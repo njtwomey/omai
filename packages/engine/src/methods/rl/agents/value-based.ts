@@ -86,7 +86,34 @@ function uniformTensor(k: Key, shape: number[], bound: number): Tensor {
 // f(x) = sign(x) sqrt(|x|), the noise transform of factorised noisy layers.
 const scaleNoise = (x: Tensor): Value => mul(sign(x), sqrt(abs(x)))
 
-function denseInit(k: Key, inputs: number, outputs: number, noisy: boolean, sigma0: number): Record<string, Tensor> {
+/** The parameters of one Q-network layer: `weight` and `bias`, or the means and scales of a noisy layer. */
+export type QLayerParams = Readonly<Record<string, Tensor | Value>>
+
+/**
+ * Initialise one layer of a Q network as PyTorch initialises linear layers (uniform in `+-1 / sqrt(inputs)`), or as a
+ * factorised noisy layer (Fortunato et al. 2018) with means drawn the same way and scales `sigma0 / sqrt(inputs)`.
+ *
+ * @param k - The key.
+ * @param inputs - The input width.
+ * @param outputs - The output width.
+ * @param noisy - Whether the layer is noisy.
+ * @param sigma0 - The initial noise scale of a noisy layer.
+ * @returns The layer's parameters.
+ * @concept deep-q-learning
+ * @example
+ * ```ts
+ * import { qLayerInit } from 'whitebox-engine/methods/rl/agents'
+ * import { key } from 'whitebox-engine/random'
+ * Object.keys(qLayerInit(key(0), 3, 2, true, 0.5)) // => ['weightMu', 'biasMu', 'weightSigma', 'biasSigma']
+ * ```
+ */
+export function qLayerInit(
+  k: Key,
+  inputs: number,
+  outputs: number,
+  noisy: boolean,
+  sigma0: number,
+): Record<string, Tensor> {
   const bound = 1 / Math.sqrt(inputs)
   if (!noisy)
     return {
@@ -102,7 +129,25 @@ function denseInit(k: Key, inputs: number, outputs: number, noisy: boolean, sigm
   }
 }
 
-function dense(p: Readonly<Record<string, Tensor | Value>>, x: Value, noise: Key | undefined): Value {
+/**
+ * Apply one layer of a Q network: `x W^T + b`, or for a noisy layer `x (W_mu + W_sigma * eps_W)^T + b_mu + b_sigma *
+ * eps_b` with factorised noise `eps_W = f(eps_out) f(eps_in)^T`, `f(x) = sign(x) sqrt(|x|)`, drawn from `noise`.
+ * Without a key a noisy layer uses its mean weights.
+ *
+ * @param p - The layer's parameters (from {@link qLayerInit}).
+ * @param x - The input `[..., inputs]`.
+ * @param noise - The noise key (noisy layers only).
+ * @returns The output `[..., outputs]`, differentiable in the parameters.
+ * @concept deep-q-learning
+ * @example
+ * ```ts
+ * import { qLayer, qLayerInit } from 'whitebox-engine/methods/rl/agents'
+ * import { key } from 'whitebox-engine/random'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * qLayer(qLayerInit(key(0), 3, 2, false, 0.5), tensor([[1, 2, 3]])).shape // => [1, 2]
+ * ```
+ */
+export function qLayer(p: QLayerParams, x: Value, noise?: Key): Value {
   const w = p['weight']
   if (w !== undefined) return linear(x, w, p['bias'])
   const wMu = p['weightMu'] as Value
@@ -144,20 +189,20 @@ export function qNetwork(inputSize: number, nActions: number, options: QNetworkO
   let width = inputSize
   for (const [i, h] of hidden.entries()) {
     // With noisy layers every layer is noisy, as in Fortunato et al. (2018).
-    params[`h${i}`] = denseInit(foldIn(key, i), width, h, noisy, sigma0)
+    params[`h${i}`] = qLayerInit(foldIn(key, i), width, h, noisy, sigma0)
     width = h
   }
   if (dueling) {
-    params['value'] = denseInit(foldIn(key, 100), width, atoms, noisy, sigma0)
-    params['advantage'] = denseInit(foldIn(key, 101), width, nActions * atoms, noisy, sigma0)
-  } else params['out'] = denseInit(foldIn(key, 100), width, nActions * atoms, noisy, sigma0)
+    params['value'] = qLayerInit(foldIn(key, 100), width, atoms, noisy, sigma0)
+    params['advantage'] = qLayerInit(foldIn(key, 101), width, nActions * atoms, noisy, sigma0)
+  } else params['out'] = qLayerInit(foldIn(key, 100), width, nActions * atoms, noisy, sigma0)
   const apply = (p: QParams, x: Value, noise?: Key): Value => {
     let h = x
     for (let i = 0; i < hidden.length; i++)
-      h = relu(dense(p[`h${i}`] ?? {}, h, noise === undefined ? undefined : foldIn(noise, i)))
+      h = relu(qLayer(p[`h${i}`] ?? {}, h, noise === undefined ? undefined : foldIn(noise, i)))
     const batch = x.shape[0] ?? 1
     const head = (name: string, _outputs: number, j: number): Value =>
-      dense(p[name] ?? {}, h, noise === undefined ? undefined : foldIn(noise, 100 + j))
+      qLayer(p[name] ?? {}, h, noise === undefined ? undefined : foldIn(noise, 100 + j))
     let q: Value
     if (dueling) {
       const v = reshape(head('value', atoms, 0), [batch, 1, atoms])
