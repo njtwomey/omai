@@ -76,6 +76,23 @@
       "cases": 14
     },
     {
+      "fixture": "numerics/geometry/triangulation.json",
+      "source": "oracle/cases/numerics/geometry/triangulation.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "numerics/interpolate/multivariate.json",
+      "source": "oracle/cases/numerics/interpolate/multivariate.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 29
+    },
+    {
       "fixture": "numerics/interpolate/univariate.json",
       "source": "oracle/cases/numerics/interpolate/univariate.py",
       "reference": {

@@ -397,21 +397,32 @@ export function bspline(t: TensorLike, c: TensorLike, k: number, extrapolate = t
   return self
 }
 
-/** Not-a-knot knots for interpolation of odd degree k at x (scipy's default for make_interp_spline). */
+/**
+ * The default interpolation knots of make_interp_spline: for odd k, not-a-knot (the data points without the (k - 1) / 2
+ * nearest each end, plus k + 1 repeated end knots); for k = 2, the midpoints between data points without the first and
+ * last; for k = 0, the data points themselves plus the last repeated.
+ */
 export function notAKnot(x: readonly number[], k: number): number[] {
-  if (k % 2 !== 1) throw new WhiteboxError('value', 'notAKnot: odd degrees only')
+  const first = x[0] ?? 0
+  const last = x[x.length - 1] ?? 0
+  if (k === 0) return [...x, last]
+  if (k === 2) {
+    const mids = x.slice(1).map((v, i) => (v + (x[i] ?? 0)) / 2)
+    return [first, first, first, ...mids.slice(1, -1), last, last, last]
+  }
+  if (k % 2 !== 1) throw new WhiteboxError('value', 'notAKnot: degrees 0, 2 and odd degrees only')
   const m = (k - 1) / 2
   const inner = x.slice(m + 1, x.length - m - 1)
   return [...new Array<number>(k + 1).fill(x[0] ?? 0), ...inner, ...new Array<number>(k + 1).fill(x[x.length - 1] ?? 0)]
 }
 
 /**
- * The interpolating B-spline of odd degree k with not-a-knot conditions (scipy.interpolate.make_interp_spline with its
- * defaults; k = 3 is the not-a-knot cubic spline). The coefficients solve the collocation system, linear in y.
+ * The interpolating B-spline of degree k with scipy's default knots (scipy.interpolate.make_interp_spline; see
+ * {@link notAKnot}; k = 3 is the not-a-knot cubic spline). The coefficients solve the collocation system, linear in y.
  *
  * @param x - Points `[n]`, increasing.
  * @param y - Values `[n, ...]`.
- * @param k - Odd degree (default 3).
+ * @param k - Degree: 0, 2 or odd (default 3).
  * @param knots - Optional knots (default not-a-knot).
  * @returns The spline.
  * @example
