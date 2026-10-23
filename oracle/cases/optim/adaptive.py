@@ -5,7 +5,7 @@ from typing import Any
 import optax  # pyright: ignore[reportMissingTypeStubs]
 import torch
 from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.optim_helpers import (
+from whitebox_oracle.optim_trajectories import (
     A_MATRIX,
     C_MATRIX,
     P0,

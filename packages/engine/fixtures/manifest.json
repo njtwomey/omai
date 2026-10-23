@@ -382,6 +382,14 @@
       "cases": 29
     },
     {
+      "fixture": "optim/admm.json",
+      "source": "oracle/cases/optim/admm.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 2
+    },
+    {
       "fixture": "optim/assignment.json",
       "source": "oracle/cases/optim/assignment.py",
       "reference": {
@@ -399,6 +407,14 @@
       "cases": 5
     },
     {
+      "fixture": "optim/dictionary.json",
+      "source": "oracle/cases/optim/dictionary.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "optim/first_order.json",
       "source": "oracle/cases/optim/first_order.py",
       "reference": {
@@ -406,6 +422,14 @@
         "optax": "0.2.8"
       },
       "cases": 27
+    },
+    {
+      "fixture": "optim/gromov.json",
+      "source": "oracle/cases/optim/gromov.py",
+      "reference": {
+        "pot": "0.9.7.post1"
+      },
+      "cases": 2
     },
     {
       "fixture": "optim/integer.json",
@@ -448,6 +472,14 @@
       "cases": 5
     },
     {
+      "fixture": "optim/minimize/convex.json",
+      "source": "oracle/cases/optim/minimize/convex.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "optim/minimize/derivative_free.json",
       "source": "oracle/cases/optim/minimize/derivative_free.py",
       "reference": {
@@ -468,6 +500,14 @@
       "source": "oracle/cases/optim/minimize/dual_annealing.py",
       "reference": {
         "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/frank_wolfe.json",
+      "source": "oracle/cases/optim/minimize/frank_wolfe.py",
+      "reference": {
+        "cvxpy": "1.9.3"
       },
       "cases": 5
     },
@@ -569,6 +609,14 @@
       "cases": 6
     },
     {
+      "fixture": "optim/proximal.json",
+      "source": "oracle/cases/optim/proximal.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "optim/quadratic.json",
       "source": "oracle/cases/optim/quadratic.py",
       "reference": {
@@ -603,6 +651,15 @@
       "cases": 4
     },
     {
+      "fixture": "optim/sparse.json",
+      "source": "oracle/cases/optim/sparse.py",
+      "reference": {
+        "sklearn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "optim/sparse_updates.json",
       "source": "oracle/cases/optim/sparse_updates.py",
       "reference": {
@@ -611,12 +668,45 @@
       "cases": 12
     },
     {
+      "fixture": "optim/splitting.json",
+      "source": "oracle/cases/optim/splitting.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/total_variation.json",
+      "source": "oracle/cases/optim/total_variation.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/transport.json",
+      "source": "oracle/cases/optim/transport.py",
+      "reference": {
+        "pot": "0.9.7.post1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "optim/variance_reduced.json",
       "source": "oracle/cases/optim/variance_reduced.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
       "cases": 3
+    },
+    {
+      "fixture": "optim/wasserstein.json",
+      "source": "oracle/cases/optim/wasserstein.py",
+      "reference": {
+        "pot": "0.9.7.post1",
+        "scipy": "1.18.1"
+      },
+      "cases": 9
     },
     {
       "fixture": "pgm/networks.json",

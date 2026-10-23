@@ -1032,17 +1032,37 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `minimize/particle-swarm.ts`: `particleSwarm` (inertia or constriction, global or ring topology, velocity clamping,
   absorbing walls, stagnation stop).
 - `minimize/constrained.ts`: projected gradient, penalty and barrier methods, augmented Lagrangian, SLSQP.
-- `minimize/convex.ts`: subgradient method, mirror descent, Frank-Wolfe, dual ascent.
+- `minimize/convex.ts`: `subgradientMethod` (projected, step rules constant, constant length, square summable,
+  diminishing, Polyak, or custom; best-point tracking), `mirrorDescent` (`entropicMirror` for exponentiated gradient on
+  the simplex, `euclideanMirror`, any `Mirror`; last, best or averaged output), `dualAscent` (and the method of
+  multipliers; numeric or closed-form inner minimisation), `dualDecomposition` (separable blocks).
+- `minimize/frank-wolfe.ts`: `frankWolfe` (conditional gradient: standard 2 / (k + 2), adaptive short step, away
+  steps and pairwise steps with active sets, the Frank-Wolfe gap) and the oracles `simplexLmo`, `l1BallLmo`, `boxLmo`,
+  `l2BallLmo`, `nuclearBallLmo`.
 - `scalar.ts`: `minimizeScalar` (golden section, Brent, bounded), `bracket`.
-- `proximal.ts`: proximal operators (L1, L2, group, nuclear, box, simplex, total variation), ISTA, FISTA, ADMM, primal-dual
-  (Chambolle-Pock), projections.
+- `proximal.ts`: proximal operators on values, differentiable (`proxL1`, `proxL2`, `proxSquaredL2`, `proxElasticNet`,
+  `proxGroupLasso`, `proxNuclear`, `proxHuber`, `proxLinf`, `proxConjugate` by the Moreau decomposition) and the
+  projections every optim file uses (`projectBox`, `projectNonnegative`, `projectSimplex`, `projectL1Ball`,
+  `projectL2Ball`, `projectAffine`, `projectHalfspace`, `projectNuclearBall`, `projectPsd`).
+- `total-variation.ts`: `proxTv1d` (Condat's direct algorithm, differentiable in the signal and the weight),
+  `proxTv2d` and `tv2dAlgorithm` (Beck-Teboulle fast gradient projection, isotropic or anisotropic, box constraints).
+- `splitting.ts`: `proximalGradientAlgorithm`, `ista` and `fista` (backtracking, adaptive restart, gradient mapping),
+  `chambollePock` (primal-dual hybrid gradient with residuals, operator norm by power iteration).
+- `admm.ts`: `admm` (scaled form, A x + B z = c, over-relaxation, residual balancing, Boyd's stopping rule),
+  `admmProx` (Douglas-Rachford splitting from two proximal operators), `admmLasso` (cached Cholesky),
+  `consensusAdmm` (global consensus with a shared regulariser).
 - `smo.ts`: sequential minimal optimisation (`smo`, `smoAlgorithm`) for quadratic programs with box constraints and
   one linear equality (the SVM dual family, libsvm's solver): working-set selection (maximal violating pair, second
   order WSS3), shrinking with gradient reconstruction, libsvm's rho, traced working pairs and active sets; `svcDual`
   (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables).
-- `sparse.ts`: sparse approximation: matching pursuit, orthogonal matching pursuit, CoSaMP, iterative hard
-  thresholding, basis pursuit, basis pursuit denoising, sparse coding over dictionaries, dictionary learning (K-SVD,
-  MOD, online), recovery guarantees (coherence, RIP estimates).
+- `sparse.ts`: sparse approximation, each a traced algorithm: `matchingPursuit`, `orthogonalMatchingPursuit`
+  (sklearn's Cholesky OMP, atoms or squared-residual tolerance), `cosamp`, `iterativeHardThresholding` (normalised
+  IHT or a fixed step), `basisPursuit` (ADMM with a cached projection), `basisPursuitDenoising` and
+  `lassoCoordinateDescent` (sklearn's coordinate descent with the duality-gap test, elastic net).
+- `dictionary.ts`: `sparseEncode` (sklearn's sparse_encode: OMP, coordinate-descent lasso, thresholding; TODO: LARS
+  and lasso-LARS coding), dictionary learning (`ksvd`, `mod`, `onlineDictionaryLearning` of Mairal et al. with
+  minibatches from keys), recovery guarantees (`mutualCoherence`, `babelFunction`, `coherenceSparsityBound`,
+  `ripEstimate` by sampled supports).
 - `linear-programming.ts`: `linprog` in scipy's form (the method a function value: `linprogSimplex`,
   `linprogInteriorPoint`), statuses (optimal, infeasible, unbounded), marginals (duals), slacks and residuals,
   sensitivity ranges for costs and right-hand sides, the simplex path for figures.
@@ -1072,15 +1092,23 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   `galeShapleyAlgorithm` (incomplete lists, unequal sides), `blockingPairs`.
 - `online.ts`: online gradient descent, FTRL, hedge, exponentiated gradient, online Newton step (`OnlineLearner`s),
   regret records (`onlineAlgorithm`, `runOnline`, `linearLosses`).
-- `transport.ts`: exact optimal transport, entropic Sinkhorn (log domain), 1-D Wasserstein, sliced Wasserstein,
-  Gromov-Wasserstein, barycentres, unbalanced transport.
+- `transport.ts`: `emd` (exact transport by the transportation simplex with dual potentials, traced pivots),
+  `sinkhorn` (log domain or scaling, traced marginal error), `entropicTransportLoss` (differentiable, envelope
+  derivatives: the plan and the potentials), `sinkhornUnbalanced` (KL-relaxed marginals, product or uniform reference).
+- `wasserstein.ts`: `wasserstein1d` (exact quantile merge, any p, weights, differentiable in positions),
+  `slicedWasserstein` (explicit or keyed random directions), barycentres (`sinkhornBarycenter` by iterative Bregman
+  projections in the log domain, `freeSupportBarycenter` by exact transport).
+- `gromov.ts`: `gromovWasserstein` (conditional gradient with exact line search, square or KL loss, asymmetric
+  structures) and `entropicGromovWasserstein` (projected gradient with Sinkhorn steps).
 - `multiobjective.ts`: `dominates`, `paretoFront`, `nonDominatedSort` (Deb's fast sort), `crowdingDistance`,
   `hypervolume` (exact: a sweep in 2-D, WFG above), `hypervolumeContributions`, scalarisations (`weightedSum`,
   `chebyshev`, `augmentedChebyshev`, `epsilonConstraint`), `VectorObjective`.
 - `nsga2.ts`: `nsga2` (binary tournaments by rank and crowding, elitist survival, constrained domination, hypervolume
   traced against a reference point), the operators `sbxCrossover` and `polynomialMutation` (bounded, as Deb's code).
-- `implicit.ts`: differentiation through solutions: `implicitRoot`, `implicitFixedPoint`, `implicitArgmin`
-  (optimisation layers).
+- `implicit.ts`: differentiation through solutions by the implicit function theorem, with any solver: `implicitRoot`
+  (F(x, ...thetas) = 0, reverse and forward rules, dense solves that differentiate again or matrix-free GMRES/CG),
+  `implicitFixedPoint` (equilibrium layers, default fixed-point solver), `implicitArgmin` (optimisation layers through
+  the stationarity condition, default inner `minimize`).
 
 ### 4.19 `kernels/` (tier 7): kernels and feature maps (sklearn kernels, GPyTorch)
 
