@@ -104,6 +104,41 @@
       "cases": 215
     },
     {
+      "fixture": "numerics/geometry/contours.json",
+      "source": "oracle/cases/numerics/geometry/contours.py",
+      "reference": {
+        "skimage": "0.26.0"
+      },
+      "cases": 32
+    },
+    {
+      "fixture": "numerics/geometry/distances.json",
+      "source": "oracle/cases/numerics/geometry/distances.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sklearn": "1.9.1"
+      },
+      "cases": 28
+    },
+    {
+      "fixture": "numerics/geometry/polygons.json",
+      "source": "oracle/cases/numerics/geometry/polygons.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "shapely": "2.2.0"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "numerics/geometry/transforms.json",
+      "source": "oracle/cases/numerics/geometry/transforms.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "skimage": "0.26.0"
+      },
+      "cases": 81
+    },
+    {
       "fixture": "numerics/geometry/triangulation.json",
       "source": "oracle/cases/numerics/geometry/triangulation.py",
       "reference": {

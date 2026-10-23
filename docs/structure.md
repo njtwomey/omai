@@ -669,14 +669,20 @@ primitives; "custom" means a dedicated rule.
   `ndimage` border modes (`padModeOf`), `extendIndex`.
 
 `geometry/` (scipy.spatial)
-- `polygons.ts`: `convexHull`, `polygonArea`, `polygonCentroid`, `pointInPolygon`, `polygonClip`, `minkowskiSum`.
-- `distances.ts`: `cdist`, `pdist`, `squareform`, metric functions (euclidean, sqeuclidean, cityblock, chebyshev,
-  minkowski, cosine, correlation, hamming, jaccard, mahalanobis, canberra, braycurtis, haversine).
+- `polygons.ts`: `convexHull` (2-D), `convexHull3` (3-D, incremental), `polygonArea`, `polygonCentroid`,
+  `polygonPerimeter` (differentiable in the vertices), `isConvex`, `windingNumber`, `pointInPolygon`,
+  `segmentIntersection`, `polygonClip` (Sutherland-Hodgman), `minkowskiSum` (convex).
+- `distances.ts`: `cdist`, `pdist`, `squareform` with the metrics euclidean, sqeuclidean, cityblock, chebyshev, minkowski
+  (with weights), seuclidean, cosine, correlation, hamming, jaccard, mahalanobis, canberra, braycurtis and haversine
+  (continuous ones differentiable).
 - `triangulation.ts`: `delaunay` (neighbours, hull, point location), `voronoi`, `barycentricCoordinates`, `alphaShape`,
   predicates (`orient`, `inCircle`, `circumcentre`).
-- `transforms.ts`: rotations and affine maps, `homography` (normalised DLT), `fundamentalMatrix`, `procrustes`,
-  `normalisePoints`, `kabsch`.
-- `contours.ts`: `contourLines` (marching squares), `contourLevels`, `isolines`, `covarianceEllipse`.
+- `transforms.ts`: `Rotation` (`rotationFromQuat`, `rotationFromMatrix`, `rotationFromRotvec`, `rotationFromEuler`
+  with all 24 sequences, `asEuler`, `compose`, `inv`, `apply`, `slerp`), `affine` maps, `homography` (normalised DLT),
+  `applyHomography`, `fundamentalMatrix` (normalised eight-point), `normalisePoints`, `orthogonalProcrustes`,
+  `procrustes`, `kabsch`.
+- `contours.ts`: `contourLines` (marching squares as skimage.find_contours, saddle connectivity, orientation,
+  coordinates), `contourLevels`, `isolines`, `covarianceEllipse` (differentiable).
 
 `spatial/` (scipy.spatial, sklearn.neighbors, faiss ideas)
 - `brute.ts`: `kNearest`, `radiusNeighbours`, `kNeighboursGraph`.

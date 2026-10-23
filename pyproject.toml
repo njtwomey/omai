@@ -11,7 +11,15 @@ dev = [
     "pyright",
     "scipy-stubs>=1.18.1.1",
 ]
-oracle-core = ["scipy", "scikit-learn", "statsmodels", "sympy", "networkx"]
+oracle-core = [
+    "scipy",
+    "scikit-learn",
+    "statsmodels",
+    "sympy",
+    "networkx",
+    "scikit-image>=0.26.0",
+    "shapely>=2.2.0",
+]
 oracle-torch = ["torch"]
 oracle-prob = ["pgmpy"]
 oracle-rl = ["gymnasium"]
