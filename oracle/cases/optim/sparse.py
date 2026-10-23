@@ -1,27 +1,18 @@
-"""Sparse approximation: OMP, sparse coding and the coordinate-descent lasso (sklearn); basis pursuit (linprog)."""
+"""Sparse approximation: OMP and the coordinate-descent lasso against sklearn; basis pursuit by scipy linprog."""
 
 import numpy as np
 import scipy
 import sklearn
 from scipy.optimize import linprog
-from sklearn.decomposition import sparse_encode
 from sklearn.linear_model import ElasticNet, Lasso, OrthogonalMatchingPursuit
 from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from whitebox_oracle.optim_helpers import sparse_problem
 
 REFERENCE: dict[str, str] = {"sklearn": sklearn.__version__, "scipy": scipy.__version__}
 
 
-def problem(seed: int, m: int, k: int, nnz: int, noise: float) -> tuple[FloatArray, FloatArray]:
-    g = rng(seed)
-    d = g.normal(size=(m, k))
-    x = np.zeros(k)
-    x[g.choice(k, size=nnz, replace=False)] = g.normal(size=nnz) * 2
-    return d, d @ x + g.normal(size=m) * noise
-
-
 def omp_cases() -> list[Case]:
-    d, y = problem(61, 30, 12, 3, 0.05)
+    d, y = sparse_problem(61, 30, 12, 3, 0.05)
     models: list[tuple[str, OrthogonalMatchingPursuit, dict[str, object]]] = [
         ("nnz", OrthogonalMatchingPursuit(n_nonzero_coefs=3, fit_intercept=False), {"nNonzeroCoefs": 3}),
         ("tol", OrthogonalMatchingPursuit(tol=0.5, fit_intercept=False), {"tol": 0.5}),
@@ -34,34 +25,8 @@ def omp_cases() -> list[Case]:
     return out
 
 
-def encode_cases() -> list[Case]:
-    g = rng(62)
-    dictionary = g.normal(size=(10, 8))
-    dictionary /= np.linalg.norm(dictionary, axis=1, keepdims=True)
-    x = g.normal(size=(5, 8))
-    out: list[Case] = []
-    for algorithm, params in [
-        ("omp", {"n_nonzero_coefs": 2}),
-        ("lasso_cd", {"alpha": 0.3}),
-        ("threshold", {"alpha": 0.5}),
-    ]:
-        code = sparse_encode(x, dictionary, algorithm=algorithm, **params)  # pyright: ignore[reportArgumentType]
-        ts = {"algorithm": {"omp": "omp", "lasso_cd": "lassoCd", "threshold": "threshold"}[algorithm]}
-        ts |= (
-            {"nNonzeroCoefs": params["n_nonzero_coefs"]} if "n_nonzero_coefs" in params else {"alpha": params["alpha"]}
-        )
-        # sparse_encode's lasso stops at sklearn's fixed duality-gap tol (1e-4 |x|^2), so its codes carry that error.
-        tol = 1e-4 if algorithm == "lasso_cd" else 1e-9
-        out.append(
-            case(
-                f"sparseEncode/{algorithm}", "sparseEncode", [x, dictionary], np.asarray(code), rtol=tol, atol=tol, **ts
-            )
-        )
-    return out
-
-
 def lasso_cases() -> list[Case]:
-    d, y = problem(63, 25, 10, 3, 0.1)
+    d, y = sparse_problem(63, 25, 10, 3, 0.1)
     m = d.shape[0]
     out: list[Case] = []
     for i, lam in enumerate([0.5, 2.0]):
@@ -76,7 +41,7 @@ def lasso_cases() -> list[Case]:
 
 def basis_pursuit_cases() -> list[Case]:
     """min |x|_1 subject to D x = y as the LP min 1.(u + v), D (u - v) = y, u, v >= 0."""
-    d, y = problem(64, 8, 20, 2, 0.0)
+    d, y = sparse_problem(64, 8, 20, 2, 0.0)
     k = d.shape[1]
     res = linprog(np.ones(2 * k), A_eq=np.hstack([d, -d]), b_eq=y, bounds=(0, None), method="highs")
     sol = np.asarray(res.x, dtype=np.float64)
@@ -85,4 +50,4 @@ def basis_pursuit_cases() -> list[Case]:
 
 
 def cases() -> list[Case]:
-    return omp_cases() + encode_cases() + lasso_cases() + basis_pursuit_cases()
+    return omp_cases() + lasso_cases() + basis_pursuit_cases()

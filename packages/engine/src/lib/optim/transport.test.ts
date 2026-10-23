@@ -6,7 +6,9 @@ import { fromStorage, sum, type Tensor, tensor, toArray, toFlat, type Value } fr
 import { metricSeries, recorder, tracePolicy } from '../trace/index.ts'
 import * as O from './index.ts'
 
-const fixture = loadFixture('optim/transport')
+const fixture = {
+  cases: ['optim/transport', 'optim/wasserstein', 'optim/gromov'].flatMap((f) => loadFixture(f).cases),
+}
 const cases = (fn: string) =>
   fixture.cases.filter((c) => c.fn === fn).map((c) => ({ ...c, inputs: c.inputs.map((v) => decode(v) as Tensor) }))
 type PlanOut = { readonly plan: unknown; readonly cost?: number; readonly distance?: number }

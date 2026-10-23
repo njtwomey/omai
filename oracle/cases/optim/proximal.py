@@ -1,45 +1,29 @@
-"""Proximal operators, projections and total variation against cvxpy; proximal and splitting solvers against sklearn."""
+"""Proximal operators and projections against cvxpy (Clarabel at tight tolerances)."""
 
 from collections.abc import Sequence
 from importlib.metadata import version
 from typing import cast
 
 import cvxpy as cp
-import numpy as np
-import sklearn
-from sklearn.linear_model import ElasticNet, Lasso
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import FloatArray, rng
+from whitebox_oracle.optim_helpers import cvx_minimize
 
-REFERENCE: dict[str, str] = {"cvxpy": version("cvxpy"), "sklearn": sklearn.__version__}
+REFERENCE: dict[str, str] = {"cvxpy": version("cvxpy")}
 
 TOL = 1e-6
 
 
-def solve(objective: object, x: cp.Variable, constraints: Sequence[object] = ()) -> FloatArray:
-    """Minimise with Clarabel at tight tolerances; return the value (cvxpy types its operators loosely)."""
-    problem = cp.Problem(cp.Minimize(cast(cp.Expression, objective)), cast(list[cp.Constraint], list(constraints)))
-    problem.solve(solver=cp.CLARABEL, tol_gap_abs=1e-12, tol_gap_rel=1e-12, tol_feas=1e-12)  # pyright: ignore[reportUnknownMemberType]
-    return np.asarray(x.value, dtype=np.float64)
-
-
 def prox_case(name: str, point: FloatArray, term: object, x: cp.Variable, t: float, **params: object) -> Case:
-    out = solve(cast(cp.Expression, term) * t + cp.sum_squares(x - point) / 2, x)
+    out, _ = cvx_minimize(cast(cp.Expression, term) * t + cp.sum_squares(x - point) / 2, x)
     return case(name, name.split("/")[0], [point], out, rtol=TOL, atol=TOL, t=t, **params)
 
 
 def projection_case(
     name: str, point: FloatArray, x: cp.Variable, constraints: Sequence[object], **params: object
 ) -> Case:
-    out = solve(cp.sum_squares(x - point), x, constraints)
+    out, _ = cvx_minimize(cp.sum_squares(x - point), x, constraints)
     return case(name, name.split("/")[0], [point], out, rtol=TOL, atol=TOL, **params)
-
-
-def padded_differences(x: cp.Variable, m: int, n: int) -> tuple[cp.Expression, cp.Expression]:
-    """Forward differences with zero beyond the last row and column (Beck and Teboulle's discretisation)."""
-    rows = cp.vstack([x[1:, :] - x[:-1, :], np.zeros((1, n))])
-    cols = cp.hstack([x[:, 1:] - x[:, :-1], np.zeros((m, 1))])
-    return rows, cols
 
 
 def operator_cases() -> list[Case]:
@@ -72,10 +56,10 @@ def operator_cases() -> list[Case]:
     a = g.normal(size=(3, 7))
     b = g.normal(size=3)
     xa = cp.Variable(7)
-    sol = solve(cp.sum_squares(xa - v), xa, [a @ xa == b])
+    sol, _ = cvx_minimize(cp.sum_squares(xa - v), xa, [a @ xa == b])
     out.append(case("projectAffine/0", "projectAffine", [v, a, b], sol, rtol=TOL, atol=TOL))
     hs = g.normal(size=7)
-    sol = solve(cp.sum_squares(xa - v), xa, [hs @ xa <= -0.3])
+    sol, _ = cvx_minimize(cp.sum_squares(xa - v), xa, [hs @ xa <= -0.3])
     out.append(case("projectHalfspace/0", "projectHalfspace", [v, hs], sol, rtol=TOL, atol=TOL, b=-0.3))
     out.append(projection_case("projectNuclearBall/0", big, xm, [cp.normNuc(xm) <= 2.0], r=2.0))
     sym = g.normal(size=(4, 4))
@@ -85,69 +69,5 @@ def operator_cases() -> list[Case]:
     return out
 
 
-def tv_cases() -> list[Case]:
-    g = rng(42)
-    out: list[Case] = []
-    for i, lam in enumerate([0.3, 1.0, 4.0]):
-        y = np.repeat(g.normal(size=4) * 3, 5) + g.normal(size=20) * 0.4
-        x = cp.Variable(20)
-        sol = solve(cp.sum_squares(x - y) / 2 + lam * cp.norm1(cp.diff(x)), x)
-        out.append(case(f"proxTv1d/{i}", "proxTv1d", [y], sol, rtol=TOL, atol=TOL, lam=lam))
-    m, n = 6, 5
-    image = np.kron(g.normal(size=(2, 1)) * 2, np.ones((3, 5))) + g.normal(size=(m, n)) * 0.3
-    for isotropic in [True, False]:
-        x = cp.Variable((m, n))
-        rows, cols = padded_differences(x, m, n)
-        if isotropic:
-            tv = cp.sum(cp.norm(cp.vstack([cp.vec(rows, order="C"), cp.vec(cols, order="C")]), 2, axis=0))
-        else:
-            tv = cp.sum(cp.abs(rows)) + cp.sum(cp.abs(cols))
-        sol = solve(cp.sum_squares(x - image) / 2 + 0.4 * tv, x)
-        out.append(
-            case(
-                f"proxTv2d/{int(isotropic)}",
-                "proxTv2d",
-                [image],
-                sol,
-                rtol=1e-5,
-                atol=1e-5,
-                lam=0.4,
-                isotropic=isotropic,
-            )
-        )
-    return out
-
-
-def lasso_cases() -> list[Case]:
-    """min |A x - b|^2 / 2 + lam |x|_1: sklearn's Lasso with alpha = lam / m and no intercept."""
-    g = rng(43)
-    out: list[Case] = []
-    m, n = 30, 8
-    a = g.normal(size=(m, n))
-    truth = np.array([2.0, 0.0, -1.5, 0.0, 0.0, 0.7, 0.0, 0.0])
-    b = a @ truth + g.normal(size=m) * 0.1
-    for i, lam in enumerate([0.5, 3.0]):
-        model = Lasso(alpha=lam / m, fit_intercept=False, tol=1e-14, max_iter=1_000_000)
-        model.fit(a, b)
-        coef = np.asarray(model.coef_, dtype=np.float64)
-        out.append(case(f"lasso/{i}", "lasso", [a, b], coef, rtol=1e-6, atol=1e-7, lam=lam))
-    net = ElasticNet(alpha=1.0 / m, l1_ratio=0.6, fit_intercept=False, tol=1e-14, max_iter=1_000_000)
-    net.fit(a, b)
-    # sklearn: |b - A x|^2 / (2 m) + alpha l1_ratio |x|_1 + alpha (1 - l1_ratio) |x|^2 / 2; scaled by m.
-    out.append(
-        case(
-            "elasticNet/0",
-            "elasticNet",
-            [a, b],
-            np.asarray(net.coef_, dtype=np.float64),
-            rtol=1e-6,
-            atol=1e-7,
-            l1=0.6,
-            l2=0.4,
-        )
-    )
-    return out
-
-
 def cases() -> list[Case]:
-    return operator_cases() + tv_cases() + lasso_cases()
+    return operator_cases()

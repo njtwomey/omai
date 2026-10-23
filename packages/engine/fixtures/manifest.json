@@ -373,12 +373,44 @@
       "cases": 12
     },
     {
+      "fixture": "optim/admm.json",
+      "source": "oracle/cases/optim/admm.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "optim/dictionary.json",
+      "source": "oracle/cases/optim/dictionary.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/gromov.json",
+      "source": "oracle/cases/optim/gromov.py",
+      "reference": {
+        "pot": "0.9.7.post1"
+      },
+      "cases": 2
+    },
+    {
       "fixture": "optim/minimize/convex.json",
       "source": "oracle/cases/optim/minimize/convex.py",
       "reference": {
         "cvxpy": "1.9.3"
       },
-      "cases": 8
+      "cases": 4
+    },
+    {
+      "fixture": "optim/minimize/frank_wolfe.json",
+      "source": "oracle/cases/optim/minimize/frank_wolfe.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 5
     },
     {
       "fixture": "optim/optimisers.json",
@@ -392,10 +424,9 @@
       "fixture": "optim/proximal.json",
       "source": "oracle/cases/optim/proximal.py",
       "reference": {
-        "cvxpy": "1.9.3",
-        "sklearn": "1.9.1"
+        "cvxpy": "1.9.3"
       },
-      "cases": 25
+      "cases": 17
     },
     {
       "fixture": "optim/sparse.json",
@@ -404,16 +435,40 @@
         "sklearn": "1.9.1",
         "scipy": "1.18.1"
       },
-      "cases": 10
+      "cases": 7
+    },
+    {
+      "fixture": "optim/splitting.json",
+      "source": "oracle/cases/optim/splitting.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/total_variation.json",
+      "source": "oracle/cases/optim/total_variation.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 5
     },
     {
       "fixture": "optim/transport.json",
       "source": "oracle/cases/optim/transport.py",
       "reference": {
+        "pot": "0.9.7.post1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "optim/wasserstein.json",
+      "source": "oracle/cases/optim/wasserstein.py",
+      "reference": {
         "pot": "0.9.7.post1",
         "scipy": "1.18.1"
       },
-      "cases": 19
+      "cases": 9
     },
     {
       "fixture": "pgm/networks.json",

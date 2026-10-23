@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
-import { abs, add, div, matmul, mul, reshape, square, sub, sum, type Tensor, type Value } from '../tensor/index.ts'
+import { solve } from '../numerics/linalg/index.ts'
+import {
+  abs,
+  add,
+  div,
+  eye,
+  matmul,
+  mul,
+  reshape,
+  square,
+  sub,
+  sum,
+  swapaxes,
+  type Tensor,
+  type Value,
+} from '../tensor/index.ts'
 import * as O from './index.ts'
 
 type Params = Readonly<Record<string, unknown>>
@@ -31,7 +46,9 @@ const leastSquares =
   (x: unknown): Value =>
     mul(sum(square(sub(reshape(matmul(a, reshape(x as Value, [-1, 1])), [-1]), b))), 0.5)
 
-const fixture = loadFixture('optim/proximal')
+const fixture = {
+  cases: ['optim/proximal', 'optim/total_variation', 'optim/splitting'].flatMap((f) => loadFixture(f).cases),
+}
 
 describe('proximal operators and projections against cvxpy', () => {
   for (const c of fixture.cases.filter((c) => c.fn in OPERATORS)) {
@@ -58,11 +75,6 @@ describe('lasso and elastic net against sklearn', () => {
     it(`${c.name} by FISTA with restart`, () => {
       const r = O.fista(f, (x, t) => O.proxL1(x, t * lam), x0, { tol: 1e-15, restart: 'gradient' })
       expectMatches(r.x as Value, c.output, c.rtol, c.atol, c.name)
-      expect(r.converged).toBe(true)
-    })
-    it(`${c.name} by ADMM`, () => {
-      const r = O.admmLasso(a, b, lam, { absTol: 1e-12, relTol: 1e-12, adaptiveRho: true })
-      expectMatches(r.z, c.output, c.rtol, c.atol, c.name)
       expect(r.converged).toBe(true)
     })
     it(`${c.name} by Chambolle-Pock`, () => {
@@ -92,6 +104,32 @@ describe('lasso and elastic net against sklearn', () => {
         },
       )
       expectMatches(r.x as Value, c.output, c.rtol, c.atol, c.name)
+    })
+  }
+})
+
+describe('ADMM on the lasso against sklearn', () => {
+  for (const c of loadFixture('optim/admm').cases) {
+    const [a, b] = c.inputs.map((v) => decode(v) as Tensor) as [Tensor, Tensor]
+    const lam = num(c.params, 'lam')
+    it(`${c.name} with a cached Cholesky factor`, () => {
+      const r = O.admmLasso(a, b, lam, { absTol: 1e-12, relTol: 1e-12, adaptiveRho: true })
+      expect(r.converged).toBe(true)
+      expectMatches(r.z, c.output, c.rtol, c.atol, c.name)
+    })
+    it(`${c.name} by Douglas-Rachford from proximal operators`, () => {
+      // prox of t |A x - b|^2 / 2: (I + t A^T A)^{-1} (v + t A^T b).
+      const at = swapaxes(a, 0, 1)
+      const n = a.shape[1] ?? 0
+      const atb = reshape(matmul(at, reshape(b, [-1, 1])), [-1])
+      const proxF = (v: Value, t: number): Value => solve(add(eye(n), mul(matmul(at, a), t)), add(v, mul(atb, t)))
+      const r = O.admmProx(proxF, (v, t) => O.proxL1(v, t * lam), new Float64Array(a.shape[1] ?? 0), {
+        rho: 1,
+        absTol: 1e-10,
+        relTol: 1e-10,
+        maxIterations: 3000,
+      })
+      expectMatches(r.z, c.output, 1e-5, 1e-6, c.name)
     })
   }
 })

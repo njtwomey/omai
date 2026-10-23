@@ -5,7 +5,7 @@ import { div, fromStorage, matmul, type Tensor, toFlat } from '../tensor/index.t
 import { messages, metricSeries, recorder, tracePolicy } from '../trace/index.ts'
 import * as O from './index.ts'
 
-const fixture = loadFixture('optim/sparse')
+const fixture = { cases: ['optim/sparse', 'optim/dictionary'].flatMap((f) => loadFixture(f).cases) }
 const cases = (fn: string) =>
   fixture.cases.filter((c) => c.fn === fn).map((c) => ({ ...c, inputs: c.inputs.map((v) => decode(v) as Tensor) }))
 

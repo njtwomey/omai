@@ -21,7 +21,9 @@ import { messages, metricSeries, recorder, tracePolicy } from '../../trace/index
 import * as O from '../index.ts'
 
 type Out = { readonly x: unknown; readonly fun: number; readonly y?: unknown }
-const fixture = loadFixture('optim/minimize/convex')
+const fixture = {
+  cases: ['optim/minimize/convex', 'optim/minimize/frank_wolfe'].flatMap((f) => loadFixture(f).cases),
+}
 const byName = (name: string) => {
   const c = fixture.cases.find((c) => c.name === name)
   if (c === undefined) throw new Error(`missing case ${name}`)
