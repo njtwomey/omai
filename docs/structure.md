@@ -602,10 +602,10 @@ primitives; "custom" means a dedicated rule.
 - `eigen.ts`: `lanczos`, `arnoldi`, `eigsh` (top k), `svds`.
 
 `polynomial/` (numpy.polynomial; composed)
-- `power.ts`: `polyval`, `polyfit`, `polyder`, `polyint`, `polyadd`, `polymul`, `polydiv`, `roots`, `polyFromRoots`,
-  `companion`.
-- `orthogonal.ts`: Legendre, Chebyshev, Hermite, Laguerre and Jacobi families: evaluation, fitting, Gauss nodes and
-  weights, basis conversion.
+- `power.ts` (lowest degree first, as numpy.polynomial): `polyval`, `polyvander`, `polyfit`, `polyder`, `polyint`,
+  `polyadd`, `polysub`, `polymul`, `polydiv`, `polytrim`, `polyroots`, `polyFromRoots`, `companion`.
+- `orthogonal.ts`: Legendre, Chebyshev, Hermite (both), Laguerre and Jacobi families by their recurrences:
+  `orthoval` (Clenshaw), `orthovander`, `orthofit`, `orthogauss`, `orthoToPower`, `powerToOrtho`.
 - `rational.ts`: `residue`, `residuez`, `invres`, partial fractions.
 
 `quadrature/` (scipy.integrate; differentiable in the integrand's parameters)
@@ -613,24 +613,28 @@ primitives; "custom" means a dedicated rule.
 - `gauss.ts`: `gaussLegendre`, `gaussHermite`, `gaussLaguerre`, `gaussJacobi`, `fixedQuad`, `normalExpectation`.
 - `adaptive.ts`: `quad` (Gauss-Kronrod G7-K15, globally adaptive, infinite limits, breakpoints, traced intervals),
   `adaptiveSimpson`, `tanhSinh`.
-- `multidim.ts`: `dblquad`, `tplquad`, `nquad`, product rules, sparse grids.
-- `monte-carlo.ts`: Monte Carlo and quasi-Monte Carlo integration with standard errors, importance-sampled integration.
+- `multidim.ts`: `dblquad`, `tplquad`, `nquad`, `productGaussRule`, `sparseGridRule` (Smolyak), `cubature`.
+- `monte-carlo.ts`: `monteCarlo`, `quasiMonteCarlo` (shifted Halton replicates) with standard errors,
+  `importanceIntegral`.
 
 `roots/` (scipy.optimize root finding; custom rules by the implicit function theorem)
-- `scalar.ts`: `bisect`, `brentq`, `ridder`, `newton`, `secant`, `halley`, `toms748`, traced.
-- `systems.ts`: `fsolve` (damped Newton with backtracking), `broyden`, `fixedPoint` (with Anderson acceleration),
-  `root`.
+- `scalar.ts`: `bisect`, `brentq`, `ridder`, `newton`, `secant`, `halley`, `toms748`, with evaluation histories;
+  `scalarRootOf` (implicit-function-theorem derivatives).
+- `systems.ts`: `fsolve` (damped Newton with backtracking), `broyden`, `fixedPoint` (Steffensen and Anderson
+  acceleration), `root`, `rootOf` (implicit-function-theorem derivatives in both modes).
 - `continuation.ts`: `homotopy`, `arcLengthContinuation`, fold and branch-point detection.
 
 `interpolate/` (scipy.interpolate; differentiable in data values and query points)
-- `piecewise.ts`: `PPoly` (evaluate, derivative, antiderivative, integrate, roots).
-- `splines.ts`: `CubicSpline` (natural, clamped, not-a-knot, periodic), `BSpline`, `makeInterpSpline`.
-- `shape-preserving.ts`: `PchipInterpolator`, `Akima1DInterpolator`.
-- `smoothing.ts`: `makeSmoothingSpline`, `UnivariateSpline`.
-- `polynomial.ts`: `BarycentricInterpolator`, `lagrange`, `chebyshevInterpolant`, `lebesgueConstant`, Runge phenomenon
-  helpers.
-- `grid.ts`: `interp`, `interp1d`, `RegularGridInterpolator`, `griddata`.
-- `scattered.ts`: `RBFInterpolator`, natural-neighbour interpolation, inverse-distance weighting.
+- `piecewise.ts`: `ppoly` (`PPoly`: evaluate, derivative, antiderivative, integrate, roots; periodic extrapolation).
+- `splines.ts`: `cubicSpline` (natural, clamped, not-a-knot, periodic, explicit), `cubicHermiteSpline`, `bspline`,
+  `makeInterpSpline`, `makeLsqSpline`, `notAKnot`.
+- `shape-preserving.ts`: `pchip`, `akima` (and makima).
+- `smoothing.ts`: `makeSmoothingSpline` (GCV), `univariateSpline`.
+- `polynomial.ts`: `barycentric`, `barycentricWeights`, `lagrange`, `chebyshevNodes`, `equispacedNodes`,
+  `chebyshevInterpolant`, `lebesgueConstant`, `runge`.
+- `grid.ts`: `interp`, `interp1d`, `regularGridInterpolator`, `griddata` (nearest, linear, natural).
+- `scattered.ts`: `rbfInterpolator`, `naturalNeighbourWeights` and `naturalNeighbour` (Sibson),
+  `inverseDistanceWeighting`.
 
 `differentiate/`
 - `finite-differences.ts`: `derivative` (with Richardson extrapolation), `gradient` (numpy), `jacobianFd`, `hessianFd`,
@@ -663,7 +667,8 @@ primitives; "custom" means a dedicated rule.
 - `polygons.ts`: `convexHull`, `polygonArea`, `polygonCentroid`, `pointInPolygon`, `polygonClip`, `minkowskiSum`.
 - `distances.ts`: `cdist`, `pdist`, `squareform`, metric functions (euclidean, sqeuclidean, cityblock, chebyshev,
   minkowski, cosine, correlation, hamming, jaccard, mahalanobis, canberra, braycurtis, haversine).
-- `triangulation.ts`: `delaunay`, `voronoi`, `barycentric`, `alphaShape`.
+- `triangulation.ts`: `delaunay` (neighbours, hull, point location), `voronoi`, `barycentricCoordinates`, `alphaShape`,
+  predicates (`orient`, `inCircle`, `circumcentre`).
 - `transforms.ts`: rotations and affine maps, `homography` (normalised DLT), `fundamentalMatrix`, `procrustes`,
   `normalisePoints`, `kabsch`.
 - `contours.ts`: `contourLines` (marching squares), `contourLevels`, `isolines`, `covarianceEllipse`.
