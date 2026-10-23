@@ -1363,11 +1363,21 @@ weights.
   `diagnosticOddsRatio`, `hammingLoss`, `zeroOneLoss`, `topKAccuracyScore`, multi-label ranking
   (`labelRankingAveragePrecisionScore`, `coverageError`, `labelRankingLoss`) and `classificationReport` (data and
   sklearn's text).
-- `curves.ts`: ROC curves and AUROC (with partial AUC), precision-recall curves and average precision, PR-gain, DET
-  curves; operating points at a fixed error rate, the equal error rate, Youden's index and minimum expected cost; cost
-  curves.
-- `probabilistic.ts`: log loss, Brier score and its decomposition, expected, maximum and classwise calibration errors
-  (with binning strategies), proper scoring rules for any `Distribution` (logarithmic, spherical, CRPS, energy score).
+- `curves.ts`: `confusionMatrixAtThresholds`, ROC curves (`rocCurve`) and AUROC (`rocAucScore`: binary with the
+  McClish partial AUC, one-vs-rest, Hand and Till one-vs-one, multilabel; macro, weighted and micro), `auc`, DET
+  curves (`detCurve`).
+- `precision-recall.ts`: precision-recall curves (`precisionRecallCurve`) and average precision
+  (`averagePrecisionScore`), PR-gain (`prGainCurve`, `prGainAuc`, ported from Flach and Kull's reference code).
+- `operating-points.ts`: operating points at a fixed error rate (`recallAtFixedPrecision`, `precisionAtFixedRecall`,
+  `sensitivityAtSpecificity`, `specificityAtSensitivity`, `fprAtTpr`), the equal error rate (`equalErrorRate`:
+  interpolated or nearest), Youden's index (`youdenIndex`) and minimum expected cost (`minimumExpectedCost`, minDCF);
+  cost curves (`costCurve`).
+- `probabilistic.ts`: `logLoss`, `d2LogLossScore`, `brierScoreLoss` and its decomposition (`brierDecomposition`),
+  `calibrationCurve`, expected, maximum and classwise calibration errors (`expectedCalibrationError` with l1, l2 and
+  max norms, `maximumCalibrationError`, `classwiseCalibrationError`; uniform and quantile binning).
+- `scoring-rules.ts`: proper scoring rules for any `Distribution`: logarithmic (`logScore`), spherical
+  (`sphericalScore`), CRPS (`crps`: closed forms for the normal, Laplace, logistic, exponential and uniform, quadrature
+  otherwise) and the energy score (`energyScore`) from samples.
 - `fairness.ts`: group rates; demographic parity, equalised odds, equal opportunity, predictive parity and calibration
   by group; disparate impact.
 - `regression.ts`: MSE, RMSE, MAE, median absolute error, maximum error, R-squared (`r2Score`, `adjustedR2Score`),

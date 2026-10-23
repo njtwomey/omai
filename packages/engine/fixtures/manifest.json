@@ -151,6 +151,14 @@
       "cases": 33
     },
     {
+      "fixture": "metrics/curves.json",
+      "source": "oracle/cases/metrics/curves.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 41
+    },
+    {
       "fixture": "metrics/deviance.json",
       "source": "oracle/cases/metrics/deviance.py",
       "reference": {
@@ -159,12 +167,49 @@
       "cases": 31
     },
     {
+      "fixture": "metrics/operating_points.json",
+      "source": "oracle/cases/metrics/operating_points.py",
+      "reference": {
+        "torchmetrics": "1.9.0",
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "metrics/precision_recall.json",
+      "source": "oracle/cases/metrics/precision_recall.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "pyprg": "0.1.1b7 (ported)"
+      },
+      "cases": 26
+    },
+    {
+      "fixture": "metrics/probabilistic.json",
+      "source": "oracle/cases/metrics/probabilistic.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 26
+    },
+    {
       "fixture": "metrics/regression.json",
       "source": "oracle/cases/metrics/regression.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
       "cases": 30
+    },
+    {
+      "fixture": "metrics/scoring_rules.json",
+      "source": "oracle/cases/metrics/scoring_rules.py",
+      "reference": {
+        "properscoring": "0.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 10
     },
     {
       "fixture": "nn/torch_reference.json",
