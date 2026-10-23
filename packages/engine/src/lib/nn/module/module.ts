@@ -106,7 +106,12 @@ export function isTraining(ctx: ApplyContext = {}): boolean {
  */
 export function tap(ctx: ApplyContext, name: string, value: Value): Value {
   if (ctx.taps === undefined) return value
-  return ctx.taps.tap(ctx.path === undefined || ctx.path === '' ? name : `${ctx.path}.${name}`, value)
+  // Inside a differentiated forward pass the value is traced: record its concrete primal when it has one.
+  let concrete: Value | undefined = value
+  while (concrete !== undefined && isTraced(concrete)) concrete = (concrete as { primal?: Value }).primal
+  if (concrete !== undefined)
+    ctx.taps.tap(ctx.path === undefined || ctx.path === '' ? name : `${ctx.path}.${name}`, concrete)
+  return value
 }
 
 /**

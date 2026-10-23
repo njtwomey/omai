@@ -1631,19 +1631,21 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `blocks/generative.ts`: time and noise-level embeddings, diffusion U-Net stages with attention, coupling layers.
 - `describe.ts`: `describe` (any functional model or module to a `Structure`: blocks, tensor shapes, repeats, skip
   connections, parameter counts), `summary` (torchinfo-style), FLOP and memory estimates.
-- `training/state.ts`: `TrainState` (params, optimiser state, buffers, step, key).
-- `training/fit.ts`: `fitAlgorithm` and `fit` (minibatch epochs, gradient clipping and accumulation, early stopping,
-  validation metrics, divergence detection); records loss, metrics, learning rate and, by policy, per-layer gradient
-  and parameter norms, gradients and activations.
+- `training/state.ts`: `TrainState` (params, optimiser state, buffers, step and update counts, key, update scale,
+  accumulation window), `trainState`, `lossAndGrads`, `applyGradients` (masking frozen parameters), `trainStep` (the
+  functional step), `accumulate`, `hasFrozen`.
+- `training/fit.ts`: `fitAlgorithm` and `fit` (minibatch epochs, buffers carried, gradient clipping and accumulation,
+  frozen parameters, early stopping, validation metrics, divergence detection); records loss, metrics, learning rate
+  and, by policy roles, per-layer gradient and parameter norms, gradients and tapped activations.
 - `training/callbacks.ts`: Lightning-style hooks without Lightning's machinery: a `Callback` implements any of
   `onTrainStart`, `onEpochStart`, `onBatchStart`, `onAfterBackward` (with gradients), `onBeforeOptimizerStep` (with
   gradients and updates), `onBatchEnd`, `onEpochEnd`, `onValidationEnd` (with validation metrics) and `onTrainEnd`; each
-  hook gets `log(name, value)` and `logTensor` (into the run's trace, like `self.log`) and `stop(reason)`. Built-ins:
-  `gradNormLogger` (global and per parameter), `paramNormLogger`, `valueLogger` (gradient and parameter tensors),
-  `learningRateMonitor`, `earlyStopping`, `bestCheckpoint`; to come: learning-rate reduction on plateau, activation
-  taps.
-- `training/serialise.ts`: saving and loading parameters (JSON with dtype and shape), loading weights exported by the
-  oracle.
+  hook gets `log(name, value)` and `logTensor` (into the run's trace, like `self.log`), `stop(reason)` and
+  `setLearningRateScale`; `onBatchEnd` gets the tapped activations. Built-ins: `gradNormLogger` (global and per
+  parameter), `paramNormLogger`, `valueLogger` (gradient and parameter tensors), `learningRateMonitor`,
+  `earlyStopping`, `bestCheckpoint`, `reduceLROnPlateau` (PyTorch's rule), `activationLogger` (activation taps).
+- `training/serialise.ts`: `saveState`/`loadState` and `stateToText`/`stateFromText` (parameters and buffers as JSON
+  with dtype and shape), `loadTorchStateDict` (weights exported by the oracle, with renaming).
 - `language-model.ts`: the `LanguageModel` contract (tokenizer, `logits(tokens)`, optional embeddings and generation),
   implemented by local models and by adapters in `methods/llm`.
 - `decoding.ts`: greedy, temperature, top-k and top-p sampling, repetition penalties, beam search, speculative
