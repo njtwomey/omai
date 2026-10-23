@@ -20,7 +20,10 @@ oracle-core = [
     "scikit-image>=0.26.0",
     "shapely>=2.2.0",
 ]
-oracle-torch = ["torch"]
+oracle-torch = [
+    "pytorch-crf>=0.7.2",
+    "torch",
+]
 oracle-prob = [
     "causal-learn>=0.1.4.8",
     "hmmlearn>=0.3.3",
