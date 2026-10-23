@@ -11,49 +11,9 @@ import scipy
 import scipy.optimize as so
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import FloatArray
+from whitebox_oracle.optim_problems import PROBLEMS
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
-
-type Problem = Callable[[FloatArray], float]
-
-
-def rosen(x: FloatArray) -> float:
-    return float(so.rosen(x))
-
-
-def beale(v: FloatArray) -> float:
-    x, y = float(v[0]), float(v[1])
-    xy = x * y
-    a, b, c = (1.5 - x) + xy, (2.25 - x) + xy * y, (2.625 - x) + xy * y * y
-    # The same operations as the TypeScript problem (products, not pow), so evaluations agree to the last bit.
-    return a * a + b * b + c * c
-
-
-def himmelblau(v: FloatArray) -> float:
-    x, y = float(v[0]), float(v[1])
-    a, b = (x * x + y) - 11, (x + y * y) - 7
-    return a * a + b * b
-
-
-def quadratic(x: FloatArray) -> float:
-    a = np.array([[4.0, 1.0, 0.0], [1.0, 3.0, 1.0], [0.0, 1.0, 2.0]])
-    b = np.array([1.0, 2.0, 3.0])
-    return float(0.5 * x @ a @ x - b @ x)
-
-
-def shifted(v: FloatArray) -> float:
-    """(x - 1)^2 + (y - 2.5)^2, the objective of scipy's constrained-minimisation tutorial."""
-    a, b = float(v[0]) - 1, float(v[1]) - 2.5
-    return a * a + b * b
-
-
-PROBLEMS: dict[str, Problem] = {
-    "rosen": rosen,
-    "beale": beale,
-    "himmelblau": himmelblau,
-    "quadratic": quadratic,
-    "shifted": shifted,
-}
 
 
 def result(res: Any) -> dict[str, object]:  # noqa: ANN401  (scipy's OptimizeResult is untyped)

@@ -381,6 +381,23 @@
       "cases": 19
     },
     {
+      "fixture": "optim/minimize/evolutionary.json",
+      "source": "oracle/cases/optim/minimize/evolutionary.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "cma": "4.5.0"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "optim/minimize/global.json",
+      "source": "oracle/cases/optim/minimize/global.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "optim/optimisers.json",
       "source": "oracle/cases/optim/optimisers.py",
       "reference": {

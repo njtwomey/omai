@@ -1005,8 +1005,15 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `minimize/cobyla.ts`: `cobyla` (Powell's linear-approximation trust-region method for inequality constraints c(x) >= 0
   and bounds: simplex of interpolation points, least-violation then objective trust-region subproblem, merit penalty
   updates, geometry steps, rhobeg and rhoend), `InequalityConstraint`.
-- `minimize/global.ts`: simulated annealing, differential evolution, CMA-ES, basin hopping, particle swarm, dual
-  annealing.
+- `minimize/global.ts`: `simulatedAnnealing` (exponential, logarithmic, fast or custom cooling, Corana step
+  adaptation, bounds), `basinHopping` (scipy's: random displacement, Metropolis acceptance, adaptive step size,
+  niterSuccess, any `LocalMethod` as a child run), `dualAnnealing` (scipy's generalised simulated annealing: Tsallis
+  visiting distribution, generalised acceptance, reannealing, local searches).
+- `minimize/evolutionary.ts`: `differentialEvolution` (scipy's: twelve strategies, dithering, binomial and exponential
+  crossover, immediate or deferred updating, Latin hypercube, Halton or given initial populations, constraints by
+  feasibility rules, polishing), `cmaes` ((mu/mu_w, lambda)-CMA-ES with cumulative step-size adaptation, rank-one and
+  rank-mu updates, bounds by repair, tolFun and tolX), `particleSwarm` (inertia or constriction, global or ring
+  topology, velocity clamping, absorbing walls, stagnation stop).
 - `minimize/constrained.ts`: projected gradient, penalty and barrier methods, augmented Lagrangian, SLSQP.
 - `minimize/convex.ts`: subgradient method, mirror descent, Frank-Wolfe, dual ascent.
 - `scalar.ts`: `minimizeScalar` (golden section, Brent, bounded), `bracket`.

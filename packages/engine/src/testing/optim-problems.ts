@@ -106,6 +106,18 @@ export function shifted(v: Value): Value {
   return sum(square(sub(v, tensor([1, 2.5]))))
 }
 
+/** cos(14.5 x - 0.3) + (x + 0.2) x, scipy's basinhopping example in one dimension (minimum near x = -0.195). */
+export function hop1(x: Value): Value {
+  return sum(add(cos(sub(mul(x, 14.5), 0.3)), mul(add(x, 0.2), x)))
+}
+
+/** cos(14.5 x0 - 0.3) + (x1 + 0.2) x1 + (x0 + 0.2) x0, scipy's basinhopping example in two dimensions. */
+export function hop2(v: Value): Value {
+  const a = at(v, 0)
+  const b = at(v, 1)
+  return sum(add(add(cos(sub(mul(a, 14.5), 0.3)), mul(add(b, 0.2), b)), mul(add(a, 0.2), a)))
+}
+
 /** The problems by name, as the oracle names them. */
 export const PROBLEMS: Readonly<Record<string, (x: Value) => Value>> = {
   rosen,
@@ -118,4 +130,6 @@ export const PROBLEMS: Readonly<Record<string, (x: Value) => Value>> = {
   quadratic,
   wavy,
   shifted,
+  hop1,
+  hop2,
 }
