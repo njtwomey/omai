@@ -391,6 +391,15 @@
       "cases": 27
     },
     {
+      "fixture": "optim/schedules.json",
+      "source": "oracle/cases/optim/schedules.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 25
+    },
+    {
       "fixture": "optim/sparse_updates.json",
       "source": "oracle/cases/optim/sparse_updates.py",
       "reference": {
