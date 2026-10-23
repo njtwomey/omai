@@ -19,6 +19,10 @@ export interface HookContext {
   logTensor(name: string, role: TensorRole, value: Value): void
   /** Stop training after this hook (the run ends with status `stopped`). */
   stop(reason: string): void
+  /** The factor every update is multiplied by (1 unless lowered). */
+  readonly lrScale: number
+  /** Set the update factor from this step on (learning-rate reduction, warm restarts by hand). */
+  setLearningRateScale(scale: number): void
   /** The underlying run, for anything else (messages, child runs). */
   readonly run: RunHandle
 }
@@ -31,6 +35,8 @@ export interface HookContext {
  */
 export interface Callback {
   readonly name: string
+  /** Ask the loop to tap activations in the forward pass (delivered to `onBatchEnd`). */
+  readonly tapsActivations?: boolean
   onTrainStart?(ctx: HookContext): void
   onEpochStart?(ctx: HookContext): void
   onBatchStart?(ctx: HookContext): void
@@ -38,7 +44,8 @@ export interface Callback {
   onAfterBackward?(ctx: HookContext & { readonly loss: number; readonly grads: Params }): void
   /** Just before the updates are applied (after any clipping by the optimiser chain). */
   onBeforeOptimizerStep?(ctx: HookContext & { readonly grads: Params; readonly updates: Params }): void
-  onBatchEnd?(ctx: HookContext & { readonly loss: number }): void
+  /** After the update, with the loss and the activations tapped in the forward pass (when a callback asked). */
+  onBatchEnd?(ctx: HookContext & { readonly loss: number; readonly activations: ReadonlyMap<string, Value> }): void
   onEpochEnd?(ctx: HookContext & { readonly meanLoss: number }): void
   /** After validation, with every validation metric (always `valLoss`). */
   onValidationEnd?(ctx: HookContext & { readonly metrics: Readonly<Record<string, number>> }): void
@@ -243,6 +250,116 @@ export function bestCheckpoint(options: { readonly monitor?: string; readonly mo
     },
     onEpochEnd: (ctx) => {
       if (monitor === 'loss') offer(ctx, ctx.meanLoss)
+    },
+  }
+}
+
+/** Options of {@link reduceLROnPlateau}. */
+export interface PlateauOptions {
+  /** The quantity to watch (default `valLoss`; `loss` is the epoch's mean training loss). */
+  readonly monitor?: string
+  readonly mode?: 'min' | 'max'
+  /** Multiply the learning rate by this on a plateau (default 0.1). */
+  readonly factor?: number
+  /** Epochs without improvement before reducing (default 10). */
+  readonly patience?: number
+  /** The least relative change that counts as an improvement (default 1e-4, PyTorch's 'rel' threshold). */
+  readonly threshold?: number
+  /** Epochs to wait after a reduction before counting again (default 0). */
+  readonly cooldown?: number
+  /** The smallest scale (default 0). */
+  readonly minScale?: number
+}
+
+/**
+ * Reduce the learning rate when a metric stops improving (torch.optim.lr_scheduler.ReduceLROnPlateau): after
+ * `patience` epochs without a relative improvement of `threshold`, the update scale is multiplied by `factor` and
+ * logged as `lr_scale`.
+ *
+ * @param options - Monitor, mode, factor, patience, threshold, cooldown and minimum scale.
+ * @returns The callback, with the current scale.
+ * @concept training-callbacks
+ * @example
+ * ```ts
+ * import { reduceLROnPlateau } from 'whitebox-engine/nn'
+ * reduceLROnPlateau({ patience: 2 }).scale() // => 1
+ * ```
+ */
+export function reduceLROnPlateau(options: PlateauOptions = {}): Callback & { readonly scale: () => number } {
+  const monitor = options.monitor ?? 'valLoss'
+  const sign = options.mode === 'max' ? -1 : 1
+  const factor = options.factor ?? 0.1
+  const patience = options.patience ?? 10
+  const threshold = options.threshold ?? 1e-4
+  const cooldown = options.cooldown ?? 0
+  const minScale = options.minScale ?? 0
+  let best = Number.POSITIVE_INFINITY
+  let bad = 0
+  let cooling = 0
+  let scale = 1
+  const check = (ctx: HookContext, value: number | undefined): void => {
+    if (value === undefined) return
+    const v = sign * value
+    // PyTorch's 'rel' mode: improvement means v < best (1 - threshold) for positive best.
+    if (v < best - Math.abs(best) * threshold) {
+      best = v
+      bad = 0
+    } else bad += 1
+    if (cooling > 0) {
+      cooling -= 1
+      bad = 0
+    }
+    if (bad > patience) {
+      const next = Math.max(scale * factor, minScale)
+      if (next < scale) {
+        scale = next
+        ctx.setLearningRateScale(scale)
+        ctx.log('lr_scale', scale)
+      }
+      cooling = cooldown
+      bad = 0
+    }
+  }
+  return {
+    name: 'reduceLROnPlateau',
+    scale: () => scale,
+    onValidationEnd: (ctx) => {
+      if (monitor !== 'loss') check(ctx, ctx.metrics[monitor])
+    },
+    onEpochEnd: (ctx) => {
+      if (monitor === 'loss') check(ctx, ctx.meanLoss)
+    },
+  }
+}
+
+/**
+ * Log activations tapped in the forward pass (`tap(ctx, name, value)` inside modules: attention weights, hidden
+ * states) as tensors with role `activation` under `activation/<path>`, recorded in full or as summaries by the run's
+ * policy, and optionally their norms as metrics.
+ *
+ * @param options - Frequency, a name filter, and whether to log norms.
+ * @returns The callback.
+ * @concept training-callbacks
+ * @example
+ * ```ts
+ * import { activationLogger } from 'whitebox-engine/nn'
+ * activationLogger().tapsActivations // => true
+ * ```
+ */
+export function activationLogger(
+  options: { readonly every?: number; readonly filter?: (name: string) => boolean; readonly norms?: boolean } = {},
+): Callback {
+  const every = options.every ?? 1
+  return {
+    name: 'activationLogger',
+    tapsActivations: true,
+    onBatchEnd: (ctx) => {
+      if ((ctx.step - 1) % every !== 0) return
+      for (const [name, value] of ctx.activations) {
+        if (options.filter !== undefined && !options.filter(name)) continue
+        ctx.logTensor(`activation/${name}`, 'activation', value)
+        if (options.norms === true) ctx.log(`activation_norm/${name}`, l2(value))
+      }
     },
   }
 }

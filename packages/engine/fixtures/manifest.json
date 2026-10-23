@@ -59,6 +59,102 @@
       "cases": 38
     },
     {
+      "fixture": "nn/functional/activations.json",
+      "source": "oracle/cases/nn/functional/activations.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "nn/functional/attention.json",
+      "source": "oracle/cases/nn/functional/attention.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "nn/functional/conv.json",
+      "source": "oracle/cases/nn/functional/conv.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "nn/functional/linear.json",
+      "source": "oracle/cases/nn/functional/linear.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "nn/functional/normalisation.json",
+      "source": "oracle/cases/nn/functional/normalisation.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 33
+    },
+    {
+      "fixture": "nn/functional/pooling.json",
+      "source": "oracle/cases/nn/functional/pooling.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 34
+    },
+    {
+      "fixture": "nn/functional/sampling.json",
+      "source": "oracle/cases/nn/functional/sampling.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "nn/functional/vision.json",
+      "source": "oracle/cases/nn/functional/vision.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "nn/module/attention.json",
+      "source": "oracle/cases/nn/module/attention.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "nn/module/normalisation.json",
+      "source": "oracle/cases/nn/module/normalisation.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 46
+    },
+    {
+      "fixture": "nn/module/recurrent.json",
+      "source": "oracle/cases/nn/module/recurrent.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "nn/module/transformer.json",
+      "source": "oracle/cases/nn/module/transformer.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "nn/torch_reference.json",
       "source": "oracle/cases/nn/torch_reference.py",
       "reference": {

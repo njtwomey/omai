@@ -1,20 +1,19 @@
 import { WhiteboxError } from '../../base/index.ts'
-import { foldIn, type Key, uniform } from '../../random/index.ts'
+import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
-  cast,
-  div,
-  flatten as flattenOp,
-  greater,
-  mul,
+  asTensor,
+  fromStorage,
+  isValue,
+  normaliseAxis,
   reshape,
-  sigmoid,
-  tanh,
+  sizeOf,
+  type Tensor,
+  type TensorLike,
   type Value,
 } from '../../tensor/index.ts'
-import { type ActivationName, activation, gelu, leakyRelu, relu, silu } from '../functional/activations.ts'
-import { linear } from '../functional/linear.ts'
+import { bilinear, embedding, embeddingBag, linear } from '../functional/linear.ts'
 import { torchDefaultUniform } from '../init.ts'
-import { type ApplyContext, initKey, Module, type Params } from './module.ts'
+import { initKey, Module, type Params } from './module.ts'
 
 /** Options of {@link Linear}. */
 export interface LinearOptions {
@@ -40,15 +39,18 @@ export class Linear extends Module {
   readonly bias: boolean
 
   constructor(inFeatures: number, outFeatures: number, options: LinearOptions = {}) {
-    const k = initKey('Linear', options.key)
-    const bias = options.bias ?? true
-    super({
-      weight: torchDefaultUniform(foldIn(k, 0), [outFeatures, inFeatures], inFeatures),
-      ...(bias ? { bias: torchDefaultUniform(foldIn(k, 1), [outFeatures], inFeatures) } : {}),
-    })
+    super()
     this.inFeatures = inFeatures
     this.outFeatures = outFeatures
-    this.bias = bias
+    this.bias = options.bias ?? true
+    this.params = this.initParams(initKey('Linear', options.key))
+  }
+
+  override initParams(key: Key): Params {
+    return {
+      weight: torchDefaultUniform(foldIn(key, 0), [this.outFeatures, this.inFeatures], this.inFeatures),
+      ...(this.bias ? { bias: torchDefaultUniform(foldIn(key, 1), [this.outFeatures], this.inFeatures) } : {}),
+    }
   }
 
   apply(params: Params, x: Value): Value {
@@ -70,83 +72,228 @@ export class Linear extends Module {
   }
 }
 
-/** A parameter-free module applying a function elementwise. */
-class Elementwise extends Module {
-  readonly kind: string
-  private readonly fn: (x: Value) => Value
+/**
+ * A bilinear layer y_k = x1^T W_k x2 + b_k (torch.nn.Bilinear), weight `[out, in1, in2]` and bias uniform on
+ * +-1/sqrt(in1). Its input is the pair `[x1, x2]`.
+ *
+ * @example
+ * ```ts
+ * import { Bilinear } from 'whitebox-engine/nn'
+ * import { key } from 'whitebox-engine/random'
+ * new Bilinear(2, 3, 4, { key: key(0) }).forward([[[1, 2]], [[1, 2, 3]]]).shape // => [1, 4]
+ * ```
+ */
+export class Bilinear extends Module<readonly [Value, Value]> {
+  readonly kind = 'Bilinear'
+  readonly in1Features: number
+  readonly in2Features: number
+  readonly outFeatures: number
+  readonly bias: boolean
 
-  constructor(kind: string, fn: (x: Value) => Value) {
-    super({})
-    this.kind = kind
-    this.fn = fn
+  constructor(in1Features: number, in2Features: number, outFeatures: number, options: LinearOptions = {}) {
+    super()
+    this.in1Features = in1Features
+    this.in2Features = in2Features
+    this.outFeatures = outFeatures
+    this.bias = options.bias ?? true
+    this.params = this.initParams(initKey('Bilinear', options.key))
   }
 
-  apply(_params: Params, x: Value): Value {
-    return this.fn(x)
+  override initParams(key: Key): Params {
+    const shape = [this.outFeatures, this.in1Features, this.in2Features]
+    return {
+      weight: torchDefaultUniform(foldIn(key, 0), shape, this.in1Features),
+      ...(this.bias ? { bias: torchDefaultUniform(foldIn(key, 1), [this.outFeatures], this.in1Features) } : {}),
+    }
+  }
+
+  protected override prepare(x: unknown): readonly [Value, Value] {
+    const [a, b] = x as readonly [TensorLike, TensorLike]
+    return [asTensor(a), asTensor(b)]
+  }
+
+  apply(params: Params, x: readonly [Value, Value]): Value {
+    return bilinear(x[0], x[1], params['weight'] as Value, params['bias'] as Value | undefined)
   }
 
   outputShape(inputShape: readonly number[]): number[] {
-    return [...inputShape]
+    return [...inputShape.slice(0, -1), this.outFeatures]
+  }
+
+  override extraRepr(): string {
+    return `in1_features=${this.in1Features}, in2_features=${this.in2Features}, out_features=${this.outFeatures}, bias=${this.bias}`
   }
 }
 
-/** ReLU as a module (torch.nn.ReLU). @example new ReLU().kind // => 'ReLU' */
-export class ReLU extends Elementwise {
-  constructor() {
-    super('ReLU', relu)
+/** Options of {@link Embedding}. */
+export interface EmbeddingModuleOptions {
+  /** An index whose row starts at zero and gets no gradient. */
+  readonly paddingIdx?: number
+  readonly maxNorm?: number
+  readonly normType?: number
+  readonly key?: Key
+}
+
+/** N(0, 1) rows with the padding row zeroed (PyTorch's embedding initialisation). */
+function embeddingInit(key: Key, n: number, dim: number, paddingIdx: number | undefined): Tensor {
+  const w = Float64Array.from(normal(key, [n, dim]).data)
+  if (paddingIdx !== undefined) w.fill(0, paddingIdx * dim, (paddingIdx + 1) * dim)
+  return fromStorage(w, [n, dim], 'float64')
+}
+
+const normaliseIndex = (i: number | undefined, n: number): number | undefined =>
+  i === undefined ? undefined : i < 0 ? i + n : i
+
+/**
+ * A lookup table of embeddings (torch.nn.Embedding): integer indices of any shape to rows of a `[n, dim]` table,
+ * initialised N(0, 1) with the padding row at zero.
+ *
+ * @concept embeddings
+ * @example
+ * ```ts
+ * import { Embedding } from 'whitebox-engine/nn'
+ * import { key } from 'whitebox-engine/random'
+ * new Embedding(10, 3, { key: key(0) }).forward([[1, 2], [3, 4]]).shape // => [2, 2, 3]
+ * ```
+ */
+export class Embedding extends Module {
+  readonly kind = 'Embedding'
+  readonly numEmbeddings: number
+  readonly embeddingDim: number
+  readonly paddingIdx: number | undefined
+  readonly maxNorm: number | undefined
+  readonly normType: number
+
+  constructor(numEmbeddings: number, embeddingDim: number, options: EmbeddingModuleOptions = {}) {
+    super()
+    this.numEmbeddings = numEmbeddings
+    this.embeddingDim = embeddingDim
+    this.paddingIdx = normaliseIndex(options.paddingIdx, numEmbeddings)
+    this.maxNorm = options.maxNorm
+    this.normType = options.normType ?? 2
+    this.params = this.initParams(initKey('Embedding', options.key))
+  }
+
+  /**
+   * An embedding with given weights (torch.nn.Embedding.from_pretrained), frozen unless `freeze` is false.
+   *
+   * @param weight - The table `[n, dim]`.
+   * @param options - Freeze (default true) and the other options.
+   * @returns The module.
+   */
+  static fromPretrained(
+    weight: TensorLike,
+    options: EmbeddingModuleOptions & { readonly freeze?: boolean } = {},
+  ): Embedding {
+    const w = asTensor(weight)
+    const e = new Embedding(w.shape[0] ?? 0, w.shape[1] ?? 0, options)
+    e.setParams({ weight: w })
+    return e.requiresGrad(!(options.freeze ?? true))
+  }
+
+  override initParams(key: Key): Params {
+    return { weight: embeddingInit(key, this.numEmbeddings, this.embeddingDim, this.paddingIdx) }
+  }
+
+  protected override prepare(x: unknown): Value {
+    return asTensor(x as TensorLike, 'int32')
+  }
+
+  apply(params: Params, x: Value): Value {
+    return embedding(x, params['weight'] as Value, {
+      ...(this.paddingIdx === undefined ? {} : { paddingIdx: this.paddingIdx }),
+      ...(this.maxNorm === undefined ? {} : { maxNorm: this.maxNorm, normType: this.normType }),
+    })
+  }
+
+  outputShape(inputShape: readonly number[]): number[] {
+    return [...inputShape, this.embeddingDim]
+  }
+
+  override extraRepr(): string {
+    return `${this.numEmbeddings}, ${this.embeddingDim}${this.paddingIdx === undefined ? '' : `, padding_idx=${this.paddingIdx}`}`
   }
 }
 
-/** Tanh as a module (torch.nn.Tanh). @example new Tanh().kind // => 'Tanh' */
-export class Tanh extends Elementwise {
-  constructor() {
-    super('Tanh', tanh)
-  }
-}
+/** The input of {@link EmbeddingBag}: 2-D indices, or 1-D indices with offsets and optional per-sample weights. */
+export type EmbeddingBagInput =
+  | Value
+  | { readonly input: TensorLike; readonly offsets?: TensorLike; readonly perSampleWeights?: TensorLike }
 
-/** Sigmoid as a module (torch.nn.Sigmoid). @example new Sigmoid().kind // => 'Sigmoid' */
-export class Sigmoid extends Elementwise {
-  constructor() {
-    super('Sigmoid', sigmoid)
-  }
-}
+/**
+ * Bags of embeddings reduced by sum, mean or max (torch.nn.EmbeddingBag), for bag-of-words and sparse-feature models.
+ *
+ * @example
+ * ```ts
+ * import { EmbeddingBag } from 'whitebox-engine/nn'
+ * import { key } from 'whitebox-engine/random'
+ * new EmbeddingBag(10, 3, { key: key(0) }).forward([[1, 2], [3, 4]]).shape // => [2, 3]
+ * ```
+ */
+export class EmbeddingBag extends Module<EmbeddingBagInput> {
+  readonly kind = 'EmbeddingBag'
+  readonly numEmbeddings: number
+  readonly embeddingDim: number
+  readonly mode: 'sum' | 'mean' | 'max'
+  readonly paddingIdx: number | undefined
+  readonly includeLastOffset: boolean
+  readonly maxNorm: number | undefined
 
-/** GELU as a module (torch.nn.GELU). @example new GELU().kind // => 'GELU' */
-export class GELU extends Elementwise {
-  constructor(approximate: 'none' | 'tanh' = 'none') {
-    super('GELU', (x) => gelu(x, approximate))
+  constructor(
+    numEmbeddings: number,
+    embeddingDim: number,
+    options: EmbeddingModuleOptions & {
+      readonly mode?: 'sum' | 'mean' | 'max'
+      readonly includeLastOffset?: boolean
+    } = {},
+  ) {
+    super()
+    this.numEmbeddings = numEmbeddings
+    this.embeddingDim = embeddingDim
+    this.mode = options.mode ?? 'mean'
+    this.paddingIdx = normaliseIndex(options.paddingIdx, numEmbeddings)
+    this.includeLastOffset = options.includeLastOffset ?? false
+    this.maxNorm = options.maxNorm
+    this.params = this.initParams(initKey('EmbeddingBag', options.key))
   }
-}
 
-/** SiLU as a module (torch.nn.SiLU). @example new SiLU().kind // => 'SiLU' */
-export class SiLU extends Elementwise {
-  constructor() {
-    super('SiLU', silu)
+  override initParams(key: Key): Params {
+    return { weight: embeddingInit(key, this.numEmbeddings, this.embeddingDim, this.paddingIdx) }
   }
-}
 
-/** Leaky ReLU as a module (torch.nn.LeakyReLU). @example new LeakyReLU(0.2).kind // => 'LeakyReLU' */
-export class LeakyReLU extends Elementwise {
-  constructor(slope = 0.01) {
-    super('LeakyReLU', (x) => leakyRelu(x, slope))
+  protected override prepare(x: unknown): EmbeddingBagInput {
+    if (isValue(x) || Array.isArray(x)) return asTensor(x as TensorLike, 'int32')
+    const r = x as { input: TensorLike; offsets?: TensorLike; perSampleWeights?: TensorLike }
+    return {
+      input: asTensor(r.input, 'int32'),
+      ...(r.offsets === undefined ? {} : { offsets: asTensor(r.offsets, 'int32') }),
+      ...(r.perSampleWeights === undefined ? {} : { perSampleWeights: asTensor(r.perSampleWeights) }),
+    }
   }
-}
 
-/** The identity (torch.nn.Identity). @example new Identity().kind // => 'Identity' */
-export class Identity extends Elementwise {
-  constructor() {
-    super('Identity', (x) => x)
+  apply(params: Params, x: EmbeddingBagInput): Value {
+    const r = isValue(x) ? { input: x } : x
+    return embeddingBag(r.input, params['weight'] as Value, {
+      mode: this.mode,
+      includeLastOffset: this.includeLastOffset,
+      ...('offsets' in r && r.offsets !== undefined ? { offsets: r.offsets } : {}),
+      ...('perSampleWeights' in r && r.perSampleWeights !== undefined ? { perSampleWeights: r.perSampleWeights } : {}),
+      ...(this.paddingIdx === undefined ? {} : { paddingIdx: this.paddingIdx }),
+      ...(this.maxNorm === undefined ? {} : { maxNorm: this.maxNorm }),
+    })
   }
-}
 
-/** An activation module by name. @example activationModule('tanh').kind // => 'tanh' */
-export function activationModule(name: ActivationName): Module {
-  const f = activation(name)
-  return new Elementwise(name, (x) => f(x))
+  outputShape(inputShape: readonly number[]): number[] {
+    return [inputShape[0] ?? 1, this.embeddingDim]
+  }
+
+  override extraRepr(): string {
+    return `${this.numEmbeddings}, ${this.embeddingDim}, mode='${this.mode}'`
+  }
 }
 
 /**
- * Flatten all but the first axis (torch.nn.Flatten with its defaults).
+ * Flatten a range of axes into one (torch.nn.Flatten, default axes 1 to the last).
  *
  * @example
  * ```ts
@@ -156,54 +303,87 @@ export function activationModule(name: ActivationName): Module {
  */
 export class Flatten extends Module {
   readonly kind = 'Flatten'
+  readonly startDim: number
+  readonly endDim: number
 
-  constructor() {
-    super({})
+  constructor(startDim = 1, endDim = -1) {
+    super()
+    this.startDim = startDim
+    this.endDim = endDim
   }
 
   apply(_params: Params, x: Value): Value {
-    if (x.shape.length < 2) return flattenOp(x)
-    return reshape(x, [x.shape[0] ?? 0, x.shape.slice(1).reduce((a, b) => a * b, 1)])
+    return x.shape.length === 0 ? reshape(x, [1]) : reshape(x, this.outputShape(x.shape))
   }
 
   outputShape(inputShape: readonly number[]): number[] {
-    return [inputShape[0] ?? 1, inputShape.slice(1).reduce((a, b) => a * b, 1)]
+    if (inputShape.length === 0) return [1]
+    const s = normaliseAxis(this.startDim, inputShape.length)
+    const e = normaliseAxis(this.endDim, inputShape.length)
+    return [...inputShape.slice(0, s), sizeOf(inputShape.slice(s, e + 1)), ...inputShape.slice(e + 1)]
+  }
+
+  override extraRepr(): string {
+    return `start_dim=${this.startDim}, end_dim=${this.endDim}`
   }
 }
 
 /**
- * Dropout (torch.nn.Dropout): in training, zero each element with probability p and scale the rest by 1 / (1 - p),
- * using the key in the apply context; the identity in evaluation mode.
+ * Expand one axis into a shape (torch.nn.Unflatten).
  *
  * @example
  * ```ts
- * import { Dropout } from 'whitebox-engine/nn'
- * new Dropout(0.5).eval().forward([1, 2]).shape // => [2]
+ * import { Unflatten } from 'whitebox-engine/nn'
+ * new Unflatten(1, [3, 4]).outputShape([2, 12]) // => [2, 3, 4]
  * ```
  */
-export class Dropout extends Module {
-  readonly kind = 'Dropout'
-  readonly p: number
+export class Unflatten extends Module {
+  readonly kind = 'Unflatten'
+  readonly dim: number
+  readonly sizes: readonly number[]
 
-  constructor(p = 0.5) {
-    super({})
-    if (!(p >= 0 && p < 1)) throw new WhiteboxError('value', `Dropout: p must be in [0, 1), got ${p}`)
-    this.p = p
+  constructor(dim: number, sizes: readonly number[]) {
+    super()
+    this.dim = dim
+    this.sizes = sizes
   }
 
-  apply(_params: Params, x: Value, ctx: ApplyContext = {}): Value {
-    if (ctx.train === false || this.p === 0) return x
-    if (ctx.key === undefined)
-      throw new WhiteboxError('value', 'Dropout: training mode needs a key in the apply context')
-    const keep = cast(greater(uniform(ctx.key, x.shape), this.p), x.dtype)
-    return div(mul(x, keep), 1 - this.p)
+  apply(_params: Params, x: Value): Value {
+    return reshape(x, this.outputShape(x.shape))
+  }
+
+  outputShape(inputShape: readonly number[]): number[] {
+    const d = normaliseAxis(this.dim, inputShape.length)
+    const n = inputShape[d] ?? 0
+    const known = this.sizes.filter((s) => s !== -1).reduce((a, b) => a * b, 1)
+    const sizes = this.sizes.map((s) => (s === -1 ? n / known : s))
+    if (sizeOf(sizes) !== n)
+      throw new WhiteboxError('shape', `Unflatten: [${this.sizes.join(', ')}] does not fill ${n}`)
+    return [...inputShape.slice(0, d), ...sizes, ...inputShape.slice(d + 1)]
+  }
+
+  override extraRepr(): string {
+    return `dim=${this.dim}, unflattened_size=(${this.sizes.join(', ')})`
+  }
+}
+
+/**
+ * The identity (torch.nn.Identity).
+ *
+ * @example
+ * ```ts
+ * import { Identity } from 'whitebox-engine/nn'
+ * new Identity().outputShape([2, 3]) // => [2, 3]
+ * ```
+ */
+export class Identity extends Module {
+  readonly kind = 'Identity'
+
+  apply(_params: Params, x: Value): Value {
+    return x
   }
 
   outputShape(inputShape: readonly number[]): number[] {
     return [...inputShape]
-  }
-
-  override extraRepr(): string {
-    return `p=${this.p}`
   }
 }

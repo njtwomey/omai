@@ -1,12 +1,11 @@
 import { WhiteboxError } from '../../base/index.ts'
 import {
-  add,
   concat,
   fromStorage,
+  full,
   max,
   mean,
   min,
-  mul,
   promoteFloat,
   sliceAxis,
   type TensorLike,
@@ -133,7 +132,12 @@ export function padArray(
         if (count === 0) return sliceAxis(out, axis, 0, 0)
         const stat =
           mode === 'constant'
-            ? add(mul(sliceAxis(out, axis, 0, 1), 0), value)
+            ? // A concrete block, not 0 * x + value: that is NaN where x is already an infinite padding value.
+              full(
+                out.shape.map((s, i) => (i === axis ? 1 : s)),
+                value,
+                { dtype: out.dtype },
+              )
             : mode === 'maximum'
               ? max(out, axis, true)
               : mode === 'minimum'

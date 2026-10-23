@@ -1,18 +1,22 @@
 import { WhiteboxError } from '../../base/index.ts'
 import { erf, logaddexp } from '../../numerics/special/index.ts'
 import {
+  abs as absOp,
   add,
   clip,
   div,
   expm1,
   greater,
+  less,
   minimum,
   mul,
   pow,
   promoteFloat,
   relu as reluOp,
+  reshape,
   sigmoid as sigmoidOp,
   sliceAxis,
+  sub,
   type TensorLike,
   tanh as tanhOp,
   type Value,
@@ -223,20 +227,268 @@ export function glu(x: TensorLike, axis = -1): Value {
   return mul(sliceAxis(v, axis, 0, n / 2), sigmoidOp(sliceAxis(v, axis, n / 2, n)))
 }
 
+const halves = (x: TensorLike, axis: number, name: string): [Value, Value] => {
+  const v = f(x)
+  const n = v.shape[axis < 0 ? v.shape.length + axis : axis] ?? 0
+  if (n % 2 !== 0) throw new WhiteboxError('shape', `${name}: the split axis must have even length`)
+  return [sliceAxis(v, axis, 0, n / 2), sliceAxis(v, axis, n / 2, n)]
+}
+
+/**
+ * SwiGLU (Shazeer 2020; LLaMA's feed-forward gate): SiLU of the first half of the axis times the second half.
+ *
+ * @param x - Input with an even split axis (the concatenated outputs of the gate and value projections).
+ * @param axis - The axis to split (default -1).
+ * @returns The activation, half as wide.
+ * @reference Shazeer (2020), GLU variants improve transformer.
+ * @example
+ * ```ts
+ * import { swiglu } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(swiglu([0, 5])) // => [0]
+ * ```
+ */
+export function swiglu(x: TensorLike, axis = -1): Value {
+  const [a, b] = halves(x, axis, 'swiglu')
+  return mul(silu(a), b)
+}
+
+/**
+ * GeGLU (Shazeer 2020): GELU of the first half of the axis times the second half.
+ *
+ * @param x - Input with an even split axis.
+ * @param axis - The axis to split (default -1).
+ * @returns The activation, half as wide.
+ * @example
+ * ```ts
+ * import { geglu } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(geglu([0, 3])) // => [0]
+ * ```
+ */
+export function geglu(x: TensorLike, axis = -1): Value {
+  const [a, b] = halves(x, axis, 'geglu')
+  return mul(gelu(a), b)
+}
+
+/**
+ * ReGLU (Shazeer 2020): ReLU of the first half of the axis times the second half.
+ *
+ * @param x - Input with an even split axis.
+ * @param axis - The axis to split (default -1).
+ * @returns The activation, half as wide.
+ * @example
+ * ```ts
+ * import { reglu } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(reglu([2, 3])) // => [6]
+ * ```
+ */
+export function reglu(x: TensorLike, axis = -1): Value {
+  const [a, b] = halves(x, axis, 'reglu')
+  return mul(reluOp(a), b)
+}
+
+/**
+ * ReLU6, min(max(x, 0), 6) (torch.nn.functional.relu6; MobileNet).
+ *
+ * @param x - Input.
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { relu6 } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(relu6([-1, 3, 9])) // => [0, 3, 6]
+ * ```
+ */
+export function relu6(x: TensorLike): Value {
+  return clip(f(x), 0, 6)
+}
+
+/**
+ * Hard swish, x relu6(x + 3) / 6 (torch.nn.functional.hardswish; MobileNetV3).
+ *
+ * @param x - Input.
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { hardswish } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(hardswish([-4, 0, 4])) // => [-0, 0, 4]
+ * ```
+ */
+export function hardswish(x: TensorLike): Value {
+  const v = f(x)
+  return mul(v, div(clip(add(v, 3), 0, 6), 6))
+}
+
+/**
+ * CELU (torch.nn.functional.celu): max(0, x) + min(0, alpha (exp(x / alpha) - 1)).
+ *
+ * @param x - Input.
+ * @param alpha - Scale (default 1).
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { celu } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(celu([0, 2])) // => [0, 2]
+ * ```
+ */
+export function celu(x: TensorLike, alpha = 1): Value {
+  const v = f(x)
+  return where(greater(v, 0), v, mul(expm1(div(minimum(v, 0), alpha)), alpha))
+}
+
+/**
+ * Softsign, x / (1 + |x|) (torch.nn.functional.softsign).
+ *
+ * @param x - Input.
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { softsign } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(softsign([1, -3])) // => [0.5, -0.75]
+ * ```
+ */
+export function softsign(x: TensorLike): Value {
+  const v = f(x)
+  return div(v, add(absOp(v), 1))
+}
+
+/**
+ * Log-sigmoid, log(sigmoid(x)) = -softplus(-x), computed stably (torch.nn.functional.logsigmoid).
+ *
+ * @param x - Input.
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { logsigmoid } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(logsigmoid([0])).map((v) => Math.round(v * 1e6) / 1e6) // => [-0.693147]
+ * ```
+ */
+export function logsigmoid(x: TensorLike): Value {
+  return mul(logaddexp(0, mul(f(x), -1)), -1)
+}
+
+/**
+ * PReLU (torch.nn.functional.prelu, He et al. 2015): x for x > 0, a x otherwise, with a learnt slope per channel
+ * (axis 1) or one shared slope.
+ *
+ * @param x - Input `[B, C, ...]` or `[B]`.
+ * @param weight - Slopes `[C]` or `[1]`.
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { prelu } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(prelu([[-2, 3]], [0.25])) // => [[-0.5, 3]]
+ * ```
+ */
+export function prelu(x: TensorLike, weight: TensorLike): Value {
+  const v = f(x)
+  const w = f(weight)
+  const n = w.shape[0] ?? 1
+  const slope = n === 1 || v.shape.length < 2 ? w : reshape(w, [1, n, ...new Array<number>(v.shape.length - 2).fill(1)])
+  return where(greater(v, 0), v, mul(v, slope))
+}
+
+/**
+ * Tanh shrink, x - tanh(x) (torch.nn.functional.tanhshrink).
+ *
+ * @param x - Input.
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { tanhshrink } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(tanhshrink([0])) // => [0]
+ * ```
+ */
+export function tanhshrink(x: TensorLike): Value {
+  const v = f(x)
+  return sub(v, tanhOp(v))
+}
+
+/**
+ * Soft shrinkage (torch.nn.functional.softshrink, the proximal map of the L1 norm): x - lambda above lambda, x +
+ * lambda below -lambda, 0 between.
+ *
+ * @param x - Input.
+ * @param lambda - Threshold (default 0.5).
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { softshrink } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(softshrink([-2, 0.2, 1])) // => [-1.5, 0, 0.5]
+ * ```
+ */
+export function softshrink(x: TensorLike, lambda = 0.5): Value {
+  const v = f(x)
+  return where(greater(v, lambda), sub(v, lambda), where(less(v, -lambda), add(v, lambda), mul(v, 0)))
+}
+
+/**
+ * Hard shrinkage (torch.nn.functional.hardshrink): x where |x| > lambda, else 0.
+ *
+ * @param x - Input.
+ * @param lambda - Threshold (default 0.5).
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { hardshrink } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(hardshrink([-2, 0.2, 1])) // => [-2, 0, 1]
+ * ```
+ */
+export function hardshrink(x: TensorLike, lambda = 0.5): Value {
+  const v = f(x)
+  return where(greater(absOp(v), lambda), v, mul(v, 0))
+}
+
+/**
+ * Threshold (torch.nn.functional.threshold): x where x > threshold, else `value`.
+ *
+ * @param x - Input.
+ * @param threshold - The threshold.
+ * @param value - The replacement.
+ * @returns The activation.
+ * @example
+ * ```ts
+ * import { threshold } from 'whitebox-engine/nn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(threshold([1, 3], 2, -1)) // => [-1, 3]
+ * ```
+ */
+export function threshold(x: TensorLike, threshold: number, value: number): Value {
+  const v = f(x)
+  return where(greater(v, threshold), v, add(mul(v, 0), value))
+}
+
 /** The activations available by name. */
 export type ActivationName =
   | 'relu'
+  | 'relu6'
   | 'leakyRelu'
   | 'elu'
+  | 'celu'
   | 'selu'
   | 'gelu'
+  | 'geluTanh'
   | 'silu'
   | 'mish'
   | 'softplus'
+  | 'softsign'
   | 'tanh'
   | 'sigmoid'
+  | 'logsigmoid'
   | 'hardtanh'
   | 'hardsigmoid'
+  | 'hardswish'
+  | 'tanhshrink'
   | 'identity'
 
 /**
@@ -254,17 +506,24 @@ export type ActivationName =
 export function activation(name: ActivationName): (x: TensorLike) => Value {
   const table: Readonly<Record<ActivationName, (x: TensorLike) => Value>> = {
     relu,
+    relu6,
     leakyRelu: (x) => leakyRelu(x),
     elu: (x) => elu(x),
+    celu: (x) => celu(x),
     selu,
     gelu: (x) => gelu(x),
+    geluTanh: (x) => gelu(x, 'tanh'),
     silu,
     mish,
     softplus: (x) => softplus(x),
+    softsign,
     tanh: (x) => tanhOp(f(x)),
     sigmoid: (x) => sigmoidOp(f(x)),
+    logsigmoid,
     hardtanh: (x) => hardtanh(x),
     hardsigmoid,
+    hardswish,
+    tanhshrink,
     identity: f,
   }
   return table[name]

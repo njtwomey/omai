@@ -1,5 +1,5 @@
 {
   "tier": 9,
   "summary": "Neural networks: functional layers, PyTorch-shaped modules, blocks, training, description and decoding.",
-  "inline": ["functional", "module", "training"]
+  "inline": ["functional", "module", "training", "decoding"]
 }

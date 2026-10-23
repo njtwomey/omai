@@ -102,7 +102,7 @@ group('modules', () => {
     const net = NN.mlp([3, 8, 2], { key: key(0) })
     const s = NN.describe(net, [16, 3])
     expect(s.type).toBe('architecture')
-    expect(s.nodes.find((n) => n.id === 'layer:2')?.badges).toEqual({ shape: '[16, 2]', params: 18 })
+    expect(s.nodes.find((n) => n.id === 'layer:2')?.badges).toEqual({ shape: '[16, 2]', params: 18, flops: 544 })
     expect(NN.summary(net, [16, 3])).toContain('Total params: 50')
   })
 
