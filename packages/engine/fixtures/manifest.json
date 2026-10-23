@@ -1,0 +1,53 @@
+{
+  "schema": "whitebox.fixtures/1",
+  "fixtures": [
+    {
+      "fixture": "tensor/ops/arithmetic.json",
+      "source": "oracle/cases/tensor/ops/arithmetic.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "tensor/ops/indexing.json",
+      "source": "oracle/cases/tensor/ops/indexing.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "tensor/ops/linear.json",
+      "source": "oracle/cases/tensor/ops/linear.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "tensor/ops/math.json",
+      "source": "oracle/cases/tensor/ops/math.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 78
+    },
+    {
+      "fixture": "tensor/ops/reduce.json",
+      "source": "oracle/cases/tensor/ops/reduce.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 61
+    },
+    {
+      "fixture": "tensor/ops/shape.json",
+      "source": "oracle/cases/tensor/ops/shape.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 18
+    }
+  ]
+}

@@ -89,17 +89,17 @@ JSON fixtures; tests read them, so the test suite never needs Python. Each folde
 
 The core is 24 domains in 9 tiers. A domain may import only domains in lower tiers.
 
-| tier | domains |
-|---:|---|
-| 0 | `base`, `scene` |
-| 1 | `tensor` |
-| 2 | `random` |
-| 3 | `space`, `trace`, `autodiff` |
-| 4 | `numerics`, `data` |
-| 5 | `graph`, `dists` |
-| 6 | `stats`, `optim`, `kernels`, `signal`, `text`, `logic`, `sampling` |
-| 7 | `dynamics`, `pgm`, `probprog`, `learn` |
-| 8 | `nn`, `rl` |
+| tier | domains                                                            |
+| ---: | ------------------------------------------------------------------ |
+|    0 | `base`, `scene`                                                    |
+|    1 | `tensor`                                                           |
+|    2 | `random`                                                           |
+|    3 | `space`, `trace`, `autodiff`                                       |
+|    4 | `numerics`, `data`                                                 |
+|    5 | `graph`, `dists`                                                   |
+|    6 | `stats`, `optim`, `kernels`, `signal`, `text`, `logic`, `sampling` |
+|    7 | `dynamics`, `pgm`, `probprog`, `learn`                             |
+|    8 | `nn`, `rl`                                                         |
 
 ### 3.1 `base/` (tier 0): what every file may assume
 
@@ -117,7 +117,6 @@ The core is 24 domains in 9 tiers. A domain may import only domains in lower tie
 
 Environments, diagrams and graphical models describe what they look like as a scene graph; whitebox-render draws it.
 Living in tier 0 lets the engine produce drawings without depending on the renderer.
-
 - `types.ts`: `Scene`, `SceneNode` (`rect`, `circle`, `ellipse`, `line`, `path`, `polygon`, `text`, `image`, `group`),
   `Style`, `Paint` (theme tokens `fg`, `bg`, `surface`, `muted`, `grid`, `accent`, `tab0`..`tab9`, or literal colours),
   `Transform`.
@@ -129,7 +128,6 @@ Living in tier 0 lets the engine produce drawings without depending on the rende
 ### 3.3 `tensor/` (tier 1): n-dimensional arrays (numpy, torch.Tensor)
 
 oracle: numpy
-
 - `dtype.ts`: `DType` (`float64`, `float32`, `int32`, `bool`, `complex128`), `Storage<D>`, `allocate`, `isFloat`,
   `isComplex`, `resultType` (explicit promotion table, numpy rules), `finfo` (`eps`, `max`, `tiny` per dtype).
 - `shape.ts`: `Shape`, `sizeOf`, `stridesOf`, `broadcastShapes`, `normaliseAxis`, `normaliseAxes`, `shapesEqual`,
@@ -168,7 +166,6 @@ oracle: numpy
 ### 3.4 `random/` (tier 2): explicit, counter-based randomness (jax.random, numpy.random)
 
 oracle: Random123 known-answer vectors; numpy for distribution moments
-
 - `philox.ts`: `philox4x32` (Philox4x32-10 block function).
 - `key.ts`: `Key`, `key(seed)`, `split(key, n)`, `foldIn(key, data)`, `keyFromPath(seed, ...names)` (named substreams),
   `randomBits`, `isKey`.
@@ -206,7 +203,6 @@ oracle: Random123 known-answer vectors; numpy for distribution moments
 ### 3.7 `autodiff/` (tier 3): reverse- and forward-mode differentiation (jax.grad, torch.autograd)
 
 oracle: torch.autograd, jax where useful; finite differences for property tests
-
 - `var.ts`: `Var` (immutable graph node: value, op, inputs, vjp), `variable`, `constant`, `asVar`, `isVar`, `node` (the
   extension point for new differentiable ops), `stopGradient`.
 - `ops/arithmetic.ts`: differentiable `add`, `sub`, `mul`, `div`, `pow`, `neg`, `abs`, `maximum`, `minimum`, `clip`,
@@ -344,7 +340,6 @@ oracle: numpy, scipy
 
 One schema per task kind. A dataset of a given kind looks the same whether it was generated or vendored. Each schema
 declares which fields are per-row, so one `take`/`split` works for all of them.
-
 - `schema/common.ts`: `DatasetMeta` (name, description, task, source, url, licence, citation, sha256, generator recipe,
   key), `Provenance`, `perRowFields`, `DatasetKind`.
 - `schema/tabular.ts`: `RegressionData` (`x`, `y`, `featureNames`, `targetName`), `ClassificationData` (adds
@@ -377,7 +372,6 @@ declares which fields are per-row, so one `take`/`split` works for all of them.
 ### 3.10 `graph/` (tier 5): graphs and their algorithms (NetworkX)
 
 oracle: networkx, scipy.sparse.csgraph
-
 - `graph.ts`: `Graph` (nodes, weighted edges, directed flag, attributes), `fromEdges`, `fromAdjacency`, `fromMatrix`,
   `neighbours`, `successors`, `predecessors`, `degree`, `inDegree`, `outDegree`, `subgraph`, `reverse`, `toUndirected`.
 - `structures.ts`: `BinaryHeap` (functional priority queue), `UnionFind`, `IndexedQueue`.
@@ -414,7 +408,6 @@ Every distribution is a plain object from a factory: `name`, `params`, `support`
 methods `logProb`, `prob`, `cdf`, `logCdf`, `sf`, `logSf`, `ppf` (quantile), `isf`, `sample(key, shape)`, `rsample`
 (reparameterised, through autodiff), `mean`, `variance`, `stddev`, `mode`, `entropy`. Methods accept tensors or
 autodiff `Var`s, so log densities are differentiable.
-
 - `distribution.ts`: the `Distribution` interface, `Support`, `ContinuousDistribution`, `DiscreteDistribution`,
   `batchShapeOf`, parameter validation helpers.
 - `continuous/normal.ts`: `normal`, `halfNormal`, `truncatedNormal`, `logNormal`, `skewNormal`.
@@ -454,7 +447,6 @@ autodiff `Var`s, so log densities are differentiable.
 ### 3.12 `stats/` (tier 6): statistics (scipy.stats, statsmodels)
 
 oracle: scipy.stats, statsmodels, numpy
-
 - `descriptive.ts`: `mean`, `variance` (two-pass, `ddof`), `std`, `skewness`, `kurtosis`, `moment`, `weightedMean`,
   `weightedVariance`, `describe`, `zscore`, `sem`, `mode`.
 - `running.ts`: Welford running moments (`push`, `merge`), running quantiles (P-squared), exponentially weighted
@@ -501,7 +493,6 @@ oracle: scipy.stats, statsmodels, numpy
 ### 3.13 `optim/` (tier 6): optimisation (optax, torch.optim, scipy.optimize)
 
 oracle: torch.optim, optax (via jax), scipy.optimize, cvxpy for small LPs and QPs
-
 - `transform.ts`: `GradientTransformation` (`init`, `update`), `applyUpdates`, `chain`, `scaleByLearningRate`,
   `clipByGlobalNorm`, `clipByValue`, `addDecayedWeights`, `maskedTransform`, `globalNorm`.
 - `first-order.ts`: `sgd` (momentum, Nesterov), `adagrad`, `rmsprop`, `adadelta`.
@@ -542,7 +533,6 @@ oracle: torch.optim, optax (via jax), scipy.optimize, cvxpy for small LPs and QP
 ### 3.14 `kernels/` (tier 6): kernel functions and kernel approximations (sklearn.gaussian_process.kernels, sklearn.kernel_approximation, GPyTorch)
 
 oracle: scikit-learn
-
 - `kernel.ts`: `Kernel` (`k(x, y)`, `diag`, hyperparameters as a pytree, differentiable), `gram`, `crossGram`,
   `sumKernel`, `productKernel`, `scaleKernel`, `ardKernel`, `fromLogParams`.
 - `stationary.ts`: `rbf`, `matern` (1/2, 3/2, 5/2, general nu), `rationalQuadratic`, `exponential`, `periodic`
@@ -559,7 +549,6 @@ oracle: scikit-learn
 ### 3.15 `signal/` (tier 6): signal and image processing (scipy.signal, scipy.ndimage, pywt, librosa basics)
 
 oracle: scipy.signal, scipy.ndimage, pywt, librosa
-
 - `signal.ts`: `Signal` (samples, sampling rate, start time, units, channels), `signal`, `sampleTimes`, `resampleTo`,
   `Spectrum` and `TimeFrequency` records, `magnitudeDb`, `unwrap`.
 - `windows.ts`: `getWindow` (boxcar, hann, hamming, blackman, blackmanharris, nuttall, flattop, bartlett, kaiser,
@@ -606,7 +595,6 @@ oracle: scipy.signal, scipy.ndimage, pywt, librosa
 ### 3.16 `text/` (tier 6): text processing (HF tokenizers, nltk, sklearn.feature_extraction.text)
 
 oracle: HF tokenizers, tiktoken, nltk, scikit-learn
-
 - `normalise.ts`: `unicodeNormalise` (NFC, NFD, NFKC, NFKD), `caseFold`, `stripAccents`, `collapseWhitespace`,
   `AlignedText` (normalised text with offsets back to the original).
 - `tokenise.ts`: `regexTokenise`, `wordTokenise` (sklearn token pattern, Treebank), `tweetTokenise`, `characters`
@@ -635,7 +623,6 @@ oracle: HF tokenizers, tiktoken, nltk, scikit-learn
 ### 3.17 `logic/` (tier 6): logic programming, satisfiability and ILP
 
 oracle: SWI-Prolog outputs recorded as fixtures; pysat for SAT
-
 - `terms.ts`: `atom`, `variable`, `compound`, `list`, `num`, `isGround`, `termVariables`, `termsEqual`,
   `printTerm`.
 - `parse.ts`: Prolog syntax parser for clauses and queries (operators, lists, comments), `parseProgram`,
@@ -660,7 +647,6 @@ oracle: SWI-Prolog outputs recorded as fixtures; pysat for SAT
 ### 3.18 `sampling/` (tier 6): Monte Carlo sampling (NumPyro/BlackJAX kernels, ArviZ diagnostics)
 
 oracle: numpy statistical checks against analytic targets; arviz for diagnostics
-
 - `target.ts`: `LogDensity` (log density with gradient by autodiff, dimension, optional constraints),
   `logDensityFromDistribution`, `unconstrainedTarget`.
 - `metropolis.ts`: `randomWalkMetropolis`, `independenceMetropolis`, `metropolisHastings` (custom proposals), adaptive
@@ -681,7 +667,6 @@ oracle: numpy statistical checks against analytic targets; arviz for diagnostics
 ### 3.19 `dynamics/` (tier 7): dynamical systems, control and filtering (scipy.integrate, python-control, filterpy)
 
 oracle: scipy.integrate, python-control, filterpy, statsmodels
-
 - `ode/explicit.ts`: fixed-step `euler`, `heun`, `midpoint`, `rk4`, any explicit Butcher tableau (`butcherTableau`).
 - `ode/adaptive.ts`: embedded pairs `rk23`, `rk45` (Dormand-Prince, dense output), `dop853`; error control and step
   rejection recorded as trace events.
@@ -724,7 +709,6 @@ oracle: pgmpy, networkx for structure; brute-force enumeration for exact checks
 A model is plain data. Every model type has `modelGraph(model)`, a structure description (nodes with roles, edges,
 plates, factor nodes) that whitebox-render draws, and inference algorithms emit `message` events so the drawing can be
 animated.
-
 - `factor.ts`: `DiscreteFactor` (scope, cardinalities, values in log space), `factorProduct`, `marginalise` (sum and
   max), `reduce` (evidence), `normalise`, `factorDivide`, `toTable`.
 - `gaussian-factor.ts`: canonical (information) form Gaussian factors: product, marginalise, condition; conversion to
@@ -768,7 +752,6 @@ oracle: numpyro and pyro on small models (posterior moments within Monte Carlo e
 A model is an ordinary function that calls `sample`, `observe`, `deterministic`, `plate` and `factor` through an
 effect-handler context. Handlers (`trace`, `condition`, `substitute`, `seed`, `block`, `replay`) are the extension
 mechanism, exactly as in NumPyro.
-
 - `primitives.ts`: `sample`, `observe`, `deterministic`, `param`, `plate`, `factor`, `Model` type.
 - `handlers.ts`: `trace`, `seed`, `condition`, `substitute`, `replay`, `block`, `scale`, `mask`, `doHandler`
   (interventions).
@@ -790,7 +773,6 @@ mechanism, exactly as in NumPyro.
 ### 3.22 `learn/` (tier 7): the machine-learning toolkit around models (sklearn's non-model modules)
 
 oracle: scikit-learn
-
 - `estimator.ts`: the estimator protocol: `Estimator<H, M>` (`name`, `hyper`, `fit(data, ctx)`), capability guards
   (`canPredict`, `canPredictProba`, `canTransform`, `canScore`, `canSample`), `FitContext` (key, tracer), and
   `EstimatorClass` (the base for sklearn-style class wrappers: `fit`, `predict`, `predictProba`, `transform`,
@@ -873,7 +855,6 @@ How a network is trained, end to end: parameters are a pytree; `apply` builds an
 `learn/losses` produces a scalar `Var`; `valueAndGrad` gives the gradient pytree; an `optim` transformation turns
 gradients into updates; `fitAlgorithm` wraps this as an `Algorithm`, so `runAlgorithm` emits `loss`, metric and
 parameter-norm events per step; `nn/describe` turns the model into an architecture spec that whitebox-render draws.
-
 - `functional/activations.ts`: `relu`, `leakyRelu`, `elu`, `selu`, `gelu` (exact and tanh), `silu`, `mish`, `softplus`,
   `hardTanh`, `hardSigmoid`, `glu`, `swiglu`, `activation(name)`.
 - `functional/linear.ts`: `linear`, `bilinear`, `embedding`, `embeddingBag`.
@@ -935,7 +916,6 @@ Environments are functional at heart, `reset(key) -> { state, obs }` and `step(s
 reward, terminated, truncated, info }`, plus `render(state) -> Scene`. A gymnasium-shaped class wraps that
 (`env.reset({ seed })`, `env.step(action)`, `env.render()`). Adding an environment is adding one file in
 `methods/rl/environments/` that exports an `EnvDefinition`.
-
 - `env.ts`: `Env<S, O, A>` (spec, observation and action spaces, reset, step, render, optional `model` for planning
   and `oracle` for regret), `EnvSpec` (id, max episode steps, reward range, render size), `EnvDefinition` (factory
   with typed options), `isEnvDefinition`.
@@ -1166,7 +1146,6 @@ oracle: scikit-learn, umap-learn, hdbscan
 ### 4.4 Probabilistic models (`models/`)
 
 oracle: hmmlearn, sklearn-crfsuite outputs, gensim LDA (statistical agreement), trueskill, numpyro
-
 - `hmm.ts`: hidden Markov models with categorical, Gaussian and GMM emissions: `baumWelch` (traced), `viterbi`,
   `posteriorStates`, `sampleHmm`; the dishonest casino.
 - `crf.ts`: linear-chain CRF (`crfFit` by L-BFGS, marginals, Viterbi), template features (CRF++ style).
@@ -1189,7 +1168,6 @@ oracle: hmmlearn, sklearn-crfsuite outputs, gensim LDA (statistical agreement), 
 ### 4.5 Causal inference (`causal/`) (DoWhy, EconML, causal-learn)
 
 oracle: dowhy and econml on fixed synthetic data, causal-learn for discovery
-
 - `scm.ts`: structural causal models with explicit noise (`scm`, `sampleScm`, `intervene`, `counterfactual`), drawn as
   graphs.
 - `identification.ts`: backdoor and frontdoor criteria, instrumental variables, `identify` (adjustment sets).
@@ -1271,7 +1249,6 @@ oracle: gymnasium (step-for-step dynamics), stable-baselines3 learning curves re
 ### 4.8 Generative models (`generative/`)
 
 oracle: PyTorch (losses and single steps with fixed weights), diffusers schedules
-
 - `autoencoders.ts`: `autoencoder`, `vae` (beta-VAE, Gaussian and Bernoulli likelihoods), `conditionalVae`, ELBO terms
   traced separately.
 - `vector-quantised.ts`: `vqVae` (straight-through, codebook and commitment losses, EMA codebooks), residual VQ,
@@ -1297,7 +1274,6 @@ oracle: PyTorch (forward and backward of each model with exported weights); Hugg
 
 Each file defines a model with `init`, `apply`, `describe` (its architecture spec, which whitebox-render draws), a
 training recipe as a traced algorithm, and an sklearn-style estimator where that makes sense.
-
 - `mlp.ts`: `mlp`, `mlpClassifier`, `mlpRegressor` (sklearn.neural_network semantics).
 - `cnn.ts`: `leNet`, `vggLite`, `resNetLite` (CIFAR-style), feature-map taps.
 - `rnn.ts`: character RNN and LSTM language models, `seq2seq` with Bahdanau and Luong attention.
@@ -1328,7 +1304,6 @@ training recipe as a traced algorithm, and an sklearn-style estimator where that
 ### 4.10 Retrieval and recommendation (`retrieval/`)
 
 oracle: faiss, rank_bm25, implicit, scikit-learn
-
 - `search.ts`: `bm25Index` and search, dense retrieval (dual encoders), hybrid fusion (reciprocal rank fusion),
   re-ranking.
 - `indexes.ts`: approximate nearest-neighbour indexes (IVF, PQ, IVF-PQ, HNSW, LSH) built on `numerics/spatial`, with
@@ -1345,7 +1320,6 @@ oracle: faiss, rank_bm25, implicit, scikit-learn
 ### 4.11 Evaluation suites (`evaluation/`)
 
 oracle: sacrebleu, rouge-score, jiwer, pycocotools, torchmetrics, scikit-image
-
 - `text.ts`: `bleu`, `chrf`, `rouge` (N and L), `meteorLite`, `ter`, `wer`, `cer`, `exactMatch`, token F1,
   `bertScore` from embeddings.
 - `detection.ts`: COCO and VOC `meanAveragePrecision`, `panopticQuality`, mask IoU, Dice, boundary F1.
@@ -1396,7 +1370,6 @@ Every dataset is a function returning a schema from `data/schema` (generated dat
 ones take nothing). Small static data is embedded as generated `*.data.ts` files vendored by the oracle with source,
 licence and checksum; larger data is a release asset loaded through `data/loader`. Generators attach `Truth` where it
 is known.
-
 - `regression/synthetic.ts`: `makeRegression`, `friedman1`, `friedman2`, `friedman3`, `regression1d` (sine, step,
   sinc, doppler, heteroscedastic), `additive` (GAM test data), `curve1d` with true quantiles.
 - `regression/real.ts`: `diabetes`, `anscombe`, `mtcars`, `bostonFree` (a licence-clean housing set), `growthChart`.
@@ -1613,7 +1586,6 @@ packages exactly as an outside project would.
 
 A uv project (root `pyproject.toml` with dependency groups `oracle` and `dev`) using pydantic and pydantic-settings.
 It has two jobs: produce golden fixtures from reference libraries, and vendor static datasets.
-
 - `oracle/whitebox_oracle/settings.py`: `OracleSettings` (pydantic-settings, reads the root `.env`; output directories,
   which cases to run).
 - `oracle/whitebox_oracle/fixture.py`: `Case` and `Fixture` pydantic models (inputs, outputs, tolerances, reference
@@ -1659,103 +1631,102 @@ For a reviewer checking coverage, and for users arriving from Python.
 
 ### scikit-learn
 
-| sklearn | whitebox |
-|---|---|
-| `base`, estimator API | `engine/lib/learn/estimator.ts` |
-| `linear_model` | `methods/linear/`, `methods/glm/` |
-| `svm` | `methods/svm/` |
-| `tree` | `methods/trees/` |
-| `ensemble` | `methods/ensemble/` |
-| `neighbors` | `methods/neighbours/`, `lib/numerics/spatial/` |
-| `naive_bayes`, `discriminant_analysis` | `methods/naive-bayes/`, `methods/discriminant/` |
-| `gaussian_process` | `methods/gp/`, `lib/kernels/` |
-| `kernel_approximation`, `kernel_ridge` | `lib/kernels/expansion.ts`, `methods/linear/least-squares.ts` |
-| `isotonic` | `methods/linear/isotonic.ts` |
-| `multiclass`, `multioutput` | `methods/multiclass/` |
-| `semi_supervised` | `methods/semi-supervised/` |
-| `neural_network` | `methods/neural/mlp.ts` |
-| `cluster` | `methods/cluster/` |
-| `mixture` | `methods/mixture/` |
-| `decomposition`, `cross_decomposition`, `random_projection` | `methods/decomposition/` |
-| `manifold` | `methods/manifold/` |
-| `covariance` | `methods/covariance/`, `lib/stats/covariance.ts` |
-| `preprocessing`, `impute` | `lib/learn/preprocessing/` |
-| `feature_extraction.text` | `lib/text/features.ts` |
-| `feature_selection` | `lib/learn/feature-selection.ts` |
-| `pipeline`, `compose` | `lib/learn/compose.ts` |
-| `model_selection` | `lib/learn/model-selection/` |
-| `metrics` | `lib/learn/metrics/` |
-| `calibration` | `lib/learn/calibration.ts` |
-| `inspection` | `lib/learn/inspection.ts` |
-| `datasets` | `methods/datasets/`, `lib/data/` |
+| sklearn                                                     | whitebox                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------- |
+| `base`, estimator API                                       | `engine/lib/learn/estimator.ts`                               |
+| `linear_model`                                              | `methods/linear/`, `methods/glm/`                             |
+| `svm`                                                       | `methods/svm/`                                                |
+| `tree`                                                      | `methods/trees/`                                              |
+| `ensemble`                                                  | `methods/ensemble/`                                           |
+| `neighbors`                                                 | `methods/neighbours/`, `lib/numerics/spatial/`                |
+| `naive_bayes`, `discriminant_analysis`                      | `methods/naive-bayes/`, `methods/discriminant/`               |
+| `gaussian_process`                                          | `methods/gp/`, `lib/kernels/`                                 |
+| `kernel_approximation`, `kernel_ridge`                      | `lib/kernels/expansion.ts`, `methods/linear/least-squares.ts` |
+| `isotonic`                                                  | `methods/linear/isotonic.ts`                                  |
+| `multiclass`, `multioutput`                                 | `methods/multiclass/`                                         |
+| `semi_supervised`                                           | `methods/semi-supervised/`                                    |
+| `neural_network`                                            | `methods/neural/mlp.ts`                                       |
+| `cluster`                                                   | `methods/cluster/`                                            |
+| `mixture`                                                   | `methods/mixture/`                                            |
+| `decomposition`, `cross_decomposition`, `random_projection` | `methods/decomposition/`                                      |
+| `manifold`                                                  | `methods/manifold/`                                           |
+| `covariance`                                                | `methods/covariance/`, `lib/stats/covariance.ts`              |
+| `preprocessing`, `impute`                                   | `lib/learn/preprocessing/`                                    |
+| `feature_extraction.text`                                   | `lib/text/features.ts`                                        |
+| `feature_selection`                                         | `lib/learn/feature-selection.ts`                              |
+| `pipeline`, `compose`                                       | `lib/learn/compose.ts`                                        |
+| `model_selection`                                           | `lib/learn/model-selection/`                                  |
+| `metrics`                                                   | `lib/learn/metrics/`                                          |
+| `calibration`                                               | `lib/learn/calibration.ts`                                    |
+| `inspection`                                                | `lib/learn/inspection.ts`                                     |
+| `datasets`                                                  | `methods/datasets/`, `lib/data/`                              |
 
 ### PyTorch
 
-| torch | whitebox |
-|---|---|
-| `torch.Tensor`, tensor ops | `lib/tensor/` |
-| `torch.autograd`, `torch.func` | `lib/autodiff/` |
-| `torch.nn.functional` | `lib/nn/functional/` |
-| `torch.nn` modules | `lib/nn/module/` |
-| `torch.nn.init` | `lib/nn/init.ts` |
-| `torch.optim`, `lr_scheduler` | `lib/optim/` |
-| `torch.utils.data` | `lib/data/batching.ts` |
-| `torch.distributions` | `lib/dists/` |
-| `torchvision.ops` | `methods/vision/boxes.ts` |
-| training loops (Lightning-style) | `lib/nn/training/` |
-| `torchinfo.summary` | `lib/nn/describe.ts` |
+| torch                                 | whitebox                                      |
+| ------------------------------------- | --------------------------------------------- |
+| `torch.Tensor`, tensor ops            | `lib/tensor/`                                 |
+| `torch.autograd`, `torch.func`        | `lib/autodiff/`                               |
+| `torch.nn.functional`                 | `lib/nn/functional/`                          |
+| `torch.nn` modules                    | `lib/nn/module/`                              |
+| `torch.nn.init`                       | `lib/nn/init.ts`                              |
+| `torch.optim`, `lr_scheduler`         | `lib/optim/`                                  |
+| `torch.utils.data`                    | `lib/data/batching.ts`                        |
+| `torch.distributions`                 | `lib/dists/`                                  |
+| `torchvision.ops`                     | `methods/vision/boxes.ts`                     |
+| training loops (Lightning-style)      | `lib/nn/training/`                            |
+| `torchinfo.summary`                   | `lib/nn/describe.ts`                          |
 | Hugging Face `generate`, `tokenizers` | `lib/nn/decoding.ts`, `lib/text/tokenizer.ts` |
 
 ### NumPy and SciPy
 
-| numpy / scipy | whitebox |
-|---|---|
-| `numpy` arrays, ufuncs, reductions | `lib/tensor/` |
-| `numpy.random` | `lib/random/` |
-| `numpy.linalg`, `scipy.linalg` | `lib/numerics/linalg/` |
-| `scipy.sparse`, `scipy.sparse.linalg` | `lib/numerics/sparse/` |
-| `numpy.fft`, `scipy.fft` | `lib/numerics/fourier/` |
-| `numpy.polynomial` | `lib/numerics/polynomial/` |
-| `scipy.special` | `lib/numerics/special/` |
-| `scipy.integrate` (quadrature) | `lib/numerics/quadrature/` |
-| `scipy.integrate` (ODEs) | `lib/dynamics/ode/` |
-| `scipy.optimize` | `lib/optim/`, `lib/numerics/roots/` |
-| `scipy.interpolate` | `lib/numerics/interpolate/` |
-| `scipy.signal` | `lib/signal/` |
-| `scipy.ndimage` | `lib/signal/image/`, `lib/numerics/convolution/` |
-| `scipy.spatial` | `lib/numerics/geometry/`, `lib/numerics/spatial/` |
-| `scipy.stats` | `lib/dists/`, `lib/stats/` |
-| `scipy.cluster.hierarchy` | `methods/cluster/hierarchical.ts` |
+| numpy / scipy                         | whitebox                                          |
+| ------------------------------------- | ------------------------------------------------- |
+| `numpy` arrays, ufuncs, reductions    | `lib/tensor/`                                     |
+| `numpy.random`                        | `lib/random/`                                     |
+| `numpy.linalg`, `scipy.linalg`        | `lib/numerics/linalg/`                            |
+| `scipy.sparse`, `scipy.sparse.linalg` | `lib/numerics/sparse/`                            |
+| `numpy.fft`, `scipy.fft`              | `lib/numerics/fourier/`                           |
+| `numpy.polynomial`                    | `lib/numerics/polynomial/`                        |
+| `scipy.special`                       | `lib/numerics/special/`                           |
+| `scipy.integrate` (quadrature)        | `lib/numerics/quadrature/`                        |
+| `scipy.integrate` (ODEs)              | `lib/dynamics/ode/`                               |
+| `scipy.optimize`                      | `lib/optim/`, `lib/numerics/roots/`               |
+| `scipy.interpolate`                   | `lib/numerics/interpolate/`                       |
+| `scipy.signal`                        | `lib/signal/`                                     |
+| `scipy.ndimage`                       | `lib/signal/image/`, `lib/numerics/convolution/`  |
+| `scipy.spatial`                       | `lib/numerics/geometry/`, `lib/numerics/spatial/` |
+| `scipy.stats`                         | `lib/dists/`, `lib/stats/`                        |
+| `scipy.cluster.hierarchy`             | `methods/cluster/hierarchical.ts`                 |
 
 ### Other familiar libraries
 
-| library | whitebox |
-|---|---|
-| statsmodels (GLM, tsa, tests) | `methods/glm/`, `methods/timeseries/`, `lib/stats/tests/` |
-| mgcv, pygam | `methods/gam/`, `lib/stats/smoothing/` |
-| NumPyro, Pyro | `lib/probprog/`, `lib/sampling/` |
-| ArviZ | `lib/sampling/diagnostics.ts`, `lib/probprog/criticism.ts` |
-| pgmpy | `lib/pgm/` |
-| NetworkX | `lib/graph/` |
-| gymnasium | `lib/rl/env.ts`, `lib/rl/gym.ts`, `lib/rl/wrappers.ts`, `methods/rl/environments/` |
-| stable-baselines3 | `methods/rl/agents/`, `lib/rl/buffers.ts`, `lib/rl/returns.ts` |
-| python-control, filterpy | `lib/dynamics/control/`, `lib/dynamics/filtering/` |
-| pywt, librosa | `lib/signal/wavelets.ts`, `lib/signal/audio.ts` |
-| optax | `lib/optim/transform.ts`, `lib/optim/adaptive.ts` |
-| POT (optimal transport) | `lib/optim/transport.ts` |
-| SWI-Prolog, Metagol, Aleph | `lib/logic/` |
-| DoWhy, EconML | `methods/causal/` |
-| Optuna, scikit-optimize | `methods/tuning/` |
-| faiss | `lib/numerics/spatial/`, `methods/retrieval/indexes.ts` |
-| gensim | `methods/embedding/word.ts`, `methods/models/topic.ts` |
-| lifelines | `methods/survival/` |
+| library                       | whitebox                                                                           |
+| ----------------------------- | ---------------------------------------------------------------------------------- |
+| statsmodels (GLM, tsa, tests) | `methods/glm/`, `methods/timeseries/`, `lib/stats/tests/`                          |
+| mgcv, pygam                   | `methods/gam/`, `lib/stats/smoothing/`                                             |
+| NumPyro, Pyro                 | `lib/probprog/`, `lib/sampling/`                                                   |
+| ArviZ                         | `lib/sampling/diagnostics.ts`, `lib/probprog/criticism.ts`                         |
+| pgmpy                         | `lib/pgm/`                                                                         |
+| NetworkX                      | `lib/graph/`                                                                       |
+| gymnasium                     | `lib/rl/env.ts`, `lib/rl/gym.ts`, `lib/rl/wrappers.ts`, `methods/rl/environments/` |
+| stable-baselines3             | `methods/rl/agents/`, `lib/rl/buffers.ts`, `lib/rl/returns.ts`                     |
+| python-control, filterpy      | `lib/dynamics/control/`, `lib/dynamics/filtering/`                                 |
+| pywt, librosa                 | `lib/signal/wavelets.ts`, `lib/signal/audio.ts`                                    |
+| optax                         | `lib/optim/transform.ts`, `lib/optim/adaptive.ts`                                  |
+| POT (optimal transport)       | `lib/optim/transport.ts`                                                           |
+| SWI-Prolog, Metagol, Aleph    | `lib/logic/`                                                                       |
+| DoWhy, EconML                 | `methods/causal/`                                                                  |
+| Optuna, scikit-optimize       | `methods/tuning/`                                                                  |
+| faiss                         | `lib/numerics/spatial/`, `methods/retrieval/indexes.ts`                            |
+| gensim                        | `methods/embedding/word.ts`, `methods/models/topic.ts`                             |
+| lifelines                     | `methods/survival/`                                                                |
 
 ## 11. Order of construction
 
 The library is built bottom up, one tier at a time, and each tier is finished (documented, tested against the oracle,
 traced) before the next relies on it. The first pass is a thin vertical slice through every layer, so the whole
 pipeline (tensor to trace to figure to docs) is proven early:
-
 1. `base`, `scene`, `tensor` (core ops), `random` (keys, uniform, normal, permutation, categorical).
 2. `trace` (events, recorder, `Algorithm`, `runAlgorithm`, export and replay), `autodiff` (reverse mode, `valueAndGrad`,
    `computationGraph`, gradient checks).
@@ -1776,7 +1747,6 @@ After the slice, each remaining file in this document becomes a `port` or `build
 ## 12. Questions for the reviewer
 
 These are the structural choices most worth challenging:
-
 1. **Granularity of entry points.** Every folder is an entry point and subfolders are namespaces. Is that too many
    import paths, or should only domains be entry points?
 2. **Core versus methods boundary.** Rules for where something goes: general machinery in `lib`, named models in

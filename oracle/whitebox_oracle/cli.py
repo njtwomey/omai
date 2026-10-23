@@ -1,0 +1,104 @@
+"""Generate or check golden fixtures (a typed pydantic-settings CLI).
+
+    uv run --group oracle-core python -m whitebox_oracle generate [--only tensor/]
+    uv run --group oracle-core python -m whitebox_oracle check
+
+Each module under oracle/cases/ defines `cases() -> list[Case]` and `REFERENCE` (library name to version). Its fixture
+is written to the mirrored path under packages/engine/fixtures/ with a `.json` suffix, and `manifest.json` catalogues
+every fixture with its source, references and case count.
+"""
+
+import importlib.util
+import json
+import sys
+import tempfile
+from pathlib import Path
+from types import ModuleType
+
+from pydantic_settings import BaseSettings, CliApp, CliSubCommand, SettingsConfigDict
+
+from .fixture import Fixture
+from .settings import ROOT, Paths
+
+
+def load_module(path: Path) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(f"whitebox_cases.{path.stem}", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def write_fixtures(paths: Paths, out_dir: Path) -> list[dict[str, object]]:
+    """Run every selected case module and write its fixture plus the manifest into `out_dir`."""
+    manifest: list[dict[str, object]] = []
+    for path in sorted(paths.cases_dir.rglob("*.py")):
+        rel = path.relative_to(paths.cases_dir)
+        if path.name.startswith("_") or not str(rel).startswith(paths.only):
+            continue
+        module = load_module(path)
+        fixture = Fixture(source=str(path.relative_to(ROOT)), reference=dict(module.REFERENCE), cases=module.cases())
+        target = out_dir / rel.with_suffix(".json")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(fixture.model_dump(by_alias=True), separators=(",", ":")) + "\n")
+        manifest.append(
+            {
+                "fixture": str(rel.with_suffix(".json")),
+                "source": fixture.source,
+                "reference": fixture.reference,
+                "cases": len(fixture.cases),
+            }
+        )
+    catalogue = {"schema": "whitebox.fixtures/1", "fixtures": manifest}
+    (out_dir / "manifest.json").write_text(json.dumps(catalogue, indent=2) + "\n")
+    return manifest
+
+
+class Generate(Paths):
+    """Regenerate fixtures in place."""
+
+    def cli_cmd(self) -> None:
+        manifest = write_fixtures(self, self.fixtures_dir)
+        total = sum(int(str(m["cases"])) for m in manifest)
+        print(f"wrote {len(manifest)} fixtures with {total} cases to {self.fixtures_dir}")
+
+
+class Check(Paths):
+    """Regenerate fixtures into a temporary directory and fail if any committed fixture differs."""
+
+    def cli_cmd(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            write_fixtures(self, Path(tmp))
+            stale = [
+                str(p.relative_to(tmp))
+                for p in sorted(Path(tmp).rglob("*.json"))
+                if not (self.fixtures_dir / p.relative_to(tmp)).exists()
+                or (self.fixtures_dir / p.relative_to(tmp)).read_text() != p.read_text()
+            ]
+        if stale:
+            print("stale fixtures:", *stale, sep="\n  ")
+            sys.exit(1)
+        print("fixtures are up to date")
+
+
+class Oracle(BaseSettings):
+    """Python ground truth for whitebox-js."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="WHITEBOX_",
+        env_file=ROOT / ".env",
+        extra="ignore",
+        cli_prog_name="whitebox-oracle",
+        cli_kebab_case=True,
+    )
+
+    generate: CliSubCommand[Generate]
+    check: CliSubCommand[Check]
+
+    def cli_cmd(self) -> None:
+        CliApp.run_subcommand(self)
+
+
+def main() -> None:
+    CliApp.run(Oracle)

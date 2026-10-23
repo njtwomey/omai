@@ -54,58 +54,58 @@ Version 1 is kept at `docs/history/structure-v1.md`.
 
 ## 0.1 Review notes, answered
 
-| note | answer |
-|---|---|
-| Data is not in the tiers | It is: `lib/data` (tier 5). The tier table in section 4 now gives every domain a one-line purpose. |
-| Model architectures | `methods/neural/` is now organised by modality with named architectures (ResNet, U-Net, ViT, GPT, BERT, T5, Mamba, GNNs, ...); reusable blocks are in `lib/nn/blocks/`; any model draws itself through `lib/nn/describe.ts`. |
-| Feature unions, pipelines, scalers | `lib/learn/compose.ts` (pipeline, featureUnion, columnTransformer, transformedTarget) and `lib/learn/preprocessing/` (scalers with fitted parameters as data, encoders, imputers, feature maps). |
-| Dimensionality reduction (UMAP etc.) | `methods/manifold/` (UMAP, t-SNE, PaCMAP, Isomap, LLE, MDS, spectral embedding, diffusion maps, SOM) and `methods/decomposition/` (PCA family, ICA, NMF, factor analysis, CCA/PLS, random projections). |
-| Calibration | `lib/learn/calibration.ts`; calibration metrics in `lib/metrics/probabilistic.ts`. |
-| GIF and MP4 of animations | `render/animation/` (timelines from traces, GIF, MP4/WebM, animated SVG). |
-| Statistical tests with good wrappers | `lib/stats/tests/`: every test returns the same `TestResult`; added two-sample, independence, equivalence, Bayesian and sequential tests. |
-| Probabilistic programming that chooses its own inference | `lib/probprog/analysis.ts`, `lib/probprog/infer.ts` (the planner) and `lib/probprog/engines/`. |
-| Gradients in traces; a contract for what is traced | `lib/trace/schema.ts`, `lib/trace/policy.ts`, `lib/trace/taps.ts`; tensor events carry a role (param, grad, state, activation). |
-| Bayesian optimisation; one parameter-selection mechanism | `lib/tune/` for every kind of objective; BO, TPE, BOHB and PBT in `methods/tuning/` as samplers. |
-| Cross-validation variants and a single split | `lib/learn/model-selection/splitters.ts` (holdout, train/validation/test, stratified, group, stratified group, time-series windows, purged and embargoed, spatial). |
-| All numerics differentiable (inverses, log-determinants) | Section 3.1; each `lib/numerics` file states its derivative rule. |
-| Strong splines for GAMs, curvature, `ns`/`ps`/`bs` | `lib/stats/smoothing/` and `methods/gam/` (all mgcv bases, derivatives and curvature of smooths with simultaneous intervals). |
-| Spectrograms, windows, Lomb-Scargle, periodograms | `lib/signal/spectral.ts`; estimator comparisons in `methods/signal/`. |
-| ODE and PDE solvers of various orders | `lib/dynamics/ode/` by family and order (explicit, adaptive, multistep, implicit, symplectic, exponential, Taylor) and `lib/dynamics/pde/` (finite difference, volume, element, spectral); order-verification studies. |
-| Everything traced | Every iterative algorithm, plus step-recorded versions of direct methods (elimination, factorisations) and `trace/instrument.ts` for any function. |
-| Parameterisable datasets with probe-able ground truth | `lib/data/generator.ts`, `lib/data/truth.ts`; every generator declares its knobs as a `Space` and returns its generative model. |
-| Distributions parameterised by other components | Parameters accept tensors and traced values with batch shapes; `lib/dists/compose/conditional.ts` makes distributions functions of inputs (used by GLMs, networks and GPs). |
-| SMO | Generic in `lib/optim/smo.ts`; `methods/svm/` uses it. |
-| Gabor filters | `lib/signal/image/filters.ts` and `lib/signal/image/features.ts`. |
-| DPPs and stochastic processes | New `lib/stochastic/`. |
-| Are trees reinvented? | Yes, natively, like everything else: Python libraries are oracles for tests, never runtime dependencies. |
-| Tree-augmented naive Bayes | `methods/naive-bayes/bayes-net-classifiers.ts` (TAN, AODE, k-dependence), built on `lib/pgm`. |
-| GMMs through probabilistic programming | `methods/mixture/` defines mixtures as programs solved by `probprog` engines; `gaussianMixture` is a familiar wrapper. Same for HMMs, LDA, factor analysis. |
-| PCA built on eigen/SVD | Yes; every methods area has a "built from" line. |
-| word2vec | `methods/embedding/word2vec.ts`. |
-| A fastText variant | `methods/embedding/fasttext.ts` (subword vectors and the supervised classifier); it shares `lib/text/shingles.ts` with shingle matching, and powers the dense mode of `methods/retrieval/approximate-matching.ts`. |
-| Active learning | New `methods/active-learning/`. |
-| Elo and rating models | `methods/models/rating.ts`. |
-| Classical vision (Hough) | `lib/signal/image/features.ts` and `methods/vision/classical.ts`. |
-| Rendering every environment | `render(state)` is part of the environment contract; episodes re-render from traces by deterministic replay. |
-| RL beyond the primitive | `methods/rl/agents/` covers the main families; new environment suites. |
-| NMF | `methods/decomposition/nmf.ts`. |
-| A more generic Boltzmann | `methods/generative/energy-based/` (one energy-model protocol for Boltzmann machines, Hopfield networks, Ising models and neural EBMs). |
-| Two-tower and sequential recommenders | `methods/retrieval/recommenders/two-tower.ts` and `sequential.ts`. |
-| Comprehensive metrics in my categories | New `lib/metrics/`, sixteen files in your order. |
-| Information theory (MI, entropy, coding, zlib) | New `lib/information/` (estimators, divergences, Huffman, arithmetic coding, LZ, DEFLATE/zlib, compression distance). |
-| Learning theory is sparse | `methods/theory/` expanded (PAC, VC, Rademacher, PAC-Bayes, stability, NTK, implicit regularisation, benign overfitting, and more). |
-| Two-sample tests (MMD) | `lib/stats/tests/two-sample.ts` and `lib/stats/tests/kernel.ts`. |
-| Text fingerprinting, LLM wrappers | `lib/text/fingerprinting.ts` and new `methods/llm/` (language-model protocol, adapters, watermarking, detection, stylometry). |
-| Mathematical foundations | New `lib/symbolic/`, `lib/foundations/`, `lib/numerics/approximation/`, `lib/autodiff/taylor.ts`, `methods/foundations/`. |
-| Stochastic calculus for diffusion | `lib/stochastic/calculus.ts` and `lib/stochastic/sde.ts`; diffusion models build on them. |
-| Lazy loading | Section 2: per-folder entry points, no side effects, a lazy module map, remote datasets, worker execution. |
-| Everything speaking the same language | Section 3 and the "built from" lines. |
-| BOCPD with tunable changepoint data | `lib/dynamics/filtering/changepoint.ts`, `methods/datasets/changepoints.ts`, `methods/timeseries/changepoints.ts`. |
-| A global seed | `lib/context/`. |
-| Subgroup discovery, exceptional model mining, GOFAI | `lib/search/`, `methods/patterns/`, `methods/gofai/`, `methods/evolutionary/`. |
-| Big files should be split | Large topics are folders; files over about 400 lines are split. |
-| Approximate search with shingles | `lib/text/shingles.ts`, `lib/text/approximate-search.ts`, `methods/retrieval/approximate-matching.ts`, `methods/retrieval/record-linkage.ts`. |
-| PINNs, neural ODEs and their solvers | New area `methods/scientific/` (neural ODEs and relatives, PINNs, neural operators, equation discovery, surrogates), on `lib/dynamics/ode` solvers of every order with adjoint gradients (`lib/dynamics/ode/adjoint.ts`), PDE operators of networks (`lib/dynamics/pde/operators.ts`) and ODE blocks (`lib/nn/blocks/continuous.ts`). |
+| note                                                     | answer                                                                                                                                                                                                                                                                                                                                |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data is not in the tiers                                 | It is: `lib/data` (tier 5). The tier table in section 4 now gives every domain a one-line purpose.                                                                                                                                                                                                                                    |
+| Model architectures                                      | `methods/neural/` is now organised by modality with named architectures (ResNet, U-Net, ViT, GPT, BERT, T5, Mamba, GNNs, ...); reusable blocks are in `lib/nn/blocks/`; any model draws itself through `lib/nn/describe.ts`.                                                                                                          |
+| Feature unions, pipelines, scalers                       | `lib/learn/compose.ts` (pipeline, featureUnion, columnTransformer, transformedTarget) and `lib/learn/preprocessing/` (scalers with fitted parameters as data, encoders, imputers, feature maps).                                                                                                                                      |
+| Dimensionality reduction (UMAP etc.)                     | `methods/manifold/` (UMAP, t-SNE, PaCMAP, Isomap, LLE, MDS, spectral embedding, diffusion maps, SOM) and `methods/decomposition/` (PCA family, ICA, NMF, factor analysis, CCA/PLS, random projections).                                                                                                                               |
+| Calibration                                              | `lib/learn/calibration.ts`; calibration metrics in `lib/metrics/probabilistic.ts`.                                                                                                                                                                                                                                                    |
+| GIF and MP4 of animations                                | `render/animation/` (timelines from traces, GIF, MP4/WebM, animated SVG).                                                                                                                                                                                                                                                             |
+| Statistical tests with good wrappers                     | `lib/stats/tests/`: every test returns the same `TestResult`; added two-sample, independence, equivalence, Bayesian and sequential tests.                                                                                                                                                                                             |
+| Probabilistic programming that chooses its own inference | `lib/probprog/analysis.ts`, `lib/probprog/infer.ts` (the planner) and `lib/probprog/engines/`.                                                                                                                                                                                                                                        |
+| Gradients in traces; a contract for what is traced       | `lib/trace/schema.ts`, `lib/trace/policy.ts`, `lib/trace/taps.ts`; tensor events carry a role (param, grad, state, activation).                                                                                                                                                                                                       |
+| Bayesian optimisation; one parameter-selection mechanism | `lib/tune/` for every kind of objective; BO, TPE, BOHB and PBT in `methods/tuning/` as samplers.                                                                                                                                                                                                                                      |
+| Cross-validation variants and a single split             | `lib/learn/model-selection/splitters.ts` (holdout, train/validation/test, stratified, group, stratified group, time-series windows, purged and embargoed, spatial).                                                                                                                                                                   |
+| All numerics differentiable (inverses, log-determinants) | Section 3.1; each `lib/numerics` file states its derivative rule.                                                                                                                                                                                                                                                                     |
+| Strong splines for GAMs, curvature, `ns`/`ps`/`bs`       | `lib/stats/smoothing/` and `methods/gam/` (all mgcv bases, derivatives and curvature of smooths with simultaneous intervals).                                                                                                                                                                                                         |
+| Spectrograms, windows, Lomb-Scargle, periodograms        | `lib/signal/spectral.ts`; estimator comparisons in `methods/signal/`.                                                                                                                                                                                                                                                                 |
+| ODE and PDE solvers of various orders                    | `lib/dynamics/ode/` by family and order (explicit, adaptive, multistep, implicit, symplectic, exponential, Taylor) and `lib/dynamics/pde/` (finite difference, volume, element, spectral); order-verification studies.                                                                                                                |
+| Everything traced                                        | Every iterative algorithm, plus step-recorded versions of direct methods (elimination, factorisations) and `trace/instrument.ts` for any function.                                                                                                                                                                                    |
+| Parameterisable datasets with probe-able ground truth    | `lib/data/generator.ts`, `lib/data/truth.ts`; every generator declares its knobs as a `Space` and returns its generative model.                                                                                                                                                                                                       |
+| Distributions parameterised by other components          | Parameters accept tensors and traced values with batch shapes; `lib/dists/compose/conditional.ts` makes distributions functions of inputs (used by GLMs, networks and GPs).                                                                                                                                                           |
+| SMO                                                      | Generic in `lib/optim/smo.ts`; `methods/svm/` uses it.                                                                                                                                                                                                                                                                                |
+| Gabor filters                                            | `lib/signal/image/filters.ts` and `lib/signal/image/features.ts`.                                                                                                                                                                                                                                                                     |
+| DPPs and stochastic processes                            | New `lib/stochastic/`.                                                                                                                                                                                                                                                                                                                |
+| Are trees reinvented?                                    | Yes, natively, like everything else: Python libraries are oracles for tests, never runtime dependencies.                                                                                                                                                                                                                              |
+| Tree-augmented naive Bayes                               | `methods/naive-bayes/bayes-net-classifiers.ts` (TAN, AODE, k-dependence), built on `lib/pgm`.                                                                                                                                                                                                                                         |
+| GMMs through probabilistic programming                   | `methods/mixture/` defines mixtures as programs solved by `probprog` engines; `gaussianMixture` is a familiar wrapper. Same for HMMs, LDA, factor analysis.                                                                                                                                                                           |
+| PCA built on eigen/SVD                                   | Yes; every methods area has a "built from" line.                                                                                                                                                                                                                                                                                      |
+| word2vec                                                 | `methods/embedding/word2vec.ts`.                                                                                                                                                                                                                                                                                                      |
+| A fastText variant                                       | `methods/embedding/fasttext.ts` (subword vectors and the supervised classifier); it shares `lib/text/shingles.ts` with shingle matching, and powers the dense mode of `methods/retrieval/approximate-matching.ts`.                                                                                                                    |
+| Active learning                                          | New `methods/active-learning/`.                                                                                                                                                                                                                                                                                                       |
+| Elo and rating models                                    | `methods/models/rating.ts`.                                                                                                                                                                                                                                                                                                           |
+| Classical vision (Hough)                                 | `lib/signal/image/features.ts` and `methods/vision/classical.ts`.                                                                                                                                                                                                                                                                     |
+| Rendering every environment                              | `render(state)` is part of the environment contract; episodes re-render from traces by deterministic replay.                                                                                                                                                                                                                          |
+| RL beyond the primitive                                  | `methods/rl/agents/` covers the main families; new environment suites.                                                                                                                                                                                                                                                                |
+| NMF                                                      | `methods/decomposition/nmf.ts`.                                                                                                                                                                                                                                                                                                       |
+| A more generic Boltzmann                                 | `methods/generative/energy-based/` (one energy-model protocol for Boltzmann machines, Hopfield networks, Ising models and neural EBMs).                                                                                                                                                                                               |
+| Two-tower and sequential recommenders                    | `methods/retrieval/recommenders/two-tower.ts` and `sequential.ts`.                                                                                                                                                                                                                                                                    |
+| Comprehensive metrics in my categories                   | New `lib/metrics/`, sixteen files in your order.                                                                                                                                                                                                                                                                                      |
+| Information theory (MI, entropy, coding, zlib)           | New `lib/information/` (estimators, divergences, Huffman, arithmetic coding, LZ, DEFLATE/zlib, compression distance).                                                                                                                                                                                                                 |
+| Learning theory is sparse                                | `methods/theory/` expanded (PAC, VC, Rademacher, PAC-Bayes, stability, NTK, implicit regularisation, benign overfitting, and more).                                                                                                                                                                                                   |
+| Two-sample tests (MMD)                                   | `lib/stats/tests/two-sample.ts` and `lib/stats/tests/kernel.ts`.                                                                                                                                                                                                                                                                      |
+| Text fingerprinting, LLM wrappers                        | `lib/text/fingerprinting.ts` and new `methods/llm/` (language-model protocol, adapters, watermarking, detection, stylometry).                                                                                                                                                                                                         |
+| Mathematical foundations                                 | New `lib/symbolic/`, `lib/foundations/`, `lib/numerics/approximation/`, `lib/autodiff/taylor.ts`, `methods/foundations/`.                                                                                                                                                                                                             |
+| Stochastic calculus for diffusion                        | `lib/stochastic/calculus.ts` and `lib/stochastic/sde.ts`; diffusion models build on them.                                                                                                                                                                                                                                             |
+| Lazy loading                                             | Section 2: per-folder entry points, no side effects, a lazy module map, remote datasets, worker execution.                                                                                                                                                                                                                            |
+| Everything speaking the same language                    | Section 3 and the "built from" lines.                                                                                                                                                                                                                                                                                                 |
+| BOCPD with tunable changepoint data                      | `lib/dynamics/filtering/changepoint.ts`, `methods/datasets/changepoints.ts`, `methods/timeseries/changepoints.ts`.                                                                                                                                                                                                                    |
+| A global seed                                            | `lib/context/`.                                                                                                                                                                                                                                                                                                                       |
+| Subgroup discovery, exceptional model mining, GOFAI      | `lib/search/`, `methods/patterns/`, `methods/gofai/`, `methods/evolutionary/`.                                                                                                                                                                                                                                                        |
+| Big files should be split                                | Large topics are folders; files over about 400 lines are split.                                                                                                                                                                                                                                                                       |
+| Approximate search with shingles                         | `lib/text/shingles.ts`, `lib/text/approximate-search.ts`, `methods/retrieval/approximate-matching.ts`, `methods/retrieval/record-linkage.ts`.                                                                                                                                                                                         |
+| PINNs, neural ODEs and their solvers                     | New area `methods/scientific/` (neural ODEs and relatives, PINNs, neural operators, equation discovery, surrogates), on `lib/dynamics/ode` solvers of every order with adjoint gradients (`lib/dynamics/ode/adjoint.ts`), PDE operators of networks (`lib/dynamics/pde/operators.ts`) and ODE blocks (`lib/nn/blocks/continuous.ts`). |
 
 ## 1. Shape of the repository
 
@@ -163,19 +163,19 @@ for charting (ECharts), graph layout (dagre), GIF and video encoding, code editi
 estimators, PyTorch for layers, optax for optimiser transformations, gymnasium for environments, NetworkX for graphs,
 NumPyro for programs, pgmpy for graphical models, mgcv for smooths), but one consistent set of verbs everywhere:
 
-| verb | meaning |
-|---|---|
-| `fit(data, options)` | learn parameters; returns a fitted value (never mutates) |
+| verb                                             | meaning                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------- |
+| `fit(data, options)`                             | learn parameters; returns a fitted value (never mutates)            |
 | `predict`, `predictProba`, `predictDistribution` | point prediction, class probabilities, full predictive distribution |
-| `transform`, `inverseTransform` | map data forwards and back |
-| `score(data)` | the model's default metric on data |
-| `logProb`, `sample` | densities and draws, for distributions, models and generators |
-| `infer(model, data)` | posterior inference on a probabilistic program |
-| `run`, `step`, `init` | drive an algorithm |
-| `reset`, `step`, `render` | drive and draw an environment |
-| `describe` | produce a structure or scene that renders the object |
-| `tune(objective, space)` | select parameters |
-| `evaluate(model, data, metrics)` | compute metrics with confidence intervals |
+| `transform`, `inverseTransform`                  | map data forwards and back                                          |
+| `score(data)`                                    | the model's default metric on data                                  |
+| `logProb`, `sample`                              | densities and draws, for distributions, models and generators       |
+| `infer(model, data)`                             | posterior inference on a probabilistic program                      |
+| `run`, `step`, `init`                            | drive an algorithm                                                  |
+| `reset`, `step`, `render`                        | drive and draw an environment                                       |
+| `describe`                                       | produce a structure or scene that renders the object                |
+| `tune(objective, space)`                         | select parameters                                                   |
+| `evaluate(model, data, metrics)`                 | compute metrics with confidence intervals                           |
 
 Option names are camelCase versions of the familiar ones (`nComponents`, `maxIter`, `tol`, `learningRate`). Randomised
 primitives take a `key` first (`normal(key, shape)`); higher-level functions take `{ key }` or `{ ctx }` in their
@@ -204,21 +204,21 @@ fetched on demand; heavy work runs in a Web Worker through `whitebox-meta/worker
 
 Everything in the library is written against these contracts. A reader who knows these thirteen ideas can read any file.
 
-| # | contract | defined in | spoken by |
-|---:|---|---|---|
-| 1 | `Tensor`, `Value`, primitives with derivative rules | `lib/tensor`, `lib/autodiff` | everything numeric |
-| 2 | `Key`, `Context`, named key derivation | `lib/random`, `lib/context` | everything random |
-| 3 | `Algorithm`, `TraceSchema`, `TracePolicy`, trace events | `lib/trace` | every iterative method |
-| 4 | `Space` | `lib/space` | hyperparameters, dataset knobs, action and observation spaces, search spaces, figure controls |
-| 5 | `Distribution`, `ConditionalDistribution`, `Bijector` | `lib/dists` | priors, likelihoods, every predictive output |
-| 6 | `Model` (probabilistic program), `InferenceEngine`, `Posterior` | `lib/probprog` | every probabilistic model and how it is solved |
-| 7 | `Estimator`, `Fitted` | `lib/learn` | every learner: linear, kernel, tree, neural, Bayesian |
-| 8 | data schemas, `DatasetGenerator`, `Truth` | `lib/data` | datasets, estimators, splitters, metrics |
-| 9 | `MetricSpec`, `MetricResult`, `TestResult`, `Estimate` | `lib/base/results.ts`, `lib/metrics`, `lib/stats` | every metric and every statistical test |
-| 10 | `Objective`, `Study`, `Trial`, `Sampler` | `lib/tune` | every selection problem |
-| 11 | `Env`, `Agent` | `lib/rl` | every sequential decision problem |
-| 12 | `SearchProblem` | `lib/search` | paths, planning, constraint satisfaction, games, pattern and rule search, ILP |
-| 13 | `Scene`, `Structure`, `describe()` | `lib/scene` | every picture and every graph-shaped thing |
+|   # | contract                                                        | defined in                                        | spoken by                                                                                     |
+| --: | --------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+|   1 | `Tensor`, `Value`, primitives with derivative rules             | `lib/tensor`, `lib/autodiff`                      | everything numeric                                                                            |
+|   2 | `Key`, `Context`, named key derivation                          | `lib/random`, `lib/context`                       | everything random                                                                             |
+|   3 | `Algorithm`, `TraceSchema`, `TracePolicy`, trace events         | `lib/trace`                                       | every iterative method                                                                        |
+|   4 | `Space`                                                         | `lib/space`                                       | hyperparameters, dataset knobs, action and observation spaces, search spaces, figure controls |
+|   5 | `Distribution`, `ConditionalDistribution`, `Bijector`           | `lib/dists`                                       | priors, likelihoods, every predictive output                                                  |
+|   6 | `Model` (probabilistic program), `InferenceEngine`, `Posterior` | `lib/probprog`                                    | every probabilistic model and how it is solved                                                |
+|   7 | `Estimator`, `Fitted`                                           | `lib/learn`                                       | every learner: linear, kernel, tree, neural, Bayesian                                         |
+|   8 | data schemas, `DatasetGenerator`, `Truth`                       | `lib/data`                                        | datasets, estimators, splitters, metrics                                                      |
+|   9 | `MetricSpec`, `MetricResult`, `TestResult`, `Estimate`          | `lib/base/results.ts`, `lib/metrics`, `lib/stats` | every metric and every statistical test                                                       |
+|  10 | `Objective`, `Study`, `Trial`, `Sampler`                        | `lib/tune`                                        | every selection problem                                                                       |
+|  11 | `Env`, `Agent`                                                  | `lib/rl`                                          | every sequential decision problem                                                             |
+|  12 | `SearchProblem`                                                 | `lib/search`                                      | paths, planning, constraint satisfaction, games, pattern and rule search, ILP                 |
+|  13 | `Scene`, `Structure`, `describe()`                              | `lib/scene`                                       | every picture and every graph-shaped thing                                                    |
 
 ### 3.1 Values and derivatives
 
@@ -228,8 +228,11 @@ rule) or a composition of primitives, so every operation accepts values and is d
 derivative should not be obtained by differentiating their loops carry a custom rule: Cholesky, triangular solves,
 `solve`, `inv`, `slogdet`, `eigh`, `svd`, `expm`, `sort`, `quad`, root finders and fixed points (implicit function
 theorem), ODE solves (adjoint method), optimisation layers (`implicitArgmin`). Traces nest by level, so higher-order
-derivatives (Hessians, Taylor coefficients, gradients of gradients for meta-learning) work. Each trace records its level
-from its inputs, so no global trace stack exists.
+derivatives (Hessians, Taylor coefficients, gradients of gradients for meta-learning) work. A transform takes the next
+level for the duration of its call (a depth counter in `autodiff/_level.ts`, restored by `try`/`finally`), so a closure
+that captures an outer transform's value is processed at the right level; this is internal bookkeeping that never
+changes a result. Differentiation is opt-in per call, as in JAX: outside a transform a tensor is a plain array with no
+graph attached.
 
 ### 3.2 Keys, seeds and the context
 
@@ -331,7 +334,6 @@ graphs all describe themselves as structures; whitebox-render lays out and draws
 ### 3.14 One worked path
 
 A reader trains a classifier and sees every contract in turn:
-
 1. `moons.generate(ctx.key('data'), { n: 400, noise: 0.2 })` returns `{ data, truth }`; its knobs are a `Space`.
 2. `mlpClassifier({ hidden: [16, 16] })` is an `Estimator` with a `hyperSpace`.
 3. `fit` runs a training `Algorithm`; the `TracePolicy` records loss every step and gradient norms every ten steps.
@@ -346,43 +348,43 @@ A reader trains a classifier and sees every contract in turn:
 
 The core has 35 domains in 11 tiers. A domain may import only domains in lower tiers.
 
-| tier | domain | purpose |
-|---:|---|---|
-| 0 | `base` | errors, JSON, shared result shapes, scalar helpers, version |
-| 0 | `scene` | drawings (`Scene`) and graph-shaped descriptions (`Structure`) as data |
-| 1 | `tensor` | arrays, dtypes, shapes, primitives with derivative rules, backends, operations, pytrees |
-| 2 | `random` | immutable counter-based keys and samplers |
-| 2 | `symbolic` | symbolic expressions: simplification, differentiation, series, integration, LaTeX |
-| 3 | `autodiff` | reverse, forward and Taylor-mode differentiation, vectorisation, gradient checks |
-| 3 | `trace` | algorithms, trace schemas and policies, events, recording, replay |
-| 3 | `space` | typed spaces for parameters, knobs, observations and actions |
-| 4 | `context` | seeds, named keys, tracer and policy defaults |
-| 5 | `numerics` | special functions, linear algebra, sparse, polynomials, quadrature, roots, interpolation, Fourier, convolution, geometry, nearest neighbours, approximation, inverse problems |
-| 5 | `data` | dataset schemas, generators and truth, loading, batching, splits, modifiers |
-| 6 | `foundations` | mathematical foundations: trigonometry, vectors, rotations, curves, surfaces, calculus, series, linear algebra with steps, number theory, combinatorics, complex numbers, elementary probability |
-| 6 | `graph` | graphs and graph algorithms, graph signal processing |
-| 6 | `dists` | distributions, bijectors, exponential families, GLM families, copulas |
-| 6 | `information` | entropy, divergences, mutual information estimators, source and channel coding, compression |
-| 6 | `systems` | linear time-invariant systems: representations, responses, stability, discretisation |
-| 7 | `stats` | descriptive statistics, tests, resampling, density estimation, smoothing bases |
-| 7 | `optim` | optimisers, minimisation, programming, sparse approximation, transport, implicit differentiation |
-| 7 | `kernels` | kernel functions, compositions and explicit feature maps |
-| 7 | `signal` | signal and image processing, spectral and time-frequency analysis, audio features |
-| 7 | `text` | normalisation, tokenisation, subwords, shingles, vectorisers, similarity, parsing, fingerprinting |
-| 7 | `search` | state-space search, local and evolutionary search, adversarial search, constraint satisfaction, planning, refinement search |
-| 7 | `stochastic` | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures |
-| 7 | `sampling` | Monte Carlo samplers and diagnostics |
-| 8 | `logic` | terms, unification, resolution, Datalog, SAT, first-order proving, ILP |
-| 8 | `dynamics` | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification |
-| 8 | `pgm` | graphical models, their inference and learning, causal graphs |
-| 8 | `metrics` | evaluation metrics in sixteen categories, with intervals and comparisons |
-| 8 | `losses` | differentiable training objectives and regularisers |
-| 8 | `rl` | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation |
-| 8 | `games` | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms |
-| 9 | `probprog` | probabilistic programs, model analysis, inference engines and the planner, posteriors |
-| 9 | `learn` | estimator protocol, preprocessing, composition, model selection, calibration, conformal, inspection, explanation, active learning, privacy |
-| 9 | `nn` | neural networks: functional layers, modules, blocks, description, training, decoding |
-| 10 | `tune` | studies, objectives, samplers, pruners, multi-fidelity schedules |
+| tier | domain        | purpose                                                                                                                                                                                          |
+| ---: | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|    0 | `base`        | errors, JSON, shared result shapes, scalar helpers, version                                                                                                                                      |
+|    0 | `scene`       | drawings (`Scene`) and graph-shaped descriptions (`Structure`) as data                                                                                                                           |
+|    1 | `tensor`      | arrays, dtypes, shapes, primitives with derivative rules, backends, operations, pytrees                                                                                                          |
+|    2 | `random`      | immutable counter-based keys and samplers                                                                                                                                                        |
+|    2 | `symbolic`    | symbolic expressions: simplification, differentiation, series, integration, LaTeX                                                                                                                |
+|    3 | `autodiff`    | reverse, forward and Taylor-mode differentiation, vectorisation, gradient checks                                                                                                                 |
+|    3 | `trace`       | algorithms, trace schemas and policies, events, recording, replay                                                                                                                                |
+|    3 | `space`       | typed spaces for parameters, knobs, observations and actions                                                                                                                                     |
+|    4 | `context`     | seeds, named keys, tracer and policy defaults                                                                                                                                                    |
+|    5 | `numerics`    | special functions, linear algebra, sparse, polynomials, quadrature, roots, interpolation, Fourier, convolution, geometry, nearest neighbours, approximation, inverse problems                    |
+|    5 | `data`        | dataset schemas, generators and truth, loading, batching, splits, modifiers                                                                                                                      |
+|    6 | `foundations` | mathematical foundations: trigonometry, vectors, rotations, curves, surfaces, calculus, series, linear algebra with steps, number theory, combinatorics, complex numbers, elementary probability |
+|    6 | `graph`       | graphs and graph algorithms, graph signal processing                                                                                                                                             |
+|    6 | `dists`       | distributions, bijectors, exponential families, GLM families, copulas                                                                                                                            |
+|    6 | `information` | entropy, divergences, mutual information estimators, source and channel coding, compression                                                                                                      |
+|    6 | `systems`     | linear time-invariant systems: representations, responses, stability, discretisation                                                                                                             |
+|    7 | `stats`       | descriptive statistics, tests, resampling, density estimation, smoothing bases                                                                                                                   |
+|    7 | `optim`       | optimisers, minimisation, programming, sparse approximation, transport, implicit differentiation                                                                                                 |
+|    7 | `kernels`     | kernel functions, compositions and explicit feature maps                                                                                                                                         |
+|    7 | `signal`      | signal and image processing, spectral and time-frequency analysis, audio features                                                                                                                |
+|    7 | `text`        | normalisation, tokenisation, subwords, shingles, vectorisers, similarity, parsing, fingerprinting                                                                                                |
+|    7 | `search`      | state-space search, local and evolutionary search, adversarial search, constraint satisfaction, planning, refinement search                                                                      |
+|    7 | `stochastic`  | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures                                                                                                |
+|    7 | `sampling`    | Monte Carlo samplers and diagnostics                                                                                                                                                             |
+|    8 | `logic`       | terms, unification, resolution, Datalog, SAT, first-order proving, ILP                                                                                                                           |
+|    8 | `dynamics`    | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification                                                                                                               |
+|    8 | `pgm`         | graphical models, their inference and learning, causal graphs                                                                                                                                    |
+|    8 | `metrics`     | evaluation metrics in sixteen categories, with intervals and comparisons                                                                                                                         |
+|    8 | `losses`      | differentiable training objectives and regularisers                                                                                                                                              |
+|    8 | `rl`          | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                     |
+|    8 | `games`       | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                     |
+|    9 | `probprog`    | probabilistic programs, model analysis, inference engines and the planner, posteriors                                                                                                            |
+|    9 | `learn`       | estimator protocol, preprocessing, composition, model selection, calibration, conformal, inspection, explanation, active learning, privacy                                                       |
+|    9 | `nn`          | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                             |
+|   10 | `tune`        | studies, objectives, samplers, pruners, multi-fidelity schedules                                                                                                                                 |
 
 ### 4.1 `base/` (tier 0)
 
@@ -417,7 +419,6 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 ### 4.3 `tensor/` (tier 1): arrays and differentiable primitives (numpy, torch.Tensor, jax.numpy)
 
 oracle: numpy, jax for derivative rules
-
 - `dtype.ts`: `DType` (float64, float32, int32, bool, complex128), `Storage<D>`, `allocate`, `isFloat`, `isComplex`,
   `resultType` (explicit promotion table), `finfo`, `iinfo`.
 - `shape.ts`: `Shape`, `sizeOf`, `stridesOf`, `broadcastShapes`, `normaliseAxis`, `normaliseAxes`, `shapesEqual`,
@@ -455,7 +456,6 @@ oracle: numpy, jax for derivative rules
 ### 4.4 `random/` (tier 2): keys and samplers (jax.random, numpy.random)
 
 oracle: Random123 known-answer vectors; numpy and scipy for distributional checks
-
 - `philox.ts`: `philox4x32`.
 - `key.ts`: `Key`, `key(seed)`, `split`, `foldIn`, `keyFromPath(seed, ...names)` (named derivation), `randomBits`,
   `isKey`.
@@ -474,7 +474,6 @@ integrated where a rule applies, typeset, and compiled into differentiable numer
 steps, so a derivation can be shown step by step.
 
 oracle: sympy
-
 - `expr.ts`: `Expr` (numbers, rationals, symbols, sums, products, powers, function applications, piecewise), `sym`,
   `num`, `rational`, operator helpers, `free`, `substitute`, structural equality.
 - `parse.ts`: `parse` (infix text to `Expr`), `parseLatex` for a useful subset.
@@ -497,7 +496,6 @@ oracle: sympy
 ### 4.6 `autodiff/` (tier 3): differentiation transforms (jax, torch.func)
 
 oracle: jax and torch for derivative values; finite differences in property tests
-
 - `reverse.ts`: the reverse-mode trace (one node per traced value, recorded by the values themselves), `vjp`,
   `backward`, higher-order reverse mode.
 - `forward.ts`: the forward-mode trace (dual numbers), `jvp`, `linearize`.
@@ -681,7 +679,6 @@ primitives; "custom" means a dedicated rule.
 ### 4.11 `data/` (tier 5): datasets, generators and truth (torch.utils.data, sklearn.datasets)
 
 One schema per task kind. Each schema declares its per-row fields, so one `take` and one `split` work for all of them.
-
 - `schema/common.ts`: `DatasetMeta` (name, description, task, source, url, licence, citation, sha256, recipe, key),
   `DatasetKind`, `perRowFields`.
 - `schema/tabular.ts`: `RegressionData`, `ClassificationData`, `MultilabelData`, `MultiOutputData`, `TableData` (named
@@ -720,7 +717,6 @@ The mathematics underneath machine learning, written so each idea can be compute
 Functions that teach a procedure (elimination, Euclid's algorithm, Newton's method) return their steps.
 
 oracle: sympy, numpy, mpmath
-
 - `trigonometry.ts`: degrees and radians, unit-circle points, quadrant-aware inverse functions, identity checks, triangle
   solving (SSS, SAS, ASA, AAS and the ambiguous SSA case), laws of sines and cosines, Heron's formula.
 - `vectors.ts`: 2-D and 3-D vector algebra (dot, cross and triple products, projections, rejections, angles,
@@ -759,7 +755,6 @@ oracle: sympy, numpy, mpmath
 ### 4.13 `graph/` (tier 6): graphs and their algorithms (NetworkX, scipy.sparse.csgraph)
 
 oracle: networkx, scipy.sparse.csgraph
-
 - `graph.ts`: `Graph` (nodes, weighted edges, directedness, attributes), constructors, neighbours, degrees,
   `subgraph`, `reverse`, `toUndirected`, `toStructure` (for drawing).
 - `structures.ts`: `BinaryHeap`, `UnionFind`, `IndexedQueue`.
@@ -792,7 +787,6 @@ Every distribution is a plain object from a factory with `name`, `params`, `supp
 pure methods `logProb`, `prob`, `cdf`, `logCdf`, `sf`, `logSf`, `ppf`, `isf`, `sample(key, shape)`, `rsample`
 (reparameterised), `mean`, `variance`, `stddev`, `mode`, `entropy`. Parameters are values (tensors or traced) with batch
 shapes, so densities differentiate with respect to parameters and broadcast over batches.
-
 - `distribution.ts`: the `Distribution` interface, `Support`, parameter validation, batch-shape helpers.
 - `continuous/normal.ts`: `normal`, `halfNormal`, `truncatedNormal`, `logNormal`, `skewNormal`.
 - `continuous/heavy-tailed.ts`: `studentT`, `cauchy`, `halfCauchy`, `laplace`, `logistic`, `pareto`, `johnsonSU`,
@@ -833,7 +827,6 @@ shapes, so densities differentiate with respect to parameters and broadcast over
 ### 4.15 `information/` (tier 6): information theory and coding
 
 oracle: scipy.stats.entropy, sklearn mutual information, zlib (byte-exact DEFLATE), npeet for k-NN estimators
-
 - `discrete.ts`: entropy (any base), joint and conditional entropy, cross-entropy, KL, Jensen-Shannon, total
   variation, mutual information from tables, conditional and interaction information, PMI, NPMI, information gain.
 - `estimators.ts`: estimators from samples: plug-in with Miller-Madow correction, Kozachenko-Leonenko entropy, KSG
@@ -854,7 +847,6 @@ oracle: scipy.stats.entropy, sklearn mutual information, zlib (byte-exact DEFLAT
 ### 4.16 `systems/` (tier 6): linear time-invariant systems (scipy.signal LTI, python-control)
 
 oracle: scipy.signal, python-control
-
 - `representations.ts`: transfer functions, zero-pole-gain, state space and second-order sections; continuous and
   discrete; conversions; minimal realisation.
 - `interconnect.ts`: series, parallel, feedback, append, connect.
@@ -873,7 +865,6 @@ oracle: scipy.stats, statsmodels, pingouin
 
 Every test in `tests/` returns a `TestResult` with the statistic, p-value, effect size and interval, the alternative,
 the method name and the assumptions it checked.
-
 - `descriptive.ts`: `mean`, `variance` (two-pass, `ddof`), `std`, `skewness`, `kurtosis`, `moment`, weighted versions,
   `describe`, `zscore`, `sem`, `mode`, `geometricMean`, `harmonicMean`.
 - `running.ts`: Welford moments (`push`, `merge`), P-squared quantiles, exponentially weighted moments.
@@ -933,7 +924,6 @@ oracle: torch.optim, optax, scipy.optimize, cvxpy for small LPs and QPs, pot for
 
 Objectives are plain functions of values; gradients come from `autodiff`. Every iterative method is a traced algorithm
 that records the objective, gradient norm, step size and (by policy) the iterates.
-
 - `transform.ts`: `GradientTransformation`, `applyUpdates`, `chain`, `scaleByLearningRate`, `clipByGlobalNorm`,
   `clipByValue`, `addDecayedWeights`, `masked`, `multiTransform` (different optimisers per parameter group),
   `globalNorm`.
@@ -978,7 +968,6 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 ### 4.19 `kernels/` (tier 7): kernels and feature maps (sklearn kernels, GPyTorch)
 
 oracle: scikit-learn, gpytorch
-
 - `kernel.ts`: `Kernel` (`k(x, y)`, `diag`, hyperparameters as a differentiable pytree), `gram`, `crossGram`, sum,
   product and scale composition, ARD, log-parameterisation.
 - `stationary.ts`: RBF, Matern (1/2, 3/2, 5/2 and general), rational quadratic, exponential, periodic, locally
@@ -996,7 +985,6 @@ oracle: scipy.signal, scipy.ndimage, pywt, librosa, scikit-image
 
 The files follow the encyclopedia's signal-processing chapters. LTI system representations are in `systems`; sparse
 representations are in `optim/sparse.ts`.
-
 - `signal.ts`: `Signal` (samples, sampling rate, start, units, channels), `Spectrum`, `TimeFrequency`, `sampleTimes`,
   `magnitudeDb`, `unwrap`.
 - `sampling.ts`: sampling and reconstruction (sinc interpolation), aliasing, quantisation (uniform, mu-law, dither),
@@ -1052,7 +1040,6 @@ representations are in `optim/sparse.ts`.
 ### 4.21 `text/` (tier 7): text processing (HF tokenizers, nltk, sklearn.feature_extraction.text)
 
 oracle: HF tokenizers, tiktoken, nltk, scikit-learn, rapidfuzz, datasketch
-
 - `normalise.ts`: Unicode normalisation, case folding, accent stripping, whitespace collapsing, `AlignedText` (offsets
   back to the original).
 - `tokenise.ts`: regex, word (sklearn pattern, Treebank), tweet, character and grapheme tokenisers, sentence splitting,
@@ -1088,7 +1075,6 @@ oracle: aima-python results and hand-checked fixtures; python-constraint; pyperp
 
 One `SearchProblem` contract (initial state, actions, result, goal test, step cost, heuristic) and traced search
 algorithms that record the frontier and explored set, so every search can be animated.
-
 - `problem.ts`: `SearchProblem`, `SearchNode`, path reconstruction, search statistics (expanded, generated, effective
   branching factor).
 - `uninformed.ts`: breadth-first, depth-first, depth-limited, iterative deepening, uniform cost, bidirectional search.
@@ -1112,7 +1098,6 @@ algorithms that record the frontier and explored set, so every search can be ani
 ### 4.23 `stochastic/` (tier 7): stochastic processes and stochastic calculus
 
 oracle: closed-form moments and transition densities; sdeint and numpy simulations; dppy for DPPs
-
 - `brownian.ts`: Brownian motion (multi-dimensional, with drift), Brownian bridges, quadratic variation, reflection
   principle, first-passage times.
 - `calculus.ts`: Ito and Stratonovich integrals by Riemann sums, Ito's lemma checked numerically, the Ito isometry,
@@ -1139,7 +1124,6 @@ oracle: closed-form moments and transition densities; sdeint and numpy simulatio
 ### 4.24 `sampling/` (tier 7): Monte Carlo (NumPyro and BlackJAX kernels, ArviZ diagnostics)
 
 oracle: statistical agreement with analytic targets; arviz for diagnostics
-
 - `target.ts`: `LogDensity` (log density, gradient by autodiff, dimension, constraints), from distributions, unconstrained
   targets.
 - `metropolis.ts`: random-walk, independence and general Metropolis-Hastings, adaptive Metropolis.
@@ -1158,7 +1142,6 @@ oracle: statistical agreement with analytic targets; arviz for diagnostics
 ### 4.25 `logic/` (tier 8): logic programming, satisfiability and ILP
 
 oracle: recorded SWI-Prolog outputs, pysat, Aleph and Popper results on small tasks
-
 - `terms.ts`: atoms, variables, compounds, lists, numbers, groundness, term variables, equality, printing.
 - `parse.ts`: Prolog syntax for clauses and queries (operators, lists, comments).
 - `unify.ts`: unification (iterative, optional occurs check), substitutions, composition, renaming apart,
@@ -1182,7 +1165,6 @@ oracle: scipy.integrate, diffrax and torchdiffeq (including adjoint gradients), 
 
 Every solver works on traced values, so solutions are differentiable: by differentiating through the solver steps, or
 by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/scientific/` are built on this folder.
-
 - `ode/problem.ts`: `OdeProblem` (vector field, initial state, time span, parameters, mass matrix), solution type with
   dense output, event specification.
 - `ode/explicit.ts`: fixed-step explicit Runge-Kutta methods by order: Euler (1), Heun and midpoint and Ralston (2),
@@ -1243,7 +1225,6 @@ oracle: pgmpy, networkx, brute-force enumeration, causal-learn and dowhy for the
 A model is plain data. Every model type describes itself as a `Structure` (roles: latent, observed, factor,
 deterministic, decision, utility; plates and slices), and inference algorithms emit `message` events, so the drawing of
 a model can animate its inference. The `probprog` engines reuse these algorithms.
-
 - `factor.ts`: discrete factors in log space: product, sum and max marginalisation, reduction by evidence,
   normalisation, division.
 - `gaussian-factor.ts`: canonical-form Gaussian factors: product, marginalisation, conditioning, conversion to moment
@@ -1290,7 +1271,6 @@ The files follow the encyclopedia's evaluation chapters, in its order. Every met
 `MetricResult`, accepts sample weights, and can attach a confidence interval. Metrics that need a pretrained network
 (LPIPS, DISTS, FID, CLIPScore, BERTScore, DNSMOS) take a feature extractor as an argument; whitebox ships none of those
 weights.
-
 - `foundations.ts`: choosing a metric for a decision (expected cost, utility), `withInterval` (bootstrap, analytic,
   Wilson, DeLong), paired comparisons of two models on one test set (paired bootstrap, McNemar, DeLong), `evaluate`
   (many metrics in one pass).
@@ -1335,7 +1315,6 @@ oracle: torch.nn.functional, optax
 
 Training objectives with a uniform `reduction` option. Evaluation metrics live in `metrics`; where a loss and a metric
 share a concept they share a definition but not a name.
-
 - `regression.ts`: `mse`, `mae`, `huber`, `logCosh`, `pinball`, `expectile`, `poissonNll`, `gaussianNll`,
   `tweedieDeviance`.
 - `classification.ts`: binary and categorical cross-entropy (with logits, label smoothing and class weights), `focal`,
@@ -1357,7 +1336,6 @@ share a concept they share a definition but not a name.
 ### 4.30 `rl/` (tier 8): reinforcement learning infrastructure (gymnasium, PettingZoo, stable-baselines3 building blocks)
 
 oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and advantages, rliable for aggregate metrics
-
 - `env.ts`: `Env<S, O, A>` (spec, observation and action spaces, `reset`, `step`, `render` required, optional `model` for
   planning and `oracle` for regret), `EnvSpec`, `EnvDefinition` (factory with an options `Space`).
 - `gym.ts`: `GymEnv` (gymnasium-style wrapper), `make`, `listEnvironments` (finds definitions in an imported module).
@@ -1391,7 +1369,6 @@ oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and adva
 ### 4.31 `games/` (tier 8): game theory (nashpy, OpenSpiel)
 
 oracle: nashpy, OpenSpiel
-
 - `normal-form.ts`: normal-form games, dominance, best responses, pure and mixed Nash equilibria (support enumeration,
   Lemke-Howson), zero-sum solutions by LP, correlated equilibria.
 - `learning.ts`: fictitious play, replicator dynamics, regret matching, multiplicative weights in games, convergence
@@ -1409,7 +1386,6 @@ oracle: numpyro and pyro on small models (posterior moments within Monte Carlo e
 A model is a function that calls the primitives below inside an effect-handler context. `analyse` traces it once and
 describes it; every engine says whether it applies and at what cost; `infer` picks one, records the reason, runs it as
 a traced algorithm and returns a `Posterior`. Adding an engine is adding a file to `engines/`.
-
 - `primitives.ts`: `sample`, `observe`, `deterministic`, `param`, `plate`, `factor`, `markov` (sequential dependence),
   the `Model` type.
 - `handlers.ts`: `trace`, `seed`, `condition`, `substitute`, `replay`, `block`, `scale`, `mask`, `doIntervention`,
@@ -1453,7 +1429,6 @@ a traced algorithm and returns a `Posterior`. Adding an engine is adding a file 
 ### 4.33 `learn/` (tier 9): the toolkit around models (scikit-learn's non-model modules)
 
 oracle: scikit-learn, mapie for conformal, captum and shap for explanations
-
 - `estimator.ts`: the estimator contract (`name`, `hyper`, `hyperSpace`, `fit`), `Fitted` (parameters as data, verbs as
   methods, `revive` after deserialisation), capability guards, `cloneEstimator`, `EstimatorClass` (the base of
   sklearn-style class wrappers).
@@ -1502,7 +1477,6 @@ oracle: PyTorch in float64 with exported weights (forward values and gradients)
 Two equal forms. Functional: `init(key, ...) -> params` and `apply(params, x, ctx) -> y` over pytrees. Module:
 PyTorch-shaped classes (`nn.Linear`, `nn.Sequential`, `forward`, `parameters`, `stateDict`) that hold params and call
 the functional form. `ctx` carries the train flag, the dropout key, taps and buffer updates, all returned as data.
-
 - `functional/activations.ts`: ReLU, leaky ReLU, ELU, SELU, GELU, SiLU, Mish, softplus, hard tanh and sigmoid, GLU,
   SwiGLU, `activation(name)`.
 - `functional/linear.ts`: linear, bilinear, embedding, embedding bag.
@@ -1566,7 +1540,6 @@ A study runs trials over a `Space` against an `Objective`. Objectives can be cro
 with epochs as fidelity, agents in environments, probabilistic programs (evidence, ELBO, LOO) or any function. The same
 samplers, pruners and schedules work for all of them. A study is a traced algorithm whose steps are trials, each a
 child run.
-
 - `study.ts`: `Study`, `Trial` (params, intermediate values, status), `tune(objective, space, options)`, best and Pareto
   trials, resuming a study, exporting trials as data.
 - `objectives.ts`: `estimatorObjective` (splitter plus metric), `holdoutObjective`, `trainingObjective` (reports per
@@ -2119,7 +2092,6 @@ exploration and generalisation studies.
 
 oracle: PyTorch (losses and single steps with fixed weights), diffusers schedules
 built from: `nn`, `losses/generative.ts`, `dists`, `stochastic` (SDEs and score dynamics), `sampling`, `probprog`
-
 - `autoencoders.ts`: autoencoders, VAEs (beta-VAE; Gaussian and Bernoulli likelihoods), conditional VAEs, ELBO terms
   traced separately.
 - `vector-quantised.ts`: VQ-VAE (straight-through estimators, codebook and commitment losses, EMA codebooks), residual
@@ -2216,7 +2188,6 @@ autoencoders, toy models of superposition, feature visualisation.
 oracle: rank_bm25, datasketch and rapidfuzz (matching), recordlinkage (linkage), faiss (indexes), implicit (ALS),
 scikit-learn
 built from: `text`, `numerics/spatial`, `embedding`, `learn`, `losses/ranking.ts`, `metrics/ranking.ts`, `nn`
-
 - `approximate-matching.ts`: approximate search, matching and scoring with shingles. Index a corpus by shingles (from
   `text/shingles.ts`: character k-grams, word n-grams, hashed n-grams); dispatch a query by breaking it into the same
   shingles; generate candidates through an inverted shingle index or MinHash-LSH bands; score candidates by Jaccard,
@@ -2555,7 +2526,6 @@ networkx), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-
 rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel),
 `oracle-misc` (lifelines, mlxtend, pysubgroup, umap-learn, hdbscan, dowhy, econml, causal-learn, pysindy, faiss-cpu,
 implicit, optuna, nashpy).
-
 - `oracle/whitebox_oracle/settings.py`: `OracleSettings` (reads the root `.env`; output paths; selection by path prefix
   or group).
 - `oracle/whitebox_oracle/fixture.py`: `Case` and `Fixture` (inputs, outputs, tolerances, reference library and version,
@@ -2593,123 +2563,122 @@ group.
 
 ### scikit-learn
 
-| sklearn | whitebox |
-|---|---|
-| `base`, estimator API | `lib/learn/estimator.ts` |
-| `linear_model` | `methods/linear/` |
-| `svm` | `methods/svm/`, `lib/optim/smo.ts` |
-| `tree` | `methods/trees/` |
-| `ensemble` | `methods/ensemble/` |
-| `neighbors` | `methods/neighbours/`, `lib/numerics/spatial/` |
-| `naive_bayes`, `discriminant_analysis` | `methods/naive-bayes/`, `methods/discriminant/` |
-| `gaussian_process` | `methods/gp/`, `lib/kernels/` |
-| `kernel_approximation`, `kernel_ridge` | `lib/kernels/expansion.ts`, `methods/kernel-methods/` |
-| `isotonic` | `methods/linear/isotonic.ts` |
-| `multiclass`, `multioutput` | `methods/multiclass/` |
-| `semi_supervised` | `methods/semi-supervised/` |
-| `neural_network` | `methods/neural/foundations/mlp.ts` |
-| `cluster` | `methods/cluster/` |
-| `mixture` | `methods/mixture/` |
-| `decomposition`, `cross_decomposition`, `random_projection` | `methods/decomposition/` |
-| `manifold` | `methods/manifold/` |
-| `covariance` | `lib/stats/covariance.ts`, `methods/covariance/` |
-| `preprocessing`, `impute` | `lib/learn/preprocessing/` |
-| `feature_extraction.text` | `lib/text/features.ts` |
-| `feature_selection` | `lib/learn/feature-selection.ts` |
-| `pipeline`, `compose` | `lib/learn/compose.ts` |
-| `model_selection` (splitters, CV) | `lib/learn/model-selection/` |
-| `model_selection` (searches) | `lib/tune/`, `methods/tuning/` |
-| `metrics` | `lib/metrics/` |
-| `calibration` | `lib/learn/calibration.ts` |
-| `inspection` | `lib/learn/inspection.ts` |
-| `datasets` | `methods/datasets/`, `lib/data/` |
+| sklearn                                                     | whitebox                                              |
+| ----------------------------------------------------------- | ----------------------------------------------------- |
+| `base`, estimator API                                       | `lib/learn/estimator.ts`                              |
+| `linear_model`                                              | `methods/linear/`                                     |
+| `svm`                                                       | `methods/svm/`, `lib/optim/smo.ts`                    |
+| `tree`                                                      | `methods/trees/`                                      |
+| `ensemble`                                                  | `methods/ensemble/`                                   |
+| `neighbors`                                                 | `methods/neighbours/`, `lib/numerics/spatial/`        |
+| `naive_bayes`, `discriminant_analysis`                      | `methods/naive-bayes/`, `methods/discriminant/`       |
+| `gaussian_process`                                          | `methods/gp/`, `lib/kernels/`                         |
+| `kernel_approximation`, `kernel_ridge`                      | `lib/kernels/expansion.ts`, `methods/kernel-methods/` |
+| `isotonic`                                                  | `methods/linear/isotonic.ts`                          |
+| `multiclass`, `multioutput`                                 | `methods/multiclass/`                                 |
+| `semi_supervised`                                           | `methods/semi-supervised/`                            |
+| `neural_network`                                            | `methods/neural/foundations/mlp.ts`                   |
+| `cluster`                                                   | `methods/cluster/`                                    |
+| `mixture`                                                   | `methods/mixture/`                                    |
+| `decomposition`, `cross_decomposition`, `random_projection` | `methods/decomposition/`                              |
+| `manifold`                                                  | `methods/manifold/`                                   |
+| `covariance`                                                | `lib/stats/covariance.ts`, `methods/covariance/`      |
+| `preprocessing`, `impute`                                   | `lib/learn/preprocessing/`                            |
+| `feature_extraction.text`                                   | `lib/text/features.ts`                                |
+| `feature_selection`                                         | `lib/learn/feature-selection.ts`                      |
+| `pipeline`, `compose`                                       | `lib/learn/compose.ts`                                |
+| `model_selection` (splitters, CV)                           | `lib/learn/model-selection/`                          |
+| `model_selection` (searches)                                | `lib/tune/`, `methods/tuning/`                        |
+| `metrics`                                                   | `lib/metrics/`                                        |
+| `calibration`                                               | `lib/learn/calibration.ts`                            |
+| `inspection`                                                | `lib/learn/inspection.ts`                             |
+| `datasets`                                                  | `methods/datasets/`, `lib/data/`                      |
 
 ### PyTorch and its ecosystem
 
-| library | whitebox |
-|---|---|
-| `torch.Tensor`, operations | `lib/tensor/` |
-| `torch.autograd`, `torch.func` | `lib/autodiff/` |
-| `torch.nn.functional` | `lib/nn/functional/` |
-| `torch.nn` modules | `lib/nn/module/` |
-| `torch.nn.init` | `lib/nn/init.ts` |
-| `torch.nn` losses | `lib/losses/` |
-| `torch.optim`, `lr_scheduler` | `lib/optim/` |
-| `torch.utils.data` | `lib/data/batching.ts` |
-| `torch.distributions` | `lib/dists/` |
-| `torchvision.ops` | `methods/vision/boxes.ts`, `lib/metrics/detection-segmentation.ts` |
-| `torchmetrics` | `lib/metrics/` |
-| `torchdiffeq`, `torchsde`, diffrax | `lib/dynamics/ode/`, `lib/stochastic/sde.ts`, `lib/nn/blocks/continuous.ts` |
-| DeepXDE | `methods/scientific/pinns/` |
-| training loops (Lightning style) | `lib/nn/training/` |
-| `torchinfo.summary` | `lib/nn/describe.ts` |
-| Hugging Face `generate`, `tokenizers` | `lib/nn/decoding.ts`, `lib/text/tokenizer.ts` |
+| library                               | whitebox                                                                    |
+| ------------------------------------- | --------------------------------------------------------------------------- |
+| `torch.Tensor`, operations            | `lib/tensor/`                                                               |
+| `torch.autograd`, `torch.func`        | `lib/autodiff/`                                                             |
+| `torch.nn.functional`                 | `lib/nn/functional/`                                                        |
+| `torch.nn` modules                    | `lib/nn/module/`                                                            |
+| `torch.nn.init`                       | `lib/nn/init.ts`                                                            |
+| `torch.nn` losses                     | `lib/losses/`                                                               |
+| `torch.optim`, `lr_scheduler`         | `lib/optim/`                                                                |
+| `torch.utils.data`                    | `lib/data/batching.ts`                                                      |
+| `torch.distributions`                 | `lib/dists/`                                                                |
+| `torchvision.ops`                     | `methods/vision/boxes.ts`, `lib/metrics/detection-segmentation.ts`          |
+| `torchmetrics`                        | `lib/metrics/`                                                              |
+| `torchdiffeq`, `torchsde`, diffrax    | `lib/dynamics/ode/`, `lib/stochastic/sde.ts`, `lib/nn/blocks/continuous.ts` |
+| DeepXDE                               | `methods/scientific/pinns/`                                                 |
+| training loops (Lightning style)      | `lib/nn/training/`                                                          |
+| `torchinfo.summary`                   | `lib/nn/describe.ts`                                                        |
+| Hugging Face `generate`, `tokenizers` | `lib/nn/decoding.ts`, `lib/text/tokenizer.ts`                               |
 
 ### NumPy, SciPy and SymPy
 
-| library | whitebox |
-|---|---|
-| `numpy` arrays and ufuncs | `lib/tensor/` |
-| `numpy.random` | `lib/random/` |
-| `numpy.linalg`, `scipy.linalg` | `lib/numerics/linalg/` |
-| `scipy.sparse`, `scipy.sparse.linalg` | `lib/numerics/sparse/` |
-| `numpy.fft`, `scipy.fft` | `lib/numerics/fourier/` |
-| `numpy.polynomial` | `lib/numerics/polynomial/` |
-| `scipy.special` | `lib/numerics/special/` |
-| `scipy.integrate` (quadrature) | `lib/numerics/quadrature/` |
-| `scipy.integrate` (ODEs, BVPs) | `lib/dynamics/ode/` |
-| `scipy.optimize` | `lib/optim/`, `lib/numerics/roots/` |
-| `scipy.interpolate` | `lib/numerics/interpolate/` |
-| `scipy.signal` | `lib/signal/`, `lib/systems/` |
-| `scipy.ndimage` | `lib/signal/image/`, `lib/numerics/convolution/` |
-| `scipy.spatial` | `lib/numerics/geometry/`, `lib/numerics/spatial/` |
-| `scipy.stats` | `lib/dists/`, `lib/stats/` |
-| `scipy.cluster.hierarchy` | `methods/cluster/hierarchical.ts` |
-| SymPy | `lib/symbolic/` |
-| mpmath (special functions) | `lib/numerics/special/` |
+| library                               | whitebox                                          |
+| ------------------------------------- | ------------------------------------------------- |
+| `numpy` arrays and ufuncs             | `lib/tensor/`                                     |
+| `numpy.random`                        | `lib/random/`                                     |
+| `numpy.linalg`, `scipy.linalg`        | `lib/numerics/linalg/`                            |
+| `scipy.sparse`, `scipy.sparse.linalg` | `lib/numerics/sparse/`                            |
+| `numpy.fft`, `scipy.fft`              | `lib/numerics/fourier/`                           |
+| `numpy.polynomial`                    | `lib/numerics/polynomial/`                        |
+| `scipy.special`                       | `lib/numerics/special/`                           |
+| `scipy.integrate` (quadrature)        | `lib/numerics/quadrature/`                        |
+| `scipy.integrate` (ODEs, BVPs)        | `lib/dynamics/ode/`                               |
+| `scipy.optimize`                      | `lib/optim/`, `lib/numerics/roots/`               |
+| `scipy.interpolate`                   | `lib/numerics/interpolate/`                       |
+| `scipy.signal`                        | `lib/signal/`, `lib/systems/`                     |
+| `scipy.ndimage`                       | `lib/signal/image/`, `lib/numerics/convolution/`  |
+| `scipy.spatial`                       | `lib/numerics/geometry/`, `lib/numerics/spatial/` |
+| `scipy.stats`                         | `lib/dists/`, `lib/stats/`                        |
+| `scipy.cluster.hierarchy`             | `methods/cluster/hierarchical.ts`                 |
+| SymPy                                 | `lib/symbolic/`                                   |
+| mpmath (special functions)            | `lib/numerics/special/`                           |
 
 ### Other libraries
 
-| library | whitebox |
-|---|---|
-| statsmodels | `methods/linear/`, `methods/timeseries/`, `lib/stats/` |
-| mgcv, pygam, gratia | `methods/gam/`, `lib/stats/smoothing/` |
-| NumPyro, Pyro | `lib/probprog/`, `lib/sampling/` |
-| ArviZ | `lib/sampling/diagnostics.ts`, `lib/probprog/criticism.ts` |
-| pgmpy | `lib/pgm/` |
-| DoWhy, EconML, causal-learn | `lib/pgm/causal/`, `methods/causal/` |
-| NetworkX | `lib/graph/` |
-| gymnasium, MinAtar | `lib/rl/`, `methods/rl/environments/` |
-| PettingZoo | `lib/rl/multi-agent.ts`, `methods/rl/environments/multi-agent.ts` |
-| stable-baselines3, CleanRL | `methods/rl/agents/`, `lib/rl/buffers.ts`, `lib/rl/returns.ts` |
-| OpenSpiel, nashpy | `lib/games/`, `methods/rl/environments/games.ts` |
-| python-control, filterpy | `lib/systems/`, `lib/dynamics/control/`, `lib/dynamics/filtering/` |
-| pywt, librosa | `lib/signal/wavelets.ts`, `lib/signal/audio/` |
-| optax | `lib/optim/transform.ts`, `lib/optim/adaptive.ts` |
-| POT | `lib/optim/transport.ts` |
-| cvxpy (small problems) | `lib/optim/linear-programming.ts`, `quadratic.ts`, `conic.ts` |
-| Optuna, Ray Tune, scikit-optimize | `lib/tune/`, `methods/tuning/` |
-| SWI-Prolog, Metagol, Popper | `lib/logic/` |
-| AIMA | `lib/search/`, `methods/gofai/` |
-| mlxtend, SPMF, pysubgroup | `methods/patterns/` |
-| DEAP | `lib/search/evolutionary.ts`, `methods/evolutionary/` |
-| PySINDy | `methods/scientific/discovery/` |
-| faiss | `lib/numerics/spatial/`, `methods/retrieval/indexes.ts` |
-| datasketch, rapidfuzz | `lib/text/shingles.ts`, `lib/text/fingerprinting.ts`, `methods/retrieval/approximate-matching.ts` |
-| recordlinkage, Splink | `methods/retrieval/record-linkage.ts` |
-| gensim, fastText | `methods/embedding/`, `methods/models/topic.ts` |
-| lifelines | `methods/survival/` |
-| fairlearn, AIF360 | `lib/metrics/fairness.ts`, `methods/fairness/` |
-| Opacus | `lib/learn/privacy.ts`, `methods/privacy/` |
-| SHAP, Captum | `lib/learn/explain/` |
-| cleanlab, Snorkel | `methods/weak-supervision/` |
-| zlib | `lib/information/dictionary-coding.ts` |
+| library                           | whitebox                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------- |
+| statsmodels                       | `methods/linear/`, `methods/timeseries/`, `lib/stats/`                                            |
+| mgcv, pygam, gratia               | `methods/gam/`, `lib/stats/smoothing/`                                                            |
+| NumPyro, Pyro                     | `lib/probprog/`, `lib/sampling/`                                                                  |
+| ArviZ                             | `lib/sampling/diagnostics.ts`, `lib/probprog/criticism.ts`                                        |
+| pgmpy                             | `lib/pgm/`                                                                                        |
+| DoWhy, EconML, causal-learn       | `lib/pgm/causal/`, `methods/causal/`                                                              |
+| NetworkX                          | `lib/graph/`                                                                                      |
+| gymnasium, MinAtar                | `lib/rl/`, `methods/rl/environments/`                                                             |
+| PettingZoo                        | `lib/rl/multi-agent.ts`, `methods/rl/environments/multi-agent.ts`                                 |
+| stable-baselines3, CleanRL        | `methods/rl/agents/`, `lib/rl/buffers.ts`, `lib/rl/returns.ts`                                    |
+| OpenSpiel, nashpy                 | `lib/games/`, `methods/rl/environments/games.ts`                                                  |
+| python-control, filterpy          | `lib/systems/`, `lib/dynamics/control/`, `lib/dynamics/filtering/`                                |
+| pywt, librosa                     | `lib/signal/wavelets.ts`, `lib/signal/audio/`                                                     |
+| optax                             | `lib/optim/transform.ts`, `lib/optim/adaptive.ts`                                                 |
+| POT                               | `lib/optim/transport.ts`                                                                          |
+| cvxpy (small problems)            | `lib/optim/linear-programming.ts`, `quadratic.ts`, `conic.ts`                                     |
+| Optuna, Ray Tune, scikit-optimize | `lib/tune/`, `methods/tuning/`                                                                    |
+| SWI-Prolog, Metagol, Popper       | `lib/logic/`                                                                                      |
+| AIMA                              | `lib/search/`, `methods/gofai/`                                                                   |
+| mlxtend, SPMF, pysubgroup         | `methods/patterns/`                                                                               |
+| DEAP                              | `lib/search/evolutionary.ts`, `methods/evolutionary/`                                             |
+| PySINDy                           | `methods/scientific/discovery/`                                                                   |
+| faiss                             | `lib/numerics/spatial/`, `methods/retrieval/indexes.ts`                                           |
+| datasketch, rapidfuzz             | `lib/text/shingles.ts`, `lib/text/fingerprinting.ts`, `methods/retrieval/approximate-matching.ts` |
+| recordlinkage, Splink             | `methods/retrieval/record-linkage.ts`                                                             |
+| gensim, fastText                  | `methods/embedding/`, `methods/models/topic.ts`                                                   |
+| lifelines                         | `methods/survival/`                                                                               |
+| fairlearn, AIF360                 | `lib/metrics/fairness.ts`, `methods/fairness/`                                                    |
+| Opacus                            | `lib/learn/privacy.ts`, `methods/privacy/`                                                        |
+| SHAP, Captum                      | `lib/learn/explain/`                                                                              |
+| cleanlab, Snorkel                 | `methods/weak-supervision/`                                                                       |
+| zlib                              | `lib/information/dictionary-coding.ts`                                                            |
 
 ## 12. Order of construction
 
 Bottom up, one tier at a time; a tier is finished (documented, tested against the oracle, traced) before the next relies
 on it. The first pass is a thin vertical slice that proves the whole pipeline (values to traces to figures to docs):
-
 1. `base`, `scene` (types, structure, timeline), `tensor` (primitives, core operations, CPU backend), `random`.
 2. `autodiff` (reverse mode, `grad`, `valueAndGrad`, `computationGraph`, `checkPrimitive`), `trace` (schema, policy,
    algorithm, recorder, replay), `space`, `context`.

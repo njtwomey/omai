@@ -30,7 +30,11 @@ function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
     const path = join(dir, name)
     if (statSync(path).isDirectory()) walk(path, out)
-    else if (/\.tsx?$/.test(name) && !/\.test(-d)?\.tsx?$/.test(name) && !/\.(property|golden|browser)\.test\.tsx?$/.test(name)) {
+    else if (
+      /\.tsx?$/.test(name) &&
+      !/\.test(-d)?\.tsx?$/.test(name) &&
+      !/\.(property|golden|browser)\.test\.tsx?$/.test(name)
+    ) {
       out.push(path)
     }
   }
@@ -85,8 +89,10 @@ for (const file of files) {
       }
       continue
     }
-    if (from.package === 'engine' && /^whitebox-(render|meta)/.test(spec)) errors.push(`${where}: engine is the base package`)
-    if (from.package === 'render' && spec.startsWith('whitebox-meta')) errors.push(`${where}: render may not import meta`)
+    if (from.package === 'engine' && /^whitebox-(render|meta)/.test(spec))
+      errors.push(`${where}: engine is the base package`)
+    if (from.package === 'render' && spec.startsWith('whitebox-meta'))
+      errors.push(`${where}: render may not import meta`)
     if (from.package === 'render' && from.unit !== 'react' && /^(react|react-dom)(\/|$)/.test(spec)) {
       errors.push(`${where}: headless render code may not import React`)
     }

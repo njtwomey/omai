@@ -13,7 +13,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 All routine work goes through `make` (it wraps mise, pnpm and uv). Run `make check` before declaring work finished.
-
 - `make setup`: install tools and dependencies.
 - `make check`: barrels, layering, lint, typecheck, tests.
 - `make test`: all Vitest projects. One file: `mise exec -- pnpm exec vitest run packages/engine/src/lib/tensor/ops/arithmetic.test.ts`.

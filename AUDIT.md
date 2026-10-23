@@ -44,7 +44,6 @@ Create a task list. Split the exploration across parallel read-only agents, one 
 ## 4. Output
 
 Write to `docs/audit/<yyyy-mm-dd>/<name>/`:
-
 - `report.md`: a summary of at most twenty lines (what the codebase is, its overall state, the most important findings), then a findings table with columns: id, severity (`critical`, `high`, `medium`, `low`), area, evidence (file:line and how it was established: `ran` or `read`), what is wrong, recommended fix, scope (`file`, `package`, `cross-package`).
 - `architecture.md`: the module graph (as a Mermaid diagram, trimmed to package level), layering assessment, a description of how the main pieces fit together.
 - `fixes.md`: the recommended order of fixes, grouped so that each group can be applied and verified on its own, with dependencies between groups stated.
@@ -55,7 +54,6 @@ If a figure such as coverage, a count or a difference from a reference result ap
 ## 5. Fix phase
 
 Only when the `fix` word was given, or after the user answers yes to the question below. Never apply fixes to a path outside the current project.
-
 1. After writing the report, ask once (AskUserQuestion) which fix groups to apply, with the recommended order as the default.
 2. First set up what is missing from the repository hygiene list: a Makefile with targets `lint`, `format`, `typecheck`, `test`, `check`, `mise.toml`, lint configuration at 120 columns, `CLAUDE.md` instructing Claude to use the make targets, and a CI workflow that runs `make check`. Match the conventions already in the project where they exist.
 3. Apply fixes one group at a time. After each group run `make check`, and if it fails, repair or revert the group before continuing. Add or extend tests that would have caught the problem. Make one commit per group (the commit message names the finding ids), only if the working tree is a git repository and the user has not said otherwise.
