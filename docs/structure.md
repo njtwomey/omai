@@ -1348,9 +1348,10 @@ The files follow the encyclopedia's evaluation chapters, in its order. Every met
 `MetricResult`, accepts sample weights, and can attach a confidence interval. Metrics that need a pretrained network
 (LPIPS, DISTS, FID, CLIPScore, BERTScore, DNSMOS) take a feature extractor as an argument; whitebox ships none of those
 weights.
-- `foundations.ts`: choosing a metric for a decision (expected cost, utility), `withInterval` (bootstrap, analytic,
-  Wilson, DeLong), paired comparisons of two models on one test set (paired bootstrap, McNemar, DeLong), `evaluate`
-  (many metrics in one pass).
+- `foundations.ts`: choosing a metric for a decision (`expectedCost`, `expectedUtility`, `bayesDecision`,
+  `costThreshold`), `withInterval` (bootstrap: percentile, basic and BCa; analytic (Wald); Wilson; DeLong, with
+  `delongVariance`), paired comparisons of two models on one test set (`pairedBootstrap`, `mcnemarTest`,
+  `delongTest`), `evaluate` (many metrics in one pass, with shared bootstrap intervals).
 - `metric.ts`: `Metric`, `defineMetric`, `metricResult`, sample weights, `weightedPercentile`, row selection and
   `streaming` (update / compute over batches).
 - `classification.ts`: confusion matrices (`confusionMatrix`, `multilabelConfusionMatrix`) and the rates computed from
@@ -1391,10 +1392,16 @@ weights.
   canonical home is `numerics/geometry`), Hausdorff and Chamfer distances between point sets.
 - `forecasting.ts`: MAPE, sMAPE, WMAPE, MASE, RMSSE, MSIS, CRPS for samples and closed forms, interval score, coverage,
   quantile loss, Theil's U2.
-- `ranking.ts`: precision and recall at k, hit rate, R-precision, MAP, MRR, DCG and NDCG (gain variants), ERR,
-  rank-biased precision; beyond-accuracy measures (coverage, diversity, novelty, serendipity, exposure Gini).
-- `clustering.ts`: silhouette, Calinski-Harabasz, Davies-Bouldin and Dunn indices; Rand, adjusted Rand and
-  Fowlkes-Mallows; NMI variants, AMI, V-measure, homogeneity and completeness; purity; B-cubed; contingency tables.
+- `ranking.ts`: `precisionAtK`, `recallAtK`, `hitRate`, `rPrecision`, `meanAveragePrecision` (trec_eval, min and
+  retrieved denominators), `meanReciprocalRank`, `dcgScore` and `ndcgScore` (linear and exponential gains,
+  tie-averaged), `expectedReciprocalRank`, `rankBiasedPrecision`; beyond-accuracy measures (`catalogCoverage`,
+  `intraListDiversity`, `novelty`, `serendipity`, `exposureGini`).
+- `clustering.ts`: Rand, adjusted Rand and Fowlkes-Mallows (`randScore`, `adjustedRandScore`,
+  `fowlkesMallowsScore`, `pairConfusionMatrix`); `mutualInfoScore`, NMI variants (`normalizedMutualInfoScore`:
+  arithmetic, geometric, min, max), AMI (`adjustedMutualInfoScore`), V-measure, homogeneity and completeness;
+  `purityScore`; B-cubed (`bCubed`, `bCubedF1`); contingency tables (`contingencyMatrix`).
+- `cluster-validity.ts`: silhouette (`silhouetteScore`, `silhouetteSamples`, any distance or precomputed),
+  Calinski-Harabasz, Davies-Bouldin and Dunn indices.
 - `detection-segmentation.ts`: IoU, GIoU, DIoU and CIoU; Dice; Hausdorff distance (and HD95) for boundaries; boundary
   F1; mean average precision (VOC and COCO protocols); panoptic quality; per-class mean IoU.
 - `image-quality.ts`: MSE, PSNR, SSIM, MS-SSIM, VIF, LPIPS and DISTS from supplied features, SAM, ERGAS, RASE, UIQI.

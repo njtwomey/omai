@@ -151,6 +151,22 @@
       "cases": 33
     },
     {
+      "fixture": "metrics/cluster_validity.json",
+      "source": "oracle/cases/metrics/cluster_validity.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "metrics/clustering.json",
+      "source": "oracle/cases/metrics/clustering.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 24
+    },
+    {
       "fixture": "metrics/curves.json",
       "source": "oracle/cases/metrics/curves.py",
       "reference": {
@@ -165,6 +181,14 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 31
+    },
+    {
+      "fixture": "metrics/foundations.json",
+      "source": "oracle/cases/metrics/foundations.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 15
     },
     {
       "fixture": "metrics/operating_points.json",
@@ -188,6 +212,15 @@
     {
       "fixture": "metrics/probabilistic.json",
       "source": "oracle/cases/metrics/probabilistic.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 26
+    },
+    {
+      "fixture": "metrics/ranking.json",
+      "source": "oracle/cases/metrics/ranking.py",
       "reference": {
         "scikit-learn": "1.9.1",
         "torchmetrics": "1.9.0"
