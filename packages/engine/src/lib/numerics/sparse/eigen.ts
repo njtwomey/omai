@@ -1,16 +1,10 @@
 import { WhiteboxError } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { eigh } from '../linalg/index.ts'
+import { ddot as dot, eigh, dnrm2 as norm } from '../linalg/index.ts'
 import { asOperator, type CsrMatrix, type LinearOperator } from './csr.ts'
 
 type Vec = Float64Array
-const dot = (a: Vec, b: Vec): number => {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
-}
-const norm = (a: Vec): number => Math.sqrt(dot(a, a))
 
 function numeric(op: LinearOperator, transpose = false): (x: Vec) => Vec {
   const f = transpose ? op.rmatvec : op.matvec

@@ -16,7 +16,7 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
-import { lstsq, solve } from '../linalg/index.ts'
+import { lstsq, dnrm2 as norm, solve } from '../linalg/index.ts'
 
 /** A vector function F: R^n -> R^n, written with operations (so its Jacobian comes from autodiff). */
 export type VectorFunction = (x: Value) => Value
@@ -45,7 +45,6 @@ export interface SystemOptions {
 }
 
 const vec = (x: TensorLike): Tensor => concreteOrThrow(promoteFloat(x)[0] as Tensor, 'vector')
-const norm = (v: readonly number[]): number => Math.sqrt(v.reduce((s, x) => s + x * x, 0))
 
 /**
  * Solve F(x) = 0 by Newton's method with a backtracking (Armijo) line search on ||F||^2, using the Jacobian from

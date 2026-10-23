@@ -43,6 +43,8 @@ All routine work goes through `make` (it wraps mise, pnpm and uv). Run `make che
 
 - Strict TypeScript (TS 7) with `isolatedDeclarations`: exported functions declare their return types. No `any`.
 - Relative imports use `.ts` extensions; Biome formats at 120 columns, single quotes, no semicolons.
+- No local copies of generic helpers: number-array kernels come from `numerics/linalg/blas.ts` (`ddot`, `dnrm2`,
+  `daxpy`, `dscal`, `dgemv`), value-level ones from the tensor ops. A missing helper goes into a shared module first.
 - Every export has TSDoc: summary, `@param`, `@returns`, and an `@example` whose `// => value` lines are checked.
 - Tests sit next to code: `foo.test.ts`, `foo.property.test.ts` (fast-check), `foo.golden.test.ts` (fixtures in
   `packages/engine/fixtures/<same path>/`), `foo.test-d.ts`.

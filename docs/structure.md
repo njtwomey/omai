@@ -574,6 +574,8 @@ primitives; "custom" means a dedicated rule.
   `smirnov`, studentised range).
 
 `linalg/` (numpy.linalg, scipy.linalg; custom rules for every factorisation and solve)
+- `blas.ts`: level-1 and level-2 kernels on number arrays (`ddot`, `dnrm2`, `daxpy`, `dscal`, `dgemv`), shared by every
+  algorithm that iterates on primal values (Krylov, Lanczos, regularising iterations, root finders).
 - `basics.ts`: `norm`, `cond`, `matrixRank`, `matrixPower`, `trace`, `det`, `slogdet`, `isSymmetric`,
   `isPositiveDefinite`.
 - `triangular.ts`: `solveTriangular`, `invTriangular`.

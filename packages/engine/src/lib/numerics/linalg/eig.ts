@@ -4,6 +4,7 @@ import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLik
 import { solveKernel } from './_kernels.ts'
 import { squareSize } from './_matrix.ts'
 import { eigenvectorKernel, hessenbergKernel, schurEigenvalues, schurKernel } from './_schur.ts'
+import { dnrm2, ddot as dot } from './blas.ts'
 
 /** Complex values as their real and imaginary parts. */
 export interface ComplexTensor {
@@ -132,11 +133,9 @@ function matvec(a: Float64Array, n: number, x: Float64Array): Float64Array {
 }
 
 const normalise = (x: Float64Array): Float64Array => {
-  const norm = Math.sqrt(x.reduce((s, v) => s + v * v, 0))
-  return x.map((v) => v / norm)
+  const length = dnrm2(x)
+  return x.map((v) => v / length)
 }
-
-const dot = (x: Float64Array, y: Float64Array): number => x.reduce((s, v, i) => s + v * (y[i] ?? 0), 0)
 
 /** Options of the eigenvalue iterations. */
 export interface EigenIterationOptions {

@@ -1,4 +1,4 @@
-import { item, sqrt, square, sum, treePaths, type Value } from '../../tensor/index.ts'
+import { item, norm, treePaths, type Value } from '../../tensor/index.ts'
 import type { RunHandle, TensorRole } from '../../trace/index.ts'
 import type { Params } from '../module/module.ts'
 
@@ -45,7 +45,8 @@ export interface Callback {
   onTrainEnd?(ctx: HookContext & { readonly status: 'completed' | 'stopped' }): void
 }
 
-const norm = (v: Value): number => item(sqrt(sum(square(v))))
+/** The L2 norm of a value, as a number. */
+const l2 = (v: Value): number => item(norm(v))
 
 /** Options of the logging callbacks. */
 export interface LoggerOptions {
@@ -76,7 +77,7 @@ export function gradNormLogger(options: LoggerOptions = {}): Callback {
       if (ctx.step % every !== 0) return
       let total = 0
       for (const [path, g] of Object.entries(treePaths(ctx.grads))) {
-        const n = norm(g)
+        const n = l2(g)
         total += n * n
         if (options.perParameter ?? true) ctx.log(`grad_norm/${path}`, n)
       }
@@ -104,7 +105,7 @@ export function paramNormLogger(options: LoggerOptions = {}): Callback {
       if (ctx.step % every !== 0) return
       let total = 0
       for (const [path, p] of Object.entries(treePaths(ctx.params))) {
-        const n = norm(p)
+        const n = l2(p)
         total += n * n
         if (options.perParameter ?? true) ctx.log(`param_norm/${path}`, n)
       }

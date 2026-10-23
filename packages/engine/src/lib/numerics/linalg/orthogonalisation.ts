@@ -6,11 +6,10 @@ import {
   item,
   matmul,
   mul,
+  norm,
   primalOf,
   promoteFloat,
   sliceAxis,
-  sqrt,
-  square,
   stack,
   sub,
   sum,
@@ -38,7 +37,6 @@ export interface GramSchmidtResult {
 }
 
 const column = (a: Value, j: number): Value => sliceAxis(a, 1, j, j + 1)
-const norm = (v: Value): Value => sqrt(sum(square(v)))
 
 /**
  * Gram-Schmidt orthogonalisation of the columns of a full-column-rank matrix, classical or modified, optionally

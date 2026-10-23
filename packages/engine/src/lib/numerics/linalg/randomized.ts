@@ -12,6 +12,7 @@ import {
 } from '../../tensor/index.ts'
 import { eighKernel } from './_kernels.ts'
 import { mT } from './_matrix.ts'
+import { dnrm2 } from './blas.ts'
 import { qr } from './qr.ts'
 import { svd } from './svd.ts'
 
@@ -249,8 +250,8 @@ function lanczos(
   z: Float64Array,
   steps: number,
 ): { alpha: number[]; beta: number[] } {
-  const norm = Math.sqrt(z.reduce((s, v) => s + v * v, 0))
-  const basis: Float64Array[] = [z.map((v) => v / norm)]
+  const length = dnrm2(z)
+  const basis: Float64Array[] = [z.map((v) => v / length)]
   const alpha: number[] = []
   const beta: number[] = []
   for (let j = 0; j < steps; j++) {

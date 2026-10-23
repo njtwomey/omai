@@ -13,20 +13,13 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import { daxpy, ddot as dot, dnrm2 as norm } from '../linalg/index.ts'
 import { asOperator, type CsrMatrix, csr, type LinearOperator, primalValues, spmv, transposeCsr } from './csr.ts'
 
 /** A preconditioner: z = M^{-1} r. */
 export type Preconditioner = (r: Float64Array) => Float64Array
 
 type Vec = Float64Array
-const dot = (a: Vec, b: Vec): number => {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
-}
-const norm = (a: Vec): number => Math.sqrt(dot(a, a))
-/** a + s b. */
-const axpy = (a: Vec, s: number, b: Vec): Vec => a.map((v, i) => v + s * (b[i] ?? 0))
 
 function numeric(op: LinearOperator): (x: Vec) => Vec {
   return (x) => Float64Array.from(toFlat(primalOf(op.matvec(fromStorage(x, [x.length], 'float64')))))
@@ -121,7 +114,7 @@ export function cgAlgorithm(
     config: { rtol: options.rtol ?? 1e-5, atol: options.atol ?? 0 } as Json,
     schema: SCHEMA,
     init: () => {
-      const r = axpy(bv, -1, apply(x0))
+      const r = daxpy(-1, apply(x0), bv)
       const z = precondition(r)
       const rn = norm(r)
       return { x: x0, residualNorm: rn, history: [rn], internal: { r, p: z, rz: dot(r, z) } }
@@ -130,11 +123,11 @@ export function cgAlgorithm(
       const { r, p, rz } = s.internal as { r: Vec; p: Vec; rz: number }
       const ap = apply(p)
       const alpha = rz / dot(p, ap)
-      const x = axpy(s.x, alpha, p)
-      const rNext = axpy(r, -alpha, ap)
+      const x = daxpy(alpha, p, s.x)
+      const rNext = daxpy(-alpha, ap, r)
       const z = precondition(rNext)
       const rzNext = dot(rNext, z)
-      const pNext = axpy(z, rzNext / rz, p)
+      const pNext = daxpy(rzNext / rz, p, z)
       const rn = norm(rNext)
       return { x, residualNorm: rn, history: [...s.history, rn], internal: { r: rNext, p: pNext, rz: rzNext } }
     },
@@ -201,7 +194,7 @@ export function bicgstabAlgorithm(
     config: { rtol: options.rtol ?? 1e-5, atol: options.atol ?? 0 } as Json,
     schema: SCHEMA,
     init: () => {
-      const r = axpy(bv, -1, apply(x0))
+      const r = daxpy(-1, apply(x0), bv)
       const rn = norm(r)
       return {
         x: x0,
@@ -227,8 +220,8 @@ export function bicgstabAlgorithm(
       const phat = precondition(p)
       const v = apply(phat)
       const alpha = rho / dot(st.rhat, v)
-      const sv = axpy(st.r, -alpha, v)
-      let x = axpy(s.x, alpha, phat)
+      const sv = daxpy(-alpha, v, st.r)
+      let x = daxpy(alpha, phat, s.x)
       if (norm(sv) <= tol) {
         const rn = norm(sv)
         return { x, residualNorm: rn, history: [...s.history, rn], internal: { ...st, r: sv, p, v, rho, alpha } }
@@ -236,8 +229,8 @@ export function bicgstabAlgorithm(
       const shat = precondition(sv)
       const t = apply(shat)
       const omega = dot(t, sv) / dot(t, t)
-      x = axpy(x, omega, shat)
-      const r = axpy(sv, -omega, t)
+      x = daxpy(omega, shat, x)
+      const r = daxpy(-omega, t, sv)
       const rn = norm(r)
       return {
         x,
@@ -311,7 +304,7 @@ export function gmresAlgorithm(
   const m = Math.min(options.restart ?? 20, rawB.length)
   type Cycle = { V: Vec[]; H: number[][]; cs: number[]; sn: number[]; g: number[]; base: Vec }
   const begin = (x: Vec): { cycle: Cycle; rn: number } => {
-    const r = axpy(bv, -1, apply(x))
+    const r = daxpy(-1, apply(x), bv)
     const beta = norm(r)
     return { cycle: { V: [r.map((v) => v / (beta || 1))], H: [], cs: [], sn: [], g: [beta], base: x }, rn: beta }
   }
@@ -326,7 +319,7 @@ export function gmresAlgorithm(
     }
     let x = c.base
     y.forEach((yi, i) => {
-      x = axpy(x, yi, c.V[i] as Vec)
+      x = daxpy(yi, c.V[i] as Vec, x)
     })
     return x
   }
@@ -346,7 +339,7 @@ export function gmresAlgorithm(
       const h: number[] = []
       for (let i = 0; i <= j; i++) {
         h[i] = dot(w, c.V[i] as Vec)
-        w = axpy(w, -(h[i] ?? 0), c.V[i] as Vec)
+        w = daxpy(-(h[i] ?? 0), c.V[i] as Vec, w)
       }
       const hn = norm(w)
       h[j + 1] = hn
@@ -458,7 +451,7 @@ export function minresAlgorithm(
     config: { rtol: options.rtol ?? 1e-5, atol: options.atol ?? 0 } as Json,
     schema: SCHEMA,
     init: () => {
-      const r = axpy(bv, -1, apply(x0))
+      const r = daxpy(-1, apply(x0), bv)
       const beta = norm(r)
       const n = r.length
       const zero = new Float64Array(n)
@@ -485,7 +478,7 @@ export function minresAlgorithm(
       // Lanczos step: A v_j = beta_j v_{j-1} + alpha_j v_j + beta_{j+1} v_{j+1}.
       const av = apply(st.v)
       const alpha = dot(st.v, av)
-      let next = axpy(axpy(av, -alpha, st.v), -st.beta, st.vOld)
+      let next = daxpy(-st.beta, st.vOld, daxpy(-alpha, st.v, av))
       const betaNext = norm(next)
       next = next.map((v) => v / (betaNext || 1))
       // Apply the previous two rotations to the new column (beta_j, alpha_j, beta_{j+1}).
@@ -496,7 +489,7 @@ export function minresAlgorithm(
       const gammaNext = delta / rho1
       const sigmaNext = betaNext / rho1
       const w = st.v.map((v, i) => (v - rho3 * (st.wOlder[i] ?? 0) - rho2 * (st.wOld[i] ?? 0)) / rho1)
-      const x = axpy(s.x, gammaNext * st.eta, w)
+      const x = daxpy(gammaNext * st.eta, w, s.x)
       const rn = Math.abs(sigmaNext) * s.residualNorm
       return {
         x,
