@@ -595,11 +595,13 @@ primitives; "custom" means a dedicated rule.
   `hutchinsonTrace`, `stochasticLogdet`.
 
 `sparse/` (scipy.sparse)
-- `csr.ts`: `CsrMatrix`, `csr`, `fromCoo`, `toDense`, `spmv`, `spmm`, `transposeCsr`, `diagCsr` (differentiable in the
-  values).
-- `iterative.ts`: `cg`, `bicgstab`, `gmres`, `minres`, preconditioners (Jacobi, incomplete Cholesky); traced residuals;
-  custom rules (adjoint solves).
-- `eigen.ts`: `lanczos`, `arnoldi`, `eigsh` (top k), `svds`.
+- `csr.ts`: `CsrMatrix`, `csr`, `fromCoo`, `toDense`, `spmv`, `spmm`, `transposeCsr`, `diagCsr`, `csrAdd`,
+  `csrDiagonal` (differentiable in the values), `LinearOperator` and `asOperator`.
+- `iterative.ts`: `cg`, `bicgstab`, `gmres` (restarted), `minres`, each also an `Algorithm` (`cgAlgorithm`, ...) with
+  traced residuals; preconditioners (`jacobiPreconditioner`, `incompleteCholesky`); `sparseSolve` (custom rules by
+  adjoint solves).
+- `eigen.ts`: `lanczos` (full reorthogonalisation, deflation), `arnoldi`, `eigsh` (top k, with locking for repeated
+  eigenvalues), `svds`.
 
 `polynomial/` (numpy.polynomial; composed)
 - `power.ts` (lowest degree first, as numpy.polynomial): `polyval`, `polyvander`, `polyfit`, `polyder`, `polyint`,

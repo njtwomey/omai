@@ -230,6 +230,14 @@
       "cases": 43
     },
     {
+      "fixture": "numerics/sparse/sparse.json",
+      "source": "oracle/cases/numerics/sparse/sparse.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "numerics/special/bessel.json",
       "source": "oracle/cases/numerics/special/bessel.py",
       "reference": {

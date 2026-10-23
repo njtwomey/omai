@@ -44,6 +44,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/numerics/polynomial': () => import('whitebox-engine/numerics/polynomial'),
   'whitebox-engine/numerics/quadrature': () => import('whitebox-engine/numerics/quadrature'),
   'whitebox-engine/numerics/roots': () => import('whitebox-engine/numerics/roots'),
+  'whitebox-engine/numerics/sparse': () => import('whitebox-engine/numerics/sparse'),
   'whitebox-engine/numerics/special': () => import('whitebox-engine/numerics/special'),
   'whitebox-engine/optim': () => import('whitebox-engine/optim'),
   'whitebox-engine/optim/minimize': () => import('whitebox-engine/optim/minimize'),
