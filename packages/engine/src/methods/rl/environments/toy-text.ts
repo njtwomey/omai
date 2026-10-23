@@ -250,7 +250,7 @@ const locIndex = (loc: readonly [number, number]): number => TAXI_LOCATIONS.find
  * @example
  * ```ts
  * import { taxiActionMask } from 'whitebox-engine/methods/rl'
- * taxiActionMask(0) // => [1, 0, 0, 0, 1, 0]
+ * taxiActionMask(0) // => [1, 0, 1, 0, 1, 0]
  * ```
  */
 export function taxiActionMask(s: number): number[] {

@@ -591,7 +591,7 @@ const wrapAngle = (x: number, m: number, M: number): number => {
  * @example
  * ```ts
  * import { acrobotDynamics } from 'whitebox-engine/methods/rl'
- * acrobotDynamics([0, 0, 0, 0], 1) // => [0, 0, 0, 0]
+ * acrobotDynamics([0, 0, 0, 0], 1).map((x) => Math.abs(x) < 1e-15) // => [true, true, true, true]
  * ```
  */
 export function acrobotDynamics(state: AcrobotState, action: number): AcrobotState {

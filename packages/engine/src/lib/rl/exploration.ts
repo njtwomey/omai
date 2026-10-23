@@ -87,7 +87,7 @@ export function countBonus(count: number, beta = 1): number {
  * @example
  * ```ts
  * import { pseudoCount } from 'whitebox-engine/rl'
- * pseudoCount(0.25, 0.4) // => 1.2500000000000002
+ * pseudoCount(0.25, 0.5) // => 0.5
  * ```
  */
 export function pseudoCount(rho: number, rhoPrime: number): number {

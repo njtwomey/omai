@@ -127,7 +127,7 @@ function dense(p: Readonly<Record<string, Tensor | Value>>, x: Value, noise: Key
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { qNetwork } from 'whitebox-engine/methods/rl'
+ * import { qNetwork } from 'whitebox-engine/methods/rl/agents'
  * import { key } from 'whitebox-engine/random'
  * import { tensor } from 'whitebox-engine/tensor'
  * const net = qNetwork(4, 2, { hidden: [8], dueling: true }, key(0))
@@ -237,7 +237,7 @@ const stack = (rows: readonly (readonly number[])[], d: number): Tensor => rowsT
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { dqn } from 'whitebox-engine/methods/rl'
+ * import { dqn } from 'whitebox-engine/methods/rl/agents'
  * import { cartPole } from 'whitebox-engine/methods/rl'
  * dqn(cartPole.create(), { double: true, dueling: true }).name // => 'dqn'
  * ```
@@ -414,7 +414,7 @@ export function dqn(env: Spaces, options: DqnOptions = {}): Agent<DqnState, read
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { dqn, qValues } from 'whitebox-engine/methods/rl'
+ * import { dqn, qValues } from 'whitebox-engine/methods/rl/agents'
  * import { cartPole } from 'whitebox-engine/methods/rl'
  * import { key } from 'whitebox-engine/random'
  * const env = cartPole.create()

@@ -30,7 +30,7 @@ const u1 = (k: Key): number => uniform(k, []).data[0] ?? 0
  * @example
  * ```ts
  * import { epsilonGreedyProbabilities } from 'whitebox-engine/rl'
- * epsilonGreedyProbabilities([1, 3, 2], 0.3) // => [0.1, 0.8, 0.1]
+ * epsilonGreedyProbabilities([1, 3, 2], 0.75) // => [0.25, 0.5, 0.25]
  * ```
  */
 export function epsilonGreedyProbabilities(q: ArrayLike<number>, epsilon: number): number[] {
@@ -70,7 +70,7 @@ export function epsilonGreedy(q: ArrayLike<number>, epsilon: number, key: Key): 
  * @example
  * ```ts
  * import { boltzmannProbabilities } from 'whitebox-engine/rl'
- * boltzmannProbabilities([0, Math.log(3)], 1) // => [0.25, 0.75]
+ * boltzmannProbabilities([0, Math.log(3)], 1).map((p) => Number(p.toFixed(12))) // => [0.25, 0.75]
  * ```
  */
 export function boltzmannProbabilities(q: ArrayLike<number>, temperature: number): number[] {

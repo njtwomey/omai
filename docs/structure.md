@@ -1413,16 +1413,22 @@ share a concept they share a definition but not a name.
 ### 4.30 `rl/` (tier 8): reinforcement learning infrastructure (gymnasium, PettingZoo, stable-baselines3 building blocks)
 
 oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and advantages, rliable for aggregate metrics
-- `env.ts`: `Env<S, O, A>` (spec, observation and action spaces, `reset`, `step`, `render` required, optional `model` for
-  planning and `oracle` for regret), `EnvSpec`, `EnvDefinition` (factory with an options `Space`).
-- `gym.ts`: `GymEnv` (gymnasium-style wrapper), `make`, `listEnvironments` (finds definitions in an imported module).
-- `multi-agent.ts`: multi-agent environments in turn-based (AEC) and simultaneous (parallel) forms, per-agent spaces,
-  `MultiAgentEnv` wrappers.
-- `wrappers.ts`: time limits, episode statistics, observation and reward normalisation, action clipping and rescaling,
-  frame stacking, action repeat, observation transforms, flattening, one-hot observations, pixel observations from
-  rendered scenes (`scene/raster.ts`).
-- `vector.ts`: vectorised environments with independent keys and auto-reset.
-- `agent.ts`: `Agent<G, O, A>` (`init`, `act`, `learn`, `greedy`), `Policy`, `Transition`.
+- `env.ts`: `Env<S, O, A>` (spec, observation and action spaces, `reset`, `step`, `render` required, optional `model`
+  (the tabular `P` table: states, actions, initial distribution, outcomes) for planning, `oracle` for regret,
+  `resetFrom` for state that persists across episodes, `observe`), `EnvSpec`, `EnvDefinition` (factory with an
+  options `Space`), `resetAfter`, `unwrapped`, `isEnvDefinition`.
+- `gym.ts`: `GymEnv` (gymnasium-style wrapper), `make` (by definition or by id in a registry, time-limit override,
+  wrappers), `listEnvironments` (finds definitions in an imported module).
+- `multi-agent.ts`: multi-agent environments in turn-based (`AecEnv`) and simultaneous (`ParallelEnv`) forms, per-agent
+  spaces, `aecToParallel`, `parallelToAec`, `parallelTimeLimit`, `singleAgentView` (one agent against fixed policies),
+  `playAec`, `playParallel`.
+- `wrappers.ts`: time limits, episode statistics, reward normalisation (`RunningMeanStd`), reward, action and
+  observation transforms, reward clipping, action clipping and rescaling, action repeat, sticky actions.
+- `observation-wrappers.ts`: observation normalisation, frame stacking, flattening, one-hot observations, time-aware
+  observations, pixel observations rendered from scenes (`scene/raster.ts`).
+- `vector.ts`: vectorised environments with independent keys and auto-reset (same-step and next-step), `GymVectorEnv`.
+- `agent.ts`: `Agent<G, O, A>` (`init`, `act`, `learn`, `greedy`, `stats`), `Policy`, `Transition`,
+  `behaviourPolicy`, `greedyPolicyOf`, `policyAgent`.
 - `rollout.ts`: rollouts as traced algorithms (episode events, optional frames), `runEpisode`, `evaluatePolicy`,
   `compareAgents` (common random numbers).
 - `buffers.ts`: replay buffers (persistent, chunked), prioritised replay (sum trees), n-step buffers, on-policy rollout
@@ -1430,9 +1436,11 @@ oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and adva
 - `returns.ts`: discounted returns, GAE, TD targets, lambda returns, n-step returns, V-trace, Retrace.
 - `policies.ts`: epsilon-greedy, Boltzmann, Gaussian (with tanh squashing), categorical and deterministic policies,
   Gaussian and Ornstein-Uhlenbeck exploration noise.
-- `mdp.ts`: tabular MDPs, value iteration, policy iteration, policy evaluation, Q from V, greedy policies, occupancy
-  measures, linear-programming solutions.
-- `planning.ts`: planning with models (MCTS over environment models via `search/adversarial`, rollout planners, CEM over
+- `mdp.ts`: tabular MDPs (from arrays or environment models), value iteration, policy iteration, policy evaluation (exact
+  and iterative), Q from V, greedy policies, occupancy measures, `tabularEnv` (environments from `P` tables). TODO:
+  linear-programming solutions, once `optim/linear-programming.ts` provides `linprog`.
+- `planning.ts`: planning with models (MCTS over environment models, UCT and PUCT with priors and values, and two-player
+  game search with negamax backups, written here while `search/adversarial` is not built; rollout planners, CEM over
   action sequences, MPPI).
 - `models.ts`: learned-dynamics interfaces (deterministic and probabilistic ensembles) for model-based agents.
 - `exploration.ts`: count-based bonuses, pseudo-counts, random network distillation and curiosity interfaces.
