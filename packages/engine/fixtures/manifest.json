@@ -129,6 +129,15 @@
       "cases": 58
     },
     {
+      "fixture": "numerics/inverse/inverse.json",
+      "source": "oracle/cases/numerics/inverse/inverse.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "numerics/linalg/basics.json",
       "source": "oracle/cases/numerics/linalg/basics.py",
       "reference": {

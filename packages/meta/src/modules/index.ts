@@ -41,6 +41,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/numerics/fourier': () => import('whitebox-engine/numerics/fourier'),
   'whitebox-engine/numerics/geometry': () => import('whitebox-engine/numerics/geometry'),
   'whitebox-engine/numerics/interpolate': () => import('whitebox-engine/numerics/interpolate'),
+  'whitebox-engine/numerics/inverse': () => import('whitebox-engine/numerics/inverse'),
   'whitebox-engine/numerics/linalg': () => import('whitebox-engine/numerics/linalg'),
   'whitebox-engine/numerics/polynomial': () => import('whitebox-engine/numerics/polynomial'),
   'whitebox-engine/numerics/quadrature': () => import('whitebox-engine/numerics/quadrature'),

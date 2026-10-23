@@ -686,9 +686,12 @@ primitives; "custom" means a dedicated rule.
 - `quantisation.ts`: product quantisation, IVF coarse quantisation, asymmetric distance computation.
 
 `inverse/` (ill-posed problems)
-- `tikhonov.ts`: standard and general-form Tikhonov regularisation (SVD and GSVD), filter factors, paths.
-- `iterative.ts`: `landweber`, `cgls`, `lsqr`, traced (semi-convergence).
-- `parameter-choice.ts`: `lCurve`, `gcv`, `discrepancyPrinciple`, `quasiOptimality`.
+- `tikhonov.ts`: `spectralData`, `tikhonov` (standard form by the SVD), `tsvd`, `tikhonovGeneral` (general form with a
+  regulariser L, as stacked least squares), `secondDifference`, `filterFactors`, `tikhonovPath`.
+- `iterative.ts`: `landweberAlgorithm`, `cglsAlgorithm`, `lsqrAlgorithm` (traced residual, solution and error norms,
+  showing semi-convergence), `regularise`.
+- `parameter-choice.ts`: `lCurve` (Hansen's curvature), `gcv`, `discrepancyPrinciple`, `quasiOptimality`,
+  `lambdaGrid`.
 
 ### 4.11 `data/` (tier 5): datasets, generators and truth (torch.utils.data, sklearn.datasets)
 
