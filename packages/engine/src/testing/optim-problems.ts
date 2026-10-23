@@ -3,6 +3,7 @@
 import {
   add,
   cos,
+  div,
   exp,
   matmul,
   mul,
@@ -10,6 +11,7 @@ import {
   sliceAxis,
   sqrt,
   square,
+  stack,
   sub,
   sum,
   tensor,
@@ -133,3 +135,22 @@ export const PROBLEMS: Readonly<Record<string, (x: Value) => Value>> = {
   hop1,
   hop2,
 }
+
+/** ZDT1 (Zitzler, Deb and Thiele 2000) on [0, 1]^n: a convex Pareto front f2 = 1 - sqrt(f1). */
+export function zdt1(x: Value): Value {
+  const n = x.shape[0] ?? 2
+  const f1 = sum(at(x, 0))
+  const g = add(mul(sum(sliceAxis(x, 0, 1, n)), 9 / (n - 1)), 1)
+  return stack([f1, mul(g, sub(1, sqrt(div(f1, g))))])
+}
+
+/** ZDT2 on [0, 1]^n: a concave Pareto front f2 = 1 - f1^2. */
+export function zdt2(x: Value): Value {
+  const n = x.shape[0] ?? 2
+  const f1 = sum(at(x, 0))
+  const g = add(mul(sum(sliceAxis(x, 0, 1, n)), 9 / (n - 1)), 1)
+  return stack([f1, mul(g, sub(1, square(div(f1, g))))])
+}
+
+/** The vector (multiobjective) problems by name. */
+export const VECTOR_PROBLEMS: Readonly<Record<string, (x: Value) => Value>> = { zdt1, zdt2 }

@@ -398,6 +398,15 @@
       "cases": 10
     },
     {
+      "fixture": "optim/multiobjective.json",
+      "source": "oracle/cases/optim/multiobjective.py",
+      "reference": {
+        "pymoo": "0.6.2",
+        "moocore": "0.3.2"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "optim/optimisers.json",
       "source": "oracle/cases/optim/optimisers.py",
       "reference": {

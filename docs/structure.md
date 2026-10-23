@@ -1033,7 +1033,11 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `online.ts`: online gradient descent, FTRL, hedge, exponentiated gradient, online Newton step, regret records.
 - `transport.ts`: exact optimal transport, entropic Sinkhorn (log domain), 1-D Wasserstein, sliced Wasserstein,
   Gromov-Wasserstein, barycentres, unbalanced transport.
-- `multiobjective.ts`: Pareto fronts, dominance, hypervolume, scalarisations, NSGA-II.
+- `multiobjective.ts`: `dominates`, `paretoFront`, `nonDominatedSort` (Deb's fast sort), `crowdingDistance`,
+  `hypervolume` (exact: a sweep in 2-D, WFG above), `hypervolumeContributions`, scalarisations (`weightedSum`,
+  `chebyshev`, `augmentedChebyshev`, `epsilonConstraint`), `VectorObjective`.
+- `nsga2.ts`: `nsga2` (binary tournaments by rank and crowding, elitist survival, constrained domination, hypervolume
+  traced against a reference point), the operators `sbxCrossover` and `polynomialMutation` (bounded, as Deb's code).
 - `implicit.ts`: differentiation through solutions: `implicitRoot`, `implicitFixedPoint`, `implicitArgmin`
   (optimisation layers).
 
