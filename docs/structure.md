@@ -1045,8 +1045,10 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `gromov.ts`: `gromovWasserstein` (conditional gradient with exact line search, square or KL loss, asymmetric
   structures) and `entropicGromovWasserstein` (projected gradient with Sinkhorn steps).
 - `multiobjective.ts`: Pareto fronts, dominance, hypervolume, scalarisations, NSGA-II.
-- `implicit.ts`: differentiation through solutions: `implicitRoot`, `implicitFixedPoint`, `implicitArgmin`
-  (optimisation layers).
+- `implicit.ts`: differentiation through solutions by the implicit function theorem, with any solver: `implicitRoot`
+  (F(x, ...thetas) = 0, reverse and forward rules, dense solves that differentiate again or matrix-free GMRES/CG),
+  `implicitFixedPoint` (equilibrium layers, default fixed-point solver), `implicitArgmin` (optimisation layers through
+  the stationarity condition, default inner `minimize`).
 
 ### 4.19 `kernels/` (tier 7): kernels and feature maps (sklearn kernels, GPyTorch)
 
