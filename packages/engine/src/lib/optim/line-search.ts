@@ -76,12 +76,18 @@ export interface BacktrackingOptions {
   readonly rho?: number
   /** Most evaluations of the halving variant (default 50). */
   readonly maxEvaluations?: number
+  /**
+   * Clip each interpolated step to [lo, hi] times the previous one (Nocedal and Wright, section 3.5, typically
+   * [0.1, 0.5]); without it the steps follow scipy exactly, whose first quadratic step can shrink by orders of
+   * magnitude.
+   */
+  readonly safeguard?: readonly [number, number]
 }
 
 /**
  * Backtracking (Armijo) line search: shrink the step until phi(alpha) <= phi(0) + c1 alpha phi'(0). The default
- * interpolates the rejected values (a quadratic, then cubics) as scipy.optimize's scalar_search_armijo; `halving`
- * multiplies by `rho`. Uses value-only evaluations when the line function has them.
+ * interpolates the rejected values (a quadratic, then cubics) as scipy.optimize's scalar_search_armijo, optionally
+ * safeguarded; `halving` multiplies by `rho`. Uses value-only evaluations when the line function has them.
  *
  * @param options - c1, smallest step, interpolation, contraction and evaluation cap.
  * @returns The line search.
@@ -117,17 +123,24 @@ export function backtracking(options: BacktrackingOptions = {}): LineSearch {
     let a0 = start.alpha ?? 1
     let f0 = p.valueAt(a0)
     if (ok(a0, f0)) return p.finish(a0, f0, p.point(a0)?.slope ?? Number.NaN, 'Armijo condition satisfied')
-    let a1 = (-d0 * a0 * a0) / 2 / (f0 - phi0 - d0 * a0)
+    const guard = options.safeguard
+    const clip = (a: number, prev: number): number =>
+      guard === undefined || !Number.isFinite(a)
+        ? guard === undefined
+          ? a
+          : guard[1] * prev
+        : Math.min(Math.max(a, guard[0] * prev), guard[1] * prev)
+    let a1 = clip((-d0 * a0 * a0) / 2 / (f0 - phi0 - d0 * a0), a0)
     let f1 = p.valueAt(a1)
     if (ok(a1, f1)) return p.finish(a1, f1, p.point(a1)?.slope ?? Number.NaN, 'Armijo condition satisfied')
     while (a1 > amin) {
       const factor = a0 * a0 * a1 * a1 * (a1 - a0)
       const a = (a0 * a0 * (f1 - phi0 - d0 * a1) - a1 * a1 * (f0 - phi0 - d0 * a0)) / factor
       const b = (-(a0 ** 3) * (f1 - phi0 - d0 * a1) + a1 ** 3 * (f0 - phi0 - d0 * a0)) / factor
-      let a2 = (-b + Math.sqrt(Math.abs(b * b - 3 * a * d0))) / (3 * a)
+      let a2 = clip((-b + Math.sqrt(Math.abs(b * b - 3 * a * d0))) / (3 * a), a1)
       const f2 = p.valueAt(a2)
       if (ok(a2, f2)) return p.finish(a2, f2, p.point(a2)?.slope ?? Number.NaN, 'Armijo condition satisfied')
-      if (a1 - a2 > a1 / 2 || 1 - a2 / a1 < 0.96) a2 = a1 / 2
+      if (guard === undefined && (a1 - a2 > a1 / 2 || 1 - a2 / a1 < 0.96)) a2 = a1 / 2
       a0 = a1
       a1 = a2
       f0 = f1
@@ -217,7 +230,8 @@ export function strongWolfe(options: StrongWolfeOptions = {}): LineSearch {
     const p = probe(phi)
     const phi0 = start.value
     const d0 = start.slope
-    if (!(d0 < 0)) return p.finish(undefined, phi0, Number.NaN, 'not a descent direction')
+    // scipy's zoom search accepts a zero slope (a stationary start): the first trial then satisfies the conditions.
+    if (d0 > 0 || Number.isNaN(d0)) return p.finish(undefined, phi0, Number.NaN, 'not a descent direction')
     const zoom = (
       aLo0: number,
       aHi0: number,

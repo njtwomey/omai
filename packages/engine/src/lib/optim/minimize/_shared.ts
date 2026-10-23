@@ -11,6 +11,7 @@ import {
   type TensorChannel,
   type TraceSchema,
 } from '../../trace/index.ts'
+import type { LineSearchResult } from '../line-search.ts'
 import { type FlatObjective, infNorm, type MinimizeResult, type VectorMethodOptions } from './objective.ts'
 
 /** The state every vector method carries (extended by each method). */
@@ -104,6 +105,25 @@ export function runVector<S extends VectorState>(
       s.stop?.message ??
       (result.status === 'completed' ? 'maximum number of iterations reached' : `stopped: ${result.status}`),
   }
+}
+
+/** A line search as a trace message: the accepted step, its evaluations and every trial point. */
+export function lineSearchMessage(r: LineSearchResult): { readonly kind: string; readonly payload: Json } {
+  return {
+    kind: 'lineSearch',
+    payload: {
+      alpha: Number.isFinite(r.alpha) ? r.alpha : null,
+      success: r.success,
+      evaluations: r.evaluations,
+      message: r.message,
+      trials: r.trials.map((t) => [t.alpha, t.value, Number.isFinite(t.slope) ? t.slope : null]),
+    },
+  }
+}
+
+/** The channel of {@link lineSearchMessage}. */
+export const LINE_SEARCH_CHANNEL: Readonly<Record<string, MessageChannel>> = {
+  lineSearch: { description: 'the line search of the step: accepted step, evaluations and trial points' },
 }
 
 /** A JSON configuration from options, dropping functions, tracers and undefined values. */

@@ -1,5 +1,5 @@
 import { checkConstants, firstStep, probe } from './_line-search.ts'
-import type { LineSearch, LineSearchResult } from './line-search.ts'
+import { type ExtraCondition, type LineSearch, type LineSearchResult, strongWolfe } from './line-search.ts'
 
 /** Options of {@link moreThuente}. */
 export interface MoreThuenteOptions {
@@ -387,5 +387,69 @@ export function hagerZhang(options: HagerZhangOptions = {}): LineSearch {
       }
     }
     return { ...done(ia, 'evaluation cap reached'), success: false }
+  }
+}
+
+/** Options of {@link wolfe12}. */
+export interface Wolfe12Options {
+  readonly c1?: number
+  readonly c2?: number
+  /** The step bounds of the More-Thuente search (default 1e-8 and 50; scipy's BFGS passes 1e-100 and 1e100). */
+  readonly alphaMin?: number
+  readonly alphaMax?: number
+  /** Also bound the fallback search by alphaMax (scipy passes amax on only when the caller gave one). */
+  readonly boundFallback?: boolean
+  /** An extra acceptance test: a More-Thuente step that fails it is rejected and the zoom search runs with it. */
+  readonly extraCondition?: ExtraCondition
+}
+
+/**
+ * The line search of scipy's BFGS, conjugate gradients and Newton-CG (its `_line_search_wolfe12`): More-Thuente, and
+ * when that fails (or its step fails the extra condition), the strong Wolfe zoom.
+ *
+ * @param options - c1, c2, step bounds and an extra condition.
+ * @returns The line search.
+ * @concept line-search
+ * @example
+ * ```ts
+ * import { wolfe12 } from 'whitebox-engine/optim'
+ * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
+ * wolfe12()(phi, { value: 0.0625, slope: -0.5 }).alpha // => 0.25
+ * ```
+ */
+export function wolfe12(options: Wolfe12Options = {}): LineSearch {
+  const c1 = options.c1 ?? 1e-4
+  const c2 = options.c2 ?? 0.9
+  const mt = moreThuente({
+    c1,
+    c2,
+    ...(options.alphaMin === undefined ? {} : { alphaMin: options.alphaMin }),
+    ...(options.alphaMax === undefined ? {} : { alphaMax: options.alphaMax }),
+  })
+  const zoom = strongWolfe({
+    c1,
+    c2,
+    ...(options.boundFallback === true && options.alphaMax !== undefined ? { alphaMax: options.alphaMax } : {}),
+    ...(options.extraCondition === undefined ? {} : { extraCondition: options.extraCondition }),
+  })
+  const extra = options.extraCondition
+  return (phi, start) => {
+    const first = mt(phi, start)
+    const accepted =
+      first.success &&
+      (extra === undefined ||
+        extra(first.alpha, {
+          value: first.value,
+          slope: first.slope,
+          ...(first.grad === undefined ? {} : { grad: first.grad }),
+        }))
+    if (accepted) return first
+    const second = zoom(phi, start)
+    return {
+      ...second,
+      evaluations: first.evaluations + second.evaluations,
+      gradEvaluations: first.gradEvaluations + second.gradEvaluations,
+      trials: [...first.trials, ...second.trials],
+    }
   }
 }

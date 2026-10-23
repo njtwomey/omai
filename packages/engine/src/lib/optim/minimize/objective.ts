@@ -1,4 +1,4 @@
-import { hvp as hessianVector, jacfwd, valueAndGrad } from '../../autodiff/index.ts'
+import { hessian as hessianOf, hvp as hessianVector, valueAndGrad } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import { idamax } from '../../numerics/linalg/index.ts'
 import {
@@ -138,7 +138,7 @@ export function flatObjective(f: Objective, x0: Parameters): FlatObjective {
       return { value: item(r.value), grad: flatOf(r.grad) }
     },
     hvp: (x, v) => flatOf(hessianVector(ofValue, vectorOf(x), vectorOf(v))),
-    hessian: (x) => flatOf(jacfwd(vg as unknown as (x: Value) => Value)(vectorOf(x))),
+    hessian: (x) => flatOf(hessianOf(ofValue)(vectorOf(x))),
   }
 }
 

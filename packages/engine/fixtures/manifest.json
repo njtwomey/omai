@@ -381,6 +381,22 @@
       "cases": 33
     },
     {
+      "fixture": "optim/minimize/newton.json",
+      "source": "oracle/cases/optim/minimize/newton.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "optim/minimize/trust_region.json",
+      "source": "oracle/cases/optim/minimize/trust_region.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "optim/optimisers.json",
       "source": "oracle/cases/optim/optimisers.py",
       "reference": {
