@@ -20,6 +20,9 @@ All routine work goes through `make` (it wraps mise, pnpm and uv). Run `make che
 - `make barrels`: regenerate `index.ts` files after adding or removing a file or folder (never edit them by hand).
 - `make layers`, `make lint`, `make format`, `make typecheck`.
 - `make fixtures`: regenerate golden fixtures from the Python oracle (`oracle/cases/...`); tests never run Python.
+  Fixtures follow the standard in `docs/structure.md` section 9: prebuilt numpy/scipy/etc. functions as references, tiered
+  tolerances (1e-12 exact, 1e-10 special functions and direct linear algebra, 1e-6 to 1e-8 iterative), no gradient
+  fixtures (gradients are checked by `checkPrimitive`), and parity with the reference as the goal, not extra digits.
 
 ## Architecture in brief
 

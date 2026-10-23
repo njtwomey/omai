@@ -1105,7 +1105,6 @@ dev = [
     { name = "scipy-stubs" },
 ]
 oracle-core = [
-    { name = "mpmath" },
     { name = "networkx" },
     { name = "scikit-learn" },
     { name = "scipy" },
@@ -1130,7 +1129,6 @@ dev = [
     { name = "scipy-stubs", specifier = ">=1.18.1.1" },
 ]
 oracle-core = [
-    { name = "mpmath" },
     { name = "networkx" },
     { name = "scikit-learn" },
     { name = "scipy" },

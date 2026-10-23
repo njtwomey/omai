@@ -11,7 +11,7 @@ dev = [
     "pyright",
     "scipy-stubs>=1.18.1.1",
 ]
-oracle-core = ["scipy", "mpmath", "scikit-learn", "statsmodels", "sympy", "networkx"]
+oracle-core = ["scipy", "scikit-learn", "statsmodels", "sympy", "networkx"]
 oracle-torch = ["torch"]
 
 [build-system]
@@ -31,12 +31,6 @@ select = ["E", "F", "I", "UP", "B", "SIM", "ANN"]
 
 [tool.pyright]
 include = ["oracle"]
-# mpmath ships no type information; its values are treated as untyped rather than stubbed. Our own signatures are
-# still fully annotated (ruff ANN); only inference through mpmath values is not checked.
-reportMissingTypeStubs = false
-reportUnknownMemberType = false
-reportUnknownVariableType = false
-reportUnknownArgumentType = false
 pythonVersion = "3.13"
 # Resolve `whitebox_oracle` as local source, not as an installed library without a py.typed marker.
 extraPaths = ["oracle"]

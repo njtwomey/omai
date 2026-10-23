@@ -1,5 +1,5 @@
 // Scalar kernels for the special functions. Each is a standard published method; accuracy targets are about 1e-14
-// relative unless noted, and every kernel is checked against scipy and mpmath fixtures.
+// relative unless noted, and every kernel is checked against scipy fixtures.
 
 export const SQRT_PI = 1.7724538509055159
 export const SQRT_2PI = 2.5066282746310002

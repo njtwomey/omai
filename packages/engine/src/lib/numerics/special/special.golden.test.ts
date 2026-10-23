@@ -1,7 +1,6 @@
 import { describe, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
-import { jvp } from '../../autodiff/index.ts'
-import { full, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
+import type { Tensor, TensorLike, Value } from '../../tensor/index.ts'
 import * as S from './index.ts'
 
 type Params = Readonly<Record<string, unknown>>
@@ -75,6 +74,7 @@ const FNS: Readonly<Record<string, Fn>> = {
   fdtr: ternary(S.fdtr),
   fdtrc: ternary(S.fdtrc),
   kolmogorov: unary(S.kolmogorov),
+  kolmogorovPdf: unary(S.kolmogorovPdf),
   smirnov: order(S.smirnov),
   zeta: unary(S.zeta),
   hurwitzZeta: binary(S.hurwitzZeta),
@@ -99,33 +99,16 @@ const FNS: Readonly<Record<string, Fn>> = {
   ellipj: (xs, p) => S.ellipj(xs[0] as Value, xs[1] as Value)[p['part'] as 'sn' | 'cn' | 'dn'],
 }
 
-/** The elementwise derivative in argument `wrt`: a forward-mode product with a tangent of ones. */
-function partial(f: Fn, xs: Value[], p: Params, wrt: number): Value {
-  const x = xs[wrt] as Value
-  const ones = full(x.shape, 1)
-  return jvp(
-    (v: Value) =>
-      f(
-        xs.map((u, i) => (i === wrt ? v : u)),
-        p,
-      ),
-    x,
-    ones,
-  ).tangent
-}
-
 const FILES = ['erf', 'normal', 'logistic', 'gamma', 'incomplete', 'cdf', 'zeta', 'bessel', 'elliptic']
 
 for (const file of FILES) {
-  describe(`special/${file} against mpmath`, () => {
+  describe(`special/${file} against scipy`, () => {
     for (const c of loadFixture(`numerics/special/${file}`).cases) {
       it(c.name, () => {
         const f = FNS[c.fn]
         if (f === undefined) throw new Error(`no function ${c.fn}`)
         const xs = c.inputs.map((x) => decode(x) as Tensor)
-        const wrt = c.params['wrt'] as number | undefined
-        const got = wrt === undefined ? f(xs, c.params) : partial(f, xs, c.params, wrt)
-        expectMatches(got, c.output, c.rtol, c.atol, c.name)
+        expectMatches(f(xs, c.params), c.output, c.rtol, c.atol, c.name)
       })
     }
   })

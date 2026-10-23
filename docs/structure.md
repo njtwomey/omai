@@ -552,7 +552,7 @@ oracle: jax and torch for derivative values; finite differences in property test
   high-level function uses.
 ### 4.10 `numerics/` (tier 5): numerical methods (scipy, numpy.linalg)
 
-oracle: numpy, scipy, mpmath for high-precision special-function values
+oracle: numpy, scipy
 
 Every routine accepts traced values. The derivative rule is stated per folder: "composed" means it follows from the
 primitives; "custom" means a dedicated rule.
@@ -716,7 +716,7 @@ One schema per task kind. Each schema declares its per-row fields, so one `take`
 The mathematics underneath machine learning, written so each idea can be computed, drawn and stepped through.
 Functions that teach a procedure (elimination, Euclid's algorithm, Newton's method) return their steps.
 
-oracle: sympy, numpy, mpmath
+oracle: sympy, numpy
 - `trigonometry.ts`: degrees and radians, unit-circle points, quadrant-aware inverse functions, identity checks, triangle
   solving (SSS, SAS, ASA, AAS and the ambiguous SSA case), laws of sines and cosines, Heron's formula.
 - `vectors.ts`: 2-D and 3-D vector algebra (dot, cross and triple products, projections, rejections, angles,
@@ -2535,7 +2535,7 @@ packages exactly as an outside project does.
 ## 9. Python oracle, `oracle/`
 
 A uv project (root `pyproject.toml`) with pydantic and pydantic-settings, and dependency groups split by domain so a
-fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy, mpmath,
+fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy,
 networkx), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro, pgmpy, arviz),
 `oracle-signal` (pywt, librosa, scikit-image, pystoi, pesq), `oracle-text` (tokenizers, tiktoken, nltk, sacrebleu,
 rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel),
@@ -2555,6 +2555,21 @@ implicit, optuna, nashpy).
 
 Python never runs in `make test`. `make fixtures` regenerates; a scheduled CI job runs `make fixtures-check` group by
 group.
+
+**The fixture standard.** Fixtures are a safeguard: they show that whitebox-js agrees with the established Python
+library for the same computation. They do not set a higher bar than that library.
+1. Reference: the prebuilt numpy, scipy, scikit-learn, statsmodels (and so on) function itself, called as a user
+   would. No arbitrary-precision references, and no reimplementations when a library function exists.
+2. Inputs: the typical range of each function plus a few edges (0, infinities, NaN, domain boundaries); no extreme tails
+   that the reference itself does not handle well.
+3. Tolerances, by tier: exact operations `1e-12`; special functions and direct linear algebra `1e-10`; iterative or
+   fitted results `1e-6` to `1e-8`, or a comparison of invariants (residuals, objective values, subspaces) where
+   outputs are not unique. Where the reference is known to be less accurate, the tolerance follows it, with a comment.
+4. Gradients are not fixtures: every primitive passes the conformance test (`checkPrimitive`: reverse and forward mode
+   against central differences, and against each other), plus property tests. The exception is a custom rule that the
+   reference library also differentiates (torch autograd for factorisations), where a small gradient fixture is kept.
+5. Size: tens of points per case; every case module generates in about a second.
+6. Python: every signature annotated (ruff `ANN`, pyright strict); nothing more elaborate.
 
 ## 10. Repository tooling
 
@@ -2651,7 +2666,6 @@ group.
 | `scipy.stats`                         | `lib/dists/`, `lib/stats/`                        |
 | `scipy.cluster.hierarchy`             | `methods/cluster/hierarchical.ts`                 |
 | SymPy                                 | `lib/symbolic/`                                   |
-| mpmath (special functions)            | `lib/numerics/special/`                           |
 
 ### Other libraries
 

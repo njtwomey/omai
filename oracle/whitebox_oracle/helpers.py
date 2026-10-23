@@ -5,6 +5,8 @@ from collections.abc import Callable
 import numpy as np
 import numpy.typing as npt
 
+from .fixture import Case, case
+
 type FloatArray = npt.NDArray[np.float64]
 """A float64 array, the default dtype of case inputs."""
 
@@ -29,3 +31,22 @@ def rng(seed: int) -> np.random.Generator:
 
 def uniform(g: np.random.Generator, shape: tuple[int, ...], lo: float = -2.0, hi: float = 2.0) -> FloatArray:
     return np.asarray(g.uniform(lo, hi, size=shape), dtype=np.float64)
+
+
+def loguniform(g: np.random.Generator, n: int, lo: float, hi: float) -> FloatArray:
+    """Values spread evenly in log space between `lo` and `hi` (both positive)."""
+    return np.exp(g.uniform(np.log(lo), np.log(hi), size=n))
+
+
+def reference(
+    name: str,
+    fn: str,
+    f: Callable[..., FloatArray],
+    inputs: list[FloatArray],
+    *,
+    rtol: float = 1e-10,
+    atol: float = 1e-300,
+    **params: int | str,
+) -> Case:
+    """A case whose expected output is a prebuilt numpy or scipy function applied to the inputs."""
+    return case(name, fn, inputs, np.asarray(f(*inputs), dtype=np.float64), rtol=rtol, atol=atol, **params)
