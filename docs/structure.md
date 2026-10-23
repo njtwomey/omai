@@ -1669,7 +1669,9 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   `bigramLanguageModel` and `characterTokenizer` (reference models), `nextTokenLogits`, `sequenceLogProb`,
   `perplexity`.
 - `decoding/` (inline): `processors.ts` (temperature, top-k, top-p, min-p, repetition, frequency and presence
-  penalties, composition), `constraints.ts` (allowed-token masks, automata and tries), `generate.ts`
+  penalties, composition), `constraints.ts` (allowed-token masks from automata and tries, so regular grammars; a
+  pushdown automaton fits the same interface. TODO: compiling context-free grammars and JSON schemas to automata),
+  `generate.ts`
   (`decodingAlgorithm` and `generate`: greedy or sampled, traced one token per step), `beam.ts` (beam search with
   GNMT's length penalty), `speculative.ts` (speculative decoding with exact acceptance and residual resampling).
 - `quantise.ts`: quantisation (symmetric, affine, per-tensor and per-channel), dequantisation, fake quantisation with a
