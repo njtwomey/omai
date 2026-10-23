@@ -1580,8 +1580,11 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   `padPackedSequence`, `packedLengths`, `lengthsFromMask`).
 - `functional/state-space.ts`: SSM discretisation, S4 convolution kernels, selective scan (Mamba), delta rule, LRU.
 - `functional/graph.ts`: message passing, GCN, GAT, GraphSAGE and GIN convolutions, edge softmax, graph pooling.
-- `functional/vision.ts`: upsampling (nearest, bilinear), pixel shuffle, ROI align, spatial transformers, patch
-  embedding.
+- `functional/vision.ts`: `interpolate` (nearest, nearest-exact, linear, bilinear, bicubic, trilinear, area; size or
+  scale factor, aligned corners), pixel shuffle and unshuffle, `pad` (PyTorch's F.pad modes), patch embedding.
+- `functional/sampling.ts`: spatial transformers (`affineGrid` 2-D and 3-D, `gridSample` bilinear, nearest and
+  bicubic with zeros, border or reflection padding, `identityTheta`), ROI Align and ROI pooling. TODO: volumetric
+  (5-D) `gridSample`.
 - `functional/sets.ts`: masked set pooling, set attention.
 - `init.ts`: Xavier, Kaiming, LeCun, orthogonal, truncated normal, uniform, normal, constant, zeros and ones, eye,
   Dirac, sparse, PyTorch's default uniform; gains and fans.
@@ -1613,6 +1616,9 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `module/transformer.ts`: `TransformerEncoderLayer`, `TransformerDecoderLayer` (post- or pre-norm), the stacks
   `TransformerEncoder` and `TransformerDecoder`, `Transformer`, `squareSubsequentMask`.
 - `module/positional.ts`: `SinusoidalPositionalEncoding`, `LearnedPositionalEmbedding`, `RotaryEmbedding`.
+- `module/vision.ts`: `Upsample`, `UpsamplingNearest2d`, `UpsamplingBilinear2d`, `PixelShuffle`, `PixelUnshuffle`,
+  the padding modules (`ZeroPad`, `ConstantPad`, `ReflectionPad`, `ReplicationPad`, `CircularPad`, 1-D to 3-D),
+  `PatchEmbedding`, `SpatialTransformer`.
 - `blocks/transformer.ts`: pre- and post-norm blocks, feed-forward and gated feed-forward, encoder, decoder and
   encoder-decoder stacks, cross-attention, KV caches.
 - `blocks/vision.ts`: residual and bottleneck blocks, ConvNeXt blocks, MBConv, squeeze-excitation, U-Net encoder and
