@@ -472,6 +472,14 @@
       "cases": 5
     },
     {
+      "fixture": "optim/minimize/constrained.json",
+      "source": "oracle/cases/optim/minimize/constrained.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "optim/minimize/convex.json",
       "source": "oracle/cases/optim/minimize/convex.py",
       "reference": {
@@ -582,6 +590,14 @@
         "scipy": "1.18.1"
       },
       "cases": 21
+    },
+    {
+      "fixture": "optim/minimize/slsqp.json",
+      "source": "oracle/cases/optim/minimize/slsqp.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
     },
     {
       "fixture": "optim/minimize/trust_region.json",
