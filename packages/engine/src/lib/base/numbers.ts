@@ -237,6 +237,41 @@ export function linspaceNumbers(start: number, stop: number, n = 50): number[] {
 }
 
 /**
+ * `log(sum(exp(xs)))` of a list, computed stably by shifting by the maximum.
+ *
+ * @param xs - The numbers.
+ * @returns The log-sum-exp, `-Infinity` for an empty list or all `-Infinity`.
+ * @example
+ * ```ts
+ * import { logSumExpOf } from 'whitebox-engine/base'
+ * logSumExpOf([0, 0]) // => 0.6931471805599453
+ * ```
+ */
+export function logSumExpOf(xs: ArrayLike<number>): number {
+  const m = maxOf(xs)
+  if (m === Number.NEGATIVE_INFINITY || Number.isNaN(m)) return m
+  let s = 0
+  for (let i = 0; i < xs.length; i++) s += Math.exp((xs[i] ?? Number.NEGATIVE_INFINITY) - m)
+  return m + Math.log(s)
+}
+
+/**
+ * The softmax of a list of log-weights: `exp(xs) / sum(exp(xs))`, computed stably.
+ *
+ * @param xs - Unnormalised log probabilities.
+ * @returns Probabilities summing to one.
+ * @example
+ * ```ts
+ * import { softmaxOf } from 'whitebox-engine/base'
+ * softmaxOf([0, 0]) // => [0.5, 0.5]
+ * ```
+ */
+export function softmaxOf(xs: ArrayLike<number>): number[] {
+  const z = logSumExpOf(xs)
+  return Array.from(xs as ArrayLike<number>, (x) => Math.exp(x - z))
+}
+
+/**
  * The `q` quantile of a list with linear interpolation between order statistics (numpy.quantile's default `linear`
  * method). The input is not modified.
  *

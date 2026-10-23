@@ -1,4 +1,4 @@
-import { argmaxOf, maxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, softmaxOf, WhiteboxError } from '../../lib/base/index.ts'
 import { type CorpusData, corpus, type DatasetGenerator, type DatasetRef } from '../../lib/data/index.ts'
 import { categorical, dirichlet, foldIn, type Key, normal, poisson, uniform } from '../../lib/random/index.ts'
 import { choice, dict, int, real } from '../../lib/space/index.ts'
@@ -183,10 +183,7 @@ export const naiveBayesCorpus: DatasetGenerator<CorpusData> = {
       const lp = wordProbs.map(
         (row, c) => Math.log(priors[c] ?? 1) + doc.reduce((s, w) => s + Math.log(row[w] ?? 1e-300), 0),
       )
-      const m = maxOf(lp)
-      const e = lp.map((v2) => Math.exp(v2 - m))
-      const z = e.reduce((a, b) => a + b, 0)
-      return e.map((v2) => v2 / z)
+      return softmaxOf(lp)
     }
     return {
       data: corpus(
@@ -234,13 +231,6 @@ export const driftingTopics: DatasetGenerator<CorpusData> = {
     const kt = knobs['nTopics'] as number
     const v = knobs['vocabulary'] as number
     const drift = knobs['drift'] as number
-    const softmax = (eta: ArrayLike<number>) => {
-      let m = Number.NEGATIVE_INFINITY
-      for (let i = 0; i < eta.length; i++) m = Math.max(m, eta[i] ?? 0)
-      const e = Array.from(eta, (x) => Math.exp(x - m))
-      const z = e.reduce((a, b) => a + b, 0)
-      return e.map((x) => x / z)
-    }
     let eta = Array.from({ length: kt }, (_, t) =>
       Float64Array.from(normal(foldIn(foldIn(k, 0), t), [v]).data, (x) => 2 * x),
     )
@@ -252,7 +242,7 @@ export const driftingTopics: DatasetGenerator<CorpusData> = {
         eta = eta.map((row, t) =>
           Float64Array.from(normal(foldIn(foldIn(k, 1), s * kt + t), [v]).data, (x, w) => (row[w] ?? 0) + drift * x),
         )
-      const topics = eta.map(softmax)
+      const topics = eta.map((row) => softmaxOf(row))
       topicsBySlice.push(topics)
       const docs = ldaDocuments(
         foldIn(foldIn(k, 2), s),

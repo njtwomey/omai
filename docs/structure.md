@@ -2469,13 +2469,21 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   planted rules).
 - `images.ts`: `shapes` (with boxes and masks), `digitGlyphs`, `barsAndStripes`, geometric scenes with true edges and
   corners (`geometricScenes`), a small Fashion-MNIST (`fashionMnistTest`, remote, parsed by `parseIdxImages`).
-- `causal.ts`: synthetic causal datasets with known structural models, ATEs and CATEs.
-- `experiments.ts`: A/B test data with known effects.
-- `trajectories.ts`: logged bandit data, offline RL datasets from known behaviour policies.
-- `weak-labels.ts`: labelling functions with known accuracies, crowd labels, positive-unlabelled data, label-proportion
-  bags.
-- `operators.ts`: operator-learning pairs (heat, Burgers, antiderivatives).
-- `predictions.ts`: model outputs with known miscalibration, survival data with known hazards.
+- `causal.ts`: synthetic causal datasets with known structural models, ATEs and CATEs: `linearScm` (random DAGs,
+  Gaussian or non-Gaussian noise, total effects, interventional means), `treatmentEffects` (confounded treatment,
+  potential outcomes, CATE, propensities), `instrumentalVariables`.
+- `experiments.ts`: A/B test data with known effects (`abTest`: conversion, continuous or revenue metrics, several
+  arms, pre-period covariates for CUPED, arrival days and novelty effects).
+- `trajectories.ts`: logged bandit data (`loggedBandit`, with exact policy values), offline RL datasets from known
+  behaviour policies (`offlineMdp` on random tabular MDPs or Strens' chain, `policyEvaluation`, `TabularMdp`).
+- `weak-labels.ts`: labelling functions with known accuracies (`labellingFunctions`), crowd labels (`crowdLabels`,
+  Dawid-Skene), positive-unlabelled data (`positiveUnlabelled`, SCAR and SAR), label-proportion bags
+  (`labelProportionBags`), each with the exact posterior or mechanism.
+- `operators.ts`: operator-learning pairs (`heatOperator`, `burgersOperator` solved exactly by Cole-Hopf,
+  `antiderivativeOperator` with Gaussian-process inputs).
+- `predictions.ts`: model outputs with known miscalibration (`miscalibratedPredictions`, with the population ECE),
+  survival data with known hazards (`survivalData`: Weibull and exponential proportional hazards, log-normal AFT,
+  censoring).
 
 ### 5.19 Hyperparameter optimisation (`tuning/`)
 

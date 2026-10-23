@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { logSumExpOf, WhiteboxError } from '../../lib/base/index.ts'
 import { type DatasetGenerator, type TimeSeriesData, timeSeries } from '../../lib/data/index.ts'
 import { lgamma } from '../../lib/numerics/special/index.ts'
 import { foldIn, gamma, normal, poisson, uniform } from '../../lib/random/index.ts'
@@ -131,15 +131,6 @@ function emptyRun(model: SegmentModel, start: number): Run {
   }
 }
 
-function logsumexpOf(xs: readonly number[]): number {
-  let m = Number.NEGATIVE_INFINITY
-  for (const v of xs) if (v > m) m = v
-  if (m === Number.NEGATIVE_INFINITY) return m
-  let s = 0
-  for (const v of xs) s += Math.exp(v - m)
-  return m + Math.log(s)
-}
-
 /** What {@link exactBocpd} returns. */
 export interface BocpdResult {
   /** `log p(y_t | y_1..y_{t-1})` for every step. */
@@ -191,7 +182,7 @@ export function exactBocpd(y: readonly number[], model: SegmentModel, hazard: nu
     let mean = 0
     for (const h of hyps) mean += Math.exp(h.logp) * h.run.predictiveMean(t, prev)
     const joint = hyps.map((h) => h.logp + h.run.logPredictive(yt, t, prev))
-    const lp = logsumexpOf(joint)
+    const lp = logSumExpOf(joint)
     logPredictive.push(lp)
     predictiveMean.push(mean)
     logEvidence += lp
@@ -207,7 +198,7 @@ export function exactBocpd(y: readonly number[], model: SegmentModel, hazard: nu
     // Before y_{t+1}: every run continues with probability 1 - h, or a new segment starts with probability h.
     const kept = posterior.filter((h) => h.logp > -40)
     hyps = [{ logp: logH, run: emptyRun(model, t + 1) }, ...kept.map((h) => ({ logp: h.logp + log1mH, run: h.run }))]
-    const z = logsumexpOf(hyps.map((h) => h.logp))
+    const z = logSumExpOf(hyps.map((h) => h.logp))
     hyps = hyps.map((h) => ({ logp: h.logp - z, run: h.run }))
   }
   return { logPredictive, predictiveMean, runLength, mapRunLength, logEvidence }
