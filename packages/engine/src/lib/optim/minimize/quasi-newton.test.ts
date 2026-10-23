@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { problem, rosen } from '../../../testing/problems.ts'
+import { problem, rosen } from '../../../testing/optim-problems.ts'
 import { add, mul, square, sub, sum, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { messages, metricSeries, recorder, tensorSeries, tracePolicy } from '../../trace/index.ts'
 import * as O from '../index.ts'
@@ -27,7 +27,7 @@ describe('BFGS', () => {
     expect(tensorSeries(run, 'x')[0]?.values).toEqual([-1.2, 1])
   })
   it('returns the inverse Hessian, near the true one at a quadratic minimum', () => {
-    const r = O.bfgs(problem('quadratic'), [1, 1, 1], { gradTol: 1e-10 })
+    const r = O.bfgs(problem('spdQuadratic'), [1, 1, 1], { gradTol: 1e-10 })
     const H = toFlat(r.hessInv)
     // A^-1 A = I for the quadratic's A.
     const A = [4, 1, 0.5, 1, 3, -0.5, 0.5, -0.5, 2]

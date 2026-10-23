@@ -1009,9 +1009,28 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   trust region, each traced (objective, gradient norm, step, curvature pairs).
 - `minimize/newton.ts`: Newton with modified Cholesky, trust region (dogleg, Steihaug CG), Newton-CG.
 - `minimize/least-squares.ts`: Gauss-Newton, Levenberg-Marquardt, bounded least squares, `curveFit`.
-- `minimize/derivative-free.ts`: Nelder-Mead, Powell, pattern search, COBYLA.
-- `minimize/global.ts`: simulated annealing, differential evolution, CMA-ES, basin hopping, particle swarm, dual
-  annealing.
+- `minimize/derivative-free.ts`: `nelderMead` (scipy's moves exactly: adaptive coefficients, xatol and fatol, initial
+  simplex, evaluation budget, clipping into bounds), the `Bounds` type.
+- `minimize/powell.ts`: `powell` (conjugate directions with scipy's bracket, Brent and bounded line minimisations,
+  initial direction set, bounds).
+- `minimize/pattern-search.ts`: `hookeJeeves` (exploratory and pattern moves), `compassSearch` (a generalised pattern
+  search: coordinate or minimal positive spanning set, mesh expansion and contraction, opportunistic or complete polls,
+  bounds).
+- `minimize/cobyla.ts`: `cobyla` (Powell's linear-approximation trust-region method for inequality constraints c(x) >= 0
+  and bounds: simplex of interpolation points, least-violation then objective trust-region subproblem, merit penalty
+  updates, geometry steps, rhobeg and rhoend), `InequalityConstraint`.
+- `minimize/global.ts`: `simulatedAnnealing` (exponential, logarithmic, fast or custom cooling, Corana step
+  adaptation, bounds), `basinHopping` (scipy's: random displacement, Metropolis acceptance, adaptive step size,
+  niterSuccess, any `LocalMethod` as a child run).
+- `minimize/dual-annealing.ts`: `dualAnnealing` (scipy's generalised simulated annealing: Tsallis visiting
+  distribution, generalised acceptance, reannealing, local searches).
+- `minimize/differential-evolution.ts`: `differentialEvolution` (scipy's: twelve strategies, dithering, binomial and
+  exponential crossover, immediate or deferred updating, Latin hypercube, Halton or given initial populations,
+  constraints by feasibility rules, polishing).
+- `minimize/cmaes.ts`: `cmaes` ((mu/mu_w, lambda)-CMA-ES with cumulative step-size adaptation, rank-one and rank-mu
+  updates, bounds by repair, tolFun and tolX).
+- `minimize/particle-swarm.ts`: `particleSwarm` (inertia or constriction, global or ring topology, velocity clamping,
+  absorbing walls, stagnation stop).
 - `minimize/constrained.ts`: projected gradient, penalty and barrier methods, augmented Lagrangian, SLSQP.
 - `minimize/convex.ts`: subgradient method, mirror descent, Frank-Wolfe, dual ascent.
 - `scalar.ts`: `minimizeScalar` (golden section, Brent, bounded), `bracket`.
@@ -1055,7 +1074,11 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   regret records (`onlineAlgorithm`, `runOnline`, `linearLosses`).
 - `transport.ts`: exact optimal transport, entropic Sinkhorn (log domain), 1-D Wasserstein, sliced Wasserstein,
   Gromov-Wasserstein, barycentres, unbalanced transport.
-- `multiobjective.ts`: Pareto fronts, dominance, hypervolume, scalarisations, NSGA-II.
+- `multiobjective.ts`: `dominates`, `paretoFront`, `nonDominatedSort` (Deb's fast sort), `crowdingDistance`,
+  `hypervolume` (exact: a sweep in 2-D, WFG above), `hypervolumeContributions`, scalarisations (`weightedSum`,
+  `chebyshev`, `augmentedChebyshev`, `epsilonConstraint`), `VectorObjective`.
+- `nsga2.ts`: `nsga2` (binary tournaments by rank and crowding, elitist survival, constrained domination, hypervolume
+  traced against a reference point), the operators `sbxCrossover` and `polynomialMutation` (bounded, as Deb's code).
 - `implicit.ts`: differentiation through solutions: `implicitRoot`, `implicitFixedPoint`, `implicitArgmin`
   (optimisation layers).
 

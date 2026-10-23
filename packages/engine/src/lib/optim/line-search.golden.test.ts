@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
-import { problem } from '../../testing/problems.ts'
+import { problem } from '../../testing/optim-problems.ts'
 import { type Tensor, tensor, toFlat } from '../tensor/index.ts'
 import * as O from './index.ts'
 

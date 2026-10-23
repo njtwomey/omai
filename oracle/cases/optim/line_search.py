@@ -6,7 +6,7 @@ import scipy.optimize as so
 from scipy.optimize import _linesearch as ls  # pyright: ignore[reportPrivateUsage]  (scipy's line searches)
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import FloatArray
-from whitebox_oracle.optim_problems import PROBLEMS
+from whitebox_oracle.optim_problems import SMOOTH
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 
@@ -19,7 +19,7 @@ SETUPS: list[tuple[str, FloatArray, str, float | None, float]] = [
     ("beale", np.array([1.0, 1.0]), "steepest", None, 0.9),
     ("beale", np.array([2.0, 0.2]), "steepest", 0.3, 0.1),
     ("himmelblau", np.array([0.0, 0.0]), "steepest", None, 0.9),
-    ("quadratic", np.array([1.0, 1.0, 1.0]), "steepest", None, 0.9),
+    ("spdQuadratic", np.array([1.0, 1.0, 1.0]), "steepest", None, 0.9),
     ("powell", np.array([3.0, -1.0, 0.0, 1.0]), "steepest", None, 0.9),
     ("wood", np.array([-3.0, -1.0, -3.0, -1.0]), "steepest", 5.0, 0.9),
     ("wood", np.array([-3.0, -1.0, -3.0, -1.0]), "scaled", None, 0.9),
@@ -27,7 +27,7 @@ SETUPS: list[tuple[str, FloatArray, str, float | None, float]] = [
 
 
 def direction(name: str, x: FloatArray, kind: str) -> FloatArray:
-    p = PROBLEMS[name]
+    p = SMOOTH[name]
     g = p.grad(x)
     if kind == "newton":
         return -np.linalg.solve(p.hess(x), g)
@@ -43,7 +43,7 @@ def nan_if_none(v: float | None) -> float:
 def cases() -> list[Case]:
     out: list[Case] = []
     for i, (name, x, kind, offset, c2) in enumerate(SETUPS):
-        prob = PROBLEMS[name]
+        prob = SMOOTH[name]
         p = direction(name, x, kind)
         f0 = prob.f(x)
         g0 = prob.grad(x)
@@ -79,7 +79,7 @@ def cases() -> list[Case]:
         )
 
         def phi(alpha: float, x: FloatArray = x, p: FloatArray = p, name: str = name) -> float:
-            return PROBLEMS[name].f(x + alpha * p)
+            return SMOOTH[name].f(x + alpha * p)
 
         aa, fa = ls.scalar_search_armijo(phi, f0, float(g0 @ p), c1=1e-4, alpha0=1.0)
         out.append(

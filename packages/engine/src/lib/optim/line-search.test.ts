@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { problem } from '../../testing/problems.ts'
+import { problem } from '../../testing/optim-problems.ts'
 import * as O from './index.ts'
 
 // The test functions of More and Thuente (1994), section 6, with their derivatives.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
-import { problem } from '../../../testing/problems.ts'
+import { problem } from '../../../testing/optim-problems.ts'
 import { add, concat, mul, square, sub, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { metricSeries, recorder } from '../../trace/index.ts'
 import * as O from '../index.ts'
@@ -26,7 +26,7 @@ describe('first-order methods against scipy.optimize.minimize', () => {
 })
 
 describe('first-order methods', () => {
-  const quadratic = problem('quadratic')
+  const quadratic = problem('spdQuadratic')
   it('every beta rule converges on a quadratic in about n steps', () => {
     for (const beta of ['polak-ribiere', 'fletcher-reeves', 'hestenes-stiefel', 'dai-yuan', 'hager-zhang'] as const) {
       const r = O.conjugateGradient(quadratic, [1, 1, 1], { beta, gradTol: 1e-10 })

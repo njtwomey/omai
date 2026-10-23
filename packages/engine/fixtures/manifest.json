@@ -432,6 +432,54 @@
       "cases": 8
     },
     {
+      "fixture": "optim/minimize/cmaes.json",
+      "source": "oracle/cases/optim/minimize/cmaes.py",
+      "reference": {
+        "cma": "4.5.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/minimize/cobyla.json",
+      "source": "oracle/cases/optim/minimize/cobyla.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/derivative_free.json",
+      "source": "oracle/cases/optim/minimize/derivative_free.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "optim/minimize/differential_evolution.json",
+      "source": "oracle/cases/optim/minimize/differential_evolution.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "optim/minimize/dual_annealing.json",
+      "source": "oracle/cases/optim/minimize/dual_annealing.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/global.json",
+      "source": "oracle/cases/optim/minimize/global.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "optim/minimize/gradient.json",
       "source": "oracle/cases/optim/minimize/gradient.py",
       "reference": {
@@ -464,6 +512,22 @@
       "cases": 5
     },
     {
+      "fixture": "optim/minimize/particle_swarm.json",
+      "source": "oracle/cases/optim/minimize/particle_swarm.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "optim/minimize/powell.json",
+      "source": "oracle/cases/optim/minimize/powell.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "optim/minimize/quasi_newton.json",
       "source": "oracle/cases/optim/minimize/quasi_newton.py",
       "reference": {
@@ -478,6 +542,15 @@
         "scipy": "1.18.1"
       },
       "cases": 17
+    },
+    {
+      "fixture": "optim/multiobjective.json",
+      "source": "oracle/cases/optim/multiobjective.py",
+      "reference": {
+        "pymoo": "0.6.2",
+        "moocore": "0.3.2"
+      },
+      "cases": 15
     },
     {
       "fixture": "optim/preconditioned.json",

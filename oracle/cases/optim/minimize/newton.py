@@ -8,12 +8,12 @@ import scipy
 import scipy.optimize as so
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import FloatArray
-from whitebox_oracle.optim_problems import PROBLEMS, Problem
+from whitebox_oracle.optim_problems import SMOOTH, Smooth
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 
 
-def products(p: Problem) -> Callable[[FloatArray, FloatArray], FloatArray]:
+def products(p: Smooth) -> Callable[[FloatArray, FloatArray], FloatArray]:
     """Hessian-vector products of a problem."""
 
     def hessp(x: FloatArray, v: FloatArray) -> FloatArray:
@@ -22,7 +22,7 @@ def products(p: Problem) -> Callable[[FloatArray, FloatArray], FloatArray]:
     return hessp
 
 
-def newton_cg(p: Problem, hessian: str) -> so.OptimizeResult:
+def newton_cg(p: Smooth, hessian: str) -> so.OptimizeResult:
     if hessian == "products":
         return so.minimize(p.f, p.x0, method="Newton-CG", jac=p.grad, hessp=products(p), options={"xtol": 1e-8})
     return so.minimize(p.f, p.x0, method="Newton-CG", jac=p.grad, hess=p.hess, options={"xtol": 1e-8})
@@ -31,8 +31,8 @@ def newton_cg(p: Problem, hessian: str) -> so.OptimizeResult:
 def cases() -> list[Case]:
     out: list[Case] = []
     # Newton-CG reaches its iteration cap on Powell's singular function and Wood's function, so those are left out.
-    for name in ["rosen", "rosen5", "beale", "himmelblau", "quadratic"]:
-        p = PROBLEMS[name]
+    for name in ["rosen", "rosen5", "beale", "himmelblau", "spdQuadratic"]:
+        p = SMOOTH[name]
         for hessian in ["products", "dense"]:
             r = newton_cg(p, hessian)
             out.append(
@@ -49,8 +49,8 @@ def cases() -> list[Case]:
                 )
             )
     # Unique minimisers (convex, or a single minimum reached from the standard start).
-    for name in ["rosen", "rosen5", "quadratic", "wood"]:
-        p = PROBLEMS[name]
+    for name in ["rosen", "rosen5", "spdQuadratic", "wood"]:
+        p = SMOOTH[name]
         r = so.minimize(p.f, p.x0, method="trust-exact", jac=p.grad, hess=p.hess, options={"gtol": 1e-10})
         out.append(
             case(

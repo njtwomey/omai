@@ -7,7 +7,7 @@ import numpy as np
 import scipy
 import scipy.optimize as so
 from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.optim_problems import PROBLEMS
+from whitebox_oracle.optim_problems import SMOOTH
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 
@@ -20,8 +20,8 @@ SETUPS: list[tuple[str, list[float], list[tuple[float, float]]]] = [
     ("rosen5", [1.3, 0.7, 0.8, 1.9, 1.2], [(0.0, 2.0), (0.0, 0.9), (-INF, INF), (1.5, 3.0), (-1.0, INF)]),
     ("beale", [1.0, 1.0], [(-4.5, 2.5), (-4.5, 0.4)]),
     ("himmelblau", [0.0, 0.0], [(0.5, 2.5), (0.5, 1.5)]),
-    ("quadratic", [1.0, 1.0, 1.0], [(0.0, INF), (0.0, INF), (0.0, INF)]),
-    ("quadratic", [1.0, 1.0, 1.0], [(-INF, 0.2), (-0.5, 0.5), (0.0, 0.0)]),
+    ("spdQuadratic", [1.0, 1.0, 1.0], [(0.0, INF), (0.0, INF), (0.0, INF)]),
+    ("spdQuadratic", [1.0, 1.0, 1.0], [(-INF, 0.2), (-0.5, 0.5), (0.0, 0.0)]),
     ("powell", [3.0, -1.0, 0.0, 1.0], [(1.0, 3.0), (-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0)]),
     ("wood", [-3.0, -1.0, -3.0, -1.0], [(-3.0, 0.8), (-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0)]),
 ]
@@ -30,7 +30,7 @@ SETUPS: list[tuple[str, list[float], list[tuple[float, float]]]] = [
 def cases() -> list[Case]:
     out: list[Case] = []
     for i, (name, x0, bounds) in enumerate(SETUPS):
-        p = PROBLEMS[name]
+        p = SMOOTH[name]
         r = so.minimize(
             p.f, np.array(x0), method="L-BFGS-B", jac=p.grad, bounds=bounds, options={"gtol": 1e-10, "ftol": 1e-15}
         )
