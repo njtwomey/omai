@@ -373,6 +373,14 @@
       "cases": 12
     },
     {
+      "fixture": "optim/line_search.json",
+      "source": "oracle/cases/optim/line_search.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 33
+    },
+    {
       "fixture": "optim/optimisers.json",
       "source": "oracle/cases/optim/optimisers.py",
       "reference": {

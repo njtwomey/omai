@@ -19,8 +19,11 @@ import {
 import type { RunOptions, RunStatus } from '../../trace/index.ts'
 import type { Tree } from '../transform.ts'
 
-/** An objective: a scalar function of a parameter tree (a vector, a matrix or nested records of tensors). */
-export type Objective = (params: Tree) => Value
+/**
+ * An objective: a scalar function of a parameter tree (a vector, a matrix or nested records of tensors). Declared
+ * bivariantly, so a function of a narrower parameter type (`(x: Value) => Value`) is accepted.
+ */
+export type Objective = { bivariant(params: Tree): Value }['bivariant']
 
 /** Options every vector method accepts: an iteration cap, the gradient tolerance and the run options. */
 export interface VectorMethodOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'>> {
