@@ -858,7 +858,8 @@ Reparameterisation comes in three forms:
 - `multivariate/normal.ts`: `multivariateNormal` (covariance, precision or Cholesky, batched), `condition`,
   `marginal`, `lowRankMultivariateNormal`, `matrixNormal`.
 - `multivariate/simplex.ts`: `dirichlet`, `multinomial`, `dirichletMultinomial`, `logisticNormal`.
-- `multivariate/matrix.ts`: `wishart`, `inverseWishart`, `lkjCholesky`.
+- `multivariate/matrix.ts`: `wishart`, `inverseWishart` (Bartlett reparameterised draws), `lkjCholesky`, `lkj`,
+  `multigammaln`.
 - `multivariate/directional.ts`: `vonMises`, `vonMisesFisher`, `powerSpherical`.
 - `multivariate/copulas.ts`: Gaussian, Student-t, Clayton, Gumbel and Frank copulas (density, sampling, fitting by
   inversion of Kendall's tau), `copulaDistribution` (joining marginals).

@@ -1,4 +1,4 @@
-import { type Custom, describeDistributions } from '../../../testing/distributions.ts'
+import { type Custom, describeDistributions, type Family } from '../../../testing/distributions.ts'
 import type { Tensor, Value } from '../../tensor/index.ts'
 import * as D from '../index.ts'
 
@@ -34,11 +34,31 @@ const moment =
   (m: Moment): Custom =>
   (xs): Value =>
     D.dirichlet(t(xs, 0))[m]()
+const wishart = (xs: readonly Tensor[]): D.Distribution => D.wishart(t(xs, 0), { covariance: t(xs, 1) })
+const invWishart = (xs: readonly Tensor[]): D.Distribution => D.inverseWishart(t(xs, 0), t(xs, 1))
+type Method = 'mean' | 'variance' | 'mode' | 'entropy'
+const MATRIX: Record<string, Custom> = {
+  'wishart.logProb': (xs) => wishart(xs).logProb(t(xs, 2)),
+  'inverseWishart.logProb': (xs) => invWishart(xs).logProb(t(xs, 2)),
+  'lkjCholesky.logProb': (xs, c) => D.lkjCholesky(c.params['dim'] as number, t(xs, 0)).logProb(t(xs, 1)),
+  multigammaln: (xs, c) => D.multigammaln(t(xs, 0), c.params['p'] as number),
+}
+for (const m of ['mean', 'variance', 'mode', 'entropy'] as const satisfies readonly Method[]) {
+  MATRIX[`wishart.${m}`] = (xs) => wishart(xs)[m]()
+  MATRIX[`inverseWishart.${m}`] = (xs) => invWishart(xs)[m]()
+}
 const ALL: Readonly<Record<string, Custom>> = {
   ...CUSTOM,
+  ...MATRIX,
   'dirichlet.mean': moment('mean'),
   'dirichlet.variance': moment('variance'),
   'dirichlet.entropy': moment('entropy'),
 }
 
-for (const file of ['normal', 'simplex']) describeDistributions(`dists/multivariate/${file}`, {}, ALL)
+const FAMILIES: Readonly<Record<string, Family>> = {
+  vonMises: (p) => D.vonMises(t(p, 0), t(p, 1)),
+  vonMisesFisher: (p) => D.vonMisesFisher(t(p, 0), t(p, 1)),
+}
+
+for (const file of ['normal', 'simplex', 'matrix', 'directional'])
+  describeDistributions(`dists/multivariate/${file}`, FAMILIES, ALL)

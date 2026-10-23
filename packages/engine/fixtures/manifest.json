@@ -112,6 +112,23 @@
       "cases": 103
     },
     {
+      "fixture": "dists/multivariate/directional.json",
+      "source": "oracle/cases/dists/multivariate/directional.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "dists/multivariate/matrix.json",
+      "source": "oracle/cases/dists/multivariate/matrix.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "dists/multivariate/normal.json",
       "source": "oracle/cases/dists/multivariate/normal.py",
       "reference": {
