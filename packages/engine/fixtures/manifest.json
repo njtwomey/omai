@@ -414,6 +414,24 @@
       "cases": 25
     },
     {
+      "fixture": "rl/policies.json",
+      "source": "oracle/cases/rl/policies.py",
+      "reference": {
+        "torch": "2.14.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "rl/returns.json",
+      "source": "oracle/cases/rl/returns.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 30
+    },
+    {
       "fixture": "rl/wrappers.json",
       "source": "oracle/cases/rl/wrappers.py",
       "reference": {
