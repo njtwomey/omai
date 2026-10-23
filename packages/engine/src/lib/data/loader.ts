@@ -2,8 +2,8 @@ import { WhiteboxError } from '../base/index.ts'
 import type { Dataset } from './schema/common.ts'
 
 /**
- * Where a dataset comes from: embedded in the bundle (a generated `*.data.ts` module, loaded on demand) or a remote
- * release asset pinned by its SHA-256 and parsed from its bytes.
+ * Where a dataset comes from: embedded in the bundle (a generated `*.data.ts` module, loaded on demand), a remote
+ * asset pinned by its SHA-256 and parsed from its bytes, or several such files parsed together.
  *
  * @concept datasets
  */
@@ -23,6 +23,22 @@ export type DatasetRef<D extends Dataset = Dataset> =
       readonly licence?: string
       readonly parse: (bytes: Uint8Array) => D | Promise<D>
     }
+  | {
+      readonly kind: 'remote-files'
+      readonly name: string
+      readonly files: readonly RemoteFile[]
+      readonly licence?: string
+      /** Parse the files' bytes, in the order of `files`. */
+      readonly parse: (files: readonly Uint8Array[]) => D | Promise<D>
+    }
+
+/** One pinned file of a multi-file remote dataset. */
+export interface RemoteFile {
+  readonly url: string
+  /** Lowercase hex SHA-256 of the file's bytes. */
+  readonly sha256: string
+  readonly size?: number
+}
 
 /** A byte store for downloaded assets, keyed by checksum. */
 export interface AssetCache {
@@ -162,17 +178,24 @@ export interface LoadOptions {
  */
 export async function load<D extends Dataset>(ref: DatasetRef<D>, options: LoadOptions = {}): Promise<D> {
   if (ref.kind === 'embedded') return ref.load()
-  const cached = await options.cache?.get(ref.sha256)
-  if (cached !== undefined && (await sha256Hex(cached)) === ref.sha256) return ref.parse(cached)
+  if (ref.kind === 'remote') return ref.parse(await fetchPinned(ref.name, ref, options))
+  const files: Uint8Array[] = []
+  for (const f of ref.files) files.push(await fetchPinned(ref.name, f, options))
+  return ref.parse(files)
+}
+
+/** The bytes of a pinned file: from the cache when they still match, else downloaded, verified and cached. */
+async function fetchPinned(name: string, file: RemoteFile, options: LoadOptions): Promise<Uint8Array> {
+  const cached = await options.cache?.get(file.sha256)
+  if (cached !== undefined && (await sha256Hex(cached)) === file.sha256) return cached
   const fetcher = options.fetch ?? (globalThis.fetch as Fetcher | undefined)
-  if (fetcher === undefined) throw new WhiteboxError('not-implemented', `load: no fetch to download ${ref.name}`)
-  const response = await fetcher(ref.url)
-  if (!response.ok)
-    throw new WhiteboxError('value', `load: downloading ${ref.name} failed with status ${response.status}`)
+  if (fetcher === undefined) throw new WhiteboxError('not-implemented', `load: no fetch to download ${name}`)
+  const response = await fetcher(file.url)
+  if (!response.ok) throw new WhiteboxError('value', `load: downloading ${name} failed with status ${response.status}`)
   const bytes = new Uint8Array(await response.arrayBuffer())
   const digest = await sha256Hex(bytes)
-  if (digest !== ref.sha256)
-    throw new WhiteboxError('value', `load: ${ref.name} has checksum ${digest}, expected ${ref.sha256}`)
-  await options.cache?.set(ref.sha256, bytes)
-  return ref.parse(bytes)
+  if (digest !== file.sha256)
+    throw new WhiteboxError('value', `load: ${name} has checksum ${digest}, expected ${file.sha256}`)
+  await options.cache?.set(file.sha256, bytes)
+  return bytes
 }

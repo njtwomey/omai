@@ -747,8 +747,8 @@ are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `M
 - `tensors.ts`: `toTensors`, `fromTensors`, `xy`, `xyClasses`, `xyMultilabel`, `xyMultiOutput` (build a dataset from
   arrays), `table`, `tableToXy` (one-hot or code encoding), `describe` (pandas-style feature summaries and class
   counts).
-- `loader.ts`: `DatasetRef`, `load` (embedded or remote; sha256 verification with Web Crypto), `AssetCache`
-  (`memoryCache`, `indexedDbCache`), `sha256Hex`.
+- `loader.ts`: `DatasetRef`, `load` (embedded, remote or several remote files; sha256 verification with Web Crypto),
+  `AssetCache` (`memoryCache`, `indexedDbCache`), `sha256Hex`.
 - `archives.ts`: `gunzip`, `untar`, `unzip`, `parseCsv`, `parseNpy`, for parsing remote assets in the browser.
 - `samplers.ts`: `Sampler`, `sequentialSampler`, `randomSampler`, `weightedRandomSampler`, `subsetRandomSampler`,
   `batchSampler`, `balancedWeights` (torch.utils.data samplers, reshuffled per epoch by derived keys).
@@ -2462,10 +2462,13 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
   (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
   `modularArithmetic`), each with an exact solver in its truth.
-- `graphs.ts`: karate club, Les Miserables, contextual stochastic block models, graph families, small molecules,
-  knowledge-graph triples.
-- `images.ts`: shapes, digit glyphs, bars and stripes, geometric scenes with true edges and corners, a small
-  Fashion-MNIST (remote).
+- `graphs.ts`: karate club (`karateClub`), Les Miserables (`lesMiserables`), contextual stochastic block models
+  (`contextualSbm`), graph families (`familyGraph`, `graphFamilies`: Erdos-Renyi, Barabasi-Albert, Watts-Strogatz,
+  grids, cycles, paths, stars, complete graphs, trees, geometric graphs), small molecules (`smallMolecules`, read from
+  SMILES, with formulas, weights and ring counts), knowledge-graph triples (`kinshipTriples`, family trees with
+  planted rules).
+- `images.ts`: `shapes` (with boxes and masks), `digitGlyphs`, `barsAndStripes`, geometric scenes with true edges and
+  corners (`geometricScenes`), a small Fashion-MNIST (`fashionMnistTest`, remote, parsed by `parseIdxImages`).
 - `causal.ts`: synthetic causal datasets with known structural models, ATEs and CATEs.
 - `experiments.ts`: A/B test data with known effects.
 - `trajectories.ts`: logged bandit data, offline RL datasets from known behaviour policies.
