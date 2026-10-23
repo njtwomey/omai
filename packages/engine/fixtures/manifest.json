@@ -51,6 +51,16 @@
       "cases": 60
     },
     {
+      "fixture": "methods/rl/environments/continuous_control.json",
+      "source": "oracle/cases/methods/rl/environments/continuous_control.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 54
+    },
+    {
       "fixture": "methods/rl/environments/gridworlds.json",
       "source": "oracle/cases/methods/rl/environments/gridworlds.py",
       "reference": {
