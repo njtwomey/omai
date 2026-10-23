@@ -43,6 +43,15 @@
       "cases": 6
     },
     {
+      "fixture": "methods/rl/agents/policy_gradient.json",
+      "source": "oracle/cases/methods/rl/agents/policy_gradient.py",
+      "reference": {
+        "torch": "2.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "methods/rl/environments/classic_control.json",
       "source": "oracle/cases/methods/rl/environments/classic_control.py",
       "reference": {

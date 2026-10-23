@@ -4,7 +4,7 @@ import { valueAndGrad } from '../../../lib/autodiff/index.ts'
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { applyUpdates, type GradientTransformation, type Tree } from '../../../lib/optim/index.ts'
 import { flatDim, type Space } from '../../../lib/space/index.ts'
-import { fromStorage, item, type Tensor, type Value } from '../../../lib/tensor/index.ts'
+import { fromStorage, item, mul, type Tensor, treeMap, type Value } from '../../../lib/tensor/index.ts'
 
 /** What an agent factory needs from an environment: its spaces. */
 export interface Spaces {
@@ -60,4 +60,20 @@ export function gradientStep(
   const { value, grad } = valueAndGrad(loss)(params)
   const { updates, state } = transformation.update(grad, optState, params)
   return { params: applyUpdates(params, updates), optState: state, loss: item(value) }
+}
+
+/**
+ * Apply a gradient through an optimiser, with the update scaled by `scale` (learning-rate annealing on top of any
+ * optimiser: a factor of 1 leaves the optimiser's own step unchanged).
+ */
+export function applyGradient(
+  grad: Tree,
+  params: Tree,
+  transformation: GradientTransformation,
+  optState: unknown,
+  scale = 1,
+): { readonly params: Tree; readonly optState: unknown } {
+  const { updates, state } = transformation.update(grad, optState, params)
+  const scaled = scale === 1 ? updates : treeMap((u) => mul(u, scale), updates)
+  return { params: applyUpdates(params, scaled), optState: state }
 }
