@@ -43,12 +43,28 @@
       "cases": 6
     },
     {
-      "fixture": "methods/rl/classic_control.json",
-      "source": "oracle/cases/methods/rl/classic_control.py",
+      "fixture": "methods/rl/environments/classic_control.json",
+      "source": "oracle/cases/methods/rl/environments/classic_control.py",
       "reference": {
         "gymnasium": "1.4.0"
       },
-      "cases": 12
+      "cases": 60
+    },
+    {
+      "fixture": "methods/rl/environments/gridworlds.json",
+      "source": "oracle/cases/methods/rl/environments/gridworlds.py",
+      "reference": {
+        "gymnasium": "1.4.0"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "methods/rl/environments/toy_text.json",
+      "source": "oracle/cases/methods/rl/environments/toy_text.py",
+      "reference": {
+        "gymnasium": "1.4.0"
+      },
+      "cases": 186
     },
     {
       "fixture": "metrics/regression.json",
@@ -387,6 +403,23 @@
         "pgmpy": "1.1.2"
       },
       "cases": 36
+    },
+    {
+      "fixture": "rl/mdp.json",
+      "source": "oracle/cases/rl/mdp.py",
+      "reference": {
+        "gymnasium": "1.4.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "rl/wrappers.json",
+      "source": "oracle/cases/rl/wrappers.py",
+      "reference": {
+        "gymnasium": "1.4.0"
+      },
+      "cases": 13
     },
     {
       "fixture": "tensor/ops/arithmetic.json",
