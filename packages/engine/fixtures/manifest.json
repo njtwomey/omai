@@ -151,6 +151,14 @@
       "cases": 10
     },
     {
+      "fixture": "numerics/roots/roots.json",
+      "source": "oracle/cases/numerics/roots/roots.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 43
+    },
+    {
       "fixture": "numerics/special/bessel.json",
       "source": "oracle/cases/numerics/special/bessel.py",
       "reference": {
