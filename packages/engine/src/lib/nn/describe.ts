@@ -1,5 +1,7 @@
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
-import type { Module } from './module/module.ts'
+import type { Module as BaseModule } from './module/module.ts'
+
+type Module = BaseModule<never, unknown>
 
 const shapeText = (shape: readonly number[]): string => `[${shape.join(', ')}]`
 

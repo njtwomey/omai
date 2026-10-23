@@ -1554,14 +1554,20 @@ oracle: PyTorch in float64 with exported weights (forward values and gradients)
 Two equal forms. Functional: `init(key, ...) -> params` and `apply(params, x, ctx) -> y` over pytrees. Module:
 PyTorch-shaped classes (`nn.Linear`, `nn.Sequential`, `forward`, `parameters`, `stateDict`) that hold params and call
 the functional form. `ctx` carries the train flag, the dropout key, taps and buffer updates, all returned as data.
-- `functional/activations.ts`: ReLU, leaky ReLU, ELU, SELU, GELU, SiLU, Mish, softplus, hard tanh and sigmoid, GLU,
-  SwiGLU, `activation(name)`.
-- `functional/linear.ts`: linear, bilinear, embedding, embedding bag.
-- `functional/conv.ts`: 1-D, 2-D and 3-D convolution, transposed, depthwise and grouped convolution, unfold and fold.
-- `functional/pooling.ts`: max, average, adaptive, global and Lp pooling.
-- `functional/normalisation.ts`: batch (returning updated statistics), layer, RMS, group, instance, weight and spectral
-  normalisation.
-- `functional/regularisation.ts`: dropout, drop path, alpha dropout, Gaussian noise, cutout.
+- `functional/activations.ts`: ReLU, ReLU6, leaky ReLU, ELU, CELU, SELU, GELU, SiLU, Mish, softplus, softsign,
+  log-sigmoid, hard tanh, sigmoid and swish, PReLU, shrinkage functions, threshold, GLU, SwiGLU, GeGLU, ReGLU,
+  `activation(name)`.
+- `functional/linear.ts`: linear, bilinear, embedding (padding index, max norm), embedding bag (sum, mean, max;
+  offsets, per-sample weights).
+- `functional/conv.ts`: `conv` and `conv1d/2d/3d` (stride, padding or 'same', padding modes, dilation, groups),
+  `convTransposed` and `convTranspose1d/2d/3d` (output padding or size), `depthwiseConv`, `separableConv`, `unfold`,
+  `fold`; kernels from `numerics/convolution`.
+- `functional/pooling.ts`: max (padding, dilation, ceil mode, indices), `maxUnpool`, average (padding counted or not,
+  divisor override), adaptive average and max, global and Lp pooling, over any number of spatial axes.
+- `functional/normalisation.ts`: batch (returning updated statistics), layer, RMS, group, instance, local response,
+  `normalize`, weight and spectral normalisation.
+- `functional/regularisation.ts`: dropout, channel dropout (1-D, 2-D, 3-D), alpha and feature alpha dropout, drop
+  path, Gaussian noise (additive or multiplicative), cutout.
 - `functional/attention.ts`: scaled dot-product attention (masks, causal, sliding window, bias, soft-capping),
   multi-head, grouped-query and multi-query attention, linear attention, attention-weight taps.
 - `functional/positional.ts`: sinusoidal, learned, rotary (RoPE) and ALiBi positions.
@@ -1571,13 +1577,28 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `functional/vision.ts`: upsampling (nearest, bilinear), pixel shuffle, ROI align, spatial transformers, patch
   embedding.
 - `functional/sets.ts`: masked set pooling, set attention.
-- `init.ts`: Xavier, Kaiming, LeCun, orthogonal, truncated normal, zeros and ones; gains and fans.
+- `init.ts`: Xavier, Kaiming, LeCun, orthogonal, truncated normal, uniform, normal, constant, zeros and ones, eye,
+  Dirac, sparse, PyTorch's default uniform; gains and fans.
 - `module/module.ts`: `Module` (forward, parameters, named parameters, buffers, state dicts, train and eval modes,
-  conversion to the functional form), `Parameter`.
-- `module/containers.ts`: `Sequential`, `ModuleList`, `ModuleDict`, `Residual`, `Parallel`.
-- `module/layers.ts`: `Linear`, `Bilinear`, `Embedding`, convolution, pooling, `Flatten`, `Unflatten`, `Dropout`,
-  activation modules, `Identity`.
-- `module/normalisation.ts`: `BatchNorm1d`, `BatchNorm2d`, `LayerNorm`, `RMSNorm`, `GroupNorm`, `InstanceNorm2d`.
+  `initParams`/`resetParameters`, freezing with `requiresGrad` and `trainableMask`), `ApplyContext` (train flag, key,
+  buffers in and updated buffers out, taps, path), `childScope` and `assemble` for composites, `tap`, `functional`
+  (conversion to the functional form: `init`, `apply`, `applyWithState`), `Parameter`.
+- `module/containers.ts`: `Sequential`, `ModuleList`, `ModuleDict`, `Residual`, `Parallel`, `Lambda`, `mlp`.
+- `module/layers.ts`: `Linear`, `Bilinear`, `Embedding` (with `fromPretrained`), `EmbeddingBag`, `Flatten`,
+  `Unflatten`, `Identity`.
+- `module/activations.ts`: a module per activation (`ReLU` to `Threshold`, `Softmax`, `LogSoftmax`, `Softmin`, `GLU`,
+  `PReLU` with learnt slopes), `activationModule`.
+- `module/conv.ts`: `Conv1d`, `Conv2d`, `Conv3d` (padding modes, groups, 'same'), `ConvTranspose1d/2d/3d`, `Unfold`,
+  `Fold`.
+- `module/pooling.ts`: `MaxPool1d/2d/3d`, `AvgPool1d/2d/3d`, `LPPool1d/2d/3d`, `AdaptiveAvgPool1d/2d/3d`,
+  `AdaptiveMaxPool1d/2d/3d`, `GlobalPool`, `MaxUnpool`.
+- `module/regularisation.ts`: `Dropout`, `Dropout1d/2d/3d`, `AlphaDropout`, `FeatureAlphaDropout`, `DropPath`,
+  `GaussianNoise`, `Cutout`.
+- `module/normalisation.ts`: `BatchNorm1d`, `BatchNorm2d`, `BatchNorm3d` (running statistics, momentum or cumulative
+  average, train and eval), `LayerNorm`, `RMSNorm`, `GroupNorm`, `InstanceNorm1d/2d/3d` (optional affine and running
+  statistics), `LocalResponseNorm`.
+- `module/parametrisation.ts`: `WeightNorm` and `SpectralNorm` wrappers (PyTorch's `weight_g`/`weight_v` and
+  `weight_orig`/`weight_u`/`weight_v` layouts; power-iteration vectors as buffers), `spectralNormEstimate`.
 - `module/recurrent.ts`: `RNN`, `GRU`, `LSTM` (stacked, bidirectional) and their cells.
 - `module/attention.ts`: `MultiheadAttention`, transformer encoder and decoder layers and stacks, `Transformer`.
 - `blocks/transformer.ts`: pre- and post-norm blocks, feed-forward and gated feed-forward, encoder, decoder and

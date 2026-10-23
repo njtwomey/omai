@@ -59,6 +59,54 @@
       "cases": 38
     },
     {
+      "fixture": "nn/functional/activations.json",
+      "source": "oracle/cases/nn/functional/activations.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "nn/functional/conv.json",
+      "source": "oracle/cases/nn/functional/conv.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "nn/functional/linear.json",
+      "source": "oracle/cases/nn/functional/linear.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "nn/functional/normalisation.json",
+      "source": "oracle/cases/nn/functional/normalisation.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 33
+    },
+    {
+      "fixture": "nn/functional/pooling.json",
+      "source": "oracle/cases/nn/functional/pooling.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 34
+    },
+    {
+      "fixture": "nn/module/normalisation.json",
+      "source": "oracle/cases/nn/module/normalisation.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 46
+    },
+    {
       "fixture": "nn/torch_reference.json",
       "source": "oracle/cases/nn/torch_reference.py",
       "reference": {
