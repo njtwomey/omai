@@ -1,0 +1,28 @@
+{
+  "name": "whitebox-js",
+  "private": true,
+  "type": "module",
+  "description": "whitebox-js: a traced, self-documenting ML library (engine, render, meta) with docs and gallery apps.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.15.0",
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@biomejs/biome": "^2.6.2",
+    "@changesets/cli": "^3.0.3",
+    "@types/node": "^26.6.5",
+    "@vitest/browser": "^5.0.5",
+    "@vitest/browser-playwright": "^5.0.5",
+    "@vitest/coverage-v8": "^5.0.5",
+    "dependency-cruiser": "^18.7.0",
+    "fast-check": "^4.10.2",
+    "playwright": "^1.64.1",
+    "publint": "^0.3.25",
+    "ts-morph": "^28.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,6 @@
+# Tool versions for whitebox-js. `make setup` runs `mise install`.
+[tools]
+node = "24.22.1"
+pnpm = "12.15.0"
+python = "3.13"
+uv = "0.12.15"

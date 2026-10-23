@@ -1,0 +1,81 @@
+# whitebox-js: the single interface for routine work. Run `make help` for the list.
+SHELL := /bin/bash
+.DEFAULT_GOAL := help
+
+MISE := mise exec --
+PNPM := $(MISE) pnpm
+NODE := $(MISE) node
+UV := $(MISE) uv
+
+PACKAGES := engine render meta
+
+.PHONY: help
+help: ## List targets
+	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: setup
+setup: ## Install tools (mise), JS dependencies (pnpm) and the Python dev environment (uv)
+	mise install
+	$(PNPM) install
+	$(UV) sync --group dev
+
+.PHONY: barrels
+barrels: ## Regenerate index.ts barrels and the module map
+	$(NODE) scripts/barrels.ts
+
+.PHONY: barrels-check
+barrels-check: ## Fail if any barrel is stale
+	$(NODE) scripts/barrels.ts --check
+
+.PHONY: layers
+layers: ## Check tier and area layering (dependency-cruiser rules from domain.json and area.json)
+	$(NODE) scripts/layers.ts
+
+.PHONY: lint
+lint: ## Lint TypeScript (Biome), banned globals, and Python (ruff)
+	$(PNPM) exec biome check .
+	$(NODE) scripts/banned.ts
+	$(UV) run --group dev ruff check oracle scripts
+	$(UV) run --group dev ruff format --check oracle scripts
+
+.PHONY: format
+format: ## Format TypeScript and Python
+	$(PNPM) exec biome check --write .
+	$(UV) run --group dev ruff format oracle scripts
+
+.PHONY: typecheck
+typecheck: ## Type-check every package (tsc) and the oracle (pyright)
+	@for p in $(PACKAGES); do echo "tsc $$p"; $(PNPM) --dir packages/$$p exec tsc -p tsconfig.json --noEmit || exit 1; done
+	$(UV) run --group dev pyright oracle
+
+.PHONY: test
+test: ## Run unit, property, golden and type tests (Node)
+	$(PNPM) exec vitest run
+
+.PHONY: test-watch
+test-watch: ## Run tests in watch mode
+	$(PNPM) exec vitest
+
+.PHONY: coverage
+coverage: ## Run tests with coverage thresholds
+	$(PNPM) exec vitest run --coverage
+
+.PHONY: fixtures
+fixtures: ## Regenerate golden fixtures from the Python oracle (needs the oracle groups)
+	$(UV) run --group oracle-core --group oracle-torch python -m whitebox_oracle generate
+
+.PHONY: fixtures-check
+fixtures-check: ## Regenerate fixtures to a temporary directory and fail on any difference
+	$(UV) run --group oracle-core --group oracle-torch python -m whitebox_oracle check
+
+.PHONY: build
+build: barrels ## Build all packages
+	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p run build || exit 1; done
+
+.PHONY: check
+check: barrels-check layers lint typecheck test ## Everything a commit needs
+
+.PHONY: clean
+clean: ## Remove build outputs
+	$(PNPM) -r exec rm -rf dist
+	rm -rf coverage

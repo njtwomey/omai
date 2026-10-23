@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.venv/
+__pycache__/
+.ruff_cache/
+.env
+*.tgz
+.cache/
+packages/meta/generated/
+apps/*/dist/
+.vitest-attachments/
+test-results/
+playwright-report/
+.smoke/

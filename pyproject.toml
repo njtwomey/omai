@@ -1,0 +1,30 @@
+[project]
+name = "whitebox-oracle"
+version = "0.1.0"
+description = "Python ground truth for whitebox-js: golden fixtures and dataset vendoring."
+requires-python = ">=3.13"
+dependencies = ["pydantic>=2", "pydantic-settings>=2", "numpy>=2"]
+
+[dependency-groups]
+dev = ["ruff", "pyright"]
+oracle-core = ["scipy", "mpmath", "scikit-learn", "statsmodels", "sympy", "networkx"]
+oracle-torch = ["torch"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["oracle/whitebox_oracle"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pyright]
+include = ["oracle"]
+pythonVersion = "3.13"
+typeCheckingMode = "standard"
