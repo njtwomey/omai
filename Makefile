@@ -46,6 +46,7 @@ format: ## Format TypeScript and Python
 .PHONY: typecheck
 typecheck: ## Type-check every package (tsc) and the oracle (pyright)
 	@for p in $(PACKAGES); do echo "tsc $$p"; $(PNPM) --dir packages/$$p exec tsc -p tsconfig.json --noEmit || exit 1; done
+	@echo "tsc scripts and config"; $(PNPM) exec tsc -p tsconfig.json
 	$(UV) run --group dev --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl pyright oracle
 
 .PHONY: test

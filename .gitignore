@@ -13,3 +13,6 @@ apps/*/dist/
 test-results/
 playwright-report/
 .smoke/
+
+# Agent worktrees (temporary checkouts of this repo)
+.claude/worktrees/
