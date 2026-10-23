@@ -43,6 +43,23 @@
       "cases": 6
     },
     {
+      "fixture": "methods/rl/agents/bandits.json",
+      "source": "oracle/cases/methods/rl/agents/bandits.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "methods/rl/agents/tabular.json",
+      "source": "oracle/cases/methods/rl/agents/tabular.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "methods/rl/environments/classic_control.json",
       "source": "oracle/cases/methods/rl/environments/classic_control.py",
       "reference": {
@@ -412,6 +429,14 @@
         "numpy": "2.5.4"
       },
       "cases": 25
+    },
+    {
+      "fixture": "rl/off_policy.json",
+      "source": "oracle/cases/rl/off_policy.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 8
     },
     {
       "fixture": "rl/policies.json",
