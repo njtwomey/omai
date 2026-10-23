@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import { checkPrimitive, jvp } from '../autodiff/index.ts'
+import { inv } from '../numerics/linalg/index.ts'
 import { key } from '../random/index.ts'
-import { item, mean, square, sub, sum, type Tensor, tensor, toFlat, type Value } from '../tensor/index.ts'
+import {
+  expandDims,
+  item,
+  mean,
+  mul,
+  sliceAxis,
+  square,
+  sub,
+  sum,
+  type Tensor,
+  tensor,
+  toFlat,
+  tril,
+  type Value,
+} from '../tensor/index.ts'
 import * as D from './index.ts'
 
 const N = 20000
@@ -17,6 +32,14 @@ const continuous: readonly (readonly [string, D.Distribution])[] = [
   ['uniform', D.uniform(-2, 5)],
   ['beta', D.beta(2, 5)],
   ['beta (small shapes)', D.beta(0.3, 0.6)],
+  ['studentT', D.studentT(6, 1, 2)],
+  ['laplace', D.laplace(-1, 0.5)],
+  ['logistic', D.logistic(2, 0.7)],
+  ['pareto', D.pareto(5, 2)],
+  ['gumbel', D.gumbel(1, 2)],
+  ['inverseGamma', D.inverseGamma(6, 2)],
+  ['chi2', D.chi2(3)],
+  ['weibull', D.weibull(1.5, 2)],
 ]
 
 describe('sampling', () => {
@@ -126,5 +149,100 @@ describe('pathwise gradients', () => {
     const logits = tensor([0.5, -1, 2])
     const g = jvp((l: Value) => sum(D.categorical({ logits: l }).logProb(2)), logits, tensor([0, 0, 1])).tangent
     expect(item(g)).toBeCloseTo(1 - item(D.categorical({ logits }).prob(2)), 12)
+  })
+})
+
+describe('more families', () => {
+  it('discrete count families sample their means', () => {
+    for (const d of [D.poisson(3.5), D.binomial(12, 0.3), D.geometric(0.4), D.negativeBinomial(2.5, 0.35)]) {
+      const x = d.sample(key(21), [N])
+      const sd = Math.sqrt(item(d.variance()))
+      expect(Math.abs(item(mean(x)) - item(d.mean()))).toBeLessThan((5 * sd) / Math.sqrt(N))
+      expect(d.hasRsample).toBe(false)
+    }
+  })
+
+  it('Student t samples differentiate in the degrees of freedom: d/dnu Var = -2 / (nu - 2)^2', () => {
+    // E[X^2] for t with scale 1 is nu / (nu - 2), so d/dnu E[X^2] = -2 / (nu - 2)^2.
+    const nu = 6
+    const g = jvp((v: Value) => mean(square(D.studentT(v).rsample(key(22), [N * 5]))), tensor(nu), tensor(1)).tangent
+    expect(item(g)).toBeCloseTo(-2 / (nu - 2) ** 2, 1)
+  })
+})
+
+describe('multivariate', () => {
+  const cov = tensor([
+    [2, 0.6, 0.2],
+    [0.6, 1, -0.3],
+    [0.2, -0.3, 0.5],
+  ])
+  const mvn = D.multivariateNormal([1, -1, 0.5], { covariance: cov })
+
+  it('the multivariate normal samples its mean and covariance', () => {
+    const x = mvn.rsample(key(30), [N]) as Tensor
+    expect(x.shape).toEqual([N, 3])
+    const m = toFlat(mean(x, 0))
+    m.forEach((v, j) => {
+      expect(v).toBeCloseTo([1, -1, 0.5][j] ?? 0, 1)
+    })
+    const centred = sub(x, mean(x, 0))
+    const empirical = toFlat(mean(mul(expandDims(centred, -1), expandDims(centred, -2)), 0))
+    empirical.forEach((v, j) => {
+      expect(v).toBeCloseTo(toFlat(cov)[j] ?? 0, 1)
+    })
+  })
+
+  it('the multivariate normal agrees across parameterisations and marginalises', () => {
+    const viaPrecision = D.multivariateNormal([1, -1, 0.5], { precision: inv(cov) })
+    expect(item(viaPrecision.logProb([0, 0, 0]))).toBeCloseTo(item(mvn.logProb([0, 0, 0])), 12)
+    const m = mvn.marginal([0])
+    expect(item(m.logProb([0.3]))).toBeCloseTo(item(D.normal(1, Math.sqrt(2)).logProb(0.3)), 12)
+  })
+
+  it('log densities of the multivariate normal differentiate in the mean and covariance factor', () => {
+    const x = tensor([
+      [0.2, -0.4, 1],
+      [1, 0, 0],
+    ])
+    const f = (mu: Value, l: Value): Value => sum(D.multivariateNormal(mu, { scaleTril: tril(l) }).logProb(x))
+    expect(
+      checkPrimitive(
+        f,
+        [
+          tensor([0.5, -1, 0.2]),
+          tensor([
+            [1.2, 0, 0],
+            [0.3, 0.9, 0],
+            [0.1, -0.2, 0.7],
+          ]),
+        ],
+        { rtol: 1e-5, atol: 1e-8 },
+      ).failures,
+    ).toEqual([])
+  })
+
+  it('Dirichlet samples lie on the simplex, match their mean, and differentiate in the concentrations', () => {
+    const d = D.dirichlet([0.8, 2, 5])
+    const x = d.rsample(key(31), [N]) as Tensor
+    expect(toFlat(sum(x, -1)).every((v) => Math.abs(v - 1) < 1e-12)).toBe(true)
+    toFlat(mean(x, 0)).forEach((v, j) => {
+      expect(v).toBeCloseTo(toFlat(d.mean())[j] ?? 0, 2)
+    })
+    // d/dalpha_0 E[X_0] = (alpha_total - alpha_0) / alpha_total^2.
+    const g = jvp(
+      (a: Value) => sliceAxis(mean(D.dirichlet(a).rsample(key(32), [N]), 0), 0, 0, 1),
+      tensor([0.8, 2, 5]),
+      tensor([1, 0, 0]),
+    ).tangent
+    expect(item(sum(g))).toBeCloseTo(7 / 7.8 ** 2, 2)
+  })
+
+  it('multinomial samples count n draws and match the mean', () => {
+    const d = D.multinomial(20, [0.1, 0.6, 0.3])
+    const x = d.sample(key(33), [4000]) as Tensor
+    expect(toFlat(sum(x, -1)).every((v) => v === 20)).toBe(true)
+    toFlat(mean(x, 0)).forEach((v, j) => {
+      expect(v).toBeCloseTo([2, 12, 6][j] ?? 0, 0)
+    })
   })
 })

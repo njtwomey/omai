@@ -21,14 +21,16 @@ export function reduce<D extends DType>(
   const reduced = new Set(axes)
   const keptShape = x.shape.map((n, axis) => (reduced.has(axis) ? 1 : n))
   const outShape = keepDims ? keptShape : x.shape.filter((_, axis) => !reduced.has(axis))
-  const out = allocate(x.dtype, sizeOf(outShape))
-  out.fill(identity[op])
+  // Accumulate in float64: integer storage cannot hold the +-Infinity identities of max and min.
+  const acc = new Float64Array(sizeOf(outShape)).fill(identity[op])
   // Walk the input with the output's strides on kept axes and zero on reduced axes.
   const strides = stridesOf(keptShape).map((s, axis) => (reduced.has(axis) ? 0 : s))
   const f = combine[op]
   walkStrided(x.shape, strides, (i, offset) => {
-    out[offset] = f(out[offset] ?? 0, x.data[i] ?? 0)
+    acc[offset] = f(acc[offset] ?? 0, x.data[i] ?? 0)
   })
+  const out = allocate(x.dtype, acc.length)
+  for (let i = 0; i < acc.length; i++) out[i] = acc[i] ?? 0
   return wrap(x.dtype, outShape, out)
 }
 

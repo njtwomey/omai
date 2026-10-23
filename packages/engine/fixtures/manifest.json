@@ -7,7 +7,7 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 169
+      "cases": 243
     },
     {
       "fixture": "dists/discrete.json",
@@ -16,7 +16,15 @@
         "numpy": "2.5.4",
         "scipy": "1.18.1"
       },
-      "cases": 20
+      "cases": 65
+    },
+    {
+      "fixture": "dists/multivariate.json",
+      "source": "oracle/cases/dists/multivariate.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 12
     },
     {
       "fixture": "losses/losses.json",

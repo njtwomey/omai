@@ -2,3 +2,4 @@
 export * from './distribution.ts'
 export * from './continuous/index.ts'
 export * from './discrete/index.ts'
+export * from './multivariate/index.ts'

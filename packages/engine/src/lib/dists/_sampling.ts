@@ -2,7 +2,7 @@
 // says how a sample moves with the parameters.
 import { jvp } from '../autodiff/index.ts'
 import { gammainc, lgamma } from '../numerics/special/index.ts'
-import { gammaVariates, type Key } from '../random/index.ts'
+import { foldIn, gammaVariates, type Key } from '../random/index.ts'
 import {
   arg,
   bind1,
@@ -11,6 +11,7 @@ import {
   div,
   exp,
   type FloatDType,
+  fromStorage,
   full,
   log,
   mul,
@@ -82,4 +83,30 @@ export function discreteSample(
   draw: (values: readonly Tensor[]) => Tensor,
 ): Value {
   return bind1(discreteSamplePrimitive, values, { draw, shape, dtype })
+}
+
+/**
+ * Draw `[...shape, ...batchShape]` values, one per entry, from concrete parameters broadcast to that shape, with a zero
+ * derivative (for discrete families whose scalar samplers take one parameter set at a time). Entry i uses the key
+ * `foldIn(key, i)`.
+ */
+export function elementwiseSample(
+  key: Key,
+  params: readonly Value[],
+  shape: readonly number[],
+  batchShape: readonly number[],
+  drawOne: (k: Key, ...p: number[]) => number,
+): Value {
+  const full = [...shape, ...batchShape]
+  return discreteSample(params, full, 'float64', (values) => {
+    const broadcast = values.map((v) =>
+      v.shape.length === full.length && v.shape.every((d, i) => d === full[i])
+        ? v
+        : (v.backend.broadcastTo(v, full) as Tensor),
+    )
+    const size = full.reduce((a, b) => a * b, 1)
+    const out = new Float64Array(size)
+    for (let i = 0; i < size; i++) out[i] = drawOne(foldIn(key, i), ...broadcast.map((b) => b.data[i] ?? Number.NaN))
+    return fromStorage(out, full, 'float64')
+  })
 }

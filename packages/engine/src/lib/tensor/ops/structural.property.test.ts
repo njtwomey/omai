@@ -1,7 +1,8 @@
 import fc from 'fast-check'
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { distinctTensor, expectConformant, RUNS, tensorOf } from '../../../testing/arbitrary.ts'
 import type { Value } from '../index.ts'
+import * as T from '../index.ts'
 import {
   broadcastTo,
   concat,
@@ -196,4 +197,27 @@ describe('linear algebra operations conform', () => {
   )
   check('diagonal with offset', [[3, 4]], (x) => diagonal(x, 1))
   check('trace', [[3, 3]], (x) => trace(x))
+})
+
+describe('integer and boolean reductions', () => {
+  it('reduce int32 and bool along an axis (a past bug: integer accumulators could not hold +-Infinity)', () => {
+    const ints = T.tensor(
+      [
+        [3, 1],
+        [-2, 5],
+      ],
+      { dtype: 'int32' },
+    )
+    expect(T.toArray(T.min(ints, -1))).toEqual([1, -2])
+    expect(T.toArray(T.max(ints, -1))).toEqual([3, 5])
+    const flags = T.greaterEqual(
+      T.tensor([
+        [1, 3],
+        [0, -6],
+      ]),
+      0,
+    )
+    expect(T.toArray(T.all(flags, -1))).toEqual([1, 0])
+    expect(T.toArray(T.any(flags, -1))).toEqual([1, 1])
+  })
 })
