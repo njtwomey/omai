@@ -1027,7 +1027,10 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   linear program, traced working-set changes.
 - `qp-interior-point.ts`: `qpInteriorPointAlgorithm`, primal-dual Mehrotra predictor-corrector on the reduced KKT
   system.
-- `conic.ts`: small second-order cone and semidefinite programs by interior point (for teaching and small models).
+- `conic.ts`: small conic programs (linear inequalities, second-order cones, linear matrix inequalities, equalities) by
+  the barrier interior-point method (`conicProgram`, `conicBarrierAlgorithm`: phase 1, centring by Newton with
+  equality constraints, duals from the central path), and standard-form semidefinite programs (`sdp`, with the dual y
+  and slack Z); for teaching and small models.
 - `integer.ts`: `milp` and `milpAlgorithm` (branch and bound on simplex relaxations as child runs, best-first or
   depth-first, incumbent, bound and gap, Gomory mixed-integer cuts at the root, the search tree traced), `knapsack`
   (0-1, by dynamic programming or branch and bound with Dantzig's bound), `setCover` (greedy or exact).

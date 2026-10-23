@@ -381,6 +381,15 @@
       "cases": 6
     },
     {
+      "fixture": "optim/conic.json",
+      "source": "oracle/cases/optim/conic.py",
+      "reference": {
+        "cvxpy": "1.9.3",
+        "clarabel": "0.11.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "optim/integer.json",
       "source": "oracle/cases/optim/integer.py",
       "reference": {
