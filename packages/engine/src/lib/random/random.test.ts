@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { minOf } from '../base/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import {
   aliasSample,
@@ -83,7 +84,7 @@ describe('samplers have the right moments', () => {
 
   it('truncated normal stays in range with the right mean', () => {
     const t = truncatedNormal(key(7), [n], 2, Infinity).data
-    expect(Math.min(...Array.from(t.slice(0, 1000)))).toBeGreaterThanOrEqual(2)
+    expect(minOf(Array.from(t.slice(0, 1000)))).toBeGreaterThanOrEqual(2)
     // E[Z | Z > 2] = phi(2) / (1 - Phi(2)) = 2.373215
     expect(mean(t)).toBeCloseTo(2.3732, 1)
   })

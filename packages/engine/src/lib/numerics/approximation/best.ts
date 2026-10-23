@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, WhiteboxError } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { solve } from '../linalg/index.ts'
 
@@ -123,7 +123,7 @@ export function remez(
     }
     if (chosen.length < size)
       throw new WhiteboxError('convergence', 'remez: the error has too few alternations (try a different degree)')
-    const maxError = Math.max(...chosen.map((p) => Math.abs(p.v)))
+    const maxError = maxOf(chosen.map((p) => Math.abs(p.v)))
     reference = chosen.map((p) => p.t)
     if (maxError - Math.abs(error) <= (options.tol ?? 1e-10) * Math.max(Math.abs(error), 1e-300)) {
       return {

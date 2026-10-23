@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
 import { grad } from '../../autodiff/index.ts'
+import { maxOf } from '../../base/index.ts'
 import { exp, item, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as I from './index.ts'
 
@@ -135,7 +136,7 @@ describe('interpolant properties', () => {
     const truth = toFlat(I.runge(fine))
     const error = (nodes: number[]): number => {
       const p = toFlat(I.barycentric(nodes, I.runge(nodes)).evaluate(fine))
-      return Math.max(...p.map((v, i) => Math.abs(v - (truth[i] ?? 0))))
+      return maxOf(p.map((v, i) => Math.abs(v - (truth[i] ?? 0))))
     }
     expect(error(I.equispacedNodes(21))).toBeGreaterThan(10)
     expect(error(I.chebyshevNodes(21))).toBeLessThan(0.02)

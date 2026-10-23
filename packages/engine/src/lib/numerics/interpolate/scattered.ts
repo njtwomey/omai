@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -145,8 +145,8 @@ export function rbfInterpolator(
     throw new WhiteboxError('value', `rbfInterpolator: kernel ${kernel} needs degree >= ${minDegree}`)
   const powers = monomials(d, degree)
   const yf = toFlat(y)
-  const mins = Array.from({ length: d }, (_, k) => Math.min(...Array.from({ length: n }, (_, i) => yf[i * d + k] ?? 0)))
-  const maxs = Array.from({ length: d }, (_, k) => Math.max(...Array.from({ length: n }, (_, i) => yf[i * d + k] ?? 0)))
+  const mins = Array.from({ length: d }, (_, k) => minOf(Array.from({ length: n }, (_, i) => yf[i * d + k] ?? 0)))
+  const maxs = Array.from({ length: d }, (_, k) => maxOf(Array.from({ length: n }, (_, i) => yf[i * d + k] ?? 0)))
   const shift = mins.map((lo, k) => (lo + (maxs[k] ?? 0)) / 2)
   const scale = mins.map((lo, k) => ((maxs[k] ?? 0) - lo) / 2 || 1)
   const polynomial = (x: Value): Value => {

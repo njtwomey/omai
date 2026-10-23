@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   abs,
   add,
@@ -149,7 +149,7 @@ export function akima(x: TensorLike, y: TensorLike, method: 'akima' | 'makima' =
   }
   const f12 = add(f1, f2)
   const f12p = toFlat(primalOf(f12))
-  const max = Math.max(...f12p)
+  const max = maxOf(f12p)
   const small = mask(
     f12p.map((v) => !(v > 1e-9 * max)),
     f12,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
+import { minOf } from '../../base/index.ts'
 import { key, normal } from '../../random/index.ts'
 import { type Tensor, tensor, toFlat } from '../../tensor/index.ts'
 import * as I from './index.ts'
@@ -82,7 +83,7 @@ describe('regularisation behaviour', () => {
   it('iterative methods semi-converge: the error falls and then rises', () => {
     for (const algorithm of [I.cglsAlgorithm(a, b, { xTrue: x }), I.lsqrAlgorithm(a, b, { xTrue: x })]) {
       const r = I.regularise(algorithm, 40)
-      const best = Math.min(...r.errors)
+      const best = minOf(r.errors)
       expect(best).toBeLessThan((r.errors[0] ?? 0) / 2)
       expect(r.errors.at(-1) ?? 0).toBeGreaterThan(best * 2)
       for (let i = 1; i < r.residualNorms.length; i++)

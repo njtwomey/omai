@@ -126,12 +126,13 @@ function spreadingMatrix(xs: readonly number[], grid: number, tau: number, sprea
  * @returns Mode coefficients `[M]`, as {@link nudft1}.
  * @example
  * ```ts
+ * import { maxOf } from 'whitebox-engine/base'
  * import { nufft1, nudft1 } from 'whitebox-engine/numerics/fourier'
  * import { toArray } from 'whitebox-engine/tensor'
  * const x = [0.3, 1.7, -2.2, 3]
  * const fast = toArray(nufft1(x, [1, -1, 2, 0.5], 8).re)
  * const slow = toArray(nudft1(x, [1, -1, 2, 0.5], 8).re)
- * Math.max(...fast.map((v, i) => Math.abs(v - slow[i]))) < 1e-10 // => true
+ * maxOf(fast.map((v, i) => Math.abs(v - slow[i]))) < 1e-10 // => true
  * ```
  */
 export function nufft1(
@@ -175,12 +176,13 @@ export function nufft1(
  * @returns Values `[J]`, as {@link nudft2}.
  * @example
  * ```ts
+ * import { maxOf } from 'whitebox-engine/base'
  * import { nufft2, nudft2 } from 'whitebox-engine/numerics/fourier'
  * import { toArray } from 'whitebox-engine/tensor'
  * const x = [0.3, 1.7, -2.2]
  * const fast = toArray(nufft2(x, [1, 2, 3, 4]).im)
  * const slow = toArray(nudft2(x, [1, 2, 3, 4]).im)
- * Math.max(...fast.map((v, i) => Math.abs(v - slow[i]))) < 1e-10 // => true
+ * maxOf(fast.map((v, i) => Math.abs(v - slow[i]))) < 1e-10 // => true
  * ```
  */
 export function nufft2(

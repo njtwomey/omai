@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,
   fromStorage,
@@ -165,7 +165,7 @@ export function chebyshev(coefficients: readonly number[], domain: readonly [num
 }
 
 function trimCoefficients(c: readonly number[]): number[] {
-  const scale = Math.max(...c.map(Math.abs), 0)
+  const scale = Math.max(maxOf(c.map(Math.abs)), 0)
   let n = c.length
   while (n > 1 && Math.abs(c[n - 1] ?? 0) <= 1e-14 * scale) n--
   return c.slice(0, n)
@@ -225,7 +225,7 @@ export function chebfun(
     if (values.some((v) => !Number.isFinite(v)))
       throw new WhiteboxError('value', 'chebfun: the function is not finite on the domain')
     const c = chebyshevCoefficients(values)
-    const scale = Math.max(...c.map(Math.abs), Number.MIN_VALUE)
+    const scale = Math.max(maxOf(c.map(Math.abs)), Number.MIN_VALUE)
     // Converged when the last few coefficients (an eighth of them, at least 4) are all negligible.
     const tail = Math.max(4, Math.floor(n / 8))
     const negligible = c.slice(-tail).every((v) => Math.abs(v) <= tol * scale)

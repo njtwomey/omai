@@ -1,4 +1,4 @@
-import { type Direction, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { type Direction, type MetricSpec, maxOf, WhiteboxError } from '../base/index.ts'
 import { type Metric, type MetricOptions, perOutputMetric, weightedMean } from './metric.ts'
 
 const map = (n: number, f: (i: number) => number): Float64Array => Float64Array.from({ length: n }, (_, i) => f(i))
@@ -132,7 +132,7 @@ export const medianAbsoluteError: Metric = perOutputMetric(
  * ```
  */
 export const maxError: Metric = perOutputMetric(spec('maxError', 'lower', [0, Infinity]), (t, p) =>
-  Math.max(...residuals(t, p).map(Math.abs)),
+  maxOf(residuals(t, p).map(Math.abs)),
 )
 
 /**

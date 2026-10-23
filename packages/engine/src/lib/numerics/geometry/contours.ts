@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -200,8 +200,8 @@ function assemble(segments: readonly [Pt, Pt][]): Pt[][] {
  */
 export function contourLevels(z: TensorLike, n = 7): number[] {
   const values = toFlat(concreteOrThrow(promoteFloat(z)[0] as Tensor, 'contourLevels')).filter((v) => !Number.isNaN(v))
-  const lo = Math.min(...values)
-  const hi = Math.max(...values)
+  const lo = minOf(values)
+  const hi = maxOf(values)
   if (!(hi > lo)) return []
   const raw = (hi - lo) / n
   const power = 10 ** Math.floor(Math.log10(raw))

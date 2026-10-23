@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -196,7 +196,7 @@ export function ppoly(coefficients: TensorLike, breakpoints: TensorLike, extrapo
 /** Real roots of sum_j a_j t^(n - j) (highest first), by companion-matrix eigenvalues polished with Newton steps. */
 export function realRoots(coefficients: readonly number[]): number[] {
   let a = [...coefficients]
-  const scale = Math.max(...a.map(Math.abs))
+  const scale = maxOf(a.map(Math.abs))
   if (scale === 0) return []
   while (a.length > 0 && Math.abs(a[0] ?? 0) <= 1e-14 * scale) a = a.slice(1)
   const n = a.length - 1

@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { minOf, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../../random/index.ts'
 import {
   concreteOrThrow,
@@ -74,7 +74,7 @@ export function randomizedSvd(
   options: RandomizedOptions = {},
 ): { readonly u: Value; readonly s: Value; readonly vh: Value } {
   const [m] = promoteFloat(a) as [Value]
-  const size = Math.min(rank + (options.oversample ?? 10), Math.min(...m.shape))
+  const size = Math.min(rank + (options.oversample ?? 10), minOf(m.shape))
   const q = randomizedRangeFinder(m, size, options)
   const { u, s, vh } = svd(matmul(mT(q), m))
   return { u: sliceAxis(matmul(q, u), 1, 0, rank), s: sliceAxis(s, 0, 0, rank), vh: sliceAxis(vh, 0, 0, rank) }

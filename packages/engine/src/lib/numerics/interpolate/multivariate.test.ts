@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
 import { grad } from '../../autodiff/index.ts'
+import { maxOf, minOf } from '../../base/index.ts'
 import { item, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as I from './index.ts'
 
@@ -77,8 +78,8 @@ describe('scattered interpolation properties', () => {
     expect(toFlat(f(sites))).toEqual(linear)
     const inner = toFlat(f(queries))
     for (const v of inner) {
-      expect(v).toBeGreaterThanOrEqual(Math.min(...linear))
-      expect(v).toBeLessThanOrEqual(Math.max(...linear))
+      expect(v).toBeGreaterThanOrEqual(minOf(linear))
+      expect(v).toBeLessThanOrEqual(maxOf(linear))
     }
   })
 

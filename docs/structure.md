@@ -394,8 +394,10 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 - `results.ts`: the shared result shapes: `Estimate` (value, standard error, interval, level, method), `TestResult`
   (statistic, p-value, degrees of freedom, effect size, alternative, method, assumptions), `MetricResult` (estimate,
   breakdowns, sample size), `MetricSpec` (name, inputs, direction, range, category, concept), `formatResult`.
-- `numbers.ts`: `isClose`, `allClose`, `clamp`, `kahanSum`, `pairwiseSum`, `maxOf`, `minOf`, `argmaxOf` (loops, never
-  spreading arrays into `Math.max`), `range`, `linspaceNumbers`.
+- `numbers.ts`: `isClose`, `allClose`, `clamp`, `kahanSum` (Neumaier), `pairwiseSum`, `maxOf`, `minOf`, `argmaxOf`,
+  `argminOf` (loops, never spreading arrays into `Math.max`), `range`, `linspaceNumbers`.
+- `heap.ts`: `heap`, a binary heap with a comparator (the priority queue of neighbour searches, shortest paths and
+  best-first search).
 - `options.ts`: shared option shapes (`Tolerance`, `Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults.
 - `version.ts`: `VERSION`, generated from `package.json`.
 
@@ -651,8 +653,8 @@ primitives; "custom" means a dedicated rule.
   equioscillation, `chebyshevSeries`.
 - `pade.ts`: `pade` (approximants from Taylor coefficients), `continuedFraction` (modified Lentz).
 - `acceleration.ts`: `richardson`, `aitken`, `shanks`, `wynnEpsilon`, `eulerTransform`.
-- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon`, `toFloat32`, `twoSum`, `twoProduct`, `kahanSum`,
-  `neumaierSum`, `pairwiseSum`, `propagateError`, `conditionNumber`, `significantDigits`.
+- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon`, `toFloat32`, `twoSum`, `twoProduct`, `compensatedSum`
+  (naive, Kahan, and base's Neumaier and pairwise sums), `propagateError`, `conditionNumber`, `significantDigits`.
 
 `fourier/` (numpy.fft, scipy.fft; linear, so differentiable)
 - `complex.ts`: `ComplexValue` (a pair of real values; the engine has no complex dtype), `complex`, arithmetic (`cAdd`,

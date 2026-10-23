@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -106,7 +106,7 @@ export function orth(a: TensorLike, rcond?: number): Value {
   const [m] = promoteFloat(a) as [Value]
   const { u, s } = svd(m)
   const values = toFlat(primalOf(s))
-  const tol = (rcond ?? Math.max(...m.shape) * 2.220446049250313e-16) * (values[0] ?? 0)
+  const tol = (rcond ?? maxOf(m.shape) * 2.220446049250313e-16) * (values[0] ?? 0)
   const rank = values.filter((v) => v > tol).length
   return sliceAxis(u, 1, 0, rank)
 }

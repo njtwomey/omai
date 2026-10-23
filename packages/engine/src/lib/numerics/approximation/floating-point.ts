@@ -1,5 +1,5 @@
 import { grad } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { kahanSum, pairwiseSum, WhiteboxError } from '../../base/index.ts'
 import { item, tensor, type Value } from '../../tensor/index.ts'
 
 const buffer = new DataView(new ArrayBuffer(8))
@@ -127,66 +127,48 @@ export function twoProduct(a: number, b: number): [number, number] {
   return [p, al * bl - (p - ah * bh - al * bh - ah * bl)]
 }
 
-/**
- * Kahan's compensated summation: the rounding error of each addition is carried into the next.
- *
- * @param xs - Terms.
- * @returns The sum, with error independent of n to first order.
- * @example
- * ```ts
- * import { kahanSum } from 'whitebox-engine/numerics/approximation'
- * kahanSum(new Array(10).fill(0.1)) // => 1
- * ```
- */
-export function kahanSum(xs: readonly number[]): number {
-  let sum = 0
-  let c = 0
-  for (const x of xs) {
-    const y = x - c
-    const t = sum + y
-    c = t - sum - y
-    sum = t
-  }
-  return sum
-}
+/** The summation algorithms of {@link compensatedSum}. */
+export type SumMethod = 'naive' | 'kahan' | 'neumaier' | 'pairwise'
 
 /**
- * Neumaier's improved compensated summation (also correct when a term exceeds the running sum).
+ * Sum with a chosen algorithm, to compare their rounding errors: naive left-to-right; Kahan's compensated summation
+ * (each addition's rounding error carried into the next); Neumaier's variant (also correct when a term exceeds the
+ * running sum; base's kahanSum); pairwise (cascade) summation as numpy (base's pairwiseSum).
  *
  * @param xs - Terms.
+ * @param method - The algorithm (default neumaier).
  * @returns The sum.
+ * @concept floating-point
  * @example
  * ```ts
- * import { neumaierSum } from 'whitebox-engine/numerics/approximation'
- * neumaierSum([1, 1e100, 1, -1e100]) // => 2
+ * import { compensatedSum } from 'whitebox-engine/numerics/approximation'
+ * compensatedSum([1, 1e100, 1, -1e100], 'neumaier') // => 2
+ * compensatedSum([1, 1e100, 1, -1e100], 'kahan') // => 0
  * ```
  */
-export function neumaierSum(xs: readonly number[]): number {
-  let sum = 0
-  let c = 0
-  for (const x of xs) {
-    const t = sum + x
-    c += Math.abs(sum) >= Math.abs(x) ? sum - t + x : x - t + sum
-    sum = t
+export function compensatedSum(xs: ArrayLike<number>, method: SumMethod = 'neumaier'): number {
+  switch (method) {
+    case 'naive': {
+      let s = 0
+      for (let i = 0; i < xs.length; i++) s += xs[i] ?? 0
+      return s
+    }
+    case 'kahan': {
+      let sum = 0
+      let c = 0
+      for (let i = 0; i < xs.length; i++) {
+        const y = (xs[i] ?? 0) - c
+        const t = sum + y
+        c = t - sum - y
+        sum = t
+      }
+      return sum
+    }
+    case 'neumaier':
+      return kahanSum(xs)
+    case 'pairwise':
+      return pairwiseSum(xs)
   }
-  return sum + c
-}
-
-/**
- * Pairwise (cascade) summation, as numpy's sum: error O(log n) instead of O(n).
- *
- * @param xs - Terms.
- * @returns The sum.
- * @example
- * ```ts
- * import { pairwiseSum } from 'whitebox-engine/numerics/approximation'
- * pairwiseSum([1, 2, 3, 4]) // => 10
- * ```
- */
-export function pairwiseSum(xs: readonly number[]): number {
-  if (xs.length <= 8) return xs.reduce((s, x) => s + x, 0)
-  const mid = Math.floor(xs.length / 2)
-  return pairwiseSum(xs.slice(0, mid)) + pairwiseSum(xs.slice(mid))
 }
 
 /**

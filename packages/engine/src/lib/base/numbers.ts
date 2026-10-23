@@ -81,6 +81,30 @@ export function kahanSum(xs: ArrayLike<number>): number {
 }
 
 /**
+ * Pairwise (cascade) summation, as numpy's sum: rounding error grows like O(log n) rather than O(n).
+ *
+ * @param xs - The numbers.
+ * @returns Their sum.
+ * @example
+ * ```ts
+ * import { pairwiseSum } from 'whitebox-engine/base'
+ * pairwiseSum([1, 2, 3, 4]) // => 10
+ * ```
+ */
+export function pairwiseSum(xs: ArrayLike<number>): number {
+  const sumRange = (lo: number, hi: number): number => {
+    if (hi - lo <= 8) {
+      let s = 0
+      for (let i = lo; i < hi; i++) s += xs[i] ?? 0
+      return s
+    }
+    const mid = (lo + hi) >> 1
+    return sumRange(lo, mid) + sumRange(mid, hi)
+  }
+  return sumRange(0, xs.length)
+}
+
+/**
  * Maximum of a list by a loop (never spreading into `Math.max`, which fails on long arrays).
  *
  * @param xs - The numbers.
@@ -147,6 +171,30 @@ export function argmaxOf(xs: ArrayLike<number>): number {
 }
 
 /**
+ * Index of the first minimum of a list.
+ *
+ * @param xs - The numbers.
+ * @returns The index, or -1 for an empty list.
+ * @example
+ * ```ts
+ * import { argminOf } from 'whitebox-engine/base'
+ * argminOf([3, 1, 1, 2]) // => 1
+ * ```
+ */
+export function argminOf(xs: ArrayLike<number>): number {
+  let best = -1
+  let m = Infinity
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i] ?? Infinity
+    if (best === -1 || x < m) {
+      best = i
+      m = x
+    }
+  }
+  return best
+}
+
+/**
  * The integers `start, start + step, ...` below `stop`.
  *
  * @param start - First value (or the stop when it is the only argument).
@@ -166,4 +214,24 @@ export function range(start: number, stop?: number, step = 1): number[] {
   if (step > 0) for (let i = lo; i < hi; i += step) out.push(i)
   else if (step < 0) for (let i = lo; i > hi; i += step) out.push(i)
   return out
+}
+
+/**
+ * n evenly spaced numbers from start to stop inclusive (numpy.linspace on plain numbers); the last equals stop exactly.
+ *
+ * @param start - First value.
+ * @param stop - Last value.
+ * @param n - Count (default 50).
+ * @returns The list.
+ * @example
+ * ```ts
+ * import { linspaceNumbers } from 'whitebox-engine/base'
+ * linspaceNumbers(0, 1, 5) // => [0, 0.25, 0.5, 0.75, 1]
+ * ```
+ */
+export function linspaceNumbers(start: number, stop: number, n = 50): number[] {
+  if (n <= 0) return []
+  if (n === 1) return [start]
+  const step = (stop - start) / (n - 1)
+  return Array.from({ length: n }, (_, i) => (i === n - 1 ? stop : start + i * step))
 }

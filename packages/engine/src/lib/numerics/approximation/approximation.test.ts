@@ -95,7 +95,10 @@ describe('approximation properties', () => {
     const [s, e] = A.twoSum(0.1, 0.2)
     expect(s + e === 0.1 + 0.2 || e !== 0).toBe(true)
     const terms = Array.from({ length: 10000 }, () => 0.1)
-    expect(Math.abs(A.kahanSum(terms) - 1000)).toBeLessThan(Math.abs(terms.reduce((a, b) => a + b) - 1000))
-    expect(A.neumaierSum([1e16, 1, -1e16])).toBe(1)
+    expect(Math.abs(A.compensatedSum(terms, 'kahan') - 1000)).toBeLessThan(
+      Math.abs(A.compensatedSum(terms, 'naive') - 1000),
+    )
+    expect(A.compensatedSum([1e16, 1, -1e16])).toBe(1)
+    expect(A.compensatedSum(terms, 'pairwise')).toBeCloseTo(1000, 11)
   })
 })

@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -49,7 +49,7 @@ export function barycentric(x: TensorLike, y: TensorLike, weights?: readonly num
   const n = xs.length
   if (yv.shape[0] !== n) throw new WhiteboxError('shape', 'barycentric: x and y must have the same length')
   let w = weights === undefined ? barycentricWeights(xs) : [...weights]
-  const scale = Math.max(...w.map(Math.abs))
+  const scale = maxOf(w.map(Math.abs))
   w = w.map((v) => v / scale)
   const nodes = fromStorage(Float64Array.from(xs), [n], 'float64')
   const wt = fromStorage(Float64Array.from(w), [n], 'float64')
@@ -87,7 +87,7 @@ export function barycentric(x: TensorLike, y: TensorLike, weights?: readonly num
 /** Barycentric weights 1 / prod_{k != j} (x_j - x_k), computed with a scaling that avoids overflow. */
 export function barycentricWeights(x: readonly number[]): number[] {
   const n = x.length
-  const span = Math.max(...x) - Math.min(...x) || 1
+  const span = maxOf(x) - minOf(x) || 1
   // Dividing each difference by span / 4 keeps the products in range (the capacity of the interval).
   const c = span / 4
   return x.map((xj, j) => {
@@ -131,7 +131,7 @@ export function lagrange(x: readonly number[], y: readonly number[]): number[] {
     const scale = (y[j] ?? 0) / denom
     total = total.map((t, i) => t + scale * (basis[i] ?? 0))
   }
-  return total.map((v) => (Math.abs(v) < 1e-13 * Math.max(1, ...total.map(Math.abs)) ? 0 : v))
+  return total.map((v) => (Math.abs(v) < 1e-13 * Math.max(1, maxOf(total.map(Math.abs))) ? 0 : v))
 }
 
 /**
@@ -203,8 +203,8 @@ export function chebyshevInterpolant(
  */
 export function lebesgueConstant(nodes: readonly number[], samples = 2000): number {
   const w = barycentricWeights(nodes)
-  const a = Math.min(...nodes)
-  const b = Math.max(...nodes)
+  const a = minOf(nodes)
+  const b = maxOf(nodes)
   let best = 0
   for (let s = 0; s <= samples; s++) {
     const x = a + ((b - a) * s) / samples

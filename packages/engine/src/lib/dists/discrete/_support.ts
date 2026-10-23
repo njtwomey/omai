@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   equal,
   exp,
@@ -22,7 +22,7 @@ export const isCount = (x: Value): Value => logicalAnd(greaterEqual(x, 0), equal
 /** The largest entry of a concrete parameter (entropies of count distributions sum their pmf up to a bound from it). */
 export function largest(v: Value, name: string): number {
   if (!isTensor(v)) throw new WhiteboxError('not-differentiable', `${name}: entropy needs concrete parameters`)
-  return Math.max(...toFlat(v))
+  return maxOf(toFlat(v))
 }
 
 /** -sum_k p_k log p_k over k = 0 .. kmax, with k on a new leading axis so the parameters broadcast against it. */

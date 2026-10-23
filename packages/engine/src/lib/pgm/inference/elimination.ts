@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, WhiteboxError } from '../../base/index.ts'
 import { nullTracer, startRun, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import {
   type Factor,
@@ -157,7 +157,7 @@ export function mapQuery(
 ): { readonly assignment: Record<string, string>; readonly probability: number } {
   const { posterior } = variableElimination(bn, query, options)
   const best = factorArgmax(posterior)
-  const probability = Math.max(...factorValues(posterior))
+  const probability = maxOf(factorValues(posterior))
   return {
     assignment: Object.fromEntries(Object.entries(best).map(([k, i]) => [k, bayesNode(bn, k).states[i] ?? String(i)])),
     probability,
