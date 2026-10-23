@@ -2450,12 +2450,18 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `events.ts`: Poisson and Hawkes event data with true intensities: `poissonProcess`, `inhomogeneousPoisson`
   (sinusoidal, piecewise and ramp intensities), `hawkesProcess` and `multivariateHawkes` (with each event's parent
   and the exact log-likelihood), `spatialPoisson`.
-- `comparisons.ts`: games between players with latent skills (chess-like Elo data, tournaments) with true skills.
-- `ranking.ts`: explicit ratings with low-rank truth, click logs (position and cascade models with propensities),
-  implicit feedback, Zipfian catalogues, a small MovieLens (remote).
-- `corpus.ts`: toy and topic corpora with true topics, drifting topics, worked-example corpora, nursery rhymes, Tiny
-  Shakespeare (remote), near-duplicate corpora with planted duplicates (for shingle matching and record linkage).
-- `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic.
+- `comparisons.ts`: games between players with latent skills (chess-like Elo data with draws and skill drift:
+  `eloGames`; tournaments: `roundRobin`; TrueSkill-style `multiplayerRaces`) with true skills.
+- `ranking.ts`: explicit ratings with low-rank truth (`lowRankRatings`, observed at random or not), click logs
+  (`clickLogs`: position and cascade models with logging-policy propensities), implicit feedback (`implicitFeedback`,
+  Poisson factorisation), Zipfian catalogues (`zipfianCatalogue`), a small MovieLens (`movielensSmall`, remote).
+- `corpus.ts`: toy and topic corpora with true topics (`naiveBayesCorpus`, `topicCorpus` with Dirichlet or bars
+  topics), drifting topics (`driftingTopics`), worked-example corpora (`workedExampleCorpus`: Deerwester's LSA
+  titles, the IR book's Caesar passages), `nurseryRhymes`, Tiny Shakespeare (`tinyShakespeare`, remote), near-duplicate
+  corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage).
+- `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
+  (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
+  `modularArithmetic`), each with an exact solver in its truth.
 - `graphs.ts`: karate club, Les Miserables, contextual stochastic block models, graph families, small molecules,
   knowledge-graph triples.
 - `images.ts`: shapes, digit glyphs, bars and stripes, geometric scenes with true edges and corners, a small
