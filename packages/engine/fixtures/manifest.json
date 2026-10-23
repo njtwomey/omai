@@ -391,6 +391,14 @@
       "cases": 27
     },
     {
+      "fixture": "optim/sparse_updates.json",
+      "source": "oracle/cases/optim/sparse_updates.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {

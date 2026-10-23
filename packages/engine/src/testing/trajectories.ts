@@ -30,11 +30,20 @@ export function everyThird(shape: readonly number[], t: number): Value {
   return reshape(tensor(flat), [...shape])
 }
 
+/** The oracle's row mask: row r is dropped at step t when (r + t) % 3 == 0, entry (r, j) when (r + j + t) % 4 == 0. */
+export function rowsAndEntries(shape: readonly number[], t: number): Value {
+  const [m = 0, n = 0] = shape
+  const rows = Array.from({ length: m }, (_, r) =>
+    Array.from({ length: n }, (_, j) => ((r + t) % 3 !== 0 && (r + j + t) % 4 !== 0 ? 1 : 0)),
+  )
+  return tensor(rows)
+}
+
 /** Run an optimiser on a fixture case's objective and return the stacked parameters after every step. */
 export function trajectory(
   c: GoldenCase,
   opt: GradientTransformation,
-  options: { readonly mask?: boolean } = {},
+  options: { readonly mask?: 'element' | 'rows' } = {},
 ): { readonly path: Value; readonly state: unknown } {
   const [p0, a, cc] = c.inputs.map((x) => decode(x) as Tensor) as [Tensor, Tensor, Tensor]
   const vg = valueAndGrad(testObjective(a, cc))
@@ -43,7 +52,12 @@ export function trajectory(
   const path: Value[] = []
   for (let t = 0; t < (c.params['steps'] as number); t++) {
     const g = vg(params).grad
-    const grad = options.mask === true ? mul(g, everyThird(p0.shape, t)) : g
+    const grad =
+      options.mask === 'element'
+        ? mul(g, everyThird(p0.shape, t))
+        : options.mask === 'rows'
+          ? mul(g, rowsAndEntries(p0.shape, t))
+          : g
     const { updates, state: next } = opt.update(grad, state, params)
     params = applyUpdates(params, updates) as Value
     state = next

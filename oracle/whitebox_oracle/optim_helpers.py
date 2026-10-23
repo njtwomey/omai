@@ -51,6 +51,16 @@ def every_third(shape: tuple[int, ...]) -> Callable[[int], FloatArray]:
     return mask
 
 
+def rows_and_entries(shape: tuple[int, int]) -> Callable[[int], FloatArray]:
+    """Row r is dropped at step t when (r + t) % 3 == 0, and entry (r, j) of a kept row when (r + j + t) % 4 == 0."""
+
+    def mask(t: int) -> FloatArray:
+        r, j = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]), indexing="ij")
+        return (((r + t) % 3 != 0) & ((r + j + t) % 4 != 0)).astype(np.float64)
+
+    return mask
+
+
 def torch_trajectory(
     make: TorchFactory,
     p0: FloatArray = P0,
@@ -59,6 +69,7 @@ def torch_trajectory(
     steps: int = STEPS,
     mask: Mask = None,
     sparse: bool = False,
+    sparse_dim: int | None = None,
 ) -> FloatArray:
     """The parameters after each of `steps` optimiser steps from p0 (gradients masked, and sparse, if asked).
 
@@ -77,7 +88,10 @@ def torch_trajectory(
             grad = p.grad
             if grad is not None and mask is not None:
                 masked = grad * torch.tensor(mask(t), dtype=torch.float64)
-                p.grad = masked.to_sparse() if sparse else masked
+                if not sparse:
+                    p.grad = masked
+                else:
+                    p.grad = masked.to_sparse() if sparse_dim is None else masked.to_sparse(sparse_dim=sparse_dim)
             opt.step()
             out.append(p.detach().numpy().copy())
         return np.stack(out)

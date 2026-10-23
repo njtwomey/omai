@@ -2,5 +2,6 @@
 export * from './adaptive.ts'
 export * from './first-order.ts'
 export * from './schedules.ts'
+export * from './sparse-updates.ts'
 export * from './transform.ts'
 export * from './minimize/index.ts'
