@@ -19,8 +19,13 @@ oracle-core = [
     "networkx",
     "scikit-image>=0.26.0",
     "shapely>=2.2.0",
+    "pot>=0.9.7.post1",
+    "cvxpy>=1.9.3",
 ]
-oracle-torch = ["torch"]
+oracle-torch = [
+    "optax>=0.2.8",
+    "torch",
+]
 oracle-prob = ["pgmpy"]
 oracle-rl = ["gymnasium"]
 
