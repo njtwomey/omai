@@ -1575,7 +1575,9 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   modules.
 - `functional/positional.ts`: sinusoidal and learned positions, rotary angles and `applyRotary` (half or interleaved
   pairs, partial rotary, position interpolation), ALiBi slopes and bias.
-- `functional/recurrent.ts`: RNN, GRU and LSTM cells, `scan` over time, bidirectional runs, packed sequences.
+- `functional/recurrent.ts`: RNN, GRU and LSTM cells (LSTM projection), `scan` over time, `recurrent` (stacked,
+  bidirectional runs with per-sequence lengths and dropout between layers), packed sequences (`packPaddedSequence`,
+  `padPackedSequence`, `packedLengths`, `lengthsFromMask`).
 - `functional/state-space.ts`: SSM discretisation, S4 convolution kernels, selective scan (Mamba), delta rule, LRU.
 - `functional/graph.ts`: message passing, GCN, GAT, GraphSAGE and GIN convolutions, edge softmax, graph pooling.
 - `functional/vision.ts`: upsampling (nearest, bilinear), pixel shuffle, ROI align, spatial transformers, patch
@@ -1603,7 +1605,8 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   statistics), `LocalResponseNorm`.
 - `module/parametrisation.ts`: `WeightNorm` and `SpectralNorm` wrappers (PyTorch's `weight_g`/`weight_v` and
   `weight_orig`/`weight_u`/`weight_v` layouts; power-iteration vectors as buffers), `spectralNormEstimate`.
-- `module/recurrent.ts`: `RNN`, `GRU`, `LSTM` (stacked, bidirectional) and their cells.
+- `module/recurrent.ts`: `RNN`, `GRU`, `LSTM` (stacked, bidirectional, batch-first, initial states, packed or padded
+  inputs with lengths, LSTM `projSize`; PyTorch's weight names) and `RNNCell`, `LSTMCell`, `GRUCell`.
 - `module/attention.ts`: `MultiheadAttention` (PyTorch's layout, sequence- or batch-first), `GroupedQueryAttention`
   (grouped- and multi-query heads, rotary positions, sliding windows, soft-capping, cross-attention, `KVCache`),
   `emptyKVCache`.

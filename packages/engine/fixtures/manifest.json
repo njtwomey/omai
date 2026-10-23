@@ -123,6 +123,14 @@
       "cases": 46
     },
     {
+      "fixture": "nn/module/recurrent.json",
+      "source": "oracle/cases/nn/module/recurrent.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "nn/module/transformer.json",
       "source": "oracle/cases/nn/module/transformer.py",
       "reference": {
