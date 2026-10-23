@@ -97,7 +97,7 @@ describe('differential evolution', () => {
     const polished = differentialEvolution((x) => rosen(v(x)), [0, 0], { bounds: box2, seed: 0, tracer: rec })
     const [root] = runTree(rec.run())
     expect(root?.run.name).toBe('differentialEvolution')
-    expect(root?.children.map((c) => c.run.name)).toEqual(['nelderMead'])
+    expect(root?.children.map((c) => c.run.name)).toEqual(['lbfgsb'])
     close(flat(polished.x), [1, 1], 1e-7)
     const custom = differentialEvolution((x) => rosen(v(x)), [0, 0], { bounds: box2, seed: 0, polish: powell })
     close(flat(custom.x), [1, 1], 1e-4)

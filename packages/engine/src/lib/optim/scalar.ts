@@ -123,7 +123,14 @@ export function bracket(f: ScalarFunction, options: BracketSearchOptions = {}): 
     Number.isFinite(xb) &&
     Number.isFinite(xc)
   if (!valid)
-    throw new WhiteboxError('convergence', 'bracket: the search ended without a valid bracket', { xa, xb, xc })
+    throw new WhiteboxError('convergence', 'bracket: the search ended without a valid bracket', {
+      xa,
+      xb,
+      xc,
+      fa,
+      fb,
+      fc,
+    })
   return { xa, xb, xc, fa, fb, fc, nfev }
 }
 
