@@ -2,6 +2,24 @@
   "schema": "whitebox.fixtures/1",
   "fixtures": [
     {
+      "fixture": "data/batching.json",
+      "source": "oracle/cases/data/batching.py",
+      "reference": {
+        "torch": "2.14.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "data/tensors.json",
+      "source": "oracle/cases/data/tensors.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "dists/continuous.json",
       "source": "oracle/cases/dists/continuous.py",
       "reference": {

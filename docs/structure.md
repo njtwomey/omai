@@ -709,38 +709,59 @@ primitives; "custom" means a dedicated rule.
 ### 4.11 `data/` (tier 5): datasets, generators and truth (torch.utils.data, sklearn.datasets)
 
 One schema per task kind. Each schema declares its per-row fields, so one `take` and one `split` work for all of them.
+Every schema file also has a validating constructor that fills defaults (names, metadata). `schema/` and `modifiers/`
+are inlined into `whitebox-engine/data`.
 - `schema/common.ts`: `DatasetMeta` (name, description, task, source, url, licence, citation, sha256, recipe, key),
-  `DatasetKind`, `perRowFields`.
+  `DatasetKind`, `Dataset` (the union of every schema), `RecipeStamp`, `perRowFields`, `rowCount`.
 - `schema/tabular.ts`: `RegressionData`, `ClassificationData`, `MultilabelData`, `MultiOutputData`, `TableData` (named
-  mixed-type columns), zod schemas.
-- `schema/ranking.ts`: `InteractionData` (users, items, values, times, sessions, propensities), `QueryData`.
+  mixed-type columns: numeric, categorical, boolean, text, with missing values), `TabularData`, zod schemas
+  (`TensorSchema`, `DatasetMetaSchema`, `RegressionDataSchema`, `ClassificationDataSchema`, `MultilabelDataSchema`,
+  `MultiOutputDataSchema`, `TableColumnSchema`, `TableDataSchema`).
+- `schema/ranking.ts`: `InteractionData` (users, items, values, times, sessions, positions, propensities), `QueryData`;
+  `interactions`, `queryData`.
 - `schema/corpus.ts`: `CorpusData` (documents or token sequences, labels, vocabulary), `SequenceLabellingData`,
-  `ParallelData`.
-- `schema/sequence.ts`: `SequenceData` (input and target token sequences, masks) for sequence tasks.
-- `schema/timeseries.ts`: `TimeSeriesData` (times, values `[n, channels]`, sampling rate, events, segment labels).
-- `schema/events.ts`: `EventData` (event times or locations with marks) for point processes.
-- `schema/comparisons.ts`: `ComparisonData` (pairwise or multi-way outcomes with players, ties and times) for rating
-  models.
-- `schema/graph.ts`: `GraphData` (one or many graphs, node and edge features, labels, masks), `TripleData`.
-- `schema/image.ts`: `ImageData` (`[n, h, w, c]`, labels, boxes, masks).
-- `schema/trajectories.ts`: `TrajectoryData` (observations, actions, rewards, terminations, behaviour propensities).
+  `ParallelData`; `corpus`, `sequenceLabelling`, `parallel`.
+- `schema/sequence.ts`: `SequenceData` (input and target token sequences, masks) for sequence tasks; `sequences`.
+- `schema/timeseries.ts`: `TimeSeriesData` (times, values `[n, channels]`, sampling rate, period, events, segment
+  labels); `timeSeries`.
+- `schema/events.ts`: `EventData` (event times or locations with marks, sequences, window and region) for point
+  processes; `events`.
+- `schema/comparisons.ts`: `ComparisonData` (pairwise or multi-way outcomes as finishing places, with players, ties and
+  times) for rating models; `comparisons`, `pairwise`.
+- `schema/graph.ts`: `GraphData` (one or many graphs, node and edge features, labels, masks), `GraphRecord`,
+  `TripleData`; `graphRecord`, `graphData`, `triples`.
+- `schema/image.ts`: `ImageData` (`[n, h, w, c]`, labels, boxes, masks); `images`.
+- `schema/trajectories.ts`: `TrajectoryData` (observations, actions, rewards, terminations, truncations, episodes,
+  behaviour propensities); `trajectories`.
 - `generator.ts`: `DatasetGenerator` (name, kind, knobs as a `Space`, `generate(key, knobs) -> { data, truth }`),
-  `generate` (resolves keys from the context), `describeGenerator`.
+  `Generated`, `generate` (resolves keys from the context, validates knobs, stamps the recipe and key),
+  `describeGenerator`, `asGenerated` (a real dataset as `{ data, truth }` for modifiers).
 - `truth.ts`: the `Truth` interface: `program` (the generating probabilistic program), `logProb`, `posterior`,
-  `regressionFunction`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`, `structure`; helpers that
-  derive missing pieces from the program when possible.
-- `rows.ts`: `take`, `trainTestSplit`, `trainValTestSplit`, `stratifiedSplit`, `bootstrap`, `concatRows`,
-  `shuffleRows`.
-- `tensors.ts`: `toTensors`, `fromTensors`, `xy` (build a dataset from arrays), `describe`.
-- `loader.ts`: `DatasetRef`, `load` (embedded or remote; sha256 verification with Web Crypto), `AssetCache` (memory and
-  IndexedDB).
-- `batching.ts`: `batches` (batch size, shuffle by key, drop last), `epochs`, `collate`, `padSequences`, `bucketBy`.
-- `recipes.ts`: `Recipe` (a generator plus modifiers with their keys, as data), `makeFromRecipe`, `describeRecipe`,
-  `encodeRecipe`, `parseRecipe`.
-- `modifiers/labels.ts`: `withLabelNoise`, `withPrevalence`, `withLabelShift`, `withClassImbalance`.
+  `regressionFunction`, `quantile`, `noiseScale`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`
+  (`CausalEffects`: ATE, ATT, CATE, ITE, potential outcomes), `structure`, `relevantFeatures`; helpers that derive
+  missing pieces: `completeTruth`, `posteriorFromJoint` (Bayes' rule from the joint density), `bayesErrorEstimate`,
+  `bayesPredict`, `clusterAgreement`, `excessRisk`.
+- `rows.ts`: `take`, `trainTestSplit` (optionally stratified), `trainValTestSplit`, `stratifiedSplit`,
+  `stratifiedIndices`, `bootstrap` (with out-of-bag rows), `concatRows`, `shuffleRows`, `labelsOf`.
+- `tensors.ts`: `toTensors`, `fromTensors`, `xy`, `xyClasses`, `xyMultilabel`, `xyMultiOutput` (build a dataset from
+  arrays), `table`, `tableToXy` (one-hot or code encoding), `describe` (pandas-style feature summaries and class
+  counts).
+- `loader.ts`: `DatasetRef`, `load` (embedded or remote; sha256 verification with Web Crypto), `AssetCache`
+  (`memoryCache`, `indexedDbCache`), `sha256Hex`.
+- `samplers.ts`: `Sampler`, `sequentialSampler`, `randomSampler`, `weightedRandomSampler`, `subsetRandomSampler`,
+  `batchSampler`, `balancedWeights` (torch.utils.data samplers, reshuffled per epoch by derived keys).
+- `batching.ts`: `batches` (batch size, shuffle by key or sampler, drop last), `epochBatches`, `epochs`, `dataLoader`,
+  `collate`, `padSequences`, `sequenceLengths`, `bucketBy`.
+- `recipes.ts`: `Recipe` (a generator plus modifiers with their keys, as data), `Modifier`, `builtinModifiers`,
+  `makeFromRecipe`, `describeRecipe`, `encodeRecipe`, `parseRecipe`, `RecipeSchema`.
+- `modifiers/labels.ts`: `withLabelNoise` (symmetric, pair-flip or a transition matrix; `noiseTransition`),
+  `withPrevalence`, `withLabelShift`, `withClassImbalance` (exponential and step profiles); posteriors adjusted.
 - `modifiers/features.ts`: `withMissing` (MCAR, MAR, MNAR), `withOutliers`, `withNuisanceFeatures`, `withTransform`
-  (keeping the density truth consistent), `withCorrelatedFeatures`.
-- `modifiers/shift.ts`: `withCovariateShift`, `withConceptDrift`, `shiftedSplit`, `semiSupervisedSplit`.
+  (keeping the density truth consistent; `featureTransform`), `withCorrelatedFeatures` (Toeplitz and equicorrelated).
+- `modifiers/shift.ts`: `withCovariateShift` (with the density ratio), `withConceptDrift` (sudden, gradual,
+  recurring), `shiftedSplit`, `semiSupervisedSplit`.
+Each modifier also comes as a recipe `Modifier` (`labelNoiseModifier`, `missingModifier`, and so on).
+
 ### 4.12 `foundations/` (tier 6): mathematical foundations
 
 The mathematics underneath machine learning, written so each idea can be computed, drawn and stepped through.
