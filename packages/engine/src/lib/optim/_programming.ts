@@ -67,3 +67,15 @@ export function matVec(a: Dense, x: ArrayLike<number>, transpose = false): Float
 export function vectorTensor(x: ArrayLike<number>): Tensor<'float64'> {
   return fromStorage(Float64Array.from(x), [x.length], 'float64')
 }
+
+/** The quadratic 1/2 x^T P x + q^T x for an n x n row-major P. */
+export function quadraticValue(P: Float64Array, q: Float64Array, x: ArrayLike<number>): number {
+  const n = q.length
+  let s = 0
+  for (let i = 0; i < n; i++) {
+    let row = 0
+    for (let j = 0; j < n; j++) row += (P[i * n + j] ?? 0) * (x[j] ?? 0)
+    s += (x[i] ?? 0) * (0.5 * row + (q[i] ?? 0))
+  }
+  return s
+}

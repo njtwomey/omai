@@ -1018,7 +1018,13 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   dropped after phase 1), traced pivot by pivot.
 - `lp-interior-point.ts`: `lpInteriorPointAlgorithm`, Mehrotra's predictor-corrector on the homogeneous self-dual
   embedding (certifies infeasible and unbounded programs), with dependent equality rows removed first.
-- `quadratic.ts`: `quadprog` (active set, interior point), box QP, KKT residuals.
+- `quadratic.ts`: `quadprog` (inequalities, equalities and bounds; the method a function value: `qpActiveSet`,
+  `qpInteriorPoint`) with multipliers split by constraint type, `qpArrays` and `QpArrays` (the reusable number-array
+  form), `kktResiduals`, box QP by Bertsekas' projected Newton (`boxQp`, `boxQpAlgorithm`).
+- `qp-active-set.ts`: `qpActiveSetAlgorithm`, the primal active-set method (Nocedal and Wright 16.3) from a phase-1
+  linear program, traced working-set changes.
+- `qp-interior-point.ts`: `qpInteriorPointAlgorithm`, primal-dual Mehrotra predictor-corrector on the reduced KKT
+  system.
 - `conic.ts`: small second-order cone and semidefinite programs by interior point (for teaching and small models).
 - `integer.ts`: `milp` and `milpAlgorithm` (branch and bound on simplex relaxations as child runs, best-first or
   depth-first, incumbent, bound and gap, Gomory mixed-integer cuts at the root, the search tree traced), `knapsack`

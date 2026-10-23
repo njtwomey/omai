@@ -405,6 +405,15 @@
       "cases": 11
     },
     {
+      "fixture": "optim/quadratic.json",
+      "source": "oracle/cases/optim/quadratic.py",
+      "reference": {
+        "cvxpy": "1.9.3",
+        "clarabel": "0.11.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {
