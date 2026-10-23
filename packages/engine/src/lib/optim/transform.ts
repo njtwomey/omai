@@ -136,7 +136,7 @@ export function globalNorm(tree: Tree): Value {
  * ```ts
  * import { clipByGlobalNorm } from 'whitebox-engine/optim'
  * import { tensor, toArray } from 'whitebox-engine/tensor'
- * toArray(clipByGlobalNorm(1).update(tensor([3, 4]), undefined).updates as never) // => [0.6, 0.8]
+ * toArray(clipByGlobalNorm(1).update(tensor([3, 4]), undefined).updates as never).map((v) => Math.round(v * 1e12) / 1e12) // => [0.6, 0.8]
  * ```
  */
 export function clipByGlobalNorm(maxNorm: number): GradientTransformation<undefined> {
