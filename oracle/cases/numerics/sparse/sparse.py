@@ -71,7 +71,7 @@ def cases() -> list[Case]:
             )
     sym = laplacian(8)
     for which in WHICH:
-        w = sla.eigsh(sym, k=3, which=which, tol=1e-13, v0=np.ones(64))[0]
+        w = sla.eigsh(sym, k=3, which=which, tol=1e-13, v0=rng(111).normal(size=64))[0]
         out.append(
             case(
                 f"eigsh/{which}",
@@ -84,7 +84,7 @@ def cases() -> list[Case]:
             )
         )
     rect = sps.random_array((40, 25), density=0.2, rng=g, format="csr")
-    s = sla.svds(rect, k=3, tol=1e-13, v0=np.ones(25))[1]
+    s = sla.svds(rect, k=3, tol=1e-13, v0=rng(112).normal(size=25))[1]
     out.append(
         case(
             "svds", "svds", [dense(sps.csr_array(rect))], np.sort(np.asarray(s, dtype=np.float64)), rtol=1e-8, atol=1e-9
