@@ -214,3 +214,30 @@ def random_potentials(
         size = int(np.prod([cards[v] for v in scope]))
         out.append((scope, [round(float(v), 6) for v in np.exp(scale * g.normal(size=size))]))
     return out
+
+
+def sample_rows(spec: list[NodeSpec], n: int, seed: int) -> list[dict[str, str]]:
+    """Ancestral samples of a node list (inputs for the learners), drawn with a seeded numpy generator."""
+    g = np.random.default_rng(seed)
+    states = {name: s for name, s, _, _ in spec}
+    rows: list[dict[str, str]] = []
+    for _ in range(n):
+        row: dict[str, str] = {}
+        for name, s, parents, cpt in spec:
+            j = 0
+            for p in parents:
+                j = j * len(states[p]) + states[p].index(row[p])
+            row[name] = s[int(g.choice(len(s), p=np.array(cpt[j]) / np.sum(cpt[j])))]
+        rows.append(row)
+    return rows
+
+
+def cpd_rows(cpd: TabularCPD, parents: Sequence[str]) -> list[float]:
+    """A pgmpy CPD as whitebox-js's flat CPT over [...parents, node] (parents in the given order)."""
+    values = np.asarray(cpd.get_values(), dtype=np.float64)  # [r, prod(parent cards)] in pgmpy's evidence order
+    evidence = [str(v) for v in cpd.variables[1:]]
+    r = values.shape[0]
+    cards = [int(c) for c in cpd.cardinality[1:]]
+    table = values.reshape([r, *cards])
+    axes = [1 + evidence.index(p) for p in parents] + [0]
+    return [float(v) for v in np.transpose(table, axes).ravel()]

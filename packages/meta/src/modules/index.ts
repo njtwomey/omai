@@ -53,6 +53,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/optim/minimize': () => import('whitebox-engine/optim/minimize'),
   'whitebox-engine/pgm': () => import('whitebox-engine/pgm'),
   'whitebox-engine/pgm/inference': () => import('whitebox-engine/pgm/inference'),
+  'whitebox-engine/pgm/learning': () => import('whitebox-engine/pgm/learning'),
   'whitebox-engine/pgm/models': () => import('whitebox-engine/pgm/models'),
   'whitebox-engine/random': () => import('whitebox-engine/random'),
   'whitebox-engine/rl': () => import('whitebox-engine/rl'),
