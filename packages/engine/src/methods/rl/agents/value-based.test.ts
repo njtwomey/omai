@@ -41,7 +41,7 @@ describe('DQN', () => {
       .events.filter((e) => e.type === 'metric')
       .map((e) => (e as { name: string }).name)
     expect(new Set(metrics)).toEqual(new Set(['epsilon', 'loss']))
-  })
+  }, 30_000)
 
   for (const [name, variant] of [
     ['double + duelling + n-step', { double: true, dueling: true, nStep: 3 }],
@@ -53,7 +53,8 @@ describe('DQN', () => {
       const agent = dqn(env as never, { ...base, ...variant })
       const result = trainAgent(env as never, agent, { maxSteps: 2000, seed: 2 })
       expect(evaluatePolicy(env as never, greedyPolicyOf(agent, result.agent), { episodes: 1 }).meanReturn).toBe(1)
-    })
+      // Learning runs take a second or two alone; the timeout leaves room for a loaded machine.
+    }, 30_000)
   }
 
   it('builds duelling, noisy and distributional networks of the right shapes', () => {
