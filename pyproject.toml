@@ -27,6 +27,10 @@ oracle-core = [
     "pycocotools>=2.0.11",
     "optax>=0.2.8",
     "pot>=0.9.7.post1",
+    "properscoring>=0.1",
+    "pingouin>=0.7.0",
+    "krippendorff>=0.9.0",
+    "prdc>=0.2",
 ]
 oracle-torch = [
     "monai>=1.6.1",

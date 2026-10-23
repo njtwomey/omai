@@ -1351,11 +1351,18 @@ weights.
 - `foundations.ts`: choosing a metric for a decision (expected cost, utility), `withInterval` (bootstrap, analytic,
   Wilson, DeLong), paired comparisons of two models on one test set (paired bootstrap, McNemar, DeLong), `evaluate`
   (many metrics in one pass).
-- `classification.ts`: confusion matrices and everything computed from them: accuracy, balanced accuracy, precision,
-  recall, F-scores, sensitivity, specificity, NPV, informedness, markedness, Matthews correlation, Cohen's kappa,
-  likelihood ratios, diagnostic odds ratio; micro, macro, weighted and sample averaging; multi-label (Hamming loss,
-  subset accuracy, label-ranking precision, coverage error) and ordinal (quadratic weighted kappa) variants;
-  `classificationReport`.
+- `metric.ts`: `Metric`, `defineMetric`, `metricResult`, sample weights, `weightedPercentile`, row selection and
+  `streaming` (update / compute over batches).
+- `classification.ts`: confusion matrices (`confusionMatrix`, `multilabelConfusionMatrix`) and the rates computed from
+  them: `accuracyScore`, `subsetAccuracy`, `balancedAccuracyScore`, `precisionScore`, `recallScore`, `fbetaScore`,
+  `f1Score`, `precisionRecallFscoreSupport`, `sensitivityScore`, `specificityScore`, `negativePredictiveValue`,
+  `informedness`, `markedness`, `jaccardScore`; binary, micro, macro, weighted, samples and per-class averaging, label
+  subsets, string labels and zero-division control.
+- `classification-summary.ts`: `matthewsCorrcoef`, `cohenKappaScore` (unweighted, linear, quadratic),
+  `quadraticWeightedKappa` (ordinal), likelihood ratios (`positiveLikelihoodRatio`, `negativeLikelihoodRatio`),
+  `diagnosticOddsRatio`, `hammingLoss`, `zeroOneLoss`, `topKAccuracyScore`, multi-label ranking
+  (`labelRankingAveragePrecisionScore`, `coverageError`, `labelRankingLoss`) and `classificationReport` (data and
+  sklearn's text).
 - `curves.ts`: ROC curves and AUROC (with partial AUC), precision-recall curves and average precision, PR-gain, DET
   curves; operating points at a fixed error rate, the equal error rate, Youden's index and minimum expected cost; cost
   curves.
@@ -1363,8 +1370,10 @@ weights.
   (with binning strategies), proper scoring rules for any `Distribution` (logarithmic, spherical, CRPS, energy score).
 - `fairness.ts`: group rates; demographic parity, equalised odds, equal opportunity, predictive parity and calibration
   by group; disparate impact.
-- `regression.ts`: MSE, RMSE, MAE, median absolute error, maximum error, R-squared (and adjusted), explained variance,
-  MSLE, log-cosh, Huber, Poisson, gamma and Tweedie deviances, D-squared scores, pinball loss.
+- `regression.ts`: MSE, RMSE, MAE, median absolute error, maximum error, R-squared (`r2Score`, `adjustedR2Score`),
+  explained variance, MSLE, MAPE, log-cosh (`meanLogCoshError`), Huber (`meanHuberLoss`).
+- `deviance.ts`: Poisson, gamma and Tweedie deviances, pinball loss, D-squared scores (`d2AbsoluteErrorScore`,
+  `d2PinballScore`, `d2TweedieScore`).
 - `correlation-agreement.ts`: Pearson, Spearman and Kendall (aliases of `stats/correlation.ts`), Cramer's V, Theil's U,
   Lin's concordance correlation, Bland-Altman limits, intraclass correlation, weighted Cohen's kappa, Fleiss' kappa,
   Krippendorff's alpha.

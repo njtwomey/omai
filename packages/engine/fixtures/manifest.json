@@ -135,12 +135,36 @@
       "cases": 12
     },
     {
+      "fixture": "metrics/classification.json",
+      "source": "oracle/cases/metrics/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 77
+    },
+    {
+      "fixture": "metrics/classification_summary.json",
+      "source": "oracle/cases/metrics/classification_summary.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 33
+    },
+    {
+      "fixture": "metrics/deviance.json",
+      "source": "oracle/cases/metrics/deviance.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 31
+    },
+    {
       "fixture": "metrics/regression.json",
       "source": "oracle/cases/metrics/regression.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
-      "cases": 38
+      "cases": 30
     },
     {
       "fixture": "nn/torch_reference.json",

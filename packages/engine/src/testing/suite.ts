@@ -1,5 +1,5 @@
 // A golden-test suite over a fixture: one `it` per case, dispatching on the case's `fn`. Node only; not published.
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Tensor, Value } from '../lib/tensor/index.ts'
 import { decode, expectMatches, type GoldenCase, loadFixture } from './golden.ts'
 
@@ -10,7 +10,7 @@ export type Params = Readonly<Record<string, unknown>>
 export type Inputs = readonly [Tensor, Tensor, ...(Tensor | undefined)[]]
 
 /** Compute a case's output from its decoded inputs and parameters. */
-export type CaseFn = (inputs: Inputs, params: Params, c: GoldenCase) => Value | number
+export type CaseFn = (inputs: Inputs, params: Params, c: GoldenCase) => Value | number | string
 
 /** Decode a case's parameters: encoded tensors become tensors, everything else passes through. */
 export function decodeParams(params: Params): Params {
@@ -19,7 +19,7 @@ export function decodeParams(params: Params): Params {
 
 /**
  * Register one test per case of a fixture: `fns[c.fn]` computes the output, which must match within the case's
- * tolerances. Unknown function names fail their test.
+ * tolerances (string outputs must be equal). Unknown function names fail their test.
  */
 export function goldenSuite(title: string, fixture: string, fns: Readonly<Record<string, CaseFn>>): void {
   describe(title, () => {
@@ -28,7 +28,9 @@ export function goldenSuite(title: string, fixture: string, fns: Readonly<Record
         const f = fns[c.fn]
         if (f === undefined) throw new Error(`no function ${c.fn}`)
         const inputs = c.inputs.map((x) => decode(x) as Tensor) as unknown as Inputs
-        expectMatches(f(inputs, decodeParams(c.params), c), c.output, c.rtol, c.atol, c.name)
+        const got = f(inputs, decodeParams(c.params), c)
+        if (typeof got === 'string') expect(got).toBe(c.output)
+        else expectMatches(got, c.output, c.rtol, c.atol, c.name)
       })
     }
   })
