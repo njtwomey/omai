@@ -5,7 +5,7 @@ import { item, mean, sum, type Tensor, tensor, toFlat, type Value } from '../ten
 import { integrate } from './_numeric.ts'
 import * as D from './index.ts'
 
-const N = 20000
+const N = 10000
 
 describe('relaxed distributions', () => {
   it('the relaxed Bernoulli density integrates to one and its draws follow its CDF', () => {

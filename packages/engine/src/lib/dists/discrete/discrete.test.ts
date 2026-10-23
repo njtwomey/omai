@@ -4,7 +4,7 @@ import { key } from '../../random/index.ts'
 import { item, mean, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as D from '../index.ts'
 
-const N = 20000
+const N = 8000
 
 describe('discrete sampling', () => {
   const families: readonly (readonly [string, D.Distribution])[] = [

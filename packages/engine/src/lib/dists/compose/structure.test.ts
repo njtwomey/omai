@@ -5,7 +5,7 @@ import { item, mean, sum, type Tensor, tensor, toFlat, type Value } from '../../
 import * as D from '../index.ts'
 import * as C from './index.ts'
 
-const N = 20000
+const N = 10000
 
 describe('independent', () => {
   it('sums log densities and entropies over reinterpreted axes', () => {

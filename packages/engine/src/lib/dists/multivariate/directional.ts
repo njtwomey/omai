@@ -71,6 +71,18 @@ export function vonMises(loc: TensorLike = 0, concentration: TensorLike = 1): Di
   // I_1 / I_0 without overflow.
   const ratio = div(ive(1, kappa), ive(0, kappa))
   const twin = concreteTwin([mu, kappa], (m, k) => vonMises(m as Tensor, k as Tensor))
+  // Best and Fisher's sampler, each draw within half a turn of loc (the branch where the CDF runs from 0 to 1).
+  const draw = (key: Key, shape: readonly number[]): Value => {
+    const raw = elementwiseSample(
+      key,
+      [mu, kappa],
+      shape,
+      batchShape,
+      (k, m, kk) => vonMisesDraw(k, [], m ?? 0, kk ?? 0).data[0] ?? 0,
+    )
+    const offset = sub(raw, mu)
+    return add(mu, arctan2(sin(offset), cos(offset)))
+  }
   const cdf = (x: Value): Value => {
     const theta = sub(x, mu)
     const kmax = maxOf(toFlat(primalOf(kappa)))
@@ -88,19 +100,8 @@ export function vonMises(loc: TensorLike = 0, concentration: TensorLike = 1): Di
     logProb: (x) => sub(mul(kappa, cos(sub(x, mu))), logNorm),
     cdf,
     ppf: (q) => numericPpf(self, twin, q),
-    rsample: (key, shape) => {
-      const draw = elementwiseSample(
-        key,
-        [mu, kappa],
-        shape,
-        batchShape,
-        (k, m, kk) => vonMisesDraw(k, [], m ?? 0, kk ?? 0).data[0] ?? 0,
-      )
-      // Each draw within half a turn of loc, on the branch where the CDF runs from 0 to 1.
-      const offset = sub(draw, mu)
-      const centred = add(mu, arctan2(sin(offset), cos(offset)))
-      return implicitReparam(centred, cdf, self.prob)
-    },
+    sample: (key, shape) => draw(key, shape),
+    rsample: (key, shape) => implicitReparam(draw(key, shape), cdf, self.prob),
     mean: () => b(mu),
     variance: () => b(sub(1, ratio)),
     mode: () => b(mu),

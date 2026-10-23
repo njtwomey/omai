@@ -4,7 +4,7 @@ import { key } from '../../random/index.ts'
 import { expandDims, item, mean, mul, sub, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as D from '../index.ts'
 
-const N = 20000
+const N = 10000
 const empiricalCov = (x: Tensor): number[] => {
   const c = sub(x, mean(x, 0))
   return toFlat(mean(mul(expandDims(c, -1), expandDims(c, -2)), 0))

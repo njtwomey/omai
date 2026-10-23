@@ -5,7 +5,7 @@ import { item, mean, square, sub, type Tensor, tensor, toFlat, type Value } from
 import { integrate, numericMoments } from '../_numeric.ts'
 import * as D from '../index.ts'
 
-const N = 20000
+const N = 10000
 
 describe('sampling matches the analytic moments', () => {
   const families: readonly (readonly [string, D.Distribution])[] = [

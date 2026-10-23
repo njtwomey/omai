@@ -11,7 +11,7 @@ import {
   lgamma,
   ndtr,
 } from '../../numerics/special/index.ts'
-import { foldIn, gammaVariates, normal as normalNoise, poisson as poissonDraw } from '../../random/index.ts'
+import { foldIn, gammaVariates, type Key, normal as normalNoise, poisson as poissonDraw } from '../../random/index.ts'
 import {
   abs,
   add,
@@ -174,6 +174,22 @@ export function noncentralChi2(df: TensorLike, nc: TensorLike): Distribution {
     return sum(mul(exp(logW), term(add(k, mul(j, 2)))), 0)
   }
   const twin = concreteTwin([k, lambda], (a, c) => noncentralChi2(a as Tensor, c as Tensor))
+  // Concrete draws of the Poisson mixture: chi-square with df + 2N degrees of freedom, N ~ Poisson(nc / 2).
+  const draw = (key: Key, shape: readonly number[]): Value => {
+    const c = twin()
+    const kk = toFlat(broadcastBatch(c.params['df'] as Value, batchShape))
+    const ll = toFlat(broadcastBatch(c.params['nc'] as Value, batchShape))
+    const full = [...shape, ...batchShape]
+    const size = full.reduce((p, d) => p * d, 1)
+    const out = new Float64Array(size)
+    for (let i = 0; i < size; i++) {
+      const bi = i % Math.max(1, kk.length)
+      const kn = foldIn(key, i)
+      const count = poissonDraw(foldIn(kn, 0), (ll[bi] ?? 0) / 2, []).data[0] ?? 0
+      out[i] = 2 * (gammaVariates(foldIn(kn, 1), [(kk[bi] ?? 1) / 2 + count])[0] ?? 0)
+    }
+    return fromStorage(out, full, 'float64')
+  }
   const mean = add(k, lambda)
   const variance = mul(add(k, mul(lambda, 2)), 2)
   const self: Distribution = defineDistribution({
@@ -199,21 +215,8 @@ export function noncentralChi2(df: TensorLike, nc: TensorLike): Distribution {
         1,
       ),
     ppf: (q) => numericPpf(self, twin, q),
-    rsample: (key, shape) => {
-      const c = twin()
-      const kk = toFlat(broadcastBatch(c.params['df'] as Value, batchShape))
-      const ll = toFlat(broadcastBatch(c.params['nc'] as Value, batchShape))
-      const full = [...shape, ...batchShape]
-      const size = full.reduce((p, d) => p * d, 1)
-      const out = new Float64Array(size)
-      for (let i = 0; i < size; i++) {
-        const bi = i % Math.max(1, kk.length)
-        const kn = foldIn(key, i)
-        const count = poissonDraw(foldIn(kn, 0), (ll[bi] ?? 0) / 2, []).data[0] ?? 0
-        out[i] = 2 * (gammaVariates(foldIn(kn, 1), [(kk[bi] ?? 1) / 2 + count])[0] ?? 0)
-      }
-      return implicitReparam(fromStorage(out, full, 'float64'), self.cdf, self.prob)
-    },
+    sample: (key, shape) => draw(key, shape),
+    rsample: (key, shape) => implicitReparam(draw(key, shape), self.cdf, self.prob),
     mean: () => b(mean),
     variance: () => b(variance),
     mode: () => {

@@ -883,8 +883,12 @@ Reparameterisation comes in three forms:
 - `bijectors/structured.ts`: `ordered`, `stickBreaking`, `correlationCholesky`, `lowerCholesky`,
   `choleskyOuterProduct`, `affineCoupling`, `permute`, `autoregressive` (MAF-style), `madeMasks`.
 - `bijectors/unconstrain.ts`: `bijectorForSupport`, `transformLogDensity`, `unconstrained`.
-- `exponential-family.ts`: natural parameters, sufficient statistics, log partition, Fisher information, the conjugate
-  table (used by `probprog` to detect conjugacy).
+- `exponential-family.ts`: `exponentialFamily` (25 families): natural parameters, sufficient statistics, log
+  partition, base measure, mean parameters and Fisher information (by differentiating the log partition), and
+  `fromNatural`.
+- `conjugacy.ts`: the conjugate table `CONJUGATES` (used by `probprog` to detect conjugacy), `conjugatePrior`,
+  `conjugatePosterior` (17 likelihood-parameter pairs, including the multivariate normal mean, covariance and
+  precision).
 - `divergences.ts`: analytic KL for family pairs, Monte Carlo fallback, Hellinger, Bhattacharyya, 2-Wasserstein
   between Gaussians.
 - `families/links.ts`: `Link`, GLM link functions with inverses and first and second derivatives (`identity`, `log`,

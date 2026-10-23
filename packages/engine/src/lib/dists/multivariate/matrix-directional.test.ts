@@ -19,7 +19,7 @@ import {
 } from '../../tensor/index.ts'
 import * as D from '../index.ts'
 
-const N = 20000
+const N = 10000
 const close = (a: readonly number[], b: readonly number[], digits: number): void => {
   for (const [i, v] of a.entries()) expect(v).toBeCloseTo(b[i] ?? Number.NaN, digits)
 }

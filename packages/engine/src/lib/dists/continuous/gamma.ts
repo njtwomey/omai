@@ -13,7 +13,13 @@ import {
   logNdtr,
   ndtr,
 } from '../../numerics/special/index.ts'
-import { exponential as exponentialNoise, foldIn, normal as normalNoise, uniform } from '../../random/index.ts'
+import {
+  exponential as exponentialNoise,
+  foldIn,
+  type Key,
+  normal as normalNoise,
+  uniform,
+} from '../../random/index.ts'
 import {
   add,
   div,
@@ -302,6 +308,17 @@ export function inverseGaussian(mean: TensorLike, shape: TensorLike = 1): Distri
     return [mul(r, sub(t, 1)), add(div(mul(lambda, 2), mu), logNdtr(neg(mul(r, add(t, 1)))))]
   }
   const twin = concreteTwin([mu, lambda], (m, l) => inverseGaussian(m as Tensor, l as Tensor))
+  // Concrete draws by the transformation with multiple roots.
+  const draw = (key: Key, shape: readonly number[]): Value => {
+    const c = twin()
+    const [m, l] = [c.params['mean'] as Value, c.params['shape'] as Value]
+    const full = [...shape, ...batchShape]
+    const y = square(normalNoise(foldIn(key, 0), full))
+    const my = mul(m, y)
+    const x1 = add(m, div(mul(m, sub(my, sqrt(add(mul(mul(l, my), 4), square(my))))), mul(l, 2)))
+    const u = uniform(foldIn(key, 1), full)
+    return where(lessEqual(u, div(m, add(m, x1))), x1, div(square(m), x1))
+  }
   const self: Distribution = defineDistribution({
     name: 'inverseGaussian',
     params: { mean: mu, shape: lambda },
@@ -328,17 +345,8 @@ export function inverseGaussian(mean: TensorLike, shape: TensorLike = 1): Distri
       return where(positive(x), sub(ndtr(neg(a)), exp(lb)), 1)
     },
     ppf: (q) => numericPpf(self, twin, q),
-    rsample: (key, shape) => {
-      const c = twin()
-      const [m, l] = [c.params['mean'] as Value, c.params['shape'] as Value]
-      const full = [...shape, ...batchShape]
-      const y = square(normalNoise(foldIn(key, 0), full))
-      const my = mul(m, y)
-      const x1 = add(m, div(mul(m, sub(my, sqrt(add(mul(mul(l, my), 4), square(my))))), mul(l, 2)))
-      const u = uniform(foldIn(key, 1), full)
-      const draw = where(lessEqual(u, div(m, add(m, x1))), x1, div(square(m), x1))
-      return implicitReparam(draw, self.cdf, self.prob)
-    },
+    sample: (key, shape) => draw(key, shape),
+    rsample: (key, shape) => implicitReparam(draw(key, shape), self.cdf, self.prob),
     mean: () => b(mu),
     variance: () => b(div(pow(mu, 3), lambda)),
     mode: () => {
