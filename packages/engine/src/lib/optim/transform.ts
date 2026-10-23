@@ -307,3 +307,22 @@ export function scaleByAdagrad(eps = 1e-10, initialAccumulator = 0): GradientTra
     },
   }
 }
+
+/**
+ * Polyak averaging of parameter trees (optax.incremental_update): `stepSize * new + (1 - stepSize) * old`, the soft
+ * target-network update of DDPG, TD3 and SAC and the exponential moving average of weights.
+ *
+ * @param newTree - The new (online) parameters.
+ * @param oldTree - The old (target) parameters, with the same structure.
+ * @param stepSize - The interpolation weight `tau` in [0, 1].
+ * @returns The averaged parameters.
+ * @example
+ * ```ts
+ * import { incrementalUpdate } from 'whitebox-engine/optim'
+ * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * toArray((incrementalUpdate({ w: tensor([4]) }, { w: tensor([0]) }, 0.25) as { w: never }).w) // => [1]
+ * ```
+ */
+export function incrementalUpdate(newTree: Tree, oldTree: Tree, stepSize: number): Tree {
+  return treeMap((n, o) => add(mul(n, stepSize), mul(o, 1 - stepSize)), newTree, oldTree)
+}
