@@ -861,8 +861,13 @@ Reparameterisation comes in three forms:
 - `multivariate/matrix.ts`: `wishart`, `inverseWishart` (Bartlett reparameterised draws), `lkjCholesky`, `lkj`,
   `multigammaln`.
 - `multivariate/directional.ts`: `vonMises`, `vonMisesFisher`, `powerSpherical`.
-- `multivariate/copulas.ts`: Gaussian, Student-t, Clayton, Gumbel and Frank copulas (density, sampling, fitting by
-  inversion of Kendall's tau), `copulaDistribution` (joining marginals).
+- `multivariate/copulas.ts`: `Copula`, `defineCopula`, `gaussianCopula`, `studentTCopula` (densities, reparameterised
+  sampling, bivariate CDFs), `copulaDistribution` (joining marginals). TODO: elliptical copula CDFs for d > 2 need a
+  multivariate normal or t CDF (Genz quasi-Monte Carlo); deferred as expensive and rarely needed.
+- `multivariate/archimedean-copulas.ts`: `claytonCopula`, `gumbelCopula`, `frankCopula` in any dimension (CDFs,
+  closed-form or mixed-partial densities, Marshall-Olkin and conditional sampling, Kendall's tau).
+- `multivariate/copula-fitting.ts`: `pseudoObservations`, `kendallTauMatrix`, `fitCopula` (inversion of Kendall's
+  tau).
 - `compose/mixture.ts`: `Mixture`, `mixture`, `mixtureSameFamily`, `responsibilities` (implicitly reparameterised
   draws, numerical quantiles, mode and entropy for univariate mixtures).
 - `compose/structure.ts`: `independent`, `truncated` (continuous and discrete bases), `censored`, `transformed`,

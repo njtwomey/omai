@@ -112,6 +112,14 @@
       "cases": 103
     },
     {
+      "fixture": "dists/multivariate/copulas.json",
+      "source": "oracle/cases/dists/multivariate/copulas.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 24
+    },
+    {
       "fixture": "dists/multivariate/directional.json",
       "source": "oracle/cases/dists/multivariate/directional.py",
       "reference": {
