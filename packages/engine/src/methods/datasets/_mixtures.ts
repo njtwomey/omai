@@ -1,0 +1,167 @@
+// Exact truths of Gaussian-mixture class models: component log densities, joint log densities and class posteriors.
+// Small models (and traced inputs) use tensor operations, so the truth is differentiable in x; large isotropic
+// models on concrete rows use a chunked loop that never materialises an [n, components] array.
+import { WhiteboxError } from '../../lib/base/index.ts'
+import { bayesErrorEstimate, type Truth } from '../../lib/data/index.ts'
+import type { Key } from '../../lib/random/index.ts'
+import {
+  add,
+  fromStorage,
+  isTensor,
+  logsumexp,
+  matmul,
+  mul,
+  reshape,
+  softmax,
+  square,
+  stack,
+  sub,
+  sum,
+  type Tensor,
+  take,
+  takeAlongAxis,
+  tensor,
+  transpose,
+  type Value,
+} from '../../lib/tensor/index.ts'
+
+/** `log N(x; m_c, sigma^2 I)` for every row of `x` and every mean `m_c`: `[n, C]`. */
+export function isotropicLogDensities(means: readonly (readonly number[])[], sigma: number): (x: Value) => Value {
+  const m = tensor(means as number[][])
+  const mt = transpose(m)
+  const d = means[0]?.length ?? 0
+  const mm = tensor(means.map((r) => r.reduce((s, v) => s + v * v, 0)))
+  const constant = -0.5 * d * Math.log(2 * Math.PI * sigma * sigma)
+  return (x) => {
+    const xx = sum(square(x), 1, true)
+    const d2 = add(sub(xx, mul(matmul(x, mt), 2)), mm)
+    return add(mul(d2, -0.5 / (sigma * sigma)), constant)
+  }
+}
+
+/** A Gaussian-mixture class model: components with log densities, the class of each and log weights. */
+export interface MixtureModel {
+  /** Component log densities `[n, C]`. */
+  readonly logDensities: (x: Value) => Value
+  /** The class of each component. */
+  readonly classOf: readonly number[]
+  /** The log weight of each component (summing to one over all components). */
+  readonly logWeights: readonly number[]
+  readonly nClasses: number
+  /** For isotropic models: the means and shared standard deviation, enabling the fast path. */
+  readonly isotropic?: { readonly means: readonly (readonly number[])[]; readonly sigma: number }
+}
+
+/** `log p(x, y = k)` for every class: `[n, K]`, with tensor operations. */
+function classLogJointTensor(model: MixtureModel): (x: Value) => Value {
+  const lw = tensor(model.logWeights as number[])
+  const groups = Array.from({ length: model.nClasses }, (_, k) =>
+    tensor(
+      model.classOf.flatMap((c, j) => (c === k ? [j] : [])),
+      { dtype: 'int32' },
+    ),
+  )
+  return (x) => {
+    const l = add(model.logDensities(x), lw)
+    return stack(
+      groups.map((g) => logsumexp(take(l, g, 1), 1)),
+      1,
+    )
+  }
+}
+
+/** The same joint for concrete rows by a loop (isotropic models only). */
+function classLogJointLoop(model: MixtureModel): (x: Tensor) => Tensor {
+  const iso = model.isotropic
+  if (iso === undefined) throw new WhiteboxError('value', 'classLogJointLoop needs an isotropic model')
+  const means = iso.means
+  const c = means.length
+  const d = means[0]?.length ?? 0
+  const flatMeans = Float64Array.from(means.flat())
+  const s2 = iso.sigma * iso.sigma
+  const constant = -0.5 * d * Math.log(2 * Math.PI * s2)
+  const k = model.nClasses
+  return (x) => {
+    const n = x.shape[0] ?? 0
+    const xs = x.data as ArrayLike<number>
+    const out = new Float64Array(n * k)
+    const best = new Float64Array(k)
+    const acc = new Float64Array(k)
+    const terms = new Float64Array(c)
+    for (let i = 0; i < n; i++) {
+      best.fill(-Infinity)
+      for (let j = 0; j < c; j++) {
+        let d2 = 0
+        for (let a = 0; a < d; a++) d2 += ((xs[i * d + a] ?? 0) - (flatMeans[j * d + a] ?? 0)) ** 2
+        const t = constant - (0.5 * d2) / s2 + (model.logWeights[j] ?? 0)
+        terms[j] = t
+        const cls = model.classOf[j] ?? 0
+        if (t > (best[cls] ?? -Infinity)) best[cls] = t
+      }
+      acc.fill(0)
+      for (let j = 0; j < c; j++) {
+        const cls = model.classOf[j] ?? 0
+        acc[cls] = (acc[cls] ?? 0) + Math.exp((terms[j] ?? 0) - (best[cls] ?? 0))
+      }
+      for (let q = 0; q < k; q++) out[i * k + q] = (best[q] ?? -Infinity) + Math.log(acc[q] ?? 0)
+    }
+    return fromStorage(out, [n, k], 'float64')
+  }
+}
+
+/** `log p(x, y = k)` for every class: `[n, K]`. */
+export function classLogJoint(model: MixtureModel): (x: Value) => Value {
+  const viaTensors = classLogJointTensor(model)
+  if (model.isotropic === undefined) return viaTensors
+  const viaLoop = classLogJointLoop(model)
+  const c = model.classOf.length
+  return (x) => (isTensor(x) && (x.shape[0] ?? 0) * c > 20_000 ? viaLoop(x) : viaTensors(x))
+}
+
+/** The exact log density and posterior of a mixture class model, with `logProb(x)` the marginal when y is absent. */
+export function mixtureTruth(model: MixtureModel): {
+  readonly logProb: NonNullable<Truth['logProb']>
+  readonly posterior: NonNullable<Truth['posterior']>
+} {
+  const joint = classLogJoint(model)
+  return {
+    logProb: (x, y) => {
+      const j = joint(x)
+      if (y === undefined) return logsumexp(j, 1)
+      return reshape(takeAlongAxis(j, reshape(y, [-1, 1]), 1), [-1])
+    },
+    posterior: (x) => softmax(joint(x), 1),
+  }
+}
+
+/**
+ * A Monte Carlo Bayes error from fresh draws of the features (rounded to 4 decimals); the number of draws shrinks for
+ * models with many components so the cost stays bounded.
+ */
+export function monteCarloBayesError(
+  posterior: (x: Value) => Value,
+  draw: (k: Key, n: number) => Value,
+  k: Key,
+  components = 1,
+): number {
+  const n = Math.round(Math.min(20_000, Math.max(2_000, 4e6 / components)))
+  return Math.round(bayesErrorEstimate(posterior, draw(k, n)).value * 1e4) / 1e4
+}
+
+/**
+ * A copy of a truth whose Bayes error is computed on first access (and cached), since Monte Carlo estimates cost more
+ * than generating the data.
+ */
+export function withLazyBayesError(truth: Truth, compute: () => number): Truth {
+  let cached: number | undefined
+  const out: Record<string, unknown> = { ...truth }
+  delete out['bayesError']
+  Object.defineProperty(out, 'bayesError', {
+    enumerable: true,
+    get: () => {
+      if (cached === undefined) cached = compute()
+      return cached
+    },
+  })
+  return out as Truth
+}

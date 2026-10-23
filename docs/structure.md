@@ -710,7 +710,8 @@ primitives; "custom" means a dedicated rule.
 
 One schema per task kind. Each schema declares its per-row fields, so one `take` and one `split` work for all of them.
 Every schema file also has a validating constructor that fills defaults (names, metadata). `schema/` and `modifiers/`
-are inlined into `whitebox-engine/data`.
+are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `Modifier` (`labelNoiseModifier`,
+`missingModifier`, and so on).
 - `schema/common.ts`: `DatasetMeta` (name, description, task, source, url, licence, citation, sha256, recipe, key),
   `DatasetKind`, `Dataset` (the union of every schema), `RecipeStamp`, `perRowFields`, `rowCount`.
 - `schema/tabular.ts`: `RegressionData`, `ClassificationData`, `MultilabelData`, `MultiOutputData`, `TableData` (named
@@ -760,7 +761,6 @@ are inlined into `whitebox-engine/data`.
   (keeping the density truth consistent; `featureTransform`), `withCorrelatedFeatures` (Toeplitz and equicorrelated).
 - `modifiers/shift.ts`: `withCovariateShift` (with the density ratio), `withConceptDrift` (sudden, gradual,
   recurring), `shiftedSplit`, `semiSupervisedSplit`.
-Each modifier also comes as a recipe `Modifier` (`labelNoiseModifier`, `missingModifier`, and so on).
 
 ### 4.12 `foundations/` (tier 6): mathematical foundations
 
@@ -2408,15 +2408,24 @@ checksum; larger data is a release asset loaded through `data/loader.ts`. Where 
 `truth.program` is that program, so likelihoods and posteriors can be queried.
 
 built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`, `scene`
-- `regression.ts`: `makeRegression`, Friedman 1 to 3, one-dimensional functions (sine, step, sinc, Doppler,
-  heteroscedastic noise), additive (GAM) data, curves with known quantiles, piecewise-linear data.
+- `regression.ts`: `makeRegression` (several targets, low-rank designs with an effective rank, column shuffling),
+  Friedman 1 to 3, `sparseUncorrelated`, with regression functions and joint log densities.
+- `regression-curves.ts`: one-dimensional functions (`sineCurve`, `stepCurve`, `sincCurve`, `dopplerCurve`,
+  `heteroscedastic` noise), additive (GAM) data (`additiveModel`, with its components), curves with known quantiles
+  (`quantileCurves`: Gaussian, Laplace, Student t and Gumbel noise), `piecewiseLinear` data.
 - `regression-real.ts`: diabetes, Anscombe's quartet, mtcars, a licence-clean housing set, growth charts.
-- `classification.ts`: blobs, moons, circles, XOR, spirals, checkerboards, Gaussian quantiles, `makeClassification`
-  (informative, redundant and noise features, class separation, imbalance, label noise as knobs), with Bayes posteriors
-  and Bayes errors.
+- `classification.ts`: `blobs`, `moons`, `circles`, `xor`, `spirals`, `checkerboard`, `gaussianQuantiles`,
+  `hastie10_2`, with exact Bayes posteriors, log densities and Bayes errors (closed form or Monte Carlo, computed on
+  first access); `moonPoints`, `circlePoints`, `gaussianQuantileLabels`.
+- `make-classification.ts`: `makeClassification` (informative, redundant, repeated and noise features, clusters per
+  class, class separation, imbalance, label noise, shift and scale as knobs; the truth tracks every column),
+  `makeMultilabelClassification`.
 - `classification-real.ts`: iris, wine, breast cancer, 8 by 8 digits, Titanic, penguins.
 - `clustering.ts`: rings, anisotropic blobs, unequal-variance blobs, Old Faithful, with true clusters.
-- `manifolds.ts`: Swiss roll, S-curve, severed sphere, torus, with latent coordinates.
+- `manifolds.ts`: `swissRoll` (optionally with a hole), `sCurve`, `severedSphere`, `torus`, with latent coordinates;
+  `swissRollEmbedding`, `sCurveEmbedding`.
+- `matrices.ts`: sklearn's matrix generators with their planted truth: `makeLowRankMatrix` (`lowRankProfile`),
+  `makeSparseCodedSignal`, `makeSpdMatrix`, `makeSparseSpdMatrix`, `makeBiclusters`, `makeCheckerboard`.
 - `densities.ts`: two-dimensional densities with exact log densities (rings, pinwheels, bananas, funnels, mixtures) for
   samplers, flows and diffusion.
 - `objectives.ts`: optimisation test functions with gradients, Hessians and known minima (Rosenbrock, Himmelblau, Beale,

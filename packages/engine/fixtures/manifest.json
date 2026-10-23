@@ -53,6 +53,31 @@
       "cases": 31
     },
     {
+      "fixture": "methods/datasets/classification.json",
+      "source": "oracle/cases/methods/datasets/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "methods/datasets/manifolds.json",
+      "source": "oracle/cases/methods/datasets/manifolds.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "methods/datasets/matrices.json",
+      "source": "oracle/cases/methods/datasets/matrices.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "methods/datasets/regression.json",
       "source": "oracle/cases/methods/datasets/regression.py",
       "reference": {
