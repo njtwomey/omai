@@ -382,6 +382,23 @@
       "cases": 29
     },
     {
+      "fixture": "optim/assignment.json",
+      "source": "oracle/cases/optim/assignment.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "optim/conic.json",
+      "source": "oracle/cases/optim/conic.py",
+      "reference": {
+        "cvxpy": "1.9.3",
+        "clarabel": "0.11.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "optim/first_order.json",
       "source": "oracle/cases/optim/first_order.py",
       "reference": {
@@ -391,12 +408,28 @@
       "cases": 27
     },
     {
+      "fixture": "optim/integer.json",
+      "source": "oracle/cases/optim/integer.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "optim/line_search.json",
       "source": "oracle/cases/optim/line_search.py",
       "reference": {
         "scipy": "1.18.1"
       },
       "cases": 33
+    },
+    {
+      "fixture": "optim/linear_programming.json",
+      "source": "oracle/cases/optim/linear_programming.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
     },
     {
       "fixture": "optim/minimize/gradient.json",
@@ -455,6 +488,15 @@
       "cases": 6
     },
     {
+      "fixture": "optim/quadratic.json",
+      "source": "oracle/cases/optim/quadratic.py",
+      "reference": {
+        "cvxpy": "1.9.3",
+        "clarabel": "0.11.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "optim/scalar.json",
       "source": "oracle/cases/optim/scalar.py",
       "reference": {
@@ -470,6 +512,14 @@
         "optax": "0.2.8"
       },
       "cases": 25
+    },
+    {
+      "fixture": "optim/smo.json",
+      "source": "oracle/cases/optim/smo.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "optim/sparse_updates.json",

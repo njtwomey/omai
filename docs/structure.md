@@ -1017,17 +1017,40 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `scalar.ts`: `minimizeScalar` (golden section, Brent, bounded), `bracket`.
 - `proximal.ts`: proximal operators (L1, L2, group, nuclear, box, simplex, total variation), ISTA, FISTA, ADMM, primal-dual
   (Chambolle-Pock), projections.
-- `smo.ts`: sequential minimal optimisation for quadratic programs with box constraints and one linear equality (the
-  SVM dual family): working-set selection (maximal violating pair, second order), shrinking, traced active sets.
+- `smo.ts`: sequential minimal optimisation (`smo`, `smoAlgorithm`) for quadratic programs with box constraints and
+  one linear equality (the SVM dual family, libsvm's solver): working-set selection (maximal violating pair, second
+  order WSS3), shrinking with gradient reconstruction, libsvm's rho, traced working pairs and active sets; `svcDual`
+  (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables).
 - `sparse.ts`: sparse approximation: matching pursuit, orthogonal matching pursuit, CoSaMP, iterative hard
   thresholding, basis pursuit, basis pursuit denoising, sparse coding over dictionaries, dictionary learning (K-SVD,
   MOD, online), recovery guarantees (coherence, RIP estimates).
-- `linear-programming.ts`: `linprog` (simplex with Bland's rule, interior point), duals, sensitivity, the simplex path
-  for figures.
-- `quadratic.ts`: `quadprog` (active set, interior point), box QP, KKT residuals.
-- `conic.ts`: small second-order cone and semidefinite programs by interior point (for teaching and small models).
-- `integer.ts`: `milp` (branch and bound, cuts), knapsack, set cover.
-- `assignment.ts`: Hungarian algorithm, auction algorithm, stable matching (Gale-Shapley).
+- `linear-programming.ts`: `linprog` in scipy's form (the method a function value: `linprogSimplex`,
+  `linprogInteriorPoint`), statuses (optimal, infeasible, unbounded), marginals (duals), slacks and residuals,
+  sensitivity ranges for costs and right-hand sides, the simplex path for figures.
+- `lp-standard-form.ts`: `standardForm` (shifted, reflected and split variables, bound rows, slacks, non-negative
+  right-hand sides) and `fromStandard`.
+- `lp-simplex.ts`: `simplexAlgorithm`, the two-phase tableau simplex (Bland's or Dantzig's rule, redundant rows
+  dropped after phase 1), traced pivot by pivot.
+- `lp-interior-point.ts`: `lpInteriorPointAlgorithm`, Mehrotra's predictor-corrector on the homogeneous self-dual
+  embedding (certifies infeasible and unbounded programs), with dependent equality rows removed first.
+- `quadratic.ts`: `quadprog` (inequalities, equalities and bounds; the method a function value: `qpActiveSet`,
+  `qpInteriorPoint`) with multipliers split by constraint type, `qpArrays` and `QpArrays` (the reusable number-array
+  form), `kktResiduals`, box QP by Bertsekas' projected Newton (`boxQp`, `boxQpAlgorithm`).
+- `qp-active-set.ts`: `qpActiveSetAlgorithm`, the primal active-set method (Nocedal and Wright 16.3) from a phase-1
+  linear program, traced working-set changes.
+- `qp-interior-point.ts`: `qpInteriorPointAlgorithm`, primal-dual Mehrotra predictor-corrector on the reduced KKT
+  system.
+- `conic.ts`: small conic programs (linear inequalities, second-order cones, linear matrix inequalities, equalities) by
+  the barrier interior-point method (`conicProgram`, `conicBarrierAlgorithm`: phase 1, centring by Newton with
+  equality constraints, duals from the central path), and standard-form semidefinite programs (`sdp`, with the dual y
+  and slack Z); for teaching and small models.
+- `integer.ts`: `milp` and `milpAlgorithm` (branch and bound on simplex relaxations as child runs, best-first or
+  depth-first, incumbent, bound and gap, Gomory mixed-integer cuts at the root, the search tree traced), `knapsack`
+  (0-1, by dynamic programming, or by `knapsackAlgorithm`: traced branch and bound with the fractional bound),
+  `setCover` (greedy or exact).
+- `assignment.ts`: `linearSumAssignment` (rectangular, maximise) by `hungarianAlgorithm` (shortest augmenting paths
+  with potentials), `auction` and `auctionAlgorithm` (Bertsekas, epsilon scaling), `stableMatching` and
+  `galeShapleyAlgorithm` (incomplete lists, unequal sides), `blockingPairs`.
 - `online.ts`: online gradient descent, FTRL, hedge, exponentiated gradient, online Newton step (`OnlineLearner`s),
   regret records (`onlineAlgorithm`, `runOnline`, `linearLosses`).
 - `transport.ts`: exact optimal transport, entropic Sinkhorn (log domain), 1-D Wasserstein, sliced Wasserstein,
