@@ -1,13 +1,13 @@
 """Products and contractions against numpy."""
 
 import numpy as np
-from whitebox_oracle.fixture import case
+from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import rng, uniform
 
-REFERENCE = {"numpy": np.__version__}
+REFERENCE: dict[str, str] = {"numpy": np.__version__}
 
 
-def cases():
+def cases() -> list[Case]:
     g = rng(700)
     a = uniform(g, (3, 4))
     b = uniform(g, (4, 2))

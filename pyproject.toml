@@ -6,7 +6,11 @@ requires-python = ">=3.13"
 dependencies = ["pydantic>=2", "pydantic-settings>=2", "numpy>=2"]
 
 [dependency-groups]
-dev = ["ruff", "pyright"]
+dev = [
+    "ruff",
+    "pyright",
+    "scipy-stubs>=1.18.1.1",
+]
 oracle-core = ["scipy", "mpmath", "scikit-learn", "statsmodels", "sympy", "networkx"]
 oracle-torch = ["torch"]
 
@@ -22,9 +26,14 @@ line-length = 120
 target-version = "py313"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+# ANN: every function and method annotates its arguments and its return type (including `-> None`).
+select = ["E", "F", "I", "UP", "B", "SIM", "ANN"]
 
 [tool.pyright]
 include = ["oracle"]
+# Local stubs for untyped dependencies (mpmath).
+stubPath = "oracle/typings"
 pythonVersion = "3.13"
-typeCheckingMode = "standard"
+# Resolve `whitebox_oracle` as local source, not as an installed library without a py.typed marker.
+extraPaths = ["oracle"]
+typeCheckingMode = "strict"

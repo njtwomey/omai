@@ -13,26 +13,44 @@ import json
 import sys
 import tempfile
 from pathlib import Path
-from types import ModuleType
+from typing import Protocol, TypedDict, cast
 
 from pydantic_settings import BaseSettings, CliApp, CliSubCommand, SettingsConfigDict
 
-from .fixture import Fixture
+from .fixture import Case, Fixture
 from .settings import ROOT, Paths
 
 
-def load_module(path: Path) -> ModuleType:
+class CaseModule(Protocol):
+    """The contract of a module under oracle/cases/ (checked at runtime by the `Fixture` model)."""
+
+    REFERENCE: dict[str, str]
+
+    def cases(self) -> list[Case]: ...
+
+
+class ManifestEntry(TypedDict):
+    """One fixture in `manifest.json`."""
+
+    fixture: str
+    source: str
+    reference: dict[str, str]
+    cases: int
+
+
+def load_module(path: Path) -> CaseModule:
+    """Import a case module from its file path."""
     spec = importlib.util.spec_from_file_location(f"whitebox_cases.{path.stem}", path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module
+    return cast(CaseModule, module)
 
 
-def write_fixtures(paths: Paths, out_dir: Path) -> list[dict[str, object]]:
+def write_fixtures(paths: Paths, out_dir: Path) -> list[ManifestEntry]:
     """Run every selected case module and write its fixture plus the manifest into `out_dir`."""
-    manifest: list[dict[str, object]] = []
+    manifest: list[ManifestEntry] = []
     for path in sorted(paths.cases_dir.rglob("*.py")):
         rel = path.relative_to(paths.cases_dir)
         if path.name.startswith("_") or not str(rel).startswith(paths.only):
@@ -60,7 +78,7 @@ class Generate(Paths):
 
     def cli_cmd(self) -> None:
         manifest = write_fixtures(self, self.fixtures_dir)
-        total = sum(int(str(m["cases"])) for m in manifest)
+        total = sum(m["cases"] for m in manifest)
         print(f"wrote {len(manifest)} fixtures with {total} cases to {self.fixtures_dir}")
 
 
@@ -101,4 +119,5 @@ class Oracle(BaseSettings):
 
 
 def main() -> None:
+    """Entry point: parse the command line and run the chosen subcommand."""
     CliApp.run(Oracle)

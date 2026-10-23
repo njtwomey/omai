@@ -49,6 +49,19 @@ export function coerce2(
   return [x, y]
 }
 
+/** Bring any number of operands to one floating dtype (plain numbers are weak, as in {@link coerce2}). */
+export function coerceFloat(xs: readonly TensorLike[]): Value[] {
+  const vs = xs.map((x) => (typeof x === 'number' ? undefined : val(x)))
+  const strong = vs.filter((v): v is Value => v !== undefined)
+  let dtype: DType = strong.length === 0 ? 'float64' : strong.map((v) => v.dtype).reduce((a, b) => resultType(a, b))
+  if (!isFloat(dtype)) dtype = 'float64'
+  const like = strong[0]
+  return xs.map((x, i) => {
+    const v = vs[i]
+    return v === undefined ? scalar(x as number, dtype, like) : asDtype(v, dtype)
+  })
+}
+
 /** Cast an integer or bool value to float64 (for operations defined on floats). */
 export function floatify(x: TensorLike): Value {
   const v = val(x)

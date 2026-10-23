@@ -24,7 +24,8 @@ const prims = {
   asinh: unaryPrimitive('asinh', (t, x) => div(t, sqrt(add(square(x), 1)))),
   acosh: unaryPrimitive('acosh', (t, x) => div(t, sqrt(sub(square(x), 1)))),
   atanh: unaryPrimitive('atanh', (t, x) => div(t, sub(1, square(x)))),
-  sigmoid: unaryPrimitive('sigmoid', (t, _x, out) => mul(t, mul(out, sub(1, out)))),
+  // sigmoid' = sigmoid(x) sigmoid(-x): avoids forming 1 - sigmoid(x), which cancels for large x.
+  sigmoid: unaryPrimitive('sigmoid', (t, x, out) => mul(t, mul(out, sigmoid(neg(x))))),
   floor: unaryPrimitive('floor'),
   ceil: unaryPrimitive('ceil'),
   round: unaryPrimitive('round'),

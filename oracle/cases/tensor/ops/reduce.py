@@ -1,23 +1,30 @@
 """Reductions and scans against numpy and scipy."""
 
-from typing import Any
+from typing import TypedDict
 
 import numpy as np
 import scipy.special as sp
-from whitebox_oracle.fixture import case
+from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import rng, uniform
 
-REFERENCE = {"numpy": np.__version__}
-
-AXES = [None, 0, -1, (0, 2)]
+REFERENCE: dict[str, str] = {"numpy": np.__version__}
 
 
-def cases():
+class AxisParam(TypedDict, total=False):
+    """The `axis` parameter, absent for a full reduction."""
+
+    axis: int | list[int]
+
+
+AXES: list[int | tuple[int, ...] | None] = [None, 0, -1, (0, 2)]
+
+
+def cases() -> list[Case]:
     x = uniform(rng(400), (2, 3, 4))
-    out = []
+    out: list[Case] = []
     for axis in AXES:
         label = "all" if axis is None else str(axis)
-        params: dict[str, Any] = {} if axis is None else {"axis": list(axis) if isinstance(axis, tuple) else axis}
+        params: AxisParam = {} if axis is None else {"axis": list(axis) if isinstance(axis, tuple) else axis}
         out.append(case(f"sum/{label}", "sum", [x], np.sum(x, axis=axis), **params))
         out.append(case(f"prod/{label}", "prod", [x], np.prod(x, axis=axis), **params))
         out.append(case(f"mean/{label}", "mean", [x], np.mean(x, axis=axis), **params))
@@ -38,6 +45,7 @@ def cases():
     big = np.array([[1000.0, 1000.0, -1000.0], [-np.inf, -np.inf, -np.inf]])
     out.append(case("logsumexp/extremes", "logsumexp", [big], sp.logsumexp(big, axis=1), axis=1))
     v = uniform(rng(401), (6,))
-    for ord_ in [1, 2, 3, np.inf, -np.inf]:
+    ords: list[float] = [1, 2, 3, np.inf, -np.inf]
+    for ord_ in ords:
         out.append(case(f"norm/{ord_}", "norm", [v], np.linalg.norm(v, ord=ord_), ord=float(ord_)))
     return out

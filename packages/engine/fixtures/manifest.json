@@ -2,6 +2,81 @@
   "schema": "whitebox.fixtures/1",
   "fixtures": [
     {
+      "fixture": "numerics/special/bessel.json",
+      "source": "oracle/cases/numerics/special/bessel.py",
+      "reference": {
+        "mpmath": "1.3.0"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "numerics/special/cdf.json",
+      "source": "oracle/cases/numerics/special/cdf.py",
+      "reference": {
+        "mpmath": "1.3.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "numerics/special/elliptic.json",
+      "source": "oracle/cases/numerics/special/elliptic.py",
+      "reference": {
+        "mpmath": "1.3.0"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "numerics/special/erf.json",
+      "source": "oracle/cases/numerics/special/erf.py",
+      "reference": {
+        "mpmath": "1.3.0"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "numerics/special/gamma.json",
+      "source": "oracle/cases/numerics/special/gamma.py",
+      "reference": {
+        "mpmath": "1.3.0"
+      },
+      "cases": 40
+    },
+    {
+      "fixture": "numerics/special/incomplete.json",
+      "source": "oracle/cases/numerics/special/incomplete.py",
+      "reference": {
+        "mpmath": "1.3.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 21
+    },
+    {
+      "fixture": "numerics/special/logistic.json",
+      "source": "oracle/cases/numerics/special/logistic.py",
+      "reference": {
+        "mpmath": "1.3.0"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "numerics/special/normal.json",
+      "source": "oracle/cases/numerics/special/normal.py",
+      "reference": {
+        "mpmath": "1.3.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "numerics/special/zeta.json",
+      "source": "oracle/cases/numerics/special/zeta.py",
+      "reference": {
+        "mpmath": "1.3.0"
+      },
+      "cases": 25
+    },
+    {
       "fixture": "tensor/ops/arithmetic.json",
       "source": "oracle/cases/tensor/ops/arithmetic.py",
       "reference": {

@@ -2,7 +2,7 @@ import { type DType, isFloat } from '../dtype.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import type { TensorLike } from '../tensor.ts'
 import type { Value } from '../traced.ts'
-import { coerce2, val } from './_coerce.ts'
+import { coerce2, coerceFloat, floatify, val } from './_coerce.ts'
 import { binaryPrimitive, toShape, unaryPrimitive } from './_factories.ts'
 import { equal, greater, less, where } from './compare.ts'
 import { floor, log } from './math.ts'
@@ -392,4 +392,34 @@ export function cast(x: TensorLike, dtype: DType): Value {
  */
 export function stopGradient(x: TensorLike): Value {
   return bind1(stopGradientPrimitive, [val(x)], null)
+}
+
+/**
+ * Convert to a floating dtype if needed (integers and booleans become float64; floats pass through).
+ *
+ * @param x - Input.
+ * @returns A float value.
+ * @example
+ * ```ts
+ * import { asFloat, tensor } from 'whitebox-engine/tensor'
+ * asFloat(tensor([1, 2], { dtype: 'int32' })).dtype // => 'float64'
+ * ```
+ */
+export function asFloat(x: TensorLike): Value {
+  return floatify(x)
+}
+
+/**
+ * Bring operands to one floating dtype (plain numbers are weak and adopt the other operands' dtype).
+ *
+ * @param xs - The operands.
+ * @returns The operands in a common float dtype.
+ * @example
+ * ```ts
+ * import { promoteFloat, tensor } from 'whitebox-engine/tensor'
+ * promoteFloat(tensor([1], { dtype: 'float32' }), 2)[1].dtype // => 'float32'
+ * ```
+ */
+export function promoteFloat(...xs: readonly TensorLike[]): Value[] {
+  return coerceFloat(xs)
 }

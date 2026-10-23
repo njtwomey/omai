@@ -2,12 +2,21 @@
 
 import numpy as np
 import scipy.special as sp
-from whitebox_oracle.fixture import case
-from whitebox_oracle.helpers import UNARY_SHAPES, rng, uniform
+from whitebox_oracle.fixture import Case, case
+from whitebox_oracle.helpers import UNARY_SHAPES, FloatArray, Unary, rng, uniform
 
-REFERENCE = {"numpy": np.__version__}
+REFERENCE: dict[str, str] = {"numpy": np.__version__}
 
-DOMAINS = {
+
+def softplus(x: FloatArray) -> FloatArray:
+    return np.logaddexp(0, x)
+
+
+def relu(x: FloatArray) -> FloatArray:
+    return np.maximum(x, 0)
+
+
+DOMAINS: dict[str, tuple[Unary, float, float]] = {
     "exp": (np.exp, -5, 5),
     "expm1": (np.expm1, -1e-3, 1e-3),
     "log": (np.log, 0.01, 10),
@@ -28,16 +37,16 @@ DOMAINS = {
     "arccosh": (np.arccosh, 1, 10),
     "arctanh": (np.arctanh, -0.99, 0.99),
     "sigmoid": (sp.expit, -40, 40),
-    "softplus": (lambda x: np.logaddexp(0, x), -40, 40),
-    "relu": (lambda x: np.maximum(x, 0), -2, 2),
+    "softplus": (softplus, -40, 40),
+    "relu": (relu, -2, 2),
     "floor": (np.floor, -5, 5),
     "ceil": (np.ceil, -5, 5),
     "trunc": (np.trunc, -5, 5),
 }
 
 
-def cases():
-    out = []
+def cases() -> list[Case]:
+    out: list[Case] = []
     for i, (name, (fn, lo, hi)) in enumerate(DOMAINS.items()):
         for shape in UNARY_SHAPES:
             x = uniform(rng(100 + i), shape, lo, hi)

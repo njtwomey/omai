@@ -1,13 +1,13 @@
 """Indexing operations against numpy."""
 
 import numpy as np
-from whitebox_oracle.fixture import case
+from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import rng, uniform
 
-REFERENCE = {"numpy": np.__version__}
+REFERENCE: dict[str, str] = {"numpy": np.__version__}
 
 
-def cases():
+def cases() -> list[Case]:
     m = uniform(rng(600), (4, 5))
     v = uniform(rng(601), (8,))
     idx = np.array([3, 0, 0, -1], dtype=np.int32)

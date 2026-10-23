@@ -1,13 +1,13 @@
 """Shape operations against numpy."""
 
 import numpy as np
-from whitebox_oracle.fixture import case
+from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import rng, uniform
 
-REFERENCE = {"numpy": np.__version__}
+REFERENCE: dict[str, str] = {"numpy": np.__version__}
 
 
-def cases():
+def cases() -> list[Case]:
     x = uniform(rng(500), (2, 3, 4))
     m = uniform(rng(501), (3, 4))
     v = uniform(rng(502), (5,))

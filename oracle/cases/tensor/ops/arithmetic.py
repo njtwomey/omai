@@ -1,17 +1,17 @@
 """Elementwise arithmetic with broadcasting and dtype promotion, against numpy."""
 
 import numpy as np
-from whitebox_oracle.fixture import case
-from whitebox_oracle.helpers import BINARY_SHAPES, rng, uniform
+from whitebox_oracle.fixture import Case, case
+from whitebox_oracle.helpers import BINARY_SHAPES, Binary, FloatArray, Unary, rng, uniform
 
-REFERENCE = {"numpy": np.__version__}
+REFERENCE: dict[str, str] = {"numpy": np.__version__}
 
 
-def py_mod(a, b):
+def py_mod(a: FloatArray, b: FloatArray) -> FloatArray:
     return np.mod(a, b)
 
 
-BINARY = {
+BINARY: dict[str, tuple[Binary, tuple[float, float], tuple[float, float]]] = {
     "add": (np.add, (-3, 3), (-3, 3)),
     "sub": (np.subtract, (-3, 3), (-3, 3)),
     "mul": (np.multiply, (-3, 3), (-3, 3)),
@@ -25,15 +25,16 @@ BINARY = {
 }
 
 
-def cases():
-    out = []
+def cases() -> list[Case]:
+    out: list[Case] = []
     for i, (name, (fn, (alo, ahi), (blo, bhi))) in enumerate(BINARY.items()):
         for sa, sb in BINARY_SHAPES:
             g = rng(200 + i)
             a = uniform(g, sa, alo, ahi)
             b = uniform(g, sb, blo, bhi)
             out.append(case(f"{name}/{list(sa)}x{list(sb)}", name, [a, b], fn(a, b), rtol=1e-13, atol=1e-15))
-    for name, fn in [("neg", np.negative), ("abs", np.abs), ("sign", np.sign), ("square", np.square)]:
+    unary: list[tuple[str, Unary]] = [("neg", np.negative), ("abs", np.abs), ("sign", np.sign), ("square", np.square)]
+    for name, fn in unary:
         x = uniform(rng(300), (2, 3))
         out.append(case(f"{name}/[2, 3]", name, [x], fn(x)))
     ints = np.array([7, -7, 3], dtype=np.int32)

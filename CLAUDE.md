@@ -44,3 +44,5 @@ All routine work goes through `make` (it wraps mise, pnpm and uv). Run `make che
 - Tests sit next to code: `foo.test.ts`, `foo.property.test.ts` (fast-check), `foo.golden.test.ts` (fixtures in
   `packages/engine/fixtures/<same path>/`), `foo.test-d.ts`.
 - Python is uv-only, configured through pydantic-settings; the oracle mirrors engine paths under `oracle/cases/`.
+- Python is fully typed: every function and method annotates all arguments and its return type (`-> None` too), and
+  named lambdas become typed `def`s. Ruff `ANN` and pyright strict enforce it in `make lint` and `make typecheck`.

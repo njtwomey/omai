@@ -787,6 +787,20 @@ Every distribution is a plain object from a factory with `name`, `params`, `supp
 pure methods `logProb`, `prob`, `cdf`, `logCdf`, `sf`, `logSf`, `ppf`, `isf`, `sample(key, shape)`, `rsample`
 (reparameterised), `mean`, `variance`, `stddev`, `mode`, `entropy`. Parameters are values (tensors or traced) with batch
 shapes, so densities differentiate with respect to parameters and broadcast over batches.
+
+`rsample(key, shape)` draws samples that are differentiable functions of the parameters (pathwise gradients), and
+`hasRsample` says whether a distribution supports it. `sample` is always `stopGradient(rsample)` where `rsample` exists.
+Reparameterisation comes in three forms:
+- Location-scale and transforms: `loc + scale * eps` (normal, laplace, logistic, cauchy, gumbel), or the inverse CDF
+  applied to uniform noise (exponential, weibull, pareto, kumaraswamy). Transformed distributions inherit `rsample`
+  from their base.
+- Implicit reparameterisation (Figurnov et al., 2018) for distributions without a usable inverse CDF: gamma, beta,
+  dirichlet, chi2 and inverse gamma, plus studentT through its gamma mixture. The sample comes from the usual sampler;
+  its gradient is `-(dF/dθ) / p(x)`, which needs the derivatives of the incomplete gamma and beta functions with
+  respect to their shape parameters (`numerics/special`).
+- Discrete distributions have no `rsample` and throw with a pointer to the alternatives: the relaxed distributions
+  `relaxedBernoulli` and `relaxedOneHotCategorical` (Concrete / Gumbel-softmax, with a temperature), straight-through
+  estimators (`straightThrough`), and score-function estimators (`elbo.ts`, `policy-gradient.ts`).
 - `distribution.ts`: the `Distribution` interface, `Support`, parameter validation, batch-shape helpers.
 - `continuous/normal.ts`: `normal`, `halfNormal`, `truncatedNormal`, `logNormal`, `skewNormal`.
 - `continuous/heavy-tailed.ts`: `studentT`, `cauchy`, `halfCauchy`, `laplace`, `logistic`, `pareto`, `johnsonSU`,
@@ -797,6 +811,7 @@ shapes, so densities differentiate with respect to parameters and broadcast over
 - `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT`, studentised range.
 - `discrete/binary.ts`: `bernoulli`, `binomial`, `betaBinomial`.
 - `discrete/categorical.ts`: `categorical`, `oneHotCategorical`, `discreteUniform`, `orderedLogistic`.
+- `relaxed.ts`: `relaxedBernoulli`, `relaxedOneHotCategorical` (Concrete / Gumbel-softmax) and `straightThrough`.
 - `discrete/counts.ts`: `poisson`, `negativeBinomial`, `geometric`, `hypergeometric`, zero-inflated variants.
 - `multivariate/normal.ts`: `multivariateNormal` (covariance, precision or Cholesky), `condition`, `marginal`,
   `lowRankMultivariateNormal`, `matrixNormal`.
