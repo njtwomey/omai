@@ -4,6 +4,7 @@ import { item, treePaths, type Value } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { adam } from '../adaptive.ts'
 import { applyUpdates, type GradientTransformation, globalNorm, type Tree } from '../transform.ts'
+import type { MinimizeMethod, MinimizeResult, Objective, Parameters } from './objective.ts'
 
 /** The state of a {@link minimizer} run. */
 export interface MinimizerState {
@@ -78,24 +79,30 @@ export function minimizer(
   }
 }
 
-/** Result of {@link minimize}. */
-export interface MinimizeResult {
-  readonly x: Tree
-  readonly fun: number
-  readonly gradNorm: number
-  readonly steps: number
-  readonly status: string
-  readonly converged: boolean
+/** Options of {@link minimize} with a gradient transformation. */
+export interface TransformationMinimizeOptions
+  extends MinimizerOptions,
+    Partial<Omit<RunOptions, 'maxSteps' | 'start'>> {
+  readonly method?: GradientTransformation
+  /** Steps to take (default 1000); `maxIterations` is accepted as a synonym. */
+  readonly maxSteps?: number
+  readonly maxIterations?: number
+}
+
+function isTransformation(m: unknown): m is GradientTransformation {
+  return typeof m === 'object' && m !== null && 'update' in m && 'init' in m
 }
 
 /**
- * Minimise an objective with a gradient transformation (default Adam with learning rate 0.01), for up to `maxSteps`
- * steps or until the gradient norm falls below `gradTol`.
+ * Minimise an objective, scipy-style. The method is a function value: a vector method such as `bfgs`, `lbfgs`,
+ * `newtonCg` or `nelderMead` (called as `method(f, x0, options)` with the remaining options), or a gradient
+ * transformation such as `adam({ learningRate: 0.01 })`, run for up to `maxSteps` steps or until the gradient norm
+ * falls below `gradTol`. Without a method, Adam with learning rate 0.01 runs.
  *
  * @param f - The objective.
- * @param x0 - Initial parameters (any tree).
- * @param options - The method, steps, tolerance and the run options (tracer, policy, seed).
- * @returns The result, scipy-style.
+ * @param x0 - Initial parameters (any tree, or anything tensor-like for vector methods).
+ * @param options - The method and its options, and the run options (tracer, policy, seed).
+ * @returns The result.
  * @example
  * ```ts
  * import { minimize, sgd } from 'whitebox-engine/optim'
@@ -104,28 +111,38 @@ export interface MinimizeResult {
  * r.converged // => true
  * ```
  */
-export function minimize(
-  f: (params: Tree) => Value,
-  x0: Tree,
-  options: MinimizerOptions &
-    Partial<Omit<RunOptions, 'maxSteps'>> & {
-      readonly method?: GradientTransformation
-      readonly maxSteps?: number
-    } = {},
-): MinimizeResult {
-  const method = options.method ?? adam({ learningRate: 0.01 })
-  const { method: _m, gradTol, maxSteps, ...run } = options
-  const result = runAlgorithm(minimizer(f, x0, method, gradTol === undefined ? {} : { gradTol }), {
+export function minimize<O extends object>(
+  f: Objective,
+  x0: Parameters,
+  options: O & { readonly method: MinimizeMethod<O> },
+): MinimizeResult
+export function minimize(f: Objective, x0: Tree, options?: TransformationMinimizeOptions): MinimizeResult
+export function minimize(f: Objective, x0: Parameters, options: object = {}): MinimizeResult {
+  const { method, ...rest } = options as { readonly method?: unknown }
+  if (typeof method === 'function') return (method as MinimizeMethod<object>)(f, x0, rest)
+  const transformation = isTransformation(method) ? method : adam({ learningRate: 0.01 })
+  const { gradTol, maxSteps, maxIterations, ...run } = rest as TransformationMinimizeOptions
+  const result = runAlgorithm(minimizer(f, x0, transformation, gradTol === undefined ? {} : { gradTol }), {
     ...run,
-    maxSteps: maxSteps ?? 1000,
+    maxSteps: maxSteps ?? maxIterations ?? 1000,
   })
   const s = result.state
   return {
     x: s.params,
     fun: s.value,
+    grad: s.grad,
     gradNorm: s.gradNorm,
     steps: result.steps,
+    nfev: result.steps + 1,
+    ngev: result.steps + 1,
+    nhev: 0,
     status: result.status,
     converged: result.status === 'converged',
+    message:
+      result.status === 'converged'
+        ? 'gradient norm below tolerance'
+        : result.status === 'completed'
+          ? 'maximum number of steps reached'
+          : `stopped: ${result.status}`,
   }
 }
