@@ -1004,8 +1004,10 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `scalar.ts`: `minimizeScalar` (golden section, Brent, bounded), `bracket`.
 - `proximal.ts`: proximal operators (L1, L2, group, nuclear, box, simplex, total variation), ISTA, FISTA, ADMM, primal-dual
   (Chambolle-Pock), projections.
-- `smo.ts`: sequential minimal optimisation for quadratic programs with box constraints and one linear equality (the
-  SVM dual family): working-set selection (maximal violating pair, second order), shrinking, traced active sets.
+- `smo.ts`: sequential minimal optimisation (`smo`, `smoAlgorithm`) for quadratic programs with box constraints and
+  one linear equality (the SVM dual family, libsvm's solver): working-set selection (maximal violating pair, second
+  order WSS3), shrinking with gradient reconstruction, libsvm's rho, traced working pairs and active sets; `svcDual`
+  (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables).
 - `sparse.ts`: sparse approximation: matching pursuit, orthogonal matching pursuit, CoSaMP, iterative hard
   thresholding, basis pursuit, basis pursuit denoising, sparse coding over dictionaries, dictionary learning (K-SVD,
   MOD, online), recovery guarantees (coherence, RIP estimates).

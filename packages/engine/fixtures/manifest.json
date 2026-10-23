@@ -414,6 +414,14 @@
       "cases": 5
     },
     {
+      "fixture": "optim/smo.json",
+      "source": "oracle/cases/optim/smo.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {
