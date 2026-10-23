@@ -749,7 +749,7 @@ are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `M
   counts).
 - `loader.ts`: `DatasetRef`, `load` (embedded or remote; sha256 verification with Web Crypto), `AssetCache`
   (`memoryCache`, `indexedDbCache`), `sha256Hex`.
-- `archives.ts`: `gunzip`, `untar`, `unzip`, `parseCsv`, for parsing remote assets in the browser.
+- `archives.ts`: `gunzip`, `untar`, `unzip`, `parseCsv`, `parseNpy`, for parsing remote assets in the browser.
 - `samplers.ts`: `Sampler`, `sequentialSampler`, `randomSampler`, `weightedRandomSampler`, `subsetRandomSampler`,
   `batchSampler`, `balancedWeights` (torch.utils.data samplers, reshuffled per epoch by derived keys).
 - `batching.ts`: `batches` (batch size, shuffle by key or sampler, drop last), `epochBatches`, `epochs`, `dataLoader`,
@@ -2439,12 +2439,17 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   `rosenbrock`, `himmelblau`, `beale`, `rastrigin`, `ackley`, `branin`, `quadraticBowl` with a set condition number),
   hyperparameter-tuning surfaces (`TuningSurface`: `learningRateSurface` with learning curves for multi-fidelity
   tuning, `braninSurface`).
-- `changepoints.ts`: tunable changepoint series (mean, variance and rate shifts, AR regime switches, trend breaks;
-  hazard rate, segment lengths and noise as knobs) with true changepoints, segment parameters and the exact BOCPD
-  predictive.
-- `timeseries.ts`: AR and ARMA processes, sinusoids in noise, uneven sampling, seasonal series, airline passengers,
-  sunspots, coal-mining disasters, an ECG record (remote).
-- `events.ts`: Poisson and Hawkes event data with true intensities.
+- `changepoints.ts`: tunable changepoint series (`changepointSeries`: mean, variance and rate shifts, AR regime
+  switches, trend breaks; hazard rate (so geometric segment lengths), noise and prior spreads as knobs) with true
+  changepoints, segment parameters and the exact BOCPD predictive (`exactBocpd` with conjugate `SegmentModel`s:
+  run-length posteriors, one-step predictives, evidence).
+- `timeseries.ts`: AR and ARMA processes (`armaProcess`, `arma`, with autocovariances and spectral densities),
+  sinusoids in noise (`sinusoids`), uneven sampling (`sinusoids` with uneven times, `subsampleSeries`), seasonal
+  series with known components (`seasonalSeries`), airline passengers (`airPassengers`), `sunspots`, coal-mining
+  disasters (`coalMiningDisasters` as events, `coalMiningCounts`), an ECG record (`electrocardiogram`, remote).
+- `events.ts`: Poisson and Hawkes event data with true intensities: `poissonProcess`, `inhomogeneousPoisson`
+  (sinusoidal, piecewise and ramp intensities), `hawkesProcess` and `multivariateHawkes` (with each event's parent
+  and the exact log-likelihood), `spatialPoisson`.
 - `comparisons.ts`: games between players with latent skills (chess-like Elo data, tournaments) with true skills.
 - `ranking.ts`: explicit ratings with low-rank truth, click logs (position and cascade models with propensities),
   implicit feedback, Zipfian catalogues, a small MovieLens (remote).

@@ -164,3 +164,84 @@ export function parseCsv(
   }
   return { columns: body[0] ?? [], rows: body.slice(1) }
 }
+
+const NPY_READERS: Readonly<
+  Record<string, { size: number; read: (v: DataView, o: number, little: boolean) => number }>
+> = {
+  f8: { size: 8, read: (v, o, l) => v.getFloat64(o, l) },
+  f4: { size: 4, read: (v, o, l) => v.getFloat32(o, l) },
+  i8: { size: 8, read: (v, o, l) => Number(v.getBigInt64(o, l)) },
+  i4: { size: 4, read: (v, o, l) => v.getInt32(o, l) },
+  i2: { size: 2, read: (v, o, l) => v.getInt16(o, l) },
+  i1: { size: 1, read: (v, o) => v.getInt8(o) },
+  u8: { size: 8, read: (v, o, l) => Number(v.getBigUint64(o, l)) },
+  u4: { size: 4, read: (v, o, l) => v.getUint32(o, l) },
+  u2: { size: 2, read: (v, o, l) => v.getUint16(o, l) },
+  u1: { size: 1, read: (v, o) => v.getUint8(o) },
+  b1: { size: 1, read: (v, o) => v.getUint8(o) },
+}
+
+/**
+ * Read a NumPy `.npy` array (format versions 1 to 3, numeric dtypes, C or Fortran order) as float64 values in C order.
+ *
+ * @param bytes - The file.
+ * @returns The shape, the dtype descriptor and the values.
+ * @throws WhiteboxError with code `value` for a file that is not `.npy` or an unsupported dtype.
+ * @example
+ * ```ts
+ * import { parseNpy } from 'whitebox-engine/data'
+ * const header = "{'descr': '<u2', 'fortran_order': False, 'shape': (2,), }"
+ * const pad = ' '.repeat(64 - ((10 + header.length + 1) % 64)) + '\n'
+ * const text = new TextEncoder().encode(header + pad)
+ * const bytes = new Uint8Array(10 + text.length + 4)
+ * bytes.set([0x93, 78, 85, 77, 80, 89, 1, 0, text.length & 255, text.length >> 8])
+ * bytes.set(text, 10)
+ * bytes.set([7, 0, 9, 1], 10 + text.length)
+ * Array.from(parseNpy(bytes).values) // => [7, 265]
+ * ```
+ */
+export function parseNpy(bytes: Uint8Array): {
+  readonly shape: readonly number[]
+  readonly dtype: string
+  readonly values: Float64Array
+} {
+  if (bytes[0] !== 0x93 || new TextDecoder().decode(bytes.subarray(1, 6)) !== 'NUMPY')
+    throw new WhiteboxError('value', 'parseNpy: not a .npy file')
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const major = bytes[6] ?? 1
+  const headerLength = major === 1 ? view.getUint16(8, true) : view.getUint32(8, true)
+  const start = major === 1 ? 10 : 12
+  const header = new TextDecoder().decode(bytes.subarray(start, start + headerLength))
+  const descr = /'descr':\s*'([<>|=])(\w)(\d+)'/.exec(header)
+  const shapeText = /'shape':\s*\(([^)]*)\)/.exec(header)?.[1] ?? ''
+  const fortran = /'fortran_order':\s*True/.test(header)
+  if (descr === null) throw new WhiteboxError('value', 'parseNpy: no dtype in the header')
+  const [, order, kind, width] = descr as unknown as [string, string, string, string]
+  const reader = NPY_READERS[`${kind}${width}`]
+  if (reader === undefined) throw new WhiteboxError('value', `parseNpy: dtype ${kind}${width} is not supported`)
+  const shape = shapeText
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s !== '')
+    .map(Number)
+  const count = shape.reduce((a, b) => a * b, 1)
+  const little = order !== '>'
+  const offset = start + headerLength
+  const raw = Float64Array.from({ length: count }, (_, i) => reader.read(view, offset + i * reader.size, little))
+  if (!fortran || shape.length < 2) return { shape, dtype: `${order}${kind}${width}`, values: raw }
+  // Fortran order: the first index varies fastest.
+  const values = new Float64Array(count)
+  const strides = shape.map((_, a) => shape.slice(0, a).reduce((p, q) => p * q, 1))
+  const cStrides = shape.map((_, a) => shape.slice(a + 1).reduce((p, q) => p * q, 1))
+  for (let i = 0; i < count; i++) {
+    let rest = i
+    let target = 0
+    for (let a = 0; a < shape.length; a++) {
+      const idx = Math.floor(rest / (cStrides[a] ?? 1))
+      rest -= idx * (cStrides[a] ?? 1)
+      target += idx * (strides[a] ?? 1)
+    }
+    values[i] = raw[target] ?? 0
+  }
+  return { shape, dtype: `${order}${kind}${width}`, values }
+}

@@ -53,6 +53,15 @@
       "cases": 31
     },
     {
+      "fixture": "methods/datasets/changepoints.json",
+      "source": "oracle/cases/methods/datasets/changepoints.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "methods/datasets/classification-real.json",
       "source": "oracle/cases/methods/datasets/classification-real.py",
       "reference": {
@@ -111,6 +120,14 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 6
+    },
+    {
+      "fixture": "methods/datasets/timeseries.json",
+      "source": "oracle/cases/methods/datasets/timeseries.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
     },
     {
       "fixture": "methods/rl/classic_control.json",
