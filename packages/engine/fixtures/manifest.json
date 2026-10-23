@@ -389,6 +389,14 @@
       "cases": 11
     },
     {
+      "fixture": "optim/scalar.json",
+      "source": "oracle/cases/optim/scalar.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 30
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {
