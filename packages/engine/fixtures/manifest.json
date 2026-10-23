@@ -373,6 +373,14 @@
       "cases": 12
     },
     {
+      "fixture": "optim/integer.json",
+      "source": "oracle/cases/optim/integer.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "optim/linear_programming.json",
       "source": "oracle/cases/optim/linear_programming.py",
       "reference": {

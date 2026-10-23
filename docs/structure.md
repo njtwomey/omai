@@ -1020,7 +1020,9 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   embedding (certifies infeasible and unbounded programs), with dependent equality rows removed first.
 - `quadratic.ts`: `quadprog` (active set, interior point), box QP, KKT residuals.
 - `conic.ts`: small second-order cone and semidefinite programs by interior point (for teaching and small models).
-- `integer.ts`: `milp` (branch and bound, cuts), knapsack, set cover.
+- `integer.ts`: `milp` and `milpAlgorithm` (branch and bound on simplex relaxations as child runs, best-first or
+  depth-first, incumbent, bound and gap, Gomory mixed-integer cuts at the root, the search tree traced), `knapsack`
+  (0-1, by dynamic programming or branch and bound with Dantzig's bound), `setCover` (greedy or exact).
 - `assignment.ts`: Hungarian algorithm, auction algorithm, stable matching (Gale-Shapley).
 - `online.ts`: online gradient descent, FTRL, hedge, exponentiated gradient, online Newton step, regret records.
 - `transport.ts`: exact optimal transport, entropic Sinkhorn (log domain), 1-D Wasserstein, sliced Wasserstein,
