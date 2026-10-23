@@ -67,6 +67,15 @@
       "cases": 20
     },
     {
+      "fixture": "numerics/approximation/approximation.json",
+      "source": "oracle/cases/numerics/approximation/approximation.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "numerics/convolution/convolution.json",
       "source": "oracle/cases/numerics/convolution/convolution.py",
       "reference": {

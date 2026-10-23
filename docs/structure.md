@@ -643,13 +643,14 @@ primitives; "custom" means a dedicated rule.
   `finiteDifferenceWeights` (Fornberg), complex-step derivatives, `differenceMatrix`.
 
 `approximation/` (numerical analysis foundations; chebfun ideas)
-- `chebyshev.ts`: adaptive Chebyshev approximations of functions (construct, evaluate, differentiate, integrate, find
-  roots and extrema), coefficient decay.
-- `best.ts`: minimax approximation by the Remez exchange algorithm (polynomial and rational), equioscillation.
-- `pade.ts`: Pade approximants from Taylor coefficients, continued-fraction evaluation (Lentz).
-- `acceleration.ts`: Richardson extrapolation, Aitken's delta-squared, Shanks and Wynn epsilon, series acceleration.
-- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon`, float32 rounding, `twoSum`, `twoProduct`, compensated sums,
-  error-propagation helpers, condition number of a function.
+- `chebyshev.ts`: `chebfun` (adaptive Chebyshev approximation: construct, evaluate, differentiate, `cumsum`, `sum`,
+  roots by the colleague matrix with subdivision, extrema), `chebyshev`, `chebyshevCoefficients`, coefficient decay.
+- `best.ts`: `remez` (minimax approximation by the Remez exchange algorithm, polynomial and rational types),
+  equioscillation, `chebyshevSeries`.
+- `pade.ts`: `pade` (approximants from Taylor coefficients), `continuedFraction` (modified Lentz).
+- `acceleration.ts`: `richardson`, `aitken`, `shanks`, `wynnEpsilon`, `eulerTransform`.
+- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon`, `toFloat32`, `twoSum`, `twoProduct`, `kahanSum`,
+  `neumaierSum`, `pairwiseSum`, `propagateError`, `conditionNumber`, `significantDigits`.
 
 `fourier/` (numpy.fft, scipy.fft; linear, so differentiable)
 - `complex.ts`: `ComplexValue` (a pair of real values; the engine has no complex dtype), `complex`, arithmetic (`cAdd`,

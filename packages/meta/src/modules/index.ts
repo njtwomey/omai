@@ -35,6 +35,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/nn/module': () => import('whitebox-engine/nn/module'),
   'whitebox-engine/nn/training': () => import('whitebox-engine/nn/training'),
   'whitebox-engine/numerics': () => import('whitebox-engine/numerics'),
+  'whitebox-engine/numerics/approximation': () => import('whitebox-engine/numerics/approximation'),
   'whitebox-engine/numerics/convolution': () => import('whitebox-engine/numerics/convolution'),
   'whitebox-engine/numerics/differentiate': () => import('whitebox-engine/numerics/differentiate'),
   'whitebox-engine/numerics/fourier': () => import('whitebox-engine/numerics/fourier'),
