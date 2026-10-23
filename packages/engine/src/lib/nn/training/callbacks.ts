@@ -220,9 +220,7 @@ export function earlyStopping(options: EarlyStoppingOptions = {}): Callback & { 
  * bestCheckpoint().best().params // => undefined
  * ```
  */
-export function bestCheckpoint(
-  options: { readonly monitor?: string; readonly mode?: 'min' | 'max' } = {},
-): Callback & {
+export function bestCheckpoint(options: { readonly monitor?: string; readonly mode?: 'min' | 'max' } = {}): Callback & {
   readonly best: () => { readonly value: number; readonly params: Params | undefined; readonly epoch: number }
 } {
   const monitor = options.monitor ?? 'valLoss'
