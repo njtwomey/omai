@@ -1578,21 +1578,27 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `functional/recurrent.ts`: RNN, GRU and LSTM cells (LSTM projection), `scan` over time, `recurrent` (stacked,
   bidirectional runs with per-sequence lengths and dropout between layers), packed sequences (`packPaddedSequence`,
   `padPackedSequence`, `packedLengths`, `lengthsFromMask`).
-- `functional/state-space.ts`: SSM discretisation, S4 convolution kernels, selective scan (Mamba), delta rule, LRU.
-- `functional/graph.ts`: message passing, GCN, GAT, GraphSAGE and GIN convolutions, edge softmax, graph pooling.
+- `functional/state-space.ts`: SSM discretisation (`discretise` by zero-order hold or bilinear, `discretiseDiagonal`),
+  S4 convolution kernels (`ssmKernel`, Vandermonde for diagonal models), `causalConvolution`, `ssmRecurrence`,
+  `linearRecurrence`, selective scan (Mamba, with gating), delta rule (DeltaNet), LRU (`lruInit`, `lruEigenvalues`,
+  `lru`). TODO: complex-valued diagonal S4D (the LRU covers complex recurrences).
+- `functional/graph.ts`: `edgeList`, `aggregate` and `messagePassing` (sum, mean, max), edge softmax, `addSelfLoops`,
+  `gcnNorm`, GCN, GAT, GraphSAGE and GIN convolutions, graph pooling (`globalPool` by batch, `topKPool`).
 - `functional/vision.ts`: `interpolate` (nearest, nearest-exact, linear, bilinear, bicubic, trilinear, area; size or
   scale factor, aligned corners), pixel shuffle and unshuffle, `pad` (PyTorch's F.pad modes), patch embedding.
 - `functional/sampling.ts`: spatial transformers (`affineGrid` 2-D and 3-D, `gridSample` bilinear, nearest and
   bicubic with zeros, border or reflection padding, `identityTheta`), ROI Align and ROI pooling. TODO: volumetric
   (5-D) `gridSample`.
-- `functional/sets.ts`: masked set pooling, set attention.
+- `functional/sets.ts`: masked set pooling (`setPool`, `maskSet`), set attention (`mab`, `sab`, `isab`, `pma` of the
+  Set Transformer).
 - `init.ts`: Xavier, Kaiming, LeCun, orthogonal, truncated normal, uniform, normal, constant, zeros and ones, eye,
   Dirac, sparse, PyTorch's default uniform; gains and fans.
 - `module/module.ts`: `Module` (forward, parameters, named parameters, buffers, state dicts, train and eval modes,
   `initParams`/`resetParameters`, freezing with `requiresGrad` and `trainableMask`), `ApplyContext` (train flag, key,
   buffers in and updated buffers out, taps, path), `childScope` and `assemble` for composites, `tap`, `functional`
   (conversion to the functional form: `init`, `apply`, `applyWithState`), `Parameter`.
-- `module/containers.ts`: `Sequential`, `ModuleList`, `ModuleDict`, `Residual`, `Parallel`, `Lambda`, `mlp`.
+- `module/containers.ts`: `Sequential`, `ModuleList`, `ModuleDict`, `Residual`, `Parallel`, `Lambda`, `Composite` (named
+  parts with routed contexts, the base of the blocks), `mlp`.
 - `module/layers.ts`: `Linear`, `Bilinear`, `Embedding` (with `fromPretrained`), `EmbeddingBag`, `Flatten`,
   `Unflatten`, `Identity`.
 - `module/activations.ts`: a module per activation (`ReLU` to `Threshold`, `Softmax`, `LogSoftmax`, `Softmin`, `GLU`,
@@ -1619,16 +1625,26 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `module/vision.ts`: `Upsample`, `UpsamplingNearest2d`, `UpsamplingBilinear2d`, `PixelShuffle`, `PixelUnshuffle`,
   the padding modules (`ZeroPad`, `ConstantPad`, `ReflectionPad`, `ReplicationPad`, `CircularPad`, 1-D to 3-D),
   `PatchEmbedding`, `SpatialTransformer`.
-- `blocks/transformer.ts`: pre- and post-norm blocks, feed-forward and gated feed-forward, encoder, decoder and
-  encoder-decoder stacks, cross-attention, KV caches.
-- `blocks/vision.ts`: residual and bottleneck blocks, ConvNeXt blocks, MBConv, squeeze-excitation, U-Net encoder and
-  decoder stages, feature pyramids.
-- `blocks/sequence.ts`: temporal convolution (dilated causal) blocks, WaveNet blocks, stacked recurrent blocks.
-- `blocks/experts.ts`: routing (softmax, top-k, noisy top-k, switch, expert choice), mixture-of-experts layers,
-  load-balancing and router-z losses.
-- `blocks/continuous.ts`: ODE blocks (a vector field network integrated by any `dynamics/ode` solver, gradients by
-  backpropagation through the solver or by the adjoint), augmented and second-order ODE blocks, CDE and SDE blocks.
-- `blocks/generative.ts`: time and noise-level embeddings, diffusion U-Net stages with attention, coupling layers.
+- `module/graph.ts`: `GCNConv`, `GATConv`, `SAGEConv`, `GINConv` (PyTorch Geometric's parameter names).
+- `module/sets.ts`: `SetAttentionBlock`, `InducedSetAttentionBlock`, `PoolingByMultiheadAttention`.
+- `blocks/` (namespace `blocks`, on `Composite` from `module/containers.ts`):
+  - `transformer.ts`: `FeedForward`, `GatedFeedForward` (SwiGLU, GeGLU), `TransformerBlock` (pre- or post-norm, RMS
+    or layer norm, grouped-query self-attention with rotary positions, sliding windows, cross-attention, KV caches),
+    `TransformerStack` (encoder, decoder or decoder-only, one cache per block), `EncoderDecoder` and
+    `encoderDecoder`, `TransformerLM` (decoder-only language model, tied embeddings).
+  - `vision.ts`: `BasicBlock` and `Bottleneck` (torchvision's names), `SqueezeExcitation`, `ConvNeXtBlock`, `MBConv`,
+    `DoubleConv`, U-Net stages `UNetDown` and `UNetUp`, `FeaturePyramid`, `toTokens`.
+  - `sequence.ts`: `causalPad`, `TemporalBlock` and `TCN` (dilated causal, weight-normalised), `WaveNetBlock` and
+    `WaveNet` (gated, residual and skip, conditioning), `StackedRecurrent` (residual LSTM or GRU layers).
+  - `experts.ts`: routing (`softmaxRouting`, `topKRouting`, `noisyTopKRouting`, `switchRouting`,
+    `expertChoiceRouting`), `MixtureOfExperts` (sparse dispatch), `loadBalancingLoss`, `routerZLoss`,
+    `importanceLoss`.
+  - `continuous.ts`: `OdeSolver` and `SdeSolver` contracts (filled by `dynamics/ode` and `stochastic` solvers),
+    `ODEBlock` (gradients by backpropagation through the solver or by the adjoint), `AugmentedODEBlock`,
+    `SecondOrderODEBlock`, `CDEBlock`, `SDEBlock`.
+  - `generative.ts`: `timestepEmbedding`, `noiseLevelEmbedding` and `fourierFrequencies`, `TimeEmbedding`,
+    `DiffusionResBlock`, `SpatialSelfAttention`, `DiffusionDownStage` and `DiffusionUpStage`, `AffineCoupling`
+    (RealNVP) and `AdditiveCoupling` (NICE).
 - `describe.ts`: `describe` (any functional model or module to a `Structure`: blocks, tensor shapes, repeats, skip
   connections, parameter counts), `summary` (torchinfo-style), FLOP and memory estimates.
 - `training/state.ts`: `TrainState` (params, optimiser state, buffers, step and update counts, key, update scale,
@@ -1646,13 +1662,21 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   `earlyStopping`, `bestCheckpoint`, `reduceLROnPlateau` (PyTorch's rule), `activationLogger` (activation taps).
 - `training/serialise.ts`: `saveState`/`loadState` and `stateToText`/`stateFromText` (parameters and buffers as JSON
   with dtype and shape), `loadTorchStateDict` (weights exported by the oracle, with renaming).
-- `language-model.ts`: the `LanguageModel` contract (tokenizer, `logits(tokens)`, optional embeddings and generation),
-  implemented by local models and by adapters in `methods/llm`.
-- `decoding.ts`: greedy, temperature, top-k and top-p sampling, repetition penalties, beam search, speculative
-  decoding, constrained decoding (allowed-token masks from grammars); traced one token per step.
-- `quantise.ts`: quantisation (symmetric, affine, per-channel), fake quantisation, GPTQ, AWQ, error reports.
-- `pruning.ts`: magnitude and structured pruning, lottery-ticket rewinding, sparsity schedules.
-- `equivariant.ts`: p4 group convolutions, orientation pooling, equivariance tests.
+- `language-model.ts`: the `LanguageModel` contract (a structural `Tokenizer`, `logits(tokens)`, optional embeddings
+  and a cached `step`), implemented by local models and by adapters in `methods/llm`; `languageModelFromModule`,
+  `bigramLanguageModel` and `characterTokenizer` (reference models), `nextTokenLogits`, `sequenceLogProb`,
+  `perplexity`.
+- `decoding/` (inline): `processors.ts` (temperature, top-k, top-p, min-p, repetition, frequency and presence
+  penalties, composition), `constraints.ts` (allowed-token masks, automata and tries), `generate.ts`
+  (`decodingAlgorithm` and `generate`: greedy or sampled, traced one token per step), `beam.ts` (beam search with
+  GNMT's length penalty), `speculative.ts` (speculative decoding with exact acceptance and residual resampling).
+- `quantise.ts`: quantisation (symmetric, affine, per-tensor and per-channel), dequantisation, fake quantisation with a
+  straight-through gradient, GPTQ, AWQ, error reports (MSE, max error, SQNR, output error), `quantiseModule`.
+- `pruning.ts`: magnitude (per tensor and global), structured (row and channel norms) and N:M pruning, masks,
+  lottery-ticket rewinding and iterative magnitude pruning, sparsity schedules (constant, linear, polynomial),
+  sparsity reports.
+- `equivariant.ts`: p4 lifting and group convolutions (functions and modules), orientation pooling, `rotate90`,
+  equivariance and invariance errors.
 
 ### 4.35 `tune/` (tier 10): parameter selection for anything (Optuna, Ray Tune ideas)
 

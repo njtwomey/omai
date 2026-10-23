@@ -83,7 +83,15 @@ abstract class StatNorm extends Module {
   }
 }
 
-/** Batch normalisation over the given input ranks (shared by BatchNorm1d, 2d and 3d). */
+/**
+ * Batch normalisation over the given input ranks (shared by BatchNorm1d, 2d and 3d).
+ *
+ * @example
+ * ```ts
+ * import { BatchNormNd } from 'whitebox-engine/nn'
+ * new BatchNormNd('BatchNorm2d', 3, [4]).parameterCount() // => 6
+ * ```
+ */
 export class BatchNormNd extends StatNorm {
   constructor(kind: string, numFeatures: number, ranks: readonly number[], options: BatchNormModuleOptions = {}) {
     super(kind, numFeatures, ranks, options, { affine: true, track: true })
@@ -155,7 +163,15 @@ export class BatchNorm3d extends BatchNormNd {
   }
 }
 
-/** Instance normalisation over the given input ranks (shared by InstanceNorm1d, 2d and 3d). */
+/**
+ * Instance normalisation over the given input ranks (shared by InstanceNorm1d, 2d and 3d).
+ *
+ * @example
+ * ```ts
+ * import { InstanceNormNd } from 'whitebox-engine/nn'
+ * new InstanceNormNd('InstanceNorm1d', 3, [3]).parameterCount() // => 0
+ * ```
+ */
 export class InstanceNormNd extends StatNorm {
   constructor(kind: string, numFeatures: number, ranks: readonly number[], options: BatchNormModuleOptions = {}) {
     super(kind, numFeatures, ranks, options, { affine: false, track: false })

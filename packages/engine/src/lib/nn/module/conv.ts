@@ -35,6 +35,12 @@ const tuple = (xs: readonly number[]): string => (xs.length === 1 ? `(${xs[0]},)
 /**
  * A convolution over d spatial axes (the shared implementation of {@link Conv1d}, {@link Conv2d} and {@link Conv3d}):
  * weight `[out, in / groups, *kernel]` and bias, initialised as PyTorch does (uniform on +-1/sqrt(fanIn)).
+ *
+ * @example
+ * ```ts
+ * import { ConvNd } from 'whitebox-engine/nn'
+ * new ConvNd(2, 3, 4, 3).kind // => 'Conv2d'
+ * ```
  */
 export class ConvNd extends Module {
   readonly kind: string
@@ -192,6 +198,12 @@ export interface ConvTransposeModuleOptions {
 /**
  * A transposed convolution over d spatial axes (the shared implementation of {@link ConvTranspose1d},
  * {@link ConvTranspose2d} and {@link ConvTranspose3d}): weight `[in, out / groups, *kernel]`.
+ *
+ * @example
+ * ```ts
+ * import { ConvTransposeNd } from 'whitebox-engine/nn'
+ * new ConvTransposeNd(1, 2, 2, 3).kind // => 'ConvTranspose1d'
+ * ```
  */
 export class ConvTransposeNd extends Module {
   readonly kind: string

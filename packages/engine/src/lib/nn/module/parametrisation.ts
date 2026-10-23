@@ -212,7 +212,9 @@ export class SpectralNorm<I, O> extends Module<I, O> {
  * ```ts
  * import { SpectralNorm, Linear, spectralNormEstimate } from 'whitebox-engine/nn'
  * import { key } from 'whitebox-engine/random'
- * spectralNormEstimate(new SpectralNorm(new Linear(3, 2, { key: key(0) }), { key: key(1) })) > 0 // => true
+ * const sn = new SpectralNorm(new Linear(3, 2, { key: key(0) }), { key: key(1) })
+ * sn.forward([[1, 2, 3]])
+ * spectralNormEstimate(sn) > 0 // => true
  * ```
  */
 export function spectralNormEstimate(module: SpectralNorm<never, unknown>): number {

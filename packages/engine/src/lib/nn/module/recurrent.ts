@@ -52,7 +52,15 @@ export interface RecurrentOutput {
 const isPacked = (x: unknown): x is PackedSequence =>
   typeof x === 'object' && x !== null && 'batchSizes' in x && 'data' in x
 
-/** The shared implementation of RNN, LSTM and GRU (PyTorch's RNNBase): weights `weight_ih_l{k}[_reverse]` etc. */
+/**
+ * The shared implementation of RNN, LSTM and GRU (PyTorch's RNNBase): weights `weight_ih_l{k}[_reverse]` etc.
+ *
+ * @example
+ * ```ts
+ * import { RNNBase } from 'whitebox-engine/nn'
+ * new RNNBase('GRU', 3, 4).parameterCount() // => 108
+ * ```
+ */
 export class RNNBase extends Module<RecurrentInput, RecurrentOutput> {
   readonly kind: string
   readonly mode: RecurrentMode

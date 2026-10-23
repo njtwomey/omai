@@ -79,7 +79,15 @@ abstract class Pool extends Module {
   }
 }
 
-/** Max pooling over d spatial axes (shared by {@link MaxPool1d}, {@link MaxPool2d} and {@link MaxPool3d}). */
+/**
+ * Max pooling over d spatial axes (shared by {@link MaxPool1d}, {@link MaxPool2d} and {@link MaxPool3d}).
+ *
+ * @example
+ * ```ts
+ * import { MaxPoolNd } from 'whitebox-engine/nn'
+ * new MaxPoolNd(2, 2).kind // => 'MaxPool2d'
+ * ```
+ */
 export class MaxPoolNd extends Pool {
   constructor(d: number, kernelSize: SpatialSize, options: MaxPoolOptions = {}) {
     super(`MaxPool${d}d`, d, kernelSize, options)
@@ -125,7 +133,15 @@ export class MaxPool3d extends MaxPoolNd {
   }
 }
 
-/** Average pooling over d spatial axes (shared by {@link AvgPool1d}, {@link AvgPool2d} and {@link AvgPool3d}). */
+/**
+ * Average pooling over d spatial axes (shared by {@link AvgPool1d}, {@link AvgPool2d} and {@link AvgPool3d}).
+ *
+ * @example
+ * ```ts
+ * import { AvgPoolNd } from 'whitebox-engine/nn'
+ * new AvgPoolNd(1, 3, { stride: 1 }).outputShape([1, 2, 5]) // => [1, 2, 3]
+ * ```
+ */
 export class AvgPoolNd extends Pool {
   readonly countIncludePad: boolean
   readonly divisorOverride: number | undefined
@@ -168,7 +184,15 @@ export class AvgPool3d extends AvgPoolNd {
   }
 }
 
-/** Lp (power-average) pooling over d spatial axes (shared by {@link LPPool1d}, {@link LPPool2d}, {@link LPPool3d}). */
+/**
+ * Lp (power-average) pooling over d spatial axes (shared by {@link LPPool1d}, {@link LPPool2d}, {@link LPPool3d}).
+ *
+ * @example
+ * ```ts
+ * import { LPPoolNd } from 'whitebox-engine/nn'
+ * new LPPoolNd(2, 2, 2).kind // => 'LPPool2d'
+ * ```
+ */
 export class LPPoolNd extends Pool {
   readonly normType: number
 
@@ -212,7 +236,15 @@ export class LPPool3d extends LPPoolNd {
   }
 }
 
-/** Adaptive pooling to a fixed output size over d spatial axes. */
+/**
+ * Adaptive pooling to a fixed output size over d spatial axes (shared by the adaptive pooling modules).
+ *
+ * @example
+ * ```ts
+ * import { AdaptivePoolNd } from 'whitebox-engine/nn'
+ * new AdaptivePoolNd('max', 1, 3).outputShape([1, 2, 10]) // => [1, 2, 3]
+ * ```
+ */
 export class AdaptivePoolNd extends Module {
   readonly kind: string
   readonly outputSize: readonly (number | null)[]

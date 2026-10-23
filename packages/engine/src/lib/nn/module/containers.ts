@@ -251,6 +251,67 @@ export class Parallel extends Module {
   }
 }
 
+/** Calls the parts of a {@link Composite} with their parameters and routed contexts. */
+export interface PartRunner {
+  /** Apply a part to an input. */
+  run<I, O>(name: string, x: I): O
+  /** The routed context of a part (for parts called in a custom way). */
+  context(name: string): ApplyContext
+  /** Report updated buffers to the parent (call once, after the parts have run). */
+  done(): void
+}
+
+/**
+ * A module made of named parts (the base of blocks such as residual, transformer and U-Net blocks): parameters and
+ * buffers are assembled from the parts under their names, `initParams` folds the key by each part's position, and
+ * `parts(params, ctx)` runs each part with its share of the parameters, buffers, key and path.
+ *
+ * @concept modules
+ */
+export abstract class Composite<I = Value, O = Value> extends Module<I, O> {
+  readonly partList: readonly (readonly [string, AnyModule])[]
+
+  protected constructor(parts: Readonly<Record<string, AnyModule | undefined>>, own: Params = {}) {
+    const list = Object.entries(parts).filter((e): e is [string, AnyModule] => e[1] !== undefined)
+    super(
+      assemble(
+        list.map(([n, c]) => [n, c.params] as const),
+        own,
+      ),
+      buffersOf(list),
+    )
+    this.partList = list
+  }
+
+  override children(): readonly (readonly [string, AnyModule])[] {
+    return this.partList
+  }
+
+  /** A part by name. */
+  part<M extends AnyModule = Module>(name: string): M {
+    const found = this.partList.find(([n]) => n === name)
+    if (found === undefined) throw new WhiteboxError('value', `${this.kind}: no part ${name}`)
+    return found[1] as M
+  }
+
+  /** Whether a part exists. */
+  has(name: string): boolean {
+    return this.partList.some(([n]) => n === name)
+  }
+
+  /** A runner for this forward pass. */
+  protected parts(params: Params, ctx: ApplyContext): PartRunner {
+    const scope = childScope(ctx, this.buffers)
+    const index = (name: string): number => this.partList.findIndex(([n]) => n === name)
+    return {
+      run: <PI, PO>(name: string, x: PI): PO =>
+        (this.part(name) as unknown as Module<PI, PO>).apply(sub(params, name), x, scope.child(name, index(name))),
+      context: (name) => scope.child(name, index(name)),
+      done: () => scope.done(),
+    }
+  }
+}
+
 /**
  * A parameter-free module from a function of the input (Keras's Lambda), for reshapes and small glue in a
  * {@link Sequential}.

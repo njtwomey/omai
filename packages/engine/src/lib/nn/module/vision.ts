@@ -110,7 +110,15 @@ export class PixelUnshuffle extends Module {
   }
 }
 
-/** Padding of the trailing d axes (the shared implementation of the padding modules). */
+/**
+ * Padding of the trailing d axes (the shared implementation of the padding modules).
+ *
+ * @example
+ * ```ts
+ * import { PadNd } from 'whitebox-engine/nn'
+ * new PadNd('ReflectionPad1d', 1, 2, 'reflect').outputShape([1, 1, 5]) // => [1, 1, 9]
+ * ```
+ */
 export class PadNd extends Module {
   readonly kind: string
   readonly padding: readonly number[]
