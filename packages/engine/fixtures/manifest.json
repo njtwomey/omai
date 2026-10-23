@@ -399,6 +399,14 @@
       "cases": 12
     },
     {
+      "fixture": "pgm/inference/chain.json",
+      "source": "oracle/cases/pgm/inference/chain.py",
+      "reference": {
+        "hmmlearn": "0.3.3"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "pgm/inference/elimination.json",
       "source": "oracle/cases/pgm/inference/elimination.py",
       "reference": {
@@ -432,6 +440,14 @@
       "cases": 24
     },
     {
+      "fixture": "pgm/models/dynamic.json",
+      "source": "oracle/cases/pgm/models/dynamic.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 2
+    },
+    {
       "fixture": "pgm/models/linear_gaussian.json",
       "source": "oracle/cases/pgm/models/linear_gaussian.py",
       "reference": {
@@ -448,6 +464,15 @@
         "pgmpy": "1.1.2"
       },
       "cases": 22
+    },
+    {
+      "fixture": "pgm/models/state_space.json",
+      "source": "oracle/cases/pgm/models/state_space.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "pgm/networks.json",
