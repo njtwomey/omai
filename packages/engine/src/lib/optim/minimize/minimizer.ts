@@ -2,9 +2,9 @@ import { valueAndGrad } from '../../autodiff/index.ts'
 import type { Json } from '../../base/index.ts'
 import { item, treePaths, type Value } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
-import { adam } from '../adaptive.ts'
 import { applyUpdates, type GradientTransformation, globalNorm, type Tree } from '../transform.ts'
 import type { MinimizeMethod, MinimizeResult, Objective, Parameters } from './objective.ts'
+import { type BfgsOptions, bfgs } from './quasi-newton.ts'
 
 /** The state of a {@link minimizer} run. */
 export interface MinimizerState {
@@ -97,7 +97,7 @@ function isTransformation(m: unknown): m is GradientTransformation {
  * Minimise an objective, scipy-style. The method is a function value: a vector method such as `bfgs`, `lbfgs`,
  * `newtonCg` or `nelderMead` (called as `method(f, x0, options)` with the remaining options), or a gradient
  * transformation such as `adam({ learningRate: 0.01 })`, run for up to `maxSteps` steps or until the gradient norm
- * falls below `gradTol`. Without a method, Adam with learning rate 0.01 runs.
+ * falls below `gradTol`. Without a method, BFGS runs (scipy's default for unconstrained problems).
  *
  * @param f - The objective.
  * @param x0 - Initial parameters (any tree, or anything tensor-like for vector methods).
@@ -120,7 +120,14 @@ export function minimize(f: Objective, x0: Tree, options?: TransformationMinimiz
 export function minimize(f: Objective, x0: Parameters, options: object = {}): MinimizeResult {
   const { method, ...rest } = options as { readonly method?: unknown }
   if (typeof method === 'function') return (method as MinimizeMethod<object>)(f, x0, rest)
-  const transformation = isTransformation(method) ? method : adam({ learningRate: 0.01 })
+  if (!isTransformation(method)) {
+    const { maxSteps, ...others } = rest as TransformationMinimizeOptions
+    return bfgs(f, x0, {
+      ...(others as BfgsOptions),
+      ...(maxSteps === undefined || others.maxIterations !== undefined ? {} : { maxIterations: maxSteps }),
+    })
+  }
+  const transformation = method
   const { gradTol, maxSteps, maxIterations, ...run } = rest as TransformationMinimizeOptions
   const result = runAlgorithm(minimizer(f, x0, transformation, gradTol === undefined ? {} : { gradTol }), {
     ...run,

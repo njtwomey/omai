@@ -142,6 +142,88 @@ export function flatObjective(f: Objective, x0: Parameters): FlatObjective {
   }
 }
 
+/**
+ * Box bounds on the flattened parameters: one [lower, upper] pair per variable (null or an infinity for no bound), or
+ * `lower` and `upper` as arrays or scalars (scipy's sequence of pairs or Bounds).
+ */
+export type Bounds =
+  | readonly (readonly [number | null, number | null])[]
+  | { readonly lower?: ArrayLike<number> | number; readonly upper?: ArrayLike<number> | number }
+
+/** Bounds as two vectors. */
+export interface Box {
+  readonly lower: Float64Array
+  readonly upper: Float64Array
+}
+
+/**
+ * Normalise bounds to lower and upper vectors of length n (missing bounds become infinities).
+ *
+ * @param bounds - Pairs, or lower and upper arrays or scalars (undefined for none).
+ * @param n - The number of variables.
+ * @returns The box.
+ * @throws WhiteboxError with code `shape` when the bounds do not match n, and `value` when a lower bound exceeds its
+ * upper bound.
+ * @example
+ * ```ts
+ * import { boxOf } from 'whitebox-engine/optim'
+ * const b = boxOf([[0, 1], [null, 2]], 2)
+ * [Array.from(b.lower), Array.from(b.upper)] // => [[0, -Infinity], [1, 2]]
+ * ```
+ */
+export function boxOf(bounds: Bounds | undefined, n: number): Box {
+  const lower = new Float64Array(n).fill(-Infinity)
+  const upper = new Float64Array(n).fill(Infinity)
+  if (bounds === undefined) return { lower, upper }
+  if (Array.isArray(bounds)) {
+    const pairs = bounds as readonly (readonly [number | null, number | null])[]
+    if (pairs.length !== n) throw new WhiteboxError('shape', `bounds: expected ${n} pairs, got ${pairs.length}`)
+    for (const [i, [lo, hi]] of pairs.entries()) {
+      lower[i] = lo ?? -Infinity
+      upper[i] = hi ?? Infinity
+    }
+  } else {
+    const b = bounds as { readonly lower?: ArrayLike<number> | number; readonly upper?: ArrayLike<number> | number }
+    const fill = (target: Float64Array, v: ArrayLike<number> | number | undefined): void => {
+      if (v === undefined) return
+      if (typeof v === 'number') target.fill(v)
+      else {
+        if (v.length !== n) throw new WhiteboxError('shape', `bounds: expected ${n} values, got ${v.length}`)
+        for (let i = 0; i < n; i++) target[i] = v[i] ?? Number.NaN
+      }
+    }
+    fill(lower, b.lower)
+    fill(upper, b.upper)
+  }
+  for (let i = 0; i < n; i++) {
+    if ((lower[i] ?? 0) > (upper[i] ?? 0))
+      throw new WhiteboxError(
+        'value',
+        `bounds: lower bound ${lower[i]} exceeds upper bound ${upper[i]} for variable ${i}`,
+      )
+  }
+  return { lower, upper }
+}
+
+/**
+ * Project a point onto a box (clip each coordinate).
+ *
+ * @param x - The point.
+ * @param box - The bounds.
+ * @returns The projection.
+ * @example
+ * ```ts
+ * import { boxOf, clipToBox } from 'whitebox-engine/optim'
+ * Array.from(clipToBox([-1, 5], boxOf({ lower: 0, upper: 2 }, 2))) // => [0, 2]
+ * ```
+ */
+export function clipToBox(x: ArrayLike<number>, box: Box): Float64Array {
+  const out = new Float64Array(x.length)
+  for (let i = 0; i < x.length; i++)
+    out[i] = Math.min(Math.max(x[i] ?? 0, box.lower[i] ?? -Infinity), box.upper[i] ?? Infinity)
+  return out
+}
+
 /** Result of a minimisation (scipy's OptimizeResult). */
 export interface MinimizeResult {
   /** The solution, with the structure of the starting parameters. */

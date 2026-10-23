@@ -3,7 +3,7 @@ import type { TensorLike } from '../tensor.ts'
 import type { Value } from '../traced.ts'
 import { coerce2, floatify, val } from './_coerce.ts'
 import { binaryPrimitive, unaryPrimitive } from './_factories.ts'
-import { abs, add, cast, div, mul, neg, square, sub } from './arithmetic.ts'
+import { add, cast, div, mul, neg, square, sub } from './arithmetic.ts'
 import { greater, where } from './compare.ts'
 
 const prims = {
@@ -351,7 +351,8 @@ export function sigmoid(x: TensorLike): Value {
 }
 
 /**
- * Elementwise softplus `log(1 + e^x)`, computed stably as `max(x, 0) + log1p(e^-|x|)`.
+ * Elementwise softplus `log(1 + e^x)`, computed stably as `x + log1p(e^-x)` for x > 0 and `log1p(e^x)` otherwise (each
+ * branch on clamped inputs, so neither overflows and the derivative is sigmoid(x) everywhere, 1/2 at 0).
  *
  * @param x - Input.
  * @returns `softplus(x)`.
@@ -363,7 +364,10 @@ export function sigmoid(x: TensorLike): Value {
  */
 export function softplus(x: TensorLike): Value {
   const v = floatify(x)
-  return add(where(greater(v, 0), v, 0), log1p(exp(neg(abs(v)))))
+  const positive = greater(v, 0)
+  const pos = where(positive, v, 0)
+  const negative = where(positive, 0, v)
+  return where(positive, add(pos, log1p(exp(neg(pos)))), log1p(exp(negative)))
 }
 
 /**

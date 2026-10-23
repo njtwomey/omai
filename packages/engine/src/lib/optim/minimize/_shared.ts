@@ -86,25 +86,36 @@ export function runVector<S extends VectorState>(
   options: VectorMethodOptions,
   defaultIterations: number,
 ): MinimizeResult {
+  return runVectorState(algorithm, objective, options, defaultIterations).result
+}
+
+/** Run a vector method, returning the MinimizeResult and the final state (for method-specific extras). */
+export function runVectorState<S extends VectorState>(
+  algorithm: Algorithm<S>,
+  objective: FlatObjective,
+  options: VectorMethodOptions,
+  defaultIterations: number,
+): { readonly result: MinimizeResult; readonly state: S } {
   const { maxIterations, gradTol: _g, ...run } = options
-  const result = runAlgorithm(algorithm, { ...run, maxSteps: maxIterations ?? defaultIterations })
-  const s = result.state
+  const out = runAlgorithm(algorithm, { ...run, maxSteps: maxIterations ?? defaultIterations })
+  const s = out.state
   const hasGrad = s.grad.length > 0
-  return {
+  const result: MinimizeResult = {
     x: objective.unravel(s.x),
     fun: s.value,
     ...(hasGrad ? { grad: objective.unravel(s.grad) } : {}),
     gradNorm: hasGrad ? infNorm(s.grad) : Number.NaN,
-    steps: result.steps,
+    steps: out.steps,
     nfev: s.nfev,
     ngev: s.ngev,
     nhev: s.nhev,
-    status: result.status,
-    converged: result.status === 'converged',
+    status: out.status,
+    converged: out.status === 'converged',
     message:
       s.stop?.message ??
-      (result.status === 'completed' ? 'maximum number of iterations reached' : `stopped: ${result.status}`),
+      (out.status === 'completed' ? 'maximum number of iterations reached' : `stopped: ${out.status}`),
   }
+  return { result, state: s }
 }
 
 /** A line search as a trace message: the accepted step, its evaluations and every trial point. */

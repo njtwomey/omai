@@ -172,7 +172,8 @@ export function moreThuente(options: MoreThuenteOptions = {}): LineSearch {
       if (stp === stpmax && f <= ftest && g <= gtest) warning = 'step at alphaMax'
       if (stp === stpmin && (f > ftest || g >= gtest)) warning = 'step at alphaMin'
       if (f <= ftest && Math.abs(g) <= gtol * -ginit) return p.finish(stp, f, g, 'strong Wolfe conditions satisfied')
-      if (warning !== undefined) return p.finish(undefined, f, g, warning)
+      // A warning (as scipy, a failure) still reports the last trial step, which L-BFGS-B accepts.
+      if (warning !== undefined) return { ...p.finish(stp, f, g, warning), success: false }
       if (stage === 1 && f <= fx && f > ftest) {
         const r = dcstep(
           stx,
