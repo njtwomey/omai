@@ -431,6 +431,14 @@
       "cases": 25
     },
     {
+      "fixture": "rl/off_policy.json",
+      "source": "oracle/cases/rl/off_policy.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "rl/policies.json",
       "source": "oracle/cases/rl/policies.py",
       "reference": {
