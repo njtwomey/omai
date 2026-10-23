@@ -783,6 +783,11 @@ oracle: networkx, scipy.sparse.csgraph
 
 oracle: scipy.stats, torch.distributions
 
+`continuous/`, `discrete/` and `multivariate/` are inlined into the entry point (`import { normal, gamma } from
+'whitebox-engine/dists'`); the other subfolders are namespaces (`bijectors`, `families`, `compose`). Sampling is a
+primitive: its kernel draws from the concrete parameter values under any trace, and its derivative rule is the
+reparameterisation (`dists/_sampling.ts`).
+
 Every distribution is a plain object from a factory with `name`, `params`, `support`, `batchShape`, `eventShape` and
 pure methods `logProb`, `prob`, `cdf`, `logCdf`, `sf`, `logSf`, `ppf`, `isf`, `sample(key, shape)`, `rsample`
 (reparameterised), `mean`, `variance`, `stddev`, `mode`, `entropy`. Parameters are values (tensors or traced) with batch

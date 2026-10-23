@@ -262,6 +262,30 @@ export function gamma(k: Key, shape: Shape, alpha: number): Tensor<'float64'> {
 }
 
 /**
+ * One gamma variate (shape `alpha_i`, scale 1) for each entry of `alphas`, each from its own stream `foldIn(k, i)`, so
+ * the draw for entry i does not depend on the others (the samplers of batched gamma, beta and Dirichlet distributions).
+ *
+ * @param k - The random key.
+ * @param alphas - Shape parameters (positive).
+ * @returns The variates.
+ * @throws WhiteboxError with code `value` for a non-positive shape.
+ * @example
+ * ```ts
+ * import { key, gammaVariates } from 'whitebox-engine/random'
+ * gammaVariates(key(0), [0.5, 2, 30]).every((v) => v > 0) // => true
+ * ```
+ */
+export function gammaVariates(k: Key, alphas: ArrayLike<number>): Float64Array {
+  const out = new Float64Array(alphas.length)
+  for (let i = 0; i < alphas.length; i++) {
+    const alpha = alphas[i] ?? Number.NaN
+    if (!(alpha > 0)) throw new WhiteboxError('value', `gammaVariates: alpha must be positive, got ${alpha}`)
+    out[i] = gammaOne(alpha, uniformStream(foldIn(k, i), foldIn))
+  }
+  return out
+}
+
+/**
  * Beta samples, as `X / (X + Y)` for gamma variates (computed in log space when both shapes are small).
  *
  * @param k - The random key.

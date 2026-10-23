@@ -2,6 +2,23 @@
   "schema": "whitebox.fixtures/1",
   "fixtures": [
     {
+      "fixture": "dists/continuous.json",
+      "source": "oracle/cases/dists/continuous.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 169
+    },
+    {
+      "fixture": "dists/discrete.json",
+      "source": "oracle/cases/dists/discrete.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "numerics/linalg/basics.json",
       "source": "oracle/cases/numerics/linalg/basics.py",
       "reference": {
