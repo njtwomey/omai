@@ -391,6 +391,14 @@
       "cases": 27
     },
     {
+      "fixture": "optim/preconditioned.json",
+      "source": "oracle/cases/optim/preconditioned.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "optim/schedules.json",
       "source": "oracle/cases/optim/schedules.py",
       "reference": {
