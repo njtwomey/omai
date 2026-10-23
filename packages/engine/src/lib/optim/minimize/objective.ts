@@ -1,4 +1,9 @@
-import { hessian as hessianOf, hvp as hessianVector, valueAndGrad } from '../../autodiff/index.ts'
+import {
+  hessian as hessianOf,
+  hvp as hessianVector,
+  jacobian as jacobianOf,
+  valueAndGrad,
+} from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import { idamax } from '../../numerics/linalg/index.ts'
 import {
@@ -104,22 +109,7 @@ const flatOf = (v: Value): Float64Array => Float64Array.from(toFlat(primalOf(v))
  * ```
  */
 export function flatObjective(f: Objective, x0: Parameters): FlatObjective {
-  const raw = treeFlatten(asTree(x0))
-  const leaves = raw.leaves.map((l) => asTensor(l))
-  const shapes = leaves.map((l) => l.shape)
-  const sizes = shapes.map((s) => sizeOf(s))
-  const offsets = sizes.map((_, i) => sizes.slice(0, i).reduce((a, b) => a + b, 0))
-  const n = sizes.reduce((a, b) => a + b, 0)
-  const single = leaves.length === 1 && raw.def.kind === 'leaf'
-  const start = new Float64Array(n)
-  for (const [i, leaf] of leaves.entries()) start.set(toFlat(primalOf(leaf)), offsets[i] ?? 0)
-  const toTree = (v: Value): Tree => {
-    if (single) return reshape(v, shapes[0] ?? [])
-    const parts = shapes.map((s, i) =>
-      reshape(sliceAxis(v, 0, offsets[i] ?? 0, (offsets[i] ?? 0) + (sizes[i] ?? 0)), s),
-    )
-    return treeUnflatten(raw.def, parts)
-  }
+  const { n, start, toTree } = flattener(x0)
   const ofValue = (v: Value): Value => {
     const out = f(toTree(v))
     if (sizeOf(out.shape) !== 1)
@@ -139,6 +129,74 @@ export function flatObjective(f: Objective, x0: Parameters): FlatObjective {
     },
     hvp: (x, v) => flatOf(hessianVector(ofValue, vectorOf(x), vectorOf(v))),
     hessian: (x) => flatOf(hessianOf(ofValue)(vectorOf(x))),
+  }
+}
+
+/** The flattening of a parameter tree: its size, flat start and the differentiable inverse. */
+function flattener(x0: Parameters): { n: number; start: Float64Array; toTree: (v: Value) => Tree } {
+  const raw = treeFlatten(asTree(x0))
+  const leaves = raw.leaves.map((l) => asTensor(l))
+  const shapes = leaves.map((l) => l.shape)
+  const sizes = shapes.map((s) => sizeOf(s))
+  const offsets = sizes.map((_, i) => sizes.slice(0, i).reduce((a, b) => a + b, 0))
+  const n = sizes.reduce((a, b) => a + b, 0)
+  const single = leaves.length === 1 && raw.def.kind === 'leaf'
+  const start = new Float64Array(n)
+  for (const [i, leaf] of leaves.entries()) start.set(toFlat(primalOf(leaf)), offsets[i] ?? 0)
+  const toTree = (v: Value): Tree => {
+    if (single) return reshape(v, shapes[0] ?? [])
+    const parts = shapes.map((s, i) =>
+      reshape(sliceAxis(v, 0, offsets[i] ?? 0, (offsets[i] ?? 0) + (sizes[i] ?? 0)), s),
+    )
+    return treeUnflatten(raw.def, parts)
+  }
+  return { n, start, toTree }
+}
+
+/** A residual function: a vector-valued function of a parameter tree (least squares minimises half its squared norm). */
+export type ResidualFunction = { bivariant(params: Tree): Value }['bivariant']
+
+/** Residuals of a parameter tree as a function of one flat vector, with the Jacobian by autodiff. */
+export interface FlatResiduals {
+  readonly n: number
+  /** The number of residuals. */
+  readonly m: number
+  readonly x0: Float64Array
+  readonly unravel: (x: ArrayLike<number>) => Tree
+  /** The residuals of a flat value, flattened (differentiable). */
+  readonly ofValue: (x: Value) => Value
+  residuals(x: ArrayLike<number>): Float64Array
+  /** The Jacobian, m x n row-major (forward mode when n <= m, else reverse). */
+  jacobian(x: ArrayLike<number>): Float64Array
+}
+
+/**
+ * View residuals of a parameter tree as a function of one flat vector, with the Jacobian by autodiff.
+ *
+ * @param r - The residual function (any output shape; flattened).
+ * @param x0 - The starting parameters.
+ * @returns The flat residuals.
+ * @concept least-squares
+ * @example
+ * ```ts
+ * import { flatResiduals } from 'whitebox-engine/optim'
+ * import { mul, sub, type Value } from 'whitebox-engine/tensor'
+ * const res = flatResiduals((p: Value) => sub(mul(p, p), 4), [1, 3])
+ * [res.m, Array.from(res.jacobian([1, 3]))] // => [2, [2, 0, 0, 6]]
+ * ```
+ */
+export function flatResiduals(r: ResidualFunction, x0: Parameters): FlatResiduals {
+  const { n, start, toTree } = flattener(x0)
+  const ofValue = (v: Value): Value => reshape(r(toTree(v)), [-1])
+  const m = sizeOf(ofValue(vectorOf(start)).shape)
+  return {
+    n,
+    m,
+    x0: start,
+    unravel: (x) => toTree(vectorOf(x)),
+    ofValue,
+    residuals: (x) => flatOf(ofValue(vectorOf(x))),
+    jacobian: (x) => flatOf(jacobianOf(ofValue)(vectorOf(x))),
   }
 }
 

@@ -496,6 +496,14 @@
       "cases": 9
     },
     {
+      "fixture": "optim/minimize/least_squares.json",
+      "source": "oracle/cases/optim/minimize/least_squares.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 25
+    },
+    {
       "fixture": "optim/minimize/newton.json",
       "source": "oracle/cases/optim/minimize/newton.py",
       "reference": {
