@@ -70,7 +70,7 @@ def cases() -> list[Case]:
             norm.logpdf(lo)[:2],
             norm.logsf(lo)[2:4],
             norm.logcdf(hi)[4:6],
-            np.log(norm.cdf(hi) - norm.cdf(lo))[6:],
+            np.log((norm.cdf(hi) - norm.cdf(lo))[6:]),
         ]
     )
     out.append(case("censored/normal", "censoredNormal", [loc, scale, lo, hi], -loglik, reduction="none"))
@@ -83,7 +83,7 @@ def cases() -> list[Case]:
             wb.logpdf(wlo)[:2],
             wb.logsf(wlo)[2:4],
             wb.logcdf(whi)[4:6],
-            np.log(wb.cdf(whi) - wb.cdf(wlo))[6:],
+            np.log((wb.cdf(whi) - wb.cdf(wlo))[6:]),
         ]
     )
     out.append(

@@ -36,6 +36,15 @@
       "cases": 36
     },
     {
+      "fixture": "losses/contrastive.json",
+      "source": "oracle/cases/losses/contrastive.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 19
+    },
+    {
       "fixture": "losses/density.json",
       "source": "oracle/cases/losses/density.py",
       "reference": {
@@ -43,6 +52,25 @@
         "scipy": "1.18.1"
       },
       "cases": 7
+    },
+    {
+      "fixture": "losses/divergence.json",
+      "source": "oracle/cases/losses/divergence.py",
+      "reference": {
+        "torch": "2.14.1",
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "pot": "0.9.7.post1"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "losses/generative.json",
+      "source": "oracle/cases/losses/generative.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 27
     },
     {
       "fixture": "losses/margin.json",
@@ -71,6 +99,24 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 37
+    },
+    {
+      "fixture": "losses/regularisers.json",
+      "source": "oracle/cases/losses/regularisers.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "losses/segmentation.json",
+      "source": "oracle/cases/losses/segmentation.py",
+      "reference": {
+        "monai": "1.6.1",
+        "torch": "2.14.1"
+      },
+      "cases": 18
     },
     {
       "fixture": "methods/datasets/regression.json",

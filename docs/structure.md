@@ -1407,15 +1407,24 @@ share a concept they share a definition but not a name.
   (`heteroscedasticGaussianNll`), censored likelihoods (`censoredNll`: exact, left, right and interval).
 - `ranking.ts`: `marginRanking`, `rankNet`, `pairwiseHinge`, `bpr`, `lambdaRank` (NDCG@k deltas), `listNet`,
   `softmaxRanking`, `listMle`, `approxNdcg`; padded lists through a mask.
-- `contrastive.ts`: InfoNCE, NT-Xent, triplet, contrastive, supervised contrastive, CLIP loss, ArcFace and CosFace
-  margins.
-- `segmentation.ts`: Dice, Tversky, focal Tversky, Lovasz hinge.
-- `generative.ts`: GAN losses (minimax, non-saturating, Wasserstein, hinge, gradient penalties), ELBO terms,
-  denoising score matching, flow-matching losses.
-- `divergence.ts`: KL, Jensen-Shannon, distillation, MMD and Sinkhorn losses.
-- `physics.ts`: PDE residual losses, boundary and initial-condition losses, adaptive loss balancing (gradient-norm and
-  NTK-based weights) for physics-informed training.
-- `regularisers.ts`: L1, L2, elastic net, group, nuclear-norm, orthogonality and entropy penalties.
+- `contrastive.ts`: `infoNce` (in-batch, shared or per-query negatives), `ntXent`, `tripletMargin`, `contrastive`,
+  `cosineEmbedding`, `hingeEmbedding`, `supervisedContrastive`, `clipLoss`, ArcFace and CosFace margins
+  (`arcFaceLogits`, `cosFaceLogits`, `arcFace`, `cosFace`).
+- `segmentation.ts`: `dice` (soft and squared), `tversky`, `focalTversky`, `lovaszHinge`, `lovaszSoftmax`; classes last,
+  index or one-hot targets, activations, background, batch pooling, ignore index and class weights as MONAI.
+- `generative.ts`: GAN losses (`discriminatorLoss`, `generatorLoss`: minimax, non-saturating, Wasserstein, hinge, least
+  squares; `gradientPenalty` (WGAN-GP) and `r1Penalty`), ELBO terms (`gaussianKl`, `sampledKl`, `negativeElbo`,
+  `bernoulliLogLikelihood`, `gaussianLogLikelihood`, `importanceWeightedBound`), `denoisingScoreMatching`, diffusion
+  objectives (`diffusionTarget`, `diffusionLoss`: epsilon, x0 and v), flow matching (`flowMatchingPath`,
+  `flowMatching`).
+- `divergence.ts`: `klDiv` (torch, with 'batchmean'), `klDivergence`, `jensenShannon`, `distillation`, `mmd` (Gaussian,
+  Laplacian and energy kernels, multi-scale, median heuristic, biased and unbiased) and `sinkhorn` (log domain, weighted,
+  debiased) losses.
+- `physics.ts`: `fieldDerivatives` (gradient, second derivatives and Laplacian by autodiff), `pdeResidualLoss`,
+  `boundaryLoss` (Dirichlet and Neumann) and `initialConditionLoss`, adaptive loss balancing (`gradientNormWeights`,
+  `ntkWeights`) for physics-informed training.
+- `regularisers.ts`: `l1Penalty`, `l2Penalty`, `elasticNet`, `groupLasso` (and sparse group lasso), `nuclearNorm`,
+  `orthogonality`, `entropyPenalty`; penalties take any pytree of parameters.
 
 ### 4.30 `rl/` (tier 8): reinforcement learning infrastructure (gymnasium, PettingZoo, stable-baselines3 building blocks)
 
