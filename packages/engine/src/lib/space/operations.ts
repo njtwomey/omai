@@ -1,0 +1,356 @@
+import { WhiteboxError } from '../base/index.ts'
+import { foldIn, type Key, uniform } from '../random/index.ts'
+import { sizeOf } from '../tensor/index.ts'
+import type { DictSpace, Space, SpaceValue } from './types.ts'
+
+function u01(k: Key, n: number): number[] {
+  return Array.from(uniform(k, [n]).data)
+}
+
+function elementBounds(bound: number | readonly number[], i: number): number {
+  return typeof bound === 'number' ? bound : (bound[i] ?? 0)
+}
+
+/** Keys of a dict space that are active for a value (their `when` condition holds). */
+export function activeKeys(space: DictSpace, value: Readonly<Record<string, SpaceValue>>): string[] {
+  return Object.entries(space.spaces)
+    .filter(([, s]) => s.when === undefined || s.when.in.includes(value[s.when.key] as string | number | boolean))
+    .map(([k]) => k)
+}
+
+/**
+ * Draw a random value from a space (log-scaled dimensions are sampled uniformly in log space; conditional keys are
+ * only drawn when active).
+ *
+ * @param space - The space.
+ * @param k - The random key.
+ * @returns A value of the space.
+ * @concept spaces
+ * @example
+ * ```ts
+ * import { sample, real } from 'whitebox-engine/space'
+ * import { key } from 'whitebox-engine/random'
+ * const v = sample(real(0, 1), key(0)) as number
+ * v >= 0 && v <= 1 // => true
+ * ```
+ */
+export function sample(space: Space, k: Key): SpaceValue {
+  switch (space.kind) {
+    case 'real': {
+      const [u] = u01(k, 1) as [number]
+      const x = space.log
+        ? Math.exp(Math.log(space.low) + u * (Math.log(space.high) - Math.log(space.low)))
+        : space.low + u * (space.high - space.low)
+      return space.step === undefined
+        ? x
+        : Math.min(space.high, space.low + Math.round((x - space.low) / space.step) * space.step)
+    }
+    case 'int': {
+      const [u] = u01(k, 1) as [number]
+      if (space.log) {
+        // Uniform in log space over [low, high + 1), then floored: each integer gets the log-width of its cell.
+        const x = Math.exp(Math.log(space.low) + u * (Math.log(space.high + 1) - Math.log(space.low)))
+        return Math.min(space.high, Math.max(space.low, Math.floor(x)))
+      }
+      return Math.min(space.high, space.low + Math.floor(u * (space.high - space.low + 1)))
+    }
+    case 'choice': {
+      const [u] = u01(k, 1) as [number]
+      return space.options[Math.min(space.options.length - 1, Math.floor(u * space.options.length))] as SpaceValue
+    }
+    case 'bool':
+      return (u01(k, 1)[0] ?? 0) < 0.5
+    case 'box': {
+      const n = sizeOf(space.shape)
+      return u01(k, n).map(
+        (u, i) => elementBounds(space.low, i) + u * (elementBounds(space.high, i) - elementBounds(space.low, i)),
+      )
+    }
+    case 'discrete':
+      return (space.start ?? 0) + Math.min(space.n - 1, Math.floor((u01(k, 1)[0] ?? 0) * space.n))
+    case 'multiDiscrete':
+      return u01(k, space.nvec.length).map((u, i) =>
+        Math.min((space.nvec[i] ?? 1) - 1, Math.floor(u * (space.nvec[i] ?? 1))),
+      )
+    case 'multiBinary':
+      return u01(k, space.n).map((u) => (u < 0.5 ? 0 : 1))
+    case 'tuple':
+      return space.spaces.map((s, i) => sample(s, foldIn(k, i)))
+    case 'dict': {
+      const out: Record<string, SpaceValue> = {}
+      const entries = Object.entries(space.spaces)
+      // Unconditional keys first, so conditions can refer to them.
+      entries.forEach(([name, s], i) => {
+        if (s.when === undefined) out[name] = sample(s, foldIn(k, i))
+      })
+      entries.forEach(([name, s], i) => {
+        if (s.when?.in.includes(out[s.when.key] as string | number | boolean)) out[name] = sample(s, foldIn(k, i))
+      })
+      return out
+    }
+  }
+}
+
+/**
+ * Whether a value belongs to a space.
+ *
+ * @param space - The space.
+ * @param value - The value.
+ * @returns `true` when the value is a member.
+ * @example
+ * ```ts
+ * import { contains, discrete } from 'whitebox-engine/space'
+ * contains(discrete(3), 2) // => true
+ * contains(discrete(3), 3) // => false
+ * ```
+ */
+export function contains(space: Space, value: SpaceValue): boolean {
+  switch (space.kind) {
+    case 'real':
+      return typeof value === 'number' && value >= space.low && value <= space.high
+    case 'int':
+      return typeof value === 'number' && Number.isInteger(value) && value >= space.low && value <= space.high
+    case 'choice':
+      return space.options.includes(value as never)
+    case 'bool':
+      return typeof value === 'boolean'
+    case 'box':
+      return (
+        Array.isArray(value) &&
+        value.length === sizeOf(space.shape) &&
+        (value as number[]).every((v, i) => v >= elementBounds(space.low, i) && v <= elementBounds(space.high, i))
+      )
+    case 'discrete': {
+      const start = space.start ?? 0
+      return typeof value === 'number' && Number.isInteger(value) && value >= start && value < start + space.n
+    }
+    case 'multiDiscrete':
+      return (
+        Array.isArray(value) &&
+        value.length === space.nvec.length &&
+        (value as number[]).every((v, i) => Number.isInteger(v) && v >= 0 && v < (space.nvec[i] ?? 0))
+      )
+    case 'multiBinary':
+      return Array.isArray(value) && value.length === space.n && (value as number[]).every((v) => v === 0 || v === 1)
+    case 'tuple':
+      return (
+        Array.isArray(value) &&
+        value.length === space.spaces.length &&
+        space.spaces.every((s, i) => contains(s, (value as SpaceValue[])[i] as SpaceValue))
+      )
+    case 'dict': {
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+      const record = value as Readonly<Record<string, SpaceValue>>
+      return activeKeys(space, record).every(
+        (k) => k in record && contains(space.spaces[k] as Space, record[k] as SpaceValue),
+      )
+    }
+  }
+}
+
+/**
+ * Bring a value into a space (clamp numbers, round integers).
+ *
+ * @param space - The space.
+ * @param value - The value.
+ * @returns The nearest member.
+ * @throws WhiteboxError with code `value` for a choice value that is not an option.
+ * @example
+ * ```ts
+ * import { clip, int } from 'whitebox-engine/space'
+ * clip(int(0, 5), 7.6) // => 5
+ * ```
+ */
+export function clip(space: Space, value: SpaceValue): SpaceValue {
+  switch (space.kind) {
+    case 'real':
+      return Math.min(space.high, Math.max(space.low, value as number))
+    case 'int':
+      return Math.min(space.high, Math.max(space.low, Math.round(value as number)))
+    case 'box':
+      return (value as number[]).map((v, i) =>
+        Math.min(elementBounds(space.high, i), Math.max(elementBounds(space.low, i), v)),
+      )
+    case 'discrete':
+      return Math.min((space.start ?? 0) + space.n - 1, Math.max(space.start ?? 0, Math.round(value as number)))
+    case 'tuple':
+      return space.spaces.map((s, i) => clip(s, (value as SpaceValue[])[i] as SpaceValue))
+    case 'dict': {
+      const record = value as Readonly<Record<string, SpaceValue>>
+      const out: Record<string, SpaceValue> = {}
+      for (const k of activeKeys(space, record))
+        if (k in record) out[k] = clip(space.spaces[k] as Space, record[k] as SpaceValue)
+      return out
+    }
+    case 'choice':
+      if (!space.options.includes(value as never))
+        throw new WhiteboxError('value', `clip: ${String(value)} is not an option`)
+      return value
+    default:
+      return value
+  }
+}
+
+/**
+ * The default value of a space: declared defaults, else the middle of intervals (the geometric middle when
+ * log-scaled), the first option, false, zeros and lower bounds.
+ *
+ * @param space - The space.
+ * @returns The default value.
+ * @example
+ * ```ts
+ * import { defaults, dict, real, choice } from 'whitebox-engine/space'
+ * defaults(dict({ lr: real(1e-4, 1, { log: true }), act: choice(['relu', 'tanh']) })) // => { lr: 0.01, act: 'relu' }
+ * ```
+ */
+export function defaults(space: Space): SpaceValue {
+  switch (space.kind) {
+    case 'real':
+      return space.default ?? (space.log ? Math.sqrt(space.low * space.high) : (space.low + space.high) / 2)
+    case 'int':
+      return space.default ?? Math.round(space.log ? Math.sqrt(space.low * space.high) : (space.low + space.high) / 2)
+    case 'choice':
+      return space.default ?? (space.options[0] as SpaceValue)
+    case 'bool':
+      return space.default ?? false
+    case 'box':
+      return Array.from({ length: sizeOf(space.shape) }, (_, i) =>
+        Math.min(Math.max(0, elementBounds(space.low, i)), elementBounds(space.high, i)),
+      )
+    case 'discrete':
+      return space.start ?? 0
+    case 'multiDiscrete':
+      return space.nvec.map(() => 0)
+    case 'multiBinary':
+      return new Array<number>(space.n).fill(0)
+    case 'tuple':
+      return space.spaces.map(defaults)
+    case 'dict': {
+      const out: Record<string, SpaceValue> = {}
+      for (const [k, s] of Object.entries(space.spaces)) if (s.when === undefined) out[k] = defaults(s)
+      for (const [k, s] of Object.entries(space.spaces)) {
+        if (s.when?.in.includes(out[s.when.key] as string | number | boolean)) out[k] = defaults(s)
+      }
+      return out
+    }
+  }
+}
+
+/**
+ * The number of numbers a flattened value of the space has (choices and discrete values count as one index).
+ *
+ * @param space - The space.
+ * @returns The flat dimension.
+ * @example
+ * ```ts
+ * import { flatDim, box, tuple, discrete } from 'whitebox-engine/space'
+ * flatDim(tuple([box(0, 1, [2, 2]), discrete(3)])) // => 5
+ * ```
+ */
+export function flatDim(space: Space): number {
+  switch (space.kind) {
+    case 'box':
+      return sizeOf(space.shape)
+    case 'multiDiscrete':
+      return space.nvec.length
+    case 'multiBinary':
+      return space.n
+    case 'tuple':
+      return space.spaces.reduce((n, s) => n + flatDim(s), 0)
+    case 'dict':
+      return Object.values(space.spaces).reduce((n, s) => n + flatDim(s), 0)
+    default:
+      return 1
+  }
+}
+
+/**
+ * Flatten a value to numbers (choices become their index, booleans 0 or 1; inactive dict keys become NaN).
+ *
+ * @param space - The space.
+ * @param value - The value.
+ * @returns The numbers.
+ * @example
+ * ```ts
+ * import { flatten, dict, real, choice } from 'whitebox-engine/space'
+ * flatten(dict({ a: real(0, 1), b: choice(['x', 'y']) }), { a: 0.5, b: 'y' }) // => [0.5, 1]
+ * ```
+ */
+export function flatten(space: Space, value: SpaceValue): number[] {
+  switch (space.kind) {
+    case 'real':
+    case 'int':
+    case 'discrete':
+      return [value as number]
+    case 'choice':
+      return [space.options.indexOf(value as never)]
+    case 'bool':
+      return [value ? 1 : 0]
+    case 'box':
+    case 'multiDiscrete':
+    case 'multiBinary':
+      return [...(value as number[])]
+    case 'tuple':
+      return space.spaces.flatMap((s, i) => flatten(s, (value as SpaceValue[])[i] as SpaceValue))
+    case 'dict': {
+      const record = value as Readonly<Record<string, SpaceValue>>
+      return Object.entries(space.spaces).flatMap(([k, s]) =>
+        k in record ? flatten(s, record[k] as SpaceValue) : new Array<number>(flatDim(s)).fill(Number.NaN),
+      )
+    }
+  }
+}
+
+/**
+ * Rebuild a value from numbers (the inverse of {@link flatten}).
+ *
+ * @param space - The space.
+ * @param numbers - The flat numbers.
+ * @returns The value.
+ * @example
+ * ```ts
+ * import { unflatten, dict, real, choice } from 'whitebox-engine/space'
+ * unflatten(dict({ a: real(0, 1), b: choice(['x', 'y']) }), [0.5, 1]) // => { a: 0.5, b: 'y' }
+ * ```
+ */
+export function unflatten(space: Space, numbers: readonly number[]): SpaceValue {
+  let offset = 0
+  const take = (n: number): number[] => {
+    const out = numbers.slice(offset, offset + n)
+    offset += n
+    return out
+  }
+  const build = (s: Space): SpaceValue | undefined => {
+    switch (s.kind) {
+      case 'real':
+      case 'int':
+      case 'discrete': {
+        const [v] = take(1)
+        return Number.isNaN(v) ? undefined : (v as number)
+      }
+      case 'choice': {
+        const [v] = take(1)
+        return Number.isNaN(v) ? undefined : (s.options[v as number] as SpaceValue)
+      }
+      case 'bool': {
+        const [v] = take(1)
+        return Number.isNaN(v) ? undefined : v === 1
+      }
+      case 'box':
+      case 'multiDiscrete':
+      case 'multiBinary':
+        return take(flatDim(s))
+      case 'tuple':
+        return s.spaces.map((c) => build(c) as SpaceValue)
+      case 'dict': {
+        const out: Record<string, SpaceValue> = {}
+        for (const [k, c] of Object.entries(s.spaces)) {
+          const v = build(c)
+          if (v !== undefined) out[k] = v
+        }
+        return out
+      }
+    }
+  }
+  return build(space) as SpaceValue
+}
