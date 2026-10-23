@@ -185,6 +185,15 @@
       "cases": 10
     },
     {
+      "fixture": "numerics/polynomial/polynomial.json",
+      "source": "oracle/cases/numerics/polynomial/polynomial.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 49
+    },
+    {
       "fixture": "numerics/quadrature/quadrature.json",
       "source": "oracle/cases/numerics/quadrature/quadrature.py",
       "reference": {

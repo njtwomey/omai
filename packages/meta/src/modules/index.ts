@@ -39,6 +39,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/numerics/geometry': () => import('whitebox-engine/numerics/geometry'),
   'whitebox-engine/numerics/interpolate': () => import('whitebox-engine/numerics/interpolate'),
   'whitebox-engine/numerics/linalg': () => import('whitebox-engine/numerics/linalg'),
+  'whitebox-engine/numerics/polynomial': () => import('whitebox-engine/numerics/polynomial'),
   'whitebox-engine/numerics/quadrature': () => import('whitebox-engine/numerics/quadrature'),
   'whitebox-engine/numerics/roots': () => import('whitebox-engine/numerics/roots'),
   'whitebox-engine/numerics/special': () => import('whitebox-engine/numerics/special'),
