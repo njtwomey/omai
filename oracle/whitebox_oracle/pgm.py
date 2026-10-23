@@ -104,16 +104,67 @@ def order_arg(order: list[str]) -> str:
     return cast(str, order)
 
 
+def model_factors(model: DiscreteBayesianNetwork | DiscreteMarkovNetwork) -> list[DiscreteFactor]:
+    """The factors of a model in a fixed order: CPTs in node order, or potentials as added."""
+    if isinstance(model, DiscreteBayesianNetwork):
+        return [cast(TabularCPD, model.get_cpds(n)).to_factor() for n in model.nodes()]
+    return [cast(DiscreteFactor, f) for f in model.get_factors()]
+
+
+def state_index(model: DiscreteBayesianNetwork | DiscreteMarkovNetwork, variable: str, state: str | int) -> int:
+    """The index of a state given by name (Bayes networks with state names) or index."""
+    if isinstance(state, int):
+        return state
+    cpd = cast(TabularCPD, cast(DiscreteBayesianNetwork, model).get_cpds(variable))
+    states: list[str] = [str(x) for x in cpd.state_names[variable]]
+    return states.index(state)
+
+
+def joint_table(model: DiscreteBayesianNetwork | DiscreteMarkovNetwork) -> tuple[list[str], FloatArray]:
+    """The unnormalised joint as one array over the variables sorted by name, by one numpy einsum over the model's
+    factor tables (deterministic, unlike pgmpy's engines, whose last bits vary with set order between Python runs)."""
+    names = sorted(str(v) for v in model.nodes())
+    letter = {v: chr(ord("a") + i) for i, v in enumerate(names)}
+    factors = model_factors(model)
+    tables = [np.asarray(f.values, dtype=np.float64) for f in factors]
+    inputs = ",".join("".join(letter[str(v)] for v in f.variables) for f in factors)
+    joint = np.einsum(f"{inputs}->{''.join(letter[v] for v in names)}", *tables)
+    return names, np.asarray(joint, dtype=np.float64)
+
+
+def exact_posterior(
+    model: DiscreteBayesianNetwork | DiscreteMarkovNetwork,
+    variables: Sequence[str],
+    evidence: dict[str, str] | dict[str, int],
+) -> FloatArray:
+    """The posterior of some variables from the einsum joint of `joint_table`, reduced by the evidence and summed over
+    the rest, axes in query order, normalised and flattened."""
+    names, joint = joint_table(model)
+    index = tuple(state_index(model, v, evidence[v]) if v in evidence else slice(None) for v in names)
+    kept = [v for v in names if v not in evidence]
+    table = joint[index]
+    rest = tuple(i for i, v in enumerate(kept) if v not in variables)
+    marginal = table.sum(axis=rest) if rest else table
+    remaining = [v for v in kept if v in variables]
+    values = np.transpose(marginal, [remaining.index(v) for v in variables]).ravel()
+    return values / values.sum()
+
+
+def checked(reference: FloatArray, exact: FloatArray) -> FloatArray:
+    """Store the deterministic value after checking that the pgmpy engine agrees with it."""
+    assert np.allclose(reference, exact, rtol=1e-10, atol=1e-14), (reference, exact)
+    return stable(exact)
+
+
 def ve_query(
     model: DiscreteBayesianNetwork | DiscreteMarkovNetwork,
     variables: list[str],
     evidence: dict[str, str] | dict[str, int],
     order: list[str] | None = None,
 ) -> FloatArray:
-    """The posterior of some variables by pgmpy's variable elimination, axes in query order, normalised, flattened and
-    rounded. The
-    elimination order defaults to the remaining variables sorted by name (pgmpy's own heuristic breaks ties by set
-    order)."""
+    """The posterior of some variables by pgmpy's variable elimination (elimination order defaulting to the remaining
+    variables by name, as pgmpy's heuristic breaks ties by set order), checked against and stored as the fixed-order
+    factor product of `exact_posterior`."""
     hidden = (
         order
         if order is not None
@@ -124,7 +175,7 @@ def ve_query(
     )
     assert isinstance(result, DiscreteFactor)
     values = ordered(result, variables)
-    return stable(values / values.sum())  # pgmpy leaves Markov-network posteriors unnormalised
+    return checked(values / values.sum(), exact_posterior(model, variables, evidence))
 
 
 # A Markov network: variables with cardinalities, and potentials as (scope, flat row-major values).

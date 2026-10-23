@@ -5,9 +5,18 @@ import itertools
 
 import numpy as np
 import pgmpy
+from pgmpy.models import DiscreteMarkovNetwork
 from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.pgm import Potential, markov_definition, pgmpy_markov, random_potentials, stable, ve_query
+from whitebox_oracle.helpers import FloatArray, rng
+from whitebox_oracle.pgm import (
+    Potential,
+    checked,
+    joint_table,
+    markov_definition,
+    pgmpy_markov,
+    random_potentials,
+    ve_query,
+)
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 
@@ -56,13 +65,19 @@ def potts(rows: int, cols: int, q: int, j: float) -> tuple[dict[str, int], list[
     return dict.fromkeys(vertices, q), pots
 
 
+def log_partition(mn: DiscreteMarkovNetwork) -> FloatArray:
+    """log Z from pgmpy's get_partition_function, checked against and stored as the einsum joint's total."""
+    exact = np.log(np.sum(joint_table(mn)[1]))
+    return checked(np.log(np.array(mn.get_partition_function())), np.array(exact))
+
+
 def cases() -> list[Case]:
     out: list[Case] = []
     zero = np.array(0.0)
     pots = random_potentials(rng(3), CARDS, SCOPES, scale=0.8)
     mn = pgmpy_markov(CARDS, pots)
     net = markov_definition(CARDS, pots)
-    out.append(case("loopy/logZ", "logZ", [], stable(np.log(mn.get_partition_function())), network=net))
+    out.append(case("loopy/logZ", "logZ", [], log_partition(mn), network=net))
     for i, (variables, evidence) in enumerate(QUERIES):
         values = ve_query(mn, variables, evidence)
         out.append(
@@ -95,7 +110,7 @@ def cases() -> list[Case]:
                 f"{label}/logZ",
                 "latticeLogZ",
                 [],
-                stable(np.log(model.get_partition_function())),
+                log_partition(model),
                 options=options,
                 kind=label[:5],
             )

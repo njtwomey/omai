@@ -381,12 +381,29 @@
       "cases": 11
     },
     {
+      "fixture": "pgm/inference/belief_propagation.json",
+      "source": "oracle/cases/pgm/inference/belief_propagation.py",
+      "reference": {
+        "pgmpy": "1.1.2",
+        "pyagrum": "3.3.0"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "pgm/inference/elimination.json",
       "source": "oracle/cases/pgm/inference/elimination.py",
       "reference": {
         "pgmpy": "1.1.2"
       },
       "cases": 17
+    },
+    {
+      "fixture": "pgm/inference/junction_tree.json",
+      "source": "oracle/cases/pgm/inference/junction_tree.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 15
     },
     {
       "fixture": "pgm/models/bayes_net.json",
