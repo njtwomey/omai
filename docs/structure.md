@@ -862,7 +862,8 @@ Reparameterisation comes in three forms:
 - `multivariate/directional.ts`: `vonMises`, `vonMisesFisher`, `powerSpherical`.
 - `multivariate/copulas.ts`: Gaussian, Student-t, Clayton, Gumbel and Frank copulas (density, sampling, fitting by
   inversion of Kendall's tau), `copulaDistribution` (joining marginals).
-- `compose/mixture.ts`: `mixture`, `mixtureSameFamily`, responsibilities.
+- `compose/mixture.ts`: `Mixture`, `mixture`, `mixtureSameFamily`, `responsibilities` (implicitly reparameterised
+  draws, numerical quantiles, mode and entropy for univariate mixtures).
 - `compose/structure.ts`: `independent`, `truncated` (continuous and discrete bases), `censored`, `transformed`,
   `empirical`, `deterministic`.
 - `compose/conditional.ts`: `ConditionalDistribution` (inputs to distribution), `conditional`, `linearGaussian`,

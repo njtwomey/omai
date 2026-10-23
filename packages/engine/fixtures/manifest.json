@@ -18,6 +18,15 @@
       "cases": 6
     },
     {
+      "fixture": "dists/compose/mixture.json",
+      "source": "oracle/cases/dists/compose/mixture.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "dists/compose/structure.json",
       "source": "oracle/cases/dists/compose/structure.py",
       "reference": {
@@ -118,6 +127,14 @@
         "scipy": "1.18.1"
       },
       "cases": 10
+    },
+    {
+      "fixture": "dists/relaxed.json",
+      "source": "oracle/cases/dists/relaxed.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "losses/losses.json",

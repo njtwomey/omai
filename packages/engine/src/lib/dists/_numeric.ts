@@ -217,14 +217,16 @@ export type Bulk =
   | { readonly kind: 'finite'; readonly low: Value | number; readonly high: Value | number }
   | { readonly kind: 'halfLine'; readonly low: Value | number; readonly scale: Value | number }
   | { readonly kind: 'real'; readonly center: Value | number; readonly scale: Value | number }
+  /** The real line split at increasing breakpoints (where the integrand has kinks), half lines scaled by `scale`. */
+  | { readonly kind: 'segments'; readonly breaks: readonly number[]; readonly scale: Value | number }
 
 // The fixed rules, built once at load (plain constants, not a cache).
-const RULES: Readonly<Record<Bulk['kind'], QuadratureRule>> = {
+const RULES: Readonly<Record<Exclude<Bulk['kind'], 'segments'>, QuadratureRule>> = {
   finite: doubleExponentialRule('finite'),
   halfLine: doubleExponentialRule('halfLine'),
   real: doubleExponentialRule('real'),
 }
-const ruleFor = (kind: Bulk['kind']): QuadratureRule => RULES[kind]
+const ruleFor = (kind: Exclude<Bulk['kind'], 'segments'>): QuadratureRule => RULES[kind]
 
 /**
  * The integral of f over a bulk, batched: f receives nodes of shape `[n, 1, ..., 1]` (broadcasting against the batch)
@@ -232,6 +234,18 @@ const ruleFor = (kind: Bulk['kind']): QuadratureRule => RULES[kind]
  * occur only where nodes round onto singular endpoints). Differentiable in everything f and the bulk close over.
  */
 export function integrate(f: (x: Value) => Value, bulk: Bulk, batchRank: number): Value {
+  if (bulk.kind === 'segments') {
+    const breaks = bulk.breaks
+    const first = breaks[0]
+    const last = breaks[breaks.length - 1]
+    if (first === undefined || last === undefined)
+      return integrate(f, { kind: 'real', center: 0, scale: bulk.scale }, batchRank)
+    // (-inf, b0] by reflection, the finite pieces, then [b_last, inf).
+    let total = integrate((s) => f(sub(first, s)), { kind: 'halfLine', low: 0, scale: bulk.scale }, batchRank)
+    for (let i = 0; i + 1 < breaks.length; i++)
+      total = add(total, integrate(f, { kind: 'finite', low: breaks[i] ?? 0, high: breaks[i + 1] ?? 0 }, batchRank))
+    return add(total, integrate(f, { kind: 'halfLine', low: last, scale: bulk.scale }, batchRank))
+  }
   const { nodes, weights } = ruleFor(bulk.kind)
   const n = nodes.shape[0] ?? 0
   const lift = (t: Tensor): Value => reshape(t, [n, ...new Array<number>(batchRank).fill(1)])
