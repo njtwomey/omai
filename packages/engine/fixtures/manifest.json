@@ -381,6 +381,14 @@
       "cases": 33
     },
     {
+      "fixture": "optim/minimize/gradient.json",
+      "source": "oracle/cases/optim/minimize/gradient.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "optim/minimize/lbfgsb.json",
       "source": "oracle/cases/optim/minimize/lbfgsb.py",
       "reference": {
