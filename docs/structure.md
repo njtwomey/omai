@@ -1568,9 +1568,13 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   `normalize`, weight and spectral normalisation.
 - `functional/regularisation.ts`: dropout, channel dropout (1-D, 2-D, 3-D), alpha and feature alpha dropout, drop
   path, Gaussian noise (additive or multiplicative), cutout.
-- `functional/attention.ts`: scaled dot-product attention (masks, causal, sliding window, bias, soft-capping),
-  multi-head, grouped-query and multi-query attention, linear attention, attention-weight taps.
-- `functional/positional.ts`: sinusoidal, learned, rotary (RoPE) and ALiBi positions.
+- `functional/attention.ts`: `attention` and `scaledDotProductAttention` (boolean or additive masks, causal, sliding
+  window, bias, soft-capping, dropout, grouped-query heads), `maskedSoftmax`, `causalMask`, `localMask`,
+  `splitHeads`/`mergeHeads`, `multiHeadAttention` (PyTorch's packed projections, key padding, `add_bias_kv`,
+  `add_zero_attn`, per-head or averaged weights), linear attention (causal by prefix sums); weights are tapped by the
+  modules.
+- `functional/positional.ts`: sinusoidal and learned positions, rotary angles and `applyRotary` (half or interleaved
+  pairs, partial rotary, position interpolation), ALiBi slopes and bias.
 - `functional/recurrent.ts`: RNN, GRU and LSTM cells, `scan` over time, bidirectional runs, packed sequences.
 - `functional/state-space.ts`: SSM discretisation, S4 convolution kernels, selective scan (Mamba), delta rule, LRU.
 - `functional/graph.ts`: message passing, GCN, GAT, GraphSAGE and GIN convolutions, edge softmax, graph pooling.
@@ -1600,7 +1604,12 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `module/parametrisation.ts`: `WeightNorm` and `SpectralNorm` wrappers (PyTorch's `weight_g`/`weight_v` and
   `weight_orig`/`weight_u`/`weight_v` layouts; power-iteration vectors as buffers), `spectralNormEstimate`.
 - `module/recurrent.ts`: `RNN`, `GRU`, `LSTM` (stacked, bidirectional) and their cells.
-- `module/attention.ts`: `MultiheadAttention`, transformer encoder and decoder layers and stacks, `Transformer`.
+- `module/attention.ts`: `MultiheadAttention` (PyTorch's layout, sequence- or batch-first), `GroupedQueryAttention`
+  (grouped- and multi-query heads, rotary positions, sliding windows, soft-capping, cross-attention, `KVCache`),
+  `emptyKVCache`.
+- `module/transformer.ts`: `TransformerEncoderLayer`, `TransformerDecoderLayer` (post- or pre-norm), the stacks
+  `TransformerEncoder` and `TransformerDecoder`, `Transformer`, `squareSubsequentMask`.
+- `module/positional.ts`: `SinusoidalPositionalEncoding`, `LearnedPositionalEmbedding`, `RotaryEmbedding`.
 - `blocks/transformer.ts`: pre- and post-norm blocks, feed-forward and gated feed-forward, encoder, decoder and
   encoder-decoder stacks, cross-attention, KV caches.
 - `blocks/vision.ts`: residual and bottleneck blocks, ConvNeXt blocks, MBConv, squeeze-excitation, U-Net encoder and

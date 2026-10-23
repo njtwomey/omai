@@ -67,6 +67,14 @@
       "cases": 14
     },
     {
+      "fixture": "nn/functional/attention.json",
+      "source": "oracle/cases/nn/functional/attention.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "nn/functional/conv.json",
       "source": "oracle/cases/nn/functional/conv.py",
       "reference": {
@@ -99,12 +107,28 @@
       "cases": 34
     },
     {
+      "fixture": "nn/module/attention.json",
+      "source": "oracle/cases/nn/module/attention.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "nn/module/normalisation.json",
       "source": "oracle/cases/nn/module/normalisation.py",
       "reference": {
         "torch": "2.14.1"
       },
       "cases": 46
+    },
+    {
+      "fixture": "nn/module/transformer.json",
+      "source": "oracle/cases/nn/module/transformer.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 11
     },
     {
       "fixture": "nn/torch_reference.json",
