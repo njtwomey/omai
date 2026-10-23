@@ -84,12 +84,30 @@
       "cases": 4
     },
     {
+      "fixture": "numerics/linalg/decompositions.json",
+      "source": "oracle/cases/numerics/linalg/decompositions.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "numerics/linalg/eigh.json",
       "source": "oracle/cases/numerics/linalg/eigh.py",
       "reference": {
         "numpy": "2.5.4"
       },
       "cases": 7
+    },
+    {
+      "fixture": "numerics/linalg/functions.json",
+      "source": "oracle/cases/numerics/linalg/functions.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 15
     },
     {
       "fixture": "numerics/linalg/lu.json",
@@ -107,6 +125,14 @@
         "numpy": "2.5.4"
       },
       "cases": 9
+    },
+    {
+      "fixture": "numerics/linalg/structured.json",
+      "source": "oracle/cases/numerics/linalg/structured.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
     },
     {
       "fixture": "numerics/linalg/svd.json",

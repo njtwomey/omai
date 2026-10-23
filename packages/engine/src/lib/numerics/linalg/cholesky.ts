@@ -3,8 +3,10 @@ import {
   add,
   arg,
   bind1,
+  concreteOrThrow,
   definePrimitive,
   type FloatDType,
+  fromStorage,
   item,
   log,
   matmul,
@@ -14,6 +16,7 @@ import {
   squeeze,
   sub,
   sum,
+  type Tensor,
   type TensorLike,
   tril,
   type Value,
@@ -166,4 +169,76 @@ export function choleskyJitter(a: TensorLike, maxJitter = 1e-4): JitteredCholesk
 
 function sumDiagonal(a: Value): number {
   return item(sum(diagPart(a)))
+}
+
+/**
+ * The Cholesky factor in scipy's cho_factor form (`{ c, lower }`), for {@link choSolve}.
+ *
+ * @param a - Symmetric positive-definite matrix.
+ * @returns The lower factor and `lower: true`.
+ * @example
+ * ```ts
+ * import { choFactor } from 'whitebox-engine/numerics/linalg'
+ * choFactor([[4, 2], [2, 2]]).lower // => true
+ * ```
+ */
+export function choFactor(a: TensorLike): { readonly c: Value; readonly lower: true } {
+  return { c: cholesky(a), lower: true }
+}
+
+function rankOne(l: TensorLike, x: TensorLike, sign: 1 | -1, name: string): Tensor {
+  const factor = concreteOrThrow(promoteFloat(l)[0] as Tensor, name)
+  const n = factor.shape[0] ?? 0
+  const lv = Float64Array.from(factor.data)
+  const v = Float64Array.from(concreteOrThrow(promoteFloat(x)[0] as Tensor, name).data)
+  for (let k = 0; k < n; k++) {
+    const lkk = lv[k * n + k] ?? 0
+    const xk = v[k] ?? 0
+    const r2 = lkk * lkk + sign * xk * xk
+    if (!(r2 > 0)) throw new WhiteboxError('value', `${name}: the result is not positive definite`)
+    const r = Math.sqrt(r2)
+    const c = r / lkk
+    const s = xk / lkk
+    lv[k * n + k] = r
+    for (let i = k + 1; i < n; i++) {
+      lv[i * n + k] = ((lv[i * n + k] ?? 0) + sign * s * (v[i] ?? 0)) / c
+      v[i] = c * (v[i] ?? 0) - s * (lv[i * n + k] ?? 0)
+    }
+  }
+  return fromStorage(lv, [n, n], 'float64')
+}
+
+/**
+ * The Cholesky factor of A + x x^T from that of A, in O(n^2) (the classic rank-one update).
+ *
+ * @param l - Lower Cholesky factor of A.
+ * @param x - Update vector.
+ * @returns The updated factor.
+ * @example
+ * ```ts
+ * import { choleskyUpdate } from 'whitebox-engine/numerics/linalg'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(choleskyUpdate([[1]], [Math.sqrt(3)])) // => [[2]]
+ * ```
+ */
+export function choleskyUpdate(l: TensorLike, x: TensorLike): Tensor {
+  return rankOne(l, x, 1, 'choleskyUpdate')
+}
+
+/**
+ * The Cholesky factor of A - x x^T from that of A (the rank-one downdate).
+ *
+ * @param l - Lower Cholesky factor of A.
+ * @param x - Downdate vector.
+ * @returns The downdated factor.
+ * @throws WhiteboxError with code `value` when A - x x^T is not positive definite.
+ * @example
+ * ```ts
+ * import { choleskyDowndate } from 'whitebox-engine/numerics/linalg'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(choleskyDowndate([[2]], [Math.sqrt(3)])) // => [[1]]
+ * ```
+ */
+export function choleskyDowndate(l: TensorLike, x: TensorLike): Tensor {
+  return rankOne(l, x, -1, 'choleskyDowndate')
 }

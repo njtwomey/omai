@@ -151,3 +151,49 @@ export function lstsq(a: TensorLike, b: TensorLike): Value {
   }
   return cols.vector ? squeeze(x, -1) : x
 }
+
+/**
+ * An elementary reflector (LAPACK's dlarfg): H = I - tau v v^T with v[0] = 1 maps x to alpha e1, alpha = -sign(x0) |x|
+ * (tau = 0 and H = I when x needs no reflection).
+ *
+ * @param x - The vector.
+ * @returns `{ v, tau, alpha }`.
+ * @concept orthogonal-transformations
+ * @example
+ * ```ts
+ * import { householderReflector } from 'whitebox-engine/numerics/linalg'
+ * householderReflector([3, 4]).alpha // => -5
+ * ```
+ */
+export function householderReflector(x: readonly number[]): {
+  readonly v: number[]
+  readonly tau: number
+  readonly alpha: number
+} {
+  const x0 = x[0] ?? 0
+  const tail = x.slice(1)
+  const tailNorm = Math.sqrt(tail.reduce((s, v) => s + v * v, 0))
+  if (tailNorm === 0) return { v: [1, ...tail.map(() => 0)], tau: 0, alpha: x0 }
+  const norm = Math.hypot(x0, tailNorm)
+  const alpha = x0 >= 0 ? -norm : norm
+  const scale = 1 / (x0 - alpha)
+  return { v: [1, ...tail.map((t) => t * scale)], tau: (alpha - x0) / alpha, alpha }
+}
+
+/**
+ * A Givens rotation: c and s with [[c, s], [-s, c]] [a, b] = [r, 0] (r = hypot(a, b) >= 0).
+ *
+ * @param a - First component.
+ * @param b - Second component (to be zeroed).
+ * @returns `{ c, s, r }`.
+ * @example
+ * ```ts
+ * import { givensRotation } from 'whitebox-engine/numerics/linalg'
+ * givensRotation(3, 4) // => { c: 0.6, s: 0.8, r: 5 }
+ * ```
+ */
+export function givensRotation(a: number, b: number): { readonly c: number; readonly s: number; readonly r: number } {
+  if (b === 0) return { c: a >= 0 ? 1 : -1, s: 0, r: Math.abs(a) }
+  const r = Math.hypot(a, b)
+  return { c: a / r, s: b / r, r }
+}

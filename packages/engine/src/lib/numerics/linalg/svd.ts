@@ -11,16 +11,18 @@ import {
   max,
   mul,
   type Primitive,
+  primalOf,
   promoteFloat,
   sliceAxis,
   square,
   sub,
   type TensorLike,
+  toFlat,
   type Value,
   where,
 } from '../../tensor/index.ts'
 import { svdKernel } from './_kernels.ts'
-import { assemble, diagEmbed, diagPart, matrices, matrixShape, mT } from './_matrix.ts'
+import { assemble, diagEmbed, diagPart, identity as identityOf, matrices, matrixShape, mT } from './_matrix.ts'
 import { eigengapInverse } from './eigh.ts'
 
 // Scale columns (right-multiply by diag(s)) and rows (left-multiply by diag(s)).
@@ -213,4 +215,52 @@ export function lowRankApproximation(a: TensorLike, rank: number): Value {
   const sr = sliceAxis(s, -1, 0, rank)
   const vr = sliceAxis(vh, -2, 0, rank)
   return matmul(scaleColumns(ur, sr), vr)
+}
+
+/**
+ * An orthonormal basis of the null space of a matrix (scipy.linalg.null_space): the orthogonal complement of the
+ * right singular vectors whose singular values exceed `rcond` times the largest.
+ *
+ * @param a - Matrix `[m, n]`.
+ * @param rcond - Relative cutoff (default max(m, n) eps).
+ * @returns The basis `[n, nullity]`.
+ * @example
+ * ```ts
+ * import { nullSpace } from 'whitebox-engine/numerics/linalg'
+ * nullSpace([[1, 1]]).shape // => [2, 1]
+ * ```
+ */
+export function nullSpace(a: TensorLike, rcond?: number): Value {
+  const [av] = promoteFloat(a) as [Value]
+  const { m, n } = matrixShape(av.shape, 'nullSpace')
+  const { s, vh } = svd(av)
+  const values = toFlat(primalOf(s))
+  const cut = (rcond ?? Math.max(m, n) * 2.220446049250313e-16) * (values[0] ?? 0)
+  const rank = values.filter((x) => x > cut).length
+  if (rank === n) return sliceAxis(mT(vh), 1, 0, 0)
+  // The complement of the row space: the range of the projector I - V_r V_r^T, whose singular values are 1 or 0.
+  const vr = mT(sliceAxis(vh, 0, 0, rank))
+  const projector = sub(identityOf(n, av), matmul(vr, mT(vr)))
+  return sliceAxis(svd(projector).u, 1, 0, n - rank)
+}
+
+/**
+ * The polar decomposition (scipy.linalg.polar): A = U P (`right`) or A = P U (`left`), with U having orthonormal
+ * columns and P symmetric positive semi-definite, from the SVD.
+ *
+ * @param a - Matrix `[m, n]` with m >= n for `right`.
+ * @param side - `right` (default) or `left`.
+ * @returns `{ u, p }`, differentiable.
+ * @example
+ * ```ts
+ * import { polar } from 'whitebox-engine/numerics/linalg'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(polar([[2, 0], [0, 3]]).p) // => [[2, 0], [0, 3]]
+ * ```
+ */
+export function polar(a: TensorLike, side: 'right' | 'left' = 'right'): { readonly u: Value; readonly p: Value } {
+  const { u, s, vh } = svd(a)
+  const unitary = matmul(u, vh)
+  const p = side === 'right' ? matmul(mul(mT(vh), expandDims(s, -2)), vh) : matmul(mul(u, expandDims(s, -2)), mT(u))
+  return { u: unitary, p }
 }

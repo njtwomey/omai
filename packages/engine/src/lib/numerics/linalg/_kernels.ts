@@ -67,9 +67,14 @@ export function triangularKernel(
 }
 
 /** LU with partial pivoting: P A = L U, returned packed (unit L below the diagonal, U on and above) with the row order. */
-export function luKernel(a: Float64Array, n: number): { lu: Float64Array; perm: Int32Array; sign: number } {
+export function luKernel(
+  a: Float64Array,
+  n: number,
+): { lu: Float64Array; perm: Int32Array; piv: Int32Array; sign: number } {
   const lu = Float64Array.from(a)
   const perm = Int32Array.from({ length: n }, (_, i) => i)
+  // LAPACK's pivot indices: row j was interchanged with row piv[j] at step j.
+  const piv = Int32Array.from({ length: n }, (_, i) => i)
   let sign = 1
   for (let j = 0; j < n; j++) {
     let p = j
@@ -81,6 +86,7 @@ export function luKernel(a: Float64Array, n: number): { lu: Float64Array; perm: 
         p = i
       }
     }
+    piv[j] = p
     if (p !== j) {
       for (let c = 0; c < n; c++) {
         const tmp = lu[j * n + c] ?? 0
@@ -100,7 +106,7 @@ export function luKernel(a: Float64Array, n: number): { lu: Float64Array; perm: 
       for (let c = j + 1; c < n; c++) lu[i * n + c] = (lu[i * n + c] ?? 0) - f * (lu[j * n + c] ?? 0)
     }
   }
-  return { lu, perm, sign }
+  return { lu, perm, piv, sign }
 }
 
 /** X with A X = B (A n x n, B n x k), by LU with partial pivoting; throws for an exactly singular matrix. */
@@ -140,8 +146,11 @@ export function qrKernel(a: Float64Array, m: number, n: number): { q: Float64Arr
     for (let i = j; i < m; i++) norm += (work[i * n + j] ?? 0) ** 2
     norm = Math.sqrt(norm)
     const x0 = work[j * n + j] ?? 0
-    // As LAPACK's dlarfg: no reflection when nothing below the diagonal needs eliminating (this keeps the sign of R_jj).
-    if (norm === 0 || norm === Math.abs(x0)) {
+    // As LAPACK's dlarfg: no reflection when the entries below the diagonal are exactly zero (this keeps the sign of
+    // R_jj); tiny nonzero entries are still eliminated.
+    let below = 0
+    for (let i = j + 1; i < m; i++) below += (work[i * n + j] ?? 0) ** 2
+    if (norm === 0 || below === 0) {
       vs.push(v)
       continue
     }

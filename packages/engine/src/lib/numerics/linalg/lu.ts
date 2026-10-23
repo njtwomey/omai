@@ -3,8 +3,10 @@ import {
   arg,
   bind,
   bind1,
+  concreteOrThrow,
   definePrimitive,
   type FloatDType,
+  fromStorage,
   type MaybeZero,
   matmul,
   neg,
@@ -12,12 +14,13 @@ import {
   promoteFloat,
   squeeze,
   sub,
+  type Tensor,
   type TensorLike,
   tril,
   triu,
   type Value,
 } from '../../tensor/index.ts'
-import { luKernel, solveKernel } from './_kernels.ts'
+import { luKernel, solveKernel, triangularKernel } from './_kernels.ts'
 import { asColumns, assemble, broadcastBatch, identity, matrices, matrixShape, mT, squareSize } from './_matrix.ts'
 import { triangularSolve } from './triangular.ts'
 
@@ -193,4 +196,87 @@ export function lu(a: TensorLike): LuResult {
   const [av] = promoteFloat(a) as [Value]
   const [p, l, u] = bind(luPrimitive, [av], null) as [Value, Value, Value]
   return { p, l, u }
+}
+
+/** A packed LU factorisation with LAPACK pivot indices (scipy.linalg.lu_factor's output). */
+export interface LuFactorisation {
+  /** L (unit, below the diagonal) and U (on and above) in one matrix. */
+  readonly lu: Tensor
+  /** Row j was interchanged with row piv[j] at step j. */
+  readonly piv: Tensor<'int32'>
+}
+
+/**
+ * The packed LU factorisation with partial pivoting (scipy.linalg.lu_factor), to solve many right-hand sides with
+ * {@link luSolve}.
+ *
+ * @param a - Square matrix `[n, n]`.
+ * @returns The packed factors and pivot indices.
+ * @example
+ * ```ts
+ * import { luFactor } from 'whitebox-engine/numerics/linalg'
+ * Array.from(luFactor([[1, 2], [3, 4]]).piv.data) // => [1, 1]
+ * ```
+ */
+export function luFactor(a: TensorLike): LuFactorisation {
+  const t = concreteOrThrow(promoteFloat(a)[0] as Tensor, 'luFactor')
+  const n = squareSize(t.shape, 'luFactor')
+  const { lu: packed, piv } = luKernel(Float64Array.from(t.data), n)
+  return { lu: fromStorage(packed, [n, n], 'float64'), piv: fromStorage(piv, [n], 'int32') }
+}
+
+/**
+ * Solve A x = b from a packed LU factorisation (scipy.linalg.lu_solve).
+ *
+ * @param factorisation - From {@link luFactor}.
+ * @param b - Right-hand side `[n]` or `[n, k]`.
+ * @param options - `transpose` to solve A^T x = b.
+ * @returns The solution.
+ * @example
+ * ```ts
+ * import { luFactor, luSolve } from 'whitebox-engine/numerics/linalg'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(luSolve(luFactor([[3, 1], [1, 2]]), [9, 8])) // => [2, 3]
+ * ```
+ */
+export function luSolve(
+  factorisation: LuFactorisation,
+  b: TensorLike,
+  options: { readonly transpose?: boolean } = {},
+): Tensor {
+  const packed = factorisation.lu
+  const n = packed.shape[0] ?? 0
+  const rhs = concreteOrThrow(promoteFloat(b)[0] as Tensor, 'luSolve')
+  const k = rhs.shape.length === 1 ? 1 : (rhs.shape[1] ?? 1)
+  const x = Float64Array.from(rhs.data)
+  const swap = (j: number, p: number): void => {
+    for (let c = 0; c < k; c++) {
+      const tmp = x[j * k + c] ?? 0
+      x[j * k + c] = x[p * k + c] ?? 0
+      x[p * k + c] = tmp
+    }
+  }
+  const piv = factorisation.piv.data
+  const lu = Float64Array.from(packed.data)
+  let out: Float64Array
+  if (options.transpose === true) {
+    // A^T = U^T L^T P: solve U^T y = b, L^T z = y, then undo the interchanges in reverse.
+    const y = triangularKernel(lu, x, n, k, { lower: false, transpose: true, unitDiagonal: false })
+    out = triangularKernel(lu, y, n, k, { lower: true, transpose: true, unitDiagonal: true })
+    for (let j = n - 1; j >= 0; j--) {
+      const p = piv[j] ?? j
+      if (p !== j) {
+        for (let c = 0; c < k; c++) {
+          const tmp = out[j * k + c] ?? 0
+          out[j * k + c] = out[p * k + c] ?? 0
+          out[p * k + c] = tmp
+        }
+      }
+    }
+  } else {
+    for (let j = 0; j < n; j++) if ((piv[j] ?? j) !== j) swap(j, piv[j] ?? j)
+    const y = triangularKernel(lu, x, n, k, { lower: true, transpose: false, unitDiagonal: true })
+    out = triangularKernel(lu, y, n, k, { lower: false, transpose: false, unitDiagonal: false })
+  }
+  return fromStorage(out, rhs.shape, 'float64')
 }

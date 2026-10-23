@@ -92,3 +92,27 @@ export function concreteOrThrow<D extends DType>(x: Value<D>, where: string): Te
   }
   return x
 }
+
+/**
+ * The concrete value underneath any number of (eager) traces: what a traced value evaluates to. For data-dependent
+ * choices that are not themselves differentiated, such as a number of iterations or a scaling exponent; derivatives do
+ * not flow through it.
+ *
+ * @param x - A value.
+ * @returns The concrete tensor it stands for.
+ * @throws WhiteboxError with code `not-differentiable` for a trace that holds no concrete primal.
+ * @example
+ * ```ts
+ * import { primalOf, tensor } from 'whitebox-engine/tensor'
+ * primalOf(tensor([1, 2])).shape // => [2]
+ * ```
+ */
+export function primalOf<D extends DType>(x: Value<D>): Tensor<D> {
+  let v: Value<D> = x
+  while (isTraced(v)) {
+    const p = (v as { primal?: Value<D> }).primal
+    if (p === undefined) throw new WhiteboxError('not-differentiable', 'primalOf: this trace holds no concrete value')
+    v = p
+  }
+  return v
+}
