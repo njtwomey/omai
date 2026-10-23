@@ -43,6 +43,15 @@
       "cases": 6
     },
     {
+      "fixture": "methods/rl/agents/imitation.json",
+      "source": "oracle/cases/methods/rl/agents/imitation.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "methods/rl/agents/policy_gradient.json",
       "source": "oracle/cases/methods/rl/agents/policy_gradient.py",
       "reference": {

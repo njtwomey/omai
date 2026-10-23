@@ -1,12 +1,12 @@
 // Tiny tasks for testing policy-gradient, actor-critic, safe and imitation agents. Node only; not published.
 
+import { clamp } from '../lib/base/index.ts'
 import { uniform } from '../lib/random/index.ts'
 import { type Env, type Outcome, tabularEnv } from '../lib/rl/index.ts'
 import { circle, scene } from '../lib/scene/index.ts'
 import { box } from '../lib/space/index.ts'
 
 const u1 = (k: Parameters<typeof uniform>[0]): number => uniform(k, []).data[0] ?? 0
-const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x))
 
 /**
  * A one-step contextual continuous bandit: the observation is a context `c ~ U(-1, 1)`, the action `a` in `[-1, 1]`,
