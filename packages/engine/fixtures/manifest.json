@@ -43,6 +43,15 @@
       "cases": 6
     },
     {
+      "fixture": "methods/rl/agents/bandits.json",
+      "source": "oracle/cases/methods/rl/agents/bandits.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "methods/rl/agents/tabular.json",
       "source": "oracle/cases/methods/rl/agents/tabular.py",
       "reference": {
