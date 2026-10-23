@@ -76,6 +76,14 @@
       "cases": 14
     },
     {
+      "fixture": "numerics/interpolate/univariate.json",
+      "source": "oracle/cases/numerics/interpolate/univariate.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 58
+    },
+    {
       "fixture": "numerics/linalg/basics.json",
       "source": "oracle/cases/numerics/linalg/basics.py",
       "reference": {
