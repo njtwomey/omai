@@ -2432,10 +2432,13 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   `swissRollEmbedding`, `sCurveEmbedding`.
 - `matrices.ts`: sklearn's matrix generators with their planted truth: `makeLowRankMatrix` (`lowRankProfile`),
   `makeSparseCodedSignal`, `makeSpdMatrix`, `makeSparseSpdMatrix`, `makeBiclusters`, `makeCheckerboard`.
-- `densities.ts`: two-dimensional densities with exact log densities (rings, pinwheels, bananas, funnels, mixtures) for
-  samplers, flows and diffusion.
-- `objectives.ts`: optimisation test functions with gradients, Hessians and known minima (Rosenbrock, Himmelblau, Beale,
-  Rastrigin, Ackley, Branin, quadratic bowls), hyperparameter-tuning surfaces.
+- `densities.ts`: two-dimensional densities with exact log densities and samplers (`Density`: `ringDensity`,
+  `pinwheelDensity`, `bananaDensity`, `funnelDensity`, `gaussianMixtureDensity` on a circle or grid,
+  `checkerboardDensity`) for samplers, flows and diffusion; `densitySamples` as a generator.
+- `objectives.ts`: optimisation test functions with gradients, Hessians and known minima (`TestFunction`:
+  `rosenbrock`, `himmelblau`, `beale`, `rastrigin`, `ackley`, `branin`, `quadraticBowl` with a set condition number),
+  hyperparameter-tuning surfaces (`TuningSurface`: `learningRateSurface` with learning curves for multi-fidelity
+  tuning, `braninSurface`).
 - `changepoints.ts`: tunable changepoint series (mean, variance and rate shifts, AR regime switches, trend breaks;
   hazard rate, segment lengths and noise as knobs) with true changepoints, segment parameters and the exact BOCPD
   predictive.

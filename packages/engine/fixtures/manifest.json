@@ -87,6 +87,15 @@
       "cases": 3
     },
     {
+      "fixture": "methods/datasets/objectives.json",
+      "source": "oracle/cases/methods/datasets/objectives.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "methods/datasets/regression-real.json",
       "source": "oracle/cases/methods/datasets/regression-real.py",
       "reference": {
