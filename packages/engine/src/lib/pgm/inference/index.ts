@@ -2,4 +2,5 @@
 export * from './belief-propagation.ts'
 export * from './elimination.ts'
 export * from './enumerate.ts'
+export * from './gaussian-bp.ts'
 export * from './junction-tree.ts'

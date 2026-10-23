@@ -381,6 +381,15 @@
       "cases": 11
     },
     {
+      "fixture": "pgm/gaussian_factor.json",
+      "source": "oracle/cases/pgm/gaussian_factor.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "pgm/inference/belief_propagation.json",
       "source": "oracle/cases/pgm/inference/belief_propagation.py",
       "reference": {
@@ -398,6 +407,15 @@
       "cases": 17
     },
     {
+      "fixture": "pgm/inference/gaussian_bp.json",
+      "source": "oracle/cases/pgm/inference/gaussian_bp.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "networkx": "3.7"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "pgm/inference/junction_tree.json",
       "source": "oracle/cases/pgm/inference/junction_tree.py",
       "reference": {
@@ -412,6 +430,16 @@
         "pgmpy": "1.1.2"
       },
       "cases": 24
+    },
+    {
+      "fixture": "pgm/models/linear_gaussian.json",
+      "source": "oracle/cases/pgm/models/linear_gaussian.py",
+      "reference": {
+        "pgmpy": "1.1.2",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
     },
     {
       "fixture": "pgm/models/markov_network.json",
