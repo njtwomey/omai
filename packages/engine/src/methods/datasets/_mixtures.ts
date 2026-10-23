@@ -25,17 +25,26 @@ import {
   type Value,
 } from '../../lib/tensor/index.ts'
 
-/** `log N(x; m_c, sigma^2 I)` for every row of `x` and every mean `m_c`: `[n, C]`. */
-export function isotropicLogDensities(means: readonly (readonly number[])[], sigma: number): (x: Value) => Value {
+/** The standard deviation of component `c`: one shared value or one per component. */
+function sigmaOf(sigma: number | readonly number[], c: number): number {
+  return typeof sigma === 'number' ? sigma : (sigma[c] ?? 1)
+}
+
+/** `log N(x; m_c, sigma_c^2 I)` for every row of `x` and every mean `m_c`: `[n, C]`. */
+export function isotropicLogDensities(
+  means: readonly (readonly number[])[],
+  sigma: number | readonly number[],
+): (x: Value) => Value {
   const m = tensor(means as number[][])
   const mt = transpose(m)
   const d = means[0]?.length ?? 0
   const mm = tensor(means.map((r) => r.reduce((s, v) => s + v * v, 0)))
-  const constant = -0.5 * d * Math.log(2 * Math.PI * sigma * sigma)
+  const scale = tensor(means.map((_, c) => -0.5 / sigmaOf(sigma, c) ** 2))
+  const constant = tensor(means.map((_, c) => -0.5 * d * Math.log(2 * Math.PI * sigmaOf(sigma, c) ** 2)))
   return (x) => {
     const xx = sum(square(x), 1, true)
     const d2 = add(sub(xx, mul(matmul(x, mt), 2)), mm)
-    return add(mul(d2, -0.5 / (sigma * sigma)), constant)
+    return add(mul(d2, scale), constant)
   }
 }
 
@@ -49,7 +58,7 @@ export interface MixtureModel {
   readonly logWeights: readonly number[]
   readonly nClasses: number
   /** For isotropic models: the means and shared standard deviation, enabling the fast path. */
-  readonly isotropic?: { readonly means: readonly (readonly number[])[]; readonly sigma: number }
+  readonly isotropic?: { readonly means: readonly (readonly number[])[]; readonly sigma: number | readonly number[] }
 }
 
 /** `log p(x, y = k)` for every class: `[n, K]`, with tensor operations. */
@@ -78,8 +87,8 @@ function classLogJointLoop(model: MixtureModel): (x: Tensor) => Tensor {
   const c = means.length
   const d = means[0]?.length ?? 0
   const flatMeans = Float64Array.from(means.flat())
-  const s2 = iso.sigma * iso.sigma
-  const constant = -0.5 * d * Math.log(2 * Math.PI * s2)
+  const s2 = means.map((_, j) => sigmaOf(iso.sigma, j) ** 2)
+  const constants = s2.map((v) => -0.5 * d * Math.log(2 * Math.PI * v))
   const k = model.nClasses
   return (x) => {
     const n = x.shape[0] ?? 0
@@ -93,7 +102,7 @@ function classLogJointLoop(model: MixtureModel): (x: Tensor) => Tensor {
       for (let j = 0; j < c; j++) {
         let d2 = 0
         for (let a = 0; a < d; a++) d2 += ((xs[i * d + a] ?? 0) - (flatMeans[j * d + a] ?? 0)) ** 2
-        const t = constant - (0.5 * d2) / s2 + (model.logWeights[j] ?? 0)
+        const t = (constants[j] ?? 0) - (0.5 * d2) / (s2[j] ?? 1) + (model.logWeights[j] ?? 0)
         terms[j] = t
         const cls = model.classOf[j] ?? 0
         if (t > (best[cls] ?? -Infinity)) best[cls] = t

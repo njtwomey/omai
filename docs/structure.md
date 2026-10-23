@@ -749,6 +749,7 @@ are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `M
   counts).
 - `loader.ts`: `DatasetRef`, `load` (embedded or remote; sha256 verification with Web Crypto), `AssetCache`
   (`memoryCache`, `indexedDbCache`), `sha256Hex`.
+- `archives.ts`: `gunzip`, `untar`, `unzip`, `parseCsv`, for parsing remote assets in the browser.
 - `samplers.ts`: `Sampler`, `sequentialSampler`, `randomSampler`, `weightedRandomSampler`, `subsetRandomSampler`,
   `batchSampler`, `balancedWeights` (torch.utils.data samplers, reshuffled per epoch by derived keys).
 - `batching.ts`: `batches` (batch size, shuffle by key or sampler, drop last), `epochBatches`, `epochs`, `dataLoader`,
@@ -2413,15 +2414,20 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `regression-curves.ts`: one-dimensional functions (`sineCurve`, `stepCurve`, `sincCurve`, `dopplerCurve`,
   `heteroscedastic` noise), additive (GAM) data (`additiveModel`, with its components), curves with known quantiles
   (`quantileCurves`: Gaussian, Laplace, Student t and Gumbel noise), `piecewiseLinear` data.
-- `regression-real.ts`: diabetes, Anscombe's quartet, mtcars, a licence-clean housing set, growth charts.
+- `regression-real.ts`: `diabetes`, Anscombe's quartet (`anscombe`), `mtcars` (and `mtcarsRegression`), a
+  licence-clean housing set (`californiaHousing`, a remote asset parsed from StatLib's archive by
+  `parseCaliforniaHousing`), growth charts (CDC LMS tables: `growthChart`, `growthValue`, and `growthCurves` with exact
+  quantiles).
 - `classification.ts`: `blobs`, `moons`, `circles`, `xor`, `spirals`, `checkerboard`, `gaussianQuantiles`,
   `hastie10_2`, with exact Bayes posteriors, log densities and Bayes errors (closed form or Monte Carlo, computed on
   first access); `moonPoints`, `circlePoints`, `gaussianQuantileLabels`.
 - `make-classification.ts`: `makeClassification` (informative, redundant, repeated and noise features, clusters per
   class, class separation, imbalance, label noise, shift and scale as knobs; the truth tracks every column),
   `makeMultilabelClassification`.
-- `classification-real.ts`: iris, wine, breast cancer, 8 by 8 digits, Titanic, penguins.
-- `clustering.ts`: rings, anisotropic blobs, unequal-variance blobs, Old Faithful, with true clusters.
+- `classification-real.ts`: `iris`, `wine`, `breastCancer`, 8 by 8 digits (`digits`, `digitImages`), Titanic
+  (`titanic`, R's survival table expanded to rows), penguins (`penguins` as a table, `penguinsClassification`).
+- `clustering.ts`: `rings`, `anisotropicBlobs`, `unequalVarianceBlobs`, `oldFaithful`, with true clusters (and
+  exact posteriors for the generators).
 - `manifolds.ts`: `swissRoll` (optionally with a hole), `sCurve`, `severedSphere`, `torus`, with latent coordinates;
   `swissRollEmbedding`, `sCurveEmbedding`.
 - `matrices.ts`: sklearn's matrix generators with their planted truth: `makeLowRankMatrix` (`lowRankProfile`),

@@ -53,6 +53,15 @@
       "cases": 31
     },
     {
+      "fixture": "methods/datasets/classification-real.json",
+      "source": "oracle/cases/methods/datasets/classification-real.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "methods/datasets/classification.json",
       "source": "oracle/cases/methods/datasets/classification.py",
       "reference": {
@@ -76,6 +85,15 @@
         "numpy": "2.5.4"
       },
       "cases": 3
+    },
+    {
+      "fixture": "methods/datasets/regression-real.json",
+      "source": "oracle/cases/methods/datasets/regression-real.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 11
     },
     {
       "fixture": "methods/datasets/regression.json",

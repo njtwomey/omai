@@ -21,7 +21,7 @@ export type DatasetRef<D extends Dataset = Dataset> =
       readonly sha256: string
       readonly size?: number
       readonly licence?: string
-      readonly parse: (bytes: Uint8Array) => D
+      readonly parse: (bytes: Uint8Array) => D | Promise<D>
     }
 
 /** A byte store for downloaded assets, keyed by checksum. */
