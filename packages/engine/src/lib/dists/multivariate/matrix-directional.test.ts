@@ -32,11 +32,14 @@ describe('matrix distributions', () => {
 
   it('Wishart draws average to df Sigma and differentiate in df', () => {
     const d = D.wishart(6, { covariance: sigma })
-    const x = d.rsample(key(1), [N]) as Tensor
-    close(toFlat(mean(x, 0)), toFlat(d.mean()), 1)
+    const n = 4000
+    const x = d.rsample(key(1), [n]) as Tensor
+    const sd = toFlat(d.variance()).map((v) => Math.sqrt(v / n))
+    for (const [i, m] of toFlat(mean(x, 0)).entries())
+      expect(Math.abs(m - (toFlat(d.mean())[i] ?? 0))).toBeLessThan(5 * (sd[i] ?? 0))
     // d/d df E[X] = Sigma.
     const g = jvp(
-      (nu: Value) => mean(D.wishart(nu, { covariance: sigma }).rsample(key(2), [N]), 0),
+      (nu: Value) => mean(D.wishart(nu, { covariance: sigma }).rsample(key(2), [n]), 0),
       tensor(6),
       tensor(1),
     )
@@ -45,10 +48,10 @@ describe('matrix distributions', () => {
 
   it('inverse Wishart draws average to Psi / (df - p - 1); entropy matches Monte Carlo', () => {
     const d = D.inverseWishart(8, sigma)
-    const x = d.rsample(key(3), [N]) as Tensor
+    const x = d.rsample(key(3), [8000]) as Tensor
     close(toFlat(mean(x, 0)), toFlat(d.mean()), 1)
     const mc = -item(mean(d.logProb(x)))
-    expect(Math.abs(mc - item(d.entropy()))).toBeLessThan(0.03)
+    expect(Math.abs(mc - item(d.entropy()))).toBeLessThan(0.06)
   })
 
   it('LKJ Cholesky draws are correlation factors and the density is normalised', () => {

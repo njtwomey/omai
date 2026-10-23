@@ -112,6 +112,31 @@
       "cases": 103
     },
     {
+      "fixture": "dists/families/dispersion.json",
+      "source": "oracle/cases/dists/families/dispersion.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 44
+    },
+    {
+      "fixture": "dists/families/distributional.json",
+      "source": "oracle/cases/dists/families/distributional.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "dists/families/links.json",
+      "source": "oracle/cases/dists/families/links.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 60
+    },
+    {
       "fixture": "dists/multivariate/copulas.json",
       "source": "oracle/cases/dists/multivariate/copulas.py",
       "reference": {

@@ -884,11 +884,17 @@ Reparameterisation comes in three forms:
   table (used by `probprog` to detect conjugacy).
 - `divergences.ts`: analytic KL for family pairs, Monte Carlo fallback, Hellinger, Bhattacharyya, 2-Wasserstein
   between Gaussians.
-- `families/links.ts`: GLM link functions with inverses and derivatives (identity, log, logit, probit, cloglog,
-  inverse, inverse-squared, sqrt, power), numerically guarded.
-- `families/dispersion.ts`: exponential dispersion families for GLMs (gaussian, binomial, poisson, gamma,
-  inverse Gaussian, negative binomial, Tweedie): variance, unit deviance, log-likelihood, starting values.
-- `families/distributional.ts`: GAMLSS-style families with per-parameter links; cumulative-link ordinal families.
+- `families/links.ts`: `Link`, GLM link functions with inverses and first and second derivatives (`identity`, `log`,
+  `logit`, `probit`, `cauchit`, `cloglog`, `loglog`, `inverse`, `inverseSquared`, `sqrt`, `power`,
+  `negativeBinomialLink`, `linkByName`), numerically guarded as statsmodels guards them.
+- `families/dispersion.ts`: `DispersionFamily`, exponential dispersion families for GLMs (`gaussian`, `binomial`,
+  `poisson`, `gamma`, `inverseGaussian`, `negativeBinomial`, `tweedie`): variance and its derivative, unit deviance,
+  deviance residuals, log-likelihood with scale and weights, starting means, IRLS weights and the response
+  distribution; `tweedieDistribution` (compound Poisson-gamma, Dunn and Smyth's series).
+- `families/distributional.ts`: `DistributionalFamily`, `defineDistributionalFamily` and GAMLSS-style families with
+  per-parameter links (`gamlssNormal`, `gamlssStudentT`, `gamlssSkewNormal`, `gamlssGamma`, `gamlssLogNormal`,
+  `gamlssWeibull`, `gamlssBeta`, `gamlssPoisson`, `gamlssNegativeBinomial`, `gamlssZeroInflatedPoisson`);
+  cumulative-link ordinal families (`ordinalFamily` with logit, probit, cloglog, loglog and cauchit links).
 
 ### 4.15 `information/` (tier 6): information theory and coding
 

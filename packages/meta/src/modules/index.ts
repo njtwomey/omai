@@ -26,6 +26,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/dists/compose': () => import('whitebox-engine/dists/compose'),
   'whitebox-engine/dists/continuous': () => import('whitebox-engine/dists/continuous'),
   'whitebox-engine/dists/discrete': () => import('whitebox-engine/dists/discrete'),
+  'whitebox-engine/dists/families': () => import('whitebox-engine/dists/families'),
   'whitebox-engine/dists/multivariate': () => import('whitebox-engine/dists/multivariate'),
   'whitebox-engine/losses': () => import('whitebox-engine/losses'),
   'whitebox-engine/methods/datasets': () => import('whitebox-engine/methods/datasets'),
