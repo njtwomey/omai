@@ -2,29 +2,96 @@
   "schema": "whitebox.fixtures/1",
   "fixtures": [
     {
-      "fixture": "dists/continuous.json",
-      "source": "oracle/cases/dists/continuous.py",
+      "fixture": "dists/continuous/bounded.json",
+      "source": "oracle/cases/dists/continuous/bounded.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 68
+    },
+    {
+      "fixture": "dists/continuous/extreme.json",
+      "source": "oracle/cases/dists/continuous/extreme.py",
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 243
+      "cases": 81
     },
     {
-      "fixture": "dists/discrete.json",
-      "source": "oracle/cases/dists/discrete.py",
+      "fixture": "dists/continuous/gamma.json",
+      "source": "oracle/cases/dists/continuous/gamma.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 179
+    },
+    {
+      "fixture": "dists/continuous/heavy_tailed.json",
+      "source": "oracle/cases/dists/continuous/heavy_tailed.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 104
+    },
+    {
+      "fixture": "dists/continuous/normal.json",
+      "source": "oracle/cases/dists/continuous/normal.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 148
+    },
+    {
+      "fixture": "dists/continuous/sampling_distributions.json",
+      "source": "oracle/cases/dists/continuous/sampling_distributions.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 79
+    },
+    {
+      "fixture": "dists/discrete/binary.json",
+      "source": "oracle/cases/dists/discrete/binary.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 72
+    },
+    {
+      "fixture": "dists/discrete/categorical.json",
+      "source": "oracle/cases/dists/discrete/categorical.py",
       "reference": {
         "numpy": "2.5.4",
         "scipy": "1.18.1"
       },
-      "cases": 65
+      "cases": 39
     },
     {
-      "fixture": "dists/multivariate.json",
-      "source": "oracle/cases/dists/multivariate.py",
+      "fixture": "dists/discrete/counts.json",
+      "source": "oracle/cases/dists/discrete/counts.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 103
+    },
+    {
+      "fixture": "dists/multivariate/normal.json",
+      "source": "oracle/cases/dists/multivariate/normal.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "dists/multivariate/simplex.json",
+      "source": "oracle/cases/dists/multivariate/simplex.py",
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 12
+      "cases": 10
     },
     {
       "fixture": "losses/losses.json",

@@ -836,20 +836,27 @@ Reparameterisation comes in three forms:
 - Discrete distributions have no `rsample` and throw with a pointer to the alternatives: the relaxed distributions
   `relaxedBernoulli` and `relaxedOneHotCategorical` (Concrete / Gumbel-softmax, with a temperature), straight-through
   estimators (`straightThrough`), and score-function estimators (`elbo.ts`, `policy-gradient.ts`).
-- `distribution.ts`: the `Distribution` interface, `Support`, parameter validation, batch-shape helpers.
+- `distribution.ts`: the `Distribution` interface and `defineDistribution`, `Support` (elementwise, vector and matrix
+  kinds) with `inSupport`, parameter validation (`validateParams`), batch-shape helpers (`batchShapeOf`,
+  `extendedShape`, `broadcastBatch`). Private `_numeric.ts` holds the numerical fallbacks every family shares
+  (quantiles by safeguarded Newton with an implicit-function derivative, modes by search, moments and entropies by
+  batched double-exponential quadrature); `_sampling.ts` the sampling primitives and `implicitReparam`.
 - `continuous/normal.ts`: `normal`, `halfNormal`, `truncatedNormal`, `logNormal`, `skewNormal`.
 - `continuous/heavy-tailed.ts`: `studentT`, `cauchy`, `halfCauchy`, `laplace`, `logistic`, `pareto`, `johnsonSU`,
   `sinhArcsinh`.
-- `continuous/gamma.ts`: `gamma`, `inverseGamma`, `exponential`, `chi2`, `weibull`, `erlang`.
+- `continuous/gamma.ts`: `gamma`, `inverseGamma`, `exponential`, `chi2`, `weibull`, `erlang`, `inverseGaussian`.
 - `continuous/bounded.ts`: `uniform`, `beta`, `kumaraswamy`, `triangular`, `logitNormal`.
 - `continuous/extreme.ts`: `gumbel`, `generalisedExtremeValue`, `generalisedPareto`, `frechet`.
-- `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT`, studentised range.
+- `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT` (Poisson-weighted series).
+- `continuous/studentised-range.ts`: `studentisedRange` (double integrals by a product double-exponential rule).
 - `discrete/binary.ts`: `bernoulli`, `binomial`, `betaBinomial`.
-- `discrete/categorical.ts`: `categorical`, `oneHotCategorical`, `discreteUniform`, `orderedLogistic`.
+- `discrete/categorical.ts`: `categorical`, `oneHotCategorical`, `discreteUniform`, `orderedLogistic`, `orderedProbit`,
+  `orderedCategorical` (any cumulative link).
 - `relaxed.ts`: `relaxedBernoulli`, `relaxedOneHotCategorical` (Concrete / Gumbel-softmax) and `straightThrough`.
-- `discrete/counts.ts`: `poisson`, `negativeBinomial`, `geometric`, `hypergeometric`, zero-inflated variants.
-- `multivariate/normal.ts`: `multivariateNormal` (covariance, precision or Cholesky), `condition`, `marginal`,
-  `lowRankMultivariateNormal`, `matrixNormal`.
+- `discrete/counts.ts`: `poisson`, `negativeBinomial`, `geometric`, `hypergeometric`, `zeroInflated` (any count
+  base), `zeroInflatedPoisson`, `zeroInflatedNegativeBinomial`.
+- `multivariate/normal.ts`: `multivariateNormal` (covariance, precision or Cholesky, batched), `condition`,
+  `marginal`, `lowRankMultivariateNormal`, `matrixNormal`.
 - `multivariate/simplex.ts`: `dirichlet`, `multinomial`, `dirichletMultinomial`, `logisticNormal`.
 - `multivariate/matrix.ts`: `wishart`, `inverseWishart`, `lkjCholesky`.
 - `multivariate/directional.ts`: `vonMises`, `vonMisesFisher`, `powerSpherical`.
