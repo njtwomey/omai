@@ -948,15 +948,22 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   `clipByValue`, `addDecayedWeights`, `masked`, `multiTransform` (different optimisers per parameter group),
   `globalNorm`.
 - `first-order.ts`: `sgd` (momentum, Nesterov), `adagrad`, `rmsprop`, `adadelta`.
+- `sparse-updates.ts`: optimisers for sparse gradients (embeddings and very wide linear models): `sparseAdam` and lazy
+  Adagrad (moments updated only where the gradient is non-zero), SGD with L1 by cumulative penalty and truncated
+  gradient (Langford et al.), FTRL-Proximal (McMahan et al.) for per-coordinate L1 and L2.
 - `adaptive.ts`: `adam`, `adamw`, `adamax`, `nadam`, `radam`, `amsgrad`, `lion`, `lamb`, `adafactor`, `sophiaLite`.
 - `preconditioned.ts`: natural gradient, K-FAC for dense layers, Shampoo, gradient preconditioning helpers.
 - `variance-reduced.ts`: `sag`, `saga`, `svrg`, stochastic average gradient for finite sums (used by linear models).
 - `schedules.ts`: constant, step, exponential, inverse-time, cosine, warmup, one-cycle, piecewise, polynomial, cyclical.
-- `line-search.ts`: backtracking (Armijo), strong Wolfe, More-Thuente, with trial points recorded.
+- `line-search.ts`: backtracking (Armijo), strong Wolfe (with zoom by cubic interpolation), More-Thuente, Hager-Zhang,
+  with trial points recorded; the one-dimensional searches every second-order method uses.
 - `minimize/minimizer.ts`: `minimizer` (a transformation as an algorithm), `minimize(f, x0, { method })` (methods are
   function values, not strings), `MinimizeResult`.
 - `minimize/gradient.ts`: gradient descent, nonlinear conjugate gradient, coordinate descent.
-- `minimize/quasi-newton.ts`: `bfgs`, `lbfgs`, `lbfgsb`, `owlqn`.
+- `minimize/quasi-newton.ts`: `bfgs` (inverse-Hessian updates, damped), `lbfgs` (two-loop recursion, memory m),
+  `lbfgsb` (box constraints by projected search and the generalised Cauchy point), `owlqn` (Andrew and Gao 2007: the
+  pseudo-gradient of f + C |x|_1, orthant-wise projection of the search direction and of the line search), SR1 with a
+  trust region, each traced (objective, gradient norm, step, curvature pairs).
 - `minimize/newton.ts`: Newton with modified Cholesky, trust region (dogleg, Steihaug CG), Newton-CG.
 - `minimize/least-squares.ts`: Gauss-Newton, Levenberg-Marquardt, bounded least squares, `curveFit`.
 - `minimize/derivative-free.ts`: Nelder-Mead, Powell, pattern search, COBYLA.
@@ -1075,6 +1082,12 @@ oracle: HF tokenizers, tiktoken, nltk, scikit-learn, rapidfuzz, datasketch
 - `shingles.ts`: character k-shingles, word n-gram shingles, w-shingling, skip-grams, the hashed character n-grams of
   fastText (bucketed with FNV hashing), weighted shingles; one extractor shared by matching, fingerprinting and fastText.
 - `features.ts`: count, TF-IDF and hashing vectorisers, word and character n-grams, BM25 and BM25+ weighting.
+- `templates.ts`: feature-template languages for sequence labellers. CRF++ templates (Kudo 2005): `U` (unigram, conjoined
+  with the label) and `B` (bigram, conjoined with the label pair) lines, `%x[row,col]` macros over a token-by-attribute
+  table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. CRFsuite-style attribute
+  templates: windows of `(attribute, offset)` tuples joined into attribute strings (`w[-1]|w[0]`). Expansion over a
+  sequence, a `FeatureIndex` (string to id with counts and a minimum frequency, as CRF++'s `-f`), feature firing for
+  inspection.
 - `representations.ts`: co-occurrence counts, PMI and PPMI, LSA, SVD word vectors, random indexing, analogies, nearest
   words.
 - `similarity.ts`: Levenshtein, Damerau-Levenshtein, Jaro-Winkler, longest common subsequence, Needleman-Wunsch,
@@ -1850,7 +1863,12 @@ Each model is a probabilistic program plus the estimator users expect; its fast 
 built from: `probprog`, `pgm`, `dists`, `learn`
 - `hmm.ts`: hidden Markov models (categorical, Gaussian and mixture emissions): the program, Baum-Welch through the EM
   engine (traced), Viterbi, posterior states, sampling; the dishonest casino.
-- `crf.ts`: linear-chain CRF estimators (L-BFGS training, marginals, Viterbi), template features.
+- `crf.ts`: linear-chain CRF estimators on template features (`text/templates.ts`): marginals, Viterbi, scores,
+  posterior paths, top features and transition weights. Training with CRF++'s and CRFsuite's algorithms: L-BFGS with
+  L2 (CRF++ `-a CRF-L2`, `-c C`), OWL-QN with L1 (`CRF-L1`), SGD with an L2 schedule and with L1 by cumulative penalty
+  (Tsuruoka et al. 2009), averaged perceptron, passive-aggressive (PA, PA-I, PA-II), AROW, and MIRA (CRF++ `-a MIRA`);
+  each a traced run (objective, active features, per-epoch accuracy). Feature counts and frequency cut-offs as CRF++.
+- `crf-examples.ts`: worked taggers (toy chunking, hyphenation as character tagging) with their template files.
 - `topic.ts`: LDA as a program (collapsed Gibbs and variational engines, traced), labelled LDA, perplexity, top words.
 - `topic-extensions.ts`: pLSA, HDP, correlated and dynamic topic models.
 - `conjugate.ts`: conjugate models with closed-form posteriors and predictives (beta-binomial, gamma-Poisson,
