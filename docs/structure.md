@@ -1539,8 +1539,13 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `training/fit.ts`: `fitAlgorithm` and `fit` (minibatch epochs, gradient clipping and accumulation, early stopping,
   validation metrics, divergence detection); records loss, metrics, learning rate and, by policy, per-layer gradient
   and parameter norms, gradients and activations.
-- `training/callbacks.ts`: trace-driven hooks: early stopping, learning-rate reduction on plateau, best-checkpoint
-  keeping, activation taps.
+- `training/callbacks.ts`: Lightning-style hooks without Lightning's machinery: a `Callback` implements any of
+  `onTrainStart`, `onEpochStart`, `onBatchStart`, `onAfterBackward` (with gradients), `onBeforeOptimizerStep` (with
+  gradients and updates), `onBatchEnd`, `onEpochEnd`, `onValidationEnd` (with validation metrics) and `onTrainEnd`; each
+  hook gets `log(name, value)` and `logTensor` (into the run's trace, like `self.log`) and `stop(reason)`. Built-ins:
+  `gradNormLogger` (global and per parameter), `paramNormLogger`, `valueLogger` (gradient and parameter tensors),
+  `learningRateMonitor`, `earlyStopping`, `bestCheckpoint`; to come: learning-rate reduction on plateau, activation
+  taps.
 - `training/serialise.ts`: saving and loading parameters (JSON with dtype and shape), loading weights exported by the
   oracle.
 - `language-model.ts`: the `LanguageModel` contract (tokenizer, `logits(tokens)`, optional embeddings and generation),
