@@ -20,6 +20,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/base': () => import('whitebox-engine/base'),
   'whitebox-engine/context': () => import('whitebox-engine/context'),
   'whitebox-engine/numerics': () => import('whitebox-engine/numerics'),
+  'whitebox-engine/numerics/linalg': () => import('whitebox-engine/numerics/linalg'),
   'whitebox-engine/numerics/special': () => import('whitebox-engine/numerics/special'),
   'whitebox-engine/random': () => import('whitebox-engine/random'),
   'whitebox-engine/scene': () => import('whitebox-engine/scene'),

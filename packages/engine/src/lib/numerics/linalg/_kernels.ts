@@ -1,0 +1,357 @@
+// Dense kernels on single row-major matrices (Float64Array): the textbook algorithms, as in Golub and Van Loan.
+// The primitives in this folder apply them matrix by matrix over batch axes.
+import { WhiteboxError } from '../../base/index.ts'
+
+const EPS = 2.220446049250313e-16
+
+/** (A + A^T) / 2 of an n x n matrix: the factorisations of symmetric matrices read A through this. */
+function symmetrised(a: Float64Array, n: number): Float64Array {
+  const s = new Float64Array(n * n)
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) s[i * n + j] = 0.5 * ((a[i * n + j] ?? 0) + (a[j * n + i] ?? 0))
+  return s
+}
+
+/**
+ * Cholesky factor L (lower, A = L L^T) of the symmetric part of an n x n matrix (identical to reading the lower triangle
+ * when A is symmetric, and consistent with the derivative rule, which treats A as symmetric); throws when not positive
+ * definite.
+ */
+export function choleskyKernel(input: Float64Array, n: number): Float64Array {
+  const a = symmetrised(input, n)
+  const l = new Float64Array(n * n)
+  for (let j = 0; j < n; j++) {
+    let d = a[j * n + j] ?? 0
+    for (let k = 0; k < j; k++) d -= (l[j * n + k] ?? 0) ** 2
+    if (!(d > 0)) throw new WhiteboxError('value', 'cholesky: matrix is not positive definite')
+    const ljj = Math.sqrt(d)
+    l[j * n + j] = ljj
+    for (let i = j + 1; i < n; i++) {
+      let s = a[i * n + j] ?? 0
+      for (let k = 0; k < j; k++) s -= (l[i * n + k] ?? 0) * (l[j * n + k] ?? 0)
+      l[i * n + j] = s / ljj
+    }
+  }
+  return l
+}
+
+/** Options of a triangular solve: which triangle of A is used, whether to solve with A^T, and a unit diagonal. */
+export interface TriangularOptions {
+  readonly lower: boolean
+  readonly transpose: boolean
+  readonly unitDiagonal: boolean
+}
+
+/** X with op(T) X = B, T the given triangle of an n x n matrix, B n x k. */
+export function triangularKernel(
+  t: Float64Array,
+  b: Float64Array,
+  n: number,
+  k: number,
+  o: TriangularOptions,
+): Float64Array {
+  const x = Float64Array.from(b)
+  const at = (i: number, j: number): number => (o.transpose ? (t[j * n + i] ?? 0) : (t[i * n + j] ?? 0))
+  // Solving with the transpose of a lower triangle is an upper-triangular solve, and vice versa.
+  const forward = o.lower !== o.transpose
+  for (let c = 0; c < k; c++) {
+    for (let step = 0; step < n; step++) {
+      const i = forward ? step : n - 1 - step
+      let s = x[i * k + c] ?? 0
+      if (forward) for (let j = 0; j < i; j++) s -= at(i, j) * (x[j * k + c] ?? 0)
+      else for (let j = i + 1; j < n; j++) s -= at(i, j) * (x[j * k + c] ?? 0)
+      x[i * k + c] = o.unitDiagonal ? s : s / at(i, i)
+    }
+  }
+  return x
+}
+
+/** LU with partial pivoting: P A = L U, returned packed (unit L below the diagonal, U on and above) with the row order. */
+export function luKernel(a: Float64Array, n: number): { lu: Float64Array; perm: Int32Array; sign: number } {
+  const lu = Float64Array.from(a)
+  const perm = Int32Array.from({ length: n }, (_, i) => i)
+  let sign = 1
+  for (let j = 0; j < n; j++) {
+    let p = j
+    let best = Math.abs(lu[j * n + j] ?? 0)
+    for (let i = j + 1; i < n; i++) {
+      const v = Math.abs(lu[i * n + j] ?? 0)
+      if (v > best) {
+        best = v
+        p = i
+      }
+    }
+    if (p !== j) {
+      for (let c = 0; c < n; c++) {
+        const tmp = lu[j * n + c] ?? 0
+        lu[j * n + c] = lu[p * n + c] ?? 0
+        lu[p * n + c] = tmp
+      }
+      const tp = perm[j] ?? 0
+      perm[j] = perm[p] ?? 0
+      perm[p] = tp
+      sign = -sign
+    }
+    const pivot = lu[j * n + j] ?? 0
+    if (pivot === 0) continue
+    for (let i = j + 1; i < n; i++) {
+      const f = (lu[i * n + j] ?? 0) / pivot
+      lu[i * n + j] = f
+      for (let c = j + 1; c < n; c++) lu[i * n + c] = (lu[i * n + c] ?? 0) - f * (lu[j * n + c] ?? 0)
+    }
+  }
+  return { lu, perm, sign }
+}
+
+/** X with A X = B (A n x n, B n x k), by LU with partial pivoting; throws for an exactly singular matrix. */
+export function solveKernel(a: Float64Array, b: Float64Array, n: number, k: number): Float64Array {
+  const { lu, perm } = luKernel(a, n)
+  for (let i = 0; i < n; i++) {
+    if ((lu[i * n + i] ?? 0) === 0) throw new WhiteboxError('value', 'solve: matrix is singular')
+  }
+  const pb = new Float64Array(n * k)
+  for (let i = 0; i < n; i++) for (let c = 0; c < k; c++) pb[i * k + c] = b[(perm[i] ?? 0) * k + c] ?? 0
+  const y = triangularKernel(lu, pb, n, k, { lower: true, transpose: false, unitDiagonal: true })
+  return triangularKernel(lu, y, n, k, { lower: false, transpose: false, unitDiagonal: false })
+}
+
+/** Sign and log |det| from LU (sign 0 and -inf for a singular matrix). */
+export function slogdetKernel(a: Float64Array, n: number): { sign: number; logabsdet: number } {
+  const { lu, sign } = luKernel(a, n)
+  let s = sign
+  let log = 0
+  for (let i = 0; i < n; i++) {
+    const d = lu[i * n + i] ?? 0
+    if (d === 0) return { sign: 0, logabsdet: Number.NEGATIVE_INFINITY }
+    if (d < 0) s = -s
+    log += Math.log(Math.abs(d))
+  }
+  return { sign: s, logabsdet: log }
+}
+
+/** Reduced QR by Householder reflections: Q (m x k, orthonormal columns) and R (k x n, upper), k = min(m, n). */
+export function qrKernel(a: Float64Array, m: number, n: number): { q: Float64Array; r: Float64Array } {
+  const k = Math.min(m, n)
+  const work = Float64Array.from(a)
+  const vs: Float64Array[] = []
+  for (let j = 0; j < k; j++) {
+    const v = new Float64Array(m - j)
+    let norm = 0
+    for (let i = j; i < m; i++) norm += (work[i * n + j] ?? 0) ** 2
+    norm = Math.sqrt(norm)
+    const x0 = work[j * n + j] ?? 0
+    // As LAPACK's dlarfg: no reflection when nothing below the diagonal needs eliminating (this keeps the sign of R_jj).
+    if (norm === 0 || norm === Math.abs(x0)) {
+      vs.push(v)
+      continue
+    }
+    // alpha = -sign(x0) |x| (LAPACK's choice, which avoids cancellation in x0 - alpha).
+    const alpha = x0 >= 0 ? -norm : norm
+    for (let i = j; i < m; i++) v[i - j] = work[i * n + j] ?? 0
+    v[0] = (v[0] ?? 0) - alpha
+    let vn = 0
+    for (const e of v) vn += e * e
+    vn = Math.sqrt(vn)
+    for (let i = 0; i < v.length; i++) v[i] = (v[i] ?? 0) / vn
+    for (let c = j; c < n; c++) {
+      let d = 0
+      for (let i = j; i < m; i++) d += (v[i - j] ?? 0) * (work[i * n + c] ?? 0)
+      for (let i = j; i < m; i++) work[i * n + c] = (work[i * n + c] ?? 0) - 2 * (v[i - j] ?? 0) * d
+    }
+    vs.push(v)
+  }
+  const r = new Float64Array(k * n)
+  for (let i = 0; i < k; i++) for (let c = i; c < n; c++) r[i * n + c] = work[i * n + c] ?? 0
+  // Q = H_0 H_1 ... H_{k-1} applied to the first k columns of the identity.
+  const q = new Float64Array(m * k)
+  for (let i = 0; i < k; i++) q[i * k + i] = 1
+  for (let j = k - 1; j >= 0; j--) {
+    const v = vs[j] as Float64Array
+    for (let c = 0; c < k; c++) {
+      let d = 0
+      for (let i = j; i < m; i++) d += (v[i - j] ?? 0) * (q[i * k + c] ?? 0)
+      for (let i = j; i < m; i++) q[i * k + c] = (q[i * k + c] ?? 0) - 2 * (v[i - j] ?? 0) * d
+    }
+  }
+  return { q, r }
+}
+
+/** Flip each column so that its entry of largest magnitude is positive (a fixed sign convention for vectors). */
+function normaliseColumns(v: Float64Array, rows: number, cols: number, also?: Float64Array, alsoRows?: number): void {
+  for (let c = 0; c < cols; c++) {
+    let best = 0
+    for (let i = 0; i < rows; i++) if (Math.abs(v[i * cols + c] ?? 0) > Math.abs(best)) best = v[i * cols + c] ?? 0
+    if (best < 0) {
+      for (let i = 0; i < rows; i++) v[i * cols + c] = -(v[i * cols + c] ?? 0)
+      if (also !== undefined && alsoRows !== undefined) {
+        for (let i = 0; i < alsoRows; i++) also[i * cols + c] = -(also[i * cols + c] ?? 0)
+      }
+    }
+  }
+}
+
+/**
+ * Symmetric eigendecomposition by the cyclic Jacobi method, of the symmetric part of A: eigenvalues ascending,
+ * eigenvectors as columns, each with its largest-magnitude entry positive.
+ */
+export function eighKernel(a: Float64Array, n: number): { w: Float64Array; v: Float64Array } {
+  const s = symmetrised(a, n)
+  const v = new Float64Array(n * n)
+  for (let i = 0; i < n; i++) v[i * n + i] = 1
+  for (let sweep = 0; sweep < 100; sweep++) {
+    let off = 0
+    let total = 0
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        const e = (s[i * n + j] ?? 0) ** 2
+        total += e
+        if (i !== j) off += e
+      }
+    }
+    if (off <= EPS * EPS * total) break
+    for (let p = 0; p < n - 1; p++) {
+      for (let q = p + 1; q < n; q++) {
+        const apq = s[p * n + q] ?? 0
+        if (apq === 0) continue
+        const app = s[p * n + p] ?? 0
+        const aqq = s[q * n + q] ?? 0
+        const theta = (aqq - app) / (2 * apq)
+        const t = (theta >= 0 ? 1 : -1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1))
+        const c = 1 / Math.sqrt(t * t + 1)
+        const sn = t * c
+        for (let r = 0; r < n; r++) {
+          const arp = s[r * n + p] ?? 0
+          const arq = s[r * n + q] ?? 0
+          s[r * n + p] = c * arp - sn * arq
+          s[r * n + q] = sn * arp + c * arq
+        }
+        for (let r = 0; r < n; r++) {
+          const apr = s[p * n + r] ?? 0
+          const aqr = s[q * n + r] ?? 0
+          s[p * n + r] = c * apr - sn * aqr
+          s[q * n + r] = sn * apr + c * aqr
+        }
+        for (let r = 0; r < n; r++) {
+          const vrp = v[r * n + p] ?? 0
+          const vrq = v[r * n + q] ?? 0
+          v[r * n + p] = c * vrp - sn * vrq
+          v[r * n + q] = sn * vrp + c * vrq
+        }
+      }
+    }
+  }
+  const order = Array.from({ length: n }, (_, i) => i).sort((i, j) => (s[i * n + i] ?? 0) - (s[j * n + j] ?? 0))
+  const w = Float64Array.from(order, (i) => s[i * n + i] ?? 0)
+  const sorted = new Float64Array(n * n)
+  order.forEach((src, dst) => {
+    for (let r = 0; r < n; r++) sorted[r * n + dst] = v[r * n + src] ?? 0
+  })
+  normaliseColumns(sorted, n, n)
+  return { w, v: sorted }
+}
+
+/** Complete the columns j >= rank of an m x k matrix with orthonormal columns to an orthonormal set (Gram-Schmidt). */
+function completeColumns(u: Float64Array, m: number, k: number, filled: readonly boolean[]): void {
+  let candidate = 0
+  for (let c = 0; c < k; c++) {
+    if (filled[c]) continue
+    while (candidate < m) {
+      const x = new Float64Array(m)
+      x[candidate++] = 1
+      for (let d = 0; d < k; d++) {
+        if (!filled[d]) continue
+        let dot = 0
+        for (let i = 0; i < m; i++) dot += (u[i * k + d] ?? 0) * (x[i] ?? 0)
+        for (let i = 0; i < m; i++) x[i] = (x[i] ?? 0) - dot * (u[i * k + d] ?? 0)
+      }
+      let norm = 0
+      for (const e of x) norm += e * e
+      norm = Math.sqrt(norm)
+      if (norm > 1e-8) {
+        for (let i = 0; i < m; i++) u[i * k + c] = (x[i] ?? 0) / norm
+        ;(filled as boolean[])[c] = true
+        break
+      }
+    }
+  }
+}
+
+/** Reduced SVD of a tall or square matrix (m >= n) by one-sided Jacobi: U (m x n), s (n, descending), V (n x n). */
+function svdTall(a: Float64Array, m: number, n: number): { u: Float64Array; s: Float64Array; v: Float64Array } {
+  const u = Float64Array.from(a)
+  const v = new Float64Array(n * n)
+  for (let i = 0; i < n; i++) v[i * n + i] = 1
+  for (let sweep = 0; sweep < 100; sweep++) {
+    let rotated = false
+    for (let p = 0; p < n - 1; p++) {
+      for (let q = p + 1; q < n; q++) {
+        let alpha = 0
+        let beta = 0
+        let gamma = 0
+        for (let i = 0; i < m; i++) {
+          const up = u[i * n + p] ?? 0
+          const uq = u[i * n + q] ?? 0
+          alpha += up * up
+          beta += uq * uq
+          gamma += up * uq
+        }
+        if (gamma === 0 || Math.abs(gamma) <= EPS * Math.sqrt(alpha * beta)) continue
+        rotated = true
+        const zeta = (beta - alpha) / (2 * gamma)
+        const t = (zeta >= 0 ? 1 : -1) / (Math.abs(zeta) + Math.sqrt(1 + zeta * zeta))
+        const c = 1 / Math.sqrt(1 + t * t)
+        const sn = c * t
+        for (let i = 0; i < m; i++) {
+          const up = u[i * n + p] ?? 0
+          const uq = u[i * n + q] ?? 0
+          u[i * n + p] = c * up - sn * uq
+          u[i * n + q] = sn * up + c * uq
+        }
+        for (let i = 0; i < n; i++) {
+          const vp = v[i * n + p] ?? 0
+          const vq = v[i * n + q] ?? 0
+          v[i * n + p] = c * vp - sn * vq
+          v[i * n + q] = sn * vp + c * vq
+        }
+      }
+    }
+    if (!rotated) break
+  }
+  const norms = Array.from({ length: n }, (_, c) => {
+    let s = 0
+    for (let i = 0; i < m; i++) s += (u[i * n + c] ?? 0) ** 2
+    return Math.sqrt(s)
+  })
+  const order = norms.map((_, i) => i).sort((i, j) => (norms[j] ?? 0) - (norms[i] ?? 0))
+  const s = Float64Array.from(order, (i) => norms[i] ?? 0)
+  const largest = s[0] ?? 0
+  const uo = new Float64Array(m * n)
+  const vo = new Float64Array(n * n)
+  const filled: boolean[] = []
+  order.forEach((src, dst) => {
+    const sv = norms[src] ?? 0
+    const keep = sv > largest * EPS * Math.max(m, n) && sv > 0
+    filled.push(keep)
+    for (let i = 0; i < m; i++) uo[i * n + dst] = keep ? (u[i * n + src] ?? 0) / sv : 0
+    for (let i = 0; i < n; i++) vo[i * n + dst] = v[i * n + src] ?? 0
+  })
+  completeColumns(uo, m, n, filled)
+  normaliseColumns(uo, m, n, vo, n)
+  return { u: uo, s, v: vo }
+}
+
+/** Reduced SVD A = U diag(s) V^T: U (m x k), s (k, descending), V (n x k), k = min(m, n). */
+export function svdKernel(
+  a: Float64Array,
+  m: number,
+  n: number,
+): { u: Float64Array; s: Float64Array; v: Float64Array } {
+  if (m >= n) return svdTall(a, m, n)
+  // A^T = U' S V'^T, so A = V' S U'^T.
+  const at = new Float64Array(n * m)
+  for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) at[j * m + i] = a[i * n + j] ?? 0
+  const t = svdTall(at, n, m)
+  // The same sign convention as the tall case: each column of U has its largest entry positive.
+  normaliseColumns(t.v, m, m, t.u, n)
+  return { u: t.v, s: t.s, v: t.u }
+}

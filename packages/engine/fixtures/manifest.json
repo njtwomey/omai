@@ -2,6 +2,64 @@
   "schema": "whitebox.fixtures/1",
   "fixtures": [
     {
+      "fixture": "numerics/linalg/basics.json",
+      "source": "oracle/cases/numerics/linalg/basics.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "numerics/linalg/cholesky.json",
+      "source": "oracle/cases/numerics/linalg/cholesky.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "numerics/linalg/eigh.json",
+      "source": "oracle/cases/numerics/linalg/eigh.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "numerics/linalg/lu.json",
+      "source": "oracle/cases/numerics/linalg/lu.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "numerics/linalg/qr.json",
+      "source": "oracle/cases/numerics/linalg/qr.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "numerics/linalg/svd.json",
+      "source": "oracle/cases/numerics/linalg/svd.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "numerics/linalg/triangular.json",
+      "source": "oracle/cases/numerics/linalg/triangular.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "numerics/special/bessel.json",
       "source": "oracle/cases/numerics/special/bessel.py",
       "reference": {

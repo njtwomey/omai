@@ -50,3 +50,21 @@ def reference(
 ) -> Case:
     """A case whose expected output is a prebuilt numpy or scipy function applied to the inputs."""
     return case(name, fn, inputs, np.asarray(f(*inputs), dtype=np.float64), rtol=rtol, atol=atol, **params)
+
+
+def spd(g: np.random.Generator, n: int, batch: tuple[int, ...] = ()) -> FloatArray:
+    """A random symmetric positive-definite matrix (M M^T + n I), well conditioned."""
+    m = g.normal(size=(*batch, n, n))
+    return m @ np.swapaxes(m, -1, -2) + n * np.eye(n)
+
+
+def well_conditioned(g: np.random.Generator, m: int, n: int, batch: tuple[int, ...] = ()) -> FloatArray:
+    """A random matrix with a strong diagonal, so square ones are comfortably invertible."""
+    return g.normal(size=(*batch, m, n)) + 3 * np.eye(m, n)
+
+
+def sign_fixed(v: FloatArray) -> FloatArray:
+    """Flip each column so that its largest-magnitude entry is positive (the convention whitebox-js uses)."""
+    idx = np.argmax(np.abs(v), axis=-2, keepdims=True)
+    signs = np.sign(np.take_along_axis(v, idx, axis=-2))
+    return v * np.where(signs == 0, 1, signs)
