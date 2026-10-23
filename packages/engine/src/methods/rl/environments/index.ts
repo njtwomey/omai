@@ -2,4 +2,5 @@
 export * from './bandits.ts'
 export * from './classic-control.ts'
 export * from './gridworlds.ts'
+export * from './minatar.ts'
 export * from './toy-text.ts'
