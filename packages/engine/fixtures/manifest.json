@@ -405,6 +405,15 @@
       "cases": 36
     },
     {
+      "fixture": "rl/evaluation.json",
+      "source": "oracle/cases/rl/evaluation.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 45
+    },
+    {
       "fixture": "rl/mdp.json",
       "source": "oracle/cases/rl/mdp.py",
       "reference": {
