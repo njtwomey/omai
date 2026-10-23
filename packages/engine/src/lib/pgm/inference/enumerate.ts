@@ -1,42 +1,52 @@
-import { allAssignments, type Factor, factor } from '../factor.ts'
-import { type BayesNet, bayesNode, jointProbability } from '../models/bayes-net.ts'
+import { logSumExpOf } from '../../base/index.ts'
+import { allAssignments, type Factor, logFactor } from '../factor.ts'
+import {
+  type DiscreteModel,
+  evidenceIndices,
+  modelVariable,
+  modelVariables,
+  unnormalisedLogProbability,
+} from '../models/factor-graph.ts'
 
 /**
  * Exact inference by brute-force enumeration of every joint assignment (exponential; the reference other inference
- * algorithms are checked against).
+ * algorithms are checked against). Works for any discrete model.
  *
- * @param bn - The network.
+ * @param model - The model.
  * @param query - The query variables.
- * @param evidence - Observed state indices by variable.
- * @returns The normalised posterior over the query.
+ * @param evidence - Observed states (names or indices) by variable.
+ * @returns The normalised posterior over the query, in query order.
+ * @concept exact-inference
  * @example
  * ```ts
  * import { bayesNet, enumerate, factorValues } from 'whitebox-engine/pgm'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.3, 0.7] }])
- * factorValues(enumerate(bn, ['a'])) // => [0.3, 0.7]
+ * factorValues(enumerate(bn, ['a'])).map((p) => Math.round(p * 10) / 10) // => [0.3, 0.7]
  * ```
  */
 export function enumerate(
-  bn: BayesNet,
+  model: DiscreteModel,
   query: readonly string[],
-  evidence: Readonly<Record<string, number>> = {},
+  evidence: Readonly<Record<string, string | number>> = {},
 ): Factor {
-  const names = bn.nodes.map((n) => n.name)
-  const card = bn.nodes.map((n) => n.states.length)
-  const qcard = query.map((q) => bayesNode(bn, q).states.length)
-  const table = new Float64Array(qcard.reduce((a, b) => a * b, 1))
-  for (const a of allAssignments(names, card)) {
-    if (Object.entries(evidence).some(([k, v]) => a[k] !== v)) continue
+  const ev = evidenceIndices(model, evidence)
+  const variables = modelVariables(model)
+  const qcard = query.map((q) => modelVariable(model, q).states.length)
+  const cells: number[][] = Array.from({ length: qcard.reduce((a, b) => a * b, 1) }, () => [])
+  for (const a of allAssignments(
+    variables.map((v) => v.name),
+    variables.map((v) => v.states.length),
+  )) {
+    if (Object.entries(ev).some(([k, v]) => a[k] !== v)) continue
     let idx = 0
-    query.forEach((q, k) => {
-      idx = idx * (qcard[k] ?? 1) + (a[q] ?? 0)
-    })
-    table[idx] = (table[idx] ?? 0) + jointProbability(bn, a)
+    for (const [k, q] of query.entries()) idx = idx * (qcard[k] ?? 1) + (a[q] ?? 0)
+    cells[idx]?.push(unnormalisedLogProbability(model, a))
   }
-  const total = table.reduce((s, v) => s + v, 0)
-  return factor(
+  const logs = cells.map(logSumExpOf)
+  const total = logSumExpOf(logs)
+  return logFactor(
     query,
     qcard,
-    table.map((v) => v / total),
+    logs.map((l) => l - total),
   )
 }

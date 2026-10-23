@@ -381,12 +381,44 @@
       "cases": 11
     },
     {
+      "fixture": "pgm/inference/elimination.json",
+      "source": "oracle/cases/pgm/inference/elimination.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "pgm/models/bayes_net.json",
+      "source": "oracle/cases/pgm/models/bayes_net.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "pgm/models/markov_network.json",
+      "source": "oracle/cases/pgm/models/markov_network.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 22
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {
         "pgmpy": "1.1.2"
       },
       "cases": 36
+    },
+    {
+      "fixture": "pgm/triangulation.json",
+      "source": "oracle/cases/pgm/triangulation.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 9
     },
     {
       "fixture": "tensor/ops/arithmetic.json",

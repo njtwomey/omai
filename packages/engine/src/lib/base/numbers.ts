@@ -235,3 +235,45 @@ export function linspaceNumbers(start: number, stop: number, n = 50): number[] {
   const step = (stop - start) / (n - 1)
   return Array.from({ length: n }, (_, i) => (i === n - 1 ? stop : start + i * step))
 }
+
+/**
+ * log(exp(a) + exp(b)) on plain numbers, without overflow (numpy.logaddexp for scalars; the tensor op is
+ * `numerics/special` `logaddexp`).
+ *
+ * @param a - First log value.
+ * @param b - Second log value.
+ * @returns The log of the sum; `-Infinity` when both are `-Infinity`.
+ * @example
+ * ```ts
+ * import { logAddExp } from 'whitebox-engine/base'
+ * logAddExp(0, 0) === Math.LN2 // => true
+ * logAddExp(-Infinity, 2) // => 2
+ * ```
+ */
+export function logAddExp(a: number, b: number): number {
+  if (a === Number.NEGATIVE_INFINITY) return b
+  if (b === Number.NEGATIVE_INFINITY) return a
+  if (a === Number.POSITIVE_INFINITY || b === Number.POSITIVE_INFINITY) return Number.POSITIVE_INFINITY
+  return a > b ? a + Math.log1p(Math.exp(b - a)) : b + Math.log1p(Math.exp(a - b))
+}
+
+/**
+ * log(sum(exp(x))) of a list of plain numbers, shifted by the maximum (scipy.special.logsumexp on a 1-D array; the
+ * tensor op is `tensor` `logsumexp`).
+ *
+ * @param xs - Log values.
+ * @returns The log of the sum of their exponentials; `-Infinity` for an empty list or all `-Infinity`.
+ * @example
+ * ```ts
+ * import { logSumExpOf } from 'whitebox-engine/base'
+ * logSumExpOf([0, 0, 0, 0]) === Math.log(4) // => true
+ * logSumExpOf([]) // => -Infinity
+ * ```
+ */
+export function logSumExpOf(xs: ArrayLike<number>): number {
+  const m = maxOf(xs)
+  if (!Number.isFinite(m)) return m
+  let s = 0
+  for (let i = 0; i < xs.length; i++) s += Math.exp((xs[i] ?? Number.NEGATIVE_INFINITY) - m)
+  return m + Math.log(s)
+}
