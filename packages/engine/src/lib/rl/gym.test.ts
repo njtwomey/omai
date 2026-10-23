@@ -15,6 +15,10 @@ describe('make and the registry', () => {
     }
     expect(listEnvironments({ x: 1, y: 'no', cartPole }).map((d) => d.id)).toEqual(['CartPole-v1'])
     expect(isEnvDefinition({ id: 'a', description: 'b' })).toBe(false)
+    // Multi-agent definitions name their form and are not single-agent environments.
+    const create = (): null => null
+    expect(isEnvDefinition({ id: 'a', description: 'b', create })).toBe(true)
+    expect(isEnvDefinition({ id: 'a', description: 'b', create, multiAgent: 'aec' })).toBe(false)
   })
 
   it('makes by id, applies the time limit, overrides or disables it, and wraps', () => {
