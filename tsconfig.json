@@ -1,5 +1,11 @@
 {
   "extends": "./tsconfig.base.json",
-  "compilerOptions": { "noEmit": true, "types": ["node"], "isolatedDeclarations": false, "declaration": false, "declarationMap": false },
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "isolatedDeclarations": false,
+    "declaration": false,
+    "declarationMap": false
+  },
   "include": ["scripts", "vitest.config.ts"]
 }
