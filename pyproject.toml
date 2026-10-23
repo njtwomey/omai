@@ -35,3 +35,9 @@ pythonVersion = "3.13"
 # Resolve `whitebox_oracle` as local source, not as an installed library without a py.typed marker.
 extraPaths = ["oracle"]
 typeCheckingMode = "strict"
+# Our own signatures are fully annotated (ruff ANN) and checked strictly. Several oracle libraries (scikit-learn,
+# statsmodels, pgmpy, gymnasium) ship no type information, so types inferred through them are not checked.
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false

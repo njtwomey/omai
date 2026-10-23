@@ -19,6 +19,22 @@
       "cases": 20
     },
     {
+      "fixture": "losses/losses.json",
+      "source": "oracle/cases/losses/losses.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 31
+    },
+    {
+      "fixture": "metrics/regression.json",
+      "source": "oracle/cases/metrics/regression.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 38
+    },
+    {
       "fixture": "numerics/linalg/basics.json",
       "source": "oracle/cases/numerics/linalg/basics.py",
       "reference": {
