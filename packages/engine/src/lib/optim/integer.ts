@@ -539,6 +539,51 @@ export function knapsack(
     }
     return pick(items)
   }
+  const { state } = runAlgorithm(knapsackAlgorithm(values, weights, capacity), { maxSteps: 2 ** 31 - 1 })
+  return { ...pick([...state.bestItems]), nodes: state.nodes }
+}
+
+/** One open node of the knapsack search: the next item position, value and room so far, and the items taken. */
+interface KnapsackNode {
+  readonly k: number
+  readonly value: number
+  readonly room: number
+  readonly items: readonly number[]
+}
+
+/** The state of {@link knapsackAlgorithm}. */
+export interface KnapsackState {
+  readonly stack: readonly KnapsackNode[]
+  readonly bestValue: number
+  readonly bestItems: readonly number[]
+  readonly nodes: number
+  /** The last node: its depth, value and fractional bound, and whether it was pruned. */
+  readonly last?: { readonly depth: number; readonly value: number; readonly bound: number; readonly pruned: boolean }
+}
+
+/**
+ * Depth-first branch and bound for the 0-1 knapsack, as a traced algorithm: items in decreasing value density, each
+ * step takes one node, updates the incumbent, prunes it when the fractional (Dantzig) bound cannot beat the incumbent,
+ * and otherwise branches on taking the next item or not. Records the incumbent, the open nodes and each node.
+ *
+ * @param values - Item values.
+ * @param weights - Item weights.
+ * @param capacity - The capacity.
+ * @returns The algorithm.
+ * @concept integer-programming
+ * @example
+ * ```ts
+ * import { knapsackAlgorithm } from 'whitebox-engine/optim'
+ * import { runAlgorithm } from 'whitebox-engine/trace'
+ * runAlgorithm(knapsackAlgorithm([60, 100, 120], [10, 20, 30], 50), { maxSteps: 100 }).state.bestValue // => 220
+ * ```
+ */
+export function knapsackAlgorithm(
+  values: ArrayLike<number>,
+  weights: ArrayLike<number>,
+  capacity: number,
+): Algorithm<KnapsackState> {
+  const n = values.length
   const order = Array.from({ length: n }, (_, i) => i).sort(
     (a, b) => (values[b] ?? 0) / (weights[b] || 1e-300) - (values[a] ?? 0) / (weights[a] || 1e-300),
   )
@@ -555,31 +600,55 @@ export function knapsack(
     }
     return v
   }
-  let bestValue = 0
-  let bestItems: number[] = []
-  let nodes = 0
-  const stack: { k: number; value: number; room: number; items: number[] }[] = [
-    { k: 0, value: 0, room: capacity, items: [] },
-  ]
-  while (stack.length > 0) {
-    const node = stack.pop() as { k: number; value: number; room: number; items: number[] }
-    nodes += 1
-    if (node.value > bestValue) {
-      bestValue = node.value
-      bestItems = node.items
-    }
-    if (node.k >= n || bound(node.k, node.value, node.room) <= bestValue) continue
-    const i = order[node.k] ?? 0
-    stack.push({ k: node.k + 1, value: node.value, room: node.room, items: node.items })
-    if ((weights[i] ?? 0) <= node.room)
-      stack.push({
-        k: node.k + 1,
-        value: node.value + (values[i] ?? 0),
-        room: node.room - (weights[i] ?? 0),
-        items: [...node.items, i],
-      })
+  return {
+    name: 'knapsackBranchAndBound',
+    config: { items: n, capacity },
+    schema: channels({
+      metrics: {
+        incumbent: { description: 'best value found', direction: 'higher' },
+        open: { description: 'open nodes' },
+        bound: { description: 'fractional (Dantzig) bound at the last node' },
+      },
+      messages: { node: { description: 'a processed node: depth, value, bound and whether it was pruned' } },
+    }),
+    init: () => ({ stack: [{ k: 0, value: 0, room: capacity, items: [] }], bestValue: 0, bestItems: [], nodes: 0 }),
+    step: (s) => {
+      const stack = [...s.stack]
+      const node = stack.pop() as KnapsackNode
+      const better = node.value > s.bestValue
+      const bestValue = better ? node.value : s.bestValue
+      const bestItems = better ? node.items : s.bestItems
+      const b = node.k >= n ? node.value : bound(node.k, node.value, node.room)
+      const pruned = node.k >= n || b <= bestValue
+      if (!pruned) {
+        const i = order[node.k] ?? 0
+        stack.push({ k: node.k + 1, value: node.value, room: node.room, items: node.items })
+        if ((weights[i] ?? 0) <= node.room)
+          stack.push({
+            k: node.k + 1,
+            value: node.value + (values[i] ?? 0),
+            room: node.room - (weights[i] ?? 0),
+            items: [...node.items, i],
+          })
+      }
+      return {
+        stack,
+        bestValue,
+        bestItems,
+        nodes: s.nodes + 1,
+        last: { depth: node.k, value: node.value, bound: b, pruned },
+      }
+    },
+    done: (s) => (s.stack.length === 0 ? 'converged' : undefined),
+    observe: (s) => ({
+      metrics: {
+        incumbent: s.bestValue,
+        open: s.stack.length,
+        ...(s.last === undefined ? {} : { bound: s.last.bound }),
+      },
+      ...(s.last === undefined ? {} : { messages: [{ kind: 'node', payload: { ...s.last } }] }),
+    }),
   }
-  return { ...pick(bestItems), nodes }
 }
 
 /** Result of {@link setCover}. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
 import { type Tensor, toArray, toFlat } from '../tensor/index.ts'
-import { messages, metricSeries, recorder, tracePolicy } from '../trace/index.ts'
+import { messages, metricSeries, recorder, runAlgorithm, tracePolicy } from '../trace/index.ts'
 import * as O from './index.ts'
 
 type Out = Readonly<Record<string, unknown>>
@@ -111,6 +111,15 @@ describe('branch and bound', () => {
     expect(O.milp({ c: [-1], integrality: 1 }).status).toBe('unbounded')
     const limited = O.milp({ c: [-1, -1, -1], aUb: [[2, 2, 2]], bUb: [5] }, { strategy: 'depth-first', maxNodes: 1 })
     expect(limited.status).toBe('node limit')
+  })
+
+  it('traces the knapsack search node by node', () => {
+    const rec = recorder()
+    const alg = O.knapsackAlgorithm([60, 100, 120, 30], [10, 20, 30, 15], 50)
+    const r = runAlgorithm(alg, { maxSteps: 1000, tracer: rec, policy: tracePolicy({ messages: true }) })
+    expect(r.state.bestValue).toBe(220)
+    expect(messages(rec.run(), 'node')).toHaveLength(r.state.nodes)
+    expect(metricSeries(rec.run(), 'incumbent').values.at(-1)).toBe(220)
   })
 
   it('knapsack edge cases', () => {

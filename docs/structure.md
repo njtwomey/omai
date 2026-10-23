@@ -1033,7 +1033,8 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   and slack Z); for teaching and small models.
 - `integer.ts`: `milp` and `milpAlgorithm` (branch and bound on simplex relaxations as child runs, best-first or
   depth-first, incumbent, bound and gap, Gomory mixed-integer cuts at the root, the search tree traced), `knapsack`
-  (0-1, by dynamic programming or branch and bound with Dantzig's bound), `setCover` (greedy or exact).
+  (0-1, by dynamic programming, or by `knapsackAlgorithm`: traced branch and bound with the fractional bound),
+  `setCover` (greedy or exact).
 - `assignment.ts`: `linearSumAssignment` (rectangular, maximise) by `hungarianAlgorithm` (shortest augmenting paths
   with potentials), `auction` and `auctionAlgorithm` (Bertsekas, epsilon scaling), `stableMatching` and
   `galeShapleyAlgorithm` (incomplete lists, unequal sides), `blockingPairs`.
