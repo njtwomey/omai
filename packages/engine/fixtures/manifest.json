@@ -67,6 +67,15 @@
       "cases": 20
     },
     {
+      "fixture": "numerics/differentiate/finite_differences.json",
+      "source": "oracle/cases/numerics/differentiate/finite_differences.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "numerics/linalg/basics.json",
       "source": "oracle/cases/numerics/linalg/basics.py",
       "reference": {
@@ -149,6 +158,15 @@
         "scipy": "1.18.1"
       },
       "cases": 10
+    },
+    {
+      "fixture": "numerics/quadrature/quadrature.json",
+      "source": "oracle/cases/numerics/quadrature/quadrature.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 65
     },
     {
       "fixture": "numerics/roots/roots.json",
