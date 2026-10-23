@@ -872,8 +872,11 @@ Reparameterisation comes in three forms:
   draws, numerical quantiles, mode and entropy for univariate mixtures).
 - `compose/structure.ts`: `independent`, `truncated` (continuous and discrete bases), `censored`, `transformed`,
   `empirical`, `deterministic`.
-- `compose/conditional.ts`: `ConditionalDistribution` (inputs to distribution), `conditional`, `linearGaussian`,
-  `glmConditional` (family plus link), helpers that turn network outputs into distributions.
+- `compose/conditional.ts`: `ConditionalDistribution` (inputs to distribution), `conditional`, `linearGaussian`
+  (marginal, Kalman-form posterior and joint), `glmConditional` (family plus link), `distributionalConditional`
+  (GAMLSS), and heads that turn network outputs into distributions (`normalFromOutput`, `bernoulliFromOutput`,
+  `categoricalFromOutput`, `poissonFromOutput`, `negativeBinomialFromOutput`, `betaFromOutput`,
+  `gammaFromOutput`, `mixtureDensityFromOutput`, `multivariateNormalFromOutput`).
 - `bijectors/bijector.ts`: `Bijector`, `defineBijector`, `chain`, `invert` (ranks, supports, monotonicity and shape
   maps tracked through compositions).
 - `bijectors/elementwise.ts`: `identity`, `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`.

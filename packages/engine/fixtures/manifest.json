@@ -18,6 +18,14 @@
       "cases": 6
     },
     {
+      "fixture": "dists/compose/conditional.json",
+      "source": "oracle/cases/dists/compose/conditional.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "dists/compose/mixture.json",
       "source": "oracle/cases/dists/compose/mixture.py",
       "reference": {

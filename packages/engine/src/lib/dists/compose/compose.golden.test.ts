@@ -1,5 +1,5 @@
 import { type Custom, describeDistributions, type Family } from '../../../testing/distributions.ts'
-import type { Tensor } from '../../tensor/index.ts'
+import { sum, type Tensor } from '../../tensor/index.ts'
 import * as D from '../index.ts'
 import * as C from './index.ts'
 
@@ -26,3 +26,20 @@ const CUSTOM: Readonly<Record<string, Custom>> = {
 }
 
 for (const file of ['structure', 'mixture']) describeDistributions(`dists/compose/${file}`, FAMILIES, CUSTOM)
+
+const GLM_FAMILIES: Readonly<Record<string, () => D.families.DispersionFamily>> = {
+  poisson: () => D.families.poisson(),
+  binomial: () => D.families.binomial(),
+  gamma: () => D.families.gamma(D.families.log()),
+  gaussian: () => D.families.gaussian(),
+}
+const glmCases: Record<string, Custom> = {}
+for (const [name, make] of Object.entries(GLM_FAMILIES))
+  glmCases[`glm.${name}`] = (xs) =>
+    sum(
+      C.glmConditional(make(), { coefficients: t(xs, 2), intercept: t(xs, 3), scale: t(xs, 4) }).logProb(
+        t(xs, 1),
+        t(xs, 0),
+      ),
+    )
+describeDistributions('dists/compose/conditional', {}, glmCases)
