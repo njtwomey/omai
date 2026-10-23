@@ -373,6 +373,24 @@
       "cases": 12
     },
     {
+      "fixture": "optim/adaptive.json",
+      "source": "oracle/cases/optim/adaptive.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 29
+    },
+    {
+      "fixture": "optim/first_order.json",
+      "source": "oracle/cases/optim/first_order.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 27
+    },
+    {
       "fixture": "optim/line_search.json",
       "source": "oracle/cases/optim/line_search.py",
       "reference": {
@@ -429,12 +447,12 @@
       "cases": 17
     },
     {
-      "fixture": "optim/optimisers.json",
-      "source": "oracle/cases/optim/optimisers.py",
+      "fixture": "optim/preconditioned.json",
+      "source": "oracle/cases/optim/preconditioned.py",
       "reference": {
-        "torch": "2.14.1"
+        "scipy": "1.18.1"
       },
-      "cases": 11
+      "cases": 6
     },
     {
       "fixture": "optim/scalar.json",
@@ -443,6 +461,31 @@
         "scipy": "1.18.1"
       },
       "cases": 30
+    },
+    {
+      "fixture": "optim/schedules.json",
+      "source": "oracle/cases/optim/schedules.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "optim/sparse_updates.json",
+      "source": "oracle/cases/optim/sparse_updates.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "optim/variance_reduced.json",
+      "source": "oracle/cases/optim/variance_reduced.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
     },
     {
       "fixture": "pgm/networks.json",

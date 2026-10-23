@@ -976,15 +976,28 @@ Objectives are plain functions of values; gradients come from `autodiff`. Every 
 that records the objective, gradient norm, step size and (by policy) the iterates.
 - `transform.ts`: `GradientTransformation`, `applyUpdates`, `chain`, `scaleByLearningRate`, `clipByGlobalNorm`,
   `clipByValue`, `addDecayedWeights`, `masked`, `multiTransform` (different optimisers per parameter group),
-  `globalNorm`.
-- `first-order.ts`: `sgd` (momentum, Nesterov), `adagrad`, `rmsprop`, `adadelta`.
-- `sparse-updates.ts`: optimisers for sparse gradients (embeddings and very wide linear models): `sparseAdam` and lazy
-  Adagrad (moments updated only where the gradient is non-zero), SGD with L1 by cumulative penalty and truncated
-  gradient (Langford et al.), FTRL-Proximal (McMahan et al.) for per-coordinate L1 and L2.
-- `adaptive.ts`: `adam`, `adamw`, `adamax`, `nadam`, `radam`, `amsgrad`, `lion`, `lamb`, `adafactor`, `sophiaLite`.
-- `preconditioned.ts`: natural gradient, K-FAC for dense layers, Shampoo, gradient preconditioning helpers.
-- `variance-reduced.ts`: `sag`, `saga`, `svrg`, stochastic average gradient for finite sums (used by linear models).
-- `schedules.ts`: constant, step, exponential, inverse-time, cosine, warmup, one-cycle, piecewise, polynomial, cyclical.
+  `globalNorm`, `identity`, `setToZero`, `scale`, `scaleByTrustRatio`, and the scalings `traceMomentum` (dampening),
+  `scaleByAdam`, `scaleByRms` (centred), `scaleByAdagrad`.
+- `first-order.ts`: `sgd` (momentum, dampening, Nesterov), `adagrad` (lr decay), `rmsprop` (centred), `adadelta`,
+  `rprop`, `asgd` (averaged iterate), `signSgd` (signSGD and signum), `ema`, `scaleBySign`, `scaleByAdadelta`; torch.optim
+  and optax trajectories.
+- `sparse-updates.ts`: optimisers for sparse gradients (embeddings and very wide linear models): `sparseAdam` and
+  `lazyAdagrad` (moments updated only on the active set, element-wise or row-wise; `activeMask`), `sgdCumulativeL1`
+  (Tsuruoka et al.) and `truncatedGradient` with `truncate` (Langford et al.), `ftrlProximal` and `ftrlSupport`
+  (McMahan et al.) for per-coordinate L1 and L2; torch.optim on COO gradients.
+- `adaptive.ts`: `adam`, `adamw`, `adamax`, `nadam`, `radam` (both with decoupled decay), `amsgrad`, `lion`, `lamb`,
+  `adafactor` (factored, torch.optim.Adafactor), `sophiaLite` with `scaleBySophia` and `hutchinsonDiagonal`, and the
+  scalings `scaleByAdamax`, `scaleByNadam`, `scaleByRadam`, `scaleByLion`.
+- `preconditioned.ts`: natural gradient (`naturalGradient` fed Fishers by `observe`, `empiricalFisher`,
+  `naturalGradientDirection`), K-FAC for dense layers (`kfac`, `kfacFactors`, `kfacPrecondition` with factored
+  Tikhonov damping and joint bias blocks), `shampoo` (tensors of any order), gradient preconditioning helpers
+  (`matrixInversePthRoot`, `preconditionBy`, `diagonalPrecondition`).
+- `variance-reduced.ts`: `sag`, `saga`, `svrg` (proximal) over a `FiniteSum`, each a traced algorithm (one epoch per
+  step) with a convenience function; stochastic average gradient for finite sums (used by linear models).
+- `schedules.ts`: constant (`constantSchedule`, `constantFactor`), step (`stepDecay`, `multiStepDecay`), exponential,
+  inverse-time, cosine (`cosineDecay`, `cosineWarmRestarts`, `sgdr`), warmup (`warmupCosineDecay`,
+  `warmupExponentialDecay`, `warmupConstant`, `linearSchedule`), one-cycle, piecewise (`piecewiseConstant`,
+  `piecewiseInterpolate`, `joinSchedules`), polynomial, cyclical, `reduceOnPlateau`; torch.optim.lr_scheduler and optax.
 - `line-search.ts`: backtracking (Armijo), strong Wolfe (with zoom by cubic interpolation), More-Thuente, Hager-Zhang,
   with trial points recorded; the one-dimensional searches every second-order method uses.
 - `minimize/minimizer.ts`: `minimizer` (a transformation as an algorithm), `minimize(f, x0, { method })` (methods are
@@ -1015,7 +1028,8 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `conic.ts`: small second-order cone and semidefinite programs by interior point (for teaching and small models).
 - `integer.ts`: `milp` (branch and bound, cuts), knapsack, set cover.
 - `assignment.ts`: Hungarian algorithm, auction algorithm, stable matching (Gale-Shapley).
-- `online.ts`: online gradient descent, FTRL, hedge, exponentiated gradient, online Newton step, regret records.
+- `online.ts`: online gradient descent, FTRL, hedge, exponentiated gradient, online Newton step (`OnlineLearner`s),
+  regret records (`onlineAlgorithm`, `runOnline`, `linearLosses`).
 - `transport.ts`: exact optimal transport, entropic Sinkhorn (log domain), 1-D Wasserstein, sliced Wasserstein,
   Gromov-Wasserstein, barycentres, unbalanced transport.
 - `multiobjective.ts`: Pareto fronts, dominance, hypervolume, scalarisations, NSGA-II.
