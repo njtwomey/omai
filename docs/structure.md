@@ -444,7 +444,8 @@ oracle: numpy, jax for derivative rules
 - `ops/reduce.ts`: `sum`, `prod`, `mean`, `var` (two-pass), `std`, `max`, `min`, `argmax`, `argmin`, `cumsum`,
   `cumprod`, `logsumexp` (max-shifted), `softmax`, `logSoftmax`, `norm`.
 - `ops/shape.ts`: `reshape`, `flatten`, `transpose`, `swapaxes`, `moveaxis`, `expandDims`, `squeeze`, `broadcastTo`,
-  `sumToShape`, `concat`, `stack`, `split`, `chunk`, `flip`, `roll`, `tile`, `repeat`, `pad`.
+  `sumToShape`, `concat`, `stack`, `split`, `chunk`, `flip`, `roll`, `tile`, `repeat`, `pad`, `slidingWindowView`
+  (numpy's strided windows along an axis, step and dilation; a view-like gather, differentiable).
 - `ops/indexing.ts`: `slice`, `take`, `takeAlongAxis`, `gather`, `scatter`, `scatterAdd`, `maskedSelect`, `nonzero`,
   `sort`, `argsort`, `topk`, `searchsorted`, `unique`, `bincount`, `oneHot`, `segmentSum`.
 - `ops/linear.ts`: `matmul`, `dot`, `outer`, `inner`, `tensordot`, `einsum`, `kron`, `trace`, `diagonal`.
@@ -1008,7 +1009,7 @@ oracle: scikit-learn, gpytorch
 
 ### 4.20 `signal/` (tier 7): signal and image processing (scipy.signal, scipy.ndimage, pywt, librosa)
 
-oracle: scipy.signal, scipy.ndimage, pywt, librosa, scikit-image
+oracle: scipy.signal, scipy.ndimage, pywt, librosa, scikit-image, stumpy
 
 The files follow the encyclopedia's signal-processing chapters. LTI system representations are in `systems`; sparse
 representations are in `optim/sparse.ts`.
@@ -1041,8 +1042,22 @@ representations are in `optim/sparse.ts`.
 - `adaptive.ts`: LMS, NLMS, RLS, adaptive noise cancellation, traced tap weights.
 - `cepstrum.ts`: real and complex cepstra, liftering, cepstral pitch.
 - `peaks.ts`: `findPeaks` (height, prominence, distance, width), prominences, widths, zero crossings.
-- `similarity.ts`: dynamic time warping (with path and lower bounds), MASS distance profiles, matrix profile (STOMP,
-  SCRIMP), PAA, SAX, cross-correlation lag.
+- `similarity.ts`: dynamic time warping (with path and lower bounds), PAA, SAX, cross-correlation lag.
+- `matrix-profile/sliding.ts`: the shared machinery of matrix profiles (as STUMPY): rolling means and standard
+  deviations by Welford updates with periodic exact recomputation (and STUMPY's precision checks for near-constant
+  windows), sliding dot products QT by FFT (`fftConvolve` and overlap-add for long series) and by the O(1) diagonal
+  update, z-normalised and non-normalised distances from QT, exclusion zones, NaN and constant-subsequence handling.
+- `matrix-profile/mass.ts`: MASS distance profiles (v2 FFT, v3 chunked by overlap-add), the non-normalised variant,
+  `distanceProfile`.
+- `matrix-profile/algorithms.ts`: `stomp` (row order), `stamp` (anytime, random order, traced convergence), `scrimp`
+  (PreSCRIMP then SCRIMP++ diagonals), diagonal-order STOMP for AB-joins, left and right profiles and indices,
+  `stumpi` (incremental and streaming updates, egress), `aamp` (non-normalised), top-k profiles; each an `Algorithm`
+  with traced progress.
+- `matrix-profile/multidimensional.ts`: mSTAMP (k-dimensional profiles by sorted per-dimension distances), MDL-based
+  dimension selection, constrained (included and excluded) dimensions.
+- `matrix-profile/discovery.ts`: motifs and discords (top-k with exclusion zones, `motifs`, `match`), time-series chains
+  (anchored and all-chain sets, ATSC and ALLC), FLUSS and FLOSS semantic segmentation (corrected arc curve), snippets
+  (MPdist-based), consensus motifs (Ostinato), `mpdist`, pan matrix profiles over many window lengths (SKIMP order).
 - `audio/scales.ts`: mel, Bark and ERB scales.
 - `audio/filterbanks.ts`: mel and gammatone filter banks.
 - `audio/features.ts`: mel spectrograms, MFCCs, spectral centroid, bandwidth, roll-off, flux and flatness, chroma,
@@ -1953,7 +1968,7 @@ built from: `stochastic`, `graph`, `dynamics`, `scene`
 ### 5.7 Domains
 
 `timeseries/` (statsmodels.tsa, sktime basics)
-oracle: statsmodels, sktime
+oracle: statsmodels, sktime, stumpy
 built from: `stats`, `dynamics/filtering`, `optim`, `signal`, `metrics/forecasting.ts`
 - `features.ts`: ACF, PACF, CCF, seasonal strength, differencing and lags, time-series feature sets.
 - `arima.ts`: ARMA processes (roots, impulse responses, theoretical ACF), ARIMA and SARIMAX (CSS and exact likelihood by
@@ -1965,6 +1980,10 @@ built from: `stats`, `dynamics/filtering`, `optim`, `signal`, `metrics/forecasti
   segmentation compared against the true changepoints.
 - `forecasting.ts`: baselines (naive, seasonal naive, drift, mean), rolling-origin backtests, forecast reconciliation.
 - `classification.ts`: time-series classification (DTW k-NN, shapelets, ROCKET and MiniRocket).
+- `matrix-profile.ts`: matrix-profile studies on tunable data with planted ground truth: motif discovery, discords as
+  anomalies, semantic segmentation (FLUSS, FLOSS on streams), chains, snippets, multidimensional motifs with dimension
+  selection, and the anytime convergence of STAMP and SCRIMP against STOMP; timing and accuracy comparisons with the
+  FFT and diagonal paths. Oracle: stumpy.
 
 `text/` (nltk, spaCy-like pipelines)
 oracle: nltk, kenlm on small corpora
