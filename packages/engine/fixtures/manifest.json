@@ -35,6 +35,14 @@
       "cases": 6
     },
     {
+      "fixture": "methods/rl/classic_control.json",
+      "source": "oracle/cases/methods/rl/classic_control.py",
+      "reference": {
+        "gymnasium": "1.4.0"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "metrics/regression.json",
       "source": "oracle/cases/metrics/regression.py",
       "reference": {
