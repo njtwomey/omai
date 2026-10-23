@@ -432,6 +432,14 @@
       "cases": 15
     },
     {
+      "fixture": "pgm/inference/map.json",
+      "source": "oracle/cases/pgm/inference/map.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "pgm/models/bayes_net.json",
       "source": "oracle/cases/pgm/models/bayes_net.py",
       "reference": {
