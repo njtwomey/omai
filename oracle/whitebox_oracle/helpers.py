@@ -68,3 +68,8 @@ def sign_fixed(v: FloatArray) -> FloatArray:
     idx = np.argmax(np.abs(v), axis=-2, keepdims=True)
     signs = np.sign(np.take_along_axis(v, idx, axis=-2))
     return v * np.where(signs == 0, 1, signs)
+
+
+def softplus(x: FloatArray) -> FloatArray:
+    """log(1 + exp(x)), computed stably."""
+    return np.logaddexp(0.0, x)

@@ -4,13 +4,9 @@ import numpy as np
 import scipy
 import scipy.special as sp
 from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, reference, rng
+from whitebox_oracle.helpers import FloatArray, reference, rng, softplus
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
-
-
-def softplus(x: FloatArray) -> FloatArray:
-    return np.logaddexp(0.0, x)
 
 
 def log1mexp(x: FloatArray) -> FloatArray:

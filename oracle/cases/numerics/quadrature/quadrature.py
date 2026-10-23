@@ -7,7 +7,7 @@ import scipy
 import scipy.integrate as si
 import scipy.special as sp
 from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from whitebox_oracle.helpers import rng, softplus
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 
@@ -31,10 +31,6 @@ FINITE: list[str] = ["poly", "exp", "sqrt", "oscillatory"]
 
 def square(x: float) -> float:
     return x * x
-
-
-def softplus(x: float) -> float:
-    return float(np.logaddexp(0.0, x))
 
 
 def normal_pdf(x: float) -> float:
@@ -132,7 +128,11 @@ def cases() -> list[Case]:
             )
 
     # E[f(X)] for X ~ N(0.5, 1.5^2).
-    expectations: dict[str, Integrand] = {"square": square, "cos": np.cos, "softplus": softplus}
+    expectations: dict[str, Integrand] = {
+        "square": square,
+        "cos": np.cos,
+        "softplus": lambda x: float(softplus(np.array(x))),
+    }
     for name, h in expectations.items():
         expected = scalar(lambda x, h=h: h(x) * normal_pdf(x), -np.inf, np.inf)
         out.append(

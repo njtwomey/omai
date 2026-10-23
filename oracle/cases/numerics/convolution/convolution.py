@@ -8,7 +8,8 @@ import scipy.signal as sg
 import torch
 import torch.nn.functional as tf
 from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from whitebox_oracle.helpers import rng
+from whitebox_oracle.torch_helpers import to_numpy, to_torch
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__, "torch": torch.__version__}
 
@@ -23,14 +24,6 @@ PADS: list[Literal["constant", "edge", "reflect", "symmetric", "wrap", "maximum"
     "minimum",
     "mean",
 ]
-
-
-def t(x: FloatArray) -> torch.Tensor:
-    return torch.from_numpy(x)
-
-
-def a(x: torch.Tensor) -> FloatArray:
-    return x.detach().numpy().astype(np.float64)
 
 
 def cases() -> list[Case]:
@@ -136,7 +129,7 @@ def cases() -> list[Case]:
             "conv1d",
             "conv",
             [x1, w1, b1],
-            a(tf.conv1d(t(x1), t(w1), t(b1), stride=2, padding=1, dilation=2, groups=2)),
+            to_numpy(tf.conv1d(to_torch(x1), to_torch(w1), to_torch(b1), stride=2, padding=1, dilation=2, groups=2)),
             rtol=1e-10,
             atol=1e-11,
             stride=2,
@@ -150,7 +143,7 @@ def cases() -> list[Case]:
             "conv1d/same",
             "convSame",
             [x1, w1, b1],
-            a(tf.conv1d(t(x1), t(w1), t(b1), padding="same", dilation=2, groups=2)),
+            to_numpy(tf.conv1d(to_torch(x1), to_torch(w1), to_torch(b1), padding="same", dilation=2, groups=2)),
             rtol=1e-10,
             atol=1e-11,
             dilation=2,
@@ -158,8 +151,8 @@ def cases() -> list[Case]:
         )
     )
     wr = g.normal(size=(3, 4, 3))
-    reflected = tf.conv1d(tf.pad(t(x1), (2, 2), mode="reflect"), t(wr))
-    out.append(case("conv1d/reflect", "convReflect", [x1, wr], a(reflected), rtol=1e-10, atol=1e-11))
+    reflected = tf.conv1d(tf.pad(to_torch(x1), (2, 2), mode="reflect"), to_torch(wr))
+    out.append(case("conv1d/reflect", "convReflect", [x1, wr], to_numpy(reflected), rtol=1e-10, atol=1e-11))
     x2 = g.normal(size=(2, 3, 7, 8))
     w2 = g.normal(size=(4, 3, 3, 2))
     out.append(
@@ -167,7 +160,7 @@ def cases() -> list[Case]:
             "conv2d",
             "conv",
             [x2, w2],
-            a(tf.conv2d(t(x2), t(w2), stride=(2, 1), padding=(1, 0), dilation=(1, 2))),
+            to_numpy(tf.conv2d(to_torch(x2), to_torch(w2), stride=(2, 1), padding=(1, 0), dilation=(1, 2))),
             rtol=1e-10,
             atol=1e-11,
             stride=[2, 1],
@@ -183,7 +176,7 @@ def cases() -> list[Case]:
             "conv3d",
             "conv",
             [x3, w3],
-            a(tf.conv3d(t(x3), t(w3), padding=1)),
+            to_numpy(tf.conv3d(to_torch(x3), to_torch(w3), padding=1)),
             rtol=1e-10,
             atol=1e-11,
             stride=1,
@@ -200,7 +193,18 @@ def cases() -> list[Case]:
             "convTranspose1d",
             "convTranspose",
             [xt, wt, bt],
-            a(tf.conv_transpose1d(t(xt), t(wt), t(bt), stride=2, padding=1, output_padding=1, groups=2, dilation=1)),
+            to_numpy(
+                tf.conv_transpose1d(
+                    to_torch(xt),
+                    to_torch(wt),
+                    to_torch(bt),
+                    stride=2,
+                    padding=1,
+                    output_padding=1,
+                    groups=2,
+                    dilation=1,
+                )
+            ),
             rtol=1e-10,
             atol=1e-11,
             stride=2,
@@ -217,7 +221,7 @@ def cases() -> list[Case]:
             "convTranspose2d",
             "convTranspose",
             [xt2, wt2],
-            a(tf.conv_transpose2d(t(xt2), t(wt2), stride=(2, 1), padding=(1, 1), dilation=(1, 2))),
+            to_numpy(tf.conv_transpose2d(to_torch(xt2), to_torch(wt2), stride=(2, 1), padding=(1, 1), dilation=(1, 2))),
             rtol=1e-10,
             atol=1e-11,
             stride=[2, 1],
@@ -233,7 +237,7 @@ def cases() -> list[Case]:
             "unfold",
             "unfold",
             [xu],
-            a(tf.unfold(t(xu), (3, 2), dilation=(1, 2), padding=1, stride=(2, 1))),
+            to_numpy(tf.unfold(to_torch(xu), (3, 2), dilation=(1, 2), padding=1, stride=(2, 1))),
             rtol=1e-13,
             kernel=[3, 2],
             dilation=[1, 2],
@@ -241,13 +245,13 @@ def cases() -> list[Case]:
             stride=[2, 1],
         )
     )
-    cols = a(tf.unfold(t(xu), (3, 2), dilation=(1, 2), padding=1, stride=(2, 1)))
+    cols = to_numpy(tf.unfold(to_torch(xu), (3, 2), dilation=(1, 2), padding=1, stride=(2, 1)))
     out.append(
         case(
             "fold",
             "fold",
             [cols],
-            a(tf.fold(t(cols), (6, 5), (3, 2), dilation=(1, 2), padding=1, stride=(2, 1))),
+            to_numpy(tf.fold(to_torch(cols), (6, 5), (3, 2), dilation=(1, 2), padding=1, stride=(2, 1))),
             rtol=1e-12,
             atol=1e-13,
             kernel=[3, 2],

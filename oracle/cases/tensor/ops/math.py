@@ -3,13 +3,9 @@
 import numpy as np
 import scipy.special as sp
 from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import UNARY_SHAPES, FloatArray, Unary, rng, uniform
+from whitebox_oracle.helpers import UNARY_SHAPES, FloatArray, Unary, rng, softplus, uniform
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
-
-
-def softplus(x: FloatArray) -> FloatArray:
-    return np.logaddexp(0, x)
 
 
 def relu(x: FloatArray) -> FloatArray:
