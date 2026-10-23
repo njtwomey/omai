@@ -167,6 +167,17 @@
       "cases": 24
     },
     {
+      "fixture": "metrics/correlation_agreement.json",
+      "source": "oracle/cases/metrics/correlation_agreement.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "pingouin": "0.7.0",
+        "krippendorff": "0.9.0",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 24
+    },
+    {
       "fixture": "metrics/curves.json",
       "source": "oracle/cases/metrics/curves.py",
       "reference": {
@@ -181,6 +192,31 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 31
+    },
+    {
+      "fixture": "metrics/distances.json",
+      "source": "oracle/cases/metrics/distances.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "metrics/fairness.json",
+      "source": "oracle/cases/metrics/fairness.py",
+      "reference": {
+        "fairlearn": "0.15.0"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "metrics/forecasting.json",
+      "source": "oracle/cases/metrics/forecasting.py",
+      "reference": {
+        "torchmetrics": "1.9.0",
+        "properscoring": "0.1"
+      },
+      "cases": 14
     },
     {
       "fixture": "metrics/foundations.json",

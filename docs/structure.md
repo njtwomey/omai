@@ -1379,19 +1379,23 @@ weights.
 - `scoring-rules.ts`: proper scoring rules for any `Distribution`: logarithmic (`logScore`), spherical
   (`sphericalScore`), CRPS (`crps`: closed forms for the normal, Laplace, logistic, exponential and uniform, quadrature
   otherwise) and the energy score (`energyScore`) from samples.
-- `fairness.ts`: group rates; demographic parity, equalised odds, equal opportunity, predictive parity and calibration
-  by group; disparate impact.
+- `fairness.ts`: group rates (`groupRates`); demographic parity, equalised odds, equal opportunity (differences and
+  ratios, between groups or to overall), predictive parity and calibration by group (`calibrationByGroup`); disparate
+  impact.
 - `regression.ts`: MSE, RMSE, MAE, median absolute error, maximum error, R-squared (`r2Score`, `adjustedR2Score`),
   explained variance, MSLE, MAPE, log-cosh (`meanLogCoshError`), Huber (`meanHuberLoss`).
 - `deviance.ts`: Poisson, gamma and Tweedie deviances, pinball loss, D-squared scores (`d2AbsoluteErrorScore`,
   `d2PinballScore`, `d2TweedieScore`).
-- `correlation-agreement.ts`: Pearson, Spearman and Kendall (aliases of `stats/correlation.ts`), Cramer's V, Theil's U,
-  Lin's concordance correlation, Bland-Altman limits, intraclass correlation, weighted Cohen's kappa, Fleiss' kappa,
-  Krippendorff's alpha.
-- `distances.ts`: Minkowski distances, cosine similarity, Mahalanobis distance, Procrustes analysis (aliases where the
-  canonical home is `numerics/geometry`), Hausdorff and Chamfer distances between point sets.
-- `forecasting.ts`: MAPE, sMAPE, WMAPE, MASE, RMSSE, MSIS, CRPS for samples and closed forms, interval score, coverage,
-  quantile loss, Theil's U2.
+- `correlation-agreement.ts`: Pearson (weighted), Spearman and Kendall (tau-b and tau-c) as metrics (TODO: make
+  them aliases of `stats/correlation.ts` once the stats domain exists; for now they are implemented here), Cramer's
+  V, Theil's U, Lin's concordance correlation, Bland-Altman limits, intraclass correlation (all six Shrout-Fleiss
+  forms), weighted Cohen's kappa, Fleiss' kappa (and Randolph's), Krippendorff's alpha (nominal, ordinal, interval,
+  ratio, missing data).
+- `distances.ts`: Minkowski distances, cosine similarity, Mahalanobis distance, Procrustes disparity (metrics over
+  the canonical `numerics/geometry` functions), Hausdorff and Chamfer distances between point sets.
+- `forecasting.ts`: MAPE (`mape`, an alias of the regression metric), sMAPE, WMAPE, MASE, RMSSE, MSIS, CRPS for
+  samples (`crpsEnsemble`, fair or not) and closed forms (`crpsNormal`), interval score, coverage
+  (`intervalCoverage`), quantile loss (mean and weighted), Theil's U2.
 - `ranking.ts`: `precisionAtK`, `recallAtK`, `hitRate`, `rPrecision`, `meanAveragePrecision` (trec_eval, min and
   retrieved denominators), `meanReciprocalRank`, `dcgScore` and `ndcgScore` (linear and exponential gains,
   tie-averaged), `expectedReciprocalRank`, `rankBiasedPrecision`; beyond-accuracy measures (`catalogCoverage`,

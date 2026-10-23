@@ -1,0 +1,505 @@
+import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { ndtri } from '../numerics/special/index.ts'
+import { item, type TensorLike } from '../tensor/index.ts'
+import { sortLabels } from './_labels.ts'
+import { cohenKappaScore, type KappaOptions } from './classification-summary.ts'
+import { contingencyMatrix } from './clustering.ts'
+import {
+  defineMetric,
+  flat,
+  type Metric,
+  type MetricFunction,
+  type MetricInput,
+  type MetricOptions,
+  matrix,
+  metricResult,
+  sampleWeights,
+} from './metric.ts'
+
+const spec = (
+  name: string,
+  range: readonly [number, number] = [-1, 1],
+  inputs: MetricSpec['inputs'] = 'values',
+): MetricSpec => ({
+  name,
+  direction: 'higher',
+  range,
+  inputs,
+  category: 'agreement',
+  concept: 'correlation-agreement',
+})
+
+const pair = (name: string, x: TensorLike, y: TensorLike): [Float64Array, Float64Array] => {
+  const a = flat(x)
+  const b = flat(y)
+  if (a.length !== b.length) throw new WhiteboxError('shape', `${name}: inputs differ in length`)
+  return [a, b]
+}
+
+/** Weighted Pearson correlation of two vectors. */
+function pearson(a: ArrayLike<number>, b: ArrayLike<number>, w?: ArrayLike<number>): number {
+  const n = a.length
+  const wt = (i: number): number => (w === undefined ? 1 : (w[i] ?? 0))
+  let sw = 0
+  let ma = 0
+  let mb = 0
+  for (let i = 0; i < n; i++) {
+    sw += wt(i)
+    ma += wt(i) * (a[i] ?? 0)
+    mb += wt(i) * (b[i] ?? 0)
+  }
+  ma /= sw
+  mb /= sw
+  let sab = 0
+  let saa = 0
+  let sbb = 0
+  for (let i = 0; i < n; i++) {
+    const da = (a[i] ?? 0) - ma
+    const db = (b[i] ?? 0) - mb
+    sab += wt(i) * da * db
+    saa += wt(i) * da * da
+    sbb += wt(i) * db * db
+  }
+  return sab / Math.sqrt(saa * sbb)
+}
+
+/** Average ranks (1-based; ties get the mean rank), as scipy.stats.rankdata. */
+function averageRanks(x: ArrayLike<number>): Float64Array {
+  const n = x.length
+  const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (x[a] ?? 0) - (x[b] ?? 0))
+  const ranks = new Float64Array(n)
+  let i = 0
+  while (i < n) {
+    let j = i
+    while (j + 1 < n && x[order[j + 1] ?? 0] === x[order[i] ?? 0]) j++
+    for (let k = i; k <= j; k++) ranks[order[k] ?? 0] = (i + j) / 2 + 1
+    i = j + 1
+  }
+  return ranks
+}
+
+/**
+ * Pearson's correlation coefficient (scipy.stats.pearsonr), with optional sample weights (the weighted correlation).
+ * TODO: alias stats/correlation.ts's `pearson` when the stats domain lands.
+ *
+ * @param x - First variable `[N]`.
+ * @param y - Second variable `[N]`.
+ * @param options - Sample weights.
+ * @returns The metric result.
+ * @concept correlation
+ * @example
+ * ```ts
+ * import { pearsonCorrelation } from 'whitebox-engine/metrics'
+ * pearsonCorrelation([1, 2, 3], [2, 4, 6]).estimate.value // => 1
+ * ```
+ */
+export const pearsonCorrelation: Metric = Object.assign(
+  (x: TensorLike, y: TensorLike, options: MetricOptions = {}): MetricResult => {
+    const [a, b] = pair('pearsonCorrelation', x, y)
+    const w =
+      options.sampleWeight === undefined
+        ? undefined
+        : sampleWeights('pearsonCorrelation', a.length, options.sampleWeight)
+    return metricResult('pearsonCorrelation', pearson(a, b, w), a.length)
+  },
+  { spec: spec('pearsonCorrelation') },
+)
+
+/**
+ * Spearman's rank correlation (scipy.stats.spearmanr): Pearson's correlation of the average ranks.
+ *
+ * @param x - First variable `[N]`.
+ * @param y - Second variable `[N]`.
+ * @returns The metric result.
+ * @example
+ * ```ts
+ * import { spearmanCorrelation } from 'whitebox-engine/metrics'
+ * spearmanCorrelation([1, 2, 3, 4], [1, 4, 9, 16]).estimate.value // => 1
+ * ```
+ */
+export const spearmanCorrelation: Metric = Object.assign(
+  (x: TensorLike, y: TensorLike): MetricResult => {
+    const [a, b] = pair('spearmanCorrelation', x, y)
+    return metricResult('spearmanCorrelation', pearson(averageRanks(a), averageRanks(b)), a.length)
+  },
+  { spec: spec('spearmanCorrelation') },
+)
+
+/**
+ * Kendall's tau (scipy.stats.kendalltau): tau-b (default), which corrects for ties in either variable, or tau-c
+ * (Stuart's, for rectangular tables).
+ *
+ * @param x - First variable `[N]`.
+ * @param y - Second variable `[N]`.
+ * @param options - variant ('b' or 'c').
+ * @returns The metric result.
+ * @example
+ * ```ts
+ * import { kendallTau } from 'whitebox-engine/metrics'
+ * kendallTau([1, 2, 3, 4], [1, 3, 2, 4]).estimate.value // => 0.6666666666666666
+ * ```
+ */
+export const kendallTau: Metric<MetricOptions & { readonly variant?: 'b' | 'c' }> = Object.assign(
+  (x: TensorLike, y: TensorLike, options: MetricOptions & { readonly variant?: 'b' | 'c' } = {}): MetricResult => {
+    const [a, b] = pair('kendallTau', x, y)
+    const n = a.length
+    let concordant = 0
+    let discordant = 0
+    let tiesX = 0
+    let tiesY = 0
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const dx = Math.sign((a[i] ?? 0) - (a[j] ?? 0))
+        const dy = Math.sign((b[i] ?? 0) - (b[j] ?? 0))
+        if (dx === 0 && dy === 0) continue
+        if (dx === 0) tiesX++
+        else if (dy === 0) tiesY++
+        else if (dx === dy) concordant++
+        else discordant++
+      }
+    }
+    let value: number
+    if (options.variant === 'c') {
+      const m = Math.min(sortLabels(Array.from(a)).length, sortLabels(Array.from(b)).length)
+      value = (2 * (concordant - discordant)) / (n * n * ((m - 1) / m))
+    } else {
+      value =
+        (concordant - discordant) / Math.sqrt((concordant + discordant + tiesX) * (concordant + discordant + tiesY))
+    }
+    return metricResult('kendallTau', value, n)
+  },
+  { spec: spec('kendallTau') },
+)
+
+/**
+ * Lin's concordance correlation coefficient (Lin, 1989): 2 cov(x, y) / (var x + var y + (mean x - mean y)^2), the
+ * agreement of two measurements with the identity line; ddof 1 matches torchmetrics' concordance_corrcoef, ddof 0
+ * Lin's original.
+ *
+ * @param x - First measurement `[N]`.
+ * @param y - Second measurement `[N]`.
+ * @param options - ddof (default 1).
+ * @returns The metric result.
+ * @example
+ * ```ts
+ * import { concordanceCorrelation } from 'whitebox-engine/metrics'
+ * concordanceCorrelation([1, 2, 3], [1, 2, 3]).estimate.value // => 1
+ * ```
+ */
+export const concordanceCorrelation: Metric<MetricOptions & { readonly ddof?: number }> = Object.assign(
+  (x: TensorLike, y: TensorLike, options: MetricOptions & { readonly ddof?: number } = {}): MetricResult => {
+    const [a, b] = pair('concordanceCorrelation', x, y)
+    const n = a.length
+    const ma = a.reduce((s, v) => s + v, 0) / n
+    const mb = b.reduce((s, v) => s + v, 0) / n
+    let sab = 0
+    let saa = 0
+    let sbb = 0
+    for (let i = 0; i < n; i++) {
+      sab += ((a[i] ?? 0) - ma) * ((b[i] ?? 0) - mb)
+      saa += ((a[i] ?? 0) - ma) ** 2
+      sbb += ((b[i] ?? 0) - mb) ** 2
+    }
+    const d = n - (options.ddof ?? 1)
+    const value = (2 * (sab / d)) / (saa / d + sbb / d + (ma - mb) ** 2)
+    return metricResult('concordanceCorrelation', value, n)
+  },
+  { spec: spec('concordanceCorrelation') },
+)
+
+/** Bland-Altman limits of agreement. */
+export interface BlandAltman {
+  /** The mean difference x - y. */
+  readonly bias: number
+  /** The standard deviation of the differences (ddof 1). */
+  readonly sd: number
+  readonly lower: number
+  readonly upper: number
+  readonly level: number
+}
+
+/**
+ * Bland-Altman analysis of two measurement methods (Bland and Altman, 1986): the mean difference and the limits of
+ * agreement bias -+ z sd of the differences.
+ *
+ * @param x - First method `[N]`.
+ * @param y - Second method `[N]`.
+ * @param options - level (default 0.95, z = 1.96 to the usual two decimals).
+ * @returns The bias, the standard deviation and the limits.
+ * @example
+ * ```ts
+ * import { blandAltman } from 'whitebox-engine/metrics'
+ * blandAltman([2, 4, 6], [1, 3, 5]).bias // => 1
+ * ```
+ */
+export function blandAltman(x: TensorLike, y: TensorLike, options: { readonly level?: number } = {}): BlandAltman {
+  const [a, b] = pair('blandAltman', x, y)
+  const d = Array.from(a, (v, i) => v - (b[i] ?? 0))
+  const n = d.length
+  const bias = d.reduce((s, v) => s + v, 0) / n
+  const sd = Math.sqrt(d.reduce((s, v) => s + (v - bias) ** 2, 0) / (n - 1))
+  const level = options.level ?? 0.95
+  const z = item(ndtri(0.5 + level / 2))
+  return { bias, sd, lower: bias - z * sd, upper: bias + z * sd, level }
+}
+
+/**
+ * Cramer's V (scipy.stats.contingency.association with method 'cramer'): sqrt(chi^2 / (n (min(r, c) - 1))) for the
+ * contingency table of two categorical variables, in [0, 1].
+ *
+ * @param x - First categorical variable `[N]`.
+ * @param y - Second categorical variable `[N]`.
+ * @returns The metric result.
+ * @example
+ * ```ts
+ * import { cramersV } from 'whitebox-engine/metrics'
+ * cramersV([0, 0, 1, 1], ['a', 'a', 'b', 'b']).estimate.value // => 1
+ * ```
+ */
+export const cramersV: Metric<MetricOptions, MetricInput> = Object.assign(
+  (x: MetricInput, y: MetricInput): MetricResult => {
+    const m = contingencyMatrix(x, y).matrix
+    const rows = m.map((r) => r.reduce((a, b) => a + b, 0))
+    const cols = Array.from({ length: m[0]?.length ?? 0 }, (_, j) => m.reduce((a, r) => a + (r[j] ?? 0), 0))
+    const n = rows.reduce((a, b) => a + b, 0)
+    let chi2 = 0
+    for (const [i, r] of m.entries()) {
+      for (const [j, o] of r.entries()) {
+        const e = ((rows[i] ?? 0) * (cols[j] ?? 0)) / n
+        chi2 += (o - e) ** 2 / e
+      }
+    }
+    const k = Math.min(rows.length, cols.length)
+    return metricResult('cramersV', Math.sqrt(chi2 / (n * (k - 1))), n)
+  },
+  { spec: spec('cramersV', [0, 1], 'labels') },
+)
+
+const entropyOf = (counts: readonly number[]): number => {
+  const n = counts.reduce((a, b) => a + b, 0)
+  return counts.reduce((h, c) => (c > 0 ? h - (c / n) * Math.log(c / n) : h), 0)
+}
+
+/**
+ * Theil's U, the uncertainty coefficient U(x | y) = (H(x) - H(x | y)) / H(x): the fraction of the uncertainty about
+ * x that knowing y removes (asymmetric; 1 when y determines x).
+ *
+ * @param x - The predicted categorical variable `[N]`.
+ * @param y - The given categorical variable `[N]`.
+ * @returns The metric result, in [0, 1].
+ * @example
+ * ```ts
+ * import { theilsU } from 'whitebox-engine/metrics'
+ * theilsU([0, 0, 1, 1], [0, 1, 2, 3]).estimate.value // => 1
+ * ```
+ */
+export const theilsU: Metric<MetricOptions, MetricInput> = Object.assign(
+  (x: MetricInput, y: MetricInput): MetricResult => {
+    const m = contingencyMatrix(x, y).matrix
+    const rows = m.map((r) => r.reduce((a, b) => a + b, 0))
+    const n = rows.reduce((a, b) => a + b, 0)
+    const hx = entropyOf(rows)
+    let hxGivenY = 0
+    const cols = m[0]?.length ?? 0
+    for (let j = 0; j < cols; j++) {
+      const column = m.map((r) => r[j] ?? 0)
+      const nj = column.reduce((a, b) => a + b, 0)
+      hxGivenY += (nj / n) * entropyOf(column)
+    }
+    return metricResult('theilsU', hx === 0 ? 1 : (hx - hxGivenY) / hx, n)
+  },
+  { spec: spec('theilsU', [0, 1], 'labels') },
+)
+
+/** The forms of the intraclass correlation (Shrout and Fleiss, 1979; McGraw and Wong, 1996). */
+export type IccType = 'ICC1' | 'ICC2' | 'ICC3' | 'ICC1k' | 'ICC2k' | 'ICC3k'
+
+/**
+ * The intraclass correlation of ratings (pingouin.intraclass_corr): ICC1 (one-way random, ICC(1,1)), ICC2 (two-way random,
+ * absolute agreement, ICC(A,1)) and ICC3 (two-way mixed, consistency, ICC(C,1)), for single raters or the mean of k raters (ICC1k, ICC2k, ICC3k), from the
+ * two-way ANOVA mean squares.
+ *
+ * @param ratings - Ratings `[targets, raters]` (complete).
+ * @param options - type (default 'ICC2').
+ * @returns The metric result, with the mean squares in the breakdown.
+ * @example
+ * ```ts
+ * import { intraclassCorrelation } from 'whitebox-engine/metrics'
+ * intraclassCorrelation([[1, 1], [2, 2], [3, 3]]).estimate.value // => 1
+ * ```
+ */
+export const intraclassCorrelation: MetricFunction<[TensorLike, { readonly type?: IccType }?]> = defineMetric(
+  spec('intraclassCorrelation'),
+  (ratings: TensorLike, options: { readonly type?: IccType } = {}): MetricResult => {
+    const r = matrix(ratings)
+    const n = r.shape[0] ?? 0
+    const k = r.shape[1] ?? 0
+    if (n < 2 || k < 2)
+      throw new WhiteboxError('shape', 'intraclassCorrelation: needs at least two targets and two raters')
+    let grand = 0
+    for (const v of r.data) grand += v
+    grand /= n * k
+    const rowMeans = Array.from(
+      { length: n },
+      (_, i) => r.data.subarray(i * k, (i + 1) * k).reduce((a, b) => a + b, 0) / k,
+    )
+    const colMeans = Array.from({ length: k }, (_, j) => {
+      let s = 0
+      for (let i = 0; i < n; i++) s += r.data[i * k + j] ?? 0
+      return s / n
+    })
+    const ssRows = k * rowMeans.reduce((a, m) => a + (m - grand) ** 2, 0)
+    const ssCols = n * colMeans.reduce((a, m) => a + (m - grand) ** 2, 0)
+    let ssTotal = 0
+    for (const v of r.data) ssTotal += (v - grand) ** 2
+    const ssError = ssTotal - ssRows - ssCols
+    const msr = ssRows / (n - 1)
+    const msc = ssCols / (k - 1)
+    const mse = ssError / ((n - 1) * (k - 1))
+    const msw = (ssCols + ssError) / (n * (k - 1))
+    const type = options.type ?? 'ICC2'
+    const value = {
+      ICC1: (msr - msw) / (msr + (k - 1) * msw),
+      ICC2: (msr - mse) / (msr + (k - 1) * mse + (k * (msc - mse)) / n),
+      ICC3: (msr - mse) / (msr + (k - 1) * mse),
+      ICC1k: (msr - msw) / msr,
+      ICC2k: (msr - mse) / (msr + (msc - mse) / n),
+      ICC3k: (msr - mse) / msr,
+    }[type]
+    return metricResult('intraclassCorrelation', value, n, { msr, msc, mse, msw })
+  },
+)
+
+/**
+ * Weighted Cohen's kappa for ordinal ratings: {@link cohenKappaScore} with linear (default) or quadratic
+ * disagreement weights.
+ *
+ * @param y1 - First rater.
+ * @param y2 - Second rater.
+ * @param options - weights (default 'linear'), labels and sample weights.
+ * @returns The metric result.
+ * @example
+ * ```ts
+ * import { weightedCohenKappa } from 'whitebox-engine/metrics'
+ * weightedCohenKappa([0, 1, 2], [0, 1, 2]).estimate.value // => 1
+ * ```
+ */
+export const weightedCohenKappa: Metric<KappaOptions, MetricInput> = Object.assign(
+  (y1: MetricInput, y2: MetricInput, options: KappaOptions = {}): MetricResult => ({
+    ...cohenKappaScore(y1, y2, { ...options, weights: options.weights ?? 'linear' }),
+    metric: 'weightedCohenKappa',
+  }),
+  { spec: spec('weightedCohenKappa', [-1, 1], 'labels') },
+)
+
+/**
+ * Fleiss' kappa for many raters (statsmodels.stats.inter_rater.fleiss_kappa): agreement on categorical ratings of
+ * subjects by a fixed number of raters, from the table of counts; method 'randolph' uses uniform chance agreement
+ * (free-marginal kappa).
+ *
+ * @param table - Counts `[subjects, categories]`: how many raters put each subject in each category.
+ * @param options - method ('fleiss', default, or 'randolph').
+ * @returns The metric result.
+ * @example
+ * ```ts
+ * import { fleissKappa } from 'whitebox-engine/metrics'
+ * fleissKappa([[3, 0], [0, 3], [3, 0]]).estimate.value // => 1
+ * ```
+ */
+export const fleissKappa: MetricFunction<[TensorLike, { readonly method?: 'fleiss' | 'randolph' }?]> = defineMetric(
+  spec('fleissKappa', [-1, 1], 'labels'),
+  (table: TensorLike, options: { readonly method?: 'fleiss' | 'randolph' } = {}): MetricResult => {
+    const t = matrix(table)
+    const n = t.shape[0] ?? 0
+    const c = t.shape[1] ?? 0
+    const raters = t.data.subarray(0, c).reduce((a, b) => a + b, 0)
+    const total = n * raters
+    const pj = Array.from({ length: c }, (_, j) => {
+      let s = 0
+      for (let i = 0; i < n; i++) s += t.data[i * c + j] ?? 0
+      return s / total
+    })
+    let pBar = 0
+    for (let i = 0; i < n; i++) {
+      let s = 0
+      for (let j = 0; j < c; j++) s += (t.data[i * c + j] ?? 0) ** 2
+      pBar += (s - raters) / (raters * (raters - 1))
+    }
+    pBar /= n
+    const pe = options.method === 'randolph' ? 1 / c : pj.reduce((a, p) => a + p * p, 0)
+    return metricResult('fleissKappa', (pBar - pe) / (1 - pe), n)
+  },
+)
+
+/** The level of measurement of Krippendorff's alpha. */
+export type MeasurementLevel = 'nominal' | 'ordinal' | 'interval' | 'ratio'
+
+/**
+ * Krippendorff's alpha (Krippendorff, 2011; the krippendorff package): 1 - D_o / D_e, observed over expected
+ * disagreement of the pairable values within units, for any number of raters, missing data (NaN) and nominal,
+ * ordinal, interval or ratio data.
+ *
+ * @param reliabilityData - Ratings `[raters, units]`, NaN where missing.
+ * @param options - level (default 'interval').
+ * @returns The metric result.
+ * @example
+ * ```ts
+ * import { krippendorffAlpha } from 'whitebox-engine/metrics'
+ * krippendorffAlpha([[1, 2, 3], [1, 2, 3]], { level: 'nominal' }).estimate.value // => 1
+ * ```
+ */
+export const krippendorffAlpha: MetricFunction<[TensorLike, { readonly level?: MeasurementLevel }?]> = defineMetric(
+  spec('krippendorffAlpha', [-Infinity, 1], 'labels'),
+  (reliabilityData: TensorLike, options: { readonly level?: MeasurementLevel } = {}): MetricResult => {
+    const r = matrix(reliabilityData)
+    const raters = r.shape[0] ?? 0
+    const units = r.shape[1] ?? 0
+    const values = sortLabels(Array.from(r.data).filter((v) => !Number.isNaN(v))) as number[]
+    const v = values.length
+    const index = new Map(values.map((x, i) => [x, i]))
+    // The coincidence matrix o[c][k]: pairs of values within units, each unit weighted by 1 / (m_u - 1).
+    const o = Array.from({ length: v }, () => new Float64Array(v))
+    for (let u = 0; u < units; u++) {
+      const present: number[] = []
+      for (let i = 0; i < raters; i++) {
+        const x = r.data[i * units + u] ?? Number.NaN
+        if (!Number.isNaN(x)) present.push(index.get(x) ?? 0)
+      }
+      const m = present.length
+      if (m < 2) continue
+      for (const [a, ca] of present.entries()) {
+        for (const [b, cb] of present.entries())
+          if (a !== b) (o[ca] as Float64Array)[cb] = ((o[ca] as Float64Array)[cb] ?? 0) + 1 / (m - 1)
+      }
+    }
+    const nc = o.map((row) => row.reduce((a, b) => a + b, 0))
+    const n = nc.reduce((a, b) => a + b, 0)
+    const level = options.level ?? 'interval'
+    const delta = (c: number, k: number): number => {
+      if (level === 'nominal') return c === k ? 0 : 1
+      if (level === 'interval') return ((values[c] ?? 0) - (values[k] ?? 0)) ** 2
+      if (level === 'ratio') {
+        const a = values[c] ?? 0
+        const b = values[k] ?? 0
+        return a + b === 0 ? 0 : ((a - b) / (a + b)) ** 2
+      }
+      // Ordinal: (sum of the marginals from c to k, minus half of the two ends)^2.
+      const lo = Math.min(c, k)
+      const hi = Math.max(c, k)
+      let s = 0
+      for (let g = lo; g <= hi; g++) s += nc[g] ?? 0
+      return (s - ((nc[c] ?? 0) + (nc[k] ?? 0)) / 2) ** 2
+    }
+    let observed = 0
+    let expected = 0
+    for (let c = 0; c < v; c++) {
+      for (let k = 0; k < v; k++) {
+        const d = delta(c, k)
+        observed += ((o[c] as Float64Array)[k] ?? 0) * d
+        expected += (nc[c] ?? 0) * (nc[k] ?? 0) * d
+      }
+    }
+    const value = expected === 0 ? 1 : 1 - ((n - 1) * observed) / expected
+    return metricResult('krippendorffAlpha', value, units)
+  },
+)
