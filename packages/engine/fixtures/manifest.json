@@ -407,6 +407,15 @@
       "cases": 10
     },
     {
+      "fixture": "optim/transport.json",
+      "source": "oracle/cases/optim/transport.py",
+      "reference": {
+        "pot": "0.9.7.post1",
+        "scipy": "1.18.1"
+      },
+      "cases": 19
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {

@@ -1036,8 +1036,14 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `integer.ts`: `milp` (branch and bound, cuts), knapsack, set cover.
 - `assignment.ts`: Hungarian algorithm, auction algorithm, stable matching (Gale-Shapley).
 - `online.ts`: online gradient descent, FTRL, hedge, exponentiated gradient, online Newton step, regret records.
-- `transport.ts`: exact optimal transport, entropic Sinkhorn (log domain), 1-D Wasserstein, sliced Wasserstein,
-  Gromov-Wasserstein, barycentres, unbalanced transport.
+- `transport.ts`: `emd` (exact transport by the transportation simplex with dual potentials, traced pivots),
+  `sinkhorn` (log domain or scaling, traced marginal error), `entropicTransportLoss` (differentiable, envelope
+  derivatives: the plan and the potentials), `sinkhornUnbalanced` (KL-relaxed marginals, product or uniform reference).
+- `wasserstein.ts`: `wasserstein1d` (exact quantile merge, any p, weights, differentiable in positions),
+  `slicedWasserstein` (explicit or keyed random directions), barycentres (`sinkhornBarycenter` by iterative Bregman
+  projections in the log domain, `freeSupportBarycenter` by exact transport).
+- `gromov.ts`: `gromovWasserstein` (conditional gradient with exact line search, square or KL loss, asymmetric
+  structures) and `entropicGromovWasserstein` (projected gradient with Sinkhorn steps).
 - `multiobjective.ts`: Pareto fronts, dominance, hypervolume, scalarisations, NSGA-II.
 - `implicit.ts`: differentiation through solutions: `implicitRoot`, `implicitFixedPoint`, `implicitArgmin`
   (optimisation layers).
