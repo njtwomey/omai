@@ -19,8 +19,19 @@ oracle-core = [
     "networkx",
     "scikit-image>=0.26.0",
     "shapely>=2.2.0",
+    "fairlearn>=0.15.0",
+    "sacrebleu>=2.6.0",
+    "rouge-score>=0.1.2",
+    "jiwer>=4.0.0",
+    "pystoi>=0.4.1",
+    "pycocotools>=2.0.11",
+    "optax>=0.2.8",
 ]
-oracle-torch = ["torch"]
+oracle-torch = [
+    "torch",
+    "torchmetrics>=1.9.0",
+    "torchvision>=0.29.1",
+]
 oracle-prob = ["pgmpy"]
 oracle-rl = ["gymnasium"]
 

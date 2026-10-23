@@ -1392,10 +1392,14 @@ oracle: torch.nn.functional, optax
 
 Training objectives with a uniform `reduction` option. Evaluation metrics live in `metrics`; where a loss and a metric
 share a concept they share a definition but not a name.
-- `regression.ts`: `mse`, `mae`, `huber`, `logCosh`, `pinball`, `expectile`, `poissonNll`, `gaussianNll`,
+- `regression.ts`: `mse`, `mae`, `huber`, `smoothL1`, `logCosh`, `pinball`, `expectile`, `poissonNll`, `gaussianNll`,
   `tweedieDeviance`.
-- `classification.ts`: binary and categorical cross-entropy (with logits, label smoothing and class weights), `focal`,
-  `nllLoss`, hierarchical softmax (Huffman-coded classes from `information`), sampled softmax.
+- `classification.ts`: binary and categorical cross-entropy (`binaryCrossEntropy`, `binaryCrossEntropyWithLogits`,
+  `crossEntropy`: with logits, label smoothing, class weights and ignore index), `focal` (sigmoid) and
+  `categoricalFocal`, `nllLoss`, `multiLabelSoftMargin`.
+- `large-output.ts`: losses for very many classes: hierarchical softmax (`huffmanCoding`, `hierarchicalSoftmax`,
+  `hierarchicalSoftmaxLogProbs`), sampled softmax (`sampledSoftmax`, `sampleClasses` with uniform and log-uniform
+  proposals). TODO: take the Huffman tree from `information/source-coding.ts` once that domain exists.
 - `margin.ts`: hinge, squared hinge, logistic, exponential, modified Huber, Crammer-Singer, Weston-Watkins.
 - `density.ts`: negative log-likelihood of any `Distribution` or `ConditionalDistribution`, mixture-density NLL,
   heteroscedastic Gaussian NLL, censored likelihoods.

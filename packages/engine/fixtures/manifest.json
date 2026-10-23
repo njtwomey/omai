@@ -27,12 +27,22 @@
       "cases": 12
     },
     {
-      "fixture": "losses/losses.json",
-      "source": "oracle/cases/losses/losses.py",
+      "fixture": "losses/classification.json",
+      "source": "oracle/cases/losses/classification.py",
       "reference": {
-        "torch": "2.14.1"
+        "torch": "2.14.1",
+        "torchvision": "0.29.1"
       },
-      "cases": 31
+      "cases": 36
+    },
+    {
+      "fixture": "losses/regression.json",
+      "source": "oracle/cases/losses/regression.py",
+      "reference": {
+        "torch": "2.14.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 37
     },
     {
       "fixture": "methods/datasets/regression.json",

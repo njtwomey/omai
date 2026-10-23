@@ -1,13 +1,16 @@
-import { logaddexp } from '../numerics/special/index.ts'
+import { WhiteboxError } from '../base/index.ts'
+import { logaddexp, xlogy } from '../numerics/special/index.ts'
 import {
   abs,
   add,
   div,
   exp,
   greater,
+  less,
   log,
   maximum,
   mul,
+  pow,
   promoteFloat,
   square,
   sub,
@@ -186,5 +189,97 @@ export function gaussianNll(
   const clamped = maximum(v, options.eps ?? 1e-6)
   let terms = mul(add(log(clamped), div(square(sub(x, y)), clamped)), 0.5)
   if (options.full === true) terms = add(terms, 0.5 * Math.log(2 * Math.PI))
+  return reduce(terms, options)
+}
+
+/**
+ * Smooth L1 loss: 0.5 r^2 / beta for |r| < beta, |r| - 0.5 beta beyond (torch.nn.functional.smooth_l1_loss). It equals
+ * {@link huber} divided by beta.
+ *
+ * @param input - Predictions.
+ * @param target - Targets.
+ * @param options - Beta (default 1; 0 gives the absolute error), reduction and weights.
+ * @returns The loss, differentiable.
+ * @example
+ * ```ts
+ * import { smoothL1 } from 'whitebox-engine/losses'
+ * import { item } from 'whitebox-engine/tensor'
+ * item(smoothL1([0], [3], { beta: 2 })) // => 2
+ * ```
+ */
+export function smoothL1(
+  input: TensorLike,
+  target: TensorLike,
+  options: LossOptions & { readonly beta?: number } = {},
+): Value {
+  const [x, y] = pair(input, target)
+  const beta = options.beta ?? 1
+  const r = abs(sub(x, y))
+  if (beta === 0) return reduce(r, options)
+  return reduce(where(less(r, beta), div(mul(square(r), 0.5), beta), sub(r, 0.5 * beta)), options)
+}
+
+/**
+ * Expectile loss for level tau: |tau - 1(r < 0)| r^2 with r = target - input, the squared-error analogue of
+ * {@link pinball} (its minimiser is the tau-expectile; tau = 0.5 gives half the squared error).
+ *
+ * @param input - Predicted expectiles.
+ * @param target - Targets.
+ * @param options - The level tau (default 0.5), reduction and weights.
+ * @returns The loss, differentiable.
+ * @example
+ * ```ts
+ * import { expectile } from 'whitebox-engine/losses'
+ * import { item } from 'whitebox-engine/tensor'
+ * item(expectile([0], [2], { tau: 0.75 })) // => 3
+ * ```
+ */
+export function expectile(
+  input: TensorLike,
+  target: TensorLike,
+  options: LossOptions & { readonly tau?: number } = {},
+): Value {
+  const [x, y] = pair(input, target)
+  const tau = options.tau ?? 0.5
+  const r = sub(y, x)
+  return reduce(mul(where(less(r, 0), 1 - tau, tau), square(r)), options)
+}
+
+/**
+ * Tweedie unit deviance for power p (sklearn.metrics.mean_tweedie_deviance, elementwise): p = 0 is the squared error,
+ * p = 1 Poisson, p = 2 gamma, 1 < p < 2 compound Poisson-gamma; p in (0, 1) has no distribution and is rejected. With
+ * `logInput` the input is log(mu), the usual parameterisation for training (as LightGBM's tweedie objective).
+ *
+ * @param input - Predicted means mu (positive), or log-means with `logInput`.
+ * @param target - Targets (non-negative for p < 2, positive for p >= 2).
+ * @param options - power (default 1.5), logInput (default false), reduction and weights.
+ * @returns The loss, differentiable in the input.
+ * @throws WhiteboxError with code `value` for a power in (0, 1).
+ * @example
+ * ```ts
+ * import { tweedieDeviance } from 'whitebox-engine/losses'
+ * import { item } from 'whitebox-engine/tensor'
+ * item(tweedieDeviance([2], [2], { power: 1.5 })) // => 0
+ * ```
+ */
+export function tweedieDeviance(
+  input: TensorLike,
+  target: TensorLike,
+  options: LossOptions & { readonly power?: number; readonly logInput?: boolean } = {},
+): Value {
+  const [x, y] = pair(input, target)
+  const p = options.power ?? 1.5
+  if (p > 0 && p < 1) throw new WhiteboxError('value', `tweedieDeviance: power ${p} is not in (-inf, 0] or [1, inf)`)
+  const mu = options.logInput === true ? exp(x) : x
+  let terms: Value
+  if (p === 0) terms = square(sub(y, mu))
+  else if (p === 1) terms = mul(add(sub(xlogy(y, div(y, mu)), y), mu), 2)
+  else if (p === 2) terms = mul(sub(add(log(div(mu, y)), div(y, mu)), 1), 2)
+  else {
+    const first = div(pow(maximum(y, 0), 2 - p), (1 - p) * (2 - p))
+    const second = div(mul(y, pow(mu, 1 - p)), 1 - p)
+    const third = div(pow(mu, 2 - p), 2 - p)
+    terms = mul(add(sub(first, second), third), 2)
+  }
   return reduce(terms, options)
 }
