@@ -381,6 +381,15 @@
       "cases": 11
     },
     {
+      "fixture": "optim/proximal.json",
+      "source": "oracle/cases/optim/proximal.py",
+      "reference": {
+        "cvxpy": "1.9.3",
+        "sklearn": "1.9.1"
+      },
+      "cases": 25
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {

@@ -1002,8 +1002,17 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `minimize/constrained.ts`: projected gradient, penalty and barrier methods, augmented Lagrangian, SLSQP.
 - `minimize/convex.ts`: subgradient method, mirror descent, Frank-Wolfe, dual ascent.
 - `scalar.ts`: `minimizeScalar` (golden section, Brent, bounded), `bracket`.
-- `proximal.ts`: proximal operators (L1, L2, group, nuclear, box, simplex, total variation), ISTA, FISTA, ADMM, primal-dual
-  (Chambolle-Pock), projections.
+- `proximal.ts`: proximal operators on values, differentiable (`proxL1`, `proxL2`, `proxSquaredL2`, `proxElasticNet`,
+  `proxGroupLasso`, `proxNuclear`, `proxHuber`, `proxLinf`, `proxConjugate` by the Moreau decomposition) and the
+  projections every optim file uses (`projectBox`, `projectNonnegative`, `projectSimplex`, `projectL1Ball`,
+  `projectL2Ball`, `projectAffine`, `projectHalfspace`, `projectNuclearBall`, `projectPsd`).
+- `total-variation.ts`: `proxTv1d` (Condat's direct algorithm, differentiable in the signal and the weight),
+  `proxTv2d` and `tv2dAlgorithm` (Beck-Teboulle fast gradient projection, isotropic or anisotropic, box constraints).
+- `splitting.ts`: `proximalGradientAlgorithm`, `ista` and `fista` (backtracking, adaptive restart, gradient mapping),
+  `chambollePock` (primal-dual hybrid gradient with residuals, operator norm by power iteration).
+- `admm.ts`: `admm` (scaled form, A x + B z = c, over-relaxation, residual balancing, Boyd's stopping rule),
+  `admmProx` (Douglas-Rachford splitting from two proximal operators), `admmLasso` (cached Cholesky),
+  `consensusAdmm` (global consensus with a shared regulariser).
 - `smo.ts`: sequential minimal optimisation for quadratic programs with box constraints and one linear equality (the
   SVM dual family): working-set selection (maximal violating pair, second order), shrinking, traced active sets.
 - `sparse.ts`: sparse approximation: matching pursuit, orthogonal matching pursuit, CoSaMP, iterative hard
