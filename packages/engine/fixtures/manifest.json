@@ -373,12 +373,22 @@
       "cases": 12
     },
     {
-      "fixture": "optim/optimisers.json",
-      "source": "oracle/cases/optim/optimisers.py",
+      "fixture": "optim/adaptive.json",
+      "source": "oracle/cases/optim/adaptive.py",
       "reference": {
-        "torch": "2.14.1"
+        "torch": "2.14.1",
+        "optax": "0.2.8"
       },
-      "cases": 11
+      "cases": 29
+    },
+    {
+      "fixture": "optim/first_order.json",
+      "source": "oracle/cases/optim/first_order.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 27
     },
     {
       "fixture": "pgm/networks.json",
