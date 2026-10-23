@@ -1023,7 +1023,9 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `integer.ts`: `milp` and `milpAlgorithm` (branch and bound on simplex relaxations as child runs, best-first or
   depth-first, incumbent, bound and gap, Gomory mixed-integer cuts at the root, the search tree traced), `knapsack`
   (0-1, by dynamic programming or branch and bound with Dantzig's bound), `setCover` (greedy or exact).
-- `assignment.ts`: Hungarian algorithm, auction algorithm, stable matching (Gale-Shapley).
+- `assignment.ts`: `linearSumAssignment` (rectangular, maximise) by `hungarianAlgorithm` (shortest augmenting paths
+  with potentials), `auction` and `auctionAlgorithm` (Bertsekas, epsilon scaling), `stableMatching` and
+  `galeShapleyAlgorithm` (incomplete lists, unequal sides), `blockingPairs`.
 - `online.ts`: online gradient descent, FTRL, hedge, exponentiated gradient, online Newton step, regret records.
 - `transport.ts`: exact optimal transport, entropic Sinkhorn (log domain), 1-D Wasserstein, sliced Wasserstein,
   Gromov-Wasserstein, barycentres, unbalanced transport.

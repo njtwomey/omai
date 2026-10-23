@@ -373,6 +373,14 @@
       "cases": 12
     },
     {
+      "fixture": "optim/assignment.json",
+      "source": "oracle/cases/optim/assignment.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "optim/integer.json",
       "source": "oracle/cases/optim/integer.py",
       "reference": {
