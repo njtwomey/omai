@@ -416,6 +416,14 @@
       "cases": 12
     },
     {
+      "fixture": "optim/variance_reduced.json",
+      "source": "oracle/cases/optim/variance_reduced.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {
