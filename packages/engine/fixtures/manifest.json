@@ -373,6 +373,14 @@
       "cases": 12
     },
     {
+      "fixture": "optim/minimize/derivative_free.json",
+      "source": "oracle/cases/optim/minimize/derivative_free.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 19
+    },
+    {
       "fixture": "optim/optimisers.json",
       "source": "oracle/cases/optim/optimisers.py",
       "reference": {

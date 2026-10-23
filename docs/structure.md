@@ -996,7 +996,15 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   trust region, each traced (objective, gradient norm, step, curvature pairs).
 - `minimize/newton.ts`: Newton with modified Cholesky, trust region (dogleg, Steihaug CG), Newton-CG.
 - `minimize/least-squares.ts`: Gauss-Newton, Levenberg-Marquardt, bounded least squares, `curveFit`.
-- `minimize/derivative-free.ts`: Nelder-Mead, Powell, pattern search, COBYLA.
+- `minimize/derivative-free.ts`: `nelderMead` (scipy's moves exactly: adaptive coefficients, xatol and fatol, initial
+  simplex, evaluation budget, clipping into bounds), `powell` (conjugate directions with scipy's bracket, Brent and
+  bounded line minimisations, initial direction set, bounds), the `Bounds` type.
+- `minimize/pattern-search.ts`: `hookeJeeves` (exploratory and pattern moves), `compassSearch` (a generalised pattern
+  search: coordinate or minimal positive spanning set, mesh expansion and contraction, opportunistic or complete polls,
+  bounds).
+- `minimize/cobyla.ts`: `cobyla` (Powell's linear-approximation trust-region method for inequality constraints c(x) >= 0
+  and bounds: simplex of interpolation points, least-violation then objective trust-region subproblem, merit penalty
+  updates, geometry steps, rhobeg and rhoend), `InequalityConstraint`.
 - `minimize/global.ts`: simulated annealing, differential evolution, CMA-ES, basin hopping, particle swarm, dual
   annealing.
 - `minimize/constrained.ts`: projected gradient, penalty and barrier methods, augmented Lagrangian, SLSQP.

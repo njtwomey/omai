@@ -21,6 +21,7 @@ oracle-core = [
     "shapely>=2.2.0",
     "pot>=0.9.7.post1",
     "cvxpy>=1.9.3",
+    "pymoo>=0.6.2",
 ]
 oracle-torch = [
     "optax>=0.2.8",
