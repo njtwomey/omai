@@ -12,12 +12,14 @@ REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__
 # Logs of the smaller tail directly, of the larger one through log1p of the other, so neither rounds to log(1).
 def log_gammainc(a: FloatArray, x: FloatArray) -> FloatArray:
     p, q = sp.gammainc(a, x), sp.gammaincc(a, x)
-    return np.where(p < 0.5, np.log(p), np.log1p(-q))
+    with np.errstate(divide="ignore"):  # the unselected branch may take log(0)
+        return np.where(p < 0.5, np.log(p), np.log1p(-q))
 
 
 def log_gammaincc(a: FloatArray, x: FloatArray) -> FloatArray:
     p, q = sp.gammainc(a, x), sp.gammaincc(a, x)
-    return np.where(q < 0.5, np.log(q), np.log1p(-p))
+    with np.errstate(divide="ignore"):  # the unselected branch may take log(0)
+        return np.where(q < 0.5, np.log(q), np.log1p(-p))
 
 
 def cases() -> list[Case]:

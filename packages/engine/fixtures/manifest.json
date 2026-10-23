@@ -151,6 +151,14 @@
       "cases": 12
     },
     {
+      "fixture": "optim/optimisers.json",
+      "source": "oracle/cases/optim/optimisers.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "tensor/ops/arithmetic.json",
       "source": "oracle/cases/tensor/ops/arithmetic.py",
       "reference": {
