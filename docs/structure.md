@@ -1000,7 +1000,13 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `minimize/global.ts`: simulated annealing, differential evolution, CMA-ES, basin hopping, particle swarm, dual
   annealing.
 - `minimize/constrained.ts`: projected gradient, penalty and barrier methods, augmented Lagrangian, SLSQP.
-- `minimize/convex.ts`: subgradient method, mirror descent, Frank-Wolfe, dual ascent.
+- `minimize/convex.ts`: `subgradientMethod` (projected, step rules constant, constant length, square summable,
+  diminishing, Polyak, or custom; best-point tracking), `mirrorDescent` (`entropicMirror` for exponentiated gradient on
+  the simplex, `euclideanMirror`, any `Mirror`; last, best or averaged output), `dualAscent` (and the method of
+  multipliers; numeric or closed-form inner minimisation), `dualDecomposition` (separable blocks).
+- `minimize/frank-wolfe.ts`: `frankWolfe` (conditional gradient: standard 2 / (k + 2), adaptive short step, away
+  steps and pairwise steps with active sets, the Frank-Wolfe gap) and the oracles `simplexLmo`, `l1BallLmo`, `boxLmo`,
+  `l2BallLmo`, `nuclearBallLmo`.
 - `scalar.ts`: `minimizeScalar` (golden section, Brent, bounded), `bracket`.
 - `proximal.ts`: proximal operators on values, differentiable (`proxL1`, `proxL2`, `proxSquaredL2`, `proxElasticNet`,
   `proxGroupLasso`, `proxNuclear`, `proxHuber`, `proxLinf`, `proxConjugate` by the Moreau decomposition) and the

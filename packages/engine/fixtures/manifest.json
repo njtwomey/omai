@@ -373,6 +373,14 @@
       "cases": 12
     },
     {
+      "fixture": "optim/minimize/convex.json",
+      "source": "oracle/cases/optim/minimize/convex.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "optim/optimisers.json",
       "source": "oracle/cases/optim/optimisers.py",
       "reference": {
