@@ -62,11 +62,12 @@ describe('least squares against scipy.optimize', () => {
           expectMatches(solution(r), c.output, c.rtol, c.atol, c.name)
           break
         }
+        case 'trf':
         case 'dogbox': {
           const [x0, t, y, lb, ub] = inputs as [Tensor, Tensor, Tensor, Tensor | undefined, Tensor | undefined]
           const f = residuals(c.params['residuals'] as string, t, y)
           const loss = c.params['loss'] as O.RobustLoss | undefined
-          const r = O.dogbox(f, x0, {
+          const r = (c.fn === 'trf' ? O.trf : O.dogbox)(f, x0, {
             ...tight,
             ...(lb === undefined || ub === undefined ? {} : { bounds: { lower: toFlat(lb), upper: toFlat(ub) } }),
             ...(loss === undefined ? {} : { loss, fScale: 0.1 }),
@@ -130,10 +131,11 @@ describe('least squares', () => {
   it('dogbox rejects a start outside the bounds', () => {
     expect(() => O.dogbox((x: Value) => x, [2], { bounds: [[0, 1]] })).toThrow(/outside/)
   })
-  it('leastSquares chooses dogbox with bounds and LM without', () => {
+  it('leastSquares defaults to the trust region reflective method and takes others', () => {
     const f = (x: Value): Value => sub(x, tensor([3, -3]))
     expect(O.leastSquares(f, [0, 0]).activeMask).toEqual([0, 0])
     expect(O.leastSquares(f, [0, 0], { bounds: { lower: -1, upper: 1 } }).activeMask).toEqual([1, -1])
+    expect(O.leastSquares(f, [0, 0], { method: O.dogbox, bounds: { lower: -1, upper: 1 } }).activeMask).toEqual([1, -1])
   })
   it('curveFit reports infinite covariance when there are no degrees of freedom', () => {
     const fit = O.curveFit((t, p) => mul(p as Value, t), [1], [2], [1])

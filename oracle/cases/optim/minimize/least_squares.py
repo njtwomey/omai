@@ -1,5 +1,6 @@
-"""Nonlinear and linear least squares against scipy.optimize: least_squares (lm, dogbox with bounds and robust losses),
-curve_fit (parameters and covariance), nnls and lsq_linear (bvls). The TypeScript test defines the same residuals."""
+"""Nonlinear and linear least squares against scipy.optimize: least_squares (lm, trf and dogbox, with bounds and
+robust losses), curve_fit (parameters and covariance), nnls and lsq_linear (bvls). The TypeScript test defines the same
+residuals."""
 
 from collections.abc import Callable
 from typing import Literal
@@ -56,6 +57,8 @@ RESIDUALS: dict[str, tuple[Residuals, FloatArray]] = {
 
 type Loss = Literal["linear", "soft_l1", "huber", "cauchy", "arctan"]
 
+METHODS: list[Literal["dogbox", "trf"]] = ["dogbox", "trf"]
+
 
 def result(r: so.OptimizeResult) -> FloatArray:
     return np.concatenate([np.asarray(r.x, dtype=np.float64), [float(r.cost)]])
@@ -70,6 +73,10 @@ def cases() -> list[Case]:
             case(f"lm/{name}", "levenbergMarquardt", [x0, T, Y_EXP], result(r), rtol=1e-7, atol=1e-9, residuals=name)
         )
         out.append(case(f"gn/{name}", "gaussNewton", [x0, T, Y_EXP], result(r), rtol=1e-6, atol=1e-8, residuals=name))
+    for name in ["rosenbrock", "helical", "beale", "exponential"]:
+        f, x0 = RESIDUALS[name]
+        r = so.least_squares(f, x0, method="trf", xtol=1e-12, ftol=1e-12, gtol=1e-12)
+        out.append(case(f"trf/{name}", "trf", [x0, T, Y_EXP], result(r), rtol=1e-7, atol=1e-9, residuals=name))
     bounded: list[tuple[str, list[tuple[float, float]]]] = [
         ("rosenbrock", [(-2.0, 0.8), (-2.0, 2.0)]),
         ("beale", [(0.0, 2.5), (0.0, 0.4)]),
@@ -80,34 +87,36 @@ def cases() -> list[Case]:
         lb = np.array([b[0] for b in bounds])
         ub = np.array([b[1] for b in bounds])
         start = np.clip(x0, lb, ub)
-        r = so.least_squares(f, start, method="dogbox", bounds=(lb, ub), xtol=1e-12, ftol=1e-12, gtol=1e-12)
-        out.append(
-            case(
-                f"dogbox/{name}",
-                "dogbox",
-                [start, T, Y_EXP, lb, ub],
-                np.concatenate([result(r), np.asarray(r.active_mask, dtype=np.float64)]),
-                rtol=1e-6,
-                atol=1e-8,
-                residuals=name,
+        for method in METHODS:
+            r = so.least_squares(f, start, method=method, bounds=(lb, ub), xtol=1e-12, ftol=1e-12, gtol=1e-12)
+            out.append(
+                case(
+                    f"{method}-bounded/{name}",
+                    method,
+                    [start, T, Y_EXP, lb, ub],
+                    np.concatenate([result(r), np.asarray(r.active_mask, dtype=np.float64)]),
+                    rtol=1e-6,
+                    atol=1e-8,
+                    residuals=name,
+                )
             )
-        )
     losses: list[Loss] = ["soft_l1", "huber", "cauchy", "arctan"]
     for loss in losses:
         f, x0 = RESIDUALS["outliers"]
-        r = so.least_squares(f, x0, method="dogbox", loss=loss, f_scale=0.1, xtol=1e-12, ftol=1e-12, gtol=1e-12)
-        out.append(
-            case(
-                f"robust/{loss}",
-                "dogbox",
-                [x0, T, Y_OUT],
-                result(r),
-                rtol=1e-6,
-                atol=1e-8,
-                residuals="outliers",
-                loss=loss,
+        for method in METHODS:
+            r = so.least_squares(f, x0, method=method, loss=loss, f_scale=0.1, xtol=1e-12, ftol=1e-12, gtol=1e-12)
+            out.append(
+                case(
+                    f"robust-{method}/{loss}",
+                    method,
+                    [x0, T, Y_OUT],
+                    result(r),
+                    rtol=1e-6,
+                    atol=1e-8,
+                    residuals="outliers",
+                    loss=loss,
+                )
             )
-        )
     # curve_fit: plain, weighted (relative and absolute sigma), and bounded.
     sigma = 0.02 + 0.01 * T
     fits: list[tuple[str, FloatArray | None, bool, tuple[list[float], list[float]] | None]] = [

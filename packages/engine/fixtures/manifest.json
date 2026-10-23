@@ -549,7 +549,7 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 25
+      "cases": 36
     },
     {
       "fixture": "optim/minimize/newton.json",

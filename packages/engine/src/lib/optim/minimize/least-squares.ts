@@ -23,7 +23,8 @@ import {
 } from './_least-squares.ts'
 import type { VectorState } from './_shared.ts'
 import { configOf, LINE_SEARCH_CHANNEL, lineSearchMessage, observeVector, vectorDone, vectorSchema } from './_shared.ts'
-import { type DogboxOptions, dogbox } from './least-squares-bounded.ts'
+import type { DogboxOptions } from './least-squares-bounded.ts'
+import { trf } from './least-squares-trf.ts'
 import {
   type FlatResiduals,
   flatResiduals,
@@ -540,14 +541,14 @@ export type LeastSquaresMethod = (r: ResidualFunction, x0: Parameters, options?:
 export type LeastSquaresSolveOptions = LevenbergMarquardtOptions &
   GaussNewtonOptions &
   DogboxOptions & {
-    /** The method (default Levenberg-Marquardt, or the bounded dogbox method when bounds or a robust loss are given). */
+    /** The method (default the trust region reflective method, as scipy's). */
     readonly method?: LeastSquaresMethod
   }
 
 /**
  * Solve a nonlinear least-squares problem, scipy.optimize.least_squares style: minimise 0.5 sum rho(f_i^2) subject to
- * bounds. The method is a function value: {@link levenbergMarquardt} (default without bounds), {@link dogbox}
- * (default with bounds or a robust loss) or {@link gaussNewton}.
+ * bounds. The method is a function value: {@link trf} (default, as scipy's), {@link dogbox},
+ * {@link levenbergMarquardt} (no bounds or losses) or {@link gaussNewton}.
  *
  * @param r - The residual function.
  * @param x0 - The start.
@@ -568,12 +569,7 @@ export function leastSquares(
   options: LeastSquaresSolveOptions = {},
 ): LeastSquaresResult {
   const { method, ...rest } = options
-  const m =
-    method ??
-    (options.bounds !== undefined || (options.loss !== undefined && options.loss !== 'linear')
-      ? (dogbox as LeastSquaresMethod)
-      : (levenbergMarquardt as LeastSquaresMethod))
-  return m(r, x0, rest)
+  return (method ?? (trf as LeastSquaresMethod))(r, x0, rest)
 }
 
 /** Options of {@link curveFit}. */
@@ -582,7 +578,7 @@ export interface CurveFitOptions extends Omit<LeastSquaresSolveOptions, 'loss' |
   readonly sigma?: TensorLike
   /** Treat sigma as absolute (pcov not rescaled by the residual variance; default false). */
   readonly absoluteSigma?: boolean
-  /** A robust loss (uses the bounded dogbox method). */
+  /** A robust loss (fitted by the trust region reflective method). */
   readonly loss?: RobustLoss
   readonly fScale?: number
 }
@@ -642,7 +638,12 @@ export function curveFit(
     } else whiten = (d) => div(d, sg)
   }
   const r = (p: unknown): Value => whiten(sub(model(x, p as Parameters), y))
-  const result = leastSquares(r, p0, rest)
+  // scipy's curve_fit: Levenberg-Marquardt without bounds or a robust loss, the trust region reflective method with.
+  const plain = rest.bounds === undefined && (rest.loss === undefined || rest.loss === 'linear')
+  const result = leastSquares(r, p0, {
+    ...rest,
+    method: rest.method ?? (plain ? (levenbergMarquardt as LeastSquaresMethod) : (trf as LeastSquaresMethod)),
+  })
   if (!result.converged && result.status !== 'completed')
     throw new WhiteboxError('convergence', `curveFit: optimal parameters not found: ${result.message}`)
   const J = Float64Array.from(toFlat(result.jacobian))
