@@ -1,5 +1,5 @@
-import { argmaxOf, type Json, meanOf, WhiteboxError } from '../../../lib/base/index.ts'
-import { binaryCrossEntropyWithLogits, crossEntropy, mse } from '../../../lib/losses/index.ts'
+import { type Json, meanOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { binaryCrossEntropyWithLogits } from '../../../lib/losses/index.ts'
 import type { ActivationName, Params } from '../../../lib/nn/index.ts'
 import { adam, type Tree } from '../../../lib/optim/index.ts'
 import { foldIn, type Key, key as makeKey, randint, uniform } from '../../../lib/random/index.ts'
@@ -25,17 +25,14 @@ import {
 } from '../../../lib/tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../../lib/trace/index.ts'
 import { gradientStep, observationSize, rowsTensor, type Spaces, vectorTensor } from './_common.ts'
+import { type Demonstration, learner } from './_learner.ts'
 import { mlpNet } from './_networks.ts'
 import type { PolicyAction } from './_on-policy.ts'
 import { type PolicyGradientState, type PpoOptions, ppo } from './policy-gradient.ts'
 
-type Vec = readonly number[]
+export type { Demonstration } from './_learner.ts'
 
-/** One expert decision: an observation and the expert's action. */
-export interface Demonstration<A> {
-  readonly observation: Vec
-  readonly action: A
-}
+type Vec = readonly number[]
 
 // --------------------------------------------------------------------------------------------------------- DAgger
 
@@ -74,56 +71,6 @@ export interface DaggerState<A> {
   readonly episodeReturn: number
 }
 
-/** A learner network: logits over discrete actions, or a regressor of continuous ones. */
-function learner(env: Spaces, options: { hidden?: readonly number[]; activation?: ActivationName; key?: Key }) {
-  const d = observationSize(env.observationSpace)
-  const discrete = env.actionSpace.kind === 'discrete'
-  const k =
-    env.actionSpace.kind === 'discrete'
-      ? env.actionSpace.n
-      : env.actionSpace.kind === 'box'
-        ? env.actionSpace.shape.reduce((a, b) => a * b, 1)
-        : 0
-  if (k === 0) throw new WhiteboxError('value', 'imitation: needs a discrete or box action space')
-  const head = mlpNet([d, ...(options.hidden ?? [32]), k], options.activation ?? 'relu', options.key ?? makeKey(0))
-  const predict = (p: Params, obs: Vec): PolicyAction => {
-    const out = toFlat(head.apply(p, rowsTensor([obs], d)))
-    return discrete ? argmaxOf(out) : out
-  }
-  const loss = (p: Params, data: readonly Demonstration<PolicyAction>[]): Value => {
-    const x = rowsTensor(
-      data.map((e) => e.observation),
-      d,
-    )
-    const out = head.apply(p, x)
-    return discrete
-      ? crossEntropy(out, vectorTensor(data.map((e) => e.action as number)))
-      : mse(
-          out,
-          rowsTensor(
-            data.map((e) => e.action as Vec),
-            k,
-          ),
-        )
-  }
-  const agreement = (p: Params, data: readonly Demonstration<PolicyAction>[]): number => {
-    if (data.length === 0) return 0
-    const x = rowsTensor(
-      data.map((e) => e.observation),
-      d,
-    )
-    const out = toFlat(head.apply(p, x))
-    let total = 0
-    for (const [i, e] of data.entries()) {
-      const row = out.slice(i * k, (i + 1) * k)
-      if (discrete) total += argmaxOf(row) === e.action ? 1 : 0
-      else for (const [j, a] of (e.action as Vec).entries()) total -= ((row[j] ?? 0) - a) ** 2 / k
-    }
-    return total / data.length
-  }
-  return { params: head.params, predict, loss, agreement, discrete, d, k }
-}
-
 /**
  * DAgger (Ross, Gordon and Bagnell 2011) as an {@link Algorithm}: each iteration rolls out the mixture policy that
  * follows the expert with probability `beta_i` and the learner otherwise (per step), labels every visited observation
@@ -143,7 +90,7 @@ function learner(env: Spaces, options: { hidden?: readonly number[]; activation?
  * ```ts
  * import { daggerAlgorithm } from 'whitebox-engine/methods/rl/agents'
  * import { cartPole } from 'whitebox-engine/methods/rl'
- * daggerAlgorithm(cartPole.create(), (o) => (o[2] > 0 ? 1 : 0)).name // => 'dagger'
+ * daggerAlgorithm(cartPole.create(), (o) => ((o[2] ?? 0) > 0 ? 1 : 0)).name // => 'dagger'
  * ```
  */
 export function daggerAlgorithm<S, A extends PolicyAction>(
@@ -265,7 +212,7 @@ export interface DaggerResult<A> {
  * import { dagger } from 'whitebox-engine/methods/rl/agents'
  * import { cartPole } from 'whitebox-engine/methods/rl'
  * import { timeLimit } from 'whitebox-engine/rl'
- * dagger(timeLimit(cartPole.create(), 20), (o) => (o[2] > 0 ? 1 : 0), { iterations: 1 }).dataset.length // => 40
+ * dagger(timeLimit(cartPole.create(), 20), (o) => ((o[2] ?? 0) > 0 ? 1 : 0), { iterations: 1 }).dataset.length // => 40
  * ```
  */
 export function dagger<S, A extends PolicyAction>(

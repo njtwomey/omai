@@ -291,11 +291,11 @@ export function predicateShield<C, A>(isSafe: (context: C, action: A) => boolean
  * @example
  * ```ts
  * import { modelShield } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * const env = cliffWalking.create()
- * const model = env.model
- * const shield = model === undefined ? undefined : modelShield(model, (s) => s > 36 && s < 47)
- * shield?.risk(36, 1) // => 1
+ * import { frozenLake } from 'whitebox-engine/methods/rl'
+ * // On the dry lake, moving down from cell 1 falls into the hole at cell 5.
+ * const model = frozenLake.create({ isSlippery: false }).model
+ * const shield = model === undefined ? undefined : modelShield(model, (s) => s === 5)
+ * [shield?.risk(1, 1), shield?.risk(1, 2)] // => [1, 0]
  * ```
  */
 export function modelShield<S, A>(

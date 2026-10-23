@@ -186,6 +186,7 @@ describe('policy-gradient building blocks', () => {
     expect(r.direction[0]).toBeCloseTo(0.4, 12)
     expect(r.direction[1]).toBeCloseTo(0.2, 12)
     expect(adaptKlCoefficient(4, 0.1, 0.01)).toBe(8)
+    expect(a2c(cartPole.create(), { advantages: 'gae' }).config).toMatchObject({ gaeLambda: 0.95 })
   })
 
   it('rejects action spaces it cannot handle', () => {

@@ -1,24 +1,19 @@
-import { argmaxOf, type Json } from '../../../lib/base/index.ts'
-import type { ActivationName, Params } from '../../../lib/nn/index.ts'
+import { argmaxOf } from '../../../lib/base/index.ts'
+import type { Params } from '../../../lib/nn/index.ts'
 import { adam, incrementalUpdate, type Tree } from '../../../lib/optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../../../lib/random/index.ts'
 import {
   type Agent,
-  bufferAdd,
-  bufferSample,
   categoricalPolicy,
   gaussianNoise,
   gaussianPolicy,
   type NoiseProcess,
   ornsteinUhlenbeckNoise,
-  type ReplayBuffer,
   replayBuffer,
-  type Transition,
 } from '../../../lib/rl/index.ts'
 import {
   add,
   clip,
-  concat,
   exp,
   fromStorage,
   item,
@@ -30,7 +25,6 @@ import {
   primalOf,
   sliceAxis,
   softmax,
-  square,
   sub,
   sum,
   type Tensor,
@@ -38,200 +32,24 @@ import {
   toFlat,
   type Value,
 } from '../../../lib/tensor/index.ts'
-import type { MetricChannel } from '../../../lib/trace/index.ts'
-import {
-  actionBox,
-  actionCount,
-  gradientStep,
-  observationSize,
-  rowsTensor,
-  type Spaces,
-  vectorTensor,
-} from './_common.ts'
+import { actionCount, gradientStep, observationSize, rowsTensor, type Spaces, vectorTensor } from './_common.ts'
 import { mlpNet } from './_networks.ts'
+import {
+  type ActorCriticAgentState,
+  baseConfig,
+  boxNetworks,
+  common,
+  type Machinery,
+  METRICS,
+  mse,
+  type OffPolicyOptions,
+  offPolicyAgent,
+  SAC_METRICS,
+  sampleBatch,
+  scalar,
+} from './_off-policy.ts'
 
-// ------------------------------------------------------------------------------------------------ shared plumbing
-
-/** Options shared by the off-policy actor-critic agents (stable-baselines3's defaults, scaled down). */
-export interface OffPolicyOptions {
-  /** Hidden widths of the actor and critic networks (default `[64, 64]`). */
-  readonly hidden?: readonly number[]
-  /** The hidden activation (default `'relu'`). */
-  readonly activation?: ActivationName
-  /** Learning rate of the actor, critics and temperature (default 1e-3; 3e-4 for SAC). */
-  readonly learningRate?: number
-  readonly actorLearningRate?: number
-  readonly criticLearningRate?: number
-  readonly gamma?: number
-  /** Polyak averaging weight of the target networks (default 0.005). */
-  readonly tau?: number
-  readonly bufferSize?: number
-  readonly batchSize?: number
-  /** Uniformly random actions for this many steps before learning starts (default 100). */
-  readonly learningStarts?: number
-  readonly trainFrequency?: number
-  readonly gradientSteps?: number
-  /** The initialisation key (default key(0)). */
-  readonly key?: Key
-}
-
-/** The state of the off-policy actor-critic agents. */
-export interface ActorCriticAgentState {
-  readonly actor: Params
-  /** The critic networks (`q1`, and `q2` for twin critics). */
-  readonly critic: Params
-  readonly actorTarget: Params
-  readonly criticTarget: Params
-  readonly actorOptState: unknown
-  readonly criticOptState: unknown
-  /** The log entropy temperature (SAC). */
-  readonly logAlpha: number
-  readonly alphaOptState: unknown
-  readonly buffer: ReplayBuffer<Transition<readonly number[], number | readonly number[]>>
-  /** The current exploration noise (DDPG and TD3), in normalised action units. */
-  readonly noise: readonly number[]
-  readonly steps: number
-  readonly updates: number
-  readonly stats: Readonly<Record<string, number>>
-}
-
-type Stored = Transition<readonly number[], number | readonly number[]>
-
-const METRICS: Readonly<Record<string, MetricChannel>> = {
-  actorLoss: { description: 'actor loss of the last update', direction: 'lower' },
-  criticLoss: { description: 'critic (TD) loss of the last update', direction: 'lower' },
-  qValue: { description: 'mean Q value of the last batch' },
-}
-
-const SAC_METRICS: Readonly<Record<string, MetricChannel>> = {
-  ...METRICS,
-  alpha: { description: 'the entropy temperature' },
-  entropy: { description: 'policy entropy estimate on the last batch' },
-}
-
-interface Batch {
-  readonly obs: Tensor
-  readonly next: Tensor
-  readonly rewards: Tensor
-  readonly notDone: Tensor
-  readonly items: readonly Stored[]
-}
-
-function sampleBatch(s: ActorCriticAgentState, d: number, batchSize: number, k: Key): Batch {
-  const items = bufferSample(s.buffer, k, batchSize).items
-  return {
-    obs: rowsTensor(
-      items.map((t) => t.observation),
-      d,
-    ),
-    next: rowsTensor(
-      items.map((t) => t.nextObservation),
-      d,
-    ),
-    rewards: vectorTensor(items.map((t) => t.reward)),
-    // Only terminal transitions stop the bootstrap; truncated ones bootstrap from their final observation.
-    notDone: vectorTensor(items.map((t) => (t.terminated ? 0 : 1))),
-    items,
-  }
-}
-
-interface Machinery {
-  readonly name: string
-  readonly config: Json
-  readonly metrics: Readonly<Record<string, MetricChannel>>
-  readonly init: (k: Key) => ActorCriticAgentState
-  /** The policy's action once learning has started (exploration included). */
-  readonly act: (s: ActorCriticAgentState, obs: readonly number[], k: Key) => number | readonly number[]
-  readonly random: (k: Key) => number | readonly number[]
-  readonly greedy: (s: ActorCriticAgentState, obs: readonly number[]) => number | readonly number[]
-  readonly update: (s: ActorCriticAgentState, k: Key) => ActorCriticAgentState
-  readonly noise?: NoiseProcess
-}
-
-function offPolicyAgent<A>(
-  m: Machinery,
-  options: OffPolicyOptions,
-): Agent<ActorCriticAgentState, readonly number[], A> {
-  const learningStarts = options.learningStarts ?? 100
-  const trainFrequency = options.trainFrequency ?? 1
-  const gradientSteps = options.gradientSteps ?? 1
-  const batchSize = options.batchSize ?? 64
-  return {
-    name: m.name,
-    config: m.config,
-    metrics: m.metrics,
-    init: m.init,
-    act: (s, obs, k) => (s.steps < learningStarts ? m.random(k) : m.act(s, obs, k)) as A,
-    greedy: (s, obs) => m.greedy(s, obs) as A,
-    learn: (s, t, k) => {
-      const done = t.terminated || t.truncated
-      const noise = m.noise === undefined ? s.noise : done ? m.noise.init() : m.noise.step(s.noise, foldIn(k, 99))
-      let next: ActorCriticAgentState = {
-        ...s,
-        buffer: bufferAdd(s.buffer, t as Stored),
-        noise,
-        steps: s.steps + 1,
-      }
-      if (next.steps >= learningStarts && next.steps % trainFrequency === 0 && next.buffer.size >= batchSize) {
-        for (let g = 0; g < gradientSteps; g++) next = { ...m.update(next, foldIn(k, g)), updates: next.updates + 1 }
-      }
-      return next
-    },
-    stats: (s) => s.stats,
-  }
-}
-
-/** Networks over a box action space: actions are normalised to [-1, 1] inside the critics, as stable-baselines3 does. */
-function boxNetworks(env: Spaces, options: OffPolicyOptions, name: string, actorOutputs: (k: number) => number) {
-  const d = observationSize(env.observationSpace)
-  const box = actionBox(env.actionSpace, name)
-  const k = box.size
-  const hidden = options.hidden ?? [64, 64]
-  const activation = options.activation ?? 'relu'
-  const key = options.key ?? makeKey(0)
-  const actor = mlpNet([d, ...hidden, actorOutputs(k)], activation, foldIn(key, 0))
-  const q1 = mlpNet([d + k, ...hidden, 1], activation, foldIn(key, 1))
-  const q2 = mlpNet([d + k, ...hidden, 1], activation, foldIn(key, 2))
-  const scale = box.low.map((l, i) => ((box.high[i] ?? 1) - l) / 2)
-  const centre = box.low.map((l, i) => ((box.high[i] ?? 1) + l) / 2)
-  const toEnv = (u: readonly number[]): number[] =>
-    u.map((x, i) => (centre[i] ?? 0) + (scale[i] ?? 1) * Math.min(1, Math.max(-1, x)))
-  const normalise = (a: readonly number[]): number[] => a.map((x, i) => (x - (centre[i] ?? 0)) / (scale[i] ?? 1))
-  const q = (net: 'q1' | 'q2', critic: Params, obs: Value, u: Value): Value =>
-    sum((net === 'q1' ? q1 : q2).apply(critic[net] as Params, concat([obs, u], 1)), -1)
-  const actions = (items: readonly Stored[]): Tensor =>
-    rowsTensor(
-      items.map((t) => normalise(t.action as readonly number[])),
-      k,
-    )
-  const random = (key2: Key): number[] => toEnv(Array.from(uniform(key2, [k], { low: -1, high: 1 }).data))
-  return { d, k, box, actor, q1, q2, scale, centre, toEnv, normalise, q, actions, random }
-}
-
-const mse = (a: Value, b: Value): Value => mean(square(sub(a, b)))
-const scalar = (v: Value): number => item(primalOf(v))
-
-function common(options: OffPolicyOptions, lr: number) {
-  return {
-    gamma: options.gamma ?? 0.99,
-    tau: options.tau ?? 0.005,
-    batchSize: options.batchSize ?? 64,
-    actorOpt: adam({ learningRate: options.actorLearningRate ?? options.learningRate ?? lr }),
-    criticOpt: adam({ learningRate: options.criticLearningRate ?? options.learningRate ?? lr }),
-    bufferSize: options.bufferSize ?? 10_000,
-  }
-}
-
-function baseConfig(options: OffPolicyOptions, c: ReturnType<typeof common>): Record<string, Json> {
-  return {
-    hidden: [...(options.hidden ?? [64, 64])],
-    gamma: c.gamma,
-    tau: c.tau,
-    batchSize: c.batchSize,
-    bufferSize: c.bufferSize,
-    learningStarts: options.learningStarts ?? 100,
-  }
-}
+export type { ActorCriticAgentState, OffPolicyOptions } from './_off-policy.ts'
 
 // ------------------------------------------------------------------------------------------------- DDPG and TD3
 
