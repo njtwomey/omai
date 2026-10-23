@@ -498,7 +498,7 @@
       "reference": {
         "numpy": "2.5.4"
       },
-      "cases": 13
+      "cases": 24
     },
     {
       "fixture": "tensor/ops/linear.json",
@@ -530,7 +530,7 @@
       "reference": {
         "numpy": "2.5.4"
       },
-      "cases": 18
+      "cases": 24
     }
   ]
 }

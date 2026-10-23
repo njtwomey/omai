@@ -390,7 +390,8 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 
 - `errors.ts`: `WhiteboxError` (codes: shape, dtype, value, domain, schema, convergence, singular, not-implemented,
   not-differentiable), `isWhiteboxError`, `invariant`, `assertShape`, `assertFinite`.
-- `json.ts`: `Json`, `JsonSchema`, `toJson`/`fromJson` (non-finite numbers and typed arrays round-trip).
+- `json.ts`: `Json`, `JsonSchema`, `encodeNumber`/`decodeNumber`, `toJson`/`fromJson` (non-finite numbers, -0, typed
+  arrays and bigints round-trip through tagged objects).
 - `results.ts`: the shared result shapes: `Estimate` (value, standard error, interval, level, method), `TestResult`
   (statistic, p-value, degrees of freedom, effect size, alternative, method, assumptions), `MetricResult` (estimate,
   breakdowns, sample size), `MetricSpec` (name, inputs, direction, range, category, concept), `formatResult`.
@@ -398,7 +399,9 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
   `argminOf` (loops, never spreading arrays into `Math.max`), `range`, `linspaceNumbers`.
 - `heap.ts`: `heap`, a binary heap with a comparator (the priority queue of neighbour searches, shortest paths and
   best-first search).
-- `options.ts`: shared option shapes (`Tolerance`, `Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults.
+- `options.ts`: shared option shapes (`Tolerance`, `Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults
+  (`defaultTolerance`, `resolveTolerance`, `defaultReduction`, `defaultAlternative`, `defaultConfidenceLevel`,
+  `resolveConfidenceLevel`).
 - `version.ts`: `VERSION`, generated from `package.json`.
 
 ### 4.2 `scene/` (tier 0): pictures and structures as data
@@ -421,8 +424,8 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 ### 4.3 `tensor/` (tier 1): arrays and differentiable primitives (numpy, torch.Tensor, jax.numpy)
 
 oracle: numpy, jax for derivative rules
-- `dtype.ts`: `DType` (float64, float32, int32, bool, complex128), `Storage<D>`, `allocate`, `isFloat`, `isComplex`,
-  `resultType` (explicit promotion table), `finfo`, `iinfo`.
+- `dtype.ts`: `DType` (float64, float32, int32, bool; complex values are pairs, see `complex.ts`), `Storage<D>`,
+  `allocate`, `isFloat`, `resultType` (explicit promotion table), `weakResultType`, `finfo`, `iinfo`.
 - `shape.ts`: `Shape`, `sizeOf`, `stridesOf`, `broadcastShapes`, `normaliseAxis`, `normaliseAxes`, `shapesEqual`,
   type-level shape helpers for literal shapes.
 - `tensor.ts`: `Tensor<D, S>` (dtype, shape, contiguous row-major storage, backend), `tensor`, `asTensor`
@@ -431,30 +434,37 @@ oracle: numpy, jax for derivative rules
   `diag`, `tri`, `tril`, `triu`, `meshgrid`, `indices`.
 - `primitive.ts`: `Primitive` (name, kernel, shape and dtype rules, `jvp`, `vjp`, `batch` rule, `transpose` for linear
   primitives), `definePrimitive` (the extension point), `bind` (dispatch: concrete inputs run the kernel; traced inputs
-  go to the highest-level trace among them).
+  go to the highest-level trace among them), `bind1`.
 - `traced.ts`: `Value` (`Tensor` or `Traced`), the `Traced` interface (abstract shape and dtype, trace, level),
-  `isTraced`, `lift`, `concreteOrThrow` (clear errors where a concrete value is required).
-- `backend.ts`: the `Backend` interface (the kernel vocabulary: elementwise, reduce, scan, matmul, transpose, gather,
-  scatter, where, cast, conv, sort), `BackendCapabilities`. WASM and WebGPU backends implement it later.
-- `cpu/elementwise.ts`, `cpu/reduce.ts`, `cpu/structure.ts`, `cpu/sort.ts`, `cpu/index.ts`: the reference CPU backend.
+  `isTraced`, `lift` (a value into a trace, as a constant when it belongs to a lower one), `concreteOrThrow` (clear
+  errors where a concrete value is required), `primalOf`.
+- `backend.ts`: the `Backend` interface (the kernel vocabulary: elementwise, reduce, scan, matmul, transpose, slice,
+  concat, pad, take and take-along-axis gathers with their scatter-add adjoints, where, cast, sort),
+  `BackendCapabilities` (dtypes, synchronous, device, element limit), `supportsDType`. Convolutions are composed in
+  `numerics/convolution` (im2col and matmul), so a backend needs no conv kernel; WASM and WebGPU backends implement the
+  interface later.
+- `cpu.ts` and `_cpu/elementwise.ts`, `_cpu/reduce.ts`, `_cpu/structure.ts`, `_cpu/sort.ts`: the reference CPU backend.
 - `ops/arithmetic.ts`: `add`, `sub`, `mul`, `div`, `floorDiv`, `mod`, `pow`, `neg`, `abs`, `sign`, `maximum`,
   `minimum`, `clip`, `reciprocal`.
 - `ops/math.ts`: exponentials, logarithms, roots, trigonometric and hyperbolic functions and inverses, `sigmoid`,
   `softplus`, `relu`, `step`, `floor`, `ceil`, `round` (special functions such as `erf` and `lgamma` are primitives defined in
   `numerics/special`).
 - `ops/compare.ts`: comparisons, `isnan`, `isfinite`, logical operations, `where`, `any`, `all`, `allclose`.
-- `ops/reduce.ts`: `sum`, `prod`, `mean`, `var` (two-pass), `std`, `max`, `min`, `argmax`, `argmin`, `cumsum`,
+- `ops/reduce.ts`: `sum`, `prod`, `mean`, `variance` (two-pass), `std`, `max`, `min`, `argmax`, `argmin`, `cumsum`,
   `cumprod`, `logsumexp` (max-shifted), `softmax`, `logSoftmax`, `norm`.
 - `ops/shape.ts`: `reshape`, `flatten`, `transpose`, `swapaxes`, `moveaxis`, `expandDims`, `squeeze`, `broadcastTo`,
   `sumToShape`, `concat`, `stack`, `split`, `chunk`, `flip`, `roll`, `tile`, `repeat`, `pad`, `slidingWindowView`
   (numpy's strided windows along an axis, step and dilation; a view-like gather, differentiable).
-- `ops/indexing.ts`: `slice`, `take`, `takeAlongAxis`, `gather`, `scatter`, `scatterAdd`, `maskedSelect`, `nonzero`,
-  `sort`, `argsort`, `topk`, `searchsorted`, `unique`, `bincount`, `oneHot`, `segmentSum`.
+- `ops/indexing.ts`: `slice`, `take`, `takeAlongAxis` (torch `gather`), `gather` (coordinate tuples, TensorFlow
+  `gather_nd`), `scatter` (functional `x.at[...]` with set, add, mul, max, min), `scatterAdd`, `maskedSelect`,
+  `nonzero`, `sort`, `argsort`, `topk`, `searchsorted`, `unique`, `bincount`, `oneHot`, `segmentSum`.
 - `ops/linear.ts`: `matmul`, `dot`, `outer`, `inner`, `tensordot`, `einsum`, `kron`, `trace`, `diagonal`.
-- `complex.ts`: `complex`, `real`, `imag`, `conj`, `angle`, `absComplex`, `polar`.
+- `complex.ts`: `ComplexValue` (a pair of real values, so every real kernel and derivative rule applies),
+  `isComplex`, `complex`, `real`, `imag`, `conj`, `angle`, `absComplex`, `polar`, `cAdd`, `cSub`, `cMul`, `cDiv`,
+  `cScale`, `cExp`, `cis`.
 - `pytree.ts`: `Tree`, `MapLeaves`, `treeLeaves`, `treeMap`, `treePaths`, `treeFlatten`, `treeUnflatten`, `treeZeros`,
-  `treeCount`, `ravel`, `unravel`.
-- `format.ts`: `formatTensor` (numpy-style display), `tensorToJSON`, `tensorFromJSON`.
+  `treeCount`, `ravel` (returns the flat vector and its `unravel`).
+- `format.ts`: `formatTensor` (numpy-style display), `tensorToJson`, `tensorFromJson`.
 
 ### 4.4 `random/` (tier 2): keys and samplers (jax.random, numpy.random)
 
@@ -657,9 +667,7 @@ primitives; "custom" means a dedicated rule.
 - `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon`, `toFloat32`, `twoSum`, `twoProduct`, `compensatedSum`
   (naive, Kahan, and base's Neumaier and pairwise sums), `propagateError`, `conditionNumber`, `significantDigits`.
 
-`fourier/` (numpy.fft, scipy.fft; linear, so differentiable)
-- `complex.ts`: `ComplexValue` (a pair of real values; the engine has no complex dtype), `complex`, arithmetic (`cAdd`,
-  `cMul`, `cConj`, `cScale`), `cAbs`, `cAngle`, `cExp`, `cis`.
+`fourier/` (numpy.fft, scipy.fft; linear, so differentiable; complex pairs come from `tensor/complex.ts`)
 - `fft.ts`: `fft`, `ifft`, `rfft`, `irfft`, `hfft`, `fftn`, `ifftn`, `fft2`, `ifft2` (radix 2 and Bluestein).
 - `helpers.ts`: `fftfreq`, `rfftfreq`, `fftshift`, `ifftshift`, `nextFastLen`, `dft`, `dftMatrix`.
 - `trig.ts`: `dct`, `idct`, `dst`, `idst` (types I to IV), `mdct`, `imdct`.

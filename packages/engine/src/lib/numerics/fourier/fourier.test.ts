@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
 import { checkPrimitive, grad } from '../../autodiff/index.ts'
-import { add, item, mul, stack, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import {
+  add,
+  type ComplexValue,
+  item,
+  mul,
+  stack,
+  sum,
+  type Tensor,
+  tensor,
+  toFlat,
+  type Value,
+} from '../../tensor/index.ts'
 import * as F from './index.ts'
 
-const pair = (z: F.ComplexValue): Value => stack([z.re, z.im])
+const pair = (z: ComplexValue): Value => stack([z.re, z.im])
 
 describe('Fourier transforms against numpy, scipy.fft and scipy.signal', () => {
   for (const c of loadFixture('numerics/fourier/fourier').cases) {
@@ -13,7 +24,7 @@ describe('Fourier transforms against numpy, scipy.fft and scipy.signal', () => {
       const p = c.params
       const norm = p['norm'] as F.FftNorm
       const type = p['type'] as F.TrigType
-      const z = (): F.ComplexValue => ({ re: t[0] as Tensor, im: t[1] as Tensor })
+      const z = (): ComplexValue => ({ re: t[0] as Tensor, im: t[1] as Tensor })
       const actual: Value =
         c.fn === 'fft'
           ? pair(F.fft(z(), p['n'] as number | undefined, -1, norm))

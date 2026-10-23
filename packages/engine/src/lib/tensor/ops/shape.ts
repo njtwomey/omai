@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../../base/index.ts'
+import { cpu } from '../cpu.ts'
 import { resultType } from '../dtype.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { broadcastShapes, formatShape, normaliseAxis, type Shape, shapesEqual, sizeOf } from '../shape.ts'
@@ -571,4 +572,78 @@ export function pad(x: TensorLike, widths: readonly (readonly [number, number])[
   const all = widths.length === 1 ? v.shape.map(() => widths[0] as readonly [number, number]) : widths
   if (all.length !== v.shape.length) throw new WhiteboxError('shape', `pad: need ${v.shape.length} width pairs`)
   return bind1(padPrimitive, [v], { widths: all, value })
+}
+
+/** Options of {@link slidingWindowView}. */
+export interface SlidingWindowOptions {
+  /** The axis or axes the windows slide along (default: the last `windowShape.length` axes). */
+  readonly axis?: number | readonly number[]
+  /** Distance between consecutive window starts (default 1). */
+  readonly step?: number | readonly number[]
+  /** Spacing between the elements of a window (default 1). */
+  readonly dilation?: number | readonly number[]
+}
+
+/**
+ * Windows sliding along one or more axes, as numpy's `sliding_window_view` with optional step and dilation: along an
+ * axis of length n, window i holds the elements `i * step + j * dilation` for j < w. Each such axis becomes the window
+ * count `floor((n - dilation (w - 1) - 1) / step) + 1`, and the window dimensions are appended at the end in the order
+ * of the axes. A gather (a copy, not a view), differentiable in x; overlapping windows accumulate in the gradient.
+ *
+ * @param x - Input.
+ * @param windowShape - The window length, or one per axis.
+ * @param options - Axes, steps and dilations.
+ * @returns The windows: the shape of x with each window axis replaced by its count, then the window lengths.
+ * @throws WhiteboxError with code `value` when a window does not fit.
+ * @example
+ * ```ts
+ * import { slidingWindowView, tensor, toArray } from 'whitebox-engine/tensor'
+ * toArray(slidingWindowView(tensor([0, 1, 2, 3, 4]), 3)) // => [[0, 1, 2], [1, 2, 3], [2, 3, 4]]
+ * toArray(slidingWindowView(tensor([0, 1, 2, 3, 4, 5]), 2, { step: 2, dilation: 3 })) // => [[0, 3], [2, 5]]
+ * ```
+ */
+export function slidingWindowView(
+  x: TensorLike,
+  windowShape: number | readonly number[],
+  options: SlidingWindowOptions = {},
+): Value {
+  let v = val(x)
+  const rank = v.shape.length
+  const windows = typeof windowShape === 'number' ? [windowShape] : windowShape
+  const rawAxes =
+    options.axis === undefined
+      ? windows.map((_, i) => rank - windows.length + i)
+      : typeof options.axis === 'number'
+        ? [options.axis]
+        : options.axis
+  if (rawAxes.length !== windows.length)
+    throw new WhiteboxError('shape', 'slidingWindowView: need one axis per window length')
+  const per = (o: number | readonly number[] | undefined, i: number): number =>
+    o === undefined ? 1 : typeof o === 'number' ? o : (o[i] ?? 1)
+  for (const [i, w] of windows.entries()) {
+    const a = normaliseAxis(rawAxes[i] ?? -1, rank)
+    const step = per(options.step, i)
+    const dilation = per(options.dilation, i)
+    const n = v.shape[a] ?? 0
+    if (
+      !(
+        Number.isInteger(w) &&
+        w >= 1 &&
+        Number.isInteger(step) &&
+        step >= 1 &&
+        Number.isInteger(dilation) &&
+        dilation >= 1
+      )
+    )
+      throw new WhiteboxError('value', 'slidingWindowView: window, step and dilation must be positive integers')
+    const span = dilation * (w - 1) + 1
+    if (span > n)
+      throw new WhiteboxError('value', `slidingWindowView: a window spanning ${span} exceeds axis length ${n}`)
+    const count = Math.floor((n - span) / step) + 1
+    const idx = new Int32Array(count * w)
+    for (let k = 0; k < count; k++) for (let j = 0; j < w; j++) idx[k * w + j] = k * step + j * dilation
+    // take puts the [count, w] index block at axis a; the window axis then moves to the end.
+    v = moveaxis(take(v, cpu.wrap('int32', [count, w], idx), a), a + 1, -1)
+  }
+  return v
 }

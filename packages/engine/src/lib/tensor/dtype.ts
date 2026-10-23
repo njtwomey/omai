@@ -116,3 +116,18 @@ export function finfo(dtype: FloatDType): { readonly eps: number; readonly max: 
     ? { eps: Number.EPSILON, max: Number.MAX_VALUE, tiny: 2.2250738585072014e-308 }
     : { eps: 1.1920928955078125e-7, max: 3.4028234663852886e38, tiny: 1.1754943508222875e-38 }
 }
+
+/**
+ * Integer properties of an integer-like dtype, as numpy's `iinfo` (bool is treated as a one-bit unsigned integer).
+ *
+ * @param dtype - `int32` or `bool`.
+ * @returns The smallest and largest values and the number of bits.
+ * @example
+ * ```ts
+ * import { iinfo } from 'whitebox-engine/tensor'
+ * iinfo('int32').max // => 2147483647
+ * ```
+ */
+export function iinfo(dtype: 'int32' | 'bool'): { readonly min: number; readonly max: number; readonly bits: number } {
+  return dtype === 'int32' ? { min: -2147483648, max: 2147483647, bits: 32 } : { min: 0, max: 1, bits: 1 }
+}

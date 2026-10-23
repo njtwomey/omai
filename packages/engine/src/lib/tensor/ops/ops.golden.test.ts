@@ -95,6 +95,15 @@ const ops: Record<string, Op> = {
     T.slice(x as TensorLike, nulls(p['starts']), nulls(p['stops']), (p['steps'] as number[] | undefined) ?? []),
   take: ([x, i], p) => T.take(x as TensorLike, i as TensorLike, num(p, 'axis', 0)),
   takeAlongAxis: ([x, i], p) => T.takeAlongAxis(x as TensorLike, i as TensorLike, p['axis'] as number),
+  gather: ([x, i]) => T.gather(x as TensorLike, i as TensorLike),
+  scatter: ([x, i, u], p) => T.scatter(x as TensorLike, i as TensorLike, u as TensorLike, p['mode'] as T.ScatterMode),
+  slidingWindowView: ([x], p) =>
+    T.slidingWindowView(x as TensorLike, p['window'] as number | number[], {
+      ...(p['axis'] === undefined ? {} : { axis: p['axis'] as number | number[] }),
+      step: num(p, 'step', 1),
+      dilation: num(p, 'dilation', 1),
+    }),
+  indices: (_xs, p) => T.indices(p['shape'] as Shape),
   sort: ([x], p) => T.sort(x as TensorLike, num(p, 'axis', -1)),
   argsort: ([x], p) => T.argsort(x as TensorLike, num(p, 'axis', -1)),
   oneHot: ([x], p) => T.oneHot(x as TensorLike, p['n'] as number),

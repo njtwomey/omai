@@ -1,10 +1,18 @@
 """Shape operations against numpy."""
 
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng, uniform
+from whitebox_oracle.helpers import FloatArray, rng, uniform
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
+
+
+def dilated_windows(v: FloatArray, w: int, step: int, dilation: int) -> FloatArray:
+    """Windows of v[i * step + j * dilation], j < w, by fancy indexing (numpy's view has no dilation)."""
+    count = (len(v) - dilation * (w - 1) - 1) // step + 1
+    starts = np.arange(count)[:, None] * step
+    return v[starts + np.arange(w)[None, :] * dilation]
 
 
 def cases() -> list[Case]:
@@ -30,4 +38,33 @@ def cases() -> list[Case]:
         case("repeat/flat", "repeat", [m], np.repeat(m, 2), repeats=2),
         case("repeat/axis1", "repeat", [m], np.repeat(m, [1, 0, 2, 1], axis=1), repeats=[1, 0, 2, 1], axis=1),
         case("pad", "pad", [m], np.pad(m, ((1, 2), (0, 1)), constant_values=7.0), widths=[[1, 2], [0, 1]], value=7.0),
+        case("slidingWindowView/last", "slidingWindowView", [m], sliding_window_view(m, 3, axis=-1), window=3),
+        case("slidingWindowView/axis0", "slidingWindowView", [x], sliding_window_view(x, 2, axis=0), window=2, axis=0),
+        case(
+            "slidingWindowView/two-axes",
+            "slidingWindowView",
+            [x],
+            sliding_window_view(x, (2, 3), axis=(1, 2)),
+            window=[2, 3],
+            axis=[1, 2],
+        ),
+        case(
+            "slidingWindowView/step",
+            "slidingWindowView",
+            [m],
+            sliding_window_view(m, 2, axis=1)[:, ::2],
+            window=2,
+            axis=1,
+            step=2,
+        ),
+        case(
+            "slidingWindowView/dilation",
+            "slidingWindowView",
+            [uniform(rng(503), (11,))],
+            dilated_windows(uniform(rng(503), (11,)), 3, 2, 3),
+            window=3,
+            step=2,
+            dilation=3,
+        ),
+        case("indices", "indices", [], np.indices((2, 3, 4)).astype(np.int32), shape=[2, 3, 4]),
     ]

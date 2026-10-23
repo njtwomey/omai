@@ -1,6 +1,7 @@
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,
+  cMul,
   flip,
   fromStorage,
   matmul,
@@ -13,7 +14,6 @@ import {
   type Value,
   zeros,
 } from '../../tensor/index.ts'
-import { cMul } from '../fourier/complex.ts'
 import { fftn, ifftn } from '../fourier/fft.ts'
 import { nextFastLen } from '../fourier/helpers.ts'
 

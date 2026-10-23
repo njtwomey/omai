@@ -1,6 +1,9 @@
 import { WhiteboxError } from '../../base/index.ts'
 import {
   bind,
+  type ComplexLike,
+  type ComplexValue,
+  complex,
   concat,
   definePrimitive,
   flip,
@@ -14,7 +17,6 @@ import {
   zerosLike,
 } from '../../tensor/index.ts'
 import { transformAxis } from './_kernel.ts'
-import { type ComplexLike, type ComplexValue, complex } from './complex.ts'
 
 /** Normalisation of a transform pair, as numpy.fft: which direction carries the 1 / n. */
 export type FftNorm = 'backward' | 'ortho' | 'forward'

@@ -1,6 +1,10 @@
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,
+  type ComplexLike,
+  type ComplexValue,
+  cMul,
+  complex,
   concreteOrThrow,
   cos,
   fromStorage,
@@ -17,7 +21,6 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
-import { type ComplexLike, type ComplexValue, cMul, complex } from './complex.ts'
 import { fft, ifft } from './fft.ts'
 
 /** The integer modes k = -floor(M/2) .. ceil(M/2) - 1, as FINUFFT's default ordering. */

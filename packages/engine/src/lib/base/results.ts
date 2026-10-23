@@ -1,3 +1,5 @@
+import type { Alternative } from './options.ts'
+
 /**
  * An estimate with its uncertainty: the shape shared by every metric, test effect size and summary statistic.
  *
@@ -10,9 +12,6 @@ export interface Estimate {
   readonly level?: number
   readonly method?: string
 }
-
-/** The alternative hypothesis of a test. */
-export type Alternative = 'two-sided' | 'less' | 'greater'
 
 /**
  * The result of every statistical test in whitebox-js.

@@ -335,3 +335,24 @@ export function triu(x: TensorLike, k = 0): Value {
   const m = v.shape[v.shape.length - 1] ?? 1
   return mul(v, cast(sub(1, tri(n, m, k - 1)), v.dtype))
 }
+
+/**
+ * The index grid of a shape, as numpy's `indices`: entry `[a, i0, ..., in-1]` is `ia`.
+ *
+ * @param shape - The grid's shape.
+ * @returns An int32 tensor `[shape.length, ...shape]`.
+ * @example
+ * ```ts
+ * import { indices, toArray } from 'whitebox-engine/tensor'
+ * toArray(indices([2, 3])) // => [[[0, 0, 0], [1, 1, 1]], [[0, 1, 2], [0, 1, 2]]]
+ * ```
+ */
+export function indices(shape: Shape): Tensor<'int32'> {
+  const size = sizeOf(shape)
+  const data = new Int32Array(shape.length * size)
+  for (const [a, n] of shape.entries()) {
+    const inner = sizeOf(shape.slice(a + 1))
+    for (let i = 0; i < size; i++) data[a * size + i] = Math.floor(i / inner) % n
+  }
+  return cpu.wrap('int32', [shape.length, ...shape], data)
+}

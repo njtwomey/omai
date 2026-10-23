@@ -1,12 +1,12 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, WhiteboxError } from '../../base/index.ts'
 import { cpu } from '../cpu.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
-import { formatShape, normaliseAxis, type Shape } from '../shape.ts'
+import { formatShape, normaliseAxis, type Shape, sizeOf } from '../shape.ts'
 import { isTensor, type Tensor, type TensorLike } from '../tensor.ts'
-import { concreteOrThrow, type Value } from '../traced.ts'
-import { asDtype, val } from './_coerce.ts'
-import { cast } from './arithmetic.ts'
-import { equal } from './compare.ts'
+import { concreteOrThrow, primalOf, type Value } from '../traced.ts'
+import { asDtype, coerce2, val } from './_coerce.ts'
+import { add, cast, mul } from './arithmetic.ts'
+import { equal, where } from './compare.ts'
 import { broadcastTo, expandDims, reshape } from './shape.ts'
 
 interface SliceParams {
@@ -157,7 +157,8 @@ function normaliseSlice(
 }
 
 function indexTensor(indices: TensorLike): Value {
-  if (Array.isArray(indices)) return cpu.wrap('int32', [indices.length], Int32Array.from(indices as readonly number[]))
+  if (Array.isArray(indices) && indices.every((i) => typeof i === 'number'))
+    return cpu.wrap('int32', [indices.length], Int32Array.from(indices as readonly number[]))
   return asDtype(val(indices), 'int32')
 }
 
@@ -217,7 +218,7 @@ export function take(x: TensorLike, indices: TensorLike, axis = 0): Value {
   const n = v.shape[a] ?? 0
   const idx = indexTensor(indices)
   const flat = isTensor(idx) ? Int32Array.from(idx.data, (i) => (i < 0 ? i + n : i)) : undefined
-  const fixed = flat === undefined ? idx : cpu.wrap('int32', [flat.length], flat)
+  const fixed = flat === undefined ? idx : cpu.wrap('int32', idx.shape, flat)
   if (fixed.shape.length !== 1) {
     const out = bind1(takePrimitive, [v, reshape(fixed, [-1])], { axis: a })
     return reshape(out, [...v.shape.slice(0, a), ...fixed.shape, ...v.shape.slice(a + 1)])
@@ -507,4 +508,170 @@ export function bincount(x: TensorLike, minLength = 0, weights?: TensorLike): Va
     return cpu.wrap('int32', [size], out)
   }
   return segmentSum(cast(weights, 'float64'), t, size)
+}
+
+/** Row-major linear indices into the leading axes of `shape` from an index array `[..., k]`. */
+function leadingIndices(
+  shape: Shape,
+  indices: TensorLike,
+  where: string,
+): { readonly flat: Int32Array; readonly batch: Shape; readonly lead: number; readonly rest: Shape } {
+  const idx = concreteOrThrow(asDtype(val(indices), 'int32'), where) as Tensor<'int32'>
+  if (idx.shape.length === 0) throw new WhiteboxError('shape', `${where}: indices need a last axis of coordinates`)
+  const k = idx.shape[idx.shape.length - 1] ?? 0
+  if (k > shape.length)
+    throw new WhiteboxError('shape', `${where}: ${k} coordinates index an array of rank ${shape.length}`)
+  const batch = idx.shape.slice(0, -1)
+  const m = sizeOf(batch)
+  const flat = new Int32Array(m)
+  let lead = 1
+  for (let a = 0; a < k; a++) lead *= shape[a] ?? 0
+  for (let r = 0; r < m; r++) {
+    let linear = 0
+    for (let a = 0; a < k; a++) {
+      const n = shape[a] ?? 0
+      const raw = idx.data[r * k + a] ?? 0
+      const i = raw < 0 ? raw + n : raw
+      if (i < 0 || i >= n) throw new WhiteboxError('value', `${where}: index ${raw} out of range for axis ${a} of ${n}`)
+      linear = linear * n + i
+    }
+    flat[r] = linear
+  }
+  return { flat, batch, lead, rest: shape.slice(k) }
+}
+
+/**
+ * Gather with coordinate tuples (TensorFlow `gather_nd`, numpy `x[tuple(indices.T)]`): the last axis of `indices`
+ * holds k coordinates into the first k axes of x, and each tuple selects the slice `x[i0, ..., ik-1]`. Negative
+ * coordinates count from the end. Differentiable in x (the gradient scatters back, accumulating repeats).
+ *
+ * @param x - Input.
+ * @param indices - int32 coordinates `[..., k]` with k at most the rank of x.
+ * @returns A value of shape `indices.shape[:-1] + x.shape[k:]`.
+ * @throws WhiteboxError with code `value` for an out-of-range coordinate.
+ * @example
+ * ```ts
+ * import { gather, tensor, toArray } from 'whitebox-engine/tensor'
+ * const x = tensor([[1, 2], [3, 4]])
+ * toArray(gather(x, [[1, 0], [0, 1]])) // => [4, 2]
+ * toArray(gather(x, [[1]])) // => [[3, 4]]
+ * ```
+ */
+export function gather(x: TensorLike, indices: TensorLike): Value {
+  const v = val(x)
+  const { flat, batch, lead, rest } = leadingIndices(v.shape, indices, 'gather')
+  const rows = bind1(takePrimitive, [reshape(v, [lead, ...rest]), cpu.wrap('int32', [flat.length], flat)], { axis: 0 })
+  return reshape(rows, [...batch, ...rest])
+}
+
+/** How {@link scatter} combines updates with the existing values. */
+export type ScatterMode = 'set' | 'add' | 'mul' | 'max' | 'min'
+
+/**
+ * Write `updates` into a copy of x at coordinate tuples (JAX `x.at[...].set/add/multiply/max/min`, numpy `x[idx] = u`
+ * and `np.add.at` and friends): the last axis of `indices` holds k coordinates into the first k axes of x, and
+ * `updates` has shape `indices.shape[:-1] + x.shape[k:]` (or broadcasts to it). Repeated coordinates accumulate for
+ * `add`, `mul`, `max` and `min`; for `set` the last write wins. `max` and `min` propagate NaN, as numpy's `maximum.at`.
+ * Differentiable in x and updates: every mode is built from differentiable gathers, sums and selections, so the
+ * gradient goes to whichever value survives (for `max`/`min`, the winner; ties go to x, then to the earlier update).
+ *
+ * @param x - The array written into (not mutated).
+ * @param indices - int32 coordinates `[..., k]`.
+ * @param updates - The values to write.
+ * @param mode - How to combine (default `'set'`).
+ * @returns The updated copy.
+ * @throws WhiteboxError with code `shape` when updates do not broadcast to the indexed shape.
+ * @example
+ * ```ts
+ * import { scatter, tensor, toArray } from 'whitebox-engine/tensor'
+ * toArray(scatter(tensor([0, 0, 0]), [[0], [2], [0]], [1, 2, 3], 'add')) // => [4, 0, 2]
+ * toArray(scatter(tensor([0, 0, 0]), [[0], [2], [0]], [1, 2, 3])) // => [3, 0, 2]
+ * toArray(scatter(tensor([[5, 5], [5, 5]]), [[1]], [[1, 9]], 'max')) // => [[5, 5], [5, 9]]
+ * ```
+ */
+export function scatter(x: TensorLike, indices: TensorLike, updates: TensorLike, mode: ScatterMode = 'set'): Value {
+  const [v, u0] = coerce2(x, updates)
+  const { flat, batch, lead, rest } = leadingIndices(v.shape, indices, 'scatter')
+  const m = flat.length
+  const xf = reshape(v, [lead, ...rest])
+  if (m === 0) return v
+  let u: Value
+  try {
+    u = reshape(broadcastTo(u0, [...batch, ...rest]), [m, ...rest])
+  } catch {
+    throw new WhiteboxError(
+      'shape',
+      `scatter: updates ${formatShape(u0.shape)} do not broadcast to ${formatShape([...batch, ...rest])}`,
+    )
+  }
+  const ones = rest.map(() => 1)
+  const rowMask = (positions: Int32Array): Value => {
+    const mask = new Uint8Array(lead)
+    for (const p of positions) mask[p] = 1
+    return cpu.wrap('bool', [lead, ...ones], mask)
+  }
+  // Place the update rows `rows` at the distinct positions `positions` of a zero array.
+  const place = (rows: Int32Array, positions: Int32Array): Value =>
+    bind1(
+      takeScatterPrimitive,
+      [
+        bind1(takePrimitive, [u, cpu.wrap('int32', [rows.length], rows)], { axis: 0 }),
+        cpu.wrap('int32', [positions.length], positions),
+      ],
+      { axis: 0, size: lead },
+    )
+  let out: Value
+  if (mode === 'add') {
+    out = add(xf, bind1(takeScatterPrimitive, [u, cpu.wrap('int32', [m], flat)], { axis: 0, size: lead }))
+  } else if (mode === 'set' || mode === 'mul') {
+    // Group repeated positions into rounds: round r holds the r-th update at each position, so positions are distinct.
+    const seen = new Map<number, number>()
+    const round = new Int32Array(m)
+    for (let j = 0; j < m; j++) {
+      const p = flat[j] ?? 0
+      const r = seen.get(p) ?? 0
+      round[j] = r
+      seen.set(p, r + 1)
+    }
+    if (mode === 'set') {
+      const last = new Map<number, number>()
+      for (let j = 0; j < m; j++) last.set(flat[j] ?? 0, j)
+      const positions = Int32Array.from(last.keys())
+      const rows = Int32Array.from(last.values())
+      out = where(rowMask(positions), place(rows, positions), xf)
+    } else {
+      out = xf
+      for (let r = 0; r < maxOf(Array.from(seen.values())); r++) {
+        const rows = Int32Array.from(round.keys()).filter((j) => round[j] === r)
+        const positions = rows.map((j) => flat[j] ?? 0)
+        out = mul(out, where(rowMask(positions), place(rows, positions), 1))
+      }
+    }
+  } else {
+    // max / min: choose the winner of every element from the primal values, then select it.
+    const width = sizeOf(rest)
+    const xp = primalOf(xf).data
+    const up = primalOf(u).data
+    const better =
+      mode === 'max'
+        ? (c: number, b: number): boolean => c > b || (Number.isNaN(c) && !Number.isNaN(b))
+        : (c: number, b: number): boolean => c < b || (Number.isNaN(c) && !Number.isNaN(b))
+    const fromUpdate = new Uint8Array(lead * width)
+    const winner = new Int32Array(lead * width)
+    const best = Float64Array.from(xp)
+    for (let j = 0; j < m; j++) {
+      const p = flat[j] ?? 0
+      for (let r = 0; r < width; r++) {
+        const c = up[j * width + r] ?? 0
+        if (better(c, best[p * width + r] ?? 0)) {
+          best[p * width + r] = c
+          fromUpdate[p * width + r] = 1
+          winner[p * width + r] = j
+        }
+      }
+    }
+    const picked = bind1(takeAlongPrimitive, [u, cpu.wrap('int32', [lead, ...rest], winner)], { axis: 0 })
+    out = where(cpu.wrap('bool', [lead, ...rest], fromUpdate), picked, xf)
+  }
+  return reshape(out, v.shape)
 }

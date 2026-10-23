@@ -1,6 +1,13 @@
 import { WhiteboxError } from '../../base/index.ts'
-import { fromStorage, promoteFloat, roll, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
-import type { ComplexValue } from './complex.ts'
+import {
+  type ComplexValue,
+  fromStorage,
+  promoteFloat,
+  roll,
+  type Tensor,
+  type TensorLike,
+  type Value,
+} from '../../tensor/index.ts'
 
 /**
  * The sample frequencies of a length-n DFT with sample spacing d (numpy.fft.fftfreq): [0, 1, ..., ceil(n/2) - 1,

@@ -116,3 +116,26 @@ export function primalOf<D extends DType>(x: Value<D>): Tensor<D> {
   }
   return v
 }
+
+/**
+ * A value as a member of a trace: unchanged when it already belongs to it, otherwise lifted in as a constant with
+ * respect to it (what {@link bind} does to the lower-level inputs of an operation).
+ *
+ * @param trace - The trace.
+ * @param x - A value of this trace, a lower trace or no trace.
+ * @returns The value in the trace.
+ * @concept function-transformations
+ * @example
+ * ```ts
+ * import { lift, tensor, type Trace } from 'whitebox-engine/tensor'
+ * const constants: Trace = {
+ *   level: 1,
+ *   lift: (x) => ({ kind: 'traced', dtype: x.dtype, shape: x.shape, trace: constants }),
+ *   process: () => [],
+ * }
+ * lift(constants, tensor([1, 2])).shape // => [2]
+ * ```
+ */
+export function lift(trace: Trace, x: Value): Traced {
+  return isTraced(x) && x.trace === trace ? x : trace.lift(x)
+}

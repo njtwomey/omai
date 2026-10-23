@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { WhiteboxError } from './errors.ts'
 
 /** A JSON value: what can cross a boundary (files, messages, traces) without loss. */
 export type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json }
@@ -53,4 +54,155 @@ export function decodeNumber(x: number | string): number {
   if (x === 'inf') return Infinity
   if (x === '-inf') return -Infinity
   return Number.NaN
+}
+
+/** The typed-array classes {@link toJson} encodes. */
+const TYPED_ARRAYS = {
+  Float64Array,
+  Float32Array,
+  Int32Array,
+  Int16Array,
+  Int8Array,
+  Uint32Array,
+  Uint16Array,
+  Uint8Array,
+  Uint8ClampedArray,
+} as const
+
+type TypedArrayName = keyof typeof TYPED_ARRAYS
+
+/** Values {@link toJson} accepts: JSON plus non-finite numbers, -0, typed arrays, bigints and undefined fields. */
+export type Encodable =
+  | null
+  | undefined
+  | boolean
+  | number
+  | bigint
+  | string
+  | ArrayLike<number>
+  | readonly Encodable[]
+  | { readonly [key: string]: Encodable }
+
+function typedArrayName(x: object): TypedArrayName | undefined {
+  for (const name of Object.keys(TYPED_ARRAYS) as TypedArrayName[]) if (x instanceof TYPED_ARRAYS[name]) return name
+  return undefined
+}
+
+// Own-property writes, so a '__proto__' key is data rather than a prototype change.
+function setOwn<T>(o: Record<string, T>, k: string, v: T): void {
+  Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true })
+}
+
+function encodeTagged(x: number): Json {
+  if (Object.is(x, -0)) return { $number: '-0' }
+  return Number.isFinite(x) ? x : { $number: encodeNumber(x) }
+}
+
+/**
+ * Encode a value as JSON without loss. Plain JSON passes through; non-finite numbers and -0 become `{ $number: 'inf' }`
+ * (also `'-inf'`, `'nan'`, `'-0'`), typed arrays `{ $typed: 'Float64Array', values: [...] }`, bigints
+ * `{ $bigint: '123' }`, and objects with a key starting with `$` are wrapped as `{ $object: {...} }` so they cannot be
+ * mistaken for tags. Undefined object fields are dropped, as `JSON.stringify` does. {@link fromJson} inverts it.
+ *
+ * @param x - The value.
+ * @returns Its JSON encoding.
+ * @throws WhiteboxError with code `value` for functions, symbols and class instances other than typed arrays.
+ * @example
+ * ```ts
+ * import { toJson } from 'whitebox-engine/base'
+ * toJson({ a: Infinity, b: new Float64Array([1, Number.NaN]) })
+ * // => { a: { $number: 'inf' }, b: { $typed: 'Float64Array', values: [1, { $number: 'nan' }] } }
+ * ```
+ */
+export function toJson(x: Encodable): Json {
+  if (x === null || x === undefined) return null
+  if (typeof x === 'boolean' || typeof x === 'string') return x
+  if (typeof x === 'number') return encodeTagged(x)
+  if (typeof x === 'bigint') return { $bigint: x.toString() }
+  if (Array.isArray(x)) return (x as readonly Encodable[]).map(toJson)
+  if (typeof x !== 'object') throw new WhiteboxError('value', `toJson: cannot encode a ${typeof x}`)
+  const typed = typedArrayName(x)
+  if (typed !== undefined) return { $typed: typed, values: Array.from(x as ArrayLike<number>, encodeTagged) }
+  const proto = Object.getPrototypeOf(x) as unknown
+  if (proto !== Object.prototype && proto !== null)
+    throw new WhiteboxError('value', 'toJson: cannot encode a class instance')
+  const out: Record<string, Json> = {}
+  let tagLike = false
+  for (const [k, v] of Object.entries(x as { readonly [key: string]: Encodable })) {
+    if (v === undefined) continue
+    if (k.startsWith('$')) tagLike = true
+    setOwn(out, k, toJson(v))
+  }
+  return tagLike ? { $object: out } : out
+}
+
+/** Values {@link fromJson} returns. */
+export type Decoded =
+  | null
+  | boolean
+  | number
+  | bigint
+  | string
+  | Float64Array
+  | Float32Array
+  | Int32Array
+  | Int16Array
+  | Int8Array
+  | Uint32Array
+  | Uint16Array
+  | Uint8Array
+  | Uint8ClampedArray
+  | Decoded[]
+  | { [key: string]: Decoded }
+
+function decodeTagged(x: Json): number {
+  if (typeof x === 'number') return x
+  if (typeof x === 'object' && x !== null && !Array.isArray(x)) {
+    const tag = (x as { readonly [key: string]: Json })['$number']
+    if (tag === '-0') return -0
+    if (tag === 'inf' || tag === '-inf' || tag === 'nan') return decodeNumber(tag)
+  }
+  throw new WhiteboxError('schema', `fromJson: expected a number, got ${JSON.stringify(x)}`)
+}
+
+/**
+ * Decode JSON written by {@link toJson}.
+ *
+ * @param x - The JSON value.
+ * @returns The value, with typed arrays, non-finite numbers, -0 and bigints restored.
+ * @throws WhiteboxError with code `schema` for a malformed tag.
+ * @example
+ * ```ts
+ * import { fromJson, toJson } from 'whitebox-engine/base'
+ * fromJson(toJson([-Infinity, 'x', { $id: 1 }])) // => [-Infinity, 'x', { $id: 1 }]
+ * fromJson(toJson(new Int32Array([4, 5]))) instanceof Int32Array // => true
+ * ```
+ */
+export function fromJson(x: Json): Decoded {
+  if (x === null || typeof x === 'boolean' || typeof x === 'number' || typeof x === 'string') return x
+  if (Array.isArray(x)) return (x as readonly Json[]).map(fromJson)
+  const o = x as { readonly [key: string]: Json }
+  const keys = Object.keys(o)
+  if (keys.length === 1 && keys[0] === '$number') return decodeTagged(o)
+  if (keys.length === 1 && keys[0] === '$bigint') {
+    const v = o['$bigint']
+    if (typeof v !== 'string') throw new WhiteboxError('schema', 'fromJson: $bigint must be a string')
+    return BigInt(v)
+  }
+  if (keys.length === 2 && '$typed' in o && 'values' in o) {
+    const name = o['$typed']
+    const values = o['values']
+    if (typeof name !== 'string' || !(name in TYPED_ARRAYS) || !Array.isArray(values))
+      throw new WhiteboxError('schema', `fromJson: bad typed array ${JSON.stringify(name)}`)
+    return TYPED_ARRAYS[name as TypedArrayName].from((values as readonly Json[]).map(decodeTagged))
+  }
+  const body = keys.length === 1 && keys[0] === '$object' ? o['$object'] : o
+  if (typeof body !== 'object' || body === null || Array.isArray(body))
+    throw new WhiteboxError('schema', 'fromJson: $object must hold an object')
+  const out: { [key: string]: Decoded } = {}
+  for (const [k, v] of Object.entries(body as { readonly [key: string]: Json })) {
+    if (body === o && k.startsWith('$')) throw new WhiteboxError('schema', `fromJson: unknown tag ${k}`)
+    setOwn(out, k, fromJson(v))
+  }
+  return out
 }

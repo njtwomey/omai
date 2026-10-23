@@ -1,6 +1,6 @@
 import { WhiteboxError } from '../base/index.ts'
 import type { Tensor } from './tensor.ts'
-import { type Aval, isTraced, type Trace, type Traced, type Value } from './traced.ts'
+import { type Aval, isTraced, lift, type Trace, type Traced, type Value } from './traced.ts'
 
 /** A cotangent or tangent that may be a symbolic zero (`null`), so zeros are never materialised needlessly. */
 export type MaybeZero = Value | null
@@ -83,7 +83,7 @@ export function bind<P>(primitive: Primitive<P>, inputs: readonly Value[], param
   for (const x of inputs) if (isTraced(x) && (top === null || x.trace.level > top.level)) top = x.trace
   if (top === null) return primitive.impl(inputs as readonly Tensor[], params)
   const trace = top
-  const lifted: Traced[] = inputs.map((x) => (isTraced(x) && x.trace === trace ? x : trace.lift(x)))
+  const lifted: Traced[] = inputs.map((x) => lift(trace, x))
   return trace.process(primitive, lifted, params)
 }
 
