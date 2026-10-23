@@ -294,3 +294,163 @@ export function squareform(d: TensorLike): Value {
   for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) idx.push(i * n + j)
   return take(reshape(v, [-1]), fromStorage(Int32Array.from(idx), [idx.length], 'int32'), 0)
 }
+
+/** A distance between two points stored at offsets of flat arrays (for trees and indexes iterating on numbers). */
+export type PointDistance = (a: ArrayLike<number>, ia: number, b: ArrayLike<number>, ib: number) => number
+
+/** Metrics satisfying the triangle inequality (usable by ball and vantage-point trees). */
+export const TRUE_METRICS: ReadonlySet<Metric> = new Set<Metric>([
+  'euclidean',
+  'cityblock',
+  'chebyshev',
+  'minkowski',
+  'seuclidean',
+  'mahalanobis',
+  'canberra',
+  'hamming',
+  'jaccard',
+  'haversine',
+])
+
+/**
+ * The scalar form of a metric on number arrays: d(a[ia .. ia + dim], b[ib .. ib + dim]), the same values as
+ * {@link cdist} (seuclidean and mahalanobis need explicit v and vi here).
+ *
+ * @param metric - The metric.
+ * @param dim - The dimension.
+ * @param options - Minkowski order, weights, variances or inverse covariance.
+ * @returns The distance function.
+ * @example
+ * ```ts
+ * import { metricFunction } from 'whitebox-engine/numerics/geometry'
+ * metricFunction('cityblock', 2)([0, 0, 1, 2], 0, [0, 0, 1, 2], 2) // => 3
+ * ```
+ */
+export function metricFunction(metric: Metric, dim: number, options: MetricOptions = {}): PointDistance {
+  const w = options.w === undefined ? undefined : toFlat(primalOf(promoteFloat(options.w)[0] as Value))
+  const weight = (k: number): number => (w === undefined ? 1 : (w[k] ?? 1))
+  switch (metric) {
+    case 'euclidean':
+    case 'sqeuclidean': {
+      const squared = metric === 'sqeuclidean'
+      return (a, ia, b, ib) => {
+        let s = 0
+        for (let k = 0; k < dim; k++) s += weight(k) * ((a[ia + k] ?? 0) - (b[ib + k] ?? 0)) ** 2
+        return squared ? s : Math.sqrt(s)
+      }
+    }
+    case 'cityblock':
+      return (a, ia, b, ib) => {
+        let s = 0
+        for (let k = 0; k < dim; k++) s += weight(k) * Math.abs((a[ia + k] ?? 0) - (b[ib + k] ?? 0))
+        return s
+      }
+    case 'chebyshev':
+      return (a, ia, b, ib) => {
+        let s = 0
+        for (let k = 0; k < dim; k++) s = Math.max(s, weight(k) * Math.abs((a[ia + k] ?? 0) - (b[ib + k] ?? 0)))
+        return s
+      }
+    case 'minkowski': {
+      const p = options.p ?? 2
+      return (a, ia, b, ib) => {
+        let s = 0
+        for (let k = 0; k < dim; k++) s += weight(k) * Math.abs((a[ia + k] ?? 0) - (b[ib + k] ?? 0)) ** p
+        return s ** (1 / p)
+      }
+    }
+    case 'seuclidean': {
+      if (options.v === undefined) throw new WhiteboxError('value', 'metricFunction: seuclidean needs the variances v')
+      const v = toFlat(primalOf(promoteFloat(options.v)[0] as Value))
+      return (a, ia, b, ib) => {
+        let s = 0
+        for (let k = 0; k < dim; k++) s += ((a[ia + k] ?? 0) - (b[ib + k] ?? 0)) ** 2 / (v[k] ?? 1)
+        return Math.sqrt(s)
+      }
+    }
+    case 'mahalanobis': {
+      if (options.vi === undefined)
+        throw new WhiteboxError('value', 'metricFunction: mahalanobis needs the inverse covariance vi')
+      const vi = toFlat(primalOf(promoteFloat(options.vi)[0] as Value))
+      return (a, ia, b, ib) => {
+        let s = 0
+        for (let j = 0; j < dim; j++) {
+          const dj = (a[ia + j] ?? 0) - (b[ib + j] ?? 0)
+          for (let k = 0; k < dim; k++) s += dj * (vi[j * dim + k] ?? 0) * ((a[ia + k] ?? 0) - (b[ib + k] ?? 0))
+        }
+        return Math.sqrt(Math.max(0, s))
+      }
+    }
+    case 'cosine':
+    case 'correlation':
+      return (a, ia, b, ib) => {
+        let ma = 0
+        let mb = 0
+        if (metric === 'correlation') {
+          for (let k = 0; k < dim; k++) {
+            ma += (a[ia + k] ?? 0) / dim
+            mb += (b[ib + k] ?? 0) / dim
+          }
+        }
+        let dotAb = 0
+        let na = 0
+        let nb = 0
+        for (let k = 0; k < dim; k++) {
+          const x = (a[ia + k] ?? 0) - ma
+          const y = (b[ib + k] ?? 0) - mb
+          dotAb += x * y
+          na += x * x
+          nb += y * y
+        }
+        return na === 0 || nb === 0 ? 1 : 1 - dotAb / Math.sqrt(na * nb)
+      }
+    case 'hamming':
+      return (a, ia, b, ib) => {
+        let s = 0
+        for (let k = 0; k < dim; k++) if ((a[ia + k] ?? 0) !== (b[ib + k] ?? 0)) s++
+        return s / dim
+      }
+    case 'jaccard':
+      return (a, ia, b, ib) => {
+        let union = 0
+        let differ = 0
+        for (let k = 0; k < dim; k++) {
+          const x = (a[ia + k] ?? 0) !== 0
+          const y = (b[ib + k] ?? 0) !== 0
+          if (x || y) union++
+          if (x !== y) differ++
+        }
+        return union === 0 ? 0 : differ / union
+      }
+    case 'canberra':
+      return (a, ia, b, ib) => {
+        let s = 0
+        for (let k = 0; k < dim; k++) {
+          const x = a[ia + k] ?? 0
+          const y = b[ib + k] ?? 0
+          const den = Math.abs(x) + Math.abs(y)
+          if (den > 0) s += Math.abs(x - y) / den
+        }
+        return s
+      }
+    case 'braycurtis':
+      return (a, ia, b, ib) => {
+        let num = 0
+        let den = 0
+        for (let k = 0; k < dim; k++) {
+          num += Math.abs((a[ia + k] ?? 0) - (b[ib + k] ?? 0))
+          den += Math.abs((a[ia + k] ?? 0) + (b[ib + k] ?? 0))
+        }
+        return den === 0 ? 0 : num / den
+      }
+    case 'haversine':
+      return (a, ia, b, ib) => {
+        const lat1 = a[ia] ?? 0
+        const lat2 = b[ib] ?? 0
+        const h =
+          Math.sin((lat2 - lat1) / 2) ** 2 +
+          Math.cos(lat1) * Math.cos(lat2) * Math.sin(((b[ib + 1] ?? 0) - (a[ia + 1] ?? 0)) / 2) ** 2
+        return 2 * Math.asin(Math.sqrt(Math.min(1, h)))
+      }
+  }
+}

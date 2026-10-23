@@ -687,11 +687,15 @@ primitives; "custom" means a dedicated rule.
   coordinates), `contourLevels`, `isolines`, `covarianceEllipse` (differentiable).
 
 `spatial/` (scipy.spatial, sklearn.neighbors, faiss ideas)
-- `brute.ts`: `kNearest`, `radiusNeighbours`, `kNeighboursGraph`.
-- `trees.ts`: `KDTree`, `BallTree`, `VPTree`, with query logs (visited, pruned) for figures.
-- `hashing.ts`: LSH families (random hyperplanes, p-stable, MinHash banding), collision-probability curves, multi-probe.
-- `graphs.ts`: `hnswIndex` and search, `nnDescent`.
-- `quantisation.ts`: product quantisation, IVF coarse quantisation, asymmetric distance computation.
+- `brute.ts`: `kNearest` (differentiable distances), `radiusNeighbours`, `kNeighboursGraph`, `radiusNeighboursGraph`.
+- `trees.ts`: `kdTree`, `ballTree`, `vpTree` (exact k-NN, radius and count queries; any true metric for ball and VP
+  trees), with query logs (visited, pruned, distance evaluations) and node descriptions for figures.
+- `hashing.ts`: LSH families (`randomHyperplanes`, `pStableHash`), `collisionProbability`, MinHash (`minHash`,
+  `estimateJaccard`, `minHashBanding`, `bandingProbability`), `lshIndex` with multi-probe (`probeSequence`).
+- `graphs.ts`: `hnswIndex` (insertion, layered search with logs), `nnDescent` and `nnDescentAlgorithm` (traced).
+- `quantisation.ts`: `kmeansCodebook` (k-means++ and Lloyd; the vector-quantisation trainer that
+  `methods/clustering/kmeans.ts` builds on), `productQuantiser` (encode, decode, asymmetric and symmetric distances),
+  `ivfIndex` (IVF and IVF-PQ).
 
 `inverse/` (ill-posed problems)
 - `tikhonov.ts`: `spectralData`, `tikhonov` (standard form by the SVD), `tsvd`, `tikhonovGeneral` (general form with a
@@ -1766,7 +1770,8 @@ oracle: scikit-learn, umap-learn, hdbscan, pacmap, gensim, pykeen
 
 `cluster/` (sklearn.cluster)
 built from: `numerics/spatial`, `numerics/linalg`, `graph`, `learn`, `metrics/clustering.ts`
-- `kmeans.ts`: k-means (k-means++, Lloyd and Elkan, traced), mini-batch, bisecting, kernel k-means, elbow data.
+- `kmeans.ts`: k-means (k-means++, Lloyd and Elkan, traced; seeding and Lloyd steps from
+  `lib/numerics/spatial/quantisation.ts`), mini-batch, bisecting, kernel k-means, elbow data.
 - `medoids.ts`: PAM (build and swap, traced), CLARA.
 - `fuzzy.ts`: fuzzy c-means.
 - `hierarchical.ts`: agglomerative clustering (single, complete, average, Ward; merge events), linkage matrices,

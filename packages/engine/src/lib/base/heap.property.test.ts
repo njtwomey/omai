@@ -10,7 +10,9 @@ describe('heap', () => {
         for (const x of xs.slice(xs.length >> 1)) h.push(x)
         const out: number[] = []
         while (h.size > 0) out.push(h.pop() as number)
-        expect(out).toEqual([...xs].sort((a, b) => a - b))
+        // -0 and +0 compare equal, so either may come first; toEqual tells them apart.
+        const plain = (v: number): number => (v === 0 ? 0 : v)
+        expect(out.map(plain)).toEqual([...xs].sort((a, b) => a - b).map(plain))
       }),
     )
   })

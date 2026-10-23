@@ -291,6 +291,14 @@
       "cases": 17
     },
     {
+      "fixture": "numerics/spatial/spatial.json",
+      "source": "oracle/cases/numerics/spatial/spatial.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 23
+    },
+    {
       "fixture": "numerics/special/bessel.json",
       "source": "oracle/cases/numerics/special/bessel.py",
       "reference": {
