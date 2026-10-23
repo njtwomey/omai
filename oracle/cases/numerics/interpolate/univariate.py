@@ -202,7 +202,7 @@ def cases() -> list[Case]:
             "barycentric",
             "barycentric",
             [nodes, vals, pts],
-            si.BarycentricInterpolator(nodes, vals)(pts),
+            si.BarycentricInterpolator(nodes, vals, rng=0)(pts),
             rtol=1e-11,
             atol=1e-12,
         )
