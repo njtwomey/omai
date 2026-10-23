@@ -1,6 +1,7 @@
 """High-precision references with mpmath: elementwise values and derivatives of scalar functions."""
 
 from collections.abc import Callable
+from typing import Any
 
 import mpmath as mp
 import numpy as np
@@ -10,8 +11,8 @@ from .fixture import Case, case
 
 DPS = 50
 
-# mpmath numbers (typed by the local stub in oracle/typings/mpmath).
-type Mpf = mp.mpf
+# mpmath is untyped: its numbers (mpf) are named once here so signatures stay readable.
+type Mpf = Any
 type MpFn = Callable[..., Mpf]
 type F64 = npt.NDArray[np.float64]
 
