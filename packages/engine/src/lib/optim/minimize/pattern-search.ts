@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../../base/index.ts'
+import { metricFunction } from '../../numerics/geometry/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { type BoundArrays, boundArrays } from './_bounds.ts'
 import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
@@ -69,6 +70,8 @@ export function hookeJeevesAlgorithm(
   const obj = flatObjective(f, x0)
   const n = obj.n
   if (n === 0) throw new WhiteboxError('value', 'hookeJeeves: no parameters')
+  const euclid = metricFunction('euclidean', n)
+  const dist = (a: Float64Array, b: Float64Array): number => euclid(a, 0, b, 0)
   const box = options.bounds === undefined ? undefined : boundArrays(options.bounds, n, 'hookeJeeves')
   if (!inBox(obj.x0, box)) throw new WhiteboxError('value', 'hookeJeeves: x0 is outside the bounds')
   const stepTol = options.stepTol ?? 1e-6
@@ -160,12 +163,6 @@ export function hookeJeevesAlgorithm(
       })
     },
   }
-}
-
-function dist(a: Float64Array, b: Float64Array): number {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += ((a[i] ?? 0) - (b[i] ?? 0)) ** 2
-  return Math.sqrt(s)
 }
 
 /**

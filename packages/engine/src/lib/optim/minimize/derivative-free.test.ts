@@ -4,9 +4,10 @@ import { isWhiteboxError } from '../../base/index.ts'
 import { add, concat, reshape, sliceAxis, square, sub, sum, toFlat, type Value } from '../../tensor/index.ts'
 import { messages, metricSeries, policies, recorder, tensorSeries } from '../../trace/index.ts'
 import { cobyla } from './cobyla.ts'
-import { nelderMead, nelderMeadAlgorithm, powell } from './derivative-free.ts'
+import { nelderMead, nelderMeadAlgorithm } from './derivative-free.ts'
 import { minimize } from './minimizer.ts'
 import { compassSearch, hookeJeeves } from './pattern-search.ts'
+import { powell } from './powell.ts'
 
 const flat = (x: unknown): number[] => toFlat(x as Value)
 const close = (a: readonly number[], b: readonly number[], tol: number): void => {

@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
 import { PROBLEMS } from '../../../testing/optim-problems.ts'
 import { add, sliceAxis, square, stack, sub, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { cmaes } from './cmaes.ts'
 import type { Bounds } from './derivative-free.ts'
-import { cmaes, type DifferentialEvolutionStrategy, differentialEvolution, particleSwarm } from './evolutionary.ts'
-import { basinHopping, dualAnnealing, simulatedAnnealing } from './global.ts'
+import { type DifferentialEvolutionStrategy, differentialEvolution } from './differential-evolution.ts'
+import { dualAnnealing } from './dual-annealing.ts'
+import { basinHopping, simulatedAnnealing } from './global.ts'
 import type { MinimizeResult } from './objective.ts'
+import { particleSwarm } from './particle-swarm.ts'
 
 const num = (v: unknown): number => (v === 'inf' ? Infinity : v === '-inf' ? -Infinity : (v as number))
 const boundsOf = (p: Readonly<Record<string, unknown>>): Bounds | undefined =>
@@ -56,7 +59,13 @@ function run(
   }
 }
 
-for (const fixture of ['optim/minimize/evolutionary', 'optim/minimize/global']) {
+for (const fixture of [
+  'optim/minimize/global',
+  'optim/minimize/dual_annealing',
+  'optim/minimize/differential_evolution',
+  'optim/minimize/cmaes',
+  'optim/minimize/particle_swarm',
+]) {
   describe(`${fixture} against scipy and pycma (minima found)`, () => {
     for (const c of loadFixture(fixture).cases) {
       it(c.name, () => {

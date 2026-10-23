@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { ackley, himmelblau, hop2, quadratic, rastrigin, rosen, sixHumpCamel } from '../../../testing/optim-problems.ts'
 import { add, sliceAxis, square, sub, sum, toFlat, type Value } from '../../tensor/index.ts'
 import { messages, metricSeries, policies, recorder, runTree, tensorSeries } from '../../trace/index.ts'
-import { nelderMead, powell } from './derivative-free.ts'
-import { cmaes, cmaesAlgorithm, differentialEvolution, particleSwarm } from './evolutionary.ts'
-import { basinHopping, dualAnnealing, simulatedAnnealing } from './global.ts'
+import { cmaes, cmaesAlgorithm } from './cmaes.ts'
+import { nelderMead } from './derivative-free.ts'
+import { differentialEvolution } from './differential-evolution.ts'
+import { dualAnnealing } from './dual-annealing.ts'
+import { basinHopping, simulatedAnnealing } from './global.ts'
 import { minimize } from './minimizer.ts'
+import { particleSwarm } from './particle-swarm.ts'
+import { powell } from './powell.ts'
 
 const v = (x: unknown): Value => x as Value
 const flat = (x: unknown): number[] => toFlat(x as Value)

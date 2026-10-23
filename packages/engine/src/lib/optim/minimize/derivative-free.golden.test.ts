@@ -15,8 +15,9 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { cobyla, type InequalityConstraint } from './cobyla.ts'
-import { type Bounds, nelderMead, powell } from './derivative-free.ts'
+import { type Bounds, nelderMead } from './derivative-free.ts'
 import type { MinimizeResult } from './objective.ts'
+import { powell } from './powell.ts'
 
 const num = (v: unknown): number => (v === 'inf' ? Infinity : v === '-inf' ? -Infinity : (v as number))
 
@@ -53,8 +54,9 @@ const CONSTRAINTS: Readonly<Record<string, InequalityConstraint>> = {
   },
 }
 
-describe('derivative-free methods against scipy.optimize.minimize', () => {
-  for (const c of loadFixture('optim/minimize/derivative_free').cases) {
+describe('Nelder-Mead, Powell and COBYLA against scipy.optimize.minimize', () => {
+  const fixtures = ['derivative_free', 'powell', 'cobyla'].map((f) => loadFixture(`optim/minimize/${f}`))
+  for (const c of fixtures.flatMap((f) => f.cases)) {
     it(c.name, () => {
       const x0 = decode(c.inputs[0]) as Tensor
       const f = PROBLEMS[c.params['problem'] as string] as (x: Value) => Value

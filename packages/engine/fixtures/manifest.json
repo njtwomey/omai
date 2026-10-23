@@ -373,21 +373,44 @@
       "cases": 12
     },
     {
+      "fixture": "optim/minimize/cmaes.json",
+      "source": "oracle/cases/optim/minimize/cmaes.py",
+      "reference": {
+        "cma": "4.5.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/minimize/cobyla.json",
+      "source": "oracle/cases/optim/minimize/cobyla.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "optim/minimize/derivative_free.json",
       "source": "oracle/cases/optim/minimize/derivative_free.py",
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 19
+      "cases": 8
     },
     {
-      "fixture": "optim/minimize/evolutionary.json",
-      "source": "oracle/cases/optim/minimize/evolutionary.py",
+      "fixture": "optim/minimize/differential_evolution.json",
+      "source": "oracle/cases/optim/minimize/differential_evolution.py",
       "reference": {
-        "scipy": "1.18.1",
-        "cma": "4.5.0"
+        "scipy": "1.18.1"
       },
-      "cases": 17
+      "cases": 10
+    },
+    {
+      "fixture": "optim/minimize/dual_annealing.json",
+      "source": "oracle/cases/optim/minimize/dual_annealing.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
     },
     {
       "fixture": "optim/minimize/global.json",
@@ -395,7 +418,23 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 10
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/particle_swarm.json",
+      "source": "oracle/cases/optim/minimize/particle_swarm.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "optim/minimize/powell.json",
+      "source": "oracle/cases/optim/minimize/powell.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
     },
     {
       "fixture": "optim/multiobjective.json",

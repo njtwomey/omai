@@ -1,13 +1,12 @@
-"""Population methods against scipy.optimize.differential_evolution and pycma, compared by the minima they find.
+"""Differential evolution against scipy.optimize.differential_evolution, compared by the minima found.
 
 Random streams differ between the libraries, so cases compare the converged minimum (x where it is unique, the value
-always) on problems whose global minimum both find. Particle swarm has no reference implementation in scipy; its cases
-use the known global minima. The TypeScript tests define the same problems (packages/engine/src/testing).
+always) on problems whose global minimum both find. The TypeScript tests define the same problems
+(packages/engine/src/testing/optim-problems.ts).
 """
 
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
-import cma  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import scipy
 import scipy.optimize as so
@@ -15,7 +14,7 @@ from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import FloatArray
 from whitebox_oracle.optim_problems import PROBLEMS
 
-REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "cma": str(cma.__version__)}
+REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 
 type Strategy = Literal["best1bin", "rand1exp", "best2bin", "randtobest1bin", "currenttobest1exp"]
 
@@ -57,30 +56,9 @@ def de(
     )
 
 
-def cmaes(name: str, problem: str, x0: list[float], sigma0: float) -> Case:
-    options: dict[str, Any] = {"seed": 3, "verbose": -9, "tolfun": 1e-12, "tolx": 1e-12}
-    xbest, es = cast(tuple[Any, Any], cma.fmin2(PROBLEMS[problem], x0, sigma0, options))
-    out = np.concatenate([np.asarray(xbest, dtype=np.float64), [float(es.result.fbest)]])
-    return case(name, "cmaes", [np.array(x0)], out, rtol=0, atol=1e-6, problem=problem, sigma0=sigma0, unique=True)
-
-
-def known(name: str, fn: str, problem: str, x0: list[float], bounds: list[tuple[float, float]], minimum: float) -> Case:
-    """A case whose reference is the problem's known global minimum value."""
-    return case(
-        name,
-        fn,
-        [np.array(x0)],
-        np.array([minimum]),
-        rtol=0,
-        atol=1e-6,
-        problem=problem,
-        bounds=[list(b) for b in bounds],
-    )
-
-
 def cases() -> list[Case]:
     b2 = [(-5.0, 5.0), (-5.0, 5.0)]
-    out = [
+    return [
         de("de/ackley", "ackley", b2, True),
         de("de/rastrigin", "rastrigin", [(-5.12, 5.12), (-5.12, 5.12)], True),
         de("de/rosen3", "rosen", [(-2.0, 2.0)] * 3, True),
@@ -91,26 +69,4 @@ def cases() -> list[Case]:
         de("de/himmelblau-randtobest1bin", "himmelblau", b2, False, "randtobest1bin"),
         de("de/beale-currenttobest1exp", "beale", [(-4.5, 4.5), (-4.5, 4.5)], True, "currenttobest1exp"),
         de("de/rosen-disc", "rosen", [(-2.0, 2.0), (-2.0, 2.0)], True, constrained=True),
-        cmaes("cmaes/rosen4", "rosen", [0.0, 0.0, 0.0, 0.0], 0.5),
-        cmaes("cmaes/beale", "beale", [1.0, 1.0], 0.5),
-        cmaes("cmaes/quadratic", "quadratic", [3.0, -3.0, 3.0], 1.0),
-        known("pso/ackley", "particleSwarm", "ackley", [2.0, 2.0], b2, 0.0),
-        known("pso/himmelblau", "particleSwarm", "himmelblau", [0.0, 0.0], b2, 0.0),
-        known(
-            "pso/sixHumpCamel",
-            "particleSwarm",
-            "sixHumpCamel",
-            [1.0, 1.0],
-            [(-3.0, 3.0), (-2.0, 2.0)],
-            float(PROBLEMS["sixHumpCamel"](np.array([0.08984201368301331, -0.7126564032704135]))),
-        ),
-        known(
-            "pso/branin",
-            "particleSwarm",
-            "branin",
-            [0.0, 0.0],
-            [(-5.0, 10.0), (0.0, 15.0)],
-            float(PROBLEMS["branin"](np.array([np.pi, 2.275]))),
-        ),
     ]
-    return out
