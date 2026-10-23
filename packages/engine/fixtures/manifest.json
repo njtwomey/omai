@@ -76,6 +76,15 @@
       "cases": 14
     },
     {
+      "fixture": "numerics/fourier/fourier.json",
+      "source": "oracle/cases/numerics/fourier/fourier.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 215
+    },
+    {
       "fixture": "numerics/geometry/triangulation.json",
       "source": "oracle/cases/numerics/geometry/triangulation.py",
       "reference": {

@@ -646,10 +646,12 @@ primitives; "custom" means a dedicated rule.
   error-propagation helpers, condition number of a function.
 
 `fourier/` (numpy.fft, scipy.fft; linear, so differentiable)
+- `complex.ts`: `ComplexValue` (a pair of real values; the engine has no complex dtype), `complex`, arithmetic (`cAdd`,
+  `cMul`, `cConj`, `cScale`), `cAbs`, `cAngle`, `cExp`, `cis`.
 - `fft.ts`: `fft`, `ifft`, `rfft`, `irfft`, `hfft`, `fftn`, `ifftn`, `fft2`, `ifft2` (radix 2 and Bluestein).
 - `helpers.ts`: `fftfreq`, `rfftfreq`, `fftshift`, `ifftshift`, `nextFastLen`, `dft`, `dftMatrix`.
 - `trig.ts`: `dct`, `idct`, `dst`, `idst` (types I to IV), `mdct`, `imdct`.
-- `nonuniform.ts`: non-uniform DFT and a simple NUFFT (gridding), the chirp-z transform.
+- `nonuniform.ts`: non-uniform DFTs (types 1 and 2), Gaussian-gridding NUFFTs, the chirp-z transform and `zoomFft`.
 
 `convolution/` (numpy, scipy.signal, scipy.ndimage; differentiable)
 - `one-d.ts`: `convolve`, `correlate`, `fftConvolve`, `oaConvolve`, `correlationLags`.
