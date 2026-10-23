@@ -67,6 +67,16 @@
       "cases": 20
     },
     {
+      "fixture": "numerics/convolution/convolution.json",
+      "source": "oracle/cases/numerics/convolution/convolution.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 66
+    },
+    {
       "fixture": "numerics/differentiate/finite_differences.json",
       "source": "oracle/cases/numerics/differentiate/finite_differences.py",
       "reference": {

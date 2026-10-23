@@ -656,7 +656,8 @@ primitives; "custom" means a dedicated rule.
 `convolution/` (numpy, scipy.signal, scipy.ndimage; differentiable)
 - `one-d.ts`: `convolve`, `correlate`, `fftConvolve`, `oaConvolve`, `correlationLags`.
 - `n-d.ts`: `convNd` (stride, dilation, groups, padding), `convTranspose`, `convOutputSize`, `im2col`, `col2im`.
-- `padding.ts`: `pad` modes and `ndimage` border modes.
+- `padding.ts`: `padArray` (numpy.pad modes: constant, edge, reflect, symmetric, wrap, maximum, minimum, mean),
+  `ndimage` border modes (`padModeOf`), `extendIndex`.
 
 `geometry/` (scipy.spatial)
 - `polygons.ts`: `convexHull`, `polygonArea`, `polygonCentroid`, `pointInPolygon`, `polygonClip`, `minkowskiSum`.
