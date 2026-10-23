@@ -13,6 +13,7 @@ dev = [
 ]
 oracle-core = ["scipy", "scikit-learn", "statsmodels", "sympy", "networkx"]
 oracle-torch = ["torch"]
+oracle-prob = ["pgmpy"]
 
 [build-system]
 requires = ["hatchling"]

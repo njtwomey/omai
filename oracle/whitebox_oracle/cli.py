@@ -69,8 +69,14 @@ def write_fixtures(paths: Paths, out_dir: Path) -> list[ManifestEntry]:
                 "cases": len(fixture.cases),
             }
         )
+    # A partial run (--only) keeps the other modules' entries of an existing manifest.
+    existing = out_dir / "manifest.json"
+    if paths.only and existing.exists():
+        previous: list[ManifestEntry] = json.loads(existing.read_text())["fixtures"]
+        written = {m["fixture"] for m in manifest}
+        manifest = sorted([m for m in previous if m["fixture"] not in written] + manifest, key=lambda m: m["fixture"])
     catalogue = {"schema": "whitebox.fixtures/1", "fixtures": manifest}
-    (out_dir / "manifest.json").write_text(json.dumps(catalogue, indent=2) + "\n")
+    existing.write_text(json.dumps(catalogue, indent=2) + "\n")
     return manifest
 
 

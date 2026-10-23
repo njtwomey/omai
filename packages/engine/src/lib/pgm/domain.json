@@ -1,0 +1,5 @@
+{
+  "tier": 8,
+  "summary": "Probabilistic graphical models: factors, Bayes and Markov networks, structure, exact and approximate inference.",
+  "inline": ["models", "inference"]
+}

@@ -46,7 +46,7 @@ format: ## Format TypeScript and Python
 .PHONY: typecheck
 typecheck: ## Type-check every package (tsc) and the oracle (pyright)
 	@for p in $(PACKAGES); do echo "tsc $$p"; $(PNPM) --dir packages/$$p exec tsc -p tsconfig.json --noEmit || exit 1; done
-	$(UV) run --group dev --group oracle-core --group oracle-torch pyright oracle
+	$(UV) run --group dev --group oracle-core --group oracle-torch --group oracle-prob pyright oracle
 
 .PHONY: test
 test: ## Run unit, property, golden and type tests (Node)
@@ -62,11 +62,11 @@ coverage: ## Run tests with coverage thresholds
 
 .PHONY: fixtures
 fixtures: ## Regenerate golden fixtures from the Python oracle (needs the oracle groups)
-	$(UV) run --group oracle-core --group oracle-torch python -m whitebox_oracle generate
+	$(UV) run --group oracle-core --group oracle-torch --group oracle-prob python -m whitebox_oracle generate
 
 .PHONY: fixtures-check
 fixtures-check: ## Regenerate fixtures to a temporary directory and fail on any difference
-	$(UV) run --group oracle-core --group oracle-torch python -m whitebox_oracle check
+	$(UV) run --group oracle-core --group oracle-torch --group oracle-prob python -m whitebox_oracle check
 
 .PHONY: build
 build: barrels ## Build all packages
