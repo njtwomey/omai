@@ -43,6 +43,14 @@
       "cases": 6
     },
     {
+      "fixture": "methods/rl/agents/control.json",
+      "source": "oracle/cases/methods/rl/agents/control.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "methods/rl/environments/classic_control.json",
       "source": "oracle/cases/methods/rl/environments/classic_control.py",
       "reference": {

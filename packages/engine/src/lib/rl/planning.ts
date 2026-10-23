@@ -479,6 +479,11 @@ export interface SequencePlannerOptions {
   readonly initial?: readonly (readonly number[])[]
   /** Initial standard deviation of the sampling distribution (default a quarter of the action range). */
   readonly sigma?: number
+  /**
+   * Score all candidate plans at once (their returns, higher is better), replacing one simulation per plan in `env`:
+   * batched rollouts of a learned or differentiable model. `env` then only supplies the action bounds.
+   */
+  readonly score?: (plans: readonly (readonly (readonly number[])[])[], key: Key) => readonly number[]
 }
 
 /** The state of {@link cemPlannerAlgorithm}. */
@@ -547,7 +552,10 @@ export function cemPlannerAlgorithm<S, O>(
           }),
         ),
       )
-      const scores = candidates.map((plan) => evaluateSequence(env, state, plan, gamma, foldIn(ctx.key, 1)))
+      const scores =
+        options.score !== undefined
+          ? options.score(candidates, foldIn(ctx.key, 1))
+          : candidates.map((plan) => evaluateSequence(env, state, plan, gamma, foldIn(ctx.key, 1)))
       const order = scores.map((_, i) => i).sort((a, b) => (scores[b] ?? 0) - (scores[a] ?? 0))
       const elite = order.slice(0, elites).map((i) => candidates[i] as number[][])
       const mean = s.mean.map((row, t) =>
@@ -612,7 +620,7 @@ export function cem<S, O>(
     readonly iterations?: number
   } & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): PlanResult {
-  const { iterations, horizon, population, gamma, initial, sigma, elites, alpha, ...run } = options
+  const { iterations, horizon, population, gamma, initial, sigma, elites, alpha, score, ...run } = options
   const opts = {
     ...(horizon === undefined ? {} : { horizon }),
     ...(population === undefined ? {} : { population }),
@@ -621,6 +629,7 @@ export function cem<S, O>(
     ...(sigma === undefined ? {} : { sigma }),
     ...(elites === undefined ? {} : { elites }),
     ...(alpha === undefined ? {} : { alpha }),
+    ...(score === undefined ? {} : { score }),
   }
   const result = runAlgorithm(cemPlannerAlgorithm(env, state, opts), { ...run, maxSteps: iterations ?? 5 })
   const plan = result.state.mean.map((r) => [...r])
@@ -674,7 +683,10 @@ export function mppi<S, O>(
         ),
       ),
     )
-    const scores = candidates.map((c) => evaluateSequence(env, state, c, gamma, foldIn(k, 2 * it + 1)))
+    const scores =
+      options.score !== undefined
+        ? options.score(candidates, foldIn(k, 2 * it + 1))
+        : candidates.map((c) => evaluateSequence(env, state, c, gamma, foldIn(k, 2 * it + 1)))
     let best = -Infinity
     for (const s of scores) best = Math.max(best, s)
     const weights = scores.map((s) => Math.exp((s - best) / lambda))
