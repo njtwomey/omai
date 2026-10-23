@@ -218,15 +218,13 @@ export type Bulk =
   | { readonly kind: 'halfLine'; readonly low: Value | number; readonly scale: Value | number }
   | { readonly kind: 'real'; readonly center: Value | number; readonly scale: Value | number }
 
-const RULES = new Map<string, QuadratureRule>()
-function ruleFor(kind: Bulk['kind']): QuadratureRule {
-  let r = RULES.get(kind)
-  if (r === undefined) {
-    r = doubleExponentialRule(kind)
-    RULES.set(kind, r)
-  }
-  return r
+// The fixed rules, built once at load (plain constants, not a cache).
+const RULES: Readonly<Record<Bulk['kind'], QuadratureRule>> = {
+  finite: doubleExponentialRule('finite'),
+  halfLine: doubleExponentialRule('halfLine'),
+  real: doubleExponentialRule('real'),
 }
+const ruleFor = (kind: Bulk['kind']): QuadratureRule => RULES[kind]
 
 /**
  * The integral of f over a bulk, batched: f receives nodes of shape `[n, 1, ..., 1]` (broadcasting against the batch)
@@ -381,4 +379,12 @@ export function tailProbability(dist: Distribution, x: Value, side: 'lower' | 'u
     { kind: 'halfLine', low: 0, scale },
     rank,
   )
+}
+
+/**
+ * E[g(X)] = int_0^1 g(F^{-1}(u)) du for a univariate distribution with a quantile function, by tanh-sinh quadrature
+ * in u (robust to heavy tails and to supports of any kind, and differentiable through the quantile function).
+ */
+export function quantileExpectation(dist: Distribution, g: (x: Value) => Value): Value {
+  return integrate((u) => g(dist.ppf(u)), { kind: 'finite', low: 0, high: 1 }, dist.batchShape.length)
 }

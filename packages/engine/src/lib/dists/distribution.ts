@@ -412,3 +412,27 @@ export function validateParams(family: string, checks: Readonly<Record<string, r
       throw new WhiteboxError('value', `${family}: ${name} must be ${constraint} (got ${bad})`, { parameter: name })
   }
 }
+
+/**
+ * Sum a value over its last `n` axes (torch's `_sum_rightmost`): how log-densities of independent coordinates and
+ * log-Jacobians of elementwise maps combine into one per event.
+ *
+ * @param x - The value.
+ * @param n - How many trailing axes to sum (0 returns x).
+ * @returns The sum.
+ * @example
+ * ```ts
+ * import { sumRightmost } from 'whitebox-engine/dists'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(sumRightmost([[1, 2], [3, 4]], 1)) // => [3, 7]
+ * ```
+ */
+export function sumRightmost(x: TensorLike, n: number): Value {
+  const v = asTensor(x)
+  if (n <= 0) return v
+  const rank = v.shape.length
+  return sum(
+    v,
+    Array.from({ length: n }, (_, i) => rank - 1 - i),
+  )
+}

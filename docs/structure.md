@@ -838,7 +838,7 @@ Reparameterisation comes in three forms:
   estimators (`straightThrough`), and score-function estimators (`elbo.ts`, `policy-gradient.ts`).
 - `distribution.ts`: the `Distribution` interface and `defineDistribution`, `Support` (elementwise, vector and matrix
   kinds) with `inSupport`, parameter validation (`validateParams`), batch-shape helpers (`batchShapeOf`,
-  `extendedShape`, `broadcastBatch`). Private `_numeric.ts` holds the numerical fallbacks every family shares
+  `extendedShape`, `broadcastBatch`, `sumRightmost`). Private `_numeric.ts` holds the numerical fallbacks every family shares
   (quantiles by safeguarded Newton with an implicit-function derivative, modes by search, moments and entropies by
   batched double-exponential quadrature); `_sampling.ts` the sampling primitives and `implicitReparam`.
 - `continuous/normal.ts`: `normal`, `halfNormal`, `truncatedNormal`, `logNormal`, `skewNormal`.
@@ -863,14 +863,16 @@ Reparameterisation comes in three forms:
 - `multivariate/copulas.ts`: Gaussian, Student-t, Clayton, Gumbel and Frank copulas (density, sampling, fitting by
   inversion of Kendall's tau), `copulaDistribution` (joining marginals).
 - `compose/mixture.ts`: `mixture`, `mixtureSameFamily`, responsibilities.
-- `compose/structure.ts`: `independent`, `truncated`, `censored`, `transformed`, `empirical`, `deterministic`.
+- `compose/structure.ts`: `independent`, `truncated` (continuous and discrete bases), `censored`, `transformed`,
+  `empirical`, `deterministic`.
 - `compose/conditional.ts`: `ConditionalDistribution` (inputs to distribution), `conditional`, `linearGaussian`,
   `glmConditional` (family plus link), helpers that turn network outputs into distributions.
-- `bijectors/bijector.ts`: `Bijector`, `chain`, `invert`.
-- `bijectors/elementwise.ts`: `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`.
-- `bijectors/structured.ts`: `ordered`, `stickBreaking`, `correlationCholesky`, `affineCoupling`, `permute`,
-  `autoregressive` (MAF-style).
-- `bijectors/unconstrain.ts`: `bijectorForSupport`, `transformLogDensity`.
+- `bijectors/bijector.ts`: `Bijector`, `defineBijector`, `chain`, `invert` (ranks, supports, monotonicity and shape
+  maps tracked through compositions).
+- `bijectors/elementwise.ts`: `identity`, `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`.
+- `bijectors/structured.ts`: `ordered`, `stickBreaking`, `correlationCholesky`, `lowerCholesky`,
+  `choleskyOuterProduct`, `affineCoupling`, `permute`, `autoregressive` (MAF-style), `madeMasks`.
+- `bijectors/unconstrain.ts`: `bijectorForSupport`, `transformLogDensity`, `unconstrained`.
 - `exponential-family.ts`: natural parameters, sufficient statistics, log partition, Fisher information, the conjugate
   table (used by `probprog` to detect conjugacy).
 - `divergences.ts`: analytic KL for family pairs, Monte Carlo fallback, Hellinger, Bhattacharyya, 2-Wasserstein

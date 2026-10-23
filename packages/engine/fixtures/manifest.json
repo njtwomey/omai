@@ -2,6 +2,32 @@
   "schema": "whitebox.fixtures/1",
   "fixtures": [
     {
+      "fixture": "dists/bijectors/elementwise.json",
+      "source": "oracle/cases/dists/bijectors/elementwise.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "dists/bijectors/structured.json",
+      "source": "oracle/cases/dists/bijectors/structured.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "dists/compose/structure.json",
+      "source": "oracle/cases/dists/compose/structure.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 30
+    },
+    {
       "fixture": "dists/continuous/bounded.json",
       "source": "oracle/cases/dists/continuous/bounded.py",
       "reference": {
