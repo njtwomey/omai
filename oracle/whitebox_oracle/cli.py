@@ -19,6 +19,7 @@ from pydantic_settings import BaseSettings, CliApp, CliSubCommand, SettingsConfi
 
 from .fixture import Case, Fixture
 from .settings import ROOT, Paths
+from .vendor import rendered
 
 
 class CaseModule(Protocol):
@@ -74,12 +75,17 @@ def write_fixtures(paths: Paths, out_dir: Path) -> list[ManifestEntry]:
 
 
 class Generate(Paths):
-    """Regenerate fixtures in place."""
+    """Regenerate fixtures and vendored datasets in place."""
 
     def cli_cmd(self) -> None:
         manifest = write_fixtures(self, self.fixtures_dir)
         total = sum(m["cases"] for m in manifest)
         print(f"wrote {len(manifest)} fixtures with {total} cases to {self.fixtures_dir}")
+        files = rendered()
+        for target, text in files.items():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text)
+        print(f"vendored {len(files)} datasets")
 
 
 class Check(Paths):
@@ -94,8 +100,9 @@ class Check(Paths):
                 if not (self.fixtures_dir / p.relative_to(tmp)).exists()
                 or (self.fixtures_dir / p.relative_to(tmp)).read_text() != p.read_text()
             ]
+        stale += [str(t.relative_to(ROOT)) for t, text in rendered().items() if not t.exists() or t.read_text() != text]
         if stale:
-            print("stale fixtures:", *stale, sep="\n  ")
+            print("stale fixtures or vendored datasets:", *stale, sep="\n  ")
             sys.exit(1)
         print("fixtures are up to date")
 

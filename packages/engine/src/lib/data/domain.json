@@ -1,0 +1,5 @@
+{
+  "tier": 5,
+  "summary": "Dataset schemas, generators with truth, recipes, splitting, batching and loading.",
+  "inline": ["schema"]
+}

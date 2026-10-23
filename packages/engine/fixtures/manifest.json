@@ -27,6 +27,14 @@
       "cases": 31
     },
     {
+      "fixture": "methods/datasets/regression.json",
+      "source": "oracle/cases/methods/datasets/regression.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "metrics/regression.json",
       "source": "oracle/cases/metrics/regression.py",
       "reference": {
