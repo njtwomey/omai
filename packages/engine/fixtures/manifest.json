@@ -398,6 +398,15 @@
       "cases": 25
     },
     {
+      "fixture": "optim/sparse.json",
+      "source": "oracle/cases/optim/sparse.py",
+      "reference": {
+        "sklearn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {

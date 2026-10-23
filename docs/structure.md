@@ -1021,9 +1021,14 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   `consensusAdmm` (global consensus with a shared regulariser).
 - `smo.ts`: sequential minimal optimisation for quadratic programs with box constraints and one linear equality (the
   SVM dual family): working-set selection (maximal violating pair, second order), shrinking, traced active sets.
-- `sparse.ts`: sparse approximation: matching pursuit, orthogonal matching pursuit, CoSaMP, iterative hard
-  thresholding, basis pursuit, basis pursuit denoising, sparse coding over dictionaries, dictionary learning (K-SVD,
-  MOD, online), recovery guarantees (coherence, RIP estimates).
+- `sparse.ts`: sparse approximation, each a traced algorithm: `matchingPursuit`, `orthogonalMatchingPursuit`
+  (sklearn's Cholesky OMP, atoms or squared-residual tolerance), `cosamp`, `iterativeHardThresholding` (normalised
+  IHT or a fixed step), `basisPursuit` (ADMM with a cached projection), `basisPursuitDenoising` and
+  `lassoCoordinateDescent` (sklearn's coordinate descent with the duality-gap test, elastic net).
+- `dictionary.ts`: `sparseEncode` (sklearn's sparse_encode: OMP, coordinate-descent lasso, thresholding; TODO: LARS
+  and lasso-LARS coding), dictionary learning (`ksvd`, `mod`, `onlineDictionaryLearning` of Mairal et al. with
+  minibatches from keys), recovery guarantees (`mutualCoherence`, `babelFunction`, `coherenceSparsityBound`,
+  `ripEstimate` by sampled supports).
 - `linear-programming.ts`: `linprog` (simplex with Bland's rule, interior point), duals, sensitivity, the simplex path
   for figures.
 - `quadratic.ts`: `quadprog` (active set, interior point), box QP, KKT residuals.
