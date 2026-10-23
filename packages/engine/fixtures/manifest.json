@@ -445,7 +445,15 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 33
+      "cases": 22
+    },
+    {
+      "fixture": "optim/line_search_interval.json",
+      "source": "oracle/cases/optim/line_search_interval.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 11
     },
     {
       "fixture": "optim/linear_programming.json",
@@ -477,7 +485,7 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 14
+      "cases": 3
     },
     {
       "fixture": "optim/minimize/convex.json",
@@ -549,7 +557,39 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 36
+      "cases": 8
+    },
+    {
+      "fixture": "optim/minimize/least_squares_bounded.json",
+      "source": "oracle/cases/optim/minimize/least_squares_bounded.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "optim/minimize/least_squares_linear.json",
+      "source": "oracle/cases/optim/minimize/least_squares_linear.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "optim/minimize/least_squares_trf.json",
+      "source": "oracle/cases/optim/minimize/least_squares_trf.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "optim/minimize/levenberg_marquardt.json",
+      "source": "oracle/cases/optim/minimize/levenberg_marquardt.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "optim/minimize/newton.json",
@@ -576,6 +616,14 @@
       "cases": 4
     },
     {
+      "fixture": "optim/minimize/penalty.json",
+      "source": "oracle/cases/optim/minimize/penalty.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "optim/minimize/powell.json",
       "source": "oracle/cases/optim/minimize/powell.py",
       "reference": {
@@ -589,7 +637,7 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 21
+      "cases": 14
     },
     {
       "fixture": "optim/minimize/slsqp.json",
@@ -598,6 +646,14 @@
         "scipy": "1.18.1"
       },
       "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/sr1.json",
+      "source": "oracle/cases/optim/minimize/sr1.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 7
     },
     {
       "fixture": "optim/minimize/trust_region.json",

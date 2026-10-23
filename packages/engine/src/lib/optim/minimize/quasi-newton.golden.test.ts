@@ -20,7 +20,7 @@ import * as O from '../index.ts'
 const solution = (r: O.MinimizeResult): Value => concat([r.x as Value, tensor([r.fun])])
 
 describe('quasi-Newton methods against scipy.optimize.minimize', () => {
-  for (const c of loadFixture('optim/minimize/quasi_newton').cases) {
+  for (const c of [...loadFixture('optim/minimize/quasi_newton').cases, ...loadFixture('optim/minimize/sr1').cases]) {
     it(c.name, () => {
       const f = problem(c.params['problem'] as string)
       const x0 = decode(c.inputs[0]) as Tensor

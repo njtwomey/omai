@@ -49,7 +49,14 @@ const solution = (r: O.LeastSquaresResult): Value => concat([r.x as Value, tenso
 const tight = { xtol: 1e-12, ftol: 1e-12, gradTol: 1e-12 }
 
 describe('least squares against scipy.optimize', () => {
-  for (const c of loadFixture('optim/minimize/least_squares').cases) {
+  const fixtures = [
+    'least_squares',
+    'levenberg_marquardt',
+    'least_squares_bounded',
+    'least_squares_trf',
+    'least_squares_linear',
+  ]
+  for (const c of fixtures.flatMap((f) => loadFixture(`optim/minimize/${f}`).cases)) {
     it(c.name, () => {
       const inputs = c.inputs.map((v) => decode(v) as Tensor)
       switch (c.fn) {

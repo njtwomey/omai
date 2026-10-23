@@ -82,7 +82,7 @@ const boundsOf = (lower: Tensor, upper: Tensor): O.Bounds | undefined =>
   toFlat(lower).length === 0 ? undefined : { lower: toFlat(lower), upper: toFlat(upper) }
 
 describe('constrained minimisation against scipy.optimize', () => {
-  for (const fixture of ['optim/minimize/slsqp', 'optim/minimize/constrained']) {
+  for (const fixture of ['optim/minimize/slsqp', 'optim/minimize/penalty', 'optim/minimize/constrained']) {
     for (const c of loadFixture(fixture).cases) {
       it(c.name, () => {
         const [x0, lower, upper] = c.inputs.map((v) => decode(v) as Tensor) as [

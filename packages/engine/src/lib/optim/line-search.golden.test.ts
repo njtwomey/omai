@@ -11,7 +11,7 @@ const SEARCHES: Readonly<Record<string, (c2: number) => O.LineSearch>> = {
 }
 
 describe('line searches against scipy.optimize', () => {
-  for (const c of loadFixture('optim/line_search').cases) {
+  for (const c of [...loadFixture('optim/line_search').cases, ...loadFixture('optim/line_search_interval').cases]) {
     it(c.name, () => {
       const [x, p] = c.inputs.map((v) => toFlat(decode(v) as Tensor)) as [number[], number[]]
       const obj = O.flatObjective(problem(c.params['problem'] as string), x)

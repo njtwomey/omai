@@ -1,7 +1,5 @@
-"""Quasi-Newton methods against scipy.optimize.minimize: BFGS (a port: solutions and iteration counts), L-BFGS
-(against unbounded L-BFGS-B) and SR1 with a trust region (against trust-constr with SR1 updates)."""
-
-import warnings
+"""Quasi-Newton methods against scipy.optimize.minimize: BFGS (a port: solutions and iteration counts) and L-BFGS
+(against unbounded L-BFGS-B)."""
 
 import numpy as np
 import scipy
@@ -31,10 +29,4 @@ def cases() -> list[Case]:
         )
         r = so.minimize(p.f, p.x0, method="L-BFGS-B", jac=p.grad, options={"gtol": 1e-10, "ftol": 1e-15})
         out.append(case(f"lbfgs/{name}", "lbfgs", [p.x0], solution(r), rtol=1e-5, atol=loose, problem=name))
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            r = so.minimize(
-                p.f, p.x0, method="trust-constr", jac=p.grad, hess=so.SR1(), options={"gtol": 1e-10, "maxiter": 5000}
-            )
-        out.append(case(f"sr1/{name}", "sr1", [p.x0], solution(r), rtol=1e-5, atol=loose, problem=name))
     return out

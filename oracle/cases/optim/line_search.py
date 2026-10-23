@@ -1,4 +1,4 @@
-"""Line searches against scipy.optimize: Armijo backtracking, the strong Wolfe zoom and MINPACK's DCSRCH."""
+"""Line searches against scipy.optimize: Armijo backtracking and the strong Wolfe zoom."""
 
 import numpy as np
 import scipy
@@ -59,19 +59,6 @@ def cases() -> list[Case]:
                 "strongWolfe",
                 [x, p],
                 np.array([nan_if_none(a2), nan_if_none(f2)]),
-                rtol=1e-10,
-                atol=1e-12,
-                **params,
-            )
-        )
-
-        a1, _fc1, _gc1, f1, _old1, _g1 = ls.line_search_wolfe1(prob.f, prob.grad, x, p, g0, f0, old, c2=c2)
-        out.append(
-            case(
-                f"moreThuente/{i}",
-                "moreThuente",
-                [x, p],
-                np.array([nan_if_none(a1), nan_if_none(f1)]),
                 rtol=1e-10,
                 atol=1e-12,
                 **params,
