@@ -213,7 +213,7 @@
         "scipy": "1.18.1",
         "scikit-learn": "1.9.1"
       },
-      "cases": 15
+      "cases": 19
     },
     {
       "fixture": "numerics/linalg/lu.json",

@@ -36,12 +36,17 @@ const FNS: Readonly<Record<string, Fn>> = {
   qr: ([a], p) => L.qr(a as Tensor)[p['part'] as 'q' | 'r'],
   lstsq: ([a, b]) => L.lstsq(a as Tensor, b as Tensor),
   eigh: ([a], p) => L.eigh(a as Tensor)[p['part'] as 'eigenvalues' | 'eigenvectors'],
+  'eigh-jacobi': ([a], p) => L.eigh(a as Tensor, { method: 'jacobi' })[p['part'] as 'eigenvalues' | 'eigenvectors'],
   eigvalsh: ([a]) => L.eigvalsh(a as Tensor),
   svd: ([a], p) => L.svd(a as Tensor)[p['part'] as 'u' | 's' | 'vh'],
+  'svd-golub-kahan': ([a], p) => L.svd(a as Tensor, { method: 'golub-kahan' })[p['part'] as 'u' | 's' | 'vh'],
   svdvals: ([a]) => L.svdvals(a as Tensor),
   pinv: ([a]) => L.pinv(a as Tensor),
   lowRankApproximation: ([a], p) => L.lowRankApproximation(a as Tensor, p['rank'] as number),
 }
+
+// The alternative eigen and SVD algorithms must meet the same fixtures as the defaults.
+const ALTERNATIVES: Readonly<Record<string, string>> = { eigh: 'eigh-jacobi', svd: 'svd-golub-kahan' }
 
 for (const file of ['triangular', 'cholesky', 'lu', 'basics', 'qr', 'eigh', 'svd']) {
   describe(`linalg/${file} against numpy and scipy`, () => {
@@ -60,6 +65,13 @@ for (const file of ['triangular', 'cholesky', 'lu', 'basics', 'qr', 'eigh', 'svd
           c.name,
         )
       })
+      const alternative = FNS[ALTERNATIVES[c.fn] ?? '']
+      if (alternative !== undefined) {
+        it(`${c.name} (${ALTERNATIVES[c.fn]})`, () => {
+          const inputs = c.inputs.map((x) => decode(x) as Tensor)
+          expectMatches(alternative(inputs, c.params), c.output, c.rtol, c.atol, `${c.name} (${ALTERNATIVES[c.fn]})`)
+        })
+      }
     }
   })
 }

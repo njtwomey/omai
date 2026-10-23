@@ -203,7 +203,12 @@ function normaliseColumns(v: Float64Array, rows: number, cols: number, also?: Fl
  * Symmetric eigendecomposition by the cyclic Jacobi method, of the symmetric part of A: eigenvalues ascending,
  * eigenvectors as columns, each with its largest-magnitude entry positive.
  */
-export function eighKernel(a: Float64Array, n: number): { w: Float64Array; v: Float64Array } {
+export function eighKernel(
+  a: Float64Array,
+  n: number,
+  onRotation?: (p: number, q: number, c: number, s: number) => void,
+  onSweep?: (offDiagonalNorm: number) => void,
+): { w: Float64Array; v: Float64Array } {
   const s = symmetrised(a, n)
   const v = new Float64Array(n * n)
   for (let i = 0; i < n; i++) v[i * n + i] = 1
@@ -217,6 +222,7 @@ export function eighKernel(a: Float64Array, n: number): { w: Float64Array; v: Fl
         if (i !== j) off += e
       }
     }
+    onSweep?.(Math.sqrt(off))
     if (off <= EPS * EPS * total) break
     for (let p = 0; p < n - 1; p++) {
       for (let q = p + 1; q < n; q++) {
@@ -228,6 +234,7 @@ export function eighKernel(a: Float64Array, n: number): { w: Float64Array; v: Fl
         const t = (theta >= 0 ? 1 : -1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1))
         const c = 1 / Math.sqrt(t * t + 1)
         const sn = t * c
+        onRotation?.(p, q, c, sn)
         for (let r = 0; r < n; r++) {
           const arp = s[r * n + p] ?? 0
           const arq = s[r * n + q] ?? 0
@@ -249,14 +256,147 @@ export function eighKernel(a: Float64Array, n: number): { w: Float64Array; v: Fl
       }
     }
   }
-  const order = Array.from({ length: n }, (_, i) => i).sort((i, j) => (s[i * n + i] ?? 0) - (s[j * n + j] ?? 0))
-  const w = Float64Array.from(order, (i) => s[i * n + i] ?? 0)
+  return sortedEigen(
+    Float64Array.from({ length: n }, (_, i) => s[i * n + i] ?? 0),
+    v,
+    n,
+  )
+}
+
+/** Eigenpairs in ascending order with the sign convention (largest-magnitude entry of each vector positive). */
+function sortedEigen(values: Float64Array, vectors: Float64Array, n: number): { w: Float64Array; v: Float64Array } {
+  const order = Array.from({ length: n }, (_, i) => i).sort((i, j) => (values[i] ?? 0) - (values[j] ?? 0))
+  const w = Float64Array.from(order, (i) => values[i] ?? 0)
   const sorted = new Float64Array(n * n)
   order.forEach((src, dst) => {
-    for (let r = 0; r < n; r++) sorted[r * n + dst] = v[r * n + src] ?? 0
+    for (let r = 0; r < n; r++) sorted[r * n + dst] = vectors[r * n + src] ?? 0
   })
   normaliseColumns(sorted, n, n)
   return { w, v: sorted }
+}
+
+/**
+ * Symmetric eigendecomposition by Householder reduction to tridiagonal form followed by the implicit-shift QL
+ * algorithm (EISPACK tred2 and tql2; Numerical Recipes tred2 and tqli): O(n^3) with a small constant, the LAPACK-style
+ * route.
+ */
+export function eighQlKernel(input: Float64Array, n: number): { w: Float64Array; v: Float64Array } {
+  const a = symmetrised(input, n)
+  const at = (i: number, j: number): number => a[i * n + j] ?? 0
+  const set = (i: number, j: number, x: number): void => {
+    a[i * n + j] = x
+  }
+  const d = new Float64Array(n)
+  const e = new Float64Array(n)
+  // tred2: A = Q T Q^T, Q accumulated in a.
+  for (let i = n - 1; i >= 1; i--) {
+    const l = i - 1
+    let h = 0
+    if (l > 0) {
+      let scale = 0
+      for (let k = 0; k <= l; k++) scale += Math.abs(at(i, k))
+      if (scale === 0) e[i] = at(i, l)
+      else {
+        for (let k = 0; k <= l; k++) {
+          set(i, k, at(i, k) / scale)
+          h += at(i, k) ** 2
+        }
+        let f = at(i, l)
+        let g = f >= 0 ? -Math.sqrt(h) : Math.sqrt(h)
+        e[i] = scale * g
+        h -= f * g
+        set(i, l, f - g)
+        f = 0
+        for (let j = 0; j <= l; j++) {
+          set(j, i, at(i, j) / h)
+          g = 0
+          for (let k = 0; k <= j; k++) g += at(j, k) * at(i, k)
+          for (let k = j + 1; k <= l; k++) g += at(k, j) * at(i, k)
+          e[j] = g / h
+          f += (e[j] ?? 0) * at(i, j)
+        }
+        const hh = f / (h + h)
+        for (let j = 0; j <= l; j++) {
+          f = at(i, j)
+          g = (e[j] ?? 0) - hh * f
+          e[j] = g
+          for (let k = 0; k <= j; k++) set(j, k, at(j, k) - (f * (e[k] ?? 0) + g * at(i, k)))
+        }
+      }
+    } else e[i] = at(i, l)
+    d[i] = h
+  }
+  d[0] = 0
+  e[0] = 0
+  for (let i = 0; i < n; i++) {
+    const l = i - 1
+    if (d[i] !== 0) {
+      for (let j = 0; j <= l; j++) {
+        let g = 0
+        for (let k = 0; k <= l; k++) g += at(i, k) * at(k, j)
+        for (let k = 0; k <= l; k++) set(k, j, at(k, j) - g * at(k, i))
+      }
+    }
+    d[i] = at(i, i)
+    set(i, i, 1)
+    for (let j = 0; j <= l; j++) {
+      set(j, i, 0)
+      set(i, j, 0)
+    }
+  }
+  // tql2: implicit-shift QL on the tridiagonal (d, e), rotations applied to the columns of a.
+  for (let i = 1; i < n; i++) e[i - 1] = e[i] ?? 0
+  if (n > 0) e[n - 1] = 0
+  for (let l = 0; l < n; l++) {
+    let iterations = 0
+    let m: number
+    do {
+      for (m = l; m < n - 1; m++) {
+        const dd = Math.abs(d[m] ?? 0) + Math.abs(d[m + 1] ?? 0)
+        if (Math.abs(e[m] ?? 0) <= EPS * dd) break
+      }
+      if (m !== l) {
+        if (iterations++ === 60) throw new WhiteboxError('convergence', 'eigh: QL iteration did not converge')
+        let g = ((d[l + 1] ?? 0) - (d[l] ?? 0)) / (2 * (e[l] ?? 0))
+        let r = Math.hypot(g, 1)
+        g = (d[m] ?? 0) - (d[l] ?? 0) + (e[l] ?? 0) / (g + (g >= 0 ? Math.abs(r) : -Math.abs(r)))
+        let s2 = 1
+        let c = 1
+        let p = 0
+        let underflow = false
+        let i: number
+        for (i = m - 1; i >= l; i--) {
+          const f = s2 * (e[i] ?? 0)
+          const b = c * (e[i] ?? 0)
+          r = Math.hypot(f, g)
+          e[i + 1] = r
+          if (r === 0) {
+            d[i + 1] = (d[i + 1] ?? 0) - p
+            e[m] = 0
+            underflow = true
+            break
+          }
+          s2 = f / r
+          c = g / r
+          g = (d[i + 1] ?? 0) - p
+          r = ((d[i] ?? 0) - g) * s2 + 2 * c * b
+          p = s2 * r
+          d[i + 1] = g + p
+          g = c * r - b
+          for (let k = 0; k < n; k++) {
+            const zf = at(k, i + 1)
+            set(k, i + 1, s2 * at(k, i) + c * zf)
+            set(k, i, c * at(k, i) - s2 * zf)
+          }
+        }
+        if (underflow && i >= l) continue
+        d[l] = (d[l] ?? 0) - p
+        e[l] = g
+        e[m] = 0
+      }
+    } while (m !== l)
+  }
+  return sortedEigen(d, a, n)
 }
 
 /** Complete the columns j >= rank of an m x k matrix with orthonormal columns to an orthonormal set (Gram-Schmidt). */
@@ -349,17 +489,247 @@ function svdTall(a: Float64Array, m: number, n: number): { u: Float64Array; s: F
   return { u: uo, s, v: vo }
 }
 
+/**
+ * Reduced SVD of a tall or square matrix (m >= n) by Golub-Kahan bidiagonalisation and the implicit-shift QR iteration
+ * on the bidiagonal (Golub and Reinsch 1970; the Numerical Recipes svdcmp form).
+ */
+function svdGolubKahan(
+  input: Float64Array,
+  m: number,
+  n: number,
+): { u: Float64Array; s: Float64Array; v: Float64Array } {
+  const a = Float64Array.from(input)
+  const v = new Float64Array(n * n)
+  const w = new Float64Array(n)
+  const rv1 = new Float64Array(n)
+  const A = (i: number, j: number): number => a[i * n + j] ?? 0
+  const setA = (i: number, j: number, x: number): void => {
+    a[i * n + j] = x
+  }
+  const V = (i: number, j: number): number => v[i * n + j] ?? 0
+  const setV = (i: number, j: number, x: number): void => {
+    v[i * n + j] = x
+  }
+  const sign = (x: number, y: number): number => (y >= 0 ? Math.abs(x) : -Math.abs(x))
+  let g = 0
+  let scale = 0
+  let anorm = 0
+  let l = 0
+  // Householder bidiagonalisation.
+  for (let i = 0; i < n; i++) {
+    l = i + 1
+    rv1[i] = scale * g
+    g = 0
+    let s = 0
+    scale = 0
+    if (i < m) {
+      for (let k = i; k < m; k++) scale += Math.abs(A(k, i))
+      if (scale !== 0) {
+        for (let k = i; k < m; k++) {
+          setA(k, i, A(k, i) / scale)
+          s += A(k, i) ** 2
+        }
+        const f = A(i, i)
+        g = -sign(Math.sqrt(s), f)
+        const h = f * g - s
+        setA(i, i, f - g)
+        for (let j = l; j < n; j++) {
+          let t = 0
+          for (let k = i; k < m; k++) t += A(k, i) * A(k, j)
+          const ff = t / h
+          for (let k = i; k < m; k++) setA(k, j, A(k, j) + ff * A(k, i))
+        }
+        for (let k = i; k < m; k++) setA(k, i, A(k, i) * scale)
+      }
+    }
+    w[i] = scale * g
+    g = 0
+    s = 0
+    scale = 0
+    if (i < m && i !== n - 1) {
+      for (let k = l; k < n; k++) scale += Math.abs(A(i, k))
+      if (scale !== 0) {
+        for (let k = l; k < n; k++) {
+          setA(i, k, A(i, k) / scale)
+          s += A(i, k) ** 2
+        }
+        const f = A(i, l)
+        g = -sign(Math.sqrt(s), f)
+        const h = f * g - s
+        setA(i, l, f - g)
+        for (let k = l; k < n; k++) rv1[k] = A(i, k) / h
+        for (let j = l; j < m; j++) {
+          let t = 0
+          for (let k = l; k < n; k++) t += A(j, k) * A(i, k)
+          for (let k = l; k < n; k++) setA(j, k, A(j, k) + t * (rv1[k] ?? 0))
+        }
+        for (let k = l; k < n; k++) setA(i, k, A(i, k) * scale)
+      }
+    }
+    anorm = Math.max(anorm, Math.abs(w[i] ?? 0) + Math.abs(rv1[i] ?? 0))
+  }
+  // Accumulate the right-hand transformations.
+  for (let i = n - 1; i >= 0; i--) {
+    if (i < n - 1) {
+      if (g !== 0) {
+        for (let j = l; j < n; j++) setV(j, i, A(i, j) / A(i, l) / g)
+        for (let j = l; j < n; j++) {
+          let t = 0
+          for (let k = l; k < n; k++) t += A(i, k) * V(k, j)
+          for (let k = l; k < n; k++) setV(k, j, V(k, j) + t * V(k, i))
+        }
+      }
+      for (let j = l; j < n; j++) {
+        setV(i, j, 0)
+        setV(j, i, 0)
+      }
+    }
+    setV(i, i, 1)
+    g = rv1[i] ?? 0
+    l = i
+  }
+  // Accumulate the left-hand transformations.
+  for (let i = Math.min(m, n) - 1; i >= 0; i--) {
+    l = i + 1
+    g = w[i] ?? 0
+    for (let j = l; j < n; j++) setA(i, j, 0)
+    if (g !== 0) {
+      g = 1 / g
+      for (let j = l; j < n; j++) {
+        let t = 0
+        for (let k = l; k < m; k++) t += A(k, i) * A(k, j)
+        const f = (t / A(i, i)) * g
+        for (let k = i; k < m; k++) setA(k, j, A(k, j) + f * A(k, i))
+      }
+      for (let j = i; j < m; j++) setA(j, i, A(j, i) * g)
+    } else for (let j = i; j < m; j++) setA(j, i, 0)
+    setA(i, i, A(i, i) + 1)
+  }
+  // Diagonalise the bidiagonal by implicit-shift QR.
+  for (let k = n - 1; k >= 0; k--) {
+    for (let its = 1; its <= 75; its++) {
+      let flag = true
+      let nm = 0
+      for (l = k; l >= 0; l--) {
+        nm = l - 1
+        if (Math.abs(rv1[l] ?? 0) + anorm === anorm) {
+          flag = false
+          break
+        }
+        if (Math.abs(w[nm] ?? 0) + anorm === anorm) break
+      }
+      if (flag) {
+        let c = 0
+        let s = 1
+        for (let i = l; i <= k; i++) {
+          const f = s * (rv1[i] ?? 0)
+          rv1[i] = c * (rv1[i] ?? 0)
+          if (Math.abs(f) + anorm === anorm) break
+          const gg = w[i] ?? 0
+          let h = Math.hypot(f, gg)
+          w[i] = h
+          h = 1 / h
+          c = gg * h
+          s = -f * h
+          for (let j = 0; j < m; j++) {
+            const y = A(j, nm)
+            const z = A(j, i)
+            setA(j, nm, y * c + z * s)
+            setA(j, i, z * c - y * s)
+          }
+        }
+      }
+      let z = w[k] ?? 0
+      if (l === k) {
+        if (z < 0) {
+          w[k] = -z
+          for (let j = 0; j < n; j++) setV(j, k, -V(j, k))
+        }
+        break
+      }
+      if (its === 75) throw new WhiteboxError('convergence', 'svd: Golub-Kahan iteration did not converge')
+      let x = w[l] ?? 0
+      nm = k - 1
+      let y = w[nm] ?? 0
+      g = rv1[nm] ?? 0
+      let h = rv1[k] ?? 0
+      let f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2 * h * y)
+      g = Math.hypot(f, 1)
+      f = ((x - z) * (x + z) + h * (y / (f + sign(g, f)) - h)) / x
+      let c = 1
+      let s = 1
+      for (let j = l; j <= nm; j++) {
+        const i = j + 1
+        g = rv1[i] ?? 0
+        y = w[i] ?? 0
+        h = s * g
+        g = c * g
+        z = Math.hypot(f, h)
+        rv1[j] = z
+        c = f / z
+        s = h / z
+        f = x * c + g * s
+        g = g * c - x * s
+        h = y * s
+        y *= c
+        for (let jj = 0; jj < n; jj++) {
+          const xv = V(jj, j)
+          const zv = V(jj, i)
+          setV(jj, j, xv * c + zv * s)
+          setV(jj, i, zv * c - xv * s)
+        }
+        z = Math.hypot(f, h)
+        w[j] = z
+        if (z !== 0) {
+          z = 1 / z
+          c = f * z
+          s = h * z
+        }
+        f = c * g + s * y
+        x = c * y - s * g
+        for (let jj = 0; jj < m; jj++) {
+          const ya = A(jj, j)
+          const za = A(jj, i)
+          setA(jj, j, ya * c + za * s)
+          setA(jj, i, za * c - ya * s)
+        }
+      }
+      rv1[l] = 0
+      rv1[k] = f
+      w[k] = x
+    }
+  }
+  // Sort descending, with the sign convention and orthonormal completion of the null columns.
+  const order = Array.from({ length: n }, (_, i) => i).sort((i, j) => (w[j] ?? 0) - (w[i] ?? 0))
+  const sv = Float64Array.from(order, (i) => w[i] ?? 0)
+  const largest = sv[0] ?? 0
+  const uo = new Float64Array(m * n)
+  const vo = new Float64Array(n * n)
+  const filled: boolean[] = []
+  order.forEach((src, dst) => {
+    const keep = (w[src] ?? 0) > largest * EPS * Math.max(m, n) && (w[src] ?? 0) > 0
+    filled.push(keep)
+    for (let i = 0; i < m; i++) uo[i * n + dst] = keep ? A(i, src) : 0
+    for (let i = 0; i < n; i++) vo[i * n + dst] = V(i, src)
+  })
+  completeColumns(uo, m, n, filled)
+  normaliseColumns(uo, m, n, vo, n)
+  return { u: uo, s: sv, v: vo }
+}
+
 /** Reduced SVD A = U diag(s) V^T: U (m x k), s (k, descending), V (n x k), k = min(m, n). */
 export function svdKernel(
   a: Float64Array,
   m: number,
   n: number,
+  method: 'jacobi' | 'golub-kahan' = 'jacobi',
 ): { u: Float64Array; s: Float64Array; v: Float64Array } {
-  if (m >= n) return svdTall(a, m, n)
+  const tall = method === 'jacobi' ? svdTall : svdGolubKahan
+  if (m >= n) return tall(a, m, n)
   // A^T = U' S V'^T, so A = V' S U'^T.
   const at = new Float64Array(n * m)
   for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) at[j * m + i] = a[i * n + j] ?? 0
-  const t = svdTall(at, n, m)
+  const t = tall(at, n, m)
   // The same sign convention as the tall case: each column of U has its largest entry positive.
   normaliseColumns(t.v, m, m, t.u, n)
   return { u: t.v, s: t.s, v: t.u }

@@ -22,6 +22,10 @@ import {
   where,
 } from '../../tensor/index.ts'
 import { svdKernel } from './_kernels.ts'
+
+/** The SVD algorithms: one-sided Jacobi (accurate small singular values) or Golub-Kahan-Reinsch (the classic). */
+export type SvdMethod = 'jacobi' | 'golub-kahan'
+
 import { assemble, diagEmbed, diagPart, identity as identityOf, matrices, matrixShape, mT } from './_matrix.ts'
 import { eigengapInverse } from './eigh.ts'
 
@@ -29,7 +33,11 @@ import { eigengapInverse } from './eigh.ts'
 const scaleColumns = (x: Value, s: Value): Value => mul(x, expandDims(s, -2))
 const scaleRows = (x: Value, s: Value): Value => mul(expandDims(s, -1), x)
 
-const svdPrimitive: Primitive<null> = definePrimitive<null>({
+interface SvdParams {
+  readonly method: SvdMethod
+}
+
+const svdPrimitive: Primitive<SvdParams> = definePrimitive<SvdParams>({
   name: 'svd',
   abstractEval: (xs) => {
     const a = arg(xs, 0)
@@ -41,11 +49,11 @@ const svdPrimitive: Primitive<null> = definePrimitive<null>({
       { shape: [...batch, k, n], dtype: a.dtype },
     ]
   },
-  impl: ([a]) => {
+  impl: ([a], { method }) => {
     const av = a as NonNullable<typeof a>
     const { batch, m, n } = matrixShape(av.shape, 'svd')
     const k = Math.min(m, n)
-    const results = matrices(av).map((x) => svdKernel(x, m, n))
+    const results = matrices(av).map((x) => svdKernel(x, m, n, method))
     const dtype = av.dtype as FloatDType
     const vh = results.map((r) => {
       const t = new Float64Array(k * n)
@@ -137,10 +145,12 @@ export interface SvdResult {
 }
 
 /**
- * Reduced singular value decomposition A = U diag(s) Vh by one-sided Jacobi rotations (numpy.linalg.svd with
- * `full_matrices=False`), k = min(m, n). Signs are fixed (each column of U has its largest-magnitude entry positive).
+ * Reduced singular value decomposition A = U diag(s) Vh (numpy.linalg.svd with `full_matrices=False`), k = min(m, n),
+ * by one-sided Jacobi rotations (default; accurate small singular values) or Golub-Kahan bidiagonalisation with the
+ * Golub-Reinsch implicit QR iteration. Signs are fixed (each column of U has its largest-magnitude entry positive).
  *
  * @param a - Matrix `[..., m, n]`.
+ * @param options - The method.
  * @returns `{ u, s, vh }`, differentiable (singular vectors only where singular values are distinct and non-zero).
  * @concept linear-algebra
  * @example
@@ -150,9 +160,9 @@ export interface SvdResult {
  * toArray(svd([[3, 0], [0, -2]]).s) // => [3, 2]
  * ```
  */
-export function svd(a: TensorLike): SvdResult {
+export function svd(a: TensorLike, options: { readonly method?: SvdMethod } = {}): SvdResult {
   const [av] = promoteFloat(a) as [Value]
-  const [u, s, vh] = bind(svdPrimitive, [av], null) as [Value, Value, Value]
+  const [u, s, vh] = bind(svdPrimitive, [av], { method: options.method ?? 'jacobi' }) as [Value, Value, Value]
   return { u, s, vh }
 }
 

@@ -573,26 +573,27 @@ primitives; "custom" means a dedicated rule.
   (the exact pendulum period and motion).
 - `zeta.ts`: `zeta`, `hurwitzZeta`, `lambertW`, `expn`, `expi`, `sici`, `fresnel`.
 - `cdf.ts`: CDFs and inverses for test statistics (`stdtr`, `stdtrit`, `chdtr`, `chdtrc`, `fdtr`, `kolmogorov`,
-  `smirnov`, studentised range).
+  `smirnov`). TODO: the studentised range distribution (deferred: a nested-quadrature CDF too slow to test).
 
 `linalg/` (numpy.linalg, scipy.linalg; custom rules for every factorisation and solve)
 - `blas.ts`: level-1 and level-2 kernels on number arrays (`ddot`, `dnrm2`, `daxpy`, `dscal`, `dgemv`), shared by every
   algorithm that iterates on primal values (Krylov, Lanczos, regularising iterations, root finders).
-- `basics.ts`: `norm`, `cond`, `matrixRank`, `matrixPower`, `trace`, `det`, `slogdet`, `isSymmetric`,
+- `basics.ts`: `norm`, `cond`, `matrixRank`, `matrixPower`, `det`, `slogdet`, `isSymmetric` (`trace` is the tensor op),
   `isPositiveDefinite`.
 - `triangular.ts`: `solveTriangular`, `invTriangular`.
 - `cholesky.ts`: `cholesky` (optional jitter ladder that reports the jitter used), `choFactor`, `choSolve`,
   `choleskyLogdet`, rank-one `choleskyUpdate` and `choleskyDowndate`.
 - `lu.ts`: `lu`, `luFactor`, `luSolve`, `solve`, `inv`.
 - `qr.ts`: `qr` (Householder), `lstsq`, `householderReflector`, `givensRotation`.
-- `orthogonalisation.ts`: classical and modified Gram-Schmidt (with step records), reorthogonalisation, `orth`.
-- `eigh.ts`: symmetric eigendecomposition (tridiagonal reduction and implicit QL; cyclic Jacobi with step records),
-  `eigh`, `eigvalsh`.
-- `svd.ts`: `svd` (one-sided Jacobi, Golub-Kahan), `svdvals`, `pinv`, `nullSpace`, `polar`, `lowRankApproximation`.
+- `orthogonalisation.ts`: `gramSchmidt` (classical and modified, with projection step records, reorthogonalisation), `orth`.
+- `eigh.ts`: `eigh` (tridiagonal reduction and implicit QL by default, or cyclic Jacobi), `eigvalsh`,
+  `jacobiEigenSteps` (sweeps and rotations for figures).
+- `svd.ts`: `svd` (one-sided Jacobi by default, or Golub-Kahan-Reinsch), `svdvals`, `pinv`, `nullSpace`, `polar`, `lowRankApproximation`.
 - `eig.ts`: `hessenberg`, `schur`, `eig`, `eigvals` (complex results), `powerIteration`, `inverseIteration`,
   `rayleighQuotientIteration`.
-- `functions.ts`: `expm` (Pade, scaling and squaring, Frechet derivative), `logm`, `sqrtm`, `funm`.
-- `equations.ts`: `solveSylvester`, `solveLyapunov` (continuous and discrete), `solveCare`, `solveDare`.
+- `functions.ts`: `expm` (Pade, scaling and squaring, Frechet derivative), `logm`, `sqrtm`, `funm` (Schur-Parlett),
+  `funmSymmetric`.
+- `equations.ts`: `solveSylvester`, `solveContinuousLyapunov`, `solveDiscreteLyapunov`, `solveCare`, `solveDare`.
 - `structured.ts`: `solveTridiagonal`, `solveBanded`, `toeplitz`, `solveToeplitz`, `circulant`, `hankel`, `blockDiag`,
   `kroneckerSolve`.
 - `randomized.ts`: `randomizedSvd`, `randomizedRangeFinder`, `randomProjectionMatrix`, `johnsonLindenstraussDim`,

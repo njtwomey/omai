@@ -11,7 +11,7 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { eigh } from '../linalg/index.ts'
-import { lbeta } from '../special/index.ts'
+import { lbeta } from '../special/gamma.ts'
 
 /** Nodes and weights of a quadrature rule. */
 export interface QuadratureRule {

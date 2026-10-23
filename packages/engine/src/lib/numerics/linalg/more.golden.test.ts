@@ -13,6 +13,7 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
+import { complexOps as C } from '../differentiate/index.ts'
 import * as L from './index.ts'
 
 type Params = Readonly<Record<string, unknown>>
@@ -50,6 +51,8 @@ const FNS: Readonly<Record<string, Fn>> = {
   logm: ([a]) => L.logm(a as Tensor),
   solveSylvester: ([a, b, q]) => L.solveSylvester(a as Tensor, b as Tensor, q as Tensor),
   solveContinuousLyapunov: ([a, q]) => L.solveContinuousLyapunov(a as Tensor, q as Tensor),
+  funm: ([a], p) =>
+    L.funm(a as Tensor, { exp: C.exp, sin: C.sin, cos: C.cos, sqrt: C.sqrt }[p['fn_name'] as 'exp']).value as Tensor,
   solveDiscreteLyapunov: ([a, q]) => L.solveDiscreteLyapunov(a as Tensor, q as Tensor),
   solveCare: ([a, b, q, r]) => L.solveCare(a as Tensor, b as Tensor, q as Tensor, r as Tensor),
   solveDare: ([a, b, q, r]) => L.solveDare(a as Tensor, b as Tensor, q as Tensor, r as Tensor),

@@ -34,6 +34,19 @@ export interface GramSchmidtResult {
   readonly r: Value
   /** The loss of orthogonality ||Q^T Q - I|| (Frobenius), which shows classical Gram-Schmidt's instability. */
   readonly orthogonalityError: number
+  /** One record per projection: column j against q_i in a pass, with the coefficient and the vector after it. */
+  readonly steps: readonly GramSchmidtStep[]
+}
+
+/** One projection step of Gram-Schmidt, for figures. */
+export interface GramSchmidtStep {
+  readonly column: number
+  readonly against: number
+  readonly pass: number
+  /** The projection coefficient r_ij of this pass. */
+  readonly coefficient: number
+  /** The vector after subtracting the projection. */
+  readonly vector: readonly number[]
 }
 
 const column = (a: Value, j: number): Value => sliceAxis(a, 1, j, j + 1)
@@ -44,7 +57,7 @@ const column = (a: Value, j: number): Value => sliceAxis(a, 1, j, j + 1)
  *
  * @param a - Matrix `[m, n]` with m >= n and independent columns.
  * @param options - Method and reorthogonalisation.
- * @returns Q, R and the orthogonality error.
+ * @returns Q, R, the orthogonality error and the projection steps.
  * @concept orthogonalisation
  * @example
  * ```ts
@@ -60,6 +73,7 @@ export function gramSchmidt(a: TensorLike, options: GramSchmidtOptions = {}): Gr
   const passes = options.reorthogonalise === true ? 2 : 1
   const qs: Value[] = []
   const r: Value[][] = Array.from({ length: n }, () => [])
+  const steps: GramSchmidtStep[] = []
   for (let j = 0; j < n; j++) {
     let v = column(m, j)
     const coefficients: (Value | undefined)[] = new Array(j).fill(undefined)
@@ -71,6 +85,7 @@ export function gramSchmidt(a: TensorLike, options: GramSchmidtOptions = {}): Gr
         const qi = qs[i] as Value
         const rij = sum(mul(qi, modified ? v : start))
         v = sub(v, mul(qi, rij))
+        steps.push({ column: j, against: i, pass, coefficient: item(primalOf(rij)), vector: toFlat(primalOf(v)) })
         coefficients[i] = coefficients[i] === undefined ? rij : add(coefficients[i] as Value, rij)
       }
     }
@@ -86,7 +101,7 @@ export function gramSchmidt(a: TensorLike, options: GramSchmidtOptions = {}): Gr
   )
   const gram = toFlat(primalOf(matmul(swapaxes(q, 0, 1), q)))
   const err = Math.sqrt(gram.reduce((s2, v, k) => s2 + (v - (Math.floor(k / n) === k % n ? 1 : 0)) ** 2, 0))
-  return { q, r: rm, orthogonalityError: err }
+  return { q, r: rm, orthogonalityError: err, steps }
 }
 
 /**

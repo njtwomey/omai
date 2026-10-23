@@ -3,7 +3,9 @@ import {
   abs,
   add,
   concat,
+  concreteOrThrow,
   div,
+  fromStorage,
   item,
   matmul,
   max,
@@ -13,11 +15,14 @@ import {
   sliceAxis,
   sub,
   sum,
+  type Tensor,
   type TensorLike,
   type Value,
   zeros,
 } from '../../tensor/index.ts'
+import { complexOps as C, type ComplexNumber } from '../differentiate/index.ts'
 import { identity, mT, squareSize } from './_matrix.ts'
+import { schurKernel } from './_schur.ts'
 import { eigh } from './eigh.ts'
 import { inv, solve } from './lu.ts'
 
@@ -225,4 +230,158 @@ export function logm(a: TensorLike): Value {
 export function funmSymmetric(a: TensorLike, f: (eigenvalues: Value) => Value): Value {
   const { eigenvalues, eigenvectors } = eigh(a)
   return matmul(mul(eigenvectors, f(eigenvalues)), mT(eigenvectors))
+}
+
+/** A complex matrix as parallel real and imaginary parts, row-major. */
+interface CMat {
+  re: Float64Array
+  im: Float64Array
+}
+
+/** The real Schur form converted to complex upper-triangular form, T = Z^H A Z (scipy.linalg.rsf2csf). */
+function complexSchur(a: Float64Array, n: number): { t: CMat; z: CMat } {
+  const { t: tr, z: zr } = schurKernel(a, n)
+  const t: CMat = { re: Float64Array.from(tr), im: new Float64Array(n * n) }
+  const z: CMat = { re: Float64Array.from(zr), im: new Float64Array(n * n) }
+  const eps = 2.220446049250313e-16
+  for (let m = n - 1; m > 0; m--) {
+    const sub = t.re[m * n + m - 1] ?? 0
+    if (Math.abs(sub) > eps * (Math.abs(t.re[(m - 1) * n + m - 1] ?? 0) + Math.abs(t.re[m * n + m] ?? 0))) {
+      // mu = (an eigenvalue of the 2 x 2 block) - T[m, m]. Earlier rotations have made T[m - 1, m] and T[m, m]
+      // complex, so the block is complex in general.
+      const at = (i: number, j: number): ComplexNumber => ({ re: t.re[i * n + j] ?? 0, im: t.im[i * n + j] ?? 0 })
+      const p = at(m - 1, m - 1)
+      const q = at(m - 1, m)
+      const r0 = at(m, m - 1)
+      const s0 = at(m, m)
+      const half = C.mul(C.sub(p, s0), 0.5)
+      const root = C.sqrt(C.add(C.mul(half, half), C.mul(q, r0)))
+      const lambda = C.add(C.mul(C.add(p, s0), 0.5), root)
+      const mu = C.sub(lambda, s0)
+      const r = Math.hypot(mu.re, mu.im, sub)
+      const c: ComplexNumber = { re: mu.re / r, im: mu.im / r }
+      const s = sub / r
+      // G = [[conj(c), s], [-s, c]]; T[m-1:m+1, m-1:] = G T; T[:m+1, m-1:m+1] = T G^H; Z[:, m-1:m+1] = Z G^H.
+      for (let col = m - 1; col < n; col++) {
+        const x = { re: t.re[(m - 1) * n + col] ?? 0, im: t.im[(m - 1) * n + col] ?? 0 }
+        const y = { re: t.re[m * n + col] ?? 0, im: t.im[m * n + col] ?? 0 }
+        const top = C.add(C.mul({ re: c.re, im: -c.im }, x), C.mul(y, s))
+        const bottom = C.add(C.mul(x, -s), C.mul(c, y))
+        t.re[(m - 1) * n + col] = top.re
+        t.im[(m - 1) * n + col] = top.im
+        t.re[m * n + col] = bottom.re
+        t.im[m * n + col] = bottom.im
+      }
+      const rightMultiply = (mat: CMat, rows: number): void => {
+        for (let row = 0; row < rows; row++) {
+          const x = { re: mat.re[row * n + m - 1] ?? 0, im: mat.im[row * n + m - 1] ?? 0 }
+          const y = { re: mat.re[row * n + m] ?? 0, im: mat.im[row * n + m] ?? 0 }
+          // [x, y] G^H with G^H = [[c, -s], [s, conj(c)]].
+          const left = C.add(C.mul(x, c), C.mul(y, s))
+          const right = C.add(C.mul(x, -s), C.mul(y, { re: c.re, im: -c.im }))
+          mat.re[row * n + m - 1] = left.re
+          mat.im[row * n + m - 1] = left.im
+          mat.re[row * n + m] = right.re
+          mat.im[row * n + m] = right.im
+        }
+      }
+      rightMultiply(t, m + 1)
+      rightMultiply(z, n)
+    }
+    t.re[m * n + m - 1] = 0
+    t.im[m * n + m - 1] = 0
+  }
+  return { t, z }
+}
+
+/** Result of {@link funm}. */
+export interface FunmResult {
+  /** f(A): real when A is real and the imaginary part is negligible, otherwise a complex pair. */
+  readonly value: Tensor | { readonly re: Tensor; readonly im: Tensor }
+  /** scipy's estimate of the relative error, large when eigenvalues nearly coincide. */
+  readonly error: number
+}
+
+/**
+ * A general matrix function f(A) by the Schur-Parlett method (scipy.linalg.funm): reduce A to complex triangular Schur
+ * form T, compute F = f(T) by Parlett's recurrence F_ij = (T_ij (F_jj - F_ii) + sum_k (T_ik F_kj - F_ik T_kj)) /
+ * (T_jj - T_ii) (from F T = T F), and transform back. Accurate when the eigenvalues are well separated (the error estimate says so).
+ *
+ * @param a - Square matrix.
+ * @param f - The scalar function on complex numbers (built from complexOps).
+ * @returns f(A) and the error estimate.
+ * @concept matrix-functions
+ * @example
+ * ```ts
+ * import { funm } from 'whitebox-engine/numerics/linalg'
+ * import { complexOps as C } from 'whitebox-engine/numerics/differentiate'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(funm([[1, 0], [0, 2]], C.exp).value).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[2.718281828459, 0], [0, 7.389056098931]]
+ * ```
+ */
+export function funm(a: TensorLike, f: (z: ComplexNumber) => ComplexNumber): FunmResult {
+  const t0 = concreteOrThrow(promoteFloat(a)[0] as Tensor, 'funm')
+  const n = t0.shape[0] ?? 0
+  if (t0.shape.length !== 2 || t0.shape[1] !== n) throw new WhiteboxError('shape', 'funm: the matrix must be square')
+  const { t, z } = complexSchur(Float64Array.from(t0.data), n)
+  const T = (i: number, j: number): ComplexNumber => ({ re: t.re[i * n + j] ?? 0, im: t.im[i * n + j] ?? 0 })
+  const F: ComplexNumber[] = new Array(n * n).fill({ re: 0, im: 0 })
+  for (let i = 0; i < n; i++) F[i * n + i] = f(T(i, i))
+  let minDen = Number.POSITIVE_INFINITY
+  for (let d = 1; d < n; d++) {
+    for (let i = 0; i + d < n; i++) {
+      const j = i + d
+      let s = C.mul(T(i, j), C.sub(F[j * n + j] as ComplexNumber, F[i * n + i] as ComplexNumber))
+      for (let k = i + 1; k < j; k++)
+        s = C.add(
+          s,
+          C.sub(C.mul(T(i, k), F[k * n + j] as ComplexNumber), C.mul(F[i * n + k] as ComplexNumber, T(k, j))),
+        )
+      const den = C.sub(T(j, j), T(i, i))
+      const absDen = Math.hypot(den.re, den.im)
+      minDen = Math.min(minDen, absDen)
+      F[i * n + j] = absDen === 0 ? { re: Number.NaN, im: Number.NaN } : C.div(s, den)
+    }
+  }
+  // F <- Z F Z^H.
+  const re = new Float64Array(n * n)
+  const im = new Float64Array(n * n)
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      let acc: ComplexNumber = { re: 0, im: 0 }
+      for (let k = 0; k < n; k++) {
+        const zik: ComplexNumber = { re: z.re[i * n + k] ?? 0, im: z.im[i * n + k] ?? 0 }
+        let inner: ComplexNumber = { re: 0, im: 0 }
+        for (let l = k; l < n; l++) {
+          const zjl: ComplexNumber = { re: z.re[j * n + l] ?? 0, im: -(z.im[j * n + l] ?? 0) }
+          inner = C.add(inner, C.mul(F[k * n + l] as ComplexNumber, zjl))
+        }
+        acc = C.add(acc, C.mul(zik, inner))
+      }
+      re[i * n + j] = acc.re
+      im[i * n + j] = acc.im
+    }
+  }
+  // scipy's error estimate.
+  const tol = 2.220446049250313e-16
+  let upper = 0
+  for (let j = 0; j < n; j++) {
+    let col = 0
+    for (let i = 0; i < j; i++) col += Math.hypot(t.re[i * n + j] ?? 0, t.im[i * n + j] ?? 0)
+    upper = Math.max(upper, col)
+  }
+  const error = n <= 1 ? tol : Math.min(1, Math.max(tol, (tol / minDen) * upper))
+  let imagNorm = 0
+  let realNorm = 0
+  for (let k = 0; k < n * n; k++) {
+    imagNorm = Math.max(imagNorm, Math.abs(im[k] ?? 0))
+    realNorm = Math.max(realNorm, Math.abs(re[k] ?? 0))
+  }
+  const real = imagNorm <= 1e3 * tol * Math.max(1, realNorm)
+  return {
+    value: real
+      ? fromStorage(re, [n, n], 'float64')
+      : { re: fromStorage(re, [n, n], 'float64'), im: fromStorage(im, [n, n], 'float64') },
+    error,
+  }
 }

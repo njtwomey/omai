@@ -23,6 +23,12 @@ def cases() -> list[Case]:
     pos = spd(g, 4) / 4 + g.normal(size=(4, 4)) * 0.1  # eigenvalues comfortably in the right half-plane
     out.append(case("sqrtm", "sqrtm", [pos], np.real(sl.sqrtm(pos)), rtol=1e-9, atol=1e-12))
     out.append(case("logm", "logm", [pos], np.real(sl.logm(pos)), rtol=1e-9, atol=1e-12))
+    # A general (non-symmetric) matrix with distinct real and complex eigenvalues, for the Schur-Parlett funm.
+    general = np.array([[1.0, 2.0, 0.5, 0.0], [-1.5, 0.3, 1.0, 0.2], [0.0, 0.4, -0.7, 1.1], [0.3, 0.0, -0.9, 0.6]])
+    for name, fn in [("exp", np.exp), ("sin", np.sin), ("cos", np.cos), ("sqrt", np.sqrt)]:
+        shifted = general + 3 * np.eye(4) if name == "sqrt" else general
+        value, _ = sl.funm(shifted, fn, disp=False)
+        out.append(case(f"funm/{name}", "funm", [shifted], np.real(value), rtol=1e-9, atol=1e-11, fn_name=name))
     m, n = 3, 2
     sa, sb, sq = g.normal(size=(m, m)), g.normal(size=(n, n)), g.normal(size=(m, n))
     out.append(case("solveSylvester", "solveSylvester", [sa, sb, sq], sl.solve_sylvester(sa, sb, sq), rtol=1e-9))
