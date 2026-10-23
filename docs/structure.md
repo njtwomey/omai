@@ -1400,10 +1400,13 @@ share a concept they share a definition but not a name.
 - `large-output.ts`: losses for very many classes: hierarchical softmax (`huffmanCoding`, `hierarchicalSoftmax`,
   `hierarchicalSoftmaxLogProbs`), sampled softmax (`sampledSoftmax`, `sampleClasses` with uniform and log-uniform
   proposals). TODO: take the Huffman tree from `information/source-coding.ts` once that domain exists.
-- `margin.ts`: hinge, squared hinge, logistic, exponential, modified Huber, Crammer-Singer, Weston-Watkins.
-- `density.ts`: negative log-likelihood of any `Distribution` or `ConditionalDistribution`, mixture-density NLL,
-  heteroscedastic Gaussian NLL, censored likelihoods.
-- `ranking.ts`: RankNet, pairwise hinge, BPR, LambdaRank, ListNet, ListMLE, ApproxNDCG.
+- `margin.ts`: `hinge`, `squaredHinge`, `logistic`, `exponential`, `modifiedHuber`, `perceptron`, `crammerSinger`,
+  `westonWatkins`.
+- `density.ts`: negative log-likelihood of any `Distribution` (`negativeLogLikelihood`) or conditional distribution
+  (`conditionalNll`), mixture-density NLL (`mixtureDensityNll`), heteroscedastic Gaussian NLL with beta-NLL weighting
+  (`heteroscedasticGaussianNll`), censored likelihoods (`censoredNll`: exact, left, right and interval).
+- `ranking.ts`: `marginRanking`, `rankNet`, `pairwiseHinge`, `bpr`, `lambdaRank` (NDCG@k deltas), `listNet`,
+  `softmaxRanking`, `listMle`, `approxNdcg`; padded lists through a mask.
 - `contrastive.ts`: InfoNCE, NT-Xent, triplet, contrastive, supervised contrastive, CLIP loss, ArcFace and CosFace
   margins.
 - `segmentation.ts`: Dice, Tversky, focal Tversky, Lovasz hinge.

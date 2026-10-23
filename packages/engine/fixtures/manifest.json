@@ -36,6 +36,34 @@
       "cases": 36
     },
     {
+      "fixture": "losses/density.json",
+      "source": "oracle/cases/losses/density.py",
+      "reference": {
+        "torch": "2.14.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "losses/margin.json",
+      "source": "oracle/cases/losses/margin.py",
+      "reference": {
+        "optax": "0.2.8",
+        "torch": "2.14.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "losses/ranking.json",
+      "source": "oracle/cases/losses/ranking.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 13
+    },
+    {
       "fixture": "losses/regression.json",
       "source": "oracle/cases/losses/regression.py",
       "reference": {
