@@ -1573,6 +1573,15 @@
       "cases": 16
     },
     {
+      "fixture": "methods/models/hmm.json",
+      "source": "oracle/cases/methods/models/hmm.py",
+      "reference": {
+        "hmmlearn": "0.3.3",
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "methods/naive_bayes/naive_bayes.json",
       "source": "oracle/cases/methods/naive_bayes/naive_bayes.py",
       "reference": {
