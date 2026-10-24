@@ -331,7 +331,7 @@ export function learningCurvePanel(curve: LearningCurve, options: ViewOptions = 
     layers,
     options: {
       x: { label: curve.resource ?? 'training size', scale: wantsLog(curve.sizes) ? 'log' : 'linear' },
-      y: { label: 'score' },
+      y: { label: curve.scoreName ?? 'score' },
     },
   }
 }

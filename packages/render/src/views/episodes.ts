@@ -11,13 +11,23 @@ import { gridSpec } from '../figure/grid.ts'
 import { rolling } from '../trace/episodes.ts'
 import { type ViewOptions, viewFigure } from './_view.ts'
 
+const ARROWS: Readonly<Record<string, string>> = { up: '↑', down: '↓', left: '←', right: '→' }
+
+/** Glyphs for named actions: arrows for directions, else the names themselves. */
+function glyphsOf(names: readonly string[] | undefined): string[] | undefined {
+  return names?.map((n) => ARROWS[n.toLowerCase()] ?? n)
+}
+
 /** Options of {@link episodeView}. */
 export interface EpisodeViewOptions extends ViewOptions {
   /** The snapshot shown (an index into the record's snapshots; default the last). */
   readonly snapshot?: number
-  /** The states as a grid `[rows, cols]` (a grid world), to draw values and policy as a map. */
+  /** The states as a grid `[rows, cols]` (a grid world), to draw values and policy as a map (default the record's). */
   readonly gridShape?: readonly [number, number]
-  /** Arrows (or names) of the actions, by action index, for the policy map (default ←, ↓, →, ↑: gymnasium's grids). */
+  /**
+   * Arrows (or names) of the actions, by action index, for the policy map (default from the record's action names,
+   * else ←, ↓, →, ↑: gymnasium's frozen lake).
+   */
   readonly actionGlyphs?: readonly string[]
   /** The rolling window of the mean return (default 20). */
   readonly window?: number
@@ -81,9 +91,10 @@ export function episodeView(record: EpisodeRecord, options: EpisodeViewOptions =
   }
   if (snap !== undefined) {
     const values = snap.values ?? snap.policy?.map(() => 0) ?? []
-    const policy = snap.policy
-    const glyphs = options.actionGlyphs ?? ['←', '↓', '→', '↑']
-    const shape = options.gridShape
+    // A policy over other indices than the values (a bandit's single best arm) is not drawn per cell.
+    const policy = snap.policy !== undefined && snap.policy.length === values.length ? snap.policy : undefined
+    const glyphs = options.actionGlyphs ?? glyphsOf(record.actionNames) ?? ['←', '↓', '→', '↑']
+    const shape = options.gridShape ?? record.snapshotShape
     if (shape !== undefined && shape[0] * shape[1] === values.length) {
       const [r, c] = shape
       const grid = Array.from({ length: r }, (_, i) => values.slice(i * c, (i + 1) * c))
@@ -137,7 +148,7 @@ export function episodeView(record: EpisodeRecord, options: EpisodeViewOptions =
           bars(
             values.map((_, s) => `${s}`),
             Array.from({ length: k }, (_, a) => ({
-              name: glyphs[a] ?? `action ${a}`,
+              name: record.actionNames?.[a] ?? glyphs[a] ?? `action ${a}`,
               colour: `tab${(a + 2) % 10}`,
               values: values.map((v, s) => ((policy?.[s] ?? 0) === a ? v : 0)),
             })),

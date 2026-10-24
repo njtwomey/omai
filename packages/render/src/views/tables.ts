@@ -143,7 +143,17 @@ export function likelihoodView(table: LikelihoodTable, options: ViewOptions = {}
           mode,
         }),
       ],
-      options: { x: { label: 'log-likelihood contribution' } },
+      options: {
+        x: { label: 'log-likelihood contribution' },
+        ...(table.scope === undefined
+          ? {}
+          : {
+              title:
+                table.scope.kind === 'average'
+                  ? `average over each class's rows (${table.scope.rows} rows)`
+                  : `one query${table.scope.row === undefined ? '' : `, row ${table.scope.row}`}`,
+            }),
+      },
     },
     totals: {
       layers: [
@@ -157,7 +167,11 @@ export function likelihoodView(table: LikelihoodTable, options: ViewOptions = {}
         ),
       ],
       options: {
-        title: `predicts ${table.classes[best] ?? best}`,
+        // For class averages the softmax compares the classes' typical rows; it predicts nothing.
+        title:
+          table.scope?.kind === 'average'
+            ? `largest: ${table.classes[best] ?? best}`
+            : `predicts ${table.classes[best] ?? best}`,
         x: { label: 'posterior probability', limits: [0, 1] },
       },
     },

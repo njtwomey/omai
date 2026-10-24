@@ -219,14 +219,16 @@ function curveRecord(
 }
 
 /** Every trial's score beside the best score so far, by trial. */
-function historyRecord(study: Study): Exposition {
+function historyRecord(study: Study, scoreName: string): Exposition {
   const h = optimisationHistory(study)
   const values = study.trials.map(shownValue)
   return learningCurve({
     sizes: h.number.map((n) => n + 1),
     train: values,
     validation: [...h.best],
-    resource: 'trials (train: each trial’s score; validation: the best so far)',
+    resource: 'trial',
+    labels: { train: 'each trial', validation: 'best so far' },
+    scoreName,
   })
 }
 
@@ -285,7 +287,7 @@ export function tuneEstimator(options: TuneEstimatorOptions): Explained<TuneEsti
       const curve = curveRecord(study, numeric[0] as string, higherIsBetter, cvName)
       if (curve !== undefined) out.push(curve)
     }
-    out.push(historyRecord(study))
+    out.push(historyRecord(study, cvName))
     return out
   }
   const inner = studyAlgorithm(objective, space, {
