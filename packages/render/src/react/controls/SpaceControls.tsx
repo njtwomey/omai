@@ -1,0 +1,91 @@
+import type { ReactNode } from 'react'
+import type { Space, SpaceValue } from 'whitebox-engine/space'
+import { Choice } from './Choice.tsx'
+import { cx, labelClass } from './classes.ts'
+import { NumberField } from './NumberField.tsx'
+import type { OptionValue } from './options.ts'
+import { Select } from './Select.tsx'
+import { type ControlSpec, type SpaceControlOptions, spaceControls, valueAt, withValueAt } from './space-controls.ts'
+import { Toggle } from './Toggle.tsx'
+
+/** Props of {@link SpaceControls}. */
+export interface SpaceControlsProps<V extends SpaceValue> extends SpaceControlOptions {
+  readonly space: Space
+  readonly value: V
+  readonly onChange: (value: V) => void
+  /** Top-level keys to leave out (a dict space's dimensions the page sets itself). */
+  readonly exclude?: readonly string[]
+  readonly disabled?: boolean
+}
+
+/**
+ * Controls generated from an engine `Space`: one per dimension, each drawn as its kind calls for (see `spaceControls`),
+ * with conditional dimensions appearing as their conditions come to hold. The controls are returned side by side, for
+ * a {@link ControlPanel} or any other container to lay out.
+ *
+ * @param props - The space, its value and what to call with a new value.
+ * @returns The controls.
+ */
+export function SpaceControls<V extends SpaceValue>(props: SpaceControlsProps<V>): ReactNode {
+  const { space, value, onChange, exclude = [], disabled = false } = props
+  const options: SpaceControlOptions = props.segmentedUpTo === undefined ? {} : { segmentedUpTo: props.segmentedUpTo }
+  const controls = spaceControls(space, value, options).filter((c) => !exclude.includes(String(c.path[0])))
+  const set = (spec: ControlSpec, leaf: SpaceValue): void => onChange(withValueAt(space, value, spec.path, leaf) as V)
+  return controls.map((c) => <ControlFor key={c.id} spec={c} value={value} set={set} disabled={disabled} />)
+}
+
+function ControlFor(props: {
+  readonly spec: ControlSpec
+  readonly value: SpaceValue
+  readonly set: (spec: ControlSpec, leaf: SpaceValue) => void
+  readonly disabled: boolean
+}): ReactNode {
+  const { spec, value, set, disabled } = props
+  const current = valueAt(value, spec.path)
+  switch (spec.kind) {
+    case 'number':
+      return (
+        <NumberField
+          label={spec.label}
+          value={typeof current === 'number' ? current : Number.NaN}
+          onChange={(v) => set(spec, v)}
+          {...spec.spec}
+          {...(spec.unit === undefined ? {} : { unit: spec.unit })}
+          disabled={disabled}
+        />
+      )
+    case 'choice':
+    case 'select': {
+      const Component = spec.kind === 'choice' ? Choice : Select
+      return (
+        <Component<OptionValue>
+          label={spec.label}
+          value={current as OptionValue}
+          options={spec.options}
+          onChange={(v) => set(spec, v)}
+          disabled={disabled}
+        />
+      )
+    }
+    case 'toggle':
+      return (
+        <Toggle
+          label={spec.label}
+          value={current === true || current === 1}
+          onChange={(v) => set(spec, typeof current === 'number' ? (v ? 1 : 0) : v)}
+          disabled={disabled}
+        />
+      )
+    case 'group':
+      return (
+        <fieldset className="flex min-w-0 flex-col gap-2 border-0 p-0">
+          <legend className={cx(labelClass, 'mb-1')}>{spec.label}</legend>
+          <div className="flex flex-wrap gap-2">
+            {spec.children.map((c) => (
+              <ControlFor key={c.id} spec={c} value={value} set={set} disabled={disabled} />
+            ))}
+          </div>
+        </fieldset>
+      )
+  }
+}
