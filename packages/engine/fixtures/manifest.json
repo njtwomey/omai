@@ -1320,6 +1320,15 @@
       "cases": 18
     },
     {
+      "fixture": "methods/linear/classification.json",
+      "source": "oracle/cases/methods/linear/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "methods/linear/regression.json",
       "source": "oracle/cases/methods/linear/regression.py",
       "reference": {
