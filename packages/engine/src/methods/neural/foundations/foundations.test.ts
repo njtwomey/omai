@@ -4,6 +4,7 @@ import { recordsOf } from '../../../lib/exposition/index.ts'
 import type { LearnData } from '../../../lib/learn/index.ts'
 import { key } from '../../../lib/random/index.ts'
 import { toFlat } from '../../../lib/tensor/index.ts'
+import { universalApproximation } from './approximation.ts'
 import { backpropByHand } from './backprop.ts'
 import { MLPClassifier, mlpClassifier, mlpRegressor } from './mlp.ts'
 import { rosenblattPerceptron } from './perceptron.ts'
@@ -149,5 +150,21 @@ describe('backpropByHand', () => {
       ],
     })
     expect(wide.maxError).toBeLessThan(1e-12)
+  })
+})
+
+describe('universalApproximation', () => {
+  it('fits a curve better with more hidden units, and records each fit and the units of the widest', () => {
+    const data = load('regression1d', 'sineCurve')
+    const r = universalApproximation(data, { widths: [1, 8] }, { key: key(0) })
+    expect(r.results[1]?.trainR2 ?? 0).toBeGreaterThan(r.results[0]?.trainR2 ?? 1)
+    expect(r.results[1]?.trainR2 ?? 0).toBeGreaterThan(0.9)
+    const [curve] = recordsOf(r.exposition, 'learningCurve')
+    expect(curve?.sizes).toEqual([1, 8])
+    const surfaces = recordsOf(r.exposition, 'decisionSurface')
+    expect(surfaces.length).toBe(3)
+    expect(surfaces[0]?.steps?.length).toBeGreaterThan(5)
+    // Eight units by sixty grid points.
+    expect([surfaces[2]?.values?.length, surfaces[2]?.values?.[0]?.length]).toEqual([8, 60])
   })
 })
