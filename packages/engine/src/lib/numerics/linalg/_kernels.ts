@@ -350,13 +350,20 @@ export function eighQlKernel(input: Float64Array, n: number): { w: Float64Array;
   // tql2: implicit-shift QL on the tridiagonal (d, e), rotations applied to the columns of a.
   for (let i = 1; i < n; i++) e[i - 1] = e[i] ?? 0
   if (n > 0) e[n - 1] = 0
+  // Deflate when an off-diagonal is negligible relative to its neighbours (Numerical Recipes' tqli) or to the norm of
+  // the tridiagonal (EISPACK's tql2, LAPACK): without the absolute test a cluster of eigenvalues at rounding level (a
+  // numerically rank-deficient kernel matrix) never meets the relative one and the iteration fails to converge.
+  let norm = 0
+  for (let i = 0; i < n; i++) norm = Math.max(norm, Math.abs(d[i] ?? 0) + Math.abs(e[i] ?? 0))
+  const floor = EPS * norm
   for (let l = 0; l < n; l++) {
     let iterations = 0
     let m: number
     do {
       for (m = l; m < n - 1; m++) {
         const dd = Math.abs(d[m] ?? 0) + Math.abs(d[m + 1] ?? 0)
-        if (Math.abs(e[m] ?? 0) <= EPS * dd) break
+        const off = Math.abs(e[m] ?? 0)
+        if (off <= EPS * dd || off <= floor) break
       }
       if (m !== l) {
         if (iterations++ === 60) throw new WhiteboxError('convergence', 'eigh: QL iteration did not converge')
