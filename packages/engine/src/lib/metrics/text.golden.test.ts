@@ -26,9 +26,9 @@ goldenSuite('text metrics against jiwer, sacrebleu, rouge-score and torchmetrics
   chrfScore: (_i, { yTrue, yPred, ...o }) => M.chrfScore(yTrue as Refs, yPred as string[], o).estimate.value,
   translationEditRate: (_i, { yTrue, yPred, ...o }) =>
     M.translationEditRate(yTrue as Refs, yPred as string[], o).estimate.value,
-  rougeN: (_i, p) => field(M.rougeN(refs(p), hyps(p), { n: p['n'] as number }), p),
-  rougeL: (_i, p) => field(M.rougeL(refs(p), hyps(p)), p),
-  rougeLsum: (_i, p) => field(M.rougeLsum(refs(p), hyps(p)), p),
+  rougeN: (_i, p) => field(M.rougeN(refs(p), hyps(p), { n: p['n'] as number, stem: p['stem'] === true }), p),
+  rougeL: (_i, p) => field(M.rougeL(refs(p), hyps(p), { stem: p['stem'] === true }), p),
+  rougeLsum: (_i, p) => field(M.rougeLsum(refs(p), hyps(p), { stem: p['stem'] === true }), p),
   exactMatch: (_i, p) => M.exactMatch(refs(p), hyps(p)).estimate.value,
   tokenF1: (_i, p) => M.tokenF1(refs(p), hyps(p)).estimate.value,
   bertScore: (_i, p) => {

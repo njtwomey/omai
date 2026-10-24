@@ -1087,7 +1087,7 @@
         "rouge-score": "0.1.2",
         "torchmetrics": "1.9.0"
       },
-      "cases": 69
+      "cases": 84
     },
     {
       "fixture": "nn/functional/activations.json",
@@ -2054,7 +2054,7 @@
         "pytorch-crf": "0.7.2",
         "sklearn-crfsuite": "0.5.0"
       },
-      "cases": 6
+      "cases": 8
     },
     {
       "fixture": "pgm/models/dynamic.json",
@@ -2191,6 +2191,65 @@
         "gymnasium": "1.4.0"
       },
       "cases": 13
+    },
+    {
+      "fixture": "search/adversarial.json",
+      "source": "oracle/cases/search/adversarial.py",
+      "reference": {
+        "aima-python": "port of games.py (2024)"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "search/csp.json",
+      "source": "oracle/cases/search/csp.py",
+      "reference": {
+        "python-constraint2": "2.7.3",
+        "aima-python": "port of csp.py (2024)"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "search/informed.json",
+      "source": "oracle/cases/search/informed.py",
+      "reference": {
+        "aima-python": "port of search.py (2024)",
+        "networkx": "3.7"
+      },
+      "cases": 36
+    },
+    {
+      "fixture": "search/planning/heuristics.json",
+      "source": "oracle/cases/search/planning/heuristics.py",
+      "reference": {
+        "pyperplan": "2.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "search/planning/strips.json",
+      "source": "oracle/cases/search/planning/strips.py",
+      "reference": {
+        "pyperplan": "2.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "search/refinement.json",
+      "source": "oracle/cases/search/refinement.py",
+      "reference": {
+        "pysubgroup": "0.8.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "search/uninformed.json",
+      "source": "oracle/cases/search/uninformed.py",
+      "reference": {
+        "aima-python": "port of search.py (2024)",
+        "networkx": "3.7"
+      },
+      "cases": 42
     },
     {
       "fixture": "stats/correlation.json",
@@ -2739,6 +2798,220 @@
         "numpy": "2.5.4"
       },
       "cases": 24
+    },
+    {
+      "fixture": "text/alignment.json",
+      "source": "oracle/cases/text/alignment.py",
+      "reference": {
+        "biopython": "1.88"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "text/collocations.json",
+      "source": "oracle/cases/text/collocations.py",
+      "reference": {
+        "nltk": "3.10.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 38
+    },
+    {
+      "fixture": "text/features.json",
+      "source": "oracle/cases/text/features.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "rank-bm25": "0.2.2"
+      },
+      "cases": 59
+    },
+    {
+      "fixture": "text/fingerprinting.json",
+      "source": "oracle/cases/text/fingerprinting.py",
+      "reference": {
+        "datasketch": "2.0.0",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "text/hashing.json",
+      "source": "oracle/cases/text/hashing.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gensim": "4.4.0"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "text/hyphenation.json",
+      "source": "oracle/cases/text/hyphenation.py",
+      "reference": {
+        "pyphen": "0.18.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "text/lemmatise.json",
+      "source": "oracle/cases/text/lemmatise.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 65
+    },
+    {
+      "fixture": "text/normalise.json",
+      "source": "oracle/cases/text/normalise.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "tokenizers": "0.23.3"
+      },
+      "cases": 96
+    },
+    {
+      "fixture": "text/parsing.json",
+      "source": "oracle/cases/text/parsing.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "text/phonetic.json",
+      "source": "oracle/cases/text/phonetic.py",
+      "reference": {
+        "jellyfish": "1.3.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "text/representations.json",
+      "source": "oracle/cases/text/representations.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "gensim": "4.4.0",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "text/sentences.json",
+      "source": "oracle/cases/text/sentences.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 33
+    },
+    {
+      "fixture": "text/shingles.json",
+      "source": "oracle/cases/text/shingles.py",
+      "reference": {
+        "nltk": "3.10.4",
+        "gensim": "4.4.0"
+      },
+      "cases": 82
+    },
+    {
+      "fixture": "text/similarity.json",
+      "source": "oracle/cases/text/similarity.py",
+      "reference": {
+        "rapidfuzz": "3.14.6"
+      },
+      "cases": 34
+    },
+    {
+      "fixture": "text/statistics.json",
+      "source": "oracle/cases/text/statistics.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "gensim": "4.4.0"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "text/stem.json",
+      "source": "oracle/cases/text/stem.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "text/stopwords.json",
+      "source": "oracle/cases/text/stopwords.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gensim": "4.4.0"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "text/subword/bpe.json",
+      "source": "oracle/cases/text/subword/bpe.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "text/subword/unigram.json",
+      "source": "oracle/cases/text/subword/unigram.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "text/subword/wordpiece.json",
+      "source": "oracle/cases/text/subword/wordpiece.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "text/tokenise.json",
+      "source": "oracle/cases/text/tokenise.py",
+      "reference": {
+        "nltk": "3.10.4",
+        "regex": "2026.9.29",
+        "scikit-learn": "1.9.1",
+        "tokenizers": "0.23.3"
+      },
+      "cases": 126
+    },
+    {
+      "fixture": "text/tokenizer.json",
+      "source": "oracle/cases/text/tokenizer.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "text/tokenizer_components.json",
+      "source": "oracle/cases/text/tokenizer_components.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 42
+    },
+    {
+      "fixture": "text/treebank.json",
+      "source": "oracle/cases/text/treebank.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 54
+    },
+    {
+      "fixture": "text/tweet.json",
+      "source": "oracle/cases/text/tweet.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 70
     },
     {
       "fixture": "trace/summaries.json",

@@ -1,0 +1,4 @@
+{
+  "tier": 7,
+  "summary": "Text processing: normalisation, tokenisation, stemming, vocabularies, subword models and tokenizer pipelines, shingles, vectorisers, feature templates, representations, similarity, approximate search, fingerprinting, parsing, hyphenation and corpus statistics."
+}
