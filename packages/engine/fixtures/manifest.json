@@ -629,6 +629,14 @@
       "cases": 9
     },
     {
+      "fixture": "learn/conformal.json",
+      "source": "oracle/cases/learn/conformal.py",
+      "reference": {
+        "mapie": "1.6.0"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {
