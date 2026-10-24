@@ -81,3 +81,12 @@ describe('selection', () => {
     expect(nearestPoint(points, [0, 0], projection)).toBe(-1)
   })
 })
+
+describe('keys', () => {
+  it('names keys for bindings', async () => {
+    const { keyName, isTyping } = await import('./keys.ts')
+    expect(keyName({ key: 'W' })).toBe('w')
+    expect(keyName({ key: 'ArrowUp' })).toBe('ArrowUp')
+    expect(isTyping(null)).toBe(false)
+  })
+})
