@@ -558,6 +558,60 @@
       "cases": 8
     },
     {
+      "fixture": "kernels/dot_product.json",
+      "source": "oracle/cases/kernels/dot_product.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gpytorch": "1.15.2"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "kernels/expansion.json",
+      "source": "oracle/cases/kernels/expansion.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "kernels/kernel.json",
+      "source": "oracle/cases/kernels/kernel.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gpytorch": "1.15.2"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "kernels/matrices.json",
+      "source": "oracle/cases/kernels/matrices.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 27
+    },
+    {
+      "fixture": "kernels/stationary.json",
+      "source": "oracle/cases/kernels/stationary.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gpytorch": "1.15.2",
+        "scipy": "1.18.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "kernels/structured.json",
+      "source": "oracle/cases/kernels/structured.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1",
+        "networkx": "3.7"
+      },
+      "cases": 30
+    },
+    {
       "fixture": "losses/classification.json",
       "source": "oracle/cases/losses/classification.py",
       "reference": {

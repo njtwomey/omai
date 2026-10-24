@@ -44,6 +44,7 @@ oracle-core = [
     "bitarray>=3.12.3",
 ]
 oracle-torch = [
+    "gpytorch>=1.15.2",
     "monai>=1.6.1",
     "optax>=0.2.8",
     "pytorch-crf>=0.7.2",
