@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { cartesian, lines } from 'whitebox-render/charts'
 import { figure, type LimitPolicy, type Range } from 'whitebox-render/figure'
-import { Chart, FigureFrame, useColourMode } from 'whitebox-render/react'
+import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -28,11 +28,14 @@ const walk = Array.from(
 export default function LimitPolicies(): ReactNode {
   const mode = useColourMode()
   const [n, setN] = useState(20)
+  const [running, setRunning] = useState(true)
+  const [speed, setSpeed] = useState(2)
   const previous = useRef<Record<string, { x?: Range; y?: Range }>>({})
   useEffect(() => {
-    const id = setInterval(() => setN((k) => (k >= walk.length ? 20 : k + 2)), 50)
+    if (!running) return
+    const id = setInterval(() => setN((k) => (k >= walk.length ? 20 : k + speed)), 50)
     return () => clearInterval(id)
-  }, [])
+  }, [running, speed])
   const options = useMemo(
     () =>
       policies.map((p) => {
@@ -56,12 +59,18 @@ export default function LimitPolicies(): ReactNode {
     [mode, n],
   )
   return (
-    <div className="flex flex-wrap gap-3">
-      {options.map((o, i) => (
-        <FigureFrame key={policies[i]?.name} figure={fig} exportFormats={[]}>
-          <Chart option={o} />
-        </FigureFrame>
-      ))}
+    <div className="flex flex-col gap-3">
+      <ControlPanel columns={2}>
+        <Toggle label="streaming" value={running} onChange={setRunning} />
+        <NumberField label="points per tick" value={speed} onChange={setSpeed} min={1} max={10} integer />
+      </ControlPanel>
+      <div className="flex flex-wrap gap-3">
+        {options.map((o, i) => (
+          <FigureFrame key={policies[i]?.name} figure={fig} exportFormats={[]}>
+            <Chart option={o} />
+          </FigureFrame>
+        ))}
+      </div>
     </div>
   )
 }
