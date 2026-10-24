@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
+import { bounded } from './_budget.ts'
 import { HALF, I, MINUS_ONE, makeAdd, makeMul, makePow, numFromRational, ONE, PI, ratOf, ZERO } from './_canon.ts'
 import { factorUnivariate } from './_factor.ts'
 import { makeFn } from './_functions.ts'
@@ -77,17 +78,19 @@ function toP(p: Poly): P {
  * ```
  */
 export function poly(e: Expr, ...gens: readonly Expr[]): Poly {
-  const all = [...gens]
-  for (const g of findGens(e)) {
-    if (all.some((h) => h.key === g.key)) continue
-    if (gens.some((h) => contains(g, h) || (h.kind === 'sym' && hasSymbol(g, h)))) {
-      throw new WhiteboxError('value', `poly: not a polynomial in the given generators (contains ${g.key})`)
+  return bounded('poly', () => {
+    const all = [...gens]
+    for (const g of findGens(e)) {
+      if (all.some((h) => h.key === g.key)) continue
+      if (gens.some((h) => contains(g, h) || (h.kind === 'sym' && hasSymbol(g, h)))) {
+        throw new WhiteboxError('value', `poly: not a polynomial in the given generators (contains ${g.key})`)
+      }
+      all.push(g)
     }
-    all.push(g)
-  }
-  const p = exprToP(e, all)
-  if (p === undefined) throw new WhiteboxError('value', 'poly: not a polynomial (negative or fractional powers)')
-  return fromP(p, all)
+    const p = exprToP(e, all)
+    if (p === undefined) throw new WhiteboxError('value', 'poly: not a polynomial (negative or fractional powers)')
+    return fromP(p, all)
+  })
 }
 
 /**
@@ -212,10 +215,12 @@ function common(f: Expr | Poly, g: Expr | Poly, gens: readonly Expr[]): [P, P, r
  * ```
  */
 export function polyDiv(f: Expr | Poly, g: Expr | Poly, ...gens: readonly Expr[]): { quotient: Expr; remainder: Expr } {
-  const [pf, pg, all] = common(f, g, gens)
-  if (pg.terms.length === 0) throw new WhiteboxError('domain', 'polyDiv: division by zero')
-  const [q, r] = pdivmod(pf, pg)
-  return { quotient: pToExpr(q, all), remainder: pToExpr(r, all) }
+  return bounded('polyDiv', () => {
+    const [pf, pg, all] = common(f, g, gens)
+    if (pg.terms.length === 0) throw new WhiteboxError('domain', 'polyDiv: division by zero')
+    const [q, r] = pdivmod(pf, pg)
+    return { quotient: pToExpr(q, all), remainder: pToExpr(r, all) }
+  })
 }
 
 /**
@@ -233,11 +238,13 @@ export function polyDiv(f: Expr | Poly, g: Expr | Poly, ...gens: readonly Expr[]
  * ```
  */
 export function polyGcd(f: Expr | Poly, g: Expr | Poly, ...gens: readonly Expr[]): Expr {
-  const [pf, pg, all] = common(f, g, gens)
-  const prim = pgcd(pf, pg)
-  // SymPy: over the integers the contents' gcd is kept; over the rationals the gcd is monic.
-  const scale = integral(pf) && integral(pg) ? rat(bgcd(content(pf), content(pg))) : rdiv(R1, leadCoeff(prim))
-  return pToExpr(pscale(prim, scale), all)
+  return bounded('polyGcd', () => {
+    const [pf, pg, all] = common(f, g, gens)
+    const prim = pgcd(pf, pg)
+    // SymPy: over the integers the contents' gcd is kept; over the rationals the gcd is monic.
+    const scale = integral(pf) && integral(pg) ? rat(bgcd(content(pf), content(pg))) : rdiv(R1, leadCoeff(prim))
+    return pToExpr(pscale(prim, scale), all)
+  })
 }
 
 function integral(p: P): boolean {
@@ -268,14 +275,16 @@ function leadCoeff(p: P): Rational {
  * ```
  */
 export function polyLcm(f: Expr | Poly, g: Expr | Poly, ...gens: readonly Expr[]): Expr {
-  const [pf, pg, all] = common(f, g, gens)
-  if (pf.terms.length === 0 || pg.terms.length === 0) return ZERO
-  const prod = pmul(pf, pg)
-  const q = pdivExact(prod, pgcd(pf, pg)) ?? prod
-  const prim = pgcd(q, q)
-  // As polyGcd: the lcm of the contents over the integers, monic over the rationals.
-  const scale = integral(pf) && integral(pg) ? rat(blcm(content(pf), content(pg))) : rdiv(R1, leadCoeff(prim))
-  return pToExpr(pscale(prim, scale), all)
+  return bounded('polyLcm', () => {
+    const [pf, pg, all] = common(f, g, gens)
+    if (pf.terms.length === 0 || pg.terms.length === 0) return ZERO
+    const prod = pmul(pf, pg)
+    const q = pdivExact(prod, pgcd(pf, pg)) ?? prod
+    const prim = pgcd(q, q)
+    // As polyGcd: the lcm of the contents over the integers, monic over the rationals.
+    const scale = integral(pf) && integral(pg) ? rat(blcm(content(pf), content(pg))) : rdiv(R1, leadCoeff(prim))
+    return pToExpr(pscale(prim, scale), all)
+  })
 }
 
 // ------------------------------------------------------------------------------------------------- roots
@@ -451,23 +460,25 @@ function sortRoots(rs: Root[]): Root[] {
  * ```
  */
 export function exactRoots(f: Expr | Poly, x?: Expr): Root[] {
-  const p = asPoly(f, x)
-  if (p.gens.length === 0) return []
-  const i = Math.max(0, genIndex(p, x))
-  const cs = coefficients(p, p.gens[i]).reverse()
-  const out: Root[] = []
-  if (cs.every((c) => c.kind === 'num')) {
-    const dense = cs.map((c) => ratOf(c as ExprNum))
-    const [, factors] = factorUnivariate(dense)
-    for (const [g, k] of factors) for (const r of rootsOfRational(g)) out.push({ value: r, multiplicity: k })
-    return sortRoots(out)
-  }
-  // Symbolic coefficients: strip zero roots, then use the formulas.
-  let lo = 0
-  while (lo < cs.length - 1 && (cs[lo] as Expr).kind === 'num' && (cs[lo] as ExprNum).n === 0n) lo++
-  if (lo > 0) out.push({ value: ZERO, multiplicity: lo })
-  for (const r of rootsOfDense(cs.slice(lo))) out.push({ value: r, multiplicity: 1 })
-  return out
+  return bounded('exactRoots', () => {
+    const p = asPoly(f, x)
+    if (p.gens.length === 0) return []
+    const i = Math.max(0, genIndex(p, x))
+    const cs = coefficients(p, p.gens[i]).reverse()
+    const out: Root[] = []
+    if (cs.every((c) => c.kind === 'num')) {
+      const dense = cs.map((c) => ratOf(c as ExprNum))
+      const [, factors] = factorUnivariate(dense)
+      for (const [g, k] of factors) for (const r of rootsOfRational(g)) out.push({ value: r, multiplicity: k })
+      return sortRoots(out)
+    }
+    // Symbolic coefficients: strip zero roots, then use the formulas.
+    let lo = 0
+    while (lo < cs.length - 1 && (cs[lo] as Expr).kind === 'num' && (cs[lo] as ExprNum).n === 0n) lo++
+    if (lo > 0) out.push({ value: ZERO, multiplicity: lo })
+    for (const r of rootsOfDense(cs.slice(lo))) out.push({ value: r, multiplicity: 1 })
+    return out
+  })
 }
 
 // ------------------------------------------------------------------------------------------------- Sturm
@@ -505,11 +516,13 @@ function sturmDense(f: U): U[] {
  * ```
  */
 export function sturm(f: Expr | Poly, x?: Expr): Expr[] {
-  const p = asPoly(f, x)
-  const v = p.gens[Math.max(0, genIndex(p, x))] ?? ZERO
-  return sturmDense(univariate(p, x)).map((s) =>
-    makeAdd(s.map((c, k) => makeMul([numFromRational(c), makePow(v, q(k))]))),
-  )
+  return bounded('sturm', () => {
+    const p = asPoly(f, x)
+    const v = p.gens[Math.max(0, genIndex(p, x))] ?? ZERO
+    return sturmDense(univariate(p, x)).map((s) =>
+      makeAdd(s.map((c, k) => makeMul([numFromRational(c), makePow(v, q(k))]))),
+    )
+  })
 }
 
 function signAt(f: U, x: Rational | 'inf' | '-inf'): number {
@@ -564,13 +577,15 @@ function toBound(e: Expr | number | undefined, fallback: 'inf' | '-inf'): Ration
  * ```
  */
 export function countRealRoots(f: Expr | Poly, x?: Expr, a?: Expr | number, b?: Expr | number): number {
-  const u = univariate(f, x)
-  const sqfree = udivmod(u, ugcd(u, uderiv(u)))[0]
-  const lo = toBound(a, '-inf')
-  const hi = toBound(b, 'inf')
-  const seq = sturmDense(sqfree)
-  const atLo = lo !== 'inf' && lo !== '-inf' && ueval(sqfree, lo).n === 0n ? 1 : 0
-  return variations(seq, lo) - variations(seq, hi) + atLo
+  return bounded('countRealRoots', () => {
+    const u = univariate(f, x)
+    const sqfree = udivmod(u, ugcd(u, uderiv(u)))[0]
+    const lo = toBound(a, '-inf')
+    const hi = toBound(b, 'inf')
+    const seq = sturmDense(sqfree)
+    const atLo = lo !== 'inf' && lo !== '-inf' && ueval(sqfree, lo).n === 0n ? 1 : 0
+    return variations(seq, lo) - variations(seq, hi) + atLo
+  })
 }
 
 /**
@@ -587,36 +602,38 @@ export function countRealRoots(f: Expr | Poly, x?: Expr, a?: Expr | number, b?: 
  * ```
  */
 export function realRootIntervals(f: Expr | Poly, x?: Expr): [Expr, Expr][] {
-  const u = univariate(f, x)
-  if (udeg(u) <= 0) return []
-  const sq = udivmod(u, ugcd(u, uderiv(u)))[0]
-  const seq = sturmDense(sq)
-  // Cauchy bound: every root has |x| < 1 + max |a_i / a_n|.
-  const lc = sq[sq.length - 1] as Rational
-  let bound = R1
-  for (const c of sq.slice(0, -1)) {
-    const v = rabs(rdiv(c, lc))
-    if (rcmp(v, bound) > 0) bound = v
-  }
-  bound = radd(bound, R1)
-  // Sturm counts roots in (lo, hi] when neither end is a root; split points that are roots are moved aside.
-  const count = (lo: Rational, hi: Rational): number => variations(seq, lo) - variations(seq, hi)
-  const out: [Rational, Rational][] = []
-  const stack: [Rational, Rational][] = [[rneg(bound), bound]]
-  while (stack.length > 0) {
-    const [lo, hi] = stack.pop() as [Rational, Rational]
-    const k = count(lo, hi)
-    if (k === 0) continue
-    if (k === 1) {
-      out.push([lo, hi])
-      continue
+  return bounded('realRootIntervals', () => {
+    const u = univariate(f, x)
+    if (udeg(u) <= 0) return []
+    const sq = udivmod(u, ugcd(u, uderiv(u)))[0]
+    const seq = sturmDense(sq)
+    // Cauchy bound: every root has |x| < 1 + max |a_i / a_n|.
+    const lc = sq[sq.length - 1] as Rational
+    let bound = R1
+    for (const c of sq.slice(0, -1)) {
+      const v = rabs(rdiv(c, lc))
+      if (rcmp(v, bound) > 0) bound = v
     }
-    let mid = rmul(radd(lo, hi), rat(1n, 2n))
-    for (let j = 3n; ueval(sq, mid).n === 0n; j++) mid = radd(lo, rmul(rsub(hi, lo), rat(1n, j)))
-    stack.push([mid, hi], [lo, mid])
-  }
-  out.sort((a, b) => rcmp(a[0], b[0]))
-  return out.map(([lo, hi]) => [numFromRational(lo), numFromRational(hi)])
+    bound = radd(bound, R1)
+    // Sturm counts roots in (lo, hi] when neither end is a root; split points that are roots are moved aside.
+    const count = (lo: Rational, hi: Rational): number => variations(seq, lo) - variations(seq, hi)
+    const out: [Rational, Rational][] = []
+    const stack: [Rational, Rational][] = [[rneg(bound), bound]]
+    while (stack.length > 0) {
+      const [lo, hi] = stack.pop() as [Rational, Rational]
+      const k = count(lo, hi)
+      if (k === 0) continue
+      if (k === 1) {
+        out.push([lo, hi])
+        continue
+      }
+      let mid = rmul(radd(lo, hi), rat(1n, 2n))
+      for (let j = 3n; ueval(sq, mid).n === 0n; j++) mid = radd(lo, rmul(rsub(hi, lo), rat(1n, j)))
+      stack.push([mid, hi], [lo, mid])
+    }
+    out.sort((a, b) => rcmp(a[0], b[0]))
+    return out.map(([lo, hi]) => [numFromRational(lo), numFromRational(hi)])
+  })
 }
 
 // --------------------------------------------------------------------------------------------- resultants
@@ -649,12 +666,14 @@ function sylvester(a: readonly Expr[], b: readonly Expr[]): Expr[][] {
  * ```
  */
 export function resultant(f: Expr | Poly, g: Expr | Poly, x: Expr): Expr {
-  const a = coefficients(asPoly(f, x), x)
-  const b = coefficients(asPoly(g, x), x)
-  if (a.length === 1 && b.length === 1) return ONE
-  if (a.length === 1) return makePow(a[0] as Expr, q(b.length - 1))
-  if (b.length === 1) return makePow(b[0] as Expr, q(a.length - 1))
-  return det(sylvester(a, b))
+  return bounded('resultant', () => {
+    const a = coefficients(asPoly(f, x), x)
+    const b = coefficients(asPoly(g, x), x)
+    if (a.length === 1 && b.length === 1) return ONE
+    if (a.length === 1) return makePow(a[0] as Expr, q(b.length - 1))
+    if (b.length === 1) return makePow(b[0] as Expr, q(a.length - 1))
+    return det(sylvester(a, b))
+  })
 }
 
 /**
@@ -670,18 +689,20 @@ export function resultant(f: Expr | Poly, g: Expr | Poly, x: Expr): Expr {
  * ```
  */
 export function discriminant(f: Expr | Poly, x: Expr): Expr {
-  const p = asPoly(f, x)
-  const cs = coefficients(p, x)
-  const n = cs.length - 1
-  if (n < 1) return ZERO
-  const fe = polyToExpr(p)
-  const res = resultant(fe, derivativeIn(cs, x), x)
-  const signed = ((n * (n - 1)) / 2) % 2 === 0 ? res : makeMul([MINUS_ONE, res])
-  // res(f, f') is divisible by lc(f) as a polynomial in the other symbols.
-  const gens = poly(makeAdd([signed, cs[0] as Expr])).gens
-  const quotient = pdivExact(toP(poly(signed, ...gens)), toP(poly(cs[0] as Expr, ...gens)))
-  if (quotient === undefined) throw new WhiteboxError('value', 'discriminant: resultant not divisible by lc')
-  return pToExpr(quotient, gens)
+  return bounded('discriminant', () => {
+    const p = asPoly(f, x)
+    const cs = coefficients(p, x)
+    const n = cs.length - 1
+    if (n < 1) return ZERO
+    const fe = polyToExpr(p)
+    const res = resultant(fe, derivativeIn(cs, x), x)
+    const signed = ((n * (n - 1)) / 2) % 2 === 0 ? res : makeMul([MINUS_ONE, res])
+    // res(f, f') is divisible by lc(f) as a polynomial in the other symbols.
+    const gens = poly(makeAdd([signed, cs[0] as Expr])).gens
+    const quotient = pdivExact(toP(poly(signed, ...gens)), toP(poly(cs[0] as Expr, ...gens)))
+    if (quotient === undefined) throw new WhiteboxError('value', 'discriminant: resultant not divisible by lc')
+    return pToExpr(quotient, gens)
+  })
 }
 
 function derivativeIn(cs: readonly Expr[], x: Expr): Expr {

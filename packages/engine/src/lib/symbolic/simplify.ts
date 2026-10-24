@@ -1,3 +1,4 @@
+import { attempt, bounded, withBudget } from './_budget.ts'
 import {
   asCoeffMul,
   isNumeric,
@@ -19,7 +20,7 @@ import { exprToP, findGens, pToExpr } from './_poly.ts'
 import { rat } from './_rational.ts'
 import { apart as apartRaw, cancel as cancelRaw, numerDenom, together as togetherRaw } from './_rational-functions.ts'
 import { hasTrig, trigSimplifyExpr } from './_trigsimp.ts'
-import { type Derivation, type Expr, type ExprSym, type Step, sym } from './expr.ts'
+import { type Derivation, type Expr, type ExprSym, type Step, sym, type WorkBudget } from './expr.ts'
 
 /**
  * Compare two expressions in SymPy's canonical sort order (`default_sort_key`): numbers, then symbols, then
@@ -68,7 +69,7 @@ export function countOps(e: Expr): number {
  * ```
  */
 export function expand(e: Expr): Expr {
-  return expandExpr(e)
+  return bounded('expand', () => expandExpr(e))
 }
 
 /**
@@ -83,9 +84,11 @@ export function expand(e: Expr): Expr {
  * ```
  */
 export function expandSteps(e: Expr): Derivation {
-  const steps: Step[] = []
-  const result = expandExpr(e, steps)
-  return { result, steps }
+  return bounded('expandSteps', () => {
+    const steps: Step[] = []
+    const result = expandExpr(e, steps)
+    return { result, steps }
+  })
 }
 
 function powerIn(f: Expr, s: Expr): Expr | undefined {
@@ -139,20 +142,31 @@ function factorPolynomial(e: Expr): Expr {
 /**
  * Factor into irreducibles over the rationals (SymPy's `factor`): sums are put over a common denominator and the
  * numerator and denominator factored as polynomials in their symbols, functions and radicals, with any number of
- * variables. Products and powers are factored part by part; function arguments are left alone.
+ * variables. Products and powers are factored part by part; function arguments are left alone. When the work budget
+ * runs out, the expression is returned as it was (the best form found so far that is certainly equal to it).
  *
  * @param e - The expression.
+ * @param budget - Work limits (see {@link WorkBudget}).
  * @returns The factored form.
  * @example
  * ```ts
  * import { factor, parse, toText } from 'whitebox-engine/symbolic'
  * toText(factor(parse('x^3 - x^2*y - x*y^2 + y^3'))) // => '(x - y)**2*(x + y)'
  * toText(factor(parse('2*x^2 - 2'))) // => '2*(x - 1)*(x + 1)'
+ * toText(factor(parse('x^4 - 1'), { steps: 50 })) // => 'x**4 - 1'
  * ```
  */
-export function factor(e: Expr): Expr {
-  if (e.kind === 'mul') return makeMul(e.args.map(factor))
-  if (e.kind === 'pow') return makePow(factor(e.base), e.exp)
+export function factor(e: Expr, budget?: WorkBudget): Expr {
+  return withBudget(
+    budget,
+    () => factorExpr(e),
+    () => e,
+  )
+}
+
+function factorExpr(e: Expr): Expr {
+  if (e.kind === 'mul') return makeMul(e.args.map(factorExpr))
+  if (e.kind === 'pow') return makePow(factorExpr(e.base), e.exp)
   if (e.kind !== 'add') return e
   const t = togetherRaw(e)
   const [n, d] = numerDenom(t)
@@ -176,7 +190,7 @@ export function factor(e: Expr): Expr {
  * ```
  */
 export function together(e: Expr): Expr {
-  return togetherRaw(e)
+  return bounded('together', () => togetherRaw(e))
 }
 
 /**
@@ -192,7 +206,7 @@ export function together(e: Expr): Expr {
  * ```
  */
 export function cancel(e: Expr): Expr {
-  return cancelRaw(e)
+  return bounded('cancel', () => cancelRaw(e))
 }
 
 /**
@@ -202,7 +216,8 @@ export function cancel(e: Expr): Expr {
  * @param e - A rational function of x.
  * @param x - The variable.
  * @returns The decomposition.
- * @throws WhiteboxError with code `value` when `e` is not a rational function of x.
+ * @throws WhiteboxError with code `value` when `e` is not a rational function of x, `convergence` when the work
+ *   budget runs out.
  * @example
  * ```ts
  * import { apart, parse, sym, toText } from 'whitebox-engine/symbolic'
@@ -210,12 +225,13 @@ export function cancel(e: Expr): Expr {
  * ```
  */
 export function apart(e: Expr, x: ExprSym): Expr {
-  return apartRaw(e, x)
+  return bounded('apart', () => apartRaw(e, x))
 }
 
 /**
  * Simplify trigonometric and hyperbolic expressions (Pythagorean identities, double angles, products to sums,
- * tan = sin/cos), choosing the form with the fewest operations, as SymPy's `trigsimp`.
+ * tan = sin/cos), choosing the form with the fewest operations, as SymPy's `trigsimp`. When the work budget runs out
+ * the expression is returned unchanged.
  *
  * @param e - The expression.
  * @returns The simplified expression.
@@ -227,7 +243,11 @@ export function apart(e: Expr, x: ExprSym): Expr {
  * ```
  */
 export function trigSimplify(e: Expr): Expr {
-  return trigSimplifyExpr(e)
+  return withBudget(
+    undefined,
+    () => trigSimplifyExpr(e),
+    () => e,
+  )
 }
 
 /** Combine powers: x^a*x^b = x^(a+b) and exp(a)*exp(b) = exp(a+b) (SymPy's `powsimp`). */
@@ -256,15 +276,21 @@ function powsimp(e: Expr): Expr {
 }
 
 const CANDIDATES: readonly [string, (e: Expr) => Expr][] = [
-  ['expand', expand],
+  ['expand', expandExpr],
   ['cancel', cancelRaw],
-  ['factor', factor],
+  ['factor', factorExpr],
   ['together', togetherRaw],
   ['combine powers', powsimp],
   ['trigonometric simplification', trigSimplifyExpr],
 ]
 
-function simplifyNode(e: Expr, steps: Step[]): Expr {
+/** The best form of the whole expression so far and the steps that led to it, kept when the work runs out. */
+interface Progress {
+  best: Expr
+  steps: number
+}
+
+function simplifyNode(e: Expr, steps: Step[], progress?: Progress): Expr {
   // Simplify inside function arguments and exponents first.
   let cur =
     e.kind === 'fn' || e.kind === 'pow' || e.kind === 'piecewise' ? mapChildren(e, (c) => simplifyNode(c, steps)) : e
@@ -272,18 +298,25 @@ function simplifyNode(e: Expr, steps: Step[]): Expr {
     const inner = mapChildren(cur, (c) => (c.kind === 'fn' || c.kind === 'pow' ? simplifyNode(c, steps) : c))
     if (inner.key !== cur.key) cur = inner
   }
+  const keep = (): void => {
+    if (progress === undefined) return
+    progress.best = cur
+    progress.steps = steps.length
+  }
+  keep()
   for (let round = 0; round < 4; round++) {
     let best = cur
     let bestRule = ''
     for (const [rule, f] of CANDIDATES) {
       if (rule === 'trigonometric simplification' && !hasTrig(cur)) continue
-      let out: Expr
+      let out: Expr | undefined
       try {
-        out = f(cur)
+        // Each rewrite may use half of the work left, so that one that blows up leaves some for the others.
+        out = attempt(0.5, () => f(cur))
       } catch {
         continue
       }
-      if (complexity(out) < complexity(best)) {
+      if (out !== undefined && complexity(out) < complexity(best)) {
         best = out
         bestRule = rule
       }
@@ -291,31 +324,46 @@ function simplifyNode(e: Expr, steps: Step[]): Expr {
     if (best.key === cur.key) break
     steps.push({ rule: bestRule, before: cur, after: best })
     cur = best
+    keep()
   }
   return cur
+}
+
+function simplifyWithin(e: Expr, budget: WorkBudget | undefined): Derivation {
+  const steps: Step[] = []
+  const progress: Progress = { best: e, steps: 0 }
+  return withBudget(
+    budget,
+    () => ({ result: simplifyNode(e, steps, progress), steps }),
+    () => ({ result: progress.best, steps: steps.slice(0, progress.steps) }),
+  )
 }
 
 /**
  * Simplify by trying the rewrites (expand, cancel, factor, together, power combination, trigonometric
  * simplification) and keeping whichever gives the fewest operations, repeatedly, after simplifying function
- * arguments (in the spirit of SymPy's `simplify`).
+ * arguments (in the spirit of SymPy's `simplify`). When the work budget runs out, the best form found so far is
+ * returned (at worst the expression itself); a rewrite that runs out of its share of the work is skipped.
  *
  * @param e - The expression.
+ * @param budget - Work limits (see {@link WorkBudget}).
  * @returns The simplest form found.
  * @example
  * ```ts
  * import { parse, simplify, toText } from 'whitebox-engine/symbolic'
  * toText(simplify(parse('(x^2 - 1)/(x - 1) + sin(x)^2 + cos(x)^2'))) // => 'x + 2'
+ * toText(simplify(parse('(x^2 - 1)/(x - 1)'), { steps: 10 })) // => '(x**2 - 1)/(x - 1)'
  * ```
  */
-export function simplify(e: Expr): Expr {
-  return simplifyNode(e, [])
+export function simplify(e: Expr, budget?: WorkBudget): Expr {
+  return simplifyWithin(e, budget).result
 }
 
 /**
  * {@link simplify} with the chain of rules that improved the expression.
  *
  * @param e - The expression.
+ * @param budget - Work limits, as for simplify.
  * @returns The result and its steps.
  * @example
  * ```ts
@@ -323,10 +371,8 @@ export function simplify(e: Expr): Expr {
  * simplifySteps(parse('(x^2 - 1)/(x - 1)')).steps.map((s) => s.rule) // => ['cancel']
  * ```
  */
-export function simplifySteps(e: Expr): Derivation {
-  const steps: Step[] = []
-  const result = simplifyNode(e, steps)
-  return { result, steps }
+export function simplifySteps(e: Expr, budget?: WorkBudget): Derivation {
+  return simplifyWithin(e, budget)
 }
 
 /**
@@ -342,8 +388,11 @@ export function simplifySteps(e: Expr): Derivation {
  */
 export function trigSimplifySteps(e: Expr): Derivation {
   const steps: Step[] = []
-  const result = trigSimplifyExpr(e, steps)
-  return { result, steps }
+  return withBudget(
+    undefined,
+    () => ({ result: trigSimplifyExpr(e, steps), steps }),
+    () => ({ result: e, steps: [] }),
+  )
 }
 
 /** The rewrites of this module, by name, for {@link rewriteSteps}. */

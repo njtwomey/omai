@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
+import { withBudget, attempt as within } from './_budget.ts'
 import { isInfinite, MINUS_ONE, makeAdd, makeIntegral, makeMul, makePow, NAN, numFromFloat, ZERO } from './_canon.ts'
 import { expandExpr } from './_expand.ts'
 import {
@@ -14,7 +15,17 @@ import { children, hasSymbol } from './_node.ts'
 import { evalReal, freeNames, type NumericFunctions, quadrature } from './_numeric.ts'
 import { cancel, numerDenom } from './_rational-functions.ts'
 import { diff } from './differentiate.ts'
-import { asExpr, type Derivation, type Expr, type ExprLike, type ExprSym, type Step, substitute, sym } from './expr.ts'
+import {
+  asExpr,
+  type Derivation,
+  type Expr,
+  type ExprLike,
+  type ExprSym,
+  type Step,
+  substitute,
+  sym,
+  type WorkBudget,
+} from './expr.ts'
 import { toText } from './latex.ts'
 import { limit } from './limits.ts'
 import { countRealRoots } from './polynomials.ts'
@@ -34,6 +45,8 @@ const BUDGET = 150
 const MAX_OPS = 40
 const MAX_CANDIDATES = 10
 const MAX_CANCEL_OPS = 25
+/** The share of the work left that one method, one level of the search or one check may use. */
+const SHARE = 0.5
 
 function record(ctx: Ctx, rule: string, e: Expr, x: ExprSym, F: Expr): Expr {
   if (ctx.steps !== undefined) ctx.steps.push({ rule, before: makeIntegral(e, x), after: F })
@@ -124,7 +137,7 @@ function deeper<T>(ctx: Ctx, f: () => T | undefined): T | undefined {
   if (ctx.depth >= MAX_DEPTH) return undefined
   ctx.depth++
   try {
-    return f()
+    return within(SHARE, f)
   } finally {
     ctx.depth--
   }
@@ -133,6 +146,10 @@ function deeper<T>(ctx: Ctx, f: () => T | undefined): T | undefined {
 /** F when d/dx F = e: numerically at sample points, or exactly when the values cannot be computed (erf). */
 function verified(F: Expr | undefined, e: Expr, x: ExprSym): Expr | undefined {
   if (F === undefined) return undefined
+  return within(SHARE, () => checkAntiderivative(F, e, x))
+}
+
+function checkAntiderivative(F: Expr, e: Expr, x: ExprSym): Expr | undefined {
   const dF = diff(F, x)
   const check = numericCompare(dF, e, 1e-7)
   if (check === 'equal') return F
@@ -171,7 +188,7 @@ function attempt(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
   for (const [rule, m] of methods) {
     let F: Expr | undefined
     try {
-      F = m()
+      F = within(SHARE, m)
     } catch (err) {
       if (!(err instanceof WhiteboxError)) throw err
       F = undefined
@@ -206,26 +223,35 @@ function attempt(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
   return undefined
 }
 
-function run(e: Expr, x: ExprSym, steps: Step[] | undefined): Expr {
-  const ctx: Ctx = { steps, depth: 0, budget: BUDGET, memo: new Map() }
-  if (e.kind !== 'add') {
-    const F = core(e, x, ctx)
-    if (F !== undefined) return F
-  }
-  // Term by term (after expanding a product), so that what fails stays as an unevaluated integral of its own.
-  const ex = e.kind === 'add' ? e : expandExpr(e)
-  if (ex.kind !== 'add') return makeIntegral(e, x)
+function run(e: Expr, x: ExprSym, steps: Step[] | undefined, budget: WorkBudget | undefined): Expr {
+  // When the work runs out, what was found is kept: the antiderivatives of the terms done, and an unevaluated
+  // integral of the others.
   const done: Expr[] = []
   const left: Expr[] = []
-  for (const t of ex.args) {
-    // A fresh search per term: failures cached under the first, exhausted budget must not stick.
-    const termCtx: Ctx = { steps, depth: 0, budget: BUDGET, memo: new Map() }
-    const F = core(t, x, termCtx)
-    if (F === undefined) left.push(t)
-    else done.push(F)
-  }
-  if (left.length > 0) done.push(makeIntegral(makeAdd(left), x))
-  return makeAdd(done)
+  let pending: readonly Expr[] = []
+  return withBudget(
+    budget,
+    () => {
+      if (e.kind !== 'add') {
+        const F = core(e, x, { steps, depth: 0, budget: BUDGET, memo: new Map() })
+        if (F !== undefined) return F
+      }
+      // Term by term (after expanding a product), so that what fails stays as an unevaluated integral of its own.
+      const ex = e.kind === 'add' ? e : expandExpr(e)
+      if (ex.kind !== 'add') return makeIntegral(e, x)
+      pending = ex.args
+      for (const t of ex.args) {
+        // A fresh search per term: failures cached under the first, exhausted budget must not stick.
+        const F = core(t, x, { steps, depth: 0, budget: BUDGET, memo: new Map() })
+        pending = pending.slice(1)
+        if (F === undefined) left.push(t)
+        else done.push(F)
+      }
+      return makeAdd(left.length > 0 ? [...done, makeIntegral(makeAdd(left), x)] : done)
+    },
+    () =>
+      done.length === 0 ? makeIntegral(e, x) : makeAdd([...done, makeIntegral(makeAdd([...left, ...pending]), x)]),
+  )
 }
 
 /**
@@ -234,13 +260,15 @@ function run(e: Expr, x: ExprSym, steps: Step[] | undefined): Expr {
  * logarithms, Gaussians via erf, quadratic radicals), rational functions by partial fractions (logarithms,
  * arctangents and the reduction formula for repeated quadratic factors), powers and products of sines and cosines,
  * reduction formulas for tan, cot, sec and csc, derivative-divides substitution and integration by parts (LIATE).
- * Every candidate is checked by differentiating it. The search is bounded (attempts, depth, expression size), so any
- * integrand returns quickly; what no rule handles is returned, term by term, as an unevaluated `Integral`.
+ * Every candidate is checked by differentiating it. The search is bounded (attempts, depth, expression size and a
+ * work budget), so any integrand returns quickly; what no rule handles is returned, term by term, as an unevaluated
+ * `Integral`. When the work budget runs out, the terms integrated so far are kept and the rest stay unevaluated.
  * TODO: the full Risch algorithm, Rothstein-Trager for rational functions with irreducible denominators of degree
  * above two, and antiderivatives in special functions other than erf (Ei, li, Si, Ci, erfi, Fresnel integrals).
  *
  * @param e - The integrand.
  * @param x - The variable.
+ * @param budget - Work limits (see {@link WorkBudget}).
  * @returns The antiderivative, possibly containing an unevaluated integral.
  * @example
  * ```ts
@@ -249,10 +277,11 @@ function run(e: Expr, x: ExprSym, steps: Step[] | undefined): Expr {
  * toText(integrate(parse('x*exp(x)'), x)) // => 'x*exp(x) - exp(x)'
  * toText(integrate(parse('1/(x^2 + 1)'), x)) // => 'atan(x)'
  * toText(integrate(parse('exp(x^2)'), x)) // => 'Integral(exp(x**2), x)'
+ * toText(integrate(parse('x*sin(x)'), x, { steps: 100 })) // => 'Integral(x*sin(x), x)'
  * ```
  */
-export function integrate(e: Expr, x: ExprSym): Expr {
-  return run(e, x, undefined)
+export function integrate(e: Expr, x: ExprSym, budget?: WorkBudget): Expr {
+  return run(e, x, undefined, budget)
 }
 
 /**
@@ -260,6 +289,7 @@ export function integrate(e: Expr, x: ExprSym): Expr {
  *
  * @param e - The integrand.
  * @param x - The variable.
+ * @param budget - Work limits, as for integrate.
  * @returns The antiderivative and its steps.
  * @example
  * ```ts
@@ -267,9 +297,9 @@ export function integrate(e: Expr, x: ExprSym): Expr {
  * integrateSteps(parse('x*cos(x)'), sym('x')).steps.some((s) => s.rule.includes('by parts')) // => true
  * ```
  */
-export function integrateSteps(e: Expr, x: ExprSym): Derivation {
+export function integrateSteps(e: Expr, x: ExprSym, budget?: WorkBudget): Derivation {
   const steps: Step[] = []
-  const result = run(e, x, steps)
+  const result = run(e, x, steps, budget)
   return { result, steps }
 }
 
@@ -292,6 +322,21 @@ export interface DefiniteOptions {
   readonly functions?: NumericFunctions
   /** Relative tolerance of the agreement between the symbolic value and quadrature (default 1e-6). */
   readonly tol?: number
+  /** Work limits of the symbolic part; when they run out the value comes from quadrature (see {@link WorkBudget}). */
+  readonly budget?: WorkBudget
+}
+
+/** Quadrature over numeric bounds of an integrand in x alone (undefined otherwise or when it fails). */
+function quadratureValue(e: Expr, x: ExprSym, a: Expr, b: Expr, fns: NumericFunctions): number | undefined {
+  const lo = numericValue(a)
+  const hi = numericValue(b)
+  if (lo === undefined || hi === undefined || !freeNames(e).every((n) => n === x.name)) return undefined
+  try {
+    const v = quadrature((t) => evalReal(e, { [x.name]: t }, fns), lo, hi)
+    return Number.isFinite(v) ? v : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function definite(
@@ -304,6 +349,32 @@ function definite(
 ): Expr {
   const a = asExpr(av)
   const b = asExpr(bv)
+  return withBudget(
+    options.budget,
+    () => definiteBody(e, x, a, b, options, steps),
+    () => {
+      // Out of work for the symbolic part: the numeric value, as when there is no closed form.
+      const numeric = quadratureValue(e, x, a, b, options.functions ?? {})
+      if (numeric === undefined) return makeIntegral(e, x, [a, b])
+      if (steps !== undefined)
+        steps.push({
+          rule: 'numeric fallback (work budget exhausted)',
+          before: makeIntegral(e, x, [a, b]),
+          after: numFromFloat(numeric),
+        })
+      return numFromFloat(numeric)
+    },
+  )
+}
+
+function definiteBody(
+  e: Expr,
+  x: ExprSym,
+  a: Expr,
+  b: Expr,
+  options: DefiniteOptions,
+  steps: Step[] | undefined,
+): Expr {
   const fns = options.functions ?? {}
   const tol = options.tol ?? 1e-6
   const numericBounds = numericValue(a) !== undefined && numericValue(b) !== undefined
@@ -323,14 +394,7 @@ function definite(
       if (k > 0) throw new WhiteboxError('domain', 'definiteIntegral: the integrand has a pole in the interval')
     }
   }
-  const quad = (): number | undefined => {
-    if (!numericBounds || !onlyX) return undefined
-    const lo = numericValue(a) as number
-    const hi = numericValue(b) as number
-    const v = quadrature((t) => evalReal(e, { [x.name]: t }, fns), lo, hi)
-    return Number.isFinite(v) ? v : undefined
-  }
-  const F = run(e, x, steps)
+  const F = run(e, x, steps, undefined)
   let value: Expr | undefined
   if (!containsIntegral(F)) {
     try {
@@ -350,13 +414,7 @@ function definite(
       value = undefined
     }
   }
-  const numeric = (() => {
-    try {
-      return quad()
-    } catch {
-      return undefined
-    }
-  })()
+  const numeric = quadratureValue(e, x, a, b, fns)
   if (value !== undefined && numeric !== undefined) {
     const sv = numericValue(value)
     if (sv !== undefined && Math.abs(sv - numeric) <= tol * Math.max(1, Math.abs(numeric))) return value
@@ -392,8 +450,9 @@ function definite(
  * @param x - The variable.
  * @param a - Lower bound (may be -oo).
  * @param b - Upper bound (may be oo).
- * @param options - Numeric implementations for the check and the fallback, and its tolerance.
- * @returns The value: exact when possible, a float from quadrature otherwise, or an unevaluated integral.
+ * @param options - Numeric implementations for the check and the fallback, its tolerance, and the work budget.
+ * @returns The value: exact when possible, a float from quadrature otherwise (also when the work budget runs out),
+ *   or an unevaluated integral.
  * @throws WhiteboxError with code `domain` when a rational integrand has a pole in the interval.
  * @example
  * ```ts

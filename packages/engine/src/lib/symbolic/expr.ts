@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
+import { bounded } from './_budget.ts'
 import {
   E as CE,
   I as CI,
@@ -155,6 +156,42 @@ export interface Step {
 export interface Derivation {
   readonly result: Expr
   readonly steps: readonly Step[]
+}
+
+/**
+ * Limits on the work of one symbolic operation, counted in deterministic work units rather than time (one unit is
+ * roughly one exact rational operation, one expression node built or one term of polynomial arithmetic), so that
+ * any input returns after a bounded, machine-independent amount of work. Every operation has a budget; when it
+ * runs out the operation returns its documented fallback (`integrate` the terms it finished plus an unevaluated
+ * integral, `simplify` the best form found so far, `factor` its input) or throws a WhiteboxError with code
+ * `convergence`. Raise the limits for inputs that need more; operations called inside another draw on its budget.
+ */
+export interface WorkBudget {
+  /** Work units (default 2,000,000, a fraction of a second; ordinary inputs use from tens to about 100,000). */
+  readonly steps?: number
+  /** The most terms an intermediate expansion may have (default 2,000). */
+  readonly terms?: number
+}
+
+/**
+ * Run `f` with a work budget shared by every symbolic operation it calls (each draws on what is left), for example
+ * to raise the limits for an expansion that needs more terms than the default allows. Operations with a fallback
+ * (integrate, simplify, factor) still take it when they run out; others throw.
+ *
+ * @param budget - Work limits (see {@link WorkBudget}).
+ * @param f - The computation.
+ * @returns What `f` returns.
+ * @throws WhiteboxError with code `convergence` when the budget runs out outside an operation with a fallback.
+ * @example
+ * ```ts
+ * import { expand, parse, toText, withWorkBudget } from 'whitebox-engine/symbolic'
+ * const big = parse('(a + b)*(c + d)*(e + f)*(g + h)*(i + j)*(k + l)*(m + n)*(o + p)*(q + r)*(s + t)*(u + v)')
+ * expand(big) // => throws convergence
+ * withWorkBudget({ terms: 4096 }, () => expand(big)).kind // => 'add'
+ * ```
+ */
+export function withWorkBudget<T>(budget: WorkBudget, f: () => T): T {
+  return bounded('withWorkBudget', f, budget)
 }
 
 /**

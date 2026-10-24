@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
+import { bounded } from './_budget.ts'
 import {
   asCoeffMul,
   isInfinite,
@@ -288,7 +289,9 @@ function solveImpl(eq: Expr, x: ExprSym, steps: Step[] | undefined): Expr[] {
  * ```
  */
 export function solve(eq: Expr, x: ExprSym): Expr[] {
-  return solveImpl(eq, x, undefined)
+  return bounded('solve', () => {
+    return solveImpl(eq, x, undefined)
+  })
 }
 
 /**
@@ -304,9 +307,11 @@ export function solve(eq: Expr, x: ExprSym): Expr[] {
  * ```
  */
 export function solveSteps(eq: Expr, x: ExprSym): Derivation {
-  const steps: Step[] = []
-  const sols = solveImpl(eq, x, steps)
-  return { result: makeFn('List', sols), steps }
+  return bounded('solveSteps', () => {
+    const steps: Step[] = []
+    const sols = solveImpl(eq, x, steps)
+    return { result: makeFn('List', sols), steps }
+  })
 }
 
 /**
@@ -326,66 +331,68 @@ export function solveSteps(eq: Expr, x: ExprSym): Derivation {
  * ```
  */
 export function solveLinearSystem(eqs: readonly Expr[], vars: readonly ExprSym[]): Record<string, Expr> {
-  const m = vars.length
-  const rows: Expr[][] = eqs.map((eq) => {
-    const f = asZero(eq)
-    const zero = vars.map(() => ZERO)
-    const constant = substitute(
-      f,
-      vars.map((v, i) => [v, zero[i] as Expr] as const),
-    )
-    const coeffs = vars.map((v) => {
-      const at1 = substitute(
+  return bounded('solveLinearSystem', () => {
+    const m = vars.length
+    const rows: Expr[][] = eqs.map((eq) => {
+      const f = asZero(eq)
+      const zero = vars.map(() => ZERO)
+      const constant = substitute(
         f,
-        vars.map((w) => [w, w.key === v.key ? ONE : ZERO] as const),
+        vars.map((v, i) => [v, zero[i] as Expr] as const),
       )
-      return cancel(makeAdd([at1, neg(constant)]))
+      const coeffs = vars.map((v) => {
+        const at1 = substitute(
+          f,
+          vars.map((w) => [w, w.key === v.key ? ONE : ZERO] as const),
+        )
+        return cancel(makeAdd([at1, neg(constant)]))
+      })
+      // Check linearity: f must equal sum coeff_i v_i + constant.
+      const rebuilt = makeAdd([constant, ...coeffs.map((c, i) => makeMul([c, vars[i] as Expr]))])
+      if (!isZero(makeAdd([f, neg(rebuilt)])))
+        throw new WhiteboxError('value', 'solveLinearSystem: an equation is not linear')
+      return [...coeffs, cancel(neg(constant))]
     })
-    // Check linearity: f must equal sum coeff_i v_i + constant.
-    const rebuilt = makeAdd([constant, ...coeffs.map((c, i) => makeMul([c, vars[i] as Expr]))])
-    if (!isZero(makeAdd([f, neg(rebuilt)])))
-      throw new WhiteboxError('value', 'solveLinearSystem: an equation is not linear')
-    return [...coeffs, cancel(neg(constant))]
-  })
-  const n = rows.length
-  const pivots: number[] = []
-  let r = 0
-  for (let c = 0; c < m && r < n; c++) {
-    let piv = -1
-    for (let i = r; i < n; i++) {
-      if (!isZero((rows[i] as Expr[])[c] as Expr)) {
-        piv = i
-        break
+    const n = rows.length
+    const pivots: number[] = []
+    let r = 0
+    for (let c = 0; c < m && r < n; c++) {
+      let piv = -1
+      for (let i = r; i < n; i++) {
+        if (!isZero((rows[i] as Expr[])[c] as Expr)) {
+          piv = i
+          break
+        }
       }
+      if (piv < 0) continue
+      ;[rows[r], rows[piv]] = [rows[piv] as Expr[], rows[r] as Expr[]]
+      const row = rows[r] as Expr[]
+      const inv = makePow(row[c] as Expr, MINUS_ONE)
+      for (let j = 0; j <= m; j++) row[j] = cancel(makeMul([row[j] as Expr, inv]))
+      for (let i = 0; i < n; i++) {
+        if (i === r) continue
+        const other = rows[i] as Expr[]
+        const f = other[c] as Expr
+        if (isZero(f)) continue
+        for (let j = 0; j <= m; j++) other[j] = cancel(makeAdd([other[j] as Expr, neg(makeMul([f, row[j] as Expr]))]))
+      }
+      pivots.push(c)
+      r++
     }
-    if (piv < 0) continue
-    ;[rows[r], rows[piv]] = [rows[piv] as Expr[], rows[r] as Expr[]]
-    const row = rows[r] as Expr[]
-    const inv = makePow(row[c] as Expr, MINUS_ONE)
-    for (let j = 0; j <= m; j++) row[j] = cancel(makeMul([row[j] as Expr, inv]))
-    for (let i = 0; i < n; i++) {
-      if (i === r) continue
-      const other = rows[i] as Expr[]
-      const f = other[c] as Expr
-      if (isZero(f)) continue
-      for (let j = 0; j <= m; j++) other[j] = cancel(makeAdd([other[j] as Expr, neg(makeMul([f, row[j] as Expr]))]))
+    for (let i = r; i < n; i++) {
+      if (!isZero((rows[i] as Expr[])[m] as Expr))
+        throw new WhiteboxError('value', 'solveLinearSystem: the system is inconsistent')
     }
-    pivots.push(c)
-    r++
-  }
-  for (let i = r; i < n; i++) {
-    if (!isZero((rows[i] as Expr[])[m] as Expr))
-      throw new WhiteboxError('value', 'solveLinearSystem: the system is inconsistent')
-  }
-  const out: Record<string, Expr> = {}
-  pivots.forEach((c, i) => {
-    const row = rows[i] as Expr[]
-    const terms: Expr[] = [row[m] as Expr]
-    for (let j = 0; j < m; j++) {
-      if (j !== c && !pivots.includes(j) && !isZero(row[j] as Expr))
-        terms.push(neg(makeMul([row[j] as Expr, vars[j] as Expr])))
-    }
-    out[(vars[c] as ExprSym).name] = cancel(makeAdd(terms))
+    const out: Record<string, Expr> = {}
+    pivots.forEach((c, i) => {
+      const row = rows[i] as Expr[]
+      const terms: Expr[] = [row[m] as Expr]
+      for (let j = 0; j < m; j++) {
+        if (j !== c && !pivots.includes(j) && !isZero(row[j] as Expr))
+          terms.push(neg(makeMul([row[j] as Expr, vars[j] as Expr])))
+      }
+      out[(vars[c] as ExprSym).name] = cancel(makeAdd(terms))
+    })
+    return out
   })
-  return out
 }
