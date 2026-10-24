@@ -7,11 +7,11 @@ export const gaussianProcessRegressor: HubEntry = defineEntry({
   id: 'sklearn/gaussian-process/gaussian-process-regressor',
   title: 'Gaussian process regression',
   summary:
-    'A distribution over functions, conditioned on the data, with kernel hyperparameters fitted by marginal likelihood.',
+    'A distribution over functions conditioned on the data: the band widens between and beyond the points, and the kernel is fitted by marginal likelihood.',
   collection: 'sklearn/gaussian-process',
   tags: ['regression', 'bayesian', 'kernels', 'nonparametric'],
   datasets: ['regression1d'],
-  maxRows: 120,
+  knobs: { n: 25 },
   ...fitEstimator(gaussianProcessRegressorMethod({ alpha: 0.01, nRestarts: 1 }), { surface: true }),
   views: [
     { record: 'posteriorGrid', title: 'Posterior' },

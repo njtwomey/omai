@@ -15,7 +15,6 @@ export const sparseGpRegressor: HubEntry = defineEntry({
   ...fitEstimator(sparseGpRegressorMethod(), { surface: true }),
   views: [
     { record: 'posteriorGrid', title: 'Posterior' },
-    { record: 'decisionSurface', title: 'Fitted function', area: 'side' },
     { record: 'coefficientTable', title: 'Hyperparameters', area: 'side' },
   ],
   methods: [{ file: 'methods/gp/sparse.ts', name: 'sparseGpRegressor' }],
