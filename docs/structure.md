@@ -3970,7 +3970,12 @@ Design rules:
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`.
-- `registry.ts`: the standard view of each record kind (`viewFor(kind)`), so hub entries may name only a record.
+- `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
+  what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
+  pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile
+  without a view.
+- Views that take rows in input space (clusters, surfaces, margins, neighbours, anomalies) accept `points` and `labels`
+  beside the record; views that play return `ViewFrames` (a frame count, a label and the option of each frame).
 
 `react/` (React 19; React and ECharts are peer dependencies)
 - `Chart.tsx`: an ECharts option as a live chart (theme from mode, resizing, disposal, events).
@@ -4006,8 +4011,11 @@ Design rules:
   left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas (`ControlLayout` places it).
   Plain React and Tailwind over the `--wb-*` tokens; the rules are pure modules (`number.ts`, `options.ts`, `seed.ts`,
   `space-controls.ts`, `datasets.ts`) and menus open in a `Popover` portal so no container clips them.
-- `views/`: a React component per exposition view (`PathView`, `TreeView`, `PipelineView`, `EmbeddingPlayer`,
-  `DecisionSurfaceView`, ...), and `ExpositionView`, which picks the standard view of any record.
+- `views/`: a React component per exposition view, one file per headless module (`paths.tsx`: `PathView`,
+  `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
+  `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
+  `stages.tsx`, `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`), each one figure in one
+  `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
 - `EnvView.tsx`: one consistent view of any environment's render, decorated, with room for controls.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
   or a prop), dark by default; no system-preference detection.
@@ -4156,15 +4164,18 @@ library for the same computation. They do not set a higher bar than that library
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
   `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`.
 - Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, then only the tests,
-  type checks and fixtures related to the change; everything when shared infrastructure changes) and `make check` with
-  `make fixtures-check` as the periodic full run after a batch of merges and before a release.
-- `scripts/verify.ts`: the scoped gate (changed files against a base, `vitest related`, fixture-to-test lookup, scoped
-  pyright and fixture checks).
+  examples, type checks and fixtures related to the change; everything when shared infrastructure changes) and
+  `make check` (which includes `make examples`) with `make fixtures-check` as the periodic full run after a batch of
+  merges and before a release.
+- `scripts/verify.ts`: the scoped gate (changed files against a base, `vitest related`, fixture-to-test lookup, the
+  examples of the changed engine source files through `scripts/examples.ts --only <files>` (about 3 seconds for a
+  typical change, most of it building the catalogue; all examples when `scripts/` or whitebox-meta's `extract/`,
+  `runner/` or `modules/` change), scoped pyright and fixture checks).
 - `mise.toml`: Node, pnpm, Python and uv versions.
 - `scripts/barrels.ts`: every `index.ts` and the module map; `--check`.
 - `scripts/layers.ts`: dependency-cruiser rules from `domain.json` and `area.json`.
 - `scripts/examples.ts` (`make examples`): every `@example` of the engine core run in worker threads with its `// =>`
-  lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows,
+  lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows to module or file prefixes,
   `--coverage` reports documentation coverage). How-tos join it when they exist.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).

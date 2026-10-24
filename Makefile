@@ -95,7 +95,7 @@ verify: ## Checks scoped to what changed against BASE (default main): the gate f
 	$(NODE) scripts/verify.ts --base $(or $(BASE),main)
 
 .PHONY: check
-check: barrels-check layers lint typecheck test ## Everything, every test (periodic full run; `verify` is the per-change gate)
+check: barrels-check layers lint typecheck test examples ## Everything, every test (periodic full run; `verify` is the per-change gate)
 
 .PHONY: clean
 clean: ## Remove build outputs

@@ -214,7 +214,8 @@ export interface TraversalStats {
 
 /**
  * The nearest hit of a ray in a hierarchy: depth-first, nearer child first, skipping every box that starts beyond the
- * nearest hit so far. Equal to testing every shape, at a fraction of the tests.
+ * nearest hit so far. Equal to testing every shape ({@link nearestHit}, ties going to the lowest index), at a fraction
+ * of the tests.
  *
  * @param bvh - The hierarchy.
  * @param ray - The ray.
@@ -263,7 +264,9 @@ export function intersectBvh(
         if (s === undefined) continue
         shapeTests++
         const h = intersect(ray, s, tMin, tMax)
-        if (h !== null) {
+        // h.t <= tMax = best.t; a tie goes to the lower index, as nearestHit, so the answer is independent of the
+        // traversal order.
+        if (h !== null && (best === null || h.t < best.t || index < best.index)) {
           best = { ...h, index }
           tMax = h.t
         }
