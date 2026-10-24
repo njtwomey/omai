@@ -3472,7 +3472,8 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
   sampling, gradient bandits.
 - `tabular.ts`: Q-learning, SARSA, expected SARSA, n-step SARSA, SARSA(lambda), Monte Carlo control, TD(0) and
   TD(lambda), double Q-learning, Dyna-Q (and Dyna-Q+), prioritised sweeping.
-- `planning.ts`: value and policy iteration agents, MCTS agents, AlphaZero-style self-play with a small network,
+- `planning.ts`: value and policy iteration agents (solving the model at once, or a sweep at a time between
+  episodes: `sweepingPlannerAgent`, which puts dynamic programming on a learning curve), MCTS agents, AlphaZero-style self-play with a small network,
   minimax agents. Its `alphaBeta` (negamax with a transposition table, bound flags and rewards on any move, untraced
   for speed inside agents) is not `search.alphaBeta`, a traced node-by-node engine over terminal utilities without a
   table.
@@ -3501,6 +3502,16 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 
 `rl/studies.ts`: learning-curve comparisons with aggregate metrics and intervals, sensitivity to hyperparameters,
 exploration and generalisation studies.
+
+`rl/playground.ts`: the playground of phase 4. `playgroundPairings` lists environment and agent pairings whose demo
+defaults (a `hyperSpace` each, with the budget) learn visibly in about a second in a browser: Bernoulli bandits
+(epsilon-greedy, UCB1, Thompson sampling; an episode is a block of pulls), cliff walking (Q-learning, SARSA, expected
+SARSA), frozen lake (Q-learning, value and policy iteration a sweep at a time), CartPole (REINFORCE, A2C) and
+MountainCar (SARSA(lambda) on a grid of the state; DQN needs too many steps there). `playground(options)` trains one
+and returns the returns and lengths per episode with an `EpisodeRecord` (chosen episodes recorded step by step, the
+last always; value and policy snapshots of tabular agents; frames beside the record on request);
+`playgroundSession` is the same run as a steppable `Algorithm` (over `lib/rl`'s `trainingAlgorithm`) with the record
+of any intermediate state, and `onEpisode` reports progress for live pages.
 ### 5.10 Generative models (`generative/`)
 
 oracle: PyTorch (losses and single steps with fixed weights), diffusers schedules
