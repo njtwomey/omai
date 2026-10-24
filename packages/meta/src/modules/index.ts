@@ -70,6 +70,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/rl': () => import('whitebox-engine/rl'),
   'whitebox-engine/scene': () => import('whitebox-engine/scene'),
   'whitebox-engine/space': () => import('whitebox-engine/space'),
+  'whitebox-engine/stochastic': () => import('whitebox-engine/stochastic'),
   'whitebox-engine/symbolic': () => import('whitebox-engine/symbolic'),
   'whitebox-engine/systems': () => import('whitebox-engine/systems'),
   'whitebox-engine/tensor': () => import('whitebox-engine/tensor'),

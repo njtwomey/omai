@@ -2139,6 +2139,33 @@
       "cases": 13
     },
     {
+      "fixture": "stochastic/brownian.json",
+      "source": "oracle/cases/stochastic/brownian.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "stochastic/calculus.json",
+      "source": "oracle/cases/stochastic/calculus.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "stochastic/sde.json",
+      "source": "oracle/cases/stochastic/sde.py",
+      "reference": {
+        "sdeint": "0.3.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "symbolic/compile.json",
       "source": "oracle/cases/symbolic/compile.py",
       "reference": {

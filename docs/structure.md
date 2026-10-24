@@ -1619,12 +1619,14 @@ algorithms that record the frontier and explored set, so every search can be ani
 ### 4.23 `stochastic/` (tier 7): stochastic processes and stochastic calculus
 
 oracle: closed-form moments and transition densities; sdeint and numpy simulations; dppy for DPPs
+- `paths.ts`: the `Paths` shape every simulator returns (`[paths, times, ...state]`), time grids, the traced Markov
+  path simulation (`pathAlgorithm`, `simulatePaths`) and increment utilities (coarsening for convergence studies).
 - `brownian.ts`: Brownian motion (multi-dimensional, with drift), Brownian bridges, quadratic variation, reflection
   principle, first-passage times.
 - `calculus.ts`: Ito and Stratonovich integrals by Riemann sums, Ito's lemma checked numerically, the Ito isometry,
-  Girsanov reweighting, Feynman-Kac by Monte Carlo.
+  Girsanov reweighting, Feynman-Kac by Monte Carlo (with the Black-Scholes price as its closed-form check).
 - `sde.ts`: SDE solvers (Euler-Maruyama, Milstein, stochastic Runge-Kutta, stochastic Heun for Stratonovich), strong and
-  weak convergence studies, reverse-time SDEs given a score.
+  weak convergence studies, reverse-time SDEs given a score. `sdeSolver` fits `nn.blocks.SdeSolver`.
 - `diffusions.ts`: named processes with exact transitions: Ornstein-Uhlenbeck, geometric Brownian motion, CIR, Vasicek,
   Bessel, Langevin dynamics, jump diffusions.
 - `markov-chains.ts`: discrete- and continuous-time Markov chains: stationary distributions, classification,
