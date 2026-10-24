@@ -1,6 +1,8 @@
 // Private exposition helpers of the neural methods (methods/neural): the loss and score curves of a training run,
 // and a hidden layer's representation of the training rows at each snapshot, projected to two dimensions.
 import {
+  type DecisionSurface,
+  decisionSurface,
   type EmbeddingSteps,
   type Exposition,
   embeddingSteps,
@@ -130,10 +132,14 @@ export function representationSteps(
   })
 }
 
-/** The training loss (eval mode, all rows) at each snapshot's epoch. */
+/** The training loss at each snapshot: on all the rows (eval mode) at epoch ends, the minibatch's between them. */
 export function lossAtSnapshots(training: Training): number[] {
   return training.snapshots.map((s) =>
-    s.epoch === 0 ? training.initial.loss : (training.evalLoss[s.epoch - 1] ?? Number.NaN),
+    s.step === 0
+      ? training.initial.loss
+      : Number.isInteger(s.epoch)
+        ? (training.evalLoss[s.epoch - 1] ?? Number.NaN)
+        : (training.stepLoss[s.step - 1] ?? Number.NaN),
   )
 }
 
@@ -176,4 +182,72 @@ export function progressReporter(
       exposition: [...recordsAt(r.snapshot), curve],
     })
   }
+}
+
+/**
+ * Tile equally sized maps (feature maps, filters, images) into one grid, `columns` across with a one-cell gap, each
+ * map scaled to [0, 1] on its own when `normalise` (so weak and strong channels both show) and the gaps at 0; rows run
+ * bottom-up so the grid draws upright on a y-up surface.
+ */
+export function mosaic(
+  maps: readonly (readonly (readonly number[])[])[],
+  columns: number,
+  normalise = true,
+): number[][] {
+  const h = maps[0]?.length ?? 0
+  const w = maps[0]?.[0]?.length ?? 0
+  const cols = Math.max(1, Math.min(columns, maps.length))
+  const rows = Math.ceil(maps.length / cols)
+  const H = rows * (h + 1) - 1
+  const W = cols * (w + 1) - 1
+  const grid = Array.from({ length: Math.max(0, H) }, () => new Array<number>(Math.max(0, W)).fill(0))
+  for (const [m, map] of maps.entries()) {
+    const r0 = Math.floor(m / cols) * (h + 1)
+    const c0 = (m % cols) * (w + 1)
+    let lo = Number.POSITIVE_INFINITY
+    let hi = Number.NEGATIVE_INFINITY
+    for (const row of map) for (const v of row) (lo = Math.min(lo, v)), (hi = Math.max(hi, v))
+    const span = hi > lo ? hi - lo : 1
+    for (let i = 0; i < h; i++)
+      for (let j = 0; j < w; j++) {
+        const v = map[i]?.[j] ?? 0
+        const target = grid[H - 1 - (r0 + i)] as number[]
+        target[c0 + j] = normalise ? (v - lo) / span : v
+      }
+  }
+  return grid
+}
+
+/**
+ * Maps at each snapshot as a playable surface of values: the mosaic of the last snapshot as the surface, every
+ * snapshot's mosaic as a step.
+ *
+ * @param perStep - The maps at each snapshot (the same count and size at every one).
+ * @param iterations - Each snapshot's epoch.
+ * @param columns - Maps across.
+ * @param objective - The training loss at each snapshot.
+ * @param normalise - Scale each map to [0, 1] (default true).
+ * @returns The record.
+ */
+export function mapSteps(
+  perStep: readonly (readonly (readonly (readonly number[])[])[])[],
+  iterations: readonly number[],
+  columns: number,
+  objective?: readonly number[],
+  normalise = true,
+): DecisionSurface {
+  const grids = perStep.map((maps) => mosaic(maps, columns, normalise))
+  const last = grids.at(-1) ?? []
+  return decisionSurface({
+    features: ['column', 'row'],
+    x: Array.from({ length: last[0]?.length ?? 0 }, (_, j) => j),
+    y: Array.from({ length: last.length }, (_, i) => i),
+    values: last,
+    steps: grids.map((values, t) => ({
+      iteration: iterations[t] ?? t,
+      values,
+      ...(objective?.[t] === undefined || !Number.isFinite(objective[t]) ? {} : { objective: objective[t] }),
+    })),
+    stepName: 'epoch',
+  })
 }

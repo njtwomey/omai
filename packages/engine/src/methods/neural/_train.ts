@@ -18,9 +18,12 @@ export interface Rows {
   readonly y: Tensor
 }
 
-/** The parameters at one recorded epoch (0 is the initial network). */
+/** The parameters at one recorded epoch or step (0 is the initial network). */
 export interface Snapshot {
+  /** The epochs completed (fractional between epochs, when snapshots are taken by step). */
   readonly epoch: number
+  /** The minibatch steps completed. */
+  readonly step: number
   readonly params: Params
   readonly buffers: Params
 }
@@ -61,8 +64,10 @@ export interface TrainOptions {
   }
   /** The most snapshots kept (default 40). */
   readonly snapshots?: number
-  /** Extra epochs to snapshot besides the geometric schedule. */
+  /** Extra epochs (or steps) to snapshot besides the geometric schedule. */
   readonly snapshotAt?: readonly number[]
+  /** Space the snapshots over epochs (default) or over minibatch steps (for short runs that learn within an epoch). */
+  readonly snapshotUnit?: 'epoch' | 'step'
   readonly fit: FitOptions
   /** Called after every epoch (progress for live pages). */
   readonly onEpoch?: (report: EpochReport) => void
@@ -144,7 +149,11 @@ export function train(options: TrainOptions): Training {
     key: base,
     ...(options.learningRate === undefined ? {} : { learningRate: options.learningRate }),
   })
-  const schedule = new Set([...geometricSteps(options.epochs, options.snapshots ?? 40), ...(options.snapshotAt ?? [])])
+  const byStep = options.snapshotUnit === 'step'
+  const schedule = new Set([
+    ...geometricSteps(byStep ? options.epochs * perEpoch : options.epochs, options.snapshots ?? 40),
+    ...(options.snapshotAt ?? []),
+  ])
   const snapshots: Snapshot[] = []
   const epochs: number[] = []
   const trainLoss: number[] = []
@@ -171,13 +180,18 @@ export function train(options: TrainOptions): Training {
     init: (k) => {
       const s = inner.init(k)
       initial = evaluate(options.train, s.params, s.buffers)
-      if (schedule.has(0)) snapshots.push({ epoch: 0, params: s.params, buffers: s.buffers })
+      if (schedule.has(0)) snapshots.push({ epoch: 0, step: 0, params: s.params, buffers: s.buffers })
       return s
     },
     step: (s, ctx) => {
       const next = inner.step(s, ctx)
       stepLoss.push(next.loss)
       epochSum += next.loss
+      const stepSnapshot =
+        byStep && schedule.has(next.step) && next.step % perEpoch !== 0
+          ? { epoch: next.step / perEpoch, step: next.step, params: next.params, buffers: next.buffers }
+          : undefined
+      if (stepSnapshot !== undefined) snapshots.push(stepSnapshot)
       if (next.step % perEpoch !== 0) return next
       const epoch = next.step / perEpoch
       const meanLoss = epochSum / perEpoch
@@ -213,9 +227,9 @@ export function train(options: TrainOptions): Training {
       }
       const last = stopReason !== undefined || epoch >= options.epochs || !Number.isFinite(meanLoss)
       let snapshot: Snapshot | undefined
-      if (schedule.has(epoch) || last) {
-        snapshot = { epoch, params: state.params, buffers: state.buffers }
-        if (snapshots.at(-1)?.epoch !== epoch) snapshots.push(snapshot)
+      if (schedule.has(byStep ? next.step : epoch) || last) {
+        snapshot = { epoch, step: next.step, params: state.params, buffers: state.buffers }
+        if (snapshots.at(-1)?.step !== next.step) snapshots.push(snapshot)
       }
       options.onEpoch?.({
         epoch,
