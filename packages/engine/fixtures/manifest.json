@@ -237,6 +237,16 @@
       "cases": 4
     },
     {
+      "fixture": "information/complexity.json",
+      "source": "oracle/cases/information/complexity.py",
+      "reference": {
+        "zlib": "1.2.12",
+        "antropy": "0.2.3",
+        "scipy": "1.18.1"
+      },
+      "cases": 32
+    },
+    {
       "fixture": "information/convolutional.json",
       "source": "oracle/cases/information/convolutional.py",
       "reference": {
