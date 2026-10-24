@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ErrorBoundary } from '../shell/ErrorBoundary.tsx'
 import { Card, CardGrid, PageHeader, PageSection, Prose } from '../shell/layout.tsx'
 import { RecipeView } from '../shell/RecipeView.tsx'
 import type { Section } from './recipe.ts'
@@ -69,7 +70,9 @@ export function EntryPage(props: { readonly entry: Entry; readonly nav?: ReactNo
       />
       <Prose text={entry.explain} className="-mt-5 max-w-3xl text-base leading-relaxed text-fg-secondary" />
       <RecipeView code={entry.snippet} file={entry.file} key={entry.path}>
-        <Example />
+        <ErrorBoundary resetKey={entry.path}>
+          <Example />
+        </ErrorBoundary>
       </RecipeView>
     </>
   )

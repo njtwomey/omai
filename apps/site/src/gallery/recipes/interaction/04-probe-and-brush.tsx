@@ -1,16 +1,20 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { key, normal } from 'whitebox-engine/random'
 import { toArray } from 'whitebox-engine/tensor'
+import { cartesian, points as pointLayer } from 'whitebox-render/charts'
+import { figure } from 'whitebox-render/figure'
 import {
   Brush,
+  Chart,
   type DataRect,
   InteractionOverlay,
   Overlaid,
   type Point2,
   Probe,
   pointsInRect,
+  useChartProjection,
+  useColourMode,
 } from 'whitebox-render/react'
-import { Dots, Plot, plotFrame } from '../../demo/Plot.tsx'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -20,16 +24,38 @@ export const recipe: Recipe = {
     '`Probe` follows the pointer with a crosshair and hands its data coordinates to whatever it draws; `Brush` selects a rectangle by dragging (a press clears it) and `pointsInRect` finds the data inside. Both sit in the same kind of overlay as the draggable points.',
 }
 
-const frame = plotFrame({ x: [-3, 3], y: [-3, 3], width: 420, aspect: 1.2 })
+const FIGURE = figure({ width: 440, aspect: 1.2 })
+const AXES = { x: { limits: [-3, 3] as const }, y: { limits: [-3, 3] as const }, tooltip: false as const }
 
 export default function ProbeAndBrush(): ReactNode {
-  const points = useMemo(() => {
+  const mode = useColourMode()
+  const probe = useChartProjection()
+  const brush = useChartProjection()
+  const data = useMemo(() => {
     const xy = toArray(normal(key(7), [150, 2])) as number[][]
     return xy.map(([a = 0, b = 0]): Point2 => [a, 0.6 * a + 0.8 * b])
   }, [])
   const [rect, setRect] = useState<DataRect | null>(null)
-  const selected = new Set(rect === null ? [] : pointsInRect(points, rect))
-  const size = { width: frame.fig.width, height: frame.fig.height }
+  const selected = useMemo(() => (rect === null ? null : new Set(pointsInRect(data, rect))), [data, rect])
+  const plain = useMemo(
+    () =>
+      cartesian([pointLayer([{ x: data.map((p) => [...p]), name: 'data' }], { mode })], {
+        mode,
+        figure: FIGURE,
+        ...AXES,
+      }),
+    [data, mode],
+  )
+  const coloured = useMemo(() => {
+    const inside = data.filter((_, i) => selected === null || selected.has(i)).map((p) => [...p])
+    const outside = data.filter((_, i) => selected !== null && !selected.has(i)).map((p) => [...p])
+    const sets = [
+      ...(outside.length > 0 ? [{ x: outside, name: 'outside', colour: 'muted' }] : []),
+      ...(inside.length > 0 ? [{ x: inside, name: 'selected' }] : []),
+    ]
+    return cartesian([pointLayer(sets, { mode })], { mode, figure: FIGURE, legend: false, ...AXES })
+  }, [data, selected, mode])
+  const size = { width: FIGURE.width, height: FIGURE.height }
   return (
     <div className="flex flex-wrap gap-4">
       <div className="flex flex-col gap-1">
@@ -37,41 +63,37 @@ export default function ProbeAndBrush(): ReactNode {
         <Overlaid
           {...size}
           overlay={
-            <InteractionOverlay projection={frame.projection} {...size}>
-              <Probe>
-                {([x, y], [px, py]) => (
-                  <text x={px + 8} y={py - 8} fontSize={11} fill="var(--wb-fg)">
-                    ({x.toFixed(2)}, {y.toFixed(2)})
-                  </text>
-                )}
-              </Probe>
-            </InteractionOverlay>
+            probe.projection === null ? null : (
+              <InteractionOverlay projection={probe.projection} {...size}>
+                <Probe>
+                  {([x, y], [px, py]) => (
+                    <text x={px + 8} y={py - 8} fontSize={11} fill="var(--wb-fg)">
+                      ({x.toFixed(2)}, {y.toFixed(2)})
+                    </text>
+                  )}
+                </Probe>
+              </InteractionOverlay>
+            )
           }
         >
-          <Plot frame={frame}>
-            <Dots frame={frame} points={points} />
-          </Plot>
+          <Chart option={plain} figure={FIGURE} onInit={probe.onInit} />
         </Overlaid>
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-xs text-muted">
-          Brush: {selected.size} of {points.length} selected
+          Brush: {selected?.size ?? data.length} of {data.length} selected
         </span>
         <Overlaid
           {...size}
           overlay={
-            <InteractionOverlay projection={frame.projection} {...size}>
-              <Brush value={rect} onChange={setRect} />
-            </InteractionOverlay>
+            brush.projection === null ? null : (
+              <InteractionOverlay projection={brush.projection} {...size}>
+                <Brush value={rect} onChange={setRect} />
+              </InteractionOverlay>
+            )
           }
         >
-          <Plot frame={frame}>
-            <Dots
-              frame={frame}
-              points={points}
-              colour={(i) => (rect === null || selected.has(i) ? 'var(--wb-tab0)' : 'var(--wb-muted)')}
-            />
-          </Plot>
+          <Chart option={coloured} figure={FIGURE} onInit={brush.onInit} />
         </Overlaid>
       </div>
     </div>

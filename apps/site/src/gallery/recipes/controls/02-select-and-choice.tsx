@@ -1,6 +1,7 @@
-import { type ReactNode, useState } from 'react'
-import { Choice, ControlPanel, Select } from 'whitebox-render/react'
-import { Line, Plot, plotFrame, sampleCurve } from '../../demo/Plot.tsx'
+import { type ReactNode, useMemo, useState } from 'react'
+import { lineChart } from 'whitebox-render/charts'
+import { figure } from 'whitebox-render/figure'
+import { Chart, Choice, ControlPanel, Select, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -10,6 +11,7 @@ export const recipe: Recipe = {
     '`Select` keeps its options in a menu, with previous and next arrows either side that cycle through them in place, wrapping at the ends; good for datasets and models. `Choice` shows two to five short options side by side; `cycle` gives it the arrows too. Options are values or `{ value, label }`.',
 }
 
+const FIGURE = figure()
 const curves = {
   sin: { label: 'sine', f: Math.sin },
   cos: { label: 'cosine', f: Math.cos },
@@ -18,13 +20,21 @@ const curves = {
   gauss: { label: 'Gaussian bump', f: (x: number) => Math.exp((-x * x) / 2) },
 } as const
 type CurveId = keyof typeof curves
-
-const frame = plotFrame({ x: [-6, 6], y: [-3, 3] })
+const xs = Array.from({ length: 301 }, (_, i) => -6 + (12 * i) / 300)
 
 export default function SelectAndChoice(): ReactNode {
+  const mode = useColourMode()
   const [curve, setCurve] = useState<CurveId>('sin')
   const [scale, setScale] = useState(1)
-  const f = curves[curve].f
+  const option = useMemo(() => {
+    const { f, label } = curves[curve]
+    return lineChart([{ x: xs, y: xs.map((x) => scale * f(x)), name: label }], {
+      mode,
+      figure: FIGURE,
+      x: { label: 'x' },
+      y: { label: 'y', limits: [-3, 3] },
+    })
+  }, [curve, scale, mode])
   return (
     <div className="flex flex-col gap-3">
       <ControlPanel columns={2}>
@@ -36,9 +46,7 @@ export default function SelectAndChoice(): ReactNode {
         />
         <Choice label="amplitude" value={scale} onChange={setScale} options={[0.5, 1, 2, 3]} cycle />
       </ControlPanel>
-      <Plot frame={frame} xLabel="x" yLabel="y">
-        <Line frame={frame} points={sampleCurve((x) => scale * f(x), -6, 6, 300)} />
-      </Plot>
+      <Chart option={option} figure={FIGURE} />
     </div>
   )
 }
