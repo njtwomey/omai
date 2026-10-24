@@ -31,7 +31,7 @@ export interface EuclideanMetric {
  * a dense one. Momenta are drawn as p = L z with L L^T = M (dense) or p_i = z_i / sqrt(M^-1_ii) (diagonal).
  *
  * @param inverseMassMatrix - M^-1: a number, a vector of length dim, a `[dim, dim]` matrix, or that matrix flattened
- *   row-major (length dim^2, as adaptation stores it).
+ *   row-major (length dim^2, as adaptation stores it); default 1, the identity.
  * @param dim - The dimension.
  * @returns The metric.
  * @throws WhiteboxError with code `value` for non-positive diagonals or a matrix that is not positive definite.
@@ -108,6 +108,15 @@ export type Integrator = (state: IntegratorState, stepSize: number) => Integrato
  * Coefficients of the palindromic splitting integrators (BlackJAX): alternating momentum and position updates,
  * starting and ending with momentum. Velocity Verlet (leapfrog) is second order with one gradient per step; McLachlan's
  * minimal-error two-stage scheme, Yoshida's and Omelyan's higher-order schemes use two, three and five.
+ *
+ * @concept symplectic-integrators
+ * @example
+ * ```ts
+ * import { INTEGRATOR_COEFFICIENTS } from 'whitebox-engine/sampling'
+ * INTEGRATOR_COEFFICIENTS.velocityVerlet // => [0.5, 1, 0.5]
+ * // The position coefficients (odd places) sum to one step.
+ * INTEGRATOR_COEFFICIENTS.yoshida.filter((_, i) => i % 2 === 1).reduce((a, b) => a + b, 0) // => 1
+ * ```
  */
 export const INTEGRATOR_COEFFICIENTS: {
   readonly velocityVerlet: readonly number[]

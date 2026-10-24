@@ -1,5 +1,6 @@
 // Test helpers for samplers: moment checks in units of Monte Carlo standard error, and standard targets.
 import { expect } from 'vitest'
+import { ndtr } from '../lib/numerics/special/index.ts'
 import { foldIn, type Key, key } from '../lib/random/index.ts'
 import {
   type Chains,
@@ -11,7 +12,7 @@ import {
   numericTarget,
   parameterDraws,
 } from '../lib/sampling/index.ts'
-import type { Tensor } from '../lib/tensor/index.ts'
+import { item, type Tensor } from '../lib/tensor/index.ts'
 
 /** Mean and standard deviation of the pooled draws of one coordinate. */
 export function moments(x: ArrayLike<number>): { readonly mean: number; readonly sd: number } {
@@ -87,6 +88,26 @@ export function expectInvariant<S extends MCMCState>(
   }
   expectIidMoments(out, dim, truth, options.z ?? 4)
   return out
+}
+
+/**
+ * The Kolmogorov-Smirnov check of independent draws against a CDF: sup |F_n - F| below the 0.1% critical value
+ * 1.95 / sqrt(n) (fixed seeds make the test deterministic; the level only sets how strict it is).
+ */
+export function expectDistribution(draws: ArrayLike<number>, cdf: (x: number) => number): void {
+  const x = Float64Array.from(draws).sort()
+  const n = x.length
+  let d = 0
+  for (let i = 0; i < n; i++) {
+    const f = cdf(x[i] ?? 0)
+    d = Math.max(d, Math.abs((i + 1) / n - f), Math.abs(i / n - f))
+  }
+  expect(d, `KS distance ${d} with n = ${n}`).toBeLessThan(1.95 / Math.sqrt(n))
+}
+
+/** The standard normal CDF. */
+export function normalCdf(x: number): number {
+  return item(ndtr(x))
 }
 
 /** Bulk ESS of every coordinate is at least `min`. */

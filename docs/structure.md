@@ -1780,22 +1780,51 @@ reparameterisations, which finite differences cannot see, by the unbiasedness of
 
 ### 4.24 `sampling/` (tier 7): Monte Carlo (NumPyro and BlackJAX kernels, ArviZ diagnostics)
 
-oracle: statistical agreement with analytic targets; arviz for diagnostics
-- `target.ts`: `LogDensity` (log density, gradient by autodiff, dimension, constraints), from distributions, unconstrained
-  targets.
-- `metropolis.ts`: random-walk, independence and general Metropolis-Hastings, adaptive Metropolis.
-- `hamiltonian.ts`: leapfrog, HMC, NUTS (multinomial, generalised U-turn, divergences), step-size adaptation (dual
-  averaging), mass-matrix adaptation (diagonal and dense, windowed), Riemannian HMC for small problems.
-- `langevin.ts`: MALA, ULA, SGLD, SVGD.
-- `gibbs.ts`: blocked Gibbs, slice sampling, elliptical slice sampling.
-- `importance.ts`: importance sampling, self-normalised estimates, Pareto-smoothed weights, weight diagnostics.
-- `smc.ts`: SMC samplers with adaptive tempering, resampling schemes, annealed importance sampling.
-- `rejection.ts`: rejection sampling, adaptive rejection sampling, ratio of uniforms.
-- `exact.ts`: inverse-transform sampling, Box-Muller and Marsaglia polar methods, alias sampling (step records for
-  teaching).
-- `chains.ts`: running several chains with independent keys, `Chains` (draws by chain), thinning, warm-up handling.
-- `diagnostics.ts`: R-hat (rank-normalised split), bulk and tail ESS, MCSE, autocorrelation, summaries, divergence and
-  tree-depth reports.
+oracle: ArviZ (arviz-stats) for every diagnostic and for PSIS on fixed chains; BlackJAX for the mechanics that are
+deterministic given the same inputs (integrator trajectories, the U-turn criterion, dual averaging, the warm-up schedule,
+Welford mass matrices, one SVGD step, resampling from the same uniforms, the adaptive-tempering solver); statistical
+agreement (moments within a few MCSE, invariance of exact draws under one transition, KS tests, detailed balance on small
+discrete targets) for the kernels themselves. Every kernel is a BlackJAX-style `MCMCKernel` (`init`, `step(key, state)`)
+traced through `samplerAlgorithm`; every loop has an iteration or depth cap and degenerate targets (NaN densities, zero
+gradients, infinite step sizes) end in rejections or divergences, never hangs.
+- `target.ts`: `LogDensity` (log density, gradient by autodiff or by hand, dimension, names, constraints,
+  `constrain`/`unconstrain`), `target`, `numericTarget`, `targetFromDistribution` (unconstrained through
+  `bijectorForSupport`), `unconstrainedTarget` (per-coordinate supports or a bijector), `Proposal`, `proposal`,
+  `proposalFromDistribution`, and the standard targets `nealsFunnel` (centred and non-centred) and `banana` (Haario).
+- `chains.ts`: the kernel protocol (`MCMCKernel`, `MCMCState`, `TransitionInfo`, `Adaptation`, `Warmup`),
+  `samplerSchema`, `samplerAlgorithm` (per-iteration position, log density, acceptance, step size, tree depth,
+  integration steps, energy, divergences), `sampleChain`, `sampleChains` (independent keys per chain, warm-up or
+  adaptation, thinning, parent run with a child per chain), `Chains`, `parameterDraws`, `flattenChains`, `thin`,
+  `discardWarmup`, `chainsFromDraws`, `constrainChains`.
+- `metropolis.ts`: `metropolisAcceptance`, `metropolisHastings` (any proposal, discrete targets too),
+  `randomWalkMetropolis` (scales or a full covariance), `independenceMetropolis`, `adaptiveMetropolis` (Haario et al.),
+  `randomWalkAdaptation` (Robbins-Monro scale and learned shape during warm-up).
+- `hamiltonian/`: `integrators.ts` (`euclideanMetric` with the generalised U-turn criterion, palindromic `integrator`s
+  velocity Verlet, McLachlan, Yoshida and Omelyan, `leapfrog`, `integratorState`, `hamiltonian`,
+  `hamiltonianTrajectory`); `hmc.ts` (`hmcKernel`, `hmcAdaptation`, `hmc`); `nuts.ts` (multinomial NUTS with biased
+  progressive sampling, the U-turn checks across subtrees, divergences, `nutsKernel`, `nutsAdaptation`, `nuts`);
+  `adaptation.ts` (dual averaging, `findReasonableStepSize`, Welford mass-matrix adaptation, diagonal or dense,
+  `windowSchedule`, `windowAdaptation`); `riemannian.ts` (`riemannianHmcKernel` with the generalised leapfrog and a
+  given or SoftAbs metric, `riemannianTrajectory`), for small problems.
+- `langevin.ts`: `malaKernel` (optionally preconditioned), `ulaKernel`, `sgldKernel` with `minibatchGradient` and
+  `polynomialStepSize`, SVGD (`svgdDirection`, `medianBandwidth`, `svgdAlgorithm`, `svgd`).
+- `gibbs.ts`: `blockedGibbs` (systematic or random scan), `sliceSampler` (Neal's stepping-out and shrinkage, coordinate
+  by coordinate), `ellipticalSlice`.
+- `importance.ts`: `importanceSampling`, `normaliseLogWeights`, `importanceEss`, `selfNormalisedEstimate`,
+  `logEvidence`, `paretoSmoothedWeights` (PSIS), `paretoKHat`, `weightDiagnostics`.
+- `smc.ts`: resampling schemes (`systematicResample`, `stratifiedResample`, `multinomialResample`, `residualResample`,
+  `resample`), `nextTemperature` (adaptive tempering), `adaptiveRandomWalkMove`, `smcAlgorithm` and `smcSampler`
+  (adaptive-tempering SMC with MCMC rejuvenation and the evidence), `annealedImportanceSampling`.
+- `rejection.ts`: `rejectionSample` (with envelope-violation counts), `adaptiveRejectionSample` (Gilks and Wild, tangent
+  hull and chord squeeze), `ratioOfUniforms` (Kinderman and Monahan).
+- `exact.ts`: `inverseTransformSample`, `inverseTransformFromCdf`, `discreteInverseTransform`, `boxMuller`,
+  `marsagliaPolar`, `aliasMethod` (Vose), each with optional step records for teaching.
+- `diagnostics/`: `convergence.ts` (`rhat`: rank-normalised split, split, folded, z-scale and identity; `ess`: bulk, tail,
+  mean, sd, quantile, median, MAD, local, folded, z-scale, identity; `mcse`: mean, sd, median, quantile);
+  `autocorrelation.ts` (`autocovariance`, `autocorrelation` by FFT); `intervals.ts` (`hdi`, also circular, `hdiModes` for
+  discrete draws, `eti`; `stats`'s `highestDensityInterval` aliases `hdi`); `reports.ts` (`summary`, `bfmi`,
+  `divergenceReport`, `treeDepthReport`, `diagnose`). TODO: multimodal HDI of continuous draws needs a density estimate
+  (ArviZ uses an ISJ-bandwidth KDE, which lives in `stats`, the same tier), and circular MCSE.
 ### 4.25 `logic/` (tier 8): logic programming, satisfiability and ILP
 
 oracle: recorded SWI-Prolog outputs, pysat, Aleph and Popper results on small tasks
