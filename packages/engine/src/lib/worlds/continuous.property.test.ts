@@ -152,7 +152,12 @@ describe('continuous motion and sight (properties)', () => {
           // A swept segment of length 2 meets the same wall as the ray, when the ray's hit is within it.
           const sweep = sweepSegment(g, o, [o[0] + 2 * d[0], o[1] + 2 * d[1]])
           if (hit !== null && hit.distance < 2 - 1e-9) expect(2 * (sweep?.t ?? Number.NaN)).toBeCloseTo(hit.distance, 9)
-          if (hit === null || hit.distance > 2 + 1e-9) expect(sweep).toBeNull()
+          // A sweep that only touches a wall's end (the ray runs exactly through a corner) is a graze, where rounding
+          // decides between the two answers, as in the brute force below.
+          const touchesEnd =
+            sweep !== null &&
+            solid.some(([a, b]) => [a, b].some((e) => Math.hypot(sweep.point[0] - e[0], sweep.point[1] - e[1]) < 1e-9))
+          if ((hit === null || hit.distance > 2 + 1e-9) && !touchesEnd) expect(sweep).toBeNull()
           // The brute force: the nearest crossing of a long segment along the ray. A crossing within 1e-9 of a wall's end
           // is a graze (the ray runs past a corner), where rounding decides; such walls are left out.
           let best = Number.POSITIVE_INFINITY
