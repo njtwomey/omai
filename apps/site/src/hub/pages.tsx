@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { catalogue, type HubEntry, type HubState } from 'whitebox-hub'
+import { catalogue, collectionDescription, type HubEntry, type HubState } from 'whitebox-hub'
 import { HubEntryView } from 'whitebox-hub/react'
 import { ErrorBoundary } from '../shell/ErrorBoundary.tsx'
 import { Link } from '../shell/Link.tsx'
@@ -64,10 +64,12 @@ export function HubHome(props: { readonly nav?: ReactNode }): ReactNode {
 export function CollectionPage(props: { readonly path: string; readonly nav?: ReactNode }): ReactNode {
   const { path } = props
   const cut = path.lastIndexOf('/')
+  const lede = collectionDescription(path)
   return (
     <>
       <PageHeader
         title={path}
+        {...(lede === undefined ? {} : { lede })}
         eyebrow={
           cut < 0
             ? { label: 'Hub', path: '/hub' }

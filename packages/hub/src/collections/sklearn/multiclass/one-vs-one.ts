@@ -9,7 +9,8 @@ export const oneVsOne: HubEntry = defineEntry({
   summary: 'One binary classifier per pair of classes, then a vote.',
   collection: 'sklearn/multiclass',
   tags: ['classification', 'multiclass', 'reductions'],
-  datasets: ['classificationTabular', 'classification2d'],
+  datasets: ['classification2d', 'classificationTabular'],
+  dataset: 'blobs',
   ...fitEstimator(oneVsOneClassifier(), { surface: true }),
   views: [
     { record: 'decisionSurface', title: 'Decision surface' },

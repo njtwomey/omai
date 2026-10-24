@@ -6,10 +6,12 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const quadraticDiscriminantAnalysis: HubEntry = defineEntry({
   id: 'sklearn/discriminant-analysis/quadratic-discriminant-analysis',
   title: 'Quadratic discriminant analysis',
-  summary: 'Gaussian classes with their own covariances: quadratic boundaries.',
+  summary:
+    'Gaussian classes with their own covariances: quadratic boundaries, here nested ellipses around shells of one Gaussian.',
   collection: 'sklearn/discriminant-analysis',
   tags: ['classification', 'generative'],
   datasets: ['classification2d', 'classificationTabular'],
+  dataset: 'gaussianQuantiles',
   ...fitEstimator(quadraticDiscriminantAnalysisMethod(), { surface: true }),
   views: [
     { record: 'decisionSurface', title: 'Decision surface' },

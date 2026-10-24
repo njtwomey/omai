@@ -6,10 +6,11 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const linearDiscriminantAnalysis: HubEntry = defineEntry({
   id: 'sklearn/discriminant-analysis/linear-discriminant-analysis',
   title: 'Linear discriminant analysis',
-  summary: 'Gaussian classes sharing one covariance: linear boundaries.',
+  summary: 'Gaussian classes sharing one covariance: linear boundaries, which suit these stretched blobs exactly.',
   collection: 'sklearn/discriminant-analysis',
   tags: ['classification', 'generative', 'linear'],
   datasets: ['classification2d', 'classificationTabular'],
+  dataset: 'anisotropicBlobs',
   ...fitEstimator(linearDiscriminantAnalysisMethod(), { surface: true }),
   views: [
     { record: 'decisionSurface', title: 'Decision surface' },
