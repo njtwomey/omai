@@ -575,6 +575,72 @@
       "cases": 14
     },
     {
+      "fixture": "graphics/camera.json",
+      "source": "oracle/cases/graphics/camera.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "graphics/intersect.json",
+      "source": "oracle/cases/graphics/intersect.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "graphics/rasterise.json",
+      "source": "oracle/cases/graphics/rasterise.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "graphics/raycasting.json",
+      "source": "oracle/cases/graphics/raycasting.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "graphics/raytracing.json",
+      "source": "oracle/cases/graphics/raytracing.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "graphics/shading.json",
+      "source": "oracle/cases/graphics/shading.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "graphics/textures.json",
+      "source": "oracle/cases/graphics/textures.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "graphics/tonemapping.json",
+      "source": "oracle/cases/graphics/tonemapping.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "information/complexity.json",
       "source": "oracle/cases/information/complexity.py",
       "reference": {
