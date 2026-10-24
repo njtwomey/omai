@@ -1642,6 +1642,14 @@
       "cases": 186
     },
     {
+      "fixture": "methods/svm/svm.json",
+      "source": "oracle/cases/methods/svm/svm.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "methods/timeseries/matrix_profile/algorithms.json",
       "source": "oracle/cases/methods/timeseries/matrix_profile/algorithms.py",
       "reference": {
