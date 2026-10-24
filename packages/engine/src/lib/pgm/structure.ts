@@ -1,11 +1,108 @@
-import { type Structure, structure } from '../scene/index.ts'
+import {
+  type NodeRole,
+  type Structure,
+  type StructureEdge,
+  type StructureGroup,
+  type StructureNode,
+  structure,
+} from '../scene/index.ts'
+import type { Pag } from './causal/fci.ts'
+import { type Scm, scmStructure } from './causal/scm.ts'
+import type { Dag } from './graphs.ts'
+import type { Pdag } from './learning/equivalence.ts'
 import type { BayesNet } from './models/bayes-net.ts'
+import type { GeneralCrf, LinearChainCrf } from './models/crf.ts'
+import type { DynamicBayesNet } from './models/dynamic.ts'
+import type { FactorGraph } from './models/factor-graph.ts'
+import type { InfluenceDiagram } from './models/influence.ts'
+import type { Gmrf, GmrfInformation, LinearGaussianBayesNet } from './models/linear-gaussian.ts'
+import type { MarkovNetwork } from './models/markov-network.ts'
+import type { PlateModel } from './models/plates.ts'
+import type { HiddenMarkovModel, LinearDynamicalSystem } from './models/state-space.ts'
+
+/** Every model type of `pgm` that describes itself as a {@link Structure}. */
+export type PgmModel =
+  | BayesNet
+  | Dag
+  | MarkovNetwork
+  | FactorGraph
+  | LinearGaussianBayesNet
+  | Gmrf
+  | GmrfInformation
+  | DynamicBayesNet
+  | HiddenMarkovModel
+  | LinearDynamicalSystem
+  | LinearChainCrf
+  | GeneralCrf
+  | PlateModel
+  | InfluenceDiagram
+  | Scm
+  | Pdag
+  | Pag
+
+const directed = (from: string, to: string, kind: StructureEdge['kind'] = 'dependency'): StructureEdge => ({
+  from,
+  to,
+  directed: true,
+  kind,
+})
+const undirected = (from: string, to: string): StructureEdge => ({ from, to, directed: false, kind: 'dependency' })
+
+function variableNode(
+  name: string,
+  observed: readonly string[],
+  detail?: string,
+  badges?: Record<string, number>,
+  group?: string,
+): StructureNode {
+  const role: NodeRole = observed.includes(name) ? 'observed' : 'latent'
+  return {
+    id: name,
+    label: name,
+    role,
+    ...(detail === undefined ? {} : { detail }),
+    ...(badges === undefined ? {} : { badges }),
+    ...(group === undefined ? {} : { group }),
+  }
+}
+
+/** Two slices of a repeated template: nodes `<name>_<t-1>` and `<name>_<t>`, grouped by slice. */
+function slices(
+  type: string,
+  title: string,
+  names: readonly { name: string; role: NodeRole; detail?: string }[],
+  intra: readonly [string, string][],
+  inter: readonly [string, string][],
+): Structure {
+  const groups: StructureGroup[] = [
+    { id: 'slice-prev', label: 't - 1', kind: 'repeat' },
+    { id: 'slice-now', label: 't', kind: 'repeat' },
+  ]
+  const nodes: StructureNode[] = ['prev', 'now'].flatMap((s) =>
+    names.map((n) => ({
+      id: `${n.name}_${s === 'prev' ? 't-1' : 't'}`,
+      label: n.name,
+      role: n.role,
+      group: `slice-${s}`,
+      ...(n.detail === undefined ? {} : { detail: n.detail }),
+    })),
+  )
+  const edges: StructureEdge[] = [
+    ...['t-1', 't'].flatMap((t) => intra.map(([a, b]) => directed(`${a}_${t}`, `${b}_${t}`))),
+    ...inter.map(([a, b]) => directed(`${a}_t-1`, `${b}_t`)),
+  ]
+  return structure(type, nodes, edges, { groups, title, direction: 'right' })
+}
 
 /**
- * A Bayes network as a {@link Structure}: one node per variable (with its states and CPT size) and an edge from each
- * parent to its child; observed variables (by evidence) take the `observed` role.
+ * Any graphical model of `pgm` as a {@link Structure}, so it can be drawn (and its inference animated from the
+ * `message` events of a trace): Bayes networks and DAGs with directed edges, Markov networks and Gaussian Markov
+ * random fields with undirected edges, factor graphs with `factor` nodes, dynamic models (DBNs, HMMs, linear
+ * dynamical systems, linear-chain CRFs) as two grouped slices, plate models with `plate` groups, influence
+ * diagrams with `decision` and `utility` nodes, structural causal models with their exogenous noises, and the
+ * equivalence classes learned by structure search (PDAGs, and PAGs with their edge marks as labels).
  *
- * @param bn - The network.
+ * @param model - The model.
  * @param observed - Variables to show as observed.
  * @returns The structure.
  * @concept structures
@@ -16,95 +113,181 @@ import type { BayesNet } from './models/bayes-net.ts'
  * toStructure(bn).edges // => [{ from: 'a', to: 'b', directed: true, kind: 'dependency' }]
  * ```
  */
-export function toStructure(bn: BayesNet, observed: readonly string[] = []): Structure {
-  return structure(
-    'bayes-net',
-    bn.nodes.map((n) => ({
-      id: n.name,
-      label: n.name,
-      role: observed.includes(n.name) ? ('observed' as const) : ('latent' as const),
-      detail: n.states.join(', '),
-      badges: { states: n.states.length, cpt: n.cpt.length },
-    })),
-    bn.nodes.flatMap((n) =>
-      n.parents.map((p) => ({ from: p, to: n.name, directed: true, kind: 'dependency' as const })),
-    ),
-    { title: 'Bayes network', direction: 'down' },
-  )
-}
-
-/**
- * The moral graph of a Bayes network: undirected edges between each node and its parents, and between co-parents.
- *
- * @param bn - The network.
- * @returns The neighbours of each variable.
- * @example
- * ```ts
- * import { bayesNet, moralGraph } from 'whitebox-engine/pgm'
- * const p = [0.5, 0.5]
- * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: p }, { name: 'b', states: ['0', '1'], parents: [], cpt: p }, { name: 'c', states: ['0', '1'], parents: ['a', 'b'], cpt: [1, 0, 1, 0, 1, 0, 1, 0] }])
- * [...(moralGraph(bn).get('a') ?? [])].sort() // => ['b', 'c']
- * ```
- */
-export function moralGraph(bn: BayesNet): Map<string, Set<string>> {
-  const g = new Map<string, Set<string>>(bn.nodes.map((n) => [n.name, new Set<string>()]))
-  const link = (a: string, b: string): void => {
-    g.get(a)?.add(b)
-    g.get(b)?.add(a)
-  }
-  for (const n of bn.nodes) {
-    for (const p of n.parents) link(p, n.name)
-    for (let i = 0; i < n.parents.length; i++)
-      for (let j = i + 1; j < n.parents.length; j++) link(n.parents[i] as string, n.parents[j] as string)
-  }
-  return g
-}
-
-/**
- * A greedy elimination ordering on an undirected graph: repeatedly eliminate the variable with the fewest neighbours
- * (`minDegree`) or the fewest fill-in edges (`minFill`), ties broken by name.
- *
- * @param graph - Neighbours of each variable (for example a moral graph).
- * @param variables - The variables to order.
- * @param heuristic - The greedy criterion.
- * @returns The order.
- * @concept elimination-orderings
- * @example
- * ```ts
- * import { eliminationOrder } from 'whitebox-engine/pgm'
- * const g = new Map([['a', new Set(['b'])], ['b', new Set(['a', 'c'])], ['c', new Set(['b'])]])
- * eliminationOrder(g, ['a', 'b', 'c'], 'minDegree') // => ['a', 'b', 'c']
- * ```
- */
-export function eliminationOrder(
-  graph: ReadonlyMap<string, ReadonlySet<string>>,
-  variables: readonly string[],
-  heuristic: 'minDegree' | 'minFill' = 'minFill',
-): string[] {
-  const g = new Map([...graph].map(([k, v]) => [k, new Set(v)]))
-  const remaining = new Set(variables)
-  const order: string[] = []
-  const cost = (v: string): number => {
-    const ns = [...(g.get(v) ?? [])]
-    if (heuristic === 'minDegree') return ns.length
-    let fill = 0
-    for (let i = 0; i < ns.length; i++)
-      for (let j = i + 1; j < ns.length; j++) if (!g.get(ns[i] as string)?.has(ns[j] as string)) fill++
-    return fill
-  }
-  while (remaining.size > 0) {
-    const v = [...remaining].sort((a, b) => cost(a) - cost(b) || a.localeCompare(b))[0] as string
-    const ns = [...(g.get(v) ?? [])]
-    for (let i = 0; i < ns.length; i++) {
-      for (let j = i + 1; j < ns.length; j++) {
-        g.get(ns[i] as string)?.add(ns[j] as string)
-        g.get(ns[j] as string)?.add(ns[i] as string)
-      }
+export function toStructure(model: PgmModel, observed: readonly string[] = []): Structure {
+  switch (model.kind) {
+    case 'bayesNet':
+      return structure(
+        'bayes-net',
+        model.nodes.map((n) =>
+          variableNode(n.name, observed, n.states.join(', '), { states: n.states.length, cpt: n.cpt.length }),
+        ),
+        model.nodes.flatMap((n) => n.parents.map((p) => directed(p, n.name))),
+        { title: 'Bayes network', direction: 'down' },
+      )
+    case 'dag':
+      return structure(
+        'dag',
+        model.nodes.map((n) => variableNode(n.name, observed)),
+        model.nodes.flatMap((n) => n.parents.map((p) => directed(p, n.name))),
+        { title: 'DAG', direction: 'down' },
+      )
+    case 'linearGaussianBayesNet':
+      return structure(
+        'linear-gaussian',
+        model.nodes.map((n) => variableNode(n.name, observed, `N(${n.intercept} + w.pa, ${n.variance})`)),
+        model.nodes.flatMap((n) =>
+          n.parents.map((p, i) => ({ ...directed(p, n.name), label: String(n.weights[i] ?? 0) })),
+        ),
+        { title: 'Linear-Gaussian network', direction: 'down' },
+      )
+    case 'markovNetwork':
+      return structure(
+        'markov-network',
+        model.variables.map((v) => variableNode(v.name, observed, v.states.join(', '), { states: v.states.length })),
+        model.edges.map(([a, b]) => undirected(a, b)),
+        { title: 'Markov network' },
+      )
+    case 'gmrf':
+    case 'gmrfInformation': {
+      const edges: StructureEdge[] = []
+      for (let i = 0; i < model.variables.length; i++)
+        for (let j = i + 1; j < model.variables.length; j++)
+          if ((model.precision[i]?.[j] ?? 0) !== 0)
+            edges.push(undirected(model.variables[i] ?? '', model.variables[j] ?? ''))
+      return structure(
+        'gmrf',
+        model.variables.map((v) => variableNode(v, observed)),
+        edges,
+        { title: 'Gaussian Markov random field' },
+      )
     }
-    for (const w of ns) g.get(w)?.delete(v)
-    g.delete(v)
-    remaining.delete(v)
-    order.push(v)
+    case 'factorGraph':
+      return structure(
+        'factor-graph',
+        [
+          ...model.variables.map((v) => variableNode(v.name, observed, v.states.join(', '))),
+          ...model.factors.map(
+            (f, i): StructureNode => ({
+              id: `f${i}`,
+              label: `f${i}`,
+              role: 'factor',
+              detail: f.variables.join(', '),
+              badges: { entries: f.logValues.length },
+            }),
+          ),
+        ],
+        model.factors.flatMap((f, i) => f.variables.map((v) => undirected(`f${i}`, v))),
+        { title: 'Factor graph' },
+      )
+    case 'dynamicBayesNet':
+      return slices(
+        'dynamic-bayes-net',
+        'Dynamic Bayes network',
+        model.transition.map((n) => ({ name: n.name, role: observed.includes(n.name) ? 'observed' : 'latent' })),
+        model.transition.flatMap((n) => n.parents.map((p): [string, string] => [p, n.name])),
+        model.transition.flatMap((n) => n.previous.map((p): [string, string] => [p, n.name])),
+      )
+    case 'hmm':
+      return slices(
+        'hmm',
+        'Hidden Markov model',
+        [
+          { name: 'z', role: 'latent', detail: model.states.join(', ') },
+          { name: 'x', role: 'observed', detail: model.emission.kind },
+        ],
+        [['z', 'x']],
+        [['z', 'z']],
+      )
+    case 'lds':
+      return slices(
+        'linear-dynamical-system',
+        'Linear dynamical system',
+        [
+          { name: 'x', role: 'latent', detail: `state (${model.initialMean.length})` },
+          { name: 'y', role: 'observed', detail: `observation (${model.observation.length})` },
+        ],
+        [['x', 'y']],
+        [['x', 'x']],
+      )
+    case 'linearChainCrf': {
+      const ts = ['t-1', 't', 't+1']
+      return structure(
+        'linear-chain-crf',
+        ts.flatMap((t): StructureNode[] => [
+          { id: `y_${t}`, label: `y ${t}`, role: 'latent', detail: model.labels.join(', ') },
+          { id: `x_${t}`, label: `x ${t}`, role: 'observed', badges: { attributes: model.attributes.length } },
+        ]),
+        [
+          ...ts.map((t) => directed(`x_${t}`, `y_${t}`, 'data')),
+          undirected('y_t-1', 'y_t'),
+          undirected('y_t', 'y_t+1'),
+        ],
+        { title: 'Linear-chain CRF', direction: 'right' },
+      )
+    }
+    case 'crf':
+      return structure(
+        'crf',
+        model.variables.map((v) => variableNode(v.name, observed, v.states.join(', '))),
+        [],
+        { title: 'Conditional random field' },
+      )
+    case 'plateModel': {
+      const groupOf = (plates: readonly string[]): string | undefined =>
+        plates.length === 0 ? undefined : `plate:${plates.join('×')}`
+      const groups: StructureGroup[] = [
+        ...new Set(model.variables.map((v) => groupOf(v.plates)).filter((g): g is string => g !== undefined)),
+      ].map((id) => ({ id, label: id.slice('plate:'.length).split('×').join(' × '), kind: 'plate' as const }))
+      return structure(
+        'plate-model',
+        model.variables.map((v) => variableNode(v.name, observed, v.states.join(', '), undefined, groupOf(v.plates))),
+        model.variables.flatMap((v) => v.parents.map((p) => directed(p, v.name))),
+        { groups, title: 'Plate model', direction: 'down' },
+      )
+    }
+    case 'influenceDiagram':
+      return structure(
+        'influence-diagram',
+        [
+          ...model.chance.map((n) => variableNode(n.name, observed, n.states.join(', '))),
+          ...model.decisions.map(
+            (d): StructureNode => ({ id: d.name, label: d.name, role: 'decision', detail: d.states.join(', ') }),
+          ),
+          ...model.utilities.map((u): StructureNode => ({ id: u.name, label: u.name, role: 'utility' })),
+        ],
+        [
+          ...model.chance.flatMap((n) => n.parents.map((p) => directed(p, n.name))),
+          ...model.decisions.flatMap((d) => d.parents.map((p) => directed(p, d.name, 'data'))),
+          ...model.utilities.flatMap((u) => u.parents.map((p) => directed(p, u.name))),
+        ],
+        { title: 'Influence diagram', direction: 'down' },
+      )
+    case 'scm':
+      return scmStructure(model)
+    case 'pdag':
+      return structure(
+        'pdag',
+        model.nodes.map((v) => variableNode(v, observed)),
+        [...model.directed.map(([a, b]) => directed(a, b)), ...model.undirected.map(([a, b]) => undirected(a, b))],
+        { title: 'Partially directed acyclic graph', direction: 'down' },
+      )
+    case 'pag': {
+      const end = { tail: '-', arrow: '>', circle: 'o' } as const
+      const start = { tail: '-', arrow: '<', circle: 'o' } as const
+      return structure(
+        'pag',
+        model.nodes.map((v) => variableNode(v, observed)),
+        model.edges.map((e) => ({
+          from: e.a,
+          to: e.b,
+          directed: e.markB === 'arrow' && e.markA === 'tail',
+          kind: 'dependency' as const,
+          label: `${start[e.markA]}-${end[e.markB]}`,
+        })),
+        { title: 'Partial ancestral graph', direction: 'down' },
+      )
+    }
+    default:
+      return structure('unknown', [], [])
   }
-  return order
 }

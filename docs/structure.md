@@ -1537,48 +1537,94 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 
 ### 4.27 `pgm/` (tier 8): probabilistic graphical models (pgmpy, libDAI)
 
-oracle: pgmpy, networkx, brute-force enumeration, causal-learn and dowhy for the causal folder
+oracle: pgmpy, networkx, pyAgrum (loopy BP, influence diagrams), hmmlearn, sklearn-crfsuite and pytorch-crf (CRFs),
+causal-learn (GES, FCI, DirectLiNGAM), numpy and scipy (Gaussian models), brute-force enumeration
 
 A model is plain data. Every model type describes itself as a `Structure` (roles: latent, observed, factor,
 deterministic, decision, utility; plates and slices), and inference algorithms emit `message` events, so the drawing of
-a model can animate its inference. The `probprog` engines reuse these algorithms.
-- `factor.ts`: discrete factors in log space: product, sum and max marginalisation, reduction by evidence,
-  normalisation, division.
-- `gaussian-factor.ts`: canonical-form Gaussian factors: product, marginalisation, conditioning, conversion to moment
-  form.
-- `models/bayes-net.ts`: Bayes networks (nodes, states, parents, CPTs, validation), d-separation, Markov blankets,
-  ancestral sampling, joint probabilities, factors.
-- `models/markov-network.ts`: Markov networks (cliques and potentials), moralisation, Ising and Potts models, Gibbs
-  distributions.
-- `models/factor-graph.ts`: factor graphs and conversions from the other model types.
-- `models/linear-gaussian.ts`: linear-Gaussian Bayes networks and Gaussian Markov random fields.
-- `models/dynamic.ts`: dynamic Bayes networks (two-slice templates), unrolling, HMMs and linear dynamical systems as
-  DBNs.
-- `models/crf.ts`: conditional random fields (linear-chain and general), features and potentials.
-- `models/plates.ts`: plate notation and template models, grounding against data.
-- `models/influence.ts`: influence diagrams (decision and utility nodes), expected utility, value of information.
-- `structure.ts`: `toStructure` for every model type, moralisation, triangulation, elimination orderings (min-degree,
-  min-fill, weighted), junction trees, treewidth.
+a model can animate its inference. The `probprog` engines reuse these algorithms. Every discrete model (Bayes network,
+Markov network, factor graph) is accepted by every discrete inference routine. `models` and `inference` are inlined
+into `whitebox-engine/pgm`; `learning` and `causal` are namespaces.
+- `factor.ts`: discrete factors in log space (`factor`, `logFactor`, `unitFactor`, `DiscreteVariable`): product
+  (`factorProduct`, `factorProductAll`), sum and max marginalisation (`marginalise`, `maxMarginalise`,
+  `factorMarginal`), reduction by evidence (`reduceFactor`), normalisation, division (`factorDivide`, 0/0 = 0), powers,
+  permutation, lookups, argmax, entropy, `allAssignments`.
+- `gaussian-factor.ts`: canonical-form Gaussian factors: product, division, marginalisation (Schur complement),
+  conditioning (`gaussianReduce`), conversion to and from moment form, log mass and log value, permutation, and the
+  factor of a linear-Gaussian conditional.
+- `graphs.ts`: DAGs (`dag`, `topologicalOrder`, `dagEdges`, `ancestors`, `descendants`), undirected graphs, moral
+  graphs (`moralGraph`), interaction graphs of factors, connected components, graph separation.
+- `triangulation.ts`: elimination costs and greedy orderings (min-degree, min-fill, min-weight, weighted min-fill),
+  `triangulate` (fill-ins and cliques), maximum cardinality search, `isChordal`, maximal cliques (Bron-Kerbosch),
+  induced width, `treewidth` (exact by subset DP up to about 20 vertices, or heuristic), `junctionTree` (maximum
+  spanning tree on separators), `hasRunningIntersection`.
+- `structure.ts`: `toStructure` for every model type (Bayes networks, DAGs, Markov networks, factor graphs,
+  linear-Gaussian networks, GMRFs, DBNs, HMMs, LDSs, linear-chain and general CRFs, plate models, influence diagrams,
+  SCMs, PDAGs and PAGs).
+- `models/bayes-net.ts`: Bayes networks (nodes, states, parents, CPTs, validation), d-separation, Bayes-ball active
+  trails, minimal d-separators, local and pairwise independencies, Markov blankets, children, CPT rows, ancestral
+  (forward) sampling, joint probabilities, factors.
+- `models/markov-network.ts`: Markov networks (cliques and potentials), moralisation (`moralise`), neighbours and
+  separation, maximal cliques, Ising and Potts models on grids or graphs, Gibbs distributions and energies.
+- `models/factor-graph.ts`: factor graphs, `DiscreteModel`, conversions from the other model types (`toFactorGraph`,
+  `toMarkovNetwork` in markov-network.ts), evidence coding, state names, variable-factor adjacency, `isFactorTree`.
+- `models/linear-gaussian.ts`: linear-Gaussian Bayes networks (joint Gaussian, factors, posteriors, sampling,
+  log-likelihood) and Gaussian Markov random fields in moment and information form (from a linear-Gaussian network,
+  conditionals, covariance, log density, Cholesky sampling, graph, factor).
+- `models/dynamic.ts`: dynamic Bayes networks (two-slice templates), unrolling, interface variables, exact filtering by
+  the interface algorithm (`dbnFilter`).
+- `models/state-space.ts`: HMMs (categorical and full-covariance Gaussian emissions: chain potentials, sampling, the DBN
+  form) and linear dynamical systems (sampling, the unrolled linear-Gaussian network with correlated noise as
+  within-slice arcs, smoothing with the log-likelihood) as DBNs.
+- `models/crf.ts`: conditional random fields: CRFsuite-style attribute templates over token columns (offset windows,
+  skipped or CRF++-padded boundaries, bias) and attribute vocabularies with frequency cut-offs; linear-chain CRFs
+  (potentials as chains, scores, conditional log-likelihoods, marginals, Viterbi decoding, the penalised objective with
+  its gradient, first-order training as a traced run); general CRFs over arbitrary cliques with per-assignment feature
+  tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The CRF++ template parser
+  and the estimators' training algorithms stay in `text/templates.ts` and `methods/models/crf.ts`.
+- `models/plates.ts`: plate notation and template models, grounding against plate elements and relations, grounded
+  evidence, pooled (parameter-sharing) maximum likelihood.
+- `models/influence.ts`: influence diagrams (decision and utility nodes, no-forgetting information sets), policy
+  networks, expected utility, optimal policies by backward induction, value of information.
 - `inference/enumerate.ts`: brute-force enumeration.
-- `inference/elimination.ts`: variable elimination (sum-product and max-product) with intermediate factor events.
-- `inference/junction-tree.ts`: Shafer-Shenoy and HUGIN propagation.
-- `inference/belief-propagation.ts`: sum- and max-product belief propagation (tree, flooding and residual schedules,
-  damping, loopy convergence), Bethe free energy.
-- `inference/gaussian-bp.ts`: Gaussian belief propagation in information form.
-- `inference/chain.ts`: forward-backward (scaled and log space), Viterbi, posterior decoding, forward filtering and
-  backward sampling.
-- `inference/sampling.ts`: forward, rejection and likelihood-weighted sampling, Gibbs sampling on factor graphs.
-- `inference/variational.ts`: naive mean field, variational message passing, tree-reweighted bounds.
-- `inference/ep.ts`: expectation propagation on factor graphs (Gaussian and discrete sites, damping, power EP).
-- `inference/map.ts`: MAP and MPE by max-product, by LP relaxation, and by local search.
-- `learning/parameters.ts`: maximum-likelihood and Bayesian parameter estimation, EM with missing data (traced).
-- `learning/structure.ts`: Chow-Liu trees, the PC algorithm, hill climbing with BIC and BDeu, scoring.
-- `causal/scm.ts`: structural causal models (assignments plus noise), sampling, `toStructure`.
-- `causal/interventions.ts`: the do-operator (graph surgery), mutilated models, interventional distributions.
-- `causal/identification.ts`: back-door and front-door criteria, adjustment sets, simple ID-algorithm cases,
-  instrumental-variable checks.
-- `causal/counterfactuals.ts`: abduction, action and prediction; twin networks.
-- `causal/discovery.ts`: PC, FCI, GES, LiNGAM and NOTEARS.
+- `inference/elimination.ts`: variable elimination (sum-product and max-product with traceback) with intermediate factor
+  events, `logPartition`, `mapQuery`.
+- `inference/junction-tree.ts`: Shafer-Shenoy and HUGIN propagation (sum and max), cross-clique queries, marginals, MAP.
+- `inference/belief-propagation.ts`: sum- and max-product belief propagation (tree, flooding, sequential and residual
+  schedules, damping, loopy convergence), Bethe free energy.
+- `inference/gaussian-bp.ts`: Gaussian belief propagation in information form, walk-summability.
+- `inference/chain.ts`: forward-backward (scaled and log space, pairwise posteriors), Viterbi, posterior decoding,
+  forward filtering and backward sampling.
+- `inference/sampling.ts`: forward (`ancestralSample` in models/bayes-net.ts), rejection and likelihood-weighted
+  sampling with effective sample sizes, Gibbs sampling on factor graphs, weighted marginals, approximate queries.
+- `inference/variational.ts`: naive mean field, variational message passing (on discrete factor graphs, where it has
+  the fixed points of mean field), tree-reweighted belief propagation and its upper bound with spanning-tree edge
+  probabilities. TODO: VMP on conjugate-exponential (Dirichlet, Gaussian) nodes.
+- `inference/ep.ts`: expectation propagation on factor graphs (discrete fully factorised sites; Gaussian sites of a
+  latent-Gaussian model: probit, Gaussian and quadrature sites; damping, power EP).
+- `inference/map.ts`: MAP and MPE by max-product (elimination and junction trees elsewhere; loopy BP decoding here), by
+  LP relaxation (MPLP on its dual, with the integrality gap), and by local search (ICM with restarts).
+- `learning/parameters.ts`: state counts, maximum-likelihood and Bayesian (BDeu, K2, Dirichlet) parameter estimation,
+  data log-likelihood, EM with missing data and latent variables (traced), linear-Gaussian least squares.
+- `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
+  BIC and AIC.
+- `learning/independence.ts`: chi-square and G tests (stratified), Fisher z and partial-correlation tests, oracles.
+- `learning/equivalence.ts`: PDAGs, skeletons, immoralities, Markov equivalence, Meek's rules, CPDAGs, consistent
+  extensions, structural Hamming distance.
+- `learning/structure.ts`: Chow-Liu trees (and TAN), the PC algorithm (stable; first or union separating sets), hill
+  climbing with any score (BIC, BDeu, ...), tabu list and parent limit, mutual information.
+- `causal/scm.ts`: structural causal models (discrete and linear assignments plus noise), sampling, induced Bayes and
+  linear-Gaussian networks, `scmStructure` (also through `toStructure`).
+- `causal/interventions.ts`: the do-operator (graph surgery), mutilated models, interventional distributions and
+  moments, average causal effects.
+- `causal/identification.ts`: back-door and front-door criteria, adjustment sets (all minimal, minimal with latents),
+  the adjustment formulas, simple ID-algorithm cases (`identifyEffect`), instrumental-variable checks.
+- `causal/counterfactuals.ts`: abduction, action and prediction; twin networks; probabilities of necessity and
+  sufficiency; linear-Gaussian counterfactuals.
+- `causal/discovery.ts`: PC (re-exported from `learning`), GES, DirectLiNGAM (least-squares effects; TODO:
+  causal-learn's adaptive-lasso pruning, which needs LARS) and NOTEARS (projected-gradient inner solves; switch to
+  `optim`'s L-BFGS-B once it exists).
+- `causal/fci.ts`: FCI with Possible-D-Sep pruning and Zhang's rules R0-R10 (R4 from the separating sets), PAGs.
 
 ### 4.28 `metrics/` (tier 8): evaluation metrics (scikit-learn, torchmetrics)
 

@@ -1,24 +1,36 @@
-import { maxOf, WhiteboxError } from '../../base/index.ts'
-import { nullTracer, startRun, type TracePolicy, type Tracer } from '../../trace/index.ts'
+import { WhiteboxError } from '../../base/index.ts'
+import { nullTracer, type RunHandle, startRun, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import {
   type Factor,
   factorArgmax,
-  factorProduct,
-  factorValues,
+  factorMarginal,
+  factorProductAll,
+  logFactorAt,
   logTotal,
   marginalise,
+  maxMarginalise,
   normaliseFactor,
   reduceFactor,
 } from '../factor.ts'
-import { type BayesNet, bayesFactors, bayesNode } from '../models/bayes-net.ts'
-import { eliminationOrder, moralGraph } from '../structure.ts'
+import { interactionGraph } from '../graphs.ts'
+import {
+  type DiscreteModel,
+  evidenceIndices,
+  modelFactors,
+  modelVariable,
+  modelVariables,
+  stateNames,
+} from '../models/factor-graph.ts'
+import { type EliminationHeuristic, eliminationOrder } from '../triangulation.ts'
 
-/** Options of {@link variableElimination}. */
+/** Options of {@link variableElimination} and the other elimination routines. */
 export interface EliminationOptions {
   /** Observed states by variable (state names or indices). */
   readonly evidence?: Readonly<Record<string, string | number>>
-  /** The elimination order of the hidden variables (default: greedy min-fill on the moral graph). */
+  /** The elimination order of the hidden variables (default: greedy by `heuristic` on the interaction graph). */
   readonly order?: readonly string[]
+  /** The greedy ordering criterion when no order is given (default `minFill`). */
+  readonly heuristic?: EliminationHeuristic
   /** Where to send one `message` event per eliminated variable. */
   readonly tracer?: Tracer
   /** What to record (messages are recorded when the policy selects them). */
@@ -27,9 +39,9 @@ export interface EliminationOptions {
 
 /** Result of {@link variableElimination}. */
 export interface EliminationResult {
-  /** The posterior over the query variables (normalised). */
+  /** The posterior over the query variables (normalised), in query order. */
   readonly posterior: Factor
-  /** log P(evidence). */
+  /** log P(evidence) for a Bayes network; log of the reduced partition function for other models. */
   readonly logEvidence: number
   /** The order in which hidden variables were eliminated. */
   readonly order: readonly string[]
@@ -37,27 +49,79 @@ export interface EliminationResult {
   readonly largestFactor: number
 }
 
-function evidenceIndices(bn: BayesNet, evidence: Readonly<Record<string, string | number>>): Record<string, number> {
-  return Object.fromEntries(
-    Object.entries(evidence).map(([k, v]) => {
-      const states = bayesNode(bn, k).states
-      const i = typeof v === 'number' ? v : states.indexOf(v)
-      if (i < 0 || i >= states.length) throw new WhiteboxError('value', `evidence: ${k} has no state ${String(v)}`)
-      return [k, i]
-    }),
-  )
+interface Prepared {
+  readonly factors: Factor[]
+  readonly evidence: Record<string, number>
+  readonly order: string[]
+  readonly run: RunHandle
+}
+
+/** Reduce the factors by the evidence, choose the order of the hidden variables and start the traced run. */
+function prepare(model: DiscreteModel, keep: readonly string[], options: EliminationOptions, name: string): Prepared {
+  const evidence = evidenceIndices(model, options.evidence ?? {})
+  for (const q of keep) {
+    modelVariable(model, q)
+    if (q in evidence) throw new WhiteboxError('value', `${name}: ${q} is both queried and observed`)
+  }
+  const names = modelVariables(model).map((v) => v.name)
+  const hidden = names.filter((v) => !keep.includes(v) && !(v in evidence))
+  const all = modelFactors(model)
+  const card = Object.fromEntries(modelVariables(model).map((v) => [v.name, v.states.length]))
+  const order =
+    options.order === undefined
+      ? eliminationOrder(interactionGraph(all, names), hidden, options.heuristic ?? 'minFill', card)
+      : [...options.order]
+  const missing = hidden.filter((v) => !order.includes(v))
+  if (missing.length > 0) throw new WhiteboxError('value', `${name}: the order misses ${missing.join(', ')}`)
+  const run = startRun(options.tracer ?? nullTracer, {
+    name,
+    seed: null,
+    config: { query: [...keep], order: [...order] },
+    ...(options.policy === undefined ? {} : { policy: options.policy }),
+  })
+  return { factors: all.map((f) => reduceFactor(f, evidence)), evidence, order, run }
 }
 
 /**
- * Exact inference by variable elimination (sum-product): reduce the CPT factors by the evidence, then eliminate the
- * hidden variables one at a time, multiplying the factors that mention each and summing it out. Each elimination is
- * recorded as a `message` event (the variable, the scope of the new factor and its size), so a drawing of the network
- * can replay the computation.
+ * Eliminate variables one at a time, recording each step; returns the remaining factors and the product factor formed
+ * at each step (for max-product traceback).
+ */
+function eliminateAll(
+  p: Prepared,
+  mode: 'sum' | 'max',
+): { factors: Factor[]; products: Map<string, Factor>; largest: number } {
+  let factors = p.factors
+  const products = new Map<string, Factor>()
+  let largest = 0
+  for (const [step, v] of p.order.entries()) {
+    const involved = factors.filter((f) => f.variables.includes(v))
+    if (involved.length === 0) continue
+    const product = factorProductAll(involved)
+    products.set(v, product)
+    largest = Math.max(largest, product.logValues.length)
+    const message = mode === 'sum' ? marginalise(product, [v]) : maxMarginalise(product, [v])
+    factors = [...factors.filter((f) => !f.variables.includes(v)), message]
+    p.run.message(
+      step,
+      mode === 'sum' ? 'eliminate' : 'maxEliminate',
+      { variable: v, scope: [...message.variables], size: message.logValues.length, factors: involved.length },
+      { from: v },
+    )
+  }
+  return { factors, products, largest }
+}
+
+/**
+ * Exact inference by variable elimination (sum-product): reduce the factors by the evidence, then eliminate the hidden
+ * variables one at a time, multiplying the factors that mention each and summing it out. Works for Bayes networks,
+ * Markov networks and factor graphs. Each elimination is recorded as a `message` event (the variable, the scope of the
+ * new factor and its size), so a drawing of the network can replay the computation.
  *
- * @param bn - The network.
+ * @param model - The model.
  * @param query - The query variables.
- * @param options - Evidence, elimination order and tracer.
+ * @param options - Evidence, elimination order or heuristic, and tracer.
  * @returns The posterior over the query, log P(evidence), the order and the largest factor size.
+ * @throws WhiteboxError with code `value` for unknown or observed query variables, or an incomplete order.
  * @concept variable-elimination
  * @example
  * ```ts
@@ -70,79 +134,108 @@ function evidenceIndices(bn: BayesNet, evidence: Readonly<Record<string, string 
  * ```
  */
 export function variableElimination(
-  bn: BayesNet,
+  model: DiscreteModel,
   query: readonly string[],
   options: EliminationOptions = {},
 ): EliminationResult {
-  const evidence = evidenceIndices(bn, options.evidence ?? {})
-  for (const q of query) {
-    bayesNode(bn, q)
-    if (q in evidence) throw new WhiteboxError('value', `variableElimination: ${q} is both queried and observed`)
+  const p = prepare(model, query, options, 'variableElimination')
+  const { factors, largest } = eliminateAll(p, 'sum')
+  const joint = factorProductAll(factors)
+  const restricted = factorMarginal(joint, [...query])
+  p.run.end('completed', p.order.length, { largestFactor: largest })
+  return {
+    posterior: normaliseFactor(restricted),
+    logEvidence: logTotal(restricted),
+    order: p.order,
+    largestFactor: largest,
   }
-  let factors = bayesFactors(bn).map((f) => reduceFactor(f, evidence))
-  const hidden = bn.nodes.map((n) => n.name).filter((v) => !query.includes(v) && !(v in evidence))
-  const order = options.order ?? eliminationOrder(moralGraph(bn), hidden)
-  const run = startRun(options.tracer ?? nullTracer, {
-    name: 'variableElimination',
-    seed: null,
-    config: { query: [...query], order: [...order] },
-    ...(options.policy === undefined ? {} : { policy: options.policy }),
-  })
-  let largest = 0
-  order.forEach((v, step) => {
-    const involved = factors.filter((f) => f.variables.includes(v))
-    if (involved.length === 0) return
-    const product = involved.reduce((a, b) => factorProduct(a, b))
-    largest = Math.max(largest, product.logValues.length)
-    const message = marginalise(product, [v])
-    factors = [...factors.filter((f) => !f.variables.includes(v)), message]
-    run.message(
-      step,
-      'eliminate',
-      { variable: v, scope: [...message.variables], size: message.logValues.length, factors: involved.length },
-      { from: v },
-    )
-  })
-  const joint = factors.reduce((a, b) => factorProduct(a, b))
-  // Put the query variables in the requested order and drop any constant (empty-scope) parts.
-  const restricted = marginalise(
-    joint,
-    joint.variables.filter((v) => !query.includes(v)),
-  )
-  const ordered = reorder(restricted, query)
-  run.end('completed', order.length, { largestFactor: largest })
-  return { posterior: normaliseFactor(ordered), logEvidence: logTotal(ordered), order, largestFactor: largest }
-}
-
-/** The same factor over the variables in a given order. */
-function reorder(f: Factor, variables: readonly string[]): Factor {
-  if (f.variables.every((v, i) => v === variables[i])) return f
-  const card = variables.map((v) => f.cardinality[f.variables.indexOf(v)] ?? 1)
-  const values: number[] = []
-  const total = card.reduce((a, b) => a * b, 1)
-  for (let i = 0; i < total; i++) {
-    let rest = i
-    const assignment: Record<string, number> = {}
-    for (let k = variables.length - 1; k >= 0; k--) {
-      assignment[variables[k] as string] = rest % (card[k] ?? 1)
-      rest = Math.floor(rest / (card[k] ?? 1))
-    }
-    let idx = 0
-    for (let k = 0; k < f.variables.length; k++)
-      idx = idx * (f.cardinality[k] ?? 1) + (assignment[f.variables[k] as string] ?? 0)
-    values.push(f.logValues[idx] ?? Number.NEGATIVE_INFINITY)
-  }
-  return { variables: [...variables], cardinality: card, logValues: Float64Array.from(values) }
 }
 
 /**
- * The most probable joint assignment of the query variables given evidence: the mode of their posterior, with every
- * other hidden variable summed out (the marginal MAP of the query, as pgmpy's map_query).
+ * The log partition function of a model, log Z = log sum_x prod_c psi_c(x_c), by variable elimination; with evidence,
+ * the log of the partition function of the reduced model (log P(evidence) for a Bayes network).
  *
- * @param bn - The network.
+ * @param model - The model.
+ * @param options - Evidence, order and tracer.
+ * @returns log Z.
+ * @concept partition-function
+ * @example
+ * ```ts
+ * import { isingModel, logPartition } from 'whitebox-engine/pgm'
+ * logPartition(isingModel({ rows: 1, cols: 2, coupling: 0 })) === Math.log(4) // => true
+ * ```
+ */
+export function logPartition(model: DiscreteModel, options: EliminationOptions = {}): number {
+  const p = prepare(model, [], options, 'logPartition')
+  const { factors, largest } = eliminateAll(p, 'sum')
+  p.run.end('completed', p.order.length, { largestFactor: largest })
+  return logTotal(factorProductAll(factors))
+}
+
+/** Result of {@link maxProductElimination}. */
+export interface MaxProductResult {
+  /** The most probable joint assignment of every unobserved variable (state names). */
+  readonly assignment: Record<string, string>
+  /** The same assignment as state indices. */
+  readonly indices: Record<string, number>
+  /** log of the unnormalised probability of the assignment with the evidence (log P(x, e) for a Bayes network). */
+  readonly logValue: number
+  /** The order of elimination. */
+  readonly order: readonly string[]
+}
+
+/**
+ * The most probable explanation (MPE) by max-product variable elimination: maximise the hidden variables out one at a
+ * time, then recover the maximising assignment by traceback in reverse elimination order (Koller and Friedman,
+ * algorithm 13.1). Ties go to the first state.
+ *
+ * @param model - The model.
+ * @param options - Evidence, order and tracer (`maxEliminate` messages).
+ * @returns The assignment and its log value.
+ * @concept map-inference
+ * @example
+ * ```ts
+ * import { bayesNet, maxProductElimination } from 'whitebox-engine/pgm'
+ * const bn = bayesNet([
+ *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
+ *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
+ * ])
+ * maxProductElimination(bn, { evidence: { wet: 'yes' } }).assignment // => { rain: 'yes' }
+ * ```
+ */
+export function maxProductElimination(model: DiscreteModel, options: EliminationOptions = {}): MaxProductResult {
+  const p = prepare(model, [], options, 'maxProductElimination')
+  const { factors, products, largest } = eliminateAll(p, 'max')
+  const logValue = factorProductAll(factors).logValues[0] ?? Number.NEGATIVE_INFINITY
+  const indices: Record<string, number> = {}
+  for (const v of [...p.order].reverse()) {
+    const product = products.get(v)
+    if (product === undefined) {
+      indices[v] = 0
+      continue
+    }
+    const fixed = Object.fromEntries(product.variables.filter((w) => w !== v).map((w) => [w, indices[w] ?? 0]))
+    indices[v] = factorArgmax(reduceFactor(product, fixed))[v] ?? 0
+  }
+  p.run.end('completed', p.order.length, { largestFactor: largest, logValue })
+  const ordered = Object.fromEntries(
+    modelVariables(model)
+      .map((v) => v.name)
+      .filter((v) => v in indices)
+      .map((v) => [v, indices[v] ?? 0]),
+  )
+  return { assignment: stateNames(model, ordered), indices: ordered, logValue, order: p.order }
+}
+
+/**
+ * The most probable joint assignment of the query variables given evidence. When the query is every unobserved
+ * variable this is the MPE, found by max-product elimination; otherwise it is the marginal MAP of the query (every
+ * other hidden variable summed out), the mode of the query's posterior, as pgmpy's `map_query`.
+ *
+ * @param model - The model.
  * @param query - The variables to assign.
  * @param options - Evidence, order and tracer.
- * @returns The state names of the most probable assignment, and its posterior probability.
+ * @returns The state names of the most probable assignment (in query order), and its posterior probability.
  * @example
  * ```ts
  * import { bayesNet, mapQuery } from 'whitebox-engine/pgm'
@@ -151,15 +244,23 @@ function reorder(f: Factor, variables: readonly string[]): Factor {
  * ```
  */
 export function mapQuery(
-  bn: BayesNet,
+  model: DiscreteModel,
   query: readonly string[],
   options: EliminationOptions = {},
 ): { readonly assignment: Record<string, string>; readonly probability: number } {
-  const { posterior } = variableElimination(bn, query, options)
-  const best = factorArgmax(posterior)
-  const probability = maxOf(factorValues(posterior))
-  return {
-    assignment: Object.fromEntries(Object.entries(best).map(([k, i]) => [k, bayesNode(bn, k).states[i] ?? String(i)])),
-    probability,
+  const evidence = evidenceIndices(model, options.evidence ?? {})
+  const unobserved = modelVariables(model).filter((v) => !(v.name in evidence))
+  const ordered = (a: Readonly<Record<string, string>>): Record<string, string> =>
+    Object.fromEntries(query.map((q) => [q, a[q] ?? '']))
+  if (unobserved.length === query.length && unobserved.every((v) => query.includes(v.name))) {
+    // Max-product eliminates every unobserved variable: a given order is used when it lists them all.
+    const { order, ...rest } = options
+    const complete = order !== undefined && unobserved.every((v) => order.includes(v.name))
+    const best = maxProductElimination(model, complete ? options : rest)
+    const logEvidence = logPartition(model, options.evidence === undefined ? {} : { evidence: options.evidence })
+    return { assignment: ordered(best.assignment), probability: Math.exp(best.logValue - logEvidence) }
   }
+  const { posterior } = variableElimination(model, query, options)
+  const best = factorArgmax(posterior)
+  return { assignment: ordered(stateNames(model, best)), probability: Math.exp(logFactorAt(posterior, best)) }
 }

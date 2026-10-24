@@ -1156,12 +1156,212 @@
       "cases": 9
     },
     {
+      "fixture": "pgm/causal/discovery.json",
+      "source": "oracle/cases/pgm/causal/discovery.py",
+      "reference": {
+        "causal-learn": "0.1.4.8"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "pgm/causal/fci.json",
+      "source": "oracle/cases/pgm/causal/fci.py",
+      "reference": {
+        "causal-learn": "0.1.4.8"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "pgm/causal/identification.json",
+      "source": "oracle/cases/pgm/causal/identification.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "pgm/causal/interventions.json",
+      "source": "oracle/cases/pgm/causal/interventions.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "pgm/gaussian_factor.json",
+      "source": "oracle/cases/pgm/gaussian_factor.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "pgm/inference/belief_propagation.json",
+      "source": "oracle/cases/pgm/inference/belief_propagation.py",
+      "reference": {
+        "pgmpy": "1.1.2",
+        "pyagrum": "3.3.0"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "pgm/inference/chain.json",
+      "source": "oracle/cases/pgm/inference/chain.py",
+      "reference": {
+        "hmmlearn": "0.3.3"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "pgm/inference/elimination.json",
+      "source": "oracle/cases/pgm/inference/elimination.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "pgm/inference/gaussian_bp.json",
+      "source": "oracle/cases/pgm/inference/gaussian_bp.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "networkx": "3.7"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "pgm/inference/junction_tree.json",
+      "source": "oracle/cases/pgm/inference/junction_tree.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "pgm/inference/map.json",
+      "source": "oracle/cases/pgm/inference/map.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "pgm/learning/equivalence.json",
+      "source": "oracle/cases/pgm/learning/equivalence.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "pgm/learning/independence.json",
+      "source": "oracle/cases/pgm/learning/independence.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "pgm/learning/parameters.json",
+      "source": "oracle/cases/pgm/learning/parameters.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "pgm/learning/scores.json",
+      "source": "oracle/cases/pgm/learning/scores.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "pgm/learning/structure.json",
+      "source": "oracle/cases/pgm/learning/structure.py",
+      "reference": {
+        "pgmpy": "1.1.2",
+        "networkx": "3.7"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "pgm/models/bayes_net.json",
+      "source": "oracle/cases/pgm/models/bayes_net.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "pgm/models/crf.json",
+      "source": "oracle/cases/pgm/models/crf.py",
+      "reference": {
+        "pytorch-crf": "0.7.2",
+        "sklearn-crfsuite": "0.5.0"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "pgm/models/dynamic.json",
+      "source": "oracle/cases/pgm/models/dynamic.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "pgm/models/influence.json",
+      "source": "oracle/cases/pgm/models/influence.py",
+      "reference": {
+        "pyagrum": "3.3.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "pgm/models/linear_gaussian.json",
+      "source": "oracle/cases/pgm/models/linear_gaussian.py",
+      "reference": {
+        "pgmpy": "1.1.2",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "pgm/models/markov_network.json",
+      "source": "oracle/cases/pgm/models/markov_network.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "pgm/models/state_space.json",
+      "source": "oracle/cases/pgm/models/state_space.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "pgm/networks.json",
       "source": "oracle/cases/pgm/networks.py",
       "reference": {
         "pgmpy": "1.1.2"
       },
       "cases": 36
+    },
+    {
+      "fixture": "pgm/triangulation.json",
+      "source": "oracle/cases/pgm/triangulation.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 9
     },
     {
       "fixture": "tensor/ops/arithmetic.json",
