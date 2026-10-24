@@ -27,6 +27,6 @@ describe('maths', () => {
     expect(numberTex(Number.NaN)).toBe('\\text{NaN}')
     expect(numberTex(2.5e7)).toBe('2.5 \\times 10^{7}')
     expect(bindTex('{{ k }} and {{missing}}', { k: 'x' })).toBe('\\htmlClass{wb-slot}{x} and missing')
-    expect(derivationTex([{ tex: 'a', note: '{bad}' }])).toContain('\\text{bad}')
+    expect(derivationTex([{ tex: 'a', note: '{bad}' }])).toContain('\\text{\\{bad\\}}')
   })
 })
