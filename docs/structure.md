@@ -1077,7 +1077,8 @@ Reparameterisation comes in three forms:
 - `continuous/gamma.ts`: `gamma`, `inverseGamma`, `exponential`, `chi2`, `weibull`, `erlang`, `inverseGaussian`.
 - `continuous/bounded.ts`: `uniform`, `beta`, `kumaraswamy`, `triangular`, `logitNormal`.
 - `continuous/extreme.ts`: `gumbel`, `generalisedExtremeValue`, `generalisedPareto`, `frechet`.
-- `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT` (Poisson-weighted series).
+- `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT`, `noncentralF`
+  (Poisson-weighted series).
 - `continuous/studentised-range.ts`: `studentisedRange` (double integrals by a product double-exponential rule).
 - `discrete/binary.ts`: `bernoulli`, `binomial`, `betaBinomial`.
 - `discrete/categorical.ts`: `categorical`, `oneHotCategorical`, `discreteUniform`, `orderedLogistic`, `orderedProbit`,
@@ -1097,7 +1098,7 @@ Reparameterisation comes in three forms:
 - `multivariate/archimedean-copulas.ts`: `claytonCopula`, `gumbelCopula`, `frankCopula` in any dimension (CDFs,
   closed-form or mixed-partial densities, Marshall-Olkin and conditional sampling, Kendall's tau).
 - `multivariate/copula-fitting.ts`: `pseudoObservations`, `kendallTauMatrix`, `fitCopula` (inversion of Kendall's
-  tau).
+  tau). Its tau-b stays private: stats' `kendallTau` is tier 7, above dists.
 - `compose/mixture.ts`: `Mixture`, `mixture`, `mixtureSameFamily`, `responsibilities` (implicitly reparameterised
   draws, numerical quantiles, mode and entropy for univariate mixtures).
 - `compose/structure.ts`: `independent`, `truncated` (continuous and discrete bases), `censored`, `transformed`,
@@ -1219,62 +1220,94 @@ coefficients, and so are the conversions between them, the responses and the dis
 
 ### 4.17 `stats/` (tier 7): statistics (scipy.stats, statsmodels, pingouin)
 
-oracle: scipy.stats, statsmodels, pingouin
+oracle: scipy.stats, statsmodels, pingouin, patsy (smoothing bases), pandas (running windows)
 
 Every test in `tests/` returns a `TestResult` with the statistic, p-value, effect size and interval, the alternative,
-the method name and the assumptions it checked.
+the method name and the assumptions it checked. Iterative procedures (permutation and bootstrap resampling, Newton
+maximum likelihood, RANSAC, SPRT) are traced `Algorithm`s; randomness comes from explicit `Key`s. Private helpers:
+`_util.ts` (input coercion, normal/t/chi-square/F tails, quadrature), `_linear.ts` (least squares and small symmetric
+linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisation); `tests/_shapiro.ts`,
+`tests/_kolmogorov.ts`, `tests/_cvm.ts` (null distributions).
 - `descriptive.ts`: `mean`, `variance` (two-pass, `ddof`), `std`, `skewness`, `kurtosis`, `moment`, weighted versions,
   `describe`, `zscore`, `sem`, `mode`, `geometricMean`, `harmonicMean`.
-- `running.ts`: Welford moments (`push`, `merge`), P-squared quantiles, exponentially weighted moments.
-- `quantiles.ts`: `quantile` (the nine Hyndman-Fan methods), `median`, `iqr`, `percentileOfScore`, `ecdf`,
-  `medianAbsoluteDeviation`.
-- `histograms.ts`: `histogram`, `histogramBinEdges` (auto, Freedman-Diaconis, Scott, Sturges, Doane, Knuth),
-  `histogram2d`, `binnedStatistic`.
-- `correlation.ts`: `pearson`, `spearman`, `kendallTau`, `cov`, `corrcoef`, `partialCorrelation`, `pointBiserial`,
-  `distanceCorrelation`, each with intervals.
+- `running.ts`: Welford moments (`momentState`, `push`, `pushAll`, `merge`, `momentsOf`), P-squared quantiles
+  (`p2Quantile`, `p2Push`, `p2Estimate`), exponentially weighted moments (`ewmState`, `ewmPush`, `ewmMean`, `ewmVar`,
+  `ewmStd`).
+- `quantiles.ts`: `quantile` (the nine Hyndman-Fan methods), `median`, `iqr`, `percentileOfScore`, `ecdf` (with the
+  Greenwood interval), `medianAbsoluteDeviation`.
+- `histograms.ts`: `histogram`, `histogramBinEdges` (auto, Freedman-Diaconis, Scott, Sturges, Doane, Rice, sqrt,
+  Knuth), `histogram2d`, `binnedStatistic`.
+- `correlation.ts`: `pearson`, `spearman`, `kendallTau` (tau-b and tau-c, O(n log n), exact null without ties), `cov`
+  (frequency and analytic weights), `corrcoef`, `partialCorrelation`, `pointBiserial`, `distanceCorrelation`, each with
+  intervals. metrics' `pearsonCorrelation`, `spearmanCorrelation` and `kendallTau` delegate here. dists'
+  `kendallTauMatrix` (copula fitting, tier 6) keeps a private tau-b because it cannot import this tier.
 - `covariance.ts`: `empiricalCovariance`, `ledoitWolf`, `oas`, `shrunkCovariance`.
-- `density.ts`: `gaussianKde` (univariate and multivariate), bandwidth rules and cross-validation, boundary correction.
-- `ranks.ts`: `rankdata`, tie corrections.
-- `transforms.ts`: `boxcox`, `yeojohnson` (maximum-likelihood lambda), inverses, `standardise`.
-- `tests/result.ts`: `TestResult` helpers, alternatives, `formatTest`, assumption checks shared by tests.
-- `tests/means.ts`: one-sample, independent (pooled and Welch) and paired t tests, z tests, one-way and Welch ANOVA,
-  Tukey HSD, repeated-measures ANOVA.
-- `tests/contingency.ts`: chi-square and G tests, Fisher's exact test, McNemar, Cochran's Q, odds and risk ratios.
-- `tests/nonparametric.ts`: Mann-Whitney U, Wilcoxon signed-rank, Kruskal-Wallis, Friedman, Nemenyi, sign test,
-  Brunner-Munzel.
-- `tests/distribution.ts`: one-sample Kolmogorov-Smirnov, Anderson-Darling, Shapiro-Wilk, Jarque-Bera, chi-square
-  goodness of fit, Lilliefors.
-- `tests/two-sample.ts`: two-sample Kolmogorov-Smirnov, Cramer-von Mises, k-sample Anderson-Darling, energy distance,
-  Wasserstein permutation tests, Epps-Singleton, classifier two-sample tests (any classifier passed in).
-- `tests/kernel.ts`: kernel two-sample (MMD with permutation and asymptotic nulls) and independence (HSIC) tests; they
-  take any kernel and default to a Gaussian kernel with the median heuristic.
-- `tests/independence.ts`: distance covariance test, Hoeffding's D, mutual-information permutation test, conditional
-  independence tests (partial correlation, G-test, kernel CI) used by causal discovery.
-- `tests/multivariate.ts`: Hotelling's T-squared, MANOVA, Box's M, Mardia's multivariate normality.
-- `tests/proportions.ts`: binomial test, proportion z tests, proportion intervals (Wald, Wilson, Agresti-Coull,
-  Clopper-Pearson, Jeffreys), difference of proportions.
-- `tests/timeseries.ts`: Ljung-Box, Durbin-Watson, augmented Dickey-Fuller, KPSS, runs test.
-- `tests/equivalence.ts`: two one-sided tests (TOST) for means and proportions.
-- `tests/bayesian.ts`: Bayes factors for t tests (JZS), binomial and correlation tests, Bayesian A/B comparison of
-  proportions, region of practical equivalence.
-- `tests/sequential.ts`: SPRT, group-sequential alpha spending, always-valid p-values and confidence sequences.
-- `tests/multiple.ts`: Bonferroni, Holm, Hochberg, Benjamini-Hochberg, Benjamini-Yekutieli, combining p-values.
-- `effect-size.ts`: Cohen's d, Hedges' g, Glass's delta, Cohen's h, Cramer's V, eta and omega squared, Cliff's delta,
-  with intervals.
-- `power.ts`: power and sample size for t, proportion, ANOVA and chi-square tests, simulation-based power.
-- `resampling.ts`: `bootstrap` (percentile, basic, BCa, studentised), `permutationTest`, `jackknife`, Monte Carlo
-  tests.
-- `extremes.ts`: generalised Pareto and GEV fitting, peaks over threshold, return levels, mean-excess plots.
-- `robust.ts`: trimmed and winsorised statistics, Huber and Tukey M-estimators, `ransac` (traced, generic).
-- `smoothing/bases.ts`: B-splines (`bs`), natural cubic splines (`ns`), P-splines (`ps`), cubic regression splines
-  (`cr`), cyclic splines (`cc`), thin-plate regression splines (`tp`, `ts`), Duchon splines, Gaussian-process smooths,
-  random-effect and factor-smooth bases, tensor products (`te`, `ti`), with knot placement rules.
-- `smoothing/penalties.ts`: difference and derivative penalties, null spaces, shrinkage, shape-constraint
-  reparameterisations (monotone, convex), sum-to-zero constraints.
-- `smoothing/smoothers.ts`: `loess`, `lowess`, kernel smoothers (Nadaraya-Watson, local linear), running statistics,
-  smoothing-spline smoothers.
-- `fit.ts`: closed-form and Newton maximum-likelihood fits for the distribution families, with standard errors from the
-  observed information.
+- `density.ts`: `gaussianKde` (univariate and multivariate, weights, boundary reflection, resampling), `scottFactor`,
+  `silvermanFactor`, `bandwidthScott`, `bandwidthSilverman`, `bandwidthCriterion`, `bandwidthCrossValidation`.
+- `ranks.ts`: `rankdata`, `ranksOf`, `tieCounts`, `tieCorrection`, `tieTerm`.
+- `transforms.ts`: `boxcox`, `yeojohnson` (maximum-likelihood lambda: `boxcoxNormmax`, `yeojohnsonNormmax`, log
+  likelihoods), inverses, `standardise`.
+- `tests/result.ts`: `TestResult` helpers (`testResult`, `resolveAlternative`, `pValueFromTails`, `intervalEstimate`,
+  `waldInterval`), `formatTest`, `rejects`, assumption checks shared by tests (`levene`, `bartlett`, `fligner`,
+  `checkNormality`, `checkEqualVariances`, `checkExpectedCounts`).
+- `tests/means.ts`: `ttest1samp`, `ttestInd` (pooled and Welch), `ttestRel`, `ztest`, `fOneway`, `welchAnova`,
+  `tukeyHsd`, `rmAnova`.
+- `tests/contingency.ts`: `chi2Contingency`, `gTest`, `fisherExact` (2 x 2 exact, r x c by permutation of the
+  margins), `mcnemar`, `cochranQ`, `oddsRatio`, `relativeRisk`, `expectedFrequencies`.
+- `tests/nonparametric.ts`: `mannWhitneyU`, `wilcoxon`, `kruskal`, `friedman`, `nemenyi`, `nemenyiFriedman`,
+  `signTest`, `brunnerMunzel`.
+- `tests/distribution.ts`: `kstest`, `andersonDarling` (norm, expon, logistic, Gumbel), `shapiro`, `jarqueBera`,
+  `chisquare` and `powerDivergence`, `lilliefors` (normal and exponential), `cramervonmises`.
+- `tests/two-sample.ts`: `ks2samp`, `cramervonmises2samp`, `andersonKsamp`, `energyDistance`, `wassersteinDistance`,
+  `energyTest`, `wassersteinTest` (permutation), `eppsSingleton`, `classifierTwoSampleTest` (any classifier passed in).
+- `tests/kernel.ts`: `mmd2`, `mmdTest` (permutation and asymptotic nulls), `hsic`, `hsicTest`; they take any kernel and
+  default to `gaussianKernel` with `medianHeuristic`.
+- `tests/independence.ts`: `distanceCovarianceTest`, `hoeffdingD`, `mutualInformation` and `mutualInformationTest`,
+  conditional independence tests (`partialCorrelationTest`, `gTestConditional`, `kernelCITest`) used by causal
+  discovery.
+- `tests/multivariate.ts`: `hotellingT2`, `manova`, `boxM`, `mardia`.
+- `tests/proportions.ts`: `binomTest`, `proportionsZtest`, `proportionConfint` (Wald, Wilson, Agresti-Coull,
+  Clopper-Pearson, Jeffreys), `proportionsDifference`.
+- `tests/timeseries.ts`: `ljungBox`, `durbinWatson`, `adfuller` (with `mackinnonp`, `mackinnoncrit`), `kpss`,
+  `runsTest`.
+- `tests/equivalence.ts`: `tost`, `tostProportion`, `tostProportions`.
+- `tests/bayesian.ts`: `bayesFactorTTest` (JZS), `bayesFactorBinomial`, `bayesFactorPearson`, `bayesianAbTest`,
+  `highestDensityInterval`, `rope`.
+- `tests/sequential.ts`: `sprt` (traced `sprtAlgorithm`, `sprtBernoulli`, `sprtNormal`), `alphaSpending` with
+  `spendingFunction`, `alwaysValidPValues`, `msprt`, `confidenceSequence`.
+- `tests/multiple.ts`: `adjustPValues`/`multipleTests`, `bonferroni`, `holm`, `hochberg`, `benjaminiHochberg`,
+  `benjaminiYekutieli`, `combinePValues`.
+- `effect-size.ts`: `cohensD`, `hedgesG`, `glassDelta`, `cohensH`, `cramersV`, `etaSquared`, `omegaSquared`,
+  `cliffsDelta`, with intervals.
+- `power.ts`: `powerTTest`/`sampleSizeTTest`, `powerProportions`/`sampleSizeProportions`, `powerAnova`/
+  `sampleSizeAnova`, `powerChisquare`/`sampleSizeChisquare`, `simulatePower`.
+- `resampling.ts`: `bootstrap` (percentile, basic, BCa, studentised; traced `bootstrapAlgorithm`), `permutationTest`
+  (exact enumeration when small; traced `permutationTestAlgorithm`), `jackknife`, `monteCarloTest`.
+- `extremes.ts`: `fitGpd` and `fitGev` (`ExtremeFit`), `peaksOverThreshold` (runs declustering), `returnLevel` (delta
+  method interval), `meanExcess`.
+- `robust.ts`: `trimboth`, `trimMean`, `trimmedVariance`, `winsorize`, `winsorizedMean`, `winsorizedVariance`,
+  `mEstimateLocation`, `huber`, `tukeyBiweight`, `ransac` (traced `ransacAlgorithm`, generic in points and models).
+- `smoothing/bases.ts`: `SmoothBasis`; `bs`, `ns`, `ps`, `cr`, `cc`, `tp`, `ts`, `duchon`, `gp`, `re`, `fs`, `te`,
+  `ti`, with `placeKnots` (quantile and uniform rules).
+- `smoothing/penalties.ts`: `differencePenalty`, `derivativePenalty`, `nullSpace`, `shrinkagePenalty`,
+  `shapeConstraint` (increasing, decreasing, convex, concave reparameterisations), `sumToZeroConstraint`,
+  `constraintNullSpace`.
+- `smoothing/smoothers.ts`: `loess`, `lowess`, `nadarayaWatson`, `localLinear`, `runningStatistic`, `runningMean`,
+  `runningMedian`, `smoothingSpline` (lambda, degrees of freedom or GCV over numerics' `makeSmoothingSpline`).
+- `fit.ts`: `fitDistribution` (closed form or Newton for seventeen families) with standard errors from the
+  `observedInformation`; `newtonMle` (traced `newtonMleAlgorithm`).
+
+TODO (deferred, esoteric):
+- `tests/bayesian.ts`: the Gauss hypergeometric series behind `bayesFactorPearson` is private; move it to
+  `numerics/special` when that domain gains hypergeometric functions.
+- `tests/bayesian.ts`: `highestDensityInterval` should alias `sampling`'s HDI once that tier-7 domain has one (same
+  tier, so stats cannot import it today).
+- `tests/independence.ts`: `mutualInformation` uses a plug-in histogram estimator; alias `information`'s estimators
+  (Kraskov and friends) once they exist.
+- `tests/distribution.ts`: `andersonDarling` lacks scipy's `weibull_min` (its critical values depend on a fitted
+  shape).
+- `smoothing/bases.ts`: `tp`, `duchon` and `gp` take the full eigen-decomposition of the kernel matrix (mgcv
+  subsamples beyond 2000 points; add that when large data needs it).
 
 ### 4.18 `optim/` (tier 7): optimisation (optax, torch.optim, scipy.optimize)
 
