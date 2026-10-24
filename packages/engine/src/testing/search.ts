@@ -1,5 +1,7 @@
 // Textbook search problems for the search tests, mirroring the oracle's port of aima-python
 // (oracle/whitebox_oracle/aima_search.py). Not published.
+
+import { randint } from '../lib/random/index.ts'
 import {
   allDifferent,
   binaryConstraint,
@@ -8,6 +10,7 @@ import {
   constraint,
   csp,
   type Game,
+  type LocalSearchProblem,
   type SearchProblem,
 } from '../lib/search/index.ts'
 
@@ -178,7 +181,33 @@ export function boardGame(
   }
 }
 
-/** n-queens as a CSP: variables '0' .. 'n-1' (columns) valued by row, with an optional fixed first queen. */
+/** The number of attacking pairs of queens, one per column, rows given. */
+export function attackingPairs(rows: readonly number[]): number {
+  let count = 0
+  for (let a = 0; a < rows.length; a++) {
+    for (let b = a + 1; b < rows.length; b++) if (queensConflict(rows[a] ?? 0, a, rows[b] ?? 0, b)) count += 1
+  }
+  return count
+}
+
+/** Complete-state n-queens for local search (AIMA 4.1.1): move one queen within its column; value is minus the attacks. */
+export function queensLocal(n: number, initial?: readonly number[]): LocalSearchProblem<readonly number[]> {
+  return {
+    ...(initial === undefined ? {} : { initial }),
+    random: (k) => Array.from(randint(k, [n], 0, n).data),
+    neighbours: (s) => {
+      const out: number[][] = []
+      for (let c = 0; c < n; c++)
+        for (let r = 0; r < n; r++) if (r !== s[c]) out.push(s.map((x, i) => (i === c ? r : x)))
+      return out
+    },
+    value: (s) => -attackingPairs(s),
+    isGoal: (s) => attackingPairs(s) === 0,
+    key: (s) => s.join(','),
+  }
+}
+
+/** n-queens as a CSP:variables '0' .. 'n-1' (columns) valued by row, with an optional fixed first queen. */
 export function queensCsp(n: number, firstRow?: number): Csp<number> {
   const cols = Array.from({ length: n }, (_, i) => String(i))
   const rows = Array.from({ length: n }, (_, i) => i)
