@@ -1,7 +1,6 @@
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
-import type { LinprogOptions } from '../../optim/index.ts'
+import { type LinprogOptions, linprog } from '../../optim/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { solveLp } from '../_lp.ts'
 import { actionRows } from './_profiles.ts'
 import { type Equilibrium, isConstantSum, type NormalFormGame, payoffMatrices } from './game.ts'
 
@@ -30,7 +29,7 @@ function maximinLp(
 ): { x: number[]; v: number; iterations: number } {
   const k = rows.length
   const cols = rows[0]?.length ?? 0
-  const r = solveLp(
+  const r = linprog(
     {
       c: [...new Array<number>(k).fill(0), -1],
       aUb: Array.from({ length: cols }, (_, s) => [...rows.map((row) => -(row[s] ?? 0)), 1]),
