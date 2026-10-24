@@ -25,8 +25,13 @@ export interface DatasetCollection {
   readonly entries: readonly CollectionEntry[]
 }
 
-const g = (name: string, title: string, knobs?: Knobs): CollectionEntry =>
-  knobs === undefined ? { name, title, generator: name } : { name, title, generator: name, knobs }
+function g(name: string, title: string, knobs?: Knobs): CollectionEntry
+function g(name: string, title: string, generator: string, knobs: Knobs): CollectionEntry
+function g(name: string, title: string, a?: Knobs | string, b?: Knobs): CollectionEntry {
+  const generator = typeof a === 'string' ? a : name
+  const knobs = typeof a === 'string' ? b : a
+  return knobs === undefined ? { name, title, generator } : { name, title, generator, knobs }
+}
 
 /**
  * The dataset collections, by id: what hub entries name and dataset pickers offer.
@@ -77,6 +82,20 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
       g('dopplerCurve', 'Doppler'),
       g('heteroscedastic', 'Heteroscedastic noise'),
       g('quantileCurves', 'Skewed noise (quantiles)'),
+    ],
+  },
+  glm1d: {
+    id: 'glm1d',
+    title: 'Counts and positive responses in one dimension',
+    entries: [
+      g('poissonCounts', 'Poisson counts', 'glmCurve', { family: 'poisson' }),
+      g('overdispersedCounts', 'Overdispersed counts (negative binomial)', 'glmCurve', { family: 'negativeBinomial' }),
+      g('gammaResponses', 'Positive skewed (gamma)', 'glmCurve', { family: 'gamma' }),
+      g('inverseGaussianResponses', 'Positive, heavy right tail (inverse Gaussian)', 'glmCurve', {
+        family: 'inverseGaussian',
+        dispersion: 0.1,
+      }),
+      g('tweedieResponses', 'Zeros and positive amounts (Tweedie)', 'glmCurve', { family: 'tweedie' }),
     ],
   },
   regressionTabular: {

@@ -8,6 +8,7 @@ import { driftingTopics, naiveBayesCorpus, nearDuplicateCorpus, tinyShakespeare,
 import { densitySamples } from './densities.ts'
 import { hawkesProcess, inhomogeneousPoisson, poissonProcess, spatialPoisson } from './events.ts'
 import { abTest } from './experiments.ts'
+import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, kinshipTriples } from './graphs.ts'
 import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes } from './images.ts'
 import { makeClassification, makeMultilabelClassification } from './make-classification.ts'
@@ -83,6 +84,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   friedman3,
   gaussianQuantiles,
   geometricScenes,
+  glmCurve,
   graphFamilies,
   growthCurves,
   hastie10_2,
