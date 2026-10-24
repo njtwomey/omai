@@ -83,12 +83,35 @@ describe('Fourier transforms against numpy, scipy.fft and scipy.signal', () => {
                                                           p['m'] as number,
                                                         ),
                                                       )
-                                                    : pair(
-                                                        F.nudft2(t[0] as Tensor, {
-                                                          re: t[1] as Tensor,
-                                                          im: t[2] as Tensor,
-                                                        }),
-                                                      )
+                                                    : c.fn === 'nufft1'
+                                                      ? pair(
+                                                          F.nufft1(
+                                                            t[0] as Tensor,
+                                                            { re: t[1] as Tensor, im: t[2] as Tensor },
+                                                            p['m'] as number,
+                                                            {
+                                                              sign: p['sign'] as 1 | -1,
+                                                              tolerance: p['tolerance'] as number,
+                                                            },
+                                                          ),
+                                                        )
+                                                      : c.fn === 'nufft2'
+                                                        ? pair(
+                                                            F.nufft2(
+                                                              t[0] as Tensor,
+                                                              { re: t[1] as Tensor, im: t[2] as Tensor },
+                                                              {
+                                                                sign: p['sign'] as 1 | -1,
+                                                                tolerance: p['tolerance'] as number,
+                                                              },
+                                                            ),
+                                                          )
+                                                        : pair(
+                                                            F.nudft2(t[0] as Tensor, {
+                                                              re: t[1] as Tensor,
+                                                              im: t[2] as Tensor,
+                                                            }),
+                                                          )
       expectMatches(actual, c.output, c.rtol, c.atol, c.name)
     })
   }
@@ -156,5 +179,26 @@ describe('Fourier properties', () => {
     }
     expect(F.dft([1, 2, 3, 4]).re).toEqual([10, -2, -2, -2])
     expect(toFlat(F.dftMatrix(4, 'sqrtn').re)[0]).toBe(0.5)
+  })
+
+  it('the NUFFT meets its tolerance for few modes too, where the grid oversamples by more than 2 (regression)', () => {
+    // With few modes the grid is 2 w + 2 points, not 2 M; the Gaussian must be sized from that grid (it was sized for
+    // 2 M, which left errors of 1e-5 at M = 8).
+    const x = [0.3, 1.7, -2.2, 3, 5.5, -7.1]
+    const c = { re: [1, -1, 2, 0.5, 0.25, -3], im: [0, 0.5, -1, 2, 1, 0] }
+    for (const m of [1, 2, 5, 8, 16])
+      for (const tolerance of [1e-4, 1e-8, 1e-12]) {
+        const err = (a: ComplexValue, b: ComplexValue): number => {
+          const [ar, ai, br, bi] = [toFlat(a.re), toFlat(a.im), toFlat(b.re), toFlat(b.im)]
+          const scale = Math.max(...br.map((v, i) => Math.hypot(v, bi[i] ?? 0)))
+          return Math.max(...ar.map((v, i) => Math.hypot(v - (br[i] ?? 0), (ai[i] ?? 0) - (bi[i] ?? 0)))) / scale
+        }
+        expect(err(F.nufft1(x, c, m, { tolerance }), F.nudft1(x, c, m))).toBeLessThan(tolerance)
+        const f = { re: c.re.slice(0, m), im: c.im.slice(0, m) }
+        while (f.re.length < m) f.re.push(1), f.im.push(-1)
+        expect(err(F.nufft2(x, f, { tolerance }), F.nudft2(x, f))).toBeLessThan(tolerance)
+      }
+    expect(() => F.nufft1(x, c, 4, { spread: 0 })).toThrow()
+    expect(() => F.nufft2(x, c, { tolerance: 0 })).toThrow()
   })
 })

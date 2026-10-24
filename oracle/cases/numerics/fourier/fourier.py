@@ -1,4 +1,5 @@
-"""Fourier transforms against numpy.fft, scipy.fft and scipy.signal (chirp-z, zoom FFT); NUDFTs by direct sums."""
+"""Fourier transforms against numpy.fft, scipy.fft and scipy.signal (chirp-z, zoom FFT); NUDFTs and NUFFTs by direct
+sums (the NUFFT within its requested tolerance relative to the largest value, as FINUFFT's eps)."""
 
 from typing import Literal
 
@@ -195,4 +196,39 @@ def cases() -> list[Case]:
     coeffs = g.normal(size=16) + 1j * g.normal(size=16)
     type2 = np.exp(-1j * np.outer(pts, k)) @ coeffs
     out.append(case("nudft2", "nudft2", [pts, coeffs.real, coeffs.imag], pair(type2), rtol=1e-11, atol=1e-11))
+    out.extend(nufft_cases())
+    return out
+
+
+def nufft_cases() -> list[Case]:
+    """NUFFTs of types 1 and 2 for few and many modes (few modes force an oversampling above 2), both signs."""
+    g = rng(91)
+    out: list[Case] = []
+    for m in [3, 8, 64]:
+        pts = g.uniform(-3 * np.pi, 3 * np.pi, size=25)
+        strengths = g.normal(size=25) + 1j * g.normal(size=25)
+        coeffs = g.normal(size=m) + 1j * g.normal(size=m)
+        k = np.arange(m) - m // 2
+        for sign in [1, -1]:
+            for tol in [1e-6, 1e-12]:
+                type1 = np.exp(sign * 1j * np.outer(k, pts)) @ strengths
+                type2 = np.exp(-sign * 1j * np.outer(pts, k)) @ coeffs
+                for fn, inputs, ref in [
+                    ("nufft1", [pts, strengths.real, strengths.imag], type1),
+                    ("nufft2", [pts, coeffs.real, coeffs.imag], type2),
+                ]:
+                    sgn = sign if fn == "nufft1" else -sign
+                    out.append(
+                        case(
+                            f"{fn}/{m}/{sgn:+d}/{tol:g}",
+                            fn,
+                            inputs,
+                            pair(ref),
+                            rtol=0.0,
+                            atol=tol * float(np.max(np.abs(ref))),
+                            m=m,
+                            sign=sgn,
+                            tolerance=tol,
+                        )
+                    )
     return out
