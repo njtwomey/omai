@@ -83,6 +83,31 @@ describe('bounding-volume hierarchies', () => {
     )
   })
 
+  it('breaks ties between shapes hit at the same parameter by the lowest index, as brute force (regression)', () => {
+    // fast-check found this: the ray crosses the triangle's plane exactly at the point box, so both are hit at the
+    // same t, and the hierarchy returned whichever its traversal reached last.
+    const shapes = [
+      triangle([0, 0, 0], [0.0024251538683667004, 0, 0], [0, 0, -0.4123449703723266]),
+      sphere([0, 0, 0], 0.1),
+      box([0, 0, 0], [0, 0, 0]),
+    ]
+    const ray = {
+      origin: [4.0046629949410324e-290, 0.000039750192823691093, 0] as Vec3,
+      direction: [-1.0074575015782704e-285, -1, 0] as Vec3,
+    }
+    const want = nearestHit(ray, shapes)
+    expect(want?.index).toBe(0)
+    for (const maxLeaf of [1, 2, 3])
+      for (const split of ['sah', 'median'] as const) {
+        const got = intersectBvh(buildBvh(shapes, { split, maxLeaf }), ray).hit
+        expect([got?.index, got?.t]).toEqual([want?.index, want?.t])
+      }
+    const twins = [sphere([0, 0, 0], 1), sphere([3, 0, 0], 1), sphere([0, 0, 0], 1)]
+    const down = { origin: [0, 0, 5] as Vec3, direction: [0, 0, -1] as Vec3 }
+    expect(intersectBvh(buildBvh(twins, { maxLeaf: 1 }), down).hit?.index).toBe(0)
+    expect(nearestHit(down, twins)?.index).toBe(0)
+  })
+
   it('tests far fewer shapes than brute force on a spread-out scene', () => {
     const shapes: Shape[] = []
     for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) shapes.push(sphere([i * 3, j * 3, 0], 1))
