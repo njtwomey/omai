@@ -1482,10 +1482,13 @@ jellyfish, Biopython, pyphen
 - `features.ts`: count, TF-IDF and hashing vectorisers, word and character n-grams, BM25 and BM25+ weighting.
 - `templates.ts`: feature-template languages for sequence labellers. CRF++ templates (Kudo 2005): `U` (unigram, conjoined
   with the label) and `B` (bigram, conjoined with the label pair) lines, `%x[row,col]` macros over a token-by-attribute
-  table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. CRFsuite-style attribute
-  templates: windows of `(attribute, offset)` tuples joined into attribute strings (`w[-1]|w[0]`). Expansion over a
-  sequence, a `FeatureIndex` (string to id with counts and a minimum frequency, as CRF++'s `-f`), feature firing for
-  inspection.
+  table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. Wapiti patterns (`u`,
+  `b`, `*` lines; `%x`, `%t`, `%m` commands with regular expressions, case-insensitive and absolute variants, `_x-1`
+  boundaries). Expansion over a sequence, a `FeatureIndex` (string to id with counts and a minimum frequency, as
+  CRF++'s `-f`), CRF++ weight offsets, feature firing for inspection.
+- `attribute-templates.ts`: CRFsuite-style attribute templates (windows of `(attribute, offset)` tuples joined into
+  attribute strings, `w[-1]|w[0]`, skipped or padded boundaries, bias, `__BOS__`/`__EOS__`; parsing from text) and
+  MALLET's offset conjunctions.
 - `representations.ts`: co-occurrence counts, PMI and PPMI, LSA, SVD word vectors, random indexing, analogies, nearest
   words.
 - `similarity.ts`: Levenshtein (weighted), the edit-alignment counts behind WER (rapidfuzz's tie-breaking),
@@ -1695,12 +1698,13 @@ into `whitebox-engine/pgm`; `learning` and `causal` are namespaces.
 - `models/state-space.ts`: HMMs (categorical and full-covariance Gaussian emissions: chain potentials, sampling, the DBN
   form) and linear dynamical systems (sampling, the unrolled linear-Gaussian network with correlated noise as
   within-slice arcs, smoothing with the log-likelihood) as DBNs.
-- `models/crf.ts`: conditional random fields: CRFsuite-style attribute templates over token columns (offset windows,
-  skipped or CRF++-padded boundaries, bias) and attribute vocabularies with frequency cut-offs; linear-chain CRFs
-  (potentials as chains, scores, conditional log-likelihoods, marginals, Viterbi decoding, the penalised objective with
-  its gradient, first-order training as a traced run); general CRFs over arbitrary cliques with per-assignment feature
-  tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The CRF++ template parser
-  and the estimators' training algorithms stay in `text/templates.ts` and `methods/models/crf.ts`.
+- `models/crf.ts`: conditional random fields: linear-chain CRFs with state, label-pair transition and
+  observation-dependent bigram features (potentials as chains, scores, conditional log-likelihoods, marginals, Viterbi
+  decoding, the penalised objective with its gradient, first-order training as a traced run), CRF++-form models and
+  inputs from parsed CRF++ templates (`crfppCrf`, `crfppObservation`); general CRFs over arbitrary cliques with
+  per-assignment feature tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The
+  template languages and feature indexes live in `text/templates.ts` and `text/attribute-templates.ts`, the
+  estimators' training algorithms in `methods/models/crf.ts`.
 - `models/plates.ts`: plate notation and template models, grounding against plate elements and relations, grounded
   evidence, pooled (parameter-sharing) maximum likelihood.
 - `models/influence.ts`: influence diagrams (decision and utility nodes, no-forgetting information sets), policy
