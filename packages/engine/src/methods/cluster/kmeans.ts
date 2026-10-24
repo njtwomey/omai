@@ -1,8 +1,9 @@
 import { WhiteboxError } from '../../lib/base/index.ts'
-import { type ClusteringSteps, clusteringSteps } from '../../lib/exposition/index.ts'
+import { type ClusteringSteps, clusteringSteps, type DecisionSurface } from '../../lib/exposition/index.ts'
 import { type PairwiseKernelMetric, pairwiseKernels } from '../../lib/kernels/index.ts'
 import {
   collecting,
+  decisionSurfaceOf,
   defineExplainedEstimator,
   type Estimator,
   EstimatorClass,
@@ -243,6 +244,22 @@ export function centroidVerbs(p: CentroidParams): CentroidVerbs {
   }
 }
 
+/**
+ * The nearest-centre regions over the data's first two features, for one or two features (else none).
+ *
+ * @param name - The estimator name.
+ * @param params - The fitted centres.
+ * @param x - The training data.
+ * @returns A `decisionSurface` record of the labels, or nothing.
+ */
+export function centroidSurface(name: string, params: CentroidParams, x: TensorLike): DecisionSurface[] {
+  const d = params.centres[0]?.length ?? 0
+  if (d > 2) return []
+  return [
+    decisionSurfaceOf({ estimator: name, kind: 'clusterer', params, ...centroidVerbs(params) }, x, { resolution: 40 }),
+  ]
+}
+
 const kmeansSpace = (h: KMeansHyper) =>
   dict({
     nClusters: int(1, 20, { default: h.nClusters ?? 3, label: 'clusters' }),
@@ -284,10 +301,8 @@ export function kmeans(hyper: KMeansHyper = {}): Estimator<KMeansHyper, FittedKM
             best = { state: out.state, steps: out.steps }
         }
         const s = (best as { state: LloydState; steps: number }).state
-        return {
-          params: { centres: s.centres, labels: s.labels, inertia: s.inertia, nIter: best?.steps ?? 0 },
-          exposition: [lloydRecord('kmeans', s)],
-        }
+        const params = { centres: s.centres, labels: s.labels, inertia: s.inertia, nIter: best?.steps ?? 0 }
+        return { params, exposition: [lloydRecord('kmeans', s), ...centroidSurface('kmeans', params, data.x)] }
       },
       methods: centroidVerbs,
     },

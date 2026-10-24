@@ -46,3 +46,14 @@ describe('Gaussian mixtures', () => {
     expect(Number.isFinite(f.score({ x: data.x }))).toBe(true)
   })
 })
+
+describe('component selection', () => {
+  it('BIC picks three components for three blobs, with a curve record and density surfaces', async () => {
+    const { selectComponents } = await import('./selection.ts')
+    const s = selectComponents(data.x, [1, 2, 3, 4, 5], { key: key(9) })
+    expect(s.best).toBe(3)
+    expect(s.curve.values).toEqual([1, 2, 3, 4, 5])
+    const f = gaussianMixture({ nComponents: 3 }).fit(data, { key: key(0) })
+    expect(recordsOf(f.exposition, 'decisionSurface')[0]?.values?.length).toBe(40)
+  })
+})
