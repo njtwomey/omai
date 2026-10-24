@@ -216,7 +216,8 @@ function provenanceParents<D = void>(
       if (msg.type === 'param') msg.value = P.tag(msg.value, msg.name)
       else if (msg.type === 'deterministic') {
         deterministicSources.set(msg.name, new Set(P.sources(msg.value)))
-        msg.value = P.tag(msg.value, msg.name)
+        // Downstream sites depend on the deterministic site itself (direct edges); `latentDependencies` sees through.
+        msg.value = P.tag(primalOf(msg.value), msg.name)
       }
     },
   }))
@@ -294,13 +295,14 @@ function nearlyEqual(a: Value, b: Value): boolean {
 
 function findConjugate(
   proto: ProgramTrace,
-  parents: Map<string, Set<string>>,
+  deps: ReadonlyMap<string, ReadonlySet<string>>,
   prior: SampleSite,
-  childrenOf: Map<string, string[]>,
   isLatent: ReadonlySet<string>,
 ): ConjugateStructure | undefined {
-  if ([...(parents.get(prior.name) ?? [])].some((p) => isLatent.has(p))) return undefined
-  const children = childrenOf.get(prior.name) ?? []
+  if ([...(deps.get(prior.name) ?? [])].some((p) => isLatent.has(p))) return undefined
+  const children = [...deps.entries()]
+    .filter(([name, ds]) => ds.has(prior.name) && proto.sites.get(name)?.type === 'sample')
+    .map(([name]) => name)
   if (children.length === 0) return undefined
   const priorFamily = unexpanded(prior.fn).name
   let found: ConjugatePair | undefined
@@ -308,7 +310,7 @@ function findConjugate(
   for (const c of children) {
     const site = proto.sites.get(c)
     if (site?.type !== 'sample' || !site.isObserved || site.isFactor) return undefined
-    if ([...(parents.get(c) ?? [])].filter((p) => isLatent.has(p)).length !== 1) return undefined
+    if ([...(deps.get(c) ?? [])].filter((p) => isLatent.has(p)).length !== 1) return undefined
     const family = unexpanded(site.fn).name
     if (likelihood !== '' && family !== likelihood) return undefined
     likelihood = family
@@ -392,11 +394,36 @@ function linearGaussianCheck<D = void>(
   return { linear: true, reason: 'every site is Gaussian with an affine mean and a constant scale' }
 }
 
-function graphShapeOf(latent: readonly string[], sites: readonly SiteInfo[]): ProgramAnalysis['graphShape'] {
+/** Each site's dependencies on sample and param sites, seeing through deterministic sites. */
+function latentDependencies(sites: readonly SiteInfo[]): Map<string, Set<string>> {
+  const byName = new Map(sites.map((s) => [s.name, s]))
+  const out = new Map<string, Set<string>>()
+  const visit = (name: string, seen: Set<string>): Set<string> => {
+    const done = out.get(name)
+    if (done !== undefined) return done
+    const result = new Set<string>()
+    for (const p of byName.get(name)?.parents ?? []) {
+      if (seen.has(p)) continue
+      const ps = byName.get(p)
+      if (ps?.role === 'deterministic') for (const q of visit(p, new Set([...seen, p]))) result.add(q)
+      else result.add(p)
+    }
+    out.set(name, result)
+    return result
+  }
+  for (const s of sites) visit(s.name, new Set([s.name]))
+  return out
+}
+
+function graphShapeOf(
+  latent: readonly string[],
+  sites: readonly SiteInfo[],
+  deps: ReadonlyMap<string, ReadonlySet<string>>,
+): ProgramAnalysis['graphShape'] {
   const isLatent = new Set(latent)
   const edges: [string, string][] = []
   for (const s of sites) {
-    const ps = s.parents.filter((p) => isLatent.has(p))
+    const ps = [...(deps.get(s.name) ?? [])].filter((p) => isLatent.has(p))
     if (isLatent.has(s.name)) for (const p of ps) edges.push([p, s.name])
     for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) edges.push([ps[i] ?? '', ps[j] ?? ''])
   }
@@ -554,17 +581,20 @@ export function analyse<D = void>(model: Model<D>, data: D, options: AnalyseOpti
     }
   }
   const edges = sites.flatMap((s) => s.parents.map((p) => ({ from: p, to: s.name })))
-  const childrenOf = new Map<string, string[]>()
-  for (const e of edges) childrenOf.set(e.from, [...(childrenOf.get(e.from) ?? []), e.to])
+  const deps = latentDependencies(sites)
   const conjugate: ConjugateStructure[] = []
   if (traced !== undefined)
     for (const name of continuous) {
       const s = proto.sites.get(name)
       if (s?.type !== 'sample') continue
-      const c = findConjugate(proto, parents, s, childrenOf, new Set(latent))
+      const c = findConjugate(proto, deps, s, new Set(latent))
       if (c !== undefined) conjugate.push(c)
     }
   const plateMap = new Map<string, PlateInfo>()
+  // Plates in the order they open (outer before inner), then their sites.
+  for (const s of proto.sites.values())
+    if (s.type === 'plate' && !plateMap.has(s.name))
+      plateMap.set(s.name, { name: s.name, size: s.size, subsampleSize: s.subsampleSize, dim: -1, sites: [] })
   for (const s of proto.sites.values()) {
     if (s.type === 'plate') continue
     for (const f of s.plates) {
@@ -578,9 +608,6 @@ export function analyse<D = void>(model: Model<D>, data: D, options: AnalyseOpti
       })
     }
   }
-  for (const s of proto.sites.values())
-    if (s.type === 'plate' && !plateMap.has(s.name))
-      plateMap.set(s.name, { name: s.name, size: s.size, subsampleSize: s.subsampleSize, dim: -1, sites: [] })
   const markovInfo: MarkovInfo[] = []
   const all = [...proto.sites.values()]
   for (const [i, s] of all.entries()) {
@@ -643,7 +670,7 @@ export function analyse<D = void>(model: Model<D>, data: D, options: AnalyseOpti
     conjugate,
     fullyConjugate: latent.length > 0 && latent.every((n) => covered.has(n)) && disjoint && factors.length === 0,
     linearGaussian: lg,
-    graphShape: graphShapeOf(latent, sites),
+    graphShape: graphShapeOf(latent, sites, deps),
     hasLikelihood: simulators.length === 0,
     simulators,
     differentiable,

@@ -125,8 +125,18 @@ export function posteriorPredictive<D = void>(
     const values = rowOf(draws, i)
     traces.push(traceOf(seed(uncondition(atLatents(model, values)), foldIn(foldIn(options.key, 1), i)), data))
   }
+  // The replicated sites: every sample site the posterior does not cover (observed in training, or new at these
+  // data), and the deterministic sites.
+  const first = traces[0]
   const names =
-    options.sites ?? observedNames(traceOf(seed(atLatents(model, rowOf(draws, 0)), foldIn(options.key, 2)), data), true)
+    options.sites ??
+    (first === undefined
+      ? []
+      : [...first.sites.values()]
+          .filter(
+            (x) => (x.type === 'sample' && !x.isFactor && draws[x.name] === undefined) || x.type === 'deterministic',
+          )
+          .map((x) => x.name))
   return stack(traces, names)
 }
 

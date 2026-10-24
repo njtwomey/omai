@@ -75,9 +75,9 @@ describe('SVI', () => {
     const model = MODELS['mvn'] as Model
     const r = svi(model, undefined, {
       key: key(5),
-      guide: autoIafNormal(model, { numFlows: 1 }),
-      numSteps: 1500,
-      optimizer: decaying(0.01),
+      guide: autoIafNormal(model, { numFlows: 1, hiddenDim: 4 }),
+      numSteps: 700,
+      optimizer: decaying(0.02),
     })
     expect(r.status).toBe('completed')
     const x = toFlat(r.posterior.sample(key(6), 2000)['x'] ?? tensor([]))

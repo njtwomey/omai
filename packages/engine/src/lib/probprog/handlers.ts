@@ -159,16 +159,23 @@ function record(msg: Message): Site | undefined {
  */
 export function trace<D = void>(model: Model<D>): TracedModel<D> {
   const getTrace = (data: D): ProgramTrace => {
-    const sites = new Map<string, Site>()
+    // Messages are kept by reference and recorded when the run ends, so handlers inside this one that finish a
+    // message in their own postprocess (plates slicing params) are seen, as in NumPyro.
+    const messages = new Map<string, Message>()
     const handler: Messenger = {
       postprocess: (msg) => {
-        if ((msg.type === 'sample' || msg.type === 'deterministic') && sites.has(msg.name))
+        if ((msg.type === 'sample' || msg.type === 'deterministic') && messages.has(msg.name))
           throw new WhiteboxError('value', `trace: the site name ${msg.name} is used twice`, { site: msg.name })
-        const site = record(msg)
-        if (site !== undefined) sites.set(msg.name, site)
+        messages.delete(msg.name)
+        messages.set(msg.name, msg)
       },
     }
     const returnValue = withHandler(handler, () => model(data))
+    const sites = new Map<string, Site>()
+    for (const [name, msg] of messages) {
+      const site = record(msg)
+      if (site !== undefined) sites.set(name, site)
+    }
     return { sites, returnValue }
   }
   const run = (data: D): unknown => getTrace(data).returnValue

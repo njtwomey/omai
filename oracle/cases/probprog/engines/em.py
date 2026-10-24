@@ -55,8 +55,8 @@ def cases() -> list[Case]:
         out.append(case(f"gmm/{name}", "gmm", [y], output, rtol=tol, atol=1e-8 if name == "separated" else 1e-4))
     # Strong loadings and little noise: EM converges fast when the factor is well determined.
     loadings = np.array([1.5, -1.0, 1.2])
-    z = g.normal(size=25)
-    x = z[:, None] * loadings + g.normal(size=(25, 3)) * np.array([0.3, 0.4, 0.25]) + np.array([1.0, 0.0, -1.0])
+    z = g.normal(size=12)
+    x = z[:, None] * loadings + g.normal(size=(12, 3)) * np.array([0.3, 0.4, 0.25]) + np.array([1.0, 0.0, -1.0])
     fa = FactorAnalysis(n_components=1, tol=1e-12, max_iter=100000, svd_method="lapack")
     fa.fit(x)
     out.append(
