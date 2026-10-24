@@ -2824,7 +2824,7 @@ sentence of explanation would use, as plain data (and as trace events where they
 **Documentation.** Methods carry a summary and parameter docs; `@example` blocks are optional (the core is where the
 exposition of the mathematics lives).
 
-**Dataset collections.** `methods/datasets/collections.ts` groups the generators and real datasets into themed lists
+**Dataset collections.** `lib/datasets/collections.ts` groups the generators and real datasets into themed lists
 for pickers: `classification2d`, `regression1d`, `clustering2d`, `density2d`, `anomaly2d`, `manifold3d`,
 `timeSeries`, `textCorpora` and `environments` (the rl environments by family), each entry with its name, its
 generator, the `Space` of its knobs with demo defaults, and the methods it suits. whitebox-render turns a collection
@@ -3887,7 +3887,7 @@ Design rules:
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
   value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
   and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
-  `Toggle`, `SeedInput`; `DatasetPicker` (a dataset collection from `methods/datasets/collections.ts`, with the
+  `Toggle`, `SeedInput`; `DatasetPicker` (a dataset collection from `lib/datasets/collections.ts`, with the
   chosen generator's knobs as controls) and `MethodControls` (controls from a method's `hyperSpace`, demo defaults
   first); and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
   left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas.
