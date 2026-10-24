@@ -1,7 +1,7 @@
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Range } from '../figure/aspect.ts'
-import { type Figure, figure as makeFigure, plotArea } from '../figure/figure.ts'
+import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figure/figure.ts'
 import { type CellSpec, type GridSpec, layoutGrid, linkedGroups, sharedGroups } from '../figure/grid.ts'
 import { resolveLimits, unionRange } from '../figure/limits.ts'
 import { tokens } from '../theme/tokens.ts'
@@ -24,6 +24,33 @@ export interface SubplotOptions {
   readonly link?: boolean
   /** Wheel and drag zoom, moving linked x axes together (default false). */
   readonly zoom?: boolean
+  /** Draw text and TeX cells as chart text (default true); `FigureGrid` overlays them as HTML instead. */
+  readonly textCells?: boolean
+}
+
+/**
+ * Where {@link subplots} places each cell of a grid in a figure, in pixels: the gridspec laid out in the figure's
+ * plotting area, less room for a colour bar when a panel has one.
+ *
+ * @param grid - The grid.
+ * @param panels - The panels by cell id.
+ * @param fig - The figure.
+ * @returns Each cell's rectangle by id.
+ * @example
+ * ```ts
+ * import { subplotRects } from 'whitebox-render/charts'
+ * import { figure, gridSpec } from 'whitebox-render/figure'
+ * subplotRects(gridSpec(1, 1), {}, figure())['r0c0'] // => { x: 56, y: 28, width: 564, height: 328 }
+ * ```
+ */
+export function subplotRects(
+  grid: GridSpec,
+  panels: Readonly<Record<string, Panel>>,
+  fig: Figure,
+): Record<string, Rect> {
+  const hasBar = Object.values(panels).some((p) => p.layers.some((l) => l.colourBar !== undefined))
+  const area = plotArea(fig)
+  return layoutGrid(grid, { ...area, width: area.width - (hasBar ? 64 : 0) })
 }
 
 function bottomOf(c: CellSpec): number {
@@ -67,9 +94,7 @@ export function subplots(
   const cells = new Map(grid.cells.map((c) => [c.id, c]))
   for (const id of Object.keys(panels))
     if (!cells.has(id)) throw new WhiteboxError('value', `subplots: no cell '${id}' in the grid`)
-  const hasBar = Object.values(panels).some((p) => p.layers.some((l) => l.colourBar !== undefined))
-  const area = plotArea(fig)
-  const rects = layoutGrid(grid, { ...area, width: area.width - (hasBar ? 64 : 0) })
+  const rects = subplotRects(grid, panels, fig)
 
   // Shared axes: one range from the union of the group's data, under the first panel's limit policy.
   const sharedRange = (axis: 'x' | 'y'): Map<string, Range> => {
@@ -106,12 +131,14 @@ export function subplots(
   const visualMap: Record<string, unknown>[] = []
   const titles: Record<string, unknown>[] = []
   const legendNames: string[] = []
+  const legends: Record<string, unknown>[] = []
   const axisIndex = new Map<string, { x: number; y: number }>()
   const graphics: Record<string, unknown>[] = []
   for (const cell of grid.cells) {
     const rect = rects[cell.id]
     if (rect === undefined) continue
     if (cell.kind === 'text' || cell.kind === 'tex') {
+      if (options.textCells === false) continue
       // TODO: typeset `tex` cells with KaTeX (as an SVG image) rather than showing the TeX source.
       graphics.push({
         type: 'text',
@@ -147,8 +174,21 @@ export function subplots(
     )
     axisIndex.set(cell.id, { x: grids.length, y: yAxes.length })
     grids.push({ ...parts.grid })
-    xAxes.push({ ...parts.xAxis })
-    yAxes.push(...parts.yAxis.map((a) => ({ ...a })))
+    // Panels that touch (gaps under 12 px) would print their edge tick labels on top of each other: drop one.
+    const touchingAbove = grid.hspace < 12 && cell.row > 0
+    const touchingRight = grid.wspace < 12 && cell.col + (cell.colSpan ?? 1) < grid.cols
+    const dropMax = (axis: Readonly<Record<string, unknown>>, drop: boolean): Record<string, unknown> =>
+      drop ? { ...axis, axisLabel: { ...(axis['axisLabel'] as object), showMaxLabel: false } } : { ...axis }
+    xAxes.push(dropMax(parts.xAxis, touchingRight))
+    yAxes.push(...parts.yAxis.map((a, i) => dropMax(a, i === 0 && touchingAbove)))
+    const names = parts.legendNames
+    if (names.length > 0 && (options.legend ?? names.length > 1))
+      legends.push({
+        show: true,
+        data: [...names],
+        top: rect.y + 2,
+        right: fig.width - rect.x - rect.width + 4,
+      })
     series.push(...parts.series)
     visualMap.push(...parts.visualMap)
     for (const n of parts.legendNames) if (!legendNames.includes(n)) legendNames.push(n)
@@ -176,8 +216,11 @@ export function subplots(
   const lx = linkGroups('x')
   const ly = linkGroups('y')
   const frameTitle = frame['title']
+  const legendStyle = frame['legend'] as Record<string, unknown>
   const option: Record<string, unknown> = {
     ...frame,
+    // One legend per panel, at the panel's top right, so a legend never sits over another panel.
+    legend: legends.length > 0 ? legends.map((l) => ({ ...legendStyle, ...l })) : { ...legendStyle, show: false },
     ...(titles.length > 0 || frameTitle !== undefined
       ? { title: [...(frameTitle === undefined ? [] : [frameTitle]), ...titles] }
       : {}),

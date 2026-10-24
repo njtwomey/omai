@@ -137,6 +137,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const frameRef = useRef<HTMLDivElement | null>(null)
   const modalRef = useRef<HTMLDivElement | null>(null)
   const formats = props.exportFormats ?? ['png', 'svg']
+  const hasTools = formats.length > 0 || (props.expandable ?? true)
 
   useEffect(() => {
     if (!expanded) return
@@ -170,7 +171,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   )
 
   // The modal keeps the figure's aspect, as large as fits in 92% of the viewport.
-  const modalWidth = Math.min(viewport.width * 0.92, viewport.height * 0.86 * aspect)
+  const modalWidth = Math.min(viewport.width * 0.92, (viewport.height * 0.86 - 36) * aspect)
   const modalSize: FrameSize = {
     width: Math.round(modalWidth),
     height: Math.round(modalWidth / aspect),
@@ -196,7 +197,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
     padding: 0,
   }
   const toolbar = (inModal: boolean): ReactElement => (
-    <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 4, zIndex: 2 }}>
+    <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', zIndex: 2 }}>
       {formats.length > 0 && (
         <div style={{ position: 'relative' }}>
           <button type="button" style={button} aria-label="Export" title="Export" onClick={() => setMenu((m) => !m)}>
@@ -260,8 +261,12 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   )
   return (
     <figure className={props.className} style={{ margin: 0, width, maxWidth: '100%', ...props.style }}>
-      {props.title !== undefined && (
-        <div style={{ font: `600 13px ${t.font}`, color: t.fg, marginBottom: 6 }}>{props.title}</div>
+      {(props.title !== undefined || hasTools) && (
+        // The title and the buttons sit above the figure area, so they never cover a legend or data.
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, minHeight: 28 }}>
+          {props.title !== undefined && <div style={{ font: `600 13px ${t.font}`, color: t.fg }}>{props.title}</div>}
+          {hasTools && toolbar(false)}
+        </div>
       )}
       <div
         ref={frameRef}
@@ -269,7 +274,6 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
         data-whitebox-frame=""
       >
         {!expanded && content(pageSize)}
-        {toolbar(false)}
       </div>
       {props.caption !== undefined && (
         <figcaption style={{ font: `12px ${t.font}`, color: t.muted, marginTop: 6 }}>{props.caption}</figcaption>
@@ -292,20 +296,22 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
             justifyContent: 'center',
           }}
         >
-          <div
-            ref={modalRef}
-            style={{
-              position: 'relative',
-              width: modalSize.width,
-              height: modalSize.height,
-              background: t.bg,
-              borderRadius: 8,
-              boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
-              overflow: 'hidden',
-            }}
-          >
-            {content(modalSize)}
-            {toolbar(true)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex' }}>{toolbar(true)}</div>
+            <div
+              ref={modalRef}
+              style={{
+                position: 'relative',
+                width: modalSize.width,
+                height: modalSize.height,
+                background: t.bg,
+                borderRadius: 8,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
+                overflow: 'hidden',
+              }}
+            >
+              {content(modalSize)}
+            </div>
           </div>
         </div>
       )}

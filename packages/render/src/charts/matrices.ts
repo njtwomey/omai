@@ -119,7 +119,7 @@ export function imageSeries(
     },
     clip: true,
     silent: true,
-    z: options.z ?? 0,
+    z: options.z ?? 1,
     tooltip: { show: false },
   } as unknown as SeriesOption
 }

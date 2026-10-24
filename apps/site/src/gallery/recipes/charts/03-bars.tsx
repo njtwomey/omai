@@ -27,6 +27,19 @@ export default function Bars(): ReactNode {
       ),
     [mode],
   )
+  const horizontal = useMemo(
+    () =>
+      barChart(
+        ['small', 'medium', 'large'],
+        [
+          { name: 'model A', values: [3, 5, 4], errors: [0.4, 0.6, 0.3] },
+          { name: 'model B', values: [2, 6, 5], errors: [0.3, 0.5, 0.7] },
+          { name: 'model C', values: [4, 4, 6], errors: [0.5, 0.4, 0.4] },
+        ],
+        { mode, figure: fig, horizontal: true, x: { label: 'score' } },
+      ),
+    [mode],
+  )
   const pareto = useMemo(
     () => paretoChart(['typos', 'timeouts', 'nulls', 'auth', 'other'], [12, 41, 23, 6, 4], { mode, figure: fig }),
     [mode],
@@ -35,6 +48,9 @@ export default function Bars(): ReactNode {
     <div className="flex flex-wrap gap-4">
       <FigureFrame figure={fig} filename="bars">
         <Chart option={grouped} />
+      </FigureFrame>
+      <FigureFrame figure={fig} filename="bars-horizontal">
+        <Chart option={horizontal} />
       </FigureFrame>
       <FigureFrame figure={fig} filename="pareto">
         <Chart option={pareto} />
