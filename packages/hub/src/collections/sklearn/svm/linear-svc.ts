@@ -12,8 +12,8 @@ export const linearSvc: HubEntry = defineEntry({
   datasets: ['classification2d', 'classificationTabular'],
   ...fitEstimator(linearSvcMethod(), { surface: true }),
   views: [
-    { record: 'decisionSurface', title: 'Decision surface' },
-    { record: 'margin', title: 'Margin and support vectors', area: 'side' },
+    { record: 'margin', title: 'Margin and support vectors' },
+    { record: 'decisionSurface', title: 'Decision surface', area: 'side' },
     { record: 'coefficientTable', title: 'Coefficients', area: 'side' },
   ],
   methods: [{ file: 'methods/svm/linear.ts', name: 'linearSvc' }],

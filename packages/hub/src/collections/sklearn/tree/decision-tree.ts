@@ -12,8 +12,8 @@ export const decisionTree: HubEntry = defineEntry({
   datasets: ['classification2d', 'regression1d', 'classificationTabular', 'regressionTabular'],
   ...fitEither(decisionTreeClassifier({ maxDepth: 4 }), decisionTreeRegressor({ maxDepth: 4 }), { surface: true }),
   views: [
-    { record: 'decisionSurface', title: 'Predictions' },
-    { record: 'tree', title: 'The tree', area: 'side' },
+    { record: 'tree', title: 'The tree' },
+    { record: 'decisionSurface', title: 'Predictions', area: 'side' },
     { record: 'pruningPath', title: 'Cost-complexity pruning', area: 'side' },
   ],
   methods: [
