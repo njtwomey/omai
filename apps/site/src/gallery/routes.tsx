@@ -3,8 +3,7 @@ import { PrevNext } from '../shell/PrevNext.tsx'
 import { TocSidebar } from '../shell/TocSidebar.tsx'
 import { GALLERY_HOME, GALLERY_TOC } from './contents.ts'
 import { EntryPage, GalleryHome, SectionPage } from './pages.tsx'
-import { SECTIONS } from './recipe.ts'
-import { ENTRIES } from './registry.ts'
+import { ENTRIES, SECTIONS } from './registry.ts'
 
 /** The gallery section: renders the page for a path under /gallery, with previous and next links. */
 export function GallerySection(props: { readonly path: string }): ReactNode {
@@ -38,9 +37,8 @@ export function GalleryToc(props: { readonly path: string }): ReactNode {
     <TocSidebar
       nodes={GALLERY_TOC}
       current={props.path.replace(/\/$/, '')}
-      storageKey="gallery"
       home={GALLERY_HOME}
-      placeholder="Search recipes"
+      placeholder="Filter recipes"
     />
   )
 }

@@ -1,12 +1,17 @@
 import * as echarts from 'echarts'
 import { describe, expect, it } from 'vitest'
 import { normal } from 'whitebox-engine/dists'
+import { withMarginals } from '../figure/grid.ts'
 import { barChart, histogram, paretoChart } from './bars.ts'
+import { subplots } from './compose.ts'
 import { boxPlot, densityChart, violinPlot } from './distributions.ts'
+import { intervalChart, rocChart } from './evaluation.ts'
+import { contours, decisionRegions, fieldArrows, streamlines, vectorField } from './fields.ts'
+import { fn, referenceLines, riemann } from './functions.ts'
 import { band, lineChart, lines } from './lines.ts'
 import { confusionMatrixChart, heatmapChart } from './matrices.ts'
 import { cartesian } from './plot.ts'
-import { scatterChart } from './points.ts'
+import { points, scatterChart } from './points.ts'
 
 // Every builder's option renders through ECharts' server-side SVG renderer without errors.
 function render(option: echarts.EChartsCoreOption): string {
@@ -49,6 +54,47 @@ describe('server-side rendering', () => {
         ],
         ['x', 'y'],
       ),
+      cartesian([
+        decisionRegions([
+          [
+            [0.9, 0.2],
+            [0.6, 0.1],
+          ],
+          [
+            [0.1, 0.8],
+            [0.4, 0.9],
+          ],
+        ]),
+        contours(
+          [
+            [0, 1],
+            [1, 2],
+          ],
+          { levels: [0.5, 1.5] },
+        ),
+      ]),
+      cartesian([
+        vectorField(fieldArrows((x, y) => [-y, x], { x: [-1, 1], y: [-1, 1], n: 5 })),
+        streamlines([
+          [
+            [0, 0],
+            [1, 1],
+            [2, 1],
+          ],
+        ]),
+      ]),
+      cartesian([
+        fn(Math.tan, [-3, 3]),
+        riemann(Math.sin, [0, 3], 6),
+        referenceLines({ x: [1.5], y: [{ value: 0, label: 'zero' }] }),
+      ]),
+      rocChart({ fpr: [0, 0.2, 1], tpr: [0, 0.7, 1], thresholds: [Infinity, 0.5, 0] }),
+      intervalChart([{ name: 'a', value: { value: 1, interval: [0.5, 1.5] } }], { reference: 0 }),
+      subplots(withMarginals(), {
+        main: { layers: [points([{ x: [0, 1, 2], y: [1, 2, 0] }])] },
+        top: { layers: [histogram([0, 1, 2], { bins: 2 })] },
+        right: { layers: [histogram([1, 2, 0], { bins: 2, horizontal: true })] },
+      }),
     ]
     for (const o of options) expect(render(o)).toContain('<svg')
   })

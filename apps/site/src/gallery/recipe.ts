@@ -13,8 +13,18 @@ export interface Recipe {
   readonly explain: string
 }
 
-/** The gallery's sections, in order. A recipe's folder names its section. */
-export const SECTIONS = [
+/** A section of the gallery: a folder of recipes. */
+export interface Section {
+  readonly id: string
+  readonly title: string
+  readonly blurb: string
+}
+
+/**
+ * Titles and descriptions of the sections by folder name. A recipe's folder is its section, whether or not it is listed
+ * here (a folder's `_section.ts` exporting `section: { title, blurb }` names it too); sections show in folder order.
+ */
+export const SECTIONS: readonly Section[] = [
   { id: 'charts', title: 'Charts and lines', blurb: 'Curves, scatter plots, bars, areas and bands from data.' },
   { id: 'axes', title: 'Axes and limits', blurb: 'Ranges and their policies, log and categorical axes, ticks.' },
   { id: 'layouts', title: 'Layouts', blurb: 'Grids of axes, shared axes, marginals, box and data aspects.' },
@@ -35,7 +45,4 @@ export const SECTIONS = [
   { id: 'animation', title: 'Animation', blurb: 'The player: precomputed timelines and live algorithms.' },
   { id: 'diagrams', title: 'Diagrams and structures', blurb: 'Graphical models, computation graphs, trees, automata.' },
   { id: 'worlds', title: 'Environments and worlds', blurb: 'Grid worlds, mazes and environment states.' },
-] as const
-
-/** A section's id. */
-export type SectionId = (typeof SECTIONS)[number]['id']
+]

@@ -149,6 +149,8 @@ export interface HistogramLayerOptions extends HistogramOptions {
   readonly opacity?: number
   /** Draw the outline of the histogram only (a step curve) rather than filled bars. */
   readonly outline?: boolean
+  /** Bins along the y axis, bars growing to the right (a marginal histogram beside a scatter plot). */
+  readonly horizontal?: boolean
   readonly mode?: ColourMode
   readonly colourOffset?: number
 }
@@ -175,6 +177,7 @@ interface RectApi {
 export function histogram(values: TensorLike | readonly number[], options: HistogramLayerOptions = {}): Layer {
   const mode = options.mode ?? 'light'
   const { density = false, cumulative = false } = options
+  const horizontal = options.horizontal === true
   const h = histogramOf(values as TensorLike, {
     ...(options.bins === undefined ? {} : { bins: options.bins }),
     ...(options.range === undefined ? {} : { range: options.range }),
@@ -199,8 +202,10 @@ export function histogram(values: TensorLike | readonly number[], options: Histo
       ? ({
           type: 'line',
           name,
-          step: 'end',
-          data: [...data.map(([a, , c]) => [a, c]), [edges[edges.length - 1] ?? 0, counts[counts.length - 1] ?? 0]],
+          step: horizontal ? 'start' : 'end',
+          data: [...data.map(([a, , c]) => [a, c]), [edges[edges.length - 1] ?? 0, counts[counts.length - 1] ?? 0]].map(
+            ([a, c]) => (horizontal ? [c, a] : [a, c]),
+          ),
           showSymbol: false,
           color: colour,
           lineStyle: { color: colour, width: 1.5 },
@@ -209,25 +214,24 @@ export function histogram(values: TensorLike | readonly number[], options: Histo
           type: 'custom',
           name,
           data,
-          encode: { x: [0, 1], y: 2, tooltip: [0, 1, 2] },
+          encode: horizontal ? { y: [0, 1], x: 2, tooltip: [0, 1, 2] } : { x: [0, 1], y: 2, tooltip: [0, 1, 2] },
           dimensions: ['from', 'to', density ? 'density' : 'count'],
           renderItem: (_params: unknown, api: RectApi): Record<string, unknown> => {
-            const [x0 = 0, y0 = 0] = api.coord([api.value(0), api.value(2)])
-            const [x1 = 0, y1 = 0] = api.coord([api.value(1), 0])
-            return {
-              type: 'rect',
-              shape: { x: x0, y: y0, width: Math.max(0, x1 - x0 - 0.5), height: Math.max(0, y1 - y0) },
-              style: { fill: colour, opacity: options.opacity ?? 0.75 },
-            }
+            const at = (edge: number, count: number): number[] => api.coord(horizontal ? [count, edge] : [edge, count])
+            const [ax = 0, ay = 0] = at(api.value(0), 0)
+            const [bx = 0, by = 0] = at(api.value(1), api.value(2))
+            const gap = 0.5
+            const shape = horizontal
+              ? { x: ax, y: by + gap, width: Math.max(0, bx - ax), height: Math.max(0, ay - by - gap) }
+              : { x: ax, y: by, width: Math.max(0, bx - ax - gap), height: Math.max(0, ay - by) }
+            return { type: 'rect', shape, style: { fill: colour, opacity: options.opacity ?? 0.75 } }
           },
           color: colour,
           clip: true,
         } as unknown as SeriesOption)
-  return layer([series], {
-    x: [edges[0] ?? 0, edges[edges.length - 1] ?? 1],
-    y: [0, Math.max(0, ...counts)],
-    baseline: 'y',
-  })
+  const span: [number, number] = [edges[0] ?? 0, edges[edges.length - 1] ?? 1]
+  const height: [number, number] = [0, Math.max(0, ...counts)]
+  return layer([series], horizontal ? { x: height, y: span, baseline: 'x' } : { x: span, y: height, baseline: 'y' })
 }
 
 /**

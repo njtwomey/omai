@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { Card, CardGrid, PageHeader, PageSection, Prose } from '../shell/layout.tsx'
 import { RecipeView } from '../shell/RecipeView.tsx'
-import { SECTIONS } from './recipe.ts'
-import { ENTRIES, type Entry, entriesOf } from './registry.ts'
+import type { Section } from './recipe.ts'
+import { ENTRIES, type Entry, entriesOf, SECTIONS } from './registry.ts'
 
 /** The gallery's front page: each section with its recipes as cards. */
 export function GalleryHome(props: { readonly nav?: ReactNode }): ReactNode {
@@ -31,10 +31,7 @@ export function GalleryHome(props: { readonly nav?: ReactNode }): ReactNode {
 }
 
 /** One section: its recipes. */
-export function SectionPage(props: {
-  readonly section: (typeof SECTIONS)[number]
-  readonly nav?: ReactNode
-}): ReactNode {
+export function SectionPage(props: { readonly section: Section; readonly nav?: ReactNode }): ReactNode {
   const { section } = props
   const items = entriesOf(section.id)
   return (
