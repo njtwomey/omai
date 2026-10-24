@@ -1320,6 +1320,14 @@
       "cases": 18
     },
     {
+      "fixture": "methods/linear/bayesian.json",
+      "source": "oracle/cases/methods/linear/bayesian.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/linear/classification.json",
       "source": "oracle/cases/methods/linear/classification.py",
       "reference": {
