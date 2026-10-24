@@ -126,8 +126,8 @@ whitebox-js/
   CLAUDE.md, INIT.md, AUDIT.md, PORT.md
 ```
 
-`docs` documents `engine`'s core, `gallery` shows off `render`, and `hub` shows off the hub (its pages generated from the
-hub catalogue). Outside projects (the encyclopedia,
+`gallery` shows off `render`, `hub` shows off `whitebox-hub` (its pages generated from the hub catalogue), and `docs`
+documents `engine`; `shell` is their shared private chrome. Outside projects (the encyclopedia,
 the slide and blog tool) consume the three published packages as release tarballs.
 
 ## 2. Conventions every file follows
@@ -347,7 +347,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. whitebox-engine core, `packages/engine/src/lib/`
 
-The core has 37 domains in 11 tiers. A domain may import only domains in lower tiers.
+The core has 39 domains in 11 tiers. A domain may import only domains in lower tiers.
 
 | tier | domain        | purpose                                                                                                                                                                                          |
 | ---: | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -356,6 +356,7 @@ The core has 37 domains in 11 tiers. A domain may import only domains in lower t
 |    1 | `tensor`      | arrays, dtypes, shapes, primitives with derivative rules, backends, operations, pytrees                                                                                                          |
 |    2 | `random`      | immutable counter-based keys and samplers                                                                                                                                                        |
 |    2 | `symbolic`    | symbolic expressions: simplification, differentiation, series, integration, LaTeX                                                                                                                |
+|    2 | `exposition`  | typed exposition records that methods return and render draws (paths, trees, stages, steps, trials, episodes)                                                                                    |
 |    3 | `autodiff`    | reverse, forward and Taylor-mode differentiation, vectorisation, gradient checks                                                                                                                 |
 |    3 | `trace`       | algorithms, trace schemas and policies, events, recording, replay                                                                                                                                |
 |    3 | `space`       | typed spaces for parameters, knobs, observations and actions                                                                                                                                     |
@@ -377,6 +378,7 @@ The core has 37 domains in 11 tiers. A domain may import only domains in lower t
 |    7 | `stochastic`  | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures                                                                                                |
 |    7 | `sampling`    | Monte Carlo samplers and diagnostics                                                                                                                                                             |
 |    7 | `graphics`    | rendering mathematics: ray casting over worlds, ray tracing, cameras, shading, textures, rasterisation                                                                                           |
+|    7 | `datasets`    | dataset generators with exact truths, vendored real datasets, themed dataset collections                                                                                                         |
 |    8 | `logic`       | terms, unification, resolution, Datalog, SAT, first-order proving, ILP                                                                                                                           |
 |    8 | `dynamics`    | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification                                                                                                               |
 |    8 | `pgm`         | graphical models, their inference and learning, causal graphs                                                                                                                                    |
@@ -2760,43 +2762,85 @@ stratified area-light estimates.
   interpolation, textures and deferred shading (`mesh`, `rasteriseMesh`): the counterpart of ray casting, for
   comparison figures.
 
-## 5. whitebox-engine hub, `packages/engine/src/hub/` (was `methods/`)
+## 5. Methods, exposition records, views and the hub
 
-**What the hub is.** The core (section 4) is a library in the sense of PyTorch or Pyro: primitives to build with. It
-does not decide how it should be used; the encyclopedia, a blog or a slide deck define their own uses. The hub is a zoo
-of worked implementations built on the core, in the spirit of a model hub rather than of a solutions package: each
-entry shows one way to put the core together, instrumented so it can be explained (the exposition contract of 5.0),
-and is usable as it is or as a template. Consumers are free to ignore it.
+Four layers, each usable without the ones after it:
 
-**Organisation.** Entries live in collections, folders that are semi-organised rather than a strict taxonomy:
-`hub/<collection>/<entry>.ts`, imported as `whitebox-engine/hub/<collection>`. A collection may follow a familiar
-library's own layout, for example `hub/sklearn/` mirroring scikit-learn (`linear_model`, `tree`, `ensemble`, `svm`,
-`neighbors`, `naive_bayes`, `discriminant_analysis`, `gaussian_process`, `cluster`, `mixture`, `decomposition`,
-`manifold`, `covariance`, `semi_supervised`, `pipeline` and `compose` as small sub-collections), or gather basic ideas,
-for example `hub/neural/` (perceptrons and MLPs, convolutions, recurrence, attention, autoencoders). Other
-collections: `probabilistic/` (the models of 5.4 as programs), `rl/` (environments, agents and the playground),
-`timeseries/` (matrix profiles), `tuning/`, and, later, the remaining areas below. Each subsection that follows
-proposes a collection's contents; names and grouping can change as the hub grows.
+| layer   | where                            | what it holds                                                                                                                                                  | draws?        |
+| ------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| core    | `packages/engine/src/lib/`       | the primitives of section 4 (a library, as PyTorch or Pyro are)                                                                                                | no            |
+| methods | `packages/engine/src/methods/`   | named algorithms and estimators (lasso, trees, k-means, UMAP, agents), headless, built from the core; each returns typed exposition records beside its results | no            |
+| views   | `packages/render/`               | reusable components, including one view per kind of exposition record                                                                                          | yes           |
+| hub     | `packages/hub/` (`whitebox-hub`) | declarative entries (a method, the dataset collections it suits, its controls, which views to show) and the generated catalogue the hub app is built from      | composes only |
 
-**Self-describing entries.** Every entry exports a `HubEntry` alongside its code: an id, title, one-line summary,
-collection, tags, the `create` factory (and class form for estimators), its `hyperSpace` with demo defaults, the
-dataset collections it suits, and a `demo(key, options)` that runs it on a default dataset and returns the exposition
-record (and a trace). `scripts/hub.ts` (run by `make barrels`) gathers every `HubEntry` into the generated
-`hub/catalogue.ts`, so the hub gallery (section 8) imports each new entry automatically, with no hand-written page.
-Estimators keep the conventions of the original methods plan: a factory (`pca({ nComponents: 2 })`) and a class
-(`new PCA({ nComponents: 2 })`), a `hyperSpace`, and `predictDistribution` where they predict.
+**Why four.** The core does not decide how it is used; the encyclopedia, a blog or a slide deck define their own uses.
+Methods are worked algorithms anyone can call. Views make the exposition reusable: a lasso, an elastic net and a GAM's
+smoothness sweep all return a `RegularisationPath`, which `render` draws one way everywhere. The hub never grows
+bespoke capabilities: an entry only declares which views to arrange; a figure that does not exist yet becomes a new
+render view, available to every consumer.
 
-**Datasets move to the core.** The generators, vendored real datasets and dataset collections of 5.18 become a core
-domain, `lib/datasets/` (tier 7, above `dists`, `worlds` and `data`), so the core, the hub and consumers share them;
-`lib/data` keeps the schemas, loaders, splits and modifiers. 5.18 describes the domain's contents.
+**Exposition records.** `lib/exposition/` (a core domain at tier 2, types and small constructors only) defines the
+record kinds methods return, each a plain, serialisable value with a `kind` tag:
+- `RegularisationPath` (penalty grid, coefficients per penalty, active sets, duality gaps), `CoefficientTable`
+  (estimates with errors and intervals), `CrossValidationCurve` (scores per parameter with standard-error bands);
+- `TreeRecord` (per node: every candidate split evaluated with impurities, the chosen split, the training-row indices
+  reaching the node, counts or values, growth order) and `PruningPath`;
+- `EnsembleStages` (members, staged predictions, out-of-bag curves, per-round weights or residuals);
+- `MarginRecord` (support vectors, dual coefficients, margins, SMO working-set steps, dual objective);
+- `NeighbourRecord` (indices and distances per query) and `LikelihoodTable` (per-class, per-feature contributions);
+- `PosteriorGrid` (means, variances and samples on a grid) and `HyperparameterSurface` (an objective over a
+  hyperparameter grid with the optimiser's path);
+- `ClusteringSteps` (assignments, centres and inertia per iteration; merges with heights; core, border and noise
+  labels; reachability), `MixtureSteps` (responsibilities and log likelihood per EM step);
+- `ComponentsRecord` (components, explained variance, scores, reconstruction error per rank), `EmbeddingSteps`
+  (embedding per iteration, neighbour graph, calibrated bandwidths, stress);
+- `AnomalyScores` (scores, thresholds, per-point evidence);
+- `DecisionSurface` (predictions and probabilities on a grid over two features);
+- `PipelineStages` (each stage's input and output data, fitted parameters and shape changes);
+- `SearchTrials` (every trial of a grid, random or Bayesian search with values and pruning decisions) and
+  `LearningCurve`;
+- `EpisodeRecord` (per episode returns; per step state, action, reward and frame; value and policy snapshots).
+  Methods return `{ ...result, exposition: Exposition[] }`; long-running ones also emit the records' steps as trace
+  events, so views can play them.
 
-**Layering.** A hub collection imports any core domain and the collections listed in its `area.json`; the core never
-imports the hub (enforced by `make layers`, as for `methods/` before).
+**Methods.** The folders of 5.1 to 5.19 (named after the familiar libraries' groupings), each with an `area.json`.
+Methods are thin over the core, document themselves lightly (summary and parameters; examples optional) and follow the
+exposition contract of 5.0. Every estimator comes as a factory (`pca({ nComponents: 2 })`) and as a class
+(`new PCA({ nComponents: 2 })`), declares its `hyperSpace`, and offers `predictDistribution` where it predicts.
 
-### 5.0 First pass of the hub: scope, phases and the exposition contract
+**Views.** `render` gains `views/` (headless: a record to chart options, scenes or structures) and
+`react/views/` (`PathView`, `TreeView`, `PipelineView`, `EmbeddingPlayer`, `DecisionSurfaceView`, ... one per record
+kind, each usable on its own in any page).
 
-(Written when the hub was still called methods; the phases name the planned collections. Not to be built until the
-user says go.)
+**The hub.** `packages/hub/src/`:
+- `entry.ts`: `HubEntry` (id, title, one-line summary, collection, tags, the method it runs, its `hyperSpace` with
+  demo defaults, the dataset collections it suits, and a layout: which record kinds to show, with which views, in which
+  slots) and `defineEntry`.
+- `collections/<collection>/<entry>.ts`: semi-organised folders, for example `sklearn/` (mirroring scikit-learn:
+  `linear_model`, `tree`, `ensemble`, `svm`, `neighbors`, `naive_bayes`, `discriminant_analysis`,
+  `gaussian_process`, `cluster`, `mixture`, `decomposition`, `manifold`, `covariance`, `semi_supervised`,
+  `pipeline`, `model_selection`), `neural/` (perceptrons and MLPs, convolutions, recurrence, attention,
+  autoencoders), `probabilistic/`, `rl/` (the playground), `timeseries/`, `tuning/`.
+- `catalogue.ts`: generated by `make barrels` from every `defineEntry`, so the hub app imports new entries
+  automatically.
+- `react/HubEntryView.tsx`: lays out an entry from its declaration (dataset picker, method controls, the declared
+  views, the trace player); the only React in the package, and composition only.
+  Entries are data: `make layers` lets the hub import the engine and render's public views, but no chart library, and
+  no drawing of its own.
+
+**Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
+core domain `lib/datasets/` (tier 7, above `dists`, `worlds` and `data`); `lib/data` keeps the schemas, loaders,
+splits and modifiers.
+
+**Testing, by layer.** The core keeps the full standard (oracle goldens, property tests, `checkPrimitive`). Methods are
+tested lightly: a smoke test per method that runs it on a small dataset and checks its exposition records' shapes,
+and a golden against the familiar library only where it is cheap and matters (a lasso path, a tree's splits). The hub
+is tested lightly: the catalogue builds and every entry's demo runs within its budget.
+
+**Layering.** Methods import the core and the method areas in their `area.json`; the core never imports methods; render
+imports engine contracts (including `lib/exposition`), never algorithms; the hub imports engine and render.
+
+### 5.0 First pass: scope, phases and the exposition contract (methods, with their views and hub entries)
 
 The methods are a classical-AI toolkit in the spirit of scikit-learn, with a little more on the probabilistic side, and a
 reinforcement-learning playground. They exist to drive small live demos and gallery entries, not as an encyclopedia: a
@@ -3955,33 +3999,30 @@ Turns the source into documentation data, runs examples and links functions to c
 
 ## 8. Apps
 
-Three apps, one per audience: `apps/docs/` documents the engine core, `apps/gallery/` shows off whitebox-render, and
-`apps/hub/` shows off the hub. Each is a private Vite and React 19 application with a navigation bar, a persistent
-light and dark toggle (system default, stored choice, no flash), theme tokens from `whitebox-render/theme` and
-Tailwind CSS, and they share one shell package-internally (`apps/shared/`). They consume the packages exactly as an
-outside project does. aifn-engine's docs approach (driven by docstrings and recipes) is recycled where it works.
+Three apps, built in this order: `apps/gallery/` shows off whitebox-render, `apps/hub/` shows off the hub, and
+`apps/docs/` documents the engine. They share a private shell package, `apps/shell/` (`whitebox-shell`: navigation
+bar, persistent light and dark toggle with system default and no flash, theme tokens from `whitebox-render/theme`,
+Tailwind CSS, the recipe and code-view components), and are private Vite and React 19 applications that consume the
+packages exactly as an outside project does. aifn-engine's `examples/` app is the template: its shell, recipe
+registry, live-example pages, Markdown and docstring-driven docs pages are recycled rather than reinvented.
 
-`apps/docs/` (the engine core's documentation)
-- `src/main.tsx`, `src/routes.tsx`, `src/shell/` (`AppShell.tsx`, `NavBar.tsx`, `ThemeToggle.tsx`, `Sidebar.tsx`).
-- `src/pages/`: `Home.tsx`, `HowTo.tsx`, `Module.tsx`, `Symbol.tsx`, `Concepts.tsx` (browse by the encyclopedia's
-  taxonomy), `Playground.tsx`, `Traces.tsx` (open, replay, compare and export runs).
-- `content/howto/`: one how-to per core domain, with runnable code blocks checked by the build.
-
-`apps/gallery/` (whitebox-render's showcase: every chart, layout, control and animation)
+`apps/gallery/` (whitebox-render's showcase)
 - `src/pages/`: `Gallery.tsx`, `Section.tsx`, `Entry.tsx` (a figure with its editable code and export menu).
-- `src/entries/`: one file per section: `charts.ts`, `distributions.ts`, `fields.ts`, `functions.ts`, `structures.ts`
-  (graphical models, computation graphs, architectures, trees, automata), `networks.ts`, `traces.ts`, `animations.ts`,
-  `environments.ts` (every environment, rendered and animated), `worlds.ts` (maps, mazes, the ray-cast view),
-  `three-d.ts`, `maths.ts`, `layouts.ts`, `controls.ts`, `themes.ts`.
+- `src/recipes/`: one folder per section, a recipe per file (as aifn-engine's recipes): charts, layouts (grids, shared
+  axes, marginals, aspects, limit policies), distributions, fields (smooth grids), functions, structures (graphical
+  models, computation graphs, architectures, trees, automata), networks, controls (number fields, cycling selects,
+  control panels), maths (macros, live equations), interaction (adding and dragging points), animation (the player,
+  live and precomputed), environments, worlds (maps, mazes, the ray-cast view), three-d, the exposition views, themes.
 
-`apps/hub/` (the hub's showcase, built from `hub/catalogue.ts`)
-- `src/pages/`: `Hub.tsx` (collections and tags), `Collection.tsx`, `Entry.tsx`: an entry's live demo, with a
-  `DatasetPicker` over the dataset collections it suits, `MethodControls` from its `hyperSpace`, its exposition
-  record rendered (for a pipeline, the output of every stage; for a lasso, its path; for a tree, its splits), its
-  trace in a player, and its source.
-- Pages are generated from the catalogue: adding a `HubEntry` adds its page, with no hand-written gallery code; an
-  entry may provide a custom figure layout, otherwise a default one is chosen from its kind (estimator, transformer,
-  pipeline, clusterer, embedding, agent, study).
+`apps/hub/` (the hub's showcase, built from `whitebox-hub`'s catalogue)
+- `src/pages/`: `Hub.tsx` (collections and tags), `Collection.tsx`, `Entry.tsx` (an entry through
+  `HubEntryView`: dataset picker, method controls, its views, its trace, its source).
+- Adding a `defineEntry` adds its page; there is no hand-written gallery code per entry.
+
+`apps/docs/` (the engine's documentation, from `whitebox-meta`)
+- `src/pages/`: `Home.tsx`, `Module.tsx`, `Symbol.tsx` (signature, TSDoc, live examples with their `// =>` values),
+  `Concepts.tsx` (by the encyclopedia's taxonomy), `HowTo.tsx`, `Traces.tsx` (open, replay, compare and export runs).
+- `content/howto/`: one how-to per core domain, with runnable code blocks checked by the build.
 
 ## 9. Python oracle, `oracle/`
 

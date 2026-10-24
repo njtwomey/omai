@@ -36,9 +36,12 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 
 ## Architecture in brief
 
-- Three published packages: `packages/engine` (`whitebox-engine`, compute), `packages/render` (`whitebox-render`,
-  headless figures plus React bindings), `packages/meta` (`whitebox-meta`, docs metadata and the example runner). Two
-  private apps: `apps/docs`, `apps/gallery`.
+- Four packages: `packages/engine` (`whitebox-engine`: the core in `lib/`, headless methods in `methods/` that return
+  typed exposition records from `lib/exposition`), `packages/render` (`whitebox-render`, headless figures, views of
+  exposition records, React bindings), `packages/meta` (`whitebox-meta`, docs metadata and the example runner),
+  `packages/hub` (`whitebox-hub`, declarative entries composing methods and render views; no drawing of its own).
+  Three private apps sharing `apps/shell`: `apps/gallery` (render), `apps/hub` (hub, generated from its catalogue),
+  `apps/docs` (engine).
 - Engine core is `packages/engine/src/lib/<domain>/`; each domain has a `domain.json` tier and imports only lower tiers.
   Applications are `packages/engine/src/methods/<area>/` with `area.json` listing allowed area imports. `make layers`
   enforces both. Every folder is an import path (`whitebox-engine/numerics/linalg`); subfolders are namespaces.
@@ -58,6 +61,9 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - Every core export (`lib/`) has TSDoc: summary, `@param`, `@returns`, and an `@example` whose `// => value` lines are
   checked. Methods (`methods/`) need a summary and parameter docs; examples are optional. Methods wrap the core rather
   than re-implement it, and return the data an explanation needs (the exposition contract, `docs/structure.md` 5.0).
+- Test depth by layer: the core (`lib/`) gets the full standard below; methods get a smoke test per method (runs on a
+  small dataset, exposition records have the right shape) plus goldens only where cheap and important; the hub gets
+  light tests (the catalogue builds, every entry's demo runs).
 - Tests sit next to code: `foo.test.ts`, `foo.property.test.ts` (fast-check), `foo.golden.test.ts` (fixtures in
   `packages/engine/fixtures/<same path>/`), `foo.test-d.ts`.
 - Python is uv-only, configured through pydantic-settings; the oracle mirrors engine paths under `oracle/cases/`.
