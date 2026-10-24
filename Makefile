@@ -8,6 +8,7 @@ NODE := $(MISE) node
 UV := $(MISE) uv
 
 PACKAGES := engine render meta hub
+APPS := shell gallery hub docs
 
 .PHONY: help
 help: ## List targets
@@ -46,6 +47,7 @@ format: ## Format TypeScript and Python
 .PHONY: typecheck
 typecheck: ## Type-check every package (tsc) and the oracle (pyright)
 	@for p in $(PACKAGES); do echo "tsc $$p"; $(PNPM) --dir packages/$$p exec tsc -p tsconfig.json --noEmit || exit 1; done
+	@for a in $(APPS); do echo "tsc apps/$$a"; $(PNPM) --dir apps/$$a exec tsc -p tsconfig.json --noEmit || exit 1; done
 	@echo "tsc scripts and config"; $(PNPM) exec tsc -p tsconfig.json
 	$(UV) run --group dev --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl pyright oracle
 
@@ -76,6 +78,22 @@ manifest: ## Rebuild fixtures/manifest.json from the fixture files (for merge co
 .PHONY: build
 build: barrels ## Build all packages
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p run build || exit 1; done
+
+.PHONY: apps
+apps: ## Build the three apps (gallery, hub, docs) into apps/*/dist
+	@for a in gallery hub docs; do $(PNPM) --dir apps/$$a exec vite build || exit 1; done
+
+.PHONY: gallery
+gallery: ## Serve the render gallery (http://localhost:5301)
+	$(PNPM) --dir apps/gallery exec vite
+
+.PHONY: hub-site
+hub-site: ## Serve the hub site (http://localhost:5302)
+	$(PNPM) --dir apps/hub exec vite
+
+.PHONY: docs-site
+docs-site: ## Serve the engine docs (http://localhost:5303)
+	$(PNPM) --dir apps/docs exec vite
 
 .PHONY: verify
 verify: ## Checks scoped to what changed against BASE (default main): the gate for commits and merges
