@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { dict } from 'whitebox-engine/space'
 import { catalogue } from '../catalogue/index.ts'
 import { buildCatalogue, defineEntry, type HubEntry } from './entry.ts'
-import { datasetState, demoState } from './run.ts'
+import { datasetState, demoState, runDemo } from './run.ts'
 import { stateFromQuery, stateToQuery } from './url.ts'
 
 const spec = (id: string, collection = 'demo'): Omit<HubEntry, 'kind'> => ({
@@ -48,5 +48,23 @@ describe('entry state in a URL', () => {
     const knobs = { ...state.knobs, n: 50 }
     expect(stateFromQuery(lasso, stateToQuery(lasso, { ...state, knobs }))).toEqual({ ...state, knobs })
     expect(stateFromQuery(lasso, '?alpha=1e9&data=nope/x&k.zzz=1')).toEqual(demo)
+  })
+})
+
+describe('entries without a dataset', () => {
+  it('run on their parameters alone and report progress', async () => {
+    const counter = defineEntry({
+      ...spec('demo/counter'),
+      datasets: [],
+      run: ({ data, progress }) => {
+        for (let i = 1; i <= 4; i++) progress?.({ fraction: i / 4, label: `step ${i}` })
+        return { exposition: [], sawData: data !== undefined }
+      },
+    })
+    const seen: number[] = []
+    const out = await runDemo(counter, demoState(counter), (p) => seen.push(p.fraction))
+    expect(seen).toEqual([0.25, 0.5, 0.75, 1])
+    expect(out.rows).toBe(0)
+    expect(stateToQuery(counter, { ...demoState(counter), seed: 2 })).toBe('seed=2')
   })
 })
