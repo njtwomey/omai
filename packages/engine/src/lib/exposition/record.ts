@@ -4,6 +4,7 @@ import type { ClusteringSteps, MixtureSteps } from './clustering.ts'
 import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
 import type { EnsembleStages } from './ensembles.ts'
 import type { EpisodeRecord } from './episodes.ts'
+import type { ImageSteps } from './images.ts'
 import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from './linear.ts'
 import type { MarginRecord } from './margins.ts'
 import type { LikelihoodTable, NeighbourRecord } from './neighbours.ts'
@@ -44,6 +45,7 @@ export type Exposition =
   | EpisodeRecord
   | BoardSteps
   | PopulationSteps
+  | ImageSteps
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -111,4 +113,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'episodes',
   'boardSteps',
   'populationSteps',
+  'imageSteps',
 ])
