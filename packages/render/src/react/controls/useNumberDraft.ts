@@ -1,5 +1,5 @@
 import { type FocusEvent, type KeyboardEvent, useState } from 'react'
-import { checkNumber, formatNumber, type NumberSpec, stepNumber } from './number.ts'
+import { checkNumber, formatFieldValue, type NumberSpec, stepNumber } from './number.ts'
 
 /** What {@link useNumberDraft} returns: the input's props and the draft's error, if any. */
 export interface NumberDraft {
@@ -30,7 +30,7 @@ export function useNumberDraft(options: {
   readonly format?: (value: number) => string
 }): NumberDraft {
   const { value, spec, onCommit } = options
-  const format = options.format ?? ((v: number) => formatNumber(spec, v))
+  const format = options.format ?? ((v: number) => formatFieldValue(spec, v))
   const [draft, setDraft] = useState<string | null>(null)
   const checked = draft === null ? null : checkNumber(spec, draft)
   const error = checked?.error ?? null

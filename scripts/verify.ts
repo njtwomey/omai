@@ -14,7 +14,8 @@
  *   configuration, scripts, or the oracle's shared helpers.
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -174,6 +175,53 @@ function plan(files: readonly string[]): Step[] {
   return steps
 }
 
+// Several checkouts (agents' worktrees) verify at once; each test run already uses half the cores, so at most
+// WHITEBOX_VERIFY_SLOTS (default 2) run their tests together and the rest wait for a slot.
+const SLOTS_DIR = join(tmpdir(), 'whitebox-verify-slots')
+
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function acquireSlot(): () => void {
+  const slots = Number(process.env['WHITEBOX_VERIFY_SLOTS'] ?? 2)
+  mkdirSync(SLOTS_DIR, { recursive: true })
+  let announced = false
+  for (;;) {
+    for (let i = 0; i < slots; i++) {
+      const dir = join(SLOTS_DIR, String(i))
+      const owner = join(dir, 'pid')
+      if (existsSync(dir)) {
+        const pid = existsSync(owner) ? Number(readFileSync(owner, 'utf8')) : Number.NaN
+        if (Number.isFinite(pid) && alive(pid)) continue
+        rmSync(dir, { recursive: true, force: true })
+      }
+      try {
+        mkdirSync(dir)
+      } catch {
+        continue
+      }
+      writeFileSync(owner, String(process.pid))
+      const release = (): void => rmSync(dir, { recursive: true, force: true })
+      process.on('exit', release)
+      for (const signal of ['SIGINT', 'SIGTERM'] as const)
+        process.on(signal, () => {
+          release()
+          process.exit(130)
+        })
+      return release
+    }
+    if (!announced) process.stdout.write(`verify: waiting for a test slot (${slots} in use)\n`)
+    announced = true
+    spawnSync('sleep', ['5'])
+  }
+}
+
 function main(): void {
   const args = process.argv.slice(2)
   const at = args.indexOf('--base')
@@ -181,7 +229,9 @@ function main(): void {
   const files = changedFiles(base)
   process.stdout.write(`verify: ${files.length} changed files against ${base}\n`)
   const steps = plan(files)
+  let release: (() => void) | undefined
   for (const step of steps) {
+    if (release === undefined && step.label.startsWith('tests') && !args.includes('--dry-run')) release = acquireSlot()
     process.stdout.write(`\n== ${step.label}\n`)
     if (args.includes('--dry-run')) {
       process.stdout.write(`   ${step.command.join(' ').slice(0, 300)}\n`)

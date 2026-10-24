@@ -2,5 +2,6 @@
 export * from './bars.ts'
 export * from './distributions.ts'
 export * from './lines.ts'
+export * from './matrices.ts'
 export * from './plot.ts'
 export * from './points.ts'

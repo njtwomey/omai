@@ -1393,6 +1393,14 @@
       "cases": 6
     },
     {
+      "fixture": "methods/linear/bayesian.json",
+      "source": "oracle/cases/methods/linear/bayesian.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/linear/classification.json",
       "source": "oracle/cases/methods/linear/classification.py",
       "reference": {
@@ -1592,6 +1600,14 @@
         "numpy": "2.5.4"
       },
       "cases": 5
+    },
+    {
+      "fixture": "methods/trees/grow.json",
+      "source": "oracle/cases/methods/trees/grow.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "metrics/audio.json",

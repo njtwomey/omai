@@ -33,8 +33,16 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "sucrase": "^3.35.1",
+    "ts-morph": "^28.0.0",
     "whitebox-engine": "workspace:*",
-    "whitebox-render": "workspace:*",
-    "whitebox-hub": "workspace:*"
+    "whitebox-hub": "workspace:*",
+    "whitebox-render": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }
