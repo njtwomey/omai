@@ -2,7 +2,7 @@ import { type ReactNode, useMemo, useState } from 'react'
 import { key, normal } from 'whitebox-engine/random'
 import { toArray } from 'whitebox-engine/tensor'
 import { cartesian, points as pointLayer } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
+import { brushSelection, figure } from 'whitebox-render/figure'
 import {
   Brush,
   Chart,
@@ -11,7 +11,6 @@ import {
   Overlaid,
   type Point2,
   Probe,
-  pointsInRect,
   useChartProjection,
   useColourMode,
 } from 'whitebox-render/react'
@@ -21,7 +20,7 @@ export const recipe: Recipe = {
   title: 'Probe and brush',
   question: 'How do I read values under the pointer, and select a region of the data?',
   explain:
-    '`Probe` follows the pointer with a crosshair and hands its data coordinates to whatever it draws; `Brush` selects a rectangle by dragging (a press clears it) and `pointsInRect` finds the data inside. Both sit in the same kind of overlay as the draggable points.',
+    '`Probe` follows the pointer with a crosshair and hands its data coordinates to whatever it draws; `Brush` selects a rectangle by dragging (a press clears it) and `brushSelection` (from `whitebox-render/figure`) finds the data inside. Both sit in the same kind of overlay as the draggable points.',
 }
 
 const FIGURE = figure({ width: 440, aspect: 1.2 })
@@ -36,7 +35,7 @@ export default function ProbeAndBrush(): ReactNode {
     return xy.map(([a = 0, b = 0]): Point2 => [a, 0.6 * a + 0.8 * b])
   }, [])
   const [rect, setRect] = useState<DataRect | null>(null)
-  const selected = useMemo(() => (rect === null ? null : new Set(pointsInRect(data, rect))), [data, rect])
+  const selected = useMemo(() => (rect === null ? null : new Set(brushSelection(data, rect))), [data, rect])
   const plain = useMemo(
     () =>
       cartesian([pointLayer([{ x: data.map((p) => [...p]), name: 'data' }], { mode })], {

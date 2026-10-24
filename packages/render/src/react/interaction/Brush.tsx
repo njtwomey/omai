@@ -6,7 +6,7 @@ import { type DataRect, rectBetween } from './selection.ts'
 /**
  * Brush a rectangle: press and drag across the figure to select a region (`onChange` follows the drag), press without
  * dragging to clear it. With `axis`, the brush spans the whole height (`'x'`) or width (`'y'`). Pair with
- * `pointsInRect` to select data, or with linked figures to filter them.
+ * `brushSelection` (from `whitebox-render/figure`) to select data, or put it in a `LinkStore` to filter linked figures.
  *
  * @param props - The selection, what to call with a new one, and the brushed axes.
  * @returns The brush, inside an {@link InteractionOverlay}.
@@ -22,12 +22,12 @@ export function Brush(props: {
   const full = (rect: DataRect): DataRect => {
     if (axis === 'xy') return rect
     const [a, b] = [projection.toData([0, height]), projection.toData([width, 0])]
-    return axis === 'x' ? { ...rect, y0: a[1], y1: b[1] } : { ...rect, x0: a[0], x1: b[0] }
+    return axis === 'x' ? { ...rect, y: [a[1], b[1]] } : { ...rect, x: [a[0], b[0]] }
   }
   let shape: ReactNode = null
   if (value !== null) {
-    const [x0, y0] = projection.toPixel([value.x0, value.y1])
-    const [x1, y1] = projection.toPixel([value.x1, value.y0])
+    const [x0, y0] = projection.toPixel([value.x[0], value.y[1]])
+    const [x1, y1] = projection.toPixel([value.x[1], value.y[0]])
     shape = (
       <rect
         x={Math.min(x0, x1)}

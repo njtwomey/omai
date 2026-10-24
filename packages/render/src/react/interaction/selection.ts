@@ -1,11 +1,12 @@
 import type { Point2, Projection } from './projection.ts'
 
-/** A rectangle in data coordinates, `x0 <= x1` and `y0 <= y1`. */
+/**
+ * A rectangle in data coordinates as x and y ranges, low end first: the shape of a brush in `whitebox-render/figure`'s
+ * link state, so a brushed rectangle goes straight to `brushSelection` or a `LinkStore`.
+ */
 export interface DataRect {
-  readonly x0: number
-  readonly x1: number
-  readonly y0: number
-  readonly y1: number
+  readonly x: readonly [number, number]
+  readonly y: readonly [number, number]
 }
 
 /**
@@ -16,22 +17,7 @@ export interface DataRect {
  * @returns The rectangle.
  */
 export function rectBetween(a: Point2, b: Point2): DataRect {
-  return { x0: Math.min(a[0], b[0]), x1: Math.max(a[0], b[0]), y0: Math.min(a[1], b[1]), y1: Math.max(a[1], b[1]) }
-}
-
-/**
- * The indices of the points inside a rectangle (edges included).
- *
- * @param points - The points.
- * @param rect - The rectangle.
- * @returns The indices, ascending.
- */
-export function pointsInRect(points: readonly Point2[], rect: DataRect): number[] {
-  const out: number[] = []
-  points.forEach(([x, y], i) => {
-    if (x >= rect.x0 && x <= rect.x1 && y >= rect.y0 && y <= rect.y1) out.push(i)
-  })
-  return out
+  return { x: [Math.min(a[0], b[0]), Math.max(a[0], b[0])], y: [Math.min(a[1], b[1]), Math.max(a[1], b[1])] }
 }
 
 /**
