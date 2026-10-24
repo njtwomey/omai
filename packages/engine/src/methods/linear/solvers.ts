@@ -281,7 +281,7 @@ export interface IrlsState {
  * its change, the step halvings and the coefficients.
  *
  * @param problem - The problem.
- * @param options - Tolerance on the objective's relative change (default 1e-10) and a warm start.
+ * @param options - Tolerance on the largest relative coefficient change (default 1e-10) and a warm start.
  * @returns The algorithm.
  */
 export function irlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}): Algorithm<IrlsState> {
@@ -306,7 +306,7 @@ export function irlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}): 
     schema: channels({
       metrics: {
         objective: { description: 'penalised deviance / (2 sum w)', direction: 'lower' },
-        change: { description: 'relative change of the objective' },
+        change: { description: 'largest coefficient change, relative' },
         halvings: { description: 'step halvings' },
       },
       tensors: { coef: { role: 'param', description: 'coefficients' } },
@@ -354,7 +354,14 @@ export function irlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}): 
         intercept = 0.5 * (intercept + state.intercept)
         objective = glmObjective(problem, coef, intercept)
       }
-      const change = first ? Infinity : Math.abs(state.objective - objective) / Math.max(Math.abs(objective), 1e-300)
+      // The largest coefficient change relative to the coefficients' size (intercept included).
+      let delta = Math.abs(intercept - state.intercept)
+      let size = Math.abs(intercept)
+      for (let j = 0; j < coef.length; j++) {
+        delta = Math.max(delta, Math.abs((coef[j] ?? 0) - (state.coef[j] ?? 0)))
+        size = Math.max(size, Math.abs(coef[j] ?? 0))
+      }
+      const change = first ? Infinity : delta / (1 + size)
       return { coef, intercept, objective, change, halvings }
     },
     done: (state) => (state.change <= tol ? 'converged' : undefined),
