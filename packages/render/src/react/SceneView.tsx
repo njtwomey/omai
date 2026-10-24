@@ -258,6 +258,7 @@ export function SceneView(props: SceneViewProps): ReactElement {
       style={{ display: 'block', maxWidth: '100%', height: 'auto', ...style }}
       role="img"
       aria-label={scene.title ?? 'scene'}
+      data-whitebox-scene=""
       onPointerMove={
         onNodeHover === undefined
           ? undefined
