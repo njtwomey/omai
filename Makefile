@@ -74,6 +74,10 @@ fixtures-check: ## Regenerate fixtures to a temporary directory and fail on any 
 manifest: ## Rebuild fixtures/manifest.json from the fixture files (for merge conflicts; runs no case module)
 	$(UV) run --group oracle-core python -m whitebox_oracle manifest
 
+.PHONY: examples
+examples: ## Run every @example of the engine core and check its `// =>` lines (ARGS="--only stats --methods" etc.)
+	$(NODE) scripts/examples.ts $(ARGS)
+
 .PHONY: build
 build: barrels ## Build all packages
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p run build || exit 1; done
