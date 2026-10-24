@@ -29,7 +29,7 @@ function inline(text: string, docs: Docs, near: string): ReactNode[] {
       ) : (
         <Link
           key={i}
-          to={symbolPath(s)}
+          to={symbolPath(s.file.path, s.name)}
           className="font-mono text-[0.85em] text-sky-700 hover:underline dark:text-sky-400"
         >
           {text}

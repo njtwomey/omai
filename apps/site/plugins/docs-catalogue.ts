@@ -2,8 +2,9 @@
  * The engine documentation as virtual modules, extracted from the source at build time by whitebox-meta/extract (a
  * few seconds for the whole engine), so the docs pages are generated and cannot drift from the code.
  *
- * - `virtual:whitebox-docs/index`: packages, modules, and every symbol's id, kind and one-line summary (the sidebar,
- *   the home page, module pages and search).
+ * - `virtual:whitebox-docs/index`: the source tree as data: every entry-point folder with its summary, every source
+ *   file (path below `packages/engine/src`) with its opening comment and its exports' names, kinds and one-line
+ *   summaries, in source order. The sidebar, folder pages and file indexes come from it.
  * - `virtual:whitebox-docs/modules`: a map from module id to a lazy import of that module's full `SymbolDoc`s, so a
  *   page loads only the module it shows.
  */
@@ -16,6 +17,7 @@ const INDEX = 'virtual:whitebox-docs/index'
 const MODULES = 'virtual:whitebox-docs/modules'
 const MODULE = 'virtual:whitebox-docs/module:'
 const ROOT = join(import.meta.dirname, '..', '..', '..')
+const SRC = 'packages/engine/src/'
 
 function firstSentence(text: string): string {
   const end = text.search(/[.:](\s|$)/)
@@ -37,14 +39,26 @@ export function docsCatalogue(): Plugin {
       if (!id.startsWith('\0virtual:whitebox-docs/')) return null
       const c = get()
       if (id === `\0${INDEX}`) {
-        const symbols = c.symbols.map((s) => ({
-          id: s.id,
-          module: s.module,
-          name: s.name,
-          kind: s.kind,
-          summary: firstSentence(s.summary),
+        // Paths relative to packages/engine/src, so the tree mirrors the directories: lib/<domain>/..., methods/<area>/...
+        const symbolsOf = new Map<string, { name: string; kind: string; summary: string }[]>()
+        for (const s of c.symbols) {
+          const list = symbolsOf.get(s.source.file) ?? []
+          list.push({ name: s.name, kind: s.kind, summary: firstSentence(s.summary) })
+          symbolsOf.set(s.source.file, list)
+        }
+        const files = c.files.map((f) => ({
+          path: f.path.slice(SRC.length),
+          module: f.module,
+          summary: f.summary,
+          description: f.description,
+          symbols: symbolsOf.get(f.path) ?? [],
         }))
-        return `export default ${JSON.stringify({ packages: c.packages, modules: c.modules, symbols })}`
+        const folders = c.modules.map((m) => ({
+          path: m.layer === 'core' ? `lib/${m.path}` : m.path,
+          module: m.id,
+          summary: m.summary,
+        }))
+        return `export default ${JSON.stringify({ packages: c.packages, folders, files })}`
       }
       if (id === `\0${MODULES}`) {
         const lines = c.modules.map((m) => `  ${JSON.stringify(m.id)}: () => import(${JSON.stringify(MODULE + m.id)}),`)

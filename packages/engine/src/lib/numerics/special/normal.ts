@@ -93,7 +93,7 @@ export function ndtri(p: TensorLike): Value {
  * ```ts
  * import { normalPdf } from 'whitebox-engine/numerics/special'
  * import { item } from 'whitebox-engine/tensor'
- * item(normalPdf(0)) === 1 / Math.sqrt(2 * Math.PI) // => true
+ * item(normalPdf(0)) // => 0.398942280401433
  * ```
  */
 export function normalPdf(x: TensorLike): Value {
@@ -109,7 +109,7 @@ export function normalPdf(x: TensorLike): Value {
  * ```ts
  * import { normalLogPdf } from 'whitebox-engine/numerics/special'
  * import { item } from 'whitebox-engine/tensor'
- * item(normalLogPdf(0)) === -0.5 * Math.log(2 * Math.PI) // => true
+ * item(normalLogPdf(0)) // => -0.918938533204673
  * ```
  */
 export function normalLogPdf(x: TensorLike): Value {
