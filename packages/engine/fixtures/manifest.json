@@ -1418,6 +1418,22 @@
       "cases": 4
     },
     {
+      "fixture": "methods/gp/classification.json",
+      "source": "oracle/cases/methods/gp/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "methods/gp/regression.json",
+      "source": "oracle/cases/methods/gp/regression.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "methods/linear/bayesian.json",
       "source": "oracle/cases/methods/linear/bayesian.py",
       "reference": {
