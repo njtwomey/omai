@@ -1,7 +1,7 @@
 import { type PointerEvent, type ReactNode, useCallback, useRef, useState } from 'react'
-import { cx, iconButtonClass, menuClass, menuItemClass } from './controls/classes.ts'
-import { useDismiss } from './controls/dismiss.ts'
+import { cx, iconButtonClass, menuItemClass } from './controls/classes.ts'
 import { ChevronDownIcon, PauseIcon, PlayIcon, StepBackIcon, StepForwardIcon } from './controls/icons.tsx'
+import { Popover } from './controls/Popover.tsx'
 import { FPS_CHOICES, timeStamp } from './playhead.ts'
 import type { PlaybackController } from './usePlayback.ts'
 
@@ -90,12 +90,12 @@ function FpsMenu(props: {
 }): ReactNode {
   const { fps, choices, onPick } = props
   const [open, setOpen] = useState(false)
-  const box = useRef<HTMLDivElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
   const close = useCallback(() => setOpen(false), [])
-  useDismiss(box, open, close)
   return (
-    <div ref={box} className="relative -ml-px flex">
+    <div className="-ml-px flex">
       <button
+        ref={trigger}
         type="button"
         className={cx(iconButtonClass, 'w-auto gap-0.5 px-1.5 font-mono text-[11px] tabular-nums')}
         aria-label={`Frames per second: ${fps}`}
@@ -107,26 +107,24 @@ function FpsMenu(props: {
         {fps}
         <ChevronDownIcon size={12} />
       </button>
-      {open ? (
-        <div role="listbox" aria-label="Frames per second" className={cx(menuClass, 'top-full left-0')}>
-          {choices.map((f) => (
-            <button
-              key={f}
-              type="button"
-              role="option"
-              aria-selected={f === fps}
-              data-selected={f === fps}
-              className={cx(menuItemClass, 'justify-end font-mono tabular-nums')}
-              onClick={() => {
-                onPick(f)
-                setOpen(false)
-              }}
-            >
-              {f} fps
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <Popover anchor={trigger} open={open} onClose={close} role="listbox" label="Frames per second">
+        {choices.map((f) => (
+          <button
+            key={f}
+            type="button"
+            role="option"
+            aria-selected={f === fps}
+            data-selected={f === fps}
+            className={cx(menuItemClass, 'justify-end font-mono tabular-nums')}
+            onClick={() => {
+              onPick(f)
+              setOpen(false)
+            }}
+          >
+            {f} fps
+          </button>
+        ))}
+      </Popover>
     </div>
   )
 }

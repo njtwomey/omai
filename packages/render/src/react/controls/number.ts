@@ -197,7 +197,8 @@ export function fromFraction(spec: NumberSpec, t: number): number {
 
 /**
  * The values the dropdown offers: `count` (default 11) evenly spaced between the bounds, geometrically on a log scale,
- * the ends exact and the rest rounded to readable values (whole numbers for integers, without repeats). Empty when the
+ * the ends exact and the rest rounded to readable values (the step grid when there is a step, whole numbers for
+ * integers, without repeats). Empty when the
  * number has no range.
  *
  * @param spec - The number's rules.
@@ -215,6 +216,8 @@ export function numberLadder(spec: NumberSpec, count = 11): number[] {
     if (i === 0) x = lo
     else if (i === count - 1) x = hi
     else if (spec.log === true) x = Number(Math.exp(Math.log(lo) + t * (Math.log(hi) - Math.log(lo))).toPrecision(2))
+    else if (spec.step !== undefined && spec.step > 0)
+      x = clean(lo + Math.round((t * (hi - lo)) / spec.step) * spec.step)
     else x = clean(lo + t * (hi - lo))
     if (spec.integer === true) x = Math.round(x)
     x = clampNumber(spec, x)

@@ -6,3 +6,15 @@
 .wb-slot-strong {
   font-weight: 700;
 }
+
+/* TeX that does not parse: a compact marker (its title holds KaTeX's message) rather than raw red source. */
+.wb-tex-error {
+  display: inline-block;
+  padding: 0 0.3em;
+  border: 1px solid var(--wb-danger, #cf222e);
+  border-radius: 4px;
+  color: var(--wb-danger, #cf222e);
+  font-size: 0.75em;
+  font-family: var(--wb-mono-font, ui-monospace, monospace);
+  cursor: help;
+}

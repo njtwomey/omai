@@ -1,7 +1,8 @@
 import { type CSSProperties, type PointerEvent, type ReactElement, type ReactNode, useMemo } from 'react'
-import { type Paint, type Pixels, projectLayers, type Scene, type SceneNode, type Style } from 'whitebox-engine/scene'
-import type { ColourMode, Tokens } from '../theme/tokens.ts'
-import { tokens as themeTokens } from '../theme/tokens.ts'
+import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'whitebox-engine/scene'
+import { arrowHeadPoints, smoothPathData, straightPathData } from '../svg/paths.ts'
+import { pngDataUrl } from '../svg/png.ts'
+import { type ColourMode, type Tokens, resolvePaint as themePaint, tokens as themeTokens } from '../theme/tokens.ts'
 import { Tex } from './MathView.tsx'
 import { useColourMode } from './theme.tsx'
 
@@ -27,83 +28,9 @@ export interface SceneViewProps {
   readonly style?: CSSProperties
 }
 
-/**
- * Resolve a scene paint for a theme: theme tokens to the theme's colour, `none` and literal colours as they are.
- *
- * @param paint - The paint.
- * @param t - The theme's tokens.
- * @returns A CSS colour, or `undefined` for no paint.
- */
-export function resolvePaint(paint: Paint | undefined, t: Tokens): string | undefined {
-  if (paint === undefined) return undefined
-  if (paint === 'none') return 'none'
-  if (paint.startsWith('#') || paint.startsWith('rgba(')) return paint
-  return (t as unknown as Record<string, string>)[paint] ?? paint
-}
-
-/**
- * The SVG path data of a smooth curve through points (Catmull-Rom, as cubic Béziers), closed or open.
- *
- * @param points - The points.
- * @param closed - Whether the curve closes.
- * @returns The path data.
- */
-export function smoothPathData(points: readonly (readonly [number, number])[], closed = false): string {
-  const n = points.length
-  if (n < 3) return straightPathData(points, closed)
-  const at = (i: number): readonly [number, number] =>
-    points[closed ? (i + n) % n : Math.min(Math.max(i, 0), n - 1)] as readonly [number, number]
-  const first = at(0)
-  let d = `M${first[0]},${first[1]}`
-  const segments = closed ? n : n - 1
-  for (let i = 0; i < segments; i++) {
-    const [p0, p1, p2, p3] = [at(i - 1), at(i), at(i + 1), at(i + 2)]
-    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6]
-    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6]
-    d += `C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${p2[0]},${p2[1]}`
-  }
-  return closed ? `${d}Z` : d
-}
-
-function straightPathData(points: readonly (readonly [number, number])[], closed: boolean): string {
-  const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join('')
-  return closed && points.length > 0 ? `${d}Z` : d
-}
-
-/**
- * The triangle of an arrow head at `to`, pointing away from `from`.
- *
- * @param from - A point behind the tip.
- * @param to - The tip.
- * @param size - The head's length.
- * @returns The polygon's points as an SVG `points` string.
- */
-export function arrowHeadPoints(from: readonly [number, number], to: readonly [number, number], size: number): string {
-  const dx = to[0] - from[0]
-  const dy = to[1] - from[1]
-  const len = Math.hypot(dx, dy) || 1
-  const [ux, uy] = [dx / len, dy / len]
-  const bx = to[0] - ux * size
-  const by = to[1] - uy * size
-  const w = size * 0.45
-  return `${to[0]},${to[1]} ${bx - uy * w},${by + ux * w} ${bx + uy * w},${by - ux * w}`
-}
-
-function pixelsUrl(pixels: Pixels): string | undefined {
-  if (typeof document === 'undefined') return undefined
-  const canvas = document.createElement('canvas')
-  canvas.width = pixels.width
-  canvas.height = pixels.height
-  const ctx = canvas.getContext('2d')
-  if (ctx === null) return undefined
-  ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.rgba), pixels.width, pixels.height), 0, 0)
-  return canvas.toDataURL()
-}
-
 function Image(props: { readonly node: Extract<SceneNode, { kind: 'image' }> }): ReactElement | null {
   const { node } = props
-  const url = useMemo(() => pixelsUrl(node.pixels), [node.pixels])
-  if (url === undefined) return null
+  const url = useMemo(() => pngDataUrl(node.pixels), [node.pixels])
   return (
     <image
       href={url}
@@ -116,6 +43,11 @@ function Image(props: { readonly node: Extract<SceneNode, { kind: 'image' }> }):
       data-node-id={node.id}
     />
   )
+}
+
+/** A scene paint for the theme, or `undefined` for none given. */
+function resolvePaint(paint: Paint | undefined, t: Tokens): string | undefined {
+  return paint === undefined ? undefined : themePaint(paint, t.mode)
 }
 
 interface Ctx {
