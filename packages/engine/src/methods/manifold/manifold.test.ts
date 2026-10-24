@@ -45,6 +45,7 @@ describe('manifold learning', () => {
       locallyLinearEmbedding({ nNeighbors: 10 }),
       spectralEmbedding({ nNeighbors: 10 }),
       diffusionMap({ epsilon: 4 }),
+      diffusionMap({ bandwidth: 0.1 }),
     ]) {
       const f = est.fit(roll)
       expect(trustworthiness(roll.x, f.params.embedding)).toBeGreaterThan(0.8)

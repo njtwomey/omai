@@ -1,1 +1,4 @@
-{ "summary": "Probabilistic models", "dependsOn": [] }
+{
+  "summary": "Probabilistic models: HMMs, topic models, conjugate models, rating systems and linear-Gaussian latent models.",
+  "dependsOn": ["cluster"]
+}
