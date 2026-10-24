@@ -73,7 +73,7 @@ export class Counter {
     '/** Scale a number.\n *\n * @param x - The number.\n * @param options - Options.\n */\nexport const scale = (x: number, { by = 2 }: { by?: number } = {}): number => x * by\n',
   'packages/mini/src/lib/core/deep/index.ts': "export * from './deep.ts'\n",
   'packages/mini/src/lib/core/deep/deep.ts':
-    "import { add } from '../maths.ts'\n/** The answer. */\nexport const answer: number = 42\nexport { add as plus }\n",
+    "/** Deep things, said once. */\n\nimport { add } from '../maths.ts'\n/** The answer. */\nexport const answer: number = 42\nexport { add as plus }\n",
 }
 for (const [path, text] of Object.entries(files)) {
   mkdirSync(dirname(join(root, path)), { recursive: true })
@@ -113,6 +113,13 @@ describe('extractCatalogue', () => {
     expect(sym('mini/core#scale')?.params.map((p) => p.name)).toEqual(['x', 'options', 'options.by'])
     expect(sym('mini/core#scale')?.kind).toBe('function')
     expect(sym('mini/core/deep#answer')?.signature).toBe('const answer: number')
+  })
+
+  it('reads the opening comment of a file, not that of its first declaration', () => {
+    const summary = (p: string) => c.files.find((f) => f.path === `packages/mini/src/lib/core/${p}`)?.summary
+    expect(summary('deep/deep.ts')).toBe('Deep things, said once.')
+    expect(summary('maths.ts')).toBe('')
+    expect(c.files.map((f) => f.module)).toEqual(['mini/core', 'mini/core', 'mini/core/deep'])
   })
 
   it('reads public class members', () => {

@@ -200,3 +200,25 @@ describe('subplots', () => {
     expect(() => subplots(g, { zz: { layers: [] } })).toThrow()
   })
 })
+
+describe('subplot details', () => {
+  it('gives each panel its own legend and drops touching edge labels', () => {
+    const g = gridSpec(2, 2, {
+      hspace: 0,
+      wspace: 0,
+      cells: [
+        { id: 'a', row: 0, col: 0 },
+        { id: 'b', row: 1, col: 1 },
+      ],
+    })
+    const two = [
+      { y: [1, 2], name: 'u' },
+      { y: [2, 1], name: 'v' },
+    ]
+    const o = opt(subplots(g, { a: { layers: [lines(two)] }, b: { layers: [lines(two)] } }))
+    expect(o.legend).toHaveLength(2)
+    expect(o.xAxis[0].axisLabel.showMaxLabel).toBe(false)
+    expect(o.yAxis[1].axisLabel.showMaxLabel).toBe(false)
+    expect(opt(subplots(g, { a: { layers: [lines([{ y: [1] }])] } })).legend.show).toBe(false)
+  })
+})

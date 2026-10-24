@@ -1,68 +1,98 @@
 import type { ReactNode } from 'react'
-import type { ModuleDoc } from 'whitebox-meta/schema'
-import { type Docs, useDocs, useModuleSymbols } from './data.ts'
-import { DocsHome } from './Home.tsx'
-import { ModulePage } from './ModulePage.tsx'
-import { Sidebar } from './Sidebar.tsx'
+import { PrevNext } from '../shell/PrevNext.tsx'
+import { TocSidebar } from '../shell/TocSidebar.tsx'
+import { type Docs, type Folder, type IndexFile, useDocs, useFileSymbols } from './data.ts'
+import { FilePage } from './FilePage.tsx'
+import { FolderPage } from './FolderPage.tsx'
 import { SymbolPage } from './SymbolPage.tsx'
-import { docsToc } from './toc.ts'
+import { DOCS_HOME, docsToc } from './toc.ts'
 
-/** What a docs path names: the home, a module, or a symbol of a module. */
+/** What a docs path names, following the source tree: a folder, a file, or an export of a file. */
 type Target =
-  | { readonly kind: 'home' }
-  | { readonly kind: 'module'; readonly module: ModuleDoc }
-  | { readonly kind: 'symbol'; readonly module: ModuleDoc; readonly name: string }
+  | { readonly kind: 'folder'; readonly folder: Folder }
+  | { readonly kind: 'file'; readonly file: IndexFile }
+  | { readonly kind: 'symbol'; readonly file: IndexFile; readonly name: string }
   | { readonly kind: 'missing' }
 
 function resolve(docs: Docs, path: string): Target {
-  const rest = path.replace(/^\/docs\/?/, '').replace(/\/$/, '')
-  if (rest === '') return { kind: 'home' }
-  const whole = docs.module(`whitebox-engine/${rest}`)
-  if (whole !== undefined) return { kind: 'module', module: whole }
+  const rest = decodeURIComponent(path.replace(/^\/docs\/?/, ''))
+  const folder = docs.folder(rest)
+  if (folder !== undefined) return { kind: 'folder', folder }
+  const file = docs.file(rest)
+  if (file !== undefined) return { kind: 'file', file }
   const cut = rest.lastIndexOf('/')
-  const module = cut < 0 ? undefined : docs.module(`whitebox-engine/${rest.slice(0, cut)}`)
-  if (module === undefined) return { kind: 'missing' }
-  return { kind: 'symbol', module, name: decodeURIComponent(rest.slice(cut + 1)) }
+  const owner = cut < 0 ? undefined : docs.file(rest.slice(0, cut))
+  return owner === undefined ? { kind: 'missing' } : { kind: 'symbol', file: owner, name: rest.slice(cut + 1) }
 }
 
 function Loading(): ReactNode {
-  return <p className="text-sm text-neutral-500">Loading…</p>
+  return <p className="text-sm text-muted">Loading…</p>
 }
 
-function SymbolTarget(props: { readonly docs: Docs; readonly module: ModuleDoc; readonly name: string }): ReactNode {
-  const symbols = useModuleSymbols(props.module.id)
+function SymbolTarget(props: {
+  readonly docs: Docs
+  readonly file: IndexFile
+  readonly name: string
+  readonly nav: ReactNode
+}): ReactNode {
+  const symbols = useFileSymbols(props.file)
   if (symbols === null) return <Loading />
   const symbol = symbols.find((s) => s.name === props.name)
   if (symbol === undefined)
     return (
       <p>
-        No export {props.name} in {props.module.id}.
+        No export {props.name} in {props.file.path}.
       </p>
     )
-  return <SymbolPage docs={props.docs} module={props.module} symbol={symbol} />
+  return <SymbolPage docs={props.docs} file={props.file} symbol={symbol} nav={props.nav} />
 }
 
-/** The docs section: the engine reference under /docs, with the table of contents on the left. */
+const tocs = new WeakMap<Docs, ReturnType<typeof docsToc>>()
+function tocOf(docs: Docs): ReturnType<typeof docsToc> {
+  let t = tocs.get(docs)
+  if (t === undefined) {
+    t = docsToc(docs)
+    tocs.set(docs, t)
+  }
+  return t
+}
+
+/** The docs section: the engine's source tree under /docs, with previous and next links in tree order. */
 export function DocsSection(props: { readonly path: string }): ReactNode {
   const docs = useDocs()
   if (docs === null) return <Loading />
-  const target = resolve(docs, props.path)
+  const path = props.path.replace(/\/$/, '')
+  const toc = tocOf(docs)
+  const nav = <PrevNext nodes={toc} home={DOCS_HOME} current={path} compact />
+  const target = resolve(docs, path)
   const page =
-    target.kind === 'home' ? (
-      <DocsHome docs={docs} />
-    ) : target.kind === 'module' ? (
-      <ModulePage docs={docs} module={target.module} />
+    target.kind === 'folder' ? (
+      <FolderPage docs={docs} folder={target.folder} nav={nav} />
+    ) : target.kind === 'file' ? (
+      <FilePage docs={docs} file={target.file} nav={nav} />
     ) : target.kind === 'symbol' ? (
-      <SymbolTarget docs={docs} module={target.module} name={target.name} />
+      <SymbolTarget docs={docs} file={target.file} name={target.name} nav={nav} />
     ) : (
       <p>Nothing documented at {props.path}.</p>
     )
   return (
-    <div className="flex gap-8">
-      <aside className="sticky top-4 hidden max-h-[calc(100vh-6rem)] w-60 shrink-0 overflow-y-auto md:block">
-        <Sidebar tree={docsToc(docs)} path={props.path.replace(/\/$/, '')} />
-      </aside>
-      <div className="min-w-0 flex-1">{page}</div>
-    </div>
+    <>
+      {page}
+      <PrevNext nodes={toc} home={DOCS_HOME} current={path} />
+    </>
+  )
+}
+
+/** The docs sidebar: the source tree, collapsed but for the way to the current page. */
+export function DocsToc(props: { readonly path: string }): ReactNode {
+  const docs = useDocs()
+  if (docs === null) return <div className="p-3 text-sm text-muted">Loading…</div>
+  return (
+    <TocSidebar
+      nodes={tocOf(docs)}
+      current={props.path.replace(/\/$/, '')}
+      home={DOCS_HOME}
+      placeholder="Filter files and exports"
+    />
   )
 }

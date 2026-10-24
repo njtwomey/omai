@@ -1,52 +1,42 @@
 /**
- * The docs table of contents as data: package, then the core's domains by tier and the methods' areas, then each
- * module's subfolders, then its symbols. The shared sidebar component renders it.
+ * The docs table of contents: the engine's source tree as it is on disk. `lib` and `methods`, then each folder's
+ * subfolders and files (alphabetical), then each file's exports in source order. Names are the folder and file names;
+ * the package's front page (`whitebox-engine`) sits above the tree.
  */
-import type { ModuleDoc } from 'whitebox-meta/schema'
-import { type Docs, modulePath, symbolPath } from './data.ts'
+import type { TocNode } from '../shell/toc.ts'
+import { type Docs, docsPath, symbolPath } from './data.ts'
 
-/** A node of the table of contents. */
-export interface TocNode {
-  readonly id: string
-  readonly title: string
-  readonly path?: string
-  readonly children?: readonly TocNode[]
-}
+/** The docs' front page, above the tree. */
+export const DOCS_HOME: { readonly title: string; readonly path: string } = { title: 'whitebox-engine', path: '/docs' }
 
-function moduleNode(docs: Docs, m: ModuleDoc, withSymbols: boolean): TocNode {
-  const children: TocNode[] = m.children.flatMap((c) => {
-    const child = docs.module(c)
-    return child === undefined ? [] : [moduleNode(docs, child, withSymbols)]
-  })
-  if (withSymbols) for (const s of docs.symbolsOf(m.id)) children.push({ id: s.id, title: s.name, path: symbolPath(s) })
-  return { id: m.id, title: m.name, path: modulePath(m.id), ...(children.length > 0 ? { children } : {}) }
+function folderNode(docs: Docs, path: string): TocNode {
+  const folder = docs.folder(path)
+  const children: TocNode[] = [
+    ...(folder?.folders ?? []).map((p) => folderNode(docs, p)),
+    ...(folder?.files ?? []).map((f) => ({
+      id: f.path,
+      title: f.path.slice(f.path.lastIndexOf('/') + 1),
+      path: docsPath(f.path),
+      ...(f.symbols.length === 0
+        ? {}
+        : {
+            children: f.symbols.map((s) => ({
+              id: `${f.path}#${s.name}`,
+              title: s.name,
+              path: symbolPath(f.path, s.name),
+            })),
+          }),
+    })),
+  ]
+  return { id: path, title: folder?.name ?? path, path: docsPath(path), ...(children.length > 0 ? { children } : {}) }
 }
 
 /**
- * The tree: Core (tier groups of domains) and Methods (areas), each module with its subfolders and symbols.
+ * The tree: `lib` and `methods` with everything below them.
  *
  * @param docs - The docs index.
- * @param withSymbols - Whether to list symbols under their modules (default true).
  * @returns The top-level nodes.
  */
-export function docsToc(docs: Docs, withSymbols = true): TocNode[] {
-  const top = docs.modules.filter((m) => m.parent === undefined)
-  const core = top.filter((m) => m.layer === 'core')
-  const tiers = [...new Set(core.map((m) => m.tier ?? 99))].sort((a, b) => a - b)
-  return [
-    {
-      id: 'core',
-      title: 'Core',
-      children: tiers.map((t) => ({
-        id: `tier-${t}`,
-        title: `Tier ${t}`,
-        children: core.filter((m) => (m.tier ?? 99) === t).map((m) => moduleNode(docs, m, withSymbols)),
-      })),
-    },
-    {
-      id: 'methods',
-      title: 'Methods',
-      children: top.filter((m) => m.layer === 'methods').map((m) => moduleNode(docs, m, withSymbols)),
-    },
-  ]
+export function docsToc(docs: Docs): TocNode[] {
+  return (docs.folder('')?.folders ?? []).map((p) => folderNode(docs, p))
 }

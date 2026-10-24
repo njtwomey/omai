@@ -35,7 +35,7 @@ export function Shell(props: {
   return (
     <div className="min-h-screen bg-bg text-fg">
       <style>{THEME_CSS}</style>
-      <header className="sticky top-0 z-30 flex h-12 items-center gap-6 border-b border-line bg-bg/90 px-4 backdrop-blur md:px-6">
+      <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-line bg-bg/90 px-3 backdrop-blur sm:gap-6 md:px-6">
         {sidebar === undefined ? null : (
           <button
             type="button"

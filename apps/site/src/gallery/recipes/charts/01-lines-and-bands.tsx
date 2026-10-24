@@ -1,6 +1,6 @@
-import { type ReactNode, useMemo } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import { band, cartesian, lines, points } from 'whitebox-render/charts'
-import { Chart, FigureFrame, useColourMode } from 'whitebox-render/react'
+import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -11,42 +11,51 @@ export const recipe: Recipe = {
 }
 
 const x = Array.from({ length: 81 }, (_, i) => i / 8)
+const observed = { x: [1, 2.5, 4, 5.5, 7, 8.5], y: [0.9, 0.5, -0.8, -0.6, 0.7, 0.8] }
 
 export default function LinesAndBands(): ReactNode {
   const mode = useColourMode()
-  const option = useMemo(
-    () =>
-      cartesian(
-        [
-          band(
-            [
-              {
-                x,
-                lower: x.map((v) => Math.sin(v) - 0.25 - 0.03 * v),
-                upper: x.map((v) => Math.sin(v) + 0.25 + 0.03 * v),
-              },
-            ],
-            { mode },
-          ),
-          lines(
-            [
-              { x, y: x.map(Math.sin), name: 'mean' },
-              { x, y: x.map((v) => Math.cos(v) / 2), name: 'cos / 2', dash: 'dashed' },
-            ],
-            { mode },
-          ),
-          points(
-            [{ x: [1, 2.5, 4, 5.5, 7, 8.5], y: [0.9, 0.5, -0.8, -0.6, 0.7, 0.8], name: 'observed', colour: 'tab3' }],
-            { mode },
-          ),
-        ],
-        { mode, x: { label: 'time' }, y: { label: 'value' }, tooltip: 'axis' },
-      ),
-    [mode],
-  )
+  const [width, setWidth] = useState(0.25)
+  const [growth, setGrowth] = useState(0.03)
+  const [showPoints, setShowPoints] = useState(true)
+  const option = useMemo(() => {
+    const spread = x.map((v) => width + growth * v)
+    return cartesian(
+      [
+        band(
+          [
+            {
+              x,
+              lower: x.map((v, i) => Math.sin(v) - (spread[i] ?? 0)),
+              upper: x.map((v, i) => Math.sin(v) + (spread[i] ?? 0)),
+            },
+          ],
+          {
+            mode,
+          },
+        ),
+        lines(
+          [
+            { x, y: x.map(Math.sin), name: 'mean' },
+            { x, y: x.map((v) => Math.cos(v) / 2), name: 'cos / 2', dash: 'dashed' },
+          ],
+          { mode },
+        ),
+        ...(showPoints ? [points([{ ...observed, name: 'observed', colour: 'tab3' }], { mode })] : []),
+      ],
+      { mode, x: { label: 'time' }, y: { label: 'value', limits: [-2.2, 2.2] }, tooltip: 'axis' },
+    )
+  }, [mode, width, growth, showPoints])
   return (
-    <FigureFrame filename="lines-and-bands">
-      <Chart option={option} />
-    </FigureFrame>
+    <div className="flex flex-col gap-3">
+      <ControlPanel columns={3}>
+        <NumberField label="band half-width" value={width} onChange={setWidth} min={0} max={1} />
+        <NumberField label="growth per unit time" value={growth} onChange={setGrowth} min={0} max={0.15} />
+        <Toggle label="observations" value={showPoints} onChange={setShowPoints} />
+      </ControlPanel>
+      <FigureFrame filename="lines-and-bands">
+        <Chart option={option} />
+      </FigureFrame>
+    </div>
   )
 }

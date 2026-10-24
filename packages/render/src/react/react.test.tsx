@@ -54,3 +54,30 @@ describe('FigureFrame', () => {
     expect(sized).not.toContain('aria-label')
   })
 })
+
+describe('FigureGrid and maths', () => {
+  it('overlays text and TeX cells on a subplot chart', async () => {
+    const { FigureGrid } = await import('./FigureGrid.tsx')
+    const { Equation, Derivation, MathProvider, Tex } = await import('./MathView.tsx')
+    const { gridSpec } = await import('../figure/grid.ts')
+    const { lines } = await import('../charts/lines.ts')
+    const grid = gridSpec(1, 3, {
+      cells: [
+        { id: 'a', row: 0, col: 0 },
+        { id: 't', row: 0, col: 1, kind: 'tex', content: '\\xvec' },
+        { id: 'n', row: 0, col: 2, kind: 'text', content: 'note' },
+      ],
+    })
+    const html = renderToString(<FigureGrid grid={grid} panels={{ a: { layers: [lines([{ y: [1, 2] }])] } }} />)
+    expect(html).toContain('<math')
+    expect(html).toContain('note')
+    const maths = renderToString(
+      <MathProvider macros={{ '\\R': '\\mathbb{R}' }} output="html">
+        <Tex>{'\\R'}</Tex>
+        <Equation>{'x'}</Equation>
+        <Derivation steps={[{ tex: 'a &= b' }]} />
+      </MathProvider>,
+    )
+    expect(maths).toContain('katex')
+  })
+})

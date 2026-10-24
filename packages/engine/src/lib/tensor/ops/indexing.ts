@@ -650,7 +650,7 @@ function leadingIndices(
  * ```ts
  * import { gather, tensor, toArray } from 'whitebox-engine/tensor'
  * const x = tensor([[1, 2], [3, 4]])
- * toArray(gather(x, [[1, 0], [0, 1]])) // => [4, 2]
+ * toArray(gather(x, [[1, 0], [0, 1]])) // => [3, 2]
  * toArray(gather(x, [[1]])) // => [[3, 4]]
  * ```
  */
