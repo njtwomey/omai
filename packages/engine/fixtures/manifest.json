@@ -365,6 +365,55 @@
       "cases": 39
     },
     {
+      "fixture": "games/evolutionary.json",
+      "source": "oracle/cases/games/evolutionary.py",
+      "reference": {
+        "nashpy": "0.0.43",
+        "open_spiel": "2.0.2"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "games/learning.json",
+      "source": "oracle/cases/games/learning.py",
+      "reference": {
+        "nashpy": "0.0.43"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "games/no_regret.json",
+      "source": "oracle/cases/games/no_regret.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "games/normal_form/correlated.json",
+      "source": "oracle/cases/games/normal_form/correlated.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "games/normal_form/enumeration.json",
+      "source": "oracle/cases/games/normal_form/enumeration.py",
+      "reference": {
+        "nashpy": "0.0.43"
+      },
+      "cases": 43
+    },
+    {
+      "fixture": "games/normal_form/zero_sum.json",
+      "source": "oracle/cases/games/normal_form/zero_sum.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
       "fixture": "graph/centrality.json",
       "source": "oracle/cases/graph/centrality.py",
       "reference": {

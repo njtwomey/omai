@@ -2125,17 +2125,63 @@ oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and adva
 
 ### 4.31 `games/` (tier 8): game theory (nashpy, OpenSpiel)
 
-oracle: nashpy, OpenSpiel
-- `normal-form.ts`: normal-form games, dominance, best responses, pure and mixed Nash equilibria (support enumeration,
-  Lemke-Howson), zero-sum solutions by LP, correlated equilibria.
-- `learning.ts`: fictitious play, replicator dynamics, regret matching, multiplicative weights in games, convergence
-  traces.
-- `extensive-form.ts`: game trees with information sets, backward induction, sequence form, CFR, CFR+, Monte Carlo CFR;
-  Kuhn and Leduc poker.
-- `cooperative.ts`: coalitional games, Shapley values (exact and sampled), the core, Banzhaf indices; used by
-  `learn/explain/shapley.ts`.
-- `mechanisms.ts`: auctions (first price, second price, VCG), voting rules (plurality, Borda, Condorcet, instant
-  runoff), social choice paradoxes.
+oracle: nashpy (support and vertex enumeration, Lemke-Howson from every label, fictitious play, replicator dynamics),
+OpenSpiel (CFR, CFR+, discounted CFR, regret matching, projected replicator dynamics, best responses and exploitability
+on Kuhn and Leduc poker, the sequence-form LP), scipy.optimize.linprog (zero-sum values, maxmin levels, correlated
+equilibria), textbook cooperative games (Shapley values, the core, the nucleolus of bankruptcy games). Built on
+`optim/linear-programming.ts` (every LP), `foundations/combinatorics.ts` and `numerics/linalg`. `methods/rl` can
+delegate its zero-sum stage games (minimax-Q), matrix games and Kuhn/Leduc rules here.
+
+`normal-form/` (inlined into `games`):
+- `game.ts`: `NormalFormGame` (any number of players, payoffs row-major over profiles), `normalFormGame`,
+  `bimatrixGame`, `payoffMatrices`, `profilePayoffs`, `expectedPayoffs`, `actionValues`, `bestResponses`,
+  `deviationGains`, `nashConv`, `isNash`, `pureNashEquilibria`, `isConstantSum`, `uniformProfile`, `Equilibrium`,
+  `GameRunOptions`.
+- `classic.ts`: the textbook games: prisoner's dilemma, matching pennies, rock-paper-scissors, battle of the sexes,
+  stag hunt, Aumann's chicken, hawk-dove, Shapley's game, n-player coordination, `randomGame`.
+- `dominance.ts`: strict and weak dominance by pure or mixed strategies (mixed by LP), `dominatedActions`,
+  `iteratedElimination`, `restrictGame`, `pureMaxmin`.
+- `enumeration.ts`: `supportEnumeration`, `vertexEnumeration` (best-response polytopes, labels, degenerate games),
+  `distinctEquilibria`.
+- `lemke-howson.ts`: Lemke-Howson with lexicographic pivoting as a traced algorithm (each pivot a step),
+  `lemkeHowsonEnumeration` (every initial label).
+- `zero-sum.ts`: `solveZeroSum` (both LPs, value and duality gap), `zeroSumEquilibrium`, `maximin` (security strategies
+  in any game).
+- `correlated.ts`: correlated and coarse correlated equilibria by LP (welfare, egalitarian, weighted or feasible),
+  `correlatedGains` (swap and external regret), `isCorrelatedEquilibrium`, `jointDistribution`.
+
+Learning in normal-form games (every routine is a traced algorithm with an iteration cap):
+- `learning.ts`: fictitious play (simultaneous or alternating, nashpy's counts), stochastic fictitious play (logit
+  responses), best-response dynamics (stops at a pure equilibrium or a detected cycle).
+- `no-regret.ts`: regret matching (OpenSpiel's, with regret matching+ and linear averaging) and multiplicative weights
+  (Hedge) in self-play; average strategies, average joint play, NashConv and external regret per iteration.
+- `evolutionary.ts`: the replicator(-mutator) field and dynamics, two-population replicator dynamics (Runge-Kutta to
+  given time points), projected replicator dynamics (OpenSpiel's, n players).
+
+`extensive-form/` (inlined into `games`):
+- `tree.ts`: `ExtensiveGame` (OpenSpiel-style states: current player or chance, legal actions, chance outcomes,
+  information-state keys, returns), `treeGame` (games from literal trees), `gameTree` (the materialised tree with
+  information sets), tabular policies, `expectedReturns`, `backwardInduction` (subgame-perfect play of perfect-information
+  games), `toNormalForm` (pure strategies of small games).
+- `best-response.ts`: `bestResponse`, `nashConv`, `exploitability` (OpenSpiel's definitions).
+- `sequence-form.ts`: sequences, realisation-plan constraints and payoff matrices; the two-player zero-sum solution
+  by one LP (Koller, Megiddo and von Stengel), realisation plans back to behaviour policies.
+- `cfr.ts`: counterfactual regret minimisation as a traced algorithm: vanilla CFR, CFR+, linear and discounted CFR
+  (alternating updates, OpenSpiel's conventions), exploitability per iteration.
+- `mccfr.ts`: Monte Carlo CFR with external and outcome sampling, keys per iteration.
+- `poker.ts`: Kuhn poker and Leduc poker (OpenSpiel's rules and information states), `kuhnEquilibrium` (the
+  one-parameter family of equilibria).
+
+Cooperative games and mechanisms:
+- `cooperative.ts`: coalitional games (characteristic functions over bitmasks), weighted voting, glove and bankruptcy
+  games, Shapley values (exact and by permutation sampling with standard errors), Banzhaf indices, superadditivity and
+  convexity; used by `learn/explain/shapley.ts`.
+- `core.ts`: core membership, a core point or emptiness, the least core, the nucleolus (sequential LPs).
+- `auctions.ts`: first-price, second-price (Vickrey) and all-pay auctions, VCG with Clarke pivot payments, symmetric
+  equilibrium bids and expected revenue with independent uniform values (revenue equivalence).
+- `voting.ts`: preference profiles, plurality, Borda, Copeland, instant runoff, the pairwise majority matrix,
+  Condorcet winners and losers, majority cycles, and the social choice paradoxes (Condorcet's paradox, Condorcet
+  winners or losers under other rules, spoilers).
 ### 4.32 `probprog/` (tier 9): probabilistic programming and automatic inference (NumPyro, Pyro)
 
 oracle: numpyro and pyro on small models (posterior moments within Monte Carlo error), pgmpy for discrete programs
@@ -3520,9 +3566,9 @@ A uv project (root `pyproject.toml`) with pydantic and pydantic-settings, and de
 fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy,
 networkx, python-control with slycot), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro, pgmpy, arviz),
 `oracle-signal` (pywt, librosa, scikit-image, pystoi, pesq), `oracle-text` (tokenizers, tiktoken, nltk, sacrebleu,
-rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel),
+rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel, nashpy),
 `oracle-misc` (lifelines, mlxtend, pysubgroup, umap-learn, hdbscan, dowhy, econml, causal-learn, pysindy, faiss-cpu,
-implicit, optuna, nashpy).
+implicit, optuna).
 - `oracle/whitebox_oracle/settings.py`: `OracleSettings` (reads the root `.env`; output paths; selection by path prefix
   or group).
 - `oracle/whitebox_oracle/fixture.py`: `Case` and `Fixture` (inputs, outputs, tolerances, reference library and version,

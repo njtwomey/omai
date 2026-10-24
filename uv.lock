@@ -79,6 +79,15 @@ wheels = [
 ]
 
 [[package]]
+name = "attrs"
+version = "26.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/9a/8e/82a0fe20a541c03148528be8cac2408564a6c9a0cc7e9171802bc1d26985/attrs-26.1.0.tar.gz", hash = "sha256:d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32", size = 952055, upload-time = "2026-03-19T14:22:25.026Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl", hash = "sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309", size = 67548, upload-time = "2026-03-19T14:22:23.645Z" },
+]
+
+[[package]]
 name = "autograd"
 version = "1.9.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1515,6 +1524,19 @@ wheels = [
 ]
 
 [[package]]
+name = "ml-collections"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "absl-py" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b8/f8/1a9ae6696dbb6bc9c44ddf5c5e84710d77fe9a35a57e8a06722e1836a4a6/ml_collections-1.1.0.tar.gz", hash = "sha256:0ac1ac6511b9f1566863e0bb0afad0c64e906ea278ad3f4d2144a55322671f6f", size = 61356, upload-time = "2025-04-17T08:25:02.247Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/8a/18d4ff2c7bd83f30d6924bd4ad97abf418488c3f908dea228d6f0961ad68/ml_collections-1.1.0-py3-none-any.whl", hash = "sha256:23b6fa4772aac1ae745a96044b925a5746145a70734f087eaca6626e92c05cbc", size = 76707, upload-time = "2025-04-17T08:24:59.038Z" },
+]
+
+[[package]]
 name = "ml-dtypes"
 version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1612,6 +1634,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/bf/21/f64d6b2dbea7bf3f8c38cdc786dcc6ef012ca3d173ad208c782c9a7bedf6/narwhals-2.27.1.tar.gz", hash = "sha256:aed93076a3ea42d9c32c88e4eb5ea422a21937011cbe1f480f9572a523c82094", size = 735013, upload-time = "2026-10-10T06:52:18.113Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/89/5d4c86da1130d9059681e5b6cd7645df5c10279a6a079c5c37dcb2cc6f3f/narwhals-2.27.1-py3-none-any.whl", hash = "sha256:d057df13f5852b8e157596e82eb5e955fad267425df5e420e0ee9863da483b31", size = 483211, upload-time = "2026-10-10T06:52:16.32Z" },
+]
+
+[[package]]
+name = "nashpy"
+version = "0.0.43"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "deprecated" },
+    { name = "networkx" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e5/34/32469f128492bbf00b0d9b2fc6c2022b698e6f0f53cb719c2dd5e3a36dd5/nashpy-0.0.43.tar.gz", hash = "sha256:3a5a8492daa2d8d8dd7a41ca9745887502970b5bc2c2018763950cbbb8c12845", size = 3052301, upload-time = "2025-11-06T18:43:57.338Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/b1/b83c723c172165a9f751e2891dbb6cf32462794771920ed4cf780c3e7c5e/nashpy-0.0.43-py3-none-any.whl", hash = "sha256:9ec9a9795b6084b580b4bc2a17216643a39ebaf1d58503e3b9689b3d2d55ce42", size = 32343, upload-time = "2025-11-06T18:43:54.058Z" },
 ]
 
 [[package]]
@@ -1912,6 +1949,29 @@ source = { registry = "https://pypi.org/simple" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/f3/d86c845465a2723ad7e1e5c36dcd75ddb82898b3f53be47ebd429fb2fa5d/nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:4936d1d6780fbe68db454f5e72a42ff64d1fd6397df9f363ae786930fd5c1cd4", size = 148047, upload-time = "2025-09-04T08:29:01.761Z" },
     { url = "https://files.pythonhosted.org/packages/a8/64/3708a90d1ebe202ffdeb7185f878a3c84d15c2b2c31858da2ce0583e2def/nvidia_nvtx-13.0.85-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:cb7780edb6b14107373c835bf8b72e7a178bac7367e23da7acb108f973f157a6", size = 148878, upload-time = "2025-09-04T08:28:53.627Z" },
+]
+
+[[package]]
+name = "open-spiel"
+version = "2.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "absl-py" },
+    { name = "attrs" },
+    { name = "ml-collections" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bb/3b/9d56d511eff27e26714aa232c945bb00335f792bc1959637ee0d2639a018/open_spiel-2.0.2.tar.gz", hash = "sha256:6f520dfe499b9e5e1e3a31cf77bf071abb02b98104789e7698021922a064e856", size = 5642416, upload-time = "2026-08-12T18:57:46.929Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/d2/949be4b9551916c06d9936eec3f1ac6d220f1b760cff535277934b8f8e45/open_spiel-2.0.2-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:57bd99505d28c1582c8acca5560222f157fdbed1fdf36b4a02423a4974bf035a", size = 12914828, upload-time = "2026-08-12T18:57:29.903Z" },
+    { url = "https://files.pythonhosted.org/packages/98/75/675e4a71b92474689f3c3e54d17d61fb61040477f838112cf115324d2008/open_spiel-2.0.2-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:edce4e7090c0a4162ee23eb922f4160dfab71286ac2f9a4608d80bab02804d61", size = 15254061, upload-time = "2026-08-12T18:57:32.336Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/53/89c6f4f6db6c41680794760528e3dac0b5e73cc1e3d03915eb8e803365c2/open_spiel-2.0.2-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5495b58e0bb82d196b2f457b0620ad2d9e6fa9620cb881d44d31640bd9677a57", size = 16049051, upload-time = "2026-08-12T18:57:34.445Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/cb/5404d9773cc08394e01f0fb33c0842aa6f30c986490d38446ae277411bb4/open_spiel-2.0.2-cp313-cp313-win_amd64.whl", hash = "sha256:bfa52822f309379bbdc8820bafa5bceee7a3e882efecba58ff65e3b8a807672b", size = 10434793, upload-time = "2026-08-12T18:57:36.531Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/f4/c5b892d14e106203cadfe9927ac3c2d4d72a1394f1e45f1ac1c856346e38/open_spiel-2.0.2-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:8c3fc8a28e0e2421f34f00cda54c9f00edfa4627c5107c88c9b750b95525902f", size = 12432086, upload-time = "2026-08-12T18:57:38.408Z" },
+    { url = "https://files.pythonhosted.org/packages/43/11/2235fb7b26ac3d0dfe14437af97531c134a3b3e7e2947b88862fc181ba9d/open_spiel-2.0.2-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b66f2ecfec2eda81c17659b544ec2a6a729a34d54474edd09af386bad37e019b", size = 15260888, upload-time = "2026-08-12T18:57:40.556Z" },
+    { url = "https://files.pythonhosted.org/packages/08/bf/f803566a00124a3d82eb056cd83442d2f8ef4ff61163f56d548481da87be/open_spiel-2.0.2-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:661cc7615d3a09294fbc37cb9d15b123d03b970dbfc0b110ccbbc91c2835d4d2", size = 16050762, upload-time = "2026-08-12T18:57:42.698Z" },
+    { url = "https://files.pythonhosted.org/packages/63/ca/c10349d4fc3644c35c43f43a68a0ef538510bbab4a3eaf1055abaa8f9fa2/open_spiel-2.0.2-cp314-cp314-win_amd64.whl", hash = "sha256:38ee96134315e2bd93bcf3bec7ea7f16079d4a5635523b9500e9fb853eff8eaa", size = 10512259, upload-time = "2026-08-12T18:57:45.055Z" },
 ]
 
 [[package]]
@@ -3708,6 +3768,8 @@ oracle-prob = [
 ]
 oracle-rl = [
     { name = "gymnasium" },
+    { name = "nashpy" },
+    { name = "open-spiel" },
 ]
 oracle-torch = [
     { name = "gpytorch" },
@@ -3783,7 +3845,11 @@ oracle-prob = [
     { name = "pyagrum", specifier = ">=3.3.0" },
     { name = "sklearn-crfsuite", specifier = ">=0.5.0" },
 ]
-oracle-rl = [{ name = "gymnasium" }]
+oracle-rl = [
+    { name = "gymnasium" },
+    { name = "nashpy", specifier = ">=0.0.43" },
+    { name = "open-spiel", specifier = ">=2.0.2" },
+]
 oracle-torch = [
     { name = "gpytorch", specifier = ">=1.15.2" },
     { name = "monai", specifier = ">=1.6.1" },
