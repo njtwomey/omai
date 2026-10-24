@@ -35,6 +35,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/dynamics/filtering': () => import('whitebox-engine/dynamics/filtering'),
   'whitebox-engine/dynamics/ode': () => import('whitebox-engine/dynamics/ode'),
   'whitebox-engine/dynamics/pde': () => import('whitebox-engine/dynamics/pde'),
+  'whitebox-engine/exposition': () => import('whitebox-engine/exposition'),
   'whitebox-engine/foundations': () => import('whitebox-engine/foundations'),
   'whitebox-engine/games': () => import('whitebox-engine/games'),
   'whitebox-engine/games/extensive-form': () => import('whitebox-engine/games/extensive-form'),
