@@ -612,6 +612,22 @@
       "cases": 30
     },
     {
+      "fixture": "logic/answer-sets.json",
+      "source": "oracle/cases/logic/answer-sets.py",
+      "reference": {
+        "clingo": "5.8.2"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "logic/datalog.json",
+      "source": "oracle/cases/logic/datalog.py",
+      "reference": {
+        "clingo": "5.8.2"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "logic/maxsat.json",
       "source": "oracle/cases/logic/maxsat.py",
       "reference": {
