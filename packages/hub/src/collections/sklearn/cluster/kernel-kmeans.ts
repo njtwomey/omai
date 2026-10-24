@@ -10,8 +10,8 @@ export const kernelKmeans: HubEntry = defineEntry({
   collection: 'sklearn/cluster',
   tags: ['clustering', 'kernels'],
   datasets: ['clustering2d'],
-  dataset: 'circles',
-  ...fitEstimator(kernelKMeans({ nClusters: 2 }), { unsupervised: true }),
+  dataset: 'moons',
+  ...fitEstimator(kernelKMeans({ nClusters: 2, gamma: 3 }), { unsupervised: true }),
   views: [{ record: 'clusteringSteps', title: 'Clustering steps' }],
   methods: [{ file: 'methods/cluster/kmeans.ts', name: 'kernelKMeans' }],
 })

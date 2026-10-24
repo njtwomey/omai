@@ -6,10 +6,12 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const lasso: HubEntry = defineEntry({
   id: 'sklearn/linear-model/lasso',
   title: 'Lasso',
-  summary: 'L1-penalised least squares: coefficients enter one by one as the penalty falls.',
+  summary:
+    'L1-penalised least squares: as the penalty falls the coefficients enter one by one, the informative ones first, and most noise features never do.',
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'sparsity', 'regularisation'],
   datasets: ['regressionTabular', 'regression1d'],
+  dataset: 'sparseUncorrelated',
   ...fitEstimator(lassoEstimator({ alpha: 0.1 })),
   views: [
     { record: 'regularisationPath', title: 'Regularisation path' },
