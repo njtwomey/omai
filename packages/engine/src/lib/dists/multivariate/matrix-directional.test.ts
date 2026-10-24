@@ -10,6 +10,7 @@ import {
   mul,
   sin,
   stack,
+  std,
   sum,
   swapaxes,
   type Tensor,
@@ -93,7 +94,10 @@ describe('directional distributions', () => {
     const d = D.vonMisesFisher([0, 0.6, 0.8], 5)
     const x = d.sample(key(8), [N]) as Tensor
     expect(toFlat(sum(mul(x, x), -1)).every((v) => Math.abs(v - 1) < 1e-12)).toBe(true)
-    close(toFlat(mean(x, 0)), toFlat(d.mean()), 2)
+    // Within four standard errors of the sample mean, estimated from the draws.
+    const se = toFlat(std(x, 0)).map((v) => v / Math.sqrt(N))
+    const m = toFlat(d.mean())
+    for (const [i, v] of toFlat(mean(x, 0)).entries()) expect(Math.abs(v - (m[i] ?? 0))).toBeLessThan(4 * (se[i] ?? 0))
     expect(d.hasRsample).toBe(false)
   })
 

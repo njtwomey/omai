@@ -321,3 +321,39 @@ export function logAddExp(a: number, b: number): number {
   if (a === Number.POSITIVE_INFINITY || b === Number.POSITIVE_INFINITY) return Number.POSITIVE_INFINITY
   return a > b ? a + Math.log1p(Math.exp(b - a)) : b + Math.log1p(Math.exp(a - b))
 }
+
+/**
+ * Arithmetic mean of a list (pairwise summation), `NaN` for an empty list.
+ *
+ * @param xs - The numbers.
+ * @returns The mean.
+ * @example
+ * ```ts
+ * import { meanOf } from 'whitebox-engine/base'
+ * meanOf([1, 2, 6]) // => 3
+ * ```
+ */
+export function meanOf(xs: ArrayLike<number>): number {
+  return xs.length === 0 ? Number.NaN : pairwiseSum(xs) / xs.length
+}
+
+/**
+ * Variance of a list about its mean, dividing by `n - ddof` (numpy's `var`), `NaN` when `n <= ddof`.
+ *
+ * @param xs - The numbers.
+ * @param ddof - Delta degrees of freedom (default 0, the population variance; 1 for the sample variance).
+ * @returns The variance.
+ * @example
+ * ```ts
+ * import { varianceOf } from 'whitebox-engine/base'
+ * varianceOf([1, 2, 3, 4], 1) // => 1.6666666666666667
+ * ```
+ */
+export function varianceOf(xs: ArrayLike<number>, ddof = 0): number {
+  const n = xs.length
+  if (n <= ddof) return Number.NaN
+  const m = meanOf(xs)
+  const d = new Float64Array(n)
+  for (let i = 0; i < n; i++) d[i] = ((xs[i] ?? 0) - m) ** 2
+  return pairwiseSum(d) / (n - ddof)
+}

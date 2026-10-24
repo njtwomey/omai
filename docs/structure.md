@@ -1712,16 +1712,22 @@ share a concept they share a definition but not a name.
 ### 4.30 `rl/` (tier 8): reinforcement learning infrastructure (gymnasium, PettingZoo, stable-baselines3 building blocks)
 
 oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and advantages, rliable for aggregate metrics
-- `env.ts`: `Env<S, O, A>` (spec, observation and action spaces, `reset`, `step`, `render` required, optional `model` for
-  planning and `oracle` for regret), `EnvSpec`, `EnvDefinition` (factory with an options `Space`).
-- `gym.ts`: `GymEnv` (gymnasium-style wrapper), `make`, `listEnvironments` (finds definitions in an imported module).
-- `multi-agent.ts`: multi-agent environments in turn-based (AEC) and simultaneous (parallel) forms, per-agent spaces,
-  `MultiAgentEnv` wrappers.
-- `wrappers.ts`: time limits, episode statistics, observation and reward normalisation, action clipping and rescaling,
-  frame stacking, action repeat, observation transforms, flattening, one-hot observations, pixel observations from
-  rendered scenes (`scene/raster.ts`).
-- `vector.ts`: vectorised environments with independent keys and auto-reset.
-- `agent.ts`: `Agent<G, O, A>` (`init`, `act`, `learn`, `greedy`), `Policy`, `Transition`.
+- `env.ts`: `Env<S, O, A>` (spec, observation and action spaces, `reset`, `step`, `render` required, optional `model`
+  (the tabular `P` table: states, actions, initial distribution, outcomes) for planning, `oracle` for regret,
+  `resetFrom` for state that persists across episodes, `observe`), `EnvSpec`, `EnvDefinition` (factory with an
+  options `Space`), `resetAfter`, `unwrapped`, `isEnvDefinition`.
+- `gym.ts`: `GymEnv` (gymnasium-style wrapper), `make` (by definition or by id in a registry, time-limit override,
+  wrappers), `listEnvironments` (finds definitions in an imported module).
+- `multi-agent.ts`: multi-agent environments in turn-based (`AecEnv`) and simultaneous (`ParallelEnv`) forms, per-agent
+  spaces, `aecToParallel`, `parallelToAec`, `parallelTimeLimit`, `singleAgentView` (one agent against fixed policies),
+  `playAec`, `playParallel`.
+- `wrappers.ts`: time limits, episode statistics, reward normalisation (`RunningMeanStd`), reward, action and
+  observation transforms, reward clipping, action clipping and rescaling, action repeat, sticky actions.
+- `observation-wrappers.ts`: observation normalisation, frame stacking, flattening, one-hot observations, time-aware
+  observations, pixel observations rendered from scenes (`scene/raster.ts`).
+- `vector.ts`: vectorised environments with independent keys and auto-reset (same-step and next-step), `GymVectorEnv`.
+- `agent.ts`: `Agent<G, O, A>` (`init`, `act`, `learn`, `greedy`, `stats`), `Policy`, `Transition`,
+  `behaviourPolicy`, `greedyPolicyOf`, `policyAgent`.
 - `rollout.ts`: rollouts as traced algorithms (episode events, optional frames), `runEpisode`, `evaluatePolicy`,
   `compareAgents` (common random numbers).
 - `buffers.ts`: replay buffers (persistent, chunked), prioritised replay (sum trees), n-step buffers, on-policy rollout
@@ -1729,9 +1735,11 @@ oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and adva
 - `returns.ts`: discounted returns, GAE, TD targets, lambda returns, n-step returns, V-trace, Retrace.
 - `policies.ts`: epsilon-greedy, Boltzmann, Gaussian (with tanh squashing), categorical and deterministic policies,
   Gaussian and Ornstein-Uhlenbeck exploration noise.
-- `mdp.ts`: tabular MDPs, value iteration, policy iteration, policy evaluation, Q from V, greedy policies, occupancy
-  measures, linear-programming solutions.
-- `planning.ts`: planning with models (MCTS over environment models via `search/adversarial`, rollout planners, CEM over
+- `mdp.ts`: tabular MDPs (from arrays or environment models), value iteration, policy iteration, policy evaluation (exact
+  and iterative), Q from V, greedy policies, occupancy measures, `tabularEnv` (environments from `P` tables). TODO:
+  linear-programming solutions, once `optim/linear-programming.ts` provides `linprog`.
+- `planning.ts`: planning with models (MCTS over environment models, UCT and PUCT with priors and values, and two-player
+  game search with negamax backups, written here while `search/adversarial` is not built; rollout planners, CEM over
   action sequences, MPPI).
 - `models.ts`: learned-dynamics interfaces (deterministic and probabilistic ensembles) for model-based agents.
 - `exploration.ts`: count-based bonuses, pseudo-counts, random network distillation and curiosity interfaces.
@@ -2510,41 +2518,57 @@ curves as loose references
 built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `scene`
 
 `rl/environments/` (each file exports `EnvDefinition`s; every environment has `render`)
-- `bandits.ts`: Bernoulli, Gaussian, contextual linear, adversarial and non-stationary bandits.
-- `gridworlds.ts`: grid world, cliff walking, frozen lake, windy grid world, mazes with keys and traps, four rooms.
-- `classic-control.ts`: CartPole, Pendulum, MountainCar (discrete and continuous), Acrobot.
-- `toy-text.ts`: Blackjack, Taxi, NChain, RiverSwim.
-- `minatar.ts`: MinAtar-style games on a 10 by 10 grid (Breakout, Asterix, Freeway, Seaquest, Space Invaders).
+- `bandits.ts`: Bernoulli, Gaussian (the 10-armed testbed), contextual linear, adversarial and non-stationary bandits,
+  with oracles for regret.
+- `gridworlds.ts`: grid world (AIMA 4 x 3 by default), cliff walking (and slippery), frozen lake (4 x 4, 8 x 8, random
+  maps), windy grid world (king's moves, stochastic wind), mazes with keys and traps (`keyMaze`), four rooms, and
+  `renderGrid`; gymnasium's `P` tables as models.
+- `classic-control.ts`: CartPole, Pendulum, MountainCar (discrete and continuous), Acrobot, matching gymnasium step for
+  step.
+- `toy-text.ts`: Blackjack (natural and Sutton-Barto rules), Taxi (rainy, fickle passenger), NChain, RiverSwim.
+- `minatar.ts`: MinAtar-style games on a 10 by 10 grid (Breakout, Asterix, Freeway, Seaquest, Space Invaders), with
+  minimal and full six-action sets, sticky actions and difficulty ramping.
 - `continuous-control.ts`: point mass, 2-D reacher, double integrator, planar quadrotor, cart double pendulum (analytic
-  dynamics).
-- `games.ts`: tic-tac-toe, connect four, nim, Kuhn and Leduc poker, Go on small boards.
+  dynamics: exact zero-order-hold steps or RK4 on Lagrangian equations of motion).
+- `games.ts`: tic-tac-toe, connect four, nim, Kuhn and Leduc poker, as turn-based environments with legal actions.
+- `go.ts`: Go on small boards (5, 7, 9; captures, simple ko or positional superko, area scoring with komi).
 - `multi-agent.ts`: matrix games (prisoner's dilemma, matching pennies, rock-paper-scissors, stag hunt), pursuit-evasion,
-  cooperative navigation.
-- `procedural.ts`: procedurally generated mazes and key-door tasks for generalisation studies.
-- `models.ts`: differentiable dynamics models of the control environments, for LQR, MPC and model-based agents.
+  cooperative navigation (MPE simple_spread).
+- `procedural.ts`: procedurally generated mazes (backtracker, Prim, Kruskal, braiding) and key-door tasks with
+  Procgen-style level seeds and train/test splits, for generalisation studies.
+- `models.ts`: differentiable dynamics models of the control environments (`ControlModel`, matching each environment's
+  step), `linearize`, trajectory derivatives and rollouts, for LQR, MPC and model-based agents.
 
 `rl/agents/` (each file exports agents implementing the `Agent` contract)
 - `random.ts`: random and constant agents.
 - `bandits.ts`: epsilon-greedy, UCB1, KL-UCB, Thompson sampling (Bernoulli and Gaussian), EXP3, LinUCB, linear Thompson
   sampling, gradient bandits.
-- `tabular.ts`: Q-learning, SARSA, expected SARSA, n-step SARSA, Monte Carlo control, TD(0) and TD(lambda), double
-  Q-learning, Dyna-Q, prioritised sweeping.
+- `tabular.ts`: Q-learning, SARSA, expected SARSA, n-step SARSA, SARSA(lambda), Monte Carlo control, TD(0) and
+  TD(lambda), double Q-learning, Dyna-Q (and Dyna-Q+), prioritised sweeping.
 - `planning.ts`: value and policy iteration agents, MCTS agents, AlphaZero-style self-play with a small network,
   minimax agents.
-- `value-based.ts`: DQN with double, dueling, prioritised-replay, n-step and noisy-network variants; distributional
-  C51, QR-DQN and IQN; Rainbow.
+- `value-based.ts`: Q networks and DQN with double, dueling, prioritised-replay, n-step and noisy-network variants.
+- `distributional.ts`: distributional C51 (categorical projection), QR-DQN (quantile Huber loss) and IQN (risk
+  distortions); Rainbow.
 - `policy-gradient.ts`: REINFORCE (with baselines), A2C, TRPO, PPO (clipped and KL-penalised).
 - `actor-critic.ts`: DDPG, TD3, SAC (continuous and discrete).
 - `model-based.ts`: PETS (probabilistic ensembles with CEM), MBPO-style short rollouts, a small latent world model in
-  the Dreamer style, MuZero-style planning with learned models.
-- `exploration.ts`: count-based bonuses, random network distillation, intrinsic curiosity.
-- `offline.ts`: behaviour cloning, BCQ, CQL, IQL, TD3+BC, decision transformers.
+  the Dreamer style (an MLP in place of the GRU), MuZero-style planning with learned models. The Dreamer- and
+  MuZero-style learners are tested for their mechanics; they do not yet solve a task within a test budget.
+- `exploration.ts`: count-based bonuses, random network distillation, intrinsic curiosity, as intrinsic-reward wrappers
+  around any agent.
+- `offline.ts`: offline datasets and the offline training algorithm, behaviour cloning.
+- `offline-q-learning.ts`: BCQ (discrete), CQL, naive offline DQN.
+- `offline-actor-critic.ts`: IQL, TD3+BC.
+- `decision-transformer.ts`: decision transformers.
 - `imitation.ts`: DAgger, GAIL, maximum-entropy inverse reinforcement learning.
-- `multi-agent.ts`: independent learners, minimax-Q, self-play, fictitious self-play (from `games`), value
-  decomposition (VDN, QMIX), MADDPG.
+- `multi-agent.ts`: independent learners, minimax-Q (TODO: solve stage games with `linprog` once it exists), self-play,
+  neural fictitious self-play (written here while `games` is not built).
+- `cooperative.ts`: value decomposition (VDN, QMIX), MADDPG.
 - `hierarchical.ts`: the options framework, option-critic.
 - `safe.ts`: constrained policy optimisation by Lagrangian PPO, shielding.
-- `control.ts`: LQR, swing-up (energy shaping plus LQR), iLQR, MPC and CEM agents.
+- `control.ts`: LQR, swing-up (energy shaping plus LQR; Pendulum, TODO: the cart double pendulum), iLQR, MPC (iLQR, CEM
+  or MPPI) and CEM agents.
 
 `rl/studies.ts`: learning-curve comparisons with aggregate metrics and intervals, sensitivity to hyperparameters,
 exploration and generalisation studies.

@@ -1,0 +1,68 @@
+import type { Json } from '../../../lib/base/index.ts'
+import { type Key, key as makeKey } from '../../../lib/random/index.ts'
+import type { Agent } from '../../../lib/rl/index.ts'
+import { type Space, sample } from '../../../lib/space/index.ts'
+
+/** What {@link randomAgent} needs from an environment: its action space (and, for type inference, its actions). */
+export interface RandomAgentEnv<O, A> {
+  readonly actionSpace: Space
+  reset?(key: Key): { readonly observation: O }
+  step?(state: never, action: A, key: Key): unknown
+}
+
+/**
+ * The uniformly random agent: every action is a fresh draw from the action space (`sample` of `lib/space` with the
+ * step key), so it works for discrete, box, multi-discrete and composite spaces. It never learns; its greedy action is
+ * a draw with a fixed key. The baseline every learning agent is compared with.
+ *
+ * @param env - The environment (or anything with an action space).
+ * @returns The agent; its state is `null`.
+ * @concept agents
+ * @example
+ * ```ts
+ * import { randomAgent } from 'whitebox-engine/methods/rl/agents'
+ * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { key } from 'whitebox-engine/random'
+ * const agent = randomAgent(cartPole.create())
+ * [0, 1].includes(agent.act(null, [0, 0, 0, 0], key(3))) // => true
+ * ```
+ */
+export function randomAgent<O, A>(env: RandomAgentEnv<O, A>): Agent<null, O, A> {
+  const space = env.actionSpace
+  return {
+    name: 'random',
+    config: { actionSpace: space.kind } as Json,
+    init: () => null,
+    act: (_, __, k) => sample(space, k) as A,
+    learn: (s) => s,
+    greedy: () => sample(space, GREEDY) as A,
+  }
+}
+
+/**
+ * The constant agent: always takes the same action (a baseline, and a way to probe an environment's dynamics).
+ *
+ * @param action - The action.
+ * @returns The agent; its state is `null`.
+ * @concept agents
+ * @example
+ * ```ts
+ * import { constantAgent } from 'whitebox-engine/methods/rl/agents'
+ * import { key } from 'whitebox-engine/random'
+ * const agent = constantAgent(1)
+ * agent.act(null, 0, key(0)) // => 1
+ * ```
+ */
+export function constantAgent<A, O = unknown>(action: A): Agent<null, O, A> {
+  return {
+    name: 'constant',
+    config: { action: action as unknown as Json },
+    init: () => null,
+    act: () => action,
+    learn: (s) => s,
+    greedy: () => action,
+  }
+}
+
+// A fixed key keeps the greedy action of the random agent deterministic.
+const GREEDY: Key = makeKey(0x67726565)

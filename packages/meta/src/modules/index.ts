@@ -32,6 +32,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/losses': () => import('whitebox-engine/losses'),
   'whitebox-engine/methods/datasets': () => import('whitebox-engine/methods/datasets'),
   'whitebox-engine/methods/rl': () => import('whitebox-engine/methods/rl'),
+  'whitebox-engine/methods/rl/agents': () => import('whitebox-engine/methods/rl/agents'),
   'whitebox-engine/methods/rl/environments': () => import('whitebox-engine/methods/rl/environments'),
   'whitebox-engine/metrics': () => import('whitebox-engine/metrics'),
   'whitebox-engine/nn': () => import('whitebox-engine/nn'),
