@@ -3,6 +3,8 @@ import { type Key, uniform } from '../../../lib/random/index.ts'
 import type { Env, EnvDefinition } from '../../../lib/rl/index.ts'
 import { circle, line, polygon, rect, type Scene, scene } from '../../../lib/scene/index.ts'
 import { bool, box, dict, int, real } from '../../../lib/space/index.ts'
+import { c2dMatrices } from '../../../lib/systems/index.ts'
+import { toArray } from '../../../lib/tensor/index.ts'
 import {
   type ArmParameters,
   armDerivatives,
@@ -517,7 +519,8 @@ export function doubleIntegratorParameters(options: DoubleIntegratorOptions = {}
 }
 
 /**
- * The exact zero-order-hold discretisation of `m p'' = u` (scipy.signal.cont2discrete with method 'zoh'):
+ * The exact zero-order-hold discretisation of `m p'' = u` (systems `c2dMatrices`, as scipy.signal.cont2discrete with
+ * method 'zoh'):
  * `A = [[1, dt], [0, 1]]`, `B = [[dt^2 / 2m], [dt / m]]`.
  *
  * @param params - The parameters (mass and dt).
@@ -533,14 +536,18 @@ export function doubleIntegratorMatrices(params: { readonly mass: number; readon
   readonly A: number[][]
   readonly B: number[][]
 } {
-  const k = dampedMassCoefficients(params.mass, 0, params.dt)
-  return {
-    A: [
-      [1, k.c],
-      [0, k.a],
+  const d = c2dMatrices(
+    [
+      [0, 1],
+      [0, 0],
     ],
-    B: [[k.gamma], [k.beta]],
-  }
+    [[0], [1 / params.mass]],
+    [[1, 0]],
+    [[0]],
+    params.dt,
+    { method: 'zoh' },
+  )
+  return { A: toArray(d.a) as number[][], B: toArray(d.b) as number[][] }
 }
 
 /** The state of the double integrator: position and velocity. */

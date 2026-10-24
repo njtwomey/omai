@@ -1,4 +1,12 @@
 import { WhiteboxError } from '../../../lib/base/index.ts'
+import {
+  matchingPennies,
+  type NormalFormGame,
+  payoffMatrices,
+  prisonersDilemma,
+  rockPaperScissors,
+  stagHunt,
+} from '../../../lib/games/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../../../lib/random/index.ts'
 import type { ParallelEnv, PerAgent } from '../../../lib/rl/index.ts'
 import { circle, line, rect, type SceneNode, scene, text } from '../../../lib/scene/index.ts'
@@ -34,59 +42,23 @@ const flags = (agents: readonly string[], value: boolean): PerAgent<boolean> =>
 /** A bimatrix: `payoffs[i][j]` is `[reward of player_0, reward of player_1]` when they play actions `i` and `j`. */
 export type Bimatrix = readonly (readonly (readonly [number, number])[])[]
 
+/** The payoffs of a two-player normal-form game from `games` as a bimatrix (`+ 0` turns zero-sum `-0`s into `0`). */
+function bimatrixOf(game: NormalFormGame): Bimatrix {
+  const [a, b] = payoffMatrices(game)
+  return a.map((row, i) => row.map((v, j): readonly [number, number] => [v + 0, (b[i]?.[j] ?? 0) + 0]))
+}
+
 /**
- * The classic two-player matrix games: the prisoner's dilemma (0 cooperate, 1 defect), matching pennies (0 heads, 1
+ * The classic two-player matrix games, with the payoffs of `games` (`prisonersDilemma`, `matchingPennies`,
+ * `rockPaperScissors`, `stagHunt`): the prisoner's dilemma (0 cooperate, 1 defect), matching pennies (0 heads, 1
  * tails; `player_0` wins on a match), rock-paper-scissors (0 rock, 1 paper, 2 scissors) and the stag hunt (0 stag, 1
  * hare).
  */
 export const MATRIX_GAMES: Readonly<Record<string, Bimatrix>> = {
-  prisonersDilemma: [
-    [
-      [3, 3],
-      [0, 5],
-    ],
-    [
-      [5, 0],
-      [1, 1],
-    ],
-  ],
-  matchingPennies: [
-    [
-      [1, -1],
-      [-1, 1],
-    ],
-    [
-      [-1, 1],
-      [1, -1],
-    ],
-  ],
-  rockPaperScissors: [
-    [
-      [0, 0],
-      [-1, 1],
-      [1, -1],
-    ],
-    [
-      [1, -1],
-      [0, 0],
-      [-1, 1],
-    ],
-    [
-      [-1, 1],
-      [1, -1],
-      [0, 0],
-    ],
-  ],
-  stagHunt: [
-    [
-      [4, 4],
-      [0, 3],
-    ],
-    [
-      [3, 0],
-      [2, 2],
-    ],
-  ],
+  prisonersDilemma: bimatrixOf(prisonersDilemma()),
+  matchingPennies: bimatrixOf(matchingPennies()),
+  rockPaperScissors: bimatrixOf(rockPaperScissors()),
+  stagHunt: bimatrixOf(stagHunt()),
 }
 
 /** The state of a repeated matrix game: rounds played and the previous joint action. */

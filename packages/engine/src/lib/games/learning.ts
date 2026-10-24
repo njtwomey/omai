@@ -1,5 +1,5 @@
 import { maxOf, WhiteboxError } from '../base/index.ts'
-import { Generator, type Key } from '../random/index.ts'
+import { uniformStream } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TensorChannel, type TraceSchema } from '../trace/index.ts'
 import { actionValues, type GameRunOptions, type NormalFormGame, nashConv } from './normal-form/index.ts'
 
@@ -44,22 +44,6 @@ function playerTensors(game: NormalFormGame, prefix: string, description: string
   for (const [p, k] of game.shape.entries())
     out[`${prefix}${p}`] = { role: 'state', description: `${description} of player ${p}`, shape: [k] }
   return out
-}
-
-/** A uniform draw in [0, 1) from a stream of blocks drawn from `key`. */
-function uniformStream(key: Key): () => number {
-  const rng = new Generator(key)
-  let block: Float64Array = new Float64Array(0)
-  let i = 0
-  return () => {
-    if (i >= block.length) {
-      block = rng.uniform([64]).data as Float64Array
-      i = 0
-    }
-    const u = block[i] ?? 0
-    i += 1
-    return u
-  }
 }
 
 function pick(values: readonly number[], tieBreak: 'first' | 'random', next: () => number): number {

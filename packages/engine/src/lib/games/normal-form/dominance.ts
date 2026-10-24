@@ -1,5 +1,5 @@
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
-import { solveLp } from '../_lp.ts'
+import { linprog } from '../../optim/index.ts'
 import { actionRows, decodeProfile, profileCount, stridesOf } from './_profiles.ts'
 import type { NormalFormGame } from './game.ts'
 
@@ -40,7 +40,7 @@ function dominatedBy(rows: number[][], a: number, strict: boolean, mixed: boolea
   const k = others.length
   if (strict) {
     // max e subject to sum_b sigma_b u(b, s) - e >= u(a, s) for every s, sigma in the simplex.
-    const r = solveLp({
+    const r = linprog({
       c: [...new Array<number>(k).fill(0), -1],
       aUb: Array.from({ length: m }, (_, s) => [...others.map((b) => -(rows[b]?.[s] ?? 0)), 1]),
       bUb: target.map((v) => -v),
@@ -51,7 +51,7 @@ function dominatedBy(rows: number[][], a: number, strict: boolean, mixed: boolea
     return r.success && -r.fun > tol
   }
   // max sum_s (sum_b sigma_b u(b, s) - u(a, s)) subject to every difference >= 0.
-  const r = solveLp({
+  const r = linprog({
     c: others.map((b) => {
       let s = 0
       for (const v of rows[b] ?? []) s -= v

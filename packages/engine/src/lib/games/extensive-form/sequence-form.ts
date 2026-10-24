@@ -1,7 +1,6 @@
 import { WhiteboxError } from '../../base/index.ts'
-import type { LinprogOptions } from '../../optim/index.ts'
+import { type LinprogOptions, linprog } from '../../optim/index.ts'
 import { toFlat } from '../../tensor/index.ts'
-import { solveLp } from '../_lp.ts'
 import { CHANCE, TERMINAL, tablePolicy } from './_tree.ts'
 import { type ExtensiveGame, type GameTree, type TabularPolicy, treeOf } from './tree.ts'
 
@@ -158,7 +157,7 @@ export function solveSequenceForm<S>(
     // u(i, j): player p's payoff for its sequence i against the opponent's sequence j.
     const u = (i: number, j: number): number => (p === 0 ? form.payoffs[0][i]?.[j] : form.payoffs[1][j]?.[i]) ?? 0
     // max opp.rhs . q subject to opp.matrix^T q <= U^T x (one row per opponent sequence), own.matrix x = own.rhs.
-    const r = solveLp(
+    const r = linprog(
       {
         c: [...new Array<number>(nOwn).fill(0), ...opp.rhs.map((v) => -v)],
         aUb: Array.from({ length: nOpp }, (_, j) => [

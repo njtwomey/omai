@@ -11,7 +11,7 @@ import {
   valueIteration,
 } from '../../../lib/rl/index.ts'
 import { item } from '../../../lib/tensor/index.ts'
-import { FOUR_ROOMS } from '../environments/gridworlds.ts'
+import { FOUR_ROOMS } from '../../../lib/worlds/index.ts'
 import {
   filled,
   nested,

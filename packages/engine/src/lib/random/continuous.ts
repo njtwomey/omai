@@ -11,7 +11,7 @@ import {
   transpose,
   type Value,
 } from '../tensor/index.ts'
-import { uniformStream, unitDoubles } from './_unit.ts'
+import { unitDoubles } from './_unit.ts'
 import { gammaOne, logGammaOne, truncatedOne } from './_variates.ts'
 import { foldIn, type Key, split } from './key.ts'
 
@@ -44,6 +44,40 @@ export function uniform(
   const high = options.high ?? 1
   const u = unitDoubles(k, sizeOf(shape))
   return fill(shape, (i) => low + (high - low) * (u[i] ?? 0))
+}
+
+/**
+ * An endless stream of uniform draws in `[0, 1)` from one key, for code that needs an unknown number of draws
+ * (rejection samplers, random walks, procedural generators). The draws come in blocks: block `b` is
+ * `uniform(foldIn(k, b), [block])`, so the stream is a pure function of the key and the block size.
+ *
+ * @param k - The random key.
+ * @param block - Draws per block (default 256); the same key and block size give the same stream.
+ * @returns A function returning the next draw on each call.
+ * @concept counter-based-rng
+ * @example
+ * ```ts
+ * import { foldIn, key, uniform, uniformStream } from 'whitebox-engine/random'
+ * const next = uniformStream(key(0), 4)
+ * const draws = [next(), next(), next(), next(), next()]
+ * draws[4] === uniform(foldIn(key(0), 1), [4]).data[0] // => true
+ * draws.every((u) => u >= 0 && u < 1) // => true
+ * ```
+ */
+export function uniformStream(k: Key, block = 256): () => number {
+  if (!(Number.isInteger(block) && block >= 1))
+    throw new WhiteboxError('value', 'uniformStream: block must be a positive integer')
+  let b = 0
+  let buf = unitDoubles(foldIn(k, b), block)
+  let i = 0
+  return () => {
+    if (i >= buf.length) {
+      b += 1
+      buf = unitDoubles(foldIn(k, b), block)
+      i = 0
+    }
+    return buf[i++] ?? 0
+  }
 }
 
 /**
@@ -102,7 +136,7 @@ export function normal(
  */
 export function truncatedNormal(k: Key, shape: Shape, lower: number, upper: number): Tensor<'float64'> {
   if (!(upper > lower)) throw new WhiteboxError('value', 'truncatedNormal: need upper > lower')
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   return fill(shape, () => truncatedOne(lower, upper, next))
 }
 
@@ -223,7 +257,7 @@ export function cauchy(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float6
  */
 export function gamma(k: Key, shape: Shape, alpha: number): Tensor<'float64'> {
   if (!(alpha > 0)) throw new WhiteboxError('value', `gamma: alpha must be positive, got ${alpha}`)
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   return fill(shape, () => gammaOne(alpha, next))
 }
 
@@ -246,7 +280,7 @@ export function gammaVariates(k: Key, alphas: ArrayLike<number>): Float64Array {
   for (let i = 0; i < alphas.length; i++) {
     const alpha = alphas[i] ?? Number.NaN
     if (!(alpha > 0)) throw new WhiteboxError('value', `gammaVariates: alpha must be positive, got ${alpha}`)
-    out[i] = gammaOne(alpha, uniformStream(foldIn(k, i), foldIn))
+    out[i] = gammaOne(alpha, uniformStream(foldIn(k, i)))
   }
   return out
 }
@@ -269,7 +303,7 @@ export function gammaVariates(k: Key, alphas: ArrayLike<number>): Float64Array {
  */
 export function beta(k: Key, shape: Shape, a: number, b: number): Tensor<'float64'> {
   if (!(a > 0 && b > 0)) throw new WhiteboxError('value', `beta: shapes must be positive, got ${a} and ${b}`)
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   return fill(shape, () => {
     const lx = logGammaOne(a, next)
     const ly = logGammaOne(b, next)
@@ -333,7 +367,7 @@ export function studentT(k: Key, shape: Shape, df: number): Tensor<'float64'> {
 export function dirichlet(k: Key, alpha: readonly number[], n: number): Tensor<'float64'> {
   if (alpha.some((a) => !(a > 0))) throw new WhiteboxError('value', 'dirichlet: concentrations must be positive')
   const K = alpha.length
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   const out = new Float64Array(n * K)
   for (let r = 0; r < n; r++) {
     let top = -Infinity
@@ -391,7 +425,7 @@ export function multivariateNormal(k: Key, mean: TensorLike, scaleTril: TensorLi
  * ```
  */
 export function vonMises(k: Key, shape: Shape, mu: number, kappa: number): Tensor<'float64'> {
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   if (kappa < 1e-8) return fill(shape, () => Math.PI * (2 * next() - 1))
   const tau = 1 + Math.sqrt(1 + 4 * kappa * kappa)
   const rho = (tau - Math.sqrt(2 * tau)) / (2 * kappa)

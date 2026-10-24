@@ -1,6 +1,6 @@
 import { WhiteboxError } from '../../base/index.ts'
 import { chi2 } from '../../dists/index.ts'
-import { cholesky, choleskyLogdet, choSolve, solve, solveDare } from '../../numerics/linalg/index.ts'
+import { cholesky, choleskyLogdet, choSolve, solve, solveDare, symmetricPart } from '../../numerics/linalg/index.ts'
 import {
   add,
   asTensor,
@@ -66,7 +66,6 @@ function resolve(model: LinearGaussianModel): Resolved {
 }
 
 const mv = (a: Value, x: Value): Value => reshape(matmul(a, reshape(x, [-1, 1])), [-1])
-const symmetrise = (a: Value): Value => mul(add(a, transpose(a)), 0.5)
 
 /**
  * The Kalman prediction step: x = F x + B u, P = F P F^T + Q.
@@ -146,7 +145,7 @@ export function kalmanUpdate(
   const Rv = asTensor(R)
   const zv = reshape(asTensor(z), [-1])
   const y = sub(zv, mv(Hv, xv))
-  const S = symmetrise(add(matmul(Hv, matmul(Pv, transpose(Hv))), Rv))
+  const S = symmetricPart(add(matmul(Hv, matmul(Pv, transpose(Hv))), Rv))
   const K = transpose(solve(S, matmul(Hv, Pv)))
   const xn = add(xv, mv(K, y))
   const n = xv.shape[0] ?? 0
@@ -159,7 +158,7 @@ export function kalmanUpdate(
   const p = zv.shape[0] ?? 0
   const quad = sum(mul(y, reshape(choSolve(L, reshape(y, [-1, 1])), [-1])))
   const logLikelihood = mul(add(add(quad, choleskyLogdet(L)), p * Math.log(2 * Math.PI)), -0.5)
-  return { x: xn, P: symmetrise(Pn), y, S, K, logLikelihood }
+  return { x: xn, P: symmetricPart(Pn), y, S, K, logLikelihood }
 }
 
 /** The output of {@link kalmanFilter}. */
@@ -362,7 +361,7 @@ export function rtsSmoother(model: LinearGaussianModel, filtered: KalmanResult):
     const J = transpose(solve(Pp, matmul(m.F, P)))
     const xp = mv(m.F, at(filtered.means, t))
     xs[t] = add(at(filtered.means, t), mv(J, sub(xs[t + 1] as Value, xp)))
-    Ps[t] = symmetrise(add(P, matmul(J, matmul(sub(Ps[t + 1] as Value, Pp), transpose(J)))))
+    Ps[t] = symmetricPart(add(P, matmul(J, matmul(sub(Ps[t + 1] as Value, Pp), transpose(J)))))
     Js.unshift(J)
   }
   return { means: stack(xs), covariances: stack(Ps), gains: Js.length === 0 ? undefined : stack(Js) }

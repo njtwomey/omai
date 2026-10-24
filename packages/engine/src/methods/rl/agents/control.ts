@@ -2,13 +2,11 @@ import { argminOf, clamp, type Json, maxOf, WhiteboxError } from '../../../lib/b
 import { dlqr, type IlqrOptions, ilqr } from '../../../lib/dynamics/control/index.ts'
 import { type Key, key as makeKey } from '../../../lib/random/index.ts'
 import { type Agent, cem, type Env, mppi, type Transition } from '../../../lib/rl/index.ts'
-import { type TensorLike, toArray, toFlat, type Value } from '../../../lib/tensor/index.ts'
+import { eye, type TensorLike, toArray, toFlat, type Value } from '../../../lib/tensor/index.ts'
 import { type ControlModel, controlModelEnv, linearize, pendulumModel, sequenceCosts } from '../environments/models.ts'
 import { rowsTensor } from './_common.ts'
 
 type Matrix = readonly (readonly number[])[]
-const identity = (n: number, scale = 1): number[][] =>
-  Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? scale : 0)))
 const asRows = (x: Value): number[][] => toArray(x) as number[][]
 
 // ------------------------------------------------------------------------------------------------------------ LQR
@@ -104,8 +102,8 @@ export function lqrAgent<A = readonly number[]>(
   const u0 = options.action ?? model.equilibrium?.action
   if (x0 === undefined || u0 === undefined) throw new WhiteboxError('value', 'lqrAgent: give an operating point')
   const toState = options.toState ?? ((o: readonly number[]) => o)
-  const Q = options.Q ?? identity(model.stateSize)
-  const R = options.R ?? identity(model.actionSize)
+  const Q = options.Q ?? asRows(eye(model.stateSize))
+  const R = options.R ?? asRows(eye(model.actionSize))
   const policy = (s: LqrAgentState, obs: readonly number[]): A => {
     const x = toState(obs)
     const dx = s.state.map((v, i) => (x[i] ?? 0) - v)

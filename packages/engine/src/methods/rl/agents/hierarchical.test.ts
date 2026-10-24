@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { key } from '../../../lib/random/index.ts'
 import { evaluatePolicy, greedyPolicyOf, make, trainAgent } from '../../../lib/rl/index.ts'
 import { discrete } from '../../../lib/space/index.ts'
-import { FOUR_ROOMS, fourRooms, makeFourRooms } from '../environments/index.ts'
+import { FOUR_ROOMS } from '../../../lib/worlds/index.ts'
+import { fourRooms, makeFourRooms } from '../environments/index.ts'
 import {
   hallwayOptions,
   intraOptionQLearning,

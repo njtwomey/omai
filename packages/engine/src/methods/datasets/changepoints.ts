@@ -1,9 +1,8 @@
 import { logSumExpOf, WhiteboxError } from '../../lib/base/index.ts'
 import { type DatasetGenerator, type TimeSeriesData, timeSeries } from '../../lib/data/index.ts'
-import { lgamma } from '../../lib/numerics/special/index.ts'
+import { bocpd, type ConjugateModel } from '../../lib/dynamics/filtering/index.ts'
 import { foldIn, gamma, normal, poisson, uniform } from '../../lib/random/index.ts'
 import { choice, dict, int, real } from '../../lib/space/index.ts'
-import { item } from '../../lib/tensor/index.ts'
 import { labels, stamp, vector } from './_util.ts'
 
 /** The kinds of regime change {@link changepointSeries} generates. */
@@ -27,7 +26,6 @@ export type SegmentModel =
     }
 
 const LOG_2PI = Math.log(2 * Math.PI)
-const lg = (x: number): number => item(lgamma(x))
 
 /** A run's posterior: the predictive log density and mean of the next value, and the update by one observation. */
 interface Run {
@@ -42,50 +40,26 @@ function gaussianLog(y: number, mean: number, variance: number): number {
   return -0.5 * (LOG_2PI + Math.log(variance) + (y - mean) ** 2 / variance)
 }
 
-/** The prior run of a model, for a segment that starts at step `start`. */
-function emptyRun(model: SegmentModel, start: number): Run {
+/** The segment models whose predictive depends on the time or the previous value (dynamics' `bocpd` has the rest). */
+type RegressionModel = Extract<SegmentModel, { readonly kind: 'ar' | 'trend' }>
+
+/** The conjugate model of dynamics' `bocpd` for a segment model, or undefined for the regression models. */
+function conjugateOf(model: SegmentModel): ConjugateModel | undefined {
   switch (model.kind) {
-    case 'mean': {
-      const s2 = model.sigma ** 2
-      const make = (length: number, precision: number, weighted: number): Run => {
-        const m = weighted / precision
-        return {
-          length,
-          logPredictive: (y) => gaussianLog(y, m, 1 / precision + s2),
-          predictiveMean: () => m,
-          update: (y) => make(length + 1, precision + 1 / s2, weighted + y / s2),
-        }
-      }
-      return make(0, 1 / model.priorStd ** 2, model.priorMean / model.priorStd ** 2)
-    }
-    case 'variance': {
-      // Normal with known mean and an inverse-gamma variance: a Student t predictive with 2a degrees of freedom.
-      const make = (length: number, a: number, b: number): Run => {
-        const nu = 2 * a
-        const scale2 = b / a
-        return {
-          length,
-          logPredictive: (y) =>
-            lg((nu + 1) / 2) -
-            lg(nu / 2) -
-            0.5 * Math.log(nu * Math.PI * scale2) -
-            ((nu + 1) / 2) * Math.log1p((y - model.mean) ** 2 / (nu * scale2)),
-          predictiveMean: () => model.mean,
-          update: (y) => make(length + 1, a + 0.5, b + 0.5 * (y - model.mean) ** 2),
-        }
-      }
-      return make(0, model.alpha, model.beta)
-    }
-    case 'rate': {
-      // Poisson with a gamma rate: a negative binomial predictive.
-      const make = (length: number, a: number, b: number): Run => ({
-        length,
-        logPredictive: (y) => lg(y + a) - lg(a) - lg(y + 1) + a * Math.log(b / (b + 1)) - y * Math.log(b + 1),
-        predictiveMean: () => a / b,
-        update: (y) => make(length + 1, a + y, b + 1),
-      })
-      return make(0, model.shape, model.rate)
-    }
+    case 'mean':
+      return { kind: 'normal-known-variance', sigma: model.sigma, priorMean: model.priorMean, priorStd: model.priorStd }
+    case 'variance':
+      return { kind: 'normal-known-mean', mean: model.mean, alpha: model.alpha, beta: model.beta }
+    case 'rate':
+      return { kind: 'poisson-gamma', shape: model.shape, rate: model.rate }
+    default:
+      return undefined
+  }
+}
+
+/** The prior run of a regression model, for a segment that starts at step `start`. */
+function emptyRun(model: RegressionModel, start: number): Run {
+  switch (model.kind) {
     case 'ar': {
       // Bayesian regression of y_t on y_{t-1} with a N(0, priorStd^2) coefficient and known noise.
       const s2 = model.sigma ** 2
@@ -150,7 +124,9 @@ export interface BocpdResult {
 
 /**
  * Exact Bayesian online changepoint detection (Adams and MacKay, 2007) for a hazard (constant, or a function of the
- * current run length) and a conjugate segment model: run-length posteriors, one-step predictives and the evidence.
+ * current run length) and a conjugate segment model: run-length posteriors, one-step predictives and the evidence. The
+ * `mean`, `variance` and `rate` models run dynamics' `filtering.bocpd`; the `ar` and `trend` regressions run the same
+ * recursion here.
  * Hypotheses whose posterior falls below `e^-40` of the total are dropped, which changes nothing at double precision.
  * It is the exact truth for data drawn by {@link changepointSeries} from the same model.
  *
@@ -173,7 +149,22 @@ export function exactBocpd(
 ): BocpdResult {
   if (typeof hazard === 'number' && !(hazard > 0 && hazard < 1))
     throw new WhiteboxError('value', 'exactBocpd: the hazard must be in (0, 1)')
-  const h = typeof hazard === 'number' ? () => hazard : hazard
+  const conjugate = conjugateOf(model)
+  if (conjugate !== undefined) {
+    const r = bocpd(y, conjugate, hazard)
+    return {
+      logPredictive: r.logPredictive,
+      predictiveMean: r.predictiveMean,
+      runLength: r.runLength,
+      mapRunLength: r.mapRunLength,
+      logEvidence: r.logEvidence,
+    }
+  }
+  return regressionBocpd(y, model as RegressionModel, typeof hazard === 'number' ? () => hazard : hazard)
+}
+
+/** The same recursion for the regression models, whose predictives read the time and the previous value. */
+function regressionBocpd(y: readonly number[], model: RegressionModel, h: (runLength: number) => number): BocpdResult {
   // Hypotheses before y_t: (log prior probability, run posterior).
   let hyps: { logp: number; run: Run }[] = [{ logp: 0, run: emptyRun(model, 0) }]
   const logPredictive: number[] = []

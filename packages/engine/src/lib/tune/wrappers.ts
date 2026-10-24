@@ -17,7 +17,7 @@ import {
   splitInputOf,
 } from '../learn/model-selection/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../random/index.ts'
-import { choice, clip, dict, grid, type Space, type SpaceValue, sample } from '../space/index.ts'
+import { choice, dict, grid, type Space, type SpaceValue, sample } from '../space/index.ts'
 import { nullTracer, type RunHandle, startRun } from '../trace/index.ts'
 import { type EstimatorSource, estimatorFor, estimatorObjective, type ScoringChoice } from './estimators.ts'
 import { randomSampler } from './samplers.ts'
@@ -90,7 +90,7 @@ function isSpace(x: unknown): x is Space {
 
 /** The candidates of a grid and a space to record them in. */
 function gridOf(paramGrid: ParamGrid, points: number): { readonly space: Space; readonly configs: SpaceValue[] } {
-  if (isSpace(paramGrid)) return { space: paramGrid, configs: grid(paramGrid, points).map((v) => clip(paramGrid, v)) }
+  if (isSpace(paramGrid)) return { space: paramGrid, configs: grid(paramGrid, points) }
   const configs = parameterGrid(paramGrid) as SpaceValue[]
   const union = new Map<string, Set<string | number | boolean>>()
   for (const c of configs)

@@ -1,6 +1,6 @@
 import { jacfwd } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
-import { cholesky, eigh, solve } from '../../numerics/linalg/index.ts'
+import { cholesky, eigh, solve, symmetricPart } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../../random/index.ts'
 import {
   add,
@@ -49,7 +49,6 @@ export interface NonlinearFilterResult {
 
 const vecOf = (v: TensorLike): Value => reshape(asTensor(v), [-1])
 const mv = (a: Value, x: Value): Value => reshape(matmul(a, reshape(x, [-1, 1])), [-1])
-const symmetrise = (a: Value): Value => mul(add(a, transpose(a)), 0.5)
 
 function runFilter<S extends { x: Value; P: Value; means: Value[]; covs: Value[]; logLik: Value }>(
   name: string,
@@ -286,17 +285,17 @@ export function unscentedKalmanFilter(
       const sf = stack(Array.from({ length: pts.count }, (_, i) => model.f(reshape(sliceAxis(sig, 0, i, i + 1), [-1]))))
       const pred = unscentedTransform(sf, pts.wm, pts.wc, Q)
       // filterpy reuses the propagated points; redrawing them from the prediction accounts for Q in the update.
-      const sx = options.redraw === true ? pts.points(pred.x, symmetrise(pred.P)) : sf
+      const sx = options.redraw === true ? pts.points(pred.x, symmetricPart(pred.P)) : sf
       const sh = stack(Array.from({ length: pts.count }, (_, i) => model.h(reshape(sliceAxis(sx, 0, i, i + 1), [-1]))))
       const obs = unscentedTransform(sh, pts.wm, pts.wc, R)
       const dx = sub(sx, reshape(pred.x, [1, -1]))
       const dz = sub(sh, reshape(obs.x, [1, -1]))
       const Pxz = matmul(transpose(dx), mul(dz, fromNumbers(pts.wc, [pts.count, 1])))
-      const S = symmetrise(obs.P)
+      const S = symmetricPart(obs.P)
       const K = transpose(solve(S, transpose(Pxz)))
       const y = sub(z, obs.x)
       const x = add(pred.x, mv(K, y))
-      const P = symmetrise(sub(pred.P, matmul(K, matmul(S, transpose(K)))))
+      const P = symmetricPart(sub(pred.P, matmul(K, matmul(S, transpose(K)))))
       const L = cholesky(S)
       const p = y.shape[0] ?? 0
       const w = solve(S, reshape(y, [-1, 1]))
@@ -372,7 +371,7 @@ export function ensembleKalmanFilter(
       const Pa = mul(matmul(transpose(dA), dA), 1 / (N - 1))
       const y = sub(z, zm)
       const w = solve(Pzz, reshape(y, [-1, 1]))
-      const L = cholesky(symmetrise(Pzz))
+      const L = cholesky(symmetricPart(Pzz))
       const ll = mul(add(add(sum(mul(y, reshape(w, [-1]))), mul(sum(logDiag(L)), 2)), p * Math.log(2 * Math.PI)), -0.5)
       s.means.push(xa)
       s.covs.push(Pa)

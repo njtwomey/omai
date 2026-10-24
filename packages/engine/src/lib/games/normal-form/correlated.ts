@@ -1,7 +1,6 @@
 import { WhiteboxError } from '../../base/index.ts'
-import type { LinprogOptions } from '../../optim/index.ts'
+import { type LinprogOptions, linprog } from '../../optim/index.ts'
 import { toFlat } from '../../tensor/index.ts'
-import { solveLp } from '../_lp.ts'
 import { decodeProfile, profileCount, stridesOf } from './_profiles.ts'
 import type { NormalFormGame } from './game.ts'
 
@@ -97,7 +96,7 @@ export function correlatedEquilibrium(game: NormalFormGame, options: CorrelatedO
   })
   // Egalitarian: t <= E[u_p] for every player p.
   if (egalitarian) for (let p = 0; p < players; p++) aUb.push([...Array.from(game.payoffs[p] ?? [], (v) => -v), 1])
-  const r = solveLp(
+  const r = linprog(
     {
       c,
       aUb,

@@ -15,7 +15,9 @@ function unit(lo: number, hi: number, x: number, log = false): number {
 
 function fromUnit(lo: number, hi: number, u: number, log = false): number {
   const c = clamp(u, 0, 1)
-  return log ? Math.exp(Math.log(lo) + c * (Math.log(hi) - Math.log(lo))) : lo + c * (hi - lo)
+  const x = log ? Math.exp(Math.log(lo) + c * (Math.log(hi) - Math.log(lo))) : lo + c * (hi - lo)
+  // The end points can round just outside the interval (exp(log(1e-5)) is 9.999999999999999e-6, 0.1 + 0.2 > 0.3).
+  return clamp(x, lo, hi)
 }
 
 function snap(low: number, high: number, step: number | undefined, x: number): number {

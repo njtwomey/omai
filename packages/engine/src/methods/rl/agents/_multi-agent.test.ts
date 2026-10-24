@@ -8,51 +8,8 @@ import {
   reservoirAdd,
   reservoirSample,
   sampleIndex,
-  solveZeroSum,
   tabularQ,
 } from './_multi-agent.ts'
-
-describe('zero-sum matrix games', () => {
-  it('solve pure saddle points, mixed equilibria and non-square games exactly', () => {
-    const saddle = solveZeroSum([
-      [3, 1],
-      [4, 2],
-    ])
-    expect(saddle).toMatchObject({ row: [0, 1], column: [0, 1], value: 2, gap: 0 })
-    const pennies = solveZeroSum([
-      [1, -1],
-      [-1, 1],
-    ])
-    expect(pennies.value).toBeCloseTo(0, 12)
-    for (const p of [...pennies.row, ...pennies.column]) expect(p).toBeCloseTo(0.5, 12)
-    const rps = solveZeroSum([
-      [0, -1, 1],
-      [1, 0, -1],
-      [-1, 1, 0],
-    ])
-    for (const p of rps.row) expect(p).toBeCloseTo(1 / 3, 12)
-    // A 2 x 3 game: the third column is never played; on the first two both players mix evenly, value 1/2.
-    const wide = solveZeroSum([
-      [2, -1, 0],
-      [-1, 2, 3],
-    ])
-    expect(wide.gap).toBeLessThan(1e-9)
-    expect(wide.value).toBeCloseTo(0.5, 12)
-    expect(() => solveZeroSum([])).toThrow(/empty/)
-  })
-
-  it('fall back to regret matching+ for larger games, to the tolerance', () => {
-    // 7 x 7 generalised rock-paper-scissors: uniform equilibrium, value 0.
-    const n = 7
-    const m = Array.from({ length: n }, (_, i) =>
-      Array.from({ length: n }, (_, j) => (i === j ? 0 : (j - i + n) % n <= 3 ? -1 : 1)),
-    )
-    const r = solveZeroSum(m, { tol: 1e-4 })
-    expect(r.gap).toBeLessThan(1e-4)
-    expect(Math.abs(r.value)).toBeLessThan(1e-4)
-    expect(r.iterations).toBeGreaterThan(0)
-  })
-})
 
 describe('reservoir sampling', () => {
   it('keeps a uniform sample of everything offered, persistently', () => {

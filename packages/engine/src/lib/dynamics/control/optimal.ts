@@ -1,11 +1,10 @@
 import { WhiteboxError } from '../../base/index.ts'
-import { eigvals, solve, solveCare, solveDare } from '../../numerics/linalg/index.ts'
+import { eigvals, solve, solveCare, solveDare, symmetricPart } from '../../numerics/linalg/index.ts'
 import { type StateSpace, ss } from '../../systems/index.ts'
 import {
   add,
   asTensor,
   matmul,
-  mul,
   neg,
   primalOf,
   reshape,
@@ -259,7 +258,7 @@ export function riccatiRecursion(
   for (let k = horizon - 1; k >= 0; k--) {
     const K = solve(add(R, matmul(Bt, matmul(P, B))), matmul(Bt, matmul(P, A)))
     P = add(Q, matmul(At, matmul(P, sub(A, matmul(B, K)))))
-    P = mul(add(P, transpose(P)), 0.5)
+    P = symmetricPart(P)
     gains.unshift(K)
     costToGo.unshift(P)
   }

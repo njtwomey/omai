@@ -357,3 +357,25 @@ export function varianceOf(xs: ArrayLike<number>, ddof = 0): number {
   for (let i = 0; i < n; i++) d[i] = ((xs[i] ?? 0) - m) ** 2
   return pairwiseSum(d) / (n - ddof)
 }
+
+/**
+ * The number of set bits of a non-negative 32-bit integer (the size of a subset given as a bitmask).
+ *
+ * @param mask - The bitmask.
+ * @returns How many bits are 1.
+ * @example
+ * ```ts
+ * import { popcount } from 'whitebox-engine/base'
+ * popcount(0b1011) // => 3
+ * popcount(0) // => 0
+ * ```
+ */
+export function popcount(mask: number): number {
+  let c = 0
+  let x = mask
+  while (x !== 0) {
+    x &= x - 1
+    c += 1
+  }
+  return c
+}

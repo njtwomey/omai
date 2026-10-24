@@ -26,7 +26,7 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { slogdetKernel } from './_kernels.ts'
-import { assemble, identity, matrices, matrixShape, mT, squareSize } from './_matrix.ts'
+import { assemble, identity, matrices, matrixShape, mT, squareSize, sym } from './_matrix.ts'
 import { cholesky } from './cholesky.ts'
 import { inv } from './lu.ts'
 import { svdvals } from './svd.ts'
@@ -257,6 +257,26 @@ export function isSymmetric(a: TensorLike, tol = 1e-10): boolean {
   const [v] = promoteFloat(a) as [Value]
   const { m, n } = matrixShape(v.shape, 'isSymmetric')
   return m === n && allclose(v, mT(v), 0, tol)
+}
+
+/**
+ * The symmetric part `(A + A^T) / 2` of a square matrix (or a batch of them, over the last two axes): the projection
+ * onto symmetric matrices, used to keep Riccati and Hessian recursions symmetric under rounding. Differentiable.
+ *
+ * @param a - Matrix `[..., n, n]`.
+ * @returns The symmetric part, same shape.
+ * @throws WhiteboxError with code `shape` when the matrices are not square.
+ * @example
+ * ```ts
+ * import { symmetricPart } from 'whitebox-engine/numerics/linalg'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(symmetricPart([[1, 2], [4, 3]])) // => [[1, 3], [3, 3]]
+ * ```
+ */
+export function symmetricPart(a: TensorLike): Value {
+  const [v] = promoteFloat(a) as [Value]
+  squareSize(v.shape, 'symmetricPart')
+  return sym(v)
 }
 
 /**

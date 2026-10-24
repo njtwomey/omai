@@ -12,10 +12,10 @@ import {
   uniform,
 } from '../random/index.ts'
 import { polynomialMutation, simulatedBinaryCrossover, tournamentSelection, uniformCrossover } from '../search/index.ts'
-import { clip, encode, grid, type Space, type SpaceValue, sample } from '../space/index.ts'
+import { decode, encode, grid, type Space, type SpaceValue, sample } from '../space/index.ts'
 import type { Value } from '../tensor/index.ts'
 import type { Algorithm } from '../trace/index.ts'
-import { decodeInto, equalMassCoordinate, fromCube, type Leaf, leavesOf } from './_leaves.ts'
+import { equalMassCoordinate, fromCube, type Leaf, leavesOf } from './_leaves.ts'
 import { replayAsk } from './_replay.ts'
 import { lossMatrix, lossOf, type Study, type StudyDirection, type Trial } from './study.ts'
 
@@ -75,7 +75,7 @@ export function gridSampler(options: { readonly points?: number; readonly shuffl
   const configs = (space: Space): SpaceValue[] => {
     const hit = cache.get(space)
     if (hit !== undefined) return hit
-    const all = grid(space, points).map((v) => clip(space, v))
+    const all = grid(space, points)
     const order =
       options.shuffle === undefined
         ? all
@@ -239,7 +239,7 @@ function optimiserSampler(
       const n = Math.max(1, leavesOf(study.space).length)
       const x0 = startOf(study.space, options.x0, n)
       const x = replayAsk((f, restart) => make(f, x0, restart), toldLosses(study, own), base)
-      return x === undefined ? sample(study.space, k) : decodeInto(study.space, x)
+      return x === undefined ? sample(study.space, k) : decode(study.space, x)
     },
   }
 }
@@ -424,13 +424,13 @@ export function evolutionarySampler(options: EvolutionarySamplerOptions = {}): S
             : simulatedBinaryCrossover(foldIn(k, 2), pa, pb, { eta: etaC, lower: zeros, upper: ones })[0]
       const rate = options.mutationRate ?? 1 / pa.length
       if (mutation === 'polynomial')
-        return decodeInto(study.space, polynomialMutation(foldIn(k, 3), child, zeros, ones, { eta: etaM, rate }))
+        return decode(study.space, polynomialMutation(foldIn(k, 3), child, zeros, ones, { eta: etaM, rate }))
       const leaves = leavesOf(study.space)
       const draws = uniform(foldIn(k, 3), [2 * child.length]).data
       const mutated = child.map((v, i) =>
         (draws[2 * i] ?? 1) < rate ? equalMassCoordinate(leaves[i] as Leaf, draws[2 * i + 1] ?? 0.5) : v,
       )
-      return decodeInto(study.space, mutated)
+      return decode(study.space, mutated)
     },
   }
 }

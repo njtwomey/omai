@@ -1,8 +1,7 @@
 import { WhiteboxError } from '../base/index.ts'
 import { matrixRank } from '../numerics/linalg/index.ts'
-import type { LinprogOptions } from '../optim/index.ts'
+import { type LinprogOptions, linprog } from '../optim/index.ts'
 import { toFlat } from '../tensor/index.ts'
-import { solveLp } from './_lp.ts'
 import type { CoalitionalGame } from './cooperative.ts'
 
 /** The total payoff a coalition (bitmask) receives under an allocation. */
@@ -93,7 +92,7 @@ export function leastCore(game: CoalitionalGame, options: LinprogOptions = {}): 
     aUb.push([...indicator(n, m).map((v) => -v), -1])
     bUb.push(-(values[m] ?? 0))
   }
-  const r = solveLp(
+  const r = linprog(
     {
       c: [...new Array<number>(n).fill(0), 1],
       aUb,
@@ -176,7 +175,7 @@ export function nucleolus(game: CoalitionalGame, options: LinprogOptions & { rea
     }
     const coalitions = [...free]
     // Variables (x, t): maximise t subject to x(S) - v(S) >= t for every free S.
-    const r = solveLp(
+    const r = linprog(
       {
         c: [...new Array<number>(n).fill(0), -1],
         aUb: coalitions.map((m) => [...indicator(n, m).map((v) => -v), 1]),
@@ -196,7 +195,7 @@ export function nucleolus(game: CoalitionalGame, options: LinprogOptions & { rea
     const settle: number[] = []
     for (const m of tight) {
       // Can some optimal solution give S more than t? Maximise x(S) subject to every free surplus >= t.
-      const q = solveLp(
+      const q = linprog(
         {
           c: indicator(n, m).map((v) => -v),
           aUb: coalitions.map((k) => indicator(n, k).map((v) => -v)),

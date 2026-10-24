@@ -1,7 +1,8 @@
 import { WhiteboxError } from '../base/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 import { checkSobol, directions, drawSobol, scrambleDirections } from './_sobol.ts'
-import { normalFrom, uniformStream, unitDoubles } from './_unit.ts'
+import { normalFrom, unitDoubles } from './_unit.ts'
+import { uniformStream } from './continuous.ts'
 import { foldIn, type Key, randomBits } from './key.ts'
 
 /** Options of {@link sobol} and {@link scrambledSobol}. */
@@ -247,7 +248,7 @@ export function poissonDisk(k: Key, d: number, radius: number, options: PoissonD
   const points: number[] = []
   const reach = Math.ceil(Math.sqrt(d))
   const r2 = radius * radius
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   const index = new Int32Array(d)
 
   const cellIndex = (x: Float64Array): number => {

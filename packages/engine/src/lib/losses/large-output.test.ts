@@ -26,6 +26,25 @@ describe('Huffman coding and the hierarchical softmax', () => {
     expect(() => L.huffmanCoding([1])).toThrow()
   })
 
+  it('breaks ties towards the lower node id (the tree from information.huffmanTree)', () => {
+    expect(L.huffmanCoding([1, 1, 1, 1])).toEqual({
+      nClasses: 4,
+      paths: [
+        [2, 0],
+        [2, 0],
+        [2, 1],
+        [2, 1],
+      ],
+      codes: [
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 1],
+      ],
+    })
+    expect(L.huffmanCoding([2, 1, 1]).codes).toEqual([[0], [1, 0], [1, 1]])
+  })
+
   it('gives probabilities that sum to one and agree with the loss', () => {
     const coding = L.huffmanCoding(counts)
     const h = tensor([

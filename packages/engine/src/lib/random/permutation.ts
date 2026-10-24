@@ -1,8 +1,9 @@
 import { WhiteboxError } from '../base/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, take, type Value } from '../tensor/index.ts'
-import { uniformStream, unitDoubles } from './_unit.ts'
+import { unitDoubles } from './_unit.ts'
+import { uniformStream } from './continuous.ts'
 import { categorical } from './discrete.ts'
-import { foldIn, type Key, split } from './key.ts'
+import { type Key, split } from './key.ts'
 
 /**
  * A uniformly random permutation of `0..n-1` (Fisher-Yates).
@@ -182,7 +183,7 @@ export function reservoir<T>(
     throw new WhiteboxError('value', `reservoir: size must be a non-negative integer, got ${size}`)
   }
   const method = options.method ?? 'L'
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   const out: T[] = []
   // Arrays, typed arrays and other array-likes are indexed directly (strings are iterated, by code point).
   const array =

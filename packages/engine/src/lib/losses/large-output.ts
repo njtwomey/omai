@@ -1,4 +1,5 @@
-import { heap, WhiteboxError } from '../base/index.ts'
+import { WhiteboxError } from '../base/index.ts'
+import { huffmanTree } from '../information/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import { type Key, randint, uniform } from '../random/index.ts'
 import {
@@ -39,8 +40,8 @@ export interface HuffmanCoding {
 
 /**
  * Build a binary Huffman code over classes from their frequencies (Mikolov et al., 2013): frequent classes get short
- * paths, so the hierarchical softmax costs O(log C) on average. Ties break towards the lower node id, so the code is
- * deterministic.
+ * paths, so the hierarchical softmax costs O(log C) on average. The tree is information's `huffmanTree` (ties break
+ * towards the lower node id, so the code is deterministic).
  *
  * @param counts - Class frequencies (positive), one per class; at least two classes.
  * @returns The coding: inner-node paths and branch bits per class.
@@ -55,22 +56,15 @@ export function huffmanCoding(counts: readonly number[]): HuffmanCoding {
   const c = counts.length
   if (c < 2) throw new WhiteboxError('value', 'huffmanCoding: needs at least two classes')
   if (counts.some((w) => !(w > 0))) throw new WhiteboxError('value', 'huffmanCoding: counts must be positive')
-  // Nodes 0..C-1 are leaves; node C + k is the k-th merge (inner node k).
-  const parent = new Int32Array(2 * c - 1).fill(-1)
-  const bit = new Int8Array(2 * c - 1)
-  const queue = heap<readonly [number, number]>(
-    (a, b) => a[0] - b[0] || a[1] - b[1],
-    counts.map((w, i) => [w, i] as const),
-  )
-  for (let k = 0; k < c - 1; k++) {
-    const a = queue.pop()
-    const b = queue.pop()
-    if (a === undefined || b === undefined) break
-    const id = c + k
-    parent[a[1]] = id
-    parent[b[1]] = id
-    bit[b[1]] = 1
-    queue.push([a[0] + b[0], id])
+  // Leaves are nodes 0..C-1 and inner node k is node C + k (a binary tree over C >= 2 leaves needs no padding).
+  const { nodes } = huffmanTree(counts)
+  const parent = new Int32Array(nodes.length).fill(-1)
+  const bit = new Int8Array(nodes.length)
+  for (const n of nodes) {
+    for (const [digit, child] of n.children.entries()) {
+      parent[child] = n.id
+      bit[child] = digit
+    }
   }
   const paths: number[][] = []
   const codes: number[][] = []

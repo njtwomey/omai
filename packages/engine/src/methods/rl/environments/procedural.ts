@@ -1,9 +1,9 @@
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { foldIn, Generator, type Key, key as makeKey } from '../../../lib/random/index.ts'
 import type { Env, EnvDefinition, EnvModel, Outcome } from '../../../lib/rl/index.ts'
-import { circle, type Paint, rect, type Scene } from '../../../lib/scene/index.ts'
+import { circle, type Paint, rect, type Scene, scene } from '../../../lib/scene/index.ts'
 import { box, choice, dict, discrete, int, real, type Space } from '../../../lib/space/index.ts'
-import { renderGrid } from './gridworlds.ts'
+import { distanceField, fromAscii, toScene, type World, deadEnds as worldDeadEnds } from '../../../lib/worlds/index.ts'
 
 // ------------------------------------------------------------------------------------------------- Maze generation
 
@@ -204,8 +204,14 @@ export function braidMaze(
  * ```
  */
 export function deadEnds(maze: Maze): number[] {
-  const m = new Carver(maze.rows, maze.cols, maze.grid)
-  return Array.from({ length: maze.rows * maze.cols }, (_, i) => i).filter((i) => m.degree(i) === 1)
+  // The dead ends of the character grid as a world (worlds' deadEnds) are the maze's: a passage between two cells
+  // always has two open neighbours, so only cells at odd positions can be dead ends.
+  const width = 2 * maze.cols + 1
+  return worldDeadEnds(charWorld(maze.grid)).flatMap((j) => {
+    const y = Math.floor(j / width)
+    const x = j % width
+    return y % 2 === 1 && x % 2 === 1 ? [((y - 1) / 2) * maze.cols + (x - 1) / 2] : []
+  })
 }
 
 /**
@@ -245,7 +251,7 @@ export function generateMaze(key: Key, options: MazeOptions = {}): Maze {
 
 /**
  * Breadth-first distances on a character grid from one position, moving up, right, down and left through passable
- * characters (default everything but `#`).
+ * characters (default everything but `#`): worlds' `distanceField` on the grid read as a world.
  *
  * @param grid - The rows.
  * @param from - The start, as `[row, column]`.
@@ -263,27 +269,14 @@ export function gridDistances(
   from: readonly [number, number],
   passable: (ch: string) => boolean = (ch) => ch !== '#',
 ): Int32Array {
-  const h = grid.length
   const w = grid[0]?.length ?? 0
-  const dist = new Int32Array(h * w).fill(-1)
-  const start = from[0] * w + from[1]
-  dist[start] = 0
-  const queue = [start]
-  for (let q = 0; q < queue.length; q++) {
-    const cur = queue[q] ?? 0
-    const r = Math.floor(cur / w)
-    const c = cur % w
-    for (const [dr, dc] of NEIGHBOURS) {
-      const r2 = r + dr
-      const c2 = c + dc
-      if (r2 < 0 || r2 >= h || c2 < 0 || c2 >= w) continue
-      const j = r2 * w + c2
-      if (dist[j] !== -1 || !passable(grid[r2]?.[c2] ?? '#')) continue
-      dist[j] = (dist[cur] ?? 0) + 1
-      queue.push(j)
-    }
-  }
-  return dist
+  const d = distanceField(charWorld(grid, passable), from[0] * w + from[1])
+  return Int32Array.from(d, (x) => (Number.isFinite(x) ? x : -1))
+}
+
+/** A character grid as a world: walls where `passable` refuses the character (default `#`), floor elsewhere. */
+function charWorld(grid: readonly string[], passable: (ch: string) => boolean = (ch) => ch !== '#'): World {
+  return fromAscii(grid.map((row) => Array.from(row, (ch) => (passable(ch) ? '.' : '#')).join('')))
 }
 
 // --------------------------------------------------------------------------------------------------------- Levels
@@ -638,7 +631,7 @@ export function makeProcedural(options: ProceduralOptions = {}, id = 'Procedural
     const drawn = L.map.map((row) =>
       row
         .split('')
-        .map((ch) => (isKeyChar(ch) ? '.' : isDoorChar(ch) ? 'D' : ch))
+        .map((ch) => (isKeyChar(ch) || isDoorChar(ch) ? '.' : ch))
         .join(''),
     )
     const overlay = [
@@ -661,7 +654,9 @@ export function makeProcedural(options: ProceduralOptions = {}, id = 'Procedural
         }),
       ),
     ]
-    return renderGrid(drawn, [Math.floor(s.pos / w), s.pos % w], { cell, title: `${id} level ${s.level}`, overlay })
+    // The level's walls, start and goal through worlds; keys and doors (coloured by letter) on top.
+    const map = toScene(fromAscii(drawn), { agent: s.pos, cell })
+    return scene(map.width, map.height, [...map.children, ...overlay], { title: `${id} level ${s.level}` })
   }
   return {
     spec: {

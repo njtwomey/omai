@@ -399,7 +399,8 @@ The core has 37 domains in 11 tiers. A domain may import only domains in lower t
   (statistic, p-value, degrees of freedom, effect size, alternative, method, assumptions), `MetricResult` (estimate,
   breakdowns, sample size), `MetricSpec` (name, inputs, direction, range, category, concept), `formatResult`.
 - `numbers.ts`: `isClose`, `allClose`, `clamp`, `kahanSum` (Neumaier), `pairwiseSum`, `maxOf`, `minOf`, `argmaxOf`,
-  `argminOf` (loops, never spreading arrays into `Math.max`), `range`, `linspaceNumbers`.
+  `argminOf` (loops, never spreading arrays into `Math.max`), `range`, `linspaceNumbers`, `popcount` (subset sizes of
+  bitmasks).
 - `heap.ts`: `heap`, a binary heap with a comparator (the priority queue of neighbour searches, shortest paths and
   best-first search).
 - `options.ts`: shared option shapes (`Tolerance`, `Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults
@@ -494,7 +495,8 @@ discrepancy and fill counts for the randomised ones); scipy.stats quantiles for 
 - `philox.ts`: `philox4x32`.
 - `key.ts`: `Key`, `key(seed)`, `split`, `foldIn`, `keyFromPath(seed, ...names)` (named derivation), `randomBits`,
   `isKey`.
-- `continuous.ts`: `uniform`, `normal`, `truncatedNormal` (Robert's samplers, any interval), `exponential`, `laplace`,
+- `continuous.ts`: `uniform`, `uniformStream` (an endless stream of uniforms from one key in blocks
+  `foldIn(key, b)`, the one stream every rejection sampler and procedural generator draws from), `normal`, `truncatedNormal` (Robert's samplers, any interval), `exponential`, `laplace`,
   `logistic`, `gumbel`, `cauchy`, `gamma`, `gammaVariates` (one independent draw per shape, for batched
   distributions), `beta`, `chisquare`, `studentT`, `dirichlet` (beta and Dirichlet in log space for small shapes),
   `multivariateNormal`, `vonMises`.
@@ -510,7 +512,7 @@ discrepancy and fill counts for the randomised ones); scipy.stats quantiles for 
   algorithm in d dimensions), `PoissonDiskOptions`. TODO: Sobol' beyond 1111 dimensions (scipy has 21201; the full
   table is about 300 KB).
 - `generator.ts`: `Generator` (numpy-style wrapper that splits on each call), `defaultRng`.
-- Private: `_unit.ts` (uniform doubles and streams), `_variates.ts` (scalar truncated normal, gamma, Poisson and
+- Private: `_unit.ts` (53-bit uniform doubles, the polar normal and a small log-gamma), `_variates.ts` (scalar truncated normal, gamma, Poisson and
   binomial kernels), `_sobol.ts` (direction numbers, scramble, Gray-code generation) and `sobol-directions.data.ts`
   (the packed Joe-Kuo table for 1111 dimensions, vendored by `oracle/datasets/sobol_directions.py`).
 
@@ -708,7 +710,7 @@ primitives; "custom" means a dedicated rule.
 - `blas.ts`: level-1 and level-2 kernels on number arrays (`ddot`, `dnrm2`, `daxpy`, `dscal`, `dgemv`), shared by every
   algorithm that iterates on primal values (Krylov, Lanczos, regularising iterations, root finders).
 - `basics.ts`: `norm`, `cond`, `matrixRank`, `matrixPower`, `det`, `slogdet`, `isSymmetric` (`trace` is the tensor op),
-  `isPositiveDefinite`.
+  `symmetricPart` (`(A + A^T) / 2`), `isPositiveDefinite`.
 - `triangular.ts`: `solveTriangular`, `invTriangular`.
 - `cholesky.ts`: `cholesky` (optional jitter ladder that reports the jitter used), `choFactor`, `choSolve`,
   `choleskyLogdet`, rank-one `choleskyUpdate` and `choleskyDowndate`.
@@ -804,6 +806,10 @@ primitives; "custom" means a dedicated rule.
 - `polygons.ts`: `convexHull` (2-D), `convexHull3` (3-D, incremental), `polygonArea`, `polygonCentroid`,
   `polygonPerimeter` (differentiable in the vertices), `isConvex`, `windingNumber`, `pointInPolygon`,
   `segmentIntersection`, `polygonClip` (Sutherland-Hodgman), `minkowskiSum` (convex).
+- `segments.ts`: segments as obstacles: `closestPointOnSegment` (point-segment distance), `raySegmentHit` (ray
+  parameter and facing normal), `sweptCircleHit` (first contact of a moving circle with a segment's side or ends),
+  `segmentsTouch` (robust closed-segment test with relative collinearity tolerance), `SegmentContact`. worlds'
+  continuous motion, ray casts and line of sight are built on them.
 - `distances.ts`: `cdist`, `pdist`, `squareform` with the metrics euclidean, sqeuclidean, cityblock, chebyshev, minkowski
   (with weights), seuclidean, cosine, correlation, hamming, jaccard, mahalanobis, canberra, braycurtis and haversine
   (continuous ones differentiable).
@@ -1166,7 +1172,8 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
   and beta divergences, Bregman divergences (named or any convex function, gradients by autodiff), on discrete
   distributions and on grids (trapezoidal rule); all differentiable.
 - `source-coding.ts`: Kraft-McMillan (Kraft sums, prefix-freeness, Sardinas-Patterson unique decodability), Huffman
-  (traced tree construction, D-ary), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
+  (traced tree construction, D-ary; `huffmanTree`, the same tree built directly in O(n log n) from raw weights, which
+  the hierarchical softmax in `losses` uses), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
   expected length, prefix encoding and decoding.
 - `stream-coding.ts`: arithmetic coding (32-bit integer, pending bits) and carry-less range coding, with static and
   adaptive frequency models.
@@ -1973,8 +1980,6 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - TODO: Kautsky-Nichols-Van Dooren iterations for complex pole pairs in `place` (they keep their initial vectors, so
   the poles are exact but the gain can differ from scipy's for complex targets).
 - TODO: missing observations in `kalmanEm`, and multi-input multi-output ARX/ARMAX (both are single-output now).
-- TODO: `methods/datasets/changepoints.ts` can switch its `exactBocpd` to `filtering/changepoint.ts`'s `bocpd`
-  (tested equal); its `ar` and `trend` segment models stay in datasets.
 
 ### 4.27 `pgm/` (tier 8): probabilistic graphical models (pgmpy, libDAI)
 
@@ -1994,7 +1999,9 @@ into `whitebox-engine/pgm`; `learning` and `causal` are namespaces.
   conditioning (`gaussianReduce`), conversion to and from moment form, log mass and log value, permutation, and the
   factor of a linear-Gaussian conditional.
 - `graphs.ts`: DAGs (`dag`, `topologicalOrder`, `dagEdges`, `ancestors`, `descendants`), undirected graphs, moral
-  graphs (`moralGraph`), interaction graphs of factors, connected components, graph separation.
+  graphs (`moralGraph`), interaction graphs of factors, connected components, graph separation. Topological orders,
+  components and (in `triangulation.ts`) maximal cliques are `graph`'s algorithms on string-labelled vertices
+  (private `_graph.ts` indexes the names in sorted order), with pgm's sorted, name-based outputs.
 - `triangulation.ts`: elimination costs and greedy orderings (min-degree, min-fill, min-weight, weighted min-fill),
   `triangulate` (fill-ins and cliques), maximum cardinality search, `isChordal`, maximal cliques (Bron-Kerbosch),
   induced width, `treewidth` (exact by subset DP up to about 20 vertices, or heuristic), `junctionTree` (maximum
@@ -2176,7 +2183,7 @@ share a concept they share a definition but not a name.
   `categoricalFocal`, `nllLoss`, `multiLabelSoftMargin`.
 - `large-output.ts`: losses for very many classes: hierarchical softmax (`huffmanCoding`, `hierarchicalSoftmax`,
   `hierarchicalSoftmaxLogProbs`), sampled softmax (`sampledSoftmax`, `sampleClasses` with uniform and log-uniform
-  proposals). TODO: take the Huffman tree from `information/source-coding.ts` once that domain exists.
+  proposals). The Huffman tree comes from `information/source-coding.ts` (`huffmanTree`).
 - `margin.ts`: `hinge`, `squaredHinge`, `logistic`, `exponential`, `modifiedHuber`, `perceptron`, `crammerSinger`,
   `westonWatkins`.
 - `density.ts`: negative log-likelihood of any `Distribution` (`negativeLogLikelihood`) or conditional distribution
@@ -2233,8 +2240,10 @@ oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and adva
   and iterative), Q from V, greedy policies, occupancy measures, `tabularEnv` (environments from `P` tables). TODO:
   linear-programming solutions, once `optim/linear-programming.ts` provides `linprog`.
 - `planning.ts`: planning with models (MCTS over environment models, UCT and PUCT with priors and values, and two-player
-  game search with negamax backups, written here while `search/adversarial` is not built; rollout planners, CEM over
-  action sequences, MPPI).
+  game search with negamax backups; rollout planners, CEM over action sequences, MPPI). `gameMcts` stays separate from
+  `search.mcts`: it searches environments with rewards on any move, and its PUCT counts a node's visits as AlphaZero
+  does (the sum of its children's), where `search.mcts` also counts the expansion visit, which changes AlphaZero's
+  training; `search.mcts` also labels every path for its trace.
 - `models.ts`: learned-dynamics interfaces (deterministic and probabilistic ensembles) for model-based agents.
 - `exploration.ts`: count-based bonuses, pseudo-counts, random network distillation and curiosity interfaces.
 - `off-policy.ts`: IPS, SNIPS, clipped IPS, direct method, doubly robust, fitted Q evaluation.
@@ -2250,8 +2259,8 @@ oracle: nashpy (support and vertex enumeration, Lemke-Howson from every label, f
 OpenSpiel (CFR, CFR+, discounted CFR, regret matching, projected replicator dynamics, best responses and exploitability
 on Kuhn and Leduc poker, the sequence-form LP), scipy.optimize.linprog (zero-sum values, maxmin levels, correlated
 equilibria), textbook cooperative games (Shapley values, the core, the nucleolus of bankruptcy games). Built on
-`optim/linear-programming.ts` (every LP), `foundations/combinatorics.ts` and `numerics/linalg`. `methods/rl` can
-delegate its zero-sum stage games (minimax-Q), matrix games and Kuhn/Leduc rules here.
+`optim/linear-programming.ts` (every LP), `foundations/combinatorics.ts` and `numerics/linalg`. `methods/rl` takes
+its zero-sum stage games (minimax-Q), matrix-game payoffs and Kuhn/Leduc rules from here.
 
 `normal-form/` (inlined into `games`):
 - `game.ts`: `NormalFormGame` (any number of players, payoffs row-major over profiles), `normalFormGame`,
@@ -2297,8 +2306,9 @@ Learning in normal-form games (every routine is a traced algorithm with an itera
 Cooperative games and mechanisms:
 - `cooperative.ts`: coalitional games (characteristic functions over bitmasks, `coalitionValue`, `membersOf`),
   weighted voting, glove, bankruptcy and unanimity games, Shapley values (exact, and by permutation sampling with
-  standard errors for worths given as functions), Banzhaf indices (raw and normalised), superadditivity and convexity;
-  used by `learn/explain/shapley.ts`.
+  standard errors for worths given as functions), the Shapley interaction index (`shapleyInteractionIndex`), Banzhaf
+  indices (raw and normalised), superadditivity and convexity; `learn/explain/shapley.ts` computes its exact Shapley
+  and interaction values with them.
 - `core.ts`: excesses, core membership, a core point or emptiness, the least core, the nucleolus and prenucleolus
   (sequential LPs).
 - `auctions.ts`: first-price, second-price (Vickrey) and all-pay auctions with reserves, VCG with Clarke pivot payments
@@ -2439,9 +2449,9 @@ modAL for active learning, diffprivlib and opacus for privacy
   functional ANOVA.
 - `explain/gradients.ts`: saliency, input times gradient, integrated gradients, SmoothGrad, DeepLIFT, expected
   gradients.
-- `explain/shapley.ts`: exact, kernel, sampling and tree SHAP, interaction values. The game-theoretic core (Shapley
-  and interaction values of a coalition game) lives here until `games/cooperative.ts` exists; TODO: move it there and
-  re-export.
+- `explain/shapley.ts`: exact, kernel, sampling and tree SHAP, interaction values. The exact Shapley and interaction
+  values of a coalition value function tabulate it as a `games` coalitional game and use `games.shapleyValue` and
+  `games.shapleyInteractionIndex`; the sampling explainer (random background rows, batched predictions) stays here.
 - `explain/surrogates.ts`: LIME, anchors, global surrogate trees, fidelity.
 - `explain/counterfactuals.ts`: Wachter counterfactuals, diverse counterfactuals, FACE, actionable recourse (linear
   costs; TODO: discrete action sets as an integer program).
@@ -2677,7 +2687,9 @@ dependency, so its layouts are checked structurally (TODO: golden-test them agai
   river crossings).
 - `continuous.ts`: continuous agents over a world: positions and headings, motion with collision against walls (swept
   circles with sliding, swept segments for point agents), ray casts, line-of-sight queries, field-of-view cones,
-  distance fields from walls (exact segment distances and the Euclidean, taxicab and chessboard transforms).
+  distance fields from walls (exact segment distances and the Euclidean, taxicab and chessboard transforms). The
+  segment predicates come from `numerics/geometry/segments.ts`; private `_geometry.ts` keeps only the bucket index
+  over wall segments.
 - `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells, unweighted or by
   terrain cost) and paths, dead ends, choke points and bridges, cell distances and heuristics, and conversion to
   `graph` adjacency for graph algorithms (`graph` is a sibling tier, so worlds returns edges `graph()` accepts).
@@ -3363,21 +3375,33 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 - `bandits.ts`: Bernoulli, Gaussian (the 10-armed testbed), contextual linear, adversarial and non-stationary bandits,
   with oracles for regret.
 - `gridworlds.ts`: grid world (AIMA 4 x 3 by default), cliff walking (and slippery), frozen lake (4 x 4, 8 x 8, random
-  maps), windy grid world (king's moves, stochastic wind), mazes with keys and traps (`keyMaze`), four rooms, and
-  `renderGrid`; gymnasium's `P` tables as models.
+  maps), windy grid world (king's moves, stochastic wind), mazes with keys and traps (`keyMaze`), four rooms;
+  gymnasium's `P` tables as models. All but the key maze are `worlds`' textbook tasks (`frozenLakeWorld`,
+  `cliffWalkingWorld`, `aimaGridWorld`, `windyGridWorld`, `fourRoomsWorld`) through `transitionModel` into
+  `tabularEnv`, drawn by `worlds.toScene`; the maps (`FROZEN_LAKE_MAPS`, `AIMA_GRID`, `FOUR_ROOMS`, `KEY_MAZE`) are
+  worlds'. The key maze keeps its own single has-a-key flag (`2 nCells` states for any map; `keyMazeWorld` tracks
+  each key present).
 - `classic-control.ts`: CartPole, Pendulum, MountainCar (discrete and continuous), Acrobot, matching gymnasium step for
   step.
-- `toy-text.ts`: Blackjack (natural and Sutton-Barto rules), Taxi (rainy, fickle passenger), NChain, RiverSwim.
+- `toy-text.ts`: Blackjack (natural and Sutton-Barto rules), Taxi (rainy, fickle passenger; its map, walls, moves and
+  stands are `worlds.taxiWorld`), NChain, RiverSwim.
 - `minatar.ts`: MinAtar-style games on a 10 by 10 grid (Breakout, Asterix, Freeway, Seaquest, Space Invaders), with
   minimal and full six-action sets, sticky actions and difficulty ramping.
 - `continuous-control.ts`: point mass, 2-D reacher, double integrator, planar quadrotor, cart double pendulum (analytic
-  dynamics: exact zero-order-hold steps or RK4 on Lagrangian equations of motion).
-- `games.ts`: tic-tac-toe, connect four, nim, Kuhn and Leduc poker, as turn-based environments with legal actions.
+  dynamics: exact zero-order-hold steps or RK4 on Lagrangian equations of motion). `doubleIntegratorMatrices` is
+  `systems.c2dMatrices` (zero-order hold); the per-step damped-mass coefficients in `_mechanics.ts` stay closed-form
+  scalars (one exponential per step, not a matrix exponential).
+- `games.ts`: tic-tac-toe, connect four, nim, Kuhn and Leduc poker, as turn-based environments with legal actions
+  (the poker rules are `games`' `kuhnPoker` and `leducPoker`, with the cards dealt at reset).
 - `go.ts`: Go on small boards (5, 7, 9; captures, simple ko or positional superko, area scoring with komi).
-- `multi-agent.ts`: matrix games (prisoner's dilemma, matching pennies, rock-paper-scissors, stag hunt), pursuit-evasion,
+- `multi-agent.ts`: matrix games (prisoner's dilemma, matching pennies, rock-paper-scissors, stag hunt, with `games`'
+  payoffs), pursuit-evasion,
   cooperative navigation (MPE simple_spread).
 - `procedural.ts`: procedurally generated mazes (backtracker, Prim, Kruskal, braiding) and key-door tasks with
-  Procgen-style level seeds and train/test splits, for generalisation studies.
+  Procgen-style level seeds and train/test splits, for generalisation studies. Distances and dead ends are worlds'
+  (`distanceField`, `deadEnds` on the character grid read as a world); the carving and braiding stay here, since
+  worlds' `generateMaze` draws other random streams (every level would change) and thin-walled worlds, where these
+  levels place keys and doors in the passages of a character grid.
 - `models.ts`: differentiable dynamics models of the control environments (`ControlModel`, matching each environment's
   step), `linearize`, trajectory derivatives and rollouts, for LQR, MPC and model-based agents.
 
@@ -3388,7 +3412,9 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 - `tabular.ts`: Q-learning, SARSA, expected SARSA, n-step SARSA, SARSA(lambda), Monte Carlo control, TD(0) and
   TD(lambda), double Q-learning, Dyna-Q (and Dyna-Q+), prioritised sweeping.
 - `planning.ts`: value and policy iteration agents, MCTS agents, AlphaZero-style self-play with a small network,
-  minimax agents.
+  minimax agents. Its `alphaBeta` (negamax with a transposition table, bound flags and rewards on any move, untraced
+  for speed inside agents) is not `search.alphaBeta`, a traced node-by-node engine over terminal utilities without a
+  table.
 - `value-based.ts`: Q networks and DQN with double, dueling, prioritised-replay, n-step and noisy-network variants.
 - `distributional.ts`: distributional C51 (categorical projection), QR-DQN (quantile Huber loss) and IQN (risk
   distortions); Rainbow.
@@ -3404,8 +3430,8 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 - `offline-actor-critic.ts`: IQL, TD3+BC.
 - `decision-transformer.ts`: decision transformers.
 - `imitation.ts`: DAgger, GAIL, maximum-entropy inverse reinforcement learning.
-- `multi-agent.ts`: independent learners, minimax-Q (TODO: solve stage games with `linprog` once it exists), self-play,
-  neural fictitious self-play (written here while `games` is not built).
+- `multi-agent.ts`: independent learners, minimax-Q (stage games solved exactly by `games.solveZeroSum`), self-play,
+  neural fictitious self-play.
 - `cooperative.ts`: value decomposition (VDN, QMIX), MADDPG.
 - `hierarchical.ts`: the options framework, option-critic.
 - `safe.ts`: constrained policy optimisation by Lagrangian PPO, shielding.
@@ -3657,7 +3683,8 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `changepoints.ts`: tunable changepoint series (`changepointSeries`: mean, variance and rate shifts, AR regime
   switches, trend breaks; hazard rate, minimum segment length and noise as knobs) with true changepoints, segment
   parameters and the exact BOCPD predictive (`exactBocpd` with conjugate `SegmentModel`s and constant or run-length
-  hazards: run-length posteriors, one-step predictives, evidence).
+  hazards: run-length posteriors, one-step predictives, evidence; the mean, variance and rate models run
+  `dynamics`' `filtering.bocpd`, and the AR and trend regressions, which `dynamics` lacks, run the recursion here).
 - `timeseries.ts`: AR and ARMA processes (`armaProcess`, `arma`, with autocovariances and spectral densities),
   sinusoids in noise (`sinusoids`), uneven sampling (`sinusoids` with uneven times, `subsampleSeries`), seasonal
   series with known components (`seasonalSeries`), airline passengers (`airPassengers`), `sunspots`, coal-mining

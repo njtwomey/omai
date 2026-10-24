@@ -1,4 +1,12 @@
 import { maxOf, WhiteboxError } from '../../../lib/base/index.ts'
+import {
+  CHANCE,
+  type KuhnState,
+  kuhnPoker as kuhnRules,
+  type LeducState,
+  leducPoker as leducRules,
+  TERMINAL,
+} from '../../../lib/games/index.ts'
 import { permutation } from '../../../lib/random/index.ts'
 import type { AecEnv } from '../../../lib/rl/index.ts'
 import { rect, type Scene, type SceneNode, scene, text } from '../../../lib/scene/index.ts'
@@ -363,7 +371,14 @@ export interface KuhnPokerState extends TurnState {
   readonly history: readonly number[]
 }
 
-const KUHN_TERMINAL = new Set(['0,0', '0,1,0', '0,1,1', '1,0', '1,1'])
+// The rules (when a hand ends, who wins what) are games' kuhnPoker; this environment deals both cards at reset.
+const KUHN = kuhnRules()
+const kuhnRulesState = (cards: readonly [number, number], history: readonly number[]): KuhnState => ({
+  cards: [cards[0], cards[1]],
+  history,
+})
+const kuhnOver = (cards: readonly [number, number], history: readonly number[]): boolean =>
+  KUHN.currentPlayer(kuhnRulesState(cards, history)) === TERMINAL
 const CARD_NAMES = ['J', 'Q', 'K']
 
 /**
@@ -397,12 +412,10 @@ export function kuhnPokerState(cards: readonly [number, number]): KuhnPokerState
  * ```
  */
 export function kuhnPayoff(cards: readonly [number, number], history: readonly number[]): [number, number] {
-  const h = history.join(',')
-  if (!KUHN_TERMINAL.has(h)) throw new WhiteboxError('value', `kuhnPayoff: ${h} is not a terminal history`)
-  if (h === '0,1,0') return [-1, 1]
-  if (h === '1,0') return [1, -1]
-  const stake = h === '0,0' ? 1 : 2
-  return cards[0] > cards[1] ? [stake, -stake] : [-stake, stake]
+  if (!kuhnOver(cards, history))
+    throw new WhiteboxError('value', `kuhnPayoff: ${history.join(',')} is not a terminal history`)
+  const r = KUHN.returns(kuhnRulesState(cards, history))
+  return [r[0] ?? 0, r[1] ?? 0]
 }
 
 /**
@@ -440,7 +453,7 @@ export const kuhnPoker: GameDefinition<KuhnPokerState> = {
       legal: () => [0, 1],
       play: (s, a) => {
         const history = [...s.history, a]
-        const over = KUHN_TERMINAL.has(history.join(','))
+        const over = kuhnOver(s.cards, history)
         return {
           state: { ...s, history, toMove: other(s.toMove), over },
           rewards: over ? kuhnPayoff(s.cards, history) : [0, 0],
@@ -512,15 +525,30 @@ export function leducPokerState(cards: readonly [number, number, number]): Leduc
  * ```
  */
 export function leducShowdown(cards: readonly [number, number, number]): Seat | undefined {
-  const [a, b, pub] = cards.map(leducRank) as [number, number, number]
-  if (a === pub && b !== pub) return 0
-  if (b === pub && a !== pub) return 1
-  if (a === b) return undefined
-  return a > b ? 0 : 1
+  // Both players check through both rounds: games' Leduc returns decide the showdown.
+  const [won] = LEDUC.returns({
+    cards: [cards[0], cards[1]],
+    publicCard: cards[2],
+    rounds: [
+      [1, 1],
+      [1, 1],
+    ],
+    contributions: [1, 1],
+    folded: null,
+  })
+  return (won ?? 0) > 0 ? 0 : (won ?? 0) < 0 ? 1 : undefined
 }
 
-const LEDUC_RAISE = [2, 4]
-const LEDUC_MAX_RAISES = 2
+// The rules (legal actions, contributions, when a round or hand ends, the showdown) are games' leducPoker, whose
+// chance deals are replaced here by the cards drawn at reset.
+const LEDUC = leducRules()
+const leducRulesState = (s: LeducPokerState): LeducState => ({
+  cards: [s.cards[0], s.cards[1]],
+  publicCard: s.round === 1 ? s.cards[2] : null,
+  rounds: [s.history[0], s.history[1]],
+  contributions: s.contributions,
+  folded: s.folded ?? null,
+})
 const LEDUC_NAMES = ['J♠', 'J♥', 'Q♠', 'Q♥', 'K♠', 'K♥']
 
 /**
@@ -546,10 +574,7 @@ export const leducPoker: GameDefinition<LeducPokerState> = {
   description: "Leduc hold'em: six cards, a public card and two betting rounds.",
   multiAgent: 'aec',
   create: () => {
-    const legal = (s: LeducPokerState): number[] => {
-      const facing = s.contributions[s.toMove] < s.contributions[other(s.toMove)]
-      return [...(facing ? [0] : []), 1, ...(s.raises < LEDUC_MAX_RAISES ? [2] : [])]
-    }
+    const legal = (s: LeducPokerState): number[] => [...LEDUC.legalActions(leducRulesState(s))]
     return twoPlayerGame<LeducPokerState>({
       id: 'LeducPoker-v0',
       description: "Leduc hold'em: six cards, a public card and two betting rounds.",
@@ -568,34 +593,23 @@ export const leducPoker: GameDefinition<LeducPokerState> = {
         seat === 0 ? [-s.contributions[0], s.contributions[0]] : [s.contributions[1], -s.contributions[1]],
       play: (s, a) => {
         const me = s.toMove
-        const them = other(me)
-        const history: [number[], number[]] = [[...s.history[0]], [...s.history[1]]]
-        history[s.round].push(a)
-        if (a === 0) {
-          const lost = s.contributions[me]
-          return {
-            state: { ...s, history, over: true, folded: me },
-            rewards: me === 0 ? [-lost, lost] : [lost, -lost],
-          }
+        const next = LEDUC.apply(leducRulesState(s), a)
+        const history: [number[], number[]] = [[...(next.rounds[0] ?? [])], [...(next.rounds[1] ?? [])]]
+        const returns = (): [number, number] => {
+          const r = LEDUC.returns(next)
+          return [r[0] ?? 0, r[1] ?? 0]
         }
-        const contributions: [number, number] = [s.contributions[0], s.contributions[1]]
-        let raises = s.raises
-        if (a === 2) {
-          contributions[me] = contributions[them] + (LEDUC_RAISE[s.round] ?? 0)
-          raises += 1
-        } else contributions[me] = contributions[them]
-        // A check or call ends the round unless it opens the round.
-        const roundOver = a === 1 && history[s.round].length >= 2
-        if (!roundOver) return { state: { ...s, history, contributions, raises, toMove: them }, rewards: [0, 0] }
-        if (s.round === 0) {
+        if (next.folded !== null) return { state: { ...s, history, over: true, folded: me }, rewards: returns() }
+        const contributions: [number, number] = [next.contributions[0], next.contributions[1]]
+        const raises = s.raises + (a === 2 ? 1 : 0)
+        const player = LEDUC.currentPlayer(next)
+        // The first round is over: games deals the public card next; here it was dealt at reset.
+        if (player === CHANCE) {
           return { state: { ...s, history, contributions, raises: 0, round: 1, toMove: 0 }, rewards: [0, 0] }
         }
-        const winner = leducShowdown(s.cards)
-        const pot = contributions[0]
-        return {
-          state: { ...s, history, contributions, raises, over: true },
-          rewards: winner === undefined ? [0, 0] : winner === 0 ? [pot, -pot] : [-pot, pot],
-        }
+        if (player === TERMINAL)
+          return { state: { ...s, history, contributions, raises, over: true }, rewards: returns() }
+        return { state: { ...s, history, contributions, raises, toMove: other(me) }, rewards: [0, 0] }
       },
       observe: (s, seat) => {
         const revealed = s.round === 1 || (s.over && s.folded === undefined)
