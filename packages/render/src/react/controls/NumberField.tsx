@@ -1,6 +1,5 @@
 import { type PointerEvent, type ReactNode, useCallback, useId, useRef, useState } from 'react'
-import { cx, iconButtonClass, inputBoxClass, labelClass, menuClass, menuItemClass } from './classes.ts'
-import { useDismiss } from './dismiss.ts'
+import { cx, iconButtonClass, inputBoxClass, labelClass, menuItemClass } from './classes.ts'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'
 import {
   formatFieldValue,
@@ -11,6 +10,7 @@ import {
   stepNumber,
   toFraction,
 } from './number.ts'
+import { Popover } from './Popover.tsx'
 import { useNumberDraft } from './useNumberDraft.ts'
 
 /** Props of {@link NumberField}. */
@@ -149,16 +149,16 @@ function LadderMenu(props: {
 }): ReactNode {
   const { values, value, format, disabled, onPick } = props
   const [open, setOpen] = useState(false)
-  const box = useRef<HTMLDivElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
   const close = useCallback(() => setOpen(false), [])
-  useDismiss(box, open, close)
   let nearest = 0
   values.forEach((v, i) => {
     if (Math.abs(v - value) < Math.abs((values[nearest] as number) - value)) nearest = i
   })
   return (
-    <div ref={box} className="flex h-full">
+    <div className="flex h-full">
       <button
+        ref={trigger}
         type="button"
         disabled={disabled}
         aria-label="Pick a value"
@@ -169,26 +169,24 @@ function LadderMenu(props: {
       >
         <ChevronDownIcon size={14} />
       </button>
-      {open ? (
-        <div role="listbox" className={cx(menuClass, 'top-full right-0')}>
-          {values.map((v, i) => (
-            <button
-              key={v}
-              type="button"
-              role="option"
-              aria-selected={i === nearest}
-              data-selected={i === nearest}
-              className={cx(menuItemClass, 'justify-end font-mono tabular-nums')}
-              onClick={() => {
-                onPick(v)
-                setOpen(false)
-              }}
-            >
-              {format(v)}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <Popover anchor={trigger} open={open} onClose={close} align="end" role="listbox" label="values">
+        {values.map((v, i) => (
+          <button
+            key={v}
+            type="button"
+            role="option"
+            aria-selected={i === nearest}
+            data-selected={i === nearest}
+            className={cx(menuItemClass, 'justify-end font-mono tabular-nums')}
+            onClick={() => {
+              onPick(v)
+              setOpen(false)
+            }}
+          >
+            {format(v)}
+          </button>
+        ))}
+      </Popover>
     </div>
   )
 }

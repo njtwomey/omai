@@ -177,7 +177,7 @@ export function raycastViews(
   const viewWidth = options.viewWidth ?? 320
   const viewHeight = (viewWidth * img.height) / img.width
   const firstPerson = scene(viewWidth, viewHeight, [
-    image(0, 0, viewWidth, viewHeight, imageToPixels(img), { id: 'view' }),
+    image(0, 0, viewWidth, viewHeight, imageToPixels(img), { id: 'view', smoothing: false }),
   ])
   const k = options.cell ?? 32
   const every = Math.max(1, options.rayEvery ?? 4)

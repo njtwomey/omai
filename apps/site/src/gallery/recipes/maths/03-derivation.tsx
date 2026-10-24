@@ -27,7 +27,7 @@ export default function DerivationRecipe(): ReactNode {
             { tex: `${fmt(a)}x^2 + ${fmt(b)}x &= ${fmt(a)}\\left(x^2 + ${fmt(b / a)}x\\right)`, note: 'factor out a' },
             {
               tex: `${fmt(a)}\\left(x^2 + ${fmt(b / a)}x + ${fmt(h * h)} - ${fmt(h * h)}\\right)`,
-              note: 'add and subtract (b/2a)^2',
+              note: 'add and subtract $(b/2a)^2$',
             },
             { tex: `${fmt(a)}\\left(x + ${fmt(h)}\\right)^2 - ${fmt(a * h * h)}`, note: 'complete the square' },
           ]}
