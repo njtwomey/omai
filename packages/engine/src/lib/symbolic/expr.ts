@@ -157,17 +157,65 @@ export interface Derivation {
   readonly steps: readonly Step[]
 }
 
-/** π. */
+/**
+ * π.
+ *
+ * @example
+ * ```ts
+ * import { pi, sin, toText } from 'whitebox-engine/symbolic'
+ * toText(sin(pi)) // => '0'
+ * ```
+ */
 export const pi: Expr = PI
-/** Euler's number e. */
+/**
+ * Euler's number e (exp(1)).
+ *
+ * @example
+ * ```ts
+ * import { E, log, toText } from 'whitebox-engine/symbolic'
+ * toText(log(E)) // => '1'
+ * ```
+ */
 export const E: Expr = CE
-/** The imaginary unit. */
+/**
+ * The imaginary unit, I^2 = -1.
+ *
+ * @example
+ * ```ts
+ * import { I, mul, toText } from 'whitebox-engine/symbolic'
+ * toText(mul(I, I)) // => '-1'
+ * ```
+ */
 export const I: Expr = CI
-/** Positive infinity. */
+/**
+ * Positive infinity.
+ *
+ * @example
+ * ```ts
+ * import { add, oo, toText } from 'whitebox-engine/symbolic'
+ * toText(add(oo, 1)) // => 'oo'
+ * ```
+ */
 export const oo: Expr = OO
-/** Complex infinity (the value of 1/0). */
+/**
+ * Complex infinity, the value of 1/0.
+ *
+ * @example
+ * ```ts
+ * import { div, toText } from 'whitebox-engine/symbolic'
+ * toText(div(1, 0)) // => 'zoo'
+ * ```
+ */
 export const zoo: Expr = ZOO
-/** Not a number. */
+/**
+ * Not a number, as from oo - oo or 0 * oo.
+ *
+ * @example
+ * ```ts
+ * import { oo, sub, toText } from 'whitebox-engine/symbolic'
+ * toText(sub(oo, oo)) // => 'nan'
+ * ```
+ */
 export const nan: Expr = CNAN
 
 /**

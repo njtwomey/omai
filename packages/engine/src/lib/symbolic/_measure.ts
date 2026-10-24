@@ -48,6 +48,15 @@ const SAMPLES = [0.37, -0.81, 1.23, 2.07, -1.61, 0.53]
  * @internal
  */
 export function numericallyEqual(a: Expr, b: Expr, tol = 1e-8): boolean {
+  return numericCompare(a, b, tol) === 'equal'
+}
+
+/**
+ * Compare two expressions at the sample points: equal, different, or unknown when too few points can be evaluated
+ * (functions without numeric implementations, such as erf).
+ * @internal
+ */
+export function numericCompare(a: Expr, b: Expr, tol = 1e-8): 'equal' | 'different' | 'unknown' {
   const names = [...new Set([...freeNames(a), ...freeNames(b)])].sort()
   let agreed = 0
   for (let s = 0; s < SAMPLES.length; s++) {
@@ -60,8 +69,8 @@ export function numericallyEqual(a: Expr, b: Expr, tol = 1e-8): boolean {
     if (va === undefined || vb === undefined) continue
     if (![va[0], va[1], vb[0], vb[1]].every(Number.isFinite)) continue
     const scale = Math.max(1, Math.hypot(va[0], va[1]), Math.hypot(vb[0], vb[1]))
-    if (Math.hypot(va[0] - vb[0], va[1] - vb[1]) > tol * scale) return false
+    if (Math.hypot(va[0] - vb[0], va[1] - vb[1]) > tol * scale) return 'different'
     agreed++
   }
-  return agreed >= 2 || (agreed >= 1 && names.length === 0)
+  return agreed >= 2 || (agreed >= 1 && names.length === 0) ? 'equal' : 'unknown'
 }

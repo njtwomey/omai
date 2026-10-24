@@ -93,7 +93,9 @@ function toTan(e: Expr): Expr {
       const S = makeFn(hyp ? 'sinh' : 'sin', [arg])
       const Cf = makeFn(hyp ? 'cosh' : 'cos', [arg])
       if (s.kind === 'num' && c.kind === 'num' && s.n > 0n && c.n < 0n && s.d === 1n && c.d === 1n) {
-        const k = s.n < -c.n ? s.n : -c.n
+        // The smaller of the two powers (bigints, so not Math.min).
+        let k = s.n
+        if (-c.n < k) k = -c.n
         const kk = numFromRational(rat(k))
         out.push(makePow(makeFn(hyp ? 'tanh' : 'tan', [arg]), kk))
         out.push(makePow(S, numFromRational(rat(s.n - k))), makePow(Cf, numFromRational(rat(c.n + k))))

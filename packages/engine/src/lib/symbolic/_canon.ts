@@ -19,6 +19,7 @@ import {
   rawPow,
   rawRel,
 } from './_node.ts'
+import { evalComplexConstant } from './_numeric.ts'
 import {
   bgcd,
   factorInteger,
@@ -128,12 +129,14 @@ export function asCoeffMul(e: Expr): [ExprNum | ExprFloat, Expr] {
 }
 
 /**
- * Base and exponent for collecting equal bases: x^2 gives [x, 2], anything else [e, 1]. As in SymPy, exp(x)*exp(y)
- * stays a product (exp is a function, not a power of E), while exp(x)*exp(x) merges into exp(2*x).
+ * Base and exponent for collecting equal bases: x^2 gives [x, 2], exp(a) gives [E, a], anything else [e, 1]. Bases
+ * merge only when the exponents share their non-numeric part, so as in SymPy exp(x)*exp(2*x) = exp(3*x) and
+ * exp(x)*exp(-x) = 1, while exp(x)*exp(y) and E*exp(x) stay products.
  * @internal
  */
 export function asBaseExp(e: Expr): [Expr, Expr] {
   if (e.kind === 'pow') return [e.base, e.exp]
+  if (e.kind === 'fn' && e.name === 'exp' && e.args.length === 1) return [E, e.args[0] as Expr]
   return [e, ONE]
 }
 
@@ -216,6 +219,13 @@ export function makeAdd(input: readonly Expr[]): Expr {
   if ((posInf && negInf) || (complexInf && (posInf || negInf))) return NAN
   let terms: Expr[] = []
   for (const g of groups.values()) if (!isZeroNum(g.coeff)) terms.push(withCoeff(g.coeff, g.rest))
+  if (posInf || negInf || complexInf) {
+    // An infinity absorbs finite constants such as pi or sqrt(2) (real ones only for oo and -oo).
+    terms = terms.filter((t) => {
+      const z = evalComplexConstant(t)
+      return z === undefined || !Number.isFinite(z[0]) || !Number.isFinite(z[1]) || (!complexInf && z[1] !== 0)
+    })
+  }
   if (complexInf) terms.push(ZOO)
   else if (posInf) terms.push(OO)
   else if (negInf) terms.push(NEG_INF)

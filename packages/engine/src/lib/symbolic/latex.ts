@@ -1,4 +1,4 @@
-import { asCoeffMul, E, isNumeric, MINUS_ONE, makeMul, makePow, numFromRational, ONE } from './_canon.ts'
+import { asCoeffMul, E, isNumeric, keepCoeff, MINUS_ONE, makeMul, makePow, numFromRational, ONE } from './_canon.ts'
 import { couldExtractMinus, orderedFactors, orderedTerms, sortBySympyKey } from './_order.ts'
 import { rat } from './_rational.ts'
 import type { Derivation, Expr, ExprFn, ExprMul, ExprPow, Step } from './expr.ts'
@@ -35,6 +35,15 @@ function precedence(e: Expr, traditional: boolean): number {
   }
 }
 
+/** -e for printing: a product keeps its unevaluated form (-2*(x + 1) prints as 2*(x + 1) after the minus sign). */
+function negated(e: Expr): Expr {
+  if (e.kind === 'mul') {
+    const [c, rest] = asCoeffMul(e)
+    return keepCoeff(makeMul([MINUS_ONE, c]), rest)
+  }
+  return makeMul([MINUS_ONE, e])
+}
+
 function floatText(x: number): string {
   return Number.isInteger(x) && Math.abs(x) < 1e16 ? `${x}.0` : `${x}`
 }
@@ -54,12 +63,12 @@ function negativeExponent(p: ExprPow): boolean {
 
 function strMul(e: ExprMul): string {
   const prec = precedence(e, false)
-  const [c, rest] = asCoeffMul(e)
+  const [c] = asCoeffMul(e)
   let sign = ''
   let body: Expr = e
   if ((c.kind === 'num' && c.n < 0n) || (c.kind === 'float' && c.value < 0)) {
     sign = '-'
-    body = makeMul([makeMul([MINUS_ONE, c]), rest])
+    body = negated(e)
   }
   const a: Expr[] = []
   const b: Expr[] = []
@@ -410,7 +419,7 @@ function texMul(e: Expr): string {
   let body = e
   let out = ''
   if (couldExtractMinus(e)) {
-    body = makeMul([MINUS_ONE, e])
+    body = negated(e)
     out = '- '
   }
   const [numer, denom] = fraction(body)
@@ -520,7 +529,7 @@ function tex(e: Expr): string {
         if (i > 0) {
           if (couldExtractMinus(term)) {
             out += ' - '
-            t = makeMul([MINUS_ONE, term])
+            t = negated(term)
           } else out += ' + '
         }
         const s = tex(t)

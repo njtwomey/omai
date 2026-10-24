@@ -1,8 +1,8 @@
 import { WhiteboxError } from '../base/index.ts'
-import { isInfinite, MINUS_ONE, makeAdd, makeIntegral, makeMul, makePow, NAN, numFromFloat } from './_canon.ts'
+import { isInfinite, MINUS_ONE, makeAdd, makeIntegral, makeMul, makePow, NAN, numFromFloat, ZERO } from './_canon.ts'
 import { expandExpr } from './_expand.ts'
 import { isRationalIn, rationalIntegral, reductionIntegral, table, trigIntegral } from './_integrals.ts'
-import { numericallyEqual } from './_measure.ts'
+import { numericCompare } from './_measure.ts'
 import { children, hasSymbol } from './_node.ts'
 import { evalReal, freeNames, type NumericFunctions, quadrature } from './_numeric.ts'
 import { cancel, numerDenom } from './_rational-functions.ts'
@@ -90,18 +90,28 @@ function byParts(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
 
 function core(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
   if (!hasSymbol(e, x)) return record(ctx, 'constant', e, x, makeMul([e, x]))
-  if (ctx.depth > MAX_DEPTH) return undefined
+  return attempt(e, x, ctx)
+}
+
+/** Run a search step one level deeper (substitution and integration by parts bound the recursion). */
+function deeper<T>(ctx: Ctx, f: () => T | undefined): T | undefined {
+  if (ctx.depth >= MAX_DEPTH) return undefined
   ctx.depth++
   try {
-    return attempt(e, x, ctx)
+    return f()
   } finally {
     ctx.depth--
   }
 }
 
+/** F when d/dx F = e: numerically at sample points, or exactly when the values cannot be computed (erf). */
 function verified(F: Expr | undefined, e: Expr, x: ExprSym): Expr | undefined {
   if (F === undefined) return undefined
-  return numericallyEqual(diff(F, x), e, 1e-7) ? F : undefined
+  const dF = diff(F, x)
+  const check = numericCompare(dF, e, 1e-7)
+  if (check === 'equal') return F
+  if (check === 'different') return undefined
+  return cancel(expandExpr(makeAdd([dF, makeMul([MINUS_ONE, e])]))).key === ZERO.key ? F : undefined
 }
 
 function attempt(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
@@ -140,9 +150,17 @@ function attempt(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
     }
     if (verified(F, e, x) !== undefined) return record(ctx, rule, e, x, F as Expr)
   }
-  const sub = verified(substitution(e, x, ctx), e, x)
+  const sub = verified(
+    deeper(ctx, () => substitution(e, x, ctx)),
+    e,
+    x,
+  )
   if (sub !== undefined) return sub
-  const parts = verified(byParts(e, x, ctx), e, x)
+  const parts = verified(
+    deeper(ctx, () => byParts(e, x, ctx)),
+    e,
+    x,
+  )
   if (parts !== undefined) return parts
   // Expand products of sums and powers of sums, then retry.
   const ex = expandExpr(e)

@@ -1,8 +1,59 @@
 // Helpers for the symbolic golden tests: the fixture output shape written by oracle/whitebox_oracle/symbolic.py and
 // value comparisons at its sample points. Not published.
+import fc from 'fast-check'
 import { z } from 'zod'
 import { erf, gamma } from '../lib/numerics/special/index.ts'
-import { type Expr, evaluateComplex, type NumericFunctions } from '../lib/symbolic/index.ts'
+import {
+  add,
+  cos,
+  type Expr,
+  evaluateComplex,
+  exp,
+  log,
+  mul,
+  type NumericFunctions,
+  pow,
+  rational,
+  sin,
+  sym,
+} from '../lib/symbolic/index.ts'
+
+/** Small integers and rationals. */
+export const rationalArb: fc.Arbitrary<Expr> = fc
+  .tuple(fc.integer({ min: -5, max: 5 }), fc.integer({ min: 1, max: 4 }))
+  .map(([p, q]) => rational(p, q))
+
+/** Polynomials in x and y with small rational coefficients, total degree up to `degree`, as expressions. */
+export function polynomialArb(degree = 3, vars: readonly string[] = ['x', 'y']): fc.Arbitrary<Expr> {
+  const monomials: [number, number][] = []
+  for (let i = 0; i <= degree; i++) for (let j = 0; j + i <= degree; j++) monomials.push([i, j])
+  const used = vars.length === 1 ? monomials.filter(([, j]) => j === 0) : monomials
+  return fc
+    .array(fc.tuple(fc.constantFrom(...used), fc.integer({ min: -4, max: 4 })), { minLength: 1, maxLength: 5 })
+    .map((ts) => add(...ts.map(([[i, j], c]) => mul(c, pow(sym(vars[0] ?? 'x'), i), pow(sym(vars[1] ?? 'y'), j)))))
+}
+
+/** Products of small polynomial factors (so that factorisation has something to find). */
+export function productArb(vars: readonly string[] = ['x', 'y']): fc.Arbitrary<Expr> {
+  return fc.array(polynomialArb(2, vars), { minLength: 1, maxLength: 3 }).map((fs) => mul(...fs))
+}
+
+/** Expressions in x and y built from + * powers, sin, cos, exp and log of 1 + square (defined for real arguments). */
+export const exprArb: fc.Arbitrary<Expr> = fc.letrec<{ e: Expr }>((tie) => ({
+  e: fc.oneof(
+    { depthSize: 'small', withCrossShrink: true },
+    fc.constantFrom(sym('x'), sym('y')),
+    rationalArb,
+    fc.tuple(tie('e'), tie('e')).map(([a, b]) => add(a, b)),
+    fc.tuple(tie('e'), tie('e')).map(([a, b]) => mul(a, b)),
+    fc.tuple(tie('e'), fc.integer({ min: 0, max: 3 })).map(([a, k]) => pow(a, k)),
+    tie('e').map((a) => sin(a)),
+    tie('e').map((a) => cos(a)),
+    tie('e').map((a) => exp(mul(rational(1, 2), a))),
+    tie('e').map((a) => log(add(1, pow(a, 2)))),
+  ),
+})).e
+
 import { item } from '../lib/tensor/index.ts'
 import type { GoldenCase } from './golden.ts'
 

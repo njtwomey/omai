@@ -111,7 +111,25 @@ function compose(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] | 
     if (e.name === 'log' && isZeroLimit(L)) return NEG_INF
     if (DISCONTINUOUS.has(e.name)) {
       const z = evalComplex(L, new Map())
-      if (z === undefined || Number.isInteger(z[0])) throw new WhiteboxError('not-implemented', 'limit: at a jump')
+      if (z === undefined || z[1] !== 0) throw new WhiteboxError('not-implemented', 'limit: at a jump')
+      const jump = e.name === 'sign' ? z[0] === 0 : Number.isInteger(z[0])
+      if (jump) {
+        // At the jump the side decides: compare the argument just beside the point with its limit.
+        const v = sample(e.args[0] as Expr, x, x0, dir, 1e-8)
+        if (v === undefined || v === z[0]) throw new WhiteboxError('not-implemented', 'limit: at a jump')
+        const below = v < z[0]
+        const k = z[0]
+        const value =
+          e.name === 'floor' ? (below ? k - 1 : k) : e.name === 'ceiling' ? (below ? k : k + 1) : below ? -1 : 1
+        if (steps !== undefined) {
+          steps.push({
+            rule: `${e.name} at a jump, approached from ${below ? 'below' : 'above'}`,
+            before: limitNode(e, x, x0, dir),
+            after: asExpr(value),
+          })
+        }
+        return asExpr(value)
+      }
     }
     const v = makeFn(e.name, [L])
     if (isFiniteExpr(v) || v.key === OO.key || v.key === NEG_INF.key) {
@@ -178,6 +196,8 @@ function oneSided(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] |
     }
   }
   try {
+    // Series of floor, ceiling and sign would treat them as smooth; their jumps are handled by composition.
+    if (hasDiscontinuity(e)) throw new WhiteboxError('not-implemented', 'limit: discontinuous function')
     return fromSeries(e, x, x0, dir, steps)
   } catch (err) {
     if (!(err instanceof WhiteboxError) || (err.code !== 'not-implemented' && err.code !== 'convergence')) throw err

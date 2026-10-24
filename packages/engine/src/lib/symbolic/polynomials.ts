@@ -24,7 +24,7 @@ import {
   uscale,
   utrim,
 } from './_poly.ts'
-import { babs, bgcd, blcm, R0, R1, type Rational, rabs, radd, rat, rcmp, rdiv, rmul, rneg, rsub } from './_rational.ts'
+import { bgcd, blcm, R1, type Rational, rabs, radd, rat, rcmp, rdiv, rmul, rneg, rsub } from './_rational.ts'
 import type { Expr, ExprNum } from './expr.ts'
 import { det } from './matrices.ts'
 
@@ -189,7 +189,8 @@ export function leadingCoefficient(f: Expr | Poly, gen?: Expr): Expr {
 function common(f: Expr | Poly, g: Expr | Poly, gens: readonly Expr[]): [P, P, readonly Expr[]] {
   const fe = (f as Poly).kind === 'poly' ? polyToExpr(f as Poly) : (f as Expr)
   const ge = (g as Poly).kind === 'poly' ? polyToExpr(g as Poly) : (g as Expr)
-  const all = poly(makeAdd([fe, ge]), ...gens).gens
+  // The generators of both (not of their sum, which may cancel): f's, then any g adds.
+  const all = poly(ge, ...poly(fe, ...gens).gens).gens
   const pf = poly(fe, ...all)
   const pg = poly(ge, ...all)
   return [toP(pf), toP(pg), all]

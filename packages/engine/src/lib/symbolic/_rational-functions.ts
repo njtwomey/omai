@@ -20,6 +20,7 @@ import {
   exprToP,
   findGens,
   type P,
+  padd,
   pcoeffsIn,
   pconst,
   pdeg,
@@ -30,7 +31,6 @@ import {
   pmul,
   pnumericContent,
   ppow,
-  pprem,
   psub,
   pToExpr,
   pvar,
@@ -215,14 +215,19 @@ export function apart(e: Expr, x: ExprSym): Expr {
       pd = pmul(pd, ppow(f, k))
     }
   }
-  // Polynomial part by pseudo-division: lc^delta * n = quotient * pd + remainder.
+  // Polynomial part by pseudo-division in x: s * n = quotient * pd + remainder with s a power of lc(pd).
   const lc = plcIn(pd, 0)
-  const delta = Math.max(0, pdeg(pn, 0) - pdeg(pd, 0) + 1)
-  const lcPow = ppow(lc, delta)
-  const scaled = pmul(lcPow, pn)
-  const remainder = pprem(scaled, pd, 0)
-  const quotient = pdivExact(psub(scaled, remainder), pd) ?? pconst(pd.n, R0)
-  const scale = makePow(makeMul([front, pToExpr(lcPow, gens)]), MINUS_ONE)
+  const db = pdeg(pd, 0)
+  let remainder = pn
+  let quotient = pconst(pd.n, R0)
+  let s = pconst(pd.n, R1)
+  while (!pIsZero(remainder) && pdeg(remainder, 0) >= db) {
+    const t = pmul(plcIn(remainder, 0), ppow(pvar(pd.n, 0), pdeg(remainder, 0) - db))
+    remainder = psub(pmul(lc, remainder), pmul(t, pd))
+    quotient = padd(pmul(lc, quotient), t)
+    s = pmul(lc, s)
+  }
+  const scale = makePow(makeMul([front, pToExpr(s, gens)]), MINUS_ONE)
   // Unknown numerator coefficients: deg f of them for each f^j, j <= k.
   const blocks: { f: P; j: number; deg: number; offset: number }[] = []
   let count = 0
