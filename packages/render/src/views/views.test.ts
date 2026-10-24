@@ -1,16 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import {
   clusteringSteps,
+  componentsRecord,
   crossValidationCurve,
   decisionSurface,
   embeddingSteps,
+  ensembleStages,
   learningCurve,
   mixtureSteps,
   pruningPath,
   regularisationPath,
+  type TreeNode,
+  treeRecord,
 } from 'whitebox-engine/exposition'
+import { componentsView } from './components.ts'
 import { coefficientsAt, crossValidationView, regularisationPathView } from './paths.ts'
 import { stillOf, viewFor } from './registry.ts'
+import { ensembleFrames } from './stages.ts'
 import {
   clusteringFrames,
   cutClusters,
@@ -21,6 +27,7 @@ import {
   mixtureFrames,
 } from './steps.ts'
 import { decisionSurfaceView } from './surfaces.ts'
+import { splitCandidatesView, splitText, treeNodeOf, treeScene } from './trees.ts'
 
 type Opt = { series: { name?: string }[]; grid: unknown[]; xAxis: { type: string; inverse?: boolean }[] }
 const o = (x: unknown): Opt => x as Opt
@@ -182,5 +189,86 @@ describe('surface and step views', () => {
     })
     const opt = o(embeddingFrames(steps, { labels: ['a', 'a', 'b', 'b'] }).option(1))
     expect(opt.series.map((x) => x.name)).toContain('b')
+  })
+})
+
+describe('tree, ensemble and component views', () => {
+  const tree = treeRecord({
+    criterion: 'gini',
+    features: ['petal length (cm)'],
+    classes: ['a', 'b'],
+    nodes: [
+      {
+        id: 0,
+        parent: null,
+        depth: 0,
+        rows: [0, 1, 2],
+        value: [2, 1],
+        impurity: 0.44,
+        candidates: [
+          { feature: 0, threshold: 0.5, impurityLeft: 0, impurityRight: 0, decrease: 0.44 },
+          { feature: 0, threshold: 1.5, impurityLeft: 0, impurityRight: 0.5, decrease: 0.11 },
+        ],
+        split: { feature: 0, threshold: 0.5, left: 1, right: 2 },
+        order: 0,
+      },
+      { id: 1, parent: 0, depth: 1, rows: [0, 1], value: [2, 0], impurity: 0, candidates: [], order: 1 },
+      { id: 2, parent: 0, depth: 1, rows: [2], value: [0, 1], impurity: 0, candidates: [], order: 2 },
+    ],
+  })
+
+  it('draws a tree as cards with hit-testable ids, and grows it', () => {
+    const ids = (s: ReturnType<typeof treeScene>): string[] =>
+      s.children.flatMap((c) => ('id' in c && typeof c.id === 'string' ? [c.id] : []))
+    expect(ids(treeScene(tree))).toEqual(['node:0', 'node:1', 'node:2'])
+    expect(ids(treeScene(tree, { grownTo: 0 }))).toEqual(['node:0'])
+    expect(splitText(tree, tree.nodes[0] as TreeNode)).toBe('petal length ≤ 0.5')
+    expect(treeNodeOf('node:2')).toBe(2)
+  })
+
+  it('charts a node’s candidate splits with the chosen one', () => {
+    const names = o(splitCandidatesView(tree, 0)).series.map((s) => s.name)
+    expect(names).toContain('petal length (cm)')
+    expect(names).toContain('chosen')
+  })
+
+  it('plays ensemble stages over the training rows', () => {
+    const stages = ensembleStages({
+      method: 'adaboost',
+      weights: [0.8, 0.4],
+      trainScores: [0.7, 0.9],
+      targets: [
+        [0.25, 0.25, 0.25, 0.25],
+        [0.1, 0.1, 0.4, 0.4],
+      ],
+    })
+    const frames = ensembleFrames(stages, {
+      points: [
+        [0, 0],
+        [1, 1],
+        [2, 2],
+        [3, 3],
+      ],
+      labels: [0, 0, 1, 1],
+    })
+    expect(frames.count).toBe(2)
+    expect(o(frames.option(1)).grid).toHaveLength(3)
+  })
+
+  it('draws a decomposition as biplot, scree and loadings', () => {
+    const record = componentsRecord({
+      method: 'pca',
+      features: ['x', 'y'],
+      components: [
+        [0.6, 0.8],
+        [-0.8, 0.6],
+      ],
+      explainedVarianceRatio: [0.9, 0.1],
+      scores: [
+        [1, 0],
+        [-1, 0.1],
+      ],
+    })
+    expect(o(componentsView(record)).grid).toHaveLength(3)
   })
 })
