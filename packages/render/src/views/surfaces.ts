@@ -1,30 +1,44 @@
 import type { EChartsOption } from 'echarts'
-import type { DecisionSurface, HyperparameterSurface, PosteriorGrid } from 'whitebox-engine/exposition'
+import {
+  type DecisionSurface,
+  type HyperparameterSurface,
+  type PosteriorGrid,
+  surfaceAt,
+} from 'whitebox-engine/exposition'
+import { type Panel, subplots } from '../charts/compose.ts'
 import { contours, decisionRegions } from '../charts/fields.ts'
 import { band, lines } from '../charts/lines.ts'
 import { heatmap } from '../charts/matrices.ts'
 import { type AxisSpec, cartesian, type Layer } from '../charts/plot.ts'
 import { type PointSet, points } from '../charts/points.ts'
 import type { DataAspect } from '../figure/aspect.ts'
+import { gridSpec } from '../figure/grid.ts'
 import { formatNumber } from '../theme/format.ts'
 import type { ColourMode } from '../theme/tokens.ts'
-import { outlined, type ViewOptions, viewFigure, viewMode } from './_view.ts'
+import { outlined, short, type ViewFrames, type ViewOptions, viewFigure, viewMode } from './_view.ts'
 
 /** Rows of input data: `rows[i]` is row i's features. */
 export type Rows = readonly (readonly number[])[]
 
 /** Options of {@link decisionSurfaceView}. */
 export interface SurfaceViewOptions extends ViewOptions {
-  /** The training rows to draw over the surface (their first two columns, or `columns`). */
+  /** Training rows to draw over the surface instead of the record's (their first two columns, or `columns`). */
   readonly points?: Rows
   /** A label per row: a class index or a class name from the record's `classes`. */
   readonly labels?: readonly (number | string)[]
   /** Which columns of `points` are the surface's two features (default `[0, 1]`). */
   readonly columns?: readonly [number, number]
-  /** Probability contours: levels, or `false` for none (default 0.25, 0.5, 0.75 for two classes; none otherwise). */
+  /**
+   * Contours: levels (of the probability of class 1, or of the decision function when the record has one), or `false`
+   * for none (default the record's decision levels, or 0.25, 0.5, 0.75 for two classes' probabilities).
+   */
   readonly contours?: readonly number[] | false
   /** The data aspect (default `auto`; `equal` when the features share units). */
   readonly aspect?: DataAspect
+  /** Rows to ring (indices into the rows drawn): support vectors, the rows just seen. */
+  readonly highlight?: readonly number[]
+  /** A weight per row drawn as its marker's area (sample weights; residuals by their size). */
+  readonly rowWeights?: readonly number[]
 }
 
 /** The class index of each label: numbers as given, names looked up in the classes (unknown names give -1). */
@@ -40,6 +54,8 @@ export function classIndices(labels: readonly (number | string)[], classes: read
  * @param columns - The two columns drawn.
  * @param labels - A class index per row (or none).
  * @param names - Class names.
+ * @param style - Style shared by every set.
+ * @param sizes - A size per row (marker areas), split with the rows.
  * @returns The point sets.
  */
 export function classPointSets(
@@ -48,11 +64,15 @@ export function classPointSets(
   labels: readonly number[] | undefined,
   names: readonly string[] | undefined,
   style: Partial<PointSet> = {},
+  sizes?: readonly number[],
 ): PointSet[] {
   const [a, b] = columns
   const x = rows.map((r) => r[a] ?? 0)
   const y = rows.map((r) => r[b] ?? 0)
-  if (labels === undefined) return [{ x, y, name: 'data', colour: 'fg', size: 6, ...style }]
+  const sized = (idx: readonly number[]): Partial<PointSet> =>
+    sizes === undefined ? {} : { sizes: idx.map((i) => Math.abs(sizes[i] ?? 0)), sizeRange: [2, 22] }
+  if (labels === undefined)
+    return [{ x, y, name: 'data', colour: 'fg', size: 6, ...style, ...sized(rows.map((_, i) => i)) }]
   const k = Math.max(-1, ...labels) + 1
   const sets: PointSet[] = []
   for (let c = -1; c < k; c++) {
@@ -67,6 +87,7 @@ export function classPointSets(
       opacity: 1,
       symbol: ['circle', 'rect', 'triangle', 'diamond'][Math.max(c, 0) % 4] ?? 'circle',
       ...style,
+      ...sized(idx),
     })
   }
   return sets
@@ -77,12 +98,36 @@ function oneHot(labels: readonly (readonly number[])[], k: number): number[][][]
 }
 
 /**
- * The layers of a decision surface: smooth class regions (faded where the model is unsure) with their boundaries and
- * probability contours, or a smooth field with contours for regressors and densities, or, for one feature, the class
- * probabilities (or values) as curves; then the training rows coloured by class.
+ * The rows a surface view draws: the ones given (with their columns), else the record's own rows.
  *
  * @param surface - The record.
- * @param options - Mode, training rows and labels, contours.
+ * @param options - Rows, labels and columns given to the view.
+ * @returns The rows, the two columns drawn and the class index of each row (when known).
+ */
+export function surfaceRows(
+  surface: DecisionSurface,
+  options: Pick<SurfaceViewOptions, 'points' | 'labels' | 'columns'> = {},
+): { readonly rows?: Rows; readonly columns: readonly [number, number]; readonly labels?: readonly number[] } {
+  if (options.points !== undefined)
+    return {
+      rows: options.points,
+      columns: options.columns ?? [0, 1],
+      ...(options.labels === undefined ? {} : { labels: classIndices(options.labels, surface.classes) }),
+    }
+  const own = surface.rows
+  if (own === undefined) return { columns: [0, 1] }
+  const labels = options.labels === undefined ? own.labels : classIndices(options.labels, surface.classes)
+  return { rows: own.points, columns: [0, 1], ...(labels === undefined ? {} : { labels }) }
+}
+
+/**
+ * The layers of a decision surface: smooth class regions (faded where the model is unsure) with their boundaries and
+ * probability contours, a binary decision function's regions with its margins dashed, or a smooth field with contours
+ * for regressors and densities, or, for one feature, the class probabilities (or values) as curves; then the training
+ * rows coloured by class (the record's own unless others are given), with the highlighted ones ringed.
+ *
+ * @param surface - The record.
+ * @param options - Mode, training rows and labels, contours, highlighted rows and row weights.
  * @returns The layers and the axes.
  */
 export function decisionSurfaceLayers(
@@ -93,7 +138,7 @@ export function decisionSurfaceLayers(
   const { x, y, classes } = surface
   const k = surface.probabilities?.length ?? (surface.labels === undefined ? 0 : Math.max(...surface.labels.flat()) + 1)
   const layers: Layer[] = []
-  const labels = options.labels === undefined ? undefined : classIndices(options.labels, classes)
+  const { rows, columns, labels } = surfaceRows(surface, options)
   const xAxis: AxisSpec = { label: surface.features[0] }
   if (y.length < 2) {
     // One feature: the probabilities (or values) as curves over it.
@@ -107,10 +152,9 @@ export function decisionSurfaceLayers(
           }))
         : [{ x, y: surface.values?.[0] ?? surface.labels?.[0] ?? [], name: 'prediction', colour: 'tab0' }]
     layers.push(lines(curves, { mode }))
-    if (options.points !== undefined) {
-      const col = options.columns?.[0] ?? 0
-      const rows = options.points.map((r) => [r[col] ?? 0, 0])
-      layers.push(points(classPointSets(rows, [0, 1], labels, classes, { size: 6, opacity: 0.5 }), { mode }))
+    if (rows !== undefined) {
+      const flat = rows.map((r) => [r[columns[0]] ?? 0, 0])
+      layers.push(points(classPointSets(flat, [0, 1], labels, classes, { size: 6, opacity: 0.5 }), { mode }))
     }
     return {
       layers,
@@ -118,48 +162,101 @@ export function decisionSurfaceLayers(
       y: { label: surface.probabilities !== undefined ? 'probability' : 'prediction' },
     }
   }
-  const scores = surface.values
-  if (scores !== undefined && surface.probabilities === undefined && surface.classes?.length === 2) {
-    // A binary decision function (an SVM's f(x)): the regions are its sign, drawn smoothly from the scores, with the
-    // margins f = ±1 dashed.
-    layers.push(
-      decisionRegions([scores.map((r) => r.map((v) => -v)), scores], { x, y, mode, confidence: false, opacity: 0.5 }),
-    )
-    const levels = options.contours ?? [-1, 1]
-    if (levels !== false)
+  // A binary decision function f (an SVM's margin, a linear model's log-odds): older records kept it in `values`.
+  const binary = surface.classes?.length === 2
+  const f =
+    surface.decision ?? (binary && surface.probabilities === undefined ? surface.values : undefined) ?? undefined
+  const levels =
+    options.contours ?? surface.levels ?? (surface.decision === undefined && f !== undefined ? [-1, 1] : undefined)
+  if (f !== undefined && surface.probabilities === undefined) {
+    // The regions are f's sign, drawn smoothly from the scores, with the margins (f = ±1 for an SVM) dashed.
+    layers.push(decisionRegions([f.map((r) => r.map((v) => -v)), f], { x, y, mode, confidence: false, opacity: 0.5 }))
+    if (levels !== undefined && levels !== false && levels.length > 0)
       layers.push(
-        contours(scores, { x, y, levels, colour: 'fg', dash: 'dashed', width: 1, opacity: 0.7, labels: false, mode }),
+        contours(f, { x, y, levels, colour: 'fg', dash: 'dashed', width: 1, opacity: 0.7, labels: false, mode }),
       )
   } else if (surface.probabilities !== undefined || surface.labels !== undefined) {
     const fields = surface.probabilities ?? oneHot(surface.labels ?? [], k)
     layers.push(decisionRegions(fields, { x, y, mode, confidence: surface.probabilities !== undefined, opacity: 0.5 }))
-    const levels = options.contours ?? (surface.probabilities !== undefined && k === 2 ? [0.25, 0.5, 0.75] : false)
-    if (levels !== false && surface.probabilities?.[1] !== undefined)
+    if (f !== undefined && surface.levels !== undefined && options.contours === undefined)
+      // A probabilistic SVM: its margins still come from f.
       layers.push(
-        contours(surface.probabilities[1], {
+        contours(f, {
           x,
           y,
-          levels: levels.filter((l) => l !== 0.5),
+          levels: surface.levels,
           colour: 'fg',
           dash: 'dashed',
-          width: 0.8,
-          opacity: 0.6,
+          width: 1,
+          opacity: 0.7,
+          labels: false,
           mode,
         }),
       )
+    else {
+      const p = options.contours ?? (surface.probabilities !== undefined && k === 2 ? [0.25, 0.5, 0.75] : false)
+      if (p !== false && surface.probabilities?.[1] !== undefined)
+        layers.push(
+          contours(surface.probabilities[1], {
+            x,
+            y,
+            levels: p.filter((l) => l !== 0.5),
+            colour: 'fg',
+            dash: 'dashed',
+            width: 0.8,
+            opacity: 0.6,
+            mode,
+          }),
+        )
+    }
   } else if (surface.values !== undefined) {
     layers.push(heatmap(surface.values, { x, y, mode, colourBar: true, label: 'prediction' }))
     layers.push(contours(surface.values, { x, y, levels: 6, colour: 'fg', width: 0.7, opacity: 0.55, mode }))
   }
-  if (options.points !== undefined)
+  if (rows !== undefined) {
     layers.push(
-      outlined(points(classPointSets(options.points, options.columns ?? [0, 1], labels, classes), { mode }), mode),
+      outlined(points(classPointSets(rows, columns, labels, classes, {}, options.rowWeights), { mode }), mode),
     )
+    const ringed = options.highlight
+    if (ringed !== undefined && ringed.length > 0)
+      layers.push(
+        outlined(
+          points(
+            [
+              {
+                x: ringed.map((i) => rows[i]?.[columns[0]] ?? 0),
+                y: ringed.map((i) => rows[i]?.[columns[1]] ?? 0),
+                name: 'highlighted',
+                colour: 'none',
+                size: 13,
+                outline: false,
+              },
+            ],
+            { mode },
+          ),
+          mode,
+          1.6,
+        ),
+      )
+  }
   return { layers, x: xAxis, y: { label: surface.features[1] } }
 }
 
+/** The axes of a surface panel: its features, limited to the grid when it spans two features. */
+export function surfaceAxes(
+  surface: DecisionSurface,
+  axes: { readonly x: AxisSpec; readonly y: AxisSpec },
+): { readonly x: AxisSpec; readonly y: AxisSpec } {
+  if (surface.y.length < 2) return axes
+  return {
+    x: { ...axes.x, limits: [surface.x[0] ?? 0, surface.x[surface.x.length - 1] ?? 1] },
+    y: { ...axes.y, limits: [surface.y[0] ?? 0, surface.y[surface.y.length - 1] ?? 1] },
+  }
+}
+
 /**
- * A decision surface as one figure: the model's regions or field over two features, with the training rows.
+ * A decision surface as one figure: the model's regions or field over two features, with the training rows (the
+ * fitted model's, for a record with steps: {@link decisionSurfaceFrames} plays them).
  *
  * @param surface - The record.
  * @param options - Mode, figure, training rows and labels, contours and aspect.
@@ -175,17 +272,111 @@ export function decisionSurfaceLayers(
 export function decisionSurfaceView(surface: DecisionSurface, options: SurfaceViewOptions = {}): EChartsOption {
   const fig = viewFigure(options, { aspect: 1.25 })
   const { layers, x, y } = decisionSurfaceLayers(surface, { ...options, mode: fig.mode })
-  const xr: [number, number] = [surface.x[0] ?? 0, surface.x[surface.x.length - 1] ?? 1]
-  const yr: [number, number] = [surface.y[0] ?? 0, surface.y[surface.y.length - 1] ?? 1]
-  const two = surface.y.length >= 2
+  const axes = surfaceAxes(surface, { x, y })
   return cartesian(layers, {
     figure: fig,
     mode: fig.mode,
-    x: two ? { ...x, limits: xr } : x,
-    y: two ? { ...y, limits: yr } : y,
+    ...axes,
     aspect: options.aspect ?? 'auto',
     tooltip: 'item',
   })
+}
+
+/**
+ * The training objective of a surface's steps as a curve: the record's full objective trace when it has one, else the
+ * objective at each step; with the iteration of each step.
+ *
+ * @param surface - The record.
+ * @returns The curve and its name, or `undefined` without an objective.
+ */
+export function surfaceObjective(
+  surface: DecisionSurface,
+): { readonly name: string; readonly x: readonly number[]; readonly y: readonly number[] } | undefined {
+  if (surface.objective !== undefined && surface.objective.values.length > 1)
+    return { name: surface.objective.name, x: surface.objective.iterations, y: surface.objective.values }
+  const steps = (surface.steps ?? []).filter((s) => s.objective !== undefined)
+  if (steps.length < 2) return undefined
+  return { name: 'objective', x: steps.map((s) => s.iteration), y: steps.map((s) => s.objective ?? 0) }
+}
+
+/**
+ * A decision surface through training as frames for a player: at each recorded step, the regions (or field) of the
+ * model then, the training rows sized by their weight at that step and the ones that mattered ringed (support vectors,
+ * the rows just seen), beside the training objective with the step marked. A record without steps is one frame.
+ *
+ * @param surface - The record.
+ * @param options - As {@link decisionSurfaceView}.
+ * @returns The frames (the last is the fitted model).
+ */
+export function decisionSurfaceFrames(surface: DecisionSurface, options: SurfaceViewOptions = {}): ViewFrames {
+  const steps = surface.steps ?? []
+  const objective = surfaceObjective(surface)
+  const fig = viewFigure(options, { aspect: objective === undefined ? 1.25 : 1.9 })
+  const mode = fig.mode
+  const count = Math.max(1, steps.length)
+  const stepName = surface.stepName ?? 'step'
+  const option = (frame: number): EChartsOption => {
+    const t = Math.min(Math.max(frame, 0), count - 1)
+    const step = steps[t]
+    const at = surfaceAt(surface, t)
+    const { layers, x, y } = decisionSurfaceLayers(at, {
+      ...options,
+      mode,
+      ...(options.highlight === undefined && step?.highlight !== undefined ? { highlight: step.highlight } : {}),
+      ...(options.rowWeights === undefined && step?.rowWeights !== undefined ? { rowWeights: step.rowWeights } : {}),
+    })
+    const axes = surfaceAxes(surface, { x, y })
+    const ringed = step?.highlight?.length
+    const main: Panel = {
+      layers,
+      options: {
+        ...axes,
+        aspect: options.aspect ?? 'auto',
+        ...(step === undefined
+          ? {}
+          : { title: `${stepName} ${step.iteration}${ringed === undefined ? '' : ` · ${ringed} highlighted`}` }),
+      },
+    }
+    if (objective === undefined || step === undefined)
+      return cartesian(main.layers, { ...main.options, figure: fig, mode, tooltip: 'item' })
+    const k = nearestIndexOf(objective.x, step.iteration)
+    const progress: Panel = {
+      layers: [
+        lines([{ x: objective.x, y: objective.y, name: objective.name, colour: 'fgSecondary', width: 1.5 }], { mode }),
+        points([{ x: [objective.x[k] ?? 0], y: [objective.y[k] ?? 0], name: '__now', colour: 'accent', size: 9 }], {
+          mode,
+        }),
+      ],
+      options: { x: { label: stepName }, y: { label: objective.name } },
+    }
+    const grid = gridSpec(1, 2, {
+      widthRatios: [1.5, 1],
+      wspace: 72,
+      cells: [
+        { id: 'main', row: 0, col: 0 },
+        { id: 'objective', row: 0, col: 1 },
+      ],
+    })
+    return subplots(grid, { main, objective: progress }, { figure: fig, legend: false, tooltip: 'item' })
+  }
+  return {
+    count,
+    label: (f) => {
+      const s = steps[Math.min(Math.max(f, 0), count - 1)]
+      if (s === undefined) return 'fitted'
+      const last = steps[steps.length - 1]?.iteration ?? 0
+      return `${stepName} ${s.iteration}/${last}${s.objective === undefined ? '' : ` · ${short(s.objective)}`}`
+    },
+    option,
+  }
+}
+
+// The index of the entry nearest a value (the iterations of an objective trace are increasing).
+function nearestIndexOf(values: readonly number[], target: number): number {
+  let best = 0
+  for (let i = 1; i < values.length; i++)
+    if (Math.abs((values[i] ?? 0) - target) < Math.abs((values[best] ?? 0) - target)) best = i
+  return best
 }
 
 /** Options of {@link posteriorView}. */

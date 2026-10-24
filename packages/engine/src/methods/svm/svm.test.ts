@@ -19,6 +19,18 @@ describe('support vector machines', () => {
     expect(margin?.dualObjective?.length).toBe(margin?.workingSets?.length)
     expect((margin?.dualObjective?.at(-1) ?? 0) <= (margin?.dualObjective?.[0] ?? 0)).toBe(true)
     expect(recordsOf(f.exposition, 'decisionSurface')).toHaveLength(1)
+    // The surface through training: steps with the support vectors then, the rows, and the margins f = ±1.
+    const surface = recordsOf(f.exposition, 'decisionSurface')[0]
+    expect(surface?.steps?.length).toBeGreaterThan(2)
+    expect(surface?.steps?.length).toBeLessThanOrEqual(41)
+    expect(surface?.steps?.[0]?.iteration).toBe(0)
+    expect(surface?.steps?.at(-1)?.highlight).toHaveLength(margin?.support.length ?? -1)
+    expect(surface?.decision).toHaveLength(surface?.y.length ?? -1)
+    expect(surface?.levels).toEqual([-1, 1])
+    expect(surface?.rows?.points).toHaveLength(80)
+    expect(margin?.rows?.labels).toHaveLength(80)
+    expect(margin?.surface).toBe(surface)
+    expect(margin?.steps).toHaveLength(margin?.dualObjective?.length ?? -1)
     expect(f.predictProba(moons.x).shape).toEqual([80, 2])
     const flowers = iris()
     const m = svc({ probability: true }).fit(flowers, { key: key(2) })

@@ -1,7 +1,15 @@
 import { type Json, linspaceNumbers, WhiteboxError } from '../base/index.ts'
 import { resolveKey, resolvePolicy, resolveTracer } from '../context/index.ts'
-import { type DecisionSurface, decisionSurface, type Explained, type Exposition } from '../exposition/index.ts'
-import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import {
+  type DecisionSurface,
+  decisionSurface,
+  type Explained,
+  type Exposition,
+  type InputRows,
+  inputRows,
+  type SurfaceStep,
+} from '../exposition/index.ts'
+import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import type { Algorithm, RunOptions } from '../trace/index.ts'
 import {
   defineEstimator,
@@ -124,6 +132,23 @@ export class ExplainedEstimatorClass<H extends Hyper = Hyper, F extends Fitted =
   }
 }
 
+/** The rows of a surface's training data drawn beside it: the default cap on how many rows a record carries. */
+export const ROWS_LIMIT = 5000
+
+/** The recorded steps of training, as fitted models, for {@link decisionSurfaceOf}. */
+export interface SurfaceStepsInput {
+  /** The model after each recorded step (the last one the fitted model). */
+  readonly models: readonly Fitted[]
+  /** The iteration each model was taken after. */
+  readonly iterations: readonly number[]
+  /** The training objective at each step. */
+  readonly objective?: readonly number[]
+  /** Rows that matter at each step (support vectors, the rows just seen). */
+  readonly highlight?: readonly (readonly number[])[]
+  /** A weight per row at each step (sample weights, residuals). */
+  readonly rowWeights?: readonly (readonly number[])[]
+}
+
 /** Options of {@link decisionSurfaceOf}. */
 export interface DecisionSurfaceOptions {
   /** The two feature columns spanning the grid (default [0, 1]); other features are held at their means. */
@@ -136,15 +161,128 @@ export interface DecisionSurfaceOptions {
   readonly featureNames?: readonly string[]
   /** Class names (default the fitted classes as strings). */
   readonly classNames?: readonly string[]
+  /** The training targets, to label the rows the record carries. */
+  readonly y?: TensorLike
+  /** The most rows the record carries (default {@link ROWS_LIMIT}; 0 for none). */
+  readonly rowsLimit?: number
+  /** Levels of a binary decision function to mark besides 0 (an SVM's margins, -1 and 1). */
+  readonly levels?: readonly number[]
+  /** The model at recorded steps of training, to record the surface at each. */
+  readonly steps?: SurfaceStepsInput
+  /** What a step is ('SMO step', 'IRLS iteration', 'epoch', 'stage'). */
+  readonly stepName?: string
+  /** The objective at every recorded iteration, with its name (finer than the steps). */
+  readonly objective?: {
+    readonly name: string
+    readonly iterations: readonly number[]
+    readonly values: readonly number[]
+    readonly lowerIsBetter?: boolean
+  }
+}
+
+/** The fields of a surface for one model on a grid. */
+type SurfaceFields = Pick<DecisionSurface, 'labels' | 'probabilities' | 'decision' | 'values'>
+
+/**
+ * The input rows of a record: two columns of a feature matrix with their names and, given classes, the rows' class
+ * indices; none beyond the row limit.
+ *
+ * @param x - The features `[n, d]`.
+ * @param options - The two columns (default the first two; one feature is paired with zeros), names, targets, the
+ * fitted classes and class names, and the row limit.
+ * @returns The rows, or `undefined` when there are more than the limit.
+ * @example
+ * ```ts
+ * import { inputRowsOf } from 'whitebox-engine/learn'
+ * inputRowsOf([[1, 2, 3], [4, 5, 6]], { y: [7, 9], classes: [7, 9] })?.labels // => [0, 1]
+ * inputRowsOf([[1, 2], [3, 4]], { limit: 1 }) // => undefined
+ * ```
+ */
+export function inputRowsOf(
+  x: TensorLike,
+  options: {
+    readonly columns?: readonly [number, number]
+    readonly featureNames?: readonly string[]
+    readonly y?: TensorLike
+    readonly classes?: readonly number[]
+    readonly classNames?: readonly string[]
+    readonly limit?: number
+  } = {},
+): InputRows | undefined {
+  const m = matrixView(x, 'inputRowsOf', { allowNaN: true })
+  if (m.n > (options.limit ?? ROWS_LIMIT)) return undefined
+  const [a, b] = options.columns ?? [0, Math.min(1, m.d - 1)]
+  const single = m.d === 1
+  const points = Array.from({ length: m.n }, (_, i) => [
+    m.data[i * m.d + a] ?? 0,
+    single ? 0 : (m.data[i * m.d + b] ?? 0),
+  ])
+  const names = options.featureNames
+  const features: [string, string] = [names?.[a] ?? `x${a}`, single ? '' : (names?.[b] ?? `x${b}`)]
+  let labels: number[] | undefined
+  if (options.y !== undefined && options.classes !== undefined) {
+    const index = new Map(options.classes.map((c, i) => [c, i]))
+    const y = toFlat(asTensor(options.y))
+    if (y.length === m.n) labels = Array.from(y, (v) => index.get(v) ?? -1)
+  }
+  const classes = options.classNames ?? options.classes?.map(String)
+  return inputRows({
+    points,
+    features,
+    ...(labels === undefined ? {} : { labels }),
+    ...(labels === undefined || classes === undefined ? {} : { classes }),
+  })
 }
 
 /**
- * A fitted model's predictions on a grid over two features of the training data: predicted class indices and
- * probabilities for classifiers, predictions (or binary decision scores) for others.
+ * At most `limit` of the steps 0 to `total`, spaced geometrically (dense early, where training changes fastest, sparse
+ * late), always with the first and the last: the steps a method records a surface or a snapshot at.
+ *
+ * @param total - The last step.
+ * @param limit - The most steps kept (default 40).
+ * @returns The steps, increasing.
+ * @example
+ * ```ts
+ * import { geometricSteps } from 'whitebox-engine/learn'
+ * geometricSteps(3) // => [0, 1, 2, 3]
+ * geometricSteps(1000, 5) // => [0, 5, 31, 177, 1000]
+ * ```
+ */
+export function geometricSteps(total: number, limit = 40): number[] {
+  const last = Math.max(0, Math.floor(total))
+  if (last + 1 <= limit) return Array.from({ length: last + 1 }, (_, t) => t)
+  const out = new Set<number>([0, last])
+  // Spaced evenly in log(t + 1): the gaps grow by a constant ratio.
+  for (let k = 1; k < limit - 1; k++) out.add(Math.round((last + 1) ** (k / (limit - 1)) - 1))
+  return [...out].sort((p, q) => p - q)
+}
+
+/**
+ * Whether step t is on a geometric schedule (every step up to 8, then about one in each 15% stretch): for snapshotting
+ * a run whose length is not known in advance, keeping a few dozen snapshots of even a long run.
+ *
+ * @param t - The step.
+ * @param ratio - The schedule's growth per kept step (default 1.15).
+ * @returns Whether to snapshot.
+ * @example
+ * ```ts
+ * import { onGeometricSchedule } from 'whitebox-engine/learn'
+ * [1, 2, 9, 12, 13, 14].map((t) => onGeometricSchedule(t)) // => [true, true, true, false, true, false]
+ * ```
+ */
+export function onGeometricSchedule(t: number, ratio = 1.15): boolean {
+  if (t <= 8) return true
+  return Math.floor(Math.log(t) / Math.log(ratio)) !== Math.floor(Math.log(t - 1) / Math.log(ratio))
+}
+
+/**
+ * A fitted model's predictions on a grid over two features of the training data: predicted class indices,
+ * probabilities and (for binary problems) the decision function for classifiers, predictions for others; with the
+ * training rows when the data is small, and the surface at recorded steps of training when given the models there.
  *
  * @param fitted - A fitted estimator with `predict`.
  * @param x - The data whose range the grid spans `[n, d]` (d at least 1; a single feature gives a one-row grid).
- * @param options - Features, resolution, padding and names.
+ * @param options - Features, resolution, padding, names, targets, decision levels and the steps of training.
  * @returns The decision surface.
  * @throws WhiteboxError `value` when the estimator cannot predict.
  * @example
@@ -164,8 +302,8 @@ export function decisionSurfaceOf(
   x: TensorLike,
   options: DecisionSurfaceOptions = {},
 ): DecisionSurface {
-  const predict = fitted.predict
-  if (predict === undefined) throw new WhiteboxError('value', `decisionSurfaceOf: ${fitted.estimator} cannot predict`)
+  if (fitted.predict === undefined)
+    throw new WhiteboxError('value', `decisionSurfaceOf: ${fitted.estimator} cannot predict`)
   const m = matrixView(x, 'decisionSurfaceOf')
   const [fi, fj] = options.features ?? [0, Math.min(1, m.d - 1)]
   const res = options.resolution ?? 30
@@ -189,8 +327,8 @@ export function decisionSurfaceOf(
   const single = m.d === 1
   const gx = axis(fi, res)
   const gy = single ? [means[0] ?? 0] : axis(fj, res)
-  const rows = gx.length * gy.length
-  const grid = new Float64Array(rows * m.d)
+  const cells = gx.length * gy.length
+  const grid = new Float64Array(cells * m.d)
   for (let a = 0; a < gy.length; a++)
     for (let b = 0; b < gx.length; b++) {
       const r = a * gx.length + b
@@ -198,29 +336,72 @@ export function decisionSurfaceOf(
       grid[r * m.d + fi] = gx[b] ?? 0
       if (!single) grid[r * m.d + fj] = gy[a] ?? 0
     }
-  const input = fromStorage(grid, [rows, m.d], 'float64')
+  const input = fromStorage(grid, [cells, m.d], 'float64')
   const reshape = (flat: ArrayLike<number>, offset = 0, stride = 1): number[][] =>
     gy.map((_, a) => gx.map((_, b) => flat[(a * gx.length + b) * stride + offset] ?? 0))
   const names = options.featureNames ?? Array.from({ length: m.d }, (_, j) => `x${j}`)
   const features: [string, string] = [names[fi] ?? `x${fi}`, single ? '' : (names[fj] ?? `x${fj}`)]
-  const predicted = toFlat(predict(input))
   const classes = fitted.classes
-  if (fitted.kind === 'classifier' && classes !== undefined) {
+  const classifier = fitted.kind === 'classifier' && classes !== undefined
+  // A binary decision function, when the model has one ([m] scores for the positive class).
+  const binaryDecision = (model: Fitted, at: TensorLike): Float64Array | undefined => {
+    if (!classifier || classes.length !== 2 || model.decisionFunction === undefined) return undefined
+    const f = model.decisionFunction(at) as Tensor
+    return f.shape.length === 1 ? Float64Array.from(toFlat(f)) : undefined
+  }
+  const fieldsOf = (model: Fitted): SurfaceFields => {
+    const predicted = toFlat((model.predict as (x: TensorLike) => Tensor)(input))
+    if (!classifier) return { values: reshape(predicted) }
     const index = new Map(classes.map((c, i) => [c, i]))
     const labels = reshape(predicted.map((v) => index.get(v) ?? 0))
-    const proba = fitted.predictProba === undefined ? undefined : (fitted.predictProba(input) as Tensor)
+    const proba = model.predictProba === undefined ? undefined : (model.predictProba(input) as Tensor)
     const k = classes.length
     const probabilities = proba === undefined ? undefined : classes.map((_, c) => reshape(toFlat(proba), c, k))
-    return decisionSurface({
-      features,
-      x: gx,
-      y: gy,
+    const decision = binaryDecision(model, input)
+    return {
       labels,
       ...(probabilities === undefined ? {} : { probabilities }),
-      classes: options.classNames ?? classes.map(String),
-    })
+      ...(decision === undefined ? {} : { decision: reshape(decision) }),
+    }
   }
-  return decisionSurface({ features, x: gx, y: gy, values: reshape(predicted) })
+  const limit = options.rowsLimit ?? ROWS_LIMIT
+  const rows =
+    limit <= 0
+      ? undefined
+      : inputRowsOf(x, {
+          columns: [fi, fj],
+          featureNames: names,
+          limit,
+          ...(options.y === undefined || !classifier ? {} : { y: options.y, classes }),
+          ...(options.classNames === undefined ? {} : { classNames: options.classNames }),
+        })
+  const steps: SurfaceStep[] | undefined = options.steps?.models.map((model, t) => {
+    const s = options.steps as SurfaceStepsInput
+    const objective = s.objective?.[t]
+    const highlight = s.highlight?.[t]
+    const rowWeights = s.rowWeights?.[t]
+    const rowValues = rows === undefined ? undefined : binaryDecision(model, x)
+    return {
+      iteration: s.iterations[t] ?? t,
+      ...fieldsOf(model),
+      ...(objective === undefined ? {} : { objective }),
+      ...(rowValues === undefined ? {} : { rowValues: Array.from(rowValues) }),
+      ...(highlight === undefined ? {} : { highlight }),
+      ...(rowWeights === undefined || rows === undefined ? {} : { rowWeights }),
+    }
+  })
+  return decisionSurface({
+    features,
+    x: gx,
+    y: gy,
+    ...fieldsOf(fitted),
+    ...(classifier ? { classes: options.classNames ?? classes.map(String) } : {}),
+    ...(options.levels === undefined ? {} : { levels: options.levels }),
+    ...(rows === undefined ? {} : { rows }),
+    ...(steps === undefined ? {} : { steps }),
+    ...(options.stepName === undefined ? {} : { stepName: options.stepName }),
+    ...(options.objective === undefined ? {} : { objective: options.objective }),
+  })
 }
 
 /** An algorithm that also collects a summary of every state it steps through, with the summaries collected. */
