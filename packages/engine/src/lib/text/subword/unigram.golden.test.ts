@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { loadFixture } from '../../../testing/golden.ts'
+import { wordCounts } from '../../../testing/text.ts'
 import { compareCodePoints } from '../_classes.ts'
 import { splitSpans, utf8Bytes } from '../index.ts'
-import { wordCounts } from './bpe.golden.test.ts'
 import {
   trainUnigram,
   trainWordPiece,

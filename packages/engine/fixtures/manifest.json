@@ -2365,6 +2365,14 @@
       "cases": 19
     },
     {
+      "fixture": "text/tokenizer_components.json",
+      "source": "oracle/cases/text/tokenizer_components.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 42
+    },
+    {
       "fixture": "text/treebank.json",
       "source": "oracle/cases/text/treebank.py",
       "reference": {

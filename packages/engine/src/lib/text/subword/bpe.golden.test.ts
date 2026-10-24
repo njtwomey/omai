@@ -1,19 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { loadFixture } from '../../../testing/golden.ts'
-import { PRE_TOKENIZER_PATTERNS, preTokenize, splitSpans, utf8Bytes } from '../index.ts'
+import { wordCounts } from '../../../testing/text.ts'
+import { utf8Bytes } from '../index.ts'
 import { type BpeTrainingOptions, bpeModel, bpeTokenize, toByteLevel, trainBpe } from './index.ts'
-
-/** Word counts as HF's Whitespace (or GPT-2 byte-level) pre-tokeniser produces them. */
-export function wordCounts(corpus: readonly string[], byteLevel = false): Map<string, number> {
-  const counts = new Map<string, number>()
-  for (const text of corpus) {
-    const words = byteLevel
-      ? preTokenize(text, 'gpt2')
-      : splitSpans(text, PRE_TOKENIZER_PATTERNS.whitespace, 'removed', true).map(([a, b]) => text.slice(a, b))
-    for (const w of words) counts.set(w, (counts.get(w) ?? 0) + 1)
-  }
-  return counts
-}
 
 describe('subword/bpe against HF tokenizers', () => {
   for (const c of loadFixture('text/subword/bpe').cases) {

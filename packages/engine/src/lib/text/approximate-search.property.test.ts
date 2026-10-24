@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { recorder } from '../trace/index.ts'
+import { metricSeries, recorder } from '../trace/index.ts'
 import {
   bkSearch,
   bkTree,
@@ -36,12 +36,18 @@ describe('approximate search agrees with brute force', () => {
     )
   })
 
-  it('top-k matching returns the k nearest and records one event per candidate', () => {
+  it('top-k matching returns the k nearest and accounts for every candidate in its trace', () => {
     fc.assert(
       fc.property(words, word, fc.integer({ min: 1, max: 4 }), (ws, q, k) => {
         const rec = recorder()
         const got = topKFuzzy(q, ws, k, { tracer: rec })
         expect(got).toEqual(brute(ws, q, Number.POSITIVE_INFINITY, false).slice(0, k))
+        if (ws.length === 0) return
+        const run = rec.run()
+        const last = (name: string): number => metricSeries(run, name).values.at(-1) ?? 0
+        // Every candidate is either pruned by length or verified (possibly cut off early).
+        expect(last('prunedByLength') + last('verified')).toBe(ws.length)
+        expect(last('prunedEarly')).toBeLessThanOrEqual(last('verified'))
       }),
     )
   })

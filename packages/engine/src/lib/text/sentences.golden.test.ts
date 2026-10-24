@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { loadFixture } from '../../testing/golden.ts'
+import { codePointSpans } from '../../testing/text.ts'
 import { type PunktParameters, sentenceSpans, splitSentences, trainPunkt } from './index.ts'
-import { codePointSpans } from './tokenise.golden.test.ts'
 
 describe('text/sentences against nltk Punkt', () => {
   const fixture = loadFixture('text/sentences')
