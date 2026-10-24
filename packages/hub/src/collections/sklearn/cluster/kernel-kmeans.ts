@@ -11,7 +11,7 @@ export const kernelKmeans: HubEntry = defineEntry({
   tags: ['clustering', 'kernels'],
   datasets: ['clustering2d'],
   dataset: 'moons',
-  ...fitEstimator(kernelKMeans({ nClusters: 2, gamma: 3 }), { unsupervised: true }),
+  ...fitEstimator(kernelKMeans({ nClusters: 2, gamma: 10 }), { unsupervised: true }),
   views: [{ record: 'clusteringSteps', title: 'Clustering steps' }],
   methods: [{ file: 'methods/cluster/kmeans.ts', name: 'kernelKMeans' }],
 })

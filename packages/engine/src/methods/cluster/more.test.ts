@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { generate } from '../../lib/data/index.ts'
-import { blobs, circles } from '../../lib/datasets/index.ts'
+import { blobs, circles, moons } from '../../lib/datasets/index.ts'
 import { recordsOf } from '../../lib/exposition/index.ts'
 import { adjustedRandScore } from '../../lib/metrics/index.ts'
 import { key } from '../../lib/random/index.ts'
-import { sum, toFlat } from '../../lib/tensor/index.ts'
+import { sum, toArray, toFlat } from '../../lib/tensor/index.ts'
 import { COPKMeans } from './constrained.ts'
 import { AffinityPropagation, birch } from './exemplar.ts'
 import { FuzzyCMeans } from './fuzzy.ts'
-import { kernelKMeans } from './kmeans.ts'
+import { clusterMeans, kernelKMeans } from './kmeans.ts'
 import { KMedoids, kMedoids } from './medoids.ts'
 import { SpectralClustering } from './spectral.ts'
 
@@ -45,6 +45,11 @@ describe('more clustering', () => {
       },
     ).model
     expect(ari(ring.y, sc.params.labels)).toBeGreaterThan(0.95)
+    // Centres are the clusters' means in the data's coordinates (both rings centre on the origin), not in the embedding.
+    const centres = recordsOf(sc.exposition, 'clusteringSteps')[0]?.centres?.at(-1) ?? []
+    const x = toArray(ring.x) as number[][]
+    expect(centres).toEqual(clusterMeans(x, sc.params.labels, 2))
+    for (const c of centres) for (const v of c) expect(Math.abs(v)).toBeLessThan(0.2)
     const kk = kernelKMeans({ nClusters: 2, gamma: 5, maxIter: 50 }).fit(ring, { key: key(6) })
     expect(ari(ring.y, kk.params.labels)).toBeGreaterThan(0.5)
     expect(toFlat(kk.predict(ring.x))).toEqual(kk.params.labels)
@@ -57,5 +62,35 @@ describe('more clustering', () => {
     const labels = m.model.params.labels
     expect(labels[0]).toBe(labels[1])
     expect(labels[2]).not.toBe(labels[3])
+  })
+
+  it('affinity propagation breaks exact ties with keyed noise, as sklearn does, and converges at damping 0.5', () => {
+    // Three pairs of points: every pair's two members are equally good exemplars. Without sklearn's noise the
+    // messages stay symmetric and no exemplar emerges; with it, any key gives sklearn's partition in ~62 iterations.
+    const x = [
+      [0, 0],
+      [0.1, 0],
+      [5, 5],
+      [5.1, 5],
+      [0, 5],
+      [0.1, 5],
+    ]
+    for (const k of [0, 1, 2]) {
+      const f = new AffinityPropagation({ damping: 0.5 }).fit(x, undefined, { key: key(k) }).model
+      expect(f.params.labels).toEqual([0, 0, 1, 1, 2, 2])
+      expect(f.params.nIter).toBeLessThan(100)
+    }
+  })
+
+  it('kernel k-means restarts from the spectral relaxation and separates two moons at gamma 10', () => {
+    const moon = generate(moons, { key: key(8), knobs: { n: 200, noise: 0.06 } }).data
+    const best = kernelKMeans({ nClusters: 2, gamma: 10 }).fit(moon, { key: key(9) })
+    expect(ari(moon.y, best.params.labels)).toBeGreaterThan(0.99)
+    // More restarts never raise the inertia of the first (spectral) start.
+    const one = kernelKMeans({ nClusters: 2, gamma: 10, nInit: 1 }).fit(moon, { key: key(9) })
+    expect(best.params.objective).toBeLessThanOrEqual(one.params.objective + 1e-9)
+    const steps = recordsOf(best.exposition, 'clusteringSteps')[0]
+    expect(steps?.assignments.at(-1)).toEqual(best.params.labels)
+    expect(steps?.objective?.at(-1)).toBeCloseTo(best.params.objective, 9)
   })
 })

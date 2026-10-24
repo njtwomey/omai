@@ -12,7 +12,7 @@ import {
 import { kNearest } from '../../lib/numerics/spatial/index.ts'
 import { choice, dict, int, real } from '../../lib/space/index.ts'
 import { type TensorLike, toArray } from '../../lib/tensor/index.ts'
-import { kmeans } from './kmeans.ts'
+import { clusterMeans, kmeans } from './kmeans.ts'
 
 /** How the affinity graph is built: symmetrised k-nearest-neighbour connectivity, or an RBF kernel. */
 export type Affinity = 'nearest_neighbors' | 'rbf'
@@ -63,8 +63,8 @@ export type SpectralClusteringParams = {
 /**
  * Spectral clustering (Ng, Jordan and Weiss 2001; sklearn.cluster.SpectralClustering): the leading eigenvectors of the
  * normalised Laplacian of the affinity graph (`graph`'s spectral embedding, rows normalised), clustered by k-means.
- * Its exposition is the k-means `clusteringSteps` record in the spectral coordinates (centres there). TODO: spectral
- * co-clustering.
+ * Its exposition is the k-means `clusteringSteps` record, with each step's centres the means of its clusters in the
+ * data's own coordinates (k-means' centres live in the spectral embedding). TODO: spectral co-clustering.
  *
  * @param hyper - Clusters and the affinity.
  * @returns The estimator.
@@ -79,9 +79,18 @@ export function spectralClustering(
       hyperSpace: (h) =>
         dict({
           nClusters: int(2, 20, { default: h.nClusters ?? 2, label: 'clusters' }),
-          affinity: choice(['rbf', 'nearest_neighbors'], { default: h.affinity ?? 'rbf' }),
+          affinity: choice(['rbf', 'nearest_neighbors'], {
+            default: h.affinity ?? 'rbf',
+            label: 'affinity',
+            description: 'A Gaussian kernel on distances, or a symmetric k-nearest-neighbour graph.',
+          }),
           nNeighbors: int(2, 50, { default: h.nNeighbors ?? 10, label: 'neighbours' }),
-          gamma: real(1e-3, 100, { log: true, default: h.gamma ?? 1 }),
+          gamma: real(1e-3, 100, {
+            log: true,
+            default: h.gamma ?? 1,
+            label: 'kernel γ',
+            description: 'The Gaussian kernel exp(-γ |x - y|²) of the rbf affinity.',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'spectralClustering', { minSamples: 3 })
@@ -94,14 +103,16 @@ export function spectralClustering(
         const embedding = toArray(spectralEmbedding(off, k, { rowNormalise: true })) as number[][]
         const km = kmeans({ nClusters: k, nInit: 4 }).fit({ x: embedding }, options)
         const [steps] = recordsOf(km.exposition, 'clusteringSteps')
+        const assignments = steps?.assignments ?? [km.params.labels]
+        const rows = Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
         return {
           params: { labels: km.params.labels, embedding, nFeaturesIn: m.d },
           exposition: [
             clusteringSteps({
               method: 'spectralClustering',
-              assignments: steps?.assignments ?? [km.params.labels],
+              assignments,
               ...(steps?.objective === undefined ? {} : { objective: steps.objective }),
-              ...(steps?.centres === undefined ? {} : { centres: steps.centres }),
+              centres: assignments.map((labels) => clusterMeans(rows, labels, k)),
             }),
           ],
         }
