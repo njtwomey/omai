@@ -10,6 +10,7 @@ export const ransacRegressor: HubEntry = defineEntry({
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'robust'],
   datasets: ['regression1d', 'regressionTabular'],
+  dataset: 'linearOutliers',
   ...fitEstimator(ransacRegressorMethod(), { surface: true }),
   views: [
     { record: 'decisionSurface', title: 'Fitted function' },

@@ -13,6 +13,7 @@ import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes 
 import { makeClassification, makeMultilabelClassification } from './make-classification.ts'
 import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
 import { antiderivativeOperator, burgersOperator, heatOperator } from './operators.ts'
+import { blobsWithOutliers, linearOutliers, moonsWithOutliers } from './outliers.ts'
 import { miscalibratedPredictions, survivalData } from './predictions.ts'
 import { clickLogs, implicitFeedback, lowRankRatings, movielensSmall, zipfianCatalogue } from './ranking.ts'
 import { friedman1, friedman2, friedman3, makeRegression, sparseUncorrelated } from './regression.ts'
@@ -62,6 +63,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   associativeRecall,
   barsAndStripes,
   blobs,
+  blobsWithOutliers,
   burgersOperator,
   changepointSeries,
   checkerboard,
@@ -93,6 +95,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   kinshipTriples,
   labelProportionBags,
   labellingFunctions,
+  linearOutliers,
   linearScm,
   loggedBandit,
   lowRankRatings,
@@ -102,6 +105,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   miscalibratedPredictions,
   modularArithmetic,
   moons,
+  moonsWithOutliers,
   naiveBayesCorpus,
   nearDuplicateCorpus,
   offlineMdp,
