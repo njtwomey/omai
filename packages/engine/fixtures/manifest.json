@@ -710,6 +710,104 @@
       "cases": 30
     },
     {
+      "fixture": "logic/answer-sets.json",
+      "source": "oracle/cases/logic/answer-sets.py",
+      "reference": {
+        "clingo": "5.8.2"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "logic/datalog.json",
+      "source": "oracle/cases/logic/datalog.py",
+      "reference": {
+        "clingo": "5.8.2"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "logic/first-order.json",
+      "source": "oracle/cases/logic/first-order.py",
+      "reference": {
+        "pelletier-1986": "F. J. Pelletier, Seventy-five problems for testing automatic theorem provers, JAR 2 (1986)",
+        "aima": "Russell and Norvig, AIMA 4th ed., chapter 9"
+      },
+      "cases": 53
+    },
+    {
+      "fixture": "logic/ilp/foil.json",
+      "source": "oracle/cases/logic/ilp/foil.py",
+      "reference": {
+        "quinlan-1990": "Learning logical definitions from relations; reference port"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "logic/ilp/generalisation.json",
+      "source": "oracle/cases/logic/ilp/generalisation.py",
+      "reference": {
+        "plotkin-1970": "reference port of anti-unification (oracle/cases/logic/ilp/_ilp.py)"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "logic/ilp/meta-interpretive.json",
+      "source": "oracle/cases/logic/ilp/meta-interpretive.py",
+      "reference": {
+        "metagol": "github.com/metagol/metagol examples; checked with oracle/cases/logic/_prolog.py",
+        "popper": "github.com/logic-and-learning-lab/Popper examples; checked with oracle/cases/logic/_prolog.py"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "logic/ilp/progol.json",
+      "source": "oracle/cases/logic/ilp/progol.py",
+      "reference": {
+        "muggleton-1995": "Inverse entailment and Progol; textbook theories checked with oracle/cases/logic/_prolog.py"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "logic/ilp/version-spaces.json",
+      "source": "oracle/cases/logic/ilp/version-spaces.py",
+      "reference": {
+        "mitchell-1997": "Machine Learning, chapter 2; brute-force reference"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "logic/maxsat.json",
+      "source": "oracle/cases/logic/maxsat.py",
+      "reference": {
+        "python-sat": "1.9.dev17"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "logic/propositional.json",
+      "source": "oracle/cases/logic/propositional.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "logic/resolution.json",
+      "source": "oracle/cases/logic/resolution.py",
+      "reference": {
+        "reference-prolog": "generator-based port (oracle/cases/logic/_prolog.py)"
+      },
+      "cases": 119
+    },
+    {
+      "fixture": "logic/sat.json",
+      "source": "oracle/cases/logic/sat.py",
+      "reference": {
+        "python-sat": "1.9.dev17"
+      },
+      "cases": 24
+    },
+    {
       "fixture": "losses/classification.json",
       "source": "oracle/cases/losses/classification.py",
       "reference": {
