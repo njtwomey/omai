@@ -7,7 +7,7 @@ import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Palettes and ramps',
-  question: 'Which colours does whitebox use for categories and for continuous values?',
+  question: 'How do I colour categories and continuous values?',
   explain:
     'Categories use tab10 in order (`tab0` to `tab9`, also scene tokens); continuous values use sequential ramps (`viridis`, `magma`, and `blues` and `greys`, which start from the theme surface) or diverging ramps with a pale midpoint, for signed fields with `centre: 0`. `simulateColourVision` and `colourBlindCheck` show how the colours read with a colour-vision deficiency.',
 }
