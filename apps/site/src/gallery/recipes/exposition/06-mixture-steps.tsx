@@ -12,7 +12,7 @@ export const recipe: Recipe = {
   title: 'Mixture steps',
   question: 'How do I play back the EM steps of a Gaussian mixture?',
   explain:
-    'A Gaussian mixture returns a `mixtureSteps` record: weights, means and covariances after every EM step, with the log likelihood (which never falls). `MixturePlayer` plays it on the Old Faithful eruptions: each component’s one and two standard-deviation ellipses, the rows coloured by their most responsible component, and the weights.',
+    'A Gaussian mixture returns a `mixtureSteps` record: weights, means and covariances after every EM step, with the log likelihood (which never falls). `MixturePlayer` plays it on the Old Faithful eruptions: each component’s one and two standard-deviation ellipses, the regions where each component is the most responsible, the rows coloured the same way, and the weights, all from the record.',
 }
 
 // region
@@ -42,7 +42,7 @@ export default function MixtureStepsRecipe(): ReactNode {
         />
         <NumberField label="seed" value={seed} onChange={setSeed} min={0} max={99} integer />
       </ControlPanel>
-      {steps !== undefined && <MixturePlayer record={steps} points={rows} />}
+      {steps !== undefined && <MixturePlayer record={steps} />}
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { rowsOf, sameLength } from './_check.ts'
+import type { RowColours } from './rows.ts'
 
 /** A linear decomposition (PCA, factor analysis, ICA, NMF, PLS): components, variance explained, scores. */
 export interface ComponentsRecord {
@@ -7,6 +8,11 @@ export interface ComponentsRecord {
   readonly features: readonly string[]
   /** components[k][f]: loading of feature f on component k. */
   readonly components: readonly (readonly number[])[]
+  /**
+   * What the components weight: the input features (default), or the training rows (kernel methods' dual
+   * coefficients, whose 'features' are rows and have no loadings worth drawing).
+   */
+  readonly space?: 'features' | 'samples'
   /** Variance explained by each component, and its ratio to the total. */
   readonly explainedVariance?: readonly number[]
   readonly explainedVarianceRatio?: readonly number[]
@@ -14,6 +20,8 @@ export interface ComponentsRecord {
   readonly scores?: readonly (readonly number[])[]
   /** Reconstruction error with the first r components, r = 1, 2, ... */
   readonly reconstructionError?: readonly number[]
+  /** What colours the rows: their class (an index per row, -1 unlabelled, with the class names) or a numeric target. */
+  readonly colourBy?: RowColours
 }
 
 /**
@@ -53,6 +61,8 @@ export interface EmbeddingSteps {
   readonly graph?: readonly (readonly [number, number, number])[]
   /** Per-row bandwidths (t-SNE's sigmas from the perplexity, UMAP's local scales). */
   readonly bandwidths?: readonly number[]
+  /** What colours the rows: their class (an index per row, -1 unlabelled, with the class names) or a numeric target. */
+  readonly colourBy?: RowColours
 }
 
 /**

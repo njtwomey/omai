@@ -1,17 +1,19 @@
-import type { EChartsOption } from 'echarts'
+import type { EChartsOption, SeriesOption } from 'echarts'
 import { multivariateNormal } from 'whitebox-engine/dists'
-import type { ClusteringSteps, EmbeddingSteps, MixtureSteps } from 'whitebox-engine/exposition'
+import type { ClusteringSteps, EmbeddingSteps, InputRows, MixtureSteps } from 'whitebox-engine/exposition'
 import { covarianceEllipse } from 'whitebox-engine/numerics/geometry'
 import { toArray, toFlat } from 'whitebox-engine/tensor'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
+import { decisionRegions } from '../charts/fields.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { type Curve, lines } from '../charts/lines.ts'
-import { cartesian, type Layer } from '../charts/plot.ts'
+import { cartesian, type Layer, layer } from '../charts/plot.ts'
 import { type PointSet, points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
+import { sampleRamp, sequentialRamp } from '../theme/palettes.ts'
 import type { ColourMode } from '../theme/tokens.ts'
-import { outlined, short, type ViewFrames, type ViewOptions, viewFigure } from './_view.ts'
+import { outlined, short, spanOf, type ViewFrames, type ViewOptions, viewFigure, viewMode } from './_view.ts'
 import type { Rows } from './surfaces.ts'
 
 /** Options of the step views: the input rows the steps assign (their first two columns are drawn). */
@@ -22,6 +24,54 @@ export interface StepsViewOptions extends ViewOptions {
 }
 
 const clusterColour = (c: number): string => (c < 0 ? 'muted' : `tab${c % 10}`)
+
+/** The rows a step view draws: the ones given (with their columns), else the record's own (two coordinates). */
+function rowsOf(
+  record: { readonly rows?: InputRows },
+  options: StepsViewOptions,
+): { readonly rows?: Rows; readonly columns: readonly [number, number]; readonly names: readonly [string, string] } {
+  if (options.points !== undefined) {
+    const columns = options.columns ?? [0, 1]
+    return { rows: options.points, columns, names: [`x${columns[0]}`, `x${columns[1]}`] }
+  }
+  const own = record.rows
+  return own === undefined
+    ? { columns: [0, 1], names: ['x0', 'x1'] }
+    : { rows: own.points, columns: [0, 1], names: own.features }
+}
+
+/**
+ * A square grid (equal spans, for an equal-aspect panel) around rows' two drawn columns, padded by 5%, `n` points a
+ * side.
+ */
+function gridOver(rows: Rows, columns: readonly [number, number], n: number): { x: number[]; y: number[] } {
+  const [lx, hx] = spanOf(rows.map((r) => r[columns[0]] ?? 0))
+  const [ly, hy] = spanOf(rows.map((r) => r[columns[1]] ?? 0))
+  const span = Math.max(hx - lx, hy - ly) || 1
+  const px = 0.05 * span + (span - (hx - lx)) / 2
+  const py = 0.05 * span + (span - (hy - ly)) / 2
+  const axis = (lo: number, hi: number): number[] => Array.from({ length: n }, (_, i) => lo + ((hi - lo) * i) / (n - 1))
+  return { x: axis(lx - px, hx + px), y: axis(ly - py, hy + py) }
+}
+
+/**
+ * The regions of a clustering over the drawn plane: each grid point takes the colour of the highest-scoring cluster
+ * (the nearest centre, the most responsible component), drawn faintly under the rows.
+ */
+function regionLayer(
+  grid: { readonly x: readonly number[]; readonly y: readonly number[] },
+  scores: readonly (readonly (readonly number[])[])[],
+  mode: ColourMode,
+): Layer {
+  return decisionRegions(scores, {
+    x: grid.x,
+    y: grid.y,
+    mode,
+    confidence: false,
+    opacity: 0.22,
+    colours: scores.map((_, c) => clusterColour(c)),
+  })
+}
 
 /** Rows grouped by cluster as point sets with stable colours (cluster k is tab10 slot k; noise is muted). */
 function clusterSets(
@@ -74,27 +124,49 @@ function progressPanel(
  * @returns The frames.
  */
 export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptions = {}): ViewFrames {
-  const fig = viewFigure(options, { aspect: 1.75 })
-  const mode = fig.mode
+  const mode = viewMode(options)
   const count = steps.assignments.length
-  const columns = options.columns ?? [0, 1]
+  const { rows: drawn, columns, names } = rowsOf(steps, options)
   const objective = steps.objective
-  const progress = objective ?? (count > 1 ? steps.assignments.map((a) => a.filter((c) => c >= 0).length) : undefined)
-  const progressLabel = objective !== undefined ? 'objective' : 'rows assigned'
+  // The side curve only when there is something to follow: an objective over several steps, or rows being assigned.
+  const assigned = steps.assignments.map((a) => a.filter((c) => c >= 0).length)
+  const progress =
+    objective !== undefined && objective.length > 1
+      ? objective
+      : count > 1 && new Set(assigned).size > 1
+        ? assigned
+        : undefined
+  const progressLabel = progress === objective ? 'objective' : 'rows assigned'
+  const fig = viewFigure(options, { aspect: progress === undefined ? 1.25 : 1.75 })
+  const grid0 = drawn === undefined ? undefined : gridOver(drawn, columns, 60)
   const option = (frame: number): EChartsOption => {
     const t = Math.min(Math.max(frame, 0), count - 1)
     const assignment = steps.assignments[t] ?? []
     const main: Layer[] = []
-    if (options.points !== undefined) {
+    if (drawn !== undefined) {
+      const centresNow = steps.centres?.[t]
+      // Centroid methods in two features: the nearest-centre regions under the rows.
+      if (grid0 !== undefined && centresNow !== undefined && centresNow.length > 1 && centresNow[0]?.length === 2)
+        main.push(
+          regionLayer(
+            grid0,
+            centresNow.map((m) =>
+              grid0.y.map((b) =>
+                grid0.x.map((a) => -(((m[columns[0]] ?? 0) - a) ** 2) - ((m[columns[1]] ?? 0) - b) ** 2),
+              ),
+            ),
+            mode,
+          ),
+        )
       const roles = steps.roles
-      if (roles === undefined) main.push(points(clusterSets(options.points, columns, assignment), { mode }))
+      if (roles === undefined) main.push(points(clusterSets(drawn, columns, assignment), { mode }))
       else {
         // Sets per cluster and role, so core rows stand out from border rows and noise is a cross.
         const sets: PointSet[] = []
         for (const role of ['core', 'border', 'noise'] as const) {
           const keep = assignment.map((c, i) => (roles[i] === role ? c : Number.NaN))
           const idx = keep.flatMap((c, i) => (Number.isNaN(c) ? [] : [i]))
-          const rows = idx.map((i) => options.points?.[i] ?? [])
+          const rows = idx.map((i) => drawn[i] ?? [])
           const sub = idx.map((i) => assignment[i] ?? -1)
           sets.push(
             ...clusterSets(rows, columns, sub, () =>
@@ -152,9 +224,13 @@ export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptio
     const scatter: Panel = {
       layers: main,
       options:
-        options.points === undefined
+        drawn === undefined
           ? { x: { label: 'cluster' }, y: { label: 'rows' } }
-          : { x: { label: `x${columns[0]}` }, y: { label: `x${columns[1]}` }, aspect: 'equal' },
+          : {
+              x: { label: names[0], ...(grid0 === undefined ? {} : { limits: limitsOf2(grid0.x) }) },
+              y: { label: names[1], ...(grid0 === undefined ? {} : { limits: limitsOf2(grid0.y) }) },
+              aspect: 'equal',
+            },
     }
     if (progress === undefined || count < 2)
       return cartesian(scatter.layers, { ...scatter.options, figure: fig, mode, legend: false })
@@ -178,6 +254,9 @@ export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptio
     option,
   }
 }
+
+// The first and last of an increasing axis.
+const limitsOf2 = (v: readonly number[]): [number, number] => [v[0] ?? 0, v[v.length - 1] ?? 1]
 
 /** A dendrogram's drawing: each merge as a U (x along the leaf order, y the merge height) and the leaf order. */
 export interface DendrogramLayout {
@@ -282,7 +361,8 @@ export interface DendrogramViewOptions extends StepsViewOptions {
  * @returns The ECharts option.
  */
 export function dendrogramView(steps: ClusteringSteps, options: DendrogramViewOptions = {}): EChartsOption {
-  const fig = viewFigure(options, { aspect: options.points === undefined ? 1.6 : 2 })
+  const { rows: drawn, columns, names } = rowsOf(steps, options)
+  const fig = viewFigure(options, { aspect: drawn === undefined ? 1.6 : 2 })
   const mode = fig.mode
   const merges = steps.merges ?? []
   const n = merges.length + 1
@@ -320,11 +400,10 @@ export function dendrogramView(steps: ClusteringSteps, options: DendrogramViewOp
       y: { label: 'merge height' },
     },
   }
-  if (options.points === undefined)
-    return cartesian(dendro.layers, { ...dendro.options, figure: fig, mode, legend: false })
+  if (drawn === undefined) return cartesian(dendro.layers, { ...dendro.options, figure: fig, mode, legend: false })
   const scatter: Panel = {
-    layers: [points(clusterSets(options.points, options.columns ?? [0, 1], labels), { mode })],
-    options: { aspect: 'equal' },
+    layers: [points(clusterSets(drawn, columns, labels), { mode })],
+    options: { aspect: 'equal', x: { label: names[0] }, y: { label: names[1] } },
   }
   const grid = gridSpec(1, 2, {
     widthRatios: [1.3, 1],
@@ -416,6 +495,32 @@ function fullCovariance(flat: readonly number[], d: number): number[][] {
 }
 
 /**
+ * The weighted log density of each component at each row, under the mixture after step t: over all d features when
+ * the rows have them, else over the first two (the rows a record carries), from the components' 2-D marginals.
+ *
+ * @param steps - The record.
+ * @param t - The step.
+ * @param rows - The rows.
+ * @returns scores[k][i], or `undefined` without covariances.
+ */
+export function mixtureScores(steps: MixtureSteps, t: number, rows: Rows): number[][] | undefined {
+  const means = steps.means[t] ?? []
+  const covs = steps.covariances?.[t]
+  const weights = steps.weights[t] ?? []
+  const d = means[0]?.length ?? 0
+  if (covs === undefined || d === 0 || rows.length === 0) return undefined
+  const full = (rows[0]?.length ?? 0) >= d
+  const x = rows.map((r) => (full ? r.slice(0, d) : [r[0] ?? 0, r[1] ?? 0]))
+  return means.map((m, k) => {
+    const dist = full
+      ? multivariateNormal(m, { covariance: fullCovariance(covs[k] ?? [], d) })
+      : multivariateNormal([m[0] ?? 0, m[1] ?? 0], { covariance: covarianceBlock(covs[k] ?? [], d, [0, 1]) })
+    const lp = toFlat(dist.logProb(x))
+    return lp.map((v) => v + Math.log(Math.max(weights[k] ?? 0, 1e-300)))
+  })
+}
+
+/**
  * The most responsible component of each row under the mixture after step t (from the record's responsibilities when
  * it holds that step, else from its Gaussian parameters).
  *
@@ -428,17 +533,9 @@ export function mixtureAssignment(steps: MixtureSteps, t: number, rows: Rows): n
   const T = steps.objective.length
   const resp = steps.responsibilities
   const stored = resp === undefined ? undefined : resp[t - (T - resp.length)]
-  if (stored !== undefined) return stored.map((r) => r.indexOf(Math.max(...r)))
-  const means = steps.means[t] ?? []
-  const covs = steps.covariances?.[t]
-  const weights = steps.weights[t] ?? []
-  const d = means[0]?.length ?? 0
-  if (covs === undefined || d === 0 || rows.length === 0) return rows.map(() => 0)
-  const x = rows.map((r) => r.slice(0, d))
-  const scores = means.map((m, k) => {
-    const lp = toFlat(multivariateNormal(m, { covariance: fullCovariance(covs[k] ?? [], d) }).logProb(x))
-    return lp.map((v) => v + Math.log(Math.max(weights[k] ?? 0, 1e-300)))
-  })
+  if (stored !== undefined && stored.length === rows.length) return stored.map((r) => r.indexOf(Math.max(...r)))
+  const scores = mixtureScores(steps, t, rows)
+  if (scores === undefined) return rows.map(() => 0)
   return rows.map((_, i) => {
     let best = 0
     for (let k = 1; k < scores.length; k++)
@@ -460,16 +557,28 @@ export function mixtureFrames(steps: MixtureSteps, options: StepsViewOptions = {
   const fig = viewFigure(options, { aspect: 1.75 })
   const mode = fig.mode
   const count = steps.objective.length
-  const columns = options.columns ?? [0, 1]
+  const { rows: drawn, columns, names } = rowsOf(steps, options)
   const d = steps.means[0]?.[0]?.length ?? 0
+  const grid0 = drawn === undefined || d !== 2 ? undefined : gridOver(drawn, columns, 50)
+  const gridRows = grid0 === undefined ? undefined : grid0.y.flatMap((b) => grid0.x.map((a) => [a, b]))
   const option = (frame: number): EChartsOption => {
     const t = Math.min(Math.max(frame, 0), count - 1)
     const means = steps.means[t] ?? []
     const main: Layer[] = []
-    if (options.points !== undefined)
+    // Two features: the regions of the most responsible component under the rows.
+    const scores = gridRows === undefined || grid0 === undefined ? undefined : mixtureScores(steps, t, gridRows)
+    if (scores !== undefined && grid0 !== undefined && scores.length > 1)
+      main.push(
+        regionLayer(
+          grid0,
+          scores.map((sc) => grid0.y.map((_, i) => sc.slice(i * grid0.x.length, (i + 1) * grid0.x.length))),
+          mode,
+        ),
+      )
+    if (drawn !== undefined)
       main.push(
         points(
-          clusterSets(options.points, columns, mixtureAssignment(steps, t, options.points), () => ({
+          clusterSets(drawn, columns, mixtureAssignment(steps, t, drawn), () => ({
             size: 6,
             opacity: 0.75,
           })),
@@ -519,7 +628,11 @@ export function mixtureFrames(steps: MixtureSteps, options: StepsViewOptions = {
     const panels: Record<string, Panel> = {
       main: {
         layers: main,
-        options: { x: { label: `x${columns[0]}` }, y: { label: `x${columns[1]}` }, aspect: 'equal' },
+        options: {
+          x: { label: names[0], ...(grid0 === undefined ? {} : { limits: limitsOf2(grid0.x) }) },
+          y: { label: names[1], ...(grid0 === undefined ? {} : { limits: limitsOf2(grid0.y) }) },
+          aspect: 'equal',
+        },
       },
       objective: progressPanel(
         steps.objective,
@@ -563,8 +676,10 @@ export function mixtureFrames(steps: MixtureSteps, options: StepsViewOptions = {
 
 /** Options of {@link embeddingFrames}. */
 export interface EmbeddingViewOptions extends ViewOptions {
-  /** A label per row (class or group) to colour the embedding by. */
+  /** A label per row (class or group) to colour the embedding by, instead of the record's colouring. */
   readonly labels?: readonly (number | string)[]
+  /** A number per row (a regression target) to colour the embedding by on a ramp with a colour bar. */
+  readonly values?: readonly number[]
   /** Draw the method's neighbour graph under the points (default false; at most 4000 edges). */
   readonly graph?: boolean
 }
@@ -578,11 +693,23 @@ export interface EmbeddingViewOptions extends ViewOptions {
  * @returns The frames.
  */
 export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOptions = {}): ViewFrames {
-  const fig = viewFigure(options, { aspect: steps.objective === undefined ? 1.25 : 1.75 })
-  const mode = fig.mode
   const count = steps.positions.length
+  // Colour by the labels or values given, else by the record's own colouring.
+  const own = options.labels === undefined && options.values === undefined ? steps.colourBy : undefined
+  const values = options.values ?? (own?.kind === 'values' ? own.values : undefined)
+  const given = options.labels ?? (own?.kind === 'classes' ? own.labels : undefined)
+  const classNames = own?.kind === 'classes' ? own.classes : undefined
   const names = [...new Set(options.labels ?? [])]
-  const labels = options.labels?.map((l) => (typeof l === 'number' ? l : names.indexOf(l)))
+  const labels = values !== undefined ? undefined : given?.map((l) => (typeof l === 'number' ? l : names.indexOf(l)))
+  const nameOf = (c: number): string | undefined =>
+    typeof names[c] === 'string' ? String(names[c]) : (classNames?.[c] ?? undefined)
+  // A legend of classes sits above the panel, out of the points' way.
+  const fig = viewFigure(options, {
+    aspect: steps.objective === undefined ? 1.25 : 1.75,
+    ...(labels === undefined ? {} : { padding: { top: 40 } }),
+  })
+  const mode = fig.mode
+  const valueSpan = values === undefined ? undefined : spanOf(values)
   const option = (frame: number): EChartsOption => {
     const t = Math.min(Math.max(frame, 0), count - 1)
     const pos = (steps.positions[t] ?? []).map((p) => [p[0] ?? 0, p[1] ?? 0])
@@ -595,13 +722,33 @@ export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOpt
       main.push(lines([{ x: xs, y: ys, name: '__graph', colour: 'grid', width: 0.6 }], { mode }))
     }
     const sets =
-      labels === undefined
-        ? [{ x: pos.map((p) => p[0] ?? 0), y: pos.map((p) => p[1] ?? 0), name: 'rows', colour: 'tab0', size: 6 }]
-        : clusterSets(pos, [0, 1], labels, (c) => ({
-            size: 6,
-            ...(typeof names[c] === 'string' ? { name: String(names[c]) } : {}),
-          }))
+      values !== undefined
+        ? [
+            {
+              x: pos.map((p) => p[0] ?? 0),
+              y: pos.map((p) => p[1] ?? 0),
+              values: [...values],
+              name: '__rows',
+              size: 6,
+            },
+          ]
+        : labels === undefined
+          ? [{ x: pos.map((p) => p[0] ?? 0), y: pos.map((p) => p[1] ?? 0), name: 'rows', colour: 'tab0', size: 6 }]
+          : clusterSets(pos, [0, 1], labels, (c) => {
+              return { size: 6, name: nameOf(c) ?? (c < 0 ? 'unlabelled' : `class ${c}`) }
+            })
     main.push(points(sets, { mode }))
+    if (valueSpan !== undefined)
+      main.push(
+        layer([{ type: 'scatter', name: '__colourbar', data: [], silent: true } as SeriesOption], undefined, {
+          colourBar: {
+            min: valueSpan[0],
+            max: valueSpan[1],
+            colours: sampleRamp(sequentialRamp('viridis'), 9),
+            label: own?.kind === 'values' ? (own.name ?? 'target') : 'target',
+          },
+        }),
+      )
     const embed: Panel = {
       layers: main,
       options: { x: { label: 'dimension 1' }, y: { label: 'dimension 2' }, aspect: 'equal' },
@@ -610,7 +757,8 @@ export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOpt
       return cartesian(embed.layers, { ...embed.options, figure: fig, mode, legend: false })
     const grid = gridSpec(1, 2, {
       widthRatios: [1.5, 1],
-      wspace: 64,
+      // Room for the colour bar between the panels.
+      wspace: valueSpan === undefined ? 64 : 120,
       cells: [
         { id: 'main', row: 0, col: 0 },
         { id: 'objective', row: 0, col: 1 },

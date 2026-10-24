@@ -1,4 +1,5 @@
 import { sameLength } from './_check.ts'
+import type { DecisionSurface } from './surfaces.ts'
 
 /** The members of an ensemble and how its prediction builds up stage by stage. */
 export interface EnsembleStages {
@@ -15,6 +16,12 @@ export interface EnsembleStages {
   readonly targets?: readonly (readonly number[])[]
   /** Indices of the bootstrap rows each member saw (bagging, forests). */
   readonly bootstraps?: readonly (readonly number[])[]
+  /** What the stage scores are ('training accuracy', 'log loss'). */
+  readonly scoreName?: string
+  /** Whether higher scores are better (accuracy) rather than lower (a loss). */
+  readonly higherIsBetter?: boolean
+  /** The ensemble's decision surface over two features, with its steps stage by stage (iterations are stage counts). */
+  readonly surface?: DecisionSurface
 }
 
 /**

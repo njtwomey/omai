@@ -5,6 +5,7 @@ import { type Panel, subplots } from '../charts/compose.ts'
 import { lines } from '../charts/lines.ts'
 import { matrix } from '../charts/matrices.ts'
 import type { Layer } from '../charts/plot.ts'
+import { cartesian } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { formatPercent } from '../theme/format.ts'
@@ -19,6 +20,20 @@ export interface ComponentsViewOptions extends ViewOptions {
   readonly pair?: readonly [number, number]
   /** The components shown in the loadings and the scree (default up to 10). */
   readonly maxComponents?: number
+  /** The most features drawn as loadings and biplot arrows, the largest first (default 12). */
+  readonly maxFeatures?: number
+}
+
+/** The features worth drawing: the `max` with the largest loadings over the components shown, in feature order. */
+function topFeatures(record: ComponentsRecord, components: readonly number[], max: number): number[] {
+  const norm = record.features.map((_, f) => Math.hypot(...components.map((k) => record.components[k]?.[f] ?? 0)))
+  if (norm.length <= max) return norm.map((_, f) => f)
+  return norm
+    .map((v, f) => [v, f] as const)
+    .sort((p, q) => q[0] - p[0])
+    .slice(0, max)
+    .map(([, f]) => f)
+    .sort((p, q) => p - q)
 }
 
 /**
@@ -83,21 +98,29 @@ export function loadingsPanel(record: ComponentsRecord, options: ComponentsViewO
   const mode = options.mode ?? 'light'
   const k = Math.min(record.components.length, options.maxComponents ?? 10)
   const comps = record.components.slice(0, k)
-  const byFeature = record.features.map((_, f) => comps.map((c) => c[f] ?? 0))
+  const keep = topFeatures(
+    record,
+    comps.map((_, i) => i),
+    options.maxFeatures ?? 12,
+  )
+  const byFeature = keep.map((f) => comps.map((c) => c[f] ?? 0))
   const top = Math.max(1e-12, ...comps.flat().map(Math.abs))
   return {
     layers: [
       matrix(byFeature, {
-        rowLabels: record.features.map((f) => shortName(f)),
+        rowLabels: keep.map((f) => shortName(record.features[f] ?? '')),
         colLabels: comps.map((_, i) => `${i + 1}`),
         centre: 0,
         range: [-top, top],
         colourBar: false,
-        annotate: k <= 4 && record.features.length <= 12,
+        annotate: k <= 4 && keep.length <= 12,
         mode,
       }),
     ],
-    options: { x: { label: 'component' } },
+    options: {
+      x: { label: 'component' },
+      ...(keep.length < record.features.length ? { title: `top ${keep.length} of ${record.features.length}` } : {}),
+    },
   }
 }
 
@@ -114,17 +137,27 @@ export function biplotPanel(record: ComponentsRecord, options: ComponentsViewOpt
   if (scores === undefined || record.components.length < 1) return undefined
   const mode = options.mode ?? 'light'
   const [a, b] = options.pair ?? [0, Math.min(1, record.components.length - 1)]
-  const labels = options.labels === undefined ? undefined : classIndices(options.labels, undefined)
+  const own = options.labels === undefined ? record.colourBy : undefined
+  const labels =
+    options.labels !== undefined
+      ? classIndices(options.labels, undefined)
+      : own?.kind === 'classes'
+        ? own.labels
+        : undefined
+  const values = own?.kind === 'values' ? own.values : undefined
+  const names = own?.kind === 'classes' ? own.classes : undefined
   const plane = scores.map((s) => [s[a] ?? 0, s[b] ?? 0])
+  // Kernel methods weight training rows, not features: no arrows. Otherwise the longest few.
+  const shown = record.space === 'samples' ? [] : topFeatures(record, [a, b], options.maxFeatures ?? 12)
   const spread = Math.max(1e-12, ...plane.flat().map(Math.abs))
   const ca = record.components[a] ?? []
   const cb = record.components[b] ?? []
-  const longest = Math.max(1e-12, ...record.features.map((_, f) => Math.hypot(ca[f] ?? 0, cb[f] ?? 0)))
+  const longest = Math.max(1e-12, ...shown.map((f) => Math.hypot(ca[f] ?? 0, cb[f] ?? 0)))
   const scale = (0.85 * spread) / longest
-  const lengths = record.features.map((_, f) => Math.hypot(ca[f] ?? 0, cb[f] ?? 0))
+  const lengths = shown.map((f) => Math.hypot(ca[f] ?? 0, cb[f] ?? 0))
   const cutoff = [...lengths].sort((p, q) => q - p)[Math.min(7, lengths.length - 1)] ?? 0
   const arrows = lines(
-    record.features.map((_, f) => ({
+    shown.map((f) => ({
       x: [0, (ca[f] ?? 0) * scale],
       y: [0, (cb[f] ?? 0) * scale],
       name: `__loading${f}`,
@@ -136,10 +169,10 @@ export function biplotPanel(record: ComponentsRecord, options: ComponentsViewOpt
   const ends = points(
     [
       {
-        x: record.features.map((_, f) => (ca[f] ?? 0) * scale),
-        y: record.features.map((_, f) => (cb[f] ?? 0) * scale),
+        x: shown.map((f) => (ca[f] ?? 0) * scale),
+        y: shown.map((f) => (cb[f] ?? 0) * scale),
         // Only the longest arrows are named, so names do not pile up at the origin.
-        labels: record.features.map((f, i) => ((lengths[i] ?? 0) >= cutoff ? shortName(f, 13) : '')),
+        labels: shown.map((f, i) => ((lengths[i] ?? 0) >= cutoff ? shortName(record.features[f] ?? '', 13) : '')),
         name: '__features',
         colour: 'fg',
         size: 5,
@@ -153,9 +186,21 @@ export function biplotPanel(record: ComponentsRecord, options: ComponentsViewOpt
     `component ${i + 1}${ratio?.[i] === undefined ? '' : ` (${formatPercent(ratio[i] ?? 0, 0)})`}`
   return {
     layers: [
-      points(classPointSets(plane, [0, 1], labels, undefined, { size: 6, opacity: 0.7 }), { mode }),
-      arrows,
-      ends,
+      values === undefined
+        ? points(classPointSets(plane, [0, 1], labels, names, { size: 6, opacity: 0.7 }), { mode })
+        : points(
+            [
+              {
+                x: plane.map((p) => p[0] ?? 0),
+                y: plane.map((p) => p[1] ?? 0),
+                values: [...values],
+                name: '__rows',
+                size: 6,
+              },
+            ],
+            { mode },
+          ),
+      ...(shown.length === 0 ? [] : [arrows, ends]),
     ],
     options: { x: { label: axisName(a) }, y: { label: axisName(b) }, aspect: 'equal' },
   }
@@ -172,12 +217,17 @@ export function biplotPanel(record: ComponentsRecord, options: ComponentsViewOpt
 export function componentsView(record: ComponentsRecord, options: ComponentsViewOptions = {}): EChartsOption {
   const fig = viewFigure(options, { aspect: record.scores === undefined ? 1.6 : 1.75 })
   const o = { ...options, mode: fig.mode }
-  const panels: Record<string, Panel> = { loadings: loadingsPanel(record, o) }
+  // Kernel methods' loadings weight training rows: nothing to read off them.
+  const panels: Record<string, Panel> = record.space === 'samples' ? {} : { loadings: loadingsPanel(record, o) }
   const scree = screePanel(record, o)
   if (scree !== undefined) panels['scree'] = scree
   const bi = biplotPanel(record, o)
   if (bi !== undefined) panels['biplot'] = bi
   const right = ['scree', 'loadings'].filter((id) => panels[id] !== undefined)
+  if (right.length === 0) {
+    const only = bi ?? { layers: [], options: {} }
+    return cartesian(only.layers, { ...only.options, figure: fig, mode: fig.mode, legend: false, tooltip: 'item' })
+  }
   const grid =
     bi !== undefined
       ? gridSpec(right.length, 2, {
