@@ -982,6 +982,60 @@
       "cases": 186
     },
     {
+      "fixture": "methods/timeseries/matrix_profile/algorithms.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/algorithms.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 21
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/discovery.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/discovery.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/multidimensional.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/multidimensional.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/pan.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/pan.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/segmentation.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/segmentation.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/snippets.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/snippets.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "metrics/audio.json",
       "source": "oracle/cases/metrics/audio.py",
       "reference": {
@@ -2425,6 +2479,349 @@
         "networkx": "3.7"
       },
       "cases": 42
+    },
+    {
+      "fixture": "signal/audio/augmentation.json",
+      "source": "oracle/cases/signal/audio/augmentation.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "signal/audio/features.json",
+      "source": "oracle/cases/signal/audio/features.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "signal/audio/filterbanks.json",
+      "source": "oracle/cases/signal/audio/filterbanks.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "signal/audio/pitch.json",
+      "source": "oracle/cases/signal/audio/pitch.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "signal/audio/rhythm.json",
+      "source": "oracle/cases/signal/audio/rhythm.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "signal/audio/scales.json",
+      "source": "oracle/cases/signal/audio/scales.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "signal/constant_q.json",
+      "source": "oracle/cases/signal/constant_q.py",
+      "reference": {
+        "librosa": "1.0.0"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "signal/decompositions.json",
+      "source": "oracle/cases/signal/decompositions.py",
+      "reference": {
+        "vmdpy": "0.2",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "signal/estimation.json",
+      "source": "oracle/cases/signal/estimation.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "librosa": "1.0.0",
+        "padasip": "1.2.2",
+        "numpy": "2.5.4"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "signal/filter_banks.json",
+      "source": "oracle/cases/signal/filter_banks.py",
+      "reference": {
+        "pywt": "1.8.0"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "signal/filters/apply.json",
+      "source": "oracle/cases/signal/filters/apply.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "pandas": "3.1.0"
+      },
+      "cases": 50
+    },
+    {
+      "fixture": "signal/filters/fir.json",
+      "source": "oracle/cases/signal/filters/fir.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "signal/filters/iir.json",
+      "source": "oracle/cases/signal/filters/iir.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 159
+    },
+    {
+      "fixture": "signal/filters/response.json",
+      "source": "oracle/cases/signal/filters/response.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "signal/fourier.json",
+      "source": "oracle/cases/signal/fourier.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "signal/image/correlate.json",
+      "source": "oracle/cases/signal/image/correlate.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 72
+    },
+    {
+      "fixture": "signal/image/features.json",
+      "source": "oracle/cases/signal/image/features.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "signal/image/filters.json",
+      "source": "oracle/cases/signal/image/filters.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 57
+    },
+    {
+      "fixture": "signal/image/geometry.json",
+      "source": "oracle/cases/signal/image/geometry.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "signal/image/morphology.json",
+      "source": "oracle/cases/signal/image/morphology.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 38
+    },
+    {
+      "fixture": "signal/image/motion.json",
+      "source": "oracle/cases/signal/image/motion.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "signal/image/segmentation.json",
+      "source": "oracle/cases/signal/image/segmentation.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "signal/lomb_scargle.json",
+      "source": "oracle/cases/signal/lomb_scargle.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "astropy": "8.0.2"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "signal/multirate.json",
+      "source": "oracle/cases/signal/multirate.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 47
+    },
+    {
+      "fixture": "signal/parametric.json",
+      "source": "oracle/cases/signal/parametric.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "signal/peaks.json",
+      "source": "oracle/cases/signal/peaks.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "librosa": "1.0.0",
+        "dtw-python": "1.9.0"
+      },
+      "cases": 62
+    },
+    {
+      "fixture": "signal/reassignment.json",
+      "source": "oracle/cases/signal/reassignment.py",
+      "reference": {
+        "librosa": "1.0.0"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "signal/sampling.json",
+      "source": "oracle/cases/signal/sampling.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "librosa": "1.0.0"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "signal/signal.json",
+      "source": "oracle/cases/signal/signal.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "librosa": "1.0.0"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "signal/sliding.json",
+      "source": "oracle/cases/signal/sliding.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 21
+    },
+    {
+      "fixture": "signal/spectral.json",
+      "source": "oracle/cases/signal/spectral.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "signal/time_frequency.json",
+      "source": "oracle/cases/signal/time_frequency.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "librosa": "1.0.0"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "signal/wavelets/cwt.json",
+      "source": "oracle/cases/signal/wavelets/cwt.py",
+      "reference": {
+        "pywt": "1.8.0"
+      },
+      "cases": 32
+    },
+    {
+      "fixture": "signal/wavelets/denoise.json",
+      "source": "oracle/cases/signal/wavelets/denoise.py",
+      "reference": {
+        "pywt": "1.8.0",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "signal/wavelets/dwt.json",
+      "source": "oracle/cases/signal/wavelets/dwt.py",
+      "reference": {
+        "pywt": "1.8.0"
+      },
+      "cases": 81
+    },
+    {
+      "fixture": "signal/wavelets/swt.json",
+      "source": "oracle/cases/signal/wavelets/swt.py",
+      "reference": {
+        "pywt": "1.8.0"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "signal/windows/cosine.json",
+      "source": "oracle/cases/signal/windows/cosine.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 60
+    },
+    {
+      "fixture": "signal/windows/dpss.json",
+      "source": "oracle/cases/signal/windows/dpss.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "signal/windows/get_window.json",
+      "source": "oracle/cases/signal/windows/get_window.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "signal/windows/shapes.json",
+      "source": "oracle/cases/signal/windows/shapes.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 103
     },
     {
       "fixture": "stats/correlation.json",

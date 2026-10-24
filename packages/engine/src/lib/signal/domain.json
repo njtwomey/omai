@@ -1,0 +1,5 @@
+{
+  "tier": 7,
+  "summary": "Signal and image processing: windows, filter design and application, multirate, spectral and time-frequency analysis, wavelets, decompositions, detection, adaptive filters, peaks, similarity, matrix profiles, audio and image processing.",
+  "inline": ["filters", "windows", "wavelets"]
+}
