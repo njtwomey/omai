@@ -676,7 +676,8 @@ primitives; "custom" means a dedicated rule.
 
 `polynomial/` (numpy.polynomial; composed)
 - `power.ts` (lowest degree first, as numpy.polynomial): `polyval`, `polyvander`, `polyfit`, `polyder`, `polyint`,
-  `polyadd`, `polysub`, `polymul`, `polydiv`, `polytrim`, `polyroots`, `polyFromRoots`, `companion`.
+  `polyadd`, `polysub`, `polymul`, `polydiv`, `polytrim`, `polyroots`, `polyFromRoots`, `companion`, `charpoly`
+  (numpy.poly of a matrix, with an exact derivative rule).
 - `orthogonal.ts`: Legendre, Chebyshev, Hermite (both), Laguerre and Jacobi families by their recurrences:
   `orthoval` (Clenshaw), `orthovander`, `orthofit`, `orthogauss`, `orthoToPower`, `powerToOrtho`.
 - `rational.ts`: `residue`, `residuez`, `invres`, partial fractions.
@@ -1014,11 +1015,22 @@ oracle: scipy.stats.entropy, sklearn mutual information, zlib (byte-exact DEFLAT
 ### 4.16 `systems/` (tier 6): linear time-invariant systems (scipy.signal LTI, python-control)
 
 oracle: scipy.signal, python-control
-- `representations.ts`: transfer functions, zero-pole-gain, state space and second-order sections; continuous and
-  discrete; conversions; minimal realisation.
+
+Systems carry a sample time (0 continuous, positive discrete, as python-control); polynomials are highest degree
+first, as scipy.signal. State-space and transfer-function values are differentiable in their matrices and
+coefficients, and so are the conversions between them, the responses and the discretisations.
+- `representations.ts`: transfer functions, zero-pole-gain, state space and second-order sections (`tf`, `zpk`, `ss`,
+  `sos`); continuous and discrete; conversions between them (`toTf`, `toZpk`, `toSs`, `toSos`), `dimensions`,
+  `isDiscrete`; minimal realisation (`minreal`: staircase reductions, pole-zero cancellation).
+- `conversions.ts`: scipy's pairwise conversions: `normalize`, `abcdNormalize`, `tf2ss` (controller canonical form),
+  `ss2tf` (differentiable through `charpoly`), `tf2zpk`, `zpk2tf`, `zpk2ss`, `ss2zpk`.
+- `sections.ts`: second-order sections: `zpk2sos` (nearest, keep-odd and minimal pairing; analog), `sos2zpk`,
+  `sos2tf`, `tf2sos`.
 - `interconnect.ts`: series, parallel, feedback, append, connect.
-- `responses.ts`: impulse, step, initial-condition and arbitrary-input responses (traced), frequency response, Bode,
-  Nyquist and Nichols data.
+- `responses.ts`: impulse, step, initial-condition and arbitrary-input responses (`lsim` and the traced
+  `lsimAlgorithm`, zero- and first-order hold, continuous and discrete), `defaultResponseTimes`.
+- `frequency.ts`: frequency response (`freqresp`, `evalfr`, `dcgain`, `freqs`, `freqz`, `findfreqs`), Bode, Nyquist
+  (with the encirclement count) and Nichols data.
 - `stability.ts`: poles and zeros, Routh-Hurwitz and Jury tests, gain, phase and delay margins, root locus.
 - `discretise.ts`: zero-order and first-order hold, Tustin with prewarping, matched z-transform, Euler, impulse
   invariance.
@@ -3046,7 +3058,7 @@ packages exactly as an outside project does.
 
 A uv project (root `pyproject.toml`) with pydantic and pydantic-settings, and dependency groups split by domain so a
 fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy,
-networkx), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro, pgmpy, arviz),
+networkx, python-control with slycot), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro, pgmpy, arviz),
 `oracle-signal` (pywt, librosa, scikit-image, pystoi, pesq), `oracle-text` (tokenizers, tiktoken, nltk, sacrebleu,
 rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel),
 `oracle-misc` (lifelines, mlxtend, pysubgroup, umap-learn, hdbscan, dowhy, econml, causal-learn, pysindy, faiss-cpu,

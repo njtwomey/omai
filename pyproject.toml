@@ -22,6 +22,8 @@ oracle-core = [
     "pot>=0.9.7.post1",
     "cvxpy>=1.9.3",
     "pymoo>=0.6.2",
+    "control>=0.10.2",
+    "slycot>=0.7.1",
 ]
 oracle-torch = [
     "optax>=0.2.8",

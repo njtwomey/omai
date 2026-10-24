@@ -1536,6 +1536,57 @@
       "cases": 13
     },
     {
+      "fixture": "systems/conversions.json",
+      "source": "oracle/cases/systems/conversions.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 100
+    },
+    {
+      "fixture": "systems/discretise.json",
+      "source": "oracle/cases/systems/discretise.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "control": "0.10.2"
+      },
+      "cases": 51
+    },
+    {
+      "fixture": "systems/frequency.json",
+      "source": "oracle/cases/systems/frequency.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "control": "0.10.2"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "systems/representations.json",
+      "source": "oracle/cases/systems/representations.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "systems/responses.json",
+      "source": "oracle/cases/systems/responses.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "control": "0.10.2"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "systems/sections.json",
+      "source": "oracle/cases/systems/sections.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 47
+    },
+    {
       "fixture": "tensor/ops/arithmetic.json",
       "source": "oracle/cases/tensor/ops/arithmetic.py",
       "reference": {

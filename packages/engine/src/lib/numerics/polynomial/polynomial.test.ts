@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
-import { grad } from '../../autodiff/index.ts'
+import { checkPrimitive, grad } from '../../autodiff/index.ts'
 import { item, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as P from './index.ts'
 
@@ -102,5 +102,32 @@ describe('polynomial properties', () => {
     for (const [i, v] of P.polyadd(P.polymul(quotient, b), remainder).entries()) expect(v).toBeCloseTo(a[i] ?? 0, 12)
     const rebuilt = P.polyFromRoots(P.polyroots(a)).map((v) => v * 5)
     for (const [i, v] of rebuilt.entries()) expect(v).toBeCloseTo(a[i] ?? 0, 9)
+  })
+})
+
+describe('charpoly', () => {
+  const a = tensor([
+    [1, 2, 0.5],
+    [-0.3, 0.7, 1.1],
+    [0.4, -1.2, 2],
+  ])
+
+  it('matches det(xI - A) at sample points and has a conformant derivative', () => {
+    const c = toFlat(P.charpoly(a) as Tensor)
+    expect(c[3]).toBe(1)
+    const det3 = (m: readonly number[]): number => {
+      const [p, q, r, s, t, u, v, w, z] = m.map((x) => x)
+      const f = (x: number | undefined): number => x ?? 0
+      return (
+        f(p) * (f(t) * f(z) - f(u) * f(w)) - f(q) * (f(s) * f(z) - f(u) * f(v)) + f(r) * (f(s) * f(w) - f(t) * f(v))
+      )
+    }
+    for (const x of [-1.5, 0, 0.8, 2.3]) {
+      const value = (c[0] ?? 0) + x * ((c[1] ?? 0) + x * ((c[2] ?? 0) + x * (c[3] ?? 0)))
+      expect(value).toBeCloseTo(det3(toFlat(a).map((v, k) => (k % 4 === 0 ? x - v : -v))), 12)
+    }
+    expect(toFlat(P.charpoly([[0]] as number[][]) as Tensor)).toEqual([0, 1])
+    const report = checkPrimitive((x) => P.charpoly(x), [a], { vmap: false })
+    expect(report.failures).toEqual([])
   })
 })
