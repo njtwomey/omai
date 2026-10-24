@@ -1338,6 +1338,15 @@
       "cases": 10
     },
     {
+      "fixture": "methods/cluster/exemplar.json",
+      "source": "oracle/cases/methods/cluster/exemplar.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/cluster/hierarchical.json",
       "source": "oracle/cases/methods/cluster/hierarchical.py",
       "reference": {

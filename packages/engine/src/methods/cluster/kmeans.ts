@@ -1,6 +1,8 @@
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type ClusteringSteps, clusteringSteps } from '../../lib/exposition/index.ts'
+import { type PairwiseKernelMetric, pairwiseKernels } from '../../lib/kernels/index.ts'
 import {
+  collecting,
   defineExplainedEstimator,
   type Estimator,
   EstimatorClass,
@@ -13,7 +15,7 @@ import { geometry } from '../../lib/numerics/index.ts'
 import { kmeansCodebook } from '../../lib/numerics/spatial/index.ts'
 import { foldIn, type Key, keys, subsample } from '../../lib/random/index.ts'
 import { choice, dict, int, real } from '../../lib/space/index.ts'
-import { fromStorage, type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike, toArray, toFlat } from '../../lib/tensor/index.ts'
 import { type Algorithm, runAlgorithm } from '../../lib/trace/index.ts'
 
 /** Rows of a matrix as plain arrays. */
@@ -550,4 +552,150 @@ export function kmeansElbow(
     ks,
     inertia: ks.map((k, i) => kmeans({ nClusters: k, nInit: 3 }).fit({ x }, { key: foldIn(key, i) }).params.inertia),
   }
+}
+
+/** Hyperparameters of kernel k-means. */
+export type KernelKMeansHyper = {
+  readonly nClusters?: number
+  /** The kernel, by scikit-learn's pairwise names (default rbf), and its gamma (default 1 / d). */
+  readonly kernel?: PairwiseKernelMetric
+  readonly gamma?: number
+  readonly maxIter?: number
+}
+
+/** The parameters of a fitted kernel k-means: training rows and labels (prediction by feature-space distances). */
+export type KernelKMeansParams = {
+  readonly data: number[][]
+  readonly labels: number[]
+  readonly objective: number
+  readonly gamma: number
+}
+
+/**
+ * Feature-space squared distances from rows to cluster means: K(x, x) - 2 mean_j K(x, j) + mean_jl K(j, l).
+ *
+ * @param kxx - Self-kernels of the rows `[m]`.
+ * @param kxt - Cross-kernels to the training rows `[m][n]`.
+ * @param ktt - The training Gram matrix `[n][n]`.
+ * @param labels - Training labels.
+ * @param k - Clusters.
+ * @returns Distances `[m][k]` (infinity for empty clusters).
+ */
+export function featureSpaceDistances(
+  kxx: readonly number[],
+  kxt: readonly (readonly number[])[],
+  ktt: readonly (readonly number[])[],
+  labels: readonly number[],
+  k: number,
+): number[][] {
+  const members = Array.from({ length: k }, (_, c) => labels.flatMap((l, i) => (l === c ? [i] : [])))
+  const within = members.map(
+    (ms) => ms.reduce((a, i) => a + ms.reduce((b, j) => b + (ktt[i]?.[j] ?? 0), 0), 0) / Math.max(1, ms.length) ** 2,
+  )
+  return kxt.map((row, i) =>
+    members.map((ms, c) =>
+      ms.length === 0
+        ? Number.POSITIVE_INFINITY
+        : (kxx[i] ?? 0) - (2 * ms.reduce((a, j) => a + (row[j] ?? 0), 0)) / ms.length + (within[c] ?? 0),
+    ),
+  )
+}
+
+/**
+ * Kernel k-means (Dhillon, Guan and Kulis 2004): Lloyd's algorithm in a kernel's feature space, from k-means++ labels,
+ * traced. Its exposition is a `clusteringSteps` record (assignments and the feature-space inertia per iteration).
+ *
+ * @param hyper - Clusters, kernel, gamma and iteration cap.
+ * @returns The estimator.
+ */
+export function kernelKMeans(
+  hyper: KernelKMeansHyper = {},
+): Estimator<
+  KernelKMeansHyper,
+  ExplainedFitted<KernelKMeansParams, { readonly predict: (x: TensorLike) => Tensor; readonly nFeaturesIn: number }>
+> {
+  const gramOf =
+    (h: KernelKMeansHyper, gamma: number) =>
+    (a: TensorLike, b?: TensorLike): number[][] =>
+      toArray(pairwiseKernels(a, b, h.kernel ?? 'rbf', { gamma })) as number[][]
+  return defineExplainedEstimator<
+    KernelKMeansHyper,
+    KernelKMeansParams,
+    { readonly predict: (x: TensorLike) => Tensor; readonly nFeaturesIn: number }
+  >(
+    {
+      name: 'kernel-kmeans',
+      kind: 'clusterer',
+      hyperSpace: (h) =>
+        dict({
+          nClusters: int(1, 20, { default: h.nClusters ?? 2, label: 'clusters' }),
+          gamma: real(1e-3, 100, { log: true, default: h.gamma ?? 1 }),
+        }),
+      fit: (data, h, options) => {
+        const m = matrixView(data.x, 'kernelKMeans')
+        const k = h.nClusters ?? 2
+        const gamma = h.gamma ?? 1 / m.d
+        const rows = Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
+        const kt = gramOf(h, gamma)(rows)
+        const diag = kt.map((r, i) => r[i] ?? 0)
+        const run = fitRunOptions(options, 'kernel-kmeans')
+        let labels = nearestCentres(rows, initialCentres(rows, k, 'k-means++', run.key as Key)).labels
+        const assignments = [labels]
+        const objective: number[] = []
+        const step = (ls: number[]): { labels: number[]; objective: number } => {
+          const d = featureSpaceDistances(diag, kt, kt, ls, k)
+          let obj = 0
+          const next = d.map((r) => {
+            const c = r.indexOf(Math.min(...r))
+            obj += r[c] ?? 0
+            return c
+          })
+          return { labels: next, objective: obj }
+        }
+        const alg: Algorithm<{ labels: number[]; objective: number; changed: boolean }> = {
+          name: 'kernel-kmeans',
+          config: { k, gamma },
+          init: () => ({ labels, objective: Number.POSITIVE_INFINITY, changed: true }),
+          step: (s) => {
+            const r = step(s.labels)
+            return { ...r, changed: r.labels.some((l, i) => l !== s.labels[i]) }
+          },
+          done: (s, t) => (t > 0 && !s.changed ? 'converged' : undefined),
+          observe: (s) => ({ metrics: Number.isFinite(s.objective) ? { inertia: s.objective } : {} }),
+        }
+        const c = collecting(alg, (s) => s)
+        const out = runAlgorithm(c.algorithm, { ...run, maxSteps: h.maxIter ?? 100 })
+        for (const s of c.history.slice(1)) {
+          assignments.push(s.labels)
+          objective.push(s.objective)
+        }
+        labels = out.state.labels
+        return {
+          params: { data: rows, labels, objective: out.state.objective, gamma },
+          exposition: [
+            clusteringSteps({
+              method: 'kernelKMeans',
+              assignments: assignments.slice(1),
+              objective,
+            }),
+          ],
+        }
+      },
+      methods: (p, h) => {
+        const gram = gramOf(h, p.gamma)
+        const kt = gram(p.data)
+        const k = Math.max(...p.labels) + 1
+        return {
+          predict: (x) => {
+            const kx = gram(x, p.data)
+            const kxx = gram(x).map((r, i) => r[i] ?? 0)
+            const labels = featureSpaceDistances(kxx, kx, kt, p.labels, k).map((r) => r.indexOf(Math.min(...r)))
+            return fromStorage(Int32Array.from(labels), [labels.length], 'int32')
+          },
+          nFeaturesIn: p.data[0]?.length ?? 0,
+        }
+      },
+    },
+    hyper,
+  )
 }
