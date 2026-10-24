@@ -1434,6 +1434,14 @@
       "cases": 3
     },
     {
+      "fixture": "methods/kernel_methods/kernel_ridge.json",
+      "source": "oracle/cases/methods/kernel_methods/kernel_ridge.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "methods/linear/bayesian.json",
       "source": "oracle/cases/methods/linear/bayesian.py",
       "reference": {
