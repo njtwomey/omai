@@ -35,6 +35,8 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
   'sklearn/tree': 'Decision trees grown split by split, every candidate split scored, then pruned by cost complexity.',
   generative:
     'Generative models learning toy data live: flows, autoencoders, GANs and diffusion, their samples and densities step by step.',
+  'generative/autoencoders':
+    'Variational autoencoders: an encoder to a latent space, a decoder back, trained on the evidence lower bound.',
   'generative/flows': 'Normalising flows: invertible maps from a Gaussian to the data, trained by exact likelihood.',
   pyod: 'Anomaly detectors outside scikit-learn, after PyOD: scores, thresholds and the evidence behind each flag.',
   probabilistic: 'Probabilistic models and density estimators.',

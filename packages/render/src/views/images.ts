@@ -69,6 +69,30 @@ function mosaic(
   return { width, height, rgba }
 }
 
+// The images drawn per group.
+function columnsOf(record: ImageSteps, columns: number | undefined): number {
+  const most = Math.max(1, ...record.steps.flatMap((s) => s.images.map((g) => g.length)))
+  return Math.max(1, Math.min(columns ?? 12, most))
+}
+
+// The mosaic's own shape, the names' column included.
+function mosaicAspectOf(record: ImageSteps, columns: number): number {
+  return ((columns + LABEL_TILES) * (record.width / record.height)) / Math.max(1, record.groups.length)
+}
+
+/**
+ * The figure aspect (width over height) that fits an image record's mosaic, with room for its objective beneath.
+ *
+ * @param record - The record.
+ * @param columns - The most images drawn per group (default 12).
+ * @returns The aspect.
+ */
+export function imageAspect(record: ImageSteps, columns?: number): number {
+  const a = mosaicAspectOf(record, columnsOf(record, columns))
+  const withObjective = record.steps.filter((s) => s.objective !== undefined).length > 1
+  return withObjective ? Math.max(1.2, 1 / (1 / a + 0.45)) : Math.max(1.2, a)
+}
+
 /**
  * Image steps as frames for a player: at each recorded step a mosaic with a row of images per group (the data, the
  * model's reconstructions, its samples from fixed noise), the groups named on the left, beside the objective with the
@@ -80,14 +104,12 @@ function mosaic(
  */
 export function imageFrames(record: ImageSteps, options: ImageViewOptions = {}): ViewFrames {
   const count = Math.max(1, record.steps.length)
-  const columns = Math.max(
-    1,
-    Math.min(options.columns ?? 12, Math.max(1, ...record.steps.flatMap((s) => s.images.map((g) => g.length)))),
-  )
+  const columns = columnsOf(record, options.columns)
   const rows = record.groups.length
   const objective = record.steps.filter((s) => s.objective !== undefined)
   const withObjective = objective.length > 1
-  const fig = viewFigure(options, { aspect: withObjective ? 2.2 : 1.6 })
+  const mosaicAspect = mosaicAspectOf(record, columns)
+  const fig = viewFigure(options, { aspect: imageAspect(record, options.columns) })
   const mode = fig.mode
   const t = tokens(mode)
   const stepName = record.stepName ?? 'step'
@@ -135,12 +157,13 @@ export function imageFrames(record: ImageSteps, options: ImageViewOptions = {}):
       ],
       options: { x: { label: stepName }, y: { label: record.objectiveName ?? 'objective' } },
     }
-    const grid = gridSpec(1, 2, {
-      widthRatios: [1.8, 1],
-      wspace: 64,
+    // The objective beneath the mosaic, so the images get the full width.
+    const grid = gridSpec(2, 1, {
+      heightRatios: [1 / mosaicAspect, 0.35],
+      hspace: 48,
       cells: [
         { id: 'main', row: 0, col: 0 },
-        { id: 'objective', row: 0, col: 1 },
+        { id: 'objective', row: 1, col: 0 },
       ],
     })
     return subplots(grid, { main, objective: progress }, { figure: fig, legend: false, tooltip: false })

@@ -1,10 +1,8 @@
-import { type ReactElement, useCallback } from 'react'
+import { type ReactElement, useCallback, useMemo } from 'react'
 import type { ImageSteps } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
-import { imageFrames } from '../../views/images.ts'
+import { imageAspect, imageFrames } from '../../views/images.ts'
 import { FramesPlayer, type PlayerViewProps, type RecordViewProps, useViewFigure } from './_frame.tsx'
-
-const IMAGE_FIGURE = { aspect: 2.2 } as const
 
 /**
  * Small images played step by step: a row of images per group (data, reconstructions, samples) beside the objective.
@@ -15,8 +13,9 @@ const IMAGE_FIGURE = { aspect: 2.2 } as const
 export function ImagePlayer(
   props: RecordViewProps<ImageSteps> & PlayerViewProps & { readonly columns?: number },
 ): ReactElement {
-  const figure = useViewFigure(props.figure, IMAGE_FIGURE)
   const { record, columns } = props
+  const defaults = useMemo(() => ({ aspect: imageAspect(record, columns) }), [record, columns])
+  const figure = useViewFigure(props.figure, defaults)
   const frames = useCallback(
     (fig: Figure) => imageFrames(record, { figure: fig, ...(columns === undefined ? {} : { columns }) }),
     [record, columns],

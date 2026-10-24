@@ -309,8 +309,14 @@ export function learningCurvePanel(curve: LearningCurve, options: ViewOptions = 
   layers.push(
     lines(
       [
-        { x: curve.sizes, y: curve.train, name: 'train', colour: 'tab0', markers: true },
-        { x: curve.sizes, y: curve.validation, name: 'validation', colour: 'tab1', markers: true },
+        { x: curve.sizes, y: curve.train, name: curve.labels?.train ?? 'train', colour: 'tab0', markers: true },
+        {
+          x: curve.sizes,
+          y: curve.validation,
+          name: curve.labels?.validation ?? 'validation',
+          colour: 'tab1',
+          markers: true,
+        },
       ],
       { mode },
     ),
