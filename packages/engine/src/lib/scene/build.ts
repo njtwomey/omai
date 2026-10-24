@@ -1,3 +1,4 @@
+import { clamp, maxOf, minOf, WhiteboxError } from '../base/index.ts'
 import type {
   CircleNode,
   EllipseNode,
@@ -7,12 +8,14 @@ import type {
   NodeBase,
   Paint,
   PathNode,
+  Pixels,
   RectNode,
   Scene,
   SceneNode,
   Style,
   TexNode,
   TextNode,
+  Transform,
 } from './types.ts'
 
 /**
@@ -221,19 +224,99 @@ export function tex(
 }
 
 /**
- * A raster image from RGBA bytes.
+ * Image data to turn into pixels: a tensor (anything with a `shape` and flat row-major `data`) of shape `[h, w]`
+ * (grey), `[h, w, 1]`, `[h, w, 3]` (RGB) or `[h, w, 4]` (RGBA), or the same as nested arrays.
+ */
+export type ImageSource =
+  | { readonly shape: readonly number[]; readonly data: ArrayLike<number> }
+  | readonly (readonly number[])[]
+  | readonly (readonly (readonly number[])[])[]
+
+function flattenSource(source: ImageSource): { shape: number[]; data: ArrayLike<number> } {
+  if (!Array.isArray(source)) {
+    const t = source as { readonly shape: readonly number[]; readonly data: ArrayLike<number> }
+    return { shape: [...t.shape], data: t.data }
+  }
+  const rows = source as readonly (readonly (number | readonly number[])[])[]
+  const h = rows.length
+  const w = rows[0]?.length ?? 0
+  const first = rows[0]?.[0]
+  const c = Array.isArray(first) ? first.length : 0
+  const data: number[] = []
+  for (const row of rows) {
+    if (row.length !== w) throw new WhiteboxError('shape', 'toPixels: rows of different lengths')
+    for (const cell of row) {
+      if (c === 0) data.push(cell as number)
+      else {
+        const channels = cell as readonly number[]
+        if (channels.length !== c) throw new WhiteboxError('shape', 'toPixels: pixels with different channel counts')
+        data.push(...channels)
+      }
+    }
+  }
+  return { shape: c === 0 ? [h, w] : [h, w, c], data }
+}
+
+/**
+ * Pixels from a 2-D (grey) or 3-D (RGB or RGBA) array, as `imshow` would show them. Grey values are scaled linearly
+ * from `range` (default: their finite minimum and maximum) to black and white, and NaN is transparent. Colour values are
+ * scaled from `range` (default `[0, 1]` when every value is at most 1, else `[0, 255]`).
+ *
+ * @param source - A tensor or nested arrays of shape `[h, w]`, `[h, w, 1]`, `[h, w, 3]` or `[h, w, 4]`.
+ * @param options - The value range mapped to 0 to 255.
+ * @returns The pixels.
+ * @throws WhiteboxError with code `shape` for any other shape or ragged arrays.
+ * @example
+ * ```ts
+ * import { toPixels } from 'whitebox-engine/scene'
+ * Array.from(toPixels([[0, 1]]).rgba) // => [0, 0, 0, 255, 255, 255, 255, 255]
+ * Array.from(toPixels([[[1, 0, 0]]]).rgba) // => [255, 0, 0, 255]
+ * ```
+ */
+export function toPixels(source: ImageSource, options: { readonly range?: readonly [number, number] } = {}): Pixels {
+  const { shape, data } = flattenSource(source)
+  const [h = 0, w = 0, c = 1] = shape
+  if (shape.length < 2 || shape.length > 3 || ![1, 3, 4].includes(c)) {
+    throw new WhiteboxError('shape', `toPixels: need shape [h, w], [h, w, 1], [h, w, 3] or [h, w, 4], got [${shape}]`)
+  }
+  if (data.length !== h * w * c) throw new WhiteboxError('shape', 'toPixels: data does not match the shape')
+  const finite: number[] = []
+  for (let i = 0; i < data.length; i++) {
+    const v = data[i] as number
+    if (Number.isFinite(v)) finite.push(v)
+  }
+  const [lo, hi] = options.range ?? (c === 1 ? [minOf(finite), maxOf(finite)] : [0, maxOf(finite) <= 1 ? 1 : 255])
+  const span = hi > lo ? hi - lo : 1
+  const byte = (v: number): number => Math.round((255 * clamp(v - lo, 0, span)) / span)
+  const rgba = new Uint8ClampedArray(h * w * 4)
+  for (let p = 0; p < h * w; p++) {
+    if (c === 1) {
+      const v = data[p] as number
+      const g = Number.isNaN(v) ? 0 : byte(v)
+      rgba.set([g, g, g, Number.isNaN(v) ? 0 : 255], 4 * p)
+    } else {
+      for (let k = 0; k < 3; k++) rgba[4 * p + k] = byte(data[c * p + k] as number)
+      rgba[4 * p + 3] = c === 4 ? byte(data[c * p + 3] as number) : 255
+    }
+  }
+  return { width: w, height: h, rgba }
+}
+
+/**
+ * A raster image, from pixels or from a 2-D (grey) or RGB(A) tensor or nested arrays (converted by {@link toPixels}).
  *
  * @param x - Left edge.
  * @param y - Top edge.
  * @param width - Drawn width.
  * @param height - Drawn height.
- * @param pixels - The image: its pixel size and RGBA bytes.
+ * @param source - The pixels, or image data to convert.
  * @param options - Smoothing when scaled (off by default, so pixels stay crisp), id and title.
  * @returns The node.
  * @example
  * ```ts
  * import { image } from 'whitebox-engine/scene'
  * image(0, 0, 10, 10, { width: 1, height: 1, rgba: new Uint8ClampedArray(4) }).width // => 10
+ * image(0, 0, 20, 10, [[0, 0.5, 1]]).pixels.width // => 3
  * ```
  */
 export function image(
@@ -241,9 +324,10 @@ export function image(
   y: number,
   width: number,
   height: number,
-  pixels: ImageNode['pixels'],
+  source: Pixels | ImageSource,
   options: NodeBase & { readonly smoothing?: boolean } = {},
 ): ImageNode {
+  const pixels = !Array.isArray(source) && 'rgba' in source ? source : toPixels(source as ImageSource)
   return { kind: 'image', x, y, width, height, pixels, ...options }
 }
 
@@ -261,12 +345,7 @@ export function image(
  */
 export function group(
   children: readonly SceneNode[],
-  transform: NodeBase & {
-    readonly translate?: readonly [number, number]
-    readonly rotate?: number
-    readonly scale?: number
-    readonly opacity?: number
-  } = {},
+  transform: NodeBase & Transform & { readonly opacity?: number } = {},
 ): GroupNode {
   return { kind: 'group', children, ...transform }
 }

@@ -351,7 +351,7 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 | tier | domain        | purpose                                                                                                                                                                                          |
 | ---: | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 |    0 | `base`        | errors, JSON, shared result shapes, scalar helpers, version                                                                                                                                      |
-|    0 | `scene`       | drawings (`Scene`) and graph-shaped descriptions (`Structure`) as data                                                                                                                           |
+|    1 | `scene`       | drawings (`Scene`), 3-D layers, rasters and graph-shaped descriptions (`Structure`) as data                                                                                                      |
 |    1 | `tensor`      | arrays, dtypes, shapes, primitives with derivative rules, backends, operations, pytrees                                                                                                          |
 |    2 | `random`      | immutable counter-based keys and samplers                                                                                                                                                        |
 |    2 | `symbolic`    | symbolic expressions: simplification, differentiation, series, integration, LaTeX                                                                                                                |
@@ -401,22 +401,33 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 - `options.ts`: shared option shapes (`Tolerance`, `Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults.
 - `version.ts`: `VERSION`, generated from `package.json`.
 
-### 4.2 `scene/` (tier 0): pictures and structures as data
+### 4.2 `scene/` (tier 1): pictures and structures as data
 
-- `types.ts`: `Scene`, `SceneNode` (rect, circle, ellipse, line, arrow, path, polygon, text, tex, image, group),
-  `Style`, `Paint` (theme tokens `fg`, `bg`, `surface`, `muted`, `grid`, `accent`, `tab0`..`tab9`, or literal colours),
-  `Transform`.
-- `build.ts`: constructors for every node, `scene`, `group`, `image` (from a 2-D or RGB tensor), `tex` (a maths label,
-  typeset by the renderer).
-- `geometry.ts`: `bounds`, `translate`, `rotate`, `scaleTo`, `fit`, `grid` (filmstrips), `isScene`.
-- `three-d.ts`: a small 3-D layer: `Scene3D` (points, segments, polylines, triangles, surfaces from grids, arrows,
-  labels), `camera` (orthographic and perspective, orbit angles), `project` (to a 2-D `Scene` with painter's-algorithm
-  depth sorting), for vectors, surfaces, loss landscapes and rotations without WebGL.
-- `structure.ts`: `Structure` (typed nodes with role, label, value badges and ports; typed edges; groups such as plates,
-  repeated blocks and clusters; annotations), `structure` builder, `mergeStructures`, `subStructure`, `isStructure`.
+Tier 1 rather than 0 so that it can use `base` (errors, `clamp`, `maxOf`); nothing below it draws.
+- `types.ts`: `Scene`, `SceneNode` (rect, circle, ellipse, line (an arrow is a line with a head), path (a polygon is a
+  closed path), text, tex, image, group, `layer3d`: a 3-D scene and camera drawn into a box), `Style` (with the default
+  fill and stroke rules every renderer follows), `ThemeToken` (`fg`, `bg`, `surface`, `muted`, `grid`, `accent`,
+  `tab0`..`tab9`), `Paint` (a token, `none` or a literal colour), `Pixels`, `Transform` (translate, rotate, scale).
+- `build.ts`: constructors for every node (`rect`, `circle`, `ellipse`, `line`, `arrow`, `path`, `polygon`, `text`,
+  `tex` (a maths label, typeset by the renderer), `image` (from pixels, or a 2-D or RGB(A) tensor or nested arrays),
+  `group`), `scene`, `toPixels` (imshow-style conversion), `isScene`.
+- `geometry.ts`: `bounds`, `composeTransforms`, `applyTransform`, `invertTransform`, `translate`, `rotate`, `scaleTo`,
+  `fit`, `grid` (filmstrips).
+- `three-d.ts`: a small 3-D layer: `Scene3D` of points, segments, arrows, polylines, faces (triangles and polygons),
+  surfaces from grids and labels (`scene3d`, `point3d`, `segment3d`, `arrow3d`, `polyline3d`, `triangle3d`, `face3d`,
+  `surface3d`, `label3d`, `axes3d`), for vectors, surfaces, loss landscapes and rotations without WebGL.
+- `projection.ts`: `Camera` and `camera` (orthographic and perspective, orbit angles as in matplotlib's `view_init`),
+  `orbit`, `fitCamera`, `projectPoint`, `project` (to a 2-D `Scene` with painter's-algorithm depth sorting and optional
+  back-face culling), `layer3d`, `projectLayers` (what renderers call before drawing).
+- `structure.ts`: `Structure` (typed nodes with role, label, value badges and ports; typed edges between ports; groups
+  such as plates, repeated blocks and clusters; annotations), `structure` builder, `mergeStructures`, `subStructure`,
+  `isStructure`.
 - `timeline.ts`: `Timeline` (frames keyed by step: scene or structure states with highlights), the data behind every
   animation and export.
-- `raster.ts`: a small software rasteriser from scenes to RGBA arrays (pixel observations for RL, frames in Node).
+- `paint.ts`: `palettes` (the light and dark token colours, tab10 for the categorical tokens), `parsePaint`.
+- `raster.ts`: `rasterise`, a small software rasteriser from scenes to RGBA pixels (pixel observations for RL, frames in
+  Node): nonzero fills at pixel centres, strokes with dashes, joins and arrow heads, smooth paths, images, 3-D layers,
+  supersampling. TODO: text and TeX labels are skipped (they need a bundled bitmap font).
 
 ### 4.3 `tensor/` (tier 1): arrays and differentiable primitives (numpy, torch.Tensor, jax.numpy)
 
@@ -2882,7 +2893,7 @@ After the slice, every remaining file in this document becomes a build task, tak
    specialised engines. Does the planner's automatic choice stay predictable enough, and is the fast path through
    engines fast enough for interactive pages?
 5. **Two API forms.** Functional and class forms for every estimator, layer and environment: worth the surface?
-6. **Scenes and structures in the engine.** Both live in tier 0 of the engine so models and environments can describe
+6. **Scenes and structures in the engine.** Both live in tier 1 of the engine so models and environments can describe
    themselves; the alternative is a small fifth package.
 7. **Datasets in the engine package.** Embedded static data enlarges the engine tarball; the alternative is a
    `whitebox-datasets` package.

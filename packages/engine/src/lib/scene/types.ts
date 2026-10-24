@@ -1,20 +1,32 @@
+import type { Camera } from './projection.ts'
+import type { Scene3D } from './three-d.ts'
+
 /**
- * A colour in a scene: a theme token resolved by the renderer (so scenes follow light and dark themes), or a literal
- * CSS colour. `tab0` to `tab9` are the tab10 palette in order.
+ * A colour named by role rather than value, resolved by the renderer for the current light or dark theme: `fg` (text
+ * and default strokes), `bg` (the page), `surface` (panels and cards), `muted` (secondary text and guides), `grid`
+ * (grid lines), `accent` (highlights), and `tab0` to `tab9` (the tab10 categorical palette, in order).
  */
-export type Paint =
+export type ThemeToken =
   | 'fg'
   | 'bg'
   | 'surface'
   | 'muted'
   | 'grid'
   | 'accent'
-  | 'none'
   | `tab${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`
-  | `#${string}`
-  | `rgba(${string})`
 
-/** Stroke and fill shared by every drawable node. */
+/**
+ * A colour in a scene: a {@link ThemeToken} (so scenes follow light and dark themes), `none`, or a literal CSS colour
+ * (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, or `rgba(r, g, b, a)` with channels 0 to 255 and alpha 0 to 1).
+ */
+export type Paint = ThemeToken | 'none' | `#${string}` | `rgba(${string})`
+
+/**
+ * Stroke and fill shared by every drawable node. Every renderer applies the same defaults: a closed shape (rect,
+ * circle, ellipse, closed path) with neither `fill` nor `stroke` set is filled with `fg`; a line or open path with no
+ * `stroke` is stroked with `fg`; otherwise an unset paint draws nothing. `strokeWidth` defaults to 1, `opacity` to 1,
+ * and `dash` lists alternating dash and gap lengths.
+ */
 export interface Style {
   readonly fill?: Paint
   readonly stroke?: Paint
@@ -99,25 +111,53 @@ export interface TexNode extends NodeBase {
   readonly anchor?: 'start' | 'middle' | 'end'
 }
 
-/** A raster image: RGBA bytes, row-major, `width * height * 4` long. */
+/** Pixels of a raster image: straight (not premultiplied) RGBA bytes, row-major, `width * height * 4` long. */
+export interface Pixels {
+  readonly width: number
+  readonly height: number
+  readonly rgba: Uint8ClampedArray
+}
+
+/** A raster image drawn into a box. */
 export interface ImageNode extends NodeBase {
   readonly kind: 'image'
   readonly x: number
   readonly y: number
   readonly width: number
   readonly height: number
-  readonly pixels: { readonly width: number; readonly height: number; readonly rgba: Uint8ClampedArray }
+  readonly pixels: Pixels
   readonly smoothing?: boolean
 }
 
-/** A group of nodes under a translation, rotation (degrees, about the group origin) and uniform scale. */
-export interface GroupNode extends NodeBase {
-  readonly kind: 'group'
-  readonly children: readonly SceneNode[]
+/**
+ * A similarity transform of the plane: a point `p` maps to `translate + scale * R(rotate) * p`, with `rotate` in
+ * degrees (clockwise on screen, since y grows downwards). Missing fields are the identity.
+ */
+export interface Transform {
   readonly translate?: readonly [number, number]
   readonly rotate?: number
   readonly scale?: number
+}
+
+/** A group of nodes under a {@link Transform} and an opacity. */
+export interface GroupNode extends NodeBase, Transform {
+  readonly kind: 'group'
+  readonly children: readonly SceneNode[]
   readonly opacity?: number
+}
+
+/**
+ * A 3-D layer: a {@link Scene3D} seen through a {@link Camera}, drawn into a box. Renderers project it (`projectLayers`
+ * in `projection.ts`); interactive views re-project it when the camera orbits.
+ */
+export interface Layer3DNode extends NodeBase {
+  readonly kind: 'layer3d'
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+  readonly scene: Scene3D
+  readonly camera: Camera
 }
 
 /** Any node of a scene graph. */
@@ -131,6 +171,7 @@ export type SceneNode =
   | TexNode
   | ImageNode
   | GroupNode
+  | Layer3DNode
 
 /**
  * A complete drawing in its own coordinate system (y grows downwards, as in SVG). Scenes are plain data: environments,

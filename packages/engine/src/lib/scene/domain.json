@@ -1,1 +1,4 @@
-{ "tier": 0, "summary": "Drawings (Scene), graph-shaped descriptions (Structure) and timelines as data." }
+{
+  "tier": 1,
+  "summary": "Drawings (Scene), 3-D layers, rasters, graph-shaped descriptions (Structure) and timelines as data."
+}
