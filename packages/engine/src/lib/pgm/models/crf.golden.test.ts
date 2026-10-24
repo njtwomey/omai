@@ -100,7 +100,9 @@ describe('linear-chain CRFs against pytorch-crf and sklearn-crfsuite', () => {
       }
       const test = c.params['test'] as P.ItemFeatures[][]
       expect(P.crfDecode(fitted, test[0] ?? []).labels).toEqual(c.params['prediction'])
-    })
+      // The trained cases fit to the exact optimum by Newton's method with a finite-difference Jacobian (about 2 s on
+      // an idle machine), so they get room for a busy one.
+    }, 30_000)
   }
 })
 
