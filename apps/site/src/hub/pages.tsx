@@ -3,10 +3,24 @@ import { catalogue, type HubEntry, type HubState } from 'whitebox-hub'
 import { HubEntryView } from 'whitebox-hub/react'
 import { ErrorBoundary } from '../shell/ErrorBoundary.tsx'
 import { Link } from '../shell/Link.tsx'
-import { Card, CardGrid, PageHeader, PageSection } from '../shell/layout.tsx'
+import { CardGrid, PageHeader, PageSection } from '../shell/layout.tsx'
 import { collectionPath, entryPath, groupsUnder } from './contents.ts'
 
 const SOURCE = 'https://github.com/njtwomey/whitebox-js/blob/main/packages/engine/src/'
+
+// An entry's card: its title and the whole of its summary (no clamping, so nothing is cut off).
+function EntryCard(props: { readonly entry: HubEntry }): ReactNode {
+  const { entry } = props
+  return (
+    <Link
+      to={entryPath(entry)}
+      className="group flex flex-col gap-0.5 rounded-lg border border-line bg-bg px-3 py-2.5 transition-colors hover:border-muted"
+    >
+      <span className="text-sm font-medium group-hover:text-accent">{entry.title}</span>
+      <span className="text-xs leading-snug text-muted">{entry.summary}</span>
+    </Link>
+  )
+}
 
 function Groups(props: { readonly path: string; readonly skipTitle?: boolean }): ReactNode {
   return groupsUnder(props.path).map((g) => (
@@ -25,7 +39,7 @@ function Groups(props: { readonly path: string; readonly skipTitle?: boolean }):
     >
       <CardGrid>
         {g.entries.map((e) => (
-          <Card key={e.id} path={entryPath(e)} title={e.title} text={e.summary} />
+          <EntryCard key={e.id} entry={e} />
         ))}
       </CardGrid>
     </PageSection>
