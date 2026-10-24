@@ -126,7 +126,8 @@ whitebox-js/
   CLAUDE.md, INIT.md, AUDIT.md, PORT.md
 ```
 
-`docs` is the counterpart of `engine` and `gallery` is the counterpart of `render`. Outside projects (the encyclopedia,
+`docs` is the one app: documentation for `engine` and the gallery for `render` (the current `apps/gallery` folds into
+it when the apps are built). Outside projects (the encyclopedia,
 the slide and blog tool) consume the three published packages as release tarballs.
 
 ## 2. Conventions every file follows
@@ -346,7 +347,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. whitebox-engine core, `packages/engine/src/lib/`
 
-The core has 35 domains in 11 tiers. A domain may import only domains in lower tiers.
+The core has 37 domains in 11 tiers. A domain may import only domains in lower tiers.
 
 | tier | domain        | purpose                                                                                                                                                                                          |
 | ---: | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -366,6 +367,7 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 |    6 | `dists`       | distributions, bijectors, exponential families, GLM families, copulas                                                                                                                            |
 |    6 | `information` | entropy, divergences, mutual information estimators, source and channel coding, compression                                                                                                      |
 |    6 | `systems`     | linear time-invariant systems: representations, responses, stability, discretisation                                                                                                             |
+|    6 | `worlds`      | discrete worlds: grid and graph maps, mazes and generators, terrain and rules, agents moving discretely or continuously                                                                          |
 |    7 | `stats`       | descriptive statistics, tests, resampling, density estimation, smoothing bases                                                                                                                   |
 |    7 | `optim`       | optimisers, minimisation, programming, sparse approximation, transport, implicit differentiation                                                                                                 |
 |    7 | `kernels`     | kernel functions, compositions and explicit feature maps                                                                                                                                         |
@@ -374,6 +376,7 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 |    7 | `search`      | state-space search, local and evolutionary search, adversarial search, constraint satisfaction, planning, refinement search                                                                      |
 |    7 | `stochastic`  | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures                                                                                                |
 |    7 | `sampling`    | Monte Carlo samplers and diagnostics                                                                                                                                                             |
+|    7 | `graphics`    | rendering mathematics: ray casting over worlds, ray tracing, cameras, shading, textures, rasterisation                                                                                           |
 |    8 | `logic`       | terms, unification, resolution, Datalog, SAT, first-order proving, ILP                                                                                                                           |
 |    8 | `dynamics`    | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification                                                                                                               |
 |    8 | `pgm`         | graphical models, their inference and learning, causal graphs                                                                                                                                    |
@@ -2380,6 +2383,52 @@ child run.
   `halvingRandomSearchCv`.
 - `analysis.ts`: trial tables, optimisation history, parameter importance (permutation and correlation based),
   parallel-coordinate, slice and contour data.
+### 4.36 `worlds/` (tier 6): discrete worlds shared by search, reinforcement learning and graphics
+
+One representation of a map, used by every application of it: a maze solved by breadth-first search, A* or a learned
+policy, a grid world in reinforcement learning, and the level a ray caster walks through are the same `World`. Movement
+can be discrete (cells and actions) or continuous (positions and headings over the same cells); each application takes
+the world and adds its own view (search problems in `search`, environments in `methods/rl`, renderers in `graphics`
+and whitebox-render).
+
+oracle: none needed for most of it (exact constructions); networkx for connectivity, gymnasium/minigrid for shared
+layouts.
+- `world.ts`: `World` (cells on a square or hexagonal grid, or nodes of a graph; walls between cells or blocking cells;
+  per-cell terrain with costs; items, doors, keys, goals, hazards; start and goal sets), `world`, `fromAscii` and
+  `toAscii` (the usual ASCII map conventions), `fromRows`, cell and coordinate conversions, neighbours under 4- and
+  8-connectivity, passability, `toStructure`, `toScene` (a top-down drawing with theme tokens).
+- `rules.ts`: what entering a cell does (cost, reward, terminate, teleport, slip probabilities, one-way cells, pickups,
+  doors opened by keys), composed rule sets, deterministic and stochastic transition models over cells, so the same
+  world feeds tabular MDPs, search problems and simulators.
+- `generators.ts`: keyed maze generators (recursive backtracker, Prim, Kruskal, Wilson, Eller, Aldous-Broder, binary
+  tree, sidewinder, recursive division), rooms and corridors (BSP dungeons), cellular-automaton caves, noise terrain
+  (value and Perlin noise), braiding (removing dead ends), and textbook worlds (FrozenLake, CliffWalking, four rooms,
+  the AIMA grid, MiniGrid-style layouts).
+- `continuous.ts`: continuous agents over a world: positions and headings, motion with collision against walls (swept
+  circles and segments), line-of-sight queries, field-of-view cones, distance fields from walls.
+- `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells), dead ends, choke
+  points, and conversion to `graph` adjacency for graph algorithms.
+
+### 4.37 `graphics/` (tier 7): rendering mathematics
+
+The mathematics of drawing worlds and scenes, as data (`Pixels`, scene nodes), so figures and the slide and blog tools
+can show how a renderer works step by step. Everything is deterministic and traced where a step is worth showing.
+
+oracle: closed forms; numpy references for the linear algebra; small images compared to hand-checked renders.
+- `camera.ts`: pinhole and orthographic cameras, view and projection matrices, ray generation per pixel, frustum tests.
+- `raycasting.ts`: grid ray casting over a `World` (DDA traversal, wall hits with side and distance, fish-eye
+  correction), first-person column rendering with textured walls, floors and ceilings, sprites with depth sorting, and
+  the traced rays for a top-down view-cone figure.
+- `raytracing.ts`: ray-primitive intersections (sphere, plane, triangle with Moller-Trumbore, axis-aligned box),
+  bounding-volume hierarchies, recursive ray tracing with shadows, reflection and refraction (Snell, Fresnel by
+  Schlick), and a small path tracer (cosine-weighted hemisphere sampling with explicit keys).
+- `shading.ts`: Lambert, Phong and Blinn-Phong, physically based microfacet shading (GGX, Smith, Fresnel), lights
+  (point, directional, area), tone mapping and gamma.
+- `textures.ts`: texture images, UV mapping, nearest, bilinear and mipmapped sampling, procedural textures
+  (checkerboard, noise, bricks).
+- `rasterise.ts`: triangle rasterisation with barycentric interpolation, depth buffers, back-face culling and clipping
+  (the counterpart of ray casting, for comparison figures).
+
 ## 5. whitebox-engine methods, `packages/engine/src/methods/`
 
 Methods are the named models, algorithms, environments, datasets and studies, each composed from the core. Each area
@@ -3254,6 +3303,28 @@ Entry points: `whitebox-render` (every headless part), `whitebox-render/<part>`,
 
 oracle: none; checked by snapshot tests of options, scenes and structures, and by browser tests in Chromium.
 
+Three consumers shape it: the machine-learning encyclopedia, a blog, and slide decks whose slides hold live toy data.
+The reference implementation is aifn-engine's `packages/render` (read-only): reuse what works there (the numeric
+field in `controls/numeric/NumberField.tsx` with `useNumberDraft`, the MathJax macros in `layout/math-macros.tsx`,
+`layout/Tex.tsx` and `equation-tex.ts`, the drag-a-point and live-equation recipes in `examples/src/recipes/`) and
+improve it as below; its player (`controls/playback/Player.tsx`) is replaced, not ported.
+
+Design rules:
+- **Figures have a default size and aspect**, as a matplotlib figure does: every figure is a fixed area with a default
+  width and aspect ratio, and only changes shape when its properties say so. Content never resizes the frame.
+- **Layouts are grids.** Axes are placed on a grid of rows and columns with spans (gridspec), may share x or y axes and
+  ranges, may sit with almost no padding between them (a scatter plot with marginal histograms on its x and y axes),
+  and grid cells may hold text or equations instead of axes.
+- **Two aspects.** The box aspect (the figure's shape, e.g. 2:1) is independent of the data aspect (`equal` makes a
+  circle look like a circle); with `equal` data aspect in a 2:1 box, the axis ranges are adjusted to fit.
+- **Limits have policies** for reactive figures: `auto` (fit the data, honouring the aspect), `fixed` (a stated range,
+  so moving a Gaussian's mean visibly moves it), `expand` (grow but never shrink) and `follow` (track a window).
+- **Grids are smooth by default.** Heatmaps of gridded fields (a classifier's probability on a 30x30 grid) render
+  interpolated (bilinear or bicubic, or filled contours) rather than as blocks, with a predictable `smooth` option
+  and an efficient path (one upsampled image, not thousands of cells); blocky cells remain available.
+- **Zoom is a modal.** A figure's expand button opens it full screen in a modal; the in-page area never changes size.
+- **Mechanisms, not layouts.** Pages own their design; the package provides the pieces to specify it.
+
 `theme/`
 - `tokens.ts`: light and dark design tokens (`fg`, `bg`, `surface`, `muted`, `grid`, `accent`, semantic colours,
   `tab0`..`tab9`), `tokens(mode)`, `cssVariables(mode)`.
@@ -3267,7 +3338,8 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
 - `bars.ts`: bar charts, histograms, Pareto charts.
 - `distributions.ts`: densities from a `Distribution` or KDE, ECDFs, box and violin plots, QQ plots, PMFs, prior and
   posterior overlays.
-- `matrices.ts`: heatmaps, confusion matrices, correlation matrices, images from tensors.
+- `matrices.ts`: heatmaps, confusion matrices, correlation matrices, images from tensors; gridded fields smooth by
+  default (bilinear or bicubic upsampling to one image, or filled contours), blocky cells on request.
 - `fields.ts`: contours, decision regions, vector fields, streamlines.
 - `functions.ts`: function plots for the foundations (asymptotes, implicit curves, parametric and polar curves,
   tangent and secant lines, Riemann rectangles, Taylor polynomials).
@@ -3276,6 +3348,14 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
 - `tuning.ts`: optimisation histories, parameter importances, slice and contour plots of studies.
 - `compose.ts`: subplot grids with shared axes, linked axes, data zoom, mark lines, annotations.
 - `downsample.ts`: LTTB and min-max decimation.
+
+`figure/` (the figure model; headless)
+- `figure.ts`: `Figure` (default size and box aspect, padding, title, theme), defaults per medium (page, blog, slide).
+- `grid.ts`: grid specifications (rows, columns, spans, ratios, gaps down to zero), shared and linked axes, text and
+  equation cells, marginal-axes helpers (`withMarginals`), bento layouts from named grid areas.
+- `aspect.ts`: box aspect versus data aspect (`equal`, numeric), and how ranges adjust to satisfy both.
+- `limits.ts`: limit policies (`auto`, `fixed`, `expand`, `follow`) and nice-range rounding.
+- `linking.ts`: linked brushing and hover across figures, shared selections.
 
 `layout/` (positions only)
 - `layered.ts`: layered layout through dagre (ranks, crossing reduction, edge routes, compound nodes for plates and
@@ -3295,6 +3375,9 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
   treemap.
 - `overlays.ts`: state overlays for animation (active nodes and edges, messages along edges, value badges, frontier and
   explored sets).
+- `models.ts`: presentations of parameterised models from their engine descriptions: neural networks from `nn`'s
+  `describe` (layer stacks, transformers, U-Nets for diffusion), Bayesian networks with plate notation (LDA, mixtures),
+  factor graphs, and decision trees and forests with a class-ratio histogram at each split.
 
 `trace/` (figures from runs)
 - `metrics.ts`: metric curves (smoothing, log scales, runs overlaid, run trees).
@@ -3307,14 +3390,23 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
 `gym/`
 - `frames.ts`: episode frames from an environment's `render`, filmstrips.
 - `overlays.ts`: value heatmaps, policy arrows, visit counts and action distributions on environment scenes.
+- `worlds.ts`: one way to draw any `worlds` world (top-down map, search frontiers, policies and values on cells, agent
+  paths), and the first-person ray-cast view from `graphics` with its top-down view cone.
 
 `maths/`
 - `tex.ts`: typesetting through KaTeX for HTML and MathJax for SVG (used by `tex` scene nodes and SVG export).
+- `macros.ts`: the shared macro registry (vectors, matrices, sets, distributions, operators, as in aifn-engine's
+  `math-macros.tsx`), exported so consumers and their own packages get the same symbols with one import, and
+  extendable with their own.
+- `live.ts`: equations bound to parameters: values substituted and highlighted as controls move, so a slider changes
+  the equation and the figure together.
 - `derivations.ts`: step lists from `symbolic` and `foundations` as aligned equations.
 
 `animation/`
 - `timeline.ts`: building `Timeline`s from runs (any event channel), from environment episodes, from structure overlays
   and from parameter sweeps; easing and interpolation between frames.
+- `playback.ts`: the two playback modes: precomputed (train up front, play a timeline) and live (step an `Algorithm`
+  frame by frame through `iterate`, with a frame budget), behind one interface.
 - `svg.ts`: animated SVG (CSS keyframes) from a timeline.
 - `gif.ts`: GIF encoding (gifenc) of a timeline rendered frame by frame.
 - `video.ts`: MP4 and WebM encoding in the browser (WebCodecs with mp4-muxer and webm-muxer); in Node, raw frames piped
@@ -3331,12 +3423,21 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
 - `Scene3DView.tsx`: a 3-D scene with drag-to-orbit camera, re-projected on interaction.
 - `StructureView.tsx`: a `Structure` with pan, zoom, hover details and overlay state.
 - `TraceView.tsx`: the standard figures of a run; `useRunStream` for live runs.
-- `TimelinePlayer.tsx`: playback of any timeline (play, step, scrub, speed).
+- `Player.tsx`: playback of a precomputed timeline or a live algorithm, redesigned and simpler than aifn-engine's:
+  play and pause with a caret menu for the target frames per second, step back and forward, a draggable scrubber, and
+  an optional time stamp.
+- `FigureFrame.tsx`: the fixed-size figure area with its expand-to-modal button and export menu.
+- `interaction/`: click to add points, drag points, drag points constrained to curves and surfaces, selection (e.g.
+  a Gaussian process refitting as its data are dragged), as hooks and scene overlays.
 - `EpisodePlayer.tsx`: environment episodes with overlays.
 - `ExportMenu.tsx`: export of the current figure as SVG, PNG, GIF, MP4 or WebM.
 - `MathView.tsx`: TeX and derivation display.
-- `controls/`: controls generated from a `Space` (`SpaceControls`), and `Slider`, `NumberInput`, `Select`, `Toggle`,
-  `SeedInput`.
+- `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
+  value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
+  and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
+  `Toggle`, `SeedInput`; and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
+  left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas.
+- `EnvView.tsx`: one consistent view of any environment's render, with episode playback and overlays.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`.
 
 ## 7. whitebox-meta, `packages/meta/src/`
@@ -3395,20 +3496,21 @@ Turns the source into documentation data, runs examples and links functions to c
 
 ## 8. Apps
 
-Both apps are private Vite and React 19 applications with a navigation bar, a persistent light and dark toggle (system
-default, stored choice, no flash), theme tokens from `whitebox-render/theme` and Tailwind CSS. They consume the
+One app, `apps/docs/`, holds both the documentation and the gallery (they were planned as two apps; one site serves
+both better). It is a private Vite and React 19 application with a navigation bar, a persistent light and dark toggle (system
+default, stored choice, no flash), theme tokens from `whitebox-render/theme` and Tailwind CSS. It consumes the
 packages exactly as an outside project does.
 
-`apps/docs/` (the counterpart of whitebox-engine)
+`apps/docs/` (documentation for whitebox-engine; gallery for whitebox-render)
 - `src/main.tsx`, `src/routes.tsx`, `src/shell/` (`AppShell.tsx`, `NavBar.tsx`, `ThemeToggle.tsx`, `Sidebar.tsx`).
 - `src/pages/`: `Home.tsx`, `HowTo.tsx`, `Module.tsx`, `Symbol.tsx`, `Concepts.tsx` (browse by the encyclopedia's
   taxonomy), `Studies.tsx`, `Playground.tsx`, `Traces.tsx` (open, replay, compare and export runs).
 - `content/howto/`: one how-to per core domain and per major method area, with runnable code blocks checked by the build.
 
-`apps/gallery/` (the counterpart of whitebox-render)
-- `src/main.tsx`, `src/routes.tsx`, `src/shell/`.
-- `src/pages/`: `Home.tsx`, `Section.tsx`, `Entry.tsx` (a figure with its editable code and export menu).
-- `src/entries/`: one file per section: `charts.ts`, `distributions.ts`, `fields.ts`, `functions.ts`, `structures.ts`
+The gallery lives in the same app (`apps/docs/src/gallery/`), recycling aifn-engine's docs approach (driven by
+docstrings and recipes):
+- `src/gallery/pages/`: `Gallery.tsx`, `Section.tsx`, `Entry.tsx` (a figure with its editable code and export menu).
+- `src/gallery/entries/`: one file per section: `charts.ts`, `distributions.ts`, `fields.ts`, `functions.ts`, `structures.ts`
   (graphical models, computation graphs, architectures, trees, automata), `networks.ts`, `traces.ts`, `animations.ts`,
   `environments.ts` (every environment, rendered and animated), `three-d.ts`, `maths.ts`, `layouts.ts`, `themes.ts`.
 
@@ -3453,7 +3555,7 @@ library for the same computation. They do not set a higher bar than that library
 
 ## 10. Repository tooling
 
-- `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `dev-gallery`, `build`, `lint`, `format`, `typecheck`,
+- `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
   `datasets`, `pack`, `smoke`, `check`, `clean`, `release`.
 - `mise.toml`: Node, pnpm, Python and uv versions.
@@ -3597,12 +3699,16 @@ on it. The first pass is a thin vertical slice that proves the whole pipeline (v
    layers, activations, `Sequential`, `fit`, `describe`), `rl` (`env.ts`, `gym.ts`, `rollout.ts`) with CartPole and its
    render, `data` (regression schema, generator and truth) with `friedman1` and `diabetes`, `metrics/regression.ts`.
 5. whitebox-render: theme, `charts/lines.ts`, `layout/layered.ts`, `structures/diagram.ts`, `trace/metrics.ts`,
-   `animation/gif.ts`, `svg/`, `react/` (Chart, SceneView, StructureView, TraceView, TimelinePlayer).
-6. whitebox-meta: schema, extractor, runner with `// =>` checks, module map, concept taxonomy; the docs and gallery apps
+   `animation/gif.ts`, `svg/`, `react/` (Chart, SceneView, StructureView, TraceView, Player).
+6. whitebox-meta: schema, extractor, runner with `// =>` checks, module map, concept taxonomy; the docs app (with its gallery)
    showing the slice; the oracle producing the first fixtures; CI, packing and the smoke test.
 
 After the slice, every remaining file in this document becomes a build task, taken in tier order for the core and in
 "built from" order for methods.
+
+Effort: the engine (core, then methods) is built at high effort, each domain to its full plan line before the next
+tier. whitebox-render, whitebox-meta and the docs app follow at normal effort, guided by the design rules of section 6
+and reusing aifn-engine's render and docs code where it already works.
 
 ## 13. Questions for the reviewer
 
