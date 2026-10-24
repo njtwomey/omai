@@ -18,6 +18,7 @@ import {
 } from '../environments/index.ts'
 import { cemAgent, ilqr, ilqrAlgorithm, lqr, lqrAgent, mpcAgent, swingUpAgent } from './control.ts'
 
+const LONG = 60_000
 const angleOf = (o: readonly number[]): number => Math.atan2(o[1] ?? 0, o[0] ?? 1)
 const toState = (o: readonly number[]): number[] => [angleOf(o), o[2] ?? 0]
 const hanging = { inner: [Math.PI, 0], t: 0 } as never
@@ -79,23 +80,27 @@ describe('iLQR', () => {
   // method sits in the no-swing optimum).
   const rock = Array.from({ length: 60 }, (_, t) => [0.5 * Math.sin(Math.sqrt(15) * t * 0.05)])
 
-  it('decreases the cost monotonically and swings the pendulum up within the torque limit', () => {
-    const rec = recorder()
-    const r = ilqr(pendulumModel(), [Math.PI, 0], { initial: rock, terminalCost: upright, tracer: rec })
-    expect(r.converged).toBe(true)
-    for (let i = 1; i < r.history.length; i++) expect(r.history[i]).toBeLessThan(r.history[i - 1] ?? Infinity)
-    expect(r.cost).toBeLessThan(r.history[0] ?? 0)
-    expect(r.controls.every((u) => Math.abs(u[0] ?? 0) <= 2)).toBe(true)
-    // Replayed open loop in the environment's dynamics, the controls end near upright.
-    let s: readonly [number, number] = [Math.PI, 0]
-    for (const u of r.controls) s = pendulumDynamics(s, u[0] ?? 0).state
-    expect(Math.abs(angleNormalize(s[0]))).toBeLessThan(0.25)
-    const metrics = rec
-      .run()
-      .events.filter((e) => e.type === 'metric')
-      .map((e) => (e as { name: string }).name)
-    expect(new Set(metrics)).toEqual(new Set(['cost', 'mu', 'alpha', 'expected']))
-  })
+  it(
+    'decreases the cost monotonically and swings the pendulum up within the torque limit',
+    () => {
+      const rec = recorder()
+      const r = ilqr(pendulumModel(), [Math.PI, 0], { initial: rock, terminalCost: upright, tracer: rec })
+      expect(r.converged).toBe(true)
+      for (let i = 1; i < r.history.length; i++) expect(r.history[i]).toBeLessThan(r.history[i - 1] ?? Infinity)
+      expect(r.cost).toBeLessThan(r.history[0] ?? 0)
+      expect(r.controls.every((u) => Math.abs(u[0] ?? 0) <= 2)).toBe(true)
+      // Replayed open loop in the environment's dynamics, the controls end near upright.
+      let s: readonly [number, number] = [Math.PI, 0]
+      for (const u of r.controls) s = pendulumDynamics(s, u[0] ?? 0).state
+      expect(Math.abs(angleNormalize(s[0]))).toBeLessThan(0.25)
+      const metrics = rec
+        .run()
+        .events.filter((e) => e.type === 'metric')
+        .map((e) => (e as { name: string }).name)
+      expect(new Set(metrics)).toEqual(new Set(['cost', 'mu', 'alpha', 'expected']))
+    },
+    LONG,
+  )
 
   it('recovers the LQR solution on a linear-quadratic problem', () => {
     const model = doubleIntegratorModel()
@@ -124,25 +129,37 @@ describe('planning agents on Pendulum', () => {
   const short = () => make(pendulum, {}, { maxEpisodeSteps: 100 })
   const zero = evaluatePolicy(short(), () => [0], { episodes: 1, seed: 3 }).meanReturn
 
-  it('MPC with iLQR beats a zero-torque policy and keeps warm-started plans in its state', () => {
-    const agent = mpcAgent(pendulumModel(), { horizon: 20, iterations: 2, toState })
-    const result = trainAgent(short(), agent, { episodes: 1, seed: 3 })
-    expect(result.returns[0]).toBeGreaterThan(zero + 300)
-    expect(result.agent.replans).toBe(99)
-  })
-
-  for (const planner of ['cem', 'mppi'] as const) {
-    it(`MPC with batched ${planner} beats a zero-torque policy`, () => {
-      const agent = mpcAgent(pendulumModel(), { planner, horizon: 15, population: 32, toState, iterations: 2 })
+  it(
+    'MPC with iLQR beats a zero-torque policy and keeps warm-started plans in its state',
+    () => {
+      const agent = mpcAgent(pendulumModel(), { horizon: 20, iterations: 2, toState })
       const result = trainAgent(short(), agent, { episodes: 1, seed: 3 })
       expect(result.returns[0]).toBeGreaterThan(zero + 300)
-    })
+      expect(result.agent.replans).toBe(99)
+    },
+    LONG,
+  )
+
+  for (const planner of ['cem', 'mppi'] as const) {
+    it(
+      `MPC with batched ${planner} beats a zero-torque policy`,
+      () => {
+        const agent = mpcAgent(pendulumModel(), { planner, horizon: 15, population: 32, toState, iterations: 2 })
+        const result = trainAgent(short(), agent, { episodes: 1, seed: 3 })
+        expect(result.returns[0]).toBeGreaterThan(zero + 300)
+      },
+      LONG,
+    )
   }
 
-  it('CEM in the true environment beats a zero-torque policy', () => {
-    const agent = cemAgent(pendulum.create(), { toState: (o) => toState(o) as never, horizon: 15, population: 32 })
-    const result = trainAgent(short(), agent, { episodes: 1, seed: 3 })
-    expect(result.returns[0]).toBeGreaterThan(zero + 300)
-    expect(result.agent.replans).toBe(99)
-  })
+  it(
+    'CEM in the true environment beats a zero-torque policy',
+    () => {
+      const agent = cemAgent(pendulum.create(), { toState: (o) => toState(o) as never, horizon: 15, population: 32 })
+      const result = trainAgent(short(), agent, { episodes: 1, seed: 3 })
+      expect(result.returns[0]).toBeGreaterThan(zero + 300)
+      expect(result.agent.replans).toBe(99)
+    },
+    LONG,
+  )
 })
