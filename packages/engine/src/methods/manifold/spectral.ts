@@ -5,35 +5,9 @@ import { pairwiseKernels } from '../../lib/kernels/index.ts'
 import { defineExplainedEstimator, type Estimator, EstimatorClass, matrixView } from '../../lib/learn/index.ts'
 import { linalg } from '../../lib/numerics/index.ts'
 import { choice, dict, int, real } from '../../lib/space/index.ts'
-import { type TensorLike, toArray, toFlat } from '../../lib/tensor/index.ts'
-import { neighbourEdges } from './isomap.ts'
+import { toArray, toFlat } from '../../lib/tensor/index.ts'
+import { type Affinity, affinityMatrix } from '../cluster/index.ts'
 import type { EmbeddingParams, FittedEmbedding } from './mds.ts'
-
-/** How the affinity graph is built: symmetrised k-nearest-neighbour connectivity, or an RBF kernel. */
-export type Affinity = 'nearest_neighbors' | 'rbf'
-
-/**
- * The affinity matrix of sklearn's spectral methods: 0.5 (A + A^T) for k-nearest-neighbour connectivity A (each row
- * connected to itself and its k - 1 nearest others), or exp(-gamma |x - y|^2).
- *
- * @param x - Points `[n, d]`.
- * @param affinity - The construction.
- * @param options - Neighbours (default max(n / 10, 1)) and gamma (default 1 / d).
- * @returns The symmetric affinity `[n][n]`.
- */
-export function affinityMatrix(
-  x: TensorLike,
-  affinity: Affinity = 'nearest_neighbors',
-  options: { readonly nNeighbors?: number; readonly gamma?: number } = {},
-): number[][] {
-  const m = matrixView(x, 'affinityMatrix', { minSamples: 2 })
-  if (affinity === 'rbf')
-    return toArray(pairwiseKernels(x, undefined, 'rbf', { gamma: options.gamma ?? 1 / m.d })) as number[][]
-  const k = options.nNeighbors ?? Math.max(Math.floor(m.n / 10), 1)
-  const a = Array.from({ length: m.n }, (_, i) => Array.from({ length: m.n }, (_, j) => (i === j ? 1 : 0)))
-  if (k > 1) for (const [i, j] of neighbourEdges(x, k - 1).edges) (a[i] as number[])[j] = 1
-  return a.map((r, i) => r.map((v, j) => 0.5 * (v + (a[j]?.[i] ?? 0))))
-}
 
 /** Hyperparameters of the spectral embedding. */
 export type SpectralEmbeddingHyper = {

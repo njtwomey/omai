@@ -6,11 +6,9 @@ export const DEFAULT_COLOUR_MODE: ColourMode = 'dark'
 
 function pageMode(): ColourMode {
   if (typeof document === 'undefined') return DEFAULT_COLOUR_MODE
-  const root = document.documentElement
-  // The page owns the mode: the `dark` class on the root element. With neither class, dark is the default.
-  if (root.classList.contains('dark')) return 'dark'
-  if (root.classList.contains('light')) return 'light'
-  return DEFAULT_COLOUR_MODE
+  // The page owns the mode: the `dark` class on the root element means dark, its absence light (the page adds the
+  // class at startup, since dark is the site's default).
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 }
 
 function subscribePage(listener: () => void): () => void {
@@ -21,8 +19,9 @@ function subscribePage(listener: () => void): () => void {
 }
 
 /**
- * The page's colour mode: the `dark` class on the root element (`<html class="dark">`), observed for changes, dark by
- * default. There is no system-preference detection: the page decides.
+ * The page's colour mode: the `dark` class on the root element (`<html class="dark">`) means dark and its absence
+ * light, observed for changes; dark when there is no page (server rendering). There is no system-preference
+ * detection: the page decides.
  *
  * @returns The mode, re-rendering when the page's class changes.
  */
