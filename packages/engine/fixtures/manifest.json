@@ -237,6 +237,134 @@
       "cases": 4
     },
     {
+      "fixture": "foundations/calculus.json",
+      "source": "oracle/cases/foundations/calculus.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 46
+    },
+    {
+      "fixture": "foundations/combinatorics.json",
+      "source": "oracle/cases/foundations/combinatorics.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 52
+    },
+    {
+      "fixture": "foundations/complex.json",
+      "source": "oracle/cases/foundations/complex.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 28
+    },
+    {
+      "fixture": "foundations/coordinates.json",
+      "source": "oracle/cases/foundations/coordinates.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "foundations/curves.json",
+      "source": "oracle/cases/foundations/curves.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 64
+    },
+    {
+      "fixture": "foundations/linear-algebra.json",
+      "source": "oracle/cases/foundations/linear-algebra.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 87
+    },
+    {
+      "fixture": "foundations/multivariable.json",
+      "source": "oracle/cases/foundations/multivariable.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 28
+    },
+    {
+      "fixture": "foundations/number-theory.json",
+      "source": "oracle/cases/foundations/number-theory.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 81
+    },
+    {
+      "fixture": "foundations/probability.json",
+      "source": "oracle/cases/foundations/probability.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "foundations/rotations.json",
+      "source": "oracle/cases/foundations/rotations.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 82
+    },
+    {
+      "fixture": "foundations/series.json",
+      "source": "oracle/cases/foundations/series.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "foundations/surfaces.json",
+      "source": "oracle/cases/foundations/surfaces.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 68
+    },
+    {
+      "fixture": "foundations/trigonometry.json",
+      "source": "oracle/cases/foundations/trigonometry.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "sympy": "1.14.0"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "foundations/vectors.json",
+      "source": "oracle/cases/foundations/vectors.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 39
+    },
+    {
       "fixture": "graph/centrality.json",
       "source": "oracle/cases/graph/centrality.py",
       "reference": {
