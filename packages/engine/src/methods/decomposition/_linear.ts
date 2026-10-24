@@ -2,7 +2,7 @@
 import type { MatrixView } from '../../lib/learn/index.ts'
 import { matrixView } from '../../lib/learn/index.ts'
 import { linalg } from '../../lib/numerics/index.ts'
-import { fromStorage, type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
+import { fromStorage, matmul, type Tensor, type TensorLike, toArray, toFlat } from '../../lib/tensor/index.ts'
 
 /** Column means of a matrix view. */
 export function columnMeans(m: MatrixView): number[] {
@@ -101,4 +101,20 @@ export function rankErrors(s: readonly number[], totalSquares: number, n: number
     kept += (s[r] ?? 0) ** 2
     return Math.max(0, totalSquares - kept) / (n * d)
   })
+}
+
+/** A matrix product of row arrays, through the tensor matmul. */
+export function mm(a: readonly (readonly number[])[], b: readonly (readonly number[])[]): number[][] {
+  if (a.length === 0 || b.length === 0) return a.map(() => [])
+  return toArray(matmul(a as number[][], b as number[][])) as number[][]
+}
+
+/** The transpose of row arrays. */
+export function tr(a: readonly (readonly number[])[]): number[][] {
+  return (a[0] ?? []).map((_, j) => a.map((r) => r[j] ?? 0))
+}
+
+/** The Moore-Penrose pseudo-inverse of row arrays (numerics/linalg). */
+export function pinvRows(a: readonly (readonly number[])[]): number[][] {
+  return toArray(linalg.pinv(a as number[][])) as number[][]
 }

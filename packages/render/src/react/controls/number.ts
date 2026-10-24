@@ -63,8 +63,8 @@ export function validateNumber(spec: NumberSpec, x: number): string | null {
   if (!Number.isFinite(x)) return 'not a number'
   if (spec.integer === true && !Number.isInteger(x)) return 'must be a whole number'
   if (spec.log === true && !(x > 0)) return 'must be > 0'
-  if (spec.min !== undefined && x < spec.min) return `must be ≥ ${formatNumber(spec, spec.min)}`
-  if (spec.max !== undefined && x > spec.max) return `must be ≤ ${formatNumber(spec, spec.max)}`
+  if (spec.min !== undefined && x < spec.min) return `must be ≥ ${formatFieldValue(spec, spec.min)}`
+  if (spec.max !== undefined && x > spec.max) return `must be ≤ ${formatFieldValue(spec, spec.max)}`
   return null
 }
 
@@ -231,7 +231,7 @@ export function numberLadder(spec: NumberSpec, count = 11): number[] {
  * @param x - The value.
  * @returns The text.
  */
-export function formatNumber(spec: NumberSpec, x: number): string {
+export function formatFieldValue(spec: NumberSpec, x: number): string {
   if (!Number.isFinite(x)) return String(x)
   if (spec.integer === true) return String(Math.round(x))
   const a = Math.abs(x)

@@ -28,6 +28,33 @@ export interface BarOptions {
   readonly colourOffset?: number
 }
 
+const BAR_GAP = 0.3
+const CATEGORY_GAP = 0.2
+const BAR_MAX = 48
+
+/**
+ * The offset, in pixels from the category's centre, of group `i`'s bar when `n` groups sit side by side in a band of
+ * the given width (ECharts' layout with this file's bar gap, category gap and maximum bar width).
+ *
+ * @param band - The category band's width in pixels.
+ * @param n - The number of groups.
+ * @param i - The group.
+ * @returns The offset of the bar's centre.
+ * @example
+ * ```ts
+ * import { barOffset } from 'whitebox-render/charts'
+ * barOffset(100, 1, 0) // => 0
+ * barOffset(100, 2, 0) < 0 && barOffset(100, 2, 1) > 0 // => true
+ * ```
+ */
+export function barOffset(band: number, n: number, i: number): number {
+  if (n <= 1) return 0
+  const raw = (band * (1 - CATEGORY_GAP)) / (n + (n - 1) * BAR_GAP)
+  const w = Math.min(BAR_MAX, raw)
+  const total = n * w + (n - 1) * BAR_GAP * w
+  return -total / 2 + i * w * (1 + BAR_GAP) + w / 2
+}
+
 interface ErrorApi {
   coord(p: readonly (number | string)[]): number[]
   value(dim: number): number
@@ -66,6 +93,22 @@ export function bars(
   const negatives = new Array<number>(categories.length).fill(0)
   const heights: number[] = []
   const series: SeriesOption[] = []
+  // Where each group's stack starts in each category (positive and negative values stack separately, as in ECharts).
+  const stackBase: number[][] = []
+  {
+    const up = new Array<number>(categories.length).fill(0)
+    const down = new Array<number>(categories.length).fill(0)
+    for (const g of list) {
+      const v = numbers(g.values)
+      stackBase.push(
+        options.stacked === true ? v.map((h, k) => (h >= 0 ? (up[k] ?? 0) : (down[k] ?? 0))) : v.map(() => 0),
+      )
+      v.forEach((h, k) => {
+        if (h >= 0) up[k] = (up[k] ?? 0) + h
+        else down[k] = (down[k] ?? 0) + h
+      })
+    }
+  }
   list.forEach((g, i) => {
     const v = numbers(g.values)
     if (v.length !== categories.length) throw new WhiteboxError('shape', 'bars: give one value per category')
@@ -88,7 +131,9 @@ export function bars(
       ...(options.labels === true
         ? { label: { show: true, position: horizontal ? 'right' : 'top', fontSize: 10 } }
         : {}),
-      barMaxWidth: 48,
+      barMaxWidth: BAR_MAX,
+      barGap: `${BAR_GAP * 100}%`,
+      barCategoryGap: `${CATEGORY_GAP * 100}%`,
       emphasis: { focus: 'series' },
     } as SeriesOption)
     if (g.errors !== undefined) {
@@ -96,14 +141,19 @@ export function bars(
       series.push({
         type: 'custom',
         name: `__errors${i}`,
-        data: v.map((h, k) => [k, h, errors[k] ?? 0]),
+        data: v.map((h, k) => [k, (stackBase[i]?.[k] ?? 0) + h, errors[k] ?? 0]),
         renderItem: (_params: unknown, api: ErrorApi): Record<string, unknown> => {
           const k = api.value(0)
           const h = api.value(1)
           const e = api.value(2)
           const cat = categories[k] ?? k
-          const a = api.coord(horizontal ? [h - e, cat] : [cat, h - e])
-          const b = api.coord(horizontal ? [h + e, cat] : [cat, h + e])
+          const a0 = api.coord(horizontal ? [h - e, cat] : [cat, h - e])
+          const b0 = api.coord(horizontal ? [h + e, cat] : [cat, h + e])
+          // Grouped bars sit beside each other in the category band; put the error bar on this group's bar.
+          const band = horizontal ? (api.size([0, 1])[1] ?? 0) : (api.size([1, 0])[0] ?? 0)
+          const shift = options.stacked === true ? 0 : barOffset(band, list.length, i)
+          const a = horizontal ? [a0[0], (a0[1] ?? 0) + shift] : [(a0[0] ?? 0) + shift, a0[1]]
+          const b = horizontal ? [b0[0], (b0[1] ?? 0) + shift] : [(b0[0] ?? 0) + shift, b0[1]]
           const w = 4
           const lines = horizontal
             ? [
@@ -149,6 +199,8 @@ export interface HistogramLayerOptions extends HistogramOptions {
   readonly opacity?: number
   /** Draw the outline of the histogram only (a step curve) rather than filled bars. */
   readonly outline?: boolean
+  /** Bins along the y axis, bars growing to the right (a marginal histogram beside a scatter plot). */
+  readonly horizontal?: boolean
   readonly mode?: ColourMode
   readonly colourOffset?: number
 }
@@ -175,6 +227,7 @@ interface RectApi {
 export function histogram(values: TensorLike | readonly number[], options: HistogramLayerOptions = {}): Layer {
   const mode = options.mode ?? 'light'
   const { density = false, cumulative = false } = options
+  const horizontal = options.horizontal === true
   const h = histogramOf(values as TensorLike, {
     ...(options.bins === undefined ? {} : { bins: options.bins }),
     ...(options.range === undefined ? {} : { range: options.range }),
@@ -199,8 +252,10 @@ export function histogram(values: TensorLike | readonly number[], options: Histo
       ? ({
           type: 'line',
           name,
-          step: 'end',
-          data: [...data.map(([a, , c]) => [a, c]), [edges[edges.length - 1] ?? 0, counts[counts.length - 1] ?? 0]],
+          step: horizontal ? 'start' : 'end',
+          data: [...data.map(([a, , c]) => [a, c]), [edges[edges.length - 1] ?? 0, counts[counts.length - 1] ?? 0]].map(
+            ([a, c]) => (horizontal ? [c, a] : [a, c]),
+          ),
           showSymbol: false,
           color: colour,
           lineStyle: { color: colour, width: 1.5 },
@@ -209,47 +264,46 @@ export function histogram(values: TensorLike | readonly number[], options: Histo
           type: 'custom',
           name,
           data,
-          encode: { x: [0, 1], y: 2, tooltip: [0, 1, 2] },
+          encode: horizontal ? { y: [0, 1], x: 2, tooltip: [0, 1, 2] } : { x: [0, 1], y: 2, tooltip: [0, 1, 2] },
           dimensions: ['from', 'to', density ? 'density' : 'count'],
           renderItem: (_params: unknown, api: RectApi): Record<string, unknown> => {
-            const [x0 = 0, y0 = 0] = api.coord([api.value(0), api.value(2)])
-            const [x1 = 0, y1 = 0] = api.coord([api.value(1), 0])
-            return {
-              type: 'rect',
-              shape: { x: x0, y: y0, width: Math.max(0, x1 - x0 - 0.5), height: Math.max(0, y1 - y0) },
-              style: { fill: colour, opacity: options.opacity ?? 0.75 },
-            }
+            const at = (edge: number, count: number): number[] => api.coord(horizontal ? [count, edge] : [edge, count])
+            const [ax = 0, ay = 0] = at(api.value(0), 0)
+            const [bx = 0, by = 0] = at(api.value(1), api.value(2))
+            const gap = 0.5
+            const shape = horizontal
+              ? { x: ax, y: by + gap, width: Math.max(0, bx - ax), height: Math.max(0, ay - by - gap) }
+              : { x: ax, y: by, width: Math.max(0, bx - ax - gap), height: Math.max(0, ay - by) }
+            return { type: 'rect', shape, style: { fill: colour, opacity: options.opacity ?? 0.75 } }
           },
           color: colour,
           clip: true,
         } as unknown as SeriesOption)
-  return layer([series], {
-    x: [edges[0] ?? 0, edges[edges.length - 1] ?? 1],
-    y: [0, Math.max(0, ...counts)],
-    baseline: 'y',
-  })
+  const span: [number, number] = [edges[0] ?? 0, edges[edges.length - 1] ?? 1]
+  const height: [number, number] = [0, Math.max(0, ...counts)]
+  return layer([series], horizontal ? { x: height, y: span, baseline: 'x' } : { x: span, y: height, baseline: 'y' })
 }
 
 /**
- * A Pareto chart: categories sorted by value as bars, with the cumulative share as a line on a secondary axis.
+ * Pareto layers: categories sorted by value as bars, and the cumulative share as a line on the secondary axis (give
+ * the plot `y2: { limits: [0, 1], format: 'percent' }`).
  *
  * @param categories - The category names.
  * @param values - Their values (non-negative).
- * @param options - Plot options.
- * @returns The ECharts option.
+ * @param options - Colour mode.
+ * @returns The bar layer and the cumulative-share layer.
  * @example
  * ```ts
- * import { paretoChart } from 'whitebox-render/charts'
- * const o = paretoChart(['a', 'b', 'c'], [1, 5, 2])
- * o.xAxis[0].data // => ['b', 'c', 'a']
+ * import { pareto } from 'whitebox-render/charts'
+ * pareto(['a', 'b'], [1, 3])[1].series[0].data // => [0.75, 1]
  * ```
  */
-export function paretoChart(
+export function pareto(
   categories: readonly string[],
   values: readonly number[],
-  options: PlotOptions = {},
-): EChartsOption {
-  const mode = modeOf(options)
+  options: { readonly mode?: ColourMode } = {},
+): Layer[] {
+  const mode = options.mode ?? 'light'
   const order = values.map((v, i) => [v, i] as const).sort((a, b) => b[0] - a[0])
   const sorted = order.map(([, i]) => categories[i] ?? String(i))
   const v = order.map(([x]) => x)
@@ -274,7 +328,29 @@ export function paretoChart(
     { y2: [0, 1] },
     { secondary: true, xCategories: sorted },
   )
-  return cartesian([bars(sorted, v, { mode }), line], {
+  return [bars(sorted, v, { mode }), line]
+}
+
+/**
+ * A Pareto chart: categories sorted by value as bars, with the cumulative share as a line on a secondary axis.
+ *
+ * @param categories - The category names.
+ * @param values - Their values (non-negative).
+ * @param options - Plot options.
+ * @returns The ECharts option.
+ * @example
+ * ```ts
+ * import { paretoChart } from 'whitebox-render/charts'
+ * const o = paretoChart(['a', 'b', 'c'], [1, 5, 2])
+ * o.xAxis[0].data // => ['b', 'c', 'a']
+ * ```
+ */
+export function paretoChart(
+  categories: readonly string[],
+  values: readonly number[],
+  options: PlotOptions = {},
+): EChartsOption {
+  return cartesian(pareto(categories, values, { mode: modeOf(options) }), {
     y2: { limits: [0, 1], format: 'percent' },
     tooltip: 'axis',
     ...options,

@@ -3,7 +3,7 @@ import { type DataAspect, fitDataAspect, type Range } from '../figure/aspect.ts'
 import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figure/figure.ts'
 import { type Limits, resolveLimits, unionRange } from '../figure/limits.ts'
 import { axisStyle, baseOption } from '../theme/echarts.ts'
-import { formatNumber, formatPercent, formatPower } from '../theme/format.ts'
+import { formatNumber, formatPercent, formatPower, niceTicks } from '../theme/format.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 
 /** The data extent of a layer, used by the axes' limit policies. `tight` asks for no padding (images, fields). */
@@ -123,6 +123,13 @@ function formatter(spec: AxisSpec | undefined, scale: AxisScale): (value: number
   return (v) => formatNumber(v)
 }
 
+// Show the labels at the ends of a linear axis only where the ends fall on ticks (a padded range ends between ticks).
+function edgeLabels(r: Range): { readonly showMinLabel: boolean; readonly showMaxLabel: boolean } {
+  const step = niceTicks(r[0], r[1], 5).step
+  const onTick = (v: number): boolean => Math.abs(v / step - Math.round(v / step)) < 1e-6
+  return { showMinLabel: onTick(r[0]), showMaxLabel: onTick(r[1]) }
+}
+
 function logRange(limits: Limits, extent: Range | undefined, previous?: Range): Range {
   const positive =
     extent === undefined ? undefined : ([Math.max(extent[0], 1e-300), Math.max(extent[1], 1e-300)] as const)
@@ -219,10 +226,11 @@ export function panelParts(
       ...(spec?.inverse === true ? { inverse: true } : {}),
       ...(scale === 'log' ? { logBase: 10 } : {}),
       nameGap: dim === 'x' ? style.nameGap : Math.round(style.nameGap * 1.5),
-      axisLine: { ...style.axisLine, show },
+      axisLine: { ...style.axisLine, show, onZero: false },
       axisLabel: {
         ...style.axisLabel,
         show,
+        ...(r !== undefined && scale === 'linear' ? edgeLabels(r) : {}),
         ...(scale === 'category' || scale === 'time' ? {} : { formatter: formatter(spec, scale) }),
       },
       splitLine: { ...style.splitLine, show: spec?.splitLine ?? (scale !== 'category' && position === undefined) },

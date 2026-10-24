@@ -6,6 +6,9 @@ export function Link(props: {
   readonly to: string
   readonly className?: string
   readonly children: ReactNode
+  /** Mark the link as the current page (`aria-current="page"`). */
+  readonly current?: boolean
+  readonly title?: string
 }): ReactNode {
   const onClick = (e: MouseEvent<HTMLAnchorElement>): void => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
@@ -13,7 +16,13 @@ export function Link(props: {
     navigate(props.to)
   }
   return (
-    <a href={href(props.to)} onClick={onClick} className={props.className}>
+    <a
+      href={href(props.to)}
+      onClick={onClick}
+      className={props.className}
+      title={props.title}
+      aria-current={props.current === true ? 'page' : undefined}
+    >
       {props.children}
     </a>
   )

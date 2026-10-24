@@ -46,6 +46,7 @@ export function DraggablePoints(props: DraggablePointsProps): ReactNode {
     return rule === undefined ? p : rule(p)
   }
   const move = (i: number, p: Point2): void => {
+    if (!Number.isFinite(p[0]) || !Number.isFinite(p[1])) return
     const next = [...points]
     next[i] = place(i, p)
     onChange(next)
@@ -77,9 +78,10 @@ export function DraggablePoints(props: DraggablePointsProps): ReactNode {
         <Backdrop
           cursor={canAdd ? 'copy' : 'default'}
           onPointerDown={(e) => {
-            if (!canAdd) return
+            const at = dataOf(e)
+            if (!canAdd || !Number.isFinite(at[0]) || !Number.isFinite(at[1])) return
             const i = points.length
-            const next = [...points, place(i, dataOf(e))]
+            const next = [...points, place(i, at)]
             onChange(next)
             // The new point follows the pointer until release, as if it had been grabbed.
             const target = e.currentTarget
@@ -87,8 +89,10 @@ export function DraggablePoints(props: DraggablePointsProps): ReactNode {
             setActive(i)
             onActive?.(i)
             const follow = (ev: PointerEvent): void => {
+              const to = dataOf(ev)
+              if (!Number.isFinite(to[0]) || !Number.isFinite(to[1])) return
               const moved = [...next]
-              moved[i] = place(i, dataOf(ev))
+              moved[i] = place(i, to)
               onChange(moved)
               next[i] = moved[i] as Point2
             }

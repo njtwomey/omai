@@ -59,7 +59,7 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
               if (picked !== undefined) onChange(picked.value)
             }}
             className={cx(
-              'h-8 w-full min-w-0 appearance-none truncate border border-(--wb-line) bg-(--wb-raised) pr-7 pl-2.5 text-xs text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-ring) focus-visible:ring-2 focus-visible:ring-(--wb-ring)/40 disabled:opacity-50',
+              'h-8 w-full min-w-0 appearance-none truncate border border-(--wb-grid) bg-(--wb-bg) pr-7 pl-2.5 text-xs text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-accent) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/40 disabled:opacity-50',
               cycle ? 'rounded-none' : 'rounded-md',
             )}
           >

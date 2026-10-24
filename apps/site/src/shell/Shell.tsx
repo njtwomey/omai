@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
+import { cssText } from 'whitebox-render/theme'
 import { ColourToggle } from './ColourToggle.tsx'
 import { Link } from './Link.tsx'
 
@@ -13,21 +14,62 @@ export const SECTIONS = [
   { path: '/docs', title: 'Docs', summary: 'The whitebox-engine reference, generated from the source.' },
 ] as const
 
-/** The shared page chrome: the top bar with the three sections (the current one highlighted) and the page. */
-export function Shell(props: { readonly path: string; readonly children: ReactNode }): ReactNode {
+// whitebox-render's theme tokens as CSS variables, light on :root and dark under the `dark` class.
+const THEME_CSS = `${cssText('light', ':root')}\n${cssText('dark', '.dark')}`
+
+/**
+ * The shared page chrome: the top bar with the three sections (the current one highlighted) and the colour toggle;
+ * then the page, beside an optional `sidebar` (a section's {@link TocSidebar}) that stays in view and scrolls on its
+ * own, the content on the right.
+ */
+export function Shell(props: {
+  readonly path: string
+  readonly children: ReactNode
+  readonly sidebar?: ReactNode
+}): ReactNode {
+  const { path, children, sidebar } = props
+  // On narrow screens the sidebar is a drawer, closed again by navigating.
+  const [drawer, setDrawer] = useState(false)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: close on every change of page
+  useEffect(() => setDrawer(false), [path])
   return (
-    <div className="min-h-screen bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
-      <header className="flex items-center gap-6 border-b border-neutral-200 px-6 py-3 dark:border-neutral-800">
-        <Link to="/" className="font-semibold">
+    <div className="min-h-screen bg-bg text-fg">
+      <style>{THEME_CSS}</style>
+      <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-line bg-bg/90 px-3 backdrop-blur sm:gap-6 md:px-6">
+        {sidebar === undefined ? null : (
+          <button
+            type="button"
+            aria-label="Contents"
+            onClick={() => setDrawer(true)}
+            className="-mr-3 rounded-md p-1.5 text-muted hover:bg-surface hover:text-fg md:hidden"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        )}
+        <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
+          <span className="size-3 rounded-sm bg-gradient-to-br from-[#1f77b4] via-[#2ca02c] to-[#ff7f0e]" />
           whitebox
         </Link>
-        <nav className="flex gap-4 text-sm">
+        <nav className="flex gap-1 text-sm">
           {SECTIONS.map((s) => (
             <Link
               key={s.path}
               to={s.path}
+              current={path.startsWith(s.path)}
               className={
-                props.path.startsWith(s.path) ? 'font-medium underline underline-offset-4' : 'text-neutral-500'
+                path.startsWith(s.path)
+                  ? 'rounded-md bg-surface px-2.5 py-1 font-medium text-fg'
+                  : 'rounded-md px-2.5 py-1 text-muted hover:bg-surface hover:text-fg'
               }
             >
               {s.title}
@@ -36,7 +78,28 @@ export function Shell(props: { readonly path: string; readonly children: ReactNo
         </nav>
         <ColourToggle />
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">{props.children}</main>
+      {sidebar === undefined ? (
+        <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+      ) : (
+        <div className="flex">
+          <aside
+            className={`fixed inset-y-0 left-0 z-40 w-72 shrink-0 border-r border-line bg-bg md:sticky md:top-12 md:z-10 md:block md:h-[calc(100vh-3rem)] md:w-64 lg:w-72 ${drawer ? 'block shadow-xl' : 'hidden'}`}
+          >
+            {sidebar}
+          </aside>
+          {drawer ? (
+            <button
+              type="button"
+              aria-label="Close the contents"
+              className="fixed inset-0 z-30 bg-black/40 md:hidden"
+              onClick={() => setDrawer(false)}
+            />
+          ) : null}
+          <main className="min-w-0 flex-1">
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 md:px-8">{children}</div>
+          </main>
+        </div>
+      )}
     </div>
   )
 }
