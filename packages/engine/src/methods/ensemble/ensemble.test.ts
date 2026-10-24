@@ -3,10 +3,14 @@ import { iris } from '../../lib/datasets/index.ts'
 import { recordsOf } from '../../lib/exposition/index.ts'
 import { key } from '../../lib/random/index.ts'
 import { classificationSet, regressionSet } from '../../testing/supervised.ts'
+import { logisticRegression, ridge } from '../linear/index.ts'
+import { decisionTreeClassifier, decisionTreeRegressor } from '../trees/index.ts'
 import { adaBoostClassifier, adaBoostRegressor } from './adaboost.ts'
 import { baggingClassifier, baggingRegressor } from './bagging.ts'
 import { ExtraTreesClassifier, extraTreesRegressor, randomForestClassifier, randomForestRegressor } from './forest.ts'
 import { gradientBoostingClassifier, gradientBoostingRegressor } from './gradient-boosting.ts'
+import { histGradientBoostingClassifier, histGradientBoostingRegressor } from './histogram-boosting.ts'
+import { stackingClassifier, stackingRegressor, votingClassifier, votingRegressor } from './stacking.ts'
 
 const moons = classificationSet('moons', { n: 120, noise: 0.25 }, 1)
 const sine = regressionSet('sineCurve', { n: 80 }, 2)
@@ -61,5 +65,49 @@ describe('ensembles', () => {
     expect(recordsOf(b.exposition, 'ensembleStages')[0]?.validationScores).toHaveLength(8)
     expect(baggingRegressor({ nEstimators: 5 }).fit(sine, k).score?.(sine)).toBeGreaterThan(0.7)
     expect(baggingClassifier().with({ 'estimator.maxDepth': 2 }).hyper.estimator.hyper).toMatchObject({ maxDepth: 2 })
+  })
+})
+
+describe('histogram boosting, voting and stacking', () => {
+  it('histogram boosting with early stopping and missing values', () => {
+    const h = histGradientBoostingClassifier({ maxIter: 30, minSamplesLeaf: 5 }).fit(moons, k)
+    expect(h.score?.(moons)).toBeGreaterThan(0.9)
+    expect(recordsOf(h.exposition, 'ensembleStages')[0]?.trainScores).toHaveLength(30)
+    const e = histGradientBoostingRegressor({ maxIter: 200, earlyStopping: true, minSamplesLeaf: 5 }).fit(sine, k)
+    expect(recordsOf(e.exposition, 'ensembleStages')[0]?.validationScores?.length).toBeGreaterThan(0)
+    expect(e.score?.(sine)).toBeGreaterThan(0.6)
+    const x = [[Number.NaN], [1], [2], [3], [Number.NaN], [5], [6], [7]]
+    const y = [0, 0, 0, 0, 1, 1, 1, 1]
+    expect(
+      histGradientBoostingRegressor({ maxIter: 5, minSamplesLeaf: 1 })
+        .fit({ x, y })
+        .predict([[Number.NaN]]).shape,
+    ).toEqual([1])
+    expect(histGradientBoostingClassifier({ maxIter: 10 }).fit(flowers).score?.(flowers)).toBeGreaterThan(0.9)
+  })
+
+  it('voting and stacking combine any members', () => {
+    const members = [
+      ['tree', decisionTreeClassifier({ maxDepth: 3 })],
+      ['logistic', logisticRegression()],
+    ] as const
+    const v = votingClassifier({ estimators: members }).fit(moons, k)
+    expect(v.score?.(moons)).toBeGreaterThan(0.85)
+    expect(recordsOf(v.exposition, 'ensembleStages')[0]?.trainScores).toHaveLength(2)
+    const s = stackingClassifier({ estimators: members }).fit(moons, k)
+    expect(s.score?.(moons)).toBeGreaterThan(0.85)
+    expect(recordsOf(s.exposition, 'coefficientTable')).toHaveLength(1)
+    const r = stackingRegressor({
+      estimators: [
+        ['tree', decisionTreeRegressor({ maxDepth: 4 })],
+        ['ridge', ridge()],
+      ],
+    }).fit(sine, k)
+    expect(r.score?.(sine)).toBeGreaterThan(0.6)
+    expect(
+      votingRegressor({ estimators: [['tree', decisionTreeRegressor({ maxDepth: 4 })]] })
+        .fit(sine)
+        .score?.(sine),
+    ).toBeGreaterThan(0.6)
   })
 })
