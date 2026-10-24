@@ -265,6 +265,16 @@
       "cases": 64
     },
     {
+      "fixture": "foundations/linear-algebra.json",
+      "source": "oracle/cases/foundations/linear-algebra.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 87
+    },
+    {
       "fixture": "foundations/multivariable.json",
       "source": "oracle/cases/foundations/multivariable.py",
       "reference": {
@@ -272,6 +282,14 @@
         "sympy": "1.14.0"
       },
       "cases": 28
+    },
+    {
+      "fixture": "foundations/number-theory.json",
+      "source": "oracle/cases/foundations/number-theory.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 81
     },
     {
       "fixture": "foundations/rotations.json",
