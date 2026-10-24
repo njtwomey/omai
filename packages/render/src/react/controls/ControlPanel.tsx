@@ -49,14 +49,14 @@ export function ControlPanel(props: ControlPanelProps): ReactNode {
           }
         : { gridTemplateColumns: `repeat(${columns ?? 1}, minmax(0, 1fr))` }
   return (
-    <section className={cx('rounded-lg border border-(--wb-line) bg-(--wb-surface) text-(--wb-fg)', className)}>
+    <section className={cx('rounded-lg border border-(--wb-grid) bg-(--wb-surface) text-(--wb-fg)', className)}>
       {title === undefined ? null : collapsible ? (
         <button
           type="button"
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => setOpen((o) => !o)}
-          className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold tracking-wide text-(--wb-muted) uppercase outline-none hover:text-(--wb-fg) focus-visible:ring-2 focus-visible:ring-(--wb-ring)/50"
+          className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold tracking-wide text-(--wb-muted) uppercase outline-none hover:text-(--wb-fg) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50"
         >
           <span className="truncate">{title}</span>
           <ChevronDownIcon size={14} className={cx('shrink-0 transition-transform', !open && '-rotate-90')} />

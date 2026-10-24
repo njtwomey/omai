@@ -48,7 +48,7 @@ export function Choice<T extends OptionValue>(props: ChoiceProps<T>): ReactNode 
           role="radiogroup"
           aria-label={typeof label === 'string' ? label : undefined}
           className={cx(
-            'flex h-8 min-w-0 flex-1 gap-0.5 border border-(--wb-line) bg-(--wb-surface) p-0.5',
+            'flex h-8 min-w-0 flex-1 gap-0.5 border border-(--wb-grid) bg-(--wb-surface) p-0.5',
             cycle ? '-mx-px' : 'rounded-md',
           )}
           onKeyDown={(e) => {
@@ -72,9 +72,9 @@ export function Choice<T extends OptionValue>(props: ChoiceProps<T>): ReactNode 
                 disabled={disabled || o.disabled === true}
                 onClick={() => onChange(o.value)}
                 className={cx(
-                  'min-w-0 flex-1 truncate rounded-[5px] px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-(--wb-ring)/50 disabled:opacity-40',
+                  'min-w-0 flex-1 truncate rounded-[5px] px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:opacity-40',
                   selected
-                    ? 'bg-(--wb-raised) font-medium text-(--wb-fg) shadow-sm'
+                    ? 'bg-(--wb-bg) font-medium text-(--wb-fg) shadow-sm'
                     : 'text-(--wb-muted) hover:text-(--wb-fg)',
                 )}
               >
