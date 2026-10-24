@@ -1,4 +1,5 @@
 import type { CompareKernel, PredicateKernel } from '../backend.ts'
+import { batchElementwise } from '../batching.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { broadcastShapes } from '../shape.ts'
 import { isTensor, type TensorLike, toFlat } from '../tensor.ts'
@@ -10,21 +11,25 @@ import { max, min } from './reduce.ts'
 import { sumToShape } from './shape.ts'
 
 function comparePrimitive(op: CompareKernel): Primitive<null> {
-  return definePrimitive<null>({
+  const primitive: Primitive<null> = definePrimitive<null>({
     name: op,
     abstractEval: (xs) => [{ shape: broadcastShapes(arg(xs, 0).shape, arg(xs, 1).shape), dtype: 'bool' }],
     impl: (xs) => [arg(xs, 0).backend.compare(op, arg(xs, 0), arg(xs, 1))],
+    batch: (xs, ds) => batchElementwise(primitive, xs, ds, null),
     zeroDerivative: true,
   })
+  return primitive
 }
 
 function predicatePrimitive(op: PredicateKernel): Primitive<null> {
-  return definePrimitive<null>({
+  const primitive: Primitive<null> = definePrimitive<null>({
     name: op,
     abstractEval: (xs) => [{ shape: arg(xs, 0).shape, dtype: 'bool' }],
     impl: (xs) => [arg(xs, 0).backend.predicate(op, arg(xs, 0))],
+    batch: (xs, ds) => batchElementwise(primitive, xs, ds, null),
     zeroDerivative: true,
   })
+  return primitive
 }
 
 const prims = {
@@ -63,6 +68,7 @@ export const wherePrimitive: Primitive<null> = definePrimitive<null>({
     const c = arg(xs, 0)
     return [null, sumToShape(where(c, g, 0), arg(xs, 1).shape), sumToShape(where(c, 0, g), arg(xs, 2).shape)]
   },
+  batch: (xs, ds) => batchElementwise(wherePrimitive, xs, ds, null),
 })
 
 function cmp(p: Primitive<null>, a: TensorLike, b: TensorLike): Value {

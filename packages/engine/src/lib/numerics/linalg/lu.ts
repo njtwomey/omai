@@ -1,6 +1,7 @@
 import {
   add,
   arg,
+  batchLeading,
   bind,
   bind1,
   concreteOrThrow,
@@ -54,6 +55,8 @@ const solvePrimitive: Primitive<null> = definePrimitive<null>({
     const gb = bind1(solvePrimitive, [mT(a as Value), g], null)
     return [neg(matmul(gb, mT(x as Value))), gb]
   },
+  // Factorisations and solves already map over leading batch axes.
+  batch: (xs, ds, p, n) => batchLeading(solvePrimitive, xs, ds, p, n),
 })
 
 /**
@@ -155,6 +158,8 @@ const luPrimitive: Primitive<null> = definePrimitive<null>({
     if (xbar === null) return [null]
     return [matmul(p as Value, adjointSandwich(l as Value, u as Value, xbar))]
   },
+  // Factorisations and solves already map over leading batch axes.
+  batch: (xs, ds, p, n) => batchLeading(luPrimitive, xs, ds, p, n),
 })
 
 // L^{-1} Y U^{-1}, with L unit lower and U upper.

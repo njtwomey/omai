@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../../base/index.ts'
+import { batchAtFront, batchedAxis, moveBatchAxis } from '../batching.ts'
 import { resultType } from '../dtype.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { broadcastShapes, formatShape, normaliseAxis, type Shape, shapesEqual, sizeOf } from '../shape.ts'
@@ -20,6 +21,10 @@ const reshapePrimitive: Primitive<{ readonly shape: Shape }> = definePrimitive<{
     const g = arg(gs, 0)
     return [g === null ? null : reshape(g, arg(xs, 0).shape)]
   },
+  batch: (xs, ds, p, n) => ({
+    outputs: [reshape(moveBatchAxis(arg(xs, 0), arg(ds, 0), 0, n), [n, ...p.shape])],
+    dims: [0],
+  }),
   describe: (p) => formatShape(p.shape),
 })
 
@@ -38,6 +43,10 @@ const transposePrimitive: Primitive<{ readonly perm: readonly number[] }> = defi
     const inverse = p.perm.map((_, i) => p.perm.indexOf(i))
     return [g === null ? null : transpose(g, inverse)]
   },
+  batch: (xs, ds, p) => {
+    const d = arg(ds, 0) ?? 0
+    return { outputs: [transpose(arg(xs, 0), [d, ...p.perm.map((a) => batchedAxis(a, d))])], dims: [0] }
+  },
   describe: (p) => `[${p.perm.join(', ')}]`,
 })
 
@@ -52,6 +61,11 @@ const broadcastPrimitive: Primitive<{ readonly shape: Shape }> = definePrimitive
   vjp: (gs, xs) => {
     const g = arg(gs, 0)
     return [g === null ? null : sumToShape(g, arg(xs, 0).shape)]
+  },
+  batch: (xs, ds, p, n) => {
+    const x = moveBatchAxis(arg(xs, 0), arg(ds, 0), 0, n)
+    const ones = new Array<number>(p.shape.length + 1 - x.shape.length).fill(1)
+    return { outputs: [broadcastTo(reshape(x, [n, ...ones, ...x.shape.slice(1)]), [n, ...p.shape])], dims: [0] }
   },
   describe: (p) => formatShape(p.shape),
 })
@@ -84,6 +98,10 @@ const concatPrimitive: Primitive<ConcatParams> = definePrimitive<ConcatParams>({
       return part
     })
   },
+  batch: (xs, ds, p, n) => ({
+    outputs: [bind1(concatPrimitive, batchAtFront(xs, ds, n), { axis: p.axis + 1 })],
+    dims: [0],
+  }),
   describe: (p) => `axis=${p.axis}`,
 })
 
@@ -112,6 +130,12 @@ const padPrimitive: Primitive<PadParams> = definePrimitive<PadParams>({
     const starts = p.widths.map(([before]) => before)
     const stops = x.shape.map((n, a) => (p.widths[a]?.[0] ?? 0) + n)
     return [slice(g, starts, stops)]
+  },
+  batch: (xs, ds, p) => {
+    const d = arg(ds, 0) ?? 0
+    const widths = [...p.widths]
+    widths.splice(d, 0, [0, 0])
+    return { outputs: [bind1(padPrimitive, [arg(xs, 0)], { widths, value: p.value })], dims: [d] }
   },
 })
 

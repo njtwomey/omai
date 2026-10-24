@@ -429,9 +429,13 @@ oracle: numpy, jax for derivative rules
   (`TensorLike` in), `fromStorage`, `isTensor`, `item`, `toArray`, `toFlat`, `clone`.
 - `create.ts`: `zeros`, `ones`, `full`, the `*Like` variants, `arange`, `linspace`, `logspace`, `geomspace`, `eye`,
   `diag`, `tri`, `tril`, `triu`, `meshgrid`, `indices`.
-- `primitive.ts`: `Primitive` (name, kernel, shape and dtype rules, `jvp`, `vjp`, `batch` rule, `transpose` for linear
-  primitives), `definePrimitive` (the extension point), `bind` (dispatch: concrete inputs run the kernel; traced inputs
-  go to the highest-level trace among them).
+- `primitive.ts`: `Primitive` (name, kernel, shape and dtype rules, `jvp`, `vjp`, optional `batch` rule; no separate
+  `transpose` rules: every differentiable primitive states its `vjp` directly, and `autodiff.customJvp` transposes a
+  forward rule by reverse mode over it), `BatchDim`, `BatchResult`, `definePrimitive` (the extension point), `bind`
+  (dispatch: concrete inputs run the kernel; traced inputs go to the highest-level trace among them).
+- `batching.ts`: helpers for batch rules: `moveBatchAxis`, `batchedAxis`, `batchAtFront`, `alignBatched`,
+  `batchElementwise` (broadcasting elementwise primitives), `batchLeading` (primitives that already map over leading
+  axes, such as factorisations).
 - `traced.ts`: `Value` (`Tensor` or `Traced`), the `Traced` interface (abstract shape and dtype, trace, level),
   `isTraced`, `lift`, `concreteOrThrow` (clear errors where a concrete value is required).
 - `backend.ts`: the `Backend` interface (the kernel vocabulary: elementwise, reduce, scan, matmul, transpose, gather,

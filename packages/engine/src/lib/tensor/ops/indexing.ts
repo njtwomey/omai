@@ -1,13 +1,14 @@
 import { WhiteboxError } from '../../base/index.ts'
+import { batchAtFront, batchedAxis, moveBatchAxis } from '../batching.ts'
 import { cpu } from '../cpu.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { formatShape, normaliseAxis, type Shape } from '../shape.ts'
 import { isTensor, type Tensor, type TensorLike } from '../tensor.ts'
 import { concreteOrThrow, type Value } from '../traced.ts'
 import { asDtype, val } from './_coerce.ts'
-import { cast } from './arithmetic.ts'
+import { add, cast } from './arithmetic.ts'
 import { equal } from './compare.ts'
-import { broadcastTo, expandDims, reshape } from './shape.ts'
+import { broadcastTo, expandDims, moveaxis, reshape } from './shape.ts'
 
 interface SliceParams {
   readonly starts: readonly number[]
@@ -41,6 +42,16 @@ const slicePrimitive: Primitive<SliceParams> = definePrimitive<SliceParams>({
         : bind1(sliceScatterPrimitive, [g], { shape: arg(xs, 0).shape, starts: p.starts, steps: p.steps }),
     ]
   },
+  batch: (xs, ds, p, n) => {
+    const d = arg(ds, 0) ?? 0
+    const at = <T>(list: readonly T[], v: T): T[] => [...list.slice(0, d), v, ...list.slice(d)]
+    return {
+      outputs: [
+        bind1(slicePrimitive, [arg(xs, 0)], { starts: at(p.starts, 0), stops: at(p.stops, n), steps: at(p.steps, 1) }),
+      ],
+      dims: [d],
+    }
+  },
 })
 
 const sliceScatterPrimitive: Primitive<SliceScatterParams> = definePrimitive<SliceScatterParams>({
@@ -56,6 +67,20 @@ const sliceScatterPrimitive: Primitive<SliceScatterParams> = definePrimitive<Sli
     const shape = arg(xs, 0).shape
     const stops = p.starts.map((s, i) => s + (shape[i] ?? 0) * (p.steps[i] ?? 1))
     return [g === null ? null : bind1(slicePrimitive, [g], { starts: p.starts, stops, steps: p.steps })]
+  },
+  batch: (xs, ds, p, n) => {
+    const d = arg(ds, 0) ?? 0
+    const at = <T>(list: readonly T[], v: T): T[] => [...list.slice(0, d), v, ...list.slice(d)]
+    return {
+      outputs: [
+        bind1(sliceScatterPrimitive, [arg(xs, 0)], {
+          shape: at(p.shape, n),
+          starts: at(p.starts, 0),
+          steps: at(p.steps, 1),
+        }),
+      ],
+      dims: [d],
+    }
   },
 })
 
@@ -75,8 +100,47 @@ const takePrimitive: Primitive<{ readonly axis: number }> = definePrimitive<{ re
     const size = arg(xs, 0).shape[p.axis] ?? 0
     return [bind1(takeScatterPrimitive, [g, arg(xs, 1)], { axis: p.axis, size }), null]
   },
+  batch: (xs, ds, p, n) => {
+    const x = arg(xs, 0)
+    const dx = arg(ds, 0)
+    const di = arg(ds, 1)
+    if (di === null) {
+      const d = dx ?? 0
+      return { outputs: [bind1(takePrimitive, [x, arg(xs, 1)], { axis: batchedAxis(p.axis, d) })], dims: [d] }
+    }
+    const idx = moveBatchAxis(arg(xs, 1), di, 0, n)
+    const k = idx.shape[1] ?? 0
+    if (dx === null) {
+      // One gather with every example's indices, then split the gathered axis into (example, index).
+      const out = bind1(takePrimitive, [x, reshape(idx, [-1])], p)
+      const shape = [...x.shape]
+      shape.splice(p.axis, 1, n, k)
+      return { outputs: [reshape(out, shape)], dims: [p.axis] }
+    }
+    // Both batched: gather from the examples stacked along the indexed axis, offsetting each example's indices.
+    const lanes = moveaxis(moveaxis(x, dx, 0), p.axis + 1, 1)
+    const m = lanes.shape[1] ?? 0
+    const rest = lanes.shape.slice(2)
+    const flat = bind1(
+      takePrimitive,
+      [reshape(lanes, [n * m, ...rest]), reshape(add(idx, exampleOffsets(n, m)), [-1])],
+      {
+        axis: 0,
+      },
+    )
+    return { outputs: [moveaxis(reshape(flat, [n, k, ...rest]), 1, p.axis + 1)], dims: [0] }
+  },
   describe: (p) => `axis=${p.axis}`,
 })
+
+/** `b * stride` for each example `b`, as an int32 column to offset per-example indices into stacked examples. */
+function exampleOffsets(n: number, stride: number): Value {
+  return cpu.wrap(
+    'int32',
+    [n, 1],
+    Int32Array.from({ length: n }, (_, b) => b * stride),
+  )
+}
 
 const takeScatterPrimitive: Primitive<{ readonly axis: number; readonly size: number }> = definePrimitive<{
   readonly axis: number
@@ -95,6 +159,26 @@ const takeScatterPrimitive: Primitive<{ readonly axis: number; readonly size: nu
     const g = arg(gs, 0)
     return [g === null ? null : bind1(takePrimitive, [g, arg(xs, 1)], { axis: p.axis }), null]
   },
+  batch: (xs, ds, p, n) => {
+    const dg = arg(ds, 0)
+    const di = arg(ds, 1)
+    if (di === null) {
+      const d = dg ?? 0
+      const params = { axis: batchedAxis(p.axis, d), size: p.size }
+      return { outputs: [bind1(takeScatterPrimitive, [arg(xs, 0), arg(xs, 1)], params)], dims: [d] }
+    }
+    // Scatter every example into its own block of a stacked output, offsetting its indices.
+    const idx = moveBatchAxis(arg(xs, 1), di, 0, n)
+    const lanes = moveaxis(moveBatchAxis(arg(xs, 0), dg, 0, n), p.axis + 1, 1)
+    const k = lanes.shape[1] ?? 0
+    const rest = lanes.shape.slice(2)
+    const flat = bind1(
+      takeScatterPrimitive,
+      [reshape(lanes, [n * k, ...rest]), reshape(add(idx, exampleOffsets(n, p.size)), [-1])],
+      { axis: 0, size: n * p.size },
+    )
+    return { outputs: [moveaxis(reshape(flat, [n, p.size, ...rest]), 1, p.axis + 1)], dims: [0] }
+  },
 })
 
 const takeAlongPrimitive: Primitive<{ readonly axis: number }> = definePrimitive<{ readonly axis: number }>({
@@ -110,6 +194,10 @@ const takeAlongPrimitive: Primitive<{ readonly axis: number }> = definePrimitive
     if (g === null) return [null, null]
     return [bind1(putAlongPrimitive, [g, arg(xs, 1)], { axis: p.axis, shape: arg(xs, 0).shape }), null]
   },
+  batch: (xs, ds, p, n) => ({
+    outputs: [bind1(takeAlongPrimitive, batchAtFront(xs, ds, n), { axis: p.axis + 1 })],
+    dims: [0],
+  }),
 })
 
 const putAlongPrimitive: Primitive<{ readonly axis: number; readonly shape: Shape }> = definePrimitive<{
@@ -127,6 +215,10 @@ const putAlongPrimitive: Primitive<{ readonly axis: number; readonly shape: Shap
     const g = arg(gs, 0)
     return [g === null ? null : bind1(takeAlongPrimitive, [g, arg(xs, 1)], { axis: p.axis }), null]
   },
+  batch: (xs, ds, p, n) => ({
+    outputs: [bind1(putAlongPrimitive, batchAtFront(xs, ds, n), { axis: p.axis + 1, shape: [n, ...p.shape] })],
+    dims: [0],
+  }),
 })
 
 const argsortPrimitive: Primitive<{ readonly axis: number; readonly descending: boolean }> = definePrimitive<{
@@ -136,6 +228,11 @@ const argsortPrimitive: Primitive<{ readonly axis: number; readonly descending: 
   name: 'argsort',
   abstractEval: (xs) => [{ shape: arg(xs, 0).shape, dtype: 'int32' }],
   impl: (xs, p) => [arg(xs, 0).backend.argsort(arg(xs, 0), p.axis, p.descending)],
+  batch: (xs, ds, p) => {
+    const d = arg(ds, 0) ?? 0
+    const params = { axis: batchedAxis(p.axis, d), descending: p.descending }
+    return { outputs: [bind1(argsortPrimitive, [arg(xs, 0)], params)], dims: [d] }
+  },
   zeroDerivative: true,
 })
 
@@ -217,7 +314,7 @@ export function take(x: TensorLike, indices: TensorLike, axis = 0): Value {
   const n = v.shape[a] ?? 0
   const idx = indexTensor(indices)
   const flat = isTensor(idx) ? Int32Array.from(idx.data, (i) => (i < 0 ? i + n : i)) : undefined
-  const fixed = flat === undefined ? idx : cpu.wrap('int32', [flat.length], flat)
+  const fixed = flat === undefined ? idx : cpu.wrap('int32', idx.shape, flat)
   if (fixed.shape.length !== 1) {
     const out = bind1(takePrimitive, [v, reshape(fixed, [-1])], { axis: a })
     return reshape(out, [...v.shape.slice(0, a), ...fixed.shape, ...v.shape.slice(a + 1)])

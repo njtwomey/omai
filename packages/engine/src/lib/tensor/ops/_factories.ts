@@ -1,6 +1,7 @@
 import { WhiteboxError } from '../../base/index.ts'
 import type { BinaryKernel, UnaryKernel } from '../backend.ts'
-import { arg, definePrimitive, type MaybeZero, type Primitive } from '../primitive.ts'
+import { batchElementwise } from '../batching.ts'
+import { arg, type BatchDim, definePrimitive, type MaybeZero, type Primitive } from '../primitive.ts'
 import { broadcastShapes, shapesEqual } from '../shape.ts'
 import type { Tensor } from '../tensor.ts'
 import type { Aval, Value } from '../traced.ts'
@@ -20,19 +21,24 @@ export function unaryPrimitive(kernel: UnaryKernel, rule?: (t: Value, x: Value, 
     name: kernel,
     abstractEval: (xs: readonly Aval[]) => [arg(xs, 0)],
     impl: (xs: readonly Tensor[]) => [arg(xs, 0).backend.unary(kernel, arg(xs, 0))],
+    batch: (xs: readonly Value[], ds: readonly BatchDim[]) => batchElementwise(primitive, xs, ds, null),
   }
-  if (rule === undefined) return definePrimitive<null>({ ...base, zeroDerivative: true })
-  return definePrimitive<null>({
-    ...base,
-    jvp: (xs, ts, _p, outs) => {
-      const t = arg(ts, 0)
-      return [t === null ? null : rule(t, arg(xs, 0), arg(outs, 0))]
-    },
-    vjp: (gs, xs, _p, outs) => {
-      const g = arg(gs, 0)
-      return [g === null ? null : rule(g, arg(xs, 0), arg(outs, 0))]
-    },
-  })
+  function withRule(rule: (t: Value, x: Value, out: Value) => Value): Primitive<null> {
+    return definePrimitive<null>({
+      ...base,
+      jvp: (xs, ts, _p, outs) => {
+        const t = arg(ts, 0)
+        return [t === null ? null : rule(t, arg(xs, 0), arg(outs, 0))]
+      },
+      vjp: (gs, xs, _p, outs) => {
+        const g = arg(gs, 0)
+        return [g === null ? null : rule(g, arg(xs, 0), arg(outs, 0))]
+      },
+    })
+  }
+  const primitive: Primitive<null> =
+    rule === undefined ? definePrimitive<null>({ ...base, zeroDerivative: true }) : withRule(rule)
+  return primitive
 }
 
 /** The rules of an elementwise binary primitive, on broadcast operands. */
@@ -52,23 +58,28 @@ export function binaryPrimitive(kernel: BinaryKernel, rules?: BinaryRules): Prim
       return [{ shape: broadcastShapes(a.shape, b.shape), dtype: a.dtype }]
     },
     impl: (xs: readonly Tensor[]) => [arg(xs, 0).backend.binary(kernel, arg(xs, 0), arg(xs, 1))],
+    batch: (xs: readonly Value[], ds: readonly BatchDim[]) => batchElementwise(primitive, xs, ds, null),
   }
-  if (rules === undefined) return definePrimitive<null>({ ...base, zeroDerivative: true })
-  return definePrimitive<null>({
-    ...base,
-    jvp: (xs, ts, _p, outs) => {
-      const ta = arg(ts, 0)
-      const tb = arg(ts, 1)
-      if (ta === null && tb === null) return [null]
-      return [rules.jvp(arg(xs, 0), arg(xs, 1), ta, tb, arg(outs, 0))]
-    },
-    vjp: (gs, xs, _p, outs) => {
-      const g = arg(gs, 0)
-      if (g === null) return [null, null]
-      const a = arg(xs, 0)
-      const b = arg(xs, 1)
-      const [ga, gb] = rules.vjp(g, a, b, arg(outs, 0))
-      return [ga === null ? null : sumToShape(ga, a.shape), gb === null ? null : sumToShape(gb, b.shape)]
-    },
-  })
+  function withRules(rules: BinaryRules): Primitive<null> {
+    return definePrimitive<null>({
+      ...base,
+      jvp: (xs, ts, _p, outs) => {
+        const ta = arg(ts, 0)
+        const tb = arg(ts, 1)
+        if (ta === null && tb === null) return [null]
+        return [rules.jvp(arg(xs, 0), arg(xs, 1), ta, tb, arg(outs, 0))]
+      },
+      vjp: (gs, xs, _p, outs) => {
+        const g = arg(gs, 0)
+        if (g === null) return [null, null]
+        const a = arg(xs, 0)
+        const b = arg(xs, 1)
+        const [ga, gb] = rules.vjp(g, a, b, arg(outs, 0))
+        return [ga === null ? null : sumToShape(ga, a.shape), gb === null ? null : sumToShape(gb, b.shape)]
+      },
+    })
+  }
+  const primitive: Primitive<null> =
+    rules === undefined ? definePrimitive<null>({ ...base, zeroDerivative: true }) : withRules(rules)
+  return primitive
 }

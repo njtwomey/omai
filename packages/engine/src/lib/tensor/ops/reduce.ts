@@ -1,6 +1,7 @@
 import { WhiteboxError } from '../../base/index.ts'
 import type { ReduceKernel } from '../backend.ts'
-import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
+import { batchedAxis } from '../batching.ts'
+import { arg, type BatchDim, type BatchResult, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { normaliseAxes, normaliseAxis, sizeOf } from '../shape.ts'
 import type { TensorLike } from '../tensor.ts'
 import type { Value } from '../traced.ts'
@@ -29,7 +30,7 @@ function expandBack(g: Value, shape: readonly number[], axes: readonly number[])
 }
 
 function reducePrimitive(op: ReduceKernel): Primitive<ReduceParams> {
-  return definePrimitive<ReduceParams>({
+  const primitive: Primitive<ReduceParams> = definePrimitive<ReduceParams>({
     name: `reduce_${op}`,
     abstractEval: (xs, p) => [{ shape: reducedShape(arg(xs, 0).shape, p), dtype: arg(xs, 0).dtype }],
     impl: (xs, p) => [arg(xs, 0).backend.reduce(op, arg(xs, 0), p.axes, p.keepDims)],
@@ -56,8 +57,16 @@ function reducePrimitive(op: ReduceKernel): Primitive<ReduceParams> {
       const mask = cast(equal(x, out), x.dtype)
       return [mul(gx, div(mask, expandBack(sum(mask, p.axes, true), x.shape, p.axes)))]
     },
+    // Reduce the same axes of every example in place; the batch axis shifts left past dropped axes.
+    batch: (xs, ds, p) => {
+      const d = arg(ds, 0) ?? 0
+      const axes = p.axes.map((a) => batchedAxis(a, d))
+      const dim = p.keepDims ? d : d - p.axes.filter((a) => a < d).length
+      return { outputs: [bind1(primitive, [arg(xs, 0)], { axes, keepDims: p.keepDims })], dims: [dim] }
+    },
     describe: (p) => `axes=[${p.axes.join(',')}]`,
   })
+  return primitive
 }
 
 const sumPrimitive = reducePrimitive('sum')
@@ -66,7 +75,10 @@ const maxPrimitive = reducePrimitive('max')
 const minPrimitive = reducePrimitive('min')
 
 function argPrimitive(op: 'max' | 'min'): Primitive<{ readonly axis: number; readonly keepDims: boolean }> {
-  return definePrimitive({
+  const primitive: Primitive<{ readonly axis: number; readonly keepDims: boolean }> = definePrimitive<{
+    readonly axis: number
+    readonly keepDims: boolean
+  }>({
     name: `arg${op}`,
     abstractEval: (xs, p) => {
       const shape = arg(xs, 0).shape
@@ -78,8 +90,15 @@ function argPrimitive(op: 'max' | 'min'): Primitive<{ readonly axis: number; rea
       ]
     },
     impl: (xs, p) => [arg(xs, 0).backend.argReduce(op, arg(xs, 0), p.axis, p.keepDims)],
+    batch: (xs, ds, p) => {
+      const d = arg(ds, 0) ?? 0
+      const axis = batchedAxis(p.axis, d)
+      const dim = p.keepDims || p.axis >= d ? d : d - 1
+      return { outputs: [bind1(primitive, [arg(xs, 0)], { axis, keepDims: p.keepDims })], dims: [dim] }
+    },
     zeroDerivative: true,
   })
+  return primitive
 }
 
 const argmaxPrimitive = argPrimitive('max')
@@ -102,6 +121,7 @@ const cumsumPrimitive: Primitive<ScanParams> = definePrimitive<ScanParams>({
     const g = arg(gs, 0)
     return [g === null ? null : bind1(cumsumPrimitive, [g], { axis: p.axis, reverse: !p.reverse })]
   },
+  batch: (xs, ds, p) => scanBatch(cumsumPrimitive, xs, ds, p),
 })
 
 const cumprodPrimitive: Primitive<ScanParams> = definePrimitive<ScanParams>({
@@ -118,7 +138,18 @@ const cumprodPrimitive: Primitive<ScanParams> = definePrimitive<ScanParams>({
     const back = bind1(cumsumPrimitive, [mul(g, arg(outs, 0))], { axis: p.axis, reverse: !p.reverse })
     return [div(back, arg(xs, 0))]
   },
+  batch: (xs, ds, p) => scanBatch(cumprodPrimitive, xs, ds, p),
 })
+
+function scanBatch(
+  primitive: Primitive<ScanParams>,
+  xs: readonly Value[],
+  ds: readonly BatchDim[],
+  p: ScanParams,
+): BatchResult {
+  const d = arg(ds, 0) ?? 0
+  return { outputs: [bind1(primitive, [arg(xs, 0)], { axis: batchedAxis(p.axis, d), reverse: p.reverse })], dims: [d] }
+}
 
 function reduceWith(
   p: Primitive<ReduceParams>,

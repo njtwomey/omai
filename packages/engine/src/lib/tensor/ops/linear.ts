@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../../base/index.ts'
+import { alignBatched } from '../batching.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { broadcastShapes, formatShape, normaliseAxis } from '../shape.ts'
 import type { TensorLike } from '../tensor.ts'
@@ -36,6 +37,11 @@ export const matmulPrimitive: Primitive<null> = definePrimitive<null>({
     const ga = bind1(matmulPrimitive, [g, swapaxes(b, -1, -2)], null)
     const gb = bind1(matmulPrimitive, [swapaxes(a, -1, -2), g], null)
     return [sumToShape(ga, a.shape), sumToShape(gb, b.shape)]
+  },
+  // Batch axes of a product broadcast, so a batched operand only needs its batch in front of its own batch axes.
+  batch: (xs, ds) => {
+    const { values, dim } = alignBatched(xs, ds, 2)
+    return { outputs: [bind1(matmulPrimitive, values, null)], dims: [dim] }
   },
 })
 

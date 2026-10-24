@@ -2,6 +2,7 @@ import { WhiteboxError } from '../../base/index.ts'
 import {
   add,
   arg,
+  batchLeading,
   bind,
   definePrimitive,
   type FloatDType,
@@ -91,6 +92,8 @@ const qrPrimitive: Primitive<null> = definePrimitive<null>({
     const ybar = hasQ ? add(gq, matmul(qv, k)) : matmul(qv, k)
     return [rightSolveTransposed(ybar, rv)]
   },
+  // Factorisations and solves already map over leading batch axes.
+  batch: (xs, ds, p, n) => batchLeading(qrPrimitive, xs, ds, p, n),
 })
 
 /** Result of {@link qr}. */

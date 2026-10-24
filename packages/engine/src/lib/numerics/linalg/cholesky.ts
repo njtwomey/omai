@@ -2,6 +2,7 @@ import { WhiteboxError } from '../../base/index.ts'
 import {
   add,
   arg,
+  batchLeading,
   bind1,
   concreteOrThrow,
   definePrimitive,
@@ -66,6 +67,8 @@ const choleskyPrimitive: Primitive<null> = definePrimitive<null>({
     const x1 = lowerSolve(lv, p, true)
     return [sym(mT(lowerSolve(lv, mT(x1), true)))]
   },
+  // Factorisations and solves already map over leading batch axes.
+  batch: (xs, ds, p, n) => batchLeading(choleskyPrimitive, xs, ds, p, n),
 })
 
 /**

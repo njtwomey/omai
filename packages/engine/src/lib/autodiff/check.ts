@@ -4,13 +4,16 @@ import {
   asTensor,
   fromStorage,
   isTensor,
+  mul,
   sizeOf,
+  stack,
   type Tensor,
   type TensorLike,
   toFlat,
   type Value,
 } from '../tensor/index.ts'
 import { jvp, vjp } from './transforms.ts'
+import { vmap } from './vmap.ts'
 
 function concrete(x: Value, where: string): Tensor {
   if (!isTensor(x)) throw new WhiteboxError('not-differentiable', `${where} needs concrete values`)
@@ -74,6 +77,114 @@ export interface CheckOptions {
   readonly key?: Key
   /** Indices of inputs to differentiate with respect to (default: every float input). */
   readonly wrt?: readonly number[]
+  /** Also check `vmap` against a loop over a small batch (default true). */
+  readonly vmap?: boolean
+}
+
+// Collects comparisons against a reference with one tolerance, tracking the largest errors.
+function comparer(rtol: number, atol: number) {
+  const failures: string[] = []
+  let maxAbs = 0
+  let maxRel = 0
+  const compare = (what: string, got: number, want: number): void => {
+    const err = Math.abs(got - want)
+    const rel = err / Math.max(Math.abs(want), 1e-12)
+    if (Number.isFinite(err)) {
+      maxAbs = Math.max(maxAbs, err)
+      maxRel = Math.max(maxRel, rel)
+    }
+    if (!(err <= atol + rtol * Math.abs(want)) && !(Number.isNaN(got) && Number.isNaN(want))) {
+      failures.push(`${what}: got ${got}, expected ${want}`)
+    }
+  }
+  const report = (): CheckReport => ({
+    passed: failures.length === 0,
+    maxAbsError: maxAbs,
+    maxRelError: maxRel,
+    failures,
+  })
+  return { compare, failures, report }
+}
+
+// Scales of the examples in the vmap check: scaling keeps every structural property of the point (symmetry, definiteness,
+// signs, zero patterns), so a valid input stays valid, while the examples still differ.
+const BATCH_SCALES = [1, 1 + 1e-3, 1 - 2e-3]
+
+function vmapAgainstLoop(
+  f: (...xs: Value[]) => Value,
+  xs: readonly Tensor[],
+  wrt: readonly number[],
+  axis: number,
+  failures: string[],
+): void {
+  const examples = BATCH_SCALES.map((c) => xs.map((x, i) => (wrt.includes(i) ? mul(x, c) : x)))
+  let want: Tensor
+  try {
+    want = concrete(stack(examples.map((args) => f(...args))), 'checkPrimitive')
+  } catch {
+    // The function cannot be evaluated at the scaled points, so there is nothing to compare against.
+    return
+  }
+  const args = xs.map((x, i) =>
+    wrt.includes(i)
+      ? stack(
+          examples.map((e) => e[i] as Value),
+          axis,
+        )
+      : x,
+  )
+  const inAxes = xs.map((_, i) => (wrt.includes(i) ? axis : null))
+  let got: Tensor
+  try {
+    got = concrete(vmap(f, inAxes)(...args), 'checkPrimitive')
+  } catch (e) {
+    failures.push(`vmap (batch axis ${axis}) threw: ${e instanceof Error ? e.message : String(e)}`)
+    return
+  }
+  if (got.shape.join(',') !== want.shape.join(',')) {
+    failures.push(`vmap (batch axis ${axis}): shape [${got.shape.join(', ')}], expected [${want.shape.join(', ')}]`)
+    return
+  }
+  const g = toFlat(got)
+  const w = toFlat(want)
+  for (let k = 0; k < w.length; k++) {
+    const a = g[k] ?? Number.NaN
+    const b = w[k] ?? Number.NaN
+    const close = Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b)) || (Number.isNaN(a) && Number.isNaN(b)) || a === b
+    if (!close) {
+      failures.push(`vmap (batch axis ${axis})[${k}]: got ${a}, loop gives ${b}`)
+      return
+    }
+  }
+}
+
+/**
+ * The dot-product (adjoint) test: for random directions `v` and `u`, the forward-mode product and the reverse-mode
+ * product must satisfy `<u, J v> = <J^T u, v>`. It links the two modes without any finite differences, so it holds to
+ * rounding error and catches a vjp that is not the transpose of its jvp.
+ *
+ * @param f - A function of one value.
+ * @param x - The point (a concrete float value).
+ * @param options - Tolerances and the key for the random directions.
+ * @returns A report with the discrepancy.
+ * @concept gradient-check
+ * @example
+ * ```ts
+ * import { dotProductTest } from 'whitebox-engine/autodiff'
+ * import { matmul, sin, tensor, type Value } from 'whitebox-engine/tensor'
+ * dotProductTest((x: Value) => sin(matmul(tensor([[1, 2], [3, 4]]), x)), tensor([0.1, 0.2])).passed // => true
+ * ```
+ */
+export function dotProductTest(f: (x: Value) => Value, x: TensorLike, options: CheckOptions = {}): CheckReport {
+  const point = concrete(asTensor(x), 'dotProductTest')
+  const baseKey = options.key ?? makeKey(0)
+  const { compare, report } = comparer(options.rtol ?? 1e-10, options.atol ?? 1e-12)
+  const v = normal(foldIn(baseKey, 2), point.shape)
+  const { out, tangent } = jvp(f, point as Value, v as Value)
+  const u = normal(foldIn(baseKey, 3), out.shape)
+  const back = concrete(vjp(f, point as Value).pullback(u), 'dotProductTest')
+  compare('<u, J v> against <J^T u, v>', dotFlat(u, tangent), dotFlat(back, v))
+  return report()
 }
 
 /**
@@ -83,11 +194,13 @@ export interface CheckOptions {
  * 1. the reverse-mode derivative against central finite differences of `<g, f(x)>` for a random cotangent `g`;
  * 2. the forward-mode derivative against finite differences along a random tangent;
  * 3. the dot-product test `<g, J t> = <J^T g, t>` linking the two;
- * 4. the inputs are not mutated.
+ * 4. `vmap` against a loop over a small batch of scaled copies of the point, batched on the first and on the last
+ *    axis (this exercises the batch rules, or the per-example fallback);
+ * 5. the inputs are not mutated.
  *
  * @param f - A function of several values returning one value.
  * @param inputs - The point (concrete float values for the differentiated inputs).
- * @param options - Step, tolerances, key for the random directions, and which inputs to check.
+ * @param options - Step, tolerances, key for the random directions, which inputs to check, and whether to check vmap.
  * @returns A report with the largest errors and any failures.
  * @concept gradient-check
  * @example
@@ -110,20 +223,7 @@ export function checkPrimitive(
   const before = xs.map((x) => Array.from(x.data))
   const wrt =
     options.wrt ?? xs.map((x, i) => (x.dtype === 'float64' || x.dtype === 'float32' ? i : -1)).filter((i) => i >= 0)
-  const failures: string[] = []
-  let maxAbs = 0
-  let maxRel = 0
-  const compare = (what: string, got: number, want: number): void => {
-    const err = Math.abs(got - want)
-    const rel = err / Math.max(Math.abs(want), 1e-12)
-    if (Number.isFinite(err)) {
-      maxAbs = Math.max(maxAbs, err)
-      maxRel = Math.max(maxRel, rel)
-    }
-    if (!(err <= atol + rtol * Math.abs(want)) && !(Number.isNaN(got) && Number.isNaN(want))) {
-      failures.push(`${what}: got ${got}, expected ${want}`)
-    }
-  }
+  const { compare, failures, report } = comparer(rtol, atol)
 
   const out = concrete(f(...xs), 'checkPrimitive')
   const g = normal(foldIn(baseKey, 1), out.shape)
@@ -140,9 +240,8 @@ export function checkPrimitive(
     const scalar = (v: Value): Value => fromStorage(new Float64Array([dotFlat(fOf(i)(v), g)]), [], 'float64')
     const gradFd = numericalGradient(scalar, xi, eps)
     const rev = toFlat(gradRev)
-    toFlat(gradFd).forEach((want, k) => {
-      compare(`vjp input ${i}[${k}]`, rev[k] ?? Number.NaN, want)
-    })
+    const fd = toFlat(gradFd)
+    for (let k = 0; k < fd.length; k++) compare(`vjp input ${i}[${k}]`, rev[k] ?? Number.NaN, fd[k] ?? Number.NaN)
 
     // 2. forward mode against finite differences along a random tangent
     const t = normal(foldIn(baseKey, 100 + i), xi.shape)
@@ -156,19 +255,26 @@ export function checkPrimitive(
       )
     const plus = toFlat(fOf(i)(step(1)))
     const minus = toFlat(fOf(i)(step(-1)))
-    toFlat(tangent).forEach((got, k) => {
-      compare(`jvp input ${i}[${k}]`, got, ((plus[k] ?? 0) - (minus[k] ?? 0)) / (2 * h))
-    })
+    const tan = toFlat(tangent)
+    for (let k = 0; k < tan.length; k++) {
+      compare(`jvp input ${i}[${k}]`, tan[k] ?? Number.NaN, ((plus[k] ?? 0) - (minus[k] ?? 0)) / (2 * h))
+    }
 
     // 3. dot-product test: <g, J t> = <J^T g, t>
     compare(`dot product input ${i}`, dotFlat(g, tangent), dotFlat(gradRev, t))
+  }
+
+  // 4. vmap against a loop, with the batch first and last
+  if (options.vmap !== false && wrt.length > 0) {
+    vmapAgainstLoop(f, xs, wrt, 0, failures)
+    vmapAgainstLoop(f, xs, wrt, -1, failures)
   }
 
   xs.forEach((x, i) => {
     if (Array.from(x.data).some((v, k) => !Object.is(v, before[i]?.[k]))) failures.push(`input ${i} was mutated`)
   })
   if (sizeOf(out.shape) === 0) failures.push('empty output: nothing was checked')
-  return { passed: failures.length === 0, maxAbsError: maxAbs, maxRelError: maxRel, failures }
+  return report()
 }
 
 /**

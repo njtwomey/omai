@@ -1,3 +1,4 @@
+import { batchElementwise } from '../batching.ts'
 import { type DType, isFloat } from '../dtype.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import type { TensorLike } from '../tensor.ts'
@@ -111,6 +112,7 @@ export const castPrimitive: Primitive<{ readonly dtype: DType }> = definePrimiti
     const from = arg(xs, 0).dtype
     return [g === null || !isFloat(from) || !isFloat(p.dtype) ? null : cast(g, from)]
   },
+  batch: (xs, ds, p) => batchElementwise(castPrimitive, xs, ds, p),
   describe: (p) => p.dtype,
 })
 
@@ -119,6 +121,7 @@ export const stopGradientPrimitive: Primitive<null> = definePrimitive<null>({
   name: 'stopGradient',
   abstractEval: (xs) => [arg(xs, 0)],
   impl: (xs) => [arg(xs, 0)],
+  batch: (xs, ds) => batchElementwise(stopGradientPrimitive, xs, ds, null),
   zeroDerivative: true,
 })
 

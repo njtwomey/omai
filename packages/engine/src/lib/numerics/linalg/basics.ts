@@ -3,6 +3,7 @@ import {
   abs,
   allclose,
   arg,
+  batchLeading,
   bind,
   definePrimitive,
   div,
@@ -69,6 +70,8 @@ const slogdetPrimitive: Primitive<null> = definePrimitive<null>({
     if (g === null || g === undefined) return [null]
     return [mul(expandDims(expandDims(g, -1), -1), mT(inv(a as Value)))]
   },
+  // Factorisations and solves already map over leading batch axes.
+  batch: (xs, ds, p, n) => batchLeading(slogdetPrimitive, xs, ds, p, n),
 })
 
 /** Result of {@link slogdet}. */

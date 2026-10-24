@@ -3,6 +3,7 @@ import {
   add,
   allocate,
   arg,
+  batchElementwise,
   bind1,
   broadcastShapes,
   definePrimitive,
@@ -85,6 +86,7 @@ export function special(
       const out = arg(outs, 0)
       return xs.map((x, i) => sumToShape(mul(g, (rules[i] as Partial)(xs, out)), x.shape))
     },
+    batch: (xs, ds) => batchElementwise(primitive, xs, ds, null),
   })
   return (...xs) => apply(promoteFloat(...xs))
 }

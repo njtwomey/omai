@@ -5,6 +5,15 @@ import { type Aval, isTraced, type Trace, type Traced, type Value } from './trac
 /** A cotangent or tangent that may be a symbolic zero (`null`), so zeros are never materialised needlessly. */
 export type MaybeZero = Value | null
 
+/** The batch axis of a value inside `vmap`: an axis of the underlying value, or `null` when every example shares it. */
+export type BatchDim = number | null
+
+/** What a batch rule returns: the batched outputs and the axis of each that indexes the examples. */
+export interface BatchResult {
+  readonly outputs: readonly Value[]
+  readonly dims: readonly BatchDim[]
+}
+
 /**
  * The definition of a primitive operation: everything other operations are built from.
  *
@@ -14,6 +23,9 @@ export type MaybeZero = Value | null
  *   with operations, so they are themselves differentiable (higher-order derivatives work).
  * - A primitive without `jvp`/`vjp` is not differentiable: differentiating through it raises `not-differentiable`,
  *   unless `zeroDerivative` says its derivative is zero everywhere it exists (comparisons, rounding, argmax).
+ * - `batch` applies the primitive to a whole batch at once inside `vmap`: it receives the underlying inputs, the batch
+ *   axis of each (`null` for inputs shared by every example; at least one is batched), the parameters and the batch
+ *   size. Without it, `vmap` falls back to a loop over the examples (slice, apply, stack), which is always correct.
  *
  * @concept primitives
  */
@@ -33,6 +45,7 @@ export interface Primitive<P> {
     params: P,
     outputs: readonly Value[],
   ) => readonly MaybeZero[]
+  readonly batch?: (inputs: readonly Value[], dims: readonly BatchDim[], params: P, size: number) => BatchResult
   readonly zeroDerivative?: boolean
   /** Describe the parameters for computation-graph labels. */
   readonly describe?: (params: P) => string
