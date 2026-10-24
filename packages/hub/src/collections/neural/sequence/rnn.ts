@@ -45,11 +45,12 @@ export const rnn: HubEntry = defineEntry({
     )
   },
   views: [
-    { record: 'decisionSurface', title: 'Hidden states of one sequence (units by position), step by step' },
-    { record: 'decisionSurface', index: 1, title: 'Its input bits, target parities and predictions', area: 'side' },
+    { record: 'valueGrids', title: 'Hidden states of one sequence (units by position), step by step' },
+    { record: 'valueGrids', index: 1, title: 'Its input bits, target parities and predictions', area: 'side' },
     { record: 'learningCurve', index: 2, title: 'Accuracy by position', area: 'side' },
     { record: 'learningCurve', title: 'Loss per epoch', area: 'below' },
     { record: 'learningCurve', index: 1, title: 'Token accuracy per epoch', area: 'below' },
+    { record: 'diagram', title: 'The tagger', area: 'below' },
   ],
   methods: [{ file: 'methods/neural/sequence/rnn.ts', name: 'recurrentTagger' }],
   references: [

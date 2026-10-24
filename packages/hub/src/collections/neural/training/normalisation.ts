@@ -29,7 +29,7 @@ export const normalisation: HubEntry = defineEntry({
       { key },
     ),
   views: [
-    ...TITLES.map((t, i): ViewSlot => ({ record: 'learningCurve', index: i, title: `${t}: loss per epoch` })),
+    { record: 'curves', title: 'Training loss per epoch: none, batch and layer normalisation' },
     { record: 'searchTrials', title: 'Final loss', area: 'side' },
     ...TITLES.map((t, i): ViewSlot => ({ record: 'decisionSurface', index: i, title: t, area: 'below' })),
   ],

@@ -22,6 +22,16 @@ export interface ClusteringSteps {
   readonly rows?: InputRows
   /** Pairwise constraints a constrained clustering was given (COP-k-means), and the ones its result breaks. */
   readonly constraints?: PairConstraintsRecord
+  /**
+   * Rows to mark, for methods that grow a labelled set round by round (self-training, label propagation, active
+   * learning): the rows labelled from the start, the rows added at each iteration (`added[t]`, queried or
+   * pseudo-labelled at iteration t; empty at 0), and what an added row is called ('queried', 'pseudo-labelled').
+   */
+  readonly marked?: {
+    readonly initial?: readonly number[]
+    readonly added?: readonly (readonly number[])[]
+    readonly name?: string
+  }
 }
 
 /** Must-link and cannot-link pairs of rows, with the pairs (indices into each list) the final assignment breaks. */
@@ -40,7 +50,7 @@ export interface PairConstraintsRecord {
  * @param steps - The record without its `kind`.
  * @returns The record.
  * @throws WhiteboxError `shape` when per-iteration columns differ in length, rows differ in count, or a constraint
- *   names a row (or a broken pair) that does not exist.
+ *   or a marked row names a row (or a broken pair) that does not exist.
  * @example
  * ```ts
  * import { clusteringSteps } from 'whitebox-engine/exposition'
@@ -57,6 +67,10 @@ export function clusteringSteps(steps: Omit<ClusteringSteps, 'kind'>): Clusterin
   if (steps.reachability !== undefined && steps.ordering !== undefined)
     sameLength('clusteringSteps', 'reachability', steps.reachability.length, steps.ordering.length)
   if (steps.rows !== undefined && t > 0) sameLength('clusteringSteps', 'rows', steps.rows.points.length, n)
+  if (steps.marked?.added !== undefined) sameLength('clusteringSteps', 'marked.added', steps.marked.added.length, t)
+  for (const i of [...(steps.marked?.initial ?? []), ...(steps.marked?.added ?? []).flat()])
+    if (!(Number.isInteger(i) && i >= 0 && i < n))
+      throw new WhiteboxError('shape', `clusteringSteps: marked row ${i} is outside 0..${n - 1}`)
   if (steps.constraints !== undefined) {
     const c = steps.constraints
     for (const [field, pairs] of [

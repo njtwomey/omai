@@ -11,8 +11,10 @@ describe('conjugate models', () => {
     expect(r.sequence.mle.at(-1)).toBeCloseTo(0.7, 12)
     const [curve] = recordsOf(r.exposition, 'learningCurve')
     expect(curve?.trainSpread?.length).toBe(11)
-    const [grid] = recordsOf(r.exposition, 'posteriorGrid')
-    expect(grid?.samples?.[0]?.length).toBe(200)
+    const [densities] = recordsOf(r.exposition, 'densities')
+    expect(densities?.curves.map((c) => c.role)).toEqual(['prior', 'posterior'])
+    expect(densities?.steps?.length).toBe(11)
+    expect(densities?.steps?.at(-1)?.density).toEqual(densities?.curves[1]?.density)
     const [table] = recordsOf(r.exposition, 'coefficientTable')
     const [lo, hi] = table?.intervals?.[1] ?? [0, 0]
     expect(lo).toBeLessThan(8 / 12)

@@ -15,6 +15,7 @@ export const sgdClassifier: HubEntry = defineEntry({
   views: [
     { record: 'learningCurve', title: 'Progressive and training error' },
     { record: 'decisionSurface', title: 'Decision surface', area: 'side' },
+    { record: 'curves', title: 'Coefficients as rows arrive', area: 'below' },
     { record: 'coefficientTable', title: 'Coefficients', area: 'below' },
   ],
   methods: [{ file: 'methods/linear/online.ts', name: 'sgdClassifier' }],

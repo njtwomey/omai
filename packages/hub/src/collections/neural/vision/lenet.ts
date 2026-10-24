@@ -2,9 +2,7 @@ import { take } from 'whitebox-engine/data'
 import { digits } from 'whitebox-engine/datasets'
 import type { Exposition } from 'whitebox-engine/exposition'
 import type { LearnData } from 'whitebox-engine/learn'
-import { lenet as lenetMethod, lenetNetwork } from 'whitebox-engine/methods/neural/vision'
-import { describe } from 'whitebox-engine/nn'
-import { key as makeKey } from 'whitebox-engine/random'
+import { lenet as lenetMethod } from 'whitebox-engine/methods/neural/vision'
 import { choice, dict, int, real, type SpaceValue } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
@@ -43,39 +41,18 @@ export const lenet: HubEntry = defineEntry({
   },
   views: [
     {
-      record: 'decisionSurface',
+      record: 'valueGrids',
       index: 1,
       title: 'The first convolution’s six feature maps of one digit, step by step',
     },
-    { record: 'decisionSurface', index: 0, title: 'The digit tapped', area: 'side' },
-    { record: 'decisionSurface', index: 3, title: 'The first convolution’s filters', area: 'side' },
-    { record: 'decisionSurface', index: 2, title: 'The second convolution’s twelve maps', area: 'side' },
+    { record: 'valueGrids', index: 0, title: 'The digit tapped', area: 'side' },
+    { record: 'valueGrids', index: 3, title: 'The first convolution’s filters', area: 'side' },
+    { record: 'valueGrids', index: 2, title: 'The second convolution’s twelve maps', area: 'side' },
     { record: 'learningCurve', title: 'Loss per epoch', area: 'below' },
     { record: 'learningCurve', index: 1, title: 'Accuracy per epoch', area: 'below' },
+    { record: 'confusionMatrix', title: 'Validation digits: true against predicted', area: 'below' },
     { record: 'coefficientTable', title: 'Validation accuracy per digit', area: 'below' },
-    {
-      record: 'coefficientTable',
-      view: 'StructureView',
-      props: (_, context) => ({
-        structure: describe(
-          lenetNetwork(
-            [1, 8, 8],
-            10,
-            {
-              channels: [6, 12],
-              kernelSize: 3,
-              hidden: 32,
-              activation: (context.params['activation'] ?? 'relu') as 'relu' | 'tanh',
-              pool: (context.params['pool'] ?? 'max') as 'max' | 'avg',
-            },
-            makeKey(0),
-          ),
-          [1, 64],
-        ),
-      }),
-      title: 'The architecture',
-      area: 'below',
-    },
+    { record: 'diagram', title: 'The architecture', area: 'below' },
   ],
   methods: [{ file: 'methods/neural/vision/lenet.ts', name: 'lenet' }],
   references: ['LeCun, Bottou, Bengio and Haffner (1998), Gradient-based learning applied to document recognition'],

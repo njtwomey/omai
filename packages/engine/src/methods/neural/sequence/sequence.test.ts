@@ -16,11 +16,13 @@ describe('recurrentTagger', () => {
     expect((loss?.train[0] ?? 0) > (loss?.train.at(-1) ?? 1)).toBe(true)
     expect(accuracy?.labels?.validation).toBe('validation token accuracy')
     expect(positions?.sizes).toEqual([1, 2, 3, 4, 5])
-    const [hidden, tokens] = recordsOf(r.exposition, 'decisionSurface')
+    const [hidden, tokens] = recordsOf(r.exposition, 'valueGrids')
     // Sixteen units by five positions; input, target and prediction by five positions.
-    expect([hidden?.values?.length, hidden?.values?.[0]?.length]).toEqual([16, 5])
-    expect([tokens?.values?.length, tokens?.values?.[0]?.length]).toEqual([3, 5])
+    const size = (g: typeof hidden) => [g?.grids[0]?.values.length, g?.grids[0]?.values[0]?.length]
+    expect(size(hidden)).toEqual([16, 5])
+    expect(size(tokens)).toEqual([3, 5])
     expect(hidden?.steps?.length).toBeLessThanOrEqual(12)
+    expect(recordsOf(r.exposition, 'diagram')).toHaveLength(1)
     expect(r.predict([[2, 3, 3, 2, 3]])[0]?.length).toBe(5)
   })
 

@@ -139,6 +139,9 @@ describe('backpropByHand', () => {
     expect(r.captions.length).toBe(r.frames.length)
     expect(r.structure.nodes.length).toBe(6)
     expect(recordsOf(r.exposition, 'coefficientTable')[0]?.names.length).toBe(9)
+    const [diagram] = recordsOf(r.exposition, 'diagram')
+    expect(diagram?.steps?.length).toBe(r.frames.length)
+    expect(diagram?.steps?.[0]?.caption).toBe(r.captions[0])
     const wide = backpropByHand({
       sizes: [2, 3, 2],
       activation: 'tanh',

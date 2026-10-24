@@ -1,5 +1,5 @@
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
-import type { DecisionSurface, Exposition } from '../../../lib/exposition/index.ts'
+import { type DecisionSurface, diagramRecord, type Exposition } from '../../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
   type ExplainedEstimator,
@@ -25,6 +25,7 @@ import { bool, choice, dict, int, real, type Space } from '../../../lib/space/in
 import { fromStorage, type Tensor, type TensorLike, tensor, toFlat } from '../../../lib/tensor/index.ts'
 import {
   buildMlp,
+  confusionOf,
   hiddenActivations,
   inputs,
   linearNames,
@@ -307,7 +308,8 @@ function fitMlp(
 
 /**
  * The exposition of a training run: the decision surface (or regression curve) of the fitted network, the loss and
- * score per epoch, and the last hidden layer's representation of the training rows at every snapshot.
+ * score per epoch, a classifier's confusion matrix through training, the architecture as a diagram, and the last
+ * hidden layer's representation of the training rows at every snapshot.
  */
 function mlpExposition(net: Sequential, training: Training, prep: Task, h: MlpHyper): Exposition[] {
   const [n = 0, d = 0] = prep.x.shape
@@ -317,6 +319,9 @@ function mlpExposition(net: Sequential, training: Training, prep: Task, h: MlpHy
   ]
   const score = scoreCurve(training, prep.output === 'identity' ? 'R²' : 'accuracy')
   if (score !== undefined) out.push(score)
+  const confusion = confusionOf(net, training, prep)
+  if (confusion !== undefined) out.push(confusion)
+  out.push(diagramRecord({ structure: describe(net, [1, d]) }))
   if (h.hiddenLayerSizes.length > 0) {
     // Every row in the data's order (so a page's labels line up), the first 500 of larger data.
     const limit = Math.min(n, 500)

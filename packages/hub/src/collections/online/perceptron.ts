@@ -15,6 +15,7 @@ export const perceptron: HubEntry = defineEntry({
   views: [
     { record: 'learningCurve', title: 'Mistakes as rows arrive' },
     { record: 'decisionSurface', title: 'Decision surface', area: 'side' },
+    { record: 'curves', title: 'Coefficients as rows arrive', area: 'below' },
   ],
   methods: [{ file: 'methods/linear/online.ts', name: 'onlinePerceptron' }],
   references: ['Rosenblatt (1958), The perceptron'],

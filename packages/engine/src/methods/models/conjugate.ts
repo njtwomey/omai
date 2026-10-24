@@ -4,10 +4,10 @@ import { WhiteboxError } from '../../lib/base/index.ts'
 import { beta, conjugatePosterior, type Distribution, gamma, normal } from '../../lib/dists/index.ts'
 import {
   coefficientTable,
+  densityCurves,
   type Explained,
   type Exposition,
   learningCurve,
-  posteriorGrid,
 } from '../../lib/exposition/index.ts'
 import { asTensor, item, type TensorLike, toFlat, type Value } from '../../lib/tensor/index.ts'
 
@@ -85,8 +85,8 @@ function prefixes(n: number, max: number): number[] {
  * A conjugate Bayesian model with its exact posterior (dists' `conjugatePosterior`): beta-Bernoulli and
  * beta-binomial, gamma-Poisson, gamma-exponential and normal-normal (known scale). Exposition: a `learningCurve` of
  * the posterior mean (with its standard deviation as the spread) and the maximum-likelihood estimate as the
- * observations arrive, a `posteriorGrid` of the posterior density over the parameter with the prior density as its
- * one sample line, and a coefficient table of the prior and posterior means with credible intervals.
+ * observations arrive, the prior and posterior `densities` over the parameter (with the credible interval, the
+ * estimates and the posterior after each prefix of the data, to play the update), and a coefficient table of the prior and posterior means with credible intervals.
  *
  * @param observations - The data `[n]`.
  * @param options - Likelihood, prior, known parameters, level, grid size and curve steps.
@@ -132,12 +132,26 @@ export function conjugateModel(observations: TensorLike, options: ConjugateModel
       trainSpread: sequence.sd,
       resource: 'observations',
       labels: { train: `posterior mean of ${parameter}`, validation: 'maximum likelihood' },
+      score: parameter,
     }),
-    posteriorGrid({
-      inputs: grid.map((g) => [g]),
-      mean: density(posterior),
-      variance: grid.map(() => 0),
-      samples: [density(prior)],
+    densityCurves({
+      parameter,
+      x: grid,
+      curves: [
+        { name: 'prior', density: density(prior), role: 'prior' },
+        { name: 'posterior', density: density(posterior), role: 'posterior' },
+      ],
+      interval: { lower: interval(posterior)[0], upper: interval(posterior)[1], level },
+      marks: [
+        { name: 'posterior mean', value: scalar(posterior.mean()) },
+        ...(xs.length === 0 ? [] : [{ name: 'maximum likelihood', value: sequence.mle.at(-1) ?? priorMean }]),
+      ],
+      steps: fits.map((d, t) => ({
+        observed: ns[t] ?? 0,
+        density: density(d),
+        interval: interval(d),
+        estimate: sequence.mean[t] ?? priorMean,
+      })),
     }),
     coefficientTable({
       names: [`prior ${parameter}`, `posterior ${parameter}`],

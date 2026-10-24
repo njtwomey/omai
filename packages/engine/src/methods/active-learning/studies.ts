@@ -140,6 +140,13 @@ export function activeLearningStudy(
     method: `active-learning/${options.strategy}`,
     assignments,
     objective: accuracy,
+    marked: {
+      initial,
+      added: labelled.map((count, r) =>
+        r === 0 ? [] : queried.slice((labelled[r - 1] ?? count) - initial.length, count - initial.length),
+      ),
+      name: 'queried',
+    },
   })
   const curve = learningCurve({
     sizes: labelled,

@@ -3,7 +3,12 @@
 // initialisation, normalisation and dropout, the predictions of a network under any parameters (for snapshots), and
 // the decision surface they draw.
 import { WhiteboxError } from '../../lib/base/index.ts'
-import type { DecisionSurface } from '../../lib/exposition/index.ts'
+import {
+  type ConfusionMatrix,
+  confusionCounts,
+  confusionMatrix,
+  type DecisionSurface,
+} from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
   decisionSurfaceOf,
@@ -195,6 +200,41 @@ export function fittedOf(net: Module, params: Params, buffers: Params, task: Tas
     ...(task.classifier ? { classes: task.classes } : {}),
     ...predictorOf(net, params, buffers, task.output, task.classes),
   }
+}
+
+/**
+ * The confusion matrix of a classifier network on its held-out rows (else its training rows): as fitted, and at up to
+ * `maxSteps` of the run's snapshots, evenly spread, so a page can play the diagonal filling in. Undefined for
+ * regression.
+ *
+ * @param net - The network.
+ * @param training - The run.
+ * @param task - The task.
+ * @param maxSteps - Most snapshots recounted (default 12).
+ * @returns The record, for classifiers.
+ */
+export function confusionOf(net: Module, training: Training, task: Task, maxSteps = 12): ConfusionMatrix | undefined {
+  if (!task.classifier) return undefined
+  const rows = task.validation ?? task.rows
+  const truth = toFlat(rows.y)
+  const k = task.classes.length
+  const indices = task.classes.map((_, i) => i)
+  const counts = (params: Params, buffers: Params): number[][] =>
+    confusionCounts(truth, toFlat(predictorOf(net, params, buffers, task.output, indices).predict(rows.x)), k)
+  const snaps = training.snapshots
+  const keep =
+    snaps.length <= maxSteps
+      ? snaps
+      : [...new Set(Array.from({ length: maxSteps }, (_, j) => Math.round((j * (snaps.length - 1)) / (maxSteps - 1))))]
+          .map((i) => snaps[i])
+          .filter((s) => s !== undefined)
+  return confusionMatrix({
+    classes: task.classNames ?? task.classes.map(String),
+    counts: counts(training.params, training.buffers),
+    split: task.validation === undefined ? 'training' : 'validation',
+    steps: keep.map((s) => ({ iteration: Math.round(s.epoch * 100) / 100, counts: counts(s.params, s.buffers) })),
+    stepName: 'epoch',
+  })
 }
 
 /**

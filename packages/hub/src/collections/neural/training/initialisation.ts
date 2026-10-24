@@ -1,10 +1,9 @@
 import { initialisationStudy as study } from 'whitebox-engine/methods/neural/training'
 import { choice, dict, int } from 'whitebox-engine/space'
-import { defineEntry, type HubEntry, type ViewSlot } from '../../../entry/entry.ts'
+import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 
 const SCHEMES = ['small', 'xavier', 'kaiming', 'large'] as const
-const TITLES = ['N(0, 0.01²)', 'Xavier', 'Kaiming', 'N(0, 1)']
 
 /** How the scale of the initial weights makes a deep network's signals vanish, survive or explode. */
 export const initialisation: HubEntry = defineEntry({
@@ -34,22 +33,10 @@ export const initialisation: HubEntry = defineEntry({
       { key },
     ),
   views: [
-    ...SCHEMES.map(
-      (_, i): ViewSlot => ({
-        record: 'learningCurve',
-        index: i,
-        title: `${TITLES[i]}: activation spread and gradient size by layer`,
-      }),
-    ),
+    { record: 'curves', index: 0, title: 'Activation spread by layer, every initialisation' },
+    { record: 'curves', index: 1, title: 'Weight-gradient size by layer', area: 'side' },
     { record: 'searchTrials', title: 'Final loss per initialisation', area: 'side' },
-    ...SCHEMES.map(
-      (_, i): ViewSlot => ({
-        record: 'learningCurve',
-        index: SCHEMES.length + i,
-        title: `${TITLES[i]}: loss per epoch`,
-        area: 'below',
-      }),
-    ),
+    { record: 'curves', index: 2, title: 'Training loss per epoch', area: 'below' },
   ],
   methods: [{ file: 'methods/neural/training/initialisation.ts', name: 'initialisationStudy' }],
   references: [

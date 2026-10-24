@@ -40,12 +40,21 @@ export interface LearningCurve {
   readonly kind: 'learningCurve'
   readonly sizes: readonly number[]
   readonly train: readonly number[]
+  /** The second column; empty (or equal to `train`) for a single series. */
   readonly validation: readonly number[]
   readonly trainSpread?: readonly number[]
   readonly validationSpread?: readonly number[]
+  /** What the sizes are (default 'training size'): 'epoch', 'games', 'observations'. */
   readonly resource?: string
   /** Series names when the two columns are not training and validation scores (e.g. each trial's score and the best so far). */
   readonly labels?: { readonly train?: string; readonly validation?: string }
+  /** What the scores are, for the y axis (default 'score'): 'loss', 'accuracy'. */
+  readonly score?: string
+  /**
+   * Read the second column against its own right-hand axis (default false), for two quantities on different scales
+   * (a running log loss and a running accuracy); each axis is then named after its column's label.
+   */
+  readonly secondaryAxis?: boolean
 }
 
 /**
@@ -53,20 +62,20 @@ export interface LearningCurve {
  *
  * @param curve - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when the scores do not match the sizes.
+ * @throws WhiteboxError `shape` when the scores do not match the sizes (an empty `validation` is a single series).
  * @example
  * ```ts
  * import { learningCurve } from 'whitebox-engine/exposition'
  * learningCurve({ sizes: [10, 20], train: [1, 0.95], validation: [0.6, 0.8] }).sizes // => [10, 20]
+ * learningCurve({ sizes: [1, 2], train: [0.9, 0.4], validation: [], score: 'loss' }).validation // => []
  * ```
  */
 export function learningCurve(curve: Omit<LearningCurve, 'kind'>): LearningCurve {
   const n = curve.sizes.length
   sameLength('learningCurve', 'train', curve.train.length, n)
-  sameLength('learningCurve', 'validation', curve.validation.length, n)
-  for (const field of ['trainSpread', 'validationSpread'] as const) {
-    const column = curve[field]
-    if (column !== undefined) sameLength('learningCurve', field, column.length, n)
-  }
+  if (curve.validation.length > 0) sameLength('learningCurve', 'validation', curve.validation.length, n)
+  if (curve.trainSpread !== undefined) sameLength('learningCurve', 'trainSpread', curve.trainSpread.length, n)
+  if (curve.validationSpread !== undefined)
+    sameLength('learningCurve', 'validationSpread', curve.validationSpread.length, curve.validation.length)
   return { kind: 'learningCurve', ...curve }
 }

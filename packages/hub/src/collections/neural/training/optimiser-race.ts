@@ -35,9 +35,7 @@ export const optimiserRace: HubEntry = defineEntry({
       { key },
     ),
   views: [
-    ...OPTIMISERS.map(
-      (_, i): ViewSlot => ({ record: 'learningCurve', index: i, title: `${TITLES[i]}: loss per epoch` }),
-    ),
+    { record: 'curves', title: 'The race: training loss per epoch, every optimiser from the same start' },
     { record: 'searchTrials', title: 'Final loss per optimiser', area: 'side' },
     ...OPTIMISERS.map(
       (_, i): ViewSlot => ({ record: 'decisionSurface', index: i, title: `${TITLES[i]}: the fit`, area: 'below' }),

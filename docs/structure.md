@@ -2804,6 +2804,17 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   and a caption, with metrics per step; mazes and frontiers, game trees with pruned branches, CSP boards, itemset
   lattices, cellular automata) and `PopulationSteps` (generations of a population: fitness, positions over the
   objective's surface with the search distribution, or the best program's curve over its data).
+- `CurveSet` (`curves`: several series on shared axes, each with an optional band, a group sharing its colour and an
+  optional right-hand axis; optimiser races, studies of schemes, rating trajectories with deviation bands,
+  coefficients against the samples seen), `DensityCurves` (`densities`: a prior against its posterior on one grid,
+  the credible interval and estimates, the posterior after each prefix of the data), `StateSequence` (state
+  posteriors over time with the Viterbi path, the true states and the observations), `DiagramRecord` (`diagram`: a
+  `Structure`, such as `describe(net)`, with optional overlays and captions to play over it), `ValueGrids` (feature
+  maps, filters, hidden states as cells, with steps through training) and `ConfusionMatrix` (counts per true and
+  predicted class, with steps through training; `confusionCounts` builds them).
+  `LearningCurve` names its axis by `score` and its series by `labels`, is one series when `validation` is empty,
+  and reads a second quantity on its own axis with `secondaryAxis`; `ClusteringSteps` marks the rows labelled at the
+  start and those added each round (`marked`: queried, pseudo-labelled).
   Methods return `{ ...result, exposition: Exposition[] }`; long-running ones also emit the records' steps as trace
   events, so views can play them.
 
@@ -4046,7 +4057,11 @@ Design rules:
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
-  (`BoardSteps` and `PopulationSteps` as players).
+  (`BoardSteps` and `PopulationSteps` as players), `curves.ts` (`CurveSet`, revealed along x as a player),
+  `densities.ts` (`DensityCurves`, the posterior played as the data arrive), `sequences.ts` (`StateSequence`: stacked
+  posteriors over strips of the Viterbi path and the truth), `cells.ts` (`ValueGrids` as blocky small multiples on one
+  colour range, `ConfusionMatrix`, both played through training), `diagrams.ts` (`DiagramRecord` as a scene with a
+  step's overlay) and `topics.ts` (a `ComponentsRecord` over words as each topic's top words).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile
@@ -4095,7 +4110,9 @@ Design rules:
   `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
   `stages.tsx`, `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
-  `BoardPlayer`, `PopulationPlayer`), each one figure in one
+  `BoardPlayer`, `PopulationPlayer`; `curves.tsx`: `CurvesView`; `densities.tsx`: `DensityView`; `sequences.tsx`:
+  `StateSequenceView`; `cells.tsx`: `ValueGridView`, `ConfusionMatrixView`; `diagrams.tsx`: `DiagramPlayer`, a
+  `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
 - `EnvView.tsx`: one consistent view of any environment's render, decorated, with room for controls.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,

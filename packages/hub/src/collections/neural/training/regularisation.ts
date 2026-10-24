@@ -33,14 +33,7 @@ export const regularisation: HubEntry = defineEntry({
     ...STRENGTHS.dropout.map(
       (v, i): ViewSlot => ({ record: 'decisionSurface', index: i, title: `strength ${v}: the fit`, area: 'side' }),
     ),
-    ...STRENGTHS.dropout.map(
-      (v, i): ViewSlot => ({
-        record: 'learningCurve',
-        index: i + 1,
-        title: `strength ${v}: training against validation loss`,
-        area: 'below',
-      }),
-    ),
+    { record: 'curves', title: 'Training (solid) against validation loss (dashed), every strength', area: 'below' },
   ],
   methods: [{ file: 'methods/neural/training/regularisation.ts', name: 'regularisationStudy' }],
   references: ['Srivastava et al. (2014), Dropout: a simple way to prevent neural networks from overfitting'],

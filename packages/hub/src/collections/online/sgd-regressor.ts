@@ -15,6 +15,7 @@ export const sgdRegressor: HubEntry = defineEntry({
   views: [
     { record: 'learningCurve', title: 'Progressive and training squared error' },
     { record: 'coefficientTable', title: 'Coefficients', area: 'side' },
+    { record: 'curves', title: 'Coefficients as rows arrive', area: 'below' },
   ],
   methods: [{ file: 'methods/linear/online.ts', name: 'sgdRegressor' }],
 })

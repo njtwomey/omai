@@ -15,8 +15,8 @@ import {
   taskOf,
   weightMask,
 } from '../_nets.ts'
-import { lossCurve, type TrainingProgress } from '../_records.ts'
-import { train } from '../_train.ts'
+import { lossCurve, studyCurves, type TrainingProgress } from '../_records.ts'
+import { type Training, train } from '../_train.ts'
 
 /** Options of {@link regularisationStudy}. */
 export interface RegularisationStudyOptions {
@@ -51,8 +51,9 @@ export interface RegularisationResult {
 /**
  * Regularisation against overfitting: the same over-sized network trained with each dropout rate (or weight decay),
  * scored on the training rows and on held-out rows. Exposition, in order: the validation curve (training and
- * validation score against the strength), one decision surface per strength (wiggly without, smoother with), and one
- * loss curve per strength (training against validation loss per epoch: the gap is the overfitting).
+ * validation score against the strength), one decision surface per strength (wiggly without, smoother with), one
+ * loss curve per strength (training against validation loss per epoch: the gap is the overfitting), and every
+ * strength's training and validation loss as one `curves` record.
  *
  * @param data - Classification (default) or regression data.
  * @param options - Kind, strengths, hold-out fraction, network, optimiser, epochs, batch size and progress.
@@ -83,6 +84,7 @@ export function regularisationStudy(
   const surfaces: Exposition[] = []
   const curves: Exposition[] = []
   const results: RegularisationResult[] = []
+  const runs: Training[] = []
   for (const [k, value] of values.entries()) {
     const net = buildMlp({
       sizes,
@@ -122,6 +124,7 @@ export function regularisationStudy(
     })
     surfaces.push(surfaceOf(net, training.params, training.buffers, task, options.resolution ?? 30, training))
     curves.push(lossCurve(training))
+    runs.push(training)
     results.push({
       value,
       trainScore: training.trainScore?.at(-1) ?? Number.NaN,
@@ -138,5 +141,9 @@ export function regularisationStudy(
     resource: kind === 'dropout' ? 'dropout rate' : 'weight decay',
     labels: { train: `training ${scoreName}`, validation: `validation ${scoreName}` },
   })
-  return { results, exposition: [validation, ...surfaces, ...curves] }
+  const all = studyCurves(
+    values.map((v) => `${kind === 'dropout' ? 'dropout' : 'decay'} ${v}`),
+    runs,
+  )
+  return { results, exposition: [validation, ...surfaces, ...curves, all] }
 }

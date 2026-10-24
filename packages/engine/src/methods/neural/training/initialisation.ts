@@ -1,6 +1,7 @@
 import { valueAndGrad } from '../../../lib/autodiff/index.ts'
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import {
+  curveSet,
   type Explained,
   type Exposition,
   learningCurve,
@@ -26,7 +27,7 @@ import {
   type Task,
   taskOf,
 } from '../_nets.ts'
-import { lossCurve } from '../_records.ts'
+import { lossCurve, spansDecades, studyCurves } from '../_records.ts'
 import { type Training, train } from '../_train.ts'
 
 /** Options shared by the initialisation and normalisation studies. */
@@ -118,7 +119,8 @@ function summary(method: string, parameter: string, names: readonly string[], ru
  * the spread of every hidden layer's activations and the size of every layer's weight gradient at initialisation
  * (vanishing or exploding with depth), then how the network trains from there. Exposition, in order: one per-layer
  * statistics curve per scheme (activation standard deviation and gradient norm against depth), one loss curve per
- * scheme, and the schemes as trials (final loss, with the loss per epoch).
+ * scheme, the schemes as trials (final loss, with the loss per epoch), then as `curves` records: every scheme's
+ * activation spread by layer, its gradient norm by layer, and its loss per epoch.
  *
  * @param data - Classification (default) or regression data.
  * @param options - Schemes, depth, width, activation, optimiser, learning rate, epochs and batch size.
@@ -177,9 +179,21 @@ export function initialisationStudy(
       score: training.trainScore?.at(-1) ?? Number.NaN,
     })
   }
+  // Every scheme on one chart per statistic: how the spread and the gradients change with depth.
+  const byLayer = (field: 'activationStd' | 'gradientNorm', yLabel: string) => {
+    const series = stats.map((s) => ({ name: s.scheme, x: s[field].map((_, l) => l + 1), y: [...s[field]] }))
+    return curveSet({ series, xLabel: 'layer', yLabel, yLog: spansDecades(series.flatMap((q) => q.y)) })
+  }
   return {
     schemes: stats,
-    exposition: [...layerCurves, ...runs.map(lossCurve), summary('initialisation', 'init', schemes, runs)],
+    exposition: [
+      ...layerCurves,
+      ...runs.map(lossCurve),
+      summary('initialisation', 'init', schemes, runs),
+      byLayer('activationStd', 'activation std'),
+      byLayer('gradientNorm', 'weight-gradient norm'),
+      studyCurves(schemes, runs),
+    ],
   }
 }
 
@@ -192,7 +206,8 @@ export interface NormalisationStudyOptions extends DeepNetStudyOptions {
 /**
  * Batch and layer normalisation against none on the same deep network from the same initial weights: how each trains
  * and what it fits. Exposition, in order: one decision surface per normalisation, one loss curve per normalisation,
- * and the normalisations as trials (final loss, with the loss per epoch).
+ * the normalisations as trials (final loss, with the loss per epoch), and every normalisation's loss per epoch as one
+ * `curves` record.
  *
  * @param data - Classification (default) or regression data.
  * @param options - Normalisations, depth, width, activation, optimiser, learning rate, epochs and batch size.
@@ -232,6 +247,11 @@ export function normalisationStudy(
       finalLoss: runs[i]?.evalLoss.at(-1) ?? Number.NaN,
       score: runs[i]?.trainScore?.at(-1) ?? Number.NaN,
     })),
-    exposition: [...surfaces, ...runs.map(lossCurve), summary('normalisation', 'norm', norms, runs)],
+    exposition: [
+      ...surfaces,
+      ...runs.map(lossCurve),
+      summary('normalisation', 'norm', norms, runs),
+      studyCurves(norms, runs),
+    ],
   }
 }

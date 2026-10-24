@@ -25,6 +25,7 @@ export const mlpClassifier: HubEntry = defineEntry({
     { record: 'decisionSurface', index: 1, title: 'Each first-layer unit over the input plane', area: 'side' },
     { record: 'learningCurve', title: 'Loss per epoch', area: 'below' },
     { record: 'learningCurve', index: 1, title: 'Accuracy per epoch', area: 'below' },
+    { record: 'confusionMatrix', title: 'True against predicted class, epoch by epoch', area: 'below' },
     mlpArchitecture(),
   ],
   methods: [{ file: 'methods/neural/foundations/mlp.ts', name: 'mlpClassifier' }],

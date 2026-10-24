@@ -1,13 +1,7 @@
 // TODO: Gaussian-mixture emissions (hmmlearn's GMMHMM), tied and spherical covariances, Baum-Welch through the
 // probprog EM engine on the HMM as a program, Bayesian (Dirichlet-prior) and variational HMMs.
 import { WhiteboxError } from '../../lib/base/index.ts'
-import {
-  coefficientTable,
-  decisionSurface,
-  type Exposition,
-  mixtureSteps,
-  posteriorGrid,
-} from '../../lib/exposition/index.ts'
+import { coefficientTable, type Exposition, mixtureSteps, stateSequence } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
   type ExplainedEstimator,
@@ -356,18 +350,27 @@ function stationaryOf(transmat: readonly (readonly number[])[], startprob: reado
 }
 
 /**
- * The exposition of a hidden Markov model on a sequence: the state posteriors over time as a heat map (a
- * `decisionSurface` over time and state, values P(z_t = k | x)) and the start and transition probabilities as a
+ * The exposition of a hidden Markov model on a sequence: the state posteriors over time with the Viterbi path (and the
+ * true states and the observations, when given) as a `stateSequence`, and the start and transition probabilities as a
  * coefficient table.
  *
  * @param p - The parameters.
  * @param x - A sequence (rows are time steps).
+ * @param options - The true states, the observations' symbol names and what a step is.
  * @returns The records.
  */
-export function hmmExposition(p: HmmParams, x: TensorLike): Exposition[] {
+export function hmmExposition(
+  p: HmmParams,
+  x: TensorLike,
+  options: {
+    readonly truth?: readonly number[]
+    readonly symbols?: readonly string[]
+    readonly stepName?: string
+  } = {},
+): Exposition[] {
   const m = sequenceView(x, 'hmm')
-  const fb = forwardBackward(hmmChain(hmmOf(p), observationsOf(m, p.emission)))
-  const K = p.startprob.length
+  const chain = hmmChain(hmmOf(p), observationsOf(m, p.emission))
+  const fb = forwardBackward(chain)
   const names: string[] = []
   const estimates: number[] = []
   for (const [k, v] of p.startprob.entries()) {
@@ -379,13 +382,24 @@ export function hmmExposition(p: HmmParams, x: TensorLike): Exposition[] {
       names.push(`${p.stateNames[i] ?? i} → ${p.stateNames[j] ?? j}`)
       estimates.push(v)
     }
+  // The observations when they are one number per step (symbols, or one-dimensional values).
+  const observed =
+    m.d === 1
+      ? {
+          values: Array.from(m.data),
+          name: p.emission === 'categorical' ? 'symbol' : 'value',
+          ...(options.symbols === undefined ? {} : { symbols: options.symbols }),
+        }
+      : undefined
   return [
-    decisionSurface({
-      features: ['time', 'state'],
-      x: Array.from({ length: m.n }, (_, t) => t),
-      y: Array.from({ length: K }, (_, k) => k),
-      values: Array.from({ length: K }, (_, k) => fb.posteriors.map((r) => r[k] ?? 0)),
-      classes: p.stateNames,
+    stateSequence({
+      method: p.emission === 'categorical' ? 'categorical-hmm' : 'gaussian-hmm',
+      states: p.stateNames,
+      posteriors: fb.posteriors,
+      decoded: viterbi(chain).path,
+      ...(options.truth === undefined ? {} : { truth: options.truth }),
+      ...(observed === undefined ? {} : { observations: observed }),
+      ...(options.stepName === undefined ? {} : { stepName: options.stepName }),
     }),
     coefficientTable({ names, estimates }),
   ]
@@ -591,8 +605,9 @@ export interface CasinoStudy {
 /**
  * The dishonest casino as a study: roll the casino's dice, then recover which die was used from the rolls alone,
  * with the true model or one learned by Baum-Welch from random starting emissions (its states ordered so that the
- * one favouring sixes is `loaded`). Exposition: a `posteriorGrid` of P(loaded | rolls) over time with the true dice as
- * the observations, then the records of {@link categoricalHMM} (when learned) or {@link hmmExposition}.
+ * one favouring sixes is `loaded`). Exposition: the records of {@link hmmExposition} on the rolls (a `stateSequence` of
+ * the posteriors with the Viterbi path, the true dice and the rolls; the transition table), then Baum-Welch's
+ * `mixtureSteps` when learned.
  *
  * @param options - Rolls, whether to learn, iterations and the key.
  * @returns The rolls, the dice, the decoding and its accuracy, with the exposition records.
@@ -625,8 +640,7 @@ export function casinoStudy(
       emissionprob: order.map((k) => e[k] ?? []),
       stateNames: ['fair', 'loaded'],
     }
-    records = swap ? hmmExposition(params, x) : f.exposition
-    if (swap) records = [...f.exposition.filter((r) => r.kind === 'mixtureSteps'), ...records]
+    records = f.exposition.filter((r) => r.kind === 'mixtureSteps')
   } else {
     params = {
       emission: 'categorical',
@@ -638,18 +652,16 @@ export function casinoStudy(
       converged: true,
       stateNames: ['fair', 'loaded'],
     }
-    records = hmmExposition(params, x)
+    records = []
   }
   const chain = hmmChain(hmmOf(params), rolls)
   const decoded = viterbi(chain).path
   const loaded = forwardBackward(chain).posteriors.map((r) => r[1] ?? 0)
   const accuracy = decoded.filter((s, t) => s === sample.states[t]).length / T
-  const grid = posteriorGrid({
-    inputs: loaded.map((_, t) => [t]),
-    mean: loaded,
-    variance: loaded.map(() => 0),
-    observed: { inputs: sample.states.map((_, t) => [t]), targets: sample.states },
-  })
+  records = [
+    ...hmmExposition(params, x, { truth: sample.states, symbols: ['1', '2', '3', '4', '5', '6'], stepName: 'roll' }),
+    ...records,
+  ]
   return {
     states: sample.states,
     rolls,
@@ -657,6 +669,6 @@ export function casinoStudy(
     loaded,
     accuracy,
     params,
-    exposition: [grid, ...records],
+    exposition: records,
   }
 }

@@ -179,6 +179,7 @@ export function rosenblattPerceptron(
             validation: cumulative,
             resource: 'epoch',
             labels: { train: 'mistakes in the epoch', validation: 'updates so far' },
+            secondaryAxis: true,
           }),
           coefficientTable({
             names: [

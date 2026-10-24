@@ -217,6 +217,13 @@ function fitSelfTraining(
       method: 'self-training',
       assignments: history.map((r) => r.codes),
       objective: labelled,
+      marked: {
+        initial: (history[0]?.codes ?? []).flatMap((c, i) => (c >= 0 ? [i] : [])),
+        added: history.map((r, t) =>
+          r.codes.flatMap((c, i) => (c >= 0 && (history[t - 1]?.codes[i] ?? 0) < 0 ? [i] : [])),
+        ),
+        name: 'pseudo-labelled',
+      },
     }),
     learningCurve({
       sizes: history.map((_, t) => t),
