@@ -3111,6 +3111,8 @@ built from: `trees`, `numerics/spatial`, `stats`, `svm/one-class.ts`
 
 `covariance/` (sklearn.covariance)
 built from: `stats/covariance.ts`, `optim`
+- `shrinkage.ts`: the empirical, shrunk, Ledoit-Wolf and OAS estimators of `stats/covariance.ts` as estimators
+  (Mahalanobis distances, Gaussian log likelihood).
 - `robust.ts`: minimum covariance determinant (fast MCD, traced).
 - `graphical-lasso.ts`: graphical lasso (traced), cross-validated selection, precision-matrix graphs as structures.
 ### 5.3 Learning paradigms
