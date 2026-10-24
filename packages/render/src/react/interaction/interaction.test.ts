@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { brushSelection } from '../../figure/linking.ts'
 import { alongAxis, chain, inBox, onCircle, onGraph, onGrid, onPolyline, onSegment } from './constraints.ts'
 import { chartProjection, linearProjection } from './projection.ts'
-import { nearestPoint, pointsInRect, rectBetween } from './selection.ts'
+import { nearestPoint, rectBetween } from './selection.ts'
 
 const projection = linearProjection({
   x: [0, 10],
@@ -55,11 +56,11 @@ describe('constraints', () => {
 })
 
 describe('selection', () => {
-  it('finds points in a dragged rectangle', () => {
+  it('gives a dragged rectangle as ranges that brushSelection reads', () => {
     const rect = rectBetween([2, 3], [0, 1])
-    expect(rect).toEqual({ x0: 0, x1: 2, y0: 1, y1: 3 })
+    expect(rect).toEqual({ x: [0, 2], y: [1, 3] })
     expect(
-      pointsInRect(
+      brushSelection(
         [
           [1, 2],
           [3, 2],
