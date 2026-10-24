@@ -43,6 +43,15 @@ export const SECTIONS: readonly Section[] = [
   },
   { id: 'interaction', title: 'Interaction', blurb: 'Dragging and adding points, constraints, probes and brushes.' },
   { id: 'animation', title: 'Animation', blurb: 'The player: precomputed timelines and live algorithms.' },
-  { id: 'diagrams', title: 'Diagrams and structures', blurb: 'Graphical models, computation graphs, trees, automata.' },
-  { id: 'worlds', title: 'Environments and worlds', blurb: 'Grid worlds, mazes and environment states.' },
+  {
+    id: 'diagrams',
+    title: 'Diagrams and structures',
+    blurb: 'Scenes, graph layouts, graphical models, computation graphs, architectures, trees and automata.',
+  },
+  {
+    id: 'worlds',
+    title: 'Environments and worlds',
+    blurb: 'Grid worlds, mazes, ray casting and environment episodes.',
+  },
+  { id: 'three-d', title: 'Three dimensions', blurb: 'Surfaces, curves and points in 3-D, orbited by dragging.' },
 ]
