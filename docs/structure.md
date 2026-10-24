@@ -3128,6 +3128,7 @@ built from: `stats/covariance.ts`, `optim`
 built from: `learn`, `graph`, `svm`, `optim`
 - `self-training.ts`: self-training, co-training, tri-training.
 - `graph-based.ts`: label propagation, label spreading, harmonic functions.
+- `labels.ts`: the unlabelled marker (-1), stratified label hiding for demos, semi-supervised label codes.
 - `margin-based.ts`: transductive SVMs, Laplacian regularised least squares and SVMs, entropy minimisation.
 
 `weak-supervision/` (Snorkel, cleanlab)
