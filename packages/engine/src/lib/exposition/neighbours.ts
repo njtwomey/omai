@@ -1,4 +1,5 @@
 import { rowsOf, sameLength } from './_check.ts'
+import type { InputRows } from './rows.ts'
 
 /** The neighbours found for each query point (k-NN, radius neighbours, LOF). */
 export interface NeighbourRecord {
@@ -7,6 +8,10 @@ export interface NeighbourRecord {
   readonly indices: readonly (readonly number[])[]
   readonly distances: readonly (readonly number[])[]
   readonly metric: string
+  /** The training rows the indices point into (two coordinates each, with any classes), when the data is small. */
+  readonly rows?: InputRows
+  /** The query rows (same coordinates), when they are not the training rows themselves (query q is row q). */
+  readonly queries?: readonly (readonly number[])[]
 }
 
 /**
@@ -36,6 +41,10 @@ export interface LikelihoodTable {
   readonly logPriors: readonly number[]
   /** contributions[c][f]: the log-likelihood contribution of feature f to class c (for one query, or averaged). */
   readonly contributions: readonly (readonly number[])[]
+  /** What the contributions are for: one query row (its index when known) or the average over rows. */
+  readonly scope?:
+    | { readonly kind: 'query'; readonly row?: number }
+    | { readonly kind: 'average'; readonly rows: number }
 }
 
 /**

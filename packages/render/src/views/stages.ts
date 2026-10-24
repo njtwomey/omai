@@ -1,5 +1,5 @@
 import type { EChartsOption } from 'echarts'
-import type { EnsembleStages, PipelineStages } from 'whitebox-engine/exposition'
+import { type DecisionSurface, type EnsembleStages, type PipelineStages, surfaceAt } from 'whitebox-engine/exposition'
 import { arrow, group, line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'whitebox-engine/scene'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -10,16 +10,18 @@ import { type PointSet, points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { formatNumber } from '../theme/format.ts'
 import { short, type ViewFrames, type ViewOptions, viewFigure } from './_view.ts'
-import { classIndices, type Rows } from './surfaces.ts'
+import { classIndices, decisionSurfaceLayers, type Rows, surfaceAxes } from './surfaces.ts'
 
 /** Options of {@link ensembleFrames}. */
 export interface EnsembleViewOptions extends ViewOptions {
-  /** The training rows, to draw what each stage's member was fitted to (sample weights or residuals) over them. */
+  /** Training rows to draw instead of the record's, to show what each stage's member was fitted to over them. */
   readonly points?: Rows
   readonly labels?: readonly (number | string)[]
   readonly columns?: readonly [number, number]
-  /** The y label of the stage scores (default 'score'; a boosting loss reads better as 'training loss'). */
+  /** The y label of the stage scores (default the record's score name, else 'score'). */
   readonly scoreLabel?: string
+  /** A decision surface to draw instead of the record's. */
+  readonly surface?: DecisionSurface
 }
 
 /** Whether a stage's targets are sample weights (non-negative, summing to about one) rather than residuals. */
@@ -30,24 +32,36 @@ function areWeights(targets: readonly number[]): boolean {
 
 /**
  * An ensemble built stage by stage as frames for a player: the training (and validation or out-of-bag) score after each
- * stage with the current stage marked, the members' weights with the current one highlighted, and, given the training
- * rows, what the current member was fitted to: AdaBoost's sample weights as point sizes, gradient boosting's residuals
- * as colours.
+ * stage with the current stage marked, the members' weights with the current one highlighted, and the model so far:
+ * when the record carries its decision surface through the stages, the regions after each recorded stage with the rows
+ * sized by what the newest member was fitted to (AdaBoost's sample weights, boosting's residuals) and the misclassified
+ * ones ringed; else, given the training rows, the sample weights as point sizes or the residuals as colours.
  *
  * @param stages - The record.
- * @param options - Mode, figure, training rows, labels and columns, and the score label.
+ * @param options - Mode, figure, training rows, labels and columns, the score label and a surface.
  * @returns The frames.
  */
 export function ensembleFrames(stages: EnsembleStages, options: EnsembleViewOptions = {}): ViewFrames {
-  const rows = options.points
-  const withRows = rows !== undefined && stages.targets !== undefined
+  const surface = options.surface ?? stages.surface
+  const recorded = surface?.steps !== undefined && surface.steps.length > 1 ? surface.steps : undefined
+  const rows = options.points ?? surface?.rows?.points
+  const withSurface = surface !== undefined && surface.y.length >= 2 && rows !== undefined
+  const withRows = withSurface || (rows !== undefined && stages.targets !== undefined)
   const fig = viewFigure(options, { aspect: withRows ? 1.75 : 1.6 })
   const mode = fig.mode
-  const count = stages.trainScores.length
+  const total = stages.trainScores.length
+  const count = recorded?.length ?? total
+  // The member index (0-based) a frame shows: the recorded step's stage count, or the frame itself.
+  const stageOf = (frame: number): number => {
+    const f = Math.min(Math.max(frame, 0), count - 1)
+    return recorded === undefined ? f : Math.min(Math.max((recorded[f]?.iteration ?? 1) - 1, 0), total - 1)
+  }
   const x = stages.trainScores.map((_, i) => i + 1)
   const constant = stages.weights.every((w) => w === stages.weights[0])
+  const scoreLabel = options.scoreLabel ?? stages.scoreName ?? 'score'
   const option = (frame: number): EChartsOption => {
-    const t = Math.min(Math.max(frame, 0), count - 1)
+    const f = Math.min(Math.max(frame, 0), count - 1)
+    const t = stageOf(f)
     const scoreLayers: Layer[] = [
       lines(
         [
@@ -63,7 +77,7 @@ export function ensembleFrames(stages: EnsembleStages, options: EnsembleViewOpti
     const panels: Record<string, Panel> = {
       scores: {
         layers: scoreLayers,
-        options: { x: { label: 'stage' }, y: { label: options.scoreLabel ?? 'score' } },
+        options: { x: { label: 'stage' }, y: { label: scoreLabel } },
       },
     }
     if (!constant)
@@ -78,9 +92,34 @@ export function ensembleFrames(stages: EnsembleStages, options: EnsembleViewOpti
             { mode, stacked: true },
           ),
         ],
-        options: { x: { label: 'member', show: count <= 30 }, y: { label: 'member weight' } },
+        options: { x: { label: 'member', show: total <= 30 }, y: { label: 'member weight' } },
       }
-    if (withRows) {
+    if (withSurface && surface !== undefined) {
+      const step = recorded?.[f]
+      const at = surfaceAt(surface, f)
+      const {
+        layers,
+        x: xa,
+        y: ya,
+      } = decisionSurfaceLayers(at, {
+        mode,
+        ...(options.points === undefined ? {} : { points: options.points }),
+        ...(options.labels === undefined ? {} : { labels: options.labels }),
+        ...(options.columns === undefined ? {} : { columns: options.columns }),
+        ...(step?.highlight === undefined ? {} : { highlight: step.highlight }),
+        ...(step?.rowWeights === undefined ? {} : { rowWeights: step.rowWeights }),
+      })
+      const wrong = step?.highlight?.length
+      panels['rows'] = {
+        layers,
+        options: {
+          ...surfaceAxes(surface, { x: xa, y: ya }),
+          title: `after ${t + 1} member${t === 0 ? '' : 's'}${
+            wrong === undefined ? '' : ` · ${wrong} ${surface.highlightName ?? 'highlighted'}`
+          }`,
+        },
+      }
+    } else if (withRows && rows !== undefined) {
       const target = stages.targets?.[t] ?? []
       const columns = options.columns ?? [0, 1]
       const weights = areWeights(target)
@@ -135,11 +174,14 @@ export function ensembleFrames(stages: EnsembleStages, options: EnsembleViewOpti
           heightRatios: right.map((id) => (id === 'scores' ? 2 : 1)),
           cells: right.map((id, r) => ({ id, row: r, col: 0 })),
         })
-    return subplots(grid, panels, { figure: fig, tooltip: 'item' })
+    return subplots(grid, panels, { figure: fig, tooltip: 'item', ...(withSurface ? { legend: false } : {}) })
   }
   return {
     count,
-    label: (f) => `stage ${f + 1}/${count} · ${short(stages.trainScores[f] ?? 0)}`,
+    label: (f) => {
+      const t = stageOf(f)
+      return `stage ${t + 1}/${total} · ${short(stages.trainScores[t] ?? 0)}`
+    },
     option,
   }
 }

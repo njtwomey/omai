@@ -39,7 +39,7 @@ export default function DendrogramRecipe(): ReactNode {
         />
         <NumberField label="clusters" value={clusters} onChange={setClusters} min={1} max={12} integer />
       </ControlPanel>
-      {steps !== undefined && <DendrogramView record={steps} points={rows} clusters={clusters} />}
+      {steps !== undefined && <DendrogramView record={steps} clusters={clusters} />}
     </div>
   )
 }

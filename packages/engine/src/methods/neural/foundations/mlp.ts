@@ -1,31 +1,15 @@
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
-import type { DecisionSurface, Exposition } from '../../../lib/exposition/index.ts'
+import type { Exposition } from '../../../lib/exposition/index.ts'
 import {
-  classNamesOf,
-  decisionSurfaceOf,
   defineExplainedEstimator,
   type ExplainedEstimator,
   ExplainedEstimatorClass,
   type ExplainedFitted,
-  encodeLabels,
   type FitOptions,
   type Fitted,
-  featureNamesOf,
   type LearnData,
-  matrixView,
 } from '../../../lib/learn/index.ts'
-import { binaryCrossEntropyWithLogits, crossEntropy, mse } from '../../../lib/losses/index.ts'
-import { accuracyScore, r2Score } from '../../../lib/metrics/index.ts'
-import {
-  type ActivationName,
-  activationModule,
-  describe,
-  Linear,
-  type Module,
-  type Params,
-  Sequential,
-  uniformInit,
-} from '../../../lib/nn/index.ts'
+import { type ActivationName, describe, type Params, type Sequential } from '../../../lib/nn/index.ts'
 import {
   adam,
   addDecayedWeights,
@@ -38,19 +22,20 @@ import {
 import { foldIn, type Key, key as makeKey } from '../../../lib/random/index.ts'
 import type { Structure } from '../../../lib/scene/index.ts'
 import { bool, choice, dict, int, real, type Space } from '../../../lib/space/index.ts'
+import { fromStorage, type Tensor, type TensorLike, tensor, toFlat } from '../../../lib/tensor/index.ts'
 import {
-  argmax,
-  asTensor,
-  fromStorage,
-  mul,
-  sigmoid,
-  softmax,
-  type Tensor,
-  type TensorLike,
-  tensor,
-  toFlat,
-  type Value,
-} from '../../../lib/tensor/index.ts'
+  buildMlp,
+  hiddenActivations,
+  inputs,
+  linearNames,
+  lossOf,
+  predictorOf,
+  scoreOf,
+  surfaceOf,
+  type Task,
+  taskOf,
+  weightMask,
+} from '../_nets.ts'
 import {
   lossAtSnapshots,
   lossCurve,
@@ -59,7 +44,7 @@ import {
   scoreCurve,
   type TrainingProgress,
 } from '../_records.ts'
-import { holdOut, type Rows, type Training, train } from '../_train.ts'
+import { type Training, train } from '../_train.ts'
 
 /** scikit-learn's hidden-layer activations. */
 export type MlpActivation = 'identity' | 'logistic' | 'tanh' | 'relu'
@@ -180,55 +165,12 @@ const ACTIVATIONS: Readonly<Record<MlpActivation, ActivationName | undefined>> =
  * @returns The module.
  */
 export function mlpNetwork(sizes: readonly number[], activation: MlpActivation, key: Key): Sequential {
-  const layers: Module[] = []
   const name = ACTIVATIONS[activation]
-  for (let l = 0; l + 1 < sizes.length; l++) {
-    const fanIn = sizes[l] ?? 1
-    const fanOut = sizes[l + 1] ?? 1
-    const lin = new Linear(fanIn, fanOut, { key: foldIn(key, l) })
-    const bound = Math.sqrt((activation === 'logistic' ? 2 : 6) / (fanIn + fanOut))
-    lin.setParams({
-      weight: uniformInit(foldIn(foldIn(key, l), 10), [fanOut, fanIn], -bound, bound),
-      bias: uniformInit(foldIn(foldIn(key, l), 11), [fanOut], -bound, bound),
-    })
-    layers.push(lin)
-    if (l + 2 < sizes.length && name !== undefined) layers.push(activationModule(name))
-  }
-  return new Sequential(...layers)
-}
-
-/** The linear layers' parameter names in a {@link mlpNetwork} (by child index). */
-function linearIndices(net: Sequential): string[] {
-  return net
-    .children()
-    .filter(([, m]) => m.kind === 'Linear')
-    .map(([name]) => name)
-}
-
-/** The weights-only mask of scikit-learn's L2 penalty. */
-function weightMask(net: Sequential): Params {
-  return Object.fromEntries(linearIndices(net).map((name) => [name, { weight: true, bias: false }]))
-}
-
-/** The activations after each hidden layer of a {@link mlpNetwork} under some parameters. */
-export function hiddenActivations(net: Sequential, params: Params, x: Value): Tensor[] {
-  const out: Tensor[] = []
-  let h = x
-  const children = net.children()
-  const linears = children.filter(([, m]) => m.kind === 'Linear').length
-  let seen = 0
-  for (const [i, [name, m]] of children.entries()) {
-    h = (m as Module).apply((params[name] ?? {}) as Params, h, { train: false })
-    if (m.kind === 'Linear') seen++
-    const next = children[i + 1]?.[1]
-    const endOfHidden = seen < linears && (next === undefined || next.kind === 'Linear')
-    if (endOfHidden) out.push(h as Tensor)
-  }
-  return out
+  return buildMlp({ sizes, ...(name === undefined ? {} : { activation: name }), init: 'sklearn', key })
 }
 
 function toLayers(net: Sequential, params: Params): MlpParams['layers'] {
-  return linearIndices(net).map((name) => {
+  return linearNames(net).map((name) => {
     const p = params[name] as { readonly weight: Tensor; readonly bias: Tensor }
     const [out = 0, inn = 0] = p.weight.shape
     const w = toFlat(p.weight)
@@ -240,64 +182,13 @@ function toLayers(net: Sequential, params: Params): MlpParams['layers'] {
 }
 
 function fromLayers(net: Sequential, layers: MlpParams['layers']): Params {
-  const names = linearIndices(net)
+  const names = linearNames(net)
   return Object.fromEntries(
     layers.map((l, i) => [
       names[i] ?? String(i),
       { weight: tensor(l.weight.map((r) => [...r])), bias: tensor([...l.bias]) },
     ]),
   )
-}
-
-/** The output of a network under some parameters mapped to probabilities or predictions. */
-function verbsFor(
-  net: Sequential,
-  params: Params,
-  output: MlpOutput,
-  classes: readonly number[],
-): Pick<MlpVerbs, 'predict' | 'predictProba'> {
-  const raw = (x: TensorLike): Value => net.apply(params, inputs(x), { train: false })
-  if (output === 'identity') {
-    return {
-      predict: (x) => {
-        const z = raw(x) as Tensor
-        return (z.shape[1] ?? 1) === 1
-          ? (fromStorage(Float64Array.from(toFlat(z)), [z.shape[0] ?? 0], 'float64') as Tensor)
-          : z
-      },
-    }
-  }
-  const proba = (x: TensorLike): Tensor => {
-    const z = raw(x)
-    if (output === 'softmax') return softmax(z, -1) as Tensor
-    const p = toFlat(sigmoid(z))
-    return tensor(p.map((v) => [1 - v, v]))
-  }
-  return {
-    predictProba: proba,
-    predict: (x) => {
-      const idx = toFlat(argmax(proba(x), -1))
-      return tensor(idx.map((i) => classes[i] ?? 0))
-    },
-  }
-}
-
-/** The fitted-like value of a snapshot, for drawing its decision surface. */
-function snapshotFitted(
-  net: Sequential,
-  params: Params,
-  output: MlpOutput,
-  classes: readonly number[],
-  nFeatures: number,
-): Fitted {
-  return {
-    estimator: 'mlp',
-    kind: output === 'identity' ? 'regressor' : 'classifier',
-    params: {},
-    nFeaturesIn: nFeatures,
-    ...(output === 'identity' ? {} : { classes }),
-    ...verbsFor(net, params, output, classes),
-  }
 }
 
 /** The optimiser of a solver, with scikit-learn's L2 penalty on the weights as a coupled decay. */
@@ -358,66 +249,6 @@ function hyperSpace(h: MlpHyper): Space {
   })
 }
 
-interface Prepared {
-  readonly rows: Rows
-  readonly validation?: Rows
-  readonly classes: readonly number[]
-  readonly output: MlpOutput
-  readonly nOut: number
-}
-
-function prepare(data: LearnData, h: MlpHyper, classifier: boolean, key: Key): Prepared {
-  const x = matrixView(data.x, 'mlp')
-  const xt = inputs(data.x)
-  if (data.y === undefined) throw new WhiteboxError('value', 'mlp: needs targets y')
-  let rows: Rows
-  let classes: number[] = []
-  let output: MlpOutput = 'identity'
-  let nOut = 1
-  if (classifier) {
-    const enc = encodeLabels(data.y, 'mlpClassifier', x.n)
-    classes = [...enc.classes]
-    if (classes.length < 2) throw new WhiteboxError('value', 'mlpClassifier: needs at least two classes')
-    output = classes.length === 2 ? 'logistic' : 'softmax'
-    nOut = classes.length === 2 ? 1 : classes.length
-    rows = { x: xt, y: tensor(Array.from(enc.codes)) }
-  } else {
-    const y = toFlat(asTensor(data.y))
-    nOut = Math.max(1, Math.round(y.length / x.n))
-    rows = { x: xt, y: fromStorage(Float64Array.from(y), [x.n, nOut], 'float64') as Tensor }
-  }
-  const split = h.earlyStopping || h.monitorValidation
-  if (!split) return { rows, classes, output, nOut }
-  const parts = holdOut(rows, h.validationFraction, foldIn(key, 7), classifier)
-  return { rows: parts.train, validation: parts.validation, classes, output, nOut }
-}
-
-function lossFor(output: MlpOutput): (p: Value, t: Value) => Value {
-  if (output === 'softmax') return (p, t) => crossEntropy(p, t)
-  if (output === 'logistic')
-    return (p, t) => binaryCrossEntropyWithLogits(p, (t as Tensor).shape.length === 1 ? reshapeColumn(t as Tensor) : t)
-  // scikit-learn's squared loss is half the mean squared error.
-  return (p, t) => mul(mse(p, t), 0.5)
-}
-
-/** Features as a float matrix tensor `[n, d]`. */
-function inputs(x: TensorLike): Tensor {
-  const m = matrixView(x, 'mlp')
-  return fromStorage(m.data, [m.n, m.d], 'float64') as Tensor
-}
-
-function reshapeColumn(t: Tensor): Tensor {
-  return fromStorage(Float64Array.from(toFlat(t)), [t.shape[0] ?? 0, 1], 'float64') as Tensor
-}
-
-function scoreFor(output: MlpOutput): (p: Tensor, t: Tensor) => number {
-  if (output === 'identity') return (p, t) => r2Score(t, p).estimate.value
-  return (p, t) => {
-    const pred = output === 'softmax' ? toFlat(argmax(p, -1)) : toFlat(p).map((z) => (z > 0 ? 1 : 0))
-    return accuracyScore(toFlat(t), pred).estimate.value
-  }
-}
-
 /** Fit an MLP (the shared body of the classifier and the regressor). */
 function fitMlp(
   data: LearnData,
@@ -427,7 +258,11 @@ function fitMlp(
 ): { params: MlpParams; exposition: Exposition[] } {
   const name = classifier ? 'mlpClassifier' : 'mlpRegressor'
   const key = options.key ?? makeKey(0)
-  const prep = prepare(data, h, classifier, key)
+  const prep = taskOf(data, classifier, {
+    who: name,
+    key,
+    ...(h.earlyStopping || h.monitorValidation ? { holdOut: h.validationFraction } : {}),
+  })
   const d = prep.rows.x.shape[1] ?? 1
   const sizes = [d, ...h.hiddenLayerSizes, prep.nOut]
   const net = mlpNetwork(sizes, h.activation, foldIn(key, 1))
@@ -439,8 +274,8 @@ function fitMlp(
     model: net,
     train: prep.rows,
     ...(prep.validation === undefined ? {} : { validation: prep.validation }),
-    loss: lossFor(prep.output),
-    score: scoreFor(prep.output),
+    loss: lossOf(prep.output),
+    score: scoreOf(prep.output),
     optimizer: opt,
     learningRate: lr,
     epochs: h.maxIter,
@@ -455,7 +290,7 @@ function fitMlp(
     fit: { ...options, key: foldIn(key, 2) },
     ...(h.onProgress === undefined
       ? {}
-      : { onEpoch: progressReporter(h.onProgress, (s) => [surfaceAt(data, net, prep, h, s.params)]) }),
+      : { onEpoch: progressReporter(h.onProgress, (s) => [surfaceOf(net, s.params, s.buffers, prep, h.resolution)]) }),
   })
   const params: MlpParams = {
     sizes,
@@ -466,40 +301,26 @@ function fitMlp(
     epochs: training.epochs.length,
     loss: training.trainLoss.at(-1) ?? Number.NaN,
   }
-  return { params, exposition: mlpExposition(data, net, training, prep, h) }
-}
-
-/** The decision surface (or regression curve) of the network under some parameters, over the training rows. */
-function surfaceAt(data: LearnData, net: Sequential, prep: Prepared, h: MlpHyper, params: Params): DecisionSurface {
-  const x = matrixView(data.x, 'mlp')
-  const classNames = prep.output === 'identity' ? undefined : classNamesOf(data, prep.classes)
-  return decisionSurfaceOf(snapshotFitted(net, params, prep.output, prep.classes, x.d), inputs(data.x), {
-    resolution: h.resolution,
-    featureNames: featureNamesOf(data, x.d),
-    ...(classNames === undefined ? {} : { classNames }),
-  })
+  return { params, exposition: mlpExposition(net, training, prep, h) }
 }
 
 /**
  * The exposition of a training run: the decision surface (or regression curve) of the fitted network, the loss and
  * score per epoch, and the last hidden layer's representation of the training rows at every snapshot.
  */
-function mlpExposition(
-  data: LearnData,
-  net: Sequential,
-  training: Training,
-  prep: Prepared,
-  h: MlpHyper,
-): Exposition[] {
-  const x = matrixView(data.x, 'mlp')
+function mlpExposition(net: Sequential, training: Training, prep: Task, h: MlpHyper): Exposition[] {
+  const [n = 0, d = 0] = prep.x.shape
   // TODO: once DecisionSurface records steps (the records branch), record the surface at every snapshot.
-  const out: Exposition[] = [surfaceAt(data, net, prep, h, training.params), lossCurve(training)]
+  const out: Exposition[] = [surfaceOf(net, training.params, training.buffers, prep, h.resolution), lossCurve(training)]
   const score = scoreCurve(training, prep.output === 'identity' ? 'R²' : 'accuracy')
   if (score !== undefined) out.push(score)
   if (h.hiddenLayerSizes.length > 0) {
-    const limit = Math.min(x.n, 500)
+    // Every row in the data's order (so a page's labels line up), the first 500 of larger data.
+    const limit = Math.min(n, 500)
     const sample =
-      limit === x.n ? inputs(data.x) : (fromStorage(x.data.slice(0, limit * x.d), [limit, x.d], 'float64') as Tensor)
+      limit === n
+        ? prep.x
+        : (fromStorage(Float64Array.from(toFlat(prep.x).slice(0, limit * d)), [limit, d], 'float64') as Tensor)
     out.push(
       representationSteps(
         `${net.kind} last hidden layer`,
@@ -518,7 +339,7 @@ function mlpVerbs(p: MlpParams): MlpVerbs {
   net.setParams(params)
   const nFeaturesIn = p.sizes[0] ?? 0
   return {
-    ...verbsFor(net, params, p.output, p.classes),
+    ...predictorOf(net, params, {}, p.output, p.classes),
     ...(p.output === 'identity' ? {} : { classes: p.classes }),
     nFeaturesIn,
     describe: () => describe(net, [1, nFeaturesIn]),

@@ -12,7 +12,7 @@ export const recipe: Recipe = {
   title: 'Clustering steps',
   question: 'How do I play back how a clustering method assigned the rows?',
   explain:
-    'Clustering methods return a `clusteringSteps` record: the assignment after every iteration, and the centres and objective for k-means. `ClusteringPlayer` plays it: the centres walk to their clusters while the inertia falls. DBSCAN’s steps grow each cluster from a core row; core rows are large, border rows small, noise a grey cross.',
+    'Clustering methods return a `clusteringSteps` record: the assignment after every iteration, the rows clustered, and the centres and objective for k-means. `ClusteringPlayer` draws from the record alone and plays it: the centres walk to their clusters, their nearest-centre regions shifting, while the inertia falls. DBSCAN’s steps grow each cluster from a core row; core rows are large, border rows small, noise a grey cross.',
 }
 
 // region
@@ -28,7 +28,6 @@ export default function ClusteringStepsRecipe(): ReactNode {
   const [k, setK] = useState(4)
   const [seed, setSeed] = useState(0)
   const [eps, setEps] = useState(0.18)
-  const rows = method === 'k-means' ? blobRows : moonRows
   const steps = useMemo(() => {
     const fitted =
       method === 'k-means'
@@ -49,7 +48,7 @@ export default function ClusteringStepsRecipe(): ReactNode {
           <NumberField label="radius ε" value={eps} onChange={setEps} min={0.03} max={1} log />
         )}
       </ControlPanel>
-      {steps !== undefined && <ClusteringPlayer record={steps} points={rows} />}
+      {steps !== undefined && <ClusteringPlayer record={steps} />}
     </div>
   )
 }

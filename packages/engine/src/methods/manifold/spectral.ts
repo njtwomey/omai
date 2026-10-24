@@ -80,8 +80,10 @@ export class SpectralEmbedding extends EstimatorClass<SpectralEmbeddingHyper, Fi
 /** Hyperparameters of diffusion maps. */
 export type DiffusionMapHyper = {
   readonly nComponents?: number
-  /** The kernel width: k(x, y) = exp(-|x - y|^2 / epsilon) (default the median squared distance). */
+  /** The kernel width: k(x, y) = exp(-|x - y|^2 / epsilon) (default `bandwidth` times the median squared distance). */
   readonly epsilon?: number
+  /** The kernel width as a multiple of the median squared distance, when `epsilon` is not given (default 1). */
+  readonly bandwidth?: number
   /** Diffusion time t (default 1). */
   readonly time?: number
   /** Density normalisation exponent (0 graph Laplacian, 1 Laplace-Beltrami; default 1). */
@@ -105,7 +107,17 @@ export function diffusionMap(hyper: DiffusionMapHyper = {}): Estimator<Diffusion
         dict({
           nComponents: int(1, 3, { default: h.nComponents ?? 2, label: 'dimensions' }),
           time: int(1, 20, { default: h.time ?? 1, label: 'diffusion time' }),
-          alpha: real(0, 1, { default: h.alpha ?? 1 }),
+          alpha: real(0, 1, {
+            default: h.alpha ?? 1,
+            label: 'density normalisation',
+            description: '0 for the graph Laplacian, 1 for the Laplace-Beltrami operator (density removed).',
+          }),
+          bandwidth: real(0.01, 10, {
+            default: h.bandwidth ?? 1,
+            log: true,
+            label: 'kernel width',
+            description: 'The Gaussian kernel width as a multiple of the median squared distance.',
+          }),
         }),
       fit: (data, h) => {
         const m = matrixView(data.x, 'diffusionMap', { minSamples: 3 })
@@ -114,7 +126,7 @@ export function diffusionMap(hyper: DiffusionMapHyper = {}): Estimator<Diffusion
         const norms = sq.map((r, i) => r[i] ?? 0)
         const d2 = sq.map((r, i) => r.map((v, j) => Math.max(0, (norms[i] ?? 0) + (norms[j] ?? 0) - 2 * v)))
         const sorted = d2.flatMap((r, i) => r.filter((_, j) => j > i)).sort((a, b) => a - b)
-        const eps = h.epsilon ?? sorted[Math.floor(sorted.length / 2)] ?? 1
+        const eps = h.epsilon ?? (h.bandwidth ?? 1) * (sorted[Math.floor(sorted.length / 2)] ?? 1)
         const kern = d2.map((r) => r.map((v) => Math.exp(-v / eps)))
         const alpha = h.alpha ?? 1
         const q = kern.map((r) => r.reduce((s, v) => s + v, 0) ** alpha)

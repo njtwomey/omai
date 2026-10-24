@@ -45,7 +45,7 @@ export default function AnomalyRecipe(): ReactNode {
         />
         <NumberField label="contamination" value={contamination} onChange={setContamination} min={0.01} max={0.3} />
       </ControlPanel>
-      {record !== undefined && <AnomalyView record={record} points={rows} />}
+      {record !== undefined && <AnomalyView record={record} />}
     </div>
   )
 }

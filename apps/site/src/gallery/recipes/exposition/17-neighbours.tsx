@@ -4,7 +4,6 @@ import { moons } from 'whitebox-engine/datasets'
 import { recordsOf } from 'whitebox-engine/exposition'
 import { kNeighborsClassifier } from 'whitebox-engine/methods/neighbours'
 import { key } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
 import { ControlPanel, NeighbourView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -17,8 +16,6 @@ export const recipe: Recipe = {
 
 // region
 const { data } = generate(moons, { knobs: { n: 150, noise: 0.2 }, key: key(12) })
-const rows = toArray(data.x) as number[][]
-const labels = Array.from(data.y.data)
 
 export default function NeighboursRecipe(): ReactNode {
   const [k, setK] = useState(7)
@@ -33,7 +30,7 @@ export default function NeighboursRecipe(): ReactNode {
         <NumberField label="neighbours k" value={k} onChange={setK} min={1} max={30} integer />
         <NumberField label="query row" value={query} onChange={setQuery} min={0} max={39} integer />
       </ControlPanel>
-      {record !== undefined && <NeighbourView record={record} points={rows} labels={labels} query={query} />}
+      {record !== undefined && <NeighbourView record={record} query={query} />}
     </div>
   )
 }

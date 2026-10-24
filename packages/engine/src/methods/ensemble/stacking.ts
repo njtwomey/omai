@@ -117,6 +117,8 @@ function votingEstimator(
             method: `${name} (${h.estimators.map(([n]) => n).join(', ')})`,
             weights,
             trainScores: stagedAverageScores(outputs, y, k, weights),
+            scoreName: classifier ? 'training accuracy' : 'training R²',
+            higherIsBetter: true,
           }),
         ]
         return { params, exposition }
@@ -292,6 +294,8 @@ function stackingEstimator(
               method: `${name} (${h.estimators.map(([n]) => n).join(', ')})`,
               weights: h.estimators.map(() => 1),
               trainScores: memberScores,
+              scoreName: classifier ? 'member training accuracy' : 'member training R²',
+              higherIsBetter: true,
             }),
             ...finalExposition.filter((r) => r.kind === 'coefficientTable'),
           ],
