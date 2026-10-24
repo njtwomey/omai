@@ -1420,6 +1420,14 @@
       "cases": 6
     },
     {
+      "fixture": "methods/discriminant/discriminant.json",
+      "source": "oracle/cases/methods/discriminant/discriminant.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "methods/ensemble/gradient_boosting.json",
       "source": "oracle/cases/methods/ensemble/gradient_boosting.py",
       "reference": {
@@ -1523,6 +1531,14 @@
         "numpy": "2.5.4"
       },
       "cases": 16
+    },
+    {
+      "fixture": "methods/naive_bayes/naive_bayes.json",
+      "source": "oracle/cases/methods/naive_bayes/naive_bayes.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
     },
     {
       "fixture": "methods/neighbours/centroid.json",
@@ -1642,6 +1658,14 @@
         "gymnasium": "1.4.0"
       },
       "cases": 186
+    },
+    {
+      "fixture": "methods/svm/svm.json",
+      "source": "oracle/cases/methods/svm/svm.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
     },
     {
       "fixture": "methods/timeseries/matrix_profile/algorithms.json",
