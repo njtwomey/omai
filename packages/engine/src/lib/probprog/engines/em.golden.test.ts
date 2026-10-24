@@ -39,6 +39,9 @@ describe('probprog/engines/em against scikit-learn', () => {
         const x = decode(c.inputs[0]) as Tensor
         const post = em(factorModel, x, { key: key(0), maxIter: 500, tol: 1e-9 })
         expect(post.diagnostics['eStep']).toBe('gaussian')
+        // The factors' posterior given the estimates (a multivariate normal over the site's flattened coordinates).
+        expect(post.mean('z').shape).toEqual([x.shape[0] ?? 0])
+        expect(post.sample(key(1), 3)['z']?.shape).toEqual([3, x.shape[0] ?? 0, 1])
         expectMatches(post.diagnostics['objective'] as number, c.output, c.rtol, c.atol, c.name)
         return
       }

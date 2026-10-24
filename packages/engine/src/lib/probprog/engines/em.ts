@@ -40,7 +40,7 @@ import { condition, enumerate, type ProgramTrace, type SampleSite, seed, substit
 import { definePosterior, type Posterior } from '../posterior.ts'
 import type { Model } from '../primitives.ts'
 import { type EngineRunOptions, feasibility, type InferenceEngine } from './engine.ts'
-import { gaussianCondition, linearGaussianForm } from './gaussian.ts'
+import { gaussianCondition, gaussianInference, linearGaussianForm } from './gaussian.ts'
 import { inferDiscrete } from './nuts.ts'
 
 /** A quantity EM estimates: a param site or (MAP-EM) a continuous latent site. */
@@ -741,6 +741,23 @@ export function em<D = void>(model: Model<D>, data: D, options: EmRunOptions & E
       }
       return res
     }
+  }
+  const constants = (n: number): Record<string, Tensor> => {
+    const res: Record<string, Tensor> = {}
+    for (const e of p.estimated) {
+      const v = values[e.name] as Value
+      res[e.name] = primalOf(broadcastTo(reshape(v, [1, ...v.shape]), [n, ...v.shape]))
+    }
+    return res
+  }
+  if (p.gaussian.length > 0) {
+    // The integrated sites' Gaussian posterior given the estimates.
+    const params: Record<string, Value> = {}
+    const fixed: Record<string, Value> = {}
+    for (const e of p.estimated) (e.kind === 'param' ? params : fixed)[e.name] = values[e.name] as Value
+    const g = gaussianInference(condition(substitute(model, params), fixed), data, { method: 'joint' })
+    for (const name of p.gaussian) marginals[name] = g.marginal(name)
+    sampler = (key, n) => ({ ...constants(n), ...g.sample(key, n) })
   }
   const pointMarginals: Record<string, Distribution> = {}
   for (const e of p.estimated) pointMarginals[e.name] = compose.deterministic(values[e.name] as Value)

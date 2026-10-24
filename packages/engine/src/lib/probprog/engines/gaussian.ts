@@ -410,6 +410,7 @@ function siteDraws(blocks: readonly GaussianBlock[], flat: Tensor, n: number): R
   return out
 }
 
+/** Per-site marginals: a normal for scalar sites, a multivariate normal over the flattened coordinates otherwise. */
 function marginalsOf(blocks: readonly GaussianBlock[], mean: Tensor, cov: Tensor): Record<string, Distribution> {
   const out: Record<string, Distribution> = {}
   let at = 0

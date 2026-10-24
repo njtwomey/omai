@@ -308,7 +308,8 @@ export function autoNormal<D = void>(model: Model<D>, options: AutoGuideOptions 
     const out: Record<string, Distribution> = {}
     for (const s of sitesOf(data)) {
       const base = normal(paramOf(params, `${s.name}_auto_loc`), paramOf(params, `${s.name}_auto_scale`))
-      out[s.name] = compose.transformed(compose.independent(base, s.unconstrainedEventDim), s.bijector)
+      const event = s.unconstrainedEventDim === 0 ? base : compose.independent(base, s.unconstrainedEventDim)
+      out[s.name] = s.support.kind === 'real' ? event : compose.transformed(event, s.bijector)
     }
     return out
   }

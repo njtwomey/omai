@@ -445,9 +445,9 @@ export function mask<D = void>(model: Model<D>, mask: boolean | TensorLike): Mod
  * import { doIntervention, sample, seed } from 'whitebox-engine/probprog'
  * import { normal } from 'whitebox-engine/dists'
  * import { key } from 'whitebox-engine/random'
- * import { item } from 'whitebox-engine/tensor'
+ * import { item, type Value } from 'whitebox-engine/tensor'
  * const model = () => { const z = sample('z', normal(0, 1)); return sample('y', normal(z, 1e-9)) }
- * Math.abs(item(seed(doIntervention(model, { z: 5 }), key(0))() as never) - 5) < 1e-6 // => true
+ * Math.abs(item(seed(doIntervention(model, { z: 5 }), key(0))() as Value) - 5) < 1e-6 // => true
  * ```
  */
 export function doIntervention<D = void>(model: Model<D>, data: Readonly<Record<string, TensorLike>>): Model<D> {

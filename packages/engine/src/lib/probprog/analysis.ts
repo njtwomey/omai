@@ -259,6 +259,14 @@ function parameterOf(d: Distribution, likelihood: string, parameter: string): Va
  * @param d - The likelihood distribution.
  * @param pair - The conjugate pair.
  * @returns The fixed parameters by name, or undefined when one is missing.
+ * @example
+ * ```ts
+ * import { fixedParameters } from 'whitebox-engine/probprog'
+ * import { conjugatePrior, normal } from 'whitebox-engine/dists'
+ * import { item } from 'whitebox-engine/tensor'
+ * const pair = conjugatePrior('normal', 'loc')
+ * pair === undefined ? 0 : item(fixedParameters(normal(0, 2), pair)?.['scale'] ?? 0) // => 2
+ * ```
  */
 export function fixedParameters(d: Distribution, pair: ConjugatePair): Record<string, Value> | undefined {
   const out: Record<string, Value> = {}
@@ -276,6 +284,15 @@ export function fixedParameters(d: Distribution, pair: ConjugatePair): Record<st
  * @param d - The likelihood distribution.
  * @param pair - The conjugate pair.
  * @returns The parameter's value, or undefined.
+ * @example
+ * ```ts
+ * import { pairParameter } from 'whitebox-engine/probprog'
+ * import { conjugatePrior, normal } from 'whitebox-engine/dists'
+ * import { item } from 'whitebox-engine/tensor'
+ * // The variance of a normal is the square of its scale.
+ * const pair = conjugatePrior('normal', 'variance')
+ * pair === undefined ? 0 : item(pairParameter(normal(0, 3), pair) ?? 0) // => 9
+ * ```
  */
 export function pairParameter(d: Distribution, pair: ConjugatePair): Value | undefined {
   return parameterOf(d, pair.likelihood, pair.parameter)

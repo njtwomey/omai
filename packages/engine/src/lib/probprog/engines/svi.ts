@@ -360,7 +360,7 @@ export function sviEngine(options: SviEngineOptions = {}): InferenceEngine {
  * @example
  * ```ts
  * import { finalElbo } from 'whitebox-engine/probprog'
- * finalElbo({ elbos: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] } as never) // => 10
+ * finalElbo({ elbos: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }) // => 10
  * ```
  */
 export function finalElbo(result: Pick<SviResult, 'elbos'>): number {
