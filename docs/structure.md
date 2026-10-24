@@ -1369,45 +1369,57 @@ representations are in `optim/sparse.ts`.
   zero-order hold, signal-to-quantisation-noise.
 - `fourier.ts`: DTFT evaluation, zero padding and frequency resolution, spectral leakage, Parseval checks, the analytic
   signal and Hilbert transform.
-- `windows.ts`: `getWindow` (boxcar, Hann, Hamming, Blackman, Blackman-Harris, Nuttall, flat top, Bartlett, Kaiser,
-  Gaussian, Tukey, cosine, DPSS), window metrics (main-lobe width, sidelobe level, ENBW).
-- `filters/fir.ts`: `firwin`, `firwin2`, `remez` (Parks-McClellan), `kaiserord`, `minimumPhase`.
-- `filters/iir.ts`: Butterworth, Chebyshev I and II, elliptic, Bessel, notch, peak, comb filters; `ba`, `zpk` and `sos`
-  outputs.
-- `filters/apply.ts`: `lfilter`, `sosfilt`, `filtfilt`, `sosfiltfilt`, initial conditions, `medfilt`, `savgolFilter`,
-  moving averages.
-- `filters/response.ts`: frequency response, group delay, phase delay, filter specification checks.
-- `multirate.ts`: decimation and interpolation, `resamplePoly`, `upfirdn`, polyphase decomposition, noble identities.
-- `filter-banks.ts`: DFT filter banks, quadrature-mirror and perfect-reconstruction filter banks, wavelet packets.
-- `spectral.ts`: periodogram, Welch, Bartlett, Blackman-Tukey, cross-spectral density, coherence, multitaper,
-  Lomb-Scargle (with false-alarm probabilities), spectral confidence intervals.
-- `parametric.ts`: Yule-Walker, Burg, AR spectra, Levinson-Durbin, MUSIC, ESPRIT, Prony.
-- `time-frequency.ts`: STFT and inverse, spectrogram, constant-Q transform, Wigner-Ville and pseudo variants,
-  reassignment, synchrosqueezing, instantaneous frequency, uncertainty-bound helpers.
-- `decompositions.ts`: EMD, EEMD, CEEMDAN, VMD, singular spectrum analysis.
-- `wavelets.ts`: continuous wavelet transform, DWT and inverse, multilevel decomposition, stationary wavelet transform,
-  families (Haar, Daubechies, Symlets, Coiflets, biorthogonal), threshold denoising.
+- `windows/` (inline): `cosine.ts` (general cosine and Hamming, boxcar, Hann, Hamming, Blackman, Blackman-Harris,
+  Nuttall, flat top), `shapes.ts` (Bartlett, triangular, Kaiser, Kaiser-Bessel-derived, Gaussian and general
+  Gaussian, Tukey, cosine, Parzen, Bohman, Bartlett-Hann, exponential, Lanczos), `dpss.ts` (Slepian tapers by Sturm
+  bisection and inverse iteration of the tridiagonal problem, concentration ratios), `get-window.ts` (`getWindow` by
+  name and parameters, as scipy), `metrics.ts` (ENBW, coherent gain, main-lobe width, sidelobe level).
+- `filters/` (inline): one filtering primitive (`_iir.ts`: A(z) y = B(z) x from rest, its jvp and vjp written in terms
+  of itself), and on top of it:
+  - `apply.ts`: `lfilter`, `lfilterZi`, `lfiltic`, `sosfilt`, `sosfiltZi`, `filtfilt` (pad and Gustafsson),
+    `sosfiltfilt`, `medfilt`, `savgolCoeffs`, `savgolFilter`, moving and exponential moving averages.
+  - `fir.ts`: `firwin`, `firwin2`, `remez` (Parks-McClellan), `kaiserord`, `kaiserBeta`, `kaiserAtten`,
+    `minimumPhase`.
+  - `prototypes.ts`: analogue prototypes (`buttap`, `cheb1ap`, `cheb2ap`, `ellipap`, `besselap`), frequency
+    transformations of zeros, poles and gain, the bilinear transform.
+  - `iir.ts`: `iirfilter`, Butterworth, Chebyshev I and II, elliptic, Bessel, notch, peak and comb filters; `ba`, `zpk`
+    and `sos` outputs.
+  - `order.ts`: order selection (`buttord`, `cheb1ord`, `cheb2ord`, `ellipord`) and `iirdesign` from a specification.
+  - `response.ts`: `sosfreqz`, `freqzZpk`, group delay, phase delay, frequency responses, specification checks.
+- `multirate.ts`: `upfirdn` (every extension mode), `resamplePoly`, `resample`, `decimate`, interpolation, down- and
+  upsampling, polyphase decomposition and recombination, filter expansion (noble identities).
+- `filter-banks.ts`: DFT analysis and synthesis banks, quadrature-mirror and perfect-reconstruction checks, power
+  complementarity, wavelet filter banks, wavelet packets.
+- `spectral.ts`: detrending, periodogram, Welch, Bartlett, Blackman-Tukey, cross-spectral density, coherence, adaptive
+  multitaper, Welch degrees of freedom, spectral confidence intervals.
+- `lomb-scargle.ts`: the Lomb-Scargle periodogram (as astropy) with amplitudes, false-alarm probabilities and levels.
+- `parametric.ts`: Levinson-Durbin, Yule-Walker, Burg, AR spectra, MUSIC, ESPRIT, Prony.
+- `time-frequency.ts`: STFT (scipy and librosa framing) and inverse, spectrogram, instantaneous phase and frequency,
+  time and frequency spreads, the time-bandwidth product.
+- `wigner.ts`: Wigner-Ville, pseudo and smoothed pseudo Wigner-Ville distributions.
+- `reassignment.ts`: reassigned spectrograms, synchrosqueezing and its inverse.
+- `constant-q.ts`: constant-Q frequencies, kernels and the transform (as librosa).
+- `decompositions.ts`: EMD, EEMD, CEEMDAN, VMD (a traced `Algorithm`), singular spectrum analysis.
+- `wavelets/` (inline): `families.ts` (Haar, Daubechies, Symlets, Coiflets, biorthogonal, reverse biorthogonal, discrete
+  Meyer and the continuous families, generated from pywt), `dwt.ts` (DWT and inverse, multilevel, 2-D), `swt.ts`
+  (stationary transform and inverse), `cwt.ts` (continuous transform, centre frequencies), `denoise.ts` (thresholds,
+  noise estimation, wavelet denoising as scikit-image).
 - `estimation.ts`: Wiener filtering (causal and non-causal), linear prediction and LPC, the matched filter.
 - `detection.ts`: energy and matched-filter detectors, CFAR, detector ROC curves.
 - `adaptive.ts`: LMS, NLMS, RLS, adaptive noise cancellation, traced tap weights.
 - `cepstrum.ts`: real and complex cepstra, liftering, cepstral pitch.
 - `peaks.ts`: `findPeaks` (height, prominence, distance, width), prominences, widths, zero crossings.
 - `similarity.ts`: dynamic time warping (with path and lower bounds), PAA, SAX, cross-correlation lag.
-- `matrix-profile/sliding.ts`: the shared machinery of matrix profiles (as STUMPY): rolling means and standard
-  deviations by Welford updates with periodic exact recomputation (and STUMPY's precision checks for near-constant
-  windows), sliding dot products QT by FFT (`fftConvolve` and overlap-add for long series) and by the O(1) diagonal
-  update, z-normalised and non-normalised distances from QT, exclusion zones, NaN and constant-subsequence handling.
-- `matrix-profile/mass.ts`: MASS distance profiles (v2 FFT, v3 chunked by overlap-add), the non-normalised variant,
-  `distanceProfile`.
-- `matrix-profile/algorithms.ts`: `stomp` (row order), `stamp` (anytime, random order, traced convergence), `scrimp`
-  (PreSCRIMP then SCRIMP++ diagonals), diagonal-order STOMP for AB-joins, left and right profiles and indices,
-  `stumpi` (incremental and streaming updates, egress), `aamp` (non-normalised), top-k profiles; each an `Algorithm`
-  with traced progress.
-- `matrix-profile/multidimensional.ts`: mSTAMP (k-dimensional profiles by sorted per-dimension distances), MDL-based
-  dimension selection, constrained (included and excluded) dimensions.
-- `matrix-profile/discovery.ts`: motifs and discords (top-k with exclusion zones, `motifs`, `match`), time-series chains
-  (anchored and all-chain sets, ATSC and ALLC), FLUSS and FLOSS semantic segmentation (corrected arc curve), snippets
-  (MPdist-based), consensus motifs (Ostinato), `mpdist`, pan matrix profiles over many window lengths (SKIMP order).
+- `sliding.ts`: the sliding-window building blocks of matrix profiles (as STUMPY): rolling means and standard
+  deviations by Welford updates with periodic exact recomputation, constancy (monotone deques) and finiteness of
+  windows, subsequence statistics, sliding dot products (direct for small products, FFT or overlap-add otherwise) and
+  the O(1) diagonal update, z-normalised distances from dot products (STUMPY's constant and NaN conventions),
+  non-normalised distance profiles, exclusion zones, z-normalisation. The matrix-profile methods are in
+  `methods/timeseries/matrix-profile/`.
+- `mass.ts`: MASS distance profiles (v2 by FFT, v3 chunked), the non-normalised variant, `distanceProfile` with the
+  trivial-match exclusion zone.
+- `image/correlate.ts`: `correlate1d`, `convolve1d`, `correlateNd`, `convolveNd` with scipy.ndimage boundary modes and
+  origins (the kernel of the image filters below).
 - `audio/scales.ts`: mel, Bark and ERB scales.
 - `audio/filterbanks.ts`: mel and gammatone filter banks.
 - `audio/features.ts`: mel spectrograms, MFCCs, spectral centroid, bandwidth, roll-off, flux and flatness, chroma,
@@ -2519,10 +2531,22 @@ built from: `stats`, `dynamics/filtering`, `optim`, `signal`, `metrics/forecasti
   segmentation compared against the true changepoints.
 - `forecasting.ts`: baselines (naive, seasonal naive, drift, mean), rolling-origin backtests, forecast reconciliation.
 - `classification.ts`: time-series classification (DTW k-NN, shapelets, ROCKET and MiniRocket).
-- `matrix-profile.ts`: matrix-profile studies on tunable data with planted ground truth: motif discovery, discords as
-  anomalies, semantic segmentation (FLUSS, FLOSS on streams), chains, snippets, multidimensional motifs with dimension
-  selection, and the anytime convergence of STAMP and SCRIMP against STOMP; timing and accuracy comparisons with the
-  FFT and diagonal paths. Oracle: stumpy.
+- `matrix-profile/` (inline; built from `lib/signal/sliding.ts` and `mass.ts`; oracle: stumpy):
+  - `algorithms.ts`: `stump` (diagonal traversal with the O(1) covariance update; self- and AB-joins, top-k, left and
+    right profiles; non-normalised AAMP p-norms), `stomp` (row order), `stamp` (anytime, random rows), `prescrump`
+    and `scrump` (SCRIMP++: PreSCRIMP seeding, random diagonals), `stumpiInit`/`stumpiUpdate` (incremental, with or
+    without egress); each iterative one also as an `Algorithm` with traced progress.
+  - `multidimensional.ts`: `mstump` (k-dimensional profiles by sorted per-dimension distances, included dimensions,
+    discords), `multiDistanceProfile`, `subspace`, `mdl` (MDL-based dimension selection).
+  - `discovery.ts`: `match`, `motifs`, `discords` (top-k with exclusion zones), time-series chains (`atsc`, `allc`).
+  - `segmentation.ts`: arc counts, the idealised arc curve (the exact expectation of STUMPY's random model), the
+    corrected arc curve, regime extraction, `fluss`, and streaming `flossInit`/`flossUpdate`/`flossAlgorithm`.
+  - `snippets.ts`: `mpdist`, `snippets` (MPdist-based), `ostinato` (consensus motifs).
+  - `pan.ts`: pan matrix profiles over many window lengths (`stimp`, breadth-first window order, display transforms).
+  - `studies.ts`: planted ground truth (`plantedSeries`), a discovery study (motif recall, discord and boundary
+    recovery), and the anytime convergence of STAMP and SCRIMP++ against the exact profile.
+    TODO: GPU and distributed variants (gpu_stump, stumped), `stimped`, non-normalised streaming (aampi) and
+    multidimensional non-normalised profiles (maamp), mSTUMP's excluded dimensions beyond include/discords.
 
 `text/` (nltk, spaCy-like pipelines)
 oracle: nltk, kenlm on small corpora

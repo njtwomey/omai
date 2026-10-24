@@ -6,7 +6,6 @@ import {
   add,
   concat,
   cScale,
-  flip,
   max,
   mean,
   min,

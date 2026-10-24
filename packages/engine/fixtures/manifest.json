@@ -621,6 +621,60 @@
       "cases": 186
     },
     {
+      "fixture": "methods/timeseries/matrix_profile/algorithms.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/algorithms.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 21
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/discovery.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/discovery.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/multidimensional.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/multidimensional.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/pan.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/pan.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/segmentation.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/segmentation.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "methods/timeseries/matrix_profile/snippets.json",
+      "source": "oracle/cases/methods/timeseries/matrix_profile/snippets.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "metrics/audio.json",
       "source": "oracle/cases/metrics/audio.py",
       "reference": {
@@ -2075,6 +2129,15 @@
         "librosa": "1.0.0"
       },
       "cases": 8
+    },
+    {
+      "fixture": "signal/sliding.json",
+      "source": "oracle/cases/signal/sliding.py",
+      "reference": {
+        "stumpy": "1.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 21
     },
     {
       "fixture": "signal/spectral.json",
