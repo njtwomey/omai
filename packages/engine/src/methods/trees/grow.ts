@@ -1,3 +1,4 @@
+// TODO: ID3, C4.5 (gain ratio, multiway splits) and CHAID for comparison with CART (classic.ts).
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { categorical, type Distribution, normal } from '../../lib/dists/index.ts'
 import { type Exposition, type SplitCandidate, type TreeNode, treeRecord } from '../../lib/exposition/index.ts'

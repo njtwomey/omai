@@ -19,7 +19,8 @@ import { kNearest, radiusNeighbours } from '../../lib/numerics/spatial/index.ts'
 import { choice, dict, int, real, type Space } from '../../lib/space/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
 
-// TODO: kernel-density classifiers, tree-backed queries for large data (numerics/spatial has kd and ball trees).
+// TODO: kernel-density classifiers, metric learning (NCA, LMNN), tree-backed queries (numerics/spatial has kd and
+// ball trees).
 
 /** Hyperparameters of the neighbour estimators. */
 export interface NeighboursHyper {
