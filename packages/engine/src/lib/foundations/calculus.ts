@@ -3,6 +3,7 @@ import { WhiteboxError } from '../base/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import { item, linspace, onesLike, promoteFloat, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
+import { extrapolateToZero } from './_extrapolate.ts'
 
 /**
  * A real function of one variable, written with tensor operations and applied elementwise (vectorised over `[n]`), so
@@ -69,26 +70,8 @@ function oneSided(
   const xs = hs.map((h) => (Number.isFinite(a) ? a + sign * h : sign / h))
   const values = evalAt(f, xs)
   const steps = hs.map((h, k) => ({ h, value: values[k] ?? Number.NaN }))
-  // Richardson extrapolation (Neville's table in h): assumes f(a + h) = L + c1 h + c2 h^2 + ...
-  let table = values.slice()
-  let best = table[table.length - 1] ?? Number.NaN
-  let bestErr = Infinity
-  for (let m = 1; m < levels; m++) {
-    const next: number[] = []
-    for (let i = 0; i + 1 < table.length; i++) {
-      const r = hs[i] ?? 1
-      const s = hs[i + m] ?? 1
-      next.push(((table[i + 1] ?? 0) * r - (table[i] ?? 0) * s) / (r - s))
-    }
-    for (let i = 1; i < next.length; i++) {
-      const err = Math.abs((next[i] ?? 0) - (next[i - 1] ?? 0))
-      if (err < bestErr) {
-        bestErr = err
-        best = next[i] ?? best
-      }
-    }
-    table = next
-  }
+  // Richardson extrapolation in h, assuming f(a + h) = L + c1 h + c2 h^2 + ...
+  const { value: best, change: bestErr } = extrapolateToZero(values)
   const scale = Math.max(1, Math.abs(best))
   return { value: best, steps, settled: Number.isFinite(best) && bestErr <= 1e-6 * scale }
 }

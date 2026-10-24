@@ -265,12 +265,31 @@
       "cases": 64
     },
     {
+      "fixture": "foundations/multivariable.json",
+      "source": "oracle/cases/foundations/multivariable.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 28
+    },
+    {
       "fixture": "foundations/rotations.json",
       "source": "oracle/cases/foundations/rotations.py",
       "reference": {
         "scipy": "1.18.1"
       },
       "cases": 82
+    },
+    {
+      "fixture": "foundations/series.json",
+      "source": "oracle/cases/foundations/series.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 35
     },
     {
       "fixture": "foundations/surfaces.json",
