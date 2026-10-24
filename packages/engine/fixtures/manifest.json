@@ -237,6 +237,14 @@
       "cases": 4
     },
     {
+      "fixture": "dynamics/nonlinear.json",
+      "source": "oracle/cases/dynamics/nonlinear.py",
+      "reference": {
+        "nolds": "0.6"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "dynamics/ode/adjoint.json",
       "source": "oracle/cases/dynamics/ode/adjoint.py",
       "reference": {
