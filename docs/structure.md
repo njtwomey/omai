@@ -1977,8 +1977,6 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - TODO: Kautsky-Nichols-Van Dooren iterations for complex pole pairs in `place` (they keep their initial vectors, so
   the poles are exact but the gain can differ from scipy's for complex targets).
 - TODO: missing observations in `kalmanEm`, and multi-input multi-output ARX/ARMAX (both are single-output now).
-- TODO: `methods/datasets/changepoints.ts` can switch its `exactBocpd` to `filtering/changepoint.ts`'s `bocpd`
-  (tested equal); its `ar` and `trend` segment models stay in datasets.
 
 ### 4.27 `pgm/` (tier 8): probabilistic graphical models (pgmpy, libDAI)
 
@@ -3613,7 +3611,8 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `changepoints.ts`: tunable changepoint series (`changepointSeries`: mean, variance and rate shifts, AR regime
   switches, trend breaks; hazard rate, minimum segment length and noise as knobs) with true changepoints, segment
   parameters and the exact BOCPD predictive (`exactBocpd` with conjugate `SegmentModel`s and constant or run-length
-  hazards: run-length posteriors, one-step predictives, evidence).
+  hazards: run-length posteriors, one-step predictives, evidence; the mean, variance and rate models run
+  `dynamics`' `filtering.bocpd`, and the AR and trend regressions, which `dynamics` lacks, run the recursion here).
 - `timeseries.ts`: AR and ARMA processes (`armaProcess`, `arma`, with autocovariances and spectral densities),
   sinusoids in noise (`sinusoids`), uneven sampling (`sinusoids` with uneven times, `subsampleSeries`), seasonal
   series with known components (`seasonalSeries`), airline passengers (`airPassengers`), `sunspots`, coal-mining
