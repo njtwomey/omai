@@ -13,6 +13,7 @@ import {
   mul,
   primalOf,
   reshape,
+  slice,
   sum,
   tensor,
   transpose,
@@ -29,6 +30,43 @@ export interface NamedFactor {
   readonly plates: readonly string[]
   /** The site the factor came from (for diagnostics and marginals). */
   readonly site?: string
+  /** How the site's log density was named: its broadcast shape, the axes kept (in order) and the axes summed. */
+  readonly layout?: {
+    readonly shape: readonly number[]
+    readonly keep: readonly number[]
+    readonly loose: readonly number[]
+  }
+}
+
+/**
+ * Name a tensor the way a site factor was named: broadcast it to the site's log-density shape and keep the named axes
+ * (it must not vary along summed axes).
+ *
+ * @param f - A factor from {@link traceFactors}.
+ * @param v - A tensor broadcasting to the site's log-density shape (a distribution parameter, a value).
+ * @returns The tensor with the factor's dims.
+ */
+export function nameLike(f: NamedFactor, v: Value): Value {
+  const layout = f.layout
+  if (layout === undefined) throw new WhiteboxError('value', 'nameLike: the factor has no layout')
+  const b = broadcastTo(v, layout.shape)
+  const picked = layout.loose.length === 0 ? b : sliceLoose(b, layout.loose)
+  return reshape(
+    picked,
+    layout.keep.map((a) => layout.shape[a] ?? 1),
+  )
+}
+
+function sliceLoose(v: Value, loose: readonly number[]): Value {
+  let out = v
+  for (const a of [...loose].sort((x, y) => y - x)) out = sum(sliceAxisOne(out, a), a)
+  return out
+}
+
+function sliceAxisOne(v: Value, axis: number): Value {
+  const starts = v.shape.map(() => 0)
+  const stops = v.shape.map((n, a) => (a === axis ? 1 : n))
+  return slice(v, starts, stops)
 }
 
 function sizeOf(f: NamedFactor, d: string): number {
@@ -345,8 +383,17 @@ export function traceFactors(
       dims.push(name)
       keep.push(size)
     }
+    const shape = [...lp.shape]
+    const kept: number[] = []
+    for (let a = 0; a < rank; a++) if ((lp.shape[a] ?? 1) > 1 && !loose.includes(a)) kept.push(a)
     if (loose.length > 0) lp = sum(lp, loose)
-    factors.push({ value: reshape(lp, keep), dims, plates: site.plates.map((f) => f.name), site: site.name })
+    factors.push({
+      value: reshape(lp, keep),
+      dims,
+      plates: site.plates.map((f) => f.name),
+      site: site.name,
+      layout: { shape, keep: kept, loose },
+    })
   }
   return { factors, sumVars, scales }
 }
@@ -404,6 +451,35 @@ export function enumeratedMarginals(
     const plateDims = reduced.dims.filter((d) => d !== site)
     const ordered = alignFactor(reduced, [...plateDims, site])
     marginals.set(site, { site, plates: plateDims, probs: primalOf(mul(ordered, 1 / scale)) })
+  })
+  return { logZ: item(value), marginals }
+}
+
+/**
+ * The posterior marginal of every factor's variables (d log Z / d log f, divided by the factor's plate scale), for
+ * expected log densities: the E-step of EM.
+ *
+ * @param factors - The named factors.
+ * @param sumVars - The enumerated sites.
+ * @param scales - Plate scales.
+ * @returns log Z and, per factor with enumerated dims, the marginal over its dims (undefined for the others).
+ */
+export function factorMarginals(
+  factors: readonly NamedFactor[],
+  sumVars: ReadonlySet<string>,
+  scales: ReadonlyMap<string, number>,
+): { readonly logZ: number; readonly marginals: (Value | undefined)[] } {
+  const { value, grad } = valueAndGrad((leaves: Value[]) =>
+    contractFactors(
+      factors.map((f, i) => ({ ...f, value: leaves[i] as Value })),
+      sumVars,
+      scales,
+    ),
+  )(factors.map((f) => primalOf(f.value)))
+  const marginals = factors.map((f, i) => {
+    if (!f.dims.some((d) => sumVars.has(d))) return undefined
+    const scale = f.plates.reduce((acc, p) => acc * (scales.get(p) ?? 1), 1)
+    return primalOf(mul(grad[i] as Value, 1 / scale))
   })
   return { logZ: item(value), marginals }
 }
