@@ -43,6 +43,10 @@ describe('mlpClassifier', () => {
     expect(hidden?.iterations[0]).toBe(0)
     expect(hidden?.positions.length).toBeLessThanOrEqual(40)
     expect(hidden?.positions[0]?.length).toBe(120)
+    // The first hidden layer's eight units over the plane: three across, three down, 15 by 15 each with gaps.
+    const units = recordsOf(fitted.exposition, 'decisionSurface')[1]
+    expect([units?.values?.length, units?.values?.[0]?.length]).toEqual([47, 47])
+    expect(units?.steps?.length).toBe(steps.length)
     expect(fitted.describe().nodes.length).toBeGreaterThan(3)
     expect(fitted.hidden([[0, 0]]).map((h) => h.shape)).toEqual([
       [1, 8],

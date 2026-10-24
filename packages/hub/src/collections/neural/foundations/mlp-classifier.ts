@@ -1,6 +1,6 @@
 import { mlpClassifier as mlpClassifierMethod } from 'whitebox-engine/methods/neural/foundations'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
-import { trainingRun } from '../_train.ts'
+import { mlpArchitecture, trainingRun } from '../_train.ts'
 
 /** A multi-layer perceptron classifier, its decision surface drawn as it trains. */
 export const mlpClassifier: HubEntry = defineEntry({
@@ -22,8 +22,10 @@ export const mlpClassifier: HubEntry = defineEntry({
   views: [
     { record: 'decisionSurface', title: 'Decision surface' },
     { record: 'embeddingSteps', title: 'The last hidden layer’s view of the data, epoch by epoch', area: 'side' },
+    { record: 'decisionSurface', index: 1, title: 'Each first-layer unit over the input plane', area: 'side' },
     { record: 'learningCurve', title: 'Loss per epoch', area: 'below' },
     { record: 'learningCurve', index: 1, title: 'Accuracy per epoch', area: 'below' },
+    mlpArchitecture(),
   ],
   methods: [{ file: 'methods/neural/foundations/mlp.ts', name: 'mlpClassifier' }],
   references: ['Rumelhart, Hinton and Williams (1986), Learning representations by back-propagating errors'],
