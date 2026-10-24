@@ -905,7 +905,7 @@
         "rouge-score": "0.1.2",
         "torchmetrics": "1.9.0"
       },
-      "cases": 69
+      "cases": 84
     },
     {
       "fixture": "nn/functional/activations.json",
@@ -2173,6 +2173,109 @@
         "numpy": "2.5.4"
       },
       "cases": 24
+    },
+    {
+      "fixture": "text/alignment.json",
+      "source": "oracle/cases/text/alignment.py",
+      "reference": {
+        "biopython": "1.88"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "text/hashing.json",
+      "source": "oracle/cases/text/hashing.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gensim": "4.4.0"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "text/lemmatise.json",
+      "source": "oracle/cases/text/lemmatise.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 65
+    },
+    {
+      "fixture": "text/normalise.json",
+      "source": "oracle/cases/text/normalise.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "tokenizers": "0.23.3"
+      },
+      "cases": 88
+    },
+    {
+      "fixture": "text/phonetic.json",
+      "source": "oracle/cases/text/phonetic.py",
+      "reference": {
+        "jellyfish": "1.3.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "text/shingles.json",
+      "source": "oracle/cases/text/shingles.py",
+      "reference": {
+        "nltk": "3.10.4",
+        "gensim": "4.4.0"
+      },
+      "cases": 82
+    },
+    {
+      "fixture": "text/similarity.json",
+      "source": "oracle/cases/text/similarity.py",
+      "reference": {
+        "rapidfuzz": "3.14.6"
+      },
+      "cases": 34
+    },
+    {
+      "fixture": "text/stem.json",
+      "source": "oracle/cases/text/stem.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "text/stopwords.json",
+      "source": "oracle/cases/text/stopwords.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gensim": "4.4.0"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "text/tokenise.json",
+      "source": "oracle/cases/text/tokenise.py",
+      "reference": {
+        "nltk": "3.10.4",
+        "regex": "2026.9.29",
+        "scikit-learn": "1.9.1",
+        "tokenizers": "0.23.3"
+      },
+      "cases": 126
+    },
+    {
+      "fixture": "text/treebank.json",
+      "source": "oracle/cases/text/treebank.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 54
+    },
+    {
+      "fixture": "text/tweet.json",
+      "source": "oracle/cases/text/tweet.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 70
     },
     {
       "fixture": "trace/summaries.json",

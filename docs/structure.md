@@ -1454,12 +1454,22 @@ representations are in `optim/sparse.ts`.
 
 ### 4.21 `text/` (tier 7): text processing (HF tokenizers, nltk, sklearn.feature_extraction.text)
 
-oracle: HF tokenizers, tiktoken, nltk, scikit-learn, rapidfuzz, datasketch
+oracle: HF tokenizers, tiktoken's patterns (with the `regex` module), nltk, scikit-learn, rapidfuzz, datasketch, gensim,
+jellyfish, Biopython, pyphen
 - `normalise.ts`: Unicode normalisation, case folding, accent stripping, whitespace collapsing, `AlignedText` (offsets
   back to the original).
-- `tokenise.ts`: regex, word (sklearn pattern, Treebank), tweet, character and grapheme tokenisers, sentence splitting,
-  detokenisation, pre-tokeniser patterns (GPT-2, cl100k, BERT).
-- `stem.ts`: Porter (with a rule trace) and Snowball English stemmers, rule-based lemmatisation, stop-word lists.
+- `tokenise.ts`: regex (nltk RegexpTokenizer, with gaps), whitespace, word (sklearn pattern), word-punct, character
+  and grapheme tokenisers, pre-tokeniser patterns (GPT-2, cl100k, o200k, HF Whitespace), HF-style splitting with
+  delimiter behaviours, BERT pre-tokenisation.
+- `treebank.ts`: the Penn Treebank tokeniser, nltk's improved word tokeniser, Treebank spans and detokenisation.
+- `tweet.ts`: nltk's TweetTokenizer (URLs, phone numbers, emoticons, handles, hashtags, emoji sequences), HTML entity
+  replacement, handle removal, lengthening reduction.
+- `sentences.ts`: sentence splitting: a rule-based splitter and Punkt (Kiss and Strunk 2006) training and tokenisation.
+- `stem.ts`: Porter (nltk's three modes, with a rule trace) and Snowball English stemmers.
+- `lemmatise.ts`: rule-based lemmatisation (WordNet's morphy detachment rules over a lexicon with exception lists, or
+  longest-suffix rules with common irregular forms).
+- `stopwords.ts`: stop-word lists (scikit-learn's, gensim's) and removal.
+- `hashing.ts`: MurmurHash3 (scikit-learn's), FNV-1a (with fastText's sign-extended variant), UTF-8 bytes.
 - `vocabulary.ts`: `Vocabulary`, building (minimum count, maximum size, specials, ordering), encoding and decoding.
 - `subword/bpe.ts`: BPE training (character and byte level, traced merges), encoding with dropout, the GPT-2 byte
   alphabet.
@@ -1478,8 +1488,13 @@ oracle: HF tokenizers, tiktoken, nltk, scikit-learn, rapidfuzz, datasketch
   inspection.
 - `representations.ts`: co-occurrence counts, PMI and PPMI, LSA, SVD word vectors, random indexing, analogies, nearest
   words.
-- `similarity.ts`: Levenshtein, Damerau-Levenshtein, Jaro-Winkler, longest common subsequence, Needleman-Wunsch,
-  Smith-Waterman, Jaccard and containment over shingles, Soundex and Metaphone, token-set and token-sort ratios.
+- `similarity.ts`: Levenshtein (weighted), the edit-alignment counts behind WER (rapidfuzz's tie-breaking),
+  Damerau-Levenshtein (OSA and unrestricted), Hamming, Jaro and Jaro-Winkler, longest common subsequence (table,
+  backtrace) and substring, Indel, Jaccard (set and weighted) and containment over shingles, clipped count overlaps,
+  ratio, token-set and token-sort ratios (rapidfuzz). The canonical home of the sequence helpers of `metrics/text.ts`.
+- `alignment.ts`: Needleman-Wunsch and Smith-Waterman with linear or affine (Gotoh) gaps, alignment scoring and
+  formatting.
+- `phonetic.ts`: Soundex and Metaphone (jellyfish's).
 - `approximate-search.ts`: approximate string search: q-gram indexes with count filtering, BK-trees, tries with fuzzy
   lookup, Sellers' approximate substring matching, top-k fuzzy matches with traced candidate pruning.
 - `fingerprinting.ts`: Rabin-Karp rolling hashes, winnowing (MOSS), SimHash, MinHash signatures for text, near-duplicate
