@@ -5,7 +5,7 @@
 // scikit-learn's stopping rules (no improvement by `tol` for `nIterNoChange` epochs, on the training loss or the
 // validation score) and its 'adaptive' learning rate (divide by five instead of stopping).
 import { rowCount, type TabularData, take, xy } from '../../lib/data/index.ts'
-import { type FitOptions, fitRunOptions } from '../../lib/learn/index.ts'
+import { type FitOptions, fitRunOptions, geometricSteps } from '../../lib/learn/index.ts'
 import { fitAlgorithm, type Module, type Params, type TrainState } from '../../lib/nn/index.ts'
 import type { GradientTransformation, LearningRate } from '../../lib/optim/index.ts'
 import { type Key, key as makeKey, permutation } from '../../lib/random/index.ts'
@@ -93,18 +93,6 @@ export interface Training {
 }
 
 /**
- * At most `limit` of the steps 0..total spaced geometrically, always with the first and last.
- * TODO: use lib/learn's geometricSteps once it lands on main (the records branch adds it).
- */
-export function geometricEpochs(total: number, limit = 40): number[] {
-  const last = Math.max(0, Math.floor(total))
-  if (last + 1 <= limit) return Array.from({ length: last + 1 }, (_, t) => t)
-  const out = new Set<number>([0, last])
-  for (let k = 1; k < limit - 1; k++) out.add(Math.round((last + 1) ** (k / (limit - 1)) - 1))
-  return [...out].sort((p, q) => p - q)
-}
-
-/**
  * Hold out a stratified (classification) or random fraction of the rows for validation, as scikit-learn's
  * early_stopping does.
  */
@@ -156,7 +144,7 @@ export function train(options: TrainOptions): Training {
     key: base,
     ...(options.learningRate === undefined ? {} : { learningRate: options.learningRate }),
   })
-  const schedule = new Set([...geometricEpochs(options.epochs, options.snapshots ?? 40), ...(options.snapshotAt ?? [])])
+  const schedule = new Set([...geometricSteps(options.epochs, options.snapshots ?? 40), ...(options.snapshotAt ?? [])])
   const snapshots: Snapshot[] = []
   const epochs: number[] = []
   const trainLoss: number[] = []

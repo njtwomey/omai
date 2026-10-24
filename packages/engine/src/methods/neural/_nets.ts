@@ -57,7 +57,8 @@ import {
   toFlat,
   type Value,
 } from '../../lib/tensor/index.ts'
-import { holdOut, type Rows } from './_train.ts'
+import { lossAtSnapshots } from './_records.ts'
+import { holdOut, type Rows, type Training } from './_train.ts'
 
 /** How a network's output maps to predictions: a linear output, a logistic for two classes, a softmax for more. */
 export type NetOutput = 'identity' | 'logistic' | 'softmax'
@@ -74,6 +75,8 @@ export interface Task {
   readonly nOut: number
   /** Every row's inputs `[n, d]` (the surface spans them). */
   readonly x: Tensor
+  /** Every row's targets as given (class labels for classifiers), to label the rows a surface carries. */
+  readonly y: Tensor
   /** The rows trained on: inputs and encoded targets (class indices, or a `[n, k]` matrix). */
   readonly rows: Rows
   readonly validation?: Rows
@@ -127,6 +130,7 @@ export function taskOf(
     featureNames,
     nOut,
     x,
+    y: asTensor(data.y) as Tensor,
   }
   const fraction = options.holdOut ?? 0
   if (!(fraction > 0)) return { ...base, rows }
@@ -193,12 +197,44 @@ export function fittedOf(net: Module, params: Params, buffers: Params, task: Tas
   }
 }
 
-/** The decision surface (or regression curve) of a network under some parameters, over the task's rows. */
-export function surfaceOf(net: Module, params: Params, buffers: Params, task: Task, resolution = 30): DecisionSurface {
+/**
+ * The decision surface (or regression curve) of a network under some parameters, over the task's rows, with the
+ * rows; given the training run, the surface at every snapshot (the rows each misclassifies highlighted) and the
+ * training loss per epoch, so a page can play the training.
+ */
+export function surfaceOf(
+  net: Module,
+  params: Params,
+  buffers: Params,
+  task: Task,
+  resolution = 30,
+  training?: Training,
+): DecisionSurface {
+  const steps =
+    training === undefined || training.snapshots.length < 2
+      ? undefined
+      : {
+          models: training.snapshots.map((s) => fittedOf(net, s.params, s.buffers, task)),
+          iterations: training.snapshots.map((s) => s.epoch),
+          objective: lossAtSnapshots(training),
+          ...(task.classifier ? { highlight: 'misclassified' as const } : {}),
+        }
   return decisionSurfaceOf(fittedOf(net, params, buffers, task), task.x, {
     resolution,
     featureNames: task.featureNames,
     ...(task.classNames === undefined ? {} : { classNames: task.classNames }),
+    y: task.y,
+    ...(steps === undefined
+      ? {}
+      : {
+          steps,
+          stepName: 'epoch',
+          objective: {
+            name: 'training loss',
+            iterations: [0, ...(training?.epochs ?? [])],
+            values: [training?.initial.loss ?? Number.NaN, ...(training?.evalLoss ?? [])],
+          },
+        }),
   })
 }
 
