@@ -1,0 +1,44 @@
+"""Gradient boosting against scikit-learn (no subsampling, so deterministic): regression with squared and
+quantile losses, and classification with the binary and multinomial log loss."""
+
+import numpy as np
+import sklearn
+from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+from whitebox_oracle.fixture import Case, case
+from whitebox_oracle.helpers import rng
+
+REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
+
+
+def cases() -> list[Case]:
+    g = rng(51)
+    n = 80
+    # scikit-learn's trees work on float32 features: start from float32-representable values.
+    x = g.normal(size=(n, 3)).astype(np.float32).astype(np.float64)
+    t = np.sin(x[:, 0]) + 0.5 * x[:, 1] + 0.2 * g.normal(size=n)
+    out: list[Case] = []
+    # The absolute error is left out: its sign gradients make many splits tie exactly, and the leaf medians then
+    # depend on which tied split scikit-learn meets first.
+    for loss in ["squared_error", "quantile"]:
+        r = GradientBoostingRegressor(loss=loss, n_estimators=15, max_depth=2, learning_rate=0.3, random_state=0)  # pyright: ignore[reportArgumentType]
+        # Sign gradients tie across features, broken by scikit-learn's random feature order: one feature for those.
+        xs = x if loss == "squared_error" else x[:, :1]
+        r.fit(xs, t)
+        out.append(
+            case(
+                f"regressor/{loss}",
+                "regressor",
+                [xs, t],
+                {"predict": r.predict(xs[:8])},
+                rtol=1e-9,
+                atol=1e-10,
+                loss=loss,
+            )
+        )
+    for k in [2, 3]:
+        y = np.digitize(x[:, 0] + 0.5 * x[:, 2], [0.0] if k == 2 else [-0.5, 0.5]).astype(np.float64)
+        c = GradientBoostingClassifier(n_estimators=10, max_depth=2, learning_rate=0.5, random_state=0).fit(x, y)
+        out.append(
+            case(f"classifier/{k}", "classifier", [x, y], {"proba": c.predict_proba(x[:8])}, rtol=1e-9, atol=1e-10)
+        )
+    return out
