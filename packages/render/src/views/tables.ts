@@ -128,7 +128,7 @@ export function likelihoodView(table: LikelihoodTable, options: ViewOptions = {}
   const hi = Math.max(...cells.flat())
   const bare = (f: string): string => {
     const b = f.replace(/\s*\([^)]*\)\s*$/, '')
-    return b.length > 14 ? `${b.slice(0, 13)}…` : b
+    return b.length > 12 ? `${b.slice(0, 11)}…` : b
   }
   const panels: Record<string, Panel> = {
     table: {
@@ -148,12 +148,12 @@ export function likelihoodView(table: LikelihoodTable, options: ViewOptions = {}
     totals: {
       layers: [
         bars(
-          [...table.classes],
+          table.classes.map((c, k) => `${c} ${formatNumber(posterior[k] ?? 0, { digits: 2 })}`),
           [
             { name: '__other', values: posterior.map((v, c) => (c === best ? 0 : v)), colour: 'muted' },
             { name: '__best', values: posterior.map((v, c) => (c === best ? v : 0)), colour: 'accent' },
           ],
-          { mode, stacked: true, horizontal: true, labels: true },
+          { mode, stacked: true, horizontal: true },
         ),
       ],
       options: {
@@ -163,8 +163,8 @@ export function likelihoodView(table: LikelihoodTable, options: ViewOptions = {}
     },
   }
   const grid = gridSpec(1, 2, {
-    widthRatios: [2.4, 1],
-    wspace: 80,
+    widthRatios: [3, 1],
+    wspace: 96,
     cells: [
       { id: 'table', row: 0, col: 0 },
       { id: 'totals', row: 0, col: 1 },
@@ -326,7 +326,7 @@ export interface SearchViewOptions extends ViewOptions {
 
 /**
  * Every trial of a search (grid, random, halving, Bayesian): the value of each trial in order with the best so far as a
- * step line (pruned trials muted, failed ones crossed, intermediate values faint), beside the value against each of up
+ * step line (pruned trials muted, failed ones crossed, the spread of per-fold values as whiskers), beside the value against each of up
  * to two parameters.
  *
  * @param record - The record.
@@ -347,25 +347,16 @@ export function searchTrialsView(record: SearchTrials, options: SearchViewOption
   const of = (state: 'complete' | 'pruned' | 'failed'): number[] =>
     trials.flatMap((t, i) => (t.state === state ? [i] : []))
   const history: Layer[] = []
-  const withIntermediate = trials.filter((t) => t.intermediate !== undefined && t.intermediate.length > 1)
-  if (withIntermediate.length > 0 && withIntermediate.length <= 200)
-    history.push(
-      lines(
-        withIntermediate.map((t) => {
-          const i = trials.indexOf(t)
-          const n = t.intermediate?.length ?? 1
-          return {
-            x: (t.intermediate ?? []).map((_, k) => i - 0.4 + (0.8 * k) / Math.max(1, n - 1)),
-            y: [...(t.intermediate ?? [])],
-            name: `__steps${i}`,
-            colour: 'muted',
-            width: 0.8,
-            opacity: 0.6,
-          }
-        }),
-        { mode },
-      ),
-    )
+  // Per-fold (or per-step) values as a whisker from the lowest to the highest at each trial.
+  const xs: number[] = []
+  const ys: number[] = []
+  trials.forEach((t, i) => {
+    if (t.intermediate === undefined || t.intermediate.length < 2) return
+    xs.push(i, i, Number.NaN)
+    ys.push(Math.min(...t.intermediate), Math.max(...t.intermediate), Number.NaN)
+  })
+  if (xs.length > 0)
+    history.push(lines([{ x: xs, y: ys, name: '__spread', colour: 'muted', width: 1.2, opacity: 0.7 }], { mode }))
   history.push(
     lines(
       [{ x: trials.map((_, i) => i), y: bestSoFar, name: 'best so far', colour: 'accent', step: 'end', width: 1.8 }],
