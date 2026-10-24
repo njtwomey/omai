@@ -1348,6 +1348,15 @@
       "cases": 6
     },
     {
+      "fixture": "methods/decomposition/pca.json",
+      "source": "oracle/cases/methods/decomposition/pca.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "methods/linear/classification.json",
       "source": "oracle/cases/methods/linear/classification.py",
       "reference": {
