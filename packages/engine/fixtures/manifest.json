@@ -710,6 +710,164 @@
       "cases": 30
     },
     {
+      "fixture": "learn/active_learning.json",
+      "source": "oracle/cases/learn/active_learning.py",
+      "reference": {
+        "modAL-python": "0.4.2.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "learn/calibration.json",
+      "source": "oracle/cases/learn/calibration.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "learn/compose.json",
+      "source": "oracle/cases/learn/compose.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "learn/conformal.json",
+      "source": "oracle/cases/learn/conformal.py",
+      "reference": {
+        "mapie": "1.6.0"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "learn/explain/gradients.json",
+      "source": "oracle/cases/learn/explain/gradients.py",
+      "reference": {
+        "captum": "0.9.0",
+        "torch": "2.14.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "learn/explain/shapley.json",
+      "source": "oracle/cases/learn/explain/shapley.py",
+      "reference": {
+        "shap": "0.54.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "learn/explain/surrogates.json",
+      "source": "oracle/cases/learn/explain/surrogates.py",
+      "reference": {
+        "lime": "0.2.0.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "learn/feature_selection.json",
+      "source": "oracle/cases/learn/feature_selection.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "learn/inspection.json",
+      "source": "oracle/cases/learn/inspection.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "learn/model_selection/criteria.json",
+      "source": "oracle/cases/learn/model_selection/criteria.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "learn/model_selection/cross_validation.json",
+      "source": "oracle/cases/learn/model_selection/cross_validation.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "learn/model_selection/search.json",
+      "source": "oracle/cases/learn/model_selection/search.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "learn/model_selection/splitters.json",
+      "source": "oracle/cases/learn/model_selection/splitters.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 28
+    },
+    {
+      "fixture": "learn/preprocessing/encoders.json",
+      "source": "oracle/cases/learn/preprocessing/encoders.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "learn/preprocessing/features.json",
+      "source": "oracle/cases/learn/preprocessing/features.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "learn/preprocessing/imputation.json",
+      "source": "oracle/cases/learn/preprocessing/imputation.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "learn/preprocessing/resampling.json",
+      "source": "oracle/cases/learn/preprocessing/resampling.py",
+      "reference": {
+        "imbalanced-learn": "0.14.2"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "learn/preprocessing/scalers.json",
+      "source": "oracle/cases/learn/preprocessing/scalers.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 26
+    },
+    {
+      "fixture": "learn/privacy.json",
+      "source": "oracle/cases/learn/privacy.py",
+      "reference": {
+        "diffprivlib": "0.6.6",
+        "opacus": "1.6.0"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "logic/answer-sets.json",
       "source": "oracle/cases/logic/answer-sets.py",
       "reference": {
