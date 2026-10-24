@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Exposition } from 'whitebox-engine/exposition'
 import { catalogue } from '../catalogue/index.ts'
-import type { HubEntry } from '../entry/entry.ts'
+import type { HubEntry, HubProgress } from '../entry/entry.ts'
 import { type HubState, runDemo } from '../entry/run.ts'
 
 /** A request to the hub's worker: run the catalogue entry `id` on `state`. */
@@ -11,8 +11,9 @@ export interface HubRunRequest {
   readonly state: HubState
 }
 
-/** The worker's reply: the records and timing, or the error message. */
+/** The worker's reply: progress, the records and timing, or the error message. */
 export type HubRunReply =
+  | { readonly token: number; readonly progress: HubProgress }
   | {
       readonly token: number
       readonly ok: true
@@ -27,7 +28,7 @@ export type RunPlace = 'worker' | 'main thread'
 
 /** The state of an entry's latest run. */
 export type HubRun =
-  | { readonly status: 'running'; readonly previous?: HubRunDone }
+  | { readonly status: 'running'; readonly previous?: HubRunDone; readonly progress?: HubProgress }
   | HubRunDone
   | { readonly status: 'error'; readonly error: string; readonly previous?: HubRunDone }
 
@@ -82,9 +83,12 @@ export function useHubRun(entry: HubEntry, state: HubState, delay = 200): HubRun
     const failed = (error: string): void => {
       if (t === token.current) setRun((p) => ({ status: 'error', error, ...previousOf(p) }))
     }
+    const progress = (p: HubProgress): void => {
+      if (t === token.current) setRun((r) => ({ status: 'running', progress: p, ...previousOf(r) }))
+    }
     const onMain = (): void => {
       const start = now()
-      runDemo(entry, state).then(
+      runDemo(entry, state, progress).then(
         (r) => done({ ...r, ms: now() - start, place: 'main thread' }),
         (e: unknown) => failed(message(e)),
       )
@@ -112,6 +116,10 @@ export function useHubRun(entry: HubEntry, state: HubState, delay = 200): HubRun
       slot.busy = true
       slot.w.onmessage = (e: MessageEvent<HubRunReply>) => {
         if (e.data.token !== token.current) return
+        if ('progress' in e.data) {
+          progress(e.data.progress)
+          return
+        }
         slot.busy = false
         if (e.data.ok) done({ exposition: e.data.exposition, rows: e.data.rows, ms: e.data.ms, place: 'worker' })
         else failed(e.data.error)

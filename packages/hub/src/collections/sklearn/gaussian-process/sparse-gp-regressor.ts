@@ -1,0 +1,22 @@
+import { sparseGpRegressor as sparseGpRegressorMethod } from 'whitebox-engine/methods/gp'
+import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
+import { fitEstimator } from '../../../entry/run.ts'
+
+/** Sparse Gaussian process: a Gaussian process through a few inducing points (VFE, FITC, DTC): the cost of a handful of basis functions. */
+export const sparseGpRegressor: HubEntry = defineEntry({
+  id: 'sklearn/gaussian-process/sparse-gp-regressor',
+  title: 'Sparse Gaussian process',
+  summary:
+    'A Gaussian process through a few inducing points (VFE, FITC, DTC): the cost of a handful of basis functions.',
+  collection: 'sklearn/gaussian-process',
+  tags: ['regression', 'bayesian', 'kernels', 'scalable'],
+  datasets: ['regression1d', 'regressionTabular'],
+  maxRows: 200,
+  ...fitEstimator(sparseGpRegressorMethod(), { surface: true }),
+  views: [
+    { record: 'posteriorGrid', title: 'Posterior' },
+    { record: 'decisionSurface', title: 'Fitted function', area: 'side' },
+    { record: 'coefficientTable', title: 'Hyperparameters', area: 'side' },
+  ],
+  methods: [{ file: 'methods/gp/sparse.ts', name: 'sparseGpRegressor' }],
+})

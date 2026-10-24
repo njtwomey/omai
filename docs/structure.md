@@ -2827,7 +2827,10 @@ kind, each usable on its own in any page).
   automatically.
 - `react/HubEntryView.tsx`: lays out an entry from its declaration (dataset picker, method controls, the declared
   views, the trace player) and re-runs it on every change, debounced, in a Web Worker (`react/_worker.ts`, by catalogue
-  id) or on the main thread for entries outside the catalogue; the only React in the package, and composition only.
+  id) or on the main thread for entries outside the catalogue, with a size limit (`maxRows`) for slow methods. A slot
+  names a record kind and optionally a `whitebox-render/react` component with props made on the page (an
+  `EpisodePlayer`'s environment and policy); a run may report progress with the records so far, which the widget
+  draws live. The only React in the package, and composition only.
   Entries are data: `make layers` lets the hub import the engine and render's public views, but no chart library, and
   no drawing of its own.
 

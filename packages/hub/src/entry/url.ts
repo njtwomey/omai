@@ -38,7 +38,8 @@ export function stateToQuery(entry: HubEntry, state: HubState): string {
   if (state.collection !== demo.collection || state.dataset !== demo.dataset)
     q.set('data', `${state.collection}/${state.dataset}`)
   if (state.seed !== 0) q.set('seed', String(state.seed))
-  const base = datasetState(state.collection, state.dataset).knobs
+  const base: Readonly<Record<string, SpaceValue>> =
+    state.collection === '' ? {} : datasetState(state.collection, state.dataset).knobs
   for (const [k, v] of Object.entries(state.knobs)) if (!same(v, base[k])) q.set(`k.${k}`, text(v))
   for (const [k, v] of Object.entries(state.params)) if (!same(v, demo.params[k])) q.set(k, text(v))
   return q.toString()
