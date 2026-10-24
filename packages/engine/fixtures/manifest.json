@@ -628,6 +628,30 @@
       "cases": 24
     },
     {
+      "fixture": "learn/preprocessing/features.json",
+      "source": "oracle/cases/learn/preprocessing/features.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "learn/preprocessing/imputation.json",
+      "source": "oracle/cases/learn/preprocessing/imputation.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "learn/preprocessing/resampling.json",
+      "source": "oracle/cases/learn/preprocessing/resampling.py",
+      "reference": {
+        "imbalanced-learn": "0.14.2"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "learn/preprocessing/scalers.json",
       "source": "oracle/cases/learn/preprocessing/scalers.py",
       "reference": {
