@@ -135,6 +135,17 @@
       "cases": 12
     },
     {
+      "fixture": "metrics/audio.json",
+      "source": "oracle/cases/metrics/audio.py",
+      "reference": {
+        "torchmetrics": "1.9.0",
+        "pystoi": "0.4.1",
+        "scipy": "1.18.1",
+        "dtw-python": "1.9.0"
+      },
+      "cases": 19
+    },
+    {
       "fixture": "metrics/classification.json",
       "source": "oracle/cases/metrics/classification.py",
       "reference": {
@@ -317,6 +328,17 @@
         "torchmetrics": "1.9.0"
       },
       "cases": 9
+    },
+    {
+      "fixture": "metrics/text.json",
+      "source": "oracle/cases/metrics/text.py",
+      "reference": {
+        "jiwer": "4.0.0",
+        "sacrebleu": "2.6.0",
+        "rouge-score": "0.1.2",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 61
     },
     {
       "fixture": "nn/torch_reference.json",

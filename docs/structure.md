@@ -1419,10 +1419,19 @@ weights.
 - `generative.ts`: Inception score (from class probabilities), FID (`frechetDistance`) and KID
   (`kernelInceptionDistance`) from features, precision, recall, density and coverage
   (`precisionRecallDensityCoverage`), CLIPScore from embeddings (`clipScore`), Vendi score (any order).
-- `text.ts`: WER, CER, MER, WIL; BLEU (corpus and sentence, smoothing); chrF and chrF++; TER; ROUGE-N, ROUGE-L and
-  ROUGE-Lsum; exact match and token F1; BERTScore from embeddings; perplexity; distinct-n.
-- `audio.ts`: SNR, segmental SNR, SDR, SI-SDR and SI-SNR, permutation-invariant matching, PESQ, STOI and ESTOI,
-  log-spectral distance, mel-cepstral distortion, DNSMOS from a supplied model.
+- `text.ts`: WER, CER, MER, WIL and WIP (jiwer's alignment); BLEU (corpus and sentence, smoothing, the 13a tokeniser
+  `tokenize13a`); chrF and chrF++ (`chrfScore`, `wordOrder: 2`); TER (Tercom shifts and normalisation flags); ROUGE-N,
+  ROUGE-L and ROUGE-Lsum (rouge-score; a stemmer can be supplied); SQuAD exact match and token F1; BERTScore from
+  embeddings (idf weights, baseline rescaling); perplexity; distinct-n. Private `_sequences.ts` (edit alignment, LCS,
+  n-gram counts) and `_ter.ts`. TODO: move the alignment and LCS to `text/similarity.ts` and default ROUGE's stemmer to
+  `text/stem.ts` once the text domain exists.
+- `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
+  matching (`permutationInvariant`, exhaustive), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
+  resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
+  supplied model (torchmetrics' windows and calibration, 16 kHz). Private `_audio.ts` (windows, `upfirdn`,
+  `resamplePoly`, framed power spectra). TODO: PESQ (ITU-T P.862), whose reference implementation is ITU-copyrighted
+  C that cannot be ported under the licence; move `_audio.ts` to `signal/` and use `optim/assignment.ts` for
+  permutation matching once those exist.
 
 ### 4.29 `losses/` (tier 8): differentiable objectives (torch.nn losses, optax losses)
 
