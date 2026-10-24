@@ -1,7 +1,8 @@
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { sizeOf } from '../tensor/index.ts'
-import type { DictSpace, Space, SpaceValue } from './types.ts'
+import { activeKeysOf, resolveDict } from './_active.ts'
+import type { Space, SpaceValue } from './types.ts'
 
 function u01(k: Key, n: number): number[] {
   return Array.from(uniform(k, [n]).data)
@@ -11,11 +12,47 @@ function elementBounds(bound: number | readonly number[], i: number): number {
   return typeof bound === 'number' ? bound : (bound[i] ?? 0)
 }
 
-/** Keys of a dict space that are active for a value (their `when` condition holds). */
-export function activeKeys(space: DictSpace, value: Readonly<Record<string, SpaceValue>>): string[] {
-  return Object.entries(space.spaces)
-    .filter(([, s]) => s.when === undefined || s.when.in.includes(value[s.when.key] as string | number | boolean))
-    .map(([k]) => k)
+function snap(low: number, high: number, step: number | undefined, x: number): number {
+  return step === undefined ? x : Math.min(high, low + Math.round((x - low) / step) * step)
+}
+
+/**
+ * The active dimensions of a value: the dotted paths (`'optimiser.lr'`, `'layers.0'`) of the leaf spaces that are
+ * active for it, in flattening order. A dict child is active when its `when` condition holds; tuple elements always
+ * are. A space that is neither a dict nor a tuple is the single dimension `''`; a box or vector space is one
+ * dimension however many numbers it holds.
+ *
+ * @param space - The space.
+ * @param value - A value of the space (inactive keys may be absent).
+ * @returns The active paths.
+ * @concept spaces
+ * @example
+ * ```ts
+ * import { activeDims, choice, dict, int, real } from 'whitebox-engine/space'
+ * const s = dict({
+ *   kind: choice(['linear', 'tree']),
+ *   alpha: real(0, 1, { when: { key: 'kind', in: ['linear'] } }),
+ *   depth: int(1, 8, { when: { key: 'kind', in: ['tree'] } }),
+ * })
+ * activeDims(s, { kind: 'tree', depth: 3 }) // => ['kind', 'depth']
+ * ```
+ */
+export function activeDims(space: Space, value: SpaceValue): string[] {
+  const walk = (s: Space, v: SpaceValue, prefix: string): string[] => {
+    const at = (name: string): string => (prefix === '' ? name : `${prefix}.${name}`)
+    if (s.kind === 'dict') {
+      const record = (typeof v === 'object' && v !== null && !Array.isArray(v) ? v : {}) as Readonly<
+        Record<string, SpaceValue>
+      >
+      return activeKeysOf(s, record).flatMap((k) => walk(s.spaces[k] as Space, record[k] as SpaceValue, at(k)))
+    }
+    if (s.kind === 'tuple') {
+      const items = (Array.isArray(v) ? v : []) as readonly SpaceValue[]
+      return s.spaces.flatMap((c, i) => walk(c, items[i] as SpaceValue, at(String(i))))
+    }
+    return [prefix]
+  }
+  return walk(space, value, '')
 }
 
 /**
@@ -41,9 +78,7 @@ export function sample(space: Space, k: Key): SpaceValue {
       const x = space.log
         ? Math.exp(Math.log(space.low) + u * (Math.log(space.high) - Math.log(space.low)))
         : space.low + u * (space.high - space.low)
-      return space.step === undefined
-        ? x
-        : Math.min(space.high, space.low + Math.round((x - space.low) / space.step) * space.step)
+      return snap(space.low, space.high, space.step, x)
     }
     case 'int': {
       const [u] = u01(k, 1) as [number]
@@ -76,23 +111,14 @@ export function sample(space: Space, k: Key): SpaceValue {
       return u01(k, space.n).map((u) => (u < 0.5 ? 0 : 1))
     case 'tuple':
       return space.spaces.map((s, i) => sample(s, foldIn(k, i)))
-    case 'dict': {
-      const out: Record<string, SpaceValue> = {}
-      const entries = Object.entries(space.spaces)
-      // Unconditional keys first, so conditions can refer to them.
-      entries.forEach(([name, s], i) => {
-        if (s.when === undefined) out[name] = sample(s, foldIn(k, i))
-      })
-      entries.forEach(([name, s], i) => {
-        if (s.when?.in.includes(out[s.when.key] as string | number | boolean)) out[name] = sample(s, foldIn(k, i))
-      })
-      return out
-    }
+    case 'dict':
+      // Each key draws from its own key (by position), so adding a conditional key never changes the others.
+      return resolveDict(space, (_, s, i) => sample(s, foldIn(k, i)))
   }
 }
 
 /**
- * Whether a value belongs to a space.
+ * Whether a value belongs to a space (for dicts: every active key is present and belongs to its space).
  *
  * @param space - The space.
  * @param value - The value.
@@ -141,7 +167,7 @@ export function contains(space: Space, value: SpaceValue): boolean {
     case 'dict': {
       if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
       const record = value as Readonly<Record<string, SpaceValue>>
-      return activeKeys(space, record).every(
+      return activeKeysOf(space, record).every(
         (k) => k in record && contains(space.spaces[k] as Space, record[k] as SpaceValue),
       )
     }
@@ -149,7 +175,8 @@ export function contains(space: Space, value: SpaceValue): boolean {
 }
 
 /**
- * Bring a value into a space (clamp numbers, round integers).
+ * Bring a value into a space: clamp numbers (snapping stepped reals to their grid), round integers, discrete and
+ * binary coordinates, and drop inactive dict keys.
  *
  * @param space - The space.
  * @param value - The value.
@@ -164,7 +191,7 @@ export function contains(space: Space, value: SpaceValue): boolean {
 export function clip(space: Space, value: SpaceValue): SpaceValue {
   switch (space.kind) {
     case 'real':
-      return Math.min(space.high, Math.max(space.low, value as number))
+      return snap(space.low, space.high, space.step, Math.min(space.high, Math.max(space.low, value as number)))
     case 'int':
       return Math.min(space.high, Math.max(space.low, Math.round(value as number)))
     case 'box':
@@ -173,12 +200,16 @@ export function clip(space: Space, value: SpaceValue): SpaceValue {
       )
     case 'discrete':
       return Math.min((space.start ?? 0) + space.n - 1, Math.max(space.start ?? 0, Math.round(value as number)))
+    case 'multiDiscrete':
+      return (value as number[]).map((v, i) => Math.min((space.nvec[i] ?? 1) - 1, Math.max(0, Math.round(v))))
+    case 'multiBinary':
+      return (value as number[]).map((v) => (v >= 0.5 ? 1 : 0))
     case 'tuple':
       return space.spaces.map((s, i) => clip(s, (value as SpaceValue[])[i] as SpaceValue))
     case 'dict': {
       const record = value as Readonly<Record<string, SpaceValue>>
       const out: Record<string, SpaceValue> = {}
-      for (const k of activeKeys(space, record))
+      for (const k of activeKeysOf(space, record))
         if (k in record) out[k] = clip(space.spaces[k] as Space, record[k] as SpaceValue)
       return out
     }
@@ -186,14 +217,15 @@ export function clip(space: Space, value: SpaceValue): SpaceValue {
       if (!space.options.includes(value as never))
         throw new WhiteboxError('value', `clip: ${String(value)} is not an option`)
       return value
-    default:
+    case 'bool':
       return value
   }
 }
 
 /**
  * The default value of a space: declared defaults, else the middle of intervals (the geometric middle when
- * log-scaled), the first option, false, zeros and lower bounds.
+ * log-scaled, snapped to the step), the first option, false, zeros clamped into boxes, and the first value of discrete
+ * spaces. Conditional dict keys get defaults when the defaults make them active.
  *
  * @param space - The space.
  * @returns The default value.
@@ -206,7 +238,15 @@ export function clip(space: Space, value: SpaceValue): SpaceValue {
 export function defaults(space: Space): SpaceValue {
   switch (space.kind) {
     case 'real':
-      return space.default ?? (space.log ? Math.sqrt(space.low * space.high) : (space.low + space.high) / 2)
+      return (
+        space.default ??
+        snap(
+          space.low,
+          space.high,
+          space.step,
+          space.log ? Math.sqrt(space.low * space.high) : (space.low + space.high) / 2,
+        )
+      )
     case 'int':
       return space.default ?? Math.round(space.log ? Math.sqrt(space.low * space.high) : (space.low + space.high) / 2)
     case 'choice':
@@ -214,25 +254,22 @@ export function defaults(space: Space): SpaceValue {
     case 'bool':
       return space.default ?? false
     case 'box':
-      return Array.from({ length: sizeOf(space.shape) }, (_, i) =>
-        Math.min(Math.max(0, elementBounds(space.low, i)), elementBounds(space.high, i)),
+      return (
+        space.default ??
+        Array.from({ length: sizeOf(space.shape) }, (_, i) =>
+          Math.min(Math.max(0, elementBounds(space.low, i)), elementBounds(space.high, i)),
+        )
       )
     case 'discrete':
-      return space.start ?? 0
+      return space.default ?? space.start ?? 0
     case 'multiDiscrete':
-      return space.nvec.map(() => 0)
+      return space.default ?? space.nvec.map(() => 0)
     case 'multiBinary':
-      return new Array<number>(space.n).fill(0)
+      return space.default ?? new Array<number>(space.n).fill(0)
     case 'tuple':
       return space.spaces.map(defaults)
-    case 'dict': {
-      const out: Record<string, SpaceValue> = {}
-      for (const [k, s] of Object.entries(space.spaces)) if (s.when === undefined) out[k] = defaults(s)
-      for (const [k, s] of Object.entries(space.spaces)) {
-        if (s.when?.in.includes(out[s.when.key] as string | number | boolean)) out[k] = defaults(s)
-      }
-      return out
-    }
+    case 'dict':
+      return resolveDict(space, (_, s) => defaults(s))
   }
 }
 
@@ -338,8 +375,10 @@ export function unflatten(space: Space, numbers: readonly number[]): SpaceValue 
       }
       case 'box':
       case 'multiDiscrete':
-      case 'multiBinary':
-        return take(flatDim(s))
+      case 'multiBinary': {
+        const v = take(flatDim(s))
+        return v.some(Number.isNaN) ? undefined : v
+      }
       case 'tuple':
         return s.spaces.map((c) => build(c) as SpaceValue)
       case 'dict': {

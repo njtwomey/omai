@@ -8,15 +8,20 @@ export interface MetricChannel {
   readonly direction?: Direction
 }
 
-/** A tensor channel an algorithm can emit. */
+/**
+ * A tensor channel an algorithm can emit, with its role and optionally its shape (numbers are fixed sizes, strings name
+ * sizes that vary, such as `'n'` or `'batch'`).
+ */
 export interface TensorChannel {
   readonly role: TensorRole
   readonly description: string
+  readonly shape?: readonly (number | string)[]
 }
 
-/** A message kind an algorithm can emit. */
+/** A message kind an algorithm can emit, optionally describing its payload fields. */
 export interface MessageChannel {
   readonly description: string
+  readonly payload?: Readonly<Record<string, string>>
 }
 
 /**
@@ -71,23 +76,52 @@ export function schemaToJson(schema: TraceSchema): Json {
   return JSON.parse(JSON.stringify(schema)) as Json
 }
 
+function shapeMatches(declared: readonly (number | string)[], actual: readonly number[]): boolean {
+  if (declared.length !== actual.length) return false
+  const named = new Map<string, number>()
+  for (let i = 0; i < declared.length; i++) {
+    const d = declared[i]
+    const a = actual[i] as number
+    if (typeof d === 'number') {
+      if (d !== a) return false
+    } else if (d !== undefined) {
+      // A named size must be the same wherever it appears in one shape.
+      if ((named.get(d) ?? a) !== a) return false
+      named.set(d, a)
+    }
+  }
+  return true
+}
+
 /**
- * Check recorded events against a schema: every metric, tensor and message must be a declared channel.
+ * Check recorded events against a schema: every metric, tensor and message must be a declared channel, and tensors
+ * must have their declared role and shape (named sizes match any size, but the same size wherever they repeat).
  *
  * @param events - The events.
  * @param schema - The declared channels.
- * @returns One message per undeclared channel (empty when the events conform).
+ * @returns One message per problem (empty when the events conform).
  * @example
  * ```ts
  * import { channels, validateAgainstSchema } from 'whitebox-engine/trace'
  * validateAgainstSchema([{ type: 'metric', runId: 'r', step: 0, name: 'x', value: 1 }], channels({})) // => ['undeclared metric x']
+ * const s = channels({ tensors: { w: { role: 'param', description: 'weights', shape: ['n', 2] } } })
+ * validateAgainstSchema([{ type: 'tensor', runId: 'r', step: 0, name: 'w', role: 'param', shape: [3, 3] }], s) // => ['tensor w has shape [3,3], declared [n,2]']
  * ```
  */
 export function validateAgainstSchema(events: readonly TraceEvent[], schema: TraceSchema): string[] {
   const problems = new Set<string>()
   for (const e of events) {
     if (e.type === 'metric' && !(e.name in schema.metrics)) problems.add(`undeclared metric ${e.name}`)
-    if (e.type === 'tensor' && !(e.name in schema.tensors)) problems.add(`undeclared tensor ${e.name}`)
+    if (e.type === 'tensor') {
+      const declared = schema.tensors[e.name]
+      if (declared === undefined) problems.add(`undeclared tensor ${e.name}`)
+      else {
+        if (declared.role !== e.role) problems.add(`tensor ${e.name} has role ${e.role}, declared ${declared.role}`)
+        if (declared.shape !== undefined && !shapeMatches(declared.shape, e.shape)) {
+          problems.add(`tensor ${e.name} has shape [${e.shape}], declared [${declared.shape}]`)
+        }
+      }
+    }
     if (e.type === 'message' && !(e.kind in schema.messages)) problems.add(`undeclared message ${e.kind}`)
     if (e.type === 'episode' && !schema.episodes) problems.add('undeclared episodes')
     if (e.type === 'frame' && !schema.frames) problems.add('undeclared frames')

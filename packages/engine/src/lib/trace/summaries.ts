@@ -54,3 +54,30 @@ export function summarise(values: ArrayLike<number>, bins = 10): TensorSummary {
     histogram: { edges, counts },
   }
 }
+
+/**
+ * An evenly spaced subsample of a tensor's flat values, always including the first and last, for recording a glimpse
+ * of a large tensor next to its summary.
+ *
+ * @param values - The values.
+ * @param count - How many to keep (at most all of them).
+ * @returns The kept values and their flat indices.
+ * @example
+ * ```ts
+ * import { subsample } from 'whitebox-engine/trace'
+ * subsample([10, 11, 12, 13, 14, 15, 16, 17, 18], 3) // => { values: [10, 14, 18], indices: [0, 4, 8] }
+ * ```
+ */
+export function subsample(
+  values: ArrayLike<number>,
+  count: number,
+): { readonly values: number[]; readonly indices: number[] } {
+  const n = values.length
+  const k = Math.min(n, Math.max(0, Math.floor(count)))
+  const indices: number[] = []
+  for (let i = 0; i < k; i++) {
+    const index = k === 1 ? 0 : Math.round((i * (n - 1)) / (k - 1))
+    if (indices[indices.length - 1] !== index) indices.push(index)
+  }
+  return { values: indices.map((i) => values[i] as number), indices }
+}

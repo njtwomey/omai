@@ -254,7 +254,7 @@ step, every n, log-spaced, on change, first and last), at what detail (summaries
 tensors), with or without gradients, within a size budget. Inner algorithms run as child runs, so traces are
 hierarchical (an inner solver inside an outer loop, a trial inside a study). Each algorithm also runs untraced at full
 speed: the policy decides, not the code. Direct methods (elimination, factorisations, decision-tree splits) offer step
-records, and `instrument(fn, schema)` traces any function call.
+records, and `instrument(fn, options)` traces any function call.
 
 ### 3.4 Spaces
 
@@ -351,7 +351,7 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 | tier | domain        | purpose                                                                                                                                                                                          |
 | ---: | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 |    0 | `base`        | errors, JSON, shared result shapes, scalar helpers, version                                                                                                                                      |
-|    0 | `scene`       | drawings (`Scene`) and graph-shaped descriptions (`Structure`) as data                                                                                                                           |
+|    1 | `scene`       | drawings (`Scene`), 3-D layers, rasters and graph-shaped descriptions (`Structure`) as data                                                                                                      |
 |    1 | `tensor`      | arrays, dtypes, shapes, primitives with derivative rules, backends, operations, pytrees                                                                                                          |
 |    2 | `random`      | immutable counter-based keys and samplers                                                                                                                                                        |
 |    2 | `symbolic`    | symbolic expressions: simplification, differentiation, series, integration, LaTeX                                                                                                                |
@@ -404,22 +404,36 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
   `resolveConfidenceLevel`).
 - `version.ts`: `VERSION`, generated from `package.json`.
 
-### 4.2 `scene/` (tier 0): pictures and structures as data
+### 4.2 `scene/` (tier 1): pictures and structures as data
 
-- `types.ts`: `Scene`, `SceneNode` (rect, circle, ellipse, line, arrow, path, polygon, text, tex, image, group),
-  `Style`, `Paint` (theme tokens `fg`, `bg`, `surface`, `muted`, `grid`, `accent`, `tab0`..`tab9`, or literal colours),
-  `Transform`.
-- `build.ts`: constructors for every node, `scene`, `group`, `image` (from a 2-D or RGB tensor), `tex` (a maths label,
-  typeset by the renderer).
-- `geometry.ts`: `bounds`, `translate`, `rotate`, `scaleTo`, `fit`, `grid` (filmstrips), `isScene`.
-- `three-d.ts`: a small 3-D layer: `Scene3D` (points, segments, polylines, triangles, surfaces from grids, arrows,
-  labels), `camera` (orthographic and perspective, orbit angles), `project` (to a 2-D `Scene` with painter's-algorithm
-  depth sorting), for vectors, surfaces, loss landscapes and rotations without WebGL.
-- `structure.ts`: `Structure` (typed nodes with role, label, value badges and ports; typed edges; groups such as plates,
-  repeated blocks and clusters; annotations), `structure` builder, `mergeStructures`, `subStructure`, `isStructure`.
+Tier 1 rather than 0 so that it can use `base` (errors, `clamp`, `maxOf`); nothing below it draws.
+- `types.ts`: `Scene`, `SceneNode` (rect, circle, ellipse, line (an arrow is a line with a head), path (a polygon is a
+  closed path), text, tex, image, group, `layer3d`: a 3-D scene and camera drawn into a box), `Style` (with the default
+  fill and stroke rules every renderer follows), `ThemeToken` (`fg`, `bg`, `surface`, `muted`, `grid`, `accent`,
+  `tab0`..`tab9`), `Paint` (a token, `none` or a literal colour), `Pixels`, `Transform` (translate, rotate, scale).
+- `build.ts`: constructors for every node (`rect`, `circle`, `ellipse`, `line`, `arrow`, `path`, `polygon`, `text`,
+  `tex` (a maths label, typeset by the renderer), `image` (from pixels, or a 2-D or RGB(A) tensor or nested arrays),
+  `group`), `scene`, `toPixels` (imshow-style conversion), `isScene`.
+- `geometry.ts`: `bounds`, `composeTransforms`, `applyTransform`, `invertTransform`, `translate`, `rotate`, `scaleTo`,
+  `fit`, `grid` (filmstrips).
+- `three-d.ts`: a small 3-D layer: `Scene3D` of points, segments, arrows, polylines, faces (triangles and polygons),
+  surfaces from grids and labels (`scene3d`, `point3d`, `segment3d`, `arrow3d`, `polyline3d`, `triangle3d`, `face3d`,
+  `surface3d`, `label3d`, `axes3d`), for vectors, surfaces, loss landscapes and rotations without WebGL.
+- `projection.ts`: `Camera` and `camera` (orthographic and perspective, orbit angles as in matplotlib's `view_init`),
+  `orbit`, `fitCamera`, `projectPoint`, `project` (to a 2-D `Scene` with painter's-algorithm depth sorting and optional
+  back-face culling), `layer3d`, `projectLayers` (what renderers call before drawing).
+- `structure.ts`: `Structure` (typed nodes with role, label, value badges and ports; typed edges between ports; groups
+  such as plates, repeated blocks and clusters; annotations), `structure` builder, `mergeStructures`, `subStructure`,
+  `isStructure`.
 - `timeline.ts`: `Timeline` (frames keyed by step: scene or structure states with highlights), the data behind every
-  animation and export.
-- `raster.ts`: a small software rasteriser from scenes to RGBA arrays (pixel observations for RL, frames in Node).
+  animation and export; `timeline`, `sceneTimeline`, `isTimeline`.
+- `paint.ts`: `palettes` (the light and dark token colours, tab10 for the categorical tokens), `parsePaint`.
+- `raster.ts`: `rasterise`, a small software rasteriser from scenes to RGBA pixels (pixel observations for RL, frames in
+  Node): nonzero fills at pixel centres, strokes with dashes, joins and arrow heads, smooth paths, images, 3-D layers,
+  supersampling. TODO: text and TeX labels are skipped (they need a bundled bitmap font).
+
+oracle: none (no reference library shares these conventions); checked by unit tests and properties (transforms
+compose, projections are affine or perspective-consistent, painter's order, exact pixel coverage)
 
 ### 4.3 `tensor/` (tier 1): arrays and differentiable primitives (numpy, torch.Tensor, jax.numpy)
 
@@ -541,35 +555,48 @@ oracle: jax and torch for derivative values; finite differences in property test
 
 ### 4.7 `trace/` (tier 3): recording what algorithms do
 
-- `events.ts`: event types `run`, `metric`, `tensor` (role: param, grad, state, activation, output, with full values or
-  a summary), `message`, `episode`, `frame`, `checkpoint`, `log`, `end`; `Run`; zod schemas.
-- `schema.ts`: `TraceSchema` (declared channels with descriptions, units and directions), `channels` builder,
-  `validateAgainstSchema`.
-- `policy.ts`: `TracePolicy` (channel selection, frequency: every n, log-spaced, on change, first and last; detail:
-  summary or full; gradients on or off; byte budget; tensor subsampling), `policies` presets (`minimal`, `standard`,
-  `debug`, `teaching`), `shouldRecord`.
+- `events.ts`: event types `run`, `metric`, `tensor` (role: param, grad, state, activation, output, with full values,
+  a summary, or a summary plus an indexed subsample), `message`, `episode`, `frame`, `checkpoint`, `log`, `end`; `Run`;
+  zod schemas.
+- `schema.ts`: `TraceSchema` (declared channels with descriptions, units and directions; tensor roles and shapes with
+  named sizes; message payload fields), `channels` builder, `schemaToJson`, `validateAgainstSchema`.
+- `policy.ts`: `TracePolicy` (channel selection, frequency: every n, log-spaced, on change with a tolerance, first and
+  last; detail: summary or full; gradients on or off through the `grad` role; event and byte budgets; tensor
+  subsampling; checkpoint interval; the `inner` policy of child runs), `policies` presets (`minimal`, `standard`,
+  `debug`, `teaching`), `tracePolicy`, `shouldRecord` (the single recording rule, built on `channelSelected`,
+  `onSchedule`, `selected` and `changed`), `childPolicy` (propagation to inner algorithms).
 - `summaries.ts`: tensor summaries (norm, mean, standard deviation, extremes, histogram, sparsity) used at summary
-  detail.
-- `tracer.ts`: `Tracer`, `nullTracer`, `recorder`, `tee`, `filtered`, `startRun`, `RunHandle`.
-- `algorithm.ts`: `Algorithm<S>` (`init`, `step`, `done`, `observe`, `schema`), `StepContext`, `runAlgorithm`,
-  `iterate` (a generator for live views), `runFor` (time-budgeted slices).
-- `nesting.ts`: child runs (`subRun`), run trees, propagation of policies to inner algorithms.
-- `taps.ts`: `tap(name, value)` inside model code, `TapContext`; records activations when the policy asks.
-- `instrument.ts`: `instrument(fn, schema)` (trace calls of any function: input and output summaries, timing excluded
-  from deterministic content), step records for direct methods.
-- `checkpoint.ts`: `checkpointEvery`, `resume`, `seek`.
+  detail (`summarise`), and `subsample`.
+- `tracer.ts`: `Tracer`, `nullTracer`, `recorder`, `tee`, `filtered`, `startRun`, `RunHandle` (applies the policy).
+- `algorithm.ts`: `Algorithm<S>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext`,
+  `runAlgorithm`, `iterate` (a generator for live views), `runFor` (budgeted slices that continue exactly; the budget
+  is a step count or milliseconds of an injected clock, since published code reads no clocks).
+- `nesting.ts`: child runs (`subRun`, keyed from the outer step, with the policy `childPolicy` derives); run trees are
+  read back with `runTree` in `query.ts`.
+- `taps.ts`: `tapContext` (`taps.tap(name, value)` inside model code, `TapContext`), `tapsFor(run, step)` (records
+  activations when the policy asks).
+- `instrument.ts`: `instrument(fn, options)` (trace calls of any function: numeric inputs and outputs as metrics or
+  tensor summaries, with a generated schema; timing excluded unless a clock is injected), `traceCall` (step records
+  for direct methods).
+- `checkpoint.ts`: `checkpointEvery` (a policy storing checkpoints every n steps), `resume`, `seek`.
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
 - `query.ts`: `metricSeries`, `tensorSeries`, `messages`, `episodes`, `frames`, `runTree`, `summary`, `diffRuns`.
+
+oracle: numpy for `summaries.ts` (moments, norms, `np.histogram`); the rest by unit and property tests
 
 ### 4.8 `space/` (tier 3): typed spaces (gymnasium.spaces, Optuna distributions, ConfigSpace)
 
 - `types.ts`: `Space` union (`real` with bounds, log scale and step; `int`; `choice`; `bool`; `box`; `discrete`;
-  `multiDiscrete`; `multiBinary`; `tuple`; `dict`; conditional dimensions), metadata (label, description, unit,
-  default).
+  `multiDiscrete`; `multiBinary`; `tuple`; `dict`; conditional dimensions through `when` on a dict child, which may
+  chain), metadata (label, description, unit, and a `default` on every kind), with a builder per kind.
 - `operations.ts`: `sample(space, key)`, `contains`, `clip`, `defaults`, `flatDim`, `flatten`, `unflatten`,
-  `activeDims`.
-- `encoding.ts`: `encode`/`decode` to the unit cube, `grid` enumeration, `neighbours` (for local search over
-  configurations), `distance`.
+  `activeDims` (dotted paths of the active dimensions of a value).
+- `encoding.ts`: `encode`/`decode` to the unit cube (every kind, inactive keys at 0.5), `encodedDim`, `grid`
+  enumeration (tuples, nested and conditional dicts), `neighbours` (one-move neighbourhoods for local search over
+  configurations, repairing conditional dimensions), `distance`.
+- `_active.ts` (internal): resolution of conditional dict keys shared by the operations.
+
+oracle: none; checked by properties (samples, neighbours and decoded values stay in the space, encodings round-trip)
 
 ### 4.9 `context/` (tier 4): reproducibility and defaults
 
@@ -3136,7 +3163,7 @@ After the slice, every remaining file in this document becomes a build task, tak
    specialised engines. Does the planner's automatic choice stay predictable enough, and is the fast path through
    engines fast enough for interactive pages?
 5. **Two API forms.** Functional and class forms for every estimator, layer and environment: worth the surface?
-6. **Scenes and structures in the engine.** Both live in tier 0 of the engine so models and environments can describe
+6. **Scenes and structures in the engine.** Both live in tier 1 of the engine so models and environments can describe
    themselves; the alternative is a small fifth package.
 7. **Datasets in the engine package.** Embedded static data enlarges the engine tarball; the alternative is a
    `whitebox-datasets` package.

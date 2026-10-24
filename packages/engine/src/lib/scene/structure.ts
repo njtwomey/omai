@@ -1,3 +1,5 @@
+import { WhiteboxError } from '../base/index.ts'
+
 /**
  * The role of a node in a structure; renderers pick shapes and colours by role.
  */
@@ -20,7 +22,17 @@ export type NodeRole =
   | 'internal'
   | 'other'
 
-/** A node of a {@link Structure}. */
+/** A named connection point on a node (a layer's inputs and outputs, a factor's variables, a block's slots). */
+export interface StructurePort {
+  readonly id: string
+  readonly label?: string
+  readonly direction: 'in' | 'out'
+}
+
+/**
+ * A node of a {@link Structure}: an id, a label, a role, an optional enclosing group, a detail line, value badges
+ * (shapes, parameter counts, current values), ports and free-form data.
+ */
 export interface StructureNode {
   readonly id: string
   readonly label: string
@@ -28,16 +40,26 @@ export interface StructureNode {
   readonly group?: string
   readonly detail?: string
   readonly badges?: Readonly<Record<string, string | number>>
+  readonly ports?: readonly StructurePort[]
   readonly data?: Readonly<Record<string, unknown>>
 }
 
-/** An edge of a {@link Structure}. */
+/** An edge of a {@link Structure}, optionally between named ports of its end nodes. */
 export interface StructureEdge {
   readonly from: string
   readonly to: string
+  readonly fromPort?: string
+  readonly toPort?: string
   readonly label?: string
   readonly directed?: boolean
   readonly kind?: 'data' | 'dependency' | 'skip' | 'message' | 'other'
+}
+
+/** A note attached to a node or group of a {@link Structure} (or to the whole structure when `target` is omitted). */
+export interface StructureAnnotation {
+  readonly target?: string
+  readonly text: string
+  readonly kind?: 'note' | 'warning' | 'highlight'
 }
 
 /** A group of nodes: a plate, a repeated block, a cluster. */
@@ -50,9 +72,9 @@ export interface StructureGroup {
 }
 
 /**
- * A graph-shaped description as data: typed nodes, typed edges and groups. Graphical models, computation graphs,
- * network architectures, trees, automata and pipelines all describe themselves this way, and whitebox-render lays out
- * and draws any structure the same way.
+ * A graph-shaped description as data: typed nodes, typed edges, groups and annotations. Graphical models,
+ * computation graphs, network architectures, trees, automata and pipelines all describe themselves this way, and
+ * whitebox-render lays out and draws any structure the same way.
  *
  * @concept structures
  */
@@ -62,6 +84,7 @@ export interface Structure {
   readonly nodes: readonly StructureNode[]
   readonly edges: readonly StructureEdge[]
   readonly groups: readonly StructureGroup[]
+  readonly annotations?: readonly StructureAnnotation[]
   readonly title?: string
   readonly direction?: 'down' | 'right'
 }
@@ -72,7 +95,7 @@ export interface Structure {
  * @param type - What it describes (for example `computation-graph`, `bayes-net`, `architecture`).
  * @param nodes - The nodes.
  * @param edges - The edges.
- * @param options - Groups, a title and the preferred layout direction.
+ * @param options - Groups, annotations, a title and the preferred layout direction.
  * @returns The structure.
  * @concept structures
  * @example
@@ -88,12 +111,90 @@ export function structure(
   edges: readonly StructureEdge[],
   options: {
     readonly groups?: readonly StructureGroup[]
+    readonly annotations?: readonly StructureAnnotation[]
     readonly title?: string
     readonly direction?: 'down' | 'right'
   } = {},
 ): Structure {
   const { groups = [], ...rest } = options
   return { kind: 'structure', type, nodes, edges, groups, ...rest }
+}
+
+/**
+ * Combine structures into one. Nodes and groups with the same id are identified (later fields override earlier ones;
+ * badges, data and ports are merged), and repeated edges are kept once. With `prefixes`, the ids of the `i`-th
+ * structure are first prefixed with `prefixes[i] + '/'`, so unrelated structures sit side by side without clashing.
+ *
+ * @param parts - The structures.
+ * @param options - Id prefixes per part, and the type, title and direction of the result (default: the first part's).
+ * @returns The merged structure.
+ * @throws WhiteboxError with code `value` when `prefixes` does not have one entry per part.
+ * @example
+ * ```ts
+ * import { mergeStructures, structure } from 'whitebox-engine/scene'
+ * const a = structure('x', [{ id: 'a', label: 'a', role: 'input' }, { id: 'b', label: 'b', role: 'output' }], [{ from: 'a', to: 'b' }])
+ * const b = structure('x', [{ id: 'b', label: 'b', role: 'output' }, { id: 'c', label: 'c', role: 'output' }], [{ from: 'b', to: 'c' }])
+ * mergeStructures([a, b]).nodes.map((n) => n.id) // => ['a', 'b', 'c']
+ * mergeStructures([a, b], { prefixes: ['l', 'r'] }).nodes.length // => 4
+ * ```
+ */
+export function mergeStructures(
+  parts: readonly Structure[],
+  options: {
+    readonly prefixes?: readonly string[]
+    readonly type?: string
+    readonly title?: string
+    readonly direction?: 'down' | 'right'
+  } = {},
+): Structure {
+  const { prefixes } = options
+  if (prefixes !== undefined && prefixes.length !== parts.length) {
+    throw new WhiteboxError('value', 'mergeStructures: give one prefix per structure')
+  }
+  const nodes = new Map<string, StructureNode>()
+  const groups = new Map<string, StructureGroup>()
+  const edges = new Map<string, StructureEdge>()
+  const annotations: StructureAnnotation[] = []
+  for (const [i, part] of parts.entries()) {
+    const p = prefixes === undefined ? (id: string): string => id : (id: string): string => `${prefixes[i]}/${id}`
+    for (const n of part.nodes) {
+      const node: StructureNode = { ...n, id: p(n.id), ...(n.group === undefined ? {} : { group: p(n.group) }) }
+      const old = nodes.get(node.id)
+      if (old === undefined) {
+        nodes.set(node.id, node)
+        continue
+      }
+      const ports = new Map([...(old.ports ?? []), ...(node.ports ?? [])].map((q) => [q.id, q]))
+      nodes.set(node.id, {
+        ...old,
+        ...node,
+        ...((old.badges ?? node.badges) ? { badges: { ...old.badges, ...node.badges } } : {}),
+        ...((old.data ?? node.data) ? { data: { ...old.data, ...node.data } } : {}),
+        ...(ports.size > 0 ? { ports: [...ports.values()] } : {}),
+      })
+    }
+    for (const g of part.groups) {
+      const group: StructureGroup = { ...g, id: p(g.id), ...(g.parent === undefined ? {} : { parent: p(g.parent) }) }
+      groups.set(group.id, { ...groups.get(group.id), ...group })
+    }
+    for (const e of part.edges) {
+      const edge: StructureEdge = { ...e, from: p(e.from), to: p(e.to) }
+      const key = JSON.stringify([edge.from, edge.to, edge.fromPort, edge.toPort, edge.label, edge.kind])
+      if (!edges.has(key)) edges.set(key, edge)
+    }
+    for (const a of part.annotations ?? []) {
+      annotations.push(a.target === undefined ? a : { ...a, target: p(a.target) })
+    }
+  }
+  const first = parts[0]
+  const title = options.title ?? first?.title
+  const direction = options.direction ?? first?.direction
+  return structure(options.type ?? first?.type ?? 'merged', [...nodes.values()], [...edges.values()], {
+    groups: [...groups.values()],
+    ...(annotations.length > 0 ? { annotations } : {}),
+    ...(title === undefined ? {} : { title }),
+    ...(direction === undefined ? {} : { direction }),
+  })
 }
 
 /**
@@ -138,9 +239,17 @@ export function subStructure(s: Structure, ids: readonly string[], direction: 'a
       }
     }
   }
+  const groups = new Set(s.groups.map((g) => g.id))
   return {
     ...s,
     nodes: s.nodes.filter((n) => keep.has(n.id)),
     edges: s.edges.filter((e) => keep.has(e.from) && keep.has(e.to)),
+    ...(s.annotations === undefined
+      ? {}
+      : {
+          annotations: s.annotations.filter(
+            (a) => a.target === undefined || keep.has(a.target) || groups.has(a.target),
+          ),
+        }),
   }
 }

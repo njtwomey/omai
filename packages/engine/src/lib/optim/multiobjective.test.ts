@@ -3,7 +3,7 @@ import { zdt1 } from '../../testing/optim-problems.ts'
 import { grad } from '../autodiff/index.ts'
 import { key } from '../random/index.ts'
 import { item, square, stack, sub, sum, tensor, toArray, toFlat, type Value } from '../tensor/index.ts'
-import { metricSeries, recorder, tensorSeries } from '../trace/index.ts'
+import { metricSeries, recorder, tensorSeries, tracePolicy } from '../trace/index.ts'
 import { nelderMead } from './minimize/derivative-free.ts'
 import {
   augmentedChebyshev,
@@ -231,7 +231,7 @@ describe('NSGA-II', () => {
       maxIterations: 3,
       seed: 0,
       tracer: rec,
-      policy: {
+      policy: tracePolicy({
         metrics: true,
         tensors: true,
         roles: ['state', 'param'],
@@ -242,7 +242,7 @@ describe('NSGA-II', () => {
         detail: 'full',
         maxTensorSize: 4096,
         maxEvents: 1e6,
-      },
+      }),
     })
     expect(tensorSeries(rec.run(), 'objectives')[0]?.shape).toEqual([8, 2])
     expect(() => nsga2Algorithm(schaffer, [0], { bounds: [[-5, 5]], popSize: 2 })).toThrow()

@@ -1210,6 +1210,14 @@
         "numpy": "2.5.4"
       },
       "cases": 24
+    },
+    {
+      "fixture": "trace/summaries.json",
+      "source": "oracle/cases/trace/summaries.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 20
     }
   ]
 }
