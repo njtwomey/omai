@@ -143,10 +143,12 @@ export interface SurfaceStepsInput {
   readonly iterations: readonly number[]
   /** The training objective at each step. */
   readonly objective?: readonly number[]
-  /** Rows that matter at each step (support vectors, the rows just seen). */
-  readonly highlight?: readonly (readonly number[])[]
+  /** Rows that matter at each step (support vectors, the rows just seen), or the rows the model then misclassifies. */
+  readonly highlight?: readonly (readonly number[])[] | 'misclassified'
   /** A weight per row at each step (sample weights, residuals). */
   readonly rowWeights?: readonly (readonly number[])[]
+  /** What the highlighted rows are (default 'misclassified' for those, else none). */
+  readonly highlightName?: string
 }
 
 /** Options of {@link decisionSurfaceOf}. */
@@ -375,21 +377,31 @@ export function decisionSurfaceOf(
           ...(options.y === undefined || !classifier ? {} : { y: options.y, classes }),
           ...(options.classNames === undefined ? {} : { classNames: options.classNames }),
         })
+  // The rows a model gets wrong (indices into the rows the record carries).
+  const misclassified = (model: Fitted): number[] | undefined => {
+    const labels = rows?.labels
+    if (labels === undefined || !classifier) return undefined
+    const index = new Map(classes.map((c, i) => [c, i]))
+    const predicted = toFlat((model.predict as (x: TensorLike) => Tensor)(x))
+    return labels.flatMap((l, i) => (l >= 0 && index.get(predicted[i] ?? Number.NaN) !== l ? [i] : []))
+  }
   const steps: SurfaceStep[] | undefined = options.steps?.models.map((model, t) => {
     const s = options.steps as SurfaceStepsInput
     const objective = s.objective?.[t]
-    const highlight = s.highlight?.[t]
+    const highlight = s.highlight === 'misclassified' ? misclassified(model) : s.highlight?.[t]
     const rowWeights = s.rowWeights?.[t]
     const rowValues = rows === undefined ? undefined : binaryDecision(model, x)
     return {
       iteration: s.iterations[t] ?? t,
       ...fieldsOf(model),
-      ...(objective === undefined ? {} : { objective }),
+      ...(objective === undefined || !Number.isFinite(objective) ? {} : { objective }),
       ...(rowValues === undefined ? {} : { rowValues: Array.from(rowValues) }),
       ...(highlight === undefined ? {} : { highlight }),
       ...(rowWeights === undefined || rows === undefined ? {} : { rowWeights }),
     }
   })
+  const highlightName =
+    options.steps?.highlightName ?? (options.steps?.highlight === 'misclassified' ? 'misclassified' : undefined)
   return decisionSurface({
     features,
     x: gx,
@@ -400,6 +412,7 @@ export function decisionSurfaceOf(
     ...(rows === undefined ? {} : { rows }),
     ...(steps === undefined ? {} : { steps }),
     ...(options.stepName === undefined ? {} : { stepName: options.stepName }),
+    ...(highlightName === undefined ? {} : { highlightName }),
     ...(options.objective === undefined ? {} : { objective: options.objective }),
   })
 }

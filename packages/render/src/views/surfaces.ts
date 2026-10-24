@@ -334,7 +334,11 @@ export function decisionSurfaceFrames(surface: DecisionSurface, options: Surface
         aspect: options.aspect ?? 'auto',
         ...(step === undefined
           ? {}
-          : { title: `${stepName} ${step.iteration}${ringed === undefined ? '' : ` · ${ringed} highlighted`}` }),
+          : {
+              title: `${stepName} ${step.iteration}${
+                ringed === undefined ? '' : ` · ${ringed} ${surface.highlightName ?? 'highlighted'}`
+              }`,
+            }),
       },
     }
     if (objective === undefined || step === undefined)

@@ -48,6 +48,15 @@ export interface GlmSolution {
   readonly history: readonly number[]
   /** The duality gap at the end (coordinate descent). */
   readonly gap?: number
+  /** The iterates, the start first, with their objective (IRLS): for recording the model through training. */
+  readonly path?: readonly GlmIterate[]
+}
+
+/** One iterate of an iterative GLM solve. */
+export interface GlmIterate {
+  readonly coef: readonly number[]
+  readonly intercept: number
+  readonly objective: number
 }
 
 /** Options of {@link solveGlm}. */
@@ -456,7 +465,10 @@ export function solveGlm(problem: GlmProblem, options: SolveOptions = {}): GlmSo
 }
 
 function irls(problem: GlmProblem, options: SolveOptions): GlmSolution {
-  const tracked = collecting(irlsAlgorithm(problem, options), (state) => state.objective)
+  const tracked = collecting(
+    irlsAlgorithm(problem, options),
+    (state): GlmIterate => ({ coef: Array.from(state.coef), intercept: state.intercept, objective: state.objective }),
+  )
   const r = runAlgorithm(tracked.algorithm, { ...runOf(options), maxSteps: options.maxIter ?? 100 })
   return {
     coef: r.state.coef,
@@ -465,7 +477,8 @@ function irls(problem: GlmProblem, options: SolveOptions): GlmSolution {
     iterations: r.steps,
     converged: r.status === 'converged',
     objective: r.state.objective,
-    history: tracked.history.slice(1),
+    history: tracked.history.slice(1).map((h) => h.objective),
+    path: [...tracked.history],
   }
 }
 

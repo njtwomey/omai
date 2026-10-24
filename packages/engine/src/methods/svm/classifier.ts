@@ -430,6 +430,7 @@ function smoSteps(
     iterations: kept.map((s) => s.step),
     objective: kept.map((s) => s.objective),
     highlight: kept.map((s) => Array.from(s.alpha.keys()).filter((i) => (s.alpha[i] ?? 0) > 0)),
+    highlightName: 'support vectors',
   }
 }
 

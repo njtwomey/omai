@@ -48,6 +48,8 @@ export interface DecisionSurface {
   readonly steps?: readonly SurfaceStep[]
   /** What a step is (default 'step'): 'SMO step', 'IRLS iteration', 'epoch', 'stage'. */
   readonly stepName?: string
+  /** What the steps' highlighted rows are ('support vectors', 'misclassified', 'updated row'). */
+  readonly highlightName?: string
   /** The training objective at every iteration it was recorded (finer than `steps`), with its name. */
   readonly objective?: {
     readonly name: string
