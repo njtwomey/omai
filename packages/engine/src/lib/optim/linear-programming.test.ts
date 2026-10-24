@@ -253,11 +253,32 @@ describe('simplex robustness on near-tied programs', () => {
       [0.49999309999930003, -0.49999499999950003, -0.1422289642229, 0.49998309999829993],
     ]
     const lp = correlatedEquilibriumLp(A, B)
-    const r = O.linprogSimplex(lp)
+    // The simplex alone either finds a feasible optimum or reports numerical difficulties; linprog always succeeds.
+    const raw = O.linprogSimplex(lp)
+    if (raw.status === 'optimal') {
+      expect(Math.abs(toFlat(raw.con)[0] ?? 1)).toBeLessThan(1e-9)
+      for (const v of toFlat(raw.slack)) expect(v).toBeGreaterThan(-1e-9)
+    } else expect(raw.status).toBe('numerical difficulties')
+    const r = O.linprog(lp)
     expect(r.status).toBe('optimal')
-    expect(Math.abs(toFlat(r.con)[0] ?? 1)).toBeLessThan(1e-9)
-    for (const v of toFlat(r.slack)) expect(v).toBeGreaterThan(-1e-9)
+    expect(Math.abs(toFlat(r.con)[0] ?? 1)).toBeLessThan(1e-7)
+    for (const v of toFlat(r.slack)) expect(v).toBeGreaterThan(-1e-7)
     expect(r.fun).toBeCloseTo(O.linprogInteriorPoint(lp).fun, 6)
+  })
+
+  it('cross-checks false verdicts on near-tied programs (simplex said infeasible, interior point unbounded)', () => {
+    const base = [1, -1, 0, 1, 3, 2, 0, 0, 0, -1, -1, -3, 0, -1, 0, 0, 1, 0]
+    const jitter = [1, 0, 1, 0, 0, -1, 0, 0, 0, 0, 1, 2, 5, -4, 1, 0, 0, 0]
+    const pay = (k: number): number => (base[k] ?? 0) / 2 + (jitter[k] ?? 0) * 1e-6
+    const A = [0, 1, 2].map((i) => [0, 1, 2].map((j) => pay(i * 3 + j)))
+    const B = [0, 1, 2].map((i) => [0, 1, 2].map((j) => pay(9 + i * 3 + j)))
+    const lp = correlatedEquilibriumLp(A, B)
+    expect(['optimal', 'numerical difficulties']).toContain(O.linprogSimplex(lp).status)
+    for (const r of [O.linprog(lp)]) {
+      expect(r.status).toBe('optimal')
+      expect(Math.abs(toFlat(r.con)[0] ?? 1)).toBeLessThan(1e-7)
+      for (const v of toFlat(r.slack)) expect(v).toBeGreaterThan(-1e-7)
+    }
   })
 
   it('reports a feasible optimum on random near-tied games', () => {

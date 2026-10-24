@@ -1,5 +1,5 @@
 import { ddot } from '../numerics/linalg/index.ts'
-import type { Tensor } from '../tensor/index.ts'
+import { asTensor, type Tensor, toArray, toFlat } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm } from '../trace/index.ts'
 import { basisMatrix } from './_lp.ts'
 import { matVec, solveDense, vectorTensor } from './_programming.ts'
@@ -183,6 +183,67 @@ function ranging(
   return { cost, bUb, bEq }
 }
 
+/** Rows of a constraint matrix (empty when absent). */
+function rowsOf(a: LinearProgram['aUb']): number[][] {
+  if (a === undefined) return []
+  const v = toArray(asTensor(a)) as number[] | number[][]
+  return v.length === 0 ? [] : Array.isArray(v[0]) ? (v as number[][]) : [v as number[]]
+}
+
+/**
+ * Solve with every constraint row equilibrated to a largest coefficient of 1 (the solution is unchanged), then report
+ * slacks and residuals against the original rows and rescale the row duals and ranges. Rows of 1e-6-sized coefficients
+ * beside rows of order 1 (near-tied payoffs) otherwise fall under the solvers' tolerances: the simplex then reports
+ * feasible programs infeasible and the interior point reports bounded ones unbounded.
+ */
+function equilibrated(problem: LinearProgram, solve: (p: LinearProgram) => LinprogResult): LinprogResult {
+  const aUb = rowsOf(problem.aUb)
+  const aEq = rowsOf(problem.aEq)
+  const scaleOf = (row: readonly number[]): number => {
+    let largest = 0
+    for (const v of row) largest = Math.max(largest, Math.abs(v))
+    return largest > 0 ? 1 / largest : 1
+  }
+  const sUb = aUb.map(scaleOf)
+  const sEq = aEq.map(scaleOf)
+  if (sUb.every((v) => v === 1) && sEq.every((v) => v === 1)) return solve(problem)
+  const bUb = problem.bUb === undefined ? [] : toFlat(asTensor(problem.bUb))
+  const bEq = problem.bEq === undefined ? [] : toFlat(asTensor(problem.bEq))
+  const scaled: LinearProgram = {
+    ...problem,
+    ...(aUb.length === 0
+      ? {}
+      : { aUb: aUb.map((row, r) => row.map((v) => v * (sUb[r] ?? 1))), bUb: bUb.map((v, r) => v * (sUb[r] ?? 1)) }),
+    ...(aEq.length === 0
+      ? {}
+      : { aEq: aEq.map((row, r) => row.map((v) => v * (sEq[r] ?? 1))), bEq: bEq.map((v, r) => v * (sEq[r] ?? 1)) }),
+  }
+  const r = solve(scaled)
+  const x = toFlat(r.x)
+  const residual = (rows: number[][], b: number[]): Tensor =>
+    vectorTensor(Float64Array.from(rows, (row, i) => (b[i] ?? 0) - ddot(row, x)))
+  // fun depends on b_r' = s_r b_r, so d fun / d b_r = s_r d fun / d b_r'; a range of b_r' is a range of b_r times 1 / s_r.
+  const rescale = (t: Tensor, s: readonly number[]): Tensor =>
+    vectorTensor(Float64Array.from(toFlat(t), (v, i) => v * (s[i] ?? 1)))
+  const ranges = (rs: readonly (readonly [number, number])[], s: readonly number[]): [number, number][] =>
+    rs.map(([lo, hi], i) => [lo / (s[i] ?? 1), hi / (s[i] ?? 1)])
+  return {
+    ...r,
+    slack: aUb.length === 0 ? r.slack : residual(aUb, bUb),
+    con: aEq.length === 0 ? r.con : residual(aEq, bEq),
+    marginals: { ...r.marginals, ineqlin: rescale(r.marginals.ineqlin, sUb), eqlin: rescale(r.marginals.eqlin, sEq) },
+    ...(r.sensitivity === undefined
+      ? {}
+      : {
+          sensitivity: {
+            ...r.sensitivity,
+            bUb: ranges(r.sensitivity.bUb, sUb),
+            bEq: ranges(r.sensitivity.bEq, sEq),
+          },
+        }),
+  }
+}
+
 function run<S extends { readonly solution: StandardSolution; readonly finished: boolean }>(
   algorithm: Algorithm<S>,
   form: StandardForm,
@@ -210,8 +271,10 @@ function run<S extends { readonly solution: StandardSolution; readonly finished:
  * ```
  */
 export function linprogSimplex(problem: LinearProgram, options: LinprogOptions = {}): LinprogResult {
-  const form = standardForm(problem)
-  return run(simplexAlgorithm(form, options), form, options, 50 * (form.a.rows + form.a.cols + 1))
+  return equilibrated(problem, (p) => {
+    const form = standardForm(p)
+    return run(simplexAlgorithm(form, options), form, options, 50 * (form.a.rows + form.a.cols + 1))
+  })
 }
 
 /**
@@ -230,15 +293,18 @@ export function linprogSimplex(problem: LinearProgram, options: LinprogOptions =
  * ```
  */
 export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOptions = {}): LinprogResult {
-  const form = standardForm(problem)
-  return run(lpInteriorPointAlgorithm(form, options), form, options, 200)
+  return equilibrated(problem, (p) => {
+    const form = standardForm(p)
+    return run(lpInteriorPointAlgorithm(form, options), form, options, 200)
+  })
 }
 
 /**
  * Solve a linear program in scipy's form (scipy.optimize.linprog): minimise c^T x subject to A_ub x <= b_ub,
  * A_eq x = b_eq and bounds. The method is a function value; by default {@link linprogSimplex},
  * falling back to {@link linprogInteriorPoint} when the simplex reports numerical difficulties, and
- * confirming infeasible and unbounded verdicts with it.
+ * returning an infeasible or unbounded verdict only when two methods (the simplex with Bland's and Dantzig's rules,
+ * the interior point) agree; otherwise the status is `numerical difficulties`.
  *
  * @param problem - The program.
  * @param options - The method and its options.
@@ -259,7 +325,15 @@ export function linprog(problem: LinearProgram, options: LinprogOptions = {}): L
   const r = linprogSimplex(problem, options)
   if (r.status === 'optimal' || r.status === 'iteration limit') return r
   // Programs the simplex cannot settle numerically (near-tied coefficients) go to the interior-point method, and
-  // infeasible or unbounded verdicts are confirmed by it (its self-dual embedding certifies both).
+  // infeasible or unbounded verdicts are cross-checked: one is returned only when two methods agree.
   const ip = linprogInteriorPoint(problem, options)
-  return ip.status === 'optimal' || r.status === 'numerical difficulties' ? ip : r
+  if (ip.status === 'optimal' || (ip.status === r.status && r.status !== 'numerical difficulties')) return ip
+  const dantzig = linprogSimplex(problem, { ...options, pivotRule: 'dantzig' })
+  if (dantzig.status === 'optimal' || (dantzig.status === ip.status && ip.status !== 'iteration limit')) return dantzig
+  return {
+    ...ip,
+    status: 'numerical difficulties',
+    success: false,
+    message: `numerical difficulties: the simplex (${r.status}, then ${dantzig.status}) and the interior point (${ip.status}) disagree`,
+  }
 }
