@@ -2495,7 +2495,7 @@ oracle: none needed for most of it (exact constructions); networkx for connectiv
 shortest paths on the cell graph and for spanning-tree counts (the matrix-tree theorem behind the uniformity tests of
 Wilson's and the Aldous-Broder algorithms); gymnasium for the FrozenLake, CliffWalking and Taxi transition tables;
 scipy.ndimage for distance transforms; shapely for continuous distances and sight. MiniGrid is not an oracle
-dependency, so its layouts are checked structurally.
+dependency, so its layouts are checked structurally (TODO: golden-test them against minigrid if it joins `oracle-rl`).
 - `world.ts`: `World` (cells on a square or hexagonal grid, or nodes of a graph; walls between cells or blocking cells;
   per-cell terrain with costs; items, doors, keys, goals, hazards; start and goal sets; landmarks), `world`,
   `setWalls`, `setTerrain`, cell and coordinate conversions (`cellIndex`, `cellCoords`, `cellCentre`, `cellAtPoint`,
@@ -2520,8 +2520,8 @@ dependency, so its layouts are checked structurally.
   world, a key maze, Taxi's map and moves) and MiniGrid-style layouts (empty rooms, door-key, four rooms, lava gap,
   river crossings).
 - `continuous.ts`: continuous agents over a world: positions and headings, motion with collision against walls (swept
-  circles and segments, sliding), ray casts, line-of-sight queries, field-of-view cones, distance fields from walls
-  (exact segment distances and the Euclidean, taxicab and chessboard transforms).
+  circles with sliding, swept segments for point agents), ray casts, line-of-sight queries, field-of-view cones,
+  distance fields from walls (exact segment distances and the Euclidean, taxicab and chessboard transforms).
 - `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells, unweighted or by
   terrain cost) and paths, dead ends, choke points and bridges, cell distances and heuristics, and conversion to
   `graph` adjacency for graph algorithms (`graph` is a sibling tier, so worlds returns edges `graph()` accepts).

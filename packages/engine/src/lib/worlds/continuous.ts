@@ -283,6 +283,46 @@ export function castRay(
 }
 
 /**
+ * Sweep a point along a segment (a point agent's move, a bullet, a probe): the first solid wall it meets between the
+ * two ends, as a fraction `t` of the way and the point and normal of contact.
+ *
+ * @param g - The world geometry.
+ * @param from - The start.
+ * @param to - The end.
+ * @param options - Which walls (`'solid'`, the default, or `'opaque'`).
+ * @returns The first contact, or null when the segment is clear.
+ * @concept collision-detection
+ * @example
+ * ```ts
+ * import { fromAscii, sweepSegment, worldGeometry } from 'whitebox-engine/worlds'
+ * const g = worldGeometry(fromAscii(['..#']))
+ * sweepSegment(g, [0.5, 0.5], [2.5, 0.5]) // => { t: 0.75, point: [2, 0.5], normal: [-1, 0] }
+ * sweepSegment(g, [0.5, 0.5], [1.5, 0.5]) // => null
+ * ```
+ */
+export function sweepSegment(
+  g: WorldGeometry,
+  from: readonly [number, number],
+  to: readonly [number, number],
+  options: { readonly kind?: 'solid' | 'opaque' } = {},
+): { readonly t: number; readonly point: [number, number]; readonly normal: [number, number] } | null {
+  const ix = options.kind === 'opaque' ? g.opaque : g.solid
+  const d: [number, number] = [to[0] - from[0], to[1] - from[1]]
+  let best = Number.POSITIVE_INFINITY
+  let normal: [number, number] = [0, 0]
+  for (const id of alongSegment(ix, from, to)) {
+    const [a, b] = segmentOf(ix, id)
+    const hit = rayHit(from, d, a, b)
+    if (hit.t <= 1 && hit.t < best) {
+      best = hit.t
+      normal = hit.normal
+    }
+  }
+  if (best === Number.POSITIVE_INFINITY) return null
+  return { t: best, point: [from[0] + best * d[0], from[1] + best * d[1]], normal }
+}
+
+/**
  * Whether two points see each other: no opaque segment touches the segment between them (touching a wall's end
  * counts as blocked, so sight never slips through a corner). The test is exactly symmetric.
  *

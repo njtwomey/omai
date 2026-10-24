@@ -11,6 +11,7 @@ import {
   moveCircle,
   passable,
   setWalls,
+  sweepSegment,
   type World,
   wallDistanceField,
   wallSegments,
@@ -148,6 +149,10 @@ describe('continuous motion and sight (properties)', () => {
           if (nearest < 1e-6) return
           const hit = castRay(g, o, angle, { kind: 'solid' })
           const d: P = [Math.cos(angle), Math.sin(angle)]
+          // A swept segment of length 2 meets the same wall as the ray, when the ray's hit is within it.
+          const sweep = sweepSegment(g, o, [o[0] + 2 * d[0], o[1] + 2 * d[1]])
+          if (hit !== null && hit.distance < 2 - 1e-9) expect(2 * (sweep?.t ?? Number.NaN)).toBeCloseTo(hit.distance, 9)
+          if (hit === null || hit.distance > 2 + 1e-9) expect(sweep).toBeNull()
           // The brute force: the nearest crossing of a long segment along the ray. A crossing within 1e-9 of a wall's end
           // is a graze (the ray runs past a corner), where rounding decides; such walls are left out.
           let best = Number.POSITIVE_INFINITY
