@@ -439,6 +439,77 @@ export function posteriorView(grid: PosteriorGrid, options: PosteriorViewOptions
   const mode = fig.mode
   const d = grid.inputs[0]?.length ?? 1
   const layers: Layer[] = []
+  const xs = grid.inputs.map((r) => r[0] ?? 0)
+  if (d === 1 && grid.densities !== undefined && grid.densities.length > 0) {
+    // Densities over a parameter: the prior dashed, a likelihood dotted, the posterior solid over its shaded area.
+    for (const dens of grid.densities) {
+      if (dens.role === 'posterior')
+        layers.push(
+          band(
+            [{ x: xs, lower: xs.map(() => 0), upper: [...dens.values], colour: 'tab0', opacity: 0.2, name: '__area' }],
+            {
+              mode,
+            },
+          ),
+        )
+      layers.push(
+        lines(
+          [
+            {
+              x: xs,
+              y: dens.values,
+              name: dens.name,
+              colour: dens.role === 'posterior' ? 'tab0' : dens.role === 'prior' ? 'fgSecondary' : 'tab1',
+              width: dens.role === 'posterior' ? 2.2 : 1.6,
+              ...(dens.role === 'prior'
+                ? { dash: 'dashed' as const }
+                : dens.role === 'likelihood'
+                  ? { dash: 'dotted' as const }
+                  : {}),
+            },
+          ],
+          { mode },
+        ),
+      )
+    }
+    return cartesian(layers, {
+      figure: fig,
+      mode,
+      x: { label: options.inputLabel ?? grid.labels?.input ?? 'parameter' },
+      y: { label: options.outputLabel ?? grid.labels?.output ?? 'density' },
+      tooltip: 'item',
+    })
+  }
+  if (d === 1 && grid.series !== undefined && grid.series.length > 0) {
+    // Several trajectories, each with its band of two standard deviations.
+    grid.series.forEach((sr, i) => {
+      const sd = sr.variance.map((v) => Math.sqrt(Math.max(v, 0)))
+      if (sd.some((v) => v > 0))
+        layers.push(
+          band(
+            [
+              {
+                x: xs,
+                lower: sr.mean.map((m, j) => m - 2 * (sd[j] ?? 0)),
+                upper: sr.mean.map((m, j) => m + 2 * (sd[j] ?? 0)),
+                colour: `tab${i % 10}`,
+                opacity: 0.14,
+                name: `__band${i}`,
+              },
+            ],
+            { mode },
+          ),
+        )
+      layers.push(lines([{ x: xs, y: sr.mean, name: sr.name, colour: `tab${i % 10}`, width: 1.8 }], { mode }))
+    })
+    return cartesian(layers, {
+      figure: fig,
+      mode,
+      x: { label: options.inputLabel ?? grid.labels?.input ?? 'x' },
+      y: { label: options.outputLabel ?? grid.labels?.output ?? 'y' },
+      tooltip: 'item',
+    })
+  }
   if (d === 1) {
     const x = grid.inputs.map((r) => r[0] ?? 0)
     const sd = grid.variance.map((v) => Math.sqrt(Math.max(v, 0)))
@@ -494,8 +565,8 @@ export function posteriorView(grid: PosteriorGrid, options: PosteriorViewOptions
     return cartesian(layers, {
       figure: fig,
       mode,
-      x: { label: options.inputLabel ?? 'x' },
-      y: { label: options.outputLabel ?? 'y' },
+      x: { label: options.inputLabel ?? grid.labels?.input ?? 'x' },
+      y: { label: options.outputLabel ?? grid.labels?.output ?? 'y' },
       legend: false,
       tooltip: 'item',
     })

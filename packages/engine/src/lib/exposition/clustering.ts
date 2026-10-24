@@ -20,6 +20,10 @@ export interface ClusteringSteps {
   readonly ordering?: readonly number[]
   /** Rows whose labels were given and held fixed (semi-supervised seeds). */
   readonly seeds?: readonly number[]
+  /** added[t]: the rows newly labelled at step t (queried by active learning, pseudo-labelled by self-training). */
+  readonly added?: readonly (readonly number[])[]
+  /** What the added rows are ('queried', 'pseudo-labelled'). */
+  readonly addedName?: string
   /** Pairwise constraints (COP k-means): pairs that must share a cluster, and pairs that must not. */
   readonly constraints?: {
     readonly mustLink?: readonly (readonly [number, number])[]
@@ -48,6 +52,7 @@ export function clusteringSteps(steps: Omit<ClusteringSteps, 'kind'>): Clusterin
   if (steps.centres !== undefined) sameLength('clusteringSteps', 'centres', steps.centres.length, t)
   if (steps.objective !== undefined) sameLength('clusteringSteps', 'objective', steps.objective.length, t)
   if (steps.roles !== undefined) sameLength('clusteringSteps', 'roles', steps.roles.length, n)
+  if (steps.added !== undefined) sameLength('clusteringSteps', 'added', steps.added.length, t)
   if (steps.reachability !== undefined && steps.ordering !== undefined)
     sameLength('clusteringSteps', 'reachability', steps.reachability.length, steps.ordering.length)
   if (steps.rows !== undefined && t > 0) sameLength('clusteringSteps', 'rows', steps.rows.points.length, n)

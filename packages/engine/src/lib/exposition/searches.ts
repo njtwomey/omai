@@ -37,7 +37,10 @@ export function searchTrials(record: Omit<SearchTrials, 'kind'>): SearchTrials {
   return { kind: 'searchTrials', ...record }
 }
 
-/** Training and validation scores against training-set size (or epochs, or another resource). */
+/**
+ * Training and validation scores against training-set size (or epochs, or another resource); `validation` may be empty
+ * for a single series.
+ */
 export interface LearningCurve {
   readonly kind: 'learningCurve'
   readonly sizes: readonly number[]
@@ -50,6 +53,8 @@ export interface LearningCurve {
   readonly labels?: { readonly train?: string; readonly validation?: string }
   /** What the scores are ('accuracy', 'cross-validated R²'). */
   readonly scoreName?: string
+  /** Draw the validation column on its own y axis (two measures on different scales: log loss and accuracy). */
+  readonly secondaryAxis?: boolean
 }
 
 /**
@@ -67,7 +72,8 @@ export interface LearningCurve {
 export function learningCurve(curve: Omit<LearningCurve, 'kind'>): LearningCurve {
   const n = curve.sizes.length
   sameLength('learningCurve', 'train', curve.train.length, n)
-  sameLength('learningCurve', 'validation', curve.validation.length, n)
+  // An empty validation column is a single series.
+  if (curve.validation.length > 0) sameLength('learningCurve', 'validation', curve.validation.length, n)
   for (const field of ['trainSpread', 'validationSpread'] as const) {
     const column = curve[field]
     if (column !== undefined) sameLength('learningCurve', field, column.length, n)

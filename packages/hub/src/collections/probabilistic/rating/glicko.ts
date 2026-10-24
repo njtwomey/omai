@@ -18,7 +18,7 @@ export const glicko: HubEntry = defineEntry({
   run: ({ data, params }) =>
     glickoRatings(comparisonsOf(data), { deviation: params['deviation'] as number, c: params['c'] as number }),
   views: [
-    { record: 'posteriorGrid', title: 'The leader’s rating and deviation, game by game' },
+    { record: 'posteriorGrid', title: 'The leaders’ ratings, game by game, with their deviation bands' },
     { record: 'coefficientTable', title: 'Final ratings with deviations', area: 'side' },
     { record: 'learningCurve', title: 'Prediction log loss and accuracy', area: 'below' },
   ],

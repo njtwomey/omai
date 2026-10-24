@@ -34,7 +34,7 @@ describe('rating systems', () => {
       expect(recordsOf(r.exposition, 'learningCurve').length).toBe(1)
     }
     const ts = trueSkillRatings(g.data)
-    expect(recordsOf(ts.exposition, 'posteriorGrid').length).toBe(3)
+    expect(recordsOf(ts.exposition, 'posteriorGrid')[0]?.series?.length).toBe(3)
     expect(ts.deviations.every((s) => s < 25 / 3)).toBe(true)
   })
 

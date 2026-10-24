@@ -310,28 +310,45 @@ export function learningCurvePanel(curve: LearningCurve, options: ViewOptions = 
       ),
     )
   }
+  // An empty validation column is a single series; a secondary axis takes the validation column's own scale.
+  const single = curve.validation.length === 0
+  const second = !single && curve.secondaryAxis === true
+  const markers = curve.sizes.length <= 40
   spread(curve.train, curve.trainSpread, 'tab0')
-  spread(curve.validation, curve.validationSpread, 'tab1')
+  if (!single && !second) spread(curve.validation, curve.validationSpread, 'tab1')
   layers.push(
-    lines(
+    lines([{ x: curve.sizes, y: curve.train, name: curve.labels?.train ?? 'train', colour: 'tab0', markers }], {
+      mode,
+    }),
+  )
+  if (!single) {
+    const validation = lines(
       [
-        { x: curve.sizes, y: curve.train, name: curve.labels?.train ?? 'train', colour: 'tab0', markers: true },
         {
           x: curve.sizes,
           y: curve.validation,
           name: curve.labels?.validation ?? 'validation',
           colour: 'tab1',
-          markers: true,
+          markers,
         },
       ],
       { mode },
-    ),
-  )
+    )
+    layers.push(second ? { ...validation, secondary: true } : validation)
+  }
   return {
     layers,
     options: {
       x: { label: curve.resource ?? 'training size', scale: wantsLog(curve.sizes) ? 'log' : 'linear' },
-      y: { label: curve.scoreName ?? 'score' },
+      y: {
+        label:
+          curve.validation.length > 0 && curve.secondaryAxis === true
+            ? (curve.labels?.train ?? 'train')
+            : (curve.scoreName ?? 'score'),
+      },
+      ...(curve.validation.length > 0 && curve.secondaryAxis === true
+        ? { y2: { label: curve.labels?.validation ?? 'validation' } }
+        : {}),
     },
   }
 }

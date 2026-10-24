@@ -2803,7 +2803,11 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
 - `BoardSteps` (a search, solver or simulation played on a grid or a graph: per step every cell's category, its text
   and a caption, with metrics per step; mazes and frontiers, game trees with pruned branches, CSP boards, itemset
   lattices, cellular automata) and `PopulationSteps` (generations of a population: fitness, positions over the
-  objective's surface with the search distribution, or the best program's curve over its data).
+  objective's surface with the search distribution, or the best program's curve over its data);
+- `StateSequence` (a hidden-state model's posteriors over time, the decoded path and the true states).
+  Records that index the training rows (clusterings, mixtures, margins, neighbours, anomaly scores, decision surfaces)
+  carry those rows (`InputRows`, two coordinates each, for data up to a few thousand rows), so a view draws from the
+  record alone; iterative trainers' decision surfaces carry their `steps` through training, which the views play.
   Methods return `{ ...result, exposition: Exposition[] }`; long-running ones also emit the records' steps as trace
   events, so views can play them.
 

@@ -23,8 +23,7 @@ export const dishonestCasino: HubEntry = defineEntry({
       key,
     }),
   views: [
-    { record: 'posteriorGrid', title: 'P(loaded die) at each roll, with the true dice' },
-    { record: 'decisionSurface', title: 'State posteriors over time', area: 'below' },
+    { record: 'stateSequence', title: 'Which die, roll by roll: posteriors, the decoded path and the truth' },
     { record: 'mixtureSteps', title: 'Baum-Welch iterations', area: 'side' },
     { record: 'coefficientTable', title: 'Start and switching probabilities', area: 'side' },
   ],

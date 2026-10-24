@@ -7,6 +7,7 @@ import { ComponentsView } from './components.tsx'
 import { EpisodeView } from './episodes.tsx'
 import { MarginView } from './margins.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
+import { StateSequenceView } from './sequences.tsx'
 import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
 import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
@@ -89,5 +90,7 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <BoardPlayer record={record} {...common} />
     case 'populationSteps':
       return <PopulationPlayer record={record} {...common} />
+    case 'stateSequence':
+      return <StateSequenceView record={record} {...common} />
   }
 }

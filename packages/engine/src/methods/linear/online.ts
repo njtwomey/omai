@@ -1,7 +1,7 @@
 // TODO: averaged SGD (`average`), early stopping on a validation split, class weights, partial_fit, and the
 // one-class SGD SVM.
 import { WhiteboxError } from '../../lib/base/index.ts'
-import { coefficientTable, type Exposition, learningCurve } from '../../lib/exposition/index.ts'
+import { type CoefficientTable, coefficientTable, type Exposition, learningCurve } from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
   decisionSurfaceOf,
@@ -186,6 +186,8 @@ export interface SgdState {
     readonly progressive: number[]
     readonly training: number[]
     readonly rate: number[]
+    /** The first problem's coefficients then its intercept at each checkpoint (the trajectory of the fit). */
+    readonly coefficients: number[][]
   }
 }
 
@@ -257,7 +259,12 @@ export function plainSgdAlgorithm(
         active: true,
         epochs: 0,
       }))
-      return { problems, epoch: 0, seen: 0, curve: { seen: [], progressive: [], training: [], rate: [] } }
+      return {
+        problems,
+        epoch: 0,
+        seen: 0,
+        curve: { seen: [], progressive: [], training: [], rate: [], coefficients: [] },
+      }
     },
     step: (s, ctx) => {
       // Copy the problems so that every state stays a value.
@@ -274,6 +281,7 @@ export function plainSgdAlgorithm(
         progressive: [...s.curve.progressive],
         training: [...s.curve.training],
         rate: [...s.curve.rate],
+        coefficients: [...s.curve.coefficients],
       }
       let seen = s.seen
       let windowErr = 0
@@ -332,6 +340,7 @@ export function plainSgdAlgorithm(
           curve.progressive.push(windowErr / windowRows)
           curve.training.push(evaluate.all(problems))
           curve.rate.push(problems[0]?.eta ?? 0)
+          curve.coefficients.push([...(problems[0]?.w ?? []), problems[0]?.b ?? 0])
           windowErr = 0
           windowRows = 0
         }
@@ -431,6 +440,13 @@ const paSpace = (h: SgdSettings, losses: readonly SgdLoss[]): Space =>
     shuffle: bool({ default: h.shuffle }),
   })
 
+/** A coefficient table with the first problem's coefficients (then intercept) at each checkpoint of the run. */
+function withTrajectory(table: CoefficientTable, state: SgdState): CoefficientTable {
+  const values = state.curve.coefficients
+  if (values.length < 2 || values.some((v) => v.length !== table.names.length)) return table
+  return coefficientTable({ ...table, trajectories: { resource: 'samples seen', at: [...state.curve.seen], values } })
+}
+
 /** The learning curve of an SGD run: progressive and training error per checkpoint. */
 function sgdCurve(state: SgdState, what: string): Exposition {
   return learningCurve({
@@ -486,7 +502,8 @@ function fitSgdClassifier(
     iterations: Math.max(...s.problems.map((p) => p.epochs)),
   }
   const table = classifierTable(params, featureNamesOf(data, x.d), classNamesOf(data, classes))
-  return { params, exposition: [sgdCurve(s, 'error'), table] }
+  // One score row (two classes): the coefficients' trajectory over the samples seen.
+  return { params, exposition: [sgdCurve(s, 'error'), rows === 1 ? withTrajectory(table, s) : table] }
 }
 
 function classifierEstimator(
@@ -618,7 +635,10 @@ function regressorEstimator(
           params,
           exposition: [
             sgdCurve(out.state, 'squared error'),
-            coefficientTable({ names: [...names, 'intercept'], estimates: [...params.coef, params.intercept] }),
+            withTrajectory(
+              coefficientTable({ names: [...names, 'intercept'], estimates: [...params.coef, params.intercept] }),
+              out.state,
+            ),
           ],
         }
       },

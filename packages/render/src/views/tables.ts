@@ -3,9 +3,10 @@ import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials }
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { intervalChart } from '../charts/evaluation.ts'
+import { referenceLines } from '../charts/functions.ts'
 import { lines } from '../charts/lines.ts'
 import { matrix } from '../charts/matrices.ts'
-import type { Layer } from '../charts/plot.ts'
+import { cartesian, type Layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { formatNumber } from '../theme/format.ts'
@@ -85,6 +86,32 @@ export function coefficientView(
 ): EChartsOption {
   // The intercept usually sits on another scale from the slopes: it stays in the table, out of the plot.
   const keep = table.names.map((n, i) => (options.intercept === true || !isIntercept(n) ? i : -1)).filter((i) => i >= 0)
+  const traj = table.trajectories
+  if (traj !== undefined && traj.at.length > 1) {
+    // The estimates as they evolved (an online learner's coefficients over the samples it has seen).
+    const fig = viewFigure(options, { aspect: 1.6, padding: { right: 72 } })
+    return cartesian(
+      [
+        referenceLines({ y: [0] }, { mode: fig.mode, colour: 'grid', dash: 'solid' }),
+        lines(
+          keep.map((j) => ({
+            x: traj.at,
+            y: traj.values.map((row) => row[j] ?? Number.NaN),
+            name: table.names[j] ?? `x${j}`,
+            width: 1.6,
+          })),
+          { mode: fig.mode },
+        ),
+      ],
+      {
+        figure: fig,
+        mode: fig.mode,
+        x: { label: traj.resource, scale: wantsLog(traj.at) ? 'log' : 'linear' },
+        y: { label: 'estimate' },
+        tooltip: 'item',
+      },
+    )
+  }
   const fig = viewFigure(options, { height: Math.max(160, 64 + 26 * keep.length), width: 640 })
   const intervals = coefficientIntervals(table)
   return intervalChart(

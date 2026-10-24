@@ -213,6 +213,12 @@ function fitSelfTraining(
       method: 'self-training',
       assignments: history.map((r) => r.codes),
       objective: labelled,
+      // The rows labelled from the start, and the ones each round pseudo-labelled.
+      seeds: (history[0]?.codes ?? []).flatMap((c, i) => (c >= 0 ? [i] : [])),
+      added: history.map((r, t) =>
+        t === 0 ? [] : r.codes.flatMap((c, i) => (c >= 0 && (history[t - 1]?.codes[i] ?? -1) < 0 ? [i] : [])),
+      ),
+      addedName: 'pseudo-labelled',
     }),
     learningCurve({
       sizes: history.map((_, t) => t),
@@ -220,6 +226,7 @@ function fitSelfTraining(
       validation: history.map((r) => r.accuracy),
       resource: 'round',
       labels: { train: 'fraction labelled', validation: 'accuracy on the given labels' },
+      secondaryAxis: true,
     }),
   ]
   if (m.d === 2) {

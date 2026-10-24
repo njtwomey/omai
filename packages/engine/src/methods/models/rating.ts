@@ -150,15 +150,28 @@ export function rateGames<S>(
       validation: accuracy,
       resource: 'games',
       labels: { train: 'running log loss', validation: 'running accuracy' },
+      // Log loss and accuracy live on different scales: each on its own axis.
+      secondaryAxis: true,
     }),
-    ...order.slice(0, options.trajectories ?? 3).map((p) =>
+  ]
+  // The leading players' ratings over the games, in one chart with their deviation bands.
+  const leaders = order.slice(0, options.trajectories ?? 3)
+  const series = leaders.map((p) => ({
+    name: names(p),
+    mean: history.map((h) => h[p] ?? 0),
+    variance: deviations.map((d) => (d[p] ?? 0) ** 2),
+  }))
+  const first = series[0]
+  if (first !== undefined)
+    records.push(
       posteriorGrid({
         inputs: history.map((_, g) => [g + 1]),
-        mean: history.map((h) => h[p] ?? 0),
-        variance: deviations.map((d) => (d[p] ?? 0) ** 2),
+        mean: first.mean,
+        variance: first.variance,
+        series,
+        labels: { input: 'games', output: 'rating' },
       }),
-    ),
-  ]
+    )
   return {
     system: system.name,
     ratings,

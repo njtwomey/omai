@@ -46,6 +46,15 @@ export interface CoefficientTable {
   readonly pValues?: readonly number[]
   /** The interval level, for example 0.95. */
   readonly level?: number
+  /**
+   * The estimates as they evolved (an online learner's coefficients after each batch of samples): values[t][j] is
+   * names[j]'s estimate at `at[t]` of the resource.
+   */
+  readonly trajectories?: {
+    readonly resource: string
+    readonly at: readonly number[]
+    readonly values: readonly (readonly number[])[]
+  }
 }
 
 /**
@@ -66,6 +75,15 @@ export function coefficientTable(table: Omit<CoefficientTable, 'kind'>): Coeffic
   for (const field of ['standardErrors', 'intervals', 'pValues'] as const) {
     const column = table[field]
     if (column !== undefined) sameLength('coefficientTable', field, column.length, n)
+  }
+  if (table.trajectories !== undefined) {
+    sameLength(
+      'coefficientTable',
+      'trajectories.values',
+      table.trajectories.values.length,
+      table.trajectories.at.length,
+    )
+    rowsOf('coefficientTable', 'trajectories.values', table.trajectories.values, n)
   }
   return { kind: 'coefficientTable', ...table }
 }

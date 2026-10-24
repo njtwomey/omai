@@ -200,6 +200,28 @@ export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptio
         pairLines(steps.constraints?.cannotLink, true),
       ].filter((c): c is Curve => c !== undefined)
       if (links.length > 0) main.push(lines(links, { mode }))
+      // Rows newly labelled at this step (queried, pseudo-labelled): ringed in the accent colour.
+      const added = steps.added?.[t]
+      if (added !== undefined && added.length > 0)
+        main.push(
+          outlined(
+            points(
+              [
+                {
+                  x: added.map((i) => drawn[i]?.[columns[0]] ?? 0),
+                  y: added.map((i) => drawn[i]?.[columns[1]] ?? 0),
+                  name: steps.addedName ?? 'added',
+                  colour: 'accent',
+                  size: 11,
+                  symbol: 'diamond',
+                },
+              ],
+              { mode },
+            ),
+            mode,
+            1.4,
+          ),
+        )
       // Seeds (semi-supervised): the rows whose labels were given, ringed.
       const seeds = steps.seeds
       if (seeds !== undefined && seeds.length > 0)
