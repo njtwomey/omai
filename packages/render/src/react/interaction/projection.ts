@@ -51,16 +51,45 @@ export interface PixelConverter {
 }
 
 /**
- * The projection of one grid (one set of axes) of a live ECharts chart, for overlays laid over the chart.
+ * The projection of one grid (one set of axes) of a live ECharts chart, for overlays laid over the chart. While the
+ * chart is between an option change and its next redraw, ECharts cannot convert; the projection then answers with the
+ * last linear map it saw (exact for linear axes), so a drag never jumps to nowhere.
  *
  * @param chart - The chart instance (or anything with ECharts' `convertToPixel` and `convertFromPixel`).
  * @param gridIndex - Which grid (default 0).
  * @returns The projection.
  */
 export function chartProjection(chart: PixelConverter, gridIndex = 0): Projection {
-  const pair = (v: number[] | number): Point2 => (Array.isArray(v) ? [v[0] ?? Number.NaN, v[1] ?? Number.NaN] : [v, v])
+  const finder = { gridIndex }
+  const pair = (v: unknown): Point2 | null =>
+    Array.isArray(v) && Number.isFinite(v[0]) && Number.isFinite(v[1]) ? [v[0] as number, v[1] as number] : null
+  // The last good linear map, pixel = origin + scale * data, per axis.
+  let map: { readonly origin: Point2; readonly scale: Point2 } | null = null
+  const learn = (): void => {
+    const a = pair(chart.convertToPixel(finder, [0, 0]))
+    const b = pair(chart.convertToPixel(finder, [1, 1]))
+    if (a !== null && b !== null && b[0] !== a[0] && b[1] !== a[1])
+      map = { origin: a, scale: [b[0] - a[0], b[1] - a[1]] }
+  }
+  const none: Point2 = [Number.NaN, Number.NaN]
   return {
-    toPixel: (p) => pair(chart.convertToPixel({ gridIndex }, [p[0], p[1]])),
-    toData: (p) => pair(chart.convertFromPixel({ gridIndex }, [p[0], p[1]])),
+    toPixel: (p) => {
+      const out = pair(chart.convertToPixel(finder, [p[0], p[1]]))
+      if (out !== null) {
+        learn()
+        return out
+      }
+      const m = map as { readonly origin: Point2; readonly scale: Point2 } | null
+      return m === null ? none : [m.origin[0] + m.scale[0] * p[0], m.origin[1] + m.scale[1] * p[1]]
+    },
+    toData: (p) => {
+      const out = pair(chart.convertFromPixel(finder, [p[0], p[1]]))
+      if (out !== null) {
+        learn()
+        return out
+      }
+      const m = map as { readonly origin: Point2; readonly scale: Point2 } | null
+      return m === null ? none : [(p[0] - m.origin[0]) / m.scale[0], (p[1] - m.origin[1]) / m.scale[1]]
+    },
   }
 }

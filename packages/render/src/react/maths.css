@@ -1,0 +1,8 @@
+/* Live values in equations (\htmlClass{wb-slot}), highlighted as controls move them. */
+.wb-slot {
+  color: var(--wb-accent, #2f81f7);
+}
+
+.wb-slot-strong {
+  font-weight: 700;
+}

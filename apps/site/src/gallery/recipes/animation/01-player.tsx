@@ -1,6 +1,7 @@
 import { type ReactNode, useMemo } from 'react'
-import { Player, type Point2, usePlayback } from 'whitebox-render/react'
-import { Dots, Line, Plot, plotFrame, sampleCurve } from '../../demo/Plot.tsx'
+import { cartesian, lines, points } from 'whitebox-render/charts'
+import { figure } from 'whitebox-render/figure'
+import { Chart, Player, useColourMode, usePlayback } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -10,24 +11,36 @@ export const recipe: Recipe = {
     '`usePlayback(count)` is the playhead of a precomputed sequence; `Player` drives it: step back, play or pause with a caret menu for the target frames per second, step forward, a scrubber to drag, and an optional time stamp. Space and the arrow keys work while the player has focus. Here each frame is one position of a point travelling a Lissajous curve.',
 }
 
-const frame = plotFrame({ x: [-1.2, 1.2], y: [-1.2, 1.2], width: 420, aspect: 1.2 })
+const FIGURE = figure({ width: 480, aspect: 1.2 })
 const N = 240
-const at = (i: number): Point2 => {
+const at = (i: number): [number, number] => {
   const t = (2 * Math.PI * i) / N
   return [Math.sin(3 * t), Math.sin(2 * t)]
 }
+const path = Array.from({ length: N + 1 }, (_, i) => at(i))
 
 export default function PlayerRecipe(): ReactNode {
+  const mode = useColourMode()
   const playback = usePlayback(N, { fps: 30, loop: true })
-  const path = useMemo(() => sampleCurve((i) => i, 0, N, N + 1).map(([i]) => at(i)), [])
-  const trail = Array.from({ length: 30 }, (_, k) => at(playback.frame - k))
+  const option = useMemo(() => {
+    const trail = Array.from({ length: 30 }, (_, k) => at(playback.frame - k))
+    return cartesian(
+      [
+        lines(
+          [
+            { x: path.map((p) => p[0]), y: path.map((p) => p[1]), name: 'path', colour: 'grid', width: 1 },
+            { x: trail.map((p) => p[0]), y: trail.map((p) => p[1]), name: 'trail', colour: 'tab1' },
+          ],
+          { mode },
+        ),
+        points([{ x: [at(playback.frame)], name: 'now', colour: 'tab1', size: 12 }], { mode }),
+      ],
+      { mode, figure: FIGURE, legend: false, tooltip: false, x: { limits: [-1.2, 1.2] }, y: { limits: [-1.2, 1.2] } },
+    )
+  }, [playback.frame, mode])
   return (
-    <div className="flex w-fit max-w-full flex-col gap-3">
-      <Plot frame={frame}>
-        <Line frame={frame} points={path} colour="var(--wb-grid)" width={1} />
-        <Line frame={frame} points={trail} colour="var(--wb-tab1)" width={2} />
-        <Dots frame={frame} points={[at(playback.frame)]} radius={6} colour="var(--wb-tab1)" opacity={1} />
-      </Plot>
+    <div className="flex w-[480px] max-w-full flex-col gap-3">
+      <Chart option={option} figure={FIGURE} />
       <Player controller={playback} stamp stampFps={30} />
     </div>
   )
