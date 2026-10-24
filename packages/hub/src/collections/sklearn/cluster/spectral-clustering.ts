@@ -6,12 +6,13 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const spectralClustering: HubEntry = defineEntry({
   id: 'sklearn/cluster/spectral-clustering',
   title: 'Spectral clustering',
-  summary: 'Cluster the leading eigenvectors of a similarity graph’s Laplacian.',
+  summary:
+    'Cluster the leading eigenvectors of a similarity graph’s Laplacian: it follows the two moons where k-means cuts straight across.',
   collection: 'sklearn/cluster',
   tags: ['clustering', 'graphs', 'spectral'],
   datasets: ['clustering2d'],
   dataset: 'moons',
-  ...fitEstimator(spectralClusteringMethod(), { unsupervised: true }),
+  ...fitEstimator(spectralClusteringMethod({ gamma: 20 }), { unsupervised: true }),
   views: [{ record: 'clusteringSteps', title: 'Clustering steps' }],
   methods: [{ file: 'methods/cluster/spectral.ts', name: 'spectralClustering' }],
 })
