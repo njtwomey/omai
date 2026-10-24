@@ -1,5 +1,6 @@
 import type { EChartsCoreOption } from 'echarts/core'
 import { WhiteboxError } from 'whitebox-engine/base'
+import type { Pixels } from 'whitebox-engine/scene'
 import { echartsCore } from '../charts/echarts-core.ts'
 import type { Figure } from '../figure/figure.ts'
 import { themeName } from '../theme/echarts.ts'
@@ -103,6 +104,48 @@ export function svgDataUrl(svg: string): string {
 }
 
 /**
+ * Draw SVG text onto a new canvas in the browser (through an image), at a pixel ratio, on a background.
+ *
+ * @param svg - The SVG text.
+ * @param width - Width in CSS pixels.
+ * @param height - Height in CSS pixels.
+ * @param options - Pixel ratio (default 2) and background colour.
+ * @returns A promise of the canvas.
+ * @throws WhiteboxError with code `not-implemented` outside a browser, and `value` when the SVG does not load.
+ */
+export function svgToCanvas(
+  svg: string,
+  width: number,
+  height: number,
+  options: { readonly scale?: number; readonly background?: string } = {},
+): Promise<HTMLCanvasElement> {
+  if (typeof document === 'undefined' || typeof Image === 'undefined')
+    return Promise.reject(new WhiteboxError('not-implemented', 'svgToCanvas: needs a browser (canvas and Image)'))
+  const scale = options.scale ?? 2
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(width * scale))
+      canvas.height = Math.max(1, Math.round(height * scale))
+      const ctx = canvas.getContext('2d')
+      if (ctx === null) {
+        reject(new WhiteboxError('not-implemented', 'svgToCanvas: no 2-D canvas'))
+        return
+      }
+      if (options.background !== undefined) {
+        ctx.fillStyle = options.background
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas)
+    }
+    img.onerror = () => reject(new WhiteboxError('value', 'svgToCanvas: the SVG did not load as an image'))
+    img.src = svgDataUrl(svg)
+  })
+}
+
+/**
  * Rasterise SVG text to a PNG data URL in the browser (through an image and a canvas), at a pixel ratio for sharp
  * slides.
  *
@@ -111,38 +154,39 @@ export function svgDataUrl(svg: string): string {
  * @param height - Height in CSS pixels.
  * @param options - Pixel ratio (default 2) and background colour.
  * @returns A promise of the PNG data URL.
- * @throws WhiteboxError with code `unsupported` outside a browser.
+ * @throws WhiteboxError with code `not-implemented` outside a browser.
  */
-export function svgToPng(
+export async function svgToPng(
   svg: string,
   width: number,
   height: number,
   options: { readonly scale?: number; readonly background?: string } = {},
 ): Promise<string> {
-  if (typeof document === 'undefined' || typeof Image === 'undefined')
-    return Promise.reject(new WhiteboxError('not-implemented', 'svgToPng: needs a browser (canvas and Image)'))
-  const scale = options.scale ?? 2
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(width * scale)
-      canvas.height = Math.round(height * scale)
-      const ctx = canvas.getContext('2d')
-      if (ctx === null) {
-        reject(new WhiteboxError('not-implemented', 'svgToPng: no 2-D canvas'))
-        return
-      }
-      if (options.background !== undefined) {
-        ctx.fillStyle = options.background
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-      }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      resolve(canvas.toDataURL('image/png'))
-    }
-    img.onerror = () => reject(new WhiteboxError('value', 'svgToPng: the SVG did not load as an image'))
-    img.src = svgDataUrl(svg)
-  })
+  const canvas = await svgToCanvas(svg, width, height, options)
+  return canvas.toDataURL('image/png')
+}
+
+/**
+ * Rasterise SVG text to RGBA pixels in the browser (for animation frames, GIF and video export).
+ *
+ * @param svg - The SVG text.
+ * @param width - Width in CSS pixels.
+ * @param height - Height in CSS pixels.
+ * @param options - Pixel ratio (default 1) and background colour.
+ * @returns A promise of the pixels.
+ * @throws WhiteboxError with code `not-implemented` outside a browser; a `SecurityError` where the browser taints
+ * canvases drawn from SVG with foreign objects.
+ */
+export async function svgToPixels(
+  svg: string,
+  width: number,
+  height: number,
+  options: { readonly scale?: number; readonly background?: string } = {},
+): Promise<Pixels> {
+  const canvas = await svgToCanvas(svg, width, height, { scale: 1, ...options })
+  const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  return { width: canvas.width, height: canvas.height, rgba: data.data }
 }
 
 /**
