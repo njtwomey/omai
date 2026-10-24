@@ -1,3 +1,4 @@
+// TODO: SAG and SAGA solvers (optim has them); ordinal (ordinal.ts) and mixed models (mixed.ts).
 import { WhiteboxError } from '../../lib/base/index.ts'
 import type { DispersionFamily, Link, LinkName } from '../../lib/dists/families/index.ts'
 import type { Distribution } from '../../lib/dists/index.ts'

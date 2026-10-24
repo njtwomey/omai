@@ -3,9 +3,12 @@ import type { Exposition } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { tokens } from '../../theme/tokens.ts'
 import { useColourMode } from '../theme.tsx'
+import { ComponentsView } from './components.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
+import { EnsembleView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
 import { DecisionSurfaceView } from './surfaces.tsx'
+import { TreeView } from './trees.tsx'
 
 /** Props of {@link ExpositionView}. */
 export interface ExpositionViewProps {
@@ -44,6 +47,12 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <PruningPathView record={record} {...common} />
     case 'decisionSurface':
       return <DecisionSurfaceView record={record} {...common} {...rows} />
+    case 'tree':
+      return <TreeView record={record} {...common} />
+    case 'ensembleStages':
+      return <EnsembleView record={record} {...common} {...rows} />
+    case 'components':
+      return <ComponentsView record={record} {...common} {...labels} />
     case 'clusteringSteps':
       if (record.merges !== undefined) return <DendrogramView record={record} {...common} {...points} />
       if (record.reachability !== undefined && record.assignments.length === 1)

@@ -8,7 +8,7 @@ import { SceneView } from './SceneView.tsx'
 export interface StructureViewProps extends Omit<DiagramOptions, 'overlay'> {
   readonly structure: Structure
   /** State laid over the diagram: active nodes and edges, badges (a frame of a message-passing animation, say). */
-  readonly overlay?: StructureOverlay
+  readonly overlay?: StructureOverlay | undefined
   /** Drawn width in pixels (default the diagram's own width, at most the container's). */
   readonly width?: number
   /** Called with a clicked node. */

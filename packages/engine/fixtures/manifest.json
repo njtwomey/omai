@@ -2106,7 +2106,7 @@
         "numpy": "2.5.4",
         "scipy": "1.18.1"
       },
-      "cases": 215
+      "cases": 239
     },
     {
       "fixture": "numerics/geometry/contours.json",
@@ -2141,7 +2141,7 @@
         "scipy": "1.18.1",
         "skimage": "0.26.0"
       },
-      "cases": 81
+      "cases": 85
     },
     {
       "fixture": "numerics/geometry/triangulation.json",
@@ -2166,7 +2166,7 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 58
+      "cases": 110
     },
     {
       "fixture": "numerics/inverse/inverse.json",

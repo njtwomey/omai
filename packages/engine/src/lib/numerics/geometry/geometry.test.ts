@@ -181,6 +181,20 @@ describe('geometry properties', () => {
     const estimate = G.homography(src, G.applyHomography(h, src))
     for (const [i, row] of estimate.entries())
       for (const [j, v] of row.entries()) expect(v).toBeCloseTo(h[i]?.[j] ?? 0, 10)
+    // Exactly four points (an 8 x 9 system): the null vector is the ninth right singular vector, which the reduced
+    // SVD leaves out unless the system is padded (regression: this returned three near-identical rows).
+    const square = src.slice(0, 4).map(([x, y]) => [(x ?? 0) / 3, (y ?? 0) / 2])
+    const scaled = G.homography(
+      square,
+      square.map(([x, y]) => [2 * (x ?? 0), 2 * (y ?? 0)]),
+    )
+    const diag = [
+      [2, 0, 0],
+      [0, 2, 0],
+      [0, 0, 1],
+    ]
+    for (const [i, row] of scaled.entries())
+      for (const [j, v] of row.entries()) expect(v).toBeCloseTo(diag[i]?.[j] ?? 0, 10)
     const map = G.affine(
       [
         [2, 1],

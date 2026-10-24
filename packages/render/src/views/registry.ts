@@ -1,9 +1,13 @@
 import type { EChartsOption } from 'echarts'
 import type { Exposition, ExpositionKind } from 'whitebox-engine/exposition'
+import type { Scene } from 'whitebox-engine/scene'
 import type { ViewOptions } from './_view.ts'
+import { componentsView } from './components.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
+import { ensembleFrames } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
 import { decisionSurfaceView } from './surfaces.ts'
+import { treeScene } from './trees.ts'
 
 /** The record of one kind. */
 export type RecordOf<K extends ExpositionKind> = Extract<Exposition, { kind: K }>
@@ -20,8 +24,11 @@ export interface StandardView<K extends ExpositionKind = ExpositionKind> {
   readonly plays: boolean
   /** Extra data the view draws when given: the input rows (`points`) and their labels. */
   readonly accepts: readonly ('points' | 'labels')[]
-  readonly still: (record: RecordOf<K>, options?: ViewOptions) => EChartsOption
+  readonly still: (record: RecordOf<K>, options?: ViewOptions) => ViewStill
 }
+
+/** A view's headless still: a chart option, or a scene for views drawn as diagrams (trees). */
+export type ViewStill = EChartsOption | Scene
 
 type Registry = { readonly [K in ExpositionKind]?: StandardView<K> }
 
@@ -65,6 +72,33 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: ['points', 'labels'],
     still: (r, o) => decisionSurfaceView(r, o),
+  },
+  tree: {
+    kind: 'tree',
+    component: 'TreeView',
+    title: 'Tree',
+    plays: true,
+    accepts: [],
+    still: (r) => treeScene(r),
+  },
+  ensembleStages: {
+    kind: 'ensembleStages',
+    component: 'EnsembleView',
+    title: 'Ensemble stages',
+    plays: true,
+    accepts: ['points', 'labels'],
+    still: (r, o) => {
+      const frames = ensembleFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
+  },
+  components: {
+    kind: 'components',
+    component: 'ComponentsView',
+    title: 'Components',
+    plays: false,
+    accepts: ['labels'],
+    still: (r, o) => componentsView(r, o),
   },
   clusteringSteps: {
     kind: 'clusteringSteps',
@@ -132,9 +166,9 @@ export function viewedKinds(): ExpositionKind[] {
  *
  * @param record - The record.
  * @param options - Mode and figure.
- * @returns The ECharts option, or `undefined` when the kind has no view yet.
+ * @returns The chart option or scene, or `undefined` when the kind has no view yet.
  */
-export function stillOf(record: Exposition, options: ViewOptions = {}): EChartsOption | undefined {
+export function stillOf(record: Exposition, options: ViewOptions = {}): ViewStill | undefined {
   const view = viewFor(record.kind) as StandardView | undefined
   return view?.still(record as never, options)
 }

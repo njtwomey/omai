@@ -602,7 +602,10 @@ export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOpt
             ...(typeof names[c] === 'string' ? { name: String(names[c]) } : {}),
           }))
     main.push(points(sets, { mode }))
-    const embed: Panel = { layers: main, options: { x: { label: '1' }, y: { label: '2' }, aspect: 'equal' } }
+    const embed: Panel = {
+      layers: main,
+      options: { x: { label: 'dimension 1' }, y: { label: 'dimension 2' }, aspect: 'equal' },
+    }
     if (steps.objective === undefined)
       return cartesian(embed.layers, { ...embed.options, figure: fig, mode, legend: false })
     const grid = gridSpec(1, 2, {
@@ -616,7 +619,7 @@ export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOpt
     return subplots(
       grid,
       { main: embed, objective: progressPanel(steps.objective, t, 'objective', mode, steps.iterations) },
-      { figure: fig, legend: false },
+      { figure: fig },
     )
   }
   return {
