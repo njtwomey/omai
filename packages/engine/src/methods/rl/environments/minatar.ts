@@ -1,5 +1,5 @@
 import type { Json } from '../../../lib/base/index.ts'
-import { foldIn, type Key, uniform } from '../../../lib/random/index.ts'
+import { foldIn, Generator, type Key, uniform } from '../../../lib/random/index.ts'
 import type { Env, EnvDefinition } from '../../../lib/rl/index.ts'
 import { type Paint, rect, type Scene, type SceneNode, scene } from '../../../lib/scene/index.ts'
 import { bool, box, dict, discrete, real } from '../../../lib/space/index.ts'
@@ -49,17 +49,10 @@ export interface MinAtarOptions {
 /** A source of uniform numbers drawn lazily from a key. */
 type Draw = () => number
 
+// A generator held only for the duration of one reset or step keeps the environment a pure function of its key.
 function draws(k: Key): Draw {
-  let block = 0
-  let u: ArrayLike<number> = []
-  let i = 0
-  return () => {
-    if (i >= u.length) {
-      u = uniform(foldIn(k, block++), [16]).data
-      i = 0
-    }
-    return u[i++] ?? 0
-  }
+  const rng = new Generator(k)
+  return () => rng.uniform([]).data[0] ?? 0
 }
 
 /** The rules of one game: its channels, minimal actions and pure-in-effect update on a private copy of its state. */
