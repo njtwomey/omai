@@ -10,7 +10,7 @@ import {
   type GradientTransformation,
   type Tree,
 } from '../../../lib/optim/index.ts'
-import { flatDim, type Space } from '../../../lib/space/index.ts'
+import { flatDim, flatten, type Space, type SpaceValue } from '../../../lib/space/index.ts'
 import { fromStorage, item, primalOf, type Tensor, toFlat, type Value } from '../../../lib/tensor/index.ts'
 
 /** What an agent factory needs from an environment: its spaces. */
@@ -100,4 +100,21 @@ export function optimiserOf(
 ): GradientTransformation {
   const base = options.optimizer ?? adam({ learningRate: options.learningRate ?? learningRate })
   return options.maxGradNorm === undefined ? base : chain(clipByGlobalNorm(options.maxGradNorm), base)
+}
+
+/** Flat numeric features of a space's values for networks: discrete values one-hot, everything else flattened. */
+export function spaceFeatures(space: Space): { readonly size: number; readonly of: (value: unknown) => number[] } {
+  if (space.kind === 'discrete') {
+    const n = space.n
+    const start = space.start ?? 0
+    return {
+      size: n,
+      of: (v) => {
+        const x = new Array<number>(n).fill(0)
+        x[(v as number) - start] = 1
+        return x
+      },
+    }
+  }
+  return { size: flatDim(space), of: (v) => flatten(space, v as SpaceValue) }
 }

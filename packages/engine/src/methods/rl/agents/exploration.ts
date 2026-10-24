@@ -29,9 +29,16 @@ import {
   updateRunningMeanStd,
   visits,
 } from '../../../lib/rl/index.ts'
-import { flatDim, flatten, type Space, type SpaceValue } from '../../../lib/space/index.ts'
 import { add, concat, mul, stack, type Value } from '../../../lib/tensor/index.ts'
-import { gradientStep, gradientStepWithTerms, optimiserOf, rowsTensor, type Spaces, vectorTensor } from './_common.ts'
+import {
+  gradientStep,
+  gradientStepWithTerms,
+  optimiserOf,
+  rowsTensor,
+  type Spaces,
+  spaceFeatures,
+  vectorTensor,
+} from './_common.ts'
 
 // ------------------------------------------------------------------------------------------------ the wrapper
 
@@ -149,23 +156,6 @@ export function intrinsicReward<G, B, O, A>(
 
 // --------------------------------------------------------------------------------------------- shared plumbing
 
-// Observations (and actions) as flat numeric features: discrete values one-hot, everything else flattened.
-function featuresOf(space: Space): { readonly size: number; readonly of: (value: unknown) => number[] } {
-  if (space.kind === 'discrete') {
-    const n = space.n
-    const start = space.start ?? 0
-    return {
-      size: n,
-      of: (v) => {
-        const x = new Array<number>(n).fill(0)
-        x[(v as number) - start] = 1
-        return x
-      },
-    }
-  }
-  return { size: flatDim(space), of: (v) => flatten(space, v as SpaceValue) }
-}
-
 /** Options shared by the learned bonus modules. */
 export interface LearnedBonusOptions {
   /** Hidden widths of the networks (default `[64]`). */
@@ -229,7 +219,7 @@ export function countBonusModule<O, A>(env: Spaces, options: CountBonusOptions =
   const on = options.on ?? 'state-action'
   const discrete = env.observationSpace.kind === 'discrete'
   const hash = options.hash ?? (discrete ? 'exact' : {})
-  const features = featuresOf(env.observationSpace)
+  const features = spaceFeatures(env.observationSpace)
   const coder =
     hash === 'exact'
       ? (o: O): string => (discrete ? String(o) : JSON.stringify(o))
@@ -305,7 +295,7 @@ export interface RndState {
  * ```
  */
 export function rndModule<O, A>(env: Spaces, options: RndOptions = {}): BonusModule<RndState, O, A> {
-  const obs = featuresOf(env.observationSpace)
+  const obs = spaceFeatures(env.observationSpace)
   const d = obs.size
   const hidden = options.hidden ?? [64]
   const k = options.features ?? 32
@@ -414,8 +404,8 @@ export interface IcmState {
  * ```
  */
 export function icmModule<O, A>(env: Spaces, options: IcmOptions = {}): BonusModule<IcmState, O, A> {
-  const obs = featuresOf(env.observationSpace)
-  const act = featuresOf(env.actionSpace)
+  const obs = spaceFeatures(env.observationSpace)
+  const act = spaceFeatures(env.actionSpace)
   const discreteActions = env.actionSpace.kind === 'discrete'
   if (!(discreteActions || env.actionSpace.kind === 'box'))
     throw new WhiteboxError('value', 'icmModule: needs discrete or box actions')
