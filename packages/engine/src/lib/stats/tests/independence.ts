@@ -1,7 +1,8 @@
 import { type TestResult, WhiteboxError } from '../../base/index.ts'
+import { mutualInformation as tableMutualInformation } from '../../information/index.ts'
 import { dsyev } from '../../numerics/linalg/index.ts'
 import { gammainc } from '../../numerics/special/index.ts'
-import { item, type TensorLike, toFlat } from '../../tensor/index.ts'
+import { fromStorage, item, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { matmul, pinvSym } from '../_linear.ts'
 import { chi2Sf, normSf, paired, type Rows, rowsOf } from '../_util.ts'
 import { centredDistances, corrcoef, distanceCorrelationOf } from '../correlation.ts'
@@ -123,7 +124,8 @@ export function hoeffdingD(x: TensorLike, y: TensorLike, options: IndependenceOp
 
 /**
  * The plug-in mutual information of two variables in nats: from their joint frequencies when discrete, otherwise from
- * an equal-width two-dimensional histogram. TODO: alias the estimators of the information domain once it exists.
+ * an equal-width two-dimensional histogram, computed by `information`'s `mutualInformation` of that table (its
+ * sample estimators, such as KSG, live there too).
  *
  * @param x - First variable `[N]`.
  * @param y - Second variable `[N]`.
@@ -171,20 +173,8 @@ function plugInMI(
     r = bins
     c = bins
   }
-  const rows = new Float64Array(r)
-  const cols = new Float64Array(c)
-  for (let i = 0; i < r; i++)
-    for (let j = 0; j < c; j++) {
-      rows[i] = (rows[i] ?? 0) + (counts[i * c + j] ?? 0)
-      cols[j] = (cols[j] ?? 0) + (counts[i * c + j] ?? 0)
-    }
-  let mi = 0
-  for (let i = 0; i < r; i++)
-    for (let j = 0; j < c; j++) {
-      const v = counts[i * c + j] ?? 0
-      if (v > 0) mi += (v / n) * Math.log((v * n) / ((rows[i] ?? 1) * (cols[j] ?? 1)))
-    }
-  return Math.max(0, mi)
+  // The table goes to the information domain, which owns mutual information.
+  return Math.max(0, item(tableMutualInformation(fromStorage(counts, [r, c], 'float64'))))
 }
 
 /**

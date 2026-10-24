@@ -1302,8 +1302,6 @@ TODO (deferred, esoteric):
   `numerics/special` when that domain gains hypergeometric functions.
 - `tests/bayesian.ts`: `highestDensityInterval` should alias `sampling`'s HDI once that tier-7 domain has one (same
   tier, so stats cannot import it today).
-- `tests/independence.ts`: `mutualInformation` uses a plug-in histogram estimator; alias `information`'s estimators
-  (Kraskov and friends) once they exist.
 - `tests/distribution.ts`: `andersonDarling` lacks scipy's `weibull_min` (its critical values depend on a fitted
   shape).
 - `smoothing/bases.ts`: `tp`, `duchon` and `gp` take the full eigen-decomposition of the kernel matrix (mgcv
