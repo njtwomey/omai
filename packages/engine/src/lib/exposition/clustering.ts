@@ -1,5 +1,6 @@
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
+import type { InputRows } from './rows.ts'
 
 /** How a clustering developed: assignments and centres per iteration, merges for hierarchies, density labels. */
 export interface ClusteringSteps {
@@ -17,6 +18,8 @@ export interface ClusteringSteps {
   readonly roles?: readonly ('core' | 'border' | 'noise')[]
   readonly reachability?: readonly number[]
   readonly ordering?: readonly number[]
+  /** The rows clustered (two coordinates each, with their names and any known classes), when the data is small. */
+  readonly rows?: InputRows
 }
 
 /**
@@ -40,6 +43,7 @@ export function clusteringSteps(steps: Omit<ClusteringSteps, 'kind'>): Clusterin
   if (steps.roles !== undefined) sameLength('clusteringSteps', 'roles', steps.roles.length, n)
   if (steps.reachability !== undefined && steps.ordering !== undefined)
     sameLength('clusteringSteps', 'reachability', steps.reachability.length, steps.ordering.length)
+  if (steps.rows !== undefined && t > 0) sameLength('clusteringSteps', 'rows', steps.rows.points.length, n)
   return { kind: 'clusteringSteps', ...steps }
 }
 
@@ -57,6 +61,8 @@ export interface MixtureSteps {
   readonly responsibilities?: readonly (readonly (readonly number[])[])[]
   /** The log likelihood (or ELBO) after each step: never decreasing for EM. */
   readonly objective: readonly number[]
+  /** The rows fitted (two coordinates each, the first two features), when the data is small. */
+  readonly rows?: InputRows
 }
 
 /**

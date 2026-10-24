@@ -15,6 +15,9 @@ describe('agglomerative clustering', () => {
       expect(adjustedRandScore(data.y, f.params.labels).estimate.value).toBeGreaterThan(0.99)
       const [steps] = recordsOf(f.exposition, 'clusteringSteps')
       expect(steps?.merges?.length).toBe(44)
+      // The rows ride along, labelled by the data's classes, so the dendrogram view needs nothing else.
+      expect(steps?.rows?.points).toHaveLength(45)
+      expect(steps?.rows?.labels).toHaveLength(45)
       const heights = (steps?.merges ?? []).map((m) => m[2])
       for (let t = 1; t < heights.length; t++)
         expect(heights[t] ?? 0).toBeGreaterThanOrEqual((heights[t - 1] ?? 0) - 1e-12)

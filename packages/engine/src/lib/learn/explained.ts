@@ -85,7 +85,9 @@ export function defineExplainedEstimator<H extends Hyper, P extends Json, V exte
   )
   const fit = (data: LearnData, options: FitOptions = {}): Explained<Fitted<P> & V> => {
     const r = explainedFit(data, hyper, options)
-    return { ...base.revive(r.params), exposition: r.exposition }
+    const fitted = base.revive(r.params)
+    const exposition = options.explain === false ? r.exposition : withInputRows(r.exposition, data, fitted.classes)
+    return { ...fitted, exposition }
   }
   return {
     name: base.name,
@@ -104,6 +106,71 @@ export function defineExplainedEstimator<H extends Hyper, P extends Json, V exte
     revive: (params) => ({ ...base.revive(params as P), exposition: [] }),
     with: (changes) => defineExplainedEstimator(spec, spec.update?.(hyper, changes) ?? ({ ...hyper, ...changes } as H)),
   }
+}
+
+// The kinds whose records index the training rows (assignments, scores, support vectors, neighbours).
+const ROW_KINDS: ReadonlySet<string> = new Set([
+  'clusteringSteps',
+  'mixtureSteps',
+  'anomalyScores',
+  'neighbours',
+  'margin',
+])
+
+/**
+ * Records that index the training rows, given those rows when they have none (and the data is small): what lets a
+ * view draw a clustering, a mixture, anomaly scores, neighbours or margins from the record alone. The rows are the
+ * first two features, labelled by the fitted classes (or by the targets when they look like labels).
+ *
+ * @param records - A fit's exposition.
+ * @param data - The training data.
+ * @param classes - The fitted classes, for classifiers.
+ * @returns The records, the row-indexed ones with `rows`.
+ * @example
+ * ```ts
+ * import { withInputRows } from 'whitebox-engine/learn'
+ * import { anomalyScores } from 'whitebox-engine/exposition'
+ * const [r] = withInputRows([anomalyScores({ method: 'z', scores: [0.1, 0.9], threshold: 0.5 })], { x: [[0, 1], [5, 5]] })
+ * r?.kind === 'anomalyScores' && r.rows?.points // => [[0, 1], [5, 5]]
+ * ```
+ */
+export function withInputRows(
+  records: readonly Exposition[],
+  data: LearnData,
+  classes?: readonly number[],
+): readonly Exposition[] {
+  if (!records.some((r) => ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined)) return records
+  let rows: InputRows | undefined
+  try {
+    const m = matrixView(data.x, 'withInputRows', { allowNaN: true })
+    if (m.n > ROWS_LIMIT) return records
+    let labelClasses = classes
+    if (labelClasses === undefined && data.y !== undefined) {
+      const y = toFlat(asTensor(data.y))
+      const unique = [...new Set(y)].sort((a, b) => a - b)
+      if (y.length === m.n && unique.length <= 20 && unique.every(Number.isInteger)) labelClasses = unique
+    }
+    rows = inputRowsOf(data.x, {
+      featureNames: featureNamesOf(data, m.d),
+      ...(labelClasses === undefined || data.y === undefined
+        ? {}
+        : { y: data.y, classes: labelClasses, classNames: classNamesOf(data, labelClasses) }),
+    })
+  } catch {
+    return records
+  }
+  if (rows === undefined) return records
+  const n = rows.points.length
+  const fits = (r: Exposition): boolean => {
+    if (r.kind === 'clusteringSteps') return (r.assignments[0]?.length ?? n) === n
+    if (r.kind === 'anomalyScores') return r.scores.length === n
+    if (r.kind === 'mixtureSteps') return (r.responsibilities?.[0]?.length ?? n) === n
+    return true
+  }
+  const given = rows
+  return records.map((r) =>
+    ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined && fits(r) ? { ...r, rows: given } : r,
+  )
 }
 
 /**

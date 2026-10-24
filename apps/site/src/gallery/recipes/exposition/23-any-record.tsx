@@ -8,7 +8,6 @@ import { gaussianNB } from 'whitebox-engine/methods/naive-bayes'
 import { svc } from 'whitebox-engine/methods/svm'
 import { decisionTreeClassifier } from 'whitebox-engine/methods/trees'
 import { key } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
 import { ControlPanel, ExpositionView, Select } from 'whitebox-render/react'
 import { viewFor } from 'whitebox-render/views'
 import type { Recipe } from '../../recipe.ts'
@@ -17,13 +16,11 @@ export const recipe: Recipe = {
   title: 'Any record',
   question: 'How do I show everything a method explains, without knowing what it returns?',
   explain:
-    'Every method returns its `exposition`: a list of records, each with a `kind`. `ExpositionView` draws any record with the standard view of its kind (`viewFor(kind)` names it), given the rows and labels for the views that draw in input space. Pick a method: its records appear one after another, whatever they are.',
+    'Every method returns its `exposition`: a list of records, each with a `kind`. `ExpositionView` draws any record with the standard view of its kind (`viewFor(kind)` names it), from the record alone: records that draw in input space carry their rows. Pick a method: its records appear one after another, whatever they are.',
 }
 
 // region
 const { data } = generate(moons, { knobs: { n: 160, noise: 0.25 }, key: key(3) })
-const rows = toArray(data.x) as number[][]
-const labels = Array.from(data.y.data)
 
 const METHODS = {
   'decision tree': () => decisionTreeClassifier({ maxDepth: 3 }).fit(data).exposition,
@@ -54,7 +51,7 @@ export default function AnyRecordRecipe(): ReactNode {
       {records.map(({ id, record: r }) => (
         <section key={id} className="flex flex-col gap-1">
           <h3 className="text-sm font-semibold text-(--wb-fg-secondary)">{viewFor(r.kind).title}</h3>
-          <ExpositionView record={r} points={rows} labels={labels} />
+          <ExpositionView record={r} />
         </section>
       ))}
     </div>
