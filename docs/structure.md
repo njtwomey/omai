@@ -2269,6 +2269,10 @@ runs it as a traced algorithm and returns a `Posterior`. Adding an engine is add
 - `criticism.ts`: WAIC, PSIS-LOO (with Pareto k diagnostics), posterior predictive checks, model comparison
   (`compareModels`) and stacking and pseudo-BMA weights.
 
+TODO: Gaussian belief propagation for programs with correlated (multivariate normal) sites, which use exact
+conditioning meanwhile; EM with discrete and Gaussian E-steps together (mixtures of factor analysers); Pyro as a second
+oracle once the oracle environment has it.
+
 ### 4.33 `learn/` (tier 9): the toolkit around models (scikit-learn's non-model modules)
 
 oracle: scikit-learn, mapie for conformal, captum and shap for explanations

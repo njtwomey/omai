@@ -3,10 +3,11 @@ import { valueAndGrad } from '../autodiff/index.ts'
 import { logSumExpOf } from '../base/index.ts'
 import { bernoulli, categorical, exponential, gamma, normal } from '../dists/index.ts'
 import { key } from '../random/index.ts'
-import { item, type TensorLike, take, tensor, toFlat, type Value } from '../tensor/index.ts'
+import { item, mul, type TensorLike, take, tensor, toFlat, type Value } from '../tensor/index.ts'
 import {
   constrainSites,
   enumerate,
+  enumerationPosterior,
   findInitialParams,
   initToMedian,
   logJoint,
@@ -156,5 +157,39 @@ describe('potentialEnergy', () => {
     }
     expect(() => potentialEnergy(model, undefined, { enumerate: false })).toThrow(/enumerate/)
     expect(potentialEnergy(enumerate(model), undefined, { enumerate: false }).dim).toBe(1)
+  })
+})
+
+describe('enumeration in nested plates', () => {
+  const ys = [
+    [0.2, 1.4],
+    [0.9, -0.3],
+    [1.8, 0.6],
+  ]
+  // z ~ Bernoulli(0.3) independently in every cell of plates a (2, dim -1) and b (3, dim -2); y ~ N(2 z, 1).
+  const model = (): void => {
+    plate('a', 2, () =>
+      plate('b', 3, () => {
+        const z = sample('z', bernoulli({ probs: 0.3 }))
+        observe('y', normal(mul(z, 2), 1), ys)
+      }),
+    )
+  }
+  const cell = (y: number): readonly [number, number] => [Math.log(0.7) + logN(y, 0, 1), Math.log(0.3) + logN(y, 2, 1)]
+
+  it('sums every cell out separately', () => {
+    let want = 0
+    for (const row of ys) for (const y of row) want += logSumExpOf([...cell(y)])
+    expect(item(logJoint(enumerate(model), undefined).logJoint)).toBeCloseTo(want, 11)
+  })
+
+  it('grounds one variable per cell for exact marginals', () => {
+    const post = enumerationPosterior(model, undefined)
+    const p = toFlat(post.mean('z'))
+    expect(post.marginal('z').batchShape).toEqual([3, 2])
+    ys.flat().forEach((y, i) => {
+      const [a, b] = cell(y)
+      expect(p[i]).toBeCloseTo(Math.exp(b - logSumExpOf([a, b])), 12)
+    })
   })
 })
