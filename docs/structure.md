@@ -3152,11 +3152,16 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 - `bandits.ts`: Bernoulli, Gaussian (the 10-armed testbed), contextual linear, adversarial and non-stationary bandits,
   with oracles for regret.
 - `gridworlds.ts`: grid world (AIMA 4 x 3 by default), cliff walking (and slippery), frozen lake (4 x 4, 8 x 8, random
-  maps), windy grid world (king's moves, stochastic wind), mazes with keys and traps (`keyMaze`), four rooms, and
-  `renderGrid`; gymnasium's `P` tables as models.
+  maps), windy grid world (king's moves, stochastic wind), mazes with keys and traps (`keyMaze`), four rooms;
+  gymnasium's `P` tables as models. All but the key maze are `worlds`' textbook tasks (`frozenLakeWorld`,
+  `cliffWalkingWorld`, `aimaGridWorld`, `windyGridWorld`, `fourRoomsWorld`) through `transitionModel` into
+  `tabularEnv`, drawn by `worlds.toScene`; the maps (`FROZEN_LAKE_MAPS`, `AIMA_GRID`, `FOUR_ROOMS`, `KEY_MAZE`) are
+  worlds'. The key maze keeps its own single has-a-key flag (`2 nCells` states for any map; `keyMazeWorld` tracks
+  each key present).
 - `classic-control.ts`: CartPole, Pendulum, MountainCar (discrete and continuous), Acrobot, matching gymnasium step for
   step.
-- `toy-text.ts`: Blackjack (natural and Sutton-Barto rules), Taxi (rainy, fickle passenger), NChain, RiverSwim.
+- `toy-text.ts`: Blackjack (natural and Sutton-Barto rules), Taxi (rainy, fickle passenger; its map, walls, moves and
+  stands are `worlds.taxiWorld`), NChain, RiverSwim.
 - `minatar.ts`: MinAtar-style games on a 10 by 10 grid (Breakout, Asterix, Freeway, Seaquest, Space Invaders), with
   minimal and full six-action sets, sticky actions and difficulty ramping.
 - `continuous-control.ts`: point mass, 2-D reacher, double integrator, planar quadrotor, cart double pendulum (analytic

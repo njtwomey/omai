@@ -11,7 +11,6 @@ import {
   makeGridWorld,
   makeKeyMaze,
   randomFrozenLakeMap,
-  renderGrid,
 } from './gridworlds.ts'
 
 function checkModel(env: Env<number, number, number>): void {
@@ -91,9 +90,10 @@ describe('grid worlds', () => {
     expect(() => makeFourRooms({ goal: [0, 0] })).toThrow(/free/)
   })
 
-  it('draws grids with an agent marker', () => {
-    const s = renderGrid(['SH', 'FG'], [1, 1], { cell: 10 })
-    expect([s.width, s.height]).toEqual([20, 20])
+  it('draws its world with an agent marker', () => {
+    const s = makeFrozenLake().render(5)
+    expect([s.width, s.height, s.title]).toEqual([256, 256, 'FrozenLake'])
     expect(s.children.some((c) => c.id === 'agent')).toBe(true)
+    expect(makeKeyMaze().render(10 + 54).title).toBe('KeyMaze (key held)')
   })
 })

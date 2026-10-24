@@ -2,7 +2,7 @@ import { foldIn, type Key, uniform } from '../../../lib/random/index.ts'
 import { type Env, type EnvDefinition, type Outcome, tabularEnv } from '../../../lib/rl/index.ts'
 import { circle, line, rect, type Scene, type SceneNode, scene, text } from '../../../lib/scene/index.ts'
 import { bool, dict, discrete, int, real, tuple } from '../../../lib/space/index.ts'
-import { renderGrid } from './gridworlds.ts'
+import { destination, taxiWorld, toScene } from '../../../lib/worlds/index.ts'
 
 // ---------------------------------------------------------------------------------------------------------- Blackjack
 
@@ -182,22 +182,14 @@ export const blackjack: EnvDefinition<BlackjackState, BlackjackObservation, numb
 
 // --------------------------------------------------------------------------------------------------------------- Taxi
 
-const TAXI_MAP = [
-  '+---------+',
-  '|R: | : :G|',
-  '| : | : : |',
-  '| : : : : |',
-  '| | : | : |',
-  '|Y| : |B: |',
-  '+---------+',
-]
-/** The four pick-up and drop-off locations R, G, Y, B as (row, column). */
-export const TAXI_LOCATIONS: readonly (readonly [number, number])[] = [
-  [0, 0],
-  [0, 4],
-  [4, 0],
-  [4, 3],
-]
+// The map, its walls and its four stands are worlds' taxiWorld; pick-up, drop-off, rain and the fickle passenger
+// are this environment's.
+const TAXI = taxiWorld()
+/** The four pick-up and drop-off locations R, G, Y, B as (row, column): the landmarks of worlds' `taxiWorld`. */
+export const TAXI_LOCATIONS: readonly (readonly [number, number])[] = ['R', 'G', 'Y', 'B'].map((name) => {
+  const cell = TAXI.world.landmarks[name]?.[0] ?? 0
+  return [Math.floor(cell / 5), cell % 5] as const
+})
 
 /**
  * Encode a Taxi state (gymnasium's `TaxiEnv.encode`): `((row * 5 + col) * 5 + passenger) * 4 + destination`, where the
@@ -237,7 +229,12 @@ export function taxiDecode(s: number): [number, number, number, number] {
   return [row, col, pass, dest]
 }
 
-const wallChar = (row: number, charCol: number): string => TAXI_MAP[1 + row]?.[charCol] ?? '|'
+/** Where a move (0 south, 1 north, 2 east, 3 west) takes the taxi, or undefined when a wall or the edge blocks it. */
+function moved(row: number, col: number, move: number): readonly [number, number] | undefined {
+  const act = TAXI.options.actions?.actions[move]
+  const to = act?.kind === 'move' ? destination(TAXI.world, row * 5 + col, act.direction) : -1
+  return to < 0 ? undefined : [Math.floor(to / 5), to % 5]
+}
 const sameLoc = (a: readonly [number, number], b: readonly [number, number]): boolean => a[0] === b[0] && a[1] === b[1]
 const locIndex = (loc: readonly [number, number]): number => TAXI_LOCATIONS.findIndex((l) => sameLoc(l, loc))
 
@@ -257,10 +254,7 @@ export function taxiActionMask(s: number): number[] {
   const [row, col, pass, dest] = taxiDecode(s)
   const loc: [number, number] = [row, col]
   return [
-    row < 4 ? 1 : 0,
-    row > 0 ? 1 : 0,
-    col < 4 && wallChar(row, 2 * col + 2) === ':' ? 1 : 0,
-    col > 0 && wallChar(row, 2 * col) === ':' ? 1 : 0,
+    ...[0, 1, 2, 3].map((m) => (moved(row, col, m) === undefined ? 0 : 1)),
     pass < 4 && sameLoc(loc, TAXI_LOCATIONS[pass] ?? [-1, -1]) ? 1 : 0,
     pass === 4 && (sameLoc(loc, TAXI_LOCATIONS[dest] ?? [-1, -1]) || locIndex(loc) >= 0) ? 1 : 0,
   ]
@@ -276,12 +270,10 @@ function dropoff(loc: readonly [number, number], pass: number, dest: number): [n
   return [pass, -10, false]
 }
 
-function calcNewPosition(row: number, col: number, dr: number, dc: number): [number, number] {
-  const r = Math.max(0, Math.min(row + dr, 4))
-  const c = Math.max(0, Math.min(col + dc, 4))
-  if (dc === 1 && wallChar(r, 2 * c) !== ':') return [row, col]
-  if (dc === -1 && wallChar(r, 2 * c + 2) !== ':') return [row, col]
-  return [r, c]
+/** A move's destination, staying put when it is blocked. */
+const moveOrStay = (row: number, col: number, move: number): [number, number] => {
+  const to = moved(row, col, move)
+  return to === undefined ? [row, col] : [to[0], to[1]]
 }
 
 /**
@@ -312,54 +304,29 @@ export function taxiTransitions(
   let reward = -1
   let terminated = false
   if (options.isRainy !== true) {
-    if (action === 0) newRow = Math.min(row + 1, 4)
-    else if (action === 1) newRow = Math.max(row - 1, 0)
-    if (action === 2 && wallChar(row, 2 * col + 2) === ':') newCol = Math.min(col + 1, 4)
-    else if (action === 3 && wallChar(row, 2 * col) === ':') newCol = Math.max(col - 1, 0)
+    if (action <= 3) [newRow, newCol] = moveOrStay(row, col, action)
     else if (action === 4) [newPass, reward] = pickup(loc, newPass)
     else if (action === 5) [newPass, reward, terminated] = dropoff(loc, newPass, dest)
     return [{ probability: 1, state: taxiEncode(newRow, newCol, newPass, dest), reward, terminated }]
   }
   const p = options.rainyProbability ?? 0.8
   const lateral = (1 - p) / 2
-  const moves: Readonly<Record<number, readonly (readonly [number, number])[]>> = {
-    0: [
-      [1, 0],
-      [0, 1],
-      [0, -1],
-    ],
-    1: [
-      [-1, 0],
-      [0, -1],
-      [0, 1],
-    ],
-    2: [
-      [0, 1],
-      [-1, 0],
-      [1, 0],
-    ],
-    3: [
-      [0, -1],
-      [1, 0],
-      [-1, 0],
-    ],
-  }
+  // The moves to either side of each move (gymnasium's order): south slips east or west, north west or east, east
+  // north or south, west south or north.
+  const sides: readonly (readonly [number, number])[] = [
+    [2, 3],
+    [3, 2],
+    [1, 0],
+    [0, 1],
+  ]
   let left: [number, number] = [row, col]
   let right: [number, number] = [row, col]
-  if (
-    (action === 0 && row < 4) ||
-    (action === 1 && row > 0) ||
-    (action === 2 && wallChar(row, 2 * col + 2) === ':') ||
-    (action === 3 && wallChar(row, 2 * col) === ':')
-  ) {
-    const m = moves[action] ?? []
-    const [dr, dc] = m[0] ?? [0, 0]
-    newRow = Math.max(0, Math.min(row + dr, 4))
-    newCol = Math.max(0, Math.min(col + dc, 4))
-    const [lr, lc] = m[1] ?? [0, 0]
-    const [rr, rc] = m[2] ?? [0, 0]
-    left = calcNewPosition(row, col, lr, lc)
-    right = calcNewPosition(row, col, rr, rc)
+  const intendedMove = action <= 3 ? moved(row, col, action) : undefined
+  if (intendedMove !== undefined) {
+    ;[newRow, newCol] = intendedMove
+    const [l, r] = sides[action] ?? [action, action]
+    left = moveOrStay(row, col, l)
+    right = moveOrStay(row, col, r)
   } else if (action === 4) [newPass, reward] = pickup(loc, newPass)
   else if (action === 5) [newPass, reward, terminated] = dropoff(loc, newPass, dest)
   const intended = taxiEncode(newRow, newCol, newPass, dest)
@@ -383,13 +350,6 @@ function renderTaxi(s: number): Scene {
     nodes.push(rect(c * cell, r * cell, cell, cell, { fill: colours[i] ?? '#ffffff', opacity: 0.3 }))
     nodes.push(text(c * cell + 8, r * cell + 20, labels[i] ?? '', { size: 16 }))
   }
-  // Interior walls: a '|' between columns c and c + 1 at row r.
-  for (let r = 0; r < 5; r++) {
-    for (let c = 0; c < 4; c++) {
-      if (wallChar(r, 2 * c + 2) === '|')
-        nodes.push(line((c + 1) * cell, r * cell, (c + 1) * cell, (r + 1) * cell, { stroke: 'fg', strokeWidth: 6 }))
-    }
-  }
   const [dr, dc] = TAXI_LOCATIONS[dest] ?? [0, 0]
   nodes.push(
     rect(dc * cell + 4, dr * cell + 4, cell - 8, cell - 8, {
@@ -404,11 +364,9 @@ function renderTaxi(s: number): Scene {
     const [pr, pc] = TAXI_LOCATIONS[pass] ?? [0, 0]
     nodes.push(circle(pc * cell + cell / 2, pr * cell + cell / 2, 12, { fill: 'tab1', id: 'passenger' }))
   }
-  return renderGrid(
-    Array.from({ length: 5 }, () => '     '),
-    undefined,
-    { cell, title: 'Taxi', overlay: nodes },
-  )
+  // The map with its walls, from worlds; the stands, passenger, destination and taxi on top.
+  const map = toScene(TAXI.world, { cell })
+  return scene(map.width, map.height, [...map.children, ...nodes], { title: 'Taxi' })
 }
 
 /** Options of Taxi (gymnasium's TaxiEnv). */

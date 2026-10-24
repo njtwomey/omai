@@ -1,9 +1,9 @@
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { foldIn, Generator, type Key, key as makeKey } from '../../../lib/random/index.ts'
 import type { Env, EnvDefinition, EnvModel, Outcome } from '../../../lib/rl/index.ts'
-import { circle, type Paint, rect, type Scene } from '../../../lib/scene/index.ts'
+import { circle, type Paint, rect, type Scene, scene } from '../../../lib/scene/index.ts'
 import { box, choice, dict, discrete, int, real, type Space } from '../../../lib/space/index.ts'
-import { renderGrid } from './gridworlds.ts'
+import { fromAscii, toScene } from '../../../lib/worlds/index.ts'
 
 // ------------------------------------------------------------------------------------------------- Maze generation
 
@@ -638,7 +638,7 @@ export function makeProcedural(options: ProceduralOptions = {}, id = 'Procedural
     const drawn = L.map.map((row) =>
       row
         .split('')
-        .map((ch) => (isKeyChar(ch) ? '.' : isDoorChar(ch) ? 'D' : ch))
+        .map((ch) => (isKeyChar(ch) || isDoorChar(ch) ? '.' : ch))
         .join(''),
     )
     const overlay = [
@@ -661,7 +661,9 @@ export function makeProcedural(options: ProceduralOptions = {}, id = 'Procedural
         }),
       ),
     ]
-    return renderGrid(drawn, [Math.floor(s.pos / w), s.pos % w], { cell, title: `${id} level ${s.level}`, overlay })
+    // The level's walls, start and goal through worlds; keys and doors (coloured by letter) on top.
+    const map = toScene(fromAscii(drawn), { agent: s.pos, cell })
+    return scene(map.width, map.height, [...map.children, ...overlay], { title: `${id} level ${s.level}` })
   }
   return {
     spec: {
