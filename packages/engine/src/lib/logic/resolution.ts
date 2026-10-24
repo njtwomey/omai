@@ -67,10 +67,26 @@ const isBuiltinKey = (key: string): boolean => CONTROL.has(key) || BUILTINS.has(
 
 const LIBRARY: ParsedProgram = parseProgram(LIBRARY_SOURCE)
 
-/** Names of the built-in predicates and control constructs, sorted. */
+/**
+ * Names of the built-in predicates and control constructs, sorted.
+ *
+ * @example
+ * ```ts
+ * import { BUILTIN_PREDICATES } from 'whitebox-engine/logic'
+ * [BUILTIN_PREDICATES.includes('findall/3'), BUILTIN_PREDICATES.includes('append/3')] // => [true, false]
+ * ```
+ */
 export const BUILTIN_PREDICATES: readonly string[] = [...CONTROL, ...BUILTINS.keys()].sort()
 
-/** Names of the standard library predicates (defined in Prolog), sorted. */
+/**
+ * Names of the standard library predicates (defined in Prolog), sorted.
+ *
+ * @example
+ * ```ts
+ * import { LIBRARY_PREDICATES } from 'whitebox-engine/logic'
+ * LIBRARY_PREDICATES.includes('append/3') // => true
+ * ```
+ */
 export const LIBRARY_PREDICATES: readonly string[] = [
   ...new Set(LIBRARY.clauses.map((c) => indicator(c.head)).filter((k) => !k.startsWith('$'))),
 ].sort()

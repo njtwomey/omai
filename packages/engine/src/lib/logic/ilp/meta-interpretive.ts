@@ -22,7 +22,15 @@ export interface Metarule {
   readonly body: readonly (readonly string[])[]
 }
 
-/** The standard metarules of Metagol (identity, inverse, precon, postcon, chain, tail recursion). */
+/**
+ * The standard metarules of Metagol (identity, inverse, precon, postcon, chain, tail recursion).
+ *
+ * @example
+ * ```ts
+ * import { METARULES } from 'whitebox-engine/logic/ilp'
+ * Object.keys(METARULES) // => ['ident', 'inverse', 'precon', 'postcon', 'chain', 'tailrec']
+ * ```
+ */
 export const METARULES: Readonly<Record<string, Metarule>> = {
   ident: { name: 'ident', symbols: ['P', 'Q'], head: ['P', 'A', 'B'], body: [['Q', 'A', 'B']] },
   inverse: { name: 'inverse', symbols: ['P', 'Q'], head: ['P', 'A', 'B'], body: [['Q', 'B', 'A']] },

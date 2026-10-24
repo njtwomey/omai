@@ -1778,25 +1778,44 @@ oracle: statistical agreement with analytic targets; arviz for diagnostics
   tree-depth reports.
 ### 4.25 `logic/` (tier 8): logic programming, satisfiability and ILP
 
-oracle: recorded SWI-Prolog outputs, pysat, Aleph and Popper results on small tasks
-- `terms.ts`: atoms, variables, compounds, lists, numbers, groundness, term variables, equality, printing.
-- `parse.ts`: Prolog syntax for clauses and queries (operators, lists, comments).
-- `unify.ts`: unification (iterative, optional occurs check), substitutions, composition, renaming apart,
-  Martelli-Montanari step traces.
+oracle: python-sat (Glucose satisfiability, model counts by enumeration, MUSX cores, RC2 MaxSAT optima); clingo
+(least and perfect models of Datalog programs, answer sets); sympy.logic (models, validity, entailment, minimal sum and
+product forms); typed reference ports in `oracle/cases/logic/` for what has no packaged reference under uv (a
+generator-based Prolog interpreter standing in for SWI-Prolog, a naive Datalog evaluator for round counts,
+anti-unification, brute-force version spaces, FOIL, bottom-clause saturation); textbook ground truth (Pelletier's
+problems and AIMA's examples for first-order proving; Quinlan's can-reach, a Michalski-style trains task, the daughter
+task, and Metagol's and Popper's family tasks for ILP, each checked with the reference interpreter). NLTK's resolution
+prover is not used: it lacks factoring and misreads single-letter names.
+
+Every solver, prover and learner is an `Algorithm` (resolution steps in Byrd's ports, Martelli-Montanari rules,
+DPLL/CDCL decisions, propagations, conflicts and learned clauses, WalkSAT flips, Datalog rounds, guesses of answer sets,
+given clauses, FOIL literals, Progol candidates, Metagol programs, tested hypotheses) with step, conflict, depth or
+size budgets and a clear status on unsatisfiable or infinite inputs.
+- `terms.ts`: atoms, variables, compounds, lists, numbers, groundness, term variables, equality, the standard order,
+  printing (operator-aware `writeq`, `write_canonical`) that reads back.
+- `parse.ts`: Prolog syntax for clauses and queries (operators and `op/3`, lists, curly terms, quoted atoms, character
+  codes, comments), DCG translation.
+- `unify.ts`: unification (iterative, optional occurs check), substitutions, composition, renaming apart, matching,
+  variants, a trailing binding store, Martelli-Montanari step traces.
 - `resolution.ts`: SLD resolution with backtracking and depth limits (traced), built-ins, negation as failure, a small
   standard library, SLD trees as structures.
 - `datalog.ts`: naive and semi-naive bottom-up evaluation, least Herbrand models, stratified negation, derivation trees.
-- `propositional.ts`: formulas, evaluation, truth tables, models, entailment, CNF (Tseitin) and DNF, simplification.
+- `propositional.ts`: formulas, evaluation, truth tables, models, entailment, CNF (Tseitin) and DNF, simplification,
+  prime implicants and exact minimal DNF and CNF.
 - `sat.ts`: DPLL, CDCL (clause learning, watched literals, traced decisions and conflicts), WalkSAT, DIMACS.
 - `maxsat.ts`: weighted partial MaxSAT (branch and bound, traced), model counting and enumeration, minimal
   unsatisfiable cores (selector assumptions with deletion-based minimisation).
-- `first-order.ts`: clausal form (Skolemisation), given-clause resolution proving, subsumption.
+- `first-order.ts`: clausal form (Skolemisation), given-clause resolution proving, subsumption, proof checking.
 - `answer-sets.ts`: stable models of small normal programs (guess and check), for comparison with Datalog semantics.
 - `ilp/generalisation.ts`: theta-subsumption, least general generalisation and relative LGG, clause reduction.
 - `ilp/version-spaces.ts`: Find-S, candidate elimination, boundaries and voting.
 - `ilp/foil.ts`: FOIL (gain, refinement, coverage), traced.
 - `ilp/progol.ts`: mode declarations, bottom clauses, inverse entailment.
 - `ilp/meta-interpretive.ts`: Metagol-style learning with metarules; learning from failures (Popper-style).
+- Internal: `_errors.ts` (ISO error terms), `_arith.ts` (arithmetic with SWI-Prolog's defaults), `_builtins.ts` (the
+  built-in predicates), `_library.ts` (the standard library in Prolog), `_cdcl.ts` (the CDCL core shared by `sat` and
+  `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of
+  terms, formulas and CNF are in `packages/engine/src/testing/logic.ts`.
 
 ### 4.26 `dynamics/` (tier 8): differential equations, nonlinear dynamics, control and filtering (scipy.integrate, diffrax, python-control, filterpy)
 
@@ -3519,7 +3538,7 @@ docstrings and recipes):
 ## 9. Python oracle, `oracle/`
 
 A uv project (root `pyproject.toml`) with pydantic and pydantic-settings, and dependency groups split by domain so a
-fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy,
+fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy, python-sat, clingo,
 networkx, python-control with slycot), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro, pgmpy, arviz),
 `oracle-signal` (pywt, librosa, scikit-image, pystoi, pesq), `oracle-text` (tokenizers, tiktoken, nltk, sacrebleu,
 rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel),
@@ -3678,6 +3697,7 @@ library for the same computation. They do not set a higher bar than that library
 | cvxpy (small problems)            | `lib/optim/linear-programming.ts`, `quadratic.ts`, `conic.ts`                                     |
 | Optuna, Ray Tune, scikit-optimize | `lib/tune/`, `methods/tuning/`                                                                    |
 | SWI-Prolog, Metagol, Popper       | `lib/logic/`                                                                                      |
+| pysat, clingo, pyDatalog          | `lib/logic/sat.ts`, `maxsat.ts`, `answer-sets.ts`, `datalog.ts`                                   |
 | AIMA                              | `lib/search/`, `methods/gofai/`                                                                   |
 | mlxtend, SPMF, pysubgroup         | `methods/patterns/`                                                                               |
 | DEAP                              | `lib/search/evolutionary/`, `methods/evolutionary/`                                               |

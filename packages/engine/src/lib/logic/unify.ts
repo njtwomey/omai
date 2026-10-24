@@ -10,7 +10,15 @@ import { type Clause, type Compound, type Term, termToString, termVariables, typ
  */
 export type Substitution = ReadonlyMap<string, Term>
 
-/** The empty substitution. */
+/**
+ * The empty substitution.
+ *
+ * @example
+ * ```ts
+ * import { EMPTY_SUBSTITUTION } from 'whitebox-engine/logic'
+ * EMPTY_SUBSTITUTION.size // => 0
+ * ```
+ */
 export const EMPTY_SUBSTITUTION: Substitution = new Map()
 
 /** A store of bindings that unification reads and extends (a substitution map, or the trailing {@link Bindings}). */

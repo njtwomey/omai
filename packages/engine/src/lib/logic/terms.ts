@@ -43,10 +43,26 @@ export interface Clause {
   readonly body: readonly Term[]
 }
 
-/** The empty list `[]`. */
+/**
+ * The empty list `[]`.
+ *
+ * @example
+ * ```ts
+ * import { NIL, termToString } from 'whitebox-engine/logic'
+ * termToString(NIL) // => '[]'
+ * ```
+ */
 export const NIL: Atom = { kind: 'atom', name: '[]' }
 
-/** The list constructor functor. */
+/**
+ * The list constructor functor (ISO's `'.'`).
+ *
+ * @example
+ * ```ts
+ * import { LIST_FUNCTOR, parseTerm } from 'whitebox-engine/logic'
+ * parseTerm('[a]').functor === LIST_FUNCTOR // => true
+ * ```
+ */
 export const LIST_FUNCTOR = '.'
 
 /**
