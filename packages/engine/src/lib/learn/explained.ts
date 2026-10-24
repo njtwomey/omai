@@ -1,7 +1,8 @@
 import { type Json, linspaceNumbers, WhiteboxError } from '../base/index.ts'
+import { resolveKey, resolvePolicy, resolveTracer } from '../context/index.ts'
 import { type DecisionSurface, decisionSurface, type Explained, type Exposition } from '../exposition/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import type { Algorithm } from '../trace/index.ts'
+import type { Algorithm, RunOptions } from '../trace/index.ts'
 import {
   defineEstimator,
   type Estimator,
@@ -30,6 +31,9 @@ export interface ExplainedSpec<H extends Hyper, P extends Json, V extends Verbs 
 
 /** An estimator whose fitted values carry their exposition records (empty after `revive`). */
 export type ExplainedEstimator<H extends Hyper, F extends Fitted> = Estimator<H, Explained<F>>
+
+/** The fitted value of an explained estimator with parameters P and verbs V. */
+export type ExplainedFitted<P extends Json = Json, V = object> = Explained<Fitted<P> & V>
 
 /**
  * Build an estimator whose fitted values carry exposition records (docs/structure.md 5.0): `fit` returns the fitted
@@ -305,4 +309,26 @@ export function classNamesOf(data: LearnData, classes: readonly number[]): strin
   return classes.map((c) =>
     Array.isArray(names) && Number.isInteger(c) && typeof names[c] === 'string' ? (names[c] as string) : String(c),
   )
+}
+
+/**
+ * Run options for a traced fit (section 3.2's rules): the caller's parent run, or the resolved key, tracer and policy.
+ *
+ * @param options - The fit options.
+ * @param name - The name the key is derived under when none is given.
+ * @returns Options to spread into `runAlgorithm`.
+ * @example
+ * ```ts
+ * import { fitRunOptions } from 'whitebox-engine/learn'
+ * import { key } from 'whitebox-engine/random'
+ * fitRunOptions({ key: key(0) }, 'kmeans').key !== undefined // => true
+ * ```
+ */
+export function fitRunOptions(
+  options: FitOptions,
+  name: string,
+): Pick<RunOptions, 'key' | 'tracer' | 'policy' | 'parent'> {
+  const key = resolveKey(options, name)
+  if (options.parent !== undefined) return { key, parent: options.parent }
+  return { key, tracer: resolveTracer(options), policy: resolvePolicy(options) }
 }

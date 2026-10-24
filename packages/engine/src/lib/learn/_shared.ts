@@ -1,9 +1,10 @@
 // Helpers shared by the learn modules (not exported from the domain).
 import { WhiteboxError } from '../base/index.ts'
-import { resolveKey, resolvePolicy, resolveTracer } from '../context/index.ts'
+import { resolveKey } from '../context/index.ts'
 import type { Key } from '../random/index.ts'
 import type { RunOptions } from '../trace/index.ts'
 import type { FitOptions } from './estimator.ts'
+import { fitRunOptions } from './explained.ts'
 import type { MatrixView } from './validation.ts'
 
 const EPS = 2.220446049250313e-16
@@ -63,13 +64,7 @@ export function keyFor(options: FitOptions, name: string): Key {
 }
 
 /** Run options for a traced learn procedure: the caller's parent run, or the resolved tracer and policy. */
-export function runOptionsFor(
-  options: FitOptions,
-  name: string,
-): Pick<RunOptions, 'key' | 'tracer' | 'policy' | 'parent'> {
-  if (options.parent !== undefined) return { key: keyFor(options, name), parent: options.parent }
-  return { key: keyFor(options, name), tracer: resolveTracer(options), policy: resolvePolicy(options) }
-}
+export const runOptionsFor: typeof fitRunOptions = fitRunOptions
 
 /** Fit options for an inner fit, nested under a run and with a derived key. */
 export function innerFitOptions(options: FitOptions, key: Key, parent?: RunOptions['parent']): FitOptions {
