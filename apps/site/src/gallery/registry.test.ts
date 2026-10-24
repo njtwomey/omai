@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SECTIONS } from './recipe.ts'
-import { ENTRIES } from './registry.ts'
+import { ENTRIES, SECTIONS } from './registry.ts'
 
 describe('the recipe registry', () => {
   it('loads every recipe with a title, question, section and source', () => {
