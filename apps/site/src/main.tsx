@@ -1,7 +1,7 @@
 import { type ReactNode, StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { DocsSection } from './docs/routes.tsx'
-import { GallerySection } from './gallery/routes.tsx'
+import { GallerySection, GalleryToc } from './gallery/routes.tsx'
 import { Home } from './Home.tsx'
 import { HubSection } from './hub/routes.tsx'
 import { usePath } from './shell/router.ts'
@@ -19,7 +19,12 @@ function App(): ReactNode {
   ) : (
     <Home />
   )
-  return <Shell path={path}>{page}</Shell>
+  const sidebar = path.startsWith('/gallery') ? <GalleryToc path={path} /> : undefined
+  return (
+    <Shell path={path} {...(sidebar === undefined ? {} : { sidebar })}>
+      {page}
+    </Shell>
+  )
 }
 
 const root = document.getElementById('root')
