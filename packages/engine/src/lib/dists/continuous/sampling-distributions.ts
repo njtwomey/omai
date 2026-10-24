@@ -229,6 +229,117 @@ export function noncentralChi2(df: TensorLike, nc: TensorLike): Distribution {
 }
 
 /**
+ * The noncentral F distribution with d1 and d2 degrees of freedom and noncentrality `nc` (scipy.stats.ncf): (V1 / d1)
+ * / (V2 / d2) for a noncentral chi-square V1 and a central V2. With u = d1 x / (d1 x + d2), the CDF is the Poisson(nc /
+ * 2) mixture of regularised incomplete beta functions I_u(d1 / 2 + j, d2 / 2) and the density the matching mixture of
+ * beta densities; this is the distribution of the ANOVA F statistic under an alternative, used for power and effect-size
+ * intervals.
+ *
+ * @param d1 - Numerator degrees of freedom (positive).
+ * @param d2 - Denominator degrees of freedom (positive).
+ * @param nc - Noncentrality (non-negative).
+ * @returns The distribution: series density, CDF and survival function (differentiable), closed-form moments, numerical
+ *   quantiles, mode and entropy, and `rsample` by implicit reparameterisation of the ratio sampler.
+ * @example
+ * ```ts
+ * import { fDistribution, noncentralF } from 'whitebox-engine/dists'
+ * import { item } from 'whitebox-engine/tensor'
+ * item(noncentralF(4, 10, 2).mean()) // => 1.875
+ * Math.abs(item(noncentralF(4, 10, 0).cdf(1.5)) - item(fDistribution(4, 10).cdf(1.5))) < 1e-14 // => true
+ * ```
+ */
+export function noncentralF(d1: TensorLike, d2: TensorLike, nc: TensorLike): Distribution {
+  const [n, m, lambda] = promoteFloat(d1, d2, nc) as [Value, Value, Value]
+  validateParams('noncentralF', { d1: [n, 'positive'], d2: [m, 'positive'], nc: [lambda, 'nonNegative'] })
+  const batchShape = batchShapeOf(n, m, lambda)
+  const b = (v: Value): Value => broadcastBatch(v, batchShape)
+  const half = mul(lambda, 0.5)
+  const hn = mul(n, 0.5)
+  const hm = mul(m, 0.5)
+  const positive = (x: Value): Value => greater(x, 0)
+  const safe = (x: Value): Value => where(positive(x), x, 1)
+  const rankOf = (x: Value): number => batchShapeOf(x, n, m, lambda).length
+  // u = d1 x / (d1 x + d2) and its complement, from logs for accuracy at both ends.
+  const parts = (x: Value): { readonly u: Value; readonly v: Value; readonly logU: Value; readonly logV: Value } => {
+    const nx = mul(n, x)
+    const den = add(nx, m)
+    return { u: div(nx, den), v: div(m, den), logU: sub(log(nx), log(den)), logV: sub(log(m), log(den)) }
+  }
+  const mixture = (x: Value, term: (a: Value) => Value): Value => {
+    const { j, logW } = poissonTerms(half, rankOf(x))
+    return sum(mul(exp(logW), term(add(hn, j))), 0)
+  }
+  const twin = concreteTwin([n, m, lambda], (a, c, e) => noncentralF(a as Tensor, c as Tensor, e as Tensor))
+  // Concrete draws: (chi2(d1 + 2N) / d1) / (chi2(d2) / d2), N ~ Poisson(nc / 2).
+  const draw = (key: Key, shape: readonly number[]): Value => {
+    const c = twin()
+    const nn = toFlat(broadcastBatch(c.params['d1'] as Value, batchShape))
+    const mm = toFlat(broadcastBatch(c.params['d2'] as Value, batchShape))
+    const ll = toFlat(broadcastBatch(c.params['nc'] as Value, batchShape))
+    const full = [...shape, ...batchShape]
+    const size = full.reduce((p, d) => p * d, 1)
+    const out = new Float64Array(size)
+    for (let i = 0; i < size; i++) {
+      const bi = i % Math.max(1, nn.length)
+      const kn = foldIn(key, i)
+      const count = poissonDraw(foldIn(kn, 0), (ll[bi] ?? 0) / 2, []).data[0] ?? 0
+      const a = 2 * (gammaVariates(foldIn(kn, 1), [(nn[bi] ?? 1) / 2 + count])[0] ?? 0)
+      const d = 2 * (gammaVariates(foldIn(kn, 2), [(mm[bi] ?? 1) / 2])[0] ?? 1)
+      out[i] = a / (nn[bi] ?? 1) / (d / (mm[bi] ?? 1))
+    }
+    return fromStorage(out, full, 'float64')
+  }
+  const mean = where(greater(m, 2), div(mul(m, add(n, lambda)), mul(n, sub(m, 2))), Number.POSITIVE_INFINITY)
+  const variance = where(
+    greater(m, 4),
+    div(
+      mul(mul(square(div(m, n)), 2), add(square(add(n, lambda)), mul(add(n, mul(lambda, 2)), sub(m, 2)))),
+      mul(square(sub(m, 2)), sub(m, 4)),
+    ),
+    where(greater(m, 2), Number.POSITIVE_INFINITY, Number.NaN),
+  )
+  const self: Distribution = defineDistribution({
+    name: 'noncentralF',
+    params: { d1: n, d2: m, nc: lambda },
+    support: { kind: 'positive' },
+    batchShape,
+    logProb: (x) => {
+      const s = safe(x)
+      const { logU, logV } = parts(s)
+      const { j, logW } = poissonTerms(half, rankOf(x))
+      const a = add(hn, j)
+      const terms = add(logW, sub(add(mul(sub(a, 1), logU), mul(sub(hm, 1), logV)), lbeta(a, hm)))
+      const jacobian = sub(log(mul(n, m)), mul(log(add(mul(n, s), m)), 2))
+      return where(positive(x), add(logsumexp(terms, 0), jacobian), Number.NEGATIVE_INFINITY)
+    },
+    cdf: (x) => {
+      const { u } = parts(safe(x))
+      return where(
+        positive(x),
+        mixture(x, (a) => betainc(a, hm, u)),
+        0,
+      )
+    },
+    sf: (x) => {
+      const { v } = parts(safe(x))
+      return where(
+        positive(x),
+        mixture(x, (a) => betainc(hm, a, v)),
+        1,
+      )
+    },
+    ppf: (q) => numericPpf(self, twin, q),
+    sample: (key, shape) => draw(key, shape),
+    rsample: (key, shape) => implicitReparam(draw(key, shape), self.cdf, self.prob),
+    mean: () => b(mean),
+    variance: () => b(variance),
+    mode: () => numericMode(self, twin, 1e-12, b(add(mul(div(add(n, lambda), n), 3), 2))),
+    entropy: () => numericEntropy(self, { kind: 'halfLine', low: 0, scale: b(div(add(n, lambda), n)) }),
+  })
+  return self
+}
+
+/**
  * The noncentral t distribution with `df` degrees of freedom and noncentrality `nc` (scipy.stats.nct): (Z + nc) /
  * sqrt(V / df) for standard normal Z and chi-square V. The CDF is Lenth's series (AS 243) in incomplete beta functions
  * and the density its derivative, both summed over the Poisson(nc^2 / 2) terms that carry the weight, using

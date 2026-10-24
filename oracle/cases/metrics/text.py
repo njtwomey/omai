@@ -178,6 +178,9 @@ def rouge_cases() -> list[Case]:
     hyps = [*HYPS, SUMMARY_HYP]
     both = [[a, b] for a, b in zip(REFS, REFS2, strict=True)] + [[SUMMARY_REF]]
     scores = [scorer.score_multi(r, h) for r, h in zip(both, hyps, strict=True)]
+    # rouge-score's use_stemmer applies nltk's PorterStemmer to tokens longer than three characters.
+    stemmer = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rouge3", "rougeL", "rougeLsum"], use_stemmer=True)
+    stemmed = [stemmer.score_multi(r, h) for r, h in zip(both, hyps, strict=True)]
     for kind, fn, extra in [
         ("rouge1", "rougeN", {"n": 1}),
         ("rouge2", "rougeN", {"n": 2}),
@@ -188,6 +191,20 @@ def rouge_cases() -> list[Case]:
         for field in ["precision", "recall", "fmeasure"]:
             value = float(np.mean([getattr(s[kind], field) for s in scores]))
             out.append(case(f"{kind}/{field}", fn, [], np.asarray(value), yTrue=both, yPred=hyps, field=field, **extra))
+            value = float(np.mean([getattr(s[kind], field) for s in stemmed]))
+            out.append(
+                case(
+                    f"{kind}/stemmed/{field}",
+                    fn,
+                    [],
+                    np.asarray(value),
+                    yTrue=both,
+                    yPred=hyps,
+                    field=field,
+                    stem=True,
+                    **extra,
+                )
+            )
     del refs
     return out
 

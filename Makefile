@@ -69,12 +69,20 @@ fixtures: ## Regenerate golden fixtures from the Python oracle (needs the oracle
 fixtures-check: ## Regenerate fixtures to a temporary directory and fail on any difference
 	$(UV) run --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl python -m whitebox_oracle check
 
+.PHONY: manifest
+manifest: ## Rebuild fixtures/manifest.json from the fixture files (for merge conflicts; runs no case module)
+	$(UV) run --group oracle-core python -m whitebox_oracle manifest
+
 .PHONY: build
 build: barrels ## Build all packages
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p run build || exit 1; done
 
+.PHONY: verify
+verify: ## Checks scoped to what changed against BASE (default main): the gate for commits and merges
+	$(NODE) scripts/verify.ts --base $(or $(BASE),main)
+
 .PHONY: check
-check: barrels-check layers lint typecheck test ## Everything a commit needs
+check: barrels-check layers lint typecheck test ## Everything, every test (periodic full run; `verify` is the per-change gate)
 
 .PHONY: clean
 clean: ## Remove build outputs

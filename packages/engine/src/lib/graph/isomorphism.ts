@@ -82,14 +82,16 @@ function refiner(
     options.nodeLabels === undefined ? String(degrees[v] ?? 0) : String(options.nodeLabels[v] ?? ''),
   )
   const edgeLabel = (k: number): string =>
-    options.edgeLabels === undefined ? '' : `${String(options.edgeLabels[a.edges[k] ?? 0] ?? '')}:`
+    options.edgeLabels === undefined ? '' : String(options.edgeLabels[a.edges[k] ?? 0] ?? '')
+  // JSON keeps the encoding unambiguous for any labels: no colour, edge label or neighbour count can collide with
+  // another (with plain concatenation, an isolated node and a node with one empty-labelled neighbour collided).
   const refine = (colours: readonly string[]): string[] =>
     Array.from({ length: g.n }, (_, v) => {
       const parts: string[] = []
       for (let k = a.indptr[v] ?? 0; k < (a.indptr[v + 1] ?? 0); k++) {
-        parts.push(edgeLabel(k) + (colours[a.indices[k] ?? 0] ?? ''))
+        parts.push(JSON.stringify([edgeLabel(k), colours[a.indices[k] ?? 0] ?? '']))
       }
-      return hash(`${colours[v] ?? ''}(${parts.sort().join(',')})`)
+      return hash(JSON.stringify([colours[v] ?? '', parts.sort()]))
     })
   return { initial, refine }
 }

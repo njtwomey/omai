@@ -1,0 +1,4 @@
+{
+  "tier": 7,
+  "summary": "Kernel functions with differentiable hyperparameters, kernel algebra, structured kernels, explicit feature maps and kernel-matrix statistics."
+}

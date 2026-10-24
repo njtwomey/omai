@@ -1,6 +1,13 @@
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import type { GradientTransformation } from '../../optim/index.ts'
 import { adam } from '../../optim/index.ts'
+import {
+  type CrfppTemplate,
+  crfppFeatures,
+  featureIndex,
+  type ItemAttributes,
+  type TokenTable,
+} from '../../text/index.ts'
 import { type Algorithm, type RunStatus, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import { type DescentState, gradientDescent } from '../_descent.ts'
 import { type DiscreteVariable, type Factor, factorMarginal, logFactor } from '../factor.ts'
@@ -9,100 +16,38 @@ import { type ChainModel, forwardBackward, viterbi } from '../inference/chain.ts
 import { calibrate, junctionTreeQuery } from '../inference/junction-tree.ts'
 import { type FactorGraph, factorGraph } from './factor-graph.ts'
 
-/** The observation of one item of a sequence: attribute names with values (1 for an indicator, as CRFsuite). */
-export type ItemFeatures = Readonly<Record<string, number>>
-
-/** One token of a sequence as named columns (word, part of speech, ...), the input of attribute templates. */
-export type Token = Readonly<Record<string, string>>
-
-/** An attribute template: (column, offset) pairs joined into one attribute, as CRFsuite's `w[-1]|w[0]`. */
-export type AttributeTemplate = readonly (readonly [string, number])[]
+/**
+ * The observation of one item of a sequence: attribute names with values (1 for an indicator, as CRFsuite). Feature
+ * templates that produce them live in `text/templates.ts` and `text/attribute-templates.ts`.
+ */
+export type ItemFeatures = ItemAttributes
 
 /**
- * Expand attribute templates over a sequence of tokens (CRFsuite-style feature templates): each template joins the
- * values of its (column, offset) cells into one attribute named like `w[-1]|w[0]=the|cat`. Cells outside the sequence
- * are skipped (`boundary: 'skip'`, CRFsuite) or padded with `_B-k` / `_B+k` (`'pad'`, CRF++'s convention). A `bias`
- * attribute fires at every position when asked for.
- *
- * @param tokens - The tokens.
- * @param templates - The templates.
- * @param options - Boundary handling and the bias attribute.
- * @returns The attributes of each position (value 1).
- * @concept crf-features
- * @example
- * ```ts
- * import { expandTemplates } from 'whitebox-engine/pgm'
- * const tokens = [{ w: 'the' }, { w: 'cat' }]
- * expandTemplates(tokens, [[['w', 0]], [['w', -1], ['w', 0]]]) // => [{ 'w[0]=the': 1 }, { 'w[0]=cat': 1, 'w[-1]|w[0]=the|cat': 1 }]
- * ```
+ * The observation of a sequence with observation-dependent transitions (CRF++'s bigram templates): the unigram
+ * attributes of each item and the bigram attributes of each edge, `bigram[t]` belonging to the edge from item t - 1 to
+ * item t (`bigram[0]` is unused).
  */
-export function expandTemplates(
-  tokens: readonly Token[],
-  templates: readonly AttributeTemplate[],
-  options: { readonly boundary?: 'skip' | 'pad'; readonly bias?: boolean } = {},
-): Record<string, number>[] {
-  const pad = options.boundary === 'pad'
-  return tokens.map((_, t) => {
-    const out: Record<string, number> = {}
-    if (options.bias === true) out['bias'] = 1
-    for (const template of templates) {
-      const values: string[] = []
-      let ok = true
-      for (const [column, offset] of template) {
-        const i = t + offset
-        const v =
-          i < 0
-            ? pad
-              ? `_B${i}`
-              : undefined
-            : i >= tokens.length
-              ? pad
-                ? `_B+${i - tokens.length + 1}`
-                : undefined
-              : tokens[i]?.[column]
-        if (v === undefined) {
-          ok = false
-          break
-        }
-        values.push(v)
-      }
-      if (!ok) continue
-      out[`${template.map(([c, o]) => `${c}[${o}]`).join('|')}=${values.join('|')}`] = 1
-    }
-    return out
-  })
+export interface CrfObservation {
+  readonly unigram: readonly ItemFeatures[]
+  readonly bigram: readonly ItemFeatures[]
+}
+
+/** The input of a linear-chain CRF: item attributes, or item and edge attributes. */
+export type CrfInput = readonly ItemFeatures[] | CrfObservation
+
+function unigramOf(x: CrfInput): readonly ItemFeatures[] {
+  return 'unigram' in x ? x.unigram : (x as readonly ItemFeatures[])
+}
+
+function bigramOf(x: CrfInput): readonly ItemFeatures[] | undefined {
+  return 'bigram' in x ? x.bigram : undefined
 }
 
 /**
- * The attribute vocabulary of a training set with each attribute's frequency, dropping those seen fewer than
- * `minFrequency` times (CRF++'s `-f`).
- *
- * @param sequences - Item features of each sequence.
- * @param options - The minimum frequency (default 1).
- * @returns The attributes (in first-seen order) and their counts.
- * @concept crf-features
- * @example
- * ```ts
- * import { attributeIndex } from 'whitebox-engine/pgm'
- * attributeIndex([[{ a: 1 }, { a: 1, b: 1 }]], { minFrequency: 2 }) // => { attributes: ['a'], counts: [2] }
- * ```
- */
-export function attributeIndex(
-  sequences: readonly (readonly ItemFeatures[])[],
-  options: { readonly minFrequency?: number } = {},
-): { readonly attributes: string[]; readonly counts: number[] } {
-  const counts = new Map<string, number>()
-  for (const s of sequences)
-    for (const item of s) for (const a of Object.keys(item)) counts.set(a, (counts.get(a) ?? 0) + 1)
-  const min = options.minFrequency ?? 1
-  const kept = [...counts].filter(([, c]) => c >= min)
-  return { attributes: kept.map(([a]) => a), counts: kept.map(([, c]) => c) }
-}
-
-/**
- * A linear-chain conditional random field (Lafferty, McCallum and Pereira 2001) in CRFsuite's form: state features
- * pair each attribute with each label (weight w(a, y)) and transition features pair consecutive labels (weight
- * w(y', y)); log p(y | x) = sum_t [sum_a x_t(a) w(a, y_t) + w(y_{t-1}, y_t)] - log Z(x).
+ * A linear-chain conditional random field (Lafferty, McCallum and Pereira 2001). State features pair each attribute
+ * with each label (weight w(a, y)), transition features pair consecutive labels (weight w(y', y)), and bigram features
+ * pair an edge attribute with a label pair (weight w(b, y', y), CRF++'s bigram templates):
+ * log p(y | x) = sum_t [sum_a x_t(a) w(a, y_t) + w(y_{t-1}, y_t) + sum_b e_t(b) w(b, y_{t-1}, y_t)] - log Z(x).
  *
  * @concept conditional-random-fields
  */
@@ -112,17 +57,25 @@ export interface LinearChainCrf {
   readonly attributes: readonly string[]
   /** State weights, row-major [attribute][label]. */
   readonly stateWeights: Float64Array
-  /** Transition weights, row-major [from][to]. */
+  /** Transition weights, row-major [from][to] (empty for a model without label-pair transitions). */
   readonly transitionWeights: Float64Array
+  /** Edge attributes of the bigram features. */
+  readonly bigramAttributes: readonly string[]
+  /** Bigram weights, row-major [attribute][from][to]. */
+  readonly bigramWeights: Float64Array
 }
+
+type Weights = ArrayLike<number> | Readonly<Record<string, Readonly<Record<string, number>>>>
 
 /**
  * Build a linear-chain CRF from its labels and attribute vocabulary, with zero weights or the given ones (dense
- * arrays, or nested records by attribute and label and by label pair).
+ * arrays, or nested records by attribute and label and by label pair). Bigram attributes add observation-dependent
+ * transitions (dense weights [attribute][from][to]); `transitions: false` leaves out the plain label-pair weights, as
+ * a CRF++ template without a bare `B` line does.
  *
  * @param labels - The labels.
  * @param attributes - The attributes.
- * @param weights - State and transition weights.
+ * @param weights - State, transition and bigram weights, the bigram attributes and whether to have transitions.
  * @returns The model.
  * @throws WhiteboxError with code `shape` for dense weights of the wrong length, `value` for unknown names.
  * @concept conditional-random-fields
@@ -136,16 +89,15 @@ export function linearChainCrf(
   labels: readonly string[],
   attributes: readonly string[],
   weights: {
-    readonly state?: ArrayLike<number> | Readonly<Record<string, Readonly<Record<string, number>>>>
-    readonly transition?: ArrayLike<number> | Readonly<Record<string, Readonly<Record<string, number>>>>
+    readonly state?: Weights
+    readonly transition?: Weights
+    readonly transitions?: boolean
+    readonly bigramAttributes?: readonly string[]
+    readonly bigram?: ArrayLike<number>
   } = {},
 ): LinearChainCrf {
   const K = labels.length
-  const dense = (
-    w: ArrayLike<number> | Readonly<Record<string, Readonly<Record<string, number>>>> | undefined,
-    rows: readonly string[],
-    name: string,
-  ): Float64Array => {
+  const dense = (w: Weights | undefined, rows: readonly string[], name: string): Float64Array => {
     const out = new Float64Array(rows.length * K)
     if (w === undefined) return out
     if ('length' in w && typeof w.length === 'number') {
@@ -166,26 +118,57 @@ export function linearChainCrf(
     return out
   }
   if (new Set(labels).size !== K) throw new WhiteboxError('value', 'linearChainCrf: labels must be distinct')
+  const bigramAttributes = [...(weights.bigramAttributes ?? [])]
+  const bigramWeights = new Float64Array(bigramAttributes.length * K * K)
+  if (weights.bigram !== undefined) {
+    if (weights.bigram.length !== bigramWeights.length)
+      throw new WhiteboxError('shape', `linearChainCrf: bigram weights need ${bigramWeights.length} entries`)
+    bigramWeights.set(Array.from(weights.bigram))
+  }
+  if (weights.transitions === false && weights.transition !== undefined)
+    throw new WhiteboxError('value', 'linearChainCrf: transition weights given for a model without transitions')
   return {
     kind: 'linearChainCrf',
     labels: [...labels],
     attributes: [...attributes],
     stateWeights: dense(weights.state, attributes, 'state'),
-    transitionWeights: dense(weights.transition, labels, 'transition'),
+    transitionWeights:
+      weights.transitions === false ? new Float64Array(0) : dense(weights.transition, labels, 'transition'),
+    bigramAttributes,
+    bigramWeights,
   }
 }
 
 /** Attribute indices of a model (attributes outside the vocabulary are ignored, as at test time in CRFsuite). */
-function attributeLookup(crf: LinearChainCrf): Map<string, number> {
-  return new Map(crf.attributes.map((a, i) => [a, i]))
+function lookup(names: readonly string[]): Map<string, number> {
+  return new Map(names.map((a, i) => [a, i]))
+}
+
+/** The log transition matrix into item t (t >= 1): plain transitions plus the bigram attributes of the edge. */
+function edgeMatrix(crf: LinearChainCrf, edge: ItemFeatures | undefined, index: Map<string, number>): number[][] {
+  const K = crf.labels.length
+  const m = Array.from({ length: K }, (_, i) =>
+    Array.from({ length: K }, (_, j) => crf.transitionWeights[i * K + j] ?? 0),
+  )
+  if (edge === undefined) return m
+  for (const [b, v] of Object.entries(edge)) {
+    const a = index.get(b)
+    if (a === undefined) continue
+    for (let i = 0; i < K; i++) {
+      const row = m[i] as number[]
+      for (let j = 0; j < K; j++) row[j] = (row[j] ?? 0) + v * (crf.bigramWeights[(a * K + i) * K + j] ?? 0)
+    }
+  }
+  return m
 }
 
 /**
  * The potentials of a linear-chain CRF on one sequence, as a chain for forward-backward and Viterbi: unary log
- * potentials sum_a x_t(a) w(a, y) and the transition weights (no initial or final transition, as CRFsuite).
+ * potentials sum_a x_t(a) w(a, y), and the transition weights plus each edge's bigram attributes (no initial or final
+ * transition, as CRFsuite and CRF++).
  *
  * @param crf - The model.
- * @param x - The item features of the sequence.
+ * @param x - The item (and edge) attributes of the sequence.
  * @returns The chain.
  * @concept conditional-random-fields
  * @example
@@ -194,10 +177,11 @@ function attributeLookup(crf: LinearChainCrf): Map<string, number> {
  * crfChain(linearChainCrf(['A', 'B'], ['f'], { state: [1, -1] }), [{ f: 2 }]).logEmission // => [[2, -2]]
  * ```
  */
-export function crfChain(crf: LinearChainCrf, x: readonly ItemFeatures[]): ChainModel {
+export function crfChain(crf: LinearChainCrf, x: CrfInput): ChainModel {
   const K = crf.labels.length
-  const index = attributeLookup(crf)
-  const logEmission = x.map((item) => {
+  const items = unigramOf(x)
+  const index = lookup(crf.attributes)
+  const logEmission = items.map((item) => {
     const row = new Array<number>(K).fill(0)
     for (const [a, v] of Object.entries(item)) {
       const i = index.get(a)
@@ -206,10 +190,13 @@ export function crfChain(crf: LinearChainCrf, x: readonly ItemFeatures[]): Chain
     }
     return row
   })
-  const logTransition = Array.from({ length: K }, (_, i) =>
-    Array.from(crf.transitionWeights.subarray(i * K, (i + 1) * K)),
-  )
-  return { logInitial: new Array<number>(K).fill(0), logTransition, logEmission }
+  const edges = bigramOf(x)
+  const logInitial = new Array<number>(K).fill(0)
+  if (edges === undefined || crf.bigramAttributes.length === 0 || items.length < 2)
+    return { logInitial, logTransition: edgeMatrix(crf, undefined, index), logEmission }
+  const bindex = lookup(crf.bigramAttributes)
+  const logTransition = items.slice(1).map((_, t) => edgeMatrix(crf, edges[t + 1], bindex))
+  return { logInitial, logTransition, logEmission }
 }
 
 function labelIndices(crf: LinearChainCrf, y: readonly (string | number)[]): number[] {
@@ -220,11 +207,20 @@ function labelIndices(crf: LinearChainCrf, y: readonly (string | number)[]): num
   })
 }
 
+/** The transition log potential of the edge into item t (t >= 1) of a chain. */
+function transitionAt(chain: ChainModel, t: number, from: number, to: number): number {
+  const tr = chain.logTransition
+  const m = (Array.isArray(tr[0]?.[0]) ? (tr as readonly (readonly (readonly number[])[])[])[t - 1] : tr) as
+    | readonly (readonly number[])[]
+    | undefined
+  return m?.[from]?.[to] ?? 0
+}
+
 /**
- * The unnormalised log score of a labelling: the sum of its state and transition weights.
+ * The unnormalised log score of a labelling: the sum of its state, transition and bigram weights.
  *
  * @param crf - The model.
- * @param x - The item features.
+ * @param x - The item (and edge) attributes.
  * @param y - The labels.
  * @returns The score.
  * @concept conditional-random-fields
@@ -234,13 +230,13 @@ function labelIndices(crf: LinearChainCrf, y: readonly (string | number)[]): num
  * crfScore(linearChainCrf(['A', 'B'], ['f'], { state: [1, -1], transition: [0, 3, 0, 0] }), [{ f: 1 }, { f: 1 }], ['A', 'B']) // => 3
  * ```
  */
-export function crfScore(crf: LinearChainCrf, x: readonly ItemFeatures[], y: readonly (string | number)[]): number {
+export function crfScore(crf: LinearChainCrf, x: CrfInput, y: readonly (string | number)[]): number {
   const chain = crfChain(crf, x)
   const idx = labelIndices(crf, y)
   let s = 0
   for (const [t, k] of idx.entries()) {
     s += chain.logEmission[t]?.[k] ?? 0
-    if (t > 0) s += crf.transitionWeights[(idx[t - 1] ?? 0) * crf.labels.length + k] ?? 0
+    if (t > 0) s += transitionAt(chain, t, idx[t - 1] ?? 0, k)
   }
   return s
 }
@@ -249,7 +245,7 @@ export function crfScore(crf: LinearChainCrf, x: readonly ItemFeatures[], y: rea
  * The conditional log-likelihood log p(y | x) of a labelling.
  *
  * @param crf - The model.
- * @param x - The item features.
+ * @param x - The item (and edge) attributes.
  * @param y - The labels.
  * @returns log p(y | x).
  * @concept conditional-random-fields
@@ -259,11 +255,7 @@ export function crfScore(crf: LinearChainCrf, x: readonly ItemFeatures[], y: rea
  * crfLogLikelihood(linearChainCrf(['A', 'B'], ['f']), [{ f: 1 }, { f: 1 }], ['A', 'B']) === -Math.log(4) // => true
  * ```
  */
-export function crfLogLikelihood(
-  crf: LinearChainCrf,
-  x: readonly ItemFeatures[],
-  y: readonly (string | number)[],
-): number {
+export function crfLogLikelihood(crf: LinearChainCrf, x: CrfInput, y: readonly (string | number)[]): number {
   return crfScore(crf, x, y) - forwardBackward(crfChain(crf, x), { method: 'log' }).logLikelihood
 }
 
@@ -271,7 +263,7 @@ export function crfLogLikelihood(
  * The marginal p(y_t | x) of every label at every position, by forward-backward.
  *
  * @param crf - The model.
- * @param x - The item features.
+ * @param x - The item (and edge) attributes.
  * @returns For each position, the probability of each label (in label order).
  * @concept conditional-random-fields
  * @example
@@ -280,8 +272,8 @@ export function crfLogLikelihood(
  * crfMarginals(linearChainCrf(['A', 'B'], ['f'], { state: [Math.log(3), 0] }), [{ f: 1 }]) // => [[0.75, 0.25]]
  * ```
  */
-export function crfMarginals(crf: LinearChainCrf, x: readonly ItemFeatures[]): number[][] {
-  if (x.length === 0) return []
+export function crfMarginals(crf: LinearChainCrf, x: CrfInput): number[][] {
+  if (unigramOf(x).length === 0) return []
   return forwardBackward(crfChain(crf, x)).posteriors
 }
 
@@ -289,7 +281,7 @@ export function crfMarginals(crf: LinearChainCrf, x: readonly ItemFeatures[]): n
  * The most probable labelling (Viterbi decoding) and its unnormalised score.
  *
  * @param crf - The model.
- * @param x - The item features.
+ * @param x - The item (and edge) attributes.
  * @returns The labels and their score.
  * @concept conditional-random-fields
  * @example
@@ -298,18 +290,80 @@ export function crfMarginals(crf: LinearChainCrf, x: readonly ItemFeatures[]): n
  * crfDecode(linearChainCrf(['A', 'B'], ['f'], { state: [1, 0], transition: [0, 5, 0, 0] }), [{ f: 1 }, { f: 1 }]).labels // => ['A', 'B']
  * ```
  */
-export function crfDecode(
-  crf: LinearChainCrf,
-  x: readonly ItemFeatures[],
-): { readonly labels: string[]; readonly score: number } {
-  if (x.length === 0) return { labels: [], score: 0 }
+export function crfDecode(crf: LinearChainCrf, x: CrfInput): { readonly labels: string[]; readonly score: number } {
+  if (unigramOf(x).length === 0) return { labels: [], score: 0 }
   const v = viterbi(crfChain(crf, x))
   return { labels: v.path.map((k) => crf.labels[k] ?? ''), score: v.logProbability }
 }
 
+/** Count each feature string once per firing, as attribute records with value = number of firings. */
+function counted(features: readonly string[]): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const f of features) out[f] = (out[f] ?? 0) + 1
+  return out
+}
+
+/**
+ * The CRF input of a sequence under a CRF++ template (`text.parseCrfppTemplate`): the expanded unigram features of
+ * each item and bigram features of each edge, as attributes that count their firings.
+ *
+ * @param template - The parsed CRF++ template.
+ * @param table - The token-by-attribute table of the sequence.
+ * @returns The observation.
+ * @concept crf-features
+ * @example
+ * ```ts
+ * import { crfppObservation } from 'whitebox-engine/pgm'
+ * import { parseCrfppTemplate } from 'whitebox-engine/text'
+ * crfppObservation(parseCrfppTemplate('U00:%x[0,0]\nB'), [['a'], ['b']]) // => { unigram: [{ 'U00:a': 1 }, { 'U00:b': 1 }], bigram: [{}, { B: 1 }] }
+ * ```
+ */
+export function crfppObservation(template: CrfppTemplate, table: TokenTable): CrfObservation {
+  const f = crfppFeatures(template, table)
+  return { unigram: f.unigram.map(counted), bigram: f.bigram.map(counted) }
+}
+
+/**
+ * A linear-chain CRF in CRF++'s form for a template and training tables: a state weight per unigram feature and label
+ * and a weight per bigram feature and label pair (the bare `B` line is the label-pair transition, as a bigram feature
+ * that fires on every edge), over the features seen at least `minFrequency` times (CRF++'s `-f`).
+ *
+ * @param template - The parsed CRF++ template.
+ * @param labels - The labels.
+ * @param tables - The token-by-attribute tables of the training sequences.
+ * @param options - The minimum feature frequency (default 1).
+ * @returns The model with zero weights, ready for {@link fitCrf} on {@link crfppObservation} inputs.
+ * @concept crf-features
+ * @example
+ * ```ts
+ * import { crfppCrf } from 'whitebox-engine/pgm'
+ * import { parseCrfppTemplate } from 'whitebox-engine/text'
+ * const crf = crfppCrf(parseCrfppTemplate('U00:%x[0,0]\nB'), ['D', 'N'], [[['the'], ['dog']]])
+ * [crf.attributes, crf.bigramAttributes, crf.transitionWeights.length] // => [['U00:the', 'U00:dog'], ['B'], 0]
+ * ```
+ */
+export function crfppCrf(
+  template: CrfppTemplate,
+  labels: readonly string[],
+  tables: readonly TokenTable[],
+  options: { readonly minFrequency?: number } = {},
+): LinearChainCrf {
+  const expanded = tables.map((t) => crfppFeatures(template, t))
+  const min = options.minFrequency === undefined ? {} : { minFrequency: options.minFrequency }
+  const unigram = featureIndex(
+    expanded.map((e) => e.unigram),
+    min,
+  )
+  const bigram = featureIndex(
+    expanded.map((e) => e.bigram.slice(1)),
+    min,
+  )
+  return linearChainCrf(labels, unigram.features, { transitions: false, bigramAttributes: bigram.features })
+}
+
 /** A labelled training sequence. */
 export interface LabelledSequence {
-  readonly x: readonly ItemFeatures[]
+  readonly x: CrfInput
   readonly y: readonly (string | number)[]
 }
 
@@ -322,7 +376,7 @@ export interface CrfPenalty {
 }
 
 /**
- * The parameters of a linear-chain CRF as one vector: state weights then transition weights.
+ * The parameters of a linear-chain CRF as one vector: state weights, then transition weights, then bigram weights.
  *
  * @param crf - The model.
  * @returns The parameter vector.
@@ -333,14 +387,15 @@ export interface CrfPenalty {
  * ```
  */
 export function crfParameters(crf: LinearChainCrf): Float64Array {
-  const out = new Float64Array(crf.stateWeights.length + crf.transitionWeights.length)
+  const out = new Float64Array(crf.stateWeights.length + crf.transitionWeights.length + crf.bigramWeights.length)
   out.set(crf.stateWeights)
   out.set(crf.transitionWeights, crf.stateWeights.length)
+  out.set(crf.bigramWeights, crf.stateWeights.length + crf.transitionWeights.length)
   return out
 }
 
 /**
- * A copy of a linear-chain CRF with new parameters (state weights then transition weights).
+ * A copy of a linear-chain CRF with new parameters (state, transition, then bigram weights).
  *
  * @param crf - The model.
  * @param parameters - The parameter vector.
@@ -354,10 +409,11 @@ export function crfParameters(crf: LinearChainCrf): Float64Array {
  */
 export function withCrfParameters(crf: LinearChainCrf, parameters: ArrayLike<number>): LinearChainCrf {
   const n = crf.stateWeights.length
-  if (parameters.length !== n + crf.transitionWeights.length)
+  const m = crf.transitionWeights.length
+  if (parameters.length !== n + m + crf.bigramWeights.length)
     throw new WhiteboxError('shape', 'withCrfParameters: wrong number of parameters')
   const p = Float64Array.from(parameters)
-  return { ...crf, stateWeights: p.slice(0, n), transitionWeights: p.slice(n) }
+  return { ...crf, stateWeights: p.slice(0, n), transitionWeights: p.slice(n, n + m), bigramWeights: p.slice(n + m) }
 }
 
 function penalise(w: Float64Array, value: number, gradient: Float64Array, penalty: CrfPenalty): number {
@@ -380,7 +436,7 @@ function penalise(w: Float64Array, value: number, gradient: Float64Array, penalt
  * @param crf - The model (its weights are the point of evaluation).
  * @param data - Labelled sequences.
  * @param penalty - L2 and L1 coefficients.
- * @returns The objective and its gradient (state weights then transition weights).
+ * @returns The objective and its gradient (in {@link crfParameters} order).
  * @concept conditional-random-fields
  * @example
  * ```ts
@@ -396,34 +452,48 @@ export function crfObjective(
 ): { readonly value: number; readonly gradient: Float64Array } {
   const K = crf.labels.length
   const nState = crf.stateWeights.length
-  const gradient = new Float64Array(nState + crf.transitionWeights.length)
-  const index = attributeLookup(crf)
+  const nTrans = crf.transitionWeights.length
+  const bigramAt = nState + nTrans
+  const gradient = new Float64Array(bigramAt + crf.bigramWeights.length)
+  const index = lookup(crf.attributes)
+  const bindex = lookup(crf.bigramAttributes)
+  const add = (i: number, v: number): void => {
+    gradient[i] = (gradient[i] ?? 0) + v
+  }
   let value = 0
   for (const { x, y } of data) {
-    if (x.length === 0) continue
+    const items = unigramOf(x)
+    if (items.length === 0) continue
+    const edges = bigramOf(x)
     const idx = labelIndices(crf, y)
-    if (idx.length !== x.length) throw new WhiteboxError('shape', 'crfObjective: one label per item')
+    if (idx.length !== items.length) throw new WhiteboxError('shape', 'crfObjective: one label per item')
     const chain = crfChain(crf, x)
     const fb = forwardBackward(chain)
     let score = 0
-    for (const [t, item] of x.entries()) {
+    for (const [t, item] of items.entries()) {
       const yt = idx[t] ?? 0
       score += chain.logEmission[t]?.[yt] ?? 0
+      const post = fb.posteriors[t] ?? []
       for (const [a, v] of Object.entries(item)) {
         const i = index.get(a)
         if (i === undefined) continue
-        gradient[i * K + yt] = (gradient[i * K + yt] ?? 0) - v
-        const post = fb.posteriors[t] ?? []
-        for (let k = 0; k < K; k++) gradient[i * K + k] = (gradient[i * K + k] ?? 0) + v * (post[k] ?? 0)
+        add(i * K + yt, -v)
+        for (let k = 0; k < K; k++) add(i * K + k, v * (post[k] ?? 0))
       }
-      if (t > 0) {
-        const prev = idx[t - 1] ?? 0
-        score += crf.transitionWeights[prev * K + yt] ?? 0
-        gradient[nState + prev * K + yt] = (gradient[nState + prev * K + yt] ?? 0) - 1
-        const xi = fb.pairwise[t - 1] ?? []
-        for (let i = 0; i < K; i++)
-          for (let j = 0; j < K; j++)
-            gradient[nState + i * K + j] = (gradient[nState + i * K + j] ?? 0) + (xi[i]?.[j] ?? 0)
+      if (t === 0) continue
+      const prev = idx[t - 1] ?? 0
+      score += transitionAt(chain, t, prev, yt)
+      const xi = fb.pairwise[t - 1] ?? []
+      if (nTrans > 0) {
+        add(nState + prev * K + yt, -1)
+        for (let i = 0; i < K; i++) for (let j = 0; j < K; j++) add(nState + i * K + j, xi[i]?.[j] ?? 0)
+      }
+      for (const [b, v] of Object.entries(edges?.[t] ?? {})) {
+        const a = bindex.get(b)
+        if (a === undefined) continue
+        const base = bigramAt + a * K * K
+        add(base + prev * K + yt, -v)
+        for (let i = 0; i < K; i++) for (let j = 0; j < K; j++) add(base + i * K + j, v * (xi[i]?.[j] ?? 0))
       }
     }
     value -= score - fb.logLikelihood
@@ -476,6 +546,7 @@ export function crfTrainingAlgorithm(
       method: method.name,
       labels: [...crf.labels],
       attributes: crf.attributes.length,
+      bigramAttributes: crf.bigramAttributes.length,
     } as Json,
     crfParameters(crf),
     (w) => crfObjective(withCrfParameters(crf, w), data, options),
@@ -486,7 +557,7 @@ export function crfTrainingAlgorithm(
 
 /**
  * Fit a linear-chain CRF by penalised conditional maximum likelihood ({@link crfTrainingAlgorithm}). The labels and the
- * attribute vocabulary come from the starting model, or from the data when only options are given.
+ * attribute vocabularies come from the starting model, or from the data when only options are given.
  *
  * @param data - Labelled sequences.
  * @param options - Penalties, optimiser, stopping rule, tracer and an optional starting model.
@@ -512,7 +583,11 @@ export function fitCrf(
 } {
   const start =
     options.start ??
-    linearChainCrf([...new Set(data.flatMap((d) => d.y.map(String)))], attributeIndex(data.map((d) => d.x)).attributes)
+    linearChainCrf(
+      [...new Set(data.flatMap((d) => d.y.map(String)))],
+      featureIndex(data.map((d) => unigramOf(d.x))).features,
+      { bigramAttributes: featureIndex(data.map((d) => (bigramOf(d.x) ?? []).slice(1))).features },
+    )
   const result = runAlgorithm(crfTrainingAlgorithm(start, data, options), {
     maxSteps: options.maxIter ?? 1000,
     ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
