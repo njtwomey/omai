@@ -11,6 +11,17 @@ import { svr } from './regressor.ts'
 const moons = classificationSet('moons', { n: 80, noise: 0.15 }, 1)
 
 describe('support vector machines', () => {
+  it('linear SVM records its surface sweep by sweep, with the support vectors then', () => {
+    const f = linearSvc().fit(moons, { key: key(3) })
+    const surface = recordsOf(f.exposition, 'decisionSurface')[0]
+    const margin = recordsOf(f.exposition, 'margin')[0]
+    expect(surface?.stepName).toBe('sweep')
+    expect(surface?.steps?.length).toBeGreaterThan(2)
+    expect(surface?.highlightName).toBe('support vectors')
+    expect(margin?.surface).toBe(surface)
+    expect(margin?.steps).toHaveLength(margin?.dualObjective?.length ?? -1)
+  })
+
   it('SVC records its margins and the SMO path', () => {
     const f = new SVC({ C: 5, probability: true }).fit(moons.x, moons.y, { key: key(1) })
     expect(f.score(moons.x, moons.y)).toBeGreaterThan(0.9)

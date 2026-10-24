@@ -29,6 +29,10 @@ describe('Gaussian processes', () => {
     expect(f.score(moons.x, moons.y)).toBeGreaterThan(0.8)
     expect(recordsOf(f.exposition, 'hyperparameterSurface')).toHaveLength(1)
     expect(recordsOf(f.exposition, 'decisionSurface')).toHaveLength(1)
+    const surface = recordsOf(f.exposition, 'decisionSurface')[0]
+    expect(surface?.stepName).toBe('optimiser step')
+    expect(surface?.steps?.length).toBeGreaterThan(2)
+    expect(surface?.objective?.lowerIsBetter).toBe(false)
     const blobs = classificationSet('blobs', { n: 45 }, 3)
     expect(gaussianProcessClassifier({ optimize: false }).fit(blobs).predictProba(blobs.x).shape).toEqual([45, 3])
   })
