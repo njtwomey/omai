@@ -1,7 +1,8 @@
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { arrow, circle, group, path, rect, scene, text } from 'whitebox-engine/scene'
+import { arrow, axes3d, circle, group, path, rect, scene, scene3d, text } from 'whitebox-engine/scene'
 import { tokens } from '../theme/tokens.ts'
+import { Scene3DView } from './Scene3DView.tsx'
 import { SceneView } from './SceneView.tsx'
 
 describe('SceneView', () => {
@@ -25,5 +26,11 @@ describe('SceneView', () => {
     expect(html).toContain('data-node-id="r"')
     expect(html).toContain(tokens('light').accent)
     expect(html).toContain('>hi</text>')
+  })
+
+  it('projects a 3-D scene for orbiting', () => {
+    const html = renderToString(<Scene3DView scene={scene3d(axes3d(1))} width={200} height={150} />)
+    expect(html).toContain('role="application"')
+    expect(html).toContain('viewBox="0 0 200 150"')
   })
 })
