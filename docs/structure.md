@@ -2828,7 +2828,9 @@ kind, each usable on its own in any page).
   kebab-cased: `linear-model`, `isotonic`, `tree`, `ensemble`, `svm`, `neighbors`, `naive-bayes`,
   `discriminant-analysis`, `gaussian-process`, `cluster`, `mixture`, `decomposition`, `random-projection`, `manifold`,
   `covariance`, `semi-supervised`, `pipeline`, `model-selection`), `pyod/` (anomaly detectors outside scikit-learn,
-  after PyOD), `neural/` (perceptrons and MLPs, convolutions, recurrence, attention, autoencoders), `probabilistic/`
+  after PyOD), `neural/` (by `methods/neural` group: `foundations/` perceptrons, MLPs and backpropagation, `training/` optimiser,
+  initialisation and regularisation studies, `vision/` convolutions, `sequence/` recurrence; later attention and
+  autoencoders), `probabilistic/`
   (`density/` and the probabilistic models: `hmm/`, `topic/`, `conjugate/`, `rating/`, `latent-gaussian/`),
   `online/` (SGD, passive-aggressive and perceptron learners with their learning curves), `active-learning/` (query
   strategies by label budget), `rl/` (the playground), `timeseries/`, `tuning/`.
@@ -3581,13 +3583,32 @@ built from: `nn`, `optim`, `losses`, `data`, `learn`, `metrics`
 Each model has `init`, `apply`, `describe` (its structure, drawn by whitebox-render), a traced training recipe, and an
 estimator where that makes sense. Sizes are chosen to train in a browser.
 
+Every trainer records how training went, so a page can play it: the parameters at up to 40 geometrically spaced epochs
+(or minibatch steps, for short runs), and from them the decision surface (or regression curve) at each, with the
+misclassified rows highlighted; the loss and score per epoch on training and held-out rows; and where useful a hidden
+layer's representation of the rows, feature maps, filters or hidden states at the same snapshots (maps are recorded as
+playable value surfaces, their channels tiled in a mosaic). Trainers take an `onProgress` callback that reports the
+records so far, which hub pages draw live. Private plumbing: `_train.ts` (lib/nn's `fitAlgorithm` run with per-epoch
+curves, snapshots and scikit-learn's stopping rules), `_nets.ts` (the task of a dataset, losses and scores, MLP builders
+with initialisation schemes, normalisation and dropout, snapshot predictors and surfaces, optimisers by name) and
+`_records.ts` (curves, representation steps, mosaics, progress).
+
 `neural/foundations/`
-- `perceptron.ts`: the perceptron and its convergence, MLPs, universal approximation in one dimension.
-- `mlp.ts`: `mlpClassifier` and `mlpRegressor` (sklearn.neural_network semantics).
-- `backprop.ts`: backpropagation by hand on small networks, compared step by step with `autodiff`.
+- `perceptron.ts`: Rosenblatt's perceptron as a study of its rule (every update, the surface after geometric updates
+  with the row that triggered each, Novikoff's bound); the multiclass estimator is `linear/`'s `perceptron`.
+- `approximation.ts`: universal approximation in one dimension (one hidden layer of growing width on one curve, the
+  widest network's units as scaled, shifted activations).
+- `mlp.ts`: `mlpClassifier` and `mlpRegressor` (sklearn.neural_network semantics: hidden sizes, activation, Adam or
+  SGD with momentum, alpha, minibatches, the constant, invscaling and adaptive rates, `tol`/`nIterNoChange` and early
+  stopping; TODO the 'lbfgs' solver), with the surface, curves, the last hidden layer's representation and the first
+  layer's units over the input plane per snapshot.
+- `backprop.ts`: backpropagation by hand on small networks, compared step by step with `autodiff` (the network as a
+  structure with forward-value and delta overlays per step).
 
 `neural/vision/`
-- `lenet.ts`, `alexnet.ts` (reduced), `vgg.ts` (reduced), `resnet.ts` (CIFAR-style), `mobilenet.ts`, `convnext.ts`
+- `lenet.ts`: a LeNet for small images given as rows (the 8 by 8 digits trains in seconds), with the feature maps of
+  each convolution and the first filters at geometric steps.
+- `alexnet.ts` (reduced), `vgg.ts` (reduced), `resnet.ts` (CIFAR-style), `mobilenet.ts`, `convnext.ts`
   (reduced): classification networks with feature-map taps.
 - `unet.ts`: U-Net segmentation.
 - `vit.ts`: vision transformers (patch embeddings, class tokens), attention rollout.
@@ -3595,7 +3616,9 @@ estimator where that makes sense. Sizes are chosen to train in a browser.
 - `autoencoders.ts`: convolutional autoencoders for images.
 
 `neural/sequence/`
-- `rnn.ts`: character-level RNN, LSTM and GRU language models.
+- `rnn.ts`: `recurrentTagger`, an Elman RNN, GRU or LSTM on the toy sequence tasks of `lib/datasets` (a prediction per
+  position, or from the last one), with the hidden states and predictions of one sequence at geometric steps and the
+  accuracy by position. TODO: character-level RNN, LSTM and GRU language models.
 - `seq2seq.ts`: encoder-decoder models with Bahdanau and Luong attention.
 - `tcn.ts`: temporal convolutional networks and WaveNet-style models.
 - `transformer.ts`: the original encoder-decoder Transformer for sequence tasks, with per-head attention maps.
@@ -3620,6 +3643,12 @@ estimator where that makes sense. Sizes are chosen to train in a browser.
 - `metric-learning.ts`: siamese and triplet networks, ArcFace heads.
 
 `neural/training/`
+- `optimisers.ts`: `optimiserRace` (SGD, momentum, Nesterov, RMSprop, Adagrad, Adam, AdamW from the same weights on the
+  same minibatches) and `learningRateFinder` (Smith's range test).
+- `initialisation.ts`: `initialisationStudy` (activation spread and gradient size by layer at initialisation, then
+  training, per scheme) and `normalisationStudy` (none, batch and layer normalisation).
+- `regularisation.ts`: `regularisationStudy` (dropout rates or weight decay against overfitting: the validation curve,
+  the fits and the train-validation gap).
 - `semi-supervised.ts`: Pi-model, mean teacher, VAT, MixMatch, FixMatch (and threshold variants).
 - `adaptation.ts`: LoRA, rsLoRA, PiSSA, adapters, prefix tuning.
 - `alignment.ts`: reward models (Bradley-Terry), RLHF with PPO, GRPO and RLOO advantages, DPO, best-of-n.

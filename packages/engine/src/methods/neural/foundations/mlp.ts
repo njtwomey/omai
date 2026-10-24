@@ -1,5 +1,5 @@
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
-import type { Exposition } from '../../../lib/exposition/index.ts'
+import type { DecisionSurface, Exposition } from '../../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
   type ExplainedEstimator,
@@ -39,6 +39,7 @@ import {
 import {
   lossAtSnapshots,
   lossCurve,
+  mapSteps,
   progressReporter,
   representationSteps,
   scoreCurve,
@@ -332,7 +333,49 @@ function mlpExposition(net: Sequential, training: Training, prep: Task, h: MlpHy
       ),
     )
   }
+  if (d === 2 && h.hiddenLayerSizes.length > 0) out.push(unitMaps(net, training, prep))
   return out
+}
+
+/**
+ * What each unit of the first hidden layer computes over the input plane (a ridge along a line, for one layer from
+ * the inputs), up to 16 units tiled in a mosaic on a 15 by 15 grid, at every snapshot.
+ */
+function unitMaps(net: Sequential, training: Training, task: Task): DecisionSurface {
+  const res = 15
+  const flat = toFlat(task.x)
+  const range = (j: number): number[] => {
+    let lo = Number.POSITIVE_INFINITY
+    let hi = Number.NEGATIVE_INFINITY
+    for (let i = j; i < flat.length; i += 2) (lo = Math.min(lo, flat[i] ?? 0)), (hi = Math.max(hi, flat[i] ?? 0))
+    const pad = 0.1 * (hi > lo ? hi - lo : 1)
+    return Array.from({ length: res }, (_, k) => lo - pad + ((hi - lo + 2 * pad) * k) / (res - 1))
+  }
+  const [gx, gy] = [range(0), range(1)]
+  const grid = fromStorage(Float64Array.from(gy.flatMap((y) => gx.flatMap((x) => [x, y]))), [res * res, 2], 'float64')
+  const maps = (params: Params): number[][][] => {
+    const a = hiddenActivations(net, params, grid)[0] as Tensor
+    const units = Math.min(16, a.shape[1] ?? 0)
+    const v = toFlat(a)
+    const width = a.shape[1] ?? 0
+    // Rows of the grid run up the plane; the mosaic draws its maps top-down, so reverse them.
+    return Array.from({ length: units }, (_, u) =>
+      Array.from({ length: res }, (_, i) =>
+        Array.from({ length: res }, (_, j) => v[((res - 1 - i) * res + j) * width + u] ?? 0),
+      ),
+    )
+  }
+  const perStep = training.snapshots.map((s) => maps(s.params))
+  const count = perStep[0]?.length ?? 1
+  return {
+    ...mapSteps(
+      perStep,
+      training.snapshots.map((s) => s.epoch),
+      Math.ceil(Math.sqrt(count)),
+      lossAtSnapshots(training),
+    ),
+    features: ['first hidden layer units, each over the input plane', ''],
+  }
 }
 
 function mlpVerbs(p: MlpParams): MlpVerbs {

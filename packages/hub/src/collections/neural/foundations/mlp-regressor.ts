@@ -1,6 +1,6 @@
 import { mlpRegressor as mlpRegressorMethod } from 'whitebox-engine/methods/neural/foundations'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
-import { trainingRun } from '../_train.ts'
+import { mlpArchitecture, trainingRun } from '../_train.ts'
 
 /** A multi-layer perceptron regressor fitting a curve, drawn as it trains. */
 export const mlpRegressor: HubEntry = defineEntry({
@@ -14,9 +14,9 @@ export const mlpRegressor: HubEntry = defineEntry({
     mlpRegressorMethod({
       hiddenLayerSizes: [32, 32],
       activation: 'tanh',
-      learningRateInit: 0.01,
-      batchSize: 16,
-      maxIter: 200,
+      learningRateInit: 0.02,
+      batchSize: 25,
+      maxIter: 150,
       tol: 1e-5,
       nIterNoChange: 40,
     }),
@@ -26,6 +26,7 @@ export const mlpRegressor: HubEntry = defineEntry({
     { record: 'learningCurve', title: 'Loss per epoch', area: 'side' },
     { record: 'learningCurve', index: 1, title: 'R² per epoch', area: 'side' },
     { record: 'embeddingSteps', title: 'The last hidden layer’s view of the data', area: 'below' },
+    mlpArchitecture(),
   ],
   methods: [{ file: 'methods/neural/foundations/mlp.ts', name: 'mlpRegressor' }],
 })
