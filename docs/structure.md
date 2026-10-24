@@ -1788,6 +1788,8 @@ oracle: recorded SWI-Prolog outputs, pysat, Aleph and Popper results on small ta
 - `datalog.ts`: naive and semi-naive bottom-up evaluation, least Herbrand models, stratified negation, derivation trees.
 - `propositional.ts`: formulas, evaluation, truth tables, models, entailment, CNF (Tseitin) and DNF, simplification.
 - `sat.ts`: DPLL, CDCL (clause learning, watched literals, traced decisions and conflicts), WalkSAT, DIMACS.
+- `maxsat.ts`: weighted partial MaxSAT (branch and bound, traced), model counting and enumeration, minimal
+  unsatisfiable cores (selector assumptions with deletion-based minimisation).
 - `first-order.ts`: clausal form (Skolemisation), given-clause resolution proving, subsumption.
 - `answer-sets.ts`: stable models of small normal programs (guess and check), for comparison with Datalog semantics.
 - `ilp/generalisation.ts`: theta-subsumption, least general generalisation and relative LGG, clause reduction.

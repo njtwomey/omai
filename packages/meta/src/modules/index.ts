@@ -33,6 +33,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/graph': () => import('whitebox-engine/graph'),
   'whitebox-engine/information': () => import('whitebox-engine/information'),
   'whitebox-engine/kernels': () => import('whitebox-engine/kernels'),
+  'whitebox-engine/logic': () => import('whitebox-engine/logic'),
   'whitebox-engine/losses': () => import('whitebox-engine/losses'),
   'whitebox-engine/methods/datasets': () => import('whitebox-engine/methods/datasets'),
   'whitebox-engine/methods/rl': () => import('whitebox-engine/methods/rl'),

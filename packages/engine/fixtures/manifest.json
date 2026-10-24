@@ -612,6 +612,38 @@
       "cases": 30
     },
     {
+      "fixture": "logic/maxsat.json",
+      "source": "oracle/cases/logic/maxsat.py",
+      "reference": {
+        "python-sat": "1.9.dev17"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "logic/propositional.json",
+      "source": "oracle/cases/logic/propositional.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "logic/resolution.json",
+      "source": "oracle/cases/logic/resolution.py",
+      "reference": {
+        "reference-prolog": "generator-based port (oracle/cases/logic/_prolog.py)"
+      },
+      "cases": 119
+    },
+    {
+      "fixture": "logic/sat.json",
+      "source": "oracle/cases/logic/sat.py",
+      "reference": {
+        "python-sat": "1.9.dev17"
+      },
+      "cases": 24
+    },
+    {
       "fixture": "losses/classification.json",
       "source": "oracle/cases/losses/classification.py",
       "reference": {
