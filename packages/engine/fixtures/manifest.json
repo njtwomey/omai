@@ -2165,6 +2165,30 @@
       "cases": 36
     },
     {
+      "fixture": "search/planning/heuristics.json",
+      "source": "oracle/cases/search/planning/heuristics.py",
+      "reference": {
+        "pyperplan": "2.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "search/planning/strips.json",
+      "source": "oracle/cases/search/planning/strips.py",
+      "reference": {
+        "pyperplan": "2.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "search/refinement.json",
+      "source": "oracle/cases/search/refinement.py",
+      "reference": {
+        "pysubgroup": "0.8.0"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "search/uninformed.json",
       "source": "oracle/cases/search/uninformed.py",
       "reference": {

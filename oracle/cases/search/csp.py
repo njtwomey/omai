@@ -4,6 +4,7 @@ typed port in whitebox_oracle.aima_csp: arc-consistent domains of partially assi
 easy1 Sudoku, which AC-3 solves outright)."""
 
 from collections.abc import Callable
+from importlib.metadata import version
 
 import constraint as pc
 import numpy as np
@@ -20,7 +21,10 @@ from whitebox_oracle.aima_csp import (
 )
 from whitebox_oracle.fixture import Case, case
 
-REFERENCE: dict[str, str] = {"python-constraint2": "2.7.3", "aima-python": "port of csp.py (2024)"}
+REFERENCE: dict[str, str] = {
+    "python-constraint2": version("python-constraint2"),
+    "aima-python": "port of csp.py (2024)",
+}
 
 COLOURS = ["red", "green", "blue"]
 REGIONS = ["WA", "NT", "SA", "Q", "NSW", "V", "T"]

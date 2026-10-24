@@ -44,6 +44,7 @@ oracle-core = [
     "bitarray>=3.12.3",
     "python-constraint2>=2.7.3",
     "pyperplan>=2.1",
+    "pysubgroup>=0.8.0",
 ]
 oracle-torch = [
     "monai>=1.6.1",
