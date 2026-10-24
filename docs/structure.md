@@ -547,7 +547,7 @@ lambdify values)
   with Hensel lifting, Kronecker substitution for several variables), `together`, `cancel`, `apart` (partial fractions
   by undetermined coefficients, symbols as parameters), `trigSimplify` (Fu-style search over Pythagorean, double-angle,
   product-to-sum and tan rewrites, guarded numerically), `simplify` (best of the rewrites by operation count), with
-  `expandSteps`, `trigSimplifySteps`, `simplifySteps`.
+  `expandSteps`, `trigSimplifySteps`, `simplifySteps`, and `rewriteSteps` (any of the rewrites by name, `Rewrite`).
 - `polynomials.ts`: `Poly` (univariate and multivariate over the rationals, generators chosen automatically), `poly`,
   `polyToExpr`, `degree`, `coefficients`, `leadingCoefficient`, `polyDiv`, `polyGcd`, `polyLcm`, `exactRoots` (factor
   first, then radicals up to degree four and binomials of any degree; three real roots of a cubic in trigonometric

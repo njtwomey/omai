@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateComplex } from './compile.ts'
+import { evaluate, evaluateComplex } from './compile.ts'
+import { add, mul } from './expr.ts'
 import { toText } from './latex.ts'
 import { parse } from './parse.ts'
 import {
@@ -8,14 +9,17 @@ import {
   degree,
   discriminant,
   exactRoots,
+  leadingCoefficient,
+  poly,
   polyDiv,
   polyGcd,
   polyLcm,
+  polyToExpr,
   realRootIntervals,
   resultant,
   sturm,
 } from './polynomials.ts'
-import { factor } from './simplify.ts'
+import { expand, factor } from './simplify.ts'
 
 const x = parse('x')
 const t = (s: string): string => toText(factor(parse(s)))
@@ -77,6 +81,22 @@ describe('polynomials', () => {
     expect(countRealRoots(parse('(x - 1)^2*(x + 2)'), x, 0, 1)).toBe(1)
     const iv = realRootIntervals(parse('x^3 - 2x + 1'), x)
     expect(iv).toHaveLength(3)
+  })
+  it('converts, divides in several variables and isolates real roots', () => {
+    const p = poly(parse('x^2*y + 3*x + sqrt(2)'), x)
+    expect(p.gens.map(toText)).toEqual(['x', 'y', 'sqrt(2)'])
+    expect(toText(polyToExpr(p))).toBe('x**2*y + 3*x + sqrt(2)')
+    expect(toText(leadingCoefficient(parse('a*x^3 + x'), x))).toBe('a')
+    expect(() => poly(parse('1/x'), x)).toThrow()
+    expect(() => poly(parse('sin(x)'), x)).toThrow()
+    const { quotient, remainder } = polyDiv(parse('x^2*y + x*y^2 + y^2'), parse('x*y - 1'))
+    expect(toText(expand(add(mul(quotient, parse('x*y - 1')), remainder)))).toBe('x**2*y + x*y**2 + y**2')
+    for (const [lo, hi] of realRootIntervals(parse('x^4 - 10x^2 + 1'), x)) {
+      const a = evaluate(lo, {})
+      const b = evaluate(hi, {})
+      const f = (t: number): number => t ** 4 - 10 * t ** 2 + 1
+      expect(a <= b && f(a) * f(b) <= 0).toBe(true)
+    }
   })
   it('resultants and discriminants', () => {
     expect(toText(resultant(parse('x^2 + y'), parse('x - y'), x))).toBe('y**2 + y')
