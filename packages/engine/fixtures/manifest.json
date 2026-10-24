@@ -1536,6 +1536,105 @@
       "cases": 13
     },
     {
+      "fixture": "symbolic/compile.json",
+      "source": "oracle/cases/symbolic/compile.py",
+      "reference": {
+        "sympy": "1.14.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "symbolic/differentiate.json",
+      "source": "oracle/cases/symbolic/differentiate.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 51
+    },
+    {
+      "fixture": "symbolic/expr.json",
+      "source": "oracle/cases/symbolic/expr.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 109
+    },
+    {
+      "fixture": "symbolic/integrate.json",
+      "source": "oracle/cases/symbolic/integrate.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 49
+    },
+    {
+      "fixture": "symbolic/latex.json",
+      "source": "oracle/cases/symbolic/latex.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 55
+    },
+    {
+      "fixture": "symbolic/limits.json",
+      "source": "oracle/cases/symbolic/limits.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "symbolic/matrices.json",
+      "source": "oracle/cases/symbolic/matrices.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 76
+    },
+    {
+      "fixture": "symbolic/parse.json",
+      "source": "oracle/cases/symbolic/parse.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 26
+    },
+    {
+      "fixture": "symbolic/polynomials.json",
+      "source": "oracle/cases/symbolic/polynomials.py",
+      "reference": {
+        "sympy": "1.14.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 47
+    },
+    {
+      "fixture": "symbolic/series.json",
+      "source": "oracle/cases/symbolic/series.py",
+      "reference": {
+        "sympy": "1.14.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "symbolic/simplify.json",
+      "source": "oracle/cases/symbolic/simplify.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 78
+    },
+    {
+      "fixture": "symbolic/solve.json",
+      "source": "oracle/cases/symbolic/solve.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 31
+    },
+    {
       "fixture": "tensor/ops/arithmetic.json",
       "source": "oracle/cases/tensor/ops/arithmetic.py",
       "reference": {
