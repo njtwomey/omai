@@ -1,5 +1,6 @@
 import type { EChartsOption } from 'echarts'
-import type { EnsembleStages } from 'whitebox-engine/exposition'
+import type { EnsembleStages, PipelineStages } from 'whitebox-engine/exposition'
+import { arrow, group, line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'whitebox-engine/scene'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -7,6 +8,7 @@ import { lines } from '../charts/lines.ts'
 import type { Layer } from '../charts/plot.ts'
 import { type PointSet, points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
+import { formatNumber } from '../theme/format.ts'
 import { short, type ViewFrames, type ViewOptions, viewFigure } from './_view.ts'
 import { classIndices, type Rows } from './surfaces.ts'
 
@@ -140,4 +142,82 @@ export function ensembleFrames(stages: EnsembleStages, options: EnsembleViewOpti
     label: (f) => `stage ${f + 1}/${count} · ${short(stages.trainScores[f] ?? 0)}`,
     option,
   }
+}
+
+const STAGE_W = 196
+const LINE = 15
+
+function cell(v: number | string | readonly number[]): string {
+  if (typeof v === 'string') return v.length > 22 ? `${v.slice(0, 21)}…` : v
+  if (typeof v === 'number') return formatNumber(v, { digits: 3 })
+  const shown = v.slice(0, 3).map((x) => formatNumber(x, { digits: 3 }))
+  return `[${shown.join(', ')}${v.length > 3 ? ', …' : ''}]`
+}
+
+/**
+ * A fitted pipeline as a scene: one card per stage, left to right, with its kind, the shape it takes and gives, what
+ * it learned (a few name-value pairs), and the first rows of its output; arrows between the cards carry the shapes.
+ *
+ * @param record - The record.
+ * @returns The scene.
+ * @example
+ * ```ts
+ * import { pipelineStages } from 'whitebox-engine/exposition'
+ * import { pipelineScene } from 'whitebox-render/views'
+ * pipelineScene(pipelineStages({ stages: [] })).kind // => 'scene'
+ * ```
+ */
+export function pipelineScene(record: PipelineStages): Scene {
+  const stages = record.stages
+  const learnedLines = Math.min(4, Math.max(0, ...stages.map((s) => s.learned.length)))
+  const sampleRows = Math.min(4, Math.max(0, ...stages.map((s) => s.outputSample.length)))
+  const height = 16 + 2 * LINE + 8 + learnedLines * LINE + 10 + (sampleRows + 1) * LINE + 12
+  const gap = 56
+  const children: SceneNode[] = []
+  stages.forEach((s, k) => {
+    const x0 = 8 + k * (STAGE_W + gap)
+    const y0 = 8
+    const parts: SceneNode[] = [
+      rect(x0, y0, STAGE_W, height, { fill: 'surface', stroke: s.kind === 'estimator' ? 'accent' : 'grid', radius: 6 }),
+      text(x0 + 10, y0 + 18, s.name, { size: 12, weight: 'bold', fill: 'fg' }),
+      text(x0 + STAGE_W - 10, y0 + 18, s.kind, { size: 10, fill: 'muted', anchor: 'end' }),
+      text(
+        x0 + 10,
+        y0 + 18 + LINE,
+        `${s.inputShape[0]} × ${s.inputShape[1]} → ${s.outputShape[0]} × ${s.outputShape[1]}`,
+        {
+          size: 10,
+          fill: 'fgSecondary' as Paint,
+        },
+      ),
+    ]
+    let y = y0 + 18 + 2 * LINE + 6
+    for (const l of s.learned.slice(0, learnedLines)) {
+      parts.push(text(x0 + 10, y, `${cell(l.name)}: ${cell(l.value)}`, { size: 10, fill: 'fg' }))
+      y += LINE
+    }
+    y = y0 + 18 + 2 * LINE + 8 + learnedLines * LINE + 8
+    // The first rows of the stage's output, first three columns, as a small table.
+    const cols = s.outputColumns.slice(0, 3)
+    const cw = (STAGE_W - 20) / Math.max(1, cols.length)
+    parts.push(line(x0 + 8, y - 11, x0 + STAGE_W - 8, y - 11, { stroke: 'grid' }))
+    for (const [j, c] of cols.entries())
+      parts.push(text(x0 + 10 + j * cw, y, c.length > 9 ? `${c.slice(0, 8)}…` : c, { size: 9, fill: 'muted' }))
+    for (const [i, r] of s.outputSample.slice(0, sampleRows).entries())
+      for (let j = 0; j < cols.length; j++)
+        parts.push(
+          text(x0 + 10 + j * cw, y + (i + 1) * LINE, formatNumber(r[j] ?? 0, { digits: 3 }), { size: 9, fill: 'fg' }),
+        )
+    children.push(group(parts, { id: `stage:${k}`, title: `${s.name} (${s.kind})` }))
+    if (k + 1 < stages.length) {
+      const ax = x0 + STAGE_W + 6
+      const ay = y0 + height / 2
+      children.push(arrow(ax, ay, ax + gap - 12, ay, { stroke: 'fgSecondary' as Paint, strokeWidth: 1.4 }))
+      children.push(
+        text(ax + (gap - 12) / 2, ay - 6, `${s.outputShape[1]}`, { size: 10, fill: 'muted', anchor: 'middle' }),
+      )
+    }
+  })
+  const width = 16 + stages.length * STAGE_W + Math.max(0, stages.length - 1) * gap
+  return scene(Math.max(width, 200), height + 16, children, { title: 'pipeline' })
 }

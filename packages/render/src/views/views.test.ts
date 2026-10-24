@@ -1,19 +1,33 @@
 import { describe, expect, it } from 'vitest'
 import {
+  anomalyScores,
+  type CoefficientTable,
   clusteringSteps,
+  coefficientTable,
   componentsRecord,
   crossValidationCurve,
   decisionSurface,
+  type EpisodeRecord,
+  type Exposition,
   embeddingSteps,
   ensembleStages,
+  episodeRecord,
+  hyperparameterSurface,
   learningCurve,
+  likelihoodTable,
+  marginRecord,
   mixtureSteps,
+  neighbourRecord,
+  pipelineStages,
+  posteriorGrid,
   pruningPath,
   regularisationPath,
+  searchTrials,
   type TreeNode,
   treeRecord,
 } from 'whitebox-engine/exposition'
 import { componentsView } from './components.ts'
+import { episodeView } from './episodes.ts'
 import { coefficientsAt, crossValidationView, regularisationPathView } from './paths.ts'
 import { stillOf, viewFor } from './registry.ts'
 import { ensembleFrames } from './stages.ts'
@@ -27,6 +41,7 @@ import {
   mixtureFrames,
 } from './steps.ts'
 import { decisionSurfaceView } from './surfaces.ts'
+import { coefficientRows } from './tables.ts'
 import { splitCandidatesView, splitText, treeNodeOf, treeScene } from './trees.ts'
 
 type Opt = { series: { name?: string }[]; grid: unknown[]; xAxis: { type: string; inverse?: boolean }[] }
@@ -270,5 +285,88 @@ describe('tree, ensemble and component views', () => {
       ],
     })
     expect(o(componentsView(record)).grid).toHaveLength(3)
+  })
+})
+
+describe('posterior, search, table, margin, anomaly, pipeline and episode views', () => {
+  it('draws every kind through the registry', () => {
+    const records: Exposition[] = [
+      posteriorGrid({
+        inputs: [[0], [1], [2]],
+        mean: [0, 1, 0],
+        variance: [1, 0.1, 1],
+        observed: { inputs: [[1]], targets: [1] },
+      }),
+      hyperparameterSurface({
+        parameters: ['a', 'b'],
+        x: [0.1, 1, 10],
+        y: [0.1, 1],
+        values: [
+          [-3, -1, -2],
+          [-4, -2, -3],
+        ],
+        path: [
+          [0.1, 0.1],
+          [1, 0.1],
+        ],
+        logScale: [true, true],
+      }),
+      anomalyScores({
+        method: 'iforest',
+        scores: [0.4, 0.5, 0.9],
+        threshold: 0.6,
+        evidence: { name: 'path', values: [9, 8, 3] },
+      }),
+      marginRecord({
+        support: [0, 2],
+        dualCoefficients: [0.5, -0.5],
+        intercept: 0,
+        margins: [1, 2, 1],
+        dualObjective: [0, -1],
+        workingSets: [
+          [0, 2],
+          [0, 2],
+        ],
+      }),
+      coefficientTable({ names: ['const', 'x'], estimates: [5, 2], standardErrors: [0.1, 0.5], pValues: [0, 0.01] }),
+      likelihoodTable({ classes: ['a', 'b'], features: ['x'], logPriors: [-0.7, -0.7], contributions: [[-1], [-2]] }),
+      neighbourRecord({ indices: [[1, 2]], distances: [[0.1, 0.4]], metric: 'euclidean' }),
+      searchTrials({
+        method: 'grid',
+        parameters: ['alpha'],
+        trials: [
+          { params: { alpha: 1 }, value: 0.8, state: 'complete' },
+          { params: { alpha: 10 }, value: 0.7, state: 'pruned', intermediate: [0.6, 0.7] },
+        ],
+        higherIsBetter: true,
+        best: 0,
+      }),
+      pipelineStages({
+        stages: [
+          {
+            name: 'scale',
+            kind: 'transformer',
+            inputColumns: ['x'],
+            outputColumns: ['x'],
+            inputSample: [[1]],
+            outputSample: [[0]],
+            inputShape: [10, 1],
+            outputShape: [10, 1],
+            learned: [{ name: 'mean', value: [1] }],
+          },
+        ],
+      }),
+      episodeRecord({
+        environment: 'FrozenLake',
+        agent: 'q',
+        returns: [0, 1, 1, 1],
+        lengths: [5, 8, 6, 6],
+        snapshots: [{ episode: 3, values: [0, 0.5, 0.2, 1], policy: [1, 2, 1, 0] }],
+      }),
+    ]
+    for (const r of records) expect(stillOf(r), r.kind).toBeDefined()
+    expect(coefficientRows(records[4] as CoefficientTable).rows[0]?.[4]).toBe('<1e-16')
+    const grid = o(episodeView(records[9] as EpisodeRecord, { gridShape: [2, 2] }))
+    expect(grid.series.some((s) => s.name === '__policy')).toBe(true)
   })
 })
