@@ -620,6 +620,14 @@
       "cases": 9
     },
     {
+      "fixture": "learn/feature_selection.json",
+      "source": "oracle/cases/learn/feature_selection.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 23
+    },
+    {
       "fixture": "learn/model_selection/criteria.json",
       "source": "oracle/cases/learn/model_selection/criteria.py",
       "reference": {
