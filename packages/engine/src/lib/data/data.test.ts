@@ -2,7 +2,7 @@ import { expect, describe as group, it } from 'vitest'
 import { quantileOf } from '../base/index.ts'
 import { key } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
-import { add, mul, reshape, type Tensor, tensor, toFlat } from '../tensor/index.ts'
+import { add, mul, reshape, type Tensor, tensor, toFlat, type Value } from '../tensor/index.ts'
 import {
   asGenerated,
   balancedWeights,
@@ -332,6 +332,26 @@ group('generators and truth', () => {
     expect(bayesErrorEstimate(post, tensor([[0]])).value).toBe(0.5)
     expect(clusterAgreement({ clusters: tensor([0, 1, 1], { dtype: 'int32' }) }, [5, 7, 7])).toBe(1)
     expect(excessRisk({ regressionFunction: (x) => x }, (x) => x, tensor([1]))).toBe(0)
+  })
+
+  it('derive the density, posterior and regression function from a generating program', () => {
+    const logJoint = (x: Value, y?: Value): Value =>
+      y === undefined ? mul(reshape(x, [-1]), 0) : mul(reshape(x, [-1]), y)
+    const program = {
+      kind: 'program' as const,
+      model: () => undefined,
+      features: 'x',
+      target: 'y',
+      classes: 2,
+      logProb: logJoint,
+      regressionFunction: (x: Value) => mul(reshape(x, [-1]), 3),
+      sample: () => ({ x: tensor([[0]]) }),
+    }
+    const t = completeTruth({ program })
+    expect(toFlat(t.logProb?.(tensor([[1], [2]]), tensor([1, 1])) ?? tensor([]))).toEqual([1, 2])
+    expect(toFlat(t.regressionFunction?.(tensor([[1]])) ?? tensor([]))).toEqual([3])
+    // The classes come from the program, so Bayes' rule gives the posterior: p(1 | x) = sigmoid(x).
+    expect(toFlat(t.posterior?.(tensor([[0]])) ?? tensor([]))).toEqual([0.5, 0.5])
   })
 })
 
