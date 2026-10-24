@@ -365,6 +365,104 @@
       "cases": 39
     },
     {
+      "fixture": "games/cooperative.json",
+      "source": "oracle/cases/games/cooperative.py",
+      "reference": {
+        "definition": "Shapley (1953), Banzhaf (1965); computed with math and itertools"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "games/core.json",
+      "source": "oracle/cases/games/core.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "definition": "Aumann and Maschler (1985), the Talmud rule"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "games/evolutionary.json",
+      "source": "oracle/cases/games/evolutionary.py",
+      "reference": {
+        "nashpy": "0.0.43",
+        "open_spiel": "2.0.2"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "games/extensive_form/best_response.json",
+      "source": "oracle/cases/games/extensive_form/best_response.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "games/extensive_form/cfr.json",
+      "source": "oracle/cases/games/extensive_form/cfr.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "games/extensive_form/poker.json",
+      "source": "oracle/cases/games/extensive_form/poker.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "games/extensive_form/sequence_form.json",
+      "source": "oracle/cases/games/extensive_form/sequence_form.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "games/learning.json",
+      "source": "oracle/cases/games/learning.py",
+      "reference": {
+        "nashpy": "0.0.43"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "games/no_regret.json",
+      "source": "oracle/cases/games/no_regret.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "games/normal_form/correlated.json",
+      "source": "oracle/cases/games/normal_form/correlated.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "games/normal_form/enumeration.json",
+      "source": "oracle/cases/games/normal_form/enumeration.py",
+      "reference": {
+        "nashpy": "0.0.43"
+      },
+      "cases": 43
+    },
+    {
+      "fixture": "games/normal_form/zero_sum.json",
+      "source": "oracle/cases/games/normal_form/zero_sum.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
       "fixture": "graph/centrality.json",
       "source": "oracle/cases/graph/centrality.py",
       "reference": {

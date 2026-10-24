@@ -78,7 +78,12 @@ oracle-prob = [
     "pyagrum>=3.3.0",
     "sklearn-crfsuite>=0.5.0",
 ]
-oracle-rl = ["gymnasium"]
+oracle-rl = [
+    "ecos>=2.0.14",
+    "gymnasium",
+    "nashpy>=0.0.43",
+    "open-spiel>=2.0.2",
+]
 
 [build-system]
 requires = ["hatchling"]
