@@ -1,6 +1,7 @@
 // Dense kernels on single row-major matrices (Float64Array): the textbook algorithms, as in Golub and Van Loan.
 // The primitives in this folder apply them matrix by matrix over batch axes.
 import { WhiteboxError } from '../../base/index.ts'
+import { dnrm2 } from './blas.ts'
 
 const EPS = 2.220446049250313e-16
 
@@ -142,25 +143,27 @@ export function qrKernel(a: Float64Array, m: number, n: number): { q: Float64Arr
   const vs: Float64Array[] = []
   for (let j = 0; j < k; j++) {
     const v = new Float64Array(m - j)
-    let norm = 0
-    for (let i = j; i < m; i++) norm += (work[i * n + j] ?? 0) ** 2
-    norm = Math.sqrt(norm)
+    // Norms by the scaled dnrm2, so that tiny columns do not underflow when squared.
+    const column = Float64Array.from({ length: m - j }, (_, i) => work[(i + j) * n + j] ?? 0)
+    const norm = dnrm2(column)
     const x0 = work[j * n + j] ?? 0
     // As LAPACK's dlarfg: no reflection when the entries below the diagonal are exactly zero (this keeps the sign of
     // R_jj); tiny nonzero entries are still eliminated.
-    let below = 0
-    for (let i = j + 1; i < m; i++) below += (work[i * n + j] ?? 0) ** 2
+    const below = dnrm2(column.subarray(1))
     if (norm === 0 || below === 0) {
       vs.push(v)
       continue
     }
-    // alpha = -sign(x0) |x| (LAPACK's choice, which avoids cancellation in x0 - alpha).
+    // alpha = -sign(x0) |x| (LAPACK's choice, which avoids cancellation in x0 - alpha). The reflector is formed from the
+    // column scaled by a power of two to unit size (exact), so that subnormal columns keep their direction.
     const alpha = x0 >= 0 ? -norm : norm
-    for (let i = j; i < m; i++) v[i - j] = work[i * n + j] ?? 0
-    v[0] = (v[0] ?? 0) - alpha
-    let vn = 0
-    for (const e of v) vn += e * e
-    vn = Math.sqrt(vn)
+    // Two power-of-two factors, as 2^k alone overflows for subnormal norms.
+    const k = -Math.round(Math.log2(norm))
+    const s1 = 2 ** Math.trunc(k / 2)
+    const s2 = 2 ** (k - Math.trunc(k / 2))
+    for (let i = j; i < m; i++) v[i - j] = (work[i * n + j] ?? 0) * s1 * s2
+    v[0] = (v[0] ?? 0) - alpha * s1 * s2
+    const vn = dnrm2(v)
     for (let i = 0; i < v.length; i++) v[i] = (v[i] ?? 0) / vn
     for (let c = j; c < n; c++) {
       let d = 0

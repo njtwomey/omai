@@ -34,6 +34,8 @@ oracle-core = [
     "prdc>=0.2",
     "sewar>=0.4.10",
     "dtw-python>=1.9.0",
+    "control>=0.10.2",
+    "slycot>=0.7.1",
 ]
 oracle-torch = [
     "monai>=1.6.1",

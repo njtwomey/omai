@@ -90,6 +90,38 @@ export function solveDiscreteLyapunov(a: TensorLike, q: TensorLike): Value {
 }
 
 /**
+ * The matrix sign function (scipy.linalg.signm) by Newton's iteration Z <- (c Z + (c Z)^{-1}) / 2 with determinant
+ * scaling c = |det Z|^{-1/n}, for matrices with no eigenvalues on the imaginary axis: sign(A) has the eigenvalues of A
+ * mapped to +1 (right half-plane) or -1 (left), and (I - sign(A)) / 2 projects onto A's stable invariant subspace.
+ * Built from inverses, so differentiable.
+ *
+ * @param a - Square matrix `[n, n]`.
+ * @returns sign(A).
+ * @throws WhiteboxError with code `convergence` when the iteration does not settle (eigenvalues on or near the axis).
+ * @concept matrix-functions
+ * @example
+ * ```ts
+ * import { signm } from 'whitebox-engine/numerics/linalg'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(signm([[-2, 0], [0, 3]])) // => [[-1, 0], [0, 1]]
+ * ```
+ */
+export function signm(a: TensorLike): Value {
+  const [z0] = promoteFloat(a) as [Value]
+  const n = squareSize(z0.shape, 'signm')
+  let z = z0
+  for (let i = 0; i < 100; i++) {
+    // Determinant scaling c = |det Z|^{-1/n} speeds the early iterations.
+    const c = Math.exp(-item(primalOf(slogdet(z).logabsdet)) / n)
+    const next = mul(add(mul(z, c), div(inv(z), c)), 0.5)
+    const change = norm1(sub(next, z)) / Math.max(norm1(next), 1e-300)
+    z = next
+    if (change <= 1e-14) return z
+  }
+  throw new WhiteboxError('convergence', 'signm: the Newton iteration did not converge')
+}
+
+/**
  * Solve the continuous algebraic Riccati equation A^T X + X A - X B R^{-1} B^T X + Q = 0 for the stabilising X
  * (scipy.linalg.solve_continuous_are), by the matrix sign function of the Hamiltonian [[A, -G], [-Q, -A^T]] (Newton's
  * iteration with determinant scaling) and a least-squares solve; differentiable.
@@ -111,15 +143,14 @@ export function solveCare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
   const [av, bv, qv, rv] = promoteFloat(a, b, q, r) as [Value, Value, Value, Value]
   const n = squareSize(av.shape, 'solveCare')
   const g = matmul(bv, solve(rv, mT(bv)))
-  let z = concat([concat([av, neg(g)], 1), concat([neg(qv), neg(mT(av))], 1)], 0)
-  for (let i = 0; i < 100; i++) {
-    // Determinant scaling c = |det Z|^{-1 / 2n} speeds the early iterations.
-    const c = Math.exp(-item(primalOf(slogdet(z).logabsdet)) / (2 * n))
-    const next = mul(add(mul(z, c), div(inv(z), c)), 0.5)
-    const change = norm1(sub(next, z)) / Math.max(norm1(next), 1e-300)
-    z = next
-    if (change <= 1e-14) break
-    if (i === 99) throw new WhiteboxError('convergence', 'solveCare: the sign iteration did not converge')
+  let z: Value
+  try {
+    z = signm(concat([concat([av, neg(g)], 1), concat([neg(qv), neg(mT(av))], 1)], 0))
+  } catch (e) {
+    if (e instanceof WhiteboxError && e.code === 'convergence') {
+      throw new WhiteboxError('convergence', 'solveCare: the sign iteration did not converge')
+    }
+    throw e
   }
   const block = (r0: number, c0: number): Value => sliceAxis(sliceAxis(z, 0, r0, r0 + n), 1, c0, c0 + n)
   const eye = identity(n, av)
