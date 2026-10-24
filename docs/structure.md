@@ -4041,8 +4041,11 @@ theme tokens from `whitebox-render/theme`, Tailwind CSS, a dependency-free path 
   views, its trace, its source). Adding a `defineEntry` adds its page; there is no per-entry site code.
 
 `src/docs/` (generated from `whitebox-meta`'s catalogue of the engine's TSDoc)
-- Pages: home (packages and domains by tier), module, symbol (signature, TSDoc, live examples with their `// =>`
-  values), concepts (by the encyclopedia's taxonomy), how-tos (`content/howto/`, runnable code blocks checked by the
+- Navigation mirrors the source tree exactly (`lib/<domain>/<subfolder>/<file>`, `methods/<area>/...`, then the
+  symbols of each file), as aifn-engine's docs: collapsed by default, only the current path expanded, a filter on
+  top. Tiers are an import-layering rule and never appear in the docs.
+- Pages: home, folder (its subfolders and files), file (its exports), symbol (signature, TSDoc, live examples with
+  their `// =>` values), concepts (by the encyclopedia's taxonomy), how-tos (`content/howto/`, runnable code blocks checked by the
   build), traces (open, replay, compare and export runs).
 - `plugins/`: the Vite plugin that extracts the catalogue at build time.
 
