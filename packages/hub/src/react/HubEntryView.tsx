@@ -34,10 +34,14 @@ function recordFor(records: readonly Exposition[], slot: ViewSlot): Exposition |
   return records.filter((r) => r.kind === slot.record)[slot.index ?? 0]
 }
 
-/** The input rows of a run's dataset and, for classification, their labels: what views draw beside a record. */
+/**
+ * The input rows of a run's dataset with, for classification, their labels and, for regression, their targets: what
+ * views draw beside a record.
+ */
 interface Rows {
   readonly points?: readonly (readonly number[])[]
   readonly labels?: readonly number[]
+  readonly targets?: readonly number[]
 }
 
 function rowsOf(entry: HubEntry, state: HubState): Rows {
@@ -47,9 +51,11 @@ function rowsOf(entry: HubEntry, state: HubState): Rows {
       | undefined
     if (data?.x === undefined) return {}
     const points = toArray(asTensor(data.x)) as number[][]
-    return data.kind === 'classification' && data.y !== undefined
-      ? { points, labels: toFlat(asTensor(data.y)) }
-      : { points }
+    if (data.y === undefined) return { points }
+    if (data.kind === 'classification') return { points, labels: toFlat(asTensor(data.y)) }
+    const y = asTensor(data.y)
+    // Single-output targets only (a multi-output target has no one colour per row).
+    return y.shape.length === 1 || y.shape[1] === 1 ? { points, targets: toFlat(y) } : { points }
   } catch {
     return {}
   }

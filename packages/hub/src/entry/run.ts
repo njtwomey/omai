@@ -127,8 +127,7 @@ const NO_DATA: Pick<HubState, 'collection' | 'dataset' | 'seed' | 'knobs'> = {
 
 /**
  * The state a demo starts from: the entry's first dataset collection and its `dataset` (default the collection's first)
- * with demo knobs, seed 0,
- * and the parameter space's defaults.
+ * with the collection's demo knobs and the entry's own `knobs` over them, seed 0, and the parameter space's defaults.
  *
  * @param entry - The entry.
  * @returns The state.
@@ -141,8 +140,10 @@ const NO_DATA: Pick<HubState, 'collection' | 'dataset' | 'seed' | 'knobs'> = {
  */
 export function demoState(entry: HubEntry): HubState {
   const collection = entry.datasets[0]
+  const data = collection === undefined ? NO_DATA : datasetState(collection, entry.dataset)
   return {
-    ...(collection === undefined ? NO_DATA : datasetState(collection, entry.dataset)),
+    ...data,
+    knobs: { ...data.knobs, ...entry.knobs },
     params: defaults(entry.params) as Readonly<Record<string, SpaceValue>>,
   }
 }
