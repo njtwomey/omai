@@ -331,14 +331,15 @@ export interface OfflineOptions {
 }
 
 /**
- * PELT, pruned exact linear time optimal partitioning (Killick, Fearnhead and Eckley 2012), as ruptures' `Pelt`: the
- * segmentation minimising the sum of segment costs plus a penalty per segment, found by dynamic programming with
- * pruning of candidates that can never be optimal.
+ * PELT, pruned exact linear time optimal partitioning (Killick, Fearnhead and Eckley 2012): the segmentation
+ * minimising the sum of segment costs plus a penalty per segment, found by dynamic programming with pruning of
+ * candidates that can never be optimal. Unlike ruptures' `Pelt`, a candidate is pruned only once every later segment
+ * from the pruning point could meet the minimum length, so the result stays exact when `minSize` exceeds 1.
  *
  * @param y - The series.
  * @param penalty - The penalty per segment (BIC: 2 log n for a mean change at unit variance).
  * @param options - Cost (default l2), minimum segment length and grid step.
- * @returns The segment end indices (sorted, the last is n), as ruptures.
+ * @returns The segment end indices (sorted, the last is n), as ruptures reports them.
  * @throws WhiteboxError with code `value` when the series is shorter than one minimum segment.
  * @concept changepoint-detection
  * @example
@@ -357,6 +358,9 @@ export function pelt(y: readonly number[], penalty: number, options: OfflineOpti
   const F = new Map<number, number>([[0, 0]])
   const last = new Map<number, number>()
   let admissible: number[] = []
+  // PELT's pruning (drop t once F(t) + C(t, b) > F(b)) relies on F(b) + C(b, c) being a valid option for every later
+  // end c, which needs c - b >= minSize; so a candidate found prunable at b is only dropped from b + minSize on.
+  const prunableAt = new Map<number, number>()
   const ends: number[] = []
   for (let k = 0; k < n; k += jump) if (k >= minSize) ends.push(k)
   ends.push(n)
@@ -373,7 +377,11 @@ export function pelt(y: readonly number[], penalty: number, options: OfflineOpti
     if (best === undefined) continue
     F.set(b, best.v)
     last.set(b, best.t)
-    admissible = scores.filter((sc) => sc.v <= best.v + penalty).map((sc) => sc.t)
+    for (const sc of scores) if (sc.v > best.v + penalty && !prunableAt.has(sc.t)) prunableAt.set(sc.t, b)
+    admissible = admissible.filter((t) => {
+      const at = prunableAt.get(t)
+      return at === undefined || b + jump < at + minSize
+    })
   }
   const out: number[] = []
   let b = n
