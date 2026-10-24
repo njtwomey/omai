@@ -645,6 +645,14 @@
       "cases": 23
     },
     {
+      "fixture": "learn/inspection.json",
+      "source": "oracle/cases/learn/inspection.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "learn/model_selection/criteria.json",
       "source": "oracle/cases/learn/model_selection/criteria.py",
       "reference": {
