@@ -1,26 +1,12 @@
 import { type Direction, type MetricSpec, maxOf, WhiteboxError } from '../base/index.ts'
-import { type Metric, type MetricOptions, perOutputMetric, weightedMean } from './metric.ts'
+import { type Metric, type MetricOptions, perOutputMetric, weightedMean, weightedPercentile } from './metric.ts'
 
 const map = (n: number, f: (i: number) => number): Float64Array => Float64Array.from({ length: n }, (_, i) => f(i))
 const residuals = (t: Float64Array, p: Float64Array): Float64Array => map(t.length, (i) => (t[i] ?? 0) - (p[i] ?? 0))
 
-/** Median, or with weights sklearn's weighted percentile at 50% (the lowest value reaching half the total weight). */
-function median(values: Float64Array, weight: Float64Array, weighted: boolean): number {
-  const order = Array.from(values.keys()).sort((a, b) => (values[a] ?? 0) - (values[b] ?? 0))
-  if (!weighted) {
-    const m = order.length
-    const lo = values[order[Math.floor((m - 1) / 2)] ?? 0] ?? 0
-    const hi = values[order[Math.ceil((m - 1) / 2)] ?? 0] ?? 0
-    return (lo + hi) / 2
-  }
-  const total = weight.reduce((a, b) => a + b, 0)
-  let acc = 0
-  for (const i of order) {
-    acc += weight[i] ?? 0
-    if (acc >= 0.5 * total) return values[i] ?? 0
-  }
-  return values[order[order.length - 1] ?? 0] ?? 0
-}
+/** The median, or with weights sklearn's weighted percentile at 50% (the lowest value reaching half the weight). */
+const median = (values: Float64Array, weight: Float64Array, weighted: boolean): number =>
+  weighted ? weightedPercentile(values, weight, 50, false) : weightedPercentile(values, undefined, 50, true)
 
 const spec = (name: string, direction: Direction, range: readonly [number, number]): MetricSpec => ({
   name,
@@ -163,6 +149,96 @@ export const r2Score: Metric = perOutputMetric(spec('r2Score', 'higher', [-Infin
   return 1 - ssRes / ssTot
 })
 
+/** Options of {@link adjustedR2Score}. */
+export interface AdjustedR2Options extends MetricOptions {
+  /** The number of predictors p in the model (required). */
+  readonly nFeatures: number
+}
+
+/**
+ * Adjusted R^2: 1 - (1 - R^2)(n - 1) / (n - p - 1), which penalises R^2 for the number of predictors p (n is the
+ * number of samples, or the sum of the weights when weighted).
+ *
+ * @param yTrue - Targets.
+ * @param yPred - Predictions.
+ * @param options - nFeatures and sample weights.
+ * @returns The metric result.
+ * @throws WhiteboxError with code `value` when n - p - 1 <= 0.
+ * @example
+ * ```ts
+ * import { adjustedR2Score } from 'whitebox-engine/metrics'
+ * adjustedR2Score([1, 2, 3, 4], [1, 2, 3, 4], { nFeatures: 1 }).estimate.value // => 1
+ * ```
+ */
+export const adjustedR2Score: Metric<AdjustedR2Options> = perOutputMetric<AdjustedR2Options>(
+  spec('adjustedR2Score', 'higher', [-Infinity, 1]),
+  (t, p, w, o) => {
+    const n = o.sampleWeight === undefined ? t.length : w.reduce((a, b) => a + b, 0)
+    const dof = n - o.nFeatures - 1
+    if (!(dof > 0)) throw new WhiteboxError('value', `adjustedR2Score: needs more samples than nFeatures + 1`)
+    const r2 = r2Score(t, p, o.sampleWeight === undefined ? {} : { sampleWeight: w }).estimate.value
+    return 1 - ((1 - r2) * (n - 1)) / dof
+  },
+)
+
+/**
+ * Mean log-cosh error: the mean of log(cosh(y - yhat)), quadratic for small errors and linear for large ones (the
+ * metric counterpart of `losses.logCosh`; Keras's LogCoshError).
+ *
+ * @param yTrue - Targets.
+ * @param yPred - Predictions.
+ * @param options - Sample weights.
+ * @returns The metric result.
+ * @example
+ * ```ts
+ * import { meanLogCoshError } from 'whitebox-engine/metrics'
+ * meanLogCoshError([0, 1], [0, 1]).estimate.value // => 0
+ * ```
+ */
+export const meanLogCoshError: Metric = perOutputMetric(spec('meanLogCoshError', 'lower', [0, Infinity]), (t, p, w) =>
+  weightedMean(
+    map(t.length, (i) => {
+      const r = Math.abs((t[i] ?? 0) - (p[i] ?? 0))
+      return r + Math.log1p(Math.exp(-2 * r)) - Math.LN2
+    }),
+    w,
+  ),
+)
+
+/** Options of {@link meanHuberLoss}. */
+export interface HuberOptions extends MetricOptions {
+  /** The threshold between the quadratic and linear regions (default 1). */
+  readonly delta?: number
+}
+
+/**
+ * Mean Huber loss: 0.5 r^2 for |r| <= delta and delta (|r| - 0.5 delta) beyond (the metric counterpart of
+ * `losses.huber`; Keras's Huber).
+ *
+ * @param yTrue - Targets.
+ * @param yPred - Predictions.
+ * @param options - delta and sample weights.
+ * @returns The metric result.
+ * @example
+ * ```ts
+ * import { meanHuberLoss } from 'whitebox-engine/metrics'
+ * meanHuberLoss([0], [3], { delta: 1 }).estimate.value // => 2.5
+ * ```
+ */
+export const meanHuberLoss: Metric<HuberOptions> = perOutputMetric<HuberOptions>(
+  spec('meanHuberLoss', 'lower', [0, Infinity]),
+  (t, p, w, o) => {
+    const delta = o.delta ?? 1
+    return weightedMean(
+      map(t.length, (i) => {
+        const r = Math.abs((t[i] ?? 0) - (p[i] ?? 0))
+        return r <= delta ? 0.5 * r * r : delta * (r - 0.5 * delta)
+      }),
+      w,
+    )
+  },
+)
+
 /**
  * Explained variance (sklearn.metrics.explained_variance_score): 1 - Var(residuals) / Var(targets).
  *
@@ -245,160 +321,4 @@ export const meanAbsolutePercentageError: Metric = perOutputMetric(
       map(t.length, (i) => Math.abs((t[i] ?? 0) - (p[i] ?? 0)) / Math.max(Math.abs(t[i] ?? 0), 2.220446049250313e-16)),
       w,
     ),
-)
-
-/** Options of {@link meanTweedieDeviance}. */
-export interface TweedieOptions extends MetricOptions {
-  /** The Tweedie power: 0 normal, 1 Poisson, 2 gamma, 3 inverse Gaussian; (1, 2) compound Poisson-gamma. */
-  readonly power?: number
-}
-
-/** The unit Tweedie deviance of one observation (sklearn's _mean_tweedie_deviance terms). */
-export function tweedieUnitDeviance(y: number, mu: number, power: number): number {
-  if (power === 0) return (y - mu) ** 2
-  if (power === 1) return 2 * ((y > 0 ? y * Math.log(y / mu) : 0) - y + mu)
-  if (power === 2) return 2 * (Math.log(mu / y) + y / mu - 1)
-  if (power < 0) {
-    const yp = Math.max(y, 0)
-    return (
-      2 *
-      (yp ** (2 - power) / ((1 - power) * (2 - power)) -
-        (y * mu ** (1 - power)) / (1 - power) +
-        mu ** (2 - power) / (2 - power))
-    )
-  }
-  return (
-    2 *
-    (y ** (2 - power) / ((1 - power) * (2 - power)) -
-      (y * mu ** (1 - power)) / (1 - power) +
-      mu ** (2 - power) / (2 - power))
-  )
-}
-
-/**
- * Mean Tweedie deviance (sklearn.metrics.mean_tweedie_deviance).
- *
- * @param yTrue - Targets.
- * @param yPred - Predicted means (positive).
- * @param options - The power (default 0) and sample weights.
- * @returns The metric result.
- * @example
- * ```ts
- * import { meanTweedieDeviance } from 'whitebox-engine/metrics'
- * meanTweedieDeviance([1, 2], [1, 2], { power: 1.5 }).estimate.value // => 0
- * ```
- */
-export const meanTweedieDeviance: Metric<TweedieOptions> = perOutputMetric<TweedieOptions>(
-  spec('meanTweedieDeviance', 'lower', [0, Infinity]),
-  (t, p, w, o) =>
-    weightedMean(
-      map(t.length, (i) => tweedieUnitDeviance(t[i] ?? 0, p[i] ?? 0, o.power ?? 0)),
-      w,
-    ),
-)
-
-/**
- * Mean Poisson deviance (sklearn.metrics.mean_poisson_deviance), Tweedie power 1.
- *
- * @param yTrue - Counts.
- * @param yPred - Predicted means.
- * @param options - Sample weights.
- * @returns The metric result.
- * @example
- * ```ts
- * import { meanPoissonDeviance } from 'whitebox-engine/metrics'
- * meanPoissonDeviance([0, 2], [1, 2]).estimate.value // => 1
- * ```
- */
-export const meanPoissonDeviance: Metric = perOutputMetric(
-  spec('meanPoissonDeviance', 'lower', [0, Infinity]),
-  (t, p, w) =>
-    weightedMean(
-      map(t.length, (i) => tweedieUnitDeviance(t[i] ?? 0, p[i] ?? 0, 1)),
-      w,
-    ),
-)
-
-/**
- * Mean gamma deviance (sklearn.metrics.mean_gamma_deviance), Tweedie power 2.
- *
- * @param yTrue - Positive targets.
- * @param yPred - Predicted means.
- * @param options - Sample weights.
- * @returns The metric result.
- * @example
- * ```ts
- * import { meanGammaDeviance } from 'whitebox-engine/metrics'
- * meanGammaDeviance([2], [2]).estimate.value // => 0
- * ```
- */
-export const meanGammaDeviance: Metric = perOutputMetric(spec('meanGammaDeviance', 'lower', [0, Infinity]), (t, p, w) =>
-  weightedMean(
-    map(t.length, (i) => tweedieUnitDeviance(t[i] ?? 0, p[i] ?? 0, 2)),
-    w,
-  ),
-)
-
-/** Options of {@link meanPinballLoss}. */
-export interface PinballOptions extends MetricOptions {
-  /** The quantile level (default 0.5). */
-  readonly alpha?: number
-}
-
-/**
- * Mean pinball loss (sklearn.metrics.mean_pinball_loss).
- *
- * @param yTrue - Targets.
- * @param yPred - Predicted quantiles.
- * @param options - The level alpha and sample weights.
- * @returns The metric result.
- * @example
- * ```ts
- * import { meanPinballLoss } from 'whitebox-engine/metrics'
- * meanPinballLoss([1], [0], { alpha: 0.9 }).estimate.value // => 0.9
- * ```
- */
-export const meanPinballLoss: Metric<PinballOptions> = perOutputMetric<PinballOptions>(
-  spec('meanPinballLoss', 'lower', [0, Infinity]),
-  (t, p, w, o) => {
-    const a = o.alpha ?? 0.5
-    return weightedMean(
-      map(t.length, (i) => {
-        const d = (t[i] ?? 0) - (p[i] ?? 0)
-        return d >= 0 ? a * d : (a - 1) * d
-      }),
-      w,
-    )
-  },
-)
-
-/**
- * D^2 score for the absolute error (sklearn.metrics.d2_absolute_error_score): the fraction of the absolute error of the
- * (weighted) median that the predictions explain.
- *
- * @param yTrue - Targets.
- * @param yPred - Predictions.
- * @param options - Sample weights.
- * @returns The metric result.
- * @example
- * ```ts
- * import { d2AbsoluteErrorScore } from 'whitebox-engine/metrics'
- * d2AbsoluteErrorScore([1, 2, 3], [1, 2, 3]).estimate.value // => 1
- * ```
- */
-export const d2AbsoluteErrorScore: Metric = perOutputMetric(
-  spec('d2AbsoluteErrorScore', 'higher', [-Infinity, 1]),
-  (t, p, w, o) => {
-    const m = median(t, w, o.sampleWeight !== undefined)
-    const num = weightedMean(
-      map(t.length, (i) => Math.abs((t[i] ?? 0) - (p[i] ?? 0))),
-      w,
-    )
-    const den = weightedMean(
-      map(t.length, (i) => Math.abs((t[i] ?? 0) - m)),
-      w,
-    )
-    if (den === 0) return num === 0 ? 1 : 0
-    return 1 - num / den
-  },
 )

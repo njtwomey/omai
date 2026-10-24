@@ -22,11 +22,26 @@ oracle-core = [
     "pot>=0.9.7.post1",
     "cvxpy>=1.9.3",
     "pymoo>=0.6.2",
+    "fairlearn>=0.15.0",
+    "sacrebleu>=2.6.0",
+    "rouge-score>=0.1.2",
+    "jiwer>=4.0.0",
+    "pystoi>=0.4.1",
+    "pycocotools>=2.0.11",
+    "properscoring>=0.1",
+    "pingouin>=0.7.0",
+    "krippendorff>=0.9.0",
+    "prdc>=0.2",
+    "sewar>=0.4.10",
+    "dtw-python>=1.9.0",
 ]
 oracle-torch = [
+    "monai>=1.6.1",
     "optax>=0.2.8",
     "pytorch-crf>=0.7.2",
     "torch",
+    "torchmetrics>=1.9.0",
+    "torchvision>=0.29.1",
 ]
 oracle-prob = [
     "causal-learn>=0.1.4.8",

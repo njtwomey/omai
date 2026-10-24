@@ -1641,73 +1641,139 @@ into `whitebox-engine/pgm`; `learning` and `causal` are namespaces.
 
 ### 4.28 `metrics/` (tier 8): evaluation metrics (scikit-learn, torchmetrics)
 
-oracle: scikit-learn, torchmetrics, scipy, sacrebleu, rouge-score, jiwer, pycocotools, scikit-image, pystoi, pesq
+oracle: scikit-learn, torchmetrics, scipy, statsmodels, fairlearn, pingouin, krippendorff, properscoring, sacrebleu,
+rouge-score, jiwer, pycocotools, torchvision, MONAI, scikit-image, sewar, prdc, pystoi, dtw-python
 
-The files follow the encyclopedia's evaluation chapters, in its order. Every metric has a `MetricSpec`, returns a
-`MetricResult`, accepts sample weights, and can attach a confidence interval. Metrics that need a pretrained network
-(LPIPS, DISTS, FID, CLIPScore, BERTScore, DNSMOS) take a feature extractor as an argument; whitebox ships none of those
-weights.
-- `foundations.ts`: choosing a metric for a decision (expected cost, utility), `withInterval` (bootstrap, analytic,
-  Wilson, DeLong), paired comparisons of two models on one test set (paired bootstrap, McNemar, DeLong), `evaluate`
-  (many metrics in one pass).
-- `classification.ts`: confusion matrices and everything computed from them: accuracy, balanced accuracy, precision,
-  recall, F-scores, sensitivity, specificity, NPV, informedness, markedness, Matthews correlation, Cohen's kappa,
-  likelihood ratios, diagnostic odds ratio; micro, macro, weighted and sample averaging; multi-label (Hamming loss,
-  subset accuracy, label-ranking precision, coverage error) and ordinal (quadratic weighted kappa) variants;
-  `classificationReport`.
-- `curves.ts`: ROC curves and AUROC (with partial AUC), precision-recall curves and average precision, PR-gain, DET
-  curves; operating points at a fixed error rate, the equal error rate, Youden's index and minimum expected cost; cost
-  curves.
-- `probabilistic.ts`: log loss, Brier score and its decomposition, expected, maximum and classwise calibration errors
-  (with binning strategies), proper scoring rules for any `Distribution` (logarithmic, spherical, CRPS, energy score).
-- `fairness.ts`: group rates; demographic parity, equalised odds, equal opportunity, predictive parity and calibration
-  by group; disparate impact.
-- `regression.ts`: MSE, RMSE, MAE, median absolute error, maximum error, R-squared (and adjusted), explained variance,
-  MSLE, log-cosh, Huber, Poisson, gamma and Tweedie deviances, D-squared scores, pinball loss.
-- `correlation-agreement.ts`: Pearson, Spearman and Kendall (aliases of `stats/correlation.ts`), Cramer's V, Theil's U,
-  Lin's concordance correlation, Bland-Altman limits, intraclass correlation, weighted Cohen's kappa, Fleiss' kappa,
-  Krippendorff's alpha.
-- `distances.ts`: Minkowski distances, cosine similarity, Mahalanobis distance, Procrustes analysis (aliases where the
-  canonical home is `numerics/geometry`), Hausdorff and Chamfer distances between point sets.
-- `forecasting.ts`: MAPE, sMAPE, WMAPE, MASE, RMSSE, MSIS, CRPS for samples and closed forms, interval score, coverage,
-  quantile loss, Theil's U2.
-- `ranking.ts`: precision and recall at k, hit rate, R-precision, MAP, MRR, DCG and NDCG (gain variants), ERR,
-  rank-biased precision; beyond-accuracy measures (coverage, diversity, novelty, serendipity, exposure Gini).
-- `clustering.ts`: silhouette, Calinski-Harabasz, Davies-Bouldin and Dunn indices; Rand, adjusted Rand and
-  Fowlkes-Mallows; NMI variants, AMI, V-measure, homogeneity and completeness; purity; B-cubed; contingency tables.
-- `detection-segmentation.ts`: IoU, GIoU, DIoU and CIoU; Dice; Hausdorff distance (and HD95) for boundaries; boundary
-  F1; mean average precision (VOC and COCO protocols); panoptic quality; per-class mean IoU.
-- `image-quality.ts`: MSE, PSNR, SSIM, MS-SSIM, VIF, LPIPS and DISTS from supplied features, SAM, ERGAS, RASE, UIQI.
-- `generative.ts`: Inception score, FID and KID from features, precision, recall, density and coverage, CLIPScore from
-  embeddings, Vendi score.
-- `text.ts`: WER, CER, MER, WIL; BLEU (corpus and sentence, smoothing); chrF and chrF++; TER; ROUGE-N, ROUGE-L and
-  ROUGE-Lsum; exact match and token F1; BERTScore from embeddings; perplexity; distinct-n.
-- `audio.ts`: SNR, segmental SNR, SDR, SI-SDR and SI-SNR, permutation-invariant matching, PESQ, STOI and ESTOI,
-  log-spectral distance, mel-cepstral distortion, DNSMOS from a supplied model.
+The files follow the encyclopedia's evaluation chapters, in its order. Every metric has a `MetricSpec` and returns a
+`MetricResult` (a few return richer records: curves, reports, PRDC, permutations); per-sample metrics accept sample
+weights where the reference does, and metrics over rows of samples (targets, predictions) can attach a confidence
+interval (`withInterval`). Metrics that need a pretrained network (LPIPS, DISTS, FID, KID, CLIPScore, BERTScore,
+Inception score) take its features, embeddings or outputs, and DNSMOS takes the networks as functions; whitebox ships
+none of those weights.
+- `foundations.ts`: choosing a metric for a decision (`expectedCost`, `expectedUtility`, `bayesDecision`,
+  `costThreshold`), `withInterval` (bootstrap: percentile, basic and BCa; analytic (Wald); Wilson; DeLong, with
+  `delongVariance`), paired comparisons of two models on one test set (`pairedBootstrap`, `mcnemarTest`,
+  `delongTest`), `evaluate` (many metrics in one pass, with shared bootstrap intervals).
+- `metric.ts`: `Metric`, `defineMetric`, `metricResult`, sample weights, `weightedPercentile`, row selection and
+  `streaming` (update / compute over batches).
+- `classification.ts`: confusion matrices (`confusionMatrix`, `multilabelConfusionMatrix`) and the rates computed from
+  them: `accuracyScore`, `subsetAccuracy`, `balancedAccuracyScore`, `precisionScore`, `recallScore`, `fbetaScore`,
+  `f1Score`, `precisionRecallFscoreSupport`, `sensitivityScore`, `specificityScore`, `negativePredictiveValue`,
+  `informedness`, `markedness`, `jaccardScore`; binary, micro, macro, weighted, samples and per-class averaging, label
+  subsets, string labels and zero-division control.
+- `classification-summary.ts`: `matthewsCorrcoef`, `cohenKappaScore` (unweighted, linear, quadratic),
+  `quadraticWeightedKappa` (ordinal), likelihood ratios (`positiveLikelihoodRatio`, `negativeLikelihoodRatio`),
+  `diagnosticOddsRatio`, `hammingLoss`, `zeroOneLoss`, `topKAccuracyScore`, multi-label ranking
+  (`labelRankingAveragePrecisionScore`, `coverageError`, `labelRankingLoss`) and `classificationReport` (data and
+  sklearn's text).
+- `curves.ts`: `confusionMatrixAtThresholds`, ROC curves (`rocCurve`) and AUROC (`rocAucScore`: binary with the
+  McClish partial AUC, one-vs-rest, Hand and Till one-vs-one, multilabel; macro, weighted and micro), `auc`, DET
+  curves (`detCurve`).
+- `precision-recall.ts`: precision-recall curves (`precisionRecallCurve`) and average precision
+  (`averagePrecisionScore`), PR-gain (`prGainCurve`, `prGainAuc`, ported from Flach and Kull's reference code).
+- `operating-points.ts`: operating points at a fixed error rate (`recallAtFixedPrecision`, `precisionAtFixedRecall`,
+  `sensitivityAtSpecificity`, `specificityAtSensitivity`, `fprAtTpr`), the equal error rate (`equalErrorRate`:
+  interpolated or nearest), Youden's index (`youdenIndex`) and minimum expected cost (`minimumExpectedCost`, minDCF);
+  cost curves (`costCurve`).
+- `probabilistic.ts`: `logLoss`, `d2LogLossScore`, `brierScoreLoss` and its decomposition (`brierDecomposition`),
+  `calibrationCurve`, expected, maximum and classwise calibration errors (`expectedCalibrationError` with l1, l2 and
+  max norms, `maximumCalibrationError`, `classwiseCalibrationError`; uniform and quantile binning).
+- `scoring-rules.ts`: proper scoring rules for any `Distribution`: logarithmic (`logScore`), spherical
+  (`sphericalScore`), CRPS (`crps`: closed forms for the normal, Laplace, logistic, exponential and uniform, quadrature
+  otherwise) and the energy score (`energyScore`) from samples.
+- `fairness.ts`: group rates (`groupRates`); demographic parity, equalised odds, equal opportunity (differences and
+  ratios, between groups or to overall), predictive parity and calibration by group (`calibrationByGroup`); disparate
+  impact.
+- `regression.ts`: MSE, RMSE, MAE, median absolute error, maximum error, R-squared (`r2Score`, `adjustedR2Score`),
+  explained variance, MSLE, MAPE, log-cosh (`meanLogCoshError`), Huber (`meanHuberLoss`).
+- `deviance.ts`: Poisson, gamma and Tweedie deviances, pinball loss, D-squared scores (`d2AbsoluteErrorScore`,
+  `d2PinballScore`, `d2TweedieScore`).
+- `correlation-agreement.ts`: Pearson (weighted), Spearman and Kendall (tau-b and tau-c) as metrics (TODO: make
+  them aliases of `stats/correlation.ts` once the stats domain exists; for now they are implemented here), Cramer's
+  V, Theil's U, Lin's concordance correlation, Bland-Altman limits, intraclass correlation (all six Shrout-Fleiss
+  forms), weighted Cohen's kappa, Fleiss' kappa (and Randolph's), Krippendorff's alpha (nominal, ordinal, interval,
+  ratio, missing data).
+- `distances.ts`: Minkowski distances, cosine similarity, Mahalanobis distance, Procrustes disparity (metrics over
+  the canonical `numerics/geometry` functions), Hausdorff and Chamfer distances between point sets.
+- `forecasting.ts`: MAPE (`mape`, an alias of the regression metric), sMAPE, WMAPE, MASE, RMSSE, MSIS, CRPS for
+  samples (`crpsEnsemble`, fair or not) and closed forms (`crpsNormal`), interval score, coverage
+  (`intervalCoverage`), quantile loss (mean and weighted), Theil's U2.
+- `ranking.ts`: `precisionAtK`, `recallAtK`, `hitRate`, `rPrecision`, `meanAveragePrecision` (trec_eval, min and
+  retrieved denominators), `meanReciprocalRank`, `dcgScore` and `ndcgScore` (linear and exponential gains,
+  tie-averaged), `expectedReciprocalRank`, `rankBiasedPrecision`; beyond-accuracy measures (`catalogCoverage`,
+  `intraListDiversity`, `novelty`, `serendipity`, `exposureGini`).
+- `clustering.ts`: Rand, adjusted Rand and Fowlkes-Mallows (`randScore`, `adjustedRandScore`,
+  `fowlkesMallowsScore`, `pairConfusionMatrix`); `mutualInfoScore`, NMI variants (`normalizedMutualInfoScore`:
+  arithmetic, geometric, min, max), AMI (`adjustedMutualInfoScore`), V-measure, homogeneity and completeness;
+  `purityScore`; B-cubed (`bCubed`, `bCubedF1`); contingency tables (`contingencyMatrix`).
+- `cluster-validity.ts`: silhouette (`silhouetteScore`, `silhouetteSamples`, any distance or precomputed),
+  Calinski-Harabasz, Davies-Bouldin and Dunn indices.
+- `detection.ts`: IoU, GIoU, DIoU and CIoU of boxes (`boxIou`, `generalizedBoxIou`, `distanceBoxIou`,
+  `completeBoxIou`); mean average precision (`detectionMeanAveragePrecision`: the COCO protocol with all twelve
+  COCOeval statistics, crowds and size ranges; VOC all-point and 2007 11-point, with difficult objects).
+- `segmentation.ts`: Dice (`diceCoefficient`), `maskIou`; Hausdorff distance (and HD95) for mask boundaries
+  (`maskHausdorffDistance`, MONAI's definition with spacing); boundary F1; panoptic quality (with void and modified
+  stuff classes); per-class mean IoU (`meanIou`).
+- `image-quality.ts`: MSE (`imageMeanSquaredError`), PSNR, SSIM (skimage's uniform and Gaussian windows), MS-SSIM,
+  VIF (pixel domain), LPIPS and DISTS from supplied features (`lpipsFromFeatures`, `distsFromFeatures`), SAM, ERGAS,
+  RASE, UIQI; images `[H, W]` or `[H, W, C]`, channels last. TODO: move the private filters of `_images.ts` to
+  `signal/` once that domain exists.
+- `generative.ts`: Inception score (from class probabilities), FID (`frechetDistance`) and KID
+  (`kernelInceptionDistance`) from features, precision, recall, density and coverage
+  (`precisionRecallDensityCoverage`), CLIPScore from embeddings (`clipScore`), Vendi score (any order).
+- `text.ts`: WER, CER, MER, WIL and WIP (jiwer's alignment); BLEU (corpus and sentence, smoothing, the 13a tokeniser
+  `tokenize13a`); chrF and chrF++ (`chrfScore`, `wordOrder: 2`); TER (Tercom shifts and normalisation flags); ROUGE-N,
+  ROUGE-L and ROUGE-Lsum (rouge-score; a stemmer can be supplied); SQuAD exact match and token F1; BERTScore from
+  embeddings (idf weights, baseline rescaling); perplexity; distinct-n. Private `_sequences.ts` (edit alignment, LCS,
+  n-gram counts) and `_ter.ts`. TODO: move the alignment and LCS to `text/similarity.ts` and default ROUGE's stemmer to
+  `text/stem.ts` once the text domain exists.
+- `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
+  matching (`permutationInvariant`, exhaustive), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
+  resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
+  supplied model (torchmetrics' windows and calibration, 16 kHz). Private `_audio.ts` (windows, `upfirdn`,
+  `resamplePoly`, framed power spectra). TODO: PESQ (ITU-T P.862), whose reference implementation is ITU-copyrighted
+  C that cannot be ported under the licence; move `_audio.ts` to `signal/` and use `optim/assignment.ts` for
+  permutation matching once those exist.
 
 ### 4.29 `losses/` (tier 8): differentiable objectives (torch.nn losses, optax losses)
 
-oracle: torch.nn.functional, optax
+oracle: torch.nn.functional, optax, MONAI, POT, torchvision, scikit-learn, scipy
 
 Training objectives with a uniform `reduction` option. Evaluation metrics live in `metrics`; where a loss and a metric
 share a concept they share a definition but not a name.
-- `regression.ts`: `mse`, `mae`, `huber`, `logCosh`, `pinball`, `expectile`, `poissonNll`, `gaussianNll`,
+- `regression.ts`: `mse`, `mae`, `huber`, `smoothL1`, `logCosh`, `pinball`, `expectile`, `poissonNll`, `gaussianNll`,
   `tweedieDeviance`.
-- `classification.ts`: binary and categorical cross-entropy (with logits, label smoothing and class weights), `focal`,
-  `nllLoss`, hierarchical softmax (Huffman-coded classes from `information`), sampled softmax.
-- `margin.ts`: hinge, squared hinge, logistic, exponential, modified Huber, Crammer-Singer, Weston-Watkins.
-- `density.ts`: negative log-likelihood of any `Distribution` or `ConditionalDistribution`, mixture-density NLL,
-  heteroscedastic Gaussian NLL, censored likelihoods.
-- `ranking.ts`: RankNet, pairwise hinge, BPR, LambdaRank, ListNet, ListMLE, ApproxNDCG.
-- `contrastive.ts`: InfoNCE, NT-Xent, triplet, contrastive, supervised contrastive, CLIP loss, ArcFace and CosFace
-  margins.
-- `segmentation.ts`: Dice, Tversky, focal Tversky, Lovasz hinge.
-- `generative.ts`: GAN losses (minimax, non-saturating, Wasserstein, hinge, gradient penalties), ELBO terms,
-  denoising score matching, flow-matching losses.
-- `divergence.ts`: KL, Jensen-Shannon, distillation, MMD and Sinkhorn losses.
-- `physics.ts`: PDE residual losses, boundary and initial-condition losses, adaptive loss balancing (gradient-norm and
-  NTK-based weights) for physics-informed training.
-- `regularisers.ts`: L1, L2, elastic net, group, nuclear-norm, orthogonality and entropy penalties.
+- `classification.ts`: binary and categorical cross-entropy (`binaryCrossEntropy`, `binaryCrossEntropyWithLogits`,
+  `crossEntropy`: with logits, label smoothing, class weights and ignore index), `focal` (sigmoid) and
+  `categoricalFocal`, `nllLoss`, `multiLabelSoftMargin`.
+- `large-output.ts`: losses for very many classes: hierarchical softmax (`huffmanCoding`, `hierarchicalSoftmax`,
+  `hierarchicalSoftmaxLogProbs`), sampled softmax (`sampledSoftmax`, `sampleClasses` with uniform and log-uniform
+  proposals). TODO: take the Huffman tree from `information/source-coding.ts` once that domain exists.
+- `margin.ts`: `hinge`, `squaredHinge`, `logistic`, `exponential`, `modifiedHuber`, `perceptron`, `crammerSinger`,
+  `westonWatkins`.
+- `density.ts`: negative log-likelihood of any `Distribution` (`negativeLogLikelihood`) or conditional distribution
+  (`conditionalNll`), mixture-density NLL (`mixtureDensityNll`), heteroscedastic Gaussian NLL with beta-NLL weighting
+  (`heteroscedasticGaussianNll`), censored likelihoods (`censoredNll`: exact, left, right and interval).
+- `ranking.ts`: `marginRanking`, `rankNet`, `pairwiseHinge`, `bpr`, `lambdaRank` (NDCG@k deltas), `listNet`,
+  `softmaxRanking`, `listMle`, `approxNdcg`; padded lists through a mask.
+- `contrastive.ts`: `infoNce` (in-batch, shared or per-query negatives), `ntXent`, `tripletMargin`, `contrastive`,
+  `cosineEmbedding`, `hingeEmbedding`, `supervisedContrastive`, `clipLoss`, ArcFace and CosFace margins
+  (`arcFaceLogits`, `cosFaceLogits`, `arcFace`, `cosFace`).
+- `segmentation.ts`: `dice` (soft and squared), `tversky`, `focalTversky`, `lovaszHinge`, `lovaszSoftmax`; classes last,
+  index or one-hot targets, activations, background, batch pooling, ignore index and class weights as MONAI.
+- `generative.ts`: GAN losses (`discriminatorLoss`, `generatorLoss`: minimax, non-saturating, Wasserstein, hinge, least
+  squares; `gradientPenalty` (WGAN-GP) and `r1Penalty`), ELBO terms (`gaussianKl`, `sampledKl`, `negativeElbo`,
+  `bernoulliLogLikelihood`, `gaussianLogLikelihood`, `importanceWeightedBound`), `denoisingScoreMatching`, diffusion
+  objectives (`diffusionTarget`, `diffusionLoss`: epsilon, x0 and v), flow matching (`flowMatchingPath`,
+  `flowMatching`).
+- `divergence.ts`: `klDiv` (torch, with 'batchmean'), `klDivergence`, `jensenShannon`, `distillation`, `mmd` (Gaussian,
+  Laplacian and energy kernels, multi-scale, median heuristic, biased and unbiased) and `sinkhorn` (log domain, weighted,
+  debiased) losses.
+- `physics.ts`: `fieldDerivatives` (gradient, second derivatives and Laplacian by autodiff), `pdeResidualLoss`,
+  `boundaryLoss` (Dirichlet and Neumann) and `initialConditionLoss`, adaptive loss balancing (`gradientNormWeights`,
+  `ntkWeights`) for physics-informed training.
+- `regularisers.ts`: `l1Penalty`, `l2Penalty`, `elasticNet`, `groupLasso` (and sparse group lasso), `nuclearNorm`,
+  `orthogonality`, `entropyPenalty`; penalties take any pytree of parameters.
 
 ### 4.30 `rl/` (tier 8): reinforcement learning infrastructure (gymnasium, PettingZoo, stable-baselines3 building blocks)
 

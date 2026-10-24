@@ -237,12 +237,96 @@
       "cases": 4
     },
     {
-      "fixture": "losses/losses.json",
-      "source": "oracle/cases/losses/losses.py",
+      "fixture": "losses/classification.json",
+      "source": "oracle/cases/losses/classification.py",
+      "reference": {
+        "torch": "2.14.1",
+        "torchvision": "0.29.1"
+      },
+      "cases": 36
+    },
+    {
+      "fixture": "losses/contrastive.json",
+      "source": "oracle/cases/losses/contrastive.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "losses/density.json",
+      "source": "oracle/cases/losses/density.py",
+      "reference": {
+        "torch": "2.14.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "losses/divergence.json",
+      "source": "oracle/cases/losses/divergence.py",
+      "reference": {
+        "torch": "2.14.1",
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "pot": "0.9.7.post1"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "losses/generative.json",
+      "source": "oracle/cases/losses/generative.py",
       "reference": {
         "torch": "2.14.1"
       },
-      "cases": 31
+      "cases": 27
+    },
+    {
+      "fixture": "losses/margin.json",
+      "source": "oracle/cases/losses/margin.py",
+      "reference": {
+        "optax": "0.2.8",
+        "torch": "2.14.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "losses/ranking.json",
+      "source": "oracle/cases/losses/ranking.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "losses/regression.json",
+      "source": "oracle/cases/losses/regression.py",
+      "reference": {
+        "torch": "2.14.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 37
+    },
+    {
+      "fixture": "losses/regularisers.json",
+      "source": "oracle/cases/losses/regularisers.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "losses/segmentation.json",
+      "source": "oracle/cases/losses/segmentation.py",
+      "reference": {
+        "monai": "1.6.1",
+        "torch": "2.14.1"
+      },
+      "cases": 18
     },
     {
       "fixture": "methods/datasets/changepoints.json",
@@ -425,12 +509,210 @@
       "cases": 186
     },
     {
+      "fixture": "metrics/audio.json",
+      "source": "oracle/cases/metrics/audio.py",
+      "reference": {
+        "torchmetrics": "1.9.0",
+        "pystoi": "0.4.1",
+        "scipy": "1.18.1",
+        "dtw-python": "1.9.0"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "metrics/classification.json",
+      "source": "oracle/cases/metrics/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 77
+    },
+    {
+      "fixture": "metrics/classification_summary.json",
+      "source": "oracle/cases/metrics/classification_summary.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 33
+    },
+    {
+      "fixture": "metrics/cluster_validity.json",
+      "source": "oracle/cases/metrics/cluster_validity.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "metrics/clustering.json",
+      "source": "oracle/cases/metrics/clustering.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "metrics/correlation_agreement.json",
+      "source": "oracle/cases/metrics/correlation_agreement.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "pingouin": "0.7.0",
+        "krippendorff": "0.9.0",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "metrics/curves.json",
+      "source": "oracle/cases/metrics/curves.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 41
+    },
+    {
+      "fixture": "metrics/detection.json",
+      "source": "oracle/cases/metrics/detection.py",
+      "reference": {
+        "torchvision": "0.29.1",
+        "pycocotools": "2.0.11"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "metrics/deviance.json",
+      "source": "oracle/cases/metrics/deviance.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 31
+    },
+    {
+      "fixture": "metrics/distances.json",
+      "source": "oracle/cases/metrics/distances.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "metrics/fairness.json",
+      "source": "oracle/cases/metrics/fairness.py",
+      "reference": {
+        "fairlearn": "0.15.0"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "metrics/forecasting.json",
+      "source": "oracle/cases/metrics/forecasting.py",
+      "reference": {
+        "torchmetrics": "1.9.0",
+        "properscoring": "0.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "metrics/foundations.json",
+      "source": "oracle/cases/metrics/foundations.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "metrics/generative.json",
+      "source": "oracle/cases/metrics/generative.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "prdc": "0.2",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "metrics/image_quality.json",
+      "source": "oracle/cases/metrics/image_quality.py",
+      "reference": {
+        "scikit-image": "0.26.0",
+        "sewar": "0.4.10",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "metrics/operating_points.json",
+      "source": "oracle/cases/metrics/operating_points.py",
+      "reference": {
+        "torchmetrics": "1.9.0",
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "metrics/precision_recall.json",
+      "source": "oracle/cases/metrics/precision_recall.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "pyprg": "0.1.1b7 (ported)"
+      },
+      "cases": 26
+    },
+    {
+      "fixture": "metrics/probabilistic.json",
+      "source": "oracle/cases/metrics/probabilistic.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 26
+    },
+    {
+      "fixture": "metrics/ranking.json",
+      "source": "oracle/cases/metrics/ranking.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 26
+    },
+    {
       "fixture": "metrics/regression.json",
       "source": "oracle/cases/metrics/regression.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
-      "cases": 38
+      "cases": 30
+    },
+    {
+      "fixture": "metrics/scoring_rules.json",
+      "source": "oracle/cases/metrics/scoring_rules.py",
+      "reference": {
+        "properscoring": "0.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "metrics/segmentation.json",
+      "source": "oracle/cases/metrics/segmentation.py",
+      "reference": {
+        "monai": "1.6.1",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "metrics/text.json",
+      "source": "oracle/cases/metrics/text.py",
+      "reference": {
+        "jiwer": "4.0.0",
+        "sacrebleu": "2.6.0",
+        "rouge-score": "0.1.2",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 69
     },
     {
       "fixture": "nn/functional/activations.json",

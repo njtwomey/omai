@@ -5,13 +5,17 @@ import {
   cast,
   div,
   equal,
+  exp,
   expandDims,
   log,
   logSoftmax,
   maximum,
   mul,
   neg,
+  notEqual,
+  pow,
   promoteFloat,
+  sigmoid,
   squeeze,
   sub,
   sum,
@@ -29,7 +33,8 @@ import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
  *
  * @param logits - Logits.
  * @param target - Targets in [0, 1].
- * @param options - posWeight (weight of positive terms), reduction and weights.
+ * @param options - posWeight (weight of positive terms, broadcast over the last axis), labelSmoothing (targets become
+ *   y (1 - eps) + eps / 2, as Keras and optax), reduction and weights.
  * @returns The loss, differentiable.
  * @concept losses
  * @example
@@ -42,13 +47,17 @@ import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
 export function binaryCrossEntropyWithLogits(
   logits: TensorLike,
   target: TensorLike,
-  options: LossOptions & { readonly posWeight?: TensorLike } = {},
+  options: LossOptions & { readonly posWeight?: TensorLike; readonly labelSmoothing?: number } = {},
 ): Value {
-  const [x, y] = promoteFloat(logits, target) as [Value, Value]
+  const [x, t] = promoteFloat(logits, target) as [Value, Value]
+  const y = smoothBinary(t, options.labelSmoothing)
   const positive =
     options.posWeight === undefined ? logSigmoid(x) : mul(logSigmoid(x), promoteFloat(options.posWeight)[0] as Value)
   return reduce(neg(add(mul(y, positive), mul(sub(1, y), logSigmoid(neg(x))))), options)
 }
+
+const smoothBinary = (y: Value, eps: number | undefined): Value =>
+  eps === undefined || eps === 0 ? y : add(mul(y, 1 - eps), eps / 2)
 
 /**
  * Binary cross-entropy on probabilities, with log clamped at -100 as torch does
@@ -56,7 +65,7 @@ export function binaryCrossEntropyWithLogits(
  *
  * @param probs - Probabilities.
  * @param target - Targets in [0, 1].
- * @param options - Reduction and weights.
+ * @param options - labelSmoothing (as {@link binaryCrossEntropyWithLogits}), reduction and weights.
  * @returns The loss, differentiable.
  * @example
  * ```ts
@@ -65,11 +74,115 @@ export function binaryCrossEntropyWithLogits(
  * item(binaryCrossEntropy([0.5], [0])) === Math.LN2 // => true
  * ```
  */
-export function binaryCrossEntropy(probs: TensorLike, target: TensorLike, options: LossOptions = {}): Value {
-  const [p, y] = promoteFloat(probs, target) as [Value, Value]
+export function binaryCrossEntropy(
+  probs: TensorLike,
+  target: TensorLike,
+  options: LossOptions & { readonly labelSmoothing?: number } = {},
+): Value {
+  const [p, t] = promoteFloat(probs, target) as [Value, Value]
+  const y = smoothBinary(t, options.labelSmoothing)
   // torch clamps each log at -100 so that a probability of exactly 0 or 1 gives a finite loss.
   const clampedLog = (v: Value): Value => maximum(log(v), -100)
   return reduce(neg(add(mul(y, clampedLog(p)), mul(sub(1, y), clampedLog(sub(1, p))))), options)
+}
+
+/**
+ * Sigmoid focal loss (Lin et al., 2017; torchvision.ops.sigmoid_focal_loss): the binary cross-entropy scaled by
+ * (1 - p_t)^gamma, which down-weights easy examples, and by alpha_t = alpha y + (1 - alpha)(1 - y).
+ *
+ * @param logits - Logits.
+ * @param target - Targets in [0, 1].
+ * @param options - alpha (default 0.25; negative disables it), gamma (default 2), reduction and weights.
+ * @returns The loss, differentiable.
+ * @concept losses
+ * @example
+ * ```ts
+ * import { focal } from 'whitebox-engine/losses'
+ * import { item } from 'whitebox-engine/tensor'
+ * item(focal([0], [1], { alpha: -1, gamma: 1 })) === Math.LN2 / 2 // => true
+ * ```
+ */
+export function focal(
+  logits: TensorLike,
+  target: TensorLike,
+  options: LossOptions & { readonly alpha?: number; readonly gamma?: number } = {},
+): Value {
+  const [x, y] = promoteFloat(logits, target) as [Value, Value]
+  const alpha = options.alpha ?? 0.25
+  const gamma = options.gamma ?? 2
+  const ce = neg(add(mul(y, logSigmoid(x)), mul(sub(1, y), logSigmoid(neg(x)))))
+  const p = sigmoid(x)
+  const pt = add(mul(p, y), mul(sub(1, p), sub(1, y)))
+  let terms = gamma === 0 ? ce : mul(ce, pow(sub(1, pt), gamma))
+  if (alpha >= 0) terms = mul(terms, add(mul(y, alpha), mul(sub(1, y), 1 - alpha)))
+  return reduce(terms, options)
+}
+
+/**
+ * Multi-class (softmax) focal loss: -alpha_y (1 - p_y)^gamma log p_y from logits along the last axis, with integer
+ * class targets.
+ *
+ * @param logits - Logits `[..., C]`.
+ * @param target - Class indices `[...]`.
+ * @param options - gamma (default 2), alpha (per-class weights `[C]`), ignoreIndex and reduction ('mean' averages over
+ *   the kept targets).
+ * @returns The loss, differentiable in the logits.
+ * @example
+ * ```ts
+ * import { categoricalFocal } from 'whitebox-engine/losses'
+ * import { item } from 'whitebox-engine/tensor'
+ * item(categoricalFocal([[0, 0]], [1], { gamma: 1 })) === Math.LN2 / 2 // => true
+ * ```
+ */
+export function categoricalFocal(
+  logits: TensorLike,
+  target: TensorLike,
+  options: {
+    readonly gamma?: number
+    readonly alpha?: TensorLike
+    readonly ignoreIndex?: number
+    readonly reduction?: Reduction
+  } = {},
+): Value {
+  const [z] = promoteFloat(logits) as [Value]
+  const gamma = options.gamma ?? 2
+  const t = promoteFloat(target)[0] as Value
+  const ignore = options.ignoreIndex
+  const index = cast(ignore === undefined ? t : where(equal(t, ignore), 0, t), 'int32')
+  const logp = squeeze(takeAlongAxis(logSoftmax(z, -1), expandDims(index, -1), -1), -1)
+  let terms = neg(gamma === 0 ? logp : mul(pow(sub(1, exp(logp)), gamma), logp))
+  if (options.alpha !== undefined) terms = mul(terms, take(promoteFloat(options.alpha)[0] as Value, index))
+  if (ignore === undefined) return reduce(terms, { reduction: options.reduction ?? 'mean' })
+  const keep = cast(notEqual(t, ignore), 'float64')
+  terms = mul(terms, keep)
+  return (options.reduction ?? 'mean') === 'mean' ? div(sum(terms), sum(keep)) : reduce(terms, options)
+}
+
+/**
+ * Multi-label soft-margin loss (torch.nn.functional.multilabel_soft_margin_loss): the binary cross-entropy on logits
+ * averaged over the classes of each sample, then reduced over samples.
+ *
+ * @param logits - Logits `[N, C]`.
+ * @param target - Binary targets `[N, C]`.
+ * @param options - classWeight `[C]` and reduction (over samples).
+ * @returns The loss, differentiable.
+ * @example
+ * ```ts
+ * import { multiLabelSoftMargin } from 'whitebox-engine/losses'
+ * import { item } from 'whitebox-engine/tensor'
+ * item(multiLabelSoftMargin([[0, 0]], [[1, 0]])) === Math.LN2 // => true
+ * ```
+ */
+export function multiLabelSoftMargin(
+  logits: TensorLike,
+  target: TensorLike,
+  options: { readonly classWeight?: TensorLike; readonly reduction?: Reduction } = {},
+): Value {
+  const [x, y] = promoteFloat(logits, target) as [Value, Value]
+  let terms = neg(add(mul(y, logSigmoid(x)), mul(sub(1, y), logSigmoid(neg(x)))))
+  if (options.classWeight !== undefined) terms = mul(terms, promoteFloat(options.classWeight)[0] as Value)
+  const c = x.shape[x.shape.length - 1] ?? 1
+  return reduce(div(sum(terms, -1), c), { reduction: options.reduction ?? 'mean' })
 }
 
 /** Options of {@link crossEntropy}. */
@@ -137,7 +250,7 @@ export function crossEntropy(logits: TensorLike, target: TensorLike, options: Cr
  *
  * @param logProbs - Log-probabilities `[..., C]`.
  * @param target - Class indices `[...]`.
- * @param options - Reduction.
+ * @param options - Class weights, ignore index and reduction (a weighted mean divides by the kept targets' weights).
  * @returns The loss, differentiable in the log-probabilities.
  * @example
  * ```ts
@@ -149,9 +262,18 @@ export function crossEntropy(logits: TensorLike, target: TensorLike, options: Cr
 export function nllLoss(
   logProbs: TensorLike,
   target: TensorLike,
-  options: { readonly reduction?: Reduction } = {},
+  options: Omit<CrossEntropyOptions, 'labelSmoothing'> = {},
 ): Value {
   const [lp] = promoteFloat(logProbs) as [Value]
-  const index = cast(promoteFloat(target)[0] as Value, 'int32')
-  return reduce(neg(squeeze(takeAlongAxis(lp, expandDims(index, -1), -1), -1)), options)
+  const t = promoteFloat(target)[0] as Value
+  const ignore = options.ignoreIndex
+  const index = cast(ignore === undefined ? t : where(equal(t, ignore), 0, t), 'int32')
+  const weights = options.classWeight === undefined ? undefined : (promoteFloat(options.classWeight)[0] as Value)
+  let w: Value | undefined = weights === undefined ? undefined : take(weights, index)
+  if (ignore !== undefined) {
+    const keep = cast(notEqual(t, ignore), 'float64')
+    w = w === undefined ? keep : mul(w, keep)
+  }
+  const terms = neg(squeeze(takeAlongAxis(lp, expandDims(index, -1), -1), -1))
+  return reduce(terms, { reduction: options.reduction ?? 'mean', ...(w === undefined ? {} : { weight: w }) })
 }
