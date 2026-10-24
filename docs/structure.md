@@ -2224,8 +2224,10 @@ oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and adva
   and iterative), Q from V, greedy policies, occupancy measures, `tabularEnv` (environments from `P` tables). TODO:
   linear-programming solutions, once `optim/linear-programming.ts` provides `linprog`.
 - `planning.ts`: planning with models (MCTS over environment models, UCT and PUCT with priors and values, and two-player
-  game search with negamax backups, written here while `search/adversarial` is not built; rollout planners, CEM over
-  action sequences, MPPI).
+  game search with negamax backups; rollout planners, CEM over action sequences, MPPI). `gameMcts` stays separate from
+  `search.mcts`: it searches environments with rewards on any move, and its PUCT counts a node's visits as AlphaZero
+  does (the sum of its children's), where `search.mcts` also counts the expansion visit, which changes AlphaZero's
+  training; `search.mcts` also labels every path for its trace.
 - `models.ts`: learned-dynamics interfaces (deterministic and probabilistic ensembles) for model-based agents.
 - `exploration.ts`: count-based bonuses, pseudo-counts, random network distillation and curiosity interfaces.
 - `off-policy.ts`: IPS, SNIPS, clipped IPS, direct method, doubly robust, fitted Q evaluation.
@@ -3179,7 +3181,9 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 - `tabular.ts`: Q-learning, SARSA, expected SARSA, n-step SARSA, SARSA(lambda), Monte Carlo control, TD(0) and
   TD(lambda), double Q-learning, Dyna-Q (and Dyna-Q+), prioritised sweeping.
 - `planning.ts`: value and policy iteration agents, MCTS agents, AlphaZero-style self-play with a small network,
-  minimax agents.
+  minimax agents. Its `alphaBeta` (negamax with a transposition table, bound flags and rewards on any move, untraced
+  for speed inside agents) is not `search.alphaBeta`, a traced node-by-node engine over terminal utilities without a
+  table.
 - `value-based.ts`: Q networks and DQN with double, dueling, prioritised-replay, n-step and noisy-network variants.
 - `distributional.ts`: distributional C51 (categorical projection), QR-DQN (quantile Huber loss) and IQN (risk
   distortions); Rainbow.
