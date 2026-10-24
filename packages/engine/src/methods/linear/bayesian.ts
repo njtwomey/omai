@@ -363,7 +363,14 @@ export function ardRegression(hyper: Partial<ArdHyper> = {}): ExplainedEstimator
       name: 'ard-regression',
       kind: 'regressor',
       hyperSpace: (h: ArdHyper): Space =>
-        dict({ thresholdLambda: real(10, 1e6, { log: true, default: h.thresholdLambda }) }),
+        dict({
+          thresholdLambda: real(10, 1e6, {
+            label: 'pruning threshold λ',
+            description: 'Coefficients whose precision λ exceeds this are pruned to zero.',
+            log: true,
+            default: h.thresholdLambda,
+          }),
+        }),
       fit: (data: LearnData, h: ArdHyper, options: FitOptions) => {
         const design = designOf(data, 'ardRegression')
         const { n, d } = design.x

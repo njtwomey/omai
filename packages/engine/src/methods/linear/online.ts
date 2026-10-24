@@ -410,25 +410,43 @@ const classifierDefaults = (h: Partial<SgdSettings>): SgdSettings => ({
 
 const sgdSpace = (h: SgdSettings, losses: readonly SgdLoss[]): Space =>
   dict({
-    loss: choice([...losses], { default: h.loss }),
-    penalty: choice(['none', 'l2', 'l1', 'elasticnet'], { default: h.penalty }),
-    alpha: real(1e-6, 1, { log: true, default: h.alpha }),
+    loss: choice([...losses], {
+      label: 'loss',
+      description:
+        'The loss each update descends: hinge, log, modified Huber, squared hinge or perceptron (classifiers), squared error, Huber or ε-insensitive (regressors).',
+      default: h.loss,
+    }),
+    penalty: choice(['none', 'l2', 'l1', 'elasticnet'], {
+      label: 'penalty',
+      description: 'The regularisation on the coefficients: none, L2, L1 or elastic net.',
+      default: h.penalty,
+    }),
+    alpha: real(1e-6, 1, {
+      label: 'α (penalty)',
+      description: 'The regularisation strength (also sets the optimal learning rate).',
+      log: true,
+      default: h.alpha,
+    }),
     learningRate: choice(['optimal', 'constant', 'invscaling', 'adaptive'], {
       default: h.learningRate,
       label: 'learning-rate schedule',
     }),
     eta0: real(1e-4, 10, { log: true, default: h.eta0, label: 'initial rate' }),
     maxIter: int(1, 1000, { default: h.maxIter, label: 'epochs' }),
-    shuffle: bool({ default: h.shuffle }),
+    shuffle: bool({ label: 'shuffle', description: 'Shuffle the rows before each epoch.', default: h.shuffle }),
   })
 
 const paSpace = (h: SgdSettings, losses: readonly SgdLoss[]): Space =>
   dict({
     eta0: real(1e-3, 100, { log: true, default: h.eta0, label: 'C (aggressiveness)' }),
     learningRate: choice(['pa1', 'pa2'], { default: h.learningRate, label: 'PA-I or PA-II' }),
-    loss: choice([...losses], { default: h.loss }),
+    loss: choice([...losses], {
+      label: 'loss',
+      description: 'Hinge (classifiers) or ε-insensitive (regressors) loss, or their squares.',
+      default: h.loss,
+    }),
     maxIter: int(1, 1000, { default: h.maxIter, label: 'epochs' }),
-    shuffle: bool({ default: h.shuffle }),
+    shuffle: bool({ label: 'shuffle', description: 'Shuffle the rows before each epoch.', default: h.shuffle }),
   })
 
 /** The learning curve of an SGD run: progressive and training error per checkpoint. */
@@ -557,7 +575,7 @@ export function onlinePerceptron(
       dict({
         eta0: real(1e-3, 10, { log: true, default: h.eta0, label: 'learning rate' }),
         maxIter: int(1, 1000, { default: h.maxIter, label: 'epochs' }),
-        shuffle: bool({ default: h.shuffle }),
+        shuffle: bool({ label: 'shuffle', description: 'Shuffle the rows before each epoch.', default: h.shuffle }),
       }),
   )
 }

@@ -81,8 +81,16 @@ export function ellipticEnvelope(
       kind: 'outlier',
       hyperSpace: (h) =>
         dict({
-          contamination: real(0.01, 0.5, { default: h.contamination ?? 0.1 }),
-          robust: choice([true, false], { default: h.robust ?? true }),
+          contamination: real(0.01, 0.5, {
+            label: 'contamination',
+            description: 'The expected fraction of outliers: sets the threshold on the scores.',
+            default: h.contamination ?? 0.1,
+          }),
+          robust: choice([true, false], {
+            label: 'robust',
+            description: 'Use the median and the median absolute deviation instead of the mean and standard deviation.',
+            default: h.robust ?? true,
+          }),
         }),
       fit: (data, h, options: FitOptions) => {
         const cov =
@@ -156,7 +164,11 @@ export function pcaReconstructionDetector(
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 20, { default: h.nComponents ?? 1, label: 'components' }),
-          contamination: real(0.01, 0.5, { default: h.contamination ?? 0.1 }),
+          contamination: real(0.01, 0.5, {
+            label: 'contamination',
+            description: 'The expected fraction of outliers: sets the threshold on the scores.',
+            default: h.contamination ?? 0.1,
+          }),
         }),
       fit: (data, h) => {
         const p = pca({ nComponents: h.nComponents ?? 1 }).fit(data).params
@@ -214,7 +226,11 @@ export function hbos(hyper: HbosHyper = {}): Estimator<HbosHyper, ExplainedFitte
       hyperSpace: (h) =>
         dict({
           bins: int(2, 100, { default: h.bins ?? 10, label: 'bins' }),
-          contamination: real(0.01, 0.5, { default: h.contamination ?? 0.1 }),
+          contamination: real(0.01, 0.5, {
+            label: 'contamination',
+            description: 'The expected fraction of outliers: sets the threshold on the scores.',
+            default: h.contamination ?? 0.1,
+          }),
         }),
       fit: (data, h) => {
         const rows = rowsOf(data.x, 'hbos')
@@ -279,8 +295,16 @@ export function zScoreDetector(
       kind: 'outlier',
       hyperSpace: (h) =>
         dict({
-          threshold: real(1, 10, { default: h.threshold ?? 3 }),
-          robust: choice([true, false], { default: h.robust ?? false }),
+          threshold: real(1, 10, {
+            label: 'threshold',
+            description: 'Rows scoring beyond this many standard deviations are outliers.',
+            default: h.threshold ?? 3,
+          }),
+          robust: choice([true, false], {
+            label: 'robust',
+            description: 'Use the median and the median absolute deviation instead of the mean and standard deviation.',
+            default: h.robust ?? false,
+          }),
         }),
       fit: (data, h) => {
         const rows = rowsOf(data.x, 'zScoreDetector')

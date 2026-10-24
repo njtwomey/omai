@@ -217,8 +217,16 @@ export function isolationForest(
         dict({
           nEstimators: int(1, 500, { default: h.nEstimators ?? 100, label: 'trees' }),
           maxSamples: int(2, 1024, { default: h.maxSamples ?? 256, label: 'rows per tree' }),
-          contamination: real(0.01, 0.5, { default: typeof h.contamination === 'number' ? h.contamination : 0.1 }),
-          extended: bool({ default: h.extended ?? false }),
+          contamination: real(0.01, 0.5, {
+            label: 'contamination',
+            description: 'The expected fraction of outliers: sets the threshold on the scores.',
+            default: typeof h.contamination === 'number' ? h.contamination : 0.1,
+          }),
+          extended: bool({
+            label: 'extended',
+            description: 'Split on random hyperplanes (extended isolation forest) instead of single features.',
+            default: h.extended ?? false,
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'isolationForest', { minSamples: 2 })

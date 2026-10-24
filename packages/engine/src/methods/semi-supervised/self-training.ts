@@ -102,7 +102,11 @@ export function selfTraining(
       kind: 'classifier',
       hyperSpace: (h: SelfTrainingHyper): Space =>
         dict({
-          criterion: choice(['threshold', 'kBest'], { default: h.criterion }),
+          criterion: choice(['threshold', 'kBest'], {
+            label: 'selection',
+            description: 'Add rows above a confidence threshold, or the k most confident each round.',
+            default: h.criterion,
+          }),
           threshold: real(0.5, 0.999, { default: h.threshold, label: 'confidence threshold' }),
           kBest: int(1, 100, { default: h.kBest, label: 'rows per round (kBest)' }),
           maxIter: int(1, 50, { default: h.maxIter, label: 'rounds' }),

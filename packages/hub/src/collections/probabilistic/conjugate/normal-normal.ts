@@ -15,7 +15,11 @@ export const normalNormal: HubEntry = defineEntry({
   params: dict({
     mean: real(-10, 10, { default: 3, label: 'the true mean' }),
     sigma: real(0.1, 10, { log: true, default: 2, label: 'measurement sd (known)' }),
-    measurements: int(1, 500, { default: 20 }),
+    measurements: int(1, 500, {
+      label: 'measurements',
+      description: 'The number of noisy measurements observed.',
+      default: 20,
+    }),
     priorMean: real(-10, 10, { default: 0, label: 'prior mean' }),
     priorSd: real(0.1, 20, { log: true, default: 1, label: 'prior sd' }),
   }),

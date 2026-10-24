@@ -732,7 +732,11 @@ export function meanShift(
       hyperSpace: (h) =>
         dict({
           bandwidth: real(0.05, 10, { log: true, default: h.bandwidth ?? 1, label: 'bandwidth' }),
-          kernel: choice(['flat', 'gaussian'], { default: h.kernel ?? 'flat' }),
+          kernel: choice(['flat', 'gaussian'], {
+            label: 'kernel',
+            description: 'Shift to the mean of the points within the bandwidth (flat) or a Gaussian-weighted mean.',
+            default: h.kernel ?? 'flat',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'meanShift')

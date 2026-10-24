@@ -123,9 +123,21 @@ export function covarianceEstimator(hyper: CovarianceHyper = {}): Estimator<Cova
       kind: 'density',
       hyperSpace: (h) =>
         dict({
-          method: choice(['empirical', 'shrunk', 'ledoit-wolf', 'oas'], { default: h.method ?? 'empirical' }),
-          shrinkage: real(0, 1, { default: h.shrinkage ?? 0.1 }),
-          assumeCentered: bool({ default: h.assumeCentered ?? false }),
+          method: choice(['empirical', 'shrunk', 'ledoit-wolf', 'oas'], {
+            label: 'estimator',
+            description: 'The empirical covariance, fixed shrinkage, Ledoit-Wolf or OAS.',
+            default: h.method ?? 'empirical',
+          }),
+          shrinkage: real(0, 1, {
+            label: 'shrinkage',
+            description: 'How far the covariance is pulled towards a scaled identity (0 none, 1 all the way).',
+            default: h.shrinkage ?? 0.1,
+          }),
+          assumeCentered: bool({
+            label: 'assume centred',
+            description: 'Treat the data as already centred (do not subtract the mean).',
+            default: h.assumeCentered ?? false,
+          }),
         }),
       fit: (data, h) => {
         const m = matrixView(data.x, 'covariance', { minSamples: 2 })

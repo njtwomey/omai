@@ -94,7 +94,11 @@ function oneClassEstimator(
       hyperSpace: (h: OneClassSvmHyper): Space =>
         dict({
           nu: real(0.01, 1, { default: h.nu, label: method === 'svdd' ? 'outlier fraction (1 / (n C))' : 'nu' }),
-          kernel: choice(['rbf', 'linear', 'poly', 'sigmoid'], { default: h.kernel }),
+          kernel: choice(['rbf', 'linear', 'poly', 'sigmoid'], {
+            label: 'kernel',
+            description: 'The kernel measuring similarity between rows.',
+            default: h.kernel,
+          }),
         }),
       fit: (data: LearnData, h: OneClassSvmHyper, options: FitOptions) => {
         const m = matrixView(data.x, method)

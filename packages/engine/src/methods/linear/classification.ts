@@ -359,9 +359,22 @@ export function logisticRegression(
       hyperSpace: (h: LogisticRegressionHyper): Space =>
         dict({
           C: real(1e-3, 1e3, { log: true, default: h.C, label: 'inverse penalty' }),
-          penalty: choice(['l2', 'l1', 'elasticnet', 'none'], { default: h.penalty }),
-          l1Ratio: real(0, 1, { default: h.l1Ratio, when: { key: 'penalty', in: ['elasticnet'] } }),
-          fitIntercept: bool({ default: h.fitIntercept }),
+          penalty: choice(['l2', 'l1', 'elasticnet', 'none'], {
+            label: 'penalty',
+            description: 'The regularisation on the coefficients: L2, L1, elastic net or none.',
+            default: h.penalty,
+          }),
+          l1Ratio: real(0, 1, {
+            label: 'L1 ratio',
+            description: 'The elastic-net mix: 0 is a pure L2 penalty, 1 pure L1.',
+            default: h.l1Ratio,
+            when: { key: 'penalty', in: ['elasticnet'] },
+          }),
+          fitIntercept: bool({
+            label: 'fit intercept',
+            description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+            default: h.fitIntercept,
+          }),
         }),
       fit: (data: LearnData, h: LogisticRegressionHyper, options: FitOptions) => {
         const x = matrixView(data.x, 'logisticRegression')
@@ -463,7 +476,18 @@ export function probitRegression(
       name: 'probit-regression',
       kind: 'classifier',
       hyperSpace: (h: ProbitRegressionHyper): Space =>
-        dict({ alpha: real(0, 1, { default: h.alpha }), fitIntercept: bool({ default: h.fitIntercept }) }),
+        dict({
+          alpha: real(0, 1, {
+            label: 'α (L2 penalty)',
+            description: 'The L2 penalty on the coefficients.',
+            default: h.alpha,
+          }),
+          fitIntercept: bool({
+            label: 'fit intercept',
+            description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+            default: h.fitIntercept,
+          }),
+        }),
       fit: (data: LearnData, h: ProbitRegressionHyper, options: FitOptions) => {
         const x = matrixView(data.x, 'probitRegression')
         const { classes: labels, codes } = encodeLabels(data.y ?? [], 'probitRegression', x.n)
@@ -541,8 +565,17 @@ export function ridgeClassifier(
       kind: 'classifier',
       hyperSpace: (h: RidgeClassifierHyper): Space =>
         dict({
-          alpha: real(1e-3, 1e3, { log: true, default: h.alpha }),
-          fitIntercept: bool({ default: h.fitIntercept }),
+          alpha: real(1e-3, 1e3, {
+            label: 'α (L2 penalty)',
+            description: 'The L2 penalty on the coefficients (ridge).',
+            log: true,
+            default: h.alpha,
+          }),
+          fitIntercept: bool({
+            label: 'fit intercept',
+            description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+            default: h.fitIntercept,
+          }),
         }),
       fit: (data: LearnData, h: RidgeClassifierHyper) => {
         const x = matrixView(data.x, 'ridgeClassifier')
@@ -614,7 +647,15 @@ export function perceptron(
       name: 'perceptron',
       kind: 'classifier',
       hyperSpace: (h: PerceptronHyper): Space =>
-        dict({ maxIter: int(1, 1000, { default: h.maxIter }), eta0: real(1e-3, 10, { log: true, default: h.eta0 }) }),
+        dict({
+          maxIter: int(1, 1000, { label: 'epochs', description: 'Passes over the data.', default: h.maxIter }),
+          eta0: real(1e-3, 10, {
+            label: 'learning rate η₀',
+            description: 'The step size of each update.',
+            log: true,
+            default: h.eta0,
+          }),
+        }),
       fit: (data: LearnData, h: PerceptronHyper, options: FitOptions) => {
         const x = matrixView(data.x, 'perceptron')
         const { classes: labels, codes } = encodeLabels(data.y ?? [], 'perceptron', x.n)

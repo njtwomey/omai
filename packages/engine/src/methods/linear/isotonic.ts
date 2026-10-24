@@ -55,7 +55,14 @@ export function isotonicRegression(
     {
       name: 'isotonic-regression',
       kind: 'regressor',
-      hyperSpace: (h: IsotonicHyper): Space => dict({ increasing: bool({ default: h.increasing }) }),
+      hyperSpace: (h: IsotonicHyper): Space =>
+        dict({
+          increasing: bool({
+            label: 'increasing',
+            description: 'Fit a non-decreasing function (otherwise a non-increasing one).',
+            default: h.increasing,
+          }),
+        }),
       fit: (data: LearnData, h: IsotonicHyper) => {
         const xs = column(data.x, 'isotonicRegression')
         const ys = targetVector(data.y ?? [], 'isotonicRegression', xs.length)

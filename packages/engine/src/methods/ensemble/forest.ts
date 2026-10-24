@@ -179,9 +179,15 @@ function forestEstimator(
           nEstimators: int(1, 300, { default: h.nEstimators, label: 'trees' }),
           maxDepth: int(1, 20, { default: h.maxDepth ?? 8, label: 'maximum depth' }),
           maxFeatures: choice(['sqrt', 'log2', 'all'], {
+            label: 'features per split',
+            description: 'How many features each split considers: √d, log₂ d or all of them.',
             default: typeof h.maxFeatures === 'string' ? h.maxFeatures : 'all',
           }),
-          bootstrap: bool({ default: h.bootstrap }),
+          bootstrap: bool({
+            label: 'bootstrap',
+            description: 'Fit each tree on a bootstrap resample of the rows (otherwise on all of them).',
+            default: h.bootstrap,
+          }),
         }),
       fit: (data: LearnData, h: ForestHyper, options: FitOptions) => {
         const prepared = treeData(data, classifier, name)

@@ -166,7 +166,11 @@ export function selfOrganisingMap(hyper: SomHyper = {}): Estimator<SomHyper, Exp
           rows: int(2, 30, { default: h.rows ?? 8, label: 'rows' }),
           cols: int(2, 30, { default: h.cols ?? 8, label: 'columns' }),
           epochs: int(1, 200, { default: h.epochs ?? 20, label: 'epochs' }),
-          learningRate: real(0.01, 1, { default: h.learningRate ?? 0.5 }),
+          learningRate: real(0.01, 1, {
+            label: 'learning rate',
+            description: 'How far the winning unit and its neighbours move towards each row.',
+            default: h.learningRate ?? 0.5,
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'som')

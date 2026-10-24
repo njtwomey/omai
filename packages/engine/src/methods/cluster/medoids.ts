@@ -157,7 +157,11 @@ export function kMedoids(
       hyperSpace: (h) =>
         dict({
           nClusters: int(1, 20, { default: h.nClusters ?? 3, label: 'clusters' }),
-          method: choice(['pam', 'clara'], { default: h.method ?? 'pam' }),
+          method: choice(['pam', 'clara'], {
+            label: 'algorithm',
+            description: 'PAM (exact swaps over all rows) or CLARA (PAM on samples, for large data).',
+            default: h.method ?? 'pam',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'kMedoids')

@@ -289,10 +289,19 @@ export function centroidSurface(name: string, params: CentroidParams, x: TensorL
 const kmeansSpace = (h: KMeansHyper) =>
   dict({
     nClusters: int(1, 20, { default: h.nClusters ?? 3, label: 'clusters' }),
-    init: choice(['k-means++', 'random'], { default: typeof h.init === 'string' ? h.init : 'k-means++' }),
+    init: choice(['k-means++', 'random'], {
+      label: 'initialisation',
+      description: 'k-means++ seeding (spread out) or k random rows.',
+      default: typeof h.init === 'string' ? h.init : 'k-means++',
+    }),
     nInit: int(1, 20, { default: h.nInit ?? 1, label: 'restarts' }),
     maxIter: int(1, 1000, { default: h.maxIter ?? 300, label: 'iterations' }),
-    tol: real(1e-8, 1e-1, { log: true, default: h.tol ?? 1e-4 }),
+    tol: real(1e-8, 1e-1, {
+      label: 'tolerance',
+      description: 'Stop when the centres move less than this (relative to the data’s variance).',
+      log: true,
+      default: h.tol ?? 1e-4,
+    }),
   })
 
 /**
@@ -502,6 +511,8 @@ export function bisectingKMeans(hyper: BisectingKMeansHyper = {}): Estimator<Bis
         dict({
           nClusters: int(1, 20, { default: h.nClusters ?? 3, label: 'clusters' }),
           bisectingStrategy: choice(['biggest_inertia', 'largest_cluster'], {
+            label: 'cluster to split',
+            description: 'Split the cluster with the largest inertia, or the largest cluster.',
             default: h.bisectingStrategy ?? 'biggest_inertia',
           }),
         }),
