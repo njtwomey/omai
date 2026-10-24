@@ -18,6 +18,7 @@ import { fromStorage, item, type Tensor, toFlat, type Value } from '../../lib/te
 import { ANSCOMBE_COLUMNS, ANSCOMBE_SHA256 } from './_data/anscombe.data.ts'
 import { DIABETES_FEATURES, DIABETES_SHA256, DIABETES_SHAPE, DIABETES_X, DIABETES_Y } from './_data/diabetes.data.ts'
 import { GROWTH_COLUMNS, GROWTH_SHA256 } from './_data/growth-charts.data.ts'
+import { LINNERUD_FEATURES, LINNERUD_SHA256, LINNERUD_TARGETS, LINNERUD_X, LINNERUD_Y } from './_data/linnerud.data.ts'
 import { MTCARS_COLUMNS, MTCARS_SHA256 } from './_data/mtcars.data.ts'
 import { matrix, stamp, vector } from './_util.ts'
 
@@ -98,6 +99,31 @@ export function anscombe(set: 1 | 2 | 3 | 4): RegressionData {
     sha256: ANSCOMBE_SHA256,
     featureNames: ['x'],
     targetNames: ['y'],
+  })
+}
+
+/**
+ * The Linnerud data (Tenenhaus, 1998): three exercises (chin-ups, sit-ups, jumps) and three physiological measurements
+ * (weight, waist, pulse) of 20 middle-aged men, a small multi-output regression set. Embedded from scikit-learn's
+ * `load_linnerud`.
+ *
+ * @returns The dataset with targets `[20, 3]`.
+ * @example
+ * ```ts
+ * import { linnerud } from 'whitebox-engine/methods/datasets'
+ * linnerud().y.shape // => [20, 3]
+ * ```
+ */
+export function linnerud(): RegressionData {
+  return xy(matrix(LINNERUD_X, 20, 3), matrix(LINNERUD_Y, 20, 3), {
+    name: 'linnerud',
+    description: 'Exercise and physiological measurements of 20 men (Tenenhaus, 1998).',
+    source: 'scikit-learn load_linnerud',
+    citation: 'Tenenhaus (1998), La regression PLS: theorie et pratique, Technip.',
+    licence: 'BSD-3-Clause (scikit-learn)',
+    sha256: LINNERUD_SHA256,
+    featureNames: LINNERUD_FEATURES,
+    targetNames: LINNERUD_TARGETS,
   })
 }
 

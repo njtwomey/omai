@@ -146,7 +146,12 @@ describe('changepoints', () => {
   for (const c of loadFixture('methods/datasets/changepoints').cases) {
     it(`BOCPD ${c.name} equals the brute-force sum over segmentations`, () => {
       const y = toFlat(decode(c.inputs[0]) as Tensor)
-      const r = exactBocpd(y, models[c.params['kind'] as string] as SegmentModel, 0.2)
+      const min = (c.params['minSegment'] as number | undefined) ?? 1
+      const r = exactBocpd(
+        y,
+        models[c.params['kind'] as string] as SegmentModel,
+        min > 1 ? (run) => (run >= min ? 0.2 : 0) : 0.2,
+      )
       expectMatches(tensor(r.logEvidence), c.output, c.rtol, 1e-10, c.name)
     })
   }
@@ -172,6 +177,17 @@ describe('changepoints', () => {
       expect(data.events.length).toBe(cps.length)
     })
   }
+})
+
+describe('minimum segment lengths', () => {
+  it('no segment is shorter than minSegment', () => {
+    const { truth } = generate(changepointSeries, { key: key(3), knobs: { n: 300, hazard: 0.2, minSegment: 6 } })
+    const cps = [0, ...(truth.changepoints ?? []), 300]
+    for (let i = 1; i < cps.length - 1; i++)
+      for (let i = 1; i < cps.length - 1; i++) expect((cps[i] ?? 0) - (cps[i - 1] ?? 0)).toBeGreaterThanOrEqual(6)
+    const run = truth.extra?.['bocpd'] as () => BocpdResult
+    expect(Number.isFinite(run().logEvidence)).toBe(true)
+  })
 })
 
 describe('point processes', () => {

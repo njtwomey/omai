@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { gunzip, parseCsv, untar, unzip } from './index.ts'
+import { gunzip, indexedDbCache, parseCsv, untar, unzip } from './index.ts'
 
 const enc = new TextEncoder()
 
@@ -93,5 +93,60 @@ describe('archives', () => {
         ['3', '4'],
       ],
     })
+  })
+})
+
+/** A minimal in-memory IndexedDB: one database, object stores of key-value pairs, requests that succeed asynchronously. */
+function fakeIndexedDb(): IDBFactory {
+  const stores = new Map<string, Map<string, unknown>>()
+  const request = <T>(f: () => T): IDBRequest<T> => {
+    const r = {
+      result: undefined as T | undefined,
+      error: null,
+      onsuccess: null as null | (() => void),
+      onerror: null,
+    } as unknown as {
+      result: T
+      onsuccess: null | (() => void)
+    }
+    queueMicrotask(() => {
+      r.result = f()
+      r.onsuccess?.()
+    })
+    return r as unknown as IDBRequest<T>
+  }
+  const db = {
+    objectStoreNames: { contains: (n: string) => stores.has(n) },
+    createObjectStore: (n: string) => stores.set(n, new Map()),
+    transaction: (n: string) => ({
+      objectStore: () => {
+        const store = stores.get(n) ?? new Map<string, unknown>()
+        return {
+          get: (k: string) => request(() => store.get(k)),
+          put: (v: unknown, k: string) => request(() => store.set(k, v)),
+          delete: (k: string) => request(() => store.delete(k)),
+        }
+      },
+    }),
+  }
+  return {
+    open: () => {
+      const r = { result: db, onsuccess: null as null | (() => void), onupgradeneeded: null as null | (() => void) }
+      queueMicrotask(() => {
+        r.onupgradeneeded?.()
+        r.onsuccess?.()
+      })
+      return r
+    },
+  } as unknown as IDBFactory
+}
+
+describe('IndexedDB cache', () => {
+  it('stores, reads and deletes bytes', async () => {
+    const cache = indexedDbCache({ factory: fakeIndexedDb() })
+    await cache.set('k', new Uint8Array([1, 2, 3]))
+    expect(Array.from((await cache.get('k')) ?? [])).toEqual([1, 2, 3])
+    await cache.delete('k')
+    expect(await cache.get('k')).toBeUndefined()
   })
 })

@@ -1,8 +1,12 @@
 """Vendored regression datasets against their sources: Anscombe's statistics, mtcars and the CDC percentiles."""
 
+from typing import cast
+
 import numpy as np
 import scipy
 from scipy.stats import norm
+from sklearn.datasets import load_linnerud
+from sklearn.utils import Bunch
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.vendor import csv_rows, fetch_pinned
 
@@ -55,4 +59,7 @@ def cases() -> list[Case]:
                     z=float(norm.ppf(p)),
                 )
             )
+    lin = cast(Bunch, load_linnerud())
+    out.append(case("linnerud/x", "linnerud", [], np.asarray(lin.data), rtol=0, atol=0, part="x"))
+    out.append(case("linnerud/y", "linnerud", [], np.asarray(lin.target), rtol=0, atol=0, part="y"))
     return out

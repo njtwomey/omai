@@ -741,7 +741,8 @@ are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `M
   `regressionFunction`, `quantile`, `noiseScale`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`
   (`CausalEffects`: ATE, ATT, CATE, ITE, potential outcomes), `structure`, `relevantFeatures`; helpers that derive
   missing pieces: `completeTruth`, `posteriorFromJoint` (Bayes' rule from the joint density), `bayesErrorEstimate`,
-  `bayesPredict`, `clusterAgreement`, `excessRisk`.
+  `bayesPredict`, `clusterAgreement`, `excessRisk`. TODO: generators fill exact `logProb` and `posterior` functions
+  but not yet `program`, and `completeTruth` cannot derive from a program, until `lib/probprog` exists.
 - `rows.ts`: `take`, `trainTestSplit` (optionally stratified), `trainValTestSplit`, `stratifiedSplit`,
   `stratifiedIndices`, `bootstrap` (with out-of-bag rows), `concatRows`, `shuffleRows`, `labelsOf`.
 - `tensors.ts`: `toTensors`, `fromTensors`, `xy`, `xyClasses`, `xyMultilabel`, `xyMultiOutput` (build a dataset from
@@ -2406,7 +2407,8 @@ Each file is a reproducible study that returns data and traces for figures.
 Every dataset is a `DatasetGenerator` (knobs as a `Space`, returning `{ data, truth }`) or a static dataset (data and
 provenance). Static data is embedded as generated `*.data.ts` files vendored by the oracle with source, licence and
 checksum; larger data is a release asset loaded through `data/loader.ts`. Where a generator has a generating program,
-`truth.program` is that program, so likelihoods and posteriors can be queried.
+`truth.program` is that program, so likelihoods and posteriors can be queried. TODO: until `lib/probprog` exists,
+generators give exact `truth.logProb` and `truth.posterior` functions instead of a program.
 
 built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`, `scene`
 - `regression.ts`: `makeRegression` (several targets, low-rank designs with an effective rank, column shuffling),
@@ -2414,10 +2416,10 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `regression-curves.ts`: one-dimensional functions (`sineCurve`, `stepCurve`, `sincCurve`, `dopplerCurve`,
   `heteroscedastic` noise), additive (GAM) data (`additiveModel`, with its components), curves with known quantiles
   (`quantileCurves`: Gaussian, Laplace, Student t and Gumbel noise), `piecewiseLinear` data.
-- `regression-real.ts`: `diabetes`, Anscombe's quartet (`anscombe`), `mtcars` (and `mtcarsRegression`), a
-  licence-clean housing set (`californiaHousing`, a remote asset parsed from StatLib's archive by
-  `parseCaliforniaHousing`), growth charts (CDC LMS tables: `growthChart`, `growthValue`, and `growthCurves` with exact
-  quantiles).
+- `regression-real.ts`: `diabetes`, `linnerud` (multi-output), Anscombe's quartet (`anscombe`), `mtcars` (and
+  `mtcarsRegression`), a licence-clean housing set (`californiaHousing`, a remote asset parsed from StatLib's archive
+  by `parseCaliforniaHousing`), growth charts (CDC LMS tables: `growthChart`, `growthValue`, and `growthCurves` with
+  exact quantiles).
 - `classification.ts`: `blobs`, `moons`, `circles`, `xor`, `spirals`, `checkerboard`, `gaussianQuantiles`,
   `hastie10_2`, with exact Bayes posteriors, log densities and Bayes errors (closed form or Monte Carlo, computed on
   first access); `moonPoints`, `circlePoints`, `gaussianQuantileLabels`.
@@ -2440,9 +2442,9 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   hyperparameter-tuning surfaces (`TuningSurface`: `learningRateSurface` with learning curves for multi-fidelity
   tuning, `braninSurface`).
 - `changepoints.ts`: tunable changepoint series (`changepointSeries`: mean, variance and rate shifts, AR regime
-  switches, trend breaks; hazard rate (so geometric segment lengths), noise and prior spreads as knobs) with true
-  changepoints, segment parameters and the exact BOCPD predictive (`exactBocpd` with conjugate `SegmentModel`s:
-  run-length posteriors, one-step predictives, evidence).
+  switches, trend breaks; hazard rate, minimum segment length and noise as knobs) with true changepoints, segment
+  parameters and the exact BOCPD predictive (`exactBocpd` with conjugate `SegmentModel`s and constant or run-length
+  hazards: run-length posteriors, one-step predictives, evidence).
 - `timeseries.ts`: AR and ARMA processes (`armaProcess`, `arma`, with autocovariances and spectral densities),
   sinusoids in noise (`sinusoids`), uneven sampling (`sinusoids` with uneven times, `subsampleSeries`), seasonal
   series with known components (`seasonalSeries`), airline passengers (`airPassengers`), `sunspots`, coal-mining
@@ -2481,6 +2483,7 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   (`labelProportionBags`), each with the exact posterior or mechanism.
 - `operators.ts`: operator-learning pairs (`heatOperator`, `burgersOperator` solved exactly by Cole-Hopf,
   `antiderivativeOperator` with Gaussian-process inputs).
+- `catalogue.ts`: `datasetGenerators` (every generator by name, for recipes and controls), `remoteDatasets`.
 - `predictions.ts`: model outputs with known miscalibration (`miscalibratedPredictions`, with the population ECE),
   survival data with known hazards (`survivalData`: Weibull and exponential proportional hazards, log-normal AFT,
   censoring).

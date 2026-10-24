@@ -54,13 +54,28 @@ def segment_log_marginal(kind: str, y: FloatArray, prev: float) -> float:
     return math.log(integrate.quad(integrand_ar, -10, 10, limit=200)[0])
 
 
-def brute_force_evidence(kind: str, y: FloatArray) -> float:
+def brute_force_evidence(kind: str, y: FloatArray, min_segment: int = 1) -> float:
     n = len(y)
     total = 0.0
     for cuts in itertools.product([0, 1], repeat=n - 1):
         starts = [0] + [i + 1 for i, c in enumerate(cuts) if c]
         bounds = [*starts, n]
-        log_p = sum(cuts) * math.log(HAZARD) + (n - 1 - sum(cuts)) * math.log(1 - HAZARD)
+        # Before step t the current run has t - start observations; cuts need at least min_segment of them.
+        log_p = 0.0
+        start = 0
+        feasible = True
+        for t in range(1, n):
+            run = t - start
+            if run < min_segment:
+                if cuts[t - 1]:
+                    feasible = False
+                    break
+                continue
+            log_p += math.log(HAZARD) if cuts[t - 1] else math.log(1 - HAZARD)
+            if cuts[t - 1]:
+                start = t
+        if not feasible:
+            continue
         for a, b in itertools.pairwise(bounds):
             prev = float(y[a - 1]) if a > 0 else 0.0
             log_p += segment_log_marginal(kind, y[a:b], prev)
@@ -81,4 +96,16 @@ def cases() -> list[Case]:
         out.append(
             case(f"evidence/{kind}", "exactBocpd", [y], np.asarray(brute_force_evidence(kind, y)), rtol=1e-7, kind=kind)
         )
+    y = series["mean"]
+    out.append(
+        case(
+            "evidence/mean/min-segment-2",
+            "exactBocpd",
+            [y],
+            np.asarray(brute_force_evidence("mean", y, 2)),
+            rtol=1e-7,
+            kind="mean",
+            minSegment=2,
+        )
+    )
     return out

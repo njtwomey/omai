@@ -59,7 +59,7 @@
         "scipy": "1.18.1",
         "numpy": "2.5.4"
       },
-      "cases": 5
+      "cases": 6
     },
     {
       "fixture": "methods/datasets/classification-real.json",
@@ -111,7 +111,7 @@
         "numpy": "2.5.4",
         "scipy": "1.18.1"
       },
-      "cases": 11
+      "cases": 13
     },
     {
       "fixture": "methods/datasets/regression.json",

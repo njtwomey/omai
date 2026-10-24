@@ -22,6 +22,7 @@ import {
   growthCurves,
   growthValue,
   iris,
+  linnerud,
   mtcars,
   mtcarsRegression,
   penguins,
@@ -72,6 +73,11 @@ describe('vendored regression data against their sources', () => {
         const slope = sxy / sxx
         const stats = [mx, my, sxx / (n - 1), syy / (n - 1), sxy / Math.sqrt(sxx * syy), slope, my - slope * mx]
         expectMatches(tensor(stats), c.output, c.rtol, c.atol, c.name)
+        return
+      }
+      if (c.fn === 'linnerud') {
+        const d = linnerud()
+        expectMatches(c.params['part'] === 'x' ? d.x : d.y, c.output, 0, 0, c.name)
         return
       }
       if (c.fn === 'mtcars') {

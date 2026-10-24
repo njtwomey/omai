@@ -149,16 +149,16 @@ export interface BocpdResult {
 }
 
 /**
- * Exact Bayesian online changepoint detection (Adams and MacKay, 2007) for a constant hazard and a conjugate segment
- * model: run-length posteriors, one-step predictives and the evidence. Hypotheses whose posterior falls below
- * `e^-40` of the total are dropped, which changes nothing at double precision. It is the exact truth for data drawn
- * by {@link changepointSeries} from the same model.
+ * Exact Bayesian online changepoint detection (Adams and MacKay, 2007) for a hazard (constant, or a function of the
+ * current run length) and a conjugate segment model: run-length posteriors, one-step predictives and the evidence.
+ * Hypotheses whose posterior falls below `e^-40` of the total are dropped, which changes nothing at double precision.
+ * It is the exact truth for data drawn by {@link changepointSeries} from the same model.
  *
  * @param y - The series.
  * @param model - The segment model and its prior.
- * @param hazard - The probability of a changepoint before each step.
+ * @param hazard - The probability of a changepoint before each step, or a function of the run length so far.
  * @returns Run-length posteriors, predictives and the evidence.
- * @throws WhiteboxError with code `value` for a hazard outside (0, 1).
+ * @throws WhiteboxError with code `value` for a constant hazard outside (0, 1).
  * @example
  * ```ts
  * import { exactBocpd } from 'whitebox-engine/methods/datasets'
@@ -166,10 +166,14 @@ export interface BocpdResult {
  * r.mapRunLength // => [1, 2, 1, 2]
  * ```
  */
-export function exactBocpd(y: readonly number[], model: SegmentModel, hazard: number): BocpdResult {
-  if (!(hazard > 0 && hazard < 1)) throw new WhiteboxError('value', 'exactBocpd: the hazard must be in (0, 1)')
-  const logH = Math.log(hazard)
-  const log1mH = Math.log1p(-hazard)
+export function exactBocpd(
+  y: readonly number[],
+  model: SegmentModel,
+  hazard: number | ((runLength: number) => number),
+): BocpdResult {
+  if (typeof hazard === 'number' && !(hazard > 0 && hazard < 1))
+    throw new WhiteboxError('value', 'exactBocpd: the hazard must be in (0, 1)')
+  const h = typeof hazard === 'number' ? () => hazard : hazard
   // Hypotheses before y_t: (log prior probability, run posterior).
   let hyps: { logp: number; run: Run }[] = [{ logp: 0, run: emptyRun(model, 0) }]
   const logPredictive: number[] = []
@@ -195,11 +199,16 @@ export function exactBocpd(y: readonly number[], model: SegmentModel, hazard: nu
     }
     runLength.push(rl)
     mapRunLength.push(best)
-    // Before y_{t+1}: every run continues with probability 1 - h, or a new segment starts with probability h.
-    const kept = posterior.filter((h) => h.logp > -40)
-    hyps = [{ logp: logH, run: emptyRun(model, t + 1) }, ...kept.map((h) => ({ logp: h.logp + log1mH, run: h.run }))]
-    const z = logSumExpOf(hyps.map((h) => h.logp))
-    hyps = hyps.map((h) => ({ logp: h.logp - z, run: h.run }))
+    // Before y_{t+1}: a run of length r continues with probability 1 - h(r), or a new segment starts with h(r).
+    const kept = posterior.filter((p) => p.logp > -40)
+    const change = logSumExpOf(kept.map((p) => p.logp + Math.log(h(p.run.length))))
+    const next = kept.flatMap((p) => {
+      const stay = 1 - h(p.run.length)
+      return stay > 0 ? [{ logp: p.logp + Math.log(stay), run: p.run }] : []
+    })
+    hyps = change === Number.NEGATIVE_INFINITY ? next : [{ logp: change, run: emptyRun(model, t + 1) }, ...next]
+    const z = logSumExpOf(hyps.map((p) => p.logp))
+    hyps = hyps.map((p) => ({ logp: p.logp - z, run: p.run }))
   }
   return { logPredictive, predictiveMean, runLength, mapRunLength, logEvidence }
 }
@@ -222,8 +231,9 @@ function modelOf(kind: ChangeKind, noise: number, shift: number, meanRate: numbe
 }
 
 /**
- * Tunable changepoint series for detection methods (BOCPD, PELT, binary segmentation): segments start before each
- * step with probability `hazard` (geometric segment lengths), each segment draws its parameter from a conjugate prior,
+ * Tunable changepoint series for detection methods (BOCPD, PELT, binary segmentation): once a segment has
+ * `minSegment` steps, a new one starts before each step with probability `hazard` (so segment lengths are
+ * `minSegment` plus a geometric number), each segment draws its parameter from a conjugate prior,
  * and the kind decides what changes: the `mean` (Gaussian, known noise), the `variance`, the `rate` of Poisson counts,
  * the coefficient of an AR(1) process (`ar`, regime switches) or the intercept and slope of a linear trend (`trend`,
  * trend breaks). The truth holds the changepoints, every segment's parameters, the model, and the exact BOCPD
@@ -245,6 +255,7 @@ export const changepointSeries: DatasetGenerator<TimeSeriesData> = {
     n: int(2, 100_000, { default: 300 }),
     kind: choice(['mean', 'variance', 'rate', 'ar', 'trend'], { default: 'mean' }),
     hazard: real(0.0001, 0.5, { default: 0.01, label: 'changepoint probability per step' }),
+    minSegment: int(1, 10_000, { default: 1, label: 'shortest segment length' }),
     noise: real(0.001, 100, { default: 1, label: 'observation noise' }),
     shift: real(0.001, 100, { default: 3, label: 'prior spread of segment means' }),
     meanRate: real(0.01, 1000, { default: 5, label: 'prior mean of Poisson rates' }),
@@ -263,7 +274,10 @@ export const changepointSeries: DatasetGenerator<TimeSeriesData> = {
     )
     const u = uniform(foldIn(k, 0), [n]).data
     const starts = [0]
-    for (let t = 1; t < n; t++) if ((u[t] ?? 1) < hazard) starts.push(t)
+    const minSegment = knobs['minSegment'] as number
+    for (let t = 1; t < n; t++)
+      if (t - (starts[starts.length - 1] ?? 0) >= minSegment && (u[t] ?? 1) < hazard) starts.push(t)
+    const hazardOf = (runLength: number) => (runLength >= minSegment ? hazard : 0)
     const z = normal(foldIn(k, 1), [n]).data
     const y = new Float64Array(n)
     const segment = new Int32Array(n)
@@ -327,7 +341,7 @@ export const changepointSeries: DatasetGenerator<TimeSeriesData> = {
     const series = Array.from(y)
     let cached: BocpdResult | undefined
     const bocpd = (): BocpdResult => {
-      if (cached === undefined) cached = exactBocpd(series, model, hazard)
+      if (cached === undefined) cached = exactBocpd(series, model, minSegment > 1 ? hazardOf : hazard)
       return cached
     }
     return {
@@ -341,7 +355,7 @@ export const changepointSeries: DatasetGenerator<TimeSeriesData> = {
         changepoints: starts.slice(1),
         clusters: labels(segment),
         latents: { segments: labels(segment), parameter: vector(param) },
-        extra: { model, hazard, segments: params, bocpd },
+        extra: { model, hazard, minSegment, hazardFunction: hazardOf, segments: params, bocpd },
       },
     }
   },
