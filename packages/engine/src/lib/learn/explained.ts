@@ -139,7 +139,13 @@ export function withInputRows(
   data: LearnData,
   classes?: readonly number[],
 ): readonly Exposition[] {
-  if (!records.some((r) => ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined)) return records
+  // A surface lacks rows, or has rows without their labels or targets while the data has them.
+  const bareSurface = (r: Exposition): boolean =>
+    r.kind === 'decisionSurface' &&
+    (r.rows === undefined || (data.y !== undefined && r.rows.labels === undefined && r.rows.targets === undefined))
+  const surfaces = records.some(bareSurface)
+  if (!surfaces && !records.some((r) => ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined))
+    return records
   let rows: InputRows | undefined
   try {
     const m = matrixView(data.x, 'withInputRows', { allowNaN: true })
@@ -161,6 +167,27 @@ export function withInputRows(
   }
   if (rows === undefined) return records
   const n = rows.points.length
+  // A surface's rows are its two features (by name among the data's), labelled by class or carrying the targets.
+  const surfaceRows = (r: DecisionSurface): InputRows | undefined => {
+    try {
+      const m = matrixView(data.x, 'withInputRows', { allowNaN: true })
+      const names = featureNamesOf(data, m.d)
+      const a = Math.max(0, names.indexOf(r.features[0]))
+      const b = r.features[1] === '' ? a : Math.max(0, names.indexOf(r.features[1]))
+      const labelled = classes !== undefined && data.y !== undefined
+      return inputRowsOf(data.x, {
+        columns: [a, m.d === 1 ? a : b],
+        featureNames: names,
+        ...(data.y === undefined
+          ? {}
+          : labelled
+            ? { y: data.y, classes, classNames: r.classes ?? classNamesOf(data, classes) }
+            : { y: data.y, numeric: true }),
+      })
+    } catch {
+      return undefined
+    }
+  }
   const fits = (r: Exposition): boolean => {
     if (r.kind === 'clusteringSteps') return (r.assignments[0]?.length ?? n) === n
     if (r.kind === 'anomalyScores') return r.scores.length === n
@@ -168,9 +195,13 @@ export function withInputRows(
     return true
   }
   const given = rows
-  return records.map((r) =>
-    ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined && fits(r) ? { ...r, rows: given } : r,
-  )
+  return records.map((r) => {
+    if (r.kind === 'decisionSurface' && bareSurface(r)) {
+      const own = surfaceRows(r)
+      return own === undefined ? r : { ...r, rows: own }
+    }
+    return ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined && fits(r) ? { ...r, rows: given } : r
+  })
 }
 
 /**
@@ -320,6 +351,8 @@ export function inputRowsOf(
     readonly classes?: readonly number[]
     readonly classNames?: readonly string[]
     readonly limit?: number
+    /** Keep the targets as numbers (regressors) rather than as class labels. */
+    readonly numeric?: boolean
   } = {},
 ): InputRows | undefined {
   const m = matrixView(x, 'inputRowsOf', { allowNaN: true })
@@ -339,9 +372,15 @@ export function inputRowsOf(
     if (y.length === m.n) labels = Array.from(y, (v) => index.get(v) ?? -1)
   }
   const classes = options.classNames ?? options.classes?.map(String)
+  let targets: number[] | undefined
+  if (options.numeric === true && options.y !== undefined) {
+    const y = toFlat(asTensor(options.y))
+    if (y.length === m.n) targets = Array.from(y)
+  }
   return inputRows({
     points,
     features,
+    ...(targets === undefined ? {} : { targets }),
     ...(labels === undefined ? {} : { labels }),
     ...(labels === undefined || classes === undefined ? {} : { classes }),
   })
@@ -485,7 +524,7 @@ export function decisionSurfaceOf(
           columns: [fi, fj],
           featureNames: names,
           limit,
-          ...(options.y === undefined || !classifier ? {} : { y: options.y, classes }),
+          ...(options.y === undefined ? {} : classifier ? { y: options.y, classes } : { y: options.y, numeric: true }),
           ...(options.classNames === undefined ? {} : { classNames: options.classNames }),
         })
   // The rows a model gets wrong (indices into the rows the record carries).

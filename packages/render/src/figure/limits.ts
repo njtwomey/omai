@@ -99,6 +99,31 @@ export function niceRange(range: Range, count = 5): Range {
 }
 
 /**
+ * A range an axis can draw: one too narrow to tick (equal ends, or a span below a billionth of its magnitude or below
+ * 1e-12, as an objective converged to ~1e-26 gives) widened about its centre, non-finite ends replaced by [0, 1].
+ *
+ * @param range - The range.
+ * @returns The range, wide enough to tick.
+ * @example
+ * ```ts
+ * import { legibleRange } from 'whitebox-render/figure'
+ * legibleRange([2, 4]) // => [2, 4]
+ * legibleRange([-1e-26, 1e-26]) // => [-5e-13, 5e-13]
+ * legibleRange([3, 3]) // => [2.7, 3.3]
+ * ```
+ */
+export function legibleRange(range: Range): Range {
+  const [lo, hi] = range
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return [0, 1]
+  if (hi === lo) return padRange(range)
+  const least = Math.max(1e-9 * Math.max(Math.abs(lo), Math.abs(hi)), 1e-12)
+  if (Math.abs(hi - lo) >= least) return range
+  const centre = (lo + hi) / 2
+  const half = least / 2
+  return hi > lo ? [centre - half, centre + half] : [centre + half, centre - half]
+}
+
+/**
  * Resolve an axis range under a limit policy.
  *
  * @param limits - The policy, or a fixed range.

@@ -16,6 +16,8 @@ export interface InputRows {
   readonly labels?: readonly number[]
   /** Class names, by class index. */
   readonly classes?: readonly string[]
+  /** targets[i]: row i's regression target, for regressors and other numeric outputs. */
+  readonly targets?: readonly number[]
 }
 
 /**
@@ -33,6 +35,7 @@ export interface InputRows {
 export function inputRows(rows: InputRows): InputRows {
   rowsOf('inputRows', 'points', rows.points, 2)
   if (rows.labels !== undefined) sameLength('inputRows', 'labels', rows.labels.length, rows.points.length)
+  if (rows.targets !== undefined) sameLength('inputRows', 'targets', rows.targets.length, rows.points.length)
   if (rows.labels?.some((l) => !Number.isInteger(l) || l < -1))
     throw new WhiteboxError('value', 'inputRows: labels must be class indices (or -1 for unlabelled)')
   return rows
