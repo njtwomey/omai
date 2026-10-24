@@ -1,6 +1,6 @@
 import { type ReactNode, useMemo, useState } from 'react'
-import { barChart, paretoChart } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
+import { bars, pareto, subplots } from 'whitebox-render/charts'
+import { figure, gridSpec } from 'whitebox-render/figure'
 import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -8,10 +8,11 @@ export const recipe: Recipe = {
   title: 'Bar charts',
   question: 'How do I compare groups with bars, error bars, stacks and a Pareto line?',
   explain:
-    '`barChart(categories, groups, options)` places groups side by side (or `stacked`, or `horizontal`) and draws `errors` as error bars on each bar; value axes keep zero. `paretoChart` sorts the categories and adds the cumulative share on a secondary axis.',
+    '`barChart(categories, groups, options)` places groups side by side (or `stacked`, or `horizontal`) and draws `errors` as error bars on each bar; value axes keep zero. `pareto` (or `paretoChart`) sorts the categories and adds the cumulative share on a secondary axis. Both panels are one figure (`subplots`), so it expands and exports as a whole.',
 }
 
-const fig = figure({ width: 440, aspect: 1.25 })
+const fig = figure({ width: 860, aspect: 2.3 })
+const grid = gridSpec(1, 2, { wspace: 90 })
 const models = ['ridge', 'lasso', 'tree', 'forest']
 const all = [
   { name: 'train', values: [0.81, 0.79, 0.95, 0.93], errors: [0.02, 0.02, 0.01, 0.01] },
@@ -24,20 +25,26 @@ export default function Bars(): ReactNode {
   const [groups, setGroups] = useState(2)
   const [stacked, setStacked] = useState(false)
   const [horizontal, setHorizontal] = useState(false)
-  const grouped = useMemo(
+  const option = useMemo(
     () =>
-      barChart(models, all.slice(0, groups), {
-        mode,
-        figure: fig,
-        stacked,
-        horizontal,
-        ...(horizontal ? { x: { label: 'accuracy' } } : { y: { label: 'accuracy' } }),
-      }),
+      subplots(
+        grid,
+        {
+          r0c0: {
+            layers: [bars(models, all.slice(0, groups), { mode, stacked, horizontal })],
+            options: {
+              title: 'accuracy by model',
+              ...(horizontal ? { x: { label: 'accuracy' } } : { y: { label: 'accuracy' } }),
+            },
+          },
+          r0c1: {
+            layers: pareto(['typos', 'timeouts', 'nulls', 'auth', 'other'], [12, 41, 23, 6, 4], { mode }),
+            options: { title: 'errors (Pareto)', y2: { limits: [0, 1], format: 'percent' } },
+          },
+        },
+        { mode, figure: fig, tooltip: 'axis' },
+      ),
     [mode, groups, stacked, horizontal],
-  )
-  const pareto = useMemo(
-    () => paretoChart(['typos', 'timeouts', 'nulls', 'auth', 'other'], [12, 41, 23, 6, 4], { mode, figure: fig }),
-    [mode],
   )
   return (
     <div className="flex flex-col gap-3">
@@ -46,14 +53,9 @@ export default function Bars(): ReactNode {
         <Toggle label="stacked" value={stacked} onChange={setStacked} />
         <Toggle label="horizontal" value={horizontal} onChange={setHorizontal} />
       </ControlPanel>
-      <div className="flex flex-wrap gap-4">
-        <FigureFrame figure={fig} filename="bars">
-          <Chart option={grouped} />
-        </FigureFrame>
-        <FigureFrame figure={fig} filename="pareto">
-          <Chart option={pareto} />
-        </FigureFrame>
-      </div>
+      <FigureFrame figure={fig} filename="bars">
+        <Chart option={option} />
+      </FigureFrame>
     </div>
   )
 }
