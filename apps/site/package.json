@@ -1,9 +1,9 @@
 {
-  "name": "whitebox-hub-app",
+  "name": "whitebox-site",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "The whitebox-hub site: every hub entry as a page, generated from the catalogue.",
+  "description": "The whitebox-js site: the render gallery, the hub and the engine docs in one app.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -14,8 +14,8 @@
     "react-dom": "^19.3.1",
     "whitebox-engine": "workspace:*",
     "whitebox-hub": "workspace:*",
-    "whitebox-render": "workspace:*",
-    "whitebox-shell": "workspace:*"
+    "whitebox-meta": "workspace:*",
+    "whitebox-render": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

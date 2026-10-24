@@ -40,8 +40,8 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
   typed exposition records from `lib/exposition`), `packages/render` (`whitebox-render`, headless figures, views of
   exposition records, React bindings), `packages/meta` (`whitebox-meta`, docs metadata and the example runner),
   `packages/hub` (`whitebox-hub`, declarative entries composing methods and render views; no drawing of its own).
-  Three private apps sharing `apps/shell`: `apps/gallery` (render), `apps/hub` (hub, generated from its catalogue),
-  `apps/docs` (engine).
+  One private app, `apps/site` (`make dev`, http://localhost:5300), with three sections on a shared shell: the gallery
+  (render, hand-written recipes), the hub (generated from its catalogue) and the docs (generated from the TSDoc).
 - Engine core is `packages/engine/src/lib/<domain>/`; each domain has a `domain.json` tier and imports only lower tiers.
   Applications are `packages/engine/src/methods/<area>/` with `area.json` listing allowed area imports. `make layers`
   enforces both. Every folder is an import path (`whitebox-engine/numerics/linalg`); subfolders are namespaces.

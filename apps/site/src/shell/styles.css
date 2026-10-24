@@ -1,7 +1,7 @@
 @import "tailwindcss";
-/* The apps, the shell and whitebox-render's React components carry the class names Tailwind generates. */
+/* The site and whitebox-render's React components carry the class names Tailwind generates. */
 @source "../../";
-@source "../../../packages/render/src/react";
+@source "../../../../packages/render/src";
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*

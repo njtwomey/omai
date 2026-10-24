@@ -126,8 +126,8 @@ whitebox-js/
   CLAUDE.md, INIT.md, AUDIT.md, PORT.md
 ```
 
-`gallery` shows off `render`, `hub` shows off `whitebox-hub` (its pages generated from the hub catalogue), and `docs`
-documents `engine`; `shell` is their shared private chrome. Outside projects (the encyclopedia,
+`apps/site` is the one site: the gallery shows off `render`, the hub shows off `whitebox-hub` (its pages generated
+from the hub catalogue), and the docs document `engine`. Outside projects (the encyclopedia,
 the slide and blog tool) consume the three published packages as release tarballs.
 
 ## 2. Conventions every file follows
@@ -3952,7 +3952,8 @@ Design rules:
 - `views/`: a React component per exposition view (`PathView`, `TreeView`, `PipelineView`, `EmbeddingPlayer`,
   `DecisionSurfaceView`, ...), and `ExpositionView`, which picks the standard view of any record.
 - `EnvView.tsx`: one consistent view of any environment's render, with episode playback and overlays.
-- `theme.tsx`: `ThemeProvider`, `useColourMode`.
+- `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
+  or a prop), dark by default; no system-preference detection.
 
 ## 7. whitebox-meta, `packages/meta/src/`
 
@@ -4008,32 +4009,37 @@ Turns the source into documentation data, runs examples and links functions to c
 - `BuiltFrom.tsx`: the "built from" graph of a symbol or area.
 - `StudyView.tsx`: a study with controls generated from its parameter space.
 
-## 8. Apps
+## 8. The site, `apps/site/`
 
-Three apps, built in this order: `apps/gallery/` shows off whitebox-render, `apps/hub/` shows off the hub, and
-`apps/docs/` documents the engine. They share a private shell package, `apps/shell/` (`whitebox-shell`: navigation
-bar, persistent light and dark toggle with system default and no flash, theme tokens from `whitebox-render/theme`,
-Tailwind CSS, the recipe and code-view components), and are private Vite and React 19 applications that consume the
-packages exactly as an outside project does. aifn-engine's `examples/` app is the template: its shell, recipe
-registry, live-example pages, Markdown and docstring-driven docs pages are recycled rather than reinvented.
+One private Vite and React 19 app, served by `make dev` (http://localhost:5300) and built by `make site`, with three
+sections on one shell, in priority order: the gallery shows off whitebox-render, the hub shows off whitebox-hub, and
+the docs document the engine. It consumes the packages exactly as an outside project does. aifn-engine's
+`examples/` app is the template: its shell, recipe registry, live-example pages, Markdown and docstring-driven docs
+pages are recycled rather than reinvented.
 
-`apps/gallery/` (whitebox-render's showcase)
-- `src/pages/`: `Gallery.tsx`, `Section.tsx`, `Entry.tsx` (a figure with its editable code and export menu).
-- `src/recipes/`: one folder per section, a recipe per file (as aifn-engine's recipes): charts, layouts (grids, shared
-  axes, marginals, aspects, limit policies), distributions, fields (smooth grids), functions, structures (graphical
-  models, computation graphs, architectures, trees, automata), networks, controls (number fields, cycling selects,
-  control panels), maths (macros, live equations), interaction (adding and dragging points), animation (the player,
-  live and precomputed), environments, worlds (maps, mazes, the ray-cast view), three-d, the exposition views, themes.
+`src/shell/`: the top bar with the three sections, a dark and light toggle at the top right (dark by default,
+remembered, set before first paint; no system-preference detection),
+theme tokens from `whitebox-render/theme`, Tailwind CSS, a dependency-free path router (`usePath`, `navigate`,
+`Link`), and the recipe and code-view components (a live figure beside its own source).
 
-`apps/hub/` (the hub's showcase, built from `whitebox-hub`'s catalogue)
-- `src/pages/`: `Hub.tsx` (collections and tags), `Collection.tsx`, `Entry.tsx` (an entry through
-  `HubEntryView`: dataset picker, method controls, its views, its trace, its source).
-- Adding a `defineEntry` adds its page; there is no hand-written gallery code per entry.
+`src/gallery/` (hand-written: what whitebox-render can show and how its pieces interact)
+- Pages: the index of sections, a section, an entry (a figure with its source and export menu).
+- `recipes/<section>/NN-name.tsx`, gathered by `import.meta.glob`: charts, layouts (grids, shared axes, marginals,
+  aspects, limit policies), colour and themes, statistical, fields (smooth grids, contours, regions), text and maths
+  (macros, live equations), controls (number fields, cycling selects, control panels), interaction (adding and
+  dragging points, probes, brushes, linked hover), animation (the player, live and precomputed), diagrams and
+  structures, environments and worlds (maps, mazes, the ray-cast view), three-d. Toy data only, no model training:
+  model demos belong to the hub.
 
-`apps/docs/` (the engine's documentation, from `whitebox-meta`)
-- `src/pages/`: `Home.tsx`, `Module.tsx`, `Symbol.tsx` (signature, TSDoc, live examples with their `// =>` values),
-  `Concepts.tsx` (by the encyclopedia's taxonomy), `HowTo.tsx`, `Traces.tsx` (open, replay, compare and export runs).
-- `content/howto/`: one how-to per core domain, with runnable code blocks checked by the build.
+`src/hub/` (generated from `whitebox-hub`'s catalogue)
+- Pages: collections and tags, a collection, an entry through `HubEntryView` (dataset picker, method controls, its
+  views, its trace, its source). Adding a `defineEntry` adds its page; there is no per-entry site code.
+
+`src/docs/` (generated from `whitebox-meta`'s catalogue of the engine's TSDoc)
+- Pages: home (packages and domains by tier), module, symbol (signature, TSDoc, live examples with their `// =>`
+  values), concepts (by the encyclopedia's taxonomy), how-tos (`content/howto/`, runnable code blocks checked by the
+  build), traces (open, replay, compare and export runs).
+- `plugins/`: the Vite plugin that extracts the catalogue at build time.
 
 ## 9. Python oracle, `oracle/`
 
