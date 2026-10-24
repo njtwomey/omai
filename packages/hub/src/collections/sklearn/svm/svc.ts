@@ -6,14 +6,15 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const svc: HubEntry = defineEntry({
   id: 'sklearn/svm/svc',
   title: 'Support vector classifier',
-  summary: 'The widest margin between classes, in a kernel’s feature space, solved by SMO.',
+  summary:
+    'The widest margin between classes in a kernel’s feature space, solved by SMO: only the circled support vectors shape the boundary.',
   collection: 'sklearn/svm',
   tags: ['classification', 'kernels', 'margins'],
   datasets: ['classification2d', 'classificationTabular'],
   ...fitEstimator(svcMethod(), { surface: true }),
   views: [
-    { record: 'decisionSurface', title: 'Decision surface' },
-    { record: 'margin', title: 'Margin and support vectors', area: 'side' },
+    { record: 'margin', title: 'Margin and support vectors' },
+    { record: 'decisionSurface', title: 'Decision surface', area: 'side' },
   ],
   methods: [{ file: 'methods/svm/classifier.ts', name: 'svc' }],
 })
