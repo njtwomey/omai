@@ -37,9 +37,8 @@ export function GalleryToc(props: { readonly path: string }): ReactNode {
     <TocSidebar
       nodes={GALLERY_TOC}
       current={props.path.replace(/\/$/, '')}
-      storageKey="gallery"
       home={GALLERY_HOME}
-      placeholder="Search recipes"
+      placeholder="Filter recipes"
     />
   )
 }

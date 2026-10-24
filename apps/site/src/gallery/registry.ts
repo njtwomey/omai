@@ -31,16 +31,15 @@ const titleOf = (id: string): string => {
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
-/** Every section: the known ones in order, then any other recipe folder, each named by its `_section.ts` if any. */
-export const SECTIONS: readonly Section[] = (() => {
-  const folders = [...new Set(Object.keys(modules).map(folderOf))]
-  const extra = folders.filter((f) => !KNOWN.some((s) => s.id === f)).sort()
-  const override = (s: Section): Section => {
-    const given = Object.entries(named).find(([k]) => folderOf(k) === s.id)?.[1].section
-    return { ...s, ...given, id: s.id }
-  }
-  return [...KNOWN, ...extra.map((id) => ({ id, title: titleOf(id), blurb: '' }))].map(override)
-})()
+/**
+ * Every section: one per recipe folder, in on-disk (alphabetical) order, titled and described by the known list, or by
+ * the folder's `_section.ts`, or else from the folder's name.
+ */
+export const SECTIONS: readonly Section[] = [...new Set(Object.keys(modules).map(folderOf))].sort().map((id) => {
+  const known = KNOWN.find((s) => s.id === id)
+  const given = Object.entries(named).find(([k]) => folderOf(k) === id)?.[1].section
+  return { id, title: titleOf(id), blurb: '', ...known, ...given }
+})
 
 const order = new Map<string, number>(SECTIONS.map((s, i) => [s.id, i]))
 

@@ -21,8 +21,8 @@ export interface Section {
 }
 
 /**
- * The known sections, in order. A recipe's folder names its section; a folder not listed here is still a section
- * (titled from its name, after these), and a `_section.ts` in the folder exporting `section: { title, blurb }` names it.
+ * Titles and descriptions of the sections by folder name. A recipe's folder is its section, whether or not it is listed
+ * here (a folder's `_section.ts` exporting `section: { title, blurb }` names it too); sections show in folder order.
  */
 export const SECTIONS: readonly Section[] = [
   { id: 'charts', title: 'Charts and lines', blurb: 'Curves, scatter plots, bars, areas and bands from data.' },
