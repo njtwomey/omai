@@ -1000,8 +1000,12 @@ oracle: scipy.stats.entropy, sklearn mutual information, zlib (byte-exact DEFLAT
   mutual information, kernel estimators, transfer entropy, variational bounds from critic scores (InfoNCE, NWJ, MINE).
 - `divergences.ts`: the f-divergence family, Renyi, alpha and beta divergences, Bregman divergences, on discrete
   distributions and on grids.
-- `source-coding.ts`: Kraft-McMillan, Huffman (traced tree construction, D-ary), canonical codes, Shannon-Fano,
-  arithmetic and range coding, Elias, Golomb-Rice, run-length.
+- `source-coding.ts`: Kraft-McMillan (Kraft sums, prefix-freeness, Sardinas-Patterson unique decodability), Huffman
+  (traced tree construction, D-ary), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
+  prefix encoding and decoding.
+- `stream-coding.ts`: arithmetic coding (32-bit integer, pending bits) and carry-less range coding, with static and
+  adaptive frequency models.
+- `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
 - `dictionary-coding.ts`: LZ77, LZ78, LZW, DEFLATE and the zlib and gzip formats (compress and inflate), BWT with
   move-to-front.
 - `channels.ts`: capacity by Blahut-Arimoto (traced), rate-distortion, binary symmetric, erasure and Z channels,

@@ -2,3 +2,6 @@
 export * from './discrete.ts'
 export * from './divergences.ts'
 export * from './estimators.ts'
+export * from './integer-coding.ts'
+export * from './source-coding.ts'
+export * from './stream-coding.ts'

@@ -267,6 +267,14 @@
       "cases": 23
     },
     {
+      "fixture": "information/source_coding.json",
+      "source": "oracle/cases/information/source_coding.py",
+      "reference": {
+        "bitarray": "3.12.3"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "losses/losses.json",
       "source": "oracle/cases/losses/losses.py",
       "reference": {

@@ -27,6 +27,7 @@ oracle-core = [
     "antropy>=0.2.3",
     "scikit-commpy>=0.8.0",
     "pyitlib>=0.3.1",
+    "bitarray>=3.12.3",
 ]
 oracle-torch = [
     "optax>=0.2.8",
