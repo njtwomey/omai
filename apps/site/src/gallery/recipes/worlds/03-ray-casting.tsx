@@ -5,6 +5,7 @@ import { raycastViews } from 'whitebox-render/gym'
 import {
   ControlPanel,
   DraggablePoints,
+  FigureFrame,
   InteractionOverlay,
   linearProjection,
   NumberField,
@@ -100,35 +101,38 @@ export default function RayCasting(): ReactNode {
         />
         <Toggle label="fish-eye (no correction)" value={fisheye} onChange={setFisheye} />
       </ControlPanel>
-      <div
-        {...keys.props}
-        className="flex flex-wrap items-start gap-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+      {/* The map and the view are one figure: one frame, one export. */}
+      <FigureFrame
+        width={size.width + 16 + views.firstPerson.width}
+        height={Math.max(size.height, views.firstPerson.height)}
+        filename="ray-casting"
+        caption={keys.held.size > 0 ? 'moving…' : 'Click the figure, then W A S D or the arrow keys to move.'}
       >
-        <Overlaid
-          {...size}
-          overlay={
-            <InteractionOverlay projection={projection} {...size}>
-              <DraggablePoints
-                points={[[pose.x, pose.y]]}
-                onChange={([p]) => {
-                  if (p !== undefined && open(p[0], MAP.length - p[1]))
-                    setPose((q) => ({ ...q, x: p[0], y: MAP.length - p[1] }))
-                }}
-                labels={['eye']}
-                radius={7}
-              />
-            </InteractionOverlay>
-          }
+        <div
+          {...keys.props}
+          className="flex items-start gap-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
         >
-          <SceneView scene={views.topDown} />
-        </Overlaid>
-        <div className="flex flex-col gap-1">
+          <Overlaid
+            {...size}
+            overlay={
+              <InteractionOverlay projection={projection} {...size}>
+                <DraggablePoints
+                  points={[[pose.x, pose.y]]}
+                  onChange={([p]) => {
+                    if (p !== undefined && open(p[0], MAP.length - p[1]))
+                      setPose((q) => ({ ...q, x: p[0], y: MAP.length - p[1] }))
+                  }}
+                  labels={['eye']}
+                  radius={7}
+                />
+              </InteractionOverlay>
+            }
+          >
+            <SceneView scene={views.topDown} />
+          </Overlaid>
           <SceneView scene={views.firstPerson} style={{ imageRendering: 'pixelated' }} />
-          <span className="text-xs text-muted">
-            {keys.held.size > 0 ? 'moving…' : 'Click here, then W A S D or the arrow keys to move.'}
-          </span>
         </div>
-      </div>
+      </FigureFrame>
     </div>
   )
 }

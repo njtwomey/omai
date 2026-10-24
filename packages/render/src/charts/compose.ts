@@ -188,7 +188,8 @@ export function subplots(
       legends.push({
         show: true,
         data: [...names],
-        top: rect.y + 2,
+        // Above the panel, in its title's row, where there is room; else inside its top right corner.
+        top: (cell.row === 0 ? fig.padding.top : grid.hspace) >= 20 ? Math.max(0, rect.y - 18) : rect.y + 2,
         right: fig.width - rect.x - rect.width + 4,
       })
     series.push(...parts.series)
@@ -221,7 +222,7 @@ export function subplots(
   const legendStyle = frame['legend'] as Record<string, unknown>
   const option: Record<string, unknown> = {
     ...frame,
-    // One legend per panel, at the panel's top right, so a legend never sits over another panel.
+    // One legend per panel, at the panel's top right (above it where there is room), never over another panel.
     legend: legends.length > 0 ? legends.map((l) => ({ ...legendStyle, ...l })) : { ...legendStyle, show: false },
     ...(titles.length > 0 || frameTitle !== undefined
       ? { title: [...(frameTitle === undefined ? [] : [frameTitle]), ...titles] }

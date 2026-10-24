@@ -2,7 +2,16 @@ import { type ReactNode, useMemo, useState } from 'react'
 import type { Algorithm } from 'whitebox-engine/trace'
 import { cartesian, lines, points } from 'whitebox-render/charts'
 import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, NumberField, Player, type Point2, useColourMode, useLiveRun } from 'whitebox-render/react'
+import {
+  Chart,
+  ControlPanel,
+  FigureFrame,
+  NumberField,
+  Player,
+  type Point2,
+  useColourMode,
+  useLiveRun,
+} from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -76,7 +85,9 @@ export default function LiveAlgorithm(): ReactNode {
       <ControlPanel>
         <NumberField label="momentum" value={momentum} onChange={setMomentum} min={0} max={0.95} step={0.05} />
       </ControlPanel>
-      <Chart option={option} figure={FIGURE} />
+      <FigureFrame figure={FIGURE} playback={run.controller} filename="momentum-descent">
+        <Chart option={option} />
+      </FigureFrame>
       <Player
         controller={run.controller}
         stamp={(f) =>

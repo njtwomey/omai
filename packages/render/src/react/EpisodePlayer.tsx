@@ -4,6 +4,7 @@ import { type Env, type Episode, type Policy, runEpisode } from 'whitebox-engine
 import type { Scene } from 'whitebox-engine/scene'
 import { episodeSteps, stepCaption } from '../gym/frames.ts'
 import { cx } from './controls/classes.ts'
+import { FigureFrame } from './FigureFrame.tsx'
 import { Player } from './Player.tsx'
 import { SceneView } from './SceneView.tsx'
 import { usePlayback } from './usePlayback.ts'
@@ -30,7 +31,7 @@ export interface EpisodePlayerProps<S, O, A> {
 /**
  * Play an episode of an environment under a policy: the episode is run once up front (`runEpisode`, reproducible from
  * its seed) with every state rendered, then played with the {@link Player}, each frame captioned with its step, action,
- * reward and return.
+ * reward and return. The frames sit in a `FigureFrame`, so the episode expands and exports (as a GIF or WebM too).
  *
  * @param props - The environment, policy, seed, step cap, rate, width and an optional decoration per frame.
  * @returns The player.
@@ -51,7 +52,17 @@ export function EpisodePlayer<S, O, A>(props: EpisodePlayerProps<S, O, A>): Reac
     base === undefined ? undefined : decorate === undefined ? base : decorate(base, episode.states[t] as S, t)
   return (
     <div className={cx('flex w-fit max-w-full flex-col gap-2', className)}>
-      {shown === undefined ? null : <SceneView scene={shown} {...(width === undefined ? {} : { width })} />}
+      {shown === undefined ? null : (
+        // One figure: its frame expands and exports the scene, and records the episode as a GIF or WebM.
+        <FigureFrame
+          width={width ?? shown.width}
+          height={Math.round(((width ?? shown.width) * shown.height) / Math.max(1, shown.width))}
+          filename="episode"
+          playback={playback}
+        >
+          {(size) => <SceneView scene={shown} width={size.width} height={size.height} />}
+        </FigureFrame>
+      )}
       <Player controller={playback} stamp={(f) => stepCaption(steps[f])} />
     </div>
   )

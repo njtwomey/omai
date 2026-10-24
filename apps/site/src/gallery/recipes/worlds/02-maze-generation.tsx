@@ -1,7 +1,7 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { type MazeAlgorithmName, type MazeState, mazeAlgorithm, mazeOf } from 'whitebox-engine/worlds'
 import { worldView } from 'whitebox-render/gym'
-import { ControlPanel, Player, SceneView, SeedInput, Select, useLiveRun } from 'whitebox-render/react'
+import { ControlPanel, Player, SceneFrame, SeedInput, Select, useLiveRun } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -39,7 +39,7 @@ export default function MazeGeneration(): ReactNode {
         <Select label="algorithm" value={name} onChange={setName} options={ALGORITHMS} />
         <SeedInput value={seed} onChange={setSeed} />
       </ControlPanel>
-      <SceneView scene={view} />
+      <SceneFrame scene={view} filename="maze" playback={run.controller} />
       <Player
         controller={run.controller}
         stamp={() => `step ${run.t}${run.status === undefined ? '' : ` (${run.status})`}`}

@@ -6,7 +6,7 @@ import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Limit policies',
-  question: 'How should an axis range behave while the data change?',
+  question: 'How do I choose how an axis range follows changing data?',
   explain:
     'A reactive figure picks a `LimitPolicy` per axis: `auto` fits the data, `fixed` holds a stated range (so movement is visible), `expand` grows but never shrinks (pass the previous range), and `follow` tracks a window of the latest data. Here a noisy random walk streams in.',
 }

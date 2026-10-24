@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo, useState } from 'react'
-import { ControlPanel, NumberField, Player, SceneView, Toggle, usePlayback } from 'whitebox-render/react'
+import { ControlPanel, NumberField, Player, SceneFrame, Toggle, usePlayback } from 'whitebox-render/react'
 import { uNet, uNetOrder, unetLevels } from 'whitebox-render/structures'
 import type { Recipe } from '../../recipe.ts'
 
@@ -39,7 +39,7 @@ export default function UNetRecipe(): ReactNode {
         <NumberField label="levels down" value={depth} onChange={setDepth} min={2} max={5} step={1} />
         <Toggle label="time embedding (diffusion)" value={time} onChange={setTime} />
       </ControlPanel>
-      <SceneView scene={drawing} width={Math.min(720, drawing.width)} />
+      <SceneFrame scene={drawing} filename="u-net" playback={playback} />
       <Player controller={playback} stamp={(f) => `${f + 1} of ${order.length}: ${describe(order[f] ?? 'out')}`} />
     </div>
   )

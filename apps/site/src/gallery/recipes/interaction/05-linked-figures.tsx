@@ -6,6 +6,7 @@ import { brushSelection, figure, linkStore } from 'whitebox-render/figure'
 import {
   Brush,
   Chart,
+  FigureFrame,
   InteractionOverlay,
   NearestHover,
   Overlaid,
@@ -78,45 +79,49 @@ export default function LinkedFigures(): ReactNode {
   return (
     <div className="flex flex-wrap gap-4">
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted">
-          Sepals: drag to brush ({selected?.size ?? rows.length} of {rows.length})
-        </span>
-        <Overlaid
-          {...size}
-          overlay={
-            left.projection === null ? null : (
-              <InteractionOverlay projection={left.projection} {...size}>
-                <Brush
-                  value={rect}
-                  onChange={(r) => link.set(({ brush: _, ...rest }) => (r === null ? rest : { ...rest, brush: r }))}
-                />
-              </InteractionOverlay>
-            )
-          }
+        <FigureFrame
+          figure={FIGURE}
+          filename="sepals"
+          title={`Sepals: drag to brush (${selected?.size ?? rows.length} of ${rows.length})`}
         >
-          <Chart option={sepalOption} figure={FIGURE} onInit={left.onInit} />
-        </Overlaid>
+          <Overlaid
+            {...size}
+            overlay={
+              left.projection === null ? null : (
+                <InteractionOverlay projection={left.projection} {...size}>
+                  <Brush
+                    value={rect}
+                    onChange={(r) => link.set(({ brush: _, ...rest }) => (r === null ? rest : { ...rest, brush: r }))}
+                  />
+                </InteractionOverlay>
+              )
+            }
+          >
+            <Chart option={sepalOption} figure={FIGURE} onInit={left.onInit} />
+          </Overlaid>
+        </FigureFrame>
       </div>
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted">Petals: hover a flower</span>
-        <Overlaid
-          {...size}
-          overlay={
-            right.projection === null ? null : (
-              <InteractionOverlay projection={right.projection} {...size}>
-                <NearestHover
-                  points={petals}
-                  onHover={(i) => {
-                    if ((link.get().hover ?? -1) !== i)
-                      link.set(({ hover: _, ...rest }) => (i < 0 ? rest : { ...rest, hover: i }))
-                  }}
-                />
-              </InteractionOverlay>
-            )
-          }
-        >
-          <Chart option={petalOption} figure={FIGURE} onInit={right.onInit} />
-        </Overlaid>
+        <FigureFrame figure={FIGURE} filename="petals" title="Petals: hover a flower">
+          <Overlaid
+            {...size}
+            overlay={
+              right.projection === null ? null : (
+                <InteractionOverlay projection={right.projection} {...size}>
+                  <NearestHover
+                    points={petals}
+                    onHover={(i) => {
+                      if ((link.get().hover ?? -1) !== i)
+                        link.set(({ hover: _, ...rest }) => (i < 0 ? rest : { ...rest, hover: i }))
+                    }}
+                  />
+                </InteractionOverlay>
+              )
+            }
+          >
+            <Chart option={petalOption} figure={FIGURE} onInit={right.onInit} />
+          </Overlaid>
+        </FigureFrame>
       </div>
     </div>
   )
