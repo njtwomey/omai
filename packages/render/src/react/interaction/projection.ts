@@ -1,0 +1,66 @@
+/** A point, in data or pixel coordinates. */
+export type Point2 = readonly [number, number]
+
+/**
+ * The map between a figure's data coordinates and the pixels of its drawing area (origin top left, y down), which
+ * interaction overlays use to place handles and read the pointer.
+ */
+export interface Projection {
+  toPixel(p: Point2): Point2
+  toData(p: Point2): Point2
+}
+
+/** Space left around a plot area, in pixels. */
+export interface Margins {
+  readonly top: number
+  readonly right: number
+  readonly bottom: number
+  readonly left: number
+}
+
+/**
+ * A linear projection: the data ranges `x` and `y` fill the area of `width` by `height` pixels inside `margins`, with
+ * y increasing upwards.
+ *
+ * @param options - The data ranges, the size in pixels and the margins (default none).
+ * @returns The projection.
+ */
+export function linearProjection(options: {
+  readonly x: Point2
+  readonly y: Point2
+  readonly width: number
+  readonly height: number
+  readonly margins?: Partial<Margins>
+}): Projection {
+  const { x, y, width, height } = options
+  const m = { top: 0, right: 0, bottom: 0, left: 0, ...options.margins }
+  const w = width - m.left - m.right
+  const h = height - m.top - m.bottom
+  const [x0, x1] = x
+  const [y0, y1] = y
+  return {
+    toPixel: ([u, v]) => [m.left + ((u - x0) / (x1 - x0)) * w, m.top + ((y1 - v) / (y1 - y0)) * h],
+    toData: ([px, py]) => [x0 + ((px - m.left) / w) * (x1 - x0), y1 - ((py - m.top) / h) * (y1 - y0)],
+  }
+}
+
+/** The part of an ECharts instance a projection needs (structural, so this module does not import ECharts). */
+export interface PixelConverter {
+  convertToPixel(finder: { readonly gridIndex: number }, value: number[]): number[] | number
+  convertFromPixel(finder: { readonly gridIndex: number }, value: number[]): number[] | number
+}
+
+/**
+ * The projection of one grid (one set of axes) of a live ECharts chart, for overlays laid over the chart.
+ *
+ * @param chart - The chart instance (or anything with ECharts' `convertToPixel` and `convertFromPixel`).
+ * @param gridIndex - Which grid (default 0).
+ * @returns The projection.
+ */
+export function chartProjection(chart: PixelConverter, gridIndex = 0): Projection {
+  const pair = (v: number[] | number): Point2 => (Array.isArray(v) ? [v[0] ?? Number.NaN, v[1] ?? Number.NaN] : [v, v])
+  return {
+    toPixel: (p) => pair(chart.convertToPixel({ gridIndex }, [p[0], p[1]])),
+    toData: (p) => pair(chart.convertFromPixel({ gridIndex }, [p[0], p[1]])),
+  }
+}
