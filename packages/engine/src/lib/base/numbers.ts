@@ -271,3 +271,29 @@ export function varianceOf(xs: ArrayLike<number>, ddof = 0): number {
   for (let i = 0; i < n; i++) d[i] = ((xs[i] ?? 0) - m) ** 2
   return pairwiseSum(d) / (n - ddof)
 }
+
+/**
+ * The `q`-quantile of a list by linear interpolation between order statistics (numpy's default `quantile` method):
+ * with the values sorted, position `q (n - 1)` is interpolated between its neighbours. `NaN` for an empty list.
+ *
+ * @param xs - The numbers.
+ * @param q - The quantile level in `[0, 1]`.
+ * @returns The quantile.
+ * @example
+ * ```ts
+ * import { quantileOf } from 'whitebox-engine/base'
+ * quantileOf([4, 1, 3, 2], 0.5) // => 2.5
+ * ```
+ */
+export function quantileOf(xs: ArrayLike<number>, q: number): number {
+  const n = xs.length
+  if (n === 0) return Number.NaN
+  const sorted = Float64Array.from(xs).sort()
+  const pos = Math.min(Math.max(q, 0), 1) * (n - 1)
+  const lo = Math.floor(pos)
+  const a = sorted[lo] ?? 0
+  const b = sorted[Math.min(lo + 1, n - 1)] ?? 0
+  const t = pos - lo
+  // numpy's lerp: from the nearer end, so the result is exact at both ends.
+  return t >= 0.5 ? b - (b - a) * (1 - t) : a + (b - a) * t
+}
