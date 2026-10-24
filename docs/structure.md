@@ -594,6 +594,12 @@ lambdify values)
   (sparse polynomials, dense univariate helpers, generators), `_factor.ts`, `_series.ts` (truncated Laurent series
   engine), `_integrals.ts` (tables, rational and trigonometric rules), `_latex-parse.ts`.
 
+- TODO (low priority): bound the total work of `integrate`, `series`, `simplify` and `factor` (expression size and
+  time-like step budgets, not only attempt counts); random expressions can run for seconds to minutes (cases: the
+  integrands `log((x^3 + y + exp(sin(y)/2))^2 + 1)` and `log(x^6 y^6 (x + y + log(y^2 + 1))^2 + 1)`, the series of
+  `log(exp(exp(x/2)) + 1)^3` at 0, and the factorisation of `x^6 (x + cos(x))^3 + y^2 + y`). Until then the
+  robustness property leaves integrate and series out.
+
 ### 4.6 `autodiff/` (tier 3): differentiation transforms (jax, torch.func)
 
 oracle: jax and torch for derivative values; finite differences in property tests
