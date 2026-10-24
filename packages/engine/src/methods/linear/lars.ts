@@ -219,10 +219,25 @@ function larsEstimator(
       hyperSpace: (h: LarsHyper): Space =>
         lassoMode
           ? dict({
-              alpha: real(1e-4, 10, { log: true, default: h.alpha }),
-              fitIntercept: bool({ default: h.fitIntercept }),
+              alpha: real(1e-4, 10, {
+                label: 'α (L1 penalty)',
+                description: 'The lasso penalty: the path stops where it reaches α.',
+                log: true,
+                default: h.alpha,
+              }),
+              fitIntercept: bool({
+                label: 'fit intercept',
+                description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+                default: h.fitIntercept,
+              }),
             })
-          : dict({ nNonzeroCoefs: int(1, 50, { default: h.nNonzeroCoefs ?? 10 }) }),
+          : dict({
+              nNonzeroCoefs: int(1, 50, {
+                label: 'non-zero coefficients',
+                description: 'Stop once this many coefficients are active.',
+                default: h.nNonzeroCoefs ?? 10,
+              }),
+            }),
       fit: (data: LearnData, h: LarsHyper, options: FitOptions) => {
         const { design, c, state } = runLars(
           data,

@@ -183,8 +183,16 @@ export function gaussianProcessRegressor(hyper: Partial<GprHyper> = {}): Explain
       hyperSpace: (h: GprHyper): Space =>
         dict({
           alpha: real(1e-10, 1, { log: true, default: h.alpha, label: 'noise' }),
-          optimize: bool({ default: h.optimize }),
-          nRestarts: int(0, 10, { default: h.nRestarts }),
+          optimize: bool({
+            label: 'optimise kernel',
+            description: 'Fit the kernel hyperparameters by maximising the marginal likelihood.',
+            default: h.optimize,
+          }),
+          nRestarts: int(0, 10, {
+            label: 'optimiser restarts',
+            description: 'Extra starts of the kernel hyperparameter optimiser from random points.',
+            default: h.nRestarts,
+          }),
         }),
       fit: (data: LearnData, h: GprHyper, options: FitOptions) => {
         const m = matrixView(data.x, 'gaussianProcessRegressor')

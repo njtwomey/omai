@@ -476,10 +476,23 @@ function histEstimator(
       hyperSpace: (h: HistBoostingHyper): Space =>
         dict({
           maxIter: int(1, 500, { default: h.maxIter, label: 'iterations' }),
-          learningRate: real(0.01, 1, { log: true, default: h.learningRate }),
+          learningRate: real(0.01, 1, {
+            label: 'learning rate',
+            description: 'The shrinkage of each tree’s contribution.',
+            log: true,
+            default: h.learningRate,
+          }),
           maxLeafNodes: int(2, 64, { default: h.maxLeafNodes, label: 'leaves per tree' }),
-          l2Regularization: real(0, 10, { default: h.l2Regularization }),
-          earlyStopping: bool({ default: h.earlyStopping }),
+          l2Regularization: real(0, 10, {
+            label: 'L2 regularisation',
+            description: 'The L2 penalty on the leaf values.',
+            default: h.l2Regularization,
+          }),
+          earlyStopping: bool({
+            label: 'early stopping',
+            description: 'Stop when the validation score stops improving.',
+            default: h.earlyStopping,
+          }),
         }),
       fit: (data: LearnData, h: HistBoostingHyper, options: FitOptions) => {
         const x = matrixView(data.x, name, { allowNaN: true })

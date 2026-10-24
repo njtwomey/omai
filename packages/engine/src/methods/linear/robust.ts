@@ -98,7 +98,19 @@ export function huberRegressor(hyper: Partial<HuberHyper> = {}): ExplainedEstima
       fitIntercept: hyper.fitIntercept ?? true,
       maxIter: hyper.maxIter ?? 100,
     },
-    (h) => dict({ epsilon: real(1, 3, { default: h.epsilon }), alpha: real(0, 1, { default: h.alpha }) }),
+    (h) =>
+      dict({
+        epsilon: real(1, 3, {
+          label: 'ε (Huber threshold)',
+          description: 'Residuals beyond ε scale estimates get absolute rather than squared loss.',
+          default: h.epsilon,
+        }),
+        alpha: real(0, 1, {
+          label: 'α (L2 penalty)',
+          description: 'The L2 penalty on the coefficients.',
+          default: h.alpha,
+        }),
+      }),
     (data, h, options) => {
       const design = designOf(data, 'huberRegressor')
       const { n, d } = design.x
@@ -185,7 +197,18 @@ export function ransacRegressor(hyper: Partial<RansacHyper> = {}): ExplainedEsti
       fitIntercept: hyper.fitIntercept ?? true,
     },
     (h) =>
-      dict({ maxTrials: int(10, 1000, { default: h.maxTrials }), fitIntercept: bool({ default: h.fitIntercept }) }),
+      dict({
+        maxTrials: int(10, 1000, {
+          label: 'trials',
+          description: 'Random minimal subsets tried.',
+          default: h.maxTrials,
+        }),
+        fitIntercept: bool({
+          label: 'fit intercept',
+          description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+          default: h.fitIntercept,
+        }),
+      }),
     (data, h, options) => {
       const design = designOf(data, 'ransacRegressor')
       const { n, d } = design.x
@@ -342,7 +365,14 @@ export function theilSenRegressor(
       maxIter: hyper.maxIter ?? 300,
       tol: hyper.tol ?? 1e-3,
     },
-    (h) => dict({ fitIntercept: bool({ default: h.fitIntercept }) }),
+    (h) =>
+      dict({
+        fitIntercept: bool({
+          label: 'fit intercept',
+          description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+          default: h.fitIntercept,
+        }),
+      }),
     (data, h, options) => {
       const design = designOf(data, 'theilSenRegressor')
       const { n, d } = design.x
@@ -407,7 +437,19 @@ export function quantileRegressor(
   return robustEstimator(
     'quantile-regressor',
     { quantile: hyper.quantile ?? 0.5, alpha: hyper.alpha ?? 1, fitIntercept: hyper.fitIntercept ?? true },
-    (h) => dict({ quantile: real(0.05, 0.95, { default: h.quantile }), alpha: real(0, 10, { default: h.alpha }) }),
+    (h) =>
+      dict({
+        quantile: real(0.05, 0.95, {
+          label: 'quantile',
+          description: 'The conditional quantile fitted (0.5 is the median).',
+          default: h.quantile,
+        }),
+        alpha: real(0, 10, {
+          label: 'α (L1 penalty)',
+          description: 'The L1 penalty on the coefficients (0 for plain quantile regression).',
+          default: h.alpha,
+        }),
+      }),
     (data, h) => {
       const design = designOf(data, 'quantileRegressor')
       const { n, d } = design.x

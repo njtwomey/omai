@@ -35,7 +35,11 @@ export function spectralEmbedding(
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 3, { default: h.nComponents ?? 2, label: 'dimensions' }),
-          affinity: choice(['nearest_neighbors', 'rbf'], { default: h.affinity ?? 'nearest_neighbors' }),
+          affinity: choice(['nearest_neighbors', 'rbf'], {
+            label: 'affinity',
+            description: 'How the similarity graph is built: k nearest neighbours or a Gaussian kernel on all pairs.',
+            default: h.affinity ?? 'nearest_neighbors',
+          }),
           nNeighbors: int(2, 50, { default: h.nNeighbors ?? 10, label: 'neighbours' }),
         }),
       fit: (data, h) => {

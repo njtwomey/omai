@@ -381,9 +381,7 @@ function treeEstimator(
         dict({
           criterion: choice(
             classifier ? ['gini', 'entropy'] : ['squared_error', 'absolute_error', 'poisson', 'friedman_mse'],
-            {
-              default: h.criterion,
-            },
+            { label: 'criterion', description: 'The impurity a split minimises.', default: h.criterion },
           ),
           maxDepth: int(1, 20, { default: h.maxDepth ?? 5, label: 'maximum depth' }),
           minSamplesLeaf: int(1, 50, { default: h.minSamplesLeaf, label: 'minimum leaf size' }),

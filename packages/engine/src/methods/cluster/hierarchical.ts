@@ -283,7 +283,11 @@ export function agglomerativeClustering(
       hyperSpace: (h) =>
         dict({
           nClusters: int(1, 20, { default: h.nClusters ?? 2, label: 'clusters' }),
-          linkage: choice(['ward', 'single', 'complete', 'average'], { default: h.linkage ?? 'ward' }),
+          linkage: choice(['ward', 'single', 'complete', 'average'], {
+            label: 'linkage',
+            description: 'The distance between clusters: Ward’s variance, complete, average or single link.',
+            default: h.linkage ?? 'ward',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'agglomerativeClustering')

@@ -199,8 +199,14 @@ export function linearDiscriminantAnalysis(hyper: Partial<LdaHyper> = {}): Expla
       kind: 'classifier',
       hyperSpace: (h: LdaHyper): Space =>
         dict({
-          solver: choice(['svd', 'lsqr'], { default: h.solver }),
+          solver: choice(['svd', 'lsqr'], {
+            label: 'solver',
+            description: 'How the discriminant directions are computed.',
+            default: h.solver,
+          }),
           shrinkage: real(0, 1, {
+            label: 'shrinkage',
+            description: 'How far the covariance is pulled towards a scaled identity (0 none, 1 all the way).',
             default: typeof h.shrinkage === 'number' ? h.shrinkage : 0,
             when: { key: 'solver', in: ['lsqr'] },
           }),

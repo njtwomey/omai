@@ -11,6 +11,12 @@ describe('the catalogue', () => {
     for (const e of catalogue.entries) expect(catalogue.collections.get(e.collection)).toContain(e)
   })
 
+  it('labels every control of the sklearn, pyod and probabilistic entries', () => {
+    for (const e of catalogue.entries)
+      if (/^(sklearn|pyod|probabilistic)\//.test(e.id))
+        for (const [k, s] of Object.entries(e.params.spaces)) expect(s.label, `${e.id}: ${k}`).toBeTypeOf('string')
+  })
+
   for (const entry of catalogue.entries)
     it(`runs ${entry.id}`, async () => {
       const out = await runDemo(entry)

@@ -151,7 +151,12 @@ export function mds(hyper: MdsHyper = {}): Estimator<MdsHyper, FittedEmbedding> 
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 3, { default: h.nComponents ?? 2, label: 'dimensions' }),
-          classical: bool({ default: h.classical ?? false }),
+          classical: bool({
+            label: 'classical (Torgerson)',
+            description:
+              'Classical MDS from the eigendecomposition of the double-centred distances, instead of SMACOF.',
+            default: h.classical ?? false,
+          }),
           maxIter: int(1, 1000, { default: h.maxIter ?? 300, label: 'iterations' }),
         }),
       fit: (data, h, options) => {

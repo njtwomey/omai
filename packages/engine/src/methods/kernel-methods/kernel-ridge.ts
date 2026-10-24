@@ -77,8 +77,17 @@ export function kernelRidge(
       hyperSpace: (h: KernelRidgeHyper): Space =>
         dict({
           alpha: real(1e-4, 1e2, { log: true, default: h.alpha, label: 'penalty' }),
-          kernel: choice(['linear', 'rbf', 'laplacian', 'polynomial', 'sigmoid'], { default: h.kernel }),
-          gamma: real(1e-3, 10, { log: true, default: h.gamma ?? 1 }),
+          kernel: choice(['linear', 'rbf', 'laplacian', 'polynomial', 'sigmoid'], {
+            label: 'kernel',
+            description: 'The kernel whose feature space the ridge fit lives in.',
+            default: h.kernel,
+          }),
+          gamma: real(1e-3, 10, {
+            label: 'kernel γ',
+            description: 'The kernel width: larger γ makes similarity more local.',
+            log: true,
+            default: h.gamma ?? 1,
+          }),
         }),
       fit: (data: LearnData, h: KernelRidgeHyper) => {
         const m = matrixView(data.x, 'kernelRidge')

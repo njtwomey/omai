@@ -127,9 +127,15 @@ export function kernelDensity(hyper: KernelDensityHyper = {}): Estimator<KernelD
       hyperSpace: (h) =>
         dict({
           bandwidth: choice(['scott', 'silverman', 'cv'], {
+            label: 'bandwidth rule',
+            description: 'Scott’s or Silverman’s rule of thumb, or cross-validated likelihood.',
             default: typeof h.bandwidth === 'string' ? h.bandwidth : 'scott',
           }),
-          folds: int(2, 20, { default: h.folds ?? 5 }),
+          folds: int(2, 20, {
+            label: 'folds',
+            description: 'Cross-validation folds for the cv bandwidth.',
+            default: h.folds ?? 5,
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'kernelDensity', { minSamples: 2 })
@@ -250,7 +256,14 @@ export function histogramDensity(
     {
       name: 'histogram-density',
       kind: 'density',
-      hyperSpace: (h) => dict({ bins: int(2, 100, { default: typeof h.bins === 'number' ? h.bins : 10 }) }),
+      hyperSpace: (h) =>
+        dict({
+          bins: int(2, 100, {
+            label: 'bins',
+            description: 'The number of histogram bins along each feature.',
+            default: typeof h.bins === 'number' ? h.bins : 10,
+          }),
+        }),
       fit: (data, h) => {
         const m = matrixView(data.x, 'histogramDensity')
         if (m.d > 2) throw new WhiteboxError('shape', 'histogramDensity: one or two features')

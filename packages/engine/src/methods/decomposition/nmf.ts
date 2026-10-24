@@ -250,7 +250,12 @@ export function nmf(hyper: NmfHyper = {}): Estimator<NmfHyper, FittedNmf> {
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 50, { default: h.nComponents ?? 2, label: 'components' }),
-          betaLoss: choice(['frobenius', 'kullback-leibler'], { default: h.betaLoss ?? 'frobenius' }),
+          betaLoss: choice(['frobenius', 'kullback-leibler'], {
+            label: 'β-divergence',
+            description:
+              'The reconstruction loss: Frobenius (squared error) or the generalised Kullback-Leibler divergence.',
+            default: h.betaLoss ?? 'frobenius',
+          }),
           maxIter: int(1, 1000, { default: h.maxIter ?? 200, label: 'updates' }),
         }),
       fit: (data, h, options) => {

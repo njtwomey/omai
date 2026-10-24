@@ -469,9 +469,20 @@ function hmmEstimator(
           nComponents: int(1, 10, { default: h.nComponents, label: 'hidden states' }),
           nIter: int(1, 500, { default: h.nIter, label: 'Baum-Welch iterations' }),
           ...(emission === 'gaussian'
-            ? { covarianceType: choice(['diag', 'full'], { default: h.covarianceType }) }
+            ? {
+                covarianceType: choice(['diag', 'full'], {
+                  label: 'covariance type',
+                  description: 'Each state’s emission covariance: diagonal or full.',
+                  default: h.covarianceType,
+                }),
+              }
             : {}),
-          tol: real(1e-8, 1, { log: true, default: h.tol }),
+          tol: real(1e-8, 1, {
+            label: 'tolerance',
+            description: 'Stop when the log-likelihood gains less than this.',
+            log: true,
+            default: h.tol,
+          }),
         }),
       fit: fitHmm,
       methods: hmmVerbs,

@@ -219,14 +219,30 @@ export function svc(hyper: Partial<SvcHyper> = {}): ExplainedEstimator<SvcHyper,
       hyperSpace: (h: SvcHyper): Space =>
         dict({
           C: real(1e-2, 1e3, { log: true, default: h.C, label: 'C' }),
-          kernel: choice(['rbf', 'linear', 'poly', 'sigmoid'], { default: h.kernel }),
+          kernel: choice(['rbf', 'linear', 'poly', 'sigmoid'], {
+            label: 'kernel',
+            description: 'The kernel measuring similarity between rows.',
+            default: h.kernel,
+          }),
           gamma: real(1e-3, 10, {
+            label: 'kernel γ',
+            description: 'The kernel width: larger γ makes similarity more local.',
             log: true,
             default: typeof h.gamma === 'number' ? h.gamma : 1,
             when: { key: 'kernel', in: ['rbf', 'poly', 'sigmoid'] },
           }),
-          degree: real(2, 5, { step: 1, default: h.degree, when: { key: 'kernel', in: ['poly'] } }),
-          probability: bool({ default: h.probability }),
+          degree: real(2, 5, {
+            label: 'polynomial degree',
+            description: 'The degree of the polynomial kernel.',
+            step: 1,
+            default: h.degree,
+            when: { key: 'kernel', in: ['poly'] },
+          }),
+          probability: bool({
+            label: 'probabilities',
+            description: 'Calibrate probabilities by Platt scaling.',
+            default: h.probability,
+          }),
         }),
       fit: (data: LearnData, h: SvcHyper, options: FitOptions) => {
         const m = matrixView(data.x, 'svc')

@@ -179,8 +179,16 @@ function neighboursEstimator(
           ...(radius
             ? { radius: real(0.01, 10, { log: true, default: h.radius, label: 'radius' }) }
             : { nNeighbors: int(1, 50, { default: h.nNeighbors, label: 'neighbours' }) }),
-          weights: choice(['uniform', 'distance'], { default: h.weights }),
-          metric: choice(['euclidean', 'cityblock', 'chebyshev'], { default: h.metric }),
+          weights: choice(['uniform', 'distance'], {
+            label: 'neighbour weights',
+            description: 'Weigh neighbours equally or by inverse distance.',
+            default: h.weights,
+          }),
+          metric: choice(['euclidean', 'cityblock', 'chebyshev'], {
+            label: 'distance',
+            description: 'The distance between rows.',
+            default: h.metric,
+          }),
         }),
       fit: (data: LearnData, h: NeighboursHyper) => {
         const m = matrixView(data.x, name)

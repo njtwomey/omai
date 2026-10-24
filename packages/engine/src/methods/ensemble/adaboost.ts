@@ -276,7 +276,12 @@ function adaEstimator(
       hyperSpace: (h: AdaBoostHyper): Space =>
         dict({
           nEstimators: int(1, 300, { default: h.nEstimators, label: 'rounds' }),
-          learningRate: real(0.01, 2, { log: true, default: h.learningRate }),
+          learningRate: real(0.01, 2, {
+            label: 'learning rate',
+            description: 'How much each weak learner’s vote counts.',
+            log: true,
+            default: h.learningRate,
+          }),
           maxDepth: int(1, 6, { default: h.maxDepth, label: 'weak tree depth' }),
         }),
       fit: (data: LearnData, h: AdaBoostHyper, options: FitOptions) => {

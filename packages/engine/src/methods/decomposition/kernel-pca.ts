@@ -70,8 +70,17 @@ export function kernelPca(hyper: KernelPcaHyper = {}): Estimator<KernelPcaHyper,
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 50, { default: h.nComponents ?? 2, label: 'components' }),
-          kernel: choice(['rbf', 'poly', 'sigmoid', 'cosine', 'linear'], { default: h.kernel ?? 'rbf' }),
-          gamma: real(1e-3, 100, { log: true, default: h.gamma ?? 1 }),
+          kernel: choice(['rbf', 'poly', 'sigmoid', 'cosine', 'linear'], {
+            label: 'kernel',
+            description: 'The kernel whose feature space the components live in.',
+            default: h.kernel ?? 'rbf',
+          }),
+          gamma: real(1e-3, 100, {
+            label: 'kernel γ',
+            description: 'The kernel width: larger γ makes similarity more local.',
+            log: true,
+            default: h.gamma ?? 1,
+          }),
         }),
       fit: (data, h) => {
         const m = matrixView(data.x, 'kernelPca', { minSamples: 2 })

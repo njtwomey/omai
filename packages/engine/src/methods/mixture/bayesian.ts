@@ -305,9 +305,16 @@ export function bayesianGaussianMixture(
         dict({
           nComponents: int(1, 20, { default: h.nComponents ?? 5, label: 'components' }),
           weightConcentrationPriorType: choice(['dirichlet_process', 'dirichlet_distribution'], {
+            label: 'weight prior',
+            description: 'A Dirichlet process (stick-breaking) or a finite Dirichlet distribution on the weights.',
             default: h.weightConcentrationPriorType ?? 'dirichlet_process',
           }),
-          weightConcentrationPrior: real(1e-3, 1e3, { log: true, default: h.weightConcentrationPrior ?? 0.2 }),
+          weightConcentrationPrior: real(1e-3, 1e3, {
+            label: 'weight concentration γ₀',
+            description: 'The prior concentration of the mixture weights: small values switch components off.',
+            log: true,
+            default: h.weightConcentrationPrior ?? 0.2,
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'bayesianGaussianMixture', { minSamples: 2 })

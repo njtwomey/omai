@@ -14,7 +14,11 @@ export const localLevel: HubEntry = defineEntry({
   tags: ['state space', 'Kalman filter', 'smoothing', 'EM', 'time series'],
   datasets: ['timeSeries'],
   params: dict({
-    model: choice(['local-level', 'local-linear-trend'], { default: 'local-level' }),
+    model: choice(['local-level', 'local-linear-trend'], {
+      label: 'model',
+      description: 'The state-space model.',
+      default: 'local-level',
+    }),
     learn: bool({ default: true, label: 'learn the noise variances by EM' }),
     maxIter: int(1, 200, { default: 20, label: 'EM iterations' }),
   }),

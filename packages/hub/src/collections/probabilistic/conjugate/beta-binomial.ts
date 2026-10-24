@@ -14,7 +14,7 @@ export const betaBinomial: HubEntry = defineEntry({
   datasets: [],
   params: dict({
     bias: real(0, 1, { default: 0.7, label: 'the coin’s true bias' }),
-    flips: int(1, 500, { default: 50 }),
+    flips: int(1, 500, { label: 'flips', description: 'The number of coin flips observed.', default: 50 }),
     a: real(0.1, 50, { log: true, default: 2, label: 'prior a (pseudo-heads)' }),
     b: real(0.1, 50, { log: true, default: 2, label: 'prior b (pseudo-tails)' }),
   }),

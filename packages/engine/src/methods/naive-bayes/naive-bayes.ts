@@ -295,10 +295,21 @@ function naiveBayes(
       kind: 'classifier',
       hyperSpace: (h: NaiveBayesHyper): Space =>
         kind === 'gaussian'
-          ? dict({ varSmoothing: real(1e-12, 1e-1, { log: true, default: h.varSmoothing }) })
+          ? dict({
+              varSmoothing: real(1e-12, 1e-1, {
+                label: 'variance smoothing',
+                description: 'The share of the largest feature variance added to every variance, for stability.',
+                log: true,
+                default: h.varSmoothing,
+              }),
+            })
           : dict({
               alpha: real(1e-3, 10, { log: true, default: h.alpha, label: 'smoothing' }),
-              fitPrior: bool({ default: h.fitPrior }),
+              fitPrior: bool({
+                label: 'learn class priors',
+                description: 'Estimate the class priors from the data (otherwise uniform).',
+                default: h.fitPrior,
+              }),
             }),
       fit: (data: LearnData, h: NaiveBayesHyper) => {
         const params = fitParams(kind, data, h, name)

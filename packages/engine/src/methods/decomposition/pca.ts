@@ -121,8 +121,16 @@ export function pca(hyper: PcaHyper = {}): Estimator<PcaHyper, FittedPca> {
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 50, { default: h.nComponents ?? 2, label: 'components' }),
-          whiten: bool({ default: h.whiten ?? false }),
-          svdSolver: choice(['full', 'randomized'], { default: h.svdSolver ?? 'full' }),
+          whiten: bool({
+            label: 'whiten',
+            description: 'Scale the components to unit variance.',
+            default: h.whiten ?? false,
+          }),
+          svdSolver: choice(['full', 'randomized'], {
+            label: 'SVD solver',
+            description: 'An exact SVD, or a randomised one (faster on large matrices, approximate).',
+            default: h.svdSolver ?? 'full',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'pca', { minSamples: 2 })

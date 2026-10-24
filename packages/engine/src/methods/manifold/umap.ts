@@ -250,7 +250,11 @@ export function umap(hyper: UmapHyper = {}): Estimator<UmapHyper, FittedEmbeddin
           nNeighbors: int(2, 100, { default: h.nNeighbors ?? 15, label: 'neighbours' }),
           minDist: real(0, 0.99, { default: h.minDist ?? 0.1, label: 'minimum distance' }),
           nEpochs: int(10, 1000, { default: h.nEpochs ?? 200, label: 'epochs' }),
-          init: choice(['spectral', 'random'], { default: h.init ?? 'spectral' }),
+          init: choice(['spectral', 'random'], {
+            label: 'initialisation',
+            description: 'Start from the spectral embedding of the graph or from random positions.',
+            default: h.init ?? 'spectral',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'umap', { minSamples: 4 })
