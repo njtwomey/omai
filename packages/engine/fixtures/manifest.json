@@ -1320,6 +1320,15 @@
       "cases": 18
     },
     {
+      "fixture": "methods/anomaly/neighbours.json",
+      "source": "oracle/cases/methods/anomaly/neighbours.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/cluster/density.json",
       "source": "oracle/cases/methods/cluster/density.py",
       "reference": {

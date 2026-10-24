@@ -1,4 +1,4 @@
 {
   "summary": "Anomaly detection: isolation forests, local outlier factors, elliptic envelopes and other detectors.",
-  "dependsOn": ["neighbours", "trees", "covariance", "svm"]
+  "dependsOn": ["covariance", "decomposition", "timeseries"]
 }
