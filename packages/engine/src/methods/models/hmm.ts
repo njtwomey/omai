@@ -7,6 +7,7 @@ import {
   type Exposition,
   mixtureSteps,
   posteriorGrid,
+  stateSequence,
 } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -366,7 +367,8 @@ function stationaryOf(transmat: readonly (readonly number[])[], startprob: reado
  */
 export function hmmExposition(p: HmmParams, x: TensorLike): Exposition[] {
   const m = sequenceView(x, 'hmm')
-  const fb = forwardBackward(hmmChain(hmmOf(p), observationsOf(m, p.emission)))
+  const chain = hmmChain(hmmOf(p), observationsOf(m, p.emission))
+  const fb = forwardBackward(chain)
   const K = p.startprob.length
   const names: string[] = []
   const estimates: number[] = []
@@ -380,6 +382,13 @@ export function hmmExposition(p: HmmParams, x: TensorLike): Exposition[] {
       estimates.push(v)
     }
   return [
+    stateSequence({
+      states: p.stateNames,
+      posteriors: fb.posteriors.map((r) => [...r]),
+      decoded: [...viterbi(chain).path],
+      // One observed number per step (a die's face, a single measurement): drawn above the paths.
+      ...(m.d === 1 ? { observations: { name: 'observation', values: Array.from(m.data) } } : {}),
+    }),
     decisionSurface({
       features: ['time', 'state'],
       x: Array.from({ length: m.n }, (_, t) => t),
@@ -650,6 +659,14 @@ export function casinoStudy(
     variance: loaded.map(() => 0),
     observed: { inputs: sample.states.map((_, t) => [t]), targets: sample.states },
   })
+  // The state strip with the true dice beside the decoded ones (the model's own strip, without the truth, is dropped).
+  const strip = stateSequence({
+    states: params.stateNames,
+    posteriors: forwardBackward(chain).posteriors.map((r) => [...r]),
+    decoded: [...decoded],
+    truth: [...sample.states],
+    observations: { name: 'roll', values: [...rolls] },
+  })
   return {
     states: sample.states,
     rolls,
@@ -657,6 +674,6 @@ export function casinoStudy(
     loaded,
     accuracy,
     params,
-    exposition: [grid, ...records],
+    exposition: [strip, grid, ...records.filter((r) => r.kind !== 'stateSequence')],
   }
 }

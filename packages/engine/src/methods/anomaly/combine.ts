@@ -82,6 +82,9 @@ export function outlierExposition(
     out.push(
       decisionSurfaceOf({ ...fitted, predict: fitted.scoreSamples }, x, {
         resolution: 30,
+        field: { name: 'anomaly score' },
+        // Ground-truth flags, when the rows have them, read 0 inlier and 1 outlier.
+        classNames: ['inlier', 'outlier'],
       }),
     )
   return out

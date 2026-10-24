@@ -15,7 +15,7 @@ export const passiveAggressive: HubEntry = defineEntry({
   views: [
     { record: 'learningCurve', title: 'Progressive and training error' },
     { record: 'decisionSurface', title: 'Decision surface', area: 'side' },
-    { record: 'coefficientTable', title: 'Coefficients', area: 'below' },
+    { record: 'coefficientTable', title: 'Coefficients over the samples seen', area: 'below' },
   ],
   methods: [{ file: 'methods/linear/online.ts', name: 'passiveAggressiveClassifier' }],
   references: ['Crammer, Dekel, Keshet, Shalev-Shwartz and Singer (2006), Online passive-aggressive algorithms'],

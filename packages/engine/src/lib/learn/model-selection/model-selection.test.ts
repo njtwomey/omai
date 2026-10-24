@@ -73,6 +73,11 @@ describe('searches', () => {
     const r = gridSearchCV(ridge(), { alpha: [1e-6, 10, 1000] }, { x, y }, { cv: 3, scoring: 'r2' })
     expect(r.bestParams).toEqual({ alpha: 1e-6 })
     expect(r.bestEstimator).toBeDefined()
+    // The search explains itself: every candidate as a trial, and the curve over its one varying parameter.
+    const [trials, curve] = r.exposition
+    expect(trials?.kind === 'searchTrials' && trials.trials.length).toBe(3)
+    expect(trials?.kind === 'searchTrials' && trials.scoreName).toBe('r2')
+    expect(curve?.kind === 'crossValidationCurve' && curve.values).toEqual([1e-6, 10, 1000])
     const nested = nestedCrossValidation(
       ridge(),
       { alpha: [1e-6, 1000] },

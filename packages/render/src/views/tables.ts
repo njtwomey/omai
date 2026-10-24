@@ -3,9 +3,10 @@ import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials }
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { intervalChart } from '../charts/evaluation.ts'
+import { referenceLines } from '../charts/functions.ts'
 import { lines } from '../charts/lines.ts'
 import { matrix } from '../charts/matrices.ts'
-import type { Layer } from '../charts/plot.ts'
+import { cartesian, type Layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { formatNumber } from '../theme/format.ts'
@@ -85,6 +86,32 @@ export function coefficientView(
 ): EChartsOption {
   // The intercept usually sits on another scale from the slopes: it stays in the table, out of the plot.
   const keep = table.names.map((n, i) => (options.intercept === true || !isIntercept(n) ? i : -1)).filter((i) => i >= 0)
+  const traj = table.trajectories
+  if (traj !== undefined && traj.at.length > 1) {
+    // The estimates as they evolved (an online learner's coefficients over the samples it has seen).
+    const fig = viewFigure(options, { aspect: 1.6, padding: { right: 72 } })
+    return cartesian(
+      [
+        referenceLines({ y: [0] }, { mode: fig.mode, colour: 'grid', dash: 'solid' }),
+        lines(
+          keep.map((j) => ({
+            x: traj.at,
+            y: traj.values.map((row) => row[j] ?? Number.NaN),
+            name: table.names[j] ?? `x${j}`,
+            width: 1.6,
+          })),
+          { mode: fig.mode },
+        ),
+      ],
+      {
+        figure: fig,
+        mode: fig.mode,
+        x: { label: traj.resource, scale: wantsLog(traj.at) ? 'log' : 'linear' },
+        y: { label: 'estimate' },
+        tooltip: 'item',
+      },
+    )
+  }
   const fig = viewFigure(options, { height: Math.max(160, 64 + 26 * keep.length), width: 640 })
   const intervals = coefficientIntervals(table)
   return intervalChart(
@@ -143,7 +170,17 @@ export function likelihoodView(table: LikelihoodTable, options: ViewOptions = {}
           mode,
         }),
       ],
-      options: { x: { label: 'log-likelihood contribution' } },
+      options: {
+        x: { label: 'log-likelihood contribution' },
+        ...(table.scope === undefined
+          ? {}
+          : {
+              title:
+                table.scope.kind === 'average'
+                  ? `average over each class's rows (${table.scope.rows} rows)`
+                  : `one query${table.scope.row === undefined ? '' : `, row ${table.scope.row}`}`,
+            }),
+      },
     },
     totals: {
       layers: [
@@ -157,7 +194,11 @@ export function likelihoodView(table: LikelihoodTable, options: ViewOptions = {}
         ),
       ],
       options: {
-        title: `predicts ${table.classes[best] ?? best}`,
+        // For class averages the softmax compares the classes' typical rows; it predicts nothing.
+        title:
+          table.scope?.kind === 'average'
+            ? `largest: ${table.classes[best] ?? best}`
+            : `predicts ${table.classes[best] ?? best}`,
         x: { label: 'posterior probability', limits: [0, 1] },
       },
     },
@@ -346,7 +387,7 @@ export interface SearchViewOptions extends ViewOptions {
 export function searchTrialsView(record: SearchTrials, options: SearchViewOptions = {}): EChartsOption {
   const fig = viewFigure(options, { aspect: 2 })
   const mode = fig.mode
-  const label = options.label ?? 'objective'
+  const label = options.label ?? record.scoreName ?? 'objective'
   const trials = record.trials
   const better = (a: number, b: number): boolean => (record.higherIsBetter ? a > b : a < b)
   let incumbent = Number.NaN

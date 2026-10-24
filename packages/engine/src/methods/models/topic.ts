@@ -302,7 +302,7 @@ function fitLda(data: LearnData, h: LdaHyper, options: FitOptions): { params: Ld
   return {
     params,
     exposition: [
-      componentsRecord({ method: 'lda', features: vocabulary, components: phi, scores: theta }),
+      componentsRecord({ method: 'lda', features: vocabulary, components: phi, scores: theta, space: 'vocabulary' }),
       mixtureSteps({
         family: 'lda',
         weights: snapshots.map((r) => r.shares),

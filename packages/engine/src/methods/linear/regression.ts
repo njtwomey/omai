@@ -397,7 +397,10 @@ export function ridgeCV(hyper: Partial<RidgeCVHyper> = {}): ExplainedEstimator<R
             return (r / (1 - hii)) ** 2 / Math.max(design.w[i] ?? 1, 1e-300)
           })
         })
-        const { foldScores: _perSample, ...curve } = curveOf('alpha', h.alphas, errors, false)
+        const { foldScores: _perSample, ...curve } = curveOf('alpha', h.alphas, errors, false, {
+          scoreName: 'leave-one-out squared error',
+          penalty: true,
+        })
         const alpha = curve.best ?? h.alphas[0] ?? 1
         const f = fitLinear(
           data,

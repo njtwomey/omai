@@ -156,6 +156,7 @@ function naiveBayesVerbs(p: NaiveBayesParams, h: NaiveBayesHyper): NaiveBayesVer
         features: features ?? Array.from({ length: d }, (_, f) => `x${f}`),
         logPriors: p.logPriors,
         contributions: contributions(p, row, h),
+        scope: { kind: 'query' },
       }),
     describe: (features) =>
       structure(
@@ -333,6 +334,8 @@ function naiveBayes(
             features,
             logPriors: params.logPriors,
             contributions: sums.map((row, c) => row.map((v) => v / Math.max(counts[c] ?? 1, 1))),
+            // Each class's row is the average over that class's own training rows.
+            scope: { kind: 'average', rows: m.n },
           }),
         ]
         if (m.d === 2) exposition.push(decisionSurfaceOf(fitted, data.x, { featureNames: features, classNames }))

@@ -1,4 +1,5 @@
 import { meanOf, varianceOf, WhiteboxError } from '../../base/index.ts'
+import { type Explained, learningCurve as learningCurveRecord } from '../../exposition/index.ts'
 import { foldIn, type Key, permutation } from '../../random/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunHandle, runAlgorithm, subRun } from '../../trace/index.ts'
@@ -359,7 +360,11 @@ export interface CurveResult {
  * learningCurve(zero, { x, y: [0, 0, 0, 0, 0, 0] }, { cv: 3, trainSizes: [0.5, 1], scoring: 'neg_mean_squared_error' }).values // => [2, 4]
  * ```
  */
-export function learningCurve(estimator: Estimator, data: LearnData, options: LearningCurveOptions = {}): CurveResult {
+export function learningCurve(
+  estimator: Estimator,
+  data: LearnData,
+  options: LearningCurveOptions = {},
+): Explained<CurveResult> {
   const splitter = checkCv(options.cv, estimator)
   const key = keyFor(options, 'learningCurve')
   const folds = splitIndices(splitter, splitInputOf(data, options.groups), foldIn(key, 0))
@@ -406,7 +411,26 @@ export function learningCurve(estimator: Estimator, data: LearnData, options: Le
   runAlgorithm(algorithm, { ...runOptionsFor(options, 'learningCurve'), maxSteps: jobs.length })
   const grid = (pick: (s: { train: number; test: number }) => number): number[][] =>
     sizes.map((_, si) => folds.map((_, f) => pick(scores[f * sizes.length + si] as { train: number; test: number })))
-  return { values: sizes, trainScores: grid((s) => s.train), testScores: grid((s) => s.test) }
+  const trainScores = grid((s) => s.train)
+  const testScores = grid((s) => s.test)
+  const sd = (v: readonly number[]): number => Math.sqrt(varianceOf(v))
+  return {
+    values: sizes,
+    trainScores,
+    testScores,
+    // The mean score over folds at each size, with the folds' standard deviation as the spread.
+    exposition: [
+      learningCurveRecord({
+        sizes,
+        train: trainScores.map((f) => meanOf(f)),
+        validation: testScores.map((f) => meanOf(f)),
+        trainSpread: trainScores.map(sd),
+        validationSpread: testScores.map(sd),
+        resource: 'training rows',
+        scoreName: Object.keys(scorersOf(options.scoring))[0] ?? 'score',
+      }),
+    ],
+  }
 }
 
 /** Options of {@link validationCurve}. */

@@ -41,6 +41,8 @@ export interface DecisionSurface {
   readonly levels?: readonly number[]
   /** values[i][j]: the prediction or score, for regressors and scorers. */
   readonly values?: SurfaceGrid
+  /** What `values` are ('density', 'anomaly score'), and whether they vary smoothly (false: piecewise constant, as a histogram's bins). */
+  readonly field?: { readonly name: string; readonly smooth?: boolean }
   readonly classes?: readonly string[]
   /** The training rows (the two features of the grid), when the data is small. */
   readonly rows?: InputRows

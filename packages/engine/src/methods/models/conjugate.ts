@@ -137,7 +137,11 @@ export function conjugateModel(observations: TensorLike, options: ConjugateModel
       inputs: grid.map((g) => [g]),
       mean: density(posterior),
       variance: grid.map(() => 0),
-      samples: [density(prior)],
+      labels: { input: parameter, output: 'density' },
+      densities: [
+        { name: `prior of ${parameter}`, role: 'prior', values: density(prior) },
+        { name: `posterior of ${parameter}`, role: 'posterior', values: density(posterior) },
+      ],
     }),
     coefficientTable({
       names: [`prior ${parameter}`, `posterior ${parameter}`],

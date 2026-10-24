@@ -1,4 +1,5 @@
-import { meanOf, varianceOf, WhiteboxError } from '../../base/index.ts'
+import { type Json, meanOf, varianceOf, WhiteboxError } from '../../base/index.ts'
+import { crossValidationCurve, type Explained, type Exposition, searchTrials } from '../../exposition/index.ts'
 import { foldIn, permutation } from '../../random/index.ts'
 import { type Space, type SpaceValue, sample } from '../../space/index.ts'
 import { toFlat } from '../../tensor/index.ts'
@@ -273,8 +274,59 @@ export function gridSearchCV(
   grid: ParamGrid,
   data: LearnData,
   options: SearchOptions = {},
-): SearchResult {
-  return evaluateCandidates(estimator, parameterGrid(grid), data, options)
+): Explained<SearchResult> {
+  const result = evaluateCandidates(estimator, parameterGrid(grid), data, options)
+  return { ...result, exposition: searchExposition(result, 'grid') }
+}
+
+/**
+ * The exposition of a search: every candidate as a trial (its mean score and per-fold scores, under the first
+ * scorer), and, when one numeric parameter varies, the score against it with standard errors.
+ */
+function searchExposition(result: SearchResult, method: string): Exposition[] {
+  const scorer = Object.keys(result.meanTestScore)[0] ?? 'score'
+  const means = result.meanTestScore[scorer] ?? []
+  const folds = result.splitTestScores[scorer] ?? []
+  const names = [...new Set(result.params.flatMap((p) => Object.keys(p)))]
+  const plain = (v: unknown): Json =>
+    typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean' || v === null ? v : String(v)
+  const out: Exposition[] = [
+    searchTrials({
+      method,
+      parameters: names,
+      trials: result.params.map((p, i) => ({
+        params: Object.fromEntries(Object.entries(p).map(([k, v]) => [k, plain(v)])),
+        value: means[i] ?? Number.NaN,
+        intermediate: [...(folds[i] ?? [])],
+        state: Number.isFinite(means[i] ?? Number.NaN) ? ('complete' as const) : ('failed' as const),
+      })),
+      higherIsBetter: true,
+      best: result.bestIndex,
+      scoreName: scorer,
+    }),
+  ]
+  // One varying numeric parameter: the classic validation curve, in the parameter's order.
+  const varying = names.filter((n) => new Set(result.params.map((p) => p[n])).size > 1)
+  const only = varying[0]
+  if (varying.length === 1 && only !== undefined && result.params.every((p) => typeof p[only] === 'number')) {
+    const order = result.params
+      .map((_, i) => i)
+      .sort((a, b) => (result.params[a]?.[only] as number) - (result.params[b]?.[only] as number))
+    const se = (f: readonly number[]): number => (f.length < 2 ? 0 : Math.sqrt(varianceOf(f, 1) / f.length))
+    out.push(
+      crossValidationCurve({
+        parameter: only,
+        values: order.map((i) => result.params[i]?.[only] as number),
+        meanScores: order.map((i) => means[i] ?? Number.NaN),
+        standardErrors: order.map((i) => se(folds[i] ?? [])),
+        foldScores: order.map((i) => [...(folds[i] ?? [])]),
+        higherIsBetter: true,
+        best: result.bestParams[only] as number,
+        scoreName: scorer,
+      }),
+    )
+  }
+  return out
 }
 
 /**
@@ -302,12 +354,13 @@ export function randomizedSearchCV(
   distributions: Space | Readonly<Record<string, readonly unknown[]>> | undefined,
   data: LearnData,
   options: SearchOptions & { readonly nIter?: number } = {},
-): SearchResult {
+): Explained<SearchResult> {
   const space = distributions ?? estimator.hyperSpace
   if (space === undefined)
     throw new WhiteboxError('value', `randomizedSearchCV: ${estimator.name} declares no hyperSpace`)
   const candidates = parameterSampler(space, options.nIter ?? 10, foldIn(keyFor(options, 'randomizedSearchCV'), 0))
-  return evaluateCandidates(estimator, candidates, data, options)
+  const result = evaluateCandidates(estimator, candidates, data, options)
+  return { ...result, exposition: searchExposition(result, 'random') }
 }
 
 /** Options of {@link nestedCrossValidation}. */

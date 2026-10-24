@@ -12,6 +12,7 @@ import type { PipelineStages } from './pipelines.ts'
 import type { PopulationSteps } from './populations.ts'
 import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
+import type { StateSequence } from './sequences.ts'
 import type { DecisionSurface } from './surfaces.ts'
 import type { PruningPath, TreeRecord } from './trees.ts'
 
@@ -44,6 +45,7 @@ export type Exposition =
   | LearningCurve
   | EpisodeRecord
   | BoardSteps
+  | StateSequence
   | PopulationSteps
   | ImageSteps
 
@@ -113,5 +115,6 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'episodes',
   'boardSteps',
   'populationSteps',
+  'stateSequence',
   'imageSteps',
 ])

@@ -11,6 +11,26 @@ export interface PosteriorGrid {
   readonly samples?: readonly (readonly number[])[]
   /** The training inputs and targets the posterior conditions on. */
   readonly observed?: { readonly inputs: readonly (readonly number[])[]; readonly targets: readonly number[] }
+  /** The names of the input and the output, for axis labels ('games' and 'rating', 'p' and 'density'). */
+  readonly labels?: { readonly input?: string; readonly output?: string }
+  /**
+   * Named densities over a one-dimensional grid of a parameter (a conjugate model's prior, likelihood and posterior),
+   * drawn as curves; `mean` then holds the posterior's.
+   */
+  readonly densities?: readonly {
+    readonly name: string
+    readonly role: 'prior' | 'likelihood' | 'posterior'
+    readonly values: readonly number[]
+  }[]
+  /**
+   * Several trajectories over the same inputs, each with its variance (players' ratings over games), drawn together
+   * with their deviation bands; `mean` and `variance` then hold the first's.
+   */
+  readonly series?: readonly {
+    readonly name: string
+    readonly mean: readonly number[]
+    readonly variance: readonly number[]
+  }[]
 }
 
 /**
@@ -32,6 +52,12 @@ export function posteriorGrid(grid: Omit<PosteriorGrid, 'kind'>): PosteriorGrid 
   if (grid.samples !== undefined) rowsOf('posteriorGrid', 'samples', grid.samples, n)
   if (grid.observed !== undefined)
     sameLength('posteriorGrid', 'observed.targets', grid.observed.targets.length, grid.observed.inputs.length)
+  for (const [i, d] of (grid.densities ?? []).entries())
+    sameLength('posteriorGrid', `densities[${i}]`, d.values.length, n)
+  for (const [i, s] of (grid.series ?? []).entries()) {
+    sameLength('posteriorGrid', `series[${i}].mean`, s.mean.length, n)
+    sameLength('posteriorGrid', `series[${i}].variance`, s.variance.length, n)
+  }
   return { kind: 'posteriorGrid', ...grid }
 }
 
@@ -46,6 +72,10 @@ export interface HyperparameterSurface {
   /** The points the optimiser visited, in order. */
   readonly path?: readonly (readonly [number, number])[]
   readonly logScale?: readonly [boolean, boolean]
+  /** What the values are ('log marginal likelihood', 'cross-validated accuracy'). */
+  readonly objective?: string
+  /** Whether higher values are better (default true: likelihoods and scores). */
+  readonly higherIsBetter?: boolean
 }
 
 /**

@@ -26,7 +26,7 @@ export interface TreeViewProps extends RecordViewProps<TreeRecord> {
 
 // Cards are never drawn smaller than this fraction of their natural size: a wide tree in a narrow slot scrolls (drag to
 // pan) instead of shrinking past legibility.
-const MIN_SCALE = 0.8
+const MIN_SCALE = 0.7
 
 // The width an element is given by its parent, followed as it changes.
 function useMeasuredWidth(fallback: number): [RefObject<HTMLDivElement | null>, number] {

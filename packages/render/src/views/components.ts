@@ -215,6 +215,7 @@ export function biplotPanel(record: ComponentsRecord, options: ComponentsViewOpt
  * @returns The ECharts option.
  */
 export function componentsView(record: ComponentsRecord, options: ComponentsViewOptions = {}): EChartsOption {
+  if (record.space === 'vocabulary') return topicsView(record, options)
   const fig = viewFigure(options, { aspect: record.scores === undefined ? 1.6 : 1.75 })
   const o = { ...options, mode: fig.mode }
   // Kernel methods' loadings weight training rows: nothing to read off them.
@@ -245,4 +246,50 @@ export function componentsView(record: ComponentsRecord, options: ComponentsView
           cells: right.map((id, c) => ({ id, row: 0, col: c })),
         })
   return subplots(grid, panels, { figure: fig, legend: false, tooltip: 'item' })
+}
+
+/**
+ * Topics (a topic model's components, each a distribution over a vocabulary) as small panels, one per topic: its top
+ * words as bars by probability, largest at the top.
+ *
+ * @param record - A components record over a vocabulary.
+ * @param options - Mode, figure, how many topics (`maxComponents`, default 12) and words (`maxFeatures`, default 8).
+ * @returns The ECharts option.
+ */
+export function topicsView(record: ComponentsRecord, options: ComponentsViewOptions = {}): EChartsOption {
+  const k = Math.min(record.components.length, options.maxComponents ?? 12)
+  const words = options.maxFeatures ?? 8
+  const cols = Math.min(k, 4)
+  const rows = Math.max(1, Math.ceil(k / cols))
+  const fig = viewFigure(options, { width: 720, height: Math.max(220, 40 + rows * (34 + 18 * words)) })
+  const mode = fig.mode
+  const panels: Record<string, Panel> = {}
+  for (let t = 0; t < k; t++) {
+    const phi = record.components[t] ?? []
+    const top = phi
+      .map((p, w) => [p, w] as const)
+      .sort((a, b) => b[0] - a[0])
+      .slice(0, words)
+      .reverse()
+    panels[`topic${t}`] = {
+      layers: [
+        bars(
+          top.map(([, w]) => shortName(record.features[w] ?? `w${w}`, 12)),
+          [{ name: `__topic${t}`, values: top.map(([p]) => p), colour: `tab${t % 10}` }],
+          { mode, horizontal: true },
+        ),
+      ],
+      options: { title: `topic ${t + 1}`, x: { label: '', show: false } },
+    }
+  }
+  const grid = gridSpec(rows, cols, {
+    wspace: 84,
+    hspace: 40,
+    cells: Array.from({ length: k }, (_, t) => ({ id: `topic${t}`, row: Math.floor(t / cols), col: t % cols })),
+  })
+  return subplots(grid, panels, {
+    figure: { ...fig, padding: { ...fig.padding, left: 84 } },
+    legend: false,
+    tooltip: 'item',
+  })
 }
