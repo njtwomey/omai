@@ -83,6 +83,8 @@ describe('GraphPlan', () => {
     expect(graphplan(exclusive).status).toBe('failure')
     expect(mutexPairs(exclusive).mutexes).toEqual([['l', 'r']])
     expect(graphplan(strips(['g'], ['g'], [])).steps).toEqual([])
+    expect(graphplan(sussman, { maxLevels: 2 }).status).toBe('budget')
+    expect(graphplan(sussman, { maxNodes: 3 }).status).toBe('budget')
   })
 
   it('traces levels', () => {

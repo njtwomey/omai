@@ -3,6 +3,7 @@ import { queensCsp, sendMoreMoney, sudokuCsp } from '../../testing/search.ts'
 import { messages, policies, recorder, runAlgorithm, validateAgainstSchema } from '../trace/index.ts'
 import {
   ac3,
+  ac3Algorithm,
   allDifferent,
   backtrackingAlgorithm,
   backtrackingSearch,
@@ -83,6 +84,12 @@ describe('solvers', () => {
     expect(validateAgainstSchema(rec.events, algorithm.schema ?? (undefined as never))).toEqual([])
     expect(messages(rec.run(), 'assign').length).toBeGreaterThan(0)
     expect(messages(rec.run(), 'solution').length).toBe(1)
+    const arc = ac3Algorithm(queensCsp(5, 0))
+    const rec3 = recorder()
+    const r = ac3(queensCsp(5, 0), { tracer: rec3, policy: policies.teaching })
+    expect(validateAgainstSchema(rec3.events, arc.schema ?? (undefined as never))).toEqual([])
+    const removed = messages(rec3.run(), 'revise').flatMap((m) => (m.payload as { removed: number[] }).removed)
+    expect(removed.length).toBe(5 * 5 - Object.values(r.domains).reduce((s, d) => s + d.length, 0) - 4)
     const mc = minConflictsAlgorithm(queensCsp(6))
     const rec2 = recorder()
     runAlgorithm(mc, { maxSteps: 500, tracer: rec2, policy: policies.teaching, seed: 2 })

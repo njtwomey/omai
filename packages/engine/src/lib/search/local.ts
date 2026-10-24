@@ -1,4 +1,4 @@
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { argmaxOf, type Json, WhiteboxError } from '../base/index.ts'
 import { Generator, type Key } from '../random/index.ts'
 import { type Space, type SpaceValue, sample, neighbours as spaceNeighbours } from '../space/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'
@@ -673,7 +673,7 @@ export function localBeamSearchAlgorithm<S>(
       const rng = new Generator(rootKey)
       const states = Array.from({ length: k }, () => startState(problem, rng.nextKey(), 'localBeamSearch'))
       const values = states.map((x) => problem.value(x))
-      const b = values.reduce((bi, v, i) => (v > (values[bi] ?? Number.NEGATIVE_INFINITY) ? i : bi), 0)
+      const b = argmaxOf(values)
       const best = states[b] as S
       const s: Mut = {
         states,

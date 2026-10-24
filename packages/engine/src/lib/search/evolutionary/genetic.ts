@@ -1,4 +1,4 @@
-import { type Json, meanOf, WhiteboxError } from '../../base/index.ts'
+import { argmaxOf, type Json, meanOf, minOf, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, permutation } from '../../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { draws } from '../_draw.ts'
@@ -218,15 +218,7 @@ const POPULATION_SCHEMA: TraceSchema = channels({
 })
 
 function stats(fitness: readonly number[]): { mean: number; worst: number; bestAt: number } {
-  let sum = 0
-  let worst = Number.POSITIVE_INFINITY
-  let bestAt = 0
-  fitness.forEach((f, i) => {
-    sum += f
-    if (f < worst) worst = f
-    if (f > (fitness[bestAt] ?? Number.NEGATIVE_INFINITY)) bestAt = i
-  })
-  return { mean: sum / Math.max(1, fitness.length), worst, bestAt }
+  return { mean: meanOf(fitness), worst: minOf(fitness), bestAt: argmaxOf(fitness) }
 }
 
 function select(

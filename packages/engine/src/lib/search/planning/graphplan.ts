@@ -27,7 +27,7 @@ export interface GraphPlanResult {
 
 /** The state of GraphPlan: the planning graph so far and the memoised failures. */
 export interface GraphPlanState {
-  readonly status: 'running' | 'solved' | 'failure'
+  readonly status: 'running' | 'solved' | 'failure' | 'budget'
   readonly levels: number
   readonly steps: readonly (readonly string[])[]
   readonly nogoods: number
@@ -51,7 +51,9 @@ interface Layer {
 }
 
 interface Internal extends GraphPlanState {
-  status: 'running' | 'solved' | 'failure'
+  status: 'running' | 'solved' | 'failure' | 'budget'
+  /** Backward-extraction choices made (the extraction budget). */
+  work: number
   levels: number
   steps: (readonly string[])[]
   nogoods: number
@@ -156,10 +158,14 @@ function builder(problem: StripsProblem): {
   return { names, ops, id, expand, levelledOff }
 }
 
-function graphplanEngine(problem: StripsProblem, options: { readonly maxLevels?: number }): Algorithm<Internal> {
+function graphplanEngine(
+  problem: StripsProblem,
+  options: { readonly maxLevels?: number; readonly maxNodes?: number },
+): Algorithm<Internal> {
   const { names, ops, id, expand, levelledOff } = builder(problem)
   const goal = problem.goal.map(id)
   const maxLevels = options.maxLevels ?? 100
+  const maxNodes = options.maxNodes ?? 1_000_000
 
   const goalsPossible = (layer: Layer): boolean =>
     goal.every((g) => layer.facts.has(g)) &&
@@ -175,6 +181,9 @@ function graphplanEngine(problem: StripsProblem, options: { readonly maxLevels?:
     const sortedGoals = [...new Set(goals)]
     // Choose a non-mutex set of actions covering the goals, one goal at a time (no-ops tried first).
     const choose = (k: number, chosen: number[]): number[][] | null => {
+      s.work += 1
+      if (s.work > maxNodes) s.status = 'budget'
+      if (s.status === 'budget') return null
       if (k === sortedGoals.length) {
         const pre = [...new Set(chosen.flatMap((a) => (ops[a] as Op).pre))]
         const rest = extract(s, pre, level - 1)
@@ -193,7 +202,7 @@ function graphplanEngine(problem: StripsProblem, options: { readonly maxLevels?:
       return null
     }
     const r = choose(0, [])
-    if (r === null) {
+    if (r === null && s.status !== 'budget') {
       const set = s.memo.get(level) ?? new Set<string>()
       set.add(keyOf)
       s.memo.set(level, set)
@@ -216,6 +225,7 @@ function graphplanEngine(problem: StripsProblem, options: { readonly maxLevels?:
     init: () => {
       const s: Internal = {
         status: 'running',
+        work: 0,
         levels: 0,
         steps: [],
         nogoods: 0,
@@ -242,6 +252,7 @@ function graphplanEngine(problem: StripsProblem, options: { readonly maxLevels?:
           s.status = 'solved'
           return s
         }
+        if (s.status === 'budget') return s
       }
       if (s.levelledAt < 0 && levelledOff(s.layers)) s.levelledAt = s.layers.length - 1
       if (s.levelledAt >= 0) {
@@ -251,10 +262,10 @@ function graphplanEngine(problem: StripsProblem, options: { readonly maxLevels?:
         if (!goalsPossible(top) || count === s.previous) s.status = 'failure'
         s.previous = count
       }
-      if (s.levels >= maxLevels && s.status === 'running') s.status = 'failure'
+      if (s.levels >= maxLevels && s.status === 'running') s.status = 'budget'
       return s
     },
-    done: (s) => (s.status === 'solved' ? 'converged' : s.status === 'failure' ? 'stopped' : undefined),
+    done: (s) => (s.status === 'solved' ? 'converged' : s.status === 'running' ? undefined : 'stopped'),
     observe: (s) => {
       const top = s.layers[s.layers.length - 1] as Layer
       return { metrics: { levels: s.levels, facts: top.facts.size, mutexes: top.factMutex.size, nogoods: s.nogoods } }
@@ -336,7 +347,7 @@ export function mutexPairs(
  * stop changing.
  *
  * @param problem - The STRIPS problem.
- * @param options - The level budget (default 100).
+ * @param options - The level budget (default 100) and the extraction budget in choices (default 1000000).
  * @returns The algorithm.
  * @concept graphplan
  * @example
@@ -347,7 +358,7 @@ export function mutexPairs(
  */
 export function graphplanAlgorithm(
   problem: StripsProblem,
-  options: { readonly maxLevels?: number } = {},
+  options: { readonly maxLevels?: number; readonly maxNodes?: number } = {},
 ): Algorithm<GraphPlanState> {
   return graphplanEngine(problem, options)
 }
@@ -356,7 +367,7 @@ export function graphplanAlgorithm(
  * GraphPlan: a shortest parallel plan (fewest steps when independent actions may share a step).
  *
  * @param problem - The STRIPS problem.
- * @param options - The level budget (default 100) and tracing.
+ * @param options - The level budget (default 100), the extraction budget (default 1000000 choices) and tracing.
  * @returns The parallel steps, a serialised plan, the number of levels, and the graph's levels.
  * @concept graphplan
  * @example
@@ -374,10 +385,10 @@ export function graphplanAlgorithm(
  */
 export function graphplan(
   problem: StripsProblem,
-  options: SearchRunOptions & { readonly maxLevels?: number } = {},
+  options: SearchRunOptions & { readonly maxLevels?: number; readonly maxNodes?: number } = {},
 ): GraphPlanResult {
-  const { maxLevels = 100, ...run } = options
-  const algorithm = graphplanEngine(problem, { maxLevels })
+  const { maxLevels = 100, maxNodes, ...run } = options
+  const algorithm = graphplanEngine(problem, { maxLevels, ...(maxNodes === undefined ? {} : { maxNodes }) })
   const { state } = runAlgorithm(algorithm, { ...run, maxSteps: maxLevels + 1 })
   const plan = state.steps.flat()
   if (state.status === 'solved' && !validatePlan(problem, plan).valid) {

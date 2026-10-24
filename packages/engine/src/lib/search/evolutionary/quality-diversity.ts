@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { meanOf, WhiteboxError } from '../../base/index.ts'
 import { kNearest } from '../../numerics/spatial/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
@@ -329,7 +329,7 @@ export function noveltySearchAlgorithm<G>(
     done: (s) => (s.found !== null ? 'converged' : undefined),
     observe: (s) => ({
       metrics: {
-        novelty: s.novelty.reduce((a, b) => a + b, 0) / Math.max(1, s.novelty.length),
+        novelty: meanOf(s.novelty),
         archive: s.archive.length,
         best: s.bestFitness,
       },

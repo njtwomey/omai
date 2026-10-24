@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../base/index.ts'
+import { argmaxOf, meanOf, WhiteboxError } from '../base/index.ts'
 import { foldIn } from '../random/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
@@ -310,8 +310,6 @@ export function discreteParticleSwarmAlgorithm(
     throw new WhiteboxError('value', 'discreteParticleSwarm: n and particles must be positive integers')
   }
   const sigmoid = (v: number): number => 1 / (1 + Math.exp(-v))
-  const bestOf = (f: readonly number[]): number =>
-    f.reduce((bi, v, i) => (v > (f[bi] ?? Number.NEGATIVE_INFINITY) ? i : bi), 0)
   return {
     name: 'discrete-particle-swarm',
     config: { n, particles, inertia: w, cognitive: c1, social: c2, vMax },
@@ -330,7 +328,7 @@ export function discreteParticleSwarmAlgorithm(
         Array.from({ length: n }, () => (2 * d.uniform() - 1) * vMax),
       )
       const f = positions.map(fitness)
-      const b = bestOf(f)
+      const b = argmaxOf(f)
       return {
         positions,
         velocities,
@@ -355,7 +353,7 @@ export function discreteParticleSwarmAlgorithm(
       const f = positions.map(fitness)
       const personal = s.personal.map((p, i) => ((f[i] ?? 0) > (s.personalFitness[i] ?? 0) ? (positions[i] ?? p) : p))
       const personalFitness = s.personalFitness.map((pf, i) => Math.max(pf, f[i] ?? pf))
-      const b = bestOf(personalFitness)
+      const b = argmaxOf(personalFitness)
       const improved = (personalFitness[b] ?? Number.NEGATIVE_INFINITY) > s.bestFitness
       return {
         positions,
@@ -372,7 +370,7 @@ export function discreteParticleSwarmAlgorithm(
     observe: (s) => ({
       metrics: {
         best: s.bestFitness,
-        mean: s.personalFitness.reduce((a, b) => a + b, 0) / Math.max(1, s.personalFitness.length),
+        mean: meanOf(s.personalFitness),
       },
     }),
   }

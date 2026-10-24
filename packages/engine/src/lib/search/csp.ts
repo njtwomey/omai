@@ -241,6 +241,55 @@ function revise<D>(
   return revised
 }
 
+/** A FIFO queue of (variable, constraint) arcs without duplicates. */
+interface ArcQueue {
+  readonly arcs: [number, number][]
+  head: number
+  readonly queued: Set<number>
+}
+
+function arcQueue<D>(m: Model<D>, arcs: [number, number][]): ArcQueue {
+  return { arcs, head: 0, queued: new Set(arcs.map(([u, c]) => u * m.constraints.length + c)) }
+}
+
+/** One revision: the next arc's variable, its constraint, the values removed, and whether its domain emptied. */
+interface Revision {
+  readonly variable: number
+  readonly constraint: number
+  readonly removed: readonly number[]
+  readonly wipeout: boolean
+}
+
+/** Revise the next queued arc and queue the arcs into its variable when its domain shrank; null when none is left. */
+function reviseNext<D>(m: Model<D>, d: Domains, assigned: Int32Array, q: ArcQueue): Revision | null {
+  for (;;) {
+    const arc = q.arcs[q.head]
+    if (arc === undefined) return null
+    q.head += 1
+    const [u, ci] = arc
+    q.queued.delete(u * m.constraints.length + ci)
+    const c = m.constraints[ci]
+    if (c === undefined) continue
+    const mark = d.trail.length
+    const revised = revise(m, d, assigned, u, c)
+    const removed = d.trail.slice(mark).filter((_, i) => i % 2 === 1)
+    if (!revised) return { variable: u, constraint: ci, removed, wipeout: false }
+    if ((d.size[u] ?? 0) === 0) return { variable: u, constraint: ci, removed, wipeout: true }
+    for (const c2 of m.on[u] ?? []) {
+      if (c2.index === ci) continue
+      for (const w of new Set(c2.scope)) {
+        if (w === u || (assigned[w] ?? -1) >= 0) continue
+        const id = w * m.constraints.length + c2.index
+        if (!q.queued.has(id)) {
+          q.queued.add(id)
+          q.arcs.push([w, c2.index])
+        }
+      }
+    }
+    return { variable: u, constraint: ci, removed, wipeout: false }
+  }
+}
+
 /** Propagate to the fixed point from a queue of (variable, constraint) arcs; false on a domain wipeout. */
 function propagate<D>(
   m: Model<D>,
@@ -249,26 +298,10 @@ function propagate<D>(
   queue: [number, number][],
   counter: { revisions: number },
 ): boolean {
-  const queued = new Set(queue.map(([u, c]) => u * m.constraints.length + c))
-  while (queue.length > 0) {
-    const [u, ci] = queue.shift() as [number, number]
-    queued.delete(u * m.constraints.length + ci)
-    const c = m.constraints[ci]
-    if (c === undefined) continue
+  const q = arcQueue(m, queue)
+  for (let r = reviseNext(m, d, assigned, q); r !== null; r = reviseNext(m, d, assigned, q)) {
     counter.revisions += 1
-    if (!revise(m, d, assigned, u, c)) continue
-    if ((d.size[u] ?? 0) === 0) return false
-    for (const c2 of m.on[u] ?? []) {
-      if (c2.index === ci) continue
-      for (const w of new Set(c2.scope)) {
-        if (w === u || (assigned[w] ?? -1) >= 0) continue
-        const id = w * m.constraints.length + c2.index
-        if (!queued.has(id)) {
-          queued.add(id)
-          queue.push([w, c2.index])
-        }
-      }
-    }
+    if (r.wipeout) return false
   }
   return true
 }
@@ -305,7 +338,7 @@ export interface ArcConsistency<D> {
  * arc-consistent set of domains, so it does not depend on the queue order.
  *
  * @param problem - The CSP.
- * @param options - Starting domains (default the CSP's).
+ * @param options - Starting domains (default the CSP's) and tracing.
  * @returns Whether the CSP is arc consistent, the domains, and the revisions and constraint checks made.
  * @concept constraint-satisfaction
  * @example
@@ -317,16 +350,117 @@ export interface ArcConsistency<D> {
  */
 export function ac3<D>(
   problem: Csp<D>,
-  options: { readonly domains?: Readonly<Record<string, readonly D[]>> } = {},
+  options: SearchRunOptions & { readonly domains?: Readonly<Record<string, readonly D[]>> } = {},
 ): ArcConsistency<D> {
-  const start =
-    options.domains === undefined ? problem : { ...problem, domains: { ...problem.domains, ...options.domains } }
-  const m = compile(start, 'ac3')
-  const d = fullDomains(m)
-  const assigned = new Int32Array(m.n).fill(-1)
-  const counter = { revisions: 0 }
-  const consistent = m.values.every((v) => v.length > 0) && propagate(m, d, assigned, allArcs(m, assigned), counter)
-  return { consistent, domains: domainsOut(m, d), revisions: counter.revisions, checks: m.checks }
+  const { domains, ...run } = options
+  const { state } = runAlgorithm(ac3Engine(problem, domains), { ...run, maxSteps: Number.MAX_SAFE_INTEGER })
+  return {
+    consistent: state.consistent,
+    domains: domainsOut(state.model, state.domains),
+    revisions: state.revisions,
+    checks: state.model.checks,
+  }
+}
+
+/** The state of a traced AC-3 run. */
+export interface Ac3State {
+  readonly consistent: boolean
+  readonly revisions: number
+  /** Arcs waiting in the queue. */
+  readonly queued: number
+  /** The last revision: the variable, the constraint's index, and the values it lost. */
+  readonly last: { readonly variable: string; readonly constraint: number; readonly removed: readonly Json[] } | null
+}
+
+interface Ac3Internal<D> extends Ac3State {
+  consistent: boolean
+  revisions: number
+  queued: number
+  last: { variable: string; constraint: number; removed: Json[] } | null
+  done: boolean
+  readonly model: Model<D>
+  readonly domains: Domains
+  readonly queue: ArcQueue
+}
+
+function ac3Engine<D>(problem: Csp<D>, domains?: Readonly<Record<string, readonly D[]>>): Algorithm<Ac3Internal<D>> {
+  const start = domains === undefined ? problem : { ...problem, domains: { ...problem.domains, ...domains } }
+  return {
+    name: 'ac3',
+    config: {},
+    schema: channels({
+      metrics: { revisions: { description: 'arc revisions so far' }, queued: { description: 'arcs in the queue' } },
+      messages: {
+        revise: {
+          description: 'an arc revised',
+          payload: { variable: 'name', constraint: 'constraint index', removed: 'values removed' },
+        },
+      },
+    }),
+    init: () => {
+      const model = compile(start, 'ac3')
+      const d = fullDomains(model)
+      const none = new Int32Array(model.n).fill(-1)
+      const consistent = model.values.every((v) => v.length > 0)
+      const queue = arcQueue(model, consistent ? allArcs(model, none) : [])
+      return {
+        consistent,
+        revisions: 0,
+        queued: queue.arcs.length,
+        last: null,
+        done: !consistent,
+        model,
+        domains: d,
+        queue,
+      }
+    },
+    step: (s) => {
+      const r = reviseNext(s.model, s.domains, new Int32Array(s.model.n).fill(-1), s.queue)
+      s.queued = s.queue.arcs.length - s.queue.head
+      if (r === null) {
+        s.done = true
+        s.last = null
+        return s
+      }
+      s.revisions += 1
+      s.last = {
+        variable: s.model.names[r.variable] ?? '',
+        constraint: r.constraint,
+        removed: r.removed.map((a) => s.model.values[r.variable]?.[a] as Json),
+      }
+      if (r.wipeout) {
+        s.consistent = false
+        s.done = true
+      }
+      return s
+    },
+    done: (s) => (s.done ? (s.consistent ? 'converged' : 'stopped') : undefined),
+    observe: (s) => ({
+      metrics: { revisions: s.revisions, queued: s.queued },
+      messages: s.last === null ? [] : [{ kind: 'revise', payload: s.last }],
+    }),
+  }
+}
+
+/**
+ * AC-3 as a traced algorithm: each step revises one arc, recording the values it removes, so arc consistency can be
+ * animated domain by domain.
+ *
+ * @param problem - The CSP.
+ * @param options - Starting domains (default the CSP's).
+ * @returns The algorithm; it ends `converged` when consistent and `stopped` on a domain wipeout.
+ * @concept constraint-satisfaction
+ * @example
+ * ```ts
+ * import { ac3Algorithm, csp } from 'whitebox-engine/search'
+ * ac3Algorithm(csp(['a'], { a: [1] }, [])).name // => 'ac3'
+ * ```
+ */
+export function ac3Algorithm<D>(
+  problem: Csp<D>,
+  options: { readonly domains?: Readonly<Record<string, readonly D[]>> } = {},
+): Algorithm<Ac3State> {
+  return ac3Engine(problem, options.domains)
 }
 
 // ------------------------------------------------------------------------------------------------ backtracking
