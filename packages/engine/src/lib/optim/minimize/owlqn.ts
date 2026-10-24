@@ -1,7 +1,16 @@
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
+import {
+  CURVATURE_CHANNEL,
+  configOf,
+  curvatureMessage,
+  observeVector,
+  runVector,
+  type VectorState,
+  vectorDone,
+  vectorSchema,
+} from './_shared.ts'
 import {
   type FlatObjective,
   flatObjective,
@@ -46,6 +55,13 @@ export interface OwlqnState extends VectorState {
   /** Line-search evaluations of the last step and its accepted step length. */
   readonly evaluations: number
   readonly alpha: number
+  /** The curvature pair (from the smooth gradients) of the last step and whether it entered the memory. */
+  readonly curvature?: {
+    readonly sy: number
+    readonly used: boolean
+    readonly s: Float64Array
+    readonly y: Float64Array
+  }
 }
 
 /**
@@ -137,6 +153,7 @@ function owlqnOn(obj: FlatObjective, options: OwlqnOptions): Algorithm<OwlqnStat
         alpha: { description: 'accepted step length' },
         evaluations: { description: 'line-search evaluations of the step' },
       },
+      messages: CURVATURE_CHANNEL,
     }),
     init: () => {
       const { value, grad } = obj.valueAndGrad(obj.x0)
@@ -238,6 +255,7 @@ function owlqnOn(obj: FlatObjective, options: OwlqnOptions): Algorithm<OwlqnStat
         nonzeros: nonzeros(next.x),
         evaluations,
         alpha,
+        curvature: { sy: ddot(s, y), used, s, y },
         ...(stop === undefined ? {} : { stop }),
       }
     },
@@ -245,6 +263,9 @@ function owlqnOn(obj: FlatObjective, options: OwlqnOptions): Algorithm<OwlqnStat
     observe: (s) =>
       observeVector(s, {
         metrics: { smoothLoss: s.smoothValue, nonzeros: s.nonzeros, alpha: s.alpha, evaluations: s.evaluations },
+        ...(s.curvature === undefined
+          ? {}
+          : { messages: [curvatureMessage(s.curvature.sy, s.curvature.s, s.curvature.y, s.curvature.used)] }),
       }),
   }
 }

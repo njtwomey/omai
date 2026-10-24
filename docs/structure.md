@@ -998,17 +998,56 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   inverse-time, cosine (`cosineDecay`, `cosineWarmRestarts`, `sgdr`), warmup (`warmupCosineDecay`,
   `warmupExponentialDecay`, `warmupConstant`, `linearSchedule`), one-cycle, piecewise (`piecewiseConstant`,
   `piecewiseInterpolate`, `joinSchedules`), polynomial, cyclical, `reduceOnPlateau`; torch.optim.lr_scheduler and optax.
-- `line-search.ts`: backtracking (Armijo), strong Wolfe (with zoom by cubic interpolation), More-Thuente, Hager-Zhang,
-  with trial points recorded; the one-dimensional searches every second-order method uses.
+- `line-search.ts`: the line-search contract (`LineFunction`, `LineStart`, `LineSearchResult` with every trial point
+  recorded, `LineSearch`), `backtracking` (Armijo, scipy's quadratic-cubic interpolation, optionally safeguarded, or
+  halving; value-only evaluations), `strongWolfe` (Nocedal-Wright bracketing and zoom by cubic interpolation, scipy's
+  line_search), `withFallback`, `lineFunction` and the vector front `lineSearch`; the one-dimensional searches every
+  second-order method uses.
+- `line-search-interval.ts`: `moreThuente` (MINPACK-2 dcsrch, scipy's scalar_search_wolfe1), `hagerZhang` (CG_DESCENT:
+  approximate Wolfe conditions, secant^2 with bisection safeguards), `wolfe12` (scipy's More-Thuente-then-zoom search
+  with an extra acceptance condition).
+- `minimize/objective.ts`: `flatObjective` (an objective of any parameter tree as a function of one flat vector, with
+  gradients, Hessian-vector products and Hessians by autodiff), `flatResiduals` (residuals and their Jacobian),
+  `MinimizeResult` (scipy's OptimizeResult), `MinimizeMethod`, `VectorMethodOptions`, `Bounds`, `boxOf`, `clipToBox`,
+  `infNorm`.
 - `minimize/minimizer.ts`: `minimizer` (a transformation as an algorithm), `minimize(f, x0, { method })` (methods are
-  function values, not strings), `MinimizeResult`.
-- `minimize/gradient.ts`: gradient descent, nonlinear conjugate gradient, coordinate descent.
-- `minimize/quasi-newton.ts`: `bfgs` (inverse-Hessian updates, damped), `lbfgs` (two-loop recursion, memory m),
-  `lbfgsb` (box constraints by projected search and the generalised Cauchy point), `owlqn` (Andrew and Gao 2007: the
-  pseudo-gradient of f + C |x|_1, orthant-wise projection of the search direction and of the line search), SR1 with a
-  trust region, each traced (objective, gradient norm, step, curvature pairs).
-- `minimize/newton.ts`: Newton with modified Cholesky, trust region (dogleg, Steihaug CG), Newton-CG.
-- `minimize/least-squares.ts`: Gauss-Newton, Levenberg-Marquardt, bounded least squares, `curveFit`.
+  function values, not strings: any vector method below with its own options, or a gradient transformation; BFGS by
+  default).
+- `minimize/gradient.ts`: `gradientDescent` (line-search, fixed or Barzilai-Borwein steps), `conjugateGradient` (a port
+  of scipy's CG: Polak-Ribiere+ with the descent condition; Fletcher-Reeves, Hestenes-Stiefel, Dai-Yuan and Hager-Zhang
+  betas, restarts), `coordinateDescent` (cyclic, keyed random or greedy order; exact, Newton or gradient coordinate
+  updates).
+- `minimize/quasi-newton.ts`: `bfgs` (a port of scipy's BFGS: inverse-Hessian updates, optional Powell damping, the
+  final inverse Hessian; `bfgsInverseUpdate`), `lbfgs` (the two-loop recursion `twoLoopRecursion`, memory m, the
+  More-Thuente search), each traced (objective, gradient norm, step, line-search trials, curvature pairs).
+- `minimize/lbfgsb.ts`: `lbfgsb` (Byrd-Lu-Nocedal-Zhu: the generalised Cauchy point on the compact limited-memory model,
+  subspace minimisation with the Morales-Nocedal projection, the bounded More-Thuente search, restarts on failure;
+  scipy's stopping tests), `projectedGradientNorm`.
+- `minimize/owlqn.ts`: `owlqn` (Andrew and Gao 2007: the pseudo-gradient of f + C |x|_1 with per-coordinate weights,
+  orthant-wise projection of the search direction and of the backtracking line search, exact zeros; traced nonzeros),
+  `pseudoGradient`.
+- `minimize/sr1.ts`: `sr1Hessian` and `bfgsHessian` (quasi-Newton curvature models for trust regions), `sr1` (SR1 with
+  a trust region, Nocedal-Wright 6.2: updated after every step, Steihaug or exact subproblems).
+- `minimize/newton.ts`: `newton` (modified Cholesky of Nocedal-Wright 3.3, `modifiedCholesky`, or eigenvalue flooring,
+  with safeguarded backtracking), `newtonCg` (a port of scipy's Newton-CG on Hessian-vector products or the dense
+  Hessian).
+- `minimize/trust-region.ts`: the trust-region driver (`trustRegionAlgorithm`, `trustRegionOn`) over pluggable
+  curvature models (`HessianModel`, `exactHessian` dense or by products), `trustRegion`, `trustDogleg`, `trustNcg`,
+  `trustExact` (scipy's dogleg, trust-ncg and trust-exact). TODO: trust-krylov (GLTR, Lanczos on the subproblem).
+- `minimize/trust-subproblems.ts`: `doglegStep`, `steihaugStep` (Steihaug-Toint CG), `exactStep` (More-Sorensen with
+  the hard case), `quadraticModelValue`.
+- `minimize/least-squares.ts`: `gaussNewton` (damped, minimum-norm steps, robust losses), `leastSquares` (scipy's
+  least_squares over method function values, default `trf`), `curveFit` (sigma vectors or covariances, absolute sigma,
+  bounds, the SVD covariance), the result shape `LeastSquaresResult` (cost, residuals, Jacobian, optimality, active
+  mask).
+- `minimize/levenberg-marquardt.ts`: `levenbergMarquardt` (MINPACK's lmder and lmpar: scaled trust region on |D p|,
+  the Levenberg-Marquardt parameter by safeguarded Newton, ftol, xtol and gtol tests).
+- `minimize/least-squares-trf.ts`: `trf` (scipy's trust region reflective method: Coleman-Li scaling, reflected and
+  truncated steps, robust losses).
+- `minimize/least-squares-bounded.ts`: `dogbox` (scipy's rectangular trust-region dogleg with active variables
+  frozen, robust losses).
+- `minimize/least-squares-linear.ts`: `nnls` (Lawson-Hanson), `lsqLinear` (bounded-variable least squares, BVLS), each a
+  traced active-set algorithm.
 - `minimize/derivative-free.ts`: `nelderMead` (scipy's moves exactly: adaptive coefficients, xatol and fatol, initial
   simplex, evaluation budget, clipping into bounds), the `Bounds` type.
 - `minimize/powell.ts`: `powell` (conjugate directions with scipy's bracket, Brent and bounded line minimisations,
@@ -1031,7 +1070,15 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   updates, bounds by repair, tolFun and tolX).
 - `minimize/particle-swarm.ts`: `particleSwarm` (inertia or constriction, global or ring topology, velocity clamping,
   absorbing walls, stagnation stop).
-- `minimize/constrained.ts`: projected gradient, penalty and barrier methods, augmented Lagrangian, SLSQP.
+- `minimize/constrained.ts`: `Constraint` (scipy's eq and ineq form) and `constraintSet` (stacked values and autodiff
+  Jacobians), `projectedGradient` (spectral projected gradient SPG2 with a nonmonotone line search, Armijo along the
+  projection arc, or fixed steps; over bounds or any projection).
+- `minimize/penalty.ts`: `penaltyMethod` (quadratic penalty), `barrierMethod` (logarithmic barrier with the duality-gap
+  bound), `augmentedLagrangian` (Powell-Hestenes-Rockafellar with shifted inequality penalties and multipliers), each
+  an outer traced algorithm whose inner solves (L-BFGS-B or Newton by default, any `InnerMethod`) are child runs.
+- `minimize/slsqp.ts`: `slsqp` (sequential quadratic programming after Kraft: QP subproblems by the active-set QP
+  solver with elastic relaxation of inconsistent linearisations, damped BFGS on the Lagrangian, an L1 merit line
+  search with Powell's penalties, the multipliers).
 - `minimize/convex.ts`: `subgradientMethod` (projected, step rules constant, constant length, square summable,
   diminishing, Polyak, or custom; best-point tracking), `mirrorDescent` (`entropicMirror` for exponentiated gradient on
   the simplex, `euclideanMirror`, any `Mirror`; last, best or averaged output), `dualAscent` (and the method of
@@ -1039,7 +1086,8 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `minimize/frank-wolfe.ts`: `frankWolfe` (conditional gradient: standard 2 / (k + 2), adaptive short step, away
   steps and pairwise steps with active sets, the Frank-Wolfe gap) and the oracles `simplexLmo`, `l1BallLmo`, `boxLmo`,
   `l2BallLmo`, `nuclearBallLmo`.
-- `scalar.ts`: `minimizeScalar` (golden section, Brent, bounded), `bracket`.
+- `scalar.ts`: `minimizeScalar` over method function values: `brent`, `golden`, `fminbound` (scipy's ports, iteration
+  and evaluation counts included; each also a traced algorithm with the interval of uncertainty), `bracket`.
 - `proximal.ts`: proximal operators on values, differentiable (`proxL1`, `proxL2`, `proxSquaredL2`, `proxElasticNet`,
   `proxGroupLasso`, `proxNuclear`, `proxHuber`, `proxLinf`, `proxConjugate` by the Moreau decomposition) and the
   projections every optim file uses (`projectBox`, `projectNonnegative`, `projectSimplex`, `projectL1Ball`,

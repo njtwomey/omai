@@ -3,7 +3,9 @@ import type { Algorithm } from '../../trace/index.ts'
 import { type LineSearchResult, lineFunction } from '../line-search.ts'
 import { moreThuente } from '../line-search-interval.ts'
 import {
+  CURVATURE_CHANNEL,
   configOf,
+  curvatureMessage,
   LINE_SEARCH_CHANNEL,
   lineSearchMessage,
   observeVector,
@@ -56,6 +58,13 @@ export interface LbfgsbState extends VectorState {
   /** Breakpoints passed in the last Cauchy search. */
   readonly segments: number
   readonly lineSearch?: LineSearchResult
+  /** The curvature pair of the last step and whether it entered the memory. */
+  readonly curvature?: {
+    readonly sy: number
+    readonly used: boolean
+    readonly s: Float64Array
+    readonly y: Float64Array
+  }
 }
 
 /**
@@ -385,7 +394,7 @@ function lbfgsbOn(obj: FlatObjective, options: LbfgsbOptions): Algorithm<LbfgsbS
         pairs: { description: 'curvature pairs held' },
       },
       tensors: { cauchy: { role: 'state', description: 'the generalized Cauchy point' } },
-      messages: LINE_SEARCH_CHANNEL,
+      messages: { ...LINE_SEARCH_CHANNEL, ...CURVATURE_CHANNEL },
     }),
     init: () => {
       const x = clipToBox(obj.x0, box)
@@ -516,6 +525,7 @@ function lbfgsbOn(obj: FlatObjective, options: LbfgsbOptions): Algorithm<LbfgsbS
         free: freeCount,
         segments,
         lineSearch: ls,
+        curvature: { sy, used, s, y },
         ...(stop === undefined ? {} : { stop }),
       }
     },
@@ -524,7 +534,12 @@ function lbfgsbOn(obj: FlatObjective, options: LbfgsbOptions): Algorithm<LbfgsbS
       observeVector(s, {
         metrics: { projectedGradNorm: s.projectedGradNorm, free: s.free, segments: s.segments, pairs: s.s.length },
         ...(s.cauchy === undefined ? {} : { tensors: { cauchy: { role: 'state', value: s.cauchy } } }),
-        ...(s.lineSearch === undefined ? {} : { messages: [lineSearchMessage(s.lineSearch)] }),
+        messages: [
+          ...(s.lineSearch === undefined ? [] : [lineSearchMessage(s.lineSearch)]),
+          ...(s.curvature === undefined
+            ? []
+            : [curvatureMessage(s.curvature.sy, s.curvature.s, s.curvature.y, s.curvature.used)]),
+        ],
       }),
   }
 }

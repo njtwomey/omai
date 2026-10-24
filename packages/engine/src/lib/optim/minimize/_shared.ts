@@ -1,6 +1,7 @@
 // Shared machinery of the vector methods (not exported from the barrel): the common state, trace schema, observation
 // and the runner that turns a final state into a MinimizeResult.
 import type { Json } from '../../base/index.ts'
+import { dnrm2 } from '../../numerics/linalg/index.ts'
 import {
   type Algorithm,
   channels,
@@ -135,6 +136,22 @@ export function lineSearchMessage(r: LineSearchResult): { readonly kind: string;
 /** The channel of {@link lineSearchMessage}. */
 export const LINE_SEARCH_CHANNEL: Readonly<Record<string, MessageChannel>> = {
   lineSearch: { description: 'the line search of the step: accepted step, evaluations and trial points' },
+}
+
+/** A curvature pair as a trace message: s'y, |s|, |y|, whether the update used it and the damping factor. */
+export function curvatureMessage(
+  sy: number,
+  s: Float64Array,
+  y: Float64Array,
+  used: boolean,
+  theta = 1,
+): { readonly kind: string; readonly payload: Json } {
+  return { kind: 'curvature', payload: { sy, s: dnrm2(s), y: dnrm2(y), used, theta } }
+}
+
+/** The channel of {@link curvatureMessage}. */
+export const CURVATURE_CHANNEL: Readonly<Record<string, MessageChannel>> = {
+  curvature: { description: "the curvature pair of the step: s'y, |s| and |y|, and whether it was used" },
 }
 
 /** A JSON configuration from options, dropping functions, tracers and undefined values. */

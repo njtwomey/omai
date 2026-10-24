@@ -4,7 +4,9 @@ import type { Algorithm } from '../../trace/index.ts'
 import { type LineSearch, type LineSearchResult, lineFunction } from '../line-search.ts'
 import { moreThuente, wolfe12 } from '../line-search-interval.ts'
 import {
+  CURVATURE_CHANNEL,
   configOf,
+  curvatureMessage,
   LINE_SEARCH_CHANNEL,
   lineSearchMessage,
   observeVector,
@@ -23,15 +25,6 @@ import {
   type Parameters,
   type VectorMethodOptions,
 } from './objective.ts'
-
-const CURVATURE_CHANNEL = {
-  curvature: { description: 'the curvature pair of the step: s.y, |s| and |y|, and whether it was used' },
-}
-
-/** The message of one curvature pair. */
-function curvatureMessage(sy: number, s: Float64Array, y: Float64Array, used: boolean, theta = 1) {
-  return { kind: 'curvature', payload: { sy, s: dnrm2(s), y: dnrm2(y), used, theta } }
-}
 
 /** Options of {@link bfgs}. */
 export interface BfgsOptions extends VectorMethodOptions {

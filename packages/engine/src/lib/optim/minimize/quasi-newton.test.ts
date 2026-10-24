@@ -92,9 +92,12 @@ describe('L-BFGS and L-BFGS-B', () => {
         [0, 2],
       ],
       tracer: rec,
+      policy: tracePolicy({ messages: true }),
     })
     const free = metricSeries(rec.run(), 'free').values
     expect(free.at(-1)).toBe(1)
+    const pairs = messages(rec.run(), 'curvature')
+    expect(pairs.length).toBeGreaterThan(0)
   })
   it('projected gradient norm vanishes at a bounded minimum', () => {
     const box = O.boxOf({ lower: [0, 0] }, 2)
@@ -118,8 +121,9 @@ describe('OWL-QN', () => {
   it('traces nonzeros along the path', () => {
     const rec = recorder()
     const f = (x: Value): Value => mul(sum(square(sub(x, tensor([2, 0.3, -1])))), 0.5)
-    O.owlqn(f, [0, 0, 0], { l1: 0.5, tracer: rec })
+    O.owlqn(f, [0, 0, 0], { l1: 0.5, tracer: rec, policy: tracePolicy({ messages: true }) })
     expect(metricSeries(rec.run(), 'nonzeros').values.at(-1)).toBe(2)
+    expect(messages(rec.run(), 'curvature').length).toBeGreaterThan(0)
   })
   it('rejects bad weights', () => {
     expect(() => O.owlqn(rosen, [0, 0], { l1: -1 })).toThrow()
