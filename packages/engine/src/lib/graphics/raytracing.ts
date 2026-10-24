@@ -19,7 +19,7 @@ import {
   where,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
-import { dot3, madd3, mul3, reflect3, refract3, scale3 } from './_vec3.ts'
+import { check3, dot3, madd3, mul3, normalise3, reflect3, refract3, scale3 } from './_vec3.ts'
 import { type Bvh, type BvhOptions, buildBvh, intersectBvh, occludedBvh } from './bvh.ts'
 import { cameraRays, type Ray, type RenderCamera } from './camera.ts'
 import { type Hit, intersect, RAY_EPSILON, type Shape } from './intersect.ts'
@@ -623,9 +623,10 @@ export function renderWhitted(
  * (reflection and refraction rays, and shadow rays at every hit), for figures that follow one pixel.
  *
  * @param s - The scene.
- * @param ray - The ray (a unit direction).
+ * @param ray - The ray (its direction is normalised here).
  * @param options - Depth and weight caps and area-light jitter.
  * @returns The radiance and the records of every ray.
+ * @throws WhiteboxError with code `value` for a zero or non-finite direction, or a negative depth cap.
  * @concept ray-tracing
  * @example
  * ```ts
@@ -643,11 +644,12 @@ export function traceRay(
   const maxDepth = options.maxDepth ?? 5
   if (!(Number.isInteger(maxDepth) && maxDepth >= 0))
     throw new WhiteboxError('value', 'traceRay: maxDepth must be >= 0')
+  const direction = normalise3(ray.direction, 'the ray direction')
   let state = initialState(
     [
       {
-        origin: ray.origin,
-        direction: ray.direction,
+        origin: check3(ray.origin, 'the ray origin'),
+        direction,
         weight: [1, 1, 1],
         pixel: 0,
         depth: 0,

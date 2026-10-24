@@ -37,7 +37,10 @@ describe('triangle rasterisation', () => {
         ]
         const centres: number[][] = []
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) centres.push([x + 0.5, y + 0.5])
-        const snapped = toArray(barycentric(centres, [snap(a), snap(b), snap(c)])) as number[][]
+        const [sa, sb, sc2] = [snap(a), snap(b), snap(c)]
+        // A sliver that snaps to a line covers nothing; the reference cannot say where its inside is.
+        if (Math.abs((sb[0] - sa[0]) * (sc2[1] - sa[1]) - (sb[1] - sa[1]) * (sc2[0] - sa[0])) < 1e-3) return
+        const snapped = toArray(barycentric(centres, [sa, sb, sc2])) as number[][]
         const exact = toArray(barycentric(centres, [a, b, c])) as number[][]
         for (const [i, w] of snapped.entries()) {
           const lo = Math.min(w[0] ?? 0, w[1] ?? 0, w[2] ?? 0)
@@ -159,8 +162,16 @@ describe('the rasterisation pipeline against ray casting', () => {
               bestT = h.t
             }
             const got = r.triangleIds[y * W + x] ?? -1
-            if (got !== best) disagreements++
-            else if (best >= 0) {
+            if (got !== best) {
+              // Two surfaces at the same depth (coplanar overlaps) may be resolved either way.
+              const other = got >= 0 ? shapes[got] : undefined
+              const tie =
+                other !== undefined &&
+                best >= 0 &&
+                Math.abs((intersectTriangle(ray, other, 0)?.t ?? Infinity) - bestT) < 1e-9
+              if (!tie) disagreements++
+            }
+            if (got === best && best >= 0) {
               const hit = intersectTriangle(ray, shapes[best] as never, 0)
               const want = hit === null ? undefined : projectToPixel(cam, hit.point, W, H)
               expect(r.depth[y * W + x]).toBeCloseTo(want?.ndcZ ?? 0, 6)

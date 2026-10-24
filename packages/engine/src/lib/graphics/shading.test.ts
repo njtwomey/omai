@@ -253,6 +253,34 @@ describe('shading derivatives', () => {
         metallicRoughness(a as Value, b as Value, c as Value, alb as Value, r as Value, m as Value),
       [n, l, v, [0.8, 0.4, 0.2], 0.6, 0.3],
     ],
+    ['halfVector', (a, b) => halfVector(a as Value, b as Value), [l, v]],
+    [
+      'phongBrdf',
+      (a, b, c, s) => phongBrdf(a as Value, b as Value, c as Value, s as Value),
+      [n, l, [-0.3, -0.5, 0.8], 6],
+    ],
+    ['blinnPhongBrdf', (a, b, c, s) => blinnPhongBrdf(a as Value, b as Value, c as Value, s as Value), [n, l, v, 6]],
+    ['blinnPhongDistribution', (c, s) => blinnPhongDistribution(c as Value, s as Value), [[0.9, 0.6], 5]],
+    ['smithG', (a, b, al) => smithG(a as Value, b as Value, al as Value), [[0.9, 0.3], [0.5, 0.8], 0.4]],
+    ['lambertBrdf', (a) => lambertBrdf(a as Value), [[0.2, 0.5, 0.9]]],
+    [
+      'shade (blinn-phong)',
+      (a, b, c, e) =>
+        shade(
+          material({ model: 'blinn-phong', specular: [0.5, 0.5, 0.5] }),
+          a as Value,
+          b as Value,
+          c as Value,
+          e as Value,
+        ),
+      [n, l, v, [1, 2, 3]],
+    ],
+    [
+      'shade (cook-torrance)',
+      (a, b, c, e) =>
+        shade(material({ model: 'cook-torrance', metallic: 0.5 }), a as Value, b as Value, c as Value, e as Value),
+      [n, l, v, [1, 2, 3]],
+    ],
   ]
   for (const [name, f, inputs] of cases) {
     it(`${name} passes checkPrimitive`, () => {

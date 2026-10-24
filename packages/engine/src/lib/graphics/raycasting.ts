@@ -180,6 +180,11 @@ export interface RaycastOptions {
   readonly maxSteps?: number
   /** Eye height above the floor, in wall heights (default 0.5). */
   readonly eyeHeight?: number
+  /**
+   * Project walls by Euclidean distance instead of the corrected one, to show the fish-eye distortion the correction
+   * removes (default false).
+   */
+  readonly fisheye?: boolean
 }
 
 /**
@@ -208,7 +213,7 @@ export interface Column {
   readonly column: number
   readonly angle: number
   readonly hit: GridHit | null
-  /** Fish-eye corrected distance (Infinity when nothing is hit). */
+  /** Fish-eye corrected distance (Infinity when nothing is hit; the Euclidean distance with `fisheye`). */
   readonly perpendicular: number
   /** The wall slice's top and bottom on screen, in pixel rows (unclamped). */
   readonly top: number
@@ -290,7 +295,12 @@ export function raycastAlgorithm(w: World, pose: Pose, options: RaycastOptions =
       const angle = angles[x] ?? pose.heading
       const r = ddaCast(w, [pose.x, pose.y], angle, { maxDistance: st.maxDistance, maxSteps: st.maxSteps })
       const perpendicular =
-        r.hit === null ? Number.POSITIVE_INFINITY : Math.max(1e-9, fisheyeCorrect(r.hit.distance, angle, pose.heading))
+        r.hit === null
+          ? Number.POSITIVE_INFINITY
+          : Math.max(
+              1e-9,
+              options.fisheye === true ? r.hit.distance : fisheyeCorrect(r.hit.distance, angle, pose.heading),
+            )
       const top = st.height / 2 - (st.focal * (1 - st.eyeHeight)) / perpendicular
       const bottom = st.height / 2 + (st.focal * st.eyeHeight) / perpendicular
       return { columns: [...s.columns, { column: x, angle, hit: r.hit, perpendicular, top, bottom, cells: r.cells }] }

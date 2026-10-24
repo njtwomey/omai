@@ -51,6 +51,10 @@ describe('grid ray casting', () => {
     const mid = cols[8]
     expect(((mid?.top ?? 0) + (mid?.bottom ?? 0)) / 2).toBeCloseTo(6, 12)
     expect(columnAngles(0, 3, Math.PI / 2)[1]).toBe(0)
+    // Without the correction the same wall bows: its columns are farther towards the edges of the view.
+    const bowed = castColumns(room, pose, { width: 16, height: 12, fov: Math.PI / 4, fisheye: true })
+    const xs = bowed.filter((c) => c.hit?.side === 'x').map((c) => c.perpendicular)
+    expect(xs.reduce((m, d) => Math.max(m, d), 0) - xs.reduce((m, d) => Math.min(m, d), Infinity)).toBeGreaterThan(0.05)
   })
 
   it('casts as a traced algorithm with one step and one hit message per column', () => {

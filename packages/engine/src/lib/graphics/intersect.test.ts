@@ -106,6 +106,7 @@ describe('ray-primitive intersections', () => {
     const inside = intersectBox({ origin: [1, 0.5, 0.5], direction: [0, 1, 0] }, b)
     expect([inside?.t, inside?.normal, inside?.frontFace]).toEqual([0.5, [0, 1, 0], false])
     expect(intersectBox({ origin: [5, 5, 5], direction: [0, 1, 0] }, b)).toBeNull()
+    expect(intersectBox({ origin: [1, 0.5, 0.5], direction: [0, 0, 0] }, b)).toBeNull()
     expect(intersectBox({ origin: [3, 0.5, 0.5], direction: [-1, 0, 0] }, b)?.uv).toEqual([0.5, 0.5])
   })
 

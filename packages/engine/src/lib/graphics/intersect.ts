@@ -348,7 +348,7 @@ export function intersectBox(
   const [near, far, nearAxis] = span
   const inside = near < tMin
   const t = inside ? far : near
-  if (!(t >= tMin && t <= tMax)) return null
+  if (!(t >= tMin && t <= tMax && Number.isFinite(t))) return null
   const point = madd3(ray.origin, ray.direction, t)
   // The face hit: the entering slab from outside; from inside, the axis whose face the exit point lies on.
   let axis = nearAxis

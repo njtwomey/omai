@@ -2,7 +2,7 @@ import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import type { Vec3 } from '../scene/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
-import { basis3, dot3, madd3, mul3, normalise3, reflect3, refract3, scale3 } from './_vec3.ts'
+import { basis3, check3, dot3, madd3, mul3, normalise3, reflect3, refract3, scale3 } from './_vec3.ts'
 import { pixelRay, type Ray, type RenderCamera } from './camera.ts'
 import { lightSamples } from './lights.ts'
 import { albedoAt, type RayScene, sceneHit, sceneOccluded, splitWeights } from './raytracing.ts'
@@ -322,6 +322,7 @@ export function pathTrace(
  * @param key - The key; bounce `b` draws its uniforms from `foldIn(key, b)`.
  * @param options - The most scattering events (default 4).
  * @returns The radiance carried back and the vertices.
+ * @throws WhiteboxError with code `value` for a zero or non-finite direction or a negative bounce cap.
  * @concept path-tracing
  * @example
  * ```ts
@@ -341,7 +342,11 @@ export function tracePath(
   const maxBounces = options.maxBounces ?? 4
   if (!(Number.isInteger(maxBounces) && maxBounces >= 0)) throw new WhiteboxError('value', 'tracePath: maxBounces >= 0')
   const per = uniformsPerBounce(s)
-  const p: PathState = { ray, throughput: [1, 1, 1], radiance: [0, 0, 0], alive: true }
+  const start: Ray = {
+    origin: check3(ray.origin, 'the ray origin'),
+    direction: normalise3(ray.direction, 'the ray direction'),
+  }
+  const p: PathState = { ray: start, throughput: [1, 1, 1], radiance: [0, 0, 0], alive: true }
   const vertices: PathVertex[] = []
   for (let b = 0; b <= maxBounces && p.alive; b++) {
     vertices.push(bounce(s, p, uniform(foldIn(key, b), [per]).data, 0, b === maxBounces))

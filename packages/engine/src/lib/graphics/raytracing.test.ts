@@ -102,6 +102,7 @@ describe('Whitted ray tracing', () => {
     expect(r.records).toHaveLength(7)
     expect(r.records.reduce((m, x) => Math.max(m, x.depth), 0)).toBe(6)
     expect(Number.isFinite(r.radiance[0])).toBe(true)
+    expect(() => traceRay(s, { origin: [0, 0, 0], direction: [0, 0, 0] })).toThrow()
   })
 
   it('renders as a traced algorithm with one step per generation and records chosen pixels', () => {
