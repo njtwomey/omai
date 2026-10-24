@@ -1525,6 +1525,22 @@
       "cases": 16
     },
     {
+      "fixture": "methods/neighbours/centroid.json",
+      "source": "oracle/cases/methods/neighbours/centroid.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "methods/neighbours/knn.json",
+      "source": "oracle/cases/methods/neighbours/knn.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "methods/rl/agents/bandits.json",
       "source": "oracle/cases/methods/rl/agents/bandits.py",
       "reference": {
