@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ColourToggle } from './ColourToggle.tsx'
 import { Link } from './Link.tsx'
 
 /** The site's sections, in navigation order. */
@@ -33,6 +34,7 @@ export function Shell(props: { readonly path: string; readonly children: ReactNo
             </Link>
           ))}
         </nav>
+        <ColourToggle />
       </header>
       <main className="mx-auto max-w-6xl px-6 py-8">{props.children}</main>
     </div>

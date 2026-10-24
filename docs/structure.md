@@ -3952,7 +3952,8 @@ Design rules:
 - `views/`: a React component per exposition view (`PathView`, `TreeView`, `PipelineView`, `EmbeddingPlayer`,
   `DecisionSurfaceView`, ...), and `ExpositionView`, which picks the standard view of any record.
 - `EnvView.tsx`: one consistent view of any environment's render, with episode playback and overlays.
-- `theme.tsx`: `ThemeProvider`, `useColourMode`.
+- `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
+  or a prop), dark by default; no system-preference detection.
 
 ## 7. whitebox-meta, `packages/meta/src/`
 
@@ -4016,7 +4017,8 @@ the docs document the engine. It consumes the packages exactly as an outside pro
 `examples/` app is the template: its shell, recipe registry, live-example pages, Markdown and docstring-driven docs
 pages are recycled rather than reinvented.
 
-`src/shell/`: the top bar with the three sections, a persistent light and dark toggle (system default, no flash),
+`src/shell/`: the top bar with the three sections, a dark and light toggle at the top right (dark by default,
+remembered, set before first paint; no system-preference detection),
 theme tokens from `whitebox-render/theme`, Tailwind CSS, a dependency-free path router (`usePath`, `navigate`,
 `Link`), and the recipe and code-view components (a live figure beside its own source).
 
