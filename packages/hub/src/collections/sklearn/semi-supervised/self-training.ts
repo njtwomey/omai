@@ -6,12 +6,13 @@ import { withHiddenLabels } from './_hidden.ts'
 export const selfTraining: HubEntry = defineEntry({
   id: 'sklearn/semi-supervised/self-training',
   title: 'Self-training',
-  summary: 'A classifier fitted on a few labels gives its most confident unlabelled points labels, then refits.',
+  summary:
+    'A classifier fitted on a few labels gives its most confident unlabelled points labels, then refits: round by round, mistakes made early are kept.',
   collection: 'sklearn/semi-supervised',
   tags: ['semi-supervised', 'classification', 'pseudo-labelling', 'wrapper'],
   datasets: ['classification2d'],
-  dataset: 'blobs',
-  ...withHiddenLabels(selfTrainingEstimator({ threshold: 0.75 })),
+  dataset: 'moons',
+  ...withHiddenLabels(selfTrainingEstimator({ criterion: 'kBest', kBest: 30, maxIter: 7 })),
   views: [
     { record: 'clusteringSteps', title: 'Pseudo-labels per round' },
     { record: 'learningCurve', title: 'Labelled fraction and accuracy', area: 'side' },

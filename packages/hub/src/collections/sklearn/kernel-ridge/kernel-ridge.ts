@@ -11,11 +11,10 @@ export const kernelRidge: HubEntry = defineEntry({
   tags: ['regression', 'kernels'],
   datasets: ['regression1d', 'regressionTabular'],
   maxRows: 200,
-  ...fitEstimator(kernelRidgeMethod(), { surface: true }),
+  ...fitEstimator(kernelRidgeMethod({ kernel: 'rbf', gamma: 10, alpha: 0.1 }), { surface: true }),
   views: [
     { record: 'posteriorGrid', title: 'Fit' },
     { record: 'crossValidationCurve', title: 'Cross-validation', area: 'side' },
-    { record: 'decisionSurface', title: 'Fitted function', area: 'side' },
   ],
   methods: [{ file: 'methods/kernel-methods/kernel-ridge.ts', name: 'kernelRidge' }],
 })
