@@ -70,3 +70,22 @@ describe('diagram', () => {
     expect(paths.every((p) => p.kind === 'path' && p.points.length === 3)).toBe(true)
   })
 })
+
+describe('architectures', () => {
+  it('draws a network four ways, counting parameters once', async () => {
+    const { describe: describeNet, mlp, TransformerEncoderLayer } = await import('whitebox-engine/nn')
+    const { architecture, flowOrder } = await import('./architectures.ts')
+    const s = describeNet(mlp([2, 4, 1]), [8, 2])
+    expect(flowOrder(s).map((n) => n.label)).toEqual(['input', 'Linear', 'ReLU', 'Linear', 'output'])
+    for (const v of ['diagram', 'compact', 'shapes', 'params'] as const) expect(architecture(s, v).kind).toBe('scene')
+    const total = (sc: ReturnType<typeof architecture>): string =>
+      flatten(sc.children).find((n) => n.kind === 'text' && n.text.endsWith('parameters'))?.kind === 'text'
+        ? (flatten(sc.children).find((n) => n.kind === 'text' && n.text.endsWith('parameters')) as { text: string })
+            .text
+        : ''
+    expect(total(architecture(s, 'params'))).toBe('17 parameters')
+    const t = describeNet(new TransformerEncoderLayer(8, 2, { batchFirst: true }), [1, 3, 8], { expandParts: true })
+    const tParams = t.nodes.find((n) => n.data?.['parts'] !== undefined)?.badges?.['params']
+    expect(total(architecture(t, 'params'))).toBe(`${(Number(tParams) / 1e3).toPrecision(3)}k parameters`)
+  })
+})
