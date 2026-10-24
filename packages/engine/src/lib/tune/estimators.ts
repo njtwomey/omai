@@ -1,233 +1,202 @@
 import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
-import { type ClassificationData, type RegressionData, take } from '../data/index.ts'
+import {
+  type Estimator,
+  type LearnData,
+  makeScorer,
+  type ResponseMethod,
+  type Scorer,
+  type ScorerName,
+  scorerFor,
+  takeData,
+} from '../learn/index.ts'
+import { checkCv, type Fold, type Splitter, splitIndices, splitInputOf } from '../learn/model-selection/index.ts'
 import type { Metric } from '../metrics/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
-import type { Space, SpaceValue } from '../space/index.ts'
-import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { kFoldIndices, stratifiedKFoldIndices } from './_folds.ts'
+import type { SpaceValue } from '../space/index.ts'
 import { type Objective, type ObjectiveOptions, objectiveBase, type TrialContext } from './objectives.ts'
+import type { StudyDirection } from './study.ts'
 
-/** A fitted model: predictions, and class probabilities for classifiers. */
-export interface FittedModel {
-  predict(x: TensorLike): TensorLike
-  predictProba?(x: TensorLike): TensorLike
-}
+/** An estimator to re-create with each configuration (`estimator.with(params)`), or a function making one. */
+export type EstimatorSource = Estimator | ((params: SpaceValue) => Estimator)
 
 /**
- * The part of the estimator contract that tuning needs: a name, an optional `hyperSpace`, `fit`, and `withHyper` to
- * make the same estimator with other hyperparameters (scikit-learn's `clone(est).set_params(**params)`).
- * TODO(learn): `learn/estimator.ts` will define the full contract; it satisfies this one.
- */
-export interface TunableEstimator<D = TabularData> {
-  readonly name: string
-  readonly hyperSpace?: Space
-  fit(data: D, options?: { readonly key?: Key }): FittedModel
-  withHyper?(params: SpaceValue): TunableEstimator<D>
-}
-
-/** Tabular data with features and targets (the schemas estimators train on). */
-export type TabularData = RegressionData | ClassificationData
-
-/** An estimator to re-create with each configuration, or a function making one from a configuration. */
-export type EstimatorSource<D = TabularData> = TunableEstimator<D> | ((params: SpaceValue) => TunableEstimator<D>)
-
-/** One cross-validation split: row indices to train on and to test on. */
-export interface Fold {
-  readonly train: readonly number[]
-  readonly test: readonly number[]
-}
-
-/** A splitter: the folds of a dataset (a key for shuffling ones). */
-export type Splitter<D = TabularData> = (data: D, key: Key) => readonly Fold[]
-
-/**
- * Make the estimator for a configuration.
+ * The estimator for a configuration: `estimator.with(params)` (scikit-learn's `clone(est).set_params(**params)`), or
+ * the factory's estimator.
  *
- * @param source - An estimator with `withHyper`, or a factory.
- * @param params - The configuration.
+ * @param source - An estimator, or a factory from configurations to estimators.
+ * @param params - The configuration (a record of hyperparameters for `with`).
  * @returns The estimator.
- * @throws WhiteboxError with code `value` when an estimator lacks `withHyper`.
+ * @throws WhiteboxError with code `value` when an estimator is given a configuration that is not a record.
  * @example
  * ```ts
  * import { estimatorFor } from 'whitebox-engine/tune'
- * const make = (p: unknown) => ({ name: `k=${(p as { k: number }).k}`, fit: () => ({ predict: () => [0] }) })
- * estimatorFor(make, { k: 3 }).name // => 'k=3'
+ * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
+ * estimatorFor(standardScaler(), { withMean: false }).hyper // => { withMean: false, withStd: true }
  * ```
  */
-export function estimatorFor<D>(source: EstimatorSource<D>, params: SpaceValue): TunableEstimator<D> {
+export function estimatorFor(source: EstimatorSource, params: SpaceValue): Estimator {
   if (typeof source === 'function') return source(params)
-  if (source.withHyper === undefined)
-    throw new WhiteboxError('value', `${source.name}: tuning needs withHyper (or pass a factory)`)
-  return source.withHyper(params)
-}
-
-function rows(data: TabularData): number {
-  return data.y.shape[0] ?? 0
+  if (typeof params !== 'object' || params === null || Array.isArray(params))
+    throw new WhiteboxError('value', `${source.name}: a configuration of an estimator is a record of hyperparameters`)
+  return source.with(params as Readonly<Record<string, unknown>>)
 }
 
 /**
- * The default folds for `cv: k`, as scikit-learn picks them: stratified k-fold for classification, k-fold otherwise,
- * unshuffled.
- *
- * @param data - The data.
- * @param k - The number of folds.
- * @returns The folds.
- * @throws WhiteboxError with code `value` for fewer than 2 folds or more folds than rows.
- * @example
- * ```ts
- * import { defaultFolds } from 'whitebox-engine/tune'
- * import { xy } from 'whitebox-engine/data'
- * defaultFolds(xy([[1], [2], [3], [4], [5]], [1, 2, 3, 4, 5]), 2).map((f) => f.test) // => [[0, 1, 2], [3, 4]]
- * ```
+ * How an estimator objective scores a fold: a metric (its spec gives the direction), a `learn` scorer (maximised), or
+ * neither: the estimator's own `score` (accuracy or R^2, maximised).
  */
-export function defaultFolds(data: TabularData, k: number): Fold[] {
-  return data.kind === 'classification' ? stratifiedKFoldIndices(toFlat(data.y), k) : kFoldIndices(rows(data), k)
+export interface ScoringChoice {
+  /** A metric scored on each test fold, minimised or maximised as its spec says. */
+  readonly metric?: Metric
+  /** A scorer or scikit-learn scorer name (higher is better), as `learn`'s searches take it. */
+  readonly scoring?: ScorerName | Scorer
+  /** The verb a metric reads (default: `predictProba` for metrics of probabilities or scores, else `predict`). */
+  readonly response?: ResponseMethod
+}
+
+/** The scorer of a choice, the sign that turns its score into the objective value, and the objective's direction. */
+function scorerOf(choice: ScoringChoice): {
+  readonly scorer: Scorer
+  readonly sign: number
+  readonly direction: StudyDirection
+  readonly name: string
+} {
+  if (choice.metric !== undefined) {
+    const spec = choice.metric.spec
+    const higher = spec.direction === 'higher'
+    const response =
+      choice.response ?? (spec.inputs === 'probabilities' || spec.inputs === 'scores' ? 'predictProba' : 'predict')
+    const scorer = makeScorer(choice.metric, { response, greaterIsBetter: higher, name: spec.name })
+    // makeScorer negates losses; the objective reports the metric itself and minimises it.
+    return { scorer, sign: higher ? 1 : -1, direction: higher ? 'maximize' : 'minimize', name: spec.name }
+  }
+  // A scorer, a scorer name, or (neither given) the estimator's own `score`, as scikit-learn's searches.
+  const scorer = scorerFor(choice.scoring)
+  return { scorer, sign: 1, direction: 'maximize', name: scorer.name }
 }
 
 /** Options of {@link estimatorObjective}. */
-export interface EstimatorObjectiveOptions<D = TabularData> extends ObjectiveOptions {
-  /** The metric scored on each test fold; its spec gives the direction. */
-  readonly metric: Metric
-  /** The splitter (the name of the worked path in the plan; takes precedence over `cv`). */
-  readonly splitter?: Splitter<D>
-  /** A splitter, or a number of folds (default 5: stratified for classification), as scikit-learn's `cv`. */
-  readonly cv?: number | Splitter<D>
-  /** Score `predictProba` instead of `predict` (default: when the metric reads probabilities or scores). */
-  readonly response?: 'predict' | 'predictProba'
+export interface EstimatorObjectiveOptions extends ObjectiveOptions, ScoringChoice {
+  /** The splitter (takes precedence over `cv`). */
+  readonly splitter?: Splitter
+  /** A splitter, or a number of folds (default 5: stratified for classifiers), as scikit-learn's `cv`. */
+  readonly cv?: Splitter | number
+  /** Group ids for group splitters. */
+  readonly groups?: ArrayLike<number>
   /** The key of a shuffling splitter (default `key(0)`: every trial sees the same folds, as scikit-learn's searches). */
   readonly splitKey?: Key
 }
 
-function responseOf(options: Pick<EstimatorObjectiveOptions, 'metric' | 'response'>): 'predict' | 'predictProba' {
-  const inputs = options.metric.spec.inputs
-  return options.response ?? (inputs === 'probabilities' || inputs === 'scores' ? 'predictProba' : 'predict')
-}
-
-/** Fit on one dataset and score the metric on another. */
+/** Fit on one part and score the other, the fit a child run of the trial. */
 function fitAndScore(
-  source: EstimatorSource,
-  params: SpaceValue,
-  train: TabularData,
-  test: TabularData,
-  options: Pick<EstimatorObjectiveOptions, 'metric' | 'response'>,
+  estimator: Estimator,
+  train: LearnData,
+  test: LearnData,
+  scorer: Scorer,
+  sign: number,
+  trial: TrialContext,
   key: Key,
 ): number {
-  const estimator = estimatorFor(source, params)
-  const fitted = estimator.fit(train, { key })
-  let predicted: TensorLike
-  if (responseOf(options) === 'predictProba') {
-    if (fitted.predictProba === undefined)
-      throw new WhiteboxError('value', `${estimator.name}: the metric needs predictProba`)
-    predicted = fitted.predictProba(test.x)
-  } else predicted = fitted.predict(test.x)
-  return options.metric(test.y, asTensor(predicted)).estimate.value
-}
-
-/** The fold scores of a configuration (scikit-learn's `cross_val_score`), reporting the running mean after each fold. */
-function crossValidate(
-  source: EstimatorSource,
-  data: TabularData,
-  params: SpaceValue,
-  folds: readonly Fold[],
-  options: Pick<EstimatorObjectiveOptions, 'metric' | 'response'>,
-  trial: TrialContext,
-): number[] {
-  const scores: number[] = []
-  for (const [i, fold] of folds.entries()) {
-    scores.push(
-      fitAndScore(source, params, take(data, fold.train), take(data, fold.test), options, foldIn(trial.key, i)),
-    )
-    if (trial.report(i, meanOf(scores))) break
-  }
-  return scores
+  const fitted = estimator.fit(train, { key, parent: trial.run })
+  return sign * scorer.score(fitted, test)
 }
 
 /**
- * Cross-validated estimator performance as an objective: fit the estimator with each configuration on every training
- * fold, score the metric on the test fold, and return the mean (direction from the metric's spec). The running mean
- * is reported after each fold, so pruners can stop hopeless configurations early. Attributes record the fold scores
- * and their standard deviation.
+ * Cross-validated estimator performance as an objective: the configuration makes an estimator (`with`, or a
+ * factory), which is fitted on every training fold (each fit a child run of the trial) and scored on the test fold;
+ * the value is the mean score, with the direction of the metric (or maximised for a scorer). The running mean is
+ * reported after each fold, so pruners can stop hopeless configurations early. Folds come from `learn`'s splitters
+ * (`cv: 5` is stratified k-fold for classifiers, as scikit-learn's `check_cv`); attributes record the fold scores and
+ * their standard deviation.
  *
- * @param estimator - An estimator with `withHyper`, or a factory from configurations to estimators.
+ * @param estimator - An estimator (re-created with each configuration by `with`), or a factory.
  * @param data - The data.
- * @param options - The metric, the folds (`splitter`, or `cv`: a splitter or a count, default 5), the prediction to
- *   score, the splitter's key, and a default space (default the estimator's `hyperSpace`).
+ * @param options - The metric or scoring, the folds (`splitter`, or `cv`), groups, the splitter's key and a default
+ *   space (default the estimator's `hyperSpace`).
  * @returns The objective.
  * @concept cross-validation
  * @example
  * ```ts
  * import { estimatorObjective, tune, gridSampler } from 'whitebox-engine/tune'
- * import { xy } from 'whitebox-engine/data'
+ * import { defineEstimator } from 'whitebox-engine/learn'
  * import { meanSquaredError } from 'whitebox-engine/metrics'
  * import { dict, choice } from 'whitebox-engine/space'
- * // A constant predictor: the configuration is the constant.
- * const make = (p: unknown) => ({ name: 'constant', fit: () => ({ predict: (x: unknown) => (x as { shape: number[] }).shape.slice(0, 1).map(() => (p as { c: number }).c).flatMap((c) => Array((x as { shape: number[] }).shape[0]).fill(c)) }) })
- * const data = xy([[0], [1], [2], [3]], [2, 2, 2, 2])
- * const objective = estimatorObjective(make, data, { metric: meanSquaredError, cv: 2 })
+ * import { asTensor, full } from 'whitebox-engine/tensor'
+ * const constant = defineEstimator(
+ *   { name: 'constant', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([asTensor(x).shape[0] ?? 0], h.c) }) },
+ *   { c: 0 },
+ * )
+ * const objective = estimatorObjective(constant, { x: [[0], [1], [2], [3]], y: [2, 2, 2, 2] }, { metric: meanSquaredError, cv: 2 })
  * tune(objective, dict({ c: choice([0, 2, 4]) }), { sampler: gridSampler() }).best?.params // => { c: 2 }
  * ```
  */
 export function estimatorObjective(
   estimator: EstimatorSource,
-  data: TabularData,
+  data: LearnData,
   options: EstimatorObjectiveOptions,
 ): Objective {
+  const { scorer, sign, direction, name } = scorerOf(options)
   const space = options.space ?? (typeof estimator === 'function' ? undefined : estimator.hyperSpace)
-  const spec = options.metric.spec
   return {
-    ...objectiveBase(
-      { ...options, ...(space === undefined ? {} : { space }) },
-      `cv:${spec.name}`,
-      spec.direction === 'higher' ? 'maximize' : 'minimize',
-    ),
-    metricNames: options.metricNames ?? [spec.name],
+    ...objectiveBase({ ...options, ...(space === undefined ? {} : { space }) }, `cv:${name}`, direction),
+    metricNames: options.metricNames ?? [name],
     evaluate: (params, trial) => {
-      const cv = options.splitter ?? options.cv ?? 5
-      const folds = typeof cv === 'number' ? defaultFolds(data, cv) : cv(data, options.splitKey ?? makeKey(0))
-      const scores = crossValidate(estimator, data, params, folds, options, trial)
-      return {
-        values: meanOf(scores),
-        attrs: { foldScores: scores, std: Math.sqrt(varianceOf(scores)) },
+      const est = estimatorFor(estimator, params)
+      const splitter = checkCv(options.splitter ?? options.cv, est)
+      const folds: Fold[] = splitIndices(splitter, splitInputOf(data, options.groups), options.splitKey ?? makeKey(0))
+      const scores: number[] = []
+      for (const [i, fold] of folds.entries()) {
+        scores.push(
+          fitAndScore(
+            est,
+            takeData(data, fold.train),
+            takeData(data, fold.test),
+            scorer,
+            sign,
+            trial,
+            foldIn(trial.key, i),
+          ),
+        )
+        if (trial.report(i, meanOf(scores))) break
       }
+      return { values: meanOf(scores), attrs: { foldScores: scores, std: Math.sqrt(varianceOf(scores)) } }
     },
   }
 }
 
 /**
- * Validation-set performance as an objective: fit on the training data, score the metric on the validation data.
+ * Validation-set performance as an objective: fit on the training data, score on the validation data (reported once,
+ * at step 0).
  *
- * @param estimator - An estimator with `withHyper`, or a factory.
+ * @param estimator - An estimator (re-created by `with`), or a factory.
  * @param train - Training data.
  * @param validation - Validation data.
- * @param options - The metric, the prediction to score and a default space.
+ * @param options - The metric or scoring and a default space.
  * @returns The objective.
  * @concept model-selection
  * @example
  * ```ts
  * import { holdoutObjective } from 'whitebox-engine/tune'
- * import { xy } from 'whitebox-engine/data'
+ * import { defineEstimator } from 'whitebox-engine/learn'
  * import { meanSquaredError } from 'whitebox-engine/metrics'
- * const make = () => ({ name: 'zero', fit: () => ({ predict: () => [0, 0] }) })
- * holdoutObjective(make, xy([[0], [1]], [0, 1]), xy([[0], [1]], [1, 1]), { metric: meanSquaredError }).directions // => ['minimize']
+ * import { asTensor, full } from 'whitebox-engine/tensor'
+ * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([asTensor(x).shape[0] ?? 0], 0) }) }, {})
+ * holdoutObjective(zero, { x: [[0], [1]], y: [0, 1] }, { x: [[0], [1]], y: [1, 1] }, { metric: meanSquaredError }).directions // => ['minimize']
  * ```
  */
 export function holdoutObjective(
   estimator: EstimatorSource,
-  train: TabularData,
-  validation: TabularData,
-  options: Omit<EstimatorObjectiveOptions, 'cv' | 'splitter' | 'splitKey'>,
+  train: LearnData,
+  validation: LearnData,
+  options: ObjectiveOptions & ScoringChoice,
 ): Objective {
+  const { scorer, sign, direction, name } = scorerOf(options)
   const space = options.space ?? (typeof estimator === 'function' ? undefined : estimator.hyperSpace)
-  const spec = options.metric.spec
   return {
-    ...objectiveBase(
-      { ...options, ...(space === undefined ? {} : { space }) },
-      `holdout:${spec.name}`,
-      spec.direction === 'higher' ? 'maximize' : 'minimize',
-    ),
-    metricNames: options.metricNames ?? [spec.name],
+    ...objectiveBase({ ...options, ...(space === undefined ? {} : { space }) }, `holdout:${name}`, direction),
+    metricNames: options.metricNames ?? [name],
     evaluate: (params, trial) => {
-      const score = fitAndScore(estimator, params, train, validation, options, trial.key)
+      const score = fitAndScore(estimatorFor(estimator, params), train, validation, scorer, sign, trial, trial.key)
       trial.report(0, score)
       return score
     },

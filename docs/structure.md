@@ -2535,7 +2535,7 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 
 oracle: optuna (TPE Parzen densities and splits, QMC sampler orders, every pruner's decisions on fixed learning curves,
 Hyperband brackets, Pareto fronts and hypervolume, PED-ANOVA importance, GP posterior and log EI), scikit-learn
-(`ParameterGrid` order, k-fold and stratified folds, `GridSearchCV` results, the halving searches' schedules, GP
+(`ParameterGrid` order, `GridSearchCV` results, the halving searches' schedules, GP
 posteriors with fixed kernels) and scipy (acquisition closed forms); stochastic samplers are checked by optimisation
 performance on Branin and Hartmann functions within budgets, with explicit keys
 
@@ -2554,10 +2554,9 @@ resumed at trial t draws exactly what an uninterrupted run would.
   `functionObjective`, `multiObjective`, `trainingObjective` (a traced algorithm as a child run, reporting per step for
   pruning, with the schedule's budget as its steps), `agentObjective`, `programObjective`. TODO(probprog):
   `programObjective` takes a fit function returning the criteria until `probprog` lands; then a model and data.
-- `estimators.ts`: the minimal `TunableEstimator` contract, `estimatorFor`, `defaultFolds` (scikit-learn's `cv=<int>`
-  folds), `estimatorObjective` (splitter plus metric, reporting the running mean per fold) and `holdoutObjective`.
-  TODO(learn): take the `Estimator` contract and splitters from `learn/estimator.ts` and
-  `learn/model-selection/splitters.ts` when `learn` lands (the folds live in `_folds.ts` until then).
+- `estimators.ts`: estimator objectives on `learn`'s contract: `estimatorFor` (`estimator.with(params)` or a factory),
+  `estimatorObjective` (a `learn` splitter or `cv` count, scored by a metric, a `learn` scorer or the estimator's own
+  score; the running mean reported per fold; each fit a child run of the trial) and `holdoutObjective`.
 - `samplers.ts`: the `Sampler` contract; grid (scikit-learn's order), random, Sobol (plain or scrambled), Halton and
   Latin hypercube samplers; CMA-ES (IPOP restarts) and Nelder-Mead samplers from `optim`, asked and told by replaying the
   optimiser (`_replay.ts`); an evolutionary sampler (NSGA-II for several objectives) from the operators of `search`.
@@ -2575,7 +2574,10 @@ resumed at trial t draws exactly what an uninterrupted run would.
   `nextAssignment` (samples and promotions that a study runs, with budgets), and `halvingPlan` (scikit-learn's halving
   iterations).
 - `wrappers.ts`: familiar entry points built on studies: `gridSearchCv`, `randomizedSearchCv`, `halvingGridSearchCv`,
-  `halvingRandomSearchCv` (searches are estimators, so they nest inside cross-validation).
+  `halvingRandomSearchCv`. Each is a `learn` estimator (fitted values revive and carry the best model's verbs), so
+  searches nest inside cross-validation; grids are `learn`'s `parameterGrid`. (`learn/model-selection/search.ts` keeps
+  the candidate-list `gridSearchCV` and `randomizedSearchCV`; these generalise them with samplers, pruners and
+  multi-fidelity schedules.)
 - `analysis.ts`: trial tables (`TableData`), optimisation history, intermediate values, parallel-coordinate, slice and
   contour data (a GP surrogate over two parameters), Pareto fronts, hypervolume history and the empirical distribution.
 - `importance.ts`: parameter importance: correlation based, permutation based (on a GP surrogate), functional ANOVA of a

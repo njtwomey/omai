@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { cartPole } from '../../methods/rl/index.ts'
 import { xy, xyClasses } from '../data/index.ts'
+import { defineEstimator } from '../learn/index.ts'
 import { accuracyScore, meanSquaredError } from '../metrics/index.ts'
 import { make, policyAgent } from '../rl/index.ts'
 import { choice, dict, real } from '../space/index.ts'
-import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { asTensor, full, type TensorLike, tensor, toFlat } from '../tensor/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import {
   agentObjective,
@@ -16,36 +17,40 @@ import {
   medianPruner,
   multiObjective,
   programObjective,
-  type TunableEstimator,
   trainingObjective,
   tune,
 } from './index.ts'
 
 /** Predicts a constant c; scores well on targets near c. */
-function constant(p: unknown): TunableEstimator {
-  const c = (p as { c: number }).c
-  return {
+const constant = defineEstimator(
+  {
     name: 'constant',
-    fit: () => ({ predict: (x: TensorLike) => new Array<number>(asTensor(x).shape[0] ?? 0).fill(c) }),
-  }
-}
-
-/** Classifies by a threshold on the first feature. */
-function stump(p: unknown): TunableEstimator {
-  const t = (p as { t: number }).t
-  const predict = (x: TensorLike): number[] => {
-    const v = asTensor(x)
-    const d = v.shape[1] ?? 1
-    return toFlat(v).flatMap((value, i) => (i % d === 0 ? [value > t ? 1 : 0] : []))
-  }
-  return {
-    name: 'stump',
-    fit: () => ({
-      predict,
-      predictProba: (x: TensorLike) => predict(x).map((y) => [1 - y, y]),
+    kind: 'regressor',
+    fit: () => ({}),
+    methods: (_p, h: { readonly c: number }) => ({
+      predict: (x: TensorLike) => full([asTensor(x).shape[0] ?? 0], h.c),
     }),
-  }
-}
+  },
+  { c: 0 },
+)
+
+/** Classifies by a threshold t on the first feature. */
+const stump = defineEstimator(
+  {
+    name: 'stump',
+    kind: 'classifier',
+    fit: () => ({}),
+    methods: (_p, h: { readonly t: number }) => {
+      const predict = (x: TensorLike) => {
+        const v = asTensor(x)
+        const d = v.shape[1] ?? 1
+        return tensor(toFlat(v).flatMap((value, i) => (i % d === 0 ? [value > h.t ? 1 : 0] : [])))
+      }
+      return { predict, predictProba: (x: TensorLike) => tensor(toFlat(predict(x)).map((y) => [1 - y, y])) }
+    },
+  },
+  { t: 0.5 },
+)
 
 describe('estimator objectives', () => {
   const data = xy(
@@ -83,9 +88,9 @@ describe('estimator objectives', () => {
     expect(tune(objective, dict({ c: choice([1, 2]) }), { sampler: gridSampler() }).best?.params).toEqual({ c: 2 })
   })
   it('make estimators from sources', () => {
-    const est: TunableEstimator = { name: 'fixed', fit: () => ({ predict: () => [0] }) }
-    expect(() => estimatorFor(est, {})).toThrow(/withHyper/)
-    expect(estimatorFor({ ...est, withHyper: () => ({ ...est, name: 'again' }) }, {}).name).toBe('again')
+    expect(estimatorFor(constant, { c: 2 }).hyper).toEqual({ c: 2 })
+    expect(() => estimatorFor(constant, 3)).toThrow(/record/)
+    expect(estimatorFor(() => stump, 0).name).toBe('stump')
   })
 })
 

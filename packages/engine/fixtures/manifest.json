@@ -4015,14 +4015,6 @@
       "cases": 5
     },
     {
-      "fixture": "tune/objectives.json",
-      "source": "oracle/cases/tune/objectives.py",
-      "reference": {
-        "scikit-learn": "1.9.1"
-      },
-      "cases": 6
-    },
-    {
       "fixture": "tune/pruners.json",
       "source": "oracle/cases/tune/pruners.py",
       "reference": {
