@@ -254,7 +254,7 @@ step, every n, log-spaced, on change, first and last), at what detail (summaries
 tensors), with or without gradients, within a size budget. Inner algorithms run as child runs, so traces are
 hierarchical (an inner solver inside an outer loop, a trial inside a study). Each algorithm also runs untraced at full
 speed: the policy decides, not the code. Direct methods (elimination, factorisations, decision-tree splits) offer step
-records, and `instrument(fn, schema)` traces any function call.
+records, and `instrument(fn, options)` traces any function call.
 
 ### 3.4 Spaces
 
@@ -423,11 +423,14 @@ Tier 1 rather than 0 so that it can use `base` (errors, `clamp`, `maxOf`); nothi
   such as plates, repeated blocks and clusters; annotations), `structure` builder, `mergeStructures`, `subStructure`,
   `isStructure`.
 - `timeline.ts`: `Timeline` (frames keyed by step: scene or structure states with highlights), the data behind every
-  animation and export.
+  animation and export; `timeline`, `sceneTimeline`, `isTimeline`.
 - `paint.ts`: `palettes` (the light and dark token colours, tab10 for the categorical tokens), `parsePaint`.
 - `raster.ts`: `rasterise`, a small software rasteriser from scenes to RGBA pixels (pixel observations for RL, frames in
   Node): nonzero fills at pixel centres, strokes with dashes, joins and arrow heads, smooth paths, images, 3-D layers,
   supersampling. TODO: text and TeX labels are skipped (they need a bundled bitmap font).
+
+oracle: none (no reference library shares these conventions); checked by unit tests and properties (transforms
+compose, projections are affine or perspective-consistent, painter's order, exact pixel coverage)
 
 ### 4.3 `tensor/` (tier 1): arrays and differentiable primitives (numpy, torch.Tensor, jax.numpy)
 
@@ -553,6 +556,8 @@ oracle: jax and torch for derivative values; finite differences in property test
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
 - `query.ts`: `metricSeries`, `tensorSeries`, `messages`, `episodes`, `frames`, `runTree`, `summary`, `diffRuns`.
 
+oracle: numpy for `summaries.ts` (moments, norms, `np.histogram`); the rest by unit and property tests
+
 ### 4.8 `space/` (tier 3): typed spaces (gymnasium.spaces, Optuna distributions, ConfigSpace)
 
 - `types.ts`: `Space` union (`real` with bounds, log scale and step; `int`; `choice`; `bool`; `box`; `discrete`;
@@ -564,6 +569,8 @@ oracle: jax and torch for derivative values; finite differences in property test
   enumeration (tuples, nested and conditional dicts), `neighbours` (one-move neighbourhoods for local search over
   configurations, repairing conditional dimensions), `distance`.
 - `_active.ts` (internal): resolution of conditional dict keys shared by the operations.
+
+oracle: none; checked by properties (samples, neighbours and decoded values stay in the space, encodings round-trip)
 
 ### 4.9 `context/` (tier 4): reproducibility and defaults
 

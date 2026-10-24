@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../base/index.ts'
+import { clamp, WhiteboxError } from '../base/index.ts'
 import { arrow, group, line, polygon, scene, tex, text } from './build.ts'
 import type { Item3D, Scene3D, Vec3 } from './three-d.ts'
 import type { Layer3DNode, NodeBase, Paint, Scene, SceneNode, Style } from './types.ts'
@@ -69,7 +69,7 @@ export function orbit(cam: Camera, dAzimuth: number, dElevation: number): Camera
   return {
     ...cam,
     azimuth: cam.azimuth + dAzimuth,
-    elevation: Math.min(90, Math.max(-90, cam.elevation + dElevation)),
+    elevation: clamp(cam.elevation + dElevation, -90, 90),
   }
 }
 

@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../base/index.ts'
+import { clamp, WhiteboxError } from '../base/index.ts'
 import { sizeOf } from '../tensor/index.ts'
 import { activeKeysOf, conditionHolds, resolveDict } from './_active.ts'
 import { defaults, flatDim } from './operations.ts'
@@ -14,7 +14,7 @@ function unit(lo: number, hi: number, x: number, log = false): number {
 }
 
 function fromUnit(lo: number, hi: number, u: number, log = false): number {
-  const c = Math.min(1, Math.max(0, u))
+  const c = clamp(u, 0, 1)
   return log ? Math.exp(Math.log(lo) + c * (Math.log(hi) - Math.log(lo))) : lo + c * (hi - lo)
 }
 
@@ -94,17 +94,17 @@ export function decode(space: Space, u: readonly number[]): SpaceValue {
       case 'int':
         return Math.min(s.high, Math.max(s.low, Math.round(fromUnit(s.low, s.high, next(), s.log))))
       case 'choice':
-        return s.options[Math.round(Math.min(1, Math.max(0, next())) * (s.options.length - 1))] as SpaceValue
+        return s.options[Math.round(clamp(next(), 0, 1) * (s.options.length - 1))] as SpaceValue
       case 'bool':
         return next() >= 0.5
       case 'discrete':
-        return (s.start ?? 0) + Math.round(Math.min(1, Math.max(0, next())) * (s.n - 1))
+        return (s.start ?? 0) + Math.round(clamp(next(), 0, 1) * (s.n - 1))
       case 'box':
         return Array.from({ length: sizeOf(s.shape) }, (_, i) =>
           fromUnit(elementBounds(s.low, i), elementBounds(s.high, i), next()),
         )
       case 'multiDiscrete':
-        return s.nvec.map((n) => Math.round(Math.min(1, Math.max(0, next())) * (n - 1)))
+        return s.nvec.map((n) => Math.round(clamp(next(), 0, 1) * (n - 1)))
       case 'multiBinary':
         return Array.from({ length: s.n }, () => (next() >= 0.5 ? 1 : 0))
       case 'tuple':
