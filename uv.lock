@@ -2221,6 +2221,20 @@ wheels = [
 ]
 
 [[package]]
+name = "sewar"
+version = "0.4.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pillow" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/57/29/7bf0d41135eb4ffa9536700144ba86665a7f314a91bf9242471220d0c30e/sewar-0.4.10.tar.gz", hash = "sha256:7e45fb0481872af750397df3ff6af31834cd7b7dc234749065c96488e01af15e", size = 15121, upload-time = "2026-10-21T18:49:15.157Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/51/dc34de07c84b648cfeb5e11ed4ea94a7002504bef5edfa1aa5ca155621cd/sewar-0.4.10-py3-none-any.whl", hash = "sha256:23d0d58f395202b5e08eed49cedbe0803fc16caa23fa413668ea145a1aa4bb2e", size = 14328, upload-time = "2026-10-21T18:49:14.139Z" },
+]
+
+[[package]]
 name = "shapely"
 version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2550,6 +2564,7 @@ oracle-core = [
     { name = "scikit-image" },
     { name = "scikit-learn" },
     { name = "scipy" },
+    { name = "sewar" },
     { name = "shapely" },
     { name = "statsmodels" },
     { name = "sympy" },
@@ -2597,6 +2612,7 @@ oracle-core = [
     { name = "scikit-image", specifier = ">=0.26.0" },
     { name = "scikit-learn" },
     { name = "scipy" },
+    { name = "sewar", specifier = ">=0.4.10" },
     { name = "shapely", specifier = ">=2.2.0" },
     { name = "statsmodels" },
     { name = "sympy" },

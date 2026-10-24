@@ -31,6 +31,7 @@ oracle-core = [
     "pingouin>=0.7.0",
     "krippendorff>=0.9.0",
     "prdc>=0.2",
+    "sewar>=0.4.10",
 ]
 oracle-torch = [
     "monai>=1.6.1",

@@ -1412,9 +1412,13 @@ weights.
 - `segmentation.ts`: Dice (`diceCoefficient`), `maskIou`; Hausdorff distance (and HD95) for mask boundaries
   (`maskHausdorffDistance`, MONAI's definition with spacing); boundary F1; panoptic quality (with void and modified
   stuff classes); per-class mean IoU (`meanIou`).
-- `image-quality.ts`: MSE, PSNR, SSIM, MS-SSIM, VIF, LPIPS and DISTS from supplied features, SAM, ERGAS, RASE, UIQI.
-- `generative.ts`: Inception score, FID and KID from features, precision, recall, density and coverage, CLIPScore from
-  embeddings, Vendi score.
+- `image-quality.ts`: MSE (`imageMeanSquaredError`), PSNR, SSIM (skimage's uniform and Gaussian windows), MS-SSIM,
+  VIF (pixel domain), LPIPS and DISTS from supplied features (`lpipsFromFeatures`, `distsFromFeatures`), SAM, ERGAS,
+  RASE, UIQI; images `[H, W]` or `[H, W, C]`, channels last. TODO: move the private filters of `_images.ts` to
+  `signal/` once that domain exists.
+- `generative.ts`: Inception score (from class probabilities), FID (`frechetDistance`) and KID
+  (`kernelInceptionDistance`) from features, precision, recall, density and coverage
+  (`precisionRecallDensityCoverage`), CLIPScore from embeddings (`clipScore`), Vendi score (any order).
 - `text.ts`: WER, CER, MER, WIL; BLEU (corpus and sentence, smoothing); chrF and chrF++; TER; ROUGE-N, ROUGE-L and
   ROUGE-Lsum; exact match and token F1; BERTScore from embeddings; perplexity; distinct-n.
 - `audio.ts`: SNR, segmental SNR, SDR, SI-SDR and SI-SNR, permutation-invariant matching, PESQ, STOI and ESTOI,

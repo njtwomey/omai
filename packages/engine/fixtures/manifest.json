@@ -236,6 +236,26 @@
       "cases": 15
     },
     {
+      "fixture": "metrics/generative.json",
+      "source": "oracle/cases/metrics/generative.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "prdc": "0.2",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "metrics/image_quality.json",
+      "source": "oracle/cases/metrics/image_quality.py",
+      "reference": {
+        "scikit-image": "0.26.0",
+        "sewar": "0.4.10",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "metrics/operating_points.json",
       "source": "oracle/cases/metrics/operating_points.py",
       "reference": {
