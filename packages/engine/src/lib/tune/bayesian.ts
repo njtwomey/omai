@@ -2,7 +2,7 @@ import type { Json } from '../base/index.ts'
 import { erfc, erfcx, logNdtr, ndtr, normalPdf } from '../numerics/special/index.ts'
 import { lbfgsb } from '../optim/index.ts'
 import { foldIn, type Key, scrambledSobol } from '../random/index.ts'
-import { sample } from '../space/index.ts'
+import { decode, sample } from '../space/index.ts'
 import {
   add,
   asTensor,
@@ -20,7 +20,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { decodeInto, type Leaf, leafCoordinate, leavesOf, nativeOf } from './_leaves.ts'
+import { type Leaf, leafCoordinate, leavesOf, nativeOf } from './_leaves.ts'
 import type { Sampler } from './samplers.ts'
 import { lossOf, type StudyDirection } from './study.ts'
 import { fitGpSurrogate, type GpSurrogate } from './surrogate.ts'
@@ -346,7 +346,7 @@ export function gpSampler(options: GpSamplerOptions = {}): Sampler {
       const seeds = order.slice(0, 3).map((i) => x[i] as number[])
       const { point } = maximizeAcquisition(surrogate, acquisition, best, foldIn(key, 0), { ...options.search, seeds })
       // Continuous columns are unit-cube coordinates already; options go through their coordinate.
-      return decodeInto(
+      return decode(
         study.space,
         leaves.map((l, j) =>
           l.kind === 'categorical' ? leafCoordinate(l, Math.round(point[j] ?? 0)) : (point[j] ?? 0.5),

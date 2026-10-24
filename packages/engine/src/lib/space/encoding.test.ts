@@ -104,3 +104,17 @@ describe('neighbours', () => {
     ])
   })
 })
+
+describe('decoding end points', () => {
+  it('stays inside the bounds when the end points round outside them', () => {
+    // exp(log(1e-5)) is 9.999999999999999e-6 and 0.1 + (0.3 - 0.1) is 0.30000000000000004.
+    expect(Math.exp(Math.log(1e-5))).toBeLessThan(1e-5)
+    expect(decode(real(1e-5, 1, { log: true }), [0])).toBe(1e-5)
+    expect(decode(real(1e-5, 1e-2, { log: true }), [1])).toBe(1e-2)
+    expect(decode(box(0.1, 0.3, [2]), [0, 1])).toEqual([0.1, 0.3])
+    for (const v of grid(real(1e-5, 3e-3, { log: true }), 7) as number[]) {
+      expect(v).toBeGreaterThanOrEqual(1e-5)
+      expect(v).toBeLessThanOrEqual(3e-3)
+    }
+  })
+})

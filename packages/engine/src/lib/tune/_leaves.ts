@@ -3,7 +3,7 @@
 // a sampler can work leaf by leaf in natural units (TPE), on the unit cube (quasi-random sequences, CMA-ES, Bayesian
 // optimisation) or on equal-mass cells (Latin hypercubes), and hand the result back as a value through `decode`.
 import { WhiteboxError } from '../base/index.ts'
-import { choice, clip, decode, encode, flatten, int, real, type Space, type SpaceValue } from '../space/index.ts'
+import { choice, decode, encode, flatten, int, real, type Space, type SpaceValue } from '../space/index.ts'
 import { sizeOf } from '../tensor/index.ts'
 
 /** One scalar parameter of a space. */
@@ -123,17 +123,9 @@ export function leafCoordinate(leaf: Leaf, x: number): number {
   return encode(leaf.space, leaf.value(x))[0] ?? 0.5
 }
 
-/**
- * `decode`, then `clip`: the exponential of a log-scaled end point can round just outside its interval (exp(log(1e-5))
- * is 9.999999999999999e-6), so decoded values are clipped back into the space.
- */
-export function decodeInto(space: Space, u: readonly number[]): SpaceValue {
-  return clip(space, decode(space, u))
-}
-
 /** The value of a space for flat numbers per leaf (NaN leaves are left to `decode`'s default). */
 export function assemble(space: Space, leaves: readonly Leaf[], natives: readonly number[]): SpaceValue {
-  return decodeInto(
+  return decode(
     space,
     leaves.map((l, i) => leafCoordinate(l, natives[i] ?? Number.NaN)),
   )
@@ -154,7 +146,7 @@ export function equalMassCoordinate(leaf: Leaf, u: number): number {
 
 /** The value of a space at a point of the unit cube, read through equal-mass cells. */
 export function fromCube(space: Space, leaves: readonly Leaf[], u: ArrayLike<number>): SpaceValue {
-  return decodeInto(
+  return decode(
     space,
     leaves.map((l, i) => equalMassCoordinate(l, u[i] ?? 0.5)),
   )
