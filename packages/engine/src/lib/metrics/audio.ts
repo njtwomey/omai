@@ -1,5 +1,6 @@
 import { argmaxOf, type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { solveToeplitz } from '../numerics/linalg/index.ts'
+import { linearSumAssignment } from '../optim/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import {
   framePowers,
@@ -253,8 +254,8 @@ export interface PermutationInvariantResult {
 
 /**
  * Permutation-invariant evaluation (Yu et al., 2017; torchmetrics' permutation_invariant_training): the metric of
- * each (target, estimate) pair, and the assignment of estimates to targets with the best mean, found exhaustively
- * (speaker counts are small). TODO: use the Hungarian algorithm of `optim/assignment.ts` once it exists.
+ * each (target, estimate) pair, and the assignment of estimates to targets with the best mean, found by the Hungarian
+ * algorithm (`optim` `linearSumAssignment`, as torchmetrics does with scipy for many speakers).
  *
  * @param target - Reference sources `[S, T]`.
  * @param preds - Estimated sources `[S, T]`, in any order.
@@ -279,30 +280,8 @@ export function permutationInvariant(
   if (t.length !== p.length) throw new WhiteboxError('shape', 'permutationInvariant: as many estimates as targets')
   const s = t.length
   const m = t.map((ti) => p.map((pj) => metric(ti, pj)))
-  const sign = options.direction === 'min' ? -1 : 1
-  let best: number[] = []
-  let bestValue = Number.NEGATIVE_INFINITY
-  const perm: number[] = []
-  const used = new Array<boolean>(s).fill(false)
-  const visit = (i: number, acc: number): void => {
-    if (i === s) {
-      if (sign * acc > bestValue) {
-        bestValue = sign * acc
-        best = [...perm]
-      }
-      return
-    }
-    for (let j = 0; j < s; j++) {
-      if (used[j] === true) continue
-      used[j] = true
-      perm.push(j)
-      visit(i + 1, acc + (m[i]?.[j] ?? 0))
-      perm.pop()
-      used[j] = false
-    }
-  }
-  visit(0, 0)
-  return { value: (sign * bestValue) / s, permutation: best }
+  const r = linearSumAssignment(m, { maximize: options.direction !== 'min' })
+  return { value: r.cost / s, permutation: [...r.colInd] }
 }
 
 // ---------------------------------------------------------------------------------------------------------------

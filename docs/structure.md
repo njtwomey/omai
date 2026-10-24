@@ -1728,12 +1728,11 @@ none of those weights.
   n-gram counts) and `_ter.ts`. TODO: move the alignment and LCS to `text/similarity.ts` and default ROUGE's stemmer to
   `text/stem.ts` once the text domain exists.
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
-  matching (`permutationInvariant`, exhaustive), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
+  matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
   supplied model (torchmetrics' windows and calibration, 16 kHz). Private `_audio.ts` (windows, `upfirdn`,
   `resamplePoly`, framed power spectra). TODO: PESQ (ITU-T P.862), whose reference implementation is ITU-copyrighted
-  C that cannot be ported under the licence; move `_audio.ts` to `signal/` and use `optim/assignment.ts` for
-  permutation matching once those exist.
+  C that cannot be ported under the licence; move `_audio.ts` to `signal/` once it exists.
 
 ### 4.29 `losses/` (tier 8): differentiable objectives (torch.nn losses, optax losses)
 
