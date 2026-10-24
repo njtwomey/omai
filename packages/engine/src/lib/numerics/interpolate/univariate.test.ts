@@ -40,23 +40,29 @@ describe('one-dimensional interpolation against scipy.interpolate', () => {
                       ? I.akima(a, b, c.fn).evaluate(q)
                       : c.fn === 'bspline'
                         ? I.bspline(a, b, 3).evaluate(q, p['nu'] as number)
-                        : c.fn === 'bsplineIntegrate'
-                          ? I.bspline(a, b, 3).integrate(0.4, 4.4)
-                          : c.fn === 'bsplineDesign'
-                            ? I.bspline(a, tensor(new Array<number>(toFlat(a).length - 4).fill(0)), 3).designMatrix(b)
-                            : c.fn === 'makeInterpSpline'
-                              ? I.makeInterpSpline(a, b, p['k'] as number).evaluate(q)
-                              : c.fn === 'makeLsqSpline'
-                                ? I.makeLsqSpline(a, b, toFlat(q), 3, d).evaluate(e)
-                                : c.fn === 'smoothing'
-                                  ? I.makeSmoothingSpline(a, b, { lam: p['lam'] as number }).spline.evaluate(q)
-                                  : c.fn === 'smoothingGcv'
-                                    ? I.makeSmoothingSpline(a, b).spline.evaluate(q)
-                                    : c.fn === 'univariateS0'
-                                      ? I.univariateSpline(a, b, { s: 0 }).spline.evaluate(q)
-                                      : c.fn === 'barycentric'
-                                        ? I.barycentric(a, b).evaluate(q)
-                                        : I.lagrange(toFlat(a), toFlat(b))
+                        : c.fn === 'bsplineK'
+                          ? I.bspline(a, b, p['k'] as number, p['extrapolate'] as boolean).evaluate(q)
+                          : c.fn === 'bsplineBasisElement'
+                            ? I.bsplineBasisElement(a, p['extrapolate'] as boolean).evaluate(b)
+                            : c.fn === 'bsplineIntegrate'
+                              ? I.bspline(a, b, 3).integrate(0.4, 4.4)
+                              : c.fn === 'bsplineDesign'
+                                ? I.bspline(a, tensor(new Array<number>(toFlat(a).length - 4).fill(0)), 3).designMatrix(
+                                    b,
+                                  )
+                                : c.fn === 'makeInterpSpline'
+                                  ? I.makeInterpSpline(a, b, p['k'] as number).evaluate(q)
+                                  : c.fn === 'makeLsqSpline'
+                                    ? I.makeLsqSpline(a, b, toFlat(q), 3, d).evaluate(e)
+                                    : c.fn === 'smoothing'
+                                      ? I.makeSmoothingSpline(a, b, { lam: p['lam'] as number }).spline.evaluate(q)
+                                      : c.fn === 'smoothingGcv'
+                                        ? I.makeSmoothingSpline(a, b).spline.evaluate(q)
+                                        : c.fn === 'univariateS0'
+                                          ? I.univariateSpline(a, b, { s: 0 }).spline.evaluate(q)
+                                          : c.fn === 'barycentric'
+                                            ? I.barycentric(a, b).evaluate(q)
+                                            : I.lagrange(toFlat(a), toFlat(b))
       expectMatches(Array.isArray(actual) ? tensor(actual) : actual, c.output, c.rtol, c.atol, c.name)
     })
   }
@@ -104,6 +110,18 @@ describe('interpolant properties', () => {
     expect(dx).toBeCloseTo(item(I.cubicSpline(xs, ys).evaluate(q, 1)), 12)
     const db = item(grad((t: Value) => I.makeInterpSpline(xs, ys).evaluate(t))(tensor(q)) as Value)
     expect(db).toBeCloseTo(item(I.makeInterpSpline(xs, ys).evaluate(q, 1)), 10)
+  })
+
+  it('B-splines need 2 k + 2 knots, as scipy; a lone basis function comes from bsplineBasisElement (regression)', () => {
+    // bspline([0, 1, 2, 3], [1], 2) has no base interval (t_k = 2 > t_n = 1) and evaluated the [2, 3] piece
+    // everywhere (1.125 at 1.5); scipy refuses it, and its basis_element gives 0.125, 0.75, 0.125.
+    expect(() => I.bspline([0, 1, 2, 3], [1], 2)).toThrow(/at least 6 knots/)
+    expect(() => I.bspline([0, 0, 0, 0], [1, 2, 3], 0)).toThrow(/positive length/)
+    const b = I.bsplineBasisElement([0, 1, 2, 3])
+    expect(toFlat(b.evaluate([0.5, 1.5, 2.5, 3])).map((v) => Math.round(v * 1e12) / 1e12)).toEqual([
+      0.125, 0.75, 0.125, 0,
+    ])
+    expect(item(b.integrate(0, 3))).toBeCloseTo(1, 12)
   })
 
   it('derivatives, antiderivatives and integrals agree', () => {

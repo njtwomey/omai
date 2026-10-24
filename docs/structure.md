@@ -774,7 +774,7 @@ primitives; "custom" means a dedicated rule.
 `interpolate/` (scipy.interpolate; differentiable in data values and query points)
 - `piecewise.ts`: `ppoly` (`PPoly`: evaluate, derivative, antiderivative, integrate, roots; periodic extrapolation).
 - `splines.ts`: `cubicSpline` (natural, clamped, not-a-knot, periodic, explicit), `cubicHermiteSpline`, `bspline`,
-  `makeInterpSpline`, `makeLsqSpline`, `notAKnot`.
+  `bsplineBasisElement`, `makeInterpSpline`, `makeLsqSpline`, `notAKnot`.
 - `shape-preserving.ts`: `pchip`, `akima` (and makima).
 - `smoothing.ts`: `makeSmoothingSpline` (GCV), `univariateSpline`.
 - `polynomial.ts`: `barycentric`, `barycentricWeights`, `lagrange`, `chebyshevNodes`, `equispacedNodes`,

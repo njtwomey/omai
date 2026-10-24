@@ -142,6 +142,7 @@ def cases() -> list[Case]:
             atol=1e-14,
         )
     )
+    out.extend(bspline_cases())
     for k in (1, 3, 5):
         out.append(
             case(
@@ -210,4 +211,55 @@ def cases() -> list[Case]:
     out.append(
         case("lagrange", "lagrange", [nodes, vals], np.polyfit(nodes, vals, len(nodes) - 1), rtol=1e-9, atol=1e-9)
     )
+    return out
+
+
+def bspline_cases() -> list[Case]:
+    """BSpline over knot vectors (uniform, clamped, repeated interior, minimal 2k + 2), degrees 0 to 5, both
+    extrapolation modes, at points on knots, inside spans and outside; and BSpline.basis_element."""
+    g = rng(53)
+    knots: dict[str, FloatArray] = {
+        "uniform": np.arange(10.0),
+        "clamped": np.array([0.0, 0, 0, 0, 0, 0, 1, 2.5, 3, 4, 4, 4, 4, 4, 4]),
+        "repeated": np.array([-1.0, -1, -0.5, 0, 0, 0.7, 0.7, 2, 3, 3.5, 4, 4.5]),
+        "random": np.r_[-2.0, np.sort(g.uniform(-2, 3, size=10)), 3.0],
+    }
+    out: list[Case] = []
+    for name, t in knots.items():
+        q = np.unique(np.r_[t, np.linspace(t[0] - 1.5, t[-1] + 1.5, 29)])
+        for k in range(6):
+            n = len(t) - k - 1
+            if n < k + 1 or t[k] == t[n]:
+                continue
+            c = g.normal(size=n)
+            for extrapolate in (True, False):
+                b = si.BSpline(t, c, k, extrapolate=extrapolate)
+                out.append(
+                    case(
+                        f"bspline/{name}/k{k}/{'extrapolate' if extrapolate else 'nan'}",
+                        "bsplineK",
+                        [t, c, q],
+                        b(q),
+                        rtol=1e-11,
+                        atol=1e-12,
+                        k=k,
+                        extrapolate=extrapolate,
+                    )
+                )
+    for t in ([0.0, 1, 2, 3], [0.0, 1], [0.0, 0.5, 2, 2.2, 4], [0.0, 0, 1, 3]):
+        tt = np.array(t)
+        q = np.r_[np.linspace(tt[0] - 1, tt[-1] + 1, 17), tt]
+        for extrapolate in (True, False):
+            b = si.BSpline.basis_element(tt, extrapolate=extrapolate)
+            out.append(
+                case(
+                    f"bspline/basisElement/k{len(t) - 2}/{'extrapolate' if extrapolate else 'nan'}",
+                    "bsplineBasisElement",
+                    [tt, q],
+                    b(q),
+                    rtol=1e-11,
+                    atol=1e-12,
+                    extrapolate=extrapolate,
+                )
+            )
     return out
