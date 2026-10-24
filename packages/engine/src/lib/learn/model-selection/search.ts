@@ -239,7 +239,9 @@ export function evaluateCandidates(
     bestScore: meanTestScore[refitBy]?.[bestIndex] ?? Number.NaN,
     ...(refit
       ? {
-          bestEstimator: estimator.with(bestParams).fit(data, innerFitOptions(options, foldIn(key, 1), options.parent)),
+          bestEstimator: estimator
+            .with(bestParams)
+            .fit(data, innerFitOptions(options, foldIn(key, 1), options.parent, true)),
         }
       : {}),
     folds,

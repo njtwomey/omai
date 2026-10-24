@@ -9,7 +9,8 @@ export const oneVsRest: HubEntry = defineEntry({
   summary: 'One binary classifier per class against the rest; the most confident wins.',
   collection: 'sklearn/multiclass',
   tags: ['classification', 'multiclass', 'reductions'],
-  datasets: ['classificationTabular', 'classification2d'],
+  datasets: ['classification2d', 'classificationTabular'],
+  dataset: 'blobs',
   ...fitEstimator(oneVsRestClassifier(), { surface: true }),
   views: [
     { record: 'decisionSurface', title: 'Decision surface' },

@@ -10,7 +10,7 @@ export const kernelDensity: HubEntry = defineEntry({
   collection: 'sklearn/neighbors',
   tags: ['density estimation', 'nonparametric'],
   datasets: ['density2d', 'clustering2d'],
-  ...fitEstimator(kernelDensityMethod(), { unsupervised: true }),
+  ...fitEstimator(kernelDensityMethod({ bandwidth: 'cv' }), { unsupervised: true }),
   views: [{ record: 'decisionSurface', title: 'Density' }],
   methods: [{ file: 'methods/mixture/density.ts', name: 'kernelDensity' }],
 })

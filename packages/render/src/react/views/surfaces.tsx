@@ -2,6 +2,7 @@ import { type ReactElement, useCallback } from 'react'
 import type { DecisionSurface, HyperparameterSurface, PosteriorGrid } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import {
+  decisionSurfaceFrames,
   decisionSurfaceView,
   type HyperSurfaceViewOptions,
   hyperparameterSurfaceView,
@@ -9,35 +10,45 @@ import {
   posteriorView,
   type SurfaceViewOptions,
 } from '../../views/surfaces.ts'
-import { RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'
+import { FramesPlayer, type PlayerViewProps, RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'
 
 const SURFACE_FIGURE = { aspect: 1.25 } as const
+const SURFACE_STEPS_FIGURE = { aspect: 1.9 } as const
 
 /**
  * A decision surface: a classifier's smooth regions (faded where it is unsure) with boundaries and probability
- * contours, or a regressor's or density's field, with the training rows over it.
+ * contours, or a regressor's or density's field, with the training rows over it (the record's own unless others are
+ * given). A record with steps through training plays them, beside the training objective, opening on the fitted
+ * model.
  *
- * @param props - The record, the training rows and labels, contours and aspect, and the figure and frame settings.
- * @returns The figure.
+ * @param props - The record, training rows and labels, contours and aspect, the playback rate, and the figure and
+ * frame settings.
+ * @returns The figure (with its player when the record has steps).
  */
 export function DecisionSurfaceView(
-  props: RecordViewProps<DecisionSurface> & Omit<SurfaceViewOptions, 'mode' | 'figure'>,
+  props: RecordViewProps<DecisionSurface> & Omit<SurfaceViewOptions, 'mode' | 'figure'> & PlayerViewProps,
 ): ReactElement {
-  const figure = useViewFigure(props.figure, SURFACE_FIGURE)
-  const { record, points, labels, columns, contours, aspect } = props
-  const build = useCallback(
-    (fig: Figure) =>
-      decisionSurfaceView(record, {
-        figure: fig,
-        ...(points === undefined ? {} : { points }),
-        ...(labels === undefined ? {} : { labels }),
-        ...(columns === undefined ? {} : { columns }),
-        ...(contours === undefined ? {} : { contours }),
-        ...(aspect === undefined ? {} : { aspect }),
-      }),
-    [record, points, labels, columns, contours, aspect],
+  const { record, points, labels, columns, contours, aspect, highlight, rowWeights } = props
+  const plays = record.steps !== undefined && record.steps.length > 1
+  const figure = useViewFigure(props.figure, plays ? SURFACE_STEPS_FIGURE : SURFACE_FIGURE)
+  const options = useCallback(
+    (fig: Figure): SurfaceViewOptions => ({
+      figure: fig,
+      ...(points === undefined ? {} : { points }),
+      ...(labels === undefined ? {} : { labels }),
+      ...(columns === undefined ? {} : { columns }),
+      ...(contours === undefined ? {} : { contours }),
+      ...(aspect === undefined ? {} : { aspect }),
+      ...(highlight === undefined ? {} : { highlight }),
+      ...(rowWeights === undefined ? {} : { rowWeights }),
+    }),
+    [points, labels, columns, contours, aspect, highlight, rowWeights],
   )
-  return <RecordFigure {...props} figure={figure} build={build} filename={props.filename ?? 'decision-surface'} />
+  const build = useCallback((fig: Figure) => decisionSurfaceView(record, options(fig)), [record, options])
+  const frames = useCallback((fig: Figure) => decisionSurfaceFrames(record, options(fig)), [record, options])
+  const filename = props.filename ?? 'decision-surface'
+  if (plays) return <FramesPlayer {...props} figure={figure} frames={frames} filename={filename} />
+  return <RecordFigure {...props} figure={figure} build={build} filename={filename} />
 }
 
 const POSTERIOR_FIGURE = { aspect: 1.6 } as const

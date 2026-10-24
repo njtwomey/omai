@@ -10,6 +10,22 @@ describe('exposition records', () => {
       /coefficients\[0\]/,
     )
     expect(() => E.decisionSurface({ features: ['a', 'b'], x: [0, 1], y: [0], labels: [[0]] })).toThrow(/labels\[0\]/)
+    expect(() =>
+      E.decisionSurface({ features: ['a', 'b'], x: [0, 1], y: [0], steps: [{ iteration: 0, decision: [[0]] }] }),
+    ).toThrow(/steps\[0\]\.decision/)
+    expect(() =>
+      E.decisionSurface({
+        features: ['a', 'b'],
+        x: [0],
+        y: [0],
+        rows: { points: [[0, 0]], features: ['a', 'b'] },
+        steps: [{ iteration: 0, rowValues: [1, 2] }],
+      }),
+    ).toThrow(/rowValues/)
+    expect(() => E.inputRows({ points: [[0, 0, 0]], features: ['a', 'b'] })).toThrow(/points/)
+    expect(() =>
+      E.marginRecord({ support: [], dualCoefficients: [], intercept: 0, margins: [], dualObjective: [1], steps: [] }),
+    ).toThrow(/steps/)
     expect(() => E.mixtureSteps({ family: 'gaussian', weights: [], means: [], objective: [1] })).toThrow(/weights/)
     expect(() =>
       E.episodeRecord({

@@ -1,5 +1,6 @@
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Pixels } from 'whitebox-engine/scene'
+import { deflateRaw } from './_deflate.ts'
 
 const CRC_TABLE: readonly number[] = Array.from({ length: 256 }, (_, n) => {
   let c = n
@@ -28,55 +29,61 @@ function adler32(bytes: Uint8Array): number {
   return ((b << 16) | a) >>> 0
 }
 
-/**
- * Encode pixels as a PNG file (8-bit RGBA, no interlacing). The image data is stored in uncompressed deflate blocks, so
- * encoding is fast and needs no compression library; files are about the size of the raw pixels.
- *
- * TODO: compress the image data (deflate with run-length matches would shrink blocky and posterised images a lot).
- *
- * @param pixels - The image.
- * @returns The PNG file's bytes.
- * @throws WhiteboxError with code `shape` when the pixel buffer does not match the size.
- * @example
- * ```ts
- * import { encodePng } from 'whitebox-render/svg'
- * const png = encodePng({ width: 1, height: 1, rgba: new Uint8ClampedArray([255, 0, 0, 255]) })
- * [...png.slice(1, 4)].map((c) => String.fromCharCode(c)).join('') // => 'PNG'
- * ```
- */
-export function encodePng(pixels: Pixels): Uint8Array {
+/** The filtered scanlines of an image (PNG filter types 0 to 4, chosen per row by the least absolute sum). */
+function filtered(pixels: Pixels): Uint8Array {
+  const { width, height, rgba } = pixels
+  const stride = width * 4
+  const out = new Uint8Array((stride + 1) * height)
+  const candidates = Array.from({ length: 5 }, () => new Uint8Array(stride))
+  for (let y = 0; y < height; y++) {
+    const row = rgba.subarray(y * stride, (y + 1) * stride)
+    const up = y > 0 ? rgba.subarray((y - 1) * stride, y * stride) : undefined
+    let best = 0
+    let bestScore = Number.POSITIVE_INFINITY
+    for (let f = 0; f < 5; f++) {
+      const c = candidates[f] as Uint8Array
+      let score = 0
+      for (let i = 0; i < stride; i++) {
+        const x = row[i] as number
+        const a = i >= 4 ? (row[i - 4] as number) : 0
+        const b = up === undefined ? 0 : (up[i] as number)
+        const d = up === undefined || i < 4 ? 0 : (up[i - 4] as number)
+        let v: number
+        if (f === 0) v = x
+        else if (f === 1) v = x - a
+        else if (f === 2) v = x - b
+        else if (f === 3) v = x - ((a + b) >> 1)
+        else {
+          const p = a + b - d
+          const pa = Math.abs(p - a)
+          const pb = Math.abs(p - b)
+          const pc = Math.abs(p - d)
+          v = x - (pa <= pb && pa <= pc ? a : pb <= pc ? b : d)
+        }
+        const byte = v & 0xff
+        c[i] = byte
+        score += byte < 128 ? byte : 256 - byte
+      }
+      if (score < bestScore) {
+        bestScore = score
+        best = f
+      }
+    }
+    out[y * (stride + 1)] = best
+    out.set(candidates[best] as Uint8Array, y * (stride + 1) + 1)
+  }
+  return out
+}
+
+function checkPixels(pixels: Pixels, name: string): void {
   const { width, height, rgba } = pixels
   if (!(Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0))
-    throw new WhiteboxError('shape', 'encodePng: width and height must be positive integers')
-  if (rgba.length !== width * height * 4) throw new WhiteboxError('shape', 'encodePng: rgba must hold width*height*4')
-  const stride = width * 4 + 1
-  const raw = new Uint8Array(stride * height)
-  for (let y = 0; y < height; y++) {
-    raw[y * stride] = 0
-    raw.set(rgba.subarray(y * width * 4, (y + 1) * width * 4), y * stride + 1)
-  }
-  const blocks = Math.max(1, Math.ceil(raw.length / 65535))
-  const zlib = new Uint8Array(2 + raw.length + 5 * blocks + 4)
-  zlib[0] = 0x78
-  zlib[1] = 0x01
-  let at = 2
-  for (let b = 0; b < blocks; b++) {
-    const start = b * 65535
-    const len = Math.min(65535, raw.length - start)
-    zlib[at++] = b === blocks - 1 ? 1 : 0
-    zlib[at++] = len & 0xff
-    zlib[at++] = len >>> 8
-    zlib[at++] = ~len & 0xff
-    zlib[at++] = (~len >>> 8) & 0xff
-    zlib.set(raw.subarray(start, start + len), at)
-    at += len
-  }
-  const adler = adler32(raw)
-  zlib[at++] = adler >>> 24
-  zlib[at++] = (adler >>> 16) & 0xff
-  zlib[at++] = (adler >>> 8) & 0xff
-  zlib[at++] = adler & 0xff
+    throw new WhiteboxError('shape', `${name}: width and height must be positive integers`)
+  if (rgba.length !== width * height * 4) throw new WhiteboxError('shape', `${name}: rgba must hold width*height*4`)
+}
 
+/** A PNG file around zlib-compressed image data. */
+function pngFile(width: number, height: number, zlib: Uint8Array): Uint8Array {
   const ihdr = new Uint8Array(13)
   const view = new DataView(ihdr.buffer)
   view.setUint32(0, width)
@@ -100,6 +107,57 @@ export function encodePng(pixels: Pixels): Uint8Array {
     p += 12 + data.length
   }
   return out
+}
+
+/**
+ * Encode pixels as a PNG file (8-bit RGBA, no interlacing): each scanline filtered with the PNG filter that suits it
+ * best, then compressed by a small synchronous deflate (LZ77 with the fixed Huffman codes), so it runs anywhere,
+ * synchronously. `encodePngAsync` compresses harder where the platform has `CompressionStream`.
+ *
+ * @param pixels - The image.
+ * @returns The PNG file's bytes.
+ * @throws WhiteboxError with code `shape` when the pixel buffer does not match the size.
+ * @example
+ * ```ts
+ * import { encodePng } from 'whitebox-render/svg'
+ * const png = encodePng({ width: 1, height: 1, rgba: new Uint8ClampedArray([255, 0, 0, 255]) })
+ * [...png.slice(1, 4)].map((c) => String.fromCharCode(c)).join('') // => 'PNG'
+ * ```
+ */
+export function encodePng(pixels: Pixels): Uint8Array {
+  checkPixels(pixels, 'encodePng')
+  const raw = filtered(pixels)
+  const body = deflateRaw(raw)
+  const zlib = new Uint8Array(body.length + 6)
+  zlib[0] = 0x78
+  zlib[1] = 0x01
+  zlib.set(body, 2)
+  const adler = adler32(raw)
+  new DataView(zlib.buffer).setUint32(body.length + 2, adler)
+  return pngFile(pixels.width, pixels.height, zlib)
+}
+
+/**
+ * Encode pixels as a PNG file, compressed with the platform's deflate (`CompressionStream`, in browsers and Node 18
+ * and later) for smaller files than {@link encodePng}; where there is none, the same as `encodePng`.
+ *
+ * @param pixels - The image.
+ * @returns A promise of the PNG file's bytes.
+ * @throws WhiteboxError with code `shape` when the pixel buffer does not match the size.
+ * @example
+ * ```ts
+ * import { encodePngAsync } from 'whitebox-render/svg'
+ * const png = await encodePngAsync({ width: 2, height: 2, rgba: new Uint8ClampedArray(16).fill(255) })
+ * png[1] // => 80
+ * ```
+ */
+export async function encodePngAsync(pixels: Pixels): Promise<Uint8Array> {
+  checkPixels(pixels, 'encodePngAsync')
+  if (typeof CompressionStream === 'undefined') return encodePng(pixels)
+  const raw = filtered(pixels)
+  const stream = new Blob([raw as Uint8Array<ArrayBuffer>]).stream().pipeThrough(new CompressionStream('deflate'))
+  const zlib = new Uint8Array(await new Response(stream).arrayBuffer())
+  return pngFile(pixels.width, pixels.height, zlib)
 }
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'

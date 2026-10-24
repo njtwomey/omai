@@ -9,7 +9,8 @@ export const outputCodes: HubEntry = defineEntry({
   summary: 'Each class a binary code word; classify by the nearest code.',
   collection: 'sklearn/multiclass',
   tags: ['classification', 'multiclass', 'reductions'],
-  datasets: ['classificationTabular', 'classification2d'],
+  datasets: ['classification2d', 'classificationTabular'],
+  dataset: 'blobs',
   ...fitEstimator(outputCodeClassifier(), { surface: true }),
   views: [
     { record: 'decisionSurface', title: 'Decision surface' },

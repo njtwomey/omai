@@ -10,6 +10,7 @@ export const labelPropagation: HubEntry = defineEntry({
   collection: 'sklearn/semi-supervised',
   tags: ['semi-supervised', 'classification', 'graph', 'transductive'],
   datasets: ['classification2d'],
+  knobs: { noise: 0.08 },
   ...withHiddenLabels(labelPropagationEstimator({ kernel: 'knn', nNeighbors: 7 })),
   views: [
     { record: 'clusteringSteps', title: 'Labels spreading through the graph' },

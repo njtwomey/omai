@@ -1,4 +1,6 @@
 import { rowsOf, sameLength } from './_check.ts'
+import type { InputRows } from './rows.ts'
+import type { DecisionSurface } from './surfaces.ts'
 
 /** A margin classifier or regressor's support and how its dual was solved (SVMs, SVDD). */
 export interface MarginRecord {
@@ -14,6 +16,12 @@ export interface MarginRecord {
   readonly dualObjective?: readonly number[]
   /** The working set chosen at each step: the pair of indices SMO updated. */
   readonly workingSets?: readonly (readonly number[])[]
+  /** The solver step of each `dualObjective` entry (when the trace was thinned; default 0, 1, 2, ...). */
+  readonly steps?: readonly number[]
+  /** The training rows (two coordinates each) that `support`, `margins` and `workingSets` index, when the data is small. */
+  readonly rows?: InputRows
+  /** The decision surface over the rows' two features, with its steps through training (two features only). */
+  readonly surface?: DecisionSurface
 }
 
 /**
@@ -33,5 +41,7 @@ export function marginRecord(record: Omit<MarginRecord, 'kind'>): MarginRecord {
   if (record.workingSets !== undefined && record.dualObjective !== undefined)
     sameLength('margin', 'workingSets', record.workingSets.length, record.dualObjective.length)
   if (record.workingSets !== undefined) rowsOf('margin', 'workingSets', record.workingSets, 2)
+  if (record.steps !== undefined && record.dualObjective !== undefined)
+    sameLength('margin', 'steps', record.steps.length, record.dualObjective.length)
   return { kind: 'margin', ...record }
 }
