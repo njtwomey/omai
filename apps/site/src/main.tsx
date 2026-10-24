@@ -1,0 +1,31 @@
+import { type ReactNode, StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { DocsSection } from './docs/routes.tsx'
+import { GallerySection } from './gallery/routes.tsx'
+import { Home } from './Home.tsx'
+import { HubSection } from './hub/routes.tsx'
+import { usePath } from './shell/router.ts'
+import { Shell } from './shell/Shell.tsx'
+import './shell/styles.css'
+
+function App(): ReactNode {
+  const path = usePath()
+  const page = path.startsWith('/gallery') ? (
+    <GallerySection path={path} />
+  ) : path.startsWith('/hub') ? (
+    <HubSection path={path} />
+  ) : path.startsWith('/docs') ? (
+    <DocsSection path={path} />
+  ) : (
+    <Home />
+  )
+  return <Shell path={path}>{page}</Shell>
+}
+
+const root = document.getElementById('root')
+if (root === null) throw new Error('index.html has no #root element')
+createRoot(root).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
