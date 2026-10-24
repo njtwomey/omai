@@ -10,6 +10,7 @@ export const lars: HubEntry = defineEntry({
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'sparsity', 'paths'],
   datasets: ['regressionTabular', 'regression1d'],
+  dataset: 'sparseUncorrelated',
   ...fitEstimator(larsMethod()),
   views: [
     { record: 'regularisationPath', title: 'LARS path' },

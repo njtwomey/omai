@@ -10,7 +10,8 @@ export const lassoLars: HubEntry = defineEntry({
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'sparsity', 'paths'],
   datasets: ['regressionTabular', 'regression1d'],
-  ...fitEstimator(lassoLarsMethod()),
+  dataset: 'sparseUncorrelated',
+  ...fitEstimator(lassoLarsMethod({ alpha: 0.1 })),
   views: [
     { record: 'regularisationPath', title: 'Lasso path' },
     { record: 'coefficientTable', title: 'Coefficients', area: 'side' },

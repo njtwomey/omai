@@ -10,7 +10,8 @@ export const ridgeCv: HubEntry = defineEntry({
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'cross-validation'],
   datasets: ['regressionTabular', 'regression1d'],
-  ...fitEstimator(ridgeCV()),
+  // A log grid of 30 penalties, so the path and the cross-validation curve are curves rather than sklearn's three points.
+  ...fitEstimator(ridgeCV({ alphas: Array.from({ length: 30 }, (_, i) => 10 ** (-3 + (7 * i) / 29)) })),
   views: [
     { record: 'regularisationPath', title: 'Regularisation path' },
     { record: 'crossValidationCurve', title: 'Cross-validation', area: 'side' },

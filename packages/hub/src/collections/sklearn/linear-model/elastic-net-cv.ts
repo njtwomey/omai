@@ -10,6 +10,7 @@ export const elasticNetCv: HubEntry = defineEntry({
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'cross-validation'],
   datasets: ['regressionTabular', 'regression1d'],
+  dataset: 'sparseUncorrelated',
   ...fitEstimator(elasticNetCV()),
   views: [
     { record: 'regularisationPath', title: 'Regularisation path' },

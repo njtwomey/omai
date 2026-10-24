@@ -10,6 +10,7 @@ export const lassoCv: HubEntry = defineEntry({
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'sparsity', 'cross-validation'],
   datasets: ['regressionTabular', 'regression1d'],
+  dataset: 'sparseUncorrelated',
   ...fitEstimator(lassoCV()),
   views: [
     { record: 'regularisationPath', title: 'Regularisation path' },
