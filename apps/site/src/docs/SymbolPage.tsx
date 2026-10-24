@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import type { Example, MemberDoc, ModuleDoc, ParamDoc, SymbolDoc } from 'whitebox-meta/schema'
+import type { Example, MemberDoc, ParamDoc, SymbolDoc } from 'whitebox-meta/schema'
+import { Crumbs } from './Crumbs.tsx'
 import { DocInline, DocText } from './DocText.tsx'
-import type { Docs } from './data.ts'
-import { Breadcrumbs } from './ModulePage.tsx'
+import { baseName, type Docs, type IndexFile } from './data.ts'
 
 function Code(props: { readonly code: string }): ReactNode {
   return (
@@ -100,25 +100,15 @@ function Member(props: { readonly member: MemberDoc; readonly docs: Docs; readon
   )
 }
 
-/** A symbol: signature, doc comment, parameters, returns, throws, examples, members and where it is defined. */
-export function SymbolPage(props: {
-  readonly docs: Docs
-  readonly module: ModuleDoc
-  readonly symbol: SymbolDoc
-}): ReactNode {
-  const { docs, module, symbol: s } = props
-  const near = module.id
+/** A symbol's documentation: signature, doc comment, parameters, returns, throws, examples, members, source. */
+export function SymbolBody(props: { readonly docs: Docs; readonly symbol: SymbolDoc }): ReactNode {
+  const { docs, symbol: s } = props
+  const near = s.module
   return (
-    <article className="space-y-6">
-      <header>
-        <Breadcrumbs docs={docs} module={module} last={s.name} />
-        <h1 className="font-mono text-2xl font-semibold">
-          {s.name} <span className="text-sm font-normal text-neutral-500">{s.kind}</span>
-        </h1>
-        {s.deprecated === undefined ? null : (
-          <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">Deprecated: {s.deprecated}</p>
-        )}
-      </header>
+    <div className="space-y-6">
+      {s.deprecated === undefined ? null : (
+        <p className="text-sm text-amber-700 dark:text-amber-400">Deprecated: {s.deprecated}</p>
+      )}
       <Code code={s.signature} />
       <DocText text={[s.summary, s.description].filter((t) => t !== '').join('\n\n')} docs={docs} near={near} />
       {s.params.length === 0 ? null : (
@@ -157,6 +147,9 @@ export function SymbolPage(props: {
         </Section>
       )}
       <footer className="space-y-1 border-t border-neutral-200 pt-3 text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="font-mono">
+          import {'{'} {s.name} {'}'} from '{s.module}'
+        </p>
         {s.concepts.length === 0 ? null : <p>Concepts: {s.concepts.join(', ')}</p>}
         {s.see.map((x) => (
           <p key={x}>
@@ -171,6 +164,29 @@ export function SymbolPage(props: {
           {s.source.file}:{s.source.line}
         </p>
       </footer>
+    </div>
+  )
+}
+
+/** A symbol's page: where it sits in the tree, its name and kind, then its documentation. */
+export function SymbolPage(props: {
+  readonly docs: Docs
+  readonly file: IndexFile
+  readonly symbol: SymbolDoc
+}): ReactNode {
+  const { docs, file, symbol } = props
+  return (
+    <article className="space-y-4">
+      <header>
+        <Crumbs path={file.path} last />
+        <h1 className="font-mono text-2xl font-semibold">
+          {symbol.name}{' '}
+          <span className="text-sm font-normal text-neutral-500">
+            {symbol.kind} in {baseName(file.path)}
+          </span>
+        </h1>
+      </header>
+      <SymbolBody docs={docs} symbol={symbol} />
     </article>
   )
 }

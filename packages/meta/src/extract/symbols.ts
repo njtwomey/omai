@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { ts } from 'ts-morph'
-import type { MemberDoc, ModuleDoc, ParamDoc, SymbolDoc, SymbolKind } from '../schema/catalogue.ts'
+import type { FileDoc, MemberDoc, ModuleDoc, ParamDoc, SymbolDoc, SymbolKind } from '../schema/catalogue.ts'
 import type { Example } from '../schema/examples.ts'
 import { type EntryPoint, type Project, relativeTo } from './project.ts'
 import { type ParsedDoc, parseDocComment, unframeComment } from './tsdoc.ts'
@@ -28,6 +28,7 @@ type Exported = { readonly decl: Declaration } | { readonly namespace: string }
 /** What reading declarations reports besides the symbols. */
 export interface SymbolsResult {
   readonly modules: readonly ModuleDoc[]
+  readonly files: readonly FileDoc[]
   readonly symbols: readonly SymbolDoc[]
 }
 
@@ -468,5 +469,19 @@ export function readSymbols(project: Project): SymbolsResult {
       files: e.files.map((f) => relativeTo(project, f)),
     }
   })
-  return { modules, symbols: ordered.map(([, s]) => s) }
+  // A file's own opening comment: one followed by a blank line or the imports, not a first declaration's doc.
+  const fileDoc = (file: string, module: string): FileDoc => {
+    const m = /^\s*(\/\*\*[\s\S]*?\*\/)(\n\s*\n|\nimport\b)/.exec(reader.source(file).text)
+    const doc = m === null ? undefined : parseDocComment(unframeComment(m[1] as string))
+    return { path: relativeTo(project, file), module, summary: doc?.summary ?? '', description: doc?.description ?? '' }
+  }
+  const files: FileDoc[] = project.entries.flatMap((e) => e.files.map((f) => fileDoc(f, e.specifier)))
+  // A private file (`_tree.ts`) that defines a public symbol is listed too, so every symbol has its file.
+  const listed = new Set(files.map((f) => f.path))
+  for (const [key, s] of ordered) {
+    if (listed.has(s.source.file)) continue
+    listed.add(s.source.file)
+    files.push(fileDoc(key.slice(0, key.lastIndexOf('#')), s.module))
+  }
+  return { modules, files, symbols: ordered.map(([, s]) => s) }
 }
