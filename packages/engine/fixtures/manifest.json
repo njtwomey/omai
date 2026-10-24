@@ -1320,6 +1320,25 @@
       "cases": 18
     },
     {
+      "fixture": "methods/cluster/density.json",
+      "source": "oracle/cases/methods/cluster/density.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "methods/cluster/hierarchical.json",
+      "source": "oracle/cases/methods/cluster/hierarchical.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "methods/cluster/kmeans.json",
       "source": "oracle/cases/methods/cluster/kmeans.py",
       "reference": {
