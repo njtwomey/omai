@@ -214,7 +214,7 @@ export function residue(e: Expr, x: ExprSym, x0: ExprLike = 0): Expr {
  * @example
  * ```ts
  * import { pade, parse, sym, toText } from 'whitebox-engine/symbolic'
- * toText(pade(parse('exp(x)'), sym('x'), 1, 1)) // => '(x + 2)/(2 - x)'
+ * toText(pade(parse('exp(x)'), sym('x'), 1, 1)) // => '-(x + 2)/(x - 2)'
  * ```
  */
 export function pade(e: Expr, x: ExprSym, m: number, n: number, x0: ExprLike = 0): Expr {
