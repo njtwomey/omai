@@ -29,6 +29,15 @@ function costToGo(g: Graph, target: number): Float64Array {
   return dijkstra(g.directed ? reverse(g) : g, target).distance
 }
 
+/**
+ * Path costs equal to rounding: searches that add the same edge weights in a different order (or choose another of
+ * several optimal paths) can differ in the last bit; unreachable targets must agree exactly (both infinite).
+ */
+function expectCost(actual: number, optimum: number): void {
+  if (!Number.isFinite(optimum)) expect(actual).toBe(optimum)
+  else expect(Math.abs(actual - optimum)).toBeLessThanOrEqual(1e-12 * Math.max(1, Math.abs(optimum)))
+}
+
 const case_ = weighted.chain((g) =>
   fc.record({
     g: fc.constant(g),
@@ -50,13 +59,13 @@ describe('path searches on random graphs', () => {
         const problem = graphProblem(g, s, t, { heuristic: h })
         const ucs = uniformCostSearch(problem)
         const optimum = hStar[s] ?? Number.POSITIVE_INFINITY
-        expect(ucs.cost).toBe(optimum)
+        expectCost(ucs.cost, optimum)
         expect(ucs.status).toBe(Number.isFinite(optimum) ? 'solved' : 'failure')
-        expect(aStarSearch(problem).cost).toBe(optimum)
-        expect(idaStarSearch(problem).cost).toBe(optimum)
+        expectCost(aStarSearch(problem).cost, optimum)
+        expectCost(idaStarSearch(problem).cost, optimum)
         // RBFS is a tree search: without a goal it cycles until its budget runs out.
         const rbfs = recursiveBestFirstSearch(problem, { maxExpansions: Number.isFinite(optimum) ? 100_000 : 300 })
-        expect(rbfs.cost).toBe(optimum)
+        expectCost(rbfs.cost, optimum)
         if (!Number.isFinite(optimum)) expect(['budget', 'failure']).toContain(rbfs.status)
         const back = bidirectionalSearch({
           ...problem,
@@ -70,9 +79,12 @@ describe('path searches on random graphs', () => {
             return out
           },
         })
-        expect(back.cost).toBe(optimum)
+        expectCost(back.cost, optimum)
         if (ucs.status === 'solved') {
-          expect(replay(problem, ucs.actions)).toEqual({ state: t, cost: optimum, goal: true })
+          const replayed = replay(problem, ucs.actions)
+          expect(replayed.state).toBe(t)
+          expect(replayed.goal).toBe(true)
+          expectCost(replayed.cost, optimum)
           expect(isAdmissible(problem).holds).toBe(true)
           expect(isConsistent(problem).holds).toBe(true)
         }
