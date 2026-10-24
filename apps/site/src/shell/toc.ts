@@ -44,8 +44,8 @@ export function filterToc(nodes: readonly TocNode[], query: string): TocNode[] {
 }
 
 /**
- * The ids of the nodes on the way to the node linking `path` (the node itself excluded), outermost first; empty when
- * no node links it.
+ * The ids of the nodes on the way to the node linking `path`, outermost first, and the node itself when it has
+ * children (a section's own page opens the section); empty when no node links it.
  *
  * @param nodes - The tree.
  * @param path - The current page.
@@ -54,7 +54,7 @@ export function filterToc(nodes: readonly TocNode[], query: string): TocNode[] {
 export function ancestorsOf(nodes: readonly TocNode[], path: string): string[] {
   const walk = (list: readonly TocNode[], trail: readonly string[]): string[] | null => {
     for (const n of list) {
-      if (n.path === path) return [...trail]
+      if (n.path === path) return n.children !== undefined && n.children.length > 0 ? [...trail, n.id] : [...trail]
       if (n.children !== undefined) {
         const found = walk(n.children, [...trail, n.id])
         if (found !== null) return found

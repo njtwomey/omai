@@ -31,6 +31,7 @@ export default function ControlPanelRecipe(): ReactNode {
   return (
     <ControlLayout
       placement={placement}
+      sidebarWidth={280}
       controls={
         <ControlPanel
           title="wave"

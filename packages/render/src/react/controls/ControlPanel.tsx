@@ -1,6 +1,9 @@
-import { type CSSProperties, type ReactNode, useId, useState } from 'react'
+import { type CSSProperties, createContext, type ReactNode, useContext, useId, useState } from 'react'
 import { cx } from './classes.ts'
 import { ChevronDownIcon } from './icons.tsx'
+
+// Whether the enclosing panel has named areas (a PanelArea's name only places it when it does).
+const AreasContext = createContext(false)
 
 /** Props of {@link ControlPanel}. */
 export interface ControlPanelProps {
@@ -70,7 +73,7 @@ export function ControlPanel(props: ControlPanelProps): ReactNode {
           className={cx('grid items-end gap-x-4 gap-y-3 px-3 pb-3', title === undefined && 'pt-3')}
           style={grid}
         >
-          {children}
+          <AreasContext.Provider value={areas !== undefined}>{children}</AreasContext.Provider>
         </div>
       ) : null}
     </section>
@@ -78,7 +81,8 @@ export function ControlPanel(props: ControlPanelProps): ReactNode {
 }
 
 /**
- * One cell of a {@link ControlPanel}'s bento grid, by area name; or, without areas, a cell spanning columns or rows.
+ * One cell of a {@link ControlPanel}'s bento grid, by area name (ignored when the panel has no `areas`, so the same
+ * cells flow into columns or rows instead); or a cell spanning columns or rows.
  *
  * @param props - The area's name (or spans) and its controls.
  * @returns The cell.
@@ -91,8 +95,9 @@ export function PanelArea(props: {
   readonly className?: string
 }): ReactNode {
   const { children, name, columnSpan, rowSpan, className } = props
+  const named = useContext(AreasContext)
   const style: CSSProperties = {
-    ...(name === undefined ? {} : { gridArea: name }),
+    ...(name === undefined || !named ? {} : { gridArea: name }),
     ...(columnSpan === undefined ? {} : { gridColumn: `span ${columnSpan} / span ${columnSpan}` }),
     ...(rowSpan === undefined ? {} : { gridRow: `span ${rowSpan} / span ${rowSpan}` }),
   }

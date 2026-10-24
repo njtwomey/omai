@@ -110,26 +110,3 @@ export function Card(props: {
     </Link>
   )
 }
-
-/** Links to the previous and next pages of a sequence. */
-export function PrevNext(props: {
-  readonly prev?: { readonly path: string; readonly title: string }
-  readonly next?: { readonly path: string; readonly title: string }
-}): ReactNode {
-  const { prev, next } = props
-  const link = (to: { readonly path: string; readonly title: string }, dir: 'prev' | 'next'): ReactNode => (
-    <Link
-      to={to.path}
-      className={`flex min-w-0 flex-col text-sm text-muted hover:text-fg ${dir === 'prev' ? 'text-left' : 'items-end text-right'}`}
-    >
-      <span className="text-xs">{dir === 'prev' ? 'Previous' : 'Next'}</span>
-      <span className="truncate font-medium text-fg">{to.title}</span>
-    </Link>
-  )
-  return (
-    <nav aria-label="Neighbouring pages" className="flex justify-between gap-4 border-t border-line pt-4">
-      {prev === undefined ? <span /> : link(prev, 'prev')}
-      {next === undefined ? <span /> : link(next, 'next')}
-    </nav>
-  )
-}
