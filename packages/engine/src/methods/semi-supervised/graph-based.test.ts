@@ -39,4 +39,17 @@ describe('graph-based semi-supervised learning', () => {
     for (const r of m.params.labelDistributions) expect(r.reduce((a, v) => a + v, 0)).toBeCloseTo(1, 10)
     expect(m.params.nIter).toBeLessThanOrEqual(30)
   })
+
+  it('small-alpha spreading keeps going until the labels reach every connected row', () => {
+    // At alpha 0.1 the total change drops below tol within a few steps, when only rows a few hops from a label hold
+    // mass; scikit-learn stops there. The iteration runs on until no row gains its first label mass.
+    const f = labelSpreading({ kernel: 'knn', nNeighbors: 7, alpha: 0.1, maxIter: 200 }).fit(
+      { ...data, y },
+      { key: key(0) },
+    )
+    const [steps] = recordsOf(f.exposition, 'clusteringSteps')
+    expect(steps?.assignments.at(-1)?.every((a) => a >= 0)).toBe(true)
+    expect(accuracy(f.params.transduction)).toBeGreaterThan(0.9)
+    expect(f.params.nIter).toBeGreaterThan(5)
+  })
 })

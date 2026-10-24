@@ -2,6 +2,7 @@
 export * as activeLearning from './active-learning/index.ts'
 export * as classicalAi from './classical-ai/index.ts'
 export * as evolutionary from './evolutionary/index.ts'
+export * as generative from './generative/index.ts'
 export * as neural from './neural/index.ts'
 export * as online from './online/index.ts'
 export * as probabilistic from './probabilistic/index.ts'

@@ -89,6 +89,58 @@ export function jointProbabilities(
 }
 
 /**
+ * The exact KL divergence and gradient on flat buffers: `p` `[n * n]` row-major, `y` `[n * k]`, the gradient written
+ * into `grad` `[n * k]` (unless it is undefined: the divergence alone) and the Student-t kernel into `kern` `[n * n]`
+ * (scratch, reused across iterations). The gradient uses `exaggeration` times p (early exaggeration) while the
+ * divergence is of p itself. Sums run in the order of sklearn's `_kl_divergence`.
+ */
+function klAndGradient(
+  p: Float64Array,
+  y: Float64Array,
+  n: number,
+  k: number,
+  dof: number,
+  exaggeration: number,
+  kern: Float64Array,
+  grad: Float64Array | undefined,
+): number {
+  const power = (dof + 1) / -2
+  let total = 0
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      if (i === j) {
+        kern[i * n + j] = 0
+        continue
+      }
+      let d2 = 0
+      for (let a = 0; a < k; a++) {
+        const diff = (y[i * k + a] ?? 0) - (y[j * k + a] ?? 0)
+        d2 += diff * diff
+      }
+      const v = (1 + d2 / dof) ** power
+      kern[i * n + j] = v
+      total += v
+    }
+  let kl = 0
+  grad?.fill(0)
+  const c = (2 * (dof + 1)) / dof
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      if (i === j) continue
+      const kij = kern[i * n + j] ?? 0
+      const q = Math.max(kij / total, MACHINE_EPSILON)
+      const pij = p[i * n + j] ?? 0
+      kl += pij * Math.log(Math.max(pij, MACHINE_EPSILON) / q)
+      if (grad === undefined) continue
+      const coef = (exaggeration === 1 ? pij : pij * exaggeration) - q
+      const ck = c * (coef * kij)
+      for (let a = 0; a < k; a++)
+        grad[i * k + a] = (grad[i * k + a] ?? 0) + ck * ((y[i * k + a] ?? 0) - (y[j * k + a] ?? 0))
+    }
+  return kl
+}
+
+/**
  * The exact t-SNE objective and gradient (sklearn's `_kl_divergence`) for a Student-t kernel with `dof` degrees of
  * freedom.
  *
@@ -104,30 +156,18 @@ export function tsneGradient(
 ): { readonly kl: number; readonly grad: number[][] } {
   const n = y.length
   const k = y[0]?.length ?? 0
-  const w = toArray(geometry.cdist(y as number[][], y as number[][], 'sqeuclidean')) as number[][]
-  let total = 0
-  const kern = w.map((r, i) =>
-    r.map((v, j) => {
-      if (i === j) return 0
-      const out = (1 + v / dof) ** ((dof + 1) / -2)
-      total += out
-      return out
-    }),
+  const grad = new Float64Array(n * k)
+  const kl = klAndGradient(
+    Float64Array.from(p.flat()),
+    Float64Array.from(y.flat()),
+    n,
+    k,
+    dof,
+    1,
+    new Float64Array(n * n),
+    grad,
   )
-  let kl = 0
-  const grad = Array.from({ length: n }, () => new Array<number>(k).fill(0))
-  const c = (2 * (dof + 1)) / dof
-  for (let i = 0; i < n; i++)
-    for (let j = 0; j < n; j++) {
-      if (i === j) continue
-      const q = Math.max((kern[i]?.[j] ?? 0) / total, MACHINE_EPSILON)
-      const pij = p[i]?.[j] ?? 0
-      kl += pij * Math.log(Math.max(pij, MACHINE_EPSILON) / q)
-      const coef = (pij - q) * (kern[i]?.[j] ?? 0)
-      const g = grad[i] as number[]
-      for (let a = 0; a < k; a++) g[a] = (g[a] ?? 0) + c * coef * ((y[i]?.[a] ?? 0) - (y[j]?.[a] ?? 0))
-    }
-  return { kl, grad }
+  return { kl, grad: Array.from({ length: n }, (_, i) => Array.from(grad.subarray(i * k, (i + 1) * k))) }
 }
 
 /** The state of t-SNE's gradient descent. */
@@ -140,7 +180,9 @@ export interface TsneState {
 
 /**
  * t-SNE's gradient descent with momentum and per-coordinate gains (sklearn's `_gradient_descent`) as a traced
- * algorithm: early exaggeration of P with momentum 0.5 for the first `exaggerationIter` steps, then momentum 0.8.
+ * algorithm: early exaggeration of P with momentum 0.5 for the first `exaggerationIter` steps, then momentum 0.8. The
+ * reported KL divergence is always of the unexaggerated P. Each step is one pass over the pairs, into buffers reused
+ * across steps.
  *
  * @param p - Joint probabilities.
  * @param init - The initial embedding.
@@ -154,32 +196,45 @@ export function tsneAlgorithm(
 ): Algorithm<TsneState> {
   const ex = options.earlyExaggeration ?? 12
   const exIter = options.exaggerationIter ?? 250
-  const pEx = p.map((r) => r.map((v) => v * ex))
   const lr = options.learningRate
+  const n = init.length
+  const k = init[0]?.length ?? 0
+  const pFlat = Float64Array.from(p.flat())
+  const kern = new Float64Array(n * n)
+  const grad = new Float64Array(n * k)
+  const y = new Float64Array(n * k)
   return {
     name: 'tsne',
     config: { learningRate: lr, earlyExaggeration: ex, exaggerationIter: exIter },
-    init: () => ({
-      y: init.map((r) => [...r]),
-      update: init.map((r) => r.map(() => 0)),
-      gains: init.map((r) => r.map(() => 1)),
-      kl: tsneGradient(p, init).kl,
-    }),
+    init: () => {
+      y.set(init.flat())
+      return {
+        y: init.map((r) => [...r]),
+        update: init.map((r) => r.map(() => 0)),
+        gains: init.map((r) => r.map(() => 1)),
+        kl: klAndGradient(pFlat, y, n, k, 1, 1, kern, grad),
+      }
+    },
     step: (s, ctx) => {
       const exploring = ctx.t < exIter
       const momentum = exploring ? 0.5 : 0.8
-      const { kl, grad } = tsneGradient(exploring ? pEx : p, s.y)
+      for (const [i, r] of s.y.entries()) for (const [a, v] of r.entries()) y[i * k + a] = v
+      // The divergence of p at the step's starting positions, and the gradient (of exaggerated p while exploring).
+      const klBefore = klAndGradient(pFlat, y, n, k, 1, exploring ? ex : 1, kern, grad)
       const gains = s.gains.map((r, i) =>
         r.map((gv, a) => {
-          const inc = (s.update[i]?.[a] ?? 0) * (grad[i]?.[a] ?? 0) < 0
+          const inc = (s.update[i]?.[a] ?? 0) * (grad[i * k + a] ?? 0) < 0
           return Math.max(inc ? gv + 0.2 : gv * 0.8, 0.01)
         }),
       )
       const update = s.update.map((r, i) =>
-        r.map((u, a) => momentum * u - lr * (gains[i]?.[a] ?? 1) * (grad[i]?.[a] ?? 0)),
+        r.map((u, a) => momentum * u - lr * (gains[i]?.[a] ?? 1) * (grad[i * k + a] ?? 0)),
       )
-      const y = s.y.map((r, i) => r.map((v, a) => v + (update[i]?.[a] ?? 0)))
-      return { y, update, gains, kl: exploring ? tsneGradient(p, y).kl : kl }
+      const next = s.y.map((r, i) => r.map((v, a) => v + (update[i]?.[a] ?? 0)))
+      if (!exploring) return { y: next, update, gains, kl: klBefore }
+      // While exploring, the divergence reported is at the new positions (a divergence-only pass).
+      for (const [i, r] of next.entries()) for (const [a, v] of r.entries()) y[i * k + a] = v
+      return { y: next, update, gains, kl: klAndGradient(pFlat, y, n, k, 1, 1, kern, undefined) }
     },
     observe: (s) => ({ metrics: { kl: s.kl } }),
   }
@@ -215,10 +270,22 @@ export function tsne(hyper: TsneHyper = {}): Estimator<TsneHyper, FittedEmbeddin
       kind: 'transformer',
       hyperSpace: (h) =>
         dict({
-          perplexity: real(2, 100, { default: h.perplexity ?? 30, label: 'perplexity' }),
+          perplexity: real(2, 100, {
+            default: h.perplexity ?? 30,
+            label: 'perplexity',
+            description: 'The effective number of neighbours each point’s bandwidth is calibrated to.',
+          }),
           maxIter: int(250, 2000, { default: h.maxIter ?? 1000, label: 'iterations' }),
-          earlyExaggeration: real(1, 50, { default: h.earlyExaggeration ?? 12 }),
-          init: choice(['pca', 'random'], { default: typeof h.init === 'string' ? h.init : 'pca' }),
+          earlyExaggeration: real(1, 50, {
+            default: h.earlyExaggeration ?? 12,
+            label: 'early exaggeration',
+            description: 'How much P is multiplied by for the first 250 iterations, pulling clusters apart early.',
+          }),
+          init: choice(['pca', 'random'], {
+            default: typeof h.init === 'string' ? h.init : 'pca',
+            label: 'initialisation',
+            description: 'Start from the first principal components (scaled small) or from small Gaussian noise.',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'tsne', { minSamples: 4 })

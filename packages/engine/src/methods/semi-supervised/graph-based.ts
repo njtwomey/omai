@@ -72,6 +72,22 @@ export interface GraphLabelState {
   readonly f: Float64Array
   /** Total absolute change at the last step. */
   readonly change: number
+  /** Rows holding some label mass. */
+  readonly reached: number
+  /** Whether the last step gave label mass to rows that had none. */
+  readonly growing: boolean
+}
+
+/** The number of rows with some label mass. */
+function reachedRows(f: Float64Array, n: number, k: number): number {
+  let count = 0
+  for (let i = 0; i < n; i++)
+    for (let c = 0; c < k; c++)
+      if ((f[i * k + c] ?? 0) > 0) {
+        count++
+        break
+      }
+  return count
 }
 
 /** The dense affinity of the training rows, `[n * n]` row-major: rbf kernel values or knn connectivity (with self). */
@@ -109,7 +125,10 @@ function graphMatrix(w: Float64Array, n: number, variant: 'propagation' | 'sprea
  * The label-propagation iteration as a traced algorithm (Zhou et al. 2004; Zhu and Ghahramani 2002), as scikit-learn
  * runs it: propagation multiplies the label distributions by the row-normalised graph, renormalises and clamps the
  * labelled rows to their labels; spreading takes alpha of each row from its neighbours and 1 - alpha from its own
- * label. Stops when the total change falls below tol.
+ * label. Stops when the total change falls below tol and no row gained its first label mass at the last step: with a
+ * small alpha the change falls below tol within a few steps, while the labels have reached only rows a few hops
+ * from a labelled one (scikit-learn stops there and gives the rest class 0); the iteration goes on until every row
+ * connected to a label holds some of its mass.
  *
  * @param graph - The iteration matrix `[n * n]`.
  * @param codes - A class code per row (-1 unlabelled).
@@ -134,7 +153,12 @@ export function graphLabelAlgorithm(
     schema: channels({
       metrics: { change: { description: 'total change of the label distributions', direction: 'lower' } },
     }),
-    init: () => ({ f: Float64Array.from(y0), change: Number.POSITIVE_INFINITY }),
+    init: () => ({
+      f: Float64Array.from(y0),
+      change: Number.POSITIVE_INFINITY,
+      reached: reachedRows(y0, n, k),
+      growing: true,
+    }),
     step: (s) => {
       const f = new Float64Array(n * k)
       for (let i = 0; i < n; i++)
@@ -156,9 +180,10 @@ export function graphLabelAlgorithm(
       }
       let change = 0
       for (let i = 0; i < f.length; i++) change += Math.abs((f[i] ?? 0) - (s.f[i] ?? 0))
-      return { f, change }
+      const reached = reachedRows(f, n, k)
+      return { f, change, reached, growing: reached > s.reached }
     },
-    done: (s) => (s.change < tol ? 'converged' : undefined),
+    done: (s) => (s.change < tol && !s.growing ? 'converged' : undefined),
     observe: (s) => ({ metrics: Number.isFinite(s.change) ? { change: s.change } : {} }),
   }
 }
@@ -312,11 +337,23 @@ function graphEstimator(
       kind: 'classifier',
       hyperSpace: (h: GraphLabelHyper): Space =>
         dict({
-          kernel: choice(['rbf', 'knn'], { default: h.kernel }),
+          kernel: choice(['rbf', 'knn'], {
+            default: h.kernel,
+            label: 'graph',
+            description: 'A Gaussian kernel on all pairs (rbf) or each row’s k nearest neighbours (knn).',
+          }),
           gamma: real(0.1, 100, { log: true, default: h.gamma, label: 'rbf gamma' }),
           nNeighbors: int(1, 30, { default: h.nNeighbors, label: 'knn neighbours' }),
-          ...(variant === 'spreading' ? { alpha: real(0.01, 0.99, { default: h.alpha, label: 'alpha' }) } : {}),
-          maxIter: int(1, 1000, { default: h.maxIter, label: 'iterations' }),
+          ...(variant === 'spreading'
+            ? {
+                alpha: real(0.01, 0.99, {
+                  default: h.alpha,
+                  label: 'clamping α',
+                  description: 'The share of each row’s labels taken from its neighbours; the rest stays its own.',
+                }),
+              }
+            : {}),
+          maxIter: int(1, 1000, { default: h.maxIter, label: 'iterations', description: 'The iteration cap.' }),
         }),
       fit: (data, h, options) => fitGraphLabels(variant, data, h, options),
       methods: graphVerbs,
