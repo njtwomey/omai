@@ -1,5 +1,6 @@
 import { isTensor, type Value } from '../tensor/index.ts'
 import type { TensorRole } from './events.ts'
+import type { RunHandle } from './tracer.ts'
 
 /** A collector for intermediate values that model code exposes by name. */
 export interface TapContext {
@@ -33,6 +34,40 @@ export function tapContext(enabled = true): TapContext {
     tap: (name, value, role = 'activation') => {
       if (enabled && isTensor(value)) entries.set(name, { role, value })
       return value
+    },
+  }
+}
+
+/**
+ * A tap context bound to a run: enabled only when the run records activations at this step (the policy selects the
+ * `activation` role and the step is on the schedule), and each tapped value is recorded as a tensor event at once
+ * (with the role given to `tap`, `activation` by default) as well as collected. So model code taps freely and the
+ * policy alone decides what reaches the trace.
+ *
+ * @param run - The run to record into.
+ * @param step - The current step.
+ * @returns The context.
+ * @concept tracing
+ * @example
+ * ```ts
+ * import { policies, recorder, startRun, tapsFor } from 'whitebox-engine/trace'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * const rec = recorder()
+ * const run = startRun(rec, { name: 'net', seed: 0, config: {}, policy: policies.debug })
+ * tapsFor(run, 0).tap('h', tensor([1, 2]))
+ * rec.events.filter((e) => e.type === 'tensor').length // => 1
+ * tapsFor(startRun(rec, { name: 'quiet', seed: 0, config: {} }), 0).enabled // => false
+ * ```
+ */
+export function tapsFor(run: RunHandle, step: number): TapContext {
+  const enabled = run.enabled && run.policy.roles.includes('activation') && run.due(step)
+  const inner = tapContext(enabled)
+  return {
+    enabled,
+    entries: inner.entries,
+    tap: (name, value, role = 'activation') => {
+      if (enabled && isTensor(value)) run.tensor(step, name, role, value)
+      return inner.tap(name, value, role)
     },
   }
 }

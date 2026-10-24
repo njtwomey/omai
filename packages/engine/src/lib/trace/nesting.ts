@@ -3,7 +3,8 @@ import { type Algorithm, type RunOptions, type RunResult, runAlgorithm, type Ste
 
 /**
  * Run an inner algorithm inside a step of an outer one, as a child run: its trace nests under the outer run, it uses the
- * outer run's tracer and policy, and its key is derived from the outer step's key (so nesting stays reproducible).
+ * outer run's tracer and the policy {@link childPolicy} derives from the outer one (unless `policy` is given), and its
+ * key is derived from the outer step's key (so nesting stays reproducible). Read run trees back with `runTree`.
  *
  * @param ctx - The outer step's context.
  * @param algorithm - The inner algorithm.

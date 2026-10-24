@@ -1,9 +1,9 @@
 import { type Json, VERSION } from '../base/index.ts'
 import { isTensor, type Value } from '../tensor/index.ts'
 import type { Run, RunStatus, TensorRole, TraceEvent } from './events.ts'
-import { onSchedule, policies, selected, type TracePolicy } from './policy.ts'
+import { changed, channelSelected, childPolicy, onSchedule, policies, type TracePolicy } from './policy.ts'
 import { schemaToJson, type TraceSchema } from './schema.ts'
-import { summarise } from './summaries.ts'
+import { subsample, summarise } from './summaries.ts'
 
 /**
  * Where trace events go. Algorithms emit through a {@link RunHandle}; they never log to the console.
@@ -117,7 +117,10 @@ export interface RunInfo {
   readonly policy?: TracePolicy
 }
 
-/** Emits the events of one run, applying its policy (channel selection, detail, budget). */
+/**
+ * Emits the events of one run, applying its policy: channel selection, on-change filtering, detail and subsampling,
+ * and the event and byte budgets. Scheduling (which steps are observed) is the runner's job, through `due`.
+ */
 export interface RunHandle {
   readonly runId: string
   readonly enabled: boolean
@@ -166,11 +169,21 @@ export function startRun(tracer: Tracer, info: RunInfo): RunHandle {
   const runId = info.runId ?? `${info.name}:${info.seed ?? 'none'}`
   const policy = info.policy ?? policies.minimal
   const enabled = tracer.enabled
+  const budgetBytes = Number.isFinite(policy.maxBytes)
+  const onChange = 'onChange' in policy.schedule ? policy.schedule : undefined
+  const lastMetric = new Map<string, number>()
+  const lastTensor = new Map<string, Float64Array>()
   let count = 0
+  let bytes = 0
   let children = 0
   const emit = (event: TraceEvent, always = false): void => {
     if (!enabled) return
     if (!always && count >= policy.maxEvents) return
+    if (budgetBytes) {
+      const size = JSON.stringify(event).length
+      if (!always && bytes + size > policy.maxBytes) return
+      bytes += size
+    }
     count += 1
     tracer.emit(event)
   }
@@ -194,14 +207,17 @@ export function startRun(tracer: Tracer, info: RunInfo): RunHandle {
     due: (step) => enabled && onSchedule(policy.schedule, step),
     wants: (kind, name = '') => {
       if (!enabled) return false
-      if (kind === 'metric') return selected(policy.metrics, name)
-      if (kind === 'message') return selected(policy.messages, name)
-      if (kind === 'frame') return policy.frames
-      return policy.checkpoints
+      if (kind === 'metric' || kind === 'message') return channelSelected(policy, { kind, name })
+      return channelSelected(policy, { kind })
     },
-    wantsTensor: (name, role) => enabled && selected(policy.tensors, name) && policy.roles.includes(role),
+    wantsTensor: (name, role) => enabled && channelSelected(policy, { kind: 'tensor', name, role }),
     metric: (step, name, value) => {
-      if (handle.wants('metric', name)) emit({ type: 'metric', runId, step, name, value })
+      if (!handle.wants('metric', name)) return
+      if (onChange !== undefined) {
+        if (!changed(lastMetric.get(name), value, onChange.tolerance ?? 0)) return
+        lastMetric.set(name, value)
+      }
+      emit({ type: 'metric', runId, step, name, value })
     },
     tensor: (step, name, role, value, shape) => {
       if (!handle.wantsTensor(name, role)) return
@@ -215,7 +231,12 @@ export function startRun(tracer: Tracer, info: RunInfo): RunHandle {
         data = value as ArrayLike<number>
         dims = shape ?? [data.length]
       }
+      if (onChange !== undefined) {
+        if (!changed(lastTensor.get(name), data, onChange.tolerance ?? 0)) return
+        lastTensor.set(name, Float64Array.from(data))
+      }
       const full = policy.detail === 'full' && data.length <= policy.maxTensorSize
+      const sample = !full && policy.detail === 'full' && policy.subsample > 0 ? subsample(data, policy.subsample) : {}
       emit({
         type: 'tensor',
         runId,
@@ -223,7 +244,7 @@ export function startRun(tracer: Tracer, info: RunInfo): RunHandle {
         name,
         role,
         shape: [...dims],
-        ...(full ? { values: Array.from(data) } : { summary: summarise(data) }),
+        ...(full ? { values: Array.from(data) } : { summary: summarise(data), ...sample }),
       })
     },
     message: (step, kind, payload, route = {}) => {
@@ -246,11 +267,12 @@ export function startRun(tracer: Tracer, info: RunInfo): RunHandle {
     },
     child: (childInfo) => {
       children += 1
-      return startRun(tracer, {
+      const inner = childInfo.policy ?? childPolicy(policy)
+      return startRun(inner === undefined ? nullTracer : tracer, {
         ...childInfo,
         runId: childInfo.runId ?? `${runId}/${childInfo.name}#${children}`,
         parent: runId,
-        policy: childInfo.policy ?? policy,
+        policy: inner ?? policy,
       })
     },
   }

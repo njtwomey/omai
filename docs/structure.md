@@ -526,23 +526,30 @@ oracle: jax and torch for derivative values; finite differences in property test
 
 ### 4.7 `trace/` (tier 3): recording what algorithms do
 
-- `events.ts`: event types `run`, `metric`, `tensor` (role: param, grad, state, activation, output, with full values or
-  a summary), `message`, `episode`, `frame`, `checkpoint`, `log`, `end`; `Run`; zod schemas.
-- `schema.ts`: `TraceSchema` (declared channels with descriptions, units and directions), `channels` builder,
-  `validateAgainstSchema`.
-- `policy.ts`: `TracePolicy` (channel selection, frequency: every n, log-spaced, on change, first and last; detail:
-  summary or full; gradients on or off; byte budget; tensor subsampling), `policies` presets (`minimal`, `standard`,
-  `debug`, `teaching`), `shouldRecord`.
+- `events.ts`: event types `run`, `metric`, `tensor` (role: param, grad, state, activation, output, with full values,
+  a summary, or a summary plus an indexed subsample), `message`, `episode`, `frame`, `checkpoint`, `log`, `end`; `Run`;
+  zod schemas.
+- `schema.ts`: `TraceSchema` (declared channels with descriptions, units and directions; tensor roles and shapes with
+  named sizes; message payload fields), `channels` builder, `schemaToJson`, `validateAgainstSchema`.
+- `policy.ts`: `TracePolicy` (channel selection, frequency: every n, log-spaced, on change with a tolerance, first and
+  last; detail: summary or full; gradients on or off through the `grad` role; event and byte budgets; tensor
+  subsampling; checkpoint interval; the `inner` policy of child runs), `policies` presets (`minimal`, `standard`,
+  `debug`, `teaching`), `tracePolicy`, `shouldRecord` (the single recording rule, built on `channelSelected`,
+  `onSchedule`, `selected` and `changed`), `childPolicy` (propagation to inner algorithms).
 - `summaries.ts`: tensor summaries (norm, mean, standard deviation, extremes, histogram, sparsity) used at summary
-  detail.
-- `tracer.ts`: `Tracer`, `nullTracer`, `recorder`, `tee`, `filtered`, `startRun`, `RunHandle`.
-- `algorithm.ts`: `Algorithm<S>` (`init`, `step`, `done`, `observe`, `schema`), `StepContext`, `runAlgorithm`,
-  `iterate` (a generator for live views), `runFor` (time-budgeted slices).
-- `nesting.ts`: child runs (`subRun`), run trees, propagation of policies to inner algorithms.
-- `taps.ts`: `tap(name, value)` inside model code, `TapContext`; records activations when the policy asks.
-- `instrument.ts`: `instrument(fn, schema)` (trace calls of any function: input and output summaries, timing excluded
-  from deterministic content), step records for direct methods.
-- `checkpoint.ts`: `checkpointEvery`, `resume`, `seek`.
+  detail (`summarise`), and `subsample`.
+- `tracer.ts`: `Tracer`, `nullTracer`, `recorder`, `tee`, `filtered`, `startRun`, `RunHandle` (applies the policy).
+- `algorithm.ts`: `Algorithm<S>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext`,
+  `runAlgorithm`, `iterate` (a generator for live views), `runFor` (budgeted slices that continue exactly; the budget
+  is a step count or milliseconds of an injected clock, since published code reads no clocks).
+- `nesting.ts`: child runs (`subRun`, keyed from the outer step, with the policy `childPolicy` derives); run trees are
+  read back with `runTree` in `query.ts`.
+- `taps.ts`: `tapContext` (`taps.tap(name, value)` inside model code, `TapContext`), `tapsFor(run, step)` (records
+  activations when the policy asks).
+- `instrument.ts`: `instrument(fn, options)` (trace calls of any function: numeric inputs and outputs as metrics or
+  tensor summaries, with a generated schema; timing excluded unless a clock is injected), `traceCall` (step records
+  for direct methods).
+- `checkpoint.ts`: `checkpointEvery` (a policy storing checkpoints every n steps), `resume`, `seek`.
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
 - `query.ts`: `metricSeries`, `tensorSeries`, `messages`, `episodes`, `frames`, `runTree`, `summary`, `diffRuns`.
 

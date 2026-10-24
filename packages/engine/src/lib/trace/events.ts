@@ -48,7 +48,9 @@ export interface TensorEvent {
   readonly name: string
   readonly role: TensorRole
   readonly shape: readonly number[]
+  /** Full values (row-major), or with `indices` an evenly spaced subsample of them at those flat positions. */
   readonly values?: readonly number[]
+  readonly indices?: readonly number[]
   readonly summary?: TensorSummary
 }
 
@@ -175,6 +177,7 @@ export const TraceEventSchema: z.ZodType<TraceEvent> = z.discriminatedUnion('typ
     role: z.enum(['param', 'grad', 'state', 'activation', 'output']),
     shape: z.array(z.number().int()),
     values: z.array(z.number()).optional(),
+    indices: z.array(z.number().int()).optional(),
     summary: SummarySchema.optional(),
   }),
   z.object({

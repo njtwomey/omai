@@ -1,6 +1,32 @@
 import { WhiteboxError } from '../base/index.ts'
 import { type Algorithm, type RunOptions, type RunResult, runAlgorithm } from './algorithm.ts'
 import type { CheckpointEvent, Run } from './events.ts'
+import { policies, type TracePolicy } from './policy.ts'
+
+/**
+ * A policy that also stores a checkpoint every `n` steps (from step 0), so that a recorded run can be resumed or
+ * sought to any step by re-running at most `n - 1` steps. Only algorithms with `serialise` produce checkpoints.
+ *
+ * @param n - The interval in steps (a positive integer).
+ * @param policy - The policy to extend (default `minimal`).
+ * @returns The policy with checkpoints on.
+ * @throws WhiteboxError with code `value` when `n` is not a positive integer.
+ * @example
+ * ```ts
+ * import { checkpointEvery, recorder, runAlgorithm, type Algorithm } from 'whitebox-engine/trace'
+ * const count: Algorithm<number> = {
+ *   name: 'count', config: {}, init: () => 0, step: (s) => s + 1,
+ *   serialise: (s) => s, deserialise: (j) => j as number,
+ * }
+ * const rec = recorder()
+ * runAlgorithm(count, { maxSteps: 7, tracer: rec, policy: checkpointEvery(3) })
+ * rec.events.filter((e) => e.type === 'checkpoint').map((e) => e.step) // => [0, 3, 6]
+ * ```
+ */
+export function checkpointEvery(n: number, policy: TracePolicy = policies.minimal): TracePolicy {
+  if (!(Number.isInteger(n) && n > 0)) throw new WhiteboxError('value', 'checkpointEvery: n must be a positive integer')
+  return { ...policy, checkpoints: true, checkpointInterval: n }
+}
 
 /**
  * Continue a run from a checkpoint: the algorithm restarts from the stored state and step, with the same step keys, so

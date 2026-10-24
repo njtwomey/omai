@@ -117,8 +117,7 @@ describe('runAlgorithm', () => {
       seed: 5,
       maxSteps: 6,
       tracer: rec,
-      policy: tracePolicy({ checkpoints: true }),
-      checkpointEvery: 2,
+      policy: tracePolicy({ checkpoints: true, checkpointInterval: 2 }),
     })
     const run = rec.run()
     const checkpoint = run.events.find((e) => e.type === 'checkpoint' && e.step === 2)
