@@ -16,6 +16,7 @@ import {
   primalOf,
   reshape,
   sliceAxis,
+  sqrt,
   square,
   stack,
   sub,
@@ -422,7 +423,7 @@ function closedUpdate<D = void>(
       const loc = s2 === undefined ? undefined : unexpanded(s2.fn).params['loc']
       if (loc === undefined) throw new WhiteboxError('value', 'em: no location for the scale update')
       const resid = square(sub(nameLike(f2, site.value), nameLike(f2, loc)))
-      return primalOf(reshape(safeDiv(weight(resid), weight(undefined)), current.shape))
+      return primalOf(reshape(sqrt(safeDiv(weight(resid), weight(undefined))), current.shape))
     }
     case 'poisson.rate': {
       const y = nameLike(f, site.value)

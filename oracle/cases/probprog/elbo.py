@@ -18,6 +18,7 @@ from numpyro.infer.util import log_density
 from scipy.special import logsumexp
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import rng
+from whitebox_oracle.pgm import stable
 
 _spec = importlib.util.spec_from_file_location("probprog_models", Path(__file__).with_name("_models.py"))
 assert _spec is not None and _spec.loader is not None
@@ -53,7 +54,7 @@ def guide_draw(guide: AutoNormal, params: dict[str, np.ndarray], seed: int) -> d
     tr = handlers.trace(
         handlers.seed(handlers.substitute(guide, data={k: jnp.asarray(v) for k, v in params.items()}), seed)
     ).get_trace()
-    return {k: np.asarray(v["value"], dtype=np.float64) for k, v in tr.items() if v["type"] == "sample"}
+    return {k: stable(v["value"]) for k, v in tr.items() if v["type"] == "sample"}
 
 
 def cases() -> list[Case]:
@@ -69,9 +70,9 @@ def cases() -> list[Case]:
         values = draws[0]
         fixed = handlers.substitute(guide, data={k: jnp.asarray(v) for k, v in values.items()})
         elbo = -float(np.asarray(Trace_ELBO().loss(key, jp, model, fixed)))
-        out.append(case(f"traceElbo/{name}", "elboAt", [params, values], np.array(elbo), rtol=1e-11, model=name))
+        out.append(case(f"traceElbo/{name}", "elboAt", [params, values], stable(elbo), rtol=1e-11, model=name))
         mf = -float(np.asarray(TraceMeanField_ELBO().loss(key, jp, model, fixed)))
-        out.append(case(f"meanField/{name}", "meanField", [params, values], np.array(mf), rtol=1e-11, model=name))
+        out.append(case(f"meanField/{name}", "meanField", [params, values], stable(mf), rtol=1e-11, model=name))
         logw = []
         for d in draws:
             lp, _ = log_density(model, (), {}, d)
@@ -85,7 +86,7 @@ def cases() -> list[Case]:
                     f"renyi/{name}/{alpha}",
                     "renyi",
                     [params, *draws],
-                    np.array(bound),
+                    stable(bound),
                     rtol=1e-11,
                     model=name,
                     alpha=alpha,

@@ -16,6 +16,7 @@ from numpyro import handlers
 from numpyro.infer.util import constrain_fn, log_density, potential_energy, unconstrain_fn
 from scipy.special import logsumexp
 from whitebox_oracle.fixture import Case, case
+from whitebox_oracle.pgm import stable
 
 _spec = importlib.util.spec_from_file_location("probprog_models", Path(__file__).with_name("_models.py"))
 assert _spec is not None and _spec.loader is not None
@@ -42,15 +43,12 @@ def program(name: str) -> Callable[[], None]:
 def latent_draws(name: str, seed: int) -> dict[str, np.ndarray]:
     """Constrained values of the latent sites from one prior run."""
     tr = handlers.trace(handlers.seed(program(name), jax.random.PRNGKey(seed))).get_trace()
-    return {
-        k: np.asarray(v["value"], dtype=np.float64)
-        for k, v in tr.items()
-        if v["type"] == "sample" and not v["is_observed"]
-    }
+    return {k: stable(v["value"]) for k, v in tr.items() if v["type"] == "sample" and not v["is_observed"]}
 
 
 def as_numpy(d: dict[str, Any]) -> dict[str, np.ndarray]:
-    return {k: np.asarray(v, dtype=np.float64) for k, v in d.items()}
+    """Values as float64 arrays rounded to 14 digits (JAX's reductions vary in the last bits between runs)."""
+    return {k: stable(v) for k, v in d.items()}
 
 
 def enumerated_mixture(locs: np.ndarray) -> tuple[float, np.ndarray]:
@@ -91,20 +89,18 @@ def cases() -> list[Case]:
             params = latent_draws(name, seed)
             ld, _ = log_density(model, (), {}, params)
             out.append(
-                case(f"logDensity/{name}/{i}", "logDensity", [params], np.array(float(ld)), rtol=1e-12, model=name)
+                case(f"logDensity/{name}/{i}", "logDensity", [params], stable(float(ld)), rtol=1e-12, model=name)
             )
             u = as_numpy(unconstrain_fn(model, (), {}, params))
             out.append(case(f"unconstrain/{name}/{i}", "unconstrain", [params], u, rtol=1e-10, atol=1e-12, model=name))
             pe = float(potential_energy(model, (), {}, u))
-            out.append(case(f"potential/{name}/{i}", "potential", [u], np.array(pe), rtol=1e-11, model=name))
+            out.append(case(f"potential/{name}/{i}", "potential", [u], stable(pe), rtol=1e-11, model=name))
             c = as_numpy(constrain_fn(model, (), {}, u, return_deterministic=True))
             out.append(case(f"constrain/{name}/{i}", "constrain", [u], c, rtol=1e-11, atol=1e-13, model=name))
     for i, locs in enumerate([np.array([-1.0, 1.5]), np.array([0.5, 2.5])]):
         total, marg = enumerated_mixture(locs)
         out.append(
-            case(
-                f"enumerated/mixture/{i}", "enumerated", [{"locs": locs}], np.array(total), rtol=1e-11, model="mixture"
-            )
+            case(f"enumerated/mixture/{i}", "enumerated", [{"locs": locs}], stable(total), rtol=1e-11, model="mixture")
         )
         out.append(
             case(
@@ -119,6 +115,6 @@ def cases() -> list[Case]:
             )
         )
     total, marg = enumerated_hmm()
-    out.append(case("enumerated/hmm", "enumerated", [{}], np.array(total), rtol=1e-11, model="hmm"))
-    out.append(case("marginals/hmm", "chainMarginals", [{}], marg, rtol=1e-10, atol=1e-13, model="hmm"))
+    out.append(case("enumerated/hmm", "enumerated", [{}], stable(total), rtol=1e-11, model="hmm"))
+    out.append(case("marginals/hmm", "chainMarginals", [{}], stable(marg), rtol=1e-10, atol=1e-13, model="hmm"))
     return out

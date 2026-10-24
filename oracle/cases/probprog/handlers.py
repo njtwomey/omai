@@ -15,6 +15,7 @@ import numpyro.distributions as dist
 from numpyro import handlers
 from numpyro.infer.util import log_density
 from whitebox_oracle.fixture import Case, case
+from whitebox_oracle.pgm import stable
 
 _spec = importlib.util.spec_from_file_location("probprog_models", Path(__file__).with_name("_models.py"))
 assert _spec is not None and _spec.loader is not None
@@ -33,7 +34,7 @@ SCHOOL_PARAMS: dict[str, Any] = {
 
 def density(model: Callable[..., Any], params: dict[str, Any]) -> np.ndarray:
     ld, _ = log_density(model, (), {}, params)
-    return np.array(float(ld))
+    return stable(float(ld))
 
 
 def shapes_model() -> None:

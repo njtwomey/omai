@@ -23,7 +23,7 @@ export interface ElpdEstimate {
   readonly method: 'waic' | 'loo'
   /** The estimated elpd (higher is better). */
   readonly elpd: number
-  /** Its standard error, sqrt(N var(pointwise)). */
+  /** Its standard error, sqrt(N var(pointwise)) with the n - 1 denominator (as ArviZ). */
   readonly se: number
   /** The effective number of parameters (p_waic or p_loo). */
   readonly p: number
@@ -54,10 +54,12 @@ function column(
   return Float64Array.from({ length: m.S }, (_, s) => m.data[s * m.N + i] ?? Number.NaN)
 }
 
-function seOf(pointwise: Float64Array): number {
+/** sqrt(n var(pointwise)): ArviZ uses ddof 1 for elpd standard errors and ddof 0 for those of differences. */
+function seOf(pointwise: Float64Array, ddof: number): number {
   const n = pointwise.length
+  if (n <= ddof) return 0
   const mean = pointwise.reduce((a, b) => a + b, 0) / n
-  const v = pointwise.reduce((a, b) => a + (b - mean) ** 2, 0) / n
+  const v = pointwise.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - ddof)
   return Math.sqrt(n * v)
 }
 
@@ -95,7 +97,7 @@ export function waic(logLik: TensorLike): ElpdEstimate {
   return {
     method: 'waic',
     elpd: lppd - p,
-    se: seOf(pointwise),
+    se: seOf(pointwise, 1),
     p,
     lppd,
     pointwise,
@@ -149,7 +151,7 @@ export function psisLoo(
   return {
     method: 'loo',
     elpd,
-    se: seOf(pointwise),
+    se: seOf(pointwise, 1),
     p: lppd - elpd,
     lppd,
     pointwise,
@@ -268,7 +270,7 @@ export interface ComparisonRow {
   readonly rank: number
   readonly elpd: number
   readonly p: number
-  /** elpd of the best model minus this one's (0 for the best). */
+  /** This model's elpd minus the best model's (0 for the best, negative otherwise, as ArviZ 1.x). */
   readonly elpdDiff: number
   readonly se: number
   /** The standard error of the difference to the best model, from the pointwise differences. */
@@ -291,7 +293,7 @@ export interface ComparisonRow {
  * import { compareModels, waic } from 'whitebox-engine/probprog'
  * const a = waic([[-1, -1], [-1, -1]])
  * const b = waic([[-2, -1], [-2, -1]])
- * compareModels({ a, b }).map((r) => [r.name, r.elpdDiff]) // => [['a', 0], ['b', 1]]
+ * compareModels({ a, b }).map((r) => [r.name, r.elpdDiff]) // => [['a', 0], ['b', -1]]
  * ```
  */
 export function compareModels(
@@ -317,9 +319,9 @@ export function compareModels(
       rank,
       elpd: e.elpd,
       p: e.p,
-      elpdDiff: best.elpd - e.elpd,
+      elpdDiff: e.elpd - best.elpd,
       se: e.se,
-      dse: rank === 0 ? 0 : seOf(diff),
+      dse: rank === 0 ? 0 : seOf(diff, 0),
       weight: weights[i] ?? 0,
       warning: e.warning,
     }

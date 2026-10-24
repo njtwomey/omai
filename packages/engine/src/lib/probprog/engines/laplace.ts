@@ -76,7 +76,9 @@ export function laplaceFit(
   const f = (u: Value): Value => neg(um.fn(u))
   const r = lbfgs(f, fromStorage(Float64Array.from(start), [um.dim], 'float64'), {
     maxIterations: options.maxIterations ?? 1000,
-    gradTol: options.gradTol ?? 1e-9,
+    gradTol: options.gradTol ?? 1e-10,
+    // Stop on the gradient, not on a small relative decrease: the mode feeds the Hessian.
+    ftol: 0,
     ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
     ...(options.policy === undefined ? {} : { policy: options.policy }),
   })
