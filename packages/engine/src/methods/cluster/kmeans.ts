@@ -12,9 +12,10 @@ import {
   fitRunOptions,
   matrixView,
 } from '../../lib/learn/index.ts'
-import { geometry } from '../../lib/numerics/index.ts'
+import { geometry, linalg } from '../../lib/numerics/index.ts'
+import { daxpy, dscal } from '../../lib/numerics/linalg/index.ts'
 import { kmeansCodebook } from '../../lib/numerics/spatial/index.ts'
-import { foldIn, type Key, keys, subsample } from '../../lib/random/index.ts'
+import { foldIn, type Key, keys, randint, subsample } from '../../lib/random/index.ts'
 import { choice, dict, int, real } from '../../lib/space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toArray, toFlat } from '../../lib/tensor/index.ts'
 import { type Algorithm, runAlgorithm } from '../../lib/trace/index.ts'
@@ -199,6 +200,31 @@ export function lloydAlgorithm(
     done: (s) => (s.shift <= tol ? 'converged' : undefined),
     observe: (s) => ({ metrics: { inertia: s.inertia, shift: Number.isFinite(s.shift) ? s.shift : -1 } }),
   }
+}
+
+/**
+ * The mean of each cluster's rows: centres in the data's own coordinates for methods that cluster elsewhere (spectral
+ * or kernel space). A cluster with no rows (or rows labelled outside 0..k-1, such as noise) gets the mean of all rows.
+ *
+ * @param rows - Rows `[n, d]`.
+ * @param labels - The cluster of each row.
+ * @param k - The number of clusters.
+ * @returns The means `[k, d]`.
+ */
+export function clusterMeans(rows: Rows, labels: readonly number[], k: number): number[][] {
+  const d = rows[0]?.length ?? 0
+  const sums: Float64Array[] = Array.from({ length: k }, () => new Float64Array(d))
+  const counts = new Array<number>(k).fill(0)
+  let all: Float64Array = new Float64Array(d)
+  for (const [i, row] of rows.entries()) {
+    all = daxpy(1, row, all)
+    const l = labels[i] ?? -1
+    if (l < 0 || l >= k) continue
+    sums[l] = daxpy(1, row, sums[l] ?? new Float64Array(d))
+    counts[l] = (counts[l] ?? 0) + 1
+  }
+  const overall = Array.from(dscal(1 / Math.max(rows.length, 1), all))
+  return sums.map((sum, j) => ((counts[j] ?? 0) > 0 ? Array.from(dscal(1 / (counts[j] ?? 1), sum)) : overall))
 }
 
 /**
@@ -576,6 +602,12 @@ export type KernelKMeansHyper = {
   readonly kernel?: PairwiseKernelMetric
   readonly gamma?: number
   readonly maxIter?: number
+  /**
+   * Restarts, the lowest feature-space inertia winning (default 10): the first from the spectral relaxation (k-means
+   * on the Gram matrix's top k eigenvectors, Dhillon, Guan and Kulis 2004), the rest alternately from random labels
+   * and k-means++ seeds in the input space (which alone split moons by a line).
+   */
+  readonly nInit?: number
 }
 
 /** The parameters of a fitted kernel k-means: training rows and labels (prediction by feature-space distances). */
@@ -617,10 +649,13 @@ export function featureSpaceDistances(
 }
 
 /**
- * Kernel k-means (Dhillon, Guan and Kulis 2004): Lloyd's algorithm in a kernel's feature space, from k-means++ labels,
- * traced. Its exposition is a `clusteringSteps` record (assignments and the feature-space inertia per iteration).
+ * Kernel k-means (Dhillon, Guan and Kulis 2004): Lloyd's algorithm in a kernel's feature space, traced, restarted from
+ * the spectral relaxation, random labels and k-means++ seeds, keeping the lowest feature-space inertia. Its exposition
+ * is the winning run's `clusteringSteps` record (assignments and the feature-space inertia per iteration). With an rbf
+ * kernel it separates two moons (gamma near 10 for unit-scale moons) but not concentric rings, whose split by radius
+ * has a higher inertia than a split across them at every gamma: spectral clustering's normalised cut handles those.
  *
- * @param hyper - Clusters, kernel, gamma and iteration cap.
+ * @param hyper - Clusters, kernel, gamma, iteration cap and restarts.
  * @returns The estimator.
  */
 export function kernelKMeans(
@@ -644,7 +679,17 @@ export function kernelKMeans(
       hyperSpace: (h) =>
         dict({
           nClusters: int(1, 20, { default: h.nClusters ?? 2, label: 'clusters' }),
-          gamma: real(1e-3, 100, { log: true, default: h.gamma ?? 1 }),
+          gamma: real(1e-3, 100, {
+            log: true,
+            default: h.gamma ?? 1,
+            label: 'kernel γ',
+            description: 'The width of the kernel: larger γ makes similarity more local.',
+          }),
+          nInit: int(1, 30, {
+            default: h.nInit ?? 10,
+            label: 'restarts',
+            description: 'Runs from different starts (spectral, random labels, k-means++); the lowest inertia wins.',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'kernelKMeans')
@@ -654,9 +699,6 @@ export function kernelKMeans(
         const kt = gramOf(h, gamma)(rows)
         const diag = kt.map((r, i) => r[i] ?? 0)
         const run = fitRunOptions(options, 'kernel-kmeans')
-        let labels = nearestCentres(rows, initialCentres(rows, k, 'k-means++', run.key as Key)).labels
-        const assignments = [labels]
-        const objective: number[] = []
         const step = (ls: number[]): { labels: number[]; objective: number } => {
           const d = featureSpaceDistances(diag, kt, kt, ls, k)
           let obj = 0
@@ -667,31 +709,59 @@ export function kernelKMeans(
           })
           return { labels: next, objective: obj }
         }
-        const alg: Algorithm<{ labels: number[]; objective: number; changed: boolean }> = {
-          name: 'kernel-kmeans',
-          config: { k, gamma },
-          init: () => ({ labels, objective: Number.POSITIVE_INFINITY, changed: true }),
-          step: (s) => {
-            const r = step(s.labels)
-            return { ...r, changed: r.labels.some((l, i) => l !== s.labels[i]) }
-          },
-          done: (s, t) => (t > 0 && !s.changed ? 'converged' : undefined),
-          observe: (s) => ({ metrics: Number.isFinite(s.objective) ? { inertia: s.objective } : {} }),
+        // The spectral relaxation of the kernel k-means objective: k-means on the top k singular vectors of the Gram
+        // matrix (its eigenvectors, for a positive semi-definite kernel).
+        const spectralLabels = (key: Key): number[] => {
+          const u = toArray(linalg.randomizedSvd(kt, k, { key: foldIn(key, 0) }).u) as number[][]
+          return kmeans({ nClusters: k, nInit: 4 }).fit({ x: u }, { key: foldIn(key, 1) }).params.labels
         }
-        const c = collecting(alg, (s) => s)
-        const out = runAlgorithm(c.algorithm, { ...run, maxSteps: h.maxIter ?? 100 })
-        for (const s of c.history.slice(1)) {
-          assignments.push(s.labels)
-          objective.push(s.objective)
+        const restarts = Math.max(1, h.nInit ?? 10)
+        type Best = { labels: number[]; objective: number; assignments: number[][]; objectives: number[] }
+        let best: Best | undefined
+        for (const [r, rk] of keys(run.key as Key, restarts).entries()) {
+          const start =
+            k < 2
+              ? new Array<number>(m.n).fill(0)
+              : r === 0
+                ? spectralLabels(rk)
+                : r % 2 === 1
+                  ? Array.from(randint(rk, [m.n], 0, k).data)
+                  : nearestCentres(rows, initialCentres(rows, k, 'k-means++', rk)).labels
+          const alg: Algorithm<{ labels: number[]; objective: number; changed: boolean }> = {
+            name: 'kernel-kmeans',
+            config: { k, gamma, restart: r },
+            init: () => ({ labels: start, objective: Number.POSITIVE_INFINITY, changed: true }),
+            step: (s) => {
+              const next = step(s.labels)
+              return { ...next, changed: next.labels.some((l, i) => l !== s.labels[i]) }
+            },
+            done: (s, t) => (t > 0 && !s.changed ? 'converged' : undefined),
+            observe: (s) => ({ metrics: Number.isFinite(s.objective) ? { inertia: s.objective } : {} }),
+          }
+          const c = collecting(alg, (s) => s)
+          const out = runAlgorithm(c.algorithm, {
+            ...run,
+            key: rk,
+            maxSteps: h.maxIter ?? 100,
+            ...(restarts > 1 ? { runId: `kernel-kmeans-${r}` } : {}),
+          })
+          if (best === undefined || out.state.objective < best.objective - 1e-12 * Math.abs(best.objective))
+            best = {
+              labels: out.state.labels,
+              objective: out.state.objective,
+              assignments: c.history.slice(1).map((s) => s.labels),
+              objectives: c.history.slice(1).map((s) => s.objective),
+            }
         }
-        labels = out.state.labels
+        const won = best as Best
+        const labels = won.labels
         return {
-          params: { data: rows, labels, objective: out.state.objective, gamma },
+          params: { data: rows, labels, objective: won.objective, gamma },
           exposition: [
             clusteringSteps({
               method: 'kernelKMeans',
-              assignments: assignments.slice(1),
-              objective,
+              assignments: won.assignments,
+              objective: won.objectives,
             }),
           ],
         }
