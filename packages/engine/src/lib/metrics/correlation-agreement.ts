@@ -1,6 +1,7 @@
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
-import { item, type TensorLike } from '../tensor/index.ts'
+import { cov, kendallTau as kendallTest, spearman } from '../stats/index.ts'
+import { item, type TensorLike, toFlat } from '../tensor/index.ts'
 import { sortLabels } from './_labels.ts'
 import { cohenKappaScore, type KappaOptions } from './classification-summary.ts'
 import { contingencyMatrix } from './clustering.ts'
@@ -36,51 +37,9 @@ const pair = (name: string, x: TensorLike, y: TensorLike): [Float64Array, Float6
   return [a, b]
 }
 
-/** Weighted Pearson correlation of two vectors. */
-function pearson(a: ArrayLike<number>, b: ArrayLike<number>, w?: ArrayLike<number>): number {
-  const n = a.length
-  const wt = (i: number): number => (w === undefined ? 1 : (w[i] ?? 0))
-  let sw = 0
-  let ma = 0
-  let mb = 0
-  for (let i = 0; i < n; i++) {
-    sw += wt(i)
-    ma += wt(i) * (a[i] ?? 0)
-    mb += wt(i) * (b[i] ?? 0)
-  }
-  ma /= sw
-  mb /= sw
-  let sab = 0
-  let saa = 0
-  let sbb = 0
-  for (let i = 0; i < n; i++) {
-    const da = (a[i] ?? 0) - ma
-    const db = (b[i] ?? 0) - mb
-    sab += wt(i) * da * db
-    saa += wt(i) * da * da
-    sbb += wt(i) * db * db
-  }
-  return sab / Math.sqrt(saa * sbb)
-}
-
-/** Average ranks (1-based; ties get the mean rank), as scipy.stats.rankdata. */
-function averageRanks(x: ArrayLike<number>): Float64Array {
-  const n = x.length
-  const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (x[a] ?? 0) - (x[b] ?? 0))
-  const ranks = new Float64Array(n)
-  let i = 0
-  while (i < n) {
-    let j = i
-    while (j + 1 < n && x[order[j + 1] ?? 0] === x[order[i] ?? 0]) j++
-    for (let k = i; k <= j; k++) ranks[order[k] ?? 0] = (i + j) / 2 + 1
-    i = j + 1
-  }
-  return ranks
-}
-
 /**
- * Pearson's correlation coefficient (scipy.stats.pearsonr), with optional sample weights (the weighted correlation).
- * TODO: alias stats/correlation.ts's `pearson` when the stats domain lands.
+ * Pearson's correlation coefficient (scipy.stats.pearsonr), with optional sample weights (the weighted correlation,
+ * from stats' weighted covariance).
  *
  * @param x - First variable `[N]`.
  * @param y - Second variable `[N]`.
@@ -100,13 +59,16 @@ export const pearsonCorrelation: Metric = Object.assign(
       options.sampleWeight === undefined
         ? undefined
         : sampleWeights('pearsonCorrelation', a.length, options.sampleWeight)
-    return metricResult('pearsonCorrelation', pearson(a, b, w), a.length)
+    // The weighted correlation from stats' weighted covariance (analytic weights).
+    const c = toFlat(cov(a, b, w === undefined ? {} : { aweights: w }))
+    return metricResult('pearsonCorrelation', (c[1] ?? 0) / Math.sqrt((c[0] ?? 0) * (c[3] ?? 0)), a.length)
   },
   { spec: spec('pearsonCorrelation') },
 )
 
 /**
- * Spearman's rank correlation (scipy.stats.spearmanr): Pearson's correlation of the average ranks.
+ * Spearman's rank correlation (scipy.stats.spearmanr, through stats' spearman): Pearson's correlation of the average
+ * ranks.
  *
  * @param x - First variable `[N]`.
  * @param y - Second variable `[N]`.
@@ -120,13 +82,13 @@ export const pearsonCorrelation: Metric = Object.assign(
 export const spearmanCorrelation: Metric = Object.assign(
   (x: TensorLike, y: TensorLike): MetricResult => {
     const [a, b] = pair('spearmanCorrelation', x, y)
-    return metricResult('spearmanCorrelation', pearson(averageRanks(a), averageRanks(b)), a.length)
+    return metricResult('spearmanCorrelation', spearman(a, b).statistic, a.length)
   },
   { spec: spec('spearmanCorrelation') },
 )
 
 /**
- * Kendall's tau (scipy.stats.kendalltau): tau-b (default), which corrects for ties in either variable, or tau-c
+ * Kendall's tau (scipy.stats.kendalltau, through stats' kendallTau): tau-b (default), which corrects for ties in either variable, or tau-c
  * (Stuart's, for rectangular tables).
  *
  * @param x - First variable `[N]`.
@@ -143,29 +105,7 @@ export const kendallTau: Metric<MetricOptions & { readonly variant?: 'b' | 'c' }
   (x: TensorLike, y: TensorLike, options: MetricOptions & { readonly variant?: 'b' | 'c' } = {}): MetricResult => {
     const [a, b] = pair('kendallTau', x, y)
     const n = a.length
-    let concordant = 0
-    let discordant = 0
-    let tiesX = 0
-    let tiesY = 0
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const dx = Math.sign((a[i] ?? 0) - (a[j] ?? 0))
-        const dy = Math.sign((b[i] ?? 0) - (b[j] ?? 0))
-        if (dx === 0 && dy === 0) continue
-        if (dx === 0) tiesX++
-        else if (dy === 0) tiesY++
-        else if (dx === dy) concordant++
-        else discordant++
-      }
-    }
-    let value: number
-    if (options.variant === 'c') {
-      const m = Math.min(sortLabels(Array.from(a)).length, sortLabels(Array.from(b)).length)
-      value = (2 * (concordant - discordant)) / (n * n * ((m - 1) / m))
-    } else {
-      value =
-        (concordant - discordant) / Math.sqrt((concordant + discordant + tiesX) * (concordant + discordant + tiesY))
-    }
+    const value = kendallTest(a, b, { variant: options.variant ?? 'b', method: 'asymptotic' }).statistic
     return metricResult('kendallTau', value, n)
   },
   { spec: spec('kendallTau') },

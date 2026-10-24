@@ -1865,6 +1865,22 @@
       "cases": 13
     },
     {
+      "fixture": "stats/extremes.json",
+      "source": "oracle/cases/stats/extremes.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "stats/fit.json",
+      "source": "oracle/cases/stats/fit.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "stats/histograms.json",
       "source": "oracle/cases/stats/histograms.py",
       "reference": {
@@ -1872,6 +1888,14 @@
         "scipy": "1.18.1"
       },
       "cases": 29
+    },
+    {
+      "fixture": "stats/power.json",
+      "source": "oracle/cases/stats/power.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 36
     },
     {
       "fixture": "stats/quantiles.json",
@@ -1899,6 +1923,15 @@
       "cases": 14
     },
     {
+      "fixture": "stats/robust.json",
+      "source": "oracle/cases/stats/robust.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "stats/running.json",
       "source": "oracle/cases/stats/running.py",
       "reference": {
@@ -1907,6 +1940,34 @@
         "pandas": "3.1.0"
       },
       "cases": 34
+    },
+    {
+      "fixture": "stats/smoothing/bases.json",
+      "source": "oracle/cases/stats/smoothing/bases.py",
+      "reference": {
+        "patsy": "1.0.3",
+        "scipy": "1.18.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "stats/smoothing/penalties.json",
+      "source": "oracle/cases/stats/smoothing/penalties.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "stats/smoothing/smoothers.json",
+      "source": "oracle/cases/stats/smoothing/smoothers.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "pandas": "3.1.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 15
     },
     {
       "fixture": "stats/tests/bayesian.json",
