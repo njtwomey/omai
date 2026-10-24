@@ -1,5 +1,6 @@
 import { WhiteboxError } from '../base/index.ts'
-import { copyGraph, link } from './_graph.ts'
+import { maximalCliques as cliques } from '../graph/index.ts'
+import { copyGraph, indexedGraph, link } from './_graph.ts'
 import { connectedComponents, type UndirectedGraph, undirectedGraph } from './graphs.ts'
 
 /** The greedy criteria of {@link eliminationOrder}. */
@@ -219,32 +220,10 @@ export function isChordal(graph: UndirectedGraph): boolean {
  * ```
  */
 export function maximalCliques(graph: UndirectedGraph): string[][] {
-  const out: string[][] = []
-  const expand = (r: string[], p: Set<string>, x: Set<string>): void => {
-    if (p.size === 0 && x.size === 0) {
-      out.push([...r].sort())
-      return
-    }
-    let pivot = ''
-    let most = -1
-    for (const u of [...p, ...x]) {
-      let k = 0
-      for (const w of graph.get(u) ?? []) if (p.has(w)) k++
-      if (k > most) {
-        most = k
-        pivot = u
-      }
-    }
-    for (const v of [...p].sort()) {
-      if (graph.get(pivot)?.has(v)) continue
-      const ns = graph.get(v) ?? new Set<string>()
-      expand([...r, v], new Set([...p].filter((w) => ns.has(w))), new Set([...x].filter((w) => ns.has(w))))
-      p.delete(v)
-      x.add(v)
-    }
-  }
-  expand([], new Set(graph.keys()), new Set())
-  return out.sort((a, b) => a.join('\u0000').localeCompare(b.join('\u0000')))
+  const { g, names } = indexedGraph(graph)
+  return cliques(g)
+    .map((c) => c.map((i) => names[i] ?? ''))
+    .sort((a, b) => a.join('\u0000').localeCompare(b.join('\u0000')))
 }
 
 /**

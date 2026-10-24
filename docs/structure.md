@@ -1982,7 +1982,9 @@ into `whitebox-engine/pgm`; `learning` and `causal` are namespaces.
   conditioning (`gaussianReduce`), conversion to and from moment form, log mass and log value, permutation, and the
   factor of a linear-Gaussian conditional.
 - `graphs.ts`: DAGs (`dag`, `topologicalOrder`, `dagEdges`, `ancestors`, `descendants`), undirected graphs, moral
-  graphs (`moralGraph`), interaction graphs of factors, connected components, graph separation.
+  graphs (`moralGraph`), interaction graphs of factors, connected components, graph separation. Topological orders,
+  components and (in `triangulation.ts`) maximal cliques are `graph`'s algorithms on string-labelled vertices
+  (private `_graph.ts` indexes the names in sorted order), with pgm's sorted, name-based outputs.
 - `triangulation.ts`: elimination costs and greedy orderings (min-degree, min-fill, min-weight, weighted min-fill),
   `triangulate` (fill-ins and cliques), maximum cardinality search, `isChordal`, maximal cliques (Bron-Kerbosch),
   induced width, `treewidth` (exact by subset DP up to about 20 vertices, or heuristic), `junctionTree` (maximum

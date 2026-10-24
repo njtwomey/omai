@@ -63,6 +63,43 @@ describe('directed and undirected graphs', () => {
   })
 })
 
+describe('graph algorithms from the graph domain keep pgm orders', () => {
+  it('topologicalOrder keeps the given order among ready nodes and reports cycles and unknown parents', () => {
+    const names = (ns: readonly P.DagNode[]): string[] => ns.map((n) => n.name)
+    expect(
+      names(
+        P.topologicalOrder([
+          { name: 'z', parents: [] },
+          { name: 'b', parents: ['z', 'z'] },
+          { name: 'a', parents: [] },
+          { name: 'c', parents: ['a'] },
+        ]),
+      ),
+    ).toEqual(['z', 'b', 'a', 'c'])
+    expect(() =>
+      P.topologicalOrder([
+        { name: 'a', parents: ['b'] },
+        { name: 'b', parents: ['a'] },
+      ]),
+    ).toThrow(/cycle/)
+    expect(() => P.topologicalOrder([{ name: 'a', parents: ['q'] }])).toThrow(/unknown parent q/)
+  })
+
+  it('components and cliques are sorted by name, cliques in locale order', () => {
+    const u = P.undirectedGraph(
+      [
+        ['b', 'B'],
+        ['B', 'a'],
+        ['a', 'b'],
+        ['a', 'c'],
+      ],
+      ['Z', 'y'],
+    )
+    expect(P.connectedComponents(u)).toEqual([['B', 'a', 'b', 'c'], ['Z'], ['y']])
+    expect(P.maximalCliques(u)).toEqual([['a', 'c'], ['B', 'a', 'b'], ['y'], ['Z']])
+  })
+})
+
 describe('triangulation and treewidth', () => {
   const grid = (k: number): Map<string, Set<string>> => {
     const edges: [string, string][] = []

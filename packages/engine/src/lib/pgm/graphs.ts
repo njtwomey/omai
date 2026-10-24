@@ -1,5 +1,6 @@
 import { WhiteboxError } from '../base/index.ts'
-import { link, mutableGraph } from './_graph.ts'
+import { connectedComponents as components, graph, isDag, topologicalSort } from '../graph/index.ts'
+import { indexedGraph, link, mutableGraph } from './_graph.ts'
 import type { Factor } from './factor.ts'
 
 /** An undirected graph: the neighbours of each vertex. */
@@ -65,21 +66,27 @@ export function dag(edges: readonly (readonly [string, string])[], nodes: readon
   return { kind: 'dag', nodes: topologicalNodes(names.map((name) => ({ name, parents: parents.get(name) ?? [] }))) }
 }
 
-/** Kahn's algorithm, keeping the given order among ready nodes. */
+/**
+ * Kahn's algorithm, keeping the given order among ready nodes: graph's lexicographic `topologicalSort` with the nodes
+ * indexed in the given order.
+ */
 function topologicalNodes<N extends DagNode>(nodes: readonly N[]): N[] {
-  const ordered: N[] = []
-  const placed = new Set<string>()
-  const known = new Set(nodes.map((n) => n.name))
-  for (const n of nodes) {
-    for (const p of n.parents) if (!known.has(p)) throw new WhiteboxError('value', `${n.name} has unknown parent ${p}`)
+  const index = new Map<string, number>()
+  for (const [i, n] of nodes.entries()) if (!index.has(n.name)) index.set(n.name, i)
+  const edges: [number, number][] = []
+  for (const [i, n] of nodes.entries()) {
+    for (const p of n.parents) {
+      const j = index.get(p)
+      if (j === undefined) throw new WhiteboxError('value', `${n.name} has unknown parent ${p}`)
+      edges.push([j, i])
+    }
   }
-  while (ordered.length < nodes.length) {
-    const next = nodes.find((n) => !placed.has(n.name) && n.parents.every((p) => placed.has(p)))
-    if (next === undefined) throw new WhiteboxError('value', 'the graph has a cycle')
-    ordered.push(next)
-    placed.add(next.name)
-  }
-  return ordered
+  const g = graph(edges, { directed: true, nodes: nodes.length })
+  if (!isDag(g)) throw new WhiteboxError('value', 'the graph has a cycle')
+  return topologicalSort(g).flatMap((i) => {
+    const n = nodes[i]
+    return n === undefined ? [] : [n]
+  })
 }
 
 /**
@@ -268,26 +275,8 @@ export function interactionGraph(
  * ```
  */
 export function connectedComponents(graph: UndirectedGraph): string[][] {
-  const seen = new Set<string>()
-  const out: string[][] = []
-  for (const v of [...graph.keys()].sort()) {
-    if (seen.has(v)) continue
-    const comp: string[] = []
-    const stack = [v]
-    seen.add(v)
-    while (stack.length > 0) {
-      const x = stack.pop() as string
-      comp.push(x)
-      for (const w of graph.get(x) ?? []) {
-        if (!seen.has(w)) {
-          seen.add(w)
-          stack.push(w)
-        }
-      }
-    }
-    out.push(comp.sort())
-  }
-  return out
+  const { g, names } = indexedGraph(graph)
+  return components(g).components.map((c) => c.map((i) => names[i] ?? ''))
 }
 
 /**
