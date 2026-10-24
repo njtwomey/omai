@@ -2462,6 +2462,22 @@
       "cases": 38
     },
     {
+      "fixture": "signal/image/motion.json",
+      "source": "oracle/cases/signal/image/motion.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "signal/image/segmentation.json",
+      "source": "oracle/cases/signal/image/segmentation.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "signal/lomb_scargle.json",
       "source": "oracle/cases/signal/lomb_scargle.py",
       "reference": {
