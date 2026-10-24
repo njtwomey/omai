@@ -318,7 +318,7 @@ export function panelParts(
         itemWidth: 10,
         itemHeight: Math.max(40, rect.height - 24),
         textStyle: { color: t.muted, fontSize: 10, fontFamily: t.font },
-        ...(bar.label === undefined ? {} : { text: [bar.label, ''], textGap: 6 }),
+        ...(bar.label === undefined ? {} : { textGap: 6 }),
         formatter: (v: number | string) => (typeof v === 'number' ? formatNumber(v, { digits: 3 }) : v),
       }
       visualMap.push(
@@ -328,7 +328,9 @@ export function panelParts(
               type: 'continuous',
               min: bar.min,
               max: bar.max,
-              calculable: false,
+              // Calculable: the handles carry the ends' values and read off any level when dragged.
+              ...(bar.label === undefined ? {} : { text: [bar.label, ''] }),
+              calculable: true,
               inRange: { color: [...bar.colours] },
             }
           : {

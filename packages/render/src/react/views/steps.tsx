@@ -76,15 +76,16 @@ export function EmbeddingPlayer(
   props: RecordViewProps<EmbeddingSteps> & Omit<EmbeddingViewOptions, 'mode' | 'figure'> & PlayerViewProps,
 ): ReactElement {
   const figure = useViewFigure(props.figure, STEPS_FIGURE)
-  const { record, labels, graph } = props
+  const { record, labels, values, graph } = props
   const frames = useCallback(
     (fig: Figure) =>
       embeddingFrames(record, {
         figure: fig,
         ...(labels === undefined ? {} : { labels }),
+        ...(values === undefined ? {} : { values }),
         ...(graph === undefined ? {} : { graph }),
       }),
-    [record, labels, graph],
+    [record, labels, values, graph],
   )
   return <FramesPlayer {...props} figure={figure} frames={frames} filename={props.filename ?? 'embedding'} />
 }
