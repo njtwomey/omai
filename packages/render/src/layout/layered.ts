@@ -160,7 +160,18 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
   for (const v of ids) if ((up.get(v) ?? []).length === 0) dfs(v)
   for (const v of items.keys()) dfs(v)
 
-  const groupOf = (v: string): string | undefined => items.get(v)?.group
+  // A node's groups from its own outwards; ordering keeps the members of each outermost group together.
+  const parentOf = new Map((graph.groups ?? []).flatMap((g) => (g.parent === undefined ? [] : [[g.id, g.parent]])))
+  const chainOf = (g: string | undefined): string[] => {
+    const out: string[] = []
+    while (g !== undefined && !out.includes(g) && out.length < 32) {
+      out.push(g)
+      g = parentOf.get(g)
+    }
+    return out
+  }
+  const groupsOf = new Map([...items.values()].map((it) => [it.id, chainOf(it.group)]))
+  const groupOf = (v: string): string | undefined => groupsOf.get(v)?.at(-1)
   const reorder = (layer: string[], neighbours: ReadonlyMap<string, readonly string[]>, ref: string[]): string[] => {
     const pos = new Map(ref.map((v, i) => [v, i]))
     const bary = new Map<string, number>()
@@ -260,6 +271,40 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
       settle(layer, want)
     }
   }
+  // Groups are drawn as boxes around their members across ranks, so a node outside a group (or in another group) that
+  // sits in a rank the group spans must clear the group's extent: push it, and its neighbours beyond it, out of the way.
+  const members = new Map<string, string[]>()
+  for (const v of items.keys()) for (const g of groupsOf.get(v) ?? []) members.set(g, [...(members.get(g) ?? []), v])
+  for (let round = 0; round < 6; round++) {
+    let moved = false
+    for (const [g, ms] of members) {
+      const lo = Math.min(...ms.map((v) => (x.get(v) ?? 0) - halfW(v)))
+      const hi = Math.max(...ms.map((v) => (x.get(v) ?? 0) + halfW(v)))
+      const ranks = new Set(ms.map((v) => rank.get(v) ?? 0))
+      // The group's box reaches 12 px past its members per level of nesting inside it.
+      const depth = Math.max(...ms.map((v) => (groupsOf.get(v) ?? []).indexOf(g)))
+      const ancestors = new Set(chainOf(g))
+      for (const r of ranks) {
+        const layer = layers[r] ?? []
+        const own = layer.map((v, i) => ((groupsOf.get(v) ?? []).includes(g) ? i : -1)).filter((i) => i >= 0)
+        layer.forEach((v, i) => {
+          if ((groupsOf.get(v) ?? []).includes(g)) return
+          const ownBoxes = (groupsOf.get(v) ?? []).filter((h) => !ancestors.has(h)).length
+          const pad = 12 * (depth + 1) + 12 * ownBoxes + (items.get(v)?.dummy ? 4 : 10)
+          const xv = x.get(v) ?? 0
+          if (xv + halfW(v) <= lo - pad || xv - halfW(v) >= hi + pad) return
+          // Out on the side it is ordered on (or, beside no member, the nearer side), with everything beyond it.
+          const after = own.length > 0 ? i > (own[0] ?? 0) : xv >= (lo + hi) / 2
+          const delta = after ? hi + pad + halfW(v) - xv : lo - pad - halfW(v) - xv
+          const shifted = after ? layer.slice(i) : layer.slice(0, i + 1)
+          for (const w of shifted) x.set(w, (x.get(w) ?? 0) + delta)
+          moved = true
+        })
+      }
+    }
+    if (!moved) break
+  }
+
   // Rank depths: each rank as tall as its tallest node.
   const rankY: number[] = []
   let y = 0

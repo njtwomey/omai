@@ -23,9 +23,9 @@ export interface StructureViewProps extends Omit<DiagramOptions, 'overlay' | 'fr
 type View = readonly [number, number, number, number]
 
 /**
- * A `Structure` drawn as a diagram (`diagram` in `whitebox-render/structures`), with pan (drag) and zoom (the buttons,
- * or the wheel with Ctrl or Cmd held), the hovered node's role, detail and badges shown beneath, and an optional
- * overlay of active nodes, edges and badges.
+ * A `Structure` drawn as a diagram (`diagram` in `whitebox-render/structures`), with pan (drag) and zoom (the buttons
+ * under it, or the wheel with Ctrl or Cmd held), the hovered node's role, detail and badges shown beneath, and an
+ * optional overlay of active nodes, edges and badges.
  *
  * @param props - The structure, overlay, layout options, width and handlers.
  * @returns The view.
@@ -72,53 +72,55 @@ export function StructureView(props: StructureViewProps): ReactElement {
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
   return (
-    <div className={cx('flex flex-col gap-2', className)}>
-      <div className="relative w-fit max-w-full">
-        <div
-          ref={box}
-          className="cursor-grab touch-none overflow-hidden rounded-lg border border-(--wb-grid) active:cursor-grabbing"
-          style={{ width: width ?? drawing.width, maxWidth: '100%' }}
-          onPointerDown={(e) => {
-            drag.current = { x: e.clientX, y: e.clientY, view: shown, moved: false }
-          }}
-          onPointerMove={(e) => {
-            const d = drag.current
-            if (d === null || e.buttons === 0) return
-            const dx = e.clientX - d.x
-            const dy = e.clientY - d.y
-            if (!d.moved && Math.hypot(dx, dy) < 4) return
-            if (!d.moved) e.currentTarget.setPointerCapture(e.pointerId)
-            d.moved = true
-            const s = scale()
-            setView([d.view[0] - dx * s, d.view[1] - dy * s, d.view[2], d.view[3]])
-          }}
-          onPointerUp={() => {
-            // Leave the record until the click that follows, so a drag does not count as a click on a node.
-            setTimeout(() => {
-              drag.current = null
-            }, 0)
-          }}
-        >
-          <SceneView
-            scene={drawing}
-            width={width ?? drawing.width}
-            viewBox={shown}
-            style={{ width: '100%' }}
-            onNodeHover={(id) => setHover(id === null ? null : (byId.get(id) ?? null))}
-            {...(onNodeClick === undefined
-              ? {}
-              : {
-                  onNodeClick: (id: string) => {
-                    const node = byId.get(id)
-                    if (node !== undefined && drag.current?.moved !== true) onNodeClick(node)
-                  },
-                })}
-          />
-        </div>
-        <div className="absolute top-2 right-2 flex">
+    <div className={cx('flex w-fit max-w-full flex-col gap-2', className)}>
+      <div
+        ref={box}
+        className="cursor-grab touch-none overflow-hidden rounded-lg border border-(--wb-grid) active:cursor-grabbing"
+        style={{ width: width ?? drawing.width, maxWidth: '100%' }}
+        onPointerDown={(e) => {
+          drag.current = { x: e.clientX, y: e.clientY, view: shown, moved: false }
+        }}
+        onPointerMove={(e) => {
+          const d = drag.current
+          if (d === null || e.buttons === 0) return
+          const dx = e.clientX - d.x
+          const dy = e.clientY - d.y
+          if (!d.moved && Math.hypot(dx, dy) < 4) return
+          if (!d.moved) e.currentTarget.setPointerCapture(e.pointerId)
+          d.moved = true
+          const s = scale()
+          setView([d.view[0] - dx * s, d.view[1] - dy * s, d.view[2], d.view[3]])
+        }}
+        onPointerUp={() => {
+          // Leave the record until the click that follows, so a drag does not count as a click on a node.
+          setTimeout(() => {
+            drag.current = null
+          }, 0)
+        }}
+      >
+        <SceneView
+          scene={drawing}
+          width={width ?? drawing.width}
+          viewBox={shown}
+          style={{ width: '100%' }}
+          onNodeHover={(id) => setHover(id === null ? null : (byId.get(id) ?? null))}
+          {...(onNodeClick === undefined
+            ? {}
+            : {
+                onNodeClick: (id: string) => {
+                  const node = byId.get(id)
+                  if (node !== undefined && drag.current?.moved !== true) onNodeClick(node)
+                },
+              })}
+        />
+      </div>
+      {/* The hovered node's details and the zoom buttons share a row under the diagram, so neither covers it. */}
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        {details ? <Details node={hover} overlay={overlay} /> : <span />}
+        <div className="flex shrink-0">
           <button
             type="button"
-            className={cx(iconButtonClass, 'rounded-l-md')}
+            className={cx(iconButtonClass, 'size-7 rounded-l-md')}
             aria-label="Zoom in"
             onClick={() => zoom(1 / 1.3)}
           >
@@ -126,7 +128,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
           </button>
           <button
             type="button"
-            className={cx(iconButtonClass, '-ml-px')}
+            className={cx(iconButtonClass, '-ml-px size-7')}
             aria-label="Zoom out"
             onClick={() => zoom(1.3)}
           >
@@ -134,7 +136,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
           </button>
           <button
             type="button"
-            className={cx(iconButtonClass, '-ml-px w-auto rounded-r-md px-2 text-xs')}
+            className={cx(iconButtonClass, '-ml-px h-7 w-auto rounded-r-md px-2 text-xs')}
             aria-label="Fit"
             onClick={() => setView(null)}
           >
@@ -142,7 +144,6 @@ export function StructureView(props: StructureViewProps): ReactElement {
           </button>
         </div>
       </div>
-      {details ? <Details node={hover} overlay={overlay} /> : null}
     </div>
   )
 }
@@ -152,10 +153,11 @@ function Details(props: {
   readonly overlay: StructureOverlay | undefined
 }): ReactNode {
   const { node, overlay } = props
-  if (node === null) return <p className="m-0 h-5 text-xs text-(--wb-muted)">Hover a node for its details.</p>
+  if (node === null)
+    return <p className="m-0 h-5 min-w-0 flex-1 truncate text-xs text-(--wb-muted)">Hover a node for its details.</p>
   const badges = { ...node.badges, ...overlay?.badges?.[node.id] }
   return (
-    <p className="m-0 h-5 truncate text-xs text-(--wb-muted)">
+    <p className="m-0 h-5 min-w-0 flex-1 truncate text-xs text-(--wb-muted)">
       <span className="font-medium text-(--wb-fg)">{node.label}</span> · {node.role}
       {node.detail === undefined ? null : <> · {node.detail}</>}
       {Object.entries(badges).map(([k, v]) => (

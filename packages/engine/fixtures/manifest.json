@@ -1692,6 +1692,14 @@
       "cases": 186
     },
     {
+      "fixture": "methods/semi_supervised/graph_based.json",
+      "source": "oracle/cases/methods/semi_supervised/graph_based.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/svm/svm.json",
       "source": "oracle/cases/methods/svm/svm.py",
       "reference": {
