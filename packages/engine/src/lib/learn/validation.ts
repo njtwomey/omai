@@ -1,5 +1,6 @@
 import { WhiteboxError } from '../base/index.ts'
 import { asTensor, fromStorage, isTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import type { LearnData } from './estimator.ts'
 
 /** A dense row-major matrix read once for fast loops: `data[i * d + j]` is row i, column j. */
 export interface MatrixView {
@@ -392,4 +393,42 @@ export function fractionOption(value: number, name: string, who: string, lo = 0,
     throw new WhiteboxError('value', `${who}: ${name} must lie in (${lo}, ${hi}), got ${value}`)
   }
   return value
+}
+
+/**
+ * The rows of a learning dataset at some indices: features, targets and weights are subset together (any other
+ * fields are kept as they are).
+ *
+ * @param data - The data.
+ * @param rows - Row indices.
+ * @returns The subset.
+ * @example
+ * ```ts
+ * import { takeData } from 'whitebox-engine/learn'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * const d = takeData({ x: [[1], [2], [3]], y: [10, 20, 30] }, [2, 0])
+ * toArray(d.y) // => [30, 10]
+ * ```
+ */
+export function takeData<D extends LearnData>(data: D, rows: ArrayLike<number>): D {
+  const take = (v: TensorLike): Tensor => {
+    const t = asTensor(v)
+    if (!isTensor(t)) throw new WhiteboxError('value', 'takeData: expected concrete data')
+    const n = t.shape[0] ?? 0
+    const width = n === 0 ? 0 : t.data.length / n
+    const out = new Float64Array(rows.length * width)
+    const src = t.dtype === 'float64' ? (t.data as Float64Array) : Float64Array.from(toFlat(t))
+    for (let r = 0; r < rows.length; r++) {
+      const i = rows[r] ?? 0
+      if (!(i >= 0 && i < n)) throw new WhiteboxError('value', `takeData: row ${i} outside [0, ${n})`)
+      out.set(src.subarray(i * width, (i + 1) * width), r * width)
+    }
+    return fromStorage(out, [rows.length, ...t.shape.slice(1)], 'float64')
+  }
+  return {
+    ...data,
+    x: take(data.x),
+    ...(data.y === undefined ? {} : { y: take(data.y) }),
+    ...(data.weights === undefined ? {} : { weights: take(data.weights) }),
+  }
 }

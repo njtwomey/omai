@@ -6,8 +6,9 @@ import { describe, expect, it } from 'vitest'
 import { argmaxOf, maxOf } from '../lib/base/index.ts'
 import { defineEstimator, type Estimator, type Fitted, type LearnData } from '../lib/learn/estimator.ts'
 import { encodeLabels, matrixView, sampleWeightsOf, targetVector } from '../lib/learn/validation.ts'
-import { lstsq, solve } from '../lib/numerics/linalg/index.ts'
-import { fromStorage, type Tensor, type TensorLike, toFlat, type Value } from '../lib/tensor/index.ts'
+import { pinv, solve } from '../lib/numerics/linalg/index.ts'
+import { dict, real } from '../lib/space/index.ts'
+import { fromStorage, matmul, type Tensor, type TensorLike, toFlat, type Value } from '../lib/tensor/index.ts'
 import { decode, expectMatches, type GoldenCase, loadFixture } from './golden.ts'
 
 /** What a learn golden case computes: one value per output key of the fixture. */
@@ -15,7 +16,7 @@ export type LearnCaseFn = (
   inputs: readonly Tensor[],
   params: Readonly<Record<string, unknown>>,
   c: GoldenCase,
-) => Readonly<Record<string, Value | number | readonly number[] | string>>
+) => Readonly<Record<string, Value | number | readonly number[] | readonly (readonly number[])[] | string>>
 
 /**
  * One test per case of a fixture whose outputs are a dictionary of arrays: every key of the expected output must be
@@ -36,9 +37,11 @@ export function learnGolden(title: string, fixture: string, fns: Readonly<Record
           if (value === undefined) throw new Error(`${c.name}: no output ${key}`)
           if (typeof value === 'string') expect(value, `${c.name}/${key}`).toBe(expected)
           else if (Array.isArray(value)) {
-            const arr = value as readonly number[]
+            const nested = Array.isArray(value[0])
+            const arr = (nested ? (value as readonly (readonly number[])[]).flat() : value) as readonly number[]
+            const shape = nested ? [value.length, (value[0] as readonly number[]).length] : [arr.length]
             expectMatches(
-              fromStorage(Float64Array.from(arr), [arr.length], 'float64'),
+              fromStorage(Float64Array.from(arr), shape, 'float64'),
               expected,
               c.rtol,
               c.atol,
@@ -140,7 +143,8 @@ export function leastSquares(
       kind: 'regressor',
       fit: (data, h) => {
         const { m, xm, ym, xc, yc } = centred(data, 'leastSquares', h.fitIntercept)
-        const coef = toFlat(lstsq(fromStorage(xc, [m.n, m.d], 'float64'), fromStorage(yc, [m.n], 'float64')))
+        // The minimum-norm solution (scipy's gelsd), so rank-deficient designs (one-hot columns) match sklearn.
+        const coef = toFlat(matmul(pinv(fromStorage(xc, [m.n, m.d], 'float64')), fromStorage(yc, [m.n], 'float64')))
         const intercept = h.fitIntercept ? ym - coef.reduce((s, c, j) => s + c * (xm[j] ?? 0), 0) : 0
         return { coef, intercept }
       },
@@ -158,6 +162,7 @@ export function ridge(
     {
       name: 'ridge',
       kind: 'regressor',
+      hyperSpace: () => dict({ alpha: real(1e-4, 1e3, { log: true }) }),
       fit: (data, h) => {
         const { m, xm, ym, xc, yc } = centred(data, 'ridge', h.fitIntercept)
         const g = new Float64Array(m.d * m.d)

@@ -612,6 +612,39 @@
       "cases": 30
     },
     {
+      "fixture": "learn/compose.json",
+      "source": "oracle/cases/learn/compose.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "learn/model_selection/criteria.json",
+      "source": "oracle/cases/learn/model_selection/criteria.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "learn/model_selection/cross_validation.json",
+      "source": "oracle/cases/learn/model_selection/cross_validation.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "learn/model_selection/search.json",
+      "source": "oracle/cases/learn/model_selection/search.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "learn/model_selection/splitters.json",
       "source": "oracle/cases/learn/model_selection/splitters.py",
       "reference": {
