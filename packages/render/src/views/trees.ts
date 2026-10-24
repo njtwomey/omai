@@ -20,6 +20,8 @@ export interface TreeSceneOptions {
 }
 
 const CARD_W = 136
+// Leaves say less (a prediction, not a split), so their cards are narrower and wide trees stay compact.
+const LEAF_W = 104
 const CARD_H = 58
 const FONT = 11
 
@@ -77,8 +79,8 @@ export function treeScene(tree: TreeRecord, options: TreeSceneOptions = {}): Sce
       : [],
   )
   const layout = tidyTree(
-    { nodes: shown.map((n) => ({ id: `${n.id}`, width: CARD_W, height: CARD_H })), edges },
-    { levelSep: 34, siblingSep: 14, margin: 8 },
+    { nodes: shown.map((n) => ({ id: `${n.id}`, width: isOpen(n) ? CARD_W : LEAF_W, height: CARD_H })), edges },
+    { levelSep: 34, siblingSep: 10, margin: 8 },
   )
   const total = Math.max(1, tree.nodes.find((n) => n.parent === null)?.rows.length ?? 1)
   const children: SceneNode[] = []
@@ -111,11 +113,12 @@ export function treeScene(tree: TreeRecord, options: TreeSceneOptions = {}): Sce
   for (const n of shown) {
     const box = layout.nodes[`${n.id}`]
     if (box === undefined) continue
-    const x0 = box.x - CARD_W / 2
+    const cardW = isOpen(n) ? CARD_W : LEAF_W
+    const x0 = box.x - cardW / 2
     const y0 = box.y - CARD_H / 2
     const selected = options.selected === n.id
     const parts: SceneNode[] = [
-      rect(x0, y0, CARD_W, CARD_H, {
+      rect(x0, y0, cardW, CARD_H, {
         fill: 'surface',
         stroke: selected ? 'accent' : 'grid',
         strokeWidth: selected ? 2.2 : 1,
@@ -126,7 +129,7 @@ export function treeScene(tree: TreeRecord, options: TreeSceneOptions = {}): Sce
     parts.push(text(box.x, y0 + 15, heading, { size: FONT, fill: 'fg', anchor: 'middle', weight: 'bold' }))
     // The class proportions as a stacked bar; a regression node shows its share of the rows instead.
     const barX = x0 + 10
-    const barW = CARD_W - 20
+    const barW = cardW - 20
     const barY = y0 + 24
     if (tree.classes !== undefined && n.value.length > 1) {
       const sum = n.value.reduce((s, v) => s + v, 0) || 1

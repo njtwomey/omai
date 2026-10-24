@@ -1,6 +1,7 @@
 import { type ReactElement, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { TreeRecord } from 'whitebox-engine/exposition'
 import { type Figure, scaleFigure } from '../../figure/figure.ts'
+import { tokens } from '../../theme/tokens.ts'
 import { growthSteps, splitCandidatesView, treeNodeOf, treeScene } from '../../views/trees.ts'
 import { Chart } from '../Chart.tsx'
 import { FigureFrame, useFrameSize } from '../FigureFrame.tsx'
@@ -10,7 +11,7 @@ import { usePlayback } from '../usePlayback.ts'
 import type { RecordViewProps } from './_frame.tsx'
 import { useViewFigure } from './_frame.tsx'
 
-const TREE_FIGURE = { width: 720, aspect: 1.15 } as const
+const TREE_FIGURE = { width: 720, aspect: 1.6 } as const
 
 /** Props of {@link TreeView}. */
 export interface TreeViewProps extends RecordViewProps<TreeRecord> {
@@ -54,6 +55,8 @@ function TreeFigure(props: {
   readonly onSelect: (node: number) => void
   readonly grownTo: number
   readonly maxDepth?: number
+  /** The share of the figure's height the tree takes (the candidate splits take the rest). */
+  readonly treeShare: number
 }): ReactElement {
   const frame = useFrameSize()
   const expandedWidth = frame?.expanded === true ? frame.width : undefined
@@ -66,8 +69,8 @@ function TreeFigure(props: {
   )
   const [outer, measured] = useMeasuredWidth(base.width)
   const width = Math.min(base.width, measured)
-  const chartHeight = Math.round(base.height * 0.34)
-  const treeHeight = base.height - chartHeight
+  const treeHeight = Math.round(base.height * props.treeShare)
+  const chartHeight = base.height - treeHeight
   const { record, selected, grownTo, maxDepth } = props
   const scene = useMemo(
     () => treeScene(record, { selected, grownTo, ...(maxDepth === undefined ? {} : { maxDepth }) }),
@@ -136,6 +139,25 @@ function TreeFigure(props: {
           drag.current = null
         }}
       >
+        {overflows && (
+          <span
+            style={{
+              // Sticky and zero-width: it stays in the corner as the tree scrolls and takes no room.
+              position: 'sticky',
+              left: 8,
+              top: 4,
+              width: 0,
+              whiteSpace: 'nowrap',
+              alignSelf: 'flex-start',
+              font: `11px ${tokens(base.mode).font}`,
+              color: tokens(base.mode).muted,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          >
+            drag to pan
+          </span>
+        )}
         <div style={{ width: drawW, height: drawH, margin: '0 auto', flexShrink: 0 }}>
           <SceneView
             scene={scene}
@@ -183,17 +205,31 @@ export function TreeView(props: TreeViewProps): ReactElement {
     setOwn(root)
   }, [steps, root])
   const growth = props.growth ?? true
+  // The figure keeps its width but grows tall enough for the whole tree at a legible scale (fit to the width, never
+  // below MIN_SCALE), with room for the candidate splits beneath; a tree too wide for that scrolls sideways.
+  const full = useMemo(
+    () => treeScene(record, props.maxDepth === undefined ? {} : { maxDepth: props.maxDepth }),
+    [record, props.maxDepth],
+  )
+  const { sized, treeShare } = useMemo(() => {
+    const chartH = Math.max(180, Math.round(figure.height * 0.34))
+    const scale = Math.min(1.2, Math.max(MIN_SCALE, figure.width / full.width))
+    const treeH = Math.max(figure.height - chartH, Math.round(full.height * scale) + 8)
+    const height = treeH + chartH
+    return { sized: { ...figure, height, aspect: figure.width / height }, treeShare: treeH / height }
+  }, [figure, full])
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: figure.width, maxWidth: '100%' }}>
       <FigureFrame
-        figure={figure}
+        figure={sized}
         filename={props.filename ?? 'tree'}
         {...(props.title === undefined ? {} : { title: props.title })}
         {...(props.caption === undefined ? {} : { caption: props.caption })}
       >
         <TreeFigure
           record={record}
-          figure={figure}
+          figure={sized}
+          treeShare={treeShare}
           selected={selected}
           onSelect={select}
           grownTo={growth ? playback.frame : steps}
