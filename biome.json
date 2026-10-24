@@ -13,6 +13,7 @@
       "!**/*.data.ts",
       "!**/fixtures",
       "!docs/port-map.json",
+      "!pnpm-lock.yaml",
       "!packages/*/src/**/index.ts"
     ]
   },

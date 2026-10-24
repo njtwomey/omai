@@ -1,0 +1,4 @@
+{
+  "summary": "Multiclass and multi-output wrappers: one-vs-rest, one-vs-one, output codes, chains.",
+  "dependsOn": ["linear"]
+}

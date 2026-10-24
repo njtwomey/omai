@@ -23,6 +23,33 @@ export default defineConfig({
           typecheck: { enabled: true, include: ['src/**/*.test-d.ts'], tsconfig: 'tsconfig.json' },
         },
       },
+      {
+        extends: true,
+        test: {
+          name: 'render',
+          root: 'packages/render',
+          include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+          environment: 'node',
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'meta',
+          root: 'packages/meta',
+          include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+          environment: 'node',
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'hub',
+          root: 'packages/hub',
+          include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+          environment: 'node',
+        },
+      },
     ],
     coverage: {
       provider: 'v8',

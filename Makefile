@@ -7,7 +7,7 @@ PNPM := $(MISE) pnpm
 NODE := $(MISE) node
 UV := $(MISE) uv
 
-PACKAGES := engine render meta
+PACKAGES := engine render meta hub
 
 .PHONY: help
 help: ## List targets

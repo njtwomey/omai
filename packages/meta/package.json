@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "whitebox-engine": "workspace:*",
-    "whitebox-render": "workspace:*"
+    "whitebox-render": "workspace:*",
+    "whitebox-hub": "workspace:*"
   }
 }

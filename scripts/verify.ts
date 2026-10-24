@@ -105,7 +105,7 @@ function plan(files: readonly string[]): Step[] {
       command: ['uv', 'run', '--group', 'dev', 'ruff', 'format', '--check', 'oracle', 'scripts'],
     },
   ]
-  for (const p of ['engine', 'render', 'meta'])
+  for (const p of ['engine', 'render', 'meta', 'hub'])
     steps.push({
       label: `tsc ${p}`,
       command: ['pnpm', '--dir', `packages/${p}`, 'exec', 'tsc', '-p', 'tsconfig.json', '--noEmit'],

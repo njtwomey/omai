@@ -1,0 +1,4 @@
+{
+  "summary": "Manifold learning: MDS, Isomap, LLE, spectral embedding, t-SNE and UMAP, self-organising maps.",
+  "dependsOn": ["neighbours", "decomposition"]
+}
