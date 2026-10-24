@@ -61,11 +61,17 @@ const Y = tensor([
   [0.2, -0.9],
 ])
 
+// Exp-sine-squared kernels of the Euclidean distance are positive semi-definite in one dimension only (as scikit-learn's
+// ExpSineSquared): in two or more, near-duplicate points can give eigenvalues just below zero, so their laws are
+// checked on the line, where they are theorems.
+const PSD_IN_ONE_DIMENSION = new Set(['periodic', 'locally periodic'])
+
 describe('stationary kernels (properties)', () => {
   for (const [name, kernel] of KERNELS) {
+    const d = PSD_IN_ONE_DIMENSION.has(name) ? 1 : 2
     it(`${name}: PSD, symmetric, diagonal and shift-invariant on random points`, () => {
       fc.assert(
-        fc.property(points(7, 2), points(3, 2), (x, y) => {
+        fc.property(points(7, d), points(3, d), (x, y) => {
           expectKernelLaws(kernel, x, y)
         }),
         { numRuns: RUNS },

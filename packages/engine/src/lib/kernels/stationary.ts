@@ -263,6 +263,8 @@ function periodicPart(d: Value, lengthScale: Value, period: Value): Value {
 /**
  * The periodic (exp-sine-squared) kernel k(x, y) = exp(-2 sin^2(pi |x - y| / p) / l^2) (scikit-learn ExpSineSquared,
  * MacKay's periodic kernel): functions that repeat exactly with period p.
+ * Positive semi-definite for one-dimensional inputs; with the Euclidean distance of several dimensions it need not be
+ * (as for scikit-learn's), so use `productKernel` of one-dimensional periodic kernels for a PSD multi-dimensional version.
  *
  * @param options - Length scale and period.
  * @returns The kernel, hyperparameters `{ lengthScale, period }`.
@@ -299,6 +301,7 @@ export interface LocallyPeriodicOptions extends PeriodicOptions {
  * The locally periodic kernel, a periodic kernel under an RBF envelope:
  * k(x, y) = exp(-2 sin^2(pi r / p) / l^2) exp(-r^2 / (2 decay^2)), r = |x - y|: patterns that repeat while slowly
  * changing shape (scikit-learn ExpSineSquared * RBF).
+ * Like the periodic kernel, it is positive semi-definite for one-dimensional inputs only.
  *
  * @param options - Length scale, period and envelope length scale.
  * @returns The kernel, hyperparameters `{ decay, lengthScale, period }`.
