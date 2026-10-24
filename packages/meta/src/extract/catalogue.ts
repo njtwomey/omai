@@ -21,12 +21,12 @@ export interface CatalogueOptions {
  */
 export function extractCatalogue(options: CatalogueOptions): Catalogue {
   const project = readProject(options.root, options.packages ?? ['engine'])
-  const { modules, symbols } = readSymbols(project)
+  const { modules, files, symbols } = readSymbols(project)
   const packages = project.packages.map((p) => ({
     name: p.name,
     description: p.description,
     version: p.version,
     modules: modules.filter((m) => m.package === p.name && m.parent === undefined).map((m) => m.id),
   }))
-  return { version: 1, packages, modules, symbols }
+  return { version: 1, packages, modules, files, symbols }
 }

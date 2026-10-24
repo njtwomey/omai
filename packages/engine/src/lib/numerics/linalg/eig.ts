@@ -65,7 +65,8 @@ export function schur(a: TensorLike): { readonly t: Tensor; readonly z: Tensor }
  * @example
  * ```ts
  * import { eigvals } from 'whitebox-engine/numerics/linalg'
- * Array.from(eigvals([[0, -1], [1, 0]]).im).sort() // => [-1, 1]
+ * import { toFlat } from 'whitebox-engine/tensor'
+ * toFlat(eigvals([[0, -1], [1, 0]]).im).sort((a, b) => a - b) // => [-1, 1]
  * ```
  */
 export function eigvals(a: TensorLike): ComplexTensor {
@@ -88,7 +89,8 @@ export function eigvals(a: TensorLike): ComplexTensor {
  * @example
  * ```ts
  * import { eig } from 'whitebox-engine/numerics/linalg'
- * Array.from(eig([[2, 1], [0, 3]]).values.re).sort() // => [2, 3]
+ * import { toFlat } from 'whitebox-engine/tensor'
+ * toFlat(eig([[2, 1], [0, 3]]).values.re).sort((a, b) => a - b) // => [2, 3]
  * ```
  */
 export function eig(a: TensorLike): { readonly values: ComplexTensor; readonly vectors: ComplexTensor } {

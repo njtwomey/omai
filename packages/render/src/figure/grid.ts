@@ -87,7 +87,7 @@ function check(spec: GridSpec): GridSpec {
  *
  * @param rows - Number of rows.
  * @param cols - Number of columns.
- * @param options - Ratios, gaps (default 24 px between columns and 28 px between rows) and cells.
+ * @param options - Ratios, gaps (default 56 px between columns and 52 px between rows: room for tick labels and panel titles) and cells.
  * @returns The grid.
  * @throws WhiteboxError with code `value` for overlapping or out-of-range cells and unknown shared cells.
  * @example
@@ -111,8 +111,8 @@ export function gridSpec(rows: number, cols: number, options: GridOptions = {}):
     cols,
     widthRatios: options.widthRatios ?? new Array<number>(cols).fill(1),
     heightRatios: options.heightRatios ?? new Array<number>(rows).fill(1),
-    wspace: options.wspace ?? 24,
-    hspace: options.hspace ?? 28,
+    wspace: options.wspace ?? 56,
+    hspace: options.hspace ?? 52,
     cells,
   })
 }

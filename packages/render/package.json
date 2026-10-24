@@ -4,7 +4,9 @@
   "description": "whitebox-js figures: ECharts options, layouts, scene and structure drawing, SVG and animation export; React bindings.",
   "license": "MIT",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/njtwomey/whitebox-js.git",
