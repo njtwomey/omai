@@ -273,6 +273,32 @@
       "cases": 92
     },
     {
+      "fixture": "dynamics/pde/finite_difference.json",
+      "source": "oracle/cases/dynamics/pde/finite_difference.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "dynamics/pde/fokker_planck.json",
+      "source": "oracle/cases/dynamics/pde/fokker_planck.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "dynamics/pde/spectral.json",
+      "source": "oracle/cases/dynamics/pde/spectral.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "foundations/calculus.json",
       "source": "oracle/cases/foundations/calculus.py",
       "reference": {

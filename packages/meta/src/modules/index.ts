@@ -31,6 +31,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/dists/multivariate': () => import('whitebox-engine/dists/multivariate'),
   'whitebox-engine/dynamics': () => import('whitebox-engine/dynamics'),
   'whitebox-engine/dynamics/ode': () => import('whitebox-engine/dynamics/ode'),
+  'whitebox-engine/dynamics/pde': () => import('whitebox-engine/dynamics/pde'),
   'whitebox-engine/foundations': () => import('whitebox-engine/foundations'),
   'whitebox-engine/graph': () => import('whitebox-engine/graph'),
   'whitebox-engine/information': () => import('whitebox-engine/information'),

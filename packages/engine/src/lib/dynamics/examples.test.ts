@@ -5,6 +5,7 @@ import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as autodiff from '../autodiff/index.ts'
 import * as base from '../base/index.ts'
+import * as numerics from '../numerics/index.ts'
 import * as random from '../random/index.ts'
 import * as systems from '../systems/index.ts'
 import * as tensor from '../tensor/index.ts'
@@ -23,6 +24,7 @@ const MODULES: Readonly<Record<string, unknown>> = {
   'whitebox-engine/dynamics/pde': (dynamics as Record<string, unknown>)['pde'],
   'whitebox-engine/dynamics/control': (dynamics as Record<string, unknown>)['control'],
   'whitebox-engine/dynamics/filtering': (dynamics as Record<string, unknown>)['filtering'],
+  ...Object.fromEntries(Object.entries(numerics).map(([k, v]) => [`whitebox-engine/numerics/${k}`, v])),
 }
 
 interface Example {
