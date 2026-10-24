@@ -103,6 +103,8 @@ describe('pursuit-evasion', () => {
     const s = { pursuers: [[0, 0] as const, [4, 4] as const], evaders: [[2, 2] as const], free: [true], t: 0 }
     const obs = env.step(s, { pursuer_0: 0, pursuer_1: 0 }, key(0)).observations['pursuer_0'] ?? []
     expect(obs.slice(0, 4)).toEqual([0, 0, 4 / 5, 4 / 5])
+    expect(() => pursuitEvasion.create({ obsRange: 4 })).toThrow(/odd/)
+    expect(() => pursuitEvasion.create({ size: 3, pursuers: 8, evaders: 2 })).toThrow(/too many/)
   })
 
   it('lets a fleeing evader run from the pursuers', () => {

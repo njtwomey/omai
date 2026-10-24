@@ -304,6 +304,7 @@ export const pursuitEvasion: ParallelDefinition<PursuitState, readonly number[],
     const urgency = o.urgencyReward ?? -0.1
     const local = o.observation === 'local'
     const range = o.obsRange ?? 5
+    if (range % 2 !== 1 || range < 1) throw new WhiteboxError('value', 'pursuitEvasion: obsRange must be odd')
     const maxCycles = o.maxCycles ?? 100
     const pursuerNames = Array.from({ length: nP }, (_, i) => `pursuer_${i}`)
     const evaderNames = control === 'agent' ? Array.from({ length: nE }, (_, i) => `evader_${i}`) : []

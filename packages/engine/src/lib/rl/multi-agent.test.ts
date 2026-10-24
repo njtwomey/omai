@@ -43,12 +43,16 @@ describe('joint and single-agent views', () => {
     expect([r1.observation, r1.reward, r1.terminated]).toEqual([2, 0, false])
     const r2 = env.step(r1.state, 0, key(2))
     expect([r2.reward, r2.terminated]).toEqual([-1, true])
-    expect(() => env.step(r2.state, 0, key(3))).toThrow(/turn/)
     // As the second player the opponent opens at reset.
     const second = aecSingleAgentView(takeAway(3), 'player_1', { player_0: () => 0 })
     const s0 = second.reset(key(0))
     expect(s0.observation).toBe(2)
     expect(second.step(s0.state, 1, key(1)).reward).toBe(1)
+    // When the opponent's opening move ends the game, the next step is the final one and pays the agent's reward.
+    const lost = aecSingleAgentView(takeAway(1), 'player_1', { player_0: () => 0 })
+    const l0 = lost.reset(key(0))
+    expect(l0.info).toEqual({})
+    expect(lost.step(l0.state, 0, key(1))).toMatchObject({ reward: -1, terminated: true, truncated: false })
     expect(() => aecSingleAgentView(takeAway(3), 'nobody', {})).toThrow(/no agent/)
     expect(() => aecSingleAgentView(takeAway(3), 'player_1', {}).reset(key(0))).toThrow(/no policy/)
   })

@@ -523,7 +523,7 @@ export interface AecViewState<S> {
 /**
  * One agent's view of a turn-based game as a single-agent {@link Env}, with every other agent following a fixed
  * policy that sees its own, current observation: a step plays the agent's move and then the others' moves until the
- * agent is to move again or the game ends, summing the agent's rewards. Reset plays the others' opening moves. The
+ * agent is to move again or the game ends, summing the agent's rewards. Reset plays the others' opening moves (if they end the game, the next step, whatever the action, is the final one and pays the agent's reward). The
  * `info.legalActions` of a reset or step lists the agent's legal moves for its next turn (for masking). This is how
  * a single-agent learner trains against fixed opponents or snapshots of itself (self-play) in board games and poker.
  *
@@ -581,8 +581,20 @@ export function aecSingleAgentView<S, O, A>(
       }
     },
     step: (s, action, k) => {
-      if (env.currentAgent(s.inner) !== agent)
-        throw new WhiteboxError('value', `aecSingleAgentView: it is not ${agent}'s turn`)
+      const mover = env.currentAgent(s.inner)
+      // The others' opening moves ended the game at reset: one final step delivers its reward.
+      if (mover === undefined) {
+        const terminated = env.terminations(s.inner)[agent] === true
+        return {
+          state: { inner: s.inner, carry: 0 },
+          observation: env.observe(s.inner, agent),
+          reward: s.carry,
+          terminated,
+          truncated: !terminated,
+          info: {},
+        }
+      }
+      if (mover !== agent) throw new WhiteboxError('value', `aecSingleAgentView: it is not ${agent}'s turn`)
       const r = env.step(s.inner, action, foldIn(k, 0))
       const next = advance(r.state, foldIn(k, 1))
       const over = env.currentAgent(next.state) === undefined

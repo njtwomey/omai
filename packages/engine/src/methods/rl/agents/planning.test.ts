@@ -21,6 +21,9 @@ import {
   valueIterationAgent,
 } from './planning.ts'
 
+// Search and learning tests stay small; the generous timeout covers a loaded machine.
+const SLOW = { timeout: 30_000 }
+
 /** Win, draw and loss counts of `policy` (for `seat`) against uniformly random legal play. */
 function versusRandom<S>(
   env: AecEnv<S, readonly number[], number>,
@@ -70,7 +73,7 @@ describe('dynamic-programming agents', () => {
 })
 
 describe('MCTS agents', () => {
-  it('balance a pole by planning from the true state', () => {
+  it('balance a pole by planning from the true state', SLOW, () => {
     const env = cartPole.create()
     const agent = mctsAgent(env, { simulations: 30, depth: 20, c: 5 })
     let s = env.reset(key(3)).state
@@ -83,7 +86,7 @@ describe('MCTS agents', () => {
     expect(steps).toBe(60)
   })
 
-  it('play games with negamax backups', () => {
+  it('play games with negamax backups', SLOW, () => {
     const env = nim.create({ heaps: [1, 2, 3, 4] })
     const agent = gameMctsAgent(env, { simulations: 200 })
     const counts = versusRandom(env, (s, k) => agent.act(null, s, k), 'player_0', 10)
@@ -92,7 +95,7 @@ describe('MCTS agents', () => {
 })
 
 describe('minimax agents', () => {
-  it('search tic-tac-toe exactly and never lose', () => {
+  it('search tic-tac-toe exactly and never lose', SLOW, () => {
     const env = ticTacToe.create()
     const root = alphaBeta(env, env.reset(key(0)))
     expect(root.value).toBe(0)
@@ -148,7 +151,7 @@ describe('minimax agents', () => {
 })
 
 describe('AlphaZero', () => {
-  it('learns from self-play to beat a random player', () => {
+  it('learns from self-play to beat a random player', SLOW, () => {
     const env = nim.create({ heaps: [1, 2, 3] })
     const opts = {
       hidden: [32],
