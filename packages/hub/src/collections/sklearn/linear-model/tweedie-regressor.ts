@@ -9,8 +9,12 @@ export const tweedieRegressor: HubEntry = defineEntry({
   summary: 'One GLM family spanning normal, Poisson, gamma and inverse Gaussian by its power.',
   collection: 'sklearn/linear-model',
   tags: ['regression', 'glm'],
-  datasets: ['regressionTabular'],
-  ...fitEstimator(tweedieRegressorMethod()),
-  views: [{ record: 'coefficientTable', title: 'Coefficients' }],
+  datasets: ['glm1d', 'regressionTabular'],
+  dataset: 'tweedieResponses',
+  ...fitEstimator(tweedieRegressorMethod({ alpha: 0 }), { surface: true }),
+  views: [
+    { record: 'decisionSurface', title: 'Fitted mean' },
+    { record: 'coefficientTable', title: 'Coefficients', area: 'side' },
+  ],
   methods: [{ file: 'methods/linear/glm.ts', name: 'tweedieRegressor' }],
 })

@@ -31,6 +31,18 @@ describe('EM for linear-Gaussian state-space models', () => {
     expect(Math.abs(q / (1 - 0.9 ** 2) + rr - (0.5 / (1 - 0.81) + 0.2))).toBeLessThan(1.2)
   })
 
+  it('stays monotone with F and H held fixed (a local level: only the noise variances learned)', () => {
+    const zs = simulate(120, 0.3, 1, 5)
+    const r = kalmanEm({ F: [[1]], H: [[1]], Q: [[0.05]], R: [[0.5]], x0: [0], P0: [[10]] }, zs, {
+      maxIterations: 40,
+      learn: { F: false, H: false, x0: false, P0: false },
+      tol: 1e-12,
+    })
+    r.history.forEach((v, i) => {
+      if (i > 0) expect(v).toBeGreaterThanOrEqual((r.history[i - 1] ?? 0) - 1e-8)
+    })
+  })
+
   it('rejects missing observations', () => {
     expect(() =>
       kalmanEm({ F: [[1]], H: [[1]], Q: [[1]], R: [[1]], x0: [0], P0: [[1]] }, [[1], [Number.NaN]]),
