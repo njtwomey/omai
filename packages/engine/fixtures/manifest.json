@@ -1348,6 +1348,15 @@
       "cases": 6
     },
     {
+      "fixture": "methods/mixture/gaussian.json",
+      "source": "oracle/cases/methods/mixture/gaussian.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 16
+    },
+    {
       "fixture": "methods/rl/agents/bandits.json",
       "source": "oracle/cases/methods/rl/agents/bandits.py",
       "reference": {

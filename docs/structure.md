@@ -3054,10 +3054,13 @@ built from: `numerics/spatial`, `numerics/linalg`, `graph`, `learn`, `metrics/cl
 built from: `probprog` (programs and engines), `dists`, `learn`
 - `programs.ts`: mixture models as probabilistic programs (Gaussian with full, tied, diagonal or spherical covariance;
   Bernoulli; multinomial; Student-t; mixtures of regressions).
-- `gaussian.ts`: `gaussianMixture` (the familiar estimator; EM by default through `probprog/engines/em.ts`, with VI,
-  Gibbs or NUTS by option; traced responsibilities).
+- `gaussian.ts`: `gaussianMixture` (the familiar estimator; traced EM with closed-form M-steps for full, tied, diagonal
+  and spherical covariances, densities from `dists.multivariateNormal`; the route through `probprog/engines/em.ts`
+  with VI, Gibbs or NUTS by option is a TODO with `programs.ts`), BIC and AIC.
 - `bayesian.ts`: Bayesian and Dirichlet-process mixtures (variational and collapsed Gibbs).
 - `selection.ts`: choosing the number of components (BIC, ICL, held-out likelihood, stability).
+- `density.ts`: density estimation: the Gaussian KDE of `stats/density.ts` as an estimator with cross-validated
+  bandwidth factors, and histogram densities for one or two features (from `stats/histograms.ts`).
 
 `decomposition/` (sklearn.decomposition, cross_decomposition, random_projection)
 built from: `numerics/linalg`, `optim`, `probprog` (latent-variable programs), `learn`
