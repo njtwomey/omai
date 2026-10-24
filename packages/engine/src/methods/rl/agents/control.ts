@@ -1,9 +1,10 @@
 import { argminOf, clamp, type Json, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
-import { cholesky, daxpy, dgemv, solve, solveDare } from '../../../lib/numerics/linalg/index.ts'
+import { cholesky, daxpy, dgemv, solve, solveDare, symmetricPart } from '../../../lib/numerics/linalg/index.ts'
 import { type Key, key as makeKey } from '../../../lib/random/index.ts'
 import { type Agent, cem, type Env, mppi, type Transition } from '../../../lib/rl/index.ts'
 import {
   add,
+  eye,
   matmul,
   mul,
   neg,
@@ -13,6 +14,7 @@ import {
   toFlat,
   transpose,
   type Value,
+  zeros,
 } from '../../../lib/tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../../lib/trace/index.ts'
 import {
@@ -27,10 +29,7 @@ import {
 import { rowsTensor, vectorTensor } from './_common.ts'
 
 type Matrix = readonly (readonly number[])[]
-const identity = (n: number, scale = 1): number[][] =>
-  Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? scale : 0)))
 const asRows = (x: Value): number[][] => toArray(x) as number[][]
-const sym = (a: Value): Value => mul(add(a, transpose(a)), 0.5)
 
 // ------------------------------------------------------------------------------------------------------------ LQR
 
@@ -126,8 +125,8 @@ export function lqrAgent<A = readonly number[]>(
   const u0 = options.action ?? model.equilibrium?.action
   if (x0 === undefined || u0 === undefined) throw new WhiteboxError('value', 'lqrAgent: give an operating point')
   const toState = options.toState ?? ((o: readonly number[]) => o)
-  const Q = options.Q ?? identity(model.stateSize)
-  const R = options.R ?? identity(model.actionSize)
+  const Q = options.Q ?? asRows(eye(model.stateSize))
+  const R = options.R ?? asRows(eye(model.actionSize))
   const policy = (s: LqrAgentState, obs: readonly number[]): A => {
     const x = toState(obs)
     const dx = s.state.map((v, i) => (x[i] ?? 0) - v)
@@ -324,7 +323,7 @@ function backward(
   const T = raw.length
   const d = trajectoryDerivatives(model, states.slice(0, T), raw)
   let Vx: Value = vectorTensor(new Array<number>(n).fill(0))
-  let Vxx: Value = rowsTensor(identity(n, 0), n)
+  let Vxx: Value = zeros([n, n])
   if (model.terminalCost !== undefined) {
     const last = trajectoryDerivatives(
       { ...model, cost: (x) => (model.terminalCost as (s: Value) => Value)(x) },
@@ -334,7 +333,7 @@ function backward(
     Vx = vectorTensor(last.lx[0] ?? [])
     Vxx = rowsTensor(last.lxx[0] ?? [], n)
   }
-  const reg = rowsTensor(identity(m, mu), m)
+  const reg = mul(eye(m), mu)
   const K: Float64Array[] = new Array(T)
   const k: number[][] = new Array(T)
   let dV1 = 0
@@ -349,7 +348,7 @@ function backward(
     const Qxx = add(rowsTensor(d.lxx[t] ?? [], n), matmul(fxT, matmul(Vxx, fx)))
     const Quu = add(rowsTensor(d.luu[t] ?? [], m), matmul(fuT, matmul(Vxx, fu)))
     const Qux = add(rowsTensor(d.lux[t] ?? [], n), matmul(fuT, matmul(Vxx, fx)))
-    const QuuR = sym(add(Quu, reg))
+    const QuuR = symmetricPart(add(Quu, reg))
     try {
       cholesky(QuuR)
     } catch {
@@ -359,7 +358,7 @@ function backward(
     const Kt = neg(solve(QuuR, Qux))
     const KtT = transpose(Kt)
     Vx = add(add(add(Qx, matmul(KtT, matmul(Quu, kt))), matmul(KtT, Qu)), matmul(transpose(Qux), kt))
-    Vxx = sym(add(add(add(Qxx, matmul(KtT, matmul(Quu, Kt))), matmul(KtT, Qux)), matmul(transpose(Qux), Kt)))
+    Vxx = symmetricPart(add(add(add(Qxx, matmul(KtT, matmul(Quu, Kt))), matmul(KtT, Qux)), matmul(transpose(Qux), Kt)))
     const kv = toFlat(kt)
     const qu = toFlat(Qu)
     const quuK = toFlat(matmul(Quu, kt))

@@ -710,7 +710,7 @@ primitives; "custom" means a dedicated rule.
 - `blas.ts`: level-1 and level-2 kernels on number arrays (`ddot`, `dnrm2`, `daxpy`, `dscal`, `dgemv`), shared by every
   algorithm that iterates on primal values (Krylov, Lanczos, regularising iterations, root finders).
 - `basics.ts`: `norm`, `cond`, `matrixRank`, `matrixPower`, `det`, `slogdet`, `isSymmetric` (`trace` is the tensor op),
-  `isPositiveDefinite`.
+  `symmetricPart` (`(A + A^T) / 2`), `isPositiveDefinite`.
 - `triangular.ts`: `solveTriangular`, `invTriangular`.
 - `cholesky.ts`: `cholesky` (optional jitter ladder that reports the jitter used), `choFactor`, `choSolve`,
   `choleskyLogdet`, rank-one `choleskyUpdate` and `choleskyDowndate`.
@@ -3158,7 +3158,9 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 - `minatar.ts`: MinAtar-style games on a 10 by 10 grid (Breakout, Asterix, Freeway, Seaquest, Space Invaders), with
   minimal and full six-action sets, sticky actions and difficulty ramping.
 - `continuous-control.ts`: point mass, 2-D reacher, double integrator, planar quadrotor, cart double pendulum (analytic
-  dynamics: exact zero-order-hold steps or RK4 on Lagrangian equations of motion).
+  dynamics: exact zero-order-hold steps or RK4 on Lagrangian equations of motion). `doubleIntegratorMatrices` is
+  `systems.c2dMatrices` (zero-order hold); the per-step damped-mass coefficients in `_mechanics.ts` stay closed-form
+  scalars (one exponential per step, not a matrix exponential).
 - `games.ts`: tic-tac-toe, connect four, nim, Kuhn and Leduc poker, as turn-based environments with legal actions.
 - `go.ts`: Go on small boards (5, 7, 9; captures, simple ko or positional superko, area scoring with komi).
 - `multi-agent.ts`: matrix games (prisoner's dilemma, matching pennies, rock-paper-scissors, stag hunt), pursuit-evasion,
