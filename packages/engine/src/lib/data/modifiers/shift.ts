@@ -7,7 +7,7 @@ import type { Modifier } from '../recipes.ts'
 import { stratifiedIndices, take } from '../rows.ts'
 import { type Dataset, rowCount } from '../schema/common.ts'
 import type { TabularData } from '../schema/tabular.ts'
-import { columnStats, logistic, requireTabular } from './_shared.ts'
+import { columnStats, logistic, requireTabular, withoutProgram } from './_shared.ts'
 
 /** A standardised projection `z(x) = (x - mean) . direction / sd` of the rows of a feature matrix. */
 function projection(
@@ -78,7 +78,7 @@ export function withCovariateShift<D extends TabularData>(
   return {
     data: out,
     truth: {
-      ...truth,
+      ...withoutProgram(truth),
       ...(logProb === undefined ? {} : { logProb: (v: Value, y?: Value) => add(logProb(v, y), tilt(v)) }),
       latents: { ...(truth.latents ?? {}), sourceRows: rows },
       extra: {
@@ -173,7 +173,7 @@ export function withConceptDrift<D extends TabularData>(
   return {
     data: { ...data, y },
     truth: {
-      ...truth,
+      ...withoutProgram(truth),
       changepoints: points,
       latents: { ...(truth.latents ?? {}), concepts: fromStorage(concepts, [n], 'int32') },
       extra: { ...(truth.extra ?? {}), ...extra, drift: { kind, points, width } },

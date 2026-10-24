@@ -2,7 +2,9 @@
 // Small models (and traced inputs) use tensor operations, so the truth is differentiable in x; large isotropic
 // models on concrete rows use a chunked loop that never materialises an [n, components] array.
 import { WhiteboxError } from '../../lib/base/index.ts'
-import { bayesErrorEstimate, type Truth } from '../../lib/data/index.ts'
+import { bayesErrorEstimate, type GeneratingProgram, type Truth } from '../../lib/data/index.ts'
+import { categorical, compose, normal } from '../../lib/dists/index.ts'
+import { generatingProgram, plate, type RowsData, sample } from '../../lib/probprog/index.ts'
 import type { Key } from '../../lib/random/index.ts'
 import {
   add,
@@ -127,13 +129,42 @@ export function classLogJoint(model: MixtureModel): (x: Value) => Value {
   return (x) => (isTensor(x) && (x.shape[0] ?? 0) * c > 20_000 ? viaLoop(x) : viaTensors(x))
 }
 
+/**
+ * The generating program of an isotropic mixture class model: per row, a component from the weights, features from
+ * its isotropic normal, and the component's class as the label.
+ */
+export function mixtureProgram(model: MixtureModel): GeneratingProgram | undefined {
+  const iso = model.isotropic
+  if (iso === undefined) return undefined
+  const c = iso.means.length
+  const means = tensor(iso.means as number[][])
+  const sigmas = tensor(iso.means.map((_, j) => [sigmaOf(iso.sigma, j)]))
+  const weights = model.logWeights.map(Math.exp)
+  const onehot = tensor(
+    Array.from({ length: c }, (_, j) =>
+      Array.from({ length: model.nClasses }, (_, k) => (model.classOf[j] === k ? 1 : 0)),
+    ),
+  )
+  const program = (data: RowsData): void => {
+    plate('rows', data.n, () => {
+      const j = sample('component', categorical({ probs: weights }))
+      sample('x', compose.independent(normal(take(means, j), take(sigmas, j)), 1), { obs: data.x })
+      sample('y', categorical({ probs: take(onehot, j) }), { obs: data.y })
+    })
+  }
+  return generatingProgram(program, { classes: model.nClasses })
+}
+
 /** The exact log density and posterior of a mixture class model, with `logProb(x)` the marginal when y is absent. */
 export function mixtureTruth(model: MixtureModel): {
   readonly logProb: NonNullable<Truth['logProb']>
   readonly posterior: NonNullable<Truth['posterior']>
+  readonly program?: GeneratingProgram
 } {
   const joint = classLogJoint(model)
+  const program = mixtureProgram(model)
   return {
+    ...(program === undefined ? {} : { program }),
     logProb: (x, y) => {
       const j = joint(x)
       if (y === undefined) return logsumexp(j, 1)
