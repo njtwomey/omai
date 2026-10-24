@@ -89,3 +89,26 @@ describe('architectures', () => {
     expect(total(architecture(t, 'params'))).toBe(`${(Number(tParams) / 1e3).toPrecision(3)}k parameters`)
   })
 })
+
+describe('traversals', () => {
+  it('orders searches and numbers visits frame by frame', async () => {
+    const { searchOrder, traversalFrames } = await import('./overlays.ts')
+    const s = structure(
+      'tree',
+      ['r', 'a', 'b', 'c'].map((id) => ({ id, label: id, role: 'internal' as const })),
+      [
+        { from: 'r', to: 'a' },
+        { from: 'r', to: 'b' },
+        { from: 'a', to: 'c' },
+      ],
+    )
+    expect(searchOrder(s, 'r', 'bfs')).toEqual(['r', 'a', 'b', 'c'])
+    expect(searchOrder(s, 'r', 'dfs')).toEqual(['r', 'a', 'c', 'b'])
+    const frames = traversalFrames(s, ['r', 'a', 'c'])
+    expect(frames[2]).toEqual({
+      active: ['c'],
+      edges: [{ from: 'a', to: 'c' }],
+      badges: { r: { order: 1 }, a: { order: 2 }, c: { order: 3 } },
+    })
+  })
+})
