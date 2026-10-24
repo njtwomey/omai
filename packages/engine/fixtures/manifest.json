@@ -506,6 +506,14 @@
       "cases": 2
     },
     {
+      "fixture": "pgm/models/influence.json",
+      "source": "oracle/cases/pgm/models/influence.py",
+      "reference": {
+        "pyagrum": "3.3.0"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "pgm/models/linear_gaussian.json",
       "source": "oracle/cases/pgm/models/linear_gaussian.py",
       "reference": {
