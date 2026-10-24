@@ -4,14 +4,14 @@ import { type Docs, symbolPath } from './data.ts'
 
 /** Inline marks of a doc comment: `code`, {@link name} and **strong**. */
 function inline(text: string, docs: Docs, near: string): ReactNode[] {
-  const parts = text.split(/(`[^`]+`|\{@link\s+[^}]+\}|\*\*[^*]+\*\*)/)
+  const parts = text.split(/(`[^`]+`|\{@link\s+[^}]+\}|\*\*[^*]+\*\*)/).filter((part) => part !== '')
   let offset = 0
   return parts.map((part) => {
     const i = `${offset}`
     offset += part.length
     if (part.startsWith('`'))
       return (
-        <code key={i} className="rounded bg-neutral-100 px-1 py-0.5 font-mono text-[0.85em] dark:bg-neutral-800">
+        <code key={i} className="rounded bg-surface px-1 py-0.5 font-mono text-[0.85em]">
           {part.slice(1, -1)}
         </code>
       )
@@ -30,7 +30,7 @@ function inline(text: string, docs: Docs, near: string): ReactNode[] {
         <Link
           key={i}
           to={symbolPath(s.file.path, s.name)}
-          className="font-mono text-[0.85em] text-sky-700 hover:underline dark:text-sky-400"
+          className="font-mono text-[0.85em] text-accent hover:underline"
         >
           {text}
         </Link>
@@ -85,7 +85,7 @@ export function DocText(props: {
     const b = all[i] as Block
     if (b.kind === 'code')
       out.push(
-        <pre key={b.at} className="overflow-x-auto rounded bg-neutral-100 p-3 font-mono text-xs dark:bg-neutral-900">
+        <pre key={b.at} className="overflow-x-auto rounded bg-surface p-3 font-mono text-xs">
           {b.text}
         </pre>,
       )

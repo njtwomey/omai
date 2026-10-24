@@ -11,22 +11,27 @@ function count(docs: Docs, path: string): number {
 }
 
 /** A folder of the source tree: its summary, then its subfolders and its files, as on disk. */
-export function FolderPage(props: { readonly docs: Docs; readonly folder: Folder }): ReactNode {
+export function FolderPage(props: {
+  readonly docs: Docs
+  readonly folder: Folder
+  readonly nav?: ReactNode
+}): ReactNode {
   const { docs, folder } = props
   const pkg = docs.packages[0]
   return (
     <div className="space-y-6">
       <header>
-        <Crumbs path={folder.path} />
+        <div className="flex items-start justify-between gap-4">
+          <Crumbs path={folder.path} />
+          {props.nav}
+        </div>
         <h1 className="font-mono text-2xl font-semibold">
           {folder.path === '' ? 'whitebox-engine' : `${folder.path}/`}
         </h1>
-        {folder.path === '' && pkg !== undefined ? (
-          <p className="mt-2 text-neutral-600 dark:text-neutral-400">{pkg.description}</p>
-        ) : null}
-        {folder.summary === '' ? null : <p className="mt-2 text-neutral-600 dark:text-neutral-400">{folder.summary}</p>}
+        {folder.path === '' && pkg !== undefined ? <p className="mt-2 text-fg-secondary">{pkg.description}</p> : null}
+        {folder.summary === '' ? null : <p className="mt-2 text-fg-secondary">{folder.summary}</p>}
         {folder.module === undefined ? null : (
-          <p className="mt-1 font-mono text-xs text-neutral-500">
+          <p className="mt-1 font-mono text-xs text-muted">
             import {'{ … }'} from '{folder.module}'
           </p>
         )}
@@ -38,14 +43,12 @@ export function FolderPage(props: { readonly docs: Docs; readonly folder: Folder
             {folder.folders.map((p) => {
               const sub = docs.folder(p)
               return (
-                <li key={p} className="rounded border border-neutral-200 p-3 dark:border-neutral-800">
-                  <Link to={docsPath(p)} className="font-mono font-medium text-sky-700 dark:text-sky-400">
+                <li key={p} className="rounded border border-line p-3">
+                  <Link to={docsPath(p)} className="font-mono font-medium text-accent">
                     {baseName(p)}/
                   </Link>
-                  <span className="ml-2 text-xs text-neutral-500">{count(docs, p)} files</span>
-                  {sub?.summary ? (
-                    <p className="mt-1 line-clamp-3 text-sm text-neutral-600 dark:text-neutral-400">{sub.summary}</p>
-                  ) : null}
+                  <span className="ml-2 text-xs text-muted">{count(docs, p)} files</span>
+                  {sub?.summary ? <p className="mt-1 line-clamp-3 text-sm text-fg-secondary">{sub.summary}</p> : null}
                 </li>
               )
             })}
@@ -57,13 +60,13 @@ export function FolderPage(props: { readonly docs: Docs; readonly folder: Folder
           <h2 className="mb-2 text-lg font-semibold">Files</h2>
           <ul className="grid gap-2 sm:grid-cols-2">
             {folder.files.map((f) => (
-              <li key={f.path} className="rounded border border-neutral-200 p-3 dark:border-neutral-800">
-                <Link to={docsPath(f.path)} className="font-mono font-medium text-sky-700 dark:text-sky-400">
+              <li key={f.path} className="rounded border border-line p-3">
+                <Link to={docsPath(f.path)} className="font-mono font-medium text-accent">
                   {baseName(f.path)}
                 </Link>
-                <span className="ml-2 text-xs text-neutral-500">{f.symbols.length} exports</span>
+                <span className="ml-2 text-xs text-muted">{f.symbols.length} exports</span>
                 {f.summary === '' ? null : (
-                  <p className="mt-1 line-clamp-2 text-sm text-neutral-600 dark:text-neutral-400">
+                  <p className="mt-1 line-clamp-2 text-sm text-fg-secondary">
                     <DocInline text={f.summary} docs={docs} near={f.module} />
                   </p>
                 )}
@@ -71,10 +74,7 @@ export function FolderPage(props: { readonly docs: Docs; readonly folder: Folder
                   {f.symbols.map((s, i) => (
                     <span key={s.name}>
                       {i > 0 ? ' · ' : ''}
-                      <Link
-                        to={symbolPath(f.path, s.name)}
-                        className="text-neutral-600 hover:underline dark:text-neutral-400"
-                      >
+                      <Link to={symbolPath(f.path, s.name)} className="text-fg-secondary hover:underline">
                         {s.name}
                       </Link>
                     </span>

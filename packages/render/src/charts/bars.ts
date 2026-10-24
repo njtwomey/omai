@@ -285,25 +285,25 @@ export function histogram(values: TensorLike | readonly number[], options: Histo
 }
 
 /**
- * A Pareto chart: categories sorted by value as bars, with the cumulative share as a line on a secondary axis.
+ * Pareto layers: categories sorted by value as bars, and the cumulative share as a line on the secondary axis (give
+ * the plot `y2: { limits: [0, 1], format: 'percent' }`).
  *
  * @param categories - The category names.
  * @param values - Their values (non-negative).
- * @param options - Plot options.
- * @returns The ECharts option.
+ * @param options - Colour mode.
+ * @returns The bar layer and the cumulative-share layer.
  * @example
  * ```ts
- * import { paretoChart } from 'whitebox-render/charts'
- * const o = paretoChart(['a', 'b', 'c'], [1, 5, 2])
- * o.xAxis[0].data // => ['b', 'c', 'a']
+ * import { pareto } from 'whitebox-render/charts'
+ * pareto(['a', 'b'], [1, 3])[1].series[0].data // => [0.75, 1]
  * ```
  */
-export function paretoChart(
+export function pareto(
   categories: readonly string[],
   values: readonly number[],
-  options: PlotOptions = {},
-): EChartsOption {
-  const mode = modeOf(options)
+  options: { readonly mode?: ColourMode } = {},
+): Layer[] {
+  const mode = options.mode ?? 'light'
   const order = values.map((v, i) => [v, i] as const).sort((a, b) => b[0] - a[0])
   const sorted = order.map(([, i]) => categories[i] ?? String(i))
   const v = order.map(([x]) => x)
@@ -328,7 +328,29 @@ export function paretoChart(
     { y2: [0, 1] },
     { secondary: true, xCategories: sorted },
   )
-  return cartesian([bars(sorted, v, { mode }), line], {
+  return [bars(sorted, v, { mode }), line]
+}
+
+/**
+ * A Pareto chart: categories sorted by value as bars, with the cumulative share as a line on a secondary axis.
+ *
+ * @param categories - The category names.
+ * @param values - Their values (non-negative).
+ * @param options - Plot options.
+ * @returns The ECharts option.
+ * @example
+ * ```ts
+ * import { paretoChart } from 'whitebox-render/charts'
+ * const o = paretoChart(['a', 'b', 'c'], [1, 5, 2])
+ * o.xAxis[0].data // => ['b', 'c', 'a']
+ * ```
+ */
+export function paretoChart(
+  categories: readonly string[],
+  values: readonly number[],
+  options: PlotOptions = {},
+): EChartsOption {
+  return cartesian(pareto(categories, values, { mode: modeOf(options) }), {
     y2: { limits: [0, 1], format: 'percent' },
     tooltip: 'axis',
     ...options,

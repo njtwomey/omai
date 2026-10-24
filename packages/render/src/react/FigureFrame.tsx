@@ -118,7 +118,8 @@ export function exportChartUrl(root: HTMLElement, format: 'png' | 'svg', backgro
 }
 
 /**
- * A fixed-size figure area: content never resizes it. An expand button opens the same content full screen in a modal
+ * A fixed-size figure area: content never resizes it. The figure is the unit: a grid of panels (`subplots`,
+ * `FigureGrid`) goes in one frame, with one expand button and one export for the whole figure, never one per panel. An expand button opens the same content full screen in a modal
  * (Escape or a click outside closes it), and an export menu saves the figure. Content that is a function receives the
  * current size, so a chart can draw at the modal's size; `useFrameSize` gives the same inside the frame.
  *

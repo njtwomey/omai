@@ -1,7 +1,8 @@
-import { type ReactNode, useMemo } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
+import { key, normal } from 'whitebox-engine/random'
 import { histogram, points, subplots } from 'whitebox-render/charts'
 import { figure, withMarginals } from 'whitebox-render/figure'
-import { Chart, FigureFrame, useColourMode } from 'whitebox-render/react'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -12,34 +13,44 @@ export const recipe: Recipe = {
 }
 
 const fig = figure({ width: 520, aspect: 1.1 })
-// A deterministic correlated cloud.
-const n = 300
-const u = Array.from({ length: n }, (_, i) => Math.sqrt(-2 * Math.log((i + 0.5) / n)) * Math.cos(i * 2.39996))
-const v = Array.from({ length: n }, (_, i) => Math.sqrt(-2 * Math.log((i + 0.5) / n)) * Math.sin(i * 2.39996))
-const x = u
-const y = u.map((a, i) => 0.7 * a + 0.5 * (v[i] ?? 0))
+const n = 400
+const z = Array.from(normal(key(3), [2 * n]).data)
 
 export default function Marginals(): ReactNode {
   const mode = useColourMode()
-  const option = useMemo(
-    () =>
-      subplots(
-        withMarginals({ ratio: 0.22 }),
-        {
-          main: {
-            layers: [points([{ x, y, size: 5, opacity: 0.6 }], { mode })],
-            options: { x: { label: 'x' }, y: { label: 'y' } },
-          },
-          top: { layers: [histogram(x, { bins: 24, mode })], options: { y: { show: false } } },
-          right: { layers: [histogram(y, { bins: 24, horizontal: true, mode })], options: { x: { show: false } } },
+  const [rho, setRho] = useState(0.7)
+  const [bins, setBins] = useState(24)
+  const option = useMemo(() => {
+    const x = z.slice(0, n)
+    const y = x.map((a, i) => rho * a + Math.sqrt(1 - rho * rho) * (z[n + i] ?? 0))
+    return subplots(
+      withMarginals({ ratio: 0.22 }),
+      {
+        main: {
+          layers: [points([{ x, y, size: 5, opacity: 0.6, outline: false }], { mode })],
+          options: { x: { label: 'x', limits: [-4, 4] }, y: { label: 'y', limits: [-4, 4] } },
         },
-        { mode, figure: fig },
-      ),
-    [mode],
-  )
+        top: {
+          layers: [histogram(x, { bins, range: [-4, 4], mode })],
+          options: { y: { show: false, splitLine: false } },
+        },
+        right: {
+          layers: [histogram(y, { bins, range: [-4, 4], horizontal: true, mode })],
+          options: { x: { show: false, splitLine: false } },
+        },
+      },
+      { mode, figure: fig },
+    )
+  }, [mode, rho, bins])
   return (
-    <FigureFrame figure={fig} filename="marginals">
-      <Chart option={option} />
-    </FigureFrame>
+    <div className="flex flex-col gap-3">
+      <ControlPanel columns={2}>
+        <NumberField label="correlation ρ" value={rho} onChange={setRho} min={-0.99} max={0.99} />
+        <NumberField label="bins" value={bins} onChange={setBins} min={4} max={60} integer />
+      </ControlPanel>
+      <FigureFrame figure={fig} filename="marginals">
+        <Chart option={option} />
+      </FigureFrame>
+    </div>
   )
 }

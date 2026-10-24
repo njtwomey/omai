@@ -1348,6 +1348,15 @@
       "cases": 6
     },
     {
+      "fixture": "methods/covariance/graphical_lasso.json",
+      "source": "oracle/cases/methods/covariance/graphical_lasso.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/decomposition/cross_decomposition.json",
       "source": "oracle/cases/methods/decomposition/cross_decomposition.py",
       "reference": {
@@ -1393,6 +1402,14 @@
       "cases": 6
     },
     {
+      "fixture": "methods/ensemble/gradient_boosting.json",
+      "source": "oracle/cases/methods/ensemble/gradient_boosting.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/linear/bayesian.json",
       "source": "oracle/cases/methods/linear/bayesian.py",
       "reference": {
@@ -1434,6 +1451,51 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 4
+    },
+    {
+      "fixture": "methods/manifold/isomap.json",
+      "source": "oracle/cases/methods/manifold/isomap.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "methods/manifold/lle.json",
+      "source": "oracle/cases/methods/manifold/lle.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "methods/manifold/mds.json",
+      "source": "oracle/cases/methods/manifold/mds.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "methods/manifold/quality.json",
+      "source": "oracle/cases/methods/manifold/quality.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "methods/manifold/spectral.json",
+      "source": "oracle/cases/methods/manifold/spectral.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 1
     },
     {
       "fixture": "methods/mixture/gaussian.json",
