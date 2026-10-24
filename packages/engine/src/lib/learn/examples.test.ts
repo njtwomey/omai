@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import * as autodiff from '../autodiff/index.ts'
 import * as base from '../base/index.ts'
 import * as data from '../data/index.ts'
+import * as exposition from '../exposition/index.ts'
 import * as metrics from '../metrics/index.ts'
 import * as random from '../random/index.ts'
 import * as space from '../space/index.ts'
@@ -17,6 +18,7 @@ const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'whitebox-engine/autodiff': autodiff,
   'whitebox-engine/base': base,
   'whitebox-engine/data': data,
+  'whitebox-engine/exposition': exposition,
   'whitebox-engine/metrics': metrics,
   'whitebox-engine/random': random,
   'whitebox-engine/space': space,
