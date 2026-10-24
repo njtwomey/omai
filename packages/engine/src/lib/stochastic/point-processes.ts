@@ -1,8 +1,8 @@
 import { grad, hessian } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
-import { fsolve } from '../numerics/roots/index.ts'
-import { exponential, foldIn, type Key, normal, poisson, uniform } from '../random/index.ts'
+import { brentq, fsolve } from '../numerics/roots/index.ts'
+import { exponential, foldIn, type Key, poisson, uniform } from '../random/index.ts'
 import {
   add,
   asFloat,
@@ -19,7 +19,6 @@ import {
   sliceAxis,
   sub,
   sum,
-  type Tensor,
   type TensorLike,
   type Value,
   where,
@@ -377,17 +376,131 @@ export interface HawkesFit {
   readonly alpha: number
   readonly beta: number
   readonly logLikelihood: number
+  /** EM iterations, then Newton iterations. */
   readonly iterations: number
   readonly converged: boolean
 }
 
+/** The state of {@link hawkesEmAlgorithm}: the parameters and the log-likelihood they reach. */
+export interface HawkesEmState {
+  readonly mu: number
+  readonly alpha: number
+  readonly beta: number
+  readonly logLikelihood: number
+  /** The largest relative change of a parameter in the last step. */
+  readonly change: number
+}
+
 /**
- * Maximum-likelihood estimation of an exponential Hawkes process: Newton's method (numerics `fsolve` with the Hessian
- * from autodiff) on the score equations in log-parameters, so the estimates stay positive.
+ * The EM algorithm for an exponential Hawkes process (Veen and Schoenberg 2008) as a traced {@link Algorithm}: the
+ * E-step assigns each event to the background or to an earlier event in proportion to their contributions to the
+ * intensity, the M-step re-estimates mu = (expected immigrants) / T, the branching ratio alpha / beta = (expected
+ * offspring) / sum_j (1 - e^{-beta (T - t_j)}), and beta by maximising the expected complete-data log-likelihood
+ * (a one-dimensional root by Brent's method), so the likelihood never decreases.
  *
  * @param events - The event times in [0, T].
  * @param horizon - T.
- * @param options - The starting point (default: mu = n / (2T), alpha = beta / 2, beta = n / T) and the iteration cap.
+ * @param init - The starting parameters.
+ * @param options - The tolerance on the largest relative change of a parameter (default 1e-10).
+ * @returns The algorithm.
+ * @concept hawkes-process
+ * @reference A. Veen and F. P. Schoenberg, Estimation of space-time branching process models in seismology using an
+ *   EM-type algorithm, JASA 103 (2008).
+ * @example
+ * ```ts
+ * import { hawkesEmAlgorithm } from 'whitebox-engine/stochastic'
+ * hawkesEmAlgorithm([1, 2, 2.5], 3, { mu: 1, alpha: 0.5, beta: 1 }).name // => 'hawkes-em'
+ * ```
+ */
+export function hawkesEmAlgorithm(
+  events: TensorLike,
+  horizon: number,
+  init: { readonly mu: number; readonly alpha: number; readonly beta: number },
+  options: { readonly tol?: number } = {},
+): Algorithm<HawkesEmState> {
+  const t = primalNumbers(events)
+  const n = t.length
+  hawkesNumbers(init)
+  const tol = options.tol ?? 1e-10
+  // The log-likelihood in O(n) by the recursion A_i = e^{-beta (t_i - t_{i-1})} (A_{i-1} + 1).
+  const ll = (mu: number, alpha: number, beta: number): number => {
+    let a = 0
+    let total = 0
+    for (let i = 0; i < n; i++) {
+      if (i > 0) a = Math.exp(-beta * ((t[i] ?? 0) - (t[i - 1] ?? 0))) * (a + 1)
+      total += Math.log(mu + alpha * a) - (alpha / beta) * (1 - Math.exp(-beta * (horizon - (t[i] ?? 0))))
+    }
+    return total - mu * horizon
+  }
+  return {
+    name: 'hawkes-em',
+    config: { events: n, horizon },
+    schema: channels({
+      metrics: { logLikelihood: { description: 'log-likelihood', direction: 'higher' } },
+    }),
+    init: () => ({ ...init, logLikelihood: ll(init.mu, init.alpha, init.beta), change: Number.POSITIVE_INFINITY }),
+    step: (s) => {
+      // E-step: the expected numbers of immigrants and offspring, and the offspring's expected total delay
+      // (sums over earlier events by the recursions A_i = e^{-beta d} (A_{i-1} + 1), B_i = e^{-beta d} (B_{i-1} + d
+      // (A_{i-1} + 1)) for sum_j e^{-beta lag} and sum_j lag e^{-beta lag}, with d = t_i - t_{i-1})
+      let immigrants = 0
+      let offspring = 0
+      let delays = 0
+      let a = 0
+      let b = 0
+      for (let i = 0; i < n; i++) {
+        if (i > 0) {
+          const d = (t[i] ?? 0) - (t[i - 1] ?? 0)
+          const decay = Math.exp(-s.beta * d)
+          b = decay * (b + d * (a + 1))
+          a = decay * (a + 1)
+        }
+        const lambda = s.mu + s.alpha * a
+        immigrants += s.mu / lambda
+        offspring += (s.alpha * a) / lambda
+        delays += (s.alpha * b) / lambda
+      }
+      // M-step: with alpha = r beta, Q(r, beta) = offspring (log r + log beta) - beta delays - r sum_j (1 - e^{-beta
+      // (T - t_j)}); profile r out and solve dQ/dbeta = 0 for beta by Brent's method.
+      const exposure = (b: number): number => t.reduce((acc, tj) => acc + 1 - Math.exp(-b * (horizon - tj)), 0)
+      const slope = (b: number): number => {
+        const r = offspring / Math.max(exposure(b), 1e-300)
+        const tail = t.reduce((acc, tj) => acc + (horizon - tj) * Math.exp(-b * (horizon - tj)), 0)
+        return offspring / b - delays - r * tail
+      }
+      let beta = s.beta
+      if (offspring > 1e-12 && delays > 0) {
+        let hi = Math.max(1, (2 * offspring) / delays)
+        for (let k = 0; k < 60 && slope(hi) > 0; k++) hi *= 2
+        let lo = Math.min(1e-8, hi / 2)
+        for (let k = 0; k < 60 && slope(lo) < 0; k++) lo /= 2
+        if (slope(lo) > 0 && slope(hi) < 0) beta = brentq(slope, lo, hi, { xtol: 1e-14 }).root
+      }
+      const mu = Math.max(immigrants / horizon, 1e-300)
+      const alpha = Math.max((beta * offspring) / Math.max(exposure(beta), 1e-300), 1e-300)
+      const value = ll(mu, alpha, beta)
+      const change = Math.max(
+        Math.abs(mu - s.mu) / s.mu,
+        Math.abs(alpha - s.alpha) / s.alpha,
+        Math.abs(beta - s.beta) / s.beta,
+      )
+      return { mu, alpha, beta, logLikelihood: value, change }
+    },
+    done: (s) => (s.change <= tol ? 'converged' : undefined),
+    observe: (s) => ({ metrics: { logLikelihood: s.logLikelihood } }),
+  }
+}
+
+/**
+ * Maximum-likelihood estimation of an exponential Hawkes process: EM ({@link hawkesEmAlgorithm}, O(n) per iteration)
+ * to the maximum, then, for up to `polishBelow` events, Newton's method on the score equations in log-parameters
+ * (numerics `fsolve`, with the Hessian from autodiff of the dense O(n^2) likelihood) to polish it.
+ *
+ * @param events - The event times in [0, T].
+ * @param horizon - T.
+ * @param options - The starting point (default: mu = n / (2T), alpha = beta / 2, beta = n / T), the EM and Newton
+ *   iteration caps (default 5000 and 50), the event count below which Newton polishes (default 500) and tracing of the
+ *   EM run.
  * @returns The estimates and the maximised log-likelihood.
  * @concept hawkes-process
  * @example
@@ -401,13 +514,22 @@ export interface HawkesFit {
 export function fitHawkes(
   events: TensorLike,
   horizon: number,
-  options: { readonly init?: { mu: number; alpha: number; beta: number }; readonly maxIter?: number } = {},
+  options: {
+    readonly init?: { mu: number; alpha: number; beta: number }
+    readonly maxIter?: number
+    readonly newtonIter?: number
+    readonly polishBelow?: number
+  } & TraceOptions = {},
 ): HawkesFit {
   const ev = asFloat(asTensor(events))
   const n = ev.shape[0] ?? 0
   if (n < 3) throw new WhiteboxError('value', 'fitHawkes: needs at least three events')
   const rate = n / horizon
   const init = options.init ?? { mu: rate / 2, alpha: rate / 2, beta: rate }
+  const em = runAlgorithm(hawkesEmAlgorithm(ev, horizon, init), {
+    ...traceOf(options),
+    maxSteps: options.maxIter ?? 5000,
+  })
   const nll = (logp: Value): Value => {
     const p = exp(logp)
     return neg(
@@ -418,15 +540,38 @@ export function fitHawkes(
       ),
     )
   }
-  const score = (logp: Value): Value => grad(nll)(logp)
-  const res = fsolve(score, [Math.log(init.mu), Math.log(init.alpha), Math.log(init.beta)], {
-    jacobian: (x) => hessian(nll)(x),
-    maxIterations: options.maxIter ?? 100,
-    ftol: 1e-10,
-  })
-  const [mu = 0, alpha = 0, beta = 0] = primalNumbers(res.x).map(Math.exp)
-  const ll = primalNumbers(hawkesLogLikelihood({ mu, alpha, beta }, ev, horizon))[0] ?? Number.NaN
-  return { mu, alpha, beta, logLikelihood: ll, iterations: res.iterations, converged: res.converged }
+  const emOnly = { mu: em.state.mu, alpha: em.state.alpha, beta: em.state.beta }
+  if (n > (options.polishBelow ?? 500)) {
+    return {
+      ...emOnly,
+      logLikelihood: em.state.logLikelihood,
+      iterations: em.steps,
+      converged: em.status === 'converged',
+    }
+  }
+  const res = fsolve(
+    (logp: Value) => grad(nll)(logp),
+    [Math.log(em.state.mu), Math.log(em.state.alpha), Math.log(em.state.beta)],
+    {
+      jacobian: (x) => hessian(nll)(x),
+      maxIterations: options.newtonIter ?? 50,
+      ftol: 1e-10,
+    },
+  )
+  const polished = primalNumbers(res.x).map(Math.exp)
+  const [pm = 0, pa = 0, pb = 0] = polished
+  const llNewton = primalNumbers(hawkesLogLikelihood({ mu: pm, alpha: pa, beta: pb }, ev, horizon))[0] ?? Number.NaN
+  // keep the Newton point only when it does not lose likelihood (it can wander to a saddle from a poor start)
+  const useNewton = Number.isFinite(llNewton) && llNewton >= em.state.logLikelihood - 1e-9
+  const [mu, alpha, beta] = useNewton ? [pm, pa, pb] : [emOnly.mu, emOnly.alpha, emOnly.beta]
+  return {
+    mu,
+    alpha,
+    beta,
+    logLikelihood: useNewton ? llNewton : em.state.logLikelihood,
+    iterations: em.steps + res.iterations,
+    converged: useNewton ? res.converged : em.status === 'converged',
+  }
 }
 
 /**
@@ -525,309 +670,4 @@ export function markedPoissonProcess(
   const times = poissonProcess(foldIn(key, 0), rate, horizon, options)
   const m = times.length === 0 ? [] : primalNumbers(marks.sample(foldIn(key, 1), [times.length]))
   return { times, marks: Float64Array.from(m) }
-}
-
-/** A rectangular observation window. */
-export interface Window {
-  readonly xmin: number
-  readonly xmax: number
-  readonly ymin: number
-  readonly ymax: number
-}
-
-const UNIT: Window = { xmin: 0, xmax: 1, ymin: 0, ymax: 1 }
-
-function areaOf(w: Window): number {
-  const a = (w.xmax - w.xmin) * (w.ymax - w.ymin)
-  if (!(a > 0)) throw new WhiteboxError('value', 'window: needs xmax > xmin and ymax > ymin')
-  return a
-}
-
-function uniformPoints(key: Key, n: number, w: Window): number[] {
-  const u = uniform(key, [n, 2]).data
-  const out: number[] = []
-  for (let i = 0; i < n; i++) {
-    out.push(w.xmin + (u[2 * i] ?? 0) * (w.xmax - w.xmin), w.ymin + (u[2 * i + 1] ?? 0) * (w.ymax - w.ymin))
-  }
-  return out
-}
-
-function asPoints(flat: readonly number[]): Tensor<'float64'> {
-  return fromStorage(Float64Array.from(flat), [flat.length / 2, 2], 'float64')
-}
-
-/**
- * A spatial Poisson process on a rectangle: a Poisson(lambda |W|) number of uniform points, thinned by
- * lambda(x, y) / bound for an inhomogeneous intensity.
- *
- * @param key - The key.
- * @param intensity - A constant intensity, or a function lambda(x, y).
- * @param window - The rectangle (default the unit square).
- * @param maxIntensity - A bound on an intensity function (required for one).
- * @returns The points `[n, 2]`.
- * @throws WhiteboxError with code `value` when a function exceeds its bound.
- * @concept spatial-point-process
- * @example
- * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { spatialPoisson } from 'whitebox-engine/stochastic'
- * spatialPoisson(key(0), 50).shape[1] // => 2
- * ```
- */
-export function spatialPoisson(
-  key: Key,
-  intensity: number | ((x: number, y: number) => number),
-  window: Window = UNIT,
-  maxIntensity?: number,
-): Tensor<'float64'> {
-  const area = areaOf(window)
-  const bound = typeof intensity === 'number' ? intensity : maxIntensity
-  if (bound === undefined || !(bound >= 0)) {
-    throw new WhiteboxError('value', 'spatialPoisson: a non-negative intensity (or bound for a function) is needed')
-  }
-  const n = poisson(foldIn(key, 0), bound * area, [1]).data[0] ?? 0
-  const pts = uniformPoints(foldIn(key, 1), n, window)
-  if (typeof intensity === 'number') return asPoints(pts)
-  const u = uniform(foldIn(key, 2), [n]).data
-  const kept: number[] = []
-  for (let i = 0; i < n; i++) {
-    const x = pts[2 * i] ?? 0
-    const y = pts[2 * i + 1] ?? 0
-    const lam = intensity(x, y)
-    if (!(lam >= 0) || lam > bound * (1 + 1e-12)) throw new WhiteboxError('value', 'spatialPoisson: bound exceeded')
-    if ((u[i] ?? 1) * bound < lam) kept.push(x, y)
-  }
-  return asPoints(kept)
-}
-
-/** Parameters of the Neyman-Scott cluster processes. */
-export interface ClusterParams {
-  /** The intensity kappa of the parent points. */
-  readonly parentRate: number
-  /** The mean number of children per parent. */
-  readonly meanChildren: number
-}
-
-function clusterProcess(
-  key: Key,
-  params: ClusterParams,
-  window: Window,
-  margin: number,
-  offset: (key: Key, n: number) => number[],
-): Tensor<'float64'> {
-  areaOf(window)
-  if (!(params.parentRate >= 0 && params.meanChildren >= 0)) throw new WhiteboxError('value', 'cluster: bad rates')
-  // parents in a window enlarged by the margin, so clusters straddling the edge are not lost
-  const big = {
-    xmin: window.xmin - margin,
-    xmax: window.xmax + margin,
-    ymin: window.ymin - margin,
-    ymax: window.ymax + margin,
-  }
-  const parents = primalNumbers(spatialPoisson(foldIn(key, 0), params.parentRate, big))
-  const kept: number[] = []
-  for (let p = 0; p < parents.length / 2; p++) {
-    const kids = poisson(foldIn(key, 1 + 2 * p), params.meanChildren, [1]).data[0] ?? 0
-    const d = offset(foldIn(key, 2 + 2 * p), kids)
-    for (let c = 0; c < kids; c++) {
-      const x = (parents[2 * p] ?? 0) + (d[2 * c] ?? 0)
-      const y = (parents[2 * p + 1] ?? 0) + (d[2 * c + 1] ?? 0)
-      if (x >= window.xmin && x <= window.xmax && y >= window.ymin && y <= window.ymax) kept.push(x, y)
-    }
-  }
-  return asPoints(kept)
-}
-
-/**
- * The Thomas cluster process: Poisson parents with intensity kappa, each with a Poisson(mu) number of children displaced
- * by N(0, sigma^2 I). Its K function is pi r^2 + (1 - exp(-r^2 / (4 sigma^2))) / kappa ({@link thomasK}).
- *
- * @param key - The key.
- * @param params - Parent intensity, mean children and the displacement scale sigma.
- * @param window - The rectangle (default the unit square).
- * @returns The points `[n, 2]`.
- * @concept cluster-process
- * @example
- * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { thomasProcess } from 'whitebox-engine/stochastic'
- * thomasProcess(key(0), { parentRate: 10, meanChildren: 5, sigma: 0.02 }).shape[1] // => 2
- * ```
- */
-export function thomasProcess(
-  key: Key,
-  params: ClusterParams & { readonly sigma: number },
-  window: Window = UNIT,
-): Tensor<'float64'> {
-  if (!(params.sigma > 0)) throw new WhiteboxError('value', 'thomasProcess: sigma must be positive')
-  return clusterProcess(key, params, window, 4 * params.sigma, (k, n) =>
-    Array.from(normal(k, [n, 2]).data, (z) => z * params.sigma),
-  )
-}
-
-/**
- * The Matern cluster process: Poisson parents with intensity kappa, each with a Poisson(mu) number of children uniform
- * in the disc of radius R around it.
- *
- * @param key - The key.
- * @param params - Parent intensity, mean children and the radius R.
- * @param window - The rectangle (default the unit square).
- * @returns The points `[n, 2]`.
- * @concept cluster-process
- * @example
- * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { maternClusterProcess } from 'whitebox-engine/stochastic'
- * maternClusterProcess(key(0), { parentRate: 10, meanChildren: 5, radius: 0.05 }).shape[1] // => 2
- * ```
- */
-export function maternClusterProcess(
-  key: Key,
-  params: ClusterParams & { readonly radius: number },
-  window: Window = UNIT,
-): Tensor<'float64'> {
-  if (!(params.radius > 0)) throw new WhiteboxError('value', 'maternClusterProcess: the radius must be positive')
-  return clusterProcess(key, params, window, params.radius, (k, n) => {
-    const u = uniform(k, [n, 2]).data
-    const out: number[] = []
-    for (let i = 0; i < n; i++) {
-      const r = params.radius * Math.sqrt(u[2 * i] ?? 0)
-      const a = 2 * Math.PI * (u[2 * i + 1] ?? 0)
-      out.push(r * Math.cos(a), r * Math.sin(a))
-    }
-    return out
-  })
-}
-
-/**
- * The K function of the Thomas process, pi r^2 + (1 - exp(-r^2 / (4 sigma^2))) / kappa (Poisson's pi r^2 plus the
- * clustering excess).
- *
- * @param r - Distances.
- * @param params - Parent intensity kappa and displacement scale sigma.
- * @returns K(r).
- * @concept ripleys-k
- * @example
- * ```ts
- * import { thomasK } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
- * toArray(thomasK([0], { parentRate: 10, sigma: 0.1 })) // => [0]
- * ```
- */
-export function thomasK(r: TensorLike, params: { readonly parentRate: number; readonly sigma: number }): Value {
-  const [rr] = promoteFloat(r) as [Value]
-  const r2 = mul(rr, rr)
-  return add(mul(r2, Math.PI), mul(sub(1, exp(mul(r2, -1 / (4 * params.sigma ** 2)))), 1 / params.parentRate))
-}
-
-/** The edge corrections of {@link ripleysK} (astropy.stats.RipleysKEstimator's modes). */
-export type RipleyCorrection = 'none' | 'translation' | 'ohser' | 'var-width' | 'ripley'
-
-/**
- * Ripley's K function of a planar point pattern in a rectangle, K(r) = |W| / (n (n - 1)) sum_{i != j} w_ij 1(d_ij < r),
- * with the edge corrections of astropy.stats.RipleysKEstimator: none, translation (Stoyan's 1 / |W cap (W + d_ij)|
- * weights), Ohser's isotropised set covariance, variable width (only points farther than r from the boundary) and
- * Ripley's isotropic correction. Under complete spatial randomness K(r) = pi r^2; clustering raises it.
- *
- * @param points - The points `[n, 2]` inside the window.
- * @param radii - The distances r.
- * @param options - The window (default the unit square) and the correction (default `none`).
- * @returns K at each radius.
- * @concept ripleys-k
- * @reference B. D. Ripley, The second-order analysis of stationary point processes, J. Appl. Prob. 13 (1976).
- * @example
- * ```ts
- * import { ripleysK } from 'whitebox-engine/stochastic'
- * Array.from(ripleysK([[0.1, 0.1], [0.2, 0.1], [0.9, 0.9]], [0.05, 0.2])) // => [0, 0.3333333333333333]
- * ```
- */
-export function ripleysK(
-  points: TensorLike,
-  radii: ArrayLike<number>,
-  options: { readonly window?: Window; readonly correction?: RipleyCorrection } = {},
-): Float64Array {
-  const w = options.window ?? UNIT
-  const area = areaOf(w)
-  const p = primalNumbers(points)
-  const n = p.length / 2
-  if (n < 2) throw new WhiteboxError('value', 'ripleysK: needs at least two points')
-  const width = w.xmax - w.xmin
-  const height = w.ymax - w.ymin
-  const out = new Float64Array(radii.length)
-  const mode = options.correction ?? 'none'
-  if (mode === 'var-width') {
-    for (let r = 0; r < radii.length; r++) {
-      const rad = radii[r] ?? 0
-      let total = 0
-      let interior = 0
-      for (let i = 0; i < n; i++) {
-        const xi = p[2 * i] ?? 0
-        const yi = p[2 * i + 1] ?? 0
-        const edge = Math.min(Math.min(w.xmax - xi, w.ymax - yi), Math.min(xi - w.xmin, yi - w.ymin))
-        if (!(edge > rad)) continue
-        interior += 1
-        for (let j = 0; j < n; j++)
-          if (j !== i && Math.hypot(xi - (p[2 * j] ?? 0), yi - (p[2 * j + 1] ?? 0)) < rad) total += 1
-      }
-      out[r] = (area * (interior === 0 ? total : total / interior)) / n
-    }
-    return out
-  }
-  const ratio = Math.max(height / width, width / height)
-  for (let i = 0; i < n - 1; i++) {
-    const xi = p[2 * i] ?? 0
-    const yi = p[2 * i + 1] ?? 0
-    const hor = Math.min(w.xmax - xi, xi - w.xmin)
-    const ver = Math.min(w.ymax - yi, yi - w.ymin)
-    for (let j = i + 1; j < n; j++) {
-      const dx = Math.abs(xi - (p[2 * j] ?? 0))
-      const dy = Math.abs(yi - (p[2 * j + 1] ?? 0))
-      const d = Math.hypot(dx, dy)
-      let weight = 1
-      if (mode === 'translation') weight = 1 / ((width - dx) * (height - dy))
-      else if (mode === 'ohser') {
-        const x = d / Math.sqrt(area / ratio)
-        const u = x > 1 ? Math.sqrt(x * x - 1) : 0
-        const v = x > ratio && x < Math.sqrt(ratio * ratio + 1) ? Math.sqrt(x * x - ratio * ratio) : 0
-        let c = 0
-        if (x >= 0 && x <= 1) c = Math.PI - 2 * x * (1 + 1 / ratio) + (x * x) / ratio
-        else if (x > 1 && x <= ratio) c = 2 * Math.asin(1 / x) - 1 / ratio - 2 * (x - u)
-        else if (x > ratio && x < Math.sqrt(ratio * ratio + 1)) {
-          c = 2 * Math.asin((ratio - u * v) / (x * x)) + 2 * u + (2 * v) / ratio - ratio - (1 + x * x) / ratio
-        }
-        weight = 1 / ((area / Math.PI) * c)
-      } else if (mode === 'ripley') {
-        const inside = d <= Math.hypot(hor, ver)
-        const w1 = 1 - (Math.acos(Math.min(ver, d) / d) + Math.acos(Math.min(hor, d) / d)) / Math.PI
-        const w2 = 0.75 - (0.5 * (Math.acos(ver / d) + Math.acos(hor / d))) / Math.PI
-        weight = 1 / (inside ? w1 : w2)
-      }
-      for (let r = 0; r < radii.length; r++) if (d < (radii[r] ?? 0)) out[r] = (out[r] ?? 0) + weight
-    }
-  }
-  const scale = mode === 'none' || mode === 'ripley' ? (2 * area) / (n * (n - 1)) : (2 * area * area) / (n * (n - 1))
-  for (let r = 0; r < radii.length; r++) out[r] = (out[r] ?? 0) * scale
-  return out
-}
-
-/**
- * Besag's L function L(r) = sqrt(K(r) / pi), which is r under complete spatial randomness.
- *
- * @param points - The points `[n, 2]`.
- * @param radii - The distances.
- * @param options - Window and edge correction, as for {@link ripleysK}.
- * @returns L at each radius.
- * @concept ripleys-k
- * @example
- * ```ts
- * import { ripleysL } from 'whitebox-engine/stochastic'
- * Array.from(ripleysL([[0.1, 0.1], [0.2, 0.1], [0.9, 0.9]], [0.05])) // => [0]
- * ```
- */
-export function ripleysL(
-  points: TensorLike,
-  radii: ArrayLike<number>,
-  options: { readonly window?: Window; readonly correction?: RipleyCorrection } = {},
-): Float64Array {
-  return Float64Array.from(ripleysK(points, radii, options), (k) => Math.sqrt(k / Math.PI))
 }

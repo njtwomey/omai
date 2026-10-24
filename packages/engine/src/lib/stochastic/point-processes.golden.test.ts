@@ -1,29 +1,19 @@
 import { goldenSuite } from '../../testing/suite.ts'
 import { gamma } from '../dists/index.ts'
 import { tensor, toFlat } from '../tensor/index.ts'
-import { fitHawkes, hawkesLogLikelihood, type RipleyCorrection, renewalFunction, ripleysK } from './point-processes.ts'
+import { fitHawkes, hawkesLogLikelihood, renewalFunction } from './point-processes.ts'
 
-goldenSuite('stochastic/point-processes against astropy, scipy and closed forms', 'stochastic/point-processes', {
-  ripley: ([pts, radii], p) =>
-    tensor(
-      Array.from(
-        ripleysK(pts, toFlat(radii), {
-          correction: p['mode'] as RipleyCorrection,
-          window: {
-            xmin: p['xmin'] as number,
-            xmax: p['xmax'] as number,
-            ymin: p['ymin'] as number,
-            ymax: p['ymax'] as number,
-          },
-        }),
-      ),
-    ),
+goldenSuite('stochastic/point-processes against scipy and closed forms', 'stochastic/point-processes', {
   'hawkes-ll': ([events, params], p) => {
     const [mu = 0, alpha = 0, beta = 0] = toFlat(params)
     return hawkesLogLikelihood({ mu, alpha, beta }, events, p['horizon'] as number)
   },
   'hawkes-mle': ([events], p) => {
     const f = fitHawkes(events, p['horizon'] as number)
+    return tensor([f.mu, f.alpha, f.beta])
+  },
+  'hawkes-mle-em': ([events], p) => {
+    const f = fitHawkes(events, p['horizon'] as number, { polishBelow: 0 })
     return tensor([f.mu, f.alpha, f.beta])
   },
   'renewal-gamma': ([t], p) => {

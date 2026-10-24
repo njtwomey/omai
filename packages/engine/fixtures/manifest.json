@@ -2233,11 +2233,10 @@
       "fixture": "stochastic/point-processes.json",
       "source": "oracle/cases/stochastic/point-processes.py",
       "reference": {
-        "astropy": "8.0.2",
         "scipy": "1.18.1",
         "numpy": "2.5.4"
       },
-      "cases": 8
+      "cases": 4
     },
     {
       "fixture": "stochastic/queues.json",
@@ -2275,6 +2274,15 @@
         "numpy": "2.5.4"
       },
       "cases": 4
+    },
+    {
+      "fixture": "stochastic/spatial-processes.json",
+      "source": "oracle/cases/stochastic/spatial-processes.py",
+      "reference": {
+        "astropy": "8.0.2",
+        "numpy": "2.5.4"
+      },
+      "cases": 5
     },
     {
       "fixture": "symbolic/compile.json",

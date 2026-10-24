@@ -22,7 +22,7 @@ import {
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { positiveInteger, primalNumbers, traceOf, vector } from './_shared.ts'
 import { simulateChain } from './markov-chains.ts'
-import { type Paths, simulatePaths, type TraceOptions } from './paths.ts'
+import { type History, historyArray, type Paths, simulatePaths, type TraceOptions } from './paths.ts'
 
 function integerSteps(steps: number, where: string): number {
   if (!(Number.isInteger(steps) && steps >= 0)) throw new WhiteboxError('value', `${where}: steps must be >= 0`)
@@ -250,7 +250,7 @@ export interface SelfAvoidingWalks {
  *
  * @param key - The key.
  * @param steps - The walk length n.
- * @param options - The dimension (default 2) and number of walks (default 100).
+ * @param options - The dimension (default 2), number of walks (default 100) and tracing.
  * @returns The walks, their lengths and their weights.
  * @concept self-avoiding-walks
  * @reference M. N. Rosenbluth and A. W. Rosenbluth, Monte Carlo calculation of the average extension of molecular
@@ -265,45 +265,106 @@ export interface SelfAvoidingWalks {
 export function selfAvoidingWalks(
   key: Key,
   steps: number,
-  options: { readonly dim?: number; readonly walks?: number } = {},
+  options: { readonly dim?: number; readonly walks?: number } & TraceOptions = {},
 ): SelfAvoidingWalks {
   integerSteps(steps, 'selfAvoidingWalks')
   const dim = positiveInteger(options.dim ?? 2, 'dim', 'selfAvoidingWalks')
   const walks = positiveInteger(options.walks ?? 100, 'walks', 'selfAvoidingWalks')
+  const r = runAlgorithm(selfAvoidingWalkAlgorithm(dim, walks), { ...traceOf(options), key, maxSteps: steps })
   const positions = new Float64Array(walks * (steps + 1) * dim)
   const lengths = new Int32Array(walks)
   const weights = new Float64Array(walks)
-  for (let w = 0; w < walks; w++) {
-    const visited = new Set<string>()
-    let site = new Array<number>(dim).fill(0)
-    visited.add(site.join(','))
-    let weight = 1
-    let made = 0
-    const u = uniform(foldIn(key, w), [steps]).data
-    for (let i = 0; i < steps; i++) {
-      const free: number[][] = []
-      for (let m = 0; m < 2 * dim; m++) {
-        const next = [...site]
-        next[m >> 1] = (next[m >> 1] ?? 0) + (m % 2 === 0 ? 1 : -1)
-        if (!visited.has(next.join(','))) free.push(next)
-      }
-      if (free.length === 0) {
-        weight = 0
-        break
-      }
-      weight *= free.length
-      site = free[Math.min(free.length - 1, Math.floor((u[i] ?? 0) * free.length))] ?? site
-      visited.add(site.join(','))
-      made = i + 1
-      for (let d = 0; d < dim; d++) positions[(w * (steps + 1) + made) * dim + d] = site[d] ?? 0
-    }
-    for (let i = made + 1; i <= steps; i++) {
+  for (const [w, walk] of r.state.walks.entries()) {
+    const sites = historyArray(walk.path)
+    for (let i = 0; i <= steps; i++) {
+      const site = sites[Math.min(i, sites.length - 1)] ?? []
       for (let d = 0; d < dim; d++) positions[(w * (steps + 1) + i) * dim + d] = site[d] ?? 0
     }
-    lengths[w] = made
-    weights[w] = weight
+    lengths[w] = sites.length - 1
+    weights[w] = walk.trapped ? 0 : walk.weight
   }
   return { positions: fromStorage(positions, [walks, steps + 1, dim], 'float64'), lengths, weights }
+}
+
+/** One growing self-avoiding walk. */
+export interface GrowingWalk {
+  /** The sites visited, newest first. */
+  readonly path: History<readonly number[]>
+  /** The visited sites as keys. */
+  readonly visited: ReadonlySet<string>
+  /** The Rosenbluth weight so far. */
+  readonly weight: number
+  /** Whether the walk has no free neighbour. */
+  readonly trapped: boolean
+}
+
+/** The state of {@link selfAvoidingWalkAlgorithm}. */
+export interface SelfAvoidingState {
+  readonly walks: readonly GrowingWalk[]
+}
+
+/**
+ * Rosenbluth growth of many self-avoiding walks as a traced {@link Algorithm}: each step extends every untrapped walk to
+ * a uniformly chosen unvisited neighbour and multiplies its weight by the number of choices.
+ *
+ * @param dim - The lattice dimension.
+ * @param walks - The number of walks.
+ * @returns The algorithm.
+ * @concept self-avoiding-walks
+ * @example
+ * ```ts
+ * import { selfAvoidingWalkAlgorithm } from 'whitebox-engine/stochastic'
+ * selfAvoidingWalkAlgorithm(2, 10).name // => 'rosenbluth'
+ * ```
+ */
+export function selfAvoidingWalkAlgorithm(dim: number, walks: number): Algorithm<SelfAvoidingState> {
+  positiveInteger(dim, 'dim', 'selfAvoidingWalkAlgorithm')
+  positiveInteger(walks, 'walks', 'selfAvoidingWalkAlgorithm')
+  const origin = new Array<number>(dim).fill(0)
+  return {
+    name: 'rosenbluth',
+    config: { dim, walks },
+    schema: channels({
+      metrics: {
+        alive: { description: 'walks not yet trapped' },
+        weight: { description: 'mean Rosenbluth weight (estimates the number of walks)' },
+      },
+    }),
+    init: () => ({
+      walks: Array.from({ length: walks }, () => ({
+        path: { item: origin, previous: undefined },
+        visited: new Set([origin.join(',')]),
+        weight: 1,
+        trapped: false,
+      })),
+    }),
+    step: (s, ctx) => {
+      const u = uniform(ctx.key, [walks]).data
+      return {
+        walks: s.walks.map((w, j) => {
+          if (w.trapped) return w
+          const site = w.path.item
+          const free: number[][] = []
+          for (let m = 0; m < 2 * dim; m++) {
+            const next = [...site]
+            next[m >> 1] = (next[m >> 1] ?? 0) + (m % 2 === 0 ? 1 : -1)
+            if (!w.visited.has(next.join(','))) free.push(next)
+          }
+          if (free.length === 0) return { ...w, trapped: true }
+          const pick = free[Math.min(free.length - 1, Math.floor((u[j] ?? 0) * free.length))] ?? site
+          const visited = new Set(w.visited)
+          visited.add(pick.join(','))
+          return { path: { item: pick, previous: w.path }, visited, weight: w.weight * free.length, trapped: false }
+        }),
+      }
+    },
+    observe: (s) => ({
+      metrics: {
+        alive: s.walks.filter((w) => !w.trapped).length,
+        weight: s.walks.reduce((a, w) => a + (w.trapped ? 0 : w.weight), 0) / walks,
+      },
+    }),
+  }
 }
 
 /**

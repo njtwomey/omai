@@ -1,18 +1,13 @@
-"""Point processes: Ripley's K with every edge correction of astropy.stats.RipleysKEstimator, the exponential Hawkes
-log-likelihood (closed form in numpy) and its maximum-likelihood estimate (scipy.optimize.minimize, L-BFGS-B, on the
-log-parameters), and the renewal function of gamma(2) gaps (closed form)."""
+"""Point processes: the exponential Hawkes log-likelihood (closed form in numpy) and its maximum-likelihood estimate
+(scipy.optimize.minimize, L-BFGS-B, on the log-parameters), and the renewal function of gamma(2) gaps (closed form)."""
 
-from typing import Literal
-
-import astropy
 import numpy as np
 import scipy
 import scipy.optimize as so
-from astropy.stats import RipleysKEstimator
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import FloatArray, rng
 
-REFERENCE: dict[str, str] = {"astropy": astropy.__version__, "scipy": scipy.__version__, "numpy": np.__version__}
+REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "numpy": np.__version__}
 
 
 def hawkes_ll(params: FloatArray, events: FloatArray, horizon: float) -> float:
@@ -42,20 +37,6 @@ def hawkes_events(g: np.random.Generator, mu: float, alpha: float, beta: float, 
 def cases() -> list[Case]:
     g = rng(31)
     out: list[Case] = []
-    pts = np.column_stack([g.uniform(0, 2, size=30), g.uniform(0, 1, size=30)])
-    radii = np.array([0.05, 0.1, 0.2, 0.3, 0.45])
-    est = RipleysKEstimator(area=2.0, x_min=0, x_max=2, y_min=0, y_max=1)
-    window = {"xmin": 0.0, "xmax": 2.0, "ymin": 0.0, "ymax": 1.0}
-    modes: list[Literal["none", "translation", "ohser", "var-width", "ripley"]] = [
-        "none",
-        "translation",
-        "ohser",
-        "var-width",
-        "ripley",
-    ]
-    for mode in modes:
-        k = est(data=pts, radii=radii, mode=mode)
-        out.append(case(f"ripley/{mode}", "ripley", [pts, radii], k, rtol=1e-10, atol=1e-12, mode=mode, **window))
     events = hawkes_events(g, 0.8, 0.5, 1.2, 150.0)
     params = np.array([0.8, 0.5, 1.2])
     out.append(
@@ -74,6 +55,8 @@ def cases() -> list[Case]:
 
     res = so.minimize(nll, np.log([0.5, 0.3, 1.0]), method="L-BFGS-B", options={"gtol": 1e-12, "ftol": 1e-15})
     out.append(case("hawkes/mle", "hawkes-mle", [events], np.exp(res.x), rtol=1e-5, horizon=150.0))
+    # the same maximiser reached by EM alone (no Newton polish)
+    out.append(case("hawkes/mle-em", "hawkes-mle-em", [events], np.exp(res.x), rtol=1e-5, horizon=150.0))
     lam = 1.5
     t = np.array([0.5, 1.0, 2.0, 5.0])
     renewal = lam * t / 2 - 0.25 * (1 - np.exp(-2 * lam * t))
