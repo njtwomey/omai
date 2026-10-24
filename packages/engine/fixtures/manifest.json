@@ -1436,6 +1436,51 @@
       "cases": 4
     },
     {
+      "fixture": "methods/manifold/isomap.json",
+      "source": "oracle/cases/methods/manifold/isomap.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "methods/manifold/lle.json",
+      "source": "oracle/cases/methods/manifold/lle.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "methods/manifold/mds.json",
+      "source": "oracle/cases/methods/manifold/mds.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "methods/manifold/quality.json",
+      "source": "oracle/cases/methods/manifold/quality.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "methods/manifold/spectral.json",
+      "source": "oracle/cases/methods/manifold/spectral.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 1
+    },
+    {
       "fixture": "methods/mixture/gaussian.json",
       "source": "oracle/cases/methods/mixture/gaussian.py",
       "reference": {
