@@ -20,9 +20,9 @@ export const iconButtonClass: string =
 export const inputBoxClass: string =
   'relative flex h-8 min-w-0 flex-1 items-center border border-(--wb-grid) bg-(--wb-bg) text-(--wb-fg) focus-within:z-10 focus-within:border-(--wb-accent) focus-within:ring-2 focus-within:ring-(--wb-accent)/40'
 
-/** The class of a floating menu's panel. */
+/** The class of a floating menu's panel (placed by `Popover`). */
 export const menuClass: string =
-  'absolute z-50 mt-1 max-h-64 min-w-24 overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-1 text-(--wb-fg) shadow-lg'
+  'z-50 max-h-64 min-w-24 overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-1 text-(--wb-fg) shadow-lg'
 
 /** The class of one item of a floating menu (`data-selected` marks the current one). */
 export const menuItemClass: string =

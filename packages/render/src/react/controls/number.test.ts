@@ -106,3 +106,12 @@ describe('display', () => {
     expect(formatFieldValue({}, 250000)).toBe('2.5e5')
   })
 })
+
+describe('the ladder on a step grid', () => {
+  it('rounds interior values to the step', () => {
+    const ladder = numberLadder({ min: 0, max: 0.95, step: 0.05 })
+    expect(ladder).toHaveLength(11)
+    for (const v of ladder) expect(Math.abs(v / 0.05 - Math.round(v / 0.05))).toBeLessThan(1e-9)
+    for (let i = 1; i < ladder.length; i++) expect(ladder[i] as number).toBeGreaterThan(ladder[i - 1] as number)
+  })
+})
