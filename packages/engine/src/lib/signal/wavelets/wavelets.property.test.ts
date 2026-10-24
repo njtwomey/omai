@@ -38,7 +38,10 @@ describe('wavelet properties', () => {
       fc.property(signal(16, 16), fc.constantFrom('haar', 'db2', 'sym3', 'coif1'), (x, w) => {
         const { cA, cD } = S.dwt(x, w, { mode: 'periodization' })
         const e = (v: number[]): number => v.reduce((a, b) => a + b * b, 0)
-        expect(e(toFlat(cA)) + e(toFlat(cD))).toBeCloseTo(e(x), 9)
+        // Relative to the energy: PyWavelets' sym3 filter (which the engine reproduces exactly, for parity) is
+        // orthonormal only to 4.8e-12 (|sum h^2 - 1|), so for 16 samples ||W^T W - I||_2 = 1.1e-11 and a signal of
+        // energy 144 can be off by 1.6e-9 (pywt too). A fixed 5e-10 failed now and then.
+        expect(Math.abs(e(toFlat(cA)) + e(toFlat(cD)) - e(x))).toBeLessThanOrEqual(2e-11 * e(x) + 1e-12)
         const back = toFlat(S.iswt(S.swt(x, w, { level: 3 }), w))
         for (const [i, v] of x.entries()) expect(back[i]).toBeCloseTo(v, 9)
       }),
