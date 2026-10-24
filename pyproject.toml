@@ -36,6 +36,12 @@ oracle-core = [
     "dtw-python>=1.9.0",
     "control>=0.10.2",
     "slycot>=0.7.1",
+    "npeet",
+    "reedsolo>=1.7.0",
+    "antropy>=0.2.3",
+    "scikit-commpy>=0.8.0",
+    "pyitlib>=0.3.1",
+    "bitarray>=3.12.3",
 ]
 oracle-torch = [
     "monai>=1.6.1",
@@ -81,3 +87,6 @@ reportMissingTypeStubs = false
 reportUnknownMemberType = false
 reportUnknownVariableType = false
 reportUnknownArgumentType = false
+
+[tool.uv.sources]
+npeet = { git = "https://github.com/gregversteeg/NPEET" }

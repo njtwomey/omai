@@ -349,6 +349,87 @@
       "cases": 14
     },
     {
+      "fixture": "information/complexity.json",
+      "source": "oracle/cases/information/complexity.py",
+      "reference": {
+        "zlib": "1.2.12",
+        "antropy": "0.2.3",
+        "scipy": "1.18.1"
+      },
+      "cases": 32
+    },
+    {
+      "fixture": "information/convolutional.json",
+      "source": "oracle/cases/information/convolutional.py",
+      "reference": {
+        "scikit-commpy": "0.8.0"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "information/deflate.json",
+      "source": "oracle/cases/information/deflate.py",
+      "reference": {
+        "zlib": "1.2.12"
+      },
+      "cases": 102
+    },
+    {
+      "fixture": "information/discrete.json",
+      "source": "oracle/cases/information/discrete.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "pyitlib": "0.3.1"
+      },
+      "cases": 38
+    },
+    {
+      "fixture": "information/divergences.json",
+      "source": "oracle/cases/information/divergences.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 40
+    },
+    {
+      "fixture": "information/estimators.json",
+      "source": "oracle/cases/information/estimators.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "npeet": "1.0.1",
+        "pyitlib": "0.3.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "information/neighbour_estimators.json",
+      "source": "oracle/cases/information/neighbour_estimators.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "npeet": "1.0.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "information/reed_solomon.json",
+      "source": "oracle/cases/information/reed_solomon.py",
+      "reference": {
+        "reedsolo": "1.7.0"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "information/source_coding.json",
+      "source": "oracle/cases/information/source_coding.py",
+      "reference": {
+        "bitarray": "3.12.3"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "losses/classification.json",
       "source": "oracle/cases/losses/classification.py",
       "reference": {

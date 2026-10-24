@@ -1036,23 +1036,46 @@ Reparameterisation comes in three forms:
 
 ### 4.15 `information/` (tier 6): information theory and coding
 
-oracle: scipy.stats.entropy, sklearn mutual information, zlib (byte-exact DEFLATE), npeet for k-NN estimators
-- `discrete.ts`: entropy (any base), joint and conditional entropy, cross-entropy, KL, Jensen-Shannon, total
-  variation, mutual information from tables, conditional and interaction information, PMI, NPMI, information gain.
-- `estimators.ts`: estimators from samples: plug-in with Miller-Madow correction, Kozachenko-Leonenko entropy, KSG
-  mutual information, kernel estimators, transfer entropy, variational bounds from critic scores (InfoNCE, NWJ, MINE).
-- `divergences.ts`: the f-divergence family, Renyi, alpha and beta divergences, Bregman divergences, on discrete
-  distributions and on grids.
-- `source-coding.ts`: Kraft-McMillan, Huffman (traced tree construction, D-ary), canonical codes, Shannon-Fano,
-  arithmetic and range coding, Elias, Golomb-Rice, run-length.
-- `dictionary-coding.ts`: LZ77, LZ78, LZW, DEFLATE and the zlib and gzip formats (compress and inflate), BWT with
-  move-to-front.
-- `channels.ts`: capacity by Blahut-Arimoto (traced), rate-distortion, binary symmetric, erasure and Z channels,
-  Gaussian channels and water-filling.
-- `error-correction.ts`: parity, repetition and Hamming codes, Reed-Solomon over GF(2^m), convolutional codes with Viterbi
-  decoding, LDPC codes with belief-propagation decoding, bounds.
-- `complexity.ts`: normalised compression distance, Lempel-Ziv complexity, entropy rate, approximate and sample
-  entropy.
+oracle: scipy.stats.entropy, scipy.special (rel_entr, kl_div), sklearn mutual information, pyitlib (plug-in
+conditional and co-information), npeet for k-NN estimators, zlib and gzip (byte-exact DEFLATE), bitarray (Huffman),
+reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel-Ziv, approximate and sample entropy)
+- `discrete.ts`: entropy (any base, scipy.stats.entropy semantics), binary entropy, joint and conditional entropy,
+  cross-entropy, KL (`relativeEntropy`; `dists.klDivergence` is the one for distribution objects), Jensen-Shannon
+  (weighted divergence and distance), total variation, mutual information from tables, conditional and interaction
+  (co-)information, PMI, NPMI, information gain and gain ratio; all differentiable.
+- `estimators.ts`: estimators from samples: plug-in with Miller-Madow correction (entropy and mutual information),
+  kernel (Gaussian KDE) estimators, transfer entropy (plug-in and KSG), variational bounds from critic scores (InfoNCE,
+  NWJ, MINE).
+- `neighbour-estimators.ts`: k-nearest-neighbour estimators on `numerics/spatial` KD trees: Kozachenko-Leonenko
+  entropy, KSG mutual information (algorithms 1 and 2) and conditional mutual information, k-NN KL divergence, Ross's
+  mixed continuous-discrete estimator.
+- `divergences.ts`: the f-divergence family (named generators or any convex f), Renyi divergence and entropy, alpha
+  and beta divergences, Bregman divergences (named or any convex function, gradients by autodiff), on discrete
+  distributions and on grids (trapezoidal rule); all differentiable.
+- `source-coding.ts`: Kraft-McMillan (Kraft sums, prefix-freeness, Sardinas-Patterson unique decodability), Huffman
+  (traced tree construction, D-ary), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
+  expected length, prefix encoding and decoding.
+- `stream-coding.ts`: arithmetic coding (32-bit integer, pending bits) and carry-less range coding, with static and
+  adaptive frequency models.
+- `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
+- `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
+- `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and
+  an inflater with puff's checks), the zlib and gzip formats (compress and decompress), CRC-32 and Adler-32.
+- `channels.ts`: channel mutual information, capacity by Blahut-Arimoto (traced, with its bounds and an active-set Newton
+  refinement for optima on the boundary of the simplex), binary symmetric, erasure and Z channels, Gaussian channels
+  (Shannon-Hartley) and water-filling.
+- `rate-distortion.ts`: rate-distortion by Blahut's algorithm (traced) and R(D) curves, reverse water-filling, binary
+  and Gaussian R(D).
+- `error-correction.ts`: binary linear block codes (generator and parity-check matrices, syndromes, coset-leader
+  decoding, minimum distance), parity, repetition and Hamming codes (extended too), bounds (Hamming, Singleton,
+  Gilbert-Varshamov, Plotkin).
+- `reed-solomon.ts`: GF(2^m) arithmetic, Reed-Solomon encoding and decoding of errors and erasures (Berlekamp-Massey,
+  Chien, Forney), matching reedsolo.
+- `convolutional.ts`: feed-forward convolutional codes and Viterbi decoding (traced, hard and soft decisions).
+- `ldpc.ts`: Gallager's regular LDPC codes, encoding, channel LLRs, belief-propagation decoding (sum-product and
+  min-sum, traced).
+- `complexity.ts`: normalised compression distance (any compressor) and distance matrices, Lempel-Ziv complexity,
+  block entropies and entropy rate (plug-in and of a Markov chain), approximate and sample entropy.
 
 ### 4.16 `systems/` (tier 6): linear time-invariant systems (scipy.signal LTI, python-control)
 
@@ -3345,7 +3368,7 @@ library for the same computation. They do not set a higher bar than that library
 | Opacus                            | `lib/learn/privacy.ts`, `methods/privacy/`                                                        |
 | SHAP, Captum                      | `lib/learn/explain/`                                                                              |
 | cleanlab, Snorkel                 | `methods/weak-supervision/`                                                                       |
-| zlib                              | `lib/information/dictionary-coding.ts`                                                            |
+| zlib                              | `lib/information/deflate.ts`                                                                      |
 
 ## 12. Order of construction
 
