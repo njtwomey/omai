@@ -1,0 +1,16 @@
+import { probabilisticPca as probabilisticPcaMethod } from 'whitebox-engine/methods/decomposition'
+import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
+import { fitEstimator } from '../../../entry/run.ts'
+
+/** Probabilistic PCA: pCA as a latent Gaussian model with isotropic noise. */
+export const probabilisticPca: HubEntry = defineEntry({
+  id: 'sklearn/decomposition/probabilistic-pca',
+  title: 'Probabilistic PCA',
+  summary: 'PCA as a latent Gaussian model with isotropic noise.',
+  collection: 'sklearn/decomposition',
+  tags: ['decomposition', 'probabilistic', 'latent variables'],
+  datasets: ['classificationTabular', 'manifold3d'],
+  ...fitEstimator(probabilisticPcaMethod({ nComponents: 2 }), { unsupervised: true }),
+  views: [{ record: 'components', title: 'Components' }],
+  methods: [{ file: 'methods/decomposition/probabilistic.ts', name: 'probabilisticPca' }],
+})

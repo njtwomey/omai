@@ -2,6 +2,7 @@
 /* The site and whitebox-render's React components carry the class names Tailwind generates. */
 @source "../../";
 @source "../../../../packages/render/src";
+@source "../../../../packages/hub/src";
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
