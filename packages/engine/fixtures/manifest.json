@@ -646,6 +646,15 @@
       "cases": 18
     },
     {
+      "fixture": "learn/explain/shapley.json",
+      "source": "oracle/cases/learn/explain/shapley.py",
+      "reference": {
+        "shap": "0.54.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {
