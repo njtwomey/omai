@@ -93,11 +93,28 @@ export function nudft2(x: TensorLike, f: ComplexLike, sign: 1 | -1 = -1): Comple
   return { re: reshape(out.re, [j]), im: reshape(out.im, [j]) }
 }
 
-/** Gaussian gridding parameters (Greengard and Lee 2004): oversampling 2 and the spreading half-width. */
+/**
+ * Gaussian gridding parameters (Greengard and Lee 2004). The grid oversamples the M modes by R >= 2 (more when M is
+ * small, so the 2 w + 1 point window fits), and the Gaussian's variance tau = pi w / (M^2 R (R - 1/2)) is set from the
+ * grid actually used: then the truncation error exp(-pi w (R - 1/2) / R) and the aliasing error
+ * exp(-pi w (R - 1) / (R - 1/2)) are both at most exp(-2 pi w / 3).
+ */
 function gridding(m: number, spread: number): { grid: number; tau: number } {
-  const ratio = 2
-  const grid = Math.max(2 * spread + 2, ratio * m)
+  const grid = Math.max(2 * spread + 2, 2 * m)
+  const ratio = grid / m
   return { grid, tau: (Math.PI * spread) / (m * m * ratio * (ratio - 0.5)) }
+}
+
+/** The spreading half-width w for a relative tolerance: the error bound exp(-2 pi w / 3) at oversampling 2. */
+function halfWidth(options: { readonly spread?: number; readonly tolerance?: number }, name: string): number {
+  if (options.spread !== undefined) {
+    if (!Number.isInteger(options.spread) || options.spread < 1)
+      throw new WhiteboxError('value', `${name}: spread must be a positive integer`)
+    return options.spread
+  }
+  const tol = options.tolerance ?? 1e-12
+  if (!(tol > 0 && tol < 1)) throw new WhiteboxError('value', `${name}: tolerance must be in (0, 1)`)
+  return Math.max(2, Math.ceil((-3 * Math.log(tol)) / (2 * Math.PI)))
 }
 
 /** The spreading matrix S[l, j] = exp(-(xi_l - x_j)^2 / 4 tau) over the nearest grid points (periodic). */
@@ -119,13 +136,16 @@ function spreadingMatrix(xs: readonly number[], grid: number, tau: number, sprea
 
 /**
  * The type-1 NUFFT by Gaussian gridding (Greengard and Lee): spread the strengths onto an oversampled grid with a
- * Gaussian, FFT, and divide out the Gaussian's transform. O(M log M + J w) with error about 1e-12 at the default
- * half-width of 12; differentiable in the strengths.
+ * Gaussian, FFT, and divide out the Gaussian's transform. The relative error (to the largest mode) is at most about
+ * the requested tolerance, as FINUFFT's eps: the half-width is w = ceil(3 ln(1 / tol) / 2 pi), 14 at the default
+ * 1e-12; below about 1e-13 rounding dominates. The spreading is held as a dense grid-by-points matrix, so the work is
+ * O(M J) rather than FINUFFT's O(M log M + J w). Differentiable in the strengths.
  *
  * @param x - Non-uniform points `[J]` (radians).
  * @param c - Strengths `[J]`.
  * @param m - Number of modes.
- * @param options - Exponent sign (default +1) and spreading half-width (default 12).
+ * @param options - Exponent sign (default +1), relative tolerance (default 1e-12), or the spreading half-width w
+ *   directly (overrides the tolerance).
  * @returns Mode coefficients `[M]`, as {@link nudft1}.
  * @example
  * ```ts
@@ -142,10 +162,10 @@ export function nufft1(
   x: TensorLike,
   c: ComplexLike,
   m: number,
-  options: { readonly sign?: 1 | -1; readonly spread?: number } = {},
+  options: { readonly sign?: 1 | -1; readonly spread?: number; readonly tolerance?: number } = {},
 ): ComplexValue {
   const sign = options.sign ?? 1
-  const spread = options.spread ?? 12
+  const spread = halfWidth(options, 'nufft1')
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, 'nufft1'))
   const { grid, tau } = gridding(m, spread)
   const s = spreadingMatrix(xs, grid, tau, spread)
@@ -175,7 +195,8 @@ export function nufft1(
  *
  * @param x - Non-uniform points `[J]`.
  * @param f - Mode coefficients `[M]`.
- * @param options - Exponent sign (default -1) and spreading half-width.
+ * @param options - Exponent sign (default -1), relative tolerance (default 1e-12) or spreading half-width, as
+ *   {@link nufft1}.
  * @returns Values `[J]`, as {@link nudft2}.
  * @example
  * ```ts
@@ -191,10 +212,10 @@ export function nufft1(
 export function nufft2(
   x: TensorLike,
   f: ComplexLike,
-  options: { readonly sign?: 1 | -1; readonly spread?: number } = {},
+  options: { readonly sign?: 1 | -1; readonly spread?: number; readonly tolerance?: number } = {},
 ): ComplexValue {
   const sign = options.sign ?? -1
-  const spread = options.spread ?? 12
+  const spread = halfWidth(options, 'nufft2')
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, 'nufft2'))
   const z = complex(f)
   const m = z.re.shape[0] ?? 0
