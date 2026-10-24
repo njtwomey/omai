@@ -233,6 +233,16 @@ export function enumerationHandler(firstAvailableDim: number): Messenger {
         )
       if (msg.fn.eventShape.length > 0 || msg.sampleShape.length > 0)
         throw new WhiteboxError('value', `enumerate: site ${msg.name} must have a scalar event and no sample shape`)
+      const batch = msg.fn.batchShape
+      for (let a = 0; a < batch.length; a++) {
+        const d = a - batch.length
+        if (d > firstAvailableDim && (batch[a] ?? 1) > 1 && !msg.plates.some((f) => f.dim === d))
+          throw new WhiteboxError(
+            'value',
+            `enumerate: site ${msg.name} has a batch dimension ${d} outside every plate; put repeated discrete variables in a plate`,
+            { site: msg.name },
+          )
+      }
       const frame = msg.markov[0]
       let dim: number | undefined
       if (frame !== undefined) {

@@ -2,4 +2,6 @@
 export * from './analysis.ts'
 export * from './density.ts'
 export * from './handlers.ts'
+export * from './posterior.ts'
 export * from './primitives.ts'
+export * from './engines/index.ts'

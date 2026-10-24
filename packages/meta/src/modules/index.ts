@@ -68,6 +68,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/pgm/learning': () => import('whitebox-engine/pgm/learning'),
   'whitebox-engine/pgm/models': () => import('whitebox-engine/pgm/models'),
   'whitebox-engine/probprog': () => import('whitebox-engine/probprog'),
+  'whitebox-engine/probprog/engines': () => import('whitebox-engine/probprog/engines'),
   'whitebox-engine/random': () => import('whitebox-engine/random'),
   'whitebox-engine/rl': () => import('whitebox-engine/rl'),
   'whitebox-engine/sampling': () => import('whitebox-engine/sampling'),
