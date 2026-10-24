@@ -92,7 +92,7 @@ function download(url: string, name: string): void {
 
 /**
  * The whole figure inside an element as one SVG document: every chart in it (re-drawn by ECharts' SVG renderer at its
- * place) and every overlay cell (`data-whitebox-overlay`: TeX from `data-tex` as MathML, or its text), on the
+ * place), every inline SVG drawing marked `data-whitebox-svg` (a `SceneView`), and every overlay cell (`data-whitebox-overlay`: TeX from `data-tex` as MathML, or its text), on the
  * background colour. Panels are parts of the figure, so they export together.
  *
  * @param root - The element holding the figure.
@@ -119,6 +119,13 @@ export function figureSvg(
       height,
       svg: chartToSvg(chart.getOption(), { width, height, mode: options.mode }),
     })
+  }
+  // Inline SVG drawings (a SceneView in a `data-whitebox-svg` element) go in as they are drawn.
+  for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-svg]')) {
+    const svg = el.querySelector('svg')
+    if (svg === null) continue
+    const r = svg.getBoundingClientRect()
+    parts.push({ x: r.left - box.left, y: r.top - box.top, width: r.width, height: r.height, svg: svg.outerHTML })
   }
   if (options.overlays ?? true)
     for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-overlay]')) {
