@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { DocsSection, DocsToc } from './docs/routes.tsx'
 import { GallerySection, GalleryToc } from './gallery/routes.tsx'
 import { Home } from './Home.tsx'
-import { HubSection } from './hub/routes.tsx'
+import { HubSection, HubToc } from './hub/routes.tsx'
 import { usePath } from './shell/router.ts'
 import { Shell } from './shell/Shell.tsx'
 import './shell/styles.css'
@@ -21,6 +21,8 @@ function App(): ReactNode {
   )
   const sidebar = path.startsWith('/gallery') ? (
     <GalleryToc path={path} />
+  ) : path.startsWith('/hub') ? (
+    <HubToc path={path} />
   ) : path.startsWith('/docs') ? (
     <DocsToc path={path} />
   ) : undefined
