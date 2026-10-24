@@ -237,6 +237,43 @@
       "cases": 4
     },
     {
+      "fixture": "foundations/coordinates.json",
+      "source": "oracle/cases/foundations/coordinates.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "foundations/rotations.json",
+      "source": "oracle/cases/foundations/rotations.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 82
+    },
+    {
+      "fixture": "foundations/trigonometry.json",
+      "source": "oracle/cases/foundations/trigonometry.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "sympy": "1.14.0"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "foundations/vectors.json",
+      "source": "oracle/cases/foundations/vectors.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 39
+    },
+    {
       "fixture": "losses/classification.json",
       "source": "oracle/cases/losses/classification.py",
       "reference": {
