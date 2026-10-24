@@ -109,6 +109,8 @@ export function FigureGrid(props: FigureGridProps): ReactElement {
     return [
       <div
         key={c.id}
+        data-whitebox-overlay=""
+        {...(c.kind === 'tex' && cells?.[c.id] === undefined ? { 'data-tex': c.content ?? '' } : {})}
         style={{
           position: 'absolute',
           left: r.x,

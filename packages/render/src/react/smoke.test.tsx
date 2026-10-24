@@ -1,19 +1,24 @@
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { structure } from 'whitebox-engine/scene'
 import { bool, choice, dict, int, real } from 'whitebox-engine/space'
 import { Choice } from './controls/Choice.tsx'
 import { ControlLayout, ControlPanel, PanelArea } from './controls/ControlPanel.tsx'
 import { DatasetPicker } from './controls/DatasetPicker.tsx'
 import { selectEntry } from './controls/datasets.ts'
+import { MethodControls } from './controls/MethodControls.tsx'
 import { NumberField } from './controls/NumberField.tsx'
 import { SeedInput } from './controls/SeedInput.tsx'
 import { Select } from './controls/Select.tsx'
 import { SpaceControls } from './controls/SpaceControls.tsx'
 import { Toggle } from './controls/Toggle.tsx'
+import { Brush } from './interaction/Brush.tsx'
 import { DraggablePoints } from './interaction/DraggablePoints.tsx'
 import { InteractionOverlay } from './interaction/InteractionOverlay.tsx'
+import { NearestHover } from './interaction/NearestHover.tsx'
 import { linearProjection } from './interaction/projection.ts'
 import { Player } from './Player.tsx'
+import { StructureView } from './StructureView.tsx'
 import type { PlaybackController } from './usePlayback.ts'
 
 const noop = (): void => {}
@@ -83,5 +88,37 @@ describe('React bindings render on the server', () => {
       </InteractionOverlay>,
     )
     expect(svg).toContain('cx="50"')
+  })
+
+  it('draws method controls from a hyperSpace, and the brush and hover tools', () => {
+    const estimator = {
+      name: 'toy',
+      kind: 'classifier',
+      hyper: { depth: 3 },
+      hyperSpace: dict({ depth: int(1, 9, { default: 3, label: 'depth' }) }),
+    } as unknown as Parameters<typeof MethodControls>[0]['estimator']
+    expect(renderToString(<MethodControls estimator={estimator} onChange={noop} />)).toContain('depth')
+    const projection = linearProjection({ x: [0, 1], y: [0, 1], width: 100, height: 100 })
+    const svg = renderToString(
+      <InteractionOverlay projection={projection} width={100} height={100}>
+        <Brush value={{ x: [0, 0.5], y: [0, 0.5] }} onChange={noop} />
+        <NearestHover points={[[0.5, 0.5]]} onHover={noop} />
+      </InteractionOverlay>,
+    )
+    expect(svg).toContain('width="50"')
+  })
+
+  it('draws a structure view', () => {
+    const s = structure(
+      'tree',
+      [
+        { id: 'r', label: 'root', role: 'internal' },
+        { id: 'l', label: 'leaf', role: 'leaf' },
+      ],
+      [{ from: 'r', to: 'l' }],
+    )
+    const html = renderToString(<StructureView structure={s} />)
+    expect(html).toContain('data-node-id="r"')
+    expect(html).toContain('Zoom in')
   })
 })

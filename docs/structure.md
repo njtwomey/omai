@@ -3841,7 +3841,12 @@ Design rules:
 - `echarts.ts`: `echartsTheme(mode)` (registered light and dark themes with tab10), `baseOption`.
 - `format.ts`: number formatting, nice ticks, log ticks, time formatting.
 
-`charts/` (ECharts option builders; each returns an `EChartsOption`)
+`charts/` (ECharts option builders; each returns an `EChartsOption`, built from layers)
+- `plot.ts`: `Layer` (series with their data extent, colour bar and categories; every builder returns layers so they
+  combine), `cartesian(layers, options)` (axes from limit policies and the data aspect, legend, tooltip, zoom),
+  `panelParts` and `chartFrame` (shared with `compose.ts`).
+- `echarts-core.ts`: `echartsCore`, the tree-shaken ECharts core with every chart type the builders use, both
+  renderers and the registered themes (shared by the React bindings and server-side export).
 - `lines.ts`: curves, steps, areas, bands, fill-between, series from tensors.
 - `points.ts`: scatter plots (labels, sizes, categorical colours), bubbles, rugs.
 - `bars.ts`: bar charts, histograms, Pareto charts.
@@ -3855,7 +3860,8 @@ Design rules:
 - `evaluation.ts`: ROC, precision-recall, calibration, learning curves, residual plots (from `MetricResult`s).
 - `multivariate.ts`: parallel coordinates, radar charts, scatter matrices.
 - `tuning.ts`: optimisation histories, parameter importances, slice and contour plots of studies.
-- `compose.ts`: subplot grids with shared axes, linked axes, data zoom, mark lines, annotations.
+- `compose.ts`: `subplots` (a gridspec as one option: spans, shared and linked axes, zero gaps, marginals, per-panel
+  legends and titles, text cells), `subplotRects`.
 - `downsample.ts`: LTTB and min-max decimation.
 
 `figure/` (the figure model; headless)
@@ -3924,7 +3930,10 @@ Design rules:
 
 `svg/`
 - `svg.ts`: `sceneToSvg` (tokens resolved for a theme, 3-D layers projected).
-- `export.ts`: PNG through canvas, data URLs, sizes for slides.
+- `paths.ts`: SVG path data (straight and smooth) and arrow heads, shared by `sceneToSvg` and `SceneView`.
+- `png.ts`: `encodePng` (dependency-free PNG), `pngDataUrl`, `base64` (heatmap images, embedded scene images).
+- `export.ts`: whole-figure export: `chartToSvg` (ECharts server-side rendering), `composeSvg` (charts and overlay
+  cells as one SVG), `svgDataUrl`, `svgToPng` (canvas), `exportSize` for slides and blogs.
 
 `views/` (headless: one builder per exposition record kind, from `lib/exposition`)
 - `paths.ts` (`RegularisationPath`, `CrossValidationCurve`, `LearningCurve`, `PruningPath`), `trees.ts` (`TreeRecord`
@@ -3943,12 +3952,17 @@ Design rules:
 - `Player.tsx`: playback of a precomputed timeline or a live algorithm, redesigned and simpler than aifn-engine's:
   play and pause with a caret menu for the target frames per second, step back and forward, a draggable scrubber, and
   an optional time stamp.
-- `FigureFrame.tsx`: the fixed-size figure area with its expand-to-modal button and export menu.
+- `FigureFrame.tsx`: the fixed-size figure area with its expand-to-modal button and export menu; one frame per figure
+  (a grid of panels is one figure), exporting the whole figure.
+- `FigureGrid.tsx`: a gridspec drawn as one subplot chart with text, TeX or React content in the other cells, scaled to
+  fit their cells.
+- `echarts.ts`: `loadEcharts` for the React bindings.
 - `interaction/`: click to add points, drag points, drag points constrained to curves and surfaces, selection (e.g.
   a Gaussian process refitting as its data are dragged), as hooks and scene overlays.
 - `EpisodePlayer.tsx`: environment episodes with overlays.
 - `ExportMenu.tsx`: export of the current figure as SVG, PNG, GIF, MP4 or WebM.
-- `MathView.tsx`: TeX and derivation display.
+- `MathView.tsx`: `Tex`, `Equation` (live), `Derivation`, `MathProvider` (KaTeX HTML with its stylesheet, MathML for
+  assistive technology; live values highlighted).
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
   value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
   and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
@@ -3970,7 +3984,8 @@ Turns the source into documentation data, runs examples and links functions to c
 
 `schema/`
 - `catalogue.ts`: `SymbolDoc` (id, package, module, name, kind, signature, summary, description, params, returns,
-  throws, examples, concepts, references, canonical home and aliases, source location), `ModuleDoc`, `Catalogue`.
+  throws, examples, concepts, references, canonical home and aliases, source location), `ModuleDoc`, `FileDoc` (each
+  source file with its opening comment), `Catalogue`.
 - `examples.ts`: `Example`, `Expectation` (value, figure, trace, throws), `ExampleResult`.
 - `content.ts`: `HowTo`, `GalleryEntry`, `Study` (a methods study as a page: description, parameters as a `Space`,
   figures).
@@ -3978,24 +3993,29 @@ Turns the source into documentation data, runs examples and links functions to c
 `concepts/`
 - `taxonomy.ts`: the concept tree schema (domain, chapter, note; ids such as `signal-processing/spectral-estimation/welch`),
   loaded from `docs/concepts.yaml`, which mirrors the encyclopedia's table of contents.
-- `index.ts`: concept to symbols, symbol to concepts, coverage of the taxonomy (notes without an implementation, symbols
-  without a concept).
+- `concepts.ts`: `conceptIndex`, concept to symbols and symbol to concepts from the `@concept` tags; coverage of the
+  taxonomy (notes without an implementation, symbols without a concept) once the taxonomy exists.
 
 `extract/` (Node only; ts-morph)
-- `project.ts`: load the packages, enumerate entry points from `exports` and barrels.
+- `catalogue.ts`: `extractCatalogue({ root, packages })`, the whole catalogue in one call (about two seconds for the
+  engine: syntax trees only, no type checker).
+- `project.ts`: load the packages, enumerate entry points from `exports` and barrels (a namespaced subfolder is its own
+  entry point, a flat one belongs to its parent).
 - `symbols.ts`: exported declarations to `SymbolDoc`s (signatures, overloads, classes and methods, aliases resolved to
   canonical homes).
 - `tsdoc.ts`: TSDoc parsing (summary, `@param`, `@returns`, `@throws`, `@example`, `@concept`, `@see`, `@reference`).
 - `built-from.ts`: the import graph between symbols and areas, for "how is this built" views.
 - `content.ts`: how-to Markdown, gallery entries and studies.
-- `coverage.ts`: documentation and concept coverage reports that fail the build.
+- `coverage.ts`: documentation coverage (summary, every parameter described, `@returns`, an `@example` with a `// =>`
+  for every core function, class and constant); `make examples ARGS=--coverage` reports it.
 
 `runner/` (browser and Node)
 - `parse.ts`: statements and expectation markers.
 - `transform.ts`: type stripping and import rewriting (sucrase), expectation instrumentation.
 - `execute.ts`: execution with a module resolver, console capture, time limits, errors mapped to example lines.
-- `compare.ts`: comparison to the stated precision, tensors and typed arrays as nested arrays, figure, trace and throw
-  recognition.
+- `compare.ts`: comparison to the stated precision (a literal with d decimals matches what rounds to it; integers and
+  computed values to about twelve digits), tensors and typed arrays as nested arrays (`Float64Array [1, 2]` too),
+  figure, trace and throw recognition.
 - `format.ts`: display of values beside code.
 - `run.ts`: `runExample`, `runExamples` with a report.
 
@@ -4007,8 +4027,9 @@ Turns the source into documentation data, runs examples and links functions to c
   events, latest-wins cancellation.
 
 `react/`
-- `LiveExample.tsx`: editable examples with outputs beside each expectation, figures and traces rendered with
-  whitebox-render.
+- `live-example.ts`: `useLiveExample`, the state of an editable example (code, latest result, run on demand and on
+  first view); the site draws it (`apps/site/src/docs/LiveExample.tsx`: highlighted editor, outcomes beside each
+  `// =>` line). Figures and traces rendered with whitebox-render come later.
 - `CodeEditor.tsx`: CodeMirror 6 with completion from the catalogue.
 - `ValueView.tsx`: any output (numbers, tensors, distributions, structures, scenes, charts, runs, timelines).
 - `ApiSymbol.tsx`, `ModuleIndex.tsx`, `Search.tsx`: browsing the catalogue.
@@ -4103,7 +4124,9 @@ library for the same computation. They do not set a higher bar than that library
 - `mise.toml`: Node, pnpm, Python and uv versions.
 - `scripts/barrels.ts`: every `index.ts` and the module map; `--check`.
 - `scripts/layers.ts`: dependency-cruiser rules from `domain.json` and `area.json`.
-- `scripts/docs.ts`: catalogue extraction, every example and how-to run, documentation coverage.
+- `scripts/examples.ts` (`make examples`): every `@example` of the engine core run in worker threads with its `// =>`
+  lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows,
+  `--coverage` reports documentation coverage). How-tos join it when they exist.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).
 - `scripts/pack.ts`: build and pack the three packages; collect release assets with a manifest.

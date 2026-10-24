@@ -2,6 +2,7 @@ import { WhiteboxError } from '../../lib/base/index.ts'
 import { multivariateNormal } from '../../lib/dists/index.ts'
 import { mixtureSteps } from '../../lib/exposition/index.ts'
 import {
+  decisionSurfaceOf,
   defineExplainedEstimator,
   type Estimator,
   EstimatorClass,
@@ -343,16 +344,29 @@ function fitGaussianMixture(data: LearnData, h: GaussianMixtureHyper, options: F
   const s = out.state
   const final = normalise(componentLogDensities(data.x, s.weights, s.means, s.covariances))
   const flat = (cs: number[][][]): number[][] => cs.map((c) => c.flat())
+  const params: GaussianMixtureParams = {
+    weights: s.weights,
+    means: s.means,
+    covariances: s.covariances,
+    covarianceType: type,
+    logLikelihood: s.logLikelihood,
+    nIter: out.steps,
+    converged: out.status === 'converged',
+  }
+  const verbs = mixtureVerbs(params)
+  // The log density over the data's range, for one or two features.
+  const surface =
+    (s.means[0]?.length ?? 0) <= 2
+      ? [
+          decisionSurfaceOf(
+            { estimator: 'gaussian-mixture', kind: 'density', params, ...verbs, predict: verbs.scoreSamples },
+            data.x,
+            { resolution: 40 },
+          ),
+        ]
+      : []
   return {
-    params: {
-      weights: s.weights,
-      means: s.means,
-      covariances: s.covariances,
-      covarianceType: type,
-      logLikelihood: s.logLikelihood,
-      nIter: out.steps,
-      converged: out.status === 'converged',
-    },
+    params,
     exposition: [
       mixtureSteps({
         family: `gaussian-${type}`,
@@ -362,6 +376,7 @@ function fitGaussianMixture(data: LearnData, h: GaussianMixtureHyper, options: F
         responsibilities: [final.resp],
         objective: s.history.objective,
       }),
+      ...surface,
     ],
   }
 }

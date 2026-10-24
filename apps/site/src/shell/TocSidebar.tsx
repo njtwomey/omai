@@ -16,8 +16,9 @@ export interface TocSidebarProps {
 
 /**
  * The left-hand contents of a section: a filter box, then the tree as given, every folder closed except those on the
- * way to the current page, which is highlighted. A click on a folder opens or closes it; typing in the filter shows
- * only the matching nodes and the folders above them, opened.
+ * way to the current page, which is highlighted. A folder's chevron opens or closes it; its name links its own page
+ * when it has a `path` (and toggles it otherwise). Typing in the filter shows only the matching nodes and the folders
+ * above them, opened.
  *
  * @param props - The tree, the current path, the front page link and the placeholder.
  * @returns The sidebar's contents.
@@ -89,27 +90,48 @@ function TocList(props: {
         return (
           <li key={n.id}>
             {folder ? (
-              <button
-                type="button"
-                aria-expanded={opened}
-                onClick={() => toggle(n.id)}
+              <div
                 style={indent}
-                className="flex w-full items-center gap-1 rounded-md py-1 pr-2 text-left text-fg hover:bg-surface"
+                className={`flex items-center rounded-md ${here ? 'bg-surface' : 'hover:bg-surface'}`}
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="12"
-                  height="12"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  aria-hidden="true"
-                  className={`shrink-0 text-muted transition-transform ${opened ? 'rotate-90' : ''}`}
+                <button
+                  type="button"
+                  aria-expanded={opened}
+                  aria-label={opened ? `Close ${n.title}` : `Open ${n.title}`}
+                  onClick={() => toggle(n.id)}
+                  className="flex size-5 shrink-0 items-center justify-center rounded text-muted hover:text-fg"
                 >
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-                <span className="truncate">{n.title}</span>
-              </button>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="12"
+                    height="12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    aria-hidden="true"
+                    className={`transition-transform ${opened ? 'rotate-90' : ''}`}
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+                {n.path === undefined ? (
+                  <button
+                    type="button"
+                    onClick={() => toggle(n.id)}
+                    className="min-w-0 flex-1 truncate py-1 pr-2 pl-0.5 text-left text-fg"
+                  >
+                    {n.title}
+                  </button>
+                ) : (
+                  <Link
+                    to={n.path}
+                    current={here}
+                    className={`min-w-0 flex-1 truncate py-1 pr-2 pl-0.5 ${here ? 'font-medium text-accent' : 'text-fg hover:text-fg'}`}
+                  >
+                    {n.title}
+                  </Link>
+                )}
+              </div>
             ) : n.path === undefined ? (
               <span style={indent} className="block truncate py-1 pr-2 text-muted">
                 {n.title}
