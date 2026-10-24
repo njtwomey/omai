@@ -293,8 +293,21 @@ export function pgcd(a: P, b: P): P {
   if (pIsZero(a)) return pIsZero(b) ? b : pnumericContent(b)[1]
   if (pIsZero(b)) return pnumericContent(a)[1]
   if (pIsConst(a) || pIsConst(b)) return pconst(a.n, R1)
+  // A monomial's gcd with anything is the monomial of the smallest exponents.
+  if (a.terms.length === 1 || b.terms.length === 1) {
+    const e = [...((a.terms.length === 1 ? a : b).terms[0] as Term).e]
+    for (const t of (a.terms.length === 1 ? b : a).terms)
+      t.e.forEach((k, i) => {
+        if (k < (e[i] as number)) e[i] = k
+      })
+    return { n: a.n, terms: [{ e, c: R1 }] }
+  }
   const vs = [...new Set([...pvars(a), ...pvars(b)])].sort((x, y) => x - y)
   const v = vs[0] as number
+  if (vs.length === 1) {
+    // One variable: Euclid on dense coefficients over the rationals, then the primitive integer form.
+    return pnumericContent(fromDense(ugcd(toDense(a, v), toDense(b, v)), a.n, v))[1]
+  }
   if (pdeg(a, v) <= 0) return pgcd(a, pcontentIn(b, v))
   if (pdeg(b, v) <= 0) return pgcd(pcontentIn(a, v), b)
   const ca = pcontentIn(a, v)
@@ -310,8 +323,9 @@ export function pgcd(a: P, b: P): P {
       pb = r
       break
     }
+    // Primitive part (polynomial and numeric content removed) keeps the coefficients from growing.
     const cr = pcontentIn(r, v)
-    pb = pdivExact(r, cr) ?? r
+    pb = pnumericContent(pdivExact(r, cr) ?? r)[1]
   }
   const prim = pIsZero(pb) ? pa : pconst(a.n, R1)
   const cp = pcontentIn(prim, v)
@@ -421,12 +435,13 @@ export function umonic(a: U): U {
 
 /** Monic gcd. @internal */
 export function ugcd(a: U, b: U): U {
-  let x = utrim(a)
-  let y = utrim(b)
+  // Monic remainders keep the rational coefficients small.
+  let x = umonic(a)
+  let y = umonic(b)
   while (y.length > 0) {
     const r = udivmod(x, y)[1]
     x = y
-    y = r
+    y = umonic(r)
   }
   return umonic(x)
 }

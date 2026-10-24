@@ -19,7 +19,7 @@ import { exprToP, findGens, pToExpr } from './_poly.ts'
 import { rat } from './_rational.ts'
 import { apart as apartRaw, cancel as cancelRaw, numerDenom, together as togetherRaw } from './_rational-functions.ts'
 import { hasTrig, trigSimplifyExpr } from './_trigsimp.ts'
-import type { Derivation, Expr, ExprSym, Step } from './expr.ts'
+import { type Derivation, type Expr, type ExprSym, type Step, sym } from './expr.ts'
 
 /**
  * Compare two expressions in SymPy's canonical sort order (`default_sort_key`): numbers, then symbols, then
@@ -344,4 +344,37 @@ export function trigSimplifySteps(e: Expr): Derivation {
   const steps: Step[] = []
   const result = trigSimplifyExpr(e, steps)
   return { result, steps }
+}
+
+/** The rewrites of this module, by name, for {@link rewriteSteps}. */
+export type Rewrite = 'expand' | 'factor' | 'collect' | 'together' | 'cancel' | 'apart' | 'trigSimplify' | 'simplify'
+
+/**
+ * Apply one of the rewrites by name and return its derivation: the detailed steps of expand, trigSimplify and
+ * simplify, or a single step named after the rewrite for factor, collect, together, cancel and apart (none when the
+ * expression is already in that form).
+ *
+ * @param rule - The rewrite.
+ * @param e - The expression.
+ * @param x - The variable for collect and apart (the symbol x by default).
+ * @returns The result and its steps.
+ * @example
+ * ```ts
+ * import { parse, rewriteSteps } from 'whitebox-engine/symbolic'
+ * rewriteSteps('factor', parse('x^2 - 1')).steps.map((s) => s.rule) // => ['factor']
+ * ```
+ */
+export function rewriteSteps(rule: Rewrite, e: Expr, x: ExprSym = sym('x')): Derivation {
+  if (rule === 'expand') return expandSteps(e)
+  if (rule === 'trigSimplify') return trigSimplifySteps(e)
+  if (rule === 'simplify') return simplifySteps(e)
+  const rewrites: Readonly<Record<string, () => Expr>> = {
+    factor: () => factor(e),
+    collect: () => collect(e, x),
+    together: () => togetherRaw(e),
+    cancel: () => cancelRaw(e),
+    apart: () => apartRaw(e, x),
+  }
+  const result = (rewrites[rule] as () => Expr)()
+  return { result, steps: result.key === e.key ? [] : [{ rule, before: e, after: result }] }
 }

@@ -109,10 +109,12 @@ function constant(name: string): Expr | undefined {
 
 class TextParser {
   private i = 0
-  constructor(
-    private readonly toks: readonly Token[],
-    private readonly options: ParseOptions,
-  ) {}
+  private readonly toks: readonly Token[]
+  private readonly options: ParseOptions
+  constructor(toks: readonly Token[], options: ParseOptions) {
+    this.toks = toks
+    this.options = options
+  }
 
   private peek(): Token {
     return this.toks[this.i] as Token

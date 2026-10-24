@@ -140,10 +140,12 @@ const IGNORED = new Set(['displaystyle', 'textstyle', 'mathrm', 'limits', 'nolim
 class LatexParser {
   private i = 0
   private absDepth = 0
-  constructor(
-    private readonly toks: readonly Tok[],
-    private readonly options: Options,
-  ) {}
+  private readonly toks: readonly Tok[]
+  private readonly options: Options
+  constructor(toks: readonly Tok[], options: Options) {
+    this.toks = toks
+    this.options = options
+  }
 
   private peek(k = 0): Tok {
     return this.toks[Math.min(this.i + k, this.toks.length - 1)] as Tok

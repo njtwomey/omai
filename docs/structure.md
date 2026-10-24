@@ -563,11 +563,15 @@ lambdify values)
   `limitSteps`, `LimitDirection`.
 - `integrate.ts`: `integrate` (linearity; table with linear arguments, Gaussians via erf, quadratic radicals; rational
   functions by partial fractions with the reduction formula for repeated quadratics; powers and products of sines and
-  cosines; reduction formulas for tan, cot, sec, csc; derivative-divides substitution; integration by parts; every
-  candidate verified by differentiation; returns an unevaluated `Integral` otherwise), `integrateSteps`,
+  cosines; reduction formulas for tan, cot, sec, csc; tabular integration by parts for polynomials times exp, sin,
+  cos, sinh, cosh; derivative-divides substitution; integration by parts; every candidate verified by differentiation;
+  the search is bounded in attempts, depth and expression size, so any integrand returns within milliseconds;
+  returns an unevaluated `Integral` otherwise, term by term), `integrateSteps`,
   `definiteIntegral` (limits of the antiderivative, checked against adaptive Gauss-Kronrod with a numeric fallback;
   poles of rational integrands in the interval are an error), `definiteIntegralSteps`, `DefiniteOptions`. TODO: the
-  Risch algorithm, and Rothstein-Trager for rational functions with irreducible denominators of degree above two.
+  Risch algorithm; Rothstein-Trager for rational functions with irreducible denominators of degree above two;
+  antiderivatives in special functions other than erf (Ei, li, Si, Ci, erfi, Fresnel S and C, polylogarithms), so
+  for example exp(x/2)*log(x^2 + 1), sin(x)/x and exp(x^2) stay unevaluated.
 - `solve.ts`: `solve` (polynomials of any degree whose factors over the rationals have degree at most four, rational
   equations, products, polynomials in exp(x) or another single function of x, invertible a*h(u) + b = 0 with SymPy's
   principal solutions), `solveSteps`, `solveLinearSystem` (Gauss-Jordan over expressions, underdetermined systems in

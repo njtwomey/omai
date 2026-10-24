@@ -79,6 +79,18 @@ describe('integrate', () => {
     expect(toText(integrate(parse('1/(x^4 + 1)'), x))).toBe('Integral(1/(x**4 + 1), x)')
   })
 
+  it('gives up quickly on non-elementary integrands', () => {
+    // exp(x/2)*log(x^2 + 1) needs the exponential integral Ei at complex arguments; the bounded search must stop.
+    for (const s of ['exp(x/2)*log(x^2 + 1)', '(2*x + 2*y + sin(x))*sin(x^2*y)', 'sin(sin(x))']) {
+      const t0 = performance.now()
+      const F = integrate(parse(s), x)
+      expect(performance.now() - t0, s).toBeLessThan(500)
+      expect(toText(F), s).toContain('Integral(')
+    }
+    // Partial results: what has an antiderivative is integrated, the rest stays unevaluated.
+    expect(toText(integrate(parse('(1 + cos(x))*sin(sin(x))'), x))).toContain('-cos(sin(x))')
+  })
+
   it('handles symbolic coefficients', () => {
     const F = integrate(parse('a*x^2 + b*x + c'), x)
     expect(toText(F)).toBe('a*x**3/3 + b*x**2/2 + c*x')
@@ -87,7 +99,7 @@ describe('integrate', () => {
 
   it('records the rules used', () => {
     const d = integrateSteps(parse('x*cos(x)'), x)
-    expect(d.steps.some((s) => s.rule === 'integration by parts')).toBe(true)
+    expect(d.steps.some((s) => s.rule.includes('by parts'))).toBe(true)
     const sub = integrateSteps(parse('2*x*exp(x^2)'), x)
     expect(sub.steps.some((s) => s.rule.startsWith('substitution'))).toBe(true)
   })

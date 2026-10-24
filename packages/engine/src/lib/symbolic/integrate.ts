@@ -1,8 +1,15 @@
 import { WhiteboxError } from '../base/index.ts'
 import { isInfinite, MINUS_ONE, makeAdd, makeIntegral, makeMul, makePow, NAN, numFromFloat, ZERO } from './_canon.ts'
 import { expandExpr } from './_expand.ts'
-import { isRationalIn, rationalIntegral, reductionIntegral, table, trigIntegral } from './_integrals.ts'
-import { numericCompare } from './_measure.ts'
+import {
+  isRationalIn,
+  rationalIntegral,
+  reductionIntegral,
+  table,
+  tabularIntegral,
+  trigIntegral,
+} from './_integrals.ts'
+import { countOps, numericCompare } from './_measure.ts'
 import { children, hasSymbol } from './_node.ts'
 import { evalReal, freeNames, type NumericFunctions, quadrature } from './_numeric.ts'
 import { cancel, numerDenom } from './_rational-functions.ts'
@@ -12,12 +19,21 @@ import { toText } from './latex.ts'
 import { limit } from './limits.ts'
 import { countRealRoots } from './polynomials.ts'
 
-const MAX_DEPTH = 8
+const MAX_DEPTH = 4
 
 interface Ctx {
   readonly steps: Step[] | undefined
   depth: number
+  /** Attempts left: the search (substitution and parts at every level) is exponential, so it is bounded. */
+  budget: number
+  /** Results already found for an integrand (undefined for failures). */
+  readonly memo: Map<string, Expr | undefined>
 }
+
+const BUDGET = 150
+const MAX_OPS = 40
+const MAX_CANDIDATES = 10
+const MAX_CANCEL_OPS = 25
 
 function record(ctx: Ctx, rule: string, e: Expr, x: ExprSym, F: Expr): Expr {
   if (ctx.steps !== undefined) ctx.steps.push({ rule, before: makeIntegral(e, x), after: F })
@@ -56,10 +72,12 @@ function candidates(e: Expr, x: ExprSym): Expr[] {
 /** Derivative-divides substitution: e = h(g(x)) g'(x) gives ∫ h(U) dU at U = g(x). */
 function substitution(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
   const U = sym(`u_sub${ctx.depth}__`)
-  for (const g of candidates(e, x)) {
+  for (const g of candidates(e, x).slice(0, MAX_CANDIDATES)) {
     const dg = diff(g, x)
     if (dg.kind === 'num' && dg.n === 0n) continue
-    const quotient = cancel(makeMul([e, makePow(dg, MINUS_ONE)]))
+    // Cancel only small quotients: multivariate gcds of large ones cost far more than the substitution is worth.
+    const raw = makeMul([e, makePow(dg, MINUS_ONE)])
+    const quotient = countOps(raw) <= MAX_CANCEL_OPS ? cancel(raw) : raw
     const inU = substitute(quotient, [[g, U]])
     if (hasSymbol(inU, x)) continue
     if (inU.key === e.key) continue
@@ -90,7 +108,15 @@ function byParts(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
 
 function core(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
   if (!hasSymbol(e, x)) return record(ctx, 'constant', e, x, makeMul([e, x]))
-  return attempt(e, x, ctx)
+  const key = `${x.key}|${e.key}`
+  if (ctx.memo.has(key)) return ctx.memo.get(key)
+  // Integrands that the search has grown past this size are not worth pursuing.
+  if (ctx.budget-- <= 0 || (ctx.depth > 0 && countOps(e) > MAX_OPS)) return undefined
+  // Mark the integrand as in progress, so that a cycle (by parts back to the start) fails instead of recursing.
+  ctx.memo.set(key, undefined)
+  const F = attempt(e, x, ctx)
+  ctx.memo.set(key, F)
+  return F
 }
 
 /** Run a search step one level deeper (substitution and integration by parts bound the recursion). */
@@ -111,6 +137,7 @@ function verified(F: Expr | undefined, e: Expr, x: ExprSym): Expr | undefined {
   const check = numericCompare(dF, e, 1e-7)
   if (check === 'equal') return F
   if (check === 'different') return undefined
+  if (countOps(dF) + countOps(e) > 4 * MAX_CANCEL_OPS) return undefined
   return cancel(expandExpr(makeAdd([dF, makeMul([MINUS_ONE, e])]))).key === ZERO.key ? F : undefined
 }
 
@@ -137,6 +164,7 @@ function attempt(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
   if (verified(t, e, x) !== undefined) return record(ctx, 'table', e, x, t as Expr)
   const methods: [string, () => Expr | undefined][] = [
     ['partial fractions', () => rationalIntegral(e, x)],
+    ['tabular integration by parts', () => tabularIntegral(e, x)],
     ['trigonometric powers', () => trigIntegral(e, x, (f, u) => core(f, u, ctx))],
     ['reduction formula', () => reductionIntegral(e, x, (f) => core(f, x, ctx))],
   ]
@@ -168,7 +196,7 @@ function attempt(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
     const F = core(ex, x, ctx)
     if (F !== undefined) return record(ctx, 'expand', e, x, F)
   }
-  if (!isRationalIn(e, x)) {
+  if (!isRationalIn(e, x) && countOps(e) <= MAX_CANCEL_OPS) {
     const cancelled = cancel(e)
     if (cancelled.key !== e.key && cancelled.key !== ex.key) {
       const F = core(cancelled, x, ctx)
@@ -179,14 +207,20 @@ function attempt(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
 }
 
 function run(e: Expr, x: ExprSym, steps: Step[] | undefined): Expr {
-  const ctx: Ctx = { steps, depth: 0 }
-  // Integrate term by term so that what fails stays as an unevaluated integral of its own.
+  const ctx: Ctx = { steps, depth: 0, budget: BUDGET, memo: new Map() }
+  if (e.kind !== 'add') {
+    const F = core(e, x, ctx)
+    if (F !== undefined) return F
+  }
+  // Term by term (after expanding a product), so that what fails stays as an unevaluated integral of its own.
   const ex = e.kind === 'add' ? e : expandExpr(e)
-  const terms = ex.kind === 'add' && e.kind === 'add' ? ex.args : [e]
+  if (ex.kind !== 'add') return makeIntegral(e, x)
   const done: Expr[] = []
   const left: Expr[] = []
-  for (const t of terms) {
-    const F = core(t, x, ctx)
+  for (const t of ex.args) {
+    // A fresh search per term: failures cached under the first, exhausted budget must not stick.
+    const termCtx: Ctx = { steps, depth: 0, budget: BUDGET, memo: new Map() }
+    const F = core(t, x, termCtx)
     if (F === undefined) left.push(t)
     else done.push(F)
   }
@@ -200,9 +234,10 @@ function run(e: Expr, x: ExprSym, steps: Step[] | undefined): Expr {
  * logarithms, Gaussians via erf, quadratic radicals), rational functions by partial fractions (logarithms,
  * arctangents and the reduction formula for repeated quadratic factors), powers and products of sines and cosines,
  * reduction formulas for tan, cot, sec and csc, derivative-divides substitution and integration by parts (LIATE).
- * Every candidate is checked by differentiating it. What no rule handles is returned as an unevaluated `Integral`.
- * TODO: the full Risch algorithm, and Rothstein-Trager for rational functions with irreducible denominators of
- * degree above two.
+ * Every candidate is checked by differentiating it. The search is bounded (attempts, depth, expression size), so any
+ * integrand returns quickly; what no rule handles is returned, term by term, as an unevaluated `Integral`.
+ * TODO: the full Risch algorithm, Rothstein-Trager for rational functions with irreducible denominators of degree
+ * above two, and antiderivatives in special functions other than erf (Ei, li, Si, Ci, erfi, Fresnel integrals).
  *
  * @param e - The integrand.
  * @param x - The variable.
@@ -229,7 +264,7 @@ export function integrate(e: Expr, x: ExprSym): Expr {
  * @example
  * ```ts
  * import { integrateSteps, parse, sym } from 'whitebox-engine/symbolic'
- * integrateSteps(parse('x*cos(x)'), sym('x')).steps.some((s) => s.rule === 'integration by parts') // => true
+ * integrateSteps(parse('x*cos(x)'), sym('x')).steps.some((s) => s.rule.includes('by parts')) // => true
  * ```
  */
 export function integrateSteps(e: Expr, x: ExprSym): Derivation {

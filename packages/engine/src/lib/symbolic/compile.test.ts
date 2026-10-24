@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { grad, jacfwd, vmap } from '../autodiff/index.ts'
 import { isWhiteboxError } from '../base/index.ts'
 import { erf } from '../numerics/special/index.ts'
-import { tensor, toArray, type Value } from '../tensor/index.ts'
+import { minimize } from '../optim/index.ts'
+import { type Tree, tensor, toArray, type Value } from '../tensor/index.ts'
 import { compile, diff, evaluate, evaluateComplex, parse, sym } from './index.ts'
 
 const x = sym('x')
@@ -60,6 +61,21 @@ describe('compile', () => {
     expect((toArray(batched) as number[]).length).toBe(3)
     const j = jacfwd((t: Value) => f(t, 2))(tensor([0.1, 0.2]))
     expect(toArray(j)).toHaveLength(2)
+  })
+
+  it('serves as an objective for minimisation', () => {
+    // Rosenbrock's function, compiled and minimised by BFGS with autodiff gradients.
+    const f = compile(parse('(1 - x)^2 + 100*(y - x^2)^2'), ['x', 'y'])
+    const res = minimize(
+      (p: Tree) => {
+        const q = p as { x: Value; y: Value }
+        return f(q.x, q.y)
+      },
+      { x: tensor(-1.2), y: tensor(1) },
+    )
+    const sol = res.x as { x: Value; y: Value }
+    close(toArray(sol.x) as number, 1, 1e-5)
+    close(toArray(sol.y) as number, 1, 1e-5)
   })
 
   it('takes implementations of erf and undefined functions', () => {

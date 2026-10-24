@@ -428,6 +428,36 @@ export function trigIntegral(
   return undefined
 }
 
+const KERNELS = new Set(['exp', 'sin', 'cos', 'sinh', 'cosh'])
+
+/**
+ * Tabular integration by parts: P(x) k(u) for a polynomial P and k in exp, sin, cos, sinh, cosh of a linear u is
+ * sum_j (-1)^j P^(j) K_(j+1), with K_1 = ∫k and K_(j+1) = ∫K_j; no search needed, however high the degree.
+ * @internal
+ */
+export function tabularIntegral(e: Expr, x: ExprSym): Expr | undefined {
+  if (e.kind !== 'mul') return undefined
+  const kernels = e.args.filter((f) => f.kind === 'fn' && KERNELS.has(f.name) && hasSymbol(f, x))
+  if (kernels.length !== 1) return undefined
+  const k = kernels[0] as Expr & { kind: 'fn' }
+  if (linear(k.args[0] as Expr, x) === undefined) return undefined
+  const p = makeMul(e.args.filter((f) => f !== k))
+  const gens = findGens(p)
+  if (gens.some((g) => g.key !== x.key && hasSymbol(g, x)) || exprToP(p, gens) === undefined) return undefined
+  const terms: Expr[] = []
+  let deriv = p
+  let K: Expr = k
+  for (let j = 0; j < 64 && !(deriv.kind === 'num' && deriv.n === 0n); j++) {
+    const [c, body] = asCoeffMul(K)
+    const next = table(body, x)
+    if (next === undefined) return undefined
+    K = makeMul([c, next])
+    terms.push(makeMul([j % 2 === 0 ? ONE : MINUS_ONE, deriv, K]))
+    deriv = expandExpr(diff(deriv, x))
+  }
+  return makeAdd(terms)
+}
+
 /** Reduction formulas for tan^n, cot^n, sec^n and csc^n of a linear argument (n >= 2). @internal */
 export function reductionIntegral(e: Expr, x: ExprSym, again: (f: Expr) => Expr | undefined): Expr | undefined {
   if (e.kind !== 'pow' || e.base.kind !== 'fn' || e.exp.kind !== 'num' || e.exp.d !== 1n || e.exp.n < 2n)
