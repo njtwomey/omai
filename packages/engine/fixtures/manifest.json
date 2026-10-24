@@ -612,6 +612,14 @@
       "cases": 30
     },
     {
+      "fixture": "learn/preprocessing/scalers.json",
+      "source": "oracle/cases/learn/preprocessing/scalers.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 26
+    },
+    {
       "fixture": "losses/classification.json",
       "source": "oracle/cases/losses/classification.py",
       "reference": {
