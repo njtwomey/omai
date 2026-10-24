@@ -112,3 +112,62 @@ describe('traversals', () => {
     })
   })
 })
+
+describe('diagram self-loops and stable sizes', () => {
+  const dfa = structure(
+    'automaton',
+    ['p', 'q'].map((id) => ({ id, label: id, role: 'state' as const })),
+    [
+      { from: 'p', to: 'p', label: 'a' },
+      { from: 'p', to: 'q', label: 'b' },
+      { from: 'q', to: 'q', label: 'a, b' },
+    ],
+    { direction: 'right' },
+  )
+  const nodeBox = (all: SceneNode[], id: string): { x: number; y: number } => {
+    const g = all.find((n) => n.kind === 'group' && n.id === id)
+    const c = g?.kind === 'group' ? g.children.find((n) => n.kind === 'circle' || n.kind === 'rect') : undefined
+    if (c?.kind === 'circle') return { x: c.cx, y: c.cy }
+    if (c?.kind === 'rect') return { x: c.x, y: c.y }
+    throw new Error(`no node ${id}`)
+  }
+
+  it('draws a loop per self-edge, matched to its own edge, with its label, inside the scene', () => {
+    const s = diagram(dfa)
+    const all = flatten(s.children)
+    const loop = all.find((n) => n.kind === 'path' && n.id === 'edge:0')
+    const straight = all.find((n) => n.kind === 'path' && n.id === 'edge:1')
+    expect(loop?.kind === 'path' && loop.points.length).toBe(5)
+    expect(straight?.kind === 'path' && straight.points.length).toBe(2)
+    expect(all.some((n) => n.kind === 'text' && n.text === 'a, b')).toBe(true)
+    // The loop leaves and re-enters the node: both ends lie on the circle around p.
+    const p = nodeBox(all, 'p')
+    if (loop?.kind === 'path') {
+      const [first, last] = [loop.points[0], loop.points[4]]
+      expect(Math.hypot((first?.[0] ?? 0) - p.x, (first?.[1] ?? 0) - p.y)).toBeCloseTo(
+        Math.hypot((last?.[0] ?? 0) - p.x, (last?.[1] ?? 0) - p.y),
+        6,
+      )
+    }
+    // Everything sits inside the scene (the loops rise above the layout's own box).
+    const translate = s.children[0]?.kind === 'group' ? (s.children[0].translate ?? [0, 0]) : [0, 0]
+    for (const n of all)
+      if (n.kind === 'path')
+        for (const [x, y] of n.points) {
+          expect(x + (translate[0] ?? 0)).toBeGreaterThanOrEqual(0)
+          expect(y + (translate[1] ?? 0)).toBeGreaterThanOrEqual(0)
+          expect(x + (translate[0] ?? 0)).toBeLessThanOrEqual(s.width)
+        }
+  })
+
+  it('keeps every node in place across an animation when given its frames', () => {
+    const frames = [{}, { badges: { p: { value: 1.2345 } } }, { badges: { p: { value: 1.2345 }, q: { value: 42 } } }]
+    const at = (overlay: (typeof frames)[number]): string =>
+      JSON.stringify(['p', 'q'].map((id) => nodeBox(flatten(diagram(dfa, { overlay, frames }).children), id)))
+    expect(at(frames[0] ?? {})).toBe(at(frames[2] ?? {}))
+    // Without the frames, badges grow the nodes and move them.
+    const loose = (overlay: (typeof frames)[number]): string =>
+      JSON.stringify(['p', 'q'].map((id) => nodeBox(flatten(diagram(dfa, { overlay }).children), id)))
+    expect(loose(frames[0] ?? {})).not.toBe(loose(frames[2] ?? {}))
+  })
+})
