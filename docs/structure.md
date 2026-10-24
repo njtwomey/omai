@@ -3148,11 +3148,14 @@ built from: `learn`, `probprog` (label models as programs), `metrics`
 
 `active-learning/` (modAL, ALiPy)
 built from: `learn/active-learning.ts`, `learn`, `neural` (for Bayesian query strategies), `numerics/spatial`
-- `strategies.ts`: uncertainty sampling (least confident, margin, entropy), query by committee (vote entropy, KL),
-  expected model change, expected error reduction, BALD, core-sets (k-centre greedy), density-weighted and diversity
+- `strategies.ts`: the core's strategies by name (`queryStrategy`: uncertainty sampling by least confidence, margin
+  and entropy; query by committee by vote entropy, consensus entropy and maximum disagreement; expected error
+  reduction; ranked batch; random) and `subsampled` (a strategy over a random subset of the pool, for expected error
+  reduction lite); later expected model change, BALD, core-sets (k-centre greedy), density-weighted and diversity
   strategies, batch-mode selection (BADGE).
 - `stream.ts`: stream-based selective sampling.
-- `studies.ts`: learning-curve comparisons of strategies on generated data with known truth.
+- `studies.ts`: `activeLearningStudy`: a strategy on a labelled dataset from a few labels per class, with the learning
+  curve by labels bought against random sampling, the labelled rows per round and the final decision surface.
 
 `transfer/`
 built from: `learn`, `nn`, `losses`, `kernels`
