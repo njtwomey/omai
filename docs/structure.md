@@ -2800,6 +2800,10 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
 - `SearchTrials` (every trial of a grid, random or Bayesian search with values and pruning decisions) and
   `LearningCurve`;
 - `EpisodeRecord` (per episode returns; per step state, action, reward and frame; value and policy snapshots).
+- `BoardSteps` (a search, solver or simulation played on a grid or a graph: per step every cell's category, its text
+  and a caption, with metrics per step; mazes and frontiers, game trees with pruned branches, CSP boards, itemset
+  lattices, cellular automata) and `PopulationSteps` (generations of a population: fitness, positions over the
+  objective's surface with the search distribution, or the best program's curve over its data).
   Methods return `{ ...result, exposition: Exposition[] }`; long-running ones also emit the records' steps as trace
   events, so views can play them.
 
@@ -3988,7 +3992,8 @@ Design rules:
   as a structure with split candidates and row counts), `stages.ts` (`EnsembleStages`, `PipelineStages`),
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
-  `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`.
+  `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
+  (`BoardSteps` and `PopulationSteps` as players).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile
@@ -4036,7 +4041,8 @@ Design rules:
 - `views/`: a React component per exposition view, one file per headless module (`paths.tsx`: `PathView`,
   `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
-  `stages.tsx`, `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`), each one figure in one
+  `stages.tsx`, `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
+  `BoardPlayer`, `PopulationPlayer`), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
 - `EnvView.tsx`: one consistent view of any environment's render, decorated, with room for controls.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,

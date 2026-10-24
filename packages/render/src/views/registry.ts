@@ -3,6 +3,7 @@ import type { Exposition, ExpositionKind } from 'whitebox-engine/exposition'
 import type { Scene } from 'whitebox-engine/scene'
 import type { ViewOptions } from './_view.ts'
 import { anomalyView } from './anomaly.ts'
+import { boardFrames, populationFrames } from './boards.ts'
 import { componentsView } from './components.ts'
 import { episodeView } from './episodes.ts'
 import { marginFrames } from './margins.ts'
@@ -226,6 +227,28 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => episodeView(r, o),
+  },
+  boardSteps: {
+    kind: 'boardSteps',
+    component: 'BoardPlayer',
+    title: 'Board steps',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      const frames = boardFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
+  },
+  populationSteps: {
+    kind: 'populationSteps',
+    component: 'PopulationPlayer',
+    title: 'Population',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      const frames = populationFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
   },
 }
 
