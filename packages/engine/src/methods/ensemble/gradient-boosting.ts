@@ -1,7 +1,7 @@
 import { quantileOf, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
-import { type Exposition, ensembleStages, treeRecord } from '../../lib/exposition/index.ts'
+import { type EnsembleStages, type Exposition, ensembleStages, treeRecord } from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
   decisionSurfaceOf,
@@ -13,6 +13,7 @@ import {
   featureNamesOf,
   type LearnData,
   matrixView,
+  stagedSteps,
   takeRows,
 } from '../../lib/learn/index.ts'
 import { foldIn, permutation } from '../../lib/random/index.ts'
@@ -436,19 +437,41 @@ function boostingEstimator(
             method: name,
             weights: s.stages.map(() => h.learningRate),
             trainScores: s.losses,
+            scoreName: 'training loss',
+            higherIsBetter: false,
             ...(s.oob.length === s.losses.length && s.oob.length > 0 ? { validationScores: s.oob } : {}),
             targets: s.residuals,
           }),
         ]
         if (s.firstTree !== undefined)
           exposition.push(treeRecord({ criterion: 'friedman_mse', features, nodes: s.firstTree.nodes }))
-        if (prepared.x.d === 2)
-          exposition.push(
-            decisionSurfaceOf(est.revive(params), data.x, {
-              featureNames: features,
-              ...(classNames === undefined ? {} : { classNames }),
-            }),
-          )
+        if (prepared.x.d === 2) {
+          // The model after each recorded stage, with the residuals its newest tree was fitted to.
+          const fitted = est.revive(params)
+          const M = s.stages.length
+          const steps =
+            options.explain === false
+              ? undefined
+              : stagedSteps(M, (m) => (m === M ? fitted : est.revive({ ...params, stages: s.stages.slice(0, m) })), {
+                  objective: s.losses,
+                  rowWeights: s.residuals,
+                  misclassified: classifier,
+                })
+          const surface = decisionSurfaceOf(fitted, data.x, {
+            featureNames: features,
+            ...(classNames === undefined ? {} : { classNames }),
+            ...(data.y === undefined ? {} : { y: data.y }),
+            ...(steps === undefined
+              ? {}
+              : {
+                  steps,
+                  stepName: 'stage',
+                  objective: { name: 'training loss', iterations: s.losses.map((_, m) => m + 1), values: s.losses },
+                }),
+          })
+          exposition[0] = { ...(exposition[0] as EnsembleStages), surface }
+          exposition.push(surface)
+        }
         return { params, exposition }
       },
       methods: (p: GradientBoostingParams) => boostingVerbs(p),

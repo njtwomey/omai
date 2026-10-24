@@ -1,7 +1,13 @@
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution, normal } from '../../lib/dists/index.ts'
-import { type Exposition, ensembleStages, type TreeNode, treeRecord } from '../../lib/exposition/index.ts'
+import {
+  type EnsembleStages,
+  type Exposition,
+  ensembleStages,
+  type TreeNode,
+  treeRecord,
+} from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
   decisionSurfaceOf,
@@ -12,6 +18,7 @@ import {
   type Fitted,
   featureNamesOf,
   type LearnData,
+  stagedSteps,
   takeRows,
 } from '../../lib/learn/index.ts'
 import { foldIn, type Key, randint } from '../../lib/random/index.ts'
@@ -222,6 +229,8 @@ function forestEstimator(
             method: name,
             weights: members.map(() => 1),
             trainScores,
+            scoreName: classifier ? 'accuracy' : 'R²',
+            higherIsBetter: true,
             ...(oob === undefined ? {} : { validationScores: oob }),
             ...(h.bootstrap ? { bootstraps: members.map((m) => m.rows) } : {}),
           }),
@@ -232,13 +241,37 @@ function forestEstimator(
             nodes: members[0]?.nodes ?? [],
           }),
         ]
-        if (prepared.x.d === 2)
-          exposition.push(
-            decisionSurfaceOf(est.revive(params), data.x, {
-              featureNames: features,
-              ...(classNames === undefined ? {} : { classNames }),
-            }),
-          )
+        if (prepared.x.d === 2) {
+          // The forest as its trees are added: the average of the first m.
+          const fitted = est.revive(params)
+          const M = members.length
+          const steps =
+            options.explain === false
+              ? undefined
+              : stagedSteps(M, (m) => (m === M ? fitted : est.revive({ ...params, trees: params.trees.slice(0, m) })), {
+                  objective: trainScores,
+                  misclassified: classifier,
+                })
+          const surface = decisionSurfaceOf(fitted, data.x, {
+            featureNames: features,
+            ...(classNames === undefined ? {} : { classNames }),
+            ...(data.y === undefined ? {} : { y: data.y }),
+            ...(steps === undefined
+              ? {}
+              : {
+                  steps,
+                  stepName: 'trees',
+                  objective: {
+                    name: classifier ? 'training accuracy' : 'training R²',
+                    iterations: trainScores.map((_, m) => m + 1),
+                    values: trainScores,
+                    lowerIsBetter: false,
+                  },
+                }),
+          })
+          exposition[0] = { ...(exposition[0] as EnsembleStages), surface }
+          exposition.push(surface)
+        }
         return { params, exposition }
       },
       methods: (p: ForestParams) => forestVerbs(p),

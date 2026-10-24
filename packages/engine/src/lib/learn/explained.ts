@@ -151,6 +151,50 @@ export interface SurfaceStepsInput {
   readonly highlightName?: string
 }
 
+/**
+ * The recorded steps of a model built stage by stage (boosting, forests): the model with its first m members at up to
+ * `limit` stage counts spaced geometrically from 1 to all of them, with what each stage did.
+ *
+ * @param stages - The number of members.
+ * @param modelAt - The model with its first m members (m from 1 to `stages`; the last is the fitted model).
+ * @param extras - Per stage (index m - 1): the objective and the row weights the member was fitted to; and whether to
+ * highlight the rows the model then misclassifies.
+ * @param limit - The most steps (default 40).
+ * @returns The steps, or `undefined` for fewer than two stages.
+ * @example
+ * ```ts
+ * import { stagedSteps } from 'whitebox-engine/learn'
+ * const model = { estimator: 'm', kind: 'regressor', params: {} }
+ * stagedSteps(100, () => model, {}, 4)?.iterations // => [1, 5, 22, 100]
+ * ```
+ */
+export function stagedSteps(
+  stages: number,
+  modelAt: (stages: number) => Fitted,
+  extras: {
+    readonly objective?: readonly number[]
+    readonly rowWeights?: readonly (readonly number[])[]
+    readonly misclassified?: boolean
+  } = {},
+  limit = 40,
+): SurfaceStepsInput | undefined {
+  if (stages < 2) return undefined
+  const counts = geometricSteps(stages - 1, limit).map((t) => t + 1)
+  const objective = extras.objective
+  const weights = extras.rowWeights
+  return {
+    models: counts.map((m) => modelAt(m)),
+    iterations: counts,
+    ...(objective === undefined || objective.length < stages
+      ? {}
+      : { objective: counts.map((m) => objective[m - 1] ?? 0) }),
+    ...(weights === undefined || weights.length < stages
+      ? {}
+      : { rowWeights: counts.map((m) => weights[m - 1] ?? []) }),
+    ...(extras.misclassified === true ? { highlight: 'misclassified' as const } : {}),
+  }
+}
+
 /** Options of {@link decisionSurfaceOf}. */
 export interface DecisionSurfaceOptions {
   /** The two feature columns spanning the grid (default [0, 1]); other features are held at their means. */
@@ -397,7 +441,7 @@ export function decisionSurfaceOf(
       ...(objective === undefined || !Number.isFinite(objective) ? {} : { objective }),
       ...(rowValues === undefined ? {} : { rowValues: Array.from(rowValues) }),
       ...(highlight === undefined ? {} : { highlight }),
-      ...(rowWeights === undefined || rows === undefined ? {} : { rowWeights }),
+      ...(rowWeights === undefined || rowWeights.length !== rows?.points.length ? {} : { rowWeights }),
     }
   })
   const highlightName =
