@@ -1909,6 +1909,15 @@
       "cases": 34
     },
     {
+      "fixture": "stats/tests/bayesian.json",
+      "source": "oracle/cases/stats/tests/bayesian.py",
+      "reference": {
+        "pingouin": "0.7.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "stats/tests/contingency.json",
       "source": "oracle/cases/stats/tests/contingency.py",
       "reference": {
@@ -1927,6 +1936,33 @@
       "cases": 42
     },
     {
+      "fixture": "stats/tests/equivalence.json",
+      "source": "oracle/cases/stats/tests/equivalence.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "stats/tests/independence.json",
+      "source": "oracle/cases/stats/tests/independence.py",
+      "reference": {
+        "pingouin": "0.7.0",
+        "sklearn": "1.9.1",
+        "causal-learn": "0.1.4.8"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "stats/tests/kernel.json",
+      "source": "oracle/cases/stats/tests/kernel.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "stats/tests/means.json",
       "source": "oracle/cases/stats/tests/means.py",
       "reference": {
@@ -1935,6 +1971,24 @@
         "pingouin": "0.7.0"
       },
       "cases": 29
+    },
+    {
+      "fixture": "stats/tests/multiple.json",
+      "source": "oracle/cases/stats/tests/multiple.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "stats/tests/multivariate.json",
+      "source": "oracle/cases/stats/tests/multivariate.py",
+      "reference": {
+        "pingouin": "0.7.0",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 10
     },
     {
       "fixture": "stats/tests/nonparametric.json",
@@ -1961,6 +2015,22 @@
         "scipy": "1.18.1"
       },
       "cases": 5
+    },
+    {
+      "fixture": "stats/tests/timeseries.json",
+      "source": "oracle/cases/stats/tests/timeseries.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 79
+    },
+    {
+      "fixture": "stats/tests/two_sample.json",
+      "source": "oracle/cases/stats/tests/two_sample.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 32
     },
     {
       "fixture": "stats/transforms.json",

@@ -1,6 +1,7 @@
 // Private helpers of the stats domain: reading samples and tables once, building tensors, and scalar views of the
 // special-function CDFs that p-values and intervals need.
 import { WhiteboxError } from '../base/index.ts'
+import { quad } from '../numerics/quadrature/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import { betainc, chdtr, chdtrc, fdtr, fdtrc, lgamma, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
 import { asTensor, fromStorage, item, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -92,6 +93,11 @@ export function rootAbove(f: (x: number) => number, lo: number, hi: number, maxE
   }
   if (Math.sign(fb) === Math.sign(flo)) return Number.POSITIVE_INFINITY
   return brentq(f, lo, b, { xtol: 1e-13, rtol: 1e-13, maxIterations: 200 }).root
+}
+
+/** The integral of a scalar function by adaptive Gauss-Kronrod quadrature (infinite limits allowed). */
+export function integrate(f: (x: number) => number, a: number, b: number, epsrel = 1e-10, limit = 200): number {
+  return item(quad((x) => vec(toFlat(x).map(f)), a, b, { epsabs: 0, epsrel, limit }).value)
 }
 
 /** The two-sided normal critical value of a confidence level. */

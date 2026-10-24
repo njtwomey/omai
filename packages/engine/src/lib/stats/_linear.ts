@@ -95,6 +95,16 @@ export function pinvSym(a: ArrayLike<number>, n: number, rcond = 1e-15): Float64
   return out
 }
 
+/** The rank of a symmetric matrix: eigenvalues above max |eigenvalue| n eps (numpy.linalg.matrix_rank's tolerance). */
+export function matrixRankSym(a: ArrayLike<number>, n: number): number {
+  const w = dsyev(a, n).w
+  let top = 0
+  for (const e of w) top = Math.max(top, Math.abs(e))
+  let r = 0
+  for (const e of w) if (Math.abs(e) > top * n * Number.EPSILON) r++
+  return r
+}
+
 /** log det of a symmetric positive-definite matrix (NaN when not positive definite). */
 export function logdetSpd(a: ArrayLike<number>, n: number): number {
   const { factor, info } = dpotrf(a, n)
