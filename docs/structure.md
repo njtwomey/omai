@@ -1513,11 +1513,16 @@ jellyfish, Biopython, pyphen
   lookup, Sellers' approximate substring matching, top-k fuzzy matches with traced candidate pruning.
 - `fingerprinting.ts`: Rabin-Karp rolling hashes and search, winnowing (MOSS), SimHash, MinHash signatures (datasketch's
   scheme), LSH banding with its optimal parameters, near-duplicate detection.
-- `parsing.ts`: context-free grammars, CYK and Earley parsing, probabilistic CFGs (Viterbi parse, inside-outside),
-  dependency parsing (Eisner, arc-standard transitions).
-- `hyphenation.ts`: Liang pattern hyphenation with matching traces.
-- `statistics.ts`: Zipf and Heaps fits, type-token ratios, tokeniser fertility, compression ratio, topic coherence
-  (NPMI, UMass).
+- `parsing.ts`: context-free grammars (nltk's notation, probabilities), parse trees, CYK and Earley parsing, conversion
+  to Chomsky normal form.
+- `pcfg.ts`: probabilistic CFGs: the Viterbi parse, sentence probabilities, inside-outside expected counts, EM
+  training as a traced run.
+- `dependency-parsing.ts`: Eisner's projective parser (optionally single-rooted), projectivity, arc-standard
+  transitions with the static oracle and greedy transition-based parsing.
+- `hyphenation.ts`: Liang pattern hyphenation with matching traces, exceptions, and Hunspell/pyphen dictionaries.
+  TODO: Németh's non-standard (`/`) patterns.
+- `statistics.ts`: Zipf (log-log and maximum likelihood) and Heaps fits, type-token ratios (root, log, moving average,
+  hapax ratio), tokeniser fertility and compression ratio, topic coherence (UMass, NPMI as gensim).
 
 ### 4.22 `search/` (tier 7): search, constraint satisfaction and planning (AIMA)
 

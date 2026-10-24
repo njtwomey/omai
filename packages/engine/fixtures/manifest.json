@@ -2219,6 +2219,14 @@
       "cases": 48
     },
     {
+      "fixture": "text/hyphenation.json",
+      "source": "oracle/cases/text/hyphenation.py",
+      "reference": {
+        "pyphen": "0.18.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "text/lemmatise.json",
       "source": "oracle/cases/text/lemmatise.py",
       "reference": {
@@ -2234,6 +2242,14 @@
         "tokenizers": "0.23.3"
       },
       "cases": 96
+    },
+    {
+      "fixture": "text/parsing.json",
+      "source": "oracle/cases/text/parsing.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 10
     },
     {
       "fixture": "text/phonetic.json",
@@ -2277,6 +2293,16 @@
         "rapidfuzz": "3.14.6"
       },
       "cases": 34
+    },
+    {
+      "fixture": "text/statistics.json",
+      "source": "oracle/cases/text/statistics.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "gensim": "4.4.0"
+      },
+      "cases": 6
     },
     {
       "fixture": "text/stem.json",
