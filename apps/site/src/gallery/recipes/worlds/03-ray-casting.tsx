@@ -9,9 +9,9 @@ import {
   linearProjection,
   NumberField,
   Overlaid,
-  type Point2,
   SceneView,
   Toggle,
+  useHeldKeys,
 } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -19,7 +19,7 @@ export const recipe: Recipe = {
   title: 'Ray casting',
   question: 'How do I show a first-person view of a grid world, and where its rays go?',
   explain:
-    '`raycastViews(world, pose)` renders the first-person picture by column ray casting (the engine’s `renderRaycast`) and a map with the view cone: every few columns’ ray out to the wall it hits. Drag the eye on the map, turn it with the heading; switch off the fish-eye correction to see the distortion it removes.',
+    '`raycastViews(world, pose)` renders the first-person picture by column ray casting (the engine’s `renderRaycast`), one ray per column, and a map with the view cone. Click the figure and walk: W or ↑ forward, S or ↓ back, A and D to step sideways, ← and → to turn (`useHeldKeys` captures them while the figure has focus); or drag the eye on the map. Fewer rays make a coarser picture and a sparser fan; switch off the fish-eye correction to see the distortion it removes.',
 }
 
 const MAP = [
@@ -40,54 +40,80 @@ const SURFACES = {
   floor: [0.32, 0.3, 0.28] as const,
   ceiling: [0.55, 0.68, 0.85] as const,
 }
-const [ROWS, COLS] = [9, 12]
+// Data coordinates are cells, y growing downwards as in the world (the y range runs from the bottom row up to 0).
 const projection = linearProjection({
-  x: [0, COLS * CELL],
-  y: [ROWS * CELL, 0],
-  width: COLS * CELL,
-  height: ROWS * CELL,
+  x: [0, MAP[0]?.length ?? 0],
+  y: [MAP.length, 0],
+  width: (MAP[0]?.length ?? 0) * CELL,
+  height: MAP.length * CELL,
 })
+const KEYS = ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
+const SPEED = 2.5 // cells per second
+const TURN = Math.PI * 0.75 // radians per second
+
+const open = (x: number, y: number): boolean => MAP[Math.floor(y)]?.[Math.floor(x)] === '.'
 
 export default function RayCasting(): ReactNode {
-  const [eye, setEye] = useState<Point2>([1.5 * CELL, 1.5 * CELL])
-  const [heading, setHeading] = useState(20)
+  const [pose, setPose] = useState<Pose>({ x: 1.5, y: 1.5, heading: 0.3 })
+  const [rays, setRays] = useState(64)
   const [fisheye, setFisheye] = useState(false)
-  const views = useMemo(() => {
-    const pose: Pose = { x: eye[0] / CELL, y: eye[1] / CELL, heading: (heading * Math.PI) / 180 }
-    return raycastViews(WORLD, pose, { width: 160, height: 100, cell: CELL, fisheye, viewWidth: 400, ...SURFACES })
-  }, [eye, heading, fisheye])
-  // Keep the eye on open floor: snap back if dragged into a wall.
-  const onFloor = (p: Point2): Point2 => {
-    const r = Math.floor(p[1] / CELL)
-    const c = Math.floor(p[0] / CELL)
-    const row = [
-      '############',
-      '#....#.....#',
-      '#.##.#.###.#',
-      '#.#......#.#',
-      '#.#.####.#.#',
-      '#...#..#...#',
-      '###.#..###.#',
-      '#..........#',
-      '############',
-    ][r]
-    return row?.[c] === '.' ? p : eye
-  }
+  const keys = useHeldKeys(KEYS, {
+    onFrame: (held, dt) =>
+      setPose((p) => {
+        const has = (...k: string[]): boolean => k.some((x) => held.has(x))
+        const heading = p.heading + ((has('ArrowRight') ? 1 : 0) - (has('ArrowLeft') ? 1 : 0)) * TURN * dt
+        const forward = (has('w', 'ArrowUp') ? 1 : 0) - (has('s', 'ArrowDown') ? 1 : 0)
+        const side = (has('d') ? 1 : 0) - (has('a') ? 1 : 0)
+        const dx = (Math.cos(heading) * forward - Math.sin(heading) * side) * SPEED * dt
+        const dy = (Math.sin(heading) * forward + Math.cos(heading) * side) * SPEED * dt
+        // Slide along walls: take each axis of the move only where it stays on open floor.
+        const x = open(p.x + dx, p.y) ? p.x + dx : p.x
+        const y = open(x, p.y + dy) ? p.y + dy : p.y
+        return { x, y, heading }
+      }),
+  })
+  const views = useMemo(
+    () =>
+      raycastViews(WORLD, pose, {
+        width: rays,
+        height: Math.max(4, Math.round(rays * 0.625)),
+        cell: CELL,
+        fisheye,
+        viewWidth: 400,
+        rayEvery: 1,
+        ...SURFACES,
+      }),
+    [pose, rays, fisheye],
+  )
+  const size = { width: views.topDown.width, height: views.topDown.height }
   return (
     <div className="flex flex-col gap-3">
-      <ControlPanel columns={2}>
-        <NumberField label="heading (degrees)" value={heading} onChange={setHeading} min={-180} max={180} step={5} />
+      <ControlPanel columns={3}>
+        <NumberField label="rays (columns)" value={rays} onChange={setRays} min={8} max={320} integer log />
+        <NumberField
+          label="heading (degrees)"
+          value={Math.round((((pose.heading * 180) / Math.PI) % 360) + 360) % 360}
+          onChange={(deg) => setPose((p) => ({ ...p, heading: (deg * Math.PI) / 180 }))}
+          min={0}
+          max={359}
+          step={5}
+        />
         <Toggle label="fish-eye (no correction)" value={fisheye} onChange={setFisheye} />
       </ControlPanel>
-      <div className="flex flex-wrap items-start gap-4">
+      <div
+        {...keys.props}
+        className="flex flex-wrap items-start gap-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+      >
         <Overlaid
-          width={views.topDown.width}
-          height={views.topDown.height}
+          {...size}
           overlay={
-            <InteractionOverlay projection={projection} width={views.topDown.width} height={views.topDown.height}>
+            <InteractionOverlay projection={projection} {...size}>
               <DraggablePoints
-                points={[eye]}
-                onChange={([p]) => p !== undefined && setEye(onFloor(p))}
+                points={[[pose.x, pose.y]]}
+                onChange={([p]) => {
+                  if (p !== undefined && open(p[0], MAP.length - p[1]))
+                    setPose((q) => ({ ...q, x: p[0], y: MAP.length - p[1] }))
+                }}
                 labels={['eye']}
                 radius={7}
               />
@@ -96,7 +122,12 @@ export default function RayCasting(): ReactNode {
         >
           <SceneView scene={views.topDown} />
         </Overlaid>
-        <SceneView scene={views.firstPerson} />
+        <div className="flex flex-col gap-1">
+          <SceneView scene={views.firstPerson} style={{ imageRendering: 'pixelated' }} />
+          <span className="text-xs text-muted">
+            {keys.held.size > 0 ? 'moving…' : 'Click here, then W A S D or the arrow keys to move.'}
+          </span>
+        </div>
       </div>
     </div>
   )

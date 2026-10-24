@@ -18,8 +18,9 @@ export interface TexOptions {
 }
 
 /**
- * Typeset TeX with KaTeX and the shared macros. Invalid input never throws: KaTeX marks the error in the output.
- * `\htmlClass` is allowed (live equations use it to highlight values).
+ * Typeset TeX with KaTeX and the shared macros. Invalid input never throws and never spills raw TeX across the page:
+ * it typesets as a compact marker (`⚠ TeX`, class `wb-tex-error`) whose title holds KaTeX's message. `\htmlClass` is
+ * allowed (live equations use it to highlight values).
  *
  * @param tex - The TeX source.
  * @param options - Display mode, macros and output markup.
@@ -28,18 +29,36 @@ export interface TexOptions {
  * ```ts
  * import { texToHtml } from 'whitebox-render/maths'
  * texToHtml('\\xvec^\\top \\yvec').includes('<math') // => true
+ * texToHtml('\\frac{1}').includes('wb-tex-error') // => true
  * ```
  */
 export function texToHtml(tex: string, options: TexOptions = {}): string {
-  return katex.renderToString(tex, {
-    displayMode: options.display ?? false,
-    output: options.output ?? 'mathml',
-    throwOnError: false,
-    strict: 'ignore',
-    trust: (context) => context.command === '\\htmlClass',
-    // KaTeX may add definitions to the macros object it is given, so it gets a copy.
-    macros: { ...(options.macros ?? sharedMacros) },
-  })
+  try {
+    return katex.renderToString(tex, {
+      displayMode: options.display ?? false,
+      output: options.output ?? 'mathml',
+      throwOnError: true,
+      strict: 'ignore',
+      trust: (context) => context.command === '\\htmlClass',
+      // KaTeX may add definitions to the macros object it is given, so it gets a copy.
+      macros: { ...(options.macros ?? sharedMacros) },
+    })
+  } catch (e) {
+    return texErrorMarker(e instanceof Error ? e.message : String(e))
+  }
+}
+
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+/**
+ * The compact marker that stands in for TeX that does not parse: a warning sign with KaTeX's message as its title.
+ *
+ * @param message - The parse error.
+ * @returns The markup.
+ */
+export function texErrorMarker(message: string): string {
+  return `<span class="wb-tex-error" role="img" aria-label="TeX error" title="${escapeHtml(message)}">⚠ TeX</span>`
 }
 
 /**

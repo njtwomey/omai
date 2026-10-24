@@ -1436,6 +1436,30 @@
       "cases": 4
     },
     {
+      "fixture": "methods/gp/classification.json",
+      "source": "oracle/cases/methods/gp/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "methods/gp/regression.json",
+      "source": "oracle/cases/methods/gp/regression.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "methods/kernel_methods/kernel_ridge.json",
+      "source": "oracle/cases/methods/kernel_methods/kernel_ridge.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "methods/linear/bayesian.json",
       "source": "oracle/cases/methods/linear/bayesian.py",
       "reference": {
@@ -1460,6 +1484,14 @@
         "statsmodels": "0.15.0"
       },
       "cases": 4
+    },
+    {
+      "fixture": "methods/linear/lars.json",
+      "source": "oracle/cases/methods/linear/lars.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
     },
     {
       "fixture": "methods/linear/regression.json",
