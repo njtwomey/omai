@@ -64,3 +64,41 @@ describe('rows and batches', () => {
     expect(all).toEqual(toFlat(data.y).sort((x, y) => x - y))
   })
 })
+
+describe('generating programs (the truth as a probprog program)', () => {
+  it('friedman1: the program gives the exact log density and regression function', () => {
+    const g = generate(DS.friedman1, { ctx: createContext({ seed: 5 }), knobs: { n: 12, noise: 0.7, nFeatures: 6 } })
+    const program = g.truth.program
+    expect(program?.kind).toBe('program')
+    const exact = toFlat(g.truth.logProb?.(g.data.x, g.data.y) ?? g.data.y)
+    const viaProgram = toFlat(program?.logProb(g.data.x, g.data.y) ?? g.data.y)
+    viaProgram.forEach((v, i) => {
+      expect(v).toBeCloseTo(exact[i] ?? 0, 10)
+    })
+    const f = toFlat(program?.regressionFunction?.(g.data.x) ?? g.data.y)
+    toFlat(DS.friedman1Function(g.data.x)).forEach((v, i) => {
+      expect(f[i]).toBeCloseTo(v, 12)
+    })
+    expect(program?.sample(key(0), 4).x.shape).toEqual([4, 6])
+  })
+
+  it('blobs: the mixture program reproduces the exact joint density and class posterior', () => {
+    const g = generate(DS.blobs, { ctx: createContext({ seed: 2 }), knobs: { n: 9, centers: 3, nFeatures: 2 } })
+    const program = g.truth.program
+    expect(program?.classes).toBe(3)
+    const x = g.data.x
+    const y = g.data.y
+    const exact = toFlat(g.truth.logProb?.(x, y) ?? y)
+    toFlat(program?.logProb(x, y) ?? y).forEach((v, i) => {
+      expect(v).toBeCloseTo(exact[i] ?? 0, 10)
+    })
+    const marginal = toFlat(g.truth.logProb?.(x) ?? y)
+    toFlat(program?.logProb(x) ?? y).forEach((v, i) => {
+      expect(v).toBeCloseTo(marginal[i] ?? 0, 10)
+    })
+    const post = toFlat(program?.posterior?.(x) ?? y)
+    toFlat(g.truth.posterior?.(x) ?? y).forEach((v, i) => {
+      expect(post[i]).toBeCloseTo(v, 10)
+    })
+  })
+})

@@ -2709,6 +2709,68 @@
       "cases": 9
     },
     {
+      "fixture": "probprog/criticism.json",
+      "source": "oracle/cases/probprog/criticism.py",
+      "reference": {
+        "arviz-stats": "1.3.3",
+        "arviz-base": "1.3.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "probprog/density.json",
+      "source": "oracle/cases/probprog/density.py",
+      "reference": {
+        "numpyro": "0.22.0",
+        "jax": "0.12.0.1"
+      },
+      "cases": 102
+    },
+    {
+      "fixture": "probprog/elbo.json",
+      "source": "oracle/cases/probprog/elbo.py",
+      "reference": {
+        "numpyro": "0.22.0",
+        "jax": "0.12.0.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "probprog/engines/em.json",
+      "source": "oracle/cases/probprog/engines/em.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "probprog/engines/enumeration.json",
+      "source": "oracle/cases/probprog/engines/enumeration.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 31
+    },
+    {
+      "fixture": "probprog/engines/laplace.json",
+      "source": "oracle/cases/probprog/engines/laplace.py",
+      "reference": {
+        "numpyro": "0.22.0",
+        "jax": "0.12.0.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "probprog/handlers.json",
+      "source": "oracle/cases/probprog/handlers.py",
+      "reference": {
+        "numpyro": "0.22.0"
+      },
+      "cases": 16
+    },
+    {
       "fixture": "random/continuous.json",
       "source": "oracle/cases/random/continuous.py",
       "reference": {

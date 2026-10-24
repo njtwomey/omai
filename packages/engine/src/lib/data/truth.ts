@@ -1,12 +1,34 @@
 import { type Estimate, estimate, WhiteboxError } from '../base/index.ts'
+import type { Key } from '../random/index.ts'
 import type { Structure } from '../scene/index.ts'
 import { argmax, full, max, reshape, softmax, stack, sub, type Tensor, toFlat, type Value } from '../tensor/index.ts'
 
 /**
- * The generating probabilistic program of a dataset (a `whitebox-engine/probprog` model), kept opaque here because
- * programs live in a higher tier.
+ * The generating probabilistic program of a dataset: a `whitebox-engine/probprog` program over rows `{ x, y, n }`
+ * (features, targets and the row count), with the densities and draws it implies. Programs live in a higher tier, so
+ * this is the structural contract they satisfy (`probprog.generatingProgram` builds one); the truth's `logProb`,
+ * `posterior` and `regressionFunction` follow from it (see {@link completeTruth}).
+ *
+ * @concept dataset-truth
  */
-export type GeneratingProgram = (...args: never[]) => unknown
+export interface GeneratingProgram {
+  readonly kind: 'program'
+  /** The program itself (a probprog `Model` of `{ x?, y?, n }`), opaque at this tier. */
+  readonly model: (data: never) => unknown
+  /** The sites holding the features and the targets. */
+  readonly features: string
+  readonly target?: string
+  /** The number of classes, for classification programs. */
+  readonly classes?: number
+  /** log p(x, y) per row `[n]` (log p(x) without y), from the program. */
+  logProb(x: Value, y?: Value): Value
+  /** Class probabilities p(y | x) `[n, k]` (classification programs). */
+  posterior?(x: Value): Value
+  /** E[y | x] `[n]` (programs whose target depends on the features directly). */
+  regressionFunction?(x: Value): Value
+  /** Draw `n` rows from the program. */
+  sample(key: Key, n: number): { readonly x: Value; readonly y?: Value }
+}
 
 /** Known causal effects of a treatment on an outcome. */
 export interface CausalEffects {
@@ -139,8 +161,9 @@ export interface CompleteTruthOptions {
 }
 
 /**
- * Fill the pieces of a truth that follow from the others: the posterior from the joint log density (Bayes' rule),
- * and the Bayes error from the posterior (Monte Carlo over `x`) or from the noise scale (the noise variance).
+ * Fill the pieces of a truth that follow from the others: the log density, posterior and regression function from the
+ * generating program, the posterior from the joint log density (Bayes' rule), and the Bayes error from the posterior
+ * (Monte Carlo over `x`) or from the noise scale (the noise variance).
  *
  * @param truth - A partial truth.
  * @param options - The class count and sample rows used for derivations.
@@ -148,14 +171,26 @@ export interface CompleteTruthOptions {
  * @example
  * ```ts
  * import { completeTruth } from 'whitebox-engine/data'
+ * import { mul, tensor, toFlat } from 'whitebox-engine/tensor'
  * completeTruth({ noiseScale: 0.5 }).bayesError // => 0.25
+ * const program = { kind: 'program' as const, model: () => undefined, features: 'x', logProb: (x) => mul(x, 0), sample: () => ({ x: tensor([0]) }) }
+ * toFlat(completeTruth({ program }).logProb?.(tensor([1, 2])) ?? tensor([])) // => [0, 0]
  * ```
  */
 export function completeTruth(truth: Truth, options: CompleteTruthOptions = {}): Truth {
   let out: Truth = truth
-  const logProb = truth.logProb
-  if (out.posterior === undefined && logProb !== undefined && options.nClasses !== undefined) {
-    out = { ...out, posterior: posteriorFromJoint((x, y) => logProb(x, y), options.nClasses) }
+  const program = truth.program
+  if (program !== undefined) {
+    if (out.logProb === undefined) out = { ...out, logProb: (x, y) => program.logProb(x, y) }
+    const posterior = program.posterior
+    if (out.posterior === undefined && posterior !== undefined) out = { ...out, posterior: (x) => posterior(x) }
+    const f = program.regressionFunction
+    if (out.regressionFunction === undefined && f !== undefined) out = { ...out, regressionFunction: (x) => f(x) }
+  }
+  const nClasses = options.nClasses ?? program?.classes
+  const logProb = out.logProb
+  if (out.posterior === undefined && logProb !== undefined && nClasses !== undefined) {
+    out = { ...out, posterior: posteriorFromJoint((x, y) => logProb(x, y), nClasses) }
   }
   if (out.bayesError === undefined) {
     if (out.noiseScale !== undefined) out = { ...out, bayesError: out.noiseScale ** 2 }

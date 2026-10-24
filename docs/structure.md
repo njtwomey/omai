@@ -870,8 +870,11 @@ are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `M
   `regressionFunction`, `quantile`, `noiseScale`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`
   (`CausalEffects`: ATE, ATT, CATE, ITE, potential outcomes), `structure`, `relevantFeatures`; helpers that derive
   missing pieces: `completeTruth`, `posteriorFromJoint` (Bayes' rule from the joint density), `bayesErrorEstimate`,
-  `bayesPredict`, `clusterAgreement`, `excessRisk`. TODO: generators fill exact `logProb` and `posterior` functions
-  but not yet `program`, and `completeTruth` cannot derive from a program, until `lib/probprog` exists.
+  `bayesPredict`, `clusterAgreement`, `excessRisk`. Programs live in a higher tier, so `GeneratingProgram` is the
+  structural contract a program over rows `{ x, y, n }` satisfies (its feature and target sites, per-row `logProb`,
+  `posterior` for classification programs, `regressionFunction`, `sample`); `probprog.generatingProgram` builds one, and
+  `completeTruth` derives the log density, posterior and regression function from it. Modifiers that change how the
+  data arise drop the program (their own densities and posteriors remain).
 - `rows.ts`: `take`, `trainTestSplit` (optionally stratified), `trainValTestSplit`, `stratifiedSplit`,
   `stratifiedIndices`, `bootstrap` (with out-of-bag rows), `concatRows`, `shuffleRows`, `labelsOf`.
 - `tensors.ts`: `toTensors`, `fromTensors`, `xy`, `xyClasses`, `xyMultilabel`, `xyMultiOutput` (build a dataset from
@@ -2307,50 +2310,88 @@ Cooperative games and mechanisms:
 
 ### 4.32 `probprog/` (tier 9): probabilistic programming and automatic inference (NumPyro, Pyro)
 
-oracle: numpyro and pyro on small models (posterior moments within Monte Carlo error), pgmpy for discrete programs
+oracle: NumPyro (log densities, potentials, transforms, handler semantics, trace shapes, ELBOs at fixed guide draws,
+Laplace modes and covariances by scipy on NumPyro's potential), pgmpy and brute-force sums for discrete programs,
+scikit-learn (`GaussianMixture`, `FactorAnalysis`) for EM, ArviZ for PSIS-LOO and model comparison; closed-form
+posteriors (conjugate, Gaussian, grids, brute force) within a few Monte Carlo standard errors for the stochastic
+engines. Shared golden programs: `oracle/cases/probprog/_models.py` and `src/testing/probprog.ts`.
 
-A model is a function that calls the primitives below inside an effect-handler context. `analyse` traces it once and
-describes it; every engine says whether it applies and at what cost; `infer` picks one, records the reason, runs it as
-a traced algorithm and returns a `Posterior`. Adding an engine is adding a file to `engines/`.
-- `primitives.ts`: `sample`, `observe`, `deterministic`, `param`, `plate`, `factor`, `markov` (sequential dependence),
-  the `Model` type.
-- `handlers.ts`: `trace`, `seed`, `condition`, `substitute`, `replay`, `block`, `scale`, `mask`, `doIntervention`,
-  `enumerate` (mark discrete sites for exact summation).
-- `density.ts`: `logJoint`, `potentialEnergy` (to an unconstrained `LogDensity` with Jacobian corrections),
-  initialisation strategies, constrain and unconstrain maps.
-- `analysis.ts`: `analyse(model, data)`: sites with supports, shapes and observed status; plates; the dependency graph;
-  discrete cardinalities and the size of their joint space; conjugate prior-likelihood pairs (from
-  `dists/exponential-family.ts`); linear-Gaussian structure; chain, tree or loopy structure; whether a likelihood
-  exists (or only a simulator); differentiability.
-- `graph.ts`: `toStructure` for programs (plates, roles, dependencies), so any program draws like a graphical model.
-- `engines/engine.ts`: the `InferenceEngine` contract (`name`, `applies(analysis)` returning feasibility, estimated cost
-  and a reason; `run`; the posterior form it produces).
-- `engines/enumeration.ts`: exact inference for discrete programs through `pgm` variable elimination and junction trees.
-- `engines/conjugate.ts`: closed-form posteriors and predictives for conjugate programs.
-- `engines/gaussian.ts`: linear-Gaussian programs (exact Gaussian conditioning, Kalman filtering and smoothing for
-  chains, Gaussian belief propagation).
-- `engines/chain.ts`: discrete-state chains (HMM-like programs) by forward-backward and FFBS.
-- `engines/em.ts`: EM and MAP-EM for programs whose latents are discrete or conjugate (mixtures, HMMs, factor analysis,
-  mixtures of experts); closed-form M-steps where they exist, gradient M-steps otherwise.
-- `engines/gibbs.ts`: Gibbs sampling with conjugate and discrete conditionals, collapsed where possible (topic models).
-- `engines/nuts.ts`: NUTS and HMC on the unconstrained density, with enumerated discrete sites summed out.
-- `engines/svi.ts`: stochastic variational inference (automatic guides, ELBO estimators, subsampling over plates).
-- `engines/laplace.ts`: Laplace approximation at the MAP estimate.
-- `engines/smc.ts`: sequential Monte Carlo for programs with `markov` structure.
-- `engines/importance.ts`: likelihood weighting and importance sampling, marginal-likelihood estimates.
-- `engines/abc.ts`: approximate Bayesian computation for simulator programs without likelihoods (rejection ABC, ABC-SMC,
-  summary statistics).
-- `infer.ts`: `plan(model, data)` (ranked engines with reasons), `infer(model, data, { engine: 'auto' | engine,
-  budget })`, `explainPlan`.
+A model is a function of its data that calls the primitives below inside an effect-handler context. `analyse` traces it
+once and describes it; every engine says whether it applies and at what cost; `infer` picks one, records the reason,
+runs it as a traced algorithm and returns a `Posterior`. Adding an engine is adding a file to `engines/` (inlined into
+`whitebox-engine/probprog`). The handler stack (`_stack.ts`) is internal bookkeeping like the transform depth of
+`autodiff`: pushed and popped by try/finally around one call, empty whenever no program runs.
+- `primitives.ts`: `sample` (observed with `obs`, sample shapes, inference hints), `observe`, `deterministic`, `param`
+  (with a support), `plate` (dimensions allocated as NumPyro, subsampling with scaling, param slicing), `factor`,
+  `markov` (sequential dependence, with a history), the `Model` type, and the extension points `Message`, `Messenger`,
+  `message`, `send` and `withMessenger`.
+- `handlers.ts`: `trace` (and `traceOf`), `seed`, `condition`, `substitute`, `replay`, `block`, `scale`, `mask`,
+  `doIntervention`, `enumerate` (mark discrete sites for exact summation), `uncondition` (for predictives) and `handle`
+  (custom handlers); the recorded site types.
+- `density.ts`: `logJoint` (enumerated sites summed out by plated sum-product contraction, `_contract.ts`, with
+  dimension recycling in markov loops), `traceLogJoint`, `siteLogProbs`, `potentialEnergy` (to an unconstrained
+  `LogDensity` with Jacobian corrections, supports re-evaluated per run, discrete sites summed out), `latentLayout`,
+  initialisation strategies (`initToSample`, `initToMedian`, `initToMean`, `initToUniform`, `initToFeasible`,
+  `initToValue`, `findInitialParams`), constrain and unconstrain maps (`constrainSites`, `unconstrainSites`,
+  `constrainDraws`, `packLatents`).
+- `analysis.ts`: `analyse(model, data)`: sites with supports, shapes and observed status; plates; the dependency graph
+  (provenance tracking of tagged values, `_provenance.ts`; direct edges, seen through deterministic sites where
+  needed); discrete cardinalities and the size of their joint space; conjugate prior-likelihood pairs (from
+  `dists/conjugacy.ts`, with exponential families flagged by `dists/exponential-family.ts`); linear-Gaussian structure
+  (affine means and constant scales, checked numerically); chain, tree or loopy moral graphs; markov loops; whether a
+  likelihood exists (or only a simulator); differentiability.
+- `graph.ts`: `toStructure` for programs (plates as nested groups, markov loops as repeats, roles, dependencies), so any
+  program draws like a graphical model.
+- `truth.ts`: `generatingProgram`, a dataset's generating program as `data`'s `Truth.program` (per-row densities with
+  discrete latents summed out, class posteriors, E[y | x], draws).
+- `engines/engine.ts`: the `InferenceEngine` contract (`name`, `applies(analysis)` returning feasibility, estimated cost,
+  quality and a reason; `run`; the posterior form it produces), `QUALITY_RANK`.
+- `engines/enumeration.ts`: exact inference for discrete programs grounded into `pgm` factor graphs (`groundDiscrete`):
+  junction-tree marginals, evidence and exact joint draws, the MAP assignment by max-product variable elimination.
+- `engines/conjugate.ts`: closed-form posteriors (`conjugatePosteriors`, `conjugateData`) and predictives
+  (`conjugatePredictive`) for conjugate programs, with the evidence by the candidate's formula.
+- `engines/gaussian.ts`: linear-Gaussian programs as one linear system (`linearGaussianForm`): exact Gaussian
+  conditioning (`gaussianCondition`), Kalman filtering and RTS smoothing for chains (`kalmanSmoother`, exact joint
+  draws by backward sampling), Gaussian belief propagation through `pgm`.
+- `engines/chain.ts`: discrete-state chains (HMM-like programs, `chainForm`) by forward-backward, FFBS and Viterbi.
+- `engines/em.ts`: EM and MAP-EM for programs whose latents are discrete (exact E-steps by differentiating the
+  enumerated density) or linear-Gaussian and plated (Gaussian conditioning and sigma points: factor analysis);
+  closed-form M-steps where a param is used directly or indexed by one enumerated site (normal locations and scales,
+  Bernoulli and categorical probabilities, Poisson and exponential rates: mixtures, HMMs), L-BFGS M-steps otherwise
+  (mixtures of experts), SQUAREM acceleration.
+- `engines/gibbs.ts`: Gibbs sampling with discrete conditionals (enumeration), conjugate conditionals given the rest,
+  mixture components group by group, slice steps otherwise, and collapsed Dirichlet and beta sites (topic models).
+- `engines/nuts.ts`: NUTS and HMC on the unconstrained density (`mcmc`), with enumerated discrete sites summed out and
+  recovered by `inferDiscrete`.
+- `engines/svi.ts`: stochastic variational inference (`sviAlgorithm`, `svi`): automatic or custom guides, any ELBO
+  estimator, optimisers on unconstrained parameters, subsampling over plates.
+- `engines/laplace.ts`: Laplace approximation at the MAP estimate (`laplaceFit`), with the Laplace evidence.
+- `engines/smc.ts`: sequential Monte Carlo: a bootstrap particle filter for programs with `markov` structure, and
+  adaptive tempering for static programs, with evidence estimates.
+- `engines/importance.ts`: likelihood weighting and importance sampling with a guide, marginal-likelihood estimates,
+  ESS and Pareto k.
+- `engines/abc.ts`: approximate Bayesian computation for simulator programs without likelihoods (`simulator`, rejection
+  ABC, ABC-SMC, summary statistics).
+- `infer.ts`: `defaultEngines`, `plan(model, data)` (ranked engines with reasons: quality first, then cost, within a
+  budget), `infer(model, data, { engine: 'auto' | name | engine, budget })` with fallback when an engine fails,
+  `explainPlan`, `withDiagnostics`.
 - `guides.ts`: automatic guides (`autoDelta`, `autoNormal`, `autoMultivariateNormal`, `autoLowRankMultivariateNormal`,
-  `autoLaplace`, normalising-flow guides).
-- `elbo.ts`: ELBO estimators (reparameterised, score function with baselines, mean-field analytic, Renyi, importance
-  weighted).
-- `posterior.ts`: `Posterior` (exact distributions, variational approximations or chains, behind one interface:
-  `marginal(site)`, `sample`, `mean`, `quantiles`, `logProb` where available), summaries.
-- `predictive.ts`: prior and posterior predictive distributions, per-observation log-likelihoods.
-- `criticism.ts`: WAIC, PSIS-LOO (with Pareto k diagnostics), posterior predictive checks, model comparison and
-  stacking weights.
+  `autoLaplace`, and the normalising-flow guide `autoIafNormal`), `guideSites`.
+- `elbo.ts`: ELBO estimators (`traceElbo`: reparameterised with score-function terms and baselines;
+  `traceMeanFieldElbo`: analytic KL; `renyiElbo`; `importanceWeightedElbo`), `particle`, `elboAt` (fixed draws),
+  `renyiBound`.
+- `posterior.ts`: `Posterior` (exact distributions, variational approximations, point estimates, equally weighted or
+  weighted draws behind one interface: `marginal(site)`, `sample`, `mean`, `variance`, `quantiles`, `logProb` where
+  available, `summary` with ESS and R-hat for chains), `definePosterior`, `samplePosterior`, `weightedPosterior`,
+  `pointPosterior`.
+- `predictive.ts`: prior and posterior predictive draws (at new data too), per-observation log-likelihoods
+  (`logLikelihood`, `pointwiseLogLikelihood`).
+- `criticism.ts`: WAIC, PSIS-LOO (with Pareto k diagnostics), posterior predictive checks, model comparison
+  (`compareModels`) and stacking and pseudo-BMA weights.
+
+TODO: Gaussian belief propagation for programs with correlated (multivariate normal) sites, which use exact
+conditioning meanwhile; EM with discrete and Gaussian E-steps together (mixtures of factor analysers); Pyro as a second
+oracle once the oracle environment has it.
 
 ### 4.33 `learn/` (tier 9): the toolkit around models (scikit-learn's non-model modules)
 
@@ -3548,8 +3589,10 @@ Each file is a reproducible study that returns data and traces for figures.
 Every dataset is a `DatasetGenerator` (knobs as a `Space`, returning `{ data, truth }`) or a static dataset (data and
 provenance). Static data is embedded as generated `*.data.ts` files vendored by the oracle with source, licence and
 checksum; larger data is a release asset loaded through `data/loader.ts`. Where a generator has a generating program,
-`truth.program` is that program, so likelihoods and posteriors can be queried. TODO: until `lib/probprog` exists,
-generators give exact `truth.logProb` and `truth.posterior` functions instead of a program.
+`truth.program` is that program, so likelihoods and posteriors can be queried: `friedman1` and every isotropic
+Gaussian-mixture class generator (`blobs`, `moons`, `circles`, `spirals` and `unequalVarianceBlobs`, through
+`_mixtures.ts`'s `mixtureProgram`) carry one, and agree with their exact functions. TODO: programs for the remaining
+generators, which give exact `truth.logProb` and `truth.posterior` functions.
 
 built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`, `scene`
 - `regression.ts`: `makeRegression` (several targets, low-rank designs with an effective rank, column shuffling),

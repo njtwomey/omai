@@ -35,6 +35,15 @@ export function priorShifted(posterior: (x: Value) => Value, ratios: readonly nu
   }
 }
 
+/**
+ * A truth without its generating program: a modifier that changes how the data arise makes the program describe the
+ * unmodified data, so it is dropped (the modifier's own density and posterior remain).
+ */
+export function withoutProgram(truth: Truth): Truth {
+  const { program: _program, ...rest } = truth
+  return rest
+}
+
 /** Replace a classification truth's posterior and re-estimate its Bayes error on the data's own rows. */
 export function withPosterior(
   truth: Truth,
@@ -42,7 +51,7 @@ export function withPosterior(
   x: Value,
   extra: Readonly<Record<string, unknown>>,
 ): Truth {
-  const { bayesError: _old, posterior: _p, ...rest } = truth
+  const { bayesError: _old, posterior: _p, program: _program, ...rest } = truth
   const base: Truth = { ...rest, extra: { ...(truth.extra ?? {}), ...extra } }
   if (posterior === undefined) return base
   return { ...base, posterior, bayesError: bayesErrorEstimate(posterior, x).value }

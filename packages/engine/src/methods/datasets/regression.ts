@@ -1,5 +1,7 @@
-import type { DatasetGenerator, RegressionData, Truth } from '../../lib/data/index.ts'
+import type { DatasetGenerator, GeneratingProgram, RegressionData, Truth } from '../../lib/data/index.ts'
 import { xy } from '../../lib/data/index.ts'
+import { normal as normalDistribution, uniform as uniformDistribution } from '../../lib/dists/index.ts'
+import { generatingProgram, plate, type RowsData, sample } from '../../lib/probprog/index.ts'
 import { foldIn, type Key, normal, permutation, uniform } from '../../lib/random/index.ts'
 import { bool, dict, int, real } from '../../lib/space/index.ts'
 import {
@@ -9,6 +11,7 @@ import {
   full,
   matmul,
   mul,
+  reshape,
   sin,
   sqrt,
   square,
@@ -80,6 +83,34 @@ export function friedman1Function(x: Value): Value {
 }
 
 /**
+ * Friedman's problem 1 as a generating program: uniform features on the unit cube and y = f(x) + N(0, noise^2).
+ *
+ * @param d - The number of features.
+ * @param noise - The noise standard deviation (positive).
+ * @returns The program.
+ * @example
+ * ```ts
+ * import { friedman1Program } from 'whitebox-engine/methods/datasets'
+ * friedman1Program(5, 1).target // => 'y'
+ * ```
+ */
+export function friedman1Program(d: number, noise: number): GeneratingProgram {
+  return generatingProgram((data: RowsData) => {
+    plate(
+      'rows',
+      data.n,
+      () => {
+        const x = sample('x', uniformDistribution(full([d], 0), full([d], 1)), { obs: data.x })
+        sample('y', normalDistribution(reshape(friedman1Function(x), [-1, 1]), noise), {
+          obs: data.y === undefined ? undefined : reshape(data.y, [-1, 1]),
+        })
+      },
+      { dim: -2 },
+    )
+  })
+}
+
+/**
  * Friedman's first regression problem (sklearn.datasets.make_friedman1): uniform features on [0, 1], of which the
  * first five matter, with the regression function, noise level and Gaussian log density as truth.
  *
@@ -107,6 +138,7 @@ export const friedman1: DatasetGenerator<RegressionData> = {
     )
     const y = withNoise(foldIn(k, 1), friedman1Function(x), noise)
     const truth: Truth = {
+      ...(noise > 0 ? { program: friedman1Program(d, noise) } : {}),
       regressionFunction: friedman1Function,
       noiseScale: noise,
       bayesError: noise ** 2,

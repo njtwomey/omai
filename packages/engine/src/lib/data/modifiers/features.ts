@@ -38,6 +38,7 @@ import {
   mapColumns,
   requireTabular,
   selectColumns,
+  withoutProgram,
 } from './_shared.ts'
 
 /** The missingness mechanisms of Rubin's taxonomy. */
@@ -130,7 +131,7 @@ export function withMissing<D extends TabularData>(input: Generated<D>, options:
   return {
     data: { ...data, x: fromStorage(values, [n, d], 'float64') },
     truth: {
-      ...truth,
+      ...withoutProgram(truth),
       latents: {
         ...(truth.latents ?? {}),
         complete: x,
@@ -221,7 +222,7 @@ export function withOutliers<D extends TabularData>(input: Generated<D>, options
   return {
     data: { ...data, x: newX, y: newY },
     truth: {
-      ...truth,
+      ...withoutProgram(truth),
       latents: { ...(truth.latents ?? {}), outliers: fromStorage(isOut, [n], 'bool'), cleanX: x, cleanY: data.y },
       extra: { ...(truth.extra ?? {}), outliers: { fraction: m / Math.max(1, n), target: where, scale } },
     },
@@ -289,7 +290,7 @@ export function withNuisanceFeatures<D extends TabularData>(
   }
   const logProb = truth.logProb
   const newTruth: Truth = {
-    ...truth,
+    ...withoutProgram(truth),
     ...composedFunctions(truth, original),
     ...(logProb === undefined || kind === 'permuted'
       ? {}
@@ -395,7 +396,7 @@ function reparameterised(
 ): Truth {
   const logProb = truth.logProb
   return {
-    ...truth,
+    ...withoutProgram(truth),
     ...composedFunctions(truth, inverseX),
     ...(logProb === undefined
       ? {}
