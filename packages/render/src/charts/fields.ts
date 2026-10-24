@@ -201,8 +201,8 @@ export function decisionRegions(probabilities: readonly TensorLike[], options: D
   const bg = tokens(mode).bg
   const shades = Array.from({ length: K }, (_, k) => {
     const c = options.colours?.[k] ?? categoricalColour(k)
-    // Ten confidence steps per class, precomputed.
-    return Array.from({ length: 11 }, (_, s) => parseColour(mixColours(bg, c, 0.25 + 0.75 * (s / 10))))
+    // 64 confidence steps per class, precomputed: fine enough that the fade shows no bands.
+    return Array.from({ length: 65 }, (_, s) => parseColour(mixColours(bg, c, 0.25 + 0.75 * (s / 64))))
   })
   const rgba = new Uint8ClampedArray(rows * cols * 4)
   const alpha = Math.round((options.opacity ?? 0.85) * 255)
@@ -221,7 +221,7 @@ export function decisionRegions(probabilities: readonly TensorLike[], options: D
       }
       if (!Number.isFinite(bestV)) continue
       const conf = options.confidence === false || !sum ? 1 : Math.min(1, Math.max(0, (bestV - 1 / K) / (1 - 1 / K)))
-      const [cr = 0, cg = 0, cb = 0] = shades[best]?.[Math.round(conf * 10)] ?? [0, 0, 0, 1]
+      const [cr = 0, cg = 0, cb = 0] = shades[best]?.[Math.round(conf * 64)] ?? [0, 0, 0, 1]
       const p = 4 * (r * cols + c)
       rgba[p] = cr
       rgba[p + 1] = cg
