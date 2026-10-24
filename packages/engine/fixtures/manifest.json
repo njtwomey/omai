@@ -1357,6 +1357,14 @@
       "cases": 17
     },
     {
+      "fixture": "methods/ensemble/gradient_boosting.json",
+      "source": "oracle/cases/methods/ensemble/gradient_boosting.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/linear/bayesian.json",
       "source": "oracle/cases/methods/linear/bayesian.py",
       "reference": {

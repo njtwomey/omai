@@ -206,10 +206,13 @@ function evaluate(
   return { feature, threshold, impurityLeft: il, impurityRight: ir, decrease }
 }
 
-/** Friedman's improvement W_l W_r (mean_l - mean_r)^2 / W, the score friedman_mse ranks splits by. */
+/**
+ * Friedman's improvement in scikit-learn's proxy form (W_r S_l - W_l S_r)^2 / (W_l W_r) = W_l W_r (mean_l - mean_r)^2,
+ * the score friedman_mse ranks splits by (computed without divisions first, so exact ties stay ties).
+ */
 function friedman(left: Side, right: Side): number {
-  const diff = left.sum / left.weight - right.sum / right.weight
-  return (left.weight * right.weight * diff * diff) / (left.weight + right.weight)
+  const diff = right.weight * left.sum - left.weight * right.sum
+  return (diff * diff) / (left.weight * right.weight)
 }
 
 /** Options of {@link searchSplits}. */
