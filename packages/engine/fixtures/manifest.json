@@ -237,6 +237,33 @@
       "cases": 4
     },
     {
+      "fixture": "dynamics/ode/adjoint.json",
+      "source": "oracle/cases/dynamics/ode/adjoint.py",
+      "reference": {
+        "torch": "2.14.1",
+        "torchdiffeq": "0.2.5"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "dynamics/ode/boundary.json",
+      "source": "oracle/cases/dynamics/ode/boundary.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "dynamics/ode/dae.json",
+      "source": "oracle/cases/dynamics/ode/dae.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 2
+    },
+    {
       "fixture": "dynamics/ode/solve_ivp.json",
       "source": "oracle/cases/dynamics/ode/solve_ivp.py",
       "reference": {
