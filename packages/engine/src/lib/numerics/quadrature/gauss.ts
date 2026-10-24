@@ -159,6 +159,61 @@ function lbetaNumber(a: number, b: number): number {
   return item(lbeta(a, b))
 }
 
+/** The range a double-exponential rule integrates over: [-1, 1], [0, inf) or the real line. */
+export type DoubleExponentialRange = 'finite' | 'halfLine' | 'real'
+
+/**
+ * A fixed double-exponential (Takahasi-Mori) rule as nodes and weights, for integrating many integrands at once (a
+ * batch of densities, say): tanh-sinh x = tanh((pi/2) sinh t) on [-1, 1], exp-sinh x = exp((pi/2) sinh t) on
+ * [0, inf) and sinh-sinh x = sinh((pi/2) sinh t) on the real line, with the trapezoidal rule in t on [-4, 4]. Nodes
+ * that round to an endpoint and weights that underflow are dropped. Convergence is double-exponential for integrands
+ * analytic inside the range, endpoint singularities included; shift and scale the nodes to the integrand's bulk.
+ *
+ * @param range - `finite`, `halfLine` or `real`.
+ * @param h - Step in t (default 1/32: 257 points before dropping).
+ * @returns The rule.
+ * @example
+ * ```ts
+ * import { doubleExponentialRule } from 'whitebox-engine/numerics/quadrature'
+ * import { exp, item, mul, neg, square, sum } from 'whitebox-engine/tensor'
+ * const { nodes, weights } = doubleExponentialRule('real')
+ * Math.abs(item(sum(mul(weights, exp(neg(square(nodes)))))) - Math.sqrt(Math.PI)) < 1e-14 // => true
+ * ```
+ */
+export function doubleExponentialRule(range: DoubleExponentialRange, h: number = 1 / 32): QuadratureRule {
+  if (!(h > 0)) throw new WhiteboxError('value', 'doubleExponentialRule: the step must be positive')
+  const xs: number[] = []
+  const ws: number[] = []
+  const steps = Math.round(4 / h)
+  for (let i = -steps; i <= steps; i++) {
+    const t = i * h
+    const u = (Math.PI / 2) * Math.sinh(t)
+    const du = (Math.PI / 2) * Math.cosh(t)
+    let x: number
+    let w: number
+    if (range === 'finite') {
+      x = Math.tanh(u)
+      w = (h * du) / Math.cosh(u) ** 2
+      if (Math.abs(x) >= 1) continue
+    } else if (range === 'halfLine') {
+      x = Math.exp(u)
+      w = h * du * x
+      if (x === 0 || !Number.isFinite(x)) continue
+    } else {
+      x = Math.sinh(u)
+      w = h * du * Math.cosh(u)
+      if (!Number.isFinite(x)) continue
+    }
+    if (!(w > 0 && Number.isFinite(w))) continue
+    xs.push(x)
+    ws.push(w)
+  }
+  return {
+    nodes: fromStorage(Float64Array.from(xs), [xs.length], 'float64'),
+    weights: fromStorage(Float64Array.from(ws), [ws.length], 'float64'),
+  }
+}
+
 /**
  * Fixed-order Gauss-Legendre quadrature of f over [a, b] (scipy.integrate.fixed_quad). The integrand is applied to the
  * vector of nodes at once; the result is differentiable in a, b and anything f closes over.

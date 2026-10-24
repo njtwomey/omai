@@ -867,43 +867,73 @@ Reparameterisation comes in three forms:
 - Discrete distributions have no `rsample` and throw with a pointer to the alternatives: the relaxed distributions
   `relaxedBernoulli` and `relaxedOneHotCategorical` (Concrete / Gumbel-softmax, with a temperature), straight-through
   estimators (`straightThrough`), and score-function estimators (`elbo.ts`, `policy-gradient.ts`).
-- `distribution.ts`: the `Distribution` interface, `Support`, parameter validation, batch-shape helpers.
+- `distribution.ts`: the `Distribution` interface and `defineDistribution`, `Support` (elementwise, vector and matrix
+  kinds) with `inSupport`, parameter validation (`validateParams`), batch-shape helpers (`batchShapeOf`,
+  `extendedShape`, `broadcastBatch`, `sumRightmost`). Private `_numeric.ts` holds the numerical fallbacks every family shares
+  (quantiles by safeguarded Newton with an implicit-function derivative, modes by search, moments and entropies by
+  batched double-exponential quadrature); `_sampling.ts` the sampling primitives and `implicitReparam`.
 - `continuous/normal.ts`: `normal`, `halfNormal`, `truncatedNormal`, `logNormal`, `skewNormal`.
 - `continuous/heavy-tailed.ts`: `studentT`, `cauchy`, `halfCauchy`, `laplace`, `logistic`, `pareto`, `johnsonSU`,
   `sinhArcsinh`.
-- `continuous/gamma.ts`: `gamma`, `inverseGamma`, `exponential`, `chi2`, `weibull`, `erlang`.
+- `continuous/gamma.ts`: `gamma`, `inverseGamma`, `exponential`, `chi2`, `weibull`, `erlang`, `inverseGaussian`.
 - `continuous/bounded.ts`: `uniform`, `beta`, `kumaraswamy`, `triangular`, `logitNormal`.
 - `continuous/extreme.ts`: `gumbel`, `generalisedExtremeValue`, `generalisedPareto`, `frechet`.
-- `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT`, studentised range.
+- `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT` (Poisson-weighted series).
+- `continuous/studentised-range.ts`: `studentisedRange` (double integrals by a product double-exponential rule).
 - `discrete/binary.ts`: `bernoulli`, `binomial`, `betaBinomial`.
-- `discrete/categorical.ts`: `categorical`, `oneHotCategorical`, `discreteUniform`, `orderedLogistic`.
+- `discrete/categorical.ts`: `categorical`, `oneHotCategorical`, `discreteUniform`, `orderedLogistic`, `orderedProbit`,
+  `orderedCategorical` (any cumulative link).
 - `relaxed.ts`: `relaxedBernoulli`, `relaxedOneHotCategorical` (Concrete / Gumbel-softmax) and `straightThrough`.
-- `discrete/counts.ts`: `poisson`, `negativeBinomial`, `geometric`, `hypergeometric`, zero-inflated variants.
-- `multivariate/normal.ts`: `multivariateNormal` (covariance, precision or Cholesky), `condition`, `marginal`,
-  `lowRankMultivariateNormal`, `matrixNormal`.
+- `discrete/counts.ts`: `poisson`, `negativeBinomial`, `geometric`, `hypergeometric`, `zeroInflated` (any count
+  base), `zeroInflatedPoisson`, `zeroInflatedNegativeBinomial`.
+- `multivariate/normal.ts`: `multivariateNormal` (covariance, precision or Cholesky, batched), `condition`,
+  `marginal`, `lowRankMultivariateNormal`, `matrixNormal`.
 - `multivariate/simplex.ts`: `dirichlet`, `multinomial`, `dirichletMultinomial`, `logisticNormal`.
-- `multivariate/matrix.ts`: `wishart`, `inverseWishart`, `lkjCholesky`.
+- `multivariate/matrix.ts`: `wishart`, `inverseWishart` (Bartlett reparameterised draws), `lkjCholesky`, `lkj`,
+  `multigammaln`.
 - `multivariate/directional.ts`: `vonMises`, `vonMisesFisher`, `powerSpherical`.
-- `multivariate/copulas.ts`: Gaussian, Student-t, Clayton, Gumbel and Frank copulas (density, sampling, fitting by
-  inversion of Kendall's tau), `copulaDistribution` (joining marginals).
-- `compose/mixture.ts`: `mixture`, `mixtureSameFamily`, responsibilities.
-- `compose/structure.ts`: `independent`, `truncated`, `censored`, `transformed`, `empirical`, `deterministic`.
-- `compose/conditional.ts`: `ConditionalDistribution` (inputs to distribution), `conditional`, `linearGaussian`,
-  `glmConditional` (family plus link), helpers that turn network outputs into distributions.
-- `bijectors/bijector.ts`: `Bijector`, `chain`, `invert`.
-- `bijectors/elementwise.ts`: `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`.
-- `bijectors/structured.ts`: `ordered`, `stickBreaking`, `correlationCholesky`, `affineCoupling`, `permute`,
-  `autoregressive` (MAF-style).
-- `bijectors/unconstrain.ts`: `bijectorForSupport`, `transformLogDensity`.
-- `exponential-family.ts`: natural parameters, sufficient statistics, log partition, Fisher information, the conjugate
-  table (used by `probprog` to detect conjugacy).
-- `divergences.ts`: analytic KL for family pairs, Monte Carlo fallback, Hellinger, Bhattacharyya, 2-Wasserstein
-  between Gaussians.
-- `families/links.ts`: GLM link functions with inverses and derivatives (identity, log, logit, probit, cloglog,
-  inverse, inverse-squared, sqrt, power), numerically guarded.
-- `families/dispersion.ts`: exponential dispersion families for GLMs (gaussian, binomial, poisson, gamma,
-  inverse Gaussian, negative binomial, Tweedie): variance, unit deviance, log-likelihood, starting values.
-- `families/distributional.ts`: GAMLSS-style families with per-parameter links; cumulative-link ordinal families.
+- `multivariate/copulas.ts`: `Copula`, `defineCopula`, `gaussianCopula`, `studentTCopula` (densities, reparameterised
+  sampling, bivariate CDFs), `copulaDistribution` (joining marginals). TODO: elliptical copula CDFs for d > 2 need a
+  multivariate normal or t CDF (Genz quasi-Monte Carlo); deferred as expensive and rarely needed.
+- `multivariate/archimedean-copulas.ts`: `claytonCopula`, `gumbelCopula`, `frankCopula` in any dimension (CDFs,
+  closed-form or mixed-partial densities, Marshall-Olkin and conditional sampling, Kendall's tau).
+- `multivariate/copula-fitting.ts`: `pseudoObservations`, `kendallTauMatrix`, `fitCopula` (inversion of Kendall's
+  tau).
+- `compose/mixture.ts`: `Mixture`, `mixture`, `mixtureSameFamily`, `responsibilities` (implicitly reparameterised
+  draws, numerical quantiles, mode and entropy for univariate mixtures).
+- `compose/structure.ts`: `independent`, `truncated` (continuous and discrete bases), `censored`, `transformed`,
+  `empirical`, `deterministic`.
+- `compose/conditional.ts`: `ConditionalDistribution` (inputs to distribution), `conditional`, `linearGaussian`
+  (marginal, Kalman-form posterior and joint), `glmConditional` (family plus link), `distributionalConditional`
+  (GAMLSS), and heads that turn network outputs into distributions (`normalFromOutput`, `bernoulliFromOutput`,
+  `categoricalFromOutput`, `poissonFromOutput`, `negativeBinomialFromOutput`, `betaFromOutput`,
+  `gammaFromOutput`, `mixtureDensityFromOutput`, `multivariateNormalFromOutput`).
+- `bijectors/bijector.ts`: `Bijector`, `defineBijector`, `chain`, `invert` (ranks, supports, monotonicity and shape
+  maps tracked through compositions).
+- `bijectors/elementwise.ts`: `identity`, `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`.
+- `bijectors/structured.ts`: `ordered`, `stickBreaking`, `correlationCholesky`, `lowerCholesky`,
+  `choleskyOuterProduct`, `affineCoupling`, `permute`, `autoregressive` (MAF-style), `madeMasks`.
+- `bijectors/unconstrain.ts`: `bijectorForSupport`, `transformLogDensity`, `unconstrained`.
+- `exponential-family.ts`: `exponentialFamily` (25 families): natural parameters, sufficient statistics, log
+  partition, base measure, mean parameters and Fisher information (by differentiating the log partition), and
+  `fromNatural`.
+- `conjugacy.ts`: the conjugate table `CONJUGATES` (used by `probprog` to detect conjugacy), `conjugatePrior`,
+  `conjugatePosterior` (17 likelihood-parameter pairs, including the multivariate normal mean, covariance and
+  precision).
+- `divergences.ts`: `klDivergence` (closed forms for 26 family pairs, independent sums, shared-bijector invariance,
+  the exponential-family identity, then a Monte Carlo fallback), `klMonteCarlo`, `bhattacharyyaCoefficient`,
+  `bhattacharyyaDistance`, `hellinger`, `wasserstein2Gaussian` (normal and multivariate normal).
+- `families/links.ts`: `Link`, GLM link functions with inverses and first and second derivatives (`identity`, `log`,
+  `logit`, `probit`, `cauchit`, `cloglog`, `loglog`, `inverse`, `inverseSquared`, `sqrt`, `power`,
+  `negativeBinomialLink`, `linkByName`), numerically guarded as statsmodels guards them.
+- `families/dispersion.ts`: `DispersionFamily`, exponential dispersion families for GLMs (`gaussian`, `binomial`,
+  `poisson`, `gamma`, `inverseGaussian`, `negativeBinomial`, `tweedie`): variance and its derivative, unit deviance,
+  deviance residuals, log-likelihood with scale and weights, starting means, IRLS weights and the response
+  distribution; `tweedieDistribution` (compound Poisson-gamma, Dunn and Smyth's series).
+- `families/distributional.ts`: `DistributionalFamily`, `defineDistributionalFamily` and GAMLSS-style families with
+  per-parameter links (`gamlssNormal`, `gamlssStudentT`, `gamlssSkewNormal`, `gamlssGamma`, `gamlssLogNormal`,
+  `gamlssWeibull`, `gamlssBeta`, `gamlssPoisson`, `gamlssNegativeBinomial`, `gamlssZeroInflatedPoisson`);
+  cumulative-link ordinal families (`ordinalFamily` with logit, probit, cloglog, loglog and cauchit links).
 
 ### 4.15 `information/` (tier 6): information theory and coding
 

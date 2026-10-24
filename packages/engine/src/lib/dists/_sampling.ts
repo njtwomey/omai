@@ -2,8 +2,9 @@
 // says how a sample moves with the parameters.
 import { jvp } from '../autodiff/index.ts'
 import { gammainc, lgamma } from '../numerics/special/index.ts'
-import { foldIn, gammaVariates, type Key } from '../random/index.ts'
+import { foldIn, gammaVariates, type Key, uniform } from '../random/index.ts'
 import {
+  add,
   arg,
   bind1,
   broadcastTo,
@@ -13,13 +14,18 @@ import {
   type FloatDType,
   fromStorage,
   full,
+  greater,
+  isfinite,
   log,
+  logicalAnd,
   mul,
   neg,
   type Primitive,
+  stopGradient,
   sub,
   type Tensor,
   type Value,
+  where,
 } from '../tensor/index.ts'
 
 // dx/dalpha of a unit-rate gamma sample x, holding its CDF value fixed (implicit reparameterisation, Figurnov et al.
@@ -109,4 +115,25 @@ export function elementwiseSample(
     for (let i = 0; i < size; i++) out[i] = drawOne(foldIn(key, i), ...broadcast.map((b) => b.data[i] ?? Number.NaN))
     return fromStorage(out, full, 'float64')
   })
+}
+
+/** Uniform noise in the open interval (0, 1): a draw of exactly 0 becomes 2^-54, so logarithms and quantiles stay finite. */
+export function uniformOpen(key: Key, shape: readonly number[]): Tensor {
+  const u = uniform(key, shape)
+  const data = u.data
+  for (let i = 0; i < data.length; i++) if (data[i] === 0) data[i] = 2 ** -54
+  return u
+}
+
+/**
+ * Implicit reparameterisation (Figurnov et al., 2018) of samples drawn from concrete parameter values: a value equal to
+ * `x` whose derivative with respect to the parameters is -(dF/dtheta) / p(x), the motion of a sample that keeps its CDF
+ * value fixed. Needs a CDF that differentiates in the parameters.
+ */
+export function implicitReparam(x: Value, cdf: (x: Value) => Value, prob: (x: Value) => Value): Value {
+  const xs = stopGradient(x)
+  const f = cdf(xs)
+  const p = stopGradient(prob(xs))
+  const ok = logicalAnd(greater(p, 0), isfinite(p))
+  return add(xs, where(ok, neg(div(sub(f, stopGradient(f)), where(ok, p, 1))), 0))
 }

@@ -20,29 +20,221 @@
       "cases": 4
     },
     {
-      "fixture": "dists/continuous.json",
-      "source": "oracle/cases/dists/continuous.py",
+      "fixture": "dists/bijectors/elementwise.json",
+      "source": "oracle/cases/dists/bijectors/elementwise.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "dists/bijectors/structured.json",
+      "source": "oracle/cases/dists/bijectors/structured.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "dists/compose/conditional.json",
+      "source": "oracle/cases/dists/compose/conditional.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "dists/compose/mixture.json",
+      "source": "oracle/cases/dists/compose/mixture.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "dists/compose/structure.json",
+      "source": "oracle/cases/dists/compose/structure.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "dists/continuous/bounded.json",
+      "source": "oracle/cases/dists/continuous/bounded.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 68
+    },
+    {
+      "fixture": "dists/continuous/extreme.json",
+      "source": "oracle/cases/dists/continuous/extreme.py",
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 243
+      "cases": 81
     },
     {
-      "fixture": "dists/discrete.json",
-      "source": "oracle/cases/dists/discrete.py",
+      "fixture": "dists/continuous/gamma.json",
+      "source": "oracle/cases/dists/continuous/gamma.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 179
+    },
+    {
+      "fixture": "dists/continuous/heavy_tailed.json",
+      "source": "oracle/cases/dists/continuous/heavy_tailed.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 104
+    },
+    {
+      "fixture": "dists/continuous/normal.json",
+      "source": "oracle/cases/dists/continuous/normal.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 148
+    },
+    {
+      "fixture": "dists/continuous/sampling_distributions.json",
+      "source": "oracle/cases/dists/continuous/sampling_distributions.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 79
+    },
+    {
+      "fixture": "dists/discrete/binary.json",
+      "source": "oracle/cases/dists/discrete/binary.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 72
+    },
+    {
+      "fixture": "dists/discrete/categorical.json",
+      "source": "oracle/cases/dists/discrete/categorical.py",
       "reference": {
         "numpy": "2.5.4",
         "scipy": "1.18.1"
       },
-      "cases": 65
+      "cases": 39
     },
     {
-      "fixture": "dists/multivariate.json",
-      "source": "oracle/cases/dists/multivariate.py",
+      "fixture": "dists/discrete/counts.json",
+      "source": "oracle/cases/dists/discrete/counts.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 103
+    },
+    {
+      "fixture": "dists/divergences.json",
+      "source": "oracle/cases/dists/divergences.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "dists/families/dispersion.json",
+      "source": "oracle/cases/dists/families/dispersion.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 44
+    },
+    {
+      "fixture": "dists/families/distributional.json",
+      "source": "oracle/cases/dists/families/distributional.py",
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 12
+      "cases": 15
+    },
+    {
+      "fixture": "dists/families/links.json",
+      "source": "oracle/cases/dists/families/links.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 60
+    },
+    {
+      "fixture": "dists/multivariate/archimedean_copulas.json",
+      "source": "oracle/cases/dists/multivariate/archimedean_copulas.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "dists/multivariate/copula_fitting.json",
+      "source": "oracle/cases/dists/multivariate/copula_fitting.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "dists/multivariate/copulas.json",
+      "source": "oracle/cases/dists/multivariate/copulas.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "dists/multivariate/directional.json",
+      "source": "oracle/cases/dists/multivariate/directional.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "dists/multivariate/matrix.json",
+      "source": "oracle/cases/dists/multivariate/matrix.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "dists/multivariate/normal.json",
+      "source": "oracle/cases/dists/multivariate/normal.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "dists/multivariate/simplex.json",
+      "source": "oracle/cases/dists/multivariate/simplex.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "dists/relaxed.json",
+      "source": "oracle/cases/dists/relaxed.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "losses/losses.json",

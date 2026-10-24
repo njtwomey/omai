@@ -73,6 +73,8 @@ const ERFC_THRESHOLD = 0.5
 
 export function erfc(x: number): number {
   if (Number.isNaN(x)) return Number.NaN
+  if (x === Number.POSITIVE_INFINITY) return 0
+  if (x === Number.NEGATIVE_INFINITY) return 2
   if (x >= ERFC_THRESHOLD) return expMinusSquare(x) / (SQRT_PI * erfcFraction(x))
   if (x <= -CF_THRESHOLD) return 2 - expMinusSquare(x) / (SQRT_PI * erfcFraction(-x))
   return 1 - (x < 0 ? -erfSeries(-x) : erfSeries(x))
@@ -99,6 +101,7 @@ export function erfcxPrime(x: number): number {
 }
 
 export function ndtr(x: number): number {
+  if (x === Number.NEGATIVE_INFINITY) return 0
   // In the lower tail, exp(-x^2 / 2) is formed from x itself (not from x / sqrt 2, whose rounding the exponential
   // would amplify by x^2); the continued fraction is insensitive to that rounding.
   if (x <= -ERFC_THRESHOLD * Math.SQRT2)
@@ -110,6 +113,7 @@ export function ndtr(x: number): number {
 export function logNdtr(x: number): number {
   if (x > 0) return Math.log1p(-ndtr(-x))
   if (x > -5) return Math.log(ndtr(x))
+  if (x === Number.NEGATIVE_INFINITY) return Number.NEGATIVE_INFINITY
   const z = -x / Math.SQRT2
   return Math.log(0.5) + Math.log(erfcx(z)) - z * z
 }
