@@ -1,4 +1,4 @@
 {
   "summary": "Active learning: query strategies, pool and stream settings, learning curves by label budget.",
-  "dependsOn": []
+  "dependsOn": ["linear"]
 }
