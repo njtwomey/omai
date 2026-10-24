@@ -246,6 +246,24 @@
       "cases": 46
     },
     {
+      "fixture": "foundations/combinatorics.json",
+      "source": "oracle/cases/foundations/combinatorics.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 52
+    },
+    {
+      "fixture": "foundations/complex.json",
+      "source": "oracle/cases/foundations/complex.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 28
+    },
+    {
       "fixture": "foundations/coordinates.json",
       "source": "oracle/cases/foundations/coordinates.py",
       "reference": {
@@ -290,6 +308,15 @@
         "sympy": "1.14.0"
       },
       "cases": 81
+    },
+    {
+      "fixture": "foundations/probability.json",
+      "source": "oracle/cases/foundations/probability.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 17
     },
     {
       "fixture": "foundations/rotations.json",
