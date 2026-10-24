@@ -3809,6 +3809,13 @@ Model-based samplers and schedulers for `lib/tune`.
 
 oracle: scikit-optimize and optuna (statistical agreement), closed-form acquisitions
 built from: `tune`, `gp`, `ensemble`, `kernels`, `optim`
+- `search.ts`: `tuneEstimator` (phase 4): cross-validated search over an estimator's hyperparameters with `tune`'s
+  grid, random, TPE or Gaussian-process samplers and its median or successive-halving pruners (fold by fold), as
+  `studyAlgorithm` through `runAlgorithm` with a per-trial callback for live pages; it returns the study and best
+  configuration with `SearchTrials` (every trial, its running fold means and fate), a `HyperparameterSurface` over two
+  numeric parameters (a GP surrogate's prediction, `tune.contourData`, with the visited path), a
+  `CrossValidationCurve` for one-parameter searches, and a `LearningCurve` of each trial's score beside the best so
+  far.
 - `bayesian.ts`: Bayesian optimisation samplers (GP or random-forest surrogates, initial designs, hyperparameter refits,
   posterior and acquisition snapshots as trace events).
 - `acquisitions.ts`: probability of improvement, expected improvement and log-EI, upper confidence bound, Thompson
