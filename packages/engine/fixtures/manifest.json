@@ -86,12 +86,30 @@
       "cases": 60
     },
     {
+      "fixture": "methods/rl/environments/games.json",
+      "source": "oracle/cases/methods/rl/environments/games.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "method": "exhaustive game-tree search"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "methods/rl/environments/gridworlds.json",
       "source": "oracle/cases/methods/rl/environments/gridworlds.py",
       "reference": {
         "gymnasium": "1.4.0"
       },
       "cases": 16
+    },
+    {
+      "fixture": "methods/rl/environments/multi_agent.json",
+      "source": "oracle/cases/methods/rl/environments/multi_agent.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "transcription": "MPE core.py and simple_spread.py"
+      },
+      "cases": 6
     },
     {
       "fixture": "methods/rl/environments/toy_text.json",

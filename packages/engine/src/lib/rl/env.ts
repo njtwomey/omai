@@ -144,7 +144,8 @@ export function resetAfter<S, O, A>(env: Env<S, O, A>, previous: S | undefined, 
 }
 
 /**
- * Whether an object is an environment definition (has an id, a description and a `create` function).
+ * Whether an object is a single-agent environment definition: it has an id, a description and a `create` function, and
+ * is not a multi-agent definition (those carry a `multiAgent` field naming their form, `'aec'` or `'parallel'`).
  *
  * @param value - Anything.
  * @returns Whether it is an {@link EnvDefinition}.
@@ -157,6 +158,11 @@ export function resetAfter<S, O, A>(env: Env<S, O, A>, previous: S | undefined, 
  */
 export function isEnvDefinition(value: unknown): value is EnvDefinition {
   if (typeof value !== 'object' || value === null) return false
-  const v = value as { id?: unknown; description?: unknown; create?: unknown }
-  return typeof v.id === 'string' && typeof v.description === 'string' && typeof v.create === 'function'
+  const v = value as { id?: unknown; description?: unknown; create?: unknown; multiAgent?: unknown }
+  return (
+    typeof v.id === 'string' &&
+    typeof v.description === 'string' &&
+    typeof v.create === 'function' &&
+    typeof v.multiAgent !== 'string'
+  )
 }

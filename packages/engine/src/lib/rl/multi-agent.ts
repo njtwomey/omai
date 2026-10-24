@@ -1,7 +1,7 @@
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
-import type { Space } from '../space/index.ts'
+import { dict, type Space } from '../space/index.ts'
 import type { Policy } from './agent.ts'
 import type { Env, EnvSpec } from './env.ts'
 
@@ -426,4 +426,209 @@ export function playParallel<S, O, A>(
     }
   }
   return { states, returns, length: t }
+}
+
+/** The state of {@link jointEnv}: the simultaneous state and every agent's latest observation. */
+export interface JointState<S, O> {
+  readonly inner: S
+  readonly observations: PerAgent<O>
+}
+
+/** How {@link jointEnv} reduces the agents' rewards to one scalar. */
+export type JointReward = 'sum' | 'mean' | { readonly agent: string }
+
+/**
+ * A simultaneous environment as one single-agent {@link Env} over joint observations and joint actions (the view of a
+ * centralised controller, and the form multi-agent learners take so that `trainAgent` can run them): observations
+ * and actions are records keyed by agent, the scalar reward is the team's (the sum or the mean of the agents'
+ * rewards) or one chosen agent's, and `info` carries every live agent's own `rewards`, `terminations` and
+ * `truncations`. The episode terminates when every live agent has terminated and is truncated when every live agent
+ * is done otherwise (or none is left).
+ *
+ * @param env - The parallel environment.
+ * @param options - `reward`: `'sum'` (default), `'mean'` or `{ agent }`.
+ * @returns The joint environment.
+ * @throws WhiteboxError with code `value` for an unknown reward agent, or when a live agent has no action.
+ * @concept multi-agent
+ * @example
+ * ```ts
+ * import { jointEnv } from 'whitebox-engine/rl'
+ * import { matrixGame } from 'whitebox-engine/methods/rl'
+ * import { key } from 'whitebox-engine/random'
+ * const env = jointEnv(matrixGame.create({ game: 'prisonersDilemma' }))
+ * const r = env.step(env.reset(key(0)).state, { player_0: 1, player_1: 0 }, key(1))
+ * [r.reward, r.info['rewards']] // => [5, { player_0: 5, player_1: 0 }]
+ * ```
+ */
+export function jointEnv<S, O, A>(
+  env: ParallelEnv<S, O, A>,
+  options: { readonly reward?: JointReward } = {},
+): Env<JointState<S, O>, PerAgent<O>, PerAgent<A>> {
+  const mode = options.reward ?? 'sum'
+  if (typeof mode === 'object' && !env.possibleAgents.includes(mode.agent))
+    throw new WhiteboxError('value', `jointEnv: no agent ${mode.agent}`)
+  const scalar = (rewards: PerAgent<number>): number => {
+    if (typeof mode === 'object') return rewards[mode.agent] ?? 0
+    let total = 0
+    for (const a of env.possibleAgents) total += rewards[a] ?? 0
+    return mode === 'mean' ? total / env.possibleAgents.length : total
+  }
+  return {
+    spec: { ...env.spec, id: `${env.spec.id}/joint` },
+    observationSpace: dict(env.observationSpaces),
+    actionSpace: dict(env.actionSpaces),
+    reset: (k) => {
+      const r = env.reset(k)
+      return { state: { inner: r.state, observations: r.observations }, observation: r.observations, info: {} }
+    },
+    step: (s, actions, k) => {
+      const live = env.agents(s.inner)
+      const acting: Record<string, A> = {}
+      for (const a of live) {
+        const action = actions[a]
+        if (action === undefined) throw new WhiteboxError('value', `jointEnv: no action for ${a}`)
+        acting[a] = action
+      }
+      const r = env.step(s.inner, acting, k)
+      const observations = { ...s.observations, ...r.observations }
+      const done = (a: string): boolean => r.terminations[a] === true || r.truncations[a] === true
+      const terminated = live.every((a) => r.terminations[a] === true)
+      const finished = live.every(done) || env.agents(r.state).length === 0
+      const pick = (x: PerAgent<boolean>): Record<string, boolean> =>
+        Object.fromEntries(live.map((a) => [a, x[a] === true]))
+      return {
+        state: { inner: r.state, observations },
+        observation: observations,
+        reward: scalar(r.rewards),
+        terminated,
+        truncated: !terminated && finished,
+        info: {
+          rewards: Object.fromEntries(live.map((a) => [a, r.rewards[a] ?? 0])),
+          terminations: pick(r.terminations),
+          truncations: pick(r.truncations),
+        },
+      }
+    },
+    render: (s) => env.render(s.inner),
+    observe: (s) => s.observations,
+  }
+}
+
+/** The state of {@link aecSingleAgentView}: the turn-based state and reward earned before the agent's next turn. */
+export interface AecViewState<S> {
+  readonly inner: S
+  readonly carry: number
+}
+
+/**
+ * One agent's view of a turn-based game as a single-agent {@link Env}, with every other agent following a fixed
+ * policy that sees its own, current observation: a step plays the agent's move and then the others' moves until the
+ * agent is to move again or the game ends, summing the agent's rewards. Reset plays the others' opening moves (if they end the game, the next step, whatever the action, is the final one and pays the agent's reward). The
+ * `info.legalActions` of a reset or step lists the agent's legal moves for its next turn (for masking). This is how
+ * a single-agent learner trains against fixed opponents or snapshots of itself (self-play) in board games and poker.
+ *
+ * @param env - The turn-based game.
+ * @param agent - The agent to control.
+ * @param others - Policies for the other agents.
+ * @returns The single-agent environment.
+ * @throws WhiteboxError with code `value` for an unknown agent or a missing policy.
+ * @concept multi-agent
+ * @example
+ * ```ts
+ * import { aecSingleAgentView } from 'whitebox-engine/rl'
+ * import { nim } from 'whitebox-engine/methods/rl'
+ * import { key } from 'whitebox-engine/random'
+ * const env = aecSingleAgentView(nim.create({ heaps: [3] }), 'player_0', { player_1: () => 0 })
+ * const r = env.step(env.reset(key(0)).state, 0, key(1))
+ * env.step(r.state, 0, key(2)).reward // => 1
+ * ```
+ */
+export function aecSingleAgentView<S, O, A>(
+  env: AecEnv<S, O, A>,
+  agent: string,
+  others: PerAgent<Policy<O, A>>,
+): Env<AecViewState<S>, O, A> {
+  if (!env.possibleAgents.includes(agent)) throw new WhiteboxError('value', `aecSingleAgentView: no agent ${agent}`)
+  // Play the other agents until it is the agent's turn or the game ends, summing the agent's rewards.
+  const advance = (start: S, k: Key): { readonly state: S; readonly reward: number } => {
+    let s = start
+    let reward = 0
+    for (let t = 0; t < 100_000; t++) {
+      const mover = env.currentAgent(s)
+      if (mover === undefined || mover === agent) break
+      const policy = others[mover]
+      if (policy === undefined) throw new WhiteboxError('value', `aecSingleAgentView: no policy for ${mover}`)
+      const r = env.step(s, policy(env.observe(s, mover), foldIn(k, 2 * t)), foldIn(k, 2 * t + 1))
+      reward += r.rewards[agent] ?? 0
+      s = r.state
+    }
+    return { state: s, reward }
+  }
+  const info = (s: S): Readonly<Record<string, Json>> =>
+    env.legalActions === undefined || env.currentAgent(s) !== agent
+      ? {}
+      : { legalActions: env.legalActions(s, agent) as unknown as Json }
+  return {
+    spec: { ...env.spec, id: `${env.spec.id}/${agent}` },
+    observationSpace: env.observationSpaces[agent] as Space,
+    actionSpace: env.actionSpaces[agent] as Space,
+    reset: (k) => {
+      const r = advance(env.reset(foldIn(k, 0)), foldIn(k, 1))
+      return {
+        state: { inner: r.state, carry: r.reward },
+        observation: env.observe(r.state, agent),
+        info: info(r.state),
+      }
+    },
+    step: (s, action, k) => {
+      const mover = env.currentAgent(s.inner)
+      // The others' opening moves ended the game at reset: one final step delivers its reward.
+      if (mover === undefined) {
+        const terminated = env.terminations(s.inner)[agent] === true
+        return {
+          state: { inner: s.inner, carry: 0 },
+          observation: env.observe(s.inner, agent),
+          reward: s.carry,
+          terminated,
+          truncated: !terminated,
+          info: {},
+        }
+      }
+      if (mover !== agent) throw new WhiteboxError('value', `aecSingleAgentView: it is not ${agent}'s turn`)
+      const r = env.step(s.inner, action, foldIn(k, 0))
+      const next = advance(r.state, foldIn(k, 1))
+      const over = env.currentAgent(next.state) === undefined
+      const terminated = over && env.terminations(next.state)[agent] === true
+      return {
+        state: { inner: next.state, carry: 0 },
+        observation: env.observe(next.state, agent),
+        reward: s.carry + (r.rewards[agent] ?? 0) + next.reward,
+        terminated,
+        truncated: over && !terminated,
+        info: info(next.state),
+      }
+    },
+    render: (s) => env.render(s.inner),
+    observe: (s) => env.observe(s.inner, agent),
+  }
+}
+
+/**
+ * A turn-based game whose observations are its full states, for planners and search agents that need the true
+ * position (minimax, MCTS and AlphaZero-style agents) when playing with {@link playAec}.
+ *
+ * @param env - The game.
+ * @returns The same game with `observe(state, agent) = state`.
+ * @concept multi-agent
+ * @example
+ * ```ts
+ * import { stateObservations } from 'whitebox-engine/rl'
+ * import { nim } from 'whitebox-engine/methods/rl'
+ * import { key } from 'whitebox-engine/random'
+ * const env = stateObservations(nim.create({ heaps: [2, 2] }))
+ * env.observe(env.reset(key(0)), 'player_1').heaps // => [2, 2]
+ * ```
+ */
+export function stateObservations<S, O, A>(env: AecEnv<S, O, A>): AecEnv<S, S, A> {
+  return { ...env, observe: (s) => s }
 }
