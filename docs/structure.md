@@ -2668,6 +2668,74 @@ lists what it is built from, which is also its import list. Areas are grouped be
 they are flat folders. Every estimator comes as a factory (`pca({ nComponents: 2 })`) and as a class
 (`new PCA({ nComponents: 2 })`), declares its `hyperSpace`, and offers `predictDistribution` where it predicts.
 
+### 5.0 First pass: scope, phases and the exposition contract
+
+The methods are a classical-AI toolkit in the spirit of scikit-learn, with a little more on the probabilistic side, and a
+reinforcement-learning playground. They exist to drive small live demos and gallery entries, not as an encyclopedia: a
+method wraps the core (it never re-implements what a core domain already has) and documents itself lightly, but it
+always hands back the data an explanation needs.
+
+**Exposition contract.** Every fitted method returns, beside its predictions, the intermediate quantities a figure or a
+sentence of explanation would use, as plain data (and as trace events where they evolve), for example:
+- linear models: coefficients, the whole regularisation path over a lambda grid (coefficients, active set, duality
+  gap per lambda), cross-validation curves with their standard-error bands, solver iterations (IRLS, coordinate steps),
+  residuals and leverage;
+- trees: for every node, every candidate split evaluated (feature, threshold, impurity before and after, decrease), the
+  chosen split, the indices of the training rows that reach it, its class counts or value, the order of growth, and the
+  cost-complexity pruning path;
+- ensembles: every member, staged predictions, out-of-bag curves, per-round sample weights (AdaBoost) and residuals
+  (gradient boosting);
+- SVMs: support vectors and their dual coefficients, margins, the decision function on a grid, the working-set trace
+  of SMO and the dual objective;
+- neighbours, naive Bayes, discriminants and GPs: neighbour indices and distances per query, per-class and per-feature
+  likelihood contributions, posterior means, variances and samples on a grid, the marginal-likelihood surface over
+  hyperparameters and the optimisation path across it;
+- clustering, mixtures and decompositions: assignments, centres and inertia per iteration, merges with heights,
+  core/border/noise labels and reachability, responsibilities and log likelihood per EM step, components, explained
+  variance per component and reconstruction error per rank;
+- manifolds and anomalies: the embedding per iteration (t-SNE, UMAP), stress, neighbour graphs and calibrated
+  bandwidths, anomaly scores with their thresholds and per-point evidence (isolation path lengths, reachability);
+- searches and agents: every trial of a hyperparameter search with its values and pruning decisions; every episode's
+  return and every step's state, action, reward and frame for an agent, with value and policy snapshots.
+
+**Documentation.** Methods carry a summary and parameter docs; `@example` blocks are optional (the core is where the
+exposition of the mathematics lives).
+
+**Dataset collections.** `methods/datasets/collections.ts` groups the generators and real datasets into themed lists
+for pickers: `classification2d`, `regression1d`, `clustering2d`, `density2d`, `anomaly2d`, `manifold3d`,
+`timeSeries`, `textCorpora` and `environments` (the rl environments by family), each entry with its name, its
+generator, the `Space` of its knobs with demo defaults, and the methods it suits. whitebox-render turns a collection
+and a method's `hyperSpace` into a dataset picker and parameter controls (see `react/controls/`).
+
+**Phases** (first pass; later phases follow the same contract):
+1. Supervised: `linear/` (model, solvers, regression with paths and CV, classification, the GLM families, robust
+   regression, Bayesian ridge and ARD), `trees/` (tree, criteria, growth, pruning), `ensemble/` (bagging, forests,
+   AdaBoost, gradient and histogram boosting, stacking), `svm/` (SVC, SVR, linear, one-class SVM and SVDD),
+   `neighbours/` (k-NN, centroids), `naive-bayes/`, `discriminant/`, `gp/` (regression and classification, dense and
+   sparse inducing-point versions), `kernel-methods/kernel-ridge.ts`, `multiclass/reductions.ts`.
+2. Unsupervised: `cluster/` (k-means family, medoids, hierarchical, DBSCAN/HDBSCAN/OPTICS/mean shift, spectral,
+   affinity propagation and BIRCH), `mixture/`, density estimation (KDE with bandwidth selection, histograms; thin
+   wrappers over `stats/density.ts` and the mixtures), `decomposition/` (PCA and its variants, probabilistic PCA and
+   factor analysis, kernel PCA, ICA, NMF, truncated SVD, CCA/PLS, random projections), `manifold/` (MDS, Isomap, LLE,
+   spectral, t-SNE, UMAP, SOM, quality measures), `anomaly/` (isolation forests, LOF, statistical, combination),
+   `covariance/`.
+3. Paradigms and probabilistic models: `semi-supervised/` (self-training, label propagation and spreading), online
+   learning (the SGD and passive-aggressive models of `linear/`, mini-batch k-means, incremental PCA, with
+   learning-curve studies), `active-learning/` studies over `learn`, and from `models/`: HMMs, the CRF estimator, LDA,
+   conjugate models, hierarchical models, Bayesian regression programs, linear-Gaussian latent models.
+4. Showcases: an rl playground study (`rl/playground.ts`: choose an environment, from classic control, toy text, grid
+   worlds built on `worlds`, MinAtar, and an agent, tabular Q-learning and SARSA, DQN, REINFORCE and PPO, LQR for
+   control, with defaults that learn visibly within a short budget, live frames and learning curves) and
+   hyperparameter optimisation (`tuning/`: a study over a method and a dataset collection, with the analysis data of
+   `tune`).
+5. Later (deprioritised): causal inference (5.5), search-based discovery and classical AI (5.6), the remaining domain
+   areas (5.7), scientific machine learning (5.8), generative models (5.10), neural network models (5.11), retrieval,
+   matching and recommendation (5.12), information and coding (5.13), algorithms and data structures (5.14),
+   foundations studies (5.15), optimisation and Monte Carlo studies (5.16), learning theory (5.17), further datasets
+   (5.18), and the rest of 5.1 to 5.4 not named above (GAMs, survival, rule learners, ordinal and mixed models,
+   multi-output, embeddings, weak supervision, transfer, federated learning, fairness, privacy, adversarial examples,
+   ratings, IRT, lattices, topic-model extensions).
+
 ### 5.1 Supervised learning
 
 oracle: scikit-learn, statsmodels, mgcv and pygam (recorded once), lifelines, xgboost for boosting agreement
@@ -3679,7 +3747,9 @@ Design rules:
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
   value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
   and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
-  `Toggle`, `SeedInput`; and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
+  `Toggle`, `SeedInput`; `DatasetPicker` (a dataset collection from `methods/datasets/collections.ts`, with the
+  chosen generator's knobs as controls) and `MethodControls` (controls from a method's `hyperSpace`, demo defaults
+  first); and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
   left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas.
 - `EnvView.tsx`: one consistent view of any environment's render, with episode playback and overlays.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`.
