@@ -6,7 +6,10 @@ import {
   type StructureNode,
   structure,
 } from '../scene/index.ts'
+import type { Pag } from './causal/fci.ts'
+import { type Scm, scmStructure } from './causal/scm.ts'
 import type { Dag } from './graphs.ts'
+import type { Pdag } from './learning/equivalence.ts'
 import type { BayesNet } from './models/bayes-net.ts'
 import type { GeneralCrf, LinearChainCrf } from './models/crf.ts'
 import type { DynamicBayesNet } from './models/dynamic.ts'
@@ -33,6 +36,9 @@ export type PgmModel =
   | GeneralCrf
   | PlateModel
   | InfluenceDiagram
+  | Scm
+  | Pdag
+  | Pag
 
 const directed = (from: string, to: string, kind: StructureEdge['kind'] = 'dependency'): StructureEdge => ({
   from,
@@ -92,8 +98,9 @@ function slices(
  * Any graphical model of `pgm` as a {@link Structure}, so it can be drawn (and its inference animated from the
  * `message` events of a trace): Bayes networks and DAGs with directed edges, Markov networks and Gaussian Markov
  * random fields with undirected edges, factor graphs with `factor` nodes, dynamic models (DBNs, HMMs, linear
- * dynamical systems, linear-chain CRFs) as two grouped slices, plate models with `plate` groups, and influence
- * diagrams with `decision` and `utility` nodes.
+ * dynamical systems, linear-chain CRFs) as two grouped slices, plate models with `plate` groups, influence
+ * diagrams with `decision` and `utility` nodes, structural causal models with their exogenous noises, and the
+ * equivalence classes learned by structure search (PDAGs, and PAGs with their edge marks as labels).
  *
  * @param model - The model.
  * @param observed - Variables to show as observed.
@@ -255,6 +262,31 @@ export function toStructure(model: PgmModel, observed: readonly string[] = []): 
         ],
         { title: 'Influence diagram', direction: 'down' },
       )
+    case 'scm':
+      return scmStructure(model)
+    case 'pdag':
+      return structure(
+        'pdag',
+        model.nodes.map((v) => variableNode(v, observed)),
+        [...model.directed.map(([a, b]) => directed(a, b)), ...model.undirected.map(([a, b]) => undirected(a, b))],
+        { title: 'Partially directed acyclic graph', direction: 'down' },
+      )
+    case 'pag': {
+      const end = { tail: '-', arrow: '>', circle: 'o' } as const
+      const start = { tail: '-', arrow: '<', circle: 'o' } as const
+      return structure(
+        'pag',
+        model.nodes.map((v) => variableNode(v, observed)),
+        model.edges.map((e) => ({
+          from: e.a,
+          to: e.b,
+          directed: e.markB === 'arrow' && e.markA === 'tail',
+          kind: 'dependency' as const,
+          label: `${start[e.markA]}-${end[e.markB]}`,
+        })),
+        { title: 'Partial ancestral graph', direction: 'down' },
+      )
+    }
     default:
       return structure('unknown', [], [])
   }

@@ -96,6 +96,39 @@ describe('every model type describes itself as a structure', () => {
       (s) => expect(s.nodes.map((n) => n.role)).toEqual(['latent', 'decision', 'utility']),
     ],
   ]
+  cases.push(
+    [
+      'scm',
+      P.causal.scm([
+        {
+          kind: 'linear',
+          name: 'x',
+          parents: [],
+          weights: [],
+          intercept: 0,
+          noise: { distribution: 'normal', scale: 1 },
+        },
+      ]),
+      (s) => expect(s.nodes.map((n) => n.role)).toEqual(['deterministic', 'latent']),
+    ],
+    [
+      'pdag',
+      P.learning.pdag([], [['a', 'b']], [['b', 'c']]),
+      (s) => expect(s.edges.map((e) => e.directed)).toEqual([true, false]),
+    ],
+    [
+      'pag',
+      {
+        kind: 'pag',
+        nodes: ['a', 'b', 'c'],
+        edges: [
+          { a: 'a', b: 'b', markA: 'circle', markB: 'arrow' },
+          { a: 'b', b: 'c', markA: 'arrow', markB: 'arrow' },
+        ],
+      },
+      (s) => expect(s.edges.map((e) => e.label)).toEqual(['o->', '<->']),
+    ],
+  )
   for (const [name, model, check] of cases) {
     it(name, () => {
       const s = P.toStructure(model)
