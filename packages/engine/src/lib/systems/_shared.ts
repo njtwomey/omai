@@ -2,7 +2,8 @@
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { type ComplexArray, polyFromRoots, polyroots } from '../numerics/polynomial/index.ts'
-import { primalOf, promoteFloat, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
+import { binom, factorial as factorialOf } from '../numerics/special/index.ts'
+import { item, primalOf, promoteFloat, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 
 // Polynomials here follow scipy.signal: coefficients highest degree first.
 
@@ -40,9 +41,26 @@ export function asComplexArray(z: readonly number[] | ComplexArray): ComplexArra
   return { re: [...c.re], im: [...c.im] }
 }
 
-/** The roots of a highest-first polynomial (numpy.roots), sorted by real then imaginary part. */
+/**
+ * The roots of a highest-first polynomial (numpy.roots: leading zeros dropped, trailing zeros giving exact zero
+ * roots), sorted by real then imaginary part.
+ */
 export function rootsOf(c: readonly number[]): ComplexArray {
-  return polyroots([...c].reverse())
+  const p = [...c]
+  while (p.length > 1 && p[0] === 0) p.shift()
+  let atZero = 0
+  while (p.length > 1 && p[p.length - 1] === 0) {
+    p.pop()
+    atZero++
+  }
+  const r = polyroots(p.reverse())
+  if (atZero === 0) return r
+  const pairs = [
+    ...r.re.map((re, i) => [re, r.im[i] ?? 0] as const),
+    ...Array.from({ length: atZero }, () => [0, 0] as const),
+  ]
+  pairs.sort((a, b) => a[0] - b[0] || a[1] - b[1])
+  return { re: pairs.map((q) => q[0]), im: pairs.map((q) => q[1]) }
 }
 
 /** The monic highest-first polynomial with the given roots (numpy.poly); real when the roots come in conjugate pairs. */
@@ -78,4 +96,14 @@ export function commonDt(name: string, ...dts: readonly number[]): number {
       throw new WhiteboxError('value', `${name}: systems have different sample times (${dts.join(', ')})`)
   }
   return first
+}
+
+/** k! as a number. */
+export function factorial(k: number): number {
+  return item(factorialOf(k))
+}
+
+/** The binomial coefficient C(n, k) as a number. */
+export function choose(n: number, k: number): number {
+  return item(binom(n, k))
 }

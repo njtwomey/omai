@@ -7,6 +7,7 @@ import {
   eye,
   matmul,
   mul,
+  primalOf,
   reshape,
   sliceAxis,
   stack,
@@ -283,7 +284,7 @@ export interface ResponseOptions extends TraceOptions {
  * ```
  */
 export function defaultResponseTimes(a: TensorLike, n = 100): Tensor {
-  const { re } = eigvals(float(a))
+  const { re } = eigvals(primalOf(float(a)))
   let r = minOf(toFlat(re).map(Math.abs))
   if (r === 0) r = 1
   return tensor(linspaceNumbers(0, 7 / r, n)) as Tensor

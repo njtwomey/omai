@@ -79,4 +79,8 @@ def cases() -> list[Case]:
                 eps=eps,
             )
         )
+    # Eigenvalues -2, -0.5, 1 and 3 behind a random similarity: well away from the imaginary axis.
+    t = g.normal(size=(4, 4)) + 2 * np.eye(4)
+    mixed = t @ np.diag([-2.0, -0.5, 1.0, 3.0]) @ np.linalg.inv(t)
+    out.append(case("signm", "signm", [mixed], np.real(sl.signm(mixed)), rtol=1e-9, atol=1e-11))
     return out

@@ -659,7 +659,8 @@ primitives; "custom" means a dedicated rule.
   `rayleighQuotientIteration`.
 - `functions.ts`: `expm` (Pade, scaling and squaring, Frechet derivative), `logm`, `sqrtm`, `funm` (Schur-Parlett),
   `funmSymmetric`.
-- `equations.ts`: `solveSylvester`, `solveContinuousLyapunov`, `solveDiscreteLyapunov`, `solveCare`, `solveDare`.
+- `equations.ts`: `solveSylvester`, `solveContinuousLyapunov`, `solveDiscreteLyapunov`, `solveCare`, `solveDare`,
+  `signm` (the matrix sign function, for the Riccati solver and spectral projectors).
 - `structured.ts`: `solveTridiagonal`, `solveBanded`, `toeplitz`, `solveToeplitz`, `circulant`, `hankel`, `blockDiag`,
   `kroneckerSolve`.
 - `randomized.ts`: `randomizedSvd`, `randomizedRangeFinder`, `randomProjectionMatrix`, `johnsonLindenstraussDim`,
@@ -1026,18 +1027,32 @@ coefficients, and so are the conversions between them, the responses and the dis
   `ss2tf` (differentiable through `charpoly`), `tf2zpk`, `zpk2tf`, `zpk2ss`, `ss2zpk`.
 - `sections.ts`: second-order sections: `zpk2sos` (nearest, keep-odd and minimal pairing; analog), `sos2zpk`,
   `sos2tf`, `tf2sos`.
-- `interconnect.ts`: series, parallel, feedback, append, connect.
+- `interconnect.ts`: `series`, `parallel`, `feedback`, `append`, `connect` (python-control semantics; static gains
+  accepted; transfer functions combine as polynomials, multivariable systems in state space).
 - `responses.ts`: impulse, step, initial-condition and arbitrary-input responses (`lsim` and the traced
   `lsimAlgorithm`, zero- and first-order hold, continuous and discrete), `defaultResponseTimes`.
-- `frequency.ts`: frequency response (`freqresp`, `evalfr`, `dcgain`, `freqs`, `freqz`, `findfreqs`), Bode, Nyquist
-  (with the encirclement count) and Nichols data.
-- `stability.ts`: poles and zeros, Routh-Hurwitz and Jury tests, gain, phase and delay margins, root locus.
-- `discretise.ts`: zero-order and first-order hold, Tustin with prewarping, matched z-transform, Euler, impulse
-  invariance.
-- `analysis.ts`: controllability, observability, Gramians, Kalman decomposition, balanced realisation and truncation,
-  H2 and H-infinity norms.
-- `transforms.ts`: difference and differential equations to transfer functions and back, z-transform and Laplace
-  transform pairs (with `symbolic`), partial-fraction inversion.
+- `frequency.ts`: frequency response (`freqresp`, `evalfr`, `dcgain`, `findfreqs`), Bode, Nyquist (with the
+  encirclement count) and Nichols data.
+- `filters.ts`: frequency responses of filters given by coefficients (`freqs` analog, `freqz` digital, FFT for FIR).
+- `stability.ts`: poles and zeros (invariant zeros of square systems), `isStable`, Routh-Hurwitz (`routh`) and Jury
+  (`jury`) tests, root locus (`rootLocus`: continuous branches, asymptotes, break points).
+- `margins.ts`: gain, phase, stability and delay margins (`stabilityMargins`, `allMargins`, `margin`,
+  `phaseCrossoverFrequencies`; python-control's polynomial method, continuous and discrete).
+- `discretise.ts`: `cont2discrete` (zero-order and first-order hold, Tustin with prewarping, matched z-transform, Euler
+  and backward difference, the generalised bilinear transform, impulse invariance), `c2dMatrices`.
+- `analysis.ts`: controllability and observability (`ctrb`, `obsv`, `isControllable`, `isObservable`), Gramians
+  (`gram`), Kalman decomposition (`kalmanDecomposition`).
+- `reduction.ts`: Hankel singular values (`hsvd`), balanced realisation (`balancedRealization`) and truncation
+  (`balred`: truncate or match dc, unstable parts kept).
+- `norms.ts`: H2 and H-infinity norms (`h2Norm`, `hinfNorm` by Bruinsma-Steinbuch, `systemNorm`).
+- `transforms.ts`: difference and differential equations to transfer functions and back (`differenceToTf`,
+  `tfToDifference`, `differentialToTf`, `tfToDifferential`, with LaTeX), partial-fraction inversion
+  (`inverseLaplace`, `inverseZ`).
+- `pairs.ts`: z-transform and Laplace transform pairs as data with evaluators and rational forms (`laplacePairs`,
+  `zTransformPairs`, `pairToTf`). TODO: derive them with `symbolic` once that domain exists.
+- TODO: invariant zeros of non-square multivariable systems (they need the staircase reduction of the system pencil).
+- Pole placement and LQR live in `dynamics/control` (section 4.26).
+
 ### 4.17 `stats/` (tier 7): statistics (scipy.stats, statsmodels, pingouin)
 
 oracle: scipy.stats, statsmodels, pingouin

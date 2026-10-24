@@ -86,6 +86,15 @@ describe('linear algebra primitives are conformant', () => {
     })
   }
 
+  it('signm (a matrix with eigenvalues on both sides of the imaginary axis)', () => {
+    const mixed = tensor([
+      [1, 2],
+      [0.5, -1.5],
+    ])
+    const report = checkPrimitive((a) => L.signm(a as Value), [mixed], { rtol: 1e-5, atol: 1e-7, vmap: false })
+    expect(report.failures).toEqual([])
+  })
+
   it('reconstruct their inputs', () => {
     const { u, s, vh } = L.svd(tall)
     expect(

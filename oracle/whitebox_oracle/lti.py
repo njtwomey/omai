@@ -1,5 +1,9 @@
 """Helpers for the systems case modules: complex values as stacked parts, canonical orderings and random systems."""
 
+from collections.abc import Callable
+from typing import cast
+
+import control as ct
 import numpy as np
 import numpy.typing as npt
 
@@ -36,3 +40,25 @@ def schur_stable_system(
     a = g.normal(size=(n, n))
     a = 0.8 * a / np.max(np.abs(np.linalg.eigvals(a)))
     return a, g.normal(size=(n, m)), g.normal(size=(p, n)), g.normal(size=(p, m))
+
+
+def ss(a: npt.ArrayLike, b: npt.ArrayLike, c: npt.ArrayLike, d: npt.ArrayLike, dt: float = 0.0) -> ct.StateSpace:
+    """python-control's ss, typed (its annotations allow nonlinear systems)."""
+    return cast(ct.StateSpace, ct.ss(a, b, c, d, dt))
+
+
+def tf(num: npt.ArrayLike, den: npt.ArrayLike, dt: float = 0.0) -> ct.TransferFunction:
+    """python-control's tf, typed."""
+    return cast(ct.TransferFunction, ct.tf(num, den, dt))
+
+
+def feedback(sys1: object, sys2: object = 1, sign: int = -1) -> ct.StateSpace | ct.TransferFunction:
+    """python-control's feedback, typed (its annotations take the feedback gain for an int)."""
+    fb = cast(Callable[..., ct.StateSpace | ct.TransferFunction], ct.feedback)
+    return fb(sys1, sys2, sign=sign)
+
+
+def system_norm(sys: object, p: int | str) -> float:
+    """python-control's system_norm, typed (its annotations take p for an int)."""
+    norm = cast(Callable[..., float], ct.system_norm)
+    return float(norm(sys, p))

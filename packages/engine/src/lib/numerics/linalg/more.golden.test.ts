@@ -56,6 +56,7 @@ const FNS: Readonly<Record<string, Fn>> = {
   solveDiscreteLyapunov: ([a, q]) => L.solveDiscreteLyapunov(a as Tensor, q as Tensor),
   solveCare: ([a, b, q, r]) => L.solveCare(a as Tensor, b as Tensor, q as Tensor, r as Tensor),
   solveDare: ([a, b, q, r]) => L.solveDare(a as Tensor, b as Tensor, q as Tensor, r as Tensor),
+  signm: ([a]) => L.signm(a as Tensor),
   johnsonLindenstraussDim: (_xs, p) => L.johnsonLindenstraussDim(p['n'] as number, p['eps'] as number),
 }
 

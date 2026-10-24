@@ -1,6 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
-import { fft, nextFastLen, rfft } from '../numerics/fourier/index.ts'
 import { eigvals, solve } from '../numerics/linalg/index.ts'
 import type { ComplexArray } from '../numerics/polynomial/index.ts'
 import {
@@ -8,13 +7,9 @@ import {
   add,
   angle,
   type ComplexValue,
-  cDiv,
-  cMul,
   concat,
   div,
   eye,
-  flip,
-  fromStorage,
   log10,
   logspace,
   matmul,
@@ -30,6 +25,7 @@ import {
   type Value,
   zeros,
 } from '../tensor/index.ts'
+import { constant, type Points, tfAt } from './_points.ts'
 import { float, numbers, rootsOf, toList } from './_shared.ts'
 import { isDiscrete, type Lti, type StateSpace, toTf, toZpk } from './representations.ts'
 import { sos2tf } from './sections.ts'
@@ -43,43 +39,6 @@ import { sos2tf } from './sections.ts'
 export interface FrequencyResponse {
   readonly w: Tensor
   readonly h: ComplexValue
-}
-
-/** Points of the complex plane as constant parts. */
-interface Points {
-  readonly re: Tensor
-  readonly im: Tensor
-}
-
-const constant = (xs: readonly number[]): Tensor => fromStorage(Float64Array.from(xs), [xs.length], 'float64')
-
-/** Horner's rule for a highest-first coefficient value at complex points (differentiable in the coefficients). */
-function horner(c: Value, z: Points): ComplexValue {
-  const k = c.shape[0] ?? 0
-  let acc: ComplexValue = { re: zeros(z.re.shape), im: zeros(z.re.shape) }
-  for (let j = 0; j < k; j++) {
-    const cj = reshape(sliceAxis(c, 0, j, j + 1), [])
-    const scaled = cMul(acc, z)
-    acc = { re: add(scaled.re, cj), im: scaled.im }
-  }
-  return acc
-}
-
-function tfAt(num: Value, den: Value, z: Points): ComplexValue {
-  const d = horner(den, z)
-  if (num.shape.length === 1) return cDiv(horner(num, z), d)
-  const p = num.shape[0] ?? 0
-  const rowsOf = Array.from({ length: p }, (_, i) => cDiv(horner(reshape(sliceAxis(num, 0, i, i + 1), [-1]), z), d))
-  const nw = z.re.shape[0] ?? 0
-  const pack = (part: 're' | 'im'): Value =>
-    reshape(
-      concat(
-        rowsOf.map((r) => reshape(r[part], [nw, 1])),
-        1,
-      ),
-      [nw, p, 1],
-    )
-  return { re: pack('re'), im: pack('im') }
 }
 
 function zpkAt(zeros_: ComplexArray, poles: ComplexArray, gain: number, z: Points): ComplexValue {
@@ -190,7 +149,7 @@ export function findfreqs(
 function defaultFrequencies(sys: Lti, n: number): Tensor {
   if (isDiscrete(sys)) return constant(Array.from({ length: n }, (_, k) => (k * Math.PI) / (n * sys.dt)))
   if (sys.kind === 'ss' && ((sys.b.shape[1] ?? 0) !== 1 || (sys.c.shape[0] ?? 0) !== 1)) {
-    const { re, im } = eigvals(sys.a)
+    const { re, im } = eigvals(primalOf(sys.a))
     return findfreqs({ re: [], im: [] }, { re: toFlat(re), im: toFlat(im) }, n, 'zp')
   }
   const z = toZpk(sys)
@@ -442,94 +401,4 @@ export function nyquist(sys: Lti, w?: TensorLike, options: NyquistOptions = {}):
   const first = (phase[0] ?? 0) + (offsets[0] ?? 0)
   const last = (phase[phase.length - 1] ?? 0) + (offsets[offsets.length - 1] ?? 0)
   return { w: constant(contour.map((s) => s.im)), h, count: roundHalfEven(-(last - first) / Math.PI) }
-}
-
-/**
- * The frequency response of an analog filter (scipy.signal.freqs): H(jw) = b(jw) / a(jw), differentiable in the
- * coefficients.
- *
- * @param b - Numerator, highest degree first.
- * @param a - Denominator, highest degree first.
- * @param worN - Frequencies, or a count chosen by findfreqs (default 200).
- * @returns The frequencies and the response.
- * @concept frequency-response
- * @example
- * ```ts
- * import { freqs } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
- * toArray(freqs([1], [1, 1], [0]).h.re) // => [1]
- * ```
- */
-export function freqs(b: TensorLike, a: TensorLike, worN: number | TensorLike = 200): FrequencyResponse {
-  const bv = float(b)
-  const av = float(a)
-  const w = typeof worN === 'number' ? findfreqs(bv, av, worN) : (float(worN) as Tensor)
-  const ws = toFlat(w)
-  return { w, h: tfAt(bv, av, { re: constant(ws.map(() => 0)), im: constant(ws) }) }
-}
-
-/** Options for {@link freqz}. */
-export interface FreqzOptions {
-  /** Frequencies over the whole circle [0, fs) instead of [0, fs / 2). */
-  readonly whole?: boolean
-  /** The sampling frequency (default 2 pi: frequencies in radians per sample). */
-  readonly fs?: number
-  /** Include the Nyquist frequency in a counted grid (when not `whole`). */
-  readonly includeNyquist?: boolean
-}
-
-/**
- * The frequency response of a digital filter (scipy.signal.freqz): H = B(e^{-jw}) / A(e^{-jw}) with coefficients in
- * powers of z^{-1}; an FIR filter on a fast grid goes through the real FFT, as scipy. Differentiable in the
- * coefficients.
- *
- * @param b - Numerator coefficients b0 + b1 z^-1 + ...
- * @param a - Denominator coefficients (default 1).
- * @param worN - Frequencies (in the units of fs), or a count (default 512).
- * @param options - Whole circle, sampling frequency, Nyquist inclusion.
- * @returns The frequencies and the response.
- * @concept frequency-response
- * @example
- * ```ts
- * import { freqz } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
- * toArray(freqz([0.5, 0.5], [1], 2).h.re) // => [1, 0.5]
- * ```
- */
-export function freqz(
-  b: TensorLike,
-  a: TensorLike = [1],
-  worN: number | TensorLike = 512,
-  options: FreqzOptions = {},
-): FrequencyResponse {
-  const fs = options.fs ?? 2 * Math.PI
-  const bv = reshape(float(b), [-1])
-  const av = reshape(float(a), [-1])
-  if (typeof worN === 'number') {
-    const n = worN
-    const whole = options.whole ?? false
-    const nyquist = !whole && (options.includeNyquist ?? false)
-    const last = whole ? fs : fs / 2
-    const w = constant(
-      Array.from({ length: n }, (_, k) => (nyquist ? (n === 1 ? 0 : (k * last) / (n - 1)) : (k * last) / n)),
-    )
-    const fir = (av.shape[0] ?? 0) === 1 && nextFastLen(n) === n && n >= (bv.shape[0] ?? 0)
-    if (fir) {
-      const nfft = whole ? n : nyquist ? 2 * (n - 1) : 2 * n
-      const spectrum = whole ? fft(bv, nfft) : rfft(bv, nfft)
-      const head = (x: Value): Value => sliceAxis(x, 0, 0, n)
-      const a0 = reshape(av, [])
-      return { w, h: { re: div(head(spectrum.re), a0), im: div(head(spectrum.im), a0) } }
-    }
-    return { w, h: digital(bv, av, toFlat(w), fs) }
-  }
-  const w = float(worN) as Tensor
-  return { w, h: digital(bv, av, toFlat(w), fs) }
-}
-
-/** B(e^{-jw}) / A(e^{-jw}): Horner in z^{-1} over the reversed coefficients. */
-function digital(b: Value, a: Value, w: readonly number[], fs: number): ComplexValue {
-  const theta = w.map((v) => (2 * Math.PI * v) / fs)
-  const zm1: Points = { re: constant(theta.map(Math.cos)), im: constant(theta.map((t) => -Math.sin(t))) }
-  return cDiv(horner(flip(b, 0), zm1), horner(flip(a, 0), zm1))
 }
