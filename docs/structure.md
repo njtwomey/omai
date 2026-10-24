@@ -1497,8 +1497,11 @@ jellyfish, Biopython, pyphen
 - `attribute-templates.ts`: CRFsuite-style attribute templates (windows of `(attribute, offset)` tuples joined into
   attribute strings, `w[-1]|w[0]`, skipped or padded boundaries, bias, `__BOS__`/`__EOS__`; parsing from text) and
   MALLET's offset conjunctions.
-- `representations.ts`: co-occurrence counts, PMI and PPMI, LSA, SVD word vectors, random indexing, analogies, nearest
-  words.
+- `representations.ts`: co-occurrence counts (windows, harmonic weighting), PMI, PPMI and shifted PPMI with context
+  smoothing, LSA, SVD word vectors, random indexing, analogies (3CosAdd, 3CosMul), nearest words.
+- `collocations.ts`: nltk's bigram and trigram association measures (raw frequency, Student's t, chi-square, PMI,
+  likelihood ratio, Poisson-Stirling, Jaccard, MI-like, Dice, phi squared, Fisher) and windowed collocation finding
+  with frequency and word filters.
 - `similarity.ts`: Levenshtein (weighted), the edit-alignment counts behind WER (rapidfuzz's tie-breaking),
   Damerau-Levenshtein (OSA and unrestricted), Hamming, Jaro and Jaro-Winkler, longest common subsequence (table,
   backtrace) and substring, Indel, Jaccard (set and weighted) and containment over shingles, clipped count overlaps,
@@ -1508,8 +1511,8 @@ jellyfish, Biopython, pyphen
 - `phonetic.ts`: Soundex and Metaphone (jellyfish's).
 - `approximate-search.ts`: approximate string search: q-gram indexes with count filtering, BK-trees, tries with fuzzy
   lookup, Sellers' approximate substring matching, top-k fuzzy matches with traced candidate pruning.
-- `fingerprinting.ts`: Rabin-Karp rolling hashes, winnowing (MOSS), SimHash, MinHash signatures for text, near-duplicate
-  detection.
+- `fingerprinting.ts`: Rabin-Karp rolling hashes and search, winnowing (MOSS), SimHash, MinHash signatures (datasketch's
+  scheme), LSH banding with its optimal parameters, near-duplicate detection.
 - `parsing.ts`: context-free grammars, CYK and Earley parsing, probabilistic CFGs (Viterbi parse, inside-outside),
   dependency parsing (Eisner, arc-standard transitions).
 - `hyphenation.ts`: Liang pattern hyphenation with matching traces.
