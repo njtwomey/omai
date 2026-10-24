@@ -38,6 +38,8 @@ export interface HubRunDone {
   readonly rows: number
   readonly ms: number
   readonly place: RunPlace
+  /** The state the run was made on. */
+  readonly state: HubState
 }
 
 const now = (): number => performance.now()
@@ -74,8 +76,8 @@ export function useHubRun(entry: HubEntry, state: HubState, delay = 200): HubRun
   // biome-ignore lint/correctness/useExhaustiveDependencies: the state is compared by content (`key`)
   useEffect(() => {
     const t = ++token.current
-    const done = (r: Omit<HubRunDone, 'status'>): void => {
-      if (t === token.current) setRun({ status: 'done', ...r })
+    const done = (r: Omit<HubRunDone, 'status' | 'state'>): void => {
+      if (t === token.current) setRun({ status: 'done', ...r, state })
     }
     const failed = (error: string): void => {
       if (t === token.current) setRun((p) => ({ status: 'error', error, ...previousOf(p) }))
