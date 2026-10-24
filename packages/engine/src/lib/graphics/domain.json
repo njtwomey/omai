@@ -1,0 +1,4 @@
+{
+  "tier": 7,
+  "summary": "Rendering mathematics as data: pinhole and orthographic cameras, grid ray casting over worlds, ray-primitive intersections, bounding-volume hierarchies, recursive ray tracing and a keyed path tracer, shading models and lights, tone mapping, textures and sampling, and triangle rasterisation with depth buffers, culling and clipping."
+}
