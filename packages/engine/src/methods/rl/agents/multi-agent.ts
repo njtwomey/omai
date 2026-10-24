@@ -1,4 +1,5 @@
 import { argmaxOf, type Json, meanOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { solveZeroSum } from '../../../lib/games/index.ts'
 import { crossEntropy } from '../../../lib/losses/index.ts'
 import { mlp } from '../../../lib/nn/index.ts'
 import { adam, type Tree } from '../../../lib/optim/index.ts'
@@ -31,7 +32,6 @@ import {
   reservoirAdd,
   reservoirSample,
   sampleIndex,
-  solveZeroSum,
   type TabularQOptions,
   tabularQ,
 } from './_multi-agent.ts'
@@ -170,8 +170,6 @@ export interface MinimaxQOptions {
   readonly gamma?: number
   /** Probability of a uniformly random action (default 0.2, Littman's explor). */
   readonly explore?: number
-  /** Duality-gap tolerance of the matrix-game solver (default 1e-6). */
-  readonly tol?: number
 }
 
 /**
@@ -179,12 +177,12 @@ export interface MinimaxQOptions {
  * `a` and the opponent's `o` from its own reward, `Q(s, a, o) <- (1 - alpha) Q + alpha (r + gamma V(s'))`, and at
  * every update solves the matrix game `max_pi min_o sum_a pi(a) Q(s, a, o)` for its strategy `pi(s)` and value
  * `V(s)`. It acts by `pi(s)`, with probability `explore` uniformly; `greedy` plays the most probable action of
- * `pi(s)` (read the mixed strategy with {@link minimaxQStrategy}). The matrix games are solved iteratively (regret
- * matching+ to a duality gap of `tol`, exactly at pure saddle points). Runs on `jointEnv` of a two-agent
+ * `pi(s)` (read the mixed strategy with {@link minimaxQStrategy}). The matrix games are solved exactly by linear
+ * programming (`games.solveZeroSum`). Runs on `jointEnv` of a two-agent
  * `ParallelEnv` with discrete actions; observations are table keys.
  *
  * @param env - The two-agent parallel environment.
- * @param options - Step sizes, discount, exploration and solver tolerance.
+ * @param options - Step sizes, discount and exploration.
  * @returns The joint agent (both players learn by minimax-Q).
  * @throws WhiteboxError with code `value` unless there are exactly two agents with discrete actions.
  * @concept multi-agent-learning
@@ -210,7 +208,6 @@ export function minimaxQ(
   const explore = options.explore ?? 0.2
   const decay = options.alphaDecay ?? 0.999
   const alphaMin = options.alphaMin ?? 0.01
-  const tol = options.tol ?? 1e-6
   const strategy = (t: MinimaxQTables | undefined, agent: string, o: unknown): readonly number[] => {
     const m = n[agent] ?? 1
     return t?.pi[observationKey(o)] ?? new Array<number>(m).fill(1 / m)
@@ -255,7 +252,7 @@ export function minimaxQ(
         const updated = q.map((row, i) =>
           i === own.action ? row.map((v, j) => (j === o ? v + tab.alpha * (target - v) : v)) : row,
         )
-        const solution = solveZeroSum(updated, { tol })
+        const solution = solveZeroSum(updated)
         tables[a] = {
           Q: { ...tab.Q, [key]: updated },
           V: { ...tab.V, [key]: solution.value },

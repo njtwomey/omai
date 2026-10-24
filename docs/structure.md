@@ -2241,8 +2241,8 @@ oracle: nashpy (support and vertex enumeration, Lemke-Howson from every label, f
 OpenSpiel (CFR, CFR+, discounted CFR, regret matching, projected replicator dynamics, best responses and exploitability
 on Kuhn and Leduc poker, the sequence-form LP), scipy.optimize.linprog (zero-sum values, maxmin levels, correlated
 equilibria), textbook cooperative games (Shapley values, the core, the nucleolus of bankruptcy games). Built on
-`optim/linear-programming.ts` (every LP), `foundations/combinatorics.ts` and `numerics/linalg`. `methods/rl` can
-delegate its zero-sum stage games (minimax-Q), matrix games and Kuhn/Leduc rules here.
+`optim/linear-programming.ts` (every LP), `foundations/combinatorics.ts` and `numerics/linalg`. `methods/rl` takes
+its zero-sum stage games (minimax-Q), matrix-game payoffs and Kuhn/Leduc rules from here.
 
 `normal-form/` (inlined into `games`):
 - `game.ts`: `NormalFormGame` (any number of players, payoffs row-major over profiles), `normalFormGame`,
@@ -3161,9 +3161,11 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
   dynamics: exact zero-order-hold steps or RK4 on Lagrangian equations of motion). `doubleIntegratorMatrices` is
   `systems.c2dMatrices` (zero-order hold); the per-step damped-mass coefficients in `_mechanics.ts` stay closed-form
   scalars (one exponential per step, not a matrix exponential).
-- `games.ts`: tic-tac-toe, connect four, nim, Kuhn and Leduc poker, as turn-based environments with legal actions.
+- `games.ts`: tic-tac-toe, connect four, nim, Kuhn and Leduc poker, as turn-based environments with legal actions
+  (the poker rules are `games`' `kuhnPoker` and `leducPoker`, with the cards dealt at reset).
 - `go.ts`: Go on small boards (5, 7, 9; captures, simple ko or positional superko, area scoring with komi).
-- `multi-agent.ts`: matrix games (prisoner's dilemma, matching pennies, rock-paper-scissors, stag hunt), pursuit-evasion,
+- `multi-agent.ts`: matrix games (prisoner's dilemma, matching pennies, rock-paper-scissors, stag hunt, with `games`'
+  payoffs), pursuit-evasion,
   cooperative navigation (MPE simple_spread).
 - `procedural.ts`: procedurally generated mazes (backtracker, Prim, Kruskal, braiding) and key-door tasks with
   Procgen-style level seeds and train/test splits, for generalisation studies.
@@ -3193,8 +3195,8 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 - `offline-actor-critic.ts`: IQL, TD3+BC.
 - `decision-transformer.ts`: decision transformers.
 - `imitation.ts`: DAgger, GAIL, maximum-entropy inverse reinforcement learning.
-- `multi-agent.ts`: independent learners, minimax-Q (TODO: solve stage games with `linprog` once it exists), self-play,
-  neural fictitious self-play (written here while `games` is not built).
+- `multi-agent.ts`: independent learners, minimax-Q (stage games solved exactly by `games.solveZeroSum`), self-play,
+  neural fictitious self-play.
 - `cooperative.ts`: value decomposition (VDN, QMIX), MADDPG.
 - `hierarchical.ts`: the options framework, option-critic.
 - `safe.ts`: constrained policy optimisation by Lagrangian PPO, shielding.
