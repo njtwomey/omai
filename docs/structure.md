@@ -4162,15 +4162,18 @@ library for the same computation. They do not set a higher bar than that library
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
   `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`.
 - Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, then only the tests,
-  type checks and fixtures related to the change; everything when shared infrastructure changes) and `make check` with
-  `make fixtures-check` as the periodic full run after a batch of merges and before a release.
-- `scripts/verify.ts`: the scoped gate (changed files against a base, `vitest related`, fixture-to-test lookup, scoped
-  pyright and fixture checks).
+  examples, type checks and fixtures related to the change; everything when shared infrastructure changes) and
+  `make check` (which includes `make examples`) with `make fixtures-check` as the periodic full run after a batch of
+  merges and before a release.
+- `scripts/verify.ts`: the scoped gate (changed files against a base, `vitest related`, fixture-to-test lookup, the
+  examples of the changed engine source files through `scripts/examples.ts --only <files>` (about 3 seconds for a
+  typical change, most of it building the catalogue; all examples when `scripts/` or whitebox-meta's `extract/`,
+  `runner/` or `modules/` change), scoped pyright and fixture checks).
 - `mise.toml`: Node, pnpm, Python and uv versions.
 - `scripts/barrels.ts`: every `index.ts` and the module map; `--check`.
 - `scripts/layers.ts`: dependency-cruiser rules from `domain.json` and `area.json`.
 - `scripts/examples.ts` (`make examples`): every `@example` of the engine core run in worker threads with its `// =>`
-  lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows,
+  lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows to module or file prefixes,
   `--coverage` reports documentation coverage). How-tos join it when they exist.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).

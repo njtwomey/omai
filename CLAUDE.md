@@ -15,12 +15,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 All routine work goes through `make` (it wraps mise, pnpm and uv).
 - `make verify`: the gate for every commit and merge. It runs the checks that take seconds over the whole repo (barrels,
   layering, lint, tsc), then only what the change touches: `vitest related` on the changed TypeScript (every test
-  importing it, transitively), the golden tests of changed fixtures, pyright and a fixture check of the changed oracle
-  case modules. Changes to shared infrastructure (dependencies, tool config, `scripts/`, the oracle's helpers) widen it
-  to everything. `BASE=<ref>` compares against something other than `main`.
+  importing it, transitively), the golden tests of changed fixtures, the `@example`s of the changed engine source files
+  (`make examples` with `--only <files>`, a few seconds), pyright and a fixture check of the changed oracle case
+  modules. Changes to shared infrastructure (dependencies, tool config, `scripts/`, the oracle's helpers, the meta
+  extractor and runner for examples) widen it to everything. `BASE=<ref>` compares against something other than `main`.
 - While iterating, run just the files you are working on (one file:
   `mise exec -- pnpm exec vitest run packages/engine/src/lib/tensor/ops/arithmetic.test.ts`; one test: add `-t "<name>"`).
-- `make check` and `make fixtures-check`: everything, every test and every fixture. A periodic full run (after a batch
+- `make check` and `make fixtures-check`: everything, every test, example and fixture. A periodic full run (after a batch
   of merges and before a release), not a per-commit gate.
 - `make setup`: install tools and dependencies.
 - `make test`: all Vitest projects.

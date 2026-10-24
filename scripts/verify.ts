@@ -9,6 +9,8 @@
  * - Tests: `vitest related` on the changed TypeScript, which runs every test that imports a changed file directly or
  *   transitively (so a change to a shared module tests its dependents), plus the golden tests that load a changed
  *   fixture.
+ * - Examples: the `@example`s of the changed engine source files (scripts/examples.ts with `--only <files>`), all of
+ *   them when the examples checker or its runner changes.
  * - Python: pyright on the changed oracle files, and a fixture check of just the changed case modules.
  * - Everything, as `make check` and `make fixtures-check` do, when shared infrastructure changes: dependencies, tool
  *   configuration, scripts, or the oracle's shared helpers.
@@ -45,6 +47,9 @@ const GLOBAL_TS = [
   /^Makefile$/,
 ]
 const GLOBAL_PY = [/^pyproject\.toml$/, /^uv\.lock$/, /^oracle\/whitebox_oracle\//]
+// Files whose change can affect every example: the catalogue extraction, the runner and its module loaders.
+const GLOBAL_EXAMPLES = [/^packages\/meta\/src\/(extract|runner|modules)\//]
+const EXAMPLES = ['node', 'scripts/examples.ts', '--methods', '--slowest', '0']
 
 function git(...args: string[]): string[] {
   const r = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8' })
@@ -145,6 +150,22 @@ function plan(files: readonly string[]): Step[] {
       })
   }
 
+  if (globalTs || has(GLOBAL_EXAMPLES)) steps.push({ label: 'examples (all)', command: EXAMPLES })
+  else {
+    // Examples live in the TSDoc of the engine's source files; a test file or a barrel has none.
+    const documented = files.filter(
+      (f) =>
+        /^packages\/engine\/src\/.*\.ts$/.test(f) &&
+        !/\.test(-d)?\.ts$|\.property\.test\.ts$|(^|\/)index\.ts$/.test(f) &&
+        existsSync(join(ROOT, f)),
+    )
+    if (documented.length > 0)
+      steps.push({
+        label: `examples of ${documented.length} changed files`,
+        command: [...EXAMPLES, '--only', documented.join(',')],
+      })
+  }
+
   if (globalPy)
     steps.push({
       label: 'fixtures (all)',
@@ -231,7 +252,8 @@ function main(): void {
   const steps = plan(files)
   let release: (() => void) | undefined
   for (const step of steps) {
-    if (release === undefined && step.label.startsWith('tests') && !args.includes('--dry-run')) release = acquireSlot()
+    if (release === undefined && /^(tests|examples)/.test(step.label) && !args.includes('--dry-run'))
+      release = acquireSlot()
     process.stdout.write(`\n== ${step.label}\n`)
     if (args.includes('--dry-run')) {
       process.stdout.write(`   ${step.command.join(' ').slice(0, 300)}\n`)
