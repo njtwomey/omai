@@ -52,6 +52,14 @@
       "cases": 14
     },
     {
+      "fixture": "methods/rl/agents/control.json",
+      "source": "oracle/cases/methods/rl/agents/control.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "methods/rl/agents/distributional.json",
       "source": "oracle/cases/methods/rl/agents/distributional.py",
       "reference": {
@@ -92,6 +100,16 @@
         "gymnasium": "1.4.0"
       },
       "cases": 60
+    },
+    {
+      "fixture": "methods/rl/environments/continuous_control.json",
+      "source": "oracle/cases/methods/rl/environments/continuous_control.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 54
     },
     {
       "fixture": "methods/rl/environments/games.json",
