@@ -1345,17 +1345,28 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 
 ### 4.19 `kernels/` (tier 7): kernels and feature maps (sklearn kernels, GPyTorch)
 
-oracle: scikit-learn, gpytorch
-- `kernel.ts`: `Kernel` (`k(x, y)`, `diag`, hyperparameters as a differentiable pytree), `gram`, `crossGram`, sum,
-  product and scale composition, ARD, log-parameterisation.
-- `stationary.ts`: RBF, Matern (1/2, 3/2, 5/2 and general), rational quadratic, exponential, periodic, locally
-  periodic, spectral mixture, cosine.
-- `dot-product.ts`: linear, polynomial, sigmoid, arc-cosine, neural tangent kernel of an MLP.
-- `structured.ts`: white noise, constant, string kernels, set kernels, graph kernels (diffusion, regularised Laplacian,
-  WL subtree), chi-square, histogram intersection.
-- `expansion.ts`: random Fourier features, orthogonal random features, Nystroem, additive chi-square sampler,
-  polynomial count sketch, tensor sketch, approximation error helpers.
-- `matrices.ts`: centring, kernel alignment, HSIC and MMD statistics, effective dimension, kernel PCA projections.
+oracle: scikit-learn, gpytorch, scipy, networkx (numpy closed forms for arc-cosine and NTK: neural-tangents does not
+import with the installed jax)
+- `kernel.ts`: `Kernel` (`k(x, y)`, `diag`, `withParams`, hyperparameters as a differentiable pytree with per-leaf
+  constraints), `defineKernel`, `asRows`, `gram`, `crossGram`, `sumKernel`, `productKernel`, `scaleKernel`,
+  `powerKernel`, `onDimensions` (active dimensions), `ard`, log-parameterisation (`theta`, `withTheta`,
+  `hyperparameters`, `fixHyperparameters`), `gramGradient` (scikit-learn's eval_gradient), `formatKernel`.
+- `stationary.ts`: `rbfKernel`, `maternKernel` (1/2, 3/2, 5/2, infinity and general through K_nu),
+  `rationalQuadraticKernel`, `exponentialKernel` (gamma-exponential), `laplacianKernel`, `periodicKernel`,
+  `locallyPeriodicKernel`, `spectralMixtureKernel`, `cosineKernel`.
+- `dot-product.ts`: `linearKernel`, `polynomialKernel`, `sigmoidKernel`, `cosineSimilarityKernel`, `arcCosineKernel`
+  (orders 0-2, composed to any depth), `neuralTangentKernel` (NTK and NNGP of a ReLU or erf MLP), `empiricalNtk`.
+- `structured.ts`: `whiteNoiseKernel`, `constantKernel`, string kernels (`spectrumKernel`, `subsequenceKernel`), set
+  kernels (`setKernel` mean embedding, `jaccardKernel`), graph kernels (`diffusionKernel`, `regularisedLaplacianKernel`,
+  `wlSubtreeFeatures`, `wlSubtreeKernel`), chi-square (`chi2Distance`, `chi2Kernel`, `additiveChi2Kernel`,
+  `skewedChi2Kernel`), `histogramIntersectionKernel`.
+- `expansion.ts`: `FeatureMap`; `randomFourierFeatures` (spectral samplers for RBF, Matérn, exponential, Laplacian,
+  rational quadratic, scaled kernels, or given draws), `orthogonalRandomFeatures`, `nystroem`, `additiveChi2Sampler`,
+  `skewedChi2Sampler`, `polynomialCountSketch`, `tensorSketch`, approximation error helpers (`approximateGram`,
+  `approximationError`).
+- `matrices.ts`: `centerKernel`, `kernelAlignment`, `targetAlignment`, `hsic` (biased, unbiased, normalised),
+  `mmdSquared` (biased, unbiased, linear-time), `effectiveDimension`, `kernelPca` projections, `pairwiseKernels`
+  (scikit-learn's metric names and parameters).
 
 ### 4.20 `signal/` (tier 7): signal and image processing (scipy.signal, scipy.ndimage, pywt, librosa)
 
