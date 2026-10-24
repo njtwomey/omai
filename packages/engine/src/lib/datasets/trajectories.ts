@@ -27,11 +27,19 @@ export const loggedBandit: DatasetGenerator<TrajectoryData> = {
   kind: 'trajectories',
   description: 'Contextual bandit logs from a known softmax logging policy with Bernoulli rewards.',
   knobs: dict({
-    rounds: int(1, 10_000_000, { default: 2000 }),
-    actions: int(2, 100, { default: 5 }),
-    features: int(1, 100, { default: 5 }),
-    temperature: real(0.01, 100, { default: 1 }),
-    epsilon: real(0, 1, { default: 0.1, label: 'uniform exploration' }),
+    rounds: int(1, 10_000_000, { label: 'rounds', description: 'The number of logged rounds.', default: 2000 }),
+    actions: int(2, 100, { label: 'actions', description: 'The number of actions.', default: 5 }),
+    features: int(1, 100, { label: 'context features', description: 'The dimension of the context.', default: 5 }),
+    temperature: real(0.01, 100, {
+      label: 'temperature',
+      description: 'The softmax temperature of the logging policy: higher is more uniform.',
+      default: 1,
+    }),
+    epsilon: real(0, 1, {
+      description: 'The probability the logging policy acts uniformly at random.',
+      default: 0.1,
+      label: 'uniform exploration',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['rounds'] as number
@@ -235,13 +243,21 @@ export const offlineMdp: DatasetGenerator<TrajectoryData> = {
   kind: 'trajectories',
   description: 'Episodes from a known tabular MDP under a known epsilon-greedy behaviour policy.',
   knobs: dict({
-    layout: choice(['random', 'chain'], { default: 'random' }),
-    states: int(2, 500, { default: 10 }),
-    actions: int(2, 20, { default: 3 }),
-    gamma: real(0, 0.999, { default: 0.9 }),
-    episodes: int(1, 100_000, { default: 100 }),
-    horizon: int(1, 10_000, { default: 20 }),
-    epsilon: real(0, 1, { default: 0.3, label: 'behaviour exploration' }),
+    layout: choice(['random', 'chain'], {
+      label: 'layout',
+      description: 'A random MDP or a chain.',
+      default: 'random',
+    }),
+    states: int(2, 500, { label: 'states', description: 'The number of states.', default: 10 }),
+    actions: int(2, 20, { label: 'actions', description: 'The number of actions.', default: 3 }),
+    gamma: real(0, 0.999, { label: 'discount γ', description: 'The discount factor.', default: 0.9 }),
+    episodes: int(1, 100_000, { label: 'episodes', description: 'The number of logged episodes.', default: 100 }),
+    horizon: int(1, 10_000, { label: 'horizon', description: 'Steps per episode.', default: 20 }),
+    epsilon: real(0, 1, {
+      description: 'The probability the behaviour policy acts uniformly at random.',
+      default: 0.3,
+      label: 'behaviour exploration',
+    }),
   }),
   generate: (k, knobs) => {
     const mdp = makeMdp(

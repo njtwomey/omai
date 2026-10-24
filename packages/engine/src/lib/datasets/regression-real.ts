@@ -362,11 +362,23 @@ export const growthCurves: DatasetGenerator<RegressionData> = {
   kind: 'regression',
   description: 'Weights or statures of children aged 2 to 20 drawn from the CDC 2000 growth charts.',
   knobs: dict({
-    n: int(1, 100_000, { default: 200 }),
-    measure: choice(['weight', 'stature'], { default: 'weight' }),
-    sex: choice(['male', 'female'], { default: 'female' }),
-    minAge: real(24, 240, { default: 24, label: 'youngest age (months)' }),
-    maxAge: real(24, 240, { default: 240, label: 'oldest age (months)' }),
+    n: int(1, 100_000, { label: 'children', description: 'The number of children measured.', default: 200 }),
+    measure: choice(['weight', 'stature'], {
+      label: 'measure',
+      description: 'Weight (kg) or stature (cm).',
+      default: 'weight',
+    }),
+    sex: choice(['male', 'female'], { label: 'sex', description: 'Which CDC chart to draw from.', default: 'female' }),
+    minAge: real(24, 240, {
+      description: 'The youngest age drawn, in months.',
+      default: 24,
+      label: 'youngest age (months)',
+    }),
+    maxAge: real(24, 240, {
+      description: 'The oldest age drawn, in months.',
+      default: 240,
+      label: 'oldest age (months)',
+    }),
   }),
   generate: (k, knobs) => {
     const chart = growthChart(knobs['measure'] as GrowthMeasure, knobs['sex'] as 'male' | 'female')

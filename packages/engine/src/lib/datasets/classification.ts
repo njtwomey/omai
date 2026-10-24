@@ -68,8 +68,16 @@ function finish(
   return { data: rows, truth: bayes === undefined ? out : withLazyBayesError(out, bayes) }
 }
 
-const nKnob = int(2, 100_000, { default: 100, label: 'samples' })
-const shuffleKnob = bool({ default: true, label: 'shuffle rows' })
+const nKnob = int(2, 100_000, {
+  description: 'The number of rows, split evenly between the centres.',
+  default: 100,
+  label: 'samples',
+})
+const shuffleKnob = bool({
+  description: 'Shuffle the rows; otherwise they come grouped by blob.',
+  default: true,
+  label: 'shuffle rows',
+})
 
 // ---------------------------------------------------------------------------------------------------------------
 // Blobs
@@ -92,10 +100,18 @@ export const blobs: DatasetGenerator<ClassificationData> = {
   description: 'Isotropic Gaussian blobs with centres uniform in a box (sklearn make_blobs).',
   knobs: dict({
     n: nKnob,
-    nFeatures: int(1, 100, { default: 2, label: 'features' }),
-    centers: int(1, 50, { default: 3, label: 'centres' }),
-    clusterStd: real(0.01, 20, { default: 1, label: 'cluster standard deviation' }),
-    boxSize: real(0.1, 100, { default: 10, label: 'centre box half-width' }),
+    nFeatures: int(1, 100, { description: 'The number of features (dimensions).', default: 2, label: 'features' }),
+    centers: int(1, 50, { description: 'The number of Gaussian blobs.', default: 3, label: 'centres' }),
+    clusterStd: real(0.01, 20, {
+      description: 'The standard deviation of each blob along each axis.',
+      default: 1,
+      label: 'cluster standard deviation',
+    }),
+    boxSize: real(0.1, 100, {
+      description: 'Centres are drawn uniformly in [-boxSize, boxSize] along each axis.',
+      default: 10,
+      label: 'centre box half-width',
+    }),
     shuffle: shuffleKnob,
   }),
   generate: (k, knobs) => {
@@ -302,7 +318,11 @@ export const moons: DatasetGenerator<ClassificationData> = {
   description: 'Two interleaving half circles with Gaussian noise (sklearn make_moons).',
   knobs: dict({
     n: nKnob,
-    noise: real(0, 2, { default: 0.1, label: 'noise standard deviation' }),
+    noise: real(0, 2, {
+      description: 'The standard deviation of the Gaussian noise added to the points.',
+      default: 0.1,
+      label: 'noise standard deviation',
+    }),
     shuffle: shuffleKnob,
   }),
   generate: (k, knobs) => noisyPoints('moons', moons.description, knobs, k, moonPoints(knobs['n'] as number)),
@@ -324,8 +344,16 @@ export const circles: DatasetGenerator<ClassificationData> = {
   description: 'A large circle containing a smaller circle, with Gaussian noise (sklearn make_circles).',
   knobs: dict({
     n: nKnob,
-    noise: real(0, 2, { default: 0.05, label: 'noise standard deviation' }),
-    factor: real(0, 0.999, { default: 0.8, label: 'inner radius' }),
+    noise: real(0, 2, {
+      description: 'The standard deviation of the Gaussian noise added to the points.',
+      default: 0.05,
+      label: 'noise standard deviation',
+    }),
+    factor: real(0, 0.999, {
+      description: 'The radius of the inner circle relative to the outer (1).',
+      default: 0.8,
+      label: 'inner radius',
+    }),
     shuffle: shuffleKnob,
   }),
   generate: (k, knobs) =>
@@ -358,8 +386,16 @@ export const xor: DatasetGenerator<ClassificationData> = {
   description: 'Four Gaussian blobs at the corners of a square, labelled exclusive-or.',
   knobs: dict({
     n: nKnob,
-    separation: real(0.1, 10, { default: 1, label: 'corner distance' }),
-    noise: real(0.01, 5, { default: 0.3, label: 'blob standard deviation' }),
+    separation: real(0.1, 10, {
+      description: 'The distance of each blob’s centre from the origin along each axis.',
+      default: 1,
+      label: 'corner distance',
+    }),
+    noise: real(0.01, 5, {
+      description: 'The standard deviation of each blob.',
+      default: 0.3,
+      label: 'blob standard deviation',
+    }),
     shuffle: shuffleKnob,
   }),
   generate: (k, knobs) => {
@@ -416,9 +452,13 @@ export const spirals: DatasetGenerator<ClassificationData> = {
   description: 'Interleaved spiral arms with Gaussian noise.',
   knobs: dict({
     n: nKnob,
-    arms: int(2, 10, { default: 2 }),
-    turns: real(0.25, 5, { default: 1.5, label: 'turns per arm' }),
-    noise: real(0.005, 1, { default: 0.05, label: 'noise standard deviation' }),
+    arms: int(2, 10, { label: 'arms', description: 'The number of spiral arms (one class each).', default: 2 }),
+    turns: real(0.25, 5, { description: 'How many turns each arm makes.', default: 1.5, label: 'turns per arm' }),
+    noise: real(0.005, 1, {
+      description: 'The standard deviation of the Gaussian noise added to the points.',
+      default: 0.05,
+      label: 'noise standard deviation',
+    }),
     shuffle: shuffleKnob,
   }),
   generate: (k, knobs) => {
@@ -510,8 +550,12 @@ export const checkerboard: DatasetGenerator<ClassificationData> = {
   description: 'Uniform points on a checkerboard, labelled by the colour of their cell.',
   knobs: dict({
     n: nKnob,
-    cells: int(1, 20, { default: 4, label: 'cells per side' }),
-    labelNoise: real(0, 1, { default: 0, label: 'label flip probability' }),
+    cells: int(1, 20, { description: 'The number of cells along each side.', default: 4, label: 'cells per side' }),
+    labelNoise: real(0, 1, {
+      description: 'The probability that each label is flipped.',
+      default: 0,
+      label: 'label flip probability',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -587,9 +631,17 @@ export const gaussianQuantiles: DatasetGenerator<ClassificationData> = {
     'Classes nested by quantiles of the distance from the centre of a Gaussian (sklearn make_gaussian_quantiles).',
   knobs: dict({
     n: nKnob,
-    nFeatures: int(1, 100, { default: 2, label: 'features' }),
-    nClasses: int(2, 20, { default: 3, label: 'classes' }),
-    cov: real(0.01, 100, { default: 1, label: 'variance' }),
+    nFeatures: int(1, 100, { description: 'The number of feature columns.', default: 2, label: 'features' }),
+    nClasses: int(2, 20, {
+      description: 'The number of classes (nested shells of equal probability).',
+      default: 3,
+      label: 'classes',
+    }),
+    cov: real(0.01, 100, {
+      description: 'The variance of the isotropic Gaussian along each axis.',
+      default: 1,
+      label: 'variance',
+    }),
     shuffle: shuffleKnob,
   }),
   generate: (k, knobs) => {
@@ -629,7 +681,7 @@ export const hastie10_2: DatasetGenerator<ClassificationData> = {
   name: 'hastie10_2',
   kind: 'classification',
   description: 'Ten standard normal features; class 1 when the squared norm exceeds 9.34 (sklearn make_hastie_10_2).',
-  knobs: dict({ n: int(2, 100_000, { default: 100, label: 'samples' }) }),
+  knobs: dict({ n: int(2, 100_000, { description: 'The number of rows.', default: 100, label: 'samples' }) }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
     const x = normal(k, [n, 10])

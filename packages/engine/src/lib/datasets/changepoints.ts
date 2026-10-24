@@ -243,14 +243,42 @@ export const changepointSeries: DatasetGenerator<TimeSeriesData> = {
   description:
     'Piecewise-stationary series whose mean, variance, rate, AR coefficient or trend changes at random times.',
   knobs: dict({
-    n: int(2, 100_000, { default: 300 }),
-    kind: choice(['mean', 'variance', 'rate', 'ar', 'trend'], { default: 'mean' }),
-    hazard: real(0.0001, 0.5, { default: 0.01, label: 'changepoint probability per step' }),
-    minSegment: int(1, 10_000, { default: 1, label: 'shortest segment length' }),
-    noise: real(0.001, 100, { default: 1, label: 'observation noise' }),
-    shift: real(0.001, 100, { default: 3, label: 'prior spread of segment means' }),
-    meanRate: real(0.01, 1000, { default: 5, label: 'prior mean of Poisson rates' }),
-    slope: real(0.0001, 10, { default: 0.05, label: 'prior spread of trend slopes' }),
+    n: int(2, 100_000, { label: 'length', description: 'The number of time steps.', default: 300 }),
+    kind: choice(['mean', 'variance', 'rate', 'ar', 'trend'], {
+      label: 'kind of change',
+      description: 'What changes at each changepoint: the mean, variance, Poisson rate, AR coefficient or trend.',
+      default: 'mean',
+    }),
+    hazard: real(0.0001, 0.5, {
+      description: 'The probability of a changepoint at each step (a geometric segment length).',
+      default: 0.01,
+      label: 'changepoint probability per step',
+    }),
+    minSegment: int(1, 10_000, {
+      description: 'The shortest allowed segment.',
+      default: 1,
+      label: 'shortest segment length',
+    }),
+    noise: real(0.001, 100, {
+      description: 'The standard deviation of the observation noise.',
+      default: 1,
+      label: 'observation noise',
+    }),
+    shift: real(0.001, 100, {
+      description: 'The spread of the segment means drawn at each change.',
+      default: 3,
+      label: 'prior spread of segment means',
+    }),
+    meanRate: real(0.01, 1000, {
+      description: 'The prior mean of the Poisson rates (rate changes).',
+      default: 5,
+      label: 'prior mean of Poisson rates',
+    }),
+    slope: real(0.0001, 10, {
+      description: 'The spread of the trend slopes (trend changes).',
+      default: 0.05,
+      label: 'prior spread of trend slopes',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number

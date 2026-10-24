@@ -54,11 +54,23 @@ export const eloGames: DatasetGenerator<ComparisonData> = {
   kind: 'comparisons',
   description: 'Pairwise games between players with latent Elo skills, with draws and optional skill drift.',
   knobs: dict({
-    players: int(2, 10_000, { default: 20 }),
-    games: int(1, 1_000_000, { default: 500 }),
-    spread: real(0, 2000, { default: 200, label: 'skill standard deviation (Elo points)' }),
-    drawWeight: real(0, 10, { default: 0.5, label: 'Davidson draw parameter' }),
-    drift: real(0, 200, { default: 0, label: 'skill random-walk step per game' }),
+    players: int(2, 10_000, { label: 'players', description: 'The number of players.', default: 20 }),
+    games: int(1, 1_000_000, { label: 'games', description: 'The number of games played.', default: 500 }),
+    spread: real(0, 2000, {
+      description: 'The standard deviation of the latent skills, in Elo points.',
+      default: 200,
+      label: 'skill standard deviation (Elo points)',
+    }),
+    drawWeight: real(0, 10, {
+      description: 'The Davidson draw parameter: larger values make draws likelier.',
+      default: 0.5,
+      label: 'Davidson draw parameter',
+    }),
+    drift: real(0, 200, {
+      description: 'The random-walk step of each skill per game.',
+      default: 0,
+      label: 'skill random-walk step per game',
+    }),
   }),
   generate: (k, knobs) => {
     const players = knobs['players'] as number
@@ -117,10 +129,18 @@ export const roundRobin: DatasetGenerator<ComparisonData> = {
   kind: 'comparisons',
   description: 'A round-robin tournament between players with latent skills.',
   knobs: dict({
-    players: int(2, 500, { default: 10 }),
-    rounds: int(1, 100, { default: 2 }),
-    spread: real(0, 2000, { default: 200 }),
-    drawWeight: real(0, 10, { default: 0.5 }),
+    players: int(2, 500, { label: 'players', description: 'The number of players.', default: 10 }),
+    rounds: int(1, 100, { label: 'rounds', description: 'How many times every pair plays.', default: 2 }),
+    spread: real(0, 2000, {
+      label: 'skill spread',
+      description: 'The standard deviation of the latent skills, in Elo points.',
+      default: 200,
+    }),
+    drawWeight: real(0, 10, {
+      label: 'draw weight',
+      description: 'The Davidson draw parameter: larger values make draws likelier.',
+      default: 0.5,
+    }),
   }),
   generate: (k, knobs) => {
     const players = knobs['players'] as number
