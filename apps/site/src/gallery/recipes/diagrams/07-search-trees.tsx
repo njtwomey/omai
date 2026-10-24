@@ -54,7 +54,7 @@ export default function SearchTrees(): ReactNode {
           ]}
         />
       </ControlPanel>
-      <StructureView structure={tree} overlay={frames[playback.frame]} />
+      <StructureView structure={tree} overlay={frames[playback.frame]} frames={frames} />
       <Player controller={playback} stamp={(f) => `expansion ${f + 1} of ${frames.length}`} />
     </div>
   )

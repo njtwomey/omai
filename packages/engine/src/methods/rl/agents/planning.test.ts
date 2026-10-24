@@ -6,6 +6,7 @@ import {
   greedyPolicyOf,
   playAec,
   stateObservations,
+  timeLimit,
   trainAgent,
 } from '../../../lib/rl/index.ts'
 import { cartPole, cliffWalking, frozenLake, nim, ticTacToe } from '../../../methods/rl/index.ts'
@@ -18,6 +19,7 @@ import {
   minimaxAgent,
   policyIterationAgent,
   randomLegalPolicy,
+  sweepingPlannerAgent,
   valueIterationAgent,
 } from './planning.ts'
 
@@ -69,6 +71,26 @@ describe('dynamic-programming agents', () => {
     const lake = frozenLake.create({ isSlippery: false })
     const r = trainAgent(lake, valueIterationAgent(lake, { gamma: 0.9 }), { episodes: 1, checkpoints: false })
     expect(r.returns).toEqual([1])
+  })
+
+  it('plan a sweep at a time, improving episode by episode to the optimum', () => {
+    // The planner reads the model of the bare environment; it trains under a time limit.
+    const dry = frozenLake.create({ isSlippery: false })
+    const lake = timeLimit(dry, 50)
+    const vi = sweepingPlannerAgent(dry, { gamma: 0.9 })
+    // Rewards reach the start after six sweeps; until then the greedy policy never reaches the goal.
+    const early = trainAgent(lake, vi, { episodes: 12, maxSteps: 2000, checkpoints: false })
+    expect(early.returns.slice(0, 3)).toEqual([0, 0, 0])
+    expect(early.returns.at(-1)).toBe(1)
+    expect(early.agent.iterations).toBe(12)
+    const edge = cliffWalking.create()
+    const cliff = timeLimit(edge, 100)
+    const pi = sweepingPlannerAgent(edge, { planner: 'policyIteration', gamma: 0.9, every: 2, sweeps: 3 })
+    const s = trainAgent(cliff, pi, { episodes: 20, maxSteps: 4000, checkpoints: false }).agent
+    expect(s.iterations).toBe(30)
+    expect(s.residual).toBe(0)
+    expect(evaluatePolicy(cliff, greedyPolicyOf(pi, s), { episodes: 1, key: key(1) }).meanReturn).toBe(-13)
+    expect(() => sweepingPlannerAgent(cartPole.create())).toThrow(/no model/)
   })
 })
 
