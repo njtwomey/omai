@@ -46,6 +46,7 @@ export function DraggablePoints(props: DraggablePointsProps): ReactNode {
     return rule === undefined ? p : rule(p)
   }
   const move = (i: number, p: Point2): void => {
+    if (!Number.isFinite(p[0]) || !Number.isFinite(p[1])) return
     const next = [...points]
     next[i] = place(i, p)
     onChange(next)

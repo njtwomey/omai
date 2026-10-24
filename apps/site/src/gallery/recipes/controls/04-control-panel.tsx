@@ -1,5 +1,8 @@
 import { type ReactNode, useState } from 'react'
+import { lineChart } from 'whitebox-render/charts'
+import { figure } from 'whitebox-render/figure'
 import {
+  Chart,
   Choice,
   ControlLayout,
   ControlPanel,
@@ -7,8 +10,8 @@ import {
   NumberField,
   PanelArea,
   Toggle,
+  useColourMode,
 } from 'whitebox-render/react'
-import { Line, Plot, plotFrame, sampleCurve } from '../../demo/Plot.tsx'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -18,7 +21,8 @@ export const recipe: Recipe = {
     '`ControlPanel` lays controls in `columns`, in `rows`, or in named `areas` (one string per row, as CSS grid areas, with a `PanelArea` per name); a `title` makes it collapsible. `ControlLayout` puts the panel `left`, `right`, `top` or `bottom` of the figure, which keeps its own size.',
 }
 
-const frame = plotFrame({ x: [0, 4 * Math.PI], y: [-2.5, 2.5], width: 520 })
+const FIGURE = figure({ width: 520 })
+const ts = Array.from({ length: 401 }, (_, i) => (4 * Math.PI * i) / 400)
 
 export default function ControlPanelRecipe(): ReactNode {
   const [placement, setPlacement] = useState<ControlPlacement>('left')
@@ -27,6 +31,13 @@ export default function ControlPanelRecipe(): ReactNode {
   const [phase, setPhase] = useState(0)
   const [damped, setDamped] = useState(false)
   const f = (t: number): number => amplitude * Math.sin(frequency * t + phase) * (damped ? Math.exp(-t / 6) : 1)
+  const mode = useColourMode()
+  const option = lineChart([{ x: ts, y: ts.map(f), name: 'wave' }], {
+    mode,
+    figure: FIGURE,
+    x: { label: 't' },
+    y: { label: 'y', limits: [-2.5, 2.5] },
+  })
   const side = placement === 'left' || placement === 'right'
   return (
     <ControlLayout
@@ -60,9 +71,7 @@ export default function ControlPanelRecipe(): ReactNode {
         </ControlPanel>
       }
     >
-      <Plot frame={frame} xLabel="t" yLabel="y">
-        <Line frame={frame} points={sampleCurve(f, 0, 4 * Math.PI, 400)} />
-      </Plot>
+      <Chart option={option} figure={FIGURE} />
     </ControlLayout>
   )
 }
