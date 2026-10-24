@@ -97,7 +97,7 @@ function fitAndScore(
   trial: TrialContext,
   key: Key,
 ): number {
-  const fitted = estimator.fit(train, { key, parent: trial.run })
+  const fitted = estimator.fit(train, { key, parent: trial.run, explain: false })
   return sign * scorer.score(fitted, test)
 }
 

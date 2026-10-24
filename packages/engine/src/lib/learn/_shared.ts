@@ -66,10 +66,16 @@ export function keyFor(options: FitOptions, name: string): Key {
 /** Run options for a traced learn procedure: the caller's parent run, or the resolved tracer and policy. */
 export const runOptionsFor: typeof fitRunOptions = fitRunOptions
 
-/** Fit options for an inner fit, nested under a run and with a derived key. */
-export function innerFitOptions(options: FitOptions, key: Key, parent?: RunOptions['parent']): FitOptions {
+/** Fit options for an inner fit, nested under a run and with a derived key; it records no training steps unless `explain` (a refit of the chosen model keeps the caller's choice). */
+export function innerFitOptions(
+  options: FitOptions,
+  key: Key,
+  parent?: RunOptions['parent'],
+  explain = false,
+): FitOptions {
   return {
     key,
+    ...(explain ? (options.explain === undefined ? {} : { explain: options.explain }) : { explain: false }),
     ...(options.ctx === undefined ? {} : { ctx: options.ctx }),
     ...(parent === undefined
       ? {

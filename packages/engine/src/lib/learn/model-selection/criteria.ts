@@ -264,7 +264,7 @@ export function bootstrap632(
       ? (a: number, b: number) => (a === b ? 0 : 1)
       : (a: number, b: number) => (a - b) ** 2)
   const key = keyFor(options, 'bootstrap632')
-  const full = estimator.fit(data, innerFitOptions(options, foldIn(key, 0), options.parent))
+  const full = estimator.fit(data, innerFitOptions(options, foldIn(key, 0), options.parent, true))
   const fullPred = toFlat(requireVerb(full, 'predict', 'bootstrap632')(data.x))
   const trainingError = meanOf(Array.from(y, (v, i) => loss(v, fullPred[i] ?? 0)))
   const sum = new Float64Array(n)

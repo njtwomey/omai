@@ -192,7 +192,7 @@ function searchEstimator(
         const best =
           options.refit === false
             ? null
-            : estimatorFor(source, bestParams).fit(data, { key: foldIn(key, 1), parent: handle }).params
+            : estimatorFor(source, bestParams).fit(data, { key: foldIn(key, 1), parent: handle, explain: false }).params
         handle.end('completed', outcome.studies.length, { bestScore: cv.meanTestScore[bestIndex] ?? Number.NaN })
         return toJson({
           bestParams,

@@ -9,7 +9,7 @@ import { marginFrames } from './margins.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
 import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
-import { decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
+import { decisionSurfaceFrames, decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
 import { coefficientView, likelihoodView, neighbourView, searchTrialsView } from './tables.ts'
 import { treeScene } from './trees.ts'
 
@@ -74,9 +74,13 @@ const REGISTRY: Registry = {
     kind: 'decisionSurface',
     component: 'DecisionSurfaceView',
     title: 'Decision surface',
-    plays: false,
+    plays: true,
     accepts: ['points', 'labels'],
-    still: (r, o) => decisionSurfaceView(r, o),
+    still: (r, o) => {
+      if (r.steps === undefined || r.steps.length < 2) return decisionSurfaceView(r, o)
+      const frames = decisionSurfaceFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
   },
   tree: {
     kind: 'tree',
