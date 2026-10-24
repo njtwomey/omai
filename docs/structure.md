@@ -556,12 +556,14 @@ oracle: jax and torch for derivative values; finite differences in property test
 ### 4.8 `space/` (tier 3): typed spaces (gymnasium.spaces, Optuna distributions, ConfigSpace)
 
 - `types.ts`: `Space` union (`real` with bounds, log scale and step; `int`; `choice`; `bool`; `box`; `discrete`;
-  `multiDiscrete`; `multiBinary`; `tuple`; `dict`; conditional dimensions), metadata (label, description, unit,
-  default).
+  `multiDiscrete`; `multiBinary`; `tuple`; `dict`; conditional dimensions through `when` on a dict child, which may
+  chain), metadata (label, description, unit, and a `default` on every kind), with a builder per kind.
 - `operations.ts`: `sample(space, key)`, `contains`, `clip`, `defaults`, `flatDim`, `flatten`, `unflatten`,
-  `activeDims`.
-- `encoding.ts`: `encode`/`decode` to the unit cube, `grid` enumeration, `neighbours` (for local search over
-  configurations), `distance`.
+  `activeDims` (dotted paths of the active dimensions of a value).
+- `encoding.ts`: `encode`/`decode` to the unit cube (every kind, inactive keys at 0.5), `encodedDim`, `grid`
+  enumeration (tuples, nested and conditional dicts), `neighbours` (one-move neighbourhoods for local search over
+  configurations, repairing conditional dimensions), `distance`.
+- `_active.ts` (internal): resolution of conditional dict keys shared by the operations.
 
 ### 4.9 `context/` (tier 4): reproducibility and defaults
 

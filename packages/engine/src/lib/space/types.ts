@@ -1,11 +1,18 @@
 import { WhiteboxError } from '../base/index.ts'
 
-/** Descriptive metadata every space can carry (for documentation, controls and reports). */
+/**
+ * Descriptive metadata every space can carry (for documentation, controls and reports), and the condition that makes
+ * it a conditional dimension. Each space kind also takes a `default` value of its own type.
+ */
 export interface SpaceMeta {
   readonly label?: string
   readonly description?: string
   readonly unit?: string
-  /** Active only when a sibling key of the enclosing dict has one of these values. */
+  /**
+   * A conditional dimension: inside a dict, the child is active only when the sibling `key` is active and has one of
+   * the listed values (conditions may chain: the sibling may itself be conditional). Inactive children are absent
+   * from values, drawn by no sampler and varied by no search.
+   */
   readonly when?: { readonly key: string; readonly in: readonly (string | number | boolean)[] }
 }
 
@@ -41,12 +48,13 @@ export interface BoolSpace extends SpaceMeta {
   readonly default?: boolean
 }
 
-/** A box of real numbers with a shape (gymnasium `Box`). */
+/** A box of real numbers with a shape (gymnasium `Box`); values are flat row-major arrays. */
 export interface BoxSpace extends SpaceMeta {
   readonly kind: 'box'
   readonly low: number | readonly number[]
   readonly high: number | readonly number[]
   readonly shape: readonly number[]
+  readonly default?: readonly number[]
 }
 
 /** The integers `start, ..., start + n - 1` (gymnasium `Discrete`). */
@@ -54,18 +62,21 @@ export interface DiscreteSpace extends SpaceMeta {
   readonly kind: 'discrete'
   readonly n: number
   readonly start?: number
+  readonly default?: number
 }
 
-/** Several discrete coordinates (gymnasium `MultiDiscrete`). */
+/** Several discrete coordinates, coordinate `i` in `0 .. nvec[i] - 1` (gymnasium `MultiDiscrete`). */
 export interface MultiDiscreteSpace extends SpaceMeta {
   readonly kind: 'multiDiscrete'
   readonly nvec: readonly number[]
+  readonly default?: readonly number[]
 }
 
 /** Binary vectors of length `n` (gymnasium `MultiBinary`). */
 export interface MultiBinarySpace extends SpaceMeta {
   readonly kind: 'multiBinary'
   readonly n: number
+  readonly default?: readonly number[]
 }
 
 /** A fixed-length tuple of spaces. */
@@ -74,7 +85,7 @@ export interface TupleSpace extends SpaceMeta {
   readonly spaces: readonly Space[]
 }
 
-/** Named sub-spaces, with optional conditional activation (`when` on a child). */
+/** Named sub-spaces, with conditional dimensions (`when` on a child). */
 export interface DictSpace extends SpaceMeta {
   readonly kind: 'dict'
   readonly spaces: Readonly<Record<string, Space>>
@@ -190,7 +201,7 @@ export function bool(meta: Omit<BoolSpace, 'kind'> = {}): BoolSpace {
  * @param low - Lower bound (scalar or per element).
  * @param high - Upper bound (scalar or per element).
  * @param shape - The shape.
- * @param meta - Metadata.
+ * @param meta - Default and metadata.
  * @returns The space.
  * @example
  * ```ts
@@ -202,7 +213,7 @@ export function box(
   low: number | readonly number[],
   high: number | readonly number[],
   shape: readonly number[],
-  meta: SpaceMeta = {},
+  meta: Omit<BoxSpace, 'kind' | 'low' | 'high' | 'shape'> = {},
 ): BoxSpace {
   return { kind: 'box', low, high, shape, ...meta }
 }
@@ -228,7 +239,7 @@ export function discrete(n: number, options: Omit<DiscreteSpace, 'kind' | 'n'> =
  * Several discrete coordinates.
  *
  * @param nvec - Number of values per coordinate.
- * @param meta - Metadata.
+ * @param meta - Default and metadata.
  * @returns The space.
  * @example
  * ```ts
@@ -236,7 +247,10 @@ export function discrete(n: number, options: Omit<DiscreteSpace, 'kind' | 'n'> =
  * multiDiscrete([3, 2]).nvec // => [3, 2]
  * ```
  */
-export function multiDiscrete(nvec: readonly number[], meta: SpaceMeta = {}): MultiDiscreteSpace {
+export function multiDiscrete(
+  nvec: readonly number[],
+  meta: Omit<MultiDiscreteSpace, 'kind' | 'nvec'> = {},
+): MultiDiscreteSpace {
   return { kind: 'multiDiscrete', nvec, ...meta }
 }
 
@@ -244,7 +258,7 @@ export function multiDiscrete(nvec: readonly number[], meta: SpaceMeta = {}): Mu
  * Binary vectors.
  *
  * @param n - Length.
- * @param meta - Metadata.
+ * @param meta - Default and metadata.
  * @returns The space.
  * @example
  * ```ts
@@ -252,7 +266,7 @@ export function multiDiscrete(nvec: readonly number[], meta: SpaceMeta = {}): Mu
  * multiBinary(3).n // => 3
  * ```
  */
-export function multiBinary(n: number, meta: SpaceMeta = {}): MultiBinarySpace {
+export function multiBinary(n: number, meta: Omit<MultiBinarySpace, 'kind' | 'n'> = {}): MultiBinarySpace {
   return { kind: 'multiBinary', n, ...meta }
 }
 
