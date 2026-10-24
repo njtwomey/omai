@@ -1798,7 +1798,8 @@ oracle: recorded SWI-Prolog outputs, pysat, Aleph and Popper results on small ta
 
 ### 4.26 `dynamics/` (tier 8): differential equations, nonlinear dynamics, control and filtering (scipy.integrate, diffrax, python-control, filterpy)
 
-oracle: scipy.integrate, diffrax and torchdiffeq (including adjoint gradients), python-control, filterpy, statsmodels
+oracle: scipy.integrate and scipy.signal, torchdiffeq (adjoint gradients), python-control, filterpy, ruptures, pysindy,
+nolds; numpy for DMD and the PDE references. Tests never run Python.
 
 Every solver works on traced values, so solutions are differentiable: by differentiating through the solver steps, or
 by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/scientific/` are built on this folder.
@@ -1854,6 +1855,20 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   hazard functions), PELT, binary segmentation.
 - `filtering/em.ts`: EM for linear-Gaussian state-space parameters (traced).
 - `identification.ts`: ARX, ARMAX, prediction-error methods, N4SID, dynamic mode decomposition, SINDy, extended DMD.
+- Private helpers: `ode/_vec.ts` (typed-array fast path that falls back to tensor ops on traced values), `ode/_step.ts`
+  (step bookkeeping shared by the steppers), `ode/_newton.ts` (simplified Newton, Jacobians, the implicit-function
+  correction that makes implicit steps differentiable), `ode/_radau.ts`, `ode/_bdf.ts`, `ode/_bvp.ts`,
+  `ode/_dop853.ts` (scipy's coefficients), `ode/_sparse-lu.ts`, `pde/_linear.ts`, `control/_model.ts`.
+- Notes: `odeSolver(method, options)` satisfies `nn/blocks/continuous.ts`'s `OdeSolver`; the `SdeSolver` belongs to
+  `stochastic`. `unscentedKalmanFilter` reuses the propagated sigma points as filterpy does (`redraw` gives the
+  additive-noise UKF, exact on linear models). `methods/rl/agents/control.ts` wraps `dlqr` and re-exports iLQR from
+  `control/trajectory.ts`.
+- TODO: move `ode/_sparse-lu.ts` into `numerics/sparse` as a general sparse direct solver.
+- TODO: Kautsky-Nichols-Van Dooren iterations for complex pole pairs in `place` (they keep their initial vectors, so
+  the poles are exact but the gain can differ from scipy's for complex targets).
+- TODO: missing observations in `kalmanEm`, and multi-input multi-output ARX/ARMAX (both are single-output now).
+- TODO: `methods/datasets/changepoints.ts` can switch its `exactBocpd` to `filtering/changepoint.ts`'s `bocpd`
+  (tested equal); its `ar` and `trend` segment models stay in datasets.
 
 ### 4.27 `pgm/` (tier 8): probabilistic graphical models (pgmpy, libDAI)
 
