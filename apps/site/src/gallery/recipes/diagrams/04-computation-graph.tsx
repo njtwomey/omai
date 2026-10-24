@@ -56,7 +56,7 @@ export default function ComputationGraph(): ReactNode {
   const overlay = useMemo(() => frame(playback.frame), [playback.frame])
   return (
     <div className="flex w-fit max-w-full flex-col gap-3">
-      <StructureView structure={g} overlay={overlay} frames={frames} />
+      <StructureView structure={g} overlay={overlay} frames={frames} frame={{ filename: 'forward-pass', playback }} />
       <Player controller={playback} stamp={(f) => `node ${f + 1} of ${order.length}: ${order[f] ?? ''}`} />
     </div>
   )

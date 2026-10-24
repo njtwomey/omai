@@ -6,7 +6,7 @@ import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Box aspect and data aspect',
-  question: 'How does a circle stay a circle in a wide figure?',
+  question: 'How do I keep a circle round in a wide figure?',
   explain:
     "The box aspect is the figure’s shape (here 2:1); the data aspect relates data units on the two axes. With `aspect: 'equal'` one unit is as long on x as on y, so the x range widens to fill the box and the unit circle stays round. `auto` stretches the data to the box.",
 }

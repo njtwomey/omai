@@ -4,6 +4,7 @@ import { figure } from 'whitebox-render/figure'
 import {
   Chart,
   DraggablePoints,
+  FigureFrame,
   InteractionOverlay,
   Overlaid,
   type Point2,
@@ -61,18 +62,20 @@ export default function DragPoints(): ReactNode {
     )
   }, [points, mode])
   return (
-    <Overlaid
-      width={FIGURE.width}
-      height={FIGURE.height}
-      overlay={
-        projection === null ? null : (
-          <InteractionOverlay projection={projection} width={FIGURE.width} height={FIGURE.height}>
-            <DraggablePoints points={points} onChange={setPoints} labels={['start', 'control', 'end']} />
-          </InteractionOverlay>
-        )
-      }
-    >
-      <Chart option={option} figure={FIGURE} onInit={onInit} />
-    </Overlaid>
+    <FigureFrame figure={FIGURE} filename="bezier">
+      <Overlaid
+        width={FIGURE.width}
+        height={FIGURE.height}
+        overlay={
+          projection === null ? null : (
+            <InteractionOverlay projection={projection} width={FIGURE.width} height={FIGURE.height}>
+              <DraggablePoints points={points} onChange={setPoints} labels={['start', 'control', 'end']} />
+            </InteractionOverlay>
+          )
+        }
+      >
+        <Chart option={option} figure={FIGURE} onInit={onInit} />
+      </Overlaid>
+    </FigureFrame>
   )
 }
