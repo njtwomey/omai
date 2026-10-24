@@ -63,7 +63,14 @@ export function linearRegression(
   return gaussianEstimator(
     'linear-regression',
     { fitIntercept: hyper.fitIntercept ?? true, solver: hyper.solver ?? 'auto' },
-    (h) => dict({ fitIntercept: bool({ default: h.fitIntercept }) }),
+    (h) =>
+      dict({
+        fitIntercept: bool({
+          label: 'fit intercept',
+          description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+          default: h.fitIntercept,
+        }),
+      }),
     (data, h, options) => {
       const f = fitLinear(
         data,
@@ -105,7 +112,11 @@ export function ridge(hyper: Partial<RidgeHyper> = {}): ExplainedEstimator<Ridge
     (h) =>
       dict({
         alpha: real(1e-3, 1e3, { log: true, default: h.alpha, label: 'penalty' }),
-        fitIntercept: bool({ default: h.fitIntercept }),
+        fitIntercept: bool({
+          label: 'fit intercept',
+          description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+          default: h.fitIntercept,
+        }),
       }),
     (data, h, options) => {
       const s = sumWeights(data, 'ridge')
@@ -183,7 +194,11 @@ const enetSpace = (h: ElasticNetHyper, withRatio: boolean): Space =>
   dict({
     alpha: real(1e-4, 10, { log: true, default: h.alpha, label: 'penalty' }),
     ...(withRatio ? { l1Ratio: real(0, 1, { default: h.l1Ratio, label: 'L1 share' }) } : {}),
-    fitIntercept: bool({ default: h.fitIntercept }),
+    fitIntercept: bool({
+      label: 'fit intercept',
+      description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+      default: h.fitIntercept,
+    }),
   })
 
 const enetDefaults = (hyper: Partial<ElasticNetHyper>, l1Ratio: number): ElasticNetHyper => ({
@@ -356,7 +371,14 @@ export function ridgeCV(hyper: Partial<RidgeCVHyper> = {}): ExplainedEstimator<R
     {
       name: 'ridge-cv',
       kind: 'regressor',
-      hyperSpace: (h: RidgeCVHyper): Space => dict({ fitIntercept: bool({ default: h.fitIntercept }) }),
+      hyperSpace: (h: RidgeCVHyper): Space =>
+        dict({
+          fitIntercept: bool({
+            label: 'fit intercept',
+            description: 'Estimate an intercept (otherwise the fit passes through the origin).',
+            default: h.fitIntercept,
+          }),
+        }),
       fit: (data: LearnData, h: RidgeCVHyper, options: FitOptions) => {
         const design = designOf(data, 'ridgeCV')
         const { n, d } = design.x

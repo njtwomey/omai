@@ -67,9 +67,18 @@ export function svr(hyper: Partial<SvrHyper> = {}): ExplainedEstimator<SvrHyper,
       kind: 'regressor',
       hyperSpace: (h: SvrHyper): Space =>
         dict({
-          C: real(1e-2, 1e3, { log: true, default: h.C }),
+          C: real(1e-2, 1e3, {
+            label: 'C (inverse penalty)',
+            description: 'The inverse of the regularisation strength: larger C fits the training data more closely.',
+            log: true,
+            default: h.C,
+          }),
           epsilon: real(0, 1, { default: h.epsilon, label: 'tube half-width' }),
-          kernel: choice(['rbf', 'linear', 'poly', 'sigmoid'], { default: h.kernel }),
+          kernel: choice(['rbf', 'linear', 'poly', 'sigmoid'], {
+            label: 'kernel',
+            description: 'The kernel measuring similarity between rows.',
+            default: h.kernel,
+          }),
         }),
       fit: (data: LearnData, h: SvrHyper, options: FitOptions) => {
         const m = matrixView(data.x, 'svr')

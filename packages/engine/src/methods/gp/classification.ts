@@ -258,7 +258,14 @@ export function gaussianProcessClassifier(hyper: Partial<GpcHyper> = {}): Explai
     {
       name: 'gaussian-process-classifier',
       kind: 'classifier',
-      hyperSpace: (h: GpcHyper): Space => dict({ optimize: bool({ default: h.optimize }) }),
+      hyperSpace: (h: GpcHyper): Space =>
+        dict({
+          optimize: bool({
+            label: 'optimise kernel',
+            description: 'Fit the kernel hyperparameters by maximising the marginal likelihood.',
+            default: h.optimize,
+          }),
+        }),
       fit: (data: LearnData, h: GpcHyper, options: FitOptions) => {
         const m = matrixView(data.x, 'gaussianProcessClassifier')
         const { classes, codes } = encodeLabels(data.y ?? [], 'gaussianProcessClassifier', m.n)

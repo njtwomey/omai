@@ -63,7 +63,12 @@ export function locallyLinearEmbedding(hyper: LleHyper = {}): Estimator<LleHyper
         dict({
           nNeighbors: int(2, 50, { default: h.nNeighbors ?? 5, label: 'neighbours' }),
           nComponents: int(1, 3, { default: h.nComponents ?? 2, label: 'dimensions' }),
-          reg: real(1e-6, 1, { log: true, default: h.reg ?? 1e-3 }),
+          reg: real(1e-6, 1, {
+            label: 'regularisation',
+            description: 'The regularisation of the local Gram matrices.',
+            log: true,
+            default: h.reg ?? 1e-3,
+          }),
         }),
       fit: (data, h) => {
         const m = matrixView(data.x, 'locallyLinearEmbedding', { minSamples: 3 })

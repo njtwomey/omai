@@ -321,7 +321,11 @@ export function factorAnalysis(hyper: FactorAnalysisHyper = {}): Estimator<Facto
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 50, { default: h.nComponents ?? 2, label: 'factors' }),
-          rotation: choice(['none', 'varimax', 'quartimax'], { default: h.rotation ?? 'none' }),
+          rotation: choice(['none', 'varimax', 'quartimax'], {
+            label: 'rotation',
+            description: 'Rotate the loadings for interpretability: none, varimax or quartimax.',
+            default: h.rotation ?? 'none',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'factorAnalysis', { minSamples: 2 })

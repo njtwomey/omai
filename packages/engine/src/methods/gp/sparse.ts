@@ -187,9 +187,17 @@ export function sparseGpRegressor(
       kind: 'regressor',
       hyperSpace: (h: SparseGprHyper): Space =>
         dict({
-          method: choice(['sor', 'dtc', 'fitc', 'vfe'], { default: h.method }),
+          method: choice(['sor', 'dtc', 'fitc', 'vfe'], {
+            label: 'approximation',
+            description: 'Subset of regressors, DTC, FITC or variational free energy (Titsias).',
+            default: h.method,
+          }),
           nInducing: int(2, 100, { default: h.nInducing, label: 'inducing points' }),
-          optimize: bool({ default: h.optimize }),
+          optimize: bool({
+            label: 'optimise kernel',
+            description: 'Fit the kernel hyperparameters by maximising the marginal likelihood.',
+            default: h.optimize,
+          }),
         }),
       fit: (data: LearnData, h: SparseGprHyper, options: FitOptions) => {
         const m = matrixView(data.x, 'sparseGpRegressor')

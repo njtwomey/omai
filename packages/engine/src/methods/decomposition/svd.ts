@@ -62,7 +62,11 @@ export function truncatedSvd(hyper: TruncatedSvdHyper = {}): Estimator<Truncated
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 50, { default: h.nComponents ?? 2, label: 'components' }),
-          algorithm: choice(['exact', 'randomized'], { default: h.algorithm ?? 'exact' }),
+          algorithm: choice(['exact', 'randomized'], {
+            label: 'algorithm',
+            description: 'An exact SVD, or a randomised one (faster on large matrices, approximate).',
+            default: h.algorithm ?? 'exact',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'truncatedSvd')
@@ -181,7 +185,11 @@ export function dictionaryLearning(
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 50, { default: h.nComponents ?? 4, label: 'atoms' }),
-          method: choice(['online', 'ksvd', 'mod'], { default: h.method ?? 'online' }),
+          method: choice(['online', 'ksvd', 'mod'], {
+            label: 'algorithm',
+            description: 'Online dictionary learning, K-SVD or the method of optimal directions.',
+            default: h.method ?? 'online',
+          }),
           sparsity: int(1, 20, { default: h.sparsity ?? 1, label: 'atoms per row' }),
         }),
       fit: (data, h, options) => {

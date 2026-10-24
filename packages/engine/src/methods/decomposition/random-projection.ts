@@ -54,9 +54,21 @@ export function randomProjection(
       kind: 'transformer',
       hyperSpace: (h) =>
         dict({
-          nComponents: int(1, 100, { default: typeof h.nComponents === 'number' ? h.nComponents : 2 }),
-          kind: choice(['gaussian', 'sparse'], { default: h.kind ?? 'gaussian' }),
-          eps: real(0.01, 0.99, { default: h.eps ?? 0.1 }),
+          nComponents: int(1, 100, {
+            label: 'components',
+            description: 'The dimension projected to.',
+            default: typeof h.nComponents === 'number' ? h.nComponents : 2,
+          }),
+          kind: choice(['gaussian', 'sparse'], {
+            label: 'projection',
+            description: 'Dense Gaussian or sparse (Achlioptas) random projections.',
+            default: h.kind ?? 'gaussian',
+          }),
+          eps: real(0.01, 0.99, {
+            label: 'distortion ε',
+            description: 'The tolerated distortion of pairwise distances (Johnson-Lindenstrauss).',
+            default: h.eps ?? 0.1,
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'randomProjection', { minSamples: 2 })

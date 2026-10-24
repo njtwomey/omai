@@ -403,7 +403,11 @@ function boostingEstimator(
           nEstimators: int(1, 500, { default: h.nEstimators, label: 'stages' }),
           learningRate: real(0.01, 1, { log: true, default: h.learningRate, label: 'learning rate' }),
           maxDepth: int(1, 8, { default: h.maxDepth, label: 'tree depth' }),
-          subsample: real(0.1, 1, { default: h.subsample }),
+          subsample: real(0.1, 1, {
+            label: 'subsample',
+            description: 'The fraction of rows each tree is fitted on (below 1: stochastic gradient boosting).',
+            default: h.subsample,
+          }),
           ...(classifier
             ? {}
             : { loss: choice(['squared_error', 'absolute_error', 'huber', 'quantile'], { default: h.loss }) }),

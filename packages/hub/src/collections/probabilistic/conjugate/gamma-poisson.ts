@@ -14,7 +14,11 @@ export const gammaPoisson: HubEntry = defineEntry({
   datasets: [],
   params: dict({
     rate: real(0.1, 30, { default: 4, label: 'the true rate' }),
-    intervals: int(1, 500, { default: 30 }),
+    intervals: int(1, 500, {
+      label: 'intervals',
+      description: 'The number of intervals in which events are counted.',
+      default: 30,
+    }),
     shape: real(0.1, 50, { log: true, default: 2, label: 'prior shape' }),
     priorRate: real(0.01, 10, { log: true, default: 0.5, label: 'prior rate' }),
   }),

@@ -138,7 +138,11 @@ export function fastIca(hyper: FastIcaHyper = {}): Estimator<FastIcaHyper, Fitte
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 50, { default: h.nComponents ?? 2, label: 'components' }),
-          fun: choice(['logcosh', 'exp', 'cube'], { default: h.fun ?? 'logcosh' }),
+          fun: choice(['logcosh', 'exp', 'cube'], {
+            label: 'contrast function',
+            description: 'The non-Gaussianity measure: log cosh, exponential or cube.',
+            default: h.fun ?? 'logcosh',
+          }),
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'fastIca', { minSamples: 2 })

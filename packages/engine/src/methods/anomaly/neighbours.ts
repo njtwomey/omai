@@ -107,7 +107,11 @@ export function localOutlierFactor(hyper: LofHyper = {}): Estimator<LofHyper, Fi
       hyperSpace: (h) =>
         dict({
           nNeighbors: int(1, 100, { default: h.nNeighbors ?? 20, label: 'neighbours' }),
-          contamination: real(0.01, 0.5, { default: typeof h.contamination === 'number' ? h.contamination : 0.1 }),
+          contamination: real(0.01, 0.5, {
+            label: 'contamination',
+            description: 'The expected fraction of outliers: sets the threshold on the scores.',
+            default: typeof h.contamination === 'number' ? h.contamination : 0.1,
+          }),
         }),
       fit: (data, h) => {
         const m = matrixView(data.x, 'localOutlierFactor', { minSamples: 2 })
@@ -194,8 +198,16 @@ export function knnDetector(
       hyperSpace: (h) =>
         dict({
           nNeighbors: int(1, 100, { default: h.nNeighbors ?? 5, label: 'neighbours' }),
-          method: choice(['largest', 'mean', 'median'], { default: h.method ?? 'largest' }),
-          contamination: real(0.01, 0.5, { default: h.contamination ?? 0.1 }),
+          method: choice(['largest', 'mean', 'median'], {
+            label: 'score',
+            description: 'The outlier score: distance to the k-th neighbour, or the mean or median distance to the k.',
+            default: h.method ?? 'largest',
+          }),
+          contamination: real(0.01, 0.5, {
+            label: 'contamination',
+            description: 'The expected fraction of outliers: sets the threshold on the scores.',
+            default: h.contamination ?? 0.1,
+          }),
         }),
       fit: (data, h) => {
         const m = matrixView(data.x, 'knnDetector', { minSamples: 2 })

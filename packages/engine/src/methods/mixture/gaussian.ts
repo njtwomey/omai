@@ -321,9 +321,18 @@ export function gaussianMixture(
       hyperSpace: (h) =>
         dict({
           nComponents: int(1, 20, { default: h.nComponents ?? 2, label: 'components' }),
-          covarianceType: choice(['full', 'tied', 'diag', 'spherical'], { default: h.covarianceType ?? 'full' }),
+          covarianceType: choice(['full', 'tied', 'diag', 'spherical'], {
+            label: 'covariance type',
+            description: 'Each component’s covariance: full, diagonal, one shared (tied) or spherical.',
+            default: h.covarianceType ?? 'full',
+          }),
           maxIter: int(1, 500, { default: h.maxIter ?? 100, label: 'EM steps' }),
-          tol: real(1e-8, 1e-1, { log: true, default: h.tol ?? 1e-3 }),
+          tol: real(1e-8, 1e-1, {
+            label: 'tolerance',
+            description: 'Stop when the log-likelihood gains less than this.',
+            log: true,
+            default: h.tol ?? 1e-3,
+          }),
         }),
       fit: (data, h, options) => fitGaussianMixture(data, h, options),
       methods: mixtureVerbs,

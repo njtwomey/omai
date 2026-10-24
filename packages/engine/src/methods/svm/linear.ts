@@ -136,8 +136,17 @@ export function linearSvc(hyper: Partial<LinearSvcHyper> = {}): ExplainedEstimat
       kind: 'classifier',
       hyperSpace: (h: LinearSvcHyper): Space =>
         dict({
-          C: real(1e-3, 1e3, { log: true, default: h.C }),
-          loss: choice(['hinge', 'squared_hinge'], { default: h.loss }),
+          C: real(1e-3, 1e3, {
+            label: 'C (inverse penalty)',
+            description: 'The inverse of the regularisation strength: larger C fits the training data more closely.',
+            log: true,
+            default: h.C,
+          }),
+          loss: choice(['hinge', 'squared_hinge'], {
+            label: 'loss',
+            description: 'The hinge loss or its square.',
+            default: h.loss,
+          }),
         }),
       fit: (data: LearnData, h: LinearSvcHyper, options: FitOptions) => {
         const x = matrixView(data.x, 'linearSvc')
