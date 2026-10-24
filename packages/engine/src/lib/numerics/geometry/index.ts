@@ -2,5 +2,6 @@
 export * from './contours.ts'
 export * from './distances.ts'
 export * from './polygons.ts'
+export * from './segments.ts'
 export * from './transforms.ts'
 export * from './triangulation.ts'

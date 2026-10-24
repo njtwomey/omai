@@ -1,15 +1,6 @@
 import { WhiteboxError } from '../base/index.ts'
-import {
-  alongSegment,
-  buildIndex,
-  circleHit,
-  closestOnSegment,
-  inBox,
-  rayHit,
-  type SegmentIndex,
-  segmentOf,
-  segmentsTouch,
-} from './_geometry.ts'
+import { closestPointOnSegment, raySegmentHit, segmentsTouch, sweptCircleHit } from '../numerics/geometry/index.ts'
+import { alongSegment, buildIndex, inBox, type SegmentIndex, segmentOf } from './_geometry.ts'
 import { step } from './_topology.ts'
 import { cellAtPoint, cellCentre, cellCorners, hasWall, passable, terrainOf, type World, worldSize } from './world.ts'
 
@@ -170,7 +161,7 @@ export function moveCircle(
       Math.max(p[1], q[1]) + pad,
     )) {
       const [a, b] = segmentOf(g.solid, id)
-      const hit = radius > 0 ? circleHit(p, rem, radius, a, b) : rayHit(p, rem, a, b)
+      const hit = radius > 0 ? sweptCircleHit(p, rem, radius, a, b) : raySegmentHit(p, rem, a, b)
       if (hit.t < best && hit.t <= 1) {
         best = hit.t
         n = hit.normal
@@ -270,7 +261,7 @@ export function castRay(
   let normal: [number, number] = [0, 0]
   for (const id of alongSegment(ix, origin, end)) {
     const [a, b] = segmentOf(ix, id)
-    const hit = rayHit(origin, d, a, b)
+    const hit = raySegmentHit(origin, d, a, b)
     if (hit.t < best) {
       best = hit.t
       normal = hit.normal
@@ -312,7 +303,7 @@ export function sweepSegment(
   let normal: [number, number] = [0, 0]
   for (const id of alongSegment(ix, from, to)) {
     const [a, b] = segmentOf(ix, id)
-    const hit = rayHit(from, d, a, b)
+    const hit = raySegmentHit(from, d, a, b)
     if (hit.t <= 1 && hit.t < best) {
       best = hit.t
       normal = hit.normal
@@ -440,7 +431,7 @@ export function distanceToWalls(g: WorldGeometry, point: readonly [number, numbe
   for (let k = 0; k <= reach; k++) {
     for (const id of inBox(ix, point[0] - k, point[1] - k, point[0] + k, point[1] + k)) {
       const [a, b] = segmentOf(ix, id)
-      best = Math.min(best, closestOnSegment(point, a, b).distance)
+      best = Math.min(best, closestPointOnSegment(point, a, b).distance)
     }
     if (best <= k) break
   }

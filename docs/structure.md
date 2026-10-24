@@ -805,6 +805,10 @@ primitives; "custom" means a dedicated rule.
 - `polygons.ts`: `convexHull` (2-D), `convexHull3` (3-D, incremental), `polygonArea`, `polygonCentroid`,
   `polygonPerimeter` (differentiable in the vertices), `isConvex`, `windingNumber`, `pointInPolygon`,
   `segmentIntersection`, `polygonClip` (Sutherland-Hodgman), `minkowskiSum` (convex).
+- `segments.ts`: segments as obstacles: `closestPointOnSegment` (point-segment distance), `raySegmentHit` (ray
+  parameter and facing normal), `sweptCircleHit` (first contact of a moving circle with a segment's side or ends),
+  `segmentsTouch` (robust closed-segment test with relative collinearity tolerance), `SegmentContact`. worlds'
+  continuous motion, ray casts and line of sight are built on them.
 - `distances.ts`: `cdist`, `pdist`, `squareform` with the metrics euclidean, sqeuclidean, cityblock, chebyshev, minkowski
   (with weights), seuclidean, cosine, correlation, hamming, jaccard, mahalanobis, canberra, braycurtis and haversine
   (continuous ones differentiable).
@@ -2591,7 +2595,9 @@ dependency, so its layouts are checked structurally (TODO: golden-test them agai
   river crossings).
 - `continuous.ts`: continuous agents over a world: positions and headings, motion with collision against walls (swept
   circles with sliding, swept segments for point agents), ray casts, line-of-sight queries, field-of-view cones,
-  distance fields from walls (exact segment distances and the Euclidean, taxicab and chessboard transforms).
+  distance fields from walls (exact segment distances and the Euclidean, taxicab and chessboard transforms). The
+  segment predicates come from `numerics/geometry/segments.ts`; private `_geometry.ts` keeps only the bucket index
+  over wall segments.
 - `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells, unweighted or by
   terrain cost) and paths, dead ends, choke points and bridges, cell distances and heuristics, and conversion to
   `graph` adjacency for graph algorithms (`graph` is a sibling tier, so worlds returns edges `graph()` accepts).
