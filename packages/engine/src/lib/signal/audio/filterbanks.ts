@@ -120,7 +120,9 @@ export function chromaFilterBank(sr: number, nfft: number, options: ChromaFilter
   const frq = new Float64Array(nfft)
   for (let k = 1; k < nfft; k++) frq[k] = n * Math.log2((k * sr) / nfft / (a440 / 16))
   frq[0] = (frq[1] ?? 0) - 1.5 * n
-  const width = Float64Array.from({ length: nfft }, (_, k) => (k + 1 < nfft ? Math.max((frq[k + 1] ?? 0) - (frq[k] ?? 0), 1) : 1))
+  const width = Float64Array.from({ length: nfft }, (_, k) =>
+    k + 1 < nfft ? Math.max((frq[k + 1] ?? 0) - (frq[k] ?? 0), 1) : 1,
+  )
   const half = Math.round(n / 2)
   const w = new Float64Array(n * nfft)
   for (let c = 0; c < n; c++)
@@ -184,7 +186,8 @@ export function gammatone(
   const erb = freq / 9.26449 + 24.7
   if (ftype === 'fir') {
     const order = options.order ?? 4
-    if (!Number.isInteger(order) || order < 1 || order > 24) throw new WhiteboxError('value', 'gammatone: order in 1..24')
+    if (!Number.isInteger(order) || order < 1 || order > 24)
+      throw new WhiteboxError('value', 'gammatone: order in 1..24')
     const numtaps = options.numtaps ?? Math.max(Math.trunc(fs * 0.015), 15)
     const bw = 1.019 * erb
     let fact = 1

@@ -126,7 +126,8 @@ whitebox-js/
   CLAUDE.md, INIT.md, AUDIT.md, PORT.md
 ```
 
-`docs` is the counterpart of `engine` and `gallery` is the counterpart of `render`. Outside projects (the encyclopedia,
+`docs` is the one app: documentation for `engine` and the gallery for `render` (the current `apps/gallery` folds into
+it when the apps are built). Outside projects (the encyclopedia,
 the slide and blog tool) consume the three published packages as release tarballs.
 
 ## 2. Conventions every file follows
@@ -346,7 +347,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. whitebox-engine core, `packages/engine/src/lib/`
 
-The core has 35 domains in 11 tiers. A domain may import only domains in lower tiers.
+The core has 37 domains in 11 tiers. A domain may import only domains in lower tiers.
 
 | tier | domain        | purpose                                                                                                                                                                                          |
 | ---: | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -366,6 +367,7 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 |    6 | `dists`       | distributions, bijectors, exponential families, GLM families, copulas                                                                                                                            |
 |    6 | `information` | entropy, divergences, mutual information estimators, source and channel coding, compression                                                                                                      |
 |    6 | `systems`     | linear time-invariant systems: representations, responses, stability, discretisation                                                                                                             |
+|    6 | `worlds`      | discrete worlds: grid and graph maps, mazes and generators, terrain and rules, agents moving discretely or continuously                                                                          |
 |    7 | `stats`       | descriptive statistics, tests, resampling, density estimation, smoothing bases                                                                                                                   |
 |    7 | `optim`       | optimisers, minimisation, programming, sparse approximation, transport, implicit differentiation                                                                                                 |
 |    7 | `kernels`     | kernel functions, compositions and explicit feature maps                                                                                                                                         |
@@ -374,6 +376,7 @@ The core has 35 domains in 11 tiers. A domain may import only domains in lower t
 |    7 | `search`      | state-space search, local and evolutionary search, adversarial search, constraint satisfaction, planning, refinement search                                                                      |
 |    7 | `stochastic`  | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures                                                                                                |
 |    7 | `sampling`    | Monte Carlo samplers and diagnostics                                                                                                                                                             |
+|    7 | `graphics`    | rendering mathematics: ray casting over worlds, ray tracing, cameras, shading, textures, rasterisation                                                                                           |
 |    8 | `logic`       | terms, unification, resolution, Datalog, SAT, first-order proving, ILP                                                                                                                           |
 |    8 | `dynamics`    | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification                                                                                                               |
 |    8 | `pgm`         | graphical models, their inference and learning, causal graphs                                                                                                                                    |
@@ -517,25 +520,79 @@ For the mathematical foundations: exact expressions that can be simplified, diff
 integrated where a rule applies, typeset, and compiled into differentiable numeric functions. Every rewrite returns its
 steps, so a derivation can be shown step by step.
 
-oracle: sympy
-- `expr.ts`: `Expr` (numbers, rationals, symbols, sums, products, powers, function applications, piecewise), `sym`,
-  `num`, `rational`, operator helpers, `free`, `substitute`, structural equality.
-- `parse.ts`: `parse` (infix text to `Expr`), `parseLatex` for a useful subset.
-- `simplify.ts`: canonical ordering, `expand`, `collect`, `factor` (polynomials over the rationals), `together`,
-  `apart` (partial fractions), `trigSimplify`, `simplify` (rule-based with steps).
-- `polynomials.ts`: `Poly` (univariate and multivariate), degree, coefficients, division, gcd, `exactRoots` up to degree
-  four, Sturm sequences, resultants.
-- `differentiate.ts`: `diff`, partial derivatives, `gradient`, `jacobian`, `hessian`, implicit differentiation, all with
-  rule steps.
-- `series.ts`: Taylor and Maclaurin series, Laurent series at simple poles, Pade approximants, big-O handling.
-- `limits.ts`: `limit` (by series and l'Hopital's rule, with a numeric cross-check), one-sided limits.
-- `integrate.ts`: `integrate` (table, linearity, substitution, by parts, rational functions by partial fractions; returns
-  `unevaluated` otherwise), `definiteIntegral` with numeric fallback.
-- `solve.ts`: `solve` (linear, quadratic, polynomial and simple transcendental equations), `solveLinearSystem`.
-- `matrices.ts`: symbolic matrices: determinant, inverse, characteristic polynomial, eigenvalues for small sizes.
-- `latex.ts`: `toLatex`, `toText`, step lists as LaTeX alignments.
-- `compile.ts`: `compile(expr, symbols)` to a function over tensors and traced values (so a symbolic expression can be
-  plotted, differentiated numerically, vectorised and used as an objective).
+Expressions are immutable trees in SymPy's canonical form, built by constructors that evaluate as SymPy does on
+construction (flattened sums and products, combined coefficients, like terms collected, equal bases merged, exact
+rational arithmetic on bigints, perfect powers pulled out of radicals, special values of functions), so structural
+equality is a key comparison. Printing follows SymPy's term and factor order, so `toText` equals SymPy's `str()` and
+`toLatex` its `latex()` for the same expression. Each multi-step rewrite has a `...Steps` form returning a `Derivation`
+(result and `Step`s: rule, before, after).
+
+oracle: sympy (canonical forms, printed text and LaTeX, values at sample points), numpy and scipy (roots, Pade,
+lambdify values)
+- `expr.ts`: `Expr` (rationals, floats, symbols with assumptions, constants pi, E, I, oo, zoo, nan, sums, products,
+  powers, function applications, piecewise, relations, connectives, big-O, unevaluated derivatives and integrals),
+  `ExprLike`, `Step`, `Derivation`, `isExpr`, `asExpr`, `sym`, `symbols`, `num`, `rational`, operator helpers (`add`,
+  `sub`, `mul`, `div`, `pow`, `neg`, `sqrt`), the constants, `free`, `dependsOn`, `substitute`, structural `equals`.
+- `functions.ts`: function constructors with automatic evaluation: `fn` (any name; unknown names are undefined
+  functions), `exp`, `log` (with optional base), `root`, `abs`, `sign`, `floor`, `ceiling`, `factorial`, `gamma`,
+  `erf`, `re`, `im`.
+- `trigonometric.ts`: `sin`, `cos`, `tan`, `cot`, `sec`, `csc` (exact at rational multiples of pi with denominators 1, 2,
+  3, 4, 6, 12, reduced by symmetry and shifts of pi/2), their inverses, `atan2`, and the hyperbolic functions and
+  inverses.
+- `conditions.ts`: `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `and`, `or`, `not`, `piecewise` (evaluated to true or false for
+  numbers; negated relations flip).
+- `parse.ts`: `parse` (SymPy's text syntax with `^`, implicit multiplication and the printed forms `Piecewise`, `Eq`,
+  `O`, `Integral`, `Derivative`), `parseLatex` for a useful subset (`\frac`, `\sqrt[n]`, scripts, `\left( \right)`,
+  absolute values, Greek letters, named and `\operatorname` functions with powers, floor and ceiling, relations,
+  implicit products), `ParseOptions`.
+- `simplify.ts`: canonical ordering (`compareExprs`, SymPy's sort key), `countOps`, `expand` (multinomial, power_exp,
+  log rules under assumptions), `collect`, `factor` (over the rationals, any number of variables: Berlekamp-Zassenhaus
+  with Hensel lifting, Kronecker substitution for several variables), `together`, `cancel`, `apart` (partial fractions
+  by undetermined coefficients, symbols as parameters), `trigSimplify` (Fu-style search over Pythagorean, double-angle,
+  product-to-sum and tan rewrites, guarded numerically), `simplify` (best of the rewrites by operation count), with
+  `expandSteps`, `trigSimplifySteps`, `simplifySteps`, and `rewriteSteps` (any of the rewrites by name, `Rewrite`).
+- `polynomials.ts`: `Poly` (univariate and multivariate over the rationals, generators chosen automatically), `poly`,
+  `polyToExpr`, `degree`, `coefficients`, `leadingCoefficient`, `polyDiv`, `polyGcd`, `polyLcm`, `exactRoots` (factor
+  first, then radicals up to degree four and binomials of any degree; three real roots of a cubic in trigonometric
+  form), `Root`, `sturm`, `countRealRoots`, `realRootIntervals`, `resultant`, `discriminant`.
+- `differentiate.ts`: `diff` (orders and mixed partials; derivatives of every known function, undefined functions,
+  piecewise, Leibniz's rule for integrals), `diffSteps`, `gradient`, `jacobian`, `hessian`, `implicitDiff`,
+  `implicitDiffSteps`, `DiffSpec`.
+- `series.ts`: `series` (Taylor, Laurent at poles, at points and at infinity, log terms), `seriesSteps`, `taylor`,
+  `seriesCoefficients`, `residue`, `pade`, `bigO`, `removeO`, `Direction`. TODO: Puiseux series (fractional powers at
+  branch points) and expansions at essential singularities.
+- `limits.ts`: `limit` (direct substitution, series leading terms, continuity of composed functions, l'Hopital's rule
+  for 0/0, oo/oo and 0*oo, exp(lim g log f) for powers, with a numeric cross-check), one-sided and two-sided limits,
+  `limitSteps`, `LimitDirection`.
+- `integrate.ts`: `integrate` (linearity; table with linear arguments, Gaussians via erf, quadratic radicals; rational
+  functions by partial fractions with the reduction formula for repeated quadratics; powers and products of sines and
+  cosines; reduction formulas for tan, cot, sec, csc; tabular integration by parts for polynomials times exp, sin,
+  cos, sinh, cosh; derivative-divides substitution; integration by parts; every candidate verified by differentiation;
+  the search is bounded in attempts, depth and expression size, so any integrand returns within milliseconds;
+  returns an unevaluated `Integral` otherwise, term by term), `integrateSteps`,
+  `definiteIntegral` (limits of the antiderivative, checked against adaptive Gauss-Kronrod with a numeric fallback;
+  poles of rational integrands in the interval are an error), `definiteIntegralSteps`, `DefiniteOptions`. TODO: the
+  Risch algorithm; Rothstein-Trager for rational functions with irreducible denominators of degree above two;
+  antiderivatives in special functions other than erf (Ei, li, Si, Ci, erfi, Fresnel S and C, polylogarithms), so
+  for example exp(x/2)*log(x^2 + 1), sin(x)/x and exp(x^2) stay unevaluated.
+- `solve.ts`: `solve` (polynomials of any degree whose factors over the rationals have degree at most four, rational
+  equations, products, polynomials in exp(x) or another single function of x, invertible a*h(u) + b = 0 with SymPy's
+  principal solutions), `solveSteps`, `solveLinearSystem` (Gauss-Jordan over expressions, underdetermined systems in
+  terms of the free unknowns).
+- `matrices.ts`: `Matrix`, `matrix`, `identityMatrix`, `transpose`, `matMul`, `det` and `charpoly` (Berkowitz,
+  division-free), `inverse` (adjugate), `nullspace`, `eigenvals`, `eigenvects`, `Eigenvector`.
+- `latex.ts`: `toLatex` (expressions and matrices), `toText`, `stepsToLatex` (derivations as `aligned` blocks).
+- `compile.ts`: `compile(expr, symbols, options)` to a function over tensors and traced values built from tensor
+  primitives (so a symbolic expression can be plotted, differentiated by `grad`, vectorised and used as an objective;
+  erf, gamma and undefined functions take implementations through `options.functions`), `evaluate` (real),
+  `evaluateComplex`, `CompileOptions`, `TensorFunctions`, `NumericFunctions`.
+- Private: `_rational.ts` (bigint rationals, integer roots and factorisation), `_node.ts` (raw nodes and keys),
+  `_canon.ts` (the canonicalising constructors), `_assume.ts` (three-valued assumption queries), `_functions.ts`
+  (automatic evaluation of known functions), `_order.ts` (SymPy's sort keys and printing order), `_numeric.ts` (real
+  and complex evaluation, adaptive Gauss-Kronrod: numerics is a higher tier), `_measure.ts` (operation counts and
+  numeric equivalence), `_expand.ts`, `_rational-functions.ts` (together, cancel, apart), `_trigsimp.ts`, `_poly.ts`
+  (sparse polynomials, dense univariate helpers, generators), `_factor.ts`, `_series.ts` (truncated Laurent series
+  engine), `_integrals.ts` (tables, rational and trigonometric rules), `_latex-parse.ts`.
 
 ### 4.6 `autodiff/` (tier 3): differentiation transforms (jax, torch.func)
 
@@ -833,43 +890,89 @@ are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `M
 ### 4.12 `foundations/` (tier 6): mathematical foundations
 
 The mathematics underneath machine learning, written so each idea can be computed, drawn and stepped through.
-Functions that teach a procedure (elimination, Euclid's algorithm, Newton's method) return their steps.
+Functions that teach a procedure (elimination, Euclid's algorithm, Newton's method) return their steps. Geometry and
+calculus on values are built from tensor operations (vectorised, differentiable, checked by `checkPrimitive`);
+procedures on small exact data take plain numbers, and exact counts are BigInts. Figures come out as point data,
+`Scene`/`Scene3D` nodes or `Pixels`.
 
-oracle: sympy, numpy
-- `trigonometry.ts`: degrees and radians, unit-circle points, quadrant-aware inverse functions, identity checks, triangle
-  solving (SSS, SAS, ASA, AAS and the ambiguous SSA case), laws of sines and cosines, Heron's formula.
-- `vectors.ts`: 2-D and 3-D vector algebra (dot, cross and triple products, projections, rejections, angles,
-  orthonormalisation), lines and planes (distances, intersections), linear independence and span tests.
-- `rotations.ts`: 2-D rotations, 3-D rotation matrices, axis-angle, Euler angles (all conventions, gimbal lock),
-  quaternions (product, conjugate, rotation, `slerp`, conversions), rotation averaging.
-- `coordinates.ts`: polar, cylindrical, spherical and homogeneous coordinates, barycentric coordinates, change of basis,
-  Jacobian determinants of coordinate maps.
-- `curves.ts`: parametric and implicit curves, arc length, curvature, torsion, the Frenet-Serret frame, osculating
-  circles, evolutes, conic sections (from equations: type, foci, eccentricity), Bezier curves (de Casteljau).
-- `surfaces.ts`: parametric surfaces, normals, tangent planes, first and second fundamental forms, Gaussian and mean
-  curvature, principal directions, surfaces of revolution, numerical geodesics.
-- `calculus.ts`: numerical limits, difference quotients, Riemann sums (left, right, midpoint, trapezoid), the
-  fundamental theorem, Taylor polynomials and their remainder bounds (through Taylor-mode autodiff or `symbolic`),
-  Newton's method with steps, critical points and the second-derivative test, the mean value theorem.
-- `multivariable.ts`: gradients, directional derivatives, Jacobians and Hessians with their geometry (tangent planes,
-  quadratic approximations), Lagrange multipliers for small problems, line and surface integrals, Green's and Stokes'
-  theorems checked numerically.
-- `series.ts`: sequences and partial sums, convergence tests, radius of convergence, Fourier series partial sums (and
-  the Gibbs phenomenon), generating functions.
-- `linear-algebra.ts`: step-by-step procedures: Gaussian elimination and row-reduced echelon form, LU with steps,
-  determinants by cofactors and by elimination, rank, null space, column space, bases, change of basis, projections,
-  least squares as projection, 2-D and 3-D linear maps as grid transformations, eigenvectors of small matrices,
-  diagonalisation, quadratic forms, the geometry of the SVD.
-- `number-theory.ts`: gcd and extended Euclid with steps, modular arithmetic (inverse, exponentiation), primes (sieve,
-  Miller-Rabin), factorisation (trial division, Pollard rho), Euler's totient, the Chinese remainder theorem,
-  continued fractions, Fibonacci and Lucas numbers.
-- `combinatorics.ts`: factorials, binomial and multinomial coefficients, permutations and combinations (enumeration and
-  ranking), derangements, Stirling, Bell and Catalan numbers, integer partitions, inclusion-exclusion, Pascal's
-  triangle.
-- `complex.ts`: complex scalars (arithmetic, polar form, roots of unity), complex functions on grids (domain colouring
-  data), Mobius transformations, conformal maps, numerical contour integrals and residues.
-- `probability.ts`: finite probability spaces, events, conditional probability and Bayes' rule calculators,
-  independence, expectations of discrete variables, transformations of random variables, sums by convolution.
+oracle: sympy, numpy, scipy (and scipy.spatial.transform, sympy.geometry, sympy.stats, sympy.ntheory)
+- `trigonometry.ts`: `degrees`, `radians`, `wrapAngle`, `unitCirclePoint`, `quadrant`, `referenceAngle`; quadrant-aware
+  inverses (`directionAngle`, `inverseInQuadrant`, `trigSolutions` over an interval); `trigIdentities` (Pythagorean,
+  double, half and triple angle, sum and difference, product to sum) and `checkIdentity` (grid evidence or a
+  counterexample); `triangleCase` and `solveTriangle` (SSS, SAS, ASA, AAS and the ambiguous SSA case with 0, 1 or 2
+  triangles, vertices for drawing); `lawOfSines`, `lawOfCosines`, `lawOfCosinesAngle`, `heronArea` (Kahan's stable form).
+- `vectors.ts`: `dotProduct`, `crossProduct` (3-D, and the 2-D scalar), `tripleProduct`, `vectorTripleProduct`,
+  `magnitude`, `unitVector`, `projection`, `scalarProjection`, `rejection`, `angleBetween` (Kahan's atan2 form),
+  `orthonormalise` (MGS with reorthogonalisation, dropping dependent vectors), `isLinearlyIndependent`,
+  `spanDimension`, `inSpan`, `linearCombination`; lines and planes (`lineThrough`, `planeThrough`,
+  `planeFromEquation`, `planeEquation`, `pointLineDistance`, `pointPlaneDistance`, `closestPoints` (skew lines),
+  `lineIntersection`, `linePlaneIntersection`, `planeIntersection`).
+- `rotations.ts`: `rotation2d`, `rotate2d`, `elementaryRotation`, `isRotationMatrix`; axis-angle (`axisAngleToMatrix`,
+  Rodrigues' `rotateAboutAxis`, `matrixToAxisAngle`); Euler angles (`eulerSequences`: all 24 conventions,
+  `eulerToMatrix`, `matrixToEuler`, `gimbalLock` with the surviving outer-angle combination); quaternions
+  (`quatMultiply`, `quatConjugate`, `quatInverse`, `quatNormalize`, `quatFromAxisAngle`, `quatToAxisAngle`,
+  `quatToMatrix`, `matrixToQuat`, `quatRotate`, `quatSlerp`, `rotationDistance`); rotation averaging (`meanRotation`,
+  the chordal mean of scipy's `Rotation.mean`, and `karcherMean`, the geodesic mean). Number-level conversions reuse
+  `numerics/geometry/transforms.ts`.
+- `coordinates.ts`: polar, cylindrical, spherical (physics convention) and geographic coordinates both ways;
+  homogeneous coordinates (`toHomogeneous`, `fromHomogeneous`, `homogeneousMatrix`, `applyHomogeneous`); barycentric
+  coordinates in any simplex (`barycentric`, `fromBarycentric`); change of basis (`coordinatesInBasis`,
+  `changeOfBasis`, `matrixInBasis`, also the home of linear-algebra.ts's change of basis); Jacobians and Jacobian
+  determinants of named or user coordinate maps by autodiff.
+- `curves.ts`: parametric curves (`curveDerivatives` by nested forward mode, `sampleCurve`, `curveSpeed`, `arcLength`,
+  `cumulativeArcLength`, `curvature` (signed in 2-D), `torsion`, `frenetFrame`, `osculatingCircle`, `evolute`);
+  implicit curves (`traceImplicitCurve` by marching squares, `implicitCurveGeometry`); conic sections from the general
+  equation (`classifyConic`: type including degenerate cases, centre, semi-axes, axis angle, vertices, foci,
+  eccentricity, directrices; `conicPoints` for drawing); Bezier curves (`bernstein`, `deCasteljau` with its levels,
+  `bezier`, `bezierSplit`, `bezierDerivative`, `bezierElevate`).
+- `surfaces.ts`: parametric surfaces (`surfaceDerivatives`, `sphere`, `torus`, `graphSurface`, `surfaceOfRevolution`),
+  `surfaceNormal`, `tangentPlane`, `firstFundamentalForm`, `secondFundamentalForm`, `gaussianCurvature`,
+  `meanCurvature`, `principalCurvatures` (with directions), `surfaceArea`, `christoffelSymbols`, `geodesic` (RK4 on the
+  geodesic equations), `surfaceFaces` (scene faces, optionally coloured by a function of the parameters).
+- `calculus.ts`: `derivatives` (Taylor mode), `limit` (one- and two-sided, at infinity; Richardson-extrapolated, with the
+  raw sequence), `differenceQuotient`, `secantTable`, `riemannSum` (left, right, midpoint, trapezoid, with the pieces),
+  `fundamentalTheorem`, `definiteIntegral`, `taylorApproximation` (coefficients through Taylor-mode autodiff and the
+  Lagrange remainder bound), `newtonSteps`, `tangentLine`, `secondDerivativeTest`, `criticalPoints`,
+  `meanValuePoints`. TODO: exact Taylor coefficients and remainders through `symbolic` once it lands (built against
+  Taylor-mode autodiff for now).
+- `multivariable.ts`: `gradientAt`, `directionalDerivative`, `jacobianAt`, `hessianAt` (vectorised over points, forward
+  mode), `quadraticApproximation` (linear and quadratic models), `graphTangentPlane`, `classifyCriticalPoint`,
+  `lagrangeMultipliers` (Newton on the stationarity system), `divergence`, `curl`, line integrals
+  (`scalarLineIntegral`, `vectorLineIntegral`, `planeFlux`), surface integrals (`scalarSurfaceIntegral`,
+  `surfaceFlux`), and the theorems checked numerically (`greensTheorem`, `stokesTheorem`, `divergenceTheorem`).
+- `series.ts`: `sequenceTerms`, `partialSums` (compensated), `seriesSum` (Wynn's epsilon, or Richardson in 1/N for
+  logarithmic convergence); convergence tests with their evidence (`nthTermTest`, `ratioTest`, `rootTest`,
+  `integralTest`, `pSeriesTest`, `limitComparisonTest`, `alternatingSeriesTest`), `radiusOfConvergence`; Fourier
+  series (`fourierCoefficients`, `fourierPartialSum`, `squareWaveCoefficients`, `gibbsOvershoot`); generating functions
+  (`rationalSeries`, `seriesProduct`, `linearRecurrence`, `recurrenceGeneratingFunction`).
+- `linear-algebra.ts`: step-by-step procedures: `rowEchelon` and `rref` (every row operation), `solveByElimination`
+  (general solution), `luSteps`, `detByCofactors`, `detByElimination`, `fundamentalSubspaces` (rank, nullity, null,
+  column, row and left null spaces), `basisFromVectors`, `projectionMatrix`, `leastSquaresProjection` (with the normal
+  equations), `gridTransformation`, `linearMapScene` and `linearMapScene3d` (2-D and 3-D maps as grid pictures),
+  `characteristicPolynomial` (Faddeev-LeVerrier), `smallEigen` (multiplicities and eigenspaces), `diagonalise`,
+  `quadraticForm`, `classifyQuadraticForm`, `principalAxes`, `svdGeometry` (circle, V^T, Sigma, U stages). Change of
+  basis lives in `coordinates.ts`.
+- `number-theory.ts`: `euclid`, `gcd`, `lcm`, `extendedEuclid` (the Bezout table), `modulo`, `modInverse`, `modPow`
+  (square and multiply, BigInt-exact), `sieve` (with smallest factors), `millerRabin` (with its rounds; deterministic
+  for safe integers), `isPrime`, `trialDivision`, `pollardRho` (with its walk), `factorise`, `eulerPhi`, `divisors`,
+  `chineseRemainder` (non-coprime moduli too), `continuedFractionExpansion`, `convergents`, `fibonacci` and `lucas`
+  (fast doubling, BigInt).
+- `combinatorics.ts`: `factorialExact`, `binomialExact`, `multinomialExact`, `permutations`, `combinations`,
+  `permutationRank`/`permutationUnrank` (Lehmer codes), `combinationRank`/`combinationUnrank`, `derangements`,
+  `stirling1` (signed or not), `stirling2`, `bell`, `catalan`, `partitionCount` (pentagonal recurrence),
+  `integerPartitions`, `inclusionExclusion` (with Bonferroni partial sums), `pascalTriangle` (optionally modulo m).
+- `complex.ts`: on complex pairs (`tensor/complex.ts` supplies the arithmetic): `toPolarForm`, `complexLog`,
+  `complexPow`, `complexSqrt`, `complexSin`, `complexCos`, `nthRoots`, `rootsOfUnity`; complex functions on grids
+  (`complexGrid`, `domainColouring` as scene `Pixels`); Mobius transformations (`mobius`, `mobiusApply`,
+  `mobiusCompose`, `mobiusInverse`, `mobiusFixedPoints`, `classifyMobius`, `mobiusFromPoints`); conformal maps
+  (`conformalMaps`, `conformalGrid`, `cauchyRiemann`); contour integrals and residues (`circleContour`,
+  `contourIntegral`, `residueAt`, `laurentCoefficient`, `windingNumber`, `argumentPrinciple`).
+- `probability.ts`: finite spaces (`probabilitySpace`, `productSpace`, `powerSpace`, `conditionSpace`), events
+  (`eventProbability`, `conditionalProbability`), Bayes' rule calculators (`bayesRule` with joint and evidence,
+  `diagnosticTest`), independence (`independent`, `mutuallyIndependent`), discrete variables (`distributionOf`,
+  `expectation`, `varianceOf`, `covarianceOf`), transformations (`transformPmf`, `transformDensity` by change of
+  variables), sums by convolution (`sumPmf`, `sumDensity`, `diceSum`).
+- `_extrapolate.ts` (private): Richardson extrapolation of sampled sequences, shared by limits and the series tests.
 
 ### 4.13 `graph/` (tier 6): graphs and their algorithms (NetworkX, scipy.sparse.csgraph)
 
@@ -977,7 +1080,8 @@ Reparameterisation comes in three forms:
 - `continuous/gamma.ts`: `gamma`, `inverseGamma`, `exponential`, `chi2`, `weibull`, `erlang`, `inverseGaussian`.
 - `continuous/bounded.ts`: `uniform`, `beta`, `kumaraswamy`, `triangular`, `logitNormal`.
 - `continuous/extreme.ts`: `gumbel`, `generalisedExtremeValue`, `generalisedPareto`, `frechet`.
-- `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT` (Poisson-weighted series).
+- `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT`, `noncentralF`
+  (Poisson-weighted series).
 - `continuous/studentised-range.ts`: `studentisedRange` (double integrals by a product double-exponential rule).
 - `discrete/binary.ts`: `bernoulli`, `binomial`, `betaBinomial`.
 - `discrete/categorical.ts`: `categorical`, `oneHotCategorical`, `discreteUniform`, `orderedLogistic`, `orderedProbit`,
@@ -997,7 +1101,7 @@ Reparameterisation comes in three forms:
 - `multivariate/archimedean-copulas.ts`: `claytonCopula`, `gumbelCopula`, `frankCopula` in any dimension (CDFs,
   closed-form or mixed-partial densities, Marshall-Olkin and conditional sampling, Kendall's tau).
 - `multivariate/copula-fitting.ts`: `pseudoObservations`, `kendallTauMatrix`, `fitCopula` (inversion of Kendall's
-  tau).
+  tau). Its tau-b stays private: stats' `kendallTau` is tier 7, above dists.
 - `compose/mixture.ts`: `Mixture`, `mixture`, `mixtureSameFamily`, `responsibilities` (implicitly reparameterised
   draws, numerical quantiles, mode and entropy for univariate mixtures).
 - `compose/structure.ts`: `independent`, `truncated` (continuous and discrete bases), `censored`, `transformed`,
@@ -1036,23 +1140,46 @@ Reparameterisation comes in three forms:
 
 ### 4.15 `information/` (tier 6): information theory and coding
 
-oracle: scipy.stats.entropy, sklearn mutual information, zlib (byte-exact DEFLATE), npeet for k-NN estimators
-- `discrete.ts`: entropy (any base), joint and conditional entropy, cross-entropy, KL, Jensen-Shannon, total
-  variation, mutual information from tables, conditional and interaction information, PMI, NPMI, information gain.
-- `estimators.ts`: estimators from samples: plug-in with Miller-Madow correction, Kozachenko-Leonenko entropy, KSG
-  mutual information, kernel estimators, transfer entropy, variational bounds from critic scores (InfoNCE, NWJ, MINE).
-- `divergences.ts`: the f-divergence family, Renyi, alpha and beta divergences, Bregman divergences, on discrete
-  distributions and on grids.
-- `source-coding.ts`: Kraft-McMillan, Huffman (traced tree construction, D-ary), canonical codes, Shannon-Fano,
-  arithmetic and range coding, Elias, Golomb-Rice, run-length.
-- `dictionary-coding.ts`: LZ77, LZ78, LZW, DEFLATE and the zlib and gzip formats (compress and inflate), BWT with
-  move-to-front.
-- `channels.ts`: capacity by Blahut-Arimoto (traced), rate-distortion, binary symmetric, erasure and Z channels,
-  Gaussian channels and water-filling.
-- `error-correction.ts`: parity, repetition and Hamming codes, Reed-Solomon over GF(2^m), convolutional codes with Viterbi
-  decoding, LDPC codes with belief-propagation decoding, bounds.
-- `complexity.ts`: normalised compression distance, Lempel-Ziv complexity, entropy rate, approximate and sample
-  entropy.
+oracle: scipy.stats.entropy, scipy.special (rel_entr, kl_div), sklearn mutual information, pyitlib (plug-in
+conditional and co-information), npeet for k-NN estimators, zlib and gzip (byte-exact DEFLATE), bitarray (Huffman),
+reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel-Ziv, approximate and sample entropy)
+- `discrete.ts`: entropy (any base, scipy.stats.entropy semantics), binary entropy, joint and conditional entropy,
+  cross-entropy, KL (`relativeEntropy`; `dists.klDivergence` is the one for distribution objects), Jensen-Shannon
+  (weighted divergence and distance), total variation, mutual information from tables, conditional and interaction
+  (co-)information, PMI, NPMI, information gain and gain ratio; all differentiable.
+- `estimators.ts`: estimators from samples: plug-in with Miller-Madow correction (entropy and mutual information),
+  kernel (Gaussian KDE) estimators, transfer entropy (plug-in and KSG), variational bounds from critic scores (InfoNCE,
+  NWJ, MINE).
+- `neighbour-estimators.ts`: k-nearest-neighbour estimators on `numerics/spatial` KD trees: Kozachenko-Leonenko
+  entropy, KSG mutual information (algorithms 1 and 2) and conditional mutual information, k-NN KL divergence, Ross's
+  mixed continuous-discrete estimator.
+- `divergences.ts`: the f-divergence family (named generators or any convex f), Renyi divergence and entropy, alpha
+  and beta divergences, Bregman divergences (named or any convex function, gradients by autodiff), on discrete
+  distributions and on grids (trapezoidal rule); all differentiable.
+- `source-coding.ts`: Kraft-McMillan (Kraft sums, prefix-freeness, Sardinas-Patterson unique decodability), Huffman
+  (traced tree construction, D-ary), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
+  expected length, prefix encoding and decoding.
+- `stream-coding.ts`: arithmetic coding (32-bit integer, pending bits) and carry-less range coding, with static and
+  adaptive frequency models.
+- `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
+- `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
+- `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and
+  an inflater with puff's checks), the zlib and gzip formats (compress and decompress), CRC-32 and Adler-32.
+- `channels.ts`: channel mutual information, capacity by Blahut-Arimoto (traced, with its bounds and an active-set Newton
+  refinement for optima on the boundary of the simplex), binary symmetric, erasure and Z channels, Gaussian channels
+  (Shannon-Hartley) and water-filling.
+- `rate-distortion.ts`: rate-distortion by Blahut's algorithm (traced) and R(D) curves, reverse water-filling, binary
+  and Gaussian R(D).
+- `error-correction.ts`: binary linear block codes (generator and parity-check matrices, syndromes, coset-leader
+  decoding, minimum distance), parity, repetition and Hamming codes (extended too), bounds (Hamming, Singleton,
+  Gilbert-Varshamov, Plotkin).
+- `reed-solomon.ts`: GF(2^m) arithmetic, Reed-Solomon encoding and decoding of errors and erasures (Berlekamp-Massey,
+  Chien, Forney), matching reedsolo.
+- `convolutional.ts`: feed-forward convolutional codes and Viterbi decoding (traced, hard and soft decisions).
+- `ldpc.ts`: Gallager's regular LDPC codes, encoding, channel LLRs, belief-propagation decoding (sum-product and
+  min-sum, traced).
+- `complexity.ts`: normalised compression distance (any compressor) and distance matrices, Lempel-Ziv complexity,
+  block entropies and entropy rate (plug-in and of a Markov chain), approximate and sample entropy.
 
 ### 4.16 `systems/` (tier 6): linear time-invariant systems (scipy.signal LTI, python-control)
 
@@ -1096,62 +1223,92 @@ coefficients, and so are the conversions between them, the responses and the dis
 
 ### 4.17 `stats/` (tier 7): statistics (scipy.stats, statsmodels, pingouin)
 
-oracle: scipy.stats, statsmodels, pingouin
+oracle: scipy.stats, statsmodels, pingouin, patsy (smoothing bases), pandas (running windows)
 
 Every test in `tests/` returns a `TestResult` with the statistic, p-value, effect size and interval, the alternative,
-the method name and the assumptions it checked.
+the method name and the assumptions it checked. Iterative procedures (permutation and bootstrap resampling, Newton
+maximum likelihood, RANSAC, SPRT) are traced `Algorithm`s; randomness comes from explicit `Key`s. Private helpers:
+`_util.ts` (input coercion, normal/t/chi-square/F tails, quadrature), `_linear.ts` (least squares and small symmetric
+linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisation); `tests/_shapiro.ts`,
+`tests/_kolmogorov.ts`, `tests/_cvm.ts` (null distributions).
 - `descriptive.ts`: `mean`, `variance` (two-pass, `ddof`), `std`, `skewness`, `kurtosis`, `moment`, weighted versions,
   `describe`, `zscore`, `sem`, `mode`, `geometricMean`, `harmonicMean`.
-- `running.ts`: Welford moments (`push`, `merge`), P-squared quantiles, exponentially weighted moments.
-- `quantiles.ts`: `quantile` (the nine Hyndman-Fan methods), `median`, `iqr`, `percentileOfScore`, `ecdf`,
-  `medianAbsoluteDeviation`.
-- `histograms.ts`: `histogram`, `histogramBinEdges` (auto, Freedman-Diaconis, Scott, Sturges, Doane, Knuth),
-  `histogram2d`, `binnedStatistic`.
-- `correlation.ts`: `pearson`, `spearman`, `kendallTau`, `cov`, `corrcoef`, `partialCorrelation`, `pointBiserial`,
-  `distanceCorrelation`, each with intervals.
+- `running.ts`: Welford moments (`momentState`, `push`, `pushAll`, `merge`, `momentsOf`), P-squared quantiles
+  (`p2Quantile`, `p2Push`, `p2Estimate`), exponentially weighted moments (`ewmState`, `ewmPush`, `ewmMean`, `ewmVar`,
+  `ewmStd`).
+- `quantiles.ts`: `quantile` (the nine Hyndman-Fan methods), `median`, `iqr`, `percentileOfScore`, `ecdf` (with the
+  Greenwood interval), `medianAbsoluteDeviation`.
+- `histograms.ts`: `histogram`, `histogramBinEdges` (auto, Freedman-Diaconis, Scott, Sturges, Doane, Rice, sqrt,
+  Knuth), `histogram2d`, `binnedStatistic`.
+- `correlation.ts`: `pearson`, `spearman`, `kendallTau` (tau-b and tau-c, O(n log n), exact null without ties), `cov`
+  (frequency and analytic weights), `corrcoef`, `partialCorrelation`, `pointBiserial`, `distanceCorrelation`, each with
+  intervals. metrics' `pearsonCorrelation`, `spearmanCorrelation` and `kendallTau` delegate here. dists'
+  `kendallTauMatrix` (copula fitting, tier 6) keeps a private tau-b because it cannot import this tier.
 - `covariance.ts`: `empiricalCovariance`, `ledoitWolf`, `oas`, `shrunkCovariance`.
-- `density.ts`: `gaussianKde` (univariate and multivariate), bandwidth rules and cross-validation, boundary correction.
-- `ranks.ts`: `rankdata`, tie corrections.
-- `transforms.ts`: `boxcox`, `yeojohnson` (maximum-likelihood lambda), inverses, `standardise`.
-- `tests/result.ts`: `TestResult` helpers, alternatives, `formatTest`, assumption checks shared by tests.
-- `tests/means.ts`: one-sample, independent (pooled and Welch) and paired t tests, z tests, one-way and Welch ANOVA,
-  Tukey HSD, repeated-measures ANOVA.
-- `tests/contingency.ts`: chi-square and G tests, Fisher's exact test, McNemar, Cochran's Q, odds and risk ratios.
-- `tests/nonparametric.ts`: Mann-Whitney U, Wilcoxon signed-rank, Kruskal-Wallis, Friedman, Nemenyi, sign test,
-  Brunner-Munzel.
-- `tests/distribution.ts`: one-sample Kolmogorov-Smirnov, Anderson-Darling, Shapiro-Wilk, Jarque-Bera, chi-square
-  goodness of fit, Lilliefors.
-- `tests/two-sample.ts`: two-sample Kolmogorov-Smirnov, Cramer-von Mises, k-sample Anderson-Darling, energy distance,
-  Wasserstein permutation tests, Epps-Singleton, classifier two-sample tests (any classifier passed in).
-- `tests/kernel.ts`: kernel two-sample (MMD with permutation and asymptotic nulls) and independence (HSIC) tests; they
-  take any kernel and default to a Gaussian kernel with the median heuristic.
-- `tests/independence.ts`: distance covariance test, Hoeffding's D, mutual-information permutation test, conditional
-  independence tests (partial correlation, G-test, kernel CI) used by causal discovery.
-- `tests/multivariate.ts`: Hotelling's T-squared, MANOVA, Box's M, Mardia's multivariate normality.
-- `tests/proportions.ts`: binomial test, proportion z tests, proportion intervals (Wald, Wilson, Agresti-Coull,
-  Clopper-Pearson, Jeffreys), difference of proportions.
-- `tests/timeseries.ts`: Ljung-Box, Durbin-Watson, augmented Dickey-Fuller, KPSS, runs test.
-- `tests/equivalence.ts`: two one-sided tests (TOST) for means and proportions.
-- `tests/bayesian.ts`: Bayes factors for t tests (JZS), binomial and correlation tests, Bayesian A/B comparison of
-  proportions, region of practical equivalence.
-- `tests/sequential.ts`: SPRT, group-sequential alpha spending, always-valid p-values and confidence sequences.
-- `tests/multiple.ts`: Bonferroni, Holm, Hochberg, Benjamini-Hochberg, Benjamini-Yekutieli, combining p-values.
-- `effect-size.ts`: Cohen's d, Hedges' g, Glass's delta, Cohen's h, Cramer's V, eta and omega squared, Cliff's delta,
-  with intervals.
-- `power.ts`: power and sample size for t, proportion, ANOVA and chi-square tests, simulation-based power.
-- `resampling.ts`: `bootstrap` (percentile, basic, BCa, studentised), `permutationTest`, `jackknife`, Monte Carlo
-  tests.
-- `extremes.ts`: generalised Pareto and GEV fitting, peaks over threshold, return levels, mean-excess plots.
-- `robust.ts`: trimmed and winsorised statistics, Huber and Tukey M-estimators, `ransac` (traced, generic).
-- `smoothing/bases.ts`: B-splines (`bs`), natural cubic splines (`ns`), P-splines (`ps`), cubic regression splines
-  (`cr`), cyclic splines (`cc`), thin-plate regression splines (`tp`, `ts`), Duchon splines, Gaussian-process smooths,
-  random-effect and factor-smooth bases, tensor products (`te`, `ti`), with knot placement rules.
-- `smoothing/penalties.ts`: difference and derivative penalties, null spaces, shrinkage, shape-constraint
-  reparameterisations (monotone, convex), sum-to-zero constraints.
-- `smoothing/smoothers.ts`: `loess`, `lowess`, kernel smoothers (Nadaraya-Watson, local linear), running statistics,
-  smoothing-spline smoothers.
-- `fit.ts`: closed-form and Newton maximum-likelihood fits for the distribution families, with standard errors from the
-  observed information.
+- `density.ts`: `gaussianKde` (univariate and multivariate, weights, boundary reflection, resampling), `scottFactor`,
+  `silvermanFactor`, `bandwidthScott`, `bandwidthSilverman`, `bandwidthCriterion`, `bandwidthCrossValidation`.
+- `ranks.ts`: `rankdata`, `ranksOf`, `tieCounts`, `tieCorrection`, `tieTerm`.
+- `transforms.ts`: `boxcox`, `yeojohnson` (maximum-likelihood lambda: `boxcoxNormmax`, `yeojohnsonNormmax`, log
+  likelihoods), inverses, `standardise`.
+- `tests/result.ts`: `TestResult` helpers (`testResult`, `resolveAlternative`, `pValueFromTails`, `intervalEstimate`,
+  `waldInterval`), `formatTest`, `rejects`, assumption checks shared by tests (`levene`, `bartlett`, `fligner`,
+  `checkNormality`, `checkEqualVariances`, `checkExpectedCounts`).
+- `tests/means.ts`: `ttest1samp`, `ttestInd` (pooled and Welch), `ttestRel`, `ztest`, `fOneway`, `welchAnova`,
+  `tukeyHsd`, `rmAnova`.
+- `tests/contingency.ts`: `chi2Contingency`, `gTest`, `fisherExact` (2 x 2 exact, r x c by permutation of the
+  margins), `mcnemar`, `cochranQ`, `oddsRatio`, `relativeRisk`, `expectedFrequencies`.
+- `tests/nonparametric.ts`: `mannWhitneyU`, `wilcoxon`, `kruskal`, `friedman`, `nemenyi`, `nemenyiFriedman`,
+  `signTest`, `brunnerMunzel`.
+- `tests/distribution.ts`: `kstest`, `andersonDarling` (norm, expon, logistic, Gumbel), `shapiro`, `jarqueBera`,
+  `chisquare` and `powerDivergence`, `lilliefors` (normal and exponential), `cramervonmises`.
+- `tests/two-sample.ts`: `ks2samp`, `cramervonmises2samp`, `andersonKsamp`, `energyDistance`, `wassersteinDistance`,
+  `energyTest`, `wassersteinTest` (permutation), `eppsSingleton`, `classifierTwoSampleTest` (any classifier passed in).
+- `tests/kernel.ts`: `mmd2`, `mmdTest` (permutation and asymptotic nulls), `hsic`, `hsicTest`; they take any kernel and
+  default to `gaussianKernel` with `medianHeuristic`.
+- `tests/independence.ts`: `distanceCovarianceTest`, `hoeffdingD`, `mutualInformation` and `mutualInformationTest`,
+  conditional independence tests (`partialCorrelationTest`, `gTestConditional`, `kernelCITest`) used by causal
+  discovery.
+- `tests/multivariate.ts`: `hotellingT2`, `manova`, `boxM`, `mardia`.
+- `tests/proportions.ts`: `binomTest`, `proportionsZtest`, `proportionConfint` (Wald, Wilson, Agresti-Coull,
+  Clopper-Pearson, Jeffreys), `proportionsDifference`.
+- `tests/timeseries.ts`: `ljungBox`, `durbinWatson`, `adfuller` (with `mackinnonp`, `mackinnoncrit`), `kpss`,
+  `runsTest`.
+- `tests/equivalence.ts`: `tost`, `tostProportion`, `tostProportions`.
+- `tests/bayesian.ts`: `bayesFactorTTest` (JZS), `bayesFactorBinomial`, `bayesFactorPearson`, `bayesianAbTest`,
+  `highestDensityInterval`, `rope`.
+- `tests/sequential.ts`: `sprt` (traced `sprtAlgorithm`, `sprtBernoulli`, `sprtNormal`), `alphaSpending` with
+  `spendingFunction`, `alwaysValidPValues`, `msprt`, `confidenceSequence`.
+- `tests/multiple.ts`: `adjustPValues`/`multipleTests`, `bonferroni`, `holm`, `hochberg`, `benjaminiHochberg`,
+  `benjaminiYekutieli`, `combinePValues`.
+- `effect-size.ts`: `cohensD`, `hedgesG`, `glassDelta`, `cohensH`, `cramersV`, `etaSquared`, `omegaSquared`,
+  `cliffsDelta`, with intervals.
+- `power.ts`: `powerTTest`/`sampleSizeTTest`, `powerProportions`/`sampleSizeProportions`, `powerAnova`/
+  `sampleSizeAnova`, `powerChisquare`/`sampleSizeChisquare`, `simulatePower`.
+- `resampling.ts`: `bootstrap` (percentile, basic, BCa, studentised; traced `bootstrapAlgorithm`), `permutationTest`
+  (exact enumeration when small; traced `permutationTestAlgorithm`), `jackknife`, `monteCarloTest`.
+- `extremes.ts`: `fitGpd` and `fitGev` (`ExtremeFit`), `peaksOverThreshold` (runs declustering), `returnLevel` (delta
+  method interval), `meanExcess`.
+- `robust.ts`: `trimboth`, `trimMean`, `trimmedVariance`, `winsorize`, `winsorizedMean`, `winsorizedVariance`,
+  `mEstimateLocation`, `huber`, `tukeyBiweight`, `ransac` (traced `ransacAlgorithm`, generic in points and models).
+- `smoothing/bases.ts`: `SmoothBasis`; `bs`, `ns`, `ps`, `cr`, `cc`, `tp`, `ts`, `duchon`, `gp`, `re`, `fs`, `te`,
+  `ti`, with `placeKnots` (quantile and uniform rules).
+- `smoothing/penalties.ts`: `differencePenalty`, `derivativePenalty`, `nullSpace`, `shrinkagePenalty`,
+  `shapeConstraint` (increasing, decreasing, convex, concave reparameterisations), `sumToZeroConstraint`,
+  `constraintNullSpace`.
+- `smoothing/smoothers.ts`: `loess`, `lowess`, `nadarayaWatson`, `localLinear`, `runningStatistic`, `runningMean`,
+  `runningMedian`, `smoothingSpline` (lambda, degrees of freedom or GCV over numerics' `makeSmoothingSpline`).
+- `fit.ts`: `fitDistribution` (closed form or Newton for seventeen families) with standard errors from the
+  `observedInformation`; `newtonMle` (traced `newtonMleAlgorithm`).
+
+TODO (deferred, esoteric):
+- `tests/bayesian.ts`: the Gauss hypergeometric series behind `bayesFactorPearson` is private; move it to
+  `numerics/special` when that domain gains hypergeometric functions.
+- `tests/bayesian.ts`: `highestDensityInterval` should alias `sampling`'s HDI once that tier-7 domain has one (same
+  tier, so stats cannot import it today).
+- `tests/distribution.ts`: `andersonDarling` lacks scipy's `weibull_min` (its critical values depend on a fitted
+  shape).
+- `smoothing/bases.ts`: `tp`, `duchon` and `gp` take the full eigen-decomposition of the kernel matrix (mgcv
+  subsamples beyond 2000 points; add that when large data needs it).
 
 ### 4.18 `optim/` (tier 7): optimisation (optax, torch.optim, scipy.optimize)
 
@@ -1345,17 +1502,28 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 
 ### 4.19 `kernels/` (tier 7): kernels and feature maps (sklearn kernels, GPyTorch)
 
-oracle: scikit-learn, gpytorch
-- `kernel.ts`: `Kernel` (`k(x, y)`, `diag`, hyperparameters as a differentiable pytree), `gram`, `crossGram`, sum,
-  product and scale composition, ARD, log-parameterisation.
-- `stationary.ts`: RBF, Matern (1/2, 3/2, 5/2 and general), rational quadratic, exponential, periodic, locally
-  periodic, spectral mixture, cosine.
-- `dot-product.ts`: linear, polynomial, sigmoid, arc-cosine, neural tangent kernel of an MLP.
-- `structured.ts`: white noise, constant, string kernels, set kernels, graph kernels (diffusion, regularised Laplacian,
-  WL subtree), chi-square, histogram intersection.
-- `expansion.ts`: random Fourier features, orthogonal random features, Nystroem, additive chi-square sampler,
-  polynomial count sketch, tensor sketch, approximation error helpers.
-- `matrices.ts`: centring, kernel alignment, HSIC and MMD statistics, effective dimension, kernel PCA projections.
+oracle: scikit-learn, gpytorch, scipy, networkx (numpy closed forms for arc-cosine and NTK: neural-tangents does not
+import with the installed jax)
+- `kernel.ts`: `Kernel` (`k(x, y)`, `diag`, `withParams`, hyperparameters as a differentiable pytree with per-leaf
+  constraints), `defineKernel`, `asRows`, `gram`, `crossGram`, `sumKernel`, `productKernel`, `scaleKernel`,
+  `powerKernel`, `onDimensions` (active dimensions), `ard`, log-parameterisation (`theta`, `withTheta`,
+  `hyperparameters`, `fixHyperparameters`), `gramGradient` (scikit-learn's eval_gradient), `formatKernel`.
+- `stationary.ts`: `rbfKernel`, `maternKernel` (1/2, 3/2, 5/2, infinity and general through K_nu),
+  `rationalQuadraticKernel`, `exponentialKernel` (gamma-exponential), `laplacianKernel`, `periodicKernel`,
+  `locallyPeriodicKernel`, `spectralMixtureKernel`, `cosineKernel`.
+- `dot-product.ts`: `linearKernel`, `polynomialKernel`, `sigmoidKernel`, `cosineSimilarityKernel`, `arcCosineKernel`
+  (orders 0-2, composed to any depth), `neuralTangentKernel` (NTK and NNGP of a ReLU or erf MLP), `empiricalNtk`.
+- `structured.ts`: `whiteNoiseKernel`, `constantKernel`, string kernels (`spectrumKernel`, `subsequenceKernel`), set
+  kernels (`setKernel` mean embedding, `jaccardKernel`), graph kernels (`diffusionKernel`, `regularisedLaplacianKernel`,
+  `wlSubtreeFeatures`, `wlSubtreeKernel`), chi-square (`chi2Distance`, `chi2Kernel`, `additiveChi2Kernel`,
+  `skewedChi2Kernel`), `histogramIntersectionKernel`.
+- `expansion.ts`: `FeatureMap`; `randomFourierFeatures` (spectral samplers for RBF, Matérn, exponential, Laplacian,
+  rational quadratic, scaled kernels, or given draws), `orthogonalRandomFeatures`, `nystroem`, `additiveChi2Sampler`,
+  `skewedChi2Sampler`, `polynomialCountSketch`, `tensorSketch`, approximation error helpers (`approximateGram`,
+  `approximationError`).
+- `matrices.ts`: `centerKernel`, `kernelAlignment`, `targetAlignment`, `hsic` (biased, unbiased, normalised),
+  `mmdSquared` (biased, unbiased, linear-time), `effectiveDimension`, `kernelPca` projections, `pairwiseKernels`
+  (scikit-learn's metric names and parameters).
 
 ### 4.20 `signal/` (tier 7): signal and image processing (scipy.signal, scipy.ndimage, pywt, librosa)
 
@@ -1443,67 +1611,138 @@ representations are in `optim/sparse.ts`.
 
 ### 4.21 `text/` (tier 7): text processing (HF tokenizers, nltk, sklearn.feature_extraction.text)
 
-oracle: HF tokenizers, tiktoken, nltk, scikit-learn, rapidfuzz, datasketch
+oracle: HF tokenizers, tiktoken's patterns (with the `regex` module), nltk, scikit-learn, rapidfuzz, datasketch, gensim,
+jellyfish, Biopython, pyphen
 - `normalise.ts`: Unicode normalisation, case folding, accent stripping, whitespace collapsing, `AlignedText` (offsets
   back to the original).
-- `tokenise.ts`: regex, word (sklearn pattern, Treebank), tweet, character and grapheme tokenisers, sentence splitting,
-  detokenisation, pre-tokeniser patterns (GPT-2, cl100k, BERT).
-- `stem.ts`: Porter (with a rule trace) and Snowball English stemmers, rule-based lemmatisation, stop-word lists.
+- `tokenise.ts`: regex (nltk RegexpTokenizer, with gaps), whitespace, word (sklearn pattern), word-punct, character
+  and grapheme tokenisers, pre-tokeniser patterns (GPT-2, cl100k, o200k, HF Whitespace), HF-style splitting with
+  delimiter behaviours, BERT pre-tokenisation.
+- `treebank.ts`: the Penn Treebank tokeniser, nltk's improved word tokeniser, Treebank spans and detokenisation.
+- `tweet.ts`: nltk's TweetTokenizer (URLs, phone numbers, emoticons, handles, hashtags, emoji sequences), HTML entity
+  replacement, handle removal, lengthening reduction.
+- `sentences.ts`: sentence splitting: a rule-based splitter and Punkt (Kiss and Strunk 2006) training and tokenisation.
+- `stem.ts`: Porter (nltk's three modes, with a rule trace) and Snowball English stemmers.
+- `lemmatise.ts`: rule-based lemmatisation (WordNet's morphy detachment rules over a lexicon with exception lists, or
+  longest-suffix rules with common irregular forms).
+- `stopwords.ts`: stop-word lists (scikit-learn's, gensim's) and removal.
+- `hashing.ts`: MurmurHash3 (scikit-learn's), FNV-1a (with fastText's sign-extended variant), UTF-8 bytes.
 - `vocabulary.ts`: `Vocabulary`, building (minimum count, maximum size, specials, ordering), encoding and decoding.
 - `subword/bpe.ts`: BPE training (character and byte level, traced merges), encoding with dropout, the GPT-2 byte
   alphabet.
 - `subword/wordpiece.ts`: WordPiece training and greedy longest-match encoding.
-- `subword/unigram.ts`: Unigram language-model training (EM with pruning), Viterbi encoding, n-best and sampling.
-- `tokenizer.ts`: an HF-tokenizers-style pipeline (normaliser, pre-tokeniser, model, post-processor, decoder), batch
-  encoding with padding and truncation, loading HF tokenizer files.
+- `subword/unigram.ts`: Unigram language-model training (suffix-array seeds, EM with the digamma M step and pruning,
+  as HF's trainer, traced), Viterbi encoding, n-best and sampling.
+- `tokenizer.ts`: an HF-tokenizers-style pipeline (added tokens with single-word, lstrip, rstrip and normalized
+  matching; normaliser, pre-tokeniser, model, post-processor, decoder), encodings with offsets, type ids, masks, word
+  and sequence ids, batch encoding with padding and truncation (strategies, stride, overflowing windows), decoding.
+- `tokenizer-components.ts`: the pipeline's normalisers (Unicode forms, Lowercase, StripAccents, Strip, Replace,
+  Prepend, BertNormalizer, NMT, ByteLevel, Sequence), pre-tokenisers (Whitespace, WhitespaceSplit, BERT, ByteLevel,
+  Metaspace, Punctuation, Digits, Split, CharDelimiterSplit, FixedLength, Sequence), decoders (ByteLevel, WordPiece,
+  Metaspace, BPE, Replace, Strip, Fuse, ByteFallback, CTC, Sequence) and HF regex translation.
+- `tokenizer-json.ts`: loading HF `tokenizer.json` files. TODO: the Precompiled (SentencePiece charsmap) normaliser
+  and the UnicodeScripts pre-tokeniser.
 - `shingles.ts`: character k-shingles, word n-gram shingles, w-shingling, skip-grams, the hashed character n-grams of
   fastText (bucketed with FNV hashing), weighted shingles; one extractor shared by matching, fingerprinting and fastText.
 - `features.ts`: count, TF-IDF and hashing vectorisers, word and character n-grams, BM25 and BM25+ weighting.
 - `templates.ts`: feature-template languages for sequence labellers. CRF++ templates (Kudo 2005): `U` (unigram, conjoined
   with the label) and `B` (bigram, conjoined with the label pair) lines, `%x[row,col]` macros over a token-by-attribute
-  table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. CRFsuite-style attribute
-  templates: windows of `(attribute, offset)` tuples joined into attribute strings (`w[-1]|w[0]`). Expansion over a
-  sequence, a `FeatureIndex` (string to id with counts and a minimum frequency, as CRF++'s `-f`), feature firing for
-  inspection.
-- `representations.ts`: co-occurrence counts, PMI and PPMI, LSA, SVD word vectors, random indexing, analogies, nearest
-  words.
-- `similarity.ts`: Levenshtein, Damerau-Levenshtein, Jaro-Winkler, longest common subsequence, Needleman-Wunsch,
-  Smith-Waterman, Jaccard and containment over shingles, Soundex and Metaphone, token-set and token-sort ratios.
+  table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. Wapiti patterns (`u`,
+  `b`, `*` lines; `%x`, `%t`, `%m` commands with regular expressions, case-insensitive and absolute variants, `_x-1`
+  boundaries). Expansion over a sequence, a `FeatureIndex` (string to id with counts and a minimum frequency, as
+  CRF++'s `-f`), CRF++ weight offsets, feature firing for inspection.
+- `attribute-templates.ts`: CRFsuite-style attribute templates (windows of `(attribute, offset)` tuples joined into
+  attribute strings, `w[-1]|w[0]`, skipped or padded boundaries, bias, `__BOS__`/`__EOS__`; parsing from text) and
+  MALLET's offset conjunctions.
+- `representations.ts`: co-occurrence counts (windows, harmonic weighting), PMI, PPMI and shifted PPMI with context
+  smoothing, LSA, SVD word vectors, random indexing, analogies (3CosAdd, 3CosMul), nearest words.
+- `collocations.ts`: nltk's bigram and trigram association measures (raw frequency, Student's t, chi-square, PMI,
+  likelihood ratio, Poisson-Stirling, Jaccard, MI-like, Dice, phi squared, Fisher) and windowed collocation finding
+  with frequency and word filters.
+- `similarity.ts`: Levenshtein (weighted), the edit-alignment counts behind WER (rapidfuzz's tie-breaking),
+  Damerau-Levenshtein (OSA and unrestricted), Hamming, Jaro and Jaro-Winkler, longest common subsequence (table,
+  backtrace) and substring, Indel, Jaccard (set and weighted) and containment over shingles, clipped count overlaps,
+  ratio, token-set and token-sort ratios (rapidfuzz). The canonical home of the sequence helpers of `metrics/text.ts`.
+- `alignment.ts`: Needleman-Wunsch and Smith-Waterman with linear or affine (Gotoh) gaps, alignment scoring and
+  formatting.
+- `phonetic.ts`: Soundex and Metaphone (jellyfish's).
 - `approximate-search.ts`: approximate string search: q-gram indexes with count filtering, BK-trees, tries with fuzzy
   lookup, Sellers' approximate substring matching, top-k fuzzy matches with traced candidate pruning.
-- `fingerprinting.ts`: Rabin-Karp rolling hashes, winnowing (MOSS), SimHash, MinHash signatures for text, near-duplicate
-  detection.
-- `parsing.ts`: context-free grammars, CYK and Earley parsing, probabilistic CFGs (Viterbi parse, inside-outside),
-  dependency parsing (Eisner, arc-standard transitions).
-- `hyphenation.ts`: Liang pattern hyphenation with matching traces.
-- `statistics.ts`: Zipf and Heaps fits, type-token ratios, tokeniser fertility, compression ratio, topic coherence
-  (NPMI, UMass).
+- `fingerprinting.ts`: Rabin-Karp rolling hashes and search, winnowing (MOSS), SimHash, MinHash signatures (datasketch's
+  scheme), LSH banding with its optimal parameters, near-duplicate detection.
+- `parsing.ts`: context-free grammars (nltk's notation, probabilities), parse trees, CYK and Earley parsing, conversion
+  to Chomsky normal form.
+- `pcfg.ts`: probabilistic CFGs: the Viterbi parse, sentence probabilities, inside-outside expected counts, EM
+  training as a traced run.
+- `dependency-parsing.ts`: Eisner's projective parser (optionally single-rooted), projectivity, arc-standard
+  transitions with the static oracle and greedy transition-based parsing.
+- `hyphenation.ts`: Liang pattern hyphenation with matching traces, exceptions, and Hunspell/pyphen dictionaries.
+  TODO: Németh's non-standard (`/`) patterns.
+- `statistics.ts`: Zipf (log-log and maximum likelihood) and Heaps fits, type-token ratios (root, log, moving average,
+  hapax ratio), tokeniser fertility and compression ratio, topic coherence (UMass, NPMI as gensim).
 
 ### 4.22 `search/` (tier 7): search, constraint satisfaction and planning (AIMA)
 
-oracle: aima-python results and hand-checked fixtures; python-constraint; pyperplan
+oracle: aima-python (typed ports of its search, game and AC-3 code in `oracle/whitebox_oracle/aima_*.py`, since it is
+not packaged; expansion, goal-test, generation and node counts match exactly under its tie-break by state order) and
+hand-checked textbook fixtures; python-constraint (CSP solution sets); pyperplan (grounding, optimal plan lengths,
+h-add and h-max); pysubgroup (exhaustive WRAcc subgroup discovery); NetworkX (path costs)
 
 One `SearchProblem` contract (initial state, actions, result, goal test, step cost, heuristic) and traced search
-algorithms that record the frontier and explored set, so every search can be animated.
-- `problem.ts`: `SearchProblem`, `SearchNode`, path reconstruction, search statistics (expanded, generated, effective
-  branching factor).
-- `uninformed.ts`: breadth-first, depth-first, depth-limited, iterative deepening, uniform cost, bidirectional search.
-- `informed.ts`: greedy best-first, A*, weighted A*, IDA*, RBFS, beam search; heuristic admissibility and consistency
-  checks.
-- `local.ts`: hill climbing (steepest, first choice, random restarts), simulated annealing, tabu search, local beam
-  search, late acceptance.
-- `evolutionary.ts`: genetic algorithms (selection, crossover and mutation for bit strings, permutations and real
-  vectors), evolution strategies, genetic programming over expression trees, MAP-Elites, novelty search.
-- `swarm.ts`: ant colony optimisation, discrete particle swarm.
-- `adversarial.ts`: minimax, alpha-beta with move ordering, negamax, expectimax, Monte Carlo tree search (UCT and PUCT
-  with priors).
-- `csp.ts`: constraint satisfaction problems: backtracking with MRV, degree and LCV heuristics, forward checking, AC-3,
-  maintaining arc consistency, min-conflicts.
-- `planning.ts`: STRIPS and a PDDL subset, forward and regression planning with h-add, h-max and FF heuristics,
-  GraphPlan, partial-order planning, simple HTN decomposition.
+algorithms that record the frontier and explored set, so every search can be animated. Every search is an `Algorithm`
+(one expansion, move, generation or level per step) with an expansion, node or iteration budget, so it terminates on
+unsolvable and infinite spaces. Searches over explicit graphs are `graph`'s; `graphProblem` adapts a `Graph`, and the
+frontiers reuse `graph`'s `BinaryHeap`.
+- `problem.ts`: `SearchProblem`, `SearchNode`, `rootNode`, `childNode`, `expand`, path reconstruction (`pathNodes`,
+  `solutionPath`, `solutionActions`, `replay`), `SearchResult` and `SearchStats` (expanded, generated, goal tests,
+  largest frontier, explored), `effectiveBranchingFactor`, `stateKeyOf`, `graphProblem`, `searchTree` (a `Structure`).
+- `uninformed.ts`: breadth-first, depth-first, depth-limited, iterative deepening, uniform cost, bidirectional search
+  (each with an `...Algorithm` form).
+- `informed.ts`: best-first on any `f`, greedy best-first, A*, weighted A*, IDA*, RBFS, beam search; heuristic
+  admissibility and consistency checks (`isAdmissible`, `isConsistent`, via `graph`'s `dijkstra` on the reversed
+  reachable space).
+- `local.ts`: hill climbing (steepest, first choice, stochastic, sideways moves; random restarts as child runs),
+  simulated annealing (exponential, geometric and logarithmic schedules), tabu search, local beam search, late
+  acceptance; `spaceProblem` over a `Space`, permutation and bit-flip neighbourhoods.
+- `evolutionary/` (inlined into `search`):
+  - `operators.ts`: selection (tournament, roulette, stochastic universal sampling, linear rank, truncation),
+    crossover and mutation for bit strings, permutations (order, PMX, cycle; swap, inversion, scramble) and real
+    vectors (blend, SBX, arithmetic; Gaussian, polynomial).
+  - `genetic.ts`: genetic algorithms over representations (`bitStrings`, `permutations`, `realVectors`),
+    self-adaptive evolution strategies ((mu, lambda) and (mu + lambda); CMA-ES is `optim`'s).
+  - `programming.ts`: genetic programming over expression trees (primitive sets, grow, full and ramped half-and-half,
+    subtree crossover and mutation, point mutation, symbolic-regression fitness). `methods/evolutionary` maps trees to
+    `symbolic` expressions.
+  - `quality-diversity.ts`: MAP-Elites, novelty search (`numerics`' `kNearest`).
+- `swarm.ts`: ant colony optimisation for the travelling salesman (Ant System, elitist, MAX-MIN), discrete (binary)
+  particle swarm (continuous swarms are `optim`'s).
+- `adversarial.ts`: minimax, alpha-beta with move ordering, negamax (with or without pruning), expectimax, Monte Carlo
+  tree search (UCT and PUCT with priors and value estimates), traced node by node with visit, value and prune events.
+- `csp.ts`: constraint satisfaction problems with constraints of any arity: backtracking with MRV, degree and LCV
+  heuristics, forward checking, AC-3 (generalised to n-ary constraints), maintaining arc consistency, min-conflicts;
+  all-solution enumeration and the incremental search formulation (`cspProblem`).
+- `planning/` (inlined into `search`):
+  - `strips.ts`: STRIPS actions and problems, progression and regression, plan validation, forward and regression
+    planning (A*, greedy, weighted A*, breadth-first) with h-add, h-max, FF and goal-count heuristics; regression
+    prunes subgoal sets with unreachable facts or invariant mutexes.
+  - `pddl.ts`: a PDDL subset (`:strips`, `:typing`, `:equality`): s-expressions, domains, problems, grounding with
+    static-predicate and reachability pruning.
+  - `heuristics.ts`: h-add, h-max, h-FF and FF's relaxed plan (`_relaxed.ts` holds the shared relaxed reachability).
+  - `graphplan.ts`: GraphPlan (mutexes, memoised backward extraction, termination on levelling off), the planning
+    graph's levels, invariant mutex pairs.
+  - `partial-order.ts`: partial-order planning (causal links, threats by promotion and demotion) as a search problem,
+    linearisation (`graph`'s `topologicalSort`).
+  - `htn.ts`: simple total-order HTN decomposition (methods with preconditions, backtracking), the decomposition tree
+    as a `Structure`.
 - `refinement.ts`: refinement-operator search over pattern and rule languages (beam, best-first, exhaustive with
-  optimistic-estimate pruning), top-k result sets with redundancy filtering; used by rule learning, subgroup discovery,
+  optimistic-estimate pruning), top-k result sets with redundancy filtering (`TopK`, `redundancyFilter`, coverage
+  similarity), the conjunctive selector language (`conjunctions`); used by rule learning, subgroup discovery,
   exceptional model mining and ILP.
+- Internal: `_engine.ts` (counters, trace schema and observer of path searches), `_best-first.ts` (the best-first
+  frontier with lazy deletion and tie-breaking), `_csp-model.ts` (compiled CSPs), `_draw.ts` (buffered draws from a
+  key). Textbook instances for tests (Romania, eight puzzle, n-queens, tic-tac-toe and connect four, Australia,
+  Sudoku, SEND+MORE=MONEY) are in `packages/engine/src/testing/search.ts`; the named puzzles and domains for users are
+  `methods/gofai`.
 
 ### 4.23 `stochastic/` (tier 7): stochastic processes and stochastic calculus
 
@@ -1669,12 +1908,13 @@ into `whitebox-engine/pgm`; `learning` and `causal` are namespaces.
 - `models/state-space.ts`: HMMs (categorical and full-covariance Gaussian emissions: chain potentials, sampling, the DBN
   form) and linear dynamical systems (sampling, the unrolled linear-Gaussian network with correlated noise as
   within-slice arcs, smoothing with the log-likelihood) as DBNs.
-- `models/crf.ts`: conditional random fields: CRFsuite-style attribute templates over token columns (offset windows,
-  skipped or CRF++-padded boundaries, bias) and attribute vocabularies with frequency cut-offs; linear-chain CRFs
-  (potentials as chains, scores, conditional log-likelihoods, marginals, Viterbi decoding, the penalised objective with
-  its gradient, first-order training as a traced run); general CRFs over arbitrary cliques with per-assignment feature
-  tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The CRF++ template parser
-  and the estimators' training algorithms stay in `text/templates.ts` and `methods/models/crf.ts`.
+- `models/crf.ts`: conditional random fields: linear-chain CRFs with state, label-pair transition and
+  observation-dependent bigram features (potentials as chains, scores, conditional log-likelihoods, marginals, Viterbi
+  decoding, the penalised objective with its gradient, first-order training as a traced run), CRF++-form models and
+  inputs from parsed CRF++ templates (`crfppCrf`, `crfppObservation`); general CRFs over arbitrary cliques with
+  per-assignment feature tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The
+  template languages and feature indexes live in `text/templates.ts` and `text/attribute-templates.ts`, the
+  estimators' training algorithms in `methods/models/crf.ts`.
 - `models/plates.ts`: plate notation and template models, grounding against plate elements and relations, grounded
   evidence, pooled (parameter-sharing) maximum likelihood.
 - `models/influence.ts`: influence diagrams (decision and utility nodes, no-forgetting information sets), policy
@@ -1803,10 +2043,10 @@ none of those weights.
   (`precisionRecallDensityCoverage`), CLIPScore from embeddings (`clipScore`), Vendi score (any order).
 - `text.ts`: WER, CER, MER, WIL and WIP (jiwer's alignment); BLEU (corpus and sentence, smoothing, the 13a tokeniser
   `tokenize13a`); chrF and chrF++ (`chrfScore`, `wordOrder: 2`); TER (Tercom shifts and normalisation flags); ROUGE-N,
-  ROUGE-L and ROUGE-Lsum (rouge-score; a stemmer can be supplied); SQuAD exact match and token F1; BERTScore from
-  embeddings (idf weights, baseline rescaling); perplexity; distinct-n. Private `_sequences.ts` (edit alignment, LCS,
-  n-gram counts) and `_ter.ts`. TODO: move the alignment and LCS to `text/similarity.ts` and default ROUGE's stemmer to
-  `text/stem.ts` once the text domain exists.
+  ROUGE-L and ROUGE-Lsum (rouge-score; `stem: true` is rouge-score's `use_stemmer`, nltk's Porter from `text/stem.ts`,
+  or a stemmer can be supplied); SQuAD exact match and token F1; BERTScore from embeddings (idf weights, baseline
+  rescaling); perplexity; distinct-n. The edit alignment, LCS and n-gram counts come from `text/similarity.ts` and
+  `text/shingles.ts`; private `_ter.ts`.
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
@@ -2155,6 +2395,52 @@ child run.
   `halvingRandomSearchCv`.
 - `analysis.ts`: trial tables, optimisation history, parameter importance (permutation and correlation based),
   parallel-coordinate, slice and contour data.
+### 4.36 `worlds/` (tier 6): discrete worlds shared by search, reinforcement learning and graphics
+
+One representation of a map, used by every application of it: a maze solved by breadth-first search, A* or a learned
+policy, a grid world in reinforcement learning, and the level a ray caster walks through are the same `World`. Movement
+can be discrete (cells and actions) or continuous (positions and headings over the same cells); each application takes
+the world and adds its own view (search problems in `search`, environments in `methods/rl`, renderers in `graphics`
+and whitebox-render).
+
+oracle: none needed for most of it (exact constructions); networkx for connectivity, gymnasium/minigrid for shared
+layouts.
+- `world.ts`: `World` (cells on a square or hexagonal grid, or nodes of a graph; walls between cells or blocking cells;
+  per-cell terrain with costs; items, doors, keys, goals, hazards; start and goal sets), `world`, `fromAscii` and
+  `toAscii` (the usual ASCII map conventions), `fromRows`, cell and coordinate conversions, neighbours under 4- and
+  8-connectivity, passability, `toStructure`, `toScene` (a top-down drawing with theme tokens).
+- `rules.ts`: what entering a cell does (cost, reward, terminate, teleport, slip probabilities, one-way cells, pickups,
+  doors opened by keys), composed rule sets, deterministic and stochastic transition models over cells, so the same
+  world feeds tabular MDPs, search problems and simulators.
+- `generators.ts`: keyed maze generators (recursive backtracker, Prim, Kruskal, Wilson, Eller, Aldous-Broder, binary
+  tree, sidewinder, recursive division), rooms and corridors (BSP dungeons), cellular-automaton caves, noise terrain
+  (value and Perlin noise), braiding (removing dead ends), and textbook worlds (FrozenLake, CliffWalking, four rooms,
+  the AIMA grid, MiniGrid-style layouts).
+- `continuous.ts`: continuous agents over a world: positions and headings, motion with collision against walls (swept
+  circles and segments), line-of-sight queries, field-of-view cones, distance fields from walls.
+- `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells), dead ends, choke
+  points, and conversion to `graph` adjacency for graph algorithms.
+
+### 4.37 `graphics/` (tier 7): rendering mathematics
+
+The mathematics of drawing worlds and scenes, as data (`Pixels`, scene nodes), so figures and the slide and blog tools
+can show how a renderer works step by step. Everything is deterministic and traced where a step is worth showing.
+
+oracle: closed forms; numpy references for the linear algebra; small images compared to hand-checked renders.
+- `camera.ts`: pinhole and orthographic cameras, view and projection matrices, ray generation per pixel, frustum tests.
+- `raycasting.ts`: grid ray casting over a `World` (DDA traversal, wall hits with side and distance, fish-eye
+  correction), first-person column rendering with textured walls, floors and ceilings, sprites with depth sorting, and
+  the traced rays for a top-down view-cone figure.
+- `raytracing.ts`: ray-primitive intersections (sphere, plane, triangle with Moller-Trumbore, axis-aligned box),
+  bounding-volume hierarchies, recursive ray tracing with shadows, reflection and refraction (Snell, Fresnel by
+  Schlick), and a small path tracer (cosine-weighted hemisphere sampling with explicit keys).
+- `shading.ts`: Lambert, Phong and Blinn-Phong, physically based microfacet shading (GGX, Smith, Fresnel), lights
+  (point, directional, area), tone mapping and gamma.
+- `textures.ts`: texture images, UV mapping, nearest, bilinear and mipmapped sampling, procedural textures
+  (checkerboard, noise, bricks).
+- `rasterise.ts`: triangle rasterisation with barycentric interpolation, depth buffers, back-face culling and clipping
+  (the counterpart of ray casting, for comparison figures).
+
 ## 5. whitebox-engine methods, `packages/engine/src/methods/`
 
 Methods are the named models, algorithms, environments, datasets and studies, each composed from the core. Each area
@@ -2500,11 +2786,11 @@ built from: `search`, `logic`, `stats`
 - `argumentation.ts`: abstract argumentation frameworks (grounded, preferred and stable semantics).
 - `knowledge-representation.ts`: semantic networks, frames with inheritance, a description logic (ALC) tableau.
 - `case-based.ts`: case retrieval, adaptation and retention.
-- `planning-domains.ts`: blocks world, logistics, gripper and other domains for `search/planning.ts`.
+- `planning-domains.ts`: blocks world, logistics, gripper and other domains for `search/planning/`.
 - `puzzles.ts`: 8-puzzle, n-queens, Sudoku, Towers of Hanoi, missionaries and cannibals, cryptarithms.
 
 `evolutionary/` (DEAP ideas)
-built from: `search/evolutionary.ts`, `symbolic`, `nn`, `rl`
+built from: `search/evolutionary/`, `symbolic`, `nn`, `rl`
 - `genetic-algorithms.ts`: studies on OneMax, knapsack and travelling-salesman problems.
 - `genetic-programming.ts`: symbolic regression by genetic programming over `symbolic` expressions.
 - `neuroevolution.ts`: NEAT-style evolution of small networks on XOR and cart-pole.
@@ -3041,6 +3327,28 @@ Entry points: `whitebox-render` (every headless part), `whitebox-render/<part>`,
 
 oracle: none; checked by snapshot tests of options, scenes and structures, and by browser tests in Chromium.
 
+Three consumers shape it: the machine-learning encyclopedia, a blog, and slide decks whose slides hold live toy data.
+The reference implementation is aifn-engine's `packages/render` (read-only): reuse what works there (the numeric
+field in `controls/numeric/NumberField.tsx` with `useNumberDraft`, the MathJax macros in `layout/math-macros.tsx`,
+`layout/Tex.tsx` and `equation-tex.ts`, the drag-a-point and live-equation recipes in `examples/src/recipes/`) and
+improve it as below; its player (`controls/playback/Player.tsx`) is replaced, not ported.
+
+Design rules:
+- **Figures have a default size and aspect**, as a matplotlib figure does: every figure is a fixed area with a default
+  width and aspect ratio, and only changes shape when its properties say so. Content never resizes the frame.
+- **Layouts are grids.** Axes are placed on a grid of rows and columns with spans (gridspec), may share x or y axes and
+  ranges, may sit with almost no padding between them (a scatter plot with marginal histograms on its x and y axes),
+  and grid cells may hold text or equations instead of axes.
+- **Two aspects.** The box aspect (the figure's shape, e.g. 2:1) is independent of the data aspect (`equal` makes a
+  circle look like a circle); with `equal` data aspect in a 2:1 box, the axis ranges are adjusted to fit.
+- **Limits have policies** for reactive figures: `auto` (fit the data, honouring the aspect), `fixed` (a stated range,
+  so moving a Gaussian's mean visibly moves it), `expand` (grow but never shrink) and `follow` (track a window).
+- **Grids are smooth by default.** Heatmaps of gridded fields (a classifier's probability on a 30x30 grid) render
+  interpolated (bilinear or bicubic, or filled contours) rather than as blocks, with a predictable `smooth` option
+  and an efficient path (one upsampled image, not thousands of cells); blocky cells remain available.
+- **Zoom is a modal.** A figure's expand button opens it full screen in a modal; the in-page area never changes size.
+- **Mechanisms, not layouts.** Pages own their design; the package provides the pieces to specify it.
+
 `theme/`
 - `tokens.ts`: light and dark design tokens (`fg`, `bg`, `surface`, `muted`, `grid`, `accent`, semantic colours,
   `tab0`..`tab9`), `tokens(mode)`, `cssVariables(mode)`.
@@ -3054,7 +3362,8 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
 - `bars.ts`: bar charts, histograms, Pareto charts.
 - `distributions.ts`: densities from a `Distribution` or KDE, ECDFs, box and violin plots, QQ plots, PMFs, prior and
   posterior overlays.
-- `matrices.ts`: heatmaps, confusion matrices, correlation matrices, images from tensors.
+- `matrices.ts`: heatmaps, confusion matrices, correlation matrices, images from tensors; gridded fields smooth by
+  default (bilinear or bicubic upsampling to one image, or filled contours), blocky cells on request.
 - `fields.ts`: contours, decision regions, vector fields, streamlines.
 - `functions.ts`: function plots for the foundations (asymptotes, implicit curves, parametric and polar curves,
   tangent and secant lines, Riemann rectangles, Taylor polynomials).
@@ -3063,6 +3372,14 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
 - `tuning.ts`: optimisation histories, parameter importances, slice and contour plots of studies.
 - `compose.ts`: subplot grids with shared axes, linked axes, data zoom, mark lines, annotations.
 - `downsample.ts`: LTTB and min-max decimation.
+
+`figure/` (the figure model; headless)
+- `figure.ts`: `Figure` (default size and box aspect, padding, title, theme), defaults per medium (page, blog, slide).
+- `grid.ts`: grid specifications (rows, columns, spans, ratios, gaps down to zero), shared and linked axes, text and
+  equation cells, marginal-axes helpers (`withMarginals`), bento layouts from named grid areas.
+- `aspect.ts`: box aspect versus data aspect (`equal`, numeric), and how ranges adjust to satisfy both.
+- `limits.ts`: limit policies (`auto`, `fixed`, `expand`, `follow`) and nice-range rounding.
+- `linking.ts`: linked brushing and hover across figures, shared selections.
 
 `layout/` (positions only)
 - `layered.ts`: layered layout through dagre (ranks, crossing reduction, edge routes, compound nodes for plates and
@@ -3082,6 +3399,9 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
   treemap.
 - `overlays.ts`: state overlays for animation (active nodes and edges, messages along edges, value badges, frontier and
   explored sets).
+- `models.ts`: presentations of parameterised models from their engine descriptions: neural networks from `nn`'s
+  `describe` (layer stacks, transformers, U-Nets for diffusion), Bayesian networks with plate notation (LDA, mixtures),
+  factor graphs, and decision trees and forests with a class-ratio histogram at each split.
 
 `trace/` (figures from runs)
 - `metrics.ts`: metric curves (smoothing, log scales, runs overlaid, run trees).
@@ -3094,14 +3414,23 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
 `gym/`
 - `frames.ts`: episode frames from an environment's `render`, filmstrips.
 - `overlays.ts`: value heatmaps, policy arrows, visit counts and action distributions on environment scenes.
+- `worlds.ts`: one way to draw any `worlds` world (top-down map, search frontiers, policies and values on cells, agent
+  paths), and the first-person ray-cast view from `graphics` with its top-down view cone.
 
 `maths/`
 - `tex.ts`: typesetting through KaTeX for HTML and MathJax for SVG (used by `tex` scene nodes and SVG export).
+- `macros.ts`: the shared macro registry (vectors, matrices, sets, distributions, operators, as in aifn-engine's
+  `math-macros.tsx`), exported so consumers and their own packages get the same symbols with one import, and
+  extendable with their own.
+- `live.ts`: equations bound to parameters: values substituted and highlighted as controls move, so a slider changes
+  the equation and the figure together.
 - `derivations.ts`: step lists from `symbolic` and `foundations` as aligned equations.
 
 `animation/`
 - `timeline.ts`: building `Timeline`s from runs (any event channel), from environment episodes, from structure overlays
   and from parameter sweeps; easing and interpolation between frames.
+- `playback.ts`: the two playback modes: precomputed (train up front, play a timeline) and live (step an `Algorithm`
+  frame by frame through `iterate`, with a frame budget), behind one interface.
 - `svg.ts`: animated SVG (CSS keyframes) from a timeline.
 - `gif.ts`: GIF encoding (gifenc) of a timeline rendered frame by frame.
 - `video.ts`: MP4 and WebM encoding in the browser (WebCodecs with mp4-muxer and webm-muxer); in Node, raw frames piped
@@ -3118,12 +3447,21 @@ oracle: none; checked by snapshot tests of options, scenes and structures, and b
 - `Scene3DView.tsx`: a 3-D scene with drag-to-orbit camera, re-projected on interaction.
 - `StructureView.tsx`: a `Structure` with pan, zoom, hover details and overlay state.
 - `TraceView.tsx`: the standard figures of a run; `useRunStream` for live runs.
-- `TimelinePlayer.tsx`: playback of any timeline (play, step, scrub, speed).
+- `Player.tsx`: playback of a precomputed timeline or a live algorithm, redesigned and simpler than aifn-engine's:
+  play and pause with a caret menu for the target frames per second, step back and forward, a draggable scrubber, and
+  an optional time stamp.
+- `FigureFrame.tsx`: the fixed-size figure area with its expand-to-modal button and export menu.
+- `interaction/`: click to add points, drag points, drag points constrained to curves and surfaces, selection (e.g.
+  a Gaussian process refitting as its data are dragged), as hooks and scene overlays.
 - `EpisodePlayer.tsx`: environment episodes with overlays.
 - `ExportMenu.tsx`: export of the current figure as SVG, PNG, GIF, MP4 or WebM.
 - `MathView.tsx`: TeX and derivation display.
-- `controls/`: controls generated from a `Space` (`SpaceControls`), and `Slider`, `NumberInput`, `Select`, `Toggle`,
-  `SeedInput`.
+- `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
+  value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
+  and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
+  `Toggle`, `SeedInput`; and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
+  left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas.
+- `EnvView.tsx`: one consistent view of any environment's render, with episode playback and overlays.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`.
 
 ## 7. whitebox-meta, `packages/meta/src/`
@@ -3182,20 +3520,21 @@ Turns the source into documentation data, runs examples and links functions to c
 
 ## 8. Apps
 
-Both apps are private Vite and React 19 applications with a navigation bar, a persistent light and dark toggle (system
-default, stored choice, no flash), theme tokens from `whitebox-render/theme` and Tailwind CSS. They consume the
+One app, `apps/docs/`, holds both the documentation and the gallery (they were planned as two apps; one site serves
+both better). It is a private Vite and React 19 application with a navigation bar, a persistent light and dark toggle (system
+default, stored choice, no flash), theme tokens from `whitebox-render/theme` and Tailwind CSS. It consumes the
 packages exactly as an outside project does.
 
-`apps/docs/` (the counterpart of whitebox-engine)
+`apps/docs/` (documentation for whitebox-engine; gallery for whitebox-render)
 - `src/main.tsx`, `src/routes.tsx`, `src/shell/` (`AppShell.tsx`, `NavBar.tsx`, `ThemeToggle.tsx`, `Sidebar.tsx`).
 - `src/pages/`: `Home.tsx`, `HowTo.tsx`, `Module.tsx`, `Symbol.tsx`, `Concepts.tsx` (browse by the encyclopedia's
   taxonomy), `Studies.tsx`, `Playground.tsx`, `Traces.tsx` (open, replay, compare and export runs).
 - `content/howto/`: one how-to per core domain and per major method area, with runnable code blocks checked by the build.
 
-`apps/gallery/` (the counterpart of whitebox-render)
-- `src/main.tsx`, `src/routes.tsx`, `src/shell/`.
-- `src/pages/`: `Home.tsx`, `Section.tsx`, `Entry.tsx` (a figure with its editable code and export menu).
-- `src/entries/`: one file per section: `charts.ts`, `distributions.ts`, `fields.ts`, `functions.ts`, `structures.ts`
+The gallery lives in the same app (`apps/docs/src/gallery/`), recycling aifn-engine's docs approach (driven by
+docstrings and recipes):
+- `src/gallery/pages/`: `Gallery.tsx`, `Section.tsx`, `Entry.tsx` (a figure with its editable code and export menu).
+- `src/gallery/entries/`: one file per section: `charts.ts`, `distributions.ts`, `fields.ts`, `functions.ts`, `structures.ts`
   (graphical models, computation graphs, architectures, trees, automata), `networks.ts`, `traces.ts`, `animations.ts`,
   `environments.ts` (every environment, rendered and animated), `three-d.ts`, `maths.ts`, `layouts.ts`, `themes.ts`.
 
@@ -3240,9 +3579,14 @@ library for the same computation. They do not set a higher bar than that library
 
 ## 10. Repository tooling
 
-- `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `dev-gallery`, `build`, `lint`, `format`, `typecheck`,
+- `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
-  `datasets`, `pack`, `smoke`, `check`, `clean`, `release`.
+  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`.
+- Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, then only the tests,
+  type checks and fixtures related to the change; everything when shared infrastructure changes) and `make check` with
+  `make fixtures-check` as the periodic full run after a batch of merges and before a release.
+- `scripts/verify.ts`: the scoped gate (changed files against a base, `vitest related`, fixture-to-test lookup, scoped
+  pyright and fixture checks).
 - `mise.toml`: Node, pnpm, Python and uv versions.
 - `scripts/barrels.ts`: every `index.ts` and the module map; `--check`.
 - `scripts/layers.ts`: dependency-cruiser rules from `domain.json` and `area.json`.
@@ -3358,7 +3702,7 @@ library for the same computation. They do not set a higher bar than that library
 | SWI-Prolog, Metagol, Popper       | `lib/logic/`                                                                                      |
 | AIMA                              | `lib/search/`, `methods/gofai/`                                                                   |
 | mlxtend, SPMF, pysubgroup         | `methods/patterns/`                                                                               |
-| DEAP                              | `lib/search/evolutionary.ts`, `methods/evolutionary/`                                             |
+| DEAP                              | `lib/search/evolutionary/`, `methods/evolutionary/`                                               |
 | PySINDy                           | `methods/scientific/discovery/`                                                                   |
 | faiss                             | `lib/numerics/spatial/`, `methods/retrieval/indexes.ts`                                           |
 | datasketch, rapidfuzz             | `lib/text/shingles.ts`, `lib/text/fingerprinting.ts`, `methods/retrieval/approximate-matching.ts` |
@@ -3369,7 +3713,7 @@ library for the same computation. They do not set a higher bar than that library
 | Opacus                            | `lib/learn/privacy.ts`, `methods/privacy/`                                                        |
 | SHAP, Captum                      | `lib/learn/explain/`                                                                              |
 | cleanlab, Snorkel                 | `methods/weak-supervision/`                                                                       |
-| zlib                              | `lib/information/dictionary-coding.ts`                                                            |
+| zlib                              | `lib/information/deflate.ts`                                                                      |
 
 ## 12. Order of construction
 
@@ -3384,12 +3728,16 @@ on it. The first pass is a thin vertical slice that proves the whole pipeline (v
    layers, activations, `Sequential`, `fit`, `describe`), `rl` (`env.ts`, `gym.ts`, `rollout.ts`) with CartPole and its
    render, `data` (regression schema, generator and truth) with `friedman1` and `diabetes`, `metrics/regression.ts`.
 5. whitebox-render: theme, `charts/lines.ts`, `layout/layered.ts`, `structures/diagram.ts`, `trace/metrics.ts`,
-   `animation/gif.ts`, `svg/`, `react/` (Chart, SceneView, StructureView, TraceView, TimelinePlayer).
-6. whitebox-meta: schema, extractor, runner with `// =>` checks, module map, concept taxonomy; the docs and gallery apps
+   `animation/gif.ts`, `svg/`, `react/` (Chart, SceneView, StructureView, TraceView, Player).
+6. whitebox-meta: schema, extractor, runner with `// =>` checks, module map, concept taxonomy; the docs app (with its gallery)
    showing the slice; the oracle producing the first fixtures; CI, packing and the smoke test.
 
 After the slice, every remaining file in this document becomes a build task, taken in tier order for the core and in
 "built from" order for methods.
+
+Effort: the engine (core, then methods) is built at high effort, each domain to its full plan line before the next
+tier. whitebox-render, whitebox-meta and the docs app follow at normal effort, guided by the design rules of section 6
+and reusing aifn-engine's render and docs code where it already works.
 
 ## 13. Questions for the reviewer
 

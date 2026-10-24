@@ -97,4 +97,12 @@ describe('isomorphism (properties)', () => {
         .length,
     ).toBe(2)
   })
+
+  it('never confuses an isolated node with one that has an empty-labelled neighbour', () => {
+    // Regression: concatenated encodings gave `(` + `)` for both "no neighbours" and "one neighbour coloured ''".
+    const g = graph([[1, 2]], { nodes: 3 })
+    const r = weisfeilerLehman(g, { nodeLabels: ['', '', ''] })
+    expect(r.colours[0]).not.toBe(r.colours[1])
+    expect(r.colours[1]).toBe(r.colours[2])
+  })
 })

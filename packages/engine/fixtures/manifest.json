@@ -109,7 +109,7 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 79
+      "cases": 103
     },
     {
       "fixture": "dists/discrete/binary.json",
@@ -237,6 +237,134 @@
       "cases": 4
     },
     {
+      "fixture": "foundations/calculus.json",
+      "source": "oracle/cases/foundations/calculus.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 46
+    },
+    {
+      "fixture": "foundations/combinatorics.json",
+      "source": "oracle/cases/foundations/combinatorics.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 52
+    },
+    {
+      "fixture": "foundations/complex.json",
+      "source": "oracle/cases/foundations/complex.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 28
+    },
+    {
+      "fixture": "foundations/coordinates.json",
+      "source": "oracle/cases/foundations/coordinates.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "foundations/curves.json",
+      "source": "oracle/cases/foundations/curves.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 64
+    },
+    {
+      "fixture": "foundations/linear-algebra.json",
+      "source": "oracle/cases/foundations/linear-algebra.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 87
+    },
+    {
+      "fixture": "foundations/multivariable.json",
+      "source": "oracle/cases/foundations/multivariable.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 28
+    },
+    {
+      "fixture": "foundations/number-theory.json",
+      "source": "oracle/cases/foundations/number-theory.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 81
+    },
+    {
+      "fixture": "foundations/probability.json",
+      "source": "oracle/cases/foundations/probability.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "foundations/rotations.json",
+      "source": "oracle/cases/foundations/rotations.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 82
+    },
+    {
+      "fixture": "foundations/series.json",
+      "source": "oracle/cases/foundations/series.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "foundations/surfaces.json",
+      "source": "oracle/cases/foundations/surfaces.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 68
+    },
+    {
+      "fixture": "foundations/trigonometry.json",
+      "source": "oracle/cases/foundations/trigonometry.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "sympy": "1.14.0"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "foundations/vectors.json",
+      "source": "oracle/cases/foundations/vectors.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 39
+    },
+    {
       "fixture": "graph/centrality.json",
       "source": "oracle/cases/graph/centrality.py",
       "reference": {
@@ -347,6 +475,141 @@
         "scipy": "1.18.1"
       },
       "cases": 14
+    },
+    {
+      "fixture": "information/complexity.json",
+      "source": "oracle/cases/information/complexity.py",
+      "reference": {
+        "zlib": "1.2.12",
+        "antropy": "0.2.3",
+        "scipy": "1.18.1"
+      },
+      "cases": 32
+    },
+    {
+      "fixture": "information/convolutional.json",
+      "source": "oracle/cases/information/convolutional.py",
+      "reference": {
+        "scikit-commpy": "0.8.0"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "information/deflate.json",
+      "source": "oracle/cases/information/deflate.py",
+      "reference": {
+        "zlib": "1.2.12"
+      },
+      "cases": 102
+    },
+    {
+      "fixture": "information/discrete.json",
+      "source": "oracle/cases/information/discrete.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "pyitlib": "0.3.1"
+      },
+      "cases": 38
+    },
+    {
+      "fixture": "information/divergences.json",
+      "source": "oracle/cases/information/divergences.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 40
+    },
+    {
+      "fixture": "information/estimators.json",
+      "source": "oracle/cases/information/estimators.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "npeet": "1.0.1",
+        "pyitlib": "0.3.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "information/neighbour_estimators.json",
+      "source": "oracle/cases/information/neighbour_estimators.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "npeet": "1.0.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "information/reed_solomon.json",
+      "source": "oracle/cases/information/reed_solomon.py",
+      "reference": {
+        "reedsolo": "1.7.0"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "information/source_coding.json",
+      "source": "oracle/cases/information/source_coding.py",
+      "reference": {
+        "bitarray": "3.12.3"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "kernels/dot_product.json",
+      "source": "oracle/cases/kernels/dot_product.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gpytorch": "1.15.2"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "kernels/expansion.json",
+      "source": "oracle/cases/kernels/expansion.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "kernels/kernel.json",
+      "source": "oracle/cases/kernels/kernel.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gpytorch": "1.15.2"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "kernels/matrices.json",
+      "source": "oracle/cases/kernels/matrices.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 27
+    },
+    {
+      "fixture": "kernels/stationary.json",
+      "source": "oracle/cases/kernels/stationary.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gpytorch": "1.15.2",
+        "scipy": "1.18.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "kernels/structured.json",
+      "source": "oracle/cases/kernels/structured.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1",
+        "networkx": "3.7"
+      },
+      "cases": 30
     },
     {
       "fixture": "losses/classification.json",
@@ -878,7 +1141,7 @@
         "rouge-score": "0.1.2",
         "torchmetrics": "1.9.0"
       },
-      "cases": 69
+      "cases": 84
     },
     {
       "fixture": "nn/functional/activations.json",
@@ -1845,7 +2108,7 @@
         "pytorch-crf": "0.7.2",
         "sklearn-crfsuite": "0.5.0"
       },
-      "cases": 6
+      "cases": 8
     },
     {
       "fixture": "pgm/models/dynamic.json",
@@ -1982,6 +2245,65 @@
         "gymnasium": "1.4.0"
       },
       "cases": 13
+    },
+    {
+      "fixture": "search/adversarial.json",
+      "source": "oracle/cases/search/adversarial.py",
+      "reference": {
+        "aima-python": "port of games.py (2024)"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "search/csp.json",
+      "source": "oracle/cases/search/csp.py",
+      "reference": {
+        "python-constraint2": "2.7.3",
+        "aima-python": "port of csp.py (2024)"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "search/informed.json",
+      "source": "oracle/cases/search/informed.py",
+      "reference": {
+        "aima-python": "port of search.py (2024)",
+        "networkx": "3.7"
+      },
+      "cases": 36
+    },
+    {
+      "fixture": "search/planning/heuristics.json",
+      "source": "oracle/cases/search/planning/heuristics.py",
+      "reference": {
+        "pyperplan": "2.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "search/planning/strips.json",
+      "source": "oracle/cases/search/planning/strips.py",
+      "reference": {
+        "pyperplan": "2.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "search/refinement.json",
+      "source": "oracle/cases/search/refinement.py",
+      "reference": {
+        "pysubgroup": "0.8.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "search/uninformed.json",
+      "source": "oracle/cases/search/uninformed.py",
+      "reference": {
+        "aima-python": "port of search.py (2024)",
+        "networkx": "3.7"
+      },
+      "cases": 42
     },
     {
       "fixture": "signal/audio/features.json",
@@ -2267,6 +2589,390 @@
       "cases": 103
     },
     {
+      "fixture": "stats/correlation.json",
+      "source": "oracle/cases/stats/correlation.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pingouin": "0.7.0"
+      },
+      "cases": 41
+    },
+    {
+      "fixture": "stats/covariance.json",
+      "source": "oracle/cases/stats/covariance.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "stats/density.json",
+      "source": "oracle/cases/stats/density.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "stats/descriptive.json",
+      "source": "oracle/cases/stats/descriptive.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "stats/effect_size.json",
+      "source": "oracle/cases/stats/effect_size.py",
+      "reference": {
+        "pingouin": "0.7.0",
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "stats/extremes.json",
+      "source": "oracle/cases/stats/extremes.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "stats/fit.json",
+      "source": "oracle/cases/stats/fit.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "stats/histograms.json",
+      "source": "oracle/cases/stats/histograms.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 29
+    },
+    {
+      "fixture": "stats/power.json",
+      "source": "oracle/cases/stats/power.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 36
+    },
+    {
+      "fixture": "stats/quantiles.json",
+      "source": "oracle/cases/stats/quantiles.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "stats/ranks.json",
+      "source": "oracle/cases/stats/ranks.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "stats/resampling.json",
+      "source": "oracle/cases/stats/resampling.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "stats/robust.json",
+      "source": "oracle/cases/stats/robust.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "stats/running.json",
+      "source": "oracle/cases/stats/running.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pandas": "3.1.0"
+      },
+      "cases": 34
+    },
+    {
+      "fixture": "stats/smoothing/bases.json",
+      "source": "oracle/cases/stats/smoothing/bases.py",
+      "reference": {
+        "patsy": "1.0.3",
+        "scipy": "1.18.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "stats/smoothing/penalties.json",
+      "source": "oracle/cases/stats/smoothing/penalties.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "stats/smoothing/smoothers.json",
+      "source": "oracle/cases/stats/smoothing/smoothers.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "pandas": "3.1.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "stats/tests/bayesian.json",
+      "source": "oracle/cases/stats/tests/bayesian.py",
+      "reference": {
+        "pingouin": "0.7.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "stats/tests/contingency.json",
+      "source": "oracle/cases/stats/tests/contingency.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 40
+    },
+    {
+      "fixture": "stats/tests/distribution.json",
+      "source": "oracle/cases/stats/tests/distribution.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 42
+    },
+    {
+      "fixture": "stats/tests/equivalence.json",
+      "source": "oracle/cases/stats/tests/equivalence.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "stats/tests/independence.json",
+      "source": "oracle/cases/stats/tests/independence.py",
+      "reference": {
+        "pingouin": "0.7.0",
+        "sklearn": "1.9.1",
+        "causal-learn": "0.1.4.8"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "stats/tests/kernel.json",
+      "source": "oracle/cases/stats/tests/kernel.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "stats/tests/means.json",
+      "source": "oracle/cases/stats/tests/means.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0",
+        "pingouin": "0.7.0"
+      },
+      "cases": 29
+    },
+    {
+      "fixture": "stats/tests/multiple.json",
+      "source": "oracle/cases/stats/tests/multiple.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "stats/tests/multivariate.json",
+      "source": "oracle/cases/stats/tests/multivariate.py",
+      "reference": {
+        "pingouin": "0.7.0",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "stats/tests/nonparametric.json",
+      "source": "oracle/cases/stats/tests/nonparametric.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 55
+    },
+    {
+      "fixture": "stats/tests/proportions.json",
+      "source": "oracle/cases/stats/tests/proportions.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 55
+    },
+    {
+      "fixture": "stats/tests/result.json",
+      "source": "oracle/cases/stats/tests/result.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "stats/tests/timeseries.json",
+      "source": "oracle/cases/stats/tests/timeseries.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 79
+    },
+    {
+      "fixture": "stats/tests/two_sample.json",
+      "source": "oracle/cases/stats/tests/two_sample.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 32
+    },
+    {
+      "fixture": "stats/transforms.json",
+      "source": "oracle/cases/stats/transforms.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sklearn": "1.9.1"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "symbolic/compile.json",
+      "source": "oracle/cases/symbolic/compile.py",
+      "reference": {
+        "sympy": "1.14.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "symbolic/differentiate.json",
+      "source": "oracle/cases/symbolic/differentiate.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 51
+    },
+    {
+      "fixture": "symbolic/expr.json",
+      "source": "oracle/cases/symbolic/expr.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 109
+    },
+    {
+      "fixture": "symbolic/integrate.json",
+      "source": "oracle/cases/symbolic/integrate.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 49
+    },
+    {
+      "fixture": "symbolic/latex.json",
+      "source": "oracle/cases/symbolic/latex.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 55
+    },
+    {
+      "fixture": "symbolic/limits.json",
+      "source": "oracle/cases/symbolic/limits.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "symbolic/matrices.json",
+      "source": "oracle/cases/symbolic/matrices.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 76
+    },
+    {
+      "fixture": "symbolic/parse.json",
+      "source": "oracle/cases/symbolic/parse.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 26
+    },
+    {
+      "fixture": "symbolic/polynomials.json",
+      "source": "oracle/cases/symbolic/polynomials.py",
+      "reference": {
+        "sympy": "1.14.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 47
+    },
+    {
+      "fixture": "symbolic/series.json",
+      "source": "oracle/cases/symbolic/series.py",
+      "reference": {
+        "sympy": "1.14.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "symbolic/simplify.json",
+      "source": "oracle/cases/symbolic/simplify.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 78
+    },
+    {
+      "fixture": "symbolic/solve.json",
+      "source": "oracle/cases/symbolic/solve.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 31
+    },
+    {
       "fixture": "systems/analysis.json",
       "source": "oracle/cases/systems/analysis.py",
       "reference": {
@@ -2429,6 +3135,220 @@
         "numpy": "2.5.4"
       },
       "cases": 24
+    },
+    {
+      "fixture": "text/alignment.json",
+      "source": "oracle/cases/text/alignment.py",
+      "reference": {
+        "biopython": "1.88"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "text/collocations.json",
+      "source": "oracle/cases/text/collocations.py",
+      "reference": {
+        "nltk": "3.10.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 38
+    },
+    {
+      "fixture": "text/features.json",
+      "source": "oracle/cases/text/features.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "rank-bm25": "0.2.2"
+      },
+      "cases": 59
+    },
+    {
+      "fixture": "text/fingerprinting.json",
+      "source": "oracle/cases/text/fingerprinting.py",
+      "reference": {
+        "datasketch": "2.0.0",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "text/hashing.json",
+      "source": "oracle/cases/text/hashing.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gensim": "4.4.0"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "text/hyphenation.json",
+      "source": "oracle/cases/text/hyphenation.py",
+      "reference": {
+        "pyphen": "0.18.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "text/lemmatise.json",
+      "source": "oracle/cases/text/lemmatise.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 65
+    },
+    {
+      "fixture": "text/normalise.json",
+      "source": "oracle/cases/text/normalise.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "tokenizers": "0.23.3"
+      },
+      "cases": 96
+    },
+    {
+      "fixture": "text/parsing.json",
+      "source": "oracle/cases/text/parsing.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "text/phonetic.json",
+      "source": "oracle/cases/text/phonetic.py",
+      "reference": {
+        "jellyfish": "1.3.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "text/representations.json",
+      "source": "oracle/cases/text/representations.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "gensim": "4.4.0",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "text/sentences.json",
+      "source": "oracle/cases/text/sentences.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 33
+    },
+    {
+      "fixture": "text/shingles.json",
+      "source": "oracle/cases/text/shingles.py",
+      "reference": {
+        "nltk": "3.10.4",
+        "gensim": "4.4.0"
+      },
+      "cases": 82
+    },
+    {
+      "fixture": "text/similarity.json",
+      "source": "oracle/cases/text/similarity.py",
+      "reference": {
+        "rapidfuzz": "3.14.6"
+      },
+      "cases": 34
+    },
+    {
+      "fixture": "text/statistics.json",
+      "source": "oracle/cases/text/statistics.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "gensim": "4.4.0"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "text/stem.json",
+      "source": "oracle/cases/text/stem.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "text/stopwords.json",
+      "source": "oracle/cases/text/stopwords.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "gensim": "4.4.0"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "text/subword/bpe.json",
+      "source": "oracle/cases/text/subword/bpe.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "text/subword/unigram.json",
+      "source": "oracle/cases/text/subword/unigram.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "text/subword/wordpiece.json",
+      "source": "oracle/cases/text/subword/wordpiece.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "text/tokenise.json",
+      "source": "oracle/cases/text/tokenise.py",
+      "reference": {
+        "nltk": "3.10.4",
+        "regex": "2026.9.29",
+        "scikit-learn": "1.9.1",
+        "tokenizers": "0.23.3"
+      },
+      "cases": 126
+    },
+    {
+      "fixture": "text/tokenizer.json",
+      "source": "oracle/cases/text/tokenizer.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "text/tokenizer_components.json",
+      "source": "oracle/cases/text/tokenizer_components.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 42
+    },
+    {
+      "fixture": "text/treebank.json",
+      "source": "oracle/cases/text/treebank.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 54
+    },
+    {
+      "fixture": "text/tweet.json",
+      "source": "oracle/cases/text/tweet.py",
+      "reference": {
+        "nltk": "3.10.4"
+      },
+      "cases": 70
     },
     {
       "fixture": "trace/summaries.json",

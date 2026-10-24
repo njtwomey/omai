@@ -47,7 +47,10 @@ export function hzToMel(f: TensorLike, htk = false): Value {
   const x = float(f)
   if (htk) return mul(log10(add(div(x, 700), 1)), 2595)
   const linear = div(x, SLANEY_SP)
-  const logs = add(div(log(div(where(greaterEqual(x, SLANEY_LOG_HZ), x, SLANEY_LOG_HZ), SLANEY_LOG_HZ)), SLANEY_STEP), SLANEY_LOG_MEL)
+  const logs = add(
+    div(log(div(where(greaterEqual(x, SLANEY_LOG_HZ), x, SLANEY_LOG_HZ), SLANEY_LOG_HZ)), SLANEY_STEP),
+    SLANEY_LOG_MEL,
+  )
   return where(greaterEqual(x, SLANEY_LOG_HZ), logs, linear)
 }
 
@@ -238,5 +241,7 @@ export function erbSpace(fmin: number, fmax: number, n: number): Tensor {
   if (!Number.isInteger(n) || n < 1) throw new WhiteboxError('value', 'erbSpace: n must be a positive integer')
   const lo = 21.4 * Math.log10(1 + 4.37e-3 * fmin)
   const hi = 21.4 * Math.log10(1 + 4.37e-3 * fmax)
-  return erbToHz(constant(Float64Array.from({ length: n }, (_, i) => (n === 1 ? lo : lo + ((hi - lo) * i) / (n - 1))))) as Tensor
+  return erbToHz(
+    constant(Float64Array.from({ length: n }, (_, i) => (n === 1 ? lo : lo + ((hi - lo) * i) / (n - 1)))),
+  ) as Tensor
 }

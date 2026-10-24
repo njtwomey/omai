@@ -187,7 +187,11 @@ export function amplitudeToDb(s: TensorLike, options: DbOptions = {}): Value {
   let peak = 0
   for (const v of data) peak = Math.max(peak, Math.abs(v))
   const ref = options.ref === 'max' ? peak : (options.ref ?? 1)
-  return powerToDb(mul(x, x), { ref: ref * ref, amin: amin * amin, topDb: options.topDb === undefined ? 80 : options.topDb })
+  return powerToDb(mul(x, x), {
+    ref: ref * ref,
+    amin: amin * amin,
+    topDb: options.topDb === undefined ? 80 : options.topDb,
+  })
 }
 
 /**
@@ -262,7 +266,10 @@ export function mfccFromDb(
   const lifter = options.lifter ?? 0
   if (lifter < 0) throw new WhiteboxError('value', 'mfcc: lifter must be non-negative')
   if (lifter === 0) return m
-  const li = Float64Array.from({ length: m.shape[0] ?? 0 }, (_, i) => 1 + (lifter / 2) * Math.sin((Math.PI * (i + 1)) / lifter))
+  const li = Float64Array.from(
+    { length: m.shape[0] ?? 0 },
+    (_, i) => 1 + (lifter / 2) * Math.sin((Math.PI * (i + 1)) / lifter),
+  )
   return mul(m, constant(li, [li.length, 1]))
 }
 
@@ -270,7 +277,10 @@ export function mfccFromDb(
 function unitColumns(s: Value): Value {
   const total = sum(s, 0, true)
   const t = toFlat(primalOf(total))
-  const safe = constant(Float64Array.from(t, (v) => (v < Number.MIN_VALUE * 2 ** 52 ? 1 : 0)), [1, t.length])
+  const safe = constant(
+    Float64Array.from(t, (v) => (v < Number.MIN_VALUE * 2 ** 52 ? 1 : 0)),
+    [1, t.length],
+  )
   return div(s, add(total, safe))
 }
 
@@ -374,7 +384,10 @@ export function spectralRolloff(s: TensorLike, sr: number, rollPercent = 0.85): 
  * toArray(audio.spectralFlatness([[1], [1], [1]])) // => [[1]]
  * ```
  */
-export function spectralFlatness(s: TensorLike, options: { readonly amin?: number; readonly power?: number } = {}): Value {
+export function spectralFlatness(
+  s: TensorLike,
+  options: { readonly amin?: number; readonly power?: number } = {},
+): Value {
   const x = maximum(pow(float(s), options.power ?? 2), options.amin ?? 1e-10)
   return div(exp(mean(log(x), 0, true)), mean(x, 0, true))
 }
@@ -538,8 +551,11 @@ export function rms(y: TensorLike, options: FrameOptions = {}): Value {
 export function rmsFromSpectrogram(s: TensorLike, frameLength: number): Value {
   const v = float(s)
   const bins = v.shape[0] ?? 0
-  if (bins !== Math.floor(frameLength / 2) + 1) throw new WhiteboxError('shape', 'rmsFromSpectrogram: bins do not match')
-  const w = Float64Array.from({ length: bins }, (_, k) => (k === 0 || (k === bins - 1 && frameLength % 2 === 0) ? 0.5 : 1))
+  if (bins !== Math.floor(frameLength / 2) + 1)
+    throw new WhiteboxError('shape', 'rmsFromSpectrogram: bins do not match')
+  const w = Float64Array.from({ length: bins }, (_, k) =>
+    k === 0 || (k === bins - 1 && frameLength % 2 === 0) ? 0.5 : 1,
+  )
   const power = mul(sum(mul(mul(v, v), constant(w, [bins, 1])), 0, true), 2 / frameLength ** 2)
   return sqrt(power)
 }
@@ -565,7 +581,10 @@ export function zeroCrossingRate(y: TensorLike, options: Omit<FrameOptions, 'pad
   const x0 = samples(y, 'zeroCrossingRate')
   const center = options.center ?? true
   const e = center ? Math.floor(frameLength / 2) : 0
-  const x = Float64Array.from({ length: x0.length + 2 * e }, (_, i) => x0[Math.min(x0.length - 1, Math.max(0, i - e))] ?? 0)
+  const x = Float64Array.from(
+    { length: x0.length + 2 * e },
+    (_, i) => x0[Math.min(x0.length - 1, Math.max(0, i - e))] ?? 0,
+  )
   const frames = 1 + Math.floor((x.length - frameLength) / hop)
   const out = new Float64Array(frames)
   for (let t = 0; t < frames; t++) {

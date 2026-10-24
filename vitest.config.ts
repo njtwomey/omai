@@ -1,11 +1,17 @@
 import { defineConfig } from 'vitest/config'
 
+// Test workers: half the cores by default, so several checkouts (agents' worktrees) can test at once without
+// saturating the machine; set WHITEBOX_TEST_WORKERS to a count or a percentage to override.
+const workers = process.env['WHITEBOX_TEST_WORKERS']
+const maxWorkers = workers === undefined ? '50%' : workers.endsWith('%') ? workers : Number(workers)
+
 // One Vitest run for the workspace. Packages resolve each other's source through the `source` export condition, so
 // tests never need a build.
 export default defineConfig({
   resolve: { conditions: ['source'] },
   ssr: { resolve: { conditions: ['source'], externalConditions: ['source'] } },
   test: {
+    maxWorkers,
     projects: [
       {
         extends: true,

@@ -32,7 +32,7 @@ export type Point3 = readonly [number, number, number]
  * @example
  * ```ts
  * import { convexHull } from 'whitebox-engine/numerics/geometry'
- * convexHull([[0, 0], [1, 1], [2, 0], [1, 0.5], [1, -1]]) // => [0, 4, 2, 1]
+ * convexHull([[0, 0], [1, 1], [2, 0], [1, 0.5], [1, -1]]) // => [4, 2, 1, 0]
  * ```
  */
 export function convexHull(points: TensorLike | readonly Point2[]): number[] {
@@ -370,7 +370,7 @@ export function segmentIntersection(a: Point2, b: Point2, c: Point2, d: Point2):
  * @example
  * ```ts
  * import { polygonClip } from 'whitebox-engine/numerics/geometry'
- * polygonClip([[0, 0], [2, 0], [2, 2], [0, 2]], [[1, 1], [3, 1], [3, 3], [1, 3]]) // => [[2, 1], [2, 2], [1, 2], [1, 1]]
+ * polygonClip([[0, 0], [2, 0], [2, 2], [0, 2]], [[1, 1], [3, 1], [3, 3], [1, 3]]) // => [[1, 1], [2, 1], [2, 2], [1, 2]]
  * ```
  */
 export function polygonClip(

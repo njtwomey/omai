@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   abs,
   allclose,
@@ -208,7 +208,7 @@ export function matrixRank(a: TensorLike, tol?: number): number {
   const [v] = promoteFloat(a) as [Value]
   const { m, n } = matrixShape(v.shape, 'matrixRank')
   const s = toFlat(svdvals(v))
-  const largest = Math.max(0, ...s)
+  const largest = s.length === 0 ? 0 : Math.max(0, maxOf(s))
   const threshold = tol ?? largest * Math.max(m, n) * 2.220446049250313e-16
   return s.filter((x) => x > threshold).length
 }

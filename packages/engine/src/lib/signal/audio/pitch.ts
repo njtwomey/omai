@@ -101,7 +101,8 @@ function cmnd(frame: Float64Array, minPeriod: number, maxPeriod: number): Float6
     running += d[k] ?? 0
     mean[k] = running / k
   }
-  for (let k = minPeriod; k <= maxPeriod; k++) out[k - minPeriod] = (d[k] ?? 0) / ((mean[k] ?? 0) + Number.MIN_VALUE * 2 ** 52)
+  for (let k = minPeriod; k <= maxPeriod; k++)
+    out[k - minPeriod] = (d[k] ?? 0) / ((mean[k] ?? 0) + Number.MIN_VALUE * 2 ** 52)
   return out
 }
 
@@ -408,7 +409,10 @@ export function harmonicProductSpectrum(
   const harmonics = options.harmonics ?? 5
   const nfft = options.nfft ?? 2 ** Math.ceil(Math.log2(4 * x.length))
   const w = (options.window ?? true) ? toFlat(getWindow('hann', x.length)) : new Array<number>(x.length).fill(1)
-  const spec = rfft(Float64Array.from(x, (v, i) => v * (w[i] ?? 1)), nfft)
+  const spec = rfft(
+    Float64Array.from(x, (v, i) => v * (w[i] ?? 1)),
+    nfft,
+  )
   const re = toFlat(spec.re)
   const im = toFlat(spec.im)
   const mag = Float64Array.from(re, (r, k) => Math.hypot(r, im[k] ?? 0))
@@ -422,6 +426,9 @@ export function harmonicProductSpectrum(
   let best = 1
   for (let k = 2; k < len; k++) if ((hps[k] ?? 0) > (hps[best] ?? 0)) best = k
   const freqs = Float64Array.from({ length: len }, (_, k) => (k * sr) / nfft)
-  return { spectrum: fromStorage(hps, [len], 'float64'), frequencies: fromStorage(freqs, [len], 'float64'), f0: freqs[best] ?? 0 }
+  return {
+    spectrum: fromStorage(hps, [len], 'float64'),
+    frequencies: fromStorage(freqs, [len], 'float64'),
+    f0: freqs[best] ?? 0,
+  }
 }
-
