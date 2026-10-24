@@ -1,4 +1,88 @@
 @import "tailwindcss";
+/* The site and whitebox-render's React components carry the class names Tailwind generates. */
 @source "../../";
 @source "../../../../packages/render/src";
 @custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Page tokens as CSS variables, light and dark. whitebox-render's React controls read the `--wb-*` variables
+ * directly (`bg-(--wb-surface)`); the apps use the Tailwind colours mapped from them below (`bg-surface`).
+ */
+:root {
+  --wb-bg: #ffffff;
+  --wb-fg: #171717;
+  --wb-surface: #f7f7f8;
+  --wb-raised: #ffffff;
+  --wb-muted: #6b6b70;
+  --wb-line: #e4e4e7;
+  --wb-accent: #1f77b4;
+  --wb-accent-fg: #ffffff;
+  --wb-accent-soft: #e3eef8;
+  --wb-danger: #c62828;
+  --wb-ring: #1f77b4;
+  --wb-code-keyword: #8e3bb5;
+  --wb-code-string: #2e7d32;
+  --wb-code-number: #b45309;
+  --wb-code-comment: #8a8a90;
+  --wb-code-type: #1f6fb4;
+}
+
+.dark {
+  --wb-bg: #0c0c0e;
+  --wb-fg: #ececef;
+  --wb-surface: #16161a;
+  --wb-raised: #1d1d22;
+  --wb-muted: #9a9aa3;
+  --wb-line: #2a2a31;
+  --wb-accent: #5aa9e6;
+  --wb-accent-fg: #0c0c0e;
+  --wb-accent-soft: #15283a;
+  --wb-danger: #ef6b6b;
+  --wb-ring: #5aa9e6;
+  --wb-code-keyword: #c792ea;
+  --wb-code-string: #a5d6a7;
+  --wb-code-number: #f6b26b;
+  --wb-code-comment: #6f6f78;
+  --wb-code-type: #82b1ff;
+}
+
+@theme inline {
+  --color-bg: var(--wb-bg);
+  --color-fg: var(--wb-fg);
+  --color-surface: var(--wb-surface);
+  --color-raised: var(--wb-raised);
+  --color-muted: var(--wb-muted);
+  --color-line: var(--wb-line);
+  --color-accent: var(--wb-accent);
+  --color-accent-fg: var(--wb-accent-fg);
+  --color-accent-soft: var(--wb-accent-soft);
+  --color-danger: var(--wb-danger);
+  --color-ring: var(--wb-ring);
+}
+
+html {
+  background: var(--wb-bg);
+  color: var(--wb-fg);
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wb-code .tok-keyword {
+  color: var(--wb-code-keyword);
+}
+.wb-code .tok-string {
+  color: var(--wb-code-string);
+}
+.wb-code .tok-number {
+  color: var(--wb-code-number);
+}
+.wb-code .tok-comment {
+  color: var(--wb-code-comment);
+  font-style: italic;
+}
+.wb-code .tok-type {
+  color: var(--wb-code-type);
+}
