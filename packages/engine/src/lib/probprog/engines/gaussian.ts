@@ -22,7 +22,6 @@ import {
   sub,
   swapaxes,
   type Tensor,
-  type TensorLike,
   take,
   toFlat,
   transpose,

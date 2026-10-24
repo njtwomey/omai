@@ -12,7 +12,6 @@ import {
   equal,
   eye,
   fromStorage,
-  item,
   mul,
   primalOf,
   reshape,
@@ -31,14 +30,7 @@ import {
   where,
 } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
-import {
-  enumeratedMarginals,
-  factorMarginals,
-  maxPlateNesting,
-  type NamedFactor,
-  nameLike,
-  traceFactors,
-} from '../_contract.ts'
+import { enumeratedMarginals, factorMarginals, type NamedFactor, nameLike, traceFactors } from '../_contract.ts'
 import { shiftedCategorical } from '../_discrete.ts'
 import { unexpanded } from '../_expand.ts'
 import { analyse, type ProgramAnalysis } from '../analysis.ts'
@@ -396,7 +388,7 @@ function sliceIndex(v: Value, axis: number, i: number): Value {
 /** The closed-form update of one parameter from the E-step's marginals. */
 function closedUpdate<D>(
   p: Problem<D>,
-  name: string,
+  _name: string,
   form: ClosedForm,
   current: Value,
   e: {
