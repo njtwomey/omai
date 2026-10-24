@@ -889,8 +889,9 @@ Reparameterisation comes in three forms:
 - `conjugacy.ts`: the conjugate table `CONJUGATES` (used by `probprog` to detect conjugacy), `conjugatePrior`,
   `conjugatePosterior` (17 likelihood-parameter pairs, including the multivariate normal mean, covariance and
   precision).
-- `divergences.ts`: analytic KL for family pairs, Monte Carlo fallback, Hellinger, Bhattacharyya, 2-Wasserstein
-  between Gaussians.
+- `divergences.ts`: `klDivergence` (closed forms for 26 family pairs, independent sums, shared-bijector invariance,
+  the exponential-family identity, then a Monte Carlo fallback), `klMonteCarlo`, `bhattacharyyaCoefficient`,
+  `bhattacharyyaDistance`, `hellinger`, `wasserstein2Gaussian` (normal and multivariate normal).
 - `families/links.ts`: `Link`, GLM link functions with inverses and first and second derivatives (`identity`, `log`,
   `logit`, `probit`, `cauchit`, `cloglog`, `loglog`, `inverse`, `inverseSquared`, `sqrt`, `power`,
   `negativeBinomialLink`, `linkByName`), numerically guarded as statsmodels guards them.

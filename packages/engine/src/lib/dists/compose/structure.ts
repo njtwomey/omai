@@ -53,6 +53,12 @@ import {
 
 const isDiscrete = (s: Support): boolean => s.kind === 'integerInterval' || s.kind === 'boolean'
 
+/** A distribution made by {@link independent}, remembering its base. */
+export interface Independent extends Distribution {
+  readonly base: Distribution
+  readonly reinterpretedBatchRank: number
+}
+
 /**
  * Reinterpret the last `reinterpretedBatchRank` batch axes of a distribution as event axes
  * (torch.distributions.Independent): log densities and entropies sum over them, so a batch of independent coordinates
@@ -72,7 +78,7 @@ const isDiscrete = (s: Support): boolean => s.kind === 'integerInterval' || s.ki
  * Math.abs(item(d.logProb([0, 0])) + Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
-export function independent(base: Distribution, reinterpretedBatchRank = 1): Distribution {
+export function independent(base: Distribution, reinterpretedBatchRank = 1): Independent {
   const r = reinterpretedBatchRank
   const n = base.batchShape.length
   if (r < 0 || r > n)
@@ -90,7 +96,14 @@ export function independent(base: Distribution, reinterpretedBatchRank = 1): Dis
     mode: () => base.mode(),
     entropy: () => sumRightmost(base.entropy(), r),
   }
-  return defineDistribution(base.hasRsample ? { ...spec, rsample: (key, shape) => base.rsample(key, shape) } : spec)
+  const d = defineDistribution(base.hasRsample ? { ...spec, rsample: (key, shape) => base.rsample(key, shape) } : spec)
+  return { ...d, base, reinterpretedBatchRank: r }
+}
+
+/** A distribution made by {@link transformed}, remembering its base and bijector. */
+export interface Transformed extends Distribution {
+  readonly base: Distribution
+  readonly bijector: Bijector
 }
 
 /**
@@ -113,7 +126,7 @@ export function independent(base: Distribution, reinterpretedBatchRank = 1): Dis
  * item(d.cdf(1)) // => 0.5
  * ```
  */
-export function transformed(base: Distribution, bijector: Bijector | readonly Bijector[]): Distribution {
+export function transformed(base: Distribution, bijector: Bijector | readonly Bijector[]): Transformed {
   const b = 'forward' in bijector ? bijector : chain(bijector)
   const extra = Math.max(0, b.inputRank - base.eventShape.length)
   const inner = extra > 0 ? independent(base, extra) : base
@@ -155,7 +168,7 @@ export function transformed(base: Distribution, bijector: Bijector | readonly Bi
   const self: Distribution = defineDistribution(
     inner.hasRsample ? { ...withCdf, rsample: (key, shape) => b.forward(inner.rsample(key, shape)) } : withCdf,
   )
-  return self
+  return { ...self, base: inner, bijector: b }
 }
 
 /** Bounds for {@link truncated} and {@link censored}; either may be omitted. */

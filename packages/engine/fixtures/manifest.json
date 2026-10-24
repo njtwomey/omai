@@ -120,6 +120,14 @@
       "cases": 103
     },
     {
+      "fixture": "dists/divergences.json",
+      "source": "oracle/cases/dists/divergences.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 22
+    },
+    {
       "fixture": "dists/families/dispersion.json",
       "source": "oracle/cases/dists/families/dispersion.py",
       "reference": {
