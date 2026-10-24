@@ -1,4 +1,3 @@
-import { WhiteboxError } from '../../base/index.ts'
 import { pinv } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, randint } from '../../random/index.ts'
 import { asTensor, fromStorage, matmul, type TensorLike, toFlat } from '../../tensor/index.ts'
@@ -312,7 +311,6 @@ export function anchors(
   const batch = options.batchSize ?? 32
   const maxSamples = options.maxSamples ?? 2048
   const maxLength = Math.min(options.maxLength ?? d, d)
-  const key = keyFor(options, 'anchors')
   const target = toFlat(predict(fromStorage(Float64Array.from(xv), [1, d], 'float64')))[0] ?? 0
   // The bin of x on each feature: [lower, upper] from training quantiles.
   const bounds = Array.from({ length: d }, (_, j) => {
