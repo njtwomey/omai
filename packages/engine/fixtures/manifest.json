@@ -2069,6 +2069,15 @@
       "cases": 72
     },
     {
+      "fixture": "signal/image/filters.json",
+      "source": "oracle/cases/signal/image/filters.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 57
+    },
+    {
       "fixture": "signal/lomb_scargle.json",
       "source": "oracle/cases/signal/lomb_scargle.py",
       "reference": {

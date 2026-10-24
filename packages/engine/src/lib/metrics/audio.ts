@@ -1,19 +1,57 @@
 import { argmaxOf, type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { solveToeplitz } from '../numerics/linalg/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
-import { type TensorLike, toFlat } from '../tensor/index.ts'
-import {
-  framePowers,
-  frameStarts,
-  hanning,
-  kaiser,
-  periodicHann,
-  resamplePoly,
-  signal,
-  signals,
-  sinc,
-} from './_audio.ts'
+import { dtw, firwin, hann, resamplePoly, stft } from '../signal/index.ts'
+import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
+
+/** A mono signal as a Float64Array. */
+function signal(name: string, x: TensorLike): Float64Array {
+  const m = matrix(x)
+  if (m.shape.length !== 1) throw new WhiteboxError('shape', `${name}: signals are 1-D`)
+  return m.data
+}
+
+/** Signals `[T]` or `[S, T]` as rows. */
+function signals(name: string, x: TensorLike): Float64Array[] {
+  const m = matrix(x)
+  if (m.shape.length === 1) return [m.data]
+  if (m.shape.length !== 2) throw new WhiteboxError('shape', `${name}: signals are [T] or [S, T]`)
+  const t = m.shape[1] ?? 0
+  return Array.from({ length: m.shape[0] ?? 0 }, (_, i) => m.data.slice(i * t, (i + 1) * t))
+}
+
+/** Frame offsets 0, hop, 2 hop, ... with each frame inside the signal (strict: range(0, n - m, hop), as pystoi). */
+function frameStarts(n: number, m: number, hop: number, strict = false): number[] {
+  const out: number[] = []
+  for (let s = 0; strict ? s < n - m : s <= n - m; s += hop) out.push(s)
+  return out
+}
+
+/** Power spectra |rfft(w * frame, nfft)|^2 * scale of the frames at 0, hop, ... (signal's unscaled, unpadded STFT). */
+function framePowers(
+  x: Float64Array,
+  window: Float64Array,
+  nfft: number,
+  hop: number,
+  strict: boolean,
+  scale = 1,
+): Float64Array[] {
+  const m = window.length
+  const frames = frameStarts(x.length, m, hop, strict).length
+  if (frames === 0) return []
+  const z = stft(x, { window, nperseg: m, noverlap: m - hop, nfft, boundary: 'none', padded: false, scaling: 'none' })
+  const re = primalOf(z.values.re).data
+  const im = primalOf(z.values.im).data
+  const bins = Math.floor(nfft / 2) + 1
+  const total = z.values.re.shape[1] ?? 0
+  return Array.from({ length: frames }, (_, f) =>
+    Float64Array.from(
+      { length: bins },
+      (_, k) => (Number(re[k * total + f] ?? 0) ** 2 + Number(im[k * total + f] ?? 0) ** 2) * scale,
+    ),
+  )
+}
 
 const spec = (
   name: string,
@@ -323,21 +361,18 @@ function resampleOct(x: Float64Array, p: number, q: number): Float64Array {
   const rejection = 60
   const l = Math.ceil((rejection - 8) / (28.714 * roll))
   const beta = 0.1102 * (rejection - 8.7)
-  const w = kaiser(2 * l + 1, beta)
-  const h = Float64Array.from(w, (v, i) => v * 2 * pp * stop * sinc(2 * stop * (i - l)))
-  const sum = h.reduce((a, b) => a + b, 0)
-  return resamplePoly(
-    x,
-    p,
-    q,
-    Float64Array.from(h, (v) => v / sum),
-  )
+  // A Kaiser-windowed sinc low-pass normalised to unit DC gain: firwin with cutoff 2 stop (fractions of Nyquist).
+  const h = firwin(2 * l + 1, 2 * stop, { window: ['kaiser', beta] })
+  return Float64Array.from(primalOf(resamplePoly(x, p, q, { window: h })).data, Number)
 }
+
+/** pystoi's frame window: numpy.hanning(framelen + 2)[1:-1]. */
+const stoiWindow = (): Float64Array => Float64Array.from(toFlat(hann(STOI_FRAME + 2)).slice(1, -1))
 
 /** pystoi's remove_silent_frames: drop frames more than 40 dB below the loudest clean frame, then overlap-add. */
 function removeSilentFrames(x: Float64Array, y: Float64Array): [Float64Array, Float64Array] {
   const hop = STOI_FRAME / 2
-  const w = hanning(STOI_FRAME + 2).slice(1, -1)
+  const w = stoiWindow()
   const starts = frameStarts(x.length, STOI_FRAME, hop, true)
   const energies = starts.map((s) => {
     let e = 0
@@ -360,8 +395,7 @@ function removeSilentFrames(x: Float64Array, y: Float64Array): [Float64Array, Fl
 
 /** One-third octave band envelopes sqrt(OBM |X|^2): bands by frames. */
 function bandEnvelopes(x: Float64Array, obm: readonly Float64Array[]): Float64Array[] {
-  const w = hanning(STOI_FRAME + 2).slice(1, -1)
-  const powers = framePowers(x, w, STOI_NFFT, frameStarts(x.length, STOI_FRAME, STOI_FRAME / 2, true))
+  const powers = framePowers(x, stoiWindow(), STOI_NFFT, STOI_FRAME / 2, true)
   return obm.map((band) => Float64Array.from(powers, (pw) => Math.sqrt(dot(band, pw))))
 }
 
@@ -487,11 +521,10 @@ export const logSpectralDistance: MetricFunction<[TensorLike, TensorLike, LsdOpt
     const nfft = options.nfft ?? 512
     const hop = options.hop ?? 128
     const eps = options.eps ?? 1e-10
-    const w = periodicHann(nfft)
+    const w = Float64Array.from(toFlat(hann(nfft, { sym: false })))
     const scale = 1 / w.reduce((a, b) => a + b, 0) ** 2
-    const starts = frameStarts(t.length, nfft, hop)
-    const pt = framePowers(t, w, nfft, starts, scale)
-    const pp = framePowers(p, w, nfft, starts, scale)
+    const pt = framePowers(t, w, nfft, hop, false, scale)
+    const pp = framePowers(p, w, nfft, hop, false, scale)
     let sum = 0
     for (const [f, a] of pt.entries()) {
       const b = pp[f] ?? new Float64Array(a.length)
@@ -550,28 +583,13 @@ export const melCepstralDistortion: MetricFunction<
       for (let i = 0; i < ta; i++) s += dist(i, i)
       return metricResult(name, s / ta, ta)
     }
-    const cost = Array.from({ length: ta + 1 }, () => new Float64Array(tb + 1).fill(Number.POSITIVE_INFINITY))
-    const at = (i: number, j: number): number => cost[i]?.[j] ?? Number.POSITIVE_INFINITY
-    ;(cost[0] as Float64Array)[0] = 0
-    for (let i = 1; i <= ta; i++) {
-      const row = cost[i] as Float64Array
-      for (let j = 1; j <= tb; j++) row[j] = dist(i - 1, j - 1) + Math.min(at(i - 1, j - 1), at(i - 1, j), at(i, j - 1))
-    }
-    let i = ta
-    let j = tb
-    let steps = 1
-    while (i > 1 || j > 1) {
-      const diag = at(i - 1, j - 1)
-      const up = at(i - 1, j)
-      const left = at(i, j - 1)
-      if (diag <= up && diag <= left) {
-        i--
-        j--
-      } else if (up <= left) i--
-      else j--
-      steps++
-    }
-    return metricResult(name, at(ta, tb) / steps, steps)
+    // Symmetric1 DTW (unit weights) on the scaled cepstra without c0: the mean distance along the warping path.
+    const features = (m: { readonly data: Float64Array }, t: number): number[][] =>
+      Array.from({ length: t }, (_, i) =>
+        Array.from({ length: d - first }, (_, c) => k * (m.data[i * d + first + c] ?? 0)),
+      )
+    const r = dtw(features(a, ta), features(b, tb), { stepPattern: 'symmetric1' })
+    return metricResult(name, r.distance / r.index1.length, r.index1.length)
   },
 )
 

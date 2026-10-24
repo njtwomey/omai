@@ -1,19 +1,110 @@
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
-import {
-  correlateValid,
-  croppedMean,
-  decimate,
-  gaussianFilter,
-  gaussianWindow,
-  type Plane,
-  pairOfPlanes,
-  planeMean,
-  separable,
-  uniformFilter,
-  zip,
-} from './_images.ts'
+import { convNd } from '../numerics/convolution/index.ts'
+import { image as filters } from '../signal/index.ts'
+import { fromStorage, primalOf, reshape, type TensorLike, type Value } from '../tensor/index.ts'
 import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
+
+// Images are handled as channel planes; the filtering itself is signal's (scipy.ndimage semantics).
+
+/** A 2-D plane of values. */
+interface Plane {
+  readonly h: number
+  readonly w: number
+  readonly data: Float64Array
+}
+
+/** The channel planes of an image `[H, W]` or `[H, W, C]` (channels last). */
+function planes(name: string, image: TensorLike): Plane[] {
+  const m = matrix(image)
+  const [h = 0, w = 0, c = 1] = m.shape
+  if (m.shape.length < 2 || m.shape.length > 3)
+    throw new WhiteboxError('shape', `${name}: images are [H, W] or [H, W, C]`)
+  return Array.from({ length: c }, (_, k) => ({
+    h,
+    w,
+    data: Float64Array.from({ length: h * w }, (_, i) => m.data[i * c + k] ?? 0),
+  }))
+}
+
+/** Planes of two images, checked to have the same shape. */
+function pairOfPlanes(name: string, a: TensorLike, b: TensorLike): [Plane[], Plane[]] {
+  const pa = planes(name, a)
+  const pb = planes(name, b)
+  if (pa.length !== pb.length || pa[0]?.h !== pb[0]?.h || pa[0]?.w !== pb[0]?.w)
+    throw new WhiteboxError('shape', `${name}: images differ in shape`)
+  return [pa, pb]
+}
+
+/** Elementwise combination of planes. */
+function zip(a: Plane, b: Plane, f: (x: number, y: number) => number): Plane {
+  return { h: a.h, w: a.w, data: Float64Array.from(a.data, (x, i) => f(x, b.data[i] ?? 0)) }
+}
+
+/** Apply a tensor filter to a plane. */
+function filterPlane(p: Plane, f: (t: Value) => Value): Plane {
+  const out = primalOf(f(fromStorage(p.data, [p.h, p.w], 'float64')))
+  return { h: out.shape[0] ?? 0, w: out.shape[1] ?? 0, data: Float64Array.from(out.data, Number) }
+}
+
+/** Valid 2-D correlation with a kernel `[k][k]` (scipy.signal.convolve2d with the kernel rotated, mode 'valid'). */
+function correlateValid(p: Plane, kernel: readonly (readonly number[])[]): Plane {
+  return filterPlane(p, (t) => {
+    const kh = kernel.length
+    const kw = kernel[0]?.length ?? 0
+    const w = fromStorage(Float64Array.from(kernel.flat()), [1, 1, kh, kw], 'float64')
+    const r = convNd(reshape(t, [1, 1, p.h, p.w]), w, { padding: 'valid' })
+    return reshape(r, r.shape.slice(2))
+  })
+}
+
+/** A normalised Gaussian window `[n][n]` as MATLAB's fspecial (sewar), tiny weights zeroed. */
+function gaussianWindow(n: number, sigma: number): number[][] {
+  // numpy.mgrid[-n//2 + 1 : n//2 + 1]: floor division, so even sizes run from -n/2 + 1 to n/2.
+  const coords = Array.from({ length: n }, (_, i) => Math.floor(-n / 2) + 1 + i)
+  const g = coords.map((y) => coords.map((x) => Math.exp(-(x * x + y * y) / (2 * sigma * sigma))))
+  let max = 0
+  for (const row of g) for (const v of row) max = Math.max(max, v)
+  let total = 0
+  for (const row of g)
+    for (const [j, v] of row.entries()) {
+      const kept = v < Number.EPSILON * max ? 0 : v
+      row[j] = kept
+      total += kept
+    }
+  return g.map((row) => row.map((v) => v / total))
+}
+
+/** The mean of a plane after cropping `s` cells from every border. */
+function croppedMean(p: Plane, s: number): number {
+  let sum = 0
+  let n = 0
+  for (let y = s; y < p.h - s; y++) {
+    for (let x = s; x < p.w - s; x++) {
+      sum += p.data[y * p.w + x] ?? 0
+      n++
+    }
+  }
+  return sum / n
+}
+
+/** The mean of a plane. */
+function planeMean(p: Plane): number {
+  return p.data.reduce((a, b) => a + b, 0) / p.data.length
+}
+
+/** Every other row and column (x[::2, ::2]). */
+function decimate(p: Plane): Plane {
+  const h = Math.ceil(p.h / 2)
+  const w = Math.ceil(p.w / 2)
+  return {
+    h,
+    w,
+    data: Float64Array.from({ length: h * w }, (_, i) => p.data[2 * Math.floor(i / w) * p.w + 2 * (i % w)] ?? 0),
+  }
+}
+
+/** scipy.ndimage.uniform_filter of a plane (reflect borders). */
+const uniformFilter = (p: Plane, size: number): Plane => filterPlane(p, (t) => filters.uniformFilter(t, size))
 
 const spec = (name: string, direction: 'higher' | 'lower', range: readonly [number, number]): MetricSpec => ({
   name,
@@ -115,7 +206,8 @@ function ssimPlane(x: Plane, y: Plane, o: SsimOptions, r: number): number {
   const sigma = o.sigma ?? 1.5
   const truncate = 3.5
   const win = gaussian ? 2 * Math.floor(truncate * sigma + 0.5) + 1 : (o.winSize ?? 7)
-  const filter = (p: Plane): Plane => (gaussian ? gaussianFilter(p, sigma, truncate) : uniformFilter(p, win))
+  const filter = (p: Plane): Plane =>
+    gaussian ? filterPlane(p, (t) => filters.gaussianFilter(t, sigma, { truncate })) : uniformFilter(p, win)
   const np = win * win
   const covNorm = (o.useSampleCovariance ?? true) ? np / (np - 1) : 1
   const ux = filter(x)
@@ -395,7 +487,10 @@ export const universalImageQualityIndex: MetricFunction<
     const total = raw.reduce((s, v) => s + v, 0)
     const kernel = raw.map((v) => v / total)
     const pad = (k - 1) >> 1
-    const filter = (p: Plane): Plane => separable(p, kernel, pad, 'reflect')
+    // numpy 'reflect' borders (ndimage 'mirror'); the window starts pad samples before each pixel.
+    const border = { mode: 'mirror', origin: pad - Math.floor(k / 2) } as const
+    const filter = (p: Plane): Plane =>
+      filterPlane(p, (t) => filters.correlate1d(filters.correlate1d(t, kernel, 1, border), kernel, 0, border))
     const values: number[] = []
     for (const [ch, p] of a.entries()) {
       const t = b[ch] as Plane

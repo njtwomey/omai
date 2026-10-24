@@ -1796,8 +1796,8 @@ none of those weights.
   stuff classes); per-class mean IoU (`meanIou`).
 - `image-quality.ts`: MSE (`imageMeanSquaredError`), PSNR, SSIM (skimage's uniform and Gaussian windows), MS-SSIM,
   VIF (pixel domain), LPIPS and DISTS from supplied features (`lpipsFromFeatures`, `distsFromFeatures`), SAM, ERGAS,
-  RASE, UIQI; images `[H, W]` or `[H, W, C]`, channels last. TODO: move the private filters of `_images.ts` to
-  `signal/` once that domain exists.
+  RASE, UIQI; images `[H, W]` or `[H, W, C]`, channels last; filtering by `signal/image` (uniform and Gaussian
+  filters, ndimage correlation) and `numerics/convolution` (valid correlation).
 - `generative.ts`: Inception score (from class probabilities), FID (`frechetDistance`) and KID
   (`kernelInceptionDistance`) from features, precision, recall, density and coverage
   (`precisionRecallDensityCoverage`), CLIPScore from embeddings (`clipScore`), Vendi score (any order).
@@ -1810,9 +1810,9 @@ none of those weights.
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
-  supplied model (torchmetrics' windows and calibration, 16 kHz). Private `_audio.ts` (windows, `upfirdn`,
-  `resamplePoly`, framed power spectra). TODO: PESQ (ITU-T P.862), whose reference implementation is ITU-copyrighted
-  C that cannot be ported under the licence; move `_audio.ts` to `signal/` once it exists.
+  supplied model (torchmetrics' windows and calibration, 16 kHz); windows, FIR design, polyphase resampling and
+  framed spectra come from `signal`. TODO: PESQ (ITU-T P.862), whose reference implementation is ITU-copyrighted C
+  that cannot be ported under the licence.
 
 ### 4.29 `losses/` (tier 8): differentiable objectives (torch.nn losses, optax losses)
 
