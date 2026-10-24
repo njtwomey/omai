@@ -1,0 +1,5 @@
+{
+  "tier": 7,
+  "summary": "Search: state-space search (uninformed, informed), local, evolutionary and swarm search, adversarial search, constraint satisfaction, planning and refinement search, all traced.",
+  "inline": ["planning", "evolutionary"]
+}

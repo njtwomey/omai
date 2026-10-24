@@ -12,14 +12,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-All routine work goes through `make` (it wraps mise, pnpm and uv). Run `make check` before declaring work finished.
+All routine work goes through `make` (it wraps mise, pnpm and uv).
+- `make verify`: the gate for every commit and merge. It runs the checks that take seconds over the whole repo (barrels,
+  layering, lint, tsc), then only what the change touches: `vitest related` on the changed TypeScript (every test
+  importing it, transitively), the golden tests of changed fixtures, pyright and a fixture check of the changed oracle
+  case modules. Changes to shared infrastructure (dependencies, tool config, `scripts/`, the oracle's helpers) widen it
+  to everything. `BASE=<ref>` compares against something other than `main`.
+- While iterating, run just the files you are working on (one file:
+  `mise exec -- pnpm exec vitest run packages/engine/src/lib/tensor/ops/arithmetic.test.ts`; one test: add `-t "<name>"`).
+- `make check` and `make fixtures-check`: everything, every test and every fixture. A periodic full run (after a batch
+  of merges and before a release), not a per-commit gate.
 - `make setup`: install tools and dependencies.
-- `make check`: barrels, layering, lint, typecheck, tests.
-- `make test`: all Vitest projects. One file: `mise exec -- pnpm exec vitest run packages/engine/src/lib/tensor/ops/arithmetic.test.ts`.
-  One test by name: add `-t "<name>"`.
+- `make test`: all Vitest projects.
 - `make barrels`: regenerate `index.ts` files after adding or removing a file or folder (never edit them by hand).
 - `make layers`, `make lint`, `make format`, `make typecheck`.
-- `make fixtures`: regenerate golden fixtures from the Python oracle (`oracle/cases/...`); tests never run Python.
+- `make fixtures`: regenerate golden fixtures from the Python oracle (`oracle/cases/...`); tests never run Python. Scope
+  it to what you changed: `mise exec -- uv run --group oracle-core --group oracle-torch --group oracle-prob --group
+  oracle-rl python -m whitebox_oracle generate --only stats/tests/,kernels/` (comma-separated prefixes).
+  `make manifest` rebuilds `fixtures/manifest.json` from the fixture files (for merge conflicts) in under a second.
   Fixtures follow the standard in `docs/structure.md` section 9: prebuilt numpy/scipy/etc. functions as references, tiered
   tolerances (1e-12 exact, 1e-10 special functions and direct linear algebra, 1e-6 to 1e-8 iterative), no gradient
   fixtures (gradients are checked by `checkPrimitive`), and parity with the reference as the goal, not extra digits.

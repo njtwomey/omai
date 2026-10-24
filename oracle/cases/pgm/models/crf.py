@@ -7,7 +7,11 @@ log-likelihood with respect to the emissions (torch autograd), since log Z is th
 sklearn-crfsuite trains a CRF by L-BFGS with an L2 penalty on attribute dictionaries built from feature templates
 (the current word, the previous and next words, suffixes and a bias), with every state and transition feature, to
 a tight tolerance; the cases keep its weights (which CRFsuite reports to 6 decimals), its marginals and its
-predictions."""
+predictions.
+
+The CRF++ cases expand a CRF++ template (unigram `%x[row,col]` macros with `_B-k`/`_B+k` boundary values and a bare
+`B` line, which is CRF++'s label-pair transition) over word and suffix columns, following CRF++'s `apply_rule` and
+`get_index`, and train CRFsuite on the expanded features, with and without CRF++'s `-f 2` frequency cut-off."""
 
 from importlib.metadata import version
 from typing import cast
@@ -40,6 +44,97 @@ def item_features(words: list[str], t: int) -> dict[str, float]:
         out[f"w[-1]|w[0]={words[t - 1]}|{w}"] = 1.0
     if t + 1 < len(words):
         out[f"w[1]={words[t + 1]}"] = 1.0
+    return out
+
+
+CRFPP_TEMPLATE = """# Unigram
+U00:%x[-1,0]
+U01:%x[0,0]
+U02:%x[1,0]
+U03:%x[0,1]
+U04:%x[-1,0]/%x[0,0]
+U05:%x[0,0]/%x[1,1]
+
+# Bigram
+B
+"""
+
+
+def crfpp_cell(table: list[list[str]], pos: int, row: int, col: int) -> str:
+    """CRF++'s get_index: the cell, or _B-k before the sequence and _B+k after it."""
+    i = pos + row
+    if i < 0:
+        return f"_B-{-i}"
+    if i >= len(table):
+        return f"_B+{i - len(table) + 1}"
+    return table[i][col]
+
+
+def crfpp_expand(line: str, table: list[list[str]], pos: int) -> str:
+    """CRF++'s apply_rule for templates whose macros are %x[row,col]."""
+    out = ""
+    i = 0
+    while i < len(line):
+        if line.startswith("%x[", i):
+            end = line.index("]", i)
+            row, col = (int(v) for v in line[i + 3 : end].split(","))
+            out += crfpp_cell(table, pos, row, col)
+            i = end + 1
+        else:
+            out += line[i]
+            i += 1
+    return out
+
+
+def crfpp_cases() -> list[Case]:
+    lines = [ln for ln in CRFPP_TEMPLATE.split("\n") if ln and ln[0] not in " #"]
+    unigram = [ln for ln in lines if ln[0] == "U"]
+    tables = [[[w, w[-2:]] for w, _ in s] for s in SENTENCES]
+    X = [[{crfpp_expand(ln, tab, t): 1.0 for ln in unigram} for t in range(len(tab))] for tab in tables]
+    Y = [[tag for _, tag in s] for s in SENTENCES]
+    out: list[Case] = []
+    for min_freq in [1, 2]:
+        counts: dict[str, int] = {}
+        for seq in X:
+            for item in seq:
+                for f in item:
+                    counts[f] = counts.get(f, 0) + 1
+        Xf = [[{f: v for f, v in item.items() if counts[f] >= min_freq} for item in seq] for seq in X]
+        crf = sklearn_crfsuite.CRF(
+            algorithm="lbfgs",
+            c1=0.0,
+            c2=0.5,
+            max_iterations=10000,
+            epsilon=1e-14,
+            delta=1e-14,
+            period=50,
+            all_possible_transitions=True,
+            all_possible_states=True,
+        )
+        crf.fit(Xf, Y)
+        state_features = cast(dict[tuple[str, str], float], crf.state_features_)
+        transition_features = cast(dict[tuple[str, str], float], crf.transition_features_)
+        test = [["the", "he"], ["big", "ig"], ["cat", "at"], ["sleeps", "ps"]]
+        Xt = [{crfpp_expand(ln, test, t): 1.0 for ln in unigram} for t in range(len(test))]
+        out.append(
+            case(
+                f"crfpp/f={min_freq}",
+                "crfpp",
+                [],
+                np.array(0.0),
+                template=CRFPP_TEMPLATE,
+                tables=tables,
+                y=Y,
+                c2=0.5,
+                minFrequency=min_freq,
+                labels=[str(c) for c in cast(list[str], crf.classes_)],
+                expanded=X,
+                state={f"{a}|{label}": float(w) for (a, label), w in state_features.items()},
+                transition={f"{a}|{b}": float(w) for (a, b), w in transition_features.items()},
+                test=test,
+                prediction=[str(p) for p in cast(list[list[str]], crf.predict([Xt]))[0]],
+            )
+        )
     return out
 
 
@@ -113,4 +208,4 @@ def cases() -> list[Case]:
                 prediction=[str(p) for p in cast(list[list[str]], crf.predict(test))[0]],
             )
         )
-    return out
+    return out + crfpp_cases()

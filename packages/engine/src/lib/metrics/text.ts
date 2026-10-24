@@ -1,6 +1,13 @@
 import { type MetricResult, type MetricSpec, maxOf, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
-import { editCounts, lcsTable, ngramCounts, overlap, total } from './_sequences.ts'
+import {
+  editCounts,
+  lcsTable,
+  ngramCounts,
+  clippedOverlap as overlap,
+  porterStem,
+  countTotal as total,
+} from '../text/index.ts'
 import { terEdits } from './_ter.ts'
 import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
 
@@ -614,10 +621,10 @@ export const translationEditRate: MetricFunction<[References, Texts, TerOptions?
 /** Options of the ROUGE scores. */
 export interface RougeOptions {
   /**
-   * A stemmer applied to tokens longer than three characters, as rouge-score's `use_stemmer` applies Porter's.
-   * TODO: default to the Porter stemmer of `text/stem.ts` once the text domain exists.
+   * Stem tokens longer than three characters: `true` applies nltk's Porter stemmer (`text.porterStem`), as
+   * rouge-score's `use_stemmer`; a function applies that stemmer instead. Default false.
    */
-  readonly stem?: (token: string) => string
+  readonly stem?: boolean | ((token: string) => string)
 }
 
 /** rouge-score's tokeniser: lowercase, non-alphanumerics to spaces, split, optionally stem. */
@@ -626,8 +633,8 @@ function rougeTokens(text: string, options: RougeOptions): string[] {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .split(/\s+/)
-  const stem = options.stem
-  const stemmed = stem === undefined ? tokens : tokens.map((t) => (t.length > 3 ? stem(t) : t))
+  const stem = options.stem === true ? (t: string): string => porterStem(t) : options.stem
+  const stemmed = typeof stem === 'function' ? tokens.map((t) => (t.length > 3 ? stem(t) : t)) : tokens
   return stemmed.filter((t) => /^[a-z0-9]+$/.test(t))
 }
 

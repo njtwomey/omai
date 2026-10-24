@@ -24,6 +24,7 @@ describe('sampling matches the analytic moments', () => {
     ['fDistribution', D.fDistribution(10, 20)],
     ['noncentralChi2', D.noncentralChi2(3, 2)],
     ['noncentralT', D.noncentralT(12, 1.5)],
+    ['noncentralF', D.noncentralF(5, 30, 3)],
   ]
   for (const [name, d] of families) {
     it(name, () => {
