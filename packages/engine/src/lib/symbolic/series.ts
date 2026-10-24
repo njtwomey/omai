@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
+import { bounded } from './_budget.ts'
 import {
   MINUS_ONE,
   makeAdd,
@@ -15,7 +16,17 @@ import { makeFn } from './_functions.ts'
 import { rat } from './_rational.ts'
 import { cancel } from './_rational-functions.ts'
 import { LOG_T, type S, seriesAt0, seriesToExpr } from './_series.ts'
-import { asExpr, type Derivation, type Expr, type ExprLike, type ExprSym, type Step, substitute, sym } from './expr.ts'
+import {
+  asExpr,
+  type Derivation,
+  type Expr,
+  type ExprLike,
+  type ExprSym,
+  type Step,
+  substitute,
+  sym,
+  type WorkBudget,
+} from './expr.ts'
 
 /** Direction of approach: from above (`'+'`) or below (`'-'`). */
 export type Direction = '+' | '-'
@@ -73,24 +84,33 @@ function backToX(s: S, f: Frame): Expr {
  * @param x0 - The expansion point (default 0; `oo` for infinity).
  * @param n - The order of the remainder: terms up to (x - x0)^(n-1) (default 6).
  * @param dir - Direction (default `'+'`).
+ * @param budget - Work limits (see {@link WorkBudget}).
  * @returns The series plus O((x - x0)^n).
  * @throws WhiteboxError with code `not-implemented` at essential singularities and branch points needing
- *   fractional powers (Puiseux series).
+ *   fractional powers (Puiseux series), and with code `convergence` when the work budget runs out (coefficients
+ *   that grow too large to normalise); no partial series is returned, since its order would be wrong.
  * @example
  * ```ts
  * import { parse, series, sym, toText } from 'whitebox-engine/symbolic'
  * toText(series(parse('sin(x)'), sym('x'))) // => 'x - x**3/6 + x**5/120 + O(x**6)'
  * toText(series(parse('1/sin(x)'), sym('x'), 0, 4)) // => '1/x + x/6 + 7*x**3/360 + O(x**4)'
+ * series(parse('exp(sin(x))'), sym('x'), 0, 8, '+', { steps: 100 }) // => throws convergence
  * ```
  */
-export function series(e: Expr, x: ExprSym, x0: ExprLike = 0, n = 6, dir: Direction = '+'): Expr {
-  const p = asExpr(x0)
-  const [s, f] = expansion(e, x, p, n, dir)
-  const order =
-    p.key === OO.key || p.key === NEG_INF.key
-      ? makeOrder(makePow(x, numFromRational(rat(BigInt(-n)))), x, p)
-      : makeOrder(makePow(isZeroPoint(p) ? x : f.back, numFromRational(rat(BigInt(n)))), x, p)
-  return makeAdd([backToX(s, f), order])
+export function series(e: Expr, x: ExprSym, x0: ExprLike = 0, n = 6, dir: Direction = '+', budget?: WorkBudget): Expr {
+  return bounded(
+    'series',
+    () => {
+      const p = asExpr(x0)
+      const [s, f] = expansion(e, x, p, n, dir)
+      const order =
+        p.key === OO.key || p.key === NEG_INF.key
+          ? makeOrder(makePow(x, numFromRational(rat(BigInt(-n)))), x, p)
+          : makeOrder(makePow(isZeroPoint(p) ? x : f.back, numFromRational(rat(BigInt(n)))), x, p)
+      return makeAdd([backToX(s, f), order])
+    },
+    budget,
+  )
 }
 
 function isZeroPoint(p: Expr): boolean {
@@ -105,16 +125,29 @@ function isZeroPoint(p: Expr): boolean {
  * @param x0 - The expansion point.
  * @param n - The order.
  * @param dir - Direction.
+ * @param budget - Work limits, as for series.
  * @returns The series and its steps.
+ * @throws WhiteboxError with code `convergence` when the work budget runs out.
  * @example
  * ```ts
  * import { parse, seriesSteps, sym } from 'whitebox-engine/symbolic'
  * seriesSteps(parse('exp(sin(x))'), sym('x'), 0, 4).steps.map((s) => s.rule) // => ['series of sin', 'series of exp']
  * ```
  */
-export function seriesSteps(e: Expr, x: ExprSym, x0: ExprLike = 0, n = 6, dir: Direction = '+'): Derivation {
+export function seriesSteps(
+  e: Expr,
+  x: ExprSym,
+  x0: ExprLike = 0,
+  n = 6,
+  dir: Direction = '+',
+  budget?: WorkBudget,
+): Derivation {
+  return bounded('seriesSteps', () => seriesStepsBody(e, x, asExpr(x0), n, dir), budget)
+}
+
+function seriesStepsBody(e: Expr, x: ExprSym, x0: Expr, n: number, dir: Direction): Derivation {
   const steps: Step[] = []
-  const p = asExpr(x0)
+  const p = x0
   const [s, f] = expansion(e, x, p, n, dir, steps)
   const back = (y: Expr): Expr =>
     substitute(y, [
@@ -148,9 +181,12 @@ export function seriesSteps(e: Expr, x: ExprSym, x0: ExprLike = 0, n = 6, dir: D
  * ```
  */
 export function taylor(e: Expr, x: ExprSym, x0: ExprLike = 0, n = 6): Expr {
-  const [s, f] = expansion(e, x, asExpr(x0), n, '+')
-  if (s.v < 0) throw new WhiteboxError('value', 'taylor: the expression has a pole here; use series for Laurent terms')
-  return backToX(s, f)
+  return bounded('taylor', () => {
+    const [s, f] = expansion(e, x, asExpr(x0), n, '+')
+    if (s.v < 0)
+      throw new WhiteboxError('value', 'taylor: the expression has a pole here; use series for Laurent terms')
+    return backToX(s, f)
+  })
 }
 
 /**
@@ -173,7 +209,11 @@ export function seriesCoefficients(
   x0: ExprLike = 0,
   n = 6,
 ): { start: number; coefficients: Expr[] } {
-  const [s] = expansion(e, x, asExpr(x0), n, '+')
+  return bounded('seriesCoefficients', () => coefficientsBody(e, x, asExpr(x0), n))
+}
+
+function coefficientsBody(e: Expr, x: ExprSym, x0: Expr, n: number): { start: number; coefficients: Expr[] } {
+  const [s] = expansion(e, x, x0, n, '+')
   if (s.c.some((c) => JSON.stringify(c.key).includes(LOG_T.key))) {
     throw new WhiteboxError('value', 'seriesCoefficients: the series has logarithmic terms')
   }
@@ -196,8 +236,10 @@ export function seriesCoefficients(
  * ```
  */
 export function residue(e: Expr, x: ExprSym, x0: ExprLike = 0): Expr {
-  const [s] = expansion(e, x, asExpr(x0), 0, '+')
-  return s.v <= -1 ? (s.c[-1 - s.v] ?? ZERO) : ZERO
+  return bounded('residue', () => {
+    const [s] = expansion(e, x, asExpr(x0), 0, '+')
+    return s.v <= -1 ? (s.c[-1 - s.v] ?? ZERO) : ZERO
+  })
 }
 
 /**
@@ -218,8 +260,11 @@ export function residue(e: Expr, x: ExprSym, x0: ExprLike = 0): Expr {
  * ```
  */
 export function pade(e: Expr, x: ExprSym, m: number, n: number, x0: ExprLike = 0): Expr {
-  const p = asExpr(x0)
-  const { start, coefficients } = seriesCoefficients(e, x, p, m + n + 1)
+  return bounded('pade', () => padeBody(e, x, m, n, asExpr(x0)))
+}
+
+function padeBody(e: Expr, x: ExprSym, m: number, n: number, p: Expr): Expr {
+  const { start, coefficients } = coefficientsBody(e, x, p, m + n + 1)
   if (start < 0) throw new WhiteboxError('value', 'pade: the expression has a pole at the expansion point')
   const c = (k: number): Expr => (k < start ? ZERO : (coefficients[k - start] ?? ZERO))
   // Solve sum_{j=1..n} q_j c_{k-j} = -c_k for k = m+1..m+n.

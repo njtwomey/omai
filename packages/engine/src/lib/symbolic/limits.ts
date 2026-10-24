@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
+import { attempt, bounded } from './_budget.ts'
 import { isInfinite, MINUS_ONE, makeAdd, makeMul, makePow, NAN, NEG_INF, OO, ZERO, ZOO } from './_canon.ts'
 import { makeFn } from './_functions.ts'
 import { children, hasSymbol, rawFn } from './_node.ts'
@@ -198,7 +199,9 @@ function oneSided(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] |
   try {
     // Series of floor, ceiling and sign would treat them as smooth; their jumps are handled by composition.
     if (hasDiscontinuity(e)) throw new WhiteboxError('not-implemented', 'limit: discontinuous function')
-    return fromSeries(e, x, x0, dir, steps)
+    // A series whose coefficients grow too large gives up its share of the work to the other methods.
+    const viaSeries = attempt(0.5, () => fromSeries(e, x, x0, dir, steps))
+    if (viaSeries !== undefined) return viaSeries
   } catch (err) {
     if (!(err instanceof WhiteboxError) || (err.code !== 'not-implemented' && err.code !== 'convergence')) throw err
   }
@@ -279,7 +282,7 @@ function limitImpl(e: Expr, x: ExprSym, x0v: ExprLike, dir: LimitDirection, step
  * @param dir - `'+'` (default), `'-'` or `'+-'`.
  * @returns The limit (possibly `oo`, `-oo`).
  * @throws WhiteboxError with code `value` when two-sided limits differ, `convergence` when the numeric check
- *   contradicts the result, `not-implemented` when no method applies.
+ *   contradicts the result or the work budget runs out, `not-implemented` when no method applies.
  * @example
  * ```ts
  * import { limit, oo, parse, sym, toText } from 'whitebox-engine/symbolic'
@@ -290,7 +293,7 @@ function limitImpl(e: Expr, x: ExprSym, x0v: ExprLike, dir: LimitDirection, step
  * ```
  */
 export function limit(e: Expr, x: ExprSym, x0: ExprLike, dir: LimitDirection = '+'): Expr {
-  return limitImpl(e, x, x0, dir, undefined)
+  return bounded('limit', () => limitImpl(e, x, x0, dir, undefined))
 }
 
 /**
@@ -308,7 +311,9 @@ export function limit(e: Expr, x: ExprSym, x0: ExprLike, dir: LimitDirection = '
  * ```
  */
 export function limitSteps(e: Expr, x: ExprSym, x0: ExprLike, dir: LimitDirection = '+'): Derivation {
-  const steps: Step[] = []
-  const result = limitImpl(e, x, x0, dir, steps)
-  return { result, steps }
+  return bounded('limitSteps', () => {
+    const steps: Step[] = []
+    const result = limitImpl(e, x, x0, dir, steps)
+    return { result, steps }
+  })
 }

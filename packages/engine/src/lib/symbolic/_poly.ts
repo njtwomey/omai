@@ -1,7 +1,9 @@
 // Sparse multivariate polynomials over the rationals (lex order, highest term first), dense univariate helpers, and
 // the conversion between expressions and polynomials over automatically chosen generators.
 import { WhiteboxError } from '../base/index.ts'
-import { HALF, isNumeric, makeAdd, makeMul, makePow, numFromRational, ONE, ratOf } from './_canon.ts'
+import { charge, chargeTerms } from './_budget.ts'
+import { asCoeffMul, HALF, isNumeric, makeAdd, makeMul, makePow, numFromRational, ONE, ratOf } from './_canon.ts'
+import { makeFn } from './_functions.ts'
 import { byKey, hasSymbol } from './_node.ts'
 import {
   bgcd,
@@ -19,6 +21,7 @@ import {
   rpow,
   rsub,
 } from './_rational.ts'
+import { CHECK_PRIME, mod, ratsToZ, type Z, zcoprimeModular, zgcd, zgcdPrimitive, zToRats } from './_zpoly.ts'
 import type { Expr, ExprSym } from './expr.ts'
 
 /** One term: exponent vector and non-zero coefficient. @internal */
@@ -49,11 +52,14 @@ function monoKey(e: readonly number[]): string {
 /** Build from unsorted terms (combining equal monomials). @internal */
 export function fromTerms(n: number, terms: Iterable<Term>): P {
   const m = new Map<string, Term>()
+  let count = 0
   for (const t of terms) {
+    count++
     const k = monoKey(t.e)
     const old = m.get(k)
     m.set(k, old === undefined ? t : { e: t.e, c: radd(old.c, t.c) })
   }
+  charge(count)
   const out = [...m.values()].filter((t) => t.c.n !== 0n)
   out.sort((a, b) => cmpMono(b.e, a.e))
   return { n, terms: out }
@@ -86,9 +92,42 @@ export function pIsConst(a: P): boolean {
   return a.terms.length === 0 || (a.terms.length === 1 && (a.terms[0] as Term).e.every((k) => k === 0))
 }
 
+/**
+ * Merge sorted term lists: a[from..] + (c * x^m) * b, in decreasing lex order with equal monomials combined (the
+ * product by a monomial keeps b's order, so no sort is needed).
+ */
+function mergeTerms(a: readonly Term[], from: number, b: readonly Term[], t: Term | undefined): Term[] {
+  charge(a.length - from + b.length)
+  const out: Term[] = []
+  let i = from
+  let j = 0
+  const bj = (k: number): Term => {
+    const s = b[k] as Term
+    return t === undefined ? s : { e: s.e.map((x, l) => x + (t.e[l] as number)), c: rmul(s.c, t.c) }
+  }
+  let next = j < b.length ? bj(j) : undefined
+  while (i < a.length || next !== undefined) {
+    const x = a[i]
+    if (next === undefined || (x !== undefined && cmpMono(x.e, next.e) > 0)) {
+      out.push(x as Term)
+      i++
+      continue
+    }
+    if (x === undefined || cmpMono(x.e, next.e) < 0) out.push(next)
+    else {
+      const c = radd(x.c, next.c)
+      if (c.n !== 0n) out.push({ e: x.e, c })
+      i++
+    }
+    j++
+    next = j < b.length ? bj(j) : undefined
+  }
+  return out
+}
+
 /** Sum. @internal */
 export function padd(a: P, b: P): P {
-  return fromTerms(a.n, [...a.terms, ...b.terms])
+  return { n: a.n, terms: mergeTerms(a.terms, 0, b.terms, undefined) }
 }
 
 /** Negation. @internal */
@@ -115,6 +154,7 @@ export function pmulTerm(a: P, t: Term): P {
 
 /** Product. @internal */
 export function pmul(a: P, b: P): P {
+  chargeTerms(a.terms.length * b.terms.length)
   const out: Term[] = []
   for (const s of a.terms)
     for (const t of b.terms) out.push({ e: s.e.map((k, i) => k + (t.e[i] as number)), c: rmul(s.c, t.c) })
@@ -180,21 +220,28 @@ function monoDivides(a: readonly number[], b: readonly number[]): boolean {
 /** Multivariate division by lex leading terms: a = q*b + r with no term of r divisible by lt(b). @internal */
 export function pdivmod(a: P, b: P): [P, P] {
   const lb = plt(b)
-  let r = a
-  let q = pzero(a.n)
-  let rem = pzero(a.n)
-  while (!pIsZero(r)) {
-    const lr = plt(r)
+  const minusB = b.terms.map((t) => ({ e: t.e, c: rneg(t.c) }))
+  // The leading terms of r decrease, so the quotient and remainder terms come out sorted.
+  let r: readonly Term[] = a.terms
+  let from = 0
+  const q: Term[] = []
+  const rem: Term[] = []
+  while (from < r.length) {
+    const lr = r[from] as Term
     if (monoDivides(lb.e, lr.e)) {
       const t: Term = { e: lr.e.map((k, i) => k - (lb.e[i] as number)), c: rdiv(lr.c, lb.c) }
-      q = padd(q, { n: a.n, terms: [t] })
-      r = psub(r, pmulTerm(b, t))
+      q.push(t)
+      r = mergeTerms(r, from, minusB, t)
+      from = 0
     } else {
-      rem = padd(rem, { n: a.n, terms: [lr] })
-      r = { n: r.n, terms: r.terms.slice(1) }
+      rem.push(lr)
+      from++
     }
   }
-  return [q, rem]
+  return [
+    { n: a.n, terms: q },
+    { n: a.n, terms: rem },
+  ]
 }
 
 /** Exact quotient a / b, or undefined when b does not divide a. @internal */
@@ -284,6 +331,51 @@ export function pcontentIn(a: P, i: number): P {
   return g
 }
 
+/** Distinct small evaluation points for the variables other than the one being tested, per attempt. */
+function evalPoint(i: number, attempt: number): bigint {
+  return BigInt(3 + ((7 * i + 11 * attempt) % 29))
+}
+
+/**
+ * The dense integer image of a (denominators cleared) in variable v, with the other variables at small points that
+ * differ per attempt, reduced modulo p when it is given.
+ * @internal
+ */
+export function pimage(a: P, v: number, attempt: number, p?: bigint): Z {
+  let den = 1n
+  for (const t of a.terms) den = blcm(den, t.c.d)
+  const out: Z = new Array<bigint>(pdeg(a, v) + 1).fill(0n)
+  charge(a.terms.length * a.n)
+  const red = (c: bigint): bigint => (p === undefined ? c : mod(c, p))
+  for (const t of a.terms) {
+    let c = red((t.c.n * den) / t.c.d)
+    t.e.forEach((k, i) => {
+      if (i !== v && k > 0) c = red(c * evalPoint(i, attempt) ** BigInt(k))
+    })
+    const k = t.e[v] as number
+    out[k] = red((out[k] as bigint) + c)
+  }
+  return out
+}
+
+/**
+ * Whether gcd(a, b) is certainly free of variable v: at a point where neither leading coefficient in v vanishes
+ * (modulo the check prime), the image of the gcd keeps its degree in v and divides both images, so a constant gcd
+ * of the images proves degree 0. False means "not proven".
+ */
+function gcdFreeOf(a: P, b: P, v: number): boolean {
+  const da = pdeg(a, v)
+  const db = pdeg(b, v)
+  if (da <= 0 || db <= 0) return true
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const ia = pimage(a, v, attempt, CHECK_PRIME)
+    const ib = pimage(b, v, attempt, CHECK_PRIME)
+    if (ia[da] === 0n || ib[db] === 0n) continue
+    return zgcd(ia, ib, CHECK_PRIME).length === 1
+  }
+  return false
+}
+
 /**
  * Greatest common divisor over the rationals, normalised to a primitive integer polynomial with positive leading
  * coefficient (as SymPy's `gcd`). Recursive on the variables with primitive pseudo-remainder sequences.
@@ -304,6 +396,9 @@ export function pgcd(a: P, b: P): P {
   }
   const vs = [...new Set([...pvars(a), ...pvars(b)])].sort((x, y) => x - y)
   const v = vs[0] as number
+  // Proven free of every variable (the common case of coprime inputs), the gcd is 1.
+  const freeOfV = vs.length > 1 && gcdFreeOf(a, b, v)
+  if (freeOfV && vs.slice(1).every((w) => gcdFreeOf(a, b, w))) return pconst(a.n, R1)
   if (vs.length === 1) {
     // One variable: Euclid on dense coefficients over the rationals, then the primitive integer form.
     return pnumericContent(fromDense(ugcd(toDense(a, v), toDense(b, v)), a.n, v))[1]
@@ -312,9 +407,11 @@ export function pgcd(a: P, b: P): P {
   if (pdeg(b, v) <= 0) return pgcd(pcontentIn(a, v), b)
   const ca = pcontentIn(a, v)
   const cb = pcontentIn(b, v)
+  const g = pgcd(ca, cb)
+  // The gcd of the primitive parts is 1 when the gcd is free of v: then it is the gcd of the contents.
+  if (freeOfV) return pnumericContent(g)[1]
   let pa = pdivExact(a, ca) ?? a
   let pb = pdivExact(b, cb) ?? b
-  const g = pgcd(ca, cb)
   if (pdeg(pa, v) < pdeg(pb, v)) [pa, pb] = [pb, pa]
   while (!pIsZero(pb) && pdeg(pb, v) > 0) {
     const r = pprem(pa, pb, v)
@@ -435,15 +532,16 @@ export function umonic(a: U): U {
 
 /** Monic gcd. @internal */
 export function ugcd(a: U, b: U): U {
-  // Monic remainders keep the rational coefficients small.
-  let x = umonic(a)
-  let y = umonic(b)
-  while (y.length > 0) {
-    const r = udivmod(x, y)[1]
-    x = y
-    y = umonic(r)
-  }
-  return umonic(x)
+  const at = utrim(a)
+  const bt = utrim(b)
+  if (at.length === 0) return umonic(bt)
+  if (bt.length === 0) return umonic(at)
+  if (at.length === 1 || bt.length === 1) return [R1]
+  const za = ratsToZ(at)
+  const zb = ratsToZ(bt)
+  // Coprime inputs (the common case) are recognised modulo a prime; otherwise a primitive remainder sequence over Z.
+  if (zcoprimeModular(za, zb)) return [R1]
+  return umonic(zToRats(zgcdPrimitive(za, zb)))
 }
 
 /** Evaluate at a rational. @internal */
@@ -477,6 +575,18 @@ export function usqf(f: U): [U, number][] {
 
 // ---------------------------------------------------------------------------------- expressions and polys
 
+/**
+ * SymPy's `decompose_power` for exponentials: exp(c*t) with rational c = p/q and |p| > 1 is the |p|-th power of
+ * exp(t/q) (of exp(-t/q) when p < 0), so that exp(2*x) and exp(x), or exp(3) and E, share a generator.
+ */
+function expPower(x: Expr): [Expr, number] | undefined {
+  if (x.kind !== 'fn' || x.name !== 'exp' || x.args.length !== 1) return undefined
+  const [c, t] = asCoeffMul(x.args[0] as Expr)
+  if (c.kind !== 'num' || c.n === 1n || c.n === -1n || c.n === 0n) return undefined
+  const base = makeFn('exp', [makeMul([numFromRational(rat(c.n < 0n ? -1n : 1n, c.d)), t])])
+  return [base, Number(c.n < 0n ? -c.n : c.n)]
+}
+
 /** Generators of an expression viewed as a polynomial (symbols, functions, radicals), sorted by key. @internal */
 export function findGens(e: Expr): Expr[] {
   const gens = new Map<string, Expr>()
@@ -499,7 +609,9 @@ export function findGens(e: Expr): Expr[] {
       gens.set(x.key, x)
       return
     }
-    gens.set(x.key, x)
+    const ep = expPower(x)
+    if (ep !== undefined) gens.set(ep[0].key, ep[0])
+    else gens.set(x.key, x)
   }
   walk(e)
   return [...gens.values()].sort(byKey)
@@ -522,6 +634,9 @@ export function exprToP(e: Expr, gens: readonly Expr[]): P | undefined {
   const go = (x: Expr): P | undefined => {
     const gi = index.get(x.key)
     if (gi !== undefined) return pvar(n, gi)
+    const ep = expPower(x)
+    const ej = ep === undefined ? undefined : index.get(ep[0].key)
+    if (ep !== undefined && ej !== undefined) return ppow(pvar(n, ej), ep[1])
     if (x.kind === 'num') return pconst(n, ratOf(x))
     if (x.kind === 'float') return pconst(n, rfromNumber(x.value))
     if (x.kind === 'add') {

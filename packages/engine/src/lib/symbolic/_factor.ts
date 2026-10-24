@@ -4,6 +4,7 @@
 // square-free parts recursively, then Kronecker's substitution x_i -> t^(D^i) and recombination of the univariate
 // factors, which finds every factor (the images of true factors are products of univariate factors).
 
+import { charge } from './_budget.ts'
 import {
   fromTerms,
   type P,
@@ -15,6 +16,7 @@ import {
   pgcd,
   pIsConst,
   pIsZero,
+  pimage,
   pmul,
   pnumericContent,
   psub,
@@ -26,104 +28,24 @@ import {
   utrim,
 } from './_poly.ts'
 import { babs, bgcd, biroot, R1, type Rational, rat, rdiv, rmul } from './_rational.ts'
-
-type Z = bigint[]
-
-function ztrim(a: Z): Z {
-  let n = a.length
-  while (n > 0 && a[n - 1] === 0n) n--
-  return a.slice(0, n)
-}
-
-function mod(a: bigint, m: bigint): bigint {
-  const r = a % m
-  return r < 0n ? r + m : r
-}
-
-function symmetric(a: bigint, m: bigint): bigint {
-  const r = mod(a, m)
-  return r > m / 2n ? r - m : r
-}
-
-function zmod(a: Z, m: bigint): Z {
-  return ztrim(a.map((c) => mod(c, m)))
-}
-
-function zadd(a: Z, b: Z, m: bigint): Z {
-  const n = Math.max(a.length, b.length)
-  const out: Z = []
-  for (let i = 0; i < n; i++) out.push(mod((a[i] ?? 0n) + (b[i] ?? 0n), m))
-  return ztrim(out)
-}
-
-function zsub(a: Z, b: Z, m: bigint): Z {
-  return zadd(
-    a,
-    b.map((c) => -c),
-    m,
-  )
-}
-
-function zmul(a: Z, b: Z, m: bigint): Z {
-  if (a.length === 0 || b.length === 0) return []
-  const out: Z = new Array<bigint>(a.length + b.length - 1).fill(0n)
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i] as bigint
-    if (x === 0n) continue
-    for (let j = 0; j < b.length; j++) out[i + j] = (out[i + j] as bigint) + x * (b[j] as bigint)
-  }
-  return zmod(out, m)
-}
-
-function zinv(a: bigint, m: bigint): bigint {
-  let [r0, r1] = [mod(a, m), m]
-  let [s0, s1] = [1n, 0n]
-  while (r1 !== 0n) {
-    const q = r0 / r1
-    ;[r0, r1] = [r1, r0 - q * r1]
-    ;[s0, s1] = [s1, s0 - q * s1]
-  }
-  if (r0 !== 1n) throw new Error('not invertible')
-  return mod(s0, m)
-}
-
-/** Division by a polynomial whose leading coefficient is invertible modulo m. */
-function zdivmod(a: Z, b: Z, m: bigint): [Z, Z] {
-  const bt = ztrim(b)
-  const db = bt.length - 1
-  const inv = zinv(bt[db] as bigint, m)
-  let r = zmod(a, m)
-  const q: Z = new Array<bigint>(Math.max(0, r.length - db)).fill(0n)
-  while (r.length - 1 >= db && r.length > 0) {
-    const k = r.length - 1 - db
-    const c = mod((r[r.length - 1] as bigint) * inv, m)
-    q[k] = c
-    const sub: Z = new Array<bigint>(k).fill(0n).concat(bt.map((x) => x * c))
-    r = zsub(r, sub, m)
-  }
-  return [ztrim(q), r]
-}
-
-function zmonic(a: Z, m: bigint): Z {
-  const t = ztrim(a)
-  if (t.length === 0) return t
-  const inv = zinv(t[t.length - 1] as bigint, m)
-  return zmod(
-    t.map((c) => c * inv),
-    m,
-  )
-}
-
-function zgcd(a: Z, b: Z, p: bigint): Z {
-  let x = zmod(a, p)
-  let y = zmod(b, p)
-  while (y.length > 0) {
-    const r = zdivmod(x, y, p)[1]
-    x = y
-    y = r
-  }
-  return zmonic(x, p)
-}
+import {
+  mod,
+  ratsToZ,
+  symmetric,
+  type Z,
+  zadd,
+  zderiv,
+  zdivmod,
+  zgcd,
+  zinv,
+  zmod,
+  zmonic,
+  zmul,
+  zprimitive,
+  zsub,
+  zToRats,
+  ztrim,
+} from './_zpoly.ts'
 
 /** s, t with s*a + t*b = 1 modulo p (a, b coprime). */
 function zxgcd(a: Z, b: Z, p: bigint): [Z, Z] {
@@ -147,10 +69,6 @@ function zxgcd(a: Z, b: Z, p: bigint): [Z, Z] {
       p,
     ),
   ]
-}
-
-function zderiv(a: Z): Z {
-  return ztrim(a.slice(1).map((c, k) => c * BigInt(k + 1)))
 }
 
 /** x^e mod (f, p). */
@@ -182,6 +100,7 @@ function nullspace(rows: Z[], n: number, p: bigint): Z[] {
     for (let i = r; i < n; i++) if ((m[i] as bigint[])[c] !== 0n) piv = piv < 0 ? i : piv
     if (piv < 0) continue
     ;[m[r], m[piv]] = [m[piv] as bigint[], m[r] as bigint[]]
+    charge(n * n)
     const row = m[r] as bigint[]
     const inv = zinv(row[c] as bigint, p)
     for (let j = 0; j < n; j++) row[j] = mod((row[j] as bigint) * inv, p)
@@ -290,19 +209,6 @@ function* combinations(n: number, k: number, start = 0): Generator<number[]> {
   for (let i = start; i <= n - k; i++) for (const rest of combinations(n, k - 1, i + 1)) yield [i, ...rest]
 }
 
-function zcontent(a: Z): bigint {
-  let g = 0n
-  for (const c of a) g = bgcd(g, c)
-  return g
-}
-
-function zprimitive(a: Z): Z {
-  const g = zcontent(a)
-  const t = ztrim(a)
-  const sign = (t[t.length - 1] ?? 1n) < 0n ? -1n : 1n
-  return g === 0n ? t : t.map((c) => (c / g) * sign)
-}
-
 /** Exact division over Z; undefined if b does not divide a. */
 function zexactDiv(a: Z, b: Z): Z | undefined {
   let r = ztrim(a)
@@ -311,6 +217,7 @@ function zexactDiv(a: Z, b: Z): Z | undefined {
   const lb = bt[db] as bigint
   const q: Z = new Array<bigint>(Math.max(0, r.length - db)).fill(0n)
   while (r.length - 1 >= db && r.length > 0) {
+    charge(r.length)
     const top = r[r.length - 1] as bigint
     if (top % lb !== 0n) return undefined
     const c = top / lb
@@ -364,6 +271,7 @@ function zassenhaus(f: Z): Z[] {
   while (2 * size <= lifted.length) {
     let found = false
     for (const subset of combinations(lifted.length, size)) {
+      charge(size)
       const lcg = g[g.length - 1] as bigint
       let cand: Z = [lcg]
       for (const i of subset) cand = zmul(cand, lifted[i] as Z, pk)
@@ -381,16 +289,6 @@ function zassenhaus(f: Z): Z[] {
   }
   if (g.length > 1) out.push(zprimitive(g))
   return out
-}
-
-function ratsToZ(a: U): Z {
-  let den = 1n
-  for (const c of a) den = (den / bgcd(den, c.d)) * c.d
-  return ztrim(a.map((c) => (c.n * den) / c.d))
-}
-
-function zToRats(a: Z): U {
-  return a.map((c) => rat(c))
 }
 
 /** Factor a univariate polynomial over Q: constant and irreducible primitive integer factors with multiplicities. @internal */
@@ -493,10 +391,36 @@ function factorPrimitive(f: P): [P, number][] {
   return out
 }
 
+const MAX_TEST_DEGREE = 12
+
+/**
+ * Whether f (in several variables) is certainly irreducible: for a variable w in which f is primitive, f of degree 1
+ * in w, or an image f(w; others at integer points) of the same degree that is irreducible over Q, proves it (a
+ * factorisation of f would map to one of the image with the same degrees). False means "not proven".
+ */
+function provablyIrreducible(f: P, vs: readonly number[]): boolean {
+  const order = [...vs].sort((a, b) => pdeg(f, a) - pdeg(f, b))
+  for (const w of order) {
+    const d = pdeg(f, w)
+    if (d > MAX_TEST_DEGREE) break
+    if (!pIsConst(pcontentIn(f, w))) continue
+    if (d === 1) return true
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const image = pimage(f, w, attempt)
+      if (image[d] === 0n) continue
+      const [, facs] = factorUnivariate(zToRats(image))
+      if (facs.length === 1 && (facs[0] as [U, number])[1] === 1) return true
+    }
+  }
+  return false
+}
+
 /** Irreducible factors of a square-free polynomial in several variables, by Kronecker's substitution. */
 function kronecker(f: P): P[] {
   const vs = pvars(f)
   if (vs.length <= 1) return factorPrimitive(f).map(([g]) => g)
+  // Most polynomials are irreducible, and an image in one variable usually shows it at a fraction of the cost.
+  if (provablyIrreducible(f, vs)) return [f]
   let D = 1
   for (const v of vs) D = Math.max(D, pdeg(f, v) + 1)
   const degree = f.terms.reduce(
@@ -543,6 +467,7 @@ function kronecker(f: P): P[] {
   while (2 * size <= remaining.length && budget > 0) {
     let found = false
     for (const subset of combinations(remaining.length, size)) {
+      charge(size)
       if (--budget <= 0) break
       let prod: Z = [1n]
       for (const i of subset) prod = zmulInt(prod, remaining[i] as Z)
@@ -564,6 +489,7 @@ function kronecker(f: P): P[] {
 }
 
 function zmulInt(a: Z, b: Z): Z {
+  charge(a.length * b.length)
   const out: Z = new Array<bigint>(a.length + b.length - 1).fill(0n)
   for (let i = 0; i < a.length; i++)
     for (let j = 0; j < b.length; j++) out[i + j] = (out[i + j] as bigint) + (a[i] as bigint) * (b[j] as bigint)

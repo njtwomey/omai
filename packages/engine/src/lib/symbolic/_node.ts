@@ -1,6 +1,7 @@
 // Raw expression nodes: construction without canonicalisation, the structural key, and small accessors. The
 // canonicalising constructors live in _canon.ts; everything public goes through them.
 import { WhiteboxError } from '../base/index.ts'
+import { charge } from './_budget.ts'
 import type { Rational } from './_rational.ts'
 import type {
   Assumptions,
@@ -64,21 +65,25 @@ export function rawConst(name: ConstName): ExprConst {
 
 /** A sum node over already canonical, sorted terms. @internal */
 export function rawAdd(args: readonly Expr[]): ExprAdd {
+  charge(args.length + 1)
   return { kind: 'add', args, key: `+[${joinKeys(args)}]` }
 }
 
 /** A product node over already canonical, sorted factors. @internal */
 export function rawMul(args: readonly Expr[]): ExprMul {
+  charge(args.length + 1)
   return { kind: 'mul', args, key: `*[${joinKeys(args)}]` }
 }
 
 /** A power node. @internal */
 export function rawPow(base: Expr, exp: Expr): ExprPow {
+  charge(2)
   return { kind: 'pow', base, exp, key: `^[${base.key},${exp.key}]` }
 }
 
 /** A function application node. @internal */
 export function rawFn(name: string, args: readonly Expr[]): ExprFn {
+  charge(args.length + 1)
   return { kind: 'fn', name, args, key: `@${name}[${joinKeys(args)}]` }
 }
 

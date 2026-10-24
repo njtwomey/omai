@@ -3,6 +3,7 @@
 // composition from its derivatives). A logarithm of t is carried as a placeholder symbol in the coefficients.
 import { WhiteboxError } from '../base/index.ts'
 import { isNegative, isPositive } from './_assume.ts'
+import { WorkExhausted } from './_budget.ts'
 import { isInfinite, isRat, MINUS_ONE, makeAdd, makeMul, makePow, NAN, numFromRational, ONE, ZERO } from './_canon.ts'
 import { expandExpr } from './_expand.ts'
 import { makeFn } from './_functions.ts'
@@ -323,7 +324,8 @@ export function seriesAt0(e: Expr, t: ExprSym, n: number, steps?: Step[]): S {
     try {
       s = toSeries(e, t, n + extra, extra === 0 ? steps : undefined)
     } catch (err) {
-      if (err instanceof WhiteboxError && err.code === 'convergence') continue
+      // Cancellation is retried with more terms; running out of work is not.
+      if (err instanceof WhiteboxError && err.code === 'convergence' && !(err instanceof WorkExhausted)) continue
       throw err
     }
     if (s.n >= n) return { v: s.v, c: s.c.slice(0, Math.max(0, n - s.v)), n }

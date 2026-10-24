@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
+import { bounded } from './_budget.ts'
 import {
   asCoeffMul,
   HALF,
@@ -222,9 +223,11 @@ function specs(vars: readonly DiffSpec[]): [ExprSym, number][] {
  * ```
  */
 export function diff(e: Expr, ...vars: readonly DiffSpec[]): Expr {
-  let out = e
-  for (const [x, k] of specs(vars)) for (let i = 0; i < k; i++) out = d(out, x, undefined)
-  return out
+  return bounded('diff', () => {
+    let out = e
+    for (const [x, k] of specs(vars)) for (let i = 0; i < k; i++) out = d(out, x, undefined)
+    return out
+  })
 }
 
 /**
@@ -241,10 +244,12 @@ export function diff(e: Expr, ...vars: readonly DiffSpec[]): Expr {
  * ```
  */
 export function diffSteps(e: Expr, ...vars: readonly DiffSpec[]): Derivation {
-  const steps: Step[] = []
-  let out = e
-  for (const [x, k] of specs(vars)) for (let i = 0; i < k; i++) out = d(out, x, steps)
-  return { result: out, steps }
+  return bounded('diffSteps', () => {
+    const steps: Step[] = []
+    let out = e
+    for (const [x, k] of specs(vars)) for (let i = 0; i < k; i++) out = d(out, x, steps)
+    return { result: out, steps }
+  })
 }
 
 /**
@@ -260,7 +265,9 @@ export function diffSteps(e: Expr, ...vars: readonly DiffSpec[]): Derivation {
  * ```
  */
 export function gradient(e: Expr, vars: readonly (ExprSym | string)[]): Expr[] {
-  return vars.map((v) => diff(e, v))
+  return bounded('gradient', () => {
+    return vars.map((v) => diff(e, v))
+  })
 }
 
 /**
@@ -276,7 +283,9 @@ export function gradient(e: Expr, vars: readonly (ExprSym | string)[]): Expr[] {
  * ```
  */
 export function jacobian(fs: readonly Expr[], vars: readonly (ExprSym | string)[]): Matrix {
-  return fs.map((f) => gradient(f, vars))
+  return bounded('jacobian', () => {
+    return fs.map((f) => gradient(f, vars))
+  })
 }
 
 /**
@@ -292,8 +301,10 @@ export function jacobian(fs: readonly Expr[], vars: readonly (ExprSym | string)[
  * ```
  */
 export function hessian(e: Expr, vars: readonly (ExprSym | string)[]): Matrix {
-  const g = gradient(e, vars)
-  return g.map((gi) => vars.map((v) => diff(gi, v)))
+  return bounded('hessian', () => {
+    const g = gradient(e, vars)
+    return g.map((gi) => vars.map((v) => diff(gi, v)))
+  })
 }
 
 function implicit(eq: Expr, y: ExprSym, x: ExprSym, n: number, steps: Step[] | undefined): Expr {
@@ -334,7 +345,9 @@ function implicit(eq: Expr, y: ExprSym, x: ExprSym, n: number, steps: Step[] | u
  * ```
  */
 export function implicitDiff(eq: Expr, y: ExprSym, x: ExprSym, n = 1): Expr {
-  return implicit(eq, y, x, n, undefined)
+  return bounded('implicitDiff', () => {
+    return implicit(eq, y, x, n, undefined)
+  })
 }
 
 /**
@@ -352,7 +365,9 @@ export function implicitDiff(eq: Expr, y: ExprSym, x: ExprSym, n = 1): Expr {
  * ```
  */
 export function implicitDiffSteps(eq: Expr, y: ExprSym, x: ExprSym, n = 1): Derivation {
-  const steps: Step[] = []
-  const result = implicit(eq, y, x, n, steps)
-  return { result, steps }
+  return bounded('implicitDiffSteps', () => {
+    const steps: Step[] = []
+    const result = implicit(eq, y, x, n, steps)
+    return { result, steps }
+  })
 }

@@ -11,6 +11,8 @@ function derivativeIs(F: Expr, f: Expr): boolean {
   return [0.31, 0.77, 1.4].every((v) => {
     const a = evaluateComplex(diff(F, x), { x: v })
     const b = evaluateComplex(f, { x: v })
+    // A sample point may be a pole of a random integrand.
+    if (!b.every(Number.isFinite)) return true
     return Math.hypot(a[0] - b[0], a[1] - b[1]) <= 1e-8 * Math.max(1, Math.hypot(...b))
   })
 }

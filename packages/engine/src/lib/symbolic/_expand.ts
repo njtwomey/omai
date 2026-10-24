@@ -1,5 +1,7 @@
 // Expansion (SymPy's `expand` with its default hints: mul, multinomial, power_exp, log with assumptions, deep).
+
 import { isNegative, isNonnegative, isNonzero, isPositive, isReal } from './_assume.ts'
+import { chargeTerms } from './_budget.ts'
 import { isNumeric, MINUS_ONE, makeAdd, makeMul, makePow, mapChildren, ONE } from './_canon.ts'
 import { makeFn } from './_functions.ts'
 import type { Expr, Step } from './expr.ts'
@@ -20,6 +22,7 @@ function distribute(factors: readonly Expr[]): Expr {
   let terms: Expr[] = [ONE]
   for (const f of factors) {
     if (f.kind === 'add') {
+      chargeTerms(terms.length * f.args.length)
       const next: Expr[] = []
       for (const t of terms) for (const a of f.args) next.push(makeMul([t, a]))
       terms = next

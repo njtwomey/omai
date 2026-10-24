@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { type ErrorCode, isWhiteboxError } from '../base/index.ts'
 import * as tensor from '../tensor/index.ts'
 import * as symbolic from './index.ts'
 
@@ -39,6 +40,11 @@ function compileExample(code: readonly string[]): string {
       body.push(`const {${imp[1]}} = __mods[${JSON.stringify(imp[2])}];`)
       continue
     }
+    const throws = /^(.*?)\s*\/\/ => throws (\w[\w-]*)$/.exec(line)
+    if (throws !== null) {
+      body.push(`__throws(() => (${throws[1]}), ${JSON.stringify(throws[2])}, ${JSON.stringify(line)});`)
+      continue
+    }
     const check = /^(.*?)\s*\/\/ => (.*)$/.exec(line)
     if (check !== null) {
       body.push(`__check(() => (${check[1]}), () => (${check[2]}), ${JSON.stringify(line)});`)
@@ -57,13 +63,25 @@ describe('documentation examples', () => {
   for (const file of files) {
     for (const ex of examples(file)) {
       it(`${file}:${ex.line}`, () => {
-        const run = new Function('__mods', '__check', compileExample(ex.code)) as (
+        const run = new Function('__mods', '__check', '__throws', compileExample(ex.code)) as (
           mods: typeof MODULES,
           check: (actual: () => unknown, expected: () => unknown, text: string) => void,
+          throws: (f: () => unknown, code: string, text: string) => void,
         ) => void
-        run(MODULES, (actual, expected, text) => {
-          expect(actual(), text).toEqual(expected())
-        })
+        run(
+          MODULES,
+          (actual, expected, text) => {
+            expect(actual(), text).toEqual(expected())
+          },
+          (f, code, text) => {
+            expect(f, text).toThrow()
+            try {
+              f()
+            } catch (e) {
+              expect(isWhiteboxError(e, code as ErrorCode), text).toBe(true)
+            }
+          },
+        )
       })
     }
   }

@@ -1,6 +1,7 @@
 // Exact rational arithmetic on bigints: the number field of symbolic expressions. Every rational is normalised
 // (positive denominator, numerator and denominator coprime), so equal values have equal representations.
 import { WhiteboxError } from '../base/index.ts'
+import { charge } from './_budget.ts'
 
 /** A normalised rational number n / d with d > 0 and gcd(n, d) = 1. @internal */
 export interface Rational {
@@ -17,11 +18,14 @@ export function babs(a: bigint): bigint {
 export function bgcd(a: bigint, b: bigint): bigint {
   let x = babs(a)
   let y = babs(b)
+  let steps = 1
   while (y !== 0n) {
     const t = x % y
     x = y
     y = t
+    steps++
   }
+  charge(steps)
   return x
 }
 

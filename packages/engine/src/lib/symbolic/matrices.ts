@@ -1,4 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
+import { bounded } from './_budget.ts'
 import { MINUS_ONE, makeAdd, makeMul, makePow, numFromRational, ONE, ZERO } from './_canon.ts'
 import { expandExpr } from './_expand.ts'
 import { evalComplexConstant, freeNames } from './_numeric.ts'
@@ -108,18 +109,20 @@ export function transpose(a: Matrix): Matrix {
  * ```
  */
 export function matMul(a: Matrix, b: Matrix): Matrix {
-  const [n, k] = shape(a)
-  const [k2, m] = shape(b)
-  if (k !== k2) throw new WhiteboxError('shape', `matMul: ${n}x${k} times ${k2}x${m}`)
-  return Array.from({ length: n }, (_, i) =>
-    Array.from({ length: m }, (_, j) =>
-      normal(
-        makeAdd(
-          Array.from({ length: k }, (_, t) => makeMul([(a[i] as Expr[])[t] as Expr, (b[t] as Expr[])[j] as Expr])),
+  return bounded('matMul', () => {
+    const [n, k] = shape(a)
+    const [k2, m] = shape(b)
+    if (k !== k2) throw new WhiteboxError('shape', `matMul: ${n}x${k} times ${k2}x${m}`)
+    return Array.from({ length: n }, (_, i) =>
+      Array.from({ length: m }, (_, j) =>
+        normal(
+          makeAdd(
+            Array.from({ length: k }, (_, t) => makeMul([(a[i] as Expr[])[t] as Expr, (b[t] as Expr[])[j] as Expr])),
+          ),
         ),
       ),
-    ),
-  )
+    )
+  })
 }
 
 /**
@@ -162,10 +165,12 @@ function berkowitz(a: Matrix): Expr[] {
  * ```
  */
 export function det(a: Matrix): Expr {
-  const n = square(a, 'det')
-  if (n === 0) return ONE
-  const c = berkowitz(a)[n] as Expr
-  return normal(n % 2 === 0 ? c : makeMul([MINUS_ONE, c]))
+  return bounded('det', () => {
+    const n = square(a, 'det')
+    if (n === 0) return ONE
+    const c = berkowitz(a)[n] as Expr
+    return normal(n % 2 === 0 ? c : makeMul([MINUS_ONE, c]))
+  })
 }
 
 /**
@@ -181,10 +186,12 @@ export function det(a: Matrix): Expr {
  * ```
  */
 export function charpoly(a: Matrix, lambda: Expr): Expr {
-  const n = square(a, 'charpoly')
-  // As SymPy's Poly.as_expr: each coefficient (simplified) times its power of lambda, the products not expanded.
-  const c = berkowitz(a).map((ci) => (hasTrig(ci) ? trigSimplifyExpr(ci) : ci))
-  return makeAdd(c.map((ci, i) => makeMul([ci, makePow(lambda, numFromRational(rat(BigInt(n - i))))])))
+  return bounded('charpoly', () => {
+    const n = square(a, 'charpoly')
+    // As SymPy's Poly.as_expr: each coefficient (simplified) times its power of lambda, the products not expanded.
+    const c = berkowitz(a).map((ci) => (hasTrig(ci) ? trigSimplifyExpr(ci) : ci))
+    return makeAdd(c.map((ci, i) => makeMul([ci, makePow(lambda, numFromRational(rat(BigInt(n - i))))])))
+  })
 }
 
 function minor(a: Matrix, r: number, c: number): Matrix {
@@ -204,16 +211,18 @@ function minor(a: Matrix, r: number, c: number): Matrix {
  * ```
  */
 export function inverse(a: Matrix): Matrix {
-  const n = square(a, 'inverse')
-  const d = det(a)
-  if (isZero(d)) throw new WhiteboxError('singular', 'inverse: the matrix is singular')
-  const inv = makePow(d, MINUS_ONE)
-  return Array.from({ length: n }, (_, i) =>
-    Array.from({ length: n }, (_, j) => {
-      const cof = n === 1 ? ONE : det(minor(a, j, i))
-      return cancel(makeMul([(i + j) % 2 === 0 ? ONE : MINUS_ONE, cof, inv]))
-    }),
-  )
+  return bounded('inverse', () => {
+    const n = square(a, 'inverse')
+    const d = det(a)
+    if (isZero(d)) throw new WhiteboxError('singular', 'inverse: the matrix is singular')
+    const inv = makePow(d, MINUS_ONE)
+    return Array.from({ length: n }, (_, i) =>
+      Array.from({ length: n }, (_, j) => {
+        const cof = n === 1 ? ONE : det(minor(a, j, i))
+        return cancel(makeMul([(i + j) % 2 === 0 ? ONE : MINUS_ONE, cof, inv]))
+      }),
+    )
+  })
 }
 
 /**
@@ -229,48 +238,50 @@ export function inverse(a: Matrix): Matrix {
  * ```
  */
 export function nullspace(a: Matrix): Expr[][] {
-  const [n, m] = shape(a)
-  const rows = a.map((r) => [...r])
-  const pivots: number[] = []
-  let r = 0
-  for (let c = 0; c < m && r < n; c++) {
-    let piv = -1
-    for (let i = r; i < n; i++) {
-      if (!isZero((rows[i] as Expr[])[c] as Expr)) {
-        piv = i
-        break
+  return bounded('nullspace', () => {
+    const [n, m] = shape(a)
+    const rows = a.map((r) => [...r])
+    const pivots: number[] = []
+    let r = 0
+    for (let c = 0; c < m && r < n; c++) {
+      let piv = -1
+      for (let i = r; i < n; i++) {
+        if (!isZero((rows[i] as Expr[])[c] as Expr)) {
+          piv = i
+          break
+        }
       }
-    }
-    if (piv < 0) continue
-    ;[rows[r], rows[piv]] = [rows[piv] as Expr[], rows[r] as Expr[]]
-    const row = rows[r] as Expr[]
-    const inv = makePow(row[c] as Expr, MINUS_ONE)
-    for (let j = 0; j < m; j++) row[j] = normal(makeMul([row[j] as Expr, inv]))
-    for (let i = 0; i < n; i++) {
-      if (i === r) continue
-      const other = rows[i] as Expr[]
-      const f = other[c] as Expr
-      if (isZero(f)) {
-        other[c] = ZERO
-        continue
+      if (piv < 0) continue
+      ;[rows[r], rows[piv]] = [rows[piv] as Expr[], rows[r] as Expr[]]
+      const row = rows[r] as Expr[]
+      const inv = makePow(row[c] as Expr, MINUS_ONE)
+      for (let j = 0; j < m; j++) row[j] = normal(makeMul([row[j] as Expr, inv]))
+      for (let i = 0; i < n; i++) {
+        if (i === r) continue
+        const other = rows[i] as Expr[]
+        const f = other[c] as Expr
+        if (isZero(f)) {
+          other[c] = ZERO
+          continue
+        }
+        for (let j = 0; j < m; j++)
+          other[j] = normal(makeAdd([other[j] as Expr, makeMul([MINUS_ONE, f, row[j] as Expr])]))
       }
-      for (let j = 0; j < m; j++)
-        other[j] = normal(makeAdd([other[j] as Expr, makeMul([MINUS_ONE, f, row[j] as Expr])]))
+      pivots.push(c)
+      r++
     }
-    pivots.push(c)
-    r++
-  }
-  const out: Expr[][] = []
-  for (let free = 0; free < m; free++) {
-    if (pivots.includes(free)) continue
-    const v: Expr[] = new Array<Expr>(m).fill(ZERO)
-    v[free] = ONE
-    pivots.forEach((pc, i) => {
-      v[pc] = normal(makeMul([MINUS_ONE, (rows[i] as Expr[])[free] as Expr]))
-    })
-    out.push(v)
-  }
-  return out
+    const out: Expr[][] = []
+    for (let free = 0; free < m; free++) {
+      if (pivots.includes(free)) continue
+      const v: Expr[] = new Array<Expr>(m).fill(ZERO)
+      v[free] = ONE
+      pivots.forEach((pc, i) => {
+        v[pc] = normal(makeMul([MINUS_ONE, (rows[i] as Expr[])[free] as Expr]))
+      })
+      out.push(v)
+    }
+    return out
+  })
 }
 
 /**
@@ -286,9 +297,11 @@ export function nullspace(a: Matrix): Expr[][] {
  * ```
  */
 export function eigenvals(a: Matrix): Root[] {
-  square(a, 'eigenvals')
-  const lam = sym('lambda_')
-  return exactRoots(charpoly(a, lam), lam)
+  return bounded('eigenvals', () => {
+    square(a, 'eigenvals')
+    const lam = sym('lambda_')
+    return exactRoots(charpoly(a, lam), lam)
+  })
 }
 
 /**
@@ -303,9 +316,11 @@ export function eigenvals(a: Matrix): Root[] {
  * ```
  */
 export function eigenvects(a: Matrix): Eigenvector[] {
-  square(a, 'eigenvects')
-  return eigenvals(a).map(({ value, multiplicity }) => {
-    const shifted = a.map((row, i) => row.map((x, j) => (i === j ? makeAdd([x, makeMul([MINUS_ONE, value])]) : x)))
-    return { value, multiplicity, vectors: nullspace(shifted) }
+  return bounded('eigenvects', () => {
+    square(a, 'eigenvects')
+    return eigenvals(a).map(({ value, multiplicity }) => {
+      const shifted = a.map((row, i) => row.map((x, j) => (i === j ? makeAdd([x, makeMul([MINUS_ONE, value])]) : x)))
+      return { value, multiplicity, vectors: nullspace(shifted) }
+    })
   })
 }

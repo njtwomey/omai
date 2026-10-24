@@ -532,7 +532,14 @@ lambdify values)
 - `expr.ts`: `Expr` (rationals, floats, symbols with assumptions, constants pi, E, I, oo, zoo, nan, sums, products,
   powers, function applications, piecewise, relations, connectives, big-O, unevaluated derivatives and integrals),
   `ExprLike`, `Step`, `Derivation`, `isExpr`, `asExpr`, `sym`, `symbols`, `num`, `rational`, operator helpers (`add`,
-  `sub`, `mul`, `div`, `pow`, `neg`, `sqrt`), the constants, `free`, `dependsOn`, `substitute`, structural `equals`.
+  `sub`, `mul`, `div`, `pow`, `neg`, `sqrt`), the constants, `free`, `dependsOn`, `substitute`, structural `equals`,
+  `WorkBudget` and `withWorkBudget` (every operation does a bounded, deterministic amount of work, counted in work
+  units rather than time: one per exact rational operation, expression node or term of polynomial arithmetic, with a
+  cap on the terms of intermediate expansions; defaults 2,000,000 units, a fraction of a second, and 2,000 terms.
+  When the work runs out, `integrate` keeps the terms it finished and leaves the rest unevaluated, `definiteIntegral`
+  falls back to quadrature, `simplify` returns the best form found so far, `factor` and `trigSimplify` the input,
+  and the others, `series` included, throw a WhiteboxError with code `convergence`; `integrate`, `series`,
+  `simplify`, `factor` and `definiteIntegral` take a budget, `withWorkBudget` sets one for everything it calls).
 - `functions.ts`: function constructors with automatic evaluation: `fn` (any name; unknown names are undefined
   functions), `exp`, `log` (with optional base), `root`, `abs`, `sign`, `floor`, `ceiling`, `factorial`, `gamma`,
   `erf`, `re`, `im`.
@@ -568,7 +575,8 @@ lambdify values)
   functions by partial fractions with the reduction formula for repeated quadratics; powers and products of sines and
   cosines; reduction formulas for tan, cot, sec, csc; tabular integration by parts for polynomials times exp, sin,
   cos, sinh, cosh; derivative-divides substitution; integration by parts; every candidate verified by differentiation;
-  the search is bounded in attempts, depth and expression size, so any integrand returns within milliseconds;
+  the search is bounded in attempts, depth, expression size and work (each method and level of the search gets half
+  of the work left), so any integrand returns within a fraction of a second;
   returns an unevaluated `Integral` otherwise, term by term), `integrateSteps`,
   `definiteIntegral` (limits of the antiderivative, checked against adaptive Gauss-Kronrod with a numeric fallback;
   poles of rational integrands in the interval are an error), `definiteIntegralSteps`, `DefiniteOptions`. TODO: the
@@ -591,14 +599,11 @@ lambdify values)
   (automatic evaluation of known functions), `_order.ts` (SymPy's sort keys and printing order), `_numeric.ts` (real
   and complex evaluation, adaptive Gauss-Kronrod: numerics is a higher tier), `_measure.ts` (operation counts and
   numeric equivalence), `_expand.ts`, `_rational-functions.ts` (together, cancel, apart), `_trigsimp.ts`, `_poly.ts`
-  (sparse polynomials, dense univariate helpers, generators), `_factor.ts`, `_series.ts` (truncated Laurent series
-  engine), `_integrals.ts` (tables, rational and trigonometric rules), `_latex-parse.ts`.
-
-- TODO (low priority): bound the total work of `integrate`, `series`, `simplify` and `factor` (expression size and
-  time-like step budgets, not only attempt counts); random expressions can run for seconds to minutes (cases: the
-  integrands `log((x^3 + y + exp(sin(y)/2))^2 + 1)` and `log(x^6 y^6 (x + y + log(y^2 + 1))^2 + 1)`, the series of
-  `log(exp(exp(x/2)) + 1)^3` at 0, and the factorisation of `x^6 (x + cos(x))^3 + y^2 + y`). Until then the
-  robustness property leaves integrate and series out.
+  (sparse polynomials, dense univariate helpers, generators with SymPy's `decompose_power`, so exp(2*x) is exp(x)^2;
+  gcds with modular coprimality checks and primitive remainder sequences), `_zpoly.ts` (dense polynomials over Z and
+  Z/p), `_factor.ts` (with an irreducibility test by evaluation before Kronecker's substitution), `_series.ts`
+  (truncated Laurent series engine), `_integrals.ts` (tables, rational and trigonometric rules), `_latex-parse.ts`,
+  `_budget.ts` (work budgets: frames, charges and fallbacks).
 
 ### 4.6 `autodiff/` (tier 3): differentiation transforms (jax, torch.func)
 
