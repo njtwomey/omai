@@ -52,6 +52,14 @@
       "cases": 14
     },
     {
+      "fixture": "methods/rl/agents/distributional.json",
+      "source": "oracle/cases/methods/rl/agents/distributional.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "methods/rl/agents/imitation.json",
       "source": "oracle/cases/methods/rl/agents/imitation.py",
       "reference": {

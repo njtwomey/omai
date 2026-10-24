@@ -2,9 +2,25 @@
 // optimiser step on a loss of a parameter tree.
 import { valueAndGrad } from '../../../lib/autodiff/index.ts'
 import { WhiteboxError } from '../../../lib/base/index.ts'
-import { applyUpdates, type GradientTransformation, type Tree } from '../../../lib/optim/index.ts'
-import { flatDim, type Space } from '../../../lib/space/index.ts'
-import { fromStorage, item, mul, type Tensor, treeMap, type Value } from '../../../lib/tensor/index.ts'
+import {
+  adam,
+  applyUpdates,
+  chain,
+  clipByGlobalNorm,
+  type GradientTransformation,
+  type Tree,
+} from '../../../lib/optim/index.ts'
+import { flatDim, flatten, type Space, type SpaceValue } from '../../../lib/space/index.ts'
+import {
+  fromStorage,
+  item,
+  mul,
+  primalOf,
+  type Tensor,
+  toFlat,
+  treeMap,
+  type Value,
+} from '../../../lib/tensor/index.ts'
 
 /** What an agent factory needs from an environment: its spaces. */
 export interface Spaces {
@@ -60,6 +76,56 @@ export function gradientStep(
   const { value, grad } = valueAndGrad(loss)(params)
   const { updates, state } = transformation.update(grad, optState, params)
   return { params: applyUpdates(params, updates), optState: state, loss: item(value) }
+}
+
+/**
+ * One optimiser step on a loss that also returns per-sample terms (`[loss, terms]`): the terms are read from the same
+ * forward pass (for replay priorities and statistics) instead of a second one.
+ */
+export function gradientStepWithTerms(
+  loss: (params: Tree) => readonly [Value, Value],
+  params: Tree,
+  transformation: GradientTransformation,
+  optState: unknown,
+): { readonly params: Tree; readonly optState: unknown; readonly loss: number; readonly terms: number[] } {
+  const { value, grad, aux } = valueAndGrad(loss, { hasAux: true })(params)
+  const { updates, state } = transformation.update(grad, optState, params)
+  return {
+    params: applyUpdates(params, updates),
+    optState: state,
+    loss: item(value),
+    terms: toFlat(primalOf(aux as Value)),
+  }
+}
+
+/** Adam with a learning rate (or a given optimiser), behind global-norm clipping when `maxGradNorm` is set. */
+export function optimiserOf(
+  options: {
+    readonly optimizer?: GradientTransformation
+    readonly learningRate?: number
+    readonly maxGradNorm?: number
+  },
+  learningRate = 1e-3,
+): GradientTransformation {
+  const base = options.optimizer ?? adam({ learningRate: options.learningRate ?? learningRate })
+  return options.maxGradNorm === undefined ? base : chain(clipByGlobalNorm(options.maxGradNorm), base)
+}
+
+/** Flat numeric features of a space's values for networks: discrete values one-hot, everything else flattened. */
+export function spaceFeatures(space: Space): { readonly size: number; readonly of: (value: unknown) => number[] } {
+  if (space.kind === 'discrete') {
+    const n = space.n
+    const start = space.start ?? 0
+    return {
+      size: n,
+      of: (v) => {
+        const x = new Array<number>(n).fill(0)
+        x[(v as number) - start] = 1
+        return x
+      },
+    }
+  }
+  return { size: flatDim(space), of: (v) => flatten(space, v as SpaceValue) }
 }
 
 /**
