@@ -1,6 +1,12 @@
 import { valueAndGrad } from '../../../lib/autodiff/index.ts'
 import { WhiteboxError } from '../../../lib/base/index.ts'
-import { coefficientTable, type Explained, type Exposition, learningCurve } from '../../../lib/exposition/index.ts'
+import {
+  coefficientTable,
+  diagramRecord,
+  type Explained,
+  type Exposition,
+  learningCurve,
+} from '../../../lib/exposition/index.ts'
 import type { Params } from '../../../lib/nn/index.ts'
 import { type Key, key as makeKey } from '../../../lib/random/index.ts'
 import {
@@ -161,7 +167,8 @@ const fmt = (v: number): string => (Math.abs(v) < 1e-3 && v !== 0 ? v.toExponent
  * ∂L/∂w = δ·a of the unit below, ∂L/∂b = δ), checks every gradient against `valueAndGrad` of the same network, and
  * takes a gradient-descent step. The result carries the network's structure with overlays to play (forward values,
  * then deltas) and every quantity per step; the exposition is the gradient table of the first step (by hand, with the
- * autodiff disagreement as its error column) and the loss per step.
+ * autodiff disagreement as its error column), the loss per step against the largest disagreement (on its own axis),
+ * and the network as a `diagram` with every frame's overlay and caption, to play over it.
  *
  * @param options - Widths, activation, rows, targets, steps, learning rate and key.
  * @returns The steps, the structure and its frames, and the exposition records.
@@ -315,9 +322,18 @@ export function backpropByHand(options: BackpropOptions = {}): Explained<Backpro
       validation: steps.map((s) => s.maxError),
       resource: 'step',
       labels: { train: 'loss on the step’s row', validation: 'largest |by hand − autodiff|' },
+      secondaryAxis: true,
     }),
   ]
-  return { sizes, activation, steps, structure: networkStructure(sizes), frames, captions, maxError, exposition }
+  const structure = networkStructure(sizes)
+  exposition.push(
+    diagramRecord({
+      structure,
+      steps: frames.map((overlay, i) => ({ overlay, ...(captions[i] === undefined ? {} : { caption: captions[i] }) })),
+      stepName: 'pass',
+    }),
+  )
+  return { sizes, activation, steps, structure, frames, captions, maxError, exposition }
 }
 
 const ACTIVATION: Readonly<Record<BackpropActivation, (v: Value) => Value>> = { logistic: sigmoid, tanh, relu }

@@ -2806,7 +2806,12 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   objective's surface with the search distribution, or the best program's curve over its data);
 - `ImageSteps` (small grey images per recorded step in named groups: a generative model's data, reconstructions and
   samples from fixed noise, with the objective per step);
-- `StateSequence` (a hidden-state model's posteriors over time, the decoded path and the true states).
+- `StateSequence` (a hidden-state model's posteriors over time, the decoded path and the true states);
+- `CurveSet` (`curves`: several series on shared axes, each with an optional band, a group sharing its colour and an
+  optional right-hand axis; optimiser races and studies of schemes or strengths), `DiagramRecord` (`diagram`: a
+  `Structure`, such as `describe(net)`, with optional overlays and captions to play over it), `ValueGrids` (feature
+  maps, filters, hidden states as cells, with steps through training) and `ConfusionMatrix` (counts per true and
+  predicted class, with steps through training; `confusionCounts` builds them).
   Records that index the training rows (clusterings, mixtures, margins, neighbours, anomaly scores, decision surfaces)
   carry those rows (`InputRows`, two coordinates each, for data up to a few thousand rows), so a view draws from the
   record alone; iterative trainers' decision surfaces carry their `steps` through training, which the views play.
@@ -4057,7 +4062,10 @@ Design rules:
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
-  (`BoardSteps` and `PopulationSteps` as players), `images.ts` (`ImageSteps` as a mosaic of image rows per step).
+  (`BoardSteps` and `PopulationSteps` as players), `images.ts` (`ImageSteps` as a mosaic of image rows per step),
+  `curves.ts` (`CurveSet`, revealed along x as a player), `cells.ts` (`ValueGrids` as blocky small multiples on one
+  colour range, `ConfusionMatrix`, both played through training) and `diagrams.ts` (`DiagramRecord` as a scene with a
+  step's overlay).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile
@@ -4106,7 +4114,9 @@ Design rules:
   `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
   `stages.tsx`, `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
-  `BoardPlayer`, `PopulationPlayer`), each one figure in one
+  `BoardPlayer`, `PopulationPlayer`; `curves.tsx`: `CurvesView`; `densities.tsx`: `DensityView`; `sequences.tsx`:
+  `StateSequenceView`; `cells.tsx`: `ValueGridView`, `ConfusionMatrixView`; `diagrams.tsx`: `DiagramPlayer`, a
+  `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
 - `EnvView.tsx`: one consistent view of any environment's render, decorated, with room for controls.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,

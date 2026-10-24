@@ -1,5 +1,11 @@
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
-import { coefficientTable, type Exposition } from '../../../lib/exposition/index.ts'
+import {
+  coefficientTable,
+  diagramRecord,
+  type Exposition,
+  type ValueGrids,
+  valueGrids,
+} from '../../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
   type ExplainedEstimator,
@@ -29,15 +35,8 @@ import { foldIn, type Key, key as makeKey } from '../../../lib/random/index.ts'
 import type { Structure } from '../../../lib/scene/index.ts'
 import { choice, dict, int, real, type Space } from '../../../lib/space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat, type Value } from '../../../lib/tensor/index.ts'
-import { lossOf, optimiserOf, predictorOf, scoreOf, type Task, taskOf } from '../_nets.ts'
-import {
-  lossAtSnapshots,
-  lossCurve,
-  mapSteps,
-  progressReporter,
-  scoreCurve,
-  type TrainingProgress,
-} from '../_records.ts'
+import { confusionOf, lossOf, optimiserOf, predictorOf, scoreOf, type Task, taskOf } from '../_nets.ts'
+import { lossAtSnapshots, lossCurve, progressReporter, scoreCurve, type TrainingProgress } from '../_records.ts'
 import { type Snapshot, train } from '../_train.ts'
 
 /** Hyperparameters of {@link lenet}. */
@@ -244,9 +243,7 @@ function fitLeNet(
     ...(h.onProgress === undefined
       ? {}
       : {
-          onEpoch: progressReporter(h.onProgress, (s) =>
-            mapsAt(s).map((maps) => mapSteps([maps], [s.step], Math.ceil(Math.sqrt(maps.length)))),
-          ),
+          onEpoch: progressReporter(h.onProgress, (s) => mapsAt(s).map((maps) => mapGrids(maps, 'map'))),
         }),
   })
   net.setParams(training.params)
@@ -265,29 +262,23 @@ function fitLeNet(
   const objective = lossAtSnapshots(training)
   const perLayer = training.snapshots.map(mapsAt)
   const layers = perLayer[0]?.length ?? 0
-  const mapRecords = Array.from({ length: layers }, (_, l) => {
-    const count = perLayer[0]?.[l]?.length ?? 1
-    return {
-      ...mapSteps(
-        perLayer.map((p) => p[l] ?? []),
-        iterations,
-        Math.ceil(Math.sqrt(count)),
-        objective,
-      ),
-      stepName: 'step',
-    }
+  const mapRecords = Array.from({ length: layers }, (_, l) =>
+    mapGrids(perLayer.at(-1)?.[l] ?? [], 'map', {
+      steps: perLayer.map((p, t) => ({
+        iteration: iterations[t] ?? t,
+        grids: p[l] ?? [],
+        ...(Number.isFinite(objective[t]) ? { objective: objective[t] as number } : {}),
+      })),
+    }),
+  )
+  const filterSteps = training.snapshots.map((s) => firstFilters(net, s.params))
+  const filters = mapGrids(filterSteps.at(-1) ?? [], 'filter', {
+    shared: true,
+    diverging: true,
+    valueName: 'weight',
+    steps: filterSteps.map((grids, t) => ({ iteration: iterations[t] ?? t, grids })),
   })
-  const filters = {
-    ...mapSteps(
-      training.snapshots.map((s) => firstFilters(net, s.params)),
-      iterations,
-      Math.ceil(Math.sqrt(h.channels[0])),
-      objective,
-      false,
-    ),
-    stepName: 'step',
-  }
-  const image = mapSteps([[tapInput2d(tapInput, shape)]], [0], 1)
+  const image = mapGrids([tapInput2d(tapInput, shape)], 'digit', { valueName: 'pixel' })
   // Accuracy per class on the validation rows (or the training rows).
   const rows = task.validation ?? task.rows
   const predicted = toFlat(
@@ -304,6 +295,7 @@ function fitLeNet(
     const idx = truth.flatMap((t, i) => (t === c ? [i] : []))
     return idx.length === 0 ? Number.NaN : idx.filter((i) => predicted[i] === c).length / idx.length
   })
+  const confusion = confusionOf(net, training, task)
   const exposition: Exposition[] = [
     lossCurve(training),
     ...(scoreCurve(training, 'accuracy') === undefined ? [] : [scoreCurve(training, 'accuracy') as Exposition]),
@@ -314,8 +306,30 @@ function fitLeNet(
       names: (task.classNames ?? task.classes.map(String)).map((c) => `accuracy on ${c}`),
       estimates: perClass,
     }),
+    ...(confusion === undefined ? [] : [confusion]),
+    diagramRecord({ structure: describe(net, [1, raw.d]) }),
   ]
   return { params, exposition }
+}
+
+/** Maps (feature maps, filters, an image) as value grids named `name 1`, `name 2`, ..., each on its own range unless shared. */
+function mapGrids(
+  maps: readonly (readonly (readonly number[])[])[],
+  name: string,
+  options: {
+    readonly shared?: boolean
+    readonly diverging?: boolean
+    readonly valueName?: string
+    readonly steps?: ValueGrids['steps']
+  } = {},
+): ValueGrids {
+  return valueGrids({
+    grids: maps.map((values, i) => ({ name: maps.length === 1 ? name : `${name} ${i + 1}`, values })),
+    scale: options.shared === true || maps.length === 1 ? 'shared' : 'each',
+    ...(options.diverging === true ? { diverging: true } : {}),
+    valueName: options.valueName ?? 'activation',
+    ...(options.steps === undefined ? {} : { steps: options.steps, stepName: 'step' }),
+  })
 }
 
 function tapInput2d(x: Tensor, shape: readonly [number, number, number]): number[][] {
@@ -355,7 +369,8 @@ function lenetVerbs(p: LeNetParams): LeNetVerbs {
  * by Adam on minibatches. Exposition, in order: the loss and accuracy per epoch (training against held-out rows), the
  * tapped input image, the activated feature maps of each convolution for that image at about 30 geometrically spaced
  * steps (playable: the filters' responses sharpen as training proceeds), the first convolution's filters at the same
- * steps, and the accuracy per class.
+ * steps (all as `valueGrids`), the accuracy per class, the confusion matrix on the held-out rows through training, and
+ * the architecture as a diagram.
  *
  * @param hyper - Image shape, channels, kernel, hidden units, activation, pooling, epochs, batching, rate and taps.
  * @returns The estimator.

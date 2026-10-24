@@ -4,7 +4,10 @@ import type { Scene } from 'whitebox-engine/scene'
 import type { ViewOptions } from './_view.ts'
 import { anomalyView } from './anomaly.ts'
 import { boardFrames, populationFrames } from './boards.ts'
+import { confusionFrames, valueGridFrames } from './cells.ts'
 import { componentsView } from './components.ts'
+import { curveSetView } from './curves.ts'
+import { diagramScene } from './diagrams.ts'
 import { episodeView } from './episodes.ts'
 import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
@@ -268,6 +271,44 @@ const REGISTRY: Registry = {
     accepts: [],
     still: (r, o) => {
       const frames = populationFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
+  },
+  curves: {
+    kind: 'curves',
+    component: 'CurvesView',
+    title: 'Curves',
+    plays: true,
+    accepts: [],
+    still: (r, o) => curveSetView(r, o),
+  },
+  diagram: {
+    kind: 'diagram',
+    component: 'DiagramPlayer',
+    title: 'Diagram',
+    plays: true,
+    accepts: [],
+    still: (r) => diagramScene(r),
+  },
+  valueGrids: {
+    kind: 'valueGrids',
+    component: 'ValueGridView',
+    title: 'Value grids',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      const frames = valueGridFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
+  },
+  confusionMatrix: {
+    kind: 'confusionMatrix',
+    component: 'ConfusionMatrixView',
+    title: 'Confusion matrix',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      const frames = confusionFrames(r, o)
       return frames.option(frames.count - 1)
     },
   },

@@ -1,6 +1,12 @@
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import type { SequenceData } from '../../../lib/data/index.ts'
-import { type Explained, type Exposition, learningCurve } from '../../../lib/exposition/index.ts'
+import {
+  diagramRecord,
+  type Explained,
+  type Exposition,
+  learningCurve,
+  valueGrids,
+} from '../../../lib/exposition/index.ts'
 import type { FitOptions } from '../../../lib/learn/index.ts'
 import { crossEntropy } from '../../../lib/losses/index.ts'
 import {
@@ -19,14 +25,7 @@ import { foldIn, type Key, key as makeKey } from '../../../lib/random/index.ts'
 import type { Structure } from '../../../lib/scene/index.ts'
 import { argmax, fromStorage, reshape, slice, type Tensor, toFlat, type Value } from '../../../lib/tensor/index.ts'
 import { optimiserOf } from '../_nets.ts'
-import {
-  lossAtSnapshots,
-  lossCurve,
-  mapSteps,
-  progressReporter,
-  scoreCurve,
-  type TrainingProgress,
-} from '../_records.ts'
+import { lossAtSnapshots, lossCurve, progressReporter, scoreCurve, type TrainingProgress } from '../_records.ts'
 import { holdOut, type Rows, train } from '../_train.ts'
 
 /** The recurrent cells a tagger can use. */
@@ -220,7 +219,12 @@ export function recurrentTagger(
       ? {}
       : {
           onEpoch: progressReporter(options.onProgress, (s) => [
-            mapSteps([[hiddenMap(s.params)]], [s.step], 1, undefined, false),
+            valueGrids({
+              grids: [{ name: 'hidden states', values: hiddenMap(s.params) }],
+              diverging: true,
+              axes: ['hidden unit', 'position'],
+              valueName: 'state',
+            }),
           ]),
         }),
   })
@@ -255,28 +259,27 @@ export function recurrentTagger(
   }
   const iterations = training.snapshots.map((s) => s.step)
   const objective = lossAtSnapshots(training)
-  const hiddenRecord = {
-    ...mapSteps(
-      training.snapshots.map((s) => [hiddenMap(s.params)]),
-      iterations,
-      1,
-      objective,
-      false,
-    ),
-    features: ['position', 'hidden unit'] as const,
+  const stepsOf = (map: (p: Params) => number[][]) =>
+    training.snapshots.map((s, t) => ({
+      iteration: iterations[t] ?? t,
+      grids: [map(s.params)],
+      ...(Number.isFinite(objective[t]) ? { objective: objective[t] as number } : {}),
+    }))
+  const hiddenRecord = valueGrids({
+    grids: [{ name: 'hidden states', values: hiddenMap(training.params) }],
+    diverging: true,
+    axes: ['hidden unit', 'position'],
+    valueName: 'state',
+    steps: stepsOf(hiddenMap),
     stepName: 'step',
-  }
-  const tokenRecord = {
-    ...mapSteps(
-      training.snapshots.map((s) => [tokens(s.params)]),
-      iterations,
-      1,
-      objective,
-      false,
-    ),
-    features: ['position', 'input, target, predicted'] as const,
+  })
+  const tokenRecord = valueGrids({
+    grids: [{ name: 'input, target, predicted', values: tokens(training.params) }],
+    axes: ['input · target · predicted', 'position'],
+    valueName: 'token',
+    steps: stepsOf(tokens),
     stepName: 'step',
-  }
+  })
   const exposition: Exposition[] = [
     lossCurve(training),
     ...(scoreCurve(training, 'token accuracy') === undefined
@@ -291,6 +294,7 @@ export function recurrentTagger(
     }),
     hiddenRecord,
     tokenRecord,
+    diagramRecord({ structure: describe(net, [1, tIn]) }),
   ]
   return {
     cell,

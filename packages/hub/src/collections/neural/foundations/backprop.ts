@@ -25,16 +25,7 @@ export const backprop: HubEntry = defineEntry({
   }),
   run: ({ params }) => backpropByHand(options(params)),
   views: [
-    {
-      record: 'coefficientTable',
-      view: 'StructureView',
-      // The diagram with the last step's forward values and deltas (the method is cheap and deterministic).
-      props: (_, context) => {
-        const r = backpropByHand(options(context.params))
-        return { structure: r.structure, overlay: r.frames.at(-1), frames: r.frames }
-      },
-      title: 'The network, with the last step’s values (z, a) and deltas (δ)',
-    },
+    { record: 'diagram', title: 'The network, pass by pass: forward values (z, a), the loss, then the deltas (δ)' },
     {
       record: 'coefficientTable',
       title: 'Gradients at the first step: by hand, ± the autodiff disagreement',

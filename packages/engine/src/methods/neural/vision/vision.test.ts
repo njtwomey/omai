@@ -18,14 +18,18 @@ describe('lenet', () => {
     const [loss, accuracy] = recordsOf(fitted.exposition, 'learningCurve')
     expect(loss?.sizes).toEqual([1, 2, 3])
     expect(accuracy?.labels?.validation).toBe('validation accuracy')
-    const [image, conv1, conv2, filters] = recordsOf(fitted.exposition, 'decisionSurface')
-    expect(image?.values?.length).toBe(8)
-    // Six 8 by 8 maps tiled 3 across with gaps: 2 rows of 8 plus a gap, 3 columns of 8 plus two gaps.
-    expect([conv1?.values?.length, conv1?.values?.[0]?.length]).toEqual([17, 26])
+    const [image, conv1, conv2, filters] = recordsOf(fitted.exposition, 'valueGrids')
+    expect(image?.grids[0]?.values.length).toBe(8)
+    // Six 8 by 8 maps, then twelve 4 by 4.
+    expect(conv1?.grids.map((g) => g.values.length)).toEqual([8, 8, 8, 8, 8, 8])
     expect(conv1?.steps?.length).toBeLessThanOrEqual(10)
     expect(conv1?.steps?.[0]?.iteration).toBe(0)
-    expect([conv2?.values?.length, conv2?.values?.[0]?.length]).toEqual([14, 19])
+    expect([conv2?.grids.length, conv2?.grids[0]?.values[0]?.length]).toEqual([12, 4])
     expect(filters?.steps?.length).toBe(conv1?.steps?.length)
+    expect(filters?.diverging).toBe(true)
+    const [confusion] = recordsOf(fitted.exposition, 'confusionMatrix')
+    expect(confusion?.counts.length).toBe(10)
+    expect(recordsOf(fitted.exposition, 'diagram')[0]?.structure.nodes.length).toBeGreaterThan(5)
     expect(recordsOf(fitted.exposition, 'coefficientTable')[0]?.names.length).toBe(10)
     const maps = fitted.featureMaps([toFlat((data as { x: never }).x).slice(0, 64)])
     expect(maps.map((l) => [l[0]?.length, l[0]?.[0]?.length])).toEqual([

@@ -20,8 +20,8 @@ import {
   surfaceOf,
   taskOf,
 } from '../_nets.ts'
-import { lossCurve, type TrainingProgress } from '../_records.ts'
-import { train } from '../_train.ts'
+import { lossCurve, studyCurves, type TrainingProgress } from '../_records.ts'
+import { type Training, train } from '../_train.ts'
 
 /** Options of {@link optimiserRace}. */
 export interface OptimiserRaceOptions {
@@ -59,8 +59,9 @@ export interface RaceResult {
 /**
  * The same network from the same initial weights, trained on the same minibatches by several optimisers: SGD, SGD
  * with momentum or Nesterov momentum, RMSprop, Adagrad, Adam, AdamW. Exposition, in order: one decision surface per
- * optimiser (the fitted networks side by side), one loss curve per optimiser, and the race as trials (final loss per
- * optimiser, its loss per epoch as the intermediate values).
+ * optimiser (the fitted networks side by side), one loss curve per optimiser, the race as trials (final loss per
+ * optimiser, its loss per epoch as the intermediate values), and every optimiser's loss per epoch as one `curves`
+ * record.
  *
  * @param data - Classification (default) or regression data (a dataset of kind 'regression').
  * @param options - Optimisers, learning rates, network, epochs, batch size and progress.
@@ -83,6 +84,8 @@ export function optimiserRace(
   const curves: Exposition[] = []
   const runs: { optimiser: OptimiserName; learningRate: number; losses: number[]; finalLoss: number; score: number }[] =
     []
+  const trainings: Training[] = []
+  const label = (o: OptimiserName, lr: number): string => `${o} (lr ${lr})`
   for (const [k, optimiser] of optimisers.entries()) {
     const learningRate = options.learningRates?.[optimiser] ?? DEMO_LEARNING_RATES[optimiser]
     // Every optimiser starts from the same weights and sees the same minibatches.
@@ -107,13 +110,25 @@ export function optimiserRace(
               options.onProgress?.({
                 fraction: (k + r.epoch / epochs) / optimisers.length,
                 label: `${optimiser}: epoch ${r.epoch} of ${epochs}`,
-                exposition: [...surfaces, ...curves],
+                exposition: [
+                  ...surfaces,
+                  ...curves,
+                  ...(trainings.length === 0
+                    ? []
+                    : [
+                        studyCurves(
+                          runs.map((q) => label(q.optimiser, q.learningRate)),
+                          trainings,
+                        ),
+                      ]),
+                ],
               })
             },
           }),
     })
     surfaces.push(surfaceOf(net, training.params, training.buffers, task, options.resolution ?? 30, training))
     curves.push(lossCurve(training))
+    trainings.push(training)
     runs.push({
       optimiser,
       learningRate,
@@ -139,7 +154,11 @@ export function optimiserRace(
     higherIsBetter: false,
     best: results.findIndex((r) => r.finalLoss === best),
   })
-  return { results, exposition: [...surfaces, ...curves, trials] }
+  const race = studyCurves(
+    runs.map((r) => label(r.optimiser, r.learningRate)),
+    trainings,
+  )
+  return { results, exposition: [...surfaces, ...curves, trials, race] }
 }
 
 /** Options of {@link learningRateFinder}. */

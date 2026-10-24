@@ -1,6 +1,9 @@
-// Private exposition helpers of the neural methods (methods/neural): the loss and score curves of a training run,
-// and a hidden layer's representation of the training rows at each snapshot, projected to two dimensions.
+// Private exposition helpers of the neural methods (methods/neural): the loss and score curves of a training run and
+// of several runs together, and a hidden layer's representation of the training rows at each snapshot, projected to
+// two dimensions.
 import {
+  type CurveSet,
+  curveSet,
   type DecisionSurface,
   decisionSurface,
   type EmbeddingSteps,
@@ -24,6 +27,7 @@ export function lossCurve(training: Training): LearningCurve {
     train: training.trainLoss,
     validation,
     resource: 'epoch',
+    scoreName: 'loss',
     labels: {
       train: 'training loss (mean over the epoch)',
       validation: training.validationLoss !== undefined ? 'validation loss' : 'training loss (end of the epoch)',
@@ -39,12 +43,10 @@ export function scoreCurve(training: Training, name: string): LearningCurve | un
   return learningCurve({
     sizes: training.epochs,
     train,
-    validation: validation ?? train,
+    validation: validation ?? [],
     resource: 'epoch',
-    labels: {
-      train: `training ${name}`,
-      validation: validation === undefined ? `training ${name}` : `validation ${name}`,
-    },
+    scoreName: name,
+    labels: { train: `training ${name}`, ...(validation === undefined ? {} : { validation: `validation ${name}` }) },
   })
 }
 
@@ -54,9 +56,43 @@ export function stepLossCurve(training: Training): LearningCurve {
   return learningCurve({
     sizes,
     train: training.stepLoss,
-    validation: training.stepLoss,
+    validation: [],
     resource: 'step',
-    labels: { train: 'minibatch loss', validation: 'minibatch loss' },
+    scoreName: 'loss',
+    labels: { train: 'minibatch loss' },
+  })
+}
+
+/** Whether values are best read on a log axis: all positive and spanning more than a decade and a half. */
+export function spansDecades(values: readonly number[]): boolean {
+  const finite = values.filter(Number.isFinite)
+  if (finite.length < 2 || finite.some((v) => v <= 0)) return false
+  return Math.max(...finite) / Math.min(...finite) > 30
+}
+
+/**
+ * The loss per epoch of several training runs as one curve set (an optimiser race, a study of schemes or strengths):
+ * each run's training loss (all rows, eval mode, at the end of each epoch) and, when rows were held out, its
+ * validation loss dashed in the same colour; on a log axis when the losses span decades.
+ *
+ * @param names - A name per run (the optimiser, the scheme, the strength).
+ * @param runs - The runs.
+ * @returns The record.
+ */
+export function studyCurves(names: readonly string[], runs: readonly Training[]): CurveSet {
+  const series = runs.flatMap((r, i) => {
+    const name = names[i] ?? `run ${i + 1}`
+    const held = r.validationLoss
+    return [
+      { name: held === undefined ? name : `${name}: training`, x: [...r.epochs], y: [...r.evalLoss], group: name },
+      ...(held === undefined ? [] : [{ name: `${name}: validation`, x: [...r.epochs], y: [...held], group: name }]),
+    ]
+  })
+  return curveSet({
+    series,
+    xLabel: 'epoch',
+    yLabel: 'loss',
+    yLog: spansDecades(series.flatMap((s) => s.y)),
   })
 }
 
@@ -172,9 +208,10 @@ export function progressReporter(
     const curve = learningCurve({
       sizes: [...epochs],
       train: [...losses],
-      validation: [...losses],
+      validation: [],
       resource: 'epoch',
-      labels: { train: 'training loss', validation: 'training loss' },
+      scoreName: 'loss',
+      labels: { train: 'training loss' },
     })
     onProgress({
       fraction: r.epoch / Math.max(1, r.epochs),
