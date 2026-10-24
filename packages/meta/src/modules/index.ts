@@ -34,6 +34,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/information': () => import('whitebox-engine/information'),
   'whitebox-engine/kernels': () => import('whitebox-engine/kernels'),
   'whitebox-engine/learn': () => import('whitebox-engine/learn'),
+  'whitebox-engine/learn/model-selection': () => import('whitebox-engine/learn/model-selection'),
   'whitebox-engine/learn/preprocessing': () => import('whitebox-engine/learn/preprocessing'),
   'whitebox-engine/losses': () => import('whitebox-engine/losses'),
   'whitebox-engine/methods/datasets': () => import('whitebox-engine/methods/datasets'),

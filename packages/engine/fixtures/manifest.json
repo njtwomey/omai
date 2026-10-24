@@ -612,6 +612,22 @@
       "cases": 30
     },
     {
+      "fixture": "learn/model_selection/splitters.json",
+      "source": "oracle/cases/learn/model_selection/splitters.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 28
+    },
+    {
+      "fixture": "learn/preprocessing/encoders.json",
+      "source": "oracle/cases/learn/preprocessing/encoders.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 24
+    },
+    {
       "fixture": "learn/preprocessing/scalers.json",
       "source": "oracle/cases/learn/preprocessing/scalers.py",
       "reference": {

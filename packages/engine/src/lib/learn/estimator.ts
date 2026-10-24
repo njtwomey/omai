@@ -89,6 +89,14 @@ export interface Estimator<H extends Hyper = Hyper, F extends Fitted = Fitted> {
   fit(data: LearnData, options?: FitOptions): F
   revive(params: Json): F
   with(changes: Readonly<Record<string, unknown>>): Estimator<H, F>
+  /**
+   * Fit and return the transform of the training data, when that differs from `fit(data).transform(data.x)` (a
+   * cross-fitted target encoding); pipelines call it for intermediate steps.
+   */
+  readonly fitTransform?: (
+    data: LearnData,
+    options?: FitOptions,
+  ) => { readonly fitted: F; readonly transformed: Tensor }
 }
 
 /** How to build an estimator: {@link defineEstimator} turns a spec and hyperparameters into an {@link Estimator}. */
@@ -103,6 +111,8 @@ export interface EstimatorSpec<H extends Hyper, P extends Json, V extends Verbs 
   methods(params: P, hyper: H): V
   /** Apply hyperparameter changes (default: a shallow merge); composites route `step.param` keys here. */
   update?(hyper: H, changes: Readonly<Record<string, unknown>>): H
+  /** The transform of the training data, when it is not `transform(data.x)` (cross-fitting). */
+  fitTransform?(fitted: Fitted<P> & V, data: LearnData): Tensor
 }
 
 function defaultScore(kind: EstimatorKind, verbs: Verbs): ((data: LearnData) => number) | undefined {
@@ -178,12 +188,22 @@ export function defineEstimator<H extends Hyper, P extends Json, V extends Verbs
     return { ...verbs, ...(score === undefined ? {} : { score }), estimator: spec.name, kind: spec.kind, params }
   }
   const space = spec.hyperSpace?.(hyper)
+  const fit = (data: LearnData, options: FitOptions = {}): Fitted<P> & V => build(spec.fit(data, hyper, options))
+  const crossFit = spec.fitTransform
   return {
     name: spec.name,
     kind: spec.kind,
     hyper,
     ...(space === undefined ? {} : { hyperSpace: space }),
-    fit: (data, options = {}) => build(spec.fit(data, hyper, options)),
+    ...(crossFit === undefined
+      ? {}
+      : {
+          fitTransform: (data: LearnData, options?: FitOptions) => {
+            const fitted = fit(data, options)
+            return { fitted, transformed: crossFit(fitted, data) }
+          },
+        }),
+    fit,
     revive: (params) => build(params as P),
     with: (changes) => defineEstimator(spec, spec.update?.(hyper, changes) ?? ({ ...hyper, ...changes } as H)),
   }
