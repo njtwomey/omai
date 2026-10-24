@@ -3319,8 +3319,10 @@ built from: `search/evolutionary/`, `symbolic`, `nn`, `rl`
 
 `complex-systems/`
 built from: `stochastic`, `graph`, `dynamics`, `scene`
-- `cellular-automata.ts`: elementary automata (Wolfram rules), Game of Life, Langton's ant.
-- `agent-based.ts`: Schelling segregation, boids, predator-prey and Sugarscape-style models.
+- `cellular-automata.ts`: elementary automata (Wolfram rules), Game of Life, Langton's ant (so far
+  `elementaryAutomaton` and `gameOfLife`, played as `BoardSteps`; TODO Langton's ant).
+- `agent-based.ts`: Schelling segregation, boids, predator-prey and Sugarscape-style models (so far `schelling`,
+  played round by round with unhappy agents marked; TODO the rest).
 - `networks.ts`: epidemics on networks, threshold cascades, influence maximisation, small-world and scale-free studies.
 - `criticality.ts`: sandpiles, percolation, forest-fire models.
 ### 5.7 Domains
