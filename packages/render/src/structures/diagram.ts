@@ -15,14 +15,18 @@ import {
 } from 'whitebox-engine/scene'
 import { circularLayout, forceLayout } from '../layout/force.ts'
 import { type Box, boxBoundary, type EdgeRoute, type GraphLayout, type LayoutGraph } from '../layout/graph.ts'
+import { bipartiteLayout } from '../layout/grids.ts'
 import { layered } from '../layout/layered.ts'
 import { tidyTree } from '../layout/trees.ts'
 import { type NodeLook, type StructureStyle, styleFor } from './styles.ts'
 
 /** Options of {@link diagram}. */
 export interface DiagramOptions {
-  /** The layout (default the style's: layered for most kinds, a tidy tree for trees, force for networks). */
-  readonly layout?: 'layered' | 'tree' | 'circular' | 'force'
+  /**
+   * The layout (default the style's: layered for most kinds, a tidy tree for trees, force for networks); `bipartite`
+   * puts factors in one row and the variables in another, as factor graphs are drawn.
+   */
+  readonly layout?: 'layered' | 'tree' | 'circular' | 'force' | 'bipartite'
   /** Ranks or depths down the page or across it (default the structure's own preference, else down). */
   readonly direction?: 'down' | 'right'
   /** The visual language (default the one for the structure's type). */
@@ -271,6 +275,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       ...(n.group === undefined ? {} : { group: n.group }),
     })),
     edges: routed.map((e) => ({ from: e.from, to: e.to })),
+    groups: s.groups.map((g) => ({ id: g.id, ...(g.parent === undefined ? {} : { parent: g.parent }) })),
   }
   const direction = options.direction ?? s.direction ?? 'down'
   const which = options.layout ?? style.layout
@@ -281,11 +286,17 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
         ? circularLayout(graph)
         : which === 'force'
           ? forceLayout(graph, { seed: options.seed ?? 0 })
-          : layered(graph, {
-              direction,
-              ...(options.rankSep === undefined ? {} : { rankSep: options.rankSep }),
-              ...(options.nodeSep === undefined ? {} : { nodeSep: options.nodeSep }),
-            })
+          : which === 'bipartite'
+            ? bipartiteLayout(
+                graph,
+                s.nodes.filter((n) => n.role !== 'factor').map((n) => n.id),
+                { orientation: direction === 'right' ? 'columns' : 'rows', gap: options.rankSep ?? 110 },
+              )
+            : layered(graph, {
+                direction,
+                ...(options.rankSep === undefined ? {} : { rankSep: options.rankSep }),
+                ...(options.nodeSep === undefined ? {} : { nodeSep: options.nodeSep }),
+              })
 
   // Groups: deepest first, each around its members and its child groups, with room for its label.
   const members = groupMembers(s)
