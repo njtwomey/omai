@@ -254,6 +254,38 @@
       "cases": 8
     },
     {
+      "fixture": "dynamics/filtering/changepoint.json",
+      "source": "oracle/cases/dynamics/filtering/changepoint.py",
+      "reference": {
+        "ruptures": "v1.1.10"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "dynamics/filtering/kalman.json",
+      "source": "oracle/cases/dynamics/filtering/kalman.py",
+      "reference": {
+        "filterpy": "1.4.5"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "dynamics/filtering/nonlinear.json",
+      "source": "oracle/cases/dynamics/filtering/nonlinear.py",
+      "reference": {
+        "filterpy": "1.4.5"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "dynamics/identification.json",
+      "source": "oracle/cases/dynamics/identification.py",
+      "reference": {
+        "pysindy": "2.1.0"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "dynamics/nonlinear.json",
       "source": "oracle/cases/dynamics/nonlinear.py",
       "reference": {
