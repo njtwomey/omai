@@ -9,5 +9,6 @@ export const GALLERY_HOME: PageRef = { title: 'Gallery', path: '/gallery' }
 export const GALLERY_TOC: readonly TocNode[] = SECTIONS.filter((s) => entriesOf(s.id).length > 0).map((s) => ({
   id: s.id,
   title: s.id,
+  path: `/gallery/${s.id}`,
   children: entriesOf(s.id).map((e) => ({ id: e.path, title: e.title, path: e.path })),
 }))
