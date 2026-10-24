@@ -2,5 +2,6 @@
 export * from './fields.ts'
 export * from './maps.ts'
 export * from './nonlinear.ts'
+export * as control from './control/index.ts'
 export * as ode from './ode/index.ts'
 export * as pde from './pde/index.ts'

@@ -237,6 +237,23 @@
       "cases": 4
     },
     {
+      "fixture": "dynamics/control/optimal.json",
+      "source": "oracle/cases/dynamics/control/optimal.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "dynamics/control/placement.json",
+      "source": "oracle/cases/dynamics/control/placement.py",
+      "reference": {
+        "control": "0.10.2",
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "dynamics/nonlinear.json",
       "source": "oracle/cases/dynamics/nonlinear.py",
       "reference": {
