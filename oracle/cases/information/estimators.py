@@ -1,4 +1,4 @@
-"""Estimators from samples against scipy, sklearn, NPEET (k-NN estimators) and pyitlib (plug-in transfer entropy)."""
+"""Plug-in, kernel and transfer-entropy estimators and variational bounds against scipy, sklearn, pyitlib and NPEET."""
 
 import importlib.metadata
 from collections.abc import Callable
@@ -12,10 +12,6 @@ import sklearn
 import sklearn.metrics as skm
 from npeet import entropy_estimators as ee  # pyright: ignore[reportMissingTypeStubs]
 from pyitlib import discrete_random_variable as drv  # pyright: ignore[reportMissingTypeStubs]
-from sklearn.feature_selection._mutual_info import (  # pyright: ignore[reportPrivateUsage]
-    _compute_mi_cc,  # pyright: ignore[reportPrivateUsage]
-    _compute_mi_cd,  # pyright: ignore[reportPrivateUsage]
-)
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import FloatArray, rng
 
@@ -60,99 +56,6 @@ def cases() -> list[Case]:
     mi = skm.mutual_info_score(a, b)
     out.append(case("plugInMutualInformation", "plugInMutualInformation", [a, b], np.array(mi)))
 
-    # Continuous samples for the k-nearest-neighbour estimators.
-    n = 300
-    x1 = g.normal(size=(n, 1))
-    x2 = g.normal(size=(n, 2))
-    y1 = x1 + 0.5 * g.normal(size=(n, 1))
-    y2 = np.c_[x2[:, :1] ** 2, x2[:, 1:] - x2[:, :1]] + 0.3 * g.normal(size=(n, 2))
-    z1 = x1 + g.normal(size=(n, 1))
-    for k in [3, 5]:
-        out.append(
-            case(
-                f"kozachenkoLeonenkoEntropy/1d/k={k}",
-                "kozachenkoLeonenkoEntropy",
-                [x1],
-                np.array(seeded(ee.entropy, x1, k=k, base=NATS)),
-                rtol=KNN_RTOL,
-                k=k,
-            )
-        )
-        out.append(
-            case(
-                f"ksgMutualInformation/1d/k={k}",
-                "ksgMutualInformation",
-                [x1, y1],
-                np.array(seeded(ee.mi, x1, y1, k=k, base=NATS)),
-                rtol=KNN_RTOL,
-                k=k,
-            )
-        )
-    out.append(
-        case(
-            "kozachenkoLeonenkoEntropy/2d/base=2",
-            "kozachenkoLeonenkoEntropy",
-            [x2],
-            np.array(seeded(ee.entropy, x2, k=4, base=2)),
-            rtol=KNN_RTOL,
-            k=4,
-            base=2,
-        )
-    )
-    out.append(
-        case(
-            "ksgMutualInformation/2d",
-            "ksgMutualInformation",
-            [x2, y2],
-            np.array(seeded(ee.mi, x2, y2, k=3, base=NATS)),
-            rtol=KNN_RTOL,
-            k=3,
-        )
-    )
-    # sklearn's KSG (mutual_info_regression without its scaling and jitter) on tie-free data.
-    out.append(
-        case(
-            "ksgMutualInformation/sklearn",
-            "ksgMutualInformation",
-            [x1[:, 0], y1[:, 0]],
-            np.array(_compute_mi_cc(x1[:, 0], y1[:, 0], 3)),
-            rtol=1e-10,
-            k=3,
-        )
-    )
-    out.append(
-        case(
-            "ksgConditionalMutualInformation",
-            "ksgConditionalMutualInformation",
-            [x1, y1, z1],
-            np.array(seeded(ee.cmi, x1, y1, z1, k=3, base=NATS)),
-            rtol=KNN_RTOL,
-            k=3,
-        )
-    )
-    q2 = g.normal(size=(250, 2)) * 1.5 + 0.3
-    out.append(
-        case(
-            "knnKlDivergence",
-            "knnKlDivergence",
-            [x2, q2],
-            np.array(ee.kldiv(x2, q2, k=3, base=NATS)),
-            rtol=1e-10,
-            k=3,
-        )
-    )
-    labels = g.integers(0, 3, size=n).astype(np.float64)
-    c = labels + g.normal(size=n)
-    out.append(
-        case(
-            "mixedMutualInformation",
-            "mixedMutualInformation",
-            [c, labels],
-            np.array(_compute_mi_cd(c, labels, 3)),
-            rtol=1e-10,
-            k=3,
-        )
-    )
     # Kernel estimators against scipy.stats.gaussian_kde.
     s1 = g.normal(size=(80, 1))
     s2 = np.c_[s1, s1 + 0.4 * g.normal(size=(80, 1))]
@@ -173,6 +76,21 @@ def cases() -> list[Case]:
     out.append(case("transferEntropy/k=2", "transferEntropy", [src, tgt], np.array(te2), history=2, base=2))
     back = drv.information_mutual_conditional(src[1:], tgt[:-1], src[:-1], base=NATS)
     out.append(case("transferEntropy/reverse", "transferEntropy", [tgt, src], np.array(back)))
+    # Continuous transfer entropy: NPEET's conditional mutual information on the lagged series.
+    ys = g.normal(size=150)
+    xs = np.r_[0.0, 0.8 * ys[:-1]] + 0.5 * g.normal(size=150)
+    te_ksg = seeded(ee.cmi, xs[1:, None], ys[:-1, None], xs[:-1, None], k=3, base=NATS)
+    out.append(
+        case(
+            "transferEntropy/ksg",
+            "transferEntropy",
+            [ys, xs],
+            np.array(te_ksg),
+            rtol=1e-7,
+            estimator="ksg",
+            neighbours=3,
+        )
+    )
     # Variational bounds from a critic score matrix (positives on the diagonal).
     scores = g.normal(size=(6, 6)) + 2 * np.eye(6)
     off = ~np.eye(6, dtype=bool)

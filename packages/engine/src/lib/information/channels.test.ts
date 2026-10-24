@@ -45,7 +45,11 @@ describe('channels', () => {
     expect(gaps.length).toBeGreaterThan(2)
     expect(gaps[gaps.length - 1]).toBeLessThan(1e-10)
     for (let i = 1; i < gaps.length; i++) expect(gaps[i] ?? 0).toBeLessThanOrEqual((gaps[i - 1] ?? 0) + 1e-15)
-    expect(() => I.channelCapacity(I.zChannel(0.3).transition, { maxIter: 2 })).toThrow()
+    // An exhausted budget still returns bounds that bracket the capacity.
+    const early = I.channelCapacity(I.zChannel(0.3).transition, { maxIter: 2 })
+    expect(early.converged).toBe(false)
+    expect(early.lower).toBeLessThanOrEqual(I.zChannel(0.3).capacity + 1e-12)
+    expect(early.upper).toBeGreaterThanOrEqual(I.zChannel(0.3).capacity - 1e-12)
     expect(() =>
       I.blahutArimotoAlgorithm(
         [
@@ -60,15 +64,54 @@ describe('channels', () => {
   it('capacity bounds every input and is reduced by processing (property)', () => {
     fc.assert(
       fc.property(channel(3, 4), channel(4, 3), row(3), (w1, w2, p) => {
-        const options = { tol: 1e-7 }
-        const c1 = I.channelCapacity(w1, options).capacity
-        expect(item(I.channelMutualInformation(p, w1))).toBeLessThanOrEqual(c1 + 1e-7)
-        expect(c1).toBeLessThanOrEqual(Math.log(3) + 1e-9)
-        const c12 = I.channelCapacity(compose(w1, w2), options).capacity
-        expect(c12).toBeLessThanOrEqual(Math.min(c1, I.channelCapacity(w2, options).capacity) + 1e-7)
+        // Bounds, not point estimates: they hold whether or not the run converged.
+        const c1 = I.channelCapacity(w1, { maxIter: 500 })
+        expect(item(I.channelMutualInformation(p, w1))).toBeLessThanOrEqual(c1.upper + 1e-12)
+        expect(c1.lower).toBeLessThanOrEqual(Math.log(3) + 1e-12)
+        const c12 = I.channelCapacity(compose(w1, w2), { maxIter: 500 })
+        const c2 = I.channelCapacity(w2, { maxIter: 500 })
+        expect(c12.lower).toBeLessThanOrEqual(Math.min(c1.upper, c2.upper) + 1e-12)
+        expect(c1.converged && c2.converged && c12.converged).toBe(true)
       }),
       { numRuns: RUNS },
     )
+  })
+
+  it('converges quickly when the optimal input leaves symbols unused or rows repeat (regression)', () => {
+    // These channels stalled plain Blahut-Arimoto for over 100000 steps: the optimum is on (or next to) the boundary
+    // of the simplex, where the multiplicative update converges sublinearly.
+    const nearlyUseless = [
+      [0.2533411830670193, 0.6592230217879231, 0.0874357951450576],
+      [0.24065675309383536, 0.6817777038697097, 0.07756554303645509],
+      [0.2507049317934575, 0.6774583452491597, 0.07183672295738293],
+    ]
+    const smallSupport = [
+      [0.0057930535359044895, 0.5502242849990292, 0.2640283455146213, 0.179954315950445],
+      [0.008354095507253405, 0.009769439338443764, 0.835409550725338, 0.146466914428965],
+      [0.012846186199997512, 0.02902056708149005, 0.9209211843468392, 0.037212062371673224],
+    ]
+    const repeated = [
+      [0.6, 0.4],
+      [0.6, 0.4],
+      [0.1, 0.9],
+      [0.35, 0.65],
+    ]
+    for (const w of [
+      nearlyUseless,
+      smallSupport,
+      repeated,
+      [[1, 0]],
+      [
+        [0.3, 0.7],
+        [0.3, 0.7],
+      ],
+    ]) {
+      const result = I.channelCapacity(w, { tol: 1e-12 })
+      expect(result.converged).toBe(true)
+      expect(result.iterations).toBeLessThan(500)
+      expect(result.upper - result.lower).toBeLessThan(1e-12)
+    }
+    expect(I.channelCapacity(nearlyUseless).capacity).toBeCloseTo(0.0004482794292515, 15)
   })
 
   it('channel mutual information is differentiable', () => {
@@ -79,40 +122,6 @@ describe('channels', () => {
     ])
     expect(checkPrimitive(f, [tensor([0.4, 0.6]), w], { vmap: false }).failures).toEqual([])
     expect(() => I.channelMutualInformation([0.5, 0.5], [[1, 0]])).toThrow()
-  })
-
-  it('rate-distortion matches the binary closed form and is convex and decreasing', () => {
-    const hamming = [
-      [0, 1],
-      [1, 0],
-    ]
-    for (const p of [0.5, 0.3]) {
-      for (const beta of [1.5, 3]) {
-        const point = I.rateDistortion([p, 1 - p], hamming, beta, { base: 2 })
-        if (point.distortion < Math.min(p, 1 - p))
-          expect(point.rate).toBeCloseTo(I.binaryRateDistortion(p, point.distortion, { base: 2 }), 8)
-      }
-    }
-    const source = [0.2, 0.3, 0.5]
-    const d = [
-      [0, 1, 4],
-      [1, 0, 1],
-      [4, 1, 0],
-    ]
-    const curve = I.rateDistortionCurve(source, d, [0.25, 0.5, 1, 2, 4, 8])
-    for (let i = 1; i < curve.length; i++) {
-      const a = curve[i - 1] as I.RateDistortionPoint
-      const b = curve[i] as I.RateDistortionPoint
-      expect(b.distortion).toBeLessThanOrEqual(a.distortion + 1e-12)
-      expect(b.rate).toBeGreaterThanOrEqual(a.rate - 1e-12)
-    }
-    // The slope of R(D) is -beta: compare with a finite difference of neighbouring points.
-    const left = I.rateDistortion(source, d, 1.99)
-    const right = I.rateDistortion(source, d, 2.01)
-    expect((right.rate - left.rate) / (right.distortion - left.distortion)).toBeCloseTo(-2, 2)
-    expect(I.binaryRateDistortion(0.3, 0.4)).toBe(0)
-    expect(() => I.rateDistortionAlgorithm([0.5, 0.5], hamming, 0)).toThrow()
-    expect(() => I.rateDistortion(source, d, 2, { maxIter: 1 })).toThrow()
   })
 
   it('water-filling satisfies its optimality conditions', () => {
@@ -138,19 +147,5 @@ describe('channels', () => {
       { numRuns: RUNS },
     )
     expect(() => I.waterFilling([], 1)).toThrow()
-  })
-
-  it('reverse water-filling spends the distortion budget and gives the Gaussian rate', () => {
-    const { allocation, total } = I.reverseWaterFilling([4, 1, 0.25], 1.25, { base: 2 })
-    expect(allocation.reduce((a, b) => a + b, 0)).toBeCloseTo(1.25, 12)
-    expect(total).toBeCloseTo(
-      I.gaussianRateDistortion(4, 0.5, { base: 2 }) + I.gaussianRateDistortion(1, 0.5, { base: 2 }),
-      12,
-    )
-    expect(I.reverseWaterFilling([2, 3], 5).total).toBe(0)
-    expect(I.gaussianRateDistortion(1, 2)).toBe(0)
-    expect(() => I.reverseWaterFilling([1], 2)).toThrow()
-    expect(() => I.gaussianCapacity(-1)).toThrow()
-    expect(() => I.gaussianRateDistortion(0, 1)).toThrow()
   })
 })

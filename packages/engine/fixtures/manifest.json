@@ -290,7 +290,16 @@
         "npeet": "1.0.1",
         "pyitlib": "0.3.1"
       },
-      "cases": 23
+      "cases": 14
+    },
+    {
+      "fixture": "information/neighbour_estimators.json",
+      "source": "oracle/cases/information/neighbour_estimators.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "npeet": "1.0.1"
+      },
+      "cases": 10
     },
     {
       "fixture": "information/reed_solomon.json",

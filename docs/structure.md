@@ -1001,9 +1001,11 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
   (weighted divergence and distance), total variation, mutual information from tables, conditional and interaction
   (co-)information, PMI, NPMI, information gain and gain ratio; all differentiable.
 - `estimators.ts`: estimators from samples: plug-in with Miller-Madow correction (entropy and mutual information),
-  Kozachenko-Leonenko entropy, KSG mutual information (algorithms 1 and 2) and conditional mutual information, k-NN KL
-  divergence, Ross's mixed continuous-discrete estimator, kernel (Gaussian KDE) estimators, transfer entropy (plug-in
-  and KSG), variational bounds from critic scores (InfoNCE, NWJ, MINE); the k-NN searches use `numerics/spatial`.
+  kernel (Gaussian KDE) estimators, transfer entropy (plug-in and KSG), variational bounds from critic scores (InfoNCE,
+  NWJ, MINE).
+- `neighbour-estimators.ts`: k-nearest-neighbour estimators on `numerics/spatial` KD trees: Kozachenko-Leonenko
+  entropy, KSG mutual information (algorithms 1 and 2) and conditional mutual information, k-NN KL divergence, Ross's
+  mixed continuous-discrete estimator.
 - `divergences.ts`: the f-divergence family (named generators or any convex f), Renyi divergence and entropy, alpha
   and beta divergences, Bregman divergences (named or any convex function, gradients by autodiff), on discrete
   distributions and on grids (trapezoidal rule); all differentiable.
@@ -1016,9 +1018,11 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
 - `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
 - `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and
   an inflater with puff's checks), the zlib and gzip formats (compress and decompress), CRC-32 and Adler-32.
-- `channels.ts`: channel mutual information, capacity by Blahut-Arimoto (traced, with its bounds), rate-distortion by
-  Blahut's algorithm (traced) and R(D) curves, binary symmetric, erasure and Z channels, Gaussian channels
-  (Shannon-Hartley) and water-filling, reverse water-filling, binary and Gaussian R(D).
+- `channels.ts`: channel mutual information, capacity by Blahut-Arimoto (traced, with its bounds and an active-set Newton
+  refinement for optima on the boundary of the simplex), binary symmetric, erasure and Z channels, Gaussian channels
+  (Shannon-Hartley) and water-filling.
+- `rate-distortion.ts`: rate-distortion by Blahut's algorithm (traced) and R(D) curves, reverse water-filling, binary
+  and Gaussian R(D).
 - `error-correction.ts`: binary linear block codes (generator and parity-check matrices, syndromes, coset-leader
   decoding, minimum distance), parity, repetition and Hamming codes (extended too), bounds (Hamming, Singleton,
   Gilbert-Varshamov, Plotkin).

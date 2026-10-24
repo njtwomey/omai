@@ -1,39 +1,10 @@
 import { type Json, logSumExpOf, maxOf, pairwiseSum, WhiteboxError } from '../base/index.ts'
+import { solve } from '../numerics/linalg/index.ts'
 import { expandDims, mul, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import { type Channel, channelOf, checkProbability, distribution, h2 } from './_matrices.ts'
 import { float, logOfBase } from './_shared.ts'
 import { mutualInformation } from './discrete.ts'
-
-/** A discrete memoryless channel given by its transition matrix W[x][y] = P(y | x) (rows sum to one). */
-interface Channel {
-  readonly w: Float64Array
-  readonly nx: number
-  readonly ny: number
-}
-
-function matrixOf(m: TensorLike, name: string): Channel {
-  const v = float(m)
-  if (v.shape.length !== 2) throw new WhiteboxError('shape', `${name}: expected a matrix [rows, columns]`)
-  const [nx = 0, ny = 0] = v.shape
-  return { w: Float64Array.from(toFlat(v)), nx, ny }
-}
-
-function channelOf(transition: TensorLike, name: string): Channel {
-  const c = matrixOf(transition, name)
-  for (let x = 0; x < c.nx; x++) {
-    const row = c.w.subarray(x * c.ny, (x + 1) * c.ny)
-    if (row.some((p) => !(p >= 0)) || Math.abs(pairwiseSum(row) - 1) > 1e-9)
-      throw new WhiteboxError('value', `${name}: row ${x} of the transition matrix is not a distribution`)
-  }
-  return c
-}
-
-function distribution(p: TensorLike, n: number, name: string): Float64Array {
-  const xs = Float64Array.from(toFlat(float(p)))
-  if (xs.length !== n || xs.some((v) => !(v >= 0)) || Math.abs(pairwiseSum(xs) - 1) > 1e-9)
-    throw new WhiteboxError('value', `${name}: expected a distribution over ${n} values`)
-  return xs
-}
 
 /**
  * The mutual information I(X; Y) between the input and output of a channel, for an input distribution p(x) and
@@ -81,6 +52,114 @@ function divergences(c: Channel, input: Float64Array): { readonly d: Float64Arra
   return { d, output }
 }
 
+/** I(p) = sum p(x) D(W_x || q) in nats. */
+function information(c: Channel, input: Float64Array): number {
+  const { d } = divergences(c, input)
+  return pairwiseSum(Array.from(d, (v, x) => (input[x] ?? 0) * v))
+}
+
+/** Divide by the sum, in place. */
+function normalise(p: Float64Array): void {
+  const total = pairwiseSum(p)
+  for (let x = 0; x < p.length; x++) p[x] = (p[x] ?? 0) / total
+}
+
+/**
+ * Newton steps for max I(p) on the face of the simplex where p is positive: the Karush-Kuhn-Tucker system
+ * [H 1; 1' 0] [step; lambda] = [-D; 0] with the Hessian H(x, x') = -sum_y W(y | x) W(y | x') / q(y), a step that stops
+ * at the boundary when a coordinate would turn negative (that symbol leaves the support), and backtracking until I
+ * improves. Returns false when the system cannot be solved.
+ */
+function newtonOnSupport(c: Channel, p: Float64Array, support: number[]): boolean {
+  for (let iteration = 0; iteration < 50 && support.length > 1; iteration++) {
+    const { d, output } = divergences(c, p)
+    const value = pairwiseSum(Array.from(d, (v, x) => (p[x] ?? 0) * v))
+    const s = support.length
+    const kkt = Array.from({ length: s + 1 }, (_, i) =>
+      Array.from({ length: s + 1 }, (_, j) => {
+        if (i === s || j === s) return i === s && j === s ? 0 : 1
+        const a = support[i] ?? 0
+        const b = support[j] ?? 0
+        // A slight ridge keeps the system regular when rows repeat (the optimal input is then not unique).
+        let h = i === j ? -1e-12 : 0
+        for (let y = 0; y < c.ny; y++) {
+          const qy = output[y] ?? 0
+          if (qy > 0) h -= ((c.w[a * c.ny + y] ?? 0) * (c.w[b * c.ny + y] ?? 0)) / qy
+        }
+        return h
+      }),
+    )
+    let step: number[]
+    try {
+      step = toFlat(solve(kkt, [...support.map((x) => -(d[x] ?? 0)), 0])).slice(0, s)
+    } catch {
+      return false
+    }
+    if (!step.every(Number.isFinite)) return false
+    if (maxOf(step.map(Math.abs)) < 1e-15) return true
+    let limit = 1
+    let blocking = -1
+    support.forEach((x, i) => {
+      const di = step[i] ?? 0
+      if (di < 0 && -(p[x] ?? 0) / di < limit) {
+        limit = -(p[x] ?? 0) / di
+        blocking = x
+      }
+    })
+    let accepted: Float64Array | undefined
+    for (let k = 0, t = limit; k < 40; k++, t /= 2) {
+      const candidate = Float64Array.from(p)
+      support.forEach((x, i) => {
+        candidate[x] = Math.max(0, (p[x] ?? 0) + t * (step[i] ?? 0))
+      })
+      if (k === 0 && blocking >= 0) candidate[blocking] = 0
+      normalise(candidate)
+      if (information(c, candidate) >= value) {
+        accepted = candidate
+        break
+      }
+    }
+    if (accepted === undefined) return true
+    p.set(accepted)
+    for (let i = support.length - 1; i >= 0; i--) if ((p[support[i] ?? 0] ?? 0) <= 0) support.splice(i, 1)
+  }
+  return true
+}
+
+/**
+ * An active-set Newton refinement of an input distribution for the capacity problem: Newton steps on the current
+ * support, then the optimality condition D(W_x || q) <= I(p) for the symbols outside it, bringing back the most
+ * violating symbol until none violates. Blahut-Arimoto alone converges only sublinearly when the optimal input leaves
+ * symbols unused (or nearly so); this converges quadratically once the support is right. Undefined when a Newton
+ * system cannot be solved.
+ */
+function newtonRefine(c: Channel, start: Float64Array): Float64Array | undefined {
+  const p = Float64Array.from(start)
+  const largest = maxOf(p)
+  for (let x = 0; x < c.nx; x++) if ((p[x] ?? 0) <= 1e-9 * largest) p[x] = 0
+  normalise(p)
+  const support = Array.from({ length: c.nx }, (_, x) => x).filter((x) => (p[x] ?? 0) > 0)
+  for (let round = 0; round <= 2 * c.nx; round++) {
+    if (!newtonOnSupport(c, p, support)) return undefined
+    const { d } = divergences(c, p)
+    const value = pairwiseSum(Array.from(d, (v, x) => (p[x] ?? 0) * v))
+    let violator = -1
+    let worst = value + 1e-13
+    for (let x = 0; x < c.nx; x++) {
+      if (!support.includes(x) && (d[x] ?? 0) > worst) {
+        worst = d[x] ?? 0
+        violator = x
+      }
+    }
+    if (violator < 0) return p
+    p[violator] = 1e-3
+    normalise(p)
+    support.push(violator)
+    support.sort((a, b) => a - b)
+  }
+  return p
+}
+
 /** The state of {@link blahutArimotoAlgorithm}. */
 export interface BlahutArimotoState {
   /** The current input distribution. */
@@ -94,7 +173,9 @@ export interface BlahutArimotoState {
  * The Blahut-Arimoto algorithm (1972) for the capacity of a discrete memoryless channel, as a traced algorithm: each
  * step reweights the input distribution by exp(D(W_x || q)), the divergence of each input's output distribution from
  * the current output distribution q. The bounds log sum p(x) exp(D_x) <= C <= max D_x close in on the capacity; the
- * run converges when they are within `tol`.
+ * run converges when they are within `tol`. Every tenth step also tries a Newton refinement on the current support
+ * (kept when it narrows the bounds), which fixes the sublinear convergence of the plain iteration when the optimal input
+ * leaves some symbols unused.
  *
  * @param transition - The transition matrix `[inputs, outputs]`.
  * @param options - Tolerance on the gap between the bounds, in nats (default 1e-10), and a starting input distribution
@@ -136,10 +217,17 @@ export function blahutArimotoAlgorithm(
       tensors: { input: { role: 'state', description: 'the input distribution' } },
     }),
     init: () => bounds(start),
-    step: (s) => {
+    step: (s, ctx) => {
       const w = logWeights(s.input, divergences(c, s.input).d)
       const z = logSumExpOf(w)
-      return bounds(Float64Array.from(w, (v) => Math.exp(v - z)))
+      const next = bounds(Float64Array.from(w, (v) => Math.exp(v - z)))
+      if (ctx.t % 10 !== 9 || next.upper - next.lower < tol) return next
+      const refined = newtonRefine(c, next.input)
+      if (refined === undefined) return next
+      // Keep a trace of every symbol so that a wrongly dropped one can still grow back.
+      const floored = Float64Array.from(refined, (v) => Math.max(v, 1e-300))
+      const candidate = bounds(floored)
+      return candidate.upper - candidate.lower < next.upper - next.lower ? candidate : next
     },
     done: (s) => (s.upper - s.lower < tol ? 'converged' : undefined),
     observe: (s) => ({
@@ -157,6 +245,8 @@ export interface CapacityResult {
   /** The output distribution it induces (unique). */
   readonly output: Tensor
   readonly iterations: number
+  /** Whether the bounds met within the tolerance (when false, `lower` and `upper` still bracket the capacity). */
+  readonly converged: boolean
   /** Final lower and upper bounds, in the chosen base. */
   readonly lower: number
   readonly upper: number
@@ -171,10 +261,10 @@ export type BlahutOptions = { readonly tol?: number; readonly maxIter?: number; 
  * The capacity C = max over p(x) of I(X; Y) of a discrete memoryless channel, by the traced Blahut-Arimoto algorithm.
  *
  * @param transition - The transition matrix `[inputs, outputs]`.
- * @param options - Tolerance on the gap (default 1e-10 nats), iteration cap (default 100000; convergence is slow when
- *   the optimal input leaves some symbols unused), base, and a tracer and policy.
- * @returns The capacity, the optimal input and output distributions and the bounds.
- * @throws WhiteboxError with code `convergence` when the bounds do not meet within the iteration cap.
+ * @param options - Tolerance on the gap (default 1e-10 nats), iteration cap (default 10000), base, and a tracer and
+ *   policy.
+ * @returns The capacity (the midpoint of the bounds), the optimal input and output distributions, the bounds and
+ *   whether they met within the tolerance.
  * @concept channel-capacity
  * @example
  * ```ts
@@ -188,205 +278,24 @@ export function channelCapacity(transition: TensorLike, options: BlahutOptions =
   const c = channelOf(transition, 'channelCapacity')
   const result = runAlgorithm(blahutArimotoAlgorithm(transition, tol === undefined ? {} : { tol }), {
     ...run,
-    maxSteps: maxIter ?? 100000,
+    maxSteps: maxIter ?? 10000,
   })
-  if (result.status !== 'converged') throw new WhiteboxError('convergence', 'channelCapacity: the bounds did not meet')
   const scale = logOfBase(base)
   return {
     capacity: (result.state.lower + result.state.upper) / 2 / scale,
     input: tensor(Array.from(result.state.input)),
     output: tensor(Array.from(divergences(c, result.state.input).output)),
     iterations: result.steps,
+    converged: result.status === 'converged',
     lower: result.state.lower / scale,
     upper: result.state.upper / scale,
   }
-}
-
-/** The state of {@link rateDistortionAlgorithm}. */
-export interface RateDistortionState {
-  /** The reproduction distribution q(xhat). */
-  readonly output: Float64Array
-  /** The test channel Q(xhat | x), row-major `[x, xhat]`. */
-  readonly conditional: Float64Array
-  /** I(X; Xhat) in nats and the expected distortion. */
-  readonly rate: number
-  readonly distortion: number
-  /** The largest change of q in the last step. */
-  readonly change: number
-}
-
-/**
- * Blahut's algorithm (1972) for a point on the rate-distortion curve of a discrete source, as a traced algorithm. For a
- * slope parameter beta > 0 it alternates Q(xhat | x) proportional to q(xhat) exp(-beta d(x, xhat)) with
- * q(xhat) = sum p(x) Q(xhat | x); the fixed point minimises I(X; Xhat) + beta E d(X, Xhat), giving the point of the
- * curve R(D) with slope -beta.
- *
- * @param source - The source distribution p(x).
- * @param distortion - The distortion matrix d `[x, xhat]`.
- * @param beta - The slope parameter (larger: less distortion, more rate).
- * @param options - Tolerance on the change of q (default 1e-12).
- * @returns The algorithm.
- * @concept rate-distortion
- * @example
- * ```ts
- * import { rateDistortionAlgorithm } from 'whitebox-engine/information'
- * import { runAlgorithm } from 'whitebox-engine/trace'
- * const hamming = [[0, 1], [1, 0]]
- * runAlgorithm(rateDistortionAlgorithm([0.5, 0.5], hamming, 2), { maxSteps: 500 }).status // => 'converged'
- * ```
- */
-export function rateDistortionAlgorithm(
-  source: TensorLike,
-  distortion: TensorLike,
-  beta: number,
-  options: { readonly tol?: number } = {},
-): Algorithm<RateDistortionState> {
-  const d = matrixOf(distortion, 'rateDistortionAlgorithm')
-  const p = distribution(source, d.nx, 'rateDistortionAlgorithm')
-  if (!(beta > 0)) throw new WhiteboxError('value', 'rateDistortionAlgorithm: beta must be positive')
-  const tol = options.tol ?? 1e-12
-  const { nx, ny } = d
-  const evaluate = (q: Float64Array, change: number): RateDistortionState => {
-    const conditional = new Float64Array(nx * ny)
-    for (let x = 0; x < nx; x++) {
-      const logs = Array.from({ length: ny }, (_, j) =>
-        (q[j] ?? 0) > 0 ? Math.log(q[j] ?? 0) - beta * (d.w[x * ny + j] ?? 0) : Number.NEGATIVE_INFINITY,
-      )
-      const z = logSumExpOf(logs)
-      for (let j = 0; j < ny; j++) conditional[x * ny + j] = Math.exp((logs[j] ?? 0) - z)
-    }
-    const output = new Float64Array(ny)
-    for (let x = 0; x < nx; x++)
-      for (let j = 0; j < ny; j++) output[j] = (output[j] ?? 0) + (p[x] ?? 0) * (conditional[x * ny + j] ?? 0)
-    const rateTerms: number[] = []
-    const distortionTerms: number[] = []
-    for (let x = 0; x < nx; x++)
-      for (let j = 0; j < ny; j++) {
-        const pq = (p[x] ?? 0) * (conditional[x * ny + j] ?? 0)
-        if (pq > 0) rateTerms.push(pq * Math.log((conditional[x * ny + j] ?? 0) / (output[j] ?? 0)))
-        distortionTerms.push(pq * (d.w[x * ny + j] ?? 0))
-      }
-    return { output, conditional, rate: pairwiseSum(rateTerms), distortion: pairwiseSum(distortionTerms), change }
-  }
-  return {
-    name: 'blahutRateDistortion',
-    config: { symbols: nx, reproductions: ny, beta, tol } as Json,
-    schema: channels({
-      metrics: {
-        rate: { description: 'I(X; Xhat) of the current test channel', unit: 'nats' },
-        distortion: { description: 'expected distortion of the current test channel' },
-        change: { description: 'largest change of the reproduction distribution', direction: 'lower' },
-      },
-      tensors: { output: { role: 'state', description: 'the reproduction distribution q(xhat)' } },
-    }),
-    init: () => evaluate(new Float64Array(ny).fill(1 / ny), Number.POSITIVE_INFINITY),
-    step: (s) => {
-      const next = evaluate(s.output, 0)
-      let change = 0
-      for (let j = 0; j < ny; j++) change = Math.max(change, Math.abs((next.output[j] ?? 0) - (s.output[j] ?? 0)))
-      return { ...next, change }
-    },
-    done: (s) => (s.change < tol ? 'converged' : undefined),
-    observe: (s) => ({
-      metrics: { rate: s.rate, distortion: s.distortion, change: s.change },
-      tensors: { output: { role: 'state', value: s.output } },
-    }),
-  }
-}
-
-/** A point of the rate-distortion curve and its test channel. */
-export interface RateDistortionPoint {
-  readonly beta: number
-  readonly rate: number
-  readonly distortion: number
-  /** The optimal test channel Q(xhat | x) `[x, xhat]`. */
-  readonly conditional: Tensor
-  /** The reproduction distribution q(xhat). */
-  readonly output: Tensor
-  readonly iterations: number
-}
-
-/**
- * The point of the rate-distortion function R(D) = min I(X; Xhat) subject to E d <= D with slope -beta, by the traced
- * Blahut algorithm.
- *
- * @param source - The source distribution p(x).
- * @param distortion - The distortion matrix `[x, xhat]`.
- * @param beta - The slope parameter.
- * @param options - Tolerance, iteration cap (default 10000), base for the rate, tracer and policy.
- * @returns The rate, distortion, test channel and reproduction distribution.
- * @throws WhiteboxError with code `convergence` when the iteration cap is reached.
- * @concept rate-distortion
- * @example
- * ```ts
- * import { binaryEntropy, rateDistortion } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
- * // A fair bit under Hamming distortion: R(D) = 1 - h(D).
- * const point = rateDistortion([0.5, 0.5], [[0, 1], [1, 0]], 2, { base: 2 })
- * Math.abs(point.rate - (1 - item(binaryEntropy(point.distortion, { base: 2 })))) < 1e-9 // => true
- * ```
- */
-export function rateDistortion(
-  source: TensorLike,
-  distortion: TensorLike,
-  beta: number,
-  options: BlahutOptions = {},
-): RateDistortionPoint {
-  const { tol, maxIter, base, ...run } = options
-  const algorithm = rateDistortionAlgorithm(source, distortion, beta, tol === undefined ? {} : { tol })
-  const result = runAlgorithm(algorithm, { ...run, maxSteps: maxIter ?? 10000 })
-  if (result.status !== 'converged') throw new WhiteboxError('convergence', 'rateDistortion: no fixed point reached')
-  const { ny } = matrixOf(distortion, 'rateDistortion')
-  const s = result.state
-  return {
-    beta,
-    rate: s.rate / logOfBase(base),
-    distortion: s.distortion,
-    conditional: tensor(
-      Array.from({ length: s.conditional.length / ny }, (_, x) =>
-        Array.from(s.conditional.subarray(x * ny, (x + 1) * ny)),
-      ),
-    ),
-    output: tensor(Array.from(s.output)),
-    iterations: result.steps,
-  }
-}
-
-/**
- * Points of the rate-distortion curve for several slopes (each by {@link rateDistortion}).
- *
- * @param source - The source distribution p(x).
- * @param distortion - The distortion matrix `[x, xhat]`.
- * @param betas - Slope parameters.
- * @param options - As for {@link rateDistortion} (one tracer records every run).
- * @returns The points, in the order of `betas`.
- * @concept rate-distortion
- * @example
- * ```ts
- * import { rateDistortionCurve } from 'whitebox-engine/information'
- * const curve = rateDistortionCurve([0.5, 0.5], [[0, 1], [1, 0]], [1, 2, 4])
- * curve.every((p, i) => i === 0 || p.rate > (curve[i - 1]?.rate ?? 0)) // => true
- * ```
- */
-export function rateDistortionCurve(
-  source: TensorLike,
-  distortion: TensorLike,
-  betas: readonly number[],
-  options: BlahutOptions = {},
-): RateDistortionPoint[] {
-  return betas.map((beta) => rateDistortion(source, distortion, beta, options))
 }
 
 /** A named channel: its transition matrix and its capacity. */
 export interface NamedChannel {
   readonly transition: Tensor
   readonly capacity: number
-}
-
-const h2 = (p: number): number => (p <= 0 || p >= 1 ? 0 : -p * Math.log(p) - (1 - p) * Math.log(1 - p))
-
-function checkProbability(p: number, name: string): void {
-  if (!(p >= 0 && p <= 1)) throw new WhiteboxError('value', `${name}: the probability must lie in [0, 1]`)
 }
 
 /**
@@ -534,90 +443,4 @@ export function waterFilling(
   const allocation = noise.map((n) => Math.max(0, level - n))
   const total = pairwiseSum(allocation.map((a, i) => 0.5 * Math.log1p(a / (noise[i] ?? 1)))) / logOfBase(options.base)
   return { allocation, level, total }
-}
-
-/**
- * Reverse water-filling: the rate-distortion function of independent Gaussian components with variances s_i under
- * total squared-error distortion D. Each component gets distortion min(lambda, s_i), with lambda set so that they
- * sum to D, and the rate is sum (1/2) log(s_i / D_i).
- *
- * @param variances - Component variances s_i > 0.
- * @param distortion - The total distortion D, between 0 and sum s_i.
- * @param options - The base of the rate (default e).
- * @returns The distortions, the level lambda and the rate.
- * @concept rate-distortion
- * @example
- * ```ts
- * import { reverseWaterFilling } from 'whitebox-engine/information'
- * reverseWaterFilling([4, 1, 0.25], 1.25).allocation // => [0.5, 0.5, 0.25]
- * ```
- */
-export function reverseWaterFilling(
-  variances: readonly number[],
-  distortion: number,
-  options: { readonly base?: number } = {},
-): WaterFillingResult {
-  const total = pairwiseSum(variances)
-  if (variances.length === 0 || variances.some((s) => !(s > 0)) || !(distortion > 0 && distortion <= total))
-    throw new WhiteboxError('value', 'reverseWaterFilling: variances must be positive and 0 < D <= sum of variances')
-  const sorted = [...variances].sort((a, b) => a - b)
-  let level = sorted[sorted.length - 1] ?? 0
-  let below = 0
-  for (let k = 0; k < sorted.length; k++) {
-    // The k smallest variances are fully distorted; the rest share the level.
-    const candidate = (distortion - below) / (sorted.length - k)
-    if (candidate <= (sorted[k] ?? 0)) {
-      level = candidate
-      break
-    }
-    below += sorted[k] ?? 0
-  }
-  const allocation = variances.map((s) => Math.min(level, s))
-  const rate = pairwiseSum(variances.map((s, i) => 0.5 * Math.log(s / (allocation[i] ?? s)))) / logOfBase(options.base)
-  return { allocation, level, total: rate }
-}
-
-/**
- * The rate-distortion function of a Bernoulli(p) source under Hamming distortion, R(D) = h(p) - h(D) for
- * D < min(p, 1 - p) and 0 beyond.
- *
- * @param p - The source probability.
- * @param distortion - The allowed bit-error rate D.
- * @param options - The base (default e).
- * @returns R(D).
- * @concept rate-distortion
- * @example
- * ```ts
- * import { binaryRateDistortion } from 'whitebox-engine/information'
- * binaryRateDistortion(0.5, 0, { base: 2 }) // => 1
- * ```
- */
-export function binaryRateDistortion(p: number, distortion: number, options: { readonly base?: number } = {}): number {
-  checkProbability(p, 'binaryRateDistortion')
-  if (!(distortion >= 0)) throw new WhiteboxError('value', 'binaryRateDistortion: distortion must be non-negative')
-  return distortion >= Math.min(p, 1 - p) ? 0 : (h2(p) - h2(distortion)) / logOfBase(options.base)
-}
-
-/**
- * The rate-distortion function of a Gaussian source under squared error, R(D) = max(0, (1/2) log(variance / D)).
- *
- * @param variance - The source variance.
- * @param distortion - The allowed mean squared error D > 0.
- * @param options - The base (default e).
- * @returns R(D).
- * @concept rate-distortion
- * @example
- * ```ts
- * import { gaussianRateDistortion } from 'whitebox-engine/information'
- * gaussianRateDistortion(4, 1, { base: 2 }) // => 1
- * ```
- */
-export function gaussianRateDistortion(
-  variance: number,
-  distortion: number,
-  options: { readonly base?: number } = {},
-): number {
-  if (!(variance > 0 && distortion > 0))
-    throw new WhiteboxError('value', 'gaussianRateDistortion: arguments must be positive')
-  return Math.max(0, 0.5 * Math.log(variance / distortion)) / logOfBase(options.base)
 }
