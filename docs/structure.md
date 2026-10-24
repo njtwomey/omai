@@ -2927,6 +2927,7 @@ built from: `optim` (solvers), `losses`, `dists/families`, `numerics/linalg`, `s
   selection.
 - `paths.ts`: the regularisation paths and cross-validation along them that `regression.ts` uses (`enetPath`,
   `lassoPath`, `ridgePath`, `cvPath`, the one-standard-error rule).
+- `lars.ts`: least angle regression and lasso-LARS (`larsPath`, `lars`, `lassoLars`), traced one knot per step.
 - `classification.ts`: `logisticRegression` (binary and multinomial, L1, L2 and elastic net), `probitRegression`,
   `ridgeClassifier`, `perceptron`, `sgdClassifier`, `passiveAggressive`.
 - `glm.ts`: Poisson, gamma, inverse Gaussian, Tweedie and negative binomial regression, zero-inflated and hurdle models,
