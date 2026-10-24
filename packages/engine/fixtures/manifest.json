@@ -1507,6 +1507,14 @@
       "cases": 16
     },
     {
+      "fixture": "methods/naive_bayes/naive_bayes.json",
+      "source": "oracle/cases/methods/naive_bayes/naive_bayes.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "methods/neighbours/centroid.json",
       "source": "oracle/cases/methods/neighbours/centroid.py",
       "reference": {
