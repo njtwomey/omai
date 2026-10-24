@@ -1486,6 +1486,14 @@
       "cases": 4
     },
     {
+      "fixture": "methods/linear/lars.json",
+      "source": "oracle/cases/methods/linear/lars.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "methods/linear/regression.json",
       "source": "oracle/cases/methods/linear/regression.py",
       "reference": {
