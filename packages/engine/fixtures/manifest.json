@@ -1348,6 +1348,41 @@
       "cases": 6
     },
     {
+      "fixture": "methods/linear/classification.json",
+      "source": "oracle/cases/methods/linear/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "methods/linear/glm.json",
+      "source": "oracle/cases/methods/linear/glm.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "methods/linear/regression.json",
+      "source": "oracle/cases/methods/linear/regression.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "methods/linear/robust.json",
+      "source": "oracle/cases/methods/linear/robust.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/mixture/gaussian.json",
       "source": "oracle/cases/methods/mixture/gaussian.py",
       "reference": {
