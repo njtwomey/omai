@@ -9,6 +9,7 @@ import {
   matrixView,
 } from '../../lib/learn/index.ts'
 import { geometry } from '../../lib/numerics/index.ts'
+import { foldIn, type Key, normal } from '../../lib/random/index.ts'
 import { dict, int, real } from '../../lib/space/index.ts'
 import { quantile } from '../../lib/stats/index.ts'
 import { toArray } from '../../lib/tensor/index.ts'
@@ -26,6 +27,10 @@ export interface AffinityPropagationState {
   readonly history: number[][]
 }
 
+const EPS = 2.220446049250313e-16
+/** 100 times the smallest normal double, sklearn's additive noise scale. */
+const TINY_100 = 100 * 2.2250738585072014e-308
+
 /** Labels from exemplars: each row to its most similar exemplar, exemplars to themselves. */
 function exemplarLabels(s: readonly (readonly number[])[], exemplars: readonly number[]): number[] {
   return s.map((row, i) => {
@@ -39,8 +44,7 @@ function exemplarLabels(s: readonly (readonly number[])[], exemplars: readonly n
 }
 
 /**
- * Affinity propagation's message passing (Frey and Dueck 2007; sklearn's loop, without its tie-breaking noise) as a
- * traced algorithm: damped responsibility and availability updates; it has converged when the exemplar set has not
+ * Affinity propagation's message passing (Frey and Dueck 2007; sklearn's loop) as a traced algorithm: damped responsibility and availability updates; it has converged when the exemplar set has not
  * changed for `convergenceIter` iterations.
  *
  * @param s - Similarities `[n][n]` with the preferences on the diagonal.
@@ -130,7 +134,11 @@ export function affinityPropagation(
       kind: 'clusterer',
       hyperSpace: (h) =>
         dict({
-          damping: real(0.5, 0.99, { default: h.damping ?? 0.5 }),
+          damping: real(0.5, 0.99, {
+            default: h.damping ?? 0.5,
+            label: 'damping',
+            description: 'The share of the previous message each update keeps: higher is slower but steadier.',
+          }),
           maxIter: int(10, 1000, { default: h.maxIter ?? 200, label: 'iterations' }),
         }),
       fit: (data, h, options) => {
@@ -138,13 +146,22 @@ export function affinityPropagation(
         const rows = Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
         const sim = (toArray(geometry.cdist(rows, rows, 'sqeuclidean')) as number[][]).map((r) => r.map((v) => -v))
         const pref = h.preference ?? quantile(sim.flat(), 0.5)
-        const s = sim.map((r, i) => r.map((v, j) => (i === j ? pref : v)))
+        // sklearn's tie-breaking noise, (eps |s| + 100 tiny) N(0, 1) per entry: without it, symmetric similarities
+        // (two equally good exemplars) make the messages oscillate at low damping instead of converging.
+        const run = fitRunOptions(options, 'affinity-propagation')
+        const noise = normal(foldIn(run.key as Key, 0), [m.n, m.n]).data
+        const s = sim.map((r, i) =>
+          r.map((v, j) => {
+            const value = i === j ? pref : v
+            return value + (EPS * value + TINY_100) * (noise[i * m.n + j] ?? 0)
+          }),
+        )
         const out = runAlgorithm(
           affinityPropagationAlgorithm(s, {
             ...(h.damping === undefined ? {} : { damping: h.damping }),
             ...(h.convergenceIter === undefined ? {} : { convergenceIter: h.convergenceIter }),
           }),
-          { ...fitRunOptions(options, 'affinity-propagation'), maxSteps: h.maxIter ?? 200 },
+          { ...run, maxSteps: h.maxIter ?? 200 },
         )
         let exemplars = (out.state.recent.at(-1) ?? []).flatMap((v, i) => (v ? [i] : []))
         if (exemplars.length === 0) throw new WhiteboxError('convergence', 'affinityPropagation: no exemplars emerged')

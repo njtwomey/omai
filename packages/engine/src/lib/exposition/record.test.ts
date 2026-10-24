@@ -24,6 +24,16 @@ describe('exposition records', () => {
     ).toThrow(/rowValues/)
     expect(() => E.inputRows({ points: [[0, 0, 0]], features: ['a', 'b'] })).toThrow(/points/)
     expect(() =>
+      E.clusteringSteps({ method: 'cop', assignments: [[0, 1]], constraints: { mustLink: [[0, 2]], cannotLink: [] } }),
+    ).toThrow(/constraints\.mustLink\[0\]/)
+    expect(() =>
+      E.clusteringSteps({
+        method: 'cop',
+        assignments: [[0, 1]],
+        constraints: { mustLink: [], cannotLink: [[0, 1]], brokenCannotLink: [1] },
+      }),
+    ).toThrow(/brokenCannotLink/)
+    expect(() =>
       E.marginRecord({ support: [], dualCoefficients: [], intercept: 0, margins: [], dualObjective: [1], steps: [] }),
     ).toThrow(/steps/)
     expect(() => E.mixtureSteps({ family: 'gaussian', weights: [], means: [], objective: [1] })).toThrow(/weights/)
