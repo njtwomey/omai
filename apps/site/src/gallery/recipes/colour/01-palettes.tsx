@@ -1,13 +1,13 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { cartesian, heatmap, type RampSpec } from 'whitebox-render/charts'
 import { figure } from 'whitebox-render/figure'
-import { Chart, Choice, ControlPanel, FigureFrame, Toggle, useColourMode } from 'whitebox-render/react'
+import { Chart, ControlPanel, FigureFrame, Select, Toggle, useColourMode } from 'whitebox-render/react'
 import { colourBlindCheck, divergingRamp, sequentialRamp, simulateColourVision, tab10 } from 'whitebox-render/theme'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Palettes and ramps',
-  question: 'Which colours does whitebox use for categories and for continuous values?',
+  question: 'How do I colour categories and continuous values?',
   explain:
     'Categories use tab10 in order (`tab0` to `tab9`, also scene tokens); continuous values use sequential ramps (`viridis`, `magma`, and `blues` and `greys`, which start from the theme surface) or diverging ramps with a pale midpoint, for signed fields with `centre: 0`. `simulateColourVision` and `colourBlindCheck` show how the colours read with a colour-vision deficiency.',
 }
@@ -59,8 +59,8 @@ export default function Palettes(): ReactNode {
   return (
     <div className="flex flex-col gap-3">
       <ControlPanel columns={3}>
-        <Choice label="ramp" value={ramp} options={ramps} onChange={setRamp} />
-        <Choice label="vision" value={vision} options={visions} onChange={setVision} />
+        <Select label="ramp" value={ramp} options={ramps} onChange={setRamp} />
+        <Select label="vision" value={vision} options={visions} onChange={setVision} />
         <Toggle label="centre at zero" value={signed} onChange={setSigned} />
       </ControlPanel>
       <div className="flex flex-wrap items-start gap-6">

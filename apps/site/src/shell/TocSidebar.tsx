@@ -1,6 +1,6 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { Link } from './Link.tsx'
-import { ancestorsOf, filterToc, innerIds, type TocNode } from './toc.ts'
+import { filterToc, innerIds, locate, type TocNode } from './toc.ts'
 
 /** Props of {@link TocSidebar}. */
 export interface TocSidebarProps {
@@ -16,7 +16,8 @@ export interface TocSidebarProps {
 
 /**
  * The left-hand contents of a section: a filter box, then the tree as given, every folder closed except those on the
- * way to the current page, which is highlighted. A folder's chevron opens or closes it; its name links its own page
+ * way to the current page, which is highlighted whatever kind of node it is (a leaf, a folder that links its page, or a
+ * folder page whose folder links nothing, found by {@link locate}). A folder's chevron opens or closes it; its name links its own page
  * when it has a `path` (and toggles it otherwise). Typing in the filter shows only the matching nodes and the folders
  * above them, opened.
  *
@@ -32,7 +33,8 @@ export function TocSidebar(props: TocSidebarProps): ReactNode {
     ids: new Set(),
   })
   const flipped = toggled.page === current ? toggled.ids : new Set<string>()
-  const trail = useMemo(() => new Set(ancestorsOf(nodes, current)), [nodes, current])
+  const here = useMemo(() => locate(nodes, current), [nodes, current])
+  const trail = useMemo(() => new Set(here.open), [here])
   const shown = useMemo(() => filterToc(nodes, query), [nodes, query])
   const filtering = query.trim() !== ''
   const forced = useMemo(() => new Set(filtering ? innerIds(shown) : []), [filtering, shown])
@@ -66,7 +68,7 @@ export function TocSidebar(props: TocSidebarProps): ReactNode {
       </div>
       <nav aria-label="Contents" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-6 text-sm">
         {shown.length === 0 ? <p className="px-2 py-1 text-xs text-muted">Nothing matches.</p> : null}
-        <TocList nodes={shown} depth={0} current={current} isOpen={isOpen} toggle={toggle} />
+        <TocList nodes={shown} depth={0} current={here.id} isOpen={isOpen} toggle={toggle} />
       </nav>
     </div>
   )
@@ -75,7 +77,8 @@ export function TocSidebar(props: TocSidebarProps): ReactNode {
 function TocList(props: {
   readonly nodes: readonly TocNode[]
   readonly depth: number
-  readonly current: string
+  /** The id of the current page's node, whatever kind of node it is. */
+  readonly current: string | undefined
   readonly isOpen: (id: string) => boolean
   readonly toggle: (id: string) => void
 }): ReactNode {
@@ -84,7 +87,7 @@ function TocList(props: {
     <ul className="m-0 list-none p-0">
       {nodes.map((n) => {
         const folder = n.children !== undefined && n.children.length > 0
-        const here = n.path !== undefined && n.path === current
+        const here = n.id === current
         const opened = folder && isOpen(n.id)
         const indent = { paddingLeft: `${0.5 + depth * 0.85}rem` }
         return (
@@ -118,7 +121,8 @@ function TocList(props: {
                   <button
                     type="button"
                     onClick={() => toggle(n.id)}
-                    className="min-w-0 flex-1 truncate py-1 pr-2 pl-0.5 text-left text-fg"
+                    aria-current={here ? 'page' : undefined}
+                    className={`min-w-0 flex-1 truncate py-1 pr-2 pl-0.5 text-left ${here ? 'font-medium text-accent' : 'text-fg'}`}
                   >
                     {n.title}
                   </button>

@@ -6,7 +6,7 @@ import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Shared axes',
-  question: 'How do panels share an x or y range?',
+  question: 'How do I make panels share an x or y range?',
   explain:
     "A cell with `sharex: 'id'` (or `sharey`) uses that cell’s axis range: the union of their data under the first panel’s limits, with inner tick labels hidden, and hover linked across them. Turn sharing off to see each panel fit its own data.",
 }

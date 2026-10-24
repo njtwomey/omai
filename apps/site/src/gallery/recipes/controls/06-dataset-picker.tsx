@@ -1,7 +1,15 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { scatterChart } from 'whitebox-render/charts'
 import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, DatasetPicker, selectEntry, useColourMode, useDataset } from 'whitebox-render/react'
+import {
+  Chart,
+  ControlPanel,
+  DatasetPicker,
+  FigureFrame,
+  selectEntry,
+  useColourMode,
+  useDataset,
+} from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -36,7 +44,9 @@ export default function DatasetPickerRecipe(): ReactNode {
       <ControlPanel columns={3}>
         <DatasetPicker collection={COLLECTION} value={selection} onChange={setSelection} />
       </ControlPanel>
-      <Chart option={option} figure={FIGURE} />
+      <FigureFrame figure={FIGURE} filename="dataset">
+        <Chart option={option} />
+      </FigureFrame>
     </div>
   )
 }

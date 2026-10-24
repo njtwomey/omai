@@ -66,7 +66,7 @@ export default function PlateNotation(): ReactNode {
       <ControlPanel>
         <Choice label="model" value={name} options={Object.keys(MODELS)} onChange={setName} />
       </ControlPanel>
-      <StructureView structure={MODELS[name] ?? lda} />
+      <StructureView structure={MODELS[name] ?? lda} frame={{ filename: 'plates' }} />
     </div>
   )
 }

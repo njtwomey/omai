@@ -4,6 +4,7 @@ import { figure } from 'whitebox-render/figure'
 import {
   Chart,
   DraggablePoints,
+  FigureFrame,
   InteractionOverlay,
   inBox,
   Overlaid,
@@ -55,29 +56,32 @@ export default function ClickToAdd(): ReactNode {
   }, [points, mode])
   return (
     <div className="flex flex-col gap-2">
-      <Overlaid
-        width={FIGURE.width}
-        height={FIGURE.height}
-        overlay={
-          projection === null ? null : (
-            <InteractionOverlay projection={projection} width={FIGURE.width} height={FIGURE.height}>
-              <DraggablePoints
-                points={points}
-                onChange={setPoints}
-                constrain={inBox([0, 10], [0, 10])}
-                add
-                remove
-                max={30}
-              />
-            </InteractionOverlay>
-          )
-        }
+      <FigureFrame
+        figure={FIGURE}
+        filename="least-squares"
+        caption={`${points.length} points. Click to add, drag to move, double-click to remove.`}
       >
-        <Chart option={option} figure={FIGURE} onInit={onInit} />
-      </Overlaid>
-      <p className="m-0 text-xs text-muted">
-        {points.length} points. Click to add, drag to move, double-click to remove.
-      </p>
+        <Overlaid
+          width={FIGURE.width}
+          height={FIGURE.height}
+          overlay={
+            projection === null ? null : (
+              <InteractionOverlay projection={projection} width={FIGURE.width} height={FIGURE.height}>
+                <DraggablePoints
+                  points={points}
+                  onChange={setPoints}
+                  constrain={inBox([0, 10], [0, 10])}
+                  add
+                  remove
+                  max={30}
+                />
+              </InteractionOverlay>
+            )
+          }
+        >
+          <Chart option={option} figure={FIGURE} onInit={onInit} />
+        </Overlaid>
+      </FigureFrame>
     </div>
   )
 }

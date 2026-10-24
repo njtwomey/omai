@@ -3,7 +3,7 @@ import { key, normal } from 'whitebox-engine/random'
 import { toArray } from 'whitebox-engine/tensor'
 import { lineChart } from 'whitebox-render/charts'
 import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, SeedInput, Toggle, useColourMode } from 'whitebox-render/react'
+import { Chart, ControlPanel, FigureFrame, SeedInput, Toggle, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -41,7 +41,9 @@ export default function ToggleAndSeed(): ReactNode {
         <Toggle label="markers" value={markers} onChange={setMarkers} />
         <Toggle label="draw as steps" value={steps} onChange={setSteps} />
       </ControlPanel>
-      <Chart option={option} figure={FIGURE} />
+      <FigureFrame figure={FIGURE} filename="random-walk">
+        <Chart option={option} />
+      </FigureFrame>
     </div>
   )
 }

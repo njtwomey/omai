@@ -1,7 +1,7 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { lineChart } from 'whitebox-render/charts'
 import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, NumberField, useColourMode } from 'whitebox-render/react'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -32,7 +32,9 @@ export default function NumberFieldRecipe(): ReactNode {
         <NumberField label="decay rate" value={rate} onChange={setRate} min={1e-3} max={1} log />
         <NumberField label="steps shown" value={steps} onChange={setSteps} min={1} max={100} integer />
       </ControlPanel>
-      <Chart option={option} figure={FIGURE} />
+      <FigureFrame figure={FIGURE} filename="decay">
+        <Chart option={option} />
+      </FigureFrame>
     </div>
   )
 }
