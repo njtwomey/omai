@@ -4,10 +4,11 @@
  * printed, and any error with its example line. It runs once on first view, through whitebox-meta's runner with the
  * module map for its imports, on the page's thread (asynchronous waits are bounded; a synchronous loop is not).
  */
-import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { moduleLoaders } from 'whitebox-meta/modules'
 import { runExample } from 'whitebox-meta/runner'
 import type { Example, ExampleResult, ExpectationResult } from 'whitebox-meta/schema'
+import { highlight } from '../shell/highlight.ts'
 
 const STATUS: Record<ExpectationResult['status'], { readonly mark: string; readonly className: string }> = {
   pass: { mark: '✓', className: 'text-emerald-600 dark:text-emerald-400' },
@@ -51,6 +52,87 @@ function Outcome(props: { readonly e: ExpectationResult }): ReactNode {
   )
 }
 
+/**
+ * The code as an editor: the site's highlighter draws the code, and a transparent textarea over it takes the typing
+ * (caret and selection stay visible). `notes` puts a mark at the end of given lines: the outcome beside each `// =>`.
+ */
+function Editor(props: {
+  readonly code: string
+  readonly onChange: (code: string) => void
+  readonly onRun: () => void
+  readonly label: string
+  readonly notes: ReadonlyMap<number, ReactNode>
+}): ReactNode {
+  const { code, onChange, onRun, label, notes } = props
+  const lines = code.split('\n')
+  return (
+    <div className="overflow-x-auto">
+      <div className="relative inline-block min-w-full">
+        <pre
+          aria-hidden="true"
+          className="pointer-events-none m-0 p-3 font-mono text-[12.5px] leading-relaxed whitespace-pre"
+        >
+          {lines.map((line, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: lines are positions in the code
+            <div key={i}>
+              {line === ''
+                ? ' '
+                : highlight(line).map((t, j) =>
+                    t.kind === undefined ? (
+                      t.text
+                    ) : (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: tokens are positions in the line
+                      <span key={j} className={`tok-${t.kind}`}>
+                        {t.text}
+                      </span>
+                    ),
+                  )}
+              {notes.get(i)}
+            </div>
+          ))}
+        </pre>
+        <textarea
+          value={code}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+              e.preventDefault()
+              onRun()
+            }
+          }}
+          spellCheck={false}
+          wrap="off"
+          aria-label={label}
+          className="absolute inset-0 m-0 h-full w-full resize-none overflow-hidden bg-transparent p-3 font-mono text-[12.5px] leading-relaxed whitespace-pre text-transparent caret-fg outline-none selection:bg-accent/30"
+        />
+      </div>
+    </div>
+  )
+}
+
+/** The marks beside the code for a result: ✓ or ✗ with the value at each `// =>` line, the error at its line. */
+function notesFor(result: ExampleResult): Map<number, ReactNode> {
+  const notes = new Map<number, ReactNode>()
+  for (const e of result.expectations) {
+    if (e.status === 'skipped') continue
+    const s = STATUS[e.status]
+    notes.set(
+      e.line,
+      <span className={`select-none ${s.className}`}>
+        {'  '}
+        {s.mark}
+        {e.status === 'pass' ? null : <span>{` got ${oneLine(e.actual, 60) || '(nothing)'}`}</span>}
+      </span>,
+    )
+  }
+  if (result.error?.line !== undefined)
+    notes.set(
+      result.error.line,
+      <span className="select-none text-red-600 dark:text-red-400">{`  ← ${oneLine(result.error.message, 80)}`}</span>,
+    )
+  return notes
+}
+
 /** Run the example once it scrolls into view (pages hold many; running them all at load would stall the page). */
 function useFirstView(ref: RefObject<HTMLElement | null>, onView: () => void): void {
   useEffect(() => {
@@ -75,7 +157,7 @@ function useFirstView(ref: RefObject<HTMLElement | null>, onView: () => void): v
 export function LiveExample(props: { readonly example: Example }): ReactNode {
   const { example } = props
   const [code, setCode] = useState(example.code)
-  const [result, setResult] = useState<ExampleResult | null>(null)
+  const [result, setResult] = useState<{ readonly code: string; readonly result: ExampleResult } | null>(null)
   const [running, setRunning] = useState(false)
   const box = useRef<HTMLDivElement | null>(null)
   const latest = useRef(0)
@@ -86,26 +168,30 @@ export function LiveExample(props: { readonly example: Example }): ReactNode {
     await new Promise((r) => setTimeout(r, 0))
     const r = await runExample(text, { loaders: moduleLoaders, timeoutMs: 10_000 })
     if (ticket !== latest.current) return
-    setResult(r)
+    setResult({ code: text, result: r })
     setRunning(false)
   }, [])
   const first = useCallback(() => void run(example.code), [run, example.code])
   useFirstView(box, first)
   const edited = code !== example.code
-  const lines = code.split('\n').length
-  const ok = result?.ok === true
+  const shown = result?.result ?? null
+  const ok = shown?.ok === true
+  const notes = useMemo(
+    () => (result === null || result.code !== code ? new Map<number, ReactNode>() : notesFor(result.result)),
+    [result, code],
+  )
   return (
     <div ref={box} className="site-code overflow-hidden rounded-lg border border-line bg-surface">
       <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-1.5">
         <span className="truncate text-xs font-medium text-muted">
           {example.title || 'Example'}
-          {result === null ? null : (
+          {shown === null ? null : (
             <span className={ok ? STATUS.pass.className : STATUS.fail.className}>
               {' · '}
               {ok
-                ? `${result.expectations.length} checked`
-                : `${result.expectations.filter((e) => e.status !== 'pass').length || 1} problem(s)`}
-              {` · ${Math.round(result.ms)} ms`}
+                ? `${shown.expectations.length} checked`
+                : `${shown.expectations.filter((e) => e.status !== 'pass').length || 1} problem(s)`}
+              {` · ${Math.round(shown.ms)} ms`}
             </span>
           )}
         </span>
@@ -133,43 +219,35 @@ export function LiveExample(props: { readonly example: Example }): ReactNode {
           </button>
         </span>
       </div>
-      <textarea
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            e.preventDefault()
-            void run(code)
-          }
-        }}
-        spellCheck={false}
-        wrap="off"
-        rows={lines}
-        aria-label={`${example.title || 'Example'} code`}
-        className="block w-full resize-y bg-transparent p-3 font-mono text-[12.5px] leading-relaxed whitespace-pre text-fg outline-none"
+      <Editor
+        code={code}
+        onChange={setCode}
+        onRun={() => void run(code)}
+        label={`${example.title || 'Example'} code`}
+        notes={notes}
       />
       <div aria-live="polite" className="border-t border-line px-3 py-2 font-mono text-xs">
-        {result === null ? (
+        {shown === null ? (
           <span className="text-muted">{running ? 'running…' : 'not run yet'}</span>
         ) : (
           <>
-            {result.expectations.length === 0 && result.error === undefined && result.logs.length === 0 ? (
+            {shown.expectations.length === 0 && shown.error === undefined && shown.logs.length === 0 ? (
               <span className="text-muted">{'Ran; no `// =>` lines to check.'}</span>
             ) : null}
             <ul className="m-0 list-none p-0">
-              {result.expectations.map((e) => (
+              {shown.expectations.map((e) => (
                 <Outcome key={`${e.startLine}:${e.line}`} e={e} />
               ))}
             </ul>
-            {result.logs.length === 0 ? null : (
+            {shown.logs.length === 0 ? null : (
               <pre className="m-0 mt-1 border-t border-line pt-1 whitespace-pre-wrap text-fg-secondary">
-                {result.logs.join('\n')}
+                {shown.logs.join('\n')}
               </pre>
             )}
-            {result.error === undefined ? null : (
+            {shown.error === undefined ? null : (
               <p className="m-0 mt-1 text-red-600 dark:text-red-400">
-                {result.error.line === undefined ? '' : `line ${result.error.line + 1}: `}
-                {result.error.message}
+                {shown.error.line === undefined ? '' : `line ${shown.error.line + 1}: `}
+                {shown.error.message}
               </p>
             )}
           </>
