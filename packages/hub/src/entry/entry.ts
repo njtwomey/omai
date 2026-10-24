@@ -26,6 +26,14 @@ export interface HubRunInput {
   readonly key: Key
 }
 
+/** A method an entry runs: its source file below `packages/engine/src` and its exported name. */
+export interface MethodRef {
+  /** E.g. `methods/linear/regression.ts`. */
+  readonly file: string
+  /** E.g. `lasso`. */
+  readonly name: string
+}
+
 /** A hub entry: a method, the datasets it suits, its controls and the views that explain it. Data, not drawing. */
 export interface HubEntry {
   readonly kind: 'hubEntry'
@@ -44,8 +52,8 @@ export interface HubEntry {
   /** Run the method; the result carries the exposition records the views show. */
   readonly run: (input: HubRunInput) => Explained<unknown> | Promise<Explained<unknown>>
   readonly views: readonly ViewSlot[]
-  /** The method symbols the entry runs, for links to the docs (e.g. `whitebox-engine/methods/linear.lasso`). */
-  readonly methods?: readonly string[]
+  /** The method symbols the entry runs, for links to their docs and source. */
+  readonly methods?: readonly MethodRef[]
   readonly references?: readonly string[]
 }
 
