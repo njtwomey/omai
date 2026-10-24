@@ -58,6 +58,10 @@ export interface PlaygroundSetup {
     readonly values?: readonly number[]
     readonly policy?: readonly number[]
   }
+  /** How the snapshots' state index lays out: `[rows, columns]` of a grid world, `[1, arms]` for a bandit. */
+  readonly snapshotShape?: readonly [number, number]
+  /** The actions' names, in policy order. */
+  readonly actionNames?: readonly string[]
 }
 
 /** The family of environments a pairing belongs to (for pickers). */
@@ -97,6 +101,10 @@ type AnyAgent = Agent<unknown, unknown, unknown>
 type AnyEnv = Env<unknown, unknown, unknown>
 const asAgent = <G, O, A>(agent: Agent<G, O, A>): AnyAgent => agent as unknown as AnyAgent
 const asEnv = <S, O, A>(env: Env<S, O, A>): AnyEnv => env as unknown as AnyEnv
+
+// Gymnasium's action orders: CliffWalking (up, right, down, left) and FrozenLake (left, down, right, up).
+const CLIFF_ACTIONS: readonly string[] = ['up', 'right', 'down', 'left']
+const LAKE_ACTIONS: readonly string[] = ['left', 'down', 'right', 'up']
 
 const tabularSnapshot = (g: unknown): { values: number[]; policy: number[] } => ({
   values: valueTable(g as TabularState),
@@ -148,6 +156,7 @@ function banditPairing(
         env: asEnv(env),
         agent: make(env, params),
         maxEpisodeSteps: num(params, 'pulls'),
+        snapshotShape: [1, num(params, 'arms')],
         snapshot: (g) => {
           const v = values(g)
           let best = 0
@@ -188,6 +197,8 @@ function cliffPairing(
         agent: make(env, { alpha: num(params, 'alpha'), epsilon: num(params, 'epsilon'), gamma: num(params, 'gamma') }),
         maxEpisodeSteps: num(params, 'maxEpisodeSteps'),
         snapshot: tabularSnapshot,
+        snapshotShape: [4, 12],
+        actionNames: CLIFF_ACTIONS,
       }
     },
   }
@@ -227,6 +238,8 @@ function lakePlannerPairing(
         ),
         maxEpisodeSteps: 100,
         snapshot: plannerSnapshot,
+        snapshotShape: [4, 4],
+        actionNames: LAKE_ACTIONS,
       }
     },
   }
@@ -327,6 +340,8 @@ export const playgroundPairings: readonly PlaygroundPairing[] = [
         ),
         maxEpisodeSteps: 100,
         snapshot: tabularSnapshot,
+        snapshotShape: [4, 4],
+        actionNames: LAKE_ACTIONS,
       }
     },
   },
@@ -450,6 +465,9 @@ export const playgroundPairings: readonly PlaygroundPairing[] = [
         ),
         maxEpisodeSteps: 200,
         snapshot: tabularSnapshot,
+        // Position bins down, velocity bins across (the binner's row-major code).
+        ...(low.length === 2 ? { snapshotShape: [bins, bins] as const } : {}),
+        actionNames: ['push left', 'no push', 'push right'],
       }
     },
   },
@@ -738,6 +756,8 @@ export function playgroundSession(options: PlaygroundOptions): PlaygroundSession
       lengths: train.lengths,
       recorded: episodesOf(state).map(({ frames: _f, ...r }) => r),
       ...(snap === undefined ? {} : { snapshots }),
+      ...(setup.snapshotShape === undefined ? {} : { snapshotShape: setup.snapshotShape }),
+      ...(setup.actionNames === undefined ? {} : { actionNames: setup.actionNames }),
     })
   }
   return { pairing, params, episodes, maxSteps, env, algorithm, record, episodesOf }

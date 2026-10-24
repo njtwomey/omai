@@ -12,6 +12,7 @@ import { episodeView } from './episodes.ts'
 import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
+import { stateSequenceView } from './sequences.ts'
 import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
 import { decisionSurfaceFrames, decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
@@ -242,6 +243,14 @@ const REGISTRY: Registry = {
       const frames = boardFrames(r, o)
       return frames.option(frames.count - 1)
     },
+  },
+  stateSequence: {
+    kind: 'stateSequence',
+    component: 'StateSequenceView',
+    title: 'Hidden states',
+    plays: false,
+    accepts: [],
+    still: (r, o) => stateSequenceView(r, o),
   },
   imageSteps: {
     kind: 'imageSteps',

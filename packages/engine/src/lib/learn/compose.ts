@@ -1,8 +1,9 @@
 import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Exposition, type PipelineStage, pipelineStages } from '../exposition/index.ts'
 import { r2Score } from '../metrics/index.ts'
 import { foldIn } from '../random/index.ts'
 import { dict, type Space } from '../space/index.ts'
-import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { asTensor, fromStorage, reshape, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { innerFitOptions, inputNames, keyFor, runOptionsFor } from './_shared.ts'
 import {
@@ -16,6 +17,7 @@ import {
   requireVerb,
   type Verbs,
 } from './estimator.ts'
+import { classNamesOf, featureNamesOf } from './explained.ts'
 import { isResampler, type Resampler } from './preprocessing/resampling.ts'
 import { fromView, hstackViews, type MatrixView, matrixView, takeColumns, targetVector } from './validation.ts'
 
@@ -138,6 +140,11 @@ export type FittedStepParams = { readonly name: string; readonly estimator: stri
 
 /** A fitted pipeline: the last step's verbs, plus the fitted steps and their intermediate outputs. */
 export interface FittedPipeline extends Fitted<{ readonly steps: FittedStepParams[] }> {
+  /**
+   * What each step did on the training data (a `pipelineStages` record: shapes, samples and what it learned), then
+   * the steps' own records; empty after `revive`.
+   */
+  readonly exposition: readonly Exposition[]
   /** The fitted steps by name (resamplers and passthroughs are absent). */
   readonly namedSteps: Readonly<Record<string, Fitted>>
   /** The output of every transforming step on new data (step inspection), by step name. */
@@ -165,6 +172,48 @@ interface PipelineState {
   readonly index: number
   readonly data: LearnData
   readonly fitted: readonly (Fitted | undefined)[]
+  /** What each step did, for the exposition (unless the fit asked for none). */
+  readonly stages: readonly PipelineStage[]
+}
+
+const SAMPLE_ROWS = 4
+
+/** The first rows of a matrix (all its columns), as plain numbers. */
+function sampleOf(x: TensorLike): { readonly rows: number[][]; readonly shape: [number, number] } {
+  const m = matrixView(x, 'pipeline', { allowNaN: true, allowInfinite: true })
+  const rows = Array.from({ length: Math.min(SAMPLE_ROWS, m.n) }, (_, i) =>
+    Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)),
+  )
+  return { rows, shape: [m.n, m.d] }
+}
+
+/** A fitted step's parameters worth showing: up to four numbers or short number lists. */
+function learnedOf(f: Fitted): PipelineStage['learned'] {
+  const out: { name: string; value: number | string | readonly number[] }[] = []
+  const params = (f.params ?? {}) as Readonly<Record<string, unknown>>
+  if (typeof params !== 'object' || params === null) return out
+  for (const [name, v] of Object.entries(params)) {
+    if (out.length >= 4) break
+    if (typeof v === 'number' && Number.isFinite(v)) out.push({ name, value: v })
+    else if (typeof v === 'string' && v.length <= 24) out.push({ name, value: v })
+    else if (Array.isArray(v) && v.length > 0 && v.every((u) => typeof u === 'number')) out.push({ name, value: v })
+    else if (Array.isArray(v) && Array.isArray(v[0]) && (v[0] as unknown[]).every((u) => typeof u === 'number'))
+      out.push({ name: `${name}[0]`, value: v[0] as number[] })
+  }
+  return out
+}
+
+/** The column names after a step: its own names for its output when it has them, else x0, x1, ... */
+function namesAfter(f: Fitted | undefined, input: readonly string[], d: number): string[] {
+  if (f?.featureNamesOut !== undefined) {
+    try {
+      const names = f.featureNamesOut(input)
+      if (names.length === d) return names
+    } catch {
+      // A step that cannot name its outputs keeps the generic names.
+    }
+  }
+  return Array.from({ length: d }, (_, j) => `x${j}`)
 }
 
 /**
@@ -204,7 +253,7 @@ export function pipeline(
   const space = stepSpace(steps)
   const hyper: PipelineHyper = { steps, ...(options.cache === undefined ? {} : { cache: options.cache }) }
 
-  const build = (fitted: readonly (Fitted | undefined)[]): FittedPipeline => {
+  const build = (fitted: readonly (Fitted | undefined)[], exposition: readonly Exposition[] = []): FittedPipeline => {
     const finalFitted = fitted[fitted.length - 1]
     const forward = (x: TensorLike, upTo: number): Tensor => {
       let cur: Tensor = fromView(matrixView(x, 'pipeline', { allowNaN: true, allowInfinite: true }))
@@ -269,6 +318,7 @@ export function pipeline(
         return names ?? inputNames(first?.nFeaturesIn ?? 0, undefined, 'pipeline')
       },
       namedSteps,
+      exposition,
       intermediate: (x) => {
         const out: Record<string, Tensor> = {}
         let cur: Tensor = fromView(matrixView(x, 'pipeline', { allowNaN: true, allowInfinite: true }))
@@ -290,6 +340,7 @@ export function pipeline(
     hyper,
     ...(space === undefined ? {} : { hyperSpace: space }),
     fit: (data, fitOptions = {}) => {
+      const explain = fitOptions.explain !== false
       const algorithm: Algorithm<PipelineState> = {
         name: 'pipeline',
         config: { steps: steps.map(([n, s]) => [n, isEstimator(s) ? s.name : isResampler(s) ? s.name : s]) },
@@ -300,22 +351,80 @@ export function pipeline(
           },
           messages: { step: { description: 'a step was fitted', payload: { name: 'string', estimator: 'string' } } },
         }),
-        init: () => ({ index: 0, data, fitted: [] }),
+        init: () => ({ index: 0, data, fitted: [], stages: [] }),
         step: (s, ctx) => {
-          const [, step] = steps[s.index] as NamedStep
+          const [name, step] = steps[s.index] as NamedStep
           const isLast = s.index === steps.length - 1
-          const inner = innerFitOptions(fitOptions, foldIn(ctx.key, 0), ctx.run)
-          if (step === 'passthrough') return { index: s.index + 1, data: s.data, fitted: [...s.fitted, undefined] }
+          const inner = innerFitOptions(fitOptions, foldIn(ctx.key, 0), ctx.run, true)
+          // The step's record: its input and output (shapes, first rows, column names) and what it learned.
+          const stageOf = (
+            kind: PipelineStage['kind'],
+            output: TensorLike,
+            outputColumns: (input: readonly string[], d: number) => string[],
+            learned: PipelineStage['learned'],
+          ): PipelineStage[] => {
+            if (!explain) return []
+            const before = sampleOf(s.data.x)
+            const after = sampleOf(output)
+            const inputColumns = s.stages.at(-1)?.outputColumns ?? featureNamesOf(data, before.shape[1])
+            return [
+              ...s.stages,
+              {
+                name,
+                kind,
+                inputColumns,
+                outputColumns: outputColumns(inputColumns, after.shape[1]),
+                inputSample: before.rows,
+                outputSample: after.rows,
+                inputShape: before.shape,
+                outputShape: after.shape,
+                learned,
+              },
+            ]
+          }
+          if (step === 'passthrough')
+            return {
+              index: s.index + 1,
+              data: s.data,
+              fitted: [...s.fitted, undefined],
+              stages: stageOf('transformer', s.data.x, (i) => [...i], []),
+            }
           if (isResampler(step)) {
             if (isLast) throw new WhiteboxError('value', 'pipeline: a resampler cannot be the last step')
             const r = step.fitResample(s.data, inner)
-            return { index: s.index + 1, data: { x: r.x, y: r.y }, fitted: [...s.fitted, undefined] }
+            return {
+              index: s.index + 1,
+              data: { x: r.x, y: r.y },
+              fitted: [...s.fitted, undefined],
+              stages: stageOf('resampler', r.x, (i) => [...i], []),
+            }
           }
           const { fitted, out } = fitStep(step, s.data, inner, isLast, hyper.cache)
+          let stages = s.stages
+          if (explain && out !== undefined)
+            stages = stageOf('transformer', out, (i, d) => namesAfter(fitted, i, d), learnedOf(fitted))
+          else if (explain) {
+            // The final estimator: its probabilities (or predictions) on the training rows, and its training score.
+            const proba = fitted.predictProba
+            const output = proba !== undefined ? proba(s.data.x) : fitted.predict?.(s.data.x)
+            if (output !== undefined) {
+              const columnsOut = (_: readonly string[], d: number): string[] =>
+                proba !== undefined && fitted.classes !== undefined
+                  ? classNamesOf(data, fitted.classes).map((c) => `p(${c})`)
+                  : Array.from({ length: d }, (_, j) => (d === 1 ? 'prediction' : `y${j}`))
+              const shaped = output.shape.length === 1 ? reshape(output, [output.shape[0] ?? 0, 1]) : output
+              const score = s.data.y === undefined ? undefined : fitted.score?.(s.data)
+              stages = stageOf('estimator', shaped as Tensor, columnsOut, [
+                ...(score === undefined ? [] : [{ name: 'training score', value: score }]),
+                ...learnedOf(fitted).slice(0, 3),
+              ])
+            }
+          }
           return {
             index: s.index + 1,
             data: out === undefined ? s.data : { ...s.data, x: out },
             fitted: [...s.fitted, fitted],
+            stages,
           }
         },
         done: (s) => (s.index >= steps.length ? 'completed' : undefined),
@@ -337,7 +446,10 @@ export function pipeline(
         }),
       }
       const result = runAlgorithm(algorithm, { ...runOptionsFor(fitOptions, 'pipeline'), maxSteps: steps.length })
-      return build(result.state.fitted)
+      const own = result.state.fitted.flatMap(
+        (f) => (f as { readonly exposition?: readonly Exposition[] } | undefined)?.exposition ?? [],
+      )
+      return build(result.state.fitted, explain ? [pipelineStages({ stages: result.state.stages }), ...own] : [])
     },
     revive: (params) => {
       const p = params as { readonly steps?: readonly FittedStepParams[] }

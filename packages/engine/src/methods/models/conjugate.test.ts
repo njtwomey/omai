@@ -12,7 +12,10 @@ describe('conjugate models', () => {
     const [curve] = recordsOf(r.exposition, 'learningCurve')
     expect(curve?.trainSpread?.length).toBe(11)
     const [grid] = recordsOf(r.exposition, 'posteriorGrid')
-    expect(grid?.samples?.[0]?.length).toBe(200)
+    expect(grid?.densities?.map((d) => [d.role, d.values.length])).toEqual([
+      ['prior', 200],
+      ['posterior', 200],
+    ])
     const [table] = recordsOf(r.exposition, 'coefficientTable')
     const [lo, hi] = table?.intervals?.[1] ?? [0, 0]
     expect(lo).toBeLessThan(8 / 12)

@@ -31,7 +31,7 @@ export const normalNormal: HubEntry = defineEntry({
   },
   views: [
     { record: 'learningCurve', title: 'Posterior mean (± sd) and the sample mean' },
-    { record: 'posteriorGrid', title: 'Posterior density (line: the prior)', area: 'side' },
+    { record: 'posteriorGrid', title: 'Prior (dashed) and posterior densities', area: 'side' },
     { record: 'coefficientTable', title: 'Prior and posterior', area: 'below' },
   ],
   methods: [{ file: 'methods/models/conjugate.ts', name: 'normalNormalModel' }],

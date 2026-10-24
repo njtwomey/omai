@@ -9,10 +9,11 @@ export interface ComponentsRecord {
   /** components[k][f]: loading of feature f on component k. */
   readonly components: readonly (readonly number[])[]
   /**
-   * What the components weight: the input features (default), or the training rows (kernel methods' dual
-   * coefficients, whose 'features' are rows and have no loadings worth drawing).
+   * What the components weight: the input features (default), the training rows (kernel methods' dual coefficients,
+   * whose 'features' are rows and have no loadings worth drawing), or a vocabulary (topic models: each component a
+   * distribution over words, best read as its top words).
    */
-  readonly space?: 'features' | 'samples'
+  readonly space?: 'features' | 'samples' | 'vocabulary'
   /** Variance explained by each component, and its ratio to the total. */
   readonly explainedVariance?: readonly number[]
   readonly explainedVarianceRatio?: readonly number[]

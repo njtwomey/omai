@@ -23,6 +23,21 @@ describe('pipelines', () => {
     expect(() => p.with({ 'nope.alpha': 1 })).toThrow(/no step/)
   })
 
+  it('record what each stage did', () => {
+    const f = pipeline([
+      ['scale', standardScaler()],
+      ['model', ridge({ alpha: 1 })],
+    ]).fit({ x, y })
+    const stages = f.exposition[0]
+    expect(stages?.kind).toBe('pipelineStages')
+    if (stages?.kind !== 'pipelineStages') return
+    expect(stages.stages.map((s) => [s.name, s.kind, s.outputShape])).toEqual([
+      ['scale', 'transformer', [12, 2]],
+      ['model', 'estimator', [12, 1]],
+    ])
+    expect(stages.stages[0]?.outputSample).toHaveLength(4)
+  })
+
   it('serialise and revive', () => {
     const p = makePipeline(polynomialFeatures(), standardScaler(), ridge())
     const f = p.fit({ x, y })

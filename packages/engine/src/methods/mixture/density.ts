@@ -14,7 +14,7 @@ import {
 import { type Key, permutation } from '../../lib/random/index.ts'
 import { choice, dict, int } from '../../lib/space/index.ts'
 import { gaussianKde, histogram, histogram2d, scottFactor, silvermanFactor } from '../../lib/stats/index.ts'
-import { fromStorage, type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
+import { exp, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
 
 /** The verbs of a density estimate: log densities per row and their mean. */
 export interface DensityVerbs {
@@ -26,10 +26,19 @@ export interface DensityVerbs {
 
 const mean = (xs: readonly number[]): number => xs.reduce((a, v) => a + v, 0) / xs.length
 
-/** A density surface over the data (log density on a grid), for one or two features. */
-function densitySurface(fitted: Fitted & DensityVerbs, x: TensorLike, d: number): Exposition[] {
+/**
+ * A density surface over the data (the density, not its log, so the modes read clearly), for one or two features;
+ * piecewise constant for a histogram.
+ */
+function densitySurface(fitted: Fitted & DensityVerbs, x: TensorLike, d: number, smooth = true): Exposition[] {
   if (d > 2) return []
-  return [decisionSurfaceOf({ ...fitted, kind: 'density', predict: fitted.scoreSamples }, x, { resolution: 40 })]
+  const density = (at: TensorLike): Tensor => primalOf(exp(fitted.scoreSamples(at)))
+  return [
+    decisionSurfaceOf({ ...fitted, kind: 'density', predict: density }, x, {
+      resolution: smooth ? 40 : 60,
+      field: { name: 'density', smooth },
+    }),
+  ]
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -158,6 +167,7 @@ export function kernelDensity(hyper: KernelDensityHyper = {}): Estimator<KernelD
               foldScores: scores,
               higherIsBetter: true,
               best: factor,
+              scoreName: 'held-out log likelihood',
             }),
           )
         }
@@ -268,7 +278,7 @@ export function histogramDensity(
           params = { edges: [toFlat(hist.xEdges), toFlat(hist.yEdges)], density: toFlat(hist.counts) }
         }
         const fitted = { estimator: 'histogram-density', kind: 'density' as const, params, ...histogramVerbs(params) }
-        return { params, exposition: densitySurface(fitted, data.x, m.d) }
+        return { params, exposition: densitySurface(fitted, data.x, m.d, false) }
       },
       methods: histogramVerbs,
     },

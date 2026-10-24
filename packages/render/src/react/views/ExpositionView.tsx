@@ -11,6 +11,7 @@ import { EpisodeView } from './episodes.tsx'
 import { ImagePlayer } from './images.tsx'
 import { MarginView } from './margins.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
+import { StateSequenceView } from './sequences.tsx'
 import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
 import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
@@ -101,6 +102,8 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <ValueGridView record={record} {...common} />
     case 'confusionMatrix':
       return <ConfusionMatrixView record={record} {...common} />
+    case 'stateSequence':
+      return <StateSequenceView record={record} {...common} />
     case 'imageSteps':
       return <ImagePlayer record={record} {...common} />
   }

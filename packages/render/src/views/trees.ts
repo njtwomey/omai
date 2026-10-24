@@ -21,7 +21,7 @@ export interface TreeSceneOptions {
 
 const CARD_W = 136
 // Leaves say less (a prediction, not a split), so their cards are narrower and wide trees stay compact.
-const LEAF_W = 104
+const LEAF_W = 92
 const CARD_H = 58
 const FONT = 11
 
@@ -80,7 +80,7 @@ export function treeScene(tree: TreeRecord, options: TreeSceneOptions = {}): Sce
   )
   const layout = tidyTree(
     { nodes: shown.map((n) => ({ id: `${n.id}`, width: isOpen(n) ? CARD_W : LEAF_W, height: CARD_H })), edges },
-    { levelSep: 34, siblingSep: 10, margin: 8 },
+    { levelSep: 34, siblingSep: 8, margin: 8 },
   )
   const total = Math.max(1, tree.nodes.find((n) => n.parent === null)?.rows.length ?? 1)
   const children: SceneNode[] = []

@@ -25,6 +25,9 @@ describe('the playground', () => {
       if (pairing.family !== 'classic-control' || pairing.id.startsWith('mountain-car')) {
         expect(record.snapshots?.[0]?.episode).toBe(0)
         expect(record.snapshots?.at(-1)?.episode).toBe(run.episodes)
+        // The snapshot's layout: a grid world's rows and columns, a bandit's one row of arms.
+        const [rows, cols] = record.snapshotShape ?? [0, 0]
+        expect(rows * cols).toBe(record.snapshots?.at(-1)?.values?.length)
       }
     })
 

@@ -140,11 +140,18 @@ export function activeLearningStudy(
     method: `active-learning/${options.strategy}`,
     assignments,
     objective: accuracy,
+    // The rows labelled at the start, and the ones each round bought.
+    seeds: [...initial],
+    added: labelled.map((count, r) =>
+      r === 0 ? [] : queried.slice((labelled[r - 1] ?? initial.length) - initial.length, count - initial.length),
+    ),
+    addedName: 'queried',
   })
   const curve = learningCurve({
     sizes: labelled,
     train: accuracy,
-    validation: baselineCurve ?? accuracy,
+    // Without a random baseline the strategy's curve stands alone.
+    validation: baselineCurve ?? [],
     resource: 'labels bought',
     labels: { train: options.strategy, validation: baselineCurve === undefined ? options.strategy : 'random' },
   })

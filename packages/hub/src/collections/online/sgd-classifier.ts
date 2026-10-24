@@ -15,7 +15,7 @@ export const sgdClassifier: HubEntry = defineEntry({
   views: [
     { record: 'learningCurve', title: 'Progressive and training error' },
     { record: 'decisionSurface', title: 'Decision surface', area: 'side' },
-    { record: 'coefficientTable', title: 'Coefficients', area: 'below' },
+    { record: 'coefficientTable', title: 'Coefficients over the samples seen', area: 'below' },
   ],
   methods: [{ file: 'methods/linear/online.ts', name: 'sgdClassifier' }],
   references: ['Bottou (2010), Large-scale machine learning with stochastic gradient descent'],

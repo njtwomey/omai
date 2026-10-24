@@ -2803,14 +2803,18 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
 - `BoardSteps` (a search, solver or simulation played on a grid or a graph: per step every cell's category, its text
   and a caption, with metrics per step; mazes and frontiers, game trees with pruned branches, CSP boards, itemset
   lattices, cellular automata) and `PopulationSteps` (generations of a population: fitness, positions over the
-  objective's surface with the search distribution, or the best program's curve over its data).
+  objective's surface with the search distribution, or the best program's curve over its data);
+- `ImageSteps` (small grey images per recorded step in named groups: a generative model's data, reconstructions and
+  samples from fixed noise, with the objective per step);
+- `StateSequence` (a hidden-state model's posteriors over time, the decoded path and the true states);
 - `CurveSet` (`curves`: several series on shared axes, each with an optional band, a group sharing its colour and an
   optional right-hand axis; optimiser races and studies of schemes or strengths), `DiagramRecord` (`diagram`: a
   `Structure`, such as `describe(net)`, with optional overlays and captions to play over it), `ValueGrids` (feature
   maps, filters, hidden states as cells, with steps through training) and `ConfusionMatrix` (counts per true and
   predicted class, with steps through training; `confusionCounts` builds them).
-- `ImageSteps` (small grey images per recorded step in named groups: a generative model's data, reconstructions and
-  samples from fixed noise, with the objective per step).
+  Records that index the training rows (clusterings, mixtures, margins, neighbours, anomaly scores, decision surfaces)
+  carry those rows (`InputRows`, two coordinates each, for data up to a few thousand rows), so a view draws from the
+  record alone; iterative trainers' decision surfaces carry their `steps` through training, which the views play.
   Methods return `{ ...result, exposition: Exposition[] }`; long-running ones also emit the records' steps as trace
   events, so views can play them.
 

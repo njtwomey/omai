@@ -441,8 +441,32 @@ function smoSteps(
     }
     return { estimator: 'svc', kind: 'classifier' as const, params, ...svcVerbs(params) }
   })
+  // Each step's decision function from one kernel matrix per set of rows: f(x) = -(sum_i alpha_i y_i K(x, x_i) - rho)
+  // for class 1 (scikit-learn's sign), the matrix computed once and reused by every step.
+  const cache = new Map<Tensor, number[]>()
+  const decisionAt = (t: number, x: Tensor): Float64Array => {
+    let K = cache.get(x)
+    if (K === undefined) {
+      K = kernelMatrix(kernel, x, rows as number[][])
+      cache.set(x, K)
+    }
+    const s = kept[t] as NonNullable<(typeof kept)[number]>
+    const n = rows.length
+    const m = K.length / Math.max(1, n)
+    const out = new Float64Array(m)
+    for (let c = 0; c < m; c++) {
+      let f = -s.rho
+      for (let i = 0; i < n; i++) {
+        const a = s.alpha[i] ?? 0
+        if (a > 0) f += a * (labels[i] ?? 1) * (K[c * n + i] ?? 0)
+      }
+      out[c] = -f
+    }
+    return out
+  }
   return {
     models,
+    decisionAt,
     iterations: kept.map((s) => s.step),
     objective: kept.map((s) => s.objective),
     highlight: kept.map((s) => Array.from(s.alpha.keys()).filter((i) => (s.alpha[i] ?? 0) > 0)),
