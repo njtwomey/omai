@@ -131,7 +131,7 @@ function plan(files: readonly string[]): Step[] {
 
   if (globalTs) steps.push({ label: 'tests (all)', command: ['pnpm', 'exec', 'vitest', 'run'] })
   else {
-    const sources = files.filter((f) => /^packages\/.*\.tsx?$/.test(f) && existsSync(join(ROOT, f)))
+    const sources = files.filter((f) => /^(packages|apps)\/.*\.tsx?$/.test(f) && existsSync(join(ROOT, f)))
     const cases = files.filter((f) => f.startsWith(CASES) && f.endsWith('.py'))
     const fixtures = [
       ...files.filter((f) => f.startsWith(FIXTURES) && f.endsWith('.json') && !f.endsWith('manifest.json')),
