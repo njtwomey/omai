@@ -9,8 +9,12 @@ export const poissonRegressor: HubEntry = defineEntry({
   summary: 'A log-linear model for counts, fitted by IRLS.',
   collection: 'sklearn/linear-model',
   tags: ['regression', 'glm', 'counts'],
-  datasets: ['regressionTabular'],
-  ...fitEstimator(poissonRegressorMethod()),
-  views: [{ record: 'coefficientTable', title: 'Coefficients' }],
+  datasets: ['glm1d', 'regressionTabular'],
+  dataset: 'poissonCounts',
+  ...fitEstimator(poissonRegressorMethod({ alpha: 0 }), { surface: true }),
+  views: [
+    { record: 'decisionSurface', title: 'Fitted mean' },
+    { record: 'coefficientTable', title: 'Coefficients', area: 'side' },
+  ],
   methods: [{ file: 'methods/linear/glm.ts', name: 'poissonRegressor' }],
 })

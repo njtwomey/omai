@@ -25,8 +25,13 @@ export interface DatasetCollection {
   readonly entries: readonly CollectionEntry[]
 }
 
-const g = (name: string, title: string, knobs?: Knobs): CollectionEntry =>
-  knobs === undefined ? { name, title, generator: name } : { name, title, generator: name, knobs }
+function g(name: string, title: string, knobs?: Knobs): CollectionEntry
+function g(name: string, title: string, generator: string, knobs: Knobs): CollectionEntry
+function g(name: string, title: string, a?: Knobs | string, b?: Knobs): CollectionEntry {
+  const generator = typeof a === 'string' ? a : name
+  const knobs = typeof a === 'string' ? b : a
+  return knobs === undefined ? { name, title, generator } : { name, title, generator, knobs }
+}
 
 /**
  * The dataset collections, by id: what hub entries name and dataset pickers offer.
@@ -70,12 +75,27 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
     title: 'Regression in one dimension',
     entries: [
       g('sineCurve', 'Sine curve'),
+      g('linearOutliers', 'Line with outliers'),
       g('sincCurve', 'Sinc curve'),
       g('stepCurve', 'Step'),
       g('piecewiseLinear', 'Piecewise linear'),
       g('dopplerCurve', 'Doppler'),
       g('heteroscedastic', 'Heteroscedastic noise'),
       g('quantileCurves', 'Skewed noise (quantiles)'),
+    ],
+  },
+  glm1d: {
+    id: 'glm1d',
+    title: 'Counts and positive responses in one dimension',
+    entries: [
+      g('poissonCounts', 'Poisson counts', 'glmCurve', { family: 'poisson' }),
+      g('overdispersedCounts', 'Overdispersed counts (negative binomial)', 'glmCurve', { family: 'negativeBinomial' }),
+      g('gammaResponses', 'Positive skewed (gamma)', 'glmCurve', { family: 'gamma' }),
+      g('inverseGaussianResponses', 'Positive, heavy right tail (inverse Gaussian)', 'glmCurve', {
+        family: 'inverseGaussian',
+        dispersion: 0.1,
+      }),
+      g('tweedieResponses', 'Zeros and positive amounts (Tweedie)', 'glmCurve', { family: 'tweedie' }),
     ],
   },
   regressionTabular: {
@@ -98,7 +118,7 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
       g('anisotropicBlobs', 'Anisotropic blobs', { n: 300 }),
       g('unequalVarianceBlobs', 'Blobs of unequal variance', { n: 300 }),
       g('moons', 'Two moons', { n: 300, noise: 0.06 }),
-      g('circles', 'Concentric circles', { n: 300, noise: 0.05 }),
+      g('circles', 'Concentric circles', { n: 300, noise: 0.05, factor: 0.5 }),
       g('rings', 'Rings', { n: 300 }),
     ],
   },
@@ -110,16 +130,21 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
   anomaly2d: {
     id: 'anomaly2d',
     title: 'Anomalies in two dimensions',
-    entries: [g('blobs', 'Blobs', { n: 300 }), g('moons', 'Two moons', { n: 300, noise: 0.08 })],
+    entries: [
+      g('blobsWithOutliers', 'Blobs with outliers'),
+      g('moonsWithOutliers', 'Two moons with outliers'),
+      g('blobs', 'Blobs (no outliers)', { n: 300 }),
+      g('moons', 'Two moons (no outliers)', { n: 300, noise: 0.08 }),
+    ],
   },
   manifold3d: {
     id: 'manifold3d',
     title: 'Manifolds in three dimensions',
     entries: [
-      g('swissRoll', 'Swiss roll'),
-      g('sCurve', 'S curve'),
-      g('severedSphere', 'Severed sphere'),
-      g('torus', 'Torus'),
+      g('swissRoll', 'Swiss roll', { n: 300 }),
+      g('sCurve', 'S curve', { n: 300 }),
+      g('severedSphere', 'Severed sphere', { n: 300 }),
+      g('torus', 'Torus', { n: 300 }),
     ],
   },
   timeSeries: {
