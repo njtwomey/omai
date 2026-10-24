@@ -4,6 +4,7 @@ import type { Figure } from '../figure/figure.ts'
 import { themeName } from '../theme/echarts.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { loadEcharts } from './echarts.ts'
+import { useFrameSize } from './FigureFrame.tsx'
 import { useColourMode } from './theme.tsx'
 
 /** An ECharts event handler: the event's parameters and the chart instance. */
@@ -40,12 +41,15 @@ export interface ChartProps {
  * event handlers and connected groups. The area has a fixed size (from `figure`, or `width` and `height`), so content
  * never resizes it.
  *
+ * Inside a {@link FigureFrame} it takes the frame's size by default, and the modal's size when the frame is expanded.
+ *
  * @param props - The option, size, mode, renderer, events and group.
  * @returns The chart's container.
  */
 export function Chart(props: ChartProps): ReactElement {
   const { option, figure, renderer = 'canvas', onEvents, onInit, group, merge = false } = props
   const contextMode = useColourMode()
+  const frame = useFrameSize()
   const mode = props.mode ?? contextMode
   const ref = useRef<HTMLDivElement | null>(null)
   const [chart, setChart] = useState<EChartsInstance | null>(null)
@@ -94,8 +98,9 @@ export function Chart(props: ChartProps): ReactElement {
     loadEcharts().connect(group)
   }, [chart, group])
 
-  const width = props.width ?? figure?.width ?? '100%'
-  const height = props.height ?? figure?.height ?? 400
+  // Inside an expanded FigureFrame the modal's size wins; otherwise explicit sizes, then the figure, then the frame.
+  const width = frame?.expanded === true ? frame.width : (props.width ?? figure?.width ?? frame?.width ?? '100%')
+  const height = frame?.expanded === true ? frame.height : (props.height ?? figure?.height ?? frame?.height ?? 400)
   return (
     <div
       ref={ref}

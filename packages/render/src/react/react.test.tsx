@@ -32,3 +32,25 @@ describe('react bindings', () => {
     expect(typeof loadEcharts().init).toBe('function')
   })
 })
+
+describe('FigureFrame', () => {
+  it('renders a fixed-size frame with expand and export buttons, sizing charts inside', async () => {
+    const { FigureFrame } = await import('./FigureFrame.tsx')
+    const html = renderToString(
+      <FigureFrame width={320} height={200} title="T" caption="c">
+        <Chart option={lineChart([{ y: [1, 2] }])} />
+      </FigureFrame>,
+    )
+    expect(html).toContain('aria-label="Expand"')
+    expect(html).toContain('aria-label="Export"')
+    expect(html).toContain('<figcaption')
+    expect(html.match(/width:320px/g)?.length).toBeGreaterThanOrEqual(2)
+    const sized = renderToString(
+      <FigureFrame exportFormats={[]} expandable={false}>
+        {(size) => `${size.width}x${size.height}:${size.expanded}`}
+      </FigureFrame>,
+    )
+    expect(sized).toContain('640x400:false')
+    expect(sized).not.toContain('aria-label')
+  })
+})
