@@ -2,6 +2,7 @@ import { type ReactElement, type ReactNode, useEffect, useMemo, useRef, useState
 import type { Structure, StructureNode, StructureOverlay } from 'whitebox-engine/scene'
 import { type DiagramOptions, diagram } from '../structures/diagram.ts'
 import { cx, iconButtonClass } from './controls/classes.ts'
+import { FigureFrame, type FigureFrameProps } from './FigureFrame.tsx'
 import { SceneView } from './SceneView.tsx'
 
 /** Props of {@link StructureView}. */
@@ -17,6 +18,12 @@ export interface StructureViewProps extends Omit<DiagramOptions, 'overlay' | 'fr
   readonly onNodeClick?: (node: StructureNode) => void
   /** Show the hovered node's details under the diagram (default true). */
   readonly details?: boolean
+  /**
+   * Hold the diagram in a `FigureFrame` (an expand button and an export menu above it) at its drawn size: the default,
+   * with the frame's export file named `diagram`, or with the given name, title, caption and playback (to record an
+   * animated diagram as a GIF or WebM); `false` draws the bare diagram.
+   */
+  readonly frame?: boolean | Pick<FigureFrameProps, 'filename' | 'title' | 'caption' | 'playback'>
   readonly className?: string
 }
 
@@ -31,7 +38,7 @@ type View = readonly [number, number, number, number]
  * @returns The view.
  */
 export function StructureView(props: StructureViewProps): ReactElement {
-  const { structure, overlay, width, onNodeClick, details = true, className, frames, ...layout } = props
+  const { structure, overlay, width, onNodeClick, details = true, className, frames, frame = true, ...layout } = props
   const options: DiagramOptions = { ...layout, ...(overlay === undefined ? {} : { overlay }) }
   // biome-ignore lint/correctness/useExhaustiveDependencies: options are compared by content, frames by reference
   const drawing = useMemo(
@@ -43,7 +50,9 @@ export function StructureView(props: StructureViewProps): ReactElement {
   const shown = view ?? full
   const [hover, setHover] = useState<StructureNode | null>(null)
   const drag = useRef<{ x: number; y: number; view: View; moved: boolean } | null>(null)
-  const box = useRef<HTMLDivElement>(null)
+  // The drawing's box: a state as well as a ref, so the wheel listener follows it into and out of an expanded frame.
+  const box = useRef<HTMLDivElement | null>(null)
+  const [boxEl, setBoxEl] = useState<HTMLDivElement | null>(null)
   const byId = useMemo(() => new Map(structure.nodes.map((n) => [n.id, n])), [structure])
   const zoom = (factor: number, cxFrac = 0.5, cyFrac = 0.5): void => {
     const [x, y, w, h] = shown
@@ -60,7 +69,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
   const zoomRef = useRef(zoom)
   zoomRef.current = zoom
   useEffect(() => {
-    const el = box.current
+    const el = boxEl
     if (el === null) return
     const onWheel = (e: WheelEvent): void => {
       if (!(e.ctrlKey || e.metaKey)) return
@@ -70,57 +79,76 @@ export function StructureView(props: StructureViewProps): ReactElement {
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [])
+  }, [boxEl])
+  // A new drawing (another structure or layout) starts unzoomed.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the drawing's size changes
+  useEffect(() => setView(null), [drawing.width, drawing.height])
+  const drawnWidth = width ?? drawing.width
+  const drawnHeight = Math.round((drawnWidth * drawing.height) / Math.max(1, drawing.width)) + 2
+  const drawingBox = (
+    <div
+      ref={(el) => {
+        box.current = el
+        setBoxEl(el)
+      }}
+      className="cursor-grab touch-none overflow-hidden rounded-lg border border-(--wb-grid) active:cursor-grabbing"
+      style={{ width: drawnWidth, maxWidth: '100%' }}
+      onPointerDown={(e) => {
+        drag.current = { x: e.clientX, y: e.clientY, view: shown, moved: false }
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current
+        if (d === null || e.buttons === 0) return
+        const dx = e.clientX - d.x
+        const dy = e.clientY - d.y
+        if (!d.moved && Math.hypot(dx, dy) < 4) return
+        if (!d.moved) e.currentTarget.setPointerCapture(e.pointerId)
+        d.moved = true
+        const s = scale()
+        setView([d.view[0] - dx * s, d.view[1] - dy * s, d.view[2], d.view[3]])
+      }}
+      onPointerUp={() => {
+        // Leave the record until the click that follows, so a drag does not count as a click on a node.
+        setTimeout(() => {
+          drag.current = null
+        }, 0)
+      }}
+    >
+      <SceneView
+        scene={drawing}
+        width={width ?? drawing.width}
+        viewBox={shown}
+        style={{ width: '100%' }}
+        onNodeHover={(id) => setHover(id === null ? null : (byId.get(id) ?? null))}
+        {...(onNodeClick === undefined
+          ? {}
+          : {
+              onNodeClick: (id: string) => {
+                const node = byId.get(id)
+                if (node !== undefined && drag.current?.moved !== true) onNodeClick(node)
+              },
+            })}
+      />
+    </div>
+  )
+  const framed =
+    frame === false ? (
+      drawingBox
+    ) : (
+      <FigureFrame width={drawnWidth} height={drawnHeight} filename="diagram" {...(frame === true ? {} : frame)}>
+        {drawingBox}
+      </FigureFrame>
+    )
   return (
     <div className={cx('flex w-fit max-w-full flex-col gap-2', className)}>
-      <div
-        ref={box}
-        className="cursor-grab touch-none overflow-hidden rounded-lg border border-(--wb-grid) active:cursor-grabbing"
-        style={{ width: width ?? drawing.width, maxWidth: '100%' }}
-        onPointerDown={(e) => {
-          drag.current = { x: e.clientX, y: e.clientY, view: shown, moved: false }
-        }}
-        onPointerMove={(e) => {
-          const d = drag.current
-          if (d === null || e.buttons === 0) return
-          const dx = e.clientX - d.x
-          const dy = e.clientY - d.y
-          if (!d.moved && Math.hypot(dx, dy) < 4) return
-          if (!d.moved) e.currentTarget.setPointerCapture(e.pointerId)
-          d.moved = true
-          const s = scale()
-          setView([d.view[0] - dx * s, d.view[1] - dy * s, d.view[2], d.view[3]])
-        }}
-        onPointerUp={() => {
-          // Leave the record until the click that follows, so a drag does not count as a click on a node.
-          setTimeout(() => {
-            drag.current = null
-          }, 0)
-        }}
-      >
-        <SceneView
-          scene={drawing}
-          width={width ?? drawing.width}
-          viewBox={shown}
-          style={{ width: '100%' }}
-          onNodeHover={(id) => setHover(id === null ? null : (byId.get(id) ?? null))}
-          {...(onNodeClick === undefined
-            ? {}
-            : {
-                onNodeClick: (id: string) => {
-                  const node = byId.get(id)
-                  if (node !== undefined && drag.current?.moved !== true) onNodeClick(node)
-                },
-              })}
-        />
-      </div>
+      {framed}
       {/* The hovered node's details and the zoom buttons share a row under the diagram, so neither covers it. */}
       <div className="flex min-w-0 items-center justify-between gap-3">
         {details ? <Details node={hover} overlay={overlay} /> : <span />}
         <div className="flex shrink-0">
           <button
             type="button"
-            className={cx(iconButtonClass, 'size-7 rounded-l-md')}
+            className={cx(iconButtonClass, 'rounded-l-md')}
             aria-label="Zoom in"
             onClick={() => zoom(1 / 1.3)}
           >
@@ -128,7 +156,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
           </button>
           <button
             type="button"
-            className={cx(iconButtonClass, '-ml-px size-7')}
+            className={cx(iconButtonClass, '-ml-px')}
             aria-label="Zoom out"
             onClick={() => zoom(1.3)}
           >
@@ -136,7 +164,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
           </button>
           <button
             type="button"
-            className={cx(iconButtonClass, '-ml-px h-7 w-auto rounded-r-md px-2 text-xs')}
+            className={cx(iconButtonClass, '-ml-px w-auto rounded-r-md px-2 text-xs')}
             aria-label="Fit"
             onClick={() => setView(null)}
           >

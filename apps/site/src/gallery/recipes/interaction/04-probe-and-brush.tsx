@@ -7,6 +7,7 @@ import {
   Brush,
   Chart,
   type DataRect,
+  FigureFrame,
   InteractionOverlay,
   Overlaid,
   type Point2,
@@ -58,42 +59,46 @@ export default function ProbeAndBrush(): ReactNode {
   return (
     <div className="flex flex-wrap gap-4">
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted">Probe</span>
-        <Overlaid
-          {...size}
-          overlay={
-            probe.projection === null ? null : (
-              <InteractionOverlay projection={probe.projection} {...size}>
-                <Probe>
-                  {([x, y], [px, py]) => (
-                    <text x={px + 8} y={py - 8} fontSize={11} fill="var(--wb-fg)">
-                      ({x.toFixed(2)}, {y.toFixed(2)})
-                    </text>
-                  )}
-                </Probe>
-              </InteractionOverlay>
-            )
-          }
-        >
-          <Chart option={plain} figure={FIGURE} onInit={probe.onInit} />
-        </Overlaid>
+        <FigureFrame figure={FIGURE} filename="probe" title="Probe: hover to read values">
+          <Overlaid
+            {...size}
+            overlay={
+              probe.projection === null ? null : (
+                <InteractionOverlay projection={probe.projection} {...size}>
+                  <Probe>
+                    {([x, y], [px, py]) => (
+                      <text x={px + 8} y={py - 8} fontSize={11} fill="var(--wb-fg)">
+                        ({x.toFixed(2)}, {y.toFixed(2)})
+                      </text>
+                    )}
+                  </Probe>
+                </InteractionOverlay>
+              )
+            }
+          >
+            <Chart option={plain} figure={FIGURE} onInit={probe.onInit} />
+          </Overlaid>
+        </FigureFrame>
       </div>
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted">
-          Brush: {selected?.size ?? data.length} of {data.length} selected
-        </span>
-        <Overlaid
-          {...size}
-          overlay={
-            brush.projection === null ? null : (
-              <InteractionOverlay projection={brush.projection} {...size}>
-                <Brush value={rect} onChange={setRect} />
-              </InteractionOverlay>
-            )
-          }
+        <FigureFrame
+          figure={FIGURE}
+          filename="brush"
+          title={`Brush: ${selected?.size ?? data.length} of ${data.length} selected`}
         >
-          <Chart option={coloured} figure={FIGURE} onInit={brush.onInit} />
-        </Overlaid>
+          <Overlaid
+            {...size}
+            overlay={
+              brush.projection === null ? null : (
+                <InteractionOverlay projection={brush.projection} {...size}>
+                  <Brush value={rect} onChange={setRect} />
+                </InteractionOverlay>
+              )
+            }
+          >
+            <Chart option={coloured} figure={FIGURE} onInit={brush.onInit} />
+          </Overlaid>
+        </FigureFrame>
       </div>
     </div>
   )

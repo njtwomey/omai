@@ -1,6 +1,6 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { bayesNet, factorValues, variableElimination } from 'whitebox-engine/pgm'
-import { ControlPanel, SceneView, Select } from 'whitebox-render/react'
+import { ControlPanel, SceneFrame, Select } from 'whitebox-render/react'
 import { bayesNetCards } from 'whitebox-render/structures'
 import type { Recipe } from '../../recipe.ts'
 
@@ -47,7 +47,7 @@ export default function BayesNetTables(): ReactNode {
         <Select label="wet grass" value={wet} options={SEEN} onChange={setWet} />
         <Select label="rain" value={rain} options={SEEN} onChange={setRain} />
       </ControlPanel>
-      <SceneView scene={drawing} width={Math.min(720, drawing.width)} />
+      <SceneFrame scene={drawing} filename="bayes-net" />
     </div>
   )
 }

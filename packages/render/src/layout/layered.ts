@@ -133,6 +133,8 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
     up.set(b, [...(up.get(b) ?? []), a])
   }
   const chains: string[][] = []
+  // The ends of each dummy's edge: a dummy sits inside the groups of either end (an edge into a block stays in it).
+  const dummyEnds = new Map<string, readonly [string, string]>()
   dag.forEach(([a, b], k) => {
     const ra = rank.get(a) ?? 0
     const rb = rank.get(b) ?? 0
@@ -140,6 +142,7 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
     for (let r = ra + 1; r < rb; r++) {
       const d = `\u0000${k}:${r}`
       items.set(d, { id: d, width: 0, height: 0, dummy: true })
+      dummyEnds.set(d, [a, b])
       rank.set(d, r)
       chain.push(d)
     }
@@ -273,8 +276,14 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
   }
   // Groups are drawn as boxes around their members across ranks, so a node outside a group (or in another group) that
   // sits in a rank the group spans must clear the group's extent: push it, and its neighbours beyond it, out of the way.
+  const boxesOf = (v: string): string[] => {
+    const ends = dummyEnds.get(v)
+    if (ends === undefined) return groupsOf.get(v) ?? []
+    return [...new Set([...(groupsOf.get(ends[0]) ?? []), ...(groupsOf.get(ends[1]) ?? [])])]
+  }
   const members = new Map<string, string[]>()
-  for (const v of items.keys()) for (const g of groupsOf.get(v) ?? []) members.set(g, [...(members.get(g) ?? []), v])
+  for (const v of items.keys())
+    if (!items.get(v)?.dummy) for (const g of groupsOf.get(v) ?? []) members.set(g, [...(members.get(g) ?? []), v])
   for (let round = 0; round < 6; round++) {
     let moved = false
     for (const [g, ms] of members) {
@@ -286,10 +295,10 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
       const ancestors = new Set(chainOf(g))
       for (const r of ranks) {
         const layer = layers[r] ?? []
-        const own = layer.map((v, i) => ((groupsOf.get(v) ?? []).includes(g) ? i : -1)).filter((i) => i >= 0)
+        const own = layer.map((v, i) => (boxesOf(v).includes(g) ? i : -1)).filter((i) => i >= 0)
         layer.forEach((v, i) => {
-          if ((groupsOf.get(v) ?? []).includes(g)) return
-          const ownBoxes = (groupsOf.get(v) ?? []).filter((h) => !ancestors.has(h)).length
+          if (boxesOf(v).includes(g)) return
+          const ownBoxes = boxesOf(v).filter((h) => !ancestors.has(h)).length
           const pad = 12 * (depth + 1) + 12 * ownBoxes + (items.get(v)?.dummy ? 4 : 10)
           const xv = x.get(v) ?? 0
           if (xv + halfW(v) <= lo - pad || xv - halfW(v) >= hi + pad) return

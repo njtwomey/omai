@@ -1,7 +1,7 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { lineChart } from 'whitebox-render/charts'
 import { figure } from 'whitebox-render/figure'
-import { Chart, Choice, ControlPanel, Select, useColourMode } from 'whitebox-render/react'
+import { Chart, Choice, ControlPanel, FigureFrame, Select, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -46,7 +46,9 @@ export default function SelectAndChoice(): ReactNode {
         />
         <Choice label="amplitude" value={scale} onChange={setScale} options={[0.5, 1, 2, 3]} cycle />
       </ControlPanel>
-      <Chart option={option} figure={FIGURE} />
+      <FigureFrame figure={FIGURE} filename="curve">
+        <Chart option={option} />
+      </FigureFrame>
     </div>
   )
 }

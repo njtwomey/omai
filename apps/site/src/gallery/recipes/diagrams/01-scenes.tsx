@@ -16,7 +16,7 @@ import {
   tex,
   text,
 } from 'whitebox-engine/scene'
-import { ControlPanel, NumberField, SceneView } from 'whitebox-render/react'
+import { ControlPanel, NumberField, SceneFrame, SceneView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -64,7 +64,7 @@ export default function Scenes(): ReactNode {
           layer3d(
             scene3d([...surface3d(xs, xs, (x, y) => Math.exp(-(x * x + y * y)), { stroke: 'grid' }), ...axes3d(1.6)]),
             camera({ azimuth, elevation: 30 }),
-            { x: 420, y: 125, width: 210, height: 230 },
+            { x: 430, y: 135, width: 180, height: 210 },
             { id: 'surface' },
           ),
         ],
@@ -87,8 +87,9 @@ export default function Scenes(): ReactNode {
           hovering: <span className="font-mono text-fg">{hover ?? '—'}</span>
         </div>
       </ControlPanel>
-      <SceneView
+      <SceneFrame
         scene={s}
+        filename="scene"
         highlight={picked}
         onNodeHover={(id) => setHover(id)}
         onNodeClick={(id) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))}

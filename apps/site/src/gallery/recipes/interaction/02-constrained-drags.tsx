@@ -5,6 +5,7 @@ import {
   alongAxis,
   Chart,
   DraggablePoints,
+  FigureFrame,
   InteractionOverlay,
   Overlaid,
   onCircle,
@@ -57,24 +58,26 @@ export default function ConstrainedDrags(): ReactNode {
     [mode],
   )
   return (
-    <Overlaid
-      width={FIGURE.width}
-      height={FIGURE.height}
-      overlay={
-        projection === null ? null : (
-          <InteractionOverlay projection={projection} width={FIGURE.width} height={FIGURE.height}>
-            <DraggablePoints
-              points={points}
-              onChange={setPoints}
-              constrainEach={(i) => rules[i]}
-              colour={(i) => colours[i] ?? 'var(--wb-accent)'}
-              labels={['on the sine curve', 'on the circle', 'along y = −2', 'on the grid']}
-            />
-          </InteractionOverlay>
-        )
-      }
-    >
-      <Chart option={option} figure={FIGURE} onInit={onInit} />
-    </Overlaid>
+    <FigureFrame figure={FIGURE} filename="constraints">
+      <Overlaid
+        width={FIGURE.width}
+        height={FIGURE.height}
+        overlay={
+          projection === null ? null : (
+            <InteractionOverlay projection={projection} width={FIGURE.width} height={FIGURE.height}>
+              <DraggablePoints
+                points={points}
+                onChange={setPoints}
+                constrainEach={(i) => rules[i]}
+                colour={(i) => colours[i] ?? 'var(--wb-accent)'}
+                labels={['on the sine curve', 'on the circle', 'along y = −2', 'on the grid']}
+              />
+            </InteractionOverlay>
+          )
+        }
+      >
+        <Chart option={option} figure={FIGURE} onInit={onInit} />
+      </Overlaid>
+    </FigureFrame>
   )
 }

@@ -32,26 +32,84 @@ export function filterToc(nodes: readonly TocNode[], query: string): TocNode[] {
   return walk(nodes)
 }
 
+/** Where the current page sits in a tree: its node (if any) and the folders to open to show it. */
+export interface TocLocation {
+  /** The node that is the current page. */
+  readonly id?: string
+  /** The folders on the way to it, outermost first, and the node itself when it is a folder. */
+  readonly open: readonly string[]
+}
+
 /**
- * The ids of the folders on the way to the node linking `path`, outermost first, and the node itself when it is a
- * folder; empty when no node links it.
+ * Find the current page in a tree, whatever kind of node it is: the node linking `path`; else, for a folder page
+ * whose folder links nothing (a collection, a directory), the innermost folder holding every page below `path`; else
+ * the node linking the longest leading part of `path` (a page inside a page).
+ *
+ * @param nodes - The tree.
+ * @param path - The current page.
+ * @returns The node and the folders to open; nothing to open when the page is not in the tree.
+ */
+export function locate(nodes: readonly TocNode[], path: string): TocLocation {
+  const isFolder = (n: TocNode): boolean => n.children !== undefined && n.children.length > 0
+  const at = (n: TocNode, trail: readonly string[]): TocLocation => ({
+    id: n.id,
+    open: isFolder(n) ? [...trail, n.id] : [...trail],
+  })
+  // The node linking the page itself.
+  const exact = (list: readonly TocNode[], trail: readonly string[]): TocLocation | null => {
+    for (const n of list) {
+      if (n.path === path) return at(n, trail)
+      const found = n.children === undefined ? null : exact(n.children, [...trail, n.id])
+      if (found !== null) return found
+    }
+    return null
+  }
+  const hit = exact(nodes, [])
+  if (hit !== null) return hit
+  // A folder page: the innermost folder whose pages include every page under `path/`.
+  const below = (n: TocNode): string[] => [
+    ...(n.path === undefined ? [] : [n.path]),
+    ...(n.children ?? []).flatMap(below),
+  ]
+  const prefix = `${path.replace(/\/$/, '')}/`
+  const total = nodes.flatMap(below).filter((p) => p.startsWith(prefix)).length
+  if (total > 0) {
+    const folder = (list: readonly TocNode[], trail: readonly string[]): TocLocation | null => {
+      for (const n of list) {
+        if (!isFolder(n)) continue
+        const pages = below(n)
+        if (pages.filter((p) => p.startsWith(prefix)).length < total) continue
+        // This folder holds them all; a child folder may hold them all too.
+        return folder(n.children ?? [], [...trail, n.id]) ?? at(n, trail)
+      }
+      return null
+    }
+    const found = folder(nodes, [])
+    if (found !== null) return found
+  }
+  // A page within a page: the node linking the longest leading part of the path.
+  let best: { loc: TocLocation; length: number } | null = null
+  const walk = (list: readonly TocNode[], trail: readonly string[]): void => {
+    for (const n of list) {
+      if (n.path !== undefined && path.startsWith(`${n.path}/`) && n.path.length > (best?.length ?? 0))
+        best = { loc: at(n, trail), length: n.path.length }
+      if (n.children !== undefined) walk(n.children, [...trail, n.id])
+    }
+  }
+  walk(nodes, [])
+  return (best as { loc: TocLocation } | null)?.loc ?? { open: [] }
+}
+
+/**
+ * The ids of the folders on the way to the current page (see {@link locate}), outermost first, and the page itself
+ * when it is a folder; empty when the page is not in the tree.
  *
  * @param nodes - The tree.
  * @param path - The current page.
  * @returns The ids to open.
  */
 export function ancestorsOf(nodes: readonly TocNode[], path: string): string[] {
-  const walk = (list: readonly TocNode[], trail: readonly string[]): string[] | null => {
-    for (const n of list) {
-      if (n.path === path) return n.children !== undefined && n.children.length > 0 ? [...trail, n.id] : [...trail]
-      if (n.children !== undefined) {
-        const found = walk(n.children, [...trail, n.id])
-        if (found !== null) return found
-      }
-    }
-    return null
-  }
-  return walk(nodes, []) ?? []
+  return [...locate(nodes, path).open]
 }
 
 /**

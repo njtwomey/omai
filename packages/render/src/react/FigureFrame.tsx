@@ -25,6 +25,11 @@ export interface FrameSize {
   readonly width: number
   readonly height: number
   readonly expanded: boolean
+  /**
+   * In the modal, content that is not a function of the size is drawn at its page size and magnified by this factor
+   * (a chart renders at a higher pixel ratio to stay sharp).
+   */
+  readonly scale?: number
 }
 
 const FrameContext = createContext<FrameSize | undefined>(undefined)
@@ -121,7 +126,9 @@ async function recordFrames(
 ): Promise<Pixels[]> {
   const start = playback.frame
   playback.pause()
-  const { width, height } = root.getBoundingClientRect()
+  // The figure's own size (an expanded frame's fixed content is magnified; its frames are not).
+  const width = root.offsetWidth
+  const height = root.offsetHeight
   const frames: Pixels[] = []
   try {
     for (let i = 0; i < Math.min(playback.count, 600); i++) {
@@ -145,8 +152,10 @@ async function recordFrames(
 
 /**
  * The whole figure inside an element as one SVG document: every chart in it (re-drawn by ECharts' SVG renderer at its
- * place), every inline SVG drawing marked `data-whitebox-svg` (a `SceneView`), and every overlay cell (`data-whitebox-overlay`: TeX from `data-tex` as MathML, or its text), on the
- * background colour. Panels are parts of the figure, so they export together.
+ * place), every scene (`SceneView`, or an inline SVG marked `data-whitebox-svg`) as drawn, and every overlay cell
+ * (`data-whitebox-overlay`: TeX from `data-tex` as MathML, or its text), on the background colour. Panels are parts of
+ * the figure, so they export together. A magnified element (an expanded frame's fixed content) exports at its own,
+ * unmagnified size.
  *
  * @param root - The element holding the figure.
  * @param options - Background colour, colour mode, and whether to include HTML overlays (default true).
@@ -157,58 +166,54 @@ export function figureSvg(
   options: { readonly background: string; readonly mode: ColourMode; readonly overlays?: boolean },
 ): string | undefined {
   const box = root.getBoundingClientRect()
+  // A CSS-magnified element (an expanded frame's fixed content) is measured in its own, unmagnified pixels.
+  const k = root.offsetWidth > 0 ? box.width / root.offsetWidth : 1
+  const place = (r: DOMRect): { x: number; y: number; width: number; height: number } => ({
+    x: (r.left - box.left) / k,
+    y: (r.top - box.top) / k,
+    width: r.width / k,
+    height: r.height / k,
+  })
   const parts: FigurePart[] = []
   const echarts = loadEcharts()
   for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-chart]')) {
     const chart = echarts.getInstanceByDom(el)
     if (chart === undefined) continue
-    const r = el.getBoundingClientRect()
-    const width = Math.round(r.width)
-    const height = Math.round(r.height)
-    parts.push({
-      x: r.left - box.left,
-      y: r.top - box.top,
-      width,
-      height,
-      svg: chartToSvg(chart.getOption(), { width, height, mode: options.mode }),
-    })
+    const at = place(el.getBoundingClientRect())
+    const width = Math.round(at.width)
+    const height = Math.round(at.height)
+    parts.push({ ...at, width, height, svg: chartToSvg(chart.getOption(), { width, height, mode: options.mode }) })
   }
   // Inline SVG drawings (a SceneView in a `data-whitebox-svg` element) go in as they are drawn.
   for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-svg]')) {
     const svg = el.querySelector('svg')
     if (svg === null) continue
-    const r = svg.getBoundingClientRect()
-    parts.push({ x: r.left - box.left, y: r.top - box.top, width: r.width, height: r.height, svg: svg.outerHTML })
+    parts.push({ ...place(svg.getBoundingClientRect()), svg: svg.outerHTML })
   }
   // Scenes (diagrams, worlds) are SVG already: each goes in as drawn, at its place.
   for (const el of root.querySelectorAll<SVGSVGElement>('svg[data-whitebox-scene]')) {
-    const r = el.getBoundingClientRect()
-    if (r.width === 0 || r.height === 0) continue
+    if (el.closest('[data-whitebox-svg]') !== null) continue
+    const at = place(el.getBoundingClientRect())
+    if (at.width === 0 || at.height === 0) continue
     const copy = el.cloneNode(true) as SVGSVGElement
-    copy.setAttribute('width', String(r.width))
-    copy.setAttribute('height', String(r.height))
+    copy.setAttribute('width', String(at.width))
+    copy.setAttribute('height', String(at.height))
     copy.removeAttribute('style')
-    parts.push({
-      x: r.left - box.left,
-      y: r.top - box.top,
-      width: r.width,
-      height: r.height,
-      svg: new XMLSerializer().serializeToString(copy),
-    })
+    parts.push({ ...at, svg: new XMLSerializer().serializeToString(copy) })
   }
   if (options.overlays ?? true)
     for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-overlay]')) {
-      const r = el.getBoundingClientRect()
+      const at = place(el.getBoundingClientRect())
       const tex = el.dataset['tex']
       const colour = getComputedStyle(el).color
       const html =
         tex === undefined
           ? `<div style="color:${colour};font:13px system-ui,sans-serif">${escapeXml(el.textContent ?? '')}</div>`
           : `<div style="color:${colour};font-size:18px">${texToHtml(tex, { display: true, output: 'mathml' })}</div>`
-      parts.push({ x: r.left - box.left, y: r.top - box.top, width: r.width, height: r.height, html })
+      parts.push({ ...at, html })
     }
   if (parts.length === 0) return undefined
-  return composeSvg(Math.round(box.width), Math.round(box.height), parts, { background: options.background })
+  return composeSvg(Math.round(box.width / k), Math.round(box.height / k), parts, { background: options.background })
 }
 /**
  * A fixed-size figure area: content never resizes it. The figure is the unit: a grid of panels (`subplots`,
@@ -216,8 +221,9 @@ export function figureSvg(
  * The expand button opens the same content full screen in a modal (Escape or a click outside closes it), and the
  * export menu saves the whole figure (every chart, scene and overlay cell) as SVG or PNG, and, given the `playback`
  * that animates it, records it frame by frame as a GIF or (where the browser can encode video) a WebM. Content that is
- * a function receives the current size, so a chart can draw at the modal's size; `useFrameSize` gives the same inside
- * the frame.
+ * a function receives the current size, so a chart can draw at the modal's size; other content is drawn at its page
+ * size and magnified in the modal (charts at a matching pixel ratio, so they stay sharp). `useFrameSize` gives the size
+ * inside the frame.
  *
  * @param props - Size, title, caption, content, expansion and export settings.
  * @returns The frame.
@@ -233,6 +239,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const [viewport, setViewport] = useState({ width: 1200, height: 800 })
   const frameRef = useRef<HTMLDivElement | null>(null)
   const modalRef = useRef<HTMLDivElement | null>(null)
+  const scaledRef = useRef<HTMLDivElement | null>(null)
   const playback = props.playback
   const formats =
     props.exportFormats ??
@@ -262,7 +269,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const onExport = useCallback(
     (format: ExportFormat) => {
       setMenu(false)
-      const root = (expanded ? modalRef.current : frameRef.current) ?? frameRef.current
+      const root = (expanded ? (scaledRef.current ?? modalRef.current) : frameRef.current) ?? frameRef.current
       if (root === null) return
       if (props.onExport !== undefined) {
         props.onExport(format, root)
@@ -296,7 +303,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
         download(svgDataUrl(svg), name)
         return
       }
-      const { width, height } = root.getBoundingClientRect()
+      const [width, height] = [root.offsetWidth, root.offsetHeight]
       // Some browsers refuse to rasterise HTML in an SVG; then the PNG goes without the overlay cells.
       svgToPng(svg, width, height, { background: t.bg })
         .catch(() => {
@@ -457,7 +464,22 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
                 overflow: 'hidden',
               }}
             >
-              {content(modalSize)}
+              {typeof props.children === 'function' ? (
+                content(modalSize)
+              ) : (
+                // Fixed content is drawn at its page size and magnified to fill the modal, overlays and all.
+                <div
+                  ref={scaledRef}
+                  style={{
+                    width,
+                    height,
+                    transform: `scale(${modalSize.width / width})`,
+                    transformOrigin: 'top left',
+                  }}
+                >
+                  {content({ width, height, expanded: true, scale: modalSize.width / width })}
+                </div>
+              )}
             </div>
           </div>
         </div>
