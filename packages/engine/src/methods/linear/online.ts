@@ -13,9 +13,11 @@ import {
   type Fitted,
   featureNamesOf,
   fitRunOptions,
+  geometricSteps,
   type LearnData,
   type MatrixView,
   matrixView,
+  type SurfaceStepsInput,
   targetVector,
 } from '../../lib/learn/index.ts'
 import { daxpy, ddot, dscal } from '../../lib/numerics/linalg/index.ts'
@@ -186,8 +188,8 @@ export interface SgdState {
     readonly progressive: number[]
     readonly training: number[]
     readonly rate: number[]
-    /** The first problem's coefficients then its intercept at each checkpoint (the trajectory of the fit). */
-    readonly coefficients: number[][]
+    /** coefficients[t][p]: problem p's coefficients then its intercept at checkpoint t (the trajectory of the fit). */
+    readonly coefficients: number[][][]
   }
 }
 
@@ -340,7 +342,7 @@ export function plainSgdAlgorithm(
           curve.progressive.push(windowErr / windowRows)
           curve.training.push(evaluate.all(problems))
           curve.rate.push(problems[0]?.eta ?? 0)
-          curve.coefficients.push([...(problems[0]?.w ?? []), problems[0]?.b ?? 0])
+          curve.coefficients.push(problems.map((p) => [...p.w, p.b]))
           windowErr = 0
           windowRows = 0
         }
@@ -442,7 +444,7 @@ const paSpace = (h: SgdSettings, losses: readonly SgdLoss[]): Space =>
 
 /** A coefficient table with the first problem's coefficients (then intercept) at each checkpoint of the run. */
 function withTrajectory(table: CoefficientTable, state: SgdState): CoefficientTable {
-  const values = state.curve.coefficients
+  const values = state.curve.coefficients.map((c) => c[0] ?? [])
   if (values.length < 2 || values.some((v) => v.length !== table.names.length)) return table
   return coefficientTable({ ...table, trajectories: { resource: 'samples seen', at: [...state.curve.seen], values } })
 }
@@ -463,7 +465,7 @@ function fitSgdClassifier(
   data: LearnData,
   h: SgdSettings,
   options: FitOptions,
-): { params: LinearClassifierParams; exposition: Exposition[] } {
+): { params: LinearClassifierParams; exposition: Exposition[]; state: SgdState } {
   const x = matrixView(data.x, name)
   const { classes: labels, codes } = encodeLabels(data.y ?? [], name, x.n)
   const classes = [...labels]
@@ -503,7 +505,7 @@ function fitSgdClassifier(
   }
   const table = classifierTable(params, featureNamesOf(data, x.d), classNamesOf(data, classes))
   // One score row (two classes): the coefficients' trajectory over the samples seen.
-  return { params, exposition: [sgdCurve(s, 'error'), rows === 1 ? withTrajectory(table, s) : table] }
+  return { params, exposition: [sgdCurve(s, 'error'), rows === 1 ? withTrajectory(table, s) : table], state: s }
 }
 
 function classifierEstimator(
@@ -520,12 +522,42 @@ function classifierEstimator(
         const r = fitSgdClassifier(name, data, hy, options)
         const d = r.params.coef[0]?.length ?? 0
         const fitted = est.revive(r.params)
+        // The surface at up to 40 of the run's checkpoints (geometric in the samples seen), the rows the
+        // model then misclassifies highlighted, beside the progressive error.
+        const curve = r.state.curve
+        const record = options.explain !== false && curve.coefficients.length > 1
+        const chosen = record ? geometricSteps(curve.coefficients.length - 1, 40) : []
+        const steps: SurfaceStepsInput | undefined = record
+          ? {
+              models: chosen.map((t) => {
+                const c = curve.coefficients[t] ?? []
+                return t === curve.coefficients.length - 1
+                  ? fitted
+                  : est.revive({ ...r.params, coef: c.map((w) => w.slice(0, d)), intercept: c.map((w) => w[d] ?? 0) })
+              }),
+              iterations: chosen.map((t) => curve.seen[t] ?? t),
+              objective: chosen.map((t) => curve.progressive[t] ?? Number.NaN),
+              highlight: 'misclassified',
+            }
+          : undefined
         const surface =
           d === 2
             ? [
                 decisionSurfaceOf(fitted, data.x, {
                   featureNames: featureNamesOf(data, d),
                   classNames: classNamesOf(data, r.params.classes),
+                  ...(data.y === undefined ? {} : { y: data.y }),
+                  ...(steps === undefined
+                    ? {}
+                    : {
+                        steps,
+                        stepName: 'samples seen',
+                        objective: {
+                          name: 'progressive error',
+                          iterations: [...curve.seen],
+                          values: [...curve.progressive],
+                        },
+                      }),
                 }),
               ]
             : []
