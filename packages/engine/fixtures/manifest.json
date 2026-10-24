@@ -1320,6 +1320,15 @@
       "cases": 18
     },
     {
+      "fixture": "methods/cluster/kmeans.json",
+      "source": "oracle/cases/methods/cluster/kmeans.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "methods/rl/agents/bandits.json",
       "source": "oracle/cases/methods/rl/agents/bandits.py",
       "reference": {
