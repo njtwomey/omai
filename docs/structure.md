@@ -126,8 +126,8 @@ whitebox-js/
   CLAUDE.md, INIT.md, AUDIT.md, PORT.md
 ```
 
-`docs` is the one app: documentation for `engine` and the gallery for `render` (the current `apps/gallery` folds into
-it when the apps are built). Outside projects (the encyclopedia,
+`docs` documents `engine`'s core, `gallery` shows off `render`, and `hub` shows off the hub (its pages generated from the
+hub catalogue). Outside projects (the encyclopedia,
 the slide and blog tool) consume the three published packages as release tarballs.
 
 ## 2. Conventions every file follows
@@ -2743,14 +2743,43 @@ stratified area-light estimates.
   interpolation, textures and deferred shading (`mesh`, `rasteriseMesh`): the counterpart of ray casting, for
   comparison figures.
 
-## 5. whitebox-engine methods, `packages/engine/src/methods/`
+## 5. whitebox-engine hub, `packages/engine/src/hub/` (was `methods/`)
 
-Methods are the named models, algorithms, environments, datasets and studies, each composed from the core. Each area
-lists what it is built from, which is also its import list. Areas are grouped below as a reader looks for them; on disk
-they are flat folders. Every estimator comes as a factory (`pca({ nComponents: 2 })`) and as a class
-(`new PCA({ nComponents: 2 })`), declares its `hyperSpace`, and offers `predictDistribution` where it predicts.
+**What the hub is.** The core (section 4) is a library in the sense of PyTorch or Pyro: primitives to build with. It
+does not decide how it should be used; the encyclopedia, a blog or a slide deck define their own uses. The hub is a zoo
+of worked implementations built on the core, in the spirit of a model hub rather than of a solutions package: each
+entry shows one way to put the core together, instrumented so it can be explained (the exposition contract of 5.0),
+and is usable as it is or as a template. Consumers are free to ignore it.
 
-### 5.0 First pass: scope, phases and the exposition contract
+**Organisation.** Entries live in collections, folders that are semi-organised rather than a strict taxonomy:
+`hub/<collection>/<entry>.ts`, imported as `whitebox-engine/hub/<collection>`. A collection may follow a familiar
+library's own layout, for example `hub/sklearn/` mirroring scikit-learn (`linear_model`, `tree`, `ensemble`, `svm`,
+`neighbors`, `naive_bayes`, `discriminant_analysis`, `gaussian_process`, `cluster`, `mixture`, `decomposition`,
+`manifold`, `covariance`, `semi_supervised`, `pipeline` and `compose` as small sub-collections), or gather basic ideas,
+for example `hub/neural/` (perceptrons and MLPs, convolutions, recurrence, attention, autoencoders). Other
+collections: `probabilistic/` (the models of 5.4 as programs), `rl/` (environments, agents and the playground),
+`timeseries/` (matrix profiles), `tuning/`, and, later, the remaining areas below. Each subsection that follows
+proposes a collection's contents; names and grouping can change as the hub grows.
+
+**Self-describing entries.** Every entry exports a `HubEntry` alongside its code: an id, title, one-line summary,
+collection, tags, the `create` factory (and class form for estimators), its `hyperSpace` with demo defaults, the
+dataset collections it suits, and a `demo(key, options)` that runs it on a default dataset and returns the exposition
+record (and a trace). `scripts/hub.ts` (run by `make barrels`) gathers every `HubEntry` into the generated
+`hub/catalogue.ts`, so the hub gallery (section 8) imports each new entry automatically, with no hand-written page.
+Estimators keep the conventions of the original methods plan: a factory (`pca({ nComponents: 2 })`) and a class
+(`new PCA({ nComponents: 2 })`), a `hyperSpace`, and `predictDistribution` where they predict.
+
+**Datasets move to the core.** The generators, vendored real datasets and dataset collections of 5.18 become a core
+domain, `lib/datasets/` (tier 7, above `dists`, `worlds` and `data`), so the core, the hub and consumers share them;
+`lib/data` keeps the schemas, loaders, splits and modifiers. 5.18 describes the domain's contents.
+
+**Layering.** A hub collection imports any core domain and the collections listed in its `area.json`; the core never
+imports the hub (enforced by `make layers`, as for `methods/` before).
+
+### 5.0 First pass of the hub: scope, phases and the exposition contract
+
+(Written when the hub was still called methods; the phases name the planned collections. Not to be built until the
+user says go.)
 
 The methods are a classical-AI toolkit in the spirit of scikit-learn, with a little more on the probabilistic side, and a
 reinforcement-learning playground. They exist to drive small live demos and gallery entries, not as an encyclopedia: a
@@ -3584,7 +3613,7 @@ Each file is a reproducible study that returns data and traces for figures.
 - `multiple-testing.ts`: the garden of forking paths and p-hacking simulations.
 - `information-theoretic.ts`: mutual-information generalisation bounds.
 
-### 5.18 Datasets (`datasets/`)
+### 5.18 Datasets (moving to the core as `lib/datasets/`, see the section introduction)
 
 Every dataset is a `DatasetGenerator` (knobs as a `Space`, returning `{ data, truth }`) or a static dataset (data and
 provenance). Static data is embedded as generated `*.data.ts` files vendored by the oracle with source, licence and
@@ -3894,23 +3923,33 @@ Turns the source into documentation data, runs examples and links functions to c
 
 ## 8. Apps
 
-One app, `apps/docs/`, holds both the documentation and the gallery (they were planned as two apps; one site serves
-both better). It is a private Vite and React 19 application with a navigation bar, a persistent light and dark toggle (system
-default, stored choice, no flash), theme tokens from `whitebox-render/theme` and Tailwind CSS. It consumes the
-packages exactly as an outside project does.
+Three apps, one per audience: `apps/docs/` documents the engine core, `apps/gallery/` shows off whitebox-render, and
+`apps/hub/` shows off the hub. Each is a private Vite and React 19 application with a navigation bar, a persistent
+light and dark toggle (system default, stored choice, no flash), theme tokens from `whitebox-render/theme` and
+Tailwind CSS, and they share one shell package-internally (`apps/shared/`). They consume the packages exactly as an
+outside project does. aifn-engine's docs approach (driven by docstrings and recipes) is recycled where it works.
 
-`apps/docs/` (documentation for whitebox-engine; gallery for whitebox-render)
+`apps/docs/` (the engine core's documentation)
 - `src/main.tsx`, `src/routes.tsx`, `src/shell/` (`AppShell.tsx`, `NavBar.tsx`, `ThemeToggle.tsx`, `Sidebar.tsx`).
 - `src/pages/`: `Home.tsx`, `HowTo.tsx`, `Module.tsx`, `Symbol.tsx`, `Concepts.tsx` (browse by the encyclopedia's
-  taxonomy), `Studies.tsx`, `Playground.tsx`, `Traces.tsx` (open, replay, compare and export runs).
-- `content/howto/`: one how-to per core domain and per major method area, with runnable code blocks checked by the build.
+  taxonomy), `Playground.tsx`, `Traces.tsx` (open, replay, compare and export runs).
+- `content/howto/`: one how-to per core domain, with runnable code blocks checked by the build.
 
-The gallery lives in the same app (`apps/docs/src/gallery/`), recycling aifn-engine's docs approach (driven by
-docstrings and recipes):
-- `src/gallery/pages/`: `Gallery.tsx`, `Section.tsx`, `Entry.tsx` (a figure with its editable code and export menu).
-- `src/gallery/entries/`: one file per section: `charts.ts`, `distributions.ts`, `fields.ts`, `functions.ts`, `structures.ts`
+`apps/gallery/` (whitebox-render's showcase: every chart, layout, control and animation)
+- `src/pages/`: `Gallery.tsx`, `Section.tsx`, `Entry.tsx` (a figure with its editable code and export menu).
+- `src/entries/`: one file per section: `charts.ts`, `distributions.ts`, `fields.ts`, `functions.ts`, `structures.ts`
   (graphical models, computation graphs, architectures, trees, automata), `networks.ts`, `traces.ts`, `animations.ts`,
-  `environments.ts` (every environment, rendered and animated), `three-d.ts`, `maths.ts`, `layouts.ts`, `themes.ts`.
+  `environments.ts` (every environment, rendered and animated), `worlds.ts` (maps, mazes, the ray-cast view),
+  `three-d.ts`, `maths.ts`, `layouts.ts`, `controls.ts`, `themes.ts`.
+
+`apps/hub/` (the hub's showcase, built from `hub/catalogue.ts`)
+- `src/pages/`: `Hub.tsx` (collections and tags), `Collection.tsx`, `Entry.tsx`: an entry's live demo, with a
+  `DatasetPicker` over the dataset collections it suits, `MethodControls` from its `hyperSpace`, its exposition
+  record rendered (for a pipeline, the output of every stage; for a lasso, its path; for a tree, its splits), its
+  trace in a player, and its source.
+- Pages are generated from the catalogue: adding a `HubEntry` adds its page, with no hand-written gallery code; an
+  entry may provide a custom figure layout, otherwise a default one is chosen from its kind (estimator, transformer,
+  pipeline, clusterer, embedding, agent, study).
 
 ## 9. Python oracle, `oracle/`
 
