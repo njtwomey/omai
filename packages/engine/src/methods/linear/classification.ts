@@ -1,4 +1,3 @@
-// TODO: sgdClassifier and passiveAggressive (phase 3, online learning).
 import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type CoefficientTable, coefficientTable, type Exposition } from '../../lib/exposition/index.ts'
