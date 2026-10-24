@@ -1406,8 +1406,12 @@ weights.
   `purityScore`; B-cubed (`bCubed`, `bCubedF1`); contingency tables (`contingencyMatrix`).
 - `cluster-validity.ts`: silhouette (`silhouetteScore`, `silhouetteSamples`, any distance or precomputed),
   Calinski-Harabasz, Davies-Bouldin and Dunn indices.
-- `detection-segmentation.ts`: IoU, GIoU, DIoU and CIoU; Dice; Hausdorff distance (and HD95) for boundaries; boundary
-  F1; mean average precision (VOC and COCO protocols); panoptic quality; per-class mean IoU.
+- `detection.ts`: IoU, GIoU, DIoU and CIoU of boxes (`boxIou`, `generalizedBoxIou`, `distanceBoxIou`,
+  `completeBoxIou`); mean average precision (`detectionMeanAveragePrecision`: the COCO protocol with all twelve
+  COCOeval statistics, crowds and size ranges; VOC all-point and 2007 11-point, with difficult objects).
+- `segmentation.ts`: Dice (`diceCoefficient`), `maskIou`; Hausdorff distance (and HD95) for mask boundaries
+  (`maskHausdorffDistance`, MONAI's definition with spacing); boundary F1; panoptic quality (with void and modified
+  stuff classes); per-class mean IoU (`meanIou`).
 - `image-quality.ts`: MSE, PSNR, SSIM, MS-SSIM, VIF, LPIPS and DISTS from supplied features, SAM, ERGAS, RASE, UIQI.
 - `generative.ts`: Inception score, FID and KID from features, precision, recall, density and coverage, CLIPScore from
   embeddings, Vendi score.

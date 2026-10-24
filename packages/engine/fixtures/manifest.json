@@ -186,6 +186,15 @@
       "cases": 41
     },
     {
+      "fixture": "metrics/detection.json",
+      "source": "oracle/cases/metrics/detection.py",
+      "reference": {
+        "torchvision": "0.29.1",
+        "pycocotools": "2.0.11"
+      },
+      "cases": 18
+    },
+    {
       "fixture": "metrics/deviance.json",
       "source": "oracle/cases/metrics/deviance.py",
       "reference": {
@@ -279,6 +288,15 @@
         "scipy": "1.18.1"
       },
       "cases": 10
+    },
+    {
+      "fixture": "metrics/segmentation.json",
+      "source": "oracle/cases/metrics/segmentation.py",
+      "reference": {
+        "monai": "1.6.1",
+        "torchmetrics": "1.9.0"
+      },
+      "cases": 9
     },
     {
       "fixture": "nn/torch_reference.json",
