@@ -39,6 +39,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/games/extensive-form': () => import('whitebox-engine/games/extensive-form'),
   'whitebox-engine/games/normal-form': () => import('whitebox-engine/games/normal-form'),
   'whitebox-engine/graph': () => import('whitebox-engine/graph'),
+  'whitebox-engine/graphics': () => import('whitebox-engine/graphics'),
   'whitebox-engine/information': () => import('whitebox-engine/information'),
   'whitebox-engine/kernels': () => import('whitebox-engine/kernels'),
   'whitebox-engine/learn': () => import('whitebox-engine/learn'),

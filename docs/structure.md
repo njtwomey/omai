@@ -2643,23 +2643,64 @@ dependency, so its layouts are checked structurally (TODO: golden-test them agai
 
 ### 4.37 `graphics/` (tier 7): rendering mathematics
 
-The mathematics of drawing worlds and scenes, as data (`Pixels`, scene nodes), so figures and the slide and blog tools
-can show how a renderer works step by step. Everything is deterministic and traced where a step is worth showing.
+The mathematics of drawing worlds and scenes, as data (float images that `imageToPixels` turns into `scene` `Pixels`,
+scene nodes, and the steps behind them: DDA crossings, ray trees, path vertices, per-triangle records), so figures and
+the slide and blog tools can show how a renderer works step by step. Everything is deterministic (randomness only from
+keys) and traced where a step is worth showing: column ray casting steps per column, Whitted tracing per generation of
+rays, path tracing per sample. Every loop is capped (DDA steps, ray depth and weight, bounces). Shading terms,
+intersection distances, projection and tone mapping are tensor compositions, vectorised and differentiable (checked
+by `checkPrimitive`); renderers run per-ray loops on numbers and shade hits in batches through the same terms. It
+builds on `scene` (`Vec3`, `Pixels`, `toPixels`, the orbit `Camera`, paints), `worlds` (maps, `Pose`, `toScene`, lattice
+noise), `foundations` (vector products, homogeneous coordinates) and `numerics/linalg/blas.ts`.
 
-oracle: closed forms; numpy references for the linear algebra; small images compared to hand-checked renders.
-- `camera.ts`: pinhole and orthographic cameras, view and projection matrices, ray generation per pixel, frustum tests.
-- `raycasting.ts`: grid ray casting over a `World` (DDA traversal, wall hits with side and distance, fish-eye
-  correction), first-person column rendering with textured walls, floors and ceilings, sprites with depth sorting, and
-  the traced rays for a top-down view-cone figure.
-- `raytracing.ts`: ray-primitive intersections (sphere, plane, triangle with Moller-Trumbore, axis-aligned box),
-  bounding-volume hierarchies, recursive ray tracing with shadows, reflection and refraction (Snell, Fresnel by
-  Schlick), and a small path tracer (cosine-weighted hemisphere sampling with explicit keys).
-- `shading.ts`: Lambert, Phong and Blinn-Phong, physically based microfacet shading (GGX, Smith, Fresnel), lights
-  (point, directional, area), tone mapping and gamma.
-- `textures.ts`: texture images, UV mapping, nearest, bilinear and mipmapped sampling, procedural textures
-  (checkerboard, noise, bricks).
-- `rasterise.ts`: triangle rasterisation with barycentric interpolation, depth buffers, back-face culling and clipping
-  (the counterpart of ray casting, for comparison figures).
+oracle: closed forms (intersection roots and normals by numpy, the exact Fresnel equations, GGX, Smith through its
+Lambda form), numpy for the camera matrices, unprojected pixel rays and frustum planes from the view volume's corners,
+scipy.integrate.dblquad for directional albedos, scipy.ndimage.map_coordinates for texture sampling, and 16 x 12
+reference renders by independent straightforward implementations (a brute-force Whitted tracer, a ray caster that
+intersects every wall face, a per-pixel rasteriser solving for barycentrics). The path tracer is checked by the white
+furnace test (exact for a convex object), agreement with Whitted where there is no indirect light, and convergence to
+stratified area-light estimates.
+- `camera.ts`: pinhole and orthographic cameras (`pinholeCamera`, `orthographicCamera`, `fromSceneCamera` for the
+  orbit camera of 3-D scene layers, `cameraBasis`), view and projection matrices (`lookAt`, `perspective`,
+  `orthographic`, `viewMatrix`, `projectionMatrix`, `viewProjection`, `transformPoint`), projection (`projectToPixel`,
+  differentiable `projectPoints`), ray generation per pixel (`pixelRay`, `cameraRays`, jittered by a key), and frustum
+  tests (`frustumPlanes`, `cameraFrustum`, `pointInFrustum`, `sphereInFrustum`, `boxInFrustum`).
+- `raycasting.ts`: grid ray casting over a `World` (`ddaCast`: the Amanatides-Woo DDA with wall hits by side, face,
+  distance and texture column, stopped by opaque cells, thin walls and the map edge; `fisheyeCorrect`), column casting
+  as a traced algorithm (`columnAngles`, `raycastAlgorithm`, `castColumns`, with a `fisheye` switch for comparison),
+  first-person frames with textured walls, floors and ceilings, fog and sprites with depth sorting against the
+  column depth buffer (`renderRaycast`), and the traced rays of a top-down view-cone figure (`viewConeRays`,
+  `viewConeScene`).
+- `intersect.ts`: shapes (`sphere`, `plane`, `triangle` with vertex normals and texture coordinates, `box`),
+  ray-primitive intersections (`intersectSphere`, `intersectPlane`, `intersectTriangle` by Moller-Trumbore,
+  `intersectBox` and `slabs`, `intersect`, brute-force `nearestHit`, `bounds`) and their differentiable distances
+  (`sphereDistance`, `planeDistance`, `triangleIntersection`, `boxDistances`).
+- `bvh.ts`: bounding-volume hierarchies (`buildBvh` by the binned surface-area heuristic or median splits, iterative),
+  nearest-hit and any-hit traversal with counts (`intersectBvh`, `occludedBvh`), and `bvhStructure` for drawing.
+- `raytracing.ts`: scenes of objects with materials and albedo maps (`rayScene`, `sceneHit`, `sceneOccluded`,
+  `albedoAt`), reflection and refraction (`refract` by Snell's law, `schlick` for dielectrics, `splitWeights`), and
+  recursive (Whitted) ray tracing with shadow rays, mirrors and glass as a traced algorithm (`whittedAlgorithm`,
+  `renderWhitted`, `traceRay` returning the ray tree).
+- `pathtracing.ts`: a small path tracer (cosine-weighted hemisphere sampling with explicit keys: `cosineHemisphere`,
+  `sampleCosineHemisphere`; next-event estimation of lights; Lambertian, mirror and Fresnel-chosen glass events) as a
+  traced algorithm per sample (`pathTracerAlgorithm`, `pathTrace`), and single paths with their vertices (`tracePath`).
+- `shading.ts`: Lambert, Phong and Blinn-Phong terms and their normalised BRDFs (`reflect`, `halfVector`, `lambert`,
+  `phong`, `blinnPhong`, `lambertBrdf`, `phongBrdf`, `blinnPhongBrdf`, `blinnPhongDistribution`), physically based
+  microfacet shading (`ggxDistribution`, `smithG1`, `smithG`, `fresnelSchlick`, `fresnelDielectric`, `cookTorrance`,
+  `metallicRoughness`), and materials (`material`, `brdf`, `shade`).
+- `lights.ts`: lights (`pointLight`, `directionalLight`, rectangular `areaLight` with stratified or keyed samples),
+  `lightSamples`, and batched shading of surface points with shadow tests (`shadePoints`).
+- `tonemapping.ts`: tone mapping and gamma (`exposure`, `reinhard` plain and extended, `acesFilm`, `gammaEncode`,
+  `gammaDecode`, `linearToSrgb`, `srgbToLinear`, `luminance`).
+- `textures.ts`: texture images (`FloatImage`, `floatImage`, `imageFromPixels`, `imageToPixels` with exposure, tone
+  mapping and encoding), UV mapping (`sphereUv`, `planarUv`, `cylinderUv`, `cubeUv`), nearest, bilinear and mipmapped
+  sampling (`wrapIndex`, `sampleNearest`, `sampleBilinear`, `mipmaps`, `mipLevel`, `sampleMipmap`), and procedural
+  textures (`checkerboard`, `bricks`, `noiseTexture` from `worlds`' lattice noise, `bakeTexture`).
+- `rasterise.ts`: triangle rasterisation (`edgeFunction`, `rasteriseTriangle` with the top-left rule on a subpixel
+  grid and barycentric weights), clipping in homogeneous clip space (`clipPolygon`), back-face culling
+  (`isBackFacing`), depth buffers (`depthBuffer`, `depthTest`), and the whole pipeline with perspective-correct
+  interpolation, textures and deferred shading (`mesh`, `rasteriseMesh`): the counterpart of ray casting, for
+  comparison figures.
 
 ## 5. whitebox-engine methods, `packages/engine/src/methods/`
 
