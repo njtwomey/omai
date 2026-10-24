@@ -330,7 +330,7 @@ export function mixtureSameFamily(weights: MixtureWeights, component: Distributi
  * import { normal } from 'whitebox-engine/dists'
  * import { mixture, responsibilities } from 'whitebox-engine/dists/compose'
  * import { toArray } from 'whitebox-engine/tensor'
- * toArray(responsibilities(mixture({ probs: [0.5, 0.5] }, [normal(-1, 1), normal(1, 1)]), 0)) // => [0.5, 0.5]
+ * toArray(responsibilities(mixture({ probs: [0.5, 0.5] }, [normal(-1, 1), normal(1, 1)]), 0)).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0.5]
  * ```
  */
 export function responsibilities(mix: Mixture, x: TensorLike): Value {

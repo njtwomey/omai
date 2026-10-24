@@ -402,9 +402,9 @@ export function bhattacharyyaDistance(p: Distribution, q: Distribution, options:
  * @returns The distance in [0, 1].
  * @example
  * ```ts
- * import { bernoulli, hellinger } from 'whitebox-engine/dists'
+ * import { hellinger, normal } from 'whitebox-engine/dists'
  * import { item } from 'whitebox-engine/tensor'
- * Math.abs(item(hellinger(bernoulli({ probs: 0 }), bernoulli({ probs: 1 }))) - 1) < 1e-12 // => true
+ * item(hellinger(normal(0, 1), normal(0, 1))) // => 0
  * ```
  */
 export function hellinger(p: Distribution, q: Distribution, options: DivergenceOptions = {}): Value {

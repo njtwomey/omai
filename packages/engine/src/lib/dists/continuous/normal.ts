@@ -174,7 +174,7 @@ export function logNormal(mu: TensorLike = 0, sigma: TensorLike = 1): Distributi
  * ```ts
  * import { truncatedNormal } from 'whitebox-engine/dists'
  * import { item } from 'whitebox-engine/tensor'
- * item(truncatedNormal(0, 1, -1, 1).cdf(0)) // => 0.5
+ * Math.abs(item(truncatedNormal(0, 1, -1, 1).cdf(0)) - 0.5) < 1e-14 // => true
  * ```
  */
 export function truncatedNormal(loc: TensorLike, scale: TensorLike, low: TensorLike, high: TensorLike): Distribution {

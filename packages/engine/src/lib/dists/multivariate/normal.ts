@@ -48,7 +48,18 @@ export interface MultivariateNormal extends Distribution {
 
 const transposeLast = (m: Value): Value => swapaxes(m, -1, -2)
 
-/** The lower Cholesky factor of a covariance given in any of the three forms. */
+/**
+ * The lower Cholesky factor of a covariance given in any of the three forms.
+ *
+ * @param params - `{ covariance }`, `{ precision }` or `{ scaleTril }`.
+ * @returns The factor L with covariance L L^T.
+ * @example
+ * ```ts
+ * import { scaleTrilOf } from 'whitebox-engine/dists'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(scaleTrilOf({ covariance: [[4, 0], [0, 9]] })) // => [[2, 0], [0, 3]]
+ * ```
+ */
 export function scaleTrilOf(params: CovarianceParams): Value {
   if ('scaleTril' in params) return promoteFloat(params.scaleTril)[0] as Value
   if ('covariance' in params) return cholesky(params.covariance)

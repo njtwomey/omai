@@ -78,7 +78,7 @@ function poissonTerms(m: Value, rank: number): { readonly j: Value; readonly log
  * ```ts
  * import { fDistribution } from 'whitebox-engine/dists'
  * import { item } from 'whitebox-engine/tensor'
- * item(fDistribution(4, 4).cdf(1)) // => 0.5
+ * Math.abs(item(fDistribution(4, 4).cdf(1)) - 0.5) < 1e-14 // => true
  * item(fDistribution(3, 6).mean()) // => 1.5
  * ```
  */

@@ -103,7 +103,7 @@ function bartlett(
  * ```ts
  * import { wishart } from 'whitebox-engine/dists'
  * import { toArray } from 'whitebox-engine/tensor'
- * toArray(wishart(5, { covariance: [[1, 0], [0, 2]] }).mean()) // => [[5, 0], [0, 10]]
+ * toArray(wishart(5, { covariance: [[1, 0], [0, 4]] }).mean()) // => [[5, 0], [0, 20]]
  * ```
  */
 export function wishart(df: TensorLike, params: CovarianceParams): Distribution {

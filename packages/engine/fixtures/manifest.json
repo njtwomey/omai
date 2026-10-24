@@ -153,12 +153,28 @@
       "cases": 60
     },
     {
+      "fixture": "dists/multivariate/archimedean_copulas.json",
+      "source": "oracle/cases/dists/multivariate/archimedean_copulas.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "dists/multivariate/copula_fitting.json",
+      "source": "oracle/cases/dists/multivariate/copula_fitting.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "dists/multivariate/copulas.json",
       "source": "oracle/cases/dists/multivariate/copulas.py",
       "reference": {
         "statsmodels": "0.15.0"
       },
-      "cases": 24
+      "cases": 4
     },
     {
       "fixture": "dists/multivariate/directional.json",

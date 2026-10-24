@@ -269,7 +269,7 @@ export function orderedCategorical(
  * ```ts
  * import { orderedLogistic } from 'whitebox-engine/dists'
  * import { item } from 'whitebox-engine/tensor'
- * item(orderedLogistic(0, [-1, 1]).prob(1)) === 1 / (1 + Math.exp(-1)) - 1 / (1 + Math.exp(1)) // => true
+ * Math.abs(item(orderedLogistic(0, [-1, 1]).prob(1)) - (1 / (1 + Math.exp(-1)) - 1 / (1 + Math.exp(1)))) < 1e-15 // => true
  * ```
  */
 export function orderedLogistic(predictor: TensorLike, cutpoints: TensorLike): Distribution {

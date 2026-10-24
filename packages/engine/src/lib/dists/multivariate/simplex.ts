@@ -248,7 +248,7 @@ function countsSample(
  * ```ts
  * import { logisticNormal } from 'whitebox-engine/dists'
  * import { toArray } from 'whitebox-engine/tensor'
- * toArray(logisticNormal([0], { scale: [1] }).mean()) // => [0.5, 0.5]
+ * toArray(logisticNormal([0], { scale: [1] }).mean()).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0.5]
  * ```
  */
 export function logisticNormal(

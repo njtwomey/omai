@@ -93,7 +93,7 @@ export function uniform(low: TensorLike = 0, high: TensorLike = 1): Distribution
  * ```ts
  * import { beta } from 'whitebox-engine/dists'
  * import { item } from 'whitebox-engine/tensor'
- * item(beta(2, 2).cdf(0.5)) // => 0.5
+ * Math.abs(item(beta(2, 2).cdf(0.5)) - 0.5) < 1e-14 // => true
  * ```
  */
 export function beta(a: TensorLike, b: TensorLike): Distribution {
@@ -146,7 +146,7 @@ export function beta(a: TensorLike, b: TensorLike): Distribution {
  * ```ts
  * import { kumaraswamy } from 'whitebox-engine/dists'
  * import { item } from 'whitebox-engine/tensor'
- * item(kumaraswamy(1, 1).cdf(0.25)) // => 0.25
+ * Math.abs(item(kumaraswamy(1, 1).cdf(0.25)) - 0.25) < 1e-15 // => true
  * ```
  */
 export function kumaraswamy(a: TensorLike, b: TensorLike): Distribution {

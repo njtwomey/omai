@@ -120,7 +120,19 @@ export interface DistributionSpec {
   entropy(): Value
 }
 
-/** Throw the error for a method a distribution does not provide. */
+/**
+ * Throw the error for a method a distribution does not provide (a `not-implemented` WhiteboxError naming it).
+ *
+ * @param name - The distribution's name.
+ * @param what - The missing method, with any explanation.
+ * @returns Never: it always throws.
+ * @throws WhiteboxError with code `not-implemented`.
+ * @example
+ * ```ts
+ * import { unavailable } from 'whitebox-engine/dists'
+ * unavailable('example', 'mode') // => throws not-implemented
+ * ```
+ */
 export function unavailable(name: string, what: string): never {
   throw new WhiteboxError('not-implemented', `${name}: ${what} is not available for this distribution`)
 }
@@ -234,7 +246,18 @@ export function broadcastBatch(v: Value, batchShape: readonly number[]): Value {
   return shapesEqual(shape, v.shape) ? v : broadcastTo(v, shape)
 }
 
-/** How many trailing axes of a value one support element occupies. */
+/**
+ * How many trailing axes of a value one element of a support occupies: 0 for elementwise supports, 1 for vectors
+ * (simplex, counts, one-hot, sphere, ordered), 2 for matrices (positive definite, Cholesky, correlation).
+ *
+ * @param support - The support.
+ * @returns The rank.
+ * @example
+ * ```ts
+ * import { supportRank } from 'whitebox-engine/dists'
+ * supportRank({ kind: 'simplex' }) // => 1
+ * ```
+ */
 export function supportRank(support: Support): number {
   switch (support.kind) {
     case 'simplex':
@@ -268,8 +291,8 @@ const TOL = 1e-6
  * ```ts
  * import { inSupport } from 'whitebox-engine/dists'
  * import { toArray } from 'whitebox-engine/tensor'
- * toArray(inSupport({ kind: 'positive' }, [-1, 0, 2])) // => [false, false, true]
- * toArray(inSupport({ kind: 'simplex' }, [[0.2, 0.8], [0.5, 0.6]])) // => [true, false]
+ * toArray(inSupport({ kind: 'positive' }, [-1, 0, 2])) // => [0, 0, 1]
+ * toArray(inSupport({ kind: 'simplex' }, [[0.2, 0.8], [0.5, 0.6]])) // => [1, 0]
  * ```
  */
 export function inSupport(support: Support, x: TensorLike): Value {
@@ -390,6 +413,7 @@ const CHECKS: Readonly<Record<Constraint, (v: number) => boolean>> = {
  *
  * @param family - The distribution's name, for the message.
  * @param checks - Parameter name to `[value, constraint]`.
+ * @returns Nothing; it throws on a violation.
  * @throws WhiteboxError with code `value` naming the parameter and the constraint.
  * @example
  * ```ts

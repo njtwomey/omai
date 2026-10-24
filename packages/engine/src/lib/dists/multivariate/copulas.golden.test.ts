@@ -24,4 +24,5 @@ for (const [name, make] of Object.entries(archimedean)) {
   custom[`fit.${name}`] = (xs) => D.fitCopula(name as D.CopulaFamily, t(xs, 0)).params['theta'] as Value
 }
 
-describeDistributions('dists/multivariate/copulas', {}, custom)
+for (const file of ['copulas', 'archimedean_copulas', 'copula_fitting'])
+  describeDistributions(`dists/multivariate/${file}`, {}, custom)
