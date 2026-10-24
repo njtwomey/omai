@@ -27,6 +27,15 @@ describe('mlpClassifier', () => {
     const [surface] = recordsOf(fitted.exposition, 'decisionSurface')
     expect(surface?.labels?.length).toBe(30)
     expect(surface?.probabilities?.length).toBe(2)
+    // The surface at geometrically spaced epochs, from the initial network to the fitted one.
+    const steps = surface?.steps ?? []
+    expect(steps.length).toBeGreaterThan(10)
+    expect(steps.length).toBeLessThanOrEqual(40)
+    expect(steps[0]?.iteration).toBe(0)
+    expect(steps.at(-1)?.iteration).toBe(fitted.params.epochs)
+    expect(steps[0]?.labels?.length).toBe(30)
+    expect(surface?.stepName).toBe('epoch')
+    expect(surface?.rows?.points.length).toBe(120)
     const curves = recordsOf(fitted.exposition, 'learningCurve')
     expect(curves.length).toBe(2)
     expect(curves[0]?.sizes.length).toBe(fitted.params.epochs)
@@ -105,6 +114,12 @@ describe('rosenblattPerceptron', () => {
     expect(fitted.params.updates).toBeLessThanOrEqual(bound)
     expect(fitted.params.history.length).toBe(fitted.params.updates)
     expect(recordsOf(fitted.exposition, 'learningCurve')[0]?.train.at(-1)).toBe(0)
+    const surface = recordsOf(fitted.exposition, 'decisionSurface')[0]
+    const steps = surface?.steps ?? []
+    expect(steps[0]?.iteration).toBe(0)
+    expect(steps.at(-1)?.iteration).toBe(fitted.params.updates)
+    expect(steps.at(-1)?.objective).toBe(0)
+    expect(steps[1]?.highlight).toEqual([fitted.params.history[0]?.row])
   })
 })
 
