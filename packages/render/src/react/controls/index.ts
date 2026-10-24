@@ -2,6 +2,7 @@
 export * from './Choice.tsx'
 export * from './ControlPanel.tsx'
 export * from './DatasetPicker.tsx'
+export * from './MethodControls.tsx'
 export * from './NumberField.tsx'
 export * from './SeedInput.tsx'
 export * from './Select.tsx'
