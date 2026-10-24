@@ -710,6 +710,262 @@
       "cases": 30
     },
     {
+      "fixture": "learn/active_learning.json",
+      "source": "oracle/cases/learn/active_learning.py",
+      "reference": {
+        "modAL-python": "0.4.2.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "learn/calibration.json",
+      "source": "oracle/cases/learn/calibration.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "learn/compose.json",
+      "source": "oracle/cases/learn/compose.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "learn/conformal.json",
+      "source": "oracle/cases/learn/conformal.py",
+      "reference": {
+        "mapie": "1.6.0"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "learn/explain/gradients.json",
+      "source": "oracle/cases/learn/explain/gradients.py",
+      "reference": {
+        "captum": "0.9.0",
+        "torch": "2.14.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "learn/explain/shapley.json",
+      "source": "oracle/cases/learn/explain/shapley.py",
+      "reference": {
+        "shap": "0.54.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "learn/explain/surrogates.json",
+      "source": "oracle/cases/learn/explain/surrogates.py",
+      "reference": {
+        "lime": "0.2.0.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "learn/feature_selection.json",
+      "source": "oracle/cases/learn/feature_selection.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "learn/inspection.json",
+      "source": "oracle/cases/learn/inspection.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "learn/model_selection/criteria.json",
+      "source": "oracle/cases/learn/model_selection/criteria.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "learn/model_selection/cross_validation.json",
+      "source": "oracle/cases/learn/model_selection/cross_validation.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "learn/model_selection/search.json",
+      "source": "oracle/cases/learn/model_selection/search.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "learn/model_selection/splitters.json",
+      "source": "oracle/cases/learn/model_selection/splitters.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 28
+    },
+    {
+      "fixture": "learn/preprocessing/encoders.json",
+      "source": "oracle/cases/learn/preprocessing/encoders.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "learn/preprocessing/features.json",
+      "source": "oracle/cases/learn/preprocessing/features.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "learn/preprocessing/imputation.json",
+      "source": "oracle/cases/learn/preprocessing/imputation.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "learn/preprocessing/resampling.json",
+      "source": "oracle/cases/learn/preprocessing/resampling.py",
+      "reference": {
+        "imbalanced-learn": "0.14.2"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "learn/preprocessing/scalers.json",
+      "source": "oracle/cases/learn/preprocessing/scalers.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 26
+    },
+    {
+      "fixture": "learn/privacy.json",
+      "source": "oracle/cases/learn/privacy.py",
+      "reference": {
+        "diffprivlib": "0.6.6",
+        "opacus": "1.6.0"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "logic/answer-sets.json",
+      "source": "oracle/cases/logic/answer-sets.py",
+      "reference": {
+        "clingo": "5.8.2"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "logic/datalog.json",
+      "source": "oracle/cases/logic/datalog.py",
+      "reference": {
+        "clingo": "5.8.2"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "logic/first-order.json",
+      "source": "oracle/cases/logic/first-order.py",
+      "reference": {
+        "pelletier-1986": "F. J. Pelletier, Seventy-five problems for testing automatic theorem provers, JAR 2 (1986)",
+        "aima": "Russell and Norvig, AIMA 4th ed., chapter 9"
+      },
+      "cases": 53
+    },
+    {
+      "fixture": "logic/ilp/foil.json",
+      "source": "oracle/cases/logic/ilp/foil.py",
+      "reference": {
+        "quinlan-1990": "Learning logical definitions from relations; reference port"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "logic/ilp/generalisation.json",
+      "source": "oracle/cases/logic/ilp/generalisation.py",
+      "reference": {
+        "plotkin-1970": "reference port of anti-unification (oracle/cases/logic/ilp/_ilp.py)"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "logic/ilp/meta-interpretive.json",
+      "source": "oracle/cases/logic/ilp/meta-interpretive.py",
+      "reference": {
+        "metagol": "github.com/metagol/metagol examples; checked with oracle/cases/logic/_prolog.py",
+        "popper": "github.com/logic-and-learning-lab/Popper examples; checked with oracle/cases/logic/_prolog.py"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "logic/ilp/progol.json",
+      "source": "oracle/cases/logic/ilp/progol.py",
+      "reference": {
+        "muggleton-1995": "Inverse entailment and Progol; textbook theories checked with oracle/cases/logic/_prolog.py"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "logic/ilp/version-spaces.json",
+      "source": "oracle/cases/logic/ilp/version-spaces.py",
+      "reference": {
+        "mitchell-1997": "Machine Learning, chapter 2; brute-force reference"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "logic/maxsat.json",
+      "source": "oracle/cases/logic/maxsat.py",
+      "reference": {
+        "python-sat": "1.9.dev17"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "logic/propositional.json",
+      "source": "oracle/cases/logic/propositional.py",
+      "reference": {
+        "sympy": "1.14.0"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "logic/resolution.json",
+      "source": "oracle/cases/logic/resolution.py",
+      "reference": {
+        "reference-prolog": "generator-based port (oracle/cases/logic/_prolog.py)"
+      },
+      "cases": 119
+    },
+    {
+      "fixture": "logic/sat.json",
+      "source": "oracle/cases/logic/sat.py",
+      "reference": {
+        "python-sat": "1.9.dev17"
+      },
+      "cases": 24
+    },
+    {
       "fixture": "losses/classification.json",
       "source": "oracle/cases/losses/classification.py",
       "reference": {
@@ -3814,6 +4070,40 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 2
+    },
+    {
+      "fixture": "worlds/analysis.json",
+      "source": "oracle/cases/worlds/analysis.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "worlds/continuous.json",
+      "source": "oracle/cases/worlds/continuous.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "shapely": "2.2.0"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "worlds/generators.json",
+      "source": "oracle/cases/worlds/generators.py",
+      "reference": {
+        "networkx": "3.7",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "worlds/textbook.json",
+      "source": "oracle/cases/worlds/textbook.py",
+      "reference": {
+        "gymnasium": "1.4.0"
+      },
+      "cases": 17
     }
   ]
 }

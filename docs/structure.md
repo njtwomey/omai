@@ -1860,23 +1860,44 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   (ArviZ uses an ISJ-bandwidth KDE, which lives in `stats`, the same tier), and circular MCSE.
 ### 4.25 `logic/` (tier 8): logic programming, satisfiability and ILP
 
-oracle: recorded SWI-Prolog outputs, pysat, Aleph and Popper results on small tasks
-- `terms.ts`: atoms, variables, compounds, lists, numbers, groundness, term variables, equality, printing.
-- `parse.ts`: Prolog syntax for clauses and queries (operators, lists, comments).
-- `unify.ts`: unification (iterative, optional occurs check), substitutions, composition, renaming apart,
-  Martelli-Montanari step traces.
+oracle: python-sat (Glucose satisfiability, model counts by enumeration, MUSX cores, RC2 MaxSAT optima); clingo
+(least and perfect models of Datalog programs, answer sets); sympy.logic (models, validity, entailment, minimal sum and
+product forms); typed reference ports in `oracle/cases/logic/` for what has no packaged reference under uv (a
+generator-based Prolog interpreter standing in for SWI-Prolog, a naive Datalog evaluator for round counts,
+anti-unification, brute-force version spaces, FOIL, bottom-clause saturation); textbook ground truth (Pelletier's
+problems and AIMA's examples for first-order proving; Quinlan's can-reach, a Michalski-style trains task, the daughter
+task, and Metagol's and Popper's family tasks for ILP, each checked with the reference interpreter). NLTK's resolution
+prover is not used: it lacks factoring and misreads single-letter names.
+
+Every solver, prover and learner is an `Algorithm` (resolution steps in Byrd's ports, Martelli-Montanari rules,
+DPLL/CDCL decisions, propagations, conflicts and learned clauses, WalkSAT flips, Datalog rounds, guesses of answer sets,
+given clauses, FOIL literals, Progol candidates, Metagol programs, tested hypotheses) with step, conflict, depth or
+size budgets and a clear status on unsatisfiable or infinite inputs.
+- `terms.ts`: atoms, variables, compounds, lists, numbers, groundness, term variables, equality, the standard order,
+  printing (operator-aware `writeq`, `write_canonical`) that reads back.
+- `parse.ts`: Prolog syntax for clauses and queries (operators and `op/3`, lists, curly terms, quoted atoms, character
+  codes, comments), DCG translation.
+- `unify.ts`: unification (iterative, optional occurs check), substitutions, composition, renaming apart, matching,
+  variants, a trailing binding store, Martelli-Montanari step traces.
 - `resolution.ts`: SLD resolution with backtracking and depth limits (traced), built-ins, negation as failure, a small
   standard library, SLD trees as structures.
 - `datalog.ts`: naive and semi-naive bottom-up evaluation, least Herbrand models, stratified negation, derivation trees.
-- `propositional.ts`: formulas, evaluation, truth tables, models, entailment, CNF (Tseitin) and DNF, simplification.
+- `propositional.ts`: formulas, evaluation, truth tables, models, entailment, CNF (Tseitin) and DNF, simplification,
+  prime implicants and exact minimal DNF and CNF.
 - `sat.ts`: DPLL, CDCL (clause learning, watched literals, traced decisions and conflicts), WalkSAT, DIMACS.
-- `first-order.ts`: clausal form (Skolemisation), given-clause resolution proving, subsumption.
+- `maxsat.ts`: weighted partial MaxSAT (branch and bound, traced), model counting and enumeration, minimal
+  unsatisfiable cores (selector assumptions with deletion-based minimisation).
+- `first-order.ts`: clausal form (Skolemisation), given-clause resolution proving, subsumption, proof checking.
 - `answer-sets.ts`: stable models of small normal programs (guess and check), for comparison with Datalog semantics.
 - `ilp/generalisation.ts`: theta-subsumption, least general generalisation and relative LGG, clause reduction.
 - `ilp/version-spaces.ts`: Find-S, candidate elimination, boundaries and voting.
 - `ilp/foil.ts`: FOIL (gain, refinement, coverage), traced.
 - `ilp/progol.ts`: mode declarations, bottom clauses, inverse entailment.
 - `ilp/meta-interpretive.ts`: Metagol-style learning with metarules; learning from failures (Popper-style).
+- Internal: `_errors.ts` (ISO error terms), `_arith.ts` (arithmetic with SWI-Prolog's defaults), `_builtins.ts` (the
+  built-in predicates), `_library.ts` (the standard library in Prolog), `_cdcl.ts` (the CDCL core shared by `sat` and
+  `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of
+  terms, formulas and CNF are in `packages/engine/src/testing/logic.ts`.
 
 ### 4.26 `dynamics/` (tier 8): differential equations, nonlinear dynamics, control and filtering (scipy.integrate, diffrax, python-control, filterpy)
 
@@ -2318,45 +2339,60 @@ a traced algorithm and returns a `Posterior`. Adding an engine is adding a file 
 
 ### 4.33 `learn/` (tier 9): the toolkit around models (scikit-learn's non-model modules)
 
-oracle: scikit-learn, mapie for conformal, captum and shap for explanations
-- `estimator.ts`: the estimator contract (`name`, `hyper`, `hyperSpace`, `fit`), `Fitted` (parameters as data, verbs as
-  methods, `revive` after deserialisation), capability guards, `cloneEstimator`, `EstimatorClass` (the base of
-  sklearn-style class wrappers).
-- `validation.ts`: input checks with clear shape errors, sample weights, `asFloatMatrix`.
+oracle: scikit-learn, statsmodels, imbalanced-learn, mapie for conformal, captum and shap for explanations, lime,
+modAL for active learning, diffprivlib and opacus for privacy
+- `estimator.ts`: the estimator contract (`name`, `hyper`, `hyperSpace`, `fit`, optional `fitTransform` for cross-fitted
+  outputs), `defineEstimator`, `Fitted` (parameters as data, verbs as methods, `revive` after deserialisation,
+  `serialiseFitted`), capability guards (`can`, `requireVerb`, `isClassifier`, `isEstimator`), `cloneEstimator`,
+  `EstimatorClass` (the base of sklearn-style class wrappers).
+- `validation.ts`: input checks with clear shape errors, sample weights, `asFloatMatrix`, matrix views, label
+  encoding, `takeData`.
+- `scoring.ts`: scorers (`makeScorer`, `getScorer` by sklearn name with the right response method, losses negated),
+  the shared `scoring` option of model selection, inspection and feature selection.
 - `preprocessing/scalers.ts`: standard, min-max, max-abs and robust scalers, normaliser, quantile and power
   transformers.
-- `preprocessing/encoders.ts`: one-hot, ordinal, label, target (cross-fitted), multi-label binarisers.
-- `preprocessing/features.ts`: polynomial features, spline features, binning, function transformers, interaction
-  features.
+- `preprocessing/encoders.ts`: one-hot, ordinal, label, target (cross-fitted), label and multi-label binarisers.
+- `preprocessing/features.ts`: polynomial features, spline features, binning, binariser, function transformers,
+  interaction features.
 - `preprocessing/imputation.ts`: simple, k-NN and iterative imputers, missing indicators.
 - `preprocessing/resampling.ts`: random over- and under-sampling, SMOTE, borderline SMOTE, ADASYN, Tomek links,
-  NearMiss.
-- `feature-selection.ts`: variance threshold, univariate selection (F test, chi-square, mutual information), RFE and
-  RFECV, sequential selection, selection from model importances, stability selection.
+  NearMiss (resamplers apply only in fit, also inside pipelines).
+- `feature-selection.ts`: variance threshold, univariate scores (F tests, chi-square, mutual information) and
+  selection (k best, percentile, FPR/FDR/FWE), selection from model importances.
+- `feature-selection-wrappers.ts`: RFE and RFECV, sequential selection, stability selection (traced).
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
-- `model-selection/splitters.ts`: holdout and train/validation/test splits; k-fold, stratified, group, stratified
-  group, shuffle, stratified shuffle, group shuffle, leave-one-out, leave-p-out, leave-one-group-out, repeated variants;
-  time-series splits (expanding window, sliding window, blocked, purged and embargoed); spatial and cluster blocks;
-  predefined splits.
+- `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
+  stratified, group, stratified group, shuffle, stratified shuffle, group shuffle, leave-one-out, leave-p-out,
+  leave-one-group-out and leave-p-groups-out, repeated variants; predefined splits.
+- `model-selection/blocked-splitters.ts`: time-series splits (expanding window, sliding window, blocked, purged and
+  embargoed); spatial and cluster blocks; index-pair adapters.
 - `model-selection/cross-validation.ts`: `crossValidate` (traced, one child run per fold), `crossValPredict`, learning
-  and validation curves, permutation-test scores, nested cross-validation.
+  and validation curves, permutation-test scores.
+- `model-selection/search.ts`: parameter grids and samplers, `gridSearchCV` and `randomizedSearchCV` (traced, one
+  child run per candidate), nested cross-validation. The general studies (samplers, pruners, multi-fidelity) are
+  `lib/tune`; these are the sklearn-shaped searches it can generalise.
 - `model-selection/criteria.ts`: AIC, AICc, BIC, Mallows' Cp, GCV, leave-one-out shortcuts for linear smoothers, the
-  one-standard-error rule, the .632 bootstrap.
-- `calibration.ts`: Platt scaling, isotonic calibration, temperature and vector scaling, beta calibration, histogram
-  binning, cross-fitted calibrated classifiers.
+  one-standard-error rule, the .632 and .632+ bootstrap.
+- `calibration.ts`: Platt scaling, isotonic calibration (pool adjacent violators, the home that
+  `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
+  cross-fitted calibrated classifiers.
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,
-  RAPS), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference).
+  RAPS with tuning), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference).
 - `inspection.ts`: permutation importance, partial dependence, ICE, accumulated local effects, H-statistics,
   functional ANOVA.
 - `explain/gradients.ts`: saliency, input times gradient, integrated gradients, SmoothGrad, DeepLIFT, expected
   gradients.
-- `explain/shapley.ts`: exact, kernel, sampling and tree SHAP, interaction values (games from `games/cooperative.ts`).
+- `explain/shapley.ts`: exact, kernel, sampling and tree SHAP, interaction values. The game-theoretic core (Shapley
+  and interaction values of a coalition game) lives here until `games/cooperative.ts` exists; TODO: move it there and
+  re-export.
 - `explain/surrogates.ts`: LIME, anchors, global surrogate trees, fidelity.
-- `explain/counterfactuals.ts`: Wachter counterfactuals, diverse counterfactuals, FACE, actionable recourse.
+- `explain/counterfactuals.ts`: Wachter counterfactuals, diverse counterfactuals, FACE, actionable recourse (linear
+  costs; TODO: discrete action sets as an integer program).
 - `valuation.ts`: influence functions, TracIn, data Shapley (truncated Monte Carlo), KNN-Shapley.
 - `active-learning.ts`: the pool-based and stream-based active-learning loop as a traced algorithm (query, label,
-  refit), query-strategy contract, budget handling.
+  refit), query-strategy contract (uncertainty, margin, entropy, random, ranked batch, expected error reduction, query
+  by committee), budget handling.
 - `privacy.ts`: Laplace, Gaussian (classic and analytic) and exponential mechanisms, randomised response, composition,
   RDP accounting for the subsampled Gaussian.
 
@@ -2553,23 +2589,40 @@ can be discrete (cells and actions) or continuous (positions and headings over t
 the world and adds its own view (search problems in `search`, environments in `methods/rl`, renderers in `graphics`
 and whitebox-render).
 
-oracle: none needed for most of it (exact constructions); networkx for connectivity, gymnasium/minigrid for shared
-layouts.
+oracle: none needed for most of it (exact constructions); networkx for connectivity, articulation points, bridges and
+shortest paths on the cell graph and for spanning-tree counts (the matrix-tree theorem behind the uniformity tests of
+Wilson's and the Aldous-Broder algorithms); gymnasium for the FrozenLake, CliffWalking and Taxi transition tables;
+scipy.ndimage for distance transforms; shapely for continuous distances and sight. MiniGrid is not an oracle
+dependency, so its layouts are checked structurally (TODO: golden-test them against minigrid if it joins `oracle-rl`).
 - `world.ts`: `World` (cells on a square or hexagonal grid, or nodes of a graph; walls between cells or blocking cells;
-  per-cell terrain with costs; items, doors, keys, goals, hazards; start and goal sets), `world`, `fromAscii` and
-  `toAscii` (the usual ASCII map conventions), `fromRows`, cell and coordinate conversions, neighbours under 4- and
-  8-connectivity, passability, `toStructure`, `toScene` (a top-down drawing with theme tokens).
-- `rules.ts`: what entering a cell does (cost, reward, terminate, teleport, slip probabilities, one-way cells, pickups,
-  doors opened by keys), composed rule sets, deterministic and stochastic transition models over cells, so the same
-  world feeds tabular MDPs, search problems and simulators.
-- `generators.ts`: keyed maze generators (recursive backtracker, Prim, Kruskal, Wilson, Eller, Aldous-Broder, binary
-  tree, sidewinder, recursive division), rooms and corridors (BSP dungeons), cellular-automaton caves, noise terrain
-  (value and Perlin noise), braiding (removing dead ends), and textbook worlds (FrozenLake, CliffWalking, four rooms,
-  the AIMA grid, MiniGrid-style layouts).
+  per-cell terrain with costs; items, doors, keys, goals, hazards; start and goal sets; landmarks), `world`,
+  `setWalls`, `setTerrain`, cell and coordinate conversions (`cellIndex`, `cellCoords`, `cellCentre`, `cellAtPoint`,
+  `cellCorners`, `worldSize`), moves and neighbours under 4- and 8-connectivity (`destination`, `exits`, `neighbours`,
+  with corner rules and one-way terrain), passability, and `wallsToBlocks` (thin walls to blocking cells).
+- `ascii.ts`: `fromAscii` and `toAscii` (the usual ASCII map conventions: one character per cell, or thin walls drawn
+  between cells; custom legends and terrains; square or hexagonal rows), `fromRows`.
+- `drawing.ts`: `toStructure` (the cell graph), `toScene` (a top-down drawing with theme tokens: terrain, walls, items,
+  starts and goals, per-cell values, a path, the agent as a cell or a pose).
+- `rules.ts`: what entering a cell does (cost, reward, terminate, teleport, slip probabilities, wind, one-way cells,
+  pickups, doors opened by keys), action sets (moves, king's moves, hexagonal moves, turning), composed rule sets and
+  `applyRules`.
+- `models.ts`: deterministic and stochastic transition models over cells (states are cell, heading and held items),
+  with sampling, so the same world feeds tabular MDPs (gymnasium-style outcome tables), search problems (a
+  `SearchProblem`-shaped deterministic model) and simulators.
+- `generators.ts`: keyed maze generators as traced algorithms (recursive backtracker, Prim, Kruskal, Wilson, Eller,
+  Aldous-Broder, binary tree, sidewinder, recursive division; the first five on any topology), `generateMaze`,
+  braiding (removing dead ends), `isPerfectMaze`.
+- `levels.ts`: rooms and corridors (BSP dungeons), cellular-automaton caves (traced), noise (value and Perlin, with
+  octaves) and noise terrain.
+- `textbook.ts`: textbook worlds with their rules (FrozenLake, CliffWalking, four rooms, the AIMA grid, the windy grid
+  world, a key maze, Taxi's map and moves) and MiniGrid-style layouts (empty rooms, door-key, four rooms, lava gap,
+  river crossings).
 - `continuous.ts`: continuous agents over a world: positions and headings, motion with collision against walls (swept
-  circles and segments), line-of-sight queries, field-of-view cones, distance fields from walls.
-- `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells), dead ends, choke
-  points, and conversion to `graph` adjacency for graph algorithms.
+  circles with sliding, swept segments for point agents), ray casts, line-of-sight queries, field-of-view cones,
+  distance fields from walls (exact segment distances and the Euclidean, taxicab and chessboard transforms).
+- `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells, unweighted or by
+  terrain cost) and paths, dead ends, choke points and bridges, cell distances and heuristics, and conversion to
+  `graph` adjacency for graph algorithms (`graph` is a sibling tier, so worlds returns edges `graph()` accepts).
 
 ### 4.37 `graphics/` (tier 7): rendering mathematics
 
@@ -3691,7 +3744,7 @@ docstrings and recipes):
 ## 9. Python oracle, `oracle/`
 
 A uv project (root `pyproject.toml`) with pydantic and pydantic-settings, and dependency groups split by domain so a
-fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy,
+fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy, python-sat, clingo,
 networkx, python-control with slycot), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro, pgmpy, arviz),
 `oracle-signal` (pywt, librosa, scikit-image, pystoi, pesq), `oracle-text` (tokenizers, tiktoken, nltk, sacrebleu,
 rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel with ecos for its LPs, nashpy),
@@ -3779,7 +3832,7 @@ library for the same computation. They do not set a higher bar than that library
 | `feature_selection`                                         | `lib/learn/feature-selection.ts`                      |
 | `pipeline`, `compose`                                       | `lib/learn/compose.ts`                                |
 | `model_selection` (splitters, CV)                           | `lib/learn/model-selection/`                          |
-| `model_selection` (searches)                                | `lib/tune/`, `methods/tuning/`                        |
+| `model_selection` (searches)                                | `lib/learn/model-selection/search.ts`, `lib/tune/`    |
 | `metrics`                                                   | `lib/metrics/`                                        |
 | `calibration`                                               | `lib/learn/calibration.ts`                            |
 | `inspection`                                                | `lib/learn/inspection.ts`                             |
@@ -3850,6 +3903,7 @@ library for the same computation. They do not set a higher bar than that library
 | cvxpy (small problems)            | `lib/optim/linear-programming.ts`, `quadratic.ts`, `conic.ts`                                     |
 | Optuna, Ray Tune, scikit-optimize | `lib/tune/`, `methods/tuning/`                                                                    |
 | SWI-Prolog, Metagol, Popper       | `lib/logic/`                                                                                      |
+| pysat, clingo, pyDatalog          | `lib/logic/sat.ts`, `maxsat.ts`, `answer-sets.ts`, `datalog.ts`                                   |
 | AIMA                              | `lib/search/`, `methods/gofai/`                                                                   |
 | mlxtend, SPMF, pysubgroup         | `methods/patterns/`                                                                               |
 | DEAP                              | `lib/search/evolutionary/`, `methods/evolutionary/`                                               |
