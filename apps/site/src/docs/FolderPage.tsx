@@ -3,6 +3,7 @@ import { Link } from '../shell/Link.tsx'
 import { Crumbs } from './Crumbs.tsx'
 import { DocInline } from './DocText.tsx'
 import { baseName, type Docs, docsPath, type Folder, symbolPath } from './data.ts'
+import { Search } from './Search.tsx'
 
 function count(docs: Docs, path: string): number {
   const f = docs.folder(path)
@@ -36,6 +37,7 @@ export function FolderPage(props: {
           </p>
         )}
       </header>
+      {folder.path === '' ? <Search docs={docs} /> : null}
       {folder.folders.length === 0 ? null : (
         <section>
           <h2 className="mb-2 text-lg font-semibold">Folders</h2>
