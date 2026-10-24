@@ -1,4 +1,5 @@
 import type { AnomalyScores } from './anomaly.ts'
+import type { BoardSteps } from './boards.ts'
 import type { ClusteringSteps, MixtureSteps } from './clustering.ts'
 import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
 import type { EnsembleStages } from './ensembles.ts'
@@ -7,6 +8,7 @@ import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from 
 import type { MarginRecord } from './margins.ts'
 import type { LikelihoodTable, NeighbourRecord } from './neighbours.ts'
 import type { PipelineStages } from './pipelines.ts'
+import type { PopulationSteps } from './populations.ts'
 import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { DecisionSurface } from './surfaces.ts'
@@ -40,6 +42,8 @@ export type Exposition =
   | SearchTrials
   | LearningCurve
   | EpisodeRecord
+  | BoardSteps
+  | PopulationSteps
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -105,4 +109,6 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'searchTrials',
   'learningCurve',
   'episodes',
+  'boardSteps',
+  'populationSteps',
 ])

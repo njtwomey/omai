@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import type { Exposition } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { AnomalyView } from './anomaly.tsx'
+import { BoardPlayer, PopulationPlayer } from './boards.tsx'
 import { ComponentsView } from './components.tsx'
 import { EpisodeView } from './episodes.tsx'
 import { MarginView } from './margins.tsx'
@@ -84,5 +85,9 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <PipelineView record={record} {...common} />
     case 'episodes':
       return <EpisodeView record={record} {...common} />
+    case 'boardSteps':
+      return <BoardPlayer record={record} {...common} />
+    case 'populationSteps':
+      return <PopulationPlayer record={record} {...common} />
   }
 }
