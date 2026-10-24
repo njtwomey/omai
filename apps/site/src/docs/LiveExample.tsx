@@ -2,11 +2,12 @@
  * An executable example, as aifn-engine's docs cells: the code in an editable box with a Run button, and under it the
  * outcome of every `// =>` line (the expected value beside the value the code gave, mismatches marked), what the code
  * printed, and any error with its example line. It runs once on first view, through whitebox-meta's runner with the
- * module map for its imports, on the page's thread (asynchronous waits are bounded; a synchronous loop is not).
+ * module map for its imports (`useLiveExample` from whitebox-meta/react), on the page's thread (asynchronous waits are
+ * bounded; a synchronous loop is not).
  */
-import { type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { moduleLoaders } from 'whitebox-meta/modules'
-import { runExample } from 'whitebox-meta/runner'
+import { useLiveExample } from 'whitebox-meta/react'
 import type { Example, ExampleResult, ExpectationResult } from 'whitebox-meta/schema'
 import { highlight } from '../shell/highlight.ts'
 
@@ -133,47 +134,21 @@ function notesFor(result: ExampleResult): Map<number, ReactNode> {
   return notes
 }
 
-/** Run the example once it scrolls into view (pages hold many; running them all at load would stall the page). */
-function useFirstView(ref: RefObject<HTMLElement | null>, onView: () => void): void {
-  useEffect(() => {
-    const el = ref.current
-    if (el === null) return
-    if (typeof IntersectionObserver === 'undefined') {
-      onView()
-      return
-    }
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) {
-        io.disconnect()
-        onView()
-      }
-    })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [ref, onView])
-}
-
 /** One executable example: editable code, a Run button, and the outcome of each expectation. */
 export function LiveExample(props: { readonly example: Example }): ReactNode {
   const { example } = props
-  const [code, setCode] = useState(example.code)
-  const [result, setResult] = useState<{ readonly code: string; readonly result: ExampleResult } | null>(null)
-  const [running, setRunning] = useState(false)
-  const box = useRef<HTMLDivElement | null>(null)
-  const latest = useRef(0)
-  const run = useCallback(async (text: string): Promise<void> => {
-    const ticket = ++latest.current
-    setRunning(true)
-    // Let the button repaint before a long synchronous example takes the thread.
-    await new Promise((r) => setTimeout(r, 0))
-    const r = await runExample(text, { loaders: moduleLoaders, timeoutMs: 10_000 })
-    if (ticket !== latest.current) return
-    setResult({ code: text, result: r })
-    setRunning(false)
-  }, [])
-  const first = useCallback(() => void run(example.code), [run, example.code])
-  useFirstView(box, first)
-  const edited = code !== example.code
+  const {
+    code,
+    setCode,
+    edited,
+    outcome: result,
+    running,
+    run,
+    reset,
+    ref: box,
+  } = useLiveExample(example, {
+    loaders: moduleLoaders,
+  })
   const shown = result?.result ?? null
   const ok = shown?.ok === true
   const notes = useMemo(
@@ -199,10 +174,7 @@ export function LiveExample(props: { readonly example: Example }): ReactNode {
           {edited ? (
             <button
               type="button"
-              onClick={() => {
-                setCode(example.code)
-                void run(example.code)
-              }}
+              onClick={reset}
               className="rounded px-2 py-0.5 text-xs text-muted hover:bg-bg hover:text-fg"
             >
               Reset
