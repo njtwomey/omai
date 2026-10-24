@@ -7,7 +7,7 @@ export const recipe: Recipe = {
   title: 'Automaton',
   question: 'How do I draw a state machine and step it through an input?',
   explain:
-    'Automata are structures of type `automaton`: states as circles, the start state ringed in the accent, accepting states doubled, transitions labelled with their symbols. The player steps through the input one symbol at a time; the overlay marks the current state and the transition just taken.',
+    'Automata are structures of type `automaton`: states as circles, the start state ringed in the accent, accepting states doubled, transitions labelled with their symbols, and transitions back to the same state drawn as loops on its freest side. The player steps through the input one symbol at a time; the overlay marks the current state and the transition just taken.',
 }
 
 // A DFA over {a, b} accepting strings that end in "ab".
@@ -27,7 +27,7 @@ const dfa = structure(
   Object.entries(delta).flatMap(([from, out]) => {
     const byTarget = new Map<string, string[]>()
     for (const [symbol, to] of Object.entries(out)) byTarget.set(to, [...(byTarget.get(to) ?? []), symbol])
-    return [...byTarget].filter(([to]) => to !== from).map(([to, symbols]) => ({ from, to, label: symbols.join(', ') }))
+    return [...byTarget].map(([to, symbols]) => ({ from, to, label: symbols.join(', ') }))
   }),
   { direction: 'right' },
 )
