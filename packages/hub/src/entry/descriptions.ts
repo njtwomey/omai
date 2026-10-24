@@ -29,6 +29,8 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
   'sklearn/neighbors':
     'Methods built on distances to training points: neighbour votes, centroids, kernel densities and outlier factors.',
   'sklearn/random-projection': 'Random low-dimensional projections that roughly keep distances.',
+  'sklearn/semi-supervised':
+    'Learning from a few labels and many unlabelled points: labels flow along a graph, or a classifier labels its own data.',
   'sklearn/svm': 'Support vector machines: margins, the support vectors that set them, and the SMO solver’s progress.',
   'sklearn/tree': 'Decision trees grown split by split, every candidate split scored, then pruned by cost complexity.',
   pyod: 'Anomaly detectors outside scikit-learn, after PyOD: scores, thresholds and the evidence behind each flag.',
