@@ -1,6 +1,7 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { RUNS } from '../../testing/arbitrary.ts'
+import { pairwiseSum } from '../base/index.ts'
 import * as I from './index.ts'
 
 const probs = (min: number, max: number): fc.Arbitrary<number[]> =>
@@ -99,6 +100,27 @@ describe('source codes (property)', () => {
           expect(I.prefixDecode(code, I.prefixEncode(code, symbols))).toEqual(symbols)
         }
       }),
+      { numRuns: RUNS },
+    )
+  })
+
+  it('huffmanTree builds the same tree as the traced construction, ties included', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 1, max: 5 }), { minLength: 1, maxLength: 40 }),
+        fc.integer({ min: 2, max: 4 }),
+        (counts, arity) => {
+          // huffman normalises its input; give huffmanTree the same normalised weights.
+          const total = pairwiseSum(counts)
+          const tree = I.huffmanTree(
+            counts.map((c) => c / total),
+            { arity },
+          )
+          const code = I.huffman(counts, { arity })
+          expect(tree.nodes).toEqual(code.nodes)
+          expect(tree.root).toBe(code.root)
+        },
+      ),
       { numRuns: RUNS },
     )
   })

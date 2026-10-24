@@ -226,6 +226,58 @@ export function huffmanAlgorithm(
   }
 }
 
+/** A Huffman tree: its nodes (leaves first, in symbol order, then padding leaves, then merges) and its root. */
+export interface HuffmanTree {
+  readonly nodes: readonly HuffmanNode[]
+  readonly root: number
+}
+
+/**
+ * Huffman's tree built directly, in O(n log n), from weights used as given (counts or probabilities, not normalised):
+ * the same merges as {@link huffmanAlgorithm} (the D lightest roots, ties by creation order, children in digit order,
+ * zero-weight padding leaves for a full D-ary tree), without the per-step trace. For large alphabets, such as the
+ * vocabularies of a hierarchical softmax.
+ *
+ * @param weights - Non-negative symbol weights, at least one.
+ * @param options - The code alphabet size (default 2).
+ * @returns The tree: leaves `0..n-1` are the symbols, inner nodes follow in merge order, the root is last.
+ * @throws WhiteboxError with code `value` for an empty or negative weight list or a bad arity.
+ * @concept huffman-coding
+ * @example
+ * ```ts
+ * import { huffmanTree } from 'whitebox-engine/information'
+ * const t = huffmanTree([5, 1, 1])
+ * t.nodes.map((n) => n.children) // => [[], [], [], [1, 2], [3, 0]]
+ * t.root // => 4
+ * ```
+ */
+export function huffmanTree(weights: TensorLike, options: { readonly arity?: number } = {}): HuffmanTree {
+  const w = toFlat(float(weights))
+  if (w.length === 0 || w.some((v) => !(v >= 0)))
+    throw new WhiteboxError('value', 'huffmanTree: weights must be non-negative and not empty')
+  const arity = options.arity ?? 2
+  checkArity(arity, 'huffmanTree')
+  const m = w.length
+  const padding = m === 1 ? arity - 1 : (arity - 1 - ((m - 1) % (arity - 1))) % (arity - 1)
+  const nodes: HuffmanNode[] = w.map((v, i) => ({ id: i, weight: v, children: [], symbol: i }))
+  for (let j = 0; j < padding; j++) nodes.push({ id: m + j, weight: 0, children: [] })
+  const q = heap<number>(
+    (a, b) => (nodes[a]?.weight ?? 0) - (nodes[b]?.weight ?? 0) || a - b,
+    nodes.map((n) => n.id),
+  )
+  while (q.size > 1) {
+    const children: number[] = []
+    for (let j = 0; j < arity; j++) {
+      const c = q.pop()
+      if (c !== undefined) children.push(c)
+    }
+    const id = nodes.length
+    nodes.push({ id, weight: pairwiseSum(children.map((c) => nodes[c]?.weight ?? 0)), children })
+    q.push(id)
+  }
+  return { nodes, root: q.pop() ?? 0 }
+}
+
 /** A Huffman code with its tree. */
 export interface HuffmanCode extends PrefixCode {
   readonly lengths: readonly number[]

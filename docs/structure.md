@@ -1168,7 +1168,8 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
   and beta divergences, Bregman divergences (named or any convex function, gradients by autodiff), on discrete
   distributions and on grids (trapezoidal rule); all differentiable.
 - `source-coding.ts`: Kraft-McMillan (Kraft sums, prefix-freeness, Sardinas-Patterson unique decodability), Huffman
-  (traced tree construction, D-ary), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
+  (traced tree construction, D-ary; `huffmanTree`, the same tree built directly in O(n log n) from raw weights, which
+  the hierarchical softmax in `losses` uses), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
   expected length, prefix encoding and decoding.
 - `stream-coding.ts`: arithmetic coding (32-bit integer, pending bits) and carry-less range coding, with static and
   adaptive frequency models.
@@ -2163,7 +2164,7 @@ share a concept they share a definition but not a name.
   `categoricalFocal`, `nllLoss`, `multiLabelSoftMargin`.
 - `large-output.ts`: losses for very many classes: hierarchical softmax (`huffmanCoding`, `hierarchicalSoftmax`,
   `hierarchicalSoftmaxLogProbs`), sampled softmax (`sampledSoftmax`, `sampleClasses` with uniform and log-uniform
-  proposals). TODO: take the Huffman tree from `information/source-coding.ts` once that domain exists.
+  proposals). The Huffman tree comes from `information/source-coding.ts` (`huffmanTree`).
 - `margin.ts`: `hinge`, `squaredHinge`, `logistic`, `exponential`, `modifiedHuber`, `perceptron`, `crammerSinger`,
   `westonWatkins`.
 - `density.ts`: negative log-likelihood of any `Distribution` (`negativeLogLikelihood`) or conditional distribution
