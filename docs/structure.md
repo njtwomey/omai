@@ -3285,7 +3285,10 @@ built from: `search`, `logic`, `stats`
 - `knowledge-representation.ts`: semantic networks, frames with inheritance, a description logic (ALC) tableau.
 - `case-based.ts`: case retrieval, adaptation and retention.
 - `planning-domains.ts`: blocks world, logistics, gripper and other domains for `search/planning/`.
-- `puzzles.ts`: 8-puzzle, n-queens, Sudoku, Towers of Hanoi, missionaries and cannibals, cryptarithms.
+- `puzzles.ts`: 8-puzzle, n-queens, Sudoku, Towers of Hanoi, missionaries and cannibals, cryptarithms (so far
+  `nQueens`, `sudoku` with `SUDOKUS`, map colouring of `AUSTRALIA` and `randomMap`s).
+- `csp.ts`: CSPs played on their boards (`playCsp` with a `CspPicture`; `solveQueens`, `solveSudoku`,
+  `solveMapColouring`): backtracking with ordering and inference, or min-conflicts, step by step as `BoardSteps`.
 - `adversarial.ts`: small games (`explicitTree`, `textbookTree`, `randomTree`, `ticTacToe` from a position) and
   `playGameSearch`: minimax or alpha-beta over the whole tree, played node by node (values backed up, pruned subtrees,
   the principal variation) as a `BoardSteps` record on the tree's layout.

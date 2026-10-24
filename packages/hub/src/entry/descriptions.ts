@@ -44,6 +44,8 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
   'classical-ai': 'Classical AI: searches, game players, constraint solvers and planners, each played step by step.',
   'classical-ai/adversarial':
     'Game-tree search: values backed up from the leaves, and the branches alpha-beta never needs to look at.',
+  'classical-ai/csp':
+    'Constraint satisfaction: queens, Sudoku and maps solved value by value, with the values each choice rules out.',
   'classical-ai/search':
     'Path search on grid worlds and mazes: watch the frontier and the explored set grow, expansion by expansion.',
 }
