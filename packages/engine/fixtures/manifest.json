@@ -365,6 +365,23 @@
       "cases": 39
     },
     {
+      "fixture": "games/cooperative.json",
+      "source": "oracle/cases/games/cooperative.py",
+      "reference": {
+        "definition": "Shapley (1953), Banzhaf (1965); computed with math and itertools"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "games/core.json",
+      "source": "oracle/cases/games/core.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "definition": "Aumann and Maschler (1985), the Talmud rule"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "games/evolutionary.json",
       "source": "oracle/cases/games/evolutionary.py",
       "reference": {
