@@ -3175,7 +3175,10 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
   payoffs), pursuit-evasion,
   cooperative navigation (MPE simple_spread).
 - `procedural.ts`: procedurally generated mazes (backtracker, Prim, Kruskal, braiding) and key-door tasks with
-  Procgen-style level seeds and train/test splits, for generalisation studies.
+  Procgen-style level seeds and train/test splits, for generalisation studies. Distances and dead ends are worlds'
+  (`distanceField`, `deadEnds` on the character grid read as a world); the carving and braiding stay here, since
+  worlds' `generateMaze` draws other random streams (every level would change) and thin-walled worlds, where these
+  levels place keys and doors in the passages of a character grid.
 - `models.ts`: differentiable dynamics models of the control environments (`ControlModel`, matching each environment's
   step), `linearize`, trajectory derivatives and rollouts, for LQR, MPC and model-based agents.
 
