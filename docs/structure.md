@@ -2887,8 +2887,9 @@ exposition of the mathematics lives).
 
 **Dataset collections.** `lib/datasets/collections.ts` groups the generators and real datasets into themed lists
 for pickers: `classification2d`, `regression1d`, `clustering2d`, `density2d`, `anomaly2d`, `manifold3d`,
-`timeSeries`, `textCorpora` and `environments` (the rl environments by family), each entry with its name, its
-generator, the `Space` of its knobs with demo defaults, and the methods it suits. whitebox-render turns a collection
+`timeSeries`, `comparisons` (games and tournaments for rating systems), `textCorpora` and `environments` (the rl
+environments by family), each entry with its name, its generator, the `Space` of its knobs with demo defaults, and
+the methods it suits. whitebox-render turns a collection
 and a method's `hyperSpace` into a dataset picker and parameter controls (see `react/controls/`).
 
 **Phases** (first pass; later phases follow the same contract):

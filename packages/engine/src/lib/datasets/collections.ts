@@ -132,6 +132,20 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
       g('changepointSeries', 'Changepoints'),
     ],
   },
+  comparisons: {
+    id: 'comparisons',
+    title: 'Games and tournaments',
+    entries: [
+      g('eloGames', 'Games between players of fixed skill', { players: 12, games: 400 }),
+      {
+        name: 'driftingSkills',
+        title: 'Games between players whose skill drifts',
+        generator: 'eloGames',
+        knobs: { players: 12, games: 600, drift: 15 },
+      },
+      g('roundRobin', 'Round-robin tournament', { players: 10, rounds: 4 }),
+    ],
+  },
   textCorpora: {
     id: 'textCorpora',
     title: 'Text corpora',
