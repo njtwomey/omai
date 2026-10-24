@@ -95,20 +95,29 @@ export function schurKernel(a: Float64Array, n: number): { t: Float64Array; z: F
 /** One Francis double-shift QR step on the active block lo..hi, with exceptional shifts every tenth iteration. */
 function francisStep(h: Float64Array, z: Float64Array, n: number, lo: number, hi: number, iterations: number): void {
   const at = (i: number, j: number): number => h[i * n + j] ?? 0
-  let s: number
-  let t: number
+  // The shifts are the roots of (lambda - sx)(lambda - sy) - sw: the trailing 2 x 2 block's eigenvalues, or every
+  // tenth iteration EISPACK's exceptional shift about the trailing diagonal entry, which breaks cycles.
+  let sx: number
+  let sy: number
+  let sw: number
   if (iterations % 10 === 0) {
-    // An exceptional shift breaks cycles (EISPACK's ad hoc choice).
     const e = Math.abs(at(hi, hi - 1)) + Math.abs(at(hi - 1, hi - 2))
-    s = 1.5 * e
-    t = e * e
+    sx = at(hi, hi) + 0.75 * e
+    sy = sx
+    sw = -0.4375 * e * e
   } else {
-    s = at(hi - 1, hi - 1) + at(hi, hi)
-    t = at(hi - 1, hi - 1) * at(hi, hi) - at(hi - 1, hi) * at(hi, hi - 1)
+    sx = at(hi, hi)
+    sy = at(hi - 1, hi - 1)
+    sw = at(hi, hi - 1) * at(hi - 1, hi)
   }
-  let x = at(lo, lo) * at(lo, lo) + at(lo, lo + 1) * at(lo + 1, lo) - s * at(lo, lo) + t
-  let y = at(lo + 1, lo) * (at(lo, lo) + at(lo + 1, lo + 1) - s)
-  let w = at(lo + 1, lo) * at(lo + 2, lo + 1)
+  // The first column of (H - sx)(H - sy) - sw, divided by h[lo+1][lo] and formed from differences (EISPACK hqr), so
+  // that a shift equal to the diagonal (repeated eigenvalues) does not cancel the column into rounding noise.
+  const zz = at(lo, lo)
+  const r0 = sx - zz
+  const s0 = sy - zz
+  let x = (r0 * s0 - sw) / at(lo + 1, lo) + at(lo, lo + 1)
+  let y = at(lo + 1, lo + 1) - zz - r0 - s0
+  let w = at(lo + 2, lo + 1)
   for (let k = lo; k <= hi - 2; k++) {
     const v = reflector([x, y, w])
     if (v !== null) {

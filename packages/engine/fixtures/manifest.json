@@ -1077,7 +1077,7 @@
         "scipy": "1.18.1",
         "scikit-learn": "1.9.1"
       },
-      "cases": 19
+      "cases": 20
     },
     {
       "fixture": "numerics/linalg/lu.json",
@@ -1928,6 +1928,122 @@
         "gymnasium": "1.4.0"
       },
       "cases": 13
+    },
+    {
+      "fixture": "systems/analysis.json",
+      "source": "oracle/cases/systems/analysis.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "systems/conversions.json",
+      "source": "oracle/cases/systems/conversions.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 100
+    },
+    {
+      "fixture": "systems/discretise.json",
+      "source": "oracle/cases/systems/discretise.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "control": "0.10.2"
+      },
+      "cases": 51
+    },
+    {
+      "fixture": "systems/filters.json",
+      "source": "oracle/cases/systems/filters.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "systems/frequency.json",
+      "source": "oracle/cases/systems/frequency.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "control": "0.10.2"
+      },
+      "cases": 29
+    },
+    {
+      "fixture": "systems/interconnect.json",
+      "source": "oracle/cases/systems/interconnect.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "systems/margins.json",
+      "source": "oracle/cases/systems/margins.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 77
+    },
+    {
+      "fixture": "systems/norms.json",
+      "source": "oracle/cases/systems/norms.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "systems/reduction.json",
+      "source": "oracle/cases/systems/reduction.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "systems/representations.json",
+      "source": "oracle/cases/systems/representations.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "systems/responses.json",
+      "source": "oracle/cases/systems/responses.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "control": "0.10.2"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "systems/sections.json",
+      "source": "oracle/cases/systems/sections.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 47
+    },
+    {
+      "fixture": "systems/stability.json",
+      "source": "oracle/cases/systems/stability.py",
+      "reference": {
+        "control": "0.10.2",
+        "numpy": "2.5.4"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "systems/transforms.json",
+      "source": "oracle/cases/systems/transforms.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 12
     },
     {
       "fixture": "tensor/ops/arithmetic.json",

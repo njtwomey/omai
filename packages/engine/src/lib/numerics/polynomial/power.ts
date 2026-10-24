@@ -1,10 +1,14 @@
+import { customJvp } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,
   concat,
   div,
+  eye,
   fromStorage,
+  matmul,
   mul,
+  neg,
   primalOf,
   promoteFloat,
   reshape,
@@ -14,8 +18,10 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  transpose,
   type Value,
   where,
+  zeros,
 } from '../../tensor/index.ts'
 import { eigvals, lstsq } from '../linalg/index.ts'
 
@@ -355,4 +361,52 @@ export function polyFromRoots(roots: readonly number[] | ComplexRoots): number[]
     pi = ni
   })
   return pr
+}
+
+const charpolyPrimitive = customJvp({
+  name: 'charpoly',
+  forward: (a) => {
+    const n = a.shape[0] ?? 0
+    const { re, im } = eigvals(a)
+    return fromStorage(Float64Array.from(polyFromRoots({ re: toFlat(re), im: toFlat(im) })), [n + 1], 'float64')
+  },
+  // With adj(xI - A) = sum_k x^(n-1-k) B_k (B_0 = I, B_k = A B_(k-1) + c_k I, c highest degree first), the
+  // coefficient of x^(n-1-k) moves by -tr(B_k dA).
+  jvp: ([a], [t], out) => {
+    if (t === null || t === undefined) return null
+    const av = a as Value
+    const n = av.shape[0] ?? 0
+    const identity = eye(n)
+    const tT = transpose(t)
+    const parts: Value[] = [zeros([1])]
+    let bk: Value = identity
+    for (let k = 0; k < n; k++) {
+      parts.unshift(reshape(neg(sum(mul(bk, tT))), [1]))
+      bk = add(matmul(av, bk), mul(identity, sliceAxis(out, 0, n - 1 - k, n - k)))
+    }
+    return concat(parts, 0)
+  },
+})
+
+/**
+ * The characteristic polynomial det(x I - A) of a square matrix (numpy.poly of a matrix), from its eigenvalues, with
+ * an exact derivative rule (the adjugate by the Faddeev-LeVerrier recurrence), so differentiable in A.
+ *
+ * @param a - Square matrix `[n, n]`.
+ * @returns The n + 1 coefficients, lowest degree first (the last is 1).
+ * @concept polynomials
+ * @example
+ * ```ts
+ * import { charpoly } from 'whitebox-engine/numerics/polynomial'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * toArray(charpoly([[2, 0], [0, 3]])) // => [6, -5, 1]
+ * ```
+ */
+export function charpoly(a: TensorLike): Value {
+  const [av] = promoteFloat(a) as [Value]
+  if (av.shape.length !== 2 || av.shape[0] !== av.shape[1]) {
+    throw new WhiteboxError('shape', 'charpoly: expected a square matrix')
+  }
+  if ((av.shape[0] ?? 0) === 0) return fromStorage(new Float64Array([1]), [1], 'float64')
+  return charpolyPrimitive(av)
 }
