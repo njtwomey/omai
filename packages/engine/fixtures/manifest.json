@@ -1347,6 +1347,14 @@
       "cases": 8
     },
     {
+      "fixture": "methods/linear/robust.json",
+      "source": "oracle/cases/methods/linear/robust.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/rl/agents/bandits.json",
       "source": "oracle/cases/methods/rl/agents/bandits.py",
       "reference": {
