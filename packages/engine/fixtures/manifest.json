@@ -628,6 +628,15 @@
       "cases": 11
     },
     {
+      "fixture": "logic/first-order.json",
+      "source": "oracle/cases/logic/first-order.py",
+      "reference": {
+        "pelletier-1986": "F. J. Pelletier, Seventy-five problems for testing automatic theorem provers, JAR 2 (1986)",
+        "aima": "Russell and Norvig, AIMA 4th ed., chapter 9"
+      },
+      "cases": 53
+    },
+    {
       "fixture": "logic/maxsat.json",
       "source": "oracle/cases/logic/maxsat.py",
       "reference": {

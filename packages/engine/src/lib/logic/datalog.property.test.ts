@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { evaluateDatalog, groundProgram, isStableModel, normalProgram, stableModels } from './index.ts'
+import { evaluateDatalog, groundProgram, isStableModel, normalProgram, stableModels, termToString } from './index.ts'
 
 /** Random facts over e/2 and n/1 with constants 0..4, plus rules drawn from a pool (some recursive, some negated). */
 const RULES = [
@@ -49,10 +49,13 @@ describe('Datalog properties', () => {
     fc.assert(
       fc.property(program, (src) => {
         const r = evaluateDatalog(src)
-        const model = [...r.model.values()].flatMap((fs) => fs.map((f) => JSON.stringify(f)))
-        const asp = stableModels(src, { maxGuessAtoms: 24 })
+        const model = [...r.model.values()].flatMap((fs) => fs.map((f) => termToString(f))).sort()
+        // Guess and check is exponential in the negated ground atoms: only small instances are compared.
+        const negated = new Set(groundProgram(normalProgram(src)).flatMap((g) => g.negative))
+        fc.pre(negated.size <= 10)
+        const asp = stableModels(src, { maxGuessAtoms: 10 })
         expect(asp.models.length).toBe(1)
-        expect(asp.models[0]?.length).toBe(model.length)
+        expect(asp.models[0]).toEqual(model)
       }),
       { numRuns: 60 },
     )
