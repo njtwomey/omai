@@ -1734,29 +1734,49 @@ frontiers reuse `graph`'s `BinaryHeap`.
 
 ### 4.23 `stochastic/` (tier 7): stochastic processes and stochastic calculus
 
-oracle: closed-form moments and transition densities; sdeint and numpy simulations; dppy for DPPs
-- `brownian.ts`: Brownian motion (multi-dimensional, with drift), Brownian bridges, quadratic variation, reflection
-  principle, first-passage times.
+oracle: closed-form moments and transition densities (scipy.stats); sdeint with shared Brownian increments; scipy.linalg
+for chains; scikit-learn for GP regression; nolds for Hurst estimators; astropy for Ripley's K; DPPy for DPPs. Simulated
+paths are checked statistically (moments, convergence orders), and pathwise derivatives with `checkPrimitive` (implicit
+reparameterisations, which finite differences cannot see, by the unbiasedness of the mean gradient).
+- `paths.ts`: the `Paths` shape every simulator returns (`[paths, times, ...state]`), time grids, the traced Markov
+  path simulation (`pathAlgorithm`, `simulatePaths`), persistent histories for long event simulations, and increment
+  utilities (coarsening for convergence studies).
+- `brownian.ts`: Brownian motion (multi-dimensional, with drift or a covariance), Brownian increments, Brownian bridges
+  (exact transitions, moments, Levy midpoint refinement), quadratic variation and covariation, the reflection principle
+  (running maxima, reflected paths, the law of the maximum), first-passage times (simulated, CDF, density, law).
 - `calculus.ts`: Ito and Stratonovich integrals by Riemann sums, Ito's lemma checked numerically, the Ito isometry,
-  Girsanov reweighting, Feynman-Kac by Monte Carlo.
-- `sde.ts`: SDE solvers (Euler-Maruyama, Milstein, stochastic Runge-Kutta, stochastic Heun for Stratonovich), strong and
-  weak convergence studies, reverse-time SDEs given a score.
-- `diffusions.ts`: named processes with exact transitions: Ornstein-Uhlenbeck, geometric Brownian motion, CIR, Vasicek,
-  Bessel, Langevin dynamics, jump diffusions.
-- `markov-chains.ts`: discrete- and continuous-time Markov chains: stationary distributions, classification,
-  absorption, hitting times, mixing times, spectral gaps, reversibility, simulation.
-- `random-walks.ts`: simple and biased walks, walks on graphs, self-avoiding walks, Levy flights, gambler's ruin.
-- `branching.ts`: Galton-Watson processes, extinction probabilities, birth-death processes.
-- `queues.ts`: M/M/1, M/M/c and M/G/1 queues (formulas and simulation), Little's law.
-- `point-processes.ts`: homogeneous and inhomogeneous Poisson processes (thinning), renewal, Hawkes (Ogata thinning,
-  maximum likelihood), Cox and marked processes, spatial Poisson and cluster processes, Ripley's K.
+  Girsanov reweighting, Feynman-Kac by Monte Carlo (with the Black-Scholes price as its closed-form check).
+- `sde.ts`: SDE solvers (Euler-Maruyama, Milstein, Platen's stochastic Runge-Kutta, stochastic Heun for Stratonovich;
+  diagonal, scalar and general noise), Ito-Stratonovich conversion, strong and weak convergence studies, reverse-time
+  SDEs and probability-flow drifts given a score. `sdeSolver` fits `nn.blocks.SdeSolver`.
+- `diffusions.ts`: named processes with exact transitions: Ornstein-Uhlenbeck, geometric Brownian motion, CIR, Vasicek
+  (with Vasicek and CIR bond prices), Bessel, overdamped and underdamped Langevin dynamics, jump diffusions (generic, and
+  Merton's with its exact simulation, log-return density and option price).
+- `markov-chains.ts`: discrete-time Markov chains: stationary distributions, classification, absorption, hitting
+  times, mixing times, spectral gaps, reversibility, simulation.
+- `ctmc.ts`: continuous-time Markov chains (split from `markov-chains.ts` for size): transition matrices exp(tQ)
+  (the Kolmogorov equations), stationary laws, embedded jump chains, uniformisation, hitting times, Gillespie
+  simulation and exact grid sampling.
+- `random-walks.ts`: simple and biased walks (with their n-step law), lattice walks, walks on graphs, self-avoiding
+  walks (Rosenbluth growth, exact counts), Levy flights, gambler's ruin (closed forms and simulation).
+- `branching.ts`: Galton-Watson processes, generating functions, extinction probabilities, birth-death processes
+  (generators, product-form stationary laws, linear birth-death and Yule laws, Gillespie simulation).
+- `queues.ts`: M/M/1, M/M/c (Erlang B and C) and M/G/1 queues (formulas and G/G/c simulation), Little's law.
+- `point-processes.ts`: homogeneous and inhomogeneous Poisson processes (thinning), renewal processes and renewal
+  functions, Hawkes (Ogata thinning, maximum likelihood by EM and Newton), Cox (including log-Gaussian Cox) and marked
+  processes.
+- `spatial-processes.ts` (split from `point-processes.ts` for size): spatial Poisson and cluster processes (Thomas,
+  Matern), Ripley's K and L with the usual edge corrections.
 - `dpp.ts`: determinantal point processes: L-ensembles, exact and k-DPP sampling, greedy MAP, marginals, conditioning.
 - `random-measures.ts`: Dirichlet processes (stick-breaking, Chinese restaurant, Polya urn), Pitman-Yor, Indian buffet,
-  beta and gamma processes.
-- `gaussian-processes.ts`: Gaussian processes as random functions: sampling paths from covariance functions,
+  beta and gamma processes (as random measures and as a subordinator in time).
+- `gaussian-processes.ts`: Gaussian processes as random functions: sampling paths from covariance functions (the
+  process covariances of Brownian motion, bridges and Ornstein-Uhlenbeck here; stationary kernels in `kernels`),
   conditioning, Karhunen-Loeve expansions.
-- `fractional.ts`: fractional Brownian motion (Davies-Harte), Hurst exponent estimation, long-range dependence.
-- `levy.ts`: compound Poisson, alpha-stable and variance-gamma processes.
+- `fractional.ts`: fractional Brownian motion (Davies-Harte), Hurst exponent estimation (R/S, DFA, aggregated
+  variance), long-range dependence.
+- `levy.ts`: compound Poisson, alpha-stable (Chambers-Mallows-Stuck sampling, densities and CDFs by Fourier inversion)
+  and variance-gamma processes.
 
 ### 4.24 `sampling/` (tier 7): Monte Carlo (NumPyro and BlackJAX kernels, ArviZ diagnostics)
 

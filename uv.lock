@@ -79,6 +79,38 @@ wheels = [
 ]
 
 [[package]]
+name = "astropy"
+version = "8.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "astropy-iers-data" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "pyerfa" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/95/57/02089e6da0fc00846d309034ad74e13ebcadc67b1c5cef397ae0597473fa/astropy-8.0.2.tar.gz", hash = "sha256:e6af35823099ad6a40b57dbe5ff845f577374ea131925c9fa4b49eeab06c5310", size = 7178167, upload-time = "2026-10-15T21:44:45.383Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/be/ac/2a62e03b4bfb9dd679693cf8b149d202683005b8f5b75386f10e40c2f618/astropy-8.0.2-cp311-abi3-macosx_10_9_x86_64.whl", hash = "sha256:3d8492ac4987e2a0634610e387b14b79962b15e8dc5d51667d9100f770aa86e7", size = 6665519, upload-time = "2026-10-15T21:44:23.81Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/8c/a6b8e81d87268d79f3a7ed3e5deeaee8d96908f1b59955b0e36ea5e47b69/astropy-8.0.2-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:fd67922cca66b7557b58dfcc2271f3871957d85e67c65e712a129ce04ad9ed51", size = 6652674, upload-time = "2026-10-15T21:44:26.32Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/1a/0944850807ebddc690eb77dc07e8dbf7865c7dcdd86bcb81d2ff133e4e38/astropy-8.0.2-cp311-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:d0e63e0011cc984426c478da8601fe177975fe4cb0b2a059ee88d26d60a0890f", size = 10405557, upload-time = "2026-10-15T21:44:29.516Z" },
+    { url = "https://files.pythonhosted.org/packages/42/c2/0e9849f6591dd113a1f217e061a9be1de766819bc076c7c7c8cb24851432/astropy-8.0.2-cp311-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:000d6998bcf4f097257b3776f29f1dafde0967bf1b091edbad95df564eee4eea", size = 10419022, upload-time = "2026-10-15T21:44:32.115Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/2a/1d84743c8be16846f8fbdc21b0af6f8ed1cff1db02026e19a4bf0cd3a87a/astropy-8.0.2-cp311-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:f462b80fe16e0603e813efd1098d4d6d94a487e64f95e2d9699e46b641577f8b", size = 10373480, upload-time = "2026-10-15T21:44:34.825Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/03/02f928891fdb2a89a7bdf10afc958e7c5c255c711d462e6b6aa0d387f95b/astropy-8.0.2-cp311-abi3-win32.whl", hash = "sha256:57b2388a229ec572437c5786e0387cb21a08ffe6001e5422ae59d2b8b9242001", size = 6412912, upload-time = "2026-10-15T21:44:37.63Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/ec/bfb4be449c689a0d80aa1b02cfa7c34e709556c9b58d8022366d67017d4a/astropy-8.0.2-cp311-abi3-win_amd64.whl", hash = "sha256:8baaf4451dc4fdbdf635e033378cbb626a9fd4755803c8fdc30ef520fb1688ba", size = 6547000, upload-time = "2026-10-15T21:44:40.442Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/00/4dfc968f9560fafee2cc04c31fb3abd9e39fd1bac7b0f81bf495db0c5740/astropy-8.0.2-cp311-abi3-win_arm64.whl", hash = "sha256:0827b3f83edbae1bda32ad5ab92d0b85f78dc71cfc2fd5c843c30d57de96d4cb", size = 6427839, upload-time = "2026-10-15T21:44:42.914Z" },
+]
+
+[[package]]
+name = "astropy-iers-data"
+version = "0.2026.10.19.0.52.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/55/9a88631602dc790d9a92f47d4a1c748a37927feec2dc9b205a4f3dc4c599/astropy_iers_data-0.2026.10.19.0.52.1.tar.gz", hash = "sha256:94e790f1aa10619e3715a2b7193ccc118701a3aa37f5adf2e52c58ee13c8f2ba", size = 1950481, upload-time = "2026-10-19T00:52:46.752Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/13/00/b3f595b34b339e4c3a9f8f622ee7e2a6f3b85a9af9b69789aecf3ef18752/astropy_iers_data-0.2026.10.19.0.52.1-py3-none-any.whl", hash = "sha256:14665720aa481c7b97dfd104d7218b38ed7e2ba30a70ff53a5c26a0e14d4025c", size = 2005913, upload-time = "2026-10-19T00:52:45.188Z" },
+]
+
+[[package]]
 name = "autograd"
 version = "1.9.1"
 source = { registry = "https://pypi.org/simple" }
@@ -591,6 +623,20 @@ wheels = [
 ]
 
 [[package]]
+name = "dppy"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ab/74/a2bbcb284764a9ad739bda4a082770c304d977cb0b672790b9b149e8d475/dppy-0.3.3.tar.gz", hash = "sha256:cfd381b29c535e62dfb347636a54cb0a5e18fb5ca4f55e206dc9c5b14e3ba980", size = 93261, upload-time = "2024-08-14T20:46:06.447Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0e/dc/b04624d24be1f5512a2f48b9028b9fdc474907f84b5e2e3e4bf204b74757/dppy-0.3.3-py3-none-any.whl", hash = "sha256:a770d6b906a9939a156e8e6f86d9d3b880edc1df8639106bff60b18fc1b483ab", size = 83822, upload-time = "2024-08-14T20:46:04.74Z" },
+]
+
+[[package]]
 name = "dtw-python"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -735,6 +781,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/77/cd/9be253869fc42e764de7f3dedd6969af7d44ff9c3375214a3442a6f3fc08/fsspec-2026.9.0.tar.gz", hash = "sha256:0f08147951c8cb31d844c3547d631053b127863b60be04cf06e121333ee0e2fe", size = 333545, upload-time = "2026-09-18T17:50:42.825Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6c/c0/a98505f18594f1bce828bb159cec0fcf9860562f1a2c85913409fc8f3d9e/fsspec-2026.9.0-py3-none-any.whl", hash = "sha256:8dd6e646e99ea382bd85f97a45e6b526a442d79423a7dc673f1e2756d05fcb5f", size = 221738, upload-time = "2026-09-18T17:50:41.341Z" },
+]
+
+[[package]]
+name = "future"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/b2/4140c69c6a66432916b26158687e821ba631a4c9273c474343badf84d3ba/future-1.0.0.tar.gz", hash = "sha256:bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05", size = 1228490, upload-time = "2024-02-21T11:52:38.461Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/71/ae30dadffc90b9006d77af76b393cb9dfbfc9629f339fc1574a1c52e6806/future-1.0.0-py3-none-any.whl", hash = "sha256:929292d34f5872e70396626ef385ec22355a1fae8ad29e1a734c3e43f9fbc216", size = 491326, upload-time = "2024-02-21T11:52:35.956Z" },
 ]
 
 [[package]]
@@ -1649,6 +1704,19 @@ wheels = [
 ]
 
 [[package]]
+name = "nolds"
+version = "0.6.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "future" },
+    { name = "numpy" },
+    { name = "setuptools" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/bc/2c7e78753d2d713aae8c0a41178deacdcae0706e3cc977abc471eba84277/nolds-0.6.3-py2.py3-none-any.whl", hash = "sha256:ba3fc9c30ba7a2c6eb8756eeb644dcf0d18e597ebe9ae170371b4b5c760213cc", size = 225672, upload-time = "2025-11-30T13:49:29.824Z" },
+]
+
+[[package]]
 name = "npeet"
 version = "1.0.1"
 source = { git = "https://github.com/gregversteeg/NPEET#8b0d9485423f74e5eb199324cf362765596538d3" }
@@ -2441,6 +2509,24 @@ wheels = [
 ]
 
 [[package]]
+name = "pyerfa"
+version = "2.0.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/71/39/63cc8291b0cf324ae710df41527faf7d331bce573899199d926b3e492260/pyerfa-2.0.1.5.tar.gz", hash = "sha256:17d6b24fe4846c65d5e7d8c362dcb08199dc63b30a236aedd73875cc83e1f6c0", size = 818430, upload-time = "2024-11-11T15:22:30.852Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7d/d9/3448a57cb5bd19950de6d6ab08bd8fbb3df60baa71726de91d73d76c481b/pyerfa-2.0.1.5-cp39-abi3-macosx_10_9_x86_64.whl", hash = "sha256:b282d7c60c4c47cf629c484c17ac504fcb04abd7b3f4dfcf53ee042afc3a5944", size = 341818, upload-time = "2024-11-11T15:22:16.467Z" },
+    { url = "https://files.pythonhosted.org/packages/11/4a/31a363370478b63c6289a34743f2ba2d3ae1bd8223e004d18ab28fb92385/pyerfa-2.0.1.5-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:be1aeb70390dd03a34faf96749d5cabc58437410b4aab7213c512323932427df", size = 329370, upload-time = "2024-11-11T15:22:17.829Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/96/b6210fc624123c8ae13e1eecb68fb75e3f3adff216d95eee1c7b05843e3e/pyerfa-2.0.1.5-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b0603e8e1b839327d586c8a627cdc634b795e18b007d84f0cda5500a0908254e", size = 692794, upload-time = "2024-11-11T15:22:19.429Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/e0/050018d855d26d3c0b4a7d1b2ed692be758ce276d8289e2a2b44ba1014a5/pyerfa-2.0.1.5-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0e43c7194e3242083f2350b46c09fd4bf8ba1bcc0ebd1460b98fc47fe2389906", size = 738711, upload-time = "2024-11-11T15:22:20.661Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/f5/ff91ee77308793ae32fa1e1de95e9edd4551456dd888b4e87c5938657ca5/pyerfa-2.0.1.5-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:07b80cd70701f5d066b1ac8cce406682cfcd667a1186ec7d7ade597239a6021d", size = 722966, upload-time = "2024-11-11T15:22:21.905Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/56/b22b35c8551d2228ff8d445e63787112927ca13f6dc9e2c04f69d742c95b/pyerfa-2.0.1.5-cp39-abi3-win32.whl", hash = "sha256:d30b9b0df588ed5467e529d851ea324a67239096dd44703125072fd11b351ea2", size = 339955, upload-time = "2024-11-11T15:22:23.087Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/11/97233cf23ad5411ac6f13b1d6ee3888f90ace4f974d9bf9db887aa428912/pyerfa-2.0.1.5-cp39-abi3-win_amd64.whl", hash = "sha256:66292d437dcf75925b694977aa06eb697126e7b86553e620371ed3e48b5e0ad0", size = 349410, upload-time = "2024-11-11T15:22:24.817Z" },
+]
+
+[[package]]
 name = "pyitlib"
 version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3180,6 +3266,15 @@ wheels = [
 ]
 
 [[package]]
+name = "sdeint"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a0/6f/8b6eecefd4d5fba57f58edba98f0050a5823e5c42db918600f370274012d/sdeint-0.3.0.tar.gz", hash = "sha256:edee046344abc9350518cc4421e0cd983967cae150d382518bfd84e0306ca64a", size = 39961, upload-time = "2022-07-12T07:44:42.18Z" }
+
+[[package]]
 name = "seaborn"
 version = "0.13.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3657,11 +3752,13 @@ dev = [
 ]
 oracle-core = [
     { name = "antropy" },
+    { name = "astropy" },
     { name = "biopython" },
     { name = "bitarray" },
     { name = "control" },
     { name = "cvxpy" },
     { name = "datasketch" },
+    { name = "dppy" },
     { name = "dtw-python" },
     { name = "fairlearn" },
     { name = "gensim" },
@@ -3670,6 +3767,7 @@ oracle-core = [
     { name = "krippendorff" },
     { name = "networkx" },
     { name = "nltk" },
+    { name = "nolds" },
     { name = "npeet" },
     { name = "pingouin" },
     { name = "pot" },
@@ -3692,6 +3790,7 @@ oracle-core = [
     { name = "scikit-image" },
     { name = "scikit-learn" },
     { name = "scipy" },
+    { name = "sdeint" },
     { name = "sewar" },
     { name = "shapely" },
     { name = "slycot" },
@@ -3734,11 +3833,13 @@ dev = [
 ]
 oracle-core = [
     { name = "antropy", specifier = ">=0.2.3" },
+    { name = "astropy", specifier = ">=8.0.2" },
     { name = "biopython", specifier = ">=1.88" },
     { name = "bitarray", specifier = ">=3.12.3" },
     { name = "control", specifier = ">=0.10.2" },
     { name = "cvxpy", specifier = ">=1.9.3" },
     { name = "datasketch", specifier = ">=2.0.0" },
+    { name = "dppy", specifier = ">=0.3.3" },
     { name = "dtw-python", specifier = ">=1.9.0" },
     { name = "fairlearn", specifier = ">=0.15.0" },
     { name = "gensim", specifier = ">=4.4.0" },
@@ -3747,6 +3848,7 @@ oracle-core = [
     { name = "krippendorff", specifier = ">=0.9.0" },
     { name = "networkx" },
     { name = "nltk", specifier = ">=3.10.4" },
+    { name = "nolds", specifier = ">=0.6.3" },
     { name = "npeet", git = "https://github.com/gregversteeg/NPEET" },
     { name = "pingouin", specifier = ">=0.7.0" },
     { name = "pot", specifier = ">=0.9.7.post1" },
@@ -3769,6 +3871,7 @@ oracle-core = [
     { name = "scikit-image", specifier = ">=0.26.0" },
     { name = "scikit-learn" },
     { name = "scipy" },
+    { name = "sdeint", specifier = ">=0.3.0" },
     { name = "sewar", specifier = ">=0.4.10" },
     { name = "shapely", specifier = ">=2.2.0" },
     { name = "slycot", specifier = ">=0.7.1" },

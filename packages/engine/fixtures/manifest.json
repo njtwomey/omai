@@ -2537,6 +2537,152 @@
       "cases": 25
     },
     {
+      "fixture": "stochastic/branching.json",
+      "source": "oracle/cases/stochastic/branching.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "stochastic/brownian.json",
+      "source": "oracle/cases/stochastic/brownian.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "stochastic/calculus.json",
+      "source": "oracle/cases/stochastic/calculus.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "stochastic/ctmc.json",
+      "source": "oracle/cases/stochastic/ctmc.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "stochastic/diffusions.json",
+      "source": "oracle/cases/stochastic/diffusions.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "stochastic/dpp.json",
+      "source": "oracle/cases/stochastic/dpp.py",
+      "reference": {
+        "dppy": "0.3.3",
+        "numpy": "2.5.4"
+      },
+      "cases": 26
+    },
+    {
+      "fixture": "stochastic/fractional.json",
+      "source": "oracle/cases/stochastic/fractional.py",
+      "reference": {
+        "nolds": "0.6.3",
+        "numpy": "2.5.4"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "stochastic/gaussian-processes.json",
+      "source": "oracle/cases/stochastic/gaussian-processes.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "stochastic/levy.json",
+      "source": "oracle/cases/stochastic/levy.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 21
+    },
+    {
+      "fixture": "stochastic/markov-chains.json",
+      "source": "oracle/cases/stochastic/markov-chains.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "networkx": "3.7"
+      },
+      "cases": 41
+    },
+    {
+      "fixture": "stochastic/point-processes.json",
+      "source": "oracle/cases/stochastic/point-processes.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "stochastic/queues.json",
+      "source": "oracle/cases/stochastic/queues.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "stochastic/random-measures.json",
+      "source": "oracle/cases/stochastic/random-measures.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "stochastic/random-walks.json",
+      "source": "oracle/cases/stochastic/random-walks.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "networkx": "3.7"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "stochastic/sde.json",
+      "source": "oracle/cases/stochastic/sde.py",
+      "reference": {
+        "sdeint": "0.3.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "stochastic/spatial-processes.json",
+      "source": "oracle/cases/stochastic/spatial-processes.py",
+      "reference": {
+        "astropy": "8.0.2",
+        "numpy": "2.5.4"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "symbolic/compile.json",
       "source": "oracle/cases/symbolic/compile.py",
       "reference": {

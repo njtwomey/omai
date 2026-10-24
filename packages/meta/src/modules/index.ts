@@ -77,6 +77,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/stats': () => import('whitebox-engine/stats'),
   'whitebox-engine/stats/smoothing': () => import('whitebox-engine/stats/smoothing'),
   'whitebox-engine/stats/tests': () => import('whitebox-engine/stats/tests'),
+  'whitebox-engine/stochastic': () => import('whitebox-engine/stochastic'),
   'whitebox-engine/symbolic': () => import('whitebox-engine/symbolic'),
   'whitebox-engine/systems': () => import('whitebox-engine/systems'),
   'whitebox-engine/tensor': () => import('whitebox-engine/tensor'),
