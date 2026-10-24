@@ -1,0 +1,94 @@
+import { type ReactElement, type ReactNode, useMemo } from 'react'
+import { type Panel, type SubplotOptions, subplotRects, subplots } from '../charts/compose.ts'
+import { type Figure, figure as makeFigure, scaleFigure } from '../figure/figure.ts'
+import type { GridSpec } from '../figure/grid.ts'
+import { Chart } from './Chart.tsx'
+import { useFrameSize } from './FigureFrame.tsx'
+import { Tex } from './MathView.tsx'
+import { useColourMode } from './theme.tsx'
+
+/** Props of {@link FigureGrid}. */
+export interface FigureGridProps extends Omit<SubplotOptions, 'figure' | 'mode' | 'textCells'> {
+  readonly grid: GridSpec
+  /** Chart panels by cell id. */
+  readonly panels: Readonly<Record<string, Panel>>
+  /** React content for other cells by id (text, controls, readouts); `text` and `tex` cells show their content. */
+  readonly cells?: Readonly<Record<string, ReactNode>>
+  readonly figure?: Figure
+}
+
+/**
+ * A figure laid out on a grid spec: chart panels drawn as one chart (`subplots`: shared and linked axes, zero gaps,
+ * marginals), and text, TeX or any React content placed in the other cells. Inside an expanded `FigureFrame` it
+ * scales to the modal.
+ *
+ * @param props - The grid, the panels, other cell content, the figure and subplot options.
+ * @returns The figure.
+ */
+export function FigureGrid(props: FigureGridProps): ReactElement {
+  const mode = useColourMode()
+  const frame = useFrameSize()
+  const { grid, panels, cells, title, legend, tooltip, link, zoom } = props
+  const fw = frame?.width
+  const fh = frame?.height
+  const expanded = frame?.expanded === true
+  const fig = useMemo(() => {
+    const size = fw === undefined || fh === undefined ? {} : { width: fw, height: fh }
+    const base = props.figure ?? makeFigure({ mode, ...size })
+    return expanded && fw !== undefined ? scaleFigure(base, fw) : base
+  }, [props.figure, mode, fw, fh, expanded])
+  const option = useMemo(
+    () =>
+      subplots(grid, panels, {
+        figure: { ...fig, mode },
+        mode,
+        textCells: false,
+        ...(title === undefined ? {} : { title }),
+        ...(legend === undefined ? {} : { legend }),
+        ...(tooltip === undefined ? {} : { tooltip }),
+        ...(link === undefined ? {} : { link }),
+        ...(zoom === undefined ? {} : { zoom }),
+      }),
+    [grid, panels, fig, mode, title, legend, tooltip, link, zoom],
+  )
+  const rects = subplotRects(grid, panels, fig)
+  const overlays = grid.cells.flatMap((c) => {
+    const r = rects[c.id]
+    const node: ReactNode =
+      cells?.[c.id] ??
+      (c.kind === 'tex' ? (
+        <Tex display style={{ fontSize: '1.35em' }}>
+          {c.content ?? ''}
+        </Tex>
+      ) : c.kind === 'text' ? (
+        c.content
+      ) : undefined)
+    if (r === undefined || node === undefined || node === null || panels[c.id] !== undefined) return []
+    return [
+      <div
+        key={c.id}
+        style={{
+          position: 'absolute',
+          left: r.x,
+          top: r.y,
+          width: r.width,
+          height: r.height,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          overflow: 'hidden',
+          fontSize: fig.fontSize + 2,
+        }}
+      >
+        {node}
+      </div>,
+    ]
+  })
+  return (
+    <div style={{ position: 'relative', width: fig.width, height: fig.height, maxWidth: '100%' }}>
+      <Chart option={option} width={fig.width} height={fig.height} mode={mode} />
+      {overlays}
+    </div>
+  )
+}
