@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { add, exp, mul, sin, sum, tensor, toArray, type Value } from '../tensor/index.ts'
-import { grad, hessian, jacfwd, jacrev, jvp, valueAndGrad, vjp } from './transforms.ts'
+import { add, exp, mul, primalOf, sin, sum, tensor, toArray, type Value } from '../tensor/index.ts'
+import { grad, gradAndAux, hessian, hvp, jacfwd, jacrev, jvp, valueAndGrad, vhp, vjp } from './transforms.ts'
 
 describe('transforms', () => {
   it('differentiates a polynomial', () => {
@@ -37,6 +37,29 @@ describe('transforms', () => {
     const t = jvp(f, x, tensor([1, 0])).tangent
     const { pullback } = vjp(f, x)
     expect((toArray(pullback(tensor([1, 0]))) as number[])[0]).toBeCloseTo((toArray(t) as number[])[0] as number)
+  })
+
+  it('passes auxiliary data through the gradient', () => {
+    const { grad: g, aux } = gradAndAux((p: { w: Value }) => {
+      const loss = sum(mul(p.w, p.w))
+      return [loss, { loss: toArray(primalOf(loss)) }] as const
+    })({ w: tensor([1, 3]) })
+    expect(toArray(g.w)).toEqual([2, 6])
+    expect(aux).toEqual({ loss: 10 })
+  })
+
+  it('vector-Hessian products agree with Hessian-vector products and the Hessian', () => {
+    const f = (x: Value) => sum(mul(sin(x), mul(x, x)))
+    const x = tensor([0.3, -1.2, 2])
+    const v = tensor([1, -2, 0.5])
+    const left = toArray(vhp(f, x, v)) as number[]
+    const right = toArray(hvp(f, x, v)) as number[]
+    const h = toArray(hessian(f)(x)) as number[][]
+    left.forEach((value, i) => {
+      expect(value).toBeCloseTo(right[i] as number, 12)
+      const column = h.reduce((acc, row, j) => acc + (row[i] as number) * ([1, -2, 0.5][j] as number), 0)
+      expect(value).toBeCloseTo(column, 12)
+    })
   })
 
   it('computes a Hessian', () => {
