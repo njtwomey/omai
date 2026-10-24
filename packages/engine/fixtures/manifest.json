@@ -1348,6 +1348,33 @@
       "cases": 6
     },
     {
+      "fixture": "methods/decomposition/cross_decomposition.json",
+      "source": "oracle/cases/methods/decomposition/cross_decomposition.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "methods/decomposition/ica.json",
+      "source": "oracle/cases/methods/decomposition/ica.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "methods/decomposition/nmf.json",
+      "source": "oracle/cases/methods/decomposition/nmf.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "methods/decomposition/pca.json",
       "source": "oracle/cases/methods/decomposition/pca.py",
       "reference": {
@@ -1355,6 +1382,15 @@
         "numpy": "2.5.4"
       },
       "cases": 17
+    },
+    {
+      "fixture": "methods/decomposition/probabilistic.json",
+      "source": "oracle/cases/methods/decomposition/probabilistic.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
     },
     {
       "fixture": "methods/linear/classification.json",
