@@ -1,5 +1,6 @@
 // The probabilistic programs the probprog golden tests share with the oracle (oracle/cases/probprog/_models.py
-// defines the same programs under the same names, with the same data). Node only; not published.
+// defines the same programs under the same names, with the same data), and posterior checks. Node only; not published.
+import { expect } from 'vitest'
 import {
   bernoulli,
   beta,
@@ -21,10 +22,12 @@ import {
   markov,
   mask,
   observe,
+  type Posterior,
   plate,
   sample,
   scale,
 } from '../lib/probprog/index.ts'
+import { ess } from '../lib/sampling/index.ts'
 import { add, matmul, mul, square, take, tensor, type Value, zeros } from '../lib/tensor/index.ts'
 
 export const Y4: readonly number[] = [0.3, -1.2, 2.1, 0.8]
@@ -154,4 +157,41 @@ export const DISCRETE: Readonly<Record<string, Model>> = {
       undefined as Value | undefined,
     )
   },
+}
+
+/**
+ * Check a posterior's mean (and sd) of one scalar coordinate against the truth within `z` Monte Carlo standard errors:
+ * the ESS of equally weighted draws by `sampling.ess` (chains laid end to end as one chain), of weighted draws by
+ * Kish's formula.
+ */
+export function expectPosteriorMoments(
+  post: Posterior,
+  site: string,
+  truth: { readonly mean: number; readonly sd?: number },
+  options: { readonly index?: number; readonly z?: number; readonly minEss?: number } = {},
+): void {
+  const z = options.z ?? 4
+  const draws = post.draws?.[site]
+  if (draws === undefined) throw new Error(`no draws of ${site}`)
+  const n = draws.shape[0] ?? 0
+  const size = draws.data.length / n
+  const j = options.index ?? 0
+  const x = Float64Array.from({ length: n }, (_, i) => draws.data[i * size + j] ?? Number.NaN)
+  let w: Float64Array | undefined
+  if (post.logWeights !== undefined) w = Float64Array.from(post.logWeights.data, Math.exp)
+  const mean = w === undefined ? x.reduce((a, b) => a + b, 0) / n : x.reduce((a, b, i) => a + b * (w?.[i] ?? 0), 0)
+  const variance =
+    w === undefined
+      ? x.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1)
+      : x.reduce((a, b, i) => a + (w?.[i] ?? 0) * (b - mean) ** 2, 0)
+  const neff = w === undefined ? ess(tensor([Array.from(x)])) : 1 / w.reduce((a, b) => a + b * b, 0)
+  expect(neff, `${site}: effective sample size`).toBeGreaterThan(options.minEss ?? 20)
+  const sd = Math.sqrt(variance)
+  expect(Math.abs(mean - truth.mean), `${site}: mean ${mean} vs ${truth.mean}`).toBeLessThan((z * sd) / Math.sqrt(neff))
+  if (truth.sd !== undefined) {
+    // The sd's standard error is about sd / sqrt(2 ESS) for near-normal draws.
+    expect(Math.abs(sd - truth.sd), `${site}: sd ${sd} vs ${truth.sd}`).toBeLessThan(
+      (z * truth.sd) / Math.sqrt(2 * neff),
+    )
+  }
 }

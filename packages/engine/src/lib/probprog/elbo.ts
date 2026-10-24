@@ -90,7 +90,8 @@ export function particle<D = void>(
   params: Readonly<Record<string, TensorLike>>,
 ): Particle {
   const guideTrace = traceOf(seed(substitute(guide, params), key), data)
-  const r = logJoint(replay(substitute(enumerate(model), params), guideTrace), data)
+  // The model is seeded too: plates the guide does not have draw their own subsamples.
+  const r = logJoint(seed(replay(substitute(enumerate(model), params), guideTrace), foldIn(key, 1 << 30)), data)
   return { guideTrace, modelTrace: r.trace, logP: r.logJoint, logQ: traceLogJoint(guideTrace) }
 }
 
@@ -206,7 +207,10 @@ export function traceMeanFieldElbo(options: { readonly numParticles?: number } =
       let total: Value = tensor(0)
       for (let i = 0; i < n; i++) {
         const guideTrace = traceOf(seed(substitute(guide, params), foldIn(key, i)), data)
-        const modelTrace = traceOf(replay(substitute(model, params), guideTrace), data)
+        const modelTrace = traceOf(
+          seed(replay(substitute(model, params), guideTrace), foldIn(foldIn(key, i), 1 << 30)),
+          data,
+        )
         let term: Value = tensor(0)
         for (const site of modelTrace.sites.values()) {
           if (site.type !== 'sample') continue

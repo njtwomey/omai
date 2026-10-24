@@ -182,6 +182,17 @@ function isExponentialFamily(d: Distribution): boolean {
   }
 }
 
+/** The program with every plate's subsample fixed to the one a trace used. */
+function withSubsamples<D>(model: Model<D>, t: ProgramTrace): Model<D> {
+  return handle(model, () => ({
+    process: (msg: Message) => {
+      if (msg.type !== 'plate' || msg.value !== undefined) return
+      const s = t.sites.get(msg.name)
+      if (s?.type === 'plate') msg.value = s.value
+    },
+  }))
+}
+
 /** Parents of every site by provenance, or undefined when the program cannot run on tagged values. */
 function provenanceParents<D = void>(
   model: Model<D>,
@@ -427,8 +438,11 @@ function graphShapeOf(latent: readonly string[], sites: readonly SiteInfo[]): Pr
  * ```
  */
 export function analyse<D = void>(model: Model<D>, data: D, options: AnalyseOptions = {}): ProgramAnalysis {
-  const proto = traceOf(seed(model, options.key ?? makeKey(0)), data)
-  const traced = provenanceParents(model, data, proto)
+  const raw = traceOf(seed(model, options.key ?? makeKey(0)), data)
+  // Every later run uses the prototype's plate subsamples, so subsampled programs need no key.
+  const fixed = withSubsamples(model, raw)
+  const proto = raw
+  const traced = provenanceParents(fixed, data, proto)
   const order = [...proto.sites.values()].filter((s) => s.type !== 'plate' && s.type !== 'markov')
   const parents =
     traced ??
@@ -589,7 +603,7 @@ export function analyse<D = void>(model: Model<D>, data: D, options: AnalyseOpti
   let continuousDim = 0
   if (continuous.length > 0 && unbounded.length === 0 && simulators.length === 0) {
     try {
-      const um = potentialEnergy(model, data, options.key === undefined ? {} : { key: options.key })
+      const um = potentialEnergy(fixed, data, options.key === undefined ? {} : { key: options.key })
       continuousDim = um.dim
       const u = new Float64Array(um.dim)
       const g = valueAndGrad((x: Value) => um.fn(x))(fromStorage(u, [um.dim], 'float64'))
@@ -604,7 +618,7 @@ export function analyse<D = void>(model: Model<D>, data: D, options: AnalyseOpti
   const lg =
     unbounded.length > 0 || Object.keys(cardinalities).length > 0
       ? { linear: false, reason: 'the program has discrete latent sites' }
-      : linearGaussianCheck(model, data, proto, traced, latent)
+      : linearGaussianCheck(fixed, data, proto, traced, latent)
   return {
     sites,
     latent,

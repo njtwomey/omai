@@ -54,6 +54,11 @@ interface Estimated {
 /** A closed-form M-step: the family and parameter of the one child site, and the enumerated site that indexes it. */
 interface ClosedForm {
   readonly family: 'normal.loc' | 'normal.scale' | 'poisson.rate' | 'exponential.rate' | 'probs'
+  /** Every child site that uses the parameter, each directly or indexed by one enumerated site. */
+  readonly roles: readonly ClosedRole[]
+}
+
+interface ClosedRole {
   readonly child: string
   readonly gather: string | undefined
   /** Whether the child is itself an enumerated site (its states are the data). */
@@ -85,8 +90,10 @@ export interface EmOptions {
   readonly tol?: number
   /** `auto` (default) uses closed-form M-steps where recognised; `gradient` always maximises the expected log density. */
   readonly mStep?: 'auto' | 'gradient'
-  /** L-BFGS iterations per gradient M-step (default 100). */
+  /** L-BFGS iterations per gradient M-step (default 50; a partial M-step still increases the objective). */
   readonly gradientIterations?: number
+  /** Accelerate with SQUAREM extrapolation (default true), falling back to plain EM steps when it does not help. */
+  readonly accelerate?: boolean
   /** Initial values (constrained) by name; params otherwise start at their initialisers, latent sites at a draw. */
   readonly init?: Readonly<Record<string, TensorLike>>
   /** Continuous latent sites integrated in the E-step (default: the plated ones, when the program is linear-Gaussian in
@@ -142,8 +149,26 @@ function detectClosedForm<D = void>(
     if (s1 === undefined) return undefined
     if (!sameValue(primalOf(s.fn.logProb(s.value)), primalOf(s1.fn.logProb(s1.value)))) changed.push(s)
   }
-  const child = changed[0]
-  if (changed.length !== 1 || child === undefined) return undefined
+  if (changed.length === 0) return undefined
+  let family: ClosedForm['family'] | undefined
+  const roles: ClosedRole[] = []
+  for (const child of changed) {
+    const role = closedRole(p, child, t0, t1, v0, v1)
+    if (role === undefined || (family !== undefined && role.family !== family)) return undefined
+    family = role.family
+    roles.push(role.role)
+  }
+  return family === undefined ? undefined : { family, roles }
+}
+
+function closedRole<D = void>(
+  p: Pick<Problem<D>, 'depth'>,
+  child: SampleSite,
+  t0: ProgramTrace,
+  t1: ProgramTrace,
+  v0: Value,
+  v1: Value,
+): { readonly family: ClosedForm['family']; readonly role: ClosedRole } | undefined {
   const base0 = unexpanded(child.fn)
   const c1 = siteOf(t1, child.name)
   if (c1 === undefined || !FAMILIES.has(base0.name)) return undefined
@@ -173,14 +198,22 @@ function detectClosedForm<D = void>(
   const latentChild = child.enumDim !== undefined
   const fs = traceFactors(t0, p.depth).factors.find((f) => f.site === child.name)
   if (fs?.layout === undefined || fs.layout.loose.length > 0) return undefined
-  if (sameValue(P0, v0) && sameValue(P1, v1)) return { family, child: child.name, gather: undefined, latentChild }
+  // A parameter used directly must be one number (or one probability vector).
+  const scalar =
+    family === 'probs' && base0.name === 'categorical'
+      ? v0.shape.length === 1
+      : v0.shape.reduce((a, b) => a * b, 1) === 1
+  if (scalar && sameValue(P0, v0) && sameValue(P1, v1))
+    return { family, role: { child: child.name, gather: undefined, latentChild } }
   for (const s of t0.sites.values()) {
-    if (s.type !== 'sample' || s.enumDim === undefined || s.name === child.name) continue
+    // The indexing site must be one of the child's factor's variables (sites sharing a recycled dimension have
+    // identical enumerated values, so the values alone cannot tell them apart).
+    if (s.type !== 'sample' || s.enumDim === undefined || s.name === child.name || !fs.dims.includes(s.name)) continue
     const k = s.value.shape[0] ?? 0
     if ((v0.shape[0] ?? -1) !== k) continue
     const idx = cast(s.value, 'int32')
     if (sameValue(P0, take(v0, idx, 0)) && sameValue(P1, take(v1, idx, 0)))
-      return { family, child: child.name, gather: s.name, latentChild }
+      return { family, role: { child: child.name, gather: s.name, latentChild } }
   }
   return undefined
 }
@@ -386,11 +419,11 @@ function sliceIndex(v: Value, axis: number, i: number): Value {
   )
 }
 
-/** The closed-form update of one parameter from the E-step's marginals. */
-function closedUpdate<D = void>(
+/** The weighted sufficient statistics one child contributes to a closed-form update: a numerator and a denominator. */
+function roleStatistics<D = void>(
   p: Problem<D>,
-  _name: string,
-  form: ClosedForm,
+  family: ClosedForm['family'],
+  role: ClosedRole,
   current: Value,
   e: {
     readonly factors?: readonly NamedFactor[]
@@ -398,64 +431,141 @@ function closedUpdate<D = void>(
     readonly trace?: ProgramTrace
   },
   values: Readonly<Record<string, Value>>,
-): Value {
+): { readonly num: Value; readonly den: Value } {
   const factors = e.factors ?? []
-  const fi = factors.findIndex((f) => f.site === form.child)
+  const fi = factors.findIndex((f) => f.site === role.child)
   const f = factors[fi]
   const t = e.trace
-  if (f === undefined || t === undefined) throw new WhiteboxError('value', `em: no factor for ${form.child}`)
+  if (f === undefined || t === undefined) throw new WhiteboxError('value', `em: no factor for ${role.child}`)
   const m = e.marginals?.[fi] ?? broadcastTo(tensor(1), f.value.shape)
-  const site = siteOf(t, form.child)
-  if (site === undefined) throw new WhiteboxError('value', `em: no site ${form.child}`)
-  const keep = [form.gather]
+  const site = siteOf(t, role.child)
+  if (site === undefined) throw new WhiteboxError('value', `em: no site ${role.child}`)
+  const keep = [role.gather]
   const weight = (x: Value | undefined): Value => keepDims(x === undefined ? m : mul(m, x), f.dims, keep)
-  const safeDiv = (num: Value, den: Value): Value =>
-    where(equal(den, 0), broadcastTo(current, den.shape), div(num, where(equal(den, 0), 1, den)))
-  switch (form.family) {
-    case 'normal.loc': {
-      const y = nameLike(f, site.value)
-      return primalOf(reshape(safeDiv(weight(y), weight(undefined)), current.shape))
-    }
+  const shaped = (v: Value, shape: readonly number[]): Value => reshape(v, shape)
+  switch (family) {
+    case 'normal.loc':
+    case 'poisson.rate':
+      return {
+        num: shaped(weight(nameLike(f, site.value)), current.shape),
+        den: shaped(weight(undefined), current.shape),
+      }
+    case 'exponential.rate':
+      return {
+        num: shaped(weight(undefined), current.shape),
+        den: shaped(weight(nameLike(f, site.value)), current.shape),
+      }
     case 'normal.scale': {
       const t2 = enumTrace(p, values)
-      const f2 = namedChild(t2, p.depth, form.child)
-      const s2 = siteOf(t2, form.child)
+      const f2 = namedChild(t2, p.depth, role.child)
+      const s2 = siteOf(t2, role.child)
       const loc = s2 === undefined ? undefined : unexpanded(s2.fn).params['loc']
       if (loc === undefined) throw new WhiteboxError('value', 'em: no location for the scale update')
       const resid = square(sub(nameLike(f2, site.value), nameLike(f2, loc)))
-      return primalOf(reshape(sqrt(safeDiv(weight(resid), weight(undefined))), current.shape))
-    }
-    case 'poisson.rate': {
-      const y = nameLike(f, site.value)
-      return primalOf(reshape(safeDiv(weight(y), weight(undefined)), current.shape))
-    }
-    case 'exponential.rate': {
-      const y = nameLike(f, site.value)
-      return primalOf(reshape(safeDiv(weight(undefined), weight(y)), current.shape))
+      return { num: shaped(weight(resid), current.shape), den: shaped(weight(undefined), current.shape) }
     }
     case 'probs': {
+      if (unexpanded(site.fn).name === 'bernoulli')
+        return {
+          num: shaped(weight(nameLike(f, site.value)), current.shape),
+          den: shaped(weight(undefined), current.shape),
+        }
       const k = current.shape[current.shape.length - 1] ?? 1
-      const isBernoulli = unexpanded(site.fn).name === 'bernoulli'
-      if (isBernoulli) {
-        const y = nameLike(f, site.value)
-        return primalOf(reshape(safeDiv(weight(y), weight(undefined)), current.shape))
-      }
       const columns: Value[] = []
       for (let j = 0; j < k; j++) {
-        const indicator = form.latentChild ? undefined : cast(equal(nameLike(f, site.value), j), 'float64')
-        if (form.latentChild) {
+        if (role.latentChild) {
           // The child's own dim holds its states: take state j.
-          const axis = f.dims.indexOf(form.child)
+          const axis = f.dims.indexOf(role.child)
           const mj = sliceIndex(m, axis, j)
-          const dims = f.dims.filter((d) => d !== form.child)
-          columns.push(keepDims(mj, dims, keep))
-        } else columns.push(weight(indicator))
+          columns.push(
+            keepDims(
+              mj,
+              f.dims.filter((d) => d !== role.child),
+              keep,
+            ),
+          )
+        } else columns.push(weight(cast(equal(nameLike(f, site.value), j), 'float64')))
       }
-      const counts = stack(columns, -1)
-      const total = sum(counts, -1, true)
-      return primalOf(reshape(safeDiv(counts, broadcastTo(total, counts.shape)), current.shape))
+      const counts = shaped(stack(columns, -1), current.shape)
+      return { num: counts, den: broadcastTo(sum(counts, -1, true), current.shape) }
     }
   }
+}
+
+/** The closed-form update of one parameter: the summed statistics of all its children. */
+function closedUpdate<D = void>(
+  p: Problem<D>,
+  form: ClosedForm,
+  current: Value,
+  e: Parameters<typeof roleStatistics>[4],
+  values: Readonly<Record<string, Value>>,
+): Value {
+  let num: Value | undefined
+  let den: Value | undefined
+  for (const role of form.roles) {
+    const r = roleStatistics(p, form.family, role, current, e, values)
+    num = num === undefined ? r.num : add(num, r.num)
+    den = den === undefined ? r.den : add(den, r.den)
+  }
+  if (num === undefined || den === undefined) return current
+  const empty = equal(den, 0)
+  const ratio = where(empty, current, div(num, where(empty, 1, den)))
+  return primalOf(form.family === 'normal.scale' ? where(empty, current, sqrt(ratio)) : ratio)
+}
+
+/** One EM update: the E-step at `values`, closed-form M-steps where recognised, then a gradient M-step for the rest. */
+function emMap<D>(p: Problem<D>, start: Readonly<Record<string, Value>>, iters: number): Record<string, Value> {
+  const e = eStep(p, start)
+  let values: Record<string, Value> = { ...start }
+  // Closed forms: everything but scales from the E-step, then scales at the new locations.
+  const order = [...p.closed.entries()].sort(
+    (a, b) => Number(a[1].family === 'normal.scale') - Number(b[1].family === 'normal.scale'),
+  )
+  for (const [name, form] of order) {
+    const current = values[name] as Value
+    values = { ...values, [name]: closedUpdate(p, form, current, e, values) }
+  }
+  const rest = p.estimated.filter((x) => !p.closed.has(x.name))
+  if (rest.length === 0) return values
+  const shapes = rest.map((x) => primalOf(x.bijector.inverse(values[x.name] as Value)))
+  const sizes = shapes.map((s) => s.data.length)
+  const total = sizes.reduce((a, b) => a + b, 0)
+  const x0 = fromStorage(Float64Array.from(shapes.flatMap((s) => toFlat(s))), [total], 'float64')
+  const fixed = values
+  const unpack = (u: Value): Record<string, Value> => {
+    const out: Record<string, Value> = { ...fixed }
+    let at = 0
+    rest.forEach((x, i) => {
+      const n = sizes[i] ?? 0
+      out[x.name] = x.bijector.forward(reshape(sliceAxis(u, 0, at, at + n), (shapes[i] as Tensor).shape))
+      at += n
+    })
+    return out
+  }
+  const r = lbfgs((u: Value) => mul(e.expected(unpack(u)), -1), x0, { maxIterations: iters, gradTol: 1e-10 })
+  const u = fromStorage(Float64Array.from(toFlat(primalOf(r.x as Value))), [total], 'float64')
+  return Object.fromEntries(Object.entries(unpack(u)).map(([k, v]) => [k, primalOf(v)]))
+}
+
+/** The estimates as one unconstrained vector, in a fixed order. */
+function flatten<D>(p: Problem<D>, values: Readonly<Record<string, Value>>): number[] {
+  return p.estimated.flatMap((e) => toFlat(primalOf(e.bijector.inverse(values[e.name] as Value))))
+}
+
+function unflatten<D>(
+  p: Problem<D>,
+  u: readonly number[],
+  like: Readonly<Record<string, Value>>,
+): Record<string, Value> {
+  const out: Record<string, Value> = { ...like }
+  let at = 0
+  for (const e of p.estimated) {
+    const shape = primalOf(e.bijector.inverse(like[e.name] as Value)).shape
+    const n = shape.reduce((a, b) => a * b, 1)
+    out[e.name] = primalOf(e.bijector.forward(fromStorage(Float64Array.from(u.slice(at, at + n)), shape, 'float64')))
+    at += n
+  }
+  return out
 }
 
 /**
@@ -500,7 +610,8 @@ function emParts<D = void>(
   options: EmOptions,
 ): { readonly algorithm: Algorithm<EmState>; readonly problem: () => Problem<D> } {
   const tol = options.tol ?? 1e-9
-  const iters = options.gradientIterations ?? 100
+  const iters = options.gradientIterations ?? 50
+  const accelerate = options.accelerate ?? true
   let problem: Problem<D> | undefined
   const get = (): Problem<D> => {
     if (problem === undefined) throw new WhiteboxError('value', 'em: not initialised')
@@ -519,37 +630,34 @@ function emParts<D = void>(
     },
     step: (state) => {
       const p = get()
-      const e = eStep(p, state.values)
-      let values: Record<string, Value> = { ...state.values }
-      // Closed forms: everything but scales from the E-step, then scales at the new locations.
-      const order = [...p.closed.entries()].sort(
-        (a, b) => Number(a[1].family === 'normal.scale') - Number(b[1].family === 'normal.scale'),
-      )
-      for (const [name, form] of order) {
-        const current = values[name] as Value
-        values = { ...values, [name]: closedUpdate(p, name, form, current, e, values) }
+      const once = emMap(p, state.values, iters)
+      if (!accelerate || p.estimated.length === 0)
+        return { values: once, objective: eStep(p, once).objective, previous: state.objective }
+      // SQUAREM (Varadhan and Roland 2008, scheme S3): extrapolate two EM maps on the unconstrained scale, then
+      // stabilise with one more map; fall back to the plain two-step result when that is not better.
+      const twice = emMap(p, once, iters)
+      const u0 = flatten(p, state.values)
+      const u1 = flatten(p, once)
+      const u2 = flatten(p, twice)
+      const r = u1.map((v, i) => v - (u0[i] ?? 0))
+      const v = u2.map((x, i) => x - 2 * (u1[i] ?? 0) + (u0[i] ?? 0))
+      const nr = Math.sqrt(r.reduce((a, b) => a + b * b, 0))
+      const nv = Math.sqrt(v.reduce((a, b) => a + b * b, 0))
+      const plain = { values: twice, objective: eStep(p, twice).objective, previous: state.objective }
+      if (!(nv > 0) || !(nr > 0)) return plain
+      const alpha = Math.min(-1, -nr / nv)
+      const jump = u0.map((x, i) => x - 2 * alpha * (r[i] ?? 0) + alpha * alpha * (v[i] ?? 0))
+      let stabilised: Record<string, Value>
+      let objective: number
+      try {
+        stabilised = emMap(p, unflatten(p, jump, state.values), iters)
+        objective = eStep(p, stabilised).objective
+      } catch {
+        return plain
       }
-      const rest = p.estimated.filter((x) => !p.closed.has(x.name))
-      if (rest.length > 0) {
-        const shapes = rest.map((x) => primalOf(x.bijector.inverse(values[x.name] as Value)))
-        const sizes = shapes.map((s) => s.data.length)
-        const total = sizes.reduce((a, b) => a + b, 0)
-        const x0 = fromStorage(Float64Array.from(shapes.flatMap((s) => toFlat(s))), [total], 'float64')
-        const unpack = (u: Value): Record<string, Value> => {
-          const out: Record<string, Value> = { ...values }
-          let at = 0
-          rest.forEach((x, i) => {
-            const n = sizes[i] ?? 0
-            out[x.name] = x.bijector.forward(reshape(sliceAxis(u, 0, at, at + n), (shapes[i] as Tensor).shape))
-            at += n
-          })
-          return out
-        }
-        const r = lbfgs((u: Value) => mul(e.expected(unpack(u)), -1), x0, { maxIterations: iters, gradTol: 1e-10 })
-        const u = fromStorage(Float64Array.from(toFlat(primalOf(r.x as Value))), [total], 'float64')
-        values = Object.fromEntries(Object.entries(unpack(u)).map(([k, v]) => [k, primalOf(v)]))
-      }
-      return { values, objective: eStep(p, values).objective, previous: state.objective }
+      return Number.isFinite(objective) && objective >= plain.objective
+        ? { values: stabilised, objective, previous: state.objective }
+        : plain
     },
     done: (s) => {
       if (Number.isNaN(s.objective) || s.objective === Number.POSITIVE_INFINITY) return 'diverged'

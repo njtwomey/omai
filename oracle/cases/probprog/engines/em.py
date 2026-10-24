@@ -1,9 +1,11 @@
-"""Expectation maximisation (probprog/engines/em.ts) against scikit-learn's `GaussianMixture`: from the same initial
-weights, means and variances (no covariance regularisation), both reach the same fixed point."""
+"""Expectation maximisation (probprog/engines/em.ts) against scikit-learn: `GaussianMixture` from the same initial
+weights, means and variances (no covariance regularisation) reaches the same fixed point, and `FactorAnalysis` the same
+maximum likelihood (the loadings are unique only up to sign, so the likelihood is compared)."""
 
 import importlib.metadata
 
 import numpy as np
+from sklearn.decomposition import FactorAnalysis
 from sklearn.mixture import GaussianMixture
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import rng
@@ -51,4 +53,13 @@ def cases() -> list[Case]:
         # stopping at the same likelihood (compared above at 1e-9) differ in the parameters' fourth digit.
         tol = 1e-6 if name == "separated" else 1e-3
         out.append(case(f"gmm/{name}", "gmm", [y], output, rtol=tol, atol=1e-8 if name == "separated" else 1e-4))
+    # Strong loadings and little noise: EM converges fast when the factor is well determined.
+    loadings = np.array([1.5, -1.0, 1.2])
+    z = g.normal(size=25)
+    x = z[:, None] * loadings + g.normal(size=(25, 3)) * np.array([0.3, 0.4, 0.25]) + np.array([1.0, 0.0, -1.0])
+    fa = FactorAnalysis(n_components=1, tol=1e-12, max_iter=100000, svd_method="lapack")
+    fa.fit(x)
+    out.append(
+        case("factorAnalysis/logLikelihood", "factorAnalysis", [x], np.array(float(fa.score(x)) * len(x)), rtol=1e-6)
+    )
     return out

@@ -9,6 +9,7 @@ import {
   concat,
   fromStorage,
   item,
+  mul,
   primalOf,
   reshape,
   sum,
@@ -142,9 +143,10 @@ function plan<D = void>(model: Model<D>, data: D, a: ProgramAnalysis, collapse: 
           children.push({ site: c, gather: undefined })
           continue
         }
+        const parentsOfChild = a.sites.find((x) => x.name === c)?.parents ?? []
         const gather = a.discrete.sites.find((g) => {
           const gs = siteOf(proto, g)
-          if (gs === undefined || g === c) return false
+          if (gs === undefined || g === c || !parentsOfChild.includes(g)) return false
           if (gs.value.shape.join() !== cs.value.shape.join()) return false
           return (s.value.shape[0] ?? -1) > 0 && close(probs, take(s.value, cast(gs.value, 'int32'), 0))
         })
@@ -215,10 +217,12 @@ function groupedConjugacy(proto: ProgramTrace, name: string, a: ProgramAnalysis)
     const cs = siteOf(proto, c)
     if (cs === undefined || !cs.isObserved) return undefined
     const family = unexpanded(cs.fn).name
+    const parentsOfChild = a.sites.find((x) => x.name === c)?.parents ?? []
     const found = CONJUGATES.filter((p) => p.likelihood === family && p.prior === priorFamily).find((p) => {
       const v = pairParameter(unexpanded(cs.fn), p)
       if (v === undefined) return false
       return a.discrete.sites.some((g) => {
+        if (!parentsOfChild.includes(g)) return false
         const gs = siteOf(proto, g)
         return gs !== undefined && close(v, take(s.value, cast(gs.value, 'int32'), 0))
       })
@@ -228,7 +232,7 @@ function groupedConjugacy(proto: ProgramTrace, name: string, a: ProgramAnalysis)
     const v = pairParameter(unexpanded(cs.fn), found) as Value
     const gather = a.discrete.sites.find((g) => {
       const gs = siteOf(proto, g)
-      return gs !== undefined && close(v, take(s.value, cast(gs.value, 'int32'), 0))
+      return parentsOfChild.includes(g) && gs !== undefined && close(v, take(s.value, cast(gs.value, 'int32'), 0))
     })
     if (gather === undefined) return undefined
     children.push({ site: c, gather })
@@ -359,7 +363,8 @@ export function gibbsAlgorithm<D = void>(model: Model<D>, data: D, options: Gibb
               fixed = f
             }
             const post = b.pair.posterior(prior.fn, concat(rows), fixed)
-            const drawn = primalOf(post.sample(foldIn(key, j), []))
+            // Component j's posterior uses its own data; parameters shared by the components broadcast.
+            const drawn = primalOf(broadcastTo(post.sample(foldIn(key, j), []), prior.value.shape))
             parts.push(reshape(take(drawn, [j], 0), prior.value.shape.slice(1)))
           }
           values = {
@@ -431,6 +436,9 @@ function updateDiscrete<D = void>(
   const all = traceFactors(t, depth)
   const relevant = collapsed.filter((c) => c.children.some((ch) => ch.site === site || ch.gather === site))
   const keep = all.factors.filter((f) => f.site === undefined || !relevantSite(relevant, f.site))
+  // The site's own factor may be collapsed away: a zero factor over its dims carries its marginal instead.
+  const own0 = all.factors.find((f) => f.site === site)
+  if (own0 !== undefined && !keep.includes(own0)) keep.push({ ...own0, value: mul(own0.value, 0) })
   const { marginals } = enumeratedMarginals(keep, all.sumVars, all.scales)
   const support = own.fn.support
   const low = support.kind === 'integerInterval' ? support.low : 0
