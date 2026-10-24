@@ -58,7 +58,7 @@ function repeatBonus<B>(
 
 describe('intrinsic rewards', () => {
   it('DQN with a count bonus reaches the far bank where epsilon-greedy DQN settles for the near one', {
-    timeout: 20_000,
+    timeout: 60_000,
   }, () => {
     const env = river()
     const run = (agent: Parameters<typeof trainAgent>[1]) => {

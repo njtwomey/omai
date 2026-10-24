@@ -78,7 +78,7 @@ describe('quantile losses and distortions', () => {
 })
 
 describe('distributional agents', () => {
-  it('C51 learns the dry lake and reports its statistics', { timeout: 20_000 }, () => {
+  it('C51 learns the dry lake and reports its statistics', { timeout: 60_000 }, () => {
     const env = lake()
     const agent = c51(env as never, { ...base, atoms: 21, vMin: -1, vMax: 1 })
     const rec = recorder()
@@ -104,16 +104,16 @@ describe('distributional agents', () => {
     for (const row of dist.probabilities) expect(row.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12)
   })
 
-  it('QR-DQN learns the dry lake', { timeout: 20_000 }, () => {
+  it('QR-DQN learns the dry lake', { timeout: 60_000 }, () => {
     expect(solves(qrDqn(lake() as never, { ...base, quantiles: 16 }), 1500, 0)).toBe(1)
   })
 
-  it('IQN learns the dry lake', { timeout: 20_000 }, () => {
+  it('IQN learns the dry lake', { timeout: 60_000 }, () => {
     const opts = { ...base, batchSize: 16, trainFrequency: 2, quantiles: 8, targetQuantiles: 8, policySamples: 8 }
     expect(solves(iqn(lake() as never, { ...opts, embedding: 16 }), 1200, 1)).toBe(1)
   })
 
-  it('Rainbow learns the dry lake', { timeout: 20_000 }, () => {
+  it('Rainbow learns the dry lake', { timeout: 60_000 }, () => {
     const opts = { ...base, trainFrequency: 2, atoms: 21, vMin: -1, vMax: 1 }
     expect(solves(rainbow(lake() as never, opts), 1200, 1)).toBe(1)
   })

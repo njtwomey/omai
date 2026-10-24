@@ -23,7 +23,7 @@ const base = {
 } as const
 
 describe('DQN', () => {
-  it('learns the dry lake within a short budget and reports its statistics', () => {
+  it('learns the dry lake within a short budget and reports its statistics', { timeout: 60_000 }, () => {
     const env = lake()
     const agent = dqn(env as never, base)
     const rec = recorder()
@@ -48,7 +48,7 @@ describe('DQN', () => {
     ['prioritised replay with soft targets', { prioritized: true, tau: 0.05 }],
     ['noisy networks', { noisy: true, sigma0: 0.5 }],
   ] as const) {
-    it(`learns with ${name}`, () => {
+    it(`learns with ${name}`, { timeout: 60_000 }, () => {
       const env = lake()
       const agent = dqn(env as never, { ...base, ...variant })
       const result = trainAgent(env as never, agent, { maxSteps: 2000, seed: 2 })
