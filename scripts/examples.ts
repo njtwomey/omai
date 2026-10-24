@@ -2,14 +2,14 @@
  * Run every `@example` of whitebox-engine's exports and check each `// =>` line (docs/structure.md section 2).
  *
  *   node scripts/examples.ts [--only <prefix>[,<prefix>...]] [--methods] [--workers N] [--timeout ms] [--json file]
- *                            [--slowest N] [--quiet]
+ *                            [--slowest N] [--quiet] [--coverage]
  *
  * The catalogue comes from whitebox-meta/extract and the examples run through whitebox-meta's runner in worker
  * threads (default 2, or WHITEBOX_EXAMPLE_WORKERS), each importing the engine from source. An example that runs past
  * the time limit (default 20 s) has its worker stopped and replaced. The core (`lib/`) is strict: any failure exits 1.
  * `--methods` also runs the methods' examples, which are optional and reported without failing.
  * `--only` keeps examples whose module (`whitebox-engine/numerics/linalg`) or file (`packages/engine/src/lib/stats`)
- * starts with one of the prefixes.
+ * starts with one of the prefixes. `--coverage` also reports documentation coverage of the core (whitebox-meta/extract).
  */
 import { availableParallelism } from 'node:os'
 import { join } from 'node:path'
@@ -83,6 +83,16 @@ async function main(): Promise<void> {
   const { extractCatalogue } = await import('../packages/meta/src/extract/index.ts')
   const catalogue = extractCatalogue({ root: ROOT, packages: ['engine'] })
   const tExtract = performance.now() - t0
+  if (args.includes('--coverage')) {
+    const { coverageReport } = await import('../packages/meta/src/extract/index.ts')
+    const r = coverageReport(catalogue)
+    const counts = Object.entries(r.counts)
+      .map(([k, n]) => `${n} ${k}`)
+      .join(', ')
+    process.stdout.write(`coverage: ${r.complete} of ${r.symbols} core symbols complete; missing: ${counts}\n`)
+    for (const i of r.issues.slice(0, Number(option(args, '--coverage-list') ?? 0)))
+      process.stdout.write(`  ${i.file}:${i.line}  ${i.symbol}  ${i.problem}${i.detail === '' ? '' : ` ${i.detail}`}\n`)
+  }
   const only = option(args, '--only')
     ?.split(',')
     .filter((p) => p !== '')
