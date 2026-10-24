@@ -2427,6 +2427,14 @@
       "cases": 72
     },
     {
+      "fixture": "signal/image/features.json",
+      "source": "oracle/cases/signal/image/features.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 24
+    },
+    {
       "fixture": "signal/image/filters.json",
       "source": "oracle/cases/signal/image/filters.py",
       "reference": {
@@ -2434,6 +2442,24 @@
         "scikit-image": "0.26.0"
       },
       "cases": 57
+    },
+    {
+      "fixture": "signal/image/geometry.json",
+      "source": "oracle/cases/signal/image/geometry.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "signal/image/morphology.json",
+      "source": "oracle/cases/signal/image/morphology.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 38
     },
     {
       "fixture": "signal/lomb_scargle.json",
