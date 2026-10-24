@@ -517,25 +517,79 @@ For the mathematical foundations: exact expressions that can be simplified, diff
 integrated where a rule applies, typeset, and compiled into differentiable numeric functions. Every rewrite returns its
 steps, so a derivation can be shown step by step.
 
-oracle: sympy
-- `expr.ts`: `Expr` (numbers, rationals, symbols, sums, products, powers, function applications, piecewise), `sym`,
-  `num`, `rational`, operator helpers, `free`, `substitute`, structural equality.
-- `parse.ts`: `parse` (infix text to `Expr`), `parseLatex` for a useful subset.
-- `simplify.ts`: canonical ordering, `expand`, `collect`, `factor` (polynomials over the rationals), `together`,
-  `apart` (partial fractions), `trigSimplify`, `simplify` (rule-based with steps).
-- `polynomials.ts`: `Poly` (univariate and multivariate), degree, coefficients, division, gcd, `exactRoots` up to degree
-  four, Sturm sequences, resultants.
-- `differentiate.ts`: `diff`, partial derivatives, `gradient`, `jacobian`, `hessian`, implicit differentiation, all with
-  rule steps.
-- `series.ts`: Taylor and Maclaurin series, Laurent series at simple poles, Pade approximants, big-O handling.
-- `limits.ts`: `limit` (by series and l'Hopital's rule, with a numeric cross-check), one-sided limits.
-- `integrate.ts`: `integrate` (table, linearity, substitution, by parts, rational functions by partial fractions; returns
-  `unevaluated` otherwise), `definiteIntegral` with numeric fallback.
-- `solve.ts`: `solve` (linear, quadratic, polynomial and simple transcendental equations), `solveLinearSystem`.
-- `matrices.ts`: symbolic matrices: determinant, inverse, characteristic polynomial, eigenvalues for small sizes.
-- `latex.ts`: `toLatex`, `toText`, step lists as LaTeX alignments.
-- `compile.ts`: `compile(expr, symbols)` to a function over tensors and traced values (so a symbolic expression can be
-  plotted, differentiated numerically, vectorised and used as an objective).
+Expressions are immutable trees in SymPy's canonical form, built by constructors that evaluate as SymPy does on
+construction (flattened sums and products, combined coefficients, like terms collected, equal bases merged, exact
+rational arithmetic on bigints, perfect powers pulled out of radicals, special values of functions), so structural
+equality is a key comparison. Printing follows SymPy's term and factor order, so `toText` equals SymPy's `str()` and
+`toLatex` its `latex()` for the same expression. Each multi-step rewrite has a `...Steps` form returning a `Derivation`
+(result and `Step`s: rule, before, after).
+
+oracle: sympy (canonical forms, printed text and LaTeX, values at sample points), numpy and scipy (roots, Pade,
+lambdify values)
+- `expr.ts`: `Expr` (rationals, floats, symbols with assumptions, constants pi, E, I, oo, zoo, nan, sums, products,
+  powers, function applications, piecewise, relations, connectives, big-O, unevaluated derivatives and integrals),
+  `ExprLike`, `Step`, `Derivation`, `isExpr`, `asExpr`, `sym`, `symbols`, `num`, `rational`, operator helpers (`add`,
+  `sub`, `mul`, `div`, `pow`, `neg`, `sqrt`), the constants, `free`, `dependsOn`, `substitute`, structural `equals`.
+- `functions.ts`: function constructors with automatic evaluation: `fn` (any name; unknown names are undefined
+  functions), `exp`, `log` (with optional base), `root`, `abs`, `sign`, `floor`, `ceiling`, `factorial`, `gamma`,
+  `erf`, `re`, `im`.
+- `trigonometric.ts`: `sin`, `cos`, `tan`, `cot`, `sec`, `csc` (exact at rational multiples of pi with denominators 1, 2,
+  3, 4, 6, 12, reduced by symmetry and shifts of pi/2), their inverses, `atan2`, and the hyperbolic functions and
+  inverses.
+- `conditions.ts`: `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `and`, `or`, `not`, `piecewise` (evaluated to true or false for
+  numbers; negated relations flip).
+- `parse.ts`: `parse` (SymPy's text syntax with `^`, implicit multiplication and the printed forms `Piecewise`, `Eq`,
+  `O`, `Integral`, `Derivative`), `parseLatex` for a useful subset (`\frac`, `\sqrt[n]`, scripts, `\left( \right)`,
+  absolute values, Greek letters, named and `\operatorname` functions with powers, floor and ceiling, relations,
+  implicit products), `ParseOptions`.
+- `simplify.ts`: canonical ordering (`compareExprs`, SymPy's sort key), `countOps`, `expand` (multinomial, power_exp,
+  log rules under assumptions), `collect`, `factor` (over the rationals, any number of variables: Berlekamp-Zassenhaus
+  with Hensel lifting, Kronecker substitution for several variables), `together`, `cancel`, `apart` (partial fractions
+  by undetermined coefficients, symbols as parameters), `trigSimplify` (Fu-style search over Pythagorean, double-angle,
+  product-to-sum and tan rewrites, guarded numerically), `simplify` (best of the rewrites by operation count), with
+  `expandSteps`, `trigSimplifySteps`, `simplifySteps`, and `rewriteSteps` (any of the rewrites by name, `Rewrite`).
+- `polynomials.ts`: `Poly` (univariate and multivariate over the rationals, generators chosen automatically), `poly`,
+  `polyToExpr`, `degree`, `coefficients`, `leadingCoefficient`, `polyDiv`, `polyGcd`, `polyLcm`, `exactRoots` (factor
+  first, then radicals up to degree four and binomials of any degree; three real roots of a cubic in trigonometric
+  form), `Root`, `sturm`, `countRealRoots`, `realRootIntervals`, `resultant`, `discriminant`.
+- `differentiate.ts`: `diff` (orders and mixed partials; derivatives of every known function, undefined functions,
+  piecewise, Leibniz's rule for integrals), `diffSteps`, `gradient`, `jacobian`, `hessian`, `implicitDiff`,
+  `implicitDiffSteps`, `DiffSpec`.
+- `series.ts`: `series` (Taylor, Laurent at poles, at points and at infinity, log terms), `seriesSteps`, `taylor`,
+  `seriesCoefficients`, `residue`, `pade`, `bigO`, `removeO`, `Direction`. TODO: Puiseux series (fractional powers at
+  branch points) and expansions at essential singularities.
+- `limits.ts`: `limit` (direct substitution, series leading terms, continuity of composed functions, l'Hopital's rule
+  for 0/0, oo/oo and 0*oo, exp(lim g log f) for powers, with a numeric cross-check), one-sided and two-sided limits,
+  `limitSteps`, `LimitDirection`.
+- `integrate.ts`: `integrate` (linearity; table with linear arguments, Gaussians via erf, quadratic radicals; rational
+  functions by partial fractions with the reduction formula for repeated quadratics; powers and products of sines and
+  cosines; reduction formulas for tan, cot, sec, csc; tabular integration by parts for polynomials times exp, sin,
+  cos, sinh, cosh; derivative-divides substitution; integration by parts; every candidate verified by differentiation;
+  the search is bounded in attempts, depth and expression size, so any integrand returns within milliseconds;
+  returns an unevaluated `Integral` otherwise, term by term), `integrateSteps`,
+  `definiteIntegral` (limits of the antiderivative, checked against adaptive Gauss-Kronrod with a numeric fallback;
+  poles of rational integrands in the interval are an error), `definiteIntegralSteps`, `DefiniteOptions`. TODO: the
+  Risch algorithm; Rothstein-Trager for rational functions with irreducible denominators of degree above two;
+  antiderivatives in special functions other than erf (Ei, li, Si, Ci, erfi, Fresnel S and C, polylogarithms), so
+  for example exp(x/2)*log(x^2 + 1), sin(x)/x and exp(x^2) stay unevaluated.
+- `solve.ts`: `solve` (polynomials of any degree whose factors over the rationals have degree at most four, rational
+  equations, products, polynomials in exp(x) or another single function of x, invertible a*h(u) + b = 0 with SymPy's
+  principal solutions), `solveSteps`, `solveLinearSystem` (Gauss-Jordan over expressions, underdetermined systems in
+  terms of the free unknowns).
+- `matrices.ts`: `Matrix`, `matrix`, `identityMatrix`, `transpose`, `matMul`, `det` and `charpoly` (Berkowitz,
+  division-free), `inverse` (adjugate), `nullspace`, `eigenvals`, `eigenvects`, `Eigenvector`.
+- `latex.ts`: `toLatex` (expressions and matrices), `toText`, `stepsToLatex` (derivations as `aligned` blocks).
+- `compile.ts`: `compile(expr, symbols, options)` to a function over tensors and traced values built from tensor
+  primitives (so a symbolic expression can be plotted, differentiated by `grad`, vectorised and used as an objective;
+  erf, gamma and undefined functions take implementations through `options.functions`), `evaluate` (real),
+  `evaluateComplex`, `CompileOptions`, `TensorFunctions`, `NumericFunctions`.
+- Private: `_rational.ts` (bigint rationals, integer roots and factorisation), `_node.ts` (raw nodes and keys),
+  `_canon.ts` (the canonicalising constructors), `_assume.ts` (three-valued assumption queries), `_functions.ts`
+  (automatic evaluation of known functions), `_order.ts` (SymPy's sort keys and printing order), `_numeric.ts` (real
+  and complex evaluation, adaptive Gauss-Kronrod: numerics is a higher tier), `_measure.ts` (operation counts and
+  numeric equivalence), `_expand.ts`, `_rational-functions.ts` (together, cancel, apart), `_trigsimp.ts`, `_poly.ts`
+  (sparse polynomials, dense univariate helpers, generators), `_factor.ts`, `_series.ts` (truncated Laurent series
+  engine), `_integrals.ts` (tables, rational and trigonometric rules), `_latex-parse.ts`.
 
 ### 4.6 `autodiff/` (tier 3): differentiation transforms (jax, torch.func)
 
