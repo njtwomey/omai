@@ -10,8 +10,8 @@ export const quantileRegressor: HubEntry = defineEntry({
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'quantiles'],
   datasets: ['regression1d', 'regressionTabular'],
-  dataset: 'quantileCurves',
-  ...fitEstimator(quantileRegressorMethod(), { surface: true }),
+  dataset: 'linearOutliers',
+  ...fitEstimator(quantileRegressorMethod({ alpha: 0 }), { surface: true }),
   views: [
     { record: 'decisionSurface', title: 'Fitted function' },
     { record: 'coefficientTable', title: 'Coefficients', area: 'side' },

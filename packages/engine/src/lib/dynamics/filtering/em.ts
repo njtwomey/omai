@@ -150,9 +150,23 @@ export function emAlgorithm(
       const m = { ...s.model }
       const T = e.T
       if (learn.F) m.F = concrete(transpose(solve(e.S00, transpose(e.S10))))
-      if (learn.Q) m.Q = concrete(symmetricPart(mul(sub(e.S11, matmul(m.F, transpose(e.S10))), 1 / T)))
+      // The full forms (S11 - F S10^T - S10 F^T + F S00 F^T) / T and likewise for R: they reduce to the familiar
+      // (S11 - F S10^T) / T only when F (or H) is learned in the same step, so they stay right for fixed F or H.
+      const FS10 = matmul(m.F, transpose(e.S10))
+      if (learn.Q)
+        m.Q = concrete(
+          symmetricPart(
+            mul(add(sub(sub(e.S11, FS10), transpose(FS10)), matmul(m.F, matmul(e.S00, transpose(m.F)))), 1 / T),
+          ),
+        )
       if (learn.H) m.H = concrete(transpose(solve(e.S11, transpose(e.Szx))))
-      if (learn.R) m.R = concrete(symmetricPart(mul(sub(e.Szz, matmul(m.H, transpose(e.Szx))), 1 / T)))
+      const HSzx = matmul(m.H, transpose(e.Szx))
+      if (learn.R)
+        m.R = concrete(
+          symmetricPart(
+            mul(add(sub(sub(e.Szz, HSzx), transpose(HSzx)), matmul(m.H, matmul(e.S11, transpose(m.H)))), 1 / T),
+          ),
+        )
       if (learn.x0) m.x0 = concrete(e.x0)
       if (learn.P0) m.P0 = concrete(e.P0)
       const converged =

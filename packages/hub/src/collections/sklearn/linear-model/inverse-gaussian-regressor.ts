@@ -9,8 +9,12 @@ export const inverseGaussianRegressor: HubEntry = defineEntry({
   summary: 'A GLM for positive targets whose variance grows as the cube of the mean.',
   collection: 'sklearn/linear-model',
   tags: ['regression', 'glm'],
-  datasets: ['regressionTabular'],
-  ...fitEstimator(inverseGaussianRegressorMethod()),
-  views: [{ record: 'coefficientTable', title: 'Coefficients' }],
+  datasets: ['glm1d', 'regressionTabular'],
+  dataset: 'inverseGaussianResponses',
+  ...fitEstimator(inverseGaussianRegressorMethod({ alpha: 0 }), { surface: true }),
+  views: [
+    { record: 'decisionSurface', title: 'Fitted mean' },
+    { record: 'coefficientTable', title: 'Coefficients', area: 'side' },
+  ],
   methods: [{ file: 'methods/linear/glm.ts', name: 'inverseGaussianRegressor' }],
 })

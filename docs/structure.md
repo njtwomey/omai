@@ -2800,6 +2800,10 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
 - `SearchTrials` (every trial of a grid, random or Bayesian search with values and pruning decisions) and
   `LearningCurve`;
 - `EpisodeRecord` (per episode returns; per step state, action, reward and frame; value and policy snapshots).
+- `BoardSteps` (a search, solver or simulation played on a grid or a graph: per step every cell's category, its text
+  and a caption, with metrics per step; mazes and frontiers, game trees with pruned branches, CSP boards, itemset
+  lattices, cellular automata) and `PopulationSteps` (generations of a population: fitness, positions over the
+  objective's surface with the search distribution, or the best program's curve over its data).
   Methods return `{ ...result, exposition: Exposition[] }`; long-running ones also emit the records' steps as trace
   events, so views can play them.
 
@@ -2887,8 +2891,9 @@ exposition of the mathematics lives).
 
 **Dataset collections.** `lib/datasets/collections.ts` groups the generators and real datasets into themed lists
 for pickers: `classification2d`, `regression1d`, `clustering2d`, `density2d`, `anomaly2d`, `manifold3d`,
-`timeSeries`, `textCorpora` and `environments` (the rl environments by family), each entry with its name, its
-generator, the `Space` of its knobs with demo defaults, and the methods it suits. whitebox-render turns a collection
+`timeSeries`, `comparisons` (games and tournaments for rating systems), `textCorpora` and `environments` (the rl
+environments by family), each entry with its name, its generator, the `Space` of its knobs with demo defaults, and
+the methods it suits. whitebox-render turns a collection
 and a method's `hyperSpace` into a dataset picker and parameter controls (see `react/controls/`).
 
 **Phases** (first pass; later phases follow the same contract):
@@ -3201,8 +3206,9 @@ Each model is a probabilistic program plus the estimator users expect; its fast 
 `probprog/engines` or an inference routine in `pgm`.
 
 built from: `probprog`, `pgm`, `dists`, `learn`
-- `hmm.ts`: hidden Markov models (categorical, Gaussian and mixture emissions): the program, Baum-Welch through the EM
-  engine (traced), Viterbi, posterior states, sampling; the dishonest casino.
+- `hmm.ts`: hidden Markov models (`categoricalHMM`, `gaussianHMM`; mixture emissions later): Baum-Welch over the pgm
+  forward-backward (traced; through the EM engine on the program later), Viterbi, posterior states; the dishonest
+  casino (`dishonestCasino`, `casinoStudy`).
 - `crf.ts`: linear-chain CRF estimators on template features (`text/templates.ts`): marginals, Viterbi, scores,
   posterior paths, top features and transition weights. Training with CRF++'s and CRFsuite's algorithms: L-BFGS with
   L2 (CRF++ `-a CRF-L2`, `-c C`), OWL-QN with L1 (`CRF-L1`), SGD with an L2 schedule and with L1 by cumulative penalty
@@ -3213,8 +3219,10 @@ built from: `probprog`, `pgm`, `dists`, `learn`
 - `topic-extensions.ts`: pLSA, HDP, correlated and dynamic topic models.
 - `conjugate.ts`: conjugate models with closed-form posteriors and predictives (beta-binomial, gamma-Poisson,
   normal-normal, normal-gamma, Dirichlet-multinomial, normal-inverse-Wishart), and CAVI compared with the exact answer.
-- `rating.ts`: Elo (with the chess conventions), Glicko and Glicko-2, TrueSkill (EP on its factor graph) and TrueSkill
-  through time, Bradley-Terry, Plackett-Luce, Massey and Colley ratings.
+- `rating.ts`: `rateGames` over a `RatingSystem` (each game predicted, then rated; races split into pairs): Elo (with
+  the chess conventions), Glicko, TrueSkill for two players (the exact EP update, with draws), Bradley-Terry by MM;
+  later Glicko-2, TrueSkill on its factor graph for teams and races, TrueSkill through time, Plackett-Luce, Massey and
+  Colley ratings.
 - `irt.ts`: item response theory (1PL, 2PL, 3PL), learner models, item information.
 - `lattice.ts`: Ising and Potts lattices: exact on chains, belief propagation, Gibbs and Swendsen-Wang sampling,
   magnetisation curves.
@@ -3222,7 +3230,9 @@ built from: `probprog`, `pgm`, `dists`, `learn`
 - `regression.ts`: Bayesian linear, logistic, Poisson and robust regression as programs.
 - `bayesian-classifiers.ts`: Bayes point machines (EP), AdPredictor (online probit regression).
 - `state-space.ts`: Bayesian structural time series (local level, local linear trend, seasonal, regression).
-- `latent-gaussian.ts`: linear-Gaussian latent models (factor analysis, PPCA, Bayesian PCA, linear dynamical systems).
+- `latent-gaussian.ts`: linear-Gaussian latent models: `linearGaussianStateSpace` (local level and local linear trend,
+  noise variances by the Kalman EM of `dynamics`, smoothed and filtered levels); later factor analysis, PPCA and
+  Bayesian PCA as programs.
 
 ### 5.5 Causal inference and experimentation
 
@@ -3988,7 +3998,8 @@ Design rules:
   as a structure with split candidates and row counts), `stages.ts` (`EnsembleStages`, `PipelineStages`),
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
-  `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`.
+  `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
+  (`BoardSteps` and `PopulationSteps` as players).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile
@@ -4036,7 +4047,8 @@ Design rules:
 - `views/`: a React component per exposition view, one file per headless module (`paths.tsx`: `PathView`,
   `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
-  `stages.tsx`, `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`), each one figure in one
+  `stages.tsx`, `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
+  `BoardPlayer`, `PopulationPlayer`), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
 - `EnvView.tsx`: one consistent view of any environment's render, decorated, with room for controls.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
