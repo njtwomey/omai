@@ -3680,6 +3680,17 @@ wheels = [
 ]
 
 [[package]]
+name = "vmdpy"
+version = "0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/96/23fdc1b42a835e3c64bae636bd1b2249680c4c70bbb416f09e8a29a1d8d8/vmdpy-0.2-py2.py3-none-any.whl", hash = "sha256:331e3013dbc95beb564fe7ce70a0f95a09efb44d0ec56a28f61e9ab40fe16c1b", size = 6547, upload-time = "2020-08-11T22:08:45.708Z" },
+]
+
+[[package]]
 name = "whitebox-oracle"
 version = "0.1.0"
 source = { editable = "." }
@@ -3726,6 +3737,7 @@ oracle-core = [
     { name = "statsmodels" },
     { name = "stumpy" },
     { name = "sympy" },
+    { name = "vmdpy" },
 ]
 oracle-prob = [
     { name = "causal-learn" },
@@ -3790,6 +3802,7 @@ oracle-core = [
     { name = "statsmodels" },
     { name = "stumpy", specifier = ">=1.14.1" },
     { name = "sympy" },
+    { name = "vmdpy", specifier = ">=0.2" },
 ]
 oracle-prob = [
     { name = "causal-learn", specifier = ">=0.1.4.8" },

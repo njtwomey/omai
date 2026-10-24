@@ -1938,6 +1938,23 @@
       "cases": 5
     },
     {
+      "fixture": "signal/decompositions.json",
+      "source": "oracle/cases/signal/decompositions.py",
+      "reference": {
+        "vmdpy": "0.2",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "signal/filter_banks.json",
+      "source": "oracle/cases/signal/filter_banks.py",
+      "reference": {
+        "pywt": "1.8.0"
+      },
+      "cases": 10
+    },
+    {
       "fixture": "signal/filters/apply.json",
       "source": "oracle/cases/signal/filters/apply.py",
       "reference": {
@@ -2054,6 +2071,39 @@
         "librosa": "1.0.0"
       },
       "cases": 24
+    },
+    {
+      "fixture": "signal/wavelets/cwt.json",
+      "source": "oracle/cases/signal/wavelets/cwt.py",
+      "reference": {
+        "pywt": "1.8.0"
+      },
+      "cases": 32
+    },
+    {
+      "fixture": "signal/wavelets/denoise.json",
+      "source": "oracle/cases/signal/wavelets/denoise.py",
+      "reference": {
+        "pywt": "1.8.0",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "signal/wavelets/dwt.json",
+      "source": "oracle/cases/signal/wavelets/dwt.py",
+      "reference": {
+        "pywt": "1.8.0"
+      },
+      "cases": 81
+    },
+    {
+      "fixture": "signal/wavelets/swt.json",
+      "source": "oracle/cases/signal/wavelets/swt.py",
+      "reference": {
+        "pywt": "1.8.0"
+      },
+      "cases": 11
     },
     {
       "fixture": "signal/windows/cosine.json",

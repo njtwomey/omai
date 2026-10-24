@@ -42,6 +42,7 @@ oracle-core = [
     "padasip>=1.2.2",
     "mir-eval>=0.8.2",
     "astropy>=8.0.2",
+    "vmdpy>=0.2",
 ]
 oracle-torch = [
     "monai>=1.6.1",

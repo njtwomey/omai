@@ -70,6 +70,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/signal': () => import('whitebox-engine/signal'),
   'whitebox-engine/signal/filters': () => import('whitebox-engine/signal/filters'),
   'whitebox-engine/signal/image': () => import('whitebox-engine/signal/image'),
+  'whitebox-engine/signal/wavelets': () => import('whitebox-engine/signal/wavelets'),
   'whitebox-engine/signal/windows': () => import('whitebox-engine/signal/windows'),
   'whitebox-engine/space': () => import('whitebox-engine/space'),
   'whitebox-engine/systems': () => import('whitebox-engine/systems'),
