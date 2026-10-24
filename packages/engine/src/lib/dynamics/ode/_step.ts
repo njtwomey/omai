@@ -1,8 +1,8 @@
 // Machinery shared by the steppers: evaluation counting, scipy's initial-step heuristic and stepper bookkeeping.
 import { WhiteboxError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
-import type { SolveCounts, StepAttempt, StepperState, StepperStatus, VectorField } from './problem.ts'
 import { combine, numbersOf, rms, type Tol, tolAt } from './_vec.ts'
+import type { SolveCounts, StepAttempt, StepperState, StepperStatus, VectorField } from './problem.ts'
 
 /** Mutable evaluation counts private to one integration. */
 export interface Counter {
@@ -21,10 +21,17 @@ export function snapshot(c: Counter): SolveCounts {
   return { nfev: c.nfev, njev: c.njev, nlu: c.nlu }
 }
 
-/** The field with every evaluation counted (and its output checked for shape). */
-export function counted(f: VectorField, c: Counter, shape: readonly number[]): VectorField {
+/** The field with every evaluation counted into `c`. */
+export function tally(f: VectorField, c: Counter): VectorField {
   return (t, y) => {
     c.nfev += 1
+    return f(t, y)
+  }
+}
+
+/** The field with its output checked to have the state's shape. */
+export function checked(f: VectorField, shape: readonly number[]): VectorField {
+  return (t, y) => {
     const out = f(t, y)
     if (out.shape.length !== shape.length || out.shape.some((n, i) => n !== shape[i])) {
       throw new WhiteboxError('shape', `the vector field returned shape [${out.shape}] for a state of shape [${shape}]`)
@@ -89,7 +96,7 @@ export function initialState(
     tBound,
     direction,
     hAbs,
-    status: y0.shape.reduce((a, b) => a * b, 1) === 0 || t0 === tBound ? 'running' : 'running',
+    status: 'running',
     message: '',
     attempts: [],
     counts: snapshot(c),

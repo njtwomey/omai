@@ -27,7 +27,8 @@ export function combine(base: Value | null, terms: readonly Term[]): Value {
   if (first === undefined) throw new WhiteboxError('value', 'combine: nothing to combine')
   if (all.length === 0) return mul(first, 0)
   if (all.every((v) => isTensor(v))) {
-    const out = base === null ? new Float64Array((first as Tensor).data.length) : Float64Array.from((base as Tensor).data)
+    const out =
+      base === null ? new Float64Array((first as Tensor).data.length) : Float64Array.from((base as Tensor).data)
     for (const [c, v] of live) {
       const d = (v as Tensor).data
       for (let i = 0; i < out.length; i++) out[i] = (out[i] ?? 0) + c * (d[i] ?? 0)
@@ -109,7 +110,7 @@ export function nextAfter(x: number, toward: number): number {
   const buf = new DataView(new ArrayBuffer(8))
   buf.setFloat64(0, x)
   let bits = buf.getBigInt64(0)
-  bits += (toward > x) === (x > 0) ? 1n : -1n
+  bits += toward > x === x > 0 ? 1n : -1n
   buf.setBigInt64(0, bits)
   return buf.getFloat64(0)
 }

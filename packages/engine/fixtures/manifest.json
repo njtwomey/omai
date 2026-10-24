@@ -237,6 +237,15 @@
       "cases": 4
     },
     {
+      "fixture": "dynamics/ode/solve_ivp.json",
+      "source": "oracle/cases/dynamics/ode/solve_ivp.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 92
+    },
+    {
       "fixture": "foundations/calculus.json",
       "source": "oracle/cases/foundations/calculus.py",
       "reference": {
