@@ -1,6 +1,6 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { axes3d, label3d, point3d, polyline3d, scene3d, surface3d } from 'whitebox-engine/scene'
-import { Choice, ControlPanel, Scene3DView } from 'whitebox-render/react'
+import { Choice, ControlPanel, FigureFrame, Scene3DView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -50,11 +50,18 @@ export default function Orbit(): ReactNode {
     ])
   }, [shape])
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex w-fit max-w-full flex-col gap-3">
       <ControlPanel>
         <Choice label="scene" value={shape} onChange={setShape} options={['surface', 'helix', 'cloud']} />
       </ControlPanel>
-      <Scene3DView scene={s} key={shape} />
+      <FigureFrame
+        width={480}
+        height={360}
+        filename="three-d"
+        caption="Drag to orbit; double-click to return to the start."
+      >
+        <Scene3DView scene={s} key={shape} width={480} height={360} />
+      </FigureFrame>
     </div>
   )
 }

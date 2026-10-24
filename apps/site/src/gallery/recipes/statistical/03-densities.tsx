@@ -2,7 +2,7 @@ import { type ReactNode, useMemo, useState } from 'react'
 import { normal, studentT } from 'whitebox-engine/dists'
 import { densityChart } from 'whitebox-render/charts'
 import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, NumberField, useColourMode } from 'whitebox-render/react'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -34,7 +34,9 @@ export default function Densities(): ReactNode {
       <ControlPanel>
         <NumberField label="degrees of freedom ν" value={df} onChange={setDf} min={0.5} max={100} log />
       </ControlPanel>
-      <Chart option={option} figure={FIGURE} />
+      <FigureFrame figure={FIGURE} filename="densities">
+        <Chart option={option} />
+      </FigureFrame>
     </div>
   )
 }

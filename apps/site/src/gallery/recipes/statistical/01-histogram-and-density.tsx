@@ -2,7 +2,7 @@ import { type ReactNode, useMemo, useState } from 'react'
 import { normal as normalDist } from 'whitebox-engine/dists'
 import { key, normal } from 'whitebox-engine/random'
 import { cartesian, density, histogram, kde, rug } from 'whitebox-render/charts'
-import { Chart, Choice, ControlPanel, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
+import { Chart, ControlPanel, FigureFrame, NumberField, Select, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -36,7 +36,7 @@ export default function HistogramDensity(): ReactNode {
     <div className="flex flex-col gap-3">
       <ControlPanel columns={2}>
         <NumberField label="sample size" value={n} onChange={setN} min={10} max={5000} integer log />
-        <Choice label="bins" value={rule} options={rules} onChange={setRule} />
+        <Select label="bins" value={rule} options={rules} onChange={setRule} />
       </ControlPanel>
       <FigureFrame filename="histogram">
         <Chart option={option} />

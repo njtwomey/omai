@@ -52,7 +52,13 @@ export default function Automaton(): ReactNode {
       <ControlPanel>
         <Select label="input" value={input} onChange={setInput} options={INPUTS} />
       </ControlPanel>
-      <StructureView structure={dfa} overlay={overlay} details={false} width={460} />
+      <StructureView
+        structure={dfa}
+        overlay={overlay}
+        details={false}
+        width={460}
+        frame={{ filename: 'automaton', playback }}
+      />
       <Player
         controller={playback}
         stamp={() =>

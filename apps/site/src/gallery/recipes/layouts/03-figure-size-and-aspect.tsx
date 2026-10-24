@@ -6,7 +6,7 @@ import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Figure size and box aspect',
-  question: 'How big is a figure, and how do I change its shape?',
+  question: 'How do I set a figure’s size and shape?',
   explain:
     "A `figure()` has a default width and box aspect per medium (`page` 640 at 16:10, `blog`, `slide` 960 at 16:9), as a matplotlib figure does. Content never resizes it: only `width`, `aspect` (a number or `'2:1'`) or `height` do.",
 }

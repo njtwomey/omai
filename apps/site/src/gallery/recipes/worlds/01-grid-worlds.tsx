@@ -12,7 +12,7 @@ import {
   windyGridWorld,
 } from 'whitebox-engine/worlds'
 import { worldView } from 'whitebox-render/gym'
-import { Choice, ControlPanel, SceneView, Select, Toggle } from 'whitebox-render/react'
+import { Choice, ControlPanel, SceneFrame, Select, Toggle } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -68,7 +68,7 @@ export default function GridWorlds(): ReactNode {
         <Choice label="overlay" value={overlay} onChange={setOverlay} options={['none', 'distances', 'policy']} />
         <Toggle label="shade by closeness to the goal" value={shade} onChange={setShade} />
       </ControlPanel>
-      <SceneView scene={view} width={Math.min(view.width, 720)} />
+      <SceneFrame scene={view} filename="grid-world" />
     </div>
   )
 }

@@ -64,7 +64,7 @@ export default function GraphicalModels(): ReactNode {
       <ControlPanel>
         <Choice label="model" value={model} onChange={setModel} options={['mixture', 'factor graph']} />
       </ControlPanel>
-      <StructureView structure={model === 'mixture' ? mixture : factorGraph} />
+      <StructureView structure={model === 'mixture' ? mixture : factorGraph} frame={{ filename: 'graphical-model' }} />
     </div>
   )
 }
