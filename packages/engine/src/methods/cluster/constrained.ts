@@ -163,6 +163,14 @@ export function copKMeans(
               assignments: s.history.assignments,
               centres: s.history.centres,
               objective: s.history.objective,
+              ...(h.mustLink === undefined && h.cannotLink === undefined
+                ? {}
+                : {
+                    constraints: {
+                      ...(h.mustLink === undefined ? {} : { mustLink: h.mustLink }),
+                      ...(h.cannotLink === undefined ? {} : { cannotLink: h.cannotLink }),
+                    },
+                  }),
             }),
           ],
         }

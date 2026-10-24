@@ -18,6 +18,13 @@ export interface ClusteringSteps {
   readonly roles?: readonly ('core' | 'border' | 'noise')[]
   readonly reachability?: readonly number[]
   readonly ordering?: readonly number[]
+  /** Rows whose labels were given and held fixed (semi-supervised seeds). */
+  readonly seeds?: readonly number[]
+  /** Pairwise constraints (COP k-means): pairs that must share a cluster, and pairs that must not. */
+  readonly constraints?: {
+    readonly mustLink?: readonly (readonly [number, number])[]
+    readonly cannotLink?: readonly (readonly [number, number])[]
+  }
   /** The rows clustered (two coordinates each, with their names and any known classes), when the data is small. */
   readonly rows?: InputRows
 }

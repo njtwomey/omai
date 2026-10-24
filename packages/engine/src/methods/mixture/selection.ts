@@ -54,6 +54,7 @@ export function selectComponents(
       standardErrors: bic.map(() => 0),
       higherIsBetter: true,
       best,
+      scoreName: '−BIC',
     }),
   }
 }

@@ -46,6 +46,10 @@ export interface HyperparameterSurface {
   /** The points the optimiser visited, in order. */
   readonly path?: readonly (readonly [number, number])[]
   readonly logScale?: readonly [boolean, boolean]
+  /** What the values are ('log marginal likelihood', 'cross-validated accuracy'). */
+  readonly objective?: string
+  /** Whether higher values are better (default true: likelihoods and scores). */
+  readonly higherIsBetter?: boolean
 }
 
 /**

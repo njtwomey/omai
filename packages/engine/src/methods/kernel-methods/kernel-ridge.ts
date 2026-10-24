@@ -135,6 +135,8 @@ export function kernelRidge(
               standardErrors: ses,
               higherIsBetter: false,
               best: alphas[argminOf(means)] ?? h.alpha,
+              scoreName: 'leave-one-out squared error',
+              penalty: true,
             }),
           )
         }

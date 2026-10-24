@@ -321,6 +321,7 @@ export function bayesianRidge(
               values: ys.map((l) => xs.map((a) => logEvidence(e, a, l))),
               path,
               logScale: [true, true],
+              objective: 'log evidence',
             }),
           )
         }

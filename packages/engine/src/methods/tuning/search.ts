@@ -137,7 +137,7 @@ function shownValue(t: Trial): number {
   return t.intermediate.at(-1)?.value ?? Number.NaN
 }
 
-function trialsRecord(study: Study, sampler: string, higherIsBetter: boolean): SearchTrials {
+function trialsRecord(study: Study, sampler: string, higherIsBetter: boolean, scoreName: string): SearchTrials {
   const best = bestTrial(study)
   const parameters = study.space.kind === 'dict' ? Object.keys(study.space.spaces) : ['x']
   return searchTrials({
@@ -151,10 +151,17 @@ function trialsRecord(study: Study, sampler: string, higherIsBetter: boolean): S
     })),
     higherIsBetter,
     ...(best === undefined ? {} : { best: study.trials.indexOf(best) }),
+    scoreName,
   })
 }
 
-function surfaceRecord(study: Study, axes: readonly [string, string], size: number): HyperparameterSurface | undefined {
+function surfaceRecord(
+  study: Study,
+  axes: readonly [string, string],
+  size: number,
+  objective: string,
+  higherIsBetter: boolean,
+): HyperparameterSurface | undefined {
   if (study.trials.filter((t) => t.state === 'complete').length < 3) return undefined
   const c = contourData(study, axes[0], axes[1], { gridSize: size })
   return hyperparameterSurface({
@@ -164,11 +171,18 @@ function surfaceRecord(study: Study, axes: readonly [string, string], size: numb
     values: c.z,
     path: c.points.map((p) => [p.x, p.y] as const),
     logScale: [c.x.log, c.y.log],
+    objective,
+    higherIsBetter,
   })
 }
 
 /** For a one-parameter search: the mean score and its standard error at every value tried. */
-function curveRecord(study: Study, parameter: string, higherIsBetter: boolean): CrossValidationCurve | undefined {
+function curveRecord(
+  study: Study,
+  parameter: string,
+  higherIsBetter: boolean,
+  scoreName: string,
+): CrossValidationCurve | undefined {
   const rows = study.trials
     .filter((t) => t.state === 'complete')
     .map((t) => {
@@ -200,6 +214,7 @@ function curveRecord(study: Study, parameter: string, higherIsBetter: boolean): 
     ...(sameFolds ? { foldScores: rows.map((r) => r.folds) } : {}),
     higherIsBetter,
     best,
+    scoreName,
   })
 }
 
@@ -244,17 +259,30 @@ export function tuneEstimator(options: TuneEstimatorOptions): Explained<TuneEsti
     ...(options.response === undefined ? {} : { response: options.response }),
   })
   const higherIsBetter = objective.directions[0] === 'maximize'
+  // The score's name: the scoring asked for, else the estimator's default (accuracy or R²).
+  const kind = typeof options.estimator === 'function' ? undefined : options.estimator.kind
+  const scoreName =
+    typeof options.scoring === 'string'
+      ? options.scoring
+      : options.metric !== undefined || options.scoring !== undefined
+        ? 'score'
+        : kind === 'classifier'
+          ? 'accuracy'
+          : kind === 'regressor'
+            ? 'R²'
+            : 'score'
+  const cvName = `cross-validated ${scoreName}`
   const numeric = numericParameters(space)
   const axes: readonly [string, string] | undefined =
     options.surface ?? (numeric.length >= 2 ? [numeric[0] as string, numeric[1] as string] : undefined)
   const size = options.surfaceSize ?? 20
   const explain = (study: Study): Exposition[] => {
-    const out: Exposition[] = [trialsRecord(study, sampler.name, higherIsBetter)]
-    const surface = axes === undefined ? undefined : surfaceRecord(study, axes, size)
+    const out: Exposition[] = [trialsRecord(study, sampler.name, higherIsBetter, cvName)]
+    const surface = axes === undefined ? undefined : surfaceRecord(study, axes, size, cvName, higherIsBetter)
     if (surface !== undefined) out.push(surface)
     const dims = space.kind === 'dict' ? Object.keys(space.spaces) : []
     if (dims.length === 1 && numeric.length === 1) {
-      const curve = curveRecord(study, numeric[0] as string, higherIsBetter)
+      const curve = curveRecord(study, numeric[0] as string, higherIsBetter, cvName)
       if (curve !== undefined) out.push(curve)
     }
     out.push(historyRecord(study))

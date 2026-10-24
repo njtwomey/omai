@@ -180,6 +180,48 @@ export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptio
         }
         main.push(points(sets, { mode }))
       }
+      // Constraints (COP k-means): must-link pairs joined by solid lines, cannot-link pairs by dashed ones.
+      const pairLines = (
+        pairs: readonly (readonly [number, number])[] | undefined,
+        dash: boolean,
+      ): Curve | undefined =>
+        pairs === undefined || pairs.length === 0
+          ? undefined
+          : {
+              x: pairs.flatMap(([i, j]) => [drawn[i]?.[columns[0]] ?? 0, drawn[j]?.[columns[0]] ?? 0, Number.NaN]),
+              y: pairs.flatMap(([i, j]) => [drawn[i]?.[columns[1]] ?? 0, drawn[j]?.[columns[1]] ?? 0, Number.NaN]),
+              name: dash ? 'cannot link' : 'must link',
+              colour: dash ? 'danger' : 'fg',
+              width: 1.2,
+              ...(dash ? { dash: 'dashed' as const } : {}),
+            }
+      const links = [
+        pairLines(steps.constraints?.mustLink, false),
+        pairLines(steps.constraints?.cannotLink, true),
+      ].filter((c): c is Curve => c !== undefined)
+      if (links.length > 0) main.push(lines(links, { mode }))
+      // Seeds (semi-supervised): the rows whose labels were given, ringed.
+      const seeds = steps.seeds
+      if (seeds !== undefined && seeds.length > 0)
+        main.push(
+          outlined(
+            points(
+              [
+                {
+                  x: seeds.map((i) => drawn[i]?.[columns[0]] ?? 0),
+                  y: seeds.map((i) => drawn[i]?.[columns[1]] ?? 0),
+                  name: 'labelled',
+                  colour: 'none',
+                  size: 13,
+                  outline: false,
+                },
+              ],
+              { mode },
+            ),
+            mode,
+            1.6,
+          ),
+        )
       const centres = steps.centres
       if (centres !== undefined) {
         const k = centres[t]?.length ?? 0
@@ -694,6 +736,8 @@ export interface EmbeddingViewOptions extends ViewOptions {
  */
 export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOptions = {}): ViewFrames {
   const count = steps.positions.length
+  // An objective worth a curve: more than one value (LLE and Isomap record one).
+  const objective = steps.objective !== undefined && steps.objective.length > 1 ? steps.objective : undefined
   // Colour by the labels or values given, else by the record's own colouring.
   const own = options.labels === undefined && options.values === undefined ? steps.colourBy : undefined
   const values = options.values ?? (own?.kind === 'values' ? own.values : undefined)
@@ -705,7 +749,7 @@ export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOpt
     typeof names[c] === 'string' ? String(names[c]) : (classNames?.[c] ?? undefined)
   // A legend of classes sits above the panel, out of the points' way.
   const fig = viewFigure(options, {
-    aspect: steps.objective === undefined ? 1.25 : 1.75,
+    aspect: objective === undefined ? 1.25 : 1.75,
     ...(labels === undefined ? {} : { padding: { top: 40 } }),
   })
   const mode = fig.mode
@@ -753,8 +797,7 @@ export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOpt
       layers: main,
       options: { x: { label: 'dimension 1' }, y: { label: 'dimension 2' }, aspect: 'equal' },
     }
-    if (steps.objective === undefined)
-      return cartesian(embed.layers, { ...embed.options, figure: fig, mode, legend: false })
+    if (objective === undefined) return cartesian(embed.layers, { ...embed.options, figure: fig, mode, legend: false })
     const grid = gridSpec(1, 2, {
       widthRatios: [1.5, 1],
       // Room for the colour bar between the panels.
@@ -766,7 +809,7 @@ export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOpt
     })
     return subplots(
       grid,
-      { main: embed, objective: progressPanel(steps.objective, t, 'objective', mode, steps.iterations) },
+      { main: embed, objective: progressPanel(objective, t, 'objective', mode, steps.iterations) },
       { figure: fig },
     )
   }

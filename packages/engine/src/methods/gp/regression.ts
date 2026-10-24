@@ -270,6 +270,7 @@ export function gaussianProcessRegressor(hyper: Partial<GprHyper> = {}): Explain
               values,
               path,
               logScale: [true, true],
+              objective: 'log marginal likelihood',
             }),
           )
         }

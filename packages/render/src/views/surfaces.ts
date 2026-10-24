@@ -15,7 +15,7 @@ import type { DataAspect } from '../figure/aspect.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { formatNumber } from '../theme/format.ts'
 import type { ColourMode } from '../theme/tokens.ts'
-import { outlined, short, type ViewFrames, type ViewOptions, viewFigure, viewMode } from './_view.ts'
+import { outlined, short, spanOf, type ViewFrames, type ViewOptions, viewFigure, viewMode } from './_view.ts'
 
 /** Rows of input data: `rows[i]` is row i's features. */
 export type Rows = readonly (readonly number[])[]
@@ -150,7 +150,16 @@ export function decisionSurfaceLayers(
             name: classes?.[c] ?? `class ${c}`,
             colour: `tab${c % 10}`,
           }))
-        : [{ x, y: surface.values?.[0] ?? surface.labels?.[0] ?? [], name: 'prediction', colour: 'tab0' }]
+        : [
+            {
+              x,
+              y: surface.values?.[0] ?? surface.labels?.[0] ?? [],
+              name: surface.field?.name ?? 'prediction',
+              colour: 'tab0',
+              // A piecewise-constant field (a histogram's bins) is drawn flat between its points.
+              ...(surface.field?.smooth === false ? { step: 'middle' as const } : {}),
+            },
+          ]
     layers.push(lines(curves, { mode }))
     if (rows !== undefined) {
       // Rows at their targets when the record has them (regressors), along zero otherwise.
@@ -162,7 +171,7 @@ export function decisionSurfaceLayers(
     return {
       layers,
       x: xAxis,
-      y: { label: surface.probabilities !== undefined ? 'probability' : 'prediction' },
+      y: { label: surface.probabilities !== undefined ? 'probability' : (surface.field?.name ?? 'prediction') },
     }
   }
   // A binary decision function f (an SVM's margin, a linear model's log-odds): older records kept it in `values`.
@@ -213,8 +222,22 @@ export function decisionSurfaceLayers(
         )
     }
   } else if (surface.values !== undefined) {
-    layers.push(heatmap(surface.values, { x, y, mode, colourBar: true, label: 'prediction' }))
-    layers.push(contours(surface.values, { x, y, levels: 6, colour: 'fg', width: 0.7, opacity: 0.55, mode }))
+    const smooth = surface.field?.smooth !== false
+    // A non-negative field (a density) is coloured from zero, not from its tiniest tail value.
+    const [lo, hi] = spanOf(surface.values.flat())
+    layers.push(
+      heatmap(surface.values, {
+        x,
+        y,
+        mode,
+        colourBar: true,
+        ...(lo >= 0 && hi > 0 ? { range: [0, hi] as [number, number] } : {}),
+        label: surface.field?.name ?? 'prediction',
+        ...(smooth ? {} : { smooth: 'cells' as const }),
+      }),
+    )
+    if (smooth)
+      layers.push(contours(surface.values, { x, y, levels: 6, colour: 'fg', width: 0.7, opacity: 0.55, mode }))
   }
   if (rows !== undefined) {
     layers.push(
@@ -548,9 +571,13 @@ export function hyperparameterSurfaceView(
     .flat()
     .filter(Number.isFinite)
     .sort((a, b) => a - b)
-  const top = finite[finite.length - 1] ?? 1
-  const low = finite[Math.floor(0.25 * (finite.length - 1))] ?? 0
-  const clipped = surface.values.map((row) => row.map((v) => (Number.isFinite(v) ? Math.max(v, low) : Number.NaN)))
+  // The colours span the better three quarters of the values: the upper ones, or the lower for a loss.
+  const higher = surface.higherIsBetter !== false
+  const top = higher ? (finite[finite.length - 1] ?? 1) : (finite[Math.ceil(0.75 * (finite.length - 1))] ?? 1)
+  const low = higher ? (finite[Math.floor(0.25 * (finite.length - 1))] ?? 0) : (finite[0] ?? 0)
+  const clipped = surface.values.map((row) =>
+    row.map((v) => (Number.isFinite(v) ? Math.min(Math.max(v, low), top) : Number.NaN)),
+  )
   const layers: Layer[] = [
     heatmap(clipped, { x: xs, y: ys, mode, range: [low, top] }),
     contours(clipped, { x: xs, y: ys, levels: 8, colour: 'fg', width: 0.7, opacity: 0.5, labels: false, mode }),
@@ -600,7 +627,7 @@ export function hyperparameterSurfaceView(
   return cartesian(layers, {
     figure: fig,
     mode,
-    title: options.label ?? 'objective',
+    title: options.label ?? surface.objective ?? 'objective',
     x: { label: surface.parameters[0], limits: [xs[0] ?? 0, xs[xs.length - 1] ?? 1], ...(lx ? { format: power } : {}) },
     y: { label: surface.parameters[1], limits: [ys[0] ?? 0, ys[ys.length - 1] ?? 1], ...(ly ? { format: power } : {}) },
     legend: false,

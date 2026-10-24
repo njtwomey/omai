@@ -346,7 +346,7 @@ export interface SearchViewOptions extends ViewOptions {
 export function searchTrialsView(record: SearchTrials, options: SearchViewOptions = {}): EChartsOption {
   const fig = viewFigure(options, { aspect: 2 })
   const mode = fig.mode
-  const label = options.label ?? 'objective'
+  const label = options.label ?? record.scoreName ?? 'objective'
   const trials = record.trials
   const better = (a: number, b: number): boolean => (record.higherIsBetter ? a > b : a < b)
   let incumbent = Number.NaN

@@ -171,7 +171,10 @@ export function regularisationPathView(path: RegularisationPath, options: PathVi
 export interface CrossValidationViewOptions extends ViewOptions {
   /** A parameter value to mark (a control's value). */
   readonly selected?: number
-  /** Reverse the parameter axis (to match a regularisation path, whose penalty decreases to the right). */
+  /**
+   * Reverse the parameter axis (to match a regularisation path, whose penalty decreases to the right); default the
+   * record's `penalty`.
+   */
   readonly inverse?: boolean
   /** The y axis label (default 'validation score', or 'validation error' when lower is better). */
   readonly scoreLabel?: string
@@ -246,9 +249,12 @@ export function crossValidationPanel(curve: CrossValidationCurve, options: Cross
         label: curve.parameter,
         scale: log ? 'log' : 'linear',
         limits: limitsOf(v, log),
-        inverse: options.inverse === true,
+        inverse: options.inverse ?? curve.penalty === true,
       },
-      y: { label: options.scoreLabel ?? (curve.higherIsBetter ? 'validation score' : 'validation error') },
+      y: {
+        label:
+          options.scoreLabel ?? curve.scoreName ?? (curve.higherIsBetter ? 'validation score' : 'validation error'),
+      },
     },
   }
 }
@@ -309,8 +315,14 @@ export function learningCurvePanel(curve: LearningCurve, options: ViewOptions = 
   layers.push(
     lines(
       [
-        { x: curve.sizes, y: curve.train, name: 'train', colour: 'tab0', markers: true },
-        { x: curve.sizes, y: curve.validation, name: 'validation', colour: 'tab1', markers: true },
+        { x: curve.sizes, y: curve.train, name: curve.labels?.train ?? 'train', colour: 'tab0', markers: true },
+        {
+          x: curve.sizes,
+          y: curve.validation,
+          name: curve.labels?.validation ?? 'validation',
+          colour: 'tab1',
+          markers: true,
+        },
       ],
       { mode },
     ),

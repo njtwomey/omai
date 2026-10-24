@@ -16,6 +16,8 @@ export interface SearchTrials {
   }[]
   readonly higherIsBetter: boolean
   readonly best?: number
+  /** What the values are ('accuracy', 'neg_mean_squared_error'). */
+  readonly scoreName?: string
 }
 
 /**

@@ -203,7 +203,7 @@ export function cvPath(data: LearnData, options: CvPathOptions = {}): CvPath {
     })
   })
   const mse = alphas.map((_, i) => perFold.map((f) => f[i] ?? Number.NaN))
-  const curve = curveOf('alpha', alphas, mse, false)
+  const curve = curveOf('alpha', alphas, mse, false, { scoreName: 'mean squared error', penalty: true })
   return {
     alphas,
     mse,
@@ -222,6 +222,7 @@ export function cvPath(data: LearnData, options: CvPathOptions = {}): CvPath {
  * @param values - Its values.
  * @param scores - scores[i][f]: value i on fold f.
  * @param higherIsBetter - The score's direction.
+ * @param names - What the scores are, and whether the parameter is a penalty.
  * @returns The curve.
  */
 export function curveOf(
@@ -229,6 +230,7 @@ export function curveOf(
   values: readonly number[],
   scores: readonly (readonly number[])[],
   higherIsBetter: boolean,
+  names: { readonly scoreName?: string; readonly penalty?: boolean } = {},
 ): CrossValidationCurve {
   const means = scores.map((s) => s.reduce((a, b) => a + b, 0) / Math.max(s.length, 1))
   const ses = scores.map((s, i) => {
@@ -260,5 +262,6 @@ export function curveOf(
     higherIsBetter,
     best: values[bestIndex] ?? 0,
     oneStandardError: values[one] ?? 0,
+    ...names,
   })
 }

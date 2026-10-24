@@ -331,6 +331,7 @@ export function gaussianProcessClassifier(hyper: Partial<GpcHyper> = {}): Explai
               values,
               ...(paths[0] === undefined ? {} : { path: paths[0] }),
               logScale: [true, true],
+              objective: 'approximate log marginal likelihood',
             }),
           )
         }

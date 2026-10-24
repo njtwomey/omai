@@ -83,6 +83,10 @@ export interface CrossValidationCurve {
   readonly higherIsBetter: boolean
   readonly best?: number
   readonly oneStandardError?: number
+  /** What the scores are ('mean squared error', 'accuracy', 'held-out log likelihood'). */
+  readonly scoreName?: string
+  /** Whether the parameter is a penalty strength, drawn decreasing to the right as on its regularisation path. */
+  readonly penalty?: boolean
 }
 
 /**

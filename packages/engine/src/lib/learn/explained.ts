@@ -342,6 +342,8 @@ export interface DecisionSurfaceOptions {
   readonly rowsLimit?: number
   /** Levels of a binary decision function to mark besides 0 (an SVM's margins, -1 and 1). */
   readonly levels?: readonly number[]
+  /** What the values are and whether they vary smoothly (a histogram's do not). */
+  readonly field?: { readonly name: string; readonly smooth?: boolean }
   /** The model at recorded steps of training, to record the surface at each. */
   readonly steps?: SurfaceStepsInput
   /** What a step is ('SMO step', 'IRLS iteration', 'epoch', 'stage'). */
@@ -534,6 +536,8 @@ export function decisionSurfaceOf(
   }
   const fieldsOf = (model: Fitted): SurfaceFields => {
     const predicted = toFlat((model.predict as (x: TensorLike) => Tensor)(input))
+    // A clusterer's predictions are cluster indices: regions, not a continuous field.
+    if (model.kind === 'clusterer') return { labels: reshape(predicted.map((v) => Math.max(0, Math.round(v)))) }
     if (!classifier) return { values: reshape(predicted) }
     const index = new Map(classes.map((c, i) => [c, i]))
     const labels = reshape(predicted.map((v) => index.get(v) ?? 0))
@@ -589,7 +593,9 @@ export function decisionSurfaceOf(
     y: gy,
     ...fieldsOf(fitted),
     ...(classifier ? { classes: options.classNames ?? classes.map(String) } : {}),
+    ...(fitted.kind === 'clusterer' && options.classNames !== undefined ? { classes: options.classNames } : {}),
     ...(options.levels === undefined ? {} : { levels: options.levels }),
+    ...(options.field === undefined ? {} : { field: options.field }),
     ...(rows === undefined ? {} : { rows }),
     ...(steps === undefined ? {} : { steps }),
     ...(options.stepName === undefined ? {} : { stepName: options.stepName }),
