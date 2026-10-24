@@ -831,43 +831,89 @@ are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `M
 ### 4.12 `foundations/` (tier 6): mathematical foundations
 
 The mathematics underneath machine learning, written so each idea can be computed, drawn and stepped through.
-Functions that teach a procedure (elimination, Euclid's algorithm, Newton's method) return their steps.
+Functions that teach a procedure (elimination, Euclid's algorithm, Newton's method) return their steps. Geometry and
+calculus on values are built from tensor operations (vectorised, differentiable, checked by `checkPrimitive`);
+procedures on small exact data take plain numbers, and exact counts are BigInts. Figures come out as point data,
+`Scene`/`Scene3D` nodes or `Pixels`.
 
-oracle: sympy, numpy
-- `trigonometry.ts`: degrees and radians, unit-circle points, quadrant-aware inverse functions, identity checks, triangle
-  solving (SSS, SAS, ASA, AAS and the ambiguous SSA case), laws of sines and cosines, Heron's formula.
-- `vectors.ts`: 2-D and 3-D vector algebra (dot, cross and triple products, projections, rejections, angles,
-  orthonormalisation), lines and planes (distances, intersections), linear independence and span tests.
-- `rotations.ts`: 2-D rotations, 3-D rotation matrices, axis-angle, Euler angles (all conventions, gimbal lock),
-  quaternions (product, conjugate, rotation, `slerp`, conversions), rotation averaging.
-- `coordinates.ts`: polar, cylindrical, spherical and homogeneous coordinates, barycentric coordinates, change of basis,
-  Jacobian determinants of coordinate maps.
-- `curves.ts`: parametric and implicit curves, arc length, curvature, torsion, the Frenet-Serret frame, osculating
-  circles, evolutes, conic sections (from equations: type, foci, eccentricity), Bezier curves (de Casteljau).
-- `surfaces.ts`: parametric surfaces, normals, tangent planes, first and second fundamental forms, Gaussian and mean
-  curvature, principal directions, surfaces of revolution, numerical geodesics.
-- `calculus.ts`: numerical limits, difference quotients, Riemann sums (left, right, midpoint, trapezoid), the
-  fundamental theorem, Taylor polynomials and their remainder bounds (through Taylor-mode autodiff or `symbolic`),
-  Newton's method with steps, critical points and the second-derivative test, the mean value theorem.
-- `multivariable.ts`: gradients, directional derivatives, Jacobians and Hessians with their geometry (tangent planes,
-  quadratic approximations), Lagrange multipliers for small problems, line and surface integrals, Green's and Stokes'
-  theorems checked numerically.
-- `series.ts`: sequences and partial sums, convergence tests, radius of convergence, Fourier series partial sums (and
-  the Gibbs phenomenon), generating functions.
-- `linear-algebra.ts`: step-by-step procedures: Gaussian elimination and row-reduced echelon form, LU with steps,
-  determinants by cofactors and by elimination, rank, null space, column space, bases, change of basis, projections,
-  least squares as projection, 2-D and 3-D linear maps as grid transformations, eigenvectors of small matrices,
-  diagonalisation, quadratic forms, the geometry of the SVD.
-- `number-theory.ts`: gcd and extended Euclid with steps, modular arithmetic (inverse, exponentiation), primes (sieve,
-  Miller-Rabin), factorisation (trial division, Pollard rho), Euler's totient, the Chinese remainder theorem,
-  continued fractions, Fibonacci and Lucas numbers.
-- `combinatorics.ts`: factorials, binomial and multinomial coefficients, permutations and combinations (enumeration and
-  ranking), derangements, Stirling, Bell and Catalan numbers, integer partitions, inclusion-exclusion, Pascal's
-  triangle.
-- `complex.ts`: complex scalars (arithmetic, polar form, roots of unity), complex functions on grids (domain colouring
-  data), Mobius transformations, conformal maps, numerical contour integrals and residues.
-- `probability.ts`: finite probability spaces, events, conditional probability and Bayes' rule calculators,
-  independence, expectations of discrete variables, transformations of random variables, sums by convolution.
+oracle: sympy, numpy, scipy (and scipy.spatial.transform, sympy.geometry, sympy.stats, sympy.ntheory)
+- `trigonometry.ts`: `degrees`, `radians`, `wrapAngle`, `unitCirclePoint`, `quadrant`, `referenceAngle`; quadrant-aware
+  inverses (`directionAngle`, `inverseInQuadrant`, `trigSolutions` over an interval); `trigIdentities` (Pythagorean,
+  double, half and triple angle, sum and difference, product to sum) and `checkIdentity` (grid evidence or a
+  counterexample); `triangleCase` and `solveTriangle` (SSS, SAS, ASA, AAS and the ambiguous SSA case with 0, 1 or 2
+  triangles, vertices for drawing); `lawOfSines`, `lawOfCosines`, `lawOfCosinesAngle`, `heronArea` (Kahan's stable form).
+- `vectors.ts`: `dotProduct`, `crossProduct` (3-D, and the 2-D scalar), `tripleProduct`, `vectorTripleProduct`,
+  `magnitude`, `unitVector`, `projection`, `scalarProjection`, `rejection`, `angleBetween` (Kahan's atan2 form),
+  `orthonormalise` (MGS with reorthogonalisation, dropping dependent vectors), `isLinearlyIndependent`,
+  `spanDimension`, `inSpan`, `linearCombination`; lines and planes (`lineThrough`, `planeThrough`,
+  `planeFromEquation`, `planeEquation`, `pointLineDistance`, `pointPlaneDistance`, `closestPoints` (skew lines),
+  `lineIntersection`, `linePlaneIntersection`, `planeIntersection`).
+- `rotations.ts`: `rotation2d`, `rotate2d`, `elementaryRotation`, `isRotationMatrix`; axis-angle (`axisAngleToMatrix`,
+  Rodrigues' `rotateAboutAxis`, `matrixToAxisAngle`); Euler angles (`eulerSequences`: all 24 conventions,
+  `eulerToMatrix`, `matrixToEuler`, `gimbalLock` with the surviving outer-angle combination); quaternions
+  (`quatMultiply`, `quatConjugate`, `quatInverse`, `quatNormalize`, `quatFromAxisAngle`, `quatToAxisAngle`,
+  `quatToMatrix`, `matrixToQuat`, `quatRotate`, `quatSlerp`, `rotationDistance`); rotation averaging (`meanRotation`,
+  the chordal mean of scipy's `Rotation.mean`, and `karcherMean`, the geodesic mean). Number-level conversions reuse
+  `numerics/geometry/transforms.ts`.
+- `coordinates.ts`: polar, cylindrical, spherical (physics convention) and geographic coordinates both ways;
+  homogeneous coordinates (`toHomogeneous`, `fromHomogeneous`, `homogeneousMatrix`, `applyHomogeneous`); barycentric
+  coordinates in any simplex (`barycentric`, `fromBarycentric`); change of basis (`coordinatesInBasis`,
+  `changeOfBasis`, `matrixInBasis`, also the home of linear-algebra.ts's change of basis); Jacobians and Jacobian
+  determinants of named or user coordinate maps by autodiff.
+- `curves.ts`: parametric curves (`curveDerivatives` by nested forward mode, `sampleCurve`, `curveSpeed`, `arcLength`,
+  `cumulativeArcLength`, `curvature` (signed in 2-D), `torsion`, `frenetFrame`, `osculatingCircle`, `evolute`);
+  implicit curves (`traceImplicitCurve` by marching squares, `implicitCurveGeometry`); conic sections from the general
+  equation (`classifyConic`: type including degenerate cases, centre, semi-axes, axis angle, vertices, foci,
+  eccentricity, directrices; `conicPoints` for drawing); Bezier curves (`bernstein`, `deCasteljau` with its levels,
+  `bezier`, `bezierSplit`, `bezierDerivative`, `bezierElevate`).
+- `surfaces.ts`: parametric surfaces (`surfaceDerivatives`, `sphere`, `torus`, `graphSurface`, `surfaceOfRevolution`),
+  `surfaceNormal`, `tangentPlane`, `firstFundamentalForm`, `secondFundamentalForm`, `gaussianCurvature`,
+  `meanCurvature`, `principalCurvatures` (with directions), `surfaceArea`, `christoffelSymbols`, `geodesic` (RK4 on the
+  geodesic equations), `surfaceFaces` (scene faces, optionally coloured by a function of the parameters).
+- `calculus.ts`: `derivatives` (Taylor mode), `limit` (one- and two-sided, at infinity; Richardson-extrapolated, with the
+  raw sequence), `differenceQuotient`, `secantTable`, `riemannSum` (left, right, midpoint, trapezoid, with the pieces),
+  `fundamentalTheorem`, `definiteIntegral`, `taylorApproximation` (coefficients through Taylor-mode autodiff and the
+  Lagrange remainder bound), `newtonSteps`, `tangentLine`, `secondDerivativeTest`, `criticalPoints`,
+  `meanValuePoints`. TODO: exact Taylor coefficients and remainders through `symbolic` once it lands (built against
+  Taylor-mode autodiff for now).
+- `multivariable.ts`: `gradientAt`, `directionalDerivative`, `jacobianAt`, `hessianAt` (vectorised over points, forward
+  mode), `quadraticApproximation` (linear and quadratic models), `graphTangentPlane`, `classifyCriticalPoint`,
+  `lagrangeMultipliers` (Newton on the stationarity system), `divergence`, `curl`, line integrals
+  (`scalarLineIntegral`, `vectorLineIntegral`, `planeFlux`), surface integrals (`scalarSurfaceIntegral`,
+  `surfaceFlux`), and the theorems checked numerically (`greensTheorem`, `stokesTheorem`, `divergenceTheorem`).
+- `series.ts`: `sequenceTerms`, `partialSums` (compensated), `seriesSum` (Wynn's epsilon, or Richardson in 1/N for
+  logarithmic convergence); convergence tests with their evidence (`nthTermTest`, `ratioTest`, `rootTest`,
+  `integralTest`, `pSeriesTest`, `limitComparisonTest`, `alternatingSeriesTest`), `radiusOfConvergence`; Fourier
+  series (`fourierCoefficients`, `fourierPartialSum`, `squareWaveCoefficients`, `gibbsOvershoot`); generating functions
+  (`rationalSeries`, `seriesProduct`, `linearRecurrence`, `recurrenceGeneratingFunction`).
+- `linear-algebra.ts`: step-by-step procedures: `rowEchelon` and `rref` (every row operation), `solveByElimination`
+  (general solution), `luSteps`, `detByCofactors`, `detByElimination`, `fundamentalSubspaces` (rank, nullity, null,
+  column, row and left null spaces), `basisFromVectors`, `projectionMatrix`, `leastSquaresProjection` (with the normal
+  equations), `gridTransformation`, `linearMapScene` and `linearMapScene3d` (2-D and 3-D maps as grid pictures),
+  `characteristicPolynomial` (Faddeev-LeVerrier), `smallEigen` (multiplicities and eigenspaces), `diagonalise`,
+  `quadraticForm`, `classifyQuadraticForm`, `principalAxes`, `svdGeometry` (circle, V^T, Sigma, U stages). Change of
+  basis lives in `coordinates.ts`.
+- `number-theory.ts`: `euclid`, `gcd`, `lcm`, `extendedEuclid` (the Bezout table), `modulo`, `modInverse`, `modPow`
+  (square and multiply, BigInt-exact), `sieve` (with smallest factors), `millerRabin` (with its rounds; deterministic
+  for safe integers), `isPrime`, `trialDivision`, `pollardRho` (with its walk), `factorise`, `eulerPhi`, `divisors`,
+  `chineseRemainder` (non-coprime moduli too), `continuedFractionExpansion`, `convergents`, `fibonacci` and `lucas`
+  (fast doubling, BigInt).
+- `combinatorics.ts`: `factorialExact`, `binomialExact`, `multinomialExact`, `permutations`, `combinations`,
+  `permutationRank`/`permutationUnrank` (Lehmer codes), `combinationRank`/`combinationUnrank`, `derangements`,
+  `stirling1` (signed or not), `stirling2`, `bell`, `catalan`, `partitionCount` (pentagonal recurrence),
+  `integerPartitions`, `inclusionExclusion` (with Bonferroni partial sums), `pascalTriangle` (optionally modulo m).
+- `complex.ts`: on complex pairs (`tensor/complex.ts` supplies the arithmetic): `toPolarForm`, `complexLog`,
+  `complexPow`, `complexSqrt`, `complexSin`, `complexCos`, `nthRoots`, `rootsOfUnity`; complex functions on grids
+  (`complexGrid`, `domainColouring` as scene `Pixels`); Mobius transformations (`mobius`, `mobiusApply`,
+  `mobiusCompose`, `mobiusInverse`, `mobiusFixedPoints`, `classifyMobius`, `mobiusFromPoints`); conformal maps
+  (`conformalMaps`, `conformalGrid`, `cauchyRiemann`); contour integrals and residues (`circleContour`,
+  `contourIntegral`, `residueAt`, `laurentCoefficient`, `windingNumber`, `argumentPrinciple`).
+- `probability.ts`: finite spaces (`probabilitySpace`, `productSpace`, `powerSpace`, `conditionSpace`), events
+  (`eventProbability`, `conditionalProbability`), Bayes' rule calculators (`bayesRule` with joint and evidence,
+  `diagnosticTest`), independence (`independent`, `mutuallyIndependent`), discrete variables (`distributionOf`,
+  `expectation`, `varianceOf`, `covarianceOf`), transformations (`transformPmf`, `transformDensity` by change of
+  variables), sums by convolution (`sumPmf`, `sumDensity`, `diceSum`).
+- `_extrapolate.ts` (private): Richardson extrapolation of sampled sequences, shared by limits and the series tests.
 
 ### 4.13 `graph/` (tier 6): graphs and their algorithms (NetworkX, scipy.sparse.csgraph)
 

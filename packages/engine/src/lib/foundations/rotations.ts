@@ -656,10 +656,10 @@ export function karcherMean(
   const tol = options.tol ?? 1e-12
   for (let it = 0; it < (options.maxIter ?? 100); it++) {
     const step = [0, 0, 0]
-    rotations.forEach((r, k) => {
+    for (const [k, r] of rotations.entries()) {
       const rv = mean.inv().compose(r).asRotvec()
       for (let i = 0; i < 3; i++) step[i] = (step[i] ?? 0) + ((w[k] ?? 0) * (rv[i] ?? 0)) / total
-    })
+    }
     const size = Math.hypot(...step)
     steps.push(size)
     mean = mean.compose(rotationFromRotvec(step))

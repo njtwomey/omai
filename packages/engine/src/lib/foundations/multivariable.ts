@@ -299,9 +299,9 @@ export function lagrangeMultipliers(
     const x = stack([sliceAxis(z, 0, 0, d)])
     const lam = sliceAxis(z, 0, d, d + k)
     let station = squeeze(gradientAt(f, x), 0)
-    constraints.forEach((g, i) => {
+    for (const [i, g] of constraints.entries()) {
       station = sub(station, mul(squeeze(gradientAt(g, x), 0), sliceAxis(lam, 0, i, i + 1)))
-    })
+    }
     return concat([station, ...constraints.map((g) => g(x))], 0)
   }
   // Without given multipliers, start from the least-squares fit of grad f by the constraint gradients at x0.

@@ -66,7 +66,7 @@ goldenSuite('surfaces against sympy and scipy.integrate.solve_ivp', 'foundations
   },
   christoffel: ([p], o) => tensor(F.christoffelSymbols(surface(o), pair(p))),
   geodesic: ([p, vel], o) => {
-    const g = F.geodesic(surface(o), pair(p), pair(vel), { length: 1, steps: 400 })
+    const g = F.geodesic(surface(o), pair(p), pair(vel), { length: 1, steps: 200 })
     return tensor(g.parameters[g.parameters.length - 1] ?? [])
   },
   area: ([box], o) => {

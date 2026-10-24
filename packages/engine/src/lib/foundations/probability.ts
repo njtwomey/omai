@@ -1,6 +1,6 @@
 import { jvp } from '../autodiff/index.ts'
 import { kahanSum, WhiteboxError } from '../base/index.ts'
-import { convolve } from '../numerics/convolution/index.ts'
+import { convolve, fftConvolve } from '../numerics/convolution/index.ts'
 import { abs, mul, onesLike, promoteFloat, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 
 /** A finite probability space: outcomes with their probabilities (non-negative, summing to one). */
@@ -463,8 +463,8 @@ export function sumPmf(a: Pmf, b: Pmf): Pmf {
 
 /**
  * The density of the sum of two independent continuous random variables on a grid, `f_{X+Y}(s) = int f_X(t)
- * f_Y(s - t) dt`, by discrete convolution of the densities sampled with spacing h (a Riemann sum; accurate to O(h^2)
- * for smooth densities with the trapezoid end correction).
+ * f_Y(s - t) dt`, by FFT convolution of the densities sampled with spacing h (the trapezoid rule: accurate to O(h^2) for
+ * smooth densities, exact at a jump at the ends of the range).
  *
  * @param fx - The density of X, vectorised.
  * @param fy - The density of Y, vectorised.
@@ -496,7 +496,8 @@ export function sumDensity(
   const trap = (v: number[]): number[] => v.map((x, i) => (i === 0 || i === n - 1 ? x / 2 : x))
   const a = trap(toFlat(fx(grid)))
   const b = trap(toFlat(fy(grid)))
-  const c = toFlat(convolve(a, b)).map((v) => v * h)
+  // FFT convolution: O(n log n), and accurate to rounding (relative to the peak) for densities.
+  const c = toFlat(fftConvolve(a, b)).map((v) => v * h)
   return { s: c.map((_, k) => 2 * lo + k * h), density: c }
 }
 

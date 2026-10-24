@@ -170,6 +170,13 @@ describe('derivatives', () => {
     expectConformant(F.sphericalToCartesian, [p3])
     expectConformant((x) => F.geographicToCartesian(x, 2), [p2])
     expectConformant(F.toHomogeneous, [p2])
+    expectConformant(F.homogeneousMatrix, [
+      tensor([
+        [1, 2],
+        [0.5, -1],
+      ]),
+      tensor([0.3, 2]),
+    ])
     expectConformant(F.fromHomogeneous, [p3])
     expectConformant(
       (m, x) => F.applyHomogeneous(m, x),

@@ -148,6 +148,7 @@ describe('triangles', () => {
 describe('derivatives', () => {
   it('passes the conformance check', () => {
     expectConformant(F.radians, [tensor([10, -30])])
+    expectConformant(F.degrees, [tensor([0.5, -2])])
     expectConformant((t: Value) => F.wrapAngle(t), [tensor([0.4, 4])])
     expectConformant(F.unitCirclePoint, [tensor([0.3, 2])])
     expectConformant(F.directionAngle, [tensor([0.3, -1]), tensor([1, 0.5])])

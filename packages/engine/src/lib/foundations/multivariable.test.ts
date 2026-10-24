@@ -163,6 +163,7 @@ describe('integrals and the integral theorems', () => {
 describe('derivatives', () => {
   it('passes the conformance check', () => {
     expectConformant((p) => F.gradientAt(potential, p), [pts])
+    expectConformant((p) => F.hessianAt(potential, p), [pts])
     expectConformant((p) => F.jacobianAt(swirl, p), [pts])
     expectConformant((p) => F.divergence(swirl, p), [pts])
     expectConformant((p) => F.curl(swirl, p), [pts])
