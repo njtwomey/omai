@@ -42,6 +42,8 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
   'rl/gridworlds': 'Grid worlds: value functions and policies spreading out from the goal.',
   tuning: 'Hyperparameter searches over a method and a dataset: every trial, and what the search learned.',
   'classical-ai': 'Classical AI: searches, game players, constraint solvers and planners, each played step by step.',
+  'classical-ai/adversarial':
+    'Game-tree search: values backed up from the leaves, and the branches alpha-beta never needs to look at.',
   'classical-ai/search':
     'Path search on grid worlds and mazes: watch the frontier and the explored set grow, expansion by expansion.',
 }

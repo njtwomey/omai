@@ -58,6 +58,10 @@ function knownColour(name: string, mode: ColourMode): string | undefined {
       return t.danger
     case 'given':
       return tint(t.fg, 0.82)
+    case 'MAX':
+      return tint(categoricalColour(0), 0.25)
+    case 'MIN':
+      return tint(categoricalColour(3), 0.25)
     case 'water':
       return tint(categoricalColour(0), 0.45)
     case 'forest':
@@ -178,6 +182,22 @@ export function boardFrames(record: BoardSteps, options: BoardViewOptions = {}):
   const withMetrics = metrics.length > 0 && record.steps.length > 1
   const mainWidth = fig.width * (withMetrics ? 0.58 : 0.9)
   const layout = record.layout
+  // Graph nodes as large as the closest pair allows at the board's scale (between 6 and 30 pixels).
+  let nodeSize = 20
+  if (layout.type === 'graph' && layout.nodes.length > 1) {
+    const xs = layout.nodes.map((p) => p.x)
+    const ys = layout.nodes.map((p) => p.y)
+    const span = Math.max(Math.max(...xs) - Math.min(...xs), 1e-9)
+    const rise = Math.max(Math.max(...ys) - Math.min(...ys), 1e-9)
+    const scale = Math.min(mainWidth / span, (fig.height * 0.75) / rise)
+    let closest = Number.POSITIVE_INFINITY
+    for (let i = 0; i < layout.nodes.length; i++)
+      for (let j = i + 1; j < layout.nodes.length; j++) {
+        const d = Math.hypot((xs[i] ?? 0) - (xs[j] ?? 0), (ys[i] ?? 0) - (ys[j] ?? 0))
+        if (d > 0 && d < closest) closest = d
+      }
+    nodeSize = Math.max(6, Math.min(30, Math.round(0.8 * closest * scale)))
+  }
   const fillRgba = colours.map(parseColour)
   const gridRgba = parseColour(t.grid)
   const option = (frame: number): EChartsOption => {
@@ -248,7 +268,7 @@ export function boardFrames(record: BoardSteps, options: BoardViewOptions = {}):
         ys.push(-p.y, -q.y, Number.NaN)
       }
       if (xs.length > 0) main.push(lines([{ x: xs, y: ys, name: '__edges', colour: 'axis', width: 1.2 }], { mode }))
-      const size = Math.max(9, Math.min(30, Math.round(220 / Math.sqrt(Math.max(1, nodes.length)))))
+      const size = nodeSize
       const byCategory = new Map<number, number[]>()
       for (const [i, c] of cells.entries()) byCategory.set(c, [...(byCategory.get(c) ?? []), i])
       const sets = [...byCategory.entries()]

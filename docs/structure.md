@@ -3286,6 +3286,9 @@ built from: `search`, `logic`, `stats`
 - `case-based.ts`: case retrieval, adaptation and retention.
 - `planning-domains.ts`: blocks world, logistics, gripper and other domains for `search/planning/`.
 - `puzzles.ts`: 8-puzzle, n-queens, Sudoku, Towers of Hanoi, missionaries and cannibals, cryptarithms.
+- `adversarial.ts`: small games (`explicitTree`, `textbookTree`, `randomTree`, `ticTacToe` from a position) and
+  `playGameSearch`: minimax or alpha-beta over the whole tree, played node by node (values backed up, pruned subtrees,
+  the principal variation) as a `BoardSteps` record on the tree's layout.
 - `maps.ts`: search worlds: hand-drawn maps (open, detour, river, rooms) and generated mazes as blocked-cell worlds.
 - `search.ts`: path search on grid worlds (`gridProblem`, `gridSearch`: breadth-first, depth-first, uniform-cost,
   greedy, A*, weighted A*, IDA*, bidirectional) played expansion by expansion as a `BoardSteps` record.
