@@ -10,18 +10,32 @@ import {
   bufferSample,
   type Env,
   gameMcts,
+  greedyPolicy,
   type MctsOptions,
   mcts,
   mdpFromEnv,
   type Policy,
+  type PolicyIterationState,
   policyIteration,
+  policyIterationAlgorithm,
+  qFromV,
   type ReplayBuffer,
   replayBuffer,
+  type ValueIterationState,
   valueIteration,
+  valueIterationAlgorithm,
 } from '../../../lib/rl/index.ts'
 import type { Space } from '../../../lib/space/index.ts'
 import { add, fromStorage, mul, sliceAxis, softmax, tanh, toFlat, type Value } from '../../../lib/tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../../lib/trace/index.ts'
+import {
+  type Algorithm,
+  channels,
+  nullTracer,
+  type RunOptions,
+  runAlgorithm,
+  type StepContext,
+  startRun,
+} from '../../../lib/trace/index.ts'
 import { gradientStep, rowsTensor } from './_common.ts'
 
 const identity = <O, S>(o: O): S => o as unknown as S
@@ -138,6 +152,109 @@ export function policyIterationAgent<S, O, A>(
 ): Agent<TabularPlanState, O, A> {
   return tabularPlanner('policyIteration', env, options)
 }
+
+/** Options of {@link sweepingPlannerAgent}. */
+export interface SweepingPlannerOptions<O, S> {
+  /** The planner: value iteration (default) or policy iteration. */
+  readonly planner?: 'valueIteration' | 'policyIteration'
+  /** The discount (default 0.99). */
+  readonly gamma?: number
+  /** Planner iterations (Bellman sweeps, or evaluate-and-improve steps) after each block of episodes (default 1). */
+  readonly sweeps?: number
+  /** Episodes per block (default 1). */
+  readonly every?: number
+  /** The model state of an observation (default the observation itself). */
+  readonly toState?: (observation: O) => S
+}
+
+/** The state of {@link sweepingPlannerAgent}: the planner's values and greedy policy after some iterations. */
+export interface SweepingPlanState {
+  readonly V: readonly number[]
+  readonly policy: readonly number[]
+  readonly iterations: number
+  readonly episodes: number
+  /** Value iteration's last sup-norm change, or the actions policy iteration last changed. */
+  readonly residual: number
+}
+
+/**
+ * A planning agent that plans a little at a time: it starts from zero values (value iteration) or a fixed policy
+ * (policy iteration) and runs `sweeps` iterations of the planner on the environment's model after every `every`
+ * episodes, acting greedily on its current plan in between. Its returns therefore improve episode by episode as the
+ * values propagate from the rewards, which makes dynamic programming visible on a learning curve (the
+ * {@link valueIterationAgent} solves the model in full before the first step). The sweeps are
+ * `valueIterationAlgorithm` and `policyIterationAlgorithm` of `lib/rl`.
+ *
+ * @param env - An environment with a tabular model (`env.model`).
+ * @param options - The planner, discount, sweeps per block, episodes per block and the map to model states.
+ * @returns The agent.
+ * @throws WhiteboxError with code `value` when the environment has no model.
+ * @concept value-iteration
+ * @example
+ * ```ts
+ * import { sweepingPlannerAgent } from 'whitebox-engine/methods/rl/agents'
+ * import { cliffWalking } from 'whitebox-engine/methods/rl'
+ * import { key } from 'whitebox-engine/random'
+ * const agent = sweepingPlannerAgent(cliffWalking.create(), { gamma: 1 })
+ * agent.init(key(0)).iterations // => 0
+ * ```
+ */
+export function sweepingPlannerAgent<S, O, A>(
+  env: Env<S, O, A>,
+  options: SweepingPlannerOptions<O, S> = {},
+): Agent<SweepingPlanState, O, A> {
+  const model = env.model
+  if (model === undefined) throw new WhiteboxError('value', `sweepingPlannerAgent: ${env.spec.id} has no model`)
+  const planner = options.planner ?? 'valueIteration'
+  const gamma = options.gamma ?? 0.99
+  const sweeps = options.sweeps ?? 1
+  const every = options.every ?? 1
+  const toState = options.toState ?? identity<O, S>
+  const mdp = mdpFromEnv(env, gamma)
+  const run = startRun(nullTracer, { name: 'sweep', seed: null, config: {} })
+  const ctx = (t: number): StepContext => ({ t, key: SWEEP_KEY, run })
+  const greedyOf = (V: readonly number[]): number[] => greedyPolicy(qFromV(mdp, V, gamma))
+  const vi = valueIterationAlgorithm(mdp, { gamma })
+  const pi = policyIterationAlgorithm(mdp, { gamma })
+  const advance = (s: SweepingPlanState): SweepingPlanState => {
+    if (planner === 'valueIteration') {
+      let state: ValueIterationState = { V: Float64Array.from(s.V), delta: s.residual, iteration: s.iterations }
+      for (let i = 0; i < sweeps; i++) state = vi.step(state, ctx(state.iteration))
+      const V = Array.from(state.V)
+      return { ...s, V, policy: greedyOf(V), iterations: state.iteration, residual: state.delta }
+    }
+    let state: PolicyIterationState = { policy: s.policy, V: s.V, changed: s.residual, iteration: s.iterations }
+    for (let i = 0; i < sweeps; i++) state = pi.step(state, ctx(state.iteration))
+    return { ...s, V: state.V, policy: state.policy, iterations: state.iteration, residual: state.changed }
+  }
+  const act = (s: SweepingPlanState, o: O): A => model.actions[s.policy[model.stateIndex(toState(o))] ?? 0] as A
+  return {
+    name: 'sweepingPlanner',
+    config: { env: env.spec.id, planner, gamma, sweeps, every } as Json,
+    metrics: {
+      iterations: { description: 'planner iterations so far' },
+      residual: { description: 'last value change (value iteration) or actions changed (policy iteration)' },
+    },
+    init: () => {
+      if (planner === 'valueIteration') {
+        const V = new Array<number>(mdp.nStates).fill(0)
+        return { V, policy: greedyOf(V), iterations: 0, episodes: 0, residual: Infinity }
+      }
+      const s = pi.init(SWEEP_KEY)
+      return { V: s.V, policy: s.policy, iterations: 0, episodes: 0, residual: s.changed }
+    },
+    act,
+    greedy: act,
+    learn: (s, t) => {
+      if (!(t.terminated || t.truncated)) return s
+      const episodes = s.episodes + 1
+      return episodes % every === 0 ? advance({ ...s, episodes }) : { ...s, episodes }
+    },
+    stats: (s) => ({ iterations: s.iterations, residual: Number.isFinite(s.residual) ? s.residual : Number.MAX_VALUE }),
+  }
+}
+
+const SWEEP_KEY = makeKey(0x73776570)
 
 // --------------------------------------------------------------------------------------------------------- MCTS
 
