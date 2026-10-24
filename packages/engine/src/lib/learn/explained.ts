@@ -16,6 +16,7 @@ import {
   defineEstimator,
   type Estimator,
   EstimatorClass,
+  type EstimatorKind,
   type EstimatorSpec,
   type FitOptions,
   type Fitted,
@@ -24,7 +25,7 @@ import {
   type LearnData,
   type Verbs,
 } from './estimator.ts'
-import { matrixView } from './validation.ts'
+import { fromView, matrixView } from './validation.ts'
 
 /** What an explained estimator's `fit` learns: the parameters and the exposition records explaining how. */
 export interface ExplainedFit<P extends Json> {
@@ -87,7 +88,8 @@ export function defineExplainedEstimator<H extends Hyper, P extends Json, V exte
   const fit = (data: LearnData, options: FitOptions = {}): Explained<Fitted<P> & V> => {
     const r = explainedFit(data, hyper, options)
     const fitted = base.revive(r.params)
-    const exposition = options.explain === false ? r.exposition : withInputRows(r.exposition, data, fitted.classes)
+    const exposition =
+      options.explain === false ? r.exposition : withInputRows(r.exposition, data, fitted.classes, fitted.kind)
     return { ...fitted, exposition }
   }
   return {
@@ -110,6 +112,15 @@ export function defineExplainedEstimator<H extends Hyper, P extends Json, V exte
 }
 
 // The kinds whose records index the training rows (assignments, scores, support vectors, neighbours).
+// The names of row classes: the data's, else, for an outlier detector's ground truth, inlier and outlier.
+function rowClassNames(data: LearnData, classes: readonly number[], kind: EstimatorKind | undefined): string[] {
+  const names = classNamesOf(data, classes)
+  if (kind !== 'outlier' || names.some((n, i) => n !== String(classes[i]))) return names
+  // scikit-learn's convention is 1 inlier, -1 outlier; ground-truth flags are 1 outlier, 0 inlier.
+  const signed = classes.includes(-1)
+  return classes.map((c) => (signed ? (c === -1 ? 'outlier' : 'inlier') : c === 1 ? 'outlier' : 'inlier'))
+}
+
 // The kinds whose rows are coloured by the data's classes or targets (embeddings, component scores).
 const COLOURED_KINDS: ReadonlySet<string> = new Set(['embeddingSteps', 'components'])
 const ROW_KINDS: ReadonlySet<string> = new Set([
@@ -128,6 +139,7 @@ const ROW_KINDS: ReadonlySet<string> = new Set([
  * @param records - A fit's exposition.
  * @param data - The training data.
  * @param classes - The fitted classes, for classifiers.
+ * @param kind - The estimator's kind: an outlier detector's 0/1 (or 1/-1) targets are named inlier and outlier.
  * @returns The records, the row-indexed ones with `rows`.
  * @example
  * ```ts
@@ -141,6 +153,7 @@ export function withInputRows(
   records: readonly Exposition[],
   data: LearnData,
   classes?: readonly number[],
+  kind?: EstimatorKind,
 ): readonly Exposition[] {
   // A surface lacks rows, or has rows without their labels or targets while the data has them.
   const bareSurface = (r: Exposition): boolean =>
@@ -156,10 +169,11 @@ export function withInputRows(
   )
     return records
   let rows: InputRows | undefined
+  // Label-like targets (a few integers) for estimators without classes: clusterers' and detectors' ground truth.
+  let labelClasses = classes
   try {
     const m = matrixView(data.x, 'withInputRows', { allowNaN: true })
     if (m.n > ROWS_LIMIT) return records
-    let labelClasses = classes
     if (labelClasses === undefined && data.y !== undefined) {
       const y = toFlat(asTensor(data.y))
       const unique = [...new Set(y)].sort((a, b) => a - b)
@@ -169,7 +183,7 @@ export function withInputRows(
       featureNames: featureNamesOf(data, m.d),
       ...(labelClasses === undefined || data.y === undefined
         ? {}
-        : { y: data.y, classes: labelClasses, classNames: classNamesOf(data, labelClasses) }),
+        : { y: data.y, classes: labelClasses, classNames: rowClassNames(data, labelClasses, kind) }),
     })
   } catch {
     return records
@@ -183,14 +197,20 @@ export function withInputRows(
       const names = featureNamesOf(data, m.d)
       const a = Math.max(0, names.indexOf(r.features[0]))
       const b = r.features[1] === '' ? a : Math.max(0, names.indexOf(r.features[1]))
-      const labelled = classes !== undefined && data.y !== undefined
+      // Classifiers' and detectors' rows carry their classes; a regressor's its targets.
+      const labelled =
+        labelClasses !== undefined && data.y !== undefined && (classes !== undefined || kind === 'outlier')
       return inputRowsOf(data.x, {
         columns: [a, m.d === 1 ? a : b],
         featureNames: names,
         ...(data.y === undefined
           ? {}
-          : labelled
-            ? { y: data.y, classes, classNames: r.classes ?? classNamesOf(data, classes) }
+          : labelled && labelClasses !== undefined
+            ? {
+                y: data.y,
+                classes: labelClasses,
+                classNames: r.classes ?? rowClassNames(data, labelClasses, kind),
+              }
             : { y: data.y, numeric: true }),
       })
     } catch {
@@ -278,6 +298,11 @@ export interface SurfaceStepsInput {
   readonly rowWeights?: readonly (readonly number[])[]
   /** What the highlighted rows are (default 'misclassified' for those, else none). */
   readonly highlightName?: string
+  /**
+   * A binary classifier's decision function at step t on given rows, when the method can compute it faster than its
+   * step model can (an SVM reusing one kernel matrix across steps); used in place of the model's.
+   */
+  readonly decisionAt?: (t: number, x: Tensor) => Float64Array
 }
 
 /**
@@ -534,7 +559,13 @@ export function decisionSurfaceOf(
     const f = model.decisionFunction(at) as Tensor
     return f.shape.length === 1 ? Float64Array.from(toFlat(f)) : undefined
   }
-  const fieldsOf = (model: Fitted): SurfaceFields => {
+  const fieldsOf = (model: Fitted, step?: number): SurfaceFields => {
+    // A step of a binary classifier with a decision function: its labels are the function's sign (the convention
+    // every binary decision function keeps), so the grid is scored once.
+    if (step !== undefined && classifier && classes.length === 2 && model.predictProba === undefined) {
+      const f = options.steps?.decisionAt?.(step, input) ?? binaryDecision(model, input)
+      if (f !== undefined) return { labels: reshape(Array.from(f, (v) => (v > 0 ? 1 : 0))), decision: reshape(f) }
+    }
     const predicted = toFlat((model.predict as (x: TensorLike) => Tensor)(input))
     // A clusterer's predictions are cluster indices: regions, not a continuous field.
     if (model.kind === 'clusterer') return { labels: reshape(predicted.map((v) => Math.max(0, Math.round(v)))) }
@@ -570,15 +601,17 @@ export function decisionSurfaceOf(
     const predicted = toFlat((model.predict as (x: TensorLike) => Tensor)(x))
     return labels.flatMap((l, i) => (l >= 0 && index.get(predicted[i] ?? Number.NaN) !== l ? [i] : []))
   }
+  // The training rows as one tensor, so a method's step decisions can reuse their work across steps.
+  const trainingRows = fromView(m)
   const steps: SurfaceStep[] | undefined = options.steps?.models.map((model, t) => {
     const s = options.steps as SurfaceStepsInput
     const objective = s.objective?.[t]
     const highlight = s.highlight === 'misclassified' ? misclassified(model) : s.highlight?.[t]
     const rowWeights = s.rowWeights?.[t]
-    const rowValues = rows === undefined ? undefined : binaryDecision(model, x)
+    const rowValues = rows === undefined ? undefined : (s.decisionAt?.(t, trainingRows) ?? binaryDecision(model, x))
     return {
       iteration: s.iterations[t] ?? t,
-      ...fieldsOf(model),
+      ...fieldsOf(model, t),
       ...(objective === undefined || !Number.isFinite(objective) ? {} : { objective }),
       ...(rowValues === undefined ? {} : { rowValues: Array.from(rowValues) }),
       ...(highlight === undefined ? {} : { highlight }),
@@ -593,7 +626,9 @@ export function decisionSurfaceOf(
     y: gy,
     ...fieldsOf(fitted),
     ...(classifier ? { classes: options.classNames ?? classes.map(String) } : {}),
-    ...(fitted.kind === 'clusterer' && options.classNames !== undefined ? { classes: options.classNames } : {}),
+    ...((fitted.kind === 'clusterer' || fitted.kind === 'outlier') && options.classNames !== undefined
+      ? { classes: options.classNames }
+      : {}),
     ...(options.levels === undefined ? {} : { levels: options.levels }),
     ...(options.field === undefined ? {} : { field: options.field }),
     ...(rows === undefined ? {} : { rows }),

@@ -135,7 +135,9 @@ export function decisionSurfaceLayers(
   options: SurfaceViewOptions = {},
 ): { readonly layers: Layer[]; readonly x: AxisSpec; readonly y: AxisSpec } {
   const mode: ColourMode = viewMode(options)
-  const { x, y, classes } = surface
+  const { x, y } = surface
+  // Class names: the model's, else its rows' (a detector's inlier and outlier).
+  const classes = surface.classes ?? surface.rows?.classes
   const k = surface.probabilities?.length ?? (surface.labels === undefined ? 0 : Math.max(...surface.labels.flat()) + 1)
   const layers: Layer[] = []
   const { rows, columns, labels } = surfaceRows(surface, options)
@@ -175,7 +177,7 @@ export function decisionSurfaceLayers(
     }
   }
   // A binary decision function f (an SVM's margin, a linear model's log-odds): older records kept it in `values`.
-  const binary = surface.classes?.length === 2
+  const binary = surface.classes?.length === 2 && surface.field === undefined
   const f =
     surface.decision ?? (binary && surface.probabilities === undefined ? surface.values : undefined) ?? undefined
   const levels =
@@ -223,8 +225,8 @@ export function decisionSurfaceLayers(
     }
   } else if (surface.values !== undefined) {
     const smooth = surface.field?.smooth !== false
-    // A non-negative field (a density) is coloured from zero, not from its tiniest tail value.
-    const [lo, hi] = spanOf(surface.values.flat())
+    // A density is coloured from zero, not from its tiniest tail value.
+    const [lo, hi] = surface.field?.name === 'density' ? spanOf(surface.values.flat()) : [Number.NaN, Number.NaN]
     layers.push(
       heatmap(surface.values, {
         x,
