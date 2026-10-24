@@ -1947,6 +1947,17 @@
       "cases": 8
     },
     {
+      "fixture": "signal/estimation.json",
+      "source": "oracle/cases/signal/estimation.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "librosa": "1.0.0",
+        "padasip": "1.2.2",
+        "numpy": "2.5.4"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "signal/filter_banks.json",
       "source": "oracle/cases/signal/filter_banks.py",
       "reference": {
@@ -2028,6 +2039,16 @@
         "numpy": "2.5.4"
       },
       "cases": 12
+    },
+    {
+      "fixture": "signal/peaks.json",
+      "source": "oracle/cases/signal/peaks.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "librosa": "1.0.0",
+        "dtw-python": "1.9.0"
+      },
+      "cases": 62
     },
     {
       "fixture": "signal/reassignment.json",
