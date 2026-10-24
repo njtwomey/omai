@@ -12,7 +12,7 @@ export const tsne: HubEntry = defineEntry({
   collection: 'sklearn/manifold',
   tags: ['manifold learning', 'embedding', 'visualisation'],
   datasets: ['classificationTabular', 'manifold3d'],
-  maxRows: 100,
+  maxRows: 200,
   ...fitEstimator(tsneMethod({ maxIter: 350, perplexity: 8 }), { unsupervised: true }),
   views: [{ record: 'embeddingSteps', title: 'Embedding', view: 'EmbeddingPlayer', props: (_, c) => rowColours(c) }],
   methods: [{ file: 'methods/manifold/tsne.ts', name: 'tsne' }],

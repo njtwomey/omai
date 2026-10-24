@@ -58,6 +58,14 @@ function knownColour(name: string, mode: ColourMode): string | undefined {
       return t.danger
     case 'given':
       return tint(t.fg, 0.82)
+    case 'hand':
+      return mixColours(t.surface, t.fg, 0.04)
+    case 'table':
+      return mode === 'light' ? mixColours(t.fg, t.bg, 0.25) : mixColours(t.fg, t.bg, 0.55)
+    case 'shade':
+      return mixColours(t.surface, t.fg, 0.08)
+    case 'assigned':
+      return tint(t.accent, 0.72)
     case 'MAX':
       return tint(categoricalColour(0), 0.25)
     case 'MIN':
@@ -231,7 +239,8 @@ export function boardFrames(record: BoardSteps, options: BoardViewOptions = {}):
       const series: SeriesOption[] = [imageSeries(pixels, [0, columns], [0, rows], { name: '__board' })]
       if (labels !== undefined) {
         const cellPx = Math.min(mainWidth / columns, (fig.height * 0.8) / rows)
-        const size = Math.max(7, Math.min(18, Math.round(cellPx * 0.5)))
+        const short = labels.every((l) => l.length <= 1)
+        const size = Math.max(7, Math.min(short ? 24 : 18, Math.round(cellPx * (short ? 0.62 : 0.5))))
         const data = labels.flatMap((text, i) => {
           if (text === '') return []
           const r = Math.floor(i / columns)

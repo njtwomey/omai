@@ -10,7 +10,7 @@ import { MDS, mds } from './mds.ts'
 import { continuity, coRankingMatrix, embeddingStress, neighbourhoodPreservation, trustworthiness } from './quality.ts'
 import { SelfOrganisingMap, uMatrix } from './som.ts'
 import { diffusionMap, spectralEmbedding } from './spectral.ts'
-import { TSNE } from './tsne.ts'
+import { jointProbabilities, TSNE, tsneAlgorithm, tsneGradient } from './tsne.ts'
 import { umap } from './umap.ts'
 
 const roll = generate(swissRoll, { key: key(0), knobs: { n: 70, noise: 0 } }).data
@@ -75,5 +75,28 @@ describe('manifold learning', () => {
     expect(obj.at(-1) ?? 0).toBeLessThan(obj[1] ?? 0)
     expect(uMatrix(m.params.weights, m.params.grid).length).toBe(4)
     expect(m.transform(blob.x).shape).toEqual([60, 2])
+  })
+
+  it('the t-SNE gradient matches finite differences, and the descent reports the divergence of p', () => {
+    const x = (toArray(blob.x) as number[][]).slice(0, 12)
+    const { p } = jointProbabilities(x, 4)
+    const y = (toArray(uniform(key(11), [12, 2])) as number[][]).map((r) => r.map((v) => v - 0.5))
+    const { kl, grad } = tsneGradient(p, y)
+    const h = 1e-6
+    for (const [i, a] of [
+      [0, 0],
+      [5, 1],
+      [11, 0],
+    ] as const) {
+      const shifted = (d: number) => y.map((r, j) => r.map((v, b) => (j === i && b === a ? v + d : v)))
+      const fd = (tsneGradient(p, shifted(h)).kl - tsneGradient(p, shifted(-h)).kl) / (2 * h)
+      expect(grad[i]?.[a]).toBeCloseTo(fd, 6)
+    }
+    // During exaggeration the step reports the divergence of p (not of the exaggerated p) at its new positions.
+    const alg = tsneAlgorithm(p, y, { learningRate: 10 })
+    const s0 = alg.init(key(0))
+    expect(s0.kl).toBeCloseTo(kl, 12)
+    const s1 = alg.step(s0, { t: 0 } as Parameters<typeof alg.step>[1])
+    expect(s1.kl).toBeCloseTo(tsneGradient(p, s1.y).kl, 12)
   })
 })
