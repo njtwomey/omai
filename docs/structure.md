@@ -1342,12 +1342,15 @@ a model can animate its inference. The `probprog` engines reuse these algorithms
 
 ### 4.28 `metrics/` (tier 8): evaluation metrics (scikit-learn, torchmetrics)
 
-oracle: scikit-learn, torchmetrics, scipy, sacrebleu, rouge-score, jiwer, pycocotools, scikit-image, pystoi, pesq
+oracle: scikit-learn, torchmetrics, scipy, statsmodels, fairlearn, pingouin, krippendorff, properscoring, sacrebleu,
+rouge-score, jiwer, pycocotools, torchvision, MONAI, scikit-image, sewar, prdc, pystoi, dtw-python
 
-The files follow the encyclopedia's evaluation chapters, in its order. Every metric has a `MetricSpec`, returns a
-`MetricResult`, accepts sample weights, and can attach a confidence interval. Metrics that need a pretrained network
-(LPIPS, DISTS, FID, CLIPScore, BERTScore, DNSMOS) take a feature extractor as an argument; whitebox ships none of those
-weights.
+The files follow the encyclopedia's evaluation chapters, in its order. Every metric has a `MetricSpec` and returns a
+`MetricResult` (a few return richer records: curves, reports, PRDC, permutations); per-sample metrics accept sample
+weights where the reference does, and metrics over rows of samples (targets, predictions) can attach a confidence
+interval (`withInterval`). Metrics that need a pretrained network (LPIPS, DISTS, FID, KID, CLIPScore, BERTScore,
+Inception score) take its features, embeddings or outputs, and DNSMOS takes the networks as functions; whitebox ships
+none of those weights.
 - `foundations.ts`: choosing a metric for a decision (`expectedCost`, `expectedUtility`, `bayesDecision`,
   `costThreshold`), `withInterval` (bootstrap: percentile, basic and BCa; analytic (Wald); Wilson; DeLong, with
   `delongVariance`), paired comparisons of two models on one test set (`pairedBootstrap`, `mcnemarTest`,
@@ -1435,7 +1438,7 @@ weights.
 
 ### 4.29 `losses/` (tier 8): differentiable objectives (torch.nn losses, optax losses)
 
-oracle: torch.nn.functional, optax
+oracle: torch.nn.functional, optax, MONAI, POT, torchvision, scikit-learn, scipy
 
 Training objectives with a uniform `reduction` option. Evaluation metrics live in `metrics`; where a loss and a metric
 share a concept they share a definition but not a name.

@@ -13,6 +13,7 @@ import torch
 from rouge_score import rouge_scorer
 from sacrebleu.metrics.chrf import CHRF
 from sacrebleu.metrics.ter import TER
+from sacrebleu.tokenizers.tokenizer_13a import Tokenizer13a
 from torchmetrics.functional.text import perplexity
 from torchmetrics.functional.text.bert import _get_precision_recall_f1  # pyright: ignore[reportPrivateUsage]
 from torchmetrics.functional.text.squad import (
@@ -272,4 +273,8 @@ def cases() -> list[Case]:
     out += bert_cases() + perplexity_cases()
     for n in [1, 2, 3]:
         out.append(case(f"distinctN/{n}", "distinctN", [], np.asarray(distinct(HYPS, n)), yPred=HYPS, n=n))
+    tok = Tokenizer13a()
+    lines = [*REFS, "Tom &amp; Jerry's &quot;show&quot; &lt;3 -- 1,000.5 items, e.g. x-ray.", "a-\nb <skipped> c\nd"]
+    for i, line in enumerate(lines):
+        out.append(case(f"tokenize13a/{i}", "tokenize13a", [], str(tok(line)), line=line))
     return out

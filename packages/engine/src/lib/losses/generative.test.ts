@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { expectConformant } from '../../testing/check.ts'
 import { key } from '../random/index.ts'
-import { item, matmul, tanh, tensor, type Value } from '../tensor/index.ts'
+import { item, matmul, tanh, tensor, toArray, type Value } from '../tensor/index.ts'
 import * as L from './index.ts'
 
 const real = tensor([0.3, -1.2, 2, 0.7])
@@ -128,5 +128,16 @@ describe('generative-model losses', () => {
     // The velocity of the straight path is constant along it.
     const path = L.flowMatchingPath([[1, 2]], [[3, -1]], [0.7])
     expect(item(L.flowMatching(path.velocity, [[1, 2]], [[3, -1]]))).toBe(0)
+  })
+
+  it('gives the epsilon, x0 and v targets of a diffusion step', () => {
+    const x0 = [1, -2]
+    const eps = [0.5, 0.25]
+    expect(toArray(L.diffusionTarget('epsilon', x0, eps, 0.6, 0.8))).toEqual([0.5, 0.25])
+    expect(toArray(L.diffusionTarget('x0', x0, eps, 0.6, 0.8))).toEqual([1, -2])
+    // v = alpha eps - sigma x0 (Salimans and Ho, 2022).
+    const v = toArray(L.diffusionTarget('v', x0, eps, 0.6, 0.8)) as number[]
+    expect(v[0]).toBeCloseTo(0.6 * 0.5 - 0.8 * 1, 15)
+    expect(v[1]).toBeCloseTo(0.6 * 0.25 + 0.8 * 2, 15)
   })
 })

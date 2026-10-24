@@ -42,4 +42,5 @@ goldenSuite('text metrics against jiwer, sacrebleu, rouge-score and torchmetrics
   },
   perplexity: ([l, t], o) => M.perplexity(l, t, o).estimate.value,
   distinctN: (_i, p) => M.distinctN(hyps(p), { n: p['n'] as number }).estimate.value,
+  tokenize13a: (_i, p) => M.tokenize13a(p['line'] as string),
 })

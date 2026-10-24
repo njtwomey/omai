@@ -338,7 +338,7 @@
         "rouge-score": "0.1.2",
         "torchmetrics": "1.9.0"
       },
-      "cases": 61
+      "cases": 69
     },
     {
       "fixture": "nn/torch_reference.json",
