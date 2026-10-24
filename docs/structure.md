@@ -2815,8 +2815,10 @@ kind, each usable on its own in any page).
 **The hub.** `packages/hub/src/`:
 - `entry/entry.ts`: `HubEntry` (id, title, one-line summary, collection, tags, the method it runs, its `hyperSpace` with
   demo defaults, the dataset collections it suits, and a layout: which record kinds to show, with which views, in which
-  slots) and `defineEntry`; `entry/run.ts`: `fitEstimator` and `fitEither` (an entry's controls and run from an
-  estimator, or from a classifier and regressor pair chosen by the dataset's kind), the demo state and `runDemo`.
+  slots, and optionally the dataset and knobs to start from) and `defineEntry`; `entry/run.ts`: `fitEstimator` and
+  `fitEither` (an entry's controls and run from an estimator, or from a classifier and regressor pair chosen by the
+  dataset's kind), the demo state and `runDemo`; `entry/slots.ts`: helpers for slot props made on the page (`rowColours`:
+  an embedding's rows coloured by class or by banded regression target); `entry/url.ts`: a state in the URL.
 - `collections/<collection>/<entry>.ts`: semi-organised folders, for example `sklearn/` (mirroring scikit-learn's modules,
   kebab-cased: `linear-model`, `isotonic`, `tree`, `ensemble`, `svm`, `neighbors`, `naive-bayes`,
   `discriminant-analysis`, `gaussian-process`, `cluster`, `mixture`, `decomposition`, `random-projection`, `manifold`,
