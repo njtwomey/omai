@@ -1,15 +1,13 @@
 import type { ReactNode } from 'react'
 import type { Example, MemberDoc, ParamDoc, SymbolDoc } from 'whitebox-meta/schema'
+import { CodeBlock } from '../shell/CodeBlock.tsx'
 import { Crumbs } from './Crumbs.tsx'
 import { DocInline, DocText } from './DocText.tsx'
 import { baseName, type Docs, type IndexFile } from './data.ts'
+import { LiveExample } from './LiveExample.tsx'
 
-function Code(props: { readonly code: string }): ReactNode {
-  return (
-    <pre className="overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-3 font-mono text-xs leading-relaxed dark:border-neutral-800 dark:bg-neutral-900">
-      {props.code}
-    </pre>
-  )
+function Code(props: { readonly code: string; readonly title?: string }): ReactNode {
+  return <CodeBlock code={props.code} title={props.title ?? 'signature'} />
 }
 
 function Params(props: {
@@ -20,23 +18,23 @@ function Params(props: {
   if (props.params.length === 0) return null
   return (
     <table className="w-full text-left text-sm">
-      <thead className="text-neutral-500">
+      <thead className="text-muted">
         <tr>
           <th className="py-1 pr-4 font-medium">Parameter</th>
           <th className="py-1 pr-4 font-medium">Type</th>
           <th className="py-1 font-medium">Description</th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+      <tbody className="divide-y divide-line">
         {props.params.map((p) => (
           <tr key={p.name} className="align-top">
             <td className="py-1.5 pr-4 font-mono whitespace-nowrap">
               {p.name}
-              {p.optional ? <span className="text-neutral-500">?</span> : null}
+              {p.optional ? <span className="text-muted">?</span> : null}
             </td>
-            <td className="py-1.5 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
+            <td className="py-1.5 pr-4 font-mono text-xs text-fg-secondary">
               {p.type}
-              {p.defaultValue === '' ? null : <span className="text-neutral-500"> = {p.defaultValue}</span>}
+              {p.defaultValue === '' ? null : <span className="text-muted"> = {p.defaultValue}</span>}
             </td>
             <td className="py-1.5">
               <DocInline text={p.description} docs={props.docs} near={props.near} />
@@ -53,10 +51,7 @@ function Examples(props: { readonly examples: readonly Example[] }): ReactNode {
   return (
     <div className="space-y-3">
       {props.examples.map((e, i) => (
-        <div key={`${e.source?.line ?? i}`}>
-          {e.title === '' ? null : <h4 className="mb-1 text-sm font-medium">{e.title}</h4>}
-          <Code code={e.code} />
-        </div>
+        <LiveExample key={`${e.source?.line ?? i}`} example={e} />
       ))}
     </div>
   )
@@ -74,7 +69,7 @@ function Section(props: { readonly title: string; readonly children: ReactNode }
 function Member(props: { readonly member: MemberDoc; readonly docs: Docs; readonly near: string }): ReactNode {
   const m = props.member
   return (
-    <div className="space-y-2 border-t border-neutral-200 pt-3 dark:border-neutral-800">
+    <div className="space-y-2 border-t border-line pt-3">
       <h3 className="font-mono text-sm font-semibold">
         {m.static ? 'static ' : ''}
         {m.name}
@@ -106,9 +101,7 @@ export function SymbolBody(props: { readonly docs: Docs; readonly symbol: Symbol
   const near = s.module
   return (
     <div className="space-y-6">
-      {s.deprecated === undefined ? null : (
-        <p className="text-sm text-amber-700 dark:text-amber-400">Deprecated: {s.deprecated}</p>
-      )}
+      {s.deprecated === undefined ? null : <p className="text-sm text-danger">Deprecated: {s.deprecated}</p>}
       <Code code={s.signature} />
       <DocText text={[s.summary, s.description].filter((t) => t !== '').join('\n\n')} docs={docs} near={near} />
       {s.params.length === 0 ? null : (
@@ -146,7 +139,7 @@ export function SymbolBody(props: { readonly docs: Docs; readonly symbol: Symbol
           </div>
         </Section>
       )}
-      <footer className="space-y-1 border-t border-neutral-200 pt-3 text-sm text-neutral-500 dark:border-neutral-800">
+      <footer className="space-y-1 border-t border-line pt-3 text-sm text-muted">
         <p className="font-mono">
           import {'{'} {s.name} {'}'} from '{s.module}'
         </p>
@@ -173,15 +166,19 @@ export function SymbolPage(props: {
   readonly docs: Docs
   readonly file: IndexFile
   readonly symbol: SymbolDoc
+  readonly nav?: ReactNode
 }): ReactNode {
   const { docs, file, symbol } = props
   return (
     <article className="space-y-4">
       <header>
-        <Crumbs path={file.path} last />
+        <div className="flex items-start justify-between gap-4">
+          <Crumbs path={file.path} last />
+          {props.nav}
+        </div>
         <h1 className="font-mono text-2xl font-semibold">
           {symbol.name}{' '}
-          <span className="text-sm font-normal text-neutral-500">
+          <span className="text-sm font-normal text-muted">
             {symbol.kind} in {baseName(file.path)}
           </span>
         </h1>

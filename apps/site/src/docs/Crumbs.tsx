@@ -7,7 +7,7 @@ export function Crumbs(props: { readonly path: string; readonly last?: boolean }
   const parts = props.path === '' ? [] : props.path.split('/')
   const upto = props.last === true ? parts.length : parts.length - 1
   return (
-    <nav className="mb-2 font-mono text-sm text-neutral-500">
+    <nav className="mb-2 font-mono text-sm text-muted">
       <Link to="/docs" className="hover:underline">
         whitebox-engine
       </Link>
