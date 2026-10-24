@@ -19,6 +19,8 @@ export interface SceneViewProps {
   readonly onNodeHover?: (id: string | null, node: SceneNode | null) => void
   /** Ids of nodes to draw emphasised (an accent outline). */
   readonly highlight?: readonly string[]
+  /** The part of the scene to show, `[x, y, width, height]` in scene coordinates (default all of it): pan and zoom. */
+  readonly viewBox?: readonly [number, number, number, number]
   /** Content drawn over the scene, in scene coordinates (overlays, handles). */
   readonly children?: ReactNode
   readonly className?: string
@@ -319,7 +321,7 @@ export function SceneView(props: SceneViewProps): ReactElement {
     <svg
       width={width}
       height={height}
-      viewBox={`0 0 ${scene.width} ${scene.height}`}
+      viewBox={props.viewBox === undefined ? `0 0 ${scene.width} ${scene.height}` : props.viewBox.join(' ')}
       className={className}
       style={{ display: 'block', maxWidth: '100%', height: 'auto', ...style }}
       role="img"
