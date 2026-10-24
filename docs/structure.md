@@ -1006,8 +1006,9 @@ oracle: scipy.stats.entropy, sklearn mutual information, zlib (byte-exact DEFLAT
 - `stream-coding.ts`: arithmetic coding (32-bit integer, pending bits) and carry-less range coding, with static and
   adaptive frequency models.
 - `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
-- `dictionary-coding.ts`: LZ77, LZ78, LZW, DEFLATE and the zlib and gzip formats (compress and inflate), BWT with
-  move-to-front.
+- `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
+- `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and
+  an inflater with puff's checks), the zlib and gzip formats (compress and decompress), CRC-32 and Adler-32.
 - `channels.ts`: capacity by Blahut-Arimoto (traced), rate-distortion, binary symmetric, erasure and Z channels,
   Gaussian channels and water-filling.
 - `error-correction.ts`: parity, repetition and Hamming codes, Reed-Solomon over GF(2^m), convolutional codes with Viterbi
@@ -3216,7 +3217,7 @@ library for the same computation. They do not set a higher bar than that library
 | Opacus                            | `lib/learn/privacy.ts`, `methods/privacy/`                                                        |
 | SHAP, Captum                      | `lib/learn/explain/`                                                                              |
 | cleanlab, Snorkel                 | `methods/weak-supervision/`                                                                       |
-| zlib                              | `lib/information/dictionary-coding.ts`                                                            |
+| zlib                              | `lib/information/deflate.ts`                                                                      |
 
 ## 12. Order of construction
 

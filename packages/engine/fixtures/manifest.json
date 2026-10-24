@@ -237,6 +237,14 @@
       "cases": 4
     },
     {
+      "fixture": "information/deflate.json",
+      "source": "oracle/cases/information/deflate.py",
+      "reference": {
+        "zlib": "1.2.12"
+      },
+      "cases": 102
+    },
+    {
       "fixture": "information/discrete.json",
       "source": "oracle/cases/information/discrete.py",
       "reference": {
