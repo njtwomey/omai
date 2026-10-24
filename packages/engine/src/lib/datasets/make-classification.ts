@@ -77,20 +77,53 @@ export const makeClassification: DatasetGenerator<ClassificationData> = {
   description:
     'Gaussian clusters on hypercube vertices with informative, redundant, repeated and noise features (sklearn make_classification).',
   knobs: dict({
-    n: int(2, 100_000, { default: 100, label: 'samples' }),
-    nFeatures: int(1, 1000, { default: 20, label: 'features' }),
-    nInformative: int(1, 100, { default: 2, label: 'informative features' }),
-    nRedundant: int(0, 100, { default: 2, label: 'redundant features' }),
-    nRepeated: int(0, 100, { default: 0, label: 'repeated features' }),
-    nClasses: int(2, 50, { default: 2, label: 'classes' }),
-    nClustersPerClass: int(1, 20, { default: 2, label: 'clusters per class' }),
-    classSep: real(0, 20, { default: 1, label: 'class separation' }),
-    imbalance: real(1, 1000, { default: 1, log: true, label: 'largest to smallest class weight' }),
-    flipY: real(0, 1, { default: 0.01, label: 'label flip probability' }),
-    hypercube: bool({ default: true, label: 'centres on hypercube vertices' }),
-    shift: real(-100, 100, { default: 0 }),
-    scale: real(0.001, 100, { default: 1 }),
-    shuffle: bool({ default: true }),
+    n: int(2, 100_000, { description: 'The number of rows.', default: 100, label: 'samples' }),
+    nFeatures: int(1, 1000, { description: 'The total number of features.', default: 20, label: 'features' }),
+    nInformative: int(1, 100, {
+      description: 'Features carrying the class signal.',
+      default: 2,
+      label: 'informative features',
+    }),
+    nRedundant: int(0, 100, {
+      description: 'Random linear combinations of the informative features.',
+      default: 2,
+      label: 'redundant features',
+    }),
+    nRepeated: int(0, 100, {
+      description: 'Duplicates of informative or redundant features.',
+      default: 0,
+      label: 'repeated features',
+    }),
+    nClasses: int(2, 50, { description: 'The number of classes.', default: 2, label: 'classes' }),
+    nClustersPerClass: int(1, 20, {
+      description: 'Gaussian clusters making up each class.',
+      default: 2,
+      label: 'clusters per class',
+    }),
+    classSep: real(0, 20, {
+      description: 'The hypercube side scale: larger separates the classes more.',
+      default: 1,
+      label: 'class separation',
+    }),
+    imbalance: real(1, 1000, {
+      description: 'The ratio of the largest to the smallest class weight (1: balanced).',
+      default: 1,
+      log: true,
+      label: 'largest to smallest class weight',
+    }),
+    flipY: real(0, 1, {
+      description: 'The fraction of labels assigned at random.',
+      default: 0.01,
+      label: 'label flip probability',
+    }),
+    hypercube: bool({
+      description: 'Put cluster centres on hypercube vertices (otherwise on a random polytope).',
+      default: true,
+      label: 'centres on hypercube vertices',
+    }),
+    shift: real(-100, 100, { label: 'shift', description: 'A constant added to every feature.', default: 0 }),
+    scale: real(0.001, 100, { label: 'scale', description: 'A factor every feature is multiplied by.', default: 1 }),
+    shuffle: bool({ label: 'shuffle', description: 'Shuffle the rows and the feature columns.', default: true }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -263,12 +296,24 @@ export const makeMultilabelClassification: DatasetGenerator<MultilabelData> = {
   description:
     'Bag-of-words rows with labels drawn from a Poisson-multinomial model (sklearn make_multilabel_classification).',
   knobs: dict({
-    n: int(1, 100_000, { default: 100, label: 'samples' }),
-    nFeatures: int(1, 10_000, { default: 20, label: 'features (vocabulary)' }),
-    nClasses: int(1, 100, { default: 5, label: 'classes' }),
-    nLabels: real(0, 100, { default: 2, label: 'mean labels per row' }),
-    length: real(1, 10_000, { default: 50, label: 'mean document length' }),
-    allowUnlabeled: bool({ default: true }),
+    n: int(1, 100_000, { description: 'The number of rows.', default: 100, label: 'samples' }),
+    nFeatures: int(1, 10_000, {
+      description: 'The number of words in the vocabulary.',
+      default: 20,
+      label: 'features (vocabulary)',
+    }),
+    nClasses: int(1, 100, { description: 'The number of labels.', default: 5, label: 'classes' }),
+    nLabels: real(0, 100, {
+      description: 'The mean number of labels per row (Poisson).',
+      default: 2,
+      label: 'mean labels per row',
+    }),
+    length: real(1, 10_000, {
+      description: 'The mean number of words per row (Poisson).',
+      default: 50,
+      label: 'mean document length',
+    }),
+    allowUnlabeled: bool({ label: 'allow unlabelled', description: 'Allow rows with no label.', default: true }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number

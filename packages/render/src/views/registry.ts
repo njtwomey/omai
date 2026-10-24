@@ -6,6 +6,7 @@ import { anomalyView } from './anomaly.ts'
 import { boardFrames, populationFrames } from './boards.ts'
 import { componentsView } from './components.ts'
 import { episodeView } from './episodes.ts'
+import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
 import { stateSequenceView } from './sequences.ts'
@@ -247,6 +248,17 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => stateSequenceView(r, o),
+  },
+  imageSteps: {
+    kind: 'imageSteps',
+    component: 'ImagePlayer',
+    title: 'Images',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      const frames = imageFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
   },
   populationSteps: {
     kind: 'populationSteps',

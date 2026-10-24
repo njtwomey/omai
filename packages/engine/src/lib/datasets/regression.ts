@@ -57,9 +57,17 @@ function standardNormalLogDensity(d: number): (v: Value) => Value {
 
 const knobs = (minFeatures: number) =>
   dict({
-    n: int(2, 100_000, { default: 100, label: 'samples' }),
-    nFeatures: int(minFeatures, 100, { default: Math.max(minFeatures, 10), label: 'features' }),
-    noise: real(0, 10, { default: 0, label: 'noise standard deviation' }),
+    n: int(2, 100_000, { default: 100, label: 'samples', description: 'The number of rows.' }),
+    nFeatures: int(minFeatures, 100, {
+      default: Math.max(minFeatures, 10),
+      label: 'features',
+      description: `The number of uniform features (the first ${minFeatures} matter).`,
+    }),
+    noise: real(0, 10, {
+      default: 0,
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the Gaussian noise on y.',
+    }),
   })
 
 /**
@@ -207,7 +215,14 @@ function friedman23(
     name,
     kind: 'regression',
     description,
-    knobs: dict({ n: int(2, 100_000, { default: 100, label: 'samples' }), noise: real(0, 100, { default: 0 }) }),
+    knobs: dict({
+      n: int(2, 100_000, { description: 'The number of rows.', default: 100, label: 'samples' }),
+      noise: real(0, 100, {
+        label: 'noise standard deviation',
+        description: 'The standard deviation of the Gaussian noise on y.',
+        default: 0,
+      }),
+    }),
     generate: (k, knobValues) => {
       const n = knobValues['n'] as number
       const noise = knobValues['noise'] as number
@@ -285,15 +300,35 @@ export const makeRegression: DatasetGenerator<RegressionData> = {
   description:
     'A random linear model with Gaussian or low-rank features, some informative, plus bias and Gaussian noise.',
   knobs: dict({
-    n: int(2, 100_000, { default: 100 }),
-    nFeatures: int(1, 1000, { default: 10 }),
-    nInformative: int(0, 1000, { default: 5 }),
-    nTargets: int(1, 100, { default: 1 }),
-    bias: real(-100, 100, { default: 0 }),
-    noise: real(0, 100, { default: 0 }),
-    effectiveRank: int(0, 1000, { default: 0, label: 'effective rank (0: well conditioned)' }),
-    tailStrength: real(0, 1, { default: 0.5, label: 'singular value tail strength' }),
-    shuffle: bool({ default: false, label: 'shuffle feature columns' }),
+    n: int(2, 100_000, { label: 'samples', description: 'The number of rows.', default: 100 }),
+    nFeatures: int(1, 1000, { label: 'features', description: 'The number of features.', default: 10 }),
+    nInformative: int(0, 1000, {
+      label: 'informative features',
+      description: 'Features with a non-zero coefficient.',
+      default: 5,
+    }),
+    nTargets: int(1, 100, { label: 'targets', description: 'The number of target columns.', default: 1 }),
+    bias: real(-100, 100, { label: 'bias', description: 'The intercept of the linear model.', default: 0 }),
+    noise: real(0, 100, {
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the Gaussian noise on y.',
+      default: 0,
+    }),
+    effectiveRank: int(0, 1000, {
+      description: 'The approximate rank of the features (0: independent, well-conditioned features).',
+      default: 0,
+      label: 'effective rank (0: well conditioned)',
+    }),
+    tailStrength: real(0, 1, {
+      description: 'How heavy the tail of the singular values is (low-rank features).',
+      default: 0.5,
+      label: 'singular value tail strength',
+    }),
+    shuffle: bool({
+      description: 'Shuffle the feature columns (and rows).',
+      default: false,
+      label: 'shuffle feature columns',
+    }),
   }),
   generate: (k, knobValues) => {
     const n = knobValues['n'] as number
@@ -349,8 +384,12 @@ export const sparseUncorrelated: DatasetGenerator<RegressionData> = {
   kind: 'regression',
   description: 'Independent Gaussian features, four of them informative: y = x0 + 2 x1 - 2 x2 - 1.5 x3 + N(0, 1).',
   knobs: dict({
-    n: int(2, 100_000, { default: 100, label: 'samples' }),
-    nFeatures: int(4, 1000, { default: 10, label: 'features' }),
+    n: int(2, 100_000, { description: 'The number of rows.', default: 100, label: 'samples' }),
+    nFeatures: int(4, 1000, {
+      description: 'The number of features (the first four matter).',
+      default: 10,
+      label: 'features',
+    }),
   }),
   generate: (k, knobValues) => {
     const n = knobValues['n'] as number

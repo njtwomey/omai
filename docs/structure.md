@@ -2804,6 +2804,8 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   and a caption, with metrics per step; mazes and frontiers, game trees with pruned branches, CSP boards, itemset
   lattices, cellular automata) and `PopulationSteps` (generations of a population: fitness, positions over the
   objective's surface with the search distribution, or the best program's curve over its data);
+- `ImageSteps` (small grey images per recorded step in named groups: a generative model's data, reconstructions and
+  samples from fixed noise, with the objective per step);
 - `StateSequence` (a hidden-state model's posteriors over time, the decoded path and the true states).
   Records that index the training rows (clusterings, mixtures, margins, neighbours, anomaly scores, decision surfaces)
   carry those rows (`InputRows`, two coordinates each, for data up to a few thousand rows), so a view draws from the
@@ -3268,8 +3270,11 @@ built from: `stats`, `metrics`, `linear`, `rl/bandits.ts`
 `patterns/` (pattern mining; mlxtend, SPMF, pysubgroup)
 oracle: mlxtend, pysubgroup, spmf outputs recorded once
 built from: `search/refinement.ts`, `stats/tests`, `information`, `learn`
-- `itemsets.ts`: Apriori, FP-growth and Eclat; closed and maximal itemsets.
-- `association-rules.ts`: association rules with support, confidence, lift, leverage and conviction.
+- `itemsets.ts`: Apriori, FP-growth and Eclat; closed and maximal itemsets (so far `apriori`, played level by level
+  over the candidate lattice, and `fpGrowth`, played as its FP-tree grows and each item is mined, both as
+  `BoardSteps`; `TEXTBOOK_BASKETS`, `marketBaskets`; TODO Eclat, closed and maximal itemsets).
+- `association-rules.ts`: association rules with support, confidence, lift, leverage and conviction
+  (`associationRules`, the top rules' lifts as a `CoefficientTable`).
 - `sequences.ts`: sequential pattern mining (GSP, PrefixSpan), episodes in event sequences.
 - `subgraphs.ts`: frequent subgraph mining (gSpan for small graphs).
 - `subgroup-discovery.ts`: subgroup discovery for nominal and numeric targets (WRAcc, lift, binomial and z-score
@@ -3320,8 +3325,10 @@ built from: `search/evolutionary/`, `symbolic`, `nn`, `rl`
 
 `complex-systems/`
 built from: `stochastic`, `graph`, `dynamics`, `scene`
-- `cellular-automata.ts`: elementary automata (Wolfram rules), Game of Life, Langton's ant.
-- `agent-based.ts`: Schelling segregation, boids, predator-prey and Sugarscape-style models.
+- `cellular-automata.ts`: elementary automata (Wolfram rules), Game of Life, Langton's ant (so far
+  `elementaryAutomaton` and `gameOfLife`, played as `BoardSteps`; TODO Langton's ant).
+- `agent-based.ts`: Schelling segregation, boids, predator-prey and Sugarscape-style models (so far `schelling`,
+  played round by round with unhappy agents marked; TODO the rest).
 - `networks.ts`: epidemics on networks, threshold cascades, influence maximisation, small-world and scale-free studies.
 - `criticality.ts`: sandpiles, percolation, forest-fire models.
 ### 5.7 Domains
@@ -4050,7 +4057,7 @@ Design rules:
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
-  (`BoardSteps` and `PopulationSteps` as players).
+  (`BoardSteps` and `PopulationSteps` as players), `images.ts` (`ImageSteps` as a mosaic of image rows per step).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile

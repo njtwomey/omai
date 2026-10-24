@@ -79,4 +79,12 @@ describe('entries starting from their own knobs', () => {
     expect(stateFromQuery(roll, 'data=manifold3d/swissRoll')).toEqual(demo)
     expect(() => defineEntry({ ...spec('demo/roll'), datasets: ['manifold3d'], knobs: { zzz: 1 } })).toThrow(/knob/)
   })
+
+  it('keep the dataset’s feature names when fitting without targets', async () => {
+    const pca = catalogue.byId.get('sklearn/decomposition/pca')
+    if (pca === undefined) throw new Error('no PCA entry')
+    const out = await runDemo(pca)
+    const record = out.exposition.find((r) => r.kind === 'components') as { readonly features?: readonly string[] }
+    expect(record.features?.[0]).toBe('sepal length (cm)')
+  })
 })

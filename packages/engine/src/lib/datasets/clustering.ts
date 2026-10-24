@@ -48,8 +48,16 @@ function clustered(
   return { data: rows, truth: withLazyBayesError({ ...truth, clusters }, bayes) }
 }
 
-const nKnob = int(2, 100_000, { default: 300, label: 'samples' })
-const shuffleKnob = bool({ default: true })
+const nKnob = int(2, 100_000, {
+  description: 'The number of rows, split evenly between the rings.',
+  default: 300,
+  label: 'samples',
+})
+const shuffleKnob = bool({
+  label: 'shuffle rows',
+  description: 'Shuffle the rows; otherwise they come ring by ring.',
+  default: true,
+})
 
 /**
  * Concentric rings: ring `k` has radius `k + 1`, angles uniform and radial Gaussian noise. The posterior depends only
@@ -69,8 +77,12 @@ export const rings: DatasetGenerator<ClassificationData> = {
   description: 'Concentric rings of radius 1, 2, ... with radial Gaussian noise.',
   knobs: dict({
     n: nKnob,
-    rings: int(2, 20, { default: 2 }),
-    noise: real(0.001, 2, { default: 0.1, label: 'radial noise' }),
+    rings: int(2, 20, { label: 'rings', description: 'The number of concentric rings (radii 1, 2, ...).', default: 2 }),
+    noise: real(0.001, 2, {
+      description: 'The standard deviation of the radial noise.',
+      default: 0.1,
+      label: 'radial noise',
+    }),
     shuffle: shuffleKnob,
   }),
   generate: (k, knobs) => {
@@ -143,9 +155,17 @@ export const anisotropicBlobs: DatasetGenerator<ClassificationData> = {
   description: 'Gaussian blobs sheared by a linear map, so the clusters are elongated.',
   knobs: dict({
     n: nKnob,
-    centers: int(1, 20, { default: 3 }),
-    clusterStd: real(0.01, 10, { default: 1 }),
-    boxSize: real(0.1, 100, { default: 10 }),
+    centers: int(1, 20, { label: 'centres', description: 'The number of blobs.', default: 3 }),
+    clusterStd: real(0.01, 10, {
+      label: 'cluster standard deviation',
+      description: 'The standard deviation of each blob before shearing.',
+      default: 1,
+    }),
+    boxSize: real(0.1, 100, {
+      label: 'centre box half-width',
+      description: 'Centres are drawn uniformly in [-boxSize, boxSize] along each axis.',
+      default: 10,
+    }),
     shuffle: shuffleKnob,
   }),
   generate: (k, knobs) => {
@@ -222,9 +242,17 @@ export const unequalVarianceBlobs: DatasetGenerator<ClassificationData> = {
   description: 'Isotropic Gaussian blobs with different standard deviations.',
   knobs: dict({
     n: nKnob,
-    centers: int(1, 20, { default: 3 }),
-    spread: real(0.01, 10, { default: 1, label: 'scale of the standard deviations' }),
-    boxSize: real(0.1, 100, { default: 10 }),
+    centers: int(1, 20, { label: 'centres', description: 'The number of blobs.', default: 3 }),
+    spread: real(0.01, 10, {
+      description: 'Scales the blobs’ standard deviations (0.5, 1.5 and 2.5 times, cycling).',
+      default: 1,
+      label: 'scale of the standard deviations',
+    }),
+    boxSize: real(0.1, 100, {
+      label: 'centre box half-width',
+      description: 'Centres are drawn uniformly in [-boxSize, boxSize] along each axis.',
+      default: 10,
+    }),
     shuffle: shuffleKnob,
   }),
   generate: (k, knobs) => {

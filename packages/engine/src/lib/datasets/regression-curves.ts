@@ -100,9 +100,17 @@ function curveData(
   return { data: xy(x, y, { ...stamp(name, description, knobs), featureNames: ['x'] }), truth }
 }
 
-const n1 = int(2, 100_000, { default: 100, label: 'samples' })
-const design = choice(['uniform', 'sorted', 'grid'], { default: 'uniform', label: 'design of x' })
-const noiseKnob = real(0, 10, { default: 0.1, label: 'noise standard deviation' })
+const n1 = int(2, 100_000, { description: 'The number of rows.', default: 100, label: 'samples' })
+const design = choice(['uniform', 'sorted', 'grid'], {
+  description: 'Where x lies: uniform draws, the same sorted, or an even grid.',
+  default: 'uniform',
+  label: 'design of x',
+})
+const noiseKnob = real(0, 10, {
+  description: 'The standard deviation of the Gaussian noise.',
+  default: 0.1,
+  label: 'noise standard deviation',
+})
 const constant =
   (s: number) =>
   (x: Value): Value =>
@@ -125,8 +133,8 @@ export const sineCurve: DatasetGenerator<RegressionData> = {
   knobs: dict({
     n: n1,
     noise: noiseKnob,
-    frequency: real(0.1, 50, { default: 1 }),
-    amplitude: real(0, 100, { default: 1 }),
+    frequency: real(0.1, 50, { label: 'frequency', description: 'Cycles over [0, 1].', default: 1 }),
+    amplitude: real(0, 100, { label: 'amplitude', description: 'The amplitude of the sine wave.', default: 1 }),
     design,
   }),
   generate: (k, knobs) => {
@@ -155,7 +163,12 @@ export const stepCurve: DatasetGenerator<RegressionData> = {
   name: 'stepCurve',
   kind: 'regression',
   description: 'A staircase with equally spaced jumps on [0, 1], with Gaussian noise.',
-  knobs: dict({ n: n1, noise: noiseKnob, steps: int(1, 50, { default: 1, label: 'jumps' }), design }),
+  knobs: dict({
+    n: n1,
+    noise: noiseKnob,
+    steps: int(1, 50, { description: 'The number of equally spaced jumps.', default: 1, label: 'jumps' }),
+    design,
+  }),
   generate: (k, knobs) => {
     const steps = knobs['steps'] as number
     const s = knobs['noise'] as number
@@ -212,7 +225,15 @@ export const dopplerCurve: DatasetGenerator<RegressionData> = {
   name: 'dopplerCurve',
   kind: 'regression',
   description: 'The Doppler function of Donoho and Johnstone on [0, 1] with Gaussian noise.',
-  knobs: dict({ n: n1, noise: real(0, 10, { default: 0.05 }), design }),
+  knobs: dict({
+    n: n1,
+    noise: real(0, 10, {
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the Gaussian noise.',
+      default: 0.05,
+    }),
+    design,
+  }),
   generate: (k, knobs) => {
     const s = knobs['noise'] as number
     const eps = 0.05
@@ -244,8 +265,16 @@ export const heteroscedastic: DatasetGenerator<RegressionData> = {
   description: 'A sine wave whose noise standard deviation grows linearly with x.',
   knobs: dict({
     n: n1,
-    base: real(0.001, 10, { default: 0.1, label: 'noise at x = 0' }),
-    slope: real(0, 10, { default: 0.5, label: 'noise growth per unit x' }),
+    base: real(0.001, 10, {
+      description: 'The noise standard deviation at x = 0.',
+      default: 0.1,
+      label: 'noise at x = 0',
+    }),
+    slope: real(0, 10, {
+      description: 'How much the noise standard deviation grows per unit of x.',
+      default: 0.5,
+      label: 'noise growth per unit x',
+    }),
     design,
   }),
   generate: (k, knobs) => {
@@ -278,7 +307,11 @@ export const quantileCurves: DatasetGenerator<RegressionData> = {
   description: 'y = x sin(x) + (0.2 + 0.1 x) e on [0, 10] with Gaussian, Laplace, Student t or Gumbel noise.',
   knobs: dict({
     n: n1,
-    noise: choice(['gaussian', 'laplace', 'student-t', 'gumbel'], { default: 'gaussian' }),
+    noise: choice(['gaussian', 'laplace', 'student-t', 'gumbel'], {
+      label: 'noise distribution',
+      description: 'The distribution of the noise e: Gaussian, Laplace, Student t (3) or Gumbel, all standardised.',
+      default: 'gaussian',
+    }),
     design,
   }),
   generate: (k, knobs) => {
@@ -312,7 +345,16 @@ export const piecewiseLinear: DatasetGenerator<RegressionData> = {
   name: 'piecewiseLinear',
   kind: 'regression',
   description: 'A continuous piecewise-linear function with random knots and slopes, plus Gaussian noise.',
-  knobs: dict({ n: n1, noise: noiseKnob, knots: int(0, 50, { default: 3 }), design }),
+  knobs: dict({
+    n: n1,
+    noise: noiseKnob,
+    knots: int(0, 50, {
+      label: 'knots',
+      description: 'The number of interior knots where the slope changes.',
+      default: 3,
+    }),
+    design,
+  }),
   generate: (k, knobs) => {
     const s = knobs['noise'] as number
     const m = knobs['knots'] as number
@@ -361,9 +403,17 @@ export const additiveModel: DatasetGenerator<RegressionData> = {
   description: 'y = sum of smooth univariate components of uniform features, plus Gaussian noise (a GAM).',
   knobs: dict({
     n: n1,
-    nFeatures: int(1, 100, { default: 4 }),
-    nInformative: int(1, 100, { default: 4 }),
-    noise: real(0, 10, { default: 0.5 }),
+    nFeatures: int(1, 100, { label: 'features', description: 'The number of uniform features.', default: 4 }),
+    nInformative: int(1, 100, {
+      label: 'informative features',
+      description: 'How many features have a non-zero component.',
+      default: 4,
+    }),
+    noise: real(0, 10, {
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the Gaussian noise.',
+      default: 0.5,
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
