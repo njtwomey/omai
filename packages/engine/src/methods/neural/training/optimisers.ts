@@ -97,7 +97,7 @@ export function optimiserRace(
       learningRate,
       epochs,
       batchSize: options.batchSize ?? 32,
-      snapshots: 2,
+      snapshots: 20,
       fit: { ...fit, key: foldIn(key, 2) },
       ...(options.onProgress === undefined
         ? {}
@@ -112,7 +112,7 @@ export function optimiserRace(
             },
           }),
     })
-    surfaces.push(surfaceOf(net, training.params, training.buffers, task, options.resolution ?? 30))
+    surfaces.push(surfaceOf(net, training.params, training.buffers, task, options.resolution ?? 30, training))
     curves.push(lossCurve(training))
     runs.push({
       optimiser,

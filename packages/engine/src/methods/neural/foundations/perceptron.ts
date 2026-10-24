@@ -2,6 +2,7 @@ import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { coefficientTable, type Exposition, learningCurve } from '../../../lib/exposition/index.ts'
 import {
   classNamesOf,
+  type DecisionSurfaceOptions,
   decisionSurfaceOf,
   defineExplainedEstimator,
   type ExplainedEstimator,
@@ -9,6 +10,7 @@ import {
   encodeLabels,
   type Fitted,
   featureNamesOf,
+  geometricSteps,
   matrixView,
 } from '../../../lib/learn/index.ts'
 import { ddot, dnrm2 } from '../../../lib/numerics/linalg/index.ts'
@@ -165,7 +167,12 @@ export function rosenblattPerceptron(
         const featureNames = featureNamesOf(data, d)
         const fitted = { estimator: 'rosenblattPerceptron', kind: 'classifier' as const, params, ...verbs(params) }
         const exposition: Exposition[] = [
-          decisionSurfaceOf(fitted, data.x, { featureNames, classNames: classNamesOf(data, params.classes) }),
+          decisionSurfaceOf(fitted, data.x, {
+            featureNames,
+            classNames: classNamesOf(data, params.classes),
+            ...(data.y === undefined ? {} : { y: data.y }),
+            ...updateSteps(params, rows, labels, h.fitIntercept),
+          }),
           learningCurve({
             sizes: mistakes.map((_, e) => e + 1),
             train: mistakes,
@@ -192,14 +199,52 @@ export function rosenblattPerceptron(
             ],
           }),
         ]
-        // TODO: once DecisionSurface records steps (the records branch), the surface after geometric updates, each
-        // highlighting the row that triggered it.
         return { params, exposition }
       },
       methods: (p) => verbs(p),
     },
     { maxEpochs: 50, eta: 1, fitIntercept: true, shuffle: true, maxRecorded: 2000, ...hyper },
   )
+}
+
+/**
+ * The surface after geometrically spaced updates (the zero weights first), each highlighting the row whose mistake
+ * triggered it, with the rows then misclassified as the objective.
+ */
+function updateSteps(
+  p: RosenblattParams,
+  rows: readonly (readonly number[])[],
+  labels: readonly number[],
+  intercept: boolean,
+): Pick<DecisionSurfaceOptions, 'steps' | 'stepName'> {
+  const recorded = p.history.length
+  if (recorded === 0) return {}
+  const d = p.weights.length
+  const at = geometricSteps(recorded, 40)
+  const weightsAt = (u: number): readonly number[] =>
+    u === 0 ? new Array<number>(d + 1).fill(0) : (p.history[u - 1]?.weights ?? [])
+  const mistakes = (w: readonly number[]): number =>
+    rows.reduce((m, r, i) => m + ((labels[i] ?? 0) * ddot(w, r) > 0 ? 0 : 1), 0)
+  const models = at.map((u) => {
+    const w = weightsAt(u)
+    const params: RosenblattParams = {
+      ...p,
+      weights: w.slice(0, d),
+      intercept: intercept ? (w[d] ?? 0) : 0,
+      history: [],
+    }
+    return { estimator: 'rosenblattPerceptron', kind: 'classifier' as const, params, ...verbs(params) }
+  })
+  return {
+    steps: {
+      models,
+      iterations: at,
+      objective: at.map((u) => mistakes(weightsAt(u).slice(0, intercept ? d + 1 : d))),
+      highlight: at.map((u) => (u === 0 ? [] : [p.history[u - 1]?.row ?? 0])),
+      highlightName: 'the row whose mistake made the update',
+    },
+    stepName: 'update',
+  }
 }
 
 function verbs(p: RosenblattParams): RosenblattVerbs {

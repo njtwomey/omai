@@ -310,8 +310,10 @@ function fitMlp(
  */
 function mlpExposition(net: Sequential, training: Training, prep: Task, h: MlpHyper): Exposition[] {
   const [n = 0, d = 0] = prep.x.shape
-  // TODO: once DecisionSurface records steps (the records branch), record the surface at every snapshot.
-  const out: Exposition[] = [surfaceOf(net, training.params, training.buffers, prep, h.resolution), lossCurve(training)]
+  const out: Exposition[] = [
+    surfaceOf(net, training.params, training.buffers, prep, h.resolution, training),
+    lossCurve(training),
+  ]
   const score = scoreCurve(training, prep.output === 'identity' ? 'R²' : 'accuracy')
   if (score !== undefined) out.push(score)
   if (h.hiddenLayerSizes.length > 0) {

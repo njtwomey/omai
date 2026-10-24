@@ -15,14 +15,14 @@ export const regularisation: HubEntry = defineEntry({
   datasets: ['classification2d', 'regression1d'],
   params: dict({
     kind: choice(['dropout', 'weightDecay'] as const, { default: 'dropout', label: 'regulariser' }),
-    epochs: int(10, 500, { log: true, default: 120 }),
+    epochs: int(10, 500, { log: true, default: 100 }),
   }),
   run: ({ data, params, key, progress }) =>
     study(
       learnDataOf(data),
       {
         kind: (params['kind'] ?? 'dropout') as 'dropout' | 'weightDecay',
-        epochs: typeof params['epochs'] === 'number' ? params['epochs'] : 120,
+        epochs: typeof params['epochs'] === 'number' ? params['epochs'] : 100,
         ...(progress === undefined ? {} : { onProgress: progress }),
       },
       { key },

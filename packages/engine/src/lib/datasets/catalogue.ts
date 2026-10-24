@@ -8,11 +8,13 @@ import { driftingTopics, naiveBayesCorpus, nearDuplicateCorpus, tinyShakespeare,
 import { densitySamples } from './densities.ts'
 import { hawkesProcess, inhomogeneousPoisson, poissonProcess, spatialPoisson } from './events.ts'
 import { abTest } from './experiments.ts'
+import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, kinshipTriples } from './graphs.ts'
 import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes } from './images.ts'
 import { makeClassification, makeMultilabelClassification } from './make-classification.ts'
 import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
 import { antiderivativeOperator, burgersOperator, heatOperator } from './operators.ts'
+import { blobsWithOutliers, linearOutliers, moonsWithOutliers } from './outliers.ts'
 import { miscalibratedPredictions, survivalData } from './predictions.ts'
 import { clickLogs, implicitFeedback, lowRankRatings, movielensSmall, zipfianCatalogue } from './ranking.ts'
 import { friedman1, friedman2, friedman3, makeRegression, sparseUncorrelated } from './regression.ts'
@@ -62,6 +64,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   associativeRecall,
   barsAndStripes,
   blobs,
+  blobsWithOutliers,
   burgersOperator,
   changepointSeries,
   checkerboard,
@@ -81,6 +84,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   friedman3,
   gaussianQuantiles,
   geometricScenes,
+  glmCurve,
   graphFamilies,
   growthCurves,
   hastie10_2,
@@ -93,6 +97,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   kinshipTriples,
   labelProportionBags,
   labellingFunctions,
+  linearOutliers,
   linearScm,
   loggedBandit,
   lowRankRatings,
@@ -102,6 +107,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   miscalibratedPredictions,
   modularArithmetic,
   moons,
+  moonsWithOutliers,
   naiveBayesCorpus,
   nearDuplicateCorpus,
   offlineMdp,

@@ -59,9 +59,32 @@ function glmRegressor(
       kind: 'regressor',
       hyperSpace: (g: GlmHyper): Space =>
         dict({
-          alpha: real(0, 10, { default: g.alpha, label: 'L2 penalty' }),
-          fitIntercept: bool({ default: g.fitIntercept }),
-          ...(family === 'tweedie' ? { power: real(1, 3, { default: g.power, label: 'Tweedie power' }) } : {}),
+          alpha: real(0, 10, {
+            default: g.alpha,
+            label: 'L2 penalty',
+            description: 'The weight of the squared coefficients against the mean deviance (0 for maximum likelihood).',
+          }),
+          fitIntercept: bool({ default: g.fitIntercept, label: 'fit intercept' }),
+          ...(family === 'tweedie'
+            ? {
+                power: real(1, 3, {
+                  default: g.power,
+                  label: 'Tweedie power',
+                  description:
+                    'The variance power p (variance φ μ^p): 1 Poisson, 1 to 2 compound Poisson-gamma, 2 gamma.',
+                }),
+              }
+            : {}),
+          ...(family === 'negative-binomial'
+            ? {
+                nbAlpha: real(0.01, 10, {
+                  default: g.nbAlpha,
+                  log: true,
+                  label: 'dispersion α',
+                  description: 'The negative binomial’s ancillary parameter: variance μ + α μ².',
+                }),
+              }
+            : {}),
         }),
       fit: (data, g, options) => {
         const f = fitLinear(data, config(g), options, name)

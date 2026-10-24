@@ -12,6 +12,7 @@ export const mds: HubEntry = defineEntry({
   collection: 'sklearn/manifold',
   tags: ['manifold learning', 'embedding'],
   datasets: ['manifold3d', 'classificationTabular'],
+  knobs: { n: 150 },
   ...fitEstimator(mdsMethod({ maxIter: 100 }), { unsupervised: true }),
   views: [{ record: 'embeddingSteps', title: 'Embedding', view: 'EmbeddingPlayer', props: (_, c) => rowColours(c) }],
   methods: [{ file: 'methods/manifold/mds.ts', name: 'mds' }],
