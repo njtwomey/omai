@@ -1596,41 +1596,75 @@ representations are in `optim/sparse.ts`.
 
 ### 4.21 `text/` (tier 7): text processing (HF tokenizers, nltk, sklearn.feature_extraction.text)
 
-oracle: HF tokenizers, tiktoken, nltk, scikit-learn, rapidfuzz, datasketch
+oracle: HF tokenizers, tiktoken's patterns (with the `regex` module), nltk, scikit-learn, rapidfuzz, datasketch, gensim,
+jellyfish, Biopython, pyphen
 - `normalise.ts`: Unicode normalisation, case folding, accent stripping, whitespace collapsing, `AlignedText` (offsets
   back to the original).
-- `tokenise.ts`: regex, word (sklearn pattern, Treebank), tweet, character and grapheme tokenisers, sentence splitting,
-  detokenisation, pre-tokeniser patterns (GPT-2, cl100k, BERT).
-- `stem.ts`: Porter (with a rule trace) and Snowball English stemmers, rule-based lemmatisation, stop-word lists.
+- `tokenise.ts`: regex (nltk RegexpTokenizer, with gaps), whitespace, word (sklearn pattern), word-punct, character
+  and grapheme tokenisers, pre-tokeniser patterns (GPT-2, cl100k, o200k, HF Whitespace), HF-style splitting with
+  delimiter behaviours, BERT pre-tokenisation.
+- `treebank.ts`: the Penn Treebank tokeniser, nltk's improved word tokeniser, Treebank spans and detokenisation.
+- `tweet.ts`: nltk's TweetTokenizer (URLs, phone numbers, emoticons, handles, hashtags, emoji sequences), HTML entity
+  replacement, handle removal, lengthening reduction.
+- `sentences.ts`: sentence splitting: a rule-based splitter and Punkt (Kiss and Strunk 2006) training and tokenisation.
+- `stem.ts`: Porter (nltk's three modes, with a rule trace) and Snowball English stemmers.
+- `lemmatise.ts`: rule-based lemmatisation (WordNet's morphy detachment rules over a lexicon with exception lists, or
+  longest-suffix rules with common irregular forms).
+- `stopwords.ts`: stop-word lists (scikit-learn's, gensim's) and removal.
+- `hashing.ts`: MurmurHash3 (scikit-learn's), FNV-1a (with fastText's sign-extended variant), UTF-8 bytes.
 - `vocabulary.ts`: `Vocabulary`, building (minimum count, maximum size, specials, ordering), encoding and decoding.
 - `subword/bpe.ts`: BPE training (character and byte level, traced merges), encoding with dropout, the GPT-2 byte
   alphabet.
 - `subword/wordpiece.ts`: WordPiece training and greedy longest-match encoding.
-- `subword/unigram.ts`: Unigram language-model training (EM with pruning), Viterbi encoding, n-best and sampling.
-- `tokenizer.ts`: an HF-tokenizers-style pipeline (normaliser, pre-tokeniser, model, post-processor, decoder), batch
-  encoding with padding and truncation, loading HF tokenizer files.
+- `subword/unigram.ts`: Unigram language-model training (suffix-array seeds, EM with the digamma M step and pruning,
+  as HF's trainer, traced), Viterbi encoding, n-best and sampling.
+- `tokenizer.ts`: an HF-tokenizers-style pipeline (added tokens with single-word, lstrip, rstrip and normalized
+  matching; normaliser, pre-tokeniser, model, post-processor, decoder), encodings with offsets, type ids, masks, word
+  and sequence ids, batch encoding with padding and truncation (strategies, stride, overflowing windows), decoding.
+- `tokenizer-components.ts`: the pipeline's normalisers (Unicode forms, Lowercase, StripAccents, Strip, Replace,
+  Prepend, BertNormalizer, NMT, ByteLevel, Sequence), pre-tokenisers (Whitespace, WhitespaceSplit, BERT, ByteLevel,
+  Metaspace, Punctuation, Digits, Split, CharDelimiterSplit, FixedLength, Sequence), decoders (ByteLevel, WordPiece,
+  Metaspace, BPE, Replace, Strip, Fuse, ByteFallback, CTC, Sequence) and HF regex translation.
+- `tokenizer-json.ts`: loading HF `tokenizer.json` files. TODO: the Precompiled (SentencePiece charsmap) normaliser
+  and the UnicodeScripts pre-tokeniser.
 - `shingles.ts`: character k-shingles, word n-gram shingles, w-shingling, skip-grams, the hashed character n-grams of
   fastText (bucketed with FNV hashing), weighted shingles; one extractor shared by matching, fingerprinting and fastText.
 - `features.ts`: count, TF-IDF and hashing vectorisers, word and character n-grams, BM25 and BM25+ weighting.
 - `templates.ts`: feature-template languages for sequence labellers. CRF++ templates (Kudo 2005): `U` (unigram, conjoined
   with the label) and `B` (bigram, conjoined with the label pair) lines, `%x[row,col]` macros over a token-by-attribute
-  table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. CRFsuite-style attribute
-  templates: windows of `(attribute, offset)` tuples joined into attribute strings (`w[-1]|w[0]`). Expansion over a
-  sequence, a `FeatureIndex` (string to id with counts and a minimum frequency, as CRF++'s `-f`), feature firing for
-  inspection.
-- `representations.ts`: co-occurrence counts, PMI and PPMI, LSA, SVD word vectors, random indexing, analogies, nearest
-  words.
-- `similarity.ts`: Levenshtein, Damerau-Levenshtein, Jaro-Winkler, longest common subsequence, Needleman-Wunsch,
-  Smith-Waterman, Jaccard and containment over shingles, Soundex and Metaphone, token-set and token-sort ratios.
+  table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. Wapiti patterns (`u`,
+  `b`, `*` lines; `%x`, `%t`, `%m` commands with regular expressions, case-insensitive and absolute variants, `_x-1`
+  boundaries). Expansion over a sequence, a `FeatureIndex` (string to id with counts and a minimum frequency, as
+  CRF++'s `-f`), CRF++ weight offsets, feature firing for inspection.
+- `attribute-templates.ts`: CRFsuite-style attribute templates (windows of `(attribute, offset)` tuples joined into
+  attribute strings, `w[-1]|w[0]`, skipped or padded boundaries, bias, `__BOS__`/`__EOS__`; parsing from text) and
+  MALLET's offset conjunctions.
+- `representations.ts`: co-occurrence counts (windows, harmonic weighting), PMI, PPMI and shifted PPMI with context
+  smoothing, LSA, SVD word vectors, random indexing, analogies (3CosAdd, 3CosMul), nearest words.
+- `collocations.ts`: nltk's bigram and trigram association measures (raw frequency, Student's t, chi-square, PMI,
+  likelihood ratio, Poisson-Stirling, Jaccard, MI-like, Dice, phi squared, Fisher) and windowed collocation finding
+  with frequency and word filters.
+- `similarity.ts`: Levenshtein (weighted), the edit-alignment counts behind WER (rapidfuzz's tie-breaking),
+  Damerau-Levenshtein (OSA and unrestricted), Hamming, Jaro and Jaro-Winkler, longest common subsequence (table,
+  backtrace) and substring, Indel, Jaccard (set and weighted) and containment over shingles, clipped count overlaps,
+  ratio, token-set and token-sort ratios (rapidfuzz). The canonical home of the sequence helpers of `metrics/text.ts`.
+- `alignment.ts`: Needleman-Wunsch and Smith-Waterman with linear or affine (Gotoh) gaps, alignment scoring and
+  formatting.
+- `phonetic.ts`: Soundex and Metaphone (jellyfish's).
 - `approximate-search.ts`: approximate string search: q-gram indexes with count filtering, BK-trees, tries with fuzzy
   lookup, Sellers' approximate substring matching, top-k fuzzy matches with traced candidate pruning.
-- `fingerprinting.ts`: Rabin-Karp rolling hashes, winnowing (MOSS), SimHash, MinHash signatures for text, near-duplicate
-  detection.
-- `parsing.ts`: context-free grammars, CYK and Earley parsing, probabilistic CFGs (Viterbi parse, inside-outside),
-  dependency parsing (Eisner, arc-standard transitions).
-- `hyphenation.ts`: Liang pattern hyphenation with matching traces.
-- `statistics.ts`: Zipf and Heaps fits, type-token ratios, tokeniser fertility, compression ratio, topic coherence
-  (NPMI, UMass).
+- `fingerprinting.ts`: Rabin-Karp rolling hashes and search, winnowing (MOSS), SimHash, MinHash signatures (datasketch's
+  scheme), LSH banding with its optimal parameters, near-duplicate detection.
+- `parsing.ts`: context-free grammars (nltk's notation, probabilities), parse trees, CYK and Earley parsing, conversion
+  to Chomsky normal form.
+- `pcfg.ts`: probabilistic CFGs: the Viterbi parse, sentence probabilities, inside-outside expected counts, EM
+  training as a traced run.
+- `dependency-parsing.ts`: Eisner's projective parser (optionally single-rooted), projectivity, arc-standard
+  transitions with the static oracle and greedy transition-based parsing.
+- `hyphenation.ts`: Liang pattern hyphenation with matching traces, exceptions, and Hunspell/pyphen dictionaries.
+  TODO: Németh's non-standard (`/`) patterns.
+- `statistics.ts`: Zipf (log-log and maximum likelihood) and Heaps fits, type-token ratios (root, log, moving average,
+  hapax ratio), tokeniser fertility and compression ratio, topic coherence (UMass, NPMI as gensim).
 
 ### 4.22 `search/` (tier 7): search, constraint satisfaction and planning (AIMA)
 
@@ -1859,12 +1893,13 @@ into `whitebox-engine/pgm`; `learning` and `causal` are namespaces.
 - `models/state-space.ts`: HMMs (categorical and full-covariance Gaussian emissions: chain potentials, sampling, the DBN
   form) and linear dynamical systems (sampling, the unrolled linear-Gaussian network with correlated noise as
   within-slice arcs, smoothing with the log-likelihood) as DBNs.
-- `models/crf.ts`: conditional random fields: CRFsuite-style attribute templates over token columns (offset windows,
-  skipped or CRF++-padded boundaries, bias) and attribute vocabularies with frequency cut-offs; linear-chain CRFs
-  (potentials as chains, scores, conditional log-likelihoods, marginals, Viterbi decoding, the penalised objective with
-  its gradient, first-order training as a traced run); general CRFs over arbitrary cliques with per-assignment feature
-  tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The CRF++ template parser
-  and the estimators' training algorithms stay in `text/templates.ts` and `methods/models/crf.ts`.
+- `models/crf.ts`: conditional random fields: linear-chain CRFs with state, label-pair transition and
+  observation-dependent bigram features (potentials as chains, scores, conditional log-likelihoods, marginals, Viterbi
+  decoding, the penalised objective with its gradient, first-order training as a traced run), CRF++-form models and
+  inputs from parsed CRF++ templates (`crfppCrf`, `crfppObservation`); general CRFs over arbitrary cliques with
+  per-assignment feature tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The
+  template languages and feature indexes live in `text/templates.ts` and `text/attribute-templates.ts`, the
+  estimators' training algorithms in `methods/models/crf.ts`.
 - `models/plates.ts`: plate notation and template models, grounding against plate elements and relations, grounded
   evidence, pooled (parameter-sharing) maximum likelihood.
 - `models/influence.ts`: influence diagrams (decision and utility nodes, no-forgetting information sets), policy
@@ -1993,10 +2028,10 @@ none of those weights.
   (`precisionRecallDensityCoverage`), CLIPScore from embeddings (`clipScore`), Vendi score (any order).
 - `text.ts`: WER, CER, MER, WIL and WIP (jiwer's alignment); BLEU (corpus and sentence, smoothing, the 13a tokeniser
   `tokenize13a`); chrF and chrF++ (`chrfScore`, `wordOrder: 2`); TER (Tercom shifts and normalisation flags); ROUGE-N,
-  ROUGE-L and ROUGE-Lsum (rouge-score; a stemmer can be supplied); SQuAD exact match and token F1; BERTScore from
-  embeddings (idf weights, baseline rescaling); perplexity; distinct-n. Private `_sequences.ts` (edit alignment, LCS,
-  n-gram counts) and `_ter.ts`. TODO: move the alignment and LCS to `text/similarity.ts` and default ROUGE's stemmer to
-  `text/stem.ts` once the text domain exists.
+  ROUGE-L and ROUGE-Lsum (rouge-score; `stem: true` is rouge-score's `use_stemmer`, nltk's Porter from `text/stem.ts`,
+  or a stemmer can be supplied); SQuAD exact match and token F1; BERTScore from embeddings (idf weights, baseline
+  rescaling); perplexity; distinct-n. The edit alignment, LCS and n-gram counts come from `text/similarity.ts` and
+  `text/shingles.ts`; private `_ter.ts`.
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
