@@ -20,6 +20,11 @@ export interface InputRows {
   readonly targets?: readonly number[]
 }
 
+/** What colours a record's rows: a class per row (with the class names), or a numeric value per row (a target). */
+export type RowColours =
+  | { readonly kind: 'classes'; readonly labels: readonly number[]; readonly classes?: readonly string[] }
+  | { readonly kind: 'values'; readonly values: readonly number[]; readonly name?: string }
+
 /**
  * Input rows, with their shapes checked.
  *

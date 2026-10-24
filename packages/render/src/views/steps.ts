@@ -1,4 +1,4 @@
-import type { EChartsOption } from 'echarts'
+import type { EChartsOption, SeriesOption } from 'echarts'
 import { multivariateNormal } from 'whitebox-engine/dists'
 import type { ClusteringSteps, EmbeddingSteps, InputRows, MixtureSteps } from 'whitebox-engine/exposition'
 import { covarianceEllipse } from 'whitebox-engine/numerics/geometry'
@@ -8,9 +8,10 @@ import { type Panel, subplots } from '../charts/compose.ts'
 import { decisionRegions } from '../charts/fields.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { type Curve, lines } from '../charts/lines.ts'
-import { cartesian, type Layer } from '../charts/plot.ts'
+import { cartesian, type Layer, layer } from '../charts/plot.ts'
 import { type PointSet, points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
+import { sampleRamp, sequentialRamp } from '../theme/palettes.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { outlined, short, spanOf, type ViewFrames, type ViewOptions, viewFigure, viewMode } from './_view.ts'
 import type { Rows } from './surfaces.ts'
@@ -675,8 +676,10 @@ export function mixtureFrames(steps: MixtureSteps, options: StepsViewOptions = {
 
 /** Options of {@link embeddingFrames}. */
 export interface EmbeddingViewOptions extends ViewOptions {
-  /** A label per row (class or group) to colour the embedding by. */
+  /** A label per row (class or group) to colour the embedding by, instead of the record's colouring. */
   readonly labels?: readonly (number | string)[]
+  /** A number per row (a regression target) to colour the embedding by on a ramp with a colour bar. */
+  readonly values?: readonly number[]
   /** Draw the method's neighbour graph under the points (default false; at most 4000 edges). */
   readonly graph?: boolean
 }
@@ -690,11 +693,23 @@ export interface EmbeddingViewOptions extends ViewOptions {
  * @returns The frames.
  */
 export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOptions = {}): ViewFrames {
-  const fig = viewFigure(options, { aspect: steps.objective === undefined ? 1.25 : 1.75 })
-  const mode = fig.mode
   const count = steps.positions.length
+  // Colour by the labels or values given, else by the record's own colouring.
+  const own = options.labels === undefined && options.values === undefined ? steps.colourBy : undefined
+  const values = options.values ?? (own?.kind === 'values' ? own.values : undefined)
+  const given = options.labels ?? (own?.kind === 'classes' ? own.labels : undefined)
+  const classNames = own?.kind === 'classes' ? own.classes : undefined
   const names = [...new Set(options.labels ?? [])]
-  const labels = options.labels?.map((l) => (typeof l === 'number' ? l : names.indexOf(l)))
+  const labels = values !== undefined ? undefined : given?.map((l) => (typeof l === 'number' ? l : names.indexOf(l)))
+  const nameOf = (c: number): string | undefined =>
+    typeof names[c] === 'string' ? String(names[c]) : (classNames?.[c] ?? undefined)
+  // A legend of classes sits above the panel, out of the points' way.
+  const fig = viewFigure(options, {
+    aspect: steps.objective === undefined ? 1.25 : 1.75,
+    ...(labels === undefined ? {} : { padding: { top: 40 } }),
+  })
+  const mode = fig.mode
+  const valueSpan = values === undefined ? undefined : spanOf(values)
   const option = (frame: number): EChartsOption => {
     const t = Math.min(Math.max(frame, 0), count - 1)
     const pos = (steps.positions[t] ?? []).map((p) => [p[0] ?? 0, p[1] ?? 0])
@@ -707,13 +722,33 @@ export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOpt
       main.push(lines([{ x: xs, y: ys, name: '__graph', colour: 'grid', width: 0.6 }], { mode }))
     }
     const sets =
-      labels === undefined
-        ? [{ x: pos.map((p) => p[0] ?? 0), y: pos.map((p) => p[1] ?? 0), name: 'rows', colour: 'tab0', size: 6 }]
-        : clusterSets(pos, [0, 1], labels, (c) => ({
-            size: 6,
-            ...(typeof names[c] === 'string' ? { name: String(names[c]) } : {}),
-          }))
+      values !== undefined
+        ? [
+            {
+              x: pos.map((p) => p[0] ?? 0),
+              y: pos.map((p) => p[1] ?? 0),
+              values: [...values],
+              name: '__rows',
+              size: 6,
+            },
+          ]
+        : labels === undefined
+          ? [{ x: pos.map((p) => p[0] ?? 0), y: pos.map((p) => p[1] ?? 0), name: 'rows', colour: 'tab0', size: 6 }]
+          : clusterSets(pos, [0, 1], labels, (c) => {
+              return { size: 6, name: nameOf(c) ?? (c < 0 ? 'unlabelled' : `class ${c}`) }
+            })
     main.push(points(sets, { mode }))
+    if (valueSpan !== undefined)
+      main.push(
+        layer([{ type: 'scatter', name: '__colourbar', data: [], silent: true } as SeriesOption], undefined, {
+          colourBar: {
+            min: valueSpan[0],
+            max: valueSpan[1],
+            colours: sampleRamp(sequentialRamp('viridis'), 9),
+            label: own?.kind === 'values' ? (own.name ?? 'target') : 'target',
+          },
+        }),
+      )
     const embed: Panel = {
       layers: main,
       options: { x: { label: 'dimension 1' }, y: { label: 'dimension 2' }, aspect: 'equal' },
@@ -722,7 +757,8 @@ export function embeddingFrames(steps: EmbeddingSteps, options: EmbeddingViewOpt
       return cartesian(embed.layers, { ...embed.options, figure: fig, mode, legend: false })
     const grid = gridSpec(1, 2, {
       widthRatios: [1.5, 1],
-      wspace: 64,
+      // Room for the colour bar between the panels.
+      wspace: valueSpan === undefined ? 64 : 120,
       cells: [
         { id: 'main', row: 0, col: 0 },
         { id: 'objective', row: 0, col: 1 },

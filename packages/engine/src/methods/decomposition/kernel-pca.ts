@@ -96,6 +96,7 @@ export function kernelPca(hyper: KernelPcaHyper = {}): Estimator<KernelPcaHyper,
             componentsRecord({
               method: 'kernelPca',
               features: rows.map((_, i) => `row${i}`),
+              space: 'samples',
               components: Array.from({ length: k }, (_, c) => eigenvectors.map((r) => r[c] ?? 0)),
               explainedVariance: toFlat(fit.eigenvalues).map((v) => v / m.n),
               scores: projections,

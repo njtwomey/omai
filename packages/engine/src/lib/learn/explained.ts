@@ -7,6 +7,7 @@ import {
   type Exposition,
   type InputRows,
   inputRows,
+  type RowColours,
   type SurfaceStep,
 } from '../exposition/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -109,6 +110,8 @@ export function defineExplainedEstimator<H extends Hyper, P extends Json, V exte
 }
 
 // The kinds whose records index the training rows (assignments, scores, support vectors, neighbours).
+// The kinds whose rows are coloured by the data's classes or targets (embeddings, component scores).
+const COLOURED_KINDS: ReadonlySet<string> = new Set(['embeddingSteps', 'components'])
 const ROW_KINDS: ReadonlySet<string> = new Set([
   'clusteringSteps',
   'mixtureSteps',
@@ -144,7 +147,13 @@ export function withInputRows(
     r.kind === 'decisionSurface' &&
     (r.rows === undefined || (data.y !== undefined && r.rows.labels === undefined && r.rows.targets === undefined))
   const surfaces = records.some(bareSurface)
-  if (!surfaces && !records.some((r) => ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined))
+  const uncoloured = (r: Exposition): boolean =>
+    COLOURED_KINDS.has(r.kind) && data.y !== undefined && (r as { colourBy?: unknown }).colourBy === undefined
+  if (
+    !surfaces &&
+    !records.some(uncoloured) &&
+    !records.some((r) => ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined)
+  )
     return records
   let rows: InputRows | undefined
   try {
@@ -195,7 +204,29 @@ export function withInputRows(
     return true
   }
   const given = rows
+  // Rows coloured by class when the targets look like labels, by value otherwise.
+  const colourBy = (count: number): RowColours | undefined => {
+    if (data.y === undefined) return undefined
+    if (given.labels !== undefined && given.labels.length === count)
+      return {
+        kind: 'classes',
+        labels: given.labels,
+        ...(given.classes === undefined ? {} : { classes: given.classes }),
+      }
+    const y = toFlat(asTensor(data.y))
+    return y.length === count ? { kind: 'values', values: Array.from(y), name: 'target' } : undefined
+  }
   return records.map((r) => {
+    if (uncoloured(r)) {
+      const count =
+        r.kind === 'embeddingSteps'
+          ? (r.positions[0]?.length ?? 0)
+          : r.kind === 'components'
+            ? (r.scores?.length ?? 0)
+            : 0
+      const by = colourBy(count)
+      return by === undefined ? r : { ...r, colourBy: by }
+    }
     if (r.kind === 'decisionSurface' && bareSurface(r)) {
       const own = surfaceRows(r)
       return own === undefined ? r : { ...r, rows: own }
