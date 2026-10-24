@@ -14,6 +14,7 @@ import {
   leastCore,
   nucleolus,
   sampledShapley,
+  shapleyInteractionIndex,
   shapleyValue,
   unanimityGame,
 } from './index.ts'
@@ -176,5 +177,42 @@ describe('core and nucleolus', () => {
       }),
       { numRuns: 15 },
     )
+  })
+})
+
+describe('the Shapley interaction index (property)', () => {
+  it('matches the definition by orders of arrival, is symmetric and carries the Shapley values on the diagonal', () => {
+    fc.assert(
+      fc.property(game, (g) => {
+        const n = g.n
+        const fact = (k: number): number => (k <= 1 ? 1 : k * fact(k - 1))
+        const index = shapleyInteractionIndex(g)
+        const phi = shapleyValue(g)
+        for (let i = 0; i < n; i++) {
+          expect(index[i]?.[i]).toBe(phi[i])
+          for (let j = 0; j < n; j++) {
+            if (j === i) continue
+            let want = 0
+            for (let m = 0; m < 2 ** n; m++) {
+              if ((m >> i) & 1 || (m >> j) & 1) continue
+              let s = 0
+              for (let k = 0; k < n; k++) s += (m >> k) & 1
+              const v = (mask: number): number => g.values[mask] ?? 0
+              const d = v(m | (1 << i) | (1 << j)) - v(m | (1 << i)) - v(m | (1 << j)) + v(m)
+              want += ((fact(s) * fact(n - s - 2)) / fact(n - 1)) * d
+            }
+            expect(index[i]?.[j]).toBeCloseTo(want, 12)
+            expect(index[i]?.[j]).toBe(index[j]?.[i])
+          }
+        }
+      }),
+      { numRuns: RUNS },
+    )
+  })
+
+  it('is zero between the players of an additive game', () => {
+    const g = coalitionalGame(4, (s) => s.reduce((a, i) => a + i + 1, 0))
+    const index = shapleyInteractionIndex(g)
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (i !== j) expect(index[i]?.[j]).toBeCloseTo(0, 14)
   })
 })

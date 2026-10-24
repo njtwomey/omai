@@ -399,7 +399,8 @@ The core has 37 domains in 11 tiers. A domain may import only domains in lower t
   (statistic, p-value, degrees of freedom, effect size, alternative, method, assumptions), `MetricResult` (estimate,
   breakdowns, sample size), `MetricSpec` (name, inputs, direction, range, category, concept), `formatResult`.
 - `numbers.ts`: `isClose`, `allClose`, `clamp`, `kahanSum` (Neumaier), `pairwiseSum`, `maxOf`, `minOf`, `argmaxOf`,
-  `argminOf` (loops, never spreading arrays into `Math.max`), `range`, `linspaceNumbers`.
+  `argminOf` (loops, never spreading arrays into `Math.max`), `range`, `linspaceNumbers`, `popcount` (subset sizes of
+  bitmasks).
 - `heap.ts`: `heap`, a binary heap with a comparator (the priority queue of neighbour searches, shortest paths and
   best-first search).
 - `options.ts`: shared option shapes (`Tolerance`, `Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults
@@ -2287,8 +2288,9 @@ Learning in normal-form games (every routine is a traced algorithm with an itera
 Cooperative games and mechanisms:
 - `cooperative.ts`: coalitional games (characteristic functions over bitmasks, `coalitionValue`, `membersOf`),
   weighted voting, glove, bankruptcy and unanimity games, Shapley values (exact, and by permutation sampling with
-  standard errors for worths given as functions), Banzhaf indices (raw and normalised), superadditivity and convexity;
-  used by `learn/explain/shapley.ts`.
+  standard errors for worths given as functions), the Shapley interaction index (`shapleyInteractionIndex`), Banzhaf
+  indices (raw and normalised), superadditivity and convexity; `learn/explain/shapley.ts` computes its exact Shapley
+  and interaction values with them.
 - `core.ts`: excesses, core membership, a core point or emptiness, the least core, the nucleolus and prenucleolus
   (sequential LPs).
 - `auctions.ts`: first-price, second-price (Vickrey) and all-pay auctions with reserves, VCG with Clarke pivot payments
@@ -2391,9 +2393,9 @@ modAL for active learning, diffprivlib and opacus for privacy
   functional ANOVA.
 - `explain/gradients.ts`: saliency, input times gradient, integrated gradients, SmoothGrad, DeepLIFT, expected
   gradients.
-- `explain/shapley.ts`: exact, kernel, sampling and tree SHAP, interaction values. The game-theoretic core (Shapley
-  and interaction values of a coalition game) lives here until `games/cooperative.ts` exists; TODO: move it there and
-  re-export.
+- `explain/shapley.ts`: exact, kernel, sampling and tree SHAP, interaction values. The exact Shapley and interaction
+  values of a coalition value function tabulate it as a `games` coalitional game and use `games.shapleyValue` and
+  `games.shapleyInteractionIndex`; the sampling explainer (random background rows, batched predictions) stays here.
 - `explain/surrogates.ts`: LIME, anchors, global surrogate trees, fidelity.
 - `explain/counterfactuals.ts`: Wachter counterfactuals, diverse counterfactuals, FACE, actionable recourse (linear
   costs; TODO: discrete action sets as an integer program).

@@ -1,4 +1,5 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { popcount, WhiteboxError } from '../../base/index.ts'
+import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../../games/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, permutation, randint } from '../../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
@@ -13,30 +14,23 @@ export type CoalitionValue = (coalition: readonly boolean[]) => number
 /** The most players the exact (exponential) computations accept. */
 export const MAX_EXACT_PLAYERS = 20
 
-function factorials(n: number): number[] {
-  const f = [1]
-  for (let i = 1; i <= n; i++) f.push((f[i - 1] ?? 1) * i)
-  return f
-}
-
 function maskOf(bits: number, n: number): boolean[] {
   return Array.from({ length: n }, (_, i) => ((bits >> i) & 1) === 1)
 }
 
-function popcount(b: number): number {
-  let c = 0
-  for (let v = b; v !== 0; v >>= 1) c += v & 1
-  return c
-}
-
-/** Every coalition's value, indexed by its bit mask. */
-function allValues(value: CoalitionValue, n: number, who: string): Float64Array {
+/**
+ * The game of a coalition value function, as games' `CoalitionalGame`: every coalition's value by bit mask, shifted by
+ * v(empty) (games fix v(empty) = 0; Shapley and interaction values depend only on differences).
+ */
+function gameOf(value: CoalitionValue, n: number, who: string): CoalitionalGame {
   if (!(Number.isInteger(n) && n >= 1 && n <= MAX_EXACT_PLAYERS)) {
     throw new WhiteboxError('value', `${who}: exact computation needs 1 to ${MAX_EXACT_PLAYERS} players, got ${n}`)
   }
-  const out = new Float64Array(1 << n)
-  for (let b = 0; b < out.length; b++) out[b] = value(maskOf(b, n))
-  return out
+  const table = new Float64Array(1 << n)
+  for (let b = 0; b < table.length; b++) table[b] = value(maskOf(b, n))
+  const empty = table[0] ?? 0
+  for (let b = 0; b < table.length; b++) table[b] = (table[b] ?? 0) - empty
+  return coalitionalGame(n, table)
 }
 
 /**
@@ -56,18 +50,7 @@ function allValues(value: CoalitionValue, n: number, who: string): Float64Array 
  * ```
  */
 export function shapleyValues(value: CoalitionValue, nPlayers: number): number[] {
-  const v = allValues(value, nPlayers, 'shapleyValues')
-  const f = factorials(nPlayers)
-  const phi = new Array<number>(nPlayers).fill(0)
-  for (let b = 0; b < v.length; b++) {
-    const s = popcount(b)
-    for (let i = 0; i < nPlayers; i++) {
-      if (((b >> i) & 1) === 1) continue
-      const w = ((f[s] ?? 1) * (f[nPlayers - s - 1] ?? 1)) / (f[nPlayers] ?? 1)
-      phi[i] = (phi[i] ?? 0) + w * ((v[b | (1 << i)] ?? 0) - (v[b] ?? 0))
-    }
-  }
-  return phi
+  return shapleyValue(gameOf(value, nPlayers, 'shapleyValues'))
 }
 
 /**
@@ -87,34 +70,14 @@ export function shapleyValues(value: CoalitionValue, nPlayers: number): number[]
  * ```
  */
 export function shapleyInteractionValues(value: CoalitionValue, nPlayers: number): number[][] {
-  const v = allValues(value, nPlayers, 'shapleyInteractionValues')
-  const n = nPlayers
-  const f = factorials(n)
-  const out = Array.from({ length: n }, () => new Array<number>(n).fill(0))
-  if (n >= 2) {
-    for (let b = 0; b < v.length; b++) {
-      const s = popcount(b)
-      if (s > n - 2) continue
-      const w = ((f[s] ?? 1) * (f[n - s - 2] ?? 1)) / (2 * (f[n - 1] ?? 1))
-      for (let i = 0; i < n; i++) {
-        if (((b >> i) & 1) === 1) continue
-        for (let j = i + 1; j < n; j++) {
-          if (((b >> j) & 1) === 1) continue
-          const d = (v[b | (1 << i) | (1 << j)] ?? 0) - (v[b | (1 << i)] ?? 0) - (v[b | (1 << j)] ?? 0) + (v[b] ?? 0)
-          const rowI = out[i] as number[]
-          const rowJ = out[j] as number[]
-          rowI[j] = (rowI[j] ?? 0) + w * d
-          rowJ[i] = (rowJ[i] ?? 0) + w * d
-        }
-      }
-    }
-  }
-  const phi = shapleyValues((m) => v[m.reduce((acc, on, i) => acc | (on ? 1 << i : 0), 0)] ?? 0, n)
-  for (let i = 0; i < n; i++) {
-    const row = out[i] as number[]
-    row[i] = (phi[i] ?? 0) - row.reduce((a, x, j) => a + (j === i ? 0 : x), 0)
-  }
-  return out
+  const index = shapleyInteractionIndex(gameOf(value, nPlayers, 'shapleyInteractionValues'))
+  return index.map((row, i) => {
+    const out = row.map((v, j) => (j === i ? 0 : v / 2))
+    let rest = 0
+    for (const v of out) rest += v
+    out[i] = (row[i] ?? 0) - rest
+    return out
+  })
 }
 
 /** A prediction function of a feature matrix: `[m, d]` to `[m]` (or the first column of `[m, k]`). */

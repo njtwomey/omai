@@ -1,4 +1,4 @@
-import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { meanOf, popcount, varianceOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../random/index.ts'
 import { toFlat } from '../tensor/index.ts'
 
@@ -201,16 +201,6 @@ function shapleyWeights(n: number): Float64Array {
   return w
 }
 
-function popcount(m: number): number {
-  let c = 0
-  let x = m
-  while (x !== 0) {
-    x &= x - 1
-    c += 1
-  }
-  return c
-}
-
 /**
  * The Shapley value (Shapley 1953): every player's average marginal contribution over all orders of arrival,
  * `phi_i = sum over S not containing i of |S|! (n - |S| - 1)! / n! (v(S + i) - v(S))`, computed exactly over the
@@ -238,6 +228,53 @@ export function shapleyValue(game: CoalitionalGame): number[] {
     }
   }
   return phi
+}
+
+/**
+ * The Shapley interaction index (Grabisch and Roubens 1999) of every pair of players:
+ * `I_ij = sum over S not containing i or j of |S|! (n - |S| - 2)! / (n - 1)! (v(S + ij) - v(S + i) - v(S + j) + v(S))`,
+ * positive for complements and negative for substitutes, with the Shapley values on the diagonal (`I_ii = phi_i`, the
+ * index of a singleton). SHAP's interaction values (`learn.explain.shapleyInteractionValues`) are built from it.
+ *
+ * @param game - The game.
+ * @returns The symmetric `n x n` matrix, as nested arrays.
+ * @concept shapley-value
+ * @example
+ * ```ts
+ * import { coalitionalGame, shapleyInteractionIndex } from 'whitebox-engine/games'
+ * // Two players worth something only together: complements.
+ * shapleyInteractionIndex(coalitionalGame(2, (s) => (s.length === 2 ? 1 : 0))) // => [[0.5, 1], [1, 0.5]]
+ * ```
+ */
+export function shapleyInteractionIndex(game: CoalitionalGame): number[][] {
+  const { n, values } = game
+  const out = Array.from({ length: n }, () => new Array<number>(n).fill(0))
+  if (n >= 2) {
+    // |S|! (n - |S| - 2)! / (n - 1)! is the Shapley weight of a game with n - 1 players.
+    const w = shapleyWeights(n - 1)
+    for (let m = 0; m < values.length; m++) {
+      const s = popcount(m)
+      if (s > n - 2) continue
+      for (let i = 0; i < n; i++) {
+        if ((m >> i) & 1) continue
+        for (let j = i + 1; j < n; j++) {
+          if ((m >> j) & 1) continue
+          const d =
+            (values[m | (1 << i) | (1 << j)] ?? 0) -
+            (values[m | (1 << i)] ?? 0) -
+            (values[m | (1 << j)] ?? 0) +
+            (values[m] ?? 0)
+          const rowI = out[i] ?? []
+          const rowJ = out[j] ?? []
+          rowI[j] = (rowI[j] ?? 0) + (w[s] ?? 0) * d
+          rowJ[i] = (rowJ[i] ?? 0) + (w[s] ?? 0) * d
+        }
+      }
+    }
+  }
+  const phi = shapleyValue(game)
+  for (const [i, row] of out.entries()) row[i] = phi[i] ?? 0
+  return out
 }
 
 /** Options for {@link sampledShapley}. */
