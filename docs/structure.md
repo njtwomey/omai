@@ -2159,11 +2159,11 @@ Learning in normal-form games (every routine is a traced algorithm with an itera
   given time points), projected replicator dynamics (OpenSpiel's, n players).
 
 `extensive-form/` (inlined into `games`):
-- `tree.ts`: `ExtensiveGame` (OpenSpiel-style states: current player or chance, legal actions, chance outcomes,
-  information-state keys, returns), `treeGame` (games from literal trees), `gameTree` (the materialised tree with
-  information sets), tabular policies, `expectedReturns`, `backwardInduction` (subgame-perfect play of perfect-information
-  games), `toNormalForm` (pure strategies of small games).
-- `best-response.ts`: `bestResponse`, `nashConv`, `exploitability` (OpenSpiel's definitions).
+- `tree.ts`: `ExtensiveGame` (OpenSpiel-style states: current player, `CHANCE` or `TERMINAL`, legal actions, chance
+  outcomes, information-state keys, returns), `treeGame` (games from literal trees), `gameTree` and `treeOf` (the
+  materialised tree with information sets), `TabularPolicy`, `uniformPolicy`, `expectedReturns`, `backwardInduction`
+  (subgame-perfect play of perfect-information games), `toNormalForm` (pure strategies of small games).
+- `best-response.ts`: `bestResponse`, `extensiveNashConv`, `exploitability` (OpenSpiel's definitions).
 - `sequence-form.ts`: sequences, realisation-plan constraints and payoff matrices; the two-player zero-sum solution
   by one LP (Koller, Megiddo and von Stengel), realisation plans back to behaviour policies.
 - `cfr.ts`: counterfactual regret minimisation as a traced algorithm: vanilla CFR, CFR+, linear and discounted CFR
@@ -3566,7 +3566,7 @@ A uv project (root `pyproject.toml`) with pydantic and pydantic-settings, and de
 fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy,
 networkx, python-control with slycot), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro, pgmpy, arviz),
 `oracle-signal` (pywt, librosa, scikit-image, pystoi, pesq), `oracle-text` (tokenizers, tiktoken, nltk, sacrebleu,
-rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel, nashpy),
+rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel with ecos for its LPs, nashpy),
 `oracle-misc` (lifelines, mlxtend, pysubgroup, umap-learn, hdbscan, dowhy, econml, causal-learn, pysindy, faiss-cpu,
 implicit, optuna).
 - `oracle/whitebox_oracle/settings.py`: `OracleSettings` (reads the root `.env`; output paths; selection by path prefix

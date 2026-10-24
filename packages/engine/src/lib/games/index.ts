@@ -2,4 +2,5 @@
 export * from './evolutionary.ts'
 export * from './learning.ts'
 export * from './no-regret.ts'
+export * from './extensive-form/index.ts'
 export * from './normal-form/index.ts'

@@ -1,5 +1,5 @@
 {
   "tier": 8,
   "summary": "Game theory: normal-form games and their equilibria, learning in games, extensive-form games with CFR, cooperative games, auctions and voting.",
-  "inline": ["normal-form"]
+  "inline": ["normal-form", "extensive-form"]
 }

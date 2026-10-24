@@ -72,6 +72,7 @@ oracle-prob = [
     "sklearn-crfsuite>=0.5.0",
 ]
 oracle-rl = [
+    "ecos>=2.0.14",
     "gymnasium",
     "nashpy>=0.0.43",
     "open-spiel>=2.0.2",

@@ -374,6 +374,38 @@
       "cases": 10
     },
     {
+      "fixture": "games/extensive_form/best_response.json",
+      "source": "oracle/cases/games/extensive_form/best_response.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "games/extensive_form/cfr.json",
+      "source": "oracle/cases/games/extensive_form/cfr.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "games/extensive_form/poker.json",
+      "source": "oracle/cases/games/extensive_form/poker.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "games/extensive_form/sequence_form.json",
+      "source": "oracle/cases/games/extensive_form/sequence_form.py",
+      "reference": {
+        "open_spiel": "2.0.2"
+      },
+      "cases": 1
+    },
+    {
       "fixture": "games/learning.json",
       "source": "oracle/cases/games/learning.py",
       "reference": {

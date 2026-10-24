@@ -31,6 +31,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/dists/multivariate': () => import('whitebox-engine/dists/multivariate'),
   'whitebox-engine/foundations': () => import('whitebox-engine/foundations'),
   'whitebox-engine/games': () => import('whitebox-engine/games'),
+  'whitebox-engine/games/extensive-form': () => import('whitebox-engine/games/extensive-form'),
   'whitebox-engine/games/normal-form': () => import('whitebox-engine/games/normal-form'),
   'whitebox-engine/graph': () => import('whitebox-engine/graph'),
   'whitebox-engine/information': () => import('whitebox-engine/information'),

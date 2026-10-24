@@ -637,6 +637,16 @@ wheels = [
 ]
 
 [[package]]
+name = "ecos"
+version = "2.0.14"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2e/5f/17716c533da95ed110815b159efa22b1064c8c41fd5c862f21aff7a7fec0/ecos-2.0.14.tar.gz", hash = "sha256:64b3201c0e0a7f0129050557c4ac50b00031e80a10534506dba1200c8dc1efe4", size = 142430, upload-time = "2024-06-18T03:48:34.809Z" }
+
+[[package]]
 name = "fairlearn"
 version = "0.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3767,6 +3777,7 @@ oracle-prob = [
     { name = "sklearn-crfsuite" },
 ]
 oracle-rl = [
+    { name = "ecos" },
     { name = "gymnasium" },
     { name = "nashpy" },
     { name = "open-spiel" },
@@ -3846,6 +3857,7 @@ oracle-prob = [
     { name = "sklearn-crfsuite", specifier = ">=0.5.0" },
 ]
 oracle-rl = [
+    { name = "ecos", specifier = ">=2.0.14" },
     { name = "gymnasium" },
     { name = "nashpy", specifier = ">=0.0.43" },
     { name = "open-spiel", specifier = ">=2.0.2" },
