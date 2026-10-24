@@ -147,6 +147,27 @@ export function minOf(xs: ArrayLike<number>): number {
 }
 
 /**
+ * log(sum exp(x_i)) of a list, computed stably by shifting by the maximum (the number-array kernel behind log-domain
+ * algorithms; differentiable code uses the tensor `logsumexp`).
+ *
+ * @param xs - The numbers.
+ * @returns The log-sum-exp, `-Infinity` for an empty list or all `-Infinity`, `NaN` if any element is NaN.
+ * @example
+ * ```ts
+ * import { logSumExpOf } from 'whitebox-engine/base'
+ * logSumExpOf([1000, 1000]) === 1000 + Math.LN2 // => true
+ * ```
+ */
+export function logSumExpOf(xs: ArrayLike<number>): number {
+  const m = maxOf(xs)
+  if (Number.isNaN(m) || m === -Infinity) return m
+  if (m === Infinity) return Infinity
+  let s = 0
+  for (let i = 0; i < xs.length; i++) s += Math.exp((xs[i] ?? 0) - m)
+  return m + Math.log(s)
+}
+
+/**
  * Index of the first maximum of a list.
  *
  * @param xs - The numbers.

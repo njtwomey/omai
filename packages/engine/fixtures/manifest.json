@@ -469,12 +469,412 @@
       "cases": 12
     },
     {
-      "fixture": "optim/optimisers.json",
-      "source": "oracle/cases/optim/optimisers.py",
+      "fixture": "optim/adaptive.json",
+      "source": "oracle/cases/optim/adaptive.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 29
+    },
+    {
+      "fixture": "optim/admm.json",
+      "source": "oracle/cases/optim/admm.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "optim/assignment.json",
+      "source": "oracle/cases/optim/assignment.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "optim/conic.json",
+      "source": "oracle/cases/optim/conic.py",
+      "reference": {
+        "cvxpy": "1.9.3",
+        "clarabel": "0.11.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/dictionary.json",
+      "source": "oracle/cases/optim/dictionary.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/first_order.json",
+      "source": "oracle/cases/optim/first_order.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 27
+    },
+    {
+      "fixture": "optim/gromov.json",
+      "source": "oracle/cases/optim/gromov.py",
+      "reference": {
+        "pot": "0.9.7.post1"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "optim/integer.json",
+      "source": "oracle/cases/optim/integer.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "optim/line_search.json",
+      "source": "oracle/cases/optim/line_search.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "optim/line_search_interval.json",
+      "source": "oracle/cases/optim/line_search_interval.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "optim/linear_programming.json",
+      "source": "oracle/cases/optim/linear_programming.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "optim/minimize/cmaes.json",
+      "source": "oracle/cases/optim/minimize/cmaes.py",
+      "reference": {
+        "cma": "4.5.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/minimize/cobyla.json",
+      "source": "oracle/cases/optim/minimize/cobyla.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/constrained.json",
+      "source": "oracle/cases/optim/minimize/constrained.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/minimize/convex.json",
+      "source": "oracle/cases/optim/minimize/convex.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "optim/minimize/derivative_free.json",
+      "source": "oracle/cases/optim/minimize/derivative_free.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "optim/minimize/differential_evolution.json",
+      "source": "oracle/cases/optim/minimize/differential_evolution.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "optim/minimize/dual_annealing.json",
+      "source": "oracle/cases/optim/minimize/dual_annealing.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/frank_wolfe.json",
+      "source": "oracle/cases/optim/minimize/frank_wolfe.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/global.json",
+      "source": "oracle/cases/optim/minimize/global.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/gradient.json",
+      "source": "oracle/cases/optim/minimize/gradient.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "optim/minimize/lbfgsb.json",
+      "source": "oracle/cases/optim/minimize/lbfgsb.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "optim/minimize/least_squares.json",
+      "source": "oracle/cases/optim/minimize/least_squares.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "optim/minimize/least_squares_bounded.json",
+      "source": "oracle/cases/optim/minimize/least_squares_bounded.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "optim/minimize/least_squares_linear.json",
+      "source": "oracle/cases/optim/minimize/least_squares_linear.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "optim/minimize/least_squares_trf.json",
+      "source": "oracle/cases/optim/minimize/least_squares_trf.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "optim/minimize/levenberg_marquardt.json",
+      "source": "oracle/cases/optim/minimize/levenberg_marquardt.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "optim/minimize/newton.json",
+      "source": "oracle/cases/optim/minimize/newton.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "optim/minimize/owlqn.json",
+      "source": "oracle/cases/optim/minimize/owlqn.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/particle_swarm.json",
+      "source": "oracle/cases/optim/minimize/particle_swarm.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "optim/minimize/penalty.json",
+      "source": "oracle/cases/optim/minimize/penalty.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "optim/minimize/powell.json",
+      "source": "oracle/cases/optim/minimize/powell.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "optim/minimize/quasi_newton.json",
+      "source": "oracle/cases/optim/minimize/quasi_newton.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "optim/minimize/slsqp.json",
+      "source": "oracle/cases/optim/minimize/slsqp.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/minimize/sr1.json",
+      "source": "oracle/cases/optim/minimize/sr1.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "optim/minimize/trust_region.json",
+      "source": "oracle/cases/optim/minimize/trust_region.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "optim/multiobjective.json",
+      "source": "oracle/cases/optim/multiobjective.py",
+      "reference": {
+        "pymoo": "0.6.2",
+        "moocore": "0.3.2"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "optim/preconditioned.json",
+      "source": "oracle/cases/optim/preconditioned.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "optim/proximal.json",
+      "source": "oracle/cases/optim/proximal.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "optim/quadratic.json",
+      "source": "oracle/cases/optim/quadratic.py",
+      "reference": {
+        "cvxpy": "1.9.3",
+        "clarabel": "0.11.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/scalar.json",
+      "source": "oracle/cases/optim/scalar.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "optim/schedules.json",
+      "source": "oracle/cases/optim/schedules.py",
+      "reference": {
+        "torch": "2.14.1",
+        "optax": "0.2.8"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "optim/smo.json",
+      "source": "oracle/cases/optim/smo.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "optim/sparse.json",
+      "source": "oracle/cases/optim/sparse.py",
+      "reference": {
+        "sklearn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "optim/sparse_updates.json",
+      "source": "oracle/cases/optim/sparse_updates.py",
       "reference": {
         "torch": "2.14.1"
       },
-      "cases": 11
+      "cases": 12
+    },
+    {
+      "fixture": "optim/splitting.json",
+      "source": "oracle/cases/optim/splitting.py",
+      "reference": {
+        "sklearn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/total_variation.json",
+      "source": "oracle/cases/optim/total_variation.py",
+      "reference": {
+        "cvxpy": "1.9.3"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "optim/transport.json",
+      "source": "oracle/cases/optim/transport.py",
+      "reference": {
+        "pot": "0.9.7.post1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "optim/variance_reduced.json",
+      "source": "oracle/cases/optim/variance_reduced.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "optim/wasserstein.json",
+      "source": "oracle/cases/optim/wasserstein.py",
+      "reference": {
+        "pot": "0.9.7.post1",
+        "scipy": "1.18.1"
+      },
+      "cases": 9
     },
     {
       "fixture": "pgm/networks.json",

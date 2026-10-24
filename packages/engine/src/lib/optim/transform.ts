@@ -1,18 +1,24 @@
+import { WhiteboxError } from '../base/index.ts'
 import {
   add,
   clip,
   div,
+  isValue,
   item,
   maximum,
   mul,
   sqrt,
   square,
+  sub,
   sum,
   tensor,
+  treeFlatten,
   treeLeaves,
   treeMap,
+  treeUnflatten,
   treeZeros,
   type Value,
+  zerosLike,
 } from '../tensor/index.ts'
 
 /** A tree of values (parameters, gradients or updates): nested records and arrays with tensor leaves. */
@@ -130,7 +136,7 @@ export function globalNorm(tree: Tree): Value {
  * ```ts
  * import { clipByGlobalNorm } from 'whitebox-engine/optim'
  * import { tensor, toArray } from 'whitebox-engine/tensor'
- * toArray(clipByGlobalNorm(1).update(tensor([3, 4]), undefined).updates as never) // => [0.6, 0.8]
+ * toArray(clipByGlobalNorm(1).update(tensor([3, 4]), undefined).updates as never).map((v) => Math.round(v * 1e12) / 1e12) // => [0.6, 0.8]
  * ```
  */
 export function clipByGlobalNorm(maxNorm: number): GradientTransformation<undefined> {
@@ -189,27 +195,38 @@ export function addDecayedWeights(weightDecay: number): GradientTransformation<u
   }
 }
 
+/** State of {@link traceMomentum}. */
+export interface TraceState {
+  readonly count: number
+  readonly trace: Tree
+}
+
 /**
- * Momentum: trace = decay trace + g, and updates = trace (or g + decay trace with Nesterov), as torch.optim.SGD with no
- * dampening.
+ * Momentum: trace = decay trace + (1 - dampening) g (the first step takes trace = g), and updates = trace, or
+ * g + decay trace with Nesterov (torch.optim.SGD's momentum buffer).
  *
  * @param decay - The momentum coefficient.
  * @param nesterov - Use Nesterov momentum.
+ * @param dampening - Dampening of the gradient added to the trace (torch's dampening, 0 by default).
  * @returns The transformation.
  * @example
  * ```ts
  * import { traceMomentum } from 'whitebox-engine/optim'
- * traceMomentum(0.9).name // => 'traceMomentum'
+ * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * const t = traceMomentum(0.5)
+ * const first = t.update(tensor([2]), t.init(tensor([0])))
+ * toArray(t.update(tensor([2]), first.state).updates as never) // => [3]
  * ```
  */
-export function traceMomentum(decay: number, nesterov = false): GradientTransformation<{ readonly trace: Tree }> {
+export function traceMomentum(decay: number, nesterov = false, dampening = 0): GradientTransformation<TraceState> {
   return {
     name: 'traceMomentum',
-    init: (params) => ({ trace: treeZeros(params) }),
+    init: (params) => ({ count: 0, trace: treeZeros(params) }),
     update: (grads, state) => {
-      const trace = treeMap((g, t) => add(g, mul(t, decay)), grads, state.trace)
+      const keep = state.count === 0 ? 1 : 1 - dampening
+      const trace = treeMap((g, t) => add(keep === 1 ? g : mul(g, keep), mul(t, decay)), grads, state.trace)
       const updates = nesterov ? treeMap((g, t) => add(g, mul(t, decay)), grads, trace) : trace
-      return { updates, state: { trace } }
+      return { updates, state: { count: state.count + 1, trace } }
     },
   }
 }
@@ -262,25 +279,39 @@ export function scaleByAdam(b1 = 0.9, b2 = 0.999, eps = 1e-8, amsgrad = false): 
   }
 }
 
+/** State of {@link scaleByRms}. */
+export interface RmsState {
+  readonly nu: Tree
+  /** The running mean of the gradient (centred RMSprop only). */
+  readonly mu?: Tree
+}
+
 /**
- * RMSprop's scaling: updates = g / (sqrt(v) + eps) with v = decay v + (1 - decay) g^2 (torch.optim.RMSprop).
+ * RMSprop's scaling: updates = g / (sqrt(v) + eps) with v = decay v + (1 - decay) g^2, or, centred, g / (sqrt(v -
+ * m^2) + eps) with m the running mean of the gradient (torch.optim.RMSprop).
  *
  * @param decay - Second-moment decay (torch's alpha).
  * @param eps - Added to the denominator.
+ * @param centered - Normalise by the estimated variance instead of the second moment.
  * @returns The transformation.
  * @example
  * ```ts
  * import { scaleByRms } from 'whitebox-engine/optim'
- * scaleByRms().name // => 'scaleByRms'
+ * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * const t = scaleByRms(0.75, 0)
+ * toArray(t.update(tensor([4]), t.init(tensor([0]))).updates as never) // => [2]
  * ```
  */
-export function scaleByRms(decay = 0.99, eps = 1e-8): GradientTransformation<{ readonly nu: Tree }> {
+export function scaleByRms(decay = 0.99, eps = 1e-8, centered = false): GradientTransformation<RmsState> {
   return {
     name: 'scaleByRms',
-    init: (params) => ({ nu: treeZeros(params) }),
+    init: (params) => ({ nu: treeZeros(params), ...(centered ? { mu: treeZeros(params) } : {}) }),
     update: (grads, state) => {
       const nu = treeMap((g, v) => add(mul(v, decay), mul(square(g), 1 - decay)), grads, state.nu)
-      return { updates: treeMap((g, v) => div(g, add(sqrt(v), eps)), grads, nu), state: { nu } }
+      if (!centered) return { updates: treeMap((g, v) => div(g, add(sqrt(v), eps)), grads, nu), state: { nu } }
+      const mu = treeMap((g, m) => add(m, mul(sub(g, m), 1 - decay)), grads, state.mu)
+      const updates = treeMap((g, v, m) => div(g, add(sqrt(sub(v, square(m))), eps)), grads, nu, mu)
+      return { updates, state: { nu, mu } }
     },
   }
 }
@@ -304,6 +335,226 @@ export function scaleByAdagrad(eps = 1e-10, initialAccumulator = 0): GradientTra
     update: (grads, state) => {
       const total = treeMap((g, s) => add(s, square(g)), grads, state.sum)
       return { updates: treeMap((g, s) => div(g, add(sqrt(s), eps)), grads, total), state: { sum: total } }
+    },
+  }
+}
+
+/**
+ * The identity transformation: updates are the gradients (optax.identity).
+ *
+ * @returns The transformation.
+ * @example
+ * ```ts
+ * import { identity } from 'whitebox-engine/optim'
+ * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * toArray(identity().update(tensor([1, 2]), undefined).updates as never) // => [1, 2]
+ * ```
+ */
+export function identity(): GradientTransformation<undefined> {
+  return { name: 'identity', init: () => undefined, update: (grads, state) => ({ updates: grads, state }) }
+}
+
+/**
+ * Zero updates: freezes the parameters it is applied to (optax.set_to_zero), typically inside {@link multiTransform}.
+ *
+ * @returns The transformation.
+ * @example
+ * ```ts
+ * import { setToZero } from 'whitebox-engine/optim'
+ * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * toArray(setToZero().update(tensor([1, 2]), undefined).updates as never) // => [0, 0]
+ * ```
+ */
+export function setToZero(): GradientTransformation<undefined> {
+  return {
+    name: 'setToZero',
+    init: () => undefined,
+    update: (grads, state) => ({ updates: treeMap((g) => zerosLike(g), grads), state }),
+  }
+}
+
+/**
+ * Multiply updates by a constant (optax.scale).
+ *
+ * @param factor - The factor.
+ * @returns The transformation.
+ * @example
+ * ```ts
+ * import { scale } from 'whitebox-engine/optim'
+ * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * toArray(scale(-2).update(tensor([1, 2]), undefined).updates as never) // => [-2, -4]
+ * ```
+ */
+export function scale(factor: number): GradientTransformation<undefined> {
+  return {
+    name: 'scale',
+    init: () => undefined,
+    update: (g, state) => ({ updates: treeMap((u) => mul(u, factor), g), state }),
+  }
+}
+
+/**
+ * Layer-wise trust ratio (LARS and LAMB, optax.scale_by_trust_ratio): each leaf's update is multiplied by
+ * |param| / |update|, or by 1 when either norm is zero.
+ *
+ * @returns The transformation (needs `params` in `update`).
+ * @example
+ * ```ts
+ * import { scaleByTrustRatio } from 'whitebox-engine/optim'
+ * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * toArray(scaleByTrustRatio().update(tensor([3, 4]), undefined, tensor([0, 10])).updates as never) // => [6, 8]
+ * ```
+ */
+export function scaleByTrustRatio(): GradientTransformation<undefined> {
+  return {
+    name: 'scaleByTrustRatio',
+    init: () => undefined,
+    update: (grads, state, params) => {
+      if (params === undefined) throw new WhiteboxError('value', 'scaleByTrustRatio needs the parameters')
+      const updates = treeMap(
+        (u, p) => {
+          const pn = item(sqrt(sum(square(p))))
+          const un = item(sqrt(sum(square(u))))
+          return pn === 0 || un === 0 ? u : mul(u, pn / un)
+        },
+        grads,
+        params,
+      )
+      return { updates, state }
+    },
+  }
+}
+
+/** A tree of labels (strings or booleans) with the structure of the parameters, or a function computing it. */
+export type Labels = unknown
+
+// The leaves of a label tree in the order treeFlatten visits a parameter tree (records by sorted key, arrays by index).
+function labelLeaves(labels: unknown): unknown[] {
+  const out: unknown[] = []
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) for (const child of node) visit(child)
+    else if (typeof node === 'object' && node !== null && !isValue(node))
+      for (const key of Object.keys(node).sort()) visit((node as Record<string, unknown>)[key])
+    else out.push(node)
+  }
+  visit(labels)
+  return out
+}
+
+function resolveLabels(labels: unknown, tree: Tree, count: number): unknown[] {
+  const leaves = labelLeaves(typeof labels === 'function' ? (labels as (p: Tree) => unknown)(tree) : labels)
+  if (leaves.length !== count)
+    throw new WhiteboxError('value', `labels have ${leaves.length} leaves but the parameters have ${count}`)
+  return leaves
+}
+
+/** State of {@link masked}. */
+export interface MaskedState {
+  readonly inner: unknown
+}
+
+/**
+ * Apply a transformation only to the leaves selected by a mask, passing the other updates through unchanged
+ * (optax.masked). The inner transformation sees the selected leaves as an array, so global operations such as
+ * {@link clipByGlobalNorm} act on the selection only.
+ *
+ * @param inner - The transformation for the selected leaves.
+ * @param mask - A tree of booleans with the structure of the parameters, or a function of the parameters returning one.
+ * @returns The transformation.
+ * @example
+ * ```ts
+ * import { masked, scale } from 'whitebox-engine/optim'
+ * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * const t = masked(scale(10), { w: true, b: false })
+ * const g = { w: tensor([1]), b: tensor([1]) }
+ * const u = t.update(g, t.init(g), g).updates as { w: never; b: never }
+ * [toArray(u.w), toArray(u.b)] // => [[10], [1]]
+ * ```
+ */
+export function masked(inner: GradientTransformation, mask: Labels): GradientTransformation<MaskedState> {
+  const pick = (tree: Tree, leaves: readonly Value[]): boolean[] =>
+    resolveLabels(mask, tree, leaves.length).map((m) => m === true)
+  return {
+    name: `masked(${inner.name})`,
+    init: (params) => {
+      const leaves = treeLeaves(params)
+      const m = pick(params, leaves)
+      return { inner: inner.init(leaves.filter((_, i) => m[i])) }
+    },
+    update: (grads, state, params) => {
+      const { leaves, def } = treeFlatten(grads)
+      const m = pick(params ?? grads, leaves)
+      const pLeaves = params === undefined ? undefined : treeLeaves(params).filter((_, i) => m[i])
+      const r = inner.update(
+        leaves.filter((_, i) => m[i]),
+        state.inner,
+        pLeaves,
+      )
+      const out = r.updates as Value[]
+      let k = 0
+      const merged = leaves.map((g, i) => (m[i] ? (out[k++] as Value) : g))
+      return { updates: treeUnflatten(def, merged), state: { inner: r.state } }
+    },
+  }
+}
+
+/**
+ * Different transformations for different parameter groups (optax.multi_transform, torch's parameter groups): each
+ * leaf's label picks the transformation that updates it; each transformation sees its group's leaves as an array.
+ *
+ * @param transforms - The transformation for each label.
+ * @param labels - A tree of labels with the structure of the parameters, or a function of the parameters returning one.
+ * @returns The transformation; its state holds one state per label.
+ * @throws WhiteboxError with code `value` when a label has no transformation.
+ * @example
+ * ```ts
+ * import { multiTransform, scaleByLearningRate, setToZero } from 'whitebox-engine/optim'
+ * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * const t = multiTransform({ train: scaleByLearningRate(0.5), frozen: setToZero() }, { w: 'train', b: 'frozen' })
+ * const g = { w: tensor([2]), b: tensor([2]) }
+ * const u = t.update(g, t.init(g), g).updates as { w: never; b: never }
+ * [toArray(u.w), toArray(u.b)] // => [[-1], [0]]
+ * ```
+ */
+export function multiTransform(
+  transforms: Readonly<Record<string, GradientTransformation>>,
+  labels: Labels,
+): GradientTransformation<Readonly<Record<string, unknown>>> {
+  const groups = (tree: Tree, leaves: readonly Value[]): string[] => {
+    const ls = resolveLabels(labels, tree, leaves.length).map(String)
+    for (const l of ls)
+      if (transforms[l] === undefined) throw new WhiteboxError('value', `no transformation for label '${l}'`)
+    return ls
+  }
+  const names = Object.keys(transforms)
+  return {
+    name: `multiTransform(${names.map((n) => `${n}: ${transforms[n]?.name}`).join(', ')})`,
+    init: (params) => {
+      const leaves = treeLeaves(params)
+      const ls = groups(params, leaves)
+      const state: Record<string, unknown> = {}
+      for (const n of names)
+        state[n] = (transforms[n] as GradientTransformation).init(leaves.filter((_, i) => ls[i] === n))
+      return state
+    },
+    update: (grads, state, params) => {
+      const { leaves, def } = treeFlatten(grads)
+      const ls = groups(params ?? grads, leaves)
+      const pLeaves = params === undefined ? undefined : treeLeaves(params)
+      const merged: Value[] = [...leaves]
+      const next: Record<string, unknown> = {}
+      for (const n of names) {
+        const idx = ls.flatMap((l, i) => (l === n ? [i] : []))
+        const r = (transforms[n] as GradientTransformation).update(
+          idx.map((i) => leaves[i] as Value),
+          state[n],
+          pLeaves === undefined ? undefined : idx.map((i) => pLeaves[i] as Value),
+        )
+        const out = r.updates as Value[]
+        for (const [k, i] of idx.entries()) merged[i] = out[k] as Value
+        next[n] = r.state
+      }
+      return { updates: treeUnflatten(def, merged), state: next }
     },
   }
 }

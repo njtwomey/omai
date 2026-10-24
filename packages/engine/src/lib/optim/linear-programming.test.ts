@@ -1,0 +1,210 @@
+import { describe, expect, it } from 'vitest'
+import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
+import { type Tensor, toArray, toFlat } from '../tensor/index.ts'
+import { messages, metricSeries, recorder, runAlgorithm, tracePolicy } from '../trace/index.ts'
+import * as O from './index.ts'
+
+type Out = Readonly<Record<string, unknown>>
+
+function problemOf(inputs: readonly unknown[]): O.LinearProgram {
+  const [c, aUb, bUb, aEq, bEq, bounds] = inputs.map((x) => decode(x) as Tensor) as Tensor[]
+  const b = toArray(bounds as Tensor) as number[][]
+  return {
+    c: c as Tensor,
+    ...((aUb as Tensor).shape[0] === 0 ? {} : { aUb: aUb as Tensor, bUb: bUb as Tensor }),
+    ...((aEq as Tensor).shape[0] === 0 ? {} : { aEq: aEq as Tensor, bEq: bEq as Tensor }),
+    bounds: b.map(([lo, hi]) => [Number.isFinite(lo) ? (lo ?? 0) : null, Number.isFinite(hi) ? (hi ?? 0) : null]),
+  }
+}
+
+const DEGENERATE = new Set(['mixed-bounds'])
+
+const METHODS = { simplex: O.linprogSimplex, interiorPoint: O.linprogInteriorPoint } as const
+
+describe('linprog against scipy (HiGHS)', () => {
+  for (const c of loadFixture('optim/linear_programming').cases) {
+    for (const [name, method] of Object.entries(METHODS)) {
+      it(`${c.name} by ${name}`, () => {
+        const out = c.output as Out
+        const problem = problemOf(c.inputs)
+        const r = O.linprog(problem, { method })
+        expect(r.status).toBe(out['status'])
+        if (out['status'] !== 'optimal') return
+        const tol = name === 'simplex' ? c.atol : 1e-6
+        expectMatches(r.x, out['x'], tol, tol, `${c.name} x`)
+        expectMatches(r.fun, out['fun'], tol, tol, `${c.name} fun`)
+        // Duals of a degenerate vertex are not unique: the interior point finds another optimal dual. Check that it is
+        // one: stationarity c = A_ub^T ineqlin + A_eq^T eqlin + lower + upper, and strong duality.
+        if (name === 'interiorPoint' && DEGENERATE.has(c.name)) {
+          const [cv, aUb, bUb, aEq, bEq, bounds] = c.inputs.map((x) => toArray(decode(x) as Tensor)) as number[][][]
+          const m = r.marginals
+          const [yu, ye, lo, up] = [m.ineqlin, m.eqlin, m.lower, m.upper].map((t) => toFlat(t))
+          const grad = (cv as unknown as number[]).map(
+            (_, j) =>
+              (aUb ?? []).reduce((s, row, i) => s + (row[j] ?? 0) * (yu?.[i] ?? 0), 0) +
+              (aEq ?? []).reduce((s, row, i) => s + (row[j] ?? 0) * (ye?.[i] ?? 0), 0) +
+              (lo?.[j] ?? 0) +
+              (up?.[j] ?? 0),
+          )
+          grad.forEach((g, j) => {
+            expect(g).toBeCloseTo((cv as unknown as number[])[j] ?? 0, 6)
+          })
+          let dual = 0
+          for (const [i, v] of ((bUb as unknown as number[]) ?? []).entries()) dual += v * (yu?.[i] ?? 0)
+          for (const [i, v] of ((bEq as unknown as number[]) ?? []).entries()) dual += v * (ye?.[i] ?? 0)
+          for (const [j, [l, u]] of (bounds ?? []).entries()) {
+            if (Number.isFinite(l)) dual += (l ?? 0) * (lo?.[j] ?? 0)
+            if (Number.isFinite(u)) dual += (u ?? 0) * (up?.[j] ?? 0)
+          }
+          expect(dual).toBeCloseTo(r.fun, 6)
+          return
+        }
+        expectMatches(r.marginals.lower, out['lower'], tol, tol, `${c.name} lower`)
+        expectMatches(r.marginals.upper, out['upper'], tol, tol, `${c.name} upper`)
+        expectMatches(r.marginals.ineqlin, out['ineqlin'], tol, tol, `${c.name} ineqlin`)
+        if (c.name === 'redundant') {
+          // Duals of dependent rows are not unique; their combination A_eq^T y is.
+          const y = toFlat(r.marginals.eqlin)
+          const want = toFlat(decode(out['eqlin']) as Tensor)
+          const combo = (v: number[]) => [v[0] ?? 0, v[1] ?? 0].reduce((s, q, i) => s + q * (i + 1), 0)
+          expect(combo(y)).toBeCloseTo(combo(want), 6)
+          expect(y[2] ?? 0).toBeCloseTo(want[2] ?? 0, 6)
+        } else expectMatches(r.marginals.eqlin, out['eqlin'], tol, tol, `${c.name} eqlin`)
+      })
+    }
+  }
+})
+
+describe('simplex', () => {
+  const textbook: O.LinearProgram = {
+    c: [-1, -2],
+    aUb: [
+      [1, 1],
+      [1, 3],
+    ],
+    bUb: [4, 6],
+  }
+
+  it('reports slack, residuals and the vertex path', () => {
+    const r = O.linprog(textbook)
+    expect(toFlat(r.slack)).toEqual([0, 0])
+    expect(r.path.map((p) => p.phase)).toEqual([2, 2, 2])
+    expect(r.path.at(-1)?.objective).toBe(-5)
+    expect(r.basis).toHaveLength(2)
+  })
+
+  it('agrees under both pivot rules and is traced pivot by pivot', () => {
+    const dantzig = O.linprog(textbook, { pivotRule: 'dantzig' })
+    expect(toFlat(dantzig.x).map((v) => Math.round(v * 1e12) / 1e12)).toEqual([3, 1])
+    expect(dantzig.path.map((p) => p.x.map((v) => Math.round(v * 1e12) / 1e12))).toEqual([
+      [0, 0],
+      [0, 2],
+      [3, 1],
+    ])
+    const rec = recorder()
+    O.linprog(textbook, { tracer: rec, policy: tracePolicy({ messages: true }) })
+    const run = rec.run()
+    expect(messages(run, 'pivot')).toHaveLength(2)
+    expect(metricSeries(run, 'objective').values.at(-1)).toBe(-5)
+  })
+
+  it('runs phase 1 when the origin is infeasible', () => {
+    const r = O.linprog({
+      c: [3, 2],
+      aUb: [
+        [-1, -1],
+        [-2, -1],
+      ],
+      bUb: [-3, -4],
+    })
+    expect(r.path[0]?.phase).toBe(1)
+    expect(toFlat(r.x)).toEqual([1, 2])
+  })
+
+  it('gives sensitivity ranges that predict when the basis changes', () => {
+    const r = O.linprog(textbook)
+    const s = r.sensitivity as O.Sensitivity
+    // c_1 in [-2, -2/3], c_2 in [-3, -1], b_1 in [2, 6], b_2 in [4, 12].
+    expect(s.cost.map(([lo, hi]) => [lo, hi].map((v) => Math.round(v * 1e9) / 1e9))).toEqual([
+      [-2, -0.666666667],
+      [-3, -1],
+    ])
+    expect(s.bUb).toEqual([
+      [2, 6],
+      [4, 12],
+    ])
+    // Inside the cost range the solution stays put; outside it moves.
+    expect(toFlat(O.linprog({ ...textbook, c: [-1.9, -2] }).x)).toEqual([3, 1])
+    expect(toFlat(O.linprog({ ...textbook, c: [-2.1, -2] }).x)).toEqual([4, 0])
+    // Inside the rhs range the dual prices stay the same.
+    expect(toFlat(O.linprog({ ...textbook, bUb: [5.5, 6] }).marginals.ineqlin)).toEqual(
+      toFlat(O.linprog(textbook).marginals.ineqlin),
+    )
+  })
+
+  it('handles a degenerate program without cycling (Beale)', () => {
+    // Beale's classic cycling example under Dantzig's rule with textbook ties; Bland's rule terminates.
+    const r = O.linprog({
+      c: [-0.75, 150, -0.02, 6],
+      aUb: [
+        [0.25, -60, -0.04, 9],
+        [0.5, -90, -0.02, 3],
+        [0, 0, 1, 0],
+      ],
+      bUb: [0, 0, 1],
+    })
+    expect(r.status).toBe('optimal')
+    expect(r.fun).toBeCloseTo(-0.05, 12)
+  })
+
+  it('stops at the iteration limit', () => {
+    const r = O.linprog(textbook, { maxIterations: 1 })
+    expect(r.status).toBe('iteration limit')
+    expect(r.success).toBe(false)
+  })
+
+  it('converts to standard form and back', () => {
+    const s = O.standardForm({
+      c: [1, 1, 1],
+      bounds: [
+        [-1, 2],
+        [null, 3],
+        [null, null],
+      ],
+    })
+    expect(s.columns.map((c) => c.kind)).toEqual(['shift', 'reflect', 'plus', 'minus', 'slack'])
+    expect(Array.from(O.fromStandard(s, [1, 1, 2, 5, 0]))).toEqual([0, 2, -3])
+    expect(s.offset).toBe(-1 + 3)
+  })
+})
+
+describe('interior point', () => {
+  it('records residuals that fall to the tolerance', () => {
+    const form = O.standardForm({
+      c: [-1, -2],
+      aUb: [
+        [1, 1],
+        [1, 3],
+      ],
+      bUb: [4, 6],
+    })
+    const rec = recorder()
+    const r = runAlgorithm(O.lpInteriorPointAlgorithm(form), { maxSteps: 100, tracer: rec })
+    expect(r.status).toBe('converged')
+    const gap = metricSeries(rec.run(), 'gap').values
+    expect(gap.at(-1)).toBeLessThan(1e-8)
+    expect(gap[0]).toBeGreaterThan(1e-3)
+  })
+
+  it('detects an inconsistent system of equalities before iterating', () => {
+    const r = O.linprogInteriorPoint({
+      c: [1, 1],
+      aEq: [
+        [1, 1],
+        [2, 2],
+      ],
+      bEq: [1, 3],
+    })
+    expect([r.status, r.iterations]).toEqual(['infeasible', 0])
+  })
+})

@@ -20,6 +20,49 @@ export function ddot(x: ArrayLike<number>, y: ArrayLike<number>): number {
 }
 
 /**
+ * The index of the entry of largest absolute value (BLAS idamax, 0-based; the first on ties, -1 for an empty vector).
+ * `Math.abs(x[idamax(x)])` is the infinity norm.
+ *
+ * @param x - The vector.
+ * @returns The index.
+ * @example
+ * ```ts
+ * import { idamax } from 'whitebox-engine/numerics/linalg'
+ * idamax([1, -3, 2]) // => 1
+ * ```
+ */
+export function idamax(x: ArrayLike<number>): number {
+  let best = -1
+  let m = -1
+  for (let i = 0; i < x.length; i++) {
+    const a = Math.abs(x[i] ?? 0)
+    if (a > m || Number.isNaN(a)) {
+      best = i
+      m = a
+      if (Number.isNaN(a)) break
+    }
+  }
+  return best
+}
+
+/**
+ * The sum of absolute values sum_i |x_i| (BLAS dasum), the L1 norm.
+ *
+ * @param x - The vector.
+ * @returns The sum.
+ * @example
+ * ```ts
+ * import { dasum } from 'whitebox-engine/numerics/linalg'
+ * dasum([1, -3, 2]) // => 6
+ * ```
+ */
+export function dasum(x: ArrayLike<number>): number {
+  let s = 0
+  for (let i = 0; i < x.length; i++) s += Math.abs(x[i] ?? 0)
+  return s
+}
+
+/**
  * The Euclidean norm |x| (BLAS dnrm2), accumulated with scaling so that it neither overflows nor underflows.
  *
  * @param x - The vector.

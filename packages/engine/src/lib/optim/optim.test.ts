@@ -1,43 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
-import { valueAndGrad } from '../autodiff/index.ts'
-import { add, mul, pow, square, stack, sub, sum, type Tensor, tensor, toFlat, type Value } from '../tensor/index.ts'
+import { add, square, sub, sum, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { metricSeries, recorder, tensorSeries, tracePolicy } from '../trace/index.ts'
 import * as O from './index.ts'
-
-// 0.5 sum a (p - c)^2 + 0.05 sum p^4, the objective of the torch fixtures.
-const objective =
-  (a: Value, c: Value) =>
-  (p: Value): Value =>
-    add(mul(sum(mul(a, square(sub(p, c)))), 0.5), mul(sum(pow(p, 4)), 0.05))
-
-const FACTORIES: Readonly<Record<string, (o: Readonly<Record<string, unknown>>) => O.GradientTransformation>> = {
-  sgd: (o) => O.sgd(o as unknown as O.SgdOptions),
-  adam: (o) => O.adam(o as unknown as O.AdamOptions),
-  adamw: (o) => O.adamw(o as unknown as O.AdamOptions),
-  rmsprop: (o) => O.rmsprop(o as unknown as O.RmspropOptions),
-  adagrad: (o) => O.adagrad(o as unknown as O.AdagradOptions),
-}
-
-describe('optimisers against torch.optim', () => {
-  for (const c of loadFixture('optim/optimisers').cases) {
-    it(c.name, () => {
-      const [p0, a, cc] = c.inputs.map((x) => decode(x) as Tensor) as [Tensor, Tensor, Tensor]
-      const opt = (FACTORIES[c.fn] as (o: Readonly<Record<string, unknown>>) => O.GradientTransformation)(c.params)
-      const vg = valueAndGrad(objective(a, cc))
-      let params: Value = p0
-      let state = opt.init(params)
-      const path: Value[] = []
-      for (let t = 0; t < (c.params['steps'] as number); t++) {
-        const { updates, state: next } = opt.update(vg(params).grad, state, params)
-        params = O.applyUpdates(params, updates) as Value
-        state = next
-        path.push(params)
-      }
-      expectMatches(stack(path), c.output, c.rtol, c.atol, c.name)
-    })
-  }
-})
 
 describe('transformations', () => {
   it('clip by global norm across a tree', () => {
