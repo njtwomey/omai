@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   checkNumber,
   clampNumber,
-  formatNumber,
+  formatFieldValue,
   fromFraction,
   numberLadder,
   numberStep,
@@ -100,9 +100,9 @@ describe('the slider', () => {
 
 describe('display', () => {
   it('shows integers in full and extremes in exponent form', () => {
-    expect(formatNumber({ integer: true }, 12000000)).toBe('12000000')
-    expect(formatNumber({}, 0.00025)).toBe('2.5e-4')
-    expect(formatNumber({}, 1 / 3)).toBe('0.3333')
-    expect(formatNumber({}, 250000)).toBe('2.5e5')
+    expect(formatFieldValue({ integer: true }, 12000000)).toBe('12000000')
+    expect(formatFieldValue({}, 0.00025)).toBe('2.5e-4')
+    expect(formatFieldValue({}, 1 / 3)).toBe('0.3333')
+    expect(formatFieldValue({}, 250000)).toBe('2.5e5')
   })
 })

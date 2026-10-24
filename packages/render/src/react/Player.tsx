@@ -172,11 +172,11 @@ function Scrubber(props: {
         e.stopPropagation()
       }}
     >
-      <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-(--wb-line)">
+      <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-(--wb-grid)">
         <div className="h-full rounded-full bg-(--wb-accent)" style={{ width: `${t * 100}%` }} />
       </div>
       <div
-        className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-(--wb-accent) bg-(--wb-raised) group-hover:ring-3 group-hover:ring-(--wb-ring)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-ring)/50"
+        className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-(--wb-accent) bg-(--wb-bg) group-hover:ring-3 group-hover:ring-(--wb-accent)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-accent)/50"
         style={{ left: `${t * 100}%` }}
       />
     </div>

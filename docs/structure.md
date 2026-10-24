@@ -2922,6 +2922,8 @@ built from: `optim` (solvers), `losses`, `dists/families`, `numerics/linalg`, `s
 - `regression.ts`: `linearRegression`, `ridge`, `lasso`, `elasticNet`, their cross-validated forms, regularisation
   paths, LARS and lasso-LARS, orthogonal matching pursuit regression, group lasso, best subset, stepwise and stagewise
   selection.
+- `paths.ts`: the regularisation paths and cross-validation along them that `regression.ts` uses (`enetPath`,
+  `lassoPath`, `ridgePath`, `cvPath`, the one-standard-error rule).
 - `classification.ts`: `logisticRegression` (binary and multinomial, L1, L2 and elastic net), `probitRegression`,
   `ridgeClassifier`, `perceptron`, `sgdClassifier`, `passiveAggressive`.
 - `glm.ts`: Poisson, gamma, inverse Gaussian, Tweedie and negative binomial regression, zero-inflated and hurdle models,
@@ -3054,10 +3056,13 @@ built from: `numerics/spatial`, `numerics/linalg`, `graph`, `learn`, `metrics/cl
 built from: `probprog` (programs and engines), `dists`, `learn`
 - `programs.ts`: mixture models as probabilistic programs (Gaussian with full, tied, diagonal or spherical covariance;
   Bernoulli; multinomial; Student-t; mixtures of regressions).
-- `gaussian.ts`: `gaussianMixture` (the familiar estimator; EM by default through `probprog/engines/em.ts`, with VI,
-  Gibbs or NUTS by option; traced responsibilities).
+- `gaussian.ts`: `gaussianMixture` (the familiar estimator; traced EM with closed-form M-steps for full, tied, diagonal
+  and spherical covariances, densities from `dists.multivariateNormal`; the route through `probprog/engines/em.ts`
+  with VI, Gibbs or NUTS by option is a TODO with `programs.ts`), BIC and AIC.
 - `bayesian.ts`: Bayesian and Dirichlet-process mixtures (variational and collapsed Gibbs).
 - `selection.ts`: choosing the number of components (BIC, ICL, held-out likelihood, stability).
+- `density.ts`: density estimation: the Gaussian KDE of `stats/density.ts` as an estimator with cross-validated
+  bandwidth factors, and histogram densities for one or two features (from `stats/histograms.ts`).
 
 `decomposition/` (sklearn.decomposition, cross_decomposition, random_projection)
 built from: `numerics/linalg`, `optim`, `probprog` (latent-variable programs), `learn`
@@ -4036,8 +4041,11 @@ theme tokens from `whitebox-render/theme`, Tailwind CSS, a dependency-free path 
   views, its trace, its source). Adding a `defineEntry` adds its page; there is no per-entry site code.
 
 `src/docs/` (generated from `whitebox-meta`'s catalogue of the engine's TSDoc)
-- Pages: home (packages and domains by tier), module, symbol (signature, TSDoc, live examples with their `// =>`
-  values), concepts (by the encyclopedia's taxonomy), how-tos (`content/howto/`, runnable code blocks checked by the
+- Navigation mirrors the source tree exactly (`lib/<domain>/<subfolder>/<file>`, `methods/<area>/...`, then the
+  symbols of each file), as aifn-engine's docs: collapsed by default, only the current path expanded, a filter on
+  top. Tiers are an import-layering rule and never appear in the docs.
+- Pages: home, folder (its subfolders and files), file (its exports), symbol (signature, TSDoc, live examples with
+  their `// =>` values), concepts (by the encyclopedia's taxonomy), how-tos (`content/howto/`, runnable code blocks checked by the
   build), traces (open, replay, compare and export runs).
 - `plugins/`: the Vite plugin that extracts the catalogue at build time.
 

@@ -3,7 +3,7 @@ import { cx, iconButtonClass, inputBoxClass, labelClass, menuClass, menuItemClas
 import { useDismiss } from './dismiss.ts'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'
 import {
-  formatNumber,
+  formatFieldValue,
   fromFraction,
   hasRange,
   type NumberSpec,
@@ -18,7 +18,7 @@ export interface NumberFieldProps extends NumberSpec {
   readonly label: ReactNode
   readonly value: number
   readonly onChange: (value: number) => void
-  /** How the value shows when not being edited (default {@link formatNumber}). */
+  /** How the value shows when not being edited (default {@link formatFieldValue}). */
   readonly format?: (value: number) => string
   /** A unit shown beside the label. */
   readonly unit?: string
@@ -48,7 +48,7 @@ export function NumberField(props: NumberFieldProps): ReactNode {
     ...(props.log === undefined ? {} : { log: props.log }),
     ...(props.step === undefined ? {} : { step: props.step }),
   }
-  const format = props.format ?? ((v: number) => formatNumber(spec, v))
+  const format = props.format ?? ((v: number) => formatFieldValue(spec, v))
   const ladder = props.ladder === false ? [] : (props.ladder ?? numberLadder(spec))
   const showSlider = props.slider ?? hasRange(spec)
   const id = useId()
@@ -243,7 +243,7 @@ function Rail(props: {
         <div className="h-full bg-(--wb-accent)" style={{ width: `${fraction * 100}%` }} />
       </div>
       <div
-        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-(--wb-accent) bg-(--wb-raised) transition-shadow group-hover:ring-3 group-hover:ring-(--wb-ring)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-ring)/50"
+        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-(--wb-accent) bg-(--wb-bg) transition-shadow group-hover:ring-3 group-hover:ring-(--wb-accent)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-accent)/50"
         style={{ left: `${fraction * 100}%` }}
       />
     </div>

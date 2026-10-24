@@ -1320,6 +1320,87 @@
       "cases": 18
     },
     {
+      "fixture": "methods/cluster/density.json",
+      "source": "oracle/cases/methods/cluster/density.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "methods/cluster/hierarchical.json",
+      "source": "oracle/cases/methods/cluster/hierarchical.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "methods/cluster/kmeans.json",
+      "source": "oracle/cases/methods/cluster/kmeans.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "methods/decomposition/cross_decomposition.json",
+      "source": "oracle/cases/methods/decomposition/cross_decomposition.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "methods/decomposition/ica.json",
+      "source": "oracle/cases/methods/decomposition/ica.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "methods/decomposition/nmf.json",
+      "source": "oracle/cases/methods/decomposition/nmf.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "methods/decomposition/pca.json",
+      "source": "oracle/cases/methods/decomposition/pca.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "methods/decomposition/probabilistic.json",
+      "source": "oracle/cases/methods/decomposition/probabilistic.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "methods/linear/bayesian.json",
+      "source": "oracle/cases/methods/linear/bayesian.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "methods/linear/classification.json",
       "source": "oracle/cases/methods/linear/classification.py",
       "reference": {
@@ -1353,6 +1434,15 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 4
+    },
+    {
+      "fixture": "methods/mixture/gaussian.json",
+      "source": "oracle/cases/methods/mixture/gaussian.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 16
     },
     {
       "fixture": "methods/rl/agents/bandits.json",
@@ -1510,6 +1600,14 @@
         "numpy": "2.5.4"
       },
       "cases": 5
+    },
+    {
+      "fixture": "methods/trees/grow.json",
+      "source": "oracle/cases/methods/trees/grow.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "metrics/audio.json",
