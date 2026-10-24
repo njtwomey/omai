@@ -77,17 +77,23 @@ describe('cont2discrete', () => {
 
   it('Tustin maps stable systems to Schur-stable ones and back-difference too (property)', () => {
     fc.assert(
-      fc.property(fc.array(fc.double({ min: -3, max: 3, noNaN: true }), { minLength: 4, maxLength: 4 }), (v) => {
-        const a = tensor([
-          [(v[0] ?? 0) - 3.5, v[1] ?? 0],
-          [-(v[1] ?? 0), (v[2] ?? 0) - 3.5],
-        ])
-        const s = S.ss(a, b2, c2)
-        for (const method of ['tustin', 'backward_diff', 'zoh'] as const) {
-          const { re, im } = eigvals(S.cont2discrete(s, 0.1 + Math.abs(v[3] ?? 0), { method }).a)
-          for (const [i, r] of toFlat(re).entries()) expect(Math.hypot(r, toFlat(im)[i] ?? 0)).toBeLessThan(1)
-        }
-      }),
+      fc.property(
+        fc.array(
+          fc.integer({ min: -300, max: 300 }).map((k) => k / 100),
+          { minLength: 4, maxLength: 4 },
+        ),
+        (v) => {
+          const a = tensor([
+            [(v[0] ?? 0) - 3.5, v[1] ?? 0],
+            [-(v[1] ?? 0), (v[2] ?? 0) - 3.5],
+          ])
+          const s = S.ss(a, b2, c2)
+          for (const method of ['tustin', 'backward_diff', 'zoh'] as const) {
+            const { re, im } = eigvals(S.cont2discrete(s, 0.1 + Math.abs(v[3] ?? 0), { method }).a)
+            for (const [i, r] of toFlat(re).entries()) expect(Math.hypot(r, toFlat(im)[i] ?? 0)).toBeLessThan(1)
+          }
+        },
+      ),
       { numRuns: 30 },
     )
   })

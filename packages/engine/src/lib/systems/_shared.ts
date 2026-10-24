@@ -1,7 +1,7 @@
 // Shared plumbing for the systems domain: number views of values, complex lists and highest-first polynomials.
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
-import { type ComplexArray, polyFromRoots, polyroots } from '../numerics/polynomial/index.ts'
+import { type ComplexArray, polyadd, polyFromRoots, polyroots, polytrim } from '../numerics/polynomial/index.ts'
 import { binom, factorial as factorialOf } from '../numerics/special/index.ts'
 import { item, primalOf, promoteFloat, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 
@@ -75,17 +75,14 @@ export function evalAt(c: readonly number[], z: ComplexNumber): ComplexNumber {
   return acc
 }
 
-/** Strip leading zeros (keeping at least one coefficient). */
+/** Strip leading zeros (keeping at least one coefficient): numpy.polynomial's polytrim on the reversed list. */
 export function trimLeading(c: readonly number[], tol = 0): number[] {
-  let i = 0
-  while (i < c.length - 1 && Math.abs(c[i] ?? 0) <= tol) i++
-  return c.slice(i)
+  return polytrim([...c].reverse(), tol).reverse()
 }
 
-/** Add highest-first polynomials (right-aligned). */
+/** Add highest-first polynomials (right-aligned): polyadd on the reversed lists. */
 export function polyAddHf(a: readonly number[], b: readonly number[]): number[] {
-  const n = Math.max(a.length, b.length)
-  return Array.from({ length: n }, (_, i) => (a[i - n + a.length] ?? 0) + (b[i - n + b.length] ?? 0))
+  return polyadd([...a].reverse(), [...b].reverse()).reverse()
 }
 
 /** The sample time shared by systems being combined: equal, or one of them continuous-agnostic is an error. */

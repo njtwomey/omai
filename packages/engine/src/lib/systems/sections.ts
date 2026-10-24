@@ -96,8 +96,8 @@ const take = (xs: ComplexNumber[], i: number): ComplexNumber => xs.splice(i, 1)[
  * @returns The sections `[n, 6]`.
  * Pairings 'nearest' and 'keep_odd' first pad the zeros (or poles) with values at the origin to equal counts, as
  * scipy, which reads the zeros and poles as factors (1 - z_i z^-1): a discrete system with fewer zeros than poles is
- * then advanced in time. {@link toSos} pairs such systems minimally. Where scipy fails (minimal pairing, a lone real
- * pole and only complex zeros left), the pole gets a section of its own.
+ * then advanced in time. {@link toSos} pairs such systems minimally. Where scipy fails (minimal pairing with only
+ * complex zeros left for a real pole or a real zero), the real values get a section without them.
  *
  * @throws WhiteboxError with code `value` for an unpaired complex value or an invalid pairing.
  * @concept second-order-sections
@@ -178,9 +178,11 @@ export function zpk2sos(
         const z1 = take(z, nearest(z, p1, 'any'))
         if (!isReal(z1)) {
           sos[si] = section([z1, C.of(z1.re, -z1.im)], [p1, p2])
-        } else if (z.length > 0) {
+        } else if (z.some(isReal)) {
           sos[si] = section([z1, take(z, nearest(z, p1, 'real'))], [p1, p2])
         } else {
+          // Only complex zeros left (minimal pairing with fewer zeros than poles, where scipy fails): the real zero
+          // goes alone, the complex pairs to later sections.
           sos[si] = section([z1], [p1, p2])
         }
       } else {

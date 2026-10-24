@@ -1561,13 +1561,21 @@
       "cases": 51
     },
     {
+      "fixture": "systems/filters.json",
+      "source": "oracle/cases/systems/filters.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 19
+    },
+    {
       "fixture": "systems/frequency.json",
       "source": "oracle/cases/systems/frequency.py",
       "reference": {
         "scipy": "1.18.1",
         "control": "0.10.2"
       },
-      "cases": 48
+      "cases": 29
     },
     {
       "fixture": "systems/interconnect.json",

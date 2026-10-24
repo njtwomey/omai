@@ -8,11 +8,6 @@ const sys = (num: Tensor, den: Tensor, form: unknown): S.Lti => {
   const g = S.tf(num, den)
   return form === 'zpk' ? S.toZpk(g) : form === 'ss' ? S.toSs(g) : g
 }
-const freqzOptions = (p: Readonly<Record<string, unknown>>): S.FreqzOptions => ({
-  ...(p['whole'] === undefined ? {} : { whole: p['whole'] as boolean }),
-  ...(p['fs'] === undefined ? {} : { fs: p['fs'] as number }),
-  ...(p['include_nyquist'] === undefined ? {} : { includeNyquist: p['include_nyquist'] as boolean }),
-})
 const bodePart = (r: S.BodeResponse, part: unknown): Value => (part === 'w' ? r.w : part === 'mag' ? r.mag : r.phase)
 
 const FNS: Readonly<Record<string, GoldenFn>> = {
@@ -32,11 +27,6 @@ const FNS: Readonly<Record<string, GoldenFn>> = {
   evalfr: ([n, d], p) =>
     parts(S.evalfr(S.tf(n as Tensor, d as Tensor), { re: p['re'] as number, im: p['im'] as number })),
   findfreqs: ([n, d], p) => S.findfreqs(n as Tensor, d as Tensor, p['n'] as number),
-  'freqs-w': ([n, d], p) => S.freqs(n as Tensor, d as Tensor, p['n'] as number).w,
-  'freqs-h': ([n, d], p) => parts(S.freqs(n as Tensor, d as Tensor, p['n'] as number).h),
-  'freqz-w': ([b, a], p) => S.freqz(b as Tensor, a as Tensor, p['worN'] as number, freqzOptions(p)).w,
-  'freqz-h': ([b, a], p) => parts(S.freqz(b as Tensor, a as Tensor, p['worN'] as number, freqzOptions(p)).h),
-  'freqz-given': ([b, a, w]) => parts(S.freqz(b as Tensor, a as Tensor, w as Tensor).h),
   nyquist: ([n, d], p) => tensor(S.nyquist(S.tf(n as Tensor, d as Tensor, { dt: p['dt'] as number })).count),
 }
 

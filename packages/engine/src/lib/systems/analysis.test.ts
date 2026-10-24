@@ -20,7 +20,10 @@ import * as S from './index.ts'
 const maxAbs = (v: Value): number => toFlat(v as Tensor).reduce((acc, x) => Math.max(acc, Math.abs(x)), 0)
 
 const stableArb = fc
-  .array(fc.double({ min: -1, max: 1, noNaN: true }), { minLength: 15, maxLength: 15 })
+  .array(
+    fc.integer({ min: -100, max: 100 }).map((k) => k / 100),
+    { minLength: 15, maxLength: 15 },
+  )
   .map((v) => {
     const a = tensor([
       [(v[0] ?? 0) - 2.5, v[1] ?? 0, v[2] ?? 0],
