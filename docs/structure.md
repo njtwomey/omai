@@ -2205,45 +2205,60 @@ a traced algorithm and returns a `Posterior`. Adding an engine is adding a file 
 
 ### 4.33 `learn/` (tier 9): the toolkit around models (scikit-learn's non-model modules)
 
-oracle: scikit-learn, mapie for conformal, captum and shap for explanations
-- `estimator.ts`: the estimator contract (`name`, `hyper`, `hyperSpace`, `fit`), `Fitted` (parameters as data, verbs as
-  methods, `revive` after deserialisation), capability guards, `cloneEstimator`, `EstimatorClass` (the base of
-  sklearn-style class wrappers).
-- `validation.ts`: input checks with clear shape errors, sample weights, `asFloatMatrix`.
+oracle: scikit-learn, statsmodels, imbalanced-learn, mapie for conformal, captum and shap for explanations, lime,
+modAL for active learning, diffprivlib and opacus for privacy
+- `estimator.ts`: the estimator contract (`name`, `hyper`, `hyperSpace`, `fit`, optional `fitTransform` for cross-fitted
+  outputs), `defineEstimator`, `Fitted` (parameters as data, verbs as methods, `revive` after deserialisation,
+  `serialiseFitted`), capability guards (`can`, `requireVerb`, `isClassifier`, `isEstimator`), `cloneEstimator`,
+  `EstimatorClass` (the base of sklearn-style class wrappers).
+- `validation.ts`: input checks with clear shape errors, sample weights, `asFloatMatrix`, matrix views, label
+  encoding, `takeData`.
+- `scoring.ts`: scorers (`makeScorer`, `getScorer` by sklearn name with the right response method, losses negated),
+  the shared `scoring` option of model selection, inspection and feature selection.
 - `preprocessing/scalers.ts`: standard, min-max, max-abs and robust scalers, normaliser, quantile and power
   transformers.
-- `preprocessing/encoders.ts`: one-hot, ordinal, label, target (cross-fitted), multi-label binarisers.
-- `preprocessing/features.ts`: polynomial features, spline features, binning, function transformers, interaction
-  features.
+- `preprocessing/encoders.ts`: one-hot, ordinal, label, target (cross-fitted), label and multi-label binarisers.
+- `preprocessing/features.ts`: polynomial features, spline features, binning, binariser, function transformers,
+  interaction features.
 - `preprocessing/imputation.ts`: simple, k-NN and iterative imputers, missing indicators.
 - `preprocessing/resampling.ts`: random over- and under-sampling, SMOTE, borderline SMOTE, ADASYN, Tomek links,
-  NearMiss.
-- `feature-selection.ts`: variance threshold, univariate selection (F test, chi-square, mutual information), RFE and
-  RFECV, sequential selection, selection from model importances, stability selection.
+  NearMiss (resamplers apply only in fit, also inside pipelines).
+- `feature-selection.ts`: variance threshold, univariate scores (F tests, chi-square, mutual information) and
+  selection (k best, percentile, FPR/FDR/FWE), selection from model importances.
+- `feature-selection-wrappers.ts`: RFE and RFECV, sequential selection, stability selection (traced).
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
-- `model-selection/splitters.ts`: holdout and train/validation/test splits; k-fold, stratified, group, stratified
-  group, shuffle, stratified shuffle, group shuffle, leave-one-out, leave-p-out, leave-one-group-out, repeated variants;
-  time-series splits (expanding window, sliding window, blocked, purged and embargoed); spatial and cluster blocks;
-  predefined splits.
+- `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
+  stratified, group, stratified group, shuffle, stratified shuffle, group shuffle, leave-one-out, leave-p-out,
+  leave-one-group-out and leave-p-groups-out, repeated variants; predefined splits.
+- `model-selection/blocked-splitters.ts`: time-series splits (expanding window, sliding window, blocked, purged and
+  embargoed); spatial and cluster blocks; index-pair adapters.
 - `model-selection/cross-validation.ts`: `crossValidate` (traced, one child run per fold), `crossValPredict`, learning
-  and validation curves, permutation-test scores, nested cross-validation.
+  and validation curves, permutation-test scores.
+- `model-selection/search.ts`: parameter grids and samplers, `gridSearchCV` and `randomizedSearchCV` (traced, one
+  child run per candidate), nested cross-validation. The general studies (samplers, pruners, multi-fidelity) are
+  `lib/tune`; these are the sklearn-shaped searches it can generalise.
 - `model-selection/criteria.ts`: AIC, AICc, BIC, Mallows' Cp, GCV, leave-one-out shortcuts for linear smoothers, the
-  one-standard-error rule, the .632 bootstrap.
-- `calibration.ts`: Platt scaling, isotonic calibration, temperature and vector scaling, beta calibration, histogram
-  binning, cross-fitted calibrated classifiers.
+  one-standard-error rule, the .632 and .632+ bootstrap.
+- `calibration.ts`: Platt scaling, isotonic calibration (pool adjacent violators, the home that
+  `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
+  cross-fitted calibrated classifiers.
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,
-  RAPS), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference).
+  RAPS with tuning), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference).
 - `inspection.ts`: permutation importance, partial dependence, ICE, accumulated local effects, H-statistics,
   functional ANOVA.
 - `explain/gradients.ts`: saliency, input times gradient, integrated gradients, SmoothGrad, DeepLIFT, expected
   gradients.
-- `explain/shapley.ts`: exact, kernel, sampling and tree SHAP, interaction values (games from `games/cooperative.ts`).
+- `explain/shapley.ts`: exact, kernel, sampling and tree SHAP, interaction values. The game-theoretic core (Shapley
+  and interaction values of a coalition game) lives here until `games/cooperative.ts` exists; TODO: move it there and
+  re-export.
 - `explain/surrogates.ts`: LIME, anchors, global surrogate trees, fidelity.
-- `explain/counterfactuals.ts`: Wachter counterfactuals, diverse counterfactuals, FACE, actionable recourse.
+- `explain/counterfactuals.ts`: Wachter counterfactuals, diverse counterfactuals, FACE, actionable recourse (linear
+  costs; TODO: discrete action sets as an integer program).
 - `valuation.ts`: influence functions, TracIn, data Shapley (truncated Monte Carlo), KNN-Shapley.
 - `active-learning.ts`: the pool-based and stream-based active-learning loop as a traced algorithm (query, label,
-  refit), query-strategy contract, budget handling.
+  refit), query-strategy contract (uncertainty, margin, entropy, random, ranked batch, expected error reduction, query
+  by committee), budget handling.
 - `privacy.ts`: Laplace, Gaussian (classic and analytic) and exponential mechanisms, randomised response, composition,
   RDP accounting for the subsampled Gaussian.
 
@@ -3625,7 +3640,7 @@ library for the same computation. They do not set a higher bar than that library
 | `feature_selection`                                         | `lib/learn/feature-selection.ts`                      |
 | `pipeline`, `compose`                                       | `lib/learn/compose.ts`                                |
 | `model_selection` (splitters, CV)                           | `lib/learn/model-selection/`                          |
-| `model_selection` (searches)                                | `lib/tune/`, `methods/tuning/`                        |
+| `model_selection` (searches)                                | `lib/learn/model-selection/search.ts`, `lib/tune/`    |
 | `metrics`                                                   | `lib/metrics/`                                        |
 | `calibration`                                               | `lib/learn/calibration.ts`                            |
 | `inspection`                                                | `lib/learn/inspection.ts`                             |

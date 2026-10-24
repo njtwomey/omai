@@ -59,7 +59,18 @@ function sorted(xs: Iterable<number>): Int32Array {
   return Int32Array.from(xs).sort()
 }
 
-/** The fold whose test set is `test` and whose training set is everything else. */
+/**
+ * The fold whose test set is `test` and whose training set is every other sample.
+ *
+ * @param n - The number of samples.
+ * @param test - The test indices.
+ * @returns The fold, both sets sorted.
+ * @example
+ * ```ts
+ * import { complementFold } from 'whitebox-engine/learn/model-selection'
+ * Array.from(complementFold(4, [2, 0]).train) // => [1, 3]
+ * ```
+ */
 export function complementFold(n: number, test: Iterable<number>): Fold {
   const inTest = new Uint8Array(n)
   for (const i of test) inTest[i] = 1

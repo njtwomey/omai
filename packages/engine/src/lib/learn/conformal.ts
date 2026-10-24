@@ -1,6 +1,6 @@
 import { WhiteboxError } from '../base/index.ts'
-import { foldIn, type Key, uniform } from '../random/index.ts'
-import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
+import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { innerFitOptions, keyFor, runOptionsFor } from './_shared.ts'
 import {
@@ -75,7 +75,7 @@ export interface SplitConformalOptions {
 }
 
 function predictOf(f: Fitted | ((x: TensorLike) => Tensor), who: string): (x: TensorLike) => Float64Array {
-  if (typeof f === 'function') return (x) => Float64Array.from(toFlat(f(x)))
+  if (typeof f === 'function') return (x) => Float64Array.from(toFlat(asTensor(f(x))))
   const p = requireVerb(f, 'predict', who)
   return (x) => Float64Array.from(toFlat(p(x)))
 }
@@ -549,6 +549,65 @@ export function splitConformalClassifier(
       return Array.from({ length: s.length / k }, (_, i) => classes.filter((_, c) => (s[i * k + c] ?? 0) === 1))
     },
   }
+}
+
+/** Options of {@link tuneRaps}. */
+export interface TuneRapsOptions {
+  readonly alpha?: number
+  /** The penalties tried (default Angelopoulos et al.'s 0.001, 0.01, 0.1, 0.2, 0.5). */
+  readonly lambdas?: readonly number[]
+  /** The share of the calibration rows used for tuning (default 0.2). */
+  readonly fraction?: number
+  readonly key?: Key
+}
+
+/**
+ * Choose RAPS's regularisation (Angelopoulos, Bates, Malik and Jordan 2021; MAPIE's RAPS): on a held-out share of the
+ * calibration data, kReg is one more than the conformal quantile of the true labels' ranks, and lambda the penalty
+ * whose RAPS sets are smallest on average; the rest of the data is left to calibrate with them.
+ *
+ * @param fitted - A fitted classifier with `predictProba`.
+ * @param calibration - Calibration data.
+ * @param options - alpha, lambdas, fraction and key.
+ * @returns kReg, lambda, and the row indices left for calibration.
+ * @example
+ * ```ts
+ * import { tuneRaps } from 'whitebox-engine/learn'
+ * import { asTensor, tensor, toArray } from 'whitebox-engine/tensor'
+ * const fixed = { estimator: 'f', kind: 'classifier', params: {}, classes: [0, 1, 2], predictProba: (x) => tensor(toArray(asTensor(x)).map((r) => [r[0], (1 - r[0]) * 0.7, (1 - r[0]) * 0.3])) }
+ * const x = Array.from({ length: 50 }, (_, i) => [(i % 10) / 10])
+ * const t = tuneRaps(fixed, { x, y: x.map((r, i) => (r[0] > 0.4 ? 0 : i % 2 === 0 ? 1 : 2)) }, { alpha: 0.2 })
+ * t.kReg >= 1 // => true
+ * ```
+ */
+export function tuneRaps(
+  fitted: Fitted,
+  calibration: LearnData,
+  options: TuneRapsOptions = {},
+): { readonly kReg: number; readonly lambda: number; readonly calibrationRows: readonly number[] } {
+  const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'tuneRaps')
+  const n = rowsOf(calibration.x)
+  const nTune = Math.max(1, Math.round((options.fraction ?? 0.2) * n))
+  if (nTune >= n) throw new WhiteboxError('value', 'tuneRaps: no calibration rows left after tuning')
+  const order = toFlat(permutation(options.key ?? keyFor({}, 'tuneRaps'), n))
+  const tuneRows = order.slice(0, nTune)
+  const rest = order.slice(nTune).sort((a, b) => a - b)
+  const tune = takeData(calibration, tuneRows)
+  const proba = requireVerb(fitted, 'predictProba', 'tuneRaps')
+  const classes = fitted.classes ?? encodeLabels(requireTargets(calibration, 'tuneRaps'), 'tuneRaps').classes
+  const k = classes.length
+  const p = matrixView(proba(tune.x), 'tuneRaps', { nFeatures: k })
+  const labels = Array.from(targetVector(requireTargets(tune, 'tuneRaps'), 'tuneRaps'), (v) => classes.indexOf(v))
+  const ranks = labels.map((c, i) => sortedDesc(p.data.subarray(i * k, (i + 1) * k)).indexOf(c))
+  const kReg = Math.min(k, conformalQuantile(ranks, alpha) + 1)
+  let best = { lambda: options.lambdas?.[0] ?? 0.001, size: Number.POSITIVE_INFINITY }
+  for (const lambda of options.lambdas ?? [0.001, 0.01, 0.1, 0.2, 0.5]) {
+    const c = splitConformalClassifier(fitted, tune, { alpha, score: 'raps', lambda, kReg })
+    const sets = toFlat(c.predictSet(tune.x))
+    const size = sets.reduce((a, b) => a + b, 0) / nTune
+    if (size < best.size - 1e-12) best = { lambda, size }
+  }
+  return { kReg: Number.isFinite(kReg) ? kReg : k, lambda: best.lambda, calibrationRows: rest }
 }
 
 /** Options of {@link adaptiveConformalInference}. */
