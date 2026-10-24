@@ -56,11 +56,14 @@ export interface PathSpec {
   readonly step: (x: Value, ctx: PathStepContext) => Value
 }
 
-/** The states visited so far, newest first (a persistent list, so each step is O(1)). */
-export interface PathHistory {
-  readonly x: Value
-  readonly previous: PathHistory | undefined
+/** A persistent list, newest first: a simulation step adds one entry in O(1) without copying the past. */
+export interface History<T> {
+  readonly item: T
+  readonly previous: History<T> | undefined
 }
+
+/** The states visited by a path simulation so far. */
+export type PathHistory = History<Value>
 
 /** The state of a path simulation. */
 export interface PathState {
@@ -118,10 +121,10 @@ export function pathAlgorithm(spec: PathSpec): Algorithm<PathState> {
       },
       tensors: { state: { role: 'state', description: 'the state of every path' } },
     }),
-    init: () => ({ i: 0, x: x0, history: { x: x0, previous: undefined } }),
+    init: () => ({ i: 0, x: x0, history: { item: x0, previous: undefined } }),
     step: (s, ctx) => {
       const x = spec.step(s.x, { i: s.i, t: times[s.i] ?? 0, dt: dts[s.i] ?? 0, key: ctx.key })
-      return { i: s.i + 1, x, history: { x, previous: s.history } }
+      return { i: s.i + 1, x, history: { item: x, previous: s.history } }
     },
     done: (s) => (s.i >= dts.length ? 'completed' : undefined),
     observe: (s) => {
@@ -155,10 +158,24 @@ export function pathAlgorithm(spec: PathSpec): Algorithm<PathState> {
 export function simulatePaths(key: Key, spec: PathSpec, options: TraceOptions = {}): Paths {
   const times = asTimes(spec.times, spec.name)
   const result = runAlgorithm(pathAlgorithm(spec), { ...options, key, maxSteps: times.length - 1 })
-  const xs: Value[] = []
-  for (let h: PathHistory | undefined = result.state.history; h !== undefined; h = h.previous) xs.push(h.x)
-  xs.reverse()
-  return { times, values: stack(xs, 1) }
+  return { times, values: stack(historyArray(result.state.history), 1) }
+}
+
+/**
+ * The entries of a history in chronological order (oldest first).
+ *
+ * @param history - A history (or undefined for none).
+ * @returns The items, oldest first.
+ * @example
+ * ```ts
+ * import { historyArray } from 'whitebox-engine/stochastic'
+ * historyArray({ item: 2, previous: { item: 1, previous: undefined } }) // => [1, 2]
+ * ```
+ */
+export function historyArray<T>(history: History<T> | undefined): T[] {
+  const out: T[] = []
+  for (let h = history; h !== undefined; h = h.previous) out.push(h.item)
+  return out.reverse()
 }
 
 /**

@@ -2139,6 +2139,15 @@
       "cases": 13
     },
     {
+      "fixture": "stochastic/branching.json",
+      "source": "oracle/cases/stochastic/branching.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "stochastic/brownian.json",
       "source": "oracle/cases/stochastic/brownian.py",
       "reference": {
@@ -2183,6 +2192,25 @@
         "networkx": "3.7"
       },
       "cases": 41
+    },
+    {
+      "fixture": "stochastic/queues.json",
+      "source": "oracle/cases/stochastic/queues.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "stochastic/random-walks.json",
+      "source": "oracle/cases/stochastic/random-walks.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "networkx": "3.7"
+      },
+      "cases": 11
     },
     {
       "fixture": "stochastic/sde.json",

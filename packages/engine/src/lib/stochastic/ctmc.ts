@@ -29,7 +29,7 @@ import {
 } from './_chains.ts'
 import { positiveInteger, primalNumbers, traceOf, vector } from './_shared.ts'
 import { hittingProbabilities, nextStates } from './markov-chains.ts'
-import { type Paths, simulatePaths, type TimesLike, type TraceOptions } from './paths.ts'
+import { type History, historyArray, type Paths, simulatePaths, type TimesLike, type TraceOptions } from './paths.ts'
 
 function jumpRows(q: TensorLike, where: string): { n: number; rows: number[][]; rates: number[] } {
   const { n, rows } = generatorRows(q, where)
@@ -191,8 +191,8 @@ export interface Trajectory {
 export interface GillespieState {
   readonly t: number
   readonly x: number
-  readonly times: readonly number[]
-  readonly states: readonly number[]
+  /** The jumps so far (time and state entered), newest first. */
+  readonly jumps: History<{ readonly t: number; readonly x: number }>
   /** Whether the horizon or an absorbing state has been reached. */
   readonly finished: boolean
 }
@@ -222,14 +222,14 @@ export function ctmcAlgorithm(q: TensorLike, x0: number, horizon: number): Algor
     schema: channels({
       metrics: { t: { description: 'the time of the last jump' }, state: { description: 'the current state' } },
     }),
-    init: () => ({ t: 0, x: x0, times: [0], states: [x0], finished: false }),
+    init: () => ({ t: 0, x: x0, jumps: { item: { t: 0, x: x0 }, previous: undefined }, finished: false }),
     step: (s, ctx) => {
       const rate = rates[s.x] ?? 0
       if (rate <= 0) return { ...s, finished: true }
       const t = s.t + (exponential(foldIn(ctx.key, 0), [1], rate).data[0] ?? 0)
       if (t >= horizon) return { ...s, finished: true }
       const next = categorical(foldIn(ctx.key, 1), rows[s.x] ?? [], [1]).data[0] ?? 0
-      return { t, x: next, times: [...s.times, t], states: [...s.states, next], finished: false }
+      return { t, x: next, jumps: { item: { t, x: next }, previous: s.jumps }, finished: false }
     },
     done: (s) => (s.finished ? 'completed' : undefined),
     observe: (s) => ({ metrics: { t: s.t, state: s.x } }),
@@ -265,7 +265,8 @@ export function simulateCtmc(
   const r = runAlgorithm(ctmcAlgorithm(q, x0, horizon), { ...traceOf(options), key, maxSteps: cap + 1 })
   if (!r.state.finished)
     throw new WhiteboxError('convergence', `simulateCtmc: more than ${cap} jumps before the horizon`)
-  return { times: Float64Array.from(r.state.times), states: Int32Array.from(r.state.states) }
+  const jumps = historyArray(r.state.jumps)
+  return { times: Float64Array.from(jumps, (j) => j.t), states: Int32Array.from(jumps, (j) => j.x) }
 }
 
 /**
