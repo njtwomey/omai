@@ -1520,6 +1520,14 @@
       "cases": 5
     },
     {
+      "fixture": "methods/trees/grow.json",
+      "source": "oracle/cases/methods/trees/grow.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "metrics/audio.json",
       "source": "oracle/cases/metrics/audio.py",
       "reference": {
