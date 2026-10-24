@@ -1930,6 +1930,105 @@
       "cases": 13
     },
     {
+      "fixture": "signal/filters/apply.json",
+      "source": "oracle/cases/signal/filters/apply.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "pandas": "3.1.0"
+      },
+      "cases": 50
+    },
+    {
+      "fixture": "signal/filters/fir.json",
+      "source": "oracle/cases/signal/filters/fir.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 22
+    },
+    {
+      "fixture": "signal/filters/iir.json",
+      "source": "oracle/cases/signal/filters/iir.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 159
+    },
+    {
+      "fixture": "signal/filters/response.json",
+      "source": "oracle/cases/signal/filters/response.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "signal/fourier.json",
+      "source": "oracle/cases/signal/fourier.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "signal/image/correlate.json",
+      "source": "oracle/cases/signal/image/correlate.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 72
+    },
+    {
+      "fixture": "signal/sampling.json",
+      "source": "oracle/cases/signal/sampling.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "librosa": "1.0.0"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "signal/signal.json",
+      "source": "oracle/cases/signal/signal.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "librosa": "1.0.0"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "signal/windows/cosine.json",
+      "source": "oracle/cases/signal/windows/cosine.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 60
+    },
+    {
+      "fixture": "signal/windows/dpss.json",
+      "source": "oracle/cases/signal/windows/dpss.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "signal/windows/get_window.json",
+      "source": "oracle/cases/signal/windows/get_window.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 48
+    },
+    {
+      "fixture": "signal/windows/shapes.json",
+      "source": "oracle/cases/signal/windows/shapes.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 103
+    },
+    {
       "fixture": "systems/analysis.json",
       "source": "oracle/cases/systems/analysis.py",
       "reference": {
