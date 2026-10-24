@@ -185,7 +185,15 @@ function reduction(
           members: members.map((f) => f.params),
           nFeatures: m.d,
         }
-        const exposition: Exposition[] = [ensembleStages({ method: name, weights: members.map(() => 1), trainScores })]
+        const exposition: Exposition[] = [
+          ensembleStages({
+            method: name,
+            weights: members.map(() => 1),
+            trainScores,
+            scoreName: 'member training accuracy',
+            higherIsBetter: true,
+          }),
+        ]
         if (m.d === 2)
           exposition.push(
             decisionSurfaceOf(est.revive(params), data.x, {

@@ -85,7 +85,9 @@ export function defineExplainedEstimator<H extends Hyper, P extends Json, V exte
   )
   const fit = (data: LearnData, options: FitOptions = {}): Explained<Fitted<P> & V> => {
     const r = explainedFit(data, hyper, options)
-    return { ...base.revive(r.params), exposition: r.exposition }
+    const fitted = base.revive(r.params)
+    const exposition = options.explain === false ? r.exposition : withInputRows(r.exposition, data, fitted.classes)
+    return { ...fitted, exposition }
   }
   return {
     name: base.name,
@@ -104,6 +106,102 @@ export function defineExplainedEstimator<H extends Hyper, P extends Json, V exte
     revive: (params) => ({ ...base.revive(params as P), exposition: [] }),
     with: (changes) => defineExplainedEstimator(spec, spec.update?.(hyper, changes) ?? ({ ...hyper, ...changes } as H)),
   }
+}
+
+// The kinds whose records index the training rows (assignments, scores, support vectors, neighbours).
+const ROW_KINDS: ReadonlySet<string> = new Set([
+  'clusteringSteps',
+  'mixtureSteps',
+  'anomalyScores',
+  'neighbours',
+  'margin',
+])
+
+/**
+ * Records that index the training rows, given those rows when they have none (and the data is small): what lets a
+ * view draw a clustering, a mixture, anomaly scores, neighbours or margins from the record alone. The rows are the
+ * first two features, labelled by the fitted classes (or by the targets when they look like labels).
+ *
+ * @param records - A fit's exposition.
+ * @param data - The training data.
+ * @param classes - The fitted classes, for classifiers.
+ * @returns The records, the row-indexed ones with `rows`.
+ * @example
+ * ```ts
+ * import { withInputRows } from 'whitebox-engine/learn'
+ * import { anomalyScores } from 'whitebox-engine/exposition'
+ * const [r] = withInputRows([anomalyScores({ method: 'z', scores: [0.1, 0.9], threshold: 0.5 })], { x: [[0, 1], [5, 5]] })
+ * r?.kind === 'anomalyScores' && r.rows?.points // => [[0, 1], [5, 5]]
+ * ```
+ */
+export function withInputRows(
+  records: readonly Exposition[],
+  data: LearnData,
+  classes?: readonly number[],
+): readonly Exposition[] {
+  // A surface lacks rows, or has rows without their labels or targets while the data has them.
+  const bareSurface = (r: Exposition): boolean =>
+    r.kind === 'decisionSurface' &&
+    (r.rows === undefined || (data.y !== undefined && r.rows.labels === undefined && r.rows.targets === undefined))
+  const surfaces = records.some(bareSurface)
+  if (!surfaces && !records.some((r) => ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined))
+    return records
+  let rows: InputRows | undefined
+  try {
+    const m = matrixView(data.x, 'withInputRows', { allowNaN: true })
+    if (m.n > ROWS_LIMIT) return records
+    let labelClasses = classes
+    if (labelClasses === undefined && data.y !== undefined) {
+      const y = toFlat(asTensor(data.y))
+      const unique = [...new Set(y)].sort((a, b) => a - b)
+      if (y.length === m.n && unique.length <= 20 && unique.every(Number.isInteger)) labelClasses = unique
+    }
+    rows = inputRowsOf(data.x, {
+      featureNames: featureNamesOf(data, m.d),
+      ...(labelClasses === undefined || data.y === undefined
+        ? {}
+        : { y: data.y, classes: labelClasses, classNames: classNamesOf(data, labelClasses) }),
+    })
+  } catch {
+    return records
+  }
+  if (rows === undefined) return records
+  const n = rows.points.length
+  // A surface's rows are its two features (by name among the data's), labelled by class or carrying the targets.
+  const surfaceRows = (r: DecisionSurface): InputRows | undefined => {
+    try {
+      const m = matrixView(data.x, 'withInputRows', { allowNaN: true })
+      const names = featureNamesOf(data, m.d)
+      const a = Math.max(0, names.indexOf(r.features[0]))
+      const b = r.features[1] === '' ? a : Math.max(0, names.indexOf(r.features[1]))
+      const labelled = classes !== undefined && data.y !== undefined
+      return inputRowsOf(data.x, {
+        columns: [a, m.d === 1 ? a : b],
+        featureNames: names,
+        ...(data.y === undefined
+          ? {}
+          : labelled
+            ? { y: data.y, classes, classNames: r.classes ?? classNamesOf(data, classes) }
+            : { y: data.y, numeric: true }),
+      })
+    } catch {
+      return undefined
+    }
+  }
+  const fits = (r: Exposition): boolean => {
+    if (r.kind === 'clusteringSteps') return (r.assignments[0]?.length ?? n) === n
+    if (r.kind === 'anomalyScores') return r.scores.length === n
+    if (r.kind === 'mixtureSteps') return (r.responsibilities?.[0]?.length ?? n) === n
+    return true
+  }
+  const given = rows
+  return records.map((r) => {
+    if (r.kind === 'decisionSurface' && bareSurface(r)) {
+      const own = surfaceRows(r)
+      return own === undefined ? r : { ...r, rows: own }
+    }
+    return ROW_KINDS.has(r.kind) && (r as { rows?: unknown }).rows === undefined && fits(r) ? { ...r, rows: given } : r
+  })
 }
 
 /**
@@ -149,6 +247,50 @@ export interface SurfaceStepsInput {
   readonly rowWeights?: readonly (readonly number[])[]
   /** What the highlighted rows are (default 'misclassified' for those, else none). */
   readonly highlightName?: string
+}
+
+/**
+ * The recorded steps of a model built stage by stage (boosting, forests): the model with its first m members at up to
+ * `limit` stage counts spaced geometrically from 1 to all of them, with what each stage did.
+ *
+ * @param stages - The number of members.
+ * @param modelAt - The model with its first m members (m from 1 to `stages`; the last is the fitted model).
+ * @param extras - Per stage (index m - 1): the objective and the row weights the member was fitted to; and whether to
+ * highlight the rows the model then misclassifies.
+ * @param limit - The most steps (default 40).
+ * @returns The steps, or `undefined` for fewer than two stages.
+ * @example
+ * ```ts
+ * import { stagedSteps } from 'whitebox-engine/learn'
+ * const model = { estimator: 'm', kind: 'regressor', params: {} }
+ * stagedSteps(100, () => model, {}, 4)?.iterations // => [1, 5, 22, 100]
+ * ```
+ */
+export function stagedSteps(
+  stages: number,
+  modelAt: (stages: number) => Fitted,
+  extras: {
+    readonly objective?: readonly number[]
+    readonly rowWeights?: readonly (readonly number[])[]
+    readonly misclassified?: boolean
+  } = {},
+  limit = 40,
+): SurfaceStepsInput | undefined {
+  if (stages < 2) return undefined
+  const counts = geometricSteps(stages - 1, limit).map((t) => t + 1)
+  const objective = extras.objective
+  const weights = extras.rowWeights
+  return {
+    models: counts.map((m) => modelAt(m)),
+    iterations: counts,
+    ...(objective === undefined || objective.length < stages
+      ? {}
+      : { objective: counts.map((m) => objective[m - 1] ?? 0) }),
+    ...(weights === undefined || weights.length < stages
+      ? {}
+      : { rowWeights: counts.map((m) => weights[m - 1] ?? []) }),
+    ...(extras.misclassified === true ? { highlight: 'misclassified' as const } : {}),
+  }
 }
 
 /** Options of {@link decisionSurfaceOf}. */
@@ -209,6 +351,8 @@ export function inputRowsOf(
     readonly classes?: readonly number[]
     readonly classNames?: readonly string[]
     readonly limit?: number
+    /** Keep the targets as numbers (regressors) rather than as class labels. */
+    readonly numeric?: boolean
   } = {},
 ): InputRows | undefined {
   const m = matrixView(x, 'inputRowsOf', { allowNaN: true })
@@ -228,9 +372,15 @@ export function inputRowsOf(
     if (y.length === m.n) labels = Array.from(y, (v) => index.get(v) ?? -1)
   }
   const classes = options.classNames ?? options.classes?.map(String)
+  let targets: number[] | undefined
+  if (options.numeric === true && options.y !== undefined) {
+    const y = toFlat(asTensor(options.y))
+    if (y.length === m.n) targets = Array.from(y)
+  }
   return inputRows({
     points,
     features,
+    ...(targets === undefined ? {} : { targets }),
     ...(labels === undefined ? {} : { labels }),
     ...(labels === undefined || classes === undefined ? {} : { classes }),
   })
@@ -374,7 +524,7 @@ export function decisionSurfaceOf(
           columns: [fi, fj],
           featureNames: names,
           limit,
-          ...(options.y === undefined || !classifier ? {} : { y: options.y, classes }),
+          ...(options.y === undefined ? {} : classifier ? { y: options.y, classes } : { y: options.y, numeric: true }),
           ...(options.classNames === undefined ? {} : { classNames: options.classNames }),
         })
   // The rows a model gets wrong (indices into the rows the record carries).
@@ -397,7 +547,7 @@ export function decisionSurfaceOf(
       ...(objective === undefined || !Number.isFinite(objective) ? {} : { objective }),
       ...(rowValues === undefined ? {} : { rowValues: Array.from(rowValues) }),
       ...(highlight === undefined ? {} : { highlight }),
-      ...(rowWeights === undefined || rows === undefined ? {} : { rowWeights }),
+      ...(rowWeights === undefined || rowWeights.length !== rows?.points.length ? {} : { rowWeights }),
     }
   })
   const highlightName =

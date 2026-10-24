@@ -1,4 +1,5 @@
 import { sameLength } from './_check.ts'
+import type { InputRows } from './rows.ts'
 
 /** Anomaly scores with the threshold that flags outliers, and per-point evidence. */
 export interface AnomalyScores {
@@ -9,6 +10,8 @@ export interface AnomalyScores {
   readonly threshold: number
   /** Per-point evidence: isolation path lengths, local reachability densities, Mahalanobis distances, ... */
   readonly evidence?: { readonly name: string; readonly values: readonly number[] }
+  /** The rows scored (two coordinates each, with any known classes), when the data is small. */
+  readonly rows?: InputRows
 }
 
 /**
@@ -26,5 +29,6 @@ export interface AnomalyScores {
 export function anomalyScores(record: Omit<AnomalyScores, 'kind'>): AnomalyScores {
   if (record.evidence !== undefined)
     sameLength('anomalyScores', 'evidence.values', record.evidence.values.length, record.scores.length)
+  if (record.rows !== undefined) sameLength('anomalyScores', 'rows', record.rows.points.length, record.scores.length)
   return { kind: 'anomalyScores', ...record }
 }

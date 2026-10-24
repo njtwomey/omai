@@ -3,7 +3,7 @@ import { WhiteboxError } from 'whitebox-engine/base'
 import type { Range } from '../figure/aspect.ts'
 import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figure/figure.ts'
 import { type CellSpec, type GridSpec, layoutGrid, linkedGroups, sharedGroups } from '../figure/grid.ts'
-import { resolveLimits, unionRange } from '../figure/limits.ts'
+import { legibleRange, padRange, resolveLimits, unionRange } from '../figure/limits.ts'
 import { tokens } from '../theme/tokens.ts'
 import { chartFrame, type Layer, logRange, type PlotOptions, panelParts } from './plot.ts'
 
@@ -104,9 +104,12 @@ export function subplots(
       const ext = unionRange(members.flatMap((id) => (panels[id]?.layers ?? []).map((l) => l.extent[axis])))
       const first = panels[members[0] ?? '']?.options?.[axis]?.limits
       const tight = members.every((id) => (panels[id]?.layers ?? []).every((l) => l.extent.tight === true))
-      const policy = first ?? { kind: 'auto' as const, pad: tight ? 0 : 0.04 }
+      const policy =
+        first !== undefined && Array.isArray(first) && !((first[1] as number) > (first[0] as number))
+          ? padRange(first as Range)
+          : (first ?? { kind: 'auto' as const, pad: tight ? 0 : 0.04 })
       const log = panels[members[0] ?? '']?.options?.[axis]?.scale === 'log'
-      const r = log ? logRange(policy, ext) : resolveLimits(policy, ext)
+      const r = log ? logRange(policy, ext) : legibleRange(resolveLimits(policy, ext))
       for (const id of members) out.set(id, r)
     }
     return out

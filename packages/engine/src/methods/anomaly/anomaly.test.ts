@@ -36,6 +36,7 @@ describe('anomaly detectors', () => {
       const [rec] = recordsOf(f.exposition, 'anomalyScores')
       expect(rec?.scores.length).toBe(84)
       expect(rec?.evidence?.values.length).toBe(84)
+      expect(rec?.rows?.points).toHaveLength(84)
       expect(planted(toFlat(f.scoreSamples(x)))).toBeGreaterThanOrEqual(
         d.name === 'pca-reconstruction-detector' ? 2 : 4,
       )
