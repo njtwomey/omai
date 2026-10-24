@@ -3264,8 +3264,11 @@ built from: `stats`, `metrics`, `linear`, `rl/bandits.ts`
 `patterns/` (pattern mining; mlxtend, SPMF, pysubgroup)
 oracle: mlxtend, pysubgroup, spmf outputs recorded once
 built from: `search/refinement.ts`, `stats/tests`, `information`, `learn`
-- `itemsets.ts`: Apriori, FP-growth and Eclat; closed and maximal itemsets.
-- `association-rules.ts`: association rules with support, confidence, lift, leverage and conviction.
+- `itemsets.ts`: Apriori, FP-growth and Eclat; closed and maximal itemsets (so far `apriori`, played level by level
+  over the candidate lattice, and `fpGrowth`, played as its FP-tree grows and each item is mined, both as
+  `BoardSteps`; `TEXTBOOK_BASKETS`, `marketBaskets`; TODO Eclat, closed and maximal itemsets).
+- `association-rules.ts`: association rules with support, confidence, lift, leverage and conviction
+  (`associationRules`, the top rules' lifts as a `CoefficientTable`).
 - `sequences.ts`: sequential pattern mining (GSP, PrefixSpan), episodes in event sequences.
 - `subgraphs.ts`: frequent subgraph mining (gSpan for small graphs).
 - `subgroup-discovery.ts`: subgroup discovery for nominal and numeric targets (WRAcc, lift, binomial and z-score

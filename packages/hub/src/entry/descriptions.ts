@@ -46,6 +46,8 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
   tuning: 'Hyperparameter searches over a method and a dataset: every trial, and what the search learned.',
   evolutionary:
     'Evolutionary computation: populations selected, recombined and mutated, played generation by generation.',
+  patterns:
+    'Pattern mining: frequent itemsets found level by level or from a prefix tree, and the association rules they imply.',
   'classical-ai': 'Classical AI: searches, game players, constraint solvers and planners, each played step by step.',
   'classical-ai/adversarial':
     'Game-tree search: values backed up from the leaves, and the branches alpha-beta never needs to look at.',
