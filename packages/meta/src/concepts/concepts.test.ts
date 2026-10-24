@@ -29,6 +29,7 @@ describe('conceptIndex', () => {
       version: 1,
       packages: [],
       modules: [],
+      files: [],
       symbols: [symbol('b', ['x']), symbol('a', ['x', 'y']), symbol('c', [])],
     }
     const index = conceptIndex(c)

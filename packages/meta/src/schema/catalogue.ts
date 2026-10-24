@@ -103,10 +103,21 @@ export interface PackageDoc {
   readonly modules: readonly string[]
 }
 
-/** Everything the docs know: packages, modules and symbols. */
+/** A source file of a module, with the comment that opens it (when it is the file's own, not a declaration's). */
+export interface FileDoc {
+  /** Repository-relative path. */
+  readonly path: string
+  /** The entry point that owns it. */
+  readonly module: string
+  readonly summary: string
+  readonly description: string
+}
+
+/** Everything the docs know: packages, modules, their files and symbols. */
 export interface Catalogue {
   readonly version: 1
   readonly packages: readonly PackageDoc[]
   readonly modules: readonly ModuleDoc[]
+  readonly files: readonly FileDoc[]
   readonly symbols: readonly SymbolDoc[]
 }
