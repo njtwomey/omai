@@ -6,11 +6,12 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const bayesianRidge: HubEntry = defineEntry({
   id: 'sklearn/linear-model/bayesian-ridge',
   title: 'Bayesian ridge',
-  summary: 'Ridge whose penalty and noise level are learned by evidence maximisation.',
+  summary:
+    'Ridge whose penalty and noise level are learned by maximising the evidence: the path climbs the evidence surface to its peak.',
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'bayesian'],
   datasets: ['regressionTabular', 'regression1d'],
-  ...fitEstimator(bayesianRidgeMethod()),
+  ...fitEstimator(bayesianRidgeMethod(), { exclude: ['maxIter'] }),
   views: [
     { record: 'hyperparameterSurface', title: 'Evidence surface' },
     { record: 'coefficientTable', title: 'Coefficients', area: 'side' },

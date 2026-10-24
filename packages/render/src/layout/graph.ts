@@ -18,10 +18,11 @@ export interface LayoutEdge {
   readonly to: string
 }
 
-/** A graph to lay out. */
+/** A graph to lay out, with the nesting of its groups (a group inside another names it as `parent`). */
 export interface LayoutGraph {
   readonly nodes: readonly LayoutNode[]
   readonly edges: readonly LayoutEdge[]
+  readonly groups?: readonly { readonly id: string; readonly parent?: string }[]
 }
 
 /** A placed box: its centre and size. */

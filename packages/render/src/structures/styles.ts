@@ -37,7 +37,7 @@ export interface StructureStyle {
   readonly edge: (edge: StructureEdge) => EdgeLook
   readonly group: (group: StructureGroup) => GroupLook
   /** The layout the kind reads best in. */
-  readonly layout: 'layered' | 'tree' | 'circular' | 'force'
+  readonly layout: 'layered' | 'tree' | 'circular' | 'force' | 'bipartite'
   readonly fontSize: number
 }
 
@@ -117,8 +117,15 @@ const general: StructureStyle = {
   fontSize: 12,
 }
 
-/** Graphical models: circles for variables (observed shaded), squares for factors, plates around repeats. */
-const graphicalModel: StructureStyle = { ...general, fontSize: 13 }
+/**
+ * Graphical models: circles for variables (observed shaded), squares for factors, small dots for fixed parameters and
+ * hyperparameters (labelled beside them), plates around repeats.
+ */
+const graphicalModel: StructureStyle = {
+  ...general,
+  node: (role) => (role === 'parameter' ? { shape: 'dot', fill: 'fg', stroke: 'fg', text: 'fg' } : generalNode(role)),
+  fontSize: 13,
+}
 
 /** Undirected graphs (Markov networks, factor graphs): no arrow heads. */
 const undirected: StructureStyle = {
@@ -126,6 +133,9 @@ const undirected: StructureStyle = {
   edge: (e) => ({ ...generalEdge(e), arrow: e.directed === true }),
   layout: 'force',
 }
+
+/** Factor graphs: undirected, variables in one row and factors in another. */
+const factorGraph: StructureStyle = { ...undirected, layout: 'bipartite' }
 
 /** Trees (decision and search trees): leaves green, internal nodes blue, laid out as tidy trees. */
 const tree: StructureStyle = { ...general, layout: 'tree' }
@@ -156,7 +166,7 @@ const STYLES: Readonly<Record<string, StructureStyle>> = {
   'graphical-model': graphicalModel,
   'directed-model': graphicalModel,
   'markov-network': undirected,
-  'factor-graph': undirected,
+  'factor-graph': factorGraph,
   undirected,
   tree,
   'decision-tree': tree,

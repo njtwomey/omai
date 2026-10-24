@@ -1,6 +1,6 @@
 // The kernels, the SMO run with its history, and libsvm's rho, shared by the SVMs.
 import { type Kernel, type PairwiseKernelMetric, pairwiseKernels } from '../../lib/kernels/index.ts'
-import { collecting, type FitOptions } from '../../lib/learn/index.ts'
+import { collecting, type FitOptions, onGeometricSchedule } from '../../lib/learn/index.ts'
 import { type SmoProblem, smoAlgorithm } from '../../lib/optim/index.ts'
 import { asTensor, primalOf, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
 import { runAlgorithm } from '../../lib/trace/index.ts'
@@ -56,6 +56,18 @@ export interface DualRun {
   /** The dual objective after each step (from the full gradient). */
   readonly objective: number[]
   readonly workingSets: [number, number][]
+  /** The SMO step of each entry of `objective` and `workingSets`. */
+  readonly steps: number[]
+  /** When asked: the duals at steps on a geometric schedule (and the last), with their rho and objective. */
+  readonly snapshots?: readonly DualSnapshot[]
+}
+
+/** The dual at one SMO step. */
+export interface DualSnapshot {
+  readonly step: number
+  readonly alpha: Float64Array
+  readonly rho: number
+  readonly objective: number
 }
 
 /** Options of {@link runDual}. */
@@ -64,6 +76,8 @@ export interface DualOptions {
   readonly maxIter: number
   /** Keep at most this many history entries, evenly spaced (default 2000). */
   readonly maxHistory?: number
+  /** Snapshot the dual on a geometric schedule of steps, for recording the model through training (default false). */
+  readonly snapshots?: boolean
 }
 
 /**
@@ -75,10 +89,16 @@ export function runDual(problem: SmoProblem, run: FitOptions, options: DualOptio
   const p = Float64Array.from(toFlat(asTensor(problem.p)))
   const n = p.length
   const algorithm = smoAlgorithm(problem, { tol: options.tol, shrinking: false })
-  const tracked = collecting(algorithm, (s) => {
+  const y = Float64Array.from(toFlat(asTensor(problem.y)))
+  const C =
+    typeof problem.C === 'number' ? new Float64Array(n).fill(problem.C) : Float64Array.from(toFlat(asTensor(problem.C)))
+  const snapshots: DualSnapshot[] = []
+  const tracked = collecting(algorithm, (s, t) => {
     let objective = 0
     for (let i = 0; i < n; i++) objective += 0.5 * (s.alpha[i] ?? 0) * ((s.grad[i] ?? 0) + (p[i] ?? 0))
-    return { objective, pair: s.pair }
+    if (options.snapshots === true && onGeometricSchedule(t))
+      snapshots.push({ step: t, alpha: Float64Array.from(s.alpha), rho: rho(s.alpha, s.grad, y, C), objective })
+    return { objective, pair: s.pair, t }
   })
   const r = runAlgorithm(tracked.algorithm, {
     maxSteps: options.maxIter,
@@ -94,17 +114,25 @@ export function runDual(problem: SmoProblem, run: FitOptions, options: DualOptio
   const limit = options.maxHistory ?? 2000
   const stride = Math.max(1, Math.ceil(history.length / limit))
   const kept = history.filter((_, i) => i % stride === 0 || i === history.length - 1)
-  const y = Float64Array.from(toFlat(asTensor(problem.y)))
-  const C =
-    typeof problem.C === 'number' ? new Float64Array(n).fill(problem.C) : Float64Array.from(toFlat(asTensor(problem.C)))
+  const finalRho = rho(r.state.alpha, r.state.grad, y, C)
+  const lastT = tracked.history[tracked.history.length - 1]?.t ?? 0
+  if (options.snapshots === true && snapshots[snapshots.length - 1]?.step !== lastT)
+    snapshots.push({
+      step: lastT,
+      alpha: Float64Array.from(r.state.alpha),
+      rho: finalRho,
+      objective: tracked.history[tracked.history.length - 1]?.objective ?? 0,
+    })
   return {
     alpha: r.state.alpha,
     grad: r.state.grad,
-    rho: rho(r.state.alpha, r.state.grad, y, C),
+    rho: finalRho,
     iterations: r.state.iterations,
     converged: r.status === 'converged',
     objective: kept.map((h) => h.objective),
     workingSets: kept.map((h) => [h.pair?.[0] ?? 0, h.pair?.[1] ?? 0]),
+    steps: kept.map((h) => h.t),
+    ...(options.snapshots === true ? { snapshots } : {}),
   }
 }
 

@@ -6,10 +6,12 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const linearRegression: HubEntry = defineEntry({
   id: 'sklearn/linear-model/linear-regression',
   title: 'Linear regression',
-  summary: 'Ordinary least squares with standard errors, t tests and intervals.',
+  summary:
+    'Ordinary least squares with standard errors and confidence intervals: the informative coefficients stand clear of zero, the noise ones straddle it.',
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear'],
   datasets: ['regressionTabular', 'regression1d'],
+  dataset: 'sparseUncorrelated',
   ...fitEstimator(linearRegressionMethod()),
   views: [{ record: 'coefficientTable', title: 'Coefficients' }],
   methods: [{ file: 'methods/linear/regression.ts', name: 'linearRegression' }],

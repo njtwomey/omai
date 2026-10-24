@@ -68,3 +68,15 @@ describe('entries without a dataset', () => {
     expect(stateToQuery(counter, { ...demoState(counter), seed: 2 })).toBe('seed=2')
   })
 })
+
+describe('entries starting from their own knobs', () => {
+  it('start from them, keep them out of the URL, and reject knobs the dataset does not take', () => {
+    const roll = defineEntry({ ...spec('demo/roll'), datasets: ['manifold3d'], knobs: { n: 300 } })
+    const demo = demoState(roll)
+    expect(demo.knobs['n']).toBe(300)
+    expect(stateToQuery(roll, demo)).toBe('')
+    expect(stateToQuery(roll, { ...demo, knobs: { ...demo.knobs, n: 200 } })).toBe('k.n=200')
+    expect(stateFromQuery(roll, 'data=manifold3d/swissRoll')).toEqual(demo)
+    expect(() => defineEntry({ ...spec('demo/roll'), datasets: ['manifold3d'], knobs: { zzz: 1 } })).toThrow(/knob/)
+  })
+})

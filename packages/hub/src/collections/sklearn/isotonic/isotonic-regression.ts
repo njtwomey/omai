@@ -6,15 +6,13 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const isotonicRegression: HubEntry = defineEntry({
   id: 'sklearn/isotonic/isotonic-regression',
   title: 'Isotonic regression',
-  summary: 'The best monotone fit, by pooling adjacent violators.',
+  summary: 'The best monotone fit, by pooling adjacent violators: a staircase that never steps down.',
   collection: 'sklearn/isotonic',
   tags: ['regression', 'monotone', 'nonparametric'],
   datasets: ['regression1d'],
   dataset: 'stepCurve',
+  knobs: { steps: 3 },
   ...fitEstimator(isotonicRegressionMethod(), { surface: true }),
-  views: [
-    { record: 'decisionSurface', title: 'Fitted function' },
-    { record: 'posteriorGrid', title: 'Fit', area: 'side' },
-  ],
+  views: [{ record: 'posteriorGrid', title: 'Fit' }],
   methods: [{ file: 'methods/linear/isotonic.ts', name: 'isotonicRegression' }],
 })

@@ -10,6 +10,7 @@ export const elasticNet: HubEntry = defineEntry({
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'sparsity', 'regularisation'],
   datasets: ['regressionTabular', 'regression1d'],
+  dataset: 'sparseUncorrelated',
   ...fitEstimator(elasticNetMethod({ alpha: 0.1 })),
   views: [
     { record: 'regularisationPath', title: 'Regularisation path' },

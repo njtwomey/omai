@@ -6,12 +6,13 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const dbscan: HubEntry = defineEntry({
   id: 'sklearn/cluster/dbscan',
   title: 'DBSCAN',
-  summary: 'Clusters as dense regions: core points, the points they reach, and noise.',
+  summary:
+    'Clusters as dense regions grown from core points: it follows the two moons, which no centroid method can separate.',
   collection: 'sklearn/cluster',
   tags: ['clustering', 'density'],
   datasets: ['clustering2d'],
   dataset: 'moons',
-  ...fitEstimator(dbscanMethod(), { unsupervised: true }),
+  ...fitEstimator(dbscanMethod({ eps: 0.2 }), { unsupervised: true }),
   views: [{ record: 'clusteringSteps', title: 'Clustering steps' }],
   methods: [{ file: 'methods/cluster/density.ts', name: 'dbscan' }],
 })

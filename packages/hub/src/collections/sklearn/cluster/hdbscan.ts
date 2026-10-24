@@ -6,10 +6,12 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const hdbscan: HubEntry = defineEntry({
   id: 'sklearn/cluster/hdbscan',
   title: 'HDBSCAN',
-  summary: 'A hierarchy of density clusters, cut where clusters are most stable.',
+  summary:
+    'A hierarchy of density clusters, cut where clusters are most stable: a tight blob and a diffuse one are found alike.',
   collection: 'sklearn/cluster',
   tags: ['clustering', 'density', 'hierarchical'],
   datasets: ['clustering2d'],
+  dataset: 'unequalVarianceBlobs',
   ...fitEstimator(hdbscanMethod(), { unsupervised: true }),
   views: [{ record: 'clusteringSteps', title: 'Clustering steps' }],
   methods: [{ file: 'methods/cluster/density.ts', name: 'hdbscan' }],

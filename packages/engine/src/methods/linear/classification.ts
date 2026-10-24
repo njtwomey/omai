@@ -11,8 +11,11 @@ import {
   type FitOptions,
   type Fitted,
   featureNamesOf,
+  geometricSteps,
   type LearnData,
   matrixView,
+  onGeometricSchedule,
+  type SurfaceStepsInput,
   sampleWeightsOf,
 } from '../../lib/learn/index.ts'
 import { ddot } from '../../lib/numerics/linalg/index.ts'
@@ -163,12 +166,117 @@ export function classifierTable(
   return coefficientTable({ names, estimates })
 }
 
-/** The exposition of a linear classifier: its coefficients and, for two features, its decision surface. */
-function classifierExposition(fitted: FittedLinearClassifier, data: LearnData, table: CoefficientTable): Exposition[] {
+/** How a linear classifier trained: its iterates (the start first), for the decision surface's steps. */
+interface LinearTraining {
+  /** What an iterate is ('IRLS iteration', 'update'). */
+  readonly stepName: string
+  readonly iterates: readonly {
+    readonly step: number
+    readonly coef: readonly (readonly number[])[]
+    readonly intercept: readonly number[]
+    readonly objective?: number
+    /** The rows that mattered at this iterate (the row just seen); default the rows then misclassified. */
+    readonly highlight?: readonly number[]
+  }[]
+  /** What the iterates' highlighted rows are (default the misclassified rows). */
+  readonly highlightName?: string
+  /** The objective trace, finer than the iterates (default the iterates' objectives). */
+  readonly objective?: { readonly name: string; readonly iterations: number[]; readonly values: number[] }
+  readonly objectiveName?: string
+}
+
+/** The models at up to 40 of a linear classifier's iterates (geometrically spaced), the last the fitted model. */
+function linearSteps(
+  fitted: FittedLinearClassifier,
+  training: LinearTraining,
+  revive: (p: LinearClassifierParams) => FittedLinearClassifier,
+): SurfaceStepsInput | undefined {
+  const its = training.iterates
+  if (its.length < 2) return undefined
+  const last = its[its.length - 1]?.step ?? 0
+  const chosen = new Set<number>()
+  for (const target of geometricSteps(last, 40)) {
+    let best = 0
+    for (let k = 1; k < its.length; k++)
+      if (Math.abs((its[k]?.step ?? 0) - target) < Math.abs((its[best]?.step ?? 0) - target)) best = k
+    chosen.add(best)
+  }
+  const kept = [...chosen].sort((a, b) => a - b).map((k) => its[k] as NonNullable<(typeof its)[number]>)
+  const models = kept.map((it, t) =>
+    t === kept.length - 1
+      ? fitted
+      : revive({ ...fitted.params, coef: it.coef.map((r) => [...r]), intercept: [...it.intercept] }),
+  )
+  const objective = kept.every((it) => it.objective !== undefined) ? kept.map((it) => it.objective ?? 0) : undefined
+  const highlight = kept.every((it) => it.highlight !== undefined) ? kept.map((it) => it.highlight ?? []) : undefined
+  return {
+    models,
+    iterations: kept.map((it) => it.step),
+    ...(objective === undefined ? {} : { objective }),
+    highlight: highlight ?? 'misclassified',
+    ...(highlight === undefined || training.highlightName === undefined
+      ? {}
+      : { highlightName: training.highlightName }),
+  }
+}
+
+/**
+ * The exposition of a linear classifier: its coefficients and, for two features, its decision surface (with its steps
+ * through training, when given how it trained).
+ */
+function classifierExposition(
+  fitted: FittedLinearClassifier,
+  data: LearnData,
+  table: CoefficientTable,
+  training?: LinearTraining,
+  revive?: (p: LinearClassifierParams) => FittedLinearClassifier,
+): Exposition[] {
   const d = fitted.nFeaturesIn
+  if (d !== 2) return [table]
   const featureNames = featureNamesOf(data, d)
   const classNames = classNamesOf(data, fitted.classes)
-  return [table, ...(d === 2 ? [decisionSurfaceOf(fitted, data.x, { featureNames, classNames })] : [])]
+  const steps = training === undefined || revive === undefined ? undefined : linearSteps(fitted, training, revive)
+  // The objective at every iterate where it is finite (IRLS starts from an infinite one).
+  const finite = training?.iterates.filter((it) => it.objective !== undefined && Number.isFinite(it.objective)) ?? []
+  const trace =
+    training?.objective ??
+    (training?.objectiveName === undefined || finite.length < 2
+      ? undefined
+      : {
+          name: training.objectiveName,
+          iterations: finite.map((it) => it.step),
+          values: finite.map((it) => it.objective ?? 0),
+        })
+  return [
+    table,
+    decisionSurfaceOf(fitted, data.x, {
+      featureNames,
+      classNames,
+      ...(data.y === undefined ? {} : { y: data.y }),
+      ...(steps === undefined || training === undefined ? {} : { steps, stepName: training.stepName }),
+      ...(steps === undefined || trace === undefined ? {} : { objective: trace }),
+    }),
+  ]
+}
+
+/** The training of a binary GLM fit (IRLS iterates), when recorded. */
+function glmTraining(
+  f: ReturnType<typeof fitLinear>,
+  options: FitOptions,
+  objectiveName: string,
+): LinearTraining | undefined {
+  const path = f.solution.path
+  if (options.explain === false || path === undefined) return undefined
+  return {
+    stepName: 'IRLS iteration',
+    objectiveName,
+    iterates: path.map((it, step) => ({
+      step,
+      coef: [[...it.coef]],
+      intercept: [it.intercept],
+      objective: it.objective,
+    })),
+  }
 }
 
 /** Hyperparameters of {@link logisticRegression}. */
@@ -280,8 +388,10 @@ export function logisticRegression(
           )
         let params: LinearClassifierParams
         let table: CoefficientTable | undefined
+        let training: LinearTraining | undefined
         if (classes.length === 2) {
           const f = binary(1)
+          training = x.d === 2 ? glmTraining(f, options, 'penalised deviance') : undefined
           params = {
             classes,
             coef: [f.params.coef],
@@ -311,6 +421,8 @@ export function logisticRegression(
             fitted,
             data,
             table ?? classifierTable(params, names, classNamesOf(data, classes)),
+            training,
+            (p) => est.revive(p),
           ),
         }
       },
@@ -376,7 +488,11 @@ export function probitRegression(
           link: 'none',
           iterations: f.params.iterations,
         }
-        return { params, exposition: classifierExposition(est.revive(params), data, f.table) }
+        const training = x.d === 2 ? glmTraining(f, options, 'deviance') : undefined
+        return {
+          params,
+          exposition: classifierExposition(est.revive(params), data, f.table, training, (p) => est.revive(p)),
+        }
       },
       methods: (p: LinearClassifierParams) => {
         const base = classifierVerbs(p, 'probitRegression', false)
@@ -509,6 +625,20 @@ export function perceptron(
           return rows === 1 ? (c === 1 ? 1 : -1) : c === r ? 1 : -1
         }
         const { n, d } = x
+        // Two features: snapshot the weights after updates on a geometric schedule, with the row that caused each.
+        const record = options.explain !== false && d === 2
+        let updates = 0
+        const iterates: LinearTraining['iterates'][number][] = []
+        const epochs: { iterations: number[]; values: number[] } = { iterations: [], values: [] }
+        const snapshot = (coef: Float64Array, intercept: Float64Array, row?: number): void => {
+          iterates.push({
+            step: updates,
+            coef: Array.from({ length: rows }, (_, k) => Array.from(coef.subarray(k * d, (k + 1) * d))),
+            intercept: Array.from(intercept),
+            ...(row === undefined ? {} : { highlight: [row] }),
+          })
+        }
+        if (record) snapshot(new Float64Array(rows * d), new Float64Array(rows), undefined)
         const algorithm: Algorithm<PerceptronState> = {
           name: 'perceptron',
           config: { eta0: h.eta0, classes: classes.length },
@@ -547,7 +677,15 @@ export function perceptron(
                   if (h.fitIntercept) intercept[r] = (intercept[r] ?? 0) + h.eta0 * t
                 }
               }
-              if (wrong) mistakes++
+              if (wrong) {
+                mistakes++
+                updates++
+                if (record && onGeometricSchedule(updates)) snapshot(coef, intercept, i)
+              }
+            }
+            if (record) {
+              epochs.iterations.push(updates)
+              epochs.values.push(mistakes)
             }
             loss /= n
             const improved = loss < s.best - h.tol
@@ -570,7 +708,21 @@ export function perceptron(
           iterations: r.steps,
         }
         const table = classifierTable(params, featureNamesOf(data, d), classNamesOf(data, classes))
-        return { params, exposition: classifierExposition(est.revive(params), data, table) }
+        if (record && iterates[iterates.length - 1]?.step !== updates)
+          snapshot(r.state.coef, r.state.intercept, undefined)
+        // The first iterate highlights nothing; the last (the fitted model) the rows it still gets wrong.
+        const training: LinearTraining | undefined = record
+          ? {
+              stepName: 'update',
+              highlightName: 'row updated on',
+              iterates: iterates.map((it, k) => (k === 0 || k === iterates.length - 1 ? { ...it, highlight: [] } : it)),
+              objective: { name: 'mistakes in the epoch', ...epochs },
+            }
+          : undefined
+        return {
+          params,
+          exposition: classifierExposition(est.revive(params), data, table, training, (p) => est.revive(p)),
+        }
       },
       methods: (p: LinearClassifierParams) => classifierVerbs(p, 'perceptron', false),
     },

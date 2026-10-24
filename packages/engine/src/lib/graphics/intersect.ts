@@ -409,7 +409,7 @@ export function intersect(
 
 /**
  * The nearest hit of a ray among shapes by testing every one (the brute-force reference for bounding-volume
- * hierarchies), with the index of the shape hit.
+ * hierarchies), with the index of the shape hit; of shapes hit at the same parameter, the lowest index.
  *
  * @param ray - The ray.
  * @param shapes - The shapes.
@@ -433,7 +433,7 @@ export function nearestHit(
   let limit = tMax
   for (const [index, s] of shapes.entries()) {
     const h = intersect(ray, s, tMin, limit)
-    if (h !== null) {
+    if (h !== null && (best === null || h.t < best.t)) {
       best = { ...h, index }
       limit = h.t
     }

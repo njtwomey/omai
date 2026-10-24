@@ -145,7 +145,22 @@ function linearTicks(
   return { splitNumber, showMinLabel: onTick(r[0]), showMaxLabel: onTick(r[1]) }
 }
 
-function logRange(limits: Limits, extent: Range | undefined, previous?: Range): Range {
+/**
+ * The range of a log axis under a limit policy: padding and `nice` (whole decades) work on the logarithms, and a fitted
+ * range (auto or expand) ends on 1, 2 or 5 times a power of ten. Non-positive values are ignored.
+ *
+ * @param limits - The policy, or a fixed range.
+ * @param extent - The data's extent.
+ * @param previous - The range shown before (for `expand`).
+ * @returns The range.
+ * @example
+ * ```ts
+ * import { logRange } from 'whitebox-render/charts'
+ * logRange({ kind: 'auto', pad: 0.05 }, [0.25, 1.6]) // => [0.2, 2]
+ * logRange({ kind: 'auto', nice: true }, [0.25, 1.6]) // => [0.1, 10]
+ * ```
+ */
+export function logRange(limits: Limits, extent: Range | undefined, previous?: Range): Range {
   const positive =
     extent === undefined ? undefined : ([Math.max(extent[0], 1e-300), Math.max(extent[1], 1e-300)] as const)
   const toLog = (r: Range | undefined): Range | undefined =>
@@ -158,7 +173,22 @@ function logRange(limits: Limits, extent: Range | undefined, previous?: Range): 
       ? { ...policy, nice: false, pad: policy.pad ?? 0 }
       : policy
   const r = resolveLimits(plain, toLog(positive), toLog(previous))
-  return decades ? [10 ** Math.floor(r[0] + 1e-9), 10 ** Math.ceil(r[1] - 1e-9)] : [10 ** r[0], 10 ** r[1]]
+  if (decades) return [10 ** Math.floor(r[0] + 1e-9), 10 ** Math.ceil(r[1] - 1e-9)]
+  // A fitted range ends on 1, 2 or 5 times a power of ten, so its end labels read 0.2 and 2 rather than 0.249 and 1.668.
+  const fitted = 'kind' in policy && (policy.kind === 'auto' || policy.kind === 'expand')
+  return fitted ? [niceDown(10 ** r[0]), niceUp(10 ** r[1])] : [10 ** r[0], 10 ** r[1]]
+}
+
+function niceDown(v: number): number {
+  const e = Math.floor(Math.log10(v) + 1e-9)
+  const f = v / 10 ** e
+  return (f >= 5 - 1e-9 ? 5 : f >= 2 - 1e-9 ? 2 : 1) * 10 ** e
+}
+
+function niceUp(v: number): number {
+  const e = Math.floor(Math.log10(v) - 1e-9)
+  const f = v / 10 ** e
+  return (f <= 1 + 1e-9 ? 1 : f <= 2 + 1e-9 ? 2 : f <= 5 + 1e-9 ? 5 : 10) * 10 ** e
 }
 
 /**

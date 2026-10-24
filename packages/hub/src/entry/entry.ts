@@ -1,17 +1,20 @@
 import { WhiteboxError } from 'whitebox-engine/base'
-import type { Dataset } from 'whitebox-engine/data'
-import { datasetCollections } from 'whitebox-engine/datasets'
+import type { Dataset, Knobs } from 'whitebox-engine/data'
+import { datasetCollections, datasetGenerators } from 'whitebox-engine/datasets'
 import type { Explained, Exposition, ExpositionKind } from 'whitebox-engine/exposition'
 import type { Key } from 'whitebox-engine/random'
-import type { DictSpace, SpaceValue } from 'whitebox-engine/space'
+import { contains, type DictSpace, type SpaceValue } from 'whitebox-engine/space'
 
 /** Where a view sits on an entry's page. */
 export type ViewArea = 'main' | 'side' | 'below'
 
-/** What a slot's `props` receives beside its record: the run's input rows, labels and parameters. */
+/** What a slot's `props` receives beside its record: the run's input rows, labels or targets, and parameters. */
 export interface SlotContext {
   readonly points?: readonly (readonly number[])[]
+  /** Class indices, for classification data. */
   readonly labels?: readonly number[]
+  /** Targets, for regression data (a Swiss roll's position along the roll, say). */
+  readonly targets?: readonly number[]
   readonly params: Readonly<Record<string, SpaceValue>>
 }
 
@@ -83,6 +86,11 @@ export interface HubEntry {
   readonly datasets: readonly string[]
   /** The dataset to start from, by name in the first collection (default its first). */
   readonly dataset?: string
+  /**
+   * Knobs of that dataset to start from, over the collection's demo knobs (more rows of a Swiss roll, say, or circles
+   * further apart).
+   */
+  readonly knobs?: Knobs
   /** Fit on at most this many rows (a keyed subsample), for methods too slow to run live on more. */
   readonly maxRows?: number
   /** The method's parameters as a space; its defaults are the demo defaults. */
@@ -100,7 +108,8 @@ export interface HubEntry {
  *
  * @param spec - The entry without its `kind`.
  * @returns The entry.
- * @throws WhiteboxError `value` when the id is not under its collection, or a dataset collection is unknown.
+ * @throws WhiteboxError `value` when the id is not under its collection, a dataset collection is unknown, or a knob
+ *   does not fit the starting dataset.
  * @example
  * ```ts
  * import { defineEntry } from 'whitebox-hub'
@@ -121,6 +130,15 @@ export function defineEntry(spec: Omit<HubEntry, 'kind'>): HubEntry {
   const first = datasetCollections[spec.datasets[0] ?? '']
   if (spec.dataset !== undefined && first?.entries.every((e) => e.name !== spec.dataset) === true)
     throw new WhiteboxError('value', `defineEntry: ${spec.id} starts from an unknown dataset '${spec.dataset}'`)
+  if (spec.knobs !== undefined) {
+    const start = first?.entries.find((e) => e.name === (spec.dataset ?? first.entries[0]?.name))
+    const space = start !== undefined && 'generator' in start ? datasetGenerators[start.generator]?.knobs : undefined
+    for (const [k, v] of Object.entries(spec.knobs)) {
+      const s = space?.spaces[k]
+      if (s === undefined || !contains(s, v))
+        throw new WhiteboxError('value', `defineEntry: ${spec.id} starts from a knob '${k}' its dataset does not take`)
+    }
+  }
   return { kind: 'hubEntry', ...spec }
 }
 

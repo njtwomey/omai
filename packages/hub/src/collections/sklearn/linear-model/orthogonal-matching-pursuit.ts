@@ -10,7 +10,8 @@ export const orthogonalMatchingPursuit: HubEntry = defineEntry({
   collection: 'sklearn/linear-model',
   tags: ['regression', 'linear', 'sparsity', 'greedy'],
   datasets: ['regressionTabular', 'regression1d'],
-  ...fitEstimator(orthogonalMatchingPursuitMethod()),
+  dataset: 'sparseUncorrelated',
+  ...fitEstimator(orthogonalMatchingPursuitMethod({ nNonzeroCoefs: 6 })),
   views: [
     { record: 'regularisationPath', title: 'Regularisation path' },
     { record: 'coefficientTable', title: 'Coefficients', area: 'side' },

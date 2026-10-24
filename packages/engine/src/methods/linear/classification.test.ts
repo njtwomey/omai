@@ -38,4 +38,21 @@ describe('linear classifiers', () => {
     expect(per.score?.(blobs)).toBeGreaterThan(0.6)
     expect(recordsOf(per.exposition, 'decisionSurface')).toHaveLength(1)
   })
+
+  it('record their decision surface through training (IRLS iterations, perceptron updates)', () => {
+    const moons = classificationSet('moons', { n: 80, noise: 0.2 }, 3)
+    const s = recordsOf(logisticRegression().fit(moons).exposition, 'decisionSurface')[0]
+    expect(s?.stepName).toBe('IRLS iteration')
+    expect(s?.steps?.length).toBeGreaterThan(2)
+    expect(s?.steps?.at(-1)?.probabilities).toEqual(s?.probabilities)
+    expect(s?.highlightName).toBe('misclassified')
+    expect(s?.objective?.values.every(Number.isFinite)).toBe(true)
+    const p = recordsOf(perceptron().fit(moons, { key: key(1) }).exposition, 'decisionSurface')[0]
+    expect(p?.stepName).toBe('update')
+    expect(p?.steps?.[1]?.highlight).toHaveLength(1)
+    expect(p?.steps?.length).toBeLessThanOrEqual(40)
+    expect(recordsOf(logisticRegression().fit(moons, { explain: false }).exposition, 'decisionSurface')[0]?.steps).toBe(
+      undefined,
+    )
+  })
 })

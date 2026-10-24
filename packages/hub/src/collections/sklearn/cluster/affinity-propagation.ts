@@ -6,11 +6,12 @@ import { fitEstimator } from '../../../entry/run.ts'
 export const affinityPropagation: HubEntry = defineEntry({
   id: 'sklearn/cluster/affinity-propagation',
   title: 'Affinity propagation',
-  summary: 'Points pass messages until a few emerge as exemplars.',
+  summary:
+    'Points trade responsibility and availability messages until a few emerge as exemplars: step through to watch the clusters settle.',
   collection: 'sklearn/cluster',
   tags: ['clustering', 'exemplars', 'message passing'],
   datasets: ['clustering2d'],
-  ...fitEstimator(affinityPropagationMethod(), { unsupervised: true }),
+  ...fitEstimator(affinityPropagationMethod({ damping: 0.8 }), { unsupervised: true }),
   views: [{ record: 'clusteringSteps', title: 'Clustering steps' }],
   methods: [{ file: 'methods/cluster/exemplar.ts', name: 'affinityPropagation' }],
 })

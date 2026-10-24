@@ -12,17 +12,19 @@ import {
   type FitOptions,
   type Fitted,
   featureNamesOf,
+  geometricSteps,
   type LearnData,
   matrixView,
   plattScaling,
   reviveCalibrator,
+  type SurfaceStepsInput,
   sampleWeightsOf,
 } from '../../lib/learn/index.ts'
 import { kFold, splitIndices } from '../../lib/learn/model-selection/index.ts'
 import { foldIn } from '../../lib/random/index.ts'
 import { bool, choice, dict, real, type Space } from '../../lib/space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
-import { type KernelHyper, type KernelParams, kernelMatrix, resolveKernel, runDual } from './_dual.ts'
+import { type DualRun, type KernelHyper, type KernelParams, kernelMatrix, resolveKernel, runDual } from './_dual.ts'
 
 // TODO: nu-SVC.
 
@@ -244,6 +246,7 @@ export function svc(hyper: Partial<SvcHyper> = {}): ExplainedEstimator<SvcHyper,
           labels: readonly number[],
           weights: readonly number[],
           track: boolean,
+          snapshots = false,
         ) => {
           const n = idx.length
           const Q = Array.from({ length: n }, (_, a) =>
@@ -256,15 +259,20 @@ export function svc(hyper: Partial<SvcHyper> = {}): ExplainedEstimator<SvcHyper,
           return runDual({ Q, p: new Float64Array(n).fill(-1), y: labels, C }, track ? options : {}, {
             tol: h.tol,
             maxIter: h.maxIter,
+            snapshots,
           })
         }
+        // Two classes and two features: snapshot the dual through SMO, to record the surface as it trained.
+        const record = options.explain !== false && classes.length === 2 && m.d === 2
+        let binary: { readonly dual: DualRun; readonly labels: readonly number[] } | undefined
         let pairIndex = 0
         for (let a = 0; a < classes.length; a++)
           for (let b = a + 1; b < classes.length; b++) {
             const idx = Array.from(codes.keys()).filter((i) => codes[i] === a || codes[i] === b)
             const labels = idx.map((i) => (codes[i] === a ? 1 : -1))
             const cw = idx.map((i) => h.classWeight?.[classes[codes[i] ?? 0] ?? 0] ?? 1)
-            const dual = solvePair(idx, labels, cw, true)
+            const dual = solvePair(idx, labels, cw, true, record)
+            if (record) binary = { dual, labels }
             const support: number[] = []
             const coef: number[] = []
             dual.alpha.forEach((al, t) => {
@@ -322,18 +330,39 @@ export function svc(hyper: Partial<SvcHyper> = {}): ExplainedEstimator<SvcHyper,
                 margins: idx.map((row, t) => (labels[t] ?? 1) * decision(row)),
                 dualObjective: dual.objective,
                 workingSets: dual.workingSets.map(([i, j]) => [idx[i] ?? i, idx[j] ?? j]),
+                steps: dual.steps,
               }),
             )
             pairIndex++
           }
         const params: SvcParams = { kernel: kp, classes: [...classes], vectors, pairs }
-        if (m.d === 2)
-          exposition.push(
-            decisionSurfaceOf(est.revive(params), data.x, {
-              featureNames: featureNamesOf(data, m.d),
-              classNames: classNamesOf(data, classes),
-            }),
-          )
+        if (m.d === 2) {
+          const fitted = est.revive(params)
+          const steps =
+            binary === undefined ? undefined : smoSteps(binary.dual, binary.labels, rows, kp, classes, fitted)
+          const surface = decisionSurfaceOf(fitted, data.x, {
+            featureNames: featureNamesOf(data, m.d),
+            classNames: classNamesOf(data, classes),
+            ...(data.y === undefined ? {} : { y: data.y }),
+            levels: [-1, 1],
+            ...(steps === undefined || binary === undefined
+              ? {}
+              : {
+                  steps,
+                  stepName: 'SMO step',
+                  objective: { name: 'dual objective', iterations: binary.dual.steps, values: binary.dual.objective },
+                }),
+          })
+          // The margin records index the same rows the surface carries: give them the rows and the surface.
+          for (const [i, r] of exposition.entries())
+            if (r.kind === 'margin')
+              exposition[i] = {
+                ...r,
+                ...(surface.rows === undefined ? {} : { rows: surface.rows }),
+                ...(classes.length === 2 ? { surface } : {}),
+              }
+          exposition.push(surface)
+        }
         return { params, exposition }
       },
       methods: (p: SvcParams) => svcVerbs(p),
@@ -351,6 +380,58 @@ export function svc(hyper: Partial<SvcHyper> = {}): ExplainedEstimator<SvcHyper,
     },
   )
   return est
+}
+
+// The models at up to 40 of SMO's snapshots (spaced geometrically in the step), for a binary SVC: each a one-pair model
+// from the snapshot's dual, the last the fitted model itself, with the support vectors at each step.
+function smoSteps(
+  dual: DualRun,
+  labels: readonly number[],
+  rows: readonly (readonly number[])[],
+  kernel: KernelParams,
+  classes: readonly number[],
+  fitted: FittedSvc,
+): SurfaceStepsInput | undefined {
+  const snaps = dual.snapshots ?? []
+  if (snaps.length < 2) return undefined
+  const last = snaps[snaps.length - 1]?.step ?? 0
+  const chosen = new Set<number>()
+  for (const target of geometricSteps(last, 40)) {
+    let best = 0
+    for (let k = 1; k < snaps.length; k++)
+      if (Math.abs((snaps[k]?.step ?? 0) - target) < Math.abs((snaps[best]?.step ?? 0) - target)) best = k
+    chosen.add(best)
+  }
+  const kept = [...chosen].sort((a, b) => a - b).map((k) => snaps[k] as NonNullable<(typeof snaps)[number]>)
+  const models = kept.map((s, t) => {
+    if (t === kept.length - 1) return fitted
+    // Before any support vector (SMO's first step), one row with a zero coefficient keeps the model's shape.
+    const active = Array.from(s.alpha.keys()).filter((i) => (s.alpha[i] ?? 0) > 0)
+    const support = active.length > 0 ? active : [0]
+    const params: SvcParams = {
+      kernel,
+      classes: [...classes],
+      vectors: support.map((i) => [...(rows[i] ?? [])]),
+      pairs: [
+        {
+          positive: 0,
+          negative: 1,
+          support: support.map((_, a) => a),
+          coef: support.map((i) => (s.alpha[i] ?? 0) * (labels[i] ?? 1)),
+          intercept: -s.rho,
+          platt: null,
+        },
+      ],
+    }
+    return { estimator: 'svc', kind: 'classifier' as const, params, ...svcVerbs(params) }
+  })
+  return {
+    models,
+    iterations: kept.map((s) => s.step),
+    objective: kept.map((s) => s.objective),
+    highlight: kept.map((s) => Array.from(s.alpha.keys()).filter((i) => (s.alpha[i] ?? 0) > 0)),
+    highlightName: 'support vectors',
+  }
 }
 
 /** {@link svc} as a class. */

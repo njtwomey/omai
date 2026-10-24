@@ -16,7 +16,7 @@ export const gradientBoosting: HubEntry = defineEntry({
   views: [
     { record: 'decisionSurface', title: 'Predictions' },
     { record: 'ensembleStages', title: 'Stages', area: 'side' },
-    { record: 'tree', title: 'A member tree', area: 'side' },
+    { record: 'tree', title: 'A member tree', area: 'below' },
   ],
   methods: [
     { file: 'methods/ensemble/gradient-boosting.ts', name: 'gradientBoostingClassifier' },

@@ -9,9 +9,12 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { Pixels } from 'whitebox-engine/scene'
+import { encodeGif } from '../animation/gif.ts'
+import { canEncodeVideo, encodeWebm } from '../animation/video.ts'
 import type { Figure } from '../figure/figure.ts'
 import { texToHtml } from '../maths/tex.ts'
-import { chartToSvg, composeSvg, type FigurePart, svgDataUrl, svgToPng } from '../svg/export.ts'
+import { chartToSvg, composeSvg, type FigurePart, svgDataUrl, svgToPixels, svgToPng } from '../svg/export.ts'
 import { escapeXml } from '../svg/svg.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { loadEcharts } from './echarts.ts'
@@ -34,6 +37,15 @@ const FrameContext = createContext<FrameSize | undefined>(undefined)
  */
 export function useFrameSize(): FrameSize | undefined {
   return useContext(FrameContext)
+}
+
+/** What a frame needs of a playback to record it: the frame count and rate, the current frame, seek and pause. */
+export interface FramePlayback {
+  readonly count: number
+  readonly fps: number
+  readonly frame: number
+  readonly seek: (frame: number) => void
+  readonly pause: () => void
 }
 
 /** Export formats offered by a frame's menu. */
@@ -59,6 +71,11 @@ export interface FigureFrameProps {
    */
   readonly onExport?: (format: ExportFormat, frame: HTMLElement) => void
   readonly filename?: string
+  /**
+   * The playback driving an animated figure (`usePlayback`'s controller): with it, the export menu also records the
+   * figure frame by frame as a GIF and, where the browser can encode video, a WebM.
+   */
+  readonly playback?: FramePlayback
   readonly className?: string
   readonly style?: CSSProperties
 }
@@ -88,6 +105,42 @@ function download(url: string, name: string): void {
   a.href = url
   a.download = name
   a.click()
+}
+
+const nextPaint = (): Promise<void> =>
+  new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 20)))
+  })
+
+/** Every frame of a playing figure as pixels: seek, wait for the figure to draw, rasterise its SVG; then seek back. */
+async function recordFrames(
+  root: HTMLElement,
+  playback: FramePlayback,
+  options: { readonly background: string; readonly mode: ColourMode },
+  progress: (done: number) => void,
+): Promise<Pixels[]> {
+  const start = playback.frame
+  playback.pause()
+  const { width, height } = root.getBoundingClientRect()
+  const frames: Pixels[] = []
+  try {
+    for (let i = 0; i < Math.min(playback.count, 600); i++) {
+      playback.seek(i)
+      await nextPaint()
+      const svg = figureSvg(root, options)
+      if (svg === undefined) break
+      // Some browsers refuse to read back a canvas drawn from HTML in an SVG; then the frame goes without overlays.
+      const pixels = await svgToPixels(svg, width, height, { background: options.background }).catch(() => {
+        const plain = figureSvg(root, { ...options, overlays: false }) ?? svg
+        return svgToPixels(plain, width, height, { background: options.background })
+      })
+      frames.push(pixels)
+      progress(i + 1)
+    }
+  } finally {
+    playback.seek(start)
+  }
+  return frames
 }
 
 /**
@@ -127,6 +180,22 @@ export function figureSvg(
     const r = svg.getBoundingClientRect()
     parts.push({ x: r.left - box.left, y: r.top - box.top, width: r.width, height: r.height, svg: svg.outerHTML })
   }
+  // Scenes (diagrams, worlds) are SVG already: each goes in as drawn, at its place.
+  for (const el of root.querySelectorAll<SVGSVGElement>('svg[data-whitebox-scene]')) {
+    const r = el.getBoundingClientRect()
+    if (r.width === 0 || r.height === 0) continue
+    const copy = el.cloneNode(true) as SVGSVGElement
+    copy.setAttribute('width', String(r.width))
+    copy.setAttribute('height', String(r.height))
+    copy.removeAttribute('style')
+    parts.push({
+      x: r.left - box.left,
+      y: r.top - box.top,
+      width: r.width,
+      height: r.height,
+      svg: new XMLSerializer().serializeToString(copy),
+    })
+  }
   if (options.overlays ?? true)
     for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-overlay]')) {
       const r = el.getBoundingClientRect()
@@ -145,8 +214,10 @@ export function figureSvg(
  * A fixed-size figure area: content never resizes it. The figure is the unit: a grid of panels (`subplots`,
  * `FigureGrid`) goes in one frame, with one expand button and one export for the whole figure, never one per panel.
  * The expand button opens the same content full screen in a modal (Escape or a click outside closes it), and the
- * export menu saves the whole figure (every chart and overlay cell) as SVG or PNG. Content that is a function receives the
- * current size, so a chart can draw at the modal's size; `useFrameSize` gives the same inside the frame.
+ * export menu saves the whole figure (every chart, scene and overlay cell) as SVG or PNG, and, given the `playback`
+ * that animates it, records it frame by frame as a GIF or (where the browser can encode video) a WebM. Content that is
+ * a function receives the current size, so a chart can draw at the modal's size; `useFrameSize` gives the same inside
+ * the frame.
  *
  * @param props - Size, title, caption, content, expansion and export settings.
  * @returns The frame.
@@ -162,7 +233,15 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const [viewport, setViewport] = useState({ width: 1200, height: 800 })
   const frameRef = useRef<HTMLDivElement | null>(null)
   const modalRef = useRef<HTMLDivElement | null>(null)
-  const formats = props.exportFormats ?? ['png', 'svg']
+  const playback = props.playback
+  const formats =
+    props.exportFormats ??
+    ([
+      'png',
+      'svg',
+      ...(playback === undefined ? [] : ['gif', ...(canEncodeVideo() ? ['webm'] : [])]),
+    ] as ExportFormat[])
+  const [busy, setBusy] = useState<string | null>(null)
   const hasTools = formats.length > 0 || (props.expandable ?? true)
 
   useEffect(() => {
@@ -189,8 +268,28 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
         props.onExport(format, root)
         return
       }
-      if (format !== 'png' && format !== 'svg') return
       const name = `${props.filename ?? 'figure'}.${format}`
+      if ((format === 'gif' || format === 'webm') && playback !== undefined && busy === null) {
+        const count = Math.min(playback.count, 600)
+        setBusy(`recording 0 / ${count}`)
+        recordFrames(root, playback, { background: t.bg, mode }, (done) => setBusy(`recording ${done} / ${count}`))
+          .then(async (frames) => {
+            setBusy('encoding')
+            const bytes =
+              format === 'gif'
+                ? encodeGif(frames, { fps: playback.fps })
+                : await encodeWebm(frames, { fps: playback.fps })
+            const url = URL.createObjectURL(
+              new Blob([bytes as Uint8Array<ArrayBuffer>], { type: format === 'gif' ? 'image/gif' : 'video/webm' }),
+            )
+            download(url, name)
+            setTimeout(() => URL.revokeObjectURL(url), 10_000)
+          })
+          .catch(() => undefined)
+          .finally(() => setBusy(null))
+        return
+      }
+      if (format !== 'png' && format !== 'svg') return
       const svg = figureSvg(root, { background: t.bg, mode })
       if (svg === undefined) return
       if (format === 'svg') {
@@ -207,7 +306,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
         .then((url) => download(url, name))
         .catch(() => undefined)
     },
-    [expanded, props.onExport, props.filename, t.bg, mode],
+    [expanded, props.onExport, props.filename, t.bg, mode, playback, busy],
   )
 
   // The modal keeps the figure's aspect, as large as fits in 92% of the viewport.
@@ -237,10 +336,18 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
     padding: 0,
   }
   const toolbar = (inModal: boolean): ReactElement => (
-    <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', zIndex: 2 }}>
+    <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', zIndex: 2, alignItems: 'center' }}>
+      {busy !== null && <span style={{ font: `11px ${t.monoFont}`, color: t.muted, marginRight: 4 }}>{busy}</span>}
       {formats.length > 0 && (
         <div style={{ position: 'relative' }}>
-          <button type="button" style={button} aria-label="Export" title="Export" onClick={() => setMenu((m) => !m)}>
+          <button
+            type="button"
+            style={{ ...button, opacity: busy === null ? 1 : 0.5 }}
+            aria-label="Export"
+            title="Export"
+            disabled={busy !== null}
+            onClick={() => setMenu((m) => !m)}
+          >
             <Icon path={ICON_DOWNLOAD} />
           </button>
           {menu && (

@@ -31,6 +31,11 @@ export interface FitOptions {
   readonly policy?: TracePolicy
   /** Fit as a child of this run (cross-validation folds, pipeline steps). */
   readonly parent?: RunHandle
+  /**
+   * Whether to record how training went in the exposition (a decision surface at each step, say): default true. Fits
+   * inside model selection (folds, trials) pass false, so a search does not pay for records nobody reads.
+   */
+  readonly explain?: boolean
 }
 
 /** What an estimator learns to do. */
