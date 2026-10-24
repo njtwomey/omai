@@ -237,6 +237,15 @@
       "cases": 4
     },
     {
+      "fixture": "foundations/calculus.json",
+      "source": "oracle/cases/foundations/calculus.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 46
+    },
+    {
       "fixture": "foundations/coordinates.json",
       "source": "oracle/cases/foundations/coordinates.py",
       "reference": {
@@ -247,12 +256,30 @@
       "cases": 13
     },
     {
+      "fixture": "foundations/curves.json",
+      "source": "oracle/cases/foundations/curves.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 64
+    },
+    {
       "fixture": "foundations/rotations.json",
       "source": "oracle/cases/foundations/rotations.py",
       "reference": {
         "scipy": "1.18.1"
       },
       "cases": 82
+    },
+    {
+      "fixture": "foundations/surfaces.json",
+      "source": "oracle/cases/foundations/surfaces.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "sympy": "1.14.0"
+      },
+      "cases": 68
     },
     {
       "fixture": "foundations/trigonometry.json",
