@@ -655,6 +655,15 @@
       "cases": 3
     },
     {
+      "fixture": "learn/explain/surrogates.json",
+      "source": "oracle/cases/learn/explain/surrogates.py",
+      "reference": {
+        "lime": "0.2.0.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {
