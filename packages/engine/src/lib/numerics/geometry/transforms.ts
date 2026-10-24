@@ -425,12 +425,18 @@ function toNested(f: readonly number[], n: number): number[][] {
   return Array.from({ length: n }, (_, i) => f.slice(i * n, i * n + n))
 }
 
-/** The right singular vector of the smallest singular value of a row-major m x 9 matrix. */
+/**
+ * The right singular vector of the smallest singular value of a row-major m x 9 matrix. The SVD is the reduced one,
+ * whose V has only min(m, 9) columns, so fewer than nine rows (four correspondences give eight) are padded with zero
+ * rows: the singular vector that spans the null space is then the ninth column.
+ */
 function nullVector(rows: readonly number[][]): number[] {
-  const { vh } = svd(rows.map((r) => [...r]))
-  const v = toFlat(vh as Tensor)
-  const k = (vh as Tensor).shape[0] ?? 9
-  return v.slice((k - 1) * 9, k * 9)
+  const padded = [
+    ...rows.map((r) => [...r]),
+    ...Array.from({ length: Math.max(0, 9 - rows.length) }, () => Array(9).fill(0)),
+  ]
+  const { vh } = svd(padded)
+  return toFlat(vh as Tensor).slice(8 * 9, 9 * 9)
 }
 
 /**
