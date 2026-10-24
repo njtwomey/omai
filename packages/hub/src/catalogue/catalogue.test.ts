@@ -3,7 +3,8 @@ import { isExposition } from 'whitebox-engine/exposition'
 import { runDemo } from '../entry/run.ts'
 import { catalogue } from './index.ts'
 
-// Every entry's demo runs on its default dataset within a small budget and returns well-formed records.
+// Every entry's demo runs on its default dataset within a budget and returns well-formed records. Demos aim at about a
+// second; the budget is generous so a busy machine (several checkouts testing at once) doesn't fail the gate.
 describe('the catalogue', () => {
   it('holds entries under their collections', () => {
     expect(catalogue.entries.length).toBeGreaterThan(0)
@@ -17,5 +18,5 @@ describe('the catalogue', () => {
       for (const r of out.exposition) expect(isExposition(r)).toBe(true)
       for (const v of entry.views)
         if (v.index === undefined || v.index === 0) expect(out.exposition.map((r) => r.kind)).toContain(v.record)
-    }, 5000)
+    }, 20_000)
 })

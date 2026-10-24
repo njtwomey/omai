@@ -24,13 +24,20 @@ export interface ClusteringSteps {
   readonly added?: readonly (readonly number[])[]
   /** What the added rows are ('queried', 'pseudo-labelled'). */
   readonly addedName?: string
-  /** Pairwise constraints (COP k-means): pairs that must share a cluster, and pairs that must not. */
-  readonly constraints?: {
-    readonly mustLink?: readonly (readonly [number, number])[]
-    readonly cannotLink?: readonly (readonly [number, number])[]
-  }
   /** The rows clustered (two coordinates each, with their names and any known classes), when the data is small. */
   readonly rows?: InputRows
+  /** Pairwise constraints a constrained clustering was given (COP-k-means), and the ones its result breaks. */
+  readonly constraints?: PairConstraintsRecord
+}
+
+/** Must-link and cannot-link pairs of rows, with the pairs (indices into each list) the final assignment breaks. */
+export interface PairConstraintsRecord {
+  readonly mustLink: readonly (readonly [number, number])[]
+  readonly cannotLink: readonly (readonly [number, number])[]
+  /** Indices into `mustLink` of pairs that ended in different clusters. */
+  readonly brokenMustLink?: readonly number[]
+  /** Indices into `cannotLink` of pairs that ended in the same cluster. */
+  readonly brokenCannotLink?: readonly number[]
 }
 
 /**
@@ -38,7 +45,8 @@ export interface ClusteringSteps {
  *
  * @param steps - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when per-iteration columns differ in length or rows differ in count.
+ * @throws WhiteboxError `shape` when per-iteration columns differ in length, rows differ in count, or a constraint
+ *   names a row (or a broken pair) that does not exist.
  * @example
  * ```ts
  * import { clusteringSteps } from 'whitebox-engine/exposition'
@@ -56,6 +64,26 @@ export function clusteringSteps(steps: Omit<ClusteringSteps, 'kind'>): Clusterin
   if (steps.reachability !== undefined && steps.ordering !== undefined)
     sameLength('clusteringSteps', 'reachability', steps.reachability.length, steps.ordering.length)
   if (steps.rows !== undefined && t > 0) sameLength('clusteringSteps', 'rows', steps.rows.points.length, n)
+  if (steps.constraints !== undefined) {
+    const c = steps.constraints
+    for (const [field, pairs] of [
+      ['mustLink', c.mustLink],
+      ['cannotLink', c.cannotLink],
+    ] as const)
+      for (const [i, [a, b]] of pairs.entries())
+        if (!(a >= 0 && a < n && b >= 0 && b < n))
+          throw new WhiteboxError(
+            'shape',
+            `clusteringSteps: constraints.${field}[${i}] names a row outside 0..${n - 1}`,
+          )
+    for (const [field, broken, pairs] of [
+      ['brokenMustLink', c.brokenMustLink, c.mustLink],
+      ['brokenCannotLink', c.brokenCannotLink, c.cannotLink],
+    ] as const)
+      for (const j of broken ?? [])
+        if (!(j >= 0 && j < pairs.length))
+          throw new WhiteboxError('shape', `clusteringSteps: constraints.${field} names a pair outside its list`)
+  }
   return { kind: 'clusteringSteps', ...steps }
 }
 
