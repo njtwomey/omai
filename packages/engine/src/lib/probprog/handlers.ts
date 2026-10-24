@@ -78,7 +78,7 @@ export interface TracedModel<D> {
   getTrace(data: D): ProgramTrace
 }
 
-function wrap<D>(model: Model<D>, make: () => Messenger): Model<D> {
+function wrap<D = void>(model: Model<D>, make: () => Messenger): Model<D> {
   return (data: D) => withHandler(make(), () => model(data))
 }
 
@@ -157,7 +157,7 @@ function record(msg: Message): Site | undefined {
  * t.sites.get('y')?.type === 'sample' && t.sites.get('y')?.isObserved // => true
  * ```
  */
-export function trace<D>(model: Model<D>): TracedModel<D> {
+export function trace<D = void>(model: Model<D>): TracedModel<D> {
   const getTrace = (data: D): ProgramTrace => {
     const sites = new Map<string, Site>()
     const handler: Messenger = {
@@ -188,7 +188,7 @@ export function trace<D>(model: Model<D>): TracedModel<D> {
  * traceOf(() => deterministic('d', 1), undefined).sites.size // => 1
  * ```
  */
-export function traceOf<D>(model: Model<D>, data: D): ProgramTrace {
+export function traceOf<D = void>(model: Model<D>, data: D): ProgramTrace {
   return trace(model).getTrace(data)
 }
 
@@ -210,7 +210,7 @@ export function traceOf<D>(model: Model<D>, data: D): ProgramTrace {
  * item(draw() as Value) === item(draw() as Value) // => true
  * ```
  */
-export function seed<D>(model: Model<D>, key: Key): Model<D> {
+export function seed<D = void>(model: Model<D>, key: Key): Model<D> {
   return wrap(model, () => {
     let count = 0
     return {
@@ -251,7 +251,7 @@ function lookup(values: SiteValues, msg: Message): Value | undefined {
  * site?.type === 'sample' && site.isObserved // => true
  * ```
  */
-export function condition<D>(model: Model<D>, data: SiteValues): Model<D> {
+export function condition<D = void>(model: Model<D>, data: SiteValues): Model<D> {
   return wrap(model, () => ({
     process: (msg) => {
       if (msg.type !== 'sample' || msg.isObserved) return
@@ -280,7 +280,7 @@ export function condition<D>(model: Model<D>, data: SiteValues): Model<D> {
  * site?.type === 'sample' && !site.isObserved && toArray(site.value) === 2 // => true
  * ```
  */
-export function substitute<D>(model: Model<D>, data: SiteValues): Model<D> {
+export function substitute<D = void>(model: Model<D>, data: SiteValues): Model<D> {
   return wrap(model, () => ({
     process: (msg) => {
       if (msg.type === 'markov' || (msg.type === 'sample' && msg.isObserved)) return
@@ -311,7 +311,7 @@ export function substitute<D>(model: Model<D>, data: SiteValues): Model<D> {
  * item(again.sites.get('x')?.value ?? 0) === item(first.sites.get('x')?.value ?? 1) // => true
  * ```
  */
-export function replay<D>(model: Model<D>, guideTrace: ProgramTrace): Model<D> {
+export function replay<D = void>(model: Model<D>, guideTrace: ProgramTrace): Model<D> {
   return wrap(model, () => ({
     process: (msg) => {
       if (msg.type !== 'sample' && msg.type !== 'plate') return
@@ -354,7 +354,7 @@ export interface BlockOptions {
  * [...traceOf(block(seed(model, key(0)), { hide: ['a'] }), undefined).sites.keys()] // => ['b']
  * ```
  */
-export function block<D>(model: Model<D>, options: BlockOptions = {}): Model<D> {
+export function block<D = void>(model: Model<D>, options: BlockOptions = {}): Model<D> {
   const hidden = (msg: Message): boolean => {
     if (options.hideFn !== undefined) return options.hideFn(msg)
     if (options.exposeTypes?.includes(msg.type) === true) return false
@@ -387,7 +387,7 @@ export function block<D>(model: Model<D>, options: BlockOptions = {}): Model<D> 
  * item(logJoint(scale(model, 2), undefined).logJoint) === 2 * item(logJoint(model, undefined).logJoint) // => true
  * ```
  */
-export function scale<D>(model: Model<D>, factor: number): Model<D> {
+export function scale<D = void>(model: Model<D>, factor: number): Model<D> {
   if (!(factor > 0)) throw new WhiteboxError('value', `scale: the factor must be positive, got ${factor}`)
   return wrap(model, () => ({
     process: (msg) => {
@@ -414,7 +414,7 @@ export function scale<D>(model: Model<D>, factor: number): Model<D> {
  * Math.abs(half - item(logJoint(model, undefined).logJoint) / 2) < 1e-15 // => true
  * ```
  */
-export function mask<D>(model: Model<D>, mask: boolean | TensorLike): Model<D> {
+export function mask<D = void>(model: Model<D>, mask: boolean | TensorLike): Model<D> {
   const m = asTensor(mask)
   return wrap(model, () => ({
     process: (msg) => {
@@ -443,7 +443,7 @@ export function mask<D>(model: Model<D>, mask: boolean | TensorLike): Model<D> {
  * Math.abs(item(seed(doIntervention(model, { z: 5 }), key(0))() as never) - 5) < 1e-6 // => true
  * ```
  */
-export function doIntervention<D>(model: Model<D>, data: Readonly<Record<string, TensorLike>>): Model<D> {
+export function doIntervention<D = void>(model: Model<D>, data: Readonly<Record<string, TensorLike>>): Model<D> {
   return wrap(model, () => {
     const id = {}
     return {
@@ -518,7 +518,7 @@ export function isDiscrete(support: Support): boolean {
  * site?.type === 'sample' ? site.infer.enumerate : undefined // => 'parallel'
  * ```
  */
-export function enumerate<D>(model: Model<D>, options: EnumerateOptions = {}): Model<D> {
+export function enumerate<D = void>(model: Model<D>, options: EnumerateOptions = {}): Model<D> {
   return wrap(model, () => ({
     process: (msg) => {
       if (msg.type !== 'sample' || msg.isObserved || msg.fn === undefined || msg.isFactor) return
@@ -545,7 +545,7 @@ export function enumerate<D>(model: Model<D>, options: EnumerateOptions = {}): M
  * site?.type === 'sample' && !site.isObserved // => true
  * ```
  */
-export function uncondition<D>(model: Model<D>, options: { readonly sites?: readonly string[] } = {}): Model<D> {
+export function uncondition<D = void>(model: Model<D>, options: { readonly sites?: readonly string[] } = {}): Model<D> {
   return wrap(model, () => ({
     process: (msg) => {
       if (msg.type !== 'sample' || !msg.isObserved || msg.isFactor) return
@@ -572,6 +572,6 @@ export function uncondition<D>(model: Model<D>, options: { readonly sites?: read
  * traceOf(fixed, undefined).sites.size // => 1
  * ```
  */
-export function handle<D>(model: Model<D>, make: () => Messenger): Model<D> {
+export function handle<D = void>(model: Model<D>, make: () => Messenger): Model<D> {
   return wrap(model, make)
 }

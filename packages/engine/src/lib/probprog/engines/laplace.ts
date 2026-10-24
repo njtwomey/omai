@@ -129,7 +129,7 @@ export interface LaplaceOptions {
  * Math.abs(item(laplaceApproximation(model, undefined, { key: key(0) }).variance('m')) - 0.5) < 1e-8 // => true
  * ```
  */
-export function laplaceApproximation<D>(
+export function laplaceApproximation<D = void>(
   model: Model<D>,
   data: D,
   options: LaplaceOptions & EngineRunOptions,

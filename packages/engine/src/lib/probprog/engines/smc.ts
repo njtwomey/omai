@@ -54,7 +54,7 @@ interface Loop {
   readonly before: number
 }
 
-function discover<D>(model: Model<D>, data: D): Loop {
+function discover<D = void>(model: Model<D>, data: D): Loop {
   let found: Loop | undefined
   const t = traceOf(
     handle(model, () => ({
@@ -102,7 +102,7 @@ function normalise(lw: Float64Array): Float64Array {
  * runAlgorithm(particleFilterAlgorithm(walk, undefined, { numParticles: 50 }), { seed: 0, maxSteps: 10 }).steps // => 3
  * ```
  */
-export function particleFilterAlgorithm<D>(
+export function particleFilterAlgorithm<D = void>(
   model: Model<D>,
   data: D,
   options: ParticleFilterOptions = {},
@@ -200,7 +200,7 @@ export function particleFilterAlgorithm<D>(
  * particleFilter(walk, undefined, { key: key(0), numParticles: 100 }).draws?.['x2']?.shape // => [100]
  * ```
  */
-export function particleFilter<D>(
+export function particleFilter<D = void>(
   model: Model<D>,
   data: D,
   options: ParticleFilterOptions & EngineRunOptions,
@@ -259,7 +259,11 @@ export interface TemperedSmcOptions {
  * Math.abs(item(temperedSmc(model, undefined, { key: key(0), numParticles: 400 }).mean('m')) - 0.5) < 0.15 // => true
  * ```
  */
-export function temperedSmc<D>(model: Model<D>, data: D, options: TemperedSmcOptions & EngineRunOptions): Posterior {
+export function temperedSmc<D = void>(
+  model: Model<D>,
+  data: D,
+  options: TemperedSmcOptions & EngineRunOptions,
+): Posterior {
   const proto = traceOf(seed(model, foldIn(options.key, 0)), data)
   const { layout, enumerated } = latentLayout(proto)
   if (enumerated.length > 0)

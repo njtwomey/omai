@@ -110,7 +110,7 @@ function siteOf(t: ProgramTrace, name: string): SampleSite | undefined {
   return s?.type === 'sample' ? s : undefined
 }
 
-function enumTrace<D>(
+function enumTrace<D = void>(
   p: Pick<Problem<D>, 'model' | 'data' | 'depth'>,
   values: Readonly<Record<string, Value>>,
 ): ProgramTrace {
@@ -118,7 +118,7 @@ function enumTrace<D>(
 }
 
 /** Recognise a closed-form M-step for a param site by perturbing it and seeing which child parameter follows it. */
-function detectClosedForm<D>(
+function detectClosedForm<D = void>(
   p: Pick<Problem<D>, 'model' | 'data' | 'depth'>,
   e: Estimated,
   values: Readonly<Record<string, Value>>,
@@ -184,7 +184,7 @@ function detectClosedForm<D>(
   return undefined
 }
 
-function setup<D>(
+function setup<D = void>(
   model: Model<D>,
   data: D,
   options: EmOptions,
@@ -249,7 +249,7 @@ function setup<D>(
 }
 
 /** The E-step: the objective at the current values and the expected log density as a function of new values. */
-function eStep<D>(
+function eStep<D = void>(
   p: Problem<D>,
   values: Readonly<Record<string, Value>>,
 ): {
@@ -386,7 +386,7 @@ function sliceIndex(v: Value, axis: number, i: number): Value {
 }
 
 /** The closed-form update of one parameter from the E-step's marginals. */
-function closedUpdate<D>(
+function closedUpdate<D = void>(
   p: Problem<D>,
   _name: string,
   form: ClosedForm,
@@ -489,11 +489,11 @@ function closedUpdate<D>(
  * runAlgorithm(emAlgorithm(gmm, undefined), { seed: 0, maxSteps: 50 }).status // => 'converged'
  * ```
  */
-export function emAlgorithm<D>(model: Model<D>, data: D, options: EmOptions = {}): Algorithm<EmState> {
+export function emAlgorithm<D = void>(model: Model<D>, data: D, options: EmOptions = {}): Algorithm<EmState> {
   return emParts(model, data, options).algorithm
 }
 
-function emParts<D>(
+function emParts<D = void>(
   model: Model<D>,
   data: D,
   options: EmOptions,
@@ -590,7 +590,7 @@ export interface EmRunOptions extends EmOptions {
  * toArray(em(gmm, undefined, { key: key(0) }).mean('mu')).map((v) => Math.round(v * 100) / 100) // => [-2.07, 2.03]
  * ```
  */
-export function em<D>(model: Model<D>, data: D, options: EmRunOptions & EngineRunOptions): Posterior {
+export function em<D = void>(model: Model<D>, data: D, options: EmRunOptions & EngineRunOptions): Posterior {
   const parts = emParts(model, data, options)
   const r = runAlgorithm(parts.algorithm, {
     key: options.key,

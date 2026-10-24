@@ -2116,6 +2116,32 @@
       "cases": 9
     },
     {
+      "fixture": "probprog/density.json",
+      "source": "oracle/cases/probprog/density.py",
+      "reference": {
+        "numpyro": "0.22.0",
+        "jax": "0.12.0.1"
+      },
+      "cases": 102
+    },
+    {
+      "fixture": "probprog/elbo.json",
+      "source": "oracle/cases/probprog/elbo.py",
+      "reference": {
+        "numpyro": "0.22.0",
+        "jax": "0.12.0.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "probprog/handlers.json",
+      "source": "oracle/cases/probprog/handlers.py",
+      "reference": {
+        "numpyro": "0.22.0"
+      },
+      "cases": 16
+    },
+    {
       "fixture": "random/continuous.json",
       "source": "oracle/cases/random/continuous.py",
       "reference": {

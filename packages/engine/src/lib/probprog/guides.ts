@@ -110,7 +110,7 @@ const product = (shape: readonly number[]): number => shape.reduce((a, b) => a *
  * guideSites(() => plate('n', 5, () => sample('s', gamma(2, 2)), { subsampleSize: 2 }), undefined)[0]?.shape // => [5]
  * ```
  */
-export function guideSites<D>(model: Model<D>, data: D): GuideSite[] {
+export function guideSites<D = void>(model: Model<D>, data: D): GuideSite[] {
   const proto = isolated(() => traceOf(seed(enumerate(model), makeKey(0)), data))
   const out: GuideSite[] = []
   let offset = 0
@@ -148,7 +148,7 @@ export function guideSites<D>(model: Model<D>, data: D): GuideSite[] {
   return out
 }
 
-function cached<D>(model: Model<D>): (data: D) => GuideSite[] {
+function cached<D = void>(model: Model<D>): (data: D) => GuideSite[] {
   let last: { readonly data: D; readonly sites: GuideSite[] } | undefined
   return (data) => {
     if (last !== undefined && last.data === data) return last.sites
@@ -283,7 +283,7 @@ function constrainFlat(sites: readonly GuideSite[], u: Value, n: number): Record
  * [...traceOf(seed(guide, key(0)), undefined).sites.keys()] // => ['s_auto_loc', 's_auto_scale', 's']
  * ```
  */
-export function autoNormal<D>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
+export function autoNormal<D = void>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
   const sitesOf = cached(model)
   const initScale = options.initScale ?? 0.1
   const program = (data: D): unknown => {
@@ -296,8 +296,10 @@ export function autoNormal<D>(model: Model<D>, options: AutoGuideOptions = {}): 
           support: { kind: 'positive' },
           eventDim: s.unconstrainedEventDim,
         })
-        const base = compose.independent(normal(loc, scale), s.unconstrainedEventDim)
-        sample(s.name, pushed(base, s.bijector))
+        const n = normal(loc, scale)
+        const base = s.unconstrainedEventDim === 0 ? n : compose.independent(n, s.unconstrainedEventDim)
+        // On the real line the guide site is the normal itself (as NumPyro), so analytic KL terms apply.
+        sample(s.name, s.support.kind === 'real' ? base : pushed(base, s.bijector))
       })
     }
     return undefined
@@ -370,7 +372,7 @@ export function autoNormal<D>(model: Model<D>, options: AutoGuideOptions = {}): 
  * [...traceOf(seed(autoDelta(() => { sample('x', normal(0, 1)) }), key(0)), undefined).sites.keys()] // => ['x_auto_loc', 'x']
  * ```
  */
-export function autoDelta<D>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
+export function autoDelta<D = void>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
   const sitesOf = cached(model)
   const program = (data: D): unknown => {
     for (const s of sitesOf(data)) {
@@ -424,7 +426,12 @@ interface JointFamily {
   readonly centre: (params: Readonly<Record<string, TensorLike>>) => Value
 }
 
-function jointGuide<D>(model: Model<D>, kind: string, family: JointFamily, options: AutoGuideOptions): AutoGuide<D> {
+function jointGuide<D = void>(
+  model: Model<D>,
+  kind: string,
+  family: JointFamily,
+  options: AutoGuideOptions,
+): AutoGuide<D> {
   const sitesOf = cached(model)
   const dimOf = (sites: readonly GuideSite[]): number => sites.reduce((a, s) => a + s.size, 0)
   const initFlat =
@@ -476,7 +483,7 @@ function jointGuide<D>(model: Model<D>, kind: string, family: JointFamily, optio
 
 /**
  * The full-rank normal guide (NumPyro's `AutoMultivariateNormal`): the flat unconstrained latent vector is
- * N(`_auto_loc`, L L^T) with `_auto_scale_tril` lower triangular, and each site is its slice pushed onto its support
+ * N(`auto_loc`, L L^T) with `auto_scale_tril` lower triangular, and each site is its slice pushed onto its support
  * (a point mass carrying the log-Jacobian).
  *
  * @param model - The model.
@@ -489,23 +496,23 @@ function jointGuide<D>(model: Model<D>, kind: string, family: JointFamily, optio
  * import { normal } from 'whitebox-engine/dists'
  * import { key } from 'whitebox-engine/random'
  * const t = traceOf(seed(autoMultivariateNormal(() => { sample('a', normal(0, 1)); sample('b', normal(0, 1)) }), key(0)), undefined)
- * t.sites.get('_auto_scale_tril')?.value.shape // => [2, 2]
+ * t.sites.get('auto_scale_tril')?.value.shape // => [2, 2]
  * ```
  */
-export function autoMultivariateNormal<D>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
+export function autoMultivariateNormal<D = void>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
   const s0 = options.initScale ?? 0.1
   return jointGuide(
     model,
     'autoMultivariateNormal',
     {
       latent: (D, _sites, init) => {
-        const loc = param('_auto_loc', init)
-        const L = param('_auto_scale_tril', mul(eye(D), s0), { support: { kind: 'lowerCholesky' } })
+        const loc = param('auto_loc', init)
+        const L = param('auto_scale_tril', mul(eye(D), s0), { support: { kind: 'lowerCholesky' } })
         return multivariateNormal(loc, { scaleTril: L })
       },
       fitted: (params) =>
-        multivariateNormal(paramOf(params, '_auto_loc'), { scaleTril: paramOf(params, '_auto_scale_tril') }),
-      centre: (params) => paramOf(params, '_auto_loc'),
+        multivariateNormal(paramOf(params, 'auto_loc'), { scaleTril: paramOf(params, 'auto_scale_tril') }),
+      centre: (params) => paramOf(params, 'auto_loc'),
     },
     options,
   )
@@ -513,7 +520,7 @@ export function autoMultivariateNormal<D>(model: Model<D>, options: AutoGuideOpt
 
 /**
  * The low-rank-plus-diagonal normal guide (NumPyro's `AutoLowRankMultivariateNormal`): covariance W W^T + diag(s^2)
- * from `_auto_cov_factor` (`[D, rank]`) and `_auto_scale`.
+ * from `auto_cov_factor` (`[D, rank]`) and `auto_scale`.
  *
  * @param model - The model.
  * @param options - Initialisation, initial scale and the rank (default ceil(sqrt(D))).
@@ -525,10 +532,10 @@ export function autoMultivariateNormal<D>(model: Model<D>, options: AutoGuideOpt
  * import { normal } from 'whitebox-engine/dists'
  * import { key } from 'whitebox-engine/random'
  * const guide = autoLowRankMultivariateNormal(() => { sample('x', normal(0, 1), { sampleShape: [4] }) }, { rank: 1 })
- * traceOf(seed(guide, key(0)), undefined).sites.get('_auto_cov_factor')?.value.shape // => [4, 1]
+ * traceOf(seed(guide, key(0)), undefined).sites.get('auto_cov_factor')?.value.shape // => [4, 1]
  * ```
  */
-export function autoLowRankMultivariateNormal<D>(
+export function autoLowRankMultivariateNormal<D = void>(
   model: Model<D>,
   options: AutoGuideOptions & { readonly rank?: number } = {},
 ): AutoGuide<D> {
@@ -539,27 +546,27 @@ export function autoLowRankMultivariateNormal<D>(
     {
       latent: (D, _sites, init) => {
         const r = options.rank ?? Math.ceil(Math.sqrt(D))
-        const loc = param('_auto_loc', init)
-        const w = param('_auto_cov_factor', (k) => mul(normalDraws(foldIn(k, 7), [D, r]), s0 * 0.1))
-        const scale = param('_auto_scale', full([D], s0), { support: { kind: 'positive' } })
+        const loc = param('auto_loc', init)
+        const w = param('auto_cov_factor', (k) => mul(normalDraws(foldIn(k, 7), [D, r]), s0 * 0.1))
+        const scale = param('auto_scale', full([D], s0), { support: { kind: 'positive' } })
         return lowRankMultivariateNormal(loc, w, mul(scale, scale))
       },
       fitted: (params) => {
-        const scale = paramOf(params, '_auto_scale')
+        const scale = paramOf(params, 'auto_scale')
         return lowRankMultivariateNormal(
-          paramOf(params, '_auto_loc'),
-          paramOf(params, '_auto_cov_factor'),
+          paramOf(params, 'auto_loc'),
+          paramOf(params, 'auto_cov_factor'),
           mul(scale, scale),
         )
       },
-      centre: (params) => paramOf(params, '_auto_loc'),
+      centre: (params) => paramOf(params, 'auto_loc'),
     },
     options,
   )
 }
 
 /**
- * The Laplace guide (NumPyro's `AutoLaplaceApproximation`): during fitting a point mass at `_auto_loc` on the
+ * The Laplace guide (NumPyro's `AutoLaplaceApproximation`): during fitting a point mass at `auto_loc` on the
  * unconstrained scale (so the ELBO is the unconstrained log density, maximised at the MAP); its posterior is the normal
  * with the inverse Hessian of the negative log density at the fitted point as covariance.
  *
@@ -572,22 +579,22 @@ export function autoLowRankMultivariateNormal<D>(
  * import { autoLaplace, sample, seed, traceOf } from 'whitebox-engine/probprog'
  * import { normal } from 'whitebox-engine/dists'
  * import { key } from 'whitebox-engine/random'
- * [...traceOf(seed(autoLaplace(() => { sample('x', normal(0, 1)) }), key(0)), undefined).sites.keys()] // => ['_auto_loc', '_auto_latent', 'x']
+ * [...traceOf(seed(autoLaplace(() => { sample('x', normal(0, 1)) }), key(0)), undefined).sites.keys()] // => ['auto_loc', '_auto_latent', 'x']
  * ```
  */
-export function autoLaplace<D>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
+export function autoLaplace<D = void>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
   return jointGuide(
     model,
     'autoLaplace',
     {
-      latent: (_D, _sites, init) => compose.deterministic(param('_auto_loc', init), 1),
+      latent: (_D, _sites, init) => compose.deterministic(param('auto_loc', init), 1),
       fitted: (params, _D, data) => {
-        const loc = paramOf(params, '_auto_loc')
+        const loc = paramOf(params, 'auto_loc')
         const um = potentialEnergy(model, data as D)
         const cov = primalOf(inv(neg(hessian((u: Value) => um.fn(u))(loc))))
         return multivariateNormal(loc, { covariance: mul(add(cov, transpose(cov)), 0.5) })
       },
-      centre: (params) => paramOf(params, '_auto_loc'),
+      centre: (params) => paramOf(params, 'auto_loc'),
     },
     options,
   )
@@ -617,10 +624,10 @@ export interface AutoIafOptions extends AutoGuideOptions {
  * import { normal } from 'whitebox-engine/dists'
  * import { key } from 'whitebox-engine/random'
  * const guide = autoIafNormal(() => { sample('x', normal(0, 1), { sampleShape: [3] }) }, { numFlows: 1 })
- * traceOf(seed(guide, key(0)), undefined).sites.has('_auto_iaf_0_w1') // => true
+ * traceOf(seed(guide, key(0)), undefined).sites.has('auto_iaf_0_w1') // => true
  * ```
  */
-export function autoIafNormal<D>(model: Model<D>, options: AutoIafOptions = {}): AutoGuide<D> {
+export function autoIafNormal<D = void>(model: Model<D>, options: AutoIafOptions = {}): AutoGuide<D> {
   const numFlows = options.numFlows ?? 2
   const s0 = options.initScale ?? 0.1
   const flowOf = (D: number, get: (name: string, init: (k: Key) => Value) => Value): Bijector[] => {
@@ -629,10 +636,10 @@ export function autoIafNormal<D>(model: Model<D>, options: AutoIafOptions = {}):
     for (let l = 0; l < numFlows; l++) {
       if (D < 2) break
       const [m1, m2] = bijectors.madeMasks(D, [H]) as [Tensor, Tensor]
-      const w1 = get(`_auto_iaf_${l}_w1`, (k) => mul(normalDraws(k, [D, H]), 1 / Math.sqrt(D)))
-      const b1 = get(`_auto_iaf_${l}_b1`, () => zeros([H]))
-      const ws = get(`_auto_iaf_${l}_shift`, () => zeros([H, D]))
-      const wl = get(`_auto_iaf_${l}_log_scale`, () => zeros([H, D]))
+      const w1 = get(`auto_iaf_${l}_w1`, (k) => mul(normalDraws(k, [D, H]), 1 / Math.sqrt(D)))
+      const b1 = get(`auto_iaf_${l}_b1`, () => zeros([H]))
+      const ws = get(`auto_iaf_${l}_shift`, () => zeros([H, D]))
+      const wl = get(`auto_iaf_${l}_log_scale`, () => zeros([H, D]))
       const conditioner = (y: Value): bijectors.ShiftLogScale => {
         const h = tanh(add(matmul(y, mul(w1, m1)), b1))
         return { shift: matmul(h, mul(ws, m2)), logScale: matmul(h, mul(wl, m2)) }
@@ -655,8 +662,8 @@ export function autoIafNormal<D>(model: Model<D>, options: AutoIafOptions = {}):
     'autoIafNormal',
     {
       latent: (D, _sites, init) => {
-        const loc = param('_auto_loc', init)
-        const scale = param('_auto_scale', full([D], s0), { support: { kind: 'positive' } })
+        const loc = param('auto_loc', init)
+        const scale = param('auto_scale', full([D], s0), { support: { kind: 'positive' } })
         const flows = flowOf(D, (name, i) => param(name, i))
         const base = compose.independent(normal(zeros([D]), 1), 1)
         return pushed(base, bijectors.chain([...flows, affineOf(loc, scale)]))
@@ -666,10 +673,10 @@ export function autoIafNormal<D>(model: Model<D>, options: AutoIafOptions = {}):
         const base = compose.independent(normal(zeros([D]), 1), 1)
         return compose.transformed(base, [
           ...flows,
-          affineOf(paramOf(params, '_auto_loc'), paramOf(params, '_auto_scale')),
+          affineOf(paramOf(params, 'auto_loc'), paramOf(params, 'auto_scale')),
         ])
       },
-      centre: (params) => paramOf(params, '_auto_loc'),
+      centre: (params) => paramOf(params, 'auto_loc'),
     },
     options,
   )

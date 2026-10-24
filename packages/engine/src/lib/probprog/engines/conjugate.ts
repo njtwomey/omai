@@ -218,7 +218,7 @@ export function conjugatePredictive(
  * item(conjugateInference(model, [1, 2, 3]).mean('mu')) // => 1.5
  * ```
  */
-export function conjugateInference<D>(model: Model<D>, data: D, analysis?: ProgramAnalysis): Posterior {
+export function conjugateInference<D = void>(model: Model<D>, data: D, analysis?: ProgramAnalysis): Posterior {
   const a = analysis ?? analyse(model, data)
   if (!a.fullyConjugate) throw new WhiteboxError('value', 'conjugateInference: the program is not fully conjugate')
   const t = a.prototype

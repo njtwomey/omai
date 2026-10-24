@@ -126,7 +126,7 @@ function blockDiagonal(blocks: readonly Tensor[]): Tensor {
  * toArray(f.A) // => [[0, 0], [1, 0]]
  * ```
  */
-export function linearGaussianForm<D>(model: Model<D>, data: D, prototype: ProgramTrace): LinearGaussianForm {
+export function linearGaussianForm<D = void>(model: Model<D>, data: D, prototype: ProgramTrace): LinearGaussianForm {
   const blocks: GaussianBlock[] = []
   const sites: SampleSite[] = []
   let offset = 0
@@ -460,7 +460,7 @@ function isChain(a: ProgramAnalysis): boolean {
  * item(gaussianInference(model, [1, 2, 3]).mean('mu')) // => 1.5
  * ```
  */
-export function gaussianInference<D>(
+export function gaussianInference<D = void>(
   model: Model<D>,
   data: D,
   options: GaussianOptions & { readonly analysis?: ProgramAnalysis } = {},

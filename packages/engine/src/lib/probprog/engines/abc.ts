@@ -138,7 +138,7 @@ interface Setting<D> {
   readonly model: Model<D>
 }
 
-function setting<D>(model: Model<D>, data: D, summary: SummaryStatistics | undefined, key: Key): Setting<D> {
+function setting<D = void>(model: Model<D>, data: D, summary: SummaryStatistics | undefined, key: Key): Setting<D> {
   const proto = traceOf(seed(model, key), data)
   const observed = [...proto.sites.values()]
     .filter((s) => s.type === 'sample' && s.isObserved && !s.isFactor)
@@ -196,7 +196,7 @@ export interface AbcOptions {
  * Math.abs(item(abcRejection(model, undefined, { key: key(0), numSamples: 1000, quantile: 0.05 }).mean('m')) - 2) < 0.5 // => true
  * ```
  */
-export function abcRejection<D>(model: Model<D>, data: D, options: AbcOptions & EngineRunOptions): Posterior {
+export function abcRejection<D = void>(model: Model<D>, data: D, options: AbcOptions & EngineRunOptions): Posterior {
   const n = options.numSamples ?? 2000
   const s = setting(model, data, options.summary, foldIn(options.key, 0))
   const traces: ProgramTrace[] = []
@@ -287,7 +287,11 @@ export interface AbcSmcOptions {
  * runAlgorithm(abcSmcAlgorithm(model, undefined, { numParticles: 50 }), { seed: 0, maxSteps: 3 }).state.generation // => 3
  * ```
  */
-export function abcSmcAlgorithm<D>(model: Model<D>, data: D, options: AbcSmcOptions = {}): Algorithm<AbcSmcState> {
+export function abcSmcAlgorithm<D = void>(
+  model: Model<D>,
+  data: D,
+  options: AbcSmcOptions = {},
+): Algorithm<AbcSmcState> {
   const P = options.numParticles ?? 500
   const q = options.quantile ?? 0.5
   const minEps = options.minEpsilon ?? 0
@@ -472,7 +476,7 @@ export function abcSmcAlgorithm<D>(model: Model<D>, data: D, options: AbcSmcOpti
  * Math.abs(item(abcSmc(model, undefined, { key: key(0), numParticles: 200, numGenerations: 4 }).mean('m')) - 2) < 0.5 // => true
  * ```
  */
-export function abcSmc<D>(
+export function abcSmc<D = void>(
   model: Model<D>,
   data: D,
   options: AbcSmcOptions & EngineRunOptions & { readonly numGenerations?: number },

@@ -64,7 +64,7 @@ export interface SviOptions<D> {
  * Object.keys(initialParams(key(0), model, autoNormal(model), undefined).values) // => ['x_auto_loc', 'x_auto_scale']
  * ```
  */
-export function initialParams<D>(
+export function initialParams<D = void>(
   key: Key,
   model: Model<D>,
   guide: Model<D>,
@@ -103,7 +103,7 @@ export function initialParams<D>(
  * runAlgorithm(sviAlgorithm(model, undefined), { seed: 0, maxSteps: 5 }).steps // => 5
  * ```
  */
-export function sviAlgorithm<D>(model: Model<D>, data: D, options: SviOptions<D> = {}): Algorithm<SviState> {
+export function sviAlgorithm<D = void>(model: Model<D>, data: D, options: SviOptions<D> = {}): Algorithm<SviState> {
   const guide = options.guide ?? autoNormal(model)
   const estimator = options.elbo ?? traceElbo()
   const optimizer = options.optimizer ?? adam({ learningRate: 0.01 })
@@ -211,7 +211,7 @@ export interface SviResult {
  * Math.abs(item(r.params['m_auto_loc'] ?? 0) - 1) < 0.2 // => true
  * ```
  */
-export function svi<D>(model: Model<D>, data: D, options: SviOptions<D> & EngineRunOptions): SviResult {
+export function svi<D = void>(model: Model<D>, data: D, options: SviOptions<D> & EngineRunOptions): SviResult {
   const guide = options.guide ?? autoNormal(model)
   const alg = sviAlgorithm(model, data, { ...options, guide })
   const elbos: number[] = []
@@ -297,7 +297,7 @@ export function svi<D>(model: Model<D>, data: D, options: SviOptions<D> & Engine
   return { params, elbos, status, steps: r.steps, posterior }
 }
 
-function isAutoGuide<D>(g: Model<D>): g is AutoGuide<D> {
+function isAutoGuide<D = void>(g: Model<D>): g is AutoGuide<D> {
   return typeof (g as Partial<AutoGuide<D>>).posterior === 'function'
 }
 

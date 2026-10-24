@@ -67,7 +67,7 @@ function chainProblem(a: ProgramAnalysis): string | undefined {
  * chainForm(hmm, undefined).chain.logEmission.length // => 3
  * ```
  */
-export function chainForm<D>(model: Model<D>, data: D, analysis?: ProgramAnalysis): ChainForm {
+export function chainForm<D = void>(model: Model<D>, data: D, analysis?: ProgramAnalysis): ChainForm {
   const a = analysis ?? analyse(model, data)
   const problem = chainProblem(a)
   if (problem !== undefined) throw new WhiteboxError('value', `chainForm: ${problem}`)
@@ -152,7 +152,7 @@ export interface ChainInferenceOptions {
  * chainInference(hmm, undefined).diagnostics['mapPath'] // => [1, 1, 1]
  * ```
  */
-export function chainInference<D>(model: Model<D>, data: D, options: ChainInferenceOptions = {}): Posterior {
+export function chainInference<D = void>(model: Model<D>, data: D, options: ChainInferenceOptions = {}): Posterior {
   const form = chainForm(model, data, options.analysis)
   const trace = {
     ...(options.tracer === undefined ? {} : { tracer: options.tracer }),

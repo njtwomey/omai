@@ -103,7 +103,7 @@ function identityGroups(childBatch: readonly number[], groupShape: readonly numb
 }
 
 /** Recognise how each latent site can be updated (conditionals at the prototype values). */
-function plan<D>(model: Model<D>, data: D, a: ProgramAnalysis, collapse: boolean): Block[] {
+function plan<D = void>(model: Model<D>, data: D, a: ProgramAnalysis, collapse: boolean): Block[] {
   const proto = a.prototype
   const values: Record<string, Value> = {}
   for (const n of a.latent) {
@@ -295,7 +295,7 @@ function draw(key: Key, logits: readonly number[]): number {
  * runAlgorithm(gibbsAlgorithm(model, undefined), { seed: 0, maxSteps: 5 }).steps // => 5
  * ```
  */
-export function gibbsAlgorithm<D>(model: Model<D>, data: D, options: GibbsOptions = {}): Algorithm<GibbsState> {
+export function gibbsAlgorithm<D = void>(model: Model<D>, data: D, options: GibbsOptions = {}): Algorithm<GibbsState> {
   let blocks: Block[] = []
   const collapseOn = options.collapse ?? true
   const width = options.sliceWidth ?? 1
@@ -410,7 +410,7 @@ export function gibbsAlgorithm<D>(model: Model<D>, data: D, options: GibbsOption
 }
 
 /** Draw a discrete site from its conditional, with collapsed predictive terms element by element where needed. */
-function updateDiscrete<D>(
+function updateDiscrete<D = void>(
   model: Model<D>,
   data: D,
   values: Readonly<Record<string, Value>>,
@@ -544,7 +544,7 @@ export interface GibbsRunOptions extends GibbsOptions {
  * Math.abs(item(gibbs(model, undefined, { key: key(0), numDraws: 2000, numWarmup: 50 }).mean('m')) - 1.5) < 0.05 // => true
  * ```
  */
-export function gibbs<D>(model: Model<D>, data: D, options: GibbsRunOptions & EngineRunOptions): Posterior {
+export function gibbs<D = void>(model: Model<D>, data: D, options: GibbsRunOptions & EngineRunOptions): Posterior {
   const numDraws = options.numDraws ?? 1000
   const numWarmup = options.numWarmup ?? 200
   const thin = options.thin ?? 1

@@ -84,7 +84,7 @@ export interface LogJointResult {
  * Math.abs(item(logJoint(model, undefined, { mu: 0 }).logJoint) + Math.log(2 * Math.PI) + 0.5) < 1e-14 // => true
  * ```
  */
-export function logJoint<D>(
+export function logJoint<D = void>(
   model: Model<D>,
   data: D,
   values: Readonly<Record<string, TensorLike>> = {},
@@ -287,7 +287,11 @@ export function latentLayout(t: ProgramTrace): {
  * Math.abs(pe.potential([0]) - (1 + 0.5 * Math.log(2 * Math.PI))) < 1e-14 // => true
  * ```
  */
-export function potentialEnergy<D>(model: Model<D>, data: D, options: PotentialOptions = {}): UnconstrainedModel {
+export function potentialEnergy<D = void>(
+  model: Model<D>,
+  data: D,
+  options: PotentialOptions = {},
+): UnconstrainedModel {
   const m = options.enumerate === false ? model : enumerate(model)
   const proto = traceOf(seed(m, options.key ?? makeKey(0)), data)
   const depth = maxPlateNesting(proto)
@@ -383,7 +387,7 @@ export function potentialEnergy<D>(model: Model<D>, data: D, options: PotentialO
  * item(constrainSites(() => sample('s', gamma(2, 1)), undefined, { s: 0 })['s'] ?? 0) // => 1
  * ```
  */
-export function constrainSites<D>(
+export function constrainSites<D = void>(
   model: Model<D>,
   data: D,
   values: Readonly<Record<string, TensorLike>>,
@@ -420,7 +424,7 @@ export function constrainSites<D>(
  * item(unconstrainSites(() => sample('s', gamma(2, 1)), undefined, { s: 1 })['s'] ?? 1) // => 0
  * ```
  */
-export function unconstrainSites<D>(
+export function unconstrainSites<D = void>(
   model: Model<D>,
   data: D,
   values: Readonly<Record<string, TensorLike>>,
@@ -607,7 +611,7 @@ export interface InitialParams {
  * findInitialParams(potentialEnergy(model, undefined), model, undefined, { key: key(0) }).valid // => true
  * ```
  */
-export function findInitialParams<D>(
+export function findInitialParams<D = void>(
   um: UnconstrainedModel,
   model: Model<D>,
   data: D,

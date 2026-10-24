@@ -31,7 +31,7 @@ const ROLE: Readonly<Record<SiteRole, NodeRole>> = {
  * s.groups // => [{ id: 'plate:data', label: 'data', kind: 'plate', count: 3 }]
  * ```
  */
-export function toStructure<D>(
+export function toStructure<D = void>(
   model: Model<D>,
   data: D,
   options: { readonly analysis?: ProgramAnalysis } = {},

@@ -183,7 +183,11 @@ function isExponentialFamily(d: Distribution): boolean {
 }
 
 /** Parents of every site by provenance, or undefined when the program cannot run on tagged values. */
-function provenanceParents<D>(model: Model<D>, data: D, proto: ProgramTrace): Map<string, Set<string>> | undefined {
+function provenanceParents<D = void>(
+  model: Model<D>,
+  data: D,
+  proto: ProgramTrace,
+): Map<string, Set<string>> | undefined {
   const P = provenanceTrace()
   const deterministicSources = new Map<string, Set<string>>()
   const tagged = handle(model, () => ({
@@ -309,7 +313,7 @@ function findConjugate(
   return { prior: prior.name, priorFamily, likelihood, parameter: found.parameter, children, pair: found }
 }
 
-function linearGaussianCheck<D>(
+function linearGaussianCheck<D = void>(
   model: Model<D>,
   data: D,
   proto: ProgramTrace,
@@ -422,7 +426,7 @@ function graphShapeOf(latent: readonly string[], sites: readonly SiteInfo[]): Pr
  * a.edges // => [{ from: 'p', to: 'y' }]
  * ```
  */
-export function analyse<D>(model: Model<D>, data: D, options: AnalyseOptions = {}): ProgramAnalysis {
+export function analyse<D = void>(model: Model<D>, data: D, options: AnalyseOptions = {}): ProgramAnalysis {
   const proto = traceOf(seed(model, options.key ?? makeKey(0)), data)
   const traced = provenanceParents(model, data, proto)
   const order = [...proto.sites.values()].filter((s) => s.type !== 'plate' && s.type !== 'markov')

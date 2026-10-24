@@ -85,7 +85,7 @@ function observedLogProb(t: ProgramTrace): number {
  * Math.abs(item(post.mean('m')) - 0.5) < 0.05 // => true
  * ```
  */
-export function importanceInference<D>(
+export function importanceInference<D = void>(
   model: Model<D>,
   data: D,
   options: ImportanceOptions<D> & EngineRunOptions,

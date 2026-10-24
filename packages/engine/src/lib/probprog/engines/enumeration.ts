@@ -78,7 +78,7 @@ function supportRange(site: SampleSite): { readonly low: number; readonly states
  * g.graph.variables.map((v) => v.name) // => ['c']
  * ```
  */
-export function groundDiscrete<D>(model: Model<D>, data: D): GroundedProgram {
+export function groundDiscrete<D = void>(model: Model<D>, data: D): GroundedProgram {
   const r = logJoint(enumerate(model), data)
   const t = r.trace
   for (const site of t.sites.values())
@@ -219,7 +219,7 @@ export interface EnumerationOptions {
  * Math.abs(item(enumerationPosterior(sprinkler, undefined).mean('rain')) - 0.18 / 0.26) < 1e-12 // => true
  * ```
  */
-export function enumerationPosterior<D>(model: Model<D>, data: D, options: EnumerationOptions = {}): Posterior {
+export function enumerationPosterior<D = void>(model: Model<D>, data: D, options: EnumerationOptions = {}): Posterior {
   const g = groundDiscrete(model, data)
   const calibrated = calibrate(g.graph, {
     mode: 'sum',

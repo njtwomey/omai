@@ -92,7 +92,7 @@ export interface PlanOptions {
  * plan(coin, undefined).entries[0]?.engine.name // => 'conjugate'
  * ```
  */
-export function plan<D>(model: Model<D>, data: D, options: PlanOptions = {}): InferencePlan {
+export function plan<D = void>(model: Model<D>, data: D, options: PlanOptions = {}): InferencePlan {
   const analysis = options.analysis ?? analyse(model, data)
   const budget = options.budget ?? Number.POSITIVE_INFINITY
   const entries = (options.engines ?? defaultEngines()).map((engine) => {
@@ -185,7 +185,7 @@ export interface InferOptions extends ContextOptions {
  * item(post.mean('rate')) // => 2.4
  * ```
  */
-export function infer<D>(model: Model<D>, data: D, options: InferOptions = {}): Posterior {
+export function infer<D = void>(model: Model<D>, data: D, options: InferOptions = {}): Posterior {
   const key = resolveKey(options, 'infer')
   const tracer = resolveTracer(options)
   const policy = resolvePolicy(options)

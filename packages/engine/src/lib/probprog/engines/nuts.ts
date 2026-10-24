@@ -39,7 +39,7 @@ import { type EngineRunOptions, feasibility, type InferenceEngine } from './engi
  * item(inferDiscrete(model, undefined, {}, key(0))['c'] ?? 0) // => 1
  * ```
  */
-export function inferDiscrete<D>(
+export function inferDiscrete<D = void>(
   model: Model<D>,
   data: D,
   values: Readonly<Record<string, TensorLike>>,
@@ -137,7 +137,7 @@ function failed(engine: string, reason: string, extra: Readonly<Record<string, J
  * post.draws?.['mu']?.shape // => [100]
  * ```
  */
-export function mcmc<D>(model: Model<D>, data: D, options: McmcOptions & EngineRunOptions): Posterior {
+export function mcmc<D = void>(model: Model<D>, data: D, options: McmcOptions & EngineRunOptions): Posterior {
   const engine = options.algorithm ?? 'nuts'
   let um: UnconstrainedModel
   try {

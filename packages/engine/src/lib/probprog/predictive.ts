@@ -51,7 +51,7 @@ function observedNames(t: ProgramTrace | undefined, deterministic: boolean): str
 }
 
 /** Fix the latent sample sites of a run at given values (deterministic sites are recomputed, observed sites untouched). */
-function atLatents<D>(model: Model<D>, values: Readonly<Record<string, Value>>): Model<D> {
+function atLatents<D = void>(model: Model<D>, values: Readonly<Record<string, Value>>): Model<D> {
   return handle(model, () => ({
     process: (msg: Message) => {
       if (msg.type !== 'sample' || msg.isObserved) return
@@ -79,7 +79,11 @@ function atLatents<D>(model: Model<D>, values: Readonly<Record<string, Value>>):
  * priorPredictive(model, undefined, { key: key(0), numSamples: 10 })['y']?.shape // => [10, 3]
  * ```
  */
-export function priorPredictive<D>(model: Model<D>, data: D, options: PredictiveOptions): Record<string, Tensor> {
+export function priorPredictive<D = void>(
+  model: Model<D>,
+  data: D,
+  options: PredictiveOptions,
+): Record<string, Tensor> {
   const n = options.numSamples ?? 1000
   const traces = Array.from({ length: n }, (_, i) => traceOf(seed(uncondition(model), foldIn(options.key, i)), data))
   const first = traceOf(seed(model, foldIn(options.key, n)), data)
@@ -108,7 +112,7 @@ export function priorPredictive<D>(model: Model<D>, data: D, options: Predictive
  * posteriorPredictive(model, post, [1, 2, 3], { key: key(0), numSamples: 20 })['y']?.shape // => [20, 3]
  * ```
  */
-export function posteriorPredictive<D>(
+export function posteriorPredictive<D = void>(
   model: Model<D>,
   posterior: Posterior,
   data: D,
@@ -163,7 +167,7 @@ function rowOf(draws: Readonly<Record<string, Tensor>>, i: number): Record<strin
  * logLikelihood(model, { m: tensor([0, 0.5, 1]) }, undefined)['y']?.shape // => [3, 2]
  * ```
  */
-export function logLikelihood<D>(
+export function logLikelihood<D = void>(
   model: Model<D>,
   draws: Readonly<Record<string, Tensor>> | Posterior,
   data: D,

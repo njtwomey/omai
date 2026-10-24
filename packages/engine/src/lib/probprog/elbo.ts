@@ -82,7 +82,7 @@ export interface Particle {
  * particle(key(0), model, autoNormal(model), undefined, { m_auto_loc: 0, m_auto_scale: 1 }).guideTrace.sites.has('m') // => true
  * ```
  */
-export function particle<D>(
+export function particle<D = void>(
   key: Key,
   model: Model<D>,
   guide: Model<D>,
@@ -114,7 +114,7 @@ export function particle<D>(
  * Math.abs(elboAt(model, autoNormal(model), undefined, { m_auto_loc: 0, m_auto_scale: 1 }, { m: 0 }).elbo + 0.5 * Math.log(2 * Math.PI)) < 1e-14 // => true
  * ```
  */
-export function elboAt<D>(
+export function elboAt<D = void>(
   model: Model<D>,
   guide: Model<D>,
   data: D,
