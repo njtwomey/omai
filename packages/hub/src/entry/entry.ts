@@ -1,29 +1,60 @@
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Dataset } from 'whitebox-engine/data'
 import { datasetCollections } from 'whitebox-engine/datasets'
-import type { Explained, ExpositionKind } from 'whitebox-engine/exposition'
+import type { Explained, Exposition, ExpositionKind } from 'whitebox-engine/exposition'
 import type { Key } from 'whitebox-engine/random'
 import type { DictSpace, SpaceValue } from 'whitebox-engine/space'
 
 /** Where a view sits on an entry's page. */
 export type ViewArea = 'main' | 'side' | 'below'
 
+/** What a slot's `props` receives beside its record: the run's input rows, labels and parameters. */
+export interface SlotContext {
+  readonly points?: readonly (readonly number[])[]
+  readonly labels?: readonly number[]
+  readonly params: Readonly<Record<string, SpaceValue>>
+}
+
 /** One view on an entry's page: which exposition record it shows, with which render view, where. */
 export interface ViewSlot {
   readonly record: ExpositionKind
-  /** A render view name; omitted, the record kind's standard view. */
+  /**
+   * A component of `whitebox-render/react` by name (`EpisodePlayer`, `EnvView`, a record view); omitted, the record
+   * kind's standard view (`ExpositionView`).
+   */
   readonly view?: string
+  /**
+   * Props for the named view beyond `record` and `figure`, made on the page from the record (an environment and a
+   * policy for an `EpisodePlayer`, say: objects that cannot cross from a worker).
+   */
+  readonly props?: (record: Exposition, context: SlotContext) => Readonly<Record<string, unknown>>
   readonly area?: ViewArea
   readonly title?: string
   /** Which record of that kind, when the method returns several (default 0). */
   readonly index?: number
 }
 
-/** What an entry's `run` receives: the chosen dataset, the parameter values and a key. */
+/** How far a long run has got, with the records so far (to draw a method learning live). */
+export interface HubProgress {
+  /** The fraction done, from 0 to 1. */
+  readonly fraction: number
+  /** A line saying where the run is (`episode 40 of 200`). */
+  readonly label?: string
+  /** The records so far (they replace the shown records until the run ends). */
+  readonly exposition?: readonly Exposition[]
+}
+
+/** What an entry's `run` receives: the chosen dataset, the parameter values, a key, and where to report progress. */
 export interface HubRunInput {
-  readonly data: Dataset
+  /** The dataset (`undefined` for entries with no dataset collections, such as agents in their environments). */
+  readonly data: Dataset | undefined
   readonly params: Readonly<Record<string, SpaceValue>>
   readonly key: Key
+  /**
+   * Report progress (long runs that learn live): the widget shows the fraction and draws the records so far. Reports
+   * are throttled by the caller, so a run may call it every step.
+   */
+  readonly progress?: (p: HubProgress) => void
 }
 
 /** A method an entry runs: its source file below `packages/engine/src` and its exported name. */
@@ -45,10 +76,15 @@ export interface HubEntry {
   /** The hub collection the entry belongs to, e.g. `sklearn/linear-model`. */
   readonly collection: string
   readonly tags: readonly string[]
-  /** Dataset collection ids (`whitebox-engine/datasets`' `datasetCollections`); the first is the default. */
+  /**
+   * Dataset collection ids (`whitebox-engine/datasets`' `datasetCollections`); the first is the default. Empty for a
+   * method that needs no dataset (an agent learning in an environment chosen by its parameters).
+   */
   readonly datasets: readonly string[]
   /** The dataset to start from, by name in the first collection (default its first). */
   readonly dataset?: string
+  /** Fit on at most this many rows (a keyed subsample), for methods too slow to run live on more. */
+  readonly maxRows?: number
   /** The method's parameters as a space; its defaults are the demo defaults. */
   readonly params: DictSpace
   /** Run the method; the result carries the exposition records the views show. */
@@ -79,8 +115,6 @@ export interface HubEntry {
 export function defineEntry(spec: Omit<HubEntry, 'kind'>): HubEntry {
   if (!spec.id.startsWith(`${spec.collection}/`))
     throw new WhiteboxError('value', `defineEntry: id '${spec.id}' is not under its collection '${spec.collection}'`)
-  if (spec.datasets.length === 0)
-    throw new WhiteboxError('value', `defineEntry: ${spec.id} names no dataset collection`)
   for (const d of spec.datasets)
     if (datasetCollections[d] === undefined)
       throw new WhiteboxError('value', `defineEntry: ${spec.id} names an unknown dataset collection '${d}'`)

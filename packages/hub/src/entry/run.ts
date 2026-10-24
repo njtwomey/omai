@@ -1,14 +1,15 @@
 import { WhiteboxError } from 'whitebox-engine/base'
-import type { Dataset, Knobs } from 'whitebox-engine/data'
+import { type Dataset, type Knobs, shuffleRows, take } from 'whitebox-engine/data'
 import { datasetCollections, datasetGenerators, loadEntry } from 'whitebox-engine/datasets'
 import type { Exposition } from 'whitebox-engine/exposition'
 import { decisionSurfaceOf, type Estimator, type LearnData } from 'whitebox-engine/learn'
 import { key } from 'whitebox-engine/random'
 import { contains, type DictSpace, defaults, dict, type Space, type SpaceValue } from 'whitebox-engine/space'
-import type { HubEntry, HubRunInput } from './entry.ts'
+import type { HubEntry, HubProgress, HubRunInput } from './entry.ts'
 
 /** The data of a dataset that learners take: its features and, when it has them, its targets. */
-export function learnDataOf(data: Dataset): LearnData {
+export function learnDataOf(data: Dataset | undefined): LearnData {
+  if (data === undefined) throw new WhiteboxError('value', 'learnDataOf: the entry runs without a dataset')
   const d = data as { readonly x?: LearnData['x']; readonly y?: LearnData['y'] }
   if (d.x === undefined) throw new WhiteboxError('value', `learnDataOf: a ${data.kind} dataset has no features`)
   return data as unknown as LearnData
@@ -101,7 +102,7 @@ export function fitEither(
   return {
     params: c.params,
     run: (input) =>
-      input.data.kind === 'classification' ? c.run(input) : r.run({ ...input, params: pick(input.params, r.params) }),
+      input.data?.kind === 'classification' ? c.run(input) : r.run({ ...input, params: pick(input.params, r.params) }),
   }
 }
 
@@ -115,6 +116,13 @@ export interface HubState {
   /** The generator's knobs (empty for a vendored dataset). */
   readonly knobs: Knobs
   readonly params: Readonly<Record<string, SpaceValue>>
+}
+
+const NO_DATA: Pick<HubState, 'collection' | 'dataset' | 'seed' | 'knobs'> = {
+  collection: '',
+  dataset: '',
+  seed: 0,
+  knobs: {},
 }
 
 /**
@@ -132,9 +140,9 @@ export interface HubState {
  * ```
  */
 export function demoState(entry: HubEntry): HubState {
-  const collection = entry.datasets[0] ?? ''
+  const collection = entry.datasets[0]
   return {
-    ...datasetState(collection, entry.dataset),
+    ...(collection === undefined ? NO_DATA : datasetState(collection, entry.dataset)),
     params: defaults(entry.params) as Readonly<Record<string, SpaceValue>>,
   }
 }
@@ -179,6 +187,26 @@ export function loadState(state: Pick<HubState, 'collection' | 'dataset' | 'seed
   return loadEntry(e, key(state.seed), state.knobs).data
 }
 
+/**
+ * The dataset an entry runs on in a state: the state's dataset, cut to a keyed subsample of the entry's `maxRows`
+ * when it has more.
+ *
+ * @param entry - The entry.
+ * @param state - The state.
+ * @returns The dataset.
+ */
+export function entryData(entry: HubEntry, state: HubState): Dataset | undefined {
+  if (entry.datasets.length === 0) return undefined
+  const data = loadState(state)
+  const x = (data as { readonly x?: { readonly shape?: readonly number[] } }).x
+  const n = x?.shape?.[0] ?? 0
+  if (entry.maxRows === undefined || n <= entry.maxRows) return data
+  return take(
+    shuffleRows(data, key(state.seed + 2)),
+    Array.from({ length: entry.maxRows }, (_, i) => i),
+  )
+}
+
 /** The outcome of {@link runDemo}: the records and the number of rows the method saw. */
 export interface DemoResult {
   readonly exposition: readonly Exposition[]
@@ -191,11 +219,21 @@ export interface DemoResult {
  *
  * @param entry - The entry.
  * @param state - The dataset and parameters (default {@link demoState}).
+ * @param progress - Where the run reports progress, if it does.
  * @returns The exposition records and the dataset's row count.
  */
-export async function runDemo(entry: HubEntry, state: HubState = demoState(entry)): Promise<DemoResult> {
-  const data = loadState(state)
-  const out = await entry.run({ data, params: state.params, key: key(state.seed + 1) })
-  const x = (data as { readonly x?: { readonly shape?: readonly number[] } }).x
+export async function runDemo(
+  entry: HubEntry,
+  state: HubState = demoState(entry),
+  progress?: (p: HubProgress) => void,
+): Promise<DemoResult> {
+  const data = entryData(entry, state)
+  const out = await entry.run({
+    data,
+    params: state.params,
+    key: key(state.seed + 1),
+    ...(progress === undefined ? {} : { progress }),
+  })
+  const x = (data as { readonly x?: { readonly shape?: readonly number[] } } | undefined)?.x
   return { exposition: out.exposition, rows: x?.shape?.[0] ?? 0 }
 }
