@@ -2139,6 +2139,41 @@
       "cases": 13
     },
     {
+      "fixture": "search/adversarial.json",
+      "source": "oracle/cases/search/adversarial.py",
+      "reference": {
+        "aima-python": "port of games.py (2024)"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "search/csp.json",
+      "source": "oracle/cases/search/csp.py",
+      "reference": {
+        "python-constraint2": "2.7.3",
+        "aima-python": "port of csp.py (2024)"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "search/informed.json",
+      "source": "oracle/cases/search/informed.py",
+      "reference": {
+        "aima-python": "port of search.py (2024)",
+        "networkx": "3.7"
+      },
+      "cases": 36
+    },
+    {
+      "fixture": "search/uninformed.json",
+      "source": "oracle/cases/search/uninformed.py",
+      "reference": {
+        "aima-python": "port of search.py (2024)",
+        "networkx": "3.7"
+      },
+      "cases": 42
+    },
+    {
       "fixture": "systems/analysis.json",
       "source": "oracle/cases/systems/analysis.py",
       "reference": {

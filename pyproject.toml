@@ -42,6 +42,8 @@ oracle-core = [
     "scikit-commpy>=0.8.0",
     "pyitlib>=0.3.1",
     "bitarray>=3.12.3",
+    "python-constraint2>=2.7.3",
+    "pyperplan>=2.1",
 ]
 oracle-torch = [
     "monai>=1.6.1",

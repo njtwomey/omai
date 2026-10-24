@@ -1,0 +1,719 @@
+import { WhiteboxError } from '../base/index.ts'
+import { digraph, dijkstra } from '../graph/index.ts'
+import type { Algorithm } from '../trace/index.ts'
+import { type BestFirstOptions, bestFirstEngine } from './_best-first.ts'
+import {
+  beginStep,
+  budgetOf,
+  type Core,
+  core,
+  generatedChild,
+  goalTest,
+  noteFrontier,
+  observer,
+  PATH_SCHEMA,
+  runSearch,
+  solved,
+  stopper,
+} from './_engine.ts'
+import {
+  childNode,
+  rootNode,
+  type SearchNode,
+  type SearchOptions,
+  type SearchProblem,
+  type SearchResult,
+  type SearchState,
+  type StateKey,
+  stateKeyOf,
+} from './problem.ts'
+
+export type { BestFirstOptions, TieBreak } from './_best-first.ts'
+
+const hOf =
+  <S, A>(problem: SearchProblem<S, A>): ((s: S) => number) =>
+  (s) =>
+    problem.heuristic?.(s) ?? 0
+
+/**
+ * Best-first search on an evaluation function as a traced algorithm (aima-python's `best_first_graph_search`): expand
+ * the frontier node of lowest `f`, testing for the goal when a node is selected; a frontier node is replaced when a
+ * cheaper `f` reaches its state. Uniform-cost, greedy, A* and weighted A* are this search with different `f`.
+ *
+ * @param problem - The problem.
+ * @param f - The evaluation function of a node.
+ * @param options - Graph or tree search, tie-breaking, the expansion budget and tree recording.
+ * @returns The algorithm.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { bestFirstSearchAlgorithm } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
+ * bestFirstSearchAlgorithm(p, (n) => n.depth).name // => 'best-first'
+ * ```
+ */
+export function bestFirstSearchAlgorithm<S, A>(
+  problem: SearchProblem<S, A>,
+  f: (node: SearchNode<S, A>) => number,
+  options: BestFirstOptions<S> = {},
+): Algorithm<SearchState<S, A>> {
+  return bestFirstEngine('best-first', problem, f, options, { graph: options.graph ?? true })
+}
+
+/**
+ * Best-first search on an evaluation function.
+ *
+ * @param problem - The problem.
+ * @param f - The evaluation function of a node.
+ * @param options - Graph or tree search, tie-breaking, the expansion budget, tree recording and tracing.
+ * @returns The result.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { bestFirstSearch } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1, 2], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 4 }
+ * bestFirstSearch(p, (n) => n.depth).actions // => [2, 2]
+ * ```
+ */
+export function bestFirstSearch<S, A>(
+  problem: SearchProblem<S, A>,
+  f: (node: SearchNode<S, A>) => number,
+  options: BestFirstOptions<S> = {},
+): SearchResult<S, A> {
+  return runSearch(bestFirstEngine('best-first', problem, f, options, { graph: options.graph ?? true }), options)
+}
+
+/**
+ * Greedy best-first search: best-first on the heuristic alone, f = h. Fast when h is good, neither optimal nor (as
+ * tree search) complete.
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param options - Graph or tree search, tie-breaking, the expansion budget, tree recording and tracing.
+ * @returns The result.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { greedyBestFirstSearch } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) }
+ * greedyBestFirstSearch(p).actions // => [3, 3]
+ * ```
+ */
+export function greedyBestFirstSearch<S, A>(
+  problem: SearchProblem<S, A>,
+  options: BestFirstOptions<S> = {},
+): SearchResult<S, A> {
+  const h = hOf(problem)
+  return runSearch(
+    bestFirstEngine('greedy-best-first', problem, (n) => h(n.state), options, { graph: options.graph ?? true }),
+    options,
+  )
+}
+
+/**
+ * A* search as a traced algorithm (aima-python's `astar_search`): best-first on f = g + h, optimal when h is
+ * admissible (tree search) or consistent (graph search).
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param options - Graph or tree search, tie-breaking, the expansion budget and tree recording.
+ * @returns The algorithm.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { aStarSearchAlgorithm } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
+ * aStarSearchAlgorithm(p).name // => 'a-star'
+ * ```
+ */
+export function aStarSearchAlgorithm<S, A>(
+  problem: SearchProblem<S, A>,
+  options: BestFirstOptions<S> = {},
+): Algorithm<SearchState<S, A>> {
+  const h = hOf(problem)
+  return bestFirstEngine('a-star', problem, (n) => n.pathCost + h(n.state), options, { graph: options.graph ?? true })
+}
+
+/**
+ * A* search: the cheapest path, expanding no node with f above the optimal cost (with a consistent heuristic).
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param options - Graph or tree search, tie-breaking, the expansion budget, tree recording and tracing.
+ * @returns The result.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { aStarSearch } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, stepCost: (_s: number, a: number) => a * a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) }
+ * aStarSearch(p).cost // => 6
+ * ```
+ */
+export function aStarSearch<S, A>(problem: SearchProblem<S, A>, options: BestFirstOptions<S> = {}): SearchResult<S, A> {
+  const h = hOf(problem)
+  return runSearch(
+    bestFirstEngine('a-star', problem, (n) => n.pathCost + h(n.state), options, { graph: options.graph ?? true }),
+    options,
+  )
+}
+
+/**
+ * Weighted A*: best-first on f = g + w h with w >= 1, which trades optimality for speed; the cost found is at most w
+ * times the optimum when h is admissible.
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param weight - The heuristic weight w (1 is A*; large w approaches greedy search).
+ * @param options - Graph or tree search, tie-breaking, the expansion budget, tree recording and tracing.
+ * @returns The result.
+ * @throws WhiteboxError with code `value` when the weight is below 1.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { weightedAStarSearch } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) / 3 }
+ * weightedAStarSearch(p, 2).depth // => 2
+ * ```
+ */
+export function weightedAStarSearch<S, A>(
+  problem: SearchProblem<S, A>,
+  weight: number,
+  options: BestFirstOptions<S> = {},
+): SearchResult<S, A> {
+  if (!(weight >= 1)) throw new WhiteboxError('value', `weightedAStarSearch: the weight ${weight} must be at least 1`)
+  const h = hOf(problem)
+  return runSearch(
+    bestFirstEngine('weighted-a-star', problem, (n) => n.pathCost + weight * h(n.state), options, {
+      graph: options.graph ?? true,
+      weight,
+    }),
+    options,
+  )
+}
+
+interface IdaFrame<S, A> {
+  readonly node: SearchNode<S, A>
+  children: SearchNode<S, A>[] | null
+  next: number
+}
+
+interface IdaState<S, A> extends Core<S, A> {
+  readonly stack: IdaFrame<S, A>[]
+  limit: number
+  nextLimit: number
+}
+
+function ida<S, A>(
+  problem: SearchProblem<S, A>,
+  options: SearchOptions,
+): Algorithm<SearchState<S, A> & IdaState<S, A>> {
+  const h = hOf(problem)
+  const key = stateKeyOf(problem)
+  const maxExpansions = budgetOf(options, 'idaStar')
+  const f = (n: SearchNode<S, A>): number => n.pathCost + h(n.state)
+  const start = (s: IdaState<S, A>): void => {
+    const root = rootNode(problem)
+    s.tree?.push(root)
+    s.stack.push({ node: root, children: null, next: 0 })
+    s.nextLimit = Number.POSITIVE_INFINITY
+    s.bound = s.limit
+  }
+  const onPath = (node: SearchNode<S, A>, k: StateKey): boolean => {
+    for (let n: SearchNode<S, A> | null = node; n !== null; n = n.parent) if (key(n.state) === k) return true
+    return false
+  }
+  return {
+    name: 'ida-star',
+    config: {},
+    schema: PATH_SCHEMA,
+    init: () => {
+      const s: IdaState<S, A> = {
+        ...core<S, A>(options.recordTree === true),
+        stack: [],
+        limit: h(problem.initial),
+        nextLimit: Number.POSITIVE_INFINITY,
+      }
+      start(s)
+      noteFrontier(s, 1)
+      return s
+    },
+    step: (s) => {
+      beginStep(s)
+      for (;;) {
+        const top = s.stack[s.stack.length - 1]
+        if (top === undefined) {
+          if (s.nextLimit === Number.POSITIVE_INFINITY) {
+            s.status = 'failure'
+            return s
+          }
+          s.limit = s.nextLimit
+          start(s)
+          return s
+        }
+        if (top.children === null) {
+          const fn = f(top.node)
+          if (fn > s.limit) {
+            s.nextLimit = Math.min(s.nextLimit, fn)
+            s.stack.pop()
+            continue
+          }
+          if (goalTest(problem, s, top.node.state)) {
+            solved(s, top.node)
+            s.current = top.node
+            return s
+          }
+          s.stats.expanded += 1
+          s.current = top.node
+          const children: SearchNode<S, A>[] = []
+          for (const a of problem.actions(top.node.state)) {
+            const child = childNode(problem, top.node, a)
+            const fresh = !onPath(top.node, key(child.state))
+            generatedChild(s, child, fresh)
+            if (fresh) children.push(child)
+          }
+          top.children = children
+          noteFrontier(
+            s,
+            s.stack.reduce((acc, fr) => acc + (fr.children === null ? 1 : fr.children.length - fr.next), 0),
+          )
+          return s
+        }
+        const child = top.children[top.next]
+        if (child === undefined) {
+          s.stack.pop()
+          continue
+        }
+        top.next += 1
+        s.stack.push({ node: child, children: null, next: 0 })
+      }
+    },
+    done: stopper(maxExpansions),
+    observe: observer(problem),
+  }
+}
+
+/**
+ * IDA* as a traced algorithm (Korf 1985): depth-first searches bounded by f = g + h, each bound the smallest f that
+ * exceeded the last, with cycle checking along the current path. Optimal with an admissible heuristic, in memory
+ * linear in the depth. A `bound` message marks each new bound.
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param options - The expansion budget and tree recording.
+ * @returns The algorithm.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { idaStarSearchAlgorithm } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
+ * idaStarSearchAlgorithm(p).name // => 'ida-star'
+ * ```
+ */
+export function idaStarSearchAlgorithm<S, A>(
+  problem: SearchProblem<S, A>,
+  options: SearchOptions = {},
+): Algorithm<SearchState<S, A>> {
+  return ida(problem, options)
+}
+
+/**
+ * IDA* search.
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param options - The expansion budget, tree recording and tracing.
+ * @returns The result.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { idaStarSearch } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, stepCost: (_s: number, a: number) => a * a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) }
+ * idaStarSearch(p).cost // => 6
+ * ```
+ */
+export function idaStarSearch<S, A>(problem: SearchProblem<S, A>, options: SearchOptions = {}): SearchResult<S, A> {
+  return runSearch(ida(problem, options), options)
+}
+
+interface Scored<S, A> {
+  readonly node: SearchNode<S, A>
+  f: number
+}
+
+interface RbfsFrame<S, A> {
+  readonly item: Scored<S, A>
+  readonly limit: number
+  successors: Scored<S, A>[] | null
+}
+
+interface RbfsState<S, A> extends Core<S, A> {
+  readonly stack: RbfsFrame<S, A>[]
+}
+
+function rbfs<S, A>(
+  problem: SearchProblem<S, A>,
+  options: SearchOptions,
+): Algorithm<SearchState<S, A> & RbfsState<S, A>> {
+  const h = hOf(problem)
+  const maxExpansions = budgetOf(options, 'recursiveBestFirstSearch')
+  // Return a backed-up value to the parent frame: the parent's best successor takes it (aima-python's `best.f`).
+  const back = (s: RbfsState<S, A>, value: number): void => {
+    s.stack.pop()
+    const parent = s.stack[s.stack.length - 1]
+    if (parent === undefined) {
+      s.status = 'failure'
+      return
+    }
+    const best = parent.successors?.[0]
+    if (best !== undefined) best.f = value
+  }
+  return {
+    name: 'recursive-best-first',
+    config: {},
+    schema: PATH_SCHEMA,
+    init: () => {
+      const root = rootNode(problem)
+      const s: RbfsState<S, A> = { ...core<S, A>(options.recordTree === true), stack: [] }
+      s.tree?.push(root)
+      s.stack.push({ item: { node: root, f: h(root.state) }, limit: Number.POSITIVE_INFINITY, successors: null })
+      noteFrontier(s, 1)
+      return s
+    },
+    step: (s) => {
+      beginStep(s)
+      for (;;) {
+        const top = s.stack[s.stack.length - 1]
+        if (top === undefined || s.status !== 'running') return s
+        if (top.successors === null) {
+          const node = top.item.node
+          if (goalTest(problem, s, node.state)) {
+            solved(s, node)
+            s.current = node
+            return s
+          }
+          s.stats.expanded += 1
+          s.current = node
+          const successors = problem.actions(node.state).map((a) => {
+            const child = childNode(problem, node, a)
+            generatedChild(s, child, true)
+            return { node: child, f: Math.max(child.pathCost + h(child.state), top.item.f) }
+          })
+          if (successors.length === 0) {
+            back(s, Number.POSITIVE_INFINITY)
+            return s
+          }
+          top.successors = successors
+          noteFrontier(
+            s,
+            s.stack.reduce((acc, fr) => acc + (fr.successors?.length ?? 1), 0),
+          )
+          return s
+        }
+        // A stable sort, as aima-python's list.sort, so ties keep their order.
+        top.successors.sort((a, b) => a.f - b.f)
+        const best = top.successors[0] as Scored<S, A>
+        // An infinite best f means every successor is a dead end: fail rather than loop (aima-python loops forever).
+        if (best.f > top.limit || best.f === Number.POSITIVE_INFINITY) {
+          back(s, best.f)
+          continue
+        }
+        const alternative = top.successors[1]?.f ?? Number.POSITIVE_INFINITY
+        s.stack.push({ item: best, limit: Math.min(top.limit, alternative), successors: null })
+      }
+    },
+    done: stopper(maxExpansions),
+    observe: observer(problem),
+  }
+}
+
+/**
+ * Recursive best-first search as a traced algorithm (aima-python's `recursive_best_first_search`, with its recursion
+ * held on an explicit stack): best-first search in linear space that backs up the best f of forgotten subtrees, so it
+ * can return to them. Optimal with an admissible heuristic.
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param options - The expansion budget and tree recording.
+ * @returns The algorithm.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { recursiveBestFirstSearchAlgorithm } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
+ * recursiveBestFirstSearchAlgorithm(p).name // => 'recursive-best-first'
+ * ```
+ */
+export function recursiveBestFirstSearchAlgorithm<S, A>(
+  problem: SearchProblem<S, A>,
+  options: SearchOptions = {},
+): Algorithm<SearchState<S, A>> {
+  return rbfs(problem, options)
+}
+
+/**
+ * Recursive best-first search (RBFS, Korf 1993).
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param options - The expansion budget, tree recording and tracing.
+ * @returns The result.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { recursiveBestFirstSearch } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, stepCost: (_s: number, a: number) => a * a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) }
+ * recursiveBestFirstSearch(p).cost // => 6
+ * ```
+ */
+export function recursiveBestFirstSearch<S, A>(
+  problem: SearchProblem<S, A>,
+  options: SearchOptions = {},
+): SearchResult<S, A> {
+  return runSearch(rbfs(problem, options), options)
+}
+
+/** Options of {@link beamSearch}. */
+export interface BeamSearchOptions extends SearchOptions {
+  /** The number of nodes kept per layer (default 3). */
+  readonly width?: number
+  /** Rank by the heuristic (`'h'`, default) or by g + h (`'f'`). */
+  readonly rank?: 'h' | 'f'
+}
+
+interface BeamState<S, A> extends Core<S, A> {
+  layer: SearchNode<S, A>[]
+  readonly seen: Set<StateKey>
+}
+
+/**
+ * Beam search (Lowerre 1976) as a traced algorithm: breadth-first search that keeps only the `width` best nodes of
+ * each layer, ranked by h or by g + h (ties in generation order), skipping states seen before. Each step expands one
+ * layer. Memory is bounded by the width; it is neither complete nor optimal.
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param options - The width, the ranking, the expansion budget and tree recording.
+ * @returns The algorithm.
+ * @throws WhiteboxError with code `value` when the width is not a positive integer.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { beamSearchAlgorithm } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
+ * beamSearchAlgorithm(p).name // => 'beam'
+ * ```
+ */
+export function beamSearchAlgorithm<S, A>(
+  problem: SearchProblem<S, A>,
+  options: BeamSearchOptions = {},
+): Algorithm<SearchState<S, A>> {
+  return beam(problem, options)
+}
+
+function beam<S, A>(
+  problem: SearchProblem<S, A>,
+  options: BeamSearchOptions,
+): Algorithm<SearchState<S, A> & BeamState<S, A>> {
+  const width = options.width ?? 3
+  if (!(Number.isInteger(width) && width >= 1)) {
+    throw new WhiteboxError('value', `beamSearch: the width ${width} must be a positive integer`)
+  }
+  const h = hOf(problem)
+  const key = stateKeyOf(problem)
+  const rank =
+    options.rank === 'f' ? (n: SearchNode<S, A>) => n.pathCost + h(n.state) : (n: SearchNode<S, A>) => h(n.state)
+  const maxExpansions = budgetOf(options, 'beamSearch')
+  return {
+    name: 'beam',
+    config: { width, rank: options.rank ?? 'h' },
+    schema: PATH_SCHEMA,
+    init: () => {
+      const root = rootNode(problem)
+      const s: BeamState<S, A> = { ...core<S, A>(options.recordTree === true), layer: [root], seen: new Set() }
+      s.tree?.push(root)
+      s.seen.add(key(root.state))
+      if (goalTest(problem, s, root.state)) solved(s, root)
+      noteFrontier(s, 1)
+      return s
+    },
+    step: (s) => {
+      beginStep(s)
+      if (s.layer.length === 0) {
+        s.status = 'failure'
+        return s
+      }
+      const next: SearchNode<S, A>[] = []
+      for (const node of s.layer) {
+        s.stats.expanded += 1
+        s.current = node
+        for (const a of problem.actions(node.state)) {
+          const child = childNode(problem, node, a)
+          const k = key(child.state)
+          const fresh = !s.seen.has(k)
+          generatedChild(s, child, fresh)
+          if (!fresh) continue
+          s.seen.add(k)
+          if (goalTest(problem, s, child.state)) {
+            solved(s, child)
+            return s
+          }
+          next.push(child)
+        }
+      }
+      const order = next.map((n, i) => ({ n, i, r: rank(n) })).sort((a, b) => a.r - b.r || a.i - b.i)
+      s.layer = order.slice(0, width).map((x) => x.n)
+      noteFrontier(s, s.layer.length)
+      s.exploredSize = s.seen.size
+      s.stats.explored = s.seen.size
+      return s
+    },
+    done: stopper(maxExpansions),
+    observe: observer(problem),
+  }
+}
+
+/**
+ * Beam search.
+ *
+ * @param problem - The problem (its `heuristic` is used).
+ * @param options - The width, the ranking, the expansion budget, tree recording and tracing.
+ * @returns The result; `failure` when every beam died out.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { beamSearch } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: () => [1, 2, 3], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 9, heuristic: (s: number) => Math.abs(9 - s) }
+ * beamSearch(p, { width: 1 }).actions // => [3, 3, 3]
+ * ```
+ */
+export function beamSearch<S, A>(problem: SearchProblem<S, A>, options: BeamSearchOptions = {}): SearchResult<S, A> {
+  return runSearch(beam(problem, options), options)
+}
+
+/** A state where a heuristic check fails: the state's label, its heuristic, and the bound it exceeds. */
+export interface HeuristicViolation {
+  readonly state: string
+  readonly h: number
+  readonly bound: number
+}
+
+/** The outcome of a heuristic check over the reachable states. */
+export interface HeuristicReport {
+  readonly holds: boolean
+  /** The states (admissibility) or transitions (consistency) checked. */
+  readonly checked: number
+  /** True when every reachable state was enumerated within the state budget. */
+  readonly complete: boolean
+  readonly violations: readonly HeuristicViolation[]
+}
+
+interface Space<S> {
+  readonly states: S[]
+  readonly labels: string[]
+  readonly edges: [number, number, number][]
+  readonly goals: number[]
+  readonly complete: boolean
+}
+
+function reachable<S, A>(problem: SearchProblem<S, A>, maxStates: number): Space<S> {
+  const key = stateKeyOf(problem)
+  const index = new Map<StateKey, number>()
+  const states: S[] = []
+  const labels: string[] = []
+  const edges: [number, number, number][] = []
+  const goals: number[] = []
+  const add = (s: S): number => {
+    const k = key(s)
+    const at = index.get(k)
+    if (at !== undefined) return at
+    index.set(k, states.length)
+    states.push(s)
+    labels.push(problem.label?.(s) ?? String(k))
+    if (problem.isGoal(s)) goals.push(states.length - 1)
+    return states.length - 1
+  }
+  add(problem.initial)
+  let complete = true
+  for (let i = 0; i < states.length; i++) {
+    if (states.length > maxStates) {
+      complete = false
+      break
+    }
+    const s = states[i] as S
+    for (const a of problem.actions(s)) {
+      const next = problem.result(s, a)
+      const c = problem.stepCost?.(s, a, next) ?? 1
+      edges.push([i, add(next), c])
+    }
+  }
+  return { states, labels, edges, goals, complete }
+}
+
+/**
+ * Check that a heuristic is admissible, h(s) <= h*(s), on every reachable state: the state space is enumerated
+ * breadth-first (up to `maxStates`), and the true costs to a goal come from graph's `dijkstra` on the reversed
+ * transitions from a virtual node joined to every goal.
+ *
+ * @param problem - The problem (its `heuristic` is checked).
+ * @param options - The state budget (default 10000) and a tolerance (default 1e-9).
+ * @returns The report: whether the check holds, the states checked, completeness and the violations.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { isAdmissible } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: (s: number) => (s < 6 ? [1] : []), result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 6 }
+ * isAdmissible({ ...p, heuristic: (s: number) => 6 - s }).holds // => true
+ * isAdmissible({ ...p, heuristic: (s: number) => 7 - s }).violations.length // => 7
+ * ```
+ */
+export function isAdmissible<S, A>(
+  problem: SearchProblem<S, A>,
+  options: { readonly maxStates?: number; readonly tol?: number } = {},
+): HeuristicReport {
+  const space = reachable(problem, options.maxStates ?? 10_000)
+  const tol = options.tol ?? 1e-9
+  const n = space.states.length
+  const edges: [number, number, number][] = space.edges.map(([u, v, c]) => [v, u, c])
+  for (const g of space.goals) edges.push([n, g, 0])
+  const g = digraph(edges, { nodes: n + 1, duplicates: 'min' })
+  const hStar = dijkstra(g, n).distance
+  const violations: HeuristicViolation[] = []
+  space.states.forEach((s, i) => {
+    const h = problem.heuristic?.(s) ?? 0
+    const bound = hStar[i] ?? Number.POSITIVE_INFINITY
+    if (h > bound + tol) violations.push({ state: space.labels[i] ?? '', h, bound })
+  })
+  return { holds: violations.length === 0, checked: n, complete: space.complete, violations }
+}
+
+/**
+ * Check that a heuristic is consistent on every reachable transition, h(s) <= c(s, a, s') + h(s'), and zero at goals.
+ * A consistent heuristic is admissible, and A* graph search with it never reopens a state.
+ *
+ * @param problem - The problem (its `heuristic` is checked).
+ * @param options - The state budget (default 10000) and a tolerance (default 1e-9).
+ * @returns The report; `checked` counts transitions plus goal states.
+ * @concept informed-search
+ * @example
+ * ```ts
+ * import { isConsistent } from 'whitebox-engine/search'
+ * const p = { initial: 0, actions: (s: number) => (s < 6 ? [1, 2] : []), result: (s: number, a: number) => Math.min(6, s + a), isGoal: (s: number) => s === 6 }
+ * isConsistent({ ...p, heuristic: (s: number) => (6 - s) / 2 }).holds // => true
+ * isConsistent({ ...p, heuristic: (s: number) => (s === 2 ? 4 : (6 - s) / 2) }).holds // => false
+ * ```
+ */
+export function isConsistent<S, A>(
+  problem: SearchProblem<S, A>,
+  options: { readonly maxStates?: number; readonly tol?: number } = {},
+): HeuristicReport {
+  const space = reachable(problem, options.maxStates ?? 10_000)
+  const tol = options.tol ?? 1e-9
+  const h = space.states.map((s) => problem.heuristic?.(s) ?? 0)
+  const violations: HeuristicViolation[] = []
+  for (const [u, v, c] of space.edges) {
+    const hu = h[u] ?? 0
+    const bound = c + (h[v] ?? 0)
+    if (hu > bound + tol) violations.push({ state: space.labels[u] ?? '', h: hu, bound })
+  }
+  for (const g of space.goals) {
+    const hg = h[g] ?? 0
+    if (Math.abs(hg) > tol) violations.push({ state: space.labels[g] ?? '', h: hg, bound: 0 })
+  }
+  return {
+    holds: violations.length === 0,
+    checked: space.edges.length + space.goals.length,
+    complete: space.complete,
+    violations,
+  }
+}
