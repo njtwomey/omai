@@ -1,0 +1,4 @@
+{
+  "tier": 8,
+  "summary": "Differential equations, nonlinear dynamics, control and filtering: ODE and PDE solvers with dense output, events and adjoint gradients; vector fields, maps and chaos; LQR, MPC, PID and trajectory optimisation; Kalman, particle and changepoint filters; system identification."
+}

@@ -42,6 +42,10 @@ oracle-core = [
     "scikit-commpy>=0.8.0",
     "pyitlib>=0.3.1",
     "bitarray>=3.12.3",
+    "filterpy>=1.4.5",
+    "nolds>=0.6.3",
+    "ruptures>=1.1.10",
+    "pysindy>=2.1.0",
 ]
 oracle-torch = [
     "gpytorch>=1.15.2",
@@ -49,6 +53,7 @@ oracle-torch = [
     "optax>=0.2.8",
     "pytorch-crf>=0.7.2",
     "torch",
+    "torchdiffeq>=0.2.5",
     "torchmetrics>=1.9.0",
     "torchvision>=0.29.1",
 ]
