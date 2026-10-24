@@ -31,6 +31,14 @@ const SMALL: Readonly<Record<string, number>> = {
 }
 
 describe('the dataset catalogue', () => {
+  it('labels and describes every knob of every generator', () => {
+    for (const g of Object.values(datasetGenerators))
+      for (const k of describeGenerator(g).knobs) {
+        expect(k.label, `${g.name}.${k.name}`).toBeTypeOf('string')
+        expect(k.description?.length ?? 0, `${g.name}.${k.name}`).toBeGreaterThan(5)
+      }
+  })
+
   it('generates every dataset, reproducibly, with a recorded recipe', () => {
     const names = Object.keys(datasetGenerators)
     expect(names.length).toBeGreaterThan(70)

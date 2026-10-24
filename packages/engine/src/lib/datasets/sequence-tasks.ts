@@ -41,10 +41,10 @@ function symbolVocabulary(symbols: number): string[] {
 }
 
 const lengthKnobs = {
-  n: int(1, 1_000_000, { default: 1000 }),
-  minLength: int(1, 1000, { default: 1 }),
-  maxLength: int(1, 1000, { default: 10 }),
-  symbols: int(2, 1000, { default: 8 }),
+  n: int(1, 1_000_000, { default: 1000, label: 'sequences', description: 'The number of sequences.' }),
+  minLength: int(1, 1000, { default: 1, label: 'shortest sequence', description: 'The minimum sequence length.' }),
+  maxLength: int(1, 1000, { default: 10, label: 'longest sequence', description: 'The maximum sequence length.' }),
+  symbols: int(2, 1000, { default: 8, label: 'alphabet size', description: 'The number of distinct symbols.' }),
 }
 
 function stringTask(
@@ -141,9 +141,13 @@ export const dyckTask: DatasetGenerator<SequenceData> = {
   kind: 'sequence',
   description: 'Decide whether a string of brackets is balanced (Dyck-k recognition).',
   knobs: dict({
-    n: int(1, 1_000_000, { default: 1000 }),
-    halfLength: int(1, 500, { default: 6, label: 'bracket pairs per string' }),
-    types: int(1, 4, { default: 2, label: 'kinds of brackets' }),
+    n: int(1, 1_000_000, { label: 'strings', description: 'The number of bracket strings.', default: 1000 }),
+    halfLength: int(1, 500, {
+      description: 'The number of bracket pairs in each string.',
+      default: 6,
+      label: 'bracket pairs per string',
+    }),
+    types: int(1, 4, { description: 'The number of bracket kinds (Dyck-k).', default: 2, label: 'kinds of brackets' }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -204,9 +208,17 @@ export const additionTask: DatasetGenerator<SequenceData> = {
   kind: 'sequence',
   description: 'Add two multi-digit numbers given as digit tokens.',
   knobs: dict({
-    n: int(1, 1_000_000, { default: 1000 }),
-    digits: int(1, 50, { default: 3, label: 'maximum digits per operand' }),
-    reverseDigits: bool({ default: false, label: 'least significant digit first' }),
+    n: int(1, 1_000_000, { label: 'problems', description: 'The number of addition problems.', default: 1000 }),
+    digits: int(1, 50, {
+      description: 'The largest number of digits in each operand.',
+      default: 3,
+      label: 'maximum digits per operand',
+    }),
+    reverseDigits: bool({
+      description: 'Write numbers least significant digit first (easier to learn left to right).',
+      default: false,
+      label: 'least significant digit first',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -259,10 +271,14 @@ export const associativeRecall: DatasetGenerator<SequenceData> = {
   kind: 'sequence',
   description: 'Recall the value paired with a query key earlier in the sequence.',
   knobs: dict({
-    n: int(1, 1_000_000, { default: 1000 }),
-    pairs: int(1, 26, { default: 5 }),
-    keys: int(2, 26, { default: 26, label: 'size of the key alphabet' }),
-    values: int(2, 100, { default: 10, label: 'size of the value alphabet' }),
+    n: int(1, 1_000_000, { label: 'sequences', description: 'The number of sequences.', default: 1000 }),
+    pairs: int(1, 26, { label: 'pairs', description: 'Key-value pairs per sequence before the query.', default: 5 }),
+    keys: int(2, 26, { description: 'The number of distinct keys.', default: 26, label: 'size of the key alphabet' }),
+    values: int(2, 100, {
+      description: 'The number of distinct values.',
+      default: 10,
+      label: 'size of the value alphabet',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -312,10 +328,14 @@ export const parityTask: DatasetGenerator<SequenceData> = {
   kind: 'sequence',
   description: 'Compute the parity of a bit string (or of every prefix).',
   knobs: dict({
-    n: int(1, 1_000_000, { default: 1000 }),
-    minLength: int(1, 10_000, { default: 1 }),
-    maxLength: int(1, 10_000, { default: 16 }),
-    running: bool({ default: false, label: 'label every prefix' }),
+    n: int(1, 1_000_000, { label: 'strings', description: 'The number of bit strings.', default: 1000 }),
+    minLength: int(1, 10_000, { label: 'shortest string', description: 'The minimum string length.', default: 1 }),
+    maxLength: int(1, 10_000, { label: 'longest string', description: 'The maximum string length.', default: 16 }),
+    running: bool({
+      description: 'Label the parity of every prefix, not only of the whole string.',
+      default: false,
+      label: 'label every prefix',
+    }),
   }),
   generate: (k, knobs) => {
     const vocab = [...SPECIAL, '0', '1']
@@ -361,10 +381,26 @@ export const modularArithmetic: DatasetGenerator<SequenceData> = {
   kind: 'sequence',
   description: 'Equations a op b = c modulo a prime p.',
   knobs: dict({
-    modulus: int(2, 10_000, { default: 97, label: 'modulus p (prime for division)' }),
-    operation: choice(['+', '-', '*', '/'], { default: '+' }),
-    all: bool({ default: true, label: 'the whole table' }),
-    n: int(1, 1_000_000, { default: 1000 }),
+    modulus: int(2, 10_000, {
+      description: 'The modulus p; division needs a prime.',
+      default: 97,
+      label: 'modulus p (prime for division)',
+    }),
+    operation: choice(['+', '-', '*', '/'], {
+      label: 'operation',
+      description: 'The operation tabulated.',
+      default: '+',
+    }),
+    all: bool({
+      description: 'Generate the whole p × p table, instead of n random equations.',
+      default: true,
+      label: 'the whole table',
+    }),
+    n: int(1, 1_000_000, {
+      label: 'equations',
+      description: 'The number of random equations when not generating the whole table.',
+      default: 1000,
+    }),
   }),
   generate: (k, knobs) => {
     const p = knobs['modulus'] as number

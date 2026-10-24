@@ -119,12 +119,28 @@ export const contextualSbm: DatasetGenerator<GraphData> = {
   kind: 'graph',
   description: 'A stochastic block model with Gaussian node features that depend on the community.',
   knobs: dict({
-    nodes: int(2, 20_000, { default: 300 }),
-    blocks: int(2, 50, { default: 2 }),
-    degree: real(0.1, 1000, { default: 10, label: 'average degree' }),
-    lambda: real(0, 50, { default: 2, label: 'graph signal' }),
-    features: int(0, 1000, { default: 8 }),
-    mu: real(0, 50, { default: 1, label: 'feature signal' }),
+    nodes: int(2, 20_000, { label: 'nodes', description: 'The number of nodes.', default: 300 }),
+    blocks: int(2, 50, { label: 'communities', description: 'The number of communities.', default: 2 }),
+    degree: real(0.1, 1000, {
+      description: 'The expected number of edges per node.',
+      default: 10,
+      label: 'average degree',
+    }),
+    lambda: real(0, 50, {
+      description: 'How much likelier edges within a community are than across (0: no signal).',
+      default: 2,
+      label: 'graph signal',
+    }),
+    features: int(0, 1000, {
+      label: 'feature dimensions',
+      description: 'The number of Gaussian node features.',
+      default: 8,
+    }),
+    mu: real(0, 50, {
+      description: 'How far apart the communities’ feature means are (0: no signal).',
+      default: 1,
+      label: 'feature signal',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['nodes'] as number
@@ -345,9 +361,9 @@ export const graphFamilies: DatasetGenerator<GraphData> = {
   kind: 'graph',
   description: 'Random graphs from ten families, labelled by family.',
   knobs: dict({
-    graphs: int(1, 100_000, { default: 200 }),
-    minNodes: int(3, 10_000, { default: 10 }),
-    maxNodes: int(3, 10_000, { default: 30 }),
+    graphs: int(1, 100_000, { label: 'graphs', description: 'The number of graphs.', default: 200 }),
+    minNodes: int(3, 10_000, { label: 'fewest nodes', description: 'The smallest graph size.', default: 10 }),
+    maxNodes: int(3, 10_000, { label: 'most nodes', description: 'The largest graph size.', default: 30 }),
   }),
   generate: (k, knobs) => {
     const g = knobs['graphs'] as number
@@ -461,10 +477,18 @@ export const kinshipTriples: DatasetGenerator<TripleData> = {
   kind: 'triples',
   description: 'Family-tree triples whose relations follow fixed rules, partly observed.',
   knobs: dict({
-    families: int(1, 1000, { default: 5 }),
-    generations: int(2, 8, { default: 3 }),
-    children: real(0.5, 6, { default: 2, label: 'mean children per couple' }),
-    observed: real(0.01, 1, { default: 0.8, label: 'fraction of true triples observed' }),
+    families: int(1, 1000, { label: 'families', description: 'The number of family trees.', default: 5 }),
+    generations: int(2, 8, { label: 'generations', description: 'The depth of each family tree.', default: 3 }),
+    children: real(0.5, 6, {
+      description: 'The mean number of children per couple.',
+      default: 2,
+      label: 'mean children per couple',
+    }),
+    observed: real(0.01, 1, {
+      description: 'The fraction of true triples observed (the rest are to be inferred).',
+      default: 0.8,
+      label: 'fraction of true triples observed',
+    }),
   }),
   generate: (k, knobs) => {
     const parents = new Map<number, number[]>()

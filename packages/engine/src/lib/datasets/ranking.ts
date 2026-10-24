@@ -40,13 +40,29 @@ export const lowRankRatings: DatasetGenerator<InteractionData> = {
   kind: 'interactions',
   description: 'User-item ratings from a low-rank model with biases, observed at random or not at random.',
   knobs: dict({
-    users: int(1, 100_000, { default: 100 }),
-    items: int(1, 100_000, { default: 200 }),
-    rank: int(1, 100, { default: 3 }),
-    density: real(0.0001, 1, { default: 0.1, label: 'fraction of ratings observed' }),
-    noise: real(0, 5, { default: 0.3 }),
-    discrete: bool({ default: true, label: 'round to 1 to 5 stars' }),
-    missing: choice(['MCAR', 'MNAR'], { default: 'MCAR', label: 'observation mechanism' }),
+    users: int(1, 100_000, { label: 'users', description: 'The number of users.', default: 100 }),
+    items: int(1, 100_000, { label: 'items', description: 'The number of items.', default: 200 }),
+    rank: int(1, 100, { label: 'rank', description: 'The number of latent factors.', default: 3 }),
+    density: real(0.0001, 1, {
+      description: 'The fraction of user-item ratings observed.',
+      default: 0.1,
+      label: 'fraction of ratings observed',
+    }),
+    noise: real(0, 5, {
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the rating noise.',
+      default: 0.3,
+    }),
+    discrete: bool({
+      description: 'Round ratings to whole stars from 1 to 5.',
+      default: true,
+      label: 'round to 1 to 5 stars',
+    }),
+    missing: choice(['MCAR', 'MNAR'], {
+      description: 'Ratings missing completely at random, or more often when low (not at random).',
+      default: 'MCAR',
+      label: 'observation mechanism',
+    }),
   }),
   generate: (k, knobs) => {
     const nu = knobs['users'] as number
@@ -101,12 +117,32 @@ export const lowRankRatings: DatasetGenerator<InteractionData> = {
 /** The knobs of the click-log generator. */
 function clickKnobs(): DictSpace {
   return dict({
-    sessions: int(1, 1_000_000, { default: 500 }),
-    items: int(2, 100_000, { default: 50 }),
-    listLength: int(1, 100, { default: 10, label: 'items shown per session' }),
-    model: choice(['position', 'cascade'], { default: 'position', label: 'click model' }),
-    eta: real(0, 5, { default: 1, label: 'position-bias exponent' }),
-    temperature: real(0.01, 100, { default: 1, label: 'logging policy temperature' }),
+    sessions: int(1, 1_000_000, {
+      default: 500,
+      label: 'sessions',
+      description: 'The number of search sessions logged.',
+    }),
+    items: int(2, 100_000, { default: 50, label: 'items', description: 'The number of items that can be shown.' }),
+    listLength: int(1, 100, {
+      default: 10,
+      label: 'items shown per session',
+      description: 'How many items each ranked list shows.',
+    }),
+    model: choice(['position', 'cascade'], {
+      default: 'position',
+      label: 'click model',
+      description: 'Position-based (examination by rank) or cascade (scan down until a click).',
+    }),
+    eta: real(0, 5, {
+      default: 1,
+      label: 'position-bias exponent',
+      description: 'How fast examination decays with rank: P(examine rank r) = r^-η.',
+    }),
+    temperature: real(0.01, 100, {
+      default: 1,
+      label: 'logging policy temperature',
+      description: 'The temperature of the Plackett-Luce logging policy: higher is more random.',
+    }),
   })
 }
 
@@ -214,10 +250,14 @@ export const implicitFeedback: DatasetGenerator<InteractionData> = {
   kind: 'interactions',
   description: 'Consumption counts from Poisson matrix factorisation with gamma factors; zeros are unobserved.',
   knobs: dict({
-    users: int(1, 100_000, { default: 100 }),
-    items: int(1, 100_000, { default: 100 }),
-    rank: int(1, 100, { default: 3 }),
-    activity: real(0.001, 100, { default: 0.3, label: 'mean rate per user-item pair' }),
+    users: int(1, 100_000, { label: 'users', description: 'The number of users.', default: 100 }),
+    items: int(1, 100_000, { label: 'items', description: 'The number of items.', default: 100 }),
+    rank: int(1, 100, { label: 'rank', description: 'The number of latent gamma factors.', default: 3 }),
+    activity: real(0.001, 100, {
+      description: 'The mean consumption count per user-item pair.',
+      default: 0.3,
+      label: 'mean rate per user-item pair',
+    }),
   }),
   generate: (k, knobs) => {
     const nu = knobs['users'] as number
@@ -270,11 +310,23 @@ export const zipfianCatalogue: DatasetGenerator<InteractionData> = {
   kind: 'interactions',
   description: 'Interactions whose items and users follow Zipf popularity laws.',
   knobs: dict({
-    interactions: int(1, 10_000_000, { default: 5000 }),
-    users: int(1, 1_000_000, { default: 500 }),
-    items: int(1, 1_000_000, { default: 1000 }),
-    itemExponent: real(0, 5, { default: 1.1, label: 'Zipf exponent of items' }),
-    userExponent: real(0, 5, { default: 0.8, label: 'Zipf exponent of users' }),
+    interactions: int(1, 10_000_000, {
+      label: 'interactions',
+      description: 'The number of user-item interactions.',
+      default: 5000,
+    }),
+    users: int(1, 1_000_000, { label: 'users', description: 'The number of users.', default: 500 }),
+    items: int(1, 1_000_000, { label: 'items', description: 'The number of items.', default: 1000 }),
+    itemExponent: real(0, 5, {
+      description: 'The Zipf exponent of item popularity: larger concentrates on the head.',
+      default: 1.1,
+      label: 'Zipf exponent of items',
+    }),
+    userExponent: real(0, 5, {
+      description: 'The Zipf exponent of user activity.',
+      default: 0.8,
+      label: 'Zipf exponent of users',
+    }),
   }),
   generate: (k, knobs) => {
     const m = knobs['interactions'] as number

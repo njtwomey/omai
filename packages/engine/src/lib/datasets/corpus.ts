@@ -92,13 +92,34 @@ export const topicCorpus: DatasetGenerator<CorpusData> = {
   kind: 'corpus',
   description: 'Documents drawn from latent Dirichlet allocation, with Dirichlet or bars topics.',
   knobs: dict({
-    nDocs: int(1, 100_000, { default: 200 }),
-    nTopics: int(1, 100, { default: 5 }),
-    vocabulary: int(2, 100_000, { default: 100 }),
-    docLength: real(1, 10_000, { default: 50, label: 'mean document length' }),
-    alpha: real(0.001, 100, { default: 0.5, label: 'document-topic concentration' }),
-    eta: real(0.001, 100, { default: 0.1, label: 'topic-word concentration' }),
-    topics: choice(['dirichlet', 'bars'], { default: 'dirichlet' }),
+    nDocs: int(1, 100_000, { label: 'documents', description: 'The number of documents.', default: 200 }),
+    nTopics: int(1, 100, { label: 'topics', description: 'The number of topics.', default: 5 }),
+    vocabulary: int(2, 100_000, {
+      label: 'vocabulary size',
+      description: 'The number of distinct words.',
+      default: 100,
+    }),
+    docLength: real(1, 10_000, {
+      description: 'The mean number of words per document (Poisson).',
+      default: 50,
+      label: 'mean document length',
+    }),
+    alpha: real(0.001, 100, {
+      description:
+        'The Dirichlet concentration of each document’s topic mix: small values give few topics per document.',
+      default: 0.5,
+      label: 'document-topic concentration',
+    }),
+    eta: real(0.001, 100, {
+      description: 'The Dirichlet concentration of each topic’s word distribution: small values give peaked topics.',
+      default: 0.1,
+      label: 'topic-word concentration',
+    }),
+    topics: choice(['dirichlet', 'bars'], {
+      label: 'topic shapes',
+      description: 'Dirichlet-drawn topics, or the bars of a square vocabulary (easy to see).',
+      default: 'dirichlet',
+    }),
   }),
   generate: (k, knobs) => {
     const bars = knobs['topics'] === 'bars'
@@ -155,12 +176,24 @@ export const naiveBayesCorpus: DatasetGenerator<CorpusData> = {
   kind: 'corpus',
   description: 'Labelled documents from a multinomial naive Bayes model with class keywords.',
   knobs: dict({
-    nDocs: int(1, 100_000, { default: 300 }),
-    nClasses: int(2, 50, { default: 2 }),
-    vocabulary: int(10, 100_000, { default: 200 }),
-    keywords: int(1, 1000, { default: 10, label: 'keywords per class' }),
-    signal: real(0, 0.99, { default: 0.3, label: 'probability mass on class keywords' }),
-    docLength: real(1, 10_000, { default: 30 }),
+    nDocs: int(1, 100_000, { label: 'documents', description: 'The number of documents.', default: 300 }),
+    nClasses: int(2, 50, { label: 'classes', description: 'The number of classes.', default: 2 }),
+    vocabulary: int(10, 100_000, {
+      label: 'vocabulary size',
+      description: 'The number of distinct words.',
+      default: 200,
+    }),
+    keywords: int(1, 1000, { description: 'Words specific to each class.', default: 10, label: 'keywords per class' }),
+    signal: real(0, 0.99, {
+      description: 'The probability mass each class puts on its keywords.',
+      default: 0.3,
+      label: 'probability mass on class keywords',
+    }),
+    docLength: real(1, 10_000, {
+      label: 'mean document length',
+      description: 'The mean number of words per document.',
+      default: 30,
+    }),
   }),
   generate: (k, knobs) => {
     const nc = knobs['nClasses'] as number
@@ -218,13 +251,29 @@ export const driftingTopics: DatasetGenerator<CorpusData> = {
   kind: 'corpus',
   description: 'Topic-model documents whose topics drift over time slices (a dynamic topic model).',
   knobs: dict({
-    slices: int(1, 1000, { default: 5 }),
-    docsPerSlice: int(1, 10_000, { default: 40 }),
-    nTopics: int(1, 50, { default: 3 }),
-    vocabulary: int(2, 10_000, { default: 60 }),
-    drift: real(0, 10, { default: 0.5, label: 'random-walk step of topic parameters' }),
-    docLength: real(1, 10_000, { default: 40 }),
-    alpha: real(0.001, 100, { default: 0.5 }),
+    slices: int(1, 1000, { label: 'time slices', description: 'The number of time slices.', default: 5 }),
+    docsPerSlice: int(1, 10_000, {
+      label: 'documents per slice',
+      description: 'The number of documents in each slice.',
+      default: 40,
+    }),
+    nTopics: int(1, 50, { label: 'topics', description: 'The number of topics.', default: 3 }),
+    vocabulary: int(2, 10_000, { label: 'vocabulary size', description: 'The number of distinct words.', default: 60 }),
+    drift: real(0, 10, {
+      description: 'The random-walk step of the topics’ natural parameters between slices.',
+      default: 0.5,
+      label: 'random-walk step of topic parameters',
+    }),
+    docLength: real(1, 10_000, {
+      label: 'mean document length',
+      description: 'The mean number of words per document.',
+      default: 40,
+    }),
+    alpha: real(0.001, 100, {
+      label: 'document-topic concentration',
+      description: 'The Dirichlet concentration of each document’s topic mix.',
+      default: 0.5,
+    }),
   }),
   generate: (k, knobs) => {
     const slices = knobs['slices'] as number
@@ -422,12 +471,32 @@ export const nearDuplicateCorpus: DatasetGenerator<CorpusData> = {
   kind: 'corpus',
   description: 'Documents with planted near-duplicates made by random word edits.',
   knobs: dict({
-    nOriginals: int(1, 100_000, { default: 100 }),
-    duplicated: real(0, 1, { default: 0.3, label: 'fraction of originals that get copies' }),
-    copies: int(1, 20, { default: 2, label: 'copies per duplicated original' }),
-    editRate: real(0, 1, { default: 0.1, label: 'per-word edit probability' }),
-    docLength: int(3, 10_000, { default: 60 }),
-    vocabulary: int(10, 100_000, { default: 2000 }),
+    nOriginals: int(1, 100_000, {
+      label: 'original documents',
+      description: 'The number of original documents.',
+      default: 100,
+    }),
+    duplicated: real(0, 1, {
+      description: 'The fraction of originals that get near-duplicate copies.',
+      default: 0.3,
+      label: 'fraction of originals that get copies',
+    }),
+    copies: int(1, 20, {
+      description: 'Copies of each duplicated original.',
+      default: 2,
+      label: 'copies per duplicated original',
+    }),
+    editRate: real(0, 1, {
+      description: 'The chance each word of a copy is edited.',
+      default: 0.1,
+      label: 'per-word edit probability',
+    }),
+    docLength: int(3, 10_000, { label: 'document length', description: 'Words per document.', default: 60 }),
+    vocabulary: int(10, 100_000, {
+      label: 'vocabulary size',
+      description: 'The number of distinct words.',
+      default: 2000,
+    }),
   }),
   generate: (k, knobs) => {
     const nOrig = knobs['nOriginals'] as number

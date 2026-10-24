@@ -48,10 +48,22 @@ export const linearScm: DatasetGenerator<RegressionData> = {
   kind: 'regression',
   description: 'Samples from a random linear structural causal model over a random DAG.',
   knobs: dict({
-    n: int(1, 1_000_000, { default: 500 }),
-    variables: int(2, 100, { default: 5 }),
-    edgeProbability: real(0, 1, { default: 0.4 }),
-    noise: choice(['gaussian', 'uniform', 'laplace'], { default: 'gaussian' }),
+    n: int(1, 1_000_000, { label: 'samples', description: 'The number of rows.', default: 500 }),
+    variables: int(2, 100, {
+      label: 'variables',
+      description: 'The number of variables (nodes of the DAG).',
+      default: 5,
+    }),
+    edgeProbability: real(0, 1, {
+      label: 'edge probability',
+      description: 'The chance of an edge between each ordered pair of variables.',
+      default: 0.4,
+    }),
+    noise: choice(['gaussian', 'uniform', 'laplace'], {
+      label: 'noise distribution',
+      description: 'The distribution of the exogenous noise (non-Gaussian noise makes the DAG identifiable).',
+      default: 'gaussian',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -133,14 +145,34 @@ export const treatmentEffects: DatasetGenerator<RegressionData> = {
   kind: 'regression',
   description: 'Confounded binary treatment, covariates and outcomes with known heterogeneous effects.',
   knobs: dict({
-    n: int(2, 1_000_000, { default: 1000 }),
-    covariates: int(2, 100, { default: 5 }),
-    setting: choice(['linear', 'nonlinear'], { default: 'linear' }),
-    ate: real(-100, 100, { default: 1 }),
-    heterogeneity: real(0, 10, { default: 0.5 }),
-    confounding: real(0, 10, { default: 1, label: 'strength of confounding in the propensity' }),
-    overlap: real(0, 0.49, { default: 0.05, label: 'propensity clipping' }),
-    noise: real(0, 10, { default: 1 }),
+    n: int(2, 1_000_000, { label: 'samples', description: 'The number of units.', default: 1000 }),
+    covariates: int(2, 100, { label: 'covariates', description: 'The number of covariates.', default: 5 }),
+    setting: choice(['linear', 'nonlinear'], {
+      label: 'setting',
+      description: 'Linear or nonlinear outcome and propensity models.',
+      default: 'linear',
+    }),
+    ate: real(-100, 100, { label: 'average effect', description: 'The average treatment effect.', default: 1 }),
+    heterogeneity: real(0, 10, {
+      label: 'heterogeneity',
+      description: 'How much the effect varies with the covariates.',
+      default: 0.5,
+    }),
+    confounding: real(0, 10, {
+      description: 'How strongly the covariates drive the treatment propensity.',
+      default: 1,
+      label: 'strength of confounding in the propensity',
+    }),
+    overlap: real(0, 0.49, {
+      description: 'Propensities are clipped to [overlap, 1 - overlap].',
+      default: 0.05,
+      label: 'propensity clipping',
+    }),
+    noise: real(0, 10, {
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the outcome noise.',
+      default: 1,
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -233,10 +265,22 @@ export const instrumentalVariables: DatasetGenerator<RegressionData> = {
   kind: 'regression',
   description: 'An instrument, a confounded treatment and an outcome, with the true effect.',
   knobs: dict({
-    n: int(2, 1_000_000, { default: 1000 }),
-    effect: real(-100, 100, { default: 1 }),
-    strength: real(0, 10, { default: 1, label: 'instrument strength' }),
-    confounding: real(0, 10, { default: 1 }),
+    n: int(2, 1_000_000, { label: 'samples', description: 'The number of rows.', default: 1000 }),
+    effect: real(-100, 100, {
+      label: 'treatment effect',
+      description: 'The true causal effect of the treatment on the outcome.',
+      default: 1,
+    }),
+    strength: real(0, 10, {
+      description: 'How strongly the instrument moves the treatment (weak instruments near 0).',
+      default: 1,
+      label: 'instrument strength',
+    }),
+    confounding: real(0, 10, {
+      label: 'confounding',
+      description: 'The strength of the unobserved confounder of treatment and outcome.',
+      default: 1,
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number

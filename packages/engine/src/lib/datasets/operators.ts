@@ -25,9 +25,17 @@ export const antiderivativeOperator: DatasetGenerator<RegressionData> = {
   kind: 'regression',
   description: 'Gaussian-process input functions and their antiderivatives on a grid.',
   knobs: dict({
-    n: int(1, 100_000, { default: 100 }),
-    points: int(2, 1000, { default: 50 }),
-    lengthScale: real(0.01, 10, { default: 0.2 }),
+    n: int(1, 100_000, { label: 'functions', description: 'The number of input functions.', default: 100 }),
+    points: int(2, 1000, {
+      label: 'grid points',
+      description: 'The number of grid points each function is sampled at.',
+      default: 50,
+    }),
+    lengthScale: real(0.01, 10, {
+      label: 'length scale',
+      description: 'The length scale of the Gaussian process the inputs are drawn from.',
+      default: 0.2,
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -78,12 +86,28 @@ function evaluateSeries(
 }
 
 const periodicKnobs = {
-  n: int(1, 100_000, { default: 100 }),
-  points: int(4, 2048, { default: 64 }),
-  modes: int(1, 64, { default: 5, label: 'Fourier modes of the initial condition' }),
-  amplitude: real(0, 100, { default: 1 }),
-  time: real(0, 100, { default: 0.05, label: 'final time T' }),
-  viscosity: real(0.0001, 10, { default: 0.1, label: 'diffusivity or viscosity' }),
+  n: int(1, 100_000, { default: 100, label: 'functions', description: 'The number of initial conditions.' }),
+  points: int(4, 2048, {
+    default: 64,
+    label: 'grid points',
+    description: 'The number of grid points on [0, 1) each function is sampled at.',
+  }),
+  modes: int(1, 64, {
+    default: 5,
+    label: 'Fourier modes of the initial condition',
+    description: 'The number of random Fourier modes in each initial condition (more is rougher).',
+  }),
+  amplitude: real(0, 100, {
+    default: 1,
+    label: 'amplitude',
+    description: 'The amplitude of the random initial conditions.',
+  }),
+  time: real(0, 100, { default: 0.05, label: 'final time T', description: 'The time the solution is taken at.' }),
+  viscosity: real(0.0001, 10, {
+    default: 0.1,
+    label: 'diffusivity or viscosity',
+    description: 'The diffusivity ν of the heat equation or the viscosity of Burgers’ equation.',
+  }),
 }
 
 /**

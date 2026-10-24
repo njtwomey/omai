@@ -28,7 +28,14 @@ export const poissonProcess: DatasetGenerator<EventData> = {
   name: 'poissonProcess',
   kind: 'events',
   description: 'A homogeneous Poisson process on [0, horizon].',
-  knobs: dict({ rate: real(0.001, 10_000, { default: 1 }), horizon: real(0.01, 100_000, { default: 100 }) }),
+  knobs: dict({
+    rate: real(0.001, 10_000, { label: 'rate', description: 'The mean number of events per unit time.', default: 1 }),
+    horizon: real(0.01, 100_000, {
+      label: 'horizon',
+      description: 'The length of the observation window.',
+      default: 100,
+    }),
+  }),
   generate: (k, knobs) => {
     const rate = knobs['rate'] as number
     const horizon = knobs['horizon'] as number
@@ -68,11 +75,27 @@ export const inhomogeneousPoisson: DatasetGenerator<EventData> = {
   kind: 'events',
   description: 'A Poisson process with a time-varying intensity, drawn by thinning.',
   knobs: dict({
-    shape: choice(['sinusoidal', 'piecewise', 'ramp'], { default: 'sinusoidal' }),
-    base: real(0.001, 10_000, { default: 1, label: 'base rate' }),
-    amplitude: real(0, 1, { default: 0.8, label: 'relative amplitude (sinusoidal)' }),
-    period: real(0.001, 100_000, { default: 25 }),
-    horizon: real(0.01, 100_000, { default: 100 }),
+    shape: choice(['sinusoidal', 'piecewise', 'ramp'], {
+      label: 'intensity shape',
+      description: 'A sinusoidal, piecewise-constant or ramp intensity.',
+      default: 'sinusoidal',
+    }),
+    base: real(0.001, 10_000, { description: 'The base intensity.', default: 1, label: 'base rate' }),
+    amplitude: real(0, 1, {
+      description: 'The relative amplitude of the sinusoidal intensity.',
+      default: 0.8,
+      label: 'relative amplitude (sinusoidal)',
+    }),
+    period: real(0.001, 100_000, {
+      label: 'period',
+      description: 'The period of the sinusoidal intensity.',
+      default: 25,
+    }),
+    horizon: real(0.01, 100_000, {
+      label: 'horizon',
+      description: 'The length of the observation window.',
+      default: 100,
+    }),
   }),
   generate: (k, knobs) => {
     const shape = knobs['shape'] as IntensityShape
@@ -210,10 +233,26 @@ export const hawkesProcess: DatasetGenerator<EventData> = {
   kind: 'events',
   description: 'A self-exciting Hawkes process with an exponential kernel.',
   knobs: dict({
-    mu: real(0.001, 1000, { default: 0.5, label: 'background rate' }),
-    alpha: real(0, 0.99, { default: 0.5, label: 'branching ratio' }),
-    beta: real(0.001, 1000, { default: 1, label: 'decay rate' }),
-    horizon: real(0.01, 100_000, { default: 100 }),
+    mu: real(0.001, 1000, {
+      description: 'The background rate of events not triggered by others.',
+      default: 0.5,
+      label: 'background rate',
+    }),
+    alpha: real(0, 0.99, {
+      description: 'The expected number of events each event triggers (below 1 for stability).',
+      default: 0.5,
+      label: 'branching ratio',
+    }),
+    beta: real(0.001, 1000, {
+      description: 'How fast the excitement from an event decays.',
+      default: 1,
+      label: 'decay rate',
+    }),
+    horizon: real(0.01, 100_000, {
+      label: 'horizon',
+      description: 'The length of the observation window.',
+      default: 100,
+    }),
   }),
   generate: (k, knobs) => {
     const mu = knobs['mu'] as number
@@ -303,10 +342,18 @@ export const spatialPoisson: DatasetGenerator<EventData> = {
   kind: 'events',
   description: 'A Poisson point process in a rectangle, homogeneous or with a central bump of intensity.',
   knobs: dict({
-    rate: real(0.001, 100_000, { default: 100, label: 'base intensity per unit area' }),
-    bump: real(0, 100, { default: 0, label: 'peak extra intensity relative to the base' }),
-    width: real(0.01, 10_000, { default: 1 }),
-    height: real(0.01, 10_000, { default: 1 }),
+    rate: real(0.001, 100_000, {
+      description: 'The base intensity per unit area.',
+      default: 100,
+      label: 'base intensity per unit area',
+    }),
+    bump: real(0, 100, {
+      description: 'The peak of the extra central intensity, relative to the base (0: homogeneous).',
+      default: 0,
+      label: 'peak extra intensity relative to the base',
+    }),
+    width: real(0.01, 10_000, { label: 'width', description: 'The width of the rectangle.', default: 1 }),
+    height: real(0.01, 10_000, { label: 'height', description: 'The height of the rectangle.', default: 1 }),
   }),
   generate: (k, knobs) => {
     const rate = knobs['rate'] as number
