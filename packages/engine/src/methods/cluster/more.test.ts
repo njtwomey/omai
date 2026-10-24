@@ -62,6 +62,33 @@ describe('more clustering', () => {
     const labels = m.model.params.labels
     expect(labels[0]).toBe(labels[1])
     expect(labels[2]).not.toBe(labels[3])
+    const steps = recordsOf(m.model.exposition, 'clusteringSteps')[0]
+    expect(steps?.constraints).toEqual({
+      mustLink: [[0, 1]],
+      cannotLink: [[2, 3]],
+      brokenMustLink: [],
+      brokenCannotLink: [],
+    })
+  })
+
+  it('COP-k-means relaxes infeasible constraints and reports the broken ones, or fails when strict', () => {
+    // Three rows pairwise cannot-linked can't fit two clusters: one pair has to share.
+    const cannotLink: [number, number][] = [
+      [0, 1],
+      [1, 2],
+      [0, 2],
+    ]
+    const m = new COPKMeans({ nClusters: 2, cannotLink }).fit(blob.x, undefined, { key: key(7) }).model
+    expect(m.params.brokenCannotLink.length).toBe(1)
+    expect(m.params.brokenMustLink).toEqual([])
+    const [a, b] = cannotLink[m.params.brokenCannotLink[0] ?? 0] ?? [0, 0]
+    expect(m.params.labels[a]).toBe(m.params.labels[b])
+    expect(recordsOf(m.exposition, 'clusteringSteps')[0]?.constraints?.brokenCannotLink).toEqual(
+      m.params.brokenCannotLink,
+    )
+    expect(() =>
+      new COPKMeans({ nClusters: 2, cannotLink, strict: true }).fit(blob.x, undefined, { key: key(7) }),
+    ).toThrow(/no cluster satisfying/)
   })
 
   it('affinity propagation breaks exact ties with keyed noise, as sklearn does, and converges at damping 0.5', () => {
