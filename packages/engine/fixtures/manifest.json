@@ -2166,7 +2166,7 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 58
+      "cases": 110
     },
     {
       "fixture": "numerics/inverse/inverse.json",

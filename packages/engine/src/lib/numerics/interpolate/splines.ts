@@ -275,7 +275,11 @@ export interface BSpline {
 /**
  * A B-spline from knots, coefficients and degree.
  *
- * @param t - Knots, non-decreasing, length n + k + 1.
+ * The spline lives on its base interval [t_k, t_n], where the k + 1 basis functions overlapping each span sum to
+ * one; as scipy, that needs n >= k + 1 coefficients (2 k + 2 knots), and a single basis function over its own
+ * knots is {@link bsplineBasisElement}. Outside the base interval the end polynomial pieces extend.
+ *
+ * @param t - Knots, non-decreasing, length n + k + 1 with n >= k + 1.
  * @param c - Coefficients `[n, ...]`.
  * @param k - Degree.
  * @param extrapolate - Extend the end pieces (default true; otherwise NaN outside [t_k, t_n]).
@@ -284,22 +288,31 @@ export interface BSpline {
  * @example
  * ```ts
  * import { bspline } from 'whitebox-engine/numerics/interpolate'
- * import { item } from 'whitebox-engine/tensor'
- * // The quadratic B-spline basis function on knots 0..3 peaks at 0.75.
- * item(bspline([0, 1, 2, 3], [1], 2).evaluate(1.5)) // => 0.75
+ * import { toArray } from 'whitebox-engine/tensor'
+ * // Clamped quadratic knots: the base interval is [0, 2] and the end coefficients are the end values.
+ * const s = bspline([0, 0, 0, 1, 2, 2, 2], [1, 2, -1, 3], 2)
+ * toArray(s.evaluate([0, 1, 2])) // => [1, 0.5, 3]
  * ```
  */
 export function bspline(t: TensorLike, c: TensorLike, k: number, extrapolate = true): BSpline {
   const ts = toFlat(concreteOrThrow(promoteFloat(t)[0] as Tensor, 'bspline knots'))
   const [cv] = promoteFloat(c) as [Value]
+  if (!Number.isInteger(k) || k < 0) throw new WhiteboxError('value', 'bspline: the degree must be a whole number')
   const n = ts.length - k - 1
-  if (n < 1 || cv.shape[0] !== n)
-    throw new WhiteboxError('shape', `bspline: ${ts.length} knots and degree ${k} need ${Math.max(n, 0)} coefficients`)
+  if (n < k + 1)
+    throw new WhiteboxError(
+      'value',
+      `bspline: degree ${k} needs at least ${2 * k + 2} knots, got ${ts.length} (for one basis function on its own knots, use bsplineBasisElement)`,
+    )
+  if (cv.shape[0] !== n)
+    throw new WhiteboxError('shape', `bspline: ${ts.length} knots and degree ${k} need ${n} coefficients`)
   for (let i = 1; i < ts.length; i++) {
     if ((ts[i] ?? 0) < (ts[i - 1] ?? 0)) throw new WhiteboxError('value', 'bspline: knots must be non-decreasing')
   }
   const lo = ts[k] ?? 0
   const hi = ts[n] ?? 0
+  if (!ts.every(Number.isFinite)) throw new WhiteboxError('value', 'bspline: knots must be finite')
+  if (!(lo < hi)) throw new WhiteboxError('value', 'bspline: the base interval [t_k, t_n] must have positive length')
 
   const designMatrix = (query: TensorLike): Value => {
     const [q] = promoteFloat(query) as [Value]
@@ -395,6 +408,34 @@ export function bspline(t: TensorLike, c: TensorLike, k: number, extrapolate = t
     integrate,
   }
   return self
+}
+
+/**
+ * The single B-spline basis function B(x; t) of degree len(t) - 2 on the knots t (scipy BSpline.basis_element): the
+ * knots are padded with k copies of t_0 - 1 and t_last + 1 so that t_0 .. t_last is the base interval, and the
+ * coefficient of the basis function is 1, the others 0.
+ *
+ * @param t - Knots, non-decreasing, at least two.
+ * @param extrapolate - Extend the end pieces outside [t_0, t_last] (default true, as scipy; otherwise NaN there).
+ * @returns The spline.
+ * @example
+ * ```ts
+ * import { bsplineBasisElement } from 'whitebox-engine/numerics/interpolate'
+ * import { toArray } from 'whitebox-engine/tensor'
+ * // The quadratic basis function on knots 0..3 peaks at 0.75.
+ * toArray(bsplineBasisElement([0, 1, 2, 3]).evaluate([0.5, 1.5, 2.5])) // => [0.125, 0.75, 0.125]
+ * ```
+ */
+export function bsplineBasisElement(t: TensorLike, extrapolate = true): BSpline {
+  const ts = toFlat(concreteOrThrow(promoteFloat(t)[0] as Tensor, 'bsplineBasisElement knots'))
+  if (ts.length < 2) throw new WhiteboxError('value', 'bsplineBasisElement: at least two knots are needed')
+  const k = ts.length - 2
+  const first = ts[0] ?? 0
+  const last = ts[ts.length - 1] ?? 0
+  const padded = [...Array<number>(k).fill(first - 1), ...ts, ...Array<number>(k).fill(last + 1)]
+  const c = new Float64Array(padded.length - k - 1)
+  c[k] = 1
+  return bspline(padded, fromStorage(c, [c.length], 'float64'), k, extrapolate)
 }
 
 /**
