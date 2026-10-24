@@ -1,6 +1,7 @@
 import {
   add,
   arg,
+  batchLeading,
   bind,
   definePrimitive,
   div,
@@ -83,6 +84,8 @@ const eighPrimitive: Primitive<EighParams> = definePrimitive<EighParams>({
     const inner = fromV === undefined ? (fromW as Value) : fromW === undefined ? fromV : add(fromW, fromV)
     return [sym(matmul(matmul(vv, inner), mT(vv)))]
   },
+  // Factorisations and solves already map over leading batch axes.
+  batch: (xs, ds, p, n) => batchLeading(eighPrimitive, xs, ds, p, n),
 })
 
 /** Result of {@link eigh}. */

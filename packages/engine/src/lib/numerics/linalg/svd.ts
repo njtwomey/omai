@@ -1,6 +1,7 @@
 import {
   add,
   arg,
+  batchLeading,
   bind,
   definePrimitive,
   div,
@@ -132,6 +133,8 @@ const svdPrimitive: Primitive<SvdParams> = definePrimitive<SvdParams>({
     }
     return [ga]
   },
+  // Factorisations and solves already map over leading batch axes.
+  batch: (xs, ds, p, n) => batchLeading(svdPrimitive, xs, ds, p, n),
 })
 
 /** Result of {@link svd}. */

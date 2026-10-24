@@ -3,10 +3,12 @@ import {
   asTensor,
   isFloat,
   isTraced,
+  mul,
   ones,
   reshape,
   sizeOf,
   stack,
+  sum,
   type TensorLike,
   treeFlatten,
   treeUnflatten,
@@ -138,6 +140,33 @@ export function grad<P>(
 ): (params: P) => P {
   const vg = valueAndGrad(f, options)
   return (params) => vg(params).grad
+}
+
+/**
+ * The gradient of a function that also returns auxiliary data (like `jax.grad(f, has_aux=True)`): `f` returns
+ * `[value, aux]`, the gradient is taken of `value`, and `aux` (any data: metrics, updated state) is passed through.
+ *
+ * @param f - A function from a pytree of values to `[scalar, aux]`.
+ * @returns A function from a pytree to `{ grad, aux }`, where `grad` mirrors the input.
+ * @concept reverse-mode-autodiff
+ * @example
+ * ```ts
+ * import { gradAndAux } from 'whitebox-engine/autodiff'
+ * import { mul, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * const f = gradAndAux((x: Value) => [sum(mul(x, x)), { size: x.shape[0] }] as const)
+ * const { grad, aux } = f(tensor([1, 2]))
+ * toArray(grad) // => [2, 4]
+ * aux // => { size: 2 }
+ * ```
+ */
+export function gradAndAux<P, A>(
+  f: (params: P) => readonly [Value, A],
+): (params: P) => { readonly grad: P; readonly aux: A } {
+  const vg = valueAndGrad(f, { hasAux: true })
+  return (params) => {
+    const { grad: g, aux } = vg(params)
+    return { grad: g, aux: aux as A }
+  }
 }
 
 /**
@@ -290,6 +319,30 @@ export function hessian(f: (x: Value) => Value): (x: TensorLike) => Value {
  */
 export function hvp(f: (x: Value) => Value, x: TensorLike, v: TensorLike): Value {
   return jvp(grad(f) as (x: Value) => Value, asTensor(x), asTensor(v)).tangent
+}
+
+/**
+ * A vector-Hessian product `v^T H(x)` without forming the Hessian, by reverse mode over reverse mode (like
+ * `torch.autograd.functional.vhp`): the gradient of `<grad f(x), v>`. For a twice continuously differentiable `f` the
+ * Hessian is symmetric and this equals {@link hvp}; the two differ in cost profile (two reverse sweeps here, one
+ * forward over one reverse there).
+ *
+ * @param f - A scalar function of one value.
+ * @param x - The point.
+ * @param v - The vector, with the shape of `x`.
+ * @returns `v^T H(x)`, with the shape of `x`.
+ * @concept hessian
+ * @example
+ * ```ts
+ * import { vhp } from 'whitebox-engine/autodiff'
+ * import { mul, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * toArray(vhp((x: Value) => sum(mul(mul(x, x), x)), tensor([1, 2]), tensor([1, 0]))) // => [6, 0]
+ * ```
+ */
+export function vhp(f: (x: Value) => Value, x: TensorLike, v: TensorLike): Value {
+  const direction = asTensor(v)
+  const gf = grad(f) as (y: Value) => Value
+  return grad((y: Value) => sum(mul(gf(y), direction)))(asTensor(x))
 }
 
 /**

@@ -1,5 +1,6 @@
 import { WhiteboxError } from '../../base/index.ts'
 import {
+  batchAtFront,
   bind,
   type ComplexLike,
   type ComplexValue,
@@ -58,6 +59,10 @@ const fftPrimitive: Primitive<FftParams> = definePrimitive<FftParams>({
       sign: params.sign === 1 ? -1 : 1,
     })
     return [cr as Value, ci as Value]
+  },
+  batch: (xs, ds, params, n) => {
+    const outputs = bind(fftPrimitive, batchAtFront(xs, ds, n), { ...params, axis: params.axis + 1 })
+    return { outputs, dims: [0, 0] }
   },
   describe: ({ axis, sign }) => `fft(axis=${axis}, sign=${sign})`,
 })

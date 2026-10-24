@@ -1,5 +1,6 @@
 import {
   arg,
+  batchLeading,
   bind1,
   cast,
   definePrimitive,
@@ -56,6 +57,8 @@ const triangularPrimitive: Primitive<TriangularOptions> = definePrimitive<Triang
     const outer = neg(matmul(gb, mT(x as Value)))
     return [usedTriangle(o.transpose ? mT(outer) : outer, o), gb]
   },
+  // Factorisations and solves already map over leading batch axes.
+  batch: (xs, ds, p, n) => batchLeading(triangularPrimitive, xs, ds, p, n),
   describe: (o) =>
     `${o.lower ? 'lower' : 'upper'}${o.transpose ? ', transposed' : ''}${o.unitDiagonal ? ', unit' : ''}`,
 })

@@ -432,9 +432,13 @@ oracle: numpy, jax for derivative rules
   (`TensorLike` in), `fromStorage`, `isTensor`, `item`, `toArray`, `toFlat`, `clone`.
 - `create.ts`: `zeros`, `ones`, `full`, the `*Like` variants, `arange`, `linspace`, `logspace`, `geomspace`, `eye`,
   `diag`, `tri`, `tril`, `triu`, `meshgrid`, `indices`.
-- `primitive.ts`: `Primitive` (name, kernel, shape and dtype rules, `jvp`, `vjp`, `batch` rule, `transpose` for linear
-  primitives), `definePrimitive` (the extension point), `bind` (dispatch: concrete inputs run the kernel; traced inputs
-  go to the highest-level trace among them), `bind1`.
+- `primitive.ts`: `Primitive` (name, kernel, shape and dtype rules, `jvp`, `vjp`, optional `batch` rule; no separate
+  `transpose` rules: every differentiable primitive states its `vjp` directly, and `autodiff.customJvp` transposes a
+  forward rule by reverse mode over it), `BatchDim`, `BatchResult`, `definePrimitive` (the extension point), `bind`
+  (dispatch: concrete inputs run the kernel; traced inputs go to the highest-level trace among them), `bind1`.
+- `batching.ts`: helpers for batch rules: `moveBatchAxis`, `batchedAxis`, `batchAtFront`, `alignBatched`,
+  `batchElementwise` (broadcasting elementwise primitives), `batchLeading` (primitives that already map over leading
+  axes, such as factorisations).
 - `traced.ts`: `Value` (`Tensor` or `Traced`), the `Traced` interface (abstract shape and dtype, trace, level),
   `isTraced`, `lift` (a value into a trace, as a constant when it belongs to a lower one), `concreteOrThrow` (clear
   errors where a concrete value is required), `primalOf`.
@@ -509,19 +513,31 @@ oracle: sympy
 ### 4.6 `autodiff/` (tier 3): differentiation transforms (jax, torch.func)
 
 oracle: jax and torch for derivative values; finite differences in property tests
-- `reverse.ts`: the reverse-mode trace (one node per traced value, recorded by the values themselves), `vjp`,
-  `backward`, higher-order reverse mode.
-- `forward.ts`: the forward-mode trace (dual numbers), `jvp`, `linearize`.
-- `taylor.ts`: Taylor-mode differentiation (jets): `jet`, `taylorCoefficients` (derivatives of any order along a
-  direction), `taylorPolynomial` for numeric functions; used by Taylor-series figures and Taylor ODE methods.
-- `transforms.ts`: `grad`, `valueAndGrad` (over pytrees, leaves labelled by path), `gradAndAux`, `jacfwd`, `jacrev`,
-  `jacobian`, `hessian`, `hvp`, `vhp`.
-- `custom.ts`: `customVjp`, `customJvp`, `stopGradient`, `checkpoint` (rematerialisation policies), `straightThrough`.
-- `vmap.ts`: `vmap` (batch rules with a per-example fallback).
-- `graph.ts`: `computationGraph` (a traced function or value to a `Structure` with ops, shapes, values and gradients),
-  `graphStats`.
-- `check.ts`: `numericalGradient`, `gradCheck`, `dotProductTest`, `checkPrimitive` (the conformance harness every
-  primitive must pass: finite-difference vjp and jvp, vmap against a loop, inputs not mutated).
+- `reverse.ts`: the reverse-mode trace (one node per traced value, recorded by the values themselves), `backward` (the
+  reverse sweep), higher-order reverse mode by nesting.
+- `forward.ts`: the forward-mode trace (dual numbers).
+- `taylor.ts`: Taylor-mode differentiation (jets, a truncated power series per value): the jet trace, `jet` (the
+  `jax.experimental.jet` convention: derivative coefficients in and out), `taylorCoefficients` (normalised coefficients
+  of any order along a direction, in one pass), `taylorPolynomial` for numeric functions; used by Taylor-series figures
+  and Taylor ODE methods. Core primitives have recurrences in `_jet-rules.ts` (products, quotients, powers, roots,
+  exponentials, logarithms, trigonometric and hyperbolic functions and their inverses, matrix products, `where`;
+  linear and structural primitives map each coefficient through their jvp rule); any other primitive propagates the
+  series through its own jvp rule (y' = jvp(x, x'), one pass of order K - 1), so the cost stays polynomial in K.
+- `transforms.ts`: `vjp`, `jvp`, `linearize`, `grad`, `valueAndGrad` (over pytrees, leaves labelled by path),
+  `gradAndAux`, `jacfwd`, `jacrev`, `jacobian`, `hessian`, `hvp` (forward over reverse), `vhp` (reverse over reverse).
+- `custom.ts`: `customVjp`, `customJvp` (reverse mode transposes the forward rule by reverse mode over it, so no
+  transpose rules are needed), `stopGradient`, `checkpoint` (rematerialisation: the backward pass recomputes the
+  function; policies `nothing`, `matmuls`, `everything` or a predicate on primitives choose which intermediate
+  results are saved and replayed instead), `straightThrough` (identity-gradient estimator).
+- `vmap.ts`: the batching trace and `vmap` (in-axes per argument, out-axes per output; composes with every other
+  transform in any order). Primitives with a `batch` rule run once on the whole batch; others loop over the examples
+  (slice, apply, stack); a function that needs concrete values of a batched argument (data-dependent control flow)
+  is mapped by a loop over the examples.
+- `graph.ts`: `computationGraph` (a function traced at an input to a `Structure` with ops, shapes, values and, for a
+  scalar output, the gradient with respect to every node), `graphStats` (counts, depth, operations by primitive).
+- `check.ts`: `numericalGradient`, `gradCheck`, `dotProductTest` (the adjoint test `<u, J v> = <J^T u, v>`),
+  `checkPrimitive` (the conformance harness every primitive must pass: finite-difference vjp and jvp, the dot-product
+  test, vmap against a loop with the batch first and last, inputs not mutated).
 
 ### 4.7 `trace/` (tier 3): recording what algorithms do
 
