@@ -90,7 +90,7 @@ function trainDeep(
     learningRate,
     epochs: options.epochs ?? 30,
     batchSize: options.batchSize ?? 50,
-    snapshots: 2,
+    snapshots: 20,
     fit: { ...fit, key: foldIn(key, 2) },
   })
 }
@@ -224,7 +224,7 @@ export function normalisationStudy(
     })
     const training = trainDeep(`normalisationStudy/${n}`, task, net, options, key, fit, 'sgd')
     runs.push(training)
-    surfaces.push(surfaceOf(net, training.params, training.buffers, task, options.resolution ?? 30))
+    surfaces.push(surfaceOf(net, training.params, training.buffers, task, options.resolution ?? 30, training))
   }
   return {
     results: norms.map((n, i) => ({

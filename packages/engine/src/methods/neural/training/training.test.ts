@@ -22,6 +22,7 @@ describe('optimiserRace', () => {
     const loss = (name: string): number => r.results.find((x) => x.optimiser === name)?.finalLoss ?? 0
     expect(loss('adam')).toBeLessThan(loss('sgd'))
     expect(recordsOf(r.exposition, 'decisionSurface').length).toBe(4)
+    expect(recordsOf(r.exposition, 'decisionSurface')[3]?.steps?.at(-1)?.iteration).toBe(15)
     expect(recordsOf(r.exposition, 'learningCurve').length).toBe(4)
     expect(recordsOf(r.exposition, 'searchTrials')[0]?.trials.length).toBe(4)
   })

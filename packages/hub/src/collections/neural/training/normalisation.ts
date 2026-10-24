@@ -14,15 +14,17 @@ export const normalisation: HubEntry = defineEntry({
   tags: ['neural networks', 'normalisation', 'batch norm'],
   datasets: ['classification2d'],
   params: dict({
-    depth: int(1, 10, { default: 4, label: 'hidden layers' }),
-    epochs: int(1, 100, { default: 20 }),
+    depth: int(1, 10, { default: 3, label: 'hidden layers' }),
+    width: int(4, 64, { default: 16 }),
+    epochs: int(1, 100, { default: 15 }),
   }),
   run: ({ data, params, key }) =>
     study(
       learnDataOf(data),
       {
-        depth: typeof params['depth'] === 'number' ? params['depth'] : 4,
-        epochs: typeof params['epochs'] === 'number' ? params['epochs'] : 20,
+        depth: typeof params['depth'] === 'number' ? params['depth'] : 3,
+        width: typeof params['width'] === 'number' ? params['width'] : 16,
+        epochs: typeof params['epochs'] === 'number' ? params['epochs'] : 15,
       },
       { key },
     ),

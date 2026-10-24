@@ -105,7 +105,7 @@ export function regularisationStudy(
       learningRate,
       epochs,
       ...(options.batchSize === undefined ? {} : { batchSize: options.batchSize }),
-      snapshots: 2,
+      snapshots: 20,
       fit: { ...fit, key: foldIn(key, 2) },
       ...(options.onProgress === undefined
         ? {}
@@ -120,7 +120,7 @@ export function regularisationStudy(
             },
           }),
     })
-    surfaces.push(surfaceOf(net, training.params, training.buffers, task, options.resolution ?? 30))
+    surfaces.push(surfaceOf(net, training.params, training.buffers, task, options.resolution ?? 30, training))
     curves.push(lossCurve(training))
     results.push({
       value,
