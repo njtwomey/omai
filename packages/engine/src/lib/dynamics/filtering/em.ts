@@ -1,5 +1,5 @@
 import { WhiteboxError } from '../../base/index.ts'
-import { solve } from '../../numerics/linalg/index.ts'
+import { solve, symmetricPart } from '../../numerics/linalg/index.ts'
 import {
   add,
   asTensor,
@@ -39,7 +39,6 @@ export interface EmState {
 const outer = (a: Value, b: Value): Value => matmul(reshape(a, [-1, 1]), reshape(b, [1, -1]))
 const row = (v: Value, t: number): Value => reshape(sliceAxis(v, 0, t, t + 1), v.shape.slice(1))
 const concrete = (v: Value): Tensor => primalOf(v)
-const sym = (a: Value): Value => mul(add(a, transpose(a)), 0.5)
 
 function eStep(
   model: LinearGaussianModel,
@@ -67,7 +66,7 @@ function eStep(
   const xs1 = row(s.means, 0)
   const Ps1 = row(s.covariances, 0)
   const x0s = add(x0, reshape(matmul(J0, reshape(sub(xs1, row(f.predictedMeans, 0)), [-1, 1])), [-1]))
-  const P0s = sym(add(P0, matmul(J0, matmul(sub(Ps1, P10), transpose(J0)))))
+  const P0s = symmetricPart(add(P0, matmul(J0, matmul(sub(Ps1, P10), transpose(J0)))))
   let S11: Value | undefined
   let S10: Value | undefined
   let S00: Value | undefined
@@ -151,9 +150,9 @@ export function emAlgorithm(
       const m = { ...s.model }
       const T = e.T
       if (learn.F) m.F = concrete(transpose(solve(e.S00, transpose(e.S10))))
-      if (learn.Q) m.Q = concrete(sym(mul(sub(e.S11, matmul(m.F, transpose(e.S10))), 1 / T)))
+      if (learn.Q) m.Q = concrete(symmetricPart(mul(sub(e.S11, matmul(m.F, transpose(e.S10))), 1 / T)))
       if (learn.H) m.H = concrete(transpose(solve(e.S11, transpose(e.Szx))))
-      if (learn.R) m.R = concrete(sym(mul(sub(e.Szz, matmul(m.H, transpose(e.Szx))), 1 / T)))
+      if (learn.R) m.R = concrete(symmetricPart(mul(sub(e.Szz, matmul(m.H, transpose(e.Szx))), 1 / T)))
       if (learn.x0) m.x0 = concrete(e.x0)
       if (learn.P0) m.P0 = concrete(e.P0)
       const converged =

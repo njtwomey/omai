@@ -1,9 +1,10 @@
 import { clamp, type Json, WhiteboxError } from '../../base/index.ts'
-import { cholesky, daxpy, dgemv, solve } from '../../numerics/linalg/index.ts'
+import { cholesky, daxpy, dgemv, solve, symmetricPart } from '../../numerics/linalg/index.ts'
 import { lbfgsb, slsqp } from '../../optim/index.ts'
 import {
   add,
   concat,
+  eye,
   matmul,
   mul,
   neg,
@@ -17,6 +18,7 @@ import {
   toFlat,
   transpose,
   type Value,
+  zeros,
 } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { f64, rollout, stepDerivatives, weightedDynamicsHessian } from './_model.ts'
@@ -84,12 +86,9 @@ export interface IlqrState {
   readonly history: readonly number[]
 }
 
-const identity = (n: number, scale = 1): number[][] =>
-  Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? scale : 0)))
 const rowsTensor = (rows: readonly (readonly number[])[], cols: number): Tensor => f64(rows.flat(), [rows.length, cols])
 const vec = (v: readonly number[]): Tensor => f64(v, [v.length])
 const asRows = (x: Value): number[][] => toArray(x) as number[][]
-const sym = (a: Value): Value => mul(add(a, transpose(a)), 0.5)
 
 interface Squash {
   readonly model: DiscreteModel
@@ -143,7 +142,7 @@ function backward(
   const T = raw.length
   const d = stepDerivatives(model, states.slice(0, T), raw)
   let Vx: Value = vec(new Array<number>(n).fill(0))
-  let Vxx: Value = rowsTensor(identity(n, 0), n)
+  let Vxx: Value = zeros([n, n])
   if (model.terminalCost !== undefined) {
     const last = stepDerivatives(
       { ...model, cost: (x) => (model.terminalCost as (s: Value) => Value)(x) },
@@ -153,7 +152,7 @@ function backward(
     Vx = vec(last.lx[0] ?? [])
     Vxx = rowsTensor(last.lxx[0] ?? [], n)
   }
-  const reg = rowsTensor(identity(m, mu), m)
+  const reg = mul(eye(m), mu)
   const K: Float64Array[] = new Array(T)
   const k: number[][] = new Array(T)
   let dV1 = 0
@@ -180,7 +179,7 @@ function backward(
       Quu = add(Quu, block(n, n, m, m))
       Qux = add(Qux, block(n, 0, m, n))
     }
-    const QuuR = sym(add(Quu, reg))
+    const QuuR = symmetricPart(add(Quu, reg))
     try {
       cholesky(QuuR)
     } catch {
@@ -190,7 +189,7 @@ function backward(
     const Kt = neg(solve(QuuR, Qux))
     const KtT = transpose(Kt)
     Vx = add(add(add(Qx, matmul(KtT, matmul(Quu, kt))), matmul(KtT, Qu)), matmul(transpose(Qux), kt))
-    Vxx = sym(add(add(add(Qxx, matmul(KtT, matmul(Quu, Kt))), matmul(KtT, Qux)), matmul(transpose(Qux), Kt)))
+    Vxx = symmetricPart(add(add(add(Qxx, matmul(KtT, matmul(Quu, Kt))), matmul(KtT, Qux)), matmul(transpose(Qux), Kt)))
     const kv = toFlat(kt)
     const qu = toFlat(Qu)
     const quuK = toFlat(matmul(Quu, kt))
