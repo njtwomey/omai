@@ -3557,7 +3557,12 @@ library for the same computation. They do not set a higher bar than that library
 
 - `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
-  `datasets`, `pack`, `smoke`, `check`, `clean`, `release`.
+  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`.
+- Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, then only the tests,
+  type checks and fixtures related to the change; everything when shared infrastructure changes) and `make check` with
+  `make fixtures-check` as the periodic full run after a batch of merges and before a release.
+- `scripts/verify.ts`: the scoped gate (changed files against a base, `vitest related`, fixture-to-test lookup, scoped
+  pyright and fixture checks).
 - `mise.toml`: Node, pnpm, Python and uv versions.
 - `scripts/barrels.ts`: every `index.ts` and the module map; `--check`.
 - `scripts/layers.ts`: dependency-cruiser rules from `domain.json` and `area.json`.
