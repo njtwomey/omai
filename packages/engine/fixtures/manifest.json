@@ -3836,6 +3836,40 @@
         "numpy": "2.5.4"
       },
       "cases": 20
+    },
+    {
+      "fixture": "worlds/analysis.json",
+      "source": "oracle/cases/worlds/analysis.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "worlds/continuous.json",
+      "source": "oracle/cases/worlds/continuous.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "shapely": "2.2.0"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "worlds/generators.json",
+      "source": "oracle/cases/worlds/generators.py",
+      "reference": {
+        "networkx": "3.7",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "worlds/textbook.json",
+      "source": "oracle/cases/worlds/textbook.py",
+      "reference": {
+        "gymnasium": "1.4.0"
+      },
+      "cases": 17
     }
   ]
 }

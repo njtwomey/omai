@@ -101,5 +101,6 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/text': () => import('whitebox-engine/text'),
   'whitebox-engine/text/subword': () => import('whitebox-engine/text/subword'),
   'whitebox-engine/trace': () => import('whitebox-engine/trace'),
+  'whitebox-engine/worlds': () => import('whitebox-engine/worlds'),
   'whitebox-render': () => import('whitebox-render'),
 }

@@ -2545,23 +2545,40 @@ can be discrete (cells and actions) or continuous (positions and headings over t
 the world and adds its own view (search problems in `search`, environments in `methods/rl`, renderers in `graphics`
 and whitebox-render).
 
-oracle: none needed for most of it (exact constructions); networkx for connectivity, gymnasium/minigrid for shared
-layouts.
+oracle: none needed for most of it (exact constructions); networkx for connectivity, articulation points, bridges and
+shortest paths on the cell graph and for spanning-tree counts (the matrix-tree theorem behind the uniformity tests of
+Wilson's and the Aldous-Broder algorithms); gymnasium for the FrozenLake, CliffWalking and Taxi transition tables;
+scipy.ndimage for distance transforms; shapely for continuous distances and sight. MiniGrid is not an oracle
+dependency, so its layouts are checked structurally (TODO: golden-test them against minigrid if it joins `oracle-rl`).
 - `world.ts`: `World` (cells on a square or hexagonal grid, or nodes of a graph; walls between cells or blocking cells;
-  per-cell terrain with costs; items, doors, keys, goals, hazards; start and goal sets), `world`, `fromAscii` and
-  `toAscii` (the usual ASCII map conventions), `fromRows`, cell and coordinate conversions, neighbours under 4- and
-  8-connectivity, passability, `toStructure`, `toScene` (a top-down drawing with theme tokens).
-- `rules.ts`: what entering a cell does (cost, reward, terminate, teleport, slip probabilities, one-way cells, pickups,
-  doors opened by keys), composed rule sets, deterministic and stochastic transition models over cells, so the same
-  world feeds tabular MDPs, search problems and simulators.
-- `generators.ts`: keyed maze generators (recursive backtracker, Prim, Kruskal, Wilson, Eller, Aldous-Broder, binary
-  tree, sidewinder, recursive division), rooms and corridors (BSP dungeons), cellular-automaton caves, noise terrain
-  (value and Perlin noise), braiding (removing dead ends), and textbook worlds (FrozenLake, CliffWalking, four rooms,
-  the AIMA grid, MiniGrid-style layouts).
+  per-cell terrain with costs; items, doors, keys, goals, hazards; start and goal sets; landmarks), `world`,
+  `setWalls`, `setTerrain`, cell and coordinate conversions (`cellIndex`, `cellCoords`, `cellCentre`, `cellAtPoint`,
+  `cellCorners`, `worldSize`), moves and neighbours under 4- and 8-connectivity (`destination`, `exits`, `neighbours`,
+  with corner rules and one-way terrain), passability, and `wallsToBlocks` (thin walls to blocking cells).
+- `ascii.ts`: `fromAscii` and `toAscii` (the usual ASCII map conventions: one character per cell, or thin walls drawn
+  between cells; custom legends and terrains; square or hexagonal rows), `fromRows`.
+- `drawing.ts`: `toStructure` (the cell graph), `toScene` (a top-down drawing with theme tokens: terrain, walls, items,
+  starts and goals, per-cell values, a path, the agent as a cell or a pose).
+- `rules.ts`: what entering a cell does (cost, reward, terminate, teleport, slip probabilities, wind, one-way cells,
+  pickups, doors opened by keys), action sets (moves, king's moves, hexagonal moves, turning), composed rule sets and
+  `applyRules`.
+- `models.ts`: deterministic and stochastic transition models over cells (states are cell, heading and held items),
+  with sampling, so the same world feeds tabular MDPs (gymnasium-style outcome tables), search problems (a
+  `SearchProblem`-shaped deterministic model) and simulators.
+- `generators.ts`: keyed maze generators as traced algorithms (recursive backtracker, Prim, Kruskal, Wilson, Eller,
+  Aldous-Broder, binary tree, sidewinder, recursive division; the first five on any topology), `generateMaze`,
+  braiding (removing dead ends), `isPerfectMaze`.
+- `levels.ts`: rooms and corridors (BSP dungeons), cellular-automaton caves (traced), noise (value and Perlin, with
+  octaves) and noise terrain.
+- `textbook.ts`: textbook worlds with their rules (FrozenLake, CliffWalking, four rooms, the AIMA grid, the windy grid
+  world, a key maze, Taxi's map and moves) and MiniGrid-style layouts (empty rooms, door-key, four rooms, lava gap,
+  river crossings).
 - `continuous.ts`: continuous agents over a world: positions and headings, motion with collision against walls (swept
-  circles and segments), line-of-sight queries, field-of-view cones, distance fields from walls.
-- `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells), dead ends, choke
-  points, and conversion to `graph` adjacency for graph algorithms.
+  circles with sliding, swept segments for point agents), ray casts, line-of-sight queries, field-of-view cones,
+  distance fields from walls (exact segment distances and the Euclidean, taxicab and chessboard transforms).
+- `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells, unweighted or by
+  terrain cost) and paths, dead ends, choke points and bridges, cell distances and heuristics, and conversion to
+  `graph` adjacency for graph algorithms (`graph` is a sibling tier, so worlds returns edges `graph()` accepts).
 
 ### 4.37 `graphics/` (tier 7): rendering mathematics
 
