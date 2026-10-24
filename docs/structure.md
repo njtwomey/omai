@@ -3280,6 +3280,9 @@ built from: `search`, `logic`, `stats`
 - `case-based.ts`: case retrieval, adaptation and retention.
 - `planning-domains.ts`: blocks world, logistics, gripper and other domains for `search/planning/`.
 - `puzzles.ts`: 8-puzzle, n-queens, Sudoku, Towers of Hanoi, missionaries and cannibals, cryptarithms.
+- `maps.ts`: search worlds: hand-drawn maps (open, detour, river, rooms) and generated mazes as blocked-cell worlds.
+- `search.ts`: path search on grid worlds (`gridProblem`, `gridSearch`: breadth-first, depth-first, uniform-cost,
+  greedy, A*, weighted A*, IDA*, bidirectional) played expansion by expansion as a `BoardSteps` record.
 
 `evolutionary/` (DEAP ideas)
 built from: `search/evolutionary/`, `symbolic`, `nn`, `rl`

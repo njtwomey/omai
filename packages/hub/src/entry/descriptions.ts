@@ -41,6 +41,9 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
   'rl/classic-control': 'Classic control: carts, poles and pendulums balanced by learned policies.',
   'rl/gridworlds': 'Grid worlds: value functions and policies spreading out from the goal.',
   tuning: 'Hyperparameter searches over a method and a dataset: every trial, and what the search learned.',
+  'classical-ai': 'Classical AI: searches, game players, constraint solvers and planners, each played step by step.',
+  'classical-ai/search':
+    'Path search on grid worlds and mazes: watch the frontier and the explored set grow, expansion by expansion.',
 }
 
 /**

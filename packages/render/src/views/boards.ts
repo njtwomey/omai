@@ -18,7 +18,8 @@ import { outlined, short, type ViewFrames, type ViewOptions, viewFigure } from '
 // Well-known category names and the colours they get, so every search, solver and automaton reads alike.
 function knownColour(name: string, mode: ColourMode): string | undefined {
   const t = tokens(mode)
-  const tint = (c: string, k: number): string => mixColours(c, t.bg, k)
+  // Tints of a colour towards the background (lighter in light mode, deeper in dark mode).
+  const tint = (c: string, k: number): string => mixColours(c, t.bg, mode === 'light' ? k : 0.75 * k)
   switch (name) {
     case 'empty':
     case 'unvisited':
@@ -28,6 +29,7 @@ function knownColour(name: string, mode: ColourMode): string | undefined {
     case 'open':
       return t.surface
     case 'wall':
+      return mode === 'light' ? mixColours(t.fg, t.bg, 0.25) : mixColours(t.fg, t.bg, 0.55)
     case 'alive':
     case 'queen':
       return t.fg
@@ -56,6 +58,12 @@ function knownColour(name: string, mode: ColourMode): string | undefined {
       return t.danger
     case 'given':
       return tint(t.fg, 0.82)
+    case 'water':
+      return tint(categoricalColour(0), 0.45)
+    case 'forest':
+      return tint(categoricalColour(5), 0.4)
+    case 'grass':
+      return tint(categoricalColour(8), 0.45)
     case 'red':
       return categoricalColour(3)
     case 'green':
@@ -137,6 +145,13 @@ function legendSeries(names: readonly string[], colours: readonly string[], used
         ]
       : [],
   )
+}
+
+// Square legend keys, the shape of the cells they name.
+function squareKeys(option: EChartsOption): EChartsOption {
+  const legend = option.legend
+  if (legend === undefined || Array.isArray(legend)) return option
+  return { ...option, legend: { ...legend, icon: 'rect', itemWidth: 10, itemHeight: 10 } }
 }
 
 /** Options of {@link boardFrames}. */
@@ -288,10 +303,10 @@ export function boardFrames(record: BoardSteps, options: BoardViewOptions = {}):
         x: { show: false, splitLine: false },
         y: { show: false, splitLine: false },
         aspect: 'equal',
-        ...(step?.caption === undefined ? {} : { title: step.caption }),
       },
     }
-    if (!withMetrics) return cartesian(board.layers, { ...board.options, figure: fig, mode, legend: used.size > 1 })
+    if (!withMetrics)
+      return squareKeys(cartesian(board.layers, { ...board.options, figure: fig, mode, legend: used.size > 1 }))
     const grid = gridSpec(1, 2, {
       widthRatios: [1.6, 1],
       wspace: 64,
@@ -300,10 +315,12 @@ export function boardFrames(record: BoardSteps, options: BoardViewOptions = {}):
         { id: 'metrics', row: 0, col: 1 },
       ],
     })
-    return subplots(
-      grid,
-      { board, metrics: metricPanel(metrics, at, stepName, mode) },
-      { figure: fig, legend: used.size > 1 },
+    return squareKeys(
+      subplots(
+        grid,
+        { board, metrics: metricPanel(metrics, at, stepName, mode) },
+        { figure: fig, legend: used.size > 1 },
+      ),
     )
   }
   return {
