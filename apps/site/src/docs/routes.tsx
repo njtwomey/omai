@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
+import { PrevNext } from '../shell/PrevNext.tsx'
+import { TocSidebar } from '../shell/TocSidebar.tsx'
 import { type Docs, type Folder, type IndexFile, useDocs, useFileSymbols } from './data.ts'
 import { FilePage } from './FilePage.tsx'
 import { FolderPage } from './FolderPage.tsx'
-import { Sidebar } from './Sidebar.tsx'
 import { SymbolPage } from './SymbolPage.tsx'
-import { docsToc } from './toc.ts'
+import { DOCS_HOME, docsToc } from './toc.ts'
 
 /** What a docs path names, following the source tree: a folder, a file, or an export of a file. */
 type Target =
@@ -14,7 +15,7 @@ type Target =
   | { readonly kind: 'missing' }
 
 function resolve(docs: Docs, path: string): Target {
-  const rest = decodeURIComponent(path.replace(/^\/docs\/?/, '').replace(/\/$/, ''))
+  const rest = decodeURIComponent(path.replace(/^\/docs\/?/, ''))
   const folder = docs.folder(rest)
   if (folder !== undefined) return { kind: 'folder', folder }
   const file = docs.file(rest)
@@ -25,10 +26,15 @@ function resolve(docs: Docs, path: string): Target {
 }
 
 function Loading(): ReactNode {
-  return <p className="text-sm text-neutral-500">Loading…</p>
+  return <p className="text-sm text-muted">Loading…</p>
 }
 
-function SymbolTarget(props: { readonly docs: Docs; readonly file: IndexFile; readonly name: string }): ReactNode {
+function SymbolTarget(props: {
+  readonly docs: Docs
+  readonly file: IndexFile
+  readonly name: string
+  readonly nav: ReactNode
+}): ReactNode {
   const symbols = useFileSymbols(props.file)
   if (symbols === null) return <Loading />
   const symbol = symbols.find((s) => s.name === props.name)
@@ -38,31 +44,55 @@ function SymbolTarget(props: { readonly docs: Docs; readonly file: IndexFile; re
         No export {props.name} in {props.file.path}.
       </p>
     )
-  return <SymbolPage docs={props.docs} file={props.file} symbol={symbol} />
+  return <SymbolPage docs={props.docs} file={props.file} symbol={symbol} nav={props.nav} />
 }
 
-/** The docs section: the engine's source tree under /docs, with the table of contents on the left. */
+const tocs = new WeakMap<Docs, ReturnType<typeof docsToc>>()
+function tocOf(docs: Docs): ReturnType<typeof docsToc> {
+  let t = tocs.get(docs)
+  if (t === undefined) {
+    t = docsToc(docs)
+    tocs.set(docs, t)
+  }
+  return t
+}
+
+/** The docs section: the engine's source tree under /docs, with previous and next links in tree order. */
 export function DocsSection(props: { readonly path: string }): ReactNode {
   const docs = useDocs()
   if (docs === null) return <Loading />
   const path = props.path.replace(/\/$/, '')
+  const toc = tocOf(docs)
+  const nav = <PrevNext nodes={toc} home={DOCS_HOME} current={path} compact />
   const target = resolve(docs, path)
   const page =
     target.kind === 'folder' ? (
-      <FolderPage docs={docs} folder={target.folder} />
+      <FolderPage docs={docs} folder={target.folder} nav={nav} />
     ) : target.kind === 'file' ? (
-      <FilePage docs={docs} file={target.file} />
+      <FilePage docs={docs} file={target.file} nav={nav} />
     ) : target.kind === 'symbol' ? (
-      <SymbolTarget docs={docs} file={target.file} name={target.name} />
+      <SymbolTarget docs={docs} file={target.file} name={target.name} nav={nav} />
     ) : (
       <p>Nothing documented at {props.path}.</p>
     )
   return (
-    <div className="flex gap-8">
-      <aside className="sticky top-4 hidden max-h-[calc(100vh-6rem)] w-64 shrink-0 overflow-y-auto md:block">
-        <Sidebar tree={docsToc(docs)} path={path} />
-      </aside>
-      <div className="min-w-0 flex-1">{page}</div>
-    </div>
+    <>
+      {page}
+      <PrevNext nodes={toc} home={DOCS_HOME} current={path} />
+    </>
+  )
+}
+
+/** The docs sidebar: the source tree, collapsed but for the way to the current page. */
+export function DocsToc(props: { readonly path: string }): ReactNode {
+  const docs = useDocs()
+  if (docs === null) return <div className="p-3 text-sm text-muted">Loading…</div>
+  return (
+    <TocSidebar
+      nodes={tocOf(docs)}
+      current={props.path.replace(/\/$/, '')}
+      home={DOCS_HOME}
+      placeholder="Filter files and exports"
+    />
   )
 }
