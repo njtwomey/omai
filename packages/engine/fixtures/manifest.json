@@ -612,6 +612,14 @@
       "cases": 30
     },
     {
+      "fixture": "learn/active_learning.json",
+      "source": "oracle/cases/learn/active_learning.py",
+      "reference": {
+        "modAL-python": "0.4.2.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "learn/calibration.json",
       "source": "oracle/cases/learn/calibration.py",
       "reference": {
