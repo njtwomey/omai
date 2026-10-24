@@ -2,7 +2,7 @@
 
 from whitebox_oracle.vendor import csv_rows, fetch_pinned, render_table
 
-TARGET = "packages/engine/src/methods/datasets/_data/growth-charts.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/growth-charts.data.ts"
 WEIGHT_URL = "https://www.cdc.gov/growthcharts/data/zscore/wtage.csv"
 WEIGHT_SHA256 = "3406c9d125bcb69c062a9e84eb8c0209bfe9346542bdc1d308643750dcc241b7"
 STATURE_URL = "https://www.cdc.gov/growthcharts/data/zscore/statage.csv"

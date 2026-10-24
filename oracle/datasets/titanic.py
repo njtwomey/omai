@@ -5,7 +5,7 @@ The source is a 4 by 2 by 2 by 2 contingency table; it is vendored as its 32 cou
 
 from whitebox_oracle.vendor import csv_rows, fetch_pinned, render_table
 
-TARGET = "packages/engine/src/methods/datasets/_data/titanic.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/titanic.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/datasets/Titanic.csv"
 SHA256 = "ca983380c99d10ece64011fef5e07150ce49949d52b517e3fc55c7715938d179"
 

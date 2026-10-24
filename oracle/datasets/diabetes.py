@@ -7,7 +7,7 @@ from sklearn.datasets import load_diabetes
 from sklearn.utils import Bunch
 from whitebox_oracle.vendor import number_list, sha256_of
 
-TARGET = "packages/engine/src/methods/datasets/_data/diabetes.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/diabetes.data.ts"
 
 
 def render() -> str:

@@ -7,7 +7,7 @@ from sklearn.datasets import load_breast_cancer
 from sklearn.utils import Bunch
 from whitebox_oracle.vendor import render_classification
 
-TARGET = "packages/engine/src/methods/datasets/_data/breast-cancer.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/breast-cancer.data.ts"
 
 
 def render() -> str:

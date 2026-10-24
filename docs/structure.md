@@ -100,7 +100,7 @@ Version 1 is kept at `docs/history/structure-v1.md`.
 | Stochastic calculus for diffusion                        | `lib/stochastic/calculus.ts` and `lib/stochastic/sde.ts`; diffusion models build on them.                                                                                                                                                                                                                                             |
 | Lazy loading                                             | Section 2: per-folder entry points, no side effects, a lazy module map, remote datasets, worker execution.                                                                                                                                                                                                                            |
 | Everything speaking the same language                    | Section 3 and the "built from" lines.                                                                                                                                                                                                                                                                                                 |
-| BOCPD with tunable changepoint data                      | `lib/dynamics/filtering/changepoint.ts`, `methods/datasets/changepoints.ts`, `methods/timeseries/changepoints.ts`.                                                                                                                                                                                                                    |
+| BOCPD with tunable changepoint data                      | `lib/dynamics/filtering/changepoint.ts`, `lib/datasets/changepoints.ts`, `methods/timeseries/changepoints.ts`.                                                                                                                                                                                                                        |
 | A global seed                                            | `lib/context/`.                                                                                                                                                                                                                                                                                                                       |
 | Subgroup discovery, exceptional model mining, GOFAI      | `lib/search/`, `methods/patterns/`, `methods/gofai/`, `methods/evolutionary/`.                                                                                                                                                                                                                                                        |
 | Big files should be split                                | Large topics are folders; files over about 400 lines are split.                                                                                                                                                                                                                                                                       |
@@ -378,7 +378,6 @@ The core has 39 domains in 11 tiers. A domain may import only domains in lower t
 |    7 | `stochastic`  | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures                                                                                                |
 |    7 | `sampling`    | Monte Carlo samplers and diagnostics                                                                                                                                                             |
 |    7 | `graphics`    | rendering mathematics: ray casting over worlds, ray tracing, cameras, shading, textures, rasterisation                                                                                           |
-|    7 | `datasets`    | dataset generators with exact truths, vendored real datasets, themed dataset collections                                                                                                         |
 |    8 | `logic`       | terms, unification, resolution, Datalog, SAT, first-order proving, ILP                                                                                                                           |
 |    8 | `dynamics`    | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification                                                                                                               |
 |    8 | `pgm`         | graphical models, their inference and learning, causal graphs                                                                                                                                    |
@@ -390,6 +389,7 @@ The core has 39 domains in 11 tiers. A domain may import only domains in lower t
 |    9 | `learn`       | estimator protocol, preprocessing, composition, model selection, calibration, conformal, inspection, explanation, active learning, privacy                                                       |
 |    9 | `nn`          | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                             |
 |   10 | `tune`        | studies, objectives, samplers, pruners, multi-fidelity schedules                                                                                                                                 |
+|   10 | `datasets`    | dataset generators with exact truths, vendored real datasets, themed dataset collections                                                                                                         |
 
 ### 4.1 `base/` (tier 0)
 
@@ -2829,8 +2829,9 @@ kind, each usable on its own in any page).
   no drawing of its own.
 
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
-core domain `lib/datasets/` (tier 7, above `dists`, `worlds` and `data`); `lib/data` keeps the schemas, loaders,
-splits and modifiers.
+core domain `lib/datasets/` (tier 10, at the top of the core, so exact truths can come from any core domain, such as
+`probprog` generating programs or `dynamics` changepoint posteriors); `lib/data` keeps the schemas, loaders, splits and
+modifiers.
 
 **Testing, by layer.** The core keeps the full standard (oracle goldens, property tests, `checkPrimitive`). Methods are
 tested lightly: a smoke test per method that runs it on a small dataset and checks its exposition records' shapes,
@@ -4119,7 +4120,7 @@ library for the same computation. They do not set a higher bar than that library
 | `metrics`                                                   | `lib/metrics/`                                        |
 | `calibration`                                               | `lib/learn/calibration.ts`                            |
 | `inspection`                                                | `lib/learn/inspection.ts`                             |
-| `datasets`                                                  | `methods/datasets/`, `lib/data/`                      |
+| `datasets`                                                  | `lib/datasets/`, `lib/data/`                          |
 
 ### PyTorch and its ecosystem
 

@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { exactBocpd } from '../../../methods/datasets/index.ts'
+import { exactBocpd } from '../../datasets/index.ts'
 import { key, normal } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { binarySegmentation, bocpd, constantHazard, pelt } from './changepoint.ts'

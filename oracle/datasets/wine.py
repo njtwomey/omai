@@ -7,7 +7,7 @@ from sklearn.datasets import load_wine
 from sklearn.utils import Bunch
 from whitebox_oracle.vendor import render_classification
 
-TARGET = "packages/engine/src/methods/datasets/_data/wine.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/wine.data.ts"
 
 
 def render() -> str:

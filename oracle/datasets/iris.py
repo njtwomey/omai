@@ -7,7 +7,7 @@ from sklearn.datasets import load_iris
 from sklearn.utils import Bunch
 from whitebox_oracle.vendor import render_classification
 
-TARGET = "packages/engine/src/methods/datasets/_data/iris.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/iris.data.ts"
 
 
 def render() -> str:

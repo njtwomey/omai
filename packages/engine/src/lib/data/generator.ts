@@ -50,7 +50,7 @@ export interface GenerateOptions {
  * @example
  * ```ts
  * import { generate } from 'whitebox-engine/data'
- * import { friedman1 } from 'whitebox-engine/methods/datasets'
+ * import { friedman1 } from 'whitebox-engine/datasets'
  * generate(friedman1, { knobs: { n: 50 } }).data.x.shape // => [50, 10]
  * ```
  */
@@ -106,7 +106,7 @@ export interface GeneratorDescription {
  * @example
  * ```ts
  * import { describeGenerator } from 'whitebox-engine/data'
- * import { friedman1 } from 'whitebox-engine/methods/datasets'
+ * import { friedman1 } from 'whitebox-engine/datasets'
  * describeGenerator(friedman1).knobs.map((k) => k.name) // => ['n', 'nFeatures', 'noise']
  * ```
  */

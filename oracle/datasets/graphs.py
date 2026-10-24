@@ -5,7 +5,7 @@ import json
 import networkx as nx
 from whitebox_oracle.vendor import number_list, string_list
 
-TARGET = "packages/engine/src/methods/datasets/_data/graphs.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/graphs.data.ts"
 
 
 def render() -> str:

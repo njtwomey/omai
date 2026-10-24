@@ -5,7 +5,7 @@ import statsmodels
 from statsmodels.datasets import sunspots
 from whitebox_oracle.vendor import number_list, sha256_of
 
-TARGET = "packages/engine/src/methods/datasets/_data/sunspots.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/sunspots.data.ts"
 
 
 def render() -> str:

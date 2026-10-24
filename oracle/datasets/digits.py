@@ -11,7 +11,7 @@ from sklearn.datasets import load_digits
 from sklearn.utils import Bunch
 from whitebox_oracle.vendor import sha256_of
 
-TARGET = "packages/engine/src/methods/datasets/_data/digits.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/digits.data.ts"
 ALPHABET = "0123456789abcdefg"
 
 

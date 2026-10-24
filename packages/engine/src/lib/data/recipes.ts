@@ -94,7 +94,7 @@ function resolveKnobs(space: DictSpace, given: Knobs | undefined, owner: string)
  * @example
  * ```ts
  * import { makeFromRecipe } from 'whitebox-engine/data'
- * import { friedman1 } from 'whitebox-engine/methods/datasets'
+ * import { friedman1 } from 'whitebox-engine/datasets'
  * const g = makeFromRecipe({ generator: 'friedman1', knobs: { n: 30 }, seed: 1, modifiers: [{ name: 'missing', knobs: { rate: 0.1 } }] }, { generators: { friedman1 } })
  * g.data.x.shape // => [30, 10]
  * ```

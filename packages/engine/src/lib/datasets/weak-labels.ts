@@ -1,0 +1,295 @@
+import { softmaxOf } from '../base/index.ts'
+import {
+  type ClassificationData,
+  type DatasetGenerator,
+  type InteractionData,
+  interactions,
+  xyClasses,
+} from '../data/index.ts'
+import { categorical, dirichlet, foldIn, type Key, normal, permutation, uniform } from '../random/index.ts'
+import { choice, dict, int, real } from '../space/index.ts'
+import { labels, matrix, stamp } from './_util.ts'
+
+/** Binary or multiclass features: class `c` centred at `separation × e_c` in `d` dimensions, unit noise. */
+function gaussianClasses(
+  k: Key,
+  n: number,
+  classes: number,
+  d: number,
+  separation: number,
+): { x: Float64Array; y: number[] } {
+  const y = Array.from(categorical(foldIn(k, 0), new Array<number>(classes).fill(1), [n]).data)
+  const z = normal(foldIn(k, 1), [n, d]).data
+  const x = Float64Array.from(z, (v, i) => v + (i % d === (y[Math.floor(i / d)] ?? 0) % d ? separation : 0))
+  return { x, y }
+}
+
+/**
+ * Programmatic weak supervision (data programming): `m` labelling functions vote on every row or abstain (`-1`), each
+ * with its own coverage and accuracy, and wrong votes uniform over the other classes; `duplicates` copies of the first
+ * function add correlated votes. The features are the votes; the target is the hidden true class. The truth has the
+ * coverages and accuracies and the exact posterior of the true class given a row of votes under conditionally
+ * independent functions (Dawid-Skene), the target of label models.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'whitebox-engine/data'
+ * import { labellingFunctions } from 'whitebox-engine/datasets'
+ * generate(labellingFunctions, { knobs: { functions: 4 } }).data.featureNames // => ['lf0', 'lf1', 'lf2', 'lf3']
+ * ```
+ */
+export const labellingFunctions: DatasetGenerator<ClassificationData> = {
+  name: 'labellingFunctions',
+  kind: 'classification',
+  description: 'Votes of labelling functions with known coverages and accuracies, and the hidden labels.',
+  knobs: dict({
+    n: int(1, 10_000_000, { default: 1000 }),
+    classes: int(2, 20, { default: 2 }),
+    functions: int(1, 100, { default: 6 }),
+    minAccuracy: real(0, 1, { default: 0.6 }),
+    maxAccuracy: real(0, 1, { default: 0.9 }),
+    minCoverage: real(0, 1, { default: 0.2 }),
+    maxCoverage: real(0, 1, { default: 0.8 }),
+    duplicates: int(0, 20, { default: 0, label: 'correlated copies of the first function' }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const kc = knobs['classes'] as number
+    const m = knobs['functions'] as number
+    const dup = knobs['duplicates'] as number
+    const ua = uniform(foldIn(k, 0), [m]).data
+    const uc = uniform(foldIn(k, 1), [m]).data
+    const lerp = (lo: number, hi: number, t: number) => lo + (hi - lo) * t
+    const accuracy = Array.from(ua, (t) => lerp(knobs['minAccuracy'] as number, knobs['maxAccuracy'] as number, t))
+    const coverage = Array.from(uc, (t) => lerp(knobs['minCoverage'] as number, knobs['maxCoverage'] as number, t))
+    const y = Array.from(categorical(foldIn(k, 2), new Array<number>(kc).fill(1), [n]).data)
+    const width = m + dup
+    const votes = new Float64Array(n * width)
+    for (let j = 0; j < m; j++) {
+      const u = uniform(foldIn(foldIn(k, 3), j), [n, 3]).data
+      for (let i = 0; i < n; i++) {
+        let v = -1
+        if ((u[3 * i] ?? 1) < (coverage[j] ?? 0)) {
+          const truth = y[i] ?? 0
+          if ((u[3 * i + 1] ?? 1) < (accuracy[j] ?? 0)) v = truth
+          else {
+            const other = Math.floor((u[3 * i + 2] ?? 0) * (kc - 1))
+            v = other >= truth ? other + 1 : other
+          }
+        }
+        votes[i * width + j] = v
+      }
+    }
+    for (let c = 0; c < dup; c++) for (let i = 0; i < n; i++) votes[i * width + m + c] = votes[i * width] ?? -1
+    const posterior = (row: readonly number[]): number[] => {
+      const lp = Array.from({ length: kc }, (_, c) => {
+        let s = Math.log(1 / kc)
+        for (let j = 0; j < m; j++) {
+          const v = row[j] ?? -1
+          if (v < 0) continue
+          s += Math.log(v === c ? (accuracy[j] ?? 0) : (1 - (accuracy[j] ?? 0)) / (kc - 1))
+        }
+        return s
+      })
+      return softmaxOf(lp)
+    }
+    return {
+      data: xyClasses(matrix(votes, n, width), labels(y), {
+        ...stamp('labellingFunctions', labellingFunctions.description, knobs),
+        featureNames: Array.from({ length: width }, (_, j) => `lf${j}`),
+      }),
+      truth: {
+        extra: { accuracy, coverage, posterior, abstain: -1, duplicateOf: Array.from({ length: dup }, () => 0) },
+      },
+    }
+  },
+}
+
+/**
+ * Crowdsourced labels (the Dawid-Skene setting): items with hidden classes, workers with their own confusion
+ * matrices (rows drawn from Dirichlets concentrated on the diagonal by `skill`), and each item labelled by `perItem`
+ * random workers. Interactions are (worker, item, given label). The truth has every item's class, every worker's
+ * confusion matrix and the exact posterior of each item's class given its labels.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'whitebox-engine/data'
+ * import { crowdLabels } from 'whitebox-engine/datasets'
+ * generate(crowdLabels, { knobs: { items: 10, perItem: 3 } }).data.values.shape // => [30]
+ * ```
+ */
+export const crowdLabels: DatasetGenerator<InteractionData> = {
+  name: 'crowdLabels',
+  kind: 'interactions',
+  description: 'Labels given by workers with known confusion matrices to items with hidden classes.',
+  knobs: dict({
+    items: int(1, 1_000_000, { default: 500 }),
+    workers: int(1, 10_000, { default: 20 }),
+    perItem: int(1, 100, { default: 5, label: 'workers per item' }),
+    classes: int(2, 20, { default: 3 }),
+    skill: real(0, 100, { default: 4, label: 'diagonal concentration of confusion matrices' }),
+  }),
+  generate: (k, knobs) => {
+    const ni = knobs['items'] as number
+    const nw = knobs['workers'] as number
+    const per = Math.min(knobs['perItem'] as number, nw)
+    const kc = knobs['classes'] as number
+    const skill = knobs['skill'] as number
+    const confusion = Array.from({ length: nw }, (_, w) =>
+      Array.from({ length: kc }, (_, c) =>
+        Array.from(
+          dirichlet(
+            foldIn(foldIn(k, 0), w * kc + c),
+            Array.from({ length: kc }, (_, j) => (j === c ? 1 + skill : 1)),
+            1,
+          ).data,
+        ),
+      ),
+    )
+    const truthLabels = Array.from(categorical(foldIn(k, 1), new Array<number>(kc).fill(1), [ni]).data)
+    const users: number[] = []
+    const items: number[] = []
+    const values: number[] = []
+    for (let i = 0; i < ni; i++) {
+      const who = permutation(foldIn(foldIn(k, 2), i), nw).data.slice(0, per)
+      const u = uniform(foldIn(foldIn(k, 3), i), [per]).data
+      for (const [j, w] of who.entries()) {
+        const row = confusion[w]?.[truthLabels[i] ?? 0] ?? []
+        let acc = 0
+        let given = row.length - 1
+        for (const [c, p] of row.entries()) {
+          acc += p
+          if ((u[j] ?? 1) < acc) {
+            given = c
+            break
+          }
+        }
+        users.push(w)
+        items.push(i)
+        values.push(given)
+      }
+    }
+    const posterior = (answers: readonly { readonly worker: number; readonly label: number }[]): number[] => {
+      const lp = Array.from({ length: kc }, (_, c) =>
+        answers.reduce((s, a) => s + Math.log(confusion[a.worker]?.[c]?.[a.label] ?? 1e-300), Math.log(1 / kc)),
+      )
+      return softmaxOf(lp)
+    }
+    return {
+      data: interactions(
+        { users, items, values, nUsers: nw, nItems: ni },
+        stamp('crowdLabels', crowdLabels.description, knobs),
+      ),
+      truth: { clusters: labels(truthLabels), latents: { trueLabels: truthLabels }, extra: { confusion, posterior } },
+    }
+  },
+}
+
+/**
+ * Positive-unlabelled data: two Gaussian classes, of which a positive is labelled with probability `labelFrequency`
+ * completely at random (SCAR) or with a probability that rises with its first feature (SAR); unlabelled rows include
+ * every negative. The target is the labelled indicator `s`; the truth has the true classes, the label frequency `c` and
+ * the labelling propensity, so `p(y = 1 | x) = p(s = 1 | x) / c` can be checked under SCAR.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'whitebox-engine/data'
+ * import { positiveUnlabelled } from 'whitebox-engine/datasets'
+ * generate(positiveUnlabelled).data.classes // => ['unlabelled', 'labelled']
+ * ```
+ */
+export const positiveUnlabelled: DatasetGenerator<ClassificationData> = {
+  name: 'positiveUnlabelled',
+  kind: 'classification',
+  description: 'Positive and unlabelled data: some positives labelled, everything else unlabelled.',
+  knobs: dict({
+    n: int(2, 10_000_000, { default: 2000 }),
+    features: int(1, 100, { default: 2 }),
+    prior: real(0.01, 0.99, { default: 0.4, label: 'fraction of positives' }),
+    labelFrequency: real(0.01, 1, { default: 0.5, label: 'c = P(labelled | positive)' }),
+    mechanism: choice(['SCAR', 'SAR'], { default: 'SCAR' }),
+    separation: real(0, 10, { default: 2 }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const d = knobs['features'] as number
+    const prior = knobs['prior'] as number
+    const c = knobs['labelFrequency'] as number
+    const sep = knobs['separation'] as number
+    const u = uniform(foldIn(k, 0), [n, 2]).data
+    const y = Array.from({ length: n }, (_, i) => ((u[2 * i] ?? 1) < prior ? 1 : 0))
+    const z = normal(foldIn(k, 1), [n, d]).data
+    const x = Float64Array.from(z, (v, i) => v + ((y[Math.floor(i / d)] ?? 0) === 1 ? sep / Math.sqrt(d) : 0))
+    const sar = knobs['mechanism'] === 'SAR'
+    // SAR: a logistic in the first feature calibrated so the mean labelling probability over positives is about c.
+    const propensity = (row: ArrayLike<number>) =>
+      sar ? Math.min(1, (2 * c) / (1 + Math.exp(-((row[0] ?? 0) - sep / Math.sqrt(d))))) : c
+    const s = y.map((yi, i) => (yi === 1 && (u[2 * i + 1] ?? 1) < propensity(x.subarray(i * d, (i + 1) * d)) ? 1 : 0))
+    return {
+      data: xyClasses(matrix(x, n, d), labels(s), {
+        ...stamp('positiveUnlabelled', positiveUnlabelled.description, knobs),
+        classes: ['unlabelled', 'labelled'],
+      }),
+      truth: {
+        latents: { trueLabels: labels(y) },
+        extra: { labelFrequency: c, classPrior: prior, propensity, mechanism: sar ? 'SAR' : 'SCAR' },
+      },
+    }
+  },
+}
+
+/**
+ * Learning from label proportions: Gaussian-class rows grouped into bags (at random, or by sorting on the first
+ * feature so bags are more homogeneous), where only each bag's class proportions are observed. The labels in the
+ * dataset are hidden (`-1`); the truth has the true labels, every row's bag and every bag's proportions.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'whitebox-engine/data'
+ * import { labelProportionBags } from 'whitebox-engine/datasets'
+ * (generate(labelProportionBags, { knobs: { n: 100, bagSize: 10 } }).truth.extra?.['proportions'] as number[][]).length // => 10
+ * ```
+ */
+export const labelProportionBags: DatasetGenerator<ClassificationData> = {
+  name: 'labelProportionBags',
+  kind: 'classification',
+  description: 'Rows in bags with only the class proportions of each bag observed.',
+  knobs: dict({
+    n: int(1, 10_000_000, { default: 1000 }),
+    classes: int(2, 20, { default: 2 }),
+    features: int(1, 100, { default: 2 }),
+    bagSize: int(1, 10_000, { default: 20 }),
+    grouping: choice(['random', 'sorted'], { default: 'random' }),
+    separation: real(0, 10, { default: 2 }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const kc = knobs['classes'] as number
+    const d = knobs['features'] as number
+    const size = knobs['bagSize'] as number
+    const { x, y } = gaussianClasses(foldIn(k, 0), n, kc, d, knobs['separation'] as number)
+    const order =
+      knobs['grouping'] === 'sorted'
+        ? Array.from({ length: n }, (_, i) => i).sort((a, b) => (x[a * d] ?? 0) - (x[b * d] ?? 0))
+        : Array.from(permutation(foldIn(k, 1), n).data)
+    const bag = new Array<number>(n).fill(0)
+    for (const [p, i] of order.entries()) bag[i] = Math.floor(p / size)
+    const nBags = Math.ceil(n / size)
+    const proportions = Array.from({ length: nBags }, () => new Array<number>(kc).fill(0))
+    const sizes = new Array<number>(nBags).fill(0)
+    for (let i = 0; i < n; i++) {
+      const b = bag[i] ?? 0
+      const row = proportions[b] as number[]
+      row[y[i] ?? 0] = (row[y[i] ?? 0] ?? 0) + 1
+      sizes[b] = (sizes[b] ?? 0) + 1
+    }
+    for (const [b, row] of proportions.entries()) for (let c = 0; c < kc; c++) row[c] = (row[c] ?? 0) / (sizes[b] ?? 1)
+    return {
+      data: xyClasses(matrix(x, n, d), labels(new Array<number>(n).fill(-1)), {
+        ...stamp('labelProportionBags', labelProportionBags.description, knobs),
+        classes: Array.from({ length: kc }, (_, c) => String(c)),
+      }),
+      truth: { latents: { trueLabels: labels(y) }, extra: { bags: bag, proportions, bagSizes: sizes } },
+    }
+  },
+}

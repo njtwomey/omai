@@ -8,7 +8,7 @@ from sklearn.datasets import load_linnerud
 from sklearn.utils import Bunch
 from whitebox_oracle.vendor import number_list, sha256_of, string_list
 
-TARGET = "packages/engine/src/methods/datasets/_data/linnerud.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/linnerud.data.ts"
 
 
 def render() -> str:

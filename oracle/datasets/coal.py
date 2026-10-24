@@ -2,7 +2,7 @@
 
 from whitebox_oracle.vendor import csv_rows, fetch_pinned, render_table
 
-TARGET = "packages/engine/src/methods/datasets/_data/coal.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/coal.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/boot/coal.csv"
 SHA256 = "8c8c9f98dca57efc85c8a2e6d73a19f414fcc5e6ece32b1135e95dd176e422f8"
 

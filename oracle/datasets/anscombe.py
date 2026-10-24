@@ -2,7 +2,7 @@
 
 from whitebox_oracle.vendor import csv_rows, fetch_pinned, render_table
 
-TARGET = "packages/engine/src/methods/datasets/_data/anscombe.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/anscombe.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/datasets/anscombe.csv"
 SHA256 = "02a87e7348a05d2fc235e79e6bd89a9e279110d9398e98e32975d82323eb535c"
 

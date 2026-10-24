@@ -2,7 +2,7 @@
 
 from whitebox_oracle.vendor import csv_rows, fetch_pinned, render_table
 
-TARGET = "packages/engine/src/methods/datasets/_data/air-passengers.data.ts"
+TARGET = "packages/engine/src/lib/datasets/_data/air-passengers.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/datasets/AirPassengers.csv"
 SHA256 = "bdb98adbd418a6de6842a742e0602f363c3b841c26677e7e61a1e055e9509bd8"
 
