@@ -14,3 +14,23 @@ describe('truncated SVD', () => {
     expect(r.params.singularValues[0]).toBeCloseTo(f.params.singularValues[0] ?? 0, 6)
   })
 })
+
+describe('dictionary learning', () => {
+  it('learns atoms whose sparse codes rebuild the data, for each learner', async () => {
+    const { dictionaryLearning } = await import('./svd.ts')
+    const atoms = [
+      [1, 0, 0, 1],
+      [0, 1, 1, 0],
+    ]
+    const rows = Array.from({ length: 24 }, (_, i) => (atoms[i % 2] ?? []).map((v) => v * (1 + (i % 5))))
+    for (const method of ['ksvd', 'mod', 'online'] as const) {
+      const f = dictionaryLearning({ nComponents: 2, method, sparsity: 1, alpha: 0.01, maxIter: 30 }).fit(
+        { x: rows },
+        { key: key(3) },
+      )
+      expect(f.params.components.length).toBe(2)
+      expect(f.transform(rows).shape).toEqual([24, 2])
+      if (method !== 'online') expect(f.params.error).toBeLessThan(1e-6)
+    }
+  })
+})
