@@ -237,6 +237,36 @@
       "cases": 4
     },
     {
+      "fixture": "information/discrete.json",
+      "source": "oracle/cases/information/discrete.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "pyitlib": "0.3.1"
+      },
+      "cases": 38
+    },
+    {
+      "fixture": "information/divergences.json",
+      "source": "oracle/cases/information/divergences.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 40
+    },
+    {
+      "fixture": "information/estimators.json",
+      "source": "oracle/cases/information/estimators.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "npeet": "1.0.1",
+        "pyitlib": "0.3.1"
+      },
+      "cases": 23
+    },
+    {
       "fixture": "losses/losses.json",
       "source": "oracle/cases/losses/losses.py",
       "reference": {
