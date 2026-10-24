@@ -4,8 +4,9 @@ import { foldIn, type Key, permutation, uniform } from '../../random/index.ts'
 import { choice, dict, int, type Space } from '../../space/index.ts'
 import { quantile } from '../../stats/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { inputNames, keyFor, present } from '../_shared.ts'
-import { defineEstimator, type Estimator, type Fitted, requireVerb } from '../estimator.ts'
+import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
+import { innerFitOptions, inputNames, keyFor, present, runOptionsFor } from '../_shared.ts'
+import { defineEstimator, type Estimator, type FitOptions, type Fitted, requireVerb } from '../estimator.ts'
 import {
   columnOf,
   fromView,
@@ -525,41 +526,63 @@ export function iterativeImputer(
         const weights =
           h.nNearestFeatures === undefined || h.nNearestFeatures >= d - 1 ? undefined : absCorrelations(filled)
         const anyMissing = mask.some((v) => v === 1)
-        if (anyMissing && d > 1 && h.maxIter > 0 && !mask.every((v) => v === 1)) {
-          for (let round = 1; round <= h.maxIter; round++) {
-            nIter = round
-            const previous = Float64Array.from(filled.data)
-            for (const j of order(round)) {
-              const others = Array.from({ length: d }, (_, k) => k).filter((k) => k !== j)
-              const predictors =
-                weights === undefined || h.nNearestFeatures === undefined
-                  ? others
-                  : drawPredictors(weights, j, h.nNearestFeatures, foldIn(foldIn(key, 1000 + round), j))
-              const observedRows: number[] = []
-              const missingRows: number[] = []
-              for (let i = 0; i < x.n; i++) (mask[i * d + j] === 1 ? missingRows : observedRows).push(i)
-              const xp = takeColumns(filled, predictors)
-              const target = takeColumns(takeRows(filled, observedRows), [j])
-              const fitted = h.estimator.fit({ x: fromView(takeRows(xp, observedRows)), y: toFlat(fromView(target)) })
-              steps.push({ feature: j, predictors, params: fitted.params })
-              if (missingRows.length === 0) continue
-              const pred = toFlat(
-                requireVerb(fitted, 'predict', 'iterativeImputer')(fromView(takeRows(xp, missingRows))),
-              )
-              const next = Float64Array.from(filled.data)
-              missingRows.forEach((i, r) => {
-                next[i * d + j] = Math.min(Math.max(pred[r] ?? 0, h.minValue), h.maxValue)
-              })
-              filled = { ...filled, data: next }
-            }
-            let change = 0
-            for (let i = 0; i < x.n; i++) {
-              let rowSum = 0
-              for (let j = 0; j < d; j++) rowSum += Math.abs((filled.data[i * d + j] ?? 0) - (previous[i * d + j] ?? 0))
-              change = Math.max(change, rowSum)
-            }
-            if (change < tol) break
+        const imputeRound = (current: MatrixView, round: number, parent: FitOptions['parent']): MatrixView => {
+          let cur = current
+          for (const j of order(round)) {
+            const others = Array.from({ length: d }, (_, k) => k).filter((k) => k !== j)
+            const predictors =
+              weights === undefined || h.nNearestFeatures === undefined
+                ? others
+                : drawPredictors(weights, j, h.nNearestFeatures, foldIn(foldIn(key, 1000 + round), j))
+            const observedRows: number[] = []
+            const missingRows: number[] = []
+            for (let i = 0; i < x.n; i++) (mask[i * d + j] === 1 ? missingRows : observedRows).push(i)
+            const xp = takeColumns(cur, predictors)
+            const target = takeColumns(takeRows(cur, observedRows), [j])
+            const fitted = h.estimator.fit(
+              { x: fromView(takeRows(xp, observedRows)), y: toFlat(fromView(target)) },
+              innerFitOptions(options, foldIn(foldIn(key, round), j), parent),
+            )
+            steps.push({ feature: j, predictors, params: fitted.params })
+            if (missingRows.length === 0) continue
+            const pred = toFlat(requireVerb(fitted, 'predict', 'iterativeImputer')(fromView(takeRows(xp, missingRows))))
+            const next = Float64Array.from(cur.data)
+            missingRows.forEach((i, r) => {
+              next[i * d + j] = Math.min(Math.max(pred[r] ?? 0, h.minValue), h.maxValue)
+            })
+            cur = { ...cur, data: next }
           }
+          return cur
+        }
+        if (anyMissing && d > 1 && h.maxIter > 0 && !mask.every((v) => v === 1)) {
+          // Each round regresses every feature on the others; stop when the largest row sum of changes is below tol.
+          type State = { readonly filled: MatrixView; readonly round: number; readonly change: number }
+          const algorithm: Algorithm<State> = {
+            name: 'iterative-imputer',
+            config: { features: d, maxIter: h.maxIter, order: h.imputationOrder },
+            schema: channels({
+              metrics: {
+                change: { description: 'the largest row sum of absolute changes in the round', direction: 'lower' },
+              },
+            }),
+            init: () => ({ filled, round: 0, change: Number.POSITIVE_INFINITY }),
+            step: (st, ctx) => {
+              const next = imputeRound(st.filled, st.round + 1, ctx.run)
+              let change = 0
+              for (let i = 0; i < x.n; i++) {
+                let rowSum = 0
+                for (let j = 0; j < d; j++)
+                  rowSum += Math.abs((next.data[i * d + j] ?? 0) - (st.filled.data[i * d + j] ?? 0))
+                change = Math.max(change, rowSum)
+              }
+              return { filled: next, round: st.round + 1, change }
+            },
+            done: (st) => (st.change < tol ? 'converged' : undefined),
+            observe: (st) => ({ metrics: Number.isFinite(st.change) ? { change: st.change } : {} }),
+          }
+          const r = runAlgorithm(algorithm, { ...runOptionsFor(options, 'iterativeImputer'), maxSteps: h.maxIter })
+          filled = r.state.filled
+          nIter = r.state.round
         }
         return { initial: initial.params, steps, nIter, kept, indicated, nFeatures: raw.d }
       },
