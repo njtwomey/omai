@@ -1,3 +1,4 @@
+import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
 import { type Tensor, toArray, toFlat } from '../tensor/index.ts'
@@ -206,5 +207,88 @@ describe('interior point', () => {
       bEq: [1, 3],
     })
     expect([r.status, r.iterations]).toEqual(['infeasible', 0])
+  })
+})
+
+// The welfare-maximising correlated equilibrium of a bimatrix game as an LP in the 16 joint probabilities: the
+// programs on which the simplex used to report an infeasible point as optimal (payoff differences of 1e-6 beside 1).
+function correlatedEquilibriumLp(a: readonly (readonly number[])[], b: readonly (readonly number[])[]) {
+  const n = a.length
+  const m = (a[0] ?? []).length
+  const idx = (i: number, j: number): number => i * m + j
+  const aUb: number[][] = []
+  for (let i = 0; i < n; i++)
+    for (let k = 0; k < n; k++) {
+      if (k === i) continue
+      const row = new Array<number>(n * m).fill(0)
+      for (let j = 0; j < m; j++) row[idx(i, j)] = (a[k]?.[j] ?? 0) - (a[i]?.[j] ?? 0)
+      aUb.push(row)
+    }
+  for (let j = 0; j < m; j++)
+    for (let k = 0; k < m; k++) {
+      if (k === j) continue
+      const row = new Array<number>(n * m).fill(0)
+      for (let i = 0; i < n; i++) row[idx(i, j)] = (b[i]?.[k] ?? 0) - (b[i]?.[j] ?? 0)
+      aUb.push(row)
+    }
+  const c = Array.from(
+    { length: n * m },
+    (_, t) => -((a[Math.floor(t / m)]?.[t % m] ?? 0) + (b[Math.floor(t / m)]?.[t % m] ?? 0)),
+  )
+  return { c, aUb, bUb: new Array<number>(aUb.length).fill(0), aEq: [new Array<number>(n * m).fill(1)], bEq: [1] }
+}
+
+describe('simplex robustness on near-tied programs', () => {
+  it('solves the correlated-equilibrium program that used to come back infeasible-but-optimal', () => {
+    const A = [
+      [-0.5, -0.06416795641680001, -0.49998299999830004, -0.4999959999996],
+      [-0.3002129800213, -0.4999939999994, -0.4999819999982, -0.4999859999986],
+      [-0.4999909999991, -0.49999499999950003, 0.39738708973870007, -0.4999929999993],
+      [-0.49999199999919997, -0.4999819999982, -0.4999929999993, 0.34787108478710005],
+    ]
+    const B = [
+      [-0.49999199999919997, -0.4999909999991, -0.49999499999950003, -0.4999929999993],
+      [-0.4999819999982, -0.4999889999989, -0.3126139812614, -0.49999699999970004],
+      [0.49999009999900007, -0.25201697520169997, 0.49999809999980005, -0.1439759643976],
+      [0.49999309999930003, -0.49999499999950003, -0.1422289642229, 0.49998309999829993],
+    ]
+    const lp = correlatedEquilibriumLp(A, B)
+    const r = O.linprogSimplex(lp)
+    expect(r.status).toBe('optimal')
+    expect(Math.abs(toFlat(r.con)[0] ?? 1)).toBeLessThan(1e-9)
+    for (const v of toFlat(r.slack)) expect(v).toBeGreaterThan(-1e-9)
+    expect(r.fun).toBeCloseTo(O.linprogInteriorPoint(lp).fun, 6)
+  })
+
+  it('reports a feasible optimum on random near-tied games', () => {
+    // Objective values are not compared with other solvers: on near ties a 1e-12 violation (within any solver's
+    // tolerance) can move the optimum a long way, as with HiGHS against the interior point here. What the simplex
+    // must never do is call an infeasible point optimal, or a feasible program infeasible.
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: -3, max: 3 }), { minLength: 18, maxLength: 18 }),
+        fc.array(fc.integer({ min: -5, max: 5 }), { minLength: 18, maxLength: 18 }),
+        (base, jitter) => {
+          // Payoffs on a coarse grid plus 1e-6-sized jitter: many near ties.
+          const pay = (k: number): number => (base[k] ?? 0) / 2 + (jitter[k] ?? 0) * 1e-6
+          const A = [0, 1, 2].map((i) => [0, 1, 2].map((j) => pay(i * 3 + j)))
+          const B = [0, 1, 2].map((i) => [0, 1, 2].map((j) => pay(9 + i * 3 + j)))
+          const lp = correlatedEquilibriumLp(A, B)
+          // The simplex alone never calls an infeasible point optimal (it may give up with numerical difficulties)...
+          const raw = O.linprogSimplex(lp)
+          if (raw.status === 'optimal') {
+            expect(Math.abs(toFlat(raw.con)[0] ?? 1)).toBeLessThan(1e-8)
+            for (const v of toFlat(raw.slack)) expect(v).toBeGreaterThan(-1e-8)
+          } else expect(['numerical difficulties', 'infeasible', 'unbounded']).toContain(raw.status)
+          // ...and linprog, falling back to the interior point, always finds the feasible optimum (to the
+          // interior point's accuracy on these deliberately ill-conditioned programs).
+          const r = O.linprog(lp)
+          expect(r.status).toBe('optimal')
+          expect(Math.abs(toFlat(r.con)[0] ?? 1)).toBeLessThan(1e-6)
+          for (const v of toFlat(r.slack)) expect(v).toBeGreaterThan(-1e-6)
+        },
+      ),
+      { numRuns: 60 },
+    )
   })
 })

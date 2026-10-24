@@ -82,21 +82,24 @@ export function dtrsv(
 }
 
 /**
- * Solve A x = b for a general square matrix by LU with partial pivoting (LAPACK dgesv).
+ * Solve A X = B for a general square matrix by LU with partial pivoting (LAPACK dgesv): one factorisation for all
+ * `nrhs` right-hand sides.
  *
  * @param a - The n x n matrix, row-major.
- * @param b - The right-hand side.
+ * @param b - The right-hand sides, n x nrhs row-major (a vector when nrhs is 1).
  * @param n - The order.
- * @returns x.
+ * @param nrhs - The number of right-hand sides (default 1).
+ * @returns X, n x nrhs row-major.
  * @throws WhiteboxError with code `value` when A is exactly singular.
  * @example
  * ```ts
  * import { dgesv } from 'whitebox-engine/numerics/linalg'
  * Array.from(dgesv([0, 1, 1, 0], [2, 3], 2)) // => [3, 2]
+ * Array.from(dgesv([2, 0, 0, 4], [2, 4, 8, 4], 2, 2)) // => [1, 2, 2, 1]
  * ```
  */
-export function dgesv(a: ArrayLike<number>, b: ArrayLike<number>, n: number): Float64Array {
-  return solveKernel(Float64Array.from(a), Float64Array.from(b), n, 1)
+export function dgesv(a: ArrayLike<number>, b: ArrayLike<number>, n: number, nrhs = 1): Float64Array {
+  return solveKernel(Float64Array.from(a), Float64Array.from(b), n, nrhs)
 }
 
 /**

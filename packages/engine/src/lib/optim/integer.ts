@@ -3,6 +3,7 @@ import { ddot } from '../numerics/linalg/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type StepContext, subRun } from '../trace/index.ts'
 import { vectorFrom, vectorTensor } from './_programming.ts'
+import { lpInteriorPointAlgorithm } from './lp-interior-point.ts'
 import { simplexAlgorithm } from './lp-simplex.ts'
 import { type Bound, fromStandard, type StandardForm, type StandardSolution, standardForm } from './lp-standard-form.ts'
 
@@ -253,7 +254,13 @@ export function milpAlgorithm(problem: MixedIntegerProgram, options: MilpOptions
     const alg = simplexAlgorithm(form)
     const maxSteps = 50 * (form.a.rows + form.a.cols + 1)
     const result = ctx === undefined ? runAlgorithm(alg, { maxSteps }) : subRun(ctx, alg, { maxSteps, index })
-    const solution = result.state.solution
+    let solution: StandardSolution = result.state.solution
+    // A relaxation the simplex cannot settle is re-solved by the interior-point method (no tableau, so no cuts from it).
+    if (solution.status === 'numerical difficulties') {
+      const ip = lpInteriorPointAlgorithm(form)
+      solution = (ctx === undefined ? runAlgorithm(ip, { maxSteps: 200 }) : subRun(ctx, ip, { maxSteps: 200, index }))
+        .state.solution
+    }
     const x = fromStandard(form, solution.z)
     return { status: solution.status, x, value: ddot(root.original.c, x), form, solution }
   }

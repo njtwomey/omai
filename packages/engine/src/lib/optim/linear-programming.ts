@@ -45,7 +45,7 @@ export interface LinprogResult {
   readonly slack: Tensor
   /** b_eq - A_eq x (zero when feasible). */
   readonly con: Tensor
-  readonly status: 'optimal' | 'infeasible' | 'unbounded' | 'iteration limit'
+  readonly status: 'optimal' | 'infeasible' | 'unbounded' | 'iteration limit' | 'numerical difficulties'
   readonly success: boolean
   readonly message: string
   readonly iterations: number
@@ -89,6 +89,7 @@ function assembleResult(form: StandardForm, sol: StandardSolution): LinprogResul
     infeasible: 'the problem is infeasible',
     unbounded: 'the problem is unbounded',
     'iteration limit': 'iteration limit reached',
+    'numerical difficulties': 'numerical difficulties: the tableau would not settle after repeated re-inversion',
   }
   return {
     x: vectorTensor(x),
@@ -235,7 +236,9 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
 
 /**
  * Solve a linear program in scipy's form (scipy.optimize.linprog): minimise c^T x subject to A_ub x <= b_ub,
- * A_eq x = b_eq and bounds. The method is a function value, {@link linprogSimplex} by default.
+ * A_eq x = b_eq and bounds. The method is a function value; by default {@link linprogSimplex},
+ * falling back to {@link linprogInteriorPoint} when the simplex reports numerical difficulties, and
+ * confirming infeasible and unbounded verdicts with it.
  *
  * @param problem - The program.
  * @param options - The method and its options.
@@ -252,5 +255,11 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
  * ```
  */
 export function linprog(problem: LinearProgram, options: LinprogOptions = {}): LinprogResult {
-  return (options.method ?? linprogSimplex)(problem, options)
+  if (options.method !== undefined) return options.method(problem, options)
+  const r = linprogSimplex(problem, options)
+  if (r.status === 'optimal' || r.status === 'iteration limit') return r
+  // Programs the simplex cannot settle numerically (near-tied coefficients) go to the interior-point method, and
+  // infeasible or unbounded verdicts are confirmed by it (its self-dual embedding certifies both).
+  const ip = linprogInteriorPoint(problem, options)
+  return ip.status === 'optimal' || r.status === 'numerical difficulties' ? ip : r
 }

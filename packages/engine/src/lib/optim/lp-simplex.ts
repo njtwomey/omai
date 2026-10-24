@@ -1,5 +1,5 @@
 import { maxOf } from '../base/index.ts'
-import { ddot } from '../numerics/linalg/index.ts'
+import { ddot, dgesv } from '../numerics/linalg/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { basisDuals, LP_SCHEMA, lpConfig } from './_lp.ts'
 import {
@@ -25,6 +25,8 @@ export interface SimplexState {
   /** The standard-form row of each tableau row (redundant equality rows are dropped after phase 1). */
   readonly rowIds: Int32Array
   readonly iterations: number
+  /** How many times the tableau has been recomputed from the original matrix (re-inversions). */
+  readonly reinversions: number
   readonly path: readonly LpPathPoint[]
   /** The last pivot. */
   readonly pivot?: { readonly entering: number; readonly leaving: number; readonly ratio: number }
@@ -63,7 +65,14 @@ function point(form: StandardForm, s: { tableau: Float64Array; rows: number; col
  * phase 1 to phase 2). Phase 1 minimises the sum of artificial variables from the slack-and-artificial basis to find a
  * feasible vertex (or prove infeasibility), drives remaining artificial variables out and drops redundant rows; phase 2
  * optimises the cost. Bland's rule (smallest eligible index for entering and leaving) prevents cycling; Dantzig's rule
- * (most negative reduced cost) is available. Records the objective, phase, infeasibility, every pivot and the vertex.
+ * (most negative reduced cost) is available. Updating the tableau pivot by pivot accumulates rounding error, so before
+ * every decision (optimal, infeasible, end of phase 1), and every 50 pivots, the tableau is recomputed from the
+ * original matrix and the basis (re-inversion, one LU solve); if the clean tableau disagrees (a negative reduced cost,
+ * or a basic variable below zero), pivoting continues, with dual-simplex pivots to restore feasibility. A basis that
+ * has become singular, or 8 re-inversions without agreement, end with status `numerical difficulties` (`linprog` then
+ * re-solves by the interior-point method). On badly conditioned near-tied programs phase 1 can still stall and
+ * report `infeasible`; `linprog` confirms such verdicts with the interior-point method. Records the objective, phase,
+ * infeasibility, every pivot and the vertex.
  *
  * @param form - A standard form (from `standardForm`).
  * @param options - Pivot rule and tolerance.
@@ -83,6 +92,61 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
   const N = form.a.cols
   const m = form.a.rows
   const bScale = 1 + maxOf(Array.from(form.b, Math.abs))
+  const feasTol = tol * bScale
+  const MAX_REINVERSIONS = 8
+  const REINVERT_EVERY = 50
+  // Artificial column N + k belongs to row artRow[k] (the rows init cannot start from a slack).
+  const artRow: number[] = []
+  for (let r = 0; r < m; r++) {
+    const sl = form.slackOf[r] ?? -1
+    if (!(sl >= 0 && (form.rows[r]?.sign ?? 1) === 1)) artRow.push(r)
+  }
+  const column = (j: number, row: number): number =>
+    j < N ? (form.a.data[row * N + j] ?? 0) : artRow[j - N] === row ? 1 : 0
+  const costOf = (phase: 1 | 2, j: number): number => (phase === 2 ? (form.c[j] ?? 0) : j >= N ? 1 : 0)
+  type Core = Omit<SimplexState, 'solution' | 'finished'>
+  // The tableau recomputed from the original matrix: B^-1 [A | b] for the basis B, and reduced costs c - c_B B^-1 A.
+  const reinvert = (s: Core): Core | undefined => {
+    const rows = s.rows
+    const width = s.cols + 1
+    const basisMatrix = new Float64Array(rows * rows)
+    const rhs = new Float64Array(rows * width)
+    for (let i = 0; i < rows; i++) {
+      const row = s.rowIds[i] ?? 0
+      for (let k = 0; k < rows; k++) basisMatrix[i * rows + k] = column(s.basis[k] ?? 0, row)
+      for (let j = 0; j < s.cols; j++) rhs[i * width + j] = column(j, row)
+      rhs[i * width + s.cols] = form.b[row] ?? 0
+    }
+    let x: Float64Array
+    try {
+      x = dgesv(basisMatrix, rhs, rows, width)
+    } catch {
+      return undefined
+    }
+    const t = new Float64Array((rows + 1) * width)
+    t.set(x)
+    for (let j = 0; j <= s.cols; j++) {
+      let d = j < s.cols ? costOf(s.phase, j) : 0
+      for (let i = 0; i < rows; i++) d -= costOf(s.phase, s.basis[i] ?? 0) * (x[i * width + j] ?? 0)
+      t[rows * width + j] = d
+    }
+    for (let i = 0; i < rows; i++) t[i * width + (s.basis[i] ?? 0)] = 1
+    return { ...s, tableau: t, reinversions: s.reinversions + 1 }
+  }
+  // The row of the most negative basic value beyond the feasibility tolerance, or -1.
+  const infeasibleRow = (s: Core): number => {
+    const width = s.cols + 1
+    let r = -1
+    let worst = -feasTol
+    for (let i = 0; i < s.rows; i++) {
+      const v = s.tableau[i * width + s.cols] ?? 0
+      if (v < worst) {
+        worst = v
+        r = i
+      }
+    }
+    return r
+  }
   const vertex = (
     s: SimplexState | Omit<SimplexState, 'path' | 'solution' | 'finished' | 'iterations'>,
   ): LpPathPoint => {
@@ -204,14 +268,47 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
         basis,
         rowIds: Int32Array.from({ length: m }, (_, i) => i),
         iterations: 0,
+        reinversions: 0,
       }
       const base = nArt === 0 ? toPhase2(start as Omit<SimplexState, 'solution' | 'finished'>) : start
       return ongoing({ ...base, path: [vertex(base as SimplexState)] } as Omit<SimplexState, 'solution' | 'finished'>)
     },
-    step: (s) => {
-      if (s.finished) return s
+    step: (current) => {
+      if (current.finished) return current
+      let s: Core = current
+      if (s.iterations > 0 && s.iterations % REINVERT_EVERY === 0 && s.reinversions * REINVERT_EVERY < s.iterations)
+        s = reinvert(s) ?? s
       const width = s.cols + 1
       const obj = s.rows * width
+      // A basic value below zero (exposed by re-inversion): a dual-simplex pivot on its row restores feasibility.
+      const bad = infeasibleRow(s)
+      if (bad >= 0) {
+        let e = -1
+        let best = Infinity
+        for (let j = 0; j < s.cols; j++) {
+          const a = s.tableau[bad * width + j] ?? 0
+          if (a >= -tol) continue
+          const q = Math.max(0, s.tableau[obj + j] ?? 0) / -a
+          if (q < best) {
+            best = q
+            e = j
+          }
+        }
+        // The row reads (sum of non-negative variables times non-negative entries) = a negative value.
+        if (e < 0) return finish(s, 'infeasible')
+        const tableau = pivotOn(s.tableau, s.rows, width, bad, e)
+        const basis = Int32Array.from(s.basis)
+        const leaving = basis[bad] ?? -1
+        basis[bad] = e
+        const next = {
+          ...s,
+          tableau,
+          basis,
+          iterations: s.iterations + 1,
+          pivot: { entering: e, leaving, ratio: best },
+        }
+        return ongoing({ ...next, path: [...s.path, vertex(next)] })
+      }
       let e = -1
       let best = -tol
       for (let j = 0; j < s.cols; j++) {
@@ -223,9 +320,22 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
         }
       }
       if (e < 0) {
+        // Decide only on a clean tableau: if re-inversion shows more work, keep pivoting from it.
+        if (s.reinversions >= MAX_REINVERSIONS) return finish(s, 'numerical difficulties')
+        const clean = reinvert(s)
+        // A singular basis means rounding has corrupted the tableau: no decision drawn from it is trustworthy.
+        if (clean === undefined) return finish(s, 'numerical difficulties')
+        {
+          const cleanObj = clean.rows * width
+          let stillOptimal = infeasibleRow(clean) < 0
+          for (let j = 0; j < clean.cols && stillOptimal; j++)
+            if ((clean.tableau[cleanObj + j] ?? 0) < -tol) stillOptimal = false
+          if (!stillOptimal) return ongoing({ ...clean, path: s.path })
+          s = clean
+        }
         if (s.phase === 1) {
           const infeasibility = -(s.tableau[obj + s.cols] ?? 0)
-          if (infeasibility > tol * bScale) return finish(s, 'infeasible')
+          if (infeasibility > feasTol) return finish(s, 'infeasible')
           const { pivot: _last, ...p2 } = toPhase2(s)
           return ongoing({ ...p2, path: [...s.path, vertex(p2 as SimplexState)] })
         }
@@ -246,7 +356,15 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
           r = i
         }
       }
-      if (r < 0) return finish(s, 'unbounded')
+      if (r < 0) {
+        // Confirm on a clean tableau: a column with no positive entry may be rounding, not a ray.
+        if (s.reinversions >= MAX_REINVERSIONS) return finish(s, 'numerical difficulties')
+        const clean = reinvert(s)
+        if (clean === undefined) return finish(s, 'numerical difficulties')
+        let ray = (clean.tableau[clean.rows * width + e] ?? 0) < -tol
+        for (let i = 0; i < clean.rows && ray; i++) if ((clean.tableau[i * width + e] ?? 0) > tol) ray = false
+        return ray ? finish(clean, 'unbounded') : ongoing({ ...clean, path: s.path })
+      }
       const tableau = pivotOn(s.tableau, s.rows, width, r, e)
       const basis = Int32Array.from(s.basis)
       const leaving = basis[r] ?? -1
