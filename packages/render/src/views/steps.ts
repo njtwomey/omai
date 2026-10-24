@@ -195,10 +195,21 @@ export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptio
               width: 1.2,
               ...(dash ? { dash: 'dashed' as const } : {}),
             }
+      // The pairs the final assignment breaks, on the last step, thick in the accent colour.
+      const c = steps.constraints
+      const last = t === count - 1
+      const broken = (pairs: readonly (readonly [number, number])[] | undefined, at: readonly number[] | undefined) =>
+        last && pairs !== undefined && at !== undefined
+          ? at.flatMap((k) => (pairs[k] === undefined ? [] : [pairs[k]]))
+          : []
+      const brokenPairs = [...broken(c?.mustLink, c?.brokenMustLink), ...broken(c?.cannotLink, c?.brokenCannotLink)]
       const links = [
-        pairLines(steps.constraints?.mustLink, false),
-        pairLines(steps.constraints?.cannotLink, true),
-      ].filter((c): c is Curve => c !== undefined)
+        pairLines(c?.mustLink, false),
+        pairLines(c?.cannotLink, true),
+        ...(brokenPairs.length === 0
+          ? []
+          : [{ ...(pairLines(brokenPairs, false) as Curve), name: 'broken', colour: 'accent', width: 2.6 }]),
+      ].filter((l): l is Curve => l !== undefined)
       if (links.length > 0) main.push(lines(links, { mode }))
       // Rows newly labelled at this step (queried, pseudo-labelled): ringed in the accent colour.
       const added = steps.added?.[t]
