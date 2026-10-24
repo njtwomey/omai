@@ -3,10 +3,12 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as trace from '../trace/index.ts'
+import * as ilp from './ilp/index.ts'
 import * as logic from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'whitebox-engine/logic': logic,
+  'whitebox-engine/logic/ilp': ilp,
   'whitebox-engine/trace': trace,
 }
 

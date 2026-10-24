@@ -637,6 +637,47 @@
       "cases": 53
     },
     {
+      "fixture": "logic/ilp/foil.json",
+      "source": "oracle/cases/logic/ilp/foil.py",
+      "reference": {
+        "quinlan-1990": "Learning logical definitions from relations; reference port"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "logic/ilp/generalisation.json",
+      "source": "oracle/cases/logic/ilp/generalisation.py",
+      "reference": {
+        "plotkin-1970": "reference port of anti-unification (oracle/cases/logic/ilp/_ilp.py)"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "logic/ilp/meta-interpretive.json",
+      "source": "oracle/cases/logic/ilp/meta-interpretive.py",
+      "reference": {
+        "metagol": "github.com/metagol/metagol examples; checked with oracle/cases/logic/_prolog.py",
+        "popper": "github.com/logic-and-learning-lab/Popper examples; checked with oracle/cases/logic/_prolog.py"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "logic/ilp/progol.json",
+      "source": "oracle/cases/logic/ilp/progol.py",
+      "reference": {
+        "muggleton-1995": "Inverse entailment and Progol; textbook theories checked with oracle/cases/logic/_prolog.py"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "logic/ilp/version-spaces.json",
+      "source": "oracle/cases/logic/ilp/version-spaces.py",
+      "reference": {
+        "mitchell-1997": "Machine Learning, chapter 2; brute-force reference"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "logic/maxsat.json",
       "source": "oracle/cases/logic/maxsat.py",
       "reference": {
