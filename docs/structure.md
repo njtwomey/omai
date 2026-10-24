@@ -1011,8 +1011,14 @@ oracle: scipy.stats.entropy, sklearn mutual information, zlib (byte-exact DEFLAT
   an inflater with puff's checks), the zlib and gzip formats (compress and decompress), CRC-32 and Adler-32.
 - `channels.ts`: capacity by Blahut-Arimoto (traced), rate-distortion, binary symmetric, erasure and Z channels,
   Gaussian channels and water-filling.
-- `error-correction.ts`: parity, repetition and Hamming codes, Reed-Solomon over GF(2^m), convolutional codes with Viterbi
-  decoding, LDPC codes with belief-propagation decoding, bounds.
+- `error-correction.ts`: binary linear block codes (generator and parity-check matrices, syndromes, coset-leader
+  decoding, minimum distance), parity, repetition and Hamming codes (extended too), bounds (Hamming, Singleton,
+  Gilbert-Varshamov, Plotkin).
+- `reed-solomon.ts`: GF(2^m) arithmetic, Reed-Solomon encoding and decoding of errors and erasures (Berlekamp-Massey,
+  Chien, Forney), matching reedsolo.
+- `convolutional.ts`: feed-forward convolutional codes and Viterbi decoding (traced, hard and soft decisions).
+- `ldpc.ts`: Gallager's regular LDPC codes, encoding, channel LLRs, belief-propagation decoding (sum-product and
+  min-sum, traced).
 - `complexity.ts`: normalised compression distance, Lempel-Ziv complexity, entropy rate, approximate and sample
   entropy.
 

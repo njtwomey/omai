@@ -237,6 +237,14 @@
       "cases": 4
     },
     {
+      "fixture": "information/convolutional.json",
+      "source": "oracle/cases/information/convolutional.py",
+      "reference": {
+        "scikit-commpy": "0.8.0"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "information/deflate.json",
       "source": "oracle/cases/information/deflate.py",
       "reference": {
@@ -273,6 +281,14 @@
         "pyitlib": "0.3.1"
       },
       "cases": 23
+    },
+    {
+      "fixture": "information/reed_solomon.json",
+      "source": "oracle/cases/information/reed_solomon.py",
+      "reference": {
+        "reedsolo": "1.7.0"
+      },
+      "cases": 30
     },
     {
       "fixture": "information/source_coding.json",
