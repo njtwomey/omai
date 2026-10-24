@@ -2548,25 +2548,56 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 
 ### 4.35 `tune/` (tier 10): parameter selection for anything (Optuna, Ray Tune ideas)
 
-oracle: statistical agreement with optuna and scikit-optimize on fixed seeds; exact checks for grid and halving
-schedules
+oracle: optuna (TPE Parzen densities and splits, QMC sampler orders, every pruner's decisions on fixed learning curves,
+Hyperband brackets, Pareto fronts and hypervolume, PED-ANOVA importance, GP posterior and log EI), scikit-learn
+(`ParameterGrid` order, `GridSearchCV` results, the halving searches' schedules, GP
+posteriors with fixed kernels) and scipy (acquisition closed forms); stochastic samplers are checked by optimisation
+performance on Branin and Hartmann functions within budgets, with explicit keys
 
 A study runs trials over a `Space` against an `Objective`. Objectives can be cross-validated estimators, training runs
 with epochs as fidelity, agents in environments, probabilistic programs (evidence, ELBO, LOO) or any function. The same
 samplers, pruners and schedules work for all of them. A study is a traced algorithm whose steps are trials, each a
-child run.
-- `study.ts`: `Study`, `Trial` (params, intermediate values, status), `tune(objective, space, options)`, best and Pareto
-  trials, resuming a study, exporting trials as data.
-- `objectives.ts`: `estimatorObjective` (splitter plus metric), `holdoutObjective`, `trainingObjective` (reports per
-  epoch for pruning and fidelity), `agentObjective`, `programObjective`, `functionObjective`, multi-objective objectives.
-- `samplers.ts`: the `Sampler` contract; grid, random, Sobol and Latin hypercube samplers; CMA-ES and Nelder-Mead
-  samplers (from `optim`); evolutionary samplers (from `search`).
-- `pruners.ts`: median, percentile, threshold, patience, successive-halving and Hyperband pruners.
-- `schedules.ts`: multi-fidelity schedules (successive halving, Hyperband brackets, ASHA) as data.
+child run. Samplers and pruners are pure functions of the study (what they remember lives on the trials), so a study
+resumed at trial t draws exactly what an uninterrupted run would.
+- `study.ts`: `Study`, `Trial` (params, values, intermediate values, state, source, budget, bracket and rung),
+  `createStudy`, `bestTrial`, `bestTrials` (Pareto front), `studyHypervolume`, `exportTrials` (trials as rows),
+  `studyToJson` and `studyFromJson` (store and resume).
+- `tuning.ts`: `studyAlgorithm` (one trial per step; trial child runs record reports and pruning decisions; stops on the
+  trial or resource budget, an exhausted sampler or schedule, repeated failures, a constant objective or lack of
+  improvement) and `tune(objective, space, options)` (enqueued configurations, resuming a study).
+- `objectives.ts`: the `Objective` and `TrialContext` contracts (`report` returns whether to stop), `objectiveBase`,
+  `functionObjective`, `multiObjective`, `trainingObjective` (a traced algorithm as a child run, reporting per step for
+  pruning, with the schedule's budget as its steps), `agentObjective`, `programObjective`. TODO(probprog):
+  `programObjective` takes a fit function returning the criteria until `probprog` lands; then a model and data.
+- `estimators.ts`: estimator objectives on `learn`'s contract: `estimatorFor` (`estimator.with(params)` or a factory),
+  `estimatorObjective` (a `learn` splitter or `cv` count, scored by a metric, a `learn` scorer or the estimator's own
+  score; the running mean reported per fold; each fit a child run of the trial) and `holdoutObjective`.
+- `samplers.ts`: the `Sampler` contract; grid (scikit-learn's order), random, Sobol (plain or scrambled), Halton and
+  Latin hypercube samplers; CMA-ES (IPOP restarts) and Nelder-Mead samplers from `optim`, asked and told by replaying the
+  optimiser (`_replay.ts`); an evolutionary sampler (NSGA-II for several objectives) from the operators of `search`.
+- `parzen.ts`: Optuna's Parzen estimators (bandwidths, prior, weights; truncated normals, stepped and log leaves,
+  options), their densities and draws, gamma and weight functions, the TPE acquisition log l(x) - log g(x).
+- `tpe.ts`: the tree-structured Parzen estimator sampler as Optuna's: the good/bad split (with pruned trials, and for
+  several objectives non-dominated ranks with hypervolume subset selection), multivariate and independent modes.
+- `surrogate.ts`: the Gaussian-process surrogate of Bayesian optimisation (Matern 5/2 with ARD and Hamming distance
+  for options, MAP hyperparameters with Optuna's priors; from `kernels`, `stochastic` and `optim`), `gpPosterior`.
+- `bayesian.ts`: acquisitions (EI, log EI, PI, log PI, confidence bounds), acquisition maximisation (Sobol candidates
+  refined by L-BFGS-B) and `gpSampler`. TODO(tune): multi-objective acquisition (log expected hypervolume improvement).
+- `pruners.ts`: median, percentile, threshold, patient, successive-halving (ASHA) and Hyperband pruners, and the no-op
+  pruner, decision for decision as Optuna's.
+- `schedules.ts`: multi-fidelity schedules as data (successive halving, Hyperband brackets, ASHA rungs),
+  `nextAssignment` (samples and promotions that a study runs, with budgets), and `halvingPlan` (scikit-learn's halving
+  iterations).
 - `wrappers.ts`: familiar entry points built on studies: `gridSearchCv`, `randomizedSearchCv`, `halvingGridSearchCv`,
-  `halvingRandomSearchCv`.
-- `analysis.ts`: trial tables, optimisation history, parameter importance (permutation and correlation based),
-  parallel-coordinate, slice and contour data.
+  `halvingRandomSearchCv`. Each is a `learn` estimator (fitted values revive and carry the best model's verbs), so
+  searches nest inside cross-validation; grids are `learn`'s `parameterGrid`. (`learn/model-selection/search.ts` keeps
+  the candidate-list `gridSearchCV` and `randomizedSearchCV`; these generalise them with samplers, pruners and
+  multi-fidelity schedules.)
+- `analysis.ts`: trial tables (`TableData`), optimisation history, intermediate values, parallel-coordinate, slice and
+  contour data (a GP surrogate over two parameters), Pareto fronts, hypervolume history and the empirical distribution.
+- `importance.ts`: parameter importance: correlation based, permutation based (on a GP surrogate), functional ANOVA of a
+  GP surrogate, and PED-ANOVA as Optuna's evaluator. TODO(methods/trees): fANOVA on random forests as Optuna's default
+  evaluator, once regression forests exist.
 ### 4.36 `worlds/` (tier 6): discrete worlds shared by search, reinforcement learning and graphics
 
 One representation of a map, used by every application of it: a maze solved by breadth-first search, A* or a learned

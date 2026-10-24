@@ -73,6 +73,48 @@ export function branin(v: Value): Value {
   return sum(add(square(inner), add(mul(cos(x), 10 * (1 - t)), 10)))
 }
 
+const HARTMANN_ALPHA = [1, 1.2, 3, 3.2]
+
+function hartmann(v: Value, a: readonly (readonly number[])[], p: readonly (readonly number[])[]): Value {
+  const diff = sub(v, tensor(p.map((row) => row.map((x) => x * 1e-4))))
+  const inner = sum(mul(tensor(a.map((row) => [...row])), square(diff)), 1)
+  return mul(sum(mul(exp(mul(inner, -1)), tensor(HARTMANN_ALPHA))), -1)
+}
+
+/** The Hartmann function on [0, 1]^3, global minimum -3.86278 at (0.114614, 0.555649, 0.852547). */
+export function hartmann3(v: Value): Value {
+  const a = [
+    [3, 10, 30],
+    [0.1, 10, 35],
+    [3, 10, 30],
+    [0.1, 10, 35],
+  ]
+  const p = [
+    [3689, 1170, 2673],
+    [4699, 4387, 7470],
+    [1091, 8732, 5547],
+    [381, 5743, 8828],
+  ]
+  return hartmann(v, a, p)
+}
+
+/** The Hartmann function on [0, 1]^6, global minimum -3.32237 at (0.20169, 0.150011, 0.476874, 0.275332, 0.311652, 0.6573). */
+export function hartmann6(v: Value): Value {
+  const a = [
+    [10, 3, 17, 3.5, 1.7, 8],
+    [0.05, 10, 17, 0.1, 8, 14],
+    [3, 3.5, 1.7, 10, 17, 8],
+    [17, 8, 0.05, 10, 0.1, 14],
+  ]
+  const p = [
+    [1312, 1696, 5569, 124, 8283, 5886],
+    [2329, 4135, 8307, 3736, 1004, 9991],
+    [2348, 1451, 3522, 2883, 3047, 6650],
+    [4047, 8828, 8732, 5743, 1091, 381],
+  ]
+  return hartmann(v, a, p)
+}
+
 /** The six-hump camel function, global minimum -1.0316 at (0.0898, -0.7126) and (-0.0898, 0.7126). */
 export function sixHumpCamel(v: Value): Value {
   const x = at(v, 0)

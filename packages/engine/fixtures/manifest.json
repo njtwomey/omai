@@ -4115,6 +4115,74 @@
       "cases": 20
     },
     {
+      "fixture": "tune/bayesian.json",
+      "source": "oracle/cases/tune/bayesian.py",
+      "reference": {
+        "optuna": "5.0.0",
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1",
+        "torch": "2.14.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "tune/importance.json",
+      "source": "oracle/cases/tune/importance.py",
+      "reference": {
+        "optuna": "5.0.0"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "tune/pruners.json",
+      "source": "oracle/cases/tune/pruners.py",
+      "reference": {
+        "optuna": "5.0.0"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "tune/samplers.json",
+      "source": "oracle/cases/tune/samplers.py",
+      "reference": {
+        "optuna": "5.0.0",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "tune/schedules.json",
+      "source": "oracle/cases/tune/schedules.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "tune/study.json",
+      "source": "oracle/cases/tune/study.py",
+      "reference": {
+        "optuna": "5.0.0"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "tune/tpe.json",
+      "source": "oracle/cases/tune/tpe.py",
+      "reference": {
+        "optuna": "5.0.0"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "tune/wrappers.json",
+      "source": "oracle/cases/tune/wrappers.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 2
+    },
+    {
       "fixture": "worlds/analysis.json",
       "source": "oracle/cases/worlds/analysis.py",
       "reference": {

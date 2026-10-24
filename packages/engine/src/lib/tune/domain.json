@@ -1,0 +1,4 @@
+{
+  "tier": 10,
+  "summary": "Parameter selection for anything: studies of trials over spaces, objectives, samplers (grid, random, quasi-random, CMA-ES, Nelder-Mead, evolutionary, TPE, Gaussian-process Bayesian optimisation), pruners, multi-fidelity schedules, search wrappers and analysis."
+}
