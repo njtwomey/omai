@@ -2,13 +2,16 @@
 // densities become named log factors over enumerated variables and plates, and plated sum-product contraction
 // eliminates the variables (greedy variable elimination inside each plate context) and multiplies over plates. Every
 // operation is a tensor operation, so the result differentiates with respect to continuous sites and parameters.
+import { valueAndGrad } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import {
   add,
   broadcastTo,
   cast,
+  item,
   logsumexp,
   mul,
+  primalOf,
   reshape,
   sum,
   tensor,
@@ -346,4 +349,61 @@ export function traceFactors(
     factors.push({ value: reshape(lp, keep), dims, plates: site.plates.map((f) => f.name), site: site.name })
   }
   return { factors, sumVars, scales }
+}
+
+/** The posterior marginal of one enumerated site: probabilities `[...plate sizes, K]` over its own plate axes. */
+export interface EnumeratedMarginal {
+  readonly site: string
+  /** The plates of the batch axes, in order. */
+  readonly plates: readonly string[]
+  readonly probs: Value
+}
+
+/**
+ * The log total of a set of factors and the posterior marginals of every enumerated site, by differentiating the
+ * contraction with respect to each site's own log factor (d log Z / d log f(a) is the posterior probability of a).
+ *
+ * @param factors - The named factors (from {@link traceFactors}).
+ * @param sumVars - The enumerated sites.
+ * @param scales - Plate scales.
+ * @returns log Z and the marginals.
+ */
+export function enumeratedMarginals(
+  factors: readonly NamedFactor[],
+  sumVars: ReadonlySet<string>,
+  scales: ReadonlyMap<string, number>,
+): { readonly logZ: number; readonly marginals: Map<string, EnumeratedMarginal> } {
+  const owned = factors.map((f, i) => ({ f, i })).filter(({ f }) => f.site !== undefined && sumVars.has(f.site))
+  const { value, grad } = valueAndGrad((leaves: Value[]) =>
+    contractFactors(
+      factors.map((f, i) => {
+        const j = owned.findIndex((o) => o.i === i)
+        return j < 0 ? f : { ...f, value: leaves[j] as Value }
+      }),
+      sumVars,
+      scales,
+    ),
+  )(owned.map(({ f }) => primalOf(f.value)))
+  const marginals = new Map<string, EnumeratedMarginal>()
+  owned.forEach(({ f }, j) => {
+    const g = grad[j] as Value
+    const site = f.site as string
+    const scale = f.plates.reduce((acc, p) => acc * (scales.get(p) ?? 1), 1)
+    const others = f.dims.filter((d) => d !== site && sumVars.has(d))
+    const reduced: NamedFactor = {
+      value:
+        others.length === 0
+          ? g
+          : sum(
+              g,
+              others.map((d) => f.dims.indexOf(d)),
+            ),
+      dims: f.dims.filter((d) => !others.includes(d)),
+      plates: f.plates,
+    }
+    const plateDims = reduced.dims.filter((d) => d !== site)
+    const ordered = alignFactor(reduced, [...plateDims, site])
+    marginals.set(site, { site, plates: plateDims, probs: primalOf(mul(ordered, 1 / scale)) })
+  })
+  return { logZ: item(value), marginals }
 }

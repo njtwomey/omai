@@ -86,3 +86,13 @@ export function applyStack(msg: Message): Message {
   for (let i = STACK.length - visited; i < STACK.length; i++) STACK[i]?.postprocess?.(msg)
   return msg
 }
+
+/** Run `fn` with an empty stack (a separate program run inside a handler or a guide), restoring the stack after. */
+export function isolated<T>(fn: () => T): T {
+  const saved = STACK.splice(0, STACK.length)
+  try {
+    return fn()
+  } finally {
+    STACK.splice(0, STACK.length, ...saved)
+  }
+}
