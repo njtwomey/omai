@@ -1984,6 +1984,42 @@
       "cases": 13
     },
     {
+      "fixture": "signal/audio/features.json",
+      "source": "oracle/cases/signal/audio/features.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "signal/audio/filterbanks.json",
+      "source": "oracle/cases/signal/audio/filterbanks.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "signal/audio/pitch.json",
+      "source": "oracle/cases/signal/audio/pitch.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "signal/audio/scales.json",
+      "source": "oracle/cases/signal/audio/scales.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "signal/constant_q.json",
       "source": "oracle/cases/signal/constant_q.py",
       "reference": {
