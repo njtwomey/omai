@@ -2193,6 +2193,65 @@
       "cases": 13
     },
     {
+      "fixture": "search/adversarial.json",
+      "source": "oracle/cases/search/adversarial.py",
+      "reference": {
+        "aima-python": "port of games.py (2024)"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "search/csp.json",
+      "source": "oracle/cases/search/csp.py",
+      "reference": {
+        "python-constraint2": "2.7.3",
+        "aima-python": "port of csp.py (2024)"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "search/informed.json",
+      "source": "oracle/cases/search/informed.py",
+      "reference": {
+        "aima-python": "port of search.py (2024)",
+        "networkx": "3.7"
+      },
+      "cases": 36
+    },
+    {
+      "fixture": "search/planning/heuristics.json",
+      "source": "oracle/cases/search/planning/heuristics.py",
+      "reference": {
+        "pyperplan": "2.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "search/planning/strips.json",
+      "source": "oracle/cases/search/planning/strips.py",
+      "reference": {
+        "pyperplan": "2.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "search/refinement.json",
+      "source": "oracle/cases/search/refinement.py",
+      "reference": {
+        "pysubgroup": "0.8.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "search/uninformed.json",
+      "source": "oracle/cases/search/uninformed.py",
+      "reference": {
+        "aima-python": "port of search.py (2024)",
+        "networkx": "3.7"
+      },
+      "cases": 42
+    },
+    {
       "fixture": "stats/correlation.json",
       "source": "oracle/cases/stats/correlation.py",
       "reference": {

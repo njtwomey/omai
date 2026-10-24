@@ -1634,29 +1634,66 @@ oracle: HF tokenizers, tiktoken, nltk, scikit-learn, rapidfuzz, datasketch
 
 ### 4.22 `search/` (tier 7): search, constraint satisfaction and planning (AIMA)
 
-oracle: aima-python results and hand-checked fixtures; python-constraint; pyperplan
+oracle: aima-python (typed ports of its search, game and AC-3 code in `oracle/whitebox_oracle/aima_*.py`, since it is
+not packaged; expansion, goal-test, generation and node counts match exactly under its tie-break by state order) and
+hand-checked textbook fixtures; python-constraint (CSP solution sets); pyperplan (grounding, optimal plan lengths,
+h-add and h-max); pysubgroup (exhaustive WRAcc subgroup discovery); NetworkX (path costs)
 
 One `SearchProblem` contract (initial state, actions, result, goal test, step cost, heuristic) and traced search
-algorithms that record the frontier and explored set, so every search can be animated.
-- `problem.ts`: `SearchProblem`, `SearchNode`, path reconstruction, search statistics (expanded, generated, effective
-  branching factor).
-- `uninformed.ts`: breadth-first, depth-first, depth-limited, iterative deepening, uniform cost, bidirectional search.
-- `informed.ts`: greedy best-first, A*, weighted A*, IDA*, RBFS, beam search; heuristic admissibility and consistency
-  checks.
-- `local.ts`: hill climbing (steepest, first choice, random restarts), simulated annealing, tabu search, local beam
-  search, late acceptance.
-- `evolutionary.ts`: genetic algorithms (selection, crossover and mutation for bit strings, permutations and real
-  vectors), evolution strategies, genetic programming over expression trees, MAP-Elites, novelty search.
-- `swarm.ts`: ant colony optimisation, discrete particle swarm.
-- `adversarial.ts`: minimax, alpha-beta with move ordering, negamax, expectimax, Monte Carlo tree search (UCT and PUCT
-  with priors).
-- `csp.ts`: constraint satisfaction problems: backtracking with MRV, degree and LCV heuristics, forward checking, AC-3,
-  maintaining arc consistency, min-conflicts.
-- `planning.ts`: STRIPS and a PDDL subset, forward and regression planning with h-add, h-max and FF heuristics,
-  GraphPlan, partial-order planning, simple HTN decomposition.
+algorithms that record the frontier and explored set, so every search can be animated. Every search is an `Algorithm`
+(one expansion, move, generation or level per step) with an expansion, node or iteration budget, so it terminates on
+unsolvable and infinite spaces. Searches over explicit graphs are `graph`'s; `graphProblem` adapts a `Graph`, and the
+frontiers reuse `graph`'s `BinaryHeap`.
+- `problem.ts`: `SearchProblem`, `SearchNode`, `rootNode`, `childNode`, `expand`, path reconstruction (`pathNodes`,
+  `solutionPath`, `solutionActions`, `replay`), `SearchResult` and `SearchStats` (expanded, generated, goal tests,
+  largest frontier, explored), `effectiveBranchingFactor`, `stateKeyOf`, `graphProblem`, `searchTree` (a `Structure`).
+- `uninformed.ts`: breadth-first, depth-first, depth-limited, iterative deepening, uniform cost, bidirectional search
+  (each with an `...Algorithm` form).
+- `informed.ts`: best-first on any `f`, greedy best-first, A*, weighted A*, IDA*, RBFS, beam search; heuristic
+  admissibility and consistency checks (`isAdmissible`, `isConsistent`, via `graph`'s `dijkstra` on the reversed
+  reachable space).
+- `local.ts`: hill climbing (steepest, first choice, stochastic, sideways moves; random restarts as child runs),
+  simulated annealing (exponential, geometric and logarithmic schedules), tabu search, local beam search, late
+  acceptance; `spaceProblem` over a `Space`, permutation and bit-flip neighbourhoods.
+- `evolutionary/` (inlined into `search`):
+  - `operators.ts`: selection (tournament, roulette, stochastic universal sampling, linear rank, truncation),
+    crossover and mutation for bit strings, permutations (order, PMX, cycle; swap, inversion, scramble) and real
+    vectors (blend, SBX, arithmetic; Gaussian, polynomial).
+  - `genetic.ts`: genetic algorithms over representations (`bitStrings`, `permutations`, `realVectors`),
+    self-adaptive evolution strategies ((mu, lambda) and (mu + lambda); CMA-ES is `optim`'s).
+  - `programming.ts`: genetic programming over expression trees (primitive sets, grow, full and ramped half-and-half,
+    subtree crossover and mutation, point mutation, symbolic-regression fitness). `methods/evolutionary` maps trees to
+    `symbolic` expressions.
+  - `quality-diversity.ts`: MAP-Elites, novelty search (`numerics`' `kNearest`).
+- `swarm.ts`: ant colony optimisation for the travelling salesman (Ant System, elitist, MAX-MIN), discrete (binary)
+  particle swarm (continuous swarms are `optim`'s).
+- `adversarial.ts`: minimax, alpha-beta with move ordering, negamax (with or without pruning), expectimax, Monte Carlo
+  tree search (UCT and PUCT with priors and value estimates), traced node by node with visit, value and prune events.
+- `csp.ts`: constraint satisfaction problems with constraints of any arity: backtracking with MRV, degree and LCV
+  heuristics, forward checking, AC-3 (generalised to n-ary constraints), maintaining arc consistency, min-conflicts;
+  all-solution enumeration and the incremental search formulation (`cspProblem`).
+- `planning/` (inlined into `search`):
+  - `strips.ts`: STRIPS actions and problems, progression and regression, plan validation, forward and regression
+    planning (A*, greedy, weighted A*, breadth-first) with h-add, h-max, FF and goal-count heuristics; regression
+    prunes subgoal sets with unreachable facts or invariant mutexes.
+  - `pddl.ts`: a PDDL subset (`:strips`, `:typing`, `:equality`): s-expressions, domains, problems, grounding with
+    static-predicate and reachability pruning.
+  - `heuristics.ts`: h-add, h-max, h-FF and FF's relaxed plan (`_relaxed.ts` holds the shared relaxed reachability).
+  - `graphplan.ts`: GraphPlan (mutexes, memoised backward extraction, termination on levelling off), the planning
+    graph's levels, invariant mutex pairs.
+  - `partial-order.ts`: partial-order planning (causal links, threats by promotion and demotion) as a search problem,
+    linearisation (`graph`'s `topologicalSort`).
+  - `htn.ts`: simple total-order HTN decomposition (methods with preconditions, backtracking), the decomposition tree
+    as a `Structure`.
 - `refinement.ts`: refinement-operator search over pattern and rule languages (beam, best-first, exhaustive with
-  optimistic-estimate pruning), top-k result sets with redundancy filtering; used by rule learning, subgroup discovery,
+  optimistic-estimate pruning), top-k result sets with redundancy filtering (`TopK`, `redundancyFilter`, coverage
+  similarity), the conjunctive selector language (`conjunctions`); used by rule learning, subgroup discovery,
   exceptional model mining and ILP.
+- Internal: `_engine.ts` (counters, trace schema and observer of path searches), `_best-first.ts` (the best-first
+  frontier with lazy deletion and tie-breaking), `_csp-model.ts` (compiled CSPs), `_draw.ts` (buffered draws from a
+  key). Textbook instances for tests (Romania, eight puzzle, n-queens, tic-tac-toe and connect four, Australia,
+  Sudoku, SEND+MORE=MONEY) are in `packages/engine/src/testing/search.ts`; the named puzzles and domains for users are
+  `methods/gofai`.
 
 ### 4.23 `stochastic/` (tier 7): stochastic processes and stochastic calculus
 
@@ -2653,11 +2690,11 @@ built from: `search`, `logic`, `stats`
 - `argumentation.ts`: abstract argumentation frameworks (grounded, preferred and stable semantics).
 - `knowledge-representation.ts`: semantic networks, frames with inheritance, a description logic (ALC) tableau.
 - `case-based.ts`: case retrieval, adaptation and retention.
-- `planning-domains.ts`: blocks world, logistics, gripper and other domains for `search/planning.ts`.
+- `planning-domains.ts`: blocks world, logistics, gripper and other domains for `search/planning/`.
 - `puzzles.ts`: 8-puzzle, n-queens, Sudoku, Towers of Hanoi, missionaries and cannibals, cryptarithms.
 
 `evolutionary/` (DEAP ideas)
-built from: `search/evolutionary.ts`, `symbolic`, `nn`, `rl`
+built from: `search/evolutionary/`, `symbolic`, `nn`, `rl`
 - `genetic-algorithms.ts`: studies on OneMax, knapsack and travelling-salesman problems.
 - `genetic-programming.ts`: symbolic regression by genetic programming over `symbolic` expressions.
 - `neuroevolution.ts`: NEAT-style evolution of small networks on XOR and cart-pole.
@@ -3499,7 +3536,7 @@ library for the same computation. They do not set a higher bar than that library
 | SWI-Prolog, Metagol, Popper       | `lib/logic/`                                                                                      |
 | AIMA                              | `lib/search/`, `methods/gofai/`                                                                   |
 | mlxtend, SPMF, pysubgroup         | `methods/patterns/`                                                                               |
-| DEAP                              | `lib/search/evolutionary.ts`, `methods/evolutionary/`                                             |
+| DEAP                              | `lib/search/evolutionary/`, `methods/evolutionary/`                                               |
 | PySINDy                           | `methods/scientific/discovery/`                                                                   |
 | faiss                             | `lib/numerics/spatial/`, `methods/retrieval/indexes.ts`                                           |
 | datasketch, rapidfuzz             | `lib/text/shingles.ts`, `lib/text/fingerprinting.ts`, `methods/retrieval/approximate-matching.ts` |
