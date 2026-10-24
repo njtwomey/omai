@@ -9,8 +9,12 @@ export const negativeBinomialRegressor: HubEntry = defineEntry({
   summary: 'A count model with more variance than the Poisson allows.',
   collection: 'sklearn/linear-model',
   tags: ['regression', 'glm', 'counts'],
-  datasets: ['regressionTabular'],
-  ...fitEstimator(negativeBinomialRegressorMethod()),
-  views: [{ record: 'coefficientTable', title: 'Coefficients' }],
+  datasets: ['glm1d', 'regressionTabular'],
+  dataset: 'overdispersedCounts',
+  ...fitEstimator(negativeBinomialRegressorMethod({ alpha: 0 }), { surface: true }),
+  views: [
+    { record: 'decisionSurface', title: 'Fitted mean' },
+    { record: 'coefficientTable', title: 'Coefficients', area: 'side' },
+  ],
   methods: [{ file: 'methods/linear/glm.ts', name: 'negativeBinomialRegressor' }],
 })

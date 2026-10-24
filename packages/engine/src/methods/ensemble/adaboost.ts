@@ -1,7 +1,7 @@
 import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
-import { type Exposition, ensembleStages, treeRecord } from '../../lib/exposition/index.ts'
+import { type EnsembleStages, type Exposition, ensembleStages, treeRecord } from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
   decisionSurfaceOf,
@@ -13,6 +13,7 @@ import {
   featureNamesOf,
   type LearnData,
   matrixView,
+  stagedSteps,
   takeRows,
 } from '../../lib/learn/index.ts'
 import { choice as draw, foldIn } from '../../lib/random/index.ts'
@@ -302,7 +303,14 @@ function adaEstimator(
         const features = featureNamesOf(data, prepared.x.d)
         const classNames = classifier ? classNamesOf(data, prepared.classes) : undefined
         const exposition: Exposition[] = [
-          ensembleStages({ method: name, weights: s.weights, trainScores, targets: s.targets }),
+          ensembleStages({
+            method: name,
+            weights: s.weights,
+            trainScores,
+            targets: s.targets,
+            scoreName: classifier ? 'training accuracy' : 'training R²',
+            higherIsBetter: true,
+          }),
         ]
         if (s.nodes !== undefined)
           exposition.push(
@@ -313,13 +321,41 @@ function adaEstimator(
               nodes: s.nodes,
             }),
           )
-        if (prepared.x.d === 2)
-          exposition.push(
-            decisionSurfaceOf(est.revive(params), data.x, {
-              featureNames: features,
-              ...(classNames === undefined ? {} : { classNames }),
-            }),
-          )
+        if (prepared.x.d === 2) {
+          // The model after each recorded stage, with the sample weights its newest member was fitted to.
+          const fitted = est.revive(params)
+          const M = s.trees.length
+          const steps =
+            options.explain === false
+              ? undefined
+              : stagedSteps(
+                  M,
+                  (m) =>
+                    m === M
+                      ? fitted
+                      : est.revive({ ...params, trees: s.trees.slice(0, m), weights: s.weights.slice(0, m) }),
+                  { objective: trainScores, rowWeights: s.targets, misclassified: classifier },
+                )
+          const surface = decisionSurfaceOf(fitted, data.x, {
+            featureNames: features,
+            ...(classNames === undefined ? {} : { classNames }),
+            ...(data.y === undefined ? {} : { y: data.y }),
+            ...(steps === undefined
+              ? {}
+              : {
+                  steps,
+                  stepName: 'stage',
+                  objective: {
+                    name: classifier ? 'training accuracy' : 'training R²',
+                    iterations: trainScores.map((_, m) => m + 1),
+                    values: trainScores,
+                    lowerIsBetter: false,
+                  },
+                }),
+          })
+          exposition[0] = { ...(exposition[0] as EnsembleStages), surface }
+          exposition.push(surface)
+        }
         return { params, exposition }
       },
       methods: (p: AdaBoostParams): AdaBoostVerbs =>

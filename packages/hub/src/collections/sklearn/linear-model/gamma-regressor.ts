@@ -9,8 +9,12 @@ export const gammaRegressor: HubEntry = defineEntry({
   summary: 'A log-linear model for positive, right-skewed targets.',
   collection: 'sklearn/linear-model',
   tags: ['regression', 'glm'],
-  datasets: ['regressionTabular'],
-  ...fitEstimator(gammaRegressorMethod()),
-  views: [{ record: 'coefficientTable', title: 'Coefficients' }],
+  datasets: ['glm1d', 'regressionTabular'],
+  dataset: 'gammaResponses',
+  ...fitEstimator(gammaRegressorMethod({ alpha: 0 }), { surface: true }),
+  views: [
+    { record: 'decisionSurface', title: 'Fitted mean' },
+    { record: 'coefficientTable', title: 'Coefficients', area: 'side' },
+  ],
   methods: [{ file: 'methods/linear/glm.ts', name: 'gammaRegressor' }],
 })

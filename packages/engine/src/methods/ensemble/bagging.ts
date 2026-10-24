@@ -143,6 +143,8 @@ function baggingEstimator(
               trainScores,
               ...(oob === undefined ? {} : { validationScores: oob }),
               bootstraps: members.map((m) => m.rows),
+              scoreName: classifier ? 'accuracy' : 'R²',
+              higherIsBetter: true,
             }),
           ],
         }

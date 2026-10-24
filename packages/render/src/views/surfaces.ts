@@ -153,7 +153,10 @@ export function decisionSurfaceLayers(
         : [{ x, y: surface.values?.[0] ?? surface.labels?.[0] ?? [], name: 'prediction', colour: 'tab0' }]
     layers.push(lines(curves, { mode }))
     if (rows !== undefined) {
-      const flat = rows.map((r) => [r[columns[0]] ?? 0, 0])
+      // Rows at their targets when the record has them (regressors), along zero otherwise.
+      const targets = surface.rows?.targets
+      const at = targets !== undefined && targets.length === rows.length ? targets : undefined
+      const flat = rows.map((r, i) => [r[columns[0]] ?? 0, at?.[i] ?? 0])
       layers.push(points(classPointSets(flat, [0, 1], labels, classes, { size: 6, opacity: 0.5 }), { mode }))
     }
     return {

@@ -2,9 +2,12 @@ import { type ReactNode, useMemo, useState } from 'react'
 import { generate } from 'whitebox-engine/data'
 import { moons } from 'whitebox-engine/datasets'
 import { recordsOf } from 'whitebox-engine/exposition'
-import { adaBoostClassifier, gradientBoostingClassifier } from 'whitebox-engine/methods/ensemble'
+import {
+  adaBoostClassifier,
+  gradientBoostingClassifier,
+  randomForestClassifier,
+} from 'whitebox-engine/methods/ensemble'
 import { key } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
 import { Choice, ControlPanel, EnsembleView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -12,15 +15,12 @@ export const recipe: Recipe = {
   title: 'Ensemble stages',
   question: 'How do I show an ensemble being built, member by member?',
   explain:
-    'Boosting returns an `ensembleStages` record: each member’s weight, the training score after each stage, and what each member was fitted to. `EnsembleView` plays it: for AdaBoost the rows the ensemble still gets wrong grow as their sample weights rise; for gradient boosting the rows are coloured by the residuals the next tree fits.',
+    'Boosting and forests return an `ensembleStages` record: each member’s weight, the training score after each stage (named, with its direction), what each member was fitted to, and the decision surface after up to 40 stages. `EnsembleView` draws from the record alone and plays the stages: the regions of the ensemble so far, the rows sized by what the newest member was fitted to (AdaBoost’s sample weights grow on the rows it gets wrong; gradient boosting’s residuals), the misclassified rows ringed, beside the scores and the member weights.',
 }
 
 // region
 const { data } = generate(moons, { knobs: { n: 140, noise: 0.25 }, key: key(5) })
-const rows = toArray(data.x) as number[][]
-const labels = Array.from(data.y.data)
-
-type Method = 'AdaBoost' | 'gradient boosting'
+type Method = 'AdaBoost' | 'gradient boosting' | 'random forest'
 
 export default function EnsembleRecipe(): ReactNode {
   const [method, setMethod] = useState<Method>('AdaBoost')
@@ -30,8 +30,10 @@ export default function EnsembleRecipe(): ReactNode {
     const est =
       method === 'AdaBoost'
         ? adaBoostClassifier({ nEstimators: members, learningRate: rate })
-        : gradientBoostingClassifier({ nEstimators: members, learningRate: rate, maxDepth: 2 })
-    return recordsOf(est.fit(data).exposition, 'ensembleStages')[0]
+        : method === 'gradient boosting'
+          ? gradientBoostingClassifier({ nEstimators: members, learningRate: rate, maxDepth: 2 })
+          : randomForestClassifier({ nEstimators: members, maxDepth: 6 })
+    return recordsOf(est.fit(data, { key: key(1) }).exposition, 'ensembleStages')[0]
   }, [method, members, rate])
   return (
     <div className="flex flex-col gap-3">
@@ -40,19 +42,12 @@ export default function EnsembleRecipe(): ReactNode {
           label="method"
           value={method}
           onChange={setMethod}
-          options={['AdaBoost', 'gradient boosting'] as Method[]}
+          options={['AdaBoost', 'gradient boosting', 'random forest'] as Method[]}
         />
         <NumberField label="members" value={members} onChange={setMembers} min={1} max={100} integer />
         <NumberField label="learning rate" value={rate} onChange={setRate} min={0.01} max={2} log />
       </ControlPanel>
-      {stages !== undefined && (
-        <EnsembleView
-          record={stages}
-          points={rows}
-          labels={labels}
-          scoreLabel={method === 'AdaBoost' ? 'training accuracy' : 'training log loss'}
-        />
-      )}
+      {stages !== undefined && <EnsembleView record={stages} />}
     </div>
   )
 }

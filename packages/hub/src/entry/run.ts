@@ -58,7 +58,16 @@ export function fitEstimator(
     const exposition: readonly Exposition[] =
       (fitted as { readonly exposition?: readonly Exposition[] }).exposition ?? []
     if (options.surface === true && !exposition.some((r) => r.kind === 'decisionSurface'))
-      return { ...fitted, exposition: [...exposition, decisionSurfaceOf(fitted, learn.x)] }
+      return {
+        ...fitted,
+        // The rows ride along with their labels or targets (a regressor's rows sit at their targets).
+        exposition: [
+          ...exposition,
+          decisionSurfaceOf(fitted, learn.x, {
+            ...(learn.y === undefined || options.unsupervised === true ? {} : { y: learn.y }),
+          }),
+        ],
+      }
     return { ...fitted, exposition }
   }
   return { params, run }

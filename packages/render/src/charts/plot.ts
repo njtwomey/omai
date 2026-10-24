@@ -1,7 +1,7 @@
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { type DataAspect, fitDataAspect, type Range } from '../figure/aspect.ts'
 import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figure/figure.ts'
-import { type Limits, resolveLimits, unionRange } from '../figure/limits.ts'
+import { type Limits, legibleRange, padRange, resolveLimits, unionRange } from '../figure/limits.ts'
 import { axisStyle, baseOption } from '../theme/echarts.ts'
 import { formatNumber, formatPercent, formatPower } from '../theme/format.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
@@ -240,8 +240,13 @@ export function panelParts(
   ): Range | undefined => {
     if (scale === 'category') return undefined
     const zero = dim !== undefined && layers.some((l) => l.extent.baseline === dim)
-    const limits = spec?.limits ?? { kind: 'auto' as const, pad, includeZero: zero && scale === 'linear' }
-    return scale === 'log' ? logRange(limits, extent, prev) : resolveLimits(limits, extent, prev)
+    const given = spec?.limits
+    // A fixed range of one point (a path with one penalty) is widened, not refused.
+    const limits =
+      given !== undefined && Array.isArray(given) && !((given[1] as number) > (given[0] as number))
+        ? padRange(given as Range)
+        : (given ?? { kind: 'auto' as const, pad, includeZero: zero && scale === 'linear' })
+    return scale === 'log' ? logRange(limits, extent, prev) : legibleRange(resolveLimits(limits, extent, prev))
   }
   let xr = range(xScale, options.x, xExtent, options.previous?.x, 'x')
   let yr = range(yScale, options.y, yExtent, options.previous?.y, 'y')
@@ -313,7 +318,7 @@ export function panelParts(
         itemWidth: 10,
         itemHeight: Math.max(40, rect.height - 24),
         textStyle: { color: t.muted, fontSize: 10, fontFamily: t.font },
-        ...(bar.label === undefined ? {} : { text: [bar.label, ''], textGap: 6 }),
+        ...(bar.label === undefined ? {} : { textGap: 6 }),
         formatter: (v: number | string) => (typeof v === 'number' ? formatNumber(v, { digits: 3 }) : v),
       }
       visualMap.push(
@@ -323,7 +328,9 @@ export function panelParts(
               type: 'continuous',
               min: bar.min,
               max: bar.max,
-              calculable: false,
+              // Calculable: the handles carry the ends' values and read off any level when dragged.
+              ...(bar.label === undefined ? {} : { text: [bar.label, ''] }),
+              calculable: true,
               inRange: { color: [...bar.colours] },
             }
           : {
