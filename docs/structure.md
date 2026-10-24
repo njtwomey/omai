@@ -2560,25 +2560,56 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 
 ### 4.35 `tune/` (tier 10): parameter selection for anything (Optuna, Ray Tune ideas)
 
-oracle: statistical agreement with optuna and scikit-optimize on fixed seeds; exact checks for grid and halving
-schedules
+oracle: optuna (TPE Parzen densities and splits, QMC sampler orders, every pruner's decisions on fixed learning curves,
+Hyperband brackets, Pareto fronts and hypervolume, PED-ANOVA importance, GP posterior and log EI), scikit-learn
+(`ParameterGrid` order, `GridSearchCV` results, the halving searches' schedules, GP
+posteriors with fixed kernels) and scipy (acquisition closed forms); stochastic samplers are checked by optimisation
+performance on Branin and Hartmann functions within budgets, with explicit keys
 
 A study runs trials over a `Space` against an `Objective`. Objectives can be cross-validated estimators, training runs
 with epochs as fidelity, agents in environments, probabilistic programs (evidence, ELBO, LOO) or any function. The same
 samplers, pruners and schedules work for all of them. A study is a traced algorithm whose steps are trials, each a
-child run.
-- `study.ts`: `Study`, `Trial` (params, intermediate values, status), `tune(objective, space, options)`, best and Pareto
-  trials, resuming a study, exporting trials as data.
-- `objectives.ts`: `estimatorObjective` (splitter plus metric), `holdoutObjective`, `trainingObjective` (reports per
-  epoch for pruning and fidelity), `agentObjective`, `programObjective`, `functionObjective`, multi-objective objectives.
-- `samplers.ts`: the `Sampler` contract; grid, random, Sobol and Latin hypercube samplers; CMA-ES and Nelder-Mead
-  samplers (from `optim`); evolutionary samplers (from `search`).
-- `pruners.ts`: median, percentile, threshold, patience, successive-halving and Hyperband pruners.
-- `schedules.ts`: multi-fidelity schedules (successive halving, Hyperband brackets, ASHA) as data.
+child run. Samplers and pruners are pure functions of the study (what they remember lives on the trials), so a study
+resumed at trial t draws exactly what an uninterrupted run would.
+- `study.ts`: `Study`, `Trial` (params, values, intermediate values, state, source, budget, bracket and rung),
+  `createStudy`, `bestTrial`, `bestTrials` (Pareto front), `studyHypervolume`, `exportTrials` (trials as rows),
+  `studyToJson` and `studyFromJson` (store and resume).
+- `tuning.ts`: `studyAlgorithm` (one trial per step; trial child runs record reports and pruning decisions; stops on the
+  trial or resource budget, an exhausted sampler or schedule, repeated failures, a constant objective or lack of
+  improvement) and `tune(objective, space, options)` (enqueued configurations, resuming a study).
+- `objectives.ts`: the `Objective` and `TrialContext` contracts (`report` returns whether to stop), `objectiveBase`,
+  `functionObjective`, `multiObjective`, `trainingObjective` (a traced algorithm as a child run, reporting per step for
+  pruning, with the schedule's budget as its steps), `agentObjective`, `programObjective`. TODO(probprog):
+  `programObjective` takes a fit function returning the criteria until `probprog` lands; then a model and data.
+- `estimators.ts`: estimator objectives on `learn`'s contract: `estimatorFor` (`estimator.with(params)` or a factory),
+  `estimatorObjective` (a `learn` splitter or `cv` count, scored by a metric, a `learn` scorer or the estimator's own
+  score; the running mean reported per fold; each fit a child run of the trial) and `holdoutObjective`.
+- `samplers.ts`: the `Sampler` contract; grid (scikit-learn's order), random, Sobol (plain or scrambled), Halton and
+  Latin hypercube samplers; CMA-ES (IPOP restarts) and Nelder-Mead samplers from `optim`, asked and told by replaying the
+  optimiser (`_replay.ts`); an evolutionary sampler (NSGA-II for several objectives) from the operators of `search`.
+- `parzen.ts`: Optuna's Parzen estimators (bandwidths, prior, weights; truncated normals, stepped and log leaves,
+  options), their densities and draws, gamma and weight functions, the TPE acquisition log l(x) - log g(x).
+- `tpe.ts`: the tree-structured Parzen estimator sampler as Optuna's: the good/bad split (with pruned trials, and for
+  several objectives non-dominated ranks with hypervolume subset selection), multivariate and independent modes.
+- `surrogate.ts`: the Gaussian-process surrogate of Bayesian optimisation (Matern 5/2 with ARD and Hamming distance
+  for options, MAP hyperparameters with Optuna's priors; from `kernels`, `stochastic` and `optim`), `gpPosterior`.
+- `bayesian.ts`: acquisitions (EI, log EI, PI, log PI, confidence bounds), acquisition maximisation (Sobol candidates
+  refined by L-BFGS-B) and `gpSampler`. TODO(tune): multi-objective acquisition (log expected hypervolume improvement).
+- `pruners.ts`: median, percentile, threshold, patient, successive-halving (ASHA) and Hyperband pruners, and the no-op
+  pruner, decision for decision as Optuna's.
+- `schedules.ts`: multi-fidelity schedules as data (successive halving, Hyperband brackets, ASHA rungs),
+  `nextAssignment` (samples and promotions that a study runs, with budgets), and `halvingPlan` (scikit-learn's halving
+  iterations).
 - `wrappers.ts`: familiar entry points built on studies: `gridSearchCv`, `randomizedSearchCv`, `halvingGridSearchCv`,
-  `halvingRandomSearchCv`.
-- `analysis.ts`: trial tables, optimisation history, parameter importance (permutation and correlation based),
-  parallel-coordinate, slice and contour data.
+  `halvingRandomSearchCv`. Each is a `learn` estimator (fitted values revive and carry the best model's verbs), so
+  searches nest inside cross-validation; grids are `learn`'s `parameterGrid`. (`learn/model-selection/search.ts` keeps
+  the candidate-list `gridSearchCV` and `randomizedSearchCV`; these generalise them with samplers, pruners and
+  multi-fidelity schedules.)
+- `analysis.ts`: trial tables (`TableData`), optimisation history, intermediate values, parallel-coordinate, slice and
+  contour data (a GP surrogate over two parameters), Pareto fronts, hypervolume history and the empirical distribution.
+- `importance.ts`: parameter importance: correlation based, permutation based (on a GP surrogate), functional ANOVA of a
+  GP surrogate, and PED-ANOVA as Optuna's evaluator. TODO(methods/trees): fANOVA on random forests as Optuna's default
+  evaluator, once regression forests exist.
 ### 4.36 `worlds/` (tier 6): discrete worlds shared by search, reinforcement learning and graphics
 
 One representation of a map, used by every application of it: a maze solved by breadth-first search, A* or a learned
@@ -2626,23 +2657,64 @@ dependency, so its layouts are checked structurally (TODO: golden-test them agai
 
 ### 4.37 `graphics/` (tier 7): rendering mathematics
 
-The mathematics of drawing worlds and scenes, as data (`Pixels`, scene nodes), so figures and the slide and blog tools
-can show how a renderer works step by step. Everything is deterministic and traced where a step is worth showing.
+The mathematics of drawing worlds and scenes, as data (float images that `imageToPixels` turns into `scene` `Pixels`,
+scene nodes, and the steps behind them: DDA crossings, ray trees, path vertices, per-triangle records), so figures and
+the slide and blog tools can show how a renderer works step by step. Everything is deterministic (randomness only from
+keys) and traced where a step is worth showing: column ray casting steps per column, Whitted tracing per generation of
+rays, path tracing per sample. Every loop is capped (DDA steps, ray depth and weight, bounces). Shading terms,
+intersection distances, projection and tone mapping are tensor compositions, vectorised and differentiable (checked
+by `checkPrimitive`); renderers run per-ray loops on numbers and shade hits in batches through the same terms. It
+builds on `scene` (`Vec3`, `Pixels`, `toPixels`, the orbit `Camera`, paints), `worlds` (maps, `Pose`, `toScene`, lattice
+noise), `foundations` (vector products, homogeneous coordinates) and `numerics/linalg/blas.ts`.
 
-oracle: closed forms; numpy references for the linear algebra; small images compared to hand-checked renders.
-- `camera.ts`: pinhole and orthographic cameras, view and projection matrices, ray generation per pixel, frustum tests.
-- `raycasting.ts`: grid ray casting over a `World` (DDA traversal, wall hits with side and distance, fish-eye
-  correction), first-person column rendering with textured walls, floors and ceilings, sprites with depth sorting, and
-  the traced rays for a top-down view-cone figure.
-- `raytracing.ts`: ray-primitive intersections (sphere, plane, triangle with Moller-Trumbore, axis-aligned box),
-  bounding-volume hierarchies, recursive ray tracing with shadows, reflection and refraction (Snell, Fresnel by
-  Schlick), and a small path tracer (cosine-weighted hemisphere sampling with explicit keys).
-- `shading.ts`: Lambert, Phong and Blinn-Phong, physically based microfacet shading (GGX, Smith, Fresnel), lights
-  (point, directional, area), tone mapping and gamma.
-- `textures.ts`: texture images, UV mapping, nearest, bilinear and mipmapped sampling, procedural textures
-  (checkerboard, noise, bricks).
-- `rasterise.ts`: triangle rasterisation with barycentric interpolation, depth buffers, back-face culling and clipping
-  (the counterpart of ray casting, for comparison figures).
+oracle: closed forms (intersection roots and normals by numpy, the exact Fresnel equations, GGX, Smith through its
+Lambda form), numpy for the camera matrices, unprojected pixel rays and frustum planes from the view volume's corners,
+scipy.integrate.dblquad for directional albedos, scipy.ndimage.map_coordinates for texture sampling, and 16 x 12
+reference renders by independent straightforward implementations (a brute-force Whitted tracer, a ray caster that
+intersects every wall face, a per-pixel rasteriser solving for barycentrics). The path tracer is checked by the white
+furnace test (exact for a convex object), agreement with Whitted where there is no indirect light, and convergence to
+stratified area-light estimates.
+- `camera.ts`: pinhole and orthographic cameras (`pinholeCamera`, `orthographicCamera`, `fromSceneCamera` for the
+  orbit camera of 3-D scene layers, `cameraBasis`), view and projection matrices (`lookAt`, `perspective`,
+  `orthographic`, `viewMatrix`, `projectionMatrix`, `viewProjection`, `transformPoint`), projection (`projectToPixel`,
+  differentiable `projectPoints`), ray generation per pixel (`pixelRay`, `cameraRays`, jittered by a key), and frustum
+  tests (`frustumPlanes`, `cameraFrustum`, `pointInFrustum`, `sphereInFrustum`, `boxInFrustum`).
+- `raycasting.ts`: grid ray casting over a `World` (`ddaCast`: the Amanatides-Woo DDA with wall hits by side, face,
+  distance and texture column, stopped by opaque cells, thin walls and the map edge; `fisheyeCorrect`), column casting
+  as a traced algorithm (`columnAngles`, `raycastAlgorithm`, `castColumns`, with a `fisheye` switch for comparison),
+  first-person frames with textured walls, floors and ceilings, fog and sprites with depth sorting against the
+  column depth buffer (`renderRaycast`), and the traced rays of a top-down view-cone figure (`viewConeRays`,
+  `viewConeScene`).
+- `intersect.ts`: shapes (`sphere`, `plane`, `triangle` with vertex normals and texture coordinates, `box`),
+  ray-primitive intersections (`intersectSphere`, `intersectPlane`, `intersectTriangle` by Moller-Trumbore,
+  `intersectBox` and `slabs`, `intersect`, brute-force `nearestHit`, `bounds`) and their differentiable distances
+  (`sphereDistance`, `planeDistance`, `triangleIntersection`, `boxDistances`).
+- `bvh.ts`: bounding-volume hierarchies (`buildBvh` by the binned surface-area heuristic or median splits, iterative),
+  nearest-hit and any-hit traversal with counts (`intersectBvh`, `occludedBvh`), and `bvhStructure` for drawing.
+- `raytracing.ts`: scenes of objects with materials and albedo maps (`rayScene`, `sceneHit`, `sceneOccluded`,
+  `albedoAt`), reflection and refraction (`refract` by Snell's law, `schlick` for dielectrics, `splitWeights`), and
+  recursive (Whitted) ray tracing with shadow rays, mirrors and glass as a traced algorithm (`whittedAlgorithm`,
+  `renderWhitted`, `traceRay` returning the ray tree).
+- `pathtracing.ts`: a small path tracer (cosine-weighted hemisphere sampling with explicit keys: `cosineHemisphere`,
+  `sampleCosineHemisphere`; next-event estimation of lights; Lambertian, mirror and Fresnel-chosen glass events) as a
+  traced algorithm per sample (`pathTracerAlgorithm`, `pathTrace`), and single paths with their vertices (`tracePath`).
+- `shading.ts`: Lambert, Phong and Blinn-Phong terms and their normalised BRDFs (`reflect`, `halfVector`, `lambert`,
+  `phong`, `blinnPhong`, `lambertBrdf`, `phongBrdf`, `blinnPhongBrdf`, `blinnPhongDistribution`), physically based
+  microfacet shading (`ggxDistribution`, `smithG1`, `smithG`, `fresnelSchlick`, `fresnelDielectric`, `cookTorrance`,
+  `metallicRoughness`), and materials (`material`, `brdf`, `shade`).
+- `lights.ts`: lights (`pointLight`, `directionalLight`, rectangular `areaLight` with stratified or keyed samples),
+  `lightSamples`, and batched shading of surface points with shadow tests (`shadePoints`).
+- `tonemapping.ts`: tone mapping and gamma (`exposure`, `reinhard` plain and extended, `acesFilm`, `gammaEncode`,
+  `gammaDecode`, `linearToSrgb`, `srgbToLinear`, `luminance`).
+- `textures.ts`: texture images (`FloatImage`, `floatImage`, `imageFromPixels`, `imageToPixels` with exposure, tone
+  mapping and encoding), UV mapping (`sphereUv`, `planarUv`, `cylinderUv`, `cubeUv`), nearest, bilinear and mipmapped
+  sampling (`wrapIndex`, `sampleNearest`, `sampleBilinear`, `mipmaps`, `mipLevel`, `sampleMipmap`), and procedural
+  textures (`checkerboard`, `bricks`, `noiseTexture` from `worlds`' lattice noise, `bakeTexture`).
+- `rasterise.ts`: triangle rasterisation (`edgeFunction`, `rasteriseTriangle` with the top-left rule on a subpixel
+  grid and barycentric weights), clipping in homogeneous clip space (`clipPolygon`), back-face culling
+  (`isBackFacing`), depth buffers (`depthBuffer`, `depthTest`), and the whole pipeline with perspective-correct
+  interpolation, textures and deferred shading (`mesh`, `rasteriseMesh`): the counterpart of ray casting, for
+  comparison figures.
 
 ## 5. whitebox-engine methods, `packages/engine/src/methods/`
 
@@ -2650,6 +2722,74 @@ Methods are the named models, algorithms, environments, datasets and studies, ea
 lists what it is built from, which is also its import list. Areas are grouped below as a reader looks for them; on disk
 they are flat folders. Every estimator comes as a factory (`pca({ nComponents: 2 })`) and as a class
 (`new PCA({ nComponents: 2 })`), declares its `hyperSpace`, and offers `predictDistribution` where it predicts.
+
+### 5.0 First pass: scope, phases and the exposition contract
+
+The methods are a classical-AI toolkit in the spirit of scikit-learn, with a little more on the probabilistic side, and a
+reinforcement-learning playground. They exist to drive small live demos and gallery entries, not as an encyclopedia: a
+method wraps the core (it never re-implements what a core domain already has) and documents itself lightly, but it
+always hands back the data an explanation needs.
+
+**Exposition contract.** Every fitted method returns, beside its predictions, the intermediate quantities a figure or a
+sentence of explanation would use, as plain data (and as trace events where they evolve), for example:
+- linear models: coefficients, the whole regularisation path over a lambda grid (coefficients, active set, duality
+  gap per lambda), cross-validation curves with their standard-error bands, solver iterations (IRLS, coordinate steps),
+  residuals and leverage;
+- trees: for every node, every candidate split evaluated (feature, threshold, impurity before and after, decrease), the
+  chosen split, the indices of the training rows that reach it, its class counts or value, the order of growth, and the
+  cost-complexity pruning path;
+- ensembles: every member, staged predictions, out-of-bag curves, per-round sample weights (AdaBoost) and residuals
+  (gradient boosting);
+- SVMs: support vectors and their dual coefficients, margins, the decision function on a grid, the working-set trace
+  of SMO and the dual objective;
+- neighbours, naive Bayes, discriminants and GPs: neighbour indices and distances per query, per-class and per-feature
+  likelihood contributions, posterior means, variances and samples on a grid, the marginal-likelihood surface over
+  hyperparameters and the optimisation path across it;
+- clustering, mixtures and decompositions: assignments, centres and inertia per iteration, merges with heights,
+  core/border/noise labels and reachability, responsibilities and log likelihood per EM step, components, explained
+  variance per component and reconstruction error per rank;
+- manifolds and anomalies: the embedding per iteration (t-SNE, UMAP), stress, neighbour graphs and calibrated
+  bandwidths, anomaly scores with their thresholds and per-point evidence (isolation path lengths, reachability);
+- searches and agents: every trial of a hyperparameter search with its values and pruning decisions; every episode's
+  return and every step's state, action, reward and frame for an agent, with value and policy snapshots.
+
+**Documentation.** Methods carry a summary and parameter docs; `@example` blocks are optional (the core is where the
+exposition of the mathematics lives).
+
+**Dataset collections.** `methods/datasets/collections.ts` groups the generators and real datasets into themed lists
+for pickers: `classification2d`, `regression1d`, `clustering2d`, `density2d`, `anomaly2d`, `manifold3d`,
+`timeSeries`, `textCorpora` and `environments` (the rl environments by family), each entry with its name, its
+generator, the `Space` of its knobs with demo defaults, and the methods it suits. whitebox-render turns a collection
+and a method's `hyperSpace` into a dataset picker and parameter controls (see `react/controls/`).
+
+**Phases** (first pass; later phases follow the same contract):
+1. Supervised: `linear/` (model, solvers, regression with paths and CV, classification, the GLM families, robust
+   regression, Bayesian ridge and ARD), `trees/` (tree, criteria, growth, pruning), `ensemble/` (bagging, forests,
+   AdaBoost, gradient and histogram boosting, stacking), `svm/` (SVC, SVR, linear, one-class SVM and SVDD),
+   `neighbours/` (k-NN, centroids), `naive-bayes/`, `discriminant/`, `gp/` (regression and classification, dense and
+   sparse inducing-point versions), `kernel-methods/kernel-ridge.ts`, `multiclass/reductions.ts`.
+2. Unsupervised: `cluster/` (k-means family, medoids, hierarchical, DBSCAN/HDBSCAN/OPTICS/mean shift, spectral,
+   affinity propagation and BIRCH), `mixture/`, density estimation (KDE with bandwidth selection, histograms; thin
+   wrappers over `stats/density.ts` and the mixtures), `decomposition/` (PCA and its variants, probabilistic PCA and
+   factor analysis, kernel PCA, ICA, NMF, truncated SVD, CCA/PLS, random projections), `manifold/` (MDS, Isomap, LLE,
+   spectral, t-SNE, UMAP, SOM, quality measures), `anomaly/` (isolation forests, LOF, statistical, combination),
+   `covariance/`.
+3. Paradigms and probabilistic models: `semi-supervised/` (self-training, label propagation and spreading), online
+   learning (the SGD and passive-aggressive models of `linear/`, mini-batch k-means, incremental PCA, with
+   learning-curve studies), `active-learning/` studies over `learn`, and from `models/`: HMMs, the CRF estimator, LDA,
+   conjugate models, hierarchical models, Bayesian regression programs, linear-Gaussian latent models.
+4. Showcases: an rl playground study (`rl/playground.ts`: choose an environment, from classic control, toy text, grid
+   worlds built on `worlds`, MinAtar, and an agent, tabular Q-learning and SARSA, DQN, REINFORCE and PPO, LQR for
+   control, with defaults that learn visibly within a short budget, live frames and learning curves) and
+   hyperparameter optimisation (`tuning/`: a study over a method and a dataset collection, with the analysis data of
+   `tune`).
+5. Later (deprioritised): causal inference (5.5), search-based discovery and classical AI (5.6), the remaining domain
+   areas (5.7), scientific machine learning (5.8), generative models (5.10), neural network models (5.11), retrieval,
+   matching and recommendation (5.12), information and coding (5.13), algorithms and data structures (5.14),
+   foundations studies (5.15), optimisation and Monte Carlo studies (5.16), learning theory (5.17), further datasets
+   (5.18), and the rest of 5.1 to 5.4 not named above (GAMs, survival, rule learners, ordinal and mixed models,
+   multi-output, embeddings, weak supervision, transfer, federated learning, fairness, privacy, adversarial examples,
+   ratings, IRT, lattices, topic-model extensions).
 
 ### 5.1 Supervised learning
 
@@ -3676,7 +3816,9 @@ Design rules:
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
   value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
   and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
-  `Toggle`, `SeedInput`; and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
+  `Toggle`, `SeedInput`; `DatasetPicker` (a dataset collection from `methods/datasets/collections.ts`, with the
+  chosen generator's knobs as controls) and `MethodControls` (controls from a method's `hyperSpace`, demo defaults
+  first); and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
   left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas.
 - `EnvView.tsx`: one consistent view of any environment's render, with episode playback and overlays.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`.

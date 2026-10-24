@@ -55,7 +55,9 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - Relative imports use `.ts` extensions; Biome formats at 120 columns, single quotes, no semicolons.
 - No local copies of generic helpers: number-array kernels come from `numerics/linalg/blas.ts` (`ddot`, `dnrm2`,
   `daxpy`, `dscal`, `dgemv`), value-level ones from the tensor ops. A missing helper goes into a shared module first.
-- Every export has TSDoc: summary, `@param`, `@returns`, and an `@example` whose `// => value` lines are checked.
+- Every core export (`lib/`) has TSDoc: summary, `@param`, `@returns`, and an `@example` whose `// => value` lines are
+  checked. Methods (`methods/`) need a summary and parameter docs; examples are optional. Methods wrap the core rather
+  than re-implement it, and return the data an explanation needs (the exposition contract, `docs/structure.md` 5.0).
 - Tests sit next to code: `foo.test.ts`, `foo.property.test.ts` (fast-check), `foo.golden.test.ts` (fixtures in
   `packages/engine/fixtures/<same path>/`), `foo.test-d.ts`.
 - Python is uv-only, configured through pydantic-settings; the oracle mirrors engine paths under `oracle/cases/`.
