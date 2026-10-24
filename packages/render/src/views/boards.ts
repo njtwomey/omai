@@ -58,6 +58,10 @@ function knownColour(name: string, mode: ColourMode): string | undefined {
       return t.danger
     case 'given':
       return tint(t.fg, 0.82)
+    case 'hand':
+      return mixColours(t.surface, t.fg, 0.04)
+    case 'table':
+      return mode === 'light' ? mixColours(t.fg, t.bg, 0.25) : mixColours(t.fg, t.bg, 0.55)
     case 'shade':
       return mixColours(t.surface, t.fg, 0.08)
     case 'assigned':

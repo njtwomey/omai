@@ -2,5 +2,7 @@
 export * from './adversarial.ts'
 export * from './csp.ts'
 export * from './maps.ts'
+export * from './planning-domains.ts'
+export * from './planning.ts'
 export * from './puzzles.ts'
 export * from './search.ts'

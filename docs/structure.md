@@ -3284,7 +3284,10 @@ built from: `search`, `logic`, `stats`
 - `argumentation.ts`: abstract argumentation frameworks (grounded, preferred and stable semantics).
 - `knowledge-representation.ts`: semantic networks, frames with inheritance, a description logic (ALC) tableau.
 - `case-based.ts`: case retrieval, adaptation and retention.
-- `planning-domains.ts`: blocks world, logistics, gripper and other domains for `search/planning/`.
+- `planning-domains.ts`: blocks world, logistics, gripper and other domains for `search/planning/` (so far the
+  four-operator `blocksWorld` with `SUSSMAN`, `randomBlocks` and `towersOf`).
+- `planning.ts`: `planBlocks`: forward STRIPS planning played twice as `BoardSteps` (the states the search expands,
+  then the plan carried out), blocks drawn on a table under the gripper.
 - `puzzles.ts`: 8-puzzle, n-queens, Sudoku, Towers of Hanoi, missionaries and cannibals, cryptarithms (so far
   `nQueens`, `sudoku` with `SUDOKUS`, map colouring of `AUSTRALIA` and `randomMap`s).
 - `csp.ts`: CSPs played on their boards (`playCsp` with a `CspPicture`; `solveQueens`, `solveSudoku`,
