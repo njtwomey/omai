@@ -637,6 +637,15 @@
       "cases": 11
     },
     {
+      "fixture": "learn/explain/gradients.json",
+      "source": "oracle/cases/learn/explain/gradients.py",
+      "reference": {
+        "captum": "0.9.0",
+        "torch": "2.14.1"
+      },
+      "cases": 18
+    },
+    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {
