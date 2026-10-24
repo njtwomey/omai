@@ -1930,6 +1930,14 @@
       "cases": 13
     },
     {
+      "fixture": "signal/constant_q.json",
+      "source": "oracle/cases/signal/constant_q.py",
+      "reference": {
+        "librosa": "1.0.0"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "signal/filters/apply.json",
       "source": "oracle/cases/signal/filters/apply.py",
       "reference": {
@@ -1979,6 +1987,40 @@
       "cases": 72
     },
     {
+      "fixture": "signal/lomb_scargle.json",
+      "source": "oracle/cases/signal/lomb_scargle.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "astropy": "8.0.2"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "signal/multirate.json",
+      "source": "oracle/cases/signal/multirate.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 47
+    },
+    {
+      "fixture": "signal/parametric.json",
+      "source": "oracle/cases/signal/parametric.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "signal/reassignment.json",
+      "source": "oracle/cases/signal/reassignment.py",
+      "reference": {
+        "librosa": "1.0.0"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "signal/sampling.json",
       "source": "oracle/cases/signal/sampling.py",
       "reference": {
@@ -1995,6 +2037,23 @@
         "librosa": "1.0.0"
       },
       "cases": 8
+    },
+    {
+      "fixture": "signal/spectral.json",
+      "source": "oracle/cases/signal/spectral.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 35
+    },
+    {
+      "fixture": "signal/time_frequency.json",
+      "source": "oracle/cases/signal/time_frequency.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "librosa": "1.0.0"
+      },
+      "cases": 24
     },
     {
       "fixture": "signal/windows/cosine.json",
