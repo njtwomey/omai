@@ -36,10 +36,16 @@ export interface AnomalyViewOptions extends ViewOptions {
 export function anomalyView(record: AnomalyScores, options: AnomalyViewOptions = {}): EChartsOption {
   const own = options.points === undefined ? record.rows : undefined
   // One feature: the rows against their score, not along a line at zero.
-  const single = own !== undefined && own.features[1] === ''
-  const rows = options.points ?? (single ? own?.points.map((p, i) => [p[0] ?? 0, record.scores[i] ?? 0]) : own?.points)
-  const names: readonly [string, string] =
-    own === undefined ? ['', ''] : single ? [own.features[0], 'anomaly score'] : own.features
+  const given = options.points
+  const single = given !== undefined ? (given[0]?.length ?? 2) < 2 : own !== undefined && own.features[1] === ''
+  const base = given ?? own?.points
+  const column = given === undefined ? 0 : (options.columns?.[0] ?? 0)
+  const rows = single ? base?.map((p, i) => [p[column] ?? 0, record.scores[i] ?? 0]) : base
+  const names: readonly [string, string] = single
+    ? [own?.features[0] ?? 'x0', 'anomaly score']
+    : own === undefined
+      ? ['', '']
+      : own.features
   const fig = viewFigure(options, { aspect: rows === undefined && record.evidence === undefined ? 1.6 : 1.75 })
   const mode = fig.mode
   const threshold = options.threshold ?? record.threshold
@@ -78,7 +84,7 @@ export function anomalyView(record: AnomalyScores, options: AnomalyViewOptions =
       options: { x: { label: 'anomaly score' }, y: { label: record.evidence.name } },
     }
   if (rows !== undefined) {
-    const [a, b] = options.points === undefined ? [0, 1] : (options.columns ?? [0, 1])
+    const [a, b] = options.points === undefined || single ? [0, 1] : (options.columns ?? [0, 1])
     const layers: Layer[] = [
       points(
         [
