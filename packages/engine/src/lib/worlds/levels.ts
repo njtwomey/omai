@@ -1,6 +1,5 @@
 import { type Json, WhiteboxError } from '../base/index.ts'
-import { uniformStream } from '../random/_unit.ts'
-import { foldIn, type Key, uniform } from '../random/index.ts'
+import { foldIn, type Key, uniform, uniformStream } from '../random/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { distanceField, regions } from './analysis.ts'
 import { TERRAINS, type TerrainSpec, type World, world } from './world.ts'
@@ -63,7 +62,7 @@ export function bspDungeon(key: Key, options: DungeonOptions = {}): Dungeon {
   const minLeaf = Math.max(3, options.minLeaf ?? 6)
   const maxDepth = Math.min(10, Math.max(0, options.maxDepth ?? 5))
   if (rows < minLeaf || cols < minLeaf) throw new WhiteboxError('value', 'bspDungeon: the map is smaller than a leaf')
-  const next = uniformStream(key, foldIn)
+  const next = uniformStream(key)
   const int = (lo: number, hi: number): number => lo + Math.min(hi - lo, Math.floor(next() * (hi - lo + 1)))
   const floor = new Uint8Array(rows * cols)
   const rooms: Room[] = []

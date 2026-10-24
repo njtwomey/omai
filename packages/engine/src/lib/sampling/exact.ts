@@ -1,8 +1,7 @@
 import { WhiteboxError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
-import { type AliasTable, aliasSample, type Key, uniform } from '../random/index.ts'
+import { type AliasTable, aliasSample, type Key, uniform, uniformStream } from '../random/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../tensor/index.ts'
-import { uniforms } from './_mcmc.ts'
 
 /** Options shared by the exact samplers: whether to return a record of each step (for teaching). */
 export interface StepRecordOptions {
@@ -272,7 +271,7 @@ export interface PolarStep {
  */
 export function marsagliaPolar(key: Key, n: number, options: StepRecordOptions = {}): Recorded<PolarStep> {
   checkN(n, 'marsagliaPolar')
-  const rand = uniforms(key)
+  const rand = uniformStream(key, 64)
   const out = new Float64Array(n)
   const steps: PolarStep[] = []
   let k = 0

@@ -1,8 +1,9 @@
 import { WhiteboxError } from '../base/index.ts'
 import { fromStorage, type Shape, sizeOf, type Tensor } from '../tensor/index.ts'
-import { uniformStream, unitDoubles } from './_unit.ts'
+import { unitDoubles } from './_unit.ts'
 import { binomialOne, poissonOne } from './_variates.ts'
-import { foldIn, type Key } from './key.ts'
+import { uniformStream } from './continuous.ts'
+import type { Key } from './key.ts'
 
 function ints(shape: Shape, draw: (i: number) => number): Tensor<'int32'> {
   const out = new Int32Array(sizeOf(shape))
@@ -129,7 +130,7 @@ export function multinomial(k: Key, n: number, probs: readonly number[], samples
   if (!Number.isInteger(n) || n < 0) throw new WhiteboxError('value', `multinomial: n must be a non-negative integer`)
   const cdf = cumulative(probs, 'multinomial')
   const K = probs.length
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   const out = new Int32Array(samples * K)
   for (let s = 0; s < samples; s++) {
     let left = n
@@ -165,7 +166,7 @@ export function multinomial(k: Key, n: number, probs: readonly number[], samples
  */
 export function poisson(k: Key, lambda: number, shape: Shape): Tensor<'int32'> {
   if (!(lambda >= 0)) throw new WhiteboxError('value', `poisson: rate must be non-negative, got ${lambda}`)
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   return ints(shape, () => poissonOne(lambda, next))
 }
 
@@ -191,7 +192,7 @@ export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'in
   if (!(p >= 0 && p <= 1) || !Number.isInteger(n) || n < 0) {
     throw new WhiteboxError('value', 'binomial: need an integer n >= 0 and p in [0, 1]')
   }
-  const next = uniformStream(k, foldIn)
+  const next = uniformStream(k)
   return ints(shape, () => binomialOne(n, p, next))
 }
 

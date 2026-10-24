@@ -1,7 +1,6 @@
 import { logAddExp, WhiteboxError } from '../base/index.ts'
-import { foldIn, type Key } from '../random/index.ts'
+import { foldIn, type Key, uniformStream } from '../random/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
-import { uniforms } from './_mcmc.ts'
 import type { LogDensity, Proposal } from './target.ts'
 
 /** The result of the rejection samplers. */
@@ -61,7 +60,7 @@ export function rejectionSample(
   const dim = target.dim
   const budget = options.maxProposals ?? 1000 * Math.max(1, n)
   const out = new Float64Array(n * dim)
-  const rand = uniforms(foldIn(options.key, 1))
+  const rand = uniformStream(foldIn(options.key, 1), 64)
   let accepted = 0
   let proposals = 0
   let violations = 0
@@ -206,7 +205,7 @@ export function adaptiveRejectionSample(
     return ((x1 - x) * h0 + (x - x0) * h1) / (x1 - x0)
   }
 
-  const rand = uniforms(options.key)
+  const rand = uniformStream(options.key, 64)
   const out = new Float64Array(n)
   let accepted = 0
   let proposals = 0
@@ -338,7 +337,7 @@ export function ratioOfUniforms(
     throw new WhiteboxError('value', 'ratioOfUniforms: the bounds must be finite with uMax > 0')
   }
   const budget = options.maxProposals ?? 1000 * Math.max(1, n)
-  const rand = uniforms(options.key)
+  const rand = uniformStream(options.key, 64)
   const out = new Float64Array(n)
   let accepted = 0
   let proposals = 0

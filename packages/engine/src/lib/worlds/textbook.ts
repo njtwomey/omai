@@ -1,6 +1,5 @@
 import { WhiteboxError } from '../base/index.ts'
-import { uniformStream } from '../random/_unit.ts'
-import { foldIn, type Key } from '../random/index.ts'
+import { type Key, uniformStream } from '../random/index.ts'
 import { fromAscii, type Legend } from './ascii.ts'
 import {
   ACTIONS,
@@ -415,7 +414,7 @@ export function miniGridWorld(layout: MiniGridLayout, key: Key, options: MiniGri
   if (!Number.isInteger(size) || size < minimum) {
     throw new WhiteboxError('value', `miniGridWorld: '${layout}' needs a size of at least ${minimum}`)
   }
-  const next = uniformStream(key, foldIn)
+  const next = uniformStream(key)
   const int = (lo: number, hi: number): number => lo + Math.min(hi - lo - 1, Math.floor(next() * (hi - lo)))
   const cell = (r: number, c: number): number => r * size + c
   const terrain = new Array<string>(size * size).fill('floor')

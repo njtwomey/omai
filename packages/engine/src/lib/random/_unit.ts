@@ -14,24 +14,6 @@ export function unitDoubles(k: Key, n: number): Float64Array {
   return out
 }
 
-/**
- * An endless stream of uniforms from one key, in blocks, for rejection samplers that need an unknown number of draws.
- * Block `b` uses `foldIn(key, b)`, so the stream is a pure function of the key.
- */
-export function uniformStream(k: Key, foldIn: (k: Key, d: number) => Key, block = 256): () => number {
-  let b = 0
-  let buf = unitDoubles(foldIn(k, b), block)
-  let i = 0
-  return () => {
-    if (i >= buf.length) {
-      b += 1
-      buf = unitDoubles(foldIn(k, b), block)
-      i = 0
-    }
-    return buf[i++] ?? 0
-  }
-}
-
 /** Standard normal from a uniform stream (Marsaglia polar method). */
 export function normalFrom(u: () => number): number {
   for (;;) {

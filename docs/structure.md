@@ -494,7 +494,8 @@ discrepancy and fill counts for the randomised ones); scipy.stats quantiles for 
 - `philox.ts`: `philox4x32`.
 - `key.ts`: `Key`, `key(seed)`, `split`, `foldIn`, `keyFromPath(seed, ...names)` (named derivation), `randomBits`,
   `isKey`.
-- `continuous.ts`: `uniform`, `normal`, `truncatedNormal` (Robert's samplers, any interval), `exponential`, `laplace`,
+- `continuous.ts`: `uniform`, `uniformStream` (an endless stream of uniforms from one key in blocks
+  `foldIn(key, b)`, the one stream every rejection sampler and procedural generator draws from), `normal`, `truncatedNormal` (Robert's samplers, any interval), `exponential`, `laplace`,
   `logistic`, `gumbel`, `cauchy`, `gamma`, `gammaVariates` (one independent draw per shape, for batched
   distributions), `beta`, `chisquare`, `studentT`, `dirichlet` (beta and Dirichlet in log space for small shapes),
   `multivariateNormal`, `vonMises`.
@@ -510,7 +511,7 @@ discrepancy and fill counts for the randomised ones); scipy.stats quantiles for 
   algorithm in d dimensions), `PoissonDiskOptions`. TODO: Sobol' beyond 1111 dimensions (scipy has 21201; the full
   table is about 300 KB).
 - `generator.ts`: `Generator` (numpy-style wrapper that splits on each call), `defaultRng`.
-- Private: `_unit.ts` (uniform doubles and streams), `_variates.ts` (scalar truncated normal, gamma, Poisson and
+- Private: `_unit.ts` (53-bit uniform doubles, the polar normal and a small log-gamma), `_variates.ts` (scalar truncated normal, gamma, Poisson and
   binomial kernels), `_sobol.ts` (direction numbers, scramble, Gray-code generation) and `sobol-directions.data.ts`
   (the packed Joe-Kuo table for 1111 dimensions, vendored by `oracle/datasets/sobol_directions.py`).
 

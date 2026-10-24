@@ -1,6 +1,6 @@
 /** Shared pieces of the Markov kernels: accept/reject with a key, starting states, and Welford accumulators. */
 import { WhiteboxError } from '../base/index.ts'
-import { foldIn, type Key, uniform } from '../random/index.ts'
+import { type Key, uniform } from '../random/index.ts'
 import type { MCMCState } from './chains.ts'
 import type { LogDensity } from './target.ts'
 
@@ -14,23 +14,6 @@ export function acceptWith(key: Key, alpha: number): boolean {
 /** Step sizes must be positive (infinite ones are allowed: they diverge and adaptation shrinks them). */
 export function checkStepSize(stepSize: number, name: string): void {
   if (!(stepSize > 0)) throw new WhiteboxError('value', `${name}: the step size must be positive`)
-}
-
-/** A lazy stream of uniforms in [0, 1) from a key, drawn in blocks of 64 with keys foldIn(key, block). */
-export function uniforms(key: Key): () => number {
-  let block: Float64Array = new Float64Array(0)
-  let b = 0
-  let i = 0
-  return () => {
-    if (i >= block.length) {
-      block = uniform(foldIn(key, b), [64]).data
-      b += 1
-      i = 0
-    }
-    const u = block[i] ?? 0
-    i += 1
-    return u
-  }
 }
 
 /** One uniform draw in [0, 1). */

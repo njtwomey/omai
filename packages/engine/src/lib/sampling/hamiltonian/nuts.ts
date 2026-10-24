@@ -1,6 +1,6 @@
 import { logAddExp, WhiteboxError } from '../../base/index.ts'
-import { foldIn } from '../../random/index.ts'
-import { checkStepSize, uniforms } from '../_mcmc.ts'
+import { foldIn, uniformStream } from '../../random/index.ts'
+import { checkStepSize } from '../_mcmc.ts'
 import { type Adaptation, type Chains, type MCMCKernel, type SampleChainsOptions, sampleChains } from '../chains.ts'
 import type { LogDensity } from '../target.ts'
 import { type WindowAdaptationOptions, windowAdaptation } from './adaptation.ts'
@@ -155,7 +155,7 @@ export function nutsKernel(target: LogDensity, options: NUTSOptions): MCMCKernel
     init: (position) => hmcState(target, position),
     step: (key, state) => {
       const momentum = metric.sampleMomentum(foldIn(key, 0))
-      const rand = uniforms(foldIn(key, 1))
+      const rand = uniformStream(foldIn(key, 1), 64)
       const initial: IntegratorState = {
         position: state.position,
         momentum,

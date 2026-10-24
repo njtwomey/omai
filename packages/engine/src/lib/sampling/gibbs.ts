@@ -1,9 +1,9 @@
 import { WhiteboxError } from '../base/index.ts'
 import { ddot, dgemv } from '../numerics/linalg/index.ts'
-import { foldIn, type Key, normal } from '../random/index.ts'
+import { foldIn, type Key, normal, uniformStream } from '../random/index.ts'
 import { asTensor, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { inverse, lowerCholesky, squareMatrix, vectorOf } from './_linear.ts'
-import { uniformOne, uniforms } from './_mcmc.ts'
+import { uniformOne } from './_mcmc.ts'
 import type { MCMCKernel, MCMCState } from './chains.ts'
 import type { LogDensity } from './target.ts'
 
@@ -149,7 +149,7 @@ export function sliceSampler(target: LogDensity, options: SliceOptions = {}): MC
       return s
     },
     step: (key, state) => {
-      const rand = uniforms(key)
+      const rand = uniformStream(key, 64)
       const x = Float64Array.from(state.position)
       let lp = state.logDensity
       let evaluations = 0
@@ -277,7 +277,7 @@ export function ellipticalSlice(
       return s
     },
     step: (key, state) => {
-      const rand = uniforms(foldIn(key, 1))
+      const rand = uniformStream(foldIn(key, 1), 64)
       const nu = dgemv(factor, dim, dim, normal(foldIn(key, 0), [dim]).data)
       const x = state.position
       const llx = state.logDensity - logPrior(x)
