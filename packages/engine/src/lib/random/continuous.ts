@@ -11,7 +11,8 @@ import {
   transpose,
   type Value,
 } from '../tensor/index.ts'
-import { normalFrom, uniformStream, unitDoubles } from './_unit.ts'
+import { uniformStream, unitDoubles } from './_unit.ts'
+import { gammaOne, logGammaOne, truncatedOne } from './_variates.ts'
 import { foldIn, type Key, split } from './key.ts'
 
 function fill(shape: Shape, draw: (i: number) => number): Tensor<'float64'> {
@@ -81,46 +82,28 @@ export function normal(
 }
 
 /**
- * Normal samples truncated to `[lower, upper]` (in standard units), by inversion of the normal CDF restricted to the
- * interval (accurate in the tails through log-space bounds).
+ * Standard normal samples truncated to `[lower, upper]`, by Robert's (1995) rejection samplers: an exponential
+ * proposal in the tails, a uniform proposal on short intervals and normal rejection on wide ones, so every interval,
+ * however narrow or far out, costs a few uniforms per draw.
  *
  * @param k - The random key.
  * @param shape - Output shape.
  * @param lower - Lower bound (may be `-Infinity`).
  * @param upper - Upper bound (may be `Infinity`).
  * @returns A float64 tensor of standard truncated normals.
+ * @throws WhiteboxError with code `value` unless `upper > lower`.
+ * @reference Robert (1995), Simulation of truncated normal variables, Statistics and Computing 5.
  * @example
  * ```ts
  * import { key, truncatedNormal } from 'whitebox-engine/random'
  * truncatedNormal(key(0), [100], 1, 2).data.every((v) => v >= 1 && v <= 2) // => true
+ * truncatedNormal(key(0), [100], 8, Infinity).data.every((v) => v >= 8) // => true
  * ```
  */
 export function truncatedNormal(k: Key, shape: Shape, lower: number, upper: number): Tensor<'float64'> {
   if (!(upper > lower)) throw new WhiteboxError('value', 'truncatedNormal: need upper > lower')
   const next = uniformStream(k, foldIn)
-  // Rejection from a uniform on finite intervals is slow in the tails; use the exponential proposal of Robert (1995)
-  // for one-sided tails and normal rejection otherwise.
-  const draw = (): number => {
-    if (lower >= 0.5) {
-      const a = (lower + Math.sqrt(lower * lower + 4)) / 2
-      for (;;) {
-        const z = lower - Math.log(1 - next()) / a
-        if (z <= upper && next() <= Math.exp(-((z - a) ** 2) / 2)) return z
-      }
-    }
-    if (upper <= -0.5) {
-      const a = (-upper + Math.sqrt(upper * upper + 4)) / 2
-      for (;;) {
-        const z = -upper - Math.log(1 - next()) / a
-        if (-z >= lower && next() <= Math.exp(-((z - a) ** 2) / 2)) return -z
-      }
-    }
-    for (;;) {
-      const z = normalFrom(next)
-      if (z >= lower && z <= upper) return z
-    }
-  }
-  return fill(shape, () => draw())
+  return fill(shape, () => truncatedOne(lower, upper, next))
 }
 
 /**
@@ -158,7 +141,8 @@ export function exponential(k: Key, shape: Shape, rate = 1): Tensor<'float64'> {
 export function laplace(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float64'> {
   const u = unitDoubles(k, sizeOf(shape))
   return fill(shape, (i) => {
-    const v = (u[i] ?? 0) - 0.5
+    // Shift by half an ulp of the grid so v lies in (-0.5, 0.5) and the logarithm is finite.
+    const v = (u[i] ?? 0) - 0.5 + 2 ** -54
     return loc - scale * Math.sign(v) * Math.log(1 - 2 * Math.abs(v))
   })
 }
@@ -223,24 +207,6 @@ export function cauchy(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float6
   return fill(shape, (i) => loc + scale * Math.tan(Math.PI * ((u[i] ?? 0) - 0.5)))
 }
 
-function gammaOne(alpha: number, next: () => number): number {
-  // Marsaglia and Tsang (2000); for alpha < 1 boost with U^(1/alpha), done in log space to avoid underflow.
-  if (alpha < 1) return Math.exp(Math.log(gammaOne(alpha + 1, next)) + Math.log(next() || Number.MIN_VALUE) / alpha)
-  const d = alpha - 1 / 3
-  const c = 1 / Math.sqrt(9 * d)
-  for (;;) {
-    let x: number
-    let v: number
-    do {
-      x = normalFrom(next)
-      v = 1 + c * x
-    } while (v <= 0)
-    v = v * v * v
-    const u = next()
-    if (u < 1 - 0.0331 * x ** 4 || Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v
-  }
-}
-
 /**
  * Gamma samples with shape `alpha` and scale 1 (Marsaglia-Tsang).
  *
@@ -286,13 +252,15 @@ export function gammaVariates(k: Key, alphas: ArrayLike<number>): Float64Array {
 }
 
 /**
- * Beta samples, as `X / (X + Y)` for gamma variates (computed in log space when both shapes are small).
+ * Beta samples, as `X / (X + Y)` for independent gamma variates, formed from their logarithms so that small shapes
+ * (where both variates underflow) still give the right mixture of values near 0 and 1.
  *
  * @param k - The random key.
  * @param shape - Output shape.
- * @param a - First shape parameter.
- * @param b - Second shape parameter.
+ * @param a - First shape parameter (positive).
+ * @param b - Second shape parameter (positive).
  * @returns A float64 tensor in [0, 1].
+ * @throws WhiteboxError with code `value` for non-positive shapes.
  * @example
  * ```ts
  * import { key, beta } from 'whitebox-engine/random'
@@ -300,13 +268,12 @@ export function gammaVariates(k: Key, alphas: ArrayLike<number>): Float64Array {
  * ```
  */
 export function beta(k: Key, shape: Shape, a: number, b: number): Tensor<'float64'> {
-  const [ka, kb] = split(k) as [Key, Key]
-  const x = gamma(ka, shape, a)
-  const y = gamma(kb, shape, b)
-  return fill(shape, (i) => {
-    const xi = x.data[i] ?? 0
-    const yi = y.data[i] ?? 0
-    return xi + yi === 0 ? (a >= b ? 1 : 0) : xi / (xi + yi)
+  if (!(a > 0 && b > 0)) throw new WhiteboxError('value', `beta: shapes must be positive, got ${a} and ${b}`)
+  const next = uniformStream(k, foldIn)
+  return fill(shape, () => {
+    const lx = logGammaOne(a, next)
+    const ly = logGammaOne(b, next)
+    return 1 / (1 + Math.exp(ly - lx))
   })
 }
 
@@ -349,12 +316,14 @@ export function studentT(k: Key, shape: Shape, df: number): Tensor<'float64'> {
 }
 
 /**
- * Dirichlet samples: each row sums to one (normalised gammas, computed in log space for small concentrations).
+ * Dirichlet samples: each row sums to one (normalised gamma variates, formed from their logarithms so that small
+ * concentrations do not underflow).
  *
  * @param k - The random key.
- * @param alpha - Concentrations (length K).
+ * @param alpha - Concentrations (length K, positive).
  * @param n - Number of samples.
  * @returns A float64 tensor of shape `[n, K]`.
+ * @throws WhiteboxError with code `value` for a non-positive concentration.
  * @example
  * ```ts
  * import { key, dirichlet } from 'whitebox-engine/random'
@@ -362,17 +331,24 @@ export function studentT(k: Key, shape: Shape, df: number): Tensor<'float64'> {
  * ```
  */
 export function dirichlet(k: Key, alpha: readonly number[], n: number): Tensor<'float64'> {
+  if (alpha.some((a) => !(a > 0))) throw new WhiteboxError('value', 'dirichlet: concentrations must be positive')
   const K = alpha.length
   const next = uniformStream(k, foldIn)
   const out = new Float64Array(n * K)
   for (let r = 0; r < n; r++) {
+    let top = -Infinity
+    for (let j = 0; j < K; j++) {
+      const g = logGammaOne(alpha[j] ?? 1, next)
+      out[r * K + j] = g
+      if (g > top) top = g
+    }
     let total = 0
     for (let j = 0; j < K; j++) {
-      const g = gammaOne(alpha[j] ?? 1, next)
-      out[r * K + j] = g
-      total += g
+      const e = Math.exp((out[r * K + j] ?? 0) - top)
+      out[r * K + j] = e
+      total += e
     }
-    for (let j = 0; j < K; j++) out[r * K + j] = total > 0 ? (out[r * K + j] ?? 0) / total : 1 / K
+    for (let j = 0; j < K; j++) out[r * K + j] = (out[r * K + j] ?? 0) / total
   }
   return fromStorage(out, [n, K], 'float64')
 }

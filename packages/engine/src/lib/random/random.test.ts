@@ -9,19 +9,24 @@ import {
   binomial,
   categorical,
   choice,
+  defaultRng,
   dirichlet,
   exponential,
   foldIn,
   Generator,
   gamma,
+  gammaVariates,
   halton,
   key,
   keyFromPath,
+  laplace,
+  multinomial,
   normal,
   permutation,
   philox4x32,
   poisson,
   randint,
+  randomBits,
   randomSplit,
   split,
   truncatedNormal,
@@ -138,5 +143,99 @@ describe('permutations and choices', () => {
 
   it('halton starts with the radical inverses', () => {
     expect(Array.from(halton(3, 1).data)).toEqual([0.5, 0.25, 0.75])
+  })
+})
+
+describe('continuous edge cases', () => {
+  it('truncated normals on narrow and far intervals stay inside and cost little', () => {
+    for (const [lo, hi] of [
+      [10, 10.0001],
+      [-1e-6, 1e-6],
+      [0.4, 0.400001],
+      [-40, -39],
+      [30, Infinity],
+      [-Infinity, -30],
+    ] as const) {
+      const x = truncatedNormal(key(1), [2000], lo, hi).data
+      expect(x.every((v) => v >= lo && v <= hi)).toBe(true)
+    }
+    // E[Z | 0.4 < Z < 0.4 + h] is the midpoint to first order.
+    expect(mean(truncatedNormal(key(2), [4000], 0.4, 0.401).data)).toBeCloseTo(0.4005, 4)
+    expect(() => truncatedNormal(key(0), [1], 1, 1)).toThrow(/upper > lower/)
+  })
+
+  it('beta and Dirichlet with tiny shapes stay finite with the right means', () => {
+    const b = beta(key(3), [20000], 0.01, 0.03).data
+    expect(b.every((v) => v >= 0 && v <= 1)).toBe(true)
+    // Nearly all the mass sits at the ends, with P(near 1) = a / (a + b) = 0.25.
+    expect(mean(b)).toBeCloseTo(0.25, 1)
+    const d = dirichlet(key(4), [0.01, 0.01, 0.02], 2000).data
+    expect(d.every((v) => Number.isFinite(v))).toBe(true)
+    for (let r = 0; r < 2000; r++) {
+      expect((d[3 * r] ?? 0) + (d[3 * r + 1] ?? 0) + (d[3 * r + 2] ?? 0)).toBeCloseTo(1, 12)
+    }
+    expect(() => beta(key(0), [1], 0, 1)).toThrow(/positive/)
+    expect(() => dirichlet(key(0), [1, -1], 1)).toThrow(/positive/)
+  })
+
+  it('laplace never reaches an infinite endpoint; gammaVariates draws one per shape', () => {
+    expect(laplace(key(5), [10000]).data.every(Number.isFinite)).toBe(true)
+    const g = gammaVariates(key(6), [0.5, 2, 30])
+    expect(g.length).toBe(3)
+    expect(g[2]).toBeGreaterThan(10)
+  })
+})
+
+describe('discrete edge cases', () => {
+  it('binomial at the boundaries and for very large n', () => {
+    expect(Array.from(binomial(key(1), 10, 0, [3]).data)).toEqual([0, 0, 0])
+    expect(Array.from(binomial(key(1), 10, 1, [3]).data)).toEqual([10, 10, 10])
+    expect(Array.from(binomial(key(1), 0, 0.5, [2]).data)).toEqual([0, 0])
+    const big = binomial(key(2), 2 ** 30, 0.25, [2000]).data
+    expect(mean(big) / 2 ** 28).toBeCloseTo(1, 4)
+    expect(() => binomial(key(0), 2.5, 0.5, [1])).toThrow(/integer/)
+  })
+
+  it('multinomial rows sum to n, zero probabilities get nothing, and large n is cheap', () => {
+    const m = multinomial(key(3), 1e9, [0.2, 0, 0.5, 0.3], 500).data
+    for (let r = 0; r < 500; r++) {
+      expect((m[4 * r] ?? 0) + (m[4 * r + 1] ?? 0) + (m[4 * r + 2] ?? 0) + (m[4 * r + 3] ?? 0)).toBe(1e9)
+      expect(m[4 * r + 1]).toBe(0)
+    }
+    expect(Array.from(multinomial(key(3), 5, [0, 0, 1], 1).data)).toEqual([0, 0, 5])
+    expect(() => multinomial(key(0), -1, [1], 1)).toThrow(/non-negative/)
+  })
+
+  it('weighted choice without replacement picks one item with probability proportional to its weight', () => {
+    const w = [1, 2, 3, 4]
+    const counts = [0, 0, 0, 0]
+    for (let t = 0; t < 8000; t++) {
+      const i = choice(key(t), 4, 1, { replace: false, weights: w }).data[0] ?? 0
+      counts[i] = (counts[i] ?? 0) + 1
+    }
+    counts.forEach((c, i) => {
+      expect(c / 8000).toBeCloseTo((w[i] ?? 0) / 10, 1)
+    })
+  })
+})
+
+describe('bits and generators', () => {
+  it('randomBits is deterministic, uint32, and any prefix of a longer draw', () => {
+    const a = randomBits(key(9), 10)
+    expect(Array.from(randomBits(key(9), 7))).toEqual(Array.from(a.slice(0, 7)))
+    expect(a.every((v) => Number.isInteger(v) && v >= 0 && v < 2 ** 32)).toBe(true)
+  })
+
+  it('Generator methods advance the key and reproduce from a seed', () => {
+    const g = defaultRng(4)
+    const first = Array.from(g.uniform([3]).data)
+    expect(Array.from(g.uniform([3]).data)).not.toEqual(first)
+    expect(Array.from(defaultRng(4).uniform([3]).data)).toEqual(first)
+    expect(
+      defaultRng(1)
+        .integers(0, 5, [100])
+        .data.every((v) => v >= 0 && v < 5),
+    ).toBe(true)
+    expect(Array.from(defaultRng(1).permutation(5).data).sort()).toEqual([0, 1, 2, 3, 4])
   })
 })

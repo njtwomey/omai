@@ -1,6 +1,7 @@
 import { WhiteboxError } from '../base/index.ts'
 import { fromStorage, type Shape, sizeOf, type Tensor } from '../tensor/index.ts'
-import { logGammaSmall, uniformStream, unitDoubles } from './_unit.ts'
+import { uniformStream, unitDoubles } from './_unit.ts'
+import { binomialOne, poissonOne } from './_variates.ts'
 import { foldIn, type Key } from './key.ts'
 
 function ints(shape: Shape, draw: (i: number) => number): Tensor<'int32'> {
@@ -109,13 +110,15 @@ export function categorical(
 }
 
 /**
- * Multinomial counts: `n` draws into categories.
+ * Multinomial counts: `n` draws into categories, by conditional binomials (category j takes a binomial share of the
+ * draws the earlier categories left), so the cost does not grow with `n`.
  *
  * @param k - The random key.
- * @param n - Number of draws.
- * @param probs - Category probabilities.
+ * @param n - Number of draws (a non-negative integer).
+ * @param probs - Category probabilities (non-negative weights, normalised).
  * @param samples - Number of independent count vectors.
  * @returns An int32 tensor of shape `[samples, K]`, each row summing to `n`.
+ * @throws WhiteboxError with code `value` for a bad `n` or weights without a positive finite sum.
  * @example
  * ```ts
  * import { key, multinomial } from 'whitebox-engine/random'
@@ -123,62 +126,37 @@ export function categorical(
  * ```
  */
 export function multinomial(k: Key, n: number, probs: readonly number[], samples: number): Tensor<'int32'> {
+  if (!Number.isInteger(n) || n < 0) throw new WhiteboxError('value', `multinomial: n must be a non-negative integer`)
+  const cdf = cumulative(probs, 'multinomial')
   const K = probs.length
-  const draws = categorical(k, probs, [samples, n])
+  const next = uniformStream(k, foldIn)
   const out = new Int32Array(samples * K)
   for (let s = 0; s < samples; s++) {
-    for (let j = 0; j < n; j++) {
-      const idx = s * K + (draws.data[s * n + j] ?? 0)
-      out[idx] = (out[idx] ?? 0) + 1
+    let left = n
+    let before = 0
+    for (let j = 0; j < K - 1 && left > 0; j++) {
+      const pj = (cdf[j] ?? 1) - before
+      const rest = 1 - before
+      const share = rest > 0 ? Math.min(1, Math.max(0, pj / rest)) : 0
+      const c = binomialOne(left, share, next)
+      out[s * K + j] = c
+      left -= c
+      before = cdf[j] ?? 1
     }
+    out[s * K + K - 1] = (out[s * K + K - 1] ?? 0) + left
   }
   return fromStorage(out, [samples, K], 'int32')
 }
 
-function poissonOne(lambda: number, next: () => number): number {
-  if (lambda === 0) return 0
-  if (lambda < 30) {
-    // Knuth: multiply uniforms until the product drops below e^-lambda.
-    const limit = Math.exp(-lambda)
-    let p = 1
-    let count = -1
-    do {
-      count += 1
-      p *= next()
-    } while (p > limit)
-    return count
-  }
-  // Hormann's transformed rejection with squeeze (PTRS), exact for lambda >= 10.
-  const slam = Math.sqrt(lambda)
-  const loglam = Math.log(lambda)
-  const b = 0.931 + 2.53 * slam
-  const a = -0.059 + 0.02483 * b
-  const invalpha = 1.1239 + 1.1328 / (b - 3.4)
-  const vr = 0.9277 - 3.6224 / (b - 2)
-  for (;;) {
-    const u = next() - 0.5
-    const v = next()
-    const us = 0.5 - Math.abs(u)
-    const kk = Math.floor(((2 * a) / us + b) * u + lambda + 0.43)
-    if (us >= 0.07 && v <= vr) return kk
-    if (kk < 0 || (us < 0.013 && v > us)) continue
-    if (
-      Math.log(v) + Math.log(invalpha) - Math.log(a / (us * us) + b) <=
-      -lambda + kk * loglam - logGammaSmall(kk + 1)
-    ) {
-      return kk
-    }
-  }
-}
-
 /**
- * Poisson samples (Knuth's method for small rates, Hormann's PTRS for large ones).
+ * Poisson samples (Knuth's method for rates below 30, Hormann's PTRS above, as numpy).
  *
  * @param k - The random key.
  * @param lambda - The rate (non-negative).
  * @param shape - Output shape.
  * @returns An int32 tensor.
  * @throws WhiteboxError with code `value` for a negative rate.
+ * @reference Hormann (1993), The transformed rejection method for generating Poisson random variables.
  * @example
  * ```ts
  * import { key, poisson } from 'whitebox-engine/random'
@@ -192,17 +170,21 @@ export function poisson(k: Key, lambda: number, shape: Shape): Tensor<'int32'> {
 }
 
 /**
- * Binomial samples, exact for any `n`, by geometric waiting times (cost proportional to `n min(p, 1 - p)`).
+ * Binomial samples, exact for any `n`: geometric waiting times between successes when `n min(p, 1 - p) < 30`, and
+ * Kachitvichyanukul and Schmeiser's BTPE otherwise (as numpy), so the cost stays bounded for large `n`.
  *
  * @param k - The random key.
- * @param n - Number of trials.
+ * @param n - Number of trials (a non-negative integer).
  * @param p - Success probability.
  * @param shape - Output shape.
  * @returns An int32 tensor.
+ * @throws WhiteboxError with code `value` unless `n` is a non-negative integer and `p` is in [0, 1].
+ * @reference Kachitvichyanukul and Schmeiser (1988), Binomial random variate generation, CACM 31(2).
  * @example
  * ```ts
  * import { key, binomial } from 'whitebox-engine/random'
  * binomial(key(0), 10, 0.3, [5]).data.every((v) => v >= 0 && v <= 10) // => true
+ * binomial(key(0), 1e6, 0.5, [3]).data.every((v) => Math.abs(v - 5e5) < 5000) // => true
  * ```
  */
 export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'int32'> {
@@ -210,20 +192,7 @@ export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'in
     throw new WhiteboxError('value', 'binomial: need an integer n >= 0 and p in [0, 1]')
   }
   const next = uniformStream(k, foldIn)
-  const q = Math.min(p, 1 - p)
-  const draw = (): number => {
-    if (q === 0) return 0
-    const logq = Math.log(1 - q)
-    let count = 0
-    let position = 0
-    for (;;) {
-      position += Math.floor(Math.log(1 - next()) / logq) + 1
-      if (position > n) break
-      count += 1
-    }
-    return p <= 0.5 ? count : n - count
-  }
-  return ints(shape, draw)
+  return ints(shape, () => binomialOne(n, p, next))
 }
 
 /**

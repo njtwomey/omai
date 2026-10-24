@@ -1,8 +1,8 @@
 import { WhiteboxError } from '../base/index.ts'
-import { fromStorage, type Tensor, type TensorLike, take, type Value } from '../tensor/index.ts'
-import { unitDoubles } from './_unit.ts'
+import { asTensor, fromStorage, type Tensor, type TensorLike, take, type Value } from '../tensor/index.ts'
+import { uniformStream, unitDoubles } from './_unit.ts'
 import { categorical } from './discrete.ts'
-import { type Key, split } from './key.ts'
+import { foldIn, type Key, split } from './key.ts'
 
 /**
  * A uniformly random permutation of `0..n-1` (Fisher-Yates).
@@ -30,22 +30,25 @@ export function permutation(k: Key, n: number): Tensor<'int32'> {
 }
 
 /**
- * Shuffle the rows (axis 0) of a value.
+ * Shuffle the rows (axis 0) of a value (a gather, so it is differentiable inside a transform).
  *
  * @param k - The random key.
- * @param x - The value.
+ * @param x - The value: a tensor, typed array or nested array with at least one dimension.
  * @returns The rows in random order.
+ * @throws WhiteboxError with code `value` for a scalar.
  * @example
  * ```ts
  * import { key, shuffle } from 'whitebox-engine/random'
  * import { tensor } from 'whitebox-engine/tensor'
  * shuffle(key(0), tensor([[1], [2], [3]])).shape // => [3, 1]
+ * Array.from(shuffle(key(0), new Float64Array([1, 2, 3])).shape) // => [3]
  * ```
  */
 export function shuffle(k: Key, x: TensorLike): Value {
-  const v = typeof x === 'object' && x !== null && 'shape' in x ? (x as Value) : undefined
-  const n = v?.shape[0] ?? (Array.isArray(x) ? x.length : 0)
-  return take(x, permutation(k, n))
+  const v = asTensor(x)
+  const n = v.shape[0]
+  if (n === undefined) throw new WhiteboxError('value', 'shuffle: need at least one dimension')
+  return take(v, permutation(k, n))
 }
 
 /**
@@ -56,7 +59,8 @@ export function shuffle(k: Key, x: TensorLike): Value {
  * @param size - How many to choose.
  * @param options - `replace` (default true) and `weights`.
  * @returns An int32 tensor of indices.
- * @throws WhiteboxError with code `value` when choosing more than `n` without replacement.
+ * @throws WhiteboxError with code `value` when choosing more than `n` (or more than the positive weights) without
+ * replacement, or when `weights` does not have length `n`.
  * @example
  * ```ts
  * import { key, choice } from 'whitebox-engine/random'
@@ -70,6 +74,9 @@ export function choice(
   options: { readonly replace?: boolean; readonly weights?: readonly number[] } = {},
 ): Tensor<'int32'> {
   const replace = options.replace ?? true
+  if (options.weights !== undefined && options.weights.length !== n) {
+    throw new WhiteboxError('value', `choice: ${options.weights.length} weights for a population of ${n}`)
+  }
   if (replace) {
     const w = options.weights ?? new Array<number>(n).fill(1)
     return categorical(k, w, [size])
@@ -78,10 +85,18 @@ export function choice(
   if (options.weights === undefined) {
     return fromStorage(permutation(k, n).data.slice(0, size), [size], 'int32')
   }
-  // Weighted sampling without replacement by exponential keys (Efraimidis-Spirakis): keep the largest u^(1/w).
+  const positive = options.weights.filter((w) => w > 0).length
+  if (size > positive) {
+    throw new WhiteboxError(
+      'value',
+      `choice: cannot take ${size} without replacement from ${positive} positive weights`,
+    )
+  }
+  // Weighted sampling without replacement by exponential keys (Efraimidis-Spirakis): keep the largest u^(1/w), that
+  // is the smallest E / w for exponential E, compared as log E - log w so that tiny weights stay finite.
   const u = unitDoubles(k, n)
-  const keys = options.weights.map((w, i) => (w > 0 ? Math.log(Math.max(u[i] ?? 0, 1e-300)) / w : -Infinity))
-  const order = keys.map((_, i) => i).sort((a, b) => (keys[b] ?? 0) - (keys[a] ?? 0))
+  const keys = options.weights.map((w, i) => (w > 0 ? Math.log(-Math.log(1 - (u[i] ?? 0))) - Math.log(w) : Infinity))
+  const order = keys.map((_, i) => i).sort((a, b) => (keys[a] ?? 0) - (keys[b] ?? 0))
   return fromStorage(Int32Array.from(order.slice(0, size)), [size], 'int32')
 }
 
@@ -102,12 +117,130 @@ export function bootstrapIndices(k: Key, n: number): Tensor<'int32'> {
 }
 
 /**
+ * A uniformly random subset of `size` of the indices `0..n-1`, in increasing order (Floyd's algorithm: `size` draws
+ * and memory proportional to `size`, however large `n` is). Use {@link choice} for the indices in random order.
+ *
+ * @param k - The random key.
+ * @param n - Population size.
+ * @param size - Subset size, at most `n`.
+ * @returns An int32 tensor of `size` distinct sorted indices.
+ * @throws WhiteboxError with code `value` unless `0 <= size <= n` are integers.
+ * @reference Bentley and Floyd (1987), A sample of brilliance, CACM 30(9).
+ * @example
+ * ```ts
+ * import { key, subsample } from 'whitebox-engine/random'
+ * const s = Array.from(subsample(key(0), 1000000, 5).data)
+ * s.length === 5 && s.every((v, i) => i === 0 || v > (s[i - 1] ?? -1)) // => true
+ * Array.from(subsample(key(0), 4, 4).data) // => [0, 1, 2, 3]
+ * ```
+ */
+export function subsample(k: Key, n: number, size: number): Tensor<'int32'> {
+  if (!Number.isInteger(n) || !Number.isInteger(size) || size < 0 || size > n) {
+    throw new WhiteboxError('value', `subsample: need integers 0 <= size <= n, got size ${size} of ${n}`)
+  }
+  const u = unitDoubles(k, size)
+  const chosen = new Set<number>()
+  for (let i = 0; i < size; i++) {
+    const j = n - size + i
+    const t = Math.floor((u[i] ?? 0) * (j + 1))
+    chosen.add(chosen.has(t) ? j : t)
+  }
+  return fromStorage(Int32Array.from(chosen).sort(), [size], 'int32')
+}
+
+/**
+ * A uniform random sample of `size` items from a stream whose length is not known in advance, in one pass with
+ * memory for `size` items (reservoir sampling). Every subset of `size` items is equally likely. Method `'L'` (Li's
+ * Algorithm L, the default) draws how many items to skip, so it costs `O(size (1 + log(N / size)))` uniforms;
+ * method `'R'` (Waterman's Algorithm R, as in Knuth) draws one uniform per item. Both are deterministic for a key;
+ * on an array, Algorithm L jumps over the skipped items without visiting them.
+ *
+ * @param k - The random key.
+ * @param items - The stream: any iterable, or an array-like.
+ * @param size - Reservoir size (a non-negative integer).
+ * @param options - `method`: `'L'` (default) or `'R'`.
+ * @returns The sampled items (all of them, in order, when the stream is shorter than `size`); the order of a full
+ * reservoir is its slot order, not the stream order.
+ * @throws WhiteboxError with code `value` for a negative or non-integer `size`.
+ * @reference Li (1994), Reservoir-sampling algorithms of time complexity O(n(1 + log(N/n))), ACM TOMS 20(4);
+ * Vitter (1985), Random sampling with a reservoir, ACM TOMS 11(1).
+ * @example
+ * ```ts
+ * import { key, reservoir } from 'whitebox-engine/random'
+ * reservoir(key(0), ['a', 'b'], 3) // => ['a', 'b']
+ * reservoir(key(0), Array.from({ length: 100 }, (_, i) => i), 5).length // => 5
+ * reservoir(key(0), new Set([1, 2, 3, 4]), 2, { method: 'R' }).length // => 2
+ * ```
+ */
+export function reservoir<T>(
+  k: Key,
+  items: Iterable<T> | ArrayLike<T>,
+  size: number,
+  options: { readonly method?: 'L' | 'R' } = {},
+): T[] {
+  if (!Number.isInteger(size) || size < 0) {
+    throw new WhiteboxError('value', `reservoir: size must be a non-negative integer, got ${size}`)
+  }
+  const method = options.method ?? 'L'
+  const next = uniformStream(k, foldIn)
+  const out: T[] = []
+  // Arrays, typed arrays and other array-likes are indexed directly (strings are iterated, by code point).
+  const array =
+    typeof items !== 'string' && typeof (items as ArrayLike<T>).length === 'number'
+      ? (items as ArrayLike<T>)
+      : undefined
+  if (array !== undefined) {
+    const n = array.length
+    for (let i = 0; i < Math.min(size, n); i++) out.push(array[i] as T)
+    if (size === 0 || n <= size) return out
+    if (method === 'R') {
+      for (let i = size; i < n; i++) {
+        const j = Math.floor(next() * (i + 1))
+        if (j < size) out[j] = array[i] as T
+      }
+      return out
+    }
+    let w = Math.exp(Math.log(1 - next()) / size)
+    for (let i = size - 1; ; ) {
+      i += Math.floor(Math.log(1 - next()) / Math.log1p(-w)) + 1
+      if (!(i < n)) return out
+      out[Math.floor(next() * size)] = array[i] as T
+      w *= Math.exp(Math.log(1 - next()) / size)
+    }
+  }
+  const it = (items as Iterable<T>)[Symbol.iterator]()
+  while (out.length < size) {
+    const r = it.next()
+    if (r.done === true) return out
+    out.push(r.value)
+  }
+  if (size === 0) return out
+  if (method === 'R') {
+    for (let i = size, r = it.next(); r.done !== true; i++, r = it.next()) {
+      const j = Math.floor(next() * (i + 1))
+      if (j < size) out[j] = r.value
+    }
+    return out
+  }
+  let w = Math.exp(Math.log(1 - next()) / size)
+  for (;;) {
+    const skip = Math.floor(Math.log(1 - next()) / Math.log1p(-w))
+    for (let s = 0; s < skip; s++) if (it.next().done === true) return out
+    const r = it.next()
+    if (r.done === true) return out
+    out[Math.floor(next() * size)] = r.value
+    w *= Math.exp(Math.log(1 - next()) / size)
+  }
+}
+
+/**
  * Split `0..n-1` into disjoint random parts with given fractions (the last part takes the remainder).
  *
  * @param k - The random key.
  * @param n - Number of items.
  * @param fractions - Fractions of the parts (summing to at most 1).
  * @returns One int32 index tensor per part.
+ * @throws WhiteboxError with code `value` for negative fractions or fractions summing to more than 1.
  * @example
  * ```ts
  * import { key, randomSplit } from 'whitebox-engine/random'
@@ -115,6 +248,10 @@ export function bootstrapIndices(k: Key, n: number): Tensor<'int32'> {
  * ```
  */
 export function randomSplit(k: Key, n: number, fractions: readonly number[]): Tensor<'int32'>[] {
+  const total = fractions.reduce((a, b) => a + b, 0)
+  if (fractions.some((f) => !(f >= 0)) || total > 1 + 1e-9) {
+    throw new WhiteboxError('value', `randomSplit: fractions must be non-negative with a sum of at most 1`)
+  }
   const order = permutation(k, n).data
   const parts: Tensor<'int32'>[] = []
   let start = 0

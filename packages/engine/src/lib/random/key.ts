@@ -49,7 +49,7 @@ export function key(seed: number): Key {
  * ```ts
  * import { key, split } from 'whitebox-engine/random'
  * const [a, b] = split(key(0))
- * a.words[0] === b.words[0] // => false
+ * a?.words[0] === b?.words[0] // => false
  * ```
  */
 export function split(k: Key, n = 2): Key[] {

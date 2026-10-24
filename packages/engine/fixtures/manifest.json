@@ -485,6 +485,31 @@
       "cases": 36
     },
     {
+      "fixture": "random/continuous.json",
+      "source": "oracle/cases/random/continuous.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "random/discrete.json",
+      "source": "oracle/cases/random/discrete.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "random/sequences.json",
+      "source": "oracle/cases/random/sequences.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "tensor/ops/arithmetic.json",
       "source": "oracle/cases/tensor/ops/arithmetic.py",
       "reference": {
