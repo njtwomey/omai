@@ -1,4 +1,4 @@
-import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactElement, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { TreeRecord } from 'whitebox-engine/exposition'
 import { type Figure, scaleFigure } from '../../figure/figure.ts'
 import { growthSteps, splitCandidatesView, treeNodeOf, treeScene } from '../../views/trees.ts'
@@ -23,7 +23,30 @@ export interface TreeViewProps extends RecordViewProps<TreeRecord> {
   readonly growth?: boolean
 }
 
-// The tree above and the selected node's candidate splits below, at the frame's size.
+// Cards are never drawn smaller than this fraction of their natural size: a wide tree in a narrow slot scrolls (drag to
+// pan) instead of shrinking past legibility.
+const MIN_SCALE = 0.8
+
+// The width an element is given by its parent, followed as it changes.
+function useMeasuredWidth(fallback: number): [RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [width, setWidth] = useState(fallback)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (el === null) return
+    const measure = (): void =>
+      setWidth((w) => (Math.abs(w - el.clientWidth) < 1 || el.clientWidth === 0 ? w : el.clientWidth))
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+  return [ref, width]
+}
+
+// The tree above and the selected node's candidate splits below, at the frame's size (or the narrower width the page
+// gives it).
 function TreeFigure(props: {
   readonly record: TreeRecord
   readonly figure: Figure
@@ -33,41 +56,101 @@ function TreeFigure(props: {
   readonly maxDepth?: number
 }): ReactElement {
   const frame = useFrameSize()
-  const fig =
-    frame?.expanded === true ? { ...scaleFigure(props.figure, frame.width), mode: props.figure.mode } : props.figure
-  const chartHeight = Math.round(fig.height * 0.34)
-  const treeHeight = fig.height - chartHeight
+  const expandedWidth = frame?.expanded === true ? frame.width : undefined
+  const base = useMemo(
+    () =>
+      expandedWidth === undefined
+        ? props.figure
+        : { ...scaleFigure(props.figure, expandedWidth), mode: props.figure.mode },
+    [props.figure, expandedWidth],
+  )
+  const [outer, measured] = useMeasuredWidth(base.width)
+  const width = Math.min(base.width, measured)
+  const chartHeight = Math.round(base.height * 0.34)
+  const treeHeight = base.height - chartHeight
   const { record, selected, grownTo, maxDepth } = props
   const scene = useMemo(
     () => treeScene(record, { selected, grownTo, ...(maxDepth === undefined ? {} : { maxDepth }) }),
     [record, selected, grownTo, maxDepth],
   )
+  // Fit the tree to its area, but no smaller than MIN_SCALE (and no larger than 1.4): beyond that it scrolls.
+  const fit = Math.min(width / scene.width, treeHeight / scene.height)
+  const scale = Math.min(1.4, Math.max(fit, MIN_SCALE))
+  const drawW = Math.round(scene.width * scale)
+  const drawH = Math.round(scene.height * scale)
+  const scroller = useRef<HTMLDivElement | null>(null)
+  // A new tree (or a new width) starts scrolled to its root, which a tidy tree centres.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new record re-centres the view
+  useEffect(() => {
+    const el = scroller.current
+    if (el !== null) el.scrollLeft = Math.max(0, (drawW - el.clientWidth) / 2)
+  }, [record, drawW])
+  const drag = useRef<{ x: number; y: number; left: number; top: number; moved: boolean } | null>(null)
   const chartFigure = useMemo(
-    () => ({ ...fig, height: chartHeight, aspect: fig.width / chartHeight }),
-    [fig, chartHeight],
+    () => ({ ...base, width, height: chartHeight, aspect: width / chartHeight }),
+    [base, width, chartHeight],
   )
   const option = useMemo(
     () => splitCandidatesView(record, selected, { figure: chartFigure }),
     [record, selected, chartFigure],
   )
+  const overflows = drawW > width + 1 || drawH > treeHeight + 1
   return (
-    <div style={{ width: fig.width, height: fig.height, display: 'flex', flexDirection: 'column' }}>
+    <div
+      ref={outer}
+      style={{ width: '100%', maxWidth: base.width, height: base.height, display: 'flex', flexDirection: 'column' }}
+    >
       <div
+        ref={scroller}
         data-whitebox-svg=""
-        style={{ height: treeHeight, display: 'flex', justifyContent: 'center', cursor: 'pointer' }}
+        style={{
+          height: treeHeight,
+          width: '100%',
+          overflow: overflows ? 'auto' : 'hidden',
+          cursor: overflows ? 'grab' : 'pointer',
+          display: 'flex',
+          alignItems: overflows ? 'flex-start' : 'center',
+        }}
+        onPointerDown={(e) => {
+          const el = scroller.current
+          if (!overflows || el === null) return
+          drag.current = { x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop, moved: false }
+        }}
+        onPointerMove={(e) => {
+          const d = drag.current
+          const el = scroller.current
+          if (d === null || el === null) return
+          const dx = e.clientX - d.x
+          const dy = e.clientY - d.y
+          if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true
+          el.scrollLeft = d.left - dx
+          el.scrollTop = d.top - dy
+        }}
+        onPointerUp={() => {
+          // Keep the flag until the click that follows a drag has been seen.
+          setTimeout(() => {
+            drag.current = null
+          }, 0)
+        }}
+        onPointerLeave={() => {
+          drag.current = null
+        }}
       >
-        <SceneView
-          scene={scene}
-          width={fig.width}
-          height={treeHeight}
-          mode={fig.mode}
-          onNodeClick={(id) => {
-            const node = treeNodeOf(id)
-            if (node !== undefined) props.onSelect(node)
-          }}
-        />
+        <div style={{ width: drawW, height: drawH, margin: '0 auto', flexShrink: 0 }}>
+          <SceneView
+            scene={scene}
+            width={drawW}
+            height={drawH}
+            mode={base.mode}
+            onNodeClick={(id) => {
+              if (drag.current?.moved === true) return
+              const node = treeNodeOf(id)
+              if (node !== undefined) props.onSelect(node)
+            }}
+          />
+        </div>
       </div>
-      <Chart option={option} width={fig.width} height={chartHeight} mode={fig.mode} />
+      <Chart option={option} width={width} height={chartHeight} mode={base.mode} />
     </div>
   )
 }

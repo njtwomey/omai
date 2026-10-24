@@ -1,13 +1,15 @@
 import type { ReactElement } from 'react'
 import type { Exposition } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
-import { tokens } from '../../theme/tokens.ts'
-import { useColourMode } from '../theme.tsx'
+import { AnomalyView } from './anomaly.tsx'
 import { ComponentsView } from './components.tsx'
+import { EpisodeView } from './episodes.tsx'
+import { MarginView } from './margins.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
-import { EnsembleView } from './stages.tsx'
+import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
-import { DecisionSurfaceView } from './surfaces.tsx'
+import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
+import { CoefficientTableView, LikelihoodView, NeighbourView, SearchTrialsView } from './tables.tsx'
 import { TreeView } from './trees.tsx'
 
 /** Props of {@link ExpositionView}. */
@@ -62,24 +64,25 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <MixturePlayer record={record} {...common} {...points} />
     case 'embeddingSteps':
       return <EmbeddingPlayer record={record} {...common} {...labels} />
-    default:
-      return <Pending kind={record.kind} />
+    case 'posteriorGrid':
+      return <PosteriorView record={record} {...common} />
+    case 'hyperparameterSurface':
+      return <HyperparameterSurfaceView record={record} {...common} />
+    case 'anomalyScores':
+      return <AnomalyView record={record} {...common} {...points} />
+    case 'margin':
+      return <MarginView record={record} {...common} {...rows} />
+    case 'coefficientTable':
+      return <CoefficientTableView record={record} {...common} />
+    case 'likelihoodTable':
+      return <LikelihoodView record={record} {...common} />
+    case 'neighbours':
+      return <NeighbourView record={record} {...common} {...rows} />
+    case 'searchTrials':
+      return <SearchTrialsView record={record} {...common} />
+    case 'pipelineStages':
+      return <PipelineView record={record} {...common} />
+    case 'episodes':
+      return <EpisodeView record={record} {...common} />
   }
-}
-
-function Pending(props: { readonly kind: string }): ReactElement {
-  const t = tokens(useColourMode())
-  return (
-    <div
-      style={{
-        padding: 12,
-        border: `1px dashed ${t.grid}`,
-        borderRadius: 6,
-        color: t.muted,
-        font: `12px ${t.font}`,
-      }}
-    >
-      No standard view of <code>{props.kind}</code> records yet.
-    </div>
-  )
 }

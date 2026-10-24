@@ -2,11 +2,15 @@ import type { EChartsOption } from 'echarts'
 import type { Exposition, ExpositionKind } from 'whitebox-engine/exposition'
 import type { Scene } from 'whitebox-engine/scene'
 import type { ViewOptions } from './_view.ts'
+import { anomalyView } from './anomaly.ts'
 import { componentsView } from './components.ts'
+import { episodeView } from './episodes.ts'
+import { marginFrames } from './margins.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
-import { ensembleFrames } from './stages.ts'
+import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
-import { decisionSurfaceView } from './surfaces.ts'
+import { decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
+import { coefficientView, likelihoodView, neighbourView, searchTrialsView } from './tables.ts'
 import { treeScene } from './trees.ts'
 
 /** The record of one kind. */
@@ -30,7 +34,8 @@ export interface StandardView<K extends ExpositionKind = ExpositionKind> {
 /** A view's headless still: a chart option, or a scene for views drawn as diagrams (trees). */
 export type ViewStill = EChartsOption | Scene
 
-type Registry = { readonly [K in ExpositionKind]?: StandardView<K> }
+// Every kind has a view: a new record kind does not compile until it has one here.
+type Registry = { readonly [K in ExpositionKind]: StandardView<K> }
 
 const REGISTRY: Registry = {
   regularisationPath: {
@@ -135,21 +140,104 @@ const REGISTRY: Registry = {
       return frames.option(frames.count - 1)
     },
   },
+  posteriorGrid: {
+    kind: 'posteriorGrid',
+    component: 'PosteriorView',
+    title: 'Posterior',
+    plays: false,
+    accepts: [],
+    still: (r, o) => posteriorView(r, o),
+  },
+  hyperparameterSurface: {
+    kind: 'hyperparameterSurface',
+    component: 'HyperparameterSurfaceView',
+    title: 'Hyperparameter surface',
+    plays: false,
+    accepts: [],
+    still: (r, o) => hyperparameterSurfaceView(r, o),
+  },
+  anomalyScores: {
+    kind: 'anomalyScores',
+    component: 'AnomalyView',
+    title: 'Anomaly scores',
+    plays: false,
+    accepts: ['points'],
+    still: (r, o) => anomalyView(r, o),
+  },
+  margin: {
+    kind: 'margin',
+    component: 'MarginView',
+    title: 'Margins',
+    plays: true,
+    accepts: ['points', 'labels'],
+    still: (r, o) => {
+      const frames = marginFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
+  },
+  coefficientTable: {
+    kind: 'coefficientTable',
+    component: 'CoefficientTableView',
+    title: 'Coefficients',
+    plays: false,
+    accepts: [],
+    still: (r, o) => coefficientView(r, o),
+  },
+  likelihoodTable: {
+    kind: 'likelihoodTable',
+    component: 'LikelihoodView',
+    title: 'Likelihood contributions',
+    plays: false,
+    accepts: [],
+    still: (r, o) => likelihoodView(r, o),
+  },
+  neighbours: {
+    kind: 'neighbours',
+    component: 'NeighbourView',
+    title: 'Neighbours',
+    plays: false,
+    accepts: ['points', 'labels'],
+    still: (r, o) => neighbourView(r, o),
+  },
+  searchTrials: {
+    kind: 'searchTrials',
+    component: 'SearchTrialsView',
+    title: 'Search trials',
+    plays: false,
+    accepts: [],
+    still: (r, o) => searchTrialsView(r, o),
+  },
+  pipelineStages: {
+    kind: 'pipelineStages',
+    component: 'PipelineView',
+    title: 'Pipeline',
+    plays: false,
+    accepts: [],
+    still: (r) => pipelineScene(r),
+  },
+  episodes: {
+    kind: 'episodes',
+    component: 'EpisodeView',
+    title: 'Episodes',
+    plays: false,
+    accepts: [],
+    still: (r, o) => episodeView(r, o),
+  },
 }
 
 /**
  * The standard view of a record kind, so a hub entry or a page may name only a record.
  *
  * @param kind - The record kind.
- * @returns The view, or `undefined` for a kind without one yet.
+ * @returns The view.
  * @example
  * ```ts
  * import { viewFor } from 'whitebox-render/views'
- * viewFor('regularisationPath')?.component // => 'PathView'
+ * viewFor('regularisationPath').component // => 'PathView'
  * ```
  */
-export function viewFor<K extends ExpositionKind>(kind: K): StandardView<K> | undefined {
-  return REGISTRY[kind] as StandardView<K> | undefined
+export function viewFor<K extends ExpositionKind>(kind: K): StandardView<K> {
+  return REGISTRY[kind] as StandardView<K>
 }
 
 /**
@@ -166,9 +254,8 @@ export function viewedKinds(): ExpositionKind[] {
  *
  * @param record - The record.
  * @param options - Mode and figure.
- * @returns The chart option or scene, or `undefined` when the kind has no view yet.
+ * @returns The chart option or scene.
  */
-export function stillOf(record: Exposition, options: ViewOptions = {}): ViewStill | undefined {
-  const view = viewFor(record.kind) as StandardView | undefined
-  return view?.still(record as never, options)
+export function stillOf(record: Exposition, options: ViewOptions = {}): ViewStill {
+  return (viewFor(record.kind) as StandardView).still(record as never, options)
 }
