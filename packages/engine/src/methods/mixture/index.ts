@@ -2,3 +2,4 @@
 export * from './bayesian.ts'
 export * from './density.ts'
 export * from './gaussian.ts'
+export * from './selection.ts'
