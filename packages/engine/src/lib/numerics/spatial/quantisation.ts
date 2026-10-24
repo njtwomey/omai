@@ -281,7 +281,7 @@ export interface IvfIndex {
  * ```ts
  * import { ivfIndex } from 'whitebox-engine/numerics/spatial'
  * import { key } from 'whitebox-engine/random'
- * ivfIndex([[0, 0], [0, 1], [9, 9], [9, 8]], { lists: 2, key: key(0) }).search([9, 8.6], 1).indices // => [3]
+ * ivfIndex([[0, 0], [0, 1], [9, 9], [9, 8]], { lists: 2, key: key(0) }).search([9, 8.6], 1).indices // => [2]
  * ```
  */
 export function ivfIndex(

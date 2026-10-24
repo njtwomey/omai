@@ -77,7 +77,8 @@ export function iv(v: TensorLike, x: TensorLike): Value {
  * ```ts
  * import { ive } from 'whitebox-engine/numerics/special'
  * import { item } from 'whitebox-engine/tensor'
- * Math.abs(item(ive(0, 1e6)) - 1 / Math.sqrt(2 * Math.PI * 1e6)) < 1e-12 // => true
+ * // Large x: exp(-x) I_0(x) ~ (1 + 1 / (8x)) / sqrt(2 pi x).
+ * Math.abs(item(ive(0, 1e6)) * Math.sqrt(2 * Math.PI * 1e6) - (1 + 1 / 8e6)) < 1e-12 // => true
  * ```
  */
 export function ive(v: TensorLike, x: TensorLike): Value {

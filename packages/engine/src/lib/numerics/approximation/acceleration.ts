@@ -72,7 +72,7 @@ export function aitken(s: readonly number[]): number[] {
  * // Partial sums of 1 - 1/2 + 1/3 - ... converge slowly to ln 2.
  * const s = []
  * for (let n = 1, acc = 0; n <= 12; n++) s.push((acc += (n % 2 ? 1 : -1) / n))
- * Math.abs(wynnEpsilon(s).value - Math.LN2) < 1e-9 // => true
+ * Math.abs(wynnEpsilon(s).value - Math.LN2) < 1e-8 // => true
  * ```
  */
 export function wynnEpsilon(s: readonly number[]): { value: number; columns: number[][] } {

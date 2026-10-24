@@ -264,7 +264,7 @@ export interface SaxResult {
  * @example
  * ```ts
  * import { sax } from 'whitebox-engine/signal'
- * sax([1, 2, 3, 4, 5, 6, 7, 8], 4, 3).word // => 'abbc'
+ * sax([1, 2, 3, 4, 5, 6, 7, 8], 4, 3).word // => 'aacc'
  * ```
  */
 export function sax(x: TensorLike, w: number, a: number): SaxResult {
