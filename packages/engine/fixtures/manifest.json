@@ -761,6 +761,15 @@
       "cases": 26
     },
     {
+      "fixture": "learn/privacy.json",
+      "source": "oracle/cases/learn/privacy.py",
+      "reference": {
+        "diffprivlib": "0.6.6",
+        "opacus": "1.6.0"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "losses/classification.json",
       "source": "oracle/cases/losses/classification.py",
       "reference": {
