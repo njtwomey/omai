@@ -117,6 +117,9 @@ import * as m113 from '../collections/sklearn/svm/svdd.ts'
 import * as m114 from '../collections/sklearn/svm/svr.ts'
 import * as m115 from '../collections/sklearn/tree/decision-tree.ts'
 import * as m116 from '../collections/sklearn/tree/extra-tree.ts'
+import * as m117 from '../collections/tuning/lasso.ts'
+import * as m118 from '../collections/tuning/random-forest.ts'
+import * as m119 from '../collections/tuning/svc.ts'
 
 /**
  * Every hub entry, gathered from the modules under `collections/` (generated: adding an entry module adds it here).
@@ -127,4 +130,4 @@ import * as m116 from '../collections/sklearn/tree/extra-tree.ts'
  * Array.isArray(catalogue.entries) // => true
  * ```
  */
-export const catalogue: Catalogue = buildCatalogue([m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22, m23, m24, m25, m26, m27, m28, m29, m30, m31, m32, m33, m34, m35, m36, m37, m38, m39, m40, m41, m42, m43, m44, m45, m46, m47, m48, m49, m50, m51, m52, m53, m54, m55, m56, m57, m58, m59, m60, m61, m62, m63, m64, m65, m66, m67, m68, m69, m70, m71, m72, m73, m74, m75, m76, m77, m78, m79, m80, m81, m82, m83, m84, m85, m86, m87, m88, m89, m90, m91, m92, m93, m94, m95, m96, m97, m98, m99, m100, m101, m102, m103, m104, m105, m106, m107, m108, m109, m110, m111, m112, m113, m114, m115, m116])
+export const catalogue: Catalogue = buildCatalogue([m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22, m23, m24, m25, m26, m27, m28, m29, m30, m31, m32, m33, m34, m35, m36, m37, m38, m39, m40, m41, m42, m43, m44, m45, m46, m47, m48, m49, m50, m51, m52, m53, m54, m55, m56, m57, m58, m59, m60, m61, m62, m63, m64, m65, m66, m67, m68, m69, m70, m71, m72, m73, m74, m75, m76, m77, m78, m79, m80, m81, m82, m83, m84, m85, m86, m87, m88, m89, m90, m91, m92, m93, m94, m95, m96, m97, m98, m99, m100, m101, m102, m103, m104, m105, m106, m107, m108, m109, m110, m111, m112, m113, m114, m115, m116, m117, m118, m119])
