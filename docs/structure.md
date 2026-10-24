@@ -3301,8 +3301,14 @@ built from: `search`, `logic`, `stats`
 
 `evolutionary/` (DEAP ideas)
 built from: `search/evolutionary/`, `symbolic`, `nn`, `rl`
-- `genetic-algorithms.ts`: studies on OneMax, knapsack and travelling-salesman problems.
-- `genetic-programming.ts`: symbolic regression by genetic programming over `symbolic` expressions.
+- `genetic-algorithms.ts`: studies on OneMax, knapsack and travelling-salesman problems (`oneMax`, `knapsack`,
+  `evolveBitStrings` with the population as `BoardSteps`; `evolveOnPlane`, a real-coded GA over an objective's
+  contours as `PopulationSteps`; TODO the travelling salesman).
+- `evolution-strategies.ts`: `evolutionStrategyOnPlane` ((mu, lambda) and (mu + lambda)) and `cmaesOnPlane` (the core's
+  CMA-ES with its sampled offspring and search distribution) as `PopulationSteps`; `_plane.ts` holds the plane
+  objectives (the core's test functions with their surface on a grid).
+- `genetic-programming.ts`: symbolic regression by genetic programming over `symbolic` expressions
+  (`symbolicRegression`, `treeToExpr`: the best program per generation simplified, with its curve over the data).
 - `neuroevolution.ts`: NEAT-style evolution of small networks on XOR and cart-pole.
 - `quality-diversity.ts`: MAP-Elites and novelty search studies.
 

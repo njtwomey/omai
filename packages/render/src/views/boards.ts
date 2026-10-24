@@ -13,7 +13,7 @@ import { points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { categoricalColour, mixColours, parseColour, relativeLuminance } from '../theme/palettes.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
-import { outlined, short, type ViewFrames, type ViewOptions, viewFigure } from './_view.ts'
+import { outlined, short, type ViewFrames, type ViewOptions, viewFigure, wantsLog } from './_view.ts'
 
 // Well-known category names and the colours they get, so every search, solver and automaton reads alike.
 function knownColour(name: string, mode: ColourMode): string | undefined {
@@ -58,6 +58,10 @@ function knownColour(name: string, mode: ColourMode): string | undefined {
       return t.danger
     case 'given':
       return tint(t.fg, 0.82)
+    case '0':
+      return t.surface
+    case '1':
+      return tint(t.accent, 0.15)
     case 'hand':
       return mixColours(t.surface, t.fg, 0.04)
     case 'table':
@@ -386,24 +390,44 @@ export function populationFrames(record: PopulationSteps, options: PopulationVie
     const v = g.best.fitness
     bestSoFar.push(prev === undefined ? v : lower ? Math.min(prev, v) : Math.max(prev, v))
   }
-  const means = gens.map((g) => {
-    const finite = g.fitness.filter(Number.isFinite)
-    return finite.length === 0 ? Number.NaN : finite.reduce((a, b) => a + b, 0) / finite.length
+  // The median, not the mean: a few wild individuals (a program dividing by nearly zero) would swamp a mean.
+  const medians = gens.map((g) => {
+    const finite = g.fitness.filter(Number.isFinite).sort((p, q) => p - q)
+    return finite.length === 0 ? Number.NaN : (finite[Math.floor((finite.length - 1) / 2)] ?? Number.NaN)
   })
+  // A log axis when the fitness is positive and spans decades (an objective driven towards zero), floored at 1e-12.
+  const log =
+    wantsLog([...bestSoFar, ...medians].filter((v) => Number.isFinite(v) && v > 0)) &&
+    [...bestSoFar, ...medians].every((v) => !Number.isFinite(v) || v >= 0)
+  const shown = (v: number): number => (log ? Math.max(v, 1e-12) : v)
   const surface = record.surface
   const backdrop: Layer[] = []
   if (surface !== undefined) {
+    // Levels at quantiles of the surface, so steep objectives (Rosenbrock's walls) still show their valleys.
+    const sorted = surface.values
+      .flat()
+      .filter(Number.isFinite)
+      .sort((p, q) => p - q)
+    const levels = [
+      ...new Set(
+        [0.03, 0.08, 0.15, 0.25, 0.38, 0.52, 0.68, 0.84].map((q) => {
+          const v = sorted[Math.floor(q * (sorted.length - 1))] ?? 0
+          return Number(v.toPrecision(3))
+        }),
+      ),
+    ]
     backdrop.push(
       heatmap(surface.values, {
         x: surface.x,
         y: surface.y,
         smooth: 'contours',
+        levels,
         ramp: 'viridis',
         opacity: 0.45,
         colourBar: false,
         mode,
       }),
-      contours(surface.values, { x: surface.x, y: surface.y, levels: 9, colour: 'fgSecondary', labels: false, mode }),
+      contours(surface.values, { x: surface.x, y: surface.y, levels, colour: 'fgSecondary', labels: false, mode }),
     )
   }
   const option = (frame: number): EChartsOption => {
@@ -512,14 +536,20 @@ export function populationFrames(record: PopulationSteps, options: PopulationVie
       layers: [
         lines(
           [
-            { x, y: bestSoFar, name: 'best so far', colour: 'accent', width: 1.8 },
-            { x, y: means, name: 'mean', colour: 'fgSecondary', width: 1.2, dash: 'dashed' },
+            { x, y: bestSoFar.map(shown), name: 'best so far', colour: 'accent', width: 1.8 },
+            { x, y: medians.map(shown), name: 'median', colour: 'fgSecondary', width: 1.2, dash: 'dashed' },
           ],
           { mode },
         ),
-        points([{ x: [at], y: [bestSoFar[at] ?? 0], name: '__now', colour: 'accent', size: 9 }], { mode }),
+        points([{ x: [at], y: [shown(bestSoFar[at] ?? 0)], name: '__now', colour: 'accent', size: 9 }], { mode }),
       ],
-      options: { x: { label: 'generation' }, y: { label: 'fitness' } },
+      options: {
+        x: { label: 'generation' },
+        y: {
+          label: lower ? 'objective (best, median)' : 'fitness (best, median)',
+          ...(log ? { scale: 'log' as const } : {}),
+        },
+      },
     }
     const grid = gridSpec(1, 2, {
       widthRatios: [1.6, 1],
