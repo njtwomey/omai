@@ -22,7 +22,7 @@ export default function TextCells(): ReactNode {
   const grid = useMemo(
     () =>
       gridSpec(2, 2, {
-        widthRatios: [1.4, 1],
+        widthRatios: [1.1, 1],
         cells: [
           { id: 'plot', row: 0, col: 0, rowSpan: 2 },
           {
@@ -31,7 +31,7 @@ export default function TextCells(): ReactNode {
             col: 1,
             kind: 'tex',
             content: toTex(
-              tex`p(x) = \frac{1}{\sqrt{2\pi}\,${live(sigma, { digits: 3 })}} \exp\!\left(-\frac{(x - ${live(mu, { digits: 3 })})^2}{2 \cdot ${live(sigma, { digits: 3 })}^2}\right)`,
+              tex`p(x) = \frac{1}{\sqrt{2\pi}\,${live(sigma, { digits: 3 })}}\, \exp\!\left(-\frac{(x - ${live(mu, { digits: 3 })})^2}{2 \cdot ${live(sigma, { digits: 3 })}^2}\right)`,
             ),
           },
           {

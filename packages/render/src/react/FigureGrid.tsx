@@ -1,4 +1,4 @@
-import { type ReactElement, type ReactNode, useMemo } from 'react'
+import { type ReactElement, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { type Panel, type SubplotOptions, subplotRects, subplots } from '../charts/compose.ts'
 import { type Figure, figure as makeFigure, scaleFigure } from '../figure/figure.ts'
 import type { GridSpec } from '../figure/grid.ts'
@@ -6,6 +6,48 @@ import { Chart } from './Chart.tsx'
 import { useFrameSize } from './FigureFrame.tsx'
 import { Tex } from './MathView.tsx'
 import { useColourMode } from './theme.tsx'
+
+// Scale content down (never up) so it fits its cell: typeset equations grow with their values and must not be clipped.
+function FitToCell(props: { readonly children: ReactNode; readonly watch: unknown }): ReactElement {
+  const outer = useRef<HTMLDivElement | null>(null)
+  const inner = useRef<HTMLDivElement | null>(null)
+  const [scale, setScale] = useState(1)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the content (`watch`) changes
+  useLayoutEffect(() => {
+    const o = outer.current
+    const i = inner.current
+    if (o === null || i === null) return
+    const measure = (): void => {
+      const w = i.scrollWidth
+      const h = i.scrollHeight
+      const next = w > 0 && h > 0 ? Math.min(1, (o.clientWidth - 4) / w, (o.clientHeight - 4) / h) : 1
+      setScale((s) => (Math.abs(s - next) < 1e-3 ? s : next))
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(o)
+    observer.observe(i)
+    return () => observer.disconnect()
+  }, [props.watch])
+  return (
+    <div
+      ref={outer}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      <div ref={inner} style={{ width: 'max-content', transform: `scale(${scale})`, transformOrigin: 'center' }}>
+        {props.children}
+      </div>
+    </div>
+  )
+}
 
 /** Props of {@link FigureGrid}. */
 export interface FigureGridProps extends Omit<SubplotOptions, 'figure' | 'mode' | 'textCells'> {
@@ -81,7 +123,7 @@ export function FigureGrid(props: FigureGridProps): ReactElement {
           fontSize: fig.fontSize + 2,
         }}
       >
-        {node}
+        <FitToCell watch={c.kind === 'tex' || c.kind === 'text' ? c.content : node}>{node}</FitToCell>
       </div>,
     ]
   })

@@ -1,3 +1,6 @@
+// KaTeX's stylesheet and fonts, bundled by the consumer's build tool, so HTML output is styled with no setup.
+import 'katex/dist/katex.min.css'
+import './maths.css'
 import { type CSSProperties, createContext, type ReactElement, type ReactNode, useContext, useMemo } from 'react'
 import { type DerivationStep, derivationTex } from '../maths/derivations.ts'
 import { type EquationTemplate, toTex } from '../maths/live.ts'
@@ -9,12 +12,12 @@ interface MathSettings {
   readonly output: TexOutput
 }
 
-const MathContext = createContext<MathSettings>({ macros: sharedMacros, output: 'mathml' })
+const MathContext = createContext<MathSettings>({ macros: sharedMacros, output: 'htmlAndMathml' })
 
 /**
  * Supply macros (merged over the enclosing ones) and the output markup to the maths below.
  *
- * @param props - Extra macros, the output (`mathml` by default; `html` when the page loads KaTeX's stylesheet), and
+ * @param props - Extra macros, the output (`htmlAndMathml` by default: KaTeX's HTML, styled by its stylesheet, which this module imports, with MathML for assistive technology), and
  *   the children.
  * @returns The provider.
  */
