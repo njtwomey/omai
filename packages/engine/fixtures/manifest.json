@@ -237,6 +237,125 @@
       "cases": 4
     },
     {
+      "fixture": "dynamics/control/optimal.json",
+      "source": "oracle/cases/dynamics/control/optimal.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "dynamics/control/placement.json",
+      "source": "oracle/cases/dynamics/control/placement.py",
+      "reference": {
+        "control": "0.10.2",
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "dynamics/filtering/changepoint.json",
+      "source": "oracle/cases/dynamics/filtering/changepoint.py",
+      "reference": {
+        "ruptures": "v1.1.10"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "dynamics/filtering/kalman.json",
+      "source": "oracle/cases/dynamics/filtering/kalman.py",
+      "reference": {
+        "filterpy": "1.4.5"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "dynamics/filtering/nonlinear.json",
+      "source": "oracle/cases/dynamics/filtering/nonlinear.py",
+      "reference": {
+        "filterpy": "1.4.5"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "dynamics/identification.json",
+      "source": "oracle/cases/dynamics/identification.py",
+      "reference": {
+        "pysindy": "2.1.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "dynamics/nonlinear.json",
+      "source": "oracle/cases/dynamics/nonlinear.py",
+      "reference": {
+        "nolds": "0.6"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "dynamics/ode/adjoint.json",
+      "source": "oracle/cases/dynamics/ode/adjoint.py",
+      "reference": {
+        "torch": "2.14.1",
+        "torchdiffeq": "0.2.5"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "dynamics/ode/boundary.json",
+      "source": "oracle/cases/dynamics/ode/boundary.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "dynamics/ode/dae.json",
+      "source": "oracle/cases/dynamics/ode/dae.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "dynamics/ode/solve_ivp.json",
+      "source": "oracle/cases/dynamics/ode/solve_ivp.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 92
+    },
+    {
+      "fixture": "dynamics/pde/finite_difference.json",
+      "source": "oracle/cases/dynamics/pde/finite_difference.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "dynamics/pde/fokker_planck.json",
+      "source": "oracle/cases/dynamics/pde/fokker_planck.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "dynamics/pde/spectral.json",
+      "source": "oracle/cases/dynamics/pde/spectral.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "foundations/calculus.json",
       "source": "oracle/cases/foundations/calculus.py",
       "reference": {

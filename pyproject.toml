@@ -53,6 +53,9 @@ oracle-core = [
     "dppy>=0.3.3",
     "nolds>=0.6.3",
     "astropy>=8.0.2",
+    "filterpy>=1.4.5",
+    "ruptures>=1.1.10",
+    "pysindy>=2.1.0",
     "python-constraint2>=2.7.3",
     "pyperplan>=2.1",
     "pysubgroup>=0.8.0",
@@ -82,6 +85,7 @@ oracle-torch = [
     "optax>=0.2.8",
     "pytorch-crf>=0.7.2",
     "torch",
+    "torchdiffeq>=0.2.5",
     "torchmetrics>=1.9.0",
     "torchvision>=0.29.1",
 ]
