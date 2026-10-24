@@ -13,8 +13,10 @@ import {
   type FitOptions,
   type Fitted,
   featureNamesOf,
+  geometricSteps,
   type LearnData,
   matrixView,
+  type SurfaceStepsInput,
 } from '../../lib/learn/index.ts'
 import { cholesky, dgemv, solveTriangular } from '../../lib/numerics/linalg/index.ts'
 import { erf } from '../../lib/numerics/special/index.ts'
@@ -274,6 +276,7 @@ export function gaussianProcessClassifier(hyper: Partial<GpcHyper> = {}): Explai
           }
         }
         const paths: [number, number][][] = []
+        const thetaPaths: (readonly { readonly x: number[]; readonly lml: number }[])[] = []
         const problems = targets.map((tg) => {
           const y = Float64Array.from(tg)
           let theta = t0
@@ -286,7 +289,7 @@ export function gaussianProcessClassifier(hyper: Partial<GpcHyper> = {}): Explai
               nelderMeadAlgorithm(objective, Float64Array.from(t0), {
                 bounds: t0.map((): [number, number] => [Math.log(1e-5), Math.log(1e5)]),
               }),
-              (s) => Array.from(s.x),
+              (s) => ({ x: Array.from(s.x), lml: -(s.fsim[0] ?? Number.POSITIVE_INFINITY) }),
             )
             const r = runAlgorithm(tracked.algorithm, {
               maxSteps: h.maxIter,
@@ -294,7 +297,8 @@ export function gaussianProcessClassifier(hyper: Partial<GpcHyper> = {}): Explai
               ...(options.policy === undefined ? {} : { policy: options.policy }),
             })
             theta = Array.from(r.state.x)
-            paths.push(tracked.history.map((xs) => [Math.exp(xs[0] ?? 0), Math.exp(xs[1] ?? xs[0] ?? 0)]))
+            paths.push(tracked.history.map(({ x: xs }) => [Math.exp(xs[0] ?? 0), Math.exp(xs[1] ?? xs[0] ?? 0)]))
+            thetaPaths.push(tracked.history)
           }
           const fit = laplace(flat(withTheta(h.kernel, theta).k(x)), m.n, y)
           return { theta, f: Array.from(fit.f), logMarginalLikelihood: fit.logMarginalLikelihood }
@@ -347,14 +351,51 @@ export function gaussianProcessClassifier(hyper: Partial<GpcHyper> = {}): Explai
             }),
           )
         }
-        if (m.d === 2)
+        if (m.d === 2) {
+          // Two classes: the classifier at up to 12 of the optimiser's steps (the Laplace fit at each step's
+          // hyperparameters), beside the approximate log marginal likelihood.
+          const path = thetaPaths[0]
+          const y0 = Float64Array.from(targets[0] ?? [])
+          const record = options.explain !== false && classes.length === 2 && path !== undefined && path.length > 1
+          const chosen = record ? geometricSteps(path.length - 1, 12) : []
+          const lml = record ? path.map((t) => (t.lml > -1e299 ? t.lml : Number.NaN)) : []
+          const steps: SurfaceStepsInput | undefined = record
+            ? {
+                models: chosen.map((t) => {
+                  if (t === path.length - 1) return fitted
+                  const theta = path[t]?.x ?? t0
+                  const fit = laplace(flat(withTheta(h.kernel, theta).k(x)), m.n, y0)
+                  return est.revive({
+                    ...params,
+                    problems: [{ theta, f: Array.from(fit.f), logMarginalLikelihood: fit.logMarginalLikelihood }],
+                  })
+                }),
+                iterations: chosen,
+                objective: chosen.map((t) => lml[t] ?? Number.NaN),
+              }
+            : undefined
+          const finite = lml.flatMap((v, t) => (Number.isFinite(v) ? [t] : []))
           exposition.push(
             decisionSurfaceOf(fitted, data.x, {
               featureNames: features,
               classNames: classNamesOf(data, classes),
               resolution: 20,
+              ...(data.y === undefined ? {} : { y: data.y }),
+              ...(steps === undefined
+                ? {}
+                : {
+                    steps,
+                    stepName: 'optimiser step',
+                    objective: {
+                      name: 'log marginal likelihood',
+                      iterations: finite,
+                      values: finite.map((t) => lml[t] ?? 0),
+                      lowerIsBetter: false,
+                    },
+                  }),
             }),
           )
+        }
         return { params, exposition }
       },
       methods: (p: GpcParams, h: GpcHyper) => gpcVerbs(p, h),

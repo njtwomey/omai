@@ -18,6 +18,25 @@ const flowers = iris()
 const k = { key: key(5) }
 
 describe('ensembles', () => {
+  it('record their decision surface stage by stage, with named scores', () => {
+    for (const est of [
+      adaBoostClassifier({ nEstimators: 12 }),
+      gradientBoostingClassifier({ nEstimators: 12 }),
+      randomForestClassifier({ nEstimators: 12 }),
+      histGradientBoostingClassifier({ maxIter: 12 }),
+    ]) {
+      const fitted = est.fit(moons, k)
+      const stages = recordsOf(fitted.exposition, 'ensembleStages')[0]
+      const surface = recordsOf(fitted.exposition, 'decisionSurface')[0]
+      expect(stages?.scoreName).toBeTypeOf('string')
+      expect(stages?.higherIsBetter).toBeTypeOf('boolean')
+      expect(stages?.surface).toBe(surface)
+      expect(surface?.steps?.[0]?.iteration).toBe(1)
+      expect(surface?.steps?.at(-1)?.labels).toEqual(surface?.labels)
+      expect(surface?.rows?.labels).toHaveLength(120)
+    }
+  })
+
   it('forests and extra trees record their stages, a tree and the surface', () => {
     const f = randomForestClassifier({ nEstimators: 15, maxDepth: 6 }).fit(moons, k)
     expect(f.score?.(moons)).toBeGreaterThan(0.9)

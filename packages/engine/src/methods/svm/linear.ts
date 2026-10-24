@@ -12,9 +12,11 @@ import {
   type FitOptions,
   type Fitted,
   featureNamesOf,
+  geometricSteps,
   type LearnData,
   type MatrixView,
   matrixView,
+  type SurfaceStepsInput,
 } from '../../lib/learn/index.ts'
 import { ddot } from '../../lib/numerics/linalg/index.ts'
 import { foldIn, type Key, permutation } from '../../lib/random/index.ts'
@@ -145,18 +147,30 @@ export function linearSvc(hyper: Partial<LinearSvcHyper> = {}): ExplainedEstimat
         const key: Key = resolveKey(options, 'linearSvc')
         const problems = classes.length === 2 ? [1] : classes.map((_, c) => c)
         const exposition: Exposition[] = []
+        let sweeps: readonly { objective: number; w?: number[]; support?: number[] }[] | undefined
         const coef: number[][] = []
         const intercept: number[] = []
         for (const [s, positive] of problems.entries()) {
           const y = Float64Array.from(codes, (c) => (c === positive ? 1 : -1))
-          const tracked = collecting(dcdAlgorithm(x, bias, y, h), (state) => state.objective)
+          // Two classes and two features: keep each sweep's weights and support, to record the surface as it trained.
+          const record = options.explain !== false && problems.length === 1 && x.d === 2
+          const tracked = collecting(dcdAlgorithm(x, bias, y, h), (state) => ({
+            objective: state.objective,
+            ...(record
+              ? {
+                  w: Array.from(state.w),
+                  support: Array.from(state.alpha.keys()).filter((i) => (state.alpha[i] ?? 0) > 0),
+                }
+              : {}),
+          }))
           const r = runAlgorithm(tracked.algorithm, {
             maxSteps: h.maxIter,
             key: foldIn(key, s),
             ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
             ...(options.policy === undefined ? {} : { policy: options.policy }),
           })
-          const objectives = tracked.history.slice(1)
+          const objectives = tracked.history.slice(1).map((t) => t.objective)
+          if (record) sweeps = tracked.history
           const w = Array.from(r.state.w)
           const b = bias > 0 ? (w[x.d] ?? 0) * bias : 0
           coef.push(w.slice(0, x.d))
@@ -187,8 +201,56 @@ export function linearSvc(hyper: Partial<LinearSvcHyper> = {}): ExplainedEstimat
             estimates: coef.flatMap((row, s) => [...row, intercept[s] ?? 0]),
           }),
         )
-        if (x.d === 2)
-          exposition.push(decisionSurfaceOf(est.revive(params), data.x, { featureNames: features, classNames }))
+        if (x.d === 2) {
+          const fitted = est.revive(params)
+          const history = sweeps
+          const last = (history?.length ?? 0) - 1
+          const chosen = history === undefined || last < 1 ? undefined : geometricSteps(last, 40)
+          const steps: SurfaceStepsInput | undefined =
+            history === undefined || chosen === undefined
+              ? undefined
+              : {
+                  models: chosen.map((t) => {
+                    const w = history[t]?.w ?? []
+                    return t === last
+                      ? fitted
+                      : est.revive({
+                          ...params,
+                          coef: [w.slice(0, x.d)],
+                          intercept: [bias > 0 ? (w[x.d] ?? 0) * bias : 0],
+                        })
+                  }),
+                  iterations: chosen,
+                  objective: chosen.map((t) => history[t]?.objective ?? 0),
+                  highlight: chosen.map((t) => history[t]?.support ?? []),
+                  highlightName: 'support vectors',
+                }
+          const surface = decisionSurfaceOf(fitted, data.x, {
+            featureNames: features,
+            classNames,
+            ...(data.y === undefined ? {} : { y: data.y }),
+            levels: [-1, 1],
+            ...(steps === undefined || history === undefined
+              ? {}
+              : {
+                  steps,
+                  stepName: 'sweep',
+                  objective: {
+                    name: 'dual objective',
+                    iterations: history.slice(1).map((_, t) => t + 1),
+                    values: history.slice(1).map((t) => t.objective),
+                  },
+                }),
+          })
+          for (const [i, r] of exposition.entries())
+            if (r.kind === 'margin')
+              exposition[i] = {
+                ...r,
+                ...(surface.rows === undefined ? {} : { rows: surface.rows }),
+                ...(problems.length === 1 ? { surface, steps: r.dualObjective?.map((_, t) => t + 1) ?? [] } : {}),
+              }
+          exposition.push(surface)
+        }
         return { params, exposition }
       },
       methods: (p: LinearSvcParams): LinearSvcVerbs => {

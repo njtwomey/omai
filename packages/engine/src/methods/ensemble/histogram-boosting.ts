@@ -1,7 +1,7 @@
 import { quantileOf, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
-import { type Exposition, ensembleStages } from '../../lib/exposition/index.ts'
+import { type EnsembleStages, type Exposition, ensembleStages } from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
   decisionSurfaceOf,
@@ -16,6 +16,7 @@ import {
   type MatrixView,
   matrixView,
   sampleWeightsOf,
+  stagedSteps,
   takeRows,
   targetVector,
 } from '../../lib/learn/index.ts'
@@ -508,16 +509,42 @@ function histEstimator(
             method: name,
             weights: r.state.iterations.map(() => h.learningRate),
             trainScores: r.state.train,
+            scoreName: 'loss',
+            higherIsBetter: false,
             ...(r.state.validation.length > 0 ? { validationScores: r.state.validation } : {}),
           }),
         ]
-        if (x.d === 2)
-          exposition.push(
-            decisionSurfaceOf(est.revive(params), data.x, {
-              featureNames: features,
-              ...(classifier ? { classNames: classNamesOf(data, classes) } : {}),
-            }),
-          )
+        if (x.d === 2) {
+          // The model after each recorded iteration.
+          const fitted = est.revive(params)
+          const its = r.state.iterations
+          const M = its.length
+          const steps =
+            options.explain === false
+              ? undefined
+              : stagedSteps(M, (m) => (m === M ? fitted : est.revive({ ...params, iterations: its.slice(0, m) })), {
+                  objective: r.state.train,
+                  misclassified: classifier,
+                })
+          const surface = decisionSurfaceOf(fitted, data.x, {
+            featureNames: features,
+            ...(classifier ? { classNames: classNamesOf(data, classes) } : {}),
+            ...(data.y === undefined ? {} : { y: data.y }),
+            ...(steps === undefined
+              ? {}
+              : {
+                  steps,
+                  stepName: 'iteration',
+                  objective: {
+                    name: 'training loss',
+                    iterations: r.state.train.map((_, m) => m + 1),
+                    values: r.state.train,
+                  },
+                }),
+          })
+          exposition[0] = { ...(exposition[0] as EnsembleStages), surface }
+          exposition.push(surface)
+        }
         return { params, exposition }
       },
       methods: (p: HistBoostingParams) => histVerbs(p),

@@ -194,7 +194,10 @@ export interface NeighbourViewOptions extends ViewOptions {
  * @returns The ECharts option.
  */
 export function neighbourView(record: NeighbourRecord, options: NeighbourViewOptions = {}): EChartsOption {
-  const rows = options.points
+  const own = options.points === undefined ? record.rows : undefined
+  const rows = options.points ?? own?.points
+  const labelsGiven = options.labels ?? own?.labels
+  const queriesGiven = options.queries ?? (own === undefined ? undefined : record.queries)
   const fig = viewFigure(options, { aspect: rows === undefined ? 1.6 : 1.75 })
   const mode = fig.mode
   const q = Math.min(Math.max(options.query ?? 0, 0), Math.max(record.indices.length - 1, 0))
@@ -202,10 +205,10 @@ export function neighbourView(record: NeighbourRecord, options: NeighbourViewOpt
   const dist = record.distances[q] ?? []
   // Each neighbour's bar in its label's colour, so the vote can be read off the chart.
   const labelOf = (i: number): number => {
-    const l = options.labels?.[i]
-    return l === undefined ? 0 : typeof l === 'number' ? l : [...new Set(options.labels)].indexOf(l)
+    const l = labelsGiven?.[i]
+    return l === undefined ? 0 : typeof l === 'number' ? l : [...new Set(labelsGiven)].indexOf(l)
   }
-  const classes = options.labels === undefined ? [0] : [...new Set(idx.map(labelOf))].sort((p, r) => p - r)
+  const classes = labelsGiven === undefined ? [0] : [...new Set(idx.map(labelOf))].sort((p, r) => p - r)
   const panels: Record<string, Panel> = {
     distances: {
       layers: [
@@ -213,25 +216,25 @@ export function neighbourView(record: NeighbourRecord, options: NeighbourViewOpt
           idx.map((_, k) => `${k + 1}`),
           classes.map((c) => ({
             name: `__class${c}`,
-            colour: options.labels === undefined ? 'tab0' : `tab${c % 10}`,
-            values: dist.map((d, k) => (labelOf(idx[k] ?? 0) === c || options.labels === undefined ? d : 0)),
+            colour: labelsGiven === undefined ? 'tab0' : `tab${c % 10}`,
+            values: dist.map((d, k) => (labelOf(idx[k] ?? 0) === c || labelsGiven === undefined ? d : 0)),
           })),
           { mode, stacked: true },
         ),
       ],
       options: {
-        title: `query ${q}: ${idx.length} neighbours (${record.metric})`,
+        title: `query ${q} · ${idx.length} neighbours`,
         x: { label: 'neighbour rank' },
-        y: { label: 'distance' },
+        y: { label: `${record.metric} distance` },
       },
     },
   }
   if (rows !== undefined) {
-    const [a, b] = options.columns ?? [0, 1]
-    const query = options.queries?.[q] ?? rows[q] ?? []
+    const [a, b] = own === undefined ? (options.columns ?? [0, 1]) : [0, 1]
+    const query = queriesGiven?.[q] ?? rows[q] ?? []
     const qx = query[a] ?? 0
     const qy = query[b] ?? 0
-    const labels = options.labels
+    const labels = labelsGiven
     const groups = labels?.map((l) => (typeof l === 'number' ? l : [...new Set(labels)].indexOf(l)))
     const layers: Layer[] = [
       points(
@@ -305,7 +308,14 @@ export function neighbourView(record: NeighbourRecord, options: NeighbourViewOpt
         1.5,
       ),
     )
-    panels['rows'] = { layers, options: { x: { label: `x${a}` }, y: { label: `x${b}` }, aspect: 'equal' } }
+    panels['rows'] = {
+      layers,
+      options: {
+        x: { label: own?.features[0] ?? `x${a}` },
+        y: { label: own?.features[1] ?? `x${b}` },
+        aspect: 'equal',
+      },
+    }
   }
   const ids = rows === undefined ? ['distances'] : ['rows', 'distances']
   const grid = gridSpec(1, ids.length, {
