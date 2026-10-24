@@ -187,17 +187,19 @@ class TextParser {
     const t = this.peek()
     return t.t === 'num' || t.t === 'id' || (t.t === 'op' && t.v === '(')
   }
+  // A product chain is gathered and built once, so `2*(x + y)*z` stays a three-factor product (pairwise building would
+  // distribute the 2 over the sum first, as a two-factor number-times-sum product does).
   private term(): Expr {
-    let left = this.unary()
+    const factors = [this.unary()]
     for (;;) {
       if (this.isOp('*')) {
         this.next()
-        left = makeMul([left, this.unary()])
+        factors.push(this.unary())
       } else if (this.isOp('/')) {
         this.next()
-        left = makeMul([left, makePow(this.unary(), MINUS_ONE)])
-      } else if (this.startsPrimary()) left = makeMul([left, this.power()])
-      else return left
+        factors.push(makePow(this.unary(), MINUS_ONE))
+      } else if (this.startsPrimary()) factors.push(this.power())
+      else return factors.length === 1 ? (factors[0] as Expr) : makeMul(factors)
     }
   }
   private unary(): Expr {

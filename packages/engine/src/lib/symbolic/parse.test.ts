@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isWhiteboxError } from '../base/index.ts'
-import { parse, parseLatex, sym, toText } from './index.ts'
+import { add, equals, mul, num, parse, parseLatex, sin, sym, toLatex, toText } from './index.ts'
 
 const t = (s: string): string => toText(parse(s))
 const l = (s: string): string => toText(parseLatex(s))
@@ -79,5 +79,15 @@ describe('parseLatex', () => {
   it('reports unsupported input', () => {
     expect(() => parseLatex('\\int x dx')).toThrow()
     expect(() => parseLatex('\\frac{1}{')).toThrow()
+  })
+})
+
+describe('product chains', () => {
+  it('build once, so a number times a sum times more stays a product (it used to distribute)', () => {
+    const x = sym('x')
+    const e = mul(num(2), add(x, sym('y')), sin(x))
+    expect(equals(parse(toText(e)), e)).toBe(true)
+    expect(equals(parseLatex(toLatex(e)), e)).toBe(true)
+    expect(toText(parse('2*(x + y)'))).toBe(toText(mul(num(2), add(x, sym('y')))))
   })
 })

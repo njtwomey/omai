@@ -220,17 +220,18 @@ class LatexParser {
     const t = this.peek()
     return t.t === 'cmd' && (FUNCTIONS[t.v] !== undefined || t.v === 'operatorname')
   }
+  // Product chains are built once, as in the text parser.
   private term(): Expr {
-    let left = this.unary()
+    const factors = [this.unary()]
     for (;;) {
       if (this.isCmd('cdot') || this.isCmd('times') || this.isChar('*')) {
         this.next()
-        left = makeMul([left, this.unary()])
+        factors.push(this.unary())
       } else if (this.isChar('/') || this.isCmd('div')) {
         this.next()
-        left = makeMul([left, makePow(this.unary(), MINUS_ONE)])
-      } else if (this.startsFactor()) left = makeMul([left, this.power()])
-      else return left
+        factors.push(makePow(this.unary(), MINUS_ONE))
+      } else if (this.startsFactor()) factors.push(this.power())
+      else return factors.length === 1 ? (factors[0] as Expr) : makeMul(factors)
     }
   }
   private unary(): Expr {
