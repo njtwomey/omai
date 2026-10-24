@@ -1,5 +1,6 @@
 import { goldenSuite, type Params } from '../../../testing/suite.ts'
-import { tensor } from '../../tensor/index.ts'
+import { stack, tensor } from '../../tensor/index.ts'
+import { stft } from '../time-frequency.ts'
 import * as A from './index.ts'
 
 const n = (o: Params, k: string): number | undefined => (typeof o[k] === 'number' ? (o[k] as number) : undefined)
@@ -88,6 +89,57 @@ goldenSuite('spectral audio features against librosa', 'signal/audio/features', 
   zeroCrossingRate: ([y], o) =>
     A.zeroCrossingRate(y, { frameLength: o['frameLength'] as number, hopLength: o['hopLength'] as number }),
   frame: ([y], o) => A.frame(y, o['frameLength'] as number, o['hop'] as number),
+})
+
+goldenSuite('augmentation against librosa', 'signal/audio/augmentation', {
+  phaseVocoder: ([y], o) => {
+    const nFft = o['nFft'] as number
+    const hop = o['hopLength'] as number
+    const z = stft(y, { nperseg: nFft, noverlap: nFft - hop, padded: false, scaling: 'none' }).values
+    const r = A.phaseVocoder(z, o['rate'] as number)
+    return stack([r.re, r.im])
+  },
+  timeStretch: ([y], o) =>
+    tensor(
+      Array.from(
+        A.timeStretch(y, o['rate'] as number, { nFft: o['nFft'] as number, hopLength: o['hopLength'] as number }),
+      ),
+    ),
+  pitchShift: ([y], o) =>
+    tensor(
+      Array.from(
+        A.pitchShift(y, o['sr'] as number, o['nSteps'] as number, {
+          nFft: o['nFft'] as number,
+          hopLength: o['hopLength'] as number,
+        }),
+      ),
+    ),
+  mixAtSnr: ([y, n], o) => tensor(Array.from(A.mixAtSnr(y, n as never, o['snrDb'] as number))),
+})
+
+goldenSuite('rhythm against librosa', 'signal/audio/rhythm', {
+  onsetStrength: ([y], o) =>
+    tensor(
+      Array.from(
+        A.onsetStrength(y, {
+          ...(o['aggregate'] === undefined ? {} : { aggregate: o['aggregate'] as 'mean' | 'median' }),
+          ...(o['lag'] === undefined ? {} : { lag: o['lag'] as number }),
+        }),
+      ),
+    ),
+  peakPick: ([x], o) => tensor(A.peakPick(x?.data ?? [], o as unknown as A.PeakPickOptions)),
+  onsetDetect: ([e], o) =>
+    tensor(A.onsetDetectFromEnvelope(e?.data ?? [], o['sr'] as number, o['hopLength'] as number)),
+  tempogram: ([e], o) => tensor(A.tempogram(e?.data ?? [], o['winLength'] as number).map((r) => Array.from(r))),
+  tempo: ([e]) => tensor([A.tempo(e?.data ?? [])]),
+  beatTrack: ([e], o) => {
+    const r = A.beatTrackFromEnvelope(e?.data ?? [], {
+      ...(o['tightness'] === undefined ? {} : { tightness: o['tightness'] as number }),
+      ...(o['trim'] === undefined ? {} : { trim: o['trim'] as boolean }),
+      ...(o['bpm'] === undefined ? {} : { bpm: o['bpm'] as number }),
+    })
+    return tensor([r.bpm, ...r.beats])
+  },
 })
 
 goldenSuite('pitch estimation against librosa', 'signal/audio/pitch', {

@@ -1588,26 +1588,41 @@ representations are in `optim/sparse.ts`.
   trivial-match exclusion zone.
 - `image/correlate.ts`: `correlate1d`, `convolve1d`, `correlateNd`, `convolveNd` with scipy.ndimage boundary modes and
   origins (the kernel of the image filters below).
-- `audio/scales.ts`: mel, Bark and ERB scales.
-- `audio/filterbanks.ts`: mel and gammatone filter banks.
-- `audio/features.ts`: mel spectrograms, MFCCs, spectral centroid, bandwidth, roll-off, flux and flatness, chroma,
-  zero-crossing rate, RMS energy.
-- `audio/pitch.ts`: YIN and probabilistic YIN, autocorrelation and cepstral pitch, harmonic product spectrum.
-- `audio/rhythm.ts`: onset strength and detection, tempo estimation, beat tracking.
-- `audio/enhancement.ts`: spectral subtraction, Wiener denoising, voice activity detection.
-- `audio/separation.ts`: ideal binary and ratio masks, mask application, separation scores (NMF and ICA separation are
-  in `methods/audio`).
-- `audio/coding.ts`: psychoacoustic masking thresholds, MDCT transform coding, perceptual quantisation.
-- `audio/augmentation.ts`: SpecAugment, time stretching and pitch shifting (phase vocoder), mixing and noise.
-- `image/filters.ts`: Gaussian, uniform, median and bilateral filters, Sobel, Scharr, Prewitt, Laplacian of Gaussian,
-  Gabor kernels and Gabor filter banks.
-- `image/features.ts`: Canny, Harris and Shi-Tomasi corners, peak finding, LoG and DoG blobs, Hough lines and circles,
-  HOG, local binary patterns, Gabor features, structure tensors.
-- `image/morphology.ts`: erosion, dilation, opening, closing, gradients, top-hats, connected-component labelling,
-  distance transforms, skeletonisation.
-- `image/geometry.ts`: resizing, rotation, affine and perspective warps, pyramids, integral images.
-- `image/segmentation.ts`: Otsu thresholds, watershed, SLIC superpixels, Felzenszwalb, graph cuts.
-- `image/motion.ts`: Lucas-Kanade and Horn-Schunck optical flow, block matching, template matching.
+- `audio/scales.ts`: mel (HTK and Slaney), Bark (Traunmüller, Zwicker-Terhardt, Schroeder) and ERB scales, mel and
+  FFT frequencies, ERB-spaced centre frequencies; differentiable.
+- `audio/filterbanks.ts`: mel and chroma filter banks (librosa.filters), gammatone filters (FIR and Slaney's IIR, as
+  scipy) and gammatone banks.
+- `audio/features.ts`: framing, librosa-convention spectrograms, mel spectrograms, power and amplitude decibels, MFCCs
+  (liftering), spectral centroid, bandwidth, roll-off, flatness and flux, chroma, zero-crossing rate, RMS energy (from
+  signals and spectrograms); the spectrogram-based ones are differentiable.
+- `audio/pitch.ts`: autocorrelation, YIN and probabilistic YIN (HMM Viterbi decoding of pitch and voicing), autocorrelation
+  pitch, harmonic product spectrum (cepstral pitch is `cepstrum.ts`).
+- `audio/rhythm.ts`: onset strength, greedy peak picking, onset detection, the autocorrelation tempogram, tempo
+  estimation under a log-normal prior, Ellis's dynamic-programming beat tracker.
+- `audio/enhancement.ts`: power spectral subtraction, decision-directed Wiener denoising, energy voice activity
+  detection with hangover.
+- `audio/separation.ts`: ideal binary, ratio and phase-sensitive masks, mask application, oracle mask separation
+  (separation scores are `metrics/audio.ts`; NMF and ICA separation are in `methods/audio`).
+- `audio/coding.ts`: the absolute threshold of hearing, Schroeder's spreading function, a Bark-domain masking threshold,
+  perceptual MDCT transform coding with an entropy estimate. TODO: the full MPEG psychoacoustic model (tonal and
+  noise maskers, decimation of maskers).
+- `audio/augmentation.ts`: SpecAugment masking (TODO: time warping), the phase vocoder, time stretching and pitch
+  shifting (as librosa with FFT resampling), mixing at an SNR, additive noise.
+- `image/filters.ts`: Gaussian filters and derivative kernels, uniform, rank, median, minimum, maximum and percentile
+  filters, Sobel, Scharr and Prewitt, Laplace, Laplacian of Gaussian, Gaussian gradient magnitude, bilateral filtering,
+  Gabor kernels, filters and banks; the linear ones differentiable.
+- `image/features.ts`: structure tensors, Harris and Shi-Tomasi corners, `peakLocalMax`, Canny, local binary patterns,
+  HOG, Hough lines and circles (Gabor features are `gaborBank`). TODO: LoG and DoG blob detection, Hough peak
+  extraction.
+- `image/morphology.ts`: binary and grey erosion, dilation, opening and closing (structures, origins, iterations),
+  morphological gradient, top-hats, connected-component labelling, the exact Euclidean distance transform, thinning and
+  Zhang-Suen skeletonisation.
+- `image/geometry.ts`: `mapCoordinates`, affine transforms, shifts, zooms and rotations (orders 0 and 1, every ndimage
+  mode), scikit-image resizing and projective warps, Gaussian pyramids, integral images. TODO: spline orders 2 to 5.
+- `image/segmentation.ts`: Otsu and Li thresholds, marker watershed, Felzenszwalb's graph-based segmentation, exact
+  binary graph cuts (by `graph` minimum cut). TODO: SLIC superpixels.
+- `image/motion.ts`: template matching (normalised cross-correlation), phase correlation, block matching, dense
+  Lucas-Kanade and traced Horn-Schunck optical flow. TODO: pyramidal iterative Lucas-Kanade and TV-L1.
 
 ### 4.21 `text/` (tier 7): text processing (HF tokenizers, nltk, sklearn.feature_extraction.text)
 

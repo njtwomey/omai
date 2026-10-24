@@ -2306,6 +2306,15 @@
       "cases": 42
     },
     {
+      "fixture": "signal/audio/augmentation.json",
+      "source": "oracle/cases/signal/audio/augmentation.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "signal/audio/features.json",
       "source": "oracle/cases/signal/audio/features.py",
       "reference": {
@@ -2331,6 +2340,15 @@
         "numpy": "2.5.4"
       },
       "cases": 4
+    },
+    {
+      "fixture": "signal/audio/rhythm.json",
+      "source": "oracle/cases/signal/audio/rhythm.py",
+      "reference": {
+        "librosa": "1.0.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
     },
     {
       "fixture": "signal/audio/scales.json",
