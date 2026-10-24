@@ -10,7 +10,10 @@ import {
   useState,
 } from 'react'
 import type { Figure } from '../figure/figure.ts'
-import { tokens } from '../theme/tokens.ts'
+import { texToHtml } from '../maths/tex.ts'
+import { chartToSvg, composeSvg, type FigurePart, svgDataUrl, svgToPng } from '../svg/export.ts'
+import { escapeXml } from '../svg/svg.ts'
+import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { loadEcharts } from './echarts.ts'
 import { useColourMode } from './theme.tsx'
 
@@ -88,39 +91,54 @@ function download(url: string, name: string): void {
 }
 
 /**
- * Export the first chart inside an element as PNG (twice the resolution) or SVG (re-rendered with ECharts' SVG
- * renderer when the chart draws on a canvas), as a data URL.
+ * The whole figure inside an element as one SVG document: every chart in it (re-drawn by ECharts' SVG renderer at its
+ * place) and every overlay cell (`data-whitebox-overlay`: TeX from `data-tex` as MathML, or its text), on the
+ * background colour. Panels are parts of the figure, so they export together.
  *
- * @param root - The element containing the chart.
- * @param format - `png` or `svg`.
- * @param background - Background colour of the export.
- * @returns The data URL, or `undefined` when no chart is found.
+ * @param root - The element holding the figure.
+ * @param options - Background colour, colour mode, and whether to include HTML overlays (default true).
+ * @returns The SVG text, or `undefined` when the element holds nothing to export.
  */
-export function exportChartUrl(root: HTMLElement, format: 'png' | 'svg', background: string): string | undefined {
-  const el = root.querySelector<HTMLElement>('[data-whitebox-chart]')
-  if (el === null) return undefined
+export function figureSvg(
+  root: HTMLElement,
+  options: { readonly background: string; readonly mode: ColourMode; readonly overlays?: boolean },
+): string | undefined {
+  const box = root.getBoundingClientRect()
+  const parts: FigurePart[] = []
   const echarts = loadEcharts()
-  const chart = echarts.getInstanceByDom(el)
-  if (chart === undefined) return undefined
-  if (format === 'png') return chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: background })
-  const host = document.createElement('div')
-  host.style.cssText = `position:fixed;left:-10000px;width:${el.clientWidth}px;height:${el.clientHeight}px`
-  document.body.appendChild(host)
-  try {
-    const svg = echarts.init(host, undefined, { renderer: 'svg' })
-    svg.setOption({ ...chart.getOption(), backgroundColor: background })
-    const url = svg.getDataURL({ type: 'svg' })
-    svg.dispose()
-    return url
-  } finally {
-    host.remove()
+  for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-chart]')) {
+    const chart = echarts.getInstanceByDom(el)
+    if (chart === undefined) continue
+    const r = el.getBoundingClientRect()
+    const width = Math.round(r.width)
+    const height = Math.round(r.height)
+    parts.push({
+      x: r.left - box.left,
+      y: r.top - box.top,
+      width,
+      height,
+      svg: chartToSvg(chart.getOption(), { width, height, mode: options.mode }),
+    })
   }
+  if (options.overlays ?? true)
+    for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-overlay]')) {
+      const r = el.getBoundingClientRect()
+      const tex = el.dataset['tex']
+      const colour = getComputedStyle(el).color
+      const html =
+        tex === undefined
+          ? `<div style="color:${colour};font:13px system-ui,sans-serif">${escapeXml(el.textContent ?? '')}</div>`
+          : `<div style="color:${colour};font-size:18px">${texToHtml(tex, { display: true, output: 'mathml' })}</div>`
+      parts.push({ x: r.left - box.left, y: r.top - box.top, width: r.width, height: r.height, html })
+    }
+  if (parts.length === 0) return undefined
+  return composeSvg(Math.round(box.width), Math.round(box.height), parts, { background: options.background })
 }
-
 /**
  * A fixed-size figure area: content never resizes it. The figure is the unit: a grid of panels (`subplots`,
- * `FigureGrid`) goes in one frame, with one expand button and one export for the whole figure, never one per panel. An expand button opens the same content full screen in a modal
- * (Escape or a click outside closes it), and an export menu saves the figure. Content that is a function receives the
+ * `FigureGrid`) goes in one frame, with one expand button and one export for the whole figure, never one per panel.
+ * The expand button opens the same content full screen in a modal (Escape or a click outside closes it), and the
+ * export menu saves the whole figure (every chart and overlay cell) as SVG or PNG. Content that is a function receives the
  * current size, so a chart can draw at the modal's size; `useFrameSize` gives the same inside the frame.
  *
  * @param props - Size, title, caption, content, expansion and export settings.
@@ -165,10 +183,24 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
         return
       }
       if (format !== 'png' && format !== 'svg') return
-      const url = exportChartUrl(root, format, t.bg)
-      if (url !== undefined) download(url, `${props.filename ?? 'figure'}.${format}`)
+      const name = `${props.filename ?? 'figure'}.${format}`
+      const svg = figureSvg(root, { background: t.bg, mode })
+      if (svg === undefined) return
+      if (format === 'svg') {
+        download(svgDataUrl(svg), name)
+        return
+      }
+      const { width, height } = root.getBoundingClientRect()
+      // Some browsers refuse to rasterise HTML in an SVG; then the PNG goes without the overlay cells.
+      svgToPng(svg, width, height, { background: t.bg })
+        .catch(() => {
+          const plain = figureSvg(root, { background: t.bg, mode, overlays: false }) ?? svg
+          return svgToPng(plain, width, height, { background: t.bg })
+        })
+        .then((url) => download(url, name))
+        .catch(() => undefined)
     },
-    [expanded, props.onExport, props.filename, t.bg],
+    [expanded, props.onExport, props.filename, t.bg, mode],
   )
 
   // The modal keeps the figure's aspect, as large as fits in 92% of the viewport.
