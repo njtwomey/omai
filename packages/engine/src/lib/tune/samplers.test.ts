@@ -140,7 +140,7 @@ describe('sampler behaviour', () => {
       nTrials: 400,
       key: key(1),
     })
-    const random = tune(zdt, box(0, 1, [4]), { nTrials: 400, key: key(1) })
+    const random = tune(zdt, box(0, 1, [4]), { sampler: randomSampler(), nTrials: 400, key: key(1) })
     expect(evolved.bestTrials.length).toBeGreaterThan(5)
     // The evolved front dominates more of the objective space than random search with the same budget.
     expect(studyHypervolume(evolved.study, [1.1, 11])).toBeGreaterThan(studyHypervolume(random.study, [1.1, 11]))

@@ -11,7 +11,7 @@ import {
 } from '../trace/index.ts'
 import type { Objective, ObjectiveResult, TrialContext } from './objectives.ts'
 import type { Pruner, RunningTrial } from './pruners.ts'
-import { randomSampler, type Sampler } from './samplers.ts'
+import type { Sampler } from './samplers.ts'
 import { type Assignment, nextAssignment, type Schedule } from './schedules.ts'
 import {
   bestTrial,
@@ -25,6 +25,7 @@ import {
   type Trial,
   type TrialState,
 } from './study.ts'
+import { tpeSampler } from './tpe.ts'
 
 /** Options of {@link tune} and {@link studyAlgorithm}. */
 export interface TuneOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'>> {
@@ -32,7 +33,7 @@ export interface TuneOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'star
   readonly nTrials?: number
   /** Stop once the trials' budgets (resource units from a schedule, or reported steps) sum to this. */
   readonly budget?: number
-  /** The sampler (default `randomSampler()`). */
+  /** The sampler (default `tpeSampler()`, sequential model-based optimisation as Optuna's default). */
   readonly sampler?: Sampler
   /** A pruner deciding, after each intermediate report, whether to stop a trial. */
   readonly pruner?: Pruner
@@ -261,7 +262,7 @@ export function studyAlgorithm(objective: Objective, space?: Space, options: Tun
   const directions = options.directions ?? options.study?.directions ?? objective.directions
   if (directions.length !== objective.directions.length)
     throw new WhiteboxError('value', 'tune: the directions do not match the objective')
-  const sampler = options.sampler ?? randomSampler()
+  const sampler = options.sampler ?? tpeSampler()
   if (directions.length > 1 && !sampler.multiObjective)
     throw new WhiteboxError('value', `tune: the ${sampler.name} sampler handles one objective only`)
   const maxFailures = options.maxFailures ?? 20
