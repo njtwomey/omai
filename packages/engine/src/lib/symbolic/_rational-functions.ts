@@ -18,7 +18,7 @@ import { factorMultivariate } from './_factor.ts'
 import { hasSymbol } from './_node.ts'
 import {
   exprToP,
-  findGens,
+  findGensAll,
   type P,
   padd,
   pcoeffsIn,
@@ -129,7 +129,7 @@ export function cancel(e: Expr): Expr {
   if (e.kind === 'fn' || e.kind === 'sym' || isNumeric(e) || e.kind === 'const') return e
   const t = together(e)
   const [n, d] = numerDenom(t)
-  const gens = findGens(makeAdd([n, d]))
+  const gens = findGensAll([n, d])
   const pn = exprToP(n, gens)
   const pd = exprToP(d, gens)
   if (pn === undefined || pd === undefined || pIsZero(pd)) return t
@@ -195,7 +195,7 @@ export function apart(e: Expr, x: ExprSym): Expr {
   const t = cancel(e)
   const [n, d] = numerDenom(t)
   if (!hasSymbol(d, x)) return t
-  const others = findGens(makeAdd([n, d])).filter((g) => g.key !== x.key)
+  const others = findGensAll([n, d]).filter((g) => g.key !== x.key)
   if (others.some((g) => hasSymbol(g, x))) {
     throw new WhiteboxError('value', 'apart: the expression must be a rational function of x')
   }

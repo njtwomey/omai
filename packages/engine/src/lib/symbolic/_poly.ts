@@ -505,6 +505,16 @@ export function findGens(e: Expr): Expr[] {
   return [...gens.values()].sort(byKey)
 }
 
+/**
+ * The generators of several expressions together, sorted by key. Use this rather than `findGens(makeAdd(...))`: a sum
+ * can cancel to a constant (p + (-p) = 0) and lose every generator. @internal
+ */
+export function findGensAll(es: readonly Expr[]): Expr[] {
+  const gens = new Map<string, Expr>()
+  for (const e of es) for (const g of findGens(e)) gens.set(g.key, g)
+  return [...gens.values()].sort(byKey)
+}
+
 /** Convert an expression to a polynomial over the given generators; undefined if it is not one. @internal */
 export function exprToP(e: Expr, gens: readonly Expr[]): P | undefined {
   const n = gens.length

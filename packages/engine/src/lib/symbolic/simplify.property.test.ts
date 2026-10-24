@@ -14,10 +14,13 @@ import {
   expand,
   factor,
   mul,
+  num,
+  parse,
   simplify,
   sub,
   sym,
   together,
+  toText,
   trigSimplify,
 } from './index.ts'
 
@@ -101,5 +104,14 @@ describe('rewrite laws', () => {
       { numRuns: 30 },
     )
     expect(equals(simplify(sub(add(mul(2, x), 2), mul(2, add(x, 1)))), 0)).toBe(true)
+  })
+
+  it('cancel removes a numerator that is minus the denominator', () => {
+    // Regression: the generators came from n + d, which is 0 here, so nothing was cancelled.
+    for (const q of ['x + 2', '1 + x^2', '2*x + 2', 'x*y - 3']) {
+      const d = parse(q)
+      expect(toText(cancel(div(mul(num(-1), d), d)))).toBe('-1')
+      expect(toText(cancel(div(mul(num(3), d), mul(num(-2), d))))).toBe('-3/2')
+    }
   })
 })
