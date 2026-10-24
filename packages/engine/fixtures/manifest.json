@@ -612,6 +612,15 @@
       "cases": 30
     },
     {
+      "fixture": "learn/calibration.json",
+      "source": "oracle/cases/learn/calibration.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "learn/compose.json",
       "source": "oracle/cases/learn/compose.py",
       "reference": {
