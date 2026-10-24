@@ -14,10 +14,11 @@ import {
   type Splitter,
   type TabularData,
   type TunableEstimator,
-} from './objectives.ts'
+} from './estimators.ts'
 import { randomSampler } from './samplers.ts'
 import { halvingPlan } from './schedules.ts'
-import { type Study, type Trial, tune } from './study.ts'
+import type { Study, Trial } from './study.ts'
+import { tune } from './tuning.ts'
 
 /** A parameter grid as scikit-learn takes it: lists of values per name (or several such grids), or a space. */
 export type ParamGrid =

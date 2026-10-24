@@ -3,7 +3,6 @@ import { type TableData, table } from '../data/index.ts'
 import { hypervolume } from '../optim/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import { type Leaf, leafCoordinate, leavesOf, nativeOf } from './_leaves.ts'
-import { fitGpSurrogate } from './bayesian.ts'
 import {
   bestTrials,
   completeTrials,
@@ -14,6 +13,7 @@ import {
   type StudyDirection,
   type Trial,
 } from './study.ts'
+import { fitGpSurrogate } from './surrogate.ts'
 
 function objectiveIndex(study: Study, objective: number | undefined): number {
   const j = objective ?? 0

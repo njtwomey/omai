@@ -2509,28 +2509,30 @@ samplers, pruners and schedules work for all of them. A study is a traced algori
 child run. Samplers and pruners are pure functions of the study (what they remember lives on the trials), so a study
 resumed at trial t draws exactly what an uninterrupted run would.
 - `study.ts`: `Study`, `Trial` (params, values, intermediate values, state, source, budget, bracket and rung),
-  `createStudy`, `studyAlgorithm` (one trial per step; trial child runs record reports and pruning decisions; stops on
-  the trial or resource budget, an exhausted sampler or schedule, repeated failures, a constant objective or lack of
-  improvement), `tune(objective, space, options)` (enqueued configurations, resuming a study), `bestTrial`,
-  `bestTrials` (Pareto front), `studyHypervolume`, `exportTrials`, `studyToJson` and `studyFromJson`.
-- `objectives.ts`: the `Objective` and `TrialContext` contracts (`report` returns whether to stop), `functionObjective`,
-  `multiObjective`, `estimatorObjective` (splitter or fold count plus metric, reporting the running mean per fold),
-  `holdoutObjective`, `trainingObjective` (a traced algorithm as a child run, reports per step for pruning, the schedule
-  budget as its steps), `agentObjective`, `programObjective`, and the minimal `TunableEstimator` contract with
-  `defaultFolds` (scikit-learn's `cv=<int>` folds). TODO(learn): take the `Estimator` contract and splitters from
-  `learn/estimator.ts` and `learn/model-selection/splitters.ts` when `learn` lands (the folds live in `_folds.ts` until
-  then). TODO(probprog): `programObjective` takes a fit function returning the criteria until `probprog` lands; then a
-  model and data.
+  `createStudy`, `bestTrial`, `bestTrials` (Pareto front), `studyHypervolume`, `exportTrials` (trials as rows),
+  `studyToJson` and `studyFromJson` (store and resume).
+- `tuning.ts`: `studyAlgorithm` (one trial per step; trial child runs record reports and pruning decisions; stops on the
+  trial or resource budget, an exhausted sampler or schedule, repeated failures, a constant objective or lack of
+  improvement) and `tune(objective, space, options)` (enqueued configurations, resuming a study).
+- `objectives.ts`: the `Objective` and `TrialContext` contracts (`report` returns whether to stop), `objectiveBase`,
+  `functionObjective`, `multiObjective`, `trainingObjective` (a traced algorithm as a child run, reporting per step for
+  pruning, with the schedule's budget as its steps), `agentObjective`, `programObjective`. TODO(probprog):
+  `programObjective` takes a fit function returning the criteria until `probprog` lands; then a model and data.
+- `estimators.ts`: the minimal `TunableEstimator` contract, `estimatorFor`, `defaultFolds` (scikit-learn's `cv=<int>`
+  folds), `estimatorObjective` (splitter plus metric, reporting the running mean per fold) and `holdoutObjective`.
+  TODO(learn): take the `Estimator` contract and splitters from `learn/estimator.ts` and
+  `learn/model-selection/splitters.ts` when `learn` lands (the folds live in `_folds.ts` until then).
 - `samplers.ts`: the `Sampler` contract; grid (scikit-learn's order), random, Sobol (plain or scrambled), Halton and
   Latin hypercube samplers; CMA-ES (IPOP restarts) and Nelder-Mead samplers from `optim`, asked and told by replaying the
   optimiser (`_replay.ts`); an evolutionary sampler (NSGA-II for several objectives) from the operators of `search`.
-- `tpe.ts`: the tree-structured Parzen estimator as in Optuna (Parzen estimators with Optuna's bandwidths, prior and
-  weights; good/bad split with pruned trials; multivariate and independent modes; MOTPE with hypervolume subset
-  selection), `tpeSampler`.
-- `bayesian.ts`: Bayesian optimisation: acquisitions (EI, log EI, PI, log PI, confidence bounds), a Gaussian-process
-  surrogate (Matern 5/2 with ARD and Hamming distance for options, MAP hyperparameters with Optuna's priors, from
-  `kernels` and `stochastic`), acquisition maximisation (Sobol candidates refined by L-BFGS-B) and `gpSampler`.
-  TODO(tune): multi-objective acquisition (log expected hypervolume improvement).
+- `parzen.ts`: Optuna's Parzen estimators (bandwidths, prior, weights; truncated normals, stepped and log leaves,
+  options), their densities and draws, gamma and weight functions, the TPE acquisition log l(x) - log g(x).
+- `tpe.ts`: the tree-structured Parzen estimator sampler as Optuna's: the good/bad split (with pruned trials, and for
+  several objectives non-dominated ranks with hypervolume subset selection), multivariate and independent modes.
+- `surrogate.ts`: the Gaussian-process surrogate of Bayesian optimisation (Matern 5/2 with ARD and Hamming distance
+  for options, MAP hyperparameters with Optuna's priors; from `kernels`, `stochastic` and `optim`), `gpPosterior`.
+- `bayesian.ts`: acquisitions (EI, log EI, PI, log PI, confidence bounds), acquisition maximisation (Sobol candidates
+  refined by L-BFGS-B) and `gpSampler`. TODO(tune): multi-objective acquisition (log expected hypervolume improvement).
 - `pruners.ts`: median, percentile, threshold, patient, successive-halving (ASHA) and Hyperband pruners, and the no-op
   pruner, decision for decision as Optuna's.
 - `schedules.ts`: multi-fidelity schedules as data (successive halving, Hyperband brackets, ASHA rungs),

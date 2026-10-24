@@ -3,7 +3,7 @@
 // TODO(learn): move to learn/model-selection/splitters.ts (kFold, stratifiedKFold) when the learn domain lands, and
 // import from there.
 import { WhiteboxError } from '../base/index.ts'
-import type { Fold } from './objectives.ts'
+import type { Fold } from './estimators.ts'
 
 function check(n: number, k: number, name: string): void {
   if (!Number.isInteger(k) || k < 2) throw new WhiteboxError('value', `${name}: need at least 2 folds, got ${k}`)

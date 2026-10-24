@@ -2,9 +2,10 @@ import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation, scrambledSobol } from '../random/index.ts'
 import { pearson, spearman } from '../stats/index.ts'
 import { type Leaf, leafCoordinate, leavesOf, nativeOf } from './_leaves.ts'
-import { fitGpSurrogate, type GpSurrogate } from './bayesian.ts'
+import { type ParzenEstimator, parzenEstimator, parzenLogPdf } from './parzen.ts'
 import { completeTrials, lossOf, type Study, type Trial } from './study.ts'
-import { type ParzenEstimator, parzenEstimator, parzenLogPdf, splitTrials } from './tpe.ts'
+import { fitGpSurrogate, type GpSurrogate } from './surrogate.ts'
+import { splitTrials } from './tpe.ts'
 
 /** Parameter importances by parameter path, largest first. */
 export type Importances = Readonly<Record<string, number>>
