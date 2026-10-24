@@ -5,6 +5,7 @@ import { AnomalyView } from './anomaly.tsx'
 import { BoardPlayer, PopulationPlayer } from './boards.tsx'
 import { ComponentsView } from './components.tsx'
 import { EpisodeView } from './episodes.tsx'
+import { ImagePlayer } from './images.tsx'
 import { MarginView } from './margins.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
 import { EnsembleView, PipelineView } from './stages.tsx'
@@ -89,5 +90,7 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <BoardPlayer record={record} {...common} />
     case 'populationSteps':
       return <PopulationPlayer record={record} {...common} />
+    case 'imageSteps':
+      return <ImagePlayer record={record} {...common} />
   }
 }

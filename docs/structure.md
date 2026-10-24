@@ -2804,6 +2804,8 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   and a caption, with metrics per step; mazes and frontiers, game trees with pruned branches, CSP boards, itemset
   lattices, cellular automata) and `PopulationSteps` (generations of a population: fitness, positions over the
   objective's surface with the search distribution, or the best program's curve over its data).
+- `ImageSteps` (small grey images per recorded step in named groups: a generative model's data, reconstructions and
+  samples from fixed noise, with the objective per step).
   Methods return `{ ...result, exposition: Exposition[] }`; long-running ones also emit the records' steps as trace
   events, so views can play them.
 
@@ -4040,7 +4042,7 @@ Design rules:
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
-  (`BoardSteps` and `PopulationSteps` as players).
+  (`BoardSteps` and `PopulationSteps` as players), `images.ts` (`ImageSteps` as a mosaic of image rows per step).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile
