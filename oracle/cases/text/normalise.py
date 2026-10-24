@@ -1,5 +1,5 @@
 """Unicode normalisation, case folding and accent stripping against Python's unicodedata and str.casefold,
-scikit-learn's strip_accents_unicode and strip_accents_ascii, and HF tokenizers' StripAccents (after NFD)."""
+scikit-learn's strip_accents_unicode and strip_accents_ascii, and HF tokenizers' BertNormalizer accent stripping."""
 
 import unicodedata
 from importlib.metadata import version
@@ -22,13 +22,15 @@ TEXTS: list[str] = [
     "Ångström Øre Æsir",
     "日本語 テキスト ｶﾀｶﾅ",
     "Crème BRÛLÉE",
+    "नमस्ते हिन्दी \u20dd",
     "",
 ]
 
 
 def strip_bert(text: str) -> str:
-    """HF tokenizers' accent stripping: NFD, then remove non-spacing marks."""
-    return normalizers.Sequence([normalizers.NFD(), normalizers.StripAccents()]).normalize_str(text)
+    """BERT's accent stripping (HF's BertNormalizer): NFD, then remove non-spacing marks."""
+    bert = normalizers.BertNormalizer(clean_text=False, handle_chinese_chars=False, strip_accents=True, lowercase=False)
+    return bert.normalize_str(text)
 
 
 def cases() -> list[Case]:

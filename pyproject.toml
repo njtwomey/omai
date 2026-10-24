@@ -50,6 +50,7 @@ oracle-core = [
     "pyphen>=0.18.1",
     "biopython>=1.88",
     "gensim>=4.4.0",
+    "rank-bm25>=0.2.2",
 ]
 oracle-torch = [
     "monai>=1.6.1",

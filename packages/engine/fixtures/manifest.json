@@ -2183,6 +2183,15 @@
       "cases": 48
     },
     {
+      "fixture": "text/features.json",
+      "source": "oracle/cases/text/features.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "rank-bm25": "0.2.2"
+      },
+      "cases": 59
+    },
+    {
       "fixture": "text/hashing.json",
       "source": "oracle/cases/text/hashing.py",
       "reference": {
@@ -2206,7 +2215,7 @@
         "scikit-learn": "1.9.1",
         "tokenizers": "0.23.3"
       },
-      "cases": 88
+      "cases": 96
     },
     {
       "fixture": "text/phonetic.json",
@@ -2251,6 +2260,30 @@
       "cases": 2
     },
     {
+      "fixture": "text/subword/bpe.json",
+      "source": "oracle/cases/text/subword/bpe.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "text/subword/unigram.json",
+      "source": "oracle/cases/text/subword/unigram.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "text/subword/wordpiece.json",
+      "source": "oracle/cases/text/subword/wordpiece.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "text/tokenise.json",
       "source": "oracle/cases/text/tokenise.py",
       "reference": {
@@ -2260,6 +2293,14 @@
         "tokenizers": "0.23.3"
       },
       "cases": 126
+    },
+    {
+      "fixture": "text/tokenizer.json",
+      "source": "oracle/cases/text/tokenizer.py",
+      "reference": {
+        "tokenizers": "0.23.3"
+      },
+      "cases": 19
     },
     {
       "fixture": "text/treebank.json",

@@ -95,8 +95,8 @@ export type AccentStripping = 'unicode' | 'ascii' | 'nonspacing'
 /**
  * Remove accents. `unicode` (default) is scikit-learn's `strip_accents_unicode`: NFKD, then drop characters with a
  * non-zero combining class (ASCII text is returned unchanged). `ascii` is
- * `strip_accents_ascii`: NFKD, then drop every non-ASCII character. `nonspacing` is HF tokenizers' (BERT's): NFD, then
- * drop non-spacing marks (category Mn).
+ * `strip_accents_ascii`: NFKD, then drop every non-ASCII character. `nonspacing` is BERT's (HF tokenizers'
+ * BertNormalizer): NFD, then drop non-spacing marks (category Mn).
  *
  * @param text - The text.
  * @param mode - The convention.

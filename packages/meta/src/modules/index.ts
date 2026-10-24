@@ -73,6 +73,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/tensor': () => import('whitebox-engine/tensor'),
   'whitebox-engine/tensor/ops': () => import('whitebox-engine/tensor/ops'),
   'whitebox-engine/text': () => import('whitebox-engine/text'),
+  'whitebox-engine/text/subword': () => import('whitebox-engine/text/subword'),
   'whitebox-engine/trace': () => import('whitebox-engine/trace'),
   'whitebox-render': () => import('whitebox-render'),
 }
