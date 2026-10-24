@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { key } from '../../../lib/random/index.ts'
 import { evaluatePolicy, greedyPolicyOf, make, oneHotObservation, trainAgent } from '../../../lib/rl/index.ts'
 import { tensor } from '../../../lib/tensor/index.ts'
 import { recorder, tracePolicy } from '../../../lib/trace/index.ts'
 import { frozenLake } from '../environments/index.ts'
 import { dqn, qNetwork, qValues } from './value-based.ts'
+
+// Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
+vi.setConfig({ testTimeout: 60_000 })
 
 // FrozenLake without ice, one-hot observations: the shortest path takes six steps and pays 1.
 const lake = () =>

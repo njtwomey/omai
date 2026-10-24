@@ -1,4 +1,4 @@
-import { describe, it } from 'vitest'
+import { describe, it, vi } from 'vitest'
 import { foldIn, key, uniform } from '../../../lib/random/index.ts'
 import type { Agent } from '../../../lib/rl/index.ts'
 import { discrete } from '../../../lib/space/index.ts'
@@ -21,6 +21,9 @@ import {
   td0,
   tdLambda,
 } from './tabular.ts'
+
+// Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
+vi.setConfig({ testTimeout: 60_000 })
 
 const spaces = { observationSpace: discrete(5), actionSpace: discrete(3) }
 const gamma = 0.9

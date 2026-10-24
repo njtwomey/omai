@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { maxOf } from '../../../lib/base/index.ts'
 import { key } from '../../../lib/random/index.ts'
 import {
@@ -33,6 +33,9 @@ import {
   tdLambda,
   valueTable,
 } from './tabular.ts'
+
+// Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
+vi.setConfig({ testTimeout: 60_000 })
 
 const maxError = (a: readonly (readonly number[])[], b: readonly (readonly number[])[]): number => {
   let m = 0

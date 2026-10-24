@@ -52,6 +52,24 @@
       "cases": 14
     },
     {
+      "fixture": "methods/rl/agents/imitation.json",
+      "source": "oracle/cases/methods/rl/agents/imitation.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "methods/rl/agents/policy_gradient.json",
+      "source": "oracle/cases/methods/rl/agents/policy_gradient.py",
+      "reference": {
+        "torch": "2.14.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "methods/rl/agents/tabular.json",
       "source": "oracle/cases/methods/rl/agents/tabular.py",
       "reference": {

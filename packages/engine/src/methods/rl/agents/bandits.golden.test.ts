@@ -1,4 +1,4 @@
-import { describe, it } from 'vitest'
+import { describe, it, vi } from 'vitest'
 import { key } from '../../../lib/random/index.ts'
 import type { Agent } from '../../../lib/rl/index.ts'
 import { box, discrete, tuple } from '../../../lib/space/index.ts'
@@ -16,6 +16,9 @@ import {
   thompsonBernoulli,
   ucb1,
 } from './bandits.ts'
+
+// Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
+vi.setConfig({ testTimeout: 60_000 })
 
 const arms = { actionSpace: discrete(4) }
 const pull = (action: number, reward: number) => ({

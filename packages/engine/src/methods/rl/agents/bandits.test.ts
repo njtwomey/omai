@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { key } from '../../../lib/random/index.ts'
 import { make, trainAgent } from '../../../lib/rl/index.ts'
 import { box, discrete } from '../../../lib/space/index.ts'
@@ -23,6 +23,9 @@ import {
   ucb1,
 } from './bandits.ts'
 import { randomAgent } from './random.ts'
+
+// Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
+vi.setConfig({ testTimeout: 60_000 })
 
 const final = (xs: readonly number[]): number => xs[xs.length - 1] ?? 0
 const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length

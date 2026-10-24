@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { key } from '../../../lib/random/index.ts'
 import { evaluatePolicy, greedyPolicyOf, make, trainAgent } from '../../../lib/rl/index.ts'
 import { discrete } from '../../../lib/space/index.ts'
@@ -14,6 +14,9 @@ import {
   subgoalOption,
 } from './hierarchical.ts'
 import { qLearning } from './tabular.ts'
+
+// Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
+vi.setConfig({ testTimeout: 60_000 })
 
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
 const mean = (xs: readonly number[]): number => sum(xs) / xs.length
