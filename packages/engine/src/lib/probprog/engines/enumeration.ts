@@ -10,6 +10,7 @@ import {
   factorMarginal,
   factorPower,
   logFactor,
+  maxProductElimination,
   normaliseFactor,
   reduceFactor,
   unnormalisedLogProbability,
@@ -228,6 +229,13 @@ export function enumerationPosterior<D = void>(model: Model<D>, data: D, options
     ...(options.policy === undefined ? {} : { policy: options.policy }),
   })
   const logZ = g.constant + calibrated.logPartition
+  // The most probable joint assignment, by max-product variable elimination.
+  const mpe = maxProductElimination(g.graph, {
+    ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
+    ...(options.policy === undefined ? {} : { policy: options.policy }),
+  })
+  const map: Record<string, number[]> = {}
+  for (const s of g.sites) map[s.name] = s.variables.map((v) => s.low + (mpe.indices[v] ?? 0))
   const marginalOf = (v: string, states: number): number[] => {
     const home = calibrated.tree.cliques.findIndex((c) => c.includes(v))
     if (home < 0) return new Array<number>(states).fill(1 / states)
@@ -278,6 +286,8 @@ export function enumerationPosterior<D = void>(model: Model<D>, data: D, options
       variables: g.graph.variables.length,
       factors: g.graph.factors.length,
       largestClique: calibrated.tree.cliques.reduce((m, c) => Math.max(m, c.length), 0),
+      map,
+      mapLogProb: mpe.logValue + g.constant - logZ,
     },
     marginals,
     sampler,

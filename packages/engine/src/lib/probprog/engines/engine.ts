@@ -31,8 +31,6 @@ export interface Feasibility {
 /** What every engine run receives. */
 export interface EngineRunOptions {
   readonly key: Key
-  /** A cost budget: engines scale their draws or iterations to stay within it. */
-  readonly budget?: number
   readonly tracer?: Tracer
   readonly policy?: TracePolicy
   /** Run as a child of another traced run. */

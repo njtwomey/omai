@@ -3,7 +3,7 @@ import { expectPosteriorMoments } from '../../../testing/probprog.ts'
 import { categorical, dirichlet, inverseGamma, normal } from '../../dists/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
 import { key } from '../../random/index.ts'
-import { item, sqrt, type Tensor, take, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { item, mul, sqrt, stack, type Tensor, take, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import { type Model, markov, observe, param, plate, sample } from '../primitives.ts'
 import { chainInference } from './chain.ts'
@@ -188,6 +188,31 @@ describe('discrete chains and EM', () => {
     const slow = em(model, undefined, { key: key(5), maxIter: 400, tol: 1e-12, mStep: 'gradient' })
     expect(fast.diagnostics['objective']).toBeCloseTo(slow.diagnostics['objective'] as number, 5)
     expect(toFlat(fast.mean('means'))[1]).toBeCloseTo(toFlat(slow.mean('means'))[1] ?? 0, 3)
+  })
+
+  it('fits a mixture of experts with gradient M-steps', () => {
+    // Two linear experts gated by a logistic function of x.
+    const xs = [-2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2]
+    const ys = [-4.1, -2.9, -2.2, -0.9, 0.4, 1.1, 1.4, 2.1]
+    const moe: Model = () => {
+      const gate = param('gate', [0.1, 0])
+      const slopes = param('slopes', [1, 0.5])
+      const s = param('noise', 0.5, { support: { kind: 'positive' } })
+      plate('n', xs.length, () => {
+        const x = tensor(xs)
+        const logits = stack([mul(x, take(gate, 0)), mul(x, take(gate, 1))], -1)
+        const k = sample('k', categorical({ logits }))
+        observe('y', normal(mul(take(slopes, k), x), s), ys)
+      })
+    }
+    const post = em(moe, undefined, { key: key(6), maxIter: 300, tol: 1e-10 })
+    expect(post.status).toBe('converged')
+    // The shared noise scale has a closed form; the gate and the slopes take gradient M-steps.
+    expect(post.diagnostics['closedForm']).toEqual(['noise'])
+    const slopes = toFlat(post.mean('slopes')).sort((a, b) => a - b)
+    // The negative-x points have slope about 2, the positive ones about 1.
+    expect(Math.abs((slopes[0] ?? 0) - 1)).toBeLessThan(0.3)
+    expect(Math.abs((slopes[1] ?? 0) - 2)).toBeLessThan(0.3)
   })
 
   it('never decreases the objective', () => {

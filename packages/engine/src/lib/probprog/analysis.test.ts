@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DISCRETE, MODELS } from '../../testing/probprog.ts'
 import { bernoulli, beta, categorical, exponential, gamma, normal, poisson } from '../dists/index.ts'
-import { exp, item, mul, take, tensor, type Value } from '../tensor/index.ts'
+import { exp, mul, take, tensor, type Value } from '../tensor/index.ts'
 import {
   analyse,
   deterministic,

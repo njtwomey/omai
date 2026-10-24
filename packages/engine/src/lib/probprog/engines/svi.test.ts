@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MODELS } from '../../../testing/probprog.ts'
-import { gamma, normal, poisson } from '../../dists/index.ts'
+import { bernoulli, gamma, normal, poisson } from '../../dists/index.ts'
 import { adam } from '../../optim/index.ts'
 import { key } from '../../random/index.ts'
 import { item, mul, take, tensor, toFlat } from '../../tensor/index.ts'
@@ -13,9 +13,8 @@ import {
   autoLaplace,
   autoLowRankMultivariateNormal,
   autoMultivariateNormal,
-  autoNormal,
 } from '../guides.ts'
-import { type Model, observe, plate, sample } from '../primitives.ts'
+import { type Model, observe, param, plate, sample } from '../primitives.ts'
 import { conjugateInference } from './conjugate.ts'
 import { finalElbo, svi, sviEngine } from './svi.ts'
 
@@ -107,6 +106,29 @@ describe('SVI', () => {
     const r = svi(model, undefined, { key: key(8), numSteps: 2500, optimizer: decaying(0.01) })
     expect(Math.abs(item(r.params['mu_auto_loc'] ?? tensor(0)) - mean)).toBeLessThan(0.1)
     expect(sviEngine().applies(analyse(model, undefined)).reason).toMatch(/subsampled/)
+  })
+
+  it('learns a discrete guide site by score-function gradients with a baseline', () => {
+    // c ~ Bernoulli(0.5), y ~ N(2c, 1) observed at 2: P(c = 1 | y) = 1 / (1 + exp(-2)).
+    const model: Model = () => {
+      const c = sample('c', bernoulli({ probs: 0.5 }))
+      observe('y', normal(mul(c, 2), 1), 2)
+    }
+    const guide: Model = () => {
+      const logit = param('q_logit', 0)
+      sample('c', bernoulli({ logits: logit }))
+    }
+    const r = svi(model, undefined, {
+      key: key(10),
+      guide,
+      numSteps: 1500,
+      optimizer: decaying(0.1),
+      elbo: traceElbo({ numParticles: 4 }),
+    })
+    const p = 1 / (1 + Math.exp(-item(r.params['q_logit'] ?? tensor(0))))
+    expect(Math.abs(p - 1 / (1 + Math.exp(-2)))).toBeLessThan(0.05)
+    expect(r.posterior.form).toBe('variational')
+    expect(toFlat(r.posterior.sample(key(11), 10)['c'] ?? tensor([])).length).toBe(10)
   })
 
   it('reports divergence when the loss stops being finite', () => {

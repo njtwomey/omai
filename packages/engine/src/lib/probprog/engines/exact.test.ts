@@ -45,6 +45,11 @@ describe('enumeration engine', () => {
     })
     expect(post.logEvidence?.value).toBeCloseTo(logZ, 10)
     expect(post.marginal('z').batchShape).toEqual([3])
+    // The MAP assignment by max-product elimination: each point's more probable component.
+    const best = Y.map((y) =>
+      Math.log(W[1] ?? 0) + logN(y, MU[1] ?? 0, 1) > Math.log(W[0] ?? 0) + logN(y, MU[0] ?? 0, 1) ? 1 : 0,
+    )
+    expect((post.diagnostics['map'] as Record<string, number[]>)['z']).toEqual(best)
   })
 
   it('samples the joint posterior of a chain exactly', () => {

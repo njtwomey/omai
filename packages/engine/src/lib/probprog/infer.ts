@@ -204,7 +204,10 @@ export function infer<D = void>(model: Model<D>, data: D, options: InferOptions 
   const run = startRun(tracer, {
     name: 'infer',
     seed: null,
-    config: { engine: typeof chosen === 'string' ? chosen : chosen.name, budget: p.budget } as Json,
+    config: {
+      engine: typeof chosen === 'string' ? chosen : chosen.name,
+      budget: Number.isFinite(p.budget) ? p.budget : null,
+    } as Json,
     policy,
   })
   run.message(0, 'plan', {
@@ -223,13 +226,7 @@ export function infer<D = void>(model: Model<D>, data: D, options: InferOptions 
     const reason = entry === undefined ? 'requested' : entry.feasibility.reason
     let post: Posterior
     try {
-      post = engine.run(model, data, p.analysis, {
-        key,
-        tracer,
-        policy,
-        parent: run,
-        ...(options.budget === undefined ? {} : { budget: options.budget }),
-      })
+      post = engine.run(model, data, p.analysis, { key, tracer, policy, parent: run })
     } catch (e) {
       tried.push({ engine: engine.name, error: e instanceof Error ? e.message : String(e) })
       if (chosen !== 'auto') throw e
