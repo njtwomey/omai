@@ -35,6 +35,7 @@ const FAMILIES: Readonly<Record<string, Family>> = {
   fDistribution: (p) => D.fDistribution(t(p, 0), t(p, 1)),
   noncentralChi2: (p) => D.noncentralChi2(t(p, 0), t(p, 1)),
   noncentralT: (p) => D.noncentralT(t(p, 0), t(p, 1)),
+  noncentralF: (p) => D.noncentralF(t(p, 0), t(p, 1), t(p, 2)),
   studentisedRange: (p) => D.studentisedRange(t(p, 0), t(p, 1)),
 }
 

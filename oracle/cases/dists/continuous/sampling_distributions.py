@@ -52,6 +52,18 @@ def cases() -> list[Case]:
             skip=("logCdf", "logSf"),
             tolerances={"logProb": 1e-8, "cdf": 1e-8, "sf": 1e-8, "ppf": 1e-8, "isf": 1e-8, "entropy": 1e-7},
         )
+    for i, (d1, d2, nc) in enumerate([(4.0, 10.0, 2.0), (2.0, 30.0, 8.0), (6.5, 5.5, 0.5)]):
+        p = [np.array([d1]), np.array([d2]), np.array([nc])]
+        out += distribution_cases(
+            f"noncentralF/{i}",
+            "noncentralF",
+            p,
+            stats.ncf(*p),
+            pos * (1 + i),
+            q,
+            skip=("logCdf", "logSf") + (("variance",) if d2 <= 4 else ()),
+            tolerances={"logProb": 1e-9, "cdf": 1e-9, "sf": 1e-9, "ppf": 1e-8, "isf": 1e-8, "entropy": 1e-7},
+        )
     # The studentised range is a double integral in both libraries (scipy's adaptive, ours a fixed product rule).
     ranges = np.array([0.5, 1.0, 2.0, 3.5, 5.0])
     for i, (k, df) in enumerate([(3.0, 10.0), (5.0, np.inf)]):
