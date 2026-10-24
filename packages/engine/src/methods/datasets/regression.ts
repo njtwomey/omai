@@ -1,39 +1,55 @@
 import type { DatasetGenerator, RegressionData, Truth } from '../../lib/data/index.ts'
 import { xy } from '../../lib/data/index.ts'
-import { foldIn, type Key, normal, uniform } from '../../lib/random/index.ts'
-import { dict, int, real } from '../../lib/space/index.ts'
+import { foldIn, type Key, normal, permutation, uniform } from '../../lib/random/index.ts'
+import { bool, dict, int, real } from '../../lib/space/index.ts'
 import {
   add,
   arctan,
   div,
-  fromStorage,
+  full,
   matmul,
   mul,
   sin,
-  sliceAxis,
   sqrt,
   square,
-  squeeze,
   sub,
+  sum,
   type Tensor,
+  take as takeColumns,
   tensor,
   type Value,
 } from '../../lib/tensor/index.ts'
+import { column, stamp, uniformColumns, withNoise } from './_util.ts'
+import { makeLowRankMatrix } from './matrices.ts'
 
-const column = (x: Value, j: number): Value => squeeze(sliceAxis(x, -1, j, j + 1), -1)
+const SQRT2PI = Math.log(2 * Math.PI)
 
-/** Columns of independent uniforms on the given ranges. */
-function uniformColumns(k: Key, n: number, ranges: readonly (readonly [number, number])[]): Tensor {
-  const cols = ranges.map(([low, high], j) => uniform(foldIn(k, j), [n], { low, high }))
-  const data = new Float64Array(n * ranges.length)
-  cols.forEach((c, j) => {
-    for (let i = 0; i < n; i++) data[i * ranges.length + j] = c.data[i] ?? 0
-  })
-  return fromStorage(data, [n, ranges.length], 'float64')
+/**
+ * The joint log density `log p(x) + log N(y; f(x), noise^2)` (summed over target columns); without `y`, `log p(x)`.
+ */
+function jointLogProb(
+  logPx: (v: Value) => Value,
+  f: (v: Value) => Value,
+  noise: number,
+): (v: Value, y?: Value) => Value {
+  return (v, y) => {
+    const px = logPx(v)
+    if (y === undefined) return px
+    const r = div(sub(y, f(v)), noise)
+    const lp = mul(add(square(r), SQRT2PI + 2 * Math.log(noise)), -0.5)
+    return add(px, lp.shape.length === 2 ? sum(lp, 1) : lp)
+  }
 }
 
-function withNoise(k: Key, clean: Value, noise: number): Tensor {
-  return add(clean, mul(normal(k, clean.shape), noise)) as Tensor
+/** `log p(x)` of independent uniform features on boxes (ignoring the support boundary). */
+function uniformLogDensity(ranges: readonly (readonly [number, number])[]): (v: Value) => Value {
+  const c = -ranges.reduce((s, [lo, hi]) => s + Math.log(hi - lo), 0)
+  return (v) => full([v.shape[0] ?? 0], c)
+}
+
+/** `log p(x)` of independent standard normal features. */
+function standardNormalLogDensity(d: number): (v: Value) => Value {
+  return (v) => mul(add(sum(square(v), 1), d * SQRT2PI), -0.5)
 }
 
 const knobs = (minFeatures: number) =>
@@ -43,7 +59,18 @@ const knobs = (minFeatures: number) =>
     noise: real(0, 10, { default: 0, label: 'noise standard deviation' }),
   })
 
-/** E[y | x] for Friedman's first problem: 10 sin(pi x0 x1) + 20 (x2 - 1/2)^2 + 10 x3 + 5 x4. */
+/**
+ * E[y | x] for Friedman's first problem: 10 sin(pi x0 x1) + 20 (x2 - 1/2)^2 + 10 x3 + 5 x4.
+ *
+ * @param x - Features `[n, d]` with `d >= 5`.
+ * @returns The regression function at each row `[n]`.
+ * @example
+ * ```ts
+ * import { friedman1Function } from 'whitebox-engine/methods/datasets'
+ * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * toFlat(friedman1Function(tensor([[0, 0, 0.5, 1, 1]]))) // => [15]
+ * ```
+ */
 export function friedman1Function(x: Value): Value {
   const c = (j: number) => column(x, j)
   return add(
@@ -54,7 +81,7 @@ export function friedman1Function(x: Value): Value {
 
 /**
  * Friedman's first regression problem (sklearn.datasets.make_friedman1): uniform features on [0, 1], of which the
- * first five matter, with the regression function as truth.
+ * first five matter, with the regression function, noise level and Gaussian log density as truth.
  *
  * @concept datasets
  * @example
@@ -84,15 +111,17 @@ export const friedman1: DatasetGenerator<RegressionData> = {
       noiseScale: noise,
       bayesError: noise ** 2,
       relevantFeatures: [0, 1, 2, 3, 4],
+      ...(noise > 0
+        ? {
+            logProb: jointLogProb(
+              uniformLogDensity(Array.from({ length: d }, () => [0, 1] as const)),
+              friedman1Function,
+              noise,
+            ),
+          }
+        : {}),
     }
-    return {
-      data: xy(x, y, {
-        name: 'friedman1',
-        description: friedman1.description,
-        recipe: { generator: 'friedman1', knobs: knobValues },
-      }),
-      truth,
-    }
+    return { data: xy(x, y, stamp('friedman1', friedman1.description, knobValues)), truth }
   },
 }
 
@@ -103,13 +132,35 @@ const FRIEDMAN23_RANGES: readonly (readonly [number, number])[] = [
   [1, 11],
 ]
 
-/** E[y | x] for Friedman's second problem: sqrt(x0^2 + (x1 x2 - 1 / (x1 x3))^2). */
+/**
+ * E[y | x] for Friedman's second problem: sqrt(x0^2 + (x1 x2 - 1 / (x1 x3))^2).
+ *
+ * @param x - Features `[n, 4]`.
+ * @returns The regression function `[n]`.
+ * @example
+ * ```ts
+ * import { friedman2Function } from 'whitebox-engine/methods/datasets'
+ * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * toFlat(friedman2Function(tensor([[3, 1, 5, 1]]))) // => [5]
+ * ```
+ */
 export function friedman2Function(x: Value): Value {
   const c = (j: number) => column(x, j)
   return sqrt(add(square(c(0)), square(sub(mul(c(1), c(2)), div(1, mul(c(1), c(3)))))))
 }
 
-/** E[y | x] for Friedman's third problem: arctan((x1 x2 - 1 / (x1 x3)) / x0). */
+/**
+ * E[y | x] for Friedman's third problem: arctan((x1 x2 - 1 / (x1 x3)) / x0).
+ *
+ * @param x - Features `[n, 4]`.
+ * @returns The regression function `[n]`.
+ * @example
+ * ```ts
+ * import { friedman3Function } from 'whitebox-engine/methods/datasets'
+ * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * toFlat(friedman3Function(tensor([[1, 1, 1, 1]]))) // => [0]
+ * ```
+ */
 export function friedman3Function(x: Value): Value {
   const c = (j: number) => column(x, j)
   return arctan(div(sub(mul(c(1), c(2)), div(1, mul(c(1), c(3)))), c(0)))
@@ -131,8 +182,14 @@ function friedman23(
       const x = uniformColumns(foldIn(k, 0), n, FRIEDMAN23_RANGES)
       const y = withNoise(foldIn(k, 1), f(x), noise)
       return {
-        data: xy(x, y, { name, description, recipe: { generator: name, knobs: knobValues } }),
-        truth: { regressionFunction: f, noiseScale: noise, bayesError: noise ** 2, relevantFeatures: [0, 1, 2, 3] },
+        data: xy(x, y, stamp(name, description, knobValues)),
+        truth: {
+          regressionFunction: f,
+          noiseScale: noise,
+          bayesError: noise ** 2,
+          relevantFeatures: [0, 1, 2, 3],
+          ...(noise > 0 ? { logProb: jointLogProb(uniformLogDensity(FRIEDMAN23_RANGES), f, noise) } : {}),
+        },
       }
     },
   }
@@ -171,9 +228,17 @@ export const friedman3: DatasetGenerator<RegressionData> = friedman23(
   'Friedman (1991) problem 3: the phase of an AC circuit, y = arctan((x1 x2 - 1/(x1 x3)) / x0) + noise.',
 )
 
+/** Draw the design of makeRegression: standard normal, or a low-rank matrix with a given effective rank. */
+function design(k: Key, n: number, d: number, effectiveRank: number, tailStrength: number): Tensor {
+  if (effectiveRank <= 0) return normal(k, [n, d])
+  return makeLowRankMatrix(k, { nSamples: n, nFeatures: d, effectiveRank, tailStrength }).x
+}
+
 /**
- * A linear regression problem with Gaussian features (sklearn.datasets.make_regression, well-conditioned case):
- * `nInformative` features have coefficients uniform on [0, 100], the rest zero.
+ * A linear regression problem (sklearn.datasets.make_regression): standard normal features (or a low-rank design
+ * with a given effective rank and tail strength, for ill-conditioned problems), `nInformative` features with
+ * coefficients uniform on [0, 100], several targets, bias and Gaussian noise. Columns stay in order unless
+ * `shuffle` is set (then the truth's coefficients and relevant features follow the permutation).
  *
  * @example
  * ```ts
@@ -185,37 +250,93 @@ export const friedman3: DatasetGenerator<RegressionData> = friedman23(
 export const makeRegression: DatasetGenerator<RegressionData> = {
   name: 'makeRegression',
   kind: 'regression',
-  description: 'A random linear model with Gaussian features, some informative, plus bias and Gaussian noise.',
+  description:
+    'A random linear model with Gaussian or low-rank features, some informative, plus bias and Gaussian noise.',
   knobs: dict({
     n: int(2, 100_000, { default: 100 }),
     nFeatures: int(1, 1000, { default: 10 }),
     nInformative: int(0, 1000, { default: 5 }),
+    nTargets: int(1, 100, { default: 1 }),
     bias: real(-100, 100, { default: 0 }),
     noise: real(0, 100, { default: 0 }),
+    effectiveRank: int(0, 1000, { default: 0, label: 'effective rank (0: well conditioned)' }),
+    tailStrength: real(0, 1, { default: 0.5, label: 'singular value tail strength' }),
+    shuffle: bool({ default: false, label: 'shuffle feature columns' }),
   }),
   generate: (k, knobValues) => {
     const n = knobValues['n'] as number
     const d = knobValues['nFeatures'] as number
     const informative = Math.min(d, knobValues['nInformative'] as number)
+    const t = knobValues['nTargets'] as number
     const bias = knobValues['bias'] as number
     const noise = knobValues['noise'] as number
-    const x = normal(foldIn(k, 0), [n, d])
-    const raw = uniform(foldIn(k, 1), [d], { low: 0, high: 100 }).data
-    const coef = tensor(Array.from({ length: d }, (_, j) => (j < informative ? (raw[j] ?? 0) : 0)))
-    const f = (v: Value): Value => add(matmul(v, coef), bias)
+    const x0 = design(foldIn(k, 0), n, d, knobValues['effectiveRank'] as number, knobValues['tailStrength'] as number)
+    const raw = uniform(foldIn(k, 1), [d, t], { low: 0, high: 100 }).data
+    const coefRows = Array.from({ length: d }, (_, j) =>
+      Array.from({ length: t }, (_, c) => (j < informative ? (raw[j * t + c] ?? 0) : 0)),
+    )
+    const order =
+      knobValues['shuffle'] === true
+        ? Array.from(permutation(foldIn(k, 3), d).data)
+        : Array.from({ length: d }, (_, j) => j)
+    const x = takeColumns(x0, tensor(order, { dtype: 'int32' }), 1) as Tensor
+    const coef = order.map((j) => coefRows[j] ?? [])
+    const coefT = tensor(t === 1 ? coef.map((r) => r[0] ?? 0) : coef)
+    const f = (v: Value): Value => add(matmul(v, coefT), bias)
     const y = withNoise(foldIn(k, 2), f(x), noise)
+    const relevant = order.flatMap((j, newJ) => (j < informative ? [newJ] : [])).sort((a, b) => a - b)
     return {
-      data: xy(x, y, {
-        name: 'makeRegression',
-        description: makeRegression.description,
-        recipe: { generator: 'makeRegression', knobs: knobValues },
-      }),
+      data: xy(x, y, stamp('makeRegression', makeRegression.description, knobValues)),
       truth: {
         regressionFunction: f,
         noiseScale: noise,
         bayesError: noise ** 2,
-        relevantFeatures: Array.from({ length: informative }, (_, j) => j),
-        extra: { coefficients: Array.from(coef.data), bias },
+        relevantFeatures: relevant,
+        ...(noise > 0 && (knobValues['effectiveRank'] as number) <= 0
+          ? { logProb: jointLogProb(standardNormalLogDensity(d), f, noise) }
+          : {}),
+        extra: { coefficients: t === 1 ? coef.map((r) => r[0] ?? 0) : coef, bias },
+      },
+    }
+  },
+}
+
+/**
+ * Sparse uncorrelated regression (sklearn.datasets.make_sparse_uncorrelated, Celeux et al.): standard normal
+ * features of which four matter, `y = x0 + 2 x1 - 2 x2 - 1.5 x3 + N(0, 1)`.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'whitebox-engine/data'
+ * import { sparseUncorrelated } from 'whitebox-engine/methods/datasets'
+ * generate(sparseUncorrelated).truth.extra?.['coefficients'] // => [1, 2, -2, -1.5, 0, 0, 0, 0, 0, 0]
+ * ```
+ */
+export const sparseUncorrelated: DatasetGenerator<RegressionData> = {
+  name: 'sparseUncorrelated',
+  kind: 'regression',
+  description: 'Independent Gaussian features, four of them informative: y = x0 + 2 x1 - 2 x2 - 1.5 x3 + N(0, 1).',
+  knobs: dict({
+    n: int(2, 100_000, { default: 100, label: 'samples' }),
+    nFeatures: int(4, 1000, { default: 10, label: 'features' }),
+  }),
+  generate: (k, knobValues) => {
+    const n = knobValues['n'] as number
+    const d = knobValues['nFeatures'] as number
+    const coef = Array.from({ length: d }, (_, j) => [1, 2, -2, -1.5][j] ?? 0)
+    const c = tensor(coef)
+    const f = (v: Value): Value => matmul(v, c)
+    const x = normal(foldIn(k, 0), [n, d])
+    const y = withNoise(foldIn(k, 1), f(x), 1)
+    return {
+      data: xy(x, y, stamp('sparseUncorrelated', sparseUncorrelated.description, knobValues)),
+      truth: {
+        regressionFunction: f,
+        noiseScale: 1,
+        bayesError: 1,
+        relevantFeatures: [0, 1, 2, 3],
+        logProb: jointLogProb(standardNormalLogDensity(d), f, 1),
+        extra: { coefficients: coef },
       },
     }
   },

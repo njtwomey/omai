@@ -256,3 +256,66 @@ export function linspaceNumbers(start: number, stop: number, n = 50): number[] {
   const step = (stop - start) / (n - 1)
   return Array.from({ length: n }, (_, i) => (i === n - 1 ? stop : start + i * step))
 }
+
+/**
+ * `log(sum(exp(xs)))` of a list, computed stably by shifting by the maximum.
+ *
+ * @param xs - The numbers.
+ * @returns The log-sum-exp, `-Infinity` for an empty list or all `-Infinity`.
+ * @example
+ * ```ts
+ * import { logSumExpOf } from 'whitebox-engine/base'
+ * logSumExpOf([0, 0]) // => 0.6931471805599453
+ * ```
+ */
+export function logSumExpOf(xs: ArrayLike<number>): number {
+  const m = maxOf(xs)
+  if (m === Number.NEGATIVE_INFINITY || Number.isNaN(m)) return m
+  let s = 0
+  for (let i = 0; i < xs.length; i++) s += Math.exp((xs[i] ?? Number.NEGATIVE_INFINITY) - m)
+  return m + Math.log(s)
+}
+
+/**
+ * The softmax of a list of log-weights: `exp(xs) / sum(exp(xs))`, computed stably.
+ *
+ * @param xs - Unnormalised log probabilities.
+ * @returns Probabilities summing to one.
+ * @example
+ * ```ts
+ * import { softmaxOf } from 'whitebox-engine/base'
+ * softmaxOf([0, 0]) // => [0.5, 0.5]
+ * ```
+ */
+export function softmaxOf(xs: ArrayLike<number>): number[] {
+  const z = logSumExpOf(xs)
+  return Array.from(xs as ArrayLike<number>, (x) => Math.exp(x - z))
+}
+
+/**
+ * The `q` quantile of a list with linear interpolation between order statistics (numpy.quantile's default `linear`
+ * method). The input is not modified.
+ *
+ * @param xs - The numbers (NaN entries make the result NaN).
+ * @param q - The level in [0, 1].
+ * @returns The quantile, `NaN` for an empty list.
+ * @example
+ * ```ts
+ * import { quantileOf } from 'whitebox-engine/base'
+ * quantileOf([4, 1, 3, 2], 0.5) // => 2.5
+ * quantileOf([1, 2, 3, 4, 5], 0.25) // => 2
+ * ```
+ */
+export function quantileOf(xs: ArrayLike<number>, q: number): number {
+  const n = xs.length
+  if (n === 0) return Number.NaN
+  const sorted = Float64Array.from(xs as ArrayLike<number>)
+  for (const v of sorted) if (Number.isNaN(v)) return Number.NaN
+  sorted.sort()
+  const h = (n - 1) * Math.min(1, Math.max(0, q))
+  const lo = Math.floor(h)
+  const hi = Math.min(n - 1, lo + 1)
+  const a = sorted[lo] ?? Number.NaN
+  const b = sorted[hi] ?? Number.NaN
+  return a + (h - lo) * (b - a)
+}

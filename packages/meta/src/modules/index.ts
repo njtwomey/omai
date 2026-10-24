@@ -20,6 +20,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/base': () => import('whitebox-engine/base'),
   'whitebox-engine/context': () => import('whitebox-engine/context'),
   'whitebox-engine/data': () => import('whitebox-engine/data'),
+  'whitebox-engine/data/modifiers': () => import('whitebox-engine/data/modifiers'),
   'whitebox-engine/data/schema': () => import('whitebox-engine/data/schema'),
   'whitebox-engine/dists': () => import('whitebox-engine/dists'),
   'whitebox-engine/dists/continuous': () => import('whitebox-engine/dists/continuous'),

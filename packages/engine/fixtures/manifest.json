@@ -2,6 +2,24 @@
   "schema": "whitebox.fixtures/1",
   "fixtures": [
     {
+      "fixture": "data/batching.json",
+      "source": "oracle/cases/data/batching.py",
+      "reference": {
+        "torch": "2.14.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "data/tensors.json",
+      "source": "oracle/cases/data/tensors.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "dists/continuous.json",
       "source": "oracle/cases/dists/continuous.py",
       "reference": {
@@ -35,12 +53,81 @@
       "cases": 31
     },
     {
+      "fixture": "methods/datasets/changepoints.json",
+      "source": "oracle/cases/methods/datasets/changepoints.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "methods/datasets/classification-real.json",
+      "source": "oracle/cases/methods/datasets/classification-real.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "methods/datasets/classification.json",
+      "source": "oracle/cases/methods/datasets/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "methods/datasets/manifolds.json",
+      "source": "oracle/cases/methods/datasets/manifolds.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "methods/datasets/matrices.json",
+      "source": "oracle/cases/methods/datasets/matrices.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "methods/datasets/objectives.json",
+      "source": "oracle/cases/methods/datasets/objectives.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "methods/datasets/regression-real.json",
+      "source": "oracle/cases/methods/datasets/regression-real.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
       "fixture": "methods/datasets/regression.json",
       "source": "oracle/cases/methods/datasets/regression.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
       "cases": 6
+    },
+    {
+      "fixture": "methods/datasets/timeseries.json",
+      "source": "oracle/cases/methods/datasets/timeseries.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
     },
     {
       "fixture": "methods/rl/classic_control.json",

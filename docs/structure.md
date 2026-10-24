@@ -717,38 +717,61 @@ primitives; "custom" means a dedicated rule.
 ### 4.11 `data/` (tier 5): datasets, generators and truth (torch.utils.data, sklearn.datasets)
 
 One schema per task kind. Each schema declares its per-row fields, so one `take` and one `split` work for all of them.
+Every schema file also has a validating constructor that fills defaults (names, metadata). `schema/` and `modifiers/`
+are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `Modifier` (`labelNoiseModifier`,
+`missingModifier`, and so on).
 - `schema/common.ts`: `DatasetMeta` (name, description, task, source, url, licence, citation, sha256, recipe, key),
-  `DatasetKind`, `perRowFields`.
+  `DatasetKind`, `Dataset` (the union of every schema), `RecipeStamp`, `perRowFields`, `rowCount`.
 - `schema/tabular.ts`: `RegressionData`, `ClassificationData`, `MultilabelData`, `MultiOutputData`, `TableData` (named
-  mixed-type columns), zod schemas.
-- `schema/ranking.ts`: `InteractionData` (users, items, values, times, sessions, propensities), `QueryData`.
+  mixed-type columns: numeric, categorical, boolean, text, with missing values), `TabularData`, zod schemas
+  (`TensorSchema`, `DatasetMetaSchema`, `RegressionDataSchema`, `ClassificationDataSchema`, `MultilabelDataSchema`,
+  `MultiOutputDataSchema`, `TableColumnSchema`, `TableDataSchema`).
+- `schema/ranking.ts`: `InteractionData` (users, items, values, times, sessions, positions, propensities), `QueryData`;
+  `interactions`, `queryData`.
 - `schema/corpus.ts`: `CorpusData` (documents or token sequences, labels, vocabulary), `SequenceLabellingData`,
-  `ParallelData`.
-- `schema/sequence.ts`: `SequenceData` (input and target token sequences, masks) for sequence tasks.
-- `schema/timeseries.ts`: `TimeSeriesData` (times, values `[n, channels]`, sampling rate, events, segment labels).
-- `schema/events.ts`: `EventData` (event times or locations with marks) for point processes.
-- `schema/comparisons.ts`: `ComparisonData` (pairwise or multi-way outcomes with players, ties and times) for rating
-  models.
-- `schema/graph.ts`: `GraphData` (one or many graphs, node and edge features, labels, masks), `TripleData`.
-- `schema/image.ts`: `ImageData` (`[n, h, w, c]`, labels, boxes, masks).
-- `schema/trajectories.ts`: `TrajectoryData` (observations, actions, rewards, terminations, behaviour propensities).
+  `ParallelData`; `corpus`, `sequenceLabelling`, `parallel`.
+- `schema/sequence.ts`: `SequenceData` (input and target token sequences, masks) for sequence tasks; `sequences`.
+- `schema/timeseries.ts`: `TimeSeriesData` (times, values `[n, channels]`, sampling rate, period, events, segment
+  labels); `timeSeries`.
+- `schema/events.ts`: `EventData` (event times or locations with marks, sequences, window and region) for point
+  processes; `events`.
+- `schema/comparisons.ts`: `ComparisonData` (pairwise or multi-way outcomes as finishing places, with players, ties and
+  times) for rating models; `comparisons`, `pairwise`.
+- `schema/graph.ts`: `GraphData` (one or many graphs, node and edge features, labels, masks), `GraphRecord`,
+  `TripleData`; `graphRecord`, `graphData`, `triples`.
+- `schema/image.ts`: `ImageData` (`[n, h, w, c]`, labels, boxes, masks); `images`.
+- `schema/trajectories.ts`: `TrajectoryData` (observations, actions, rewards, terminations, truncations, episodes,
+  behaviour propensities); `trajectories`.
 - `generator.ts`: `DatasetGenerator` (name, kind, knobs as a `Space`, `generate(key, knobs) -> { data, truth }`),
-  `generate` (resolves keys from the context), `describeGenerator`.
+  `Generated`, `generate` (resolves keys from the context, validates knobs, stamps the recipe and key),
+  `describeGenerator`, `asGenerated` (a real dataset as `{ data, truth }` for modifiers).
 - `truth.ts`: the `Truth` interface: `program` (the generating probabilistic program), `logProb`, `posterior`,
-  `regressionFunction`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`, `structure`; helpers that
-  derive missing pieces from the program when possible.
-- `rows.ts`: `take`, `trainTestSplit`, `trainValTestSplit`, `stratifiedSplit`, `bootstrap`, `concatRows`,
-  `shuffleRows`.
-- `tensors.ts`: `toTensors`, `fromTensors`, `xy` (build a dataset from arrays), `describe`.
-- `loader.ts`: `DatasetRef`, `load` (embedded or remote; sha256 verification with Web Crypto), `AssetCache` (memory and
-  IndexedDB).
-- `batching.ts`: `batches` (batch size, shuffle by key, drop last), `epochs`, `collate`, `padSequences`, `bucketBy`.
-- `recipes.ts`: `Recipe` (a generator plus modifiers with their keys, as data), `makeFromRecipe`, `describeRecipe`,
-  `encodeRecipe`, `parseRecipe`.
-- `modifiers/labels.ts`: `withLabelNoise`, `withPrevalence`, `withLabelShift`, `withClassImbalance`.
+  `regressionFunction`, `quantile`, `noiseScale`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`
+  (`CausalEffects`: ATE, ATT, CATE, ITE, potential outcomes), `structure`, `relevantFeatures`; helpers that derive
+  missing pieces: `completeTruth`, `posteriorFromJoint` (Bayes' rule from the joint density), `bayesErrorEstimate`,
+  `bayesPredict`, `clusterAgreement`, `excessRisk`. TODO: generators fill exact `logProb` and `posterior` functions
+  but not yet `program`, and `completeTruth` cannot derive from a program, until `lib/probprog` exists.
+- `rows.ts`: `take`, `trainTestSplit` (optionally stratified), `trainValTestSplit`, `stratifiedSplit`,
+  `stratifiedIndices`, `bootstrap` (with out-of-bag rows), `concatRows`, `shuffleRows`, `labelsOf`.
+- `tensors.ts`: `toTensors`, `fromTensors`, `xy`, `xyClasses`, `xyMultilabel`, `xyMultiOutput` (build a dataset from
+  arrays), `table`, `tableToXy` (one-hot or code encoding), `describe` (pandas-style feature summaries and class
+  counts).
+- `loader.ts`: `DatasetRef`, `load` (embedded, remote or several remote files; sha256 verification with Web Crypto),
+  `AssetCache` (`memoryCache`, `indexedDbCache`), `sha256Hex`.
+- `archives.ts`: `gunzip`, `untar`, `unzip`, `parseCsv`, `parseNpy`, for parsing remote assets in the browser.
+- `samplers.ts`: `Sampler`, `sequentialSampler`, `randomSampler`, `weightedRandomSampler`, `subsetRandomSampler`,
+  `batchSampler`, `balancedWeights` (torch.utils.data samplers, reshuffled per epoch by derived keys).
+- `batching.ts`: `batches` (batch size, shuffle by key or sampler, drop last), `epochBatches`, `epochs`, `dataLoader`,
+  `collate`, `padSequences`, `sequenceLengths`, `bucketBy`.
+- `recipes.ts`: `Recipe` (a generator plus modifiers with their keys, as data), `Modifier`, `builtinModifiers`,
+  `makeFromRecipe`, `describeRecipe`, `encodeRecipe`, `parseRecipe`, `RecipeSchema`.
+- `modifiers/labels.ts`: `withLabelNoise` (symmetric, pair-flip or a transition matrix; `noiseTransition`),
+  `withPrevalence`, `withLabelShift`, `withClassImbalance` (exponential and step profiles); posteriors adjusted.
 - `modifiers/features.ts`: `withMissing` (MCAR, MAR, MNAR), `withOutliers`, `withNuisanceFeatures`, `withTransform`
-  (keeping the density truth consistent), `withCorrelatedFeatures`.
-- `modifiers/shift.ts`: `withCovariateShift`, `withConceptDrift`, `shiftedSplit`, `semiSupervisedSplit`.
+  (keeping the density truth consistent; `featureTransform`), `withCorrelatedFeatures` (Toeplitz and equicorrelated).
+- `modifiers/shift.ts`: `withCovariateShift` (with the density ratio), `withConceptDrift` (sudden, gradual,
+  recurring), `shiftedSplit`, `semiSupervisedSplit`.
+
 ### 4.12 `foundations/` (tier 6): mathematical foundations
 
 The mathematics underneath machine learning, written so each idea can be computed, drawn and stepped through.
@@ -2597,45 +2620,86 @@ Each file is a reproducible study that returns data and traces for figures.
 Every dataset is a `DatasetGenerator` (knobs as a `Space`, returning `{ data, truth }`) or a static dataset (data and
 provenance). Static data is embedded as generated `*.data.ts` files vendored by the oracle with source, licence and
 checksum; larger data is a release asset loaded through `data/loader.ts`. Where a generator has a generating program,
-`truth.program` is that program, so likelihoods and posteriors can be queried.
+`truth.program` is that program, so likelihoods and posteriors can be queried. TODO: until `lib/probprog` exists,
+generators give exact `truth.logProb` and `truth.posterior` functions instead of a program.
 
 built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`, `scene`
-- `regression.ts`: `makeRegression`, Friedman 1 to 3, one-dimensional functions (sine, step, sinc, Doppler,
-  heteroscedastic noise), additive (GAM) data, curves with known quantiles, piecewise-linear data.
-- `regression-real.ts`: diabetes, Anscombe's quartet, mtcars, a licence-clean housing set, growth charts.
-- `classification.ts`: blobs, moons, circles, XOR, spirals, checkerboards, Gaussian quantiles, `makeClassification`
-  (informative, redundant and noise features, class separation, imbalance, label noise as knobs), with Bayes posteriors
-  and Bayes errors.
-- `classification-real.ts`: iris, wine, breast cancer, 8 by 8 digits, Titanic, penguins.
-- `clustering.ts`: rings, anisotropic blobs, unequal-variance blobs, Old Faithful, with true clusters.
-- `manifolds.ts`: Swiss roll, S-curve, severed sphere, torus, with latent coordinates.
-- `densities.ts`: two-dimensional densities with exact log densities (rings, pinwheels, bananas, funnels, mixtures) for
-  samplers, flows and diffusion.
-- `objectives.ts`: optimisation test functions with gradients, Hessians and known minima (Rosenbrock, Himmelblau, Beale,
-  Rastrigin, Ackley, Branin, quadratic bowls), hyperparameter-tuning surfaces.
-- `changepoints.ts`: tunable changepoint series (mean, variance and rate shifts, AR regime switches, trend breaks;
-  hazard rate, segment lengths and noise as knobs) with true changepoints, segment parameters and the exact BOCPD
-  predictive.
-- `timeseries.ts`: AR and ARMA processes, sinusoids in noise, uneven sampling, seasonal series, airline passengers,
-  sunspots, coal-mining disasters, an ECG record (remote).
-- `events.ts`: Poisson and Hawkes event data with true intensities.
-- `comparisons.ts`: games between players with latent skills (chess-like Elo data, tournaments) with true skills.
-- `ranking.ts`: explicit ratings with low-rank truth, click logs (position and cascade models with propensities),
-  implicit feedback, Zipfian catalogues, a small MovieLens (remote).
-- `corpus.ts`: toy and topic corpora with true topics, drifting topics, worked-example corpora, nursery rhymes, Tiny
-  Shakespeare (remote), near-duplicate corpora with planted duplicates (for shingle matching and record linkage).
-- `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic.
-- `graphs.ts`: karate club, Les Miserables, contextual stochastic block models, graph families, small molecules,
-  knowledge-graph triples.
-- `images.ts`: shapes, digit glyphs, bars and stripes, geometric scenes with true edges and corners, a small
-  Fashion-MNIST (remote).
-- `causal.ts`: synthetic causal datasets with known structural models, ATEs and CATEs.
-- `experiments.ts`: A/B test data with known effects.
-- `trajectories.ts`: logged bandit data, offline RL datasets from known behaviour policies.
-- `weak-labels.ts`: labelling functions with known accuracies, crowd labels, positive-unlabelled data, label-proportion
-  bags.
-- `operators.ts`: operator-learning pairs (heat, Burgers, antiderivatives).
-- `predictions.ts`: model outputs with known miscalibration, survival data with known hazards.
+- `regression.ts`: `makeRegression` (several targets, low-rank designs with an effective rank, column shuffling),
+  Friedman 1 to 3, `sparseUncorrelated`, with regression functions and joint log densities.
+- `regression-curves.ts`: one-dimensional functions (`sineCurve`, `stepCurve`, `sincCurve`, `dopplerCurve`,
+  `heteroscedastic` noise), additive (GAM) data (`additiveModel`, with its components), curves with known quantiles
+  (`quantileCurves`: Gaussian, Laplace, Student t and Gumbel noise), `piecewiseLinear` data.
+- `regression-real.ts`: `diabetes`, `linnerud` (multi-output), Anscombe's quartet (`anscombe`), `mtcars` (and
+  `mtcarsRegression`), a licence-clean housing set (`californiaHousing`, a remote asset parsed from StatLib's archive
+  by `parseCaliforniaHousing`), growth charts (CDC LMS tables: `growthChart`, `growthValue`, and `growthCurves` with
+  exact quantiles).
+- `classification.ts`: `blobs`, `moons`, `circles`, `xor`, `spirals`, `checkerboard`, `gaussianQuantiles`,
+  `hastie10_2`, with exact Bayes posteriors, log densities and Bayes errors (closed form or Monte Carlo, computed on
+  first access); `moonPoints`, `circlePoints`, `gaussianQuantileLabels`.
+- `make-classification.ts`: `makeClassification` (informative, redundant, repeated and noise features, clusters per
+  class, class separation, imbalance, label noise, shift and scale as knobs; the truth tracks every column),
+  `makeMultilabelClassification`.
+- `classification-real.ts`: `iris`, `wine`, `breastCancer`, 8 by 8 digits (`digits`, `digitImages`), Titanic
+  (`titanic`, R's survival table expanded to rows), penguins (`penguins` as a table, `penguinsClassification`).
+- `clustering.ts`: `rings`, `anisotropicBlobs`, `unequalVarianceBlobs`, `oldFaithful`, with true clusters (and
+  exact posteriors for the generators).
+- `manifolds.ts`: `swissRoll` (optionally with a hole), `sCurve`, `severedSphere`, `torus`, with latent coordinates;
+  `swissRollEmbedding`, `sCurveEmbedding`.
+- `matrices.ts`: sklearn's matrix generators with their planted truth: `makeLowRankMatrix` (`lowRankProfile`),
+  `makeSparseCodedSignal`, `makeSpdMatrix`, `makeSparseSpdMatrix`, `makeBiclusters`, `makeCheckerboard`.
+- `densities.ts`: two-dimensional densities with exact log densities and samplers (`Density`: `ringDensity`,
+  `pinwheelDensity`, `bananaDensity`, `funnelDensity`, `gaussianMixtureDensity` on a circle or grid,
+  `checkerboardDensity`) for samplers, flows and diffusion; `densitySamples` as a generator.
+- `objectives.ts`: optimisation test functions with gradients, Hessians and known minima (`TestFunction`:
+  `rosenbrock`, `himmelblau`, `beale`, `rastrigin`, `ackley`, `branin`, `quadraticBowl` with a set condition number),
+  hyperparameter-tuning surfaces (`TuningSurface`: `learningRateSurface` with learning curves for multi-fidelity
+  tuning, `braninSurface`).
+- `changepoints.ts`: tunable changepoint series (`changepointSeries`: mean, variance and rate shifts, AR regime
+  switches, trend breaks; hazard rate, minimum segment length and noise as knobs) with true changepoints, segment
+  parameters and the exact BOCPD predictive (`exactBocpd` with conjugate `SegmentModel`s and constant or run-length
+  hazards: run-length posteriors, one-step predictives, evidence).
+- `timeseries.ts`: AR and ARMA processes (`armaProcess`, `arma`, with autocovariances and spectral densities),
+  sinusoids in noise (`sinusoids`), uneven sampling (`sinusoids` with uneven times, `subsampleSeries`), seasonal
+  series with known components (`seasonalSeries`), airline passengers (`airPassengers`), `sunspots`, coal-mining
+  disasters (`coalMiningDisasters` as events, `coalMiningCounts`), an ECG record (`electrocardiogram`, remote).
+- `events.ts`: Poisson and Hawkes event data with true intensities: `poissonProcess`, `inhomogeneousPoisson`
+  (sinusoidal, piecewise and ramp intensities), `hawkesProcess` and `multivariateHawkes` (with each event's parent
+  and the exact log-likelihood), `spatialPoisson`.
+- `comparisons.ts`: games between players with latent skills (chess-like Elo data with draws and skill drift:
+  `eloGames`; tournaments: `roundRobin`; TrueSkill-style `multiplayerRaces`) with true skills.
+- `ranking.ts`: explicit ratings with low-rank truth (`lowRankRatings`, observed at random or not), click logs
+  (`clickLogs`: position and cascade models with logging-policy propensities), implicit feedback (`implicitFeedback`,
+  Poisson factorisation), Zipfian catalogues (`zipfianCatalogue`), a small MovieLens (`movielensSmall`, remote).
+- `corpus.ts`: toy and topic corpora with true topics (`naiveBayesCorpus`, `topicCorpus` with Dirichlet or bars
+  topics), drifting topics (`driftingTopics`), worked-example corpora (`workedExampleCorpus`: Deerwester's LSA
+  titles, the IR book's Caesar passages), `nurseryRhymes`, Tiny Shakespeare (`tinyShakespeare`, remote), near-duplicate
+  corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage).
+- `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
+  (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
+  `modularArithmetic`), each with an exact solver in its truth.
+- `graphs.ts`: karate club (`karateClub`), Les Miserables (`lesMiserables`), contextual stochastic block models
+  (`contextualSbm`), graph families (`familyGraph`, `graphFamilies`: Erdos-Renyi, Barabasi-Albert, Watts-Strogatz,
+  grids, cycles, paths, stars, complete graphs, trees, geometric graphs), small molecules (`smallMolecules`, read from
+  SMILES, with formulas, weights and ring counts), knowledge-graph triples (`kinshipTriples`, family trees with
+  planted rules).
+- `images.ts`: `shapes` (with boxes and masks), `digitGlyphs`, `barsAndStripes`, geometric scenes with true edges and
+  corners (`geometricScenes`), a small Fashion-MNIST (`fashionMnistTest`, remote, parsed by `parseIdxImages`).
+- `causal.ts`: synthetic causal datasets with known structural models, ATEs and CATEs: `linearScm` (random DAGs,
+  Gaussian or non-Gaussian noise, total effects, interventional means), `treatmentEffects` (confounded treatment,
+  potential outcomes, CATE, propensities), `instrumentalVariables`.
+- `experiments.ts`: A/B test data with known effects (`abTest`: conversion, continuous or revenue metrics, several
+  arms, pre-period covariates for CUPED, arrival days and novelty effects).
+- `trajectories.ts`: logged bandit data (`loggedBandit`, with exact policy values), offline RL datasets from known
+  behaviour policies (`offlineMdp` on random tabular MDPs or Strens' chain, `policyEvaluation`, `TabularMdp`).
+- `weak-labels.ts`: labelling functions with known accuracies (`labellingFunctions`), crowd labels (`crowdLabels`,
+  Dawid-Skene), positive-unlabelled data (`positiveUnlabelled`, SCAR and SAR), label-proportion bags
+  (`labelProportionBags`), each with the exact posterior or mechanism.
+- `operators.ts`: operator-learning pairs (`heatOperator`, `burgersOperator` solved exactly by Cole-Hopf,
+  `antiderivativeOperator` with Gaussian-process inputs).
+- `catalogue.ts`: `datasetGenerators` (every generator by name, for recipes and controls), `remoteDatasets`.
+- `predictions.ts`: model outputs with known miscalibration (`miscalibratedPredictions`, with the population ECE),
+  survival data with known hazards (`survivalData`: Weibull and exponential proportional hazards, log-normal AFT,
+  censoring).
 
 ### 5.19 Hyperparameter optimisation (`tuning/`)
 
