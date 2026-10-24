@@ -16,6 +16,13 @@ export interface EpisodeRecord {
     readonly actions: readonly Json[]
     readonly rewards: readonly number[]
   }[]
+  /**
+   * How the state index of the snapshots lays out for drawing: `[rows, columns]` of a grid world (state = row ·
+   * columns + column), or one row of `[1, n]` (bandit arms, a single line of states).
+   */
+  readonly snapshotShape?: readonly [number, number]
+  /** Names of the actions, in policy order (e.g. up, right, down, left), for labels and arrows. */
+  readonly actionNames?: readonly string[]
   /** Snapshots of tabular values or policies at chosen episodes (state-indexed). */
   readonly snapshots?: readonly {
     readonly episode: number

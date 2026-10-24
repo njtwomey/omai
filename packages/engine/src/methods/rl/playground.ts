@@ -4,6 +4,7 @@ import { foldIn, type Key, key as makeKey } from '../../lib/random/index.ts'
 import {
   type Agent,
   type Env,
+  type Policy,
   type TimeLimitState,
   type TrainState,
   type Transition,
@@ -11,7 +12,17 @@ import {
   trainingAlgorithm,
 } from '../../lib/rl/index.ts'
 import type { Scene } from '../../lib/scene/index.ts'
-import { bool, choice, type DictSpace, defaults, dict, int, real, type SpaceValue } from '../../lib/space/index.ts'
+import {
+  bool,
+  choice,
+  type DictSpace,
+  defaults,
+  dict,
+  discrete,
+  int,
+  real,
+  type SpaceValue,
+} from '../../lib/space/index.ts'
 import { type Algorithm, type RunOptions, type RunStatus, runAlgorithm } from '../../lib/trace/index.ts'
 import {
   a2c,
@@ -806,4 +817,60 @@ export function playground(options: PlaygroundOptions): Explained<PlaygroundResu
     runId: result.runId,
     exposition: [session.record(s)],
   }
+}
+
+// ------------------------------------------------------------------------------------------------ playback
+
+/** A recorded episode as an environment and a policy, for players that run an episode (render's `EpisodePlayer`). */
+export interface EpisodeReplay {
+  /** States are step indices; each step moves to the recorded next state and pays the recorded reward. */
+  readonly env: Env<number, number, Json>
+  /** The recorded action at each step. */
+  readonly policy: Policy<number, Json>
+}
+
+/**
+ * Play a recorded episode back exactly: an environment whose state is the step index, which moves to the recorded
+ * next state and pays the recorded reward whatever the dynamics' randomness (slippery ice, bandit draws), drawn by
+ * the pairing's own `render`, and the policy that takes the recorded actions. A page builds it from an `episodes`
+ * record to hand to a player, since the trained agent stays where it was trained (a worker, say).
+ *
+ * @param pairing - The pairing's id (its environment draws the frames).
+ * @param recorded - A recorded episode of its `episodes` record.
+ * @param params - The parameters of the run (the environment's options among them; default the demo's).
+ * @returns The environment and policy.
+ * @throws WhiteboxError with code `value` for an unknown pairing.
+ */
+export function replayRecorded(
+  pairing: string,
+  recorded: {
+    readonly states: readonly Json[]
+    readonly actions: readonly Json[]
+    readonly rewards: readonly number[]
+  },
+  params: PlaygroundParams = {},
+): EpisodeReplay {
+  const p = playgroundPairing(pairing)
+  const base = p.setup({ ...(defaults(p.hyperSpace) as PlaygroundParams), ...params }, makeKey(0)).env
+  const n = recorded.actions.length
+  const env: Env<number, number, Json> = {
+    spec: { id: `${base.spec.id} (replay)`, description: `A recorded episode of ${base.spec.id}`, deterministic: true },
+    observationSpace: discrete(n + 1, { label: 'step' }),
+    actionSpace: base.actionSpace,
+    reset: () => ({ state: 0, observation: 0, info: {} }),
+    step: (t) => {
+      const next = Math.min(t + 1, n)
+      return {
+        state: next,
+        observation: next,
+        reward: recorded.rewards[t] ?? 0,
+        terminated: next >= n,
+        truncated: false,
+        info: {},
+      }
+    },
+    render: (t) => base.render(recorded.states[t] as unknown),
+    observe: (t) => t,
+  }
+  return { env, policy: (t) => recorded.actions[t] ?? 0 }
 }

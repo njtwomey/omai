@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+import { evaluatePolicy } from '../../lib/rl/index.ts'
 import { runAlgorithm } from '../../lib/trace/index.ts'
-import { playground, playgroundPairing, playgroundPairings, playgroundSession } from './playground.ts'
+import { frozenLake } from './environments/index.ts'
+import { playground, playgroundPairing, playgroundPairings, playgroundSession, replayRecorded } from './playground.ts'
 
 // Each default trains in well under a second alone; the timeout only guards against a heavily loaded machine.
 vi.setConfig({ testTimeout: 30_000 })
@@ -61,5 +63,19 @@ describe('the playground', () => {
     expect(() => playgroundPairing('cliff-walking/dqn')).toThrow(/no pairing/)
     expect(() => playground({})).toThrow(/give a pairing/)
     expect(new Set(playgroundPairings.map((p) => p.id)).size).toBe(playgroundPairings.length)
+  })
+})
+
+describe('replaying a recorded episode', () => {
+  it('reproduces the recorded rewards and draws the recorded states', () => {
+    const run = playground({ pairing: 'frozen-lake/value-iteration', episodes: 20, seed: 1 })
+    const [record] = run.exposition
+    const last = record?.kind === 'episodes' ? record.recorded?.at(-1) : undefined
+    if (last === undefined) throw new Error('no recorded episode')
+    const { env, policy } = replayRecorded('frozen-lake/value-iteration', last)
+    const ev = evaluatePolicy(env, policy, { episodes: 1, seed: 0 })
+    expect(ev.lengths).toEqual([last.actions.length])
+    expect(ev.meanReturn).toBe(run.returns.at(-1))
+    expect(env.render(0)).toEqual(frozenLake.create().render(0))
   })
 })

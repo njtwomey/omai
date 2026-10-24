@@ -44,6 +44,8 @@ export interface LearningCurve {
   readonly trainSpread?: readonly number[]
   readonly validationSpread?: readonly number[]
   readonly resource?: string
+  /** Series names when the two columns are not training and validation scores (e.g. each trial's score and the best so far). */
+  readonly labels?: { readonly train?: string; readonly validation?: string }
 }
 
 /**
