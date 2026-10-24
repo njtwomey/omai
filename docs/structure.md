@@ -1629,8 +1629,11 @@ oracle: closed-form moments and transition densities; sdeint and numpy simulatio
   weak convergence studies, reverse-time SDEs given a score. `sdeSolver` fits `nn.blocks.SdeSolver`.
 - `diffusions.ts`: named processes with exact transitions: Ornstein-Uhlenbeck, geometric Brownian motion, CIR, Vasicek,
   Bessel, Langevin dynamics, jump diffusions.
-- `markov-chains.ts`: discrete- and continuous-time Markov chains: stationary distributions, classification,
-  absorption, hitting times, mixing times, spectral gaps, reversibility, simulation.
+- `markov-chains.ts`: discrete-time Markov chains: stationary distributions, classification, absorption, hitting
+  times, mixing times, spectral gaps, reversibility, simulation.
+- `ctmc.ts`: continuous-time Markov chains (split from `markov-chains.ts` for size): transition matrices exp(tQ)
+  (the Kolmogorov equations), stationary laws, embedded jump chains, uniformisation, hitting times, Gillespie
+  simulation and exact grid sampling.
 - `random-walks.ts`: simple and biased walks, walks on graphs, self-avoiding walks, Levy flights, gambler's ruin.
 - `branching.ts`: Galton-Watson processes, extinction probabilities, birth-death processes.
 - `queues.ts`: M/M/1, M/M/c and M/G/1 queues (formulas and simulation), Little's law.

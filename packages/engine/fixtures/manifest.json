@@ -2157,6 +2157,34 @@
       "cases": 8
     },
     {
+      "fixture": "stochastic/ctmc.json",
+      "source": "oracle/cases/stochastic/ctmc.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "stochastic/diffusions.json",
+      "source": "oracle/cases/stochastic/diffusions.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 30
+    },
+    {
+      "fixture": "stochastic/markov-chains.json",
+      "source": "oracle/cases/stochastic/markov-chains.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "networkx": "3.7"
+      },
+      "cases": 41
+    },
+    {
       "fixture": "stochastic/sde.json",
       "source": "oracle/cases/stochastic/sde.py",
       "reference": {
