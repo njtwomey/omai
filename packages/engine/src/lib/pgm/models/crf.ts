@@ -1,15 +1,8 @@
 import { type Json, WhiteboxError } from '../../base/index.ts'
-import { dnrm2 } from '../../numerics/linalg/index.ts'
-import { adam, applyUpdates, type GradientTransformation } from '../../optim/index.ts'
-import { fromStorage, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
-import {
-  type Algorithm,
-  channels,
-  type RunStatus,
-  runAlgorithm,
-  type TracePolicy,
-  type Tracer,
-} from '../../trace/index.ts'
+import type { GradientTransformation } from '../../optim/index.ts'
+import { adam } from '../../optim/index.ts'
+import { type Algorithm, type RunStatus, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
+import { type DescentState, gradientDescent } from '../_descent.ts'
 import { type DiscreteVariable, type Factor, factorMarginal, logFactor } from '../factor.ts'
 import { type BeliefPropagationOptions, beliefPropagation } from '../inference/belief-propagation.ts'
 import { type ChainModel, forwardBackward, viterbi } from '../inference/chain.ts'
@@ -438,52 +431,8 @@ export function crfObjective(
   return { value: penalise(crfParameters(crf), value, gradient, penalty), gradient }
 }
 
-/** The state of a CRF training run. */
-export interface CrfTrainingState {
-  readonly parameters: Float64Array
-  readonly optState: unknown
-  readonly value: number
-  readonly gradient: Float64Array
-  readonly gradNorm: number
-}
-
-const vector = (w: Float64Array): Tensor => fromStorage(Float64Array.from(w), [w.length], 'float64')
-
-/**
- * Minimise an objective over a parameter vector with a gradient transformation from `optim`, as an {@link Algorithm}
- * that records the objective and the gradient norm (the training loop shared by both kinds of CRF).
- */
-function gradientDescent(
-  name: string,
-  config: Json,
-  start: Float64Array,
-  objective: (w: Float64Array) => { value: number; gradient: Float64Array },
-  method: GradientTransformation,
-  gradTol: number,
-): Algorithm<CrfTrainingState> {
-  const evaluate = (w: Float64Array, optState: unknown): CrfTrainingState => {
-    const { value, gradient } = objective(w)
-    return { parameters: w, optState, value, gradient, gradNorm: dnrm2(gradient) }
-  }
-  return {
-    name,
-    config,
-    schema: channels({
-      metrics: {
-        objective: { description: 'penalised negative conditional log-likelihood', direction: 'lower' },
-        gradNorm: { description: 'gradient norm', direction: 'lower' },
-      },
-    }),
-    init: () => evaluate(start, method.init(vector(start))),
-    step: (s) => {
-      const { updates, state } = method.update(vector(s.gradient), s.optState, vector(s.parameters))
-      const next = Float64Array.from(toFlat(applyUpdates(vector(s.parameters), updates) as Value))
-      return evaluate(next, state)
-    },
-    done: (s) => (s.gradNorm <= gradTol ? 'converged' : !Number.isFinite(s.value) ? 'diverged' : undefined),
-    observe: (s) => ({ metrics: { objective: s.value, gradNorm: s.gradNorm } }),
-  }
-}
+/** The state of a CRF training run: the parameters, the optimiser state, the objective and its gradient. */
+export type CrfTrainingState = DescentState
 
 /** Options of {@link crfTrainingAlgorithm} and {@link fitCrf}. */
 export interface CrfTrainingOptions extends CrfPenalty {

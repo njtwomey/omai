@@ -381,6 +381,38 @@
       "cases": 11
     },
     {
+      "fixture": "pgm/causal/discovery.json",
+      "source": "oracle/cases/pgm/causal/discovery.py",
+      "reference": {
+        "causal-learn": "0.1.4.8"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "pgm/causal/fci.json",
+      "source": "oracle/cases/pgm/causal/fci.py",
+      "reference": {
+        "causal-learn": "0.1.4.8"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "pgm/causal/identification.json",
+      "source": "oracle/cases/pgm/causal/identification.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "pgm/causal/interventions.json",
+      "source": "oracle/cases/pgm/causal/interventions.py",
+      "reference": {
+        "pgmpy": "1.1.2"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "pgm/gaussian_factor.json",
       "source": "oracle/cases/pgm/gaussian_factor.py",
       "reference": {
