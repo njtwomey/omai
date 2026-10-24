@@ -486,17 +486,30 @@ oracle: numpy, jax for derivative rules
 
 ### 4.4 `random/` (tier 2): keys and samplers (jax.random, numpy.random)
 
-oracle: Random123 known-answer vectors; numpy and scipy for distributional checks
+oracle: Random123 known-answer vectors; scipy.stats.qmc for the sequences (unscrambled Sobol' and Halton exactly; mean
+discrepancy and fill counts for the randomised ones); scipy.stats quantiles for distributional checks of every sampler
 - `philox.ts`: `philox4x32`.
 - `key.ts`: `Key`, `key(seed)`, `split`, `foldIn`, `keyFromPath(seed, ...names)` (named derivation), `randomBits`,
   `isKey`.
-- `continuous.ts`: `uniform`, `normal`, `truncatedNormal`, `exponential`, `laplace`, `logistic`, `gumbel`, `cauchy`,
-  `gamma`, `beta`, `chisquare`, `studentT`, `dirichlet`, `multivariateNormal`, `vonMises`.
-- `discrete.ts`: `randint`, `bernoulli`, `categorical` (probabilities or logits), `multinomial`, `poisson`, `binomial`,
-  `geometric`, `aliasTable`, `aliasSample`.
-- `permutation.ts`: `permutation`, `shuffle`, `choice`, `bootstrapIndices`, `subsample`, `randomSplit`, `reservoir`.
-- `sequences.ts`: `sobol`, `scrambledSobol`, `halton`, `latinHypercube`, `poissonDisk` (blue noise).
+- `continuous.ts`: `uniform`, `normal`, `truncatedNormal` (Robert's samplers, any interval), `exponential`, `laplace`,
+  `logistic`, `gumbel`, `cauchy`, `gamma`, `gammaVariates` (one independent draw per shape, for batched
+  distributions), `beta`, `chisquare`, `studentT`, `dirichlet` (beta and Dirichlet in log space for small shapes),
+  `multivariateNormal`, `vonMises`.
+- `discrete.ts`: `randint`, `bernoulli`, `categorical` (probabilities or logits), `multinomial` (conditional
+  binomials), `poisson` (Knuth, PTRS), `binomial` (waiting times, BTPE), `geometric`, `AliasTable`, `aliasTable`,
+  `aliasSample`.
+- `permutation.ts`: `permutation`, `shuffle`, `choice`, `bootstrapIndices`, `subsample` (Floyd's algorithm, sorted),
+  `randomSplit`, `reservoir` (Algorithms R and L over any iterable), `keys`.
+- `sequences.ts`: `sobol` (Joe-Kuo new-joe-kuo-6.21201 direction numbers, Gray-code order, `skip` as scipy's
+  `fast_forward`, equal to `scipy.stats.qmc.Sobol(d, scramble=False)`), `scrambledSobol` (keyed linear matrix
+  scramble plus digital shift, scipy's LMS+shift), `SobolOptions`, `halton` (skips the origin by default; `skip: 0`
+  equals scipy's unscrambled Halton), `latinHypercube` (jittered or centred), `poissonDisk` (blue noise by Bridson's
+  algorithm in d dimensions), `PoissonDiskOptions`. TODO: Sobol' beyond 1111 dimensions (scipy has 21201; the full
+  table is about 300 KB).
 - `generator.ts`: `Generator` (numpy-style wrapper that splits on each call), `defaultRng`.
+- Private: `_unit.ts` (uniform doubles and streams), `_variates.ts` (scalar truncated normal, gamma, Poisson and
+  binomial kernels), `_sobol.ts` (direction numbers, scramble, Gray-code generation) and `sobol-directions.data.ts`
+  (the packed Joe-Kuo table for 1111 dimensions, vendored by `oracle/datasets/sobol_directions.py`).
 
 ### 4.5 `symbolic/` (tier 2): a small computer algebra system (SymPy)
 
