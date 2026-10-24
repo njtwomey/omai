@@ -5,10 +5,12 @@ import { cx, iconButtonClass } from './controls/classes.ts'
 import { SceneView } from './SceneView.tsx'
 
 /** Props of {@link StructureView}. */
-export interface StructureViewProps extends Omit<DiagramOptions, 'overlay'> {
+export interface StructureViewProps extends Omit<DiagramOptions, 'overlay' | 'frames'> {
   readonly structure: Structure
   /** State laid over the diagram: active nodes and edges, badges (a frame of a message-passing animation, say). */
   readonly overlay?: StructureOverlay | undefined
+  /** Every frame the overlay comes from, so nodes are sized once for all of them and the layout never jumps. */
+  readonly frames?: readonly StructureOverlay[] | undefined
   /** Drawn width in pixels (default the diagram's own width, at most the container's). */
   readonly width?: number
   /** Called with a clicked node. */
@@ -29,10 +31,13 @@ type View = readonly [number, number, number, number]
  * @returns The view.
  */
 export function StructureView(props: StructureViewProps): ReactElement {
-  const { structure, overlay, width, onNodeClick, details = true, className, ...layout } = props
+  const { structure, overlay, width, onNodeClick, details = true, className, frames, ...layout } = props
   const options: DiagramOptions = { ...layout, ...(overlay === undefined ? {} : { overlay }) }
-  // biome-ignore lint/correctness/useExhaustiveDependencies: options are compared by content
-  const drawing = useMemo(() => diagram(structure, options), [structure, JSON.stringify(options)])
+  // biome-ignore lint/correctness/useExhaustiveDependencies: options are compared by content, frames by reference
+  const drawing = useMemo(
+    () => diagram(structure, frames === undefined ? options : { ...options, frames }),
+    [structure, frames, JSON.stringify(options)],
+  )
   const full: View = [0, 0, drawing.width, drawing.height]
   const [view, setView] = useState<View | null>(null)
   const shown = view ?? full

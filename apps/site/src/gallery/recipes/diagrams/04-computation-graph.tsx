@@ -7,7 +7,7 @@ export const recipe: Recipe = {
   title: 'Computation graph',
   question: 'How do I animate values flowing through a graph?',
   explain:
-    'A structure overlay marks `active` nodes and edges and sets value `badges`; one overlay per frame, played with `usePlayback` and `Player`, animates a forward pass through f(x, y) = (x + y)·sin(y) node by node, in topological order.',
+    'A structure overlay marks `active` nodes and edges and sets value `badges`; one overlay per frame, played with `usePlayback` and `Player`, animates a forward pass through f(x, y) = (x + y)·sin(y) node by node, in topological order. Passing every `frames` sizes the nodes once, so the layout stays put as values appear.',
 }
 
 const g = structure(
@@ -49,12 +49,14 @@ function frame(t: number): StructureOverlay {
   }
 }
 
+const frames = order.map((_, t) => frame(t))
+
 export default function ComputationGraph(): ReactNode {
   const playback = usePlayback(order.length, { fps: 2 })
   const overlay = useMemo(() => frame(playback.frame), [playback.frame])
   return (
     <div className="flex w-fit max-w-full flex-col gap-3">
-      <StructureView structure={g} overlay={overlay} />
+      <StructureView structure={g} overlay={overlay} frames={frames} />
       <Player controller={playback} stamp={(f) => `node ${f + 1} of ${order.length}: ${order[f] ?? ''}`} />
     </div>
   )
