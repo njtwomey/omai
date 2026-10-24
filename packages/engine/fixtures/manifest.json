@@ -2109,7 +2109,7 @@
         "scipy": "1.18.1",
         "skimage": "0.26.0"
       },
-      "cases": 81
+      "cases": 85
     },
     {
       "fixture": "numerics/geometry/triangulation.json",

@@ -194,8 +194,10 @@ describe('Fourier properties', () => {
           return Math.max(...ar.map((v, i) => Math.hypot(v - (br[i] ?? 0), (ai[i] ?? 0) - (bi[i] ?? 0)))) / scale
         }
         expect(err(F.nufft1(x, c, m, { tolerance }), F.nudft1(x, c, m))).toBeLessThan(tolerance)
-        const f = { re: c.re.slice(0, m), im: c.im.slice(0, m) }
-        while (f.re.length < m) f.re.push(1), f.im.push(-1)
+        const f = {
+          re: Array.from({ length: m }, (_, i) => c.re[i] ?? 1),
+          im: Array.from({ length: m }, (_, i) => c.im[i] ?? -1),
+        }
         expect(err(F.nufft2(x, f, { tolerance }), F.nudft2(x, f))).toBeLessThan(tolerance)
       }
     expect(() => F.nufft1(x, c, 4, { spread: 0 })).toThrow()

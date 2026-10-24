@@ -98,8 +98,16 @@ def cases() -> list[Case]:
     dst = hom[:, :2] / hom[:, 2:] + 1e-3 * g.normal(size=(10, 2))
     params = ProjectiveTransform.from_estimate(src, dst).params
     out.append(case("homography", "homography", [src, dst], params / params[2, 2], rtol=1e-8, atol=1e-10))
+    # Exactly four correspondences: an 8 x 9 system whose null vector the reduced SVD does not return directly.
+    square = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
+    four = [(square, 2 * square), (src[:4], dst[:4]), (square, square @ np.array([[0.8, 0.3], [-0.2, 1.1]]) + 0.4)]
+    for i, (s4, d4) in enumerate(four):
+        p4 = ProjectiveTransform.from_estimate(s4, d4).params
+        out.append(case(f"homography/four/{i}", "homography", [s4, d4], p4 / p4[2, 2], rtol=1e-8, atol=1e-10))
     x1 = g.uniform(0, 10, size=(12, 2))
     x2 = x1 + np.array([1.0, 0.2]) + 0.05 * g.normal(size=(12, 2))
     fparams = FundamentalMatrixTransform.from_estimate(x1, x2).params
     out.append(case("fundamental", "fundamental", [x1, x2], unit_fundamental(fparams), rtol=1e-7, atol=1e-9))
+    f8 = FundamentalMatrixTransform.from_estimate(x1[:8], x2[:8]).params
+    out.append(case("fundamental/eight", "fundamental", [x1[:8], x2[:8]], unit_fundamental(f8), rtol=1e-7, atol=1e-9))
     return out
