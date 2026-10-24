@@ -3201,8 +3201,9 @@ Each model is a probabilistic program plus the estimator users expect; its fast 
 `probprog/engines` or an inference routine in `pgm`.
 
 built from: `probprog`, `pgm`, `dists`, `learn`
-- `hmm.ts`: hidden Markov models (categorical, Gaussian and mixture emissions): the program, Baum-Welch through the EM
-  engine (traced), Viterbi, posterior states, sampling; the dishonest casino.
+- `hmm.ts`: hidden Markov models (`categoricalHMM`, `gaussianHMM`; mixture emissions later): Baum-Welch over the pgm
+  forward-backward (traced; through the EM engine on the program later), Viterbi, posterior states; the dishonest
+  casino (`dishonestCasino`, `casinoStudy`).
 - `crf.ts`: linear-chain CRF estimators on template features (`text/templates.ts`): marginals, Viterbi, scores,
   posterior paths, top features and transition weights. Training with CRF++'s and CRFsuite's algorithms: L-BFGS with
   L2 (CRF++ `-a CRF-L2`, `-c C`), OWL-QN with L1 (`CRF-L1`), SGD with an L2 schedule and with L1 by cumulative penalty
@@ -3213,8 +3214,10 @@ built from: `probprog`, `pgm`, `dists`, `learn`
 - `topic-extensions.ts`: pLSA, HDP, correlated and dynamic topic models.
 - `conjugate.ts`: conjugate models with closed-form posteriors and predictives (beta-binomial, gamma-Poisson,
   normal-normal, normal-gamma, Dirichlet-multinomial, normal-inverse-Wishart), and CAVI compared with the exact answer.
-- `rating.ts`: Elo (with the chess conventions), Glicko and Glicko-2, TrueSkill (EP on its factor graph) and TrueSkill
-  through time, Bradley-Terry, Plackett-Luce, Massey and Colley ratings.
+- `rating.ts`: `rateGames` over a `RatingSystem` (each game predicted, then rated; races split into pairs): Elo (with
+  the chess conventions), Glicko, TrueSkill for two players (the exact EP update, with draws), Bradley-Terry by MM;
+  later Glicko-2, TrueSkill on its factor graph for teams and races, TrueSkill through time, Plackett-Luce, Massey and
+  Colley ratings.
 - `irt.ts`: item response theory (1PL, 2PL, 3PL), learner models, item information.
 - `lattice.ts`: Ising and Potts lattices: exact on chains, belief propagation, Gibbs and Swendsen-Wang sampling,
   magnetisation curves.
@@ -3222,7 +3225,9 @@ built from: `probprog`, `pgm`, `dists`, `learn`
 - `regression.ts`: Bayesian linear, logistic, Poisson and robust regression as programs.
 - `bayesian-classifiers.ts`: Bayes point machines (EP), AdPredictor (online probit regression).
 - `state-space.ts`: Bayesian structural time series (local level, local linear trend, seasonal, regression).
-- `latent-gaussian.ts`: linear-Gaussian latent models (factor analysis, PPCA, Bayesian PCA, linear dynamical systems).
+- `latent-gaussian.ts`: linear-Gaussian latent models: `linearGaussianStateSpace` (local level and local linear trend,
+  noise variances by the Kalman EM of `dynamics`, smoothed and filtered levels); later factor analysis, PPCA and
+  Bayesian PCA as programs.
 
 ### 5.5 Causal inference and experimentation
 
