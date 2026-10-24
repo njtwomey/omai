@@ -232,6 +232,12 @@ export function projectedReplicatorDynamicsAlgorithm(
     config: { dt, gamma },
     schema: channels({
       metrics: { nashConv: { description: 'NashConv of the average strategies', direction: 'lower' } },
+      tensors: Object.fromEntries(
+        game.shape.map((k, p) => [
+          `strategy${p}`,
+          { role: 'state' as const, description: `the current strategy of player ${p}`, shape: [k] },
+        ]),
+      ),
     }),
     init: () => ({ t: 0, strategies: start, sums: start.map((x) => [...x]) }),
     step: (s) => {
@@ -253,6 +259,7 @@ export function projectedReplicatorDynamicsAlgorithm(
           s.sums.map((x) => x.map((v) => v / (s.t + 1))),
         ),
       },
+      tensors: Object.fromEntries(s.strategies.map((x, p) => [`strategy${p}`, { role: 'state' as const, value: x }])),
     }),
   }
 }

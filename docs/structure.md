@@ -2145,8 +2145,8 @@ delegate its zero-sum stage games (minimax-Q), matrix games and Kuhn/Leduc rules
   `distinctEquilibria`.
 - `lemke-howson.ts`: Lemke-Howson with lexicographic pivoting as a traced algorithm (each pivot a step),
   `lemkeHowsonEnumeration` (every initial label).
-- `zero-sum.ts`: `solveZeroSum` (both LPs, value and duality gap), `zeroSumEquilibrium`, `maximin` (security strategies
-  in any game).
+- `zero-sum.ts`: `solveZeroSum` (both LPs, value and duality gap; the shape `methods/rl` uses), `zeroSumEquilibrium`,
+  `maximin` (security strategies in any game).
 - `correlated.ts`: correlated and coarse correlated equilibria by LP (welfare, egalitarian, weighted or feasible),
   `correlatedGains` (swap and external regret), `isCorrelatedEquilibrium`, `jointDistribution`.
 
@@ -2167,21 +2167,26 @@ Learning in normal-form games (every routine is a traced algorithm with an itera
 - `sequence-form.ts`: sequences, realisation-plan constraints and payoff matrices; the two-player zero-sum solution
   by one LP (Koller, Megiddo and von Stengel), realisation plans back to behaviour policies.
 - `cfr.ts`: counterfactual regret minimisation as a traced algorithm: vanilla CFR, CFR+, linear and discounted CFR
-  (alternating updates, OpenSpiel's conventions), exploitability per iteration.
+  (alternating or simultaneous updates, OpenSpiel's conventions); exploitability, average regret, regrets and the
+  average policy per iteration.
 - `mccfr.ts`: Monte Carlo CFR with external and outcome sampling, keys per iteration.
 - `poker.ts`: Kuhn poker and Leduc poker (OpenSpiel's rules and information states), `kuhnEquilibrium` (the
   one-parameter family of equilibria).
 
 Cooperative games and mechanisms:
-- `cooperative.ts`: coalitional games (characteristic functions over bitmasks), weighted voting, glove and bankruptcy
-  games, Shapley values (exact and by permutation sampling with standard errors), Banzhaf indices, superadditivity and
-  convexity; used by `learn/explain/shapley.ts`.
-- `core.ts`: core membership, a core point or emptiness, the least core, the nucleolus (sequential LPs).
-- `auctions.ts`: first-price, second-price (Vickrey) and all-pay auctions, VCG with Clarke pivot payments, symmetric
-  equilibrium bids and expected revenue with independent uniform values (revenue equivalence).
+- `cooperative.ts`: coalitional games (characteristic functions over bitmasks, `coalitionValue`, `membersOf`),
+  weighted voting, glove, bankruptcy and unanimity games, Shapley values (exact, and by permutation sampling with
+  standard errors for worths given as functions), Banzhaf indices (raw and normalised), superadditivity and convexity;
+  used by `learn/explain/shapley.ts`.
+- `core.ts`: excesses, core membership, a core point or emptiness, the least core, the nucleolus and prenucleolus
+  (sequential LPs).
+- `auctions.ts`: first-price, second-price (Vickrey) and all-pay auctions with reserves, VCG with Clarke pivot payments
+  and combinatorial (XOR bundle) auctions run by it, symmetric equilibrium bids and expected revenue with independent
+  uniform values (revenue equivalence, optimal reserve).
 - `voting.ts`: preference profiles, plurality, Borda, Copeland, instant runoff, the pairwise majority matrix,
-  Condorcet winners and losers, majority cycles, and the social choice paradoxes (Condorcet's paradox, Condorcet
-  winners or losers under other rules, spoilers).
+  Condorcet winners and losers, the Smith set, and a report of the social choice paradoxes (Condorcet's paradox,
+  Condorcet winners who lose or losers who win, spoilers); the Tennessee and Condorcet-paradox profiles.
+
 ### 4.32 `probprog/` (tier 9): probabilistic programming and automatic inference (NumPyro, Pyro)
 
 oracle: numpyro and pyro on small models (posterior moments within Monte Carlo error), pgmpy for discrete programs

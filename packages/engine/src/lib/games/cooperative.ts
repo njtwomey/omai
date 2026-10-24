@@ -18,7 +18,18 @@ export interface CoalitionalGame {
 /** The largest number of players with exact (exponential) computations. */
 const MAX_PLAYERS = 24
 
-/** The members of a coalition mask, ascending. */
+/**
+ * The members of a coalition given by its bitmask (bit i for player i), ascending.
+ *
+ * @param mask - The coalition's bitmask.
+ * @param n - The number of players.
+ * @returns The members.
+ * @example
+ * ```ts
+ * import { membersOf } from 'whitebox-engine/games'
+ * membersOf(0b101, 3) // => [0, 2]
+ * ```
+ */
 export function membersOf(mask: number, n: number): number[] {
   const out: number[] = []
   for (let i = 0; i < n; i++) if ((mask >> i) & 1) out.push(i)

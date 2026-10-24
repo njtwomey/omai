@@ -1,7 +1,7 @@
 import { WhiteboxError } from '../../base/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
+import { type Algorithm, runAlgorithm } from '../../trace/index.ts'
 import type { GameRunOptions } from '../normal-form/index.ts'
-import { averageOf, regretMatch } from './_regrets.ts'
+import { averageOf, CFR_SCHEMA, cfrObservation, regretMatch } from './_regrets.ts'
 import { CHANCE, TERMINAL, tablePolicy } from './_tree.ts'
 import { exploitability } from './best-response.ts'
 import { type ExtensiveGame, type GameTree, type TabularPolicy, treeOf } from './tree.ts'
@@ -134,9 +134,7 @@ export function cfrAlgorithm<S>(
   return {
     name: `cfr-${variant}`,
     config: { variant, alternating, ...(variant === 'discounted' ? { alpha, beta, gamma } : {}) },
-    schema: channels({
-      metrics: { exploitability: { description: 'exploitability of the average policy', direction: 'lower' } },
-    }),
+    schema: CFR_SCHEMA,
     init: () => ({
       t: 0,
       regrets: tree.infosets.map((i) => new Float64Array(i.actions.length)),
@@ -173,7 +171,7 @@ export function cfrAlgorithm<S>(
       }
       return { t, regrets: state.regrets, policySums: state.sums, current: state.current }
     },
-    observe: (s) => ({ metrics: { exploitability: exploitability(tree, tablePolicy(tree, averageOf(s.policySums))) } }),
+    observe: (s) => cfrObservation(tree, s.t, s.regrets, s.policySums),
   }
 }
 

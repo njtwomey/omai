@@ -1,8 +1,8 @@
 import { WhiteboxError } from '../../base/index.ts'
 import { Generator, type Key } from '../../random/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
+import { type Algorithm, runAlgorithm } from '../../trace/index.ts'
 import type { GameRunOptions } from '../normal-form/index.ts'
-import { averageOf, regretMatch } from './_regrets.ts'
+import { averageOf, CFR_SCHEMA, cfrObservation, regretMatch } from './_regrets.ts'
 import { CHANCE, TERMINAL, tablePolicy } from './_tree.ts'
 import { exploitability } from './best-response.ts'
 import type { CfrResult } from './cfr.ts'
@@ -155,9 +155,7 @@ export function mccfrAlgorithm<S>(
   return {
     name: `mccfr-${sampling}`,
     config: { sampling, ...(sampling === 'outcome' ? { exploration: eps } : {}) },
-    schema: channels({
-      metrics: { exploitability: { description: 'exploitability of the average policy', direction: 'lower' } },
-    }),
+    schema: CFR_SCHEMA,
     init: () => ({
       t: 0,
       regrets: tree.infosets.map((i) => new Float64Array(i.actions.length).fill(1e-6)),
@@ -175,7 +173,7 @@ export function mccfrAlgorithm<S>(
       }
       return { t: st.t + 1, regrets: s.regrets, policySums: s.sums }
     },
-    observe: (s) => ({ metrics: { exploitability: exploitability(tree, tablePolicy(tree, averageOf(s.policySums))) } }),
+    observe: (s) => cfrObservation(tree, s.t, s.regrets, s.policySums),
   }
 }
 
