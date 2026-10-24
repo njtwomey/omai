@@ -1,7 +1,8 @@
-import type { EChartsOption } from 'echarts'
+import type { EChartsOption, SeriesOption } from 'echarts'
+import type { Layer } from '../charts/plot.ts'
 import { type Figure, type FigureOptions, figure as makeFigure } from '../figure/figure.ts'
 import { formatNumber } from '../theme/format.ts'
-import type { ColourMode } from '../theme/tokens.ts'
+import { type ColourMode, tokens } from '../theme/tokens.ts'
 
 /** Options every view takes: the colour mode and the figure it fills. */
 export interface ViewOptions {
@@ -74,4 +75,19 @@ export function nearestIndex(values: readonly number[], target: number, log = fa
     }
   }
   return best
+}
+
+/**
+ * A layer's markers outlined in the foreground colour, so a point never melts into a region or a cluster of its own
+ * colour (training rows over decision regions, centres over their clusters).
+ */
+export function outlined(l: Layer, mode: ColourMode, width = 0.9): Layer {
+  const fg = tokens(mode).fg
+  return {
+    ...l,
+    series: l.series.map((s) => {
+      const style = (s as { itemStyle?: Record<string, unknown> }).itemStyle ?? {}
+      return { ...s, itemStyle: { ...style, borderColor: fg, borderWidth: width } } as SeriesOption
+    }),
+  }
 }

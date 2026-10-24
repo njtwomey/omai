@@ -2,6 +2,8 @@ import type { EChartsOption } from 'echarts'
 import type { Exposition, ExpositionKind } from 'whitebox-engine/exposition'
 import type { ViewOptions } from './_view.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
+import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
+import { decisionSurfaceView } from './surfaces.ts'
 
 /** The record of one kind. */
 export type RecordOf<K extends ExpositionKind> = Extract<Exposition, { kind: K }>
@@ -55,6 +57,49 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => pruningPathView(r, o),
+  },
+  decisionSurface: {
+    kind: 'decisionSurface',
+    component: 'DecisionSurfaceView',
+    title: 'Decision surface',
+    plays: false,
+    accepts: ['points', 'labels'],
+    still: (r, o) => decisionSurfaceView(r, o),
+  },
+  clusteringSteps: {
+    kind: 'clusteringSteps',
+    component: 'ClusteringPlayer',
+    title: 'Clustering steps',
+    plays: true,
+    accepts: ['points'],
+    still: (r, o) => {
+      if (r.merges !== undefined) return dendrogramView(r, o)
+      if (r.reachability !== undefined && r.assignments.length === 1) return reachabilityView(r, o)
+      const frames = clusteringFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
+  },
+  mixtureSteps: {
+    kind: 'mixtureSteps',
+    component: 'MixturePlayer',
+    title: 'Mixture steps',
+    plays: true,
+    accepts: ['points'],
+    still: (r, o) => {
+      const frames = mixtureFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
+  },
+  embeddingSteps: {
+    kind: 'embeddingSteps',
+    component: 'EmbeddingPlayer',
+    title: 'Embedding steps',
+    plays: true,
+    accepts: ['labels'],
+    still: (r, o) => {
+      const frames = embeddingFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
   },
 }
 

@@ -4,6 +4,8 @@ import type { Figure } from '../../figure/figure.ts'
 import { tokens } from '../../theme/tokens.ts'
 import { useColourMode } from '../theme.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
+import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
+import { DecisionSurfaceView } from './surfaces.tsx'
 
 /** Props of {@link ExpositionView}. */
 export interface ExpositionViewProps {
@@ -25,6 +27,12 @@ export interface ExpositionViewProps {
 export function ExpositionView(props: ExpositionViewProps): ReactElement {
   const { record } = props
   const common = props.figure === undefined ? {} : { figure: props.figure }
+  const rows = {
+    ...(props.points === undefined ? {} : { points: props.points }),
+    ...(props.labels === undefined ? {} : { labels: props.labels }),
+  }
+  const points = props.points === undefined ? {} : { points: props.points }
+  const labels = props.labels === undefined ? {} : { labels: props.labels }
   switch (record.kind) {
     case 'regularisationPath':
       return <PathView record={record} {...common} />
@@ -34,6 +42,17 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <LearningCurveView record={record} {...common} />
     case 'pruningPath':
       return <PruningPathView record={record} {...common} />
+    case 'decisionSurface':
+      return <DecisionSurfaceView record={record} {...common} {...rows} />
+    case 'clusteringSteps':
+      if (record.merges !== undefined) return <DendrogramView record={record} {...common} {...points} />
+      if (record.reachability !== undefined && record.assignments.length === 1)
+        return <ReachabilityView record={record} {...common} />
+      return <ClusteringPlayer record={record} {...common} {...points} />
+    case 'mixtureSteps':
+      return <MixturePlayer record={record} {...common} {...points} />
+    case 'embeddingSteps':
+      return <EmbeddingPlayer record={record} {...common} {...labels} />
     default:
       return <Pending kind={record.kind} />
   }
