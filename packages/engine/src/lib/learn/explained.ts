@@ -265,3 +265,44 @@ export function collecting<S, T>(algorithm: Algorithm<S>, summarise: (state: S, 
     },
   }
 }
+
+/**
+ * The feature names of a dataset passed as learn data: its `featureNames` when it carries them (every tabular
+ * dataset does) with the right length, else sklearn's `x0, x1, ...`.
+ *
+ * @param data - The data (a dataset or plain learn data).
+ * @param d - The number of features.
+ * @returns The names.
+ * @example
+ * ```ts
+ * import { featureNamesOf } from 'whitebox-engine/learn'
+ * featureNamesOf({ x: [[1, 2]] }, 2) // => ['x0', 'x1']
+ * featureNamesOf({ x: [[1, 2]], featureNames: ['a', 'b'] }, 2) // => ['a', 'b']
+ * ```
+ */
+export function featureNamesOf(data: LearnData, d: number): string[] {
+  const names = (data as { readonly featureNames?: unknown }).featureNames
+  if (Array.isArray(names) && names.length === d && names.every((s) => typeof s === 'string')) return [...names]
+  return Array.from({ length: d }, (_, j) => `x${j}`)
+}
+
+/**
+ * The names of fitted classes: a classification dataset's `classes` (names indexed by label) when it carries them,
+ * else the labels as strings.
+ *
+ * @param data - The data (a dataset or plain learn data).
+ * @param classes - The fitted class labels.
+ * @returns One name per class.
+ * @example
+ * ```ts
+ * import { classNamesOf } from 'whitebox-engine/learn'
+ * classNamesOf({ x: [[0]], classes: ['cat', 'dog'] }, [0, 1]) // => ['cat', 'dog']
+ * classNamesOf({ x: [[0]] }, [2, 5]) // => ['2', '5']
+ * ```
+ */
+export function classNamesOf(data: LearnData, classes: readonly number[]): string[] {
+  const names = (data as { readonly classes?: unknown }).classes
+  return classes.map((c) =>
+    Array.isArray(names) && Number.isInteger(c) && typeof names[c] === 'string' ? (names[c] as string) : String(c),
+  )
+}
