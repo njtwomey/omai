@@ -1,4 +1,4 @@
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, maxOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { partitionFromLabels } from './_build.ts'
@@ -90,8 +90,7 @@ export function modularity(
   const labels = labelsOf(g.n, communities)
   const resolution = options.resolution ?? 1
   const weighted = options.weighted ?? true
-  let count = 0
-  for (const c of labels) count = Math.max(count, c + 1)
+  const count = Math.max(0, maxOf(labels) + 1)
   const inside = new Float64Array(count)
   const out = new Float64Array(count)
   const into = new Float64Array(count)
@@ -435,8 +434,7 @@ export function labelPropagationAlgorithm(
           const c = labels[a.indices[k] ?? 0] ?? 0
           freq.set(c, (freq.get(c) ?? 0) + (weighted ? (a.weights[k] ?? 0) : 1))
         }
-        let top = Number.NEGATIVE_INFINITY
-        for (const f of freq.values()) top = Math.max(top, f)
+        const top = maxOf([...freq.values()])
         const best = [...freq.entries()].filter(([, f]) => f === top).map(([c]) => c)
         if (best.includes(labels[u] ?? -1)) continue
         const r = uniform(foldIn(foldIn(ctx.key, 1), draw++), [1]).data[0] ?? 0
@@ -530,8 +528,7 @@ export function girvanNewmanAlgorithm(
     step: (s) => {
       const h = rebuild(s.remaining)
       const eb = edgeBetweennessCentrality(h, { weighted })
-      let top = Number.NEGATIVE_INFINITY
-      for (const x of eb) top = Math.max(top, x)
+      const top = maxOf(eb)
       const at = eb.findIndex((x) => x >= top - 1e-9 * Math.max(1, Math.abs(top)))
       // Edges of the rebuilt graph are in the order of `remaining`.
       const removed = s.remaining[at] ?? -1

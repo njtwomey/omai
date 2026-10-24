@@ -1,5 +1,5 @@
-import { type Json, WhiteboxError } from '../base/index.ts'
-import { dnrm2 } from '../numerics/linalg/index.ts'
+import { type Json, kahanSum, maxOf, WhiteboxError } from '../base/index.ts'
+import { dasum, daxpy, dnrm2 } from '../numerics/linalg/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { degree, type Graph, type GraphRunOptions, inDegree, type NodeId, nodeIndex, outDegree } from './graph.ts'
 import { IndexedQueue } from './structures.ts'
@@ -112,13 +112,9 @@ export function closenessCentrality(
   const improved = options.wfImproved ?? true
   return Float64Array.from({ length: g.n }, (_, u) => {
     const { dist } = singleSource(g, u, weighted, g.directed)
-    let total = 0
-    let reached = 0
-    for (const d of dist) {
-      if (d === Number.POSITIVE_INFINITY) continue
-      total += d
-      reached++
-    }
+    const finite = Array.from(dist).filter((d) => d !== Number.POSITIVE_INFINITY)
+    const total = kahanSum(finite)
+    const reached = finite.length
     if (total <= 0 || g.n <= 1) return 0
     const c = (reached - 1) / total
     return improved ? c * ((reached - 1) / (g.n - 1)) : c
@@ -257,10 +253,9 @@ function pushForward(g: Graph, x: Float64Array, weights: Float64Array | null): F
   return y
 }
 
+/** The l1 distance |a - b|_1, the convergence measure of NetworkX's power iterations. */
 function l1(a: Float64Array, b: Float64Array): number {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += Math.abs((a[i] ?? 0) - (b[i] ?? 0))
-  return s
+  return dasum(daxpy(-1, b, a))
 }
 
 /** Options of the power-iteration centralities. */
@@ -296,8 +291,7 @@ export function eigenvectorCentralityAlgorithm(
     schema: POWER_SCHEMA,
     init: () => {
       const x = Float64Array.from({ length: g.n }, (_, i) => options.start?.[i] ?? 1)
-      let total = 0
-      for (const v of x) total += v
+      const total = kahanSum(x)
       if (total === 0) throw new WhiteboxError('value', 'eigenvectorCentrality: the start vector sums to zero')
       return { x: Float64Array.from(x, (v) => v / total), error: Number.POSITIVE_INFINITY }
     },
@@ -433,8 +427,7 @@ export interface PagerankOptions extends PowerOptions {
 function distribution(n: number, v: ArrayLike<number> | undefined, name: string): Float64Array {
   if (v === undefined) return new Float64Array(n).fill(1 / n)
   const x = Float64Array.from({ length: n }, (_, i) => v[i] ?? 0)
-  let total = 0
-  for (const p of x) total += p
+  const total = kahanSum(x)
   if (!(total > 0)) throw new WhiteboxError('value', `pagerank: the ${name} vector must have a positive sum`)
   return Float64Array.from(x, (p) => p / total)
 }
@@ -576,8 +569,7 @@ export function hitsAlgorithm(
     step: (s) => {
       const authorities = pushForward(g, s.x, weights)
       const y = pull(authorities)
-      let top = 0
-      for (const v of y) top = Math.max(top, v)
+      const top = Math.max(0, maxOf(y))
       const x = Float64Array.from(y, (v) => v / (top || 1))
       return { x, error: l1(x, s.x), authorities }
     },
@@ -621,8 +613,7 @@ export function hits(
   const hubs = state.x
   const authorities = state.authorities ?? new Float64Array(g.n)
   const scaled = (v: Float64Array, by: 'sum' | 'max'): Float64Array => {
-    let s = 0
-    for (const x of v) s = by === 'sum' ? s + x : Math.max(s, x)
+    const s = by === 'sum' ? kahanSum(v) : Math.max(0, maxOf(v))
     return Float64Array.from(v, (x) => x / (s || 1))
   }
   return normalized

@@ -2,6 +2,7 @@
 // weighted graph whose nodes are communities of the level below; gains are written in the common form
 // e(v, C) - gamma * w(v) * W(C), with node weights w the degrees (modularity, gamma = resolution / 2m) or the node
 // counts (the constant Potts model, gamma = resolution).
+import { kahanSum, maxOf } from '../base/index.ts'
 import type { Graph } from './graph.ts'
 
 /** An undirected weighted graph of communities. */
@@ -257,11 +258,9 @@ export function refine(
       const gain = e - q.gamma * wv * ws
       if (gain >= 0) candidates.push([s, gain / q.unit])
     }
-    let top = 0
-    for (const [, g] of candidates) top = Math.max(top, g)
+    const top = maxOf(candidates.map(([, g]) => g))
     const scores = candidates.map(([, g]) => Math.exp((g - top) / theta))
-    let total = 0
-    for (const s of scores) total += s
+    const total = kahanSum(scores)
     let u = random() * total
     let chosen = own
     for (const [i, [s]] of candidates.entries()) {

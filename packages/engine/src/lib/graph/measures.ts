@@ -1,5 +1,5 @@
-import { WhiteboxError } from '../base/index.ts'
-import { eigvalsh } from '../numerics/linalg/index.ts'
+import { maxOf, meanOf, minOf, WhiteboxError } from '../base/index.ts'
+import { ddot, eigvalsh } from '../numerics/linalg/index.ts'
 import { concreteOrThrow, type Tensor, toFlat } from '../tensor/index.ts'
 import { degree, type Graph, inDegree, type NodeId, nodeIndex, outDegree } from './graph.ts'
 import { laplacian, normalisedLaplacian } from './matrices.ts'
@@ -45,8 +45,7 @@ export function eccentricity(g: Graph, options: { readonly weighted?: boolean } 
       options.weighted === true
         ? dijkstra(g, v).distance
         : Float64Array.from(bfs(g, v).distance, (x) => (x < 0 ? Number.POSITIVE_INFINITY : x))
-    let e = 0
-    for (const x of d) e = Math.max(e, x)
+    const e = Math.max(0, maxOf(d))
     if (e === Number.POSITIVE_INFINITY) {
       throw new WhiteboxError('value', 'eccentricity: the graph is not (strongly) connected')
     }
@@ -68,9 +67,7 @@ export function eccentricity(g: Graph, options: { readonly weighted?: boolean } 
  * ```
  */
 export function diameter(g: Graph, options: { readonly weighted?: boolean } = {}): number {
-  let d = 0
-  for (const e of eccentricity(g, options)) d = Math.max(d, e)
-  return d
+  return Math.max(0, maxOf(eccentricity(g, options)))
 }
 
 /**
@@ -87,9 +84,7 @@ export function diameter(g: Graph, options: { readonly weighted?: boolean } = {}
  * ```
  */
 export function radius(g: Graph, options: { readonly weighted?: boolean } = {}): number {
-  let r = Number.POSITIVE_INFINITY
-  for (const e of eccentricity(g, options)) r = Math.min(r, e)
-  return g.n === 0 ? 0 : r
+  return g.n === 0 ? 0 : minOf(eccentricity(g, options))
 }
 
 /**
@@ -185,8 +180,7 @@ export function triangles(g: Graph): Int32Array {
  */
 export function clustering(g: Graph, options: { readonly weighted?: boolean } = {}): Float64Array {
   const weighted = options.weighted ?? false
-  let top = 0
-  for (const e of g.edges) top = Math.max(top, e.weight)
+  const top = Math.max(0, maxOf(g.edges.map((e) => e.weight)))
   const w = (u: number, v: number): number => {
     if (!weighted) return 1
     // Binary search in the sorted out-adjacency.
@@ -273,9 +267,7 @@ export function averageClustering(
   options: { readonly weighted?: boolean; readonly countZeros?: boolean } = {},
 ): number {
   const c = Array.from(clustering(g, options)).filter((x) => options.countZeros !== false || x > 0)
-  let s = 0
-  for (const x of c) s += x
-  return c.length === 0 ? 0 : s / c.length
+  return c.length === 0 ? 0 : meanOf(c)
 }
 
 /**
@@ -304,27 +296,13 @@ export function transitivity(g: Graph): number {
   return triples === 0 ? 0 : tri / triples
 }
 
+/** The Pearson correlation of paired values (centred, then cosine similarity by BLAS dot products). */
 function pearson(xs: readonly number[], ys: readonly number[]): number {
-  const n = xs.length
-  let mx = 0
-  let my = 0
-  for (let i = 0; i < n; i++) {
-    mx += xs[i] ?? 0
-    my += ys[i] ?? 0
-  }
-  mx /= n
-  my /= n
-  let sxy = 0
-  let sxx = 0
-  let syy = 0
-  for (let i = 0; i < n; i++) {
-    const dx = (xs[i] ?? 0) - mx
-    const dy = (ys[i] ?? 0) - my
-    sxy += dx * dy
-    sxx += dx * dx
-    syy += dy * dy
-  }
-  return sxy / Math.sqrt(sxx * syy)
+  const mx = meanOf(xs)
+  const my = meanOf(ys)
+  const dx = xs.map((x) => x - mx)
+  const dy = ys.map((y) => y - my)
+  return ddot(dx, dy) / Math.sqrt(ddot(dx, dx) * ddot(dy, dy))
 }
 
 /** The values at the two ends of every edge (both orientations of an undirected edge). */

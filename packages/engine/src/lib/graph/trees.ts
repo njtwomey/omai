@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../base/index.ts'
+import { kahanSum, WhiteboxError } from '../base/index.ts'
 import { connectedComponents } from './components.ts'
 import { type Edge, type Graph, graph, type NodeId, nodeIndex } from './graph.ts'
 import { IndexedQueue, UnionFind } from './structures.ts'
@@ -114,8 +114,7 @@ export function minimumSpanningTree(
   const chosen =
     algorithm === 'prim' ? prim(g, before) : algorithm === 'boruvka' ? boruvka(g, before) : kruskal(g, before)
   const edges = chosen.map((k) => g.edges[k] as Edge).sort((p, q) => p.source - q.source || p.target - q.target)
-  let weight = 0
-  for (const e of edges) weight += e.weight
+  const weight = kahanSum(edges.map((e) => e.weight))
   return {
     edges,
     weight,

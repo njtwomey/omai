@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../base/index.ts'
+import { kahanSum, WhiteboxError } from '../base/index.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
 import { IndexedQueue } from './structures.ts'
 import { bipartiteColouring } from './traversal.ts'
@@ -281,8 +281,7 @@ export function minCostFlow(
 ): MinCostFlow {
   if (!g.directed) throw new WhiteboxError('value', 'minCostFlow: the graph must be directed')
   if (demand.length !== g.n) throw new WhiteboxError('value', 'minCostFlow: give one demand per node')
-  let total = 0
-  for (let v = 0; v < g.n; v++) total += demand[v] ?? 0
+  const total = kahanSum(demand)
   if (Math.abs(total) > 1e-9) throw new WhiteboxError('value', 'minCostFlow: the demands do not sum to zero')
   const m = g.edges.length
   const cost = Float64Array.from({ length: m }, (_, e) => options.cost?.[e] ?? 1)
