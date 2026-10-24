@@ -54,6 +54,8 @@ oracle-core = [
     "biopython>=1.88",
     "gensim>=4.4.0",
     "rank-bm25>=0.2.2",
+    "python-sat>=1.9.dev17",
+    "clingo>=5.8.2",
 ]
 oracle-torch = [
     "gpytorch>=1.15.2",
