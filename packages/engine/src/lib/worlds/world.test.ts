@@ -1,0 +1,162 @@
+import { describe, expect, it } from 'vitest'
+import { isWhiteboxError } from '../base/index.ts'
+import {
+  cellAtPoint,
+  cellCentre,
+  cellCoords,
+  cellCorners,
+  cellIndex,
+  destination,
+  exits,
+  fromAscii,
+  hasWall,
+  neighbours,
+  passable,
+  setTerrain,
+  setWalls,
+  terrainOf,
+  toAscii,
+  toScene,
+  toStructure,
+  wallsToBlocks,
+  world,
+  worldSize,
+} from './index.ts'
+
+const throwsValue = (f: () => unknown): void => {
+  try {
+    f()
+  } catch (e) {
+    expect(isWhiteboxError(e, 'value')).toBe(true)
+    return
+  }
+  throw new Error('expected a value error')
+}
+
+describe('world construction', () => {
+  it('validates sizes, terrains, cells and walls', () => {
+    throwsValue(() => world({ topology: { kind: 'square', rows: 0, cols: 2 } }))
+    throwsValue(() => world({ topology: { kind: 'square', rows: 2, cols: 2 }, terrain: ['floor'] }))
+    throwsValue(() => world({ topology: { kind: 'square', rows: 1, cols: 2 }, terrain: ['floor', 'lava?'] }))
+    throwsValue(() => world({ topology: { kind: 'square', rows: 2, cols: 2 }, walls: [[0, 3]] }))
+    throwsValue(() => world({ topology: { kind: 'square', rows: 2, cols: 2 }, starts: [4] }))
+    throwsValue(() => world({ topology: { kind: 'graph', n: 2, neighbours: [[1], []] } }))
+    throwsValue(() => setTerrain(fromAscii(['..']), [0], 'nothing'))
+  })
+
+  it('keeps walls symmetric and reopens them', () => {
+    const w = setWalls(fromAscii(['...', '...']), [
+      [1, 4],
+      [0, 1],
+    ])
+    expect([hasWall(w, 1, 2), hasWall(w, 4, 0), hasWall(w, 0, 1), hasWall(w, 1, 3)]).toEqual([true, true, true, true])
+    const open = setWalls(w, [[4, 1]], false)
+    expect([hasWall(open, 1, 2), hasWall(open, 4, 0)]).toEqual([false, false])
+  })
+})
+
+describe('coordinates', () => {
+  it('converts between cells, rows and columns, and points on squares', () => {
+    const w = fromAscii(['....', '....', '....'])
+    for (let c = 0; c < w.n; c++) {
+      const [r, col] = cellCoords(w, c)
+      expect(cellIndex(w, r, col)).toBe(c)
+      const [x, y] = cellCentre(w, c)
+      expect(cellAtPoint(w, x, y)).toBe(c)
+    }
+    expect([cellIndex(w, -1, 0), cellAtPoint(w, 4.2, 0), cellAtPoint(w, -0.1, 1)]).toEqual([-1, -1, -1])
+    expect(worldSize(w)).toEqual([4, 3])
+  })
+
+  it('places hexagons one unit apart, inverts centres and gives six corners', () => {
+    const w = fromAscii(['....', '....', '....'], { topology: 'hex' })
+    for (let c = 0; c < w.n; c++) {
+      const [x, y] = cellCentre(w, c)
+      expect(cellAtPoint(w, x, y)).toBe(c)
+      expect(cellCorners(w, c)).toHaveLength(6)
+      for (const nb of neighbours(w, c)) {
+        const [x2, y2] = cellCentre(w, nb)
+        expect(Math.hypot(x2 - x, y2 - y)).toBeCloseTo(1, 12)
+      }
+    }
+    // Interior hexagons have six neighbours; the opposite of each side faces back.
+    expect(neighbours(w, 5)).toHaveLength(6)
+    expect(neighbours(w, 6).sort((a, b) => a - b)).toEqual([2, 3, 5, 7, 10, 11])
+  })
+
+  it('throws for row-based queries on graph worlds', () => {
+    const g = world({ topology: { kind: 'graph', n: 3, neighbours: [[1], [0, 2], [1]] } })
+    throwsValue(() => cellCoords(g, 0))
+    throwsValue(() => cellIndex(g, 0, 0))
+    throwsValue(() => toAscii(g))
+    expect(neighbours(g, 1)).toEqual([0, 2])
+    expect(cellAtPoint(g, 0, 0)).toBe(-1)
+  })
+})
+
+describe('moves', () => {
+  it('respects walls, terrain, one-way cells and blocked cells', () => {
+    const w = fromAscii(['.>.', '.#.'])
+    expect(destination(w, 0, 1)).toBe(1)
+    expect(destination(w, 2, 3)).toBe(-1)
+    expect(destination(w, 0, 2)).toBe(3)
+    expect(destination(w, 1, 2)).toBe(-1)
+    expect(destination(w, 0, 1, { blocked: (c) => c === 1 })).toBe(-1)
+    expect(destination(setWalls(w, [[0, 3]]), 0, 2)).toBe(-1)
+    expect(destination(w, 0, 7)).toBe(-1)
+  })
+
+  it('lists exits under 8-connectivity with the corner rules', () => {
+    const w = fromAscii(['...', '.#.', '...'])
+    expect(exits(w, 0, { connectivity: 8 })).toEqual([
+      [1, 1],
+      [2, 3],
+    ])
+    expect(neighbours(w, 0, { connectivity: 8, corners: 'loose' })).toEqual([1, 3])
+    const open = fromAscii(['...', '...', '...'])
+    expect(neighbours(open, 0, { connectivity: 8 })).toEqual([1, 3, 4])
+  })
+
+  it('reports passability and terrain', () => {
+    const w = fromAscii(['.#~H'])
+    expect([0, 1, 2, 3, 4, -1].map((c) => passable(w, c))).toEqual([true, false, true, true, false, false])
+    expect([terrainOf(w, 2).name, terrainOf(w, 3).hazard]).toEqual(['water', true])
+    throwsValue(() => terrainOf(w, 9))
+  })
+})
+
+describe('blocks, structures and scenes', () => {
+  it('turns thin walls into blocking cells', () => {
+    const rows = ['#######', '#S..#.#', '#.###.#', '#....G#', '#######']
+    const thin = fromAscii(rows, { format: 'walls' })
+    expect(thin.n).toBe(6)
+    expect(toAscii(wallsToBlocks(thin))).toEqual(rows)
+    throwsValue(() => wallsToBlocks(fromAscii(['..'], { topology: 'hex' })))
+  })
+
+  it('describes one-way moves as directed edges', () => {
+    const s = toStructure(fromAscii(['.>.']), { title: 'conveyor' })
+    expect(s.title).toBe('conveyor')
+    expect(s.edges).toEqual([
+      { from: 'c0', to: 'c1', directed: false },
+      { from: 'c1', to: 'c2', directed: true },
+    ])
+  })
+
+  it('draws squares, hexagons and graphs with walls, items, values and paths', () => {
+    const w = fromAscii(['#####', '#S.K#', '#.###', '#D.$#', '#####'], {
+      format: 'walls',
+      legend: { $: { terrain: 'floor', goal: true, item: { kind: 'pickup' } } },
+    })
+    expect([w.items.map((it) => it.kind), w.goals]).toEqual([['key', 'door', 'pickup'], [3]])
+    const s = toScene(w, { values: [1, 2, 3, 0], path: [0, 2], agent: { x: 0.5, y: 0.5, heading: 0 }, title: 'maze' })
+    expect(s.title).toBe('maze')
+    expect(s.children.filter((n) => n.kind === 'line' && n.stroke === 'fg').length).toBeGreaterThan(1)
+    expect(s.children.filter((n) => n.kind === 'circle' && n.fill === 'accent')).toHaveLength(4)
+    const hex = toScene(fromAscii(['..', '..'], { topology: 'hex' }))
+    expect(hex.children.filter((n) => n.kind === 'path')).toHaveLength(4)
+    const g = toScene(world({ topology: { kind: 'graph', n: 3, neighbours: [[1], [0, 2], [1]] }, walls: [[0, 1]] }))
+    expect(g.children.filter((n) => n.kind === 'circle')).toHaveLength(3)
+    expect(g.children.filter((n) => n.kind === 'line')).toHaveLength(2)
+  })
+})
