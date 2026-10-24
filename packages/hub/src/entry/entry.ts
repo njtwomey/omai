@@ -47,6 +47,8 @@ export interface HubEntry {
   readonly tags: readonly string[]
   /** Dataset collection ids (`whitebox-engine/datasets`' `datasetCollections`); the first is the default. */
   readonly datasets: readonly string[]
+  /** The dataset to start from, by name in the first collection (default its first). */
+  readonly dataset?: string
   /** The method's parameters as a space; its defaults are the demo defaults. */
   readonly params: DictSpace
   /** Run the method; the result carries the exposition records the views show. */
@@ -82,6 +84,9 @@ export function defineEntry(spec: Omit<HubEntry, 'kind'>): HubEntry {
   for (const d of spec.datasets)
     if (datasetCollections[d] === undefined)
       throw new WhiteboxError('value', `defineEntry: ${spec.id} names an unknown dataset collection '${d}'`)
+  const first = datasetCollections[spec.datasets[0] ?? '']
+  if (spec.dataset !== undefined && first?.entries.every((e) => e.name !== spec.dataset) === true)
+    throw new WhiteboxError('value', `defineEntry: ${spec.id} starts from an unknown dataset '${spec.dataset}'`)
   return { kind: 'hubEntry', ...spec }
 }
 

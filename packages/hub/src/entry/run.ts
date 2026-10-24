@@ -4,7 +4,7 @@ import { datasetCollections, datasetGenerators, loadEntry } from 'whitebox-engin
 import type { Exposition } from 'whitebox-engine/exposition'
 import { decisionSurfaceOf, type Estimator, type LearnData } from 'whitebox-engine/learn'
 import { key } from 'whitebox-engine/random'
-import { type DictSpace, defaults, dict, type Space, type SpaceValue } from 'whitebox-engine/space'
+import { contains, type DictSpace, defaults, dict, type Space, type SpaceValue } from 'whitebox-engine/space'
 import type { HubEntry, HubRunInput } from './entry.ts'
 
 /** The data of a dataset that learners take: its features and, when it has them, its targets. */
@@ -63,6 +63,48 @@ export function fitEstimator(
   return { params, run }
 }
 
+/**
+ * An entry's `params` and `run` from a classifier and a regressor of one method (a tree, a forest, k nearest
+ * neighbours): the run fits the classifier to classification data and the regressor to anything else. The controls
+ * are the classifier's, less the hyperparameters the regressor lacks.
+ *
+ * @param classifier - The classifier with its demo hyperparameters.
+ * @param regressor - The regressor with its demo hyperparameters.
+ * @param options - As {@link fitEstimator}.
+ * @returns The `params` and `run` of a {@link HubEntry}.
+ * @example
+ * ```ts
+ * import { fitEither } from 'whitebox-hub'
+ * import { decisionTreeClassifier, decisionTreeRegressor } from 'whitebox-engine/methods/trees'
+ * 'maxDepth' in fitEither(decisionTreeClassifier(), decisionTreeRegressor()).params.spaces // => true
+ * ```
+ */
+export function fitEither(
+  classifier: Estimator,
+  regressor: Estimator,
+  options: FitEstimatorOptions = {},
+): Pick<HubEntry, 'params' | 'run'> {
+  const shared = (e: Estimator): string[] => (e.hyperSpace?.kind === 'dict' ? Object.keys(e.hyperSpace.spaces) : [])
+  const inRegressor = new Set(shared(regressor))
+  const only = shared(classifier).filter((k) => !inRegressor.has(k))
+  const exclude = [...(options.exclude ?? []), ...only]
+  const c = fitEstimator(classifier, { ...options, exclude })
+  const r = fitEstimator(regressor, { ...options, exclude })
+  // Values the regressor's space does not hold (a classification criterion, say) keep the regressor's own.
+  const pick = (params: HubRunInput['params'], from: DictSpace): HubRunInput['params'] =>
+    Object.fromEntries(
+      Object.entries(params).filter(([k, v]) => {
+        const space = from.spaces[k]
+        return space !== undefined && contains(space, v)
+      }),
+    )
+  return {
+    params: c.params,
+    run: (input) =>
+      input.data.kind === 'classification' ? c.run(input) : r.run({ ...input, params: pick(input.params, r.params) }),
+  }
+}
+
 /** What a hub demo runs on: a dataset of one of the entry's collections, its seed and knobs, and the parameters. */
 export interface HubState {
   /** A dataset collection id among the entry's `datasets`. */
@@ -76,7 +118,8 @@ export interface HubState {
 }
 
 /**
- * The state a demo starts from: the entry's first dataset collection and its first dataset with demo knobs, seed 0,
+ * The state a demo starts from: the entry's first dataset collection and its `dataset` (default the collection's first)
+ * with demo knobs, seed 0,
  * and the parameter space's defaults.
  *
  * @param entry - The entry.
@@ -90,7 +133,10 @@ export interface HubState {
  */
 export function demoState(entry: HubEntry): HubState {
   const collection = entry.datasets[0] ?? ''
-  return { ...datasetState(collection), params: defaults(entry.params) as Readonly<Record<string, SpaceValue>> }
+  return {
+    ...datasetState(collection, entry.dataset),
+    params: defaults(entry.params) as Readonly<Record<string, SpaceValue>>,
+  }
 }
 
 /**

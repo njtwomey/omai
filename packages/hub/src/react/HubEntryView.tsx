@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useState } from 'react'
 import { datasetCollections } from 'whitebox-engine/datasets'
 import type { Exposition } from 'whitebox-engine/exposition'
 import type { SpaceValue } from 'whitebox-engine/space'
-import { ControlPanel, DatasetPicker, Select, SpaceControls } from 'whitebox-render/react'
+import { ControlPanel, DatasetPicker, PanelArea, Select, SpaceControls } from 'whitebox-render/react'
 import type { HubEntry, ViewSlot } from '../entry/entry.ts'
 import { datasetState, demoState, type HubState } from '../entry/run.ts'
 import { RecordSummary } from './RecordSummary.tsx'
@@ -91,12 +91,14 @@ export function HubEntryView(props: HubEntryViewProps): ReactNode {
       <div className="grid gap-3 md:grid-cols-2">
         <ControlPanel title="Data" columns={2}>
           {entry.datasets.length > 1 ? (
-            <Select
-              label="collection"
-              value={state.collection}
-              options={entry.datasets.map((id) => ({ value: id, label: datasetCollections[id]?.title ?? id }))}
-              onChange={(id) => update({ ...state, ...datasetState(id, undefined, state.seed) })}
-            />
+            <PanelArea columnSpan={2}>
+              <Select
+                label="collection"
+                value={state.collection}
+                options={entry.datasets.map((id) => ({ value: id, label: datasetCollections[id]?.title ?? id }))}
+                onChange={(id) => update({ ...state, ...datasetState(id, undefined, state.seed) })}
+              />
+            </PanelArea>
           ) : null}
           <DatasetPicker
             collection={state.collection}

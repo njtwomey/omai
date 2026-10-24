@@ -1,0 +1,23 @@
+import { extraTreeClassifier, extraTreeRegressor } from 'whitebox-engine/methods/trees'
+import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
+import { fitEither } from '../../../entry/run.ts'
+
+/** Extremely randomised tree: a tree whose split thresholds are drawn at random, not searched. */
+export const extraTree: HubEntry = defineEntry({
+  id: 'sklearn/tree/extra-tree',
+  title: 'Extremely randomised tree',
+  summary: 'A tree whose split thresholds are drawn at random, not searched.',
+  collection: 'sklearn/tree',
+  tags: ['classification', 'regression', 'trees', 'randomised'],
+  datasets: ['classification2d', 'regression1d', 'classificationTabular', 'regressionTabular'],
+  ...fitEither(extraTreeClassifier({ maxDepth: 6 }), extraTreeRegressor({ maxDepth: 6 }), { surface: true }),
+  views: [
+    { record: 'decisionSurface', title: 'Predictions' },
+    { record: 'tree', title: 'The tree', area: 'side' },
+    { record: 'pruningPath', title: 'Cost-complexity pruning', area: 'side' },
+  ],
+  methods: [
+    { file: 'methods/trees/grow.ts', name: 'extraTreeClassifier' },
+    { file: 'methods/trees/grow.ts', name: 'extraTreeRegressor' },
+  ],
+})
