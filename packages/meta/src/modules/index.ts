@@ -29,6 +29,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'whitebox-engine/dists/discrete': () => import('whitebox-engine/dists/discrete'),
   'whitebox-engine/dists/families': () => import('whitebox-engine/dists/families'),
   'whitebox-engine/dists/multivariate': () => import('whitebox-engine/dists/multivariate'),
+  'whitebox-engine/graph': () => import('whitebox-engine/graph'),
   'whitebox-engine/losses': () => import('whitebox-engine/losses'),
   'whitebox-engine/methods/datasets': () => import('whitebox-engine/methods/datasets'),
   'whitebox-engine/methods/rl': () => import('whitebox-engine/methods/rl'),

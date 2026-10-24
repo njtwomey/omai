@@ -871,30 +871,71 @@ oracle: sympy, numpy
 
 ### 4.13 `graph/` (tier 6): graphs and their algorithms (NetworkX, scipy.sparse.csgraph)
 
-oracle: networkx, scipy.sparse.csgraph
-- `graph.ts`: `Graph` (nodes, weighted edges, directedness, attributes), constructors, neighbours, degrees,
-  `subgraph`, `reverse`, `toUndirected`, `toStructure` (for drawing).
-- `structures.ts`: `BinaryHeap`, `UnionFind`, `IndexedQueue`.
-- `traversal.ts`: `bfs`, `dfs` (with edge classification), `topologicalSort`, `isDag`, `findCycle`, `isBipartite`,
-  `kHopNeighbourhood`; traced.
-- `components.ts`: connected and strongly connected components (Tarjan, Kosaraju), `condensation`, articulation
-  points, bridges, biconnected components.
-- `paths.ts`: `dijkstra`, `bellmanFord`, `aStar`, `floydWarshall`, `johnson`, `kShortestPaths`, path reconstruction.
-- `trees.ts`: minimum spanning trees (Kruskal, Prim, Boruvka), rooted-tree utilities (depths, LCA, subtree sizes,
-  orders, Euler tours).
-- `flows.ts`: `maxFlow` (Edmonds-Karp, Dinic), `minCut`, `minCostFlow`, `bipartiteMatching` (Hopcroft-Karp).
-- `centrality.ts`: degree, closeness, betweenness (Brandes), eigenvector, Katz, PageRank, HITS.
-- `community.ts`: modularity, Louvain, Leiden, label propagation, Girvan-Newman, spectral bisection.
-- `matrices.ts`: adjacency, incidence and degree matrices; combinatorial, symmetric-normalised and random-walk
-  Laplacians; transition matrices; Laplacian and random-walk positional encodings.
-- `spectral.ts`: graph signal processing: the graph Fourier transform, spectral filters (heat kernel, Chebyshev
-  polynomial filters), graph wavelets, smoothness (Dirichlet energy), spectral clustering embeddings.
-- `measures.ts`: density, diameter, eccentricity, clustering coefficients, transitivity, assortativity, homophily,
-  Cheeger constants, spectral gap.
-- `generators.ts`: deterministic families and random models (Erdos-Renyi, Watts-Strogatz, Barabasi-Albert, stochastic
-  block models, random DAGs, random geometric and k-nearest-neighbour graphs).
-- `isomorphism.ts`: Weisfeiler-Lehman refinement (traced), WL hashes, VF2 isomorphism and subgraph isomorphism.
-- `colouring.ts`: greedy and DSATUR colouring, maximal independent sets, maximum cliques (Bron-Kerbosch).
+oracle: networkx, scipy.sparse.csgraph, numpy and scipy (heat kernels, Chebyshev filters, spectra), checked as
+canonical forms where answers are not unique (sorted sets, partitions up to relabelling, modularity values, path costs,
+flow and cut values with feasibility checks)
+
+Nodes are the indices `0 .. n - 1` with labels; every function that takes a node also takes its label. Adjacency is
+sorted CSR in both directions, so traversal orders match scipy.sparse.csgraph and NetworkX on graphs built in sorted
+order. Iterative methods (traversals, power iterations, multilevel community searches, label propagation,
+Girvan-Newman, Weisfeiler-Lehman, subspace iteration) are `Algorithm`s run by `runAlgorithm`. Matrix and spectral
+functions take a graph or a dense (possibly traced, possibly batched) matrix and are differentiable and vectorisable
+in it (`checkPrimitive`).
+- `graph.ts`: `Graph` (nodes with labels and data, weighted edges with data, directedness, attributes, CSR adjacency
+  `out`/`in`), `graph`, `digraph` (repeated edges: last, sum, min, max or error), `isGraph`, `nodeIndex`, `neighbours`,
+  `successors`, `predecessors`, `degree`, `inDegree`, `outDegree`, `edgeWeight`, `hasEdge`, `edgeList`, `subgraph`,
+  `reverse`, `toUndirected`, `toDirected`, `toStructure` (for drawing, with community groups and highlights),
+  `GraphRunOptions`.
+- `structures.ts`: `BinaryHeap` (a class over `base/heap.ts`), `UnionFind` (rank and path halving), `IndexedQueue`
+  (indexed min-priority queue with decrease-key).
+- `traversal.ts`: `bfs`/`bfsAlgorithm` (layer per step, several sources, direction, depth limit), `dfs`/`dfsAlgorithm`
+  (tree, back, forward and cross edges, discovery and finish times), `topologicalSort` (lexicographic Kahn),
+  `isDag`, `findCycle`, `bipartiteColouring`, `isBipartite`, `kHopNeighbourhood`.
+- `components.ts`: `connectedComponents` (weak or strong), `isConnected`, `stronglyConnectedComponents` (Tarjan,
+  Kosaraju), `isStronglyConnected`, `condensation`, `articulationPoints`, `bridges`, `biconnectedComponents`.
+- `paths.ts`: `dijkstra`, `bellmanFord`, `aStar` (with the expanded set), `floydWarshall`, `johnson`, `kShortestPaths`
+  (Yen), `shortestPath`, `reconstructPath` (single-source and all-pairs predecessors).
+- `trees.ts`: `minimumSpanningTree` (Kruskal, Prim, Boruvka; minimum or maximum; forests), `isTree`, `isForest`,
+  `rootTree` (parents, children, depths, distances), `subtreeSizes`, `treeOrder` (pre, post, level), `eulerTour`,
+  `lcaIndex` (binary lifting), `lowestCommonAncestor`.
+- `flows.ts`: `maxFlow` (Dinic, Edmonds-Karp), `minCut`, `minCostFlow` (negative costs saturated, then successive
+  shortest paths with potentials), `maxFlowMinCost`, `bipartiteMatching` (Hopcroft-Karp).
+- `centrality.ts`: `degreeCentrality`, `closenessCentrality` (Wasserman-Faust), `betweennessCentrality` (Brandes,
+  weighted, endpoints), `edgeBetweennessCentrality`, `shortestPathCounts`, and traced power iterations
+  `eigenvectorCentrality`, `katzCentrality`, `pagerank` (personalisation, dangling distribution), `hits`, each with
+  its `*Algorithm`.
+- `community.ts`: `partition`, `modularity` (resolution, directed), `louvain`/`louvainAlgorithm`, `leiden`/
+  `leidenAlgorithm` (modularity or CPM, refinement with randomness theta), `labelPropagation`/
+  `labelPropagationAlgorithm` (asynchronous), `girvanNewman`/`girvanNewmanAlgorithm`, `spectralBisection`;
+  `_levels.ts` holds the shared level graphs and moves.
+- `matrices.ts`: `adjacencyMatrix`, `adjacencyCsr`, `fromAdjacency`, `incidenceMatrix`, `degreeMatrix`, `laplacian`,
+  `normalisedLaplacian`, `randomWalkLaplacian`, `laplacianCsr`, `transitionMatrix` (lazy, dangling rules),
+  `modularityMatrix`, `normalisedAdjacency` (GCN and mean aggregation), `laplacianPositionalEncoding`,
+  `randomWalkPositionalEncoding`.
+- `spectral.ts`: graph signal processing: `graphFourierTransform`, `inverseGraphFourierTransform`, `spectralFilter`,
+  `heatKernel`, `heatDiffusion`, `chebyshevFilter`, `chebyshevFilterCoefficients`, `graphWavelets` (spectral graph
+  wavelets), `propagate` (weighted message passing, SGC and APPNP), `dirichletEnergy`, `fiedlerVector` (dense or
+  Lanczos), `spectralEmbedding`, and the traced subspace iteration `spectralEmbeddingAlgorithm`/
+  `iterativeSpectralEmbedding`.
+- `measures.ts`: `density`, `eccentricity`, `diameter`, `radius`, `center`, `periphery`, `triangles`, `clustering`
+  (weighted, directed), `averageClustering`, `transitivity`, `degreeAssortativity`, `numericAssortativity`,
+  `attributeAssortativity`, `homophily` (edge, node, class-insensitive), `conductance`, `edgeExpansion`,
+  `cheegerConstant` (exhaustive Gray-code search up to 24 nodes), `algebraicConnectivity`, `spectralGap`.
+- `generators.ts`: deterministic families (`completeGraph`, `pathGraph`, `cycleGraph`, `starGraph`, `wheelGraph`,
+  `gridGraph`, `hypercubeGraph`, `completeBipartiteGraph`, `balancedTree`, `barbellGraph`, `petersenGraph`,
+  `karateClubGraph`) and random models from keys (`erdosRenyiGraph`, `gnmRandomGraph`, `wattsStrogatzGraph`,
+  `barabasiAlbertGraph`, `stochasticBlockModel`, `randomDag`, `randomGeometricGraph`, `kNearestNeighbourGraph`,
+  `randomKnnGraph`).
+- `isomorphism.ts`: `weisfeilerLehmanAlgorithm`/`weisfeilerLehman` (traced colour refinement), `wlHash`, `vf2`
+  (isomorphism, induced subgraph isomorphism and monomorphism, with node matching), `isIsomorphic`,
+  `subgraphIsomorphisms`, `isSubgraphIsomorphic`.
+- `colouring.ts`: `greedyColouring` (largest-first, smallest-last, random-sequential, independent-set,
+  connected-sequential BFS/DFS, DSATUR), `isProperColouring`, `maximalIndependentSet`, `maximalCliques`
+  (Bron-Kerbosch with Tomita pivoting), `maximumClique`, `cliqueNumber`.
+
+The graph machinery in `pgm/graphs.ts` and `pgm/triangulation.ts` (tier 8) predates this domain and works on
+string-named adjacency maps; `pgm.connectedComponents`, `topologicalOrder` and `maximalCliques` can later delegate to
+`graph.connectedComponents`, `graph.topologicalSort` and `graph.maximalCliques`.
 
 ### 4.14 `dists/` (tier 6): distributions (scipy.stats, torch.distributions, NumPyro)
 

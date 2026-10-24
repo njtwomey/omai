@@ -237,6 +237,118 @@
       "cases": 4
     },
     {
+      "fixture": "graph/centrality.json",
+      "source": "oracle/cases/graph/centrality.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 240
+    },
+    {
+      "fixture": "graph/colouring.json",
+      "source": "oracle/cases/graph/colouring.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "graph/community.json",
+      "source": "oracle/cases/graph/community.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "graph/components.json",
+      "source": "oracle/cases/graph/components.py",
+      "reference": {
+        "networkx": "3.7",
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "graph/flows.json",
+      "source": "oracle/cases/graph/flows.py",
+      "reference": {
+        "networkx": "3.7",
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "graph/generators.json",
+      "source": "oracle/cases/graph/generators.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 15
+    },
+    {
+      "fixture": "graph/isomorphism.json",
+      "source": "oracle/cases/graph/isomorphism.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 32
+    },
+    {
+      "fixture": "graph/matrices.json",
+      "source": "oracle/cases/graph/matrices.py",
+      "reference": {
+        "networkx": "3.7",
+        "scipy": "1.18.1"
+      },
+      "cases": 153
+    },
+    {
+      "fixture": "graph/measures.json",
+      "source": "oracle/cases/graph/measures.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 152
+    },
+    {
+      "fixture": "graph/paths.json",
+      "source": "oracle/cases/graph/paths.py",
+      "reference": {
+        "networkx": "3.7",
+        "scipy": "1.18.1"
+      },
+      "cases": 97
+    },
+    {
+      "fixture": "graph/spectral.json",
+      "source": "oracle/cases/graph/spectral.py",
+      "reference": {
+        "networkx": "3.7",
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 71
+    },
+    {
+      "fixture": "graph/traversal.json",
+      "source": "oracle/cases/graph/traversal.py",
+      "reference": {
+        "networkx": "3.7",
+        "scipy": "1.18.1"
+      },
+      "cases": 42
+    },
+    {
+      "fixture": "graph/trees.json",
+      "source": "oracle/cases/graph/trees.py",
+      "reference": {
+        "networkx": "3.7",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "losses/losses.json",
       "source": "oracle/cases/losses/losses.py",
       "reference": {
