@@ -3876,9 +3876,11 @@ Design rules:
 - `limits.ts`: limit policies (`auto`, `fixed`, `expand`, `follow`) and nice-range rounding.
 - `linking.ts`: linked brushing and hover across figures, shared selections.
 
-`layout/` (positions only)
-- `layered.ts`: layered layout through dagre (ranks, crossing reduction, edge routes, compound nodes for plates and
-  repeated blocks).
+`layout/` (positions only; no layout dependency)
+- `graph.ts`: the shared shapes: a graph to lay out (nodes with sizes and groups, edges) and a layout (node boxes, edge
+  routes, group boxes), with boundary clipping, straight routes, group boxes and normalisation.
+- `layered.ts`: a Sugiyama-style layered layout, as dagre draws (cycle breaking, longest-path ranks, virtual points on
+  long edges, barycentre crossing reduction keeping groups together, spacing-preserving coordinates).
 - `trees.ts`: tidy trees, radial trees, dendrograms.
 - `force.ts`: seeded, deterministic force-directed layout with an energy-based stopping rule; circular and spectral
   layouts.
@@ -3892,11 +3894,11 @@ Design rules:
   decision and search trees, automata, pipelines, networks.
 - `architectures.ts`: views of a network structure: compact stack, expanded block, tensor-shape flow, parameter-count
   treemap.
-- `overlays.ts`: state overlays for animation (active nodes and edges, messages along edges, value badges, frontier and
-  explored sets).
-- `models.ts`: presentations of parameterised models from their engine descriptions: neural networks from `nn`'s
-  `describe` (layer stacks, transformers, U-Nets for diffusion), Bayesian networks with plate notation (LDA, mixtures),
-  factor graphs, and decision trees and forests with a class-ratio histogram at each split.
+- `overlays.ts`: state overlays for animation: traversal frames (active node, the edge it was reached by, visit order
+  as badges) and breadth- and depth-first search orders (messages from traces are `messageFrames` in `trace/`).
+- `models.ts` (to do): presentations of parameterised models from their engine descriptions beyond what `diagram` and
+  `architectures.ts` already draw (U-Nets for diffusion, LDA; decision trees and forests with a class-ratio histogram at
+  each split, which may live with the `TreeRecord` view in `views/`).
 
 `trace/` (figures from runs)
 - `metrics.ts`: metric curves (smoothing, log scales, runs overlaid, run trees).
@@ -3908,9 +3910,9 @@ Design rules:
 
 `gym/`
 - `frames.ts`: episode frames from an environment's `render`, filmstrips.
-- `overlays.ts`: value heatmaps, policy arrows, visit counts and action distributions on environment scenes.
-- `worlds.ts`: one way to draw any `worlds` world (top-down map, search frontiers, policies and values on cells, agent
-  paths), and the first-person ray-cast view from `graphics` with its top-down view cone.
+- `worlds.ts`: one way to draw any `worlds` world (`worldView`: the engine's top-down map with search frontiers and
+  explored cells, policies as arrows sized by probability, values and numbers on cells, agent paths), and the
+  first-person ray-cast view from `graphics` with its top-down view cone (`raycastViews`).
 
 `maths/`
 - `tex.ts`: typesetting through KaTeX for HTML and MathJax for SVG (used by `tex` scene nodes and SVG export).
@@ -3955,15 +3957,20 @@ Design rules:
 - `TraceView.tsx`: the standard figures of a run; `useRunStream` for live runs.
 - `Player.tsx`: playback of a precomputed timeline or a live algorithm, redesigned and simpler than aifn-engine's:
   play and pause with a caret menu for the target frames per second, step back and forward, a draggable scrubber, and
-  an optional time stamp.
+  an optional time stamp. `usePlayback.ts` (`usePlayback`, `useTimelinePlayback`, `useLiveRun`: one controller over
+  precomputed frames and live algorithm steps) and `playhead.ts` (frame timing, the pure part).
 - `FigureFrame.tsx`: the fixed-size figure area with its expand-to-modal button and export menu; one frame per figure
   (a grid of panels is one figure), exporting the whole figure.
 - `FigureGrid.tsx`: a gridspec drawn as one subplot chart with text, TeX or React content in the other cells, scaled to
   fit their cells.
 - `echarts.ts`: `loadEcharts` for the React bindings.
-- `interaction/`: click to add points, drag points, drag points constrained to curves and surfaces, selection (e.g.
-  a Gaussian process refitting as its data are dragged), as hooks and scene overlays.
-- `EpisodePlayer.tsx`: environment episodes with overlays.
+- `interaction/`: overlays laid over any figure through a projection (`projection.ts`: linear, or a live chart's via
+  `useChartProjection`): `DraggablePoints` (drag, click to add, remove, keyboard nudges) with `constraints.ts` (on a
+  graph, segment, polyline or circle, along an axis, on a grid, in a box, chained), `Brush`, `Probe`, `NearestHover`,
+  `selection.ts`, `useLinkState` (a figure `LinkStore` in React) and `keys.ts` (`useHeldKeys`: keys captured while a
+  figure has focus, per press and per frame, for playing worlds).
+- `EpisodePlayer.tsx`: environment episodes (run once from a seed, rendered, played with captions) with overlays;
+  `useEnvStepper.ts`: an environment stepped by hand from a seed.
 - `ExportMenu.tsx`: export of the current figure as SVG, PNG, GIF, MP4 or WebM.
 - `MathView.tsx`: `Tex`, `Equation` (live), `Derivation`, `MathProvider` (KaTeX HTML with its stylesheet, MathML for
   assistive technology; live values highlighted).
@@ -3973,10 +3980,12 @@ Design rules:
   `Toggle`, `SeedInput`; `DatasetPicker` (a dataset collection from `lib/datasets/collections.ts`, with the
   chosen generator's knobs as controls) and `MethodControls` (controls from a method's `hyperSpace`, demo defaults
   first); and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
-  left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas.
+  left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas (`ControlLayout` places it).
+  Plain React and Tailwind over the `--wb-*` tokens; the rules are pure modules (`number.ts`, `options.ts`, `seed.ts`,
+  `space-controls.ts`, `datasets.ts`) and menus open in a `Popover` portal so no container clips them.
 - `views/`: a React component per exposition view (`PathView`, `TreeView`, `PipelineView`, `EmbeddingPlayer`,
   `DecisionSurfaceView`, ...), and `ExpositionView`, which picks the standard view of any record.
-- `EnvView.tsx`: one consistent view of any environment's render, with episode playback and overlays.
+- `EnvView.tsx`: one consistent view of any environment's render, decorated, with room for controls.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
   or a prop), dark by default; no system-preference detection.
 
@@ -4052,7 +4061,10 @@ pages are recycled rather than reinvented.
 `src/shell/`: the top bar with the three sections, a dark and light toggle at the top right (dark by default,
 remembered, set before first paint; no system-preference detection),
 theme tokens from `whitebox-render/theme`, Tailwind CSS, a dependency-free path router (`usePath`, `navigate`,
-`Link`), and the recipe and code-view components (a live figure beside its own source).
+`Link`), the contents sidebar (`TocSidebar`: any tree of `TocNode`s, a filter, folders closed but for the way to
+the current page, folder names linking their pages) with previous and next links over the same tree (`PrevNext`, arrow
+keys too), and the recipe and code-view components (a live figure beside its own source, `ErrorBoundary` keeping a
+failing example to itself).
 
 `src/gallery/` (hand-written: what whitebox-render can show and how its pieces interact)
 - Pages: the index of sections, a section, an entry (a figure with its source and export menu).
