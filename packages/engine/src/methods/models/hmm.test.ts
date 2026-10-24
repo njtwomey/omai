@@ -9,11 +9,9 @@ describe('hidden Markov models', () => {
   it('the dishonest casino: decoding with the true model finds the loaded die', () => {
     const s = casinoStudy({ rolls: 400, learn: false, key: key(1) })
     expect(s.accuracy).toBeGreaterThan(0.65)
-    const [seq] = recordsOf(s.exposition, 'stateSequence')
-    expect(seq?.posteriors.length).toBe(400)
-    expect(seq?.truth?.length).toBe(400)
-    expect(seq?.decoded).toEqual(s.decoded)
-    expect(seq?.observations?.symbols?.length).toBe(6)
+    const [grid] = recordsOf(s.exposition, 'posteriorGrid')
+    expect(grid?.mean.length).toBe(400)
+    expect(grid?.observed?.targets.length).toBe(400)
   })
 
   it('Baum-Welch learns the casino from the rolls, never lowering the likelihood', () => {
@@ -24,7 +22,7 @@ describe('hidden Markov models', () => {
     const obj = steps?.objective ?? []
     for (let t = 1; t < obj.length; t++) expect(obj[t] ?? 0).toBeGreaterThanOrEqual((obj[t - 1] ?? 0) - 1e-8)
     expect(steps?.means[0]?.[0]?.length).toBe(6)
-    expect(recordsOf(s.exposition, 'stateSequence')[0]?.states).toEqual(['fair', 'loaded'])
+    expect(recordsOf(s.exposition, 'decisionSurface')[0]?.values?.length).toBe(2)
     expect(recordsOf(s.exposition, 'coefficientTable')[0]?.names.length).toBe(6)
   })
 

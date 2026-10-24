@@ -6,12 +6,11 @@ import { BoardPlayer, PopulationPlayer } from './boards.tsx'
 import { ConfusionMatrixView, ValueGridView } from './cells.tsx'
 import { ComponentsView } from './components.tsx'
 import { CurvesView } from './curves.tsx'
-import { DensityView } from './densities.tsx'
 import { DiagramPlayer } from './diagrams.tsx'
 import { EpisodeView } from './episodes.tsx'
+import { ImagePlayer } from './images.tsx'
 import { MarginView } from './margins.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
-import { StateSequenceView } from './sequences.tsx'
 import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
 import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
@@ -96,15 +95,13 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <PopulationPlayer record={record} {...common} />
     case 'curves':
       return <CurvesView record={record} {...common} />
-    case 'densities':
-      return <DensityView record={record} {...common} />
-    case 'stateSequence':
-      return <StateSequenceView record={record} {...common} />
     case 'diagram':
       return <DiagramPlayer record={record} {...common} />
     case 'valueGrids':
       return <ValueGridView record={record} {...common} />
     case 'confusionMatrix':
       return <ConfusionMatrixView record={record} {...common} />
+    case 'imageSteps':
+      return <ImagePlayer record={record} {...common} />
   }
 }

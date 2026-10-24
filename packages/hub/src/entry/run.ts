@@ -54,7 +54,10 @@ export function fitEstimator(
   const run = (input: HubRunInput) => {
     const model = Object.keys(input.params).length === 0 ? estimator : estimator.with(input.params)
     const learn = learnDataOf(input.data)
-    const fitted = model.fit(options.unsupervised === true ? { x: learn.x } : learn, { key: input.key })
+    // Unsupervised fits drop the targets but keep the feature names (axes and loadings read them).
+    const names = (learn as { readonly featureNames?: readonly string[] }).featureNames
+    const unlabelled = names === undefined ? { x: learn.x } : { x: learn.x, featureNames: names }
+    const fitted = model.fit(options.unsupervised === true ? unlabelled : learn, { key: input.key })
     const exposition: readonly Exposition[] =
       (fitted as { readonly exposition?: readonly Exposition[] }).exposition ?? []
     if (options.surface === true && !exposition.some((r) => r.kind === 'decisionSurface'))
@@ -65,6 +68,7 @@ export function fitEstimator(
           ...exposition,
           decisionSurfaceOf(fitted, learn.x, {
             ...(learn.y === undefined || options.unsupervised === true ? {} : { y: learn.y }),
+            ...(names === undefined ? {} : { featureNames: names }),
           }),
         ],
       }

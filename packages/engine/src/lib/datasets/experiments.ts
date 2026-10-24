@@ -28,15 +28,43 @@ export const abTest: DatasetGenerator<TableData> = {
   kind: 'table',
   description: 'Randomised experiment data with known treatment effects, pre-period covariates and arrival days.',
   knobs: dict({
-    users: int(2, 10_000_000, { default: 10_000 }),
-    arms: int(2, 10, { default: 2 }),
-    metric: choice(['conversion', 'continuous', 'revenue'], { default: 'conversion' }),
-    baseline: real(0.0001, 1000, { default: 0.1, label: 'control conversion rate or mean' }),
-    lift: real(-0.99, 10, { default: 0.05, label: 'relative effect of the last arm' }),
-    rho: real(0, 0.99, { default: 0.5, label: 'pre-period correlation' }),
-    days: int(1, 365, { default: 14 }),
-    novelty: real(0, 10, { default: 0, label: 'extra relative effect on day 0, decaying' }),
-    treatmentShare: real(0.01, 0.99, { default: 0.5, label: 'share of users in treatments' }),
+    users: int(2, 10_000_000, { label: 'users', description: 'The number of users randomised.', default: 10_000 }),
+    arms: int(2, 10, {
+      label: 'arms',
+      description: 'The number of experiment arms, the control included.',
+      default: 2,
+    }),
+    metric: choice(['conversion', 'continuous', 'revenue'], {
+      label: 'metric',
+      description: 'The outcome: a conversion (0/1), a continuous measure or revenue (zero-inflated).',
+      default: 'conversion',
+    }),
+    baseline: real(0.0001, 1000, {
+      description: 'The control arm’s conversion rate or mean outcome.',
+      default: 0.1,
+      label: 'control conversion rate or mean',
+    }),
+    lift: real(-0.99, 10, {
+      description: 'The relative effect of the last arm over control (arms in between interpolate).',
+      default: 0.05,
+      label: 'relative effect of the last arm',
+    }),
+    rho: real(0, 0.99, {
+      description: 'The correlation between each user’s pre-period covariate and outcome (for CUPED).',
+      default: 0.5,
+      label: 'pre-period correlation',
+    }),
+    days: int(1, 365, { label: 'days', description: 'The number of days over which users arrive.', default: 14 }),
+    novelty: real(0, 10, {
+      description: 'An extra relative effect on the first day that decays over the experiment.',
+      default: 0,
+      label: 'extra relative effect on day 0, decaying',
+    }),
+    treatmentShare: real(0.01, 0.99, {
+      description: 'The share of users assigned to the treatment arms together.',
+      default: 0.5,
+      label: 'share of users in treatments',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['users'] as number

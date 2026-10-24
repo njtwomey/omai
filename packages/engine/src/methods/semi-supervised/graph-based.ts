@@ -312,7 +312,6 @@ function fitGraphLabels(
     method: `label-${variant}`,
     assignments: keep.map((t) => snapshots[t] ?? []),
     objective: keep.map((t) => (t === 0 ? (changes[1] ?? 0) : (changes[t] ?? 0))),
-    marked: { initial: codes.flatMap((c, i) => (c >= 0 ? [i] : [])), name: 'labelled' },
   })
   const verbs = graphVerbs(params)
   const surface =

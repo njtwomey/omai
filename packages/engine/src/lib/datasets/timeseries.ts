@@ -146,13 +146,17 @@ export const arma: DatasetGenerator<TimeSeriesData> = {
   kind: 'timeseries',
   description: 'A Gaussian ARMA(2, 2) process.',
   knobs: dict({
-    n: int(1, 100_000, { default: 200 }),
-    phi1: real(-2, 2, { default: 0.6 }),
-    phi2: real(-1, 1, { default: 0 }),
-    theta1: real(-2, 2, { default: 0 }),
-    theta2: real(-1, 1, { default: 0 }),
-    sigma: real(0.001, 100, { default: 1 }),
-    mean: real(-1000, 1000, { default: 0 }),
+    n: int(1, 100_000, { label: 'length', description: 'The number of time steps.', default: 200 }),
+    phi1: real(-2, 2, { label: 'φ₁', description: 'The first autoregressive coefficient.', default: 0.6 }),
+    phi2: real(-1, 1, { label: 'φ₂', description: 'The second autoregressive coefficient.', default: 0 }),
+    theta1: real(-2, 2, { label: 'θ₁', description: 'The first moving-average coefficient.', default: 0 }),
+    theta2: real(-1, 1, { label: 'θ₂', description: 'The second moving-average coefficient.', default: 0 }),
+    sigma: real(0.001, 100, {
+      label: 'innovation σ',
+      description: 'The standard deviation of the white-noise innovations.',
+      default: 1,
+    }),
+    mean: real(-1000, 1000, { label: 'mean', description: 'The mean level of the process.', default: 0 }),
   }),
   generate: (k, knobs) => {
     const trim = (c: number[]) => {
@@ -188,11 +192,23 @@ export const sinusoids: DatasetGenerator<TimeSeriesData> = {
   kind: 'timeseries',
   description: 'A sum of sinusoids with random frequencies, amplitudes and phases in white noise.',
   knobs: dict({
-    n: int(2, 100_000, { default: 256 }),
-    components: int(1, 20, { default: 2 }),
-    samplingRate: real(0.01, 10_000, { default: 32, label: 'samples per unit time' }),
-    noise: real(0, 10, { default: 0.5 }),
-    uneven: bool({ default: false, label: 'uneven sampling' }),
+    n: int(2, 100_000, { label: 'length', description: 'The number of samples.', default: 256 }),
+    components: int(1, 20, { label: 'components', description: 'The number of sinusoids summed.', default: 2 }),
+    samplingRate: real(0.01, 10_000, {
+      description: 'Samples per unit time.',
+      default: 32,
+      label: 'samples per unit time',
+    }),
+    noise: real(0, 10, {
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the white noise.',
+      default: 0.5,
+    }),
+    uneven: bool({
+      description: 'Sample at uneven (jittered) times instead of a regular grid.',
+      default: false,
+      label: 'uneven sampling',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -245,14 +261,34 @@ export const seasonalSeries: DatasetGenerator<TimeSeriesData> = {
   kind: 'timeseries',
   description: 'Linear trend plus a periodic seasonal pattern plus AR(1) noise.',
   knobs: dict({
-    n: int(2, 100_000, { default: 144 }),
-    period: int(2, 1000, { default: 12 }),
-    harmonics: int(1, 10, { default: 2 }),
-    trend: real(-10, 10, { default: 0.05, label: 'trend per step' }),
-    amplitude: real(0, 100, { default: 2, label: 'seasonal amplitude' }),
-    noise: real(0, 100, { default: 0.5 }),
-    phi: real(-0.99, 0.99, { default: 0.5, label: 'noise AR(1) coefficient' }),
-    multiplicative: bool({ default: false, label: 'seasonality grows with the level' }),
+    n: int(2, 100_000, { label: 'length', description: 'The number of time steps.', default: 144 }),
+    period: int(2, 1000, { label: 'period', description: 'The length of the season in steps.', default: 12 }),
+    harmonics: int(1, 10, {
+      label: 'harmonics',
+      description: 'Fourier harmonics making up the seasonal pattern.',
+      default: 2,
+    }),
+    trend: real(-10, 10, { description: 'The linear trend added per step.', default: 0.05, label: 'trend per step' }),
+    amplitude: real(0, 100, {
+      description: 'The amplitude of the seasonal pattern.',
+      default: 2,
+      label: 'seasonal amplitude',
+    }),
+    noise: real(0, 100, {
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the AR(1) noise innovations.',
+      default: 0.5,
+    }),
+    phi: real(-0.99, 0.99, {
+      description: 'The AR(1) coefficient of the noise.',
+      default: 0.5,
+      label: 'noise AR(1) coefficient',
+    }),
+    multiplicative: bool({
+      description: 'Make the seasonal swing proportional to the level.',
+      default: false,
+      label: 'seasonality grows with the level',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number

@@ -24,7 +24,7 @@ export const betaBinomial: HubEntry = defineEntry({
   },
   views: [
     { record: 'learningCurve', title: 'Posterior mean (± sd) and the frequency as flips arrive' },
-    { record: 'densities', title: 'Prior (dashed) and posterior, updated as the data arrive', area: 'side' },
+    { record: 'posteriorGrid', title: 'Posterior density (line: the prior)', area: 'side' },
     { record: 'coefficientTable', title: 'Prior and posterior', area: 'below' },
   ],
   methods: [{ file: 'methods/models/conjugate.ts', name: 'betaBinomialModel' }],

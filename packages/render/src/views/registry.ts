@@ -7,12 +7,11 @@ import { boardFrames, populationFrames } from './boards.ts'
 import { confusionFrames, valueGridFrames } from './cells.ts'
 import { componentsView } from './components.ts'
 import { curveSetView } from './curves.ts'
-import { densityFrames } from './densities.ts'
 import { diagramScene } from './diagrams.ts'
 import { episodeView } from './episodes.ts'
+import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
-import { stateSequenceView } from './sequences.ts'
 import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
 import { decisionSurfaceFrames, decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
@@ -244,6 +243,17 @@ const REGISTRY: Registry = {
       return frames.option(frames.count - 1)
     },
   },
+  imageSteps: {
+    kind: 'imageSteps',
+    component: 'ImagePlayer',
+    title: 'Images',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      const frames = imageFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
+  },
   populationSteps: {
     kind: 'populationSteps',
     component: 'PopulationPlayer',
@@ -262,25 +272,6 @@ const REGISTRY: Registry = {
     plays: true,
     accepts: [],
     still: (r, o) => curveSetView(r, o),
-  },
-  densities: {
-    kind: 'densities',
-    component: 'DensityView',
-    title: 'Densities',
-    plays: true,
-    accepts: [],
-    still: (r, o) => {
-      const frames = densityFrames(r, o)
-      return frames.option(frames.count - 1)
-    },
-  },
-  stateSequence: {
-    kind: 'stateSequence',
-    component: 'StateSequenceView',
-    title: 'State sequence',
-    plays: false,
-    accepts: [],
-    still: (r, o) => stateSequenceView(r, o),
   },
   diagram: {
     kind: 'diagram',

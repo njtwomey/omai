@@ -27,7 +27,7 @@ export function lossCurve(training: Training): LearningCurve {
     train: training.trainLoss,
     validation,
     resource: 'epoch',
-    score: 'loss',
+    scoreName: 'loss',
     labels: {
       train: 'training loss (mean over the epoch)',
       validation: training.validationLoss !== undefined ? 'validation loss' : 'training loss (end of the epoch)',
@@ -45,7 +45,7 @@ export function scoreCurve(training: Training, name: string): LearningCurve | un
     train,
     validation: validation ?? [],
     resource: 'epoch',
-    score: name,
+    scoreName: name,
     labels: { train: `training ${name}`, ...(validation === undefined ? {} : { validation: `validation ${name}` }) },
   })
 }
@@ -58,7 +58,7 @@ export function stepLossCurve(training: Training): LearningCurve {
     train: training.stepLoss,
     validation: [],
     resource: 'step',
-    score: 'loss',
+    scoreName: 'loss',
     labels: { train: 'minibatch loss' },
   })
 }
@@ -210,7 +210,7 @@ export function progressReporter(
       train: [...losses],
       validation: [],
       resource: 'epoch',
-      score: 'loss',
+      scoreName: 'loss',
       labels: { train: 'training loss' },
     })
     onProgress({

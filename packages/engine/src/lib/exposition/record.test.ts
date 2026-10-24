@@ -48,17 +48,12 @@ describe('exposition records', () => {
     ).toThrow(/states/)
   })
 
-  it('check the shapes of curves, densities, state sequences, value grids and confusion matrices', () => {
+  it('check the shapes of curves, value grids and confusion matrices', () => {
     expect(() => E.curveSet({ x: [1, 2], xLabel: 'epoch', series: [{ name: 'a', y: [1] }] })).toThrow(/a\.y/)
     expect(() => E.curveSet({ xLabel: 'epoch', series: [{ name: 'a', y: [1] }] })).toThrow(/no x values/)
     expect(() => E.curveSet({ x: [1, 2], xLabel: 'epoch', series: [{ name: 'a', y: [1, 2], spread: [0] }] })).toThrow(
       /a\.spread/,
     )
-    expect(() =>
-      E.densityCurves({ parameter: 'p', x: [0, 1], curves: [], steps: [{ observed: 0, density: [1] }] }),
-    ).toThrow(/steps\[0\]/)
-    expect(() => E.stateSequence({ method: 'hmm', states: ['a'], posteriors: [[1]], decoded: [1] })).toThrow(/decoded/)
-    expect(() => E.stateSequence({ method: 'hmm', states: ['a', 'b'], posteriors: [[1]] })).toThrow(/posteriors/)
     expect(() =>
       E.valueGrids({
         grids: [{ name: 'g', values: [[1, 2]] }],
@@ -72,12 +67,6 @@ describe('exposition records', () => {
     ])
     expect(() => E.confusionCounts([0, 2], [0, 0], 2)).toThrow(/row 1/)
     expect(() => E.learningCurve({ sizes: [1, 2], train: [1, 2], validation: [1] })).toThrow(/validation/)
-    expect(() =>
-      E.clusteringSteps({ method: 'self-training', assignments: [[0, -1]], marked: { initial: [2] } }),
-    ).toThrow(/marked/)
-    expect(() =>
-      E.clusteringSteps({ method: 'self-training', assignments: [[0, -1]], marked: { added: [[], [1]] } }),
-    ).toThrow(/marked\.added/)
   })
 
   it('reject node lists that are not trees', () => {

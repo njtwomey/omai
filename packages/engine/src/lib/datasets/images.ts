@@ -59,10 +59,18 @@ export const shapes: DatasetGenerator<ImageData> = {
   kind: 'image',
   description: 'Circles, squares and triangles with boxes and masks.',
   knobs: dict({
-    n: int(1, 100_000, { default: 200 }),
-    size: int(8, 512, { default: 28, label: 'image side in pixels' }),
-    perImage: int(1, 10, { default: 1, label: 'shapes per image' }),
-    noise: real(0, 1, { default: 0.05, label: 'pixel noise standard deviation' }),
+    n: int(1, 100_000, { label: 'images', description: 'The number of images.', default: 200 }),
+    size: int(8, 512, {
+      description: 'The side of each square image in pixels.',
+      default: 28,
+      label: 'image side in pixels',
+    }),
+    perImage: int(1, 10, { description: 'The number of shapes in each image.', default: 1, label: 'shapes per image' }),
+    noise: real(0, 1, {
+      description: 'The standard deviation of the pixel noise.',
+      default: 0.05,
+      label: 'pixel noise standard deviation',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -154,10 +162,18 @@ export const digitGlyphs: DatasetGenerator<ImageData> = {
   kind: 'image',
   description: 'Bitmap-font digits with random scale, shift, slant and noise.',
   knobs: dict({
-    n: int(1, 100_000, { default: 500 }),
-    size: int(8, 128, { default: 16 }),
-    jitter: real(0, 1, { default: 0.3, label: 'amount of random scale, shift and slant' }),
-    noise: real(0, 1, { default: 0.1 }),
+    n: int(1, 100_000, { label: 'images', description: 'The number of digit images.', default: 500 }),
+    size: int(8, 128, { label: 'image side', description: 'The side of each square image in pixels.', default: 16 }),
+    jitter: real(0, 1, {
+      description: 'How much the scale, position and slant of each glyph vary.',
+      default: 0.3,
+      label: 'amount of random scale, shift and slant',
+    }),
+    noise: real(0, 1, {
+      label: 'pixel noise',
+      description: 'The standard deviation of the pixel noise.',
+      default: 0.1,
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -218,9 +234,17 @@ export const barsAndStripes: DatasetGenerator<ImageData> = {
   kind: 'image',
   description: 'Binary images whose rows (bars) or columns (stripes) are each all on or all off.',
   knobs: dict({
-    side: int(2, 12, { default: 4 }),
-    all: bool({ default: true, label: 'every distinct pattern' }),
-    n: int(1, 100_000, { default: 100 }),
+    side: int(2, 12, { label: 'image side', description: 'The side of each square binary image.', default: 4 }),
+    all: bool({
+      description: 'Generate every distinct pattern once, instead of n random ones.',
+      default: true,
+      label: 'every distinct pattern',
+    }),
+    n: int(1, 100_000, {
+      label: 'images',
+      description: 'The number of images when not generating all patterns.',
+      default: 100,
+    }),
   }),
   generate: (k, knobs) => {
     const side = knobs['side'] as number
@@ -275,11 +299,19 @@ export const geometricScenes: DatasetGenerator<ImageData> = {
   kind: 'image',
   description: 'Overlapping rectangles and triangles with exact edges and corners.',
   knobs: dict({
-    n: int(1, 10_000, { default: 20 }),
-    size: int(16, 512, { default: 64 }),
-    polygons: int(1, 8, { default: 3 }),
-    noise: real(0, 1, { default: 0.02 }),
-    kinds: choice(['mixed', 'rectangles', 'triangles'], { default: 'mixed' }),
+    n: int(1, 10_000, { label: 'images', description: 'The number of scenes.', default: 20 }),
+    size: int(16, 512, { label: 'image side', description: 'The side of each square image in pixels.', default: 64 }),
+    polygons: int(1, 8, { label: 'polygons', description: 'Shapes per scene.', default: 3 }),
+    noise: real(0, 1, {
+      label: 'pixel noise',
+      description: 'The standard deviation of the pixel noise.',
+      default: 0.02,
+    }),
+    kinds: choice(['mixed', 'rectangles', 'triangles'], {
+      label: 'shapes',
+      description: 'Rectangles, triangles or a mix.',
+      default: 'mixed',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number

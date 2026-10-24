@@ -12,7 +12,7 @@ import { cartesian, type Layer, layer } from '../charts/plot.ts'
 import { type PointSet, points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { sampleRamp, sequentialRamp } from '../theme/palettes.ts'
-import { type ColourMode, tokens } from '../theme/tokens.ts'
+import type { ColourMode } from '../theme/tokens.ts'
 import { outlined, short, spanOf, type ViewFrames, type ViewOptions, viewFigure, viewMode } from './_view.ts'
 import type { Rows } from './surfaces.ts'
 
@@ -113,33 +113,6 @@ function progressPanel(
   }
 }
 
-// Rings around marked rows: the rows labelled from the start (thin, in the foreground colour) and the rows added at
-// step t (thicker, in the accent), so a growing labelled set reads round by round.
-function markedRings(
-  marked: NonNullable<ClusteringSteps['marked']>,
-  t: number,
-  rows: Rows,
-  columns: readonly [number, number],
-  mode: ColourMode,
-): Layer {
-  const tk = tokens(mode)
-  const ring = (idx: readonly number[], name: string, colour: string, size: number, width: number): SeriesOption =>
-    ({
-      type: 'scatter',
-      name,
-      data: idx.map((i) => [rows[i]?.[columns[0]] ?? 0, rows[i]?.[columns[1]] ?? 0]),
-      symbol: 'circle',
-      symbolSize: size,
-      itemStyle: { color: 'rgba(0,0,0,0)', borderColor: colour, borderWidth: width },
-      z: 4,
-      silent: true,
-    }) as SeriesOption
-  return layer([
-    ring(marked.initial ?? [], '__initial', tk.fg, 12, 1.2),
-    ring(marked.added?.[t] ?? [], '__added', tk.accent, 16, 2),
-  ])
-}
-
 /**
  * The steps of a clustering as frames for a player: the rows coloured by their cluster after each iteration (noise
  * muted; core, border and noise rows sized by role for density methods), the centres with the trails they moved
@@ -207,7 +180,6 @@ export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptio
         }
         main.push(points(sets, { mode }))
       }
-      if (steps.marked !== undefined) main.push(markedRings(steps.marked, t, drawn, columns, mode))
       const centres = steps.centres
       if (centres !== undefined) {
         const k = centres[t]?.length ?? 0
@@ -278,11 +250,7 @@ export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptio
   }
   return {
     count,
-    label: (f) => {
-      const added = steps.marked?.added?.[f]?.length ?? 0
-      const marks = added > 0 ? ` · ${added} ${steps.marked?.name ?? 'added'}` : ''
-      return `step ${f}/${count - 1}${objective === undefined ? '' : ` · ${short(objective[f] ?? 0)}`}${marks}`
-    },
+    label: (f) => `step ${f}/${count - 1}${objective === undefined ? '' : ` · ${short(objective[f] ?? 0)}`}`,
     option,
   }
 }

@@ -28,11 +28,23 @@ export const miscalibratedPredictions: DatasetGenerator<ClassificationData> = {
   kind: 'classification',
   description: 'Reported class probabilities that distort the true ones, with the labels drawn from the truth.',
   knobs: dict({
-    n: int(1, 10_000_000, { default: 5000 }),
-    classes: int(2, 100, { default: 2 }),
-    distortion: choice(['calibrated', 'overconfident', 'underconfident', 'shifted'], { default: 'overconfident' }),
-    strength: real(1, 10, { default: 2, label: 'temperature factor or shift size' }),
-    concentration: real(0.01, 100, { default: 1, label: 'Dirichlet concentration of the true probabilities' }),
+    n: int(1, 10_000_000, { label: 'samples', description: 'The number of predictions.', default: 5000 }),
+    classes: int(2, 100, { label: 'classes', description: 'The number of classes.', default: 2 }),
+    distortion: choice(['calibrated', 'overconfident', 'underconfident', 'shifted'], {
+      label: 'distortion',
+      description: 'How the reported probabilities distort the true ones.',
+      default: 'overconfident',
+    }),
+    strength: real(1, 10, {
+      description: 'The temperature factor (over- or underconfidence) or the size of the shift.',
+      default: 2,
+      label: 'temperature factor or shift size',
+    }),
+    concentration: real(0.01, 100, {
+      description: 'The Dirichlet concentration of the true probabilities: low values give confident truths.',
+      default: 1,
+      label: 'Dirichlet concentration of the true probabilities',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -122,12 +134,28 @@ export const survivalData: DatasetGenerator<RegressionData> = {
   kind: 'regression',
   description: 'Right-censored event times from a known proportional-hazards or AFT model.',
   knobs: dict({
-    n: int(1, 10_000_000, { default: 500 }),
-    features: int(1, 100, { default: 3 }),
-    model: choice(['weibull', 'exponential', 'lognormal'], { default: 'weibull' }),
-    shape: real(0.1, 10, { default: 1.5, label: 'Weibull shape k (or log-normal sigma)' }),
-    scale: real(0.0001, 1000, { default: 0.1, label: 'baseline rate lambda' }),
-    censoring: real(0, 100, { default: 0.05, label: 'censoring rate' }),
+    n: int(1, 10_000_000, { label: 'samples', description: 'The number of subjects.', default: 500 }),
+    features: int(1, 100, { label: 'covariates', description: 'The number of covariates.', default: 3 }),
+    model: choice(['weibull', 'exponential', 'lognormal'], {
+      label: 'model',
+      description: 'The baseline event-time distribution: Weibull, exponential or log-normal (AFT).',
+      default: 'weibull',
+    }),
+    shape: real(0.1, 10, {
+      description: 'The Weibull shape k (hazard rising above 1), or the log-normal σ.',
+      default: 1.5,
+      label: 'Weibull shape k (or log-normal sigma)',
+    }),
+    scale: real(0.0001, 1000, {
+      description: 'The baseline hazard rate λ.',
+      default: 0.1,
+      label: 'baseline rate lambda',
+    }),
+    censoring: real(0, 100, {
+      description: 'The rate of the exponential censoring times (0: no censoring).',
+      default: 0.05,
+      label: 'censoring rate',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number

@@ -3,12 +3,11 @@
 import { WhiteboxError } from '../../lib/base/index.ts'
 import type { ComparisonData } from '../../lib/data/index.ts'
 import {
-  type CurveSet,
   coefficientTable,
-  curveSet,
   type Explained,
   type Exposition,
   learningCurve,
+  posteriorGrid,
 } from '../../lib/exposition/index.ts'
 import { ndtr, ndtri } from '../../lib/numerics/special/index.ts'
 import { item, toFlat } from '../../lib/tensor/index.ts'
@@ -44,36 +43,10 @@ export interface Ratings {
 
 /** Options of {@link rateGames}. */
 export interface RateOptions {
-  /** Players whose rating trajectories the `curves` record shows (default the top 3). */
+  /** Players whose trajectories become `posteriorGrid` records (default the top 3). */
   readonly trajectories?: number
   /** Most points of the learning curve (default 100). */
   readonly curvePoints?: number
-}
-
-/**
- * The ratings of some players after every game as one curve set, each with a band of two deviations when the system
- * has them, thinned evenly to at most `points` games.
- */
-function trajectories(
-  players: readonly number[],
-  names: (p: number) => string,
-  history: readonly (readonly number[])[],
-  deviations: readonly (readonly number[])[] | undefined,
-  points: number,
-): CurveSet {
-  const n = history.length
-  const every = Math.max(1, Math.ceil(n / Math.max(2, points)))
-  const games = Array.from({ length: n }, (_, g) => g).filter((g) => g % every === 0 || g === n - 1)
-  return curveSet({
-    x: games.map((g) => g + 1),
-    xLabel: 'games',
-    yLabel: deviations === undefined ? 'rating' : 'rating (± 2 deviations)',
-    series: players.map((p) => ({
-      name: names(p),
-      y: games.map((g) => history[g]?.[p] ?? 0),
-      ...(deviations === undefined ? {} : { spread: games.map((g) => 2 * (deviations[g]?.[p] ?? 0)) }),
-    })),
-  })
 }
 
 /** The pairwise games of comparison data, in order: a race of k players becomes its k (k - 1) / 2 pairs. */
@@ -97,8 +70,8 @@ function gamesOf(data: ComparisonData): { a: number; b: number; score: number }[
  * Rate players from comparison data with a rating system, game by game (races split into pairs): every game's
  * prediction is made before its result updates both players. Exposition: a coefficient table of the final ratings
  * (best first, with deviations and two-deviation intervals when the system has them), a `learningCurve` of the
- * running log loss and accuracy of the predictions against games played (each on its own axis), and the rating
- * trajectories of the top players as one `curves` record (rating after every game, with two deviations as a band).
+ * running log loss and accuracy of the predictions against games played, and the rating trajectories of the top
+ * players as `posteriorGrid` records (rating after every game, variance the squared deviation).
  *
  * @param data - Comparison data (participants and finishing places).
  * @param system - The rating system.
@@ -177,9 +150,14 @@ export function rateGames<S>(
       validation: accuracy,
       resource: 'games',
       labels: { train: 'running log loss', validation: 'running accuracy' },
-      secondaryAxis: true,
     }),
-    trajectories(order.slice(0, options.trajectories ?? 3), names, history, hasDeviation ? deviations : undefined, 300),
+    ...order.slice(0, options.trajectories ?? 3).map((p) =>
+      posteriorGrid({
+        inputs: history.map((_, g) => [g + 1]),
+        mean: history.map((h) => h[p] ?? 0),
+        variance: deviations.map((d) => (d[p] ?? 0) ** 2),
+      }),
+    ),
   ]
   return {
     system: system.name,
@@ -463,10 +441,9 @@ export function bradleyTerry(
       learningCurve({
         sizes: ll.map((_, i) => i + 1),
         train: ll,
-        validation: [],
+        validation: ll,
         resource: 'MM iterations',
-        score: 'log likelihood per game',
-        labels: { train: 'log likelihood per game' },
+        labels: { train: 'log likelihood per game', validation: 'log likelihood per game' },
       }),
     ],
   }

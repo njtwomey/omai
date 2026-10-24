@@ -21,7 +21,7 @@ export const lda: HubEntry = defineEntry({
     return inner.run({ ...input, data: documentTermCounts(corpus) as never })
   },
   views: [
-    { record: 'components', view: 'TopicWordsView', title: 'Topics by their most probable words' },
+    { record: 'components', title: 'Topics (word distributions)' },
     { record: 'coefficientTable', title: 'Top words per topic', area: 'side' },
     { record: 'mixtureSteps', title: 'Gibbs sweeps', area: 'below' },
   ],

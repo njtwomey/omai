@@ -278,22 +278,8 @@ export function crossValidationView(
 }
 
 /**
- * Whether a learning curve is one series: no second column, or a second column equal to the first (a loss curve with
- * nothing held out), or both columns named alike.
- *
- * @param curve - The record.
- * @returns `true` for a single series.
- */
-export function singleSeries(curve: LearningCurve): boolean {
-  if (curve.validation.length === 0) return true
-  const same = curve.validationSpread === undefined && curve.validation.every((v, i) => Object.is(v, curve.train[i]))
-  return same || (curve.labels?.train !== undefined && curve.labels.train === curve.labels.validation)
-}
-
-/**
  * The panel of a learning curve: training and validation scores against the training size (or another resource), each
- * with its spread as a band, named by the record's labels; one series when the second column is absent or repeats the
- * first, and the second column on its own right-hand axis when the record asks (two quantities on different scales).
+ * with its spread as a band.
  *
  * @param curve - The record.
  * @param options - Mode.
@@ -301,51 +287,45 @@ export function singleSeries(curve: LearningCurve): boolean {
  */
 export function learningCurvePanel(curve: LearningCurve, options: ViewOptions = {}): Panel {
   const mode = viewMode(options)
-  const single = singleSeries(curve)
-  const twin = !single && curve.secondaryAxis === true
-  const trainName = curve.labels?.train ?? (single ? (curve.score ?? 'score') : 'train')
-  const validationName = curve.labels?.validation ?? 'validation'
   const layers: Layer[] = []
-  const spread = (mean: readonly number[], s: readonly number[] | undefined, colour: string, right: boolean): void => {
+  const spread = (mean: readonly number[], s: readonly number[] | undefined, colour: string): void => {
     if (s === undefined) return
-    const l = band(
-      [
-        {
-          x: curve.sizes,
-          lower: mean.map((m, i) => m - (s[i] ?? 0)),
-          upper: mean.map((m, i) => m + (s[i] ?? 0)),
-          colour,
-        },
-      ],
-      { mode },
+    layers.push(
+      band(
+        [
+          {
+            x: curve.sizes,
+            lower: mean.map((m, i) => m - (s[i] ?? 0)),
+            upper: mean.map((m, i) => m + (s[i] ?? 0)),
+            colour,
+          },
+        ],
+        { mode },
+      ),
     )
-    layers.push(right ? { ...l, secondary: true } : l)
   }
-  spread(curve.train, curve.trainSpread, 'tab0', false)
-  if (!single) spread(curve.validation, curve.validationSpread, 'tab1', twin)
-  layers.push(lines([{ x: curve.sizes, y: curve.train, name: trainName, colour: 'tab0', markers: true }], { mode }))
-  if (!single) {
-    const second = lines(
+  spread(curve.train, curve.trainSpread, 'tab0')
+  spread(curve.validation, curve.validationSpread, 'tab1')
+  layers.push(
+    lines(
       [
+        { x: curve.sizes, y: curve.train, name: curve.labels?.train ?? 'train', colour: 'tab0', markers: true },
         {
           x: curve.sizes,
           y: curve.validation,
-          name: validationName,
+          name: curve.labels?.validation ?? 'validation',
           colour: 'tab1',
           markers: true,
-          ...(twin ? { dash: 'dashed' as const } : {}),
         },
       ],
       { mode },
-    )
-    layers.push(twin ? { ...second, secondary: true } : second)
-  }
+    ),
+  )
   return {
     layers,
     options: {
       x: { label: curve.resource ?? 'training size', scale: wantsLog(curve.sizes) ? 'log' : 'linear' },
-      y: { label: twin ? trainName : single ? (curve.score ?? trainName) : (curve.score ?? 'score') },
-      ...(twin ? { y2: { label: validationName } } : {}),
+      y: { label: 'score' },
     },
   }
 }
@@ -356,13 +336,6 @@ export function learningCurvePanel(curve: LearningCurve, options: ViewOptions = 
  * @param curve - The record.
  * @param options - Mode and figure.
  * @returns The ECharts option.
- * @example
- * ```ts
- * import { learningCurve } from 'whitebox-engine/exposition'
- * import { learningCurveView } from 'whitebox-render/views'
- * const curve = learningCurve({ sizes: [1, 2], train: [0.9, 0.5], validation: [], score: 'loss' })
- * learningCurveView(curve).yAxis[0].name // => 'loss'
- * ```
  */
 export function learningCurveView(curve: LearningCurve, options: ViewOptions = {}): EChartsOption {
   const fig = viewFigure(options, { aspect: 1.6 })

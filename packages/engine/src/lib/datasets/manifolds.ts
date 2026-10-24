@@ -82,8 +82,12 @@ function manifoldData(
   }
 }
 
-const n = int(1, 100_000, { default: 100, label: 'samples' })
-const noise = real(0, 5, { default: 0, label: 'noise standard deviation' })
+const n = int(1, 100_000, { description: 'The number of rows.', default: 100, label: 'samples' })
+const noise = real(0, 5, {
+  description: 'The standard deviation of the Gaussian noise.',
+  default: 0,
+  label: 'noise standard deviation',
+})
 
 /**
  * The Swiss roll (sklearn.datasets.make_swiss_roll), optionally with a hole: a rolled-up rectangle in 3-D with the
@@ -100,7 +104,15 @@ export const swissRoll: DatasetGenerator<RegressionData> = {
   name: 'swissRoll',
   kind: 'regression',
   description: 'A rolled-up rectangle in three dimensions (sklearn make_swiss_roll), optionally with a hole.',
-  knobs: dict({ n, noise, hole: bool({ default: false, label: 'cut a hole' }) }),
+  knobs: dict({
+    n,
+    noise,
+    hole: bool({
+      description: 'Remove a rectangle from the middle of the sheet.',
+      default: false,
+      label: 'cut a hole',
+    }),
+  }),
   generate: (k, knobs) => {
     const m = knobs['n'] as number
     let t: number[]
@@ -231,8 +243,12 @@ export const torus: DatasetGenerator<RegressionData> = {
   knobs: dict({
     n,
     noise,
-    majorRadius: real(0.1, 100, { default: 2, label: 'R' }),
-    minorRadius: real(0.01, 100, { default: 0.5, label: 'r' }),
+    majorRadius: real(0.1, 100, {
+      description: 'The distance from the centre of the tube to the centre of the torus.',
+      default: 2,
+      label: 'R',
+    }),
+    minorRadius: real(0.01, 100, { description: 'The radius of the tube.', default: 0.5, label: 'r' }),
   }),
   generate: (k, knobs) => {
     const m = knobs['n'] as number

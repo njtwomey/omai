@@ -2805,16 +2805,12 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   lattices, cellular automata) and `PopulationSteps` (generations of a population: fitness, positions over the
   objective's surface with the search distribution, or the best program's curve over its data).
 - `CurveSet` (`curves`: several series on shared axes, each with an optional band, a group sharing its colour and an
-  optional right-hand axis; optimiser races, studies of schemes, rating trajectories with deviation bands,
-  coefficients against the samples seen), `DensityCurves` (`densities`: a prior against its posterior on one grid,
-  the credible interval and estimates, the posterior after each prefix of the data), `StateSequence` (state
-  posteriors over time with the Viterbi path, the true states and the observations), `DiagramRecord` (`diagram`: a
+  optional right-hand axis; optimiser races and studies of schemes or strengths), `DiagramRecord` (`diagram`: a
   `Structure`, such as `describe(net)`, with optional overlays and captions to play over it), `ValueGrids` (feature
   maps, filters, hidden states as cells, with steps through training) and `ConfusionMatrix` (counts per true and
   predicted class, with steps through training; `confusionCounts` builds them).
-  `LearningCurve` names its axis by `score` and its series by `labels`, is one series when `validation` is empty,
-  and reads a second quantity on its own axis with `secondaryAxis`; `ClusteringSteps` marks the rows labelled at the
-  start and those added each round (`marked`: queried, pseudo-labelled).
+- `ImageSteps` (small grey images per recorded step in named groups: a generative model's data, reconstructions and
+  samples from fixed noise, with the objective per step).
   Methods return `{ ...result, exposition: Exposition[] }`; long-running ones also emit the records' steps as trace
   events, so views can play them.
 
@@ -3275,8 +3271,11 @@ built from: `stats`, `metrics`, `linear`, `rl/bandits.ts`
 `patterns/` (pattern mining; mlxtend, SPMF, pysubgroup)
 oracle: mlxtend, pysubgroup, spmf outputs recorded once
 built from: `search/refinement.ts`, `stats/tests`, `information`, `learn`
-- `itemsets.ts`: Apriori, FP-growth and Eclat; closed and maximal itemsets.
-- `association-rules.ts`: association rules with support, confidence, lift, leverage and conviction.
+- `itemsets.ts`: Apriori, FP-growth and Eclat; closed and maximal itemsets (so far `apriori`, played level by level
+  over the candidate lattice, and `fpGrowth`, played as its FP-tree grows and each item is mined, both as
+  `BoardSteps`; `TEXTBOOK_BASKETS`, `marketBaskets`; TODO Eclat, closed and maximal itemsets).
+- `association-rules.ts`: association rules with support, confidence, lift, leverage and conviction
+  (`associationRules`, the top rules' lifts as a `CoefficientTable`).
 - `sequences.ts`: sequential pattern mining (GSP, PrefixSpan), episodes in event sequences.
 - `subgraphs.ts`: frequent subgraph mining (gSpan for small graphs).
 - `subgroup-discovery.ts`: subgroup discovery for nominal and numeric targets (WRAcc, lift, binomial and z-score
@@ -3327,8 +3326,10 @@ built from: `search/evolutionary/`, `symbolic`, `nn`, `rl`
 
 `complex-systems/`
 built from: `stochastic`, `graph`, `dynamics`, `scene`
-- `cellular-automata.ts`: elementary automata (Wolfram rules), Game of Life, Langton's ant.
-- `agent-based.ts`: Schelling segregation, boids, predator-prey and Sugarscape-style models.
+- `cellular-automata.ts`: elementary automata (Wolfram rules), Game of Life, Langton's ant (so far
+  `elementaryAutomaton` and `gameOfLife`, played as `BoardSteps`; TODO Langton's ant).
+- `agent-based.ts`: Schelling segregation, boids, predator-prey and Sugarscape-style models (so far `schelling`,
+  played round by round with unhappy agents marked; TODO the rest).
 - `networks.ts`: epidemics on networks, threshold cascades, influence maximisation, small-world and scale-free studies.
 - `criticality.ts`: sandpiles, percolation, forest-fire models.
 ### 5.7 Domains
@@ -4057,11 +4058,10 @@ Design rules:
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
-  (`BoardSteps` and `PopulationSteps` as players), `curves.ts` (`CurveSet`, revealed along x as a player),
-  `densities.ts` (`DensityCurves`, the posterior played as the data arrive), `sequences.ts` (`StateSequence`: stacked
-  posteriors over strips of the Viterbi path and the truth), `cells.ts` (`ValueGrids` as blocky small multiples on one
-  colour range, `ConfusionMatrix`, both played through training), `diagrams.ts` (`DiagramRecord` as a scene with a
-  step's overlay) and `topics.ts` (a `ComponentsRecord` over words as each topic's top words).
+  (`BoardSteps` and `PopulationSteps` as players), `images.ts` (`ImageSteps` as a mosaic of image rows per step),
+  `curves.ts` (`CurveSet`, revealed along x as a player), `cells.ts` (`ValueGrids` as blocky small multiples on one
+  colour range, `ConfusionMatrix`, both played through training) and `diagrams.ts` (`DiagramRecord` as a scene with a
+  step's overlay).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile

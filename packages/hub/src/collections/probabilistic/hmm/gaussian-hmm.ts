@@ -33,7 +33,7 @@ export const gaussianHmm: HubEntry = defineEntry({
     return inner.run({ ...input, data: { x } as never })
   },
   views: [
-    { record: 'stateSequence', title: 'State posteriors over time, with the Viterbi path' },
+    { record: 'decisionSurface', title: 'State posteriors over time' },
     { record: 'mixtureSteps', title: 'Baum-Welch iterations', area: 'side' },
     { record: 'coefficientTable', title: 'Start and transition probabilities', area: 'below' },
   ],

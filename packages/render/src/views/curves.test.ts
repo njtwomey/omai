@@ -1,8 +1,7 @@
 import * as echarts from 'echarts'
 import { describe, expect, it } from 'vitest'
-import { curveSet, learningCurve } from 'whitebox-engine/exposition'
+import { curveSet } from 'whitebox-engine/exposition'
 import { curveSetFrames, curveSetView, curveStyles } from './curves.ts'
-import { learningCurveView, singleSeries } from './paths.ts'
 
 type Opt = { series: { name?: string; yAxisIndex?: number }[]; yAxis: { name?: string }[] }
 const o = (x: unknown): Opt => x as Opt
@@ -51,28 +50,5 @@ describe('curve sets', () => {
     expect(frames.label(1)).toBe('epoch 2')
     expect(o(frames.option(0)).series.filter((s) => s.name?.startsWith('__now'))).toHaveLength(4)
     expect(o(frames.option(3)).series.some((s) => s.name?.startsWith('__now'))).toBe(false)
-  })
-})
-
-describe('learning curves', () => {
-  it('draw one series when the second is absent or repeats the first', () => {
-    const one = learningCurve({ sizes: [1, 2], train: [0.9, 0.5], validation: [], score: 'loss' })
-    expect(singleSeries(one)).toBe(true)
-    expect(o(learningCurveView(one)).yAxis[0]?.name).toBe('loss')
-    expect(singleSeries(learningCurve({ sizes: [1, 2], train: [0.9, 0.5], validation: [0.9, 0.5] }))).toBe(true)
-  })
-
-  it('name the series by their labels and read a second scale on its own axis', () => {
-    const r = learningCurve({
-      sizes: [10, 20, 30],
-      train: [0.69, 0.6, 0.55],
-      validation: [0.5, 0.62, 0.7],
-      labels: { train: 'running log loss', validation: 'running accuracy' },
-      secondaryAxis: true,
-    })
-    const opt = o(learningCurveView(r))
-    expect(opt.yAxis.map((a) => a.name)).toEqual(['running log loss', 'running accuracy'])
-    expect(opt.series.find((s) => s.name === 'running accuracy')?.yAxisIndex).toBe(1)
-    expect(render(opt)).toContain('<svg')
   })
 })

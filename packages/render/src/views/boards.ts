@@ -50,8 +50,9 @@ function knownColour(name: string, mode: ColourMode): string | undefined {
       return categoricalColour(4)
     case 'goal':
       return t.success
-    case 'pruned':
     case 'infrequent':
+      return tint(categoricalColour(3), 0.55)
+    case 'pruned':
     case 'ruled out':
       return tint(t.muted, 0.45)
     case 'conflict':

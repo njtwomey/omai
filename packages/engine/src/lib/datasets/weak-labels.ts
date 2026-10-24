@@ -43,14 +43,38 @@ export const labellingFunctions: DatasetGenerator<ClassificationData> = {
   kind: 'classification',
   description: 'Votes of labelling functions with known coverages and accuracies, and the hidden labels.',
   knobs: dict({
-    n: int(1, 10_000_000, { default: 1000 }),
-    classes: int(2, 20, { default: 2 }),
-    functions: int(1, 100, { default: 6 }),
-    minAccuracy: real(0, 1, { default: 0.6 }),
-    maxAccuracy: real(0, 1, { default: 0.9 }),
-    minCoverage: real(0, 1, { default: 0.2 }),
-    maxCoverage: real(0, 1, { default: 0.8 }),
-    duplicates: int(0, 20, { default: 0, label: 'correlated copies of the first function' }),
+    n: int(1, 10_000_000, { label: 'samples', description: 'The number of rows.', default: 1000 }),
+    classes: int(2, 20, { label: 'classes', description: 'The number of classes.', default: 2 }),
+    functions: int(1, 100, {
+      label: 'labelling functions',
+      description: 'The number of labelling functions.',
+      default: 6,
+    }),
+    minAccuracy: real(0, 1, {
+      label: 'lowest accuracy',
+      description: 'Accuracies are uniform between the lowest and highest.',
+      default: 0.6,
+    }),
+    maxAccuracy: real(0, 1, {
+      label: 'highest accuracy',
+      description: 'Accuracies are uniform between the lowest and highest.',
+      default: 0.9,
+    }),
+    minCoverage: real(0, 1, {
+      label: 'lowest coverage',
+      description: 'Coverages (chances of voting) are uniform between the lowest and highest.',
+      default: 0.2,
+    }),
+    maxCoverage: real(0, 1, {
+      label: 'highest coverage',
+      description: 'Coverages (chances of voting) are uniform between the lowest and highest.',
+      default: 0.8,
+    }),
+    duplicates: int(0, 20, {
+      description: 'Copies of the first function that agree with it, breaking conditional independence.',
+      default: 0,
+      label: 'correlated copies of the first function',
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -123,11 +147,16 @@ export const crowdLabels: DatasetGenerator<InteractionData> = {
   kind: 'interactions',
   description: 'Labels given by workers with known confusion matrices to items with hidden classes.',
   knobs: dict({
-    items: int(1, 1_000_000, { default: 500 }),
-    workers: int(1, 10_000, { default: 20 }),
-    perItem: int(1, 100, { default: 5, label: 'workers per item' }),
-    classes: int(2, 20, { default: 3 }),
-    skill: real(0, 100, { default: 4, label: 'diagonal concentration of confusion matrices' }),
+    items: int(1, 1_000_000, { label: 'items', description: 'The number of items to label.', default: 500 }),
+    workers: int(1, 10_000, { label: 'workers', description: 'The number of workers.', default: 20 }),
+    perItem: int(1, 100, { description: 'How many workers label each item.', default: 5, label: 'workers per item' }),
+    classes: int(2, 20, { label: 'classes', description: 'The number of classes.', default: 3 }),
+    skill: real(0, 100, {
+      description:
+        'The Dirichlet concentration on the diagonal of each worker’s confusion matrix: higher is more accurate.',
+      default: 4,
+      label: 'diagonal concentration of confusion matrices',
+    }),
   }),
   generate: (k, knobs) => {
     const ni = knobs['items'] as number
@@ -203,12 +232,28 @@ export const positiveUnlabelled: DatasetGenerator<ClassificationData> = {
   kind: 'classification',
   description: 'Positive and unlabelled data: some positives labelled, everything else unlabelled.',
   knobs: dict({
-    n: int(2, 10_000_000, { default: 2000 }),
-    features: int(1, 100, { default: 2 }),
-    prior: real(0.01, 0.99, { default: 0.4, label: 'fraction of positives' }),
-    labelFrequency: real(0.01, 1, { default: 0.5, label: 'c = P(labelled | positive)' }),
-    mechanism: choice(['SCAR', 'SAR'], { default: 'SCAR' }),
-    separation: real(0, 10, { default: 2 }),
+    n: int(2, 10_000_000, { label: 'samples', description: 'The number of rows.', default: 2000 }),
+    features: int(1, 100, { label: 'features', description: 'The number of feature columns.', default: 2 }),
+    prior: real(0.01, 0.99, {
+      description: 'The fraction of rows that are positive.',
+      default: 0.4,
+      label: 'fraction of positives',
+    }),
+    labelFrequency: real(0.01, 1, {
+      description: 'The probability that a positive is labelled.',
+      default: 0.5,
+      label: 'c = P(labelled | positive)',
+    }),
+    mechanism: choice(['SCAR', 'SAR'], {
+      label: 'labelling mechanism',
+      description: 'Labelled completely at random (SCAR) or depending on the features (SAR).',
+      default: 'SCAR',
+    }),
+    separation: real(0, 10, {
+      label: 'class separation',
+      description: 'The distance between the class means, in standard deviations.',
+      default: 2,
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
@@ -255,12 +300,20 @@ export const labelProportionBags: DatasetGenerator<ClassificationData> = {
   kind: 'classification',
   description: 'Rows in bags with only the class proportions of each bag observed.',
   knobs: dict({
-    n: int(1, 10_000_000, { default: 1000 }),
-    classes: int(2, 20, { default: 2 }),
-    features: int(1, 100, { default: 2 }),
-    bagSize: int(1, 10_000, { default: 20 }),
-    grouping: choice(['random', 'sorted'], { default: 'random' }),
-    separation: real(0, 10, { default: 2 }),
+    n: int(1, 10_000_000, { label: 'samples', description: 'The number of rows.', default: 1000 }),
+    classes: int(2, 20, { label: 'classes', description: 'The number of classes.', default: 2 }),
+    features: int(1, 100, { label: 'features', description: 'The number of feature columns.', default: 2 }),
+    bagSize: int(1, 10_000, { label: 'bag size', description: 'Rows per bag.', default: 20 }),
+    grouping: choice(['random', 'sorted'], {
+      label: 'grouping',
+      description: 'Bags of random rows, or of rows sorted by a feature (bags with skewed proportions).',
+      default: 'random',
+    }),
+    separation: real(0, 10, {
+      label: 'class separation',
+      description: 'The distance between the class means, in standard deviations.',
+      default: 2,
+    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number

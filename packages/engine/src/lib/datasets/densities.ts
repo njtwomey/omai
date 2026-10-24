@@ -443,11 +443,17 @@ export const densitySamples: DatasetGenerator<ClassificationData> = {
   description:
     'Samples from a two-dimensional density with an exact log density (rings, mixtures, pinwheel, banana, funnel, checkerboard).',
   knobs: dict({
-    n: int(1, 100_000, { default: 500 }),
+    n: int(1, 100_000, { label: 'samples', description: 'The number of points.', default: 500 }),
     density: choice(['rings', 'mixture', 'grid', 'pinwheel', 'banana', 'funnel', 'checkerboard'], {
+      label: 'density',
+      description: 'The two-dimensional density sampled.',
       default: 'mixture',
     }),
-    noise: real(0, 1, { default: 0, label: 'extra isotropic noise' }),
+    noise: real(0, 1, {
+      description: 'The standard deviation of extra isotropic Gaussian noise.',
+      default: 0,
+      label: 'extra isotropic noise',
+    }),
   }),
   generate: (k, knobs) => {
     const make = DENSITIES[knobs['density'] as string] ?? DENSITIES['mixture']

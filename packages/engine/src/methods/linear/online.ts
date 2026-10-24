@@ -1,7 +1,7 @@
 // TODO: averaged SGD (`average`), early stopping on a validation split, class weights, partial_fit, and the
 // one-class SGD SVM.
 import { WhiteboxError } from '../../lib/base/index.ts'
-import { coefficientTable, curveSet, type Exposition, learningCurve } from '../../lib/exposition/index.ts'
+import { coefficientTable, type Exposition, learningCurve } from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
   decisionSurfaceOf,
@@ -186,8 +186,6 @@ export interface SgdState {
     readonly progressive: number[]
     readonly training: number[]
     readonly rate: number[]
-    /** coef[c][r]: problem r's weights then intercept at checkpoint c. */
-    readonly coef: number[][][]
   }
 }
 
@@ -259,7 +257,7 @@ export function plainSgdAlgorithm(
         active: true,
         epochs: 0,
       }))
-      return { problems, epoch: 0, seen: 0, curve: { seen: [], progressive: [], training: [], rate: [], coef: [] } }
+      return { problems, epoch: 0, seen: 0, curve: { seen: [], progressive: [], training: [], rate: [] } }
     },
     step: (s, ctx) => {
       // Copy the problems so that every state stays a value.
@@ -276,7 +274,6 @@ export function plainSgdAlgorithm(
         progressive: [...s.curve.progressive],
         training: [...s.curve.training],
         rate: [...s.curve.rate],
-        coef: [...s.curve.coef],
       }
       let seen = s.seen
       let windowErr = 0
@@ -335,7 +332,6 @@ export function plainSgdAlgorithm(
           curve.progressive.push(windowErr / windowRows)
           curve.training.push(evaluate.all(problems))
           curve.rate.push(problems[0]?.eta ?? 0)
-          curve.coef.push(problems.map((q) => [...q.w, q.b]))
           windowErr = 0
           windowRows = 0
         }
@@ -460,34 +456,8 @@ function sgdCurve(state: SgdState, what: string): Exposition {
     train: state.curve.progressive,
     validation: state.curve.training,
     resource: 'samples seen',
-    score: what,
     labels: { train: `progressive ${what}`, validation: `training ${what}` },
   })
-}
-
-/**
- * The coefficients of an SGD run against the samples seen, one series per feature and the intercept (per class for
- * one-versus-rest problems, a colour per class), the ten largest at the end when there are more.
- */
-function coefficientCurves(
-  state: SgdState,
-  features: readonly string[],
-  problems: readonly string[] = [''],
-): Exposition {
-  const names = [...features, 'intercept']
-  const at = state.curve.coef
-  const series = problems.flatMap((problem, r) =>
-    names.map((name, k) => ({
-      name: problem === '' ? name : `${problem}: ${name}`,
-      y: at.map((c) => c[r]?.[k] ?? 0),
-      ...(problem === '' ? {} : { group: problem }),
-    })),
-  )
-  const shown =
-    series.length <= 10
-      ? series
-      : [...series].sort((a, b) => Math.abs(b.y.at(-1) ?? 0) - Math.abs(a.y.at(-1) ?? 0)).slice(0, 10)
-  return curveSet({ x: state.curve.seen, series: shown, xLabel: 'samples seen', yLabel: 'coefficient' })
 }
 
 function fitSgdClassifier(
@@ -533,11 +503,8 @@ function fitSgdClassifier(
     link: h.loss === 'log_loss' ? (rows === 1 ? 'binary' : 'ovr') : 'none',
     iterations: Math.max(...s.problems.map((p) => p.epochs)),
   }
-  const featureNames = featureNamesOf(data, x.d)
-  const classNames = classNamesOf(data, classes)
-  const table = classifierTable(params, featureNames, classNames)
-  const coefficients = coefficientCurves(s, featureNames, rows === 1 ? [''] : classNames)
-  return { params, exposition: [sgdCurve(s, 'error'), table, coefficients] }
+  const table = classifierTable(params, featureNamesOf(data, x.d), classNamesOf(data, classes))
+  return { params, exposition: [sgdCurve(s, 'error'), table] }
 }
 
 function classifierEstimator(
@@ -577,8 +544,8 @@ function classifierEstimator(
  * SVM), log loss (logistic regression, with probabilities), modified Huber, squared hinge or the perceptron loss; L2,
  * L1 or elastic-net penalties; scikit-learn's learning-rate schedules; one-versus-rest for several classes. Trained by
  * {@link plainSgdAlgorithm}, one traced epoch per step. Exposition: a `learningCurve` of the progressive error (each
- * row predicted before it is learned) and the training error against the samples seen, the coefficient table, the
- * coefficients against the samples seen (a `curves` record) and, for two features, the decision surface.
+ * row predicted before it is learned) and the training error against the samples seen, the coefficient table and, for
+ * two features, the decision surface.
  *
  * @param hyper - Loss, penalty, alpha, l1Ratio, intercept, epochs, tolerance, shuffling and the schedule.
  * @returns The estimator.
@@ -670,7 +637,6 @@ function regressorEstimator(
           exposition: [
             sgdCurve(out.state, 'squared error'),
             coefficientTable({ names: [...names, 'intercept'], estimates: [...params.coef, params.intercept] }),
-            coefficientCurves(out.state, names),
           ],
         }
       },
@@ -684,7 +650,7 @@ function regressorEstimator(
  * A linear regressor trained by stochastic gradient descent (sklearn.linear_model.SGDRegressor): squared error, Huber
  * or (squared) epsilon-insensitive losses, the penalties and schedules of {@link sgdClassifier} (default inverse
  * scaling, eta0 / t^0.25). Exposition: the learning curve (progressive and training squared error against samples
- * seen), the coefficient table and the coefficients against the samples seen (a `curves` record).
+ * seen) and the coefficient table.
  *
  * @param hyper - As {@link sgdClassifier}, with regression losses.
  * @returns The estimator.

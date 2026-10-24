@@ -23,7 +23,7 @@ export const trueskill: HubEntry = defineEntry({
       drawProbability: params['drawProbability'] as number,
     }),
   views: [
-    { record: 'curves', title: 'The top three players’ skill beliefs (± 2σ), game by game' },
+    { record: 'posteriorGrid', title: 'The leader’s skill belief, game by game' },
     { record: 'coefficientTable', title: 'Skill means with sigma', area: 'side' },
     { record: 'learningCurve', title: 'Prediction log loss and accuracy', area: 'below' },
   ],

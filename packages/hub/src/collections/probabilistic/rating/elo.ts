@@ -20,7 +20,7 @@ export const elo: HubEntry = defineEntry({
     return eloRatings(comparisonsOf(data), { k, scale: params['scale'] as number })
   },
   views: [
-    { record: 'curves', title: 'The top three players’ ratings, game by game' },
+    { record: 'posteriorGrid', title: 'The leader’s rating, game by game' },
     { record: 'coefficientTable', title: 'Final ratings', area: 'side' },
     { record: 'learningCurve', title: 'Prediction log loss and accuracy', area: 'below' },
   ],
