@@ -5,7 +5,7 @@ import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figur
 import { type CellSpec, type GridSpec, layoutGrid, linkedGroups, sharedGroups } from '../figure/grid.ts'
 import { resolveLimits, unionRange } from '../figure/limits.ts'
 import { tokens } from '../theme/tokens.ts'
-import { chartFrame, type Layer, type PlotOptions, panelParts } from './plot.ts'
+import { chartFrame, type Layer, logRange, type PlotOptions, panelParts } from './plot.ts'
 
 /** What one axes cell of a subplot grid draws: layers and per-panel axis options. */
 export interface Panel {
@@ -104,7 +104,9 @@ export function subplots(
       const ext = unionRange(members.flatMap((id) => (panels[id]?.layers ?? []).map((l) => l.extent[axis])))
       const first = panels[members[0] ?? '']?.options?.[axis]?.limits
       const tight = members.every((id) => (panels[id]?.layers ?? []).every((l) => l.extent.tight === true))
-      const r = resolveLimits(first ?? { kind: 'auto', pad: tight ? 0 : 0.04 }, ext)
+      const policy = first ?? { kind: 'auto' as const, pad: tight ? 0 : 0.04 }
+      const log = panels[members[0] ?? '']?.options?.[axis]?.scale === 'log'
+      const r = log ? logRange(policy, ext) : resolveLimits(policy, ext)
       for (const id of members) out.set(id, r)
     }
     return out
