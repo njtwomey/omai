@@ -3893,8 +3893,11 @@ Design rules:
 - `functions.ts`: function plots for the foundations (asymptotes, implicit curves, parametric and polar curves,
   tangent and secant lines, Riemann rectangles, Taylor polynomials).
 - `evaluation.ts`: ROC, precision-recall, calibration, learning curves, residual plots (from `MetricResult`s).
-- `multivariate.ts`: parallel coordinates, radar charts, scatter matrices.
-- `tuning.ts`: optimisation histories, parameter importances, slice and contour plots of studies.
+- `multivariate.ts`: parallel coordinates with brushing (`parallelCoordinates`, `brushFromAxisEvent`, `brushRows`,
+  `parallelLayout`), radar charts, scatter matrices with a linked selection (`scatterMatrix`, `scatterMatrixCells` for
+  overlays).
+- `tuning.ts`: figures of a `Study` (through `tune`'s analysis helpers): optimisation histories, parameter importances,
+  slice plots, surrogate contour plots, intermediate values with pruned trials.
 - `compose.ts`: `subplots` (a gridspec as one option: spans, shared and linked axes, zero gaps, marginals, per-panel
   legends and titles, text cells), `subplotRects`.
 - `downsample.ts`: LTTB and min-max decimation.
@@ -3911,7 +3914,8 @@ Design rules:
 - `graph.ts`: the shared shapes: a graph to lay out (nodes with sizes and groups, edges) and a layout (node boxes, edge
   routes, group boxes), with boundary clipping, straight routes, group boxes and normalisation.
 - `layered.ts`: a Sugiyama-style layered layout, as dagre draws (cycle breaking, longest-path ranks, virtual points on
-  long edges, barycentre crossing reduction keeping groups together, spacing-preserving coordinates).
+  long edges, barycentre crossing reduction keeping groups together, spacing-preserving coordinates; nodes of other groups kept clear of a group's box,
+  nested groups from `LayoutGraph.groups`).
 - `trees.ts`: tidy trees, radial trees, dendrograms.
 - `force.ts`: seeded, deterministic force-directed layout with an energy-based stopping rule; circular and spectral
   layouts.
@@ -3920,16 +3924,18 @@ Design rules:
 `structures/` (any `Structure` to a diagram)
 - `diagram.ts`: `diagram(structure, layout, options)` to a `Scene`: node shapes by role (latent and observed variables,
   factors, operations, tensors, decisions, utilities, states), edge routing (straight, orthogonal, splines), arrowheads,
-  edge labels, groups (plates, repeated blocks with counts, clusters).
+  edge labels, self-loops, groups (plates, repeated blocks with counts, clusters), layered, tree, circular, force
+  and bipartite (factor graphs) layouts, node sizes held steady across an animation's `frames`.
 - `styles.ts`: the visual language per structure kind: graphical models, computation graphs, neural architectures,
   decision and search trees, automata, pipelines, networks.
 - `architectures.ts`: views of a network structure: compact stack, expanded block, tensor-shape flow, parameter-count
   treemap.
 - `overlays.ts`: state overlays for animation: traversal frames (active node, the edge it was reached by, visit order
   as badges) and breadth- and depth-first search orders (messages from traces are `messageFrames` in `trace/`).
-- `models.ts` (to do): presentations of parameterised models from their engine descriptions beyond what `diagram` and
-  `architectures.ts` already draw (U-Nets for diffusion, LDA; decision trees and forests with a class-ratio histogram at
-  each split, which may live with the `TreeRecord` view in `views/`).
+- `models.ts`: presentations of parameterised models beyond what `diagram` and `architectures.ts` draw: `uNet` (U-Nets
+  and encoder–decoders, a diffusion time embedding, `uNetOrder` for an animated pass), `bayesNetCards` (a Bayes network
+  with its CPTs, evidence and marginals), `nestPlates` (plate-model plates nested). Decision trees with class ratios are
+  the `TreeRecord` view in `views/`.
 
 `trace/` (figures from runs)
 - `metrics.ts`: metric curves (smoothing, log scales, runs overlaid, run trees).
@@ -3959,16 +3965,18 @@ Design rules:
   and from parameter sweeps; easing and interpolation between frames.
 - `playback.ts`: the two playback modes: precomputed (train up front, play a timeline) and live (step an `Algorithm`
   frame by frame through `iterate`, with a frame budget), behind one interface.
-- `svg.ts`: animated SVG (CSS keyframes) from a timeline.
-- `gif.ts`: GIF encoding (gifenc) of a timeline rendered frame by frame.
-- `video.ts`: MP4 and WebM encoding in the browser (WebCodecs with mp4-muxer and webm-muxer); in Node, raw frames piped
-  to ffmpeg when it is installed.
-- `frames.ts`: rasterising scenes to RGBA frames (canvas in the browser, resvg in Node).
+- `svg.ts`: `animatedSvg`, every frame of a timeline in one SVG shown in turn by CSS keyframes.
+- `gif.ts`: `encodeGif` (dependency-free: a median-cut palette from `quantise`, LZW, delays, looping).
+- `video.ts`: `muxWebm` (a pure WebM muxer), `encodeWebm` (WebCodecs VP8 in the browser, else a `MediaRecorder`),
+  `canEncodeVideo`. TODO: MP4, and raw frames piped to ffmpeg in Node.
+- `frames.ts`: `timelineScenes` (structure frames on one steady layout), `rasteriseScene` (canvas in the browser, the
+  engine's rasteriser in Node, which leaves out text) and `timelineFrames`.
 
 `svg/`
 - `svg.ts`: `sceneToSvg` (tokens resolved for a theme, 3-D layers projected).
 - `paths.ts`: SVG path data (straight and smooth) and arrow heads, shared by `sceneToSvg` and `SceneView`.
-- `png.ts`: `encodePng` (dependency-free PNG), `pngDataUrl`, `base64` (heatmap images, embedded scene images).
+- `png.ts`: `encodePng` (dependency-free PNG: filtered rows, a small synchronous deflate in `_deflate.ts`),
+  `encodePngAsync` (the platform's `CompressionStream`), `pngDataUrl`, `base64`.
 - `export.ts`: whole-figure export: `chartToSvg` (ECharts server-side rendering), `composeSvg` (charts and overlay
   cells as one SVG), `svgDataUrl`, `svgToPng` (canvas), `exportSize` for slides and blogs.
 
@@ -3989,14 +3997,17 @@ Design rules:
 - `Chart.tsx`: an ECharts option as a live chart (theme from mode, resizing, disposal, events).
 - `SceneView.tsx`: a `Scene` as SVG elements, with hover and click hit-testing.
 - `Scene3DView.tsx`: a 3-D scene with drag-to-orbit camera, re-projected on interaction.
-- `StructureView.tsx`: a `Structure` with pan, zoom, hover details and overlay state.
+- `StructureView.tsx`: a `Structure` in a frame (by default) with pan, zoom, hover details and overlay state (`frames`
+  sizes nodes once for a whole animation).
 - `TraceView.tsx`: the standard figures of a run; `useRunStream` for live runs.
 - `Player.tsx`: playback of a precomputed timeline or a live algorithm, redesigned and simpler than aifn-engine's:
   play and pause with a caret menu for the target frames per second, step back and forward, a draggable scrubber, and
   an optional time stamp. `usePlayback.ts` (`usePlayback`, `useTimelinePlayback`, `useLiveRun`: one controller over
   precomputed frames and live algorithm steps) and `playhead.ts` (frame timing, the pure part).
 - `FigureFrame.tsx`: the fixed-size figure area with its expand-to-modal button and export menu; one frame per figure
-  (a grid of panels is one figure), exporting the whole figure.
+  (a grid of panels is one figure), exporting the whole figure (charts, scenes, overlay cells) as SVG or PNG, and given
+  a `playback`, recording it as GIF or WebM. Fixed content is magnified in the modal; content that is a function of the
+  size redraws at it. `SceneFrame.tsx`: a scene as one framed figure (`fitScene`).
 - `FigureGrid.tsx`: a gridspec drawn as one subplot chart with text, TeX or React content in the other cells, scaled to
   fit their cells.
 - `echarts.ts`: `loadEcharts` for the React bindings.
@@ -4111,7 +4122,8 @@ failing example to itself).
   aspects, limit policies), colour and themes, statistical, fields (smooth grids, contours, regions), text and maths
   (macros, live equations), controls (number fields, cycling selects, control panels), interaction (adding and
   dragging points, probes, brushes, linked hover), animation (the player, live and precomputed), diagrams and
-  structures, environments and worlds (maps, mazes, the ray-cast view), three-d. Toy data only, no model training:
+  structures, multivariate (parallel coordinates, radar, scatter matrices), tuning studies, environments and worlds
+  (maps, mazes, the ray-cast view), three-d. Every figure has one frame (expand, export) and a live control. Toy data only, no model training:
   model demos belong to the hub.
 
 `src/hub/` (generated from `whitebox-hub`'s catalogue)

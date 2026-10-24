@@ -4,7 +4,7 @@ import { key } from 'whitebox-engine/random'
 import { toArray } from 'whitebox-engine/tensor'
 import { cartesian, ecdfCurve, lines } from 'whitebox-render/charts'
 import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, NumberField, SeedInput, useColourMode } from 'whitebox-render/react'
+import { Chart, ControlPanel, FigureFrame, NumberField, SeedInput, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -44,7 +44,9 @@ export default function Ecdf(): ReactNode {
         <NumberField label="sample size" value={n} onChange={setN} min={5} max={5000} integer log />
         <SeedInput value={seed} onChange={setSeed} />
       </ControlPanel>
-      <Chart option={option} figure={FIGURE} />
+      <FigureFrame figure={FIGURE} filename="ecdf">
+        <Chart option={option} />
+      </FigureFrame>
     </div>
   )
 }

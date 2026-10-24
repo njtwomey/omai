@@ -11,7 +11,7 @@ import {
   spectralLayout,
   tidyTree,
 } from 'whitebox-render/layout'
-import { ControlPanel, SceneView, SeedInput, Select } from 'whitebox-render/react'
+import { ControlPanel, SceneFrame, SeedInput, Select } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -81,7 +81,7 @@ export default function GraphLayouts(): ReactNode {
         <Select label="layout" value={name} onChange={setName} options={[...LAYOUTS]} />
         <SeedInput value={seed} onChange={setSeed} label="seed (force layout)" />
       </ControlPanel>
-      <SceneView scene={drawing} width={Math.min(drawing.width, 720)} />
+      <SceneFrame scene={drawing} filename="graph-layout" />
     </div>
   )
 }

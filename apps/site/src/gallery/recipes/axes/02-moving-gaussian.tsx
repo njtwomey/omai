@@ -7,7 +7,7 @@ import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Fixed versus fitted limits',
-  question: 'Why does a Gaussian not seem to move when I change its mean?',
+  question: 'How do I make a curve visibly move when its parameter changes?',
   explain:
     'With `auto` limits the axes refit the data, so moving the mean moves the axis instead of the curve. `fixed` limits hold the range, so the curve visibly moves; `expand` grows to cover where it has been; `follow` keeps a window around the latest data. Each panel has its own x policy.',
 }

@@ -30,7 +30,7 @@ export function Choice<T extends OptionValue>(props: ChoiceProps<T>): ReactNode 
     if (next !== undefined && next !== value) onChange(next)
   }
   return (
-    <div className={cx('flex w-full min-w-36 max-w-xs flex-col gap-1.5', className)}>
+    <div className={cx('flex w-full min-w-36 max-w-sm flex-col gap-1.5', className)}>
       <span className={cx(labelClass, 'truncate')}>{label}</span>
       <div className="flex w-full">
         {cycle ? (
@@ -68,11 +68,11 @@ export function Choice<T extends OptionValue>(props: ChoiceProps<T>): ReactNode 
                 role="radio"
                 aria-checked={selected}
                 tabIndex={selected ? 0 : -1}
-                title={o.description}
+                title={o.description ?? o.label}
                 disabled={disabled || o.disabled === true}
                 onClick={() => onChange(o.value)}
                 className={cx(
-                  'min-w-0 flex-1 truncate rounded-[5px] px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:opacity-40',
+                  'min-w-0 flex-auto truncate rounded-[5px] px-2 text-xs whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:opacity-40',
                   selected
                     ? 'bg-(--wb-bg) font-medium text-(--wb-fg) shadow-sm'
                     : 'text-(--wb-muted) hover:text-(--wb-fg)',

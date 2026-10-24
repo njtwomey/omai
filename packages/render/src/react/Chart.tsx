@@ -51,6 +51,7 @@ export function Chart(props: ChartProps): ReactElement {
   const contextMode = useColourMode()
   const frame = useFrameSize()
   const mode = props.mode ?? contextMode
+  const ratio = frame?.scale
   const ref = useRef<HTMLDivElement | null>(null)
   const [chart, setChart] = useState<EChartsInstance | null>(null)
   const optionRef = useRef(option)
@@ -63,7 +64,11 @@ export function Chart(props: ChartProps): ReactElement {
     const el = ref.current
     if (el === null) return
     const echarts = loadEcharts()
-    const instance = echarts.init(el, themeName(mode), { renderer })
+    // Magnified in an expanded frame: render at a pixel ratio to match, so the canvas stays sharp.
+    const instance = echarts.init(el, themeName(mode), {
+      renderer,
+      ...(ratio === undefined ? {} : { devicePixelRatio: (globalThis.devicePixelRatio || 1) * ratio }),
+    })
     instance.setOption(optionRef.current, { notMerge: true })
     onInitRef.current?.(instance)
     setChart(instance)
@@ -74,7 +79,7 @@ export function Chart(props: ChartProps): ReactElement {
       setChart(null)
       instance.dispose()
     }
-  }, [mode, renderer])
+  }, [mode, renderer, ratio])
 
   useEffect(() => {
     chart?.setOption(option, { notMerge: !merge, lazyUpdate: true })

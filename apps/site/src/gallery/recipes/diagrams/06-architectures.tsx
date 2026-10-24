@@ -11,7 +11,7 @@ import {
   TransformerEncoderLayer,
 } from 'whitebox-engine/nn'
 import type { Structure } from 'whitebox-engine/scene'
-import { Choice, ControlPanel, SceneView, Select } from 'whitebox-render/react'
+import { Choice, ControlPanel, SceneFrame, Select } from 'whitebox-render/react'
 import { type ArchitectureView, architecture } from 'whitebox-render/structures'
 import type { Recipe } from '../../recipe.ts'
 
@@ -56,7 +56,7 @@ export default function Architectures(): ReactNode {
         <Select label="network" value={name} onChange={setName} options={Object.keys(NETWORKS)} />
         <Choice label="view" value={view} onChange={setView} options={['diagram', 'compact', 'shapes', 'params']} />
       </ControlPanel>
-      <SceneView scene={drawing} width={Math.min(drawing.width, 720)} />
+      <SceneFrame scene={drawing} filename="architecture" maxHeight={960} />
     </div>
   )
 }

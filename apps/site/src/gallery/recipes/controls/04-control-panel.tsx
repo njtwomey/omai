@@ -7,6 +7,7 @@ import {
   ControlLayout,
   ControlPanel,
   type ControlPlacement,
+  FigureFrame,
   NumberField,
   PanelArea,
   Toggle,
@@ -71,7 +72,9 @@ export default function ControlPanelRecipe(): ReactNode {
         </ControlPanel>
       }
     >
-      <Chart option={option} figure={FIGURE} />
+      <FigureFrame figure={FIGURE} filename="wave">
+        <Chart option={option} />
+      </FigureFrame>
     </ControlLayout>
   )
 }
