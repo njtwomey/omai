@@ -28,6 +28,7 @@ export interface DependenceViewOptions extends ViewOptions {
 
 function yLabel(record: Dependence): string {
   if (record.method === 'ale') return `ALE of ${record.output}`
+  if (record.method === 'shape function') return `term of ${record.output}`
   if (record.transform === 'centred') return `centred ${record.output}`
   if (record.transform === 'derivative') return `∂ ${record.output}`
   return `partial dependence of ${record.output}`
@@ -52,22 +53,28 @@ function curveLayers(record: Dependence, c: DependenceCurve, mode: ColourMode, m
     )
   }
   const ale = record.method === 'ale'
+  const shape = record.method === 'shape function'
+  // A shape function holds each bin's value from its left end: drawn as steps, the last bin carried to the data's end.
+  const end = c.rug === undefined || c.rug.length === 0 ? undefined : Math.max(...c.rug)
+  const stepX = shape && end !== undefined && end > (c.grid[c.grid.length - 1] ?? end) ? [...c.grid, end] : c.grid
+  const stepY = stepX.length > c.average.length ? [...c.average, c.average[c.average.length - 1] ?? 0] : c.average
   layers.push(
     lines(
       [
         {
-          x: c.grid,
-          y: c.average,
-          name: ale ? 'ALE' : 'average',
+          x: shape ? stepX : c.grid,
+          y: shape ? stepY : c.average,
+          name: ale ? 'ALE' : shape ? 'shape function' : 'average',
           colour: 'accent',
           width: 3,
           markers: c.categorical === true || ale,
+          ...(shape ? { step: 'end' as const } : {}),
         },
       ],
       { mode },
     ),
   )
-  if (ale || record.transform === 'centred' || record.transform === 'derivative')
+  if (ale || shape || record.transform === 'centred' || record.transform === 'derivative')
     layers.push(referenceLines({ y: [0] }, { mode, colour: t.muted, dash: 'dashed' }))
   if (c.rug !== undefined && c.rug.length > 0) layers.push(rug(c.rug, { mode, opacity: 0.45 }))
   return layers
@@ -168,16 +175,21 @@ export function dependenceSurfaceView(record: Dependence, options: DependenceSur
   // heatmap rows run along y: z[j][i] = values[i][j].
   const z = s.gridY.map((_, j) => s.gridX.map((_, i) => s.values[i]?.[j] ?? 0))
   const ale = record.method === 'ale'
-  const label = ale ? `interaction (ALE) in ${record.output}` : `partial dependence of ${record.output}`
+  const shape = record.method === 'shape function'
+  const label = ale
+    ? `interaction (ALE) in ${record.output}`
+    : shape
+      ? `pairwise term of ${record.output}`
+      : `partial dependence of ${record.output}`
   return cartesian(
     [
       heatmap(z, {
         x: s.gridX,
         y: s.gridY,
-        smooth: 'bilinear',
+        smooth: shape ? 'cells' : 'bilinear',
         mode: fig.mode,
         label,
-        ...(ale ? { centre: 0 } : {}),
+        ...(ale || shape ? { centre: 0 } : {}),
       }),
     ],
     {

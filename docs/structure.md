@@ -2828,6 +2828,9 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   (both orders) and drop-column refits.
 - Surrogates and rules (`surrogates.ts`, `rules.ts`): global surrogate trees and fidelity, anchors (precision and
   coverage), RuleFit-style rule ensembles, rule lists and Boolean rules (BRCG-style), linearity measure.
+  Built: `treeRules`, `ruleMask`, `ruleFit` and `ruleFitPredict` (lasso from `optim`), `linearityMeasure` in
+  `rules.ts`; `anchors`, `surrogateTree`, `fidelity`, `globalSurrogate`, `lime`, `limeMasked` in `surrogates.ts`.
+  TODO: rule lists and Boolean rules (BRCG).
 - Example-based (`examples.ts`): prototypes and criticisms (MMD-critic, ProtoSelect), k-nearest explanations, gradient
   similarity explanations, trust scores.
   Built: `mmdCritic` (greedy MMD prototypes, witness-function criticisms with a log-det spread), `nearestExamples`,
@@ -2842,10 +2845,17 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   monotone, bounded, integer), `recourseRobustness`. TODO: MACE for tree ensembles.
 - Concepts (`concepts.ts`): concept activation vectors and TCAV scores with significance, probing classifiers,
   concept bottleneck analysis.
+  Built: `linearProbe` (IRLS logistic probe), `conceptActivationVector`, `directionalDerivatives`, `tcav` (runs
+  against random sets, random-vs-random null, Welch t test). TODO: concept bottleneck analysis.
 - Glass-box models (`glassbox.ts`): explainable boosting (GA2M: shape functions and pairwise terms), scorecards from
   logistic models, sparse linear contributions; the shape-function data render draws.
+  Built: `explainableBoosting` (cyclic boosting over quantile bins, FAST-ranked pairs, centred terms),
+  `glassBoxContributions`, `glassBoxPredict`, `termImportances`, `scorecard` (points per bin, pdo scaling). Sparse
+  linear contributions are `linearShap`. TODO: a golden against interpret (not in the oracle).
 - Data attribution (`valuation.ts`): influence functions, TracIn, data Shapley, k-NN Shapley, Beta Shapley and data
   Banzhaf, representer points; detecting mislabelled and harmful training rows.
+  Built: `influenceFunctions`, `tracIn`, `dataShapley`, `knnShapley`, `subsetUtility`, `betaShapley`,
+  `dataBanzhaf` (maximum sample reuse), `representerValues`; the mislabelled-row study is in `methods/explain`.
 - Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
   attribution applies to text, images and series.
   Built: `tokenise`, `tokenPredictor`, `gridSuperpixels`, `slicSuperpixels`, `timeWindows`, `maskGroups`,
@@ -4127,6 +4137,13 @@ built from: `explain`, `learn`, `metrics`
   table by `CounterfactualView`; `prototypesAndCriticisms` (MMD-critic on standardised rows: a `prototypes` record,
   `PrototypeView` on principal components or as images); `trustScoreStudy` (accuracy as fewer rows are trusted, by
   trust score and by confidence, as `curves`). Built.
+- `glassbox.ts`: `explainableBoostingMachine` (shape functions and pairs as a `dependence` record of method
+  `shape function`, drawn as steps and heat maps; term importances), `logisticScorecard`, `ruleFitExplanation` and
+  `anchorExplanation` (each a `rules` record, `lib/exposition/rules.ts`, drawn by `RuleListView`). Built.
+- `concepts.ts`: `tcavStudy` (TCAV at the LeNet's hidden layer, concepts as rows of the data): a `concepts` record
+  (`lib/exposition/concepts.ts`) drawn by `ConceptView`. Built.
+- `valuation.ts`: `mislabelledRowStudy` (flipped labels found by k-NN Shapley, data Banzhaf and Beta Shapley, as
+  `curves`). Built.
 - `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
 - `gradients.ts`: `explainNetwork` (saliency, input times gradient, integrated gradients, SmoothGrad, VarGrad,
   GradientSHAP, guided backpropagation, deconvolution, Grad-CAM, guided Grad-CAM) for the LeNet of `methods/neural`,

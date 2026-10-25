@@ -9,6 +9,7 @@ import type { FeatureAttributions, Importances } from './attributions.ts'
 import type { BoardSteps } from './boards.ts'
 import type { ValueGrids } from './cells.ts'
 import type { ClusteringSteps, MixtureSteps } from './clustering.ts'
+import type { ConceptScores } from './concepts.ts'
 import type { CurveSet } from './curves.ts'
 import type { DataBias } from './data-bias.ts'
 import type { Dependence } from './dependence.ts'
@@ -26,6 +27,7 @@ import type { LikelihoodTable, NeighbourRecord } from './neighbours.ts'
 import type { PipelineStages } from './pipelines.ts'
 import type { PopulationSteps } from './populations.ts'
 import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
+import type { RuleSet } from './rules.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
 import type { SubgroupReport } from './subgroups.ts'
@@ -75,6 +77,8 @@ export type Exposition =
   | Dependence
   | CounterfactualSet
   | PrototypeSet
+  | ConceptScores
+  | RuleSet
   | GroupReport
   | CalibrationRecord
   | ConformalRecord
@@ -159,6 +163,8 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'dependence',
   'counterfactuals',
   'prototypes',
+  'concepts',
+  'rules',
   'groupReport',
   'calibration',
   'conformal',

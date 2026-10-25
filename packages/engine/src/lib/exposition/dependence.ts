@@ -39,14 +39,15 @@ export interface DependenceSurface {
 
 /**
  * How a model's output depends on its features (Friedman's partial dependence with Goldstein's ICE curves, Apley and
- * Zhu's accumulated local effects): per feature the averaged curve and, for partial dependence, every row's curve;
- * per pair a surface. `transform` says what the curves hold: the raw output, curves centred at their first grid value
+ * Zhu's accumulated local effects, an explainable boosting machine's shape functions): per feature the averaged curve
+ * and, for partial dependence, every row's curve; per pair a surface. A shape function's grid holds each bin's left
+ * end (the first the data's minimum) and its average the bin's value. `transform` says what the curves hold: the raw output, curves centred at their first grid value
  * (c-ICE) or their derivatives (d-ICE).
  */
 export interface Dependence {
   readonly kind: 'dependence'
-  /** `partial dependence` or `ale`. */
-  readonly method: 'partial dependence' | 'ale'
+  /** `partial dependence`, `ale`, or a glass-box model's `shape function` (piecewise constant, a value per bin). */
+  readonly method: 'partial dependence' | 'ale' | 'shape function'
   /** Every feature's name (curves and surfaces index into them). */
   readonly features: readonly string[]
   /** What is explained (`prediction`, `P(malignant)`). */
