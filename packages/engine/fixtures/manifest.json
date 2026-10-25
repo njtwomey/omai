@@ -498,7 +498,7 @@
       "reference": {
         "fairlearn": "0.15.0"
       },
-      "cases": 12
+      "cases": 24
     },
     {
       "fixture": "fairness/individual.json",

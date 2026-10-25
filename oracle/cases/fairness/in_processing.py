@@ -5,7 +5,14 @@ from typing import Self
 
 import fairlearn
 import numpy as np
-from fairlearn.reductions import DemographicParity, EqualizedOdds, ExponentiatedGradient, GridSearch
+from fairlearn.reductions import (
+    DemographicParity,
+    EqualizedOdds,
+    ExponentiatedGradient,
+    FalsePositiveRateParity,
+    GridSearch,
+    TruePositiveRateParity,
+)
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import LinearRegression
 from whitebox_oracle.fixture import Case, case
@@ -38,7 +45,13 @@ def data() -> tuple[FloatArray, FloatArray, FloatArray]:
 def cases() -> list[Case]:
     x, y, groups = data()
     out: list[Case] = []
-    for name, moment in [("demographicParity", DemographicParity), ("equalisedOdds", EqualizedOdds)]:
+    moments = [
+        ("demographicParity", DemographicParity),
+        ("equalisedOdds", EqualizedOdds),
+        ("truePositiveRateParity", TruePositiveRateParity),
+        ("falsePositiveRateParity", FalsePositiveRateParity),
+    ]
+    for name, moment in moments:
         eg = ExponentiatedGradient(LeastSquaresClassifier(), moment(), eps=0.02)
         eg.fit(x, y, sensitive_features=groups)
         pmf = np.asarray(eg._pmf_predict(x), dtype=np.float64)[:, 1]  # pyright: ignore[reportPrivateUsage]

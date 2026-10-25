@@ -11,8 +11,15 @@ import { linprog } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { asTensor, fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
 
-/** The moment a reduction constrains: demographic parity or equalised odds. */
-export type ReductionConstraint = 'demographicParity' | 'equalisedOdds'
+/**
+ * The moment a reduction constrains: demographic parity, equalised odds, or one half of it, true-positive rate parity
+ * (equal opportunity) or false-positive rate parity.
+ */
+export type ReductionConstraint =
+  | 'demographicParity'
+  | 'equalisedOdds'
+  | 'truePositiveRateParity'
+  | 'falsePositiveRateParity'
 
 /**
  * fairlearn's utility-parity moments, laid out as fairlearn lays them out: constraints indexed by sign (+ then -), then
@@ -35,15 +42,24 @@ interface Moments {
 function moments(constraint: ReductionConstraint, groups: readonly number[], labels: readonly number[]): Moments {
   const n = groups.length
   const k = Math.max(...groups) + 1
-  const events = constraint === 'demographicParity' ? 1 : 2
-  const eventOf = (i: number): number => (constraint === 'demographicParity' ? 0 : labels[i] === 1 ? 1 : 0)
+  const events = constraint === 'equalisedOdds' ? 2 : 1
+  // Each row's event (-1 for rows outside every event: the negatives for TPR parity, the positives for FPR parity).
+  const eventOf = (i: number): number => {
+    const y = labels[i] === 1 ? 1 : 0
+    if (constraint === 'demographicParity') return 0
+    if (constraint === 'equalisedOdds') return y
+    if (constraint === 'truePositiveRateParity') return y === 1 ? 0 : -1
+    return y === 0 ? 0 : -1
+  }
   const half = events * k
   const cell = (e: number, g: number): number => e * k + g
   const pEvent = new Array<number>(events).fill(0)
   const pCell = new Array<number>(half).fill(0)
   for (let i = 0; i < n; i++) {
-    pEvent[eventOf(i)] = (pEvent[eventOf(i)] ?? 0) + 1 / n
-    pCell[cell(eventOf(i), groups[i] ?? 0)] = (pCell[cell(eventOf(i), groups[i] ?? 0)] ?? 0) + 1 / n
+    const e = eventOf(i)
+    if (e < 0) continue
+    pEvent[e] = (pEvent[e] ?? 0) + 1 / n
+    pCell[cell(e, groups[i] ?? 0)] = (pCell[cell(e, groups[i] ?? 0)] ?? 0) + 1 / n
   }
   // Groups in order of appearance (fairlearn's `unique()`); the last is left out of the grid's basis.
   const seen: number[] = []
@@ -61,6 +77,7 @@ function moments(constraint: ReductionConstraint, groups: readonly number[], lab
       const sumCell = new Array<number>(half).fill(0)
       for (let i = 0; i < n; i++) {
         const e = eventOf(i)
+        if (e < 0) continue
         sumEvent[e] = (sumEvent[e] ?? 0) + (h[i] ?? 0)
         sumCell[cell(e, groups[i] ?? 0)] = (sumCell[cell(e, groups[i] ?? 0)] ?? 0) + (h[i] ?? 0)
       }
@@ -75,6 +92,7 @@ function moments(constraint: ReductionConstraint, groups: readonly number[], lab
     signedWeights: (lambda) =>
       Array.from({ length: n }, (_, i) => {
         const e = eventOf(i)
+        if (e < 0) return 0
         const own = cell(e, groups[i] ?? 0)
         let s = 0
         for (let g = 0; g < k; g++) {
