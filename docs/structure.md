@@ -2958,7 +2958,8 @@ Aequitas (group bias); goldens where cheap
   (`lib/exposition/frontiers.ts`) and view `paretoFrontView`; `methods/fairness/studies.ts` is built on it.
 - Dynamics (`dynamics.ts`): delayed impact of decisions (`outcomeCurve`, `delayedImpact` under maximum-utility,
   demographic-parity and equal-opportunity policies, Liu et al.), feedback loops over repeated rounds
-  (`repeatedDecisions`). Built; method `delayedImpactStudy` (`curves` records). TODO: fairness under distribution shift.
+  (`repeatedDecisions`), fairness under distribution shift (`shiftedDisparities` by importance weights,
+  `labelShiftSweep` over a group's base rate). Built; method `delayedImpactStudy` (`curves` records).
   Round two's step-four domains reuse the `curves` and `coefficientTable` records; dedicated views (exposure in
   rankings, causal decompositions, dynamics of repeated decisions) are TODO while render work is paused.
 

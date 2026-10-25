@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { delayedImpact, outcomeCurve, repeatedDecisions } from './dynamics.ts'
+import { delayedImpact, labelShiftSweep, outcomeCurve, repeatedDecisions, shiftedDisparities } from './dynamics.ts'
 
 const model = { scores: [300, 450, 600, 750], repay: [0.1, 0.5, 0.8, 0.95] }
 const groups = [
@@ -30,5 +30,30 @@ describe('dynamics of decisions', () => {
     expect(r.meanScore).toHaveLength(5)
     expect(r.selection).toHaveLength(4)
     for (const round of r.distributions) for (const d of round) expect(d.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 9)
+  })
+
+  it('under label shift error-rate gaps stay put while selection gaps move; unit weights change nothing', () => {
+    const labels = [1, 1, 0, 0, 1, 1, 0, 0]
+    const decisions = [1, 0, 1, 0, 1, 1, 0, 0]
+    const groups = [0, 0, 0, 0, 1, 1, 1, 1]
+    const plain = shiftedDisparities(
+      labels,
+      decisions,
+      groups,
+      labels.map(() => 1),
+    )
+    const s = labelShiftSweep(labels, decisions, groups, { group: 1, baseRates: [0.5, 0.2, 0.6] })
+    const named = (d: readonly { name: string; value: number }[], n: string): number =>
+      d.find((x) => x.name === n)?.value ?? Number.NaN
+    expect(named(s.disparities[0] ?? [], 'demographic parity difference')).toBeCloseTo(
+      named(plain, 'demographic parity difference'),
+      12,
+    )
+    for (const d of s.disparities) expect(named(d, 'equal opportunity difference')).toBeCloseTo(0.5, 12)
+    expect(named(s.disparities[1] ?? [], 'demographic parity difference')).not.toBeCloseTo(
+      named(s.disparities[2] ?? [], 'demographic parity difference'),
+      3,
+    )
+    expect(() => labelShiftSweep([1, 1], [1, 1], [0, 0], { group: 0, baseRates: [0.5] })).toThrow(/both classes/)
   })
 })

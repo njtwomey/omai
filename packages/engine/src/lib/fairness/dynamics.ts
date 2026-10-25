@@ -2,10 +2,13 @@
  * Fairness over time: the delayed impact of decisions on the groups they are made about (Liu, Dean, Rolf, Simchowitz
  * and Hardt, 2018), each group's outcome curve (the change in its mean score against its selection rate) and the
  * groups' changes under the bank's maximum-utility, demographic-parity and equal-opportunity policies; and the
- * feedback loop of repeated decisions, where each round's decisions move the score distributions the next round sees.
+ * feedback loop of repeated decisions, where each round's decisions move the score distributions the next round sees;
+ * and fairness under distribution shift, a fixed classifier's disparities when the rows are reweighted to another
+ * population (covariate shift by importance weights, or label shift by a group's new base rate).
  */
 
 import { WhiteboxError } from '../base/index.ts'
+import { type GroupDisparity, groupDisparities, tableRates } from '../exposition/index.ts'
 
 /** A lending model on a grid of scores: each score's probability of repaying, and what each outcome is worth. */
 export interface ImpactModel {
@@ -234,4 +237,100 @@ export function repeatedDecisions(
     meanScore.push(current.map(mean))
   }
   return { distributions, meanScore, selection }
+}
+
+/**
+ * A fixed classifier's disparities in a shifted population: each row reweighted (importance weights, the target's
+ * density over the source's), each group's 2 by 2 table counted with the weights, and the disparities recomputed
+ * against the reference group.
+ *
+ * @param labels - Binary labels `[n]`.
+ * @param decisions - Decisions or probabilities of a positive decision `[n]`.
+ * @param groups - Group indices `[n]`.
+ * @param weights - Each row's importance weight `[n]` (all 1: the population as it is).
+ * @param reference - The reference group (default 0).
+ * @returns The disparities in the shifted population.
+ * @throws WhiteboxError `shape` when the inputs differ in length.
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { shiftedDisparities } from 'whitebox-engine/fairness'
+ * const d = shiftedDisparities([1, 0, 1, 0], [1, 0, 1, 1], [0, 0, 1, 1], [1, 1, 1, 3])
+ * d.find((x) => x.name === 'demographic parity difference')?.value // => 0.5
+ * ```
+ */
+export function shiftedDisparities(
+  labels: readonly number[],
+  decisions: readonly number[],
+  groups: readonly number[],
+  weights: readonly number[],
+  reference = 0,
+): GroupDisparity[] {
+  const n = labels.length
+  if (decisions.length !== n || groups.length !== n || weights.length !== n)
+    throw new WhiteboxError('shape', 'shiftedDisparities: inputs differ in length')
+  const k = Math.max(...groups) + 1
+  const tables = Array.from({ length: k }, () => [
+    [0, 0],
+    [0, 0],
+  ])
+  for (let i = 0; i < n; i++) {
+    const row = tables[groups[i] ?? 0]?.[labels[i] === 1 ? 1 : 0]
+    if (row === undefined) continue
+    const w = weights[i] ?? 0
+    const d = decisions[i] ?? 0
+    row[1] = (row[1] ?? 0) + w * d
+    row[0] = (row[0] ?? 0) + w * (1 - d)
+  }
+  return groupDisparities(tables.map(tableRates), reference)
+}
+
+/** The disparities of a fixed classifier as one group's base rate shifts. */
+export interface LabelShiftSweep {
+  readonly baseRates: readonly number[]
+  /** disparities[t]: the disparities at baseRates[t]. */
+  readonly disparities: readonly (readonly GroupDisparity[])[]
+}
+
+/**
+ * Fairness under label shift: a fixed classifier's disparities as one group's base rate moves to each of the given
+ * values (its positives reweighted by new / old base rate, its negatives by the complements), its error rates fixed
+ * and its selection rate and predictive values moving with the base rate.
+ *
+ * @param labels - Binary labels `[n]`.
+ * @param decisions - Decisions or probabilities of a positive decision `[n]`.
+ * @param groups - Group indices `[n]`.
+ * @param options - The shifted group and the base rates to try.
+ * @returns The disparities at each base rate.
+ * @throws WhiteboxError `value` when the group has only one class.
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { labelShiftSweep } from 'whitebox-engine/fairness'
+ * const r = labelShiftSweep([1, 0, 1, 0], [1, 0, 1, 1], [0, 0, 1, 1], { group: 1, baseRates: [0.5, 0.9] })
+ * r.disparities[0]?.find((x) => x.name === 'equal opportunity difference')?.value // => 0
+ * ```
+ */
+export function labelShiftSweep(
+  labels: readonly number[],
+  decisions: readonly number[],
+  groups: readonly number[],
+  options: { readonly group: number; readonly baseRates: readonly number[]; readonly reference?: number },
+): LabelShiftSweep {
+  const rows = groups.flatMap((g, i) => (g === options.group ? [i] : []))
+  const pos = rows.filter((i) => labels[i] === 1).length
+  const old = pos / Math.max(1, rows.length)
+  if (!(old > 0 && old < 1)) throw new WhiteboxError('value', 'labelShiftSweep: the group needs both classes')
+  return {
+    baseRates: options.baseRates,
+    disparities: options.baseRates.map((b) =>
+      shiftedDisparities(
+        labels,
+        decisions,
+        groups,
+        labels.map((y, i) => (groups[i] !== options.group ? 1 : y === 1 ? b / old : (1 - b) / (1 - old))),
+        options.reference ?? 0,
+      ),
+    ),
+  }
 }
