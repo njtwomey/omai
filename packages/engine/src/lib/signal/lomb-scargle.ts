@@ -1,3 +1,9 @@
+/**
+ * The Lomb-Scargle periodogram, the least-squares fit of a sinusoid at each frequency, which finds periodicities in
+ * unevenly sampled data where the FFT cannot be used: the power and amplitude spectra (scipy.signal.lombscargle), and
+ * false-alarm probabilities and levels that say how significant a peak is under Gaussian noise.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import {

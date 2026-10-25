@@ -1,3 +1,10 @@
+/**
+ * Estimators of entropy and mutual information from samples rather than known distributions: plug-in estimates for
+ * discrete data with the Miller-Madow bias correction, kernel density estimates for continuous data, Schreiber's
+ * transfer entropy (directed information flow between time series), and the InfoNCE, NWJ and MINE variational lower
+ * bounds computed from a critic's scores.
+ */
+
 import { logSumExpOf, meanOf, WhiteboxError } from '../base/index.ts'
 import { cdist } from '../numerics/geometry/index.ts'
 import { cholesky, choleskyLogdet, inv } from '../numerics/linalg/index.ts'

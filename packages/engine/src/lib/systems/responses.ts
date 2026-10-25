@@ -1,3 +1,9 @@
+/**
+ * Time-domain responses of linear systems, scipy.signal style: `lsim` (and `dlsim`) simulation of the response to any
+ * input by exact discretisation, also as a traced algorithm, the step and impulse responses, the free response from an
+ * initial state, and default time grids from the slowest pole.
+ */
+
 import { type Json, linspaceNumbers, minOf, WhiteboxError } from '../base/index.ts'
 import { interp } from '../numerics/interpolate/index.ts'
 import { eigvals, expm } from '../numerics/linalg/index.ts'

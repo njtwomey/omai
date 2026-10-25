@@ -1,3 +1,10 @@
+/**
+ * Continuous relaxations of discrete distributions, so that sampling categorical outcomes can be differentiated: the
+ * relaxed Bernoulli (binary Concrete) and the relaxed one-hot categorical (Gumbel-softmax), whose temperature controls
+ * how close draws are to hard choices, and straight-through estimators that return hard samples with the gradients of
+ * the relaxed ones.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { lgamma, logit, logSigmoid } from '../numerics/special/index.ts'
 import {

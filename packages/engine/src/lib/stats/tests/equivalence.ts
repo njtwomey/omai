@@ -1,3 +1,9 @@
+/**
+ * Equivalence testing by two one-sided tests (TOST), which shows that an effect lies inside chosen bounds rather than
+ * that it differs from zero: for one mean, paired or independent means, one proportion (exact binomial) and the
+ * difference of two proportions, as statsmodels.
+ */
+
 import { meanOf, type TestResult, varianceOf, WhiteboxError } from '../../base/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { normCdf, normPpf, normSf, paired, sample, tCdf, tPpf, tSf } from '../_util.ts'

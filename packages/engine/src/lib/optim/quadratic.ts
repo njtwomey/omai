@@ -1,3 +1,9 @@
+/**
+ * Convex quadratic programming: the `QuadraticProgram` type (quadratic objective, linear inequalities, equalities and
+ * bounds), the active-set and interior-point solvers with KKT residuals to check a solution, the `quadprog` front end,
+ * and Bertsekas' projected Newton method for box-constrained problems.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'

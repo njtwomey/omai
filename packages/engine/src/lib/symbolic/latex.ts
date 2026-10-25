@@ -1,3 +1,9 @@
+/**
+ * Rendering expressions as text: `toText` writes SymPy's `str()` form (`x**2 + 2*x + 1`), `toLatex` writes LaTeX
+ * matching SymPy's `latex()` for expressions and matrices, and `stepsToLatex` lays a derivation out as an aligned block
+ * with the rule beside each line.
+ */
+
 import { asCoeffMul, E, isNumeric, keepCoeff, MINUS_ONE, makeMul, makePow, numFromRational, ONE } from './_canon.ts'
 import { couldExtractMinus, orderedFactors, orderedTerms, sortBySympyKey } from './_order.ts'
 import { rat } from './_rational.ts'

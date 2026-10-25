@@ -1,3 +1,9 @@
+/**
+ * The continuous wavelet transform (pywt.cwt): the correlation of a signal with scaled copies of a wavelet such as the
+ * Morlet or Mexican hat, giving a scalogram of coefficients by scale and time, plus the wavelet's centre frequency that
+ * converts scales to frequencies.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { convolve } from '../../numerics/convolution/index.ts'
 import { fft } from '../../numerics/fourier/index.ts'

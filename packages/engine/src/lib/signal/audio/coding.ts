@@ -1,3 +1,9 @@
+/**
+ * Perceptual audio coding: the psychoacoustic model of what the ear cannot hear (the absolute threshold of hearing,
+ * Schroeder's spreading function over the Bark scale and the per-frame masking threshold), and an MDCT transform coder
+ * that quantises each coefficient just coarsely enough that its noise stays below that threshold.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { imdct, mdct, rfft, sineWindow } from '../../numerics/fourier/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

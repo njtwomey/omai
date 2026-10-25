@@ -1,3 +1,9 @@
+/**
+ * Implicit differentiation through solutions: derivatives of a root, a fixed point or a minimiser with respect to its
+ * parameters from the implicit function theorem, never by unrolling the solver. The basis of optimisation layers, deep
+ * equilibrium models, bilevel problems and hyperparameter gradients.
+ */
+
 import { grad, jacobian, jvp, vjp } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { solve as denseSolve } from '../numerics/linalg/index.ts'

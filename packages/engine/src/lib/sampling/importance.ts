@@ -1,3 +1,10 @@
+/**
+ * Importance sampling, which estimates expectations under a target from weighted draws of a simpler proposal: weight
+ * normalisation, Kish's effective sample size, self-normalised estimates and log-evidence with standard errors, the
+ * full `importanceSampling` routine, and Pareto-smoothed importance sampling (PSIS, as ArviZ) with its k-hat diagnostic
+ * of whether the weights can be trusted.
+ */
+
 import { type Estimate, logSumExpOf, WhiteboxError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'

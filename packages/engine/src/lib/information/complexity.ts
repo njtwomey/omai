@@ -1,3 +1,10 @@
+/**
+ * Measures of how complex or unpredictable a sequence is: the normalised compression distance (similarity by how well
+ * two items compress together) and its distance matrix, Lempel-Ziv complexity, block entropies and entropy-rate
+ * estimates including the exact rate of a Markov chain, and the approximate and sample entropies used on physiological
+ * time series.
+ */
+
 import { meanOf, pairwiseSum, varianceOf, WhiteboxError } from '../base/index.ts'
 import { nextAfter } from '../numerics/approximation/index.ts'
 import { solve } from '../numerics/linalg/index.ts'

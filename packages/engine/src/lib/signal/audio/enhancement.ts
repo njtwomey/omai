@@ -1,3 +1,9 @@
+/**
+ * Speech enhancement in the short-time Fourier domain: power spectral subtraction of a noise estimate, Wiener-filter
+ * denoising with the decision-directed a priori SNR, and energy-based voice activity detection with a hangover that
+ * marks which frames hold speech.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { samples } from '../_shared.ts'

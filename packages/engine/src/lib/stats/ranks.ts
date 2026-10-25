@@ -1,3 +1,9 @@
+/**
+ * Ranking with ties, the basis of rank-based tests: `rankdata` (scipy.stats.rankdata) with average, minimum, maximum,
+ * dense or ordinal ties, a plain-number kernel for use in loops, and the tie counts and tie corrections that rank-test
+ * variances need.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { sample, vec } from './_util.ts'

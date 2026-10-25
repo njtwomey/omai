@@ -1,3 +1,10 @@
+/**
+ * Proximal operators and projections, the building blocks of nonsmooth optimisation (the proximal operator of g maps x
+ * to the point that balances a small g against staying near x): soft thresholding and the L2, elastic-net, group-lasso,
+ * nuclear-norm, Huber and L-infinity proxes, the conjugate prox by Moreau decomposition, and projections onto boxes,
+ * simplices, norm balls, affine sets, half-spaces and the PSD cone.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { eigh, solve, svd } from '../numerics/linalg/index.ts'
 import {

@@ -1,3 +1,9 @@
+/**
+ * Effect sizes, which say how large a difference or association is rather than whether it is significant, each with a
+ * confidence interval: standardised mean differences (Cohen's d, Hedges' g, Glass's delta), Cohen's h for proportions,
+ * Cramer's V for contingency tables, eta and omega squared for one-way layouts, and Cliff's delta.
+ */
+
 import { type Estimate, meanOf, resolveConfidenceLevel, varianceOf, WhiteboxError } from '../base/index.ts'
 import { noncentralChi2, noncentralF } from '../dists/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'

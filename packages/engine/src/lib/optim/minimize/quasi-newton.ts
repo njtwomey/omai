@@ -1,3 +1,9 @@
+/**
+ * Quasi-Newton minimisers, which build curvature from gradient differences instead of computing Hessians: BFGS (a port
+ * of scipy's, with the inverse-Hessian update exposed) and L-BFGS with the two-loop recursion over a limited memory of
+ * curvature pairs, both as traced algorithms with gradients by autodiff.
+ */
+
 import { daxpy, ddot, dgemv, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

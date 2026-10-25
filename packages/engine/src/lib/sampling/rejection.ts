@@ -1,3 +1,9 @@
+/**
+ * Rejection samplers that produce independent exact draws from an unnormalised density: classic rejection sampling
+ * under an envelope M q(x), adaptive rejection sampling for log-concave densities (Gilks and Wild), whose
+ * piecewise-exponential envelope tightens with each rejection, and the ratio-of-uniforms method.
+ */
+
 import { logAddExp, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, uniformStream } from '../random/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'

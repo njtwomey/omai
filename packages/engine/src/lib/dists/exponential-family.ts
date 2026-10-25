@@ -1,3 +1,9 @@
+/**
+ * The exponential-family form p(x) = h(x) exp(eta . T(x) - A(eta)) of the distributions that have one: natural
+ * parameters, sufficient statistics, log-partition function and base measure for the normal, gamma, beta, Poisson,
+ * binomial, categorical and others, with the moments that follow from differentiating the log-partition.
+ */
+
 import { grad, jvp } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { cholesky, inv, solveTriangular } from '../numerics/linalg/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Riemannian manifold HMC (Girolami and Calderhead), in which the mass matrix varies with position to follow the local
+ * curvature of the target, integrated by the implicit generalised leapfrog: the kernel for small problems and the
+ * trajectory with its energy for figures.
+ */
+
 import { hessian, jacobian } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import { ddot, dgemv, eigh } from '../../numerics/linalg/index.ts'

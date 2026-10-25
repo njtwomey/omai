@@ -1,3 +1,10 @@
+/**
+ * The four representations of a linear time-invariant (LTI) system as one `Lti` type, as scipy.signal and
+ * python-control: state space (`ss`), transfer function (`tf`), zeros-poles-gain (`zpk`) and second-order sections
+ * (`sos`), in continuous or discrete time and differentiable in their coefficients, with conversions between them,
+ * dimensions and minimal realisation.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { ComplexNumber } from '../numerics/differentiate/index.ts'
 import type { ComplexArray } from '../numerics/polynomial/index.ts'

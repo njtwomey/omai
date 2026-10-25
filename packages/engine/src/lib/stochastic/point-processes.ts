@@ -1,3 +1,10 @@
+/**
+ * Temporal point processes, random sequences of event times: homogeneous and inhomogeneous Poisson processes (by
+ * thinning), renewal processes and the renewal function, the self-exciting Hawkes process with its intensity,
+ * log-likelihood and fitting by EM, Cox and log-Gaussian Cox processes with random intensities, and marked Poisson
+ * processes.
+ */
+
 import { grad, hessian } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'

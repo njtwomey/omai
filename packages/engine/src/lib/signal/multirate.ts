@@ -1,3 +1,10 @@
+/**
+ * Multirate signal processing, changing a signal's sampling rate: `upfirdn` (upsample, filter, downsample in one pass),
+ * polyphase rational resampling (`resamplePoly`), Fourier resampling, decimation with an anti-aliasing filter and
+ * interpolation by an integer factor, as in scipy.signal, plus unfiltered up- and downsampling and the polyphase
+ * decomposition of a filter.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fftConvolve } from '../numerics/convolution/index.ts'
 import { fftshift, irfft, rfft } from '../numerics/fourier/index.ts'

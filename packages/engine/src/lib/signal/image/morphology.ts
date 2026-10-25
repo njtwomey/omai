@@ -1,3 +1,9 @@
+/**
+ * Mathematical morphology, scipy.ndimage and scikit-image style: binary and grey erosion, dilation, opening and closing
+ * with a structuring element, the morphological gradient and top-hats, connected-component labelling, the exact
+ * Euclidean distance transform, and thinning and skeletonisation to one-pixel-wide shapes.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type BorderMode, extendIndex, padModeOf } from '../../numerics/convolution/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'

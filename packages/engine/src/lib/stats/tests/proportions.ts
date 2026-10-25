@@ -1,3 +1,9 @@
+/**
+ * Inference on binomial proportions: confidence intervals for one proportion (Wald, Wilson, Agresti-Coull,
+ * Clopper-Pearson and Jeffreys, as statsmodels proportion_confint), the exact binomial test (scipy.stats.binomtest), z
+ * tests of one or two proportions, and the difference of two proportions with its interval.
+ */
+
 import { type Alternative, type Estimate, type TestResult, WhiteboxError } from '../../base/index.ts'
 import { binomial } from '../../dists/index.ts'
 import { betaincinv } from '../../numerics/special/index.ts'

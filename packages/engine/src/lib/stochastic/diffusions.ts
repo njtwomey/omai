@@ -1,3 +1,10 @@
+/**
+ * Named diffusion processes with their closed forms where they exist (exact transition laws, conditional moments,
+ * stationary laws), simulated exactly or by an SDE scheme: Ornstein-Uhlenbeck and Vasicek, geometric Brownian motion,
+ * Cox-Ingersoll-Ross with their bond prices, Bessel processes, overdamped and underdamped Langevin dynamics, and jump
+ * diffusions including Merton's model with its return density and option price.
+ */
+
 import { grad } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { bijectors, compose, type Distribution, gamma, logNormal, noncentralChi2, normal } from '../dists/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * The numerical integrators and geometry of Hamiltonian Monte Carlo: Gaussian Euclidean metrics (diagonal or dense mass
+ * matrices) with the generalised U-turn criterion, leapfrog and other palindromic splitting integrators (as BlackJAX),
+ * the Hamiltonian energy of a phase-space state, and whole trajectories for figures and teaching.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { ddot, dgemv } from '../../numerics/linalg/index.ts'
 import { type Key, normal } from '../../random/index.ts'

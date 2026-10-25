@@ -1,3 +1,9 @@
+/**
+ * Sequential quadratic programming in the style of SLSQP (Kraft): each step solves a quadratic model of the objective
+ * under the linearised constraints and bounds, with a quasi-Newton Hessian and a merit-function line search, as
+ * `scipy.optimize.minimize(method='SLSQP')`, with gradients and constraint Jacobians by autodiff.
+ */
+
 import { daxpy, ddot, dgemv, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { qpActiveSet, qpArrays } from '../quadratic.ts'

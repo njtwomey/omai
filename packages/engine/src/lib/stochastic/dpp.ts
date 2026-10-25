@@ -1,3 +1,10 @@
+/**
+ * Determinantal point processes (DPPs), random subsets whose items repel each other, so that samples are diverse: the
+ * L-ensemble and its marginal kernel, subset and inclusion probabilities, k-DPPs of fixed size, exact spectral
+ * sampling, greedy MAP inference by incremental Cholesky, conditioning on included and excluded items, and the expected
+ * sample size.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { eigh, inv, slogdet, solve } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'

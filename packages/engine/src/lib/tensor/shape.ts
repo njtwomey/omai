@@ -1,3 +1,8 @@
+/**
+ * Shapes and their arithmetic: element counts, row-major strides, numpy broadcasting of two shapes, normalising
+ * (possibly negative) axis arguments, and comparing and formatting shapes for messages.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** A tensor shape: the length of each axis, outermost first. `[]` is a scalar. */

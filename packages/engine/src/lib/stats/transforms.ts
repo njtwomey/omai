@@ -1,3 +1,9 @@
+/**
+ * Variance-stabilising power transforms that make data closer to normal: Box-Cox for positive data and Yeo-Johnson for
+ * data of any sign, with lambda fitted by maximum likelihood and its profile-likelihood interval, their log-likelihoods
+ * and inverses (as scipy.stats), and standardisation to zero mean and unit variance.
+ */
+
 import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { chi2 } from '../dists/index.ts'
 import { brentq } from '../numerics/roots/index.ts'

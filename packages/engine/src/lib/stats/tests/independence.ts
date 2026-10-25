@@ -1,3 +1,10 @@
+/**
+ * Tests of independence and conditional independence that detect nonlinear dependence: the distance covariance test,
+ * Hoeffding's D, mutual information with a permutation test, and the conditional tests used by causal discovery
+ * (Fisher's z on partial correlations, the stratified G test for discrete data, and the kernel conditional independence
+ * test, as causal-learn).
+ */
+
 import { type TestResult, WhiteboxError } from '../../base/index.ts'
 import { mutualInformation as tableMutualInformation } from '../../information/index.ts'
 import { dsyev } from '../../numerics/linalg/index.ts'

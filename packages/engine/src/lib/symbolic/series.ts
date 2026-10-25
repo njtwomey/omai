@@ -1,3 +1,9 @@
+/**
+ * Series expansions, as SymPy's `series`: Taylor and Laurent series about a point with a big-O remainder, Taylor
+ * polynomials and coefficients, residues, Pade approximants (rational functions matching the series), and Landau's O
+ * notation with `bigO` and `removeO`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import {

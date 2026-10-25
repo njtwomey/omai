@@ -1,3 +1,9 @@
+/**
+ * Symbolic matrices: rows of expressions with transposes, products, determinants (Berkowitz's algorithm),
+ * characteristic polynomials, inverses by the adjugate, null spaces, and exact eigenvalues in radicals with their
+ * eigenvectors.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import { MINUS_ONE, makeAdd, makeMul, makePow, numFromRational, ONE, ZERO } from './_canon.ts'

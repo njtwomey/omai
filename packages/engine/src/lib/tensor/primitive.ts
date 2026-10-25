@@ -1,3 +1,10 @@
+/**
+ * Primitives, the operations everything else is built from: `definePrimitive` declares one with its kernel, its `jvp`
+ * and `vjp` derivative rules and an optional batch rule, and `bind` applies it, dispatching to whichever transform
+ * (reverse mode, forward mode, batching) is in progress. Symbolic zeros (`MaybeZero`) keep zero tangents and cotangents
+ * from being materialised.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Tensor } from './tensor.ts'
 import { type Aval, isTraced, lift, type Trace, type Traced, type Value } from './traced.ts'

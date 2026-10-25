@@ -1,3 +1,10 @@
+/**
+ * Levy processes, which have independent stationary increments and may jump: compound Poisson processes, alpha-stable
+ * laws (Chambers-Mallows-Stuck sampling, characteristic function, density and CDF by Fourier inversion, as
+ * scipy.stats.levy_stable) and the stable process, and the variance gamma process (Brownian motion run on a gamma
+ * clock) with its closed-form density and moments.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Distribution, gamma } from '../dists/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'

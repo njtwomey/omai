@@ -1,3 +1,9 @@
+/**
+ * The primal active-set method for convex quadratic programs (Nocedal and Wright, algorithm 16.3) as a traced algorithm
+ * on number arrays: each step solves the equality-constrained problem on the working set, then adds a blocking
+ * constraint or drops one with a negative multiplier. It is the exact solver behind `qpActiveSet`.
+ */
+
 import { ddot, dnrm2 } from '../numerics/linalg/index.ts'
 import { type Algorithm, channels } from '../trace/index.ts'
 import { matVec, quadraticValue, solveDense } from './_programming.ts'

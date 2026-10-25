@@ -1,3 +1,8 @@
+/**
+ * Distributions on the probability simplex and over category counts: the Dirichlet, the multinomial, the overdispersed
+ * Dirichlet-multinomial and Aitchison's logistic-normal, as scipy.stats and torch.distributions.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { gaussHermite } from '../../numerics/quadrature/index.ts'
 import { digamma, lgamma, xlogy } from '../../numerics/special/index.ts'

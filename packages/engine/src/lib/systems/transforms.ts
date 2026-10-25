@@ -1,3 +1,9 @@
+/**
+ * Moving between equations and transfer functions: difference and differential equations to and from transfer functions
+ * (with LaTeX of each equation), and inverse Laplace and z-transforms of rational functions by partial fractions
+ * (scipy.signal residue and residuez), which give the time response term by term.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { type PartialFractions, residue, residuez } from '../numerics/polynomial/index.ts'

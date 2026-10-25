@@ -1,3 +1,9 @@
+/**
+ * Linear programs and their standard form: the `LinearProgram` type in scipy's form, conversion to standard form
+ * (equalities with non-negative variables, by shifting, reflecting and splitting variables and adding slacks) and back,
+ * and the shared option, path and solution types of the linear-programming methods.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import type { RunOptions } from '../trace/index.ts'

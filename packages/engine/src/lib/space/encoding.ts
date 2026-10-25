@@ -1,3 +1,9 @@
+/**
+ * Encodings of space values for search and model-based tuning: mapping configurations to and from the unit cube (log
+ * dimensions in log space, choices by index), enumerating grids, distances between configurations, and the one-move
+ * neighbourhoods that local search (hill climbing, simulated annealing, tabu search) explores.
+ */
+
 import { clamp, WhiteboxError } from '../base/index.ts'
 import { sizeOf } from '../tensor/index.ts'
 import { activeKeysOf, conditionHolds, resolveDict } from './_active.ts'

@@ -1,3 +1,9 @@
+/**
+ * Model reduction by balanced truncation: the Hankel singular values that say how much each state contributes to the
+ * input-output behaviour, a balanced realisation in which the controllability and observability Gramians are equal and
+ * diagonal, and `balred` (python-control), which drops the weakest states or residualises them to keep the DC gain.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { blockDiag, eigh, eigvals, signm, solve, svd } from '../numerics/linalg/index.ts'
 import {

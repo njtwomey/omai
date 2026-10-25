@@ -1,3 +1,9 @@
+/**
+ * Symbolic differentiation, as SymPy's `diff`: derivatives with respect to one or more variables and to any order,
+ * gradients, Jacobians and Hessians as symbolic matrices, and implicit differentiation (`idiff`). The `Steps` variants
+ * record the rule applied at each node (sum, product, power, chain rule) for worked derivations.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import {

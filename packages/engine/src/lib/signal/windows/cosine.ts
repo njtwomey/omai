@@ -1,3 +1,9 @@
+/**
+ * The cosine-sum family of window functions, scipy.signal.windows style: the general cosine and general Hamming forms
+ * and the named members (rectangular, Hann, Hamming, Blackman, Blackman-Harris, Nuttall and flat top), which taper a
+ * segment to reduce spectral leakage.
+ */
+
 import type { Tensor } from '../../tensor/index.ts'
 import { build } from './_build.ts'
 

@@ -1,3 +1,9 @@
+/**
+ * Parametric spectral estimation, which fits a model and reads the spectrum from it: autoregressive models by the
+ * Levinson-Durbin recursion, Yule-Walker and Burg (as statsmodels) with their power spectral density, the MUSIC and
+ * ESPRIT subspace estimators of sinusoid frequencies, and Prony's method for sums of damped complex exponentials.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C } from '../numerics/differentiate/index.ts'
 import { eigh, eigvals, lstsq, pinv, solveToeplitz } from '../numerics/linalg/index.ts'

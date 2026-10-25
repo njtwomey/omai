@@ -1,3 +1,9 @@
+/**
+ * The constant-Q transform, a time-frequency analysis whose bins are geometrically spaced (a fixed number per octave)
+ * with a bandwidth proportional to frequency, which suits musical pitch: the centre frequencies, the bank of windowed
+ * complex exponentials and the transform itself, matching librosa.cqt without early downsampling.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fft } from '../numerics/fourier/index.ts'
 import {

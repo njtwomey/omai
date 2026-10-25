@@ -1,3 +1,9 @@
+/**
+ * Operations on any space: sampling a value (log-scaled dimensions uniformly in log space, conditional keys only when
+ * active), membership tests, clipping into the space, defaults, the active dimensions of a value, and flattening to and
+ * from a vector of numbers.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { sizeOf } from '../tensor/index.ts'

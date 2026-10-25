@@ -1,3 +1,9 @@
+/**
+ * Taps: named intermediate values (activations, attention weights) that model code exposes to a collector. `tapsFor`
+ * binds the collector to a run so values are recorded only when the policy selects activations at that step, and cost
+ * nothing otherwise.
+ */
+
 import { isTensor, type Value } from '../tensor/index.ts'
 import type { TensorRole } from './events.ts'
 import type { RunHandle } from './tracer.ts'

@@ -1,3 +1,9 @@
+/**
+ * The cepstrum, the inverse Fourier transform of a log spectrum, which separates a slowly varying spectral envelope
+ * from a periodic excitation: the real cepstrum, the complex cepstrum and its inverse (as MATLAB cceps and
+ * python-acoustics), liftering of low or high quefrencies, and pitch estimation from the strongest cepstral peak.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fft, ifft } from '../numerics/fourier/index.ts'
 import {

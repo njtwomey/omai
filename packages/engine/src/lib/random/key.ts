@@ -1,3 +1,9 @@
+/**
+ * Immutable random keys in the style of JAX PRNG keys: two 32-bit words, created from a seed and derived with `split`
+ * (several independent keys) and `foldIn` (a key per step or episode). Random bits come from the Philox counter-based
+ * generator, and `keyFromPath` derives a key from a seed and a path of names.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { philox4x32 } from './philox.ts'
 

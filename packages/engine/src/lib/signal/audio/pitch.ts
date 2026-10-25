@@ -1,3 +1,9 @@
+/**
+ * Fundamental-frequency (pitch) estimation: YIN (the first trough of a normalised difference function) and
+ * probabilistic YIN, which decodes pitch and voicing with a hidden Markov model, both as in librosa, plus
+ * autocorrelation pitch, the harmonic product spectrum and the FFT autocorrelation they rest on.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { irfft, nextFastLen, rfft } from '../../numerics/fourier/index.ts'
 import { betainc } from '../../numerics/special/index.ts'

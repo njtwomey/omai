@@ -1,3 +1,9 @@
+/**
+ * Statistical power and sample-size calculations, statsmodels style: the probability that a test detects an effect of a
+ * given size, and the sample size needed to reach a target power, for t tests, the two-sample proportion test, one-way
+ * ANOVA and the chi-square goodness-of-fit test, plus power by simulation for any test.
+ */
+
 import { type Alternative, type Estimate, WhiteboxError } from '../base/index.ts'
 import { chi2, fDistribution, noncentralChi2, noncentralF, noncentralT } from '../dists/index.ts'
 import { brentq } from '../numerics/roots/index.ts'

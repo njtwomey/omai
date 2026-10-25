@@ -1,3 +1,9 @@
+/**
+ * The interior-point algorithm behind `linprogInteriorPoint`: Mehrotra's predictor-corrector on the homogeneous
+ * self-dual embedding of Andersen and Andersen (the method of scipy's legacy `interior-point`), as a traced algorithm
+ * whose iterates move through the inside of the feasible region.
+ */
+
 import { ddot, dnrm2 } from '../numerics/linalg/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { LP_SCHEMA, lpConfig } from './_lp.ts'

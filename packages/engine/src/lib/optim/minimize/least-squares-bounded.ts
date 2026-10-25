@@ -1,3 +1,9 @@
+/**
+ * The dogbox method for bounded nonlinear least squares (Voglis and Lagaris), a port of scipy's
+ * `least_squares(method='dogbox')`: a dogleg trust-region step in a rectangular region, with variables at an active
+ * bound held fixed, as a traced algorithm.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

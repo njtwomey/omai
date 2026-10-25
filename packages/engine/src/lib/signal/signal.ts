@@ -1,3 +1,9 @@
+/**
+ * The shared vocabulary of the signal domain: the `Signal` (samples with a sampling rate and start time), `Spectrum`
+ * and `TimeFrequency` record types the analyses return, `createSignal` and its sample times and duration, decibel
+ * conversion, and phase unwrapping (numpy.unwrap).
+ */
+
 import { maxOf, WhiteboxError } from '../base/index.ts'
 import {
   abs,

@@ -1,3 +1,9 @@
+/**
+ * Conditions and piecewise expressions: equations and inequalities (SymPy's `Eq`, `Lt` and friends), which evaluate to
+ * true or false when they can, the logical connectives `and`, `or` and `not` in simplified form, and `piecewise` from
+ * value and condition pairs.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { makeLogic, makePiecewise, makeRel, TRUE } from './_canon.ts'
 import { asExpr, type Expr, type ExprLike, type RelOp } from './expr.ts'

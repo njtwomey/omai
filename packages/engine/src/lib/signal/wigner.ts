@@ -1,3 +1,9 @@
+/**
+ * Quadratic time-frequency distributions: the Wigner-Ville distribution of the analytic signal, perfectly concentrated
+ * on linear chirps but with cross terms between components, and the pseudo and smoothed pseudo versions that window the
+ * lag and time to suppress those cross terms, as in the tftb toolbox.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fft } from '../numerics/fourier/index.ts'
 import { type ComplexLike, complex, primalOf, type TensorLike, toFlat } from '../tensor/index.ts'

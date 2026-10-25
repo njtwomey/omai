@@ -1,3 +1,9 @@
+/**
+ * Displaying and serialising tensors: `formatTensor` prints a tensor like numpy's `repr` (nested brackets, fixed
+ * precision, long axes summarised with `...`), and `tensorToJson` and `tensorFromJson` round-trip tensors as JSON in
+ * the format the Python oracle writes.
+ */
+
 import { decodeNumber, encodeNumber, WhiteboxError } from '../base/index.ts'
 import { cpu } from './cpu.ts'
 import { allocate, type DType } from './dtype.ts'

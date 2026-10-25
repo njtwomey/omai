@@ -1,3 +1,9 @@
+/**
+ * Rhythm analysis, librosa style: the onset strength envelope (how sharply the mel spectrum rises at each frame), peak
+ * picking and onset detection on it, the autocorrelation tempogram, a global tempo estimate, and Ellis's
+ * dynamic-programming beat tracker that places beats on strong onsets at a steady period.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { primalOf, type TensorLike } from '../../tensor/index.ts'
 import { getWindow } from '../windows/index.ts'

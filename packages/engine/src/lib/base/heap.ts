@@ -1,4 +1,9 @@
 /**
+ * Priority queues: the `Heap` interface and the `heap` constructor, a binary heap on an array with push, pop and peek
+ * in logarithmic time, shared by nearest-neighbour searches, shortest paths and best-first search.
+ */
+
+/**
  * A binary heap ordered by a comparator: the smallest element (by `compare`) is at the top. The priority queue behind
  * nearest-neighbour searches, graph shortest paths and best-first search.
  */

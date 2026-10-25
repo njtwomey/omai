@@ -1,3 +1,9 @@
+/**
+ * Distributions for directions, on the circle and the sphere: the von Mises distribution of angles, the von
+ * Mises-Fisher distribution on the unit sphere (as scipy.stats), and the power spherical distribution, an alternative
+ * with a simple reparameterised sampler.
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import { digamma, ive, lgamma, logIv } from '../../numerics/special/index.ts'
 import {

@@ -1,3 +1,9 @@
+/**
+ * The frequency responses of filters given by coefficients, as scipy.signal: `freqs` for an analog filter b(s) / a(s)
+ * and `freqz` for a digital filter in powers of z^-1 (through the real FFT for FIR filters on a uniform grid), both
+ * differentiable in the coefficients.
+ */
+
 import { fft, nextFastLen, rfft } from '../numerics/fourier/index.ts'
 import {
   type ComplexValue,

@@ -1,3 +1,9 @@
+/**
+ * Global minimisation by stochastic search: simulated annealing (a Metropolis chain at a falling temperature) and basin
+ * hopping (random jumps followed by local minimisation, as `scipy.optimize.basinhopping`), as traced algorithms that
+ * keep the best point seen.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import { Generator } from '../../random/index.ts'

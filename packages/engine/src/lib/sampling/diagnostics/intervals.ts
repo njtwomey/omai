@@ -1,3 +1,9 @@
+/**
+ * Credible intervals from posterior draws, as ArviZ: the highest density interval (the narrowest interval holding a
+ * given mass), its multimodal form for discrete draws as a union of intervals, and the equal-tailed interval between
+ * two quantiles.
+ */
+
 import { quantileOf, WhiteboxError } from '../../base/index.ts'
 import { asTensor, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 

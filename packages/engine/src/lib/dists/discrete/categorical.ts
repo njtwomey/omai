@@ -1,3 +1,9 @@
+/**
+ * Distributions over a finite set of categories: the categorical and one-hot categorical (from probabilities or
+ * logits), the discrete uniform on a range of integers, and ordinal (cumulative-link) distributions such as the ordered
+ * logistic and ordered probit, where increasing cutpoints divide a latent scale into ordered classes.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import { log1mexp, logNdtr, logSigmoid } from '../../numerics/special/index.ts'
 import { type Key, uniform as uniformNoise } from '../../random/index.ts'

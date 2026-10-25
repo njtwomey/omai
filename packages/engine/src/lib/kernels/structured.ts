@@ -1,3 +1,10 @@
+/**
+ * Kernels for structured or special inputs: white noise and constant kernels, chi-square, histogram-intersection and
+ * related kernels for histograms, string kernels (k-spectrum and Lodhi's subsequence kernel), set and Jaccard kernels,
+ * diffusion and regularised Laplacian kernels between the nodes of a graph, and the Weisfeiler-Lehman subtree kernel
+ * between graphs.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   type Graph,

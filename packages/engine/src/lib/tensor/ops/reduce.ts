@@ -1,3 +1,9 @@
+/**
+ * Reductions over axes: sums, products, extrema (ties share the gradient), means, two-pass variances and standard
+ * deviations, argmax and argmin, cumulative sums and products, the stable `logsumexp`, `softmax` and `logSoftmax`, and
+ * vector norms of any order.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { ReduceKernel } from '../backend.ts'
 import { batchedAxis } from '../batching.ts'

@@ -1,3 +1,9 @@
+/**
+ * Quasi-random and space-filling point sets: Sobol' sequences (unscrambled, and Matousek-scrambled with a digital
+ * shift, matching `scipy.stats.qmc.Sobol`), Halton sequences, Latin hypercube samples as in scipy's `LatinHypercube`,
+ * and Poisson disk (blue-noise) samples by Bridson's algorithm in any dimension.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 import { checkSobol, directions, drawSobol, scrambleDirections } from './_sobol.ts'

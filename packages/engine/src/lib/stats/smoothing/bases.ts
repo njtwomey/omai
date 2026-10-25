@@ -1,3 +1,10 @@
+/**
+ * Penalised regression bases for the smooth terms of generalised additive models, following mgcv and patsy: B-splines,
+ * natural splines and P-splines, cubic and cyclic cubic regression splines, thin-plate, Duchon and Gaussian-process
+ * smooths, random effects, factor-smooth interactions and tensor products. Each `SmoothBasis` carries its model matrix,
+ * its penalty matrices and a way to evaluate it at new data.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { bspline } from '../../numerics/interpolate/index.ts'
 import { dgesv, dsyev } from '../../numerics/linalg/index.ts'

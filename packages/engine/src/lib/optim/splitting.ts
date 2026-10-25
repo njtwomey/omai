@@ -1,3 +1,9 @@
+/**
+ * Operator splitting methods for problems with a smooth part and a nonsmooth part known through its proximal operator:
+ * proximal gradient descent with backtracking (ISTA), its accelerated form FISTA with optional restarts, and the
+ * Chambolle-Pock primal-dual hybrid gradient method for min F(K x) + G(x), all as traced algorithms.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { daxpy, ddot, dnrm2 } from '../numerics/linalg/index.ts'
 import { asOperator, type CsrMatrix, type LinearOperator } from '../numerics/sparse/index.ts'

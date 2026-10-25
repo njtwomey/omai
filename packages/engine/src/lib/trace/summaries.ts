@@ -1,3 +1,9 @@
+/**
+ * Compact records of large tensors: `summarise` computes count, mean, standard deviation, extremes, norm, fraction of
+ * zeros and a 10-bin histogram, and `subsample` keeps an evenly spaced glimpse of the values, as recorded at summary
+ * detail.
+ */
+
 import type { TensorSummary } from './events.ts'
 
 /**

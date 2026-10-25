@@ -1,3 +1,10 @@
+/**
+ * Robust statistics, estimates that resist outliers: trimmed and winsorized means and variances (scipy.stats),
+ * M-estimates of location by iteratively reweighted least squares with Huber's or Tukey's biweight weights (as
+ * statsmodels RLM), and RANSAC, which fits any model to random minimal subsets and keeps the one with the most inliers,
+ * also as a traced algorithm.
+ */
+
 import { type Estimate, meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { subsample } from '../random/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'

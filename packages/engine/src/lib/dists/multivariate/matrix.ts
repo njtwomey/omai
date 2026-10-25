@@ -1,3 +1,9 @@
+/**
+ * Distributions over matrices: the Wishart and inverse Wishart distributions on positive-definite matrices (the
+ * conjugate priors of a normal precision and covariance, as scipy.stats), and the LKJ distribution over correlation
+ * matrices and their Cholesky factors, with the log multivariate gamma function that normalises them.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { cholesky, inv, solveTriangular } from '../../numerics/linalg/index.ts'
 import { digamma, lgamma } from '../../numerics/special/index.ts'

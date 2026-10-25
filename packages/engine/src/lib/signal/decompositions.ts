@@ -1,3 +1,10 @@
+/**
+ * Data-driven decompositions of a signal into oscillatory components that sum back to it: empirical mode decomposition
+ * (EMD, sifting out intrinsic mode functions) and its noise-assisted ensemble variants EEMD and CEEMDAN, variational
+ * mode decomposition (VMD, band-limited modes by ADMM, step for step as vmdpy, also as a traced algorithm), and
+ * singular spectrum analysis (SSA, the SVD of the lagged trajectory matrix).
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { fft, ifft } from '../numerics/fourier/index.ts'
 import { cubicSpline } from '../numerics/interpolate/index.ts'

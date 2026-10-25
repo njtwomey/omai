@@ -1,3 +1,9 @@
+/**
+ * Resumable runs: a policy that stores the algorithm state every `n` steps, `resume` to continue a run exactly from a
+ * checkpoint (with the same step keys), and `seek` to reconstruct the state at any step by re-running from the nearest
+ * earlier checkpoint.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Algorithm, type RunOptions, type RunResult, runAlgorithm } from './algorithm.ts'
 import type { CheckpointEvent, Run } from './events.ts'

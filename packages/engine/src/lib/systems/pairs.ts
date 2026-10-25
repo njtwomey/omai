@@ -1,3 +1,9 @@
+/**
+ * Tables of standard Laplace and z-transform pairs (a time function or sequence with its rational transform), as data
+ * with evaluators and written-out forms, and `pairToTf`, which turns a pair into a transfer function whose impulse
+ * response is the time function, so the tables can be checked by simulation.
+ */
+
 import { polymul } from '../numerics/polynomial/index.ts'
 import { choose, factorial } from './_shared.ts'
 import { type TransferFunction, tf } from './representations.ts'

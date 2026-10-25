@@ -1,3 +1,9 @@
+/**
+ * The Nelder-Mead downhill simplex method, a derivative-free minimiser that reflects, expands, contracts and shrinks a
+ * simplex of points, as a traced algorithm that follows `scipy.optimize.minimize(method='Nelder-Mead')` step for step,
+ * so the simplex can be animated.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { boundArrays, clipInto } from './_bounds.ts'

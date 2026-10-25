@@ -1,3 +1,9 @@
+/**
+ * OWL-QN (orthant-wise limited-memory quasi-Newton, Andrew and Gao), for a smooth function plus an L1 penalty: L-BFGS
+ * on the pseudo-gradient with steps kept within one orthant, giving exact zeros at quasi-Newton speed for the lasso and
+ * sparse logistic regression.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

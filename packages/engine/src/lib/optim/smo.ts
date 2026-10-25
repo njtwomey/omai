@@ -1,3 +1,9 @@
+/**
+ * Sequential minimal optimisation (SMO, Platt; libsvm's solver): the dual quadratic program of a support vector machine
+ * solved by repeatedly optimising a pair of variables that violate the optimality conditions, as a traced algorithm.
+ * Includes the C-SVC and epsilon-SVR duals, which return the solution as a kernel expansion.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'

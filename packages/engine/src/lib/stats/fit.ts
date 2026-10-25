@@ -1,3 +1,10 @@
+/**
+ * Maximum-likelihood estimation: Newton's method on any log-likelihood with the score and Hessian from automatic
+ * differentiation (`newtonMle`, also as a traced algorithm), the observed information whose inverse gives standard
+ * errors, and `fitDistribution`, which fits a named distribution family to data in closed form where one exists and
+ * numerically otherwise, as scipy.stats' fit.
+ */
+
 import { grad, hessian } from '../autodiff/index.ts'
 import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import {

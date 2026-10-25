@@ -1,3 +1,10 @@
+/**
+ * Convolutional codes, error-correcting codes in which each output bit is a parity of the last K input bits held in a
+ * shift register: building a code from its generator polynomials, encoding with optional termination, and
+ * maximum-likelihood decoding by the Viterbi algorithm over the code's trellis (also as a traced algorithm), with hard
+ * or soft decisions.
+ */
+
 import { argminOf, type Json, maxOf, minOf, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 

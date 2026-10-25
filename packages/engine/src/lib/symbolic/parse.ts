@@ -1,3 +1,8 @@
+/**
+ * Parsing text into symbolic expressions: `parse` reads infix notation (`x^2 + sin(x)`) and `parseLatex` reads a useful
+ * subset of LaTeX (fractions, roots, powers and subscripts, implicit multiplication, absolute values).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   E,

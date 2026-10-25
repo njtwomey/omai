@@ -1,3 +1,9 @@
+/**
+ * Goodness-of-fit tests of whether a sample follows a hypothesised distribution, scipy.stats style: chi-square and
+ * Cressie-Read power-divergence tests on counts, the Kolmogorov-Smirnov, Anderson-Darling and Cramer-von Mises tests
+ * against a CDF, and the normality tests of Shapiro-Wilk, Jarque-Bera and Lilliefors.
+ */
+
 import { meanOf, type TestResult, varianceOf, WhiteboxError } from '../../base/index.ts'
 import type { Distribution } from '../../dists/index.ts'
 import { kolmogorov, logNdtr, ndtr, smirnov } from '../../numerics/special/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * System norms, which measure a system's size as an operator: the H2 norm (output energy under white-noise input, from
+ * a Gramian) and the H-infinity norm (the peak gain over all frequencies, by the Bruinsma-Steinbuch algorithm), as
+ * python-control's `system_norm`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { eigvals, solve, svdvals } from '../numerics/linalg/index.ts'
 import {

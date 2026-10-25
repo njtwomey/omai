@@ -1,3 +1,8 @@
+/**
+ * Dual annealing (Xiang et al.), generalised simulated annealing with heavy-tailed visiting distributions combined with
+ * local search, as `scipy.optimize.dual_annealing`, as a traced algorithm for global minimisation within bounds.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Complex arithmetic on tensors, with a complex value held as a pair of real arrays of the same shape so that
+ * everything stays differentiable: construction and real and imaginary parts, sums, products, quotients and conjugates,
+ * modulus and argument, polar form (`torch.polar`), the complex exponential and `cis`.
+ */
+
 import { zerosLike } from './create.ts'
 import { add, div, mul, neg, promoteFloat, sub } from './ops/arithmetic.ts'
 import { arctan2, cos, exp, sin, sqrt } from './ops/math.ts'

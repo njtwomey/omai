@@ -1,3 +1,8 @@
+/**
+ * The simplex algorithm behind `linprogSimplex`: the two-phase method on a dense tableau as a traced algorithm, one
+ * pivot per step, recording the basis and the vertices visited so the walk along the feasible polytope can be shown.
+ */
+
 import { maxOf } from '../base/index.ts'
 import { ddot, dgesv } from '../numerics/linalg/index.ts'
 import type { Algorithm } from '../trace/index.ts'

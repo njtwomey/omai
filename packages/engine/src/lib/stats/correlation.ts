@@ -1,3 +1,10 @@
+/**
+ * Measures of association between variables, each with its test where one exists: Pearson, Spearman and Kendall
+ * correlations (scipy.stats), the covariance and correlation matrices of numpy, partial correlation given covariates
+ * and the point-biserial correlation (as pingouin), and the distance correlation of Szekely, Rizzo and Bakirov, which
+ * is zero exactly when the variables are independent.
+ */
+
 import { type Estimate, meanOf, type TestResult, WhiteboxError } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { asTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'

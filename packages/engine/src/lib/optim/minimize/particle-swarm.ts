@@ -1,3 +1,9 @@
+/**
+ * Particle swarm optimisation (Kennedy and Eberhart), a population-based global optimiser in which each particle's
+ * velocity is pulled towards its own best point and the swarm's, with inertia weights or constriction coefficients, as
+ * a traced algorithm.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import { Generator } from '../../random/index.ts'

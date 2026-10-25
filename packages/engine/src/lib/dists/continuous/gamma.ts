@@ -1,3 +1,8 @@
+/**
+ * The gamma family and its relatives on the positive reals: gamma, Erlang, exponential, inverse gamma, chi-square,
+ * Weibull and inverse Gaussian (Wald), with scipy.stats parameterisations noted on each.
+ */
+
 import {
   digamma,
   gamma as gammaFn,

@@ -1,3 +1,10 @@
+/**
+ * The trace event vocabulary and its schemas: a run starts with a `run` event (what ran, with which seed, version and
+ * configuration) and ends with an `end` event, and between them records metrics, tensors (full or summarised),
+ * structured messages, episodes, frames for animation, checkpoints and log lines. A `Run` is the unit that is exported,
+ * replayed and visualised.
+ */
+
 import { z } from 'zod'
 import { type Json, JsonSchema } from '../base/index.ts'
 

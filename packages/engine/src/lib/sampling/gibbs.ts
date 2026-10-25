@@ -1,3 +1,9 @@
+/**
+ * Gibbs-type samplers that update one part of the state at a time: blocked Gibbs sampling from full conditional
+ * distributions, Neal's slice sampler (a coordinate-wise draw from under the density by stepping out and shrinking a
+ * bracket), and elliptical slice sampling for posteriors with a Gaussian prior (as BlackJAX), all as MCMC kernels.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { ddot, dgemv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, uniformStream } from '../random/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * The `Tensor` type, an n-dimensional array with a dtype, a shape and contiguous row-major storage owned by a backend,
+ * and the ways in and out of it: `tensor` (like `numpy.array`), wrapping existing storage, conversion of tensor-like
+ * inputs, and `toArray`, `toFlat`, `item` and `clone`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Backend } from './backend.ts'
 import { cpu } from './cpu.ts'

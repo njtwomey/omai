@@ -1,3 +1,9 @@
+/**
+ * Nested runs: `subRun` runs an inner algorithm inside a step of an outer one, so the inner trace nests under the outer
+ * run with the outer tracer and a policy derived from the outer one (a solver inside an optimiser, trials inside a
+ * study).
+ */
+
 import { foldIn } from '../random/index.ts'
 import { type Algorithm, type RunOptions, type RunResult, runAlgorithm, type StepContext } from './algorithm.ts'
 

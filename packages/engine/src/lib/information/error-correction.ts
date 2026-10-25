@@ -1,3 +1,10 @@
+/**
+ * Binary linear block codes, which add redundant bits so that errors can be detected and corrected: generator and
+ * parity-check matrices, encoding, syndromes and syndrome (coset-leader) decoding, minimum distance, the parity,
+ * repetition and Hamming codes, and the Hamming, Singleton, Gilbert-Varshamov and Plotkin bounds on how good a code can
+ * be.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type BitMatrix, bitMatrix, matVec, nullSpace, rref, solveRow, vecMat } from './_gf2.ts'
 

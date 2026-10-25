@@ -1,3 +1,9 @@
+/**
+ * Trust-region minimisation, which minimises a quadratic model within a radius and grows or shrinks the radius by how
+ * well the model predicted the actual reduction: the traced driver (scipy's `_minimize_trust_region`), exact or
+ * Hessian-vector-product curvature from autodiff, and the dogleg, trust-ncg and trust-exact methods.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { daxpy, dgemv, dnrm2 } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

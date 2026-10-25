@@ -1,3 +1,10 @@
+/**
+ * Multirate filter banks that split a signal into subbands and put it back together: quadrature-mirror filters,
+ * two-channel banks built from wavelets with checks of the perfect-reconstruction and power-complementarity conditions,
+ * the uniform DFT analysis and synthesis bank, and the wavelet packet decomposition (pywt.WaveletPacket), which splits
+ * both approximation and detail at every level.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { type ComplexValue, flip, mul, sliceAxis, type TensorLike, type Value } from '../tensor/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Scatterplot smoothers, nonparametric estimates of a regression curve: LOWESS and LOESS (local weighted polynomial
+ * fits, as statsmodels and R), Nadaraya-Watson and local linear kernel regression, running (moving-window) statistics
+ * as pandas rolling, and cubic smoothing splines with the penalty chosen by degrees of freedom or generalised
+ * cross-validation.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { makeSmoothingSpline, type SmoothingSpline } from '../../numerics/interpolate/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'

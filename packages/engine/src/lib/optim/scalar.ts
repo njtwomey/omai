@@ -1,3 +1,9 @@
+/**
+ * Minimisation of functions of one variable, scipy.optimize style: bracketing a minimum, Brent's method, golden-section
+ * search and bounded Brent minimisation (`fminbound`), each also a traced algorithm whose shrinking intervals can be
+ * shown, and the `minimizeScalar` front end.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 

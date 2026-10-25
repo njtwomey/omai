@@ -1,3 +1,9 @@
+/**
+ * The option shapes and defaults shared across the library, so every iterative method, loss, metric and test reads them
+ * the same way: convergence tolerances (`Tolerance`, `resolveTolerance`), loss and metric reductions, the alternative
+ * hypothesis of a test, and confidence levels.
+ */
+
 import { WhiteboxError } from './errors.ts'
 
 /** Convergence tolerances shared by iterative methods. */

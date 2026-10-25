@@ -1,3 +1,8 @@
+/**
+ * Variable-length codes for integers: Elias's universal gamma, delta and omega codes, Golomb and Rice codes with the
+ * parameter that is optimal for a geometric distribution, and run-length encoding, each with its decoder.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** The Elias universal codes for positive integers. */

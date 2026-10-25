@@ -1,3 +1,10 @@
+/**
+ * What a digital filter does to each frequency: the complex frequency response of second-order sections,
+ * zeros-poles-gain or any LTI system, the group delay (computed exactly from the polynomials) and the phase delay, and
+ * `checkSpecification`, which measures a design's worst passband loss and stopband attenuation against what was asked
+ * for.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { complexOps as C } from '../../numerics/differentiate/index.ts'
 import {

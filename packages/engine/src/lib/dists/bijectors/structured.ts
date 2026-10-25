@@ -1,3 +1,10 @@
+/**
+ * Bijectors onto structured spaces and the building blocks of normalising flows: maps onto ordered vectors, the
+ * probability simplex (stick-breaking), Cholesky factors of correlation and covariance matrices and positive-definite
+ * matrices (as NumPyro and TFP), plus the RealNVP affine coupling layer, masked autoregressive flow (MAF) layers with
+ * MADE masks, and permutations between layers.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { cholesky } from '../../numerics/linalg/index.ts'
 import { logit, logSigmoid } from '../../numerics/special/index.ts'

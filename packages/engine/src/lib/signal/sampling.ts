@@ -1,3 +1,9 @@
+/**
+ * Sampling and quantisation of signals: band-limited Whittaker-Shannon (sinc) reconstruction, the aliased frequency of
+ * an undersampled tone, uniform quantisation, mu-law companding (librosa.mu_compress), dither, the zero-order hold of a
+ * DAC and its droop, and the signal-to-quantisation-noise ratio with its 6.02 b + 1.76 dB rule.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Key, uniform } from '../random/index.ts'
 import {

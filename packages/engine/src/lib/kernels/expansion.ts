@@ -1,3 +1,10 @@
+/**
+ * Explicit feature maps that approximate a kernel by an inner product of finite feature vectors, so kernel methods
+ * scale to large data: random Fourier and orthogonal random features (Rahimi and Recht), the Nystrom approximation from
+ * landmarks, additive and skewed chi-square samplers, tensor and polynomial count sketches (as scikit-learn's
+ * kernel_approximation), and the errors of the approximate Gram matrix.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type ContextOptions, resolveKey } from '../context/index.ts'
 import { fft, ifft } from '../numerics/fourier/index.ts'

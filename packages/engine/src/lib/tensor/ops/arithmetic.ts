@@ -1,3 +1,9 @@
+/**
+ * Elementwise arithmetic primitives with numpy broadcasting and derivative rules: sums, differences, products, true and
+ * floor division, powers, modulo, extrema, negation, absolute value, sign, squares and reciprocals, clipping, dtype
+ * casts, `stopGradient`, and the helpers that promote operands to a floating dtype.
+ */
+
 import { batchElementwise } from '../batching.ts'
 import { type DType, isFloat } from '../dtype.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'

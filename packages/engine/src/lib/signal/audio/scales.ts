@@ -1,3 +1,10 @@
+/**
+ * Perceptual frequency scales and their conversions to and from hertz: the mel scale (Slaney and HTK variants, as
+ * librosa), the Bark scale (Traunmüller, Zwicker and Terhardt, Schroeder) and the equivalent rectangular bandwidth
+ * (ERB) scale of the auditory filter, with helpers that space frequencies evenly on them and list the rFFT bin
+ * frequencies.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

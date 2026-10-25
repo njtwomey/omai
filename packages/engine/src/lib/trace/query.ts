@@ -1,3 +1,9 @@
+/**
+ * Reading recorded traces: metric and tensor series over steps for plotting, messages, episodes and animation frames,
+ * the tree of runs by parent link, per-run summaries, and `diffRuns` to compare the configuration, seeds and results of
+ * two runs.
+ */
+
 import type { Json } from '../base/index.ts'
 import type {
   EndEvent,

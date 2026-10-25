@@ -1,3 +1,10 @@
+/**
+ * The penalties and constraints that smooth terms are built from: difference penalties (P-splines) and integrated
+ * squared derivative penalties of B-spline bases, the null space of a penalty and shrinkage that penalises it too, the
+ * sum-to-zero identifiability constraint and the reparameterisation that absorbs linear constraints, and Pya and Wood's
+ * monotone and convex shape constraints.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { bspline } from '../../numerics/interpolate/index.ts'
 import { dsyev } from '../../numerics/linalg/index.ts'

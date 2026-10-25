@@ -1,3 +1,9 @@
+/**
+ * Second-order sections, the cascade of biquad filters that is the numerically safe way to realise a high-order filter:
+ * `zpk2sos` with scipy's pairing of poles and zeros, and the conversions from sections back to a single transfer
+ * function or to zeros, poles and gain, and from a transfer function to sections.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { convolve } from '../numerics/convolution/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'

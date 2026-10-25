@@ -1,3 +1,9 @@
+/**
+ * Tracing for code that is not an `Algorithm`: `instrument` wraps a function so every call becomes a run recording its
+ * numeric inputs and output, and `traceCall` traces a single non-iterative computation (an elimination, a
+ * factorisation, a pipeline step) that emits its own steps.
+ */
+
 import type { Json } from '../base/index.ts'
 import { isTensor } from '../tensor/index.ts'
 import type { TensorRole } from './events.ts'

@@ -1,3 +1,9 @@
+/**
+ * Peak finding in one-dimensional signals, scipy.signal style: `findPeaks` with filtering by height, threshold,
+ * distance, prominence and width, the prominence and width measures themselves, relative extrema over a neighbourhood
+ * (`argrelextrema`), and zero crossings (librosa.zero_crossings).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { samples } from './_shared.ts'

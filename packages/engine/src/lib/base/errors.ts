@@ -1,3 +1,9 @@
+/**
+ * The library's single error type, `WhiteboxError`, with machine-readable codes that callers branch on instead of
+ * message text, and the guards built on it: `invariant`, `assertFinite` and `assertShape` for checking conditions,
+ * numbers and shapes at function boundaries.
+ */
+
 /** The category of a {@link WhiteboxError}: callers branch on this, never on message text. */
 export type ErrorCode =
   | 'shape'

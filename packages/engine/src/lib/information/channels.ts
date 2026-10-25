@@ -1,3 +1,10 @@
+/**
+ * Communication channels and their capacity, the highest rate at which information can be sent through them reliably:
+ * the mutual information between a channel's input and output, the Blahut-Arimoto algorithm for the capacity of any
+ * discrete memoryless channel (also as a traced algorithm), the binary symmetric, erasure and Z channels, the Gaussian
+ * channel's Shannon-Hartley capacity, and water-filling power allocation over parallel Gaussian channels.
+ */
+
 import { type Json, logSumExpOf, maxOf, pairwiseSum, WhiteboxError } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { expandDims, mul, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'

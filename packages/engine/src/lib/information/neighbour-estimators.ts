@@ -1,3 +1,10 @@
+/**
+ * k-nearest-neighbour estimators for continuous data, which avoid binning by using distances to the k-th neighbour: the
+ * Kozachenko-Leonenko entropy, the Kraskov-Stoegbauer-Grassberger (KSG) mutual information and its conditional form (as
+ * NPEET), a k-NN estimate of the KL divergence, and Ross's estimator for a continuous and a discrete variable
+ * (scikit-learn's mutual_info_classif).
+ */
+
 import { meanOf, WhiteboxError } from '../base/index.ts'
 import { kdTree } from '../numerics/spatial/index.ts'
 import { lgamma } from '../numerics/special/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Numerical solution of stochastic differential equations dY = f dt + g dW, like sdeint and torchsde: Euler-Maruyama,
+ * Milstein, stochastic Runge-Kutta and Heun schemes for several noise types, `sdeint` as a traced path simulation,
+ * strong and weak convergence studies, conversion between Ito and Stratonovich forms, and the reverse-time SDE and
+ * probability-flow ODE that score-based diffusion models are built on.
+ */
+
 import { jvp } from '../autodiff/index.ts'
 import { type Estimate, estimate, maxOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'

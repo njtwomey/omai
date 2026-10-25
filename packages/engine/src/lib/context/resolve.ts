@@ -1,3 +1,9 @@
+/**
+ * How high-level functions pick their randomness and tracing: the `ContextOptions` they accept (`key`, `ctx`, tracer,
+ * policy) and the resolvers that choose an explicit key first, then a key named from the given context, then one from
+ * the default context.
+ */
+
 import type { Key } from '../random/index.ts'
 import type { TracePolicy, Tracer } from '../trace/index.ts'
 import type { Context } from './context.ts'
