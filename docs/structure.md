@@ -2785,6 +2785,9 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Attributions, perturbation-based (`perturbation.ts`): occlusion and feature ablation (with feature masks and
   baselines), RISE for images, Morris elementary effects, LIME (tabular, text tokens, image superpixels;
   `surrogates.ts`).
+  Built: `featureAblation`, `occlusion` (captum's window count, edge windows clipped), `rise`, `morrisEffects`;
+  `limeMasked` in `surrogates.ts` (lime's text and image explainers over on/off units). Goldens: captum
+  FeatureAblation and Occlusion.
 - Shapley family (`shapley.ts`): exact, kernel, sampling and permutation SHAP, tree SHAP (path-dependent and
   interventional) and interactions, linear SHAP (independent and correlated), partition SHAP and Owen values over
   feature hierarchies, conditional versus interventional value functions, SAGE (global importance), Shapley-based
@@ -2818,6 +2821,9 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   Banzhaf, representer points; detecting mislabelled and harmful training rows.
 - Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
   attribution applies to text, images and series.
+  Built: `tokenise`, `tokenPredictor`, `gridSuperpixels`, `slicSuperpixels`, `timeWindows`, `maskGroups`,
+  `maskedPredictor` (a predictor over group presence, so Kernel SHAP, exact Shapley and LIME run over units),
+  `expandGroups`.
 - Evaluation of explanations (`evaluation.ts`, Quantus's categories): faithfulness (deletion and insertion curves,
   ROAR, faithfulness correlation, monotonicity), robustness (max- and average-sensitivity, local Lipschitz estimate),
   localisation (pointing game, relevance mass and rank against a ground-truth mask), complexity (sparseness, entropy),
@@ -4073,6 +4079,11 @@ built from: `explain`, `learn`, `metrics`
 - `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
 - `gradients.ts`: gradient attributions for neural models (`methods/neural`), drawn over images and tabular inputs.
 - `valuation.ts`: which training rows matter (influence, data Shapley, k-NN Shapley), with mislabelled-row studies.
+- `perturbation.ts`: `explainImage` (occlusion, superpixel ablation, RISE, superpixel SHAP and LIME), `explainText`
+  (word ablation, SHAP, LIME over any text scorer), `explainSeries` (window occlusion, ablation, SHAP) and
+  `morrisScreening` (an `importances` record). The `featureAttributions` record gains `layout` (image, tokens,
+  series) and `segments`; render draws them with `AttributionImageView`, `TokenStripView` and
+  `AttributionSeriesView` (`views/modalities.ts`), which `AttributionView` picks by layout. Built.
 
 `fairness/` (fairlearn, AIF360)
 built from: `fairness`, `learn`, `metrics`, `optim`, `datasets` (with protected attributes)

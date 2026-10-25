@@ -450,6 +450,15 @@
       "cases": 12
     },
     {
+      "fixture": "explain/perturbation.json",
+      "source": "oracle/cases/explain/perturbation.py",
+      "reference": {
+        "captum": "0.9.0",
+        "torch": "2.14.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "explain/shapley.json",
       "source": "oracle/cases/explain/shapley.py",
       "reference": {
