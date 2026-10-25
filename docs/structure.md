@@ -2963,6 +2963,15 @@ Aequitas (group bias); goldens where cheap
   Round two's step-four domains reuse the `curves` and `coefficientTable` records; dedicated views (exposure in
   rankings, causal decompositions, dynamics of repeated decisions) are TODO while render work is paused.
 
+Left in 4.39 after round two (one line each):
+- TODO: error-rate parity moment for the reductions (fairlearn's ErrorRateParity).
+- TODO: bounded group loss reduction for regression (fairlearn's BoundedGroupLoss with exponentiated gradient).
+- TODO: FA*IR's multiple-test adjustment of alpha (`fairMinimumTable` uses the unadjusted test).
+- TODO: path-specific effects along arbitrary chosen paths (`pathSpecificEffects` gives total, direct, indirect).
+- TODO: dedicated records and views for exposure in rankings, causal decompositions and repeated decisions.
+- TODO: thin methods for causal, regression and ranking fairness (the core is built).
+- TODO: hub entries for the round-two mitigations, and the parked gallery-to-hub move (5.20).
+
 ## 5. Methods, exposition records, views and the hub
 
 Four layers, each usable without the ones after it:
