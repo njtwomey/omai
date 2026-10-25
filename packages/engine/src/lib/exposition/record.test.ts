@@ -99,6 +99,68 @@ describe('exposition records', () => {
     expect(() => E.pipelineStages({ stages: [stage('scale', 3, 3), stage('pca', 2, 2)] })).toThrow(/scale outputs 3/)
   })
 
+  it('check pipeline stages’ data, parameters and loss against their shapes', () => {
+    const data = (columns: string[], n: number): E.StageData => ({
+      columns,
+      rows: Array.from({ length: Math.min(n, 3) }, () => columns.map(() => 0)),
+      n,
+      labels: Array.from({ length: Math.min(n, 3) }, () => 0),
+      stats: columns.map(() => ({ mean: 0, std: 1, min: -1, max: 1 })),
+    })
+    const surface = E.decisionSurface({
+      features: ['a', 'b'],
+      x: [0, 1],
+      y: [0, 1],
+      probabilities: [
+        [
+          [0.9, 0.4],
+          [0.6, 0.1],
+        ],
+        [
+          [0.1, 0.6],
+          [0.4, 0.9],
+        ],
+      ],
+      rows: E.inputRows({ points: [[0, 0]], features: ['a', 'b'], labels: [0] }),
+    })
+    const stage: E.PipelineStage = {
+      name: 'model',
+      kind: 'estimator',
+      inputColumns: ['a', 'b'],
+      outputColumns: ['p(0)', 'p(1)'],
+      inputSample: [],
+      outputSample: [],
+      inputShape: [5, 2],
+      outputShape: [5, 2],
+      learned: [],
+      output: data(['p(0)', 'p(1)'], 5),
+      parameters: [{ name: 'coef', value: [[1, 2]], columns: ['a', 'b'], rows: ['1'] }],
+      surface,
+      loss: {
+        name: 'log loss',
+        mean: 0.3,
+        values: [0.1],
+        misclassified: [],
+        expected: [
+          [0.3, 0.6],
+          [0.6, 0.3],
+        ],
+      },
+    }
+    const ok = E.pipelineStages({ stages: [stage], input: data(['a', 'b'], 5), classes: ['0', '1'] })
+    expect(ok.stages[0]?.loss?.mean).toBe(0.3)
+    expect(() => E.pipelineStages({ stages: [{ ...stage, output: data(['p'], 5) }] })).toThrow(/columns/)
+    expect(() => E.pipelineStages({ stages: [stage], input: data(['a'], 5) })).toThrow(/input.columns/)
+    expect(() =>
+      E.pipelineStages({ stages: [{ ...stage, parameters: [{ name: 'c', value: [1, 2], columns: ['a'] }] }] }),
+    ).toThrow(/parameters/)
+    expect(() =>
+      E.pipelineStages({ stages: [{ ...stage, loss: { ...(stage.loss as E.StageLoss), values: [] } }] }),
+    ).toThrow(/loss.values/)
+    const { surface: _, ...bare } = stage
+    expect(() => E.pipelineStages({ stages: [bare] })).toThrow(/needs a surface/)
+  })
+
   it('round-trip through JSON and are recognised by kind', () => {
     const records: E.Exposition[] = [
       E.regularisationPath({ penalties: [1, 0.1], features: ['a'], coefficients: [[0], [0.5]], chosen: 0.1 }),

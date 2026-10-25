@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { gaussianNB, ridge, rows } from '../../testing/learn.ts'
+import { gaussianNB, logisticRegression, ridge, rows } from '../../testing/learn.ts'
 import { key } from '../random/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import { policies, recorder, runTree, tensorSeries } from '../trace/index.ts'
+import { parametersOf } from './_stages.ts'
 import { columnTransformer, fitCache, makePipeline, pipeline } from './compose.ts'
 import { requireVerb, revive, serialiseFitted } from './estimator.ts'
 import { polynomialFeatures, randomOverSampler, standardScaler } from './preprocessing/index.ts'
@@ -36,6 +37,90 @@ describe('pipelines', () => {
       ['model', 'estimator', [12, 1]],
     ])
     expect(stages.stages[0]?.outputSample).toHaveLength(4)
+  })
+
+  it('record each stage’s data, parameters and, for the final classifier, the surface and loss over the raw inputs', () => {
+    const n = 40
+    const xc = Array.from({ length: n }, (_, i) => [Math.cos(i), Math.sin(2 * i) + (i % 2)])
+    const yc = xc.map((_, i) => i % 2)
+    const f = pipeline(
+      [
+        ['poly', polynomialFeatures({ degree: 2, includeBias: false })],
+        ['scale', standardScaler()],
+        ['model', logisticRegression()],
+      ],
+      { explainRows: 30 },
+    ).fit({ x: xc, y: yc, classes: ['a', 'b'] } as Parameters<ReturnType<typeof pipeline>['fit']>[0])
+    const record = f.exposition[0]
+    if (record?.kind !== 'pipelineStages') throw new Error('no pipelineStages')
+    expect(record.classes).toEqual(['a', 'b'])
+    expect(record.input?.columns).toEqual(['x0', 'x1'])
+    expect(record.input?.rows).toHaveLength(30)
+    expect(record.input?.n).toBe(n)
+    const [poly, scale, model] = record.stages
+    expect(poly?.output?.columns).toEqual(['x0', 'x1', 'x0^2', 'x0 x1', 'x1^2'])
+    expect(poly?.output?.labels).toHaveLength(30)
+    expect(poly?.parameters?.find((p) => p.name === 'powers')?.rows).toHaveLength(5)
+    // Standardised columns have mean 0 and standard deviation 1 over all rows.
+    for (const st of scale?.output?.stats ?? []) {
+      expect(st.mean).toBeCloseTo(0, 10)
+      expect(st.std).toBeCloseTo(1, 10)
+    }
+    expect(scale?.parameters?.find((p) => p.name === 'scale')?.columns).toHaveLength(5)
+    expect(scale?.parameters?.some((p) => p.name === 'nSamplesSeen')).toBe(false)
+    expect(model?.surface?.rows?.points).toHaveLength(30)
+    expect(model?.surface?.probabilities).toHaveLength(2)
+    expect(model?.loss?.name).toBe('log loss')
+    expect(model?.loss?.values).toHaveLength(30)
+    expect(model?.loss?.expected?.length).toBe(model?.surface?.y.length)
+    expect(model?.loss?.mean).toBeGreaterThan(0)
+    // Stages without surfaces carry none; a fit asked for no rows carries no data.
+    expect(scale?.surface).toBeUndefined()
+    const bare = pipeline(
+      [
+        ['scale', standardScaler()],
+        ['model', ridge()],
+      ],
+      { explainRows: 0 },
+    ).fit({ x, y })
+    const r = bare.exposition[0]
+    if (r?.kind !== 'pipelineStages') throw new Error('no pipelineStages')
+    expect(r.input).toBeUndefined()
+    expect(r.stages[0]?.output).toBeUndefined()
+  })
+
+  it('name parameters by the stage’s columns and pick out a projection’s explained variance', () => {
+    const fitted = {
+      estimator: 'p',
+      kind: 'transformer' as const,
+      params: {
+        components: [
+          [1, 0, 0],
+          [0, 1, 0],
+        ],
+        explainedVarianceRatio: [0.7, 0.2],
+        seen: [5, 5, 5],
+        tag: 'x',
+      },
+    }
+    const { parameters, explainedVarianceRatio } = parametersOf(fitted, ['a', 'b', 'c'], ['p0', 'p1'])
+    expect(explainedVarianceRatio).toEqual([0.7, 0.2])
+    expect(parameters.map((p) => p.name)).toEqual(['components', 'explainedVarianceRatio', 'tag'])
+    expect(parameters[0]?.columns).toEqual(['a', 'b', 'c'])
+    expect(parameters[0]?.rows).toEqual(['p0', 'p1'])
+    expect(parameters[1]?.columns).toEqual(['p0', 'p1'])
+  })
+
+  it('carry a regressor’s squared error and targets', () => {
+    const f = pipeline([
+      ['scale', standardScaler()],
+      ['model', ridge()],
+    ]).fit({ x, y })
+    const r = f.exposition[0]
+    if (r?.kind !== 'pipelineStages') throw new Error('no pipelineStages')
+    expect(r.stages[1]?.loss?.name).toBe('squared error')
+    expect(r.stages[1]?.output?.targets).toHaveLength(12)
+    expect(r.classes).toBeUndefined()
   })
 
   it('serialise and revive', () => {
