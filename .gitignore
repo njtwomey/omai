@@ -9,6 +9,7 @@ __pycache__/
 .cache/
 packages/meta/generated/
 apps/*/dist/
+apps/*/.generated/
 .vitest-attachments/
 test-results/
 playwright-report/

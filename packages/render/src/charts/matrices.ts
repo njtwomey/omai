@@ -11,6 +11,7 @@ import {
   type DivergingName,
   divergingRamp,
   interpolateRgba,
+  mixColours,
   parseColour,
   relativeLuminance,
   type SequentialName,
@@ -23,6 +24,7 @@ import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { axisCoords, type Grid2D, grid2d, modeOf } from './_data.ts'
 import { type Resampling, repeatCells, resample } from './_resample.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
+import { DIMMED_OPACITY, dimColour, type ImageEncoder, type ValueFilter } from './selection.ts'
 
 /** A colour ramp: a named sequential or diverging ramp, or explicit stops from low to high. */
 export type RampSpec = SequentialName | DivergingName | readonly string[]
@@ -103,20 +105,11 @@ export function imageSeries(
   y: Range,
   options: { readonly name?: string; readonly opacity?: number; readonly z?: number } = {},
 ): SeriesOption {
-  const url = pngDataUrl(pixels)
   return {
     type: 'custom',
     name: options.name ?? '__image',
     data: [[x[0], y[0], x[1], y[1]]],
-    renderItem: (_params: unknown, api: ImageApi): Record<string, unknown> => {
-      const [x0 = 0, y1 = 0] = api.coord([x[0], y[0]])
-      const [x1 = 0, y0 = 0] = api.coord([x[1], y[1]])
-      return {
-        type: 'image',
-        style: { image: url, x: x0, y: y0, width: x1 - x0, height: y1 - y0, opacity: options.opacity ?? 1 },
-        silent: true,
-      }
-    },
+    renderItem: imageRenderer(pngDataUrl(pixels), x, y, options.opacity ?? 1),
     clip: true,
     silent: true,
     z: options.z ?? 1,
@@ -124,18 +117,74 @@ export function imageSeries(
   } as unknown as SeriesOption
 }
 
-function paintGrid(values: Float64Array, rows: number, cols: number, colour: (v: number) => readonly number[]): Pixels {
+// The renderItem of an image series: the image (a data URL, or a canvas) stretched over a data rectangle.
+function imageRenderer(
+  image: unknown,
+  x: Range,
+  y: Range,
+  opacity: number,
+): (params: unknown, api: ImageApi) => Record<string, unknown> {
+  return (_params, api) => {
+    const [x0 = 0, y1 = 0] = api.coord([x[0], y[0]])
+    const [x1 = 0, y0 = 0] = api.coord([x[1], y[1]])
+    return {
+      type: 'image',
+      style: { image, x: x0, y: y0, width: x1 - x0, height: y1 - y0, opacity },
+      silent: true,
+    }
+  }
+}
+
+/** A selection to paint: its weights, the background dimmed values blend into, and whether its edges are soft. */
+interface Dimming {
+  readonly keep: ValueFilter
+  readonly background: readonly number[]
+  /** Ramp the weights over a pixel's change in value, so a smooth field's dimmed region has anti-aliased edges. */
+  readonly soft: boolean
+}
+
+// The largest change in value from a grid point to its four neighbours: how much the value moves across a pixel.
+function spreadAt(values: Float64Array, rows: number, cols: number, i: number, j: number): number {
+  const v = values[i * cols + j] ?? Number.NaN
+  let s = 0
+  for (const [di, dj] of [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ] as const) {
+    const a = i + di
+    const b = j + dj
+    if (a < 0 || a >= rows || b < 0 || b >= cols) continue
+    const d = Math.abs((values[a * cols + b] ?? Number.NaN) - v)
+    if (d > s) s = d
+  }
+  return s
+}
+
+// Values outside a selection are blended towards the background (see dimColour).
+function paintGrid(
+  values: Float64Array,
+  rows: number,
+  cols: number,
+  colour: (v: number) => readonly number[],
+  dimming?: Dimming,
+): Pixels {
   // Image rows run top to bottom, grid rows bottom to top: flip.
   const rgba = new Uint8ClampedArray(rows * cols * 4)
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++) {
-      const v = values[(rows - 1 - r) * cols + c] ?? Number.NaN
+      const i = rows - 1 - r
+      const v = values[i * cols + c] ?? Number.NaN
       const p = 4 * (r * cols + c)
       if (!Number.isFinite(v)) continue
       const [cr = 0, cg = 0, cb = 0, ca = 1] = colour(v)
-      rgba[p] = cr
-      rgba[p + 1] = cg
-      rgba[p + 2] = cb
+      const w = dimming === undefined ? 1 : dimming.keep(v, dimming.soft ? spreadAt(values, rows, cols, i, c) : 0)
+      const [dr = 0, dg = 0, db = 0] =
+        w >= 1 || dimming === undefined ? [cr, cg, cb] : dimColour([cr, cg, cb], dimming.background, w)
+      rgba[p] = dr
+      rgba[p + 1] = dg
+      rgba[p + 2] = db
       rgba[p + 3] = Math.round(ca * 255)
     }
   return { width: cols, height: rows, rgba }
@@ -170,15 +219,19 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
   const parsed = stops.map(parseColour)
   const domain: readonly [number, number] | readonly [number, number, number] =
     centre === undefined ? [lo, hi] : [Math.min(lo, centre), centre, Math.max(hi, centre)]
-  let image: Pixels
+  // The painted grid and its colouring, kept so a colour bar selection can repaint it.
+  let paint: (keep?: ValueFilter) => Pixels
   let levels: number[] | undefined
   let bandColours: string[] | undefined
+  const ramp = (v: number): readonly number[] => interpolateRgba(parsed, scaleFraction(v, domain))
+  const background = parseColour(tokens(mode).bg)
+  const dimming = (keep: ValueFilter | undefined, soft: boolean): Dimming | undefined =>
+    keep === undefined ? undefined : { keep, background, soft }
   const cells = smooth === 'cells' || g.rows < 2 || g.cols < 2
   if (cells) {
     const k = Math.max(1, Math.min(16, Math.floor(256 / Math.max(g.rows, g.cols))))
-    image = paintGrid(repeatCells(g, k), g.rows * k, g.cols * k, (v) =>
-      interpolateRgba(parsed, scaleFraction(v, domain)),
-    )
+    const values = repeatCells(g, k)
+    paint = (keep) => paintGrid(values, g.rows * k, g.cols * k, ramp, dimming(keep, false))
   } else {
     const target = options.resolution ?? Math.min(256, Math.max(64, 4 * Math.max(g.rows, g.cols)))
     const scale = target / Math.max(g.rows, g.cols)
@@ -197,12 +250,13 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
       bandColours = mids.map((m) => toHex(interpolateRgba(parsed, scaleFraction(m, domain))))
       const bandRgba = bandColours.map(parseColour)
       const edges = levels
-      image = paintGrid(values, rows, cols, (v) => {
+      const band = (v: number): readonly number[] => {
         let b = 0
         while (b < edges.length - 2 && v >= (edges[b + 1] ?? Number.POSITIVE_INFINITY)) b++
         return bandRgba[b] ?? [0, 0, 0, 0]
-      })
-    } else image = paintGrid(values, rows, cols, (v) => interpolateRgba(parsed, scaleFraction(v, domain)))
+      }
+      paint = (keep) => paintGrid(values, rows, cols, band, dimming(keep, true))
+    } else paint = (keep) => paintGrid(values, rows, cols, ramp, dimming(keep, true))
   }
   const dx = g.cols > 1 ? ((xs[xs.length - 1] ?? 1) - (xs[0] ?? 0)) / (g.cols - 1) : 1
   const dy = g.rows > 1 ? ((ys[ys.length - 1] ?? 1) - (ys[0] ?? 0)) / (g.rows - 1) : 1
@@ -212,12 +266,17 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
   const y1 = ys[ys.length - 1] ?? 1
   const xr: Range = cells ? [x0 - dx / 2, x1 + dx / 2] : [x0, x1]
   const yr: Range = cells ? [y0 - dy / 2, y1 + dy / 2] : [y0, y1]
+  const opacity = options.opacity ?? 1
   const series: SeriesOption[] = [
-    imageSeries(image, xr, yr, {
+    imageSeries(paint(), xr, yr, {
       ...(options.name === undefined ? {} : { name: options.name }),
-      ...(options.opacity === undefined ? {} : { opacity: options.opacity }),
+      opacity,
     }),
   ]
+  // A selection on the colour bar repaints the image with the values outside it dimmed.
+  const recolour = (keep: ValueFilter | undefined, encode: ImageEncoder): Record<string, unknown> => ({
+    renderItem: imageRenderer(encode(paint(keep)), xr, yr, opacity),
+  })
   const showBar = options.colourBar ?? true
   if (showBar) series.push({ type: 'scatter', name: '__colourbar', data: [], silent: true } as SeriesOption)
   return layer(
@@ -230,6 +289,7 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
             max: domain[domain.length - 1] ?? hi,
             colours: bandColours ?? sampleRamp(stops, 9),
             target: 1,
+            select: { series: 0, recolour },
             ...(levels === undefined ? {} : { levels }),
             ...(options.label === undefined ? {} : { label: options.label }),
           },
@@ -317,14 +377,54 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
   const fmt = options.format ?? ((v: number): string => formatNumber(v, { digits: 3 }))
   const annotate = options.annotate ?? g.rows * g.cols <= 400
   const t = tokens(mode)
-  const data: { value: number[]; colour: string; text: string; ink: string }[] = []
+  const data: { value: number[]; colour: string; dimmed: string; text: string; ink: string }[] = []
   for (let r = 0; r < g.rows; r++)
     for (let c = 0; c < g.cols; c++) {
       const v = g.values[r * g.cols + c] ?? Number.NaN
       const colour = Number.isFinite(v) ? toHex(interpolateRgba(parsed, scaleFraction(v, domain))) : t.surface
       const ink = relativeLuminance(colour) > 0.4 ? '#1f2328' : '#ffffff'
       // Category index of the row on the y axis, which lists rows bottom-up so row 0 sits at the top.
-      data.push({ value: [c, g.rows - 1 - r, v], colour, text: Number.isFinite(v) ? fmt(v) : '', ink })
+      // Its colour outside a colour bar selection: blended towards the background.
+      const dimmed = mixColours(t.bg, colour, DIMMED_OPACITY)
+      data.push({ value: [c, g.rows - 1 - r, v], colour, dimmed, text: Number.isFinite(v) ? fmt(v) : '', ink })
+    }
+  // Cells outside a colour bar selection are drawn dimmed, values and all.
+  const renderer =
+    (keep?: ValueFilter) =>
+    (params: { dataIndex: number }, api: CellApi): Record<string, unknown> => {
+      const d = data[params.dataIndex]
+      if (d === undefined) return { type: 'group', children: [] }
+      const [cx = 0, cy = 0] = api.coord([api.value(0), api.value(1)])
+      const [w = 0, h = 0] = api.size([1, 1])
+      const v = d.value[2] ?? Number.NaN
+      const dim = keep !== undefined && Number.isFinite(v) && keep(v) < 0.5
+      return {
+        type: 'group',
+        children: [
+          {
+            type: 'rect',
+            shape: { x: cx - w / 2, y: cy - h / 2, width: w, height: h },
+            style: { fill: dim ? d.dimmed : d.colour },
+          },
+          ...(annotate
+            ? [
+                {
+                  type: 'text',
+                  style: {
+                    text: d.text,
+                    x: cx,
+                    y: cy,
+                    fill: d.ink,
+                    opacity: dim ? DIMMED_OPACITY : 1,
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    fontSize: Math.max(8, Math.min(12, h / 3)),
+                  },
+                },
+              ]
+            : []),
+        ],
+      }
     }
   const series: SeriesOption[] = [
     {
@@ -332,34 +432,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
       name: '__matrix',
       data: data.map((d) => d.value),
       encode: { x: 0, y: 1, tooltip: 2 },
-      renderItem: (params: { dataIndex: number }, api: CellApi): Record<string, unknown> => {
-        const d = data[params.dataIndex]
-        if (d === undefined) return { type: 'group', children: [] }
-        const [cx = 0, cy = 0] = api.coord([api.value(0), api.value(1)])
-        const [w = 0, h = 0] = api.size([1, 1])
-        return {
-          type: 'group',
-          children: [
-            { type: 'rect', shape: { x: cx - w / 2, y: cy - h / 2, width: w, height: h }, style: { fill: d.colour } },
-            ...(annotate
-              ? [
-                  {
-                    type: 'text',
-                    style: {
-                      text: d.text,
-                      x: cx,
-                      y: cy,
-                      fill: d.ink,
-                      align: 'center',
-                      verticalAlign: 'middle',
-                      fontSize: Math.max(8, Math.min(12, h / 3)),
-                    },
-                  },
-                ]
-              : []),
-          ],
-        }
-      },
+      renderItem: renderer(),
     } as unknown as SeriesOption,
   ]
   const showBar = options.colourBar ?? true
@@ -377,6 +450,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
               max: domain[domain.length - 1] ?? hi,
               colours: sampleRamp(stops, 9),
               target: 1,
+              select: { series: 0, recolour: (keep: ValueFilter | undefined) => ({ renderItem: renderer(keep) }) },
               ...(options.label === undefined ? {} : { label: options.label }),
             },
           }

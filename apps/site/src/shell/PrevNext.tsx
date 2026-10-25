@@ -19,14 +19,46 @@ export interface PageRef {
  */
 export function pageOrder(nodes: readonly TocNode[], home?: PageRef): PageRef[] {
   const out: PageRef[] = home === undefined ? [] : [home]
+  const seen = new Set(out.map((p) => p.path))
   const walk = (list: readonly TocNode[]): void => {
     for (const n of list) {
-      if (n.path !== undefined && !out.some((p) => p.path === n.path)) out.push({ path: n.path, title: n.title })
+      if (n.path !== undefined && !seen.has(n.path)) {
+        seen.add(n.path)
+        out.push({ path: n.path, title: n.title })
+      }
       if (n.children !== undefined) walk(n.children)
     }
   }
   walk(nodes)
   return out
+}
+
+// The order of a tree, kept while the tree lives: the docs tree has some twelve thousand pages.
+const orders = new WeakMap<
+  readonly TocNode[],
+  Map<string, { readonly order: PageRef[]; readonly at: Map<string, number> }>
+>()
+function orderOf(
+  nodes: readonly TocNode[],
+  home?: PageRef,
+): { readonly order: PageRef[]; readonly at: Map<string, number> } {
+  let byHome = orders.get(nodes)
+  if (byHome === undefined) {
+    byHome = new Map()
+    orders.set(nodes, byHome)
+  }
+  const key = home === undefined ? '' : `${home.path}\n${home.title}`
+  let o = byHome.get(key)
+  if (o === undefined) {
+    const order = pageOrder(nodes, home)
+    const at = new Map<string, number>()
+    order.forEach((p, i) => {
+      if (!at.has(p.path)) at.set(p.path, i)
+    })
+    o = { order, at }
+    byHome.set(key, o)
+  }
+  return o
 }
 
 /** The pages before and after `current` in reading order. */
@@ -62,7 +94,10 @@ export function PrevNext(props: {
   readonly compact?: boolean
 }): ReactNode {
   const { nodes, current, home, compact = false } = props
-  const { prev, next } = neighbours(pageOrder(nodes, home), current)
+  const { order, at } = orderOf(nodes, home)
+  const i = at.get(current)
+  const prev = i === undefined ? undefined : order[i - 1]
+  const next = i === undefined ? undefined : order[i + 1]
   useEffect(() => {
     if (compact) return
     const onKey = (e: KeyboardEvent): void => {
