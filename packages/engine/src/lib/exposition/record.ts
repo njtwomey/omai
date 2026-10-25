@@ -11,6 +11,7 @@ import type { ValueGrids } from './cells.ts'
 import type { ClusteringSteps, MixtureSteps } from './clustering.ts'
 import type { ConceptScores } from './concepts.ts'
 import type { CurveSet } from './curves.ts'
+import type { DataBias } from './data-bias.ts'
 import type { Dependence } from './dependence.ts'
 import type { DiagramRecord } from './diagrams.ts'
 import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
@@ -29,6 +30,7 @@ import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { RuleSet } from './rules.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
+import type { SubgroupReport } from './subgroups.ts'
 import type { DecisionSurface } from './surfaces.ts'
 import type { ThresholdSweep } from './thresholds.ts'
 import type { PruningPath, TreeRecord } from './trees.ts'
@@ -81,6 +83,8 @@ export type Exposition =
   | CalibrationRecord
   | ConformalRecord
   | ThresholdSweep
+  | SubgroupReport
+  | DataBias
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -165,4 +169,6 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'calibration',
   'conformal',
   'thresholdSweep',
+  'subgroupReport',
+  'dataBias',
 ])

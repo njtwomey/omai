@@ -15,6 +15,7 @@ import { boardFrames, populationFrames } from './boards.ts'
 import { confusionFrames, valueGridFrames } from './cells.ts'
 import { componentsView } from './components.ts'
 import { curveSetView } from './curves.ts'
+import { dataBiasView } from './data-bias.ts'
 import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
 import { episodeView } from './episodes.ts'
@@ -28,6 +29,7 @@ import { conceptView, ruleListView } from './rules.ts'
 import { stateSequenceView } from './sequences.ts'
 import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
+import { subgroupView } from './subgroups.ts'
 import { decisionSurfaceFrames, decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
 import { coefficientView, likelihoodView, neighbourView, searchTrialsView } from './tables.ts'
 import { thresholdSweepView } from './thresholds.ts'
@@ -343,6 +345,22 @@ const REGISTRY: Registry = {
       const frames = conformalFrames(r, o)
       return frames.option(frames.count - 1)
     },
+  },
+  subgroupReport: {
+    kind: 'subgroupReport',
+    component: 'SubgroupView',
+    title: 'Subgroup report',
+    plays: false,
+    accepts: [],
+    still: (r, o) => subgroupView(r, o),
+  },
+  dataBias: {
+    kind: 'dataBias',
+    component: 'DataBiasView',
+    title: 'Bias in data',
+    plays: false,
+    accepts: [],
+    still: (r, o) => dataBiasView(r, o),
   },
   thresholdSweep: {
     kind: 'thresholdSweep',

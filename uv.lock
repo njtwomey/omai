@@ -29,6 +29,22 @@ wheels = [
 ]
 
 [[package]]
+name = "aif360"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fa/bb/d96f06e8c461e11d3a6f68d9141cbca484708c457c8e36987a7c3048335f/aif360-0.6.1.tar.gz", hash = "sha256:635afc0bbe785e08fa242eee5e5080238193d0583bc0f5006a132050d4fb77f2", size = 2003486, upload-time = "2024-04-08T20:03:18.11Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/7b/7e4fa9e7b6f62759663db3b5aaa12a6cc9ef866223e5978c25844bceb762/aif360-0.6.1-py3-none-any.whl", hash = "sha256:2bae0f7ba95c4902f551df33c7603c3be0319442a96b35ad99199a7d62093217", size = 259720, upload-time = "2024-04-08T20:03:12.953Z" },
+]
+
+[[package]]
 name = "alembic"
 version = "1.20.1"
 source = { registry = "https://pypi.org/simple" }
@@ -318,6 +334,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/da/0e/dba167a458593539da48fed4df7e3b6a75c89783b17561f159942bc21a02/bitarray-3.12.3-cp315-cp315t-win_amd64.whl", hash = "sha256:0f1308a2fd7e9d5113b5dd87d58ca3332003ca692daecd1b88ee11ef7e3be68d", size = 187512, upload-time = "2026-10-19T07:23:54.691Z" },
     { url = "https://files.pythonhosted.org/packages/45/6c/9b5f85e29004684a0c00b01b7721de285b72c87cd90ce8ce28213e6955cb/bitarray-3.12.3-cp315-cp315t-win_arm64.whl", hash = "sha256:4ca3f49210c6fe5e1bef30f85af16a67d7ecd124fb7a83d7cc21a7397ebdb5c1", size = 186411, upload-time = "2026-10-19T07:23:56.426Z" },
 ]
+
+[[package]]
+name = "blackboxauditing"
+version = "0.1.54"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "networkx" },
+    { name = "numpy" },
+    { name = "pandas" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d8/2e/e2e7166bc78eb599b602ca79ace1ceba2ef83b69a0b708c9a7eb729347bf/BlackBoxAuditing-0.1.54.tar.gz", hash = "sha256:02824682f4ac3a89e606d3dc7e99481d09e82655513511e9406268f8b17be3d6", size = 2598455, upload-time = "2019-05-22T00:26:58.842Z" }
 
 [[package]]
 name = "blackjax"
@@ -4794,10 +4822,12 @@ dev = [
     { name = "scipy-stubs" },
 ]
 oracle-core = [
+    { name = "aif360" },
     { name = "antropy" },
     { name = "astropy" },
     { name = "biopython" },
     { name = "bitarray" },
+    { name = "blackboxauditing" },
     { name = "clingo" },
     { name = "control" },
     { name = "cvxpy" },
@@ -4902,10 +4932,12 @@ dev = [
     { name = "scipy-stubs", specifier = ">=1.18.1.1" },
 ]
 oracle-core = [
+    { name = "aif360", specifier = ">=0.6.1" },
     { name = "antropy", specifier = ">=0.2.3" },
     { name = "astropy", specifier = ">=8.0.2" },
     { name = "biopython", specifier = ">=1.88" },
     { name = "bitarray", specifier = ">=3.12.3" },
+    { name = "blackboxauditing", specifier = ">=0.1.54" },
     { name = "clingo", specifier = ">=5.8.2" },
     { name = "control", specifier = ">=0.10.2" },
     { name = "cvxpy", specifier = ">=1.9.3" },
