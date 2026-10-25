@@ -21,6 +21,7 @@ import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
 import type { DecisionSurface } from './surfaces.ts'
 import type { PruningPath, TreeRecord } from './trees.ts'
+import type { CalibrationRecord, ConformalRecord } from './trust.ts'
 
 /**
  * Any exposition record: the plain, serialisable data a method returns beside its result so a view can explain it.
@@ -61,6 +62,8 @@ export type Exposition =
   | FeatureAttributions
   | Importances
   | GroupReport
+  | CalibrationRecord
+  | ConformalRecord
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -137,4 +140,6 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'featureAttributions',
   'importances',
   'groupReport',
+  'calibration',
+  'conformal',
 ])

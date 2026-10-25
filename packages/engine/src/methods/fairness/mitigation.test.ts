@@ -7,7 +7,7 @@ import type { Tensor } from '../../lib/tensor/index.ts'
 import { logisticRegression } from '../linear/index.ts'
 import { fairnessAudit } from './audit.ts'
 import { exponentiatedGradient, gridSearchReduction } from './in-processing.ts'
-import { optimiseThresholds, thresholdDecisions, thresholdOptimizer } from './post-processing.ts'
+import { thresholdOptimizer } from './post-processing.ts'
 import { disparateImpactRemover, reweighedFit, reweighing } from './preprocessing.ts'
 import { fairnessFrontier, impossibilityStudy } from './studies.ts'
 
@@ -33,14 +33,6 @@ describe('post-processing', () => {
     const after = recordsOf(t.exposition, 'groupReport')[1]
     expect(dp(after ?? { disparities: [] }, 'equalised odds difference')).toBeLessThan(0.01)
     expect(t.predictProbabilities([0.9, 0.1], [0, 1])).toHaveLength(2)
-  })
-
-  it('a single group keeps its best threshold', () => {
-    const scores = [0.1, 0.3, 0.6, 0.8]
-    const r = optimiseThresholds(scores, [0, 0, 1, 1], [0, 0, 0, 0], { gridSize: 100 })
-    expect(r.yBest).toBe(1)
-    expect(thresholdDecisions(r.rules, scores, [0, 0, 0, 0])).toEqual([0, 0, 1, 1])
-    expect(() => optimiseThresholds(scores, [1, 1, 1, 1], [0, 0, 0, 0])).toThrow(/one class/)
   })
 })
 

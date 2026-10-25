@@ -1,4 +1,5 @@
-import { fairnessFrontier, type ReductionConstraint } from 'whitebox-engine/methods/fairness'
+import type { ReductionConstraint } from 'whitebox-engine/fairness'
+import { fairnessFrontier } from 'whitebox-engine/methods/fairness'
 import { choice, dict } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fairnessDataOf } from './_shared.ts'

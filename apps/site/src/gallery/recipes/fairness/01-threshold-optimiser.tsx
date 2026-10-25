@@ -1,14 +1,8 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import { generate } from 'whitebox-engine/data'
 import { biasedCredit } from 'whitebox-engine/datasets'
-import {
-  buildGroupReport,
-  positiveScores,
-  sensitiveGroups,
-  type ThresholdConstraint,
-  thresholdDecisions,
-  thresholdOptimizer,
-} from 'whitebox-engine/methods/fairness'
+import { type ThresholdConstraint, thresholdDecisions } from 'whitebox-engine/fairness'
+import { buildGroupReport, positiveScores, sensitiveGroups, thresholdOptimizer } from 'whitebox-engine/methods/fairness'
 import { logisticRegression } from 'whitebox-engine/methods/linear'
 import { key } from 'whitebox-engine/random'
 import { cartesian, lines } from 'whitebox-render/charts'

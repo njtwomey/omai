@@ -20,6 +20,7 @@ import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reach
 import { decisionSurfaceFrames, decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
 import { coefficientView, likelihoodView, neighbourView, searchTrialsView } from './tables.ts'
 import { treeScene } from './trees.ts'
+import { conformalFrames, conformalView, reliabilityView } from './trust.ts'
 
 /** The record of one kind. */
 export type RecordOf<K extends ExpositionKind> = Extract<Exposition, { kind: K }>
@@ -310,6 +311,26 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => groupReportView(r, o),
+  },
+  calibration: {
+    kind: 'calibration',
+    component: 'CalibrationView',
+    title: 'Reliability diagram',
+    plays: false,
+    accepts: [],
+    still: (r, o) => reliabilityView(r, o),
+  },
+  conformal: {
+    kind: 'conformal',
+    component: 'ConformalView',
+    title: 'Conformal prediction',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      if (r.stream === undefined) return conformalView(r, o)
+      const frames = conformalFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
   },
   confusionMatrix: {
     kind: 'confusionMatrix',

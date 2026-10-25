@@ -19,6 +19,7 @@ import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, Reach
 import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
 import { CoefficientTableView, LikelihoodView, NeighbourView, SearchTrialsView } from './tables.tsx'
 import { TreeView } from './trees.tsx'
+import { CalibrationView, ConformalView } from './trust.tsx'
 
 /** Props of {@link ExpositionView}. */
 export interface ExpositionViewProps {
@@ -114,5 +115,9 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <ImportanceView record={record} {...common} />
     case 'groupReport':
       return <GroupReportView record={record} {...common} />
+    case 'calibration':
+      return <CalibrationView record={record} {...common} />
+    case 'conformal':
+      return <ConformalView record={record} {...common} />
   }
 }

@@ -1,8 +1,13 @@
 import { generate } from '../../lib/data/index.ts'
 import { biasedCredit } from '../../lib/datasets/index.ts'
 import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'
+import {
+  calibrationByGroup,
+  optimiseThresholds,
+  type ReductionConstraint,
+  thresholdDecisions,
+} from '../../lib/fairness/index.ts'
 import type { Estimator } from '../../lib/learn/index.ts'
-import { calibrationByGroup } from '../../lib/metrics/index.ts'
 import { foldIn, type Key, key as makeKey } from '../../lib/random/index.ts'
 import { type Tensor, toFlat } from '../../lib/tensor/index.ts'
 import { logisticRegression } from '../linear/index.ts'
@@ -15,8 +20,7 @@ import {
   sensitiveGroups,
   withoutColumns,
 } from './groups.ts'
-import { gridSearchReduction, type ReductionConstraint } from './in-processing.ts'
-import { optimiseThresholds, thresholdDecisions } from './post-processing.ts'
+import { gridSearchReduction } from './in-processing.ts'
 
 /** Options of {@link fairnessFrontier}. */
 export interface FairnessFrontierOptions {

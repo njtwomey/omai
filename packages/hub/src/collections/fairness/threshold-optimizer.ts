@@ -1,4 +1,5 @@
-import { thresholdOptimizer as optimise, type ThresholdConstraint } from 'whitebox-engine/methods/fairness'
+import type { ThresholdConstraint } from 'whitebox-engine/fairness'
+import { thresholdOptimizer as optimise } from 'whitebox-engine/methods/fairness'
 import { choice, dict } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { awareParam, fairnessDataOf, fitClassifier } from './_shared.ts'

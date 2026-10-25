@@ -1,8 +1,8 @@
-import { tensor } from '../../lib/tensor/index.ts'
 import { goldenSuite } from '../../testing/suite.ts'
+import { tensor } from '../tensor/index.ts'
 import { optimiseThresholds, type ThresholdConstraint, thresholdDecisions } from './post-processing.ts'
 
-goldenSuite('threshold optimisation against fairlearn', 'methods/fairness/post_processing', {
+goldenSuite('threshold optimisation against fairlearn', 'fairness/post_processing', {
   decisions: ([scores, labels, groups], o) => {
     const s = Array.from((scores as { data: ArrayLike<number> }).data)
     const y = Array.from((labels as { data: ArrayLike<number> }).data)

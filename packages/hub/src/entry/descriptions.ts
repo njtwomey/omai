@@ -49,6 +49,8 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
   'rl/gridworlds': 'Grid worlds: value functions and policies spreading out from the goal.',
   explainability:
     'Why a fitted model predicts what it does: Shapley values for one row and for all, importances, effects and counterfactuals.',
+  trust:
+    'Trust: calibrated probabilities, conformal intervals and sets with guaranteed coverage, uncertainty, shift, robustness and model cards.',
   tuning: 'Hyperparameter searches over a method and a dataset: every trial, and what the search learned.',
   'complex-systems':
     'Complex systems: simple local rules (cells, agents) and the large patterns they grow, played step by step.',
