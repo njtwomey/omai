@@ -1,3 +1,9 @@
+/**
+ * The symmetric eigendecomposition (numpy.linalg `eigh` and `eigvalsh`), by Householder tridiagonalisation and
+ * implicit-shift QL or by the cyclic Jacobi method, with derivative rules through the eigengap matrix, and
+ * `jacobiEigenSteps`, which records every Jacobi sweep for teaching.
+ */
+
 import {
   add,
   arg,

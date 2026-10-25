@@ -1,3 +1,8 @@
+/**
+ * Seed rerolling without hidden randomness: `rerollSeed` derives the next seed from the current one by a key, so the
+ * same seed always rerolls to the same next seed, within `MAX_SEED`.
+ */
+
 import { foldIn, key, randomBits } from 'whitebox-engine/random'
 
 /** The largest seed {@link SeedInput} offers. */

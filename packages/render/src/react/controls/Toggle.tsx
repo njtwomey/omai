@@ -1,3 +1,7 @@
+/**
+ * A boolean control: a switch with its label beside it (show the data, use a log scale).
+ */
+
 import { type ReactNode, useId } from 'react'
 import { cx, labelClass } from './classes.ts'
 

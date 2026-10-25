@@ -1,3 +1,9 @@
+/**
+ * Matrix equations, scipy.linalg style: Sylvester and Lyapunov equations (continuous and discrete) through their
+ * Kronecker forms, the matrix sign function, and the continuous and discrete algebraic Riccati equations that LQR
+ * control and Kalman filtering rest on.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   abs,

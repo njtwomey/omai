@@ -1,3 +1,8 @@
+/**
+ * A popup menu drawn in a portal with fixed coordinates, below its anchor or above when there is no room, so no
+ * scrolling or clipping container hides it.
+ */
+
 import { type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { cx, menuClass } from './classes.ts'

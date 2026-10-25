@@ -1,3 +1,9 @@
+/**
+ * Convergence acceleration for sequences and series: Richardson extrapolation of step-size estimates, Aitken's
+ * delta-squared process, Wynn's epsilon algorithm and the Shanks transformation built on it, and the Euler transform
+ * for alternating series, each turning slowly converging partial results into a much better limit estimate.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 
 /**

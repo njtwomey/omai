@@ -1,3 +1,9 @@
+/**
+ * Geometric transforms and registration: 3-D rotations as unit quaternions (from matrices, rotation vectors and Euler
+ * angles, with slerp, as scipy's `Rotation`), affine maps, homographies by the normalised direct linear transform, the
+ * fundamental matrix by the eight-point algorithm, and the Procrustes and Kabsch alignments of point sets.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

@@ -1,3 +1,9 @@
+/**
+ * Tree layouts: tidy trees (leaves side by side, each parent centred over its children, depth in rows) as decision and
+ * search trees are drawn, radial trees with depths on rings, and dendrograms with merges at their heights, as
+ * hierarchical clustering is drawn.
+ */
+
 import { type Box, type GraphLayout, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /** Options of the tree layouts. */

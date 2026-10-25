@@ -1,3 +1,9 @@
+/**
+ * Player frames for a margin classifier (a support vector machine) over its solver's steps: the training rows over the
+ * decision surface with the margins dashed and the support vectors ringed by the size of their dual coefficients, the
+ * functional margins, and the dual objective as SMO (sequential minimal optimisation) updates one pair at a time.
+ */
+
 import type { EChartsOption } from 'echarts'
 import { type DecisionSurface, type MarginRecord, surfaceAt } from 'whitebox-engine/exposition'
 import { histogram } from '../charts/bars.ts'

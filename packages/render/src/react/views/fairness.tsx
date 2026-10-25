@@ -1,6 +1,7 @@
 /**
- * React views of the group report: the report with per-group contingency tables and disparities, the sweep of rates
- * over a shared threshold, and a threshold explorer per group.
+ * React views of a group fairness report: the groups' rates, gaps to the reference group and ROC curves with operating
+ * points, a table of summary disparities (with intervals and p-values) against their ideals, each group's contingency
+ * table, the rates over a threshold sweep, and a threshold explorer per group.
  */
 
 import { type ReactElement, type ReactNode, useCallback, useMemo, useState } from 'react'

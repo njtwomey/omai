@@ -1,3 +1,8 @@
+/**
+ * A vertical or horizontal reference line the reader drags across a figure (a threshold, a cut-off, a level), bound
+ * two-way to a control's value, snapping to a step and nudged with the keyboard.
+ */
+
 import { type KeyboardEvent, type ReactNode, useState } from 'react'
 import { useOverlay } from './InteractionOverlay.tsx'
 

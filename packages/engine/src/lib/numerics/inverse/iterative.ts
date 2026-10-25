@@ -1,3 +1,9 @@
+/**
+ * Regularising iterations for ill-posed least-squares problems, where stopping early plays the part of the
+ * regularisation parameter: Landweber, CGLS (conjugate gradients on the normal equations) and LSQR (Golub-Kahan
+ * bidiagonalisation), as algorithms, with `regularise` to run one and collect residual, solution and error curves.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { primalOf, promoteFloat, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'

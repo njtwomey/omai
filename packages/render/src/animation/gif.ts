@@ -1,3 +1,9 @@
+/**
+ * A dependency-free animated GIF encoder: `quantise` builds a palette of up to 256 colours by median cut over the
+ * frames' pixels, and `encodeGif` maps each frame to it, LZW-compresses the indices and writes the frame delays and
+ * looping.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Pixels } from 'whitebox-engine/scene'
 

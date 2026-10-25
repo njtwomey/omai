@@ -1,3 +1,9 @@
+/**
+ * Figures of probability distributions and samples: densities from a `Distribution` on its plausible range, Gaussian
+ * kernel density estimates, empirical CDFs, probability mass functions as stems, Tukey box plots and violin plots, QQ
+ * plots against a reference distribution, and prior and posterior overlays, each as a layer or a ready chart.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import { type Distribution, normal } from 'whitebox-engine/dists'

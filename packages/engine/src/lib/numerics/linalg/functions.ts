@@ -1,3 +1,9 @@
+/**
+ * Functions of matrices, scipy.linalg style: the matrix exponential by Pade scaling and squaring with its Frechet
+ * derivative, the principal square root (Denman-Beavers) and logarithm (inverse scaling and squaring), functions of
+ * symmetric matrices through the eigendecomposition, and general `funm` by the Schur-Parlett method.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   abs,

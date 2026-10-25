@@ -1,3 +1,9 @@
+/**
+ * The colour mode in React: `ThemeProvider` and `useColourMode` take the mode from a prop or from the page's root
+ * `dark` class (dark by default, no system-preference detection), and `useTokens` gives the design tokens of the
+ * current mode.
+ */
+
 import { createContext, type ReactElement, type ReactNode, useContext, useMemo, useSyncExternalStore } from 'react'
 import { type ColourMode, type Tokens, tokens } from '../theme/tokens.ts'
 

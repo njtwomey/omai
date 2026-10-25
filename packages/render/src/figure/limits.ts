@@ -1,3 +1,9 @@
+/**
+ * Axis limit policies for reactive figures: `auto` fits the data, `fixed` holds a stated range (so a moving mean
+ * visibly moves), `expand` grows but never shrinks and `follow` tracks a window, with the range helpers behind them
+ * (extents, padding, nice rounding, and widening a range too narrow to tick).
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import { niceTicks } from '../theme/format.ts'
 import type { Range } from './aspect.ts'

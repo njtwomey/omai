@@ -1,3 +1,9 @@
+/**
+ * Orthogonalisation: classical and modified Gram-Schmidt (optionally repeated) as a differentiable thin QR
+ * factorisation, with per-projection step records for figures, and `orth`, an orthonormal basis of a matrix's range
+ * from its SVD (scipy.linalg).
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,

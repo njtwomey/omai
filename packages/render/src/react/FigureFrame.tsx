@@ -1,3 +1,9 @@
+/**
+ * The fixed-size figure area every figure sits in: content never resizes it, an expand button opens it full screen in a
+ * modal, and its menu exports the whole figure (charts, scenes, typeset overlays) as SVG or PNG, or records a playback
+ * as GIF or WebM. `useFrameSize` tells content the size it is drawn at.
+ */
+
 import {
   type CSSProperties,
   createContext,

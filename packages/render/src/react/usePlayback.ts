@@ -1,3 +1,9 @@
+/**
+ * Playback controllers for the `Player`: one interface over precomputed frames (`usePlayback`, `useTimelinePlayback`)
+ * and a live algorithm stepped as it plays (`useLiveRun`, through `iterate`, so its states match an uninterrupted run
+ * with the same seed), with play, pause, step, seek and loop.
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Frame, Timeline } from 'whitebox-engine/scene'
 import { type Algorithm, iterate } from 'whitebox-engine/trace'

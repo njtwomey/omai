@@ -1,3 +1,9 @@
+/**
+ * Spatial trees for exact neighbour queries, as scikit-learn's: KD trees with axis-aligned median splits, ball trees
+ * for any true metric (haversine included), and vantage-point trees that split by distance alone. Trees expose their
+ * nodes and queries log what they pruned, for figures and comparisons.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Metric, type MetricOptions, metricFunction, type PointDistance, TRUE_METRICS } from '../geometry/index.ts'

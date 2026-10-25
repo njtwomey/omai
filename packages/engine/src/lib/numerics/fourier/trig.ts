@@ -1,3 +1,9 @@
+/**
+ * Real trigonometric transforms, scipy.fft style: the discrete cosine and sine transforms of types 1 to 4 and their
+ * inverses, computed through FFTs and differentiable, and the modified discrete cosine transform (MDCT) with a sine
+ * window and overlap-add inverse, the lapped transform behind audio codecs.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

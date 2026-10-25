@@ -1,3 +1,8 @@
+/**
+ * The standard view of any exposition record: `ExpositionView` picks the component `viewFor(record.kind)` names, so a
+ * page can show a method's whole exposition without knowing its kinds.
+ */
+
 import type { ReactElement } from 'react'
 import type { Exposition } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

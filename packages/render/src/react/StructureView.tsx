@@ -1,3 +1,8 @@
+/**
+ * An engine `Structure` drawn as a diagram in a frame, with pan and zoom, details of the hovered node, and an overlay
+ * state (active nodes and edges, badges) for animations, with node sizes fixed once for a whole animation.
+ */
+
 import { type ReactElement, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { Structure, StructureNode, StructureOverlay } from 'whitebox-engine/scene'
 import { type DiagramOptions, diagram } from '../structures/diagram.ts'

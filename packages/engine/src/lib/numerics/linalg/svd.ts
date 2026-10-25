@@ -1,3 +1,10 @@
+/**
+ * The singular value decomposition (numpy.linalg `svd`, reduced) by one-sided Jacobi rotations, which keeps small
+ * singular values accurate, or by Golub-Kahan-Reinsch, as a differentiable primitive, with what is built on it:
+ * singular values, the pseudo-inverse, best low-rank approximations (Eckart-Young), null spaces and the polar
+ * decomposition.
+ */
+
 import {
   add,
   arg,

@@ -1,3 +1,9 @@
+/**
+ * Interpolation of scattered data in any dimension: radial basis functions with a polynomial tail (scipy's
+ * `RBFInterpolator`), Shepard's inverse-distance weighting, and Sibson's natural-neighbour interpolation of planar data
+ * from Voronoi cell areas.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,

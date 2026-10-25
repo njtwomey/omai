@@ -1,3 +1,9 @@
+/**
+ * React views over an input grid: a decision surface (class regions, boundaries and contours, or a field) with the
+ * training rows, a predictive distribution with its bands and samples, and an objective over two hyperparameters with
+ * the optimiser's path.
+ */
+
 import { type ReactElement, useCallback } from 'react'
 import type { DecisionSurface, HyperparameterSurface, PosteriorGrid } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

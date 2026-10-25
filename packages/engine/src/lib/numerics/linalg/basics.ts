@@ -1,3 +1,9 @@
+/**
+ * Basic matrix quantities, numpy.linalg style: determinants and their logarithms (`slogdet`), vector and matrix norms,
+ * condition numbers, numerical rank, integer matrix powers, and tests and projections for symmetry and positive
+ * definiteness.
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   abs,

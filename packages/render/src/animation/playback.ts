@@ -1,3 +1,8 @@
+/**
+ * The two playback modes behind one interface (`PlaybackSource`): precomputed, a finished list of frames or a timeline,
+ * and live, an algorithm stepped through the engine's `iterate` as frames are asked for, within a step budget per call.
+ */
+
 import type { Key } from 'whitebox-engine/random'
 import type { Frame, Timeline } from 'whitebox-engine/scene'
 import { type Algorithm, iterate } from 'whitebox-engine/trace'

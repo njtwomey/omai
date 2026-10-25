@@ -1,3 +1,9 @@
+/**
+ * Linked brushing and hover across figures: a small store of shared state (the hovered item and position, the selected
+ * items, a brushed region) that figures read and update, with helpers for toggling a selection and finding the points
+ * inside a brush.
+ */
+
 import type { Range } from './aspect.ts'
 
 /** What linked figures share: the hovered item and data position, the selected items, and a brushed region. */

@@ -1,6 +1,7 @@
 /**
- * Views of the group report: rates side by side, gaps to the reference group, ROC curves with operating points, and the
- * rates over a shared threshold.
+ * Views of a group fairness report: each group's rates (selection, true- and false-positive rates) side by side with
+ * their intervals, each group's gap to the reference group, the groups' ROC curves with their operating points, and
+ * the rates over a shared threshold sweep.
  */
 
 import type { EChartsOption } from 'echarts'

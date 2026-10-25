@@ -1,3 +1,9 @@
+/**
+ * Views of tabular records: a coefficient table as a forest plot and as table data, a likelihood table of each
+ * feature's contribution to each class's score (naive Bayes, discriminant analysis), a query's nearest neighbours with
+ * their distances, and the trials of a hyperparameter search with the best so far.
+ */
+
 import type { EChartsOption } from 'echarts'
 import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials } from 'whitebox-engine/exposition'
 import { bars } from '../charts/bars.ts'

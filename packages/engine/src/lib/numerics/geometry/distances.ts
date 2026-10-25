@@ -1,3 +1,9 @@
+/**
+ * Distances between points, scipy.spatial.distance style: `cdist`, `pdist` and `squareform` for all of scipy's metrics
+ * plus haversine, and scalar metric functions on flat number arrays for the trees and indexes of `numerics/spatial`,
+ * with the list of true metrics they may use.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   abs,

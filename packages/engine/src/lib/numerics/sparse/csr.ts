@@ -1,3 +1,10 @@
+/**
+ * Sparse matrices in compressed sparse row form (as `scipy.sparse.csr_array`): construction from arrays, dense matrices
+ * or coordinates, conversion to dense, matrix-vector and matrix-matrix products, transposes, diagonals and sums, all
+ * differentiable in the stored values, plus the `LinearOperator` interface that lets solvers take CSR, dense or
+ * implicit matrices alike.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   concat,

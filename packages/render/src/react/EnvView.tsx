@@ -1,3 +1,8 @@
+/**
+ * One consistent view of any environment's state: its `render` drawn as a scene in a figure frame (expand and export),
+ * optionally decorated, with room for controls.
+ */
+
 import { type ReactElement, type ReactNode, useMemo } from 'react'
 import type { Env } from 'whitebox-engine/rl'
 import type { Scene } from 'whitebox-engine/scene'

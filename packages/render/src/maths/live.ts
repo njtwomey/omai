@@ -1,3 +1,9 @@
+/**
+ * Live equations: the `tex` tag writes TeX with `${...}` slots for values, and `toTex` and `bindTex` substitute
+ * formatted numbers into them, each wrapped in a class a stylesheet highlights, so a slider changes the equation and
+ * the figure together.
+ */
+
 import { formatNumber } from '../theme/format.ts'
 
 /** A live value in an equation: highlighted, formatted to `digits` significant digits. */

@@ -1,3 +1,9 @@
+/**
+ * Linear convolution and cross-correlation of arrays, numpy and scipy.signal style: direct 1-D `convolve` and
+ * `correlate` (differentiable in both inputs) with full, same and valid output modes, the lags of a cross-correlation,
+ * and FFT-based and overlap-add convolution for long signals.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

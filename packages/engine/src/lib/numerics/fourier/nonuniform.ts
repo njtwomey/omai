@@ -1,3 +1,9 @@
+/**
+ * Fourier transforms off the uniform grid: non-uniform DFTs of type 1 and 2 computed directly and by Gaussian gridding
+ * (the NUFFT of Greengard and Lee, as FINUFFT defines the types), and the chirp-z transform with zoom FFT for
+ * evaluating a spectrum on a chosen band (scipy.signal `czt` and `zoom_fft`).
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

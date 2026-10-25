@@ -1,3 +1,10 @@
+/**
+ * Spectral regularisation of ill-posed linear problems, in the manner of Hansen's Regularization Tools: the SVD with
+ * data coefficients, filter factors, Tikhonov solutions in standard and general form (with a smoothness operator such
+ * as second differences), truncated SVD solutions, and Tikhonov paths with residual and solution norms for L-curve
+ * figures.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

@@ -1,3 +1,8 @@
+/**
+ * A scene as one framed figure: a `FigureFrame` the size of the scene, shrunk to fit a maximum box while keeping its
+ * aspect, holding a `SceneView`, and redrawn at the modal's size when expanded.
+ */
+
 import type { ReactElement } from 'react'
 import { FigureFrame, type FigureFrameProps } from './FigureFrame.tsx'
 import { SceneView, type SceneViewProps } from './SceneView.tsx'

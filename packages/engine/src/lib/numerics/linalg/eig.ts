@@ -1,3 +1,9 @@
+/**
+ * Eigenvalues of general (non-symmetric) real matrices: Hessenberg reduction, the real Schur form by Francis
+ * double-shift QR, `eig` and `eigvals` as in numpy.linalg (complex results as real and imaginary parts), and the
+ * classic power, inverse and Rayleigh quotient iterations with their histories for convergence figures.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Key, key as makeKey, normal } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

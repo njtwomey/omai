@@ -1,3 +1,9 @@
+/**
+ * Krylov eigensolvers for large or implicit matrices: the Lanczos process for symmetric operators and the Arnoldi
+ * process for general ones (both with reorthogonalisation), `eigsh` for a few extreme eigenpairs by restarted Lanczos,
+ * and `svds` for the largest singular triplets, as scipy.sparse.linalg.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

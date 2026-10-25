@@ -1,3 +1,9 @@
+/**
+ * Views of how far predictions can be trusted: reliability (calibration) diagrams with each curve's expected
+ * calibration error and the forecasts per bin, and conformal prediction (intervals with the truth, or the sizes of
+ * prediction sets) with its calibration scores and the coverage as data arrive.
+ */
+
 import type { EChartsOption } from 'echarts'
 import { type CalibrationRecord, type ConformalRecord, setSizes } from 'whitebox-engine/exposition'
 import { bars, histogram } from '../charts/bars.ts'

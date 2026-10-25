@@ -1,3 +1,9 @@
+/**
+ * Metric curves of traced runs, as TensorBoard draws them: each recorded metric against its steps, optionally smoothed
+ * by a debiased exponential moving average over the faint raw values, on a log axis on request, and one metric from
+ * several runs overlaid.
+ */
+
 import type { EChartsOption } from 'echarts'
 import { metricSeries, type Run } from 'whitebox-engine/trace'
 import { modeOf } from '../charts/_data.ts'

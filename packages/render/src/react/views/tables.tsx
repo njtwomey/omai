@@ -1,3 +1,8 @@
+/**
+ * React views of tabular records: coefficient tables as a forest plot above the table, likelihood tables of per-feature
+ * contributions to each class, a query's neighbours, and the trials of a search.
+ */
+
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

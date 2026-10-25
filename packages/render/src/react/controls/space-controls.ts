@@ -1,3 +1,9 @@
+/**
+ * The pure rules that turn an engine `Space` into controls: which control each dimension calls for (log-scaled or
+ * stepped number fields, segmented controls or selects, toggles) at which path of the value, and reading and updating a
+ * value by path while keeping conditional dimensions in line with their conditions.
+ */
+
 import { activeDims, defaults, type Space, type SpaceValue } from 'whitebox-engine/space'
 import type { NumberSpec } from './number.ts'
 import type { OptionValue } from './options.ts'

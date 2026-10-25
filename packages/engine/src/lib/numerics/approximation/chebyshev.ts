@@ -1,3 +1,9 @@
+/**
+ * Chebyshev expansions, sums of Chebyshev polynomials on an interval and the standard near-best way to approximate a
+ * smooth function: coefficients from values at Chebyshev points by a DCT, and `chebfun`, which samples on finer and
+ * finer grids until the coefficients fall below machine precision (as the chebfun constructor).
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,

@@ -1,3 +1,8 @@
+/**
+ * A 3-D scene (points, segments, polylines, faces, labels and surfaces from the engine's `scene3d`) with a
+ * drag-to-orbit camera: dragging turns the azimuth and elevation and the scene is projected again.
+ */
+
 import { type ReactElement, useMemo, useRef, useState } from 'react'
 import {
   type Camera,

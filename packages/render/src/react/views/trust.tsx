@@ -1,3 +1,8 @@
+/**
+ * React views of trust in predictions: reliability diagrams with expected calibration errors, and conformal prediction
+ * with its intervals or set sizes, calibration scores and coverage, played along a stream when there is one.
+ */
+
 import { type ReactElement, useCallback } from 'react'
 import type { CalibrationRecord, ConformalRecord } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

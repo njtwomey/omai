@@ -1,3 +1,9 @@
+/**
+ * Planar triangulation and its relatives: the orientation and in-circle predicates, Delaunay triangulation by the
+ * Bowyer-Watson algorithm (as scipy's `Delaunay`), barycentric coordinates, Voronoi diagrams as the Delaunay dual, and
+ * alpha shapes, the boundary of the triangles below a circumradius.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 

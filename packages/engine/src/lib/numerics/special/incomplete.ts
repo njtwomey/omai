@@ -1,3 +1,9 @@
+/**
+ * Incomplete gamma and beta functions, the CDFs of the gamma and beta distributions: the regularised lower and upper
+ * incomplete gamma functions with log forms that stay finite where they underflow, their inverses, and the regularised
+ * incomplete beta function with its inverse.
+ */
+
 import { add, div, exp, log, log1p, mul, neg, sub, type TensorLike, type Value } from '../../tensor/index.ts'
 import { special } from './_elementwise.ts'
 import * as inc from './_incomplete.ts'

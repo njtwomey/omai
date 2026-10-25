@@ -1,3 +1,9 @@
+/**
+ * Companions to the FFT: sample frequencies (`fftfreq`, `rfftfreq`), shifting the zero frequency to the centre, fast
+ * transform lengths (`nextFastLen`), the explicit DFT matrix, and the O(n^2) DFT by its definition as a reference for
+ * teaching and checking.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   type ComplexValue,

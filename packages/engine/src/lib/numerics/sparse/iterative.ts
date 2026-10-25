@@ -1,3 +1,9 @@
+/**
+ * Krylov solvers for sparse linear systems, scipy.sparse.linalg style: conjugate gradients, BiCGSTAB, restarted GMRES
+ * and MINRES, each also available as a traced algorithm, with Jacobi and incomplete Cholesky preconditioners, and
+ * `sparseSolve`, which differentiates through the solution by solving the adjoint system.
+ */
+
 import { customVjp } from '../../autodiff/index.ts'
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import {

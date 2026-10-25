@@ -1,3 +1,8 @@
+/**
+ * Points the reader can drag on a figure, add by pressing empty space and remove by double click, each kept where its
+ * constraint allows (in a box, on a curve, on a grid), with keyboard nudges.
+ */
+
 import { type KeyboardEvent, type ReactNode, useState } from 'react'
 import type { Constraint } from './constraints.ts'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'

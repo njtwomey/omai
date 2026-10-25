@@ -1,3 +1,8 @@
+/**
+ * Drawing a `Scene` (the plain data environments, diagrams and models produce) as SVG elements in React: theme tokens
+ * resolved for the colour mode, 3-D layers projected, TeX labels typeset, with hover and click hit-testing.
+ */
+
 import { type CSSProperties, type PointerEvent, type ReactElement, type ReactNode, useMemo } from 'react'
 import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'whitebox-engine/scene'
 import { arrowHeadPoints, smoothPathData, straightPathData } from '../svg/paths.ts'

@@ -1,3 +1,9 @@
+/**
+ * Building and timing `Timeline`s: from a parameter sweep, from the `frame` events of a run, from overlays on one
+ * structure (message passing, search frontiers, forward passes), plus easings, interpolation between corresponding
+ * scenes and in-between frames (`tweenTimeline`), and `frameAt`, the frame shown at a time.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import {
   type Frame,

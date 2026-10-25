@@ -1,3 +1,10 @@
+/**
+ * Views over an input grid: a classifier's decision surface (smooth class regions faded where it is unsure, boundaries
+ * and probability contours) or a regressor's field with the training rows, played through training; a predictive
+ * distribution with its mean, bands and samples (Gaussian processes, Bayesian regression); and an objective over two
+ * hyperparameters.
+ */
+
 import type { EChartsOption } from 'echarts'
 import {
   type DecisionSurface,

@@ -1,3 +1,8 @@
+/**
+ * The React player of image steps: a row of small images per group (data, reconstructions, samples) at each step,
+ * beside the objective.
+ */
+
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { ImageSteps } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

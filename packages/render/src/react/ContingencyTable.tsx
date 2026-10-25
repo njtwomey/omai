@@ -1,3 +1,9 @@
+/**
+ * A contingency table (confusion matrix) with full margins: actual classes as rows and predicted as columns, named
+ * cells (TP, FN, FP, TN), row and column totals with their rates (recall, precision, false-positive rate and the rest),
+ * prevalence and accuracy; hovering a rate outlines its numerator and denominator.
+ */
+
 import { type ReactNode, useMemo, useState } from 'react'
 import { type ConfusionMatrix, confusionMargins, tableCost } from 'whitebox-engine/metrics'
 import { formatNumber, formatPercent } from '../theme/format.ts'

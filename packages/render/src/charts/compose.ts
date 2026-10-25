@@ -1,3 +1,9 @@
+/**
+ * Subplots: `subplots` lays panels of layers out on a grid specification (matplotlib's gridspec) as one ECharts option,
+ * with spans, ratios, gaps down to zero, shared and linked axes, marginal plots, per-panel titles and legends and text
+ * cells; `subplotRects` says where each cell lands in pixels.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Range } from '../figure/aspect.ts'

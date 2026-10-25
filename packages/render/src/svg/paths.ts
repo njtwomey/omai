@@ -1,3 +1,8 @@
+/**
+ * SVG path data shared by `sceneToSvg` and `SceneView`: polylines and polygons, smooth curves through points
+ * (Catmull-Rom splines as cubic Bézier segments), and arrow-head triangles.
+ */
+
 /** A point `[x, y]`. */
 type Pt = readonly [number, number]
 

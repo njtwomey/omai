@@ -1,3 +1,10 @@
+/**
+ * Structure diagrams: `diagram` lays out any engine `Structure` (layered by default, a tidy tree for trees, or
+ * circular, force-directed, bipartite or grid) and draws it as a scene, with node shapes, colours and labels by role,
+ * routed edges with arrowheads and labels, self-loops, groups such as plates and repeated blocks, and node sizes held
+ * steady across an animation's frames.
+ */
+
 import {
   circle,
   group as groupNode,
