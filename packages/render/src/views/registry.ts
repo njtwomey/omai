@@ -18,6 +18,7 @@ import { curveSetView } from './curves.ts'
 import { dataBiasView } from './data-bias.ts'
 import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
+import { epicycleFrames } from './epicycles.ts'
 import { episodeView } from './episodes.ts'
 import { counterfactualTableView, prototypeView } from './examples.ts'
 import { explanationQualityView } from './explanation-quality.ts'
@@ -280,6 +281,17 @@ const REGISTRY: Registry = {
     still: (r, o) => {
       const frames = imageFrames(r, o)
       return frames.option(frames.count - 1)
+    },
+  },
+  epicycles: {
+    kind: 'epicycles',
+    component: 'EpicyclePlayer',
+    title: 'Drawing with rotating arrows',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      const frames = epicycleFrames(r, o)
+      return frames.option(Math.round(frames.count * 0.7))
     },
   },
   populationSteps: {

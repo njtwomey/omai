@@ -102,18 +102,23 @@ export function FramesPlayer(props: {
   readonly filename: string
   readonly fps?: number
   readonly startAtFirst?: boolean
+  /** Loop and start playing at once, for views that are a cycle rather than a run (default false). */
+  readonly cycle?: boolean
 }): ReactElement {
   const { figure, frames } = props
   const count = frames(figure).count
   // By default a whole run plays in about ten seconds, at 2 to 30 frames per second.
-  const playback = usePlayback(count, { fps: props.fps ?? 10 })
+  const playback = usePlayback(count, {
+    fps: props.fps ?? 10,
+    ...(props.cycle === true ? { loop: true, autoplay: true } : {}),
+  })
   const seek = useRef(playback.seek)
   seek.current = playback.seek
   // A new record (new frames) opens on its result, or on its first frame when asked.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `frames` changes with the record, which resets the view
   useEffect(() => {
-    seek.current(props.startAtFirst === true ? 0 : count - 1)
-  }, [frames, count, props.startAtFirst])
+    seek.current(props.startAtFirst === true || props.cycle === true ? 0 : count - 1)
+  }, [frames, count, props.startAtFirst, props.cycle])
   const frame = playback.frame
   const build = useCallback((fig: Figure) => frames(fig).option(frame), [frames, frame])
   const label = frames(figure).label

@@ -16,6 +16,7 @@ import type { Dependence } from './dependence.ts'
 import type { DiagramRecord } from './diagrams.ts'
 import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
 import type { EnsembleStages } from './ensembles.ts'
+import type { Epicycles } from './epicycles.ts'
 import type { EpisodeRecord } from './episodes.ts'
 import type { ConfusionMatrix } from './evaluation.ts'
 import type { CounterfactualSet, PrototypeSet } from './examples.ts'
@@ -74,6 +75,7 @@ export type Exposition =
   | ValueGrids
   | ConfusionMatrix
   | ImageSteps
+  | Epicycles
   | FeatureAttributions
   | Importances
   | Dependence
@@ -162,6 +164,7 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'confusionMatrix',
   'stateSequence',
   'imageSteps',
+  'epicycles',
   'featureAttributions',
   'importances',
   'dependence',

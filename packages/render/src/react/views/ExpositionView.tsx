@@ -14,6 +14,7 @@ import { ComponentsView } from './components.tsx'
 import { CurvesView } from './curves.tsx'
 import { DependenceView } from './dependence.tsx'
 import { DiagramPlayer } from './diagrams.tsx'
+import { EpicyclePlayer } from './epicycles.tsx'
 import { EpisodeView } from './episodes.tsx'
 import { CounterfactualView, PrototypeView } from './examples.tsx'
 import { ExplanationQualityView } from './explanation-quality.tsx'
@@ -120,6 +121,8 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <StateSequenceView record={record} {...common} />
     case 'imageSteps':
       return <ImagePlayer record={record} {...common} />
+    case 'epicycles':
+      return <EpicyclePlayer record={record} {...common} />
     case 'featureAttributions':
       return <AttributionView record={record} {...common} />
     case 'importances':
