@@ -1,7 +1,7 @@
 import { type ClassificationData, type DatasetGenerator, type Knobs, xyClasses } from '../data/index.ts'
 import { ndtr } from '../numerics/special/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
-import { bool, dict, int, real } from '../space/index.ts'
+import { dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, toFlat, type Value } from '../tensor/index.ts'
 import {
   GERMAN_CREDIT_CLASSES,
@@ -26,7 +26,6 @@ interface CreditModel {
   readonly proxy: number
   readonly sigma: readonly [number, number]
   readonly noise: number
-  readonly withGroup: boolean
 }
 
 function creditModel(knobs: Knobs): CreditModel {
@@ -37,7 +36,6 @@ function creditModel(knobs: Knobs): CreditModel {
     proxy: knobs['proxyStrength'] as number,
     sigma: [1, knobs['minorityNoise'] as number],
     noise: knobs['noise'] as number,
-    withGroup: knobs['includeGroup'] as boolean,
   }
 }
 
@@ -48,7 +46,7 @@ function drawCredit(k: Key, n: number, m: CreditModel) {
   const z = normal(foldIn(k, 2), [n, 3]).data
   const e = normal(foldIn(k, 3), [n]).data
   const flip = uniform(foldIn(k, 4), [n]).data
-  const d = m.withGroup ? 4 : 3
+  const d = 4
   const x = new Float64Array(n * d)
   const group: number[] = []
   const quality: number[] = []
@@ -61,7 +59,7 @@ function drawCredit(k: Key, n: number, m: CreditModel) {
     x[i * d] = q + s * (z[3 * i] ?? 0)
     x[i * d + 1] = q + s * (z[3 * i + 1] ?? 0)
     x[i * d + 2] = m.proxy * a + (z[3 * i + 2] ?? 0)
-    if (m.withGroup) x[i * d + 3] = a
+    x[i * d + 3] = a
     const ok = q + m.noise * (e[i] ?? 0) > 0 ? 1 : 0
     group.push(a)
     quality.push(q)
@@ -77,7 +75,7 @@ function drawCredit(k: Key, n: number, m: CreditModel) {
  * through the outcome noise, thinned by the label bias; without the group column, mixed over the group's posterior
  * given the measurements and the proxy.
  */
-function creditPosterior(m: CreditModel): (x: Value) => Value {
+function creditPosterior(m: CreditModel, withGroup: boolean): (x: Value) => Value {
   // The argument of the normal CDF giving P(clean outcome | measurements, group a).
   const argument = (x1: number, x2: number, a: number): number => {
     const s2 = (m.sigma[a] ?? 1) ** 2
@@ -96,14 +94,14 @@ function creditPosterior(m: CreditModel): (x: Value) => Value {
   }
   return (x) => {
     const v = toFlat(x)
-    const d = m.withGroup ? 4 : 3
+    const d = withGroup ? 4 : 3
     const n = v.length / d
     // Each row's posterior weight on the minority (its group when seen) and both groups' CDF arguments.
     const w1 = new Float64Array(n)
     const args = new Float64Array(2 * n)
     for (let i = 0; i < n; i++) {
       const [x1, x2, x3] = [v[i * d] ?? 0, v[i * d + 1] ?? 0, v[i * d + 2] ?? 0]
-      if (m.withGroup) w1[i] = v[i * d + 3] ?? 0
+      if (withGroup) w1[i] = v[i * d + 3] ?? 0
       else {
         const l0 = Math.log(1 - m.share) + logLik(x1, x2, x3, 0)
         const l1 = Math.log(m.share) + logLik(x1, x2, x3, 1)
@@ -131,10 +129,11 @@ function creditPosterior(m: CreditModel): (x: Value) => Value {
  * `income` and `repayment`, carry noise of standard deviation 1 for the majority and `minorityNoise` for the
  * minority (less informative data about a group); `postcode` is a pure proxy, `N(proxyStrength * group, 1)`, that
  * says nothing about qualification; the clean outcome is `q + noise * e > 0`, and the recorded label drops a share
- * `labelBias` of the minority's good outcomes to bad (historical bias in the labels). With `includeGroup` the last
- * column is the group (0 majority, 1 minority), named in `meta.sensitive`; without it a model can still learn the
- * group through the proxy. The truth is exact: the posterior of the recorded label, a Monte Carlo Bayes error, the
- * group, qualification and clean labels per row, and each group's clean and recorded base rates.
+ * `labelBias` of the minority's good outcomes to bad (historical bias in the labels). The last column is the group (0
+ * majority, 1 minority), named in `meta.sensitive`; a model fitted without it can still learn the group through the
+ * proxy. The truth is exact: the posterior of the recorded label, a Monte Carlo Bayes error, the group, qualification
+ * and clean labels per row, each group's clean and recorded base rates, and `extra.unawarePosterior`, the posterior
+ * from the first three columns alone (the best a model without the group can do).
  *
  * @example
  * ```ts
@@ -180,30 +179,25 @@ export const biasedCredit: DatasetGenerator<ClassificationData> = {
       description: 'The standard deviation of the outcome noise beyond the qualification.',
       default: 0.5,
     }),
-    includeGroup: bool({
-      label: 'group as a feature',
-      description: 'Include the group as the last feature column.',
-      default: true,
-    }),
   }),
   generate: (k, knobs) => {
     const n = knobs['n'] as number
     const m = creditModel(knobs)
     const draw = drawCredit(foldIn(k, 0), n, m)
-    const featureNames = ['income', 'repayment', 'postcode', ...(m.withGroup ? ['group'] : [])]
+    const featureNames = ['income', 'repayment', 'postcode', 'group']
     const clean = Array.from(toFlat(ndtr([0, -m.gap / Math.sqrt(1 + m.noise ** 2)])))
-    const posterior = creditPosterior(m)
+    const posterior = creditPosterior(m, true)
     return {
       data: xyClasses(draw.x, labels(draw.y), {
         ...stamp('biasedCredit', biasedCredit.description, knobs),
         featureNames,
         classes: ['default', 'repaid'],
-        ...(m.withGroup ? { sensitive: { group: CREDIT_GROUPS } } : {}),
+        sensitive: { group: CREDIT_GROUPS },
       }),
       truth: withLazyBayesError(
         {
           posterior,
-          relevantFeatures: m.withGroup ? [0, 1, 3] : [0, 1, 2],
+          relevantFeatures: [0, 1, 3],
           latents: {
             group: draw.group,
             qualification: draw.quality,
@@ -213,6 +207,7 @@ export const biasedCredit: DatasetGenerator<ClassificationData> = {
             groups: CREDIT_GROUPS,
             cleanBaseRates: clean,
             recordedBaseRates: clean.map((r, a) => r * (1 - m.bias * a)),
+            unawarePosterior: creditPosterior(m, false),
           },
         },
         () => monteCarloBayesError(posterior, (key, size) => drawCredit(key, size, m).x, foldIn(k, 1)),

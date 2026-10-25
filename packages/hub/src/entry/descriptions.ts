@@ -38,6 +38,8 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
   'generative/autoencoders':
     'Variational autoencoders: an encoder to a latent space, a decoder back, trained on the evidence lower bound.',
   'generative/flows': 'Normalising flows: invertible maps from a Gaussian to the data, trained by exact likelihood.',
+  fairness:
+    'Fairness: audits of a classifier across protected groups, and mitigation before, during and after training, with the trade-offs.',
   pyod: 'Anomaly detectors outside scikit-learn, after PyOD: scores, thresholds and the evidence behind each flag.',
   probabilistic: 'Probabilistic models and density estimators.',
   'probabilistic/density': 'Density estimation without a model: histograms and their kernel-smoothed cousins.',

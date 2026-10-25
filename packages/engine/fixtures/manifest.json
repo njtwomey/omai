@@ -1436,6 +1436,14 @@
       "cases": 4
     },
     {
+      "fixture": "methods/fairness/post_processing.json",
+      "source": "oracle/cases/methods/fairness/post_processing.py",
+      "reference": {
+        "fairlearn": "0.15.0"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "methods/gp/classification.json",
       "source": "oracle/cases/methods/gp/classification.py",
       "reference": {

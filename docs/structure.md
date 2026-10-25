@@ -3836,7 +3836,7 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   exact posterior, Bayes error, clean labels and base rates), the vendored Statlog German credit data
   (`germanCredit`, UCI, CC BY 4.0; sex derived from the personal status) and `titanicSurvival` (sex protected); the
   collection `fairnessTabular` gathers presets of the generator (biased labels, an under-represented group, a real
-  gap, a withheld group with a proxy, no bias) and the two real datasets.
+  gap, a strong proxy, no bias) and the two real datasets.
 - `clustering.ts`: `rings`, `anisotropicBlobs`, `unequalVarianceBlobs`, `oldFaithful`, with true clusters (and
   exact posteriors for the generators).
 - `manifolds.ts`: `swissRoll` (optionally with a hole), `sCurve`, `severedSphere`, `torus`, with latent coordinates;
@@ -3961,11 +3961,20 @@ built from: `learn/explain`, `learn/inspection`, `learn/valuation`, `metrics`
 
 `fairness/` (fairlearn, AIF360)
 built from: `learn`, `metrics/fairness.ts`, `optim`, `datasets` (with protected attributes)
-- `audit.ts`: `fairnessAudit(model, data, { sensitive })`: group report across thresholds and metrics.
-- `preprocessing.ts`: reweighing, disparate-impact removal, fair representations.
-- `in-processing.ts`: reductions (exponentiated gradient, grid search) traced over iterations, adversarial debiasing.
-- `post-processing.ts`: threshold optimisation for equalised odds or demographic parity, reject-option classification.
-- `studies.ts`: impossibility results (calibration against equalised odds), the accuracy–fairness frontier.
+- `groups.ts`: `sensitiveGroups` (a column by name or index, labels per row, or the dataset's `meta.sensitive`),
+  `withoutColumns` (fit unaware), `positiveScores`, `binaryLabels`.
+- `audit.ts`: `fairnessAudit(model, data, { sensitive, threshold })`: a `groupReport` with the scored rows (so views
+  move each group's threshold), per-group ROC curves and a sweep; `buildGroupReport` for scores, randomised decisions
+  and per-group thresholds.
+- `preprocessing.ts`: `reweighing` and `reweighedFit` (Kamiran and Calders), `disparateImpactRemover` (Feldman et al.,
+  quantile repair with a level). TODO: fair representations.
+- `in-processing.ts`: `exponentiatedGradient` (Agarwal et al.: best responses by weighted refits, fairlearn's step and
+  linear-programming mixture, traced per iteration) and `gridSearchReduction`. TODO: adversarial debiasing.
+- `post-processing.ts`: `optimiseThresholds` and `thresholdOptimizer` (fairlearn's ThresholdOptimizer: convex hulls of
+  each group's trade-off, demographic parity, equalised odds, true- and false-positive rate parity; golden against
+  fairlearn's per-row decision probabilities), `thresholdDecisions`. TODO: reject-option classification.
+- `studies.ts`: `fairnessFrontier` (accuracy against violation, in training and after it) and `impossibilityStudy`
+  (calibrated scores against equalised odds and predictive parity as the base-rate gap grows).
 
 `trust/` (MAPIE, netcal, uncertainty and robustness)
 built from: `learn`, `metrics`, `stats`, `dists`
@@ -3982,8 +3991,12 @@ each with the same records and views.
 Datasets: `lib/datasets` gains tabular datasets with protected attributes (a credit or income-like generator with a
 controllable dependence on the attribute, and vendored public ones where licences allow) for audits and mitigation.
 
-Hub: collections `explainability/`, `fairness/`, `trust/`. Gallery: the exposition section gains a recipe per new
-view, driven by real methods on small data, with live controls.
+Hub: collections `explainability/`, `fairness/` (audit, threshold optimiser, exponentiated gradient, reweighing,
+disparate-impact remover, frontier, impossibility), `trust/`. Gallery: the exposition section gains a recipe per new
+view, driven by real methods on small data, with live controls (`exposition/40-group-report`: per-group thresholds
+dragged on each group's scores); the `fairness/` section holds the mitigation recipes (threshold optimiser with a
+draggable shared rate, exponentiated gradient with a draggable ε, reweighing and repair, the frontier, the
+impossibility).
 
 ## 6. whitebox-render, `packages/render/src/`
 
