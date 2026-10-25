@@ -196,7 +196,7 @@ export function TreeView(props: TreeViewProps): ReactElement {
     props.onSelect?.(node)
   }
   const steps = growthSteps(record)
-  const playback = usePlayback(steps, { fps: Math.min(12, Math.max(2, Math.round(steps / 8))) })
+  const playback = usePlayback(steps, { fps: 10 })
   const seek = useRef(playback.seek)
   seek.current = playback.seek
   // A new tree opens fully grown, with its root selected.

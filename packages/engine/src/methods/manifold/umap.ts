@@ -6,6 +6,7 @@ import {
   type Estimator,
   EstimatorClass,
   fitRunOptions,
+  type LearnData,
   matrixView,
 } from '../../lib/learn/index.ts'
 import { curveFit } from '../../lib/optim/index.ts'
@@ -231,6 +232,58 @@ export type UmapHyper = {
   readonly recordEvery?: number
 }
 
+/** A UMAP run set up and ready to step: what {@link umap} fits, for pages that run it live. */
+export interface UmapSession {
+  readonly algorithm: Algorithm<UmapState>
+  /** The epoch budget (`nEpochs`). */
+  readonly maxSteps: number
+  /** The fuzzy graph's memberships and each row's local scale. */
+  readonly weights: readonly (readonly number[])[]
+  readonly sigmas: readonly number[]
+}
+
+/**
+ * Set up UMAP without running it: the fuzzy simplicial set, the initial layout (spectral or random, scaled to
+ * [0, 10] with a little noise) and the layout-optimisation algorithm {@link umap} runs. Step it with `runAlgorithm`,
+ * or live frame by frame (render's `useLiveRun`), and read each state's positions (`state.y`) and cross-entropy
+ * (`state.crossEntropy`).
+ *
+ * @param data - The rows to embed.
+ * @param hyper - As {@link umap}.
+ * @param key - The key for random initialisation and the jitter.
+ * @returns The algorithm, the epoch budget, and the graph and local scales.
+ */
+export function umapSession(data: LearnData, hyper: UmapHyper, key: Key): UmapSession {
+  const m = matrixView(data.x, 'umap', { minSamples: 4 })
+  const k = hyper.nComponents ?? 2
+  const nn = Math.min(hyper.nNeighbors ?? 15, m.n)
+  const { weights, sigmas } = fuzzySimplicialSet(data.x, nn)
+  let start: number[][]
+  if ((hyper.init ?? 'spectral') === 'spectral') {
+    start = toArray(graphSpectralEmbedding(weights, k, { dropFirst: true })) as number[][]
+  } else start = toArray(uniform(foldIn(key, 0), [m.n, k], { low: -10, high: 10 })) as number[][]
+  const noise = toFlat(uniform(foldIn(key, 2), [m.n * k], { low: -1e-4, high: 1e-4 }))
+  const lo = Array.from({ length: k }, (_, c) => Math.min(...start.map((r) => r[c] ?? 0)))
+  const hi = Array.from({ length: k }, (_, c) => Math.max(...start.map((r) => r[c] ?? 0)))
+  start = start.map((r, i) =>
+    r.map((v, c) => (10 * (v - (lo[c] ?? 0))) / Math.max((hi[c] ?? 1) - (lo[c] ?? 0), 1e-12) + (noise[i * k + c] ?? 0)),
+  )
+  const { a, b } = findAbParams(hyper.spread ?? 1, hyper.minDist ?? 0.1)
+  const nEpochs = hyper.nEpochs ?? 200
+  return {
+    algorithm: umapLayoutAlgorithm(weights, start, {
+      nEpochs,
+      a,
+      b,
+      ...(hyper.negativeSampleRate === undefined ? {} : { negativeSampleRate: hyper.negativeSampleRate }),
+      ...(hyper.learningRate === undefined ? {} : { learningRate: hyper.learningRate }),
+    }),
+    maxSteps: nEpochs,
+    weights,
+    sigmas,
+  }
+}
+
 /**
  * UMAP (McInnes, Healy and Melville 2018; umap-learn): the fuzzy simplicial set of the k-nearest-neighbour graph,
  * spectral initialisation (`graph`'s spectral embedding) and the traced SGD layout with negative sampling. Its
@@ -258,35 +311,13 @@ export function umap(hyper: UmapHyper = {}): Estimator<UmapHyper, FittedEmbeddin
         }),
       fit: (data, h, options) => {
         const m = matrixView(data.x, 'umap', { minSamples: 4 })
-        const k = h.nComponents ?? 2
-        const nn = Math.min(h.nNeighbors ?? 15, m.n)
-        const { weights, sigmas } = fuzzySimplicialSet(data.x, nn)
         const run = fitRunOptions(options, 'umap')
         const key = run.key as Key
-        let start: number[][]
-        if ((h.init ?? 'spectral') === 'spectral') {
-          start = toArray(graphSpectralEmbedding(weights, k, { dropFirst: true })) as number[][]
-        } else start = toArray(uniform(foldIn(key, 0), [m.n, k], { low: -10, high: 10 })) as number[][]
-        const noise = toFlat(uniform(foldIn(key, 2), [m.n * k], { low: -1e-4, high: 1e-4 }))
-        const lo = Array.from({ length: k }, (_, c) => Math.min(...start.map((r) => r[c] ?? 0)))
-        const hi = Array.from({ length: k }, (_, c) => Math.max(...start.map((r) => r[c] ?? 0)))
-        start = start.map((r, i) =>
-          r.map(
-            (v, c) =>
-              (10 * (v - (lo[c] ?? 0))) / Math.max((hi[c] ?? 1) - (lo[c] ?? 0), 1e-12) + (noise[i * k + c] ?? 0),
-          ),
-        )
-        const { a, b } = findAbParams(h.spread ?? 1, h.minDist ?? 0.1)
-        const nEpochs = h.nEpochs ?? 200
+        const session = umapSession(data, h, key)
+        const { weights, sigmas } = session
         const out = recordedRun(
-          umapLayoutAlgorithm(weights, start, {
-            nEpochs,
-            a,
-            b,
-            ...(h.negativeSampleRate === undefined ? {} : { negativeSampleRate: h.negativeSampleRate }),
-            ...(h.learningRate === undefined ? {} : { learningRate: h.learningRate }),
-          }),
-          { ...run, key: foldIn(key, 1), maxSteps: nEpochs },
+          session.algorithm,
+          { ...run, key: foldIn(key, 1), maxSteps: session.maxSteps },
           h.recordEvery ?? 10,
           (s) => s.y,
           (s) => s.crossEntropy,

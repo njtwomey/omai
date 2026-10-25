@@ -5,6 +5,7 @@ import {
   type Estimator,
   EstimatorClass,
   fitRunOptions,
+  type LearnData,
   matrixView,
 } from '../../lib/learn/index.ts'
 import { geometry } from '../../lib/numerics/index.ts'
@@ -254,6 +255,56 @@ export type TsneHyper = {
   readonly recordEvery?: number
 }
 
+/** A t-SNE run set up and ready to step: what {@link tsne} fits, for pages that run it live. */
+export interface TsneSession {
+  readonly algorithm: Algorithm<TsneState>
+  /** The iteration budget (`maxIter`). */
+  readonly maxSteps: number
+  /** The joint probabilities and each row's calibrated bandwidth. */
+  readonly p: readonly (readonly number[])[]
+  readonly sigmas: readonly number[]
+}
+
+/**
+ * Set up t-SNE without running it: the perplexity-calibrated joint probabilities, the initial embedding (PCA scaled
+ * small, random or given) and the gradient-descent algorithm {@link tsne} runs. Step it with `runAlgorithm`, or live
+ * frame by frame (render's `useLiveRun`), and read each state's positions (`state.y`) and divergence (`state.kl`).
+ *
+ * @param data - The rows to embed.
+ * @param hyper - As {@link tsne}.
+ * @param key - The key for random initialisation.
+ * @returns The algorithm, the iteration budget, and the affinities and bandwidths.
+ * @throws WhiteboxError `value` when the perplexity is not below the number of rows.
+ */
+export function tsneSession(data: LearnData, hyper: TsneHyper, key: Key): TsneSession {
+  const m = matrixView(data.x, 'tsne', { minSamples: 4 })
+  const perplexity = hyper.perplexity ?? 30
+  if (!(perplexity < m.n)) throw new WhiteboxError('value', `tsne: perplexity must be below n = ${m.n}`)
+  const k = hyper.nComponents ?? 2
+  const init = hyper.init ?? 'pca'
+  let start: number[][]
+  if (typeof init !== 'string') start = init.map((r) => [...r])
+  else if (init === 'random')
+    start = (toArray(normal(foldIn(key, 0), [m.n, k])) as number[][]).map((r) => r.map((v) => v * 1e-4))
+  else {
+    const z = toArray(pca({ nComponents: k }).fit(data).transform(data.x)) as number[][]
+    const col = z.map((r) => r[0] ?? 0)
+    const mu = col.reduce((a, v) => a + v, 0) / col.length
+    const sd = Math.sqrt(col.reduce((a, v) => a + (v - mu) ** 2, 0) / col.length) || 1
+    start = z.map((r) => r.map((v) => (v / sd) * 1e-4))
+  }
+  const { p, sigmas } = jointProbabilities(data.x, perplexity)
+  const ex = hyper.earlyExaggeration ?? 12
+  const lr =
+    hyper.learningRate === undefined || hyper.learningRate === 'auto' ? Math.max(m.n / ex / 4, 50) : hyper.learningRate
+  return {
+    algorithm: tsneAlgorithm(p, start, { learningRate: lr, earlyExaggeration: ex, exaggerationIter: 250 }),
+    maxSteps: hyper.maxIter ?? 1000,
+    p,
+    sigmas,
+  }
+}
+
 /**
  * t-SNE (van der Maaten and Hinton 2008; sklearn.manifold.TSNE with the exact gradient): perplexity-calibrated joint
  * probabilities, then traced gradient descent on the KL divergence to a Student-t similarity. Its exposition is an
@@ -288,31 +339,15 @@ export function tsne(hyper: TsneHyper = {}): Estimator<TsneHyper, FittedEmbeddin
           }),
         }),
       fit: (data, h, options) => {
-        const m = matrixView(data.x, 'tsne', { minSamples: 4 })
-        const perplexity = h.perplexity ?? 30
-        if (!(perplexity < m.n)) throw new WhiteboxError('value', `tsne: perplexity must be below n = ${m.n}`)
-        const k = h.nComponents ?? 2
         const run = fitRunOptions(options, 'tsne')
         const key = run.key as Key
-        const init = h.init ?? 'pca'
-        let start: number[][]
-        if (typeof init !== 'string') start = init.map((r) => [...r])
-        else if (init === 'random')
-          start = (toArray(normal(foldIn(key, 0), [m.n, k])) as number[][]).map((r) => r.map((v) => v * 1e-4))
-        else {
-          const z = toArray(pca({ nComponents: k }).fit(data).transform(data.x)) as number[][]
-          const col = z.map((r) => r[0] ?? 0)
-          const mu = col.reduce((a, v) => a + v, 0) / col.length
-          const sd = Math.sqrt(col.reduce((a, v) => a + (v - mu) ** 2, 0) / col.length) || 1
-          start = z.map((r) => r.map((v) => (v / sd) * 1e-4))
-        }
-        const { p, sigmas } = jointProbabilities(data.x, perplexity)
-        const ex = h.earlyExaggeration ?? 12
-        const lr =
-          h.learningRate === undefined || h.learningRate === 'auto' ? Math.max(m.n / ex / 4, 50) : h.learningRate
+        const session = tsneSession(data, h, key)
+        const { p, sigmas } = session
+        const m = matrixView(data.x, 'tsne', { minSamples: 4 })
+        const perplexity = h.perplexity ?? 30
         const out = recordedRun(
-          tsneAlgorithm(p, start, { learningRate: lr, earlyExaggeration: ex, exaggerationIter: 250 }),
-          { ...run, key: foldIn(key, 1), maxSteps: h.maxIter ?? 1000 },
+          session.algorithm,
+          { ...run, key: foldIn(key, 1), maxSteps: session.maxSteps },
           h.recordEvery ?? 25,
           (s) => s.y,
           (s) => s.kl,

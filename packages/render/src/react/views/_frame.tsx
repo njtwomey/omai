@@ -88,7 +88,7 @@ export function RecordFigure(props: {
 
 /** Props of the players: the frames' figure and frame settings, the playback rate, and the frame to start on. */
 export interface PlayerViewProps {
-  /** Frames per second (default: the whole run in about ten seconds). */
+  /** Frames per second (default 10). */
   readonly fps?: number
   /** Start on the first frame rather than the last (default false: show the result, play from the start). */
   readonly startAtFirst?: boolean
@@ -106,7 +106,7 @@ export function FramesPlayer(props: {
   const { figure, frames } = props
   const count = frames(figure).count
   // By default a whole run plays in about ten seconds, at 2 to 30 frames per second.
-  const playback = usePlayback(count, { fps: props.fps ?? Math.min(30, Math.max(2, Math.round(count / 10))) })
+  const playback = usePlayback(count, { fps: props.fps ?? 10 })
   const seek = useRef(playback.seek)
   seek.current = playback.seek
   // A new record (new frames) opens on its result, or on its first frame when asked.

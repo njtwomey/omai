@@ -19,7 +19,7 @@ export function DiagramPlayer(props: RecordViewProps<DiagramRecord> & PlayerView
   const count = steps.length
   const frames = useMemo(() => steps.map((s) => s.overlay), [steps])
   const playback = usePlayback(Math.max(1, count), {
-    fps: props.fps ?? Math.min(12, Math.max(1, Math.round(count / 12))),
+    fps: props.fps ?? 10,
   })
   const seek = useRef(playback.seek)
   seek.current = playback.seek
