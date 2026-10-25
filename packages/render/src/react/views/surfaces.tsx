@@ -56,16 +56,16 @@ const HYPER_FIGURE = { aspect: 1.35 } as const
 
 /**
  * A predictive distribution on a grid (a GP, Bayesian regression): mean, one and two standard-deviation bands, samples
- * and observations.
+ * as thin lines in one colour, and observations.
  *
- * @param props - The record, axis labels and samples, and the figure and frame settings.
+ * @param props - The record, axis labels, samples and their colour, fixed limits, and the figure and frame settings.
  * @returns The figure.
  */
 export function PosteriorView(
   props: RecordViewProps<PosteriorGrid> & Omit<PosteriorViewOptions, 'mode' | 'figure'>,
 ): ReactElement {
   const figure = useViewFigure(props.figure, POSTERIOR_FIGURE)
-  const { record, inputLabel, outputLabel, samples } = props
+  const { record, inputLabel, outputLabel, samples, sampleColour, limits } = props
   const build = useCallback(
     (fig: Figure) =>
       posteriorView(record, {
@@ -73,8 +73,10 @@ export function PosteriorView(
         ...(inputLabel === undefined ? {} : { inputLabel }),
         ...(outputLabel === undefined ? {} : { outputLabel }),
         ...(samples === undefined ? {} : { samples }),
+        ...(sampleColour === undefined ? {} : { sampleColour }),
+        ...(limits === undefined ? {} : { limits }),
       }),
-    [record, inputLabel, outputLabel, samples],
+    [record, inputLabel, outputLabel, samples, sampleColour, limits],
   )
   return <RecordFigure {...props} figure={figure} build={build} filename={props.filename ?? 'posterior'} />
 }
