@@ -142,7 +142,7 @@ export function tokenLayout(texts: readonly string[], width: number, fontSize: n
  * ```
  */
 export function tokenStripHeight(texts: readonly string[], fig: Figure): number {
-  const fs = fig.fontSize
+  const fs = fig.fontSize + 2
   const boxes = tokenLayout(texts, fig.width - fig.padding.left - fig.padding.right, fs)
   const nLines = (boxes.at(-1)?.line ?? 0) + 1
   return fig.padding.top + Math.round(fs * 2.2) + nLines * Math.round(fs * 3) + Math.round(fs * 1.2)
@@ -181,7 +181,7 @@ function tokenColour(v: number, max: number, mode: ColourMode): string {
 export function tokenStripView(record: FeatureAttributions, options: ModalityViewOptions = {}): EChartsOption {
   const row = options.row ?? 0
   const base = viewFigure(options, { height: tokenStripHeight(record.features, viewFigure(options, {})) })
-  const fs = base.fontSize
+  const fs = base.fontSize + 2
   const width = base.width - base.padding.left - base.padding.right
   const boxes = tokenLayout(record.features, width, fs)
   const lineHeight = Math.round(fs * 3)

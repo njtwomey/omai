@@ -35,7 +35,7 @@ export const rules: HubEntry = defineEntry({
     if (params['kind'] === 'RuleFit') return ruleFitExplanation(learn, { nTrees: Number(params['trees']), key })
     if (params['kind'] === 'scorecard')
       return logisticScorecard(logisticRegression({ C: 1 }).fit(learn), learn, { bins: 3 })
-    const forest = randomForestClassifier({ nEstimators: 30, maxDepth: 5 }).fit(learn, { key, explain: false })
+    const forest = randomForestClassifier({ nEstimators: 12, maxDepth: 4 }).fit(learn, { key, explain: false })
     return anchorExplanation(forest, learn, Math.min(Number(params['row']), n - 1), { key })
   },
   views: [{ record: 'rules', view: 'RuleListView', title: 'The rules' }],

@@ -11,7 +11,7 @@ export const recipe: Recipe = {
   title: 'Counterfactual table',
   question: 'How do I show what would have to change for a model to decide otherwise?',
   explain:
-    '`explainCounterfactuals` searches for rows near the applicant that the credit model would score the other way: growing spheres samples outward until it crosses the boundary and then undoes what it can, DiCE finds several diverse ones together, the prototype-guided search heads for a typical member of the other class, and CEM gives a pertinent negative (what would have to be added) and a pertinent positive (what must stay). The record is a `counterfactuals` record; `CounterfactualView` lays the original beside each, the changes coloured red (up) or blue (down) and the outcome beneath. The first feature is held fixed here, as an immutable attribute would be.',
+    '`explainCounterfactuals` searches for rows near the applicant that the credit model would score the other way: growing spheres samples outward until it crosses the boundary and then undoes what it can, DiCE finds several diverse ones together, the prototype-guided search heads for a typical member of the other class, and CEM gives a pertinent negative (what would have to be added) and a pertinent positive (what must stay). The record is a `counterfactuals` record; `CounterfactualView` lays the original beside each, the changes coloured red (up) or blue (down) and the outcome beneath. The first feature is held fixed here, as an immutable attribute would be, and every feature kept whole, as the data’s codes and counts are.',
 }
 
 // region
@@ -25,8 +25,12 @@ export default function CounterfactualRecipe(): ReactNode {
   const record = useMemo(
     () =>
       recordsOf(
-        explainCounterfactuals(model, data, row, { method, count: 3, constraints: { immutable: [0] }, key: key(2) })
-          .exposition,
+        explainCounterfactuals(model, data, row, {
+          method,
+          count: 3,
+          constraints: { immutable: [0], integer: data.featureNames.map((_, j) => j) },
+          key: key(2),
+        }).exposition,
         'counterfactuals',
       )[0],
     [row, method],
