@@ -1,7 +1,8 @@
 // What an explainer needs from a fitted estimator (private to methods/explain): the output to explain as a
 // prediction function, its name, and the model's trees when it is a tree or an ensemble of trees.
 import { WhiteboxError } from '../../lib/base/index.ts'
-import { classNamesOf, type explain, type Fitted, type LearnData } from '../../lib/learn/index.ts'
+import type * as explain from '../../lib/explain/index.ts'
+import { classNamesOf, type Fitted, type LearnData } from '../../lib/learn/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../../lib/tensor/index.ts'
 import type { ForestParams, GradientBoostingParams } from '../ensemble/index.ts'
 import type { TreeParams } from '../trees/index.ts'

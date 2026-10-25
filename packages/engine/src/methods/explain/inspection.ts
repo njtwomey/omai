@@ -1,13 +1,7 @@
 import { WhiteboxError } from '../../lib/base/index.ts'
+import { permutationImportance } from '../../lib/explain/index.ts'
 import { type Explained, importances } from '../../lib/exposition/index.ts'
-import {
-  type Fitted,
-  featureNamesOf,
-  type LearnData,
-  matrixView,
-  permutationImportance,
-  type Scoring,
-} from '../../lib/learn/index.ts'
+import { type Fitted, featureNamesOf, type LearnData, matrixView, type Scoring } from '../../lib/learn/index.ts'
 import type { Key } from '../../lib/random/index.ts'
 
 /** Options of {@link featureImportance}. */

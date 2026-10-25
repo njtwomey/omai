@@ -1,6 +1,7 @@
 import { meanOf, varianceOf, WhiteboxError } from '../../lib/base/index.ts'
+import * as explain from '../../lib/explain/index.ts'
 import { curveSet, type Explained, type Exposition, featureAttributions } from '../../lib/exposition/index.ts'
-import { explain, type Fitted, featureNamesOf, type LearnData, matrixView } from '../../lib/learn/index.ts'
+import { type Fitted, featureNamesOf, type LearnData, matrixView } from '../../lib/learn/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../../lib/random/index.ts'
 import { pearson } from '../../lib/stats/index.ts'
 import { fromStorage, toFlat } from '../../lib/tensor/index.ts'
