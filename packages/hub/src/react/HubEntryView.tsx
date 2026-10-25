@@ -228,7 +228,7 @@ export function HubEntryView(props: HubEntryViewProps): ReactNode {
       <div ref={area} className={`flex flex-col gap-4 transition-opacity ${stale ? 'opacity-60' : ''}`}>
         {main.map((s) => (
           <Slot
-            key={`${s.record}-${s.index ?? 0}`}
+            key={`${s.record}-${s.index ?? 0}-${s.view ?? ''}`}
             slot={s}
             record={recordFor(records, s)}
             pending={pending}
@@ -241,7 +241,7 @@ export function HubEntryView(props: HubEntryViewProps): ReactNode {
           <div className={`grid items-start gap-4 ${width >= 720 ? 'grid-cols-2' : ''}`}>
             {side.map((s) => (
               <Slot
-                key={`${s.record}-${s.index ?? 0}`}
+                key={`${s.record}-${s.index ?? 0}-${s.view ?? ''}`}
                 slot={s}
                 record={recordFor(records, s)}
                 pending={pending}
@@ -254,7 +254,7 @@ export function HubEntryView(props: HubEntryViewProps): ReactNode {
         ) : null}
         {below.map((s) => (
           <Slot
-            key={`${s.record}-${s.index ?? 0}`}
+            key={`${s.record}-${s.index ?? 0}-${s.view ?? ''}`}
             slot={s}
             record={recordFor(records, s)}
             pending={pending}

@@ -3,6 +3,7 @@ import type { Exposition, ExpositionKind } from 'whitebox-engine/exposition'
 import type { Scene } from 'whitebox-engine/scene'
 import type { ViewOptions } from './_view.ts'
 import { anomalyView } from './anomaly.ts'
+import { attributionFrames, beeswarmView, importanceView } from './attributions.ts'
 import { boardFrames, populationFrames } from './boards.ts'
 import { confusionFrames, valueGridFrames } from './cells.ts'
 import { componentsView } from './components.ts'
@@ -320,6 +321,26 @@ const REGISTRY: Registry = {
       const frames = confusionFrames(r, o)
       return frames.option(frames.count - 1)
     },
+  },
+  featureAttributions: {
+    kind: 'featureAttributions',
+    component: 'AttributionView',
+    title: 'Feature attributions',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      if (r.values.length > 1) return beeswarmView(r, o)
+      const frames = attributionFrames(r, o)
+      return frames.option(frames.count - 1)
+    },
+  },
+  importances: {
+    kind: 'importances',
+    component: 'ImportanceView',
+    title: 'Feature importances',
+    plays: false,
+    accepts: [],
+    still: (r, o) => importanceView(r, o),
   },
 }
 

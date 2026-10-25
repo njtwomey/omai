@@ -27,8 +27,12 @@ export interface SpaceControlOptions {
   readonly segmentedUpTo?: number
 }
 
+// Segments share a half-width panel column: a few short options, and not too much text in all (four of six to eight
+// letters already clip).
 const isShort = (options: readonly OptionValue[], upTo: number): boolean =>
-  options.length <= upTo && options.every((o) => String(o).length <= 10)
+  options.length <= upTo &&
+  options.every((o) => String(o).length <= 10) &&
+  options.reduce<number>((n, o) => n + String(o).length + 4, 0) <= 36
 
 function meta(space: Space, path: ControlPath, fallback: string): ControlBase {
   return {
