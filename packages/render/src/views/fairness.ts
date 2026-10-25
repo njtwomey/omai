@@ -1,3 +1,8 @@
+/**
+ * Views of the group report: rates side by side, gaps to the reference group, ROC curves with operating points, and the
+ * rates over a shared threshold.
+ */
+
 import type { EChartsOption } from 'echarts'
 import { GROUP_RATES, type GroupRateName, type GroupReport, groupReportAt } from 'whitebox-engine/exposition'
 import { bars } from '../charts/bars.ts'

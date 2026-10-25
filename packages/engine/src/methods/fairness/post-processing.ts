@@ -1,3 +1,8 @@
+/**
+ * Post-processing methods: the threshold optimiser over a fitted classifier, with group reports before and after and
+ * the trade-off curves.
+ */
+
 import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'
 import {
   type GroupThresholdRule,

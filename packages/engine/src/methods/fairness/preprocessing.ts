@@ -1,3 +1,8 @@
+/**
+ * Pre-processing methods: reweighing and the disparate-impact remover over a dataset, with the group reports with and
+ * without them.
+ */
+
 import { coefficientTable, curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'
 import { type ReweighingCell as CoreCell, repairFeatures, reweighingWeights } from '../../lib/fairness/index.ts'
 import { type Estimator, type Fitted, featureNamesOf, matrixView } from '../../lib/learn/index.ts'

@@ -1,3 +1,8 @@
+/**
+ * In-processing methods: the exponentiated-gradient and grid-search reductions over a fitted learner, with the group
+ * reports before and after and the trade-off over iterations.
+ */
+
 import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'
 import {
   type ExponentiatedGradientReduction,

@@ -23,6 +23,7 @@ import { NearestHover } from './interaction/NearestHover.tsx'
 import { linearProjection } from './interaction/projection.ts'
 import { Player } from './Player.tsx'
 import { StructureView } from './StructureView.tsx'
+import { ThresholdExplorer } from './ThresholdExplorer.tsx'
 import type { PlaybackController } from './usePlayback.ts'
 
 const noop = (): void => {}
@@ -189,5 +190,28 @@ describe('React bindings render on the server', () => {
     const html = renderToString(<StructureView structure={s} />)
     expect(html).toContain('data-node-id="r"')
     expect(html).toContain('Zoom in')
+  })
+
+  it('draws the threshold explorer: figures, controls and the contingency table at one threshold', () => {
+    const y = [0, 0, 1, 0, 1, 1]
+    const scores = [0.1, 0.3, 0.4, 0.6, 0.7, 0.9]
+    const html = renderToString(
+      <ThresholdExplorer
+        yTrue={y}
+        scores={scores}
+        costs={[
+          [0, 1],
+          [4, 0],
+        ]}
+        followCheapest
+        classNames={['no', 'yes']}
+      />,
+    )
+    expect(html).toContain('follow the cheapest threshold')
+    expect(html).toContain('total cost')
+    expect(html).toContain('yes')
+    const plain = renderToString(<ThresholdExplorer yTrue={y} scores={scores} threshold={0.5} controls={false} />)
+    expect(plain).not.toContain('follow the cheapest')
+    expect(plain).toContain('TP')
   })
 })

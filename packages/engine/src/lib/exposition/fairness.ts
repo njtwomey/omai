@@ -1,3 +1,9 @@
+/**
+ * The group report record (groupReport): a classifier's rates, contingency tables and disparities across the groups of
+ * a protected attribute, with the helpers that build it from per-group tables (groupReportFromTables, tableRates,
+ * groupDisparities) and re-threshold it from its scored rows (groupReportAt).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 

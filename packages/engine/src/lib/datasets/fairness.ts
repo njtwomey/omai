@@ -1,3 +1,9 @@
+/**
+ * Datasets with protected attributes, for fairness audits and mitigation: a credit generator with controllable label
+ * bias, proxy strength and base-rate gap (biasedCredit), and small vendored public tables (germanCredit,
+ * titanicSurvival).
+ */
+
 import { type ClassificationData, type DatasetGenerator, type Knobs, xyClasses } from '../data/index.ts'
 import { ndtr } from '../numerics/special/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'

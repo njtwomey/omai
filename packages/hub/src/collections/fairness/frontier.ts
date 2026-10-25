@@ -1,3 +1,7 @@
+/**
+ * Hub entry: the accuracy–fairness frontier, in training and after it.
+ */
+
 import type { ReductionConstraint } from 'whitebox-engine/fairness'
 import { fairnessFrontier } from 'whitebox-engine/methods/fairness'
 import { choice, dict } from 'whitebox-engine/space'

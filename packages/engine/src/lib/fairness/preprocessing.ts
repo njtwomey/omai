@@ -1,3 +1,8 @@
+/**
+ * Pre-processing mitigation: changing the data before a model sees it. Reweighing (Kamiran and Calders; AIF360's
+ * Reweighing) and disparate-impact repair of features (Feldman et al.; AIF360's DisparateImpactRemover).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** One cell of {@link reweighingWeights}: a group and a label, how many rows it has and expects, and its weight. */

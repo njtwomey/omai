@@ -1,3 +1,7 @@
+/**
+ * Hub entry: post-processing: per-group randomised thresholds meeting a fairness constraint.
+ */
+
 import type { ThresholdConstraint } from 'whitebox-engine/fairness'
 import { thresholdOptimizer as optimise } from 'whitebox-engine/methods/fairness'
 import { choice, dict } from 'whitebox-engine/space'

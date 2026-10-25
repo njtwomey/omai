@@ -1,3 +1,7 @@
+/**
+ * Hub entry: preprocessing: repair features so their distribution is the same in every group.
+ */
+
 import type { Exposition } from 'whitebox-engine/exposition'
 import { fairnessAudit, disparateImpactRemover as repair } from 'whitebox-engine/methods/fairness'
 import { dict, real } from 'whitebox-engine/space'

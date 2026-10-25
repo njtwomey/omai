@@ -1,3 +1,8 @@
+/**
+ * The fairness audit of a fitted classifier (fairnessAudit) and the group report built from scores, labels and groups
+ * (buildGroupReport), with each group's ROC curve and its rates over a sweep of thresholds.
+ */
+
 import { linspaceNumbers, WhiteboxError } from '../../lib/base/index.ts'
 import {
   type Explained,
@@ -5,6 +10,8 @@ import {
   type GroupRoc,
   groupReport,
   groupReportFromTables,
+  type SweepPoint,
+  sweepAt,
 } from '../../lib/exposition/index.ts'
 import {
   demographicParityDifference,
@@ -16,7 +23,7 @@ import {
   predictiveParityDifference,
 } from '../../lib/fairness/index.ts'
 import type { Fitted } from '../../lib/learn/index.ts'
-import { rocCurve } from '../../lib/metrics/index.ts'
+import { analyseThresholds, rocCurve } from '../../lib/metrics/index.ts'
 import {
   binaryLabels,
   type FairnessData,
@@ -109,20 +116,25 @@ export function buildGroupReport(input: GroupReportInput): GroupReport {
   const lo = probability ? 0 : Math.min(...scores)
   const hi = probability ? 1 : Math.max(...scores)
   const grid = nSweep > 1 ? linspaceNumbers(lo, hi, nSweep) : []
-  const sweepOf = (pick: (tp: number, fp: number, p: number, n: number) => number): number[][] =>
-    members.map((rows) =>
+  // Each group's rates at every grid threshold, read from its one-pass threshold sweep (0 where a rate is undefined,
+  // as fairlearn).
+  const sweeps =
+    grid.length === 0
+      ? []
+      : members.map((rows) =>
+          rows.length === 0
+            ? undefined
+            : analyseThresholds(
+                rows.map((i) => (labels[i] === 1 ? 1 : 0)),
+                rows.map((i) => scores[i] ?? 0),
+                { posLabel: 1, keepRows: false },
+              ),
+        )
+  const sweepOf = (pick: (p: SweepPoint) => number): number[][] =>
+    sweeps.map((sw) =>
       grid.map((t) => {
-        let tp = 0
-        let fp = 0
-        let p = 0
-        for (const i of rows) {
-          const yes = (scores[i] ?? 0) >= t
-          if (labels[i] === 1) {
-            p++
-            if (yes) tp++
-          } else if (yes) fp++
-        }
-        return pick(tp, fp, p, rows.length)
+        const v = sw === undefined ? 0 : pick(sweepAt(sw, t))
+        return Number.isFinite(v) ? v : 0
       }),
     )
   const keep = (input.keepRows ?? true) && scores.length <= 5000
@@ -148,9 +160,9 @@ export function buildGroupReport(input: GroupReportInput): GroupReport {
         : {
             sweep: {
               thresholds: grid,
-              selectionRate: sweepOf((tp, fp, _p, n) => (n === 0 ? 0 : (tp + fp) / n)),
-              truePositiveRate: sweepOf((tp, _fp, p) => (p === 0 ? 0 : tp / p)),
-              falsePositiveRate: sweepOf((_tp, fp, p, n) => (n - p === 0 ? 0 : fp / (n - p))),
+              selectionRate: sweepOf((p) => p.selectionRate),
+              truePositiveRate: sweepOf((p) => p.tpr),
+              falsePositiveRate: sweepOf((p) => p.fpr),
             },
           }),
     }),

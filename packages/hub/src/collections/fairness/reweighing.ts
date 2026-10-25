@@ -1,3 +1,7 @@
+/**
+ * Hub entry: preprocessing: weight rows so the label is independent of the group.
+ */
+
 import { reweighedFit } from 'whitebox-engine/methods/fairness'
 import { dict } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'

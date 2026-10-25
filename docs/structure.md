@@ -2123,7 +2123,12 @@ none of those weights.
   subsets, string labels and zero-division control.
 - `contingency.ts`: `confusionMargins` (row and column totals, recall and miss rate per row, precision and false
   discovery rate per column, prevalence, accuracy) and `thresholdConfusion` (the 2 by 2 table of scores cut at a
-  threshold), what a contingency table writes around its cells.
+  threshold), what a contingency table writes around its cells; `tableCost` and `thresholdCosts` (misclassification
+  cost of a table and at every threshold); `analyseThresholds(yTrue, scores, { costs, posLabel, sampleWeight })`, the
+  shared threshold layer: one sorted pass over every distinct threshold giving a `thresholdSweep` exposition record
+  (`lib/exposition/thresholds.ts`, with `sweepIndex` and `sweepAt` to read any threshold back): TP/FP/TN/FN, TPR, FPR,
+  precision, selection rate and accuracy at each, total cost and the cheapest when costs are given, ROC and PR points
+  with their areas (golden against scikit-learn). Built.
 - `classification-summary.ts`: `matthewsCorrcoef`, `cohenKappaScore` (unweighted, linear, quadratic),
   `quadraticWeightedKappa` (ordinal), likelihood ratios (`positiveLikelihoodRatio`, `negativeLikelihoodRatio`),
   `diagnosticOddsRatio`, `hammingLoss`, `zeroOneLoss`, `topKAccuracyScore`, multi-label ranking
@@ -4314,6 +4319,14 @@ Design rules:
   classes), prevalence and accuracy; hovering a rate outlines its numerator and denominator. Static from any table,
   reactive by recomputing the table (e.g. `thresholdConfusion` at a threshold from a control). Ported from ml-concepts'
   `ContingencyTableView`.
+- `ThresholdExplorer.tsx`: the shared threshold layer's figure (`yTrue`, `scores`, optional `costs`, or a
+  `thresholdSweep` record; `threshold`/`onThreshold` controlled or uncontrolled; optional follow-the-cheapest): each
+  class's scores and the cost against the threshold (each with a `DraggableLine`), ROC and precision-recall with the
+  operating point, and the `ContingencyTable` at the threshold, one threshold driving all of them. Headless panels in
+  `views/thresholds.ts` (`thresholdScoresPanel`, `thresholdCostPanel`, `thresholdRocPanel`, `thresholdPrPanel`,
+  `thresholdSweepView`); `ThresholdSweepView` is the record's standard view and `GroupThresholds` (react/views/fairness)
+  gives each group of a `groupReport` its own explorer. The gallery's `evaluation/threshold` and `evaluation/costs` and
+  the group report are built on it. Built.
 - `FigureFrame.tsx`: the fixed-size figure area with its expand-to-modal button and export menu; one frame per figure
   (a grid of panels is one figure), exporting the whole figure (charts, scenes, overlay cells) as SVG or PNG, and given
   a `playback`, recording it as GIF or WebM. Fixed content is magnified in the modal; content that is a function of the

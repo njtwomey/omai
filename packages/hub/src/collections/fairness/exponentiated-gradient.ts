@@ -1,3 +1,7 @@
+/**
+ * Hub entry: in-processing: fair classification by reduction to cost-sensitive problems, traced over iterations.
+ */
+
 import type { ReductionConstraint } from 'whitebox-engine/fairness'
 import { exponentiatedGradient as reduce } from 'whitebox-engine/methods/fairness'
 import { choice, dict, int, real } from 'whitebox-engine/space'

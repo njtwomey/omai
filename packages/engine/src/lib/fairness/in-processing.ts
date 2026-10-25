@@ -1,3 +1,9 @@
+/**
+ * In-processing mitigation: fitting a classifier under fairness constraints. The reductions approach of Agarwal et al.
+ * (fairlearn's ExponentiatedGradient and GridSearch) over constraint moments such as demographic parity and equalised
+ * odds.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Estimator, type Fitted, requireVerb } from '../learn/index.ts'
 import { linprog } from '../optim/index.ts'

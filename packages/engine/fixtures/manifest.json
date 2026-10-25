@@ -1846,6 +1846,14 @@
       "cases": 24
     },
     {
+      "fixture": "metrics/contingency.json",
+      "source": "oracle/cases/metrics/contingency.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 21
+    },
+    {
       "fixture": "metrics/correlation_agreement.json",
       "source": "oracle/cases/metrics/correlation_agreement.py",
       "reference": {

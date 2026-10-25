@@ -1,3 +1,8 @@
+/**
+ * Fairness studies: the accuracy-fairness frontier and the impossibility of calibration with equal error rates on
+ * generated data.
+ */
+
 import { generate } from '../../lib/data/index.ts'
 import { biasedCredit } from '../../lib/datasets/index.ts'
 import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'

@@ -1,3 +1,7 @@
+/**
+ * Hub entry: calibration against equalised odds: why both cannot hold when base rates differ.
+ */
+
 import { impossibilityStudy } from 'whitebox-engine/methods/fairness'
 import { dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'

@@ -18,6 +18,7 @@ import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
 import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
 import { CoefficientTableView, LikelihoodView, NeighbourView, SearchTrialsView } from './tables.tsx'
+import { ThresholdSweepView } from './thresholds.tsx'
 import { TreeView } from './trees.tsx'
 import { CalibrationView, ConformalView } from './trust.tsx'
 
@@ -119,5 +120,7 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <CalibrationView record={record} {...common} />
     case 'conformal':
       return <ConformalView record={record} {...common} />
+    case 'thresholdSweep':
+      return <ThresholdSweepView record={record} {...common} />
   }
 }

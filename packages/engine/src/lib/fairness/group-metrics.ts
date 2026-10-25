@@ -1,3 +1,9 @@
+/**
+ * Group fairness metrics for classification (fairlearn's MetricFrame and parity metrics, AIF360's and Aequitas's group
+ * measures): rates per group, their differences and ratios between groups or to the overall rate, disparate impact, and
+ * calibration within groups.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { type Label, labelValues, sortLabels } from '../metrics/_labels.ts'
 import {

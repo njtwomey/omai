@@ -1,3 +1,8 @@
+/**
+ * Reading fairness data: the protected attribute's groups (a column, labels per row, or the dataset's meta), fitting
+ * without columns, positive-class scores and binary labels.
+ */
+
 // Protected groups of a dataset, the features without them, and a classifier's positive-class scores: what every
 // fairness method starts from.
 import { WhiteboxError } from '../../lib/base/index.ts'
