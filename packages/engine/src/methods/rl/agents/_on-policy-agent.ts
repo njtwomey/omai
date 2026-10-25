@@ -1,5 +1,9 @@
-// Private plumbing of the policy-gradient agents (policy-gradient.ts): their state, metrics, optimiser clipping and
-// the agent that collects transitions and updates when a rollout or episode is complete.
+/**
+ * Plumbing shared by the policy-gradient agents (policy-gradient.ts), private to the agents: their state and metrics,
+ * gradient-norm clipping of the optimiser, and the agent that collects transitions and updates when a rollout or
+ * episode is complete.
+ */
+
 import type { Json } from '../../../lib/base/index.ts'
 import type { Params } from '../../../lib/nn/index.ts'
 import { chain, clipByGlobalNorm, type GradientTransformation, type Tree } from '../../../lib/optim/index.ts'

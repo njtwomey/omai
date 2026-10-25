@@ -1,6 +1,9 @@
-// The shared kernels of the matrix-profile algorithms: STUMPY's preprocessing for diagonal traversal, the
-// z-normalised diagonal kernel (Pearson correlations by the covariance update along each diagonal, top-k insertion),
-// the non-normalised (p-norm) diagonal kernel, and the profile container. Private to the matrix-profile methods.
+/**
+ * The shared kernels of the matrix-profile algorithms, private to the matrix-profile methods: STUMPY's preprocessing
+ * for diagonal traversal, the z-normalised diagonal kernel (Pearson correlations updated along each diagonal, with
+ * top-k insertion), the non-normalised p-norm kernel, and the profile container.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { checkWindow, exclusionZone, rollingMeanStd, subsequenceStats } from '../../../lib/signal/index.ts'
 

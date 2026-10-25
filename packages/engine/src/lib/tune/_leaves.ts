@@ -1,7 +1,10 @@
-// The scalar parameters ("leaves") of a search space, shared by the samplers, the surrogates and the analysis. Not
-// re-exported. Every leaf is one coordinate of `flatten(space, value)` and of `encode(space, value)`, in that order, so
-// a sampler can work leaf by leaf in natural units (TPE), on the unit cube (quasi-random sequences, CMA-ES, Bayesian
-// optimisation) or on equal-mass cells (Latin hypercubes), and hand the result back as a value through `decode`.
+/**
+ * The scalar parameters (leaves) of a search space, private to tune and shared by the samplers, the surrogates and the
+ * analysis. Each leaf is one coordinate of `flatten(space, value)` and of `encode(space, value)`, in that order, so a
+ * sampler can work leaf by leaf in natural units (TPE), on the unit cube (quasi-random sequences, CMA-ES, Bayesian
+ * optimisation) or on equal-mass cells (Latin hypercubes), and hand the result back as a value.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { choice, decode, encode, flatten, int, real, type Space, type SpaceValue } from '../space/index.ts'
 import { sizeOf } from '../tensor/index.ts'

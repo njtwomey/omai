@@ -178,7 +178,7 @@ function hubCatalogue(): void {
   const imports = modules.map((m, i) => `import * as m${i} from '../collections/${m}'`)
   outputs.set(
     join(src, 'catalogue/index.ts'),
-    `${CATALOGUE_SUMMARY}\n${HEADER}import { buildCatalogue, type Catalogue } from '../entry/index.ts'
+    `${CATALOGUE_SUMMARY}\n\n${HEADER}import { buildCatalogue, type Catalogue } from '../entry/index.ts'
 ${imports.join('\n')}${imports.length > 0 ? '\n' : ''}
 /**
  * Every hub entry, gathered from the modules under \`collections/\` (generated: adding an entry module adds it here).
@@ -215,6 +215,7 @@ const loaders = entries
 outputs.set(
   join(ROOT, 'packages/meta/src/modules/index.ts'),
   `${MODULES_SUMMARY}
+
 ${HEADER}
 /** A lazily imported module namespace. */
 export type ModuleLoader = () => Promise<Readonly<Record<string, unknown>>>
@@ -257,5 +258,5 @@ if (stale > 0 && check) process.exit(1)
 if (!check) console.log(`barrels: ${outputs.size} files, ${stale} updated`)
 if (unsummarised.length + unopened.length > 0) {
   console.error(`${unsummarised.length} folder(s) and ${unopened.length} file(s) without a summary`)
-  if (process.env['WHITEBOX_SUMMARIES'] === 'strict') process.exit(1)
+  process.exit(1)
 }

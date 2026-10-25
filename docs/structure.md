@@ -154,7 +154,8 @@ of section 1 hold too.
   values are and which explainers it provides), as a doc comment followed by a blank line or the imports. No to-do
   lists and no lists of every export; hub entries under `collections/` can be one line.
 - `make barrels` fails on a folder or a module file without one; whitebox-meta reads both into the catalogue, and the
-  docs show them on folder and file pages.
+  docs show them on folder and file pages. A private file (`_tree.ts`) that defines a public symbol is shown too, so it
+  opens with its paragraph as well (`make examples ARGS=--coverage` lists any that do not).
 
 **One canonical home.** Every function has exactly one defining file. Another entry point may re-export it as an alias
 (the docs record the canonical home), but nothing is implemented twice. Where two names would collide in meaning (a
@@ -618,7 +619,7 @@ lambdify values)
 - Private: `_rational.ts` (bigint rationals, integer roots and factorisation), `_node.ts` (raw nodes and keys),
   `_canon.ts` (the canonicalising constructors), `_assume.ts` (three-valued assumption queries), `_functions.ts`
   (automatic evaluation of known functions), `_order.ts` (SymPy's sort keys and printing order), `_numeric.ts` (real
-  and complex evaluation, adaptive Gauss-Kronrod: numerics imports symbolic, not the reverse), `_measure.ts` (operation counts and
+  and complex evaluation, adaptive Gauss-Kronrod: kept here so symbolic does not depend on numerics), `_measure.ts` (operation counts and
   numeric equivalence), `_expand.ts`, `_rational-functions.ts` (together, cancel, apart), `_trigsimp.ts`, `_poly.ts`
   (sparse polynomials, dense univariate helpers, generators with SymPy's `decompose_power`, so exp(2*x) is exp(x)^2;
   gcds with modular coprimality checks and primitive remainder sequences), `_zpoly.ts` (dense polynomials over Z and
@@ -1344,7 +1345,7 @@ TODO (deferred, esoteric):
 - `tests/bayesian.ts`: the Gauss hypergeometric series behind `bayesFactorPearson` is private; move it to
   `numerics/special` when that domain gains hypergeometric functions.
 - `tests/bayesian.ts`: `highestDensityInterval` should alias `sampling`'s HDI once that domain has one
-  (sampling imports stats, so stats cannot import it today).
+  (stats may import sampling, which does not import stats).
 - `tests/distribution.ts`: `andersonDarling` lacks scipy's `weibull_min` (its critical values depend on a fitted
   shape).
 - `smoothing/bases.ts`: `tp`, `duchon` and `gp` take the full eigen-decomposition of the kernel matrix (mgcv

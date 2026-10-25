@@ -1,5 +1,8 @@
-// Private supervised learner of the imitation agents (imitation.ts): an MLP classifier for discrete actions or a
-// regressor for box actions, trained on expert demonstrations with lib/losses.
+/**
+ * The supervised learner behind the imitation agents (imitation.ts), private to the agents: an MLP classifier for
+ * discrete actions or a regressor for box actions, trained on expert demonstrations with lib/losses.
+ */
+
 import { argmaxOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { crossEntropy, mse } from '../../../lib/losses/index.ts'
 import type { ActivationName, Params } from '../../../lib/nn/index.ts'

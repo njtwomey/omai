@@ -1,5 +1,9 @@
-// Objectives on the plane for the evolutionary studies (private to this area): the core's test functions with their
-// surface on a grid, for populations drawn over contours.
+/**
+ * Objectives on the plane for the evolutionary studies, private to this area: the core's test functions (Rastrigin,
+ * Himmelblau, Rosenbrock, Ackley) with their box, a minimiser and their surface on a grid, so populations can be drawn
+ * over contours.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { ackley, himmelblau, rastrigin, rosenbrock, type TestFunction } from '../../lib/datasets/index.ts'
 import { item, tensor, toFlat } from '../../lib/tensor/index.ts'

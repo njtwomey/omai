@@ -12,15 +12,15 @@ import { argmax, full, max, reshape, softmax, stack, sub, type Tensor, toFlat, t
 
 /**
  * The generating probabilistic program of a dataset: a `whitebox-engine/probprog` program over rows `{ x, y, n }`
- * (features, targets and the row count), with the densities and draws it implies. Programs live in a higher tier, so
- * this is the structural contract they satisfy (`probprog.generatingProgram` builds one); the truth's `logProb`,
+ * (features, targets and the row count), with the densities and draws it implies. Programs live in probprog, which
+ * imports data, so this is the structural contract they satisfy (`probprog.generatingProgram` builds one); the truth's `logProb`,
  * `posterior` and `regressionFunction` follow from it (see {@link completeTruth}).
  *
  * @concept dataset-truth
  */
 export interface GeneratingProgram {
   readonly kind: 'program'
-  /** The program itself (a probprog `Model` of `{ x?, y?, n }`), opaque at this tier. */
+  /** The program itself (a probprog `Model` of `{ x?, y?, n }`), opaque here. */
   readonly model: (data: never) => unknown
   /** The sites holding the features and the targets. */
   readonly features: string

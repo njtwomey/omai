@@ -1,6 +1,6 @@
 // Private one-dimensional maximisation for profile likelihoods and cross-validation criteria: a grid scan to locate the
 // best bracket, then Brent's root finder on the derivative (from reverse-mode differentiation). The optimisers proper
-// live in optim (the same tier, so not importable here); this only roots a smooth derivative.
+// live in optim; this only roots a smooth derivative.
 
 import { grad } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'

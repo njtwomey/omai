@@ -1,4 +1,9 @@
-// Policies as per-information-set arrays, and node values, for the extensive-form solvers.
+/**
+ * Policies and node values over a game tree, private to the extensive-form solvers: the chance and terminal player
+ * markers, conversion between tabular policies and per-information-set probability arrays, and the value of every node
+ * under such a table.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { GameTree, TabularPolicy } from './tree.ts'
 

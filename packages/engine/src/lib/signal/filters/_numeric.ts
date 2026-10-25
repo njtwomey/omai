@@ -1,7 +1,7 @@
-// Scalar numerics for filter design that the lower tiers do not provide in the form scipy uses: the complete elliptic
+// Scalar numerics for filter design that the domains below signal do not provide in the form scipy uses: the complete elliptic
 // integral with the complementary parameter (scipy.special.ellipkm1, by the arithmetic-geometric mean), the
 // inverse Jacobi functions of scipy's elliptic design by Landen transformations, the bounded scalar minimiser of
-// scipy.optimize.fminbound (optim is the same tier as signal) and the secant iteration of scipy.optimize.newton.
+// scipy.optimize.fminbound (written here rather than imported from optim) and the secant iteration of scipy.optimize.newton.
 import { WhiteboxError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
 import { ellipk } from '../../numerics/special/index.ts'
