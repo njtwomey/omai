@@ -468,6 +468,14 @@
       "cases": 7
     },
     {
+      "fixture": "fairness/data_bias.json",
+      "source": "oracle/cases/fairness/data_bias.py",
+      "reference": {
+        "aif360": "0.6.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "fairness/group_metrics.json",
       "source": "oracle/cases/fairness/group_metrics.py",
       "reference": {
@@ -482,6 +490,14 @@
         "statsmodels": "0.15.0"
       },
       "cases": 3
+    },
+    {
+      "fixture": "fairness/intersectional.json",
+      "source": "oracle/cases/fairness/intersectional.py",
+      "reference": {
+        "aif360": "0.6.1"
+      },
+      "cases": 12
     },
     {
       "fixture": "fairness/post_processing.json",

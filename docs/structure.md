@@ -2856,8 +2856,13 @@ Aequitas (group bias); goldens where cheap
   (`minimumDetectableDifference`, golden against statsmodels' NormalIndPower) and small-group warnings
   (`smallGroupWarnings`). The audit's `groupReport` carries `intervals` (bootstrap intervals of every rate and
   disparity, permutation p-values) and `warnings`, drawn as interval bars and an interval column. Built.
-- Intersectional and subgroup fairness (`intersectional.ts`): metrics over combinations of attributes, rich-subgroup
-  auditing (GerryFair-style), worst-group gaps, generalised entropy and Theil indices between and within groups.
+- Intersectional and subgroup fairness (`intersectional.ts`): metrics over combinations of attributes
+  (`intersectionalGroups`, `subgroupRates`: every subgroup's table and rates, gaps between subgroups at least `minSize`
+  large, the worst subgroup), rich-subgroup auditing (`richSubgroupAudit`, golden against GerryFair's Auditor in
+  AIF360), generalised entropy and Theil indices with their between- and within-group parts
+  (`generalisedEntropyIndex`, `theilIndex`, `entropyDecomposition`, golden against AIF360's ClassificationMetric).
+  Built; record `subgroupReport` (`lib/exposition/subgroups.ts`, `subgroupGrid`), views `subgroupView` (heatmap over
+  the attributes beside sorted subgroup bars) and the React `SubgroupView`.
 - Individual fairness (`individual.ts`): consistency (k-NN), Lipschitz fairness under a task metric, fairness through
   awareness.
 - Causal fairness (`causal.ts`): counterfactual fairness, total, direct and indirect (path-specific) discrimination,
@@ -2866,8 +2871,12 @@ Aequitas (group bias); goldens where cheap
   distribution (Wasserstein and Kolmogorov-Smirnov), mean-difference and calibration gaps.
 - Rankings and recommendation (`ranking.ts`): exposure and attention parity, FA*IR, disparate treatment and impact in
   rankings, deterministic re-ranking.
-- Bias in data (`data-bias.ts`): representation and base-rate gaps, label bias, proxy detection (dependence and
-  predictability of the protected attribute from features), sampling bias, bias amplification by a model.
+- Bias in data (`data-bias.ts`): representation and sampling bias against population shares (`representation`),
+  base-rate gaps in the labels (`baseRates`, golden against AIF360's BinaryLabelDatasetMetric), label bias against clean
+  labels (`labelBias`), proxy detection by dependence (normalised mutual information) and predictability (per-feature
+  and held-out combined AUC) of the protected attribute (`proxyScores`), bias amplification by a model
+  (`biasAmplification`, Wang and Russakovsky's BiasAmp). Built; record `dataBias` (`lib/exposition/data-bias.ts`),
+  views `dataBiasView` and the React `DataBiasView`.
 - Pre-processing (`preprocessing.ts`): reweighing, massaging, preferential sampling, disparate-impact removal (with a
   repair level), optimised pre-processing, learning fair representations.
 - In-processing (`in-processing.ts`): reductions (exponentiated gradient and grid search over constraint moments:
@@ -4095,6 +4104,9 @@ built from: `fairness`, `learn`, `metrics`, `optim`, `datasets` (with protected 
   model, group reports before and after) and `gridSearchReduction`.
 - `post-processing.ts`: `thresholdOptimizer` (group reports before and after, the trade-off curves with the choice,
   `rulesAt` for other shared rates).
+- `intersectional.ts`: `intersectionalAudit(model, data, { attributes })`: a `subgroupReport` (rates over the
+  attributes' combinations, entropy decomposition, GerryFair audit over indicators of the attributes). Built.
+- `data-bias.ts`: `dataBiasAudit(data, { cleanLabels, populationShares, model })`: a `dataBias` record. Built.
 - `studies.ts`: `fairnessFrontier` (accuracy against violation, in training and after it) and `impossibilityStudy`
   (calibrated scores against equalised odds and predictive parity as the base-rate gap grows).
 
@@ -4137,7 +4149,11 @@ Built in round one. Records built: `groupReport` (`lib/exposition/fairness.ts`, 
 
 Hub: collections `explainability/`, `trust/` (calibration, conformal intervals, sets and streams, uncertainty, shift,
 robustness, model card), `fairness/` (audit, threshold optimiser, exponentiated gradient, reweighing,
-disparate-impact remover, frontier, impossibility). Gallery: the exposition section gains a recipe per new
+disparate-impact remover, frontier, impossibility; round two: intersectional audit, bias in data).
+
+Round two built so far: the shared threshold layer (`thresholdSweep` record, `ThresholdExplorer`, section 6), group
+report intervals and warnings, `subgroupReport` and `dataBias` records with their views, gallery recipes
+`exposition/43-subgroup-report` and `44-data-bias`. Gallery: the exposition section gains a recipe per new
 view, driven by real methods on small data, with live controls (`exposition/40-group-report`: per-group thresholds
 dragged on each group's scores); the `fairness/` section holds the mitigation recipes (threshold optimiser with a
 draggable shared rate, exponentiated gradient with a draggable ε, reweighing and repair, the frontier, the

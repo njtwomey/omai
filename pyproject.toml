@@ -77,6 +77,8 @@ oracle-core = [
     "diffprivlib>=0.6.6",
     "imbalanced-learn>=0.14.2",
     "optuna>=5.0.0",
+    "aif360>=0.6.1",
+    "blackboxauditing>=0.1.54",
 ]
 oracle-torch = [
     "captum>=0.9.0",

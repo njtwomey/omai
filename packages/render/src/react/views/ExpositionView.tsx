@@ -21,6 +21,7 @@ import { CrossValidationView, LearningCurveView, PathView, PruningPathView } fro
 import { StateSequenceView } from './sequences.tsx'
 import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
+import { DataBiasView, SubgroupView } from './subgroups.tsx'
 import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
 import { CoefficientTableView, LikelihoodView, NeighbourView, SearchTrialsView } from './tables.tsx'
 import { ThresholdSweepView } from './thresholds.tsx'
@@ -127,5 +128,9 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <ConformalView record={record} {...common} />
     case 'thresholdSweep':
       return <ThresholdSweepView record={record} {...common} />
+    case 'subgroupReport':
+      return <SubgroupView record={record} {...common} />
+    case 'dataBias':
+      return <DataBiasView record={record} {...common} />
   }
 }
