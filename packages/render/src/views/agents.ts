@@ -86,6 +86,12 @@ export function agentFrames(record: AgentSteps, options: ViewOptions = {}): View
         { world },
         { figure: fig, legend: false, tooltip: false },
       )
+    const colourOf = (s: (typeof series)[number], k: number): string =>
+      s.state !== undefined
+        ? stateColour(s.state)
+        : record.states?.includes(s.name) === true
+          ? stateColour(record.states.indexOf(s.name))
+          : categoricalColour(k)
     const below: Panel = {
       layers: [
         lines(
@@ -93,25 +99,18 @@ export function agentFrames(record: AgentSteps, options: ViewOptions = {}): View
             x: times,
             y: s.values,
             name: s.name,
-            colour:
-              record.states?.includes(s.name) === true
-                ? stateColour(record.states.indexOf(s.name))
-                : categoricalColour(k),
-            width: 1.75,
+            colour: colourOf(s, k),
+            width: s.dashed === true ? 1.25 : 1.75,
+            dash: s.dashed === true ? ('dashed' as const) : ('solid' as const),
           })),
           { mode },
         ),
         points(
-          series.map((s, k) => ({
-            x: [times[at] ?? 0],
-            y: [s.values[at] ?? 0],
-            name: `__now${k}`,
-            colour:
-              record.states?.includes(s.name) === true
-                ? stateColour(record.states.indexOf(s.name))
-                : categoricalColour(k),
-            size: 8,
-          })),
+          series.flatMap((s, k) =>
+            s.dashed === true
+              ? []
+              : [{ x: [times[at] ?? 0], y: [s.values[at] ?? 0], name: `__now${k}`, colour: colourOf(s, k), size: 8 }],
+          ),
           { mode },
         ),
       ],
@@ -135,6 +134,7 @@ export function agentFrames(record: AgentSteps, options: ViewOptions = {}): View
     label: (frame) => {
       const f = record.frames[Math.min(Math.max(frame, 0), count - 1)]
       const tail = (record.series ?? [])
+        .filter((s) => s.dashed !== true)
         .map((s) => `${s.name} ${(s.values[Math.min(Math.max(frame, 0), count - 1)] ?? 0).toFixed(2)}`)
         .join(' · ')
       return `${timeName} ${f?.t ?? 0}${tail === '' ? '' : ` · ${tail}`}`

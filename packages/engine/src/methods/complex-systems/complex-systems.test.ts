@@ -3,6 +3,7 @@ import { recordsOf } from '../../lib/exposition/index.ts'
 import { key } from '../../lib/random/index.ts'
 import { schelling } from './agent-based.ts'
 import { elementaryAutomaton, gameOfLife } from './cellular-automata.ts'
+import { epidemic } from './epidemics.ts'
 import { flocking } from './flocking.ts'
 
 describe('complex systems', () => {
@@ -35,5 +36,17 @@ describe('flocking', () => {
     expect(rec.frames).toHaveLength(51)
     expect(rec.frames[0]?.heading).toHaveLength(60)
     expect(r.polarisation.at(-1)).toBeGreaterThan(r.polarisation[0] ?? 1)
+  })
+})
+
+describe('epidemic', () => {
+  it('records the room by state with the simulation and the equations as series', () => {
+    const r = epidemic({ people: 80, days: 20 })
+    const [rec] = r.exposition
+    if (rec?.kind !== 'agentSteps') throw new Error('expected agentSteps')
+    expect(rec.states).toEqual(['susceptible', 'exposed', 'infectious', 'recovered'])
+    expect(rec.series?.filter((s) => s.dashed === true)).toHaveLength(4)
+    for (const s of rec.series ?? []) expect(s.values).toHaveLength(rec.frames.length)
+    expect(r.everInfected).toBeGreaterThan(0)
   })
 })

@@ -32,8 +32,16 @@ export interface AgentSteps {
   /** A CSS colour per state (default the categorical palette). */
   readonly stateColours?: readonly string[]
   readonly frames: readonly AgentFrame[]
-  /** Series over the frames, one value per frame, drawn beneath with the current frame marked. */
-  readonly series?: readonly { readonly name: string; readonly values: readonly number[] }[]
+  /**
+   * Series over the frames, one value per frame, drawn beneath with the current frame marked: coloured as the state
+   * they count when they name one, dashed for a comparison (a model's prediction beside the simulation).
+   */
+  readonly series?: readonly {
+    readonly name: string
+    readonly values: readonly number[]
+    readonly state?: number
+    readonly dashed?: boolean
+  }[]
   /** What the series measure (their axis), and what the time is (default 'step'). */
   readonly seriesName?: string
   readonly timeName?: string
