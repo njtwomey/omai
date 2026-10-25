@@ -1,6 +1,5 @@
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
-import { type Label, labelValues, sortLabels } from './_labels.ts'
+import { type Label, labelValues, sortLabels } from '../metrics/_labels.ts'
 import {
   defineMetric,
   type MetricFunction,
@@ -8,8 +7,9 @@ import {
   type MetricOptions,
   metricResult,
   sampleWeights,
-} from './metric.ts'
-import { expectedCalibrationError } from './probabilistic.ts'
+} from '../metrics/metric.ts'
+import { expectedCalibrationError } from '../metrics/probabilistic.ts'
+import type { TensorLike } from '../tensor/index.ts'
 
 const spec = (name: string, direction: 'higher' | 'lower', range: readonly [number, number]): MetricSpec => ({
   name,
@@ -102,7 +102,7 @@ function prepare(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { groupRates } from 'whitebox-engine/metrics'
+ * import { groupRates } from 'whitebox-engine/fairness'
  * groupRates([1, 0, 1, 0], [1, 1, 0, 0], ['a', 'a', 'b', 'b']).groups.a?.selectionRate // => 1
  * ```
  */
@@ -188,7 +188,7 @@ function rateDisparity(
  * @returns The metric result, with each group's selection rate in the breakdown.
  * @example
  * ```ts
- * import { demographicParityDifference } from 'whitebox-engine/metrics'
+ * import { demographicParityDifference } from 'whitebox-engine/fairness'
  * demographicParityDifference([1, 0, 1, 0], [1, 1, 0, 0], ['a', 'a', 'b', 'b']).estimate.value // => 1
  * ```
  */
@@ -206,7 +206,7 @@ export const demographicParityDifference: MetricFunction<[MetricInput, MetricInp
  * @returns The metric result.
  * @example
  * ```ts
- * import { demographicParityRatio } from 'whitebox-engine/metrics'
+ * import { demographicParityRatio } from 'whitebox-engine/fairness'
  * demographicParityRatio([0, 0, 0, 0], [1, 1, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -224,7 +224,7 @@ export const demographicParityRatio: MetricFunction<[MetricInput, MetricInput, M
  * @returns The metric result.
  * @example
  * ```ts
- * import { equalOpportunityDifference } from 'whitebox-engine/metrics'
+ * import { equalOpportunityDifference } from 'whitebox-engine/fairness'
  * equalOpportunityDifference([1, 1, 1, 1], [1, 1, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -241,7 +241,7 @@ export const equalOpportunityDifference: MetricFunction<[MetricInput, MetricInpu
  * @returns The metric result.
  * @example
  * ```ts
- * import { equalOpportunityRatio } from 'whitebox-engine/metrics'
+ * import { equalOpportunityRatio } from 'whitebox-engine/fairness'
  * equalOpportunityRatio([1, 1, 1, 1], [1, 1, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -259,7 +259,7 @@ export const equalOpportunityRatio: MetricFunction<[MetricInput, MetricInput, Me
  * @returns The metric result.
  * @example
  * ```ts
- * import { predictiveParityDifference } from 'whitebox-engine/metrics'
+ * import { predictiveParityDifference } from 'whitebox-engine/fairness'
  * predictiveParityDifference([1, 0, 1, 1], [1, 1, 1, 1], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -311,7 +311,7 @@ const equalizedOdds = (
  * @returns The metric result, with the two gaps in the breakdown.
  * @example
  * ```ts
- * import { equalizedOddsDifference } from 'whitebox-engine/metrics'
+ * import { equalizedOddsDifference } from 'whitebox-engine/fairness'
  * equalizedOddsDifference([1, 0, 1, 0], [1, 1, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 1
  * ```
  */
@@ -329,7 +329,7 @@ export const equalizedOddsDifference: MetricFunction<[MetricInput, MetricInput, 
  * @returns The metric result.
  * @example
  * ```ts
- * import { equalizedOddsRatio } from 'whitebox-engine/metrics'
+ * import { equalizedOddsRatio } from 'whitebox-engine/fairness'
  * equalizedOddsRatio([1, 0, 1, 0], [1, 0, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0
  * ```
  */
@@ -346,7 +346,7 @@ export const equalizedOddsRatio: MetricFunction<[MetricInput, MetricInput, Metri
  * @returns The metric result: the smallest ratio over unprivileged groups, each group's ratio in the breakdown.
  * @example
  * ```ts
- * import { disparateImpact } from 'whitebox-engine/metrics'
+ * import { disparateImpact } from 'whitebox-engine/fairness'
  * disparateImpact([1, 1, 1, 0], ['a', 'a', 'b', 'b'], { privileged: 'a' }).estimate.value // => 0.5
  * ```
  */
@@ -390,7 +390,7 @@ export const disparateImpact: MetricFunction<
  * @returns The largest between-group ECE gap, with each group's ECE in the breakdown.
  * @example
  * ```ts
- * import { calibrationByGroup } from 'whitebox-engine/metrics'
+ * import { calibrationByGroup } from 'whitebox-engine/fairness'
  * calibrationByGroup([1, 0, 1, 0], [1, 0, 0.25, 0.25], ['a', 'a', 'b', 'b'], { nBins: 2 }).estimate.value // => 0.25
  * ```
  */

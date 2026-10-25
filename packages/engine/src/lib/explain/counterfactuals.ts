@@ -1,7 +1,10 @@
-import { grad } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
-import { dijkstra, graph } from '../../graph/index.ts'
-import { foldIn, normal } from '../../random/index.ts'
+import { grad } from '../autodiff/index.ts'
+import { WhiteboxError } from '../base/index.ts'
+import { dijkstra, graph } from '../graph/index.ts'
+import { keyFor, runOptionsFor } from '../learn/_shared.ts'
+import type { FitOptions } from '../learn/estimator.ts'
+import { columnOf, matrixView } from '../learn/validation.ts'
+import { foldIn, normal } from '../random/index.ts'
 import {
   add,
   asTensor,
@@ -20,11 +23,8 @@ import {
   type TensorLike,
   toFlat,
   type Value,
-} from '../../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
-import { keyFor, runOptionsFor } from '../_shared.ts'
-import type { FitOptions } from '../estimator.ts'
-import { columnOf, matrixView } from '../validation.ts'
+} from '../tensor/index.ts'
+import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import type { DifferentiableModel } from './gradients.ts'
 
 function rowOf(x: TensorLike, who: string): Float64Array {
@@ -40,7 +40,7 @@ function rowOf(x: TensorLike, who: string): Float64Array {
  * @returns One scale per feature.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * explain.medianAbsoluteDeviations([[0, 1], [1, 1], [4, 1]]) // => [1, 1]
  * ```
  */
@@ -106,7 +106,7 @@ function scalarModel(model: DifferentiableModel, d: number): (v: Float64Array) =
  * @concept counterfactual-explanations
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { matmul } from 'whitebox-engine/tensor'
  * const score = (v) => matmul(v, [[1], [2]])
  * const cf = explain.wachterCounterfactual(score, [0, 0], { target: 2, tolerance: 0.01 })
@@ -228,7 +228,7 @@ export interface DiverseCounterfactuals {
  * @returns The counterfactuals, their predictions and validity, and the diversity.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { matmul, sigmoid } from 'whitebox-engine/tensor'
  * const proba = (v) => sigmoid(matmul(v, [[2], [2]]))
  * const r = explain.diverseCounterfactuals(proba, [-1, -1], { count: 3 })
@@ -367,7 +367,7 @@ export interface FacePath {
  * @returns The path, or undefined when no acceptable point is reachable.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const sign = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[i] > 2 ? 1 : 0)))
  * const data = [[0], [0.5], [1], [1.5], [2], [2.5], [3]]
@@ -464,7 +464,7 @@ export interface Recourse {
  * @returns The action, its cost and feasibility.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * // Score 2 x0 + x1 - 4 at (0, 0); raising x0 is twice as effective per unit as x1.
  * explain.linearRecourse([2, 1], -4, [0, 0], { bounds: [[0, 1], [0, 5]] }) // => { action: [1, 2], cost: 3, feasible: true }
  * ```

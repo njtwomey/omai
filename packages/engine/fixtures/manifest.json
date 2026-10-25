@@ -433,6 +433,49 @@
       "cases": 9
     },
     {
+      "fixture": "explain/gradients.json",
+      "source": "oracle/cases/explain/gradients.py",
+      "reference": {
+        "captum": "0.9.0",
+        "torch": "2.14.1"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "explain/inspection.json",
+      "source": "oracle/cases/explain/inspection.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "explain/shapley.json",
+      "source": "oracle/cases/explain/shapley.py",
+      "reference": {
+        "shap": "0.54.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "explain/surrogates.json",
+      "source": "oracle/cases/explain/surrogates.py",
+      "reference": {
+        "lime": "0.2.0.1",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "fairness/group_metrics.json",
+      "source": "oracle/cases/fairness/group_metrics.py",
+      "reference": {
+        "fairlearn": "0.15.0"
+      },
+      "cases": 19
+    },
+    {
       "fixture": "foundations/calculus.json",
       "source": "oracle/cases/foundations/calculus.py",
       "reference": {
@@ -1005,47 +1048,12 @@
       "cases": 11
     },
     {
-      "fixture": "learn/explain/gradients.json",
-      "source": "oracle/cases/learn/explain/gradients.py",
-      "reference": {
-        "captum": "0.9.0",
-        "torch": "2.14.1"
-      },
-      "cases": 18
-    },
-    {
-      "fixture": "learn/explain/shapley.json",
-      "source": "oracle/cases/learn/explain/shapley.py",
-      "reference": {
-        "shap": "0.54.1",
-        "scikit-learn": "1.9.1"
-      },
-      "cases": 3
-    },
-    {
-      "fixture": "learn/explain/surrogates.json",
-      "source": "oracle/cases/learn/explain/surrogates.py",
-      "reference": {
-        "lime": "0.2.0.1",
-        "scikit-learn": "1.9.1"
-      },
-      "cases": 7
-    },
-    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
       "cases": 23
-    },
-    {
-      "fixture": "learn/inspection.json",
-      "source": "oracle/cases/learn/inspection.py",
-      "reference": {
-        "scikit-learn": "1.9.1"
-      },
-      "cases": 10
     },
     {
       "fixture": "learn/model_selection/criteria.json",
@@ -1872,14 +1880,6 @@
         "scipy": "1.18.1"
       },
       "cases": 11
-    },
-    {
-      "fixture": "metrics/fairness.json",
-      "source": "oracle/cases/metrics/fairness.py",
-      "reference": {
-        "fairlearn": "0.15.0"
-      },
-      "cases": 19
     },
     {
       "fixture": "metrics/forecasting.json",

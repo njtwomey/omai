@@ -1,13 +1,13 @@
 import { grad, hessian } from '../autodiff/index.ts'
 import { meanOf, WhiteboxError } from '../base/index.ts'
+import { innerFitOptions, keyFor, runOptionsFor } from '../learn/_shared.ts'
+import type { Estimator, FitOptions, LearnData } from '../learn/estimator.ts'
+import { type Scorer, type Scoring, scorersOf } from '../learn/scoring.ts'
+import { matrixView, rowsOf, takeData, targetVector } from '../learn/validation.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { foldIn, permutation } from '../random/index.ts'
 import { add, asTensor, fromStorage, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
-import { innerFitOptions, keyFor, runOptionsFor } from './_shared.ts'
-import type { Estimator, FitOptions, LearnData } from './estimator.ts'
-import { type Scorer, type Scoring, scorersOf } from './scoring.ts'
-import { matrixView, rowsOf, takeData, targetVector } from './validation.ts'
 
 /** A per-example loss of flat parameters `[p]`, one input row `[d]` and its target. */
 export type ExampleLoss = (params: Value, x: Value, y: number) => Value
@@ -52,7 +52,7 @@ export interface InfluenceResult {
  * @concept data-valuation
  * @example
  * ```ts
- * import { influenceFunctions } from 'whitebox-engine/learn'
+ * import { influenceFunctions } from 'whitebox-engine/explain'
  * import { mul, square, sub, sum } from 'whitebox-engine/tensor'
  * // Least squares on a mean: theta = mean(y) = 2. Up-weighting the outlier at 4 raises the test loss at 1 (+4);
  * // up-weighting a point at 1 lowers it (-2).
@@ -110,7 +110,7 @@ export interface Checkpoint {
  * @returns tracin[test][train].
  * @example
  * ```ts
- * import { tracIn } from 'whitebox-engine/learn'
+ * import { tracIn } from 'whitebox-engine/explain'
  * import { mul, square, sub, sum } from 'whitebox-engine/tensor'
  * const loss = (p, x, y) => square(sub(sum(mul(p, x)), y))
  * tracIn(loss, [{ params: [0], learningRate: 0.5 }], { x: [[1], [1]], y: [1, -1] }, { x: [[1]], y: [1] }) // => [[2, -2]]
@@ -176,7 +176,8 @@ export interface DataShapleyResult {
  * @returns The values, their standard errors and the full utility.
  * @example
  * ```ts
- * import { dataShapley, defineEstimator, rowsOf } from 'whitebox-engine/learn'
+ * import { dataShapley } from 'whitebox-engine/explain'
+ * import { defineEstimator, rowsOf } from 'whitebox-engine/learn'
  * import { full, item, mean } from 'whitebox-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) },
@@ -264,7 +265,7 @@ export function dataShapley(
  * @returns One value per training point.
  * @example
  * ```ts
- * import { knnShapley } from 'whitebox-engine/learn'
+ * import { knnShapley } from 'whitebox-engine/explain'
  * // The near point with the right label is worth most; the wrong label is worth less than nothing.
  * knnShapley([[0], [1], [5]], [1, 0, 1], [[0]], [1], 1).map((v) => Math.round(v * 1e6) / 1e6) // => [0.833333, -0.166667, 0.333333]
  * ```
@@ -315,7 +316,7 @@ export function knnShapley(
  * @returns The utility of each subset of training points (a coalition value).
  * @example
  * ```ts
- * import { knnUtility } from 'whitebox-engine/learn'
+ * import { knnUtility } from 'whitebox-engine/explain'
  * knnUtility([[0], [1]], [1, 0], [[0]], [1], 1)([true, true]) // => 1
  * ```
  */
@@ -356,7 +357,7 @@ export function knnUtility(
  * @returns The summed loss (differentiable in the parameters).
  * @example
  * ```ts
- * import { totalLoss } from 'whitebox-engine/learn'
+ * import { totalLoss } from 'whitebox-engine/explain'
  * import { item, square, sub, sum } from 'whitebox-engine/tensor'
  * item(totalLoss((p, x, y) => square(sub(sum(p), y)), [1], { x: [[0], [0]], y: [0, 3] })) // => 5
  * ```

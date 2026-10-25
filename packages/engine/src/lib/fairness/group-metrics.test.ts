@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { expectedCalibrationError } from '../metrics/index.ts'
 import * as M from './index.ts'
 
 const v = (r: { readonly estimate: { readonly value: number } }): number => r.estimate.value
@@ -11,7 +12,7 @@ describe('fairness metrics', () => {
     const r = M.calibrationByGroup(yTrue, yProb, groups, { nBins: 2 })
     const ece = (idx: number[]): number =>
       v(
-        M.expectedCalibrationError(
+        expectedCalibrationError(
           idx.map((i) => yTrue[i] ?? 0),
           idx.map((i) => yProb[i] ?? 0),
           { nBins: 2 },

@@ -1,0 +1,4 @@
+{
+  "tier": 10,
+  "summary": "Explaining models and data: Shapley values (exact, kernel, sampling, tree), LIME, anchors and surrogates, gradient attributions, counterfactuals and recourse, model inspection (importance, PDP, ICE, ALE, interactions) and data valuation."
+}

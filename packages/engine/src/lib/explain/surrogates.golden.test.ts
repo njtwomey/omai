@@ -1,9 +1,9 @@
-import { learnGolden, num, str } from '../../../testing/learn.ts'
-import type { Tensor } from '../../tensor/index.ts'
+import { learnGolden, num, str } from '../../testing/learn.ts'
+import type { Tensor } from '../tensor/index.ts'
 import { treePredict } from './shapley.ts'
 import { type LimeFeatureSelection, limeFit, surrogateTree } from './surrogates.ts'
 
-learnGolden('surrogates against lime and sklearn trees', 'learn/explain/surrogates', {
+learnGolden('surrogates against lime and sklearn trees', 'explain/surrogates', {
   lime: ([z, y, d], p) => {
     const r = limeFit(z as Tensor, y as Tensor, d as Tensor, {
       kernelWidth: num(p, 'width'),

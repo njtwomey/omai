@@ -1,8 +1,8 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { linprog } from '../../optim/index.ts'
-import { key } from '../../random/index.ts'
-import { fromStorage, matmul, sigmoid, type Tensor, type Value } from '../../tensor/index.ts'
+import { linprog } from '../optim/index.ts'
+import { key } from '../random/index.ts'
+import { fromStorage, matmul, sigmoid, type Tensor, type Value } from '../tensor/index.ts'
 import {
   diverseCounterfactuals,
   faceCounterfactual,
