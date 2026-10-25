@@ -35,7 +35,7 @@
         "scikit-learn": "1.9.1",
         "numpy": "2.5.4"
       },
-      "cases": 10
+      "cases": 13
     },
     {
       "fixture": "datasets/classification.json",

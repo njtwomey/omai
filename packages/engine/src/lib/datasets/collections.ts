@@ -4,6 +4,7 @@ import { type Generated, generate, type Knobs } from '../data/index.ts'
 import type { Key } from '../random/index.ts'
 import { datasetGenerators } from './catalogue.ts'
 import { breastCancer, digits, iris, penguinsClassification, wine } from './classification-real.ts'
+import { germanCredit, titanicSurvival } from './fairness.ts'
 import { diabetes, linnerud, mtcarsRegression } from './regression-real.ts'
 
 /** One dataset in a collection: a generator with demo knobs, or a vendored real dataset. */
@@ -68,6 +69,37 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
       { name: 'penguins', title: 'Palmer penguins', load: penguinsClassification },
       { name: 'digits', title: 'Digits (8 by 8)', load: digits },
       g('makeClassification', 'Synthetic (make_classification)'),
+    ],
+  },
+  fairnessTabular: {
+    id: 'fairnessTabular',
+    title: 'Classification with a protected attribute',
+    entries: [
+      g('biasedLabels', 'Credit: biased labels', 'biasedCredit', { labelBias: 0.3, baseRateGap: 0.3 }),
+      g('underRepresented', 'Credit: an under-represented, noisier group', 'biasedCredit', {
+        minorityShare: 0.12,
+        minorityNoise: 2.5,
+        labelBias: 0,
+        baseRateGap: 0,
+      }),
+      g('baseRateGap', 'Credit: a real base-rate gap, no bias', 'biasedCredit', {
+        labelBias: 0,
+        baseRateGap: 1,
+        minorityNoise: 1,
+      }),
+      g('proxyOnly', 'Credit: group withheld, a strong proxy', 'biasedCredit', {
+        includeGroup: false,
+        proxyStrength: 3,
+        labelBias: 0.3,
+      }),
+      g('fairCredit', 'Credit: no bias at all', 'biasedCredit', {
+        labelBias: 0,
+        baseRateGap: 0,
+        minorityNoise: 1,
+        proxyStrength: 0,
+      }),
+      { name: 'germanCredit', title: 'German credit (Statlog)', load: germanCredit },
+      { name: 'titanicSurvival', title: 'Titanic survival', load: titanicSurvival },
     ],
   },
   regression1d: {

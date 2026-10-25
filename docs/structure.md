@@ -3831,6 +3831,12 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   `makeMultilabelClassification`.
 - `classification-real.ts`: `iris`, `wine`, `breastCancer`, 8 by 8 digits (`digits`, `digitImages`), Titanic
   (`titanic`, R's survival table expanded to rows), penguins (`penguins` as a table, `penguinsClassification`).
+- `fairness.ts`: data with protected attributes (named with their coded values in `meta.sensitive`): `biasedCredit`
+  (a group with knobs for representation, a real base-rate gap, label bias, noisier measurements and a proxy feature;
+  exact posterior, Bayes error, clean labels and base rates), the vendored Statlog German credit data
+  (`germanCredit`, UCI, CC BY 4.0; sex derived from the personal status) and `titanicSurvival` (sex protected); the
+  collection `fairnessTabular` gathers presets of the generator (biased labels, an under-represented group, a real
+  gap, a withheld group with a proxy, no bias) and the two real datasets.
 - `clustering.ts`: `rings`, `anisotropicBlobs`, `unequalVarianceBlobs`, `oldFaithful`, with true clusters (and
   exact posteriors for the generators).
 - `manifolds.ts`: `swissRoll` (optionally with a hole), `sCurve`, `severedSphere`, `torus`, with latent coordinates;

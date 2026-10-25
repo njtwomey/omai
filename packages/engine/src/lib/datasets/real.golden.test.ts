@@ -10,6 +10,7 @@ import {
   californiaHousing,
   digitImages,
   digits,
+  germanCredit,
   growthChart,
   growthCurves,
   growthValue,
@@ -24,7 +25,8 @@ import {
 } from './index.ts'
 
 describe('vendored classification data against their sources', () => {
-  const loaders: Record<string, () => { x: Tensor; y: Tensor }> = {
+  const loaders: Record<string, () => { x: Tensor; y: Tensor; featureNames?: readonly string[] }> = {
+    germanCredit,
     iris,
     wine,
     breastCancer,
@@ -37,6 +39,17 @@ describe('vendored classification data against their sources', () => {
       if (d === undefined) throw new Error(`no loader ${c.fn}`)
       if (c.name === 'digits/pixel-sums') {
         expectMatches(sum(d.x, 0), c.output, 0, 0, c.name)
+        return
+      }
+      if (c.fn === 'germanCredit') {
+        const names = d.featureNames as readonly string[]
+        const cols = c.params['part'] === 'numeric' ? ['duration', 'amount', 'age'] : ['female']
+        const idx = cols.map((name) => names.indexOf(name))
+        const x = toFlat(d.x)
+        const width = names.length
+        const picked = Array.from({ length: x.length / width }, (_, i) => idx.map((j) => x[i * width + j] ?? 0))
+        const out = c.params['part'] === 'y' ? d.y : tensor(cols.length === 1 ? picked.map((r) => r[0] ?? 0) : picked)
+        expectMatches(out, c.output, 0, 0, c.name)
         return
       }
       if (c.name === 'penguins/means') {
