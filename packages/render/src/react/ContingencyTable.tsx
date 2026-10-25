@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo, useState } from 'react'
-import { type ConfusionMatrix, confusionMargins } from 'whitebox-engine/metrics'
+import { type ConfusionMatrix, confusionMargins, tableCost } from 'whitebox-engine/metrics'
 import { formatNumber, formatPercent } from '../theme/format.ts'
 import { mixColours } from '../theme/palettes.ts'
 import { useTokens } from './theme.tsx'
@@ -21,6 +21,12 @@ export interface ContingencyTableProps {
   readonly share?: 'all' | 'row' | 'column' | 'none'
   /** A colour per class, shown as a dot by each class name (e.g. to match a scatter). */
   readonly classColours?: readonly string[]
+  /**
+   * Misclassification costs, `costs[actual][predicted]` in the table's class order (correct decisions usually 0, and
+   * negative to count as benefits): each cell then shows its count times its cost, and the corner the total cost and
+   * the cost per case (`tableCost` from `whitebox-engine/metrics`).
+   */
+  readonly costs?: readonly (readonly number[])[]
   /** The names of the two axes (default "actual" and "predicted"). */
   readonly rowLabel?: string
   readonly columnLabel?: string
@@ -41,6 +47,8 @@ interface Rate {
   readonly value: number
   readonly formula: string
   readonly focus: Focus
+  /** How to show the value (default three significant digits). */
+  readonly format?: (v: number) => string
 }
 
 const count = (v: number): string => formatNumber(v, { largeExponent: 1e12 })
@@ -73,6 +81,8 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
   const [focus, setFocus] = useState<Focus | null>(null)
   const k = table.labels.length
   const m = useMemo(() => confusionMargins(table), [table])
+  const costs = props.costs
+  const cost = useMemo(() => (costs === undefined ? undefined : tableCost(table, costs)), [table, costs])
   const binary = k === 2 && (positive === 0 || positive === 1)
   const names = classNames ?? table.labels.map(String)
   const at = (j: number, i: number): number => table.matrix[j]?.[i] ?? 0
@@ -145,6 +155,25 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
       formula: binary ? '(TP + TN) / n' : 'diagonal / n',
       focus: { numerator: Array.from({ length: k }, (_, j): Cell => [j, j]), denominator: every },
     },
+    ...(cost === undefined
+      ? []
+      : [
+          {
+            label: 'total cost',
+            name: 'total misclassification cost',
+            value: cost.total,
+            formula: 'Σ count × cost',
+            focus: { numerator: every.filter(([a, b]) => (costs?.[a]?.[b] ?? 0) !== 0), denominator: [] },
+            format: count,
+          },
+          {
+            label: 'cost per case',
+            name: 'expected cost of one case',
+            value: cost.perCase,
+            formula: 'total cost / n',
+            focus: { numerator: every.filter(([a, b]) => (costs?.[a]?.[b] ?? 0) !== 0), denominator: every },
+          },
+        ]),
   ]
 
   // Light shading by count, from the surface towards the accent, so text stays legible in both themes.
@@ -169,7 +198,7 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
           className="flex items-baseline justify-between gap-x-1.5 rounded px-1 text-left hover:bg-(--wb-surface) focus-visible:bg-(--wb-surface) focus-visible:outline-none"
         >
           <span className="whitespace-nowrap text-(--wb-muted)">{r.label}</span>
-          <span className="font-mono text-(--wb-fg) tabular-nums">{rate(r.value)}</span>
+          <span className="font-mono text-(--wb-fg) tabular-nums">{(r.format ?? rate)(r.value)}</span>
         </button>
       ))}
     </div>
@@ -195,6 +224,9 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
     <>
       <div className="text-[10px] text-(--wb-muted)">{tag}</div>
       <div className={join('font-mono text-(--wb-fg) tabular-nums', strong && 'font-medium')}>{count(value)}</div>
+      {mode !== 'none' && !strong && (
+        <div className="font-mono text-[10px] text-(--wb-muted) tabular-nums">{share(value / m.n)}</div>
+      )}
     </>
   )
   const axis = 'text-[11px] font-medium tracking-wide text-(--wb-muted) uppercase'
@@ -253,6 +285,15 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
                     <div className="font-mono text-sm text-(--wb-fg) tabular-nums">{count(at(j, i))}</div>
                     {mode !== 'none' && (
                       <div className="font-mono text-[10px] text-(--wb-muted) tabular-nums">{share(shareOf(j, i))}</div>
+                    )}
+                    {cost !== undefined && (costs?.[j]?.[i] ?? 0) !== 0 && (
+                      <div
+                        className="font-mono text-[10px] tabular-nums"
+                        style={{ color: (costs?.[j]?.[i] ?? 0) > 0 ? t.danger : t.success }}
+                        title={`${count(at(j, i))} × ${formatNumber(costs?.[j]?.[i] ?? 0)}`}
+                      >
+                        cost {count(cost.cells[j]?.[i] ?? 0)}
+                      </div>
                     )}
                   </td>
                 )

@@ -56,6 +56,18 @@ describe('React bindings render on the server', () => {
       />,
     )
     expect(three).toContain('recall')
+    const costed = renderToString(
+      <ContingencyTable
+        table={table}
+        positive={1}
+        costs={[
+          [0, 1],
+          [10, 0],
+        ]}
+      />,
+    )
+    expect(costed).toContain('total cost')
+    expect(costed).toContain('cost per case')
     expect(three).not.toContain('TPR')
   })
 

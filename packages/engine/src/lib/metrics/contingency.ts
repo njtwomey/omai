@@ -123,3 +123,122 @@ export function thresholdConfusion(
   }
   return { labels: [neg, pos], matrix: m }
 }
+
+/** The cost of a contingency table under a cost matrix. */
+export interface TableCost {
+  /** cells[i][j]: the count of actual class i predicted as j, times its cost. */
+  readonly cells: readonly (readonly number[])[]
+  readonly total: number
+  /** The total over the grand total of the table (the expected cost of one case). */
+  readonly perCase: number
+}
+
+/**
+ * The cost of a contingency table: each cell's count times the cost of that decision (`costs[actual][predicted]`, in
+ * the table's class order; correct decisions usually cost 0 and may be negative to count as benefits), summed.
+ *
+ * @param table - A confusion matrix of counts.
+ * @param costs - The cost matrix, one row per actual class and one column per predicted class.
+ * @returns Each cell's cost, the total and the cost per case.
+ * @throws WhiteboxError `shape` when the cost matrix does not match the table.
+ * @concept classification-metrics
+ * @example
+ * ```ts
+ * import { tableCost } from 'whitebox-engine/metrics'
+ * // A missed illness (FN) costs 50 times a false alarm (FP).
+ * const c = tableCost({ labels: ['healthy', 'ill'], matrix: [[880, 70], [8, 42]] }, [[0, 1], [50, 0]])
+ * c.total // => 470
+ * c.perCase // => 0.47
+ * ```
+ */
+export function tableCost(table: ConfusionMatrix, costs: readonly (readonly number[])[]): TableCost {
+  const k = table.labels.length
+  if (costs.length !== k || costs.some((row) => row.length !== k))
+    throw new WhiteboxError('shape', `tableCost: the cost matrix must be ${k} by ${k}, like the table`)
+  const cells = table.matrix.map((row, i) => row.map((n, j) => n * (costs[i]?.[j] ?? 0)))
+  const total = cells.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
+  const n = table.matrix.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
+  return { cells, total, perCase: n === 0 ? Number.NaN : total / n }
+}
+
+/** The total cost of cutting scores at every threshold, and the cheapest cut. */
+export interface ThresholdCosts {
+  /** Every distinct score, ascending, then +Infinity (nothing predicted positive). */
+  readonly thresholds: readonly number[]
+  /** The total cost at each threshold. */
+  readonly totals: readonly number[]
+  /** The cheapest threshold (the lowest of any ties) and its total. */
+  readonly best: { readonly threshold: number; readonly total: number }
+}
+
+/**
+ * The total misclassification cost of cutting scores at each threshold (positive when the score is at least the
+ * threshold), under a 2 by 2 cost matrix in `thresholdConfusion`'s order (`[[TN, FP], [FN, TP]]` costs), and the
+ * cheapest threshold. One sorted sweep, so every threshold costs O(1) after sorting.
+ *
+ * @param yTrue - Binary labels.
+ * @param yScore - Scores, higher meaning more positive.
+ * @param costs - `[[cost of TN, cost of FP], [cost of FN, cost of TP]]`.
+ * @param options - posLabel and sample weights.
+ * @returns The thresholds, their totals and the cheapest.
+ * @throws WhiteboxError `shape` for a cost matrix that is not 2 by 2 or lengths that differ; `value` with more than two
+ * classes.
+ * @concept classification-metrics
+ * @example
+ * ```ts
+ * import { thresholdCosts } from 'whitebox-engine/metrics'
+ * // A false negative costs 5, a false positive 1.
+ * thresholdCosts([0, 0, 1, 1], [0.1, 0.6, 0.4, 0.9], [[0, 1], [5, 0]]).best // => { threshold: 0.4, total: 1 }
+ * ```
+ */
+export function thresholdCosts(
+  yTrue: MetricInput,
+  yScore: TensorLike,
+  costs: readonly (readonly number[])[],
+  options: ThresholdConfusionOptions = {},
+): ThresholdCosts {
+  if (costs.length !== 2 || costs.some((row) => row.length !== 2))
+    throw new WhiteboxError('shape', 'thresholdCosts: the cost matrix must be 2 by 2')
+  const t = labelValues(yTrue)
+  const s = flat(yScore)
+  if (s.length !== t.length) throw new WhiteboxError('shape', 'thresholdCosts: yTrue and yScore have different lengths')
+  const classes = sortLabels(t)
+  if (classes.length > 2) throw new WhiteboxError('value', 'thresholdCosts: needs two classes')
+  const pos = options.posLabel ?? (classes.includes(1) ? 1 : (classes[classes.length - 1] ?? 1))
+  const w = sampleWeights('thresholdCosts', t.length, options.sampleWeight)
+  const [[cTn = 0, cFp = 0] = [], [cFn = 0, cTp = 0] = []] = costs
+  const order = Array.from({ length: t.length }, (_, i) => i).sort((a, b) => (s[a] ?? 0) - (s[b] ?? 0))
+  let positives = 0
+  let negatives = 0
+  for (let i = 0; i < t.length; i++) {
+    if (t[i] === pos) positives += w[i] ?? 0
+    else negatives += w[i] ?? 0
+  }
+  // Sweep thresholds upwards: at a threshold equal to a distinct score, every sample at or above it is positive.
+  const thresholds: number[] = []
+  const totals: number[] = []
+  let belowPos = 0
+  let belowNeg = 0
+  const total = (): number =>
+    belowNeg * cTn + (negatives - belowNeg) * cFp + belowPos * cFn + (positives - belowPos) * cTp
+  for (let r = 0; r < order.length; ) {
+    const value = s[order[r] ?? 0] ?? 0
+    thresholds.push(value)
+    totals.push(total())
+    while (r < order.length && (s[order[r] ?? 0] ?? 0) === value) {
+      const i = order[r] ?? 0
+      if (t[i] === pos) belowPos += w[i] ?? 0
+      else belowNeg += w[i] ?? 0
+      r++
+    }
+  }
+  thresholds.push(Number.POSITIVE_INFINITY)
+  totals.push(total())
+  let best = 0
+  for (let i = 1; i < totals.length; i++) if ((totals[i] ?? 0) < (totals[best] ?? 0)) best = i
+  return {
+    thresholds,
+    totals,
+    best: { threshold: thresholds[best] ?? Number.POSITIVE_INFINITY, total: totals[best] ?? 0 },
+  }
+}

@@ -1,7 +1,7 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { accuracyScore, confusionMatrix } from './classification.ts'
-import { confusionMargins, thresholdConfusion } from './contingency.ts'
+import { confusionMargins, tableCost, thresholdConfusion, thresholdCosts } from './contingency.ts'
 
 describe('contingency tables', () => {
   it('margins of a binary table name every rate', () => {
@@ -110,6 +110,68 @@ describe('contingency tables', () => {
             Math.abs(m.accuracy - acc) < 1e-12 &&
             rowsSumToOne &&
             colsSumToOne
+          )
+        },
+      ),
+      { numRuns: 200 },
+    )
+  })
+})
+
+describe('misclassification costs', () => {
+  it('cost a table cell by cell', () => {
+    const c = tableCost(
+      {
+        labels: [0, 1],
+        matrix: [
+          [880, 70],
+          [8, 42],
+        ],
+      },
+      [
+        [0, 1],
+        [50, -2],
+      ],
+    )
+    expect(c.cells).toEqual([
+      [0, 70],
+      [400, -84],
+    ])
+    expect(c.total).toBe(386)
+    expect(c.perCase).toBeCloseTo(0.386)
+    expect(() =>
+      tableCost(
+        {
+          labels: [0, 1],
+          matrix: [
+            [1, 0],
+            [0, 1],
+          ],
+        },
+        [[0, 1]],
+      ),
+    ).toThrow(/2 by 2/)
+  })
+
+  it('agree with tableCost of thresholdConfusion at every threshold (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(fc.boolean(), fc.integer({ min: 0, max: 20 })), { minLength: 1, maxLength: 30 }),
+        fc.tuple(fc.integer({ min: 0, max: 9 }), fc.integer({ min: 0, max: 9 }), fc.integer({ min: 0, max: 9 })),
+        (rows, [fp, fn, tp]) => {
+          const y = [0, 1, ...rows.map(([b]) => (b ? 1 : 0))]
+          const s = [3, 7, ...rows.map(([, v]) => v / 2)]
+          const costs = [
+            [0, fp],
+            [fn, -tp],
+          ]
+          const sweep = thresholdCosts(y, s, costs)
+          const direct = sweep.thresholds.map((th) => tableCost(thresholdConfusion(y, s, th), costs).total)
+          const min = Math.min(...direct)
+          return (
+            sweep.totals.every((v, i) => Math.abs(v - (direct[i] ?? Number.NaN)) < 1e-9) &&
+            sweep.best.total === min &&
+            sweep.thresholds.length === new Set(s).size + 1
           )
         },
       ),
