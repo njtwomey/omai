@@ -1,3 +1,10 @@
+/**
+ * Random forests and extremely randomised trees (as in scikit-learn): many decision trees, each grown on a bootstrap
+ * sample with a random subset of features per split (or random thresholds, for extra trees), averaged into one
+ * prediction. Classifiers and regressors with their classes; the regressor's predictive distribution comes from the
+ * spread of the trees.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution, normal } from '../../lib/dists/index.ts'

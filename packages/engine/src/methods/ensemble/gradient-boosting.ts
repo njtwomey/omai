@@ -1,3 +1,10 @@
+/**
+ * Gradient boosting (as in scikit-learn's `GradientBoostingRegressor` and `GradientBoostingClassifier`): an additive
+ * model built stage by stage, each stage a regression tree fitted to the negative gradient of the loss and added with
+ * shrinkage. Squared, absolute, Huber and quantile losses for regression and the log loss for classification, traced
+ * one stage per step.
+ */
+
 import { quantileOf, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'

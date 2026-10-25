@@ -1,3 +1,9 @@
+/**
+ * Regularisation paths: coefficients as the penalty varies. The elastic-net and lasso paths by warm-started coordinate
+ * descent (scikit-learn's `enet_path`), the ridge path from one SVD, and cross-validated mean squared error along a
+ * path with the best and one-standard-error choices of the penalty.
+ */
+
 import { argminOf, WhiteboxError } from '../../lib/base/index.ts'
 import {
   type CrossValidationCurve,

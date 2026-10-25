@@ -1,3 +1,10 @@
+/**
+ * Linear classifiers: logistic regression (binary by the GLM core's IRLS, with L1 by coordinate descent, multinomial
+ * for several classes), probit regression, the ridge classifier (ridge on targets coded -1 and +1) and Rosenblatt's
+ * perceptron, traced epoch by epoch. Fit functions and classes mirroring scikit-learn and statsmodels, with coefficient
+ * tables and decision surfaces as exposition.
+ */
+
 import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type CoefficientTable, coefficientTable, type Exposition } from '../../lib/exposition/index.ts'

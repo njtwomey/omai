@@ -1,3 +1,9 @@
+/**
+ * Conjugate Bayesian models, whose posterior has the same form as the prior and is known exactly: beta-Bernoulli and
+ * beta-binomial, gamma-Poisson, gamma-exponential and normal-normal with a known scale, each updated observation by
+ * observation from the core's `conjugatePosterior` so the prior-to-posterior story can be shown.
+ */
+
 // TODO: normal-gamma (unknown mean and variance), Dirichlet-multinomial and normal-inverse-Wishart studies, the
 // predictive distributions, and CAVI on the same models compared with the exact posterior.
 import { WhiteboxError } from '../../lib/base/index.ts'

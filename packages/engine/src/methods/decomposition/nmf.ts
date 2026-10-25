@@ -1,3 +1,10 @@
+/**
+ * Non-negative matrix factorisation (as in scikit-learn's `NMF`): approximating a non-negative matrix by a product `W
+ * H` of non-negative factors, which yields additive, parts-based components. Lee and Seung's multiplicative updates for
+ * the Frobenius or Kullback-Leibler loss, traced update by update, with NNDSVD initialisation, a fit function and a
+ * class.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {

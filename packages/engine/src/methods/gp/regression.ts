@@ -1,3 +1,9 @@
+/**
+ * Gaussian-process regression (as in scikit-learn's `GaussianProcessRegressor`): the exact posterior over functions
+ * given a kernel from the core's kernels, with predictive means and variances, and the hyperparameters fitted by
+ * maximising the differentiable log marginal likelihood.
+ */
+
 import { linspaceNumbers, maxOf, minOf } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { type Distribution, multivariateNormal, normal } from '../../lib/dists/index.ts'

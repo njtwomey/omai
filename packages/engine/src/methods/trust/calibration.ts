@@ -1,3 +1,10 @@
+/**
+ * Probability calibration for binary classifiers: reliability curves (observed frequency against mean forecast per bin)
+ * with expected and maximum calibration errors and the Brier score, and `calibrateClassifier`, which recalibrates a
+ * fitted model by Platt scaling, isotonic regression or temperature scaling on held-out rows (as scikit-learn's
+ * `CalibratedClassifierCV` and netcal) and compares them.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { calibrationRecord, type Explained, type ReliabilityCurve } from '../../lib/exposition/index.ts'
 import {

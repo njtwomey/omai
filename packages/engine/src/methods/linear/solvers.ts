@@ -1,3 +1,10 @@
+/**
+ * The solvers of the penalised GLM core: direct least squares (Cholesky, QR or SVD, including ridge for many penalties
+ * from one SVD), elastic-net coordinate descent with duality gaps, iteratively reweighted least squares (Fisher
+ * scoring) and quasi-Newton (L-BFGS, or OWL-QN for an L1 penalty), each traced. `chooseSolver` picks one for a problem
+ * and says why.
+ */
+
 import { type Json, WhiteboxError } from '../../lib/base/index.ts'
 import type { DispersionFamily, Link } from '../../lib/dists/families/index.ts'
 import { collecting, type MatrixView } from '../../lib/learn/index.ts'

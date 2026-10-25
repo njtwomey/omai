@@ -1,3 +1,9 @@
+/**
+ * Model cards (Mitchell et al., 2019) as data: for a fitted binary classifier, its details, evaluation data, overall
+ * performance, performance by group with fairness disparities, calibration and robustness, assembled into sections a
+ * view can render.
+ */
+
 import { calibrationRecord, type Explained, type Exposition, recordsOf } from '../../lib/exposition/index.ts'
 import type { Fitted } from '../../lib/learn/index.ts'
 import { accuracyScore, rocAucScore } from '../../lib/metrics/index.ts'

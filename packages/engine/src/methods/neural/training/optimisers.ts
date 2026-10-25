@@ -1,3 +1,9 @@
+/**
+ * Studies of optimisers: `optimiserRace` trains the same network from the same weights on the same minibatches with
+ * SGD, momentum, Nesterov, RMSprop, Adagrad, Adam and AdamW, and `learningRateFinder` runs Leslie Smith's learning-rate
+ * range test (fastai's `lr_find`), raising the rate geometrically until the loss blows up.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import {
   type Explained,

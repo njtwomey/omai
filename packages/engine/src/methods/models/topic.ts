@@ -1,3 +1,10 @@
+/**
+ * Latent Dirichlet allocation (Blei, Ng and Jordan, 2003), the topic model in which each document mixes topics and each
+ * topic is a distribution over words, fitted by collapsed Gibbs sampling (Griffiths and Steyvers, 2004) traced one
+ * sweep per step. A fit function and class as in scikit-learn and gensim, and `documentTermCounts` for turning a
+ * tokenised corpus into counts.
+ */
+
 // TODO: LDA as a probprog program with the variational engine (sklearn's online and batch VB), labelled LDA, held-out
 // perplexity by importance sampling; pLSA, HDP, correlated and dynamic topic models (topic-extensions.ts).
 import { WhiteboxError } from '../../lib/base/index.ts'

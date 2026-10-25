@@ -1,3 +1,9 @@
+/**
+ * Backpropagation worked by hand on a small network, step by step beside reverse-mode autodiff: each step sends one
+ * training row through the forward pass (every unit's pre-activation and activation), propagates the error terms
+ * backwards and records every parameter's gradient both ways, so the hand calculation can be checked against `grad`.
+ */
+
 import { valueAndGrad } from '../../../lib/autodiff/index.ts'
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import {

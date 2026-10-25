@@ -1,6 +1,9 @@
-// Symbolic regression by genetic programming, played generation by generation: the best program of each generation as
-// a simplified symbolic expression and its curve over the data, from the core's genetic programming
-// (whitebox-engine/search) and computer algebra (whitebox-engine/symbolic).
+/**
+ * Symbolic regression by genetic programming: evolving expression trees over `x`, arithmetic (and optionally
+ * trigonometric) functions and constants to fit points of a target function. Each generation's best program is recorded
+ * as a simplified symbolic expression (via `whitebox-engine/symbolic`) with its curve over the data.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type Explained, type Generation, populationSteps } from '../../lib/exposition/index.ts'
 import { type Key, key as makeKey } from '../../lib/random/index.ts'

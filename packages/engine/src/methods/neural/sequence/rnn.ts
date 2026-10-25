@@ -1,3 +1,9 @@
+/**
+ * Recurrent networks on toy sequence tasks: `recurrentTagger` trains an Elman RNN, GRU or LSTM on tasks from
+ * `lib/datasets` such as running parity, copying or Dyck languages, with a prediction at every position or from the
+ * last one. Records the hidden states and predictions of a sequence as training goes on, and accuracy by position.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import type { SequenceData } from '../../../lib/data/index.ts'
 import {

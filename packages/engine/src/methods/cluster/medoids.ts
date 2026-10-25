@@ -1,3 +1,9 @@
+/**
+ * k-medoids by PAM (Kaufman and Rousseeuw, 1990): clustering around actual data rows rather than means, with a greedy
+ * BUILD phase and SWAP steps that exchange a medoid for a non-medoid while the total dissimilarity falls, or CLARA on
+ * samples for larger data. Mirrors scikit-learn-extra's `KMedoids`.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {

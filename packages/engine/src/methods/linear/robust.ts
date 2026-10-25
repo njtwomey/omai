@@ -1,3 +1,10 @@
+/**
+ * Robust linear regression that resists outliers, as in scikit-learn: Huber regression (squared loss for small
+ * residuals and linear beyond, with a jointly fitted scale), RANSAC (fits on random minimal samples keeping the one
+ * with most inliers), Theil-Sen (the spatial median of fits on small subsets) and quantile regression (the pinball
+ * loss, as a linear program).
+ */
+
 import { quantileOf, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { anomalyScores, coefficientTable, type Exposition } from '../../lib/exposition/index.ts'

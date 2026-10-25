@@ -1,3 +1,9 @@
+/**
+ * Rating systems that learn players' skills from games: Elo, Glicko (ratings with a deviation that shrinks with play)
+ * and two-player TrueSkill (Gaussian skill beliefs updated by moment matching), run game by game so each prediction is
+ * made before its result, and Bradley-Terry strengths fitted to all games at once by Hunter's MM algorithm.
+ */
+
 // TODO: Glicko-2 (volatility), TrueSkill on its factor graph by EP for teams and free-for-all races (here races are
 // split into pairs), TrueSkill through time, Plackett-Luce, Massey and Colley ratings.
 import { WhiteboxError } from '../../lib/base/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * One-class support vector methods for novelty detection: the one-class SVM (as in scikit-learn's `OneClassSVM`,
+ * libsvm's nu formulation), a kernel boundary around the data with at most a fraction nu of rows outside, and support
+ * vector data description (Tax and Duin, 2004), the smallest kernel-space ball holding the data. Both are solved by the
+ * core's traced SMO.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { anomalyScores, type Exposition, marginRecord } from '../../lib/exposition/index.ts'
 import {

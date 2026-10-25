@@ -1,3 +1,9 @@
+/**
+ * Universal approximation in one dimension (Cybenko, Hornik): one hidden layer of increasing width fitted to the same
+ * curve, showing the fit improve with the number of units and how the widest network builds the curve from its
+ * individual units.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { type Explained, type Exposition, learningCurve } from '../../../lib/exposition/index.ts'
 import type { FitOptions, LearnData } from '../../../lib/learn/index.ts'

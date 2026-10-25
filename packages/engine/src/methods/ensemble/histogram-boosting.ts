@@ -1,3 +1,9 @@
+/**
+ * Histogram gradient boosting (the basics of scikit-learn's `HistGradientBoosting*`, the LightGBM approach): features
+ * are binned once into at most 255 quantile bins so split finding works on histograms, missing values get their own bin
+ * and a learned direction, and trees are grown with second-order (Newton) leaf values, traced iteration by iteration.
+ */
+
 import { quantileOf, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'

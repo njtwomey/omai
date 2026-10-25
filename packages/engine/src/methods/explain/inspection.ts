@@ -1,3 +1,9 @@
+/**
+ * Global feature importance for a fitted model: `featureImportance` measures how much the model relies on each feature,
+ * by permutation importance (the drop in score when the feature is shuffled, repeated with its spread) or, for trees
+ * and their ensembles, by impurity decrease.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { permutationImportance } from '../../lib/explain/index.ts'
 import { type Explained, importances } from '../../lib/exposition/index.ts'

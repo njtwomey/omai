@@ -1,5 +1,9 @@
-// Cellular automata played step by step: Wolfram's elementary automata as a space-time diagram filling row by row,
-// and Conway's Game of Life generation by generation.
+/**
+ * Cellular automata played step by step: Wolfram's elementary automata, where each cell's next state is a rule of
+ * itself and its two neighbours, drawn as a space-time diagram filling row by row, and Conway's Game of Life generation
+ * by generation from classic starting patterns.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, key as makeKey, uniform } from '../../lib/random/index.ts'

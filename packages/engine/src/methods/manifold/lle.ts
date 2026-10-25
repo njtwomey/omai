@@ -1,3 +1,9 @@
+/**
+ * Locally linear embedding (Roweis and Saul, 2000; scikit-learn's standard method): each row is rebuilt as a weighted
+ * combination of its neighbours, and the embedding is the low-dimensional configuration that the same weights rebuild
+ * best, found from the bottom eigenvectors of `(I - W)^T (I - W)`.
+ */
+
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import { defineExplainedEstimator, type Estimator, EstimatorClass, matrixView } from '../../lib/learn/index.ts'
 import { linalg } from '../../lib/numerics/index.ts'

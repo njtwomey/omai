@@ -1,3 +1,9 @@
+/**
+ * Principal component analysis (as in scikit-learn's `PCA`): the orthogonal directions of greatest variance, found by
+ * the SVD of the centred data (full or randomised), with whitening, reconstruction and the probabilistic PCA log
+ * likelihood. Also incremental PCA, which processes batches in constant memory and is traced batch by batch.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {

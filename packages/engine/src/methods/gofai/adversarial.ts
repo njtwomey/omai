@@ -1,5 +1,9 @@
-// Adversarial search played node by node over the whole game tree: the node visited, the values backed up, and the
-// branches alpha-beta prunes, from the core's traced game searches (whitebox-engine/search).
+/**
+ * Adversarial search played node by node over a whole game tree, from the core's traced game searches
+ * (`whitebox-engine/search`): minimax and alpha-beta, showing the node visited, the values backed up and the branches
+ * alpha-beta prunes. Games include textbook trees (AIMA figure 5.2), random trees and tic-tac-toe.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, randint } from '../../lib/random/index.ts'

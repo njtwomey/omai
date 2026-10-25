@@ -1,3 +1,9 @@
+/**
+ * Combining different estimators, as in scikit-learn: voting ensembles (a weighted majority of labels, or an average of
+ * probabilities or predictions) and stacking, where a final estimator learns how to combine the members' out-of-fold
+ * predictions. Classifier and regressor functions, classes and their exposition.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'

@@ -1,3 +1,8 @@
+/**
+ * The linear support vector machine (as in scikit-learn's `LinearSVC`, LIBLINEAR): the hinge or squared-hinge loss with
+ * an L2 penalty, solved in the dual by coordinate descent traced step by step, one-versus-rest for several classes.
+ */
+
 import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { coefficientTable, type Exposition, marginRecord } from '../../lib/exposition/index.ts'

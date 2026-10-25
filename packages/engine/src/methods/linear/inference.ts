@@ -1,3 +1,10 @@
+/**
+ * Statistical inference for linear models, statsmodels style: Wald tables of standard errors, t or z statistics,
+ * p-values and confidence intervals, the covariance of GLM estimates, and `olsSummary`, an ordinary or weighted
+ * least-squares fit with classical or heteroscedasticity-consistent (HC0 to HC3) standard errors, R^2, the F test and
+ * information criteria.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type CoefficientTable, coefficientTable, type Explained } from '../../lib/exposition/index.ts'
 import { featureNamesOf, type LearnData } from '../../lib/learn/index.ts'

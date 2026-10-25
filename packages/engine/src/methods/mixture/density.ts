@@ -1,3 +1,9 @@
+/**
+ * Nonparametric density estimates: the Gaussian kernel density estimate (as in scipy's `gaussian_kde` and
+ * scikit-learn's `KernelDensity`) with the bandwidth by rule, given or chosen by cross-validated log likelihood, and
+ * histogram densities for one or two features (as numpy's `histogram` with `density`).
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { crossValidationCurve, type Exposition } from '../../lib/exposition/index.ts'
 import {

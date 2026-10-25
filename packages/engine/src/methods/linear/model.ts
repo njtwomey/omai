@@ -1,3 +1,10 @@
+/**
+ * The one penalised GLM estimator that every named linear model configures: a response family (Gaussian, binomial,
+ * Poisson, gamma, inverse Gaussian, Tweedie, negative binomial) with a link, an elastic-net penalty and a solver.
+ * `linearModel` and its class, plus the shared fit, verbs, coefficient table and tunable penalty space the other linear
+ * methods build on.
+ */
+
 // TODO: SAG and SAGA solvers (optim has them); ordinal (ordinal.ts) and mixed models (mixed.ts).
 import { WhiteboxError } from '../../lib/base/index.ts'
 import type { DispersionFamily, Link, LinkName } from '../../lib/dists/families/index.ts'

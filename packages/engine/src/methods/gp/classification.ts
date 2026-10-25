@@ -1,3 +1,10 @@
+/**
+ * Gaussian-process classification by the Laplace approximation (as in scikit-learn's `GaussianProcessClassifier`): a
+ * latent function with a GP prior is squashed by the logistic link, its posterior mode is found by Newton's iteration
+ * and approximated by a Gaussian there, and the kernel hyperparameters are fitted on the approximate marginal
+ * likelihood. Multiclass by one-vs-rest.
+ */
+
 import { linspaceNumbers, maxOf, minOf, WhiteboxError } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { coefficientTable, type Exposition, hyperparameterSurface, posteriorGrid } from '../../lib/exposition/index.ts'

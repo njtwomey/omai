@@ -1,3 +1,9 @@
+/**
+ * The nearest-centroid classifier (as in scikit-learn's `NearestCentroid`): each class is represented by the mean of
+ * its rows and a point takes the class of the nearest one, optionally with Tibshirani's shrunken centroids, which pull
+ * class means towards the overall mean and drop uninformative features.
+ */
+
 import { argminOf, quantileOf } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { coefficientTable, type Exposition } from '../../lib/exposition/index.ts'

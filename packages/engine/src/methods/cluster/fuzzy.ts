@@ -1,3 +1,9 @@
+/**
+ * Fuzzy c-means (Bezdek, 1981): clustering with soft memberships, where every point belongs to each cluster to a degree
+ * set by its relative distances and a fuzzifier `m`. Alternating membership and centre updates as a traced algorithm,
+ * with k-means++ starts, a fit function and a class.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {

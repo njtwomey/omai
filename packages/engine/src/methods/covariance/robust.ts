@@ -1,3 +1,9 @@
+/**
+ * The minimum covariance determinant by FastMCD (Rousseeuw and Van Driessen, 1999; as in scikit-learn's `MinCovDet`): a
+ * robust location and covariance from the subset of rows with the smallest covariance determinant, found by
+ * concentration steps from random subsets (traced), then reweighted and corrected for consistency.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { chi2 } from '../../lib/dists/index.ts'
 import {

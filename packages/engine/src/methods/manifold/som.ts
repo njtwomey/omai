@@ -1,3 +1,9 @@
+/**
+ * The self-organising map (Kohonen, 1982): a lattice of prototype vectors trained online so that neighbouring nodes
+ * come to represent similar rows, giving a topology-preserving map of the data. Training traced epoch by epoch with
+ * shrinking learning rate and neighbourhood, the U-matrix of neighbour distances, a fit function and a class.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import {

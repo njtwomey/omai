@@ -1,3 +1,9 @@
+/**
+ * Nearest-neighbour estimators, as in scikit-learn's `neighbors` module: k-nearest-neighbour classification and
+ * regression (a vote or mean of the k closest training rows, optionally weighted by inverse distance) and their
+ * radius-neighbour forms (every training row within a radius), by brute-force search with the core's metrics.
+ */
+
 import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
 import { categorical, type Distribution, normal } from '../../lib/dists/index.ts'
 import { type Exposition, type NeighbourRecord, neighbourRecord } from '../../lib/exposition/index.ts'

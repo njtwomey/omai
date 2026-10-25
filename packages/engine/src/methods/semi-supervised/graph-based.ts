@@ -1,3 +1,10 @@
+/**
+ * Graph-based semi-supervised learning, as in scikit-learn's `semi_supervised` module: label propagation (Zhu and
+ * Ghahramani, 2002) and label spreading (Zhou et al., 2004), in which labels flow from the few labelled rows to the
+ * rest along a similarity graph built from an RBF kernel or nearest neighbours. The iteration is traced so the spread
+ * of labels can be replayed.
+ */
+
 // TODO: harmonic functions with class mass normalisation (Zhu, Ghahramani and Lafferty 2003) as a third variant.
 import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
 import { type ClusteringSteps, clusteringSteps, type Exposition } from '../../lib/exposition/index.ts'

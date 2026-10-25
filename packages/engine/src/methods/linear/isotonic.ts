@@ -1,3 +1,9 @@
+/**
+ * Isotonic regression (as in scikit-learn's `IsotonicRegression`): the monotone step function closest to the targets in
+ * weighted least squares, found by the core's pool-adjacent-violators algorithm after merging tied inputs, with
+ * interpolation between the knots for prediction.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { posteriorGrid } from '../../lib/exposition/index.ts'
 import {

@@ -1,3 +1,9 @@
+/**
+ * Self-training (Yarowsky, 1995; as in scikit-learn's `SelfTrainingClassifier`): a base classifier fitted on the
+ * labelled rows gives pseudo-labels to the unlabelled rows it is most confident about, is refitted with them, and
+ * repeats, with the pseudo-labelling history recorded round by round.
+ */
+
 // TODO: co-training (two feature views) and tri-training (three bootstrapped learners voting).
 import { argmaxOf, type Json, WhiteboxError } from '../../lib/base/index.ts'
 import { clusteringSteps, type Exposition, learningCurve } from '../../lib/exposition/index.ts'

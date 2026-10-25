@@ -1,3 +1,9 @@
+/**
+ * Generalised linear model regressors with the log link, configured from the shared penalised GLM: Poisson, gamma and
+ * Tweedie regression (as in scikit-learn), and inverse Gaussian and negative binomial regression (as in statsmodels),
+ * all fitted by IRLS.
+ */
+
 import type { LinkName } from '../../lib/dists/families/index.ts'
 import { defineExplainedEstimator, type ExplainedEstimator, ExplainedEstimatorClass } from '../../lib/learn/index.ts'
 import { bool, dict, real, type Space } from '../../lib/space/index.ts'

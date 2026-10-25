@@ -1,3 +1,9 @@
+/**
+ * A fitted decision tree as plain arrays, in the layout of scikit-learn's `tree_` (split feature, threshold, children
+ * and node values), and what can be done with one: the leaf and decision path of each row, predictions, depth and leaf
+ * counts, a structure for drawing with whitebox-render, and indented text as in `export_text`.
+ */
+
 import { argmaxOf } from '../../lib/base/index.ts'
 import { matrixView } from '../../lib/learn/index.ts'
 import { type Structure, structure } from '../../lib/scene/index.ts'

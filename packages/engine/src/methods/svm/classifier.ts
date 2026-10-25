@@ -1,3 +1,10 @@
+/**
+ * C-support vector classification (as in scikit-learn's `SVC`, libsvm's C-SVC): the maximum-margin classifier in a
+ * kernel's feature space, found by solving the dual problem with the core's traced SMO for each pair of classes
+ * (one-versus-one), with Platt-scaled probabilities. Records the support vectors, margins and the decision surface as
+ * SMO proceeds.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'

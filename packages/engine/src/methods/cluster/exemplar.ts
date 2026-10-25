@@ -1,3 +1,9 @@
+/**
+ * Exemplar and summary-based clustering: affinity propagation (Frey and Dueck, 2007), where points pass responsibility
+ * and availability messages until a set of exemplars emerges, and BIRCH, which summarises the data into small
+ * subclusters of a CF tree and then merges them by Ward agglomeration. Both mirror scikit-learn.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {

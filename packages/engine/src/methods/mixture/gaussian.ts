@@ -1,3 +1,9 @@
+/**
+ * The Gaussian mixture model fitted by expectation-maximisation (as in scikit-learn's `GaussianMixture`): each step
+ * computes every row's responsibilities under the components (E), then re-estimates weights, means and full, tied,
+ * diagonal or spherical covariances (M), from a k-means start and traced step by step. Also the BIC and AIC of a fit.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { multivariateNormal } from '../../lib/dists/index.ts'
 import { mixtureSteps } from '../../lib/exposition/index.ts'

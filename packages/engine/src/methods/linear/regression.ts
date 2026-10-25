@@ -1,3 +1,10 @@
+/**
+ * Linear regressors, as in scikit-learn's `linear_model`: ordinary least squares, ridge, the lasso and the elastic net
+ * (by coordinate descent with duality gaps), their cross-validated forms that choose the penalty along a path (with
+ * ridge's efficient leave-one-out), and orthogonal matching pursuit. Fit functions and classes over the shared
+ * penalised GLM.
+ */
+
 import {
   coefficientTable,
   crossValidationCurve,
