@@ -7,6 +7,7 @@
 export * from './attributions.ts'
 export * from './concepts.ts'
 export * from './counterfactuals.ts'
+export * from './evaluation.ts'
 export * from './glassbox.ts'
 export * from './gradients.ts'
 export * from './inspection.ts'

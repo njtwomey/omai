@@ -2866,6 +2866,11 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   localisation (pointing game, relevance mass and rank against a ground-truth mask), complexity (sparseness, entropy),
   randomisation sanity checks (model parameter and label randomisation), axiomatic properties (completeness, input
   invariance, symmetry), agreement between explainers.
+  Built: `deletionCurve` (deletion and insertion, with areas), `faithfulnessCorrelation`, `monotonicity`,
+  `removeAndRetrain` (ROAR, and least-first), `sensitivity` (maximum and average), `localLipschitz`, `localisation`
+  (pointing game, relevance mass and rank), `complexity` (Gini sparseness, entropy), `explanationSimilarity`
+  (Spearman, Pearson, top-k, sign), `explainerAgreement`, `completenessGap`. TODO: input invariance and symmetry
+  checks, Quantus goldens (not in the oracle).
 
 ### 4.39 `fairness/`: fairness and bias (fairlearn, AIF360, Aequitas)
 
@@ -4135,6 +4140,11 @@ built from: `explain`, `learn`, `metrics`
   (`lib/exposition/concepts.ts`) drawn by `ConceptView`. Built.
 - `valuation.ts`: `mislabelledRowStudy` (flipped labels found by k-NN Shapley, data Banzhaf and Beta Shapley, as
   `curves`). Built.
+- `evaluation.ts`: `evaluateExplanations` (explainers compared on deletion and insertion areas, faithfulness
+  correlation, sensitivity, sparseness and completeness, with their agreement: an `explanationQuality` record,
+  `lib/exposition/explanation-quality.ts`, drawn by `ExplanationQualityView`; mean deletion and insertion curves as
+  `curves`) and `sanityChecks` (cascading layer randomisation and label randomisation of a LeNet: `curves` and the maps
+  as `valueGrids`). Built.
 - `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
 - `gradients.ts`: `explainNetwork` (saliency, input times gradient, integrated gradients, SmoothGrad, VarGrad,
   GradientSHAP, guided backpropagation, deconvolution, Grad-CAM, guided Grad-CAM) for the LeNet of `methods/neural`,
