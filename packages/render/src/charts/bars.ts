@@ -20,6 +20,8 @@ export interface BarGroup {
   readonly colour?: string
   /** Error bar half-widths, one per category. */
   readonly errors?: readonly number[]
+  /** Asymmetric error bars: the low and high end per category (a confidence interval); overrides `errors`. */
+  readonly intervals?: readonly (readonly [number, number])[]
 }
 
 /** Options of {@link bars}. */
@@ -122,7 +124,9 @@ export function bars(
     v.forEach((h, k) => {
       if (h >= 0) totals[k] = (totals[k] ?? 0) + h
       else negatives[k] = (negatives[k] ?? 0) + h
-      heights.push(h + (g.errors?.[k] ?? 0), h - (g.errors?.[k] ?? 0))
+      const iv = g.intervals?.[k]
+      if (iv !== undefined) heights.push(iv[0], iv[1])
+      else heights.push(h + (g.errors?.[k] ?? 0), h - (g.errors?.[k] ?? 0))
     })
     series.push({
       type: 'bar',
@@ -142,19 +146,29 @@ export function bars(
       barCategoryGap: `${CATEGORY_GAP * 100}%`,
       emphasis: { focus: 'series' },
     } as SeriesOption)
-    if (g.errors !== undefined) {
+    if (g.errors !== undefined || g.intervals !== undefined) {
       const errors = g.errors
+      const intervals = g.intervals
+      // Each bar's [category, low, high] (no bar where an interval is missing or not finite).
+      const ends = v.flatMap((h, k) => {
+        const iv = intervals?.[k]
+        if (intervals !== undefined)
+          return iv !== undefined && Number.isFinite(iv[0]) && Number.isFinite(iv[1]) ? [[k, iv[0], iv[1]]] : []
+        const top = (stackBase[i]?.[k] ?? 0) + h
+        const e = errors?.[k] ?? 0
+        return [[k, top - e, top + e]]
+      })
       series.push({
         type: 'custom',
         name: `__errors${i}`,
-        data: v.map((h, k) => [k, (stackBase[i]?.[k] ?? 0) + h, errors[k] ?? 0]),
+        data: ends,
         renderItem: (_params: unknown, api: ErrorApi): Record<string, unknown> => {
           const k = api.value(0)
-          const h = api.value(1)
-          const e = api.value(2)
+          const lo = api.value(1)
+          const hi = api.value(2)
           const cat = categories[k] ?? k
-          const a0 = api.coord(horizontal ? [h - e, cat] : [cat, h - e])
-          const b0 = api.coord(horizontal ? [h + e, cat] : [cat, h + e])
+          const a0 = api.coord(horizontal ? [lo, cat] : [cat, lo])
+          const b0 = api.coord(horizontal ? [hi, cat] : [cat, hi])
           // Grouped bars sit beside each other in the category band; put the error bar on this group's bar.
           const band = horizontal ? (api.size([0, 1])[1] ?? 0) : (api.size([1, 0])[0] ?? 0)
           const shift = options.stacked === true ? 0 : barOffset(band, list.length, i)

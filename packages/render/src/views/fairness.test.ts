@@ -68,4 +68,18 @@ describe('group report views', () => {
   it('draws the sweep, one line per group and rate', () => {
     expect((groupSweepView(record) as unknown as Opt).series).toHaveLength(6)
   })
+
+  it('draws the interval of each rate when the report has them', () => {
+    const withIntervals = {
+      ...record,
+      intervals: {
+        level: 0.95,
+        method: 'bootstrap',
+        rates: [{ selectionRate: [0.2, 0.6] as const }, { selectionRate: [0.5, 0.9] as const }],
+      },
+    }
+    const o = groupReportView(withIntervals) as unknown as Opt
+    expect(o.series.filter((s) => s.name?.startsWith('__errors'))).toHaveLength(2)
+    expect((groupReportView(record) as unknown as Opt).series.some((s) => s.name?.startsWith('__errors'))).toBe(false)
+  })
 })

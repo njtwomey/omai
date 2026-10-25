@@ -67,6 +67,22 @@ export interface GroupSweep {
 }
 
 /**
+ * Confidence intervals of a group report: each group's rates (binomial intervals) and each disparity (bootstrap), at a
+ * level, with optional permutation-test p-values for the disparities.
+ */
+export interface GroupReportIntervals {
+  readonly level: number
+  /** How the intervals were made (`Wilson; bootstrap percentile, 500 resamples`). */
+  readonly method: string
+  /** rates[g][rate]: the low and high end of group g's rate. */
+  readonly rates: readonly Readonly<Partial<Record<GroupRateName, readonly [number, number]>>>[]
+  /** One interval per disparity, in the report's order (null where there is none). */
+  readonly disparities?: readonly (readonly [number, number] | null)[]
+  /** The permutation-test p-value of each disparity (null where untested). */
+  readonly pValues?: readonly (number | null)[]
+}
+
+/**
  * A fairness audit of a binary classifier across the groups of a protected attribute (fairlearn's MetricFrame with
  * its disparities): per group the count, the decision threshold applied, the 2 by 2 table (actual by predicted; expected
  * counts for randomised decisions), the rates (selection, true- and false-positive, precision, accuracy, base rate),
@@ -97,6 +113,10 @@ export interface GroupReport {
   readonly operatingPoints?: readonly { readonly fpr: number; readonly tpr: number }[]
   readonly scored?: GroupRows
   readonly sweep?: GroupSweep
+  /** Intervals of the rates and disparities (at the report's thresholds). */
+  readonly intervals?: GroupReportIntervals
+  /** Warnings about the groups (too small to measure). */
+  readonly warnings?: readonly string[]
 }
 
 /**
@@ -135,6 +155,11 @@ export function groupReport(record: Omit<GroupReport, 'kind'>): GroupReport {
   if (record.scored !== undefined) {
     sameLength('groupReport', 'scored.labels', record.scored.labels.length, record.scored.scores.length)
     sameLength('groupReport', 'scored.groups', record.scored.groups.length, record.scored.scores.length)
+  }
+  if (record.intervals !== undefined) {
+    sameLength('groupReport', 'intervals.rates', record.intervals.rates.length, k)
+    if (record.intervals.disparities !== undefined)
+      sameLength('groupReport', 'intervals.disparities', record.intervals.disparities.length, record.disparities.length)
   }
   if (record.sweep !== undefined)
     for (const field of ['selectionRate', 'truePositiveRate', 'falsePositiveRate'] as const) {
@@ -250,7 +275,8 @@ export function groupReportFromTables(input: GroupTablesInput): Omit<GroupReport
 
 /**
  * The report at other thresholds, recomputed from its scored rows: each group's table, rates and the disparities,
- * with each group's operating point on its ROC curve. Views use it to let a reader drag a group's threshold.
+ * with each group's operating point on its ROC curve (its intervals, which belong to its own thresholds, are dropped;
+ * at its own thresholds it is returned as it is). Views use it to let a reader drag a group's threshold.
  *
  * @param record - A report with `scored` rows.
  * @param thresholds - A threshold per group (`score >= threshold` predicts positive).
@@ -268,6 +294,8 @@ export function groupReportAt(record: GroupReport, thresholds: readonly number[]
   const rows = record.scored
   if (rows === undefined) throw new WhiteboxError('value', 'groupReportAt: the report has no scored rows')
   sameLength('groupReportAt', 'thresholds', thresholds.length, record.groups.length)
+  // At its own thresholds the report is itself, intervals and all (a randomised one cannot be re-derived from rows).
+  if (thresholds.every((t, g) => t === record.thresholds[g])) return record
   const tables = record.groups.map(() => [
     [0, 0],
     [0, 0],
@@ -279,6 +307,7 @@ export function groupReportAt(record: GroupReport, thresholds: readonly number[]
     const row = tables[g]?.[actual]
     if (row !== undefined) row[predicted] = (row[predicted] ?? 0) + 1
   }
-  const { operatingPoints: _, ...rest } = record
+  // Operating points and intervals belong to the report's own thresholds.
+  const { operatingPoints: _, intervals: _i, ...rest } = record
   return groupReport(groupReportFromTables({ ...rest, tables, thresholds, reference: record.reference }))
 }

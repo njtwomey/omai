@@ -482,7 +482,15 @@
       "reference": {
         "fairlearn": "0.15.0"
       },
-      "cases": 19
+      "cases": 33
+    },
+    {
+      "fixture": "fairness/inference.json",
+      "source": "oracle/cases/fairness/inference.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 3
     },
     {
       "fixture": "fairness/post_processing.json",
@@ -1853,6 +1861,14 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 24
+    },
+    {
+      "fixture": "metrics/contingency.json",
+      "source": "oracle/cases/metrics/contingency.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 21
     },
     {
       "fixture": "metrics/correlation_agreement.json",
