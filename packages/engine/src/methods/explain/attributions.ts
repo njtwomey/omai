@@ -1,8 +1,6 @@
 /**
- * Explaining a fitted model's predictions by feature attributions: `explainPrediction` says how much each feature moved
- * one prediction from the expected value, and `explainDataset` does it for many rows for global pictures (beeswarm
- * summaries, mean |SHAP| bars, dependence plots). It picks Tree SHAP for trees and their ensembles, or Kernel SHAP,
- * exact or sampling Shapley values, LIME and gradient methods from the core.
+ * Attributions of fitted models as exposition records: `explainPrediction` for one row and `explainDataset` for many,
+ * by Tree SHAP, exact or Kernel SHAP, sampling SHAP (with its convergence) or LIME, over the output a model is read by.
  */
 
 import { meanOf, varianceOf, WhiteboxError } from '../../lib/base/index.ts'
@@ -14,8 +12,21 @@ import { pearson } from '../../lib/stats/index.ts'
 import { fromStorage, toFlat } from '../../lib/tensor/index.ts'
 import { modelOutput, type OutputKind, treeEnsembleOf } from './_models.ts'
 
-/** The explainers {@link explainPrediction} and {@link explainDataset} offer. */
-export type AttributionMethod = 'tree' | 'kernel' | 'exact' | 'sampling' | 'lime'
+/**
+ * The explainers {@link explainPrediction} and {@link explainDataset} offer: Tree SHAP, Kernel SHAP, exact and sampled
+ * interventional Shapley values, LIME, linear SHAP (for models linear in their inputs), partition SHAP (Owen values
+ * over a correlation clustering of the features) and conditional Shapley values (missing features drawn from their
+ * Gaussian conditional given the present ones).
+ */
+export type AttributionMethod =
+  | 'tree'
+  | 'kernel'
+  | 'exact'
+  | 'sampling'
+  | 'lime'
+  | 'linear'
+  | 'partition'
+  | 'conditional'
 
 /** Options of {@link explainPrediction} and {@link explainDataset}. */
 export interface ExplainOptions {
@@ -75,6 +86,8 @@ function setup(fitted: Fitted, data: LearnData, options: ExplainOptions, who: st
       'value',
       `${who}: the tree explainer needs a tree, a forest or a boosted model explaining its ${output.kind === 'raw' ? 'raw score' : 'prediction or probability'}`,
     )
+  if ((method === 'conditional' || method === 'partition') && x.d > 12)
+    throw new WhiteboxError('value', `${who}: the ${method} explainer takes at most 12 features`)
   if (method === 'exact' && x.d > explain.MAX_EXACT_PLAYERS)
     throw new WhiteboxError('value', `${who}: the exact explainer takes at most ${explain.MAX_EXACT_PLAYERS} features`)
   return { method, x, features: featureNamesOf(data, x.d), output, key: options.key ?? makeKey(0) }
@@ -211,6 +224,28 @@ function explainRows(
     )
     return { values, baseValue, predictions }
   }
+  if (s.method === 'linear') {
+    const { coef, intercept } = linearCoefficients(s)
+    const r = explain.linearShap(coef, intercept, xs, background)
+    return { values: r.values.map((v) => [...v]), baseValue: r.baseValue, predictions }
+  }
+  if (s.method === 'partition') {
+    const all = Array.from({ length: Math.min(s.x.n, 500) }, (_, i) => rowOf(s.x, i))
+    const r = explain.partitionShap(s.output.predict, xs, background, explain.correlationHierarchy(all))
+    return { values: r.values.map((v) => [...v]), baseValue, predictions }
+  }
+  if (s.method === 'conditional') {
+    const values = xs.map((x, r) =>
+      explain.shapleyValues(
+        explain.conditionalValue(s.output.predict, x, background, {
+          nSamples: options.nSamples ?? 50,
+          key: foldIn(s.key, 4 + r),
+        }),
+        s.x.d,
+      ),
+    )
+    return { values, baseValue, predictions }
+  }
   if (s.method === 'sampling') {
     const total = options.nPermutations ?? 200
     if (!(Number.isInteger(total) && total >= 2))
@@ -270,6 +305,27 @@ function explainRows(
     predictions,
     localFit: fits.map((f) => f.score),
   }
+}
+
+/**
+ * The weights and intercept of a model linear in its inputs, read off d + 1 evaluations (at 0 and each unit vector)
+ * and checked at a data row, so linear SHAP applies to any fitted linear model without knowing its parameters.
+ */
+function linearCoefficients(s: Setup): { readonly coef: number[]; readonly intercept: number } {
+  const d = s.x.d
+  const probe = [
+    new Array<number>(d).fill(0),
+    ...Array.from({ length: d }, (_, j) => Array.from({ length: d }, (_, k) => (k === j ? 1 : 0))),
+  ]
+  const check = rowOf(s.x, 0)
+  const out = predictRows(s, [...probe, check])
+  const intercept = out[0] ?? 0
+  const coef = Array.from({ length: d }, (_, j) => (out[j + 1] ?? 0) - intercept)
+  const want = intercept + coef.reduce((a, w, j) => a + w * (check[j] ?? 0), 0)
+  const got = out[d + 1] ?? 0
+  if (Math.abs(want - got) > 1e-8 * (1 + Math.abs(got)))
+    throw new WhiteboxError('value', 'explain: the linear explainer needs a model linear in its inputs')
+  return { coef, intercept }
 }
 
 /**

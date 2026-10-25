@@ -23,6 +23,21 @@ export interface AttributionConvergence {
 }
 
 /**
+ * How an attribution record's features are laid out, for the views of other modalities: an image (`shape` [h, w],
+ * features row-major), the tokens of a text (features in reading order; `text` and `spans` place them in it), or a
+ * series (features in time order). Without a layout the features are a table's columns.
+ */
+export type AttributionLayout =
+  | { readonly kind: 'image'; readonly shape: readonly [number, number] }
+  | {
+      readonly kind: 'tokens'
+      readonly text?: string
+      /** Each token's [start, end) in `text`. */
+      readonly spans?: readonly (readonly [number, number])[]
+    }
+  | { readonly kind: 'series'; readonly time?: readonly number[] }
+
+/**
  * Additive feature attributions of a model's predictions (SHAP values, LIME weights times the feature's offset):
  * for each explained row, the base value the attributions start from, one value per feature, the feature values,
  * and the model's prediction. For SHAP the base value plus the row's values is the prediction (efficiency); a local
@@ -60,6 +75,10 @@ export interface FeatureAttributions {
   readonly partners?: readonly number[]
   /** How well a local surrogate fits its neighbourhood (LIME's weighted R^2), per row. */
   readonly localFit?: readonly number[]
+  /** How the features are laid out (an image, a text's tokens, a series); default a table's columns. */
+  readonly layout?: AttributionLayout
+  /** The interpretable units an attribution was computed over (superpixel or window ids per feature), for outlines. */
+  readonly segments?: readonly number[]
 }
 
 /**
@@ -105,6 +124,12 @@ export function featureAttributions(record: Omit<FeatureAttributions, 'kind'>): 
       rowsOf(k, `interactions[${i}]`, m, d)
     })
   }
+  const layout = record.layout
+  if (layout?.kind === 'image' && layout.shape[0] * layout.shape[1] !== d)
+    throw new WhiteboxError('shape', `${k}: an image of ${layout.shape.join('x')} for ${d} features`)
+  if (layout?.kind === 'tokens' && layout.spans !== undefined) sameLength(k, 'layout.spans', layout.spans.length, d)
+  if (layout?.kind === 'series' && layout.time !== undefined) sameLength(k, 'layout.time', layout.time.length, d)
+  if (record.segments !== undefined) sameLength(k, 'segments', record.segments.length, d)
   const c = record.convergence
   if (c !== undefined) {
     if (!(Number.isInteger(c.row) && c.row >= 0 && c.row < n))
