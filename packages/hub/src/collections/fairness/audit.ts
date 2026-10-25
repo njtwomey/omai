@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a fairness audit of a classifier: its rates, gaps to a reference group and ROC curves across the groups
+ * of a protected attribute, on tabular data with a protected attribute.
+ */
+
 import { fairnessAudit as audit } from 'whitebox-engine/methods/fairness'
 import { dict, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'

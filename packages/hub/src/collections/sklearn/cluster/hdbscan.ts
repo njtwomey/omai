@@ -1,3 +1,8 @@
+/**
+ * Hub entry for HDBSCAN, a hierarchy of density clusters cut where the clusters are most stable, on two-dimensional
+ * clustering datasets.
+ */
+
 import { hdbscan as hdbscanMethod } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

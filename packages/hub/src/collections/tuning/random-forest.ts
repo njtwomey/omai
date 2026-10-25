@@ -1,3 +1,8 @@
+/**
+ * Hub entry for tuning a random forest's maximum depth and minimum leaf size by tree-structured Parzen estimators with
+ * cross-validation, on two-dimensional classification data and tabular classification data.
+ */
+
 import { randomForestClassifier } from 'whitebox-engine/methods/ensemble'
 import { dict, int } from 'whitebox-engine/space'
 import type { HubEntry } from '../../entry/entry.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for DBSCAN, clusters as dense regions grown from core points, with the rest marked as noise, on
+ * two-dimensional clustering datasets such as the two moons.
+ */
+
 import { dbscan as dbscanMethod } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

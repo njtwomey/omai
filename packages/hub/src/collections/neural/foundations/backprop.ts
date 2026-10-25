@@ -1,3 +1,8 @@
+/**
+ * Hub entry for backpropagation worked by hand on a tiny 2-2-1 network learning XOR, checked against reverse-mode
+ * autodiff at every step.
+ */
+
 import { type BackpropActivation, backpropByHand } from 'whitebox-engine/methods/neural/foundations'
 import { choice, dict, int, real, type SpaceValue } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

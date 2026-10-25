@@ -1,3 +1,8 @@
+/**
+ * Hub entry for k-means (as scikit-learn's `KMeans`), Lloyd's iterations from k-means++ seeds, on two-dimensional
+ * clustering datasets.
+ */
+
 import { kmeans as kmeansEstimator } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

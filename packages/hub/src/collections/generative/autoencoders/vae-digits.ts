@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a variational autoencoder with a two-dimensional latent space trained on the 8 by 8 handwritten digits,
+ * showing the latent space, reconstructions and samples as it trains.
+ */
+
 import { digits } from 'whitebox-engine/datasets'
 import type { LearnData } from 'whitebox-engine/learn'
 import { vae as vaeMethod } from 'whitebox-engine/methods/generative'

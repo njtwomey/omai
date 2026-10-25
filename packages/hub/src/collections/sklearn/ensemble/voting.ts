@@ -1,3 +1,8 @@
+/**
+ * Hub entry for voting, a tree, k nearest neighbours and a linear model combined by a vote or an average of their
+ * outputs, on two-dimensional classification data and one-dimensional regression curves.
+ */
+
 import { votingClassifier, votingRegressor } from 'whitebox-engine/methods/ensemble'
 import { logisticRegression, ridge } from 'whitebox-engine/methods/linear'
 import { kNeighborsClassifier, kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'

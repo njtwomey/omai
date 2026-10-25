@@ -1,3 +1,8 @@
+/**
+ * Hub entry for sparse Gaussian process regression through a few inducing points (VFE, FITC and DTC), on
+ * one-dimensional regression curves and tabular regression data.
+ */
+
 import { sparseGpRegressor as sparseGpRegressorMethod } from 'whitebox-engine/methods/gp'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

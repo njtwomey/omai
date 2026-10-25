@@ -1,3 +1,9 @@
+/**
+ * Hub entry for ARD regression (automatic relevance determination), one learned prior precision per coefficient that
+ * prunes irrelevant features, on tabular regression data with a few informative features and one-dimensional regression
+ * curves.
+ */
+
 import { ardRegression as ardRegressionMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

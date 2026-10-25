@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Tweedie regression, one GLM family spanning the normal, Poisson, gamma and inverse Gaussian by its
+ * power, on one-dimensional GLM responses and tabular data.
+ */
+
 import { tweedieRegressor as tweedieRegressorMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

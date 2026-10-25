@@ -1,3 +1,8 @@
+/**
+ * Hub entry comparing batch normalisation, layer normalisation and none on the same deep ReLU network, on
+ * two-dimensional classification data.
+ */
+
 import { normalisationStudy as study } from 'whitebox-engine/methods/neural/training'
 import { dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry, type ViewSlot } from '../../../entry/entry.ts'

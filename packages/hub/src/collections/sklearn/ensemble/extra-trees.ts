@@ -1,3 +1,8 @@
+/**
+ * Hub entry for extra trees, a forest of extremely randomised trees, on two-dimensional and tabular classification and
+ * regression data.
+ */
+
 import { extraTreesClassifier, extraTreesRegressor } from 'whitebox-engine/methods/ensemble'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'

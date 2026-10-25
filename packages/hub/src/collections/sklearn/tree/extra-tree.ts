@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the extremely randomised tree, whose split thresholds are drawn at random rather than searched, on
+ * two-dimensional and tabular classification and regression data.
+ */
+
 import { extraTreeClassifier, extraTreeRegressor } from 'whitebox-engine/methods/trees'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'

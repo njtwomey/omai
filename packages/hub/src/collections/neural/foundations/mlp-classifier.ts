@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a multi-layer perceptron classifier, its decision surface drawn epoch by epoch as it trains, on
+ * two-dimensional classification data and tabular classification data.
+ */
+
 import { mlpClassifier as mlpClassifierMethod } from 'whitebox-engine/methods/neural/foundations'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { mlpArchitecture, trainingRun } from '../_train.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the threshold optimiser, a post-processing step choosing per-group randomised thresholds that meet
+ * demographic parity or equalised odds, on tabular data with a protected attribute.
+ */
+
 import type { ThresholdConstraint } from 'whitebox-engine/fairness'
 import { thresholdOptimizer as optimise } from 'whitebox-engine/methods/fairness'
 import { choice, dict } from 'whitebox-engine/space'

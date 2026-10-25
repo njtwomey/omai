@@ -1,3 +1,10 @@
+/**
+ * The hub entry contract: a `HubEntry` names the engine method it demonstrates, the dataset collections it suits, its
+ * controls as a parameter space, a `run` that produces exposition records, and view slots saying which render view
+ * shows each record and where. `defineEntry` checks an entry as it is declared, and `buildCatalogue` gathers the
+ * entries of many modules into the catalogue, by id and by collection.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Dataset, Knobs } from 'whitebox-engine/data'
 import { datasetCollections, datasetGenerators } from 'whitebox-engine/datasets'

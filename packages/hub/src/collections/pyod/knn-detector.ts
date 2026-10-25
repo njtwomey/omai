@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the k-nearest-neighbour outlier detector, scoring each point by its distance to its k-th nearest
+ * neighbour, on two-dimensional data with outliers.
+ */
+
 import { knnDetector as knnDetectorMethod } from 'whitebox-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'

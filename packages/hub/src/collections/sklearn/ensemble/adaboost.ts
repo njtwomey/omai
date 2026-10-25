@@ -1,3 +1,8 @@
+/**
+ * Hub entry for AdaBoost, which reweights the examples the ensemble gets wrong and adds another weak learner, on
+ * two-dimensional and tabular classification and regression data.
+ */
+
 import { adaBoostClassifier, adaBoostRegressor } from 'whitebox-engine/methods/ensemble'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'

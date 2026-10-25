@@ -1,3 +1,8 @@
+/**
+ * Hub entry for kernel ridge regression, ridge regression in a kernel's feature space (the Gaussian process posterior
+ * mean), on one-dimensional regression curves and tabular regression data.
+ */
+
 import { kernelRidge as kernelRidgeMethod } from 'whitebox-engine/methods/kernel-methods'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

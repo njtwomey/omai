@@ -1,3 +1,8 @@
+/**
+ * Hub entry for COP k-means, k-means that respects must-link and cannot-link constraints drawn from a few labelled
+ * pairs, on two-dimensional clustering datasets.
+ */
+
 import { copKMeans } from 'whitebox-engine/methods/cluster'
 import { split, uniform } from 'whitebox-engine/random'
 import { dict, int } from 'whitebox-engine/space'

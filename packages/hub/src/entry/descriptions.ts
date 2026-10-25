@@ -1,4 +1,10 @@
 /**
+ * The one-line descriptions of every hub collection and folder of collections, shown on their index pages: what the
+ * methods in a collection have in common and what their demos show, looked up by collection path with
+ * `collectionDescription`.
+ */
+
+/**
  * One line per hub collection (and per folder of collections) for its index page: what the methods in it have in
  * common and what their demos show. Keyed by collection path, as entries' `collection`.
  */

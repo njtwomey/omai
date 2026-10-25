@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the minimum covariance determinant, a robust covariance from the most concentrated half of the data, on
+ * two-dimensional data with outliers.
+ */
+
 import { minCovDet as minCovDetMethod } from 'whitebox-engine/methods/covariance'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

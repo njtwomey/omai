@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the accuracy-fairness frontier, the best accuracy at each level of unfairness during training and after
+ * it, on tabular data with a protected attribute.
+ */
+
 import type { ReductionConstraint } from 'whitebox-engine/fairness'
 import { fairnessFrontier } from 'whitebox-engine/methods/fairness'
 import { choice, dict } from 'whitebox-engine/space'

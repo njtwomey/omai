@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Glicko ratings, Elo with a rating deviation that shrinks as a player plays and grows while they sit
+ * out, on simulated tournaments.
+ */
+
 import { glickoRatings } from 'whitebox-engine/methods/models'
 import { dict, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for SARSA on cliff walking, where it learns the safer path away from the edge, from the
+ * reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

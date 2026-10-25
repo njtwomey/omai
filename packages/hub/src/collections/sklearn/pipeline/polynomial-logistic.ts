@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a scikit-learn-style pipeline shown stage by stage: polynomial features made, rescaled and projected,
+ * then classified by logistic regression, on two-dimensional classification data.
+ */
+
 import { type NamedStep, pipeline } from 'whitebox-engine/learn'
 import { polynomialFeatures, standardScaler } from 'whitebox-engine/learn/preprocessing'
 import { pca } from 'whitebox-engine/methods/decomposition'

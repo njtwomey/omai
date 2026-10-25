@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the epsilon-greedy bandit agent learning which arm of a multi-armed bandit pays best, from the
+ * reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

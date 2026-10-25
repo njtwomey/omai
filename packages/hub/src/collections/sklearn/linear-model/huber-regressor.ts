@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Huber regression, squared loss near the fit and absolute loss far from it so outliers count less, on a
+ * line with outliers and tabular regression data.
+ */
+
 import { huberRegressor as huberRegressorMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

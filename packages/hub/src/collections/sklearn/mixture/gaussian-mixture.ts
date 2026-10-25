@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the Gaussian mixture model, soft clusters as Gaussian components fitted by expectation maximisation
+ * step by step, on two-dimensional clustering datasets and two-dimensional densities.
+ */
+
 import { gaussianMixture as gaussianMixtureMethod } from 'whitebox-engine/methods/mixture'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

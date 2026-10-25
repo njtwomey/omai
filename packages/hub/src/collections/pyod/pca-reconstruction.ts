@@ -1,3 +1,8 @@
+/**
+ * Hub entry for PCA reconstruction error as an outlier score, flagging points the leading components reconstruct badly,
+ * on two-dimensional data with outliers.
+ */
+
 import { pcaReconstructionDetector } from 'whitebox-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'

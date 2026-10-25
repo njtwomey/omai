@@ -1,3 +1,8 @@
+/**
+ * Hub entry for robustness checks, a classifier's accuracy as Gaussian noise grows and as values go missing, on tabular
+ * classification data and two-dimensional classification data.
+ */
+
 import { logisticRegression } from 'whitebox-engine/methods/linear'
 import { robustnessStudy } from 'whitebox-engine/methods/trust'
 import { dict } from 'whitebox-engine/space'

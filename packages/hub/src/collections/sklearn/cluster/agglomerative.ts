@@ -1,3 +1,8 @@
+/**
+ * Hub entry for agglomerative clustering, merging the two closest clusters again and again into a dendrogram, on
+ * two-dimensional clustering datasets.
+ */
+
 import { agglomerativeClustering } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

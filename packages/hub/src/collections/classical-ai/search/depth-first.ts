@@ -1,3 +1,8 @@
+/**
+ * Hub entry for depth-first search, the frontier as a stack diving down one corridor at a time, played on grid maps and
+ * mazes.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { searchEntry } from './_search.ts'
 

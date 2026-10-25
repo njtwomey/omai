@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a Gaussian hidden Markov model (as hmmlearn's `GaussianHMM`) fitted by Baum-Welch, segmenting a time
+ * series into regimes.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { TimeSeriesData } from 'whitebox-engine/data'
 import { gaussianHMM as gaussianHmmEstimator } from 'whitebox-engine/methods/models'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for multidimensional scaling by SMACOF, placing points so their distances match the data's, on
+ * three-dimensional manifolds such as the Swiss roll and tabular data.
+ */
+
 import { mds as mdsMethod } from 'whitebox-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

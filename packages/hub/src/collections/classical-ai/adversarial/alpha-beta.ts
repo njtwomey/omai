@@ -1,3 +1,8 @@
+/**
+ * Hub entry for alpha-beta pruning, minimax search that skips branches which cannot change the decision, played node by
+ * node over a textbook tree, a random tree or a tic-tac-toe position.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { gameEntry } from './_game.ts'
 

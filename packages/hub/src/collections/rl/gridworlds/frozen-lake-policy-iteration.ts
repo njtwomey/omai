@@ -1,3 +1,8 @@
+/**
+ * Hub entry for policy iteration planning a little after every episode on FrozenLake, from the reinforcement-learning
+ * playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

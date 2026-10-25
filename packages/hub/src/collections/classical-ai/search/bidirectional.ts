@@ -1,3 +1,8 @@
+/**
+ * Hub entry for bidirectional search, one search forward from the start and one back from the goal until the frontiers
+ * meet, played on grid maps and mazes.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { searchEntry } from './_search.ts'
 

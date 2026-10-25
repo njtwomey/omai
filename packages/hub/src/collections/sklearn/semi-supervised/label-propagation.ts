@@ -1,3 +1,8 @@
+/**
+ * Hub entry for label propagation (as scikit-learn's `LabelPropagation`), a few labels flowing along a similarity graph
+ * to the unlabelled points, on two-dimensional classification data.
+ */
+
 import { labelPropagation as labelPropagationEstimator } from 'whitebox-engine/methods/semi-supervised'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { withHiddenLabels } from './_hidden.ts'

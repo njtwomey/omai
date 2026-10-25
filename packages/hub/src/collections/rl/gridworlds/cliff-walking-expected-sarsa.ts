@@ -1,3 +1,7 @@
+/**
+ * Hub entry for expected SARSA learning to cross cliff walking, from the reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

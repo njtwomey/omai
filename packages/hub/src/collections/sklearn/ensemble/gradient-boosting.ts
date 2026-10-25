@@ -1,3 +1,8 @@
+/**
+ * Hub entry for gradient boosting, each new tree fitted to the gradient of the loss of the ensemble so far, on
+ * two-dimensional and tabular classification and regression data.
+ */
+
 import { gradientBoostingClassifier, gradientBoostingRegressor } from 'whitebox-engine/methods/ensemble'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'

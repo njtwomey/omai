@@ -1,3 +1,8 @@
+/**
+ * Hub entry for kernel k-means, k-means in a kernel's feature space that can find non-convex clusters, on
+ * two-dimensional clustering datasets.
+ */
+
 import { kernelKMeans } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

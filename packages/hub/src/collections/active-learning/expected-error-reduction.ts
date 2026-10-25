@@ -1,3 +1,8 @@
+/**
+ * Hub entry for expected error reduction, the active-learning strategy that buys the label which would most lower a
+ * naive Bayes model's expected error on the unlabelled pool, on two-dimensional classification data.
+ */
+
 import { gaussianNB } from 'whitebox-engine/methods/naive-bayes'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { studyEntry } from './_study.ts'

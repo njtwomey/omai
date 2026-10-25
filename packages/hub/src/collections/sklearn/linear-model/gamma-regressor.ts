@@ -1,3 +1,8 @@
+/**
+ * Hub entry for gamma regression, a log-linear GLM for positive, right-skewed targets, on one-dimensional GLM responses
+ * and tabular data.
+ */
+
 import { gammaRegressor as gammaRegressorMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

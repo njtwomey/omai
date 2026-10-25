@@ -1,3 +1,8 @@
+/**
+ * Hub entry for SARSA(lambda) on a grid over the state learning to drive MountainCar out of its valley, from the
+ * reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for breadth-first search, the frontier as a queue expanding layer by layer from the start, played on grid
+ * maps and mazes.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { searchEntry } from './_search.ts'
 

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the Theil-Sen regressor, the spatial median of the fits to many subsets, on a line with outliers and
+ * tabular regression data.
+ */
+
 import { theilSenRegressor as theilSenRegressorMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a variational autoencoder on two-dimensional toy data, showing its latent space, reconstructions and
+ * samples from the prior step by step.
+ */
+
 import { vae as vaeMethod } from 'whitebox-engine/methods/generative'
 import { dict, int, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

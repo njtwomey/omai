@@ -1,3 +1,8 @@
+/**
+ * Hub entry showing how the scale of the initial weights makes a deep network's signals vanish, survive or explode,
+ * comparing schemes such as Xavier and Kaiming on two-dimensional classification data.
+ */
+
 import { initialisationStudy as study } from 'whitebox-engine/methods/neural/training'
 import { choice, dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

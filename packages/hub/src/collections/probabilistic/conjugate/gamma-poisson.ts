@@ -1,3 +1,7 @@
+/**
+ * Hub entry for the gamma-Poisson model, an event rate learned from counts with its exact Gamma posterior.
+ */
+
 import { gammaPoissonModel } from 'whitebox-engine/methods/models'
 import { poisson } from 'whitebox-engine/random'
 import { dict, int, real } from 'whitebox-engine/space'

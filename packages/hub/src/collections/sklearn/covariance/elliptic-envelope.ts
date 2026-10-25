@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the elliptic envelope, flagging points far from a robust Gaussian fit as outliers, on two-dimensional
+ * data with outliers.
+ */
+
 import { ellipticEnvelope as ellipticEnvelopeMethod } from 'whitebox-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for affinity propagation, where points pass responsibility and availability messages until a few emerge as
+ * exemplars, on two-dimensional clustering datasets.
+ */
+
 import { affinityPropagation as affinityPropagationMethod } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

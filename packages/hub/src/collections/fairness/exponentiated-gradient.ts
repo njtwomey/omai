@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the exponentiated-gradient reduction, which trains a fair classifier as a game between a learner and a
+ * constraint auditor, traced over iterations on tabular data with a protected attribute.
+ */
+
 import type { ReductionConstraint } from 'whitebox-engine/fairness'
 import { exponentiatedGradient as reduce } from 'whitebox-engine/methods/fairness'
 import { choice, dict, int, real } from 'whitebox-engine/space'

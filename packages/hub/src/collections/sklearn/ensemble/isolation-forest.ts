@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the isolation forest, which scores anomalies by how few random splits isolate them, on two-dimensional
+ * data with outliers.
+ */
+
 import { isolationForest as isolationForestMethod } from 'whitebox-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

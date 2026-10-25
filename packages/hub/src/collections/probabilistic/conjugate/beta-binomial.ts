@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the beta-binomial model, a coin's bias learned from flips with its exact Beta posterior narrowing flip
+ * by flip.
+ */
+
 import { betaBinomialModel } from 'whitebox-engine/methods/models'
 import { bernoulli } from 'whitebox-engine/random'
 import { dict, int, real } from 'whitebox-engine/space'

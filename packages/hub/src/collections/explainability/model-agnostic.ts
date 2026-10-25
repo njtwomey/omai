@@ -1,3 +1,8 @@
+/**
+ * Hub entry for model-agnostic attributions of one prediction (Kernel SHAP, exact and sampled Shapley values, and
+ * LIME), explaining a model fitted to tabular regression and classification data.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import { type AttributionMethod, explainPrediction } from 'whitebox-engine/methods/explain'
 import { choice, dict, int } from 'whitebox-engine/space'

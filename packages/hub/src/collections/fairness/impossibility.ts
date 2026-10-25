@@ -1,3 +1,8 @@
+/**
+ * Hub entry showing why calibration and equalised odds cannot both hold when groups have different base rates, on
+ * synthetic scores.
+ */
+
 import { impossibilityStudy } from 'whitebox-engine/methods/fairness'
 import { dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'

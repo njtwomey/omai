@@ -1,3 +1,8 @@
+/**
+ * Hub entry for recalibrating an overconfident naive Bayes classifier by Platt, isotonic and temperature scaling, with
+ * reliability diagrams before and after, on tabular classification data.
+ */
+
 import { gaussianNB } from 'whitebox-engine/methods/naive-bayes'
 import { calibrateClassifier } from 'whitebox-engine/methods/trust'
 import { dict, int } from 'whitebox-engine/space'
