@@ -1,11 +1,11 @@
 import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { keyFor, runOptionsFor } from '../learn/_shared.ts'
+import { type FitOptions, type Fitted, type LearnData, requireTargets } from '../learn/estimator.ts'
+import { type Scoring, scorersOf } from '../learn/scoring.ts'
+import { columnOf, fromView, type MatrixView, matrixView, sampleWeightsOf, takeRows } from '../learn/validation.ts'
 import { foldIn, permutation, subsample } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
-import { keyFor, runOptionsFor } from './_shared.ts'
-import { type FitOptions, type Fitted, type LearnData, requireTargets } from './estimator.ts'
-import { type Scoring, scorersOf } from './scoring.ts'
-import { columnOf, fromView, type MatrixView, matrixView, sampleWeightsOf, takeRows } from './validation.ts'
 
 /** Options of {@link permutationImportance}. */
 export interface PermutationImportanceOptions extends FitOptions {
@@ -43,7 +43,7 @@ export interface PermutationImportanceResult {
  * @concept feature-importance
  * @example
  * ```ts
- * import { permutationImportance } from 'whitebox-engine/learn'
+ * import { permutationImportance } from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const firstColumn = { estimator: 'f', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i * 2])) }
  * const x = [[1, 9], [2, 8], [3, 7], [4, 6]]
@@ -189,7 +189,7 @@ export interface PartialDependenceResult {
  * @concept partial-dependence
  * @example
  * ```ts
- * import { partialDependence } from 'whitebox-engine/learn'
+ * import { partialDependence } from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const sumModel = { estimator: 's', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i + 1])) }
  * const r = partialDependence(sumModel, [[0, 1], [1, 3]], [0], { values: [[0, 10]] })
@@ -295,7 +295,7 @@ export interface AleResult {
  * @returns The edges, centred effects and bin counts.
  * @example
  * ```ts
- * import { accumulatedLocalEffects } from 'whitebox-engine/learn'
+ * import { accumulatedLocalEffects } from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const twice = { estimator: 't', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[i])) }
  * const r = accumulatedLocalEffects(twice, [[0], [1], [2], [3], [4]], 0, { bins: 2 })
@@ -397,7 +397,7 @@ export interface HStatisticOptions {
  * @returns H squared, in [0, 1] up to estimation noise.
  * @example
  * ```ts
- * import { hStatistic } from 'whitebox-engine/learn'
+ * import { hStatistic } from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const additive = { estimator: 'a', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i + 1])) }
  * hStatistic(additive, [[0, 1], [1, 0], [2, 2], [3, 1]], 0, 1) < 1e-20 // => true
@@ -463,7 +463,7 @@ export interface AnovaComponent {
  * @returns The constant, the components and the share of variance left to higher orders.
  * @example
  * ```ts
- * import { functionalAnova } from 'whitebox-engine/learn'
+ * import { functionalAnova } from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const grid = [[-1, -1], [-1, 1], [1, -1], [1, 1]]
  * const f = { estimator: 'f', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i] * x.data[2 * i + 1])) }

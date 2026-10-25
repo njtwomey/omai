@@ -1,7 +1,9 @@
-import { vjp } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
-import { gaussLegendre } from '../../numerics/quadrature/index.ts'
-import { foldIn, type Key, normal, randint, uniform } from '../../random/index.ts'
+import { vjp } from '../autodiff/index.ts'
+import { WhiteboxError } from '../base/index.ts'
+import { keyFor } from '../learn/_shared.ts'
+import { matrixView } from '../learn/validation.ts'
+import { gaussLegendre } from '../numerics/quadrature/index.ts'
+import { foldIn, type Key, normal, randint, uniform } from '../random/index.ts'
 import {
   add,
   asTensor,
@@ -13,9 +15,7 @@ import {
   type TensorLike,
   toFlat,
   type Value,
-} from '../../tensor/index.ts'
-import { keyFor } from '../_shared.ts'
-import { matrixView } from '../validation.ts'
+} from '../tensor/index.ts'
 
 /** A differentiable model: inputs `[n, d]` to outputs `[n, k]` (or `[n]`), rows independent. */
 export type DifferentiableModel = (x: Value) => Value
@@ -38,7 +38,7 @@ function concrete(x: TensorLike, who: string): Tensor {
  * @returns The gradients.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { matmul, toArray } from 'whitebox-engine/tensor'
  * toArray(explain.targetGradient((x) => matmul(x, [[1, 0], [0, 5]]), [[1, 1]], 1)) // => [[0, 5]]
  * ```
@@ -70,7 +70,7 @@ export function targetGradient(model: DifferentiableModel, x: TensorLike, target
  * @concept attribution
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { matmul, toArray } from 'whitebox-engine/tensor'
  * const linear = (x) => matmul(x, [[2], [-3]])
  * toArray(explain.saliency(linear, [[1, 1]])) // => [[2, 3]]
@@ -97,7 +97,7 @@ export function saliency(
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { matmul, toArray } from 'whitebox-engine/tensor'
  * toArray(explain.inputXGradient((x) => matmul(x, [[2], [-3]]), [[1, 2]])) // => [[2, -6]]
  * ```
@@ -122,7 +122,7 @@ export type PathMethod = 'gausslegendre' | 'riemann_left' | 'riemann_right' | 'r
  * @returns The path positions and their weights (summing to 1).
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * explain.pathRule('riemann_trapezoid', 3) // => { alphas: [0, 0.5, 1], weights: [1 / 6, 1 / 3, 1 / 6] }
  * ```
  */
@@ -187,7 +187,7 @@ function baselineOf(xt: Tensor, baseline: TensorLike | undefined, who: string): 
  * @returns Attributions `[n, d]` and the convergence delta per row.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { square, sum, toArray } from 'whitebox-engine/tensor'
  * const r = explain.integratedGradients((x) => sum(square(x), 1), [[1, 2]], { nSteps: 4 })
  * toArray(r.attributions).map((row) => row.map((v) => Math.round(v * 1e12) / 1e12)) // => [[1, 4]]
@@ -254,7 +254,7 @@ export interface SmoothGradOptions {
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { matmul, toArray } from 'whitebox-engine/tensor'
  * // A linear model's gradient does not change under noise.
  * toArray(explain.smoothGrad((x) => matmul(x, [[2], [-3]]), [[1, 1]], { nSamples: 5 })) // => [[2, -3]]
@@ -296,7 +296,7 @@ export interface ExpectedGradientsOptions {
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { matmul, toArray } from 'whitebox-engine/tensor'
  * // For a linear model: w (x - mean background) exactly, whatever the samples.
  * toArray(explain.expectedGradients((x) => matmul(x, [[2], [1]]), [[3, 3]], [[1, 1], [1, 1]], { nSamples: 8 })) // => [[4, 2]]
@@ -351,7 +351,7 @@ export interface DeepLiftLayer {
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { add, matmul, relu, toArray } from 'whitebox-engine/tensor'
  * const layers = [{ fn: (v) => add(matmul(v, [[1], [1]]), -1) }, { fn: relu, nonlinear: true }]
  * // f(x) = relu(x1 + x2 - 1): from the zero baseline (f = 0) to (2, 1) (f = 2), shared as 4/3 and 2/3.

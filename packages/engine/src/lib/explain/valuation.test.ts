@@ -4,7 +4,7 @@ import { leastSquares } from '../../testing/learn.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { key } from '../random/index.ts'
 import { add, fromStorage, mul, square, sub, sum, toFlat, type Value } from '../tensor/index.ts'
-import { shapleyValues } from './explain/shapley.ts'
+import { shapleyValues } from './shapley.ts'
 import { dataShapley, influenceFunctions, knnShapley, knnUtility, tracIn } from './valuation.ts'
 
 describe('data valuation', () => {

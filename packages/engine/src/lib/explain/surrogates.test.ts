@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { key } from '../../random/index.ts'
-import { fromStorage, type Tensor } from '../../tensor/index.ts'
+import { key } from '../random/index.ts'
+import { fromStorage, type Tensor } from '../tensor/index.ts'
 import { anchors, globalSurrogate, lime } from './surrogates.ts'
 
 const rule = (x: Tensor): Tensor => {

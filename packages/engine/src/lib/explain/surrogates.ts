@@ -1,10 +1,10 @@
-import { pinv } from '../../numerics/linalg/index.ts'
-import { foldIn, type Key, normal, randint } from '../../random/index.ts'
-import { asTensor, fromStorage, matmul, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
-import { keyFor, runOptionsFor } from '../_shared.ts'
-import type { FitOptions } from '../estimator.ts'
-import { columnOf, type MatrixView, matrixView, takeColumns, targetVector } from '../validation.ts'
+import { keyFor, runOptionsFor } from '../learn/_shared.ts'
+import type { FitOptions } from '../learn/estimator.ts'
+import { columnOf, type MatrixView, matrixView, takeColumns, targetVector } from '../learn/validation.ts'
+import { pinv } from '../numerics/linalg/index.ts'
+import { foldIn, type Key, normal, randint } from '../random/index.ts'
+import { asTensor, fromStorage, matmul, type TensorLike, toFlat } from '../tensor/index.ts'
+import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import type { PredictFunction, TreeModel } from './shapley.ts'
 
 /** A weighted ridge fit with an unpenalised intercept (sklearn Ridge with sample weights). */
@@ -107,7 +107,7 @@ function forwardSelection(m: MatrixView, y: Float64Array, w: Float64Array, k: nu
  * @concept local-surrogates
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * const z = [[0, 0], [1, 0], [0, 1], [1, 1]]
  * const r = explain.limeFit(z, [0, 2, 1, 3], [0, 1, 1, Math.SQRT2], { alpha: 0, featureSelection: 'none' })
  * r.weights.map(([j, w]) => [j, Math.round(w * 1e9) / 1e9]) // => [[0, 2], [1, 1]]
@@ -177,7 +177,7 @@ export interface LimeOptions extends LimeFitOptions {
  * @returns The explanation (weights refer to standardised features).
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 3 * x.data[2 * i]))
  * const train = [[0, 0], [1, 5], [2, 1], [3, 7]]
@@ -287,7 +287,7 @@ function klBound(p: number, level: number, upper: boolean): number {
  * @returns The anchor.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const firstPositive = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[2 * i] > 0 ? 1 : 0)))
  * const train = Array.from({ length: 40 }, (_, i) => [((i * 7) % 20) - 10, (i * 3) % 5])
@@ -488,7 +488,7 @@ export interface SurrogateTreeOptions {
  * @returns The tree as arrays (leaf values are means, or for classification the majority class).
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { toFlat } from 'whitebox-engine/tensor'
  * const t = explain.surrogateTree([[0], [1], [2], [3]], [0, 0, 5, 5], { maxDepth: 1 })
  * t.threshold[0] // => 1.5
@@ -595,7 +595,7 @@ export function surrogateTree(x: TensorLike, targets: TensorLike, options: Surro
  * @returns The fidelity (1 is perfect).
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * explain.fidelity([1, 2, 3], [1, 2, 3]) // => 1
  * explain.fidelity([0, 1, 1, 0], [0, 1, 0, 0], 'classification') // => 0.75
  * ```
@@ -629,7 +629,7 @@ export function fidelity(
  * @returns The tree and its fidelity on the data.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const step = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[i] > 1 ? 1 : 0)))
  * explain.globalSurrogate(step, [[0], [1], [2], [3]], { maxDepth: 1 }).fidelity // => 1

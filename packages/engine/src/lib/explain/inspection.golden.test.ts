@@ -1,7 +1,8 @@
 import { gaussianNB, learnGolden, leastSquares, num, rows } from '../../testing/learn.ts'
+import { pipeline } from '../learn/compose.ts'
+import type { Fitted } from '../learn/estimator.ts'
+import { polynomialFeatures } from '../learn/preprocessing/index.ts'
 import type { Tensor } from '../tensor/index.ts'
-import { pipeline } from './compose.ts'
-import type { Fitted } from './estimator.ts'
 import {
   accumulatedLocalEffects,
   functionalAnova,
@@ -9,7 +10,6 @@ import {
   partialDependence,
   permutationImportance,
 } from './inspection.ts'
-import { polynomialFeatures } from './preprocessing/index.ts'
 
 const polyModel = (x: Tensor, y: Tensor): Fitted =>
   pipeline([
@@ -19,7 +19,7 @@ const polyModel = (x: Tensor, y: Tensor): Fitted =>
 
 const features = (p: Readonly<Record<string, unknown>>): number[] => p['features'] as number[]
 
-learnGolden('inspection against sklearn.inspection', 'learn/inspection', {
+learnGolden('inspection against sklearn.inspection', 'explain/inspection', {
   permutation: ([x, y, perms]) => {
     const r = permutationImportance(
       polyModel(x as Tensor, y as Tensor),

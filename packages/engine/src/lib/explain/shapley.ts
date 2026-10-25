@@ -1,12 +1,12 @@
-import { popcount, WhiteboxError } from '../../base/index.ts'
-import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../../games/index.ts'
-import { solve } from '../../numerics/linalg/index.ts'
-import { foldIn, type Key, permutation, randint } from '../../random/index.ts'
-import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
-import { keyFor, runOptionsFor } from '../_shared.ts'
-import type { FitOptions } from '../estimator.ts'
-import { type MatrixView, matrixView } from '../validation.ts'
+import { popcount, WhiteboxError } from '../base/index.ts'
+import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../games/index.ts'
+import { keyFor, runOptionsFor } from '../learn/_shared.ts'
+import type { FitOptions } from '../learn/estimator.ts'
+import { type MatrixView, matrixView } from '../learn/validation.ts'
+import { solve } from '../numerics/linalg/index.ts'
+import { foldIn, type Key, permutation, randint } from '../random/index.ts'
+import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 
 /** A cooperative game: the value of each coalition (a membership mask over the players). */
 export type CoalitionValue = (coalition: readonly boolean[]) => number
@@ -44,7 +44,7 @@ function gameOf(value: CoalitionValue, n: number, who: string): CoalitionalGame 
  * @concept shapley-values
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * // A glove game: player 0 owns a left glove, players 1 and 2 right gloves; a pair is worth 1.
  * explain.shapleyValues((s) => (s[0] && (s[1] || s[2]) ? 1 : 0), 3).map((v) => Math.round(v * 1e12) / 1e12) // => [0.666666666667, 0.166666666667, 0.166666666667]
  * ```
@@ -64,7 +64,7 @@ export function shapleyValues(value: CoalitionValue, nPlayers: number): number[]
  * @returns The n x n matrix, row-major as nested arrays.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * // v(S) = 1 when both players are in: all the value is interaction.
  * explain.shapleyInteractionValues((s) => (s[0] && s[1] ? 1 : 0), 2) // => [[0, 0.5], [0.5, 0]]
  * ```
@@ -100,7 +100,7 @@ function evalRows(predict: PredictFunction, data: Float64Array, m: number, d: nu
  * @returns The coalition value function.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const sum = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i + 1]))
  * explain.interventionalValue(sum, [1, 1], [[0, 0], [2, 0]])([true, false]) // => 1
@@ -151,7 +151,7 @@ export interface ShapExplanation {
  * @returns The values and the base value.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[2 * i] - x.data[2 * i + 1]))
  * explain.kernelShap(linear, [[1, 1]], [[0, 0], [2, 2]]).values // => [[0, 0]]
@@ -286,7 +286,7 @@ export interface SamplingShapleyOptions extends FitOptions {
  * @returns The estimates and their standard errors.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { tensor } from 'whitebox-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[2 * i] + x.data[2 * i + 1]))
  * explain.samplingShapley(linear, [1, 1], [[0, 0]], { nPermutations: 10 }).values // => [2, 1]
@@ -367,7 +367,7 @@ export interface TreeModel {
  * @returns Predictions `[n]`.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * import { toFlat } from 'whitebox-engine/tensor'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * toFlat(explain.treePredict(stump, [[0], [1]])) // => [0, 1]
@@ -411,7 +411,7 @@ interface PathElement {
  * @returns The values (`[n][d]`) and the base value (the cover-weighted mean leaf).
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * explain.treeShap(stump, [[1, 7]]) // => { values: [[0.5, 0]], baseValue: 0.5 }
  * ```
@@ -526,7 +526,7 @@ function expectedLeaf(tree: TreeModel, node: number): number {
  * @returns The coalition value function.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * explain.treeConditionalValue(stump, [1])([false]) // => 0.5
  * ```
@@ -557,7 +557,7 @@ export function treeConditionalValue(tree: TreeModel, x: TensorLike): CoalitionV
  * @returns interactions[row][i][j].
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * explain.treeShapInteractions(stump, [[1, 7]]) // => [[[0.5, 0], [0, 0]]]
  * ```
@@ -579,7 +579,7 @@ export function treeShapInteractions(tree: TreeModel, x: TensorLike): number[][]
  * @returns The values and base value of the ensemble.
  * @example
  * ```ts
- * import { explain } from 'whitebox-engine/learn'
+ * import * as explain from 'whitebox-engine/explain'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * explain.ensembleTreeShap([stump, stump], [[1]], { combine: 'sum' }).values // => [[1]]
  * ```

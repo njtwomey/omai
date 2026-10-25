@@ -1,8 +1,8 @@
-import { learnGolden, leastSquares, num } from '../../../testing/learn.ts'
-import { type Tensor, toFlat } from '../../tensor/index.ts'
-import { pipeline } from '../compose.ts'
-import { requireVerb } from '../estimator.ts'
-import { polynomialFeatures } from '../preprocessing/index.ts'
+import { learnGolden, leastSquares, num } from '../../testing/learn.ts'
+import { pipeline } from '../learn/compose.ts'
+import { requireVerb } from '../learn/estimator.ts'
+import { polynomialFeatures } from '../learn/preprocessing/index.ts'
+import { type Tensor, toFlat } from '../tensor/index.ts'
 import {
   ensembleTreeShap,
   interventionalValue,
@@ -18,7 +18,7 @@ function treeFrom(arrays: readonly Tensor[], offset = 0): TreeModel {
   return { childrenLeft: a(0), childrenRight: a(1), feature: a(2), threshold: a(3), value: a(4), cover: a(5) }
 }
 
-learnGolden('Shapley explanations against shap', 'learn/explain/shapley', {
+learnGolden('Shapley explanations against shap', 'explain/shapley', {
   kernel: ([x, y, xe, bg]) => {
     const f = pipeline([
       ['poly', polynomialFeatures()],

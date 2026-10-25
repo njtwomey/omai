@@ -1,5 +1,5 @@
-import { learnGolden, num, str } from '../../../testing/learn.ts'
-import { add, matmul, relu, type Tensor, tanh, type Value } from '../../tensor/index.ts'
+import { learnGolden, num, str } from '../../testing/learn.ts'
+import { add, matmul, relu, type Tensor, tanh, type Value } from '../tensor/index.ts'
 import {
   type DeepLiftLayer,
   deepLift,
@@ -22,7 +22,7 @@ const model = (inputs: readonly Tensor[], act: string) => {
   return (v: Value): Value => ls.reduce((h, l) => l.fn(h), v)
 }
 
-learnGolden('gradient attributions against captum', 'learn/explain/gradients', {
+learnGolden('gradient attributions against captum', 'explain/gradients', {
   saliency: (inputs, p) => {
     const f = model(inputs, str(p, 'act'))
     const target = num(p, 'target')

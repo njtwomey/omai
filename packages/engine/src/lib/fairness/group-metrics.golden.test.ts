@@ -8,7 +8,7 @@ const disparity =
   ([y, p, g, w]: readonly [Tensor, Tensor, ...(Tensor | undefined)[]], o: Readonly<Record<string, unknown>>): number =>
     (m as Disparity)(y, p, g as Tensor, { ...o, ...(w === undefined ? {} : { sampleWeight: w }) }).estimate.value
 
-goldenSuite('group fairness metrics against fairlearn', 'metrics/fairness', {
+goldenSuite('group fairness metrics against fairlearn', 'fairness/group_metrics', {
   demographicParityDifference: disparity(M.demographicParityDifference),
   demographicParityRatio: disparity(M.demographicParityRatio),
   equalOpportunityDifference: disparity(M.equalOpportunityDifference),

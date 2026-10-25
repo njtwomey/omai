@@ -234,7 +234,7 @@ export function shapleyValue(game: CoalitionalGame): number[] {
  * The Shapley interaction index (Grabisch and Roubens 1999) of every pair of players:
  * `I_ij = sum over S not containing i or j of |S|! (n - |S| - 2)! / (n - 1)! (v(S + ij) - v(S + i) - v(S + j) + v(S))`,
  * positive for complements and negative for substitutes, with the Shapley values on the diagonal (`I_ii = phi_i`, the
- * index of a singleton). SHAP's interaction values (`learn.explain.shapleyInteractionValues`) are built from it.
+ * index of a singleton). SHAP's interaction values (`explain.shapleyInteractionValues`) are built from it.
  *
  * @param game - The game.
  * @returns The symmetric `n x n` matrix, as nested arrays.
