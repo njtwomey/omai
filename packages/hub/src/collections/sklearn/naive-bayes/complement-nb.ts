@@ -1,3 +1,8 @@
+/**
+ * Hub entry for complement naive Bayes, multinomial naive Bayes fitted to each class's complement for skewed classes,
+ * on tabular classification data such as the handwritten digits.
+ */
+
 import { complementNB } from 'whitebox-engine/methods/naive-bayes'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

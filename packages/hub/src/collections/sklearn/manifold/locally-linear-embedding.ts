@@ -1,3 +1,8 @@
+/**
+ * Hub entry for locally linear embedding, which keeps each point's reconstruction from its neighbours, on
+ * three-dimensional manifolds such as the Swiss roll and tabular data.
+ */
+
 import { locallyLinearEmbedding as locallyLinearEmbeddingMethod } from 'whitebox-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

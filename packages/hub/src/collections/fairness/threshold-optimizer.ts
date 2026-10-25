@@ -1,5 +1,6 @@
 /**
- * Hub entry: post-processing: per-group randomised thresholds meeting a fairness constraint.
+ * Hub entry for the threshold optimiser, a post-processing step choosing per-group randomised thresholds that meet
+ * demographic parity or equalised odds, on tabular data with a protected attribute.
  */
 
 import type { ThresholdConstraint } from 'whitebox-engine/fairness'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for fuzzy c-means, where every point belongs to every cluster to a degree, on two-dimensional clustering
+ * datasets.
+ */
+
 import { fuzzyCMeans as fuzzyCMeansMethod } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

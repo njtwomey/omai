@@ -1,3 +1,8 @@
+/**
+ * Hub entry for histogram density estimation, with its bin width chosen by a rule, on two-dimensional densities and
+ * clustering datasets.
+ */
+
 import { histogramDensity } from 'whitebox-engine/methods/mixture'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

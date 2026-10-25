@@ -1,3 +1,8 @@
+/**
+ * Hub entry for SGD regression (as scikit-learn's `SGDRegressor`), a linear regression learned one row at a time with a
+ * squared, Huber or epsilon-insensitive loss, on tabular regression data and one-dimensional regression curves.
+ */
+
 import { sgdRegressor as sgdRegressorEstimator } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'

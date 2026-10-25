@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Apriori, which finds frequent itemsets level by level and prunes candidates with an infrequent subset,
+ * on market baskets, with the association rules found.
+ */
+
 import type { HubEntry } from '../../entry/entry.ts'
 import { miningEntry } from './_mining.ts'
 

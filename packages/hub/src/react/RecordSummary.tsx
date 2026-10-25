@@ -1,3 +1,8 @@
+/**
+ * A compact fallback card for an exposition record that has no render view yet: the record's kind in words and one line
+ * per field, numbers and short text as they are, arrays by their shape and range, objects by their keys.
+ */
+
 import type { ReactNode } from 'react'
 import type { Exposition } from 'whitebox-engine/exposition'
 

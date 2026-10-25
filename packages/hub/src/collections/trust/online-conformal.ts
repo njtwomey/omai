@@ -1,3 +1,8 @@
+/**
+ * Hub entry for adaptive conformal inference, online intervals that keep their running coverage near target on a stream
+ * whose noise drifts, on one-dimensional regression curves.
+ */
+
 import { kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
 import { onlineConformal as online } from 'whitebox-engine/methods/trust'
 import { dict, int, real } from 'whitebox-engine/space'

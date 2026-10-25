@@ -1,3 +1,8 @@
+/**
+ * Hub entry for iterative-deepening A* (depth-first search under a cost bound raised each round), played on grid maps
+ * and mazes.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { searchEntry } from './_search.ts'
 

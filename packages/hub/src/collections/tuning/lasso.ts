@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a grid search over the lasso's penalty by cross-validated R squared with its standard errors, on
+ * tabular regression data.
+ */
+
 import { lasso } from 'whitebox-engine/methods/linear'
 import { dict, real } from 'whitebox-engine/space'
 import type { HubEntry } from '../../entry/entry.ts'

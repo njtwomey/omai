@@ -1,5 +1,10 @@
-// Numeric evaluation of expressions: real (double) and complex scalars, and an adaptive Gauss-Kronrod rule for the
-// numeric fallback of definite integrals. (The quadrature module of numerics is tier 5, above symbolic.)
+/**
+ * Numeric evaluation of symbolic expressions, private to symbolic: real (double) and complex values of an expression
+ * under an environment of numbers, with caller-supplied implementations for functions symbolic cannot evaluate, and an
+ * adaptive Gauss-Kronrod rule for the numeric fallback of definite integrals (kept here so symbolic does not depend on
+ * numerics).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { children } from './_node.ts'
 import { KNOWN_FUNCTIONS } from './_order.ts'

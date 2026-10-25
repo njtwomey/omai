@@ -1,3 +1,7 @@
+/**
+ * Hub entry for advantage actor-critic (A2C) learning to balance CartPole, from the reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

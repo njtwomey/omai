@@ -1,3 +1,8 @@
+/**
+ * Hub entry for probit regression, a linear model through the normal CDF (the latent-variable view of a binary
+ * outcome), on two-dimensional classification data.
+ */
+
 import { probitRegression as probitRegressionMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

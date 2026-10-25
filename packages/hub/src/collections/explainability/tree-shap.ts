@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Tree SHAP, exact Shapley values of a gradient-boosted or random forest model, as one prediction's
+ * waterfall and a beeswarm of every row, on tabular regression and classification data.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import { explainDataset, explainPrediction } from 'whitebox-engine/methods/explain'
 import { dict, int } from 'whitebox-engine/space'

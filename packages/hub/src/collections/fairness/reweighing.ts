@@ -1,5 +1,6 @@
 /**
- * Hub entry: preprocessing: weight rows so the label is independent of the group.
+ * Hub entry for reweighing, a preprocessing step that weights rows so the label is independent of the group, on tabular
+ * data with a protected attribute.
  */
 
 import { reweighedFit } from 'whitebox-engine/methods/fairness'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for recurrent networks (a plain RNN, a GRU or an LSTM) learning the running parity of a bit string, which
+ * it must carry in its hidden state.
+ */
+
 import { generate } from 'whitebox-engine/data'
 import { parityTask } from 'whitebox-engine/datasets'
 import { type RecurrentCell, recurrentTagger } from 'whitebox-engine/methods/neural/sequence'

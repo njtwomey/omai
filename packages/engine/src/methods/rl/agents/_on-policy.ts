@@ -1,6 +1,9 @@
-// Private machinery of the on-policy agents (policy-gradient.ts, safe.ts, imitation.ts): actor-critic networks over
-// discrete or box action spaces, KL divergences between their policies, rollout batches with GAE, and the epochs of
-// minibatch updates PPO and its constrained variant share.
+/**
+ * Machinery shared by the on-policy agents (policy-gradient.ts, safe.ts, imitation.ts), private to the agents:
+ * actor-critic networks over discrete or box action spaces, KL divergences between their policies, rollout batches with
+ * generalised advantage estimation, and the epochs of minibatch updates that PPO and its constrained variant share.
+ */
+
 import { valueAndGrad } from '../../../lib/autodiff/index.ts'
 import { meanOf, varianceOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { explainedVarianceScore } from '../../../lib/metrics/index.ts'

@@ -1,3 +1,7 @@
+/**
+ * Hub entry for Q-learning on the slippery FrozenLake, from the reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

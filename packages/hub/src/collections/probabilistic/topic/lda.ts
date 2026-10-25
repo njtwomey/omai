@@ -1,3 +1,8 @@
+/**
+ * Hub entry for latent Dirichlet allocation by collapsed Gibbs sampling, finding topics as word distributions and
+ * documents as mixtures of them, on small text corpora.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { CorpusData } from 'whitebox-engine/data'
 import { documentTermCounts, latentDirichletAllocation } from 'whitebox-engine/methods/models'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for probabilistic PCA, PCA as a latent Gaussian model with isotropic noise, on three-dimensional manifolds
+ * such as the Swiss roll and tabular data.
+ */
+
 import { probabilisticPca as probabilisticPcaMethod } from 'whitebox-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

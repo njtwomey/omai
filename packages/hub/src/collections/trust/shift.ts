@@ -1,3 +1,8 @@
+/**
+ * Hub entry for covariate and concept shift and the tests that detect them (Kolmogorov-Smirnov tests and a domain
+ * classifier), on tabular classification data and two-dimensional classification data.
+ */
+
 import { logisticRegression } from 'whitebox-engine/methods/linear'
 import { type ShiftKind, shiftStudy } from 'whitebox-engine/methods/trust'
 import { choice, dict } from 'whitebox-engine/space'

@@ -1,3 +1,9 @@
+/**
+ * A hub demo's state in the URL: `stateToQuery` writes only what differs from the entry's demo state (dataset, seed,
+ * dataset knobs and parameters) as query parameters, and `stateFromQuery` reads them back, ignoring unknown names and
+ * out-of-range values, so a configured demo can be shared as a link.
+ */
+
 import { datasetCollections, datasetGenerators } from 'whitebox-engine/datasets'
 import { contains, type DictSpace, type SpaceValue } from 'whitebox-engine/space'
 import type { HubEntry } from './entry.ts'

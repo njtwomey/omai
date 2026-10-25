@@ -1,3 +1,8 @@
+/**
+ * Hub entry for uniform-cost search (Dijkstra's algorithm), the frontier ordered by path cost, played on grid maps with
+ * costly terrain and on mazes.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { searchEntry } from './_search.ts'
 

@@ -1,4 +1,8 @@
-// Internal helpers shared by the stochastic modules: time grids, scalars and shapes.
+/**
+ * Helpers shared by the stochastic modules, private to stochastic: validated time grids and their step sizes, concrete
+ * numbers from scalars and traced values, and float64 vectors.
+ */
+
 import { type Estimate, estimate, WhiteboxError } from '../base/index.ts'
 import {
   asTensor,

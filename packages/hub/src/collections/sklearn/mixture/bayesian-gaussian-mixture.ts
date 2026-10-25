@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the Bayesian Gaussian mixture, whose prior on the weights switches spare components off, on
+ * two-dimensional clustering datasets and two-dimensional densities.
+ */
+
 import { bayesianGaussianMixture as bayesianGaussianMixtureMethod } from 'whitebox-engine/methods/mixture'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

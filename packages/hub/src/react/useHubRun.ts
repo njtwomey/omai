@@ -1,3 +1,10 @@
+/**
+ * The React hook that runs a hub entry's method whenever its state changes, debounced: in a Web Worker when the entry
+ * is in the catalogue and workers are available (a newer state stops a run still going), otherwise on the main thread,
+ * reporting progress, the records, timing and where the run happened. Also the request and reply messages of the hub's
+ * worker.
+ */
+
 import { useEffect, useRef, useState } from 'react'
 import type { Exposition } from 'whitebox-engine/exposition'
 import { catalogue } from '../catalogue/index.ts'

@@ -1,5 +1,9 @@
-// Private plumbing of the off-policy actor-critic agents (actor-critic.ts): their options and state, replay batches,
-// the agent that adds transitions, advances the exploration noise and updates, and networks over box action spaces.
+/**
+ * Plumbing shared by the off-policy actor-critic agents (actor-critic.ts: DDPG, TD3, SAC), private to the agents: their
+ * options and state, replay batches, the agent that stores transitions, advances the exploration noise and updates, and
+ * networks over box action spaces.
+ */
+
 import type { Json } from '../../../lib/base/index.ts'
 import type { ActivationName, Params } from '../../../lib/nn/index.ts'
 import { adam, type GradientTransformation } from '../../../lib/optim/index.ts'

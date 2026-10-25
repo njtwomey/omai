@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Rosenblatt's perceptron run online, every mistake moving the boundary towards the misclassified row, on
+ * two-dimensional classification data and tabular classification data.
+ */
+
 import { onlinePerceptron } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'

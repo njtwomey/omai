@@ -1,3 +1,8 @@
+/**
+ * Hub entry for non-negative matrix factorisation, parts-based factors with non-negative weights and parts, on tabular
+ * classification data.
+ */
+
 import { nmf as nmfMethod } from 'whitebox-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

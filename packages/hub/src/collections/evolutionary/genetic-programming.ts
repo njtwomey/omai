@@ -1,3 +1,8 @@
+/**
+ * Hub entry for symbolic regression by genetic programming, evolving expression trees by subtree crossover and mutation
+ * until a formula fits the points.
+ */
+
 import { type SymbolicTarget, symbolicRegression } from 'whitebox-engine/methods/evolutionary'
 import { bool, choice, dict, int, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'

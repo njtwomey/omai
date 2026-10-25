@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a genetic algorithm on bit strings (selection, crossover and bit-flip mutation) solving OneMax or a
+ * knapsack problem, played generation by generation.
+ */
+
 import { evolveBitStrings, knapsack, oneMax } from 'whitebox-engine/methods/evolutionary'
 import { choice, dict, int, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'

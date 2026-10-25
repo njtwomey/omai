@@ -1,3 +1,8 @@
+/**
+ * Hub entry for covariance estimation, empirical and shrunk (Ledoit-Wolf, OAS), with the Mahalanobis distances it
+ * gives, on two-dimensional data with outliers and two-dimensional densities.
+ */
+
 import { covarianceEstimator } from 'whitebox-engine/methods/covariance'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

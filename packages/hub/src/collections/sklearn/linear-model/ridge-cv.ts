@@ -1,3 +1,8 @@
+/**
+ * Hub entry for ridge regression with its penalty chosen by cross-validation along the path, on tabular regression data
+ * and one-dimensional regression curves.
+ */
+
 import { ridgeCV } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for one-vs-rest multiclass classification, one binary classifier per class with the most confident winning,
+ * on two-dimensional classification data and tabular classification data.
+ */
+
 import { oneVsRestClassifier } from 'whitebox-engine/methods/multiclass'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

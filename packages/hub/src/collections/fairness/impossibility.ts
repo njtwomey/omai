@@ -1,5 +1,6 @@
 /**
- * Hub entry: calibration against equalised odds: why both cannot hold when base rates differ.
+ * Hub entry showing why calibration and equalised odds cannot both hold when groups have different base rates, on
+ * synthetic scores.
  */
 
 import { impossibilityStudy } from 'whitebox-engine/methods/fairness'

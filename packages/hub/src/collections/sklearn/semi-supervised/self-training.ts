@@ -1,3 +1,8 @@
+/**
+ * Hub entry for self-training (as scikit-learn's `SelfTrainingClassifier`), a classifier labelling its most confident
+ * unlabelled points round by round, on two-dimensional classification data.
+ */
+
 import { selfTraining as selfTrainingEstimator } from 'whitebox-engine/methods/semi-supervised'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { withHiddenLabels } from './_hidden.ts'

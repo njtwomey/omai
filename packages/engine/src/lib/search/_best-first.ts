@@ -1,3 +1,9 @@
+/**
+ * The engine behind every best-first search (uniform cost, greedy, A* and their relatives), private to search: a
+ * priority-queue frontier with configurable tie-breaking, the explored set, and the traced algorithm that expands nodes
+ * in order of an evaluation function.
+ */
+
 import type { Json } from '../base/index.ts'
 import { BinaryHeap } from '../graph/index.ts'
 import type { Algorithm } from '../trace/index.ts'

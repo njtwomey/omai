@@ -1,3 +1,8 @@
+/**
+ * Hub entry for negative binomial regression, a count model with more variance than the Poisson allows, on
+ * overdispersed counts and tabular data.
+ */
+
 import { negativeBinomialRegressor as negativeBinomialRegressorMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

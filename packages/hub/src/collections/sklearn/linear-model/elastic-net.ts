@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the elastic net, a mix of the lasso's L1 and ridge's L2 penalties solved by coordinate descent, on
+ * tabular regression data with a few informative features and one-dimensional regression curves.
+ */
+
 import { elasticNet as elasticNetMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

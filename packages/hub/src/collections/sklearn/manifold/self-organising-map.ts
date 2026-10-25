@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the self-organising map, a grid of prototypes pulled towards the data with neighbours moving together,
+ * on two-dimensional clusters, three-dimensional manifolds and tabular data.
+ */
+
 import { selfOrganisingMap as selfOrganisingMapMethod } from 'whitebox-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,5 +1,6 @@
 /**
- * Hub entry: in-processing: fair classification by reduction to cost-sensitive problems, traced over iterations.
+ * Hub entry for the exponentiated-gradient reduction, which trains a fair classifier as a game between a learner and a
+ * constraint auditor, traced over iterations on tabular data with a protected attribute.
  */
 
 import type { ReductionConstraint } from 'whitebox-engine/fairness'

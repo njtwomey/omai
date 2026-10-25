@@ -1,3 +1,8 @@
+/**
+ * Hub entry for FP-growth, which mines frequent itemsets from a prefix tree of the baskets without generating
+ * candidates, on market baskets, with the association rules found.
+ */
+
 import type { HubEntry } from '../../entry/entry.ts'
 import { miningEntry } from './_mining.ts'
 

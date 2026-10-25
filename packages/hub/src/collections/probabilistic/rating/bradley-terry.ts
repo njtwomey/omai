@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Bradley-Terry strengths, maximum-likelihood ratings fitted to all the games at once by Hunter's MM
+ * algorithm, on simulated tournaments.
+ */
+
 import { bradleyTerry as bradleyTerryRatings } from 'whitebox-engine/methods/models'
 import { dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

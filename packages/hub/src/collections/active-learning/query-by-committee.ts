@@ -1,3 +1,8 @@
+/**
+ * Hub entry for query by committee, the active-learning strategy that asks for the labels a bagged committee of models
+ * disagrees about most, on two-dimensional classification data and tabular classification data.
+ */
+
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { studyEntry } from './_study.ts'
 

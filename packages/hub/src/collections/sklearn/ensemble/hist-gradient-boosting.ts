@@ -1,3 +1,8 @@
+/**
+ * Hub entry for histogram gradient boosting, gradient boosting on binned features with trees grown leaf by leaf, on
+ * two-dimensional and tabular classification and regression data.
+ */
+
 import { histGradientBoostingClassifier, histGradientBoostingRegressor } from 'whitebox-engine/methods/ensemble'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'

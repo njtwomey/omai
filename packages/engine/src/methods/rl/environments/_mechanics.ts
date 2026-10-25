@@ -1,6 +1,10 @@
-// Equations of motion and rewards of the continuous-control systems, written once over a scalar algebra so that the
-// environments (plain numbers, continuous-control.ts) and their differentiable models (tensor values, models.ts)
-// evaluate the same operations in the same order. Private to methods/rl/environments.
+/**
+ * Equations of motion and rewards of the continuous-control systems, written once over a scalar algebra so the
+ * environments (plain numbers, continuous-control.ts) and their differentiable models (tensor values, models.ts)
+ * evaluate the same operations in the same order: the number and tensor algebras, a Runge-Kutta step and exact
+ * damped-mass discretisations. Private to methods/rl/environments.
+ */
+
 import {
   add,
   cos,

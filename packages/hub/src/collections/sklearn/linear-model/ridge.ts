@@ -1,3 +1,8 @@
+/**
+ * Hub entry for ridge regression, least squares with an L2 penalty that shrinks the coefficients smoothly towards zero,
+ * on tabular regression data and one-dimensional regression curves.
+ */
+
 import { ridge as ridgeMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

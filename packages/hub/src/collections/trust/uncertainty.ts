@@ -1,3 +1,8 @@
+/**
+ * Hub entry for epistemic and aleatoric uncertainty from a bootstrap ensemble, its members disagreeing away from the
+ * data, on one-dimensional regression curves.
+ */
+
 import { decisionTreeRegressor } from 'whitebox-engine/methods/trees'
 import { ensembleUncertainty } from 'whitebox-engine/methods/trust'
 import { dict, int } from 'whitebox-engine/space'

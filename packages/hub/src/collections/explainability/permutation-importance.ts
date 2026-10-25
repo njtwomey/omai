@@ -1,3 +1,8 @@
+/**
+ * Hub entry for permutation importance, the drop in a model's held-out score when each feature is shuffled, on tabular
+ * classification and regression data.
+ */
+
 import { trainTestSplit } from 'whitebox-engine/data'
 import { featureImportance } from 'whitebox-engine/methods/explain'
 import { choice, dict, int } from 'whitebox-engine/space'

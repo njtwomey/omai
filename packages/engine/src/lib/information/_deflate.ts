@@ -1,6 +1,8 @@
-// A port of zlib's compressor (deflate.c and trees.c, version 1.2.12, by Jean-loup Gailly and Mark Adler) for one-shot
-// compression with windowBits 15 and memLevel 8, so that the output matches zlib byte for byte. Not exported: the
-// public functions are in deflate.ts. Names follow zlib's so that the two can be read side by side.
+/**
+ * A port of zlib's compressor (deflate.c and trees.c, version 1.2.12, by Jean-loup Gailly and Mark Adler) for one-shot
+ * compression with windowBits 15 and memLevel 8, so that the output matches zlib byte for byte. Private: the public
+ * functions are in deflate.ts, and names follow zlib's so the two can be read side by side.
+ */
 
 /** zlib's compression strategies. */
 export type DeflateStrategy = 'default' | 'filtered' | 'huffmanOnly' | 'rle' | 'fixed'

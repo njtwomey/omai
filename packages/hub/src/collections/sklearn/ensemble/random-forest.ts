@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the random forest, many deep trees on bootstrap samples and random feature subsets, averaged, on
+ * two-dimensional and tabular classification and regression data.
+ */
+
 import { randomForestClassifier, randomForestRegressor } from 'whitebox-engine/methods/ensemble'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'

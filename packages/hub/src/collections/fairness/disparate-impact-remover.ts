@@ -1,5 +1,6 @@
 /**
- * Hub entry: preprocessing: repair features so their distribution is the same in every group.
+ * Hub entry for the disparate impact remover, a preprocessing step that repairs features so their distribution is the
+ * same in every group, on tabular data with a protected attribute.
  */
 
 import type { Exposition } from 'whitebox-engine/exposition'

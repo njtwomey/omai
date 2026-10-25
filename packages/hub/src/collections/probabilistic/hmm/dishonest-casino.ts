@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a hidden Markov model decoding the occasionally dishonest casino: which rolls came from the loaded die,
+ * inferred from the rolls alone.
+ */
+
 import { casinoStudy } from 'whitebox-engine/methods/models'
 import { bool, dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

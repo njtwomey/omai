@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Rosenblatt's perceptron as a neural network, one update per misclassified row until an epoch makes no
+ * mistake, on two-dimensional classification data.
+ */
+
 import type { Exposition } from 'whitebox-engine/exposition'
 import { rosenblattPerceptron } from 'whitebox-engine/methods/neural/foundations'
 import { asTensor, toFlat } from 'whitebox-engine/tensor'

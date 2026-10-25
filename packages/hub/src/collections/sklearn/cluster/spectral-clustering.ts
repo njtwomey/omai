@@ -1,3 +1,8 @@
+/**
+ * Hub entry for spectral clustering, clustering the leading eigenvectors of a similarity graph's Laplacian, on
+ * two-dimensional clustering datasets such as the two moons.
+ */
+
 import { spectralClustering as spectralClusteringMethod } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

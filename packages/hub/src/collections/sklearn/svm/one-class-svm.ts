@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the one-class SVM, a boundary around the bulk of the data in a kernel's feature space, on
+ * two-dimensional data with outliers.
+ */
+
 import { oneClassSvm as oneClassSvmMethod } from 'whitebox-engine/methods/svm'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
