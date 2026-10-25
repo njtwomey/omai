@@ -1,3 +1,8 @@
+/**
+ * Time-series discords as anomaly scores: each subsequence's distance to its nearest non-overlapping neighbour, read
+ * from the matrix profile (Yeh et al., 2016), so the most unusual windows of a series score highest.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type AnomalyScores, anomalyScores } from '../../lib/exposition/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'

@@ -2,6 +2,7 @@
  * Attributions of fitted models as exposition records: `explainPrediction` for one row and `explainDataset` for many,
  * by Tree SHAP, exact or Kernel SHAP, sampling SHAP (with its convergence) or LIME, over the output a model is read by.
  */
+
 import { meanOf, varianceOf, WhiteboxError } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import { curveSet, type Explained, type Exposition, featureAttributions } from '../../lib/exposition/index.ts'

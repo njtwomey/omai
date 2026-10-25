@@ -1,5 +1,9 @@
-// Classical planning played twice: the forward state-space search that finds the plan, expansion by expansion, and the
-// plan carried out action by action, both drawn as blocks on a table.
+/**
+ * Classical planning played twice in the blocks world: the forward state-space search that finds the plan, expansion by
+ * expansion with path costs and heuristic values, and then the plan carried out action by action, both drawn as blocks
+ * on a table with the gripper above.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import {

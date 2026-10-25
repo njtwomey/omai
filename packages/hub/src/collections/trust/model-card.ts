@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the evidence behind a model card: a fitted model's performance by group, calibration and robustness, on
+ * tabular data with a protected attribute.
+ */
+
 import { logisticRegression } from 'whitebox-engine/methods/linear'
 import { modelCard as card } from 'whitebox-engine/methods/trust'
 import { dict } from 'whitebox-engine/space'

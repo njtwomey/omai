@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Gaussian process classification, a latent Gaussian process squashed to probabilities and approximated
+ * by Laplace's method, on two-dimensional classification data and tabular classification data.
+ */
+
 import { gaussianProcessClassifier as gaussianProcessClassifierMethod } from 'whitebox-engine/methods/gp'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

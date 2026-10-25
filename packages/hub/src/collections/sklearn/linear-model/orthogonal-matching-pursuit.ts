@@ -1,3 +1,9 @@
+/**
+ * Hub entry for orthogonal matching pursuit, greedy sparse regression that adds the feature most correlated with the
+ * residual and refits, on tabular regression data with a few informative features and one-dimensional regression
+ * curves.
+ */
+
 import { orthogonalMatchingPursuit as orthogonalMatchingPursuitMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,3 +1,10 @@
+/**
+ * Changepoint series with known regime changes (in mean, variance, rate, autoregressive dynamics or trend), for
+ * detection methods such as BOCPD, PELT and binary segmentation. It also holds `exactBocpd`, exact Bayesian online
+ * changepoint detection (Adams and MacKay, 2007) for a conjugate segment model, so a generated series comes with the
+ * true run-length posterior.
+ */
+
 import { logSumExpOf, WhiteboxError } from '../base/index.ts'
 import { type DatasetGenerator, type TimeSeriesData, timeSeries } from '../data/index.ts'
 import { bocpd, type ConjugateModel } from '../dynamics/filtering/index.ts'

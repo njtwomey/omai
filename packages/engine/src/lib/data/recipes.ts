@@ -1,3 +1,9 @@
+/**
+ * Recipes: a generator, its knobs, a list of modifiers and a seed, held as plain data so a dataset can be remade
+ * exactly, described in one line, or shared in a link. `makeFromRecipe` derives every step's key from the seed, the zod
+ * `RecipeSchema` validates recipes, and `encodeRecipe` and `parseRecipe` turn them into URL-safe strings and back.
+ */
+
 import { z } from 'zod'
 import { WhiteboxError } from '../base/index.ts'
 import { type Key, keyFromPath } from '../random/index.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the linear support vector classifier solved by dual coordinate descent, on two-dimensional
+ * classification data and tabular classification data.
+ */
+
 import { linearSvc as linearSvcMethod } from 'whitebox-engine/methods/svm'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

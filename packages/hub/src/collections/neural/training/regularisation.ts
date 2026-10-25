@@ -1,3 +1,8 @@
+/**
+ * Hub entry for dropout and weight decay against overfitting, with training and validation scores per strength, on
+ * two-dimensional classification data and one-dimensional regression curves.
+ */
+
 import { regularisationStudy as study } from 'whitebox-engine/methods/neural/training'
 import { choice, dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry, type ViewSlot } from '../../../entry/entry.ts'

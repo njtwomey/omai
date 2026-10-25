@@ -1,3 +1,8 @@
+/**
+ * Hub entries for the n-queens puzzle as a constraint satisfaction problem, solved by backtracking with forward
+ * checking and by min-conflicts local search.
+ */
+
 import { solveQueens } from 'whitebox-engine/methods/gofai'
 import { choice, dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

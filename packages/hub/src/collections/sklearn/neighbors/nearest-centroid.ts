@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the nearest centroid classifier, which assigns each point to the closest class mean, on two-dimensional
+ * classification data and tabular classification data.
+ */
+
 import { nearestCentroid as nearestCentroidMethod } from 'whitebox-engine/methods/neighbours'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

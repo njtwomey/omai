@@ -4,6 +4,7 @@
  * Tree SHAP (path-dependent) with its interaction values for single trees and ensembles, linear SHAP (independent and
  * correlated), Owen values and partition SHAP over feature hierarchies, and SAGE's global importance.
  */
+
 import { popcount, WhiteboxError } from '../base/index.ts'
 import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../games/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'

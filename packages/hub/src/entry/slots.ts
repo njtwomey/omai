@@ -1,3 +1,8 @@
+/**
+ * Shared slot props for hub views: `rowColours` colours a view's points by the data (class labels as categories,
+ * regression targets on a colour ramp with a colour bar), so an embedding or projection shows where each row came from.
+ */
+
 import type { SlotContext } from './entry.ts'
 
 /**

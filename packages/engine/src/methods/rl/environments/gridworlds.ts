@@ -1,3 +1,10 @@
+/**
+ * Grid-world environments, small tabular MDPs with known models on which planners and tabular learners can be compared:
+ * gymnasium's FrozenLake (a slippery lake with holes, on 4 x 4, 8 x 8 or random maps) and CliffWalking (with its
+ * slippery variant), Russell and Norvig's 4 x 3 grid world, Sutton and Barto's windy grid world, a maze with a key,
+ * locked doors and traps, and the four-rooms domain used to study options.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { foldIn, type Key, uniform } from '../../../lib/random/index.ts'
 import { type Env, type EnvDefinition, type Outcome, tabularEnv } from '../../../lib/rl/index.ts'

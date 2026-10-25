@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the z-score outlier detector, flagging points many standard deviations from the mean, on
+ * two-dimensional data with outliers.
+ */
+
 import { zScoreDetector } from 'whitebox-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'

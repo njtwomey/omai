@@ -1,3 +1,10 @@
+/**
+ * Turn-based two-player games as agent-environment-cycle environments (PettingZoo's AEC model, with OpenSpiel's rules):
+ * tic-tac-toe, connect four, Nim, Kuhn poker (one betting round over a three-card deck) and Leduc hold'em (two betting
+ * rounds with a public card from a six-card deck). Also the `GameDefinition` contract and helpers for exact analysis,
+ * such as the poker payoffs and the starting states of given deals.
+ */
+
 import { maxOf, WhiteboxError } from '../../../lib/base/index.ts'
 import {
   CHANCE,

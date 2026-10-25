@@ -1,3 +1,8 @@
+/**
+ * Hub entry for mean shift, every point climbing a kernel density estimate to a mode, on two-dimensional clustering
+ * datasets.
+ */
+
 import { meanShift as meanShiftMethod } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

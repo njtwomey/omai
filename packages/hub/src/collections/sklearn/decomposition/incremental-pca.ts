@@ -1,3 +1,8 @@
+/**
+ * Hub entry for incremental PCA, principal components updated batch by batch, on three-dimensional manifolds such as
+ * the Swiss roll and tabular data.
+ */
+
 import { incrementalPca as incrementalPcaMethod } from 'whitebox-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

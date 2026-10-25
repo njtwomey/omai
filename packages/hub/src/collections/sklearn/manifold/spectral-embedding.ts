@@ -1,3 +1,8 @@
+/**
+ * Hub entry for spectral embedding (Laplacian eigenmaps), the bottom eigenvectors of a neighbour graph's Laplacian, on
+ * three-dimensional manifolds such as the Swiss roll and tabular data.
+ */
+
 import { spectralEmbedding as spectralEmbeddingMethod } from 'whitebox-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

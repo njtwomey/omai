@@ -1,3 +1,8 @@
+/**
+ * Hub entry for stacking, a tree, k nearest neighbours and a linear model combined by a final model fitted to their
+ * out-of-fold predictions, on two-dimensional classification data and one-dimensional regression curves.
+ */
+
 import { stackingClassifier, stackingRegressor } from 'whitebox-engine/methods/ensemble'
 import { logisticRegression, ridge } from 'whitebox-engine/methods/linear'
 import { kNeighborsClassifier, kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'

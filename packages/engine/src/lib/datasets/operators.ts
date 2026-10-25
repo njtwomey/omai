@@ -1,3 +1,9 @@
+/**
+ * Operator-learning datasets of input and output function pairs on a grid, with exact solutions: the antiderivative of
+ * Gaussian-process inputs (the DeepONet benchmark), and the periodic heat and viscous Burgers equations from random
+ * Fourier-series initial conditions (the Fourier neural operator benchmark).
+ */
+
 import { type DatasetGenerator, type RegressionData, xy } from '../data/index.ts'
 import { irfft, rfft } from '../numerics/fourier/index.ts'
 import { choleskyJitter } from '../numerics/linalg/index.ts'

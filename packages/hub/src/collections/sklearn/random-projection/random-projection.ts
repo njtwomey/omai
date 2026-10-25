@@ -1,3 +1,8 @@
+/**
+ * Hub entry for random projection onto random directions, which roughly keeps distances (the Johnson-Lindenstrauss
+ * lemma), on three-dimensional manifolds such as the Swiss roll and tabular data.
+ */
+
 import { randomProjection as randomProjectionMethod } from 'whitebox-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,3 +1,9 @@
+/**
+ * The exposition record of a search, solver or simulation played out on a board: a grid world, maze, chess board,
+ * Sudoku, game tree, map, itemset lattice or cellular automaton. A board is a grid of cells or a graph of positioned
+ * nodes, and each step gives every cell's category, text and a caption.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 

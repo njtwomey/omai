@@ -1,3 +1,8 @@
+/**
+ * Hub entry for STRIPS planning in the blocks world: forward state-space search guided by a relaxed-plan heuristic,
+ * then the plan carried out by the gripper.
+ */
+
 import { planBlocks, randomBlocks, SUSSMAN } from 'whitebox-engine/methods/gofai'
 import { choice, dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

@@ -1,3 +1,10 @@
+/**
+ * Query strategies for active learning by name, the families of modAL: uncertainty sampling (least confident, margin,
+ * entropy), query by committee (vote entropy, consensus entropy, maximum disagreement) and expected error reduction,
+ * with random sampling as the baseline. `subsampled` restricts a costly strategy to a random subset of the pool each
+ * round.
+ */
+
 // TODO: expected model change, BALD (needs Bayesian neural nets), core-sets (k-centre greedy), density-weighted and
 // diversity strategies, BADGE.
 import { WhiteboxError } from '../../lib/base/index.ts'

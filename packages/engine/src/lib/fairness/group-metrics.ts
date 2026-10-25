@@ -1,3 +1,10 @@
+/**
+ * Group fairness metrics for binary classifiers, as in fairlearn's `metrics` module: per-group rates (selection, true
+ * and false positive, precision, accuracy) and the disparities built on them, namely demographic parity, equal
+ * opportunity, predictive parity and equalised odds (as differences and ratios), disparate impact with the four-fifths
+ * rule, and calibration by group.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { type Label, labelValues, sortLabels } from '../metrics/_labels.ts'
 import {

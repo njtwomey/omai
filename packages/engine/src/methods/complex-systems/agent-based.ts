@@ -1,4 +1,9 @@
-// Agent-based models played round by round: Schelling's segregation model.
+/**
+ * Agent-based models played round by round: Schelling's segregation model, in which two groups of agents on a grid move
+ * whenever too few of their neighbours are like them, so mild individual preferences produce strong segregation. Each
+ * round is recorded as a board step.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, key as makeKey, permutation, split, uniform } from '../../lib/random/index.ts'

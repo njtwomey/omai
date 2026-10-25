@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the perceptron as a scikit-learn linear model, Rosenblatt's mistake-driven updates of a linear
+ * separator, on two-dimensional classification data and tabular classification data.
+ */
+
 import { perceptron as perceptronMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

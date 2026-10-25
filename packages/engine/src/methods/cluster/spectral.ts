@@ -1,3 +1,9 @@
+/**
+ * Spectral clustering (Ng, Jordan and Weiss, 2001; as in scikit-learn): build an affinity graph from nearest neighbours
+ * or an RBF kernel, embed the rows with the leading eigenvectors of its normalised Laplacian, and cluster the embedding
+ * with k-means, which separates clusters that are connected but not convex.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { clusteringSteps, recordsOf } from '../../lib/exposition/index.ts'
 import { spectralEmbedding } from '../../lib/graph/index.ts'

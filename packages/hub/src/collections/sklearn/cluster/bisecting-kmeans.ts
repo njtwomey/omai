@@ -1,3 +1,8 @@
+/**
+ * Hub entry for bisecting k-means, splitting the largest cluster in two until there are k, on two-dimensional
+ * clustering datasets.
+ */
+
 import { bisectingKMeans } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

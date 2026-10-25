@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Schelling's segregation model, where agents that move when too few of their neighbours are alike sort
+ * themselves into segregated blocks.
+ */
+
 import { schelling } from 'whitebox-engine/methods/complex-systems'
 import { dict, int, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'

@@ -1,3 +1,9 @@
+/**
+ * Synthetic regression problems from scikit-learn: Friedman's three problems with their regression functions (the first
+ * also as a generating program), `makeRegression` for sparse linear problems with optionally low-rank, ill-conditioned
+ * designs, and the sparse uncorrelated problem.
+ */
+
 import type { DatasetGenerator, GeneratingProgram, RegressionData, Truth } from '../data/index.ts'
 import { xy } from '../data/index.ts'
 import { normal as normalDistribution, uniform as uniformDistribution } from '../dists/index.ts'

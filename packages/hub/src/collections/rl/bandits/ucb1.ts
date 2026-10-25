@@ -1,3 +1,8 @@
+/**
+ * Hub entry for UCB1, which pulls the arm with the largest upper confidence bound, on a multi-armed bandit from the
+ * reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for truncated SVD, the leading singular vectors without centring (as in latent semantic analysis), on
+ * three-dimensional manifolds such as the Swiss roll and tabular data.
+ */
+
 import { truncatedSvd as truncatedSvdMethod } from 'whitebox-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Wolfram's elementary cellular automata: a row of cells updated by one of the 256 rules of three
+ * neighbours, played generation by generation.
+ */
+
 import { elementaryAutomaton } from 'whitebox-engine/methods/complex-systems'
 import { choice, dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'

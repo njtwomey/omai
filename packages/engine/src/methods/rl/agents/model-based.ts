@@ -1,3 +1,10 @@
+/**
+ * Model-based deep RL agents, which learn a model of the environment and plan or train inside it: PETS (an ensemble of
+ * probabilistic networks with cross-entropy-method planning over sampled trajectories), MBPO (short rollouts of a
+ * learnt ensemble feeding any off-policy learner), a small Dreamer (a latent world model whose actor and critic learn
+ * purely in imagination) and MuZero-style tree search over a learnt hidden-state model.
+ */
+
 import { argmaxOf, type Json, meanOf, minOf } from '../../../lib/base/index.ts'
 import { adam, type Tree } from '../../../lib/optim/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../../../lib/random/index.ts'

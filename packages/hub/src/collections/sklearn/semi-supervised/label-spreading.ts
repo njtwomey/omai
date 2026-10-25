@@ -1,3 +1,8 @@
+/**
+ * Hub entry for label spreading (as scikit-learn's `LabelSpreading`), label propagation on the normalised graph with
+ * soft clamping of the given labels, on two-dimensional classification data.
+ */
+
 import { labelSpreading as labelSpreadingEstimator } from 'whitebox-engine/methods/semi-supervised'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { withHiddenLabels } from './_hidden.ts'

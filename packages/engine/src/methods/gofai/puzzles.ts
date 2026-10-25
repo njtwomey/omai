@@ -1,4 +1,8 @@
-// Named puzzles as constraint satisfaction problems: n-queens, Sudoku and map colouring (AIMA chapter 6).
+/**
+ * Named puzzles as constraint satisfaction problems (AIMA chapter 6): n-queens, Sudoku (an easy grid and one that needs
+ * search) and map colouring, with Australia's states and random planar maps.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type Key, uniform } from '../../lib/random/index.ts'
 import { allDifferent, binaryConstraint, type Constraint, type Csp, csp } from '../../lib/search/index.ts'

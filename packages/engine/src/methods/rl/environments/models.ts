@@ -1,3 +1,11 @@
+/**
+ * Differentiable models of the control environments, for planners and model-based controllers: each environment's
+ * dynamics and per-step cost written with tensor operations so that autodiff can differentiate them (CartPole,
+ * Pendulum, MountainCarContinuous, Acrobot and the continuous-control tasks). Linearisation at an operating point,
+ * trajectory derivatives for iLQR, batched rollouts and sequence costs for sampling planners such as CEM and MPPI, a
+ * model seen as an environment, and a check that a model agrees with its environment.
+ */
+
 import { grad, jacfwd, jvp } from '../../../lib/autodiff/index.ts'
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import type { Key } from '../../../lib/random/index.ts'

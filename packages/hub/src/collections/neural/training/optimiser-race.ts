@@ -1,3 +1,8 @@
+/**
+ * Hub entry racing four optimisers (SGD, momentum, RMSprop and Adam) from the same initial weights on the same
+ * minibatches, on two-dimensional classification data and one-dimensional regression curves.
+ */
+
 import { optimiserRace as race } from 'whitebox-engine/methods/neural/training'
 import { dict, int, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry, type ViewSlot } from '../../../entry/entry.ts'

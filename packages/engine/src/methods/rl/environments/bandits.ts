@@ -1,3 +1,10 @@
+/**
+ * Multi-armed bandit environments, where each pull of an arm pays a random reward: Bernoulli and Gaussian arms, a
+ * contextual linear bandit that shows a feature vector per arm every round, an oblivious adversarial bandit whose best
+ * arm keeps changing, and Sutton and Barto's non-stationary bandit whose means drift as random walks. Each carries an
+ * oracle of the best expected reward, so an agent's regret can be measured.
+ */
+
 import { argmaxOf, maxOf, minOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../../../lib/random/index.ts'
 import type { BanditEnv, EnvDefinition } from '../../../lib/rl/index.ts'

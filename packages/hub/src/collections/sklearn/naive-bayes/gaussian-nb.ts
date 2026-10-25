@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Gaussian naive Bayes, classes as products of independent normal features, on two-dimensional
+ * classification data and tabular classification data.
+ */
+
 import { gaussianNB } from 'whitebox-engine/methods/naive-bayes'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

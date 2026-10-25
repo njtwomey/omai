@@ -1,3 +1,8 @@
+/**
+ * Hub entry for TrueSkill, Gaussian beliefs over skill updated by moment matching after each game, on simulated
+ * tournaments.
+ */
+
 import { trueSkillRatings } from 'whitebox-engine/methods/models'
 import { dict, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

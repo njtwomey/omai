@@ -1,3 +1,9 @@
+/**
+ * The exposition record for several curves on shared axes: an optimiser race, a comparison of initialisations or
+ * normalisations, rating trajectories with deviation bands, coefficients against samples seen, or any training curve.
+ * Each series has its values, an optional band, and its axis and group.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 

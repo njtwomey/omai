@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Isomap, classical scaling of geodesic distances along a neighbour graph, unrolling three-dimensional
+ * manifolds such as the Swiss roll.
+ */
+
 import { isomap as isomapMethod } from 'whitebox-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

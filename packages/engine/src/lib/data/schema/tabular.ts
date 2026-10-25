@@ -1,3 +1,9 @@
+/**
+ * Schemas for tabular data, the datasets estimators fit: regression, classification, multilabel and
+ * multiclass-multioutput sets of a feature matrix with targets (scikit-learn's formats), and tables of named mixed-type
+ * columns like a data frame. Each has a zod schema for validating data that crosses a boundary.
+ */
+
 import { z } from 'zod'
 import { isTensor, type Tensor } from '../../tensor/index.ts'
 import type { DatasetKind, DatasetMeta } from './common.ts'

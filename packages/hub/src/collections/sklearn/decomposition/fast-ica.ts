@@ -1,3 +1,8 @@
+/**
+ * Hub entry for FastICA, which unmixes signals into maximally non-Gaussian independent sources, on three-dimensional
+ * manifolds such as the Swiss roll and tabular data.
+ */
+
 import { fastIca as fastIcaMethod } from 'whitebox-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

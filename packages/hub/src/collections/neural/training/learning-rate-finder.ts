@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Leslie Smith's learning-rate range test, raising the rate step by step until the loss blows up, on
+ * two-dimensional classification data and one-dimensional regression curves.
+ */
+
 import { learningRateFinder as finder } from 'whitebox-engine/methods/neural/training'
 import { choice, dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

@@ -1,3 +1,9 @@
+/**
+ * Independent component analysis by FastICA (Hyvärinen and Oja, 2000; as in scikit-learn): unmixing observed signals
+ * into statistically independent sources by whitening the data and then running a fixed-point iteration that maximises
+ * non-Gaussianity, traced step by step. The fit function, a class, and the symmetric decorrelation it relies on.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {

@@ -1,3 +1,9 @@
+/**
+ * Bagging (bootstrap aggregation, as in scikit-learn): any estimator fitted on keyed bootstrap samples of the rows,
+ * with predictions averaged (probabilities for classifiers, votes when a member has none) to reduce variance.
+ * Classifier and regressor functions and classes, with the stage-by-stage exposition of the ensemble.
+ */
+
 import { argmaxOf, type Json } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'

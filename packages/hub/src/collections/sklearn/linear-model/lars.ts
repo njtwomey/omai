@@ -1,3 +1,9 @@
+/**
+ * Hub entry for least angle regression (LARS), moving the coefficients along the direction equiangular to the most
+ * correlated features, on tabular regression data with a few informative features and one-dimensional regression
+ * curves.
+ */
+
 import { lars as larsMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

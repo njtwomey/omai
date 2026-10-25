@@ -1,3 +1,9 @@
+/**
+ * Kernel ridge regression (as in scikit-learn's `KernelRidge`): ridge regression in a kernel's feature space, solved in
+ * its dual form `(K + alpha I)^-1 y`, so predictions are kernel-weighted sums over the training rows. The fit function,
+ * a class and its exposition.
+ */
+
 import { argminOf, linspaceNumbers } from '../../lib/base/index.ts'
 import { type Distribution, normal } from '../../lib/dists/index.ts'
 import { crossValidationCurve, type Exposition, posteriorGrid } from '../../lib/exposition/index.ts'

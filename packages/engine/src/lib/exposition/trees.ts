@@ -1,3 +1,9 @@
+/**
+ * Exposition records for decision trees (CART, ID3, C4.5, CHAID, and trees inside ensembles): every node with its
+ * samples, impurity, prediction and the split candidates it considered, so a view can explain how the tree was grown,
+ * plus the cost-complexity pruning path. `treeRecord` checks that the nodes form a tree.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** A split a tree considered at a node. */

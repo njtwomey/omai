@@ -1,3 +1,8 @@
+/**
+ * A study of regularisation against overfitting: the same over-sized network trained with each dropout rate or
+ * weight-decay strength, scored on training and held-out rows, so the gap between them can be seen to close.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { type Explained, type Exposition, learningCurve } from '../../../lib/exposition/index.ts'
 import type { FitOptions, LearnData } from '../../../lib/learn/index.ts'

@@ -1,5 +1,9 @@
-// Constraint satisfaction played value by value on the puzzle's own board: queens on a chess board, digits in a
-// Sudoku, colours on a map, from the core's traced solvers (whitebox-engine/search).
+/**
+ * Constraint satisfaction played value by value on the puzzle's own board, from the core's traced solvers
+ * (`whitebox-engine/search`): backtracking with variable and value ordering and inference, or min-conflicts local
+ * search. Ready-made plays put queens on a chess board, digits in a Sudoku and colours on a map.
+ */
+
 import { type Json, WhiteboxError } from '../../lib/base/index.ts'
 import { type BoardLayout, type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, key as makeKey, randint } from '../../lib/random/index.ts'

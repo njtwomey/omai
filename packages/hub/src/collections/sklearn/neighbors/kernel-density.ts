@@ -1,3 +1,8 @@
+/**
+ * Hub entry for kernel density estimation, a smooth density from a bump on every point with its bandwidth chosen from
+ * the data, on two-dimensional densities and clustering datasets.
+ */
+
 import { kernelDensity as kernelDensityMethod } from 'whitebox-engine/methods/mixture'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

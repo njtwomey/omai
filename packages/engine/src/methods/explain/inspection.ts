@@ -2,6 +2,7 @@
  * Global inspection of fitted models as exposition records: permutation, conditional, drop-column, impurity and SAGE
  * importances (`importances`), partial dependence with ICE curves and accumulated local effects (`dependence`).
  */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import {
   accumulatedLocalEffects,

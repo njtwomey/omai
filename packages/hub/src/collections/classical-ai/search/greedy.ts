@@ -1,3 +1,8 @@
+/**
+ * Hub entry for greedy best-first search, the frontier ordered by the heuristic alone, played on grid maps and mazes
+ * where a wall can fool it.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { searchEntry } from './_search.ts'
 

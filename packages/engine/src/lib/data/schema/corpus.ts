@@ -1,3 +1,9 @@
+/**
+ * Schemas for text datasets: corpora of documents as raw text and/or token-id sequences with a vocabulary and optional
+ * labels, sequence-labelling sets with one tag per token (part of speech, named entities), and parallel corpora of
+ * aligned text pairs. The constructors check that the per-document fields agree.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Tensor, TensorLike } from '../../tensor/index.ts'
 import { checkRows, concrete, metaFor } from './_coerce.ts'

@@ -1,3 +1,9 @@
+/**
+ * Time series, synthetic and real: ARMA processes, sinusoids in noise, seasonal series with known trend and seasonal
+ * components, and subsampling to uneven times; the airline passengers, sunspots and coal-mining disasters series; and
+ * an ECG record shipped with SciPy as a pinned remote asset.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   type DatasetGenerator,

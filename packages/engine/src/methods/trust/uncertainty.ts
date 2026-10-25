@@ -1,3 +1,9 @@
+/**
+ * Epistemic and aleatoric uncertainty of any regressor by a bootstrap ensemble, after deep ensembles (Lakshminarayanan
+ * et al., 2017): members fitted on resamples disagree where the model is unsure (epistemic), while the residual noise
+ * they share is aleatoric. Records both along the input.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { curveSet, type Explained } from '../../lib/exposition/index.ts'
 import {

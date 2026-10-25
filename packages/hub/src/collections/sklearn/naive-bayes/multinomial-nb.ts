@@ -1,3 +1,8 @@
+/**
+ * Hub entry for multinomial naive Bayes, classes as multinomials over count features, on tabular classification data
+ * such as the handwritten digits.
+ */
+
 import { multinomialNB } from 'whitebox-engine/methods/naive-bayes'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

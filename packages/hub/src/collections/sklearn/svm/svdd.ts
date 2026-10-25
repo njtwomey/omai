@@ -1,3 +1,8 @@
+/**
+ * Hub entry for support vector data description, the smallest sphere in feature space that holds most of the data, on
+ * two-dimensional data with outliers.
+ */
+
 import { svdd as svddMethod } from 'whitebox-engine/methods/svm'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

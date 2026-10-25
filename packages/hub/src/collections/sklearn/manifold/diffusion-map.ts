@@ -1,3 +1,8 @@
+/**
+ * Hub entry for diffusion maps, coordinates from a random walk on the data's similarity graph, on three-dimensional
+ * manifolds such as the Swiss roll and tabular data.
+ */
+
 import { diffusionMap as diffusionMapMethod } from 'whitebox-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

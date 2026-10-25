@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the support vector classifier, the widest margin between classes in a kernel's feature space solved by
+ * SMO, with its support vectors marked, on two-dimensional classification data and tabular classification data.
+ */
+
 import { svc as svcMethod } from 'whitebox-engine/methods/svm'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

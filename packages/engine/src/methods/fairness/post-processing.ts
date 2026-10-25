@@ -1,3 +1,9 @@
+/**
+ * Fairness after training: `thresholdOptimizer` post-processes a fitted classifier with per-group randomised thresholds
+ * that meet a fairness constraint while keeping as much accuracy as possible (fairlearn's `ThresholdOptimizer`),
+ * returning the audits before and after.
+ */
+
 import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'
 import {
   type GroupThresholdRule,

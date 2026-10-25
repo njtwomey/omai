@@ -1,3 +1,9 @@
+/**
+ * Studies of matrix-profile methods on planted ground truth: series with known regimes, motifs and a discord, scored
+ * for motif recall, discord overlap and segmentation accuracy, and the anytime convergence of STAMP and SCRIMP++
+ * towards the exact profile, traced batch by batch.
+ */
+
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { foldIn, type Key, normal } from '../../../lib/random/index.ts'
 import { exclusionZone } from '../../../lib/signal/index.ts'

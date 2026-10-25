@@ -1,3 +1,9 @@
+/**
+ * Manifold-learning datasets with their intrinsic coordinates as latents: the Swiss roll (optionally with a hole) and
+ * S-curve of scikit-learn, the severed sphere of its manifold comparison, and a torus. The embedding functions from
+ * intrinsic coordinates are exported too.
+ */
+
 import { type DatasetGenerator, type Generated, type Knobs, type RegressionData, xy } from '../data/index.ts'
 import { foldIn, type Key, normal, randint, uniform } from '../random/index.ts'
 import { bool, dict, int, real } from '../space/index.ts'

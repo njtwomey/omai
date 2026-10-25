@@ -1,3 +1,8 @@
+/**
+ * Hub entry for support vector regression, a tube of width epsilon around a kernel fit with the points outside it as
+ * support vectors, on one-dimensional regression curves and tabular regression data.
+ */
+
 import { svr as svrMethod } from 'whitebox-engine/methods/svm'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

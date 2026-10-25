@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Thompson sampling, which pulls each arm with the posterior probability that it is the best, on a
+ * multi-armed bandit from the reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

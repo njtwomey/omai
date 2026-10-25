@@ -1,3 +1,8 @@
+/**
+ * Hub entry for logistic regression, a linear model of the log odds fitted by maximum likelihood, on two-dimensional
+ * classification data and tabular classification data.
+ */
+
 import { logisticRegression as logisticRegressionMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,3 +1,9 @@
+/**
+ * Neighbour-based outlier detectors: the local outlier factor (LOF, as in scikit-learn), which compares a point's local
+ * density with its neighbours' densities and can score new rows, and the k-nearest-neighbour distance detector, which
+ * scores a point by its distance to its k-th neighbour.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { neighbourRecord } from '../../lib/exposition/index.ts'
 import {

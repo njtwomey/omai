@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the decision tree, grown by greedy recursive splits that most reduce impurity and pruned by cost
+ * complexity, on two-dimensional and tabular classification and regression data.
+ */
+
 import { decisionTreeClassifier, decisionTreeRegressor } from 'whitebox-engine/methods/trees'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'

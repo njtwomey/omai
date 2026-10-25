@@ -1,3 +1,10 @@
+/**
+ * Running a hub entry's demo: the state a demo starts from (a dataset of one of its collections, its seed and knobs,
+ * and the parameter values), loading that dataset with a keyed subsample when it is large, and `runDemo`, which runs
+ * the method and returns its records. `fitEstimator` and `fitEither` build an entry's controls and run directly from a
+ * scikit-learn-style estimator and its hyperparameter space.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import { type Dataset, type Knobs, shuffleRows, take } from 'whitebox-engine/data'
 import { datasetCollections, datasetGenerators, loadEntry } from 'whitebox-engine/datasets'

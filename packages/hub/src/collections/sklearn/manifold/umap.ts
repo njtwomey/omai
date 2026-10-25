@@ -1,3 +1,8 @@
+/**
+ * Hub entry for UMAP, which lays out a fuzzy neighbour graph of the data by cross-entropy, on three-dimensional
+ * manifolds such as the Swiss roll and tabular data, starting from the handwritten digits.
+ */
+
 import { umap as umapMethod } from 'whitebox-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

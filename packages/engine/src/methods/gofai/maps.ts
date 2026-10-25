@@ -1,4 +1,8 @@
-// Small worlds for path search: mazes and hand-drawn maps that show where each search shines or fails.
+/**
+ * Small worlds for path search: hand-drawn ASCII maps with walls, water and forest of different costs, which show where
+ * each search shines or fails, and generated mazes, both as grid worlds.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import type { Key } from '../../lib/random/index.ts'
 import {

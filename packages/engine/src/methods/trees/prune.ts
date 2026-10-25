@@ -1,3 +1,9 @@
+/**
+ * Minimal cost-complexity pruning, as in scikit-learn: the pruning path of effective alphas at which the weakest links
+ * are cut, `pruneTree` for the subtree at a given alpha, and impurity-based feature importances (mean decrease in
+ * impurity).
+ */
+
 import { type PruningPath, pruningPath } from '../../lib/exposition/index.ts'
 import { isLeaf, type TreeParams } from './tree.ts'
 

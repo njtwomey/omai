@@ -1,3 +1,9 @@
+/**
+ * Schemas for graph datasets: single graphs as edge lists with optional weights, node features and labels, collections
+ * of graphs with graph labels or node-level train, validation and test masks, and knowledge-graph triples of head,
+ * relation and tail. The constructors check node indices and field lengths.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { cardinality, checkRows, concrete, concreteFloat, defaultNames, metaFor } from './_coerce.ts'

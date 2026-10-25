@@ -1,3 +1,10 @@
+/**
+ * Bayesian linear regression with its hyperparameters learnt from the data by evidence maximisation (type-II maximum
+ * likelihood), as in scikit-learn: Bayesian ridge, with one prior precision shared by all coefficients, and automatic
+ * relevance determination (ARD), with one per coefficient so irrelevant features are pruned. Both are traced iteration
+ * by iteration and give predictive standard deviations.
+ */
+
 import { linspaceNumbers, maxOf, minOf } from '../../lib/base/index.ts'
 import { normal } from '../../lib/dists/index.ts'
 import { coefficientTable, type Exposition, hyperparameterSurface, posteriorGrid } from '../../lib/exposition/index.ts'

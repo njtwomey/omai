@@ -1,3 +1,8 @@
+/**
+ * Hub entry for a LeNet convolutional network learning the 8 by 8 handwritten digits, its feature maps tapped as it
+ * trains.
+ */
+
 import { take } from 'whitebox-engine/data'
 import { digits } from 'whitebox-engine/datasets'
 import type { Exposition } from 'whitebox-engine/exposition'

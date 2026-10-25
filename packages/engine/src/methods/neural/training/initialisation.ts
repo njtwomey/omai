@@ -1,3 +1,10 @@
+/**
+ * Studies of how a deep network's starting point shapes training: `initialisationStudy` compares weight schemes (zeros,
+ * small Gaussians, Xavier/Glorot, Kaiming/He, unit Gaussians) by the spread of each layer's activations and gradients
+ * at initialisation and by how they train, and `normalisationStudy` compares batch and layer normalisation with none
+ * from the same initial weights.
+ */
+
 import { valueAndGrad } from '../../../lib/autodiff/index.ts'
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import {

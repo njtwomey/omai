@@ -1,3 +1,8 @@
+/**
+ * Hub entry for t-SNE, which matches heavy-tailed neighbour probabilities in the plane to those in the data, on
+ * three-dimensional manifolds such as the Swiss roll and tabular data.
+ */
+
 import { tsne as tsneMethod } from 'whitebox-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

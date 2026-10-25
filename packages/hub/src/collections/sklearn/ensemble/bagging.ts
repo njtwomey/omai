@@ -1,3 +1,8 @@
+/**
+ * Hub entry for bagging (bootstrap aggregation), the same learner fitted to resampled data and averaged, on
+ * two-dimensional and tabular classification and regression data.
+ */
+
 import { baggingClassifier, baggingRegressor } from 'whitebox-engine/methods/ensemble'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'

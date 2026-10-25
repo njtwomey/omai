@@ -1,3 +1,7 @@
+/**
+ * Hub entry for the REINFORCE policy gradient learning to balance CartPole, from the reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

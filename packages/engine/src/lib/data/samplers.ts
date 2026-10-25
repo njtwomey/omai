@@ -1,3 +1,9 @@
+/**
+ * Samplers: the order in which rows are visited in each epoch, as in torch's `Sampler` classes, as functions of the
+ * epoch so random orders are reshuffled reproducibly. Sequential, random, weighted, subset-random and batch samplers,
+ * plus `balancedWeights` for inverse-frequency class weights.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { categorical, foldIn, type Key, permutation, randint, uniform } from '../random/index.ts'
 

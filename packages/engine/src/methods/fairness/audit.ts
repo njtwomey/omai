@@ -1,3 +1,9 @@
+/**
+ * Fairness audits of a fitted binary classifier, as in fairlearn's `MetricFrame` and parity metrics: score the rows,
+ * decide at a threshold per group, and report each group's 2 by 2 table, rates and ROC curve with the disparities
+ * between groups. `buildGroupReport` assembles the `groupReport` record the other fairness methods return.
+ */
+
 import { linspaceNumbers, WhiteboxError } from '../../lib/base/index.ts'
 import {
   type Explained,

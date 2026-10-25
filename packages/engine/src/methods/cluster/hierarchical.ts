@@ -1,3 +1,10 @@
+/**
+ * Agglomerative hierarchical clustering, as in scipy's `linkage` and scikit-learn's `AgglomerativeClustering`: clusters
+ * merged pairwise from the bottom up under single, complete, average, Ward and other linkages through the
+ * Lance-Williams update, traced merge by merge. Also cutting the tree into flat clusters, cophenetic distances and
+ * correlation, and dendrogram layout.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {

@@ -2,6 +2,7 @@
  * Data attribution: which training rows a model owes its behaviour to. Influence functions, TracIn over checkpoints,
  * Monte Carlo data Shapley and the exact k-nearest-neighbour Shapley values.
  */
+
 import { grad, hessian } from '../autodiff/index.ts'
 import { meanOf, WhiteboxError } from '../base/index.ts'
 import { innerFitOptions, keyFor, runOptionsFor } from '../learn/_shared.ts'

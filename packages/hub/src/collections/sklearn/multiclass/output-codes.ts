@@ -1,3 +1,8 @@
+/**
+ * Hub entry for error-correcting output codes, each class a binary code word and each prediction the nearest code, on
+ * two-dimensional classification data and tabular classification data.
+ */
+
 import { outputCodeClassifier } from 'whitebox-engine/methods/multiclass'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

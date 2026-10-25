@@ -1,3 +1,8 @@
+/**
+ * The schema for a multichannel time series: one row per time step, with times (evenly spaced from a sampling rate
+ * unless given) and labelled events such as annotations, interventions or known changepoints.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { arange, fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { checkRows, concrete, concreteFloat, defaultNames, metaFor } from './_coerce.ts'

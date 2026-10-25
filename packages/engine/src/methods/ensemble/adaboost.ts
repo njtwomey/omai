@@ -1,3 +1,9 @@
+/**
+ * AdaBoost (as in scikit-learn): boosting that fits weak learners, by default stumps, in sequence, each on rows
+ * reweighted towards those the ensemble so far gets wrong. SAMME for classification, traced one round per step, and
+ * AdaBoost.R2 for regression, combined by the weighted median.
+ */
+
 import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'

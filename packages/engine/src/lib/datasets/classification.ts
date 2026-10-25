@@ -1,3 +1,9 @@
+/**
+ * Synthetic classification generators with exact class posteriors and Bayes errors: Gaussian blobs, moons and circles
+ * (scikit-learn's `make_blobs`, `make_moons`, `make_circles`), XOR, spirals, a checkerboard, Gaussian quantiles and
+ * Hastie's problem 10.2. The noise-free point sets behind the sklearn generators are exported too.
+ */
+
 import {
   type ClassificationData,
   type DatasetGenerator,

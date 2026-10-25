@@ -1,3 +1,9 @@
+/**
+ * Uncentred factorisations: the truncated SVD (as in scikit-learn's `TruncatedSVD`, latent semantic analysis on term
+ * matrices), and dictionary learning with sparse coding, which learns atoms so each row is a sparse combination of
+ * them, over the core's K-SVD, MOD and online learners.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {

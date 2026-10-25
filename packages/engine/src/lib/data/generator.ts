@@ -1,3 +1,10 @@
+/**
+ * The dataset generator contract: a generator describes its knobs as a typed `Space` and maps a key and knob values to
+ * data together with the truth of how it was made. `generate` runs one with defaults and a reproducible key,
+ * `describeGenerator` flattens its knobs for documentation and controls, and `asGenerated` wraps a real dataset so
+ * modifiers apply to it too.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Context } from '../context/index.ts'
 import { resolveKey } from '../context/index.ts'

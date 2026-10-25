@@ -1,3 +1,9 @@
+/**
+ * The live page of a hub entry as a React component: a dataset picker over the entry's dataset collections, controls
+ * generated from its parameter space, and its view slots drawn with whitebox-render, re-run (debounced, off the main
+ * thread where it can) whenever the data or a control changes.
+ */
+
 import { type ComponentType, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { datasetCollections } from 'whitebox-engine/datasets'
 import type { Exposition } from 'whitebox-engine/exposition'

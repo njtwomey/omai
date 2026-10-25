@@ -1,3 +1,8 @@
+/**
+ * Hub entry for OPTICS, an ordering of the points by reachability distance that shows the clusters at every DBSCAN
+ * radius at once, on two-dimensional clustering datasets.
+ */
+
 import { optics as opticsMethod } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

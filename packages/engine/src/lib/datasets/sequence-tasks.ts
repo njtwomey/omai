@@ -1,3 +1,9 @@
+/**
+ * Algorithmic sequence tasks for sequence models: copying, reversal, sorting, Dyck-language recognition, multi-digit
+ * addition, associative recall (the induction-head benchmark), parity, and modular arithmetic (the grokking benchmark),
+ * each as padded input and target token sequences.
+ */
+
 import { type DatasetGenerator, type Generated, type Knobs, type SequenceData, sequences } from '../data/index.ts'
 import { foldIn, type Key, randint, uniform } from '../random/index.ts'
 import { bool, choice, dict, int } from '../space/index.ts'

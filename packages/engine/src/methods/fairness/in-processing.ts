@@ -1,3 +1,9 @@
+/**
+ * Fair classification during training on a dataset with a protected attribute, wrapping the reductions of
+ * `whitebox-engine/fairness`: exponentiated gradient, which yields a randomised classifier meeting a demographic-parity
+ * or equalised-odds constraint, and a grid search over multipliers, each audited before and after (as in fairlearn).
+ */
+
 import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'
 import {
   type ExponentiatedGradientReduction,

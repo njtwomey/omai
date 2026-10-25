@@ -1,3 +1,9 @@
+/**
+ * Hub entry for uncertainty sampling, the active-learning strategy that asks for the labels the model is least sure of
+ * (least confidence, smallest margin or highest entropy), on two-dimensional classification data and tabular
+ * classification data.
+ */
+
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { studyEntry } from './_study.ts'
 

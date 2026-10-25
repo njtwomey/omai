@@ -1,3 +1,9 @@
+/**
+ * Recommendation and ranking data: explicit ratings with low-rank truth for matrix completion, click logs from a
+ * logging policy and a known click model for unbiased learning to rank, implicit feedback from Poisson matrix
+ * factorisation, Zipfian long-tail interactions, and the small MovieLens set as a pinned remote asset.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   type DatasetGenerator,

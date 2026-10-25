@@ -1,3 +1,9 @@
+/**
+ * One-dimensional and additive regression curves with known regression functions: sine, staircase, sinc, Donoho and
+ * Johnstone's Doppler, heteroscedastic and known-quantile curves for quantile regression and conformal prediction,
+ * piecewise-linear functions and additive (GAM) data with known components.
+ */
+
 import type { DatasetGenerator, Generated, Knobs, RegressionData, Truth } from '../data/index.ts'
 import { xy } from '../data/index.ts'
 import { type Distribution, gumbel, laplace, normal as normalDist, studentT } from '../dists/index.ts'

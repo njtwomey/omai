@@ -1,3 +1,8 @@
+/**
+ * Hub entry illustrating universal approximation: one hidden layer of growing width fitting the same curve, on
+ * one-dimensional regression curves.
+ */
+
 import { universalApproximation as study } from 'whitebox-engine/methods/neural/foundations'
 import { choice, dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry, type ViewSlot } from '../../../entry/entry.ts'

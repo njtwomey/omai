@@ -1,3 +1,9 @@
+/**
+ * The pan matrix profile (stumpy's `stimp`): matrix profiles across a range of window lengths, computed in
+ * breadth-first order as an anytime algorithm so a coarse picture over all lengths appears first, with `panImage` for
+ * the normalised, displayable image.
+ */
+
 import type { Json } from '../../../lib/base/index.ts'
 import { seriesOf } from '../../../lib/signal/index.ts'
 import type { TensorLike } from '../../../lib/tensor/index.ts'

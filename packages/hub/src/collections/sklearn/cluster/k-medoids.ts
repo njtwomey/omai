@@ -1,3 +1,8 @@
+/**
+ * Hub entry for k-medoids, clusters centred on actual data points found by BUILD and SWAP, on two-dimensional
+ * clustering datasets.
+ */
+
 import { kMedoids as kMedoidsMethod } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

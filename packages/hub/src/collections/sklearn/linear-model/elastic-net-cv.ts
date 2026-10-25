@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the elastic net with its penalty chosen by cross-validation, on tabular regression data with a few
+ * informative features and one-dimensional regression curves.
+ */
+
 import { elasticNetCV } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

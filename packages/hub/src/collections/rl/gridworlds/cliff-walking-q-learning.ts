@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Q-learning on cliff walking, where it learns the risky path along the cliff edge (Sutton and Barto,
+ * example 6.6), from the reinforcement-learning playground.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { playgroundEntry } from '../_playground.ts'
 

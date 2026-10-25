@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Gaussian process regression, a distribution over functions conditioned on the data with its kernel
+ * fitted by marginal likelihood, on one-dimensional regression curves.
+ */
+
 import { gaussianProcessRegressor as gaussianProcessRegressorMethod } from 'whitebox-engine/methods/gp'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,3 +1,9 @@
+/**
+ * A robustness study of a fitted classifier: how its accuracy degrades as Gaussian noise of growing scale is added to
+ * every feature, or to one feature at a time to show which it leans on, and as growing shares of its inputs are
+ * corrupted.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { curveSet, type Explained } from '../../lib/exposition/index.ts'
 import {

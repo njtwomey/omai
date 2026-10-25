@@ -1,3 +1,9 @@
+/**
+ * Multi-layer perceptrons, as in scikit-learn's `MLPClassifier` and `MLPRegressor`: fully connected hidden layers with
+ * a nonlinearity, a logistic, softmax or linear output, the log or squared loss with an L2 penalty, and SGD or Adam
+ * training with scikit-learn's schedules and initialisation. Fit functions, classes and the network builder.
+ */
+
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { type DecisionSurface, diagramRecord, type Exposition } from '../../../lib/exposition/index.ts'
 import {

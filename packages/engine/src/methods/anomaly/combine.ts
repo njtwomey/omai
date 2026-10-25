@@ -1,3 +1,9 @@
+/**
+ * The shared machinery of the outlier detectors: the score-and-label verbs (scores higher for more anomalous, labels -1
+ * outlier and 1 inlier), thresholds by contamination fraction, Tukey's fences or a robust z-score, the exposition every
+ * detector returns, and score normalisation and combination for ensembles of detectors (Aggarwal and Sathe, 2015).
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { anomalyScores, type Exposition } from '../../lib/exposition/index.ts'
 import { decisionSurfaceOf, type Fitted, type LearnData, matrixView } from '../../lib/learn/index.ts'

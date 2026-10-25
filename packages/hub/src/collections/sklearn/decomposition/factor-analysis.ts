@@ -1,3 +1,8 @@
+/**
+ * Hub entry for factor analysis, a few latent factors plus independent noise per feature, on three-dimensional
+ * manifolds such as the Swiss roll and tabular data.
+ */
+
 import { factorAnalysis as factorAnalysisMethod } from 'whitebox-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

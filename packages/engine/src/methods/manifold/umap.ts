@@ -1,3 +1,10 @@
+/**
+ * UMAP (McInnes, Healy and Melville, 2018; as in umap-learn): a fuzzy graph of each row's nearest neighbours is laid
+ * out in low dimensions by stochastic gradient descent on a fuzzy cross-entropy, pulling neighbours together and
+ * pushing negative samples apart, from a spectral start. The layout is traced epoch by epoch, and `umapSession` sets a
+ * run up for live stepping.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import { spectralEmbedding as graphSpectralEmbedding } from '../../lib/graph/index.ts'

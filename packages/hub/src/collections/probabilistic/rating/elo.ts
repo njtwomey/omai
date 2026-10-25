@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Elo ratings with the chess conventions, each result moving both ratings by K times its surprise, on
+ * simulated tournaments.
+ */
+
 import { eloRatings } from 'whitebox-engine/methods/models'
 import { choice, dict, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

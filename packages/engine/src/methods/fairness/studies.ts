@@ -1,3 +1,9 @@
+/**
+ * Fairness studies: the accuracy-fairness frontier of a dataset (how much accuracy each amount of unfairness buys,
+ * traced by reductions and by thresholds), and the impossibility result of Kleinberg, Mullainathan and Raghavan and of
+ * Chouldechova, shown by how calibrated scores break equalised odds as groups' base rates move apart.
+ */
+
 import { generate } from '../../lib/data/index.ts'
 import { biasedCredit } from '../../lib/datasets/index.ts'
 import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'

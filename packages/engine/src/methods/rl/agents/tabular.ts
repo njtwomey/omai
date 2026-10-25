@@ -1,3 +1,11 @@
+/**
+ * Tabular reinforcement learning after Sutton and Barto, for environments small enough to keep a value per state or
+ * state-action pair. TD control (Q-learning, SARSA, expected SARSA, n-step SARSA, SARSA(lambda) and double Q-learning),
+ * Monte Carlo control, the planning learners Dyna-Q and prioritised sweeping, and TD(0) and TD(lambda) prediction of a
+ * fixed policy's values; helpers read the learnt tables back as value, action-value and greedy-policy grids for
+ * figures.
+ */
+
 import { argmaxOf, heap, type Json, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../../../lib/random/index.ts'
 import type { Agent, Policy, Transition } from '../../../lib/rl/index.ts'

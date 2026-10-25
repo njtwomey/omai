@@ -1,3 +1,10 @@
+/**
+ * CART decision trees (as in scikit-learn's `DecisionTreeClassifier` and `DecisionTreeRegressor`) and extremely
+ * randomised trees: recursive binary splitting grown by a traced algorithm one node per step, depth-first or best-first
+ * under a leaf limit, with the usual depth, leaf-size and feature-sampling limits and cost-complexity pruning.
+ * `growTree` is the entry point the ensembles use.
+ */
+
 // TODO: ID3, C4.5 (gain ratio, multiway splits) and CHAID for comparison with CART (classic.ts).
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { categorical, type Distribution, normal } from '../../lib/dists/index.ts'

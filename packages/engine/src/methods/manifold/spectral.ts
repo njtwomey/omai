@@ -1,3 +1,10 @@
+/**
+ * Graph-spectral embeddings: Laplacian eigenmaps (Belkin and Niyogi, 2003; scikit-learn's `SpectralEmbedding`), the
+ * bottom eigenvectors of the normalised Laplacian of a neighbour or kernel graph, and diffusion maps (Coifman and
+ * Lafon, 2006), which embed by the leading eigenvectors of a random walk on the data so distances reflect diffusion
+ * over `t` steps.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import { spectralEmbedding as graphSpectralEmbedding } from '../../lib/graph/index.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the normal-normal model, a mean learned from noisy measurements of known spread with its exact normal
+ * posterior.
+ */
+
 import { normalNormalModel } from 'whitebox-engine/methods/models'
 import { normal } from 'whitebox-engine/random'
 import { dict, int, real } from 'whitebox-engine/space'

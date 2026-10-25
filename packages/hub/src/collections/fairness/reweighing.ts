@@ -1,3 +1,8 @@
+/**
+ * Hub entry for reweighing, a preprocessing step that weights rows so the label is independent of the group, on tabular
+ * data with a protected attribute.
+ */
+
 import { reweighedFit } from 'whitebox-engine/methods/fairness'
 import { dict } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'

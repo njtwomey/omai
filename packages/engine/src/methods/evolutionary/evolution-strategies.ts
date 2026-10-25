@@ -1,5 +1,10 @@
-// Evolution strategies and CMA-ES on objectives in the plane, played generation by generation: every offspring
-// sampled, the search distribution and the best point over the objective's contours.
+/**
+ * Evolution strategies and CMA-ES on objectives in the plane, played generation by generation: a self-adaptive (mu,
+ * lambda) or (mu + lambda) strategy, and CMA-ES, which adapts a Gaussian search distribution's mean, step size and
+ * covariance. Every generation records the offspring sampled, the search distribution as an ellipse and the best point
+ * over the objective's contours.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type Explained, type Generation, type PopulationSteps, populationSteps } from '../../lib/exposition/index.ts'
 import { type CmaesState, cmaesAlgorithm } from '../../lib/optim/index.ts'

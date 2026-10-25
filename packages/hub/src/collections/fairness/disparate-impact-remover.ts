@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the disparate impact remover, a preprocessing step that repairs features so their distribution is the
+ * same in every group, on tabular data with a protected attribute.
+ */
+
 import type { Exposition } from 'whitebox-engine/exposition'
 import { fairnessAudit, disparateImpactRemover as repair } from 'whitebox-engine/methods/fairness'
 import { dict, real } from 'whitebox-engine/space'

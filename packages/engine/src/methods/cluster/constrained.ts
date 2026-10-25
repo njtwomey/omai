@@ -1,3 +1,9 @@
+/**
+ * Constrained clustering: COP-k-means (Wagstaff et al., 2001), k-means whose assignments must respect must-link and
+ * cannot-link pairs between rows. The constrained assignment step, a traced algorithm, the fit function and class, and
+ * `brokenConstraints` for the pairs a labelling violates.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {

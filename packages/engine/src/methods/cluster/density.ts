@@ -1,3 +1,10 @@
+/**
+ * Density-based clustering, as in scikit-learn: DBSCAN (clusters grown through dense neighbourhoods, other points left
+ * as noise), OPTICS (a reachability ordering from which clusters at any radius can be read), HDBSCAN (a hierarchy over
+ * the mutual reachability distance, condensed and cut by excess of mass) and mean shift (hill climbing on a kernel
+ * density to its modes). Each is traced so its growth can be replayed.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {

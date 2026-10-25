@@ -1,3 +1,10 @@
+/**
+ * The exposition record of a fairness audit of a binary classifier across groups of a protected attribute, in the
+ * manner of fairlearn's `MetricFrame`: per group the 2 by 2 table, rates (selection, true- and false-positive,
+ * precision), ROC curve and threshold, with summary disparities such as demographic parity and equalised odds. The
+ * scored rows are kept, so `groupReportAt` can recompute the report at other thresholds.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 

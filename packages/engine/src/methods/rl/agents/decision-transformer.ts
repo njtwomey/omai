@@ -1,6 +1,11 @@
-// Decision transformers (Chen et al. 2021): offline RL as conditional sequence modelling. A small GPT reads the
-// interleaved tokens (return-to-go, state, action) of the last K steps and predicts each action from its state token;
-// acting conditions on a target return that decreases by the rewards received.
+/**
+ * Decision transformers (Chen et al. 2021): offline RL as conditional sequence modelling. A small causal transformer
+ * reads the interleaved return-to-go, state and action tokens of the last K steps and predicts each action from its
+ * state token; acting conditions on a target return that falls by the rewards received. The offline learner, an
+ * in-context agent that carries the episode's context forward, and helpers that train one on a dataset and evaluate it
+ * over whole episodes.
+ */
+
 import { argmaxOf, type Json } from '../../../lib/base/index.ts'
 import { crossEntropy } from '../../../lib/losses/index.ts'
 import { gelu } from '../../../lib/nn/index.ts'

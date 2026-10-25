@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the local-level (or local-trend) state-space model, a hidden random walk seen through noise and
+ * recovered by Kalman filtering and RTS smoothing, on time series.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { TimeSeriesData } from 'whitebox-engine/data'
 import { linearGaussianStateSpace, type StructuralModel } from 'whitebox-engine/methods/models'

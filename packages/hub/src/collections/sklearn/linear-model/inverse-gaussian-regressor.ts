@@ -1,3 +1,8 @@
+/**
+ * Hub entry for inverse Gaussian regression, a GLM for positive targets whose variance grows as the cube of the mean,
+ * on one-dimensional GLM responses and tabular data.
+ */
+
 import { inverseGaussianRegressor as inverseGaussianRegressorMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

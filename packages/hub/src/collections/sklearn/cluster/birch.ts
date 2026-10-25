@@ -1,3 +1,8 @@
+/**
+ * Hub entry for BIRCH, which summarises the data in a tree of clustering features and then clusters the leaves, on
+ * two-dimensional clustering datasets.
+ */
+
 import { birch as birchMethod } from 'whitebox-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

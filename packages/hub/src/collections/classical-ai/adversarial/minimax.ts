@@ -1,3 +1,8 @@
+/**
+ * Hub entry for minimax game-tree search, backing up the best value for the player to move on the assumption that the
+ * opponent does the same, played node by node over a textbook tree, a random tree or a tic-tac-toe position.
+ */
+
 import type { HubEntry } from '../../../entry/entry.ts'
 import { gameEntry } from './_game.ts'
 

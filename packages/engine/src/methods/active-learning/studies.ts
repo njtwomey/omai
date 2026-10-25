@@ -1,3 +1,9 @@
+/**
+ * Pool-based active-learning studies (Settles, 2009; as in modAL): start from a few labelled rows per class, let a
+ * strategy choose which pool rows an oracle labels next, refit after each query, and record accuracy against the number
+ * of labels, compared with random sampling.
+ */
+
 // TODO: stream-based selective sampling studies (`streamActiveLearning` of the core) and several strategies averaged
 // over seeds with spreads.
 import { WhiteboxError } from '../../lib/base/index.ts'

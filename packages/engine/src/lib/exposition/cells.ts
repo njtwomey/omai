@@ -1,3 +1,9 @@
+/**
+ * The exposition record for values drawn as cells rather than smooth fields: convolution feature maps and filters,
+ * images, a recurrent network's hidden states over time, attention or weight matrices. Grids can be recorded at steps
+ * of training so a view can play them.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 

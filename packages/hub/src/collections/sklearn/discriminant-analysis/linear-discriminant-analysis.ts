@@ -1,3 +1,8 @@
+/**
+ * Hub entry for linear discriminant analysis, Gaussian classes sharing one covariance and so separated by linear
+ * boundaries, on two-dimensional classification data and tabular classification data.
+ */
+
 import { linearDiscriminantAnalysis as linearDiscriminantAnalysisMethod } from 'whitebox-engine/methods/discriminant'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

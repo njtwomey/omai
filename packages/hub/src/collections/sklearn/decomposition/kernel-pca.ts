@@ -1,3 +1,8 @@
+/**
+ * Hub entry for kernel PCA, principal components in a kernel's feature space, on three-dimensional manifolds such as
+ * the Swiss roll and tabular data.
+ */
+
 import { kernelPca as kernelPcaMethod } from 'whitebox-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

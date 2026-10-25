@@ -1,3 +1,8 @@
+/**
+ * Hub entry for conformal prediction sets for a classifier, sets of classes holding the true one at a chosen rate, on
+ * two-dimensional classification data and tabular classification data.
+ */
+
 import type { ClassificationScore } from 'whitebox-engine/learn'
 import { logisticRegression } from 'whitebox-engine/methods/linear'
 import { conformalClassification } from 'whitebox-engine/methods/trust'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for conformal intervals for a regressor (split, normalised and CV+) that cover a chosen fraction of new
+ * rows, on one-dimensional regression curves with noise that varies.
+ */
+
 import { kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
 import { type ConformalRegressionMethod, conformalRegression as conformal } from 'whitebox-engine/methods/trust'
 import { choice, dict, real } from 'whitebox-engine/space'

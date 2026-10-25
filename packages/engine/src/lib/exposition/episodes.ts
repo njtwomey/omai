@@ -1,3 +1,8 @@
+/**
+ * The exposition record of a reinforcement-learning run: the return of each episode, the steps of chosen episodes, and
+ * snapshots of the value function or policy as training went on.
+ */
+
 import type { Json } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 

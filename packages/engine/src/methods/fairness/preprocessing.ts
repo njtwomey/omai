@@ -1,3 +1,10 @@
+/**
+ * Fairness before training on a dataset with a protected attribute: reweighing, which up-weights the outcomes that are
+ * rare in a group so label and group become independent, a classifier fitted with and without those weights and audited
+ * both ways, and disparate-impact removal, which repairs the other features towards a distribution shared by the
+ * groups.
+ */
+
 import { coefficientTable, curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'
 import { type ReweighingCell as CoreCell, repairFeatures, reweighingWeights } from '../../lib/fairness/index.ts'
 import { type Estimator, type Fitted, featureNamesOf, matrixView } from '../../lib/learn/index.ts'

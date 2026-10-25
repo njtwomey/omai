@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Sudoku as a constraint satisfaction problem, solved by backtracking that fills the cell with the fewest
+ * candidates first and strikes out values by forward checking.
+ */
+
 import { SUDOKUS, solveSudoku } from 'whitebox-engine/methods/gofai'
 import { choice, dict } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

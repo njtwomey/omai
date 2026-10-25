@@ -1,3 +1,8 @@
+/**
+ * Hub entry for map colouring as a constraint satisfaction problem: Australia in three colours or a random planar map
+ * in four, solved region by region with the colours each choice rules out.
+ */
+
 import { AUSTRALIA, randomMap, solveMapColouring } from 'whitebox-engine/methods/gofai'
 import { choice, dict, int } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'

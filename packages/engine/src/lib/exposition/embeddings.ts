@@ -1,3 +1,9 @@
+/**
+ * Exposition records for representations: linear decompositions (PCA, factor analysis, ICA, NMF, PLS) with their
+ * components, variance explained and scores, and the steps of a nonlinear embedding (t-SNE, UMAP, MDS, Isomap,
+ * self-organising maps) from its start to the end.
+ */
+
 import { rowsOf, sameLength } from './_check.ts'
 import type { RowColours } from './rows.ts'
 

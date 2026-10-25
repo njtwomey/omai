@@ -1,3 +1,9 @@
+/**
+ * Hub entry for the lasso (as scikit-learn's `Lasso`), L1-penalised least squares by coordinate descent, with its
+ * regularisation path and chosen penalty, on tabular regression data with a few informative features and
+ * one-dimensional regression curves.
+ */
+
 import { lasso as lassoEstimator } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

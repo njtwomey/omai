@@ -1,3 +1,10 @@
+/**
+ * Discriminant analysis (as in scikit-learn's `discriminant_analysis`): generative classifiers with a Gaussian per
+ * class. Linear discriminant analysis shares one covariance, giving linear boundaries and a supervised projection,
+ * optionally with Ledoit-Wolf shrinkage; quadratic discriminant analysis gives each class its own covariance and so
+ * quadratic boundaries. Fit functions, classes and their exposition.
+ */
+
 import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { coefficientTable, componentsRecord, type Exposition } from '../../lib/exposition/index.ts'

@@ -1,3 +1,8 @@
+/**
+ * A/B and A/B/n test data with known treatment effects: users allocated to a control and treatment arms over several
+ * days, with a pre-experiment covariate for variance reduction by CUPED, for conversion, continuous or revenue metrics.
+ */
+
 import { type DatasetGenerator, type TableData, table } from '../data/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { categorical, foldIn, normal, randint, uniform } from '../random/index.ts'

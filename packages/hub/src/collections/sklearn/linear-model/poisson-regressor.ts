@@ -1,3 +1,8 @@
+/**
+ * Hub entry for Poisson regression, a log-linear model for counts fitted by IRLS, on one-dimensional GLM responses and
+ * tabular data.
+ */
+
 import { poissonRegressor as poissonRegressorMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

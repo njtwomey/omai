@@ -1,3 +1,8 @@
+/**
+ * Hub entry for isotonic regression, the best monotone fit found by pooling adjacent violators, on one-dimensional
+ * regression curves.
+ */
+
 import { isotonicRegression as isotonicRegressionMethod } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

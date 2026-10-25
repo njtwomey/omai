@@ -1,3 +1,8 @@
+/**
+ * Hub entry for the lasso with its penalty chosen by k-fold cross-validation along the path, on tabular regression data
+ * with a few informative features and one-dimensional regression curves.
+ */
+
 import { lassoCV } from 'whitebox-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'

@@ -1,3 +1,9 @@
+/**
+ * Conformal prediction for any model, as in MAPIE: prediction intervals for regressors and prediction sets for
+ * classifiers (LAC and APS scores) with a guaranteed coverage, calibrated on held-out rows, and online conformal
+ * prediction (Gibbs and Candès, 2021), which adapts its level as data arrive so coverage holds under drift.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { conformalRecord, type Explained } from '../../lib/exposition/index.ts'
 import {

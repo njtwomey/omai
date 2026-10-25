@@ -1,3 +1,9 @@
+/**
+ * The scikit-learn random classification problems: `makeClassification` (Gaussian clusters at hypercube vertices with
+ * informative, redundant and repeated features and flipped labels) and `makeMultilabelClassification` (rows with
+ * Poisson numbers of labels and bag-of-words features).
+ */
+
 import {
   type ClassificationData,
   type DatasetGenerator,

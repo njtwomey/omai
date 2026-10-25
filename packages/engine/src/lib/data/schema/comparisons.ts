@@ -1,3 +1,9 @@
+/**
+ * The schema for comparison data: outcomes of games, matches or judged comparisons between players or items, as used by
+ * rating models such as Bradley-Terry, Elo, Glicko, TrueSkill and Plackett-Luce. Built from finishing places with
+ * `comparisons`, or from winners and losers with `pairwise`.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { cardinality, checkRows, concrete, concreteFloat, defaultNames, metaFor } from './_coerce.ts'

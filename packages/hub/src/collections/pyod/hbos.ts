@@ -1,3 +1,8 @@
+/**
+ * Hub entry for HBOS, histogram-based outlier scores that add up each feature's rarity, on two-dimensional data with
+ * outliers.
+ */
+
 import { hbos as hbosMethod } from 'whitebox-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'

@@ -1,3 +1,8 @@
+/**
+ * Hub entry for k nearest neighbours, predicting by a vote or an average of the k closest training points, on
+ * two-dimensional and tabular classification and regression data.
+ */
+
 import { kNeighborsClassifier, kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'

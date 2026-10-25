@@ -1,3 +1,10 @@
+/**
+ * Reductions of a multiclass problem to binary ones, as in scikit-learn's `multiclass` module: one-versus-rest (one
+ * classifier per class against the others), one-versus-one (one per pair of classes, combined by votes) and
+ * error-correcting output codes (one per bit of a random binary code for each class, decoded to the nearest code). Any
+ * binary classifier can be the member.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'

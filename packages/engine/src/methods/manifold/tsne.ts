@@ -1,3 +1,10 @@
+/**
+ * t-SNE (van der Maaten and Hinton, 2008; scikit-learn's `TSNE` with the exact gradient): neighbour probabilities
+ * calibrated to a perplexity in the data are matched by a heavy-tailed Student-t similarity in the embedding, by
+ * gradient descent on their KL divergence with early exaggeration, momentum and gains, traced step by step.
+ * `tsneSession` sets a run up for pages that step it live.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import {
