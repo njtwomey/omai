@@ -9,6 +9,7 @@ import type { EChartsOption } from 'echarts'
 import type { Exposition, ExpositionKind } from 'mdml-engine/exposition'
 import type { Scene } from 'mdml-engine/scene'
 import type { ViewOptions } from './_view.ts'
+import { agentFrames } from './agents.ts'
 import { anomalyView } from './anomaly.ts'
 import { attributionFrames, beeswarmView, importanceView } from './attributions.ts'
 import { boardFrames, populationFrames } from './boards.ts'
@@ -292,6 +293,17 @@ const REGISTRY: Registry = {
     still: (r, o) => {
       const frames = epicycleFrames(r, o)
       return frames.option(Math.round(frames.count * 0.7))
+    },
+  },
+  agentSteps: {
+    kind: 'agentSteps',
+    component: 'AgentPlayer',
+    title: 'Agents',
+    plays: true,
+    accepts: [],
+    still: (r, o) => {
+      const frames = agentFrames(r, o)
+      return frames.option(frames.count - 1)
     },
   },
   populationSteps: {

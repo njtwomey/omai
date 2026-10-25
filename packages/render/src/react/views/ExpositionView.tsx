@@ -6,6 +6,7 @@
 import type { Exposition } from 'mdml-engine/exposition'
 import type { ReactElement } from 'react'
 import type { Figure } from '../../figure/figure.ts'
+import { AgentPlayer } from './agents.tsx'
 import { AnomalyView } from './anomaly.tsx'
 import { AttributionView, ImportanceView } from './attributions.tsx'
 import { BoardPlayer, PopulationPlayer } from './boards.tsx'
@@ -123,6 +124,8 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <ImagePlayer record={record} {...common} />
     case 'epicycles':
       return <EpicyclePlayer record={record} {...common} />
+    case 'agentSteps':
+      return <AgentPlayer record={record} {...common} />
     case 'featureAttributions':
       return <AttributionView record={record} {...common} />
     case 'importances':

@@ -3,6 +3,7 @@ import { recordsOf } from '../../lib/exposition/index.ts'
 import { key } from '../../lib/random/index.ts'
 import { schelling } from './agent-based.ts'
 import { elementaryAutomaton, gameOfLife } from './cellular-automata.ts'
+import { flocking } from './flocking.ts'
 
 describe('complex systems', () => {
   it('draws rule 90 as Sierpinski’s triangle and keeps a glider at five cells', () => {
@@ -23,5 +24,16 @@ describe('complex systems', () => {
     const r = schelling({ key: key(1), size: 20, threshold: 0.5 })
     expect(r.similarity.at(-1)).toBeGreaterThan((r.similarity[0] ?? 1) + 0.1)
     expect(r.unhappy.at(-1)).toBeLessThan(r.unhappy[0] ?? 0)
+  })
+})
+
+describe('flocking', () => {
+  it('records positions, headings and polarisation per frame, the flock aligning', () => {
+    const r = flocking({ count: 60, steps: 200, every: 4 })
+    const [rec] = r.exposition
+    if (rec?.kind !== 'agentSteps') throw new Error('expected agentSteps')
+    expect(rec.frames).toHaveLength(51)
+    expect(rec.frames[0]?.heading).toHaveLength(60)
+    expect(r.polarisation.at(-1)).toBeGreaterThan(r.polarisation[0] ?? 1)
   })
 })

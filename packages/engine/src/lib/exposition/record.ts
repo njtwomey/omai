@@ -4,6 +4,7 @@
  * `isExposition` recognises a record by its `kind` tag.
  */
 
+import type { AgentSteps } from './agents.ts'
 import type { AnomalyScores } from './anomaly.ts'
 import type { FeatureAttributions, Importances } from './attributions.ts'
 import type { BoardSteps } from './boards.ts'
@@ -76,6 +77,7 @@ export type Exposition =
   | ConfusionMatrix
   | ImageSteps
   | Epicycles
+  | AgentSteps
   | FeatureAttributions
   | Importances
   | Dependence
@@ -165,6 +167,7 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'stateSequence',
   'imageSteps',
   'epicycles',
+  'agentSteps',
   'featureAttributions',
   'importances',
   'dependence',
