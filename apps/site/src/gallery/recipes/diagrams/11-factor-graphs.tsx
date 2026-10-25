@@ -1,13 +1,13 @@
+import { factor, factorGraph, toStructure } from 'mdml-engine/pgm'
+import { Choice, ControlPanel, StructureView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { factor, factorGraph, toStructure } from 'whitebox-engine/pgm'
-import { Choice, ControlPanel, StructureView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Factor graphs',
   question: 'How do I draw a factor graph, and show what a variable is connected to?',
   explain:
-    'A factor graph from whitebox-engine’s `pgm` becomes a structure with `toStructure`: variables as circles, factors as small squares. Factor graphs are drawn `bipartite` by default, variables in one row and factors in the other, so every edge crosses between them; `force` lays them out freely. Click a node to light up its neighbourhood (an overlay of active nodes and edges).',
+    'A factor graph from mdml-engine’s `pgm` becomes a structure with `toStructure`: variables as circles, factors as small squares. Factor graphs are drawn `bipartite` by default, variables in one row and factors in the other, so every edge crosses between them; `force` lays them out freely. Click a node to light up its neighbourhood (an overlay of active nodes and edges).',
 }
 
 const binary = ['0', '1']

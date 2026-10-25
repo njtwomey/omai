@@ -138,7 +138,7 @@ for (const file of ['arithmetic', 'math', 'reduce', 'shape', 'indexing', 'linear
     for (const c of fixture.cases) {
       it(c.name, () => {
         const op = ops[c.fn]
-        if (op === undefined) throw new Error(`no whitebox function mapped for '${c.fn}'`)
+        if (op === undefined) throw new Error(`no mdml function mapped for '${c.fn}'`)
         const inputs = c.inputs.map(decode) as TensorLike[]
         expectMatches(op(inputs, c.params), c.output, c.rtol, c.atol, c.name)
       })

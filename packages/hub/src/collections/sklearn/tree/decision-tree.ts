@@ -3,7 +3,7 @@
  * complexity, on two-dimensional and tabular classification and regression data.
  */
 
-import { decisionTreeClassifier, decisionTreeRegressor } from 'whitebox-engine/methods/trees'
+import { decisionTreeClassifier, decisionTreeRegressor } from 'mdml-engine/methods/trees'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'
 

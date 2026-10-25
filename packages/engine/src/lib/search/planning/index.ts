@@ -1,7 +1,7 @@
 /**
  * Automated planning: finding a sequence of actions from an initial state to a goal. Here are STRIPS problems with
  * forward and regression planners and their relaxation heuristics, GraphPlan, partial-order planning, hierarchical task
- * networks and a PDDL reader. Part of `whitebox-engine/search`.
+ * networks and a PDDL reader. Part of `mdml-engine/search`.
  *
  * @inline
  */

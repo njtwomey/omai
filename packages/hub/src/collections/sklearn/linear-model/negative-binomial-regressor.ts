@@ -3,7 +3,7 @@
  * overdispersed counts and tabular data.
  */
 
-import { negativeBinomialRegressor as negativeBinomialRegressorMethod } from 'whitebox-engine/methods/linear'
+import { negativeBinomialRegressor as negativeBinomialRegressorMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

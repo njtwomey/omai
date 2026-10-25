@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import {
   add,
   bigO,
@@ -70,7 +70,7 @@ describe('series', () => {
         series(parse(e), x)
         expect.unreachable()
       } catch (err) {
-        expect(isWhiteboxError(err) && err.code === 'not-implemented').toBe(true)
+        expect(isMdmlError(err) && err.code === 'not-implemented').toBe(true)
       }
     }
   })

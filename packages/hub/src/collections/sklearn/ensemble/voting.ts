@@ -3,10 +3,10 @@
  * outputs, on two-dimensional classification data and one-dimensional regression curves.
  */
 
-import { votingClassifier, votingRegressor } from 'whitebox-engine/methods/ensemble'
-import { logisticRegression, ridge } from 'whitebox-engine/methods/linear'
-import { kNeighborsClassifier, kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
-import { decisionTreeClassifier, decisionTreeRegressor } from 'whitebox-engine/methods/trees'
+import { votingClassifier, votingRegressor } from 'mdml-engine/methods/ensemble'
+import { logisticRegression, ridge } from 'mdml-engine/methods/linear'
+import { kNeighborsClassifier, kNeighborsRegressor } from 'mdml-engine/methods/neighbours'
+import { decisionTreeClassifier, decisionTreeRegressor } from 'mdml-engine/methods/trees'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'
 

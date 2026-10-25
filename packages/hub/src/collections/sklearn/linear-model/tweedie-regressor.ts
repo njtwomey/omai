@@ -3,7 +3,7 @@
  * power, on one-dimensional GLM responses and tabular data.
  */
 
-import { tweedieRegressor as tweedieRegressorMethod } from 'whitebox-engine/methods/linear'
+import { tweedieRegressor as tweedieRegressorMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

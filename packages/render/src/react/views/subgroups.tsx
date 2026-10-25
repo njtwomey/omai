@@ -5,14 +5,14 @@
  * against a fairness violation.
  */
 
-import { type ReactElement, useCallback, useState } from 'react'
 import {
   type DataBias,
   GROUP_RATES,
   type GroupRateName,
   type ParetoFront,
   type SubgroupReport,
-} from 'whitebox-engine/exposition'
+} from 'mdml-engine/exposition'
+import { type ReactElement, useCallback, useState } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { formatNumber } from '../../theme/format.ts'
 import { dataBiasView } from '../../views/data-bias.ts'

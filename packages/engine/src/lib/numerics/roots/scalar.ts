@@ -5,7 +5,7 @@
  */
 
 import { customVjp, jvp as forward, grad } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { div, item, mul, neg, primalOf, tensor, type Value } from '../../tensor/index.ts'
 
 const EPS = 2.220446049250313e-16
@@ -50,7 +50,7 @@ function result(root: number, iterations: number, history: RootStep[], flag: Roo
 }
 
 function checkBracket(fa: number, fb: number, name: string): void {
-  if (fa * fb > 0) throw new WhiteboxError('value', `${name}: f(a) and f(b) must have different signs`)
+  if (fa * fb > 0) throw new MdmlError('value', `${name}: f(a) and f(b) must have different signs`)
 }
 
 /**
@@ -65,7 +65,7 @@ function checkBracket(fa: number, fb: number, name: string): void {
  * @concept root-finding
  * @example
  * ```ts
- * import { bisect } from 'whitebox-engine/numerics/roots'
+ * import { bisect } from 'mdml-engine/numerics/roots'
  * Math.abs(bisect((x) => x * x - 2, 0, 2).root - Math.SQRT2) < 1e-11 // => true
  * ```
  */
@@ -105,7 +105,7 @@ export function bisect(f: (x: number) => number, a: number, b: number, options: 
  * @concept root-finding
  * @example
  * ```ts
- * import { brentq } from 'whitebox-engine/numerics/roots'
+ * import { brentq } from 'mdml-engine/numerics/roots'
  * Math.abs(brentq(Math.cos, 0, 2).root - Math.PI / 2) < 1e-12 // => true
  * ```
  */
@@ -179,7 +179,7 @@ export function brentq(f: (x: number) => number, a: number, b: number, options: 
  * @returns The root with its history.
  * @example
  * ```ts
- * import { ridder } from 'whitebox-engine/numerics/roots'
+ * import { ridder } from 'mdml-engine/numerics/roots'
  * Math.abs(ridder((x) => Math.exp(x) - 2, 0, 1).root - Math.LN2) < 1e-11 // => true
  * ```
  */
@@ -233,7 +233,7 @@ export function ridder(f: (x: number) => number, a: number, b: number, options: 
  * @returns The root with its history.
  * @example
  * ```ts
- * import { toms748 } from 'whitebox-engine/numerics/roots'
+ * import { toms748 } from 'mdml-engine/numerics/roots'
  * Math.abs(toms748((x) => x ** 3 - x - 1, 1, 2).root - 1.324717957244746) < 1e-12 // => true
  * ```
  */
@@ -346,7 +346,7 @@ export interface NewtonOptions {
  * @concept root-finding
  * @example
  * ```ts
- * import { newton } from 'whitebox-engine/numerics/roots'
+ * import { newton } from 'mdml-engine/numerics/roots'
  * Math.abs(newton((x) => x * x - 2, 1, { fprime: (x) => 2 * x }).root - Math.SQRT2) < 1e-12 // => true
  * ```
  */
@@ -405,7 +405,7 @@ export function newton(f: (x: number) => number, x0: number, options: NewtonOpti
  * @returns The root with its history.
  * @example
  * ```ts
- * import { secant } from 'whitebox-engine/numerics/roots'
+ * import { secant } from 'mdml-engine/numerics/roots'
  * secant((x) => x - 3, 0, 1).root // => 3
  * ```
  */
@@ -429,7 +429,7 @@ export function secant(
  * @returns The root with its history.
  * @example
  * ```ts
- * import { halley } from 'whitebox-engine/numerics/roots'
+ * import { halley } from 'mdml-engine/numerics/roots'
  * Math.abs(halley((x) => x ** 3 - 8, 3, (x) => 3 * x * x, (x) => 6 * x).root - 2) < 1e-12 // => true
  * ```
  */
@@ -454,9 +454,9 @@ export function halley(
  * @concept implicit-differentiation
  * @example
  * ```ts
- * import { scalarRootOf, brentq } from 'whitebox-engine/numerics/roots'
- * import { grad } from 'whitebox-engine/autodiff'
- * import { item, mul, square, sub, tensor } from 'whitebox-engine/tensor'
+ * import { scalarRootOf, brentq } from 'mdml-engine/numerics/roots'
+ * import { grad } from 'mdml-engine/autodiff'
+ * import { item, mul, square, sub, tensor } from 'mdml-engine/tensor'
  * // x^2 = theta, so dx/dtheta = 1 / (2 sqrt(theta)) = 0.25 at theta = 4.
  * const root = (t) => scalarRootOf((x, th) => sub(square(x), th), t, (g) => brentq(g, 0, 10).root)
  * item(grad(root)(tensor(4))) // => 0.25

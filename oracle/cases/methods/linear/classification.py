@@ -5,9 +5,9 @@ import numpy as np
 import sklearn
 import statsmodels
 import statsmodels.api as sm
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__, "statsmodels": statsmodels.__version__}
 

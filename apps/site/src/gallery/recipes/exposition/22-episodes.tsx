@@ -1,9 +1,9 @@
+import { episodeRecord } from 'mdml-engine/exposition'
+import { frozenLake } from 'mdml-engine/methods/rl'
+import { greedyTable, qLearning, valueTable } from 'mdml-engine/methods/rl/agents'
+import { make, trainAgent } from 'mdml-engine/rl'
+import { ControlPanel, EpisodeView, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { episodeRecord } from 'whitebox-engine/exposition'
-import { frozenLake } from 'whitebox-engine/methods/rl'
-import { greedyTable, qLearning, valueTable } from 'whitebox-engine/methods/rl/agents'
-import { make, trainAgent } from 'whitebox-engine/rl'
-import { ControlPanel, EpisodeView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

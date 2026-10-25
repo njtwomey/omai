@@ -4,8 +4,8 @@ value, entry by entry), and eigenvalues (sorted numeric values with multipliciti
 from typing import cast
 
 import sympy as sp
-from whitebox_oracle.fixture import Case, Json, case
-from whitebox_oracle.symbolic import expr_case, parse
+from mdml_oracle.fixture import Case, Json, case
+from mdml_oracle.symbolic import expr_case, parse
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__}
 

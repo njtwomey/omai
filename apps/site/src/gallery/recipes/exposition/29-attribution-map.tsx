@@ -1,10 +1,10 @@
+import { digits } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { randomForestClassifier } from 'mdml-engine/methods/ensemble'
+import { explainImage, type ImageMethod } from 'mdml-engine/methods/explain'
+import { key } from 'mdml-engine/random'
+import { AttributionImageView, Choice, ControlPanel, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { digits } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { randomForestClassifier } from 'whitebox-engine/methods/ensemble'
-import { explainImage, type ImageMethod } from 'whitebox-engine/methods/explain'
-import { key } from 'whitebox-engine/random'
-import { AttributionImageView, Choice, ControlPanel, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

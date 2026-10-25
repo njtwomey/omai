@@ -3,7 +3,7 @@
  * data with outliers.
  */
 
-import { isolationForest as isolationForestMethod } from 'whitebox-engine/methods/anomaly'
+import { isolationForest as isolationForestMethod } from 'mdml-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

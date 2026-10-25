@@ -4,7 +4,7 @@
  * Mexican hat, Gaussian derivatives) sampled on their support.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { Tensor } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'
 import { FILTERS } from './_filters.ts'
@@ -33,7 +33,7 @@ export type WaveletSpec = string | DiscreteWavelet
  * @concept wavelets
  * @example
  * ```ts
- * import { waveletList } from 'whitebox-engine/signal'
+ * import { waveletList } from 'mdml-engine/signal'
  * waveletList('coif').slice(0, 3) // => ['coif1', 'coif2', 'coif3']
  * ```
  */
@@ -51,11 +51,11 @@ export function waveletList(family?: string): string[] {
  *
  * @param name - The wavelet's name, or a wavelet (returned as is).
  * @returns The filter bank.
- * @throws WhiteboxError with code `value` for an unknown name.
+ * @throws MdmlError with code `value` for an unknown name.
  * @concept wavelets
  * @example
  * ```ts
- * import { wavelet } from 'whitebox-engine/signal'
+ * import { wavelet } from 'mdml-engine/signal'
  * const w = wavelet('db2')
  * [w.decLo.length, w.orthogonal] // => [4, true]
  * ```
@@ -63,7 +63,7 @@ export function waveletList(family?: string): string[] {
 export function wavelet(name: WaveletSpec): DiscreteWavelet {
   if (typeof name !== 'string') return name
   const f = FILTERS[name]
-  if (f === undefined) throw new WhiteboxError('value', `wavelet: unknown wavelet '${name}'`)
+  if (f === undefined) throw new MdmlError('value', `wavelet: unknown wavelet '${name}'`)
   const decLo = Float64Array.from(f[0])
   const recLo = Float64Array.from(f[1])
   const decHi = Float64Array.from(recLo, (v, k) => (k % 2 === 0 ? -v : v))
@@ -82,7 +82,7 @@ export function wavelet(name: WaveletSpec): DiscreteWavelet {
  * @concept wavelets
  * @example
  * ```ts
- * import { dwtMaxLevel } from 'whitebox-engine/signal'
+ * import { dwtMaxLevel } from 'mdml-engine/signal'
  * dwtMaxLevel(1000, 'db4') // => 7
  * ```
  */
@@ -128,12 +128,12 @@ function hermite(p: number, x: number): number {
  * @param name - The continuous wavelet.
  * @param precision - log2 of the number of samples (default 8).
  * @returns The grid and the real and imaginary parts.
- * @throws WhiteboxError with code `value` for an unknown wavelet.
+ * @throws MdmlError with code `value` for an unknown wavelet.
  * @concept continuous-wavelet-transform
  * @example
  * ```ts
- * import { continuousWavelet } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { continuousWavelet } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const w = continuousWavelet('mexh', 4)
  * [toFlat(w.x)[0], w.complex] // => [-8, false]
  * ```
@@ -160,7 +160,7 @@ export function continuousWavelet(name: string, precision = 8): WaveletFunction 
     re = Float64Array.from(x, (v) => c * (p % 2 === 0 ? 1 : -1) * hermite(p, v) * Math.exp(-v * v))
   } else {
     const m = /^(cmor|shan)(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/.exec(name)
-    if (m === null) throw new WhiteboxError('value', `continuousWavelet: unknown wavelet '${name}'`)
+    if (m === null) throw new MdmlError('value', `continuousWavelet: unknown wavelet '${name}'`)
     const b = Number(m[2])
     const fc = Number(m[3])
     complex = true

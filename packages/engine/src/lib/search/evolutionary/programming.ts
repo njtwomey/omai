@@ -5,7 +5,7 @@
  * penalty, and the traced evolutionary loop.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { Key } from '../../random/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { type Draw, draws } from '../_draw.ts'
@@ -46,7 +46,7 @@ export interface PrimitiveSet {
  * @concept genetic-programming
  * @example
  * ```ts
- * import { arithmeticPrimitives } from 'whitebox-engine/search'
+ * import { arithmeticPrimitives } from 'mdml-engine/search'
  * arithmeticPrimitives().map((p) => p.apply([6, 0])) // => [6, 6, 0, 1]
  * ```
  */
@@ -79,7 +79,7 @@ function grow(d: Draw, set: PrimitiveSet, depth: number, full: boolean): ExprTre
 
 function checkSet(set: PrimitiveSet, name: string): void {
   if (set.variables.length === 0 && set.constants === undefined) {
-    throw new WhiteboxError('value', `${name}: the primitive set needs a variable or constants`)
+    throw new MdmlError('value', `${name}: the primitive set needs a variable or constants`)
   }
 }
 
@@ -91,12 +91,12 @@ function checkSet(set: PrimitiveSet, name: string): void {
  * @param set - The primitive set.
  * @param options - The depth (default 4) and the method (default grow).
  * @returns The tree.
- * @throws WhiteboxError with code `value` when the set has no terminals.
+ * @throws MdmlError with code `value` when the set has no terminals.
  * @concept genetic-programming
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { arithmeticPrimitives, randomTree, treeDepth } from 'whitebox-engine/search'
+ * import { key } from 'mdml-engine/random'
+ * import { arithmeticPrimitives, randomTree, treeDepth } from 'mdml-engine/search'
  * treeDepth(randomTree(key(0), { functions: arithmeticPrimitives(), variables: ['x'] }, { depth: 3, method: 'full' })) // => 3
  * ```
  */
@@ -118,12 +118,12 @@ export function randomTree(
  * @param n - The number of trees.
  * @param options - The depth range (default 2 to 6).
  * @returns The trees.
- * @throws WhiteboxError with code `value` when the set has no terminals or the range is empty.
+ * @throws MdmlError with code `value` when the set has no terminals or the range is empty.
  * @concept genetic-programming
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { arithmeticPrimitives, rampedHalfAndHalf } from 'whitebox-engine/search'
+ * import { key } from 'mdml-engine/random'
+ * import { arithmeticPrimitives, rampedHalfAndHalf } from 'mdml-engine/search'
  * rampedHalfAndHalf(key(0), { functions: arithmeticPrimitives(), variables: ['x'] }, 10).length // => 10
  * ```
  */
@@ -136,7 +136,7 @@ export function rampedHalfAndHalf(
   checkSet(set, 'rampedHalfAndHalf')
   const lo = options.minDepth ?? 2
   const hi = options.maxDepth ?? 6
-  if (!(hi >= lo && lo >= 0)) throw new WhiteboxError('value', 'rampedHalfAndHalf: need 0 <= minDepth <= maxDepth')
+  if (!(hi >= lo && lo >= 0)) throw new MdmlError('value', 'rampedHalfAndHalf: need 0 <= minDepth <= maxDepth')
   const d = draws(key)
   return Array.from({ length: n }, (_, i) => grow(d, set, lo + (Math.floor(i / 2) % (hi - lo + 1)), i % 2 === 0))
 }
@@ -148,11 +148,11 @@ export function rampedHalfAndHalf(
  * @param functions - The functions its nodes name.
  * @param env - The variables' values.
  * @returns The value.
- * @throws WhiteboxError with code `value` when a function or variable is unknown.
+ * @throws MdmlError with code `value` when a function or variable is unknown.
  * @concept genetic-programming
  * @example
  * ```ts
- * import { arithmeticPrimitives, evaluateTree } from 'whitebox-engine/search'
+ * import { arithmeticPrimitives, evaluateTree } from 'mdml-engine/search'
  * const t = { op: 'add', children: [{ variable: 'x' }, { op: 'mul', children: [{ variable: 'x' }, { constant: 2 }] }] }
  * evaluateTree(t, arithmeticPrimitives(), { x: 3 }) // => 9
  * ```
@@ -165,11 +165,11 @@ export function evaluateTree(
   if ('constant' in tree) return tree.constant
   if ('variable' in tree) {
     const v = env[tree.variable]
-    if (v === undefined) throw new WhiteboxError('value', `evaluateTree: variable ${tree.variable} has no value`)
+    if (v === undefined) throw new MdmlError('value', `evaluateTree: variable ${tree.variable} has no value`)
     return v
   }
   const f = functions.find((p) => p.name === tree.op)
-  if (f === undefined) throw new WhiteboxError('value', `evaluateTree: unknown function ${tree.op}`)
+  if (f === undefined) throw new MdmlError('value', `evaluateTree: unknown function ${tree.op}`)
   return f.apply(tree.children.map((c) => evaluateTree(c, functions, env)))
 }
 
@@ -180,7 +180,7 @@ export function evaluateTree(
  * @returns Its size.
  * @example
  * ```ts
- * import { treeSize } from 'whitebox-engine/search'
+ * import { treeSize } from 'mdml-engine/search'
  * treeSize({ op: 'add', children: [{ variable: 'x' }, { constant: 1 }] }) // => 3
  * ```
  */
@@ -195,7 +195,7 @@ export function treeSize(tree: ExprTree): number {
  * @returns Its depth.
  * @example
  * ```ts
- * import { treeDepth } from 'whitebox-engine/search'
+ * import { treeDepth } from 'mdml-engine/search'
  * treeDepth({ op: 'add', children: [{ variable: 'x' }, { constant: 1 }] }) // => 1
  * ```
  */
@@ -210,7 +210,7 @@ export function treeDepth(tree: ExprTree): number {
  * @returns The text, such as `(add x 1)`.
  * @example
  * ```ts
- * import { formatTree } from 'whitebox-engine/search'
+ * import { formatTree } from 'mdml-engine/search'
  * formatTree({ op: 'add', children: [{ variable: 'x' }, { constant: 1 }] }) // => '(add x 1)'
  * ```
  */
@@ -262,8 +262,8 @@ function replaceAt(tree: ExprTree, index: number, by: ExprTree): ExprTree {
  * @concept genetic-programming
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { subtreeCrossover, treeSize } from 'whitebox-engine/search'
+ * import { key } from 'mdml-engine/random'
+ * import { subtreeCrossover, treeSize } from 'mdml-engine/search'
  * const a = { op: 'add', children: [{ variable: 'x' }, { constant: 1 }] }
  * const b = { op: 'mul', children: [{ variable: 'y' }, { variable: 'y' }] }
  * const [c, d] = subtreeCrossover(key(0), a, b)
@@ -297,8 +297,8 @@ export function subtreeCrossover(
  * @concept genetic-programming
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { arithmeticPrimitives, subtreeMutation, treeDepth } from 'whitebox-engine/search'
+ * import { key } from 'mdml-engine/random'
+ * import { arithmeticPrimitives, subtreeMutation, treeDepth } from 'mdml-engine/search'
  * const t = subtreeMutation(key(1), { variable: 'x' }, { functions: arithmeticPrimitives(), variables: ['x'] }, { depth: 2 })
  * treeDepth(t) <= 2 // => true
  * ```
@@ -327,8 +327,8 @@ export function subtreeMutation(
  * @concept genetic-programming
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { arithmeticPrimitives, pointMutation, treeSize } from 'whitebox-engine/search'
+ * import { key } from 'mdml-engine/random'
+ * import { arithmeticPrimitives, pointMutation, treeSize } from 'mdml-engine/search'
  * const t = { op: 'add', children: [{ variable: 'x' }, { constant: 1 }] }
  * treeSize(pointMutation(key(0), t, { functions: arithmeticPrimitives(), variables: ['x'], constants: [1, 2] }, 1)) // => 3
  * ```
@@ -360,8 +360,8 @@ export function pointMutation(
  * @concept genetic-programming
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { arithmeticPrimitives, treeDepth, trees } from 'whitebox-engine/search'
+ * import { key } from 'mdml-engine/random'
+ * import { arithmeticPrimitives, treeDepth, trees } from 'mdml-engine/search'
  * treeDepth(trees({ functions: arithmeticPrimitives(), variables: ['x'] }, { maxDepth: 4 }).random(key(0))) <= 6 // => true
  * ```
  */
@@ -392,11 +392,11 @@ export function trees(
  * @param targets - The target per sample.
  * @param parsimony - The penalty per node (default 0).
  * @returns The fitness function.
- * @throws WhiteboxError with code `shape` when inputs and targets differ in length.
+ * @throws MdmlError with code `shape` when inputs and targets differ in length.
  * @concept genetic-programming
  * @example
  * ```ts
- * import { arithmeticPrimitives, regressionFitness } from 'whitebox-engine/search'
+ * import { arithmeticPrimitives, regressionFitness } from 'mdml-engine/search'
  * const f = regressionFitness(arithmeticPrimitives(), [{ x: 1 }, { x: 2 }], [1, 4])
  * f({ op: 'mul', children: [{ variable: 'x' }, { variable: 'x' }] }) // => 0
  * ```
@@ -407,7 +407,7 @@ export function regressionFitness(
   targets: readonly number[],
   parsimony = 0,
 ): (tree: ExprTree) => number {
-  if (inputs.length !== targets.length) throw new WhiteboxError('shape', 'regressionFitness: inputs and targets differ')
+  if (inputs.length !== targets.length) throw new MdmlError('shape', 'regressionFitness: inputs and targets differ')
   return (tree) => {
     let sse = 0
     for (let i = 0; i < inputs.length; i++) {
@@ -437,7 +437,7 @@ export interface ProgrammingOptions extends GeneticOptions {
  * @concept genetic-programming
  * @example
  * ```ts
- * import { arithmeticPrimitives, geneticProgrammingAlgorithm } from 'whitebox-engine/search'
+ * import { arithmeticPrimitives, geneticProgrammingAlgorithm } from 'mdml-engine/search'
  * geneticProgrammingAlgorithm({ functions: arithmeticPrimitives(), variables: ['x'] }, () => 0).name // => 'genetic-algorithm'
  * ```
  */
@@ -466,7 +466,7 @@ export function geneticProgrammingAlgorithm(
  * @concept genetic-programming
  * @example
  * ```ts
- * import { arithmeticPrimitives, evaluateTree, geneticProgramming, regressionFitness } from 'whitebox-engine/search'
+ * import { arithmeticPrimitives, evaluateTree, geneticProgramming, regressionFitness } from 'mdml-engine/search'
  * const xs = [-2, -1, 0, 1, 2, 3].map((x) => ({ x }))
  * const fitness = regressionFitness(arithmeticPrimitives(), xs, xs.map(({ x }) => x * x + x))
  * const r = geneticProgramming({ functions: arithmeticPrimitives(), variables: ['x'] }, fitness, { target: -1e-9, populationSize: 200, generations: 50, seed: 1 })

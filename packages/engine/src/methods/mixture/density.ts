@@ -4,7 +4,7 @@
  * histogram densities for one or two features (as numpy's `histogram` with `density`).
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { crossValidationCurve, type Exposition } from '../../lib/exposition/index.ts'
 import {
   decisionSurfaceOf,
@@ -103,7 +103,7 @@ export function kdeFoldScores(
   key: Key,
 ): number[][] {
   const n = rows.length
-  if (folds < 2 || folds > n) throw new WhiteboxError('value', `kdeFoldScores: folds must be in 2..${n}`)
+  if (folds < 2 || folds > n) throw new MdmlError('value', `kdeFoldScores: folds must be in 2..${n}`)
   const order = Array.from(permutation(key, n).data)
   const fold = new Array<number>(n)
   for (const [r, i] of order.entries()) fold[i] = r % folds
@@ -272,7 +272,7 @@ export function histogramDensity(
         }),
       fit: (data, h) => {
         const m = matrixView(data.x, 'histogramDensity')
-        if (m.d > 2) throw new WhiteboxError('shape', 'histogramDensity: one or two features')
+        if (m.d > 2) throw new MdmlError('shape', 'histogramDensity: one or two features')
         const col = (j: number): number[] => Array.from({ length: m.n }, (_, i) => m.data[i * m.d + j] ?? 0)
         let params: HistogramDensityParams
         if (m.d === 1) {

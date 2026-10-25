@@ -3,8 +3,8 @@
  * (TensorBoard's distributions view), and a heatmap of per-layer norms for spotting vanishing or exploding gradients.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import { type Run, tensorSeries } from 'whitebox-engine/trace'
+import { MdmlError } from 'mdml-engine/base'
+import { type Run, tensorSeries } from 'mdml-engine/trace'
 import { lines } from '../charts/lines.ts'
 import { heatmap, type RampSpec } from '../charts/matrices.ts'
 import type { Layer } from '../charts/plot.ts'
@@ -20,9 +20,9 @@ import type { ColourMode } from '../theme/tokens.ts'
  * @returns The layer, one curve per element.
  * @example
  * ```ts
- * import { parameterTrajectories } from 'whitebox-render/trace'
+ * import { parameterTrajectories } from 'mdml-render/trace'
  * const ev = (step: number, values: number[]) => ({ type: 'tensor' as const, runId: 'r', step, name: 'w', role: 'param' as const, shape: [2], values })
- * const run = { schema: 'whitebox.run/1' as const, events: [ev(0, [0, 1]), ev(1, [1, 2])] }
+ * const run = { schema: 'mdml.run/1' as const, events: [ev(0, [0, 1]), ev(1, [1, 2])] }
  * parameterTrajectories(run, 'w').series.map((s) => s.name) // => ['w[0]', 'w[1]']
  * ```
  */
@@ -59,12 +59,12 @@ export function parameterTrajectories(
  * @param name - The tensor channel.
  * @param options - Bins for rebinning (default 30), ramp, smoothing of the image and colour mode.
  * @returns The layer.
- * @throws WhiteboxError with code `value` when the channel has neither summaries nor values.
+ * @throws MdmlError with code `value` when the channel has neither summaries nor values.
  * @example
  * ```ts
- * import { histogramsOverTime } from 'whitebox-render/trace'
+ * import { histogramsOverTime } from 'mdml-render/trace'
  * const ev = (step: number, values: number[]) => ({ type: 'tensor' as const, runId: 'r', step, name: 'g', role: 'grad' as const, shape: [3], values })
- * const run = { schema: 'whitebox.run/1' as const, events: [ev(0, [0, 1, 2]), ev(1, [1, 2, 3])] }
+ * const run = { schema: 'mdml.run/1' as const, events: [ev(0, [0, 1, 2]), ev(1, [1, 2, 3])] }
  * histogramsOverTime(run, 'g', { bins: 3 }).extent.x // => [0, 1]
  * ```
  */
@@ -75,7 +75,7 @@ export function histogramsOverTime(
 ): Layer {
   const events = tensorSeries(run, name)
   if (events.length === 0 || events.every((e) => e.summary === undefined && e.values === undefined))
-    throw new WhiteboxError('value', `histogramsOverTime: no summaries or values for '${name}'`)
+    throw new MdmlError('value', `histogramsOverTime: no summaries or values for '${name}'`)
   const bins = options.bins ?? 30
   let lo = Number.POSITIVE_INFINITY
   let hi = Number.NEGATIVE_INFINITY
@@ -125,9 +125,9 @@ export function histogramsOverTime(
  * @returns The layer, rows labelled by channel.
  * @example
  * ```ts
- * import { normHeatmap } from 'whitebox-render/trace'
+ * import { normHeatmap } from 'mdml-render/trace'
  * const s = { n: 1, mean: 0, std: 0, min: 0, max: 0, norm: 2, zeros: 0, histogram: { edges: [0, 1], counts: [1] } }
- * const run = { schema: 'whitebox.run/1' as const, events: [{ type: 'tensor' as const, runId: 'r', step: 0, name: 'a', role: 'grad' as const, shape: [1], summary: s }] }
+ * const run = { schema: 'mdml.run/1' as const, events: [{ type: 'tensor' as const, runId: 'r', step: 0, name: 'a', role: 'grad' as const, shape: [1], summary: s }] }
  * normHeatmap(run, ['a']).yCategories // => ['a']
  * ```
  */

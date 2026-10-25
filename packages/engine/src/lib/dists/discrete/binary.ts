@@ -49,8 +49,8 @@ export type BernoulliParams = { readonly probs: TensorLike } | { readonly logits
  * @concept distributions
  * @example
  * ```ts
- * import { bernoulli } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { bernoulli } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(bernoulli({ probs: 0.25 }).mean()) // => 0.25
  * ```
  */
@@ -106,8 +106,8 @@ export function bernoulli(params: BernoulliParams): Distribution {
  * @returns The distribution (no reparameterisation).
  * @example
  * ```ts
- * import { binomial } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { binomial } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(binomial(10, 0.3).mean()) // => 3
  * ```
  */
@@ -167,8 +167,8 @@ export function binomial(n: TensorLike, probs: TensorLike): Distribution {
  * @returns The distribution (no reparameterisation); the CDF, mode and entropy sum the pmf over 0 .. n.
  * @example
  * ```ts
- * import { betaBinomial } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { betaBinomial } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(betaBinomial(10, 2, 3).mean()) // => 4
  * ```
  */

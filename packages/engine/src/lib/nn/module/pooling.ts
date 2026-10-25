@@ -89,7 +89,7 @@ abstract class Pool extends Module {
  *
  * @example
  * ```ts
- * import { MaxPoolNd } from 'whitebox-engine/nn'
+ * import { MaxPoolNd } from 'mdml-engine/nn'
  * new MaxPoolNd(2, 2).kind // => 'MaxPool2d'
  * ```
  */
@@ -121,7 +121,7 @@ export class MaxPool1d extends MaxPoolNd {
  * @concept pooling
  * @example
  * ```ts
- * import { MaxPool2d } from 'whitebox-engine/nn'
+ * import { MaxPool2d } from 'mdml-engine/nn'
  * new MaxPool2d(3, { stride: 2, padding: 1 }).outputShape([1, 8, 32, 32]) // => [1, 8, 16, 16]
  * ```
  */
@@ -143,7 +143,7 @@ export class MaxPool3d extends MaxPoolNd {
  *
  * @example
  * ```ts
- * import { AvgPoolNd } from 'whitebox-engine/nn'
+ * import { AvgPoolNd } from 'mdml-engine/nn'
  * new AvgPoolNd(1, 3, { stride: 1 }).outputShape([1, 2, 5]) // => [1, 2, 3]
  * ```
  */
@@ -194,7 +194,7 @@ export class AvgPool3d extends AvgPoolNd {
  *
  * @example
  * ```ts
- * import { LPPoolNd } from 'whitebox-engine/nn'
+ * import { LPPoolNd } from 'mdml-engine/nn'
  * new LPPoolNd(2, 2, 2).kind // => 'LPPool2d'
  * ```
  */
@@ -246,7 +246,7 @@ export class LPPool3d extends LPPoolNd {
  *
  * @example
  * ```ts
- * import { AdaptivePoolNd } from 'whitebox-engine/nn'
+ * import { AdaptivePoolNd } from 'mdml-engine/nn'
  * new AdaptivePoolNd('max', 1, 3).outputShape([1, 2, 10]) // => [1, 2, 3]
  * ```
  */
@@ -289,7 +289,7 @@ export class AdaptiveAvgPool1d extends AdaptivePoolNd {
  *
  * @example
  * ```ts
- * import { AdaptiveAvgPool2d } from 'whitebox-engine/nn'
+ * import { AdaptiveAvgPool2d } from 'mdml-engine/nn'
  * new AdaptiveAvgPool2d(1).outputShape([2, 64, 7, 7]) // => [2, 64, 1, 1]
  * ```
  */
@@ -332,7 +332,7 @@ export class AdaptiveMaxPool3d extends AdaptivePoolNd {
  *
  * @example
  * ```ts
- * import { GlobalPool } from 'whitebox-engine/nn'
+ * import { GlobalPool } from 'mdml-engine/nn'
  * new GlobalPool('avg').outputShape([2, 16, 7, 7]) // => [2, 16]
  * ```
  */
@@ -361,7 +361,7 @@ export class GlobalPool extends Module {
  *
  * @example
  * ```ts
- * import { MaxUnpool } from 'whitebox-engine/nn'
+ * import { MaxUnpool } from 'mdml-engine/nn'
  * new MaxUnpool(1, 2).outputShape([1, 1, 3]) // => [1, 1, 6]
  * ```
  */

@@ -4,7 +4,7 @@
  * agreement and the Vendi diversity score.
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { eigvalsh, funmSymmetric } from '../numerics/linalg/index.ts'
 import { type Key, key as makeKey, permutation, split } from '../random/index.ts'
 import { matmul, relu, sqrt, type TensorLike, tensor, toFlat } from '../tensor/index.ts'
@@ -26,7 +26,7 @@ const spec = (
 /** Rows of a feature matrix `[N, D]`. */
 function rows(name: string, x: TensorLike): { n: number; d: number; data: Float64Array } {
   const m = matrix(x)
-  if (m.shape.length !== 2) throw new WhiteboxError('shape', `${name}: features are [N, D]`)
+  if (m.shape.length !== 2) throw new MdmlError('shape', `${name}: features are [N, D]`)
   return { n: m.shape[0] ?? 0, d: m.shape[1] ?? 0, data: m.data }
 }
 
@@ -49,7 +49,7 @@ function moments(f: { n: number; d: number; data: Float64Array }): { mu: Float64
 /**
  * The Inception score (Salimans et al., 2016) from class probabilities p(y | x) of generated samples: exp(E_x
  * KL(p(y | x) || p(y))) on each of `splits` consecutive chunks, with the mean and standard deviation over chunks.
- * whitebox ships no classifier; pass the softmax outputs of Inception (or any classifier).
+ * mdml ships no classifier; pass the softmax outputs of Inception (or any classifier).
  *
  * @param probs - Class probabilities `[N, C]`.
  * @param options - splits (default 10).
@@ -57,7 +57,7 @@ function moments(f: { n: number; d: number; data: Float64Array }): { mu: Float64
  * @concept generative-evaluation
  * @example
  * ```ts
- * import { inceptionScore } from 'whitebox-engine/metrics'
+ * import { inceptionScore } from 'mdml-engine/metrics'
  * Number(inceptionScore([[1, 0], [0, 1]], { splits: 1 }).estimate.value.toFixed(12)) // => 2
  * ```
  */
@@ -98,7 +98,7 @@ export const inceptionScore: MetricFunction<[TensorLike, { readonly splits?: num
  * @returns The metric result.
  * @example
  * ```ts
- * import { frechetDistance } from 'whitebox-engine/metrics'
+ * import { frechetDistance } from 'mdml-engine/metrics'
  * frechetDistance([[0, 0], [2, 0], [0, 2]], [[0, 0], [2, 0], [0, 2]]).estimate.value < 1e-12 // => true
  * ```
  */
@@ -176,7 +176,7 @@ export interface KidOptions {
  * @returns The mean over subsets, with the standard deviation in the breakdown.
  * @example
  * ```ts
- * import { kernelInceptionDistance } from 'whitebox-engine/metrics'
+ * import { kernelInceptionDistance } from 'mdml-engine/metrics'
  * const f = [[0, 1], [1, 0], [1, 1]]
  * // The unbiased estimate of a set against itself is slightly negative.
  * kernelInceptionDistance(f, f, { subsets: 1 }).estimate.value < 0 // => true
@@ -255,7 +255,7 @@ export interface Prdc {
  * @returns The four scores.
  * @example
  * ```ts
- * import { precisionRecallDensityCoverage } from 'whitebox-engine/metrics'
+ * import { precisionRecallDensityCoverage } from 'mdml-engine/metrics'
  * const f = [[0, 0], [1, 0], [0, 1], [1, 1]]
  * precisionRecallDensityCoverage(f, f, { nearestK: 1 }).coverage // => 1
  * ```
@@ -297,14 +297,14 @@ export function precisionRecallDensityCoverage(
 
 /**
  * CLIPScore from embeddings (Hessel et al., 2021; torchmetrics' CLIPScore): the mean over pairs of
- * max(100 cos(image, text), 0). whitebox ships no CLIP model; pass its image and text embeddings.
+ * max(100 cos(image, text), 0). mdml ships no CLIP model; pass its image and text embeddings.
  *
  * @param imageEmbeddings - Image embeddings `[N, D]`.
  * @param textEmbeddings - Matching text embeddings `[N, D]`.
  * @returns The metric result, in [0, 100].
  * @example
  * ```ts
- * import { clipScore } from 'whitebox-engine/metrics'
+ * import { clipScore } from 'mdml-engine/metrics'
  * clipScore([[1, 0]], [[1, 0]]).estimate.value // => 100
  * ```
  */
@@ -341,7 +341,7 @@ export const clipScore: MetricFunction<[TensorLike, TensorLike]> = defineMetric(
  * @returns The metric result, in [1, N].
  * @example
  * ```ts
- * import { vendiScore } from 'whitebox-engine/metrics'
+ * import { vendiScore } from 'mdml-engine/metrics'
  * Number(vendiScore([[1, 0], [0, 1]]).estimate.value.toFixed(6)) // => 2
  * ```
  */

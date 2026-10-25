@@ -4,7 +4,7 @@
  * knapsack by depth-first branch and bound and weighted set cover.
  */
 
-import { heap, WhiteboxError } from '../base/index.ts'
+import { heap, MdmlError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type StepContext, subRun } from '../trace/index.ts'
@@ -100,7 +100,7 @@ function integralityOf(spec: MixedIntegerProgram['integrality'], n: number): Uin
   const out = new Uint8Array(n)
   for (let j = 0; j < n; j++) {
     const v = spec === undefined ? 1 : Array.isArray(spec) ? spec[j] : spec
-    if (v === undefined) throw new WhiteboxError('shape', `milp: integrality must have ${n} entries`)
+    if (v === undefined) throw new MdmlError('shape', `milp: integrality must have ${n} entries`)
     out[j] = v === true || v === 1 ? 1 : 0
   }
   return out
@@ -202,8 +202,8 @@ function gomoryCuts(
  * @concept integer-programming
  * @example
  * ```ts
- * import { milpAlgorithm } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { milpAlgorithm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const alg = milpAlgorithm({ c: [-1, -1], aUb: [[2, 2]], bUb: [3] })
  * runAlgorithm(alg, { maxSteps: 100 }).state.incumbent?.value // => -1
  * ```
@@ -441,8 +441,8 @@ export function milpAlgorithm(problem: MixedIntegerProgram, options: MilpOptions
  * @concept integer-programming
  * @example
  * ```ts
- * import { milp } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { milp } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * const r = milp({ c: [-5, -4], aUb: [[6, 4], [1, 2]], bUb: [24, 6], integrality: [1, 1] })
  * [r.fun, toArray(r.x)] // => [-20, [4, 0]]
  * ```
@@ -504,11 +504,11 @@ export interface KnapsackResult {
  * @param capacity - The capacity.
  * @param options - `method`: 'dynamic-programming' (default when weights are integers) or 'branch-and-bound'.
  * @returns The best value, its weight, the chosen items and the nodes explored.
- * @throws WhiteboxError with code `value` for dynamic programming on fractional weights.
+ * @throws MdmlError with code `value` for dynamic programming on fractional weights.
  * @concept integer-programming
  * @example
  * ```ts
- * import { knapsack } from 'whitebox-engine/optim'
+ * import { knapsack } from 'mdml-engine/optim'
  * knapsack([60, 100, 120], [10, 20, 30], 50).items // => [1, 2]
  * knapsack([60, 100, 120], [10, 20, 30], 50, { method: 'branch-and-bound' }).value // => 220
  * ```
@@ -520,7 +520,7 @@ export function knapsack(
   options: { readonly method?: 'dynamic-programming' | 'branch-and-bound' } = {},
 ): KnapsackResult {
   const n = values.length
-  if (weights.length !== n) throw new WhiteboxError('shape', 'knapsack: values and weights differ in length')
+  if (weights.length !== n) throw new MdmlError('shape', 'knapsack: values and weights differ in length')
   const integral = Array.from(weights).every(Number.isInteger) && Number.isInteger(capacity)
   const method = options.method ?? (integral ? 'dynamic-programming' : 'branch-and-bound')
   const pick = (items: number[]): KnapsackResult & { nodes: number } => ({
@@ -530,7 +530,7 @@ export function knapsack(
     nodes: 0,
   })
   if (method === 'dynamic-programming') {
-    if (!integral) throw new WhiteboxError('value', 'knapsack: dynamic programming needs integer weights and capacity')
+    if (!integral) throw new MdmlError('value', 'knapsack: dynamic programming needs integer weights and capacity')
     const W = Math.max(0, capacity)
     // best[i][w]: the best value of the first i items within capacity w.
     const best = new Float64Array((n + 1) * (W + 1))
@@ -586,8 +586,8 @@ export interface KnapsackState {
  * @concept integer-programming
  * @example
  * ```ts
- * import { knapsackAlgorithm } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { knapsackAlgorithm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(knapsackAlgorithm([60, 100, 120], [10, 20, 30], 50), { maxSteps: 100 }).state.bestValue // => 220
  * ```
  */
@@ -679,11 +679,11 @@ export interface SetCoverResult {
  * @param sets - Each set as a list of elements (integers from 0).
  * @param options - Costs (default 1 each), universe size (default the largest element + 1) and the method.
  * @returns The chosen sets and their cost.
- * @throws WhiteboxError with code `value` when some element is in no set.
+ * @throws MdmlError with code `value` when some element is in no set.
  * @concept integer-programming
  * @example
  * ```ts
- * import { setCover } from 'whitebox-engine/optim'
+ * import { setCover } from 'mdml-engine/optim'
  * const sets = [[0, 1, 2], [0, 3], [1, 4], [2, 5], [3, 4, 5]]
  * setCover(sets).chosen // => [0, 4]
  * setCover(sets, { method: 'exact' }).cost // => 2
@@ -702,7 +702,7 @@ export function setCover(
   const cost = (i: number): number => options.costs?.[i] ?? 1
   const coverable = new Uint8Array(universe)
   for (const s of sets) for (const e of s) coverable[e] = 1
-  if (coverable.includes(0)) throw new WhiteboxError('value', 'setCover: some element is in no set')
+  if (coverable.includes(0)) throw new MdmlError('value', 'setCover: some element is in no set')
   if (options.method === 'exact') {
     const a = Array.from({ length: universe }, (_, e) => sets.map((s) => (s.includes(e) ? -1 : 0)))
     const r = milp({

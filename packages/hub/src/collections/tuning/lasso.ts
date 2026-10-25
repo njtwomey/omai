@@ -3,8 +3,8 @@
  * tabular regression data.
  */
 
-import { lasso } from 'whitebox-engine/methods/linear'
-import { dict, real } from 'whitebox-engine/space'
+import { lasso } from 'mdml-engine/methods/linear'
+import { dict, real } from 'mdml-engine/space'
 import type { HubEntry } from '../../entry/entry.ts'
 import { tuningEntry } from './_tuning.ts'
 

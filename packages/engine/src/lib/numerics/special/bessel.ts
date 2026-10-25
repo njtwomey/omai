@@ -64,8 +64,8 @@ const yvP = special('yv', b.yv, [
  * @concept special-functions
  * @example
  * ```ts
- * import { iv } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { iv } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(iv(0, 0)) // => 1
  * ```
  */
@@ -81,8 +81,8 @@ export function iv(v: TensorLike, x: TensorLike): Value {
  * @returns exp(-|x|) I_v(x), differentiable.
  * @example
  * ```ts
- * import { ive } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { ive } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * // Large x: exp(-x) I_0(x) ~ (1 + 1 / (8x)) / sqrt(2 pi x).
  * Math.abs(item(ive(0, 1e6)) * Math.sqrt(2 * Math.PI * 1e6) - (1 + 1 / 8e6)) < 1e-12 // => true
  * ```
@@ -99,8 +99,8 @@ export function ive(v: TensorLike, x: TensorLike): Value {
  * @returns log I_v(x), differentiable.
  * @example
  * ```ts
- * import { logIv } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { logIv } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(logIv(0, 1e4)) > 9990 // => true
  * ```
  */
@@ -116,8 +116,8 @@ export function logIv(v: TensorLike, x: TensorLike): Value {
  * @returns K_v(x), differentiable.
  * @example
  * ```ts
- * import { kv } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { kv } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(kv(0.5, 1)) - Math.sqrt(Math.PI / 2) * Math.exp(-1)) < 1e-15 // => true
  * ```
  */
@@ -133,8 +133,8 @@ export function kv(v: TensorLike, x: TensorLike): Value {
  * @returns exp(x) K_v(x), differentiable.
  * @example
  * ```ts
- * import { kve } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { kve } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(kve(0.5, 2)) - Math.sqrt(Math.PI / 4)) < 1e-15 // => true
  * ```
  */
@@ -150,8 +150,8 @@ export function kve(v: TensorLike, x: TensorLike): Value {
  * @returns J_v(x), differentiable.
  * @example
  * ```ts
- * import { jv } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { jv } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(jv(0, 0)) // => 1
  * ```
  */
@@ -167,8 +167,8 @@ export function jv(v: TensorLike, x: TensorLike): Value {
  * @returns Y_v(x), differentiable.
  * @example
  * ```ts
- * import { yv } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { yv } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(yv(0, 0)) // => -Infinity
  * ```
  */
@@ -183,8 +183,8 @@ export function yv(v: TensorLike, x: TensorLike): Value {
  * @returns I_0(x), differentiable.
  * @example
  * ```ts
- * import { i0 } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { i0 } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(i0(0)) // => 1
  * ```
  */
@@ -199,8 +199,8 @@ export function i0(x: TensorLike): Value {
  * @returns I_1(x), differentiable.
  * @example
  * ```ts
- * import { i1 } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { i1 } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(i1(0)) // => 0
  * ```
  */
@@ -215,8 +215,8 @@ export function i1(x: TensorLike): Value {
  * @returns The scaled value, differentiable.
  * @example
  * ```ts
- * import { i0e } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { i0e } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(i0e(0)) // => 1
  * ```
  */
@@ -231,8 +231,8 @@ export function i0e(x: TensorLike): Value {
  * @returns The scaled value, differentiable.
  * @example
  * ```ts
- * import { i1e } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { i1e } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(i1e(0)) // => 0
  * ```
  */

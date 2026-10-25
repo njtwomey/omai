@@ -1,6 +1,6 @@
 // Private helpers of the stats domain: reading samples and tables once, building tensors, and scalar views of the
 // special-function CDFs that p-values and intervals need.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import { betainc, chdtr, chdtrc, fdtr, fdtrc, lgamma, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
@@ -9,13 +9,13 @@ import { asTensor, fromStorage, item, type Tensor, type TensorLike, toFlat } fro
 /** Read a sample as a flat array, requiring at least `min` values. */
 export function sample(name: string, x: TensorLike, min = 1): Float64Array {
   const data = Float64Array.from(toFlat(asTensor(x)))
-  if (data.length < min) throw new WhiteboxError('value', `${name}: needs at least ${min} observations`)
+  if (data.length < min) throw new MdmlError('value', `${name}: needs at least ${min} observations`)
   return data
 }
 
 /** Read several samples (groups). */
 export function groupsOf(name: string, groups: readonly TensorLike[], min = 1, minGroups = 2): Float64Array[] {
-  if (groups.length < minGroups) throw new WhiteboxError('value', `${name}: needs at least ${minGroups} groups`)
+  if (groups.length < minGroups) throw new MdmlError('value', `${name}: needs at least ${minGroups} groups`)
   return groups.map((g) => sample(name, g, min))
 }
 
@@ -23,7 +23,7 @@ export function groupsOf(name: string, groups: readonly TensorLike[], min = 1, m
 export function paired(name: string, x: TensorLike, y: TensorLike, min = 1): [Float64Array, Float64Array] {
   const a = sample(name, x, min)
   const b = sample(name, y, min)
-  if (a.length !== b.length) throw new WhiteboxError('shape', `${name}: samples differ in length`)
+  if (a.length !== b.length) throw new MdmlError('shape', `${name}: samples differ in length`)
   return [a, b]
 }
 
@@ -39,7 +39,7 @@ export function rowsOf(name: string, x: TensorLike): Rows {
   const t = asTensor(x)
   const data = Float64Array.from(toFlat(t))
   if (t.shape.length === 1) return { rows: t.shape[0] ?? 0, cols: 1, data }
-  if (t.shape.length !== 2) throw new WhiteboxError('shape', `${name}: expected a 1-D or 2-D array`)
+  if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a 1-D or 2-D array`)
   return { rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0, data }
 }
 

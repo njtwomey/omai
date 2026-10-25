@@ -4,8 +4,8 @@ softplus contact forces between agents, and the shared coverage reward mixed wit
 
 import numpy as np
 import numpy.typing as npt
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "transcription": "MPE core.py and simple_spread.py"}
 

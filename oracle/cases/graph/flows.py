@@ -9,11 +9,11 @@ import networkx as nx
 import numpy as np
 import scipy
 import scipy.sparse as sps
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.graphs import NxGraph, edges_of, gnp, spec, weighted_family
+from mdml_oracle.helpers import rng
 from networkx.algorithms import bipartite
 from scipy.sparse.csgraph import maximum_bipartite_matching, maximum_flow
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.graphs import NxGraph, edges_of, gnp, spec, weighted_family
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__, "scipy": scipy.__version__}
 

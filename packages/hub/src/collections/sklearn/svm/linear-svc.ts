@@ -3,7 +3,7 @@
  * classification data and tabular classification data.
  */
 
-import { linearSvc as linearSvcMethod } from 'whitebox-engine/methods/svm'
+import { linearSvc as linearSvcMethod } from 'mdml-engine/methods/svm'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

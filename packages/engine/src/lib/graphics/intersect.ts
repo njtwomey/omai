@@ -5,7 +5,7 @@
  * geometry.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { crossProduct, dotProduct } from '../foundations/index.ts'
 import type { Vec3 } from '../scene/index.ts'
 import {
@@ -55,16 +55,16 @@ export type Shape =
  * @param centre - Its centre.
  * @param radius - Its radius (positive).
  * @returns The shape.
- * @throws WhiteboxError with code `value` for a non-positive radius.
+ * @throws MdmlError with code `value` for a non-positive radius.
  * @concept ray-intersection
  * @example
  * ```ts
- * import { sphere } from 'whitebox-engine/graphics'
+ * import { sphere } from 'mdml-engine/graphics'
  * sphere([0, 0, 0], 2).radius // => 2
  * ```
  */
 export function sphere(centre: Vec3, radius: number): Shape {
-  if (!(radius > 0)) throw new WhiteboxError('value', 'sphere: the radius must be positive')
+  if (!(radius > 0)) throw new MdmlError('value', 'sphere: the radius must be positive')
   return { kind: 'sphere', centre: check3(centre, 'centre'), radius }
 }
 
@@ -77,7 +77,7 @@ export function sphere(centre: Vec3, radius: number): Shape {
  * @concept ray-intersection
  * @example
  * ```ts
- * import { plane } from 'whitebox-engine/graphics'
+ * import { plane } from 'mdml-engine/graphics'
  * plane([0, 0, 0], [0, 3, 0]).normal // => [0, 1, 0]
  * ```
  */
@@ -93,11 +93,11 @@ export function plane(point: Vec3, normal: Vec3): Shape {
  * @param c - Third vertex.
  * @param options - Per-vertex normals (interpolated for smooth shading) and texture coordinates.
  * @returns The shape.
- * @throws WhiteboxError with code `value` for a degenerate triangle.
+ * @throws MdmlError with code `value` for a degenerate triangle.
  * @concept ray-intersection
  * @example
  * ```ts
- * import { triangle } from 'whitebox-engine/graphics'
+ * import { triangle } from 'mdml-engine/graphics'
  * triangle([0, 0, 0], [1, 0, 0], [0, 1, 0]).kind // => 'triangle'
  * ```
  */
@@ -121,18 +121,18 @@ export function triangle(
  * @param min - The minimum corner.
  * @param max - The maximum corner (at least `min` on every axis).
  * @returns The shape.
- * @throws WhiteboxError with code `value` when `max < min` on an axis.
+ * @throws MdmlError with code `value` when `max < min` on an axis.
  * @concept ray-intersection
  * @example
  * ```ts
- * import { box } from 'whitebox-engine/graphics'
+ * import { box } from 'mdml-engine/graphics'
  * box([0, 0, 0], [1, 2, 3]).max // => [1, 2, 3]
  * ```
  */
 export function box(min: Vec3, max: Vec3): Shape {
   const lo = check3(min, 'min')
   const hi = check3(max, 'max')
-  if (!(hi[0] >= lo[0] && hi[1] >= lo[1] && hi[2] >= lo[2])) throw new WhiteboxError('value', 'box: need max >= min')
+  if (!(hi[0] >= lo[0] && hi[1] >= lo[1] && hi[2] >= lo[2])) throw new MdmlError('value', 'box: need max >= min')
   return { kind: 'box', min: lo, max: hi }
 }
 
@@ -164,7 +164,7 @@ export const RAY_EPSILON = 1e-9
  * @concept ray-intersection
  * @example
  * ```ts
- * import { intersectSphere, sphere } from 'whitebox-engine/graphics'
+ * import { intersectSphere, sphere } from 'mdml-engine/graphics'
  * const hit = intersectSphere({ origin: [0, 0, 5], direction: [0, 0, -1] }, sphere([0, 0, 0], 1))
  * [hit?.t, hit?.normal, hit?.frontFace] // => [4, [0, 0, 1], true]
  * ```
@@ -175,7 +175,7 @@ export function intersectSphere(
   tMin: number = RAY_EPSILON,
   tMax: number = Number.POSITIVE_INFINITY,
 ): Hit | null {
-  if (s.kind !== 'sphere') throw new WhiteboxError('value', 'intersectSphere: not a sphere')
+  if (s.kind !== 'sphere') throw new MdmlError('value', 'intersectSphere: not a sphere')
   const oc = sub3(ray.origin, s.centre)
   const a = dot3(ray.direction, ray.direction)
   const b = dot3(oc, ray.direction)
@@ -208,7 +208,7 @@ export function intersectSphere(
  * @concept ray-intersection
  * @example
  * ```ts
- * import { intersectPlane, plane } from 'whitebox-engine/graphics'
+ * import { intersectPlane, plane } from 'mdml-engine/graphics'
  * intersectPlane({ origin: [0, 2, 0], direction: [0, -1, 0] }, plane([0, 0, 0], [0, 1, 0]))?.t // => 2
  * ```
  */
@@ -218,7 +218,7 @@ export function intersectPlane(
   tMin: number = RAY_EPSILON,
   tMax: number = Number.POSITIVE_INFINITY,
 ): Hit | null {
-  if (s.kind !== 'plane') throw new WhiteboxError('value', 'intersectPlane: not a plane')
+  if (s.kind !== 'plane') throw new MdmlError('value', 'intersectPlane: not a plane')
   const denom = dot3(s.normal, ray.direction)
   if (Math.abs(denom) < 1e-15) return null
   const t = dot3(sub3(s.point, ray.origin), s.normal) / denom
@@ -243,7 +243,7 @@ export function intersectPlane(
  * @concept ray-intersection
  * @example
  * ```ts
- * import { intersectTriangle, triangle } from 'whitebox-engine/graphics'
+ * import { intersectTriangle, triangle } from 'mdml-engine/graphics'
  * const hit = intersectTriangle({ origin: [0.25, 0.25, 1], direction: [0, 0, -1] }, triangle([0, 0, 0], [1, 0, 0], [0, 1, 0]))
  * [hit?.t, hit?.uv] // => [1, [0.25, 0.25]]
  * ```
@@ -255,7 +255,7 @@ export function intersectTriangle(
   tMax: number = Number.POSITIVE_INFINITY,
   cull: boolean = false,
 ): Hit | null {
-  if (s.kind !== 'triangle') throw new WhiteboxError('value', 'intersectTriangle: not a triangle')
+  if (s.kind !== 'triangle') throw new MdmlError('value', 'intersectTriangle: not a triangle')
   const e1 = sub3(s.b, s.a)
   const e2 = sub3(s.c, s.a)
   const p = cross3(ray.direction, e2)
@@ -295,7 +295,7 @@ export function intersectTriangle(
  * @concept ray-intersection
  * @example
  * ```ts
- * import { slabs } from 'whitebox-engine/graphics'
+ * import { slabs } from 'mdml-engine/graphics'
  * slabs([-2, 0.5, 0.5], [1, 0, 0], [0, 0, 0], [1, 1, 1]) // => [2, 3, 0]
  * ```
  */
@@ -338,7 +338,7 @@ export function slabs(origin: Vec3, direction: Vec3, min: Vec3, max: Vec3): [num
  * @concept ray-intersection
  * @example
  * ```ts
- * import { box, intersectBox } from 'whitebox-engine/graphics'
+ * import { box, intersectBox } from 'mdml-engine/graphics'
  * const hit = intersectBox({ origin: [-2, 0.5, 0.5], direction: [1, 0, 0] }, box([0, 0, 0], [1, 1, 1]))
  * [hit?.t, hit?.normal] // => [2, [-1, 0, 0]]
  * ```
@@ -349,7 +349,7 @@ export function intersectBox(
   tMin: number = RAY_EPSILON,
   tMax: number = Number.POSITIVE_INFINITY,
 ): Hit | null {
-  if (s.kind !== 'box') throw new WhiteboxError('value', 'intersectBox: not a box')
+  if (s.kind !== 'box') throw new MdmlError('value', 'intersectBox: not a box')
   const span = slabs(ray.origin, ray.direction, s.min, s.max)
   if (span === null) return null
   const [near, far, nearAxis] = span
@@ -392,7 +392,7 @@ export function intersectBox(
  * @concept ray-intersection
  * @example
  * ```ts
- * import { intersect, sphere } from 'whitebox-engine/graphics'
+ * import { intersect, sphere } from 'mdml-engine/graphics'
  * intersect({ origin: [0, 0, 0], direction: [1, 0, 0] }, sphere([0, 0, 0], 2))?.frontFace // => false
  * ```
  */
@@ -426,7 +426,7 @@ export function intersect(
  * @concept ray-intersection
  * @example
  * ```ts
- * import { nearestHit, sphere } from 'whitebox-engine/graphics'
+ * import { nearestHit, sphere } from 'mdml-engine/graphics'
  * nearestHit({ origin: [0, 0, 5], direction: [0, 0, -1] }, [sphere([0, 0, 0], 1), sphere([0, 0, 2], 1)])?.index // => 1
  * ```
  */
@@ -453,11 +453,11 @@ export function nearestHit(
  *
  * @param s - A sphere, triangle or box.
  * @returns `{ min, max }`.
- * @throws WhiteboxError with code `value` for a plane (unbounded).
+ * @throws MdmlError with code `value` for a plane (unbounded).
  * @concept bounding-volume-hierarchy
  * @example
  * ```ts
- * import { bounds, sphere } from 'whitebox-engine/graphics'
+ * import { bounds, sphere } from 'mdml-engine/graphics'
  * bounds(sphere([1, 1, 1], 1)) // => { min: [0, 0, 0], max: [2, 2, 2] }
  * ```
  */
@@ -476,7 +476,7 @@ export function bounds(s: Shape): { readonly min: Vec3; readonly max: Vec3 } {
     case 'box':
       return { min: s.min, max: s.max }
     case 'plane':
-      throw new WhiteboxError('value', 'bounds: a plane is unbounded')
+      throw new MdmlError('value', 'bounds: a plane is unbounded')
   }
 }
 
@@ -497,8 +497,8 @@ const col = (v: Value, k: number): Value => squeeze(sliceAxis(v, -1, k, k + 1), 
  * @concept ray-intersection
  * @example
  * ```ts
- * import { sphereDistance } from 'whitebox-engine/graphics'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { sphereDistance } from 'mdml-engine/graphics'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(sphereDistance([[0, 0, 5], [0, 0, 0]], [0, 0, -1], [0, 0, 0], 1)) // => [4, 1]
  * ```
  */
@@ -531,8 +531,8 @@ export function sphereDistance(
  * @concept ray-intersection
  * @example
  * ```ts
- * import { planeDistance } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { planeDistance } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(planeDistance([0, 3, 0], [0, -2, 0], [0, 1, 0], [0, 1, 0])) // => 1
  * ```
  */
@@ -555,8 +555,8 @@ export function planeDistance(origin: TensorLike, direction: TensorLike, point: 
  * @concept ray-intersection
  * @example
  * ```ts
- * import { triangleIntersection } from 'whitebox-engine/graphics'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { triangleIntersection } from 'mdml-engine/graphics'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(triangleIntersection([0.25, 0.5, 2], [0, 0, -1], [0, 0, 0], [1, 0, 0], [0, 1, 0])) // => [2, 0.25, 0.5]
  * ```
  */
@@ -589,8 +589,8 @@ export function triangleIntersection(
  * @concept ray-intersection
  * @example
  * ```ts
- * import { boxDistances } from 'whitebox-engine/graphics'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { boxDistances } from 'mdml-engine/graphics'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(boxDistances([-1, -1, -1], [1, 1, 1], [0, 0, 0], [1, 2, 3])) // => [1, 2]
  * ```
  */

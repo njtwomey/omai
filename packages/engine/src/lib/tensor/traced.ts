@@ -4,7 +4,7 @@
  * test for, lift into and look underneath traces, such as `primalOf` and `concreteOrThrow`.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { DType } from './dtype.ts'
 import type { Primitive } from './primitive.ts'
 import type { Shape } from './shape.ts'
@@ -19,7 +19,7 @@ export interface Aval {
 /**
  * A transformation in progress (reverse mode, forward mode, batching). Traces form a stack by `level`: the trace with
  * the highest level among an operation's inputs processes it, and lifts lower-level inputs into itself as constants.
- * Implementations live in `whitebox-engine/autodiff`; the tensor layer only dispatches to them.
+ * Implementations live in `mdml-engine/autodiff`; the tensor layer only dispatches to them.
  *
  * @concept function-transformations
  */
@@ -53,7 +53,7 @@ export type Value<D extends DType = DType, S extends Shape = Shape> = Tensor<D, 
  * @returns `true` for traced values.
  * @example
  * ```ts
- * import { isTraced, tensor } from 'whitebox-engine/tensor'
+ * import { isTraced, tensor } from 'mdml-engine/tensor'
  * isTraced(tensor([1, 2])) // => false
  * ```
  */
@@ -68,7 +68,7 @@ export function isTraced(x: unknown): x is Traced {
  * @returns Its shape and dtype.
  * @example
  * ```ts
- * import { avalOf, zeros } from 'whitebox-engine/tensor'
+ * import { avalOf, zeros } from 'mdml-engine/tensor'
  * avalOf(zeros([2, 3])) // => { shape: [2, 3], dtype: 'float64' }
  * ```
  */
@@ -83,16 +83,16 @@ export function avalOf(x: Value): Aval {
  * @param x - A value.
  * @param where - What needed the concrete value, for the message.
  * @returns The tensor.
- * @throws WhiteboxError with code `not-differentiable` when `x` is traced.
+ * @throws MdmlError with code `not-differentiable` when `x` is traced.
  * @example
  * ```ts
- * import { concreteOrThrow, tensor } from 'whitebox-engine/tensor'
+ * import { concreteOrThrow, tensor } from 'mdml-engine/tensor'
  * concreteOrThrow(tensor([1]), 'example').shape // => [1]
  * ```
  */
 export function concreteOrThrow<D extends DType>(x: Value<D>, where: string): Tensor<D> {
   if (isTraced(x)) {
-    throw new WhiteboxError('not-differentiable', `${where} needs a concrete value, but received a traced value`, {
+    throw new MdmlError('not-differentiable', `${where} needs a concrete value, but received a traced value`, {
       shape: x.shape,
     })
   }
@@ -106,10 +106,10 @@ export function concreteOrThrow<D extends DType>(x: Value<D>, where: string): Te
  *
  * @param x - A value.
  * @returns The concrete tensor it stands for.
- * @throws WhiteboxError with code `not-differentiable` for a trace that holds no concrete primal.
+ * @throws MdmlError with code `not-differentiable` for a trace that holds no concrete primal.
  * @example
  * ```ts
- * import { primalOf, tensor } from 'whitebox-engine/tensor'
+ * import { primalOf, tensor } from 'mdml-engine/tensor'
  * primalOf(tensor([1, 2])).shape // => [2]
  * ```
  */
@@ -117,7 +117,7 @@ export function primalOf<D extends DType>(x: Value<D>): Tensor<D> {
   let v: Value<D> = x
   while (isTraced(v)) {
     const p = (v as { primal?: Value<D> }).primal
-    if (p === undefined) throw new WhiteboxError('not-differentiable', 'primalOf: this trace holds no concrete value')
+    if (p === undefined) throw new MdmlError('not-differentiable', 'primalOf: this trace holds no concrete value')
     v = p
   }
   return v
@@ -133,7 +133,7 @@ export function primalOf<D extends DType>(x: Value<D>): Tensor<D> {
  * @concept function-transformations
  * @example
  * ```ts
- * import { lift, tensor, type Trace } from 'whitebox-engine/tensor'
+ * import { lift, tensor, type Trace } from 'mdml-engine/tensor'
  * const constants: Trace = {
  *   level: 1,
  *   lift: (x) => ({ kind: 'traced', dtype: x.dtype, shape: x.shape, trace: constants }),

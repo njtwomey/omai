@@ -4,7 +4,7 @@
  * and the per-feature z-score detector with mean or robust median scaling.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import {
   defineExplainedEstimator,
   type Estimator,
@@ -314,7 +314,7 @@ export function zScoreDetector(
         }),
       fit: (data, h) => {
         const rows = rowsOf(data.x, 'zScoreDetector')
-        if (rows.length < 2) throw new WhiteboxError('value', 'zScoreDetector: needs at least two rows')
+        if (rows.length < 2) throw new MdmlError('value', 'zScoreDetector: needs at least two rows')
         const d = rows[0]?.length ?? 0
         const cols = Array.from({ length: d }, (_, j) => rows.map((r) => r[j] ?? 0))
         const median = (v: number[]): number => {

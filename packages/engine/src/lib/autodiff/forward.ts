@@ -3,7 +3,7 @@
  * its `jvp` rule as the computation runs. `jvp`, `jacfwd` and Hessians build on it.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { bind, type MaybeZero, type Primitive, type Trace, type Traced, type Value } from '../tensor/index.ts'
 
 /** A value inside a forward-mode trace: a primal and its tangent (`null` for a zero tangent). */
@@ -29,7 +29,7 @@ export interface ForwardTrace extends Trace {
  * @returns The trace.
  * @example
  * ```ts
- * import { forwardTrace } from 'whitebox-engine/autodiff'
+ * import { forwardTrace } from 'mdml-engine/autodiff'
  * forwardTrace(1).kind // => 'forward'
  * ```
  */
@@ -48,7 +48,7 @@ export function forwardTrace(level: number): ForwardTrace {
         return outputs.map((o) => make(o, null))
       const rule = primitive.jvp
       if (rule === undefined) {
-        throw new WhiteboxError('not-differentiable', `primitive ${primitive.name} has no derivative rule`, {
+        throw new MdmlError('not-differentiable', `primitive ${primitive.name} has no derivative rule`, {
           primitive: primitive.name,
         })
       }

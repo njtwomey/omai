@@ -4,7 +4,7 @@
  * maximum clique and clique number follow.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Key, permutation } from '../random/index.ts'
 import { connectedComponents } from './components.ts'
 import { degree, type Graph, type NodeId, nodeIndex } from './graph.ts'
@@ -86,12 +86,12 @@ function smallestLastOrder(nb: readonly Set<number>[]): number[] {
  * @param g - The graph.
  * @param options - The strategy, and a key for `'random-sequential'`.
  * @returns A colour 0, 1, ... per node.
- * @throws WhiteboxError with code `value` when `'random-sequential'` has no key.
+ * @throws MdmlError with code `value` when `'random-sequential'` has no key.
  * @concept graph-colouring
  * @reference D. Brelaz, New methods to color the vertices of a graph, Comm. ACM 22 (1979).
  * @example
  * ```ts
- * import { cycleGraph, greedyColouring } from 'whitebox-engine/graph'
+ * import { cycleGraph, greedyColouring } from 'mdml-engine/graph'
  * greedyColouring(cycleGraph(5)) // => [0, 1, 0, 1, 2]
  * greedyColouring(cycleGraph(5), { strategy: 'dsatur' }) // => [0, 1, 0, 1, 2]
  * ```
@@ -135,7 +135,7 @@ export function greedyColouring(
     order = Array.from({ length: n }, (_, v) => v).sort((p, q) => (deg[q] ?? 0) - (deg[p] ?? 0) || p - q)
   } else if (strategy === 'smallest-last') order = smallestLastOrder(nb)
   else if (strategy === 'random-sequential') {
-    if (options.key === undefined) throw new WhiteboxError('value', "greedyColouring: 'random-sequential' needs a key")
+    if (options.key === undefined) throw new MdmlError('value', "greedyColouring: 'random-sequential' needs a key")
     order = Array.from(permutation(options.key, n).data)
   } else if (strategy === 'independent-set') {
     order = []
@@ -189,7 +189,7 @@ function undirectedView(g: Graph, nb: readonly Set<number>[]): Graph {
  * @concept graph-colouring
  * @example
  * ```ts
- * import { isProperColouring, pathGraph } from 'whitebox-engine/graph'
+ * import { isProperColouring, pathGraph } from 'mdml-engine/graph'
  * [isProperColouring(pathGraph(3), [0, 1, 0]), isProperColouring(pathGraph(3), [0, 0, 1])] // => [true, false]
  * ```
  */
@@ -205,11 +205,11 @@ export function isProperColouring(g: Graph, colours: ArrayLike<number>): boolean
  * @param g - The graph (directions ignored).
  * @param options - Nodes to include, and a key for a random set.
  * @returns The set, ascending.
- * @throws WhiteboxError with code `value` when the forced nodes are not independent.
+ * @throws MdmlError with code `value` when the forced nodes are not independent.
  * @concept independent-sets
  * @example
  * ```ts
- * import { maximalIndependentSet, starGraph } from 'whitebox-engine/graph'
+ * import { maximalIndependentSet, starGraph } from 'mdml-engine/graph'
  * maximalIndependentSet(starGraph(3)) // => [1, 2, 3]
  * maximalIndependentSet(starGraph(3), { nodes: [0] }) // => [0]
  * ```
@@ -223,7 +223,7 @@ export function maximalIndependentSet(
   const chosen = new Set<number>()
   const blocked = new Set<number>()
   for (const v of forced) {
-    if (blocked.has(v)) throw new WhiteboxError('value', 'maximalIndependentSet: the given nodes are not independent')
+    if (blocked.has(v)) throw new MdmlError('value', 'maximalIndependentSet: the given nodes are not independent')
     chosen.add(v)
     blocked.add(v)
     for (const u of nb[v] ?? []) blocked.add(u)
@@ -246,19 +246,19 @@ export function maximalIndependentSet(
  *
  * @param g - An undirected graph.
  * @returns The maximal cliques.
- * @throws WhiteboxError with code `value` for a directed graph.
+ * @throws MdmlError with code `value` for a directed graph.
  * @concept cliques
  * @reference C. Bron and J. Kerbosch, Algorithm 457: finding all cliques of an undirected graph, Comm. ACM 16 (1973);
  *   E. Tomita, A. Tanaka and H. Takahashi, The worst-case time complexity for generating all maximal cliques, Theoretical
  *   Computer Science 363 (2006).
  * @example
  * ```ts
- * import { graph, maximalCliques } from 'whitebox-engine/graph'
+ * import { graph, maximalCliques } from 'mdml-engine/graph'
  * maximalCliques(graph([[0, 1], [1, 2], [2, 0], [2, 3]])) // => [[0, 1, 2], [2, 3]]
  * ```
  */
 export function maximalCliques(g: Graph): number[][] {
-  if (g.directed) throw new WhiteboxError('value', 'maximalCliques: the graph must be undirected')
+  if (g.directed) throw new MdmlError('value', 'maximalCliques: the graph must be undirected')
   const nb = neighbourSets(g)
   const out: number[][] = []
   // Iterative Bron-Kerbosch: frames of (R, P, X, the candidates P \ N(pivot) still to branch on).
@@ -313,7 +313,7 @@ export function maximalCliques(g: Graph): number[][] {
  * @concept cliques
  * @example
  * ```ts
- * import { graph, maximumClique } from 'whitebox-engine/graph'
+ * import { graph, maximumClique } from 'mdml-engine/graph'
  * maximumClique(graph([[0, 1], [1, 2], [2, 0], [2, 3], [3, 4]])) // => [0, 1, 2]
  * ```
  */
@@ -331,7 +331,7 @@ export function maximumClique(g: Graph): number[] {
  * @concept cliques
  * @example
  * ```ts
- * import { cliqueNumber, petersenGraph } from 'whitebox-engine/graph'
+ * import { cliqueNumber, petersenGraph } from 'mdml-engine/graph'
  * cliqueNumber(petersenGraph()) // => 2
  * ```
  */

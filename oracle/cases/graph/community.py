@@ -8,9 +8,8 @@ from typing import cast
 
 import networkx as nx
 import numpy as np
-from networkx.algorithms import community as nxc
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.graphs import (
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.graphs import (
     NxGraph,
     build,
     directed_family,
@@ -20,7 +19,8 @@ from whitebox_oracle.graphs import (
     undirected_family,
     weighted_family,
 )
-from whitebox_oracle.helpers import rng
+from mdml_oracle.helpers import rng
+from networkx.algorithms import community as nxc
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__}
 

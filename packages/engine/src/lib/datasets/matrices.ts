@@ -4,7 +4,7 @@
  * bicluster and checkerboard matrices with their planted row and column groups.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { qr, svd } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, multinomial, normal, permutation, uniform } from '../random/index.ts'
 import { fromStorage, matmul, mul, type Tensor, tensor, transpose } from '../tensor/index.ts'
@@ -20,7 +20,7 @@ import { matrix } from './_util.ts'
  * @returns The singular values, descending.
  * @example
  * ```ts
- * import { lowRankProfile } from 'whitebox-engine/datasets'
+ * import { lowRankProfile } from 'mdml-engine/datasets'
  * lowRankProfile(2, 1, 0) // => [1, 0.36787944117144233]
  * ```
  */
@@ -52,8 +52,8 @@ export interface LowRankOptions {
  * @returns The matrix `[nSamples, nFeatures]` and its singular values.
  * @example
  * ```ts
- * import { makeLowRankMatrix } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { makeLowRankMatrix } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * makeLowRankMatrix(key(0), { nSamples: 6, nFeatures: 4, effectiveRank: 2 }).x.shape // => [6, 4]
  * ```
  */
@@ -88,11 +88,11 @@ export interface SparseCodedOptions {
  * @param key - The random key.
  * @param options - Sizes and sparsity.
  * @returns `data` `[nSamples, nFeatures]`, `dictionary` `[nComponents, nFeatures]` and `code` `[nSamples, nComponents]`.
- * @throws WhiteboxError with code `value` when the sparsity exceeds the number of components.
+ * @throws MdmlError with code `value` when the sparsity exceeds the number of components.
  * @example
  * ```ts
- * import { makeSparseCodedSignal } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { makeSparseCodedSignal } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * const s = makeSparseCodedSignal(key(0), { nSamples: 3, nComponents: 5, nFeatures: 4, nNonzeroCoefs: 2 })
  * Array.from(s.code.data).filter((v) => v !== 0).length // => 6
  * ```
@@ -103,7 +103,7 @@ export function makeSparseCodedSignal(
 ): { readonly data: Tensor; readonly dictionary: Tensor; readonly code: Tensor } {
   const { nSamples, nComponents, nFeatures, nNonzeroCoefs } = options
   if (nNonzeroCoefs > nComponents)
-    throw new WhiteboxError('value', 'makeSparseCodedSignal: more non-zero coefficients than components')
+    throw new MdmlError('value', 'makeSparseCodedSignal: more non-zero coefficients than components')
   const raw = normal(foldIn(key, 0), [nComponents, nFeatures]).data
   const dict = new Float64Array(nComponents * nFeatures)
   for (let c = 0; c < nComponents; c++) {
@@ -132,8 +132,8 @@ export function makeSparseCodedSignal(
  * @returns The matrix and its eigenvalues (descending).
  * @example
  * ```ts
- * import { makeSpdMatrix } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { makeSpdMatrix } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * makeSpdMatrix(key(0), 3).eigenvalues.every((e) => e >= 1 && e < 2) // => true
  * ```
  */
@@ -174,8 +174,8 @@ export interface SparseSpdOptions {
  * @returns The precision matrix and its factor.
  * @example
  * ```ts
- * import { makeSparseSpdMatrix } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { makeSparseSpdMatrix } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * makeSparseSpdMatrix(key(0), 4, { normDiag: true }).precision.data[0] // => 1
  * ```
  */
@@ -273,8 +273,8 @@ function labelsFromSizes(sizes: readonly number[]): number[] {
  * @returns The matrix and its planted biclusters.
  * @example
  * ```ts
- * import { makeBiclusters } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { makeBiclusters } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * makeBiclusters(key(0), [6, 4], 2).rows.length // => 2
  * ```
  */
@@ -310,8 +310,8 @@ export function makeBiclusters(
  * @returns The matrix and its planted biclusters (one per block, row-group major).
  * @example
  * ```ts
- * import { makeCheckerboard } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { makeCheckerboard } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * makeCheckerboard(key(0), [6, 6], [2, 3]).rows.length // => 6
  * ```
  */

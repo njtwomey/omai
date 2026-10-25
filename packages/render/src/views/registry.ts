@@ -6,8 +6,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { Exposition, ExpositionKind } from 'whitebox-engine/exposition'
-import type { Scene } from 'whitebox-engine/scene'
+import type { Exposition, ExpositionKind } from 'mdml-engine/exposition'
+import type { Scene } from 'mdml-engine/scene'
 import type { ViewOptions } from './_view.ts'
 import { anomalyView } from './anomaly.ts'
 import { attributionFrames, beeswarmView, importanceView } from './attributions.ts'
@@ -42,7 +42,7 @@ import { conformalFrames, conformalView, reliabilityView } from './trust.ts'
 export type RecordOf<K extends ExpositionKind> = Extract<Exposition, { kind: K }>
 
 /**
- * The standard view of a record kind: its React component's name in `whitebox-render/react`, a title, whether it plays
+ * The standard view of a record kind: its React component's name in `mdml-render/react`, a title, whether it plays
  * (frames for a player), what it needs beside the record to draw rows in input space, and a headless still (the
  * figure, or the last frame of one that plays) for slides, blogs and server-side export.
  */
@@ -471,7 +471,7 @@ const REGISTRY: Registry = {
  * @returns The view.
  * @example
  * ```ts
- * import { viewFor } from 'whitebox-render/views'
+ * import { viewFor } from 'mdml-render/views'
  * viewFor('regularisationPath').component // => 'PathView'
  * ```
  */

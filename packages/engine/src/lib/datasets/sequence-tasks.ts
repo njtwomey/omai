@@ -83,8 +83,8 @@ function stringTask(
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { copyTask } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { copyTask } from 'mdml-engine/datasets'
  * const { data } = generate(copyTask, { knobs: { n: 5 } })
  * Array.from(data.inputs.data).join() === Array.from(data.targets.data).join() // => true
  * ```
@@ -96,8 +96,8 @@ export const copyTask: DatasetGenerator<SequenceData> = stringTask('copyTask', '
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { reverseTask } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { reverseTask } from 'mdml-engine/datasets'
  * (generate(reverseTask).truth.extra?.['solve'] as (s: number[]) => number[])([2, 3, 4]) // => [4, 3, 2]
  * ```
  */
@@ -110,8 +110,8 @@ export const reverseTask: DatasetGenerator<SequenceData> = stringTask('reverseTa
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { sortTask } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { sortTask } from 'mdml-engine/datasets'
  * (generate(sortTask).truth.extra?.['solve'] as (s: number[]) => number[])([5, 2, 4]) // => [2, 4, 5]
  * ```
  */
@@ -137,8 +137,8 @@ function balanced(s: readonly number[], first: number): boolean {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { dyckTask } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { dyckTask } from 'mdml-engine/datasets'
  * generate(dyckTask, { knobs: { types: 2 } }).data.vocabulary // => ['<pad>', '<sep>', 'no', 'yes', '(', ')', '[', ']']
  * ```
  */
@@ -204,8 +204,8 @@ export const dyckTask: DatasetGenerator<SequenceData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { additionTask } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { additionTask } from 'mdml-engine/datasets'
  * (generate(additionTask).truth.extra?.['solve'] as (s: number[]) => number[])([3, 4, 12, 5, 6]) // => [6, 8]
  * ```
  */
@@ -267,8 +267,8 @@ export const additionTask: DatasetGenerator<SequenceData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { associativeRecall } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { associativeRecall } from 'mdml-engine/datasets'
  * generate(associativeRecall, { knobs: { pairs: 3 } }).data.inputs.shape[1] // => 8
  * ```
  */
@@ -324,8 +324,8 @@ export const associativeRecall: DatasetGenerator<SequenceData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { parityTask } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { parityTask } from 'mdml-engine/datasets'
  * (generate(parityTask, { knobs: { running: true } }).truth.extra?.['solve'] as (s: number[]) => number[])([3, 3, 2]) // => [3, 2, 2]
  * ```
  */
@@ -377,8 +377,8 @@ export type ModularOperation = '+' | '-' | '*' | '/'
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { modularArithmetic } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { modularArithmetic } from 'mdml-engine/datasets'
  * generate(modularArithmetic, { knobs: { modulus: 7, all: true } }).data.inputs.shape // => [49, 4]
  * ```
  */

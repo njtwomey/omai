@@ -4,7 +4,7 @@
  * greedy hill climbing over DAGs by score. PC's skeleton phase and hill climbing are traced algorithms.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import {
   type Algorithm,
   channels,
@@ -71,8 +71,8 @@ export interface ChowLiuOptions {
  * @concept structure-learning
  * @example
  * ```ts
- * import { dagEdges } from 'whitebox-engine/pgm'
- * import { chowLiu } from 'whitebox-engine/pgm/learning'
+ * import { dagEdges } from 'mdml-engine/pgm'
+ * import { chowLiu } from 'mdml-engine/pgm/learning'
  * const data = Array.from({ length: 60 }, (_, i) => ({ a: i % 2, b: i % 2, c: (i % 2) ^ (i % 3 === 0 ? 1 : 0) }))
  * dagEdges(chowLiu(data, { root: 'a' })) // => [['a', 'b'], ['a', 'c']]
  * ```
@@ -107,7 +107,7 @@ export function chowLiu(data: readonly DataRow[], options: ChowLiuOptions = {}):
       pairs.push({ a: names[i] as string, b: names[j] as string, w: weight(names[i] as string, names[j] as string) })
   const total = new Map(names.map((v) => [v, pairs.reduce((s, p) => s + (p.a === v || p.b === v ? p.w : 0), 0)]))
   const root = options.root ?? [...names].sort((x, y) => (total.get(y) ?? 0) - (total.get(x) ?? 0))[0] ?? ''
-  if (!names.includes(root)) throw new WhiteboxError('value', `chowLiu: unknown root ${root}`)
+  if (!names.includes(root)) throw new MdmlError('value', `chowLiu: unknown root ${root}`)
   // Kruskal on decreasing weight.
   const parentOf = new Map(names.map((v) => [v, v]))
   const find = (v: string): string => {
@@ -190,8 +190,8 @@ function* subsets(items: readonly string[], k: number, start = 0, acc: string[] 
  * @concept constraint-based-learning
  * @example
  * ```ts
- * import { pcAlgorithm } from 'whitebox-engine/pgm/learning'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { pcAlgorithm } from 'mdml-engine/pgm/learning'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const data = Array.from({ length: 200 }, (_, i) => ({ a: i % 2, b: i % 2, c: Math.floor(i / 2) % 2 }))
  * runAlgorithm(pcAlgorithm(data), { maxSteps: 10 }).state.removed.length // => 2
  * ```
@@ -280,7 +280,7 @@ export interface PcResult {
  * @concept constraint-based-learning
  * @example
  * ```ts
- * import { pc } from 'whitebox-engine/pgm/learning'
+ * import { pc } from 'mdml-engine/pgm/learning'
  * // a -> c <- b: c is the "or" of two independent coins.
  * const data = Array.from({ length: 400 }, (_, i) => ({ a: i % 2, b: Math.floor(i / 2) % 2, c: (i % 2) | (Math.floor(i / 2) % 2) }))
  * pc(data).cpdag.directed // => [['a', 'c'], ['b', 'c']]
@@ -380,8 +380,8 @@ function reaches(parents: ReadonlyMap<string, readonly string[]>, from: string, 
  * @concept score-based-learning
  * @example
  * ```ts
- * import { hillClimbAlgorithm } from 'whitebox-engine/pgm/learning'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { hillClimbAlgorithm } from 'mdml-engine/pgm/learning'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const data = Array.from({ length: 100 }, (_, i) => ({ a: i % 2, b: i % 2 }))
  * // One improving move, then a step that finds none.
  * runAlgorithm(hillClimbAlgorithm(data), { maxSteps: 10 }).steps // => 2
@@ -515,8 +515,8 @@ export function hillClimbAlgorithm(
  * @concept score-based-learning
  * @example
  * ```ts
- * import { dagEdges } from 'whitebox-engine/pgm'
- * import { hillClimb } from 'whitebox-engine/pgm/learning'
+ * import { dagEdges } from 'mdml-engine/pgm'
+ * import { hillClimb } from 'mdml-engine/pgm/learning'
  * const data = Array.from({ length: 100 }, (_, i) => ({ a: i % 2, b: i % 2, c: Math.floor(i / 2) % 2 }))
  * dagEdges(hillClimb(data).dag).length // => 1
  * ```
@@ -546,7 +546,7 @@ export function hillClimb(
  * @concept structure-learning
  * @example
  * ```ts
- * import { mutualInformationOf } from 'whitebox-engine/pgm/learning'
+ * import { mutualInformationOf } from 'mdml-engine/pgm/learning'
  * Math.abs(mutualInformationOf([{ a: 0, b: 0 }, { a: 1, b: 1 }], 'a', 'b') - Math.LN2) < 1e-15 // => true
  * ```
  */

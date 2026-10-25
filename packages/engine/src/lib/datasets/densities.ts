@@ -79,7 +79,7 @@ export interface RingOptions {
  * @returns The density.
  * @example
  * ```ts
- * import { ringDensity } from 'whitebox-engine/datasets'
+ * import { ringDensity } from 'mdml-engine/datasets'
  * ringDensity({ radii: [1, 3] }).nComponents // => 2
  * ```
  */
@@ -156,7 +156,7 @@ export interface MixtureDensityOptions {
  * @returns The density, with `means` for reference.
  * @example
  * ```ts
- * import { gaussianMixtureDensity } from 'whitebox-engine/datasets'
+ * import { gaussianMixtureDensity } from 'mdml-engine/datasets'
  * gaussianMixtureDensity({ layout: 'grid', count: 3 }).nComponents // => 9
  * ```
  */
@@ -231,7 +231,7 @@ export interface PinwheelOptions {
  * @returns The density.
  * @example
  * ```ts
- * import { pinwheelDensity } from 'whitebox-engine/datasets'
+ * import { pinwheelDensity } from 'mdml-engine/datasets'
  * pinwheelDensity({ arms: 3 }).nComponents // => 3
  * ```
  */
@@ -300,7 +300,7 @@ export interface BananaOptions {
  * @returns The density.
  * @example
  * ```ts
- * import { bananaDensity } from 'whitebox-engine/datasets'
+ * import { bananaDensity } from 'mdml-engine/datasets'
  * bananaDensity().dim // => 2
  * ```
  */
@@ -341,7 +341,7 @@ export function bananaDensity(options: BananaOptions = {}): Density {
  * @returns The density.
  * @example
  * ```ts
- * import { funnelDensity } from 'whitebox-engine/datasets'
+ * import { funnelDensity } from 'mdml-engine/datasets'
  * funnelDensity().name // => 'funnel'
  * ```
  */
@@ -379,8 +379,8 @@ export function funnelDensity(scale = 3): Density {
  * @returns The density.
  * @example
  * ```ts
- * import { checkerboardDensity } from 'whitebox-engine/datasets'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { checkerboardDensity } from 'mdml-engine/datasets'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * toFlat(checkerboardDensity().logProb(tensor([[0.5, 0.5], [-0.5, 0.5]]))) // => [-3.4657359027997265, -Infinity]
  * ```
  */
@@ -438,8 +438,8 @@ const DENSITIES: Readonly<Record<string, () => Density>> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { densitySamples } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { densitySamples } from 'mdml-engine/datasets'
  * generate(densitySamples, { knobs: { density: 'pinwheel', n: 50 } }).data.classes.length // => 5
  * ```
  */

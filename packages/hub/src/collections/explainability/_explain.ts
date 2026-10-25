@@ -1,16 +1,16 @@
 // What the explainability entries share (private to collections/explainability): the model a demo explains, fitted
 // to the chosen dataset as a classifier or a regressor.
-import type { Dataset } from 'whitebox-engine/data'
-import { type Estimator, type Fitted, type LearnData, matrixView } from 'whitebox-engine/learn'
+import type { Dataset } from 'mdml-engine/data'
+import { type Estimator, type Fitted, type LearnData, matrixView } from 'mdml-engine/learn'
 import {
   gradientBoostingClassifier,
   gradientBoostingRegressor,
   randomForestClassifier,
   randomForestRegressor,
-} from 'whitebox-engine/methods/ensemble'
-import { kNeighborsClassifier, kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
-import type { Key } from 'whitebox-engine/random'
-import { choice, int, type Space } from 'whitebox-engine/space'
+} from 'mdml-engine/methods/ensemble'
+import { kNeighborsClassifier, kNeighborsRegressor } from 'mdml-engine/methods/neighbours'
+import type { Key } from 'mdml-engine/random'
+import { choice, int, type Space } from 'mdml-engine/space'
 import { learnDataOf } from '../../entry/run.ts'
 
 /** The models the explainability demos fit. */

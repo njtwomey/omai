@@ -4,7 +4,7 @@
  * repeated equilibria.
  */
 
-import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { combinations } from '../../foundations/index.ts'
 import { dgesv } from '../../numerics/linalg/index.ts'
 import { type Equilibrium, expectedPayoffs, type NormalFormGame, payoffMatrices } from './game.ts'
@@ -67,7 +67,7 @@ function equilibrium(game: NormalFormGame, x: readonly number[], y: readonly num
  * @reference Nisan, Roughgarden, Tardos and Vazirani (2007), Algorithmic Game Theory, chapter 3.
  * @example
  * ```ts
- * import { battleOfTheSexes, supportEnumeration } from 'whitebox-engine/games'
+ * import { battleOfTheSexes, supportEnumeration } from 'mdml-engine/games'
  * const rows = supportEnumeration(battleOfTheSexes()).map((e) => e.strategies[0])
  * rows.map((x) => x.map((p) => Math.round(p * 100) / 100)) // => [[1, 0], [0, 1], [0.6, 0.4]]
  * ```
@@ -161,7 +161,7 @@ function polytopeVertices(
  * @reference von Stengel (2007), Equilibrium computation for two-player games in strategic and extensive form.
  * @example
  * ```ts
- * import { matchingPennies, vertexEnumeration } from 'whitebox-engine/games'
+ * import { matchingPennies, vertexEnumeration } from 'mdml-engine/games'
  * const round = (s) => s.map((p) => Math.round(p * 1e9) / 1e9)
  * vertexEnumeration(matchingPennies()).map((e) => e.strategies.map(round)) // => [[[0.5, 0.5], [0.5, 0.5]]]
  * ```
@@ -220,10 +220,10 @@ export function vertexEnumeration(game: NormalFormGame, options: EnumerationOpti
  * @param equilibria - Equilibria, for example from several initial labels of Lemke-Howson.
  * @param tol - Absolute tolerance per probability (default 1e-8).
  * @returns The distinct equilibria in their first order.
- * @throws WhiteboxError with code `shape` when the equilibria are of different games.
+ * @throws MdmlError with code `shape` when the equilibria are of different games.
  * @example
  * ```ts
- * import { distinctEquilibria } from 'whitebox-engine/games'
+ * import { distinctEquilibria } from 'mdml-engine/games'
  * const e = { strategies: [[1, 0], [0, 1]], payoffs: [0, 0] }
  * distinctEquilibria([e, e]).length // => 1
  * ```
@@ -233,7 +233,7 @@ export function distinctEquilibria(equilibria: readonly Equilibrium[], tol = 1e-
   for (const e of equilibria) {
     const same = out.some((o) => {
       if (o.strategies.length !== e.strategies.length)
-        throw new WhiteboxError('shape', 'distinctEquilibria: equilibria of different games')
+        throw new MdmlError('shape', 'distinctEquilibria: equilibria of different games')
       return o.strategies.every((s, p) => s.every((v, a) => Math.abs(v - (e.strategies[p]?.[a] ?? Number.NaN)) <= tol))
     })
     if (!same) out.push(e)

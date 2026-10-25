@@ -13,7 +13,7 @@ import numpy as np
 import optax  # pyright: ignore[reportMissingTypeStubs]
 import torch
 
-from whitebox_oracle.helpers import FloatArray
+from mdml_oracle.helpers import FloatArray
 
 jax.config.update("jax_enable_x64", True)
 

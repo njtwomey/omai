@@ -1,7 +1,7 @@
+import { structure } from 'mdml-engine/scene'
+import { Choice, ControlPanel, Player, StructureView, usePlayback } from 'mdml-render/react'
+import { searchOrder, traversalFrames } from 'mdml-render/structures'
 import { type ReactNode, useMemo, useState } from 'react'
-import { structure } from 'whitebox-engine/scene'
-import { Choice, ControlPanel, Player, StructureView, usePlayback } from 'whitebox-render/react'
-import { searchOrder, traversalFrames } from 'whitebox-render/structures'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

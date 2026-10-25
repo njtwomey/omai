@@ -7,9 +7,9 @@ from importlib.metadata import version
 
 import nashpy as nash
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from open_spiel.python.algorithms import projected_replicator_dynamics as prd
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"nashpy": nash.__version__, "open_spiel": version("open_spiel")}
 

@@ -3,8 +3,8 @@
  * class proportions, row counts and impurity, growth played step by step, and every candidate split of a clicked node.
  */
 
+import type { TreeRecord } from 'mdml-engine/exposition'
 import { type ReactElement, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { TreeRecord } from 'whitebox-engine/exposition'
 import { type Figure, scaleFigure } from '../../figure/figure.ts'
 import { tokens } from '../../theme/tokens.ts'
 import { growthSteps, splitCandidatesView, treeNodeOf, treeScene } from '../../views/trees.ts'
@@ -110,7 +110,7 @@ function TreeFigure(props: {
     >
       <div
         ref={scroller}
-        data-whitebox-svg=""
+        data-mdml-svg=""
         style={{
           height: treeHeight,
           width: '100%',

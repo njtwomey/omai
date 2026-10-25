@@ -4,7 +4,7 @@
  * every other length uses Bluestein's algorithm, so all lengths cost O(N log N).
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   batchAtFront,
   bind,
@@ -75,7 +75,7 @@ const fftPrimitive: Primitive<FftParams> = definePrimitive<FftParams>({
 
 function normaliseAxis(axis: number, rank: number): number {
   const a = axis < 0 ? axis + rank : axis
-  if (a < 0 || a >= rank) throw new WhiteboxError('value', `fft: axis ${axis} out of range for rank ${rank}`)
+  if (a < 0 || a >= rank) throw new MdmlError('value', `fft: axis ${axis} out of range for rank ${rank}`)
   return a
 }
 
@@ -98,7 +98,7 @@ function run(x: ComplexLike, n: number | undefined, axis: number, norm: FftNorm,
   const z = complex(x)
   const a = normaliseAxis(axis, z.re.shape.length)
   const len = n ?? z.re.shape[a] ?? 0
-  if (len < 1) throw new WhiteboxError('value', 'fft: the transform length must be positive')
+  if (len < 1) throw new MdmlError('value', 'fft: the transform length must be positive')
   const re = resize(z.re, a, len)
   const im = resize(z.im, a, len)
   const [or, oi] = bind(fftPrimitive, [re, im], {
@@ -121,8 +121,8 @@ function run(x: ComplexLike, n: number | undefined, axis: number, norm: FftNorm,
  * @concept fourier-transform
  * @example
  * ```ts
- * import { fft } from 'whitebox-engine/numerics/fourier'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { fft } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(fft([1, 2, 3, 4]).re) // => [10, -2, -2, -2]
  * ```
  */
@@ -140,8 +140,8 @@ export function fft(x: ComplexLike, n?: number, axis = -1, norm: FftNorm = 'back
  * @returns The signal as a complex pair.
  * @example
  * ```ts
- * import { ifft } from 'whitebox-engine/numerics/fourier'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { ifft } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(ifft({ re: [10, -2, -2, -2], im: [0, 2, 0, -2] }).re) // => [1, 2, 3, 4]
  * ```
  */
@@ -159,8 +159,8 @@ export function ifft(x: ComplexLike, n?: number, axis = -1, norm: FftNorm = 'bac
  * @returns The half spectrum.
  * @example
  * ```ts
- * import { rfft } from 'whitebox-engine/numerics/fourier'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { rfft } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(rfft([1, 2, 3, 4]).im) // => [0, 2, 0]
  * ```
  */
@@ -184,8 +184,8 @@ export function rfft(x: ComplexLike, n?: number, axis = -1, norm: FftNorm = 'bac
  * @returns The real signal.
  * @example
  * ```ts
- * import { irfft } from 'whitebox-engine/numerics/fourier'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { irfft } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(irfft({ re: [10, -2, -2], im: [0, 2, 0] })) // => [1, 2, 3, 4]
  * ```
  */
@@ -194,7 +194,7 @@ export function irfft(x: ComplexLike, n?: number, axis = -1, norm: FftNorm = 'ba
   const a = normaliseAxis(axis, z.re.shape.length)
   const m = z.re.shape[a] ?? 0
   const len = n ?? 2 * (m - 1)
-  if (len < 1) throw new WhiteboxError('value', 'irfft: the output length must be positive')
+  if (len < 1) throw new MdmlError('value', 'irfft: the output length must be positive')
   const half = Math.floor(len / 2) + 1
   const re = resize(z.re, a, half)
   const im = resize(z.im, a, half)
@@ -216,8 +216,8 @@ export function irfft(x: ComplexLike, n?: number, axis = -1, norm: FftNorm = 'ba
  * @returns The real spectrum.
  * @example
  * ```ts
- * import { hfft } from 'whitebox-engine/numerics/fourier'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { hfft } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(hfft([1, 2, 3])) // => [8, -2, 0, -2]
  * ```
  */
@@ -240,8 +240,8 @@ export function hfft(x: ComplexLike, n?: number, axis = -1, norm: FftNorm = 'bac
  * @returns The spectrum.
  * @example
  * ```ts
- * import { fftn } from 'whitebox-engine/numerics/fourier'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { fftn } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(fftn([[1, 2], [3, 4]]).re) // => [[10, -2], [-4, 0]]
  * ```
  */
@@ -264,8 +264,8 @@ export function fftn(
  * @returns The signal.
  * @example
  * ```ts
- * import { ifftn } from 'whitebox-engine/numerics/fourier'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { ifftn } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(ifftn({ re: [[10, -2], [-4, 0]], im: [[0, 0], [0, 0]] }).re) // => [[1, 2], [3, 4]]
  * ```
  */
@@ -306,8 +306,8 @@ function multi(
  * @returns The spectrum.
  * @example
  * ```ts
- * import { fft2 } from 'whitebox-engine/numerics/fourier'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { fft2 } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(fft2([[1, 0], [0, 0]]).re) // => [[1, 1], [1, 1]]
  * ```
  */
@@ -323,8 +323,8 @@ export function fft2(x: ComplexLike, norm: FftNorm = 'backward'): ComplexValue {
  * @returns The signal.
  * @example
  * ```ts
- * import { ifft2 } from 'whitebox-engine/numerics/fourier'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { ifft2 } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(ifft2({ re: [[1, 1], [1, 1]], im: [[0, 0], [0, 0]] }).re) // => [[1, 0], [0, 0]]
  * ```
  */

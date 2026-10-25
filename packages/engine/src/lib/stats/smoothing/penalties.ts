@@ -5,7 +5,7 @@
  * monotone and convex shape constraints.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { bspline } from '../../numerics/interpolate/index.ts'
 import { dsyev } from '../../numerics/linalg/index.ts'
 import { gaussLegendre } from '../../numerics/quadrature/index.ts'
@@ -21,13 +21,13 @@ import { mat, rowsOf } from '../_util.ts'
  * @returns The k x k penalty.
  * @example
  * ```ts
- * import { differencePenalty } from 'whitebox-engine/stats/smoothing'
+ * import { differencePenalty } from 'mdml-engine/stats/smoothing'
  * differencePenalty(3, 1) // => [[1, -1, 0], [-1, 2, -1], [0, -1, 1]]
  * ```
  */
 export function differencePenalty(k: number, order = 2): Tensor {
   if (!(Number.isInteger(order) && order >= 0 && order < k))
-    throw new WhiteboxError('value', 'differencePenalty: order must be in [0, k)')
+    throw new MdmlError('value', 'differencePenalty: order must be in [0, k)')
   // Rows of the difference matrix by repeated differencing of the identity.
   let D: number[][] = Array.from({ length: k }, (_, i) => Array.from({ length: k }, (_, j) => (i === j ? 1 : 0)))
   for (let o = 0; o < order; o++) D = D.slice(1).map((row, i) => row.map((v, j) => v - (D[i]?.[j] ?? 0)))
@@ -49,14 +49,14 @@ export function differencePenalty(k: number, order = 2): Tensor {
  * @returns The penalty over the n = len(knots) - degree - 1 basis functions.
  * @example
  * ```ts
- * import { derivativePenalty } from 'whitebox-engine/stats/smoothing'
+ * import { derivativePenalty } from 'mdml-engine/stats/smoothing'
  * derivativePenalty([0, 0, 1, 1], 1, 1) // => [[1, -1], [-1, 1]]
  * ```
  */
 export function derivativePenalty(knots: TensorLike, degree: number, order = 2): Tensor {
   const t = toFlat(asTensor(knots))
   const n = t.length - degree - 1
-  if (n < 1) throw new WhiteboxError('value', 'derivativePenalty: too few knots for the degree')
+  if (n < 1) throw new MdmlError('value', 'derivativePenalty: too few knots for the degree')
   const identity = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)))
   const spline = bspline(t, identity, degree)
   const d = order === 0 ? spline : spline.derivative(order)
@@ -102,7 +102,7 @@ export interface PenaltyNullSpace {
  * @returns An orthonormal basis of the null space and its dimension.
  * @example
  * ```ts
- * import { differencePenalty, nullSpace } from 'whitebox-engine/stats/smoothing'
+ * import { differencePenalty, nullSpace } from 'mdml-engine/stats/smoothing'
  * nullSpace(differencePenalty(5, 2)).dimension // => 2
  * ```
  */
@@ -132,7 +132,7 @@ export function nullSpace(S: TensorLike, options: { readonly tol?: number } = {}
  * @returns The shrunk penalty, of full rank.
  * @example
  * ```ts
- * import { differencePenalty, nullSpace, shrinkagePenalty } from 'whitebox-engine/stats/smoothing'
+ * import { differencePenalty, nullSpace, shrinkagePenalty } from 'mdml-engine/stats/smoothing'
  * nullSpace(shrinkagePenalty(differencePenalty(5, 2))).dimension // => 0
  * ```
  */
@@ -168,7 +168,7 @@ export function shrinkagePenalty(
  * @returns Z, k x (k - 1).
  * @example
  * ```ts
- * import { sumToZeroConstraint } from 'whitebox-engine/stats/smoothing'
+ * import { sumToZeroConstraint } from 'mdml-engine/stats/smoothing'
  * sumToZeroConstraint([[1, 0], [0, 1]]).shape // => [2, 1]
  * ```
  */
@@ -189,7 +189,7 @@ export function sumToZeroConstraint(X: TensorLike): Tensor {
  * @returns Z, k x (k - r), with C Z = 0 and orthonormal columns.
  * @example
  * ```ts
- * import { constraintNullSpace } from 'whitebox-engine/stats/smoothing'
+ * import { constraintNullSpace } from 'mdml-engine/stats/smoothing'
  * constraintNullSpace([1, 1], 2) // => [[-0.707107], [0.707107]]
  * ```
  */
@@ -246,8 +246,8 @@ export interface ShapeConstraint {
  * @returns Sigma and the transform.
  * @example
  * ```ts
- * import { shapeConstraint } from 'whitebox-engine/stats/smoothing'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { shapeConstraint } from 'mdml-engine/stats/smoothing'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * toFlat(shapeConstraint(3, 'increasing').transform(tensor([1, 0, 0]))) // => [1, 2, 3]
  * toFlat(shapeConstraint(4, 'convex').transform(tensor([0, 0, 0, 0]))) // => [0, 0, 1, 3]
  * ```

@@ -1,6 +1,6 @@
 /**
  * Pictures of worlds as engine data: the cell graph as a `Structure`, and a top-down `Scene` with cells filled by
- * terrain, walls, starts, goals and coloured items, optional per-cell values and paths, for whitebox-render to draw.
+ * terrain, walls, starts, goals and coloured items, optional per-cell values and paths, for mdml-render to draw.
  */
 
 import {
@@ -43,7 +43,7 @@ import {
  * @concept structures
  * @example
  * ```ts
- * import { fromAscii, toStructure } from 'whitebox-engine/worlds'
+ * import { fromAscii, toStructure } from 'mdml-engine/worlds'
  * const s = toStructure(fromAscii(['S.#', '..G']))
  * [s.nodes.length, s.edges.length] // => [5, 5]
  * ```
@@ -93,7 +93,7 @@ const COLOURS: Readonly<Record<string, Paint>> = {
  * @returns The paint.
  * @example
  * ```ts
- * import { colourPaint } from 'whitebox-engine/worlds'
+ * import { colourPaint } from 'mdml-engine/worlds'
  * colourPaint('red') // => 'tab3'
  * ```
  */
@@ -125,7 +125,7 @@ export interface WorldSceneOptions {
  * @concept scene-graph
  * @example
  * ```ts
- * import { fromAscii, toScene } from 'whitebox-engine/worlds'
+ * import { fromAscii, toScene } from 'mdml-engine/worlds'
  * const s = toScene(fromAscii(['S.', '.G']), { agent: 0 })
  * [s.width, s.height] // => [64, 64]
  * s.children.some((n) => n.id === 'agent') // => true

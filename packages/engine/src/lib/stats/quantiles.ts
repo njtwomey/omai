@@ -4,7 +4,7 @@
  * absolute deviation, as numpy and scipy.stats.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { asTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { normPpf, sample, sortedCopy, vec } from './_util.ts'
 
@@ -58,8 +58,7 @@ const CONTINUOUS: Readonly<Record<string, readonly [number, number]>> = {
 
 function methodName(method: QuantileMethod): string {
   const name = typeof method === 'number' ? NAMES[method - 1] : method
-  if (name === undefined || !NAMES.includes(name))
-    throw new WhiteboxError('value', `quantile: unknown method ${method}`)
+  if (name === undefined || !NAMES.includes(name)) throw new MdmlError('value', `quantile: unknown method ${method}`)
   return String(name)
 }
 
@@ -97,7 +96,7 @@ function virtual(n: number, q: number, [alpha, beta]: readonly [number, number])
 function levels(q: number | TensorLike): { values: number[]; scalar: boolean } {
   const scalar = typeof q === 'number'
   const values = scalar ? [q] : toFlat(asTensor(q))
-  for (const v of values) if (!(v >= 0 && v <= 1)) throw new WhiteboxError('value', 'quantile: q must lie in [0, 1]')
+  for (const v of values) if (!(v >= 0 && v <= 1)) throw new MdmlError('value', 'quantile: q must lie in [0, 1]')
   return { values, scalar }
 }
 
@@ -116,7 +115,7 @@ export interface QuantileOptions {
  * @returns The quantile (a number for a single level, a tensor for several).
  * @example
  * ```ts
- * import { quantile } from 'whitebox-engine/stats'
+ * import { quantile } from 'mdml-engine/stats'
  * quantile([1, 2, 3, 4], 0.5) // => 2.5
  * quantile([1, 2, 3, 4], 0.5, { method: 'inverted_cdf' }) // => 2
  * quantile([1, 2, 3, 4], [0.25, 0.75], { method: 'hazen' }) // => [1.5, 3.5]
@@ -141,7 +140,7 @@ export function quantile(x: TensorLike, q: number | TensorLike, options: Quantil
  * @returns The median.
  * @example
  * ```ts
- * import { median } from 'whitebox-engine/stats'
+ * import { median } from 'mdml-engine/stats'
  * median([3, 1, 2]) // => 2
  * median([4, 1, 3, 2]) // => 2.5
  * ```
@@ -167,14 +166,13 @@ export interface IqrOptions extends QuantileOptions {
  * @returns The range.
  * @example
  * ```ts
- * import { iqr } from 'whitebox-engine/stats'
+ * import { iqr } from 'mdml-engine/stats'
  * iqr([1, 2, 3, 4, 5, 6, 7, 8, 9]) // => 4
  * ```
  */
 export function iqr(x: TensorLike, options: IqrOptions = {}): number {
   const [lo, hi] = options.rng ?? [25, 75]
-  if (!(lo >= 0 && hi <= 100 && lo <= hi))
-    throw new WhiteboxError('value', 'iqr: rng must satisfy 0 <= lo <= hi <= 100')
+  if (!(lo >= 0 && hi <= 100 && lo <= hi)) throw new MdmlError('value', 'iqr: rng must satisfy 0 <= lo <= hi <= 100')
   const method = options.method ?? 'linear'
   const r = quantile(x, [lo / 100, hi / 100], { method })
   const [a, b] = toFlat(r)
@@ -196,7 +194,7 @@ export type PercentileKind = 'rank' | 'weak' | 'strict' | 'mean'
  * @returns A percentage in [0, 100].
  * @example
  * ```ts
- * import { percentileOfScore } from 'whitebox-engine/stats'
+ * import { percentileOfScore } from 'mdml-engine/stats'
  * percentileOfScore([1, 2, 3, 4], 3) // => 75
  * percentileOfScore([1, 2, 3, 3, 4], 3, { kind: 'strict' }) // => 40
  * ```
@@ -249,7 +247,7 @@ export interface Ecdf {
  * @returns The ECDF.
  * @example
  * ```ts
- * import { ecdf } from 'whitebox-engine/stats'
+ * import { ecdf } from 'mdml-engine/stats'
  * const F = ecdf([1, 3, 3, 4])
  * F.probabilities // => [0.25, 0.75, 1]
  * F.evaluate([0, 3, 3.5]) // => [0, 0.75, 0.75]
@@ -336,7 +334,7 @@ export interface MadOptions {
  * @returns The MAD.
  * @example
  * ```ts
- * import { medianAbsoluteDeviation } from 'whitebox-engine/stats'
+ * import { medianAbsoluteDeviation } from 'mdml-engine/stats'
  * medianAbsoluteDeviation([1, 2, 3, 4, 100]) // => 1
  * ```
  */

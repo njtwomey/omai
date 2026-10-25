@@ -4,7 +4,7 @@
  * automata, neural networks and a generic fallback, looked up with `styleFor`.
  */
 
-import type { NodeRole, Paint, StructureEdge, StructureGroup } from 'whitebox-engine/scene'
+import type { NodeRole, Paint, StructureEdge, StructureGroup } from 'mdml-engine/scene'
 
 /** The outline of a node. */
 export type NodeShape = 'rect' | 'round' | 'circle' | 'ellipse' | 'diamond' | 'square' | 'dot'
@@ -192,7 +192,7 @@ const STYLES: Readonly<Record<string, StructureStyle>> = {
  * @returns The style.
  * @example
  * ```ts
- * import { styleFor } from 'whitebox-render/structures'
+ * import { styleFor } from 'mdml-render/structures'
  * styleFor('bayes-net').node('observed').shape // => 'circle'
  * styleFor('factor-graph').edge({ from: 'a', to: 'f' }).arrow // => false
  * ```

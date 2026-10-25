@@ -1,10 +1,10 @@
 /**
  * Analysis of a world's cell graph: reachable cells and connected regions, distance fields and shortest paths (by moves
  * or terrain cost), dead ends, choke points and bridges, distances between cells under the usual grid metrics with
- * heuristics for A*, and conversion of the cell graph to edges that `whitebox-engine/graph` can build on.
+ * heuristics for A*, and conversion of the cell graph to edges that `mdml-engine/graph` can build on.
  */
 
-import { heap, WhiteboxError } from '../base/index.ts'
+import { heap, MdmlError } from '../base/index.ts'
 import { axial } from './_topology.ts'
 import {
   cellCentre,
@@ -20,7 +20,7 @@ import {
 const sources = (w: World, from: number | readonly number[]): number[] => {
   const list = typeof from === 'number' ? [from] : [...from]
   for (const c of list) {
-    if (!Number.isInteger(c) || c < 0 || c >= w.n) throw new WhiteboxError('value', `worlds: cell ${c} is off the map`)
+    if (!Number.isInteger(c) || c < 0 || c >= w.n) throw new MdmlError('value', `worlds: cell ${c} is off the map`)
   }
   return list
 }
@@ -32,10 +32,10 @@ const sources = (w: World, from: number | readonly number[]): number[] => {
  * @param from - A cell or cells.
  * @param options - Connectivity, corner rule and extra blocked cells.
  * @returns A mask, 1 for each reachable cell (the sources included).
- * @throws WhiteboxError with code `value` for a source off the map.
+ * @throws MdmlError with code `value` for a source off the map.
  * @example
  * ```ts
- * import { fromAscii, reachable } from 'whitebox-engine/worlds'
+ * import { fromAscii, reachable } from 'mdml-engine/worlds'
  * Array.from(reachable(fromAscii(['..#.']), 0)) // => [1, 1, 0, 0]
  * ```
  */
@@ -83,7 +83,7 @@ export interface Regions {
  * @returns Labels, the count and the sizes.
  * @example
  * ```ts
- * import { fromAscii, regions } from 'whitebox-engine/worlds'
+ * import { fromAscii, regions } from 'mdml-engine/worlds'
  * const r = regions(fromAscii(['..#.', '..#.']))
  * [r.count, r.sizes] // => [2, [4, 2]]
  * ```
@@ -173,10 +173,10 @@ function search(
  * @param from - A cell or cells (distance 0).
  * @param options - Weighting, connectivity, corner rule and extra blocked cells.
  * @returns The distance of each cell (`Infinity` where unreachable).
- * @throws WhiteboxError with code `value` for a source off the map.
+ * @throws MdmlError with code `value` for a source off the map.
  * @example
  * ```ts
- * import { distanceField, fromAscii } from 'whitebox-engine/worlds'
+ * import { distanceField, fromAscii } from 'mdml-engine/worlds'
  * Array.from(distanceField(fromAscii(['...', '#.#']), 0)) // => [0, 1, 2, Infinity, 2, Infinity]
  * Array.from(distanceField(fromAscii(['.~.']), 0, { weighted: true })) // => [0, 5, 6]
  * ```
@@ -193,10 +193,10 @@ export function distanceField(w: World, from: number | readonly number[], option
  * @param to - The goal cell.
  * @param options - Weighting, connectivity, corner rule and extra blocked cells.
  * @returns The cells of the path, both ends included, or null when the goal is unreachable.
- * @throws WhiteboxError with code `value` for cells off the map.
+ * @throws MdmlError with code `value` for cells off the map.
  * @example
  * ```ts
- * import { fromAscii, shortestPath } from 'whitebox-engine/worlds'
+ * import { fromAscii, shortestPath } from 'mdml-engine/worlds'
  * shortestPath(fromAscii(['...', '#.#', '...']), 0, 6) // => [0, 1, 4, 7, 6]
  * ```
  */
@@ -208,7 +208,7 @@ export function shortestPath(w: World, from: number, to: number, options: Distan
   for (let c = to; c !== from; ) {
     c = parent[c] ?? from
     out.push(c)
-    if (out.length > w.n) throw new WhiteboxError('value', 'shortestPath: parent chain did not end')
+    if (out.length > w.n) throw new MdmlError('value', 'shortestPath: parent chain did not end')
   }
   return out.reverse()
 }
@@ -221,7 +221,7 @@ export function shortestPath(w: World, from: number, to: number, options: Distan
  * @returns The cells, in order.
  * @example
  * ```ts
- * import { deadEnds, fromAscii } from 'whitebox-engine/worlds'
+ * import { deadEnds, fromAscii } from 'mdml-engine/worlds'
  * deadEnds(fromAscii(['...', '#.#'])) // => [0, 2, 4]
  * ```
  */
@@ -288,7 +288,7 @@ function lowLinks(w: World, options: MoveOptions): { readonly cuts: number[]; re
  * @returns The cells, in order.
  * @example
  * ```ts
- * import { chokePoints, fromAscii } from 'whitebox-engine/worlds'
+ * import { chokePoints, fromAscii } from 'mdml-engine/worlds'
  * chokePoints(fromAscii(['..#..', '.....', '..#..'])) // => [6, 7, 8]
  * ```
  */
@@ -305,7 +305,7 @@ export function chokePoints(w: World, options: MoveOptions = {}): number[] {
  * @returns Pairs `[a, b]` with `a < b`, sorted.
  * @example
  * ```ts
- * import { bridges, fromAscii } from 'whitebox-engine/worlds'
+ * import { bridges, fromAscii } from 'mdml-engine/worlds'
  * bridges(fromAscii(['..#..', '.....', '..#..'])) // => [[6, 7], [7, 8]]
  * bridges(fromAscii(['...'])) // => [[0, 1], [1, 2]]
  * ```
@@ -314,7 +314,7 @@ export function bridges(w: World, options: MoveOptions = {}): [number, number][]
   return lowLinks(w, options).bridges
 }
 
-/** A world's cell graph as edges `graph` (`whitebox-engine/graph`) can build: `graph(edges, { nodes: labels, directed })`. */
+/** A world's cell graph as edges `graph` (`mdml-engine/graph`) can build: `graph(edges, { nodes: labels, directed })`. */
 export interface Adjacency {
   /** The number of nodes. */
   readonly n: number
@@ -332,15 +332,15 @@ export interface Adjacency {
  * The cell graph of a world in a form graph algorithms consume: nodes for the passable cells (or all cells), an edge
  * per legal move, weighted by terrain cost times step length when `weighted`. Undirected (one edge per pair) when
  * every move can be reversed at the same cost; otherwise directed with one edge per move. Build it with
- * `graph(adj.edges, { nodes: adj.labels, directed: adj.directed })` from `whitebox-engine/graph`.
+ * `graph(adj.edges, { nodes: adj.labels, directed: adj.directed })` from `mdml-engine/graph`.
  *
  * @param w - The world.
  * @param options - Which cells become nodes, weighting, connectivity, corner rule and extra blocked cells.
  * @returns The adjacency.
  * @example
  * ```ts
- * import { fromAscii, toAdjacency } from 'whitebox-engine/worlds'
- * import { graph } from 'whitebox-engine/graph'
+ * import { fromAscii, toAdjacency } from 'mdml-engine/worlds'
+ * import { graph } from 'mdml-engine/graph'
  * const adj = toAdjacency(fromAscii(['..', '#.']))
  * [adj.labels, adj.edges, adj.directed] // => [['0,0', '0,1', '1,1'], [[0, 1, 1], [1, 2, 1]], false]
  * graph(adj.edges, { nodes: adj.labels }).n // => 3
@@ -390,10 +390,10 @@ export type CellMetric = 'manhattan' | 'chebyshev' | 'octile' | 'euclidean' | 'h
  * @param b - Another cell.
  * @param metric - The metric (default Manhattan on squares, hexagonal on hexagons, Euclidean on graphs).
  * @returns The distance.
- * @throws WhiteboxError with code `value` for a grid metric on a graph world.
+ * @throws MdmlError with code `value` for a grid metric on a graph world.
  * @example
  * ```ts
- * import { cellDistance, fromAscii } from 'whitebox-engine/worlds'
+ * import { cellDistance, fromAscii } from 'mdml-engine/worlds'
  * const w = fromAscii(['....', '....', '....'])
  * [cellDistance(w, 0, 11), cellDistance(w, 0, 11, 'chebyshev'), cellDistance(w, 0, 11, 'euclidean')] // => [5, 3, Math.hypot(2, 3)]
  * ```
@@ -406,7 +406,7 @@ export function cellDistance(w: World, a: number, b: number, metric?: CellMetric
     const [x2, y2] = cellCentre(w, b)
     return Math.hypot(x2 - x1, y2 - y1)
   }
-  if (t.kind === 'graph') throw new WhiteboxError('value', `cellDistance: '${m}' needs a grid`)
+  if (t.kind === 'graph') throw new MdmlError('value', `cellDistance: '${m}' needs a grid`)
   if (m === 'hex') {
     const [q1, r1] = axial(t.cols, a)
     const [q2, r2] = axial(t.cols, b)
@@ -429,7 +429,7 @@ export function cellDistance(w: World, a: number, b: number, metric?: CellMetric
  * @returns A function from a cell to its estimated distance.
  * @example
  * ```ts
- * import { fromAscii, heuristicTo } from 'whitebox-engine/worlds'
+ * import { fromAscii, heuristicTo } from 'mdml-engine/worlds'
  * heuristicTo(fromAscii(['S..G', '...G']))(0) // => 3
  * ```
  */

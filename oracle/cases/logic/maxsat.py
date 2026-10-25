@@ -3,10 +3,10 @@ and of unweighted MaxSAT over unsatisfiable random 3-CNF, plus an instance whose
 
 from importlib.metadata import version
 
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from pysat.examples.rc2 import RC2
 from pysat.formula import WCNF
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"python-sat": version("python-sat")}
 

@@ -4,7 +4,7 @@
  * from its SVD (scipy.linalg).
  */
 
-import { maxOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -67,8 +67,8 @@ const column = (a: Value, j: number): Value => sliceAxis(a, 1, j, j + 1)
  * @concept orthogonalisation
  * @example
  * ```ts
- * import { gramSchmidt } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { gramSchmidt } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(gramSchmidt([[3, 1], [4, 1]]).r)[0] // => [5, 1.4]
  * ```
  */
@@ -96,7 +96,7 @@ export function gramSchmidt(a: TensorLike, options: GramSchmidtOptions = {}): Gr
       }
     }
     const rjj = norm(v)
-    if (!(item(primalOf(rjj)) > 0)) throw new WhiteboxError('value', 'gramSchmidt: the columns are linearly dependent')
+    if (!(item(primalOf(rjj)) > 0)) throw new MdmlError('value', 'gramSchmidt: the columns are linearly dependent')
     qs.push(div(v, rjj))
     for (let i = 0; i < n; i++) r[i]?.push(i < j ? (coefficients[i] as Value) : i === j ? rjj : mul(rjj, 0))
   }
@@ -119,7 +119,7 @@ export function gramSchmidt(a: TensorLike, options: GramSchmidtOptions = {}): Gr
  * @returns The basis `[m, rank]`.
  * @example
  * ```ts
- * import { orth } from 'whitebox-engine/numerics/linalg'
+ * import { orth } from 'mdml-engine/numerics/linalg'
  * orth([[1, 1], [1, 1]]).shape // => [2, 1]
  * ```
  */

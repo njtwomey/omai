@@ -7,9 +7,9 @@ from typing import cast
 
 import numpy as np
 import sklearn
+from mdml_oracle.vendor import sha256_of
 from sklearn.datasets import load_digits
 from sklearn.utils import Bunch
-from whitebox_oracle.vendor import sha256_of
 
 TARGET = "packages/engine/src/lib/datasets/_data/digits.data.ts"
 ALPHABET = "0123456789abcdefg"

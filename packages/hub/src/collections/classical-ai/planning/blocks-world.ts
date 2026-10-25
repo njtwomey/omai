@@ -3,8 +3,8 @@
  * then the plan carried out by the gripper.
  */
 
-import { planBlocks, randomBlocks, SUSSMAN } from 'whitebox-engine/methods/gofai'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { planBlocks, randomBlocks, SUSSMAN } from 'mdml-engine/methods/gofai'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 /** STRIPS planning in the blocks world by forward state-space search. */

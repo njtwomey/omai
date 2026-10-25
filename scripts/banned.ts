@@ -1,5 +1,5 @@
 /**
- * Fail on banned globals in published source: Math.random (use keys from whitebox-engine/random), Date.now and
+ * Fail on banned globals in published source: Math.random (use keys from mdml-engine/random), Date.now and
  * performance.now in algorithms (traces must be deterministic), and console output (use trace events).
  *
  *   node scripts/banned.ts
@@ -11,7 +11,7 @@ import { join, relative } from 'node:path'
 
 const ROOT = join(import.meta.dirname, '..')
 const RULES: readonly { readonly pattern: RegExp; readonly message: string }[] = [
-  { pattern: /\bMath\.random\s*\(/, message: 'use keys from whitebox-engine/random' },
+  { pattern: /\bMath\.random\s*\(/, message: 'use keys from mdml-engine/random' },
   { pattern: /\b(Date\.now|performance\.now)\s*\(/, message: 'clocks make traces non-deterministic' },
   { pattern: /\bconsole\.(log|info|warn|error|debug)\s*\(/, message: 'emit trace events instead of logging' },
 ]

@@ -4,7 +4,7 @@ Twelve of the twenty attributes are kept, coded as numbers (ordinal codes in the
 with `female` derived from attribute 9 (personal status and sex), the protected attribute of fairness audits.
 """
 
-from whitebox_oracle.vendor import fetch_pinned, render_classification
+from mdml_oracle.vendor import fetch_pinned, render_classification
 
 TARGET = "packages/engine/src/lib/datasets/_data/german-credit.data.ts"
 URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/german.data"

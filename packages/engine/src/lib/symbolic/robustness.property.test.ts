@@ -1,10 +1,10 @@
-// Every public operation on random expressions either succeeds or fails with a WhiteboxError (never a TypeError or
+// Every public operation on random expressions either succeeds or fails with a MdmlError (never a TypeError or
 // a hang), within a bounded and deterministic amount of work, and the results that are claimed to be equal to the
 // input are equal in value.
 import fc from 'fast-check'
 import { describe, it } from 'vitest'
 import { exprArb } from '../../testing/symbolic.ts'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import { DEFAULT_STEPS, lastWork } from './_budget.ts'
 import {
   apart,
@@ -33,7 +33,7 @@ function guarded(f: () => unknown): boolean {
     f()
     return true
   } catch (e) {
-    if (isWhiteboxError(e)) return true
+    if (isMdmlError(e)) return true
     throw e
   }
 }
@@ -67,14 +67,14 @@ function outcome(f: () => unknown): [string, number] {
     const r = f()
     out = isExpr(r) ? toText(r) : JSON.stringify(r, (_, v) => (typeof v === 'bigint' ? String(v) : v))
   } catch (e) {
-    if (!isWhiteboxError(e)) throw e
+    if (!isMdmlError(e)) throw e
     out = `error ${e.code}`
   }
   return [out, lastWork()]
 }
 
 describe('robustness on random expressions', () => {
-  it('never throws anything but WhiteboxError', () => {
+  it('never throws anything but MdmlError', () => {
     fc.assert(
       fc.property(exprArb, (e) => OPERATIONS.every(([, op]) => guarded(() => op(e)))),
       { numRuns: 40 },
@@ -106,7 +106,7 @@ describe('robustness on random expressions', () => {
           try {
             r = f(e)
           } catch (err) {
-            if (isWhiteboxError(err)) return true
+            if (isMdmlError(err)) return true
             throw err
           }
           const w = valueAt(r)

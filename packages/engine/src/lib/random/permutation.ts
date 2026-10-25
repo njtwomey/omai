@@ -4,7 +4,7 @@
  * unknown length, random splits by fraction, and keys for parallel tasks.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, take, type Value } from '../tensor/index.ts'
 import { unitDoubles } from './_unit.ts'
 import { uniformStream } from './continuous.ts'
@@ -19,7 +19,7 @@ import { type Key, split } from './key.ts'
  * @returns An int32 tensor of shape `[n]`.
  * @example
  * ```ts
- * import { key, permutation } from 'whitebox-engine/random'
+ * import { key, permutation } from 'mdml-engine/random'
  * Array.from(permutation(key(3), 5).data).sort() // => [0, 1, 2, 3, 4]
  * ```
  */
@@ -42,11 +42,11 @@ export function permutation(k: Key, n: number): Tensor<'int32'> {
  * @param k - The random key.
  * @param x - The value: a tensor, typed array or nested array with at least one dimension.
  * @returns The rows in random order.
- * @throws WhiteboxError with code `value` for a scalar.
+ * @throws MdmlError with code `value` for a scalar.
  * @example
  * ```ts
- * import { key, shuffle } from 'whitebox-engine/random'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { key, shuffle } from 'mdml-engine/random'
+ * import { tensor } from 'mdml-engine/tensor'
  * shuffle(key(0), tensor([[1], [2], [3]])).shape // => [3, 1]
  * Array.from(shuffle(key(0), new Float64Array([1, 2, 3])).shape) // => [3]
  * ```
@@ -54,7 +54,7 @@ export function permutation(k: Key, n: number): Tensor<'int32'> {
 export function shuffle(k: Key, x: TensorLike): Value {
   const v = asTensor(x)
   const n = v.shape[0]
-  if (n === undefined) throw new WhiteboxError('value', 'shuffle: need at least one dimension')
+  if (n === undefined) throw new MdmlError('value', 'shuffle: need at least one dimension')
   return take(v, permutation(k, n))
 }
 
@@ -66,11 +66,11 @@ export function shuffle(k: Key, x: TensorLike): Value {
  * @param size - How many to choose.
  * @param options - `replace` (default true) and `weights`.
  * @returns An int32 tensor of indices.
- * @throws WhiteboxError with code `value` when choosing more than `n` (or more than the positive weights) without
+ * @throws MdmlError with code `value` when choosing more than `n` (or more than the positive weights) without
  * replacement, or when `weights` does not have length `n`.
  * @example
  * ```ts
- * import { key, choice } from 'whitebox-engine/random'
+ * import { key, choice } from 'mdml-engine/random'
  * new Set(choice(key(0), 5, 5, { replace: false }).data).size // => 5
  * ```
  */
@@ -82,22 +82,19 @@ export function choice(
 ): Tensor<'int32'> {
   const replace = options.replace ?? true
   if (options.weights !== undefined && options.weights.length !== n) {
-    throw new WhiteboxError('value', `choice: ${options.weights.length} weights for a population of ${n}`)
+    throw new MdmlError('value', `choice: ${options.weights.length} weights for a population of ${n}`)
   }
   if (replace) {
     const w = options.weights ?? new Array<number>(n).fill(1)
     return categorical(k, w, [size])
   }
-  if (size > n) throw new WhiteboxError('value', `choice: cannot take ${size} of ${n} without replacement`)
+  if (size > n) throw new MdmlError('value', `choice: cannot take ${size} of ${n} without replacement`)
   if (options.weights === undefined) {
     return fromStorage(permutation(k, n).data.slice(0, size), [size], 'int32')
   }
   const positive = options.weights.filter((w) => w > 0).length
   if (size > positive) {
-    throw new WhiteboxError(
-      'value',
-      `choice: cannot take ${size} without replacement from ${positive} positive weights`,
-    )
+    throw new MdmlError('value', `choice: cannot take ${size} without replacement from ${positive} positive weights`)
   }
   // Weighted sampling without replacement by exponential keys (Efraimidis-Spirakis): keep the largest u^(1/w), that
   // is the smallest E / w for exponential E, compared as log E - log w so that tiny weights stay finite.
@@ -115,7 +112,7 @@ export function choice(
  * @returns An int32 tensor of length `n`.
  * @example
  * ```ts
- * import { key, bootstrapIndices } from 'whitebox-engine/random'
+ * import { key, bootstrapIndices } from 'mdml-engine/random'
  * bootstrapIndices(key(0), 10).shape // => [10]
  * ```
  */
@@ -131,11 +128,11 @@ export function bootstrapIndices(k: Key, n: number): Tensor<'int32'> {
  * @param n - Population size.
  * @param size - Subset size, at most `n`.
  * @returns An int32 tensor of `size` distinct sorted indices.
- * @throws WhiteboxError with code `value` unless `0 <= size <= n` are integers.
+ * @throws MdmlError with code `value` unless `0 <= size <= n` are integers.
  * @reference Bentley and Floyd (1987), A sample of brilliance, CACM 30(9).
  * @example
  * ```ts
- * import { key, subsample } from 'whitebox-engine/random'
+ * import { key, subsample } from 'mdml-engine/random'
  * const s = Array.from(subsample(key(0), 1000000, 5).data)
  * s.length === 5 && s.every((v, i) => i === 0 || v > (s[i - 1] ?? -1)) // => true
  * Array.from(subsample(key(0), 4, 4).data) // => [0, 1, 2, 3]
@@ -143,7 +140,7 @@ export function bootstrapIndices(k: Key, n: number): Tensor<'int32'> {
  */
 export function subsample(k: Key, n: number, size: number): Tensor<'int32'> {
   if (!Number.isInteger(n) || !Number.isInteger(size) || size < 0 || size > n) {
-    throw new WhiteboxError('value', `subsample: need integers 0 <= size <= n, got size ${size} of ${n}`)
+    throw new MdmlError('value', `subsample: need integers 0 <= size <= n, got size ${size} of ${n}`)
   }
   const u = unitDoubles(k, size)
   const chosen = new Set<number>()
@@ -168,12 +165,12 @@ export function subsample(k: Key, n: number, size: number): Tensor<'int32'> {
  * @param options - `method`: `'L'` (default) or `'R'`.
  * @returns The sampled items (all of them, in order, when the stream is shorter than `size`); the order of a full
  * reservoir is its slot order, not the stream order.
- * @throws WhiteboxError with code `value` for a negative or non-integer `size`.
+ * @throws MdmlError with code `value` for a negative or non-integer `size`.
  * @reference Li (1994), Reservoir-sampling algorithms of time complexity O(n(1 + log(N/n))), ACM TOMS 20(4);
  * Vitter (1985), Random sampling with a reservoir, ACM TOMS 11(1).
  * @example
  * ```ts
- * import { key, reservoir } from 'whitebox-engine/random'
+ * import { key, reservoir } from 'mdml-engine/random'
  * reservoir(key(0), ['a', 'b'], 3) // => ['a', 'b']
  * reservoir(key(0), Array.from({ length: 100 }, (_, i) => i), 5).length // => 5
  * reservoir(key(0), new Set([1, 2, 3, 4]), 2, { method: 'R' }).length // => 2
@@ -186,7 +183,7 @@ export function reservoir<T>(
   options: { readonly method?: 'L' | 'R' } = {},
 ): T[] {
   if (!Number.isInteger(size) || size < 0) {
-    throw new WhiteboxError('value', `reservoir: size must be a non-negative integer, got ${size}`)
+    throw new MdmlError('value', `reservoir: size must be a non-negative integer, got ${size}`)
   }
   const method = options.method ?? 'L'
   const next = uniformStream(k)
@@ -247,17 +244,17 @@ export function reservoir<T>(
  * @param n - Number of items.
  * @param fractions - Fractions of the parts (summing to at most 1).
  * @returns One int32 index tensor per part.
- * @throws WhiteboxError with code `value` for negative fractions or fractions summing to more than 1.
+ * @throws MdmlError with code `value` for negative fractions or fractions summing to more than 1.
  * @example
  * ```ts
- * import { key, randomSplit } from 'whitebox-engine/random'
+ * import { key, randomSplit } from 'mdml-engine/random'
  * randomSplit(key(0), 10, [0.8, 0.2]).map((p) => p.shape[0]) // => [8, 2]
  * ```
  */
 export function randomSplit(k: Key, n: number, fractions: readonly number[]): Tensor<'int32'>[] {
   const total = fractions.reduce((a, b) => a + b, 0)
   if (fractions.some((f) => !(f >= 0)) || total > 1 + 1e-9) {
-    throw new WhiteboxError('value', `randomSplit: fractions must be non-negative with a sum of at most 1`)
+    throw new MdmlError('value', `randomSplit: fractions must be non-negative with a sum of at most 1`)
   }
   const order = permutation(k, n).data
   const parts: Tensor<'int32'>[] = []
@@ -278,7 +275,7 @@ export function randomSplit(k: Key, n: number, fractions: readonly number[]): Te
  * @returns The keys.
  * @example
  * ```ts
- * import { key, keys } from 'whitebox-engine/random'
+ * import { key, keys } from 'mdml-engine/random'
  * keys(key(0), 3).length // => 3
  * ```
  */

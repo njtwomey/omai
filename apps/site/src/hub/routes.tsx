@@ -1,5 +1,5 @@
+import { catalogue, type HubEntry, type HubState, stateFromQuery, stateToQuery } from 'mdml-hub'
 import type { ReactNode } from 'react'
-import { catalogue, type HubEntry, type HubState, stateFromQuery, stateToQuery } from 'whitebox-hub'
 import { PrevNext } from '../shell/PrevNext.tsx'
 import { href } from '../shell/router.ts'
 import { TocSidebar } from '../shell/TocSidebar.tsx'

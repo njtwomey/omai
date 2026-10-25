@@ -3,9 +3,9 @@ graph, on the Asia, student and sprinkler networks."""
 
 import numpy as np
 import pgmpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.pgm import NETWORKS, definition, hashables, pgmpy_model
 from pgmpy.independencies import IndependenceAssertion
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.pgm import NETWORKS, definition, hashables, pgmpy_model
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

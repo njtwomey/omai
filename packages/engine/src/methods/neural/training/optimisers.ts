@@ -4,7 +4,7 @@
  * range test (fastai's `lr_find`), raising the rate geometrically until the loss blows up.
  */
 
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import {
   type Explained,
   type Exposition,
@@ -80,7 +80,7 @@ export function optimiserRace(
   fit: FitOptions = {},
 ): Explained<{ readonly results: readonly RaceResult[] }> {
   const optimisers = options.optimisers ?? ['sgd', 'momentum', 'rmsprop', 'adam']
-  if (optimisers.length === 0) throw new WhiteboxError('value', 'optimiserRace: needs at least one optimiser')
+  if (optimisers.length === 0) throw new MdmlError('value', 'optimiserRace: needs at least one optimiser')
   const key = fit.key ?? makeKey(0)
   const task = taskOf(data, !isRegression(data), { who: 'optimiserRace', key })
   const d = task.x.shape[1] ?? 1
@@ -214,7 +214,7 @@ export function learningRateFinder(
   const hi = options.maxLearningRate ?? 10
   const steps = options.steps ?? 100
   if (!(lo > 0 && hi > lo))
-    throw new WhiteboxError('value', 'learningRateFinder: needs 0 < minLearningRate < maxLearningRate')
+    throw new MdmlError('value', 'learningRateFinder: needs 0 < minLearningRate < maxLearningRate')
   const key = fit.key ?? makeKey(0)
   const task = taskOf(data, !isRegression(data), { who: 'learningRateFinder', key })
   const d = task.x.shape[1] ?? 1

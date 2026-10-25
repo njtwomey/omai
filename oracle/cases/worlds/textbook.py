@@ -5,7 +5,7 @@ from typing import Any, cast
 
 import gymnasium as gym
 import numpy as np
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"gymnasium": gym.__version__}
 

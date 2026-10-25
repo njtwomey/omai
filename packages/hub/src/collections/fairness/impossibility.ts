@@ -3,8 +3,8 @@
  * synthetic scores.
  */
 
-import { impossibilityStudy } from 'whitebox-engine/methods/fairness'
-import { dict, int } from 'whitebox-engine/space'
+import { impossibilityStudy } from 'mdml-engine/methods/fairness'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 
 /** Calibration against equalised odds: why both cannot hold when base rates differ. */

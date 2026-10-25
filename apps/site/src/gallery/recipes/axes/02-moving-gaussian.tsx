@@ -1,8 +1,8 @@
+import { normal } from 'mdml-engine/dists'
+import { density, type Panel } from 'mdml-render/charts'
+import { figure, gridSpec, type LimitPolicy, type Range } from 'mdml-render/figure'
+import { ControlPanel, FigureFrame, FigureGrid, NumberField, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useRef, useState } from 'react'
-import { normal } from 'whitebox-engine/dists'
-import { density, type Panel } from 'whitebox-render/charts'
-import { figure, gridSpec, type LimitPolicy, type Range } from 'whitebox-render/figure'
-import { ControlPanel, FigureFrame, FigureGrid, NumberField, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

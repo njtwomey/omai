@@ -1,5 +1,5 @@
+import { counterfactualSet, prototypeSet } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { counterfactualSet, prototypeSet } from 'whitebox-engine/exposition'
 import { counterfactualRows, counterfactualTableView, prototypeView } from './examples.ts'
 import { stillOf, viewFor } from './registry.ts'
 

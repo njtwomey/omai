@@ -6,7 +6,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { bijectors, compose, type Distribution, gamma, logNormal, noncentralChi2, normal } from '../dists/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { foldIn, type Key, normal as normalDraws, poisson } from '../random/index.ts'
@@ -93,8 +93,8 @@ export interface DiffusionSimulationOptions extends TraceOptions {
  * @concept diffusion-processes
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { ornsteinUhlenbeck, simulateDiffusion, timeGrid } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { ornsteinUhlenbeck, simulateDiffusion, timeGrid } from 'mdml-engine/stochastic'
  * simulateDiffusion(key(0), ornsteinUhlenbeck({ theta: 2, mu: 1, sigma: 0.5 }), 0, timeGrid(5, 10), { paths: 3 }).values.shape // => [3, 11]
  * ```
  */
@@ -157,8 +157,8 @@ export interface OuParams {
  * @concept ornstein-uhlenbeck
  * @example
  * ```ts
- * import { ornsteinUhlenbeck } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { ornsteinUhlenbeck } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(ornsteinUhlenbeck({ theta: 0.5, sigma: 1 }).stationary().variance()) // => 1
  * ```
  */
@@ -198,8 +198,8 @@ export interface VasicekParams {
  * @concept short-rate-models
  * @example
  * ```ts
- * import { vasicek } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { vasicek } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(vasicek({ a: 1, b: 0.05, sigma: 0.01 }).stationary().mean()) // => 0.05
  * ```
  */
@@ -224,8 +224,8 @@ export function vasicek(params: VasicekParams): ErgodicDiffusion {
  * @concept short-rate-models
  * @example
  * ```ts
- * import { vasicekBondPrice } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { vasicekBondPrice } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(vasicekBondPrice(0.05, 1, { a: 1, b: 0.05, sigma: 1e-8 })) - Math.exp(-0.05)) < 1e-12 // => true
  * ```
  */
@@ -260,8 +260,8 @@ export interface GbmParams {
  * @concept geometric-brownian-motion
  * @example
  * ```ts
- * import { geometricBrownianMotion } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { geometricBrownianMotion } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(geometricBrownianMotion({ mu: 0, sigma: 0.2 }).mean(3, 1)) // => 3
  * ```
  */
@@ -300,8 +300,8 @@ export interface CirParams {
  * @concept cox-ingersoll-ross
  * @example
  * ```ts
- * import { cir } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { cir } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * Math.round(item(cir({ kappa: 2, theta: 0.04, sigma: 0.2 }).stationary().mean()) * 1e12) / 1e12 // => 0.04
  * ```
  */
@@ -344,8 +344,8 @@ export function cir(params: CirParams): ErgodicDiffusion {
  * @concept short-rate-models
  * @example
  * ```ts
- * import { cirBondPrice } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { cirBondPrice } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(cirBondPrice(0.05, 1, { kappa: 1, theta: 0.05, sigma: 0.1 })) < Math.exp(-0.05) + 1e-3 // => true
  * ```
  */
@@ -379,8 +379,8 @@ export function cirBondPrice(r0: TensorLike, maturity: TensorLike, params: CirPa
  * @concept bessel-process
  * @example
  * ```ts
- * import { besselProcess } from 'whitebox-engine/stochastic'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { besselProcess } from 'mdml-engine/stochastic'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(besselProcess({ delta: 3 }).drift(0, tensor(2))) // => 0.5
  * ```
  */
@@ -424,8 +424,8 @@ function gradientOf(potential: (x: Value) => Value): (x: Value) => Value {
  * @concept langevin-dynamics
  * @example
  * ```ts
- * import { langevinDiffusion } from 'whitebox-engine/stochastic'
- * import { mul, sum, square, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { langevinDiffusion } from 'mdml-engine/stochastic'
+ * import { mul, sum, square, tensor, toArray } from 'mdml-engine/tensor'
  * const l = langevinDiffusion({ potential: (x) => mul(sum(square(x), 1), 0.5) })
  * toArray(l.drift(0, tensor([[1, -2]]))) // => [[-1, 2]]
  * ```
@@ -458,8 +458,8 @@ export interface UnderdampedParams extends LangevinParams {
  * @concept langevin-dynamics
  * @example
  * ```ts
- * import { underdampedLangevin } from 'whitebox-engine/stochastic'
- * import { mul, sum, square, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { underdampedLangevin } from 'mdml-engine/stochastic'
+ * import { mul, sum, square, tensor, toArray } from 'mdml-engine/tensor'
  * const l = underdampedLangevin({ potential: (x) => mul(sum(square(x), 1), 0.5), friction: 2 })
  * toArray(l.drift(0, tensor([[1, 3]]))) // => [[3, -7]]
  * ```
@@ -469,7 +469,7 @@ export function underdampedLangevin(params: UnderdampedParams): Diffusion {
   const gradient = gradientOf(params.potential)
   const halves = (x: Value): [Value, Value] => {
     const d2 = x.shape[x.shape.length - 1] ?? 0
-    if (d2 % 2 !== 0) throw new WhiteboxError('shape', 'underdampedLangevin: states must be [paths, 2 d]')
+    if (d2 % 2 !== 0) throw new MdmlError('shape', 'underdampedLangevin: states must be [paths, 2 d]')
     return [sliceAxis(x, -1, 0, d2 / 2), sliceAxis(x, -1, d2 / 2, d2)]
   }
   return {
@@ -532,10 +532,10 @@ function jumpTotals(key: Key, jd: JumpDiffusion, shape: readonly number[], dt: n
  * @concept jump-diffusion
  * @example
  * ```ts
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { simulateJumpDiffusion, timeGrid } from 'whitebox-engine/stochastic'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { simulateJumpDiffusion, timeGrid } from 'mdml-engine/stochastic'
+ * import { zeros } from 'mdml-engine/tensor'
  * const still = { drift: (_t, y) => zeros(y.shape), diffusion: (_t, y) => zeros(y.shape) }
  * const jd = { name: 'jumps', sde: still, rate: 2, jumpSize: normal(1, 0.1) }
  * simulateJumpDiffusion(key(0), jd, 0, timeGrid(1, 4), { paths: 2 }).values.shape // => [2, 5]
@@ -550,7 +550,7 @@ export function simulateJumpDiffusion(
 ): Paths {
   const t = asTimes(times, 'simulateJumpDiffusion')
   const paths = positiveInteger(options.paths ?? 1, 'paths', 'simulateJumpDiffusion')
-  if (!(jd.rate >= 0)) throw new WhiteboxError('value', 'simulateJumpDiffusion: the rate must be non-negative')
+  if (!(jd.rate >= 0)) throw new MdmlError('value', 'simulateJumpDiffusion: the rate must be non-negative')
   const one = asFloat(asTensor(x0))
   const start = add(zeros([paths, ...one.shape]), one)
   const method = options.method ?? 'euler'
@@ -598,14 +598,14 @@ export interface MertonParams {
  * @concept jump-diffusion
  * @example
  * ```ts
- * import { mertonJumpDiffusion } from 'whitebox-engine/stochastic'
+ * import { mertonJumpDiffusion } from 'mdml-engine/stochastic'
  * mertonJumpDiffusion({ mu: 0.05, sigma: 0.2, rate: 1, jumpMean: -0.1, jumpStd: 0.1 }).multiplicative // => true
  * ```
  */
 export function mertonJumpDiffusion(params: MertonParams): JumpDiffusion {
   const { mu, sigma, rate, jumpMean, jumpStd } = params
   if (!(sigma >= 0 && rate >= 0 && jumpStd >= 0)) {
-    throw new WhiteboxError('value', 'mertonJumpDiffusion: sigma, rate and jumpStd must be non-negative')
+    throw new MdmlError('value', 'mertonJumpDiffusion: sigma, rate and jumpStd must be non-negative')
   }
   const k = Math.exp(jumpMean + jumpStd ** 2 / 2) - 1
   const driftLog = mu - rate * k - sigma ** 2 / 2
@@ -646,8 +646,8 @@ function mertonTerms(rate: number, t: number): number {
  * @concept jump-diffusion
  * @example
  * ```ts
- * import { mertonLogReturnDensity } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { mertonLogReturnDensity } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * const p = { mu: 0, sigma: 1, rate: 0, jumpMean: 0, jumpStd: 0.1 }
  * Math.abs(item(mertonLogReturnDensity(-0.5, 1, p)) - 1 / Math.sqrt(2 * Math.PI)) < 1e-15 // => true
  * ```
@@ -685,8 +685,8 @@ function lgammaOf(x: number): number | undefined {
  * @concept jump-diffusion
  * @example
  * ```ts
- * import { blackScholes, mertonPrice } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { blackScholes, mertonPrice } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * const p = { mu: 0, sigma: 0.2, rate: 0, jumpMean: 0, jumpStd: 0 }
  * Math.abs(item(mertonPrice(100, 100, 1, 0.05, p)) - item(blackScholes(100, 100, 1, 0.05, 0.2))) < 1e-12 // => true
  * ```

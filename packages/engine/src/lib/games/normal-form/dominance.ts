@@ -4,7 +4,7 @@
  * of actions, and pure-strategy security levels.
  */
 
-import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { linprog } from '../../optim/index.ts'
 import { actionRows, decodeProfile, profileCount, stridesOf } from './_profiles.ts'
 import type { NormalFormGame } from './game.ts'
@@ -22,7 +22,7 @@ export interface DominanceOptions {
 /** The payoffs of each of `player`'s actions against every profile of the others: `rows[a][s]`. */
 function payoffRows(game: NormalFormGame, player: number): number[][] {
   const u = game.payoffs[player]
-  if (u === undefined) throw new WhiteboxError('value', `${game.name}: no player ${player}`)
+  if (u === undefined) throw new MdmlError('value', `${game.name}: no player ${player}`)
   return actionRows(game.shape, u, player)
 }
 
@@ -86,7 +86,7 @@ function dominatedBy(rows: number[][], a: number, strict: boolean, mixed: boolea
  * @concept dominance
  * @example
  * ```ts
- * import { bimatrixGame, isDominated } from 'whitebox-engine/games'
+ * import { bimatrixGame, isDominated } from 'mdml-engine/games'
  * // The middle row is beaten by no pure row, but by the mix of the other two.
  * const g = bimatrixGame([[3, 0], [1, 1], [0, 3]], [[0, 0], [0, 0], [0, 0]])
  * [isDominated(g, 0, 1), isDominated(g, 0, 1, { mixed: true })] // => [false, true]
@@ -99,7 +99,7 @@ export function isDominated(
   options: DominanceOptions = {},
 ): boolean {
   const rows = payoffRows(game, player)
-  if (action < 0 || action >= rows.length) throw new WhiteboxError('value', `${game.name}: no action ${action}`)
+  if (action < 0 || action >= rows.length) throw new MdmlError('value', `${game.name}: no action ${action}`)
   return dominatedBy(rows, action, options.strict ?? true, options.mixed ?? false, options.tol ?? 1e-9)
 }
 
@@ -113,7 +113,7 @@ export function isDominated(
  * @concept dominance
  * @example
  * ```ts
- * import { dominatedActions, prisonersDilemma } from 'whitebox-engine/games'
+ * import { dominatedActions, prisonersDilemma } from 'mdml-engine/games'
  * dominatedActions(prisonersDilemma(), 0) // => [0]
  * ```
  */
@@ -131,18 +131,18 @@ export function dominatedActions(game: NormalFormGame, player: number, options: 
  * @param game - The game.
  * @param actions - The actions kept for each player.
  * @returns The restricted game.
- * @throws WhiteboxError with code `value` when a player keeps no action or an action does not exist.
+ * @throws MdmlError with code `value` when a player keeps no action or an action does not exist.
  * @example
  * ```ts
- * import { restrictGame, rockPaperScissors } from 'whitebox-engine/games'
+ * import { restrictGame, rockPaperScissors } from 'mdml-engine/games'
  * restrictGame(rockPaperScissors(), [[0, 1], [2]]).actionNames // => [['rock', 'paper'], ['scissors']]
  * ```
  */
 export function restrictGame(game: NormalFormGame, actions: readonly (readonly number[])[]): NormalFormGame {
-  if (actions.length !== game.shape.length) throw new WhiteboxError('value', `${game.name}: one action list per player`)
+  if (actions.length !== game.shape.length) throw new MdmlError('value', `${game.name}: one action list per player`)
   for (const [p, list] of actions.entries())
     if (list.length === 0 || list.some((a) => a < 0 || a >= (game.shape[p] ?? 0)))
-      throw new WhiteboxError('value', `${game.name}: player ${p} must keep existing actions`)
+      throw new MdmlError('value', `${game.name}: player ${p} must keep existing actions`)
   const shape = actions.map((l) => l.length)
   const strides = stridesOf(game.shape)
   const total = profileCount(shape)
@@ -182,7 +182,7 @@ export interface EliminationResult {
  * @concept dominance
  * @example
  * ```ts
- * import { iteratedElimination, prisonersDilemma } from 'whitebox-engine/games'
+ * import { iteratedElimination, prisonersDilemma } from 'mdml-engine/games'
  * iteratedElimination(prisonersDilemma()).actions // => [[1], [1]]
  * ```
  */
@@ -213,7 +213,7 @@ export function iteratedElimination(game: NormalFormGame, options: DominanceOpti
  * @returns The level and the maxmin actions.
  * @example
  * ```ts
- * import { pureMaxmin, stagHunt } from 'whitebox-engine/games'
+ * import { pureMaxmin, stagHunt } from 'mdml-engine/games'
  * pureMaxmin(stagHunt(), 0) // => { value: 2, actions: [1] }
  * ```
  */

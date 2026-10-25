@@ -4,7 +4,7 @@
  * curves.
  */
 
-import { lars as larsMethod } from 'whitebox-engine/methods/linear'
+import { lars as larsMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

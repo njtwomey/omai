@@ -5,7 +5,7 @@
  * every distinct threshold in one sorted pass into a thresholdSweep exposition record.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type ThresholdSweep, thresholdSweep } from '../exposition/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
@@ -44,11 +44,11 @@ export interface ConfusionMargins {
  *
  * @param table - A confusion matrix of counts (`confusionMatrix`, `thresholdConfusion`), actual classes as rows.
  * @returns The margins, in the table's class order.
- * @throws WhiteboxError `shape` when the matrix is not square or does not match its labels.
+ * @throws MdmlError `shape` when the matrix is not square or does not match its labels.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { confusionMargins } from 'whitebox-engine/metrics'
+ * import { confusionMargins } from 'mdml-engine/metrics'
  * const m = confusionMargins({ labels: [0, 1], matrix: [[3, 1], [2, 4]] })
  * m.accuracy // => 0.7
  * m.columnRate // => [0.6, 0.8]
@@ -58,7 +58,7 @@ export interface ConfusionMargins {
 export function confusionMargins(table: ConfusionMatrix): ConfusionMargins {
   const k = table.labels.length
   if (table.matrix.length !== k || table.matrix.some((row) => row.length !== k))
-    throw new WhiteboxError('shape', `confusionMargins: the matrix must be ${k} by ${k}, one row and column per label`)
+    throw new MdmlError('shape', `confusionMargins: the matrix must be ${k} by ${k}, one row and column per label`)
   const at = (i: number, j: number): number => table.matrix[i]?.[j] ?? 0
   const actual = Array.from({ length: k }, (_, i) => table.matrix[i]?.reduce((s, v) => s + v, 0) ?? 0)
   const predicted = Array.from({ length: k }, (_, j) => actual.reduce((s, _a, i) => s + at(i, j), 0))
@@ -97,11 +97,11 @@ export interface ThresholdConfusionOptions extends MetricOptions {
  * @param threshold - The cut.
  * @param options - posLabel and sample weights.
  * @returns The confusion matrix with labels `[negative, positive]`.
- * @throws WhiteboxError `value` with more than two classes; `shape` when the lengths differ.
+ * @throws MdmlError `value` with more than two classes; `shape` when the lengths differ.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { thresholdConfusion } from 'whitebox-engine/metrics'
+ * import { thresholdConfusion } from 'mdml-engine/metrics'
  * thresholdConfusion([0, 0, 1, 1], [0.1, 0.6, 0.4, 0.9], 0.3).matrix // => [[1, 1], [0, 2]]
  * thresholdConfusion(['ham', 'spam'], [0.2, 0.7], 0.5, { posLabel: 'spam' }).labels // => ['ham', 'spam']
  * ```
@@ -114,10 +114,9 @@ export function thresholdConfusion(
 ): ConfusionMatrix {
   const t = labelValues(yTrue)
   const s = flat(yScore)
-  if (s.length !== t.length)
-    throw new WhiteboxError('shape', 'thresholdConfusion: yTrue and yScore have different lengths')
+  if (s.length !== t.length) throw new MdmlError('shape', 'thresholdConfusion: yTrue and yScore have different lengths')
   const classes = sortLabels(t)
-  if (classes.length > 2) throw new WhiteboxError('value', 'thresholdConfusion: needs two classes')
+  if (classes.length > 2) throw new MdmlError('value', 'thresholdConfusion: needs two classes')
   const pos = options.posLabel ?? (classes.includes(1) ? 1 : (classes[classes.length - 1] ?? 1))
   const neg = classes.find((c) => c !== pos) ?? (typeof pos === 'number' ? (pos === 0 ? 1 : 0) : `not ${pos}`)
   const w = sampleWeights('thresholdConfusion', t.length, options.sampleWeight)
@@ -149,11 +148,11 @@ export interface TableCost {
  * @param table - A confusion matrix of counts.
  * @param costs - The cost matrix, one row per actual class and one column per predicted class.
  * @returns Each cell's cost, the total and the cost per case.
- * @throws WhiteboxError `shape` when the cost matrix does not match the table.
+ * @throws MdmlError `shape` when the cost matrix does not match the table.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { tableCost } from 'whitebox-engine/metrics'
+ * import { tableCost } from 'mdml-engine/metrics'
  * // A missed illness (FN) costs 50 times a false alarm (FP).
  * const c = tableCost({ labels: ['healthy', 'ill'], matrix: [[880, 70], [8, 42]] }, [[0, 1], [50, 0]])
  * c.total // => 470
@@ -163,7 +162,7 @@ export interface TableCost {
 export function tableCost(table: ConfusionMatrix, costs: readonly (readonly number[])[]): TableCost {
   const k = table.labels.length
   if (costs.length !== k || costs.some((row) => row.length !== k))
-    throw new WhiteboxError('shape', `tableCost: the cost matrix must be ${k} by ${k}, like the table`)
+    throw new MdmlError('shape', `tableCost: the cost matrix must be ${k} by ${k}, like the table`)
   const cells = table.matrix.map((row, i) => row.map((n, j) => n * (costs[i]?.[j] ?? 0)))
   const total = cells.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
   const n = table.matrix.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
@@ -190,12 +189,12 @@ export interface ThresholdCosts {
  * @param costs - `[[cost of TN, cost of FP], [cost of FN, cost of TP]]`.
  * @param options - posLabel and sample weights.
  * @returns The thresholds, their totals and the cheapest.
- * @throws WhiteboxError `shape` for a cost matrix that is not 2 by 2 or lengths that differ; `value` with more than two
+ * @throws MdmlError `shape` for a cost matrix that is not 2 by 2 or lengths that differ; `value` with more than two
  * classes.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { thresholdCosts } from 'whitebox-engine/metrics'
+ * import { thresholdCosts } from 'mdml-engine/metrics'
  * // A false negative costs 5, a false positive 1.
  * thresholdCosts([0, 0, 1, 1], [0.1, 0.6, 0.4, 0.9], [[0, 1], [5, 0]]).best // => { threshold: 0.4, total: 1 }
  * ```
@@ -219,7 +218,7 @@ export function thresholdCosts(
 
 function checkCosts(name: string, costs: readonly (readonly number[])[]): void {
   if (costs.length !== 2 || costs.some((row) => row.length !== 2))
-    throw new WhiteboxError('shape', `${name}: the cost matrix must be 2 by 2`)
+    throw new MdmlError('shape', `${name}: the cost matrix must be 2 by 2`)
 }
 
 /** The counts of scores cut at every distinct threshold, from one sorted pass. */
@@ -247,10 +246,10 @@ function sweepScores(
 ): ScoreSweep {
   const t = labelValues(yTrue)
   const s = flat(yScore)
-  if (s.length !== t.length) throw new WhiteboxError('shape', `${name}: yTrue and yScore have different lengths`)
-  for (const v of s) if (Number.isNaN(v)) throw new WhiteboxError('value', `${name}: a score is NaN`)
+  if (s.length !== t.length) throw new MdmlError('shape', `${name}: yTrue and yScore have different lengths`)
+  for (const v of s) if (Number.isNaN(v)) throw new MdmlError('value', `${name}: a score is NaN`)
   const classes = sortLabels(t)
-  if (classes.length > 2) throw new WhiteboxError('value', `${name}: needs two classes`)
+  if (classes.length > 2) throw new MdmlError('value', `${name}: needs two classes`)
   const positive = options.posLabel ?? (classes.includes(1) ? 1 : (classes[classes.length - 1] ?? 1))
   const negative =
     classes.find((c) => c !== positive) ?? (typeof positive === 'number' ? (positive === 0 ? 1 : 0) : `not ${positive}`)
@@ -320,12 +319,12 @@ export interface AnalyseThresholdsOptions extends ThresholdConfusionOptions {
  * @param yScore - Scores, higher meaning more positive.
  * @param options - Costs, posLabel, class names, sample weights and whether to keep the rows.
  * @returns The sweep.
- * @throws WhiteboxError `shape` for lengths that differ or a cost matrix that is not 2 by 2; `value` with more than two
+ * @throws MdmlError `shape` for lengths that differ or a cost matrix that is not 2 by 2; `value` with more than two
  *   classes or a NaN score.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { analyseThresholds } from 'whitebox-engine/metrics'
+ * import { analyseThresholds } from 'mdml-engine/metrics'
  * const r = analyseThresholds([0, 0, 1, 1], [0.1, 0.6, 0.4, 0.9], { costs: [[0, 1], [5, 0]] })
  * r.thresholds // => [0.1, 0.4, 0.6, 0.9, Infinity]
  * r.tp // => [2, 2, 1, 1, 0]

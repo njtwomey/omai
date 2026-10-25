@@ -6,7 +6,7 @@
  * exactly.
  */
 
-import { type Json, linspaceNumbers, meanOf, WhiteboxError } from '../../lib/base/index.ts'
+import { type Json, linspaceNumbers, MdmlError, meanOf } from '../../lib/base/index.ts'
 import { type EpisodeRecord, type Explained, episodeRecord } from '../../lib/exposition/index.ts'
 import { foldIn, type Key, key as makeKey } from '../../lib/random/index.ts'
 import {
@@ -99,7 +99,7 @@ export interface PlaygroundPairing {
 
 const num = (params: PlaygroundParams, name: string): number => {
   const v = params[name]
-  if (typeof v !== 'number') throw new WhiteboxError('value', `playground: parameter '${name}' must be a number`)
+  if (typeof v !== 'number') throw new MdmlError('value', `playground: parameter '${name}' must be a number`)
   return v
 }
 const flag = (params: PlaygroundParams, name: string): boolean => params[name] === true
@@ -454,7 +454,7 @@ export const playgroundPairings: readonly PlaygroundPairing[] = [
     setup: (params) => {
       const env = mountainCar.create()
       const space = env.observationSpace
-      if (space.kind !== 'box') throw new WhiteboxError('value', 'playground: MountainCar has box observations')
+      if (space.kind !== 'box') throw new MdmlError('value', 'playground: MountainCar has box observations')
       const low = Array.isArray(space.low) ? (space.low as number[]) : [-1.2, -0.07]
       const high = Array.isArray(space.high) ? (space.high as number[]) : [0.6, 0.07]
       const bins = num(params, 'bins')
@@ -487,14 +487,14 @@ export const playgroundPairings: readonly PlaygroundPairing[] = [
  * @param id - The pairing's id, or its environment's short name when `agent` is given.
  * @param agent - The agent's short name.
  * @returns The pairing.
- * @throws WhiteboxError with code `value` for an unknown pairing.
+ * @throws MdmlError with code `value` for an unknown pairing.
  */
 export function playgroundPairing(id: string, agent?: string): PlaygroundPairing {
   const full = agent === undefined ? id : `${id}/${agent}`
   const found = playgroundPairings.find((p) => p.id === full)
   if (found === undefined) {
     const known = playgroundPairings.map((p) => p.id).join(', ')
-    throw new WhiteboxError('value', `playground: no pairing '${full}' (known: ${known})`)
+    throw new MdmlError('value', `playground: no pairing '${full}' (known: ${known})`)
   }
   return found
 }
@@ -649,7 +649,7 @@ function resolvePairing(options: PlaygroundOptions): PlaygroundPairing {
   if (options.pairing !== undefined) return playgroundPairing(options.pairing)
   if (options.environment !== undefined && options.agent !== undefined)
     return playgroundPairing(options.environment, options.agent)
-  throw new WhiteboxError('value', 'playground: give a pairing, or an environment and an agent')
+  throw new MdmlError('value', 'playground: give a pairing, or an environment and an agent')
 }
 
 const evenly = (n: number, count: number): number[] => [
@@ -665,7 +665,7 @@ const evenly = (n: number, count: number): number[] => [
  * @param options - The pairing (or environment and agent), parameters, budget, episodes to record, snapshot
  *   schedule and frames.
  * @returns The session.
- * @throws WhiteboxError with code `value` for an unknown pairing or a parameter of the wrong type.
+ * @throws MdmlError with code `value` for an unknown pairing or a parameter of the wrong type.
  */
 export function playgroundSession(options: PlaygroundOptions): PlaygroundSession {
   const pairing = resolvePairing(options)
@@ -709,7 +709,7 @@ export function playgroundSession(options: PlaygroundOptions): PlaygroundSession
     step: (s, ctx) => {
       const train = inner.step(s.train, ctx)
       const t = train.agent.last
-      if (t === undefined) throw new WhiteboxError('value', 'playground: the agent learned from no transition')
+      if (t === undefined) throw new MdmlError('value', 'playground: the agent learned from no transition')
       const raw = t.info?.[RAW_STATE] as unknown
       const cell: StepCell = {
         state: raw as Json,
@@ -804,10 +804,10 @@ export interface PlaygroundResult {
  *
  * @param options - The pairing (or environment and agent), parameters, budget, recording and run options.
  * @returns The result with its `episodes` record.
- * @throws WhiteboxError with code `value` for an unknown pairing.
+ * @throws MdmlError with code `value` for an unknown pairing.
  * @example
  * ```ts
- * import { playground } from 'whitebox-engine/methods/rl'
+ * import { playground } from 'mdml-engine/methods/rl'
  * const run = playground({ pairing: 'cliff-walking/q-learning', episodes: 100, seed: 0 })
  * run.after > run.before // => true
  * ```
@@ -867,7 +867,7 @@ export interface EpisodeReplay {
  * @param recorded - A recorded episode of its `episodes` record.
  * @param params - The parameters of the run (the environment's options among them; default the demo's).
  * @returns The environment and policy.
- * @throws WhiteboxError with code `value` for an unknown pairing.
+ * @throws MdmlError with code `value` for an unknown pairing.
  */
 export function replayRecorded(
   pairing: string,

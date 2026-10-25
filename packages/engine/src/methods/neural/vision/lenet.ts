@@ -5,7 +5,7 @@
  * goes on.
  */
 
-import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { type Json, MdmlError } from '../../../lib/base/index.ts'
 import {
   coefficientTable,
   diagramRecord,
@@ -185,12 +185,11 @@ function firstFilters(net: Sequential, params: Params): number[][][] {
 function inferShape(d: number, given?: readonly [number, number, number]): [number, number, number] {
   if (given !== undefined) {
     if (given[0] * given[1] * given[2] !== d)
-      throw new WhiteboxError('shape', `lenet: imageShape [${given.join(', ')}] does not hold ${d} features`)
+      throw new MdmlError('shape', `lenet: imageShape [${given.join(', ')}] does not hold ${d} features`)
     return [...given]
   }
   const side = Math.round(Math.sqrt(d))
-  if (side * side !== d)
-    throw new WhiteboxError('shape', `lenet: ${d} features are not a square image; give imageShape`)
+  if (side * side !== d) throw new MdmlError('shape', `lenet: ${d} features are not a square image; give imageShape`)
   return [1, side, side]
 }
 
@@ -212,7 +211,7 @@ function fitLeNet(
   const raw = matrixView(data.x, 'lenet')
   const shape = inferShape(raw.d, h.imageShape)
   if (shape[1] % 4 !== 0 || shape[2] % 4 !== 0)
-    throw new WhiteboxError('shape', 'lenet: the image height and width must be divisible by 4 (two poolings by 2)')
+    throw new MdmlError('shape', 'lenet: the image height and width must be divisible by 4 (two poolings by 2)')
   let peak = 0
   for (const v of raw.data) peak = Math.max(peak, Math.abs(v))
   const scale = h.scale ?? (peak > 0 ? peak : 1)

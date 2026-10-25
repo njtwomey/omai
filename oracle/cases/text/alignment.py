@@ -5,8 +5,8 @@ from importlib.metadata import version
 
 import numpy as np
 from Bio.Align import PairwiseAligner
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"biopython": version("biopython")}
 

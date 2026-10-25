@@ -4,7 +4,7 @@
  * that quantises each coefficient just coarsely enough that its noise stays below that threshold.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { imdct, mdct, rfft, sineWindow } from '../../numerics/fourier/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { samples } from '../_shared.ts'
@@ -24,7 +24,7 @@ import { hzToBark } from './scales.ts'
  * @concept psychoacoustics
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * Array.from(audio.absoluteThreshold([1000])).map((v) => Math.round(v * 100) / 100) // => [3.37]
  * ```
  */
@@ -44,7 +44,7 @@ export function absoluteThreshold(f: ArrayLike<number>): Float64Array {
  * @concept psychoacoustics
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * Array.from(audio.spreadingFunction([0, 1, -1])).map((v) => Math.round(v * 10) / 10) // => [0, -4.3, -7.9]
  * ```
  */
@@ -72,7 +72,7 @@ export interface MaskingOptions {
  * @concept psychoacoustics
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const x = Array.from({ length: 512 }, (_, i) => 0.5 * Math.sin((2 * Math.PI * 1000 * i) / 16000))
  * audio.maskingThreshold(x, 16000).threshold.length // => 257
  * ```
@@ -140,7 +140,7 @@ export interface MdctCode {
  * @concept transform-coding
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const x = Array.from({ length: 2048 }, (_, i) => 0.5 * Math.sin((2 * Math.PI * 440 * i) / 16000))
  * audio.mdctCode(x, 16000).decoded.length // => 2048
  * ```
@@ -152,7 +152,7 @@ export function mdctCode(
 ): MdctCode {
   const s0 = samples(x, 'mdctCode')
   const n = options.n ?? 256
-  if (!Number.isInteger(n) || n < 2) throw new WhiteboxError('value', 'mdctCode: n must be an integer >= 2')
+  if (!Number.isInteger(n) || n < 2) throw new MdmlError('value', 'mdctCode: n must be an integer >= 2')
   const len = Math.ceil(s0.length / n) * n
   const s = new Float64Array(len)
   s.set(s0)

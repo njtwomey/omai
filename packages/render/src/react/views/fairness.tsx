@@ -4,9 +4,9 @@
  * table, the rates over a threshold sweep, and a threshold explorer per group.
  */
 
+import type { GroupRateName, GroupReport } from 'mdml-engine/exposition'
+import { analyseThresholds } from 'mdml-engine/metrics'
 import { type ReactElement, type ReactNode, useCallback, useMemo, useState } from 'react'
-import type { GroupRateName, GroupReport } from 'whitebox-engine/exposition'
-import { analyseThresholds } from 'whitebox-engine/metrics'
 import type { Figure } from '../../figure/figure.ts'
 import { formatNumber } from '../../theme/format.ts'
 import { categoricalColour } from '../../theme/palettes.ts'

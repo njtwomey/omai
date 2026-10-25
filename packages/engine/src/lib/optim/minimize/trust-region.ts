@@ -4,7 +4,7 @@
  * Hessian-vector-product curvature from autodiff, and the dogleg, trust-ncg and trust-exact methods.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { daxpy, dgemv, dnrm2 } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
@@ -64,7 +64,7 @@ export interface ExactHessianData {
  * @returns The curvature model.
  * @example
  * ```ts
- * import { exactHessian } from 'whitebox-engine/optim'
+ * import { exactHessian } from 'mdml-engine/optim'
  * exactHessian('products').name // => 'hessianProducts'
  * ```
  */
@@ -116,12 +116,12 @@ export interface TrustRegionState extends VectorState {
  * @param model - The curvature model (exact Hessian, products, or a quasi-Newton approximation).
  * @param options - Subproblem, radii, eta and tolerance.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for inconsistent radii or eta.
+ * @throws MdmlError with code `value` for inconsistent radii or eta.
  * @concept trust-region
  * @example
  * ```ts
- * import { exactHessian, trustRegionAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { exactHessian, trustRegionAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * trustRegionAlgorithm((x: Value) => sum(square(x)), [1, 2], exactHessian()).name // => 'trustRegion'
  * ```
  */
@@ -143,12 +143,12 @@ export function trustRegionAlgorithm<H>(
  * @param model - The curvature model.
  * @param options - Subproblem, radii, eta and tolerance.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for inconsistent radii or eta.
+ * @throws MdmlError with code `value` for inconsistent radii or eta.
  * @concept trust-region
  * @example
  * ```ts
- * import { exactHessian, flatObjective, trustRegionOn } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { exactHessian, flatObjective, trustRegionOn } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * trustRegionOn(flatObjective((x: Value) => sum(square(x)), [1, 2]), exactHessian()).name // => 'trustRegion'
  * ```
  */
@@ -162,9 +162,9 @@ export function trustRegionOn<H>(
   const maxRadius = options.maxRadius ?? 1000
   const eta = options.eta ?? 0.15
   const gtol = options.gradTol ?? 1e-4
-  if (!(eta >= 0 && eta < 0.25)) throw new WhiteboxError('value', 'trust region: eta must be in [0, 0.25)')
+  if (!(eta >= 0 && eta < 0.25)) throw new MdmlError('value', 'trust region: eta must be in [0, 0.25)')
   if (!(maxRadius > 0 && radius0 > 0 && radius0 < maxRadius))
-    throw new WhiteboxError('value', 'trust region: need 0 < initialRadius < maxRadius')
+    throw new MdmlError('value', 'trust region: need 0 < initialRadius < maxRadius')
   // The model of a state, counting Hessian-vector products (scipy counts them as Hessian evaluations).
   let products = 0
   const quadratic = (s: TrustRegionState): QuadraticModel => ({
@@ -306,8 +306,8 @@ export function trustRegionOn<H>(
  * @concept trust-region
  * @example
  * ```ts
- * import { exactStep, trustRegion } from 'whitebox-engine/optim'
- * import { add, mul, pow, square, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { exactStep, trustRegion } from 'mdml-engine/optim'
+ * import { add, mul, pow, square, sub, sum, type Value } from 'mdml-engine/tensor'
  * const r = trustRegion((x: Value) => sum(add(pow(x, 4), square(sub(x, 1)))), [2, -2], { subproblem: exactStep() })
  * r.converged // => true
  * ```
@@ -328,8 +328,8 @@ export function trustRegion(f: Objective, x0: Parameters, options: TrustRegionOp
  * @concept trust-region
  * @example
  * ```ts
- * import { trustDogleg } from 'whitebox-engine/optim'
- * import { add, mul, square, sub, sum, toFlat, type Value } from 'whitebox-engine/tensor'
+ * import { trustDogleg } from 'mdml-engine/optim'
+ * import { add, mul, square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
  * const r = trustDogleg((x: Value) => add(sum(square(sub(x, 1))), mul(sum(square(x)), 0.5)), [3, -3])
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e8) / 1e8) // => [0.66666667, 0.66666667]
  * ```
@@ -355,8 +355,8 @@ export function trustDogleg(f: Objective, x0: Parameters, options: TrustRegionOp
  * @concept trust-region
  * @example
  * ```ts
- * import { trustNcg } from 'whitebox-engine/optim'
- * import { square, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { trustNcg } from 'mdml-engine/optim'
+ * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
  * trustNcg((x: Value) => sum(square(sub(x, 2))), [0, 0, 0]).converged // => true
  * ```
  */
@@ -381,8 +381,8 @@ export function trustNcg(f: Objective, x0: Parameters, options: TrustRegionOptio
  * @concept trust-region
  * @example
  * ```ts
- * import { trustExact } from 'whitebox-engine/optim'
- * import { add, cos, sum, square, type Value } from 'whitebox-engine/tensor'
+ * import { trustExact } from 'mdml-engine/optim'
+ * import { add, cos, sum, square, type Value } from 'mdml-engine/tensor'
  * trustExact((x: Value) => sum(add(cos(x), square(x))), [2, -1]).converged // => true
  * ```
  */

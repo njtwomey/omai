@@ -5,7 +5,7 @@
  * and NOTEARS are traced algorithms.
  */
 
-import { argmaxOf, type Json, WhiteboxError } from '../../base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../../base/index.ts'
 import { expm, lstsq } from '../../numerics/linalg/index.ts'
 import { applyUpdates, type GradientTransformation } from '../../optim/index.ts'
 import { fromStorage, toArray, toFlat, type Value } from '../../tensor/index.ts'
@@ -80,8 +80,8 @@ function* subsets(items: readonly string[]): Generator<string[]> {
  * @concept causal-discovery
  * @example
  * ```ts
- * import { gesAlgorithm } from 'whitebox-engine/pgm/causal'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { gesAlgorithm } from 'mdml-engine/pgm/causal'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const data = Array.from({ length: 200 }, (_, i) => ({ a: Math.sin(i), b: 2 * Math.sin(i) + Math.cos(3 * i) }))
  * runAlgorithm(gesAlgorithm(data), { maxSteps: 20 }).state.cpdag.undirected // => [['a', 'b']]
  * ```
@@ -229,7 +229,7 @@ export function gesAlgorithm(data: readonly DataRow[], options: GesOptions = {})
  * @concept causal-discovery
  * @example
  * ```ts
- * import { ges } from 'whitebox-engine/pgm/causal'
+ * import { ges } from 'mdml-engine/pgm/causal'
  * const data = Array.from({ length: 300 }, (_, i) => {
  *   const a = Math.sin(1.3 * i), b = Math.cos(2.1 * i)
  *   return { a, b, c: a + b + 0.3 * Math.sin(5.7 * i) }
@@ -318,8 +318,8 @@ export interface LingamResult {
  * @concept causal-discovery
  * @example
  * ```ts
- * import { directLingam } from 'whitebox-engine/pgm/causal'
- * import { key, uniform } from 'whitebox-engine/random'
+ * import { directLingam } from 'mdml-engine/pgm/causal'
+ * import { key, uniform } from 'mdml-engine/random'
  * const u = uniform(key(0), [400, 2]).data
  * const rows = Array.from({ length: 400 }, (_, i) => { const x = (u[2 * i] ?? 0) - 0.5; return { y: 2 * x + ((u[2 * i + 1] ?? 0) - 0.5), x } })
  * directLingam(rows).order // => ['x', 'y']
@@ -415,8 +415,8 @@ export interface NotearsState {
  * @concept causal-discovery
  * @example
  * ```ts
- * import { notearsAlgorithm } from 'whitebox-engine/pgm/causal'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { notearsAlgorithm } from 'mdml-engine/pgm/causal'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const rows = Array.from({ length: 100 }, (_, i) => ({ x: Math.sin(i), y: 2 * Math.sin(i) + 0.5 * Math.cos(3 * i) }))
  * runAlgorithm(notearsAlgorithm(rows, { innerSteps: 50 }), { maxSteps: 3 }).steps // => 3
  * ```
@@ -571,9 +571,9 @@ export function notearsAlgorithm(data: readonly DataRow[], options: NotearsOptio
  * @concept causal-discovery
  * @example
  * ```ts
- * import { notears } from 'whitebox-engine/pgm/causal'
- * import { dagEdges } from 'whitebox-engine/pgm'
- * import { key, normal } from 'whitebox-engine/random'
+ * import { notears } from 'mdml-engine/pgm/causal'
+ * import { dagEdges } from 'mdml-engine/pgm'
+ * import { key, normal } from 'mdml-engine/random'
  * const z = normal(key(1), [300, 2]).data
  * const rows = Array.from({ length: 300 }, (_, i) => { const x = z[2 * i] ?? 0; return { x, y: 1.5 * x + 0.5 * (z[2 * i + 1] ?? 0) } })
  * dagEdges(notears(rows).dag).length // => 1
@@ -604,10 +604,7 @@ export function notears(
   try {
     result = dag(edges, names)
   } catch {
-    throw new WhiteboxError(
-      'value',
-      'notears: the thresholded graph has a cycle (raise the threshold or the iterations)',
-    )
+    throw new MdmlError('value', 'notears: the thresholded graph has a cycle (raise the threshold or the iterations)')
   }
   return { weights, dag: result, h: r.state.h, status: r.status }
 }

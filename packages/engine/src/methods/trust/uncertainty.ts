@@ -4,7 +4,7 @@
  * they share is aleatoric. Records both along the input.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { curveSet, type Explained } from '../../lib/exposition/index.ts'
 import {
   type Estimator,
@@ -60,7 +60,7 @@ export function ensembleUncertainty(
   data: LearnData,
   options: EnsembleUncertaintyOptions = {},
 ): Explained<EnsembleUncertainty> {
-  if (data.y === undefined) throw new WhiteboxError('value', 'ensembleUncertainty: the data needs targets')
+  if (data.y === undefined) throw new MdmlError('value', 'ensembleUncertainty: the data needs targets')
   const m = matrixView(data.x, 'ensembleUncertainty')
   const y = targetVector(data.y, 'ensembleUncertainty', m.n)
   const key = options.key ?? makeKey(0)

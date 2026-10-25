@@ -4,7 +4,7 @@
  * zeros-poles-gain or second-order sections, and the second-order notch, peak and comb filters.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   type SecondOrderSections,
   sos,
@@ -93,12 +93,12 @@ function finish(s: ZerosPolesGainData, analog: boolean, fs: number | undefined, 
  * @param wn - Critical frequency, or two band edges.
  * @param options - Family, ripples, band, analog or digital, sampling rate, output form.
  * @returns The design as a transfer function, zeros-poles-gain or second-order sections.
- * @throws WhiteboxError with code `value` for invalid frequencies or missing ripples.
+ * @throws MdmlError with code `value` for invalid frequencies or missing ripples.
  * @concept iir-design
  * @example
  * ```ts
- * import { iirfilter } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { iirfilter } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(iirfilter(1, 0.5).num).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0.5]
  * ```
  */
@@ -108,16 +108,16 @@ export function iirfilter<O extends FilterOutput = 'ba'>(
   options: IirFilterOptions<O> = {},
 ): DesignOf<O> {
   const analog = options.analog ?? false
-  if (analog && options.fs !== undefined) throw new WhiteboxError('value', 'iirfilter: fs is for digital filters only')
+  if (analog && options.fs !== undefined) throw new MdmlError('value', 'iirfilter: fs is for digital filters only')
   let w = typeof wn === 'number' ? [wn] : [...wn]
   if (options.fs !== undefined) w = w.map((v) => v / ((options.fs as number) / 2))
-  if (w.some((v) => v <= 0)) throw new WhiteboxError('value', 'iirfilter: critical frequencies must be positive')
+  if (w.some((v) => v <= 0)) throw new MdmlError('value', 'iirfilter: critical frequencies must be positive')
   if (w.length > 1 && !((w[0] ?? 0) < (w[1] ?? 0)))
-    throw new WhiteboxError('value', 'iirfilter: Wn[0] must be less than Wn[1]')
+    throw new MdmlError('value', 'iirfilter: Wn[0] must be less than Wn[1]')
   const ftype = options.ftype ?? 'butter'
   const { rp, rs } = options
-  if (rp !== undefined && rp < 0) throw new WhiteboxError('value', 'iirfilter: rp must be positive')
-  if (rs !== undefined && rs < 0) throw new WhiteboxError('value', 'iirfilter: rs must be positive')
+  if (rp !== undefined && rp < 0) throw new MdmlError('value', 'iirfilter: rp must be positive')
+  if (rs !== undefined && rs < 0) throw new MdmlError('value', 'iirfilter: rs must be positive')
   let s: ZerosPolesGainData
   switch (ftype) {
     case 'butter':
@@ -127,32 +127,31 @@ export function iirfilter<O extends FilterOutput = 'ba'>(
       s = besselap(n, options.norm ?? 'phase')
       break
     case 'cheby1':
-      if (rp === undefined) throw new WhiteboxError('value', 'iirfilter: a Chebyshev I filter needs rp')
+      if (rp === undefined) throw new MdmlError('value', 'iirfilter: a Chebyshev I filter needs rp')
       s = cheb1ap(n, rp)
       break
     case 'cheby2':
-      if (rs === undefined) throw new WhiteboxError('value', 'iirfilter: a Chebyshev II filter needs rs')
+      if (rs === undefined) throw new MdmlError('value', 'iirfilter: a Chebyshev II filter needs rs')
       s = cheb2ap(n, rs)
       break
     case 'ellip':
       if (rp === undefined || rs === undefined)
-        throw new WhiteboxError('value', 'iirfilter: an elliptic filter needs rp and rs')
+        throw new MdmlError('value', 'iirfilter: an elliptic filter needs rp and rs')
       s = ellipap(n, rp, rs)
       break
   }
   let warped = w
   if (!analog) {
     if (w.some((v) => v >= 1))
-      throw new WhiteboxError('value', 'iirfilter: digital critical frequencies must be below Nyquist')
+      throw new MdmlError('value', 'iirfilter: digital critical frequencies must be below Nyquist')
     warped = w.map((v) => 4 * Math.tan((Math.PI * v) / 2))
   }
   const btype = options.btype ?? 'lowpass'
   if (btype === 'lowpass' || btype === 'highpass') {
-    if (warped.length !== 1)
-      throw new WhiteboxError('value', `iirfilter: a ${btype} filter needs one critical frequency`)
+    if (warped.length !== 1) throw new MdmlError('value', `iirfilter: a ${btype} filter needs one critical frequency`)
     s = btype === 'lowpass' ? lp2lpZpk(s, warped[0]) : lp2hpZpk(s, warped[0])
   } else {
-    if (warped.length !== 2) throw new WhiteboxError('value', `iirfilter: a ${btype} filter needs two band edges`)
+    if (warped.length !== 2) throw new MdmlError('value', `iirfilter: a ${btype} filter needs two band edges`)
     const bw = (warped[1] ?? 0) - (warped[0] ?? 0)
     const wo = Math.sqrt((warped[0] ?? 0) * (warped[1] ?? 0))
     s = btype === 'bandpass' ? lp2bpZpk(s, wo, bw) : lp2bsZpk(s, wo, bw)
@@ -176,8 +175,8 @@ export interface DesignOptions<O extends FilterOutput = 'ba'> extends IirOptions
  * @concept iir-design
  * @example
  * ```ts
- * import { butter } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { butter } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(butter(2, 0.5).den).map((v) => Math.round(v * 1e9) / 1e9) // => [1, 0, 0.171572875]
  * ```
  */
@@ -200,7 +199,7 @@ export function butter<O extends FilterOutput = 'ba'>(
  * @concept iir-design
  * @example
  * ```ts
- * import { cheby1 } from 'whitebox-engine/signal'
+ * import { cheby1 } from 'mdml-engine/signal'
  * cheby1(4, 1, 0.3, { output: 'zpk' }).kind // => 'zpk'
  * ```
  */
@@ -224,7 +223,7 @@ export function cheby1<O extends FilterOutput = 'ba'>(
  * @concept iir-design
  * @example
  * ```ts
- * import { cheby2 } from 'whitebox-engine/signal'
+ * import { cheby2 } from 'mdml-engine/signal'
  * cheby2(4, 40, 0.3, { output: 'sos' }).kind // => 'sos'
  * ```
  */
@@ -249,7 +248,7 @@ export function cheby2<O extends FilterOutput = 'ba'>(
  * @concept iir-design
  * @example
  * ```ts
- * import { ellip } from 'whitebox-engine/signal'
+ * import { ellip } from 'mdml-engine/signal'
  * ellip(4, 1, 40, [0.2, 0.4], { btype: 'bandpass', output: 'zpk' }).kind // => 'zpk'
  * ```
  */
@@ -273,7 +272,7 @@ export function ellip<O extends FilterOutput = 'ba'>(
  * @concept iir-design
  * @example
  * ```ts
- * import { bessel } from 'whitebox-engine/signal'
+ * import { bessel } from 'mdml-engine/signal'
  * bessel(3, 0.2, { norm: 'mag' }).kind // => 'tf'
  * ```
  */
@@ -287,7 +286,7 @@ export function bessel<O extends FilterOutput = 'ba'>(
 
 function notchPeak(w0: number, q: number, fs: number, kind: 'notch' | 'peak'): TransferFunction {
   const w = (2 * w0) / fs
-  if (w > 1 || w < 0) throw new WhiteboxError('value', 'iirnotch: w0 must lie in (0, fs / 2)')
+  if (w > 1 || w < 0) throw new MdmlError('value', 'iirnotch: w0 must lie in (0, fs / 2)')
   const bw = (w / q) * Math.PI
   const beta = Math.tan(bw / 2)
   const gain = 1 / (1 + beta)
@@ -307,8 +306,8 @@ function notchPeak(w0: number, q: number, fs: number, kind: 'notch' | 'peak'): T
  * @concept iir-design
  * @example
  * ```ts
- * import { iirnotch } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { iirnotch } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(iirnotch(0.5, 1).num).map((v) => Math.round(v * 1e9) / 1e9) // => [0.5, 0, 0.5]
  * ```
  */
@@ -326,8 +325,8 @@ export function iirnotch(w0: number, q: number, fs = 2): TransferFunction {
  * @concept iir-design
  * @example
  * ```ts
- * import { iirpeak } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { iirpeak } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(iirpeak(0.5, 1).num).map((v) => Math.round(v * 1e9) / 1e9) // => [0.5, 0, -0.5]
  * ```
  */
@@ -342,11 +341,11 @@ export function iirpeak(w0: number, q: number, fs = 2): TransferFunction {
  * @param q - Quality factor.
  * @param options - 'notch' (default) or 'peak', sampling rate (default 2), and whether DC passes.
  * @returns The transfer function of order fs / w0.
- * @throws WhiteboxError with code `value` when w0 does not divide fs.
+ * @throws MdmlError with code `value` when w0 does not divide fs.
  * @concept iir-design
  * @example
  * ```ts
- * import { iircomb } from 'whitebox-engine/signal'
+ * import { iircomb } from 'mdml-engine/signal'
  * iircomb(250, 30, { fs: 1000 }).num.shape // => [5]
  * ```
  */
@@ -357,9 +356,9 @@ export function iircomb(
 ): TransferFunction {
   const fs = options.fs ?? 2
   const ftype = options.ftype ?? 'notch'
-  if (!(w0 > 0 && w0 < fs / 2)) throw new WhiteboxError('value', `iircomb: w0 must lie in (0, ${fs / 2})`)
+  if (!(w0 > 0 && w0 < fs / 2)) throw new MdmlError('value', `iircomb: w0 must lie in (0, ${fs / 2})`)
   const n = Math.round(fs / w0)
-  if (Math.abs(w0 - fs / n) / fs > 1e-14) throw new WhiteboxError('value', 'iircomb: w0 must divide fs')
+  if (Math.abs(w0 - fs / n) / fs > 1e-14) throw new MdmlError('value', 'iircomb: w0 must divide fs')
   const w = (2 * Math.PI * w0) / fs
   const delta = w / q
   const [g0, g] = ftype === 'notch' ? [1, 0] : [0, 1]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import { limit, limitSteps, oo, parse, sym, toText } from './index.ts'
 
 const x = sym('x')
@@ -33,7 +33,7 @@ describe('limit', () => {
       limit(parse('1/x'), x, 0, '+-')
       expect.unreachable()
     } catch (e) {
-      expect(isWhiteboxError(e) && e.code === 'value').toBe(true)
+      expect(isMdmlError(e) && e.code === 'value').toBe(true)
     }
   })
   it('keeps symbols', () => {

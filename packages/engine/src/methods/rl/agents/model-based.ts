@@ -221,9 +221,9 @@ export interface PetsState extends ModelBasedState {
  * @concept model-based-rl
  * @example
  * ```ts
- * import { pets } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { pets } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = pets(pendulum.create(), { hidden: [8], members: 2 })
  * agent.act(agent.init(key(0)), [1, 0, 0], key(1)).length // => 1
  * ```
@@ -346,8 +346,8 @@ export interface MbpoState<G> extends ModelBasedState {
  * @concept model-based-rl
  * @example
  * ```ts
- * import { dqn, mbpo } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { dqn, mbpo } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * const env = cartPole.create()
  * mbpo(env, dqn(env, { hidden: [8] }), { hidden: [8] }).name // => 'mbpo-dqn'
  * ```
@@ -489,9 +489,9 @@ export interface DreamerState {
  * @concept model-based-rl
  * @example
  * ```ts
- * import { dreamer } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { dreamer } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = dreamer(pendulum.create(), { hidden: 8 })
  * agent.act(agent.init(key(0)), [1, 0, 0], key(1)).length // => 1
  * ```
@@ -784,9 +784,9 @@ export interface MuZeroState {
  * @concept model-based-rl
  * @example
  * ```ts
- * import { muZero } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { muZero } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = muZero(cartPole.create(), { hidden: 8, simulations: 4 })
  * [0, 1].includes(agent.greedy(agent.init(key(0)), [0, 0, 0, 0])) // => true
  * ```

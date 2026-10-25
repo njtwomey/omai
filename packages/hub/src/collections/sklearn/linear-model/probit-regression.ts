@@ -3,7 +3,7 @@
  * outcome), on two-dimensional classification data.
  */
 
-import { probitRegression as probitRegressionMethod } from 'whitebox-engine/methods/linear'
+import { probitRegression as probitRegressionMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

@@ -1,7 +1,7 @@
 // The hub entry of a playground pairing (private to collections/rl): the pairing's parameters as controls, a run
 // that reports the episodes so far as it learns, the learning curve, and the last recorded episode played back.
-import type { Exposition } from 'whitebox-engine/exposition'
-import { playground, playgroundPairing, replayRecorded } from 'whitebox-engine/methods/rl'
+import type { Exposition } from 'mdml-engine/exposition'
+import { playground, playgroundPairing, replayRecorded } from 'mdml-engine/methods/rl'
 import { defineEntry, type HubEntry, type MethodRef, type SlotContext } from '../../entry/entry.ts'
 
 /** Options of {@link playgroundEntry}. */

@@ -5,7 +5,7 @@ from typing import Literal
 import numpy as np
 import scipy
 import scipy.signal.windows as W
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

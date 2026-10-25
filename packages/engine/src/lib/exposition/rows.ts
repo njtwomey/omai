@@ -3,7 +3,7 @@
  * spans, or a 2-D projection) with their names, coloured by class or by a numeric target. Shared by most other records.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 
 /**
@@ -35,10 +35,10 @@ export type RowColours =
  *
  * @param rows - The rows.
  * @returns The rows.
- * @throws WhiteboxError `shape` when a point does not have two coordinates or the labels do not match the points.
+ * @throws MdmlError `shape` when a point does not have two coordinates or the labels do not match the points.
  * @example
  * ```ts
- * import { inputRows } from 'whitebox-engine/exposition'
+ * import { inputRows } from 'mdml-engine/exposition'
  * inputRows({ points: [[0, 1], [2, 3]], features: ['a', 'b'], labels: [0, 1] }).labels // => [0, 1]
  * ```
  */
@@ -47,6 +47,6 @@ export function inputRows(rows: InputRows): InputRows {
   if (rows.labels !== undefined) sameLength('inputRows', 'labels', rows.labels.length, rows.points.length)
   if (rows.targets !== undefined) sameLength('inputRows', 'targets', rows.targets.length, rows.points.length)
   if (rows.labels?.some((l) => !Number.isInteger(l) || l < -1))
-    throw new WhiteboxError('value', 'inputRows: labels must be class indices (or -1 for unlabelled)')
+    throw new MdmlError('value', 'inputRows: labels must be class indices (or -1 for unlabelled)')
   return rows
 }

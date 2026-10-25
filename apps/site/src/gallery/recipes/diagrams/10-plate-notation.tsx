@@ -1,15 +1,15 @@
+import { plateModel, toStructure } from 'mdml-engine/pgm'
+import { type Structure, structure } from 'mdml-engine/scene'
+import { Choice, ControlPanel, StructureView } from 'mdml-render/react'
+import { nestPlates } from 'mdml-render/structures'
 import { type ReactNode, useState } from 'react'
-import { plateModel, toStructure } from 'whitebox-engine/pgm'
-import { type Structure, structure } from 'whitebox-engine/scene'
-import { Choice, ControlPanel, StructureView } from 'whitebox-render/react'
-import { nestPlates } from 'whitebox-render/structures'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Plate notation',
   question: 'How do I draw nested plates, as in latent Dirichlet allocation?',
   explain:
-    'A group with a `parent` is drawn inside its parent, so plates nest: in LDA the words of a document sit in a plate inside the documents’ plate, and the topics have a plate of their own. A plate model from whitebox-engine’s `pgm` (`toStructure`) names its plates by the index sets they combine; `nestPlates` turns those names into nested plates with their sizes.',
+    'A group with a `parent` is drawn inside its parent, so plates nest: in LDA the words of a document sit in a plate inside the documents’ plate, and the topics have a plate of their own. A plate model from mdml-engine’s `pgm` (`toStructure`) names its plates by the index sets they combine; `nestPlates` turns those names into nested plates with their sizes.',
 }
 
 const lda = structure(

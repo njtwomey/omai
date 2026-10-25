@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Csp } from './csp.ts'
 
 /** A compiled constraint: its scope as variable indices. */
@@ -26,18 +26,18 @@ export interface Model<D> {
 export function compile<D>(csp: Csp<D>, name: string): Model<D> {
   const index = new Map<string, number>()
   csp.variables.forEach((v, i) => {
-    if (index.has(v)) throw new WhiteboxError('value', `${name}: variable ${v} is repeated`)
+    if (index.has(v)) throw new MdmlError('value', `${name}: variable ${v} is repeated`)
     index.set(v, i)
   })
   const values = csp.variables.map((v) => {
     const d = csp.domains[v]
-    if (d === undefined) throw new WhiteboxError('value', `${name}: variable ${v} has no domain`)
+    if (d === undefined) throw new MdmlError('value', `${name}: variable ${v} has no domain`)
     return d
   })
   const constraints = csp.constraints.map((c, k) => ({
     scope: c.scope.map((v) => {
       const i = index.get(v)
-      if (i === undefined) throw new WhiteboxError('value', `${name}: constraint on unknown variable ${v}`)
+      if (i === undefined) throw new MdmlError('value', `${name}: constraint on unknown variable ${v}`)
       return i
     }),
     test: c.test,

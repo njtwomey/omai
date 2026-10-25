@@ -3,7 +3,7 @@
  * status, steps, seed and the final value of each summary metric, ready for any table component.
  */
 
-import { type Run, type RunNode, runTree } from 'whitebox-engine/trace'
+import { type Run, type RunNode, runTree } from 'mdml-engine/trace'
 
 /** A table as data: column names and rows of cells, for any table component. */
 export interface TableData {
@@ -19,8 +19,8 @@ export interface TableData {
  * @returns The table.
  * @example
  * ```ts
- * import { runTable } from 'whitebox-render/trace'
- * const run = { schema: 'whitebox.run/1' as const, events: [
+ * import { runTable } from 'mdml-render/trace'
+ * const run = { schema: 'mdml.run/1' as const, events: [
  *   { type: 'run' as const, runId: 'r', name: 'sgd', seed: 0, version: '1', config: {} },
  *   { type: 'end' as const, runId: 'r', status: 'converged' as const, steps: 12, summary: { loss: 0.1 } },
  * ] }

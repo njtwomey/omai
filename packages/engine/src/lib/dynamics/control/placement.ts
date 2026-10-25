@@ -4,7 +4,7 @@
  * well-conditioned eigenvectors, and `acker` is Ackermann's formula for the single-input case.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { det, eigvals, lstsq, matrixPower, matrixRank, nullSpace, qr, solve, svd } from '../../numerics/linalg/index.ts'
 import { ctrb } from '../../systems/index.ts'
 import {
@@ -40,11 +40,11 @@ function orderPoles(poles: readonly Pole[]): Cpole[] {
   const out: Cpole[] = [...real]
   for (const p of lower) {
     if (!ps.some((q) => q.re === p.re && q.im === -p.im)) {
-      throw new WhiteboxError('value', 'place: complex poles must come with their conjugates')
+      throw new MdmlError('value', 'place: complex poles must come with their conjugates')
     }
     out.push(p, { re: p.re, im: -p.im })
   }
-  if (out.length !== ps.length) throw new WhiteboxError('value', 'place: complex poles must come with their conjugates')
+  if (out.length !== ps.length) throw new MdmlError('value', 'place: complex poles must come with their conjugates')
   return out
 }
 
@@ -267,13 +267,13 @@ export interface PlacementResult {
  * @param poles - The desired poles (complex ones as {re, im} with their conjugates).
  * @param options - Method (`YT` or `KNV0`), relative tolerance (default 1e-3) and iteration cap (default 30).
  * @returns The gain, requested and achieved poles, eigenvector matrix and iteration count.
- * @throws WhiteboxError with code `value` for the wrong number of poles, poles repeated more than rank(B) times, or
+ * @throws MdmlError with code `value` for the wrong number of poles, poles repeated more than rank(B) times, or
  * poles that cannot be placed.
  * @concept pole-placement
  * @example
  * ```ts
- * import { control } from 'whitebox-engine/dynamics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { control } from 'mdml-engine/dynamics'
+ * import { toArray } from 'mdml-engine/tensor'
  * // The double integrator with poles -1, -2: K = [2, 3].
  * toArray(control.place([[0, 1], [0, 0]], [[0], [1]], [-1, -2]).gain).map((r) => r.map((v) => Math.round(v * 1e10) / 1e10)) // => [[2, 3]]
  * ```
@@ -289,11 +289,11 @@ export function place(
   const n = asTensor(a).shape[0] ?? 0
   const m = Bt.shape[1] ?? 0
   const ps = orderPoles(poles)
-  if (ps.length !== n) throw new WhiteboxError('value', `place: give ${n} poles, not ${ps.length}`)
+  if (ps.length !== n) throw new MdmlError('value', `place: give ${n} poles, not ${ps.length}`)
   const rankB = matrixRank(Bt)
   for (const p of ps) {
     if (ps.filter((q) => q.re === p.re && q.im === p.im).length > rankB) {
-      throw new WhiteboxError('value', 'place: a pole is repeated more than rank(B) times')
+      throw new MdmlError('value', 'place: a pole is repeated more than rank(B) times')
     }
   }
   const method = options.method ?? 'YT'
@@ -391,7 +391,7 @@ export function place(
     try {
       k = primalOf(solve(tensor2(zr, rankB, m), rhs)) as Tensor
     } catch {
-      throw new WhiteboxError('value', "place: these poles can't be placed (check controllability)")
+      throw new MdmlError('value', "place: these poles can't be placed (check controllability)")
     }
     gain = primalOf(mul(k, -1)) as Tensor
   }
@@ -434,12 +434,12 @@ function primalDet(X: Mat, n: number): number {
  * @param b - B `[n, 1]`.
  * @param poles - The desired poles.
  * @returns K `[1, n]`.
- * @throws WhiteboxError with code `value` for more than one input or the wrong number of poles.
+ * @throws MdmlError with code `value` for more than one input or the wrong number of poles.
  * @concept pole-placement
  * @example
  * ```ts
- * import { control } from 'whitebox-engine/dynamics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { control } from 'mdml-engine/dynamics'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(control.acker([[0, 1], [0, 0]], [[0], [1]], [-1, -2])) // => [[2, 3]]
  * ```
  */
@@ -447,9 +447,9 @@ export function acker(a: TensorLike, b: TensorLike, poles: readonly Pole[]): Ten
   const A = asTensor(a)
   const B = asTensor(b)
   const n = A.shape[0] ?? 0
-  if ((B.shape[1] ?? 1) !== 1) throw new WhiteboxError('value', 'acker: one input only')
+  if ((B.shape[1] ?? 1) !== 1) throw new MdmlError('value', 'acker: one input only')
   const ps = orderPoles(poles)
-  if (ps.length !== n) throw new WhiteboxError('value', `acker: give ${n} poles`)
+  if (ps.length !== n) throw new MdmlError('value', `acker: give ${n} poles`)
   // Characteristic polynomial coefficients (highest power first) from the roots, in real arithmetic by pairs.
   let coeffs = [1]
   const mulPoly = (c: number[], f: number[]): number[] => {

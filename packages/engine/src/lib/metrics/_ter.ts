@@ -3,7 +3,7 @@
  * reduce a beam-limited word edit distance, then the edit distance of the shifted hypothesis.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 const MAX_SHIFT_SIZE = 10
 const MAX_SHIFT_DIST = 50
@@ -63,7 +63,7 @@ function editDistance(hyp: readonly string[], ref: readonly string[]): { distanc
       j--
     } else if (op === 'i') j--
     else if (op === 'd') i--
-    else throw new WhiteboxError('value', 'translationEditRate: undefined edit operation')
+    else throw new MdmlError('value', 'translationEditRate: undefined edit operation')
   }
   return { distance: cost[nh]?.[nr] ?? 0, trace }
 }

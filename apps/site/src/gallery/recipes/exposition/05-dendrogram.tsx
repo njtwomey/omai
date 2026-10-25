@@ -1,11 +1,11 @@
+import { generate } from 'mdml-engine/data'
+import { blobs } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { agglomerativeClustering, type Linkage } from 'mdml-engine/methods/cluster'
+import { key } from 'mdml-engine/random'
+import { toArray } from 'mdml-engine/tensor'
+import { Choice, ControlPanel, DendrogramView, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { generate } from 'whitebox-engine/data'
-import { blobs } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { agglomerativeClustering, type Linkage } from 'whitebox-engine/methods/cluster'
-import { key } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
-import { Choice, ControlPanel, DendrogramView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

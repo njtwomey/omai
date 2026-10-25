@@ -8,10 +8,10 @@ import numpy as np
 import scipy
 import scipy.stats as st
 import statsmodels
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from scipy.optimize import minimize_scalar
 from statsmodels.nonparametric.bandwidths import bw_scott, bw_silverman
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "statsmodels": statsmodels.__version__}
 

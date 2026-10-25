@@ -6,7 +6,7 @@
 import type { Point2, Projection } from './projection.ts'
 
 /**
- * A rectangle in data coordinates as x and y ranges, low end first: the shape of a brush in `whitebox-render/figure`'s
+ * A rectangle in data coordinates as x and y ranges, low end first: the shape of a brush in `mdml-render/figure`'s
  * link state, so a brushed rectangle goes straight to `brushSelection` or a `LinkStore`.
  */
 export interface DataRect {

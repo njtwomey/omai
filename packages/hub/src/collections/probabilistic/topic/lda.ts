@@ -3,9 +3,9 @@
  * documents as mixtures of them, on small text corpora.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import type { CorpusData } from 'whitebox-engine/data'
-import { documentTermCounts, latentDirichletAllocation } from 'whitebox-engine/methods/models'
+import { MdmlError } from 'mdml-engine/base'
+import type { CorpusData } from 'mdml-engine/data'
+import { documentTermCounts, latentDirichletAllocation } from 'mdml-engine/methods/models'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 
@@ -22,7 +22,7 @@ export const lda: HubEntry = defineEntry({
   params: inner.params,
   run: (input) => {
     const corpus = input.data as CorpusData | undefined
-    if (corpus?.kind !== 'corpus') throw new WhiteboxError('value', 'lda: needs a corpus')
+    if (corpus?.kind !== 'corpus') throw new MdmlError('value', 'lda: needs a corpus')
     return inner.run({ ...input, data: documentTermCounts(corpus) as never })
   },
   views: [

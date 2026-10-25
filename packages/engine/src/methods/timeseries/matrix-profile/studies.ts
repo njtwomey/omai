@@ -4,7 +4,7 @@
  * towards the exact profile, traced batch by batch.
  */
 
-import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { type Json, MdmlError } from '../../../lib/base/index.ts'
 import { foldIn, type Key, normal } from '../../../lib/random/index.ts'
 import { exclusionZone } from '../../../lib/signal/index.ts'
 import type { TensorLike } from '../../../lib/tensor/index.ts'
@@ -61,8 +61,8 @@ export interface PlantedSeries {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { plantedSeries } from 'whitebox-engine/methods/timeseries'
- * import { key } from 'whitebox-engine/random'
+ * import { plantedSeries } from 'mdml-engine/methods/timeseries'
+ * import { key } from 'mdml-engine/random'
  * plantedSeries(key(0), { n: 200, m: 10 }).motifStarts // => [17, 83, 149]
  * ```
  */
@@ -72,7 +72,7 @@ export function plantedSeries(key: Key, options: PlantedOptions = {}): PlantedSe
   const occurrences = options.occurrences ?? 3
   const noise = options.noise ?? 0.1
   const regimes = options.regimes ?? 2
-  if (occurrences * 3 * m > n) throw new WhiteboxError('value', 'plantedSeries: the series is too short for the motifs')
+  if (occurrences * 3 * m > n) throw new MdmlError('value', 'plantedSeries: the series is too short for the motifs')
   const e = normal(foldIn(key, 0), [n]).data
   const boundaries = Array.from({ length: regimes - 1 }, (_, r) => Math.round(((r + 1) * n) / regimes))
   const t = new Float64Array(n)
@@ -130,8 +130,8 @@ export interface DiscoveryStudy {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { discoveryStudy } from 'whitebox-engine/methods/timeseries'
- * import { key } from 'whitebox-engine/random'
+ * import { discoveryStudy } from 'mdml-engine/methods/timeseries'
+ * import { key } from 'mdml-engine/random'
  * const s = discoveryStudy(key(1), { n: 240, m: 12 })
  * [s.motifRecall, s.discordFound] // => [1, true]
  * ```
@@ -207,7 +207,7 @@ export interface AnytimeStudyState {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { anytimeStudyAlgorithm } from 'whitebox-engine/methods/timeseries'
+ * import { anytimeStudyAlgorithm } from 'mdml-engine/methods/timeseries'
  * anytimeStudyAlgorithm(Array.from({ length: 60 }, (_, i) => Math.sin(i / 3) + Math.cos(i * 1.1)), 6, 'scrump').name // => 'anytime:scrump'
  * ```
  */
@@ -266,7 +266,7 @@ export function anytimeStudyAlgorithm(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { anytimeStudy } from 'whitebox-engine/methods/timeseries'
+ * import { anytimeStudy } from 'mdml-engine/methods/timeseries'
  * const curve = anytimeStudy(Array.from({ length: 60 }, (_, i) => Math.sin(i / 3) + Math.cos(i * 1.1)), 6, 'stamp')
  * curve.at(-1)?.exactFraction // => 1
  * ```

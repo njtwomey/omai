@@ -1,6 +1,6 @@
 // Private dense linear-model helpers of the stats domain, composed from numerics/linalg's LAPACK-style routines:
 // least squares with coefficient covariances, Gram matrices and SPD inverses on row-major number arrays.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { dgeqrf, dpotrf, dpotrs, dsyev, dtrsv } from '../numerics/linalg/index.ts'
 
 /** An ordinary least-squares fit. */
@@ -19,11 +19,11 @@ export interface OlsFit {
 
 /** Ordinary least squares y ~ X by Householder QR (X row-major n x p, full column rank). */
 export function ols(X: ArrayLike<number>, n: number, p: number, y: ArrayLike<number>): OlsFit {
-  if (n < p) throw new WhiteboxError('value', 'ols: fewer observations than coefficients')
+  if (n < p) throw new MdmlError('value', 'ols: fewer observations than coefficients')
   const { q, r } = dgeqrf(X, n, p)
   for (let i = 0; i < p; i++)
     if (!(Math.abs(r[i * p + i] ?? 0) > 1e-12 * Math.abs(r[0] ?? 1)))
-      throw new WhiteboxError('singular', 'ols: the design matrix is rank deficient')
+      throw new MdmlError('singular', 'ols: the design matrix is rank deficient')
   const qty = new Float64Array(p)
   for (let j = 0; j < p; j++) {
     let s = 0
@@ -64,7 +64,7 @@ export function ols(X: ArrayLike<number>, n: number, p: number, y: ArrayLike<num
 /** The inverse of a symmetric positive-definite matrix (row-major n x n) via Cholesky. */
 export function invSpd(a: ArrayLike<number>, n: number): Float64Array {
   const { factor, info } = dpotrf(a, n)
-  if (info !== 0) throw new WhiteboxError('singular', 'the matrix is not positive definite')
+  if (info !== 0) throw new MdmlError('singular', 'the matrix is not positive definite')
   const out = new Float64Array(n * n)
   for (let j = 0; j < n; j++) {
     const e = new Float64Array(n)

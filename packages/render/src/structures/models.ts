@@ -5,8 +5,8 @@
  * nested inside each other.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import type { BayesNet } from 'whitebox-engine/pgm'
+import { MdmlError } from 'mdml-engine/base'
+import type { BayesNet } from 'mdml-engine/pgm'
 import {
   type Paint,
   path,
@@ -17,7 +17,7 @@ import {
   type StructureGroup,
   scene,
   text,
-} from 'whitebox-engine/scene'
+} from 'mdml-engine/scene'
 import { layered } from '../layout/layered.ts'
 
 /** One resolution level of a U-Net or encoder–decoder: its channels and its spatial size (side in pixels). */
@@ -32,15 +32,15 @@ export interface UNetLevel {
  * @param size - The input's side in pixels.
  * @param channels - Channels per level, top first (the last is the bottleneck).
  * @returns The levels.
- * @throws WhiteboxError with code `value` for no levels or a non-positive size.
+ * @throws MdmlError with code `value` for no levels or a non-positive size.
  * @example
  * ```ts
- * import { unetLevels } from 'whitebox-render/structures'
+ * import { unetLevels } from 'mdml-render/structures'
  * unetLevels(64, [32, 64, 128]) // => [{ channels: 32, size: 64 }, { channels: 64, size: 32 }, { channels: 128, size: 16 }]
  * ```
  */
 export function unetLevels(size: number, channels: readonly number[]): UNetLevel[] {
-  if (channels.length === 0 || !(size > 0)) throw new WhiteboxError('value', 'unetLevels: need a size and channels')
+  if (channels.length === 0 || !(size > 0)) throw new MdmlError('value', 'unetLevels: need a size and channels')
   return channels.map((c, i) => ({ channels: c, size: Math.max(1, Math.round(size / 2 ** i)) }))
 }
 
@@ -70,7 +70,7 @@ export interface UNetOptions {
  * @returns The ids, one frame each of an animated pass.
  * @example
  * ```ts
- * import { uNetOrder, unetLevels } from 'whitebox-render/structures'
+ * import { uNetOrder, unetLevels } from 'mdml-render/structures'
  * uNetOrder(unetLevels(32, [8, 16])) // => ['enc:0', 'mid', 'skip:0', 'dec:0', 'out']
  * ```
  */
@@ -92,16 +92,16 @@ export function uNetOrder(levels: readonly UNetLevel[], options: Pick<UNetOption
  * @param levels - The levels, top first; the last is the bottleneck (see {@link unetLevels}).
  * @param options - Skips, time embedding, channels in and out, convolutions per block, active blocks and legend.
  * @returns The scene (block ids as in `active`).
- * @throws WhiteboxError with code `value` for fewer than two levels.
+ * @throws MdmlError with code `value` for fewer than two levels.
  * @example
  * ```ts
- * import { uNet, unetLevels } from 'whitebox-render/structures'
+ * import { uNet, unetLevels } from 'mdml-render/structures'
  * const s = uNet(unetLevels(64, [16, 32, 64]))
  * s.children.some((n) => n.id === 'skip:0') // => true
  * ```
  */
 export function uNet(levels: readonly UNetLevel[], options: UNetOptions = {}): Scene {
-  if (levels.length < 2) throw new WhiteboxError('value', 'uNet: need at least two levels (one and the bottleneck)')
+  if (levels.length < 2) throw new MdmlError('value', 'uNet: need at least two levels (one and the bottleneck)')
   const skips = options.skips ?? true
   const convs = Math.max(1, options.convs ?? 2)
   const active = new Set(options.active ?? [])
@@ -326,13 +326,13 @@ const FONT = 11
  * each probability as a number over a bar). With `evidence`, observed variables are shaded and the CPT row that applies
  * is highlighted, so the cards read as the arithmetic of the network. Cards are laid out in ranks, arrows between them.
  *
- * @param bn - The network (`bayesNet` in whitebox-engine's `pgm`).
+ * @param bn - The network (`bayesNet` in mdml-engine's `pgm`).
  * @param options - Evidence, marginals, direction and the most rows per table.
  * @returns The scene (cards have the variables' names as ids).
  * @example
  * ```ts
- * import { bayesNet } from 'whitebox-engine/pgm'
- * import { bayesNetCards } from 'whitebox-render/structures'
+ * import { bayesNet } from 'mdml-engine/pgm'
+ * import { bayesNetCards } from 'mdml-render/structures'
  * const bn = bayesNet([
  *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
  *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -499,8 +499,8 @@ export function bayesNetCards(bn: BayesNet, options: BayesNetCardOptions = {}): 
  * @returns The structure with nested plates.
  * @example
  * ```ts
- * import { structure } from 'whitebox-engine/scene'
- * import { nestPlates } from 'whitebox-render/structures'
+ * import { structure } from 'mdml-engine/scene'
+ * import { nestPlates } from 'mdml-render/structures'
  * const s = structure('plate-model', [{ id: 'x', label: 'x', role: 'observed', group: 'plate:doc×word' }], [], { groups: [{ id: 'plate:doc×word', label: 'doc × word', kind: 'plate' }] })
  * nestPlates(s).groups.map((g) => [g.id, g.parent]) // => [['plate:doc', undefined], ['plate:doc×word', 'plate:doc']]
  * ```

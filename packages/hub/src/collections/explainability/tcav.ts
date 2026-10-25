@@ -2,10 +2,10 @@
  * The TCAV entry: whether a LeNet's decision for a digit rests on concepts given as other digits' images.
  */
 
-import { tcavStudy } from 'whitebox-engine/methods/explain'
-import { lenet } from 'whitebox-engine/methods/neural/vision'
-import { dict, int } from 'whitebox-engine/space'
-import { asTensor, type TensorLike, toFlat } from 'whitebox-engine/tensor'
+import { tcavStudy } from 'mdml-engine/methods/explain'
+import { lenet } from 'mdml-engine/methods/neural/vision'
+import { dict, int } from 'mdml-engine/space'
+import { asTensor, type TensorLike, toFlat } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

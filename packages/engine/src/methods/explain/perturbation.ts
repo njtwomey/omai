@@ -3,7 +3,7 @@
  * layout the views draw (an attribution map, a token strip, a series): occlusion, feature ablation over superpixels,
  * words or windows, RISE, and Shapley values or LIME over those units; and Morris screening as an importance record.
  */
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import { type Explained, featureAttributions, importances } from '../../lib/exposition/index.ts'
 import { type Fitted, featureNamesOf, type LearnData, matrixView } from '../../lib/learn/index.ts'
@@ -52,11 +52,11 @@ export interface ImageExplanation {
 
 function squareShape(d: number, given: readonly [number, number] | undefined, who: string): [number, number] {
   if (given !== undefined) {
-    if (given[0] * given[1] !== d) throw new WhiteboxError('shape', `${who}: shape ${given.join('x')} for ${d} pixels`)
+    if (given[0] * given[1] !== d) throw new MdmlError('shape', `${who}: shape ${given.join('x')} for ${d} pixels`)
     return [given[0], given[1]]
   }
   const s = Math.round(Math.sqrt(d))
-  if (s * s !== d) throw new WhiteboxError('shape', `${who}: ${d} pixels are not a square image; give shape`)
+  if (s * s !== d) throw new MdmlError('shape', `${who}: ${d} pixels are not a square image; give shape`)
   return [s, s]
 }
 
@@ -84,7 +84,7 @@ export function explainImage(
   options: ExplainImageOptions = {},
 ): Explained<ImageExplanation> {
   const x = matrixView(data.x, 'explainImage')
-  if (!(Number.isInteger(row) && row >= 0 && row < x.n)) throw new WhiteboxError('value', `explainImage: no row ${row}`)
+  if (!(Number.isInteger(row) && row >= 0 && row < x.n)) throw new MdmlError('value', `explainImage: no row ${row}`)
   const shape = squareShape(x.d, options.shape, 'explainImage')
   const pixels = Array.from(x.data.subarray(row * x.d, (row + 1) * x.d))
   const output = modelOutput(fitted, data, 'auto', options.classIndex ?? predictedClass(fitted, pixels))
@@ -203,7 +203,7 @@ export function explainText(
 ): Explained<TextExplanation> {
   const t = explain.tokenise(text)
   const T = t.tokens.length
-  if (T === 0) throw new WhiteboxError('value', 'explainText: the text has no words')
+  if (T === 0) throw new MdmlError('value', 'explainText: the text has no words')
   const f = explain.tokenPredictor(t.tokens, classify, options.mask === undefined ? {} : { mask: options.mask })
   const method = options.method ?? 'shap'
   const key = options.key ?? makeKey(0)
@@ -277,8 +277,7 @@ export function explainSeries(
   options: ExplainSeriesOptions = {},
 ): Explained<{ readonly values: readonly number[]; readonly prediction: number }> {
   const x = matrixView(data.x, 'explainSeries')
-  if (!(Number.isInteger(row) && row >= 0 && row < x.n))
-    throw new WhiteboxError('value', `explainSeries: no row ${row}`)
+  if (!(Number.isInteger(row) && row >= 0 && row < x.n)) throw new MdmlError('value', `explainSeries: no row ${row}`)
   const series = Array.from(x.data.subarray(row * x.d, (row + 1) * x.d))
   const output = modelOutput(fitted, data, 'auto', options.classIndex ?? predictedClass(fitted, series))
   const method = options.method ?? 'occlusion'

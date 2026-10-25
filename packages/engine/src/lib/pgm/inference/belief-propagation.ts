@@ -5,7 +5,7 @@
  * of log Z, and the Bethe free energy.
  */
 
-import { heap, type Json, WhiteboxError } from '../../base/index.ts'
+import { heap, type Json, MdmlError } from '../../base/index.ts'
 import {
   type Algorithm,
   channels,
@@ -100,7 +100,7 @@ function variableMessage(c: Compiled, f2v: readonly Float64Array[], e: number, m
 function factorMessage(c: Compiled, v2f: readonly Float64Array[], e: number, mode: 'sum' | 'max'): Float64Array {
   const { factor, variable, position } = c.edges[e] ?? { factor: 0, variable: 0, position: 0 }
   const f = c.factors[factor]
-  if (f === undefined) throw new WhiteboxError('value', 'belief propagation: unknown factor')
+  if (f === undefined) throw new MdmlError('value', 'belief propagation: unknown factor')
   const incoming = (c.factorEdges[factor] ?? []).map((e2) => (e2 === e ? null : (v2f[e2] ?? null)))
   const out = projectFactor(f, c.card[variable] ?? 1, position, incoming, mode)
   normaliseLog(out, mode)
@@ -128,7 +128,7 @@ function treeSchedule(c: Compiled): { kind: 'v2f' | 'f2v'; edge: number }[] {
         const w = u < n ? node(e, 'f') : node(e, 'v')
         if (seen.has(w)) {
           if (parentEdge.get(u) !== e)
-            throw new WhiteboxError('value', 'belief propagation: the tree schedule needs a factor tree')
+            throw new MdmlError('value', 'belief propagation: the tree schedule needs a factor tree')
           continue
         }
         seen.add(w)
@@ -164,12 +164,12 @@ function treeSchedule(c: Compiled): { kind: 'v2f' | 'f2v'; edge: number }[] {
  * @param model - The model.
  * @param options - Evidence, mode, schedule, damping and stopping rule.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for the tree schedule on a loopy graph, or inconsistent evidence.
+ * @throws MdmlError with code `value` for the tree schedule on a loopy graph, or inconsistent evidence.
  * @concept belief-propagation
  * @example
  * ```ts
- * import { isingModel, beliefPropagationAlgorithm } from 'whitebox-engine/pgm'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { isingModel, beliefPropagationAlgorithm } from 'mdml-engine/pgm'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(beliefPropagationAlgorithm(isingModel({ rows: 3, cols: 3, coupling: 0.2 })), { maxSteps: 200 }).status // => 'converged'
  * ```
  */
@@ -182,7 +182,7 @@ export function beliefPropagationAlgorithm(
   const schedule = options.schedule ?? 'flooding'
   const damping = options.damping ?? 0
   const tol = options.tol ?? 1e-10
-  if (!(damping >= 0 && damping < 1)) throw new WhiteboxError('value', 'belief propagation: damping must be in [0, 1)')
+  if (!(damping >= 0 && damping < 1)) throw new MdmlError('value', 'belief propagation: damping must be in [0, 1)')
   const tree = schedule === 'tree' ? treeSchedule(c) : []
   const nEdges = c.edges.length
   return {
@@ -329,7 +329,7 @@ function bethe(
  * @concept belief-propagation
  * @example
  * ```ts
- * import { bayesNet, beliefPropagation, factorValues } from 'whitebox-engine/pgm'
+ * import { bayesNet, beliefPropagation, factorValues } from 'mdml-engine/pgm'
  * const bn = bayesNet([
  *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
  *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -385,7 +385,7 @@ export function beliefPropagation(
  * @concept belief-propagation
  * @example
  * ```ts
- * import { factor, factorGraph, betheFreeEnergy } from 'whitebox-engine/pgm'
+ * import { factor, factorGraph, betheFreeEnergy } from 'mdml-engine/pgm'
  * const fg = factorGraph([{ name: 'a', states: ['0', '1'] }], [factor(['a'], [2], [1, 3])])
  * const b = factor(['a'], [2], [0.25, 0.75])
  * Math.round(-betheFreeEnergy(fg, { a: b }, [b]) * 1e12) / 1e12 === Math.round(Math.log(4) * 1e12) / 1e12 // => true
@@ -401,7 +401,7 @@ export function betheFreeEnergy(
   for (const [a, f] of c.factors.entries()) {
     const b = factorBeliefs[a]
     if (b === undefined || b.logValues.length !== f.logValues.length) {
-      throw new WhiteboxError('shape', `betheFreeEnergy: factor belief ${a} does not match its factor`)
+      throw new MdmlError('shape', `betheFreeEnergy: factor belief ${a} does not match its factor`)
     }
     for (let e = 0; e < f.logValues.length; e++) {
       const lb = b.logValues[e] ?? Number.NEGATIVE_INFINITY
@@ -410,7 +410,7 @@ export function betheFreeEnergy(
   }
   for (const [i, name] of c.names.entries()) {
     const b = variableBeliefs[name]
-    if (b === undefined) throw new WhiteboxError('value', `betheFreeEnergy: no belief for ${name}`)
+    if (b === undefined) throw new MdmlError('value', `betheFreeEnergy: no belief for ${name}`)
     let negEntropy = 0
     for (const lb of b.logValues) if (lb > Number.NEGATIVE_INFINITY) negEntropy += Math.exp(lb) * lb
     free -= ((c.variableEdges[i]?.length ?? 0) - 1) * negEntropy

@@ -5,7 +5,7 @@
  * loopy belief propagation marginals.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import type { GradientTransformation } from '../../optim/index.ts'
 import { adam } from '../../optim/index.ts'
 import {
@@ -84,11 +84,11 @@ type Weights = ArrayLike<number> | Readonly<Record<string, Readonly<Record<strin
  * @param attributes - The attributes.
  * @param weights - State, transition and bigram weights, the bigram attributes and whether to have transitions.
  * @returns The model.
- * @throws WhiteboxError with code `shape` for dense weights of the wrong length, `value` for unknown names.
+ * @throws MdmlError with code `shape` for dense weights of the wrong length, `value` for unknown names.
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { linearChainCrf } from 'whitebox-engine/pgm'
+ * import { linearChainCrf } from 'mdml-engine/pgm'
  * Array.from(linearChainCrf(['B', 'I'], ['w=a'], { transition: { B: { I: 2 } } }).transitionWeights) // => [0, 2, 0, 0]
  * ```
  */
@@ -109,31 +109,31 @@ export function linearChainCrf(
     if (w === undefined) return out
     if ('length' in w && typeof w.length === 'number') {
       if (w.length !== out.length)
-        throw new WhiteboxError('shape', `linearChainCrf: ${name} weights need ${out.length} entries`)
+        throw new MdmlError('shape', `linearChainCrf: ${name} weights need ${out.length} entries`)
       out.set(Array.from(w as ArrayLike<number>))
       return out
     }
     for (const [r, cols] of Object.entries(w as Record<string, Record<string, number>>)) {
       const i = rows.indexOf(r)
-      if (i < 0) throw new WhiteboxError('value', `linearChainCrf: unknown ${name} row ${r}`)
+      if (i < 0) throw new MdmlError('value', `linearChainCrf: unknown ${name} row ${r}`)
       for (const [label, v] of Object.entries(cols)) {
         const j = labels.indexOf(label)
-        if (j < 0) throw new WhiteboxError('value', `linearChainCrf: unknown label ${label}`)
+        if (j < 0) throw new MdmlError('value', `linearChainCrf: unknown label ${label}`)
         out[i * K + j] = v
       }
     }
     return out
   }
-  if (new Set(labels).size !== K) throw new WhiteboxError('value', 'linearChainCrf: labels must be distinct')
+  if (new Set(labels).size !== K) throw new MdmlError('value', 'linearChainCrf: labels must be distinct')
   const bigramAttributes = [...(weights.bigramAttributes ?? [])]
   const bigramWeights = new Float64Array(bigramAttributes.length * K * K)
   if (weights.bigram !== undefined) {
     if (weights.bigram.length !== bigramWeights.length)
-      throw new WhiteboxError('shape', `linearChainCrf: bigram weights need ${bigramWeights.length} entries`)
+      throw new MdmlError('shape', `linearChainCrf: bigram weights need ${bigramWeights.length} entries`)
     bigramWeights.set(Array.from(weights.bigram))
   }
   if (weights.transitions === false && weights.transition !== undefined)
-    throw new WhiteboxError('value', 'linearChainCrf: transition weights given for a model without transitions')
+    throw new MdmlError('value', 'linearChainCrf: transition weights given for a model without transitions')
   return {
     kind: 'linearChainCrf',
     labels: [...labels],
@@ -180,7 +180,7 @@ function edgeMatrix(crf: LinearChainCrf, edge: ItemFeatures | undefined, index: 
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { linearChainCrf, crfChain } from 'whitebox-engine/pgm'
+ * import { linearChainCrf, crfChain } from 'mdml-engine/pgm'
  * crfChain(linearChainCrf(['A', 'B'], ['f'], { state: [1, -1] }), [{ f: 2 }]).logEmission // => [[2, -2]]
  * ```
  */
@@ -209,7 +209,7 @@ export function crfChain(crf: LinearChainCrf, x: CrfInput): ChainModel {
 function labelIndices(crf: LinearChainCrf, y: readonly (string | number)[]): number[] {
   return y.map((l) => {
     const i = typeof l === 'number' ? l : crf.labels.indexOf(l)
-    if (!(i >= 0 && i < crf.labels.length)) throw new WhiteboxError('value', `crf: unknown label ${String(l)}`)
+    if (!(i >= 0 && i < crf.labels.length)) throw new MdmlError('value', `crf: unknown label ${String(l)}`)
     return i
   })
 }
@@ -233,7 +233,7 @@ function transitionAt(chain: ChainModel, t: number, from: number, to: number): n
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { linearChainCrf, crfScore } from 'whitebox-engine/pgm'
+ * import { linearChainCrf, crfScore } from 'mdml-engine/pgm'
  * crfScore(linearChainCrf(['A', 'B'], ['f'], { state: [1, -1], transition: [0, 3, 0, 0] }), [{ f: 1 }, { f: 1 }], ['A', 'B']) // => 3
  * ```
  */
@@ -258,7 +258,7 @@ export function crfScore(crf: LinearChainCrf, x: CrfInput, y: readonly (string |
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { linearChainCrf, crfLogLikelihood } from 'whitebox-engine/pgm'
+ * import { linearChainCrf, crfLogLikelihood } from 'mdml-engine/pgm'
  * crfLogLikelihood(linearChainCrf(['A', 'B'], ['f']), [{ f: 1 }, { f: 1 }], ['A', 'B']) === -Math.log(4) // => true
  * ```
  */
@@ -275,7 +275,7 @@ export function crfLogLikelihood(crf: LinearChainCrf, x: CrfInput, y: readonly (
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { linearChainCrf, crfMarginals } from 'whitebox-engine/pgm'
+ * import { linearChainCrf, crfMarginals } from 'mdml-engine/pgm'
  * crfMarginals(linearChainCrf(['A', 'B'], ['f'], { state: [Math.log(3), 0] }), [{ f: 1 }]) // => [[0.75, 0.25]]
  * ```
  */
@@ -293,7 +293,7 @@ export function crfMarginals(crf: LinearChainCrf, x: CrfInput): number[][] {
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { linearChainCrf, crfDecode } from 'whitebox-engine/pgm'
+ * import { linearChainCrf, crfDecode } from 'mdml-engine/pgm'
  * crfDecode(linearChainCrf(['A', 'B'], ['f'], { state: [1, 0], transition: [0, 5, 0, 0] }), [{ f: 1 }, { f: 1 }]).labels // => ['A', 'B']
  * ```
  */
@@ -320,8 +320,8 @@ function counted(features: readonly string[]): Record<string, number> {
  * @concept crf-features
  * @example
  * ```ts
- * import { crfppObservation } from 'whitebox-engine/pgm'
- * import { parseCrfppTemplate } from 'whitebox-engine/text'
+ * import { crfppObservation } from 'mdml-engine/pgm'
+ * import { parseCrfppTemplate } from 'mdml-engine/text'
  * crfppObservation(parseCrfppTemplate('U00:%x[0,0]\nB'), [['a'], ['b']]) // => { unigram: [{ 'U00:a': 1 }, { 'U00:b': 1 }], bigram: [{}, { B: 1 }] }
  * ```
  */
@@ -343,8 +343,8 @@ export function crfppObservation(template: CrfppTemplate, table: TokenTable): Cr
  * @concept crf-features
  * @example
  * ```ts
- * import { crfppCrf } from 'whitebox-engine/pgm'
- * import { parseCrfppTemplate } from 'whitebox-engine/text'
+ * import { crfppCrf } from 'mdml-engine/pgm'
+ * import { parseCrfppTemplate } from 'mdml-engine/text'
  * const crf = crfppCrf(parseCrfppTemplate('U00:%x[0,0]\nB'), ['D', 'N'], [[['the'], ['dog']]])
  * [crf.attributes, crf.bigramAttributes, crf.transitionWeights.length] // => [['U00:the', 'U00:dog'], ['B'], 0]
  * ```
@@ -389,7 +389,7 @@ export interface CrfPenalty {
  * @returns The parameter vector.
  * @example
  * ```ts
- * import { linearChainCrf, crfParameters } from 'whitebox-engine/pgm'
+ * import { linearChainCrf, crfParameters } from 'mdml-engine/pgm'
  * crfParameters(linearChainCrf(['A', 'B'], ['f'])).length // => 6
  * ```
  */
@@ -407,10 +407,10 @@ export function crfParameters(crf: LinearChainCrf): Float64Array {
  * @param crf - The model.
  * @param parameters - The parameter vector.
  * @returns The new model.
- * @throws WhiteboxError with code `shape` for a vector of the wrong length.
+ * @throws MdmlError with code `shape` for a vector of the wrong length.
  * @example
  * ```ts
- * import { linearChainCrf, withCrfParameters } from 'whitebox-engine/pgm'
+ * import { linearChainCrf, withCrfParameters } from 'mdml-engine/pgm'
  * Array.from(withCrfParameters(linearChainCrf(['A', 'B'], ['f']), [1, 2, 3, 4, 5, 6]).transitionWeights) // => [3, 4, 5, 6]
  * ```
  */
@@ -418,7 +418,7 @@ export function withCrfParameters(crf: LinearChainCrf, parameters: ArrayLike<num
   const n = crf.stateWeights.length
   const m = crf.transitionWeights.length
   if (parameters.length !== n + m + crf.bigramWeights.length)
-    throw new WhiteboxError('shape', 'withCrfParameters: wrong number of parameters')
+    throw new MdmlError('shape', 'withCrfParameters: wrong number of parameters')
   const p = Float64Array.from(parameters)
   return { ...crf, stateWeights: p.slice(0, n), transitionWeights: p.slice(n, n + m), bigramWeights: p.slice(n + m) }
 }
@@ -447,7 +447,7 @@ function penalise(w: Float64Array, value: number, gradient: Float64Array, penalt
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { linearChainCrf, crfObjective } from 'whitebox-engine/pgm'
+ * import { linearChainCrf, crfObjective } from 'mdml-engine/pgm'
  * const r = crfObjective(linearChainCrf(['A', 'B'], ['f']), [{ x: [{ f: 1 }], y: ['A'] }])
  * [r.value === Math.LN2, Array.from(r.gradient)] // => [true, [-0.5, 0.5, 0, 0, 0, 0]]
  * ```
@@ -473,7 +473,7 @@ export function crfObjective(
     if (items.length === 0) continue
     const edges = bigramOf(x)
     const idx = labelIndices(crf, y)
-    if (idx.length !== items.length) throw new WhiteboxError('shape', 'crfObjective: one label per item')
+    if (idx.length !== items.length) throw new MdmlError('shape', 'crfObjective: one label per item')
     const chain = crfChain(crf, x)
     const fb = forwardBackward(chain)
     let score = 0
@@ -533,8 +533,8 @@ export interface CrfTrainingOptions extends CrfPenalty {
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { linearChainCrf, crfTrainingAlgorithm } from 'whitebox-engine/pgm'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { linearChainCrf, crfTrainingAlgorithm } from 'mdml-engine/pgm'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const alg = crfTrainingAlgorithm(linearChainCrf(['A', 'B'], ['f']), [{ x: [{ f: 1 }], y: ['A'] }], { c2: 1 })
  * runAlgorithm(alg, { maxSteps: 2000 }).status // => 'converged'
  * ```
@@ -572,7 +572,7 @@ export function crfTrainingAlgorithm(
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { fitCrf, crfDecode } from 'whitebox-engine/pgm'
+ * import { fitCrf, crfDecode } from 'mdml-engine/pgm'
  * const data = [{ x: [{ 'w=the': 1 }, { 'w=dog': 1 }], y: ['D', 'N'] }, { x: [{ 'w=a': 1 }, { 'w=cat': 1 }], y: ['D', 'N'] }]
  * const { crf } = fitCrf(data, { c2: 0.1, maxIter: 300 })
  * crfDecode(crf, [{ 'w=the': 1 }, { 'w=cat': 1 }]).labels // => ['D', 'N']
@@ -644,11 +644,11 @@ export interface CrfInstance {
  * @param features - Feature names.
  * @param weights - Initial weights (default zero).
  * @returns The model.
- * @throws WhiteboxError with code `shape` for weights of the wrong length.
+ * @throws MdmlError with code `shape` for weights of the wrong length.
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { generalCrf } from 'whitebox-engine/pgm'
+ * import { generalCrf } from 'mdml-engine/pgm'
  * Array.from(generalCrf([{ name: 'y', states: ['0', '1'] }], ['bias']).weights) // => [0]
  * ```
  */
@@ -658,7 +658,7 @@ export function generalCrf(
   weights?: ArrayLike<number>,
 ): GeneralCrf {
   if (weights !== undefined && weights.length !== features.length)
-    throw new WhiteboxError('shape', 'generalCrf: one weight per feature')
+    throw new MdmlError('shape', 'generalCrf: one weight per feature')
   return {
     kind: 'crf',
     variables: variables.map((v) => ({ ...v })),
@@ -673,11 +673,11 @@ export function generalCrf(
  * @param crf - The model.
  * @param instance - The input's cliques and features.
  * @returns The conditional factor graph, ready for any inference routine.
- * @throws WhiteboxError with code `shape` for a clique with the wrong number of assignments.
+ * @throws MdmlError with code `shape` for a clique with the wrong number of assignments.
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { generalCrf, crfFactorGraph, factorValues } from 'whitebox-engine/pgm'
+ * import { generalCrf, crfFactorGraph, factorValues } from 'mdml-engine/pgm'
  * const crf = generalCrf([{ name: 'y', states: ['0', '1'] }], ['f'], [Math.log(2)])
  * crfFactorGraph(crf, { cliques: [{ variables: ['y'], features: [[], [[0, 1]]] }] }).factors.map(factorValues) // => [[1, 2]]
  * ```
@@ -688,7 +688,7 @@ export function crfFactorGraph(crf: GeneralCrf, instance: CrfInstance): FactorGr
     const cards = c.variables.map((v) => card.get(v) ?? 0)
     const size = cards.reduce((a, b) => a * b, 1)
     if (c.features.length !== size)
-      throw new WhiteboxError('shape', `crfFactorGraph: clique [${c.variables.join(', ')}] needs ${size} assignments`)
+      throw new MdmlError('shape', `crfFactorGraph: clique [${c.variables.join(', ')}] needs ${size} assignments`)
     return logFactor(
       c.variables,
       cards,
@@ -733,7 +733,7 @@ function cliqueMarginals(
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { generalCrf, generalCrfObjective } from 'whitebox-engine/pgm'
+ * import { generalCrf, generalCrfObjective } from 'mdml-engine/pgm'
  * const crf = generalCrf([{ name: 'y', states: ['0', '1'] }], ['f'])
  * const r = generalCrfObjective(crf, [{ instance: { cliques: [{ variables: ['y'], features: [[], [[0, 1]]] }] }, y: { y: '1' } }])
  * [r.value === Math.LN2, Array.from(r.gradient)] // => [true, [-0.5]]
@@ -755,7 +755,7 @@ export function generalCrfObjective(
     const label = (v: string): number => {
       const raw = y[v]
       const i = typeof raw === 'number' ? raw : (states.get(v) ?? []).indexOf(String(raw))
-      if (!(i >= 0)) throw new WhiteboxError('value', `generalCrfObjective: no label for ${v}`)
+      if (!(i >= 0)) throw new MdmlError('value', `generalCrfObjective: no label for ${v}`)
       return i
     }
     const { marginals, logZ } = cliqueMarginals(fg, instance, options.inference ?? 'exact', options.bp ?? {})
@@ -787,7 +787,7 @@ export function generalCrfObjective(
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { generalCrf, fitGeneralCrf } from 'whitebox-engine/pgm'
+ * import { generalCrf, fitGeneralCrf } from 'mdml-engine/pgm'
  * const crf = generalCrf([{ name: 'y', states: ['0', '1'] }], ['f'])
  * const inst = { cliques: [{ variables: ['y'], features: [[], [[0, 1]]] }] }
  * const r = fitGeneralCrf(crf, [{ instance: inst, y: { y: '1' } }, { instance: inst, y: { y: '1' } }, { instance: inst, y: { y: '0' } }], { maxIter: 3000, gradTol: 1e-8 })

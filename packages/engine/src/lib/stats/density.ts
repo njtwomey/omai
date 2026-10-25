@@ -4,7 +4,7 @@
  * Scott's and Silverman's rules or by likelihood and least-squares cross-validation (as statsmodels).
  */
 
-import { varianceOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, varianceOf } from '../base/index.ts'
 import { dpotrf } from '../numerics/linalg/index.ts'
 import { categorical, foldIn, type Key, normal as normalNoise } from '../random/index.ts'
 import {
@@ -33,7 +33,7 @@ import { iqr } from './quantiles.ts'
  * @returns The factor multiplying the data's standard deviation.
  * @example
  * ```ts
- * import { scottFactor } from 'whitebox-engine/stats'
+ * import { scottFactor } from 'mdml-engine/stats'
  * scottFactor(32) // => 0.5
  * ```
  */
@@ -49,7 +49,7 @@ export function scottFactor(n: number, d = 1): number {
  * @returns The factor.
  * @example
  * ```ts
- * import { silvermanFactor } from 'whitebox-engine/stats'
+ * import { silvermanFactor } from 'mdml-engine/stats'
  * silvermanFactor(4 / 3) // => 1
  * ```
  */
@@ -71,7 +71,7 @@ function spread(x: Float64Array): number {
  * @returns The bandwidth.
  * @example
  * ```ts
- * import { bandwidthScott } from 'whitebox-engine/stats'
+ * import { bandwidthScott } from 'mdml-engine/stats'
  * bandwidthScott([1, 2, 3, 4, 5]) // => 1.137942
  * ```
  */
@@ -87,7 +87,7 @@ export function bandwidthScott(x: TensorLike): number {
  * @returns The bandwidth.
  * @example
  * ```ts
- * import { bandwidthSilverman } from 'whitebox-engine/stats'
+ * import { bandwidthSilverman } from 'mdml-engine/stats'
  * bandwidthSilverman([1, 2, 3, 4, 5]) // => 0.967089
  * ```
  */
@@ -110,7 +110,7 @@ export type BandwidthCriterion = 'likelihood' | 'least-squares'
  * @returns The criterion.
  * @example
  * ```ts
- * import { bandwidthCriterion } from 'whitebox-engine/stats'
+ * import { bandwidthCriterion } from 'mdml-engine/stats'
  * bandwidthCriterion([0, 1], 1) // => -2.837877
  * ```
  */
@@ -160,7 +160,7 @@ function criterion(a: Float64Array, method: BandwidthCriterion): (lh: Value) => 
  * @returns The bandwidth.
  * @example
  * ```ts
- * import { bandwidthCrossValidation } from 'whitebox-engine/stats'
+ * import { bandwidthCrossValidation } from 'mdml-engine/stats'
  * bandwidthCrossValidation([0, 0.5, 1.1, 1.4, 2.2, 2.3, 3.1, 4]) > 0 // => true
  * ```
  */
@@ -227,7 +227,7 @@ export interface GaussianKde {
  * @returns The estimate.
  * @example
  * ```ts
- * import { gaussianKde } from 'whitebox-engine/stats'
+ * import { gaussianKde } from 'mdml-engine/stats'
  * const kde = gaussianKde([-1, 0, 1])
  * kde.evaluate([0]) // => [0.318156]
  * ```
@@ -236,9 +236,9 @@ export function gaussianKde(data: TensorLike, options: KdeOptions = {}): Gaussia
   const m = rowsOf('gaussianKde', data)
   const n = m.rows
   const d = m.cols
-  if (n < 2) throw new WhiteboxError('value', 'gaussianKde: needs at least two observations')
+  if (n < 2) throw new MdmlError('value', 'gaussianKde: needs at least two observations')
   const w = options.weights === undefined ? new Float64Array(n).fill(1 / n) : sample('gaussianKde', options.weights)
-  if (w.length !== n) throw new WhiteboxError('shape', 'gaussianKde: weights must match the data')
+  if (w.length !== n) throw new MdmlError('shape', 'gaussianKde: weights must match the data')
   let ws = 0
   for (const v of w) ws += v
   for (let i = 0; i < n; i++) w[i] = (w[i] ?? 0) / ws
@@ -262,20 +262,19 @@ export function gaussianKde(data: TensorLike, options: KdeOptions = {}): Gaussia
   else if (bw === 'scott') factor = scottFactor(neff, d)
   else if (bw === 'silverman') factor = silvermanFactor(neff, d)
   else {
-    if (d !== 1) throw new WhiteboxError('value', 'gaussianKde: cross-validated bandwidths are univariate')
+    if (d !== 1) throw new MdmlError('value', 'gaussianKde: cross-validated bandwidths are univariate')
     const h = bandwidthCrossValidation(m.data, { method: bw === 'cv-likelihood' ? 'likelihood' : 'least-squares' })
     factor = h / Math.sqrt(C[0] ?? 1)
   }
-  if (!(factor > 0)) throw new WhiteboxError('value', 'gaussianKde: the bandwidth factor must be positive')
+  if (!(factor > 0)) throw new MdmlError('value', 'gaussianKde: the bandwidth factor must be positive')
   const cov = Float64Array.from(C, (v) => v * factor * factor)
   const { factor: U, info } = dpotrf(cov, d)
-  if (info !== 0) throw new WhiteboxError('singular', 'gaussianKde: the data covariance is singular')
+  if (info !== 0) throw new MdmlError('singular', 'gaussianKde: the data covariance is singular')
   // Lower Cholesky factor L = U^T; log normaliser log((2 pi)^(d/2) det L).
   let logNorm = (d / 2) * Math.log(2 * Math.PI)
   for (let i = 0; i < d; i++) logNorm += Math.log(U[i * d + i] ?? 1)
   const boundary = options.boundary
-  if (boundary !== undefined && d !== 1)
-    throw new WhiteboxError('value', 'gaussianKde: boundary correction is univariate')
+  if (boundary !== undefined && d !== 1) throw new MdmlError('value', 'gaussianKde: boundary correction is univariate')
   const h = Math.sqrt(cov[0] ?? 0)
   // Squared Mahalanobis distance of z to x_i by forward substitution with L.
   const mahalanobis = (z: ArrayLike<number>, i: number): number => {
@@ -320,7 +319,7 @@ export function gaussianKde(data: TensorLike, options: KdeOptions = {}): Gaussia
   }
   const pointsOf = (points: TensorLike): Float64Array[] => {
     const p = rowsOf('gaussianKde', points)
-    if (p.cols !== d) throw new WhiteboxError('shape', `gaussianKde: points must have dimension ${d}`)
+    if (p.cols !== d) throw new MdmlError('shape', `gaussianKde: points must have dimension ${d}`)
     return Array.from({ length: p.rows }, (_, i) => p.data.subarray(i * d, (i + 1) * d))
   }
   return {

@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import {
   camera,
   circle,
@@ -14,7 +13,8 @@ import {
   scene3d,
   tex,
   text,
-} from 'whitebox-engine/scene'
+} from 'mdml-engine/scene'
+import { describe, expect, it } from 'vitest'
 import { lineChart } from '../charts/lines.ts'
 import { figure } from '../figure/figure.ts'
 import { chartToSvg, composeSvg, exportSize, svgDataUrl, svgToPng } from './export.ts'

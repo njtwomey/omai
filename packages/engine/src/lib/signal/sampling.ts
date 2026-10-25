@@ -4,7 +4,7 @@
  * DAC and its droop, and the signal-to-quantisation-noise ratio with its 6.02 b + 1.76 dB rule.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Key, uniform } from '../random/index.ts'
 import {
   abs,
@@ -43,14 +43,14 @@ import { constant, float, sinc } from './_shared.ts'
  * @concept sampling-theorem
  * @example
  * ```ts
- * import { sincInterpolate } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sincInterpolate } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sincInterpolate([0, 1, 0], 1, [1, 2])) // => [1, 0]
  * ```
  */
 export function sincInterpolate(x: TensorLike, fs: number, t: TensorLike, start = 0): Value {
   const v = float(x)
-  if (v.shape.length !== 1) throw new WhiteboxError('shape', 'sincInterpolate: expected 1-D samples')
+  if (v.shape.length !== 1) throw new MdmlError('shape', 'sincInterpolate: expected 1-D samples')
   const n = v.shape[0] ?? 0
   const times = toFlat(primalOf(float(t)))
   const m = new Float64Array(times.length * n)
@@ -68,12 +68,12 @@ export function sincInterpolate(x: TensorLike, fs: number, t: TensorLike, start 
  * @concept aliasing
  * @example
  * ```ts
- * import { alias } from 'whitebox-engine/signal'
+ * import { alias } from 'mdml-engine/signal'
  * alias([30, 70, 120], 100) // => [30, 30, 20]
  * ```
  */
 export function alias(f: readonly number[], fs: number): number[] {
-  if (!(fs > 0)) throw new WhiteboxError('value', 'alias: fs must be positive')
+  if (!(fs > 0)) throw new MdmlError('value', 'alias: fs must be positive')
   return f.map((v) => Math.abs(v - fs * Math.round(v / fs)))
 }
 
@@ -97,17 +97,17 @@ export interface QuantiseOptions {
  * @concept quantisation
  * @example
  * ```ts
- * import { quantise } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { quantise } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(quantise([0.1, 0.3, -0.8], { bits: 2 })) // => [0, 0.5, -1]
  * toArray(quantise([0.1, 0.3, -0.8], { bits: 2, mode: 'midrise' })) // => [0.25, 0.25, -0.75]
  * ```
  */
 export function quantise(x: TensorLike, options: QuantiseOptions): Value {
   const { bits } = options
-  if (!Number.isInteger(bits) || bits < 1) throw new WhiteboxError('value', 'quantise: bits must be a positive integer')
+  if (!Number.isInteger(bits) || bits < 1) throw new MdmlError('value', 'quantise: bits must be a positive integer')
   const [lo, hi] = options.range ?? [-1, 1]
-  if (!(hi > lo)) throw new WhiteboxError('value', 'quantise: the range must be increasing')
+  if (!(hi > lo)) throw new MdmlError('value', 'quantise: the range must be increasing')
   const levels = 2 ** bits
   const step = (hi - lo) / levels
   const v = float(x)
@@ -128,20 +128,20 @@ export function quantise(x: TensorLike, options: QuantiseOptions): Value {
  * @param mu - Compression parameter (default 255).
  * @param quantize - Return integer codes (default true).
  * @returns The compressed values or codes.
- * @throws WhiteboxError with code `value` for inputs outside [-1, 1] or mu <= 0.
+ * @throws MdmlError with code `value` for inputs outside [-1, 1] or mu <= 0.
  * @concept quantisation
  * @example
  * ```ts
- * import { muLawEncode } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { muLawEncode } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(muLawEncode([-1, 0, 1], 15)) // => [-8, 0, 7]
  * ```
  */
 export function muLawEncode(x: TensorLike, mu = 255, quantize = true): Value {
-  if (!(mu > 0)) throw new WhiteboxError('value', 'muLawEncode: mu must be positive')
+  if (!(mu > 0)) throw new MdmlError('value', 'muLawEncode: mu must be positive')
   const v = float(x)
   for (const s of primalOf(v).data)
-    if (s < -1 || s > 1) throw new WhiteboxError('value', 'muLawEncode: x must be in [-1, 1]')
+    if (s < -1 || s > 1) throw new MdmlError('value', 'muLawEncode: x must be in [-1, 1]')
   const comp = div(mul(sign(v), log1p(mul(abs(v), mu))), Math.log1p(mu))
   if (!quantize) return comp
   const count = Math.floor(1 + mu)
@@ -164,21 +164,20 @@ export function muLawEncode(x: TensorLike, mu = 255, quantize = true): Value {
  * @param mu - Compression parameter (default 255).
  * @param quantize - The input is integer codes (default true).
  * @returns The expanded values.
- * @throws WhiteboxError with code `value` for inputs outside the range.
+ * @throws MdmlError with code `value` for inputs outside the range.
  * @concept quantisation
  * @example
  * ```ts
- * import { muLawDecode } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { muLawDecode } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(muLawDecode([-1, 0, 1], 255, false)) // => [-1, 0, 1]
  * ```
  */
 export function muLawDecode(y: TensorLike, mu = 255, quantize = true): Value {
-  if (!(mu > 0)) throw new WhiteboxError('value', 'muLawDecode: mu must be positive')
+  if (!(mu > 0)) throw new MdmlError('value', 'muLawDecode: mu must be positive')
   const v0 = float(y)
   const v = quantize ? mul(v0, 2 / (1 + mu)) : v0
-  for (const s of primalOf(v).data)
-    if (s < -1 || s > 1) throw new WhiteboxError('value', 'muLawDecode: input out of range')
+  for (const s of primalOf(v).data) if (s < -1 || s > 1) throw new MdmlError('value', 'muLawDecode: input out of range')
   return mul(div(sign(v), mu), sub(pow(1 + mu, abs(v)), 1))
 }
 
@@ -201,16 +200,16 @@ export interface DitherOptions {
  * @concept quantisation
  * @example
  * ```ts
- * import { dither } from 'whitebox-engine/signal'
- * import { key } from 'whitebox-engine/random'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { dither } from 'mdml-engine/signal'
+ * import { key } from 'mdml-engine/random'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(dither(key(0), [0, 0, 0], { step: 0.1 })).every((v) => Math.abs(v) <= 0.1) // => true
  * ```
  */
 export function dither(key: Key, x: TensorLike, options: DitherOptions): Value {
   const v = float(x)
   const s = options.step
-  if (!(s > 0)) throw new WhiteboxError('value', 'dither: the step must be positive')
+  if (!(s > 0)) throw new MdmlError('value', 'dither: the step must be positive')
   const u = uniform(key, [...v.shape, 2], { low: -s / 2, high: s / 2 })
   const noise = (options.kind ?? 'triangular') === 'triangular' ? sum(u, -1) : sum(mul(u, constant([1, 0])), -1)
   return add(v, noise)
@@ -226,13 +225,13 @@ export function dither(key: Key, x: TensorLike, options: DitherOptions): Value {
  * @concept zero-order-hold
  * @example
  * ```ts
- * import { zeroOrderHold } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { zeroOrderHold } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(zeroOrderHold([1, 2], 3)) // => [1, 1, 1, 2, 2, 2]
  * ```
  */
 export function zeroOrderHold(x: TensorLike, factor: number): Value {
-  if (!Number.isInteger(factor) || factor < 1) throw new WhiteboxError('value', 'zeroOrderHold: factor must be >= 1')
+  if (!Number.isInteger(factor) || factor < 1) throw new MdmlError('value', 'zeroOrderHold: factor must be >= 1')
   return repeat(float(x), factor, 0)
 }
 
@@ -246,7 +245,7 @@ export function zeroOrderHold(x: TensorLike, factor: number): Value {
  * @concept zero-order-hold
  * @example
  * ```ts
- * import { zeroOrderHoldResponse } from 'whitebox-engine/signal'
+ * import { zeroOrderHoldResponse } from 'mdml-engine/signal'
  * zeroOrderHoldResponse([0, 50], 100).map((v) => Math.round(v * 1e6) / 1e6) // => [1, 0.63662]
  * ```
  */
@@ -263,14 +262,14 @@ export function zeroOrderHoldResponse(f: readonly number[], fs: number): number[
  * @concept quantisation
  * @example
  * ```ts
- * import { sqnr } from 'whitebox-engine/signal'
+ * import { sqnr } from 'mdml-engine/signal'
  * Math.round(sqnr([1, -1], [0.9, -0.9]) * 1e9) / 1e9 // => 20
  * ```
  */
 export function sqnr(x: TensorLike, xq: TensorLike): number {
   const a = toFlat(primalOf(float(x)))
   const b = toFlat(primalOf(float(xq)))
-  if (a.length !== b.length) throw new WhiteboxError('shape', 'sqnr: signals differ in length')
+  if (a.length !== b.length) throw new MdmlError('shape', 'sqnr: signals differ in length')
   let s = 0
   let e = 0
   for (const [i, v] of a.entries()) {
@@ -289,7 +288,7 @@ export function sqnr(x: TensorLike, xq: TensorLike): number {
  * @concept quantisation
  * @example
  * ```ts
- * import { idealSqnr } from 'whitebox-engine/signal'
+ * import { idealSqnr } from 'mdml-engine/signal'
  * Math.round(idealSqnr(16) * 100) / 100 // => 98.09
  * ```
  */

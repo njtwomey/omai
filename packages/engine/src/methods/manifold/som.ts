@@ -4,7 +4,7 @@
  * shrinking learning rate and neighbourhood, the U-matrix of neighbour distances, a fit function and a class.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -182,7 +182,7 @@ export function selfOrganisingMap(hyper: SomHyper = {}): Estimator<SomHyper, Exp
         const m = matrixView(data.x, 'som')
         const grid: [number, number] = [h.rows ?? 8, h.cols ?? 8]
         const units = grid[0] * grid[1]
-        if (units < 1) throw new WhiteboxError('value', 'som: the grid must have nodes')
+        if (units < 1) throw new MdmlError('value', 'som: the grid must have nodes')
         const run = fitRunOptions(options, 'som')
         const key = run.key as Key
         const picks = Array.from(subsample(foldIn(key, 0), m.n, Math.min(units, m.n)).data)

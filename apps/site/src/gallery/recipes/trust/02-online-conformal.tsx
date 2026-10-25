@@ -1,11 +1,11 @@
+import { generate } from 'mdml-engine/data'
+import { heteroscedastic } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { kNeighborsRegressor } from 'mdml-engine/methods/neighbours'
+import { onlineConformal } from 'mdml-engine/methods/trust'
+import { key } from 'mdml-engine/random'
+import { ConformalView, ControlPanel, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { generate } from 'whitebox-engine/data'
-import { heteroscedastic } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
-import { onlineConformal } from 'whitebox-engine/methods/trust'
-import { key } from 'whitebox-engine/random'
-import { ConformalView, ControlPanel, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

@@ -5,7 +5,7 @@
  * used to test whether a filter's covariances are honest.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { chi2 } from '../../dists/index.ts'
 import { cholesky, choleskyLogdet, choSolve, solve, solveDare, symmetricPart } from '../../numerics/linalg/index.ts'
 import {
@@ -87,8 +87,8 @@ const mv = (a: Value, x: Value): Value => reshape(matmul(a, reshape(x, [-1, 1]))
  * @concept kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(filtering.kalmanPredict([1], [[1]], [[2]], [[0.5]]).P) // => [[4.5]]
  * ```
  */
@@ -133,8 +133,8 @@ export interface KalmanUpdate {
  * @concept kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(filtering.kalmanUpdate([0], [[1]], [2], [[1]], [[1]]).x) // => [1]
  * ```
  */
@@ -207,7 +207,7 @@ export interface KalmanState {
  * @returns The algorithm and the number of steps.
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * filtering.kalmanFilterAlgorithm({ F: [[1]], H: [[1]], Q: [[1]], R: [[1]], x0: [0], P0: [[1]] }, [[1], [2]]).steps // => 2
  * ```
  */
@@ -299,8 +299,8 @@ function castInt(v: Value): Value {
  * @concept kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { toArray } from 'mdml-engine/tensor'
  * // A random walk observed with equal noise: the first filtered mean is halfway to z.
  * toArray(filtering.kalmanFilter({ F: [[1]], H: [[1]], Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[2]]).means) // => [[1]]
  * ```
@@ -314,7 +314,7 @@ export function kalmanFilter(
 ): KalmanResult {
   const { algorithm, steps } = kalmanFilterAlgorithm(model, observations, options)
   const s = runAlgorithm(algorithm, { maxSteps: steps, ...options }).state
-  if (steps === 0) throw new WhiteboxError('value', 'kalmanFilter: no observations')
+  if (steps === 0) throw new MdmlError('value', 'kalmanFilter: no observations')
   return {
     means: stack(s.means),
     covariances: stack(s.covs),
@@ -345,8 +345,8 @@ export interface SmootherResult {
  * @concept rts-smoother
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { toArray } from 'mdml-engine/tensor'
  * const m = { F: [[1]], H: [[1]], Q: [[0]], R: [[1]], x0: [0], P0: [[100]] }
  * // A constant observed twice: the smoothed estimates agree.
  * const s = filtering.rtsSmoother(m, filtering.kalmanFilter(m, [[1], [3]]))
@@ -386,8 +386,8 @@ export function rtsSmoother(model: LinearGaussianModel, filtered: KalmanResult):
  * @concept kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { item } from 'mdml-engine/tensor'
  * // Random walk with q = r = 1: P = (1 + sqrt 5) / 2.
  * Math.abs(item(filtering.steadyStateKalman([[1]], [[1]], [[1]], [[1]]).prior) - (1 + Math.sqrt(5)) / 2) < 1e-10 // => true
  * ```
@@ -417,8 +417,8 @@ export function steadyStateKalman(
  * @concept kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(filtering.kalmanLogLikelihood({ F: [[1]], H: [[1]], Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[0]])) + 0.5 * Math.log(4 * Math.PI)) < 1e-12 // => true
  * ```
  */
@@ -446,7 +446,7 @@ export interface ConsistencyReport {
  * @concept filter-consistency
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * const f = filtering.kalmanFilter({ F: [[1]], H: [[1]], Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[0.3], [-0.5], [1.1], [-0.2]])
  * filtering.nisTest(f).degreesOfFreedom // => 4
  * ```
@@ -482,7 +482,7 @@ export function nisTest(filtered: KalmanResult, alpha = 0.05): ConsistencyReport
  * @concept filter-consistency
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * const f = filtering.kalmanFilter({ F: [[1]], H: [[1]], Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[2]])
  * filtering.nees(f, [[0]]) // => [2]
  * ```

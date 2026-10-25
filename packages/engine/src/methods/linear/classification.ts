@@ -5,7 +5,7 @@
  * tables and decision surfaces as exposition.
  */
 
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type CoefficientTable, coefficientTable, type Exposition } from '../../lib/exposition/index.ts'
 import {
@@ -387,7 +387,7 @@ export function logisticRegression(
         const x = matrixView(data.x, 'logisticRegression')
         const { classes: labels, codes } = encodeLabels(data.y ?? [], 'logisticRegression', x.n)
         const classes = [...labels]
-        if (classes.length < 2) throw new WhiteboxError('value', 'logisticRegression: needs at least two classes')
+        if (classes.length < 2) throw new MdmlError('value', 'logisticRegression: needs at least two classes')
         const w = sampleWeightsOf(data.weights, x.n, 'logisticRegression')
         const s = w.reduce((a, b) => a + b, 0)
         const alpha = h.penalty === 'none' ? 0 : 1 / (h.C * s)
@@ -499,7 +499,7 @@ export function probitRegression(
         const x = matrixView(data.x, 'probitRegression')
         const { classes: labels, codes } = encodeLabels(data.y ?? [], 'probitRegression', x.n)
         const classes = [...labels]
-        if (classes.length !== 2) throw new WhiteboxError('value', 'probitRegression: needs exactly two classes')
+        if (classes.length !== 2) throw new MdmlError('value', 'probitRegression: needs exactly two classes')
         const f = fitLinear(
           { x: data.x, y: Array.from(codes), ...(data.weights === undefined ? {} : { weights: data.weights }) },
           linearModelDefaults({

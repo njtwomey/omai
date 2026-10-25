@@ -1,13 +1,7 @@
 // Path-search hub entries (private to this collection): a map or a generated maze, the search and its settings as
 // controls, and the search played expansion by expansion.
-import {
-  gridSearch,
-  mazeWorld,
-  type PathSearchName,
-  type SearchMapName,
-  searchMap,
-} from 'whitebox-engine/methods/gofai'
-import { choice, dict, int, real, type Space } from 'whitebox-engine/space'
+import { gridSearch, mazeWorld, type PathSearchName, type SearchMapName, searchMap } from 'mdml-engine/methods/gofai'
+import { choice, dict, int, real, type Space } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 /** What a path-search entry declares. */

@@ -5,7 +5,7 @@
  * STUMPI for streams, each as a traced algorithm.
  */
 
-import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { type Json, MdmlError } from '../../../lib/base/index.ts'
 import { key as makeKey, permutation } from '../../../lib/random/index.ts'
 import {
   applyExclusionZone,
@@ -71,11 +71,11 @@ function setup(tA: TensorLike, m: number, options: MatrixProfileOptions, name: s
   const a = seriesOf(tA, name)
   const selfJoin = options.tB === undefined
   const b = options.tB === undefined ? a : seriesOf(options.tB, name)
-  if (!Number.isInteger(m) || m < 3) throw new WhiteboxError('value', `${name}: the window must be at least 3`)
-  if (m > Math.min(a.length, b.length)) throw new WhiteboxError('value', `${name}: the window is longer than a series`)
+  if (!Number.isInteger(m) || m < 3) throw new MdmlError('value', `${name}: the window must be at least 3`)
+  if (m > Math.min(a.length, b.length)) throw new MdmlError('value', `${name}: the window is longer than a series`)
   const exclusion = selfJoin ? checkSelfJoin(m, a.length) : 0
   const k = options.k ?? 1
-  if (!Number.isInteger(k) || k < 1) throw new WhiteboxError('value', `${name}: k must be a positive integer`)
+  if (!Number.isInteger(k) || k < 1) throw new MdmlError('value', `${name}: k must be a positive integer`)
   return {
     a,
     b,
@@ -225,7 +225,7 @@ export interface StumpOptions extends MatrixProfileOptions {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stumpAlgorithm } from 'whitebox-engine/methods/timeseries'
+ * import { stumpAlgorithm } from 'mdml-engine/methods/timeseries'
  * stumpAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).name // => 'stump'
  * ```
  */
@@ -259,7 +259,7 @@ export function stumpAlgorithm(tA: TensorLike, m: number, options: StumpOptions 
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stump } from 'whitebox-engine/methods/timeseries'
+ * import { stump } from 'mdml-engine/methods/timeseries'
  * const mp = stump([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4)
  * Array.from(mp.I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
@@ -344,7 +344,7 @@ function cloneProfile(p: MatrixProfile): MatrixProfile {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stompAlgorithm } from 'whitebox-engine/methods/timeseries'
+ * import { stompAlgorithm } from 'mdml-engine/methods/timeseries'
  * stompAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).name // => 'stomp'
  * ```
  */
@@ -414,7 +414,7 @@ export function stompAlgorithm(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stomp } from 'whitebox-engine/methods/timeseries'
+ * import { stomp } from 'mdml-engine/methods/timeseries'
  * Array.from(stomp([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
  */
@@ -446,7 +446,7 @@ export interface StampOptions extends StumpOptions {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stampAlgorithm } from 'whitebox-engine/methods/timeseries'
+ * import { stampAlgorithm } from 'mdml-engine/methods/timeseries'
  * stampAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).name // => 'stamp'
  * ```
  */
@@ -500,7 +500,7 @@ export function stampAlgorithm(tA: TensorLike, m: number, options: StampOptions 
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stamp } from 'whitebox-engine/methods/timeseries'
+ * import { stamp } from 'mdml-engine/methods/timeseries'
  * Array.from(stamp([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
  */
@@ -526,8 +526,8 @@ export interface PrescrumpOptions extends Omit<MatrixProfileOptions, 'normalize'
  * @concept matrix-profile
  * @example
  * ```ts
- * import { prescrump } from 'whitebox-engine/methods/timeseries'
- * import { key } from 'whitebox-engine/random'
+ * import { prescrump } from 'mdml-engine/methods/timeseries'
+ * import { key } from 'mdml-engine/random'
  * const t = [0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7]
  * Array.from(prescrump(t, 4, { s: 1, key: key(0) }).I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
@@ -627,7 +627,7 @@ export interface ScrumpOptions extends StumpOptions {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { scrumpAlgorithm } from 'whitebox-engine/methods/timeseries'
+ * import { scrumpAlgorithm } from 'mdml-engine/methods/timeseries'
  * scrumpAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).name // => 'scrump'
  * ```
  */
@@ -678,7 +678,7 @@ export function scrumpAlgorithm(tA: TensorLike, m: number, options: ScrumpOption
  * @concept matrix-profile
  * @example
  * ```ts
- * import { scrump } from 'whitebox-engine/methods/timeseries'
+ * import { scrump } from 'mdml-engine/methods/timeseries'
  * Array.from(scrump([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4, { percentage: 1 }).I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
  */
@@ -715,7 +715,7 @@ export interface StumpiState {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stumpiInit } from 'whitebox-engine/methods/timeseries'
+ * import { stumpiInit } from 'mdml-engine/methods/timeseries'
  * stumpiInit([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).profile.P.length // => 10
  * ```
  */
@@ -768,7 +768,7 @@ function lastWindowStats(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stumpiInit, stumpiUpdate } from 'whitebox-engine/methods/timeseries'
+ * import { stumpiInit, stumpiUpdate } from 'mdml-engine/methods/timeseries'
  * const s = stumpiUpdate(stumpiInit([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4, { egress: false }), 3)
  * s.profile.P.length // => 11
  * ```
@@ -888,7 +888,7 @@ export function stumpiUpdate(state: StumpiState, value: number): StumpiState {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stumpiAlgorithm } from 'whitebox-engine/methods/timeseries'
+ * import { stumpiAlgorithm } from 'mdml-engine/methods/timeseries'
  * stumpiAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4, [1, 2]).name // => 'stumpi'
  * ```
  */

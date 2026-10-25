@@ -87,7 +87,7 @@ export interface BackendCapabilities {
  * @returns `true` when its kernels accept the dtype.
  * @example
  * ```ts
- * import { cpu, supportsDType } from 'whitebox-engine/tensor'
+ * import { cpu, supportsDType } from 'mdml-engine/tensor'
  * supportsDType(cpu, 'float64') // => true
  * ```
  */

@@ -4,7 +4,7 @@
  * points, and `pma`, which pools a set into k vectors by attention.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   asTensor,
@@ -46,14 +46,14 @@ export type SetReduction = 'sum' | 'mean' | 'max'
  * @reference Zaheer et al. (2017), Deep sets.
  * @example
  * ```ts
- * import { setPool } from 'whitebox-engine/nn'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { setPool } from 'mdml-engine/nn'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * toArray(setPool([[[1], [3], [9]]], tensor([[true, true, false]], { dtype: 'bool' }), 'mean')) // => [[2]]
  * ```
  */
 export function setPool(x: TensorLike, mask?: TensorLike, reduce: SetReduction = 'mean'): Value {
   const xv = fl(x)
-  if (xv.shape.length !== 3) throw new WhiteboxError('shape', 'setPool: input must be [B, N, F]')
+  if (xv.shape.length !== 3) throw new MdmlError('shape', 'setPool: input must be [B, N, F]')
   if (mask === undefined) {
     if (reduce === 'max') return max(xv, 1)
     return reduce === 'sum' ? sum(xv, 1) : div(sum(xv, 1), xv.shape[1] ?? 1)
@@ -104,8 +104,8 @@ const norm = (h: Value, p: { readonly weight: TensorLike; readonly bias: TensorL
  * @reference Lee et al. (2019), Set transformer: a framework for attention-based permutation-invariant neural networks.
  * @example
  * ```ts
- * import { mab } from 'whitebox-engine/nn'
- * import { eye, zeros } from 'whitebox-engine/tensor'
+ * import { mab } from 'mdml-engine/nn'
+ * import { eye, zeros } from 'mdml-engine/tensor'
  * mab(zeros([1, 3, 2]), zeros([1, 5, 2]), { attention: { inProjWeight: zeros([6, 2]), outProjWeight: eye(2) }, ffWeight: zeros([2, 2]) }, { numHeads: 1 }).shape // => [1, 3, 2]
  * ```
  */
@@ -131,8 +131,8 @@ export function mab(x: TensorLike, y: TensorLike, params: MabParams, options: Se
  * @returns `[B, N, D]`.
  * @example
  * ```ts
- * import { sab } from 'whitebox-engine/nn'
- * import { eye, zeros } from 'whitebox-engine/tensor'
+ * import { sab } from 'mdml-engine/nn'
+ * import { eye, zeros } from 'mdml-engine/tensor'
  * sab(zeros([2, 3, 2]), { attention: { inProjWeight: zeros([6, 2]), outProjWeight: eye(2) }, ffWeight: zeros([2, 2]) }, { numHeads: 2 }).shape // => [2, 3, 2]
  * ```
  */
@@ -157,8 +157,8 @@ const tile = (seeds: TensorLike, b: number): Value => {
  * @returns `[B, N, D]`.
  * @example
  * ```ts
- * import { isab } from 'whitebox-engine/nn'
- * import { eye, zeros } from 'whitebox-engine/tensor'
+ * import { isab } from 'mdml-engine/nn'
+ * import { eye, zeros } from 'mdml-engine/tensor'
  * const p = { attention: { inProjWeight: zeros([6, 2]), outProjWeight: eye(2) }, ffWeight: zeros([2, 2]) }
  * isab(zeros([1, 5, 2]), zeros([2, 2]), p, p, { numHeads: 1 }).shape // => [1, 5, 2]
  * ```
@@ -186,8 +186,8 @@ export function isab(
  * @returns `[B, k, D]`.
  * @example
  * ```ts
- * import { pma } from 'whitebox-engine/nn'
- * import { eye, zeros } from 'whitebox-engine/tensor'
+ * import { pma } from 'mdml-engine/nn'
+ * import { eye, zeros } from 'mdml-engine/tensor'
  * pma(zeros([2, 5, 2]), zeros([1, 2]), { attention: { inProjWeight: zeros([6, 2]), outProjWeight: eye(2) }, ffWeight: zeros([2, 2]) }, { numHeads: 1 }).shape // => [2, 1, 2]
  * ```
  */
@@ -217,8 +217,8 @@ export function pma(
  * @returns x with padded rows zeroed.
  * @example
  * ```ts
- * import { maskSet } from 'whitebox-engine/nn'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { maskSet } from 'mdml-engine/nn'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * toArray(maskSet([[[1], [2]]], tensor([[true, false]], { dtype: 'bool' }))) // => [[[1], [0]]]
  * ```
  */

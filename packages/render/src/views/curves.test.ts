@@ -1,6 +1,6 @@
 import * as echarts from 'echarts'
+import { curveSet } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { curveSet } from 'whitebox-engine/exposition'
 import { curveSetFrames, curveSetView, curveStyles } from './curves.ts'
 
 type Opt = { series: { name?: string; yAxisIndex?: number }[]; yAxis: { name?: string }[] }

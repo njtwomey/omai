@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { CrossValidationCurve, LearningCurve, PruningPath, RegularisationPath } from 'whitebox-engine/exposition'
+import type { CrossValidationCurve, LearningCurve, PruningPath, RegularisationPath } from 'mdml-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { band, lines } from '../charts/lines.ts'
@@ -153,8 +153,8 @@ export function regularisationPathPanels(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { regularisationPath } from 'whitebox-engine/exposition'
- * import { regularisationPathView } from 'whitebox-render/views'
+ * import { regularisationPath } from 'mdml-engine/exposition'
+ * import { regularisationPathView } from 'mdml-render/views'
  * const path = regularisationPath({ penalties: [1, 0.1, 0.01], features: ['a', 'b'], coefficients: [[0, 0], [0.4, 0], [0.9, -0.2]] })
  * regularisationPathView(path).grid.length // => 2
  * ```
@@ -274,8 +274,8 @@ export function crossValidationPanel(curve: CrossValidationCurve, options: Cross
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { crossValidationCurve } from 'whitebox-engine/exposition'
- * import { crossValidationView } from 'whitebox-render/views'
+ * import { crossValidationCurve } from 'mdml-engine/exposition'
+ * import { crossValidationView } from 'mdml-render/views'
  * const curve = crossValidationCurve({ parameter: 'k', values: [1, 2, 3], meanScores: [0.7, 0.8, 0.75], standardErrors: [0.05, 0.04, 0.05], higherIsBetter: true, best: 2 })
  * crossValidationView(curve).xAxis[0].name // => 'k'
  * ```

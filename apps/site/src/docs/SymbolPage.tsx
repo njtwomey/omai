@@ -1,5 +1,5 @@
+import type { Example, MemberDoc, ParamDoc, SymbolDoc } from 'mdml-meta/schema'
 import type { ReactNode } from 'react'
-import type { Example, MemberDoc, ParamDoc, SymbolDoc } from 'whitebox-meta/schema'
 import { CodeBlock } from '../shell/CodeBlock.tsx'
 import { highlight } from '../shell/highlight.ts'
 import { Crumbs } from './Crumbs.tsx'

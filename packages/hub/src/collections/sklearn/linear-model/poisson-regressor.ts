@@ -3,7 +3,7 @@
  * tabular data.
  */
 
-import { poissonRegressor as poissonRegressorMethod } from 'whitebox-engine/methods/linear'
+import { poissonRegressor as poissonRegressorMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

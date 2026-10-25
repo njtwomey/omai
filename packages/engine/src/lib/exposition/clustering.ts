@@ -4,7 +4,7 @@
  * steps of a mixture model (parameters, responsibilities and objective per step).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 import type { InputRows } from './rows.ts'
 
@@ -51,11 +51,11 @@ export interface PairConstraintsRecord {
  *
  * @param steps - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when per-iteration columns differ in length, rows differ in count, or a constraint
+ * @throws MdmlError `shape` when per-iteration columns differ in length, rows differ in count, or a constraint
  *   names a row (or a broken pair) that does not exist.
  * @example
  * ```ts
- * import { clusteringSteps } from 'whitebox-engine/exposition'
+ * import { clusteringSteps } from 'mdml-engine/exposition'
  * clusteringSteps({ method: 'kmeans', assignments: [[0, 0, 1], [0, 1, 1]], objective: [3, 1] }).assignments.length // => 2
  * ```
  */
@@ -78,17 +78,14 @@ export function clusteringSteps(steps: Omit<ClusteringSteps, 'kind'>): Clusterin
     ] as const)
       for (const [i, [a, b]] of pairs.entries())
         if (!(a >= 0 && a < n && b >= 0 && b < n))
-          throw new WhiteboxError(
-            'shape',
-            `clusteringSteps: constraints.${field}[${i}] names a row outside 0..${n - 1}`,
-          )
+          throw new MdmlError('shape', `clusteringSteps: constraints.${field}[${i}] names a row outside 0..${n - 1}`)
     for (const [field, broken, pairs] of [
       ['brokenMustLink', c.brokenMustLink, c.mustLink],
       ['brokenCannotLink', c.brokenCannotLink, c.cannotLink],
     ] as const)
       for (const j of broken ?? [])
         if (!(j >= 0 && j < pairs.length))
-          throw new WhiteboxError('shape', `clusteringSteps: constraints.${field} names a pair outside its list`)
+          throw new MdmlError('shape', `clusteringSteps: constraints.${field} names a pair outside its list`)
   }
   return { kind: 'clusteringSteps', ...steps }
 }
@@ -116,10 +113,10 @@ export interface MixtureSteps {
  *
  * @param steps - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when per-step columns differ in length.
+ * @throws MdmlError `shape` when per-step columns differ in length.
  * @example
  * ```ts
- * import { mixtureSteps } from 'whitebox-engine/exposition'
+ * import { mixtureSteps } from 'mdml-engine/exposition'
  * mixtureSteps({ family: 'gaussian', weights: [[0.5, 0.5]], means: [[[0], [1]]], objective: [-10] }).objective // => [-10]
  * ```
  */
@@ -129,6 +126,6 @@ export function mixtureSteps(steps: Omit<MixtureSteps, 'kind'>): MixtureSteps {
   sameLength('mixtureSteps', 'means', steps.means.length, t)
   if (steps.covariances !== undefined) sameLength('mixtureSteps', 'covariances', steps.covariances.length, t)
   if (steps.responsibilities !== undefined && steps.responsibilities.length > t)
-    throw new WhiteboxError('shape', 'mixtureSteps: more responsibility steps than objective values')
+    throw new MdmlError('shape', 'mixtureSteps: more responsibility steps than objective values')
   return { kind: 'mixtureSteps', ...steps }
 }

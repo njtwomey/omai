@@ -56,8 +56,8 @@ import { crowdLabels, labellingFunctions, labelProportionBags, positiveUnlabelle
  *
  * @example
  * ```ts
- * import { makeFromRecipe } from 'whitebox-engine/data'
- * import { datasetGenerators } from 'whitebox-engine/datasets'
+ * import { makeFromRecipe } from 'mdml-engine/data'
+ * import { datasetGenerators } from 'mdml-engine/datasets'
  * makeFromRecipe({ generator: 'moons', knobs: { n: 10 } }, { generators: datasetGenerators }).data.kind // => 'classification'
  * ```
  */
@@ -154,7 +154,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
  *
  * @example
  * ```ts
- * import { remoteDatasets } from 'whitebox-engine/datasets'
+ * import { remoteDatasets } from 'mdml-engine/datasets'
  * Object.keys(remoteDatasets).length // => 5
  * ```
  */

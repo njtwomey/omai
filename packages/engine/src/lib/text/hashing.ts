@@ -12,7 +12,7 @@ let encoder: TextEncoder | undefined
  * @returns Its UTF-8 encoding.
  * @example
  * ```ts
- * import { utf8Bytes } from 'whitebox-engine/text'
+ * import { utf8Bytes } from 'mdml-engine/text'
  * Array.from(utf8Bytes('é')) // => [195, 169]
  * ```
  */
@@ -34,7 +34,7 @@ const bytesOf = (key: string | Uint8Array): Uint8Array => (typeof key === 'strin
  * @concept feature-hashing
  * @example
  * ```ts
- * import { murmurhash3 } from 'whitebox-engine/text'
+ * import { murmurhash3 } from 'mdml-engine/text'
  * [murmurhash3('foo'), murmurhash3('foo', 0, true)] // => [-156908512, 4138058784]
  * ```
  */
@@ -85,7 +85,7 @@ export function murmurhash3(key: string | Uint8Array, seed = 0, positive = false
  * @concept feature-hashing
  * @example
  * ```ts
- * import { fnv1a } from 'whitebox-engine/text'
+ * import { fnv1a } from 'mdml-engine/text'
  * [fnv1a('a'), fnv1a('é'), fnv1a('é', { signedBytes: true })] // => [3826002220, 513665217, 1023043777]
  * ```
  */

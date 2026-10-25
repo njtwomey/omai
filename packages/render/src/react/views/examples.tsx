@@ -2,8 +2,8 @@
  * React views of example-based and contrastive records: the counterfactual table and the prototypes and criticisms.
  */
 
+import type { CounterfactualSet, PrototypeSet } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
-import type { CounterfactualSet, PrototypeSet } from 'whitebox-engine/exposition'
 import { type Figure, figure as makeFigure } from '../../figure/figure.ts'
 import { counterfactualTableHeight, counterfactualTableView, prototypeView } from '../../views/examples.ts'
 import { RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'

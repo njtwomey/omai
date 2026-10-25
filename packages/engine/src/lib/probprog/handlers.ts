@@ -5,7 +5,7 @@
  * marks for discrete sites, `uncondition`, and `handle` for custom handlers.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Distribution, Support } from '../dists/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import { asTensor, logicalAnd, type TensorLike, type Value } from '../tensor/index.ts'
@@ -151,13 +151,13 @@ function record(msg: Message): Site | undefined {
  *
  * @param model - The program.
  * @returns The traced program.
- * @throws WhiteboxError with code `value` when two sample or deterministic sites share a name.
+ * @throws MdmlError with code `value` when two sample or deterministic sites share a name.
  * @concept effect-handlers
  * @example
  * ```ts
- * import { sample, seed, trace } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { sample, seed, trace } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const model = () => { const mu = sample('mu', normal(0, 1)); sample('y', normal(mu, 1), { obs: 0.5 }) }
  * const t = trace(seed(model, key(0))).getTrace()
  * [...t.sites.keys()] // => ['mu', 'y']
@@ -172,7 +172,7 @@ export function trace<D = void>(model: Model<D>): TracedModel<D> {
     const handler: Messenger = {
       postprocess: (msg) => {
         if ((msg.type === 'sample' || msg.type === 'deterministic') && messages.has(msg.name))
-          throw new WhiteboxError('value', `trace: the site name ${msg.name} is used twice`, { site: msg.name })
+          throw new MdmlError('value', `trace: the site name ${msg.name} is used twice`, { site: msg.name })
         messages.delete(msg.name)
         messages.set(msg.name, msg)
       },
@@ -198,7 +198,7 @@ export function trace<D = void>(model: Model<D>): TracedModel<D> {
  * @concept effect-handlers
  * @example
  * ```ts
- * import { deterministic, traceOf } from 'whitebox-engine/probprog'
+ * import { deterministic, traceOf } from 'mdml-engine/probprog'
  * traceOf(() => deterministic('d', 1), undefined).sites.size // => 1
  * ```
  */
@@ -216,10 +216,10 @@ export function traceOf<D = void>(model: Model<D>, data: D): ProgramTrace {
  * @concept effect-handlers
  * @example
  * ```ts
- * import { sample, seed } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { item, type Value } from 'whitebox-engine/tensor'
+ * import { sample, seed } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { item, type Value } from 'mdml-engine/tensor'
  * const draw = seed(() => sample('x', normal(0, 1)), key(3))
  * item(draw() as Value) === item(draw() as Value) // => true
  * ```
@@ -259,8 +259,8 @@ function lookup(values: SiteValues, msg: Message): Value | undefined {
  * @concept effect-handlers
  * @example
  * ```ts
- * import { condition, sample, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
+ * import { condition, sample, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
  * const site = traceOf(condition(() => sample('x', normal(0, 1)), { x: 2 }), undefined).sites.get('x')
  * site?.type === 'sample' && site.isObserved // => true
  * ```
@@ -287,9 +287,9 @@ export function condition<D = void>(model: Model<D>, data: SiteValues): Model<D>
  * @concept effect-handlers
  * @example
  * ```ts
- * import { sample, substitute, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sample, substitute, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * const site = traceOf(substitute(() => sample('x', normal(0, 1)), { x: 2 }), undefined).sites.get('x')
  * site?.type === 'sample' && !site.isObserved && toArray(site.value) === 2 // => true
  * ```
@@ -311,14 +311,14 @@ export function substitute<D = void>(model: Model<D>, data: SiteValues): Model<D
  * @param model - The program.
  * @param guideTrace - The trace to take values from.
  * @returns The replaying program.
- * @throws WhiteboxError with code `value` when a replayed site has another type in the trace.
+ * @throws MdmlError with code `value` when a replayed site has another type in the trace.
  * @concept effect-handlers
  * @example
  * ```ts
- * import { replay, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { item } from 'whitebox-engine/tensor'
+ * import { replay, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => sample('x', normal(0, 1))
  * const first = traceOf(seed(model, key(1)), undefined)
  * const again = traceOf(replay(model, first), undefined)
@@ -333,10 +333,7 @@ export function replay<D = void>(model: Model<D>, guideTrace: ProgramTrace): Mod
       const site = guideTrace.sites.get(msg.name)
       if (site === undefined) return
       if (site.type !== msg.type)
-        throw new WhiteboxError(
-          'value',
-          `replay: site ${msg.name} is a ${msg.type} here but a ${site.type} in the trace`,
-        )
+        throw new MdmlError('value', `replay: site ${msg.name} is a ${msg.type} here but a ${site.type} in the trace`)
       msg.value = site.value
       if (site.type === 'sample') msg.infer = { ...site.infer }
     },
@@ -361,9 +358,9 @@ export interface BlockOptions {
  * @concept effect-handlers
  * @example
  * ```ts
- * import { block, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { block, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const model = () => { sample('a', normal(0, 1)); sample('b', normal(0, 1)) }
  * [...traceOf(block(seed(model, key(0)), { hide: ['a'] }), undefined).sites.keys()] // => ['b']
  * ```
@@ -390,19 +387,19 @@ export function block<D = void>(model: Model<D>, options: BlockOptions = {}): Mo
  * @param model - The program.
  * @param factor - A positive multiplier.
  * @returns The scaled program.
- * @throws WhiteboxError with code `value` for a factor that is not positive.
+ * @throws MdmlError with code `value` for a factor that is not positive.
  * @concept effect-handlers
  * @example
  * ```ts
- * import { logJoint, observe, scale } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { logJoint, observe, scale } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => { observe('y', normal(0, 1), 0) }
  * item(logJoint(scale(model, 2), undefined).logJoint) === 2 * item(logJoint(model, undefined).logJoint) // => true
  * ```
  */
 export function scale<D = void>(model: Model<D>, factor: number): Model<D> {
-  if (!(factor > 0)) throw new WhiteboxError('value', `scale: the factor must be positive, got ${factor}`)
+  if (!(factor > 0)) throw new MdmlError('value', `scale: the factor must be positive, got ${factor}`)
   return wrap(model, () => ({
     process: (msg) => {
       if (msg.type === 'sample') msg.scale *= factor
@@ -420,9 +417,9 @@ export function scale<D = void>(model: Model<D>, factor: number): Model<D> {
  * @concept effect-handlers
  * @example
  * ```ts
- * import { logJoint, mask, observe, plate } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { logJoint, mask, observe, plate } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => plate('n', 2, () => observe('y', normal(0, 1), [0, 0]))
  * const half = item(logJoint(mask(model, [true, false]), undefined).logJoint)
  * Math.abs(half - item(logJoint(model, undefined).logJoint) / 2) < 1e-15 // => true
@@ -449,10 +446,10 @@ export function mask<D = void>(model: Model<D>, mask: boolean | TensorLike): Mod
  * @concept effect-handlers
  * @example
  * ```ts
- * import { doIntervention, sample, seed } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { item, type Value } from 'whitebox-engine/tensor'
+ * import { doIntervention, sample, seed } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { item, type Value } from 'mdml-engine/tensor'
  * const model = () => { const z = sample('z', normal(0, 1)); return sample('y', normal(z, 1e-9)) }
  * Math.abs(item(seed(doIntervention(model, { z: 5 }), key(0))() as Value) - 5) < 1e-6 // => true
  * ```
@@ -490,7 +487,7 @@ export interface EnumerateOptions {
  * @returns True for integer intervals and booleans.
  * @example
  * ```ts
- * import { isFiniteDiscrete } from 'whitebox-engine/probprog'
+ * import { isFiniteDiscrete } from 'mdml-engine/probprog'
  * isFiniteDiscrete({ kind: 'boolean' }) // => true
  * ```
  */
@@ -506,7 +503,7 @@ export function isFiniteDiscrete(support: Support): boolean {
  * @returns True for discrete supports.
  * @example
  * ```ts
- * import { isDiscrete } from 'whitebox-engine/probprog'
+ * import { isDiscrete } from 'mdml-engine/probprog'
  * isDiscrete({ kind: 'integerInterval', low: 0, high: Infinity }) // => true
  * ```
  */
@@ -525,9 +522,9 @@ export function isDiscrete(support: Support): boolean {
  * @concept effect-handlers
  * @example
  * ```ts
- * import { enumerate, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { bernoulli } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { enumerate, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { bernoulli } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const site = traceOf(seed(enumerate(() => sample('c', bernoulli({ probs: 0.3 }))), key(0)), undefined).sites.get('c')
  * site?.type === 'sample' ? site.infer.enumerate : undefined // => 'parallel'
  * ```
@@ -552,9 +549,9 @@ export function enumerate<D = void>(model: Model<D>, options: EnumerateOptions =
  * @concept effect-handlers
  * @example
  * ```ts
- * import { observe, seed, traceOf, uncondition } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { observe, seed, traceOf, uncondition } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const site = traceOf(seed(uncondition(() => observe('y', normal(0, 1), 3)), key(0)), undefined).sites.get('y')
  * site?.type === 'sample' && !site.isObserved // => true
  * ```
@@ -579,9 +576,9 @@ export function uncondition<D = void>(model: Model<D>, options: { readonly sites
  * @concept effect-handlers
  * @example
  * ```ts
- * import { handle, sample, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { handle, sample, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { tensor } from 'mdml-engine/tensor'
  * const fixed = handle(() => sample('x', normal(0, 1)), () => ({ process: (m) => { m.value = tensor(1) } }))
  * traceOf(fixed, undefined).sites.size // => 1
  * ```

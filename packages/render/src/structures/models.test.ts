@@ -1,6 +1,6 @@
+import { bayesNet, plateModel, toStructure } from 'mdml-engine/pgm'
+import { type SceneNode, structure } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
-import { bayesNet, plateModel, toStructure } from 'whitebox-engine/pgm'
-import { type SceneNode, structure } from 'whitebox-engine/scene'
 import { diagram } from './diagram.ts'
 import { bayesNetCards, nestPlates, uNet, uNetOrder, unetLevels } from './models.ts'
 

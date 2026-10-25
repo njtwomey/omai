@@ -1,5 +1,5 @@
 /**
- * React 19 bindings of whitebox-render: live charts, scene, 3-D and structure views, the fixed-size figure frame with
+ * React 19 bindings of mdml-render: live charts, scene, 3-D and structure views, the fixed-size figure frame with
  * expand and export, figure grids, typeset and live maths, the player and its playback hooks, environment views and the
  * colour-mode theme, with controls, interaction overlays and exposition views in their subfolders.
  */

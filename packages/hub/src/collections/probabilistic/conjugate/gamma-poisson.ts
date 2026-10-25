@@ -2,10 +2,10 @@
  * Hub entry for the gamma-Poisson model, an event rate learned from counts with its exact Gamma posterior.
  */
 
-import { gammaPoissonModel } from 'whitebox-engine/methods/models'
-import { poisson } from 'whitebox-engine/random'
-import { dict, int, real } from 'whitebox-engine/space'
-import { toFlat } from 'whitebox-engine/tensor'
+import { gammaPoissonModel } from 'mdml-engine/methods/models'
+import { poisson } from 'mdml-engine/random'
+import { dict, int, real } from 'mdml-engine/space'
+import { toFlat } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 /** The gamma-Poisson model: an event rate from counts, with its exact posterior. */

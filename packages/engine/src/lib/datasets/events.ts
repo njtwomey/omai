@@ -25,8 +25,8 @@ function uniformTimes(k: Key, n: number, horizon: number): number[] {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { poissonProcess } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { poissonProcess } from 'mdml-engine/datasets'
  * generate(poissonProcess, { knobs: { rate: 2, horizon: 10 } }).data.window // => [0, 10]
  * ```
  */
@@ -70,8 +70,8 @@ export type IntensityShape = 'sinusoidal' | 'piecewise' | 'ramp'
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { inhomogeneousPoisson } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { inhomogeneousPoisson } from 'mdml-engine/datasets'
  * const g = generate(inhomogeneousPoisson, { knobs: { shape: 'piecewise', horizon: 30 } })
  * g.truth.changepoints // => [10, 20]
  * ```
@@ -229,8 +229,8 @@ function hawkesTruth(
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { hawkesProcess } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { hawkesProcess } from 'mdml-engine/datasets'
  * generate(hawkesProcess, { knobs: { horizon: 50 } }).truth.extra?.['branchingRatio'] // => 0.5
  * ```
  */
@@ -303,8 +303,8 @@ export interface MultivariateHawkesOptions {
  * @returns The marked events and their truth.
  * @example
  * ```ts
- * import { multivariateHawkes } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { multivariateHawkes } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * multivariateHawkes(key(0), { mu: [0.2, 0.1], alpha: [[0.3, 0.2], [0, 0.4]], horizon: 20 }).data.markNames // => ['type0', 'type1']
  * ```
  */
@@ -322,7 +322,7 @@ export function multivariateHawkes(key: Key, options: MultivariateHawkesOptions)
       meta: {
         name: 'multivariateHawkes',
         description: 'A mutually exciting Hawkes process.',
-        source: 'whitebox-js generator',
+        source: 'mdml-js generator',
       },
     }),
     truth: {
@@ -338,8 +338,8 @@ export function multivariateHawkes(key: Key, options: MultivariateHawkesOptions)
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { spatialPoisson } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { spatialPoisson } from 'mdml-engine/datasets'
  * generate(spatialPoisson, { knobs: { width: 2, height: 1 } }).data.region // => [[0, 2], [0, 1]]
  * ```
  */

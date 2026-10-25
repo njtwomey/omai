@@ -5,7 +5,7 @@
  * (as BlackJAX), and annealed importance sampling.
  */
 
-import { type Estimate, type Json, logSumExpOf, WhiteboxError } from '../base/index.ts'
+import { type Estimate, type Json, logSumExpOf, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -16,13 +16,13 @@ import { type LogDensity, numericTarget, type Proposal } from './target.ts'
 
 function weightsOf(w: TensorLike, name: string): Float64Array {
   const v = Float64Array.from(toFlat(asTensor(w) as Tensor))
-  if (v.length === 0) throw new WhiteboxError('value', `${name}: no weights`)
+  if (v.length === 0) throw new MdmlError('value', `${name}: no weights`)
   let s = 0
   for (const x of v) {
-    if (!(x >= 0)) throw new WhiteboxError('value', `${name}: weights must be non-negative`)
+    if (!(x >= 0)) throw new MdmlError('value', `${name}: weights must be non-negative`)
     s += x
   }
-  if (!(s > 0)) throw new WhiteboxError('value', `${name}: the weights sum to zero`)
+  if (!(s > 0)) throw new MdmlError('value', `${name}: the weights sum to zero`)
   return v.map((x) => x / s)
 }
 
@@ -59,12 +59,12 @@ function cumulative(w: Float64Array): Float64Array {
  * @param u - The uniform in [0, 1).
  * @param n - The number of indices (default the number of weights).
  * @returns The ancestor indices, sorted.
- * @throws WhiteboxError with code `value` for negative weights or weights summing to zero.
+ * @throws MdmlError with code `value` for negative weights or weights summing to zero.
  * @concept resampling
  * @reference N. Chopin and O. Papaspiliopoulos, An introduction to sequential Monte Carlo (2020), chapter 9.
  * @example
  * ```ts
- * import { systematicResample } from 'whitebox-engine/sampling'
+ * import { systematicResample } from 'mdml-engine/sampling'
  * Array.from(systematicResample([0.5, 0.25, 0.25], 0.6)) // => [0, 1, 2]
  * ```
  */
@@ -84,18 +84,18 @@ export function systematicResample(weights: TensorLike, u: number, n?: number): 
  * @param u - n uniforms in [0, 1).
  * @param n - The number of indices (default the number of weights).
  * @returns The ancestor indices, sorted.
- * @throws WhiteboxError with code `shape` when the number of uniforms differs from n.
+ * @throws MdmlError with code `shape` when the number of uniforms differs from n.
  * @concept resampling
  * @example
  * ```ts
- * import { stratifiedResample } from 'whitebox-engine/sampling'
+ * import { stratifiedResample } from 'mdml-engine/sampling'
  * Array.from(stratifiedResample([0.5, 0.5], [0.9, 0.1])) // => [0, 1]
  * ```
  */
 export function stratifiedResample(weights: TensorLike, u: ArrayLike<number>, n?: number): Int32Array {
   const w = weightsOf(weights, 'stratifiedResample')
   const m = n ?? w.length
-  if (u.length !== m) throw new WhiteboxError('shape', `stratifiedResample: need ${m} uniforms, got ${u.length}`)
+  if (u.length !== m) throw new MdmlError('shape', `stratifiedResample: need ${m} uniforms, got ${u.length}`)
   return inverseCdf(
     cumulative(w),
     Float64Array.from({ length: m }, (_, k) => (k + (u[k] ?? 0)) / m),
@@ -122,19 +122,18 @@ function sortedUniforms(u: ArrayLike<number>, m: number): Float64Array {
  * @param u - n + 1 uniforms in [0, 1).
  * @param n - The number of indices (default the number of weights).
  * @returns The ancestor indices, sorted.
- * @throws WhiteboxError with code `shape` when the number of uniforms is not n + 1.
+ * @throws MdmlError with code `shape` when the number of uniforms is not n + 1.
  * @concept resampling
  * @example
  * ```ts
- * import { multinomialResample } from 'whitebox-engine/sampling'
+ * import { multinomialResample } from 'mdml-engine/sampling'
  * Array.from(multinomialResample([0, 1, 0], [0.3, 0.6, 0.2, 0.9])) // => [1, 1, 1]
  * ```
  */
 export function multinomialResample(weights: TensorLike, u: ArrayLike<number>, n?: number): Int32Array {
   const w = weightsOf(weights, 'multinomialResample')
   const m = n ?? w.length
-  if (u.length !== m + 1)
-    throw new WhiteboxError('shape', `multinomialResample: need ${m + 1} uniforms, got ${u.length}`)
+  if (u.length !== m + 1) throw new MdmlError('shape', `multinomialResample: need ${m + 1} uniforms, got ${u.length}`)
   return inverseCdf(cumulative(w), sortedUniforms(u, m))
 }
 
@@ -147,11 +146,11 @@ export function multinomialResample(weights: TensorLike, u: ArrayLike<number>, n
  * @param u - n + 1 uniforms for the multinomial part.
  * @param n - The number of indices (default the number of weights).
  * @returns The ancestor indices.
- * @throws WhiteboxError with code `shape` when the number of uniforms is not n + 1.
+ * @throws MdmlError with code `shape` when the number of uniforms is not n + 1.
  * @concept resampling
  * @example
  * ```ts
- * import { residualResample } from 'whitebox-engine/sampling'
+ * import { residualResample } from 'mdml-engine/sampling'
  * // n w = (1.5, 1.5): one copy of each, then one residual draw.
  * Array.from(residualResample([0.5, 0.5], [0.1, 0.2, 0.3, 0.4], 3)).slice(0, 2) // => [0, 1]
  * ```
@@ -159,7 +158,7 @@ export function multinomialResample(weights: TensorLike, u: ArrayLike<number>, n
 export function residualResample(weights: TensorLike, u: ArrayLike<number>, n?: number): Int32Array {
   const w = weightsOf(weights, 'residualResample')
   const m = n ?? w.length
-  if (u.length !== m + 1) throw new WhiteboxError('shape', `residualResample: need ${m + 1} uniforms, got ${u.length}`)
+  if (u.length !== m + 1) throw new MdmlError('shape', `residualResample: need ${m + 1} uniforms, got ${u.length}`)
   const out = new Int32Array(m)
   let k = 0
   const residual = new Float64Array(w.length)
@@ -189,8 +188,8 @@ export type ResamplingScheme = 'multinomial' | 'systematic' | 'stratified' | 're
  * @concept resampling
  * @example
  * ```ts
- * import { resample } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { resample } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * resample(key(0), [0, 0, 1], { scheme: 'stratified' }).every((i) => i === 2) // => true
  * ```
  */
@@ -211,7 +210,7 @@ export function resample(
     case 'residual':
       return residualResample(weights, uniform(key, [m + 1]).data, m)
     default:
-      throw new WhiteboxError('value', `resample: unknown scheme ${String(scheme)}`)
+      throw new MdmlError('value', `resample: unknown scheme ${String(scheme)}`)
   }
 }
 
@@ -247,13 +246,13 @@ export interface TemperingOptions {
  * @param temperature - The current temperature lambda in [0, 1].
  * @param options - Target ESS fraction, tolerance and iteration cap.
  * @returns The next temperature.
- * @throws WhiteboxError with code `value` for a temperature outside [0, 1] or a target outside (0, 1).
+ * @throws MdmlError with code `value` for a temperature outside [0, 1] or a target outside (0, 1).
  * @concept sequential-monte-carlo
  * @reference P. Del Moral, A. Doucet and A. Jasra, An adaptive sequential Monte Carlo method for approximate Bayesian
  *   computation (Statistics and Computing 2012).
  * @example
  * ```ts
- * import { nextTemperature } from 'whitebox-engine/sampling'
+ * import { nextTemperature } from 'mdml-engine/sampling'
  * // Equal likelihoods never reduce the ESS: go straight to 1.
  * nextTemperature([-1, -1, -1, -1], 0.2) // => 1
  * ```
@@ -265,8 +264,8 @@ export function nextTemperature(
 ): number {
   const target = options.targetEss ?? 0.5
   if (!(temperature >= 0 && temperature <= 1))
-    throw new WhiteboxError('value', 'nextTemperature: temperature must lie in [0, 1]')
-  if (!(target > 0 && target < 1)) throw new WhiteboxError('value', 'nextTemperature: targetEss must lie in (0, 1)')
+    throw new MdmlError('value', 'nextTemperature: temperature must lie in [0, 1]')
+  if (!(target > 0 && target < 1)) throw new MdmlError('value', 'nextTemperature: targetEss must lie in (0, 1)')
   const tol = options.tol ?? 1e-4
   const maxIter = options.maxIter ?? 100
   const l = Float64Array.from(toFlat(asTensor(logLikelihoods) as Tensor))
@@ -306,7 +305,7 @@ export type MoveKernel = (target: LogDensity, particles: Float64Array, temperatu
  * @concept sequential-monte-carlo
  * @example
  * ```ts
- * import { adaptiveRandomWalkMove, numericTarget } from 'whitebox-engine/sampling'
+ * import { adaptiveRandomWalkMove, numericTarget } from 'mdml-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * adaptiveRandomWalkMove(t, new Float64Array([-1, 0, 1])).name // => 'randomWalkMetropolis'
  * ```
@@ -392,14 +391,14 @@ function moveParticles(
  * @param logLikelihood - log L(x) (NaN reads as -Infinity).
  * @param options - Particles, target ESS, resampling scheme, MCMC steps and move, tempering tolerance.
  * @returns The algorithm; it converges when lambda reaches 1.
- * @throws WhiteboxError with code `value` for a non-positive number of particles or MCMC steps.
+ * @throws MdmlError with code `value` for a non-positive number of particles or MCMC steps.
  * @concept sequential-monte-carlo
  * @reference P. Del Moral, A. Doucet and A. Jasra, Sequential Monte Carlo samplers (JRSS B 2006).
  * @example
  * ```ts
- * import { proposalFromDistribution, smcAlgorithm } from 'whitebox-engine/sampling'
- * import { normal } from 'whitebox-engine/dists'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { proposalFromDistribution, smcAlgorithm } from 'mdml-engine/sampling'
+ * import { normal } from 'mdml-engine/dists'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const smc = smcAlgorithm(proposalFromDistribution(normal(0, 3)), (x) => -0.5 * ((x[0] ?? 0) - 1) ** 2, { numParticles: 200 })
  * runAlgorithm(smc, { seed: 0, maxSteps: 50 }).state.temperature // => 1
  * ```
@@ -412,7 +411,7 @@ export function smcAlgorithm(
   const n = options.numParticles ?? 1000
   const steps = options.mcmcSteps ?? 5
   if (!(Number.isInteger(n) && n >= 2 && Number.isInteger(steps) && steps >= 0)) {
-    throw new WhiteboxError('value', 'smcAlgorithm: need at least 2 particles and a non-negative number of MCMC steps')
+    throw new MdmlError('value', 'smcAlgorithm: need at least 2 particles and a non-negative number of MCMC steps')
   }
   const dim = prior.dim
   const scheme = options.resampling ?? 'systematic'
@@ -514,9 +513,9 @@ export interface SMCResult {
  * @concept sequential-monte-carlo
  * @example
  * ```ts
- * import { proposalFromDistribution, smcSampler } from 'whitebox-engine/sampling'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { proposalFromDistribution, smcSampler } from 'mdml-engine/sampling'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * // Prior N(0, 3^2), likelihood N(1; x, 1): Z = N(1; 0, 10) on the natural scale.
  * const r = smcSampler(proposalFromDistribution(normal(0, 3)), (x) => -0.5 * (1 - (x[0] ?? 0)) ** 2 - 0.5 * Math.log(2 * Math.PI), { numParticles: 400, key: key(0) })
  * Math.abs(r.logEvidence - (-0.5 * Math.log(2 * Math.PI * 10) - 0.05)) < 0.15 // => true
@@ -588,14 +587,14 @@ export interface AISResult {
  * @param logLikelihood - log L(x).
  * @param options - Key, particles, temperature ladder, MCMC steps and move.
  * @returns The final particles, their log weights, the log-evidence estimate and the weights' ESS.
- * @throws WhiteboxError with code `value` for a ladder that does not increase from 0 to 1.
+ * @throws MdmlError with code `value` for a ladder that does not increase from 0 to 1.
  * @concept annealed-importance-sampling
  * @reference R. M. Neal, Annealed importance sampling (Statistics and Computing 2001).
  * @example
  * ```ts
- * import { annealedImportanceSampling, proposalFromDistribution } from 'whitebox-engine/sampling'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { annealedImportanceSampling, proposalFromDistribution } from 'mdml-engine/sampling'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const r = annealedImportanceSampling(proposalFromDistribution(normal(0, 3)), (x) => -0.5 * (1 - (x[0] ?? 0)) ** 2 - 0.5 * Math.log(2 * Math.PI), { key: key(0), numParticles: 200 })
  * Math.abs(r.logEvidence.value - (-0.5 * Math.log(2 * Math.PI * 10) - 0.05)) < 0.1 // => true
  * ```
@@ -613,9 +612,9 @@ export function annealedImportanceSampling(
     ladder[ladder.length - 1] !== 1 ||
     ladder.some((v, i) => i > 0 && !(v > (ladder[i - 1] ?? 0)))
   ) {
-    throw new WhiteboxError('value', 'annealedImportanceSampling: temperatures must increase from 0 to 1')
+    throw new MdmlError('value', 'annealedImportanceSampling: temperatures must increase from 0 to 1')
   }
-  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', 'annealedImportanceSampling: need particles')
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'annealedImportanceSampling: need particles')
   const dim = prior.dim
   const move = options.move ?? adaptiveRandomWalkMove
   const ll = (x: Float64Array): number => {

@@ -5,7 +5,7 @@
  * channel's Shannon-Hartley capacity, and water-filling power allocation over parallel Gaussian channels.
  */
 
-import { type Json, logSumExpOf, maxOf, pairwiseSum, WhiteboxError } from '../base/index.ts'
+import { type Json, logSumExpOf, MdmlError, maxOf, pairwiseSum } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { expandDims, mul, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -24,8 +24,8 @@ import { mutualInformation } from './discrete.ts'
  * @concept channel-capacity
  * @example
  * ```ts
- * import { channelMutualInformation } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { channelMutualInformation } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * // A noiseless binary channel with uniform input carries one bit.
  * item(channelMutualInformation([0.5, 0.5], [[1, 0], [0, 1]], { base: 2 })) // => 1
  * ```
@@ -38,7 +38,7 @@ export function channelMutualInformation(
   const p = float(input)
   const w = float(transition)
   if (p.shape.length !== 1 || w.shape.length !== 2 || w.shape[0] !== p.shape[0])
-    throw new WhiteboxError('shape', 'channelMutualInformation: expected p [n] and W [n, m]')
+    throw new MdmlError('shape', 'channelMutualInformation: expected p [n] and W [n, m]')
   return mutualInformation(mul(expandDims(p, -1), w), options)
 }
 
@@ -191,8 +191,8 @@ export interface BlahutArimotoState {
  * @concept channel-capacity
  * @example
  * ```ts
- * import { blahutArimotoAlgorithm } from 'whitebox-engine/information'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { blahutArimotoAlgorithm } from 'mdml-engine/information'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(blahutArimotoAlgorithm([[1, 0], [0, 1]]), { maxSteps: 100 }).status // => 'converged'
  * ```
  */
@@ -275,7 +275,7 @@ export type BlahutOptions = { readonly tol?: number; readonly maxIter?: number; 
  * @concept channel-capacity
  * @example
  * ```ts
- * import { channelCapacity } from 'whitebox-engine/information'
+ * import { channelCapacity } from 'mdml-engine/information'
  * // A binary symmetric channel with crossover 0.11 carries 1 - h(0.11) = 0.5 bits per use.
  * Math.round(channelCapacity([[0.89, 0.11], [0.11, 0.89]], { base: 2 }).capacity * 1e3) / 1e3 // => 0.5
  * ```
@@ -315,7 +315,7 @@ export interface NamedChannel {
  * @concept channel-capacity
  * @example
  * ```ts
- * import { binarySymmetricChannel } from 'whitebox-engine/information'
+ * import { binarySymmetricChannel } from 'mdml-engine/information'
  * binarySymmetricChannel(0.5, { base: 2 }).capacity // => 0
  * ```
  */
@@ -340,7 +340,7 @@ export function binarySymmetricChannel(p: number, options: { readonly base?: num
  * @concept channel-capacity
  * @example
  * ```ts
- * import { binaryErasureChannel } from 'whitebox-engine/information'
+ * import { binaryErasureChannel } from 'mdml-engine/information'
  * binaryErasureChannel(0.25, { base: 2 }).capacity // => 0.75
  * ```
  */
@@ -365,7 +365,7 @@ export function binaryErasureChannel(e: number, options: { readonly base?: numbe
  * @concept channel-capacity
  * @example
  * ```ts
- * import { zChannel } from 'whitebox-engine/information'
+ * import { zChannel } from 'mdml-engine/information'
  * Math.round(zChannel(0.5, { base: 2 }).capacity * 1e6) / 1e6 // => 0.321928
  * ```
  */
@@ -391,7 +391,7 @@ export function zChannel(p: number, options: { readonly base?: number } = {}): N
  * @concept channel-capacity
  * @example
  * ```ts
- * import { gaussianCapacity } from 'whitebox-engine/information'
+ * import { gaussianCapacity } from 'mdml-engine/information'
  * gaussianCapacity(3, { base: 2 }) // => 1
  * gaussianCapacity(3, { base: 2, bandwidth: 3000 }) // => 6000
  * ```
@@ -400,7 +400,7 @@ export function gaussianCapacity(
   snr: number,
   options: { readonly bandwidth?: number; readonly base?: number } = {},
 ): number {
-  if (!(snr >= 0)) throw new WhiteboxError('value', 'gaussianCapacity: snr must be non-negative')
+  if (!(snr >= 0)) throw new MdmlError('value', 'gaussianCapacity: snr must be non-negative')
   const perUse = Math.log1p(snr) / logOfBase(options.base)
   return options.bandwidth === undefined ? perUse / 2 : options.bandwidth * perUse
 }
@@ -427,7 +427,7 @@ export interface WaterFillingResult {
  * @concept water-filling
  * @example
  * ```ts
- * import { waterFilling } from 'whitebox-engine/information'
+ * import { waterFilling } from 'mdml-engine/information'
  * waterFilling([1, 2, 4], 3).allocation // => [2, 1, 0]
  * ```
  */
@@ -437,7 +437,7 @@ export function waterFilling(
   options: { readonly base?: number } = {},
 ): WaterFillingResult {
   if (noise.length === 0 || noise.some((n) => !(n > 0)) || !(power >= 0))
-    throw new WhiteboxError('value', 'waterFilling: noise powers must be positive and the power non-negative')
+    throw new MdmlError('value', 'waterFilling: noise powers must be positive and the power non-negative')
   const sorted = [...noise].sort((a, b) => a - b)
   let level = 0
   for (let k = sorted.length; k >= 1; k--) {

@@ -5,7 +5,7 @@
  * chance.
  */
 
-import { meanOf, varianceOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, meanOf, varianceOf } from '../../base/index.ts'
 import { type Explained, learningCurve as learningCurveRecord } from '../../exposition/index.ts'
 import { foldIn, type Key, permutation } from '../../random/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../../tensor/index.ts'
@@ -27,7 +27,7 @@ export type CvOption = Splitter | number
  * @returns The splitter.
  * @example
  * ```ts
- * import { checkCv } from 'whitebox-engine/learn/model-selection'
+ * import { checkCv } from 'mdml-engine/learn/model-selection'
  * checkCv(3, { kind: 'classifier' }).name // => 'stratified-k-fold'
  * ```
  */
@@ -47,7 +47,7 @@ export function checkCv(cv: CvOption | undefined, estimator: Pick<Estimator, 'ki
  * @returns The splitter input.
  * @example
  * ```ts
- * import { splitInputOf } from 'whitebox-engine/learn/model-selection'
+ * import { splitInputOf } from 'mdml-engine/learn/model-selection'
  * splitInputOf({ x: [[1], [2]], y: [0, 1] }).n // => 2
  * ```
  */
@@ -144,7 +144,7 @@ function runFold(
     observe: (s) => ({ metrics: s === undefined ? {} : s.test }),
   }
   const r = subRun({ t: index, key: ctx.key, run: ctx.run }, foldAlgorithm, { maxSteps: 1, index })
-  if (r.state === undefined) throw new WhiteboxError('convergence', 'crossValidate: a fold did not run')
+  if (r.state === undefined) throw new MdmlError('convergence', 'crossValidate: a fold did not run')
   return r.state
 }
 
@@ -164,9 +164,9 @@ interface CvState {
  * @concept cross-validation
  * @example
  * ```ts
- * import { crossValidate } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full, mean, item } from 'whitebox-engine/tensor'
+ * import { crossValidate } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full, mean, item } from 'mdml-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([x.shape[0]], p.m) }) },
  *   {},
@@ -244,9 +244,9 @@ export function crossValidate(
  * @returns One score per fold.
  * @example
  * ```ts
- * import { crossValScore } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { crossValScore } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([x.shape[0]], 0) }) }, {})
  * crossValScore(zero, { x: [[0], [1]], y: [1, 3] }, { cv: 2, scoring: 'neg_mean_squared_error' }) // => [-1, -9]
  * ```
@@ -273,12 +273,12 @@ export interface CrossValPredictOptions extends FitOptions {
  * @param data - The data.
  * @param options - cv, method, groups, key and tracing.
  * @returns `[n]` or `[n, k]` predictions in the original row order.
- * @throws WhiteboxError with code `value` when the splitter does not partition the samples.
+ * @throws MdmlError with code `value` when the splitter does not partition the samples.
  * @example
  * ```ts
- * import { crossValPredict } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full, item, mean, toFlat } from 'whitebox-engine/tensor'
+ * import { crossValPredict } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full, item, mean, toFlat } from 'mdml-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([x.shape[0]], p.m) }) },
  *   {},
@@ -289,7 +289,7 @@ export interface CrossValPredictOptions extends FitOptions {
 export function crossValPredict(estimator: Estimator, data: LearnData, options: CrossValPredictOptions = {}): Tensor {
   const splitter = checkCv(options.cv, estimator)
   if (!splitter.partition)
-    throw new WhiteboxError('value', `crossValPredict: ${splitter.name} does not partition the samples`)
+    throw new MdmlError('value', `crossValPredict: ${splitter.name} does not partition the samples`)
   const n = rowsOf(data.x)
   const folds = splitIndices(
     splitter,
@@ -359,9 +359,9 @@ export interface CurveResult {
  * @returns The absolute training sizes and the scores.
  * @example
  * ```ts
- * import { learningCurve } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { learningCurve } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([x.shape[0]], 0) }) }, {})
  * const x = [[0], [1], [2], [3], [4], [5]]
  * learningCurve(zero, { x, y: [0, 0, 0, 0, 0, 0] }, { cv: 3, trainSizes: [0.5, 1], scoring: 'neg_mean_squared_error' }).values // => [2, 4]
@@ -383,7 +383,7 @@ export function learningCurve(
     new Set(requested.map((s) => Math.min(Math.max(fractions ? Math.trunc(s * nMax) : s, 1), nMax))),
   ).sort((a, b) => a - b)
   if (!fractions && requested.some((s) => !Number.isInteger(s) || s < 1 || s > nMax)) {
-    throw new WhiteboxError('value', `learningCurve: train sizes must be fractions in (0, 1] or counts in [1, ${nMax}]`)
+    throw new MdmlError('value', `learningCurve: train sizes must be fractions in (0, 1] or counts in [1, ${nMax}]`)
   }
   const jobs = folds.flatMap((fold, f) => sizes.map((size) => ({ fold, f, size })))
   const scores: { train: number; test: number }[] = []
@@ -459,9 +459,9 @@ export interface ValidationCurveOptions extends FitOptions {
  * @returns The values and the scores by value and fold.
  * @example
  * ```ts
- * import { validationCurve } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { validationCurve } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * validationCurve(constant, { x: [[0], [1]], y: [1, 1] }, 'c', [0, 1], { cv: 2, scoring: 'neg_mean_absolute_error' }).testScores // => [[-1, -1], [-0, -0]]
  * ```
@@ -521,9 +521,9 @@ export interface PermutationTestResult {
  * @returns The score, the permutation scores and the p-value.
  * @example
  * ```ts
- * import { permutationTestScore } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { permutationTestScore } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([x.shape[0]], 0) }) }, {})
  * const r = permutationTestScore(zero, { x: [[0], [1], [2], [3]], y: [1, 2, 3, 4] }, { cv: 2, nPermutations: 9, scoring: 'neg_mean_absolute_error' })
  * r.pValue // => 1
@@ -536,7 +536,7 @@ export function permutationTestScore(
 ): PermutationTestResult {
   const nPerm = options.nPermutations ?? 100
   if (!(Number.isInteger(nPerm) && nPerm >= 1))
-    throw new WhiteboxError('value', 'permutationTestScore: nPermutations must be >= 1')
+    throw new MdmlError('value', 'permutationTestScore: nPermutations must be >= 1')
   const key = keyFor(options, 'permutationTestScore')
   const n = rowsOf(data.x)
   const y = targetVector(data.y ?? [], 'permutationTestScore', n)

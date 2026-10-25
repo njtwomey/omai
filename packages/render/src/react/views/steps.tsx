@@ -3,8 +3,8 @@
  * optimisation, a hierarchical clustering's dendrogram cut into clusters, and the OPTICS reachability plot.
  */
 
+import type { ClusteringSteps, EmbeddingSteps, MixtureSteps } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
-import type { ClusteringSteps, EmbeddingSteps, MixtureSteps } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import {
   clusteringFrames,

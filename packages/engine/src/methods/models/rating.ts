@@ -6,7 +6,7 @@
 
 // TODO: Glicko-2 (volatility), TrueSkill on its factor graph by EP for teams and free-for-all races (here races are
 // split into pairs), TrueSkill through time, Plackett-Luce, Massey and Colley ratings.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import type { ComparisonData } from '../../lib/data/index.ts'
 import {
   coefficientTable,
@@ -90,7 +90,7 @@ export function rateGames<S>(
   options: RateOptions = {},
 ): Explained<Ratings> {
   const games = gamesOf(data)
-  if (games.length === 0) throw new WhiteboxError('value', 'rateGames: no games')
+  if (games.length === 0) throw new MdmlError('value', 'rateGames: no games')
   const players = Math.max(data.playerNames.length, ...games.flatMap((g) => [g.a + 1, g.b + 1]))
   const states = Array.from({ length: players }, () => system.initial())
   const played = new Array<number>(players).fill(0)

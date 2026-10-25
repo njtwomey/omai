@@ -2,8 +2,9 @@
  * React views of the dependence record: one feature's PDP with ICE curves or ALE (or small multiples), and a pair's
  * joint effect as a heatmap.
  */
+
+import type { Dependence } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
-import type { Dependence } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { dependenceSurfaceView, dependenceView } from '../../views/dependence.ts'
 import { RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'

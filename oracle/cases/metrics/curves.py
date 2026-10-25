@@ -3,8 +3,8 @@
 import numpy as np
 import sklearn
 import sklearn.metrics as M
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

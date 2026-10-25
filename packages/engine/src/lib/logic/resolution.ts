@@ -5,7 +5,7 @@
  * for drawing.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { type Structure, type StructureNode, structure } from '../scene/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { addArgs, BUILTINS, copyTerm, type Engine, type MutableDb } from './_builtins.ts'
@@ -79,7 +79,7 @@ const LIBRARY: ParsedProgram = parseProgram(LIBRARY_SOURCE)
  *
  * @example
  * ```ts
- * import { BUILTIN_PREDICATES } from 'whitebox-engine/logic'
+ * import { BUILTIN_PREDICATES } from 'mdml-engine/logic'
  * [BUILTIN_PREDICATES.includes('findall/3'), BUILTIN_PREDICATES.includes('append/3')] // => [true, false]
  * ```
  */
@@ -90,7 +90,7 @@ export const BUILTIN_PREDICATES: readonly string[] = [...CONTROL, ...BUILTINS.ke
  *
  * @example
  * ```ts
- * import { LIBRARY_PREDICATES } from 'whitebox-engine/logic'
+ * import { LIBRARY_PREDICATES } from 'mdml-engine/logic'
  * LIBRARY_PREDICATES.includes('append/3') // => true
  * ```
  */
@@ -127,11 +127,11 @@ function predicateIndicators(t: Term): string[] {
  * @param source - Program text, or parsed clauses.
  * @param options - Whether to include the library, the operator table, and a database to extend.
  * @returns The database.
- * @throws WhiteboxError with code `value` on a syntax error or a clause for a built-in predicate.
+ * @throws MdmlError with code `value` on a syntax error or a clause for a built-in predicate.
  * @concept logic-programming
  * @example
  * ```ts
- * import { consult } from 'whitebox-engine/logic'
+ * import { consult } from 'mdml-engine/logic'
  * const db = consult('parent(tom, bob). parent(bob, ann).')
  * db.predicates.get('parent/2').length // => 2
  * db.predicates.has('append/3') // => true
@@ -165,10 +165,10 @@ export function consult(source: string | readonly Clause[], options: ConsultOpti
   }
   for (const c of parsed.clauses) {
     if (c.head.kind === 'var' || c.head.kind === 'num') {
-      throw new WhiteboxError('value', `consult: clause head ${termToString(c.head)} is not callable`)
+      throw new MdmlError('value', `consult: clause head ${termToString(c.head)} is not callable`)
     }
     const k = indicator(c.head)
-    if (isBuiltinKey(k)) throw new WhiteboxError('value', `consult: cannot redefine the built-in ${k}`)
+    if (isBuiltinKey(k)) throw new MdmlError('value', `consult: cannot redefine the built-in ${k}`)
     // The first user clause of a library predicate replaces the library definition.
     const old = fresh.has(k) ? (preds.get(k) ?? []) : base !== undefined ? (preds.get(k) ?? []) : []
     fresh.add(k)
@@ -947,7 +947,7 @@ function finalise(s: Machine, ops: Operators, directives: readonly Term[]): Mach
  * @concept sld-resolution
  * @example
  * ```ts
- * import { consult, sldAlgorithm } from 'whitebox-engine/logic'
+ * import { consult, sldAlgorithm } from 'mdml-engine/logic'
  * sldAlgorithm(consult('p(1).'), 'p(X)').name // => 'sld-resolution'
  * ```
  */
@@ -988,7 +988,7 @@ export interface SolveResult {
  * @concept sld-resolution
  * @example
  * ```ts
- * import { solve } from 'whitebox-engine/logic'
+ * import { solve } from 'mdml-engine/logic'
  * const family = 'parent(tom, bob). parent(tom, liz). parent(bob, ann). grandparent(X, Z) :- parent(X, Y), parent(Y, Z).'
  * solve(family, 'grandparent(tom, W)').answers.map((a) => a.text) // => ['W = ann']
  * solve('', 'append(X, Y, [1,2])').answers.map((a) => a.text) // => ['X = [], Y = [1,2]', 'X = [1], Y = [2]', 'X = [1,2], Y = []']
@@ -1043,19 +1043,19 @@ export function solve(program: Database | string, query: string | Term, options:
  * @param query - The goal.
  * @param options - Budgets and flags as for {@link solve}.
  * @returns True when provable.
- * @throws WhiteboxError with code `convergence` when the step budget runs out first, and code `value` for an uncaught
+ * @throws MdmlError with code `convergence` when the step budget runs out first, and code `value` for an uncaught
  *   Prolog exception.
  * @example
  * ```ts
- * import { prove } from 'whitebox-engine/logic'
+ * import { prove } from 'mdml-engine/logic'
  * [prove('', 'member(2, [1,2,3])'), prove('', '\\+ member(4, [1,2,3])'), prove('', 'member(4, [1,2,3])')] // => [true, true, false]
  * ```
  */
 export function prove(program: Database | string, query: string | Term, options: SolveOptions = {}): boolean {
   const r = solve(program, query, { ...options, maxSolutions: 1 })
-  if (r.status === 'budget') throw new WhiteboxError('convergence', 'prove: the step budget ran out')
+  if (r.status === 'budget') throw new MdmlError('convergence', 'prove: the step budget ran out')
   if (r.status === 'error') {
-    throw new WhiteboxError('value', `prove: uncaught exception ${termToString(r.error ?? atom('error'))}`)
+    throw new MdmlError('value', `prove: uncaught exception ${termToString(r.error ?? atom('error'))}`)
   }
   return r.answers.length > 0
 }
@@ -1066,18 +1066,18 @@ export function prove(program: Database | string, query: string | Term, options:
  *
  * @param result - A solve result with its tree.
  * @returns The structure.
- * @throws WhiteboxError with code `value` when the run did not record its tree.
+ * @throws MdmlError with code `value` when the run did not record its tree.
  * @concept sld-resolution
  * @example
  * ```ts
- * import { sldTree, solve } from 'whitebox-engine/logic'
+ * import { sldTree, solve } from 'mdml-engine/logic'
  * const r = solve('p(1). p(2). q(2).', 'p(X), q(X)', { recordTree: true })
  * sldTree(r).nodes.map((n) => n.label) // => ['p(X),q(X)', 'q(1)', 'fail', 'q(2)', '[]']
  * ```
  */
 export function sldTree(result: SolveResult): Structure {
   const tree = result.tree
-  if (tree === undefined) throw new WhiteboxError('value', 'sldTree: solve with recordTree: true')
+  if (tree === undefined) throw new MdmlError('value', 'sldTree: solve with recordTree: true')
   const nodes: StructureNode[] = tree.map((n) => ({
     id: `n${n.id}`,
     label: n.goals,
@@ -1106,7 +1106,7 @@ export function sldTree(result: SolveResult): Structure {
  * @returns The text.
  * @example
  * ```ts
- * import { formatTerm, solve } from 'whitebox-engine/logic'
+ * import { formatTerm, solve } from 'mdml-engine/logic'
  * formatTerm(solve('', 'X is 1 / 0').error) // => 'error(evaluation_error(zero_divisor),context((is)/2,_))'
  * ```
  */

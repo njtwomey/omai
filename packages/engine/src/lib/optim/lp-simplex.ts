@@ -85,8 +85,8 @@ function point(form: StandardForm, s: { tableau: Float64Array; rows: number; col
  * @concept simplex-method
  * @example
  * ```ts
- * import { simplexAlgorithm, standardForm } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { simplexAlgorithm, standardForm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const form = standardForm({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
  * runAlgorithm(simplexAlgorithm(form), { maxSteps: 50 }).state.path.map((p) => p.x) // => [[0, 0], [4, 0], [3, 1]]
  * ```

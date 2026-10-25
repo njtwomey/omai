@@ -1,13 +1,13 @@
 {
-  "name": "whitebox-meta",
+  "name": "mdml-meta",
   "version": "0.1.0",
-  "description": "whitebox-js documentation metadata: schema, docstring extractor, example runner, worker and concepts.",
+  "description": "mdml-js documentation metadata: schema, docstring extractor, example runner, worker and concepts.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/njtwomey/whitebox-js.git",
+    "url": "git+https://github.com/njtwomey/mdml-js.git",
     "directory": "packages/meta"
   },
   "files": [
@@ -35,9 +35,9 @@
   "dependencies": {
     "sucrase": "^3.35.1",
     "ts-morph": "^28.0.0",
-    "whitebox-engine": "workspace:*",
-    "whitebox-hub": "workspace:*",
-    "whitebox-render": "workspace:*"
+    "mdml-engine": "workspace:*",
+    "mdml-hub": "workspace:*",
+    "mdml-render": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

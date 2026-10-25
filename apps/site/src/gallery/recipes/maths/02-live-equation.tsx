@@ -1,8 +1,8 @@
+import { cartesian, fn, points } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { live, tex } from 'mdml-render/maths'
+import { Chart, ControlPanel, Equation, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { cartesian, fn, points } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { live, tex } from 'whitebox-render/maths'
-import { Chart, ControlPanel, Equation, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

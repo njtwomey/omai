@@ -11,10 +11,10 @@ import numpy as np
 import scipy
 import scipy.linalg as sl
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from prdc import compute_prdc
 from torchmetrics.image.kid import poly_mmd
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {
     "scipy": scipy.__version__,

@@ -32,7 +32,7 @@ export interface TexOptions {
  * @returns The markup.
  * @example
  * ```ts
- * import { texToHtml } from 'whitebox-render/maths'
+ * import { texToHtml } from 'mdml-render/maths'
  * texToHtml('\\xvec^\\top \\yvec').includes('<math') // => true
  * texToHtml('\\frac{1}').includes('wb-tex-error') // => true
  * ```
@@ -74,7 +74,7 @@ export function texErrorMarker(message: string): string {
  * @returns A function from TeX and display mode to markup.
  * @example
  * ```ts
- * import { texRenderer } from 'whitebox-render/maths'
+ * import { texRenderer } from 'mdml-render/maths'
  * const render = texRenderer()
  * render('x^2') === render('x^2') // => true
  * ```
@@ -100,7 +100,7 @@ export function texRenderer(options: Omit<TexOptions, 'display'> = {}): (tex: st
  * @returns `undefined` when it parses, else the error message.
  * @example
  * ```ts
- * import { texError } from 'whitebox-render/maths'
+ * import { texError } from 'mdml-render/maths'
  * texError('\\frac{1}{2}') // => undefined
  * texError('\\frac{1}').startsWith('KaTeX parse error') // => true
  * ```

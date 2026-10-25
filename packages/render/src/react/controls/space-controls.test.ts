@@ -1,5 +1,5 @@
+import { bool, box, choice, dict, int, real, tuple } from 'mdml-engine/space'
 import { describe, expect, it } from 'vitest'
-import { bool, box, choice, dict, int, real, tuple } from 'whitebox-engine/space'
 import { settleValue, spaceControls, valueAt, withValueAt } from './space-controls.ts'
 
 const space = dict({

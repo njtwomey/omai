@@ -3,8 +3,8 @@
  * algorithm, on simulated tournaments.
  */
 
-import { bradleyTerry as bradleyTerryRatings } from 'whitebox-engine/methods/models'
-import { dict, int } from 'whitebox-engine/space'
+import { bradleyTerry as bradleyTerryRatings } from 'mdml-engine/methods/models'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { comparisonsOf } from './_rating.ts'
 

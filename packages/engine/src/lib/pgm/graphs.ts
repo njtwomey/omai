@@ -4,7 +4,7 @@
  * property of Markov networks.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { connectedComponents as components, graph, isDag, topologicalSort } from '../graph/index.ts'
 import { indexedGraph, link, mutableGraph } from './_graph.ts'
 import type { Factor } from './factor.ts'
@@ -42,11 +42,11 @@ export interface Dag extends DirectedModel {
  * @param edges - `[parent, child]` pairs.
  * @param nodes - Extra (or all) nodes, including isolated ones.
  * @returns The graph.
- * @throws WhiteboxError with code `value` when the edges contain a cycle.
+ * @throws MdmlError with code `value` when the edges contain a cycle.
  * @concept graphical-models
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
+ * import { dag } from 'mdml-engine/pgm'
  * dag([['b', 'c'], ['a', 'b']]).nodes.map((n) => n.name) // => ['a', 'b', 'c']
  * ```
  */
@@ -83,12 +83,12 @@ function topologicalNodes<N extends DagNode>(nodes: readonly N[]): N[] {
   for (const [i, n] of nodes.entries()) {
     for (const p of n.parents) {
       const j = index.get(p)
-      if (j === undefined) throw new WhiteboxError('value', `${n.name} has unknown parent ${p}`)
+      if (j === undefined) throw new MdmlError('value', `${n.name} has unknown parent ${p}`)
       edges.push([j, i])
     }
   }
   const g = graph(edges, { directed: true, nodes: nodes.length })
-  if (!isDag(g)) throw new WhiteboxError('value', 'the graph has a cycle')
+  if (!isDag(g)) throw new MdmlError('value', 'the graph has a cycle')
   return topologicalSort(g).flatMap((i) => {
     const n = nodes[i]
     return n === undefined ? [] : [n]
@@ -100,10 +100,10 @@ function topologicalNodes<N extends DagNode>(nodes: readonly N[]): N[] {
  *
  * @param nodes - The nodes, in any order.
  * @returns The same nodes, ordered.
- * @throws WhiteboxError with code `value` for unknown parents or a cycle.
+ * @throws MdmlError with code `value` for unknown parents or a cycle.
  * @example
  * ```ts
- * import { topologicalOrder } from 'whitebox-engine/pgm'
+ * import { topologicalOrder } from 'mdml-engine/pgm'
  * topologicalOrder([{ name: 'b', parents: ['a'] }, { name: 'a', parents: [] }]).map((n) => n.name) // => ['a', 'b']
  * ```
  */
@@ -118,7 +118,7 @@ export function topologicalOrder<N extends DagNode>(nodes: readonly N[]): N[] {
  * @returns The edges.
  * @example
  * ```ts
- * import { dag, dagEdges } from 'whitebox-engine/pgm'
+ * import { dag, dagEdges } from 'mdml-engine/pgm'
  * dagEdges(dag([['a', 'b']])) // => [['a', 'b']]
  * ```
  */
@@ -128,7 +128,7 @@ export function dagEdges(g: DirectedModel): [string, string][] {
 
 function nodeOf(g: DirectedModel, name: string): DagNode {
   const n = g.nodes.find((x) => x.name === name)
-  if (n === undefined) throw new WhiteboxError('value', `unknown variable ${name}`)
+  if (n === undefined) throw new MdmlError('value', `unknown variable ${name}`)
   return n
 }
 
@@ -138,10 +138,10 @@ function nodeOf(g: DirectedModel, name: string): DagNode {
  * @param g - The graph or model.
  * @param names - The nodes.
  * @returns The ancestral set, sorted.
- * @throws WhiteboxError with code `value` for an unknown node.
+ * @throws MdmlError with code `value` for an unknown node.
  * @example
  * ```ts
- * import { dag, ancestors } from 'whitebox-engine/pgm'
+ * import { dag, ancestors } from 'mdml-engine/pgm'
  * ancestors(dag([['a', 'b'], ['b', 'c'], ['d', 'c']]), ['b']) // => ['a', 'b']
  * ```
  */
@@ -163,10 +163,10 @@ export function ancestors(g: DirectedModel, names: readonly string[]): string[] 
  * @param g - The graph or model.
  * @param name - The node.
  * @returns The descendants, sorted.
- * @throws WhiteboxError with code `value` for an unknown node.
+ * @throws MdmlError with code `value` for an unknown node.
  * @example
  * ```ts
- * import { dag, descendants } from 'whitebox-engine/pgm'
+ * import { dag, descendants } from 'mdml-engine/pgm'
  * descendants(dag([['a', 'b'], ['b', 'c'], ['d', 'c']]), 'b') // => ['b', 'c']
  * ```
  */
@@ -191,7 +191,7 @@ export function descendants(g: DirectedModel, name: string): string[] {
  * @returns The neighbours of each vertex.
  * @example
  * ```ts
- * import { undirectedGraph } from 'whitebox-engine/pgm'
+ * import { undirectedGraph } from 'mdml-engine/pgm'
  * [...(undirectedGraph([['a', 'b'], ['b', 'c']]).get('b') ?? [])] // => ['a', 'c']
  * ```
  */
@@ -211,7 +211,7 @@ export function undirectedGraph(
  * @returns The edges.
  * @example
  * ```ts
- * import { undirectedGraph, graphEdges } from 'whitebox-engine/pgm'
+ * import { undirectedGraph, graphEdges } from 'mdml-engine/pgm'
  * graphEdges(undirectedGraph([['b', 'a'], ['c', 'b']])) // => [['a', 'b'], ['b', 'c']]
  * ```
  */
@@ -229,7 +229,7 @@ export function graphEdges(graph: UndirectedGraph): [string, string][] {
  * @concept moralisation
  * @example
  * ```ts
- * import { dag, moralGraph } from 'whitebox-engine/pgm'
+ * import { dag, moralGraph } from 'mdml-engine/pgm'
  * [...(moralGraph(dag([['a', 'c'], ['b', 'c']])).get('a') ?? [])].sort() // => ['b', 'c']
  * ```
  */
@@ -252,7 +252,7 @@ export function moralGraph(g: DirectedModel): Map<string, Set<string>> {
  * @returns The neighbours of each variable.
  * @example
  * ```ts
- * import { factor, interactionGraph } from 'whitebox-engine/pgm'
+ * import { factor, interactionGraph } from 'mdml-engine/pgm'
  * [...(interactionGraph([factor(['a', 'b'], [2, 2], [1, 1, 1, 1])]).get('a') ?? [])] // => ['b']
  * ```
  */
@@ -276,7 +276,7 @@ export function interactionGraph(
  * @returns The components (each sorted), ordered by their smallest vertex.
  * @example
  * ```ts
- * import { undirectedGraph, connectedComponents } from 'whitebox-engine/pgm'
+ * import { undirectedGraph, connectedComponents } from 'mdml-engine/pgm'
  * connectedComponents(undirectedGraph([['a', 'b']], ['c'])) // => [['a', 'b'], ['c']]
  * ```
  */
@@ -297,7 +297,7 @@ export function connectedComponents(graph: UndirectedGraph): string[][] {
  * @concept markov-properties
  * @example
  * ```ts
- * import { undirectedGraph, separated } from 'whitebox-engine/pgm'
+ * import { undirectedGraph, separated } from 'mdml-engine/pgm'
  * const g = undirectedGraph([['a', 'b'], ['b', 'c']])
  * separated(g, ['a'], ['c'], ['b']) // => true
  * separated(g, ['a'], ['c'], []) // => false

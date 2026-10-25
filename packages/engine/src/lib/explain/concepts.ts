@@ -4,7 +4,7 @@
  * rises along that direction, tested against CAVs of random examples for significance. Probing classifiers measure
  * how well a layer encodes a concept at all.
  */
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { matrixView } from '../learn/validation.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { tests } from '../stats/index.ts'
@@ -29,7 +29,7 @@ export interface LinearProbe {
  * @returns The probe.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const probe = explain.linearProbe([[0, 1], [0, 2], [1, 0], [2, 0]], [1, 1, 0, 0])
  * probe.accuracy // => 1
  * ```
@@ -40,7 +40,7 @@ export function linearProbe(
   options: { readonly l2?: number; readonly iterations?: number } = {},
 ): LinearProbe {
   const m = matrixView(activations, 'linearProbe')
-  if (labels.length !== m.n) throw new WhiteboxError('shape', 'linearProbe: one label per row')
+  if (labels.length !== m.n) throw new MdmlError('shape', 'linearProbe: one label per row')
   const p = m.d + 1
   const lambda = options.l2 ?? 1e-2
   let w = new Float64Array(p)
@@ -87,7 +87,7 @@ export function linearProbe(
  * @returns The unit vector and the probe's accuracy.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const cav = explain.conceptActivationVector([[2, 0], [3, 0.1]], [[0, 0.1], [0.1, -0.1]])
  * cav.vector[0] > 0.9 // => true
  * ```
@@ -119,8 +119,8 @@ export function conceptActivationVector(
  * @returns One derivative per example.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { matmul } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { matmul } from 'mdml-engine/tensor'
  * explain.directionalDerivatives((h) => matmul(h, [[1], [-2]]), [[0, 0], [1, 1]], [0, 1]) // => [-2, -2]
  * ```
  */
@@ -169,8 +169,8 @@ export interface TcavResult {
  * @returns The scores, random scores, mean, p-value and probe accuracies.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { matmul } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { matmul } from 'mdml-engine/tensor'
  * // The output is the first unit: a concept lying along it scores 1 in every run.
  * const tail = (h) => matmul(h, [[1], [0]])
  * const randoms = [[[0, 1], [0.1, -1]], [[-0.1, 0.5], [0, -0.4]], [[0.1, 0.2], [-0.1, -0.3]]]
@@ -184,7 +184,7 @@ export function tcav(
   randomActivations: readonly TensorLike[],
   options: TcavOptions = {},
 ): TcavResult {
-  if (randomActivations.length < 2) throw new WhiteboxError('value', 'tcav: needs at least two random sets')
+  if (randomActivations.length < 2) throw new MdmlError('value', 'tcav: needs at least two random sets')
   const probeOptions = options.l2 === undefined ? {} : { l2: options.l2 }
   const score = (vector: readonly number[]): number => {
     const dd = directionalDerivatives(

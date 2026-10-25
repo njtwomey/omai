@@ -6,7 +6,7 @@
  */
 
 import { customVjp, jvp as forward, jacobian, vjp } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -64,8 +64,8 @@ const vec = (x: TensorLike): Tensor => concreteOrThrow(promoteFloat(x)[0] as Ten
  * @concept root-finding
  * @example
  * ```ts
- * import { fsolve } from 'whitebox-engine/numerics/roots'
- * import { sub, mul, tensor, toArray, sliceAxis, concat, square } from 'whitebox-engine/tensor'
+ * import { fsolve } from 'mdml-engine/numerics/roots'
+ * import { sub, mul, tensor, toArray, sliceAxis, concat, square } from 'mdml-engine/tensor'
  * // x^2 = 4 and x y = 2 near (1, 1): (2, 1).
  * const F = (v) => concat([sub(square(sliceAxis(v, 0, 0, 1)), 4), sub(mul(sliceAxis(v, 0, 0, 1), sliceAxis(v, 0, 1, 2)), 2)])
  * toArray(fsolve(F, [1, 1]).x).map((v) => Math.round(v * 1e10) / 1e10) // => [2, 1]
@@ -121,8 +121,8 @@ export function fsolve(f: VectorFunction, x0: TensorLike, options: SystemOptions
  * @returns The solution with its residual history.
  * @example
  * ```ts
- * import { broyden } from 'whitebox-engine/numerics/roots'
- * import { sub, mul, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { broyden } from 'mdml-engine/numerics/roots'
+ * import { sub, mul, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(broyden((v) => sub(mul(v, 2), tensor([2, 4])), [0, 0]).x) // => [1, 2]
  * ```
  */
@@ -200,8 +200,8 @@ export interface FixedPointOptions {
  * @concept fixed-points
  * @example
  * ```ts
- * import { fixedPoint } from 'whitebox-engine/numerics/roots'
- * import { cos, toArray } from 'whitebox-engine/tensor'
+ * import { fixedPoint } from 'mdml-engine/numerics/roots'
+ * import { cos, toArray } from 'mdml-engine/tensor'
  * Math.abs(toArray(fixedPoint((x) => cos(x), [1]).x)[0] - 0.7390851332151607) < 1e-10 // => true
  * ```
  */
@@ -277,7 +277,7 @@ export function fixedPoint(g: VectorFunction, x0: TensorLike, options: FixedPoin
     }
     x = next
   }
-  throw new WhiteboxError('convergence', `fixedPoint: no convergence after ${maxIterations} iterations`)
+  throw new MdmlError('convergence', `fixedPoint: no convergence after ${maxIterations} iterations`)
 }
 
 /**
@@ -290,8 +290,8 @@ export function fixedPoint(g: VectorFunction, x0: TensorLike, options: FixedPoin
  * @returns The solution.
  * @example
  * ```ts
- * import { root } from 'whitebox-engine/numerics/roots'
- * import { sub, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { root } from 'mdml-engine/numerics/roots'
+ * import { sub, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(root((v) => sub(v, tensor([3, 4])), [0, 0]).x) // => [3, 4]
  * ```
  */
@@ -324,9 +324,9 @@ export function root(
  * @concept implicit-differentiation
  * @example
  * ```ts
- * import { rootOf } from 'whitebox-engine/numerics/roots'
- * import { jacobian } from 'whitebox-engine/autodiff'
- * import { mul, sub, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { rootOf } from 'mdml-engine/numerics/roots'
+ * import { jacobian } from 'mdml-engine/autodiff'
+ * import { mul, sub, tensor, toArray } from 'mdml-engine/tensor'
  * // 2x = theta, so dx/dtheta = I / 2.
  * toArray(jacobian((t) => rootOf((x, th) => sub(mul(x, 2), th), t, [0, 0]))(tensor([1, 2]))) // => [[0.5, 0], [0, 0.5]]
  * ```

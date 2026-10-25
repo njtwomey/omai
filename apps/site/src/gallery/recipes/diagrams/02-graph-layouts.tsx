@@ -1,5 +1,4 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { path, rect, type SceneNode, scene, text } from 'whitebox-engine/scene'
+import { path, rect, type SceneNode, scene, text } from 'mdml-engine/scene'
 import {
   circularLayout,
   forceLayout,
@@ -10,15 +9,16 @@ import {
   radialTree,
   spectralLayout,
   tidyTree,
-} from 'whitebox-render/layout'
-import { ControlPanel, SceneFrame, SeedInput, Select } from 'whitebox-render/react'
+} from 'mdml-render/layout'
+import { ControlPanel, SceneFrame, SeedInput, Select } from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Graph layouts',
   question: 'How do I place the nodes of a graph: in layers, as a tree, by forces, on a circle?',
   explain:
-    'Layouts in `whitebox-render/layout` take nodes with sizes and edges and return node boxes, edge routes and group boxes: `layered` (Sugiyama-style, as dagre), `tidyTree` and `radialTree`, a seeded `forceLayout` that stops when its energy settles, `circularLayout`, `spectralLayout` (Laplacian eigenvectors) and `gridLayout`. Here the layout is drawn by hand as a scene; diagrams do this for any structure.',
+    'Layouts in `mdml-render/layout` take nodes with sizes and edges and return node boxes, edge routes and group boxes: `layered` (Sugiyama-style, as dagre), `tidyTree` and `radialTree`, a seeded `forceLayout` that stops when its energy settles, `circularLayout`, `spectralLayout` (Laplacian eigenvectors) and `gridLayout`. Here the layout is drawn by hand as a scene; diagrams do this for any structure.',
 }
 
 const names = ['root', 'parse', 'check', 'lower', 'optimise', 'emit', 'cache', 'log', 'report']

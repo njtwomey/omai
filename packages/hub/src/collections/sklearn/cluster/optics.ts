@@ -3,7 +3,7 @@
  * radius at once, on two-dimensional clustering datasets.
  */
 
-import { optics as opticsMethod } from 'whitebox-engine/methods/cluster'
+import { optics as opticsMethod } from 'mdml-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

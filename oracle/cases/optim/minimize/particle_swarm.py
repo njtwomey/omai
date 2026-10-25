@@ -2,8 +2,8 @@
 
 import numpy as np
 import scipy
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.optim_problems import PROBLEMS
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.optim_problems import PROBLEMS
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

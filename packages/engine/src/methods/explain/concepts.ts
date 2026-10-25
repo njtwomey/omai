@@ -3,7 +3,7 @@
  * rows (images of a digit, say), tested at the network's hidden layer against random rows, as a `concepts` record.
  */
 
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import { conceptScores, type Explained } from '../../lib/exposition/index.ts'
 import { classNamesOf, type Fitted, type LearnData, matrixView } from '../../lib/learn/index.ts'
@@ -70,7 +70,7 @@ export function tcavStudy(
   const target =
     options.classIndex ?? argmaxOf(Array.from({ length: k }, (_, c) => predicted.filter((p) => p === c).length))
   const inputs = options.inputs ?? all.filter((i) => predicted[i] === target).slice(0, 60)
-  if (inputs.length === 0) throw new WhiteboxError('value', 'tcavStudy: no examples of the class')
+  if (inputs.length === 0) throw new MdmlError('value', 'tcavStudy: no examples of the class')
   const key = options.key ?? makeKey(0)
   const nRandom = Math.max(2, options.nRandom ?? 8)
   const size = Math.min(x.n, options.randomSize ?? 30)

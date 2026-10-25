@@ -1,10 +1,10 @@
 // Semi-supervised hub entries (private to this collection): the method's controls plus how many labels each class
 // keeps, and a run that hides the rest of the dataset's labels (keyed) before fitting.
-import type { Dataset } from 'whitebox-engine/data'
-import type { Estimator } from 'whitebox-engine/learn'
-import { hideLabels } from 'whitebox-engine/methods/semi-supervised'
-import { foldIn } from 'whitebox-engine/random'
-import { dict, int } from 'whitebox-engine/space'
+import type { Dataset } from 'mdml-engine/data'
+import type { Estimator } from 'mdml-engine/learn'
+import { hideLabels } from 'mdml-engine/methods/semi-supervised'
+import { foldIn } from 'mdml-engine/random'
+import { dict, int } from 'mdml-engine/space'
 import type { HubEntry } from '../../../entry/entry.ts'
 import { type FitEstimatorOptions, fitEstimator, learnDataOf } from '../../../entry/run.ts'
 

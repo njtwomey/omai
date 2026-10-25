@@ -5,7 +5,7 @@
  * collecting state summaries from an algorithm, and feature and class names.
  */
 
-import { type Json, linspaceNumbers, WhiteboxError } from '../base/index.ts'
+import { type Json, linspaceNumbers, MdmlError } from '../base/index.ts'
 import { resolveKey, resolvePolicy, resolveTracer } from '../context/index.ts'
 import {
   type DecisionSurface,
@@ -63,9 +63,9 @@ export type ExplainedFitted<P extends Json = Json, V = object> = Explained<Fitte
  * @concept estimator-protocol
  * @example
  * ```ts
- * import { defineExplainedEstimator } from 'whitebox-engine/learn'
- * import { coefficientTable } from 'whitebox-engine/exposition'
- * import { full, item, mean } from 'whitebox-engine/tensor'
+ * import { defineExplainedEstimator } from 'mdml-engine/learn'
+ * import { coefficientTable } from 'mdml-engine/exposition'
+ * import { full, item, mean } from 'mdml-engine/tensor'
  * const meanRegressor = defineExplainedEstimator(
  *   {
  *     name: 'mean',
@@ -150,8 +150,8 @@ const ROW_KINDS: ReadonlySet<string> = new Set([
  * @returns The records, the row-indexed ones with `rows`.
  * @example
  * ```ts
- * import { withInputRows } from 'whitebox-engine/learn'
- * import { anomalyScores } from 'whitebox-engine/exposition'
+ * import { withInputRows } from 'mdml-engine/learn'
+ * import { anomalyScores } from 'mdml-engine/exposition'
  * const [r] = withInputRows([anomalyScores({ method: 'z', scores: [0.1, 0.9], threshold: 0.5 })], { x: [[0, 1], [5, 5]] })
  * r?.kind === 'anomalyScores' && r.rows?.points // => [[0, 1], [5, 5]]
  * ```
@@ -269,8 +269,8 @@ export function withInputRows(
  * @concept estimator-protocol
  * @example
  * ```ts
- * import { defineExplainedEstimator, ExplainedEstimatorClass } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { defineExplainedEstimator, ExplainedEstimatorClass } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const zero = defineExplainedEstimator(
  *   { name: 'zero', kind: 'regressor', fit: () => ({ params: {}, exposition: [] }), methods: () => ({ predict: (x) => full([x.length], 0) }) },
  *   {},
@@ -324,7 +324,7 @@ export interface SurfaceStepsInput {
  * @returns The steps, or `undefined` for fewer than two stages.
  * @example
  * ```ts
- * import { stagedSteps } from 'whitebox-engine/learn'
+ * import { stagedSteps } from 'mdml-engine/learn'
  * const model = { estimator: 'm', kind: 'regressor', params: {} }
  * stagedSteps(100, () => model, {}, 4)?.iterations // => [1, 5, 22, 100]
  * ```
@@ -402,7 +402,7 @@ type SurfaceFields = Pick<DecisionSurface, 'labels' | 'probabilities' | 'decisio
  * @returns The rows, or `undefined` when there are more than the limit.
  * @example
  * ```ts
- * import { inputRowsOf } from 'whitebox-engine/learn'
+ * import { inputRowsOf } from 'mdml-engine/learn'
  * inputRowsOf([[1, 2, 3], [4, 5, 6]], { y: [7, 9], classes: [7, 9] })?.labels // => [0, 1]
  * inputRowsOf([[1, 2], [3, 4]], { limit: 1 }) // => undefined
  * ```
@@ -460,7 +460,7 @@ export function inputRowsOf(
  * @returns The steps, increasing.
  * @example
  * ```ts
- * import { geometricSteps } from 'whitebox-engine/learn'
+ * import { geometricSteps } from 'mdml-engine/learn'
  * geometricSteps(3) // => [0, 1, 2, 3]
  * geometricSteps(1000, 5) // => [0, 5, 31, 177, 1000]
  * ```
@@ -483,7 +483,7 @@ export function geometricSteps(total: number, limit = 40): number[] {
  * @returns Whether to snapshot.
  * @example
  * ```ts
- * import { onGeometricSchedule } from 'whitebox-engine/learn'
+ * import { onGeometricSchedule } from 'mdml-engine/learn'
  * [1, 2, 9, 12, 13, 14].map((t) => onGeometricSchedule(t)) // => [true, true, true, false, true, false]
  * ```
  */
@@ -501,11 +501,11 @@ export function onGeometricSchedule(t: number, ratio = 1.15): boolean {
  * @param x - The data whose range the grid spans `[n, d]` (d at least 1; a single feature gives a one-row grid).
  * @param options - Features, resolution, padding, names, targets, decision levels and the steps of training.
  * @returns The decision surface.
- * @throws WhiteboxError `value` when the estimator cannot predict.
+ * @throws MdmlError `value` when the estimator cannot predict.
  * @example
  * ```ts
- * import { decisionSurfaceOf, defineEstimator } from 'whitebox-engine/learn'
- * import { asTensor, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { decisionSurfaceOf, defineEstimator } from 'mdml-engine/learn'
+ * import { asTensor, tensor, toArray } from 'mdml-engine/tensor'
  * const signOfFirst = (x) => tensor(toArray(asTensor(x)).map((r) => Math.sign(r[0])))
  * const sign = defineEstimator(
  *   { name: 'sign', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: signOfFirst }) },
@@ -520,7 +520,7 @@ export function decisionSurfaceOf(
   options: DecisionSurfaceOptions = {},
 ): DecisionSurface {
   if (fitted.predict === undefined)
-    throw new WhiteboxError('value', `decisionSurfaceOf: ${fitted.estimator} cannot predict`)
+    throw new MdmlError('value', `decisionSurfaceOf: ${fitted.estimator} cannot predict`)
   const m = matrixView(x, 'decisionSurfaceOf')
   const [fi, fj] = options.features ?? [0, Math.min(1, m.d - 1)]
   const res = options.resolution ?? 30
@@ -664,8 +664,8 @@ export interface Collecting<S, T> {
  * @concept algorithm-protocol
  * @example
  * ```ts
- * import { collecting } from 'whitebox-engine/learn'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { collecting } from 'mdml-engine/learn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const halve = { name: 'halve', config: {}, init: () => 8, step: (x) => x / 2 }
  * const c = collecting(halve, (x) => x)
  * runAlgorithm(c.algorithm, { maxSteps: 3 })
@@ -702,7 +702,7 @@ export function collecting<S, T>(algorithm: Algorithm<S>, summarise: (state: S, 
  * @returns The names.
  * @example
  * ```ts
- * import { featureNamesOf } from 'whitebox-engine/learn'
+ * import { featureNamesOf } from 'mdml-engine/learn'
  * featureNamesOf({ x: [[1, 2]] }, 2) // => ['x0', 'x1']
  * featureNamesOf({ x: [[1, 2]], featureNames: ['a', 'b'] }, 2) // => ['a', 'b']
  * ```
@@ -722,7 +722,7 @@ export function featureNamesOf(data: LearnData, d: number): string[] {
  * @returns One name per class.
  * @example
  * ```ts
- * import { classNamesOf } from 'whitebox-engine/learn'
+ * import { classNamesOf } from 'mdml-engine/learn'
  * classNamesOf({ x: [[0]], classes: ['cat', 'dog'] }, [0, 1]) // => ['cat', 'dog']
  * classNamesOf({ x: [[0]] }, [2, 5]) // => ['2', '5']
  * ```
@@ -742,8 +742,8 @@ export function classNamesOf(data: LearnData, classes: readonly number[]): strin
  * @returns Options to spread into `runAlgorithm`.
  * @example
  * ```ts
- * import { fitRunOptions } from 'whitebox-engine/learn'
- * import { key } from 'whitebox-engine/random'
+ * import { fitRunOptions } from 'mdml-engine/learn'
+ * import { key } from 'mdml-engine/random'
  * fitRunOptions({ key: key(0) }, 'kmeans').key !== undefined // => true
  * ```
  */

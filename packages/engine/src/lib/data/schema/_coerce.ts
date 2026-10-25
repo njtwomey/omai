@@ -1,18 +1,18 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { asTensor, cast, type DType, isTensor, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import type { DatasetKind, DatasetMeta } from './common.ts'
 
 /** A concrete tensor of the given dtype (datasets hold concrete tensors, never traced values). */
 export function concrete<D extends DType>(x: TensorLike, dtype: D, name: string): Tensor<D> {
   const t = asTensor(x)
-  if (!isTensor(t)) throw new WhiteboxError('value', `${name}: datasets hold concrete tensors`)
+  if (!isTensor(t)) throw new MdmlError('value', `${name}: datasets hold concrete tensors`)
   return (t.dtype === dtype ? t : cast(t, dtype)) as Tensor<D>
 }
 
 /** A concrete floating tensor, keeping float32 input as float32. */
 export function concreteFloat(x: TensorLike, name: string): Tensor {
   const t = asTensor(x)
-  if (!isTensor(t)) throw new WhiteboxError('value', `${name}: datasets hold concrete tensors`)
+  if (!isTensor(t)) throw new MdmlError('value', `${name}: datasets hold concrete tensors`)
   return (t.dtype === 'float64' || t.dtype === 'float32' ? t : cast(t, 'float64')) as Tensor
 }
 
@@ -35,7 +35,7 @@ export function checkRows(
   for (const [f, v] of Object.entries(fields)) {
     if (v === undefined) continue
     const m = isTensor(v) ? (v.shape[0] ?? 0) : v.length
-    if (m !== n) throw new WhiteboxError('shape', `${name}: ${f} has ${m} rows, expected ${n}`)
+    if (m !== n) throw new MdmlError('shape', `${name}: ${f} has ${m} rows, expected ${n}`)
   }
 }
 

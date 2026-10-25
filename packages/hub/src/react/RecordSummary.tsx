@@ -3,8 +3,8 @@
  * per field, numbers and short text as they are, arrays by their shape and range, objects by their keys.
  */
 
+import type { Exposition } from 'mdml-engine/exposition'
 import type { ReactNode } from 'react'
-import type { Exposition } from 'whitebox-engine/exposition'
 
 const fmt = (x: number): string =>
   Number.isInteger(x) ? String(x) : Math.abs(x) >= 1e4 || Math.abs(x) < 1e-3 ? x.toExponential(2) : x.toPrecision(4)

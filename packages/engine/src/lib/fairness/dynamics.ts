@@ -7,7 +7,7 @@
  * population (covariate shift by importance weights, or label shift by a group's new base rate).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type GroupDisparity, groupDisparities, tableRates } from '../exposition/index.ts'
 
 /** A lending model on a grid of scores: each score's probability of repaying, and what each outcome is worth. */
@@ -78,18 +78,18 @@ export interface OutcomeCurve {
  * @param distribution - The group's distribution over the grid.
  * @param steps - Selection rates evaluated (default 101).
  * @returns The curve.
- * @throws WhiteboxError `shape` when the distribution and the grid differ in length.
+ * @throws MdmlError `shape` when the distribution and the grid differ in length.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { outcomeCurve } from 'whitebox-engine/fairness'
+ * import { outcomeCurve } from 'mdml-engine/fairness'
  * const c = outcomeCurve({ scores: [300, 600, 800], repay: [0.2, 0.7, 0.95] }, [0.3, 0.4, 0.3], 3)
  * c.meanChange.map((v) => Math.round(v * 100) / 100) // => [0, 20.62, -9.37]
  * ```
  */
 export function outcomeCurve(model: ImpactModel, distribution: readonly number[], steps = 101): OutcomeCurve {
   if (distribution.length !== model.scores.length || model.repay.length !== model.scores.length)
-    throw new WhiteboxError('shape', 'outcomeCurve: one probability and repayment per score')
+    throw new MdmlError('shape', 'outcomeCurve: one probability and repayment per score')
   const selection = Array.from({ length: steps }, (_, i) => (steps === 1 ? 0 : i / (steps - 1)))
   const points = selection.map((b) => evaluate(model, distribution, b))
   return {
@@ -121,7 +121,7 @@ export interface ImpactPolicy {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { delayedImpact } from 'whitebox-engine/fairness'
+ * import { delayedImpact } from 'mdml-engine/fairness'
  * const model = { scores: [300, 600, 800], repay: [0.2, 0.7, 0.95] }
  * const r = delayedImpact(model, [
  *   { name: 'a', share: 0.5, distribution: [0.1, 0.4, 0.5] },
@@ -183,7 +183,7 @@ export interface DecisionRounds {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { repeatedDecisions } from 'whitebox-engine/fairness'
+ * import { repeatedDecisions } from 'mdml-engine/fairness'
  * const model = { scores: [300, 450, 600, 750], repay: [0.1, 0.5, 0.8, 0.95], scoreChange: [150, -150] as const }
  * const r = repeatedDecisions(model, [{ name: 'a', share: 1, distribution: [0.25, 0.25, 0.25, 0.25] }], { rounds: 3 })
  * r.meanScore.length // => 4
@@ -250,11 +250,11 @@ export function repeatedDecisions(
  * @param weights - Each row's importance weight `[n]` (all 1: the population as it is).
  * @param reference - The reference group (default 0).
  * @returns The disparities in the shifted population.
- * @throws WhiteboxError `shape` when the inputs differ in length.
+ * @throws MdmlError `shape` when the inputs differ in length.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { shiftedDisparities } from 'whitebox-engine/fairness'
+ * import { shiftedDisparities } from 'mdml-engine/fairness'
  * const d = shiftedDisparities([1, 0, 1, 0], [1, 0, 1, 1], [0, 0, 1, 1], [1, 1, 1, 3])
  * d.find((x) => x.name === 'demographic parity difference')?.value // => 0.5
  * ```
@@ -268,7 +268,7 @@ export function shiftedDisparities(
 ): GroupDisparity[] {
   const n = labels.length
   if (decisions.length !== n || groups.length !== n || weights.length !== n)
-    throw new WhiteboxError('shape', 'shiftedDisparities: inputs differ in length')
+    throw new MdmlError('shape', 'shiftedDisparities: inputs differ in length')
   const k = Math.max(...groups) + 1
   const tables = Array.from({ length: k }, () => [
     [0, 0],
@@ -302,11 +302,11 @@ export interface LabelShiftSweep {
  * @param groups - Group indices `[n]`.
  * @param options - The shifted group and the base rates to try.
  * @returns The disparities at each base rate.
- * @throws WhiteboxError `value` when the group has only one class.
+ * @throws MdmlError `value` when the group has only one class.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { labelShiftSweep } from 'whitebox-engine/fairness'
+ * import { labelShiftSweep } from 'mdml-engine/fairness'
  * const r = labelShiftSweep([1, 0, 1, 0], [1, 0, 1, 1], [0, 0, 1, 1], { group: 1, baseRates: [0.5, 0.9] })
  * r.disparities[0]?.find((x) => x.name === 'equal opportunity difference')?.value // => 0
  * ```
@@ -320,7 +320,7 @@ export function labelShiftSweep(
   const rows = groups.flatMap((g, i) => (g === options.group ? [i] : []))
   const pos = rows.filter((i) => labels[i] === 1).length
   const old = pos / Math.max(1, rows.length)
-  if (!(old > 0 && old < 1)) throw new WhiteboxError('value', 'labelShiftSweep: the group needs both classes')
+  if (!(old > 0 && old < 1)) throw new MdmlError('value', 'labelShiftSweep: the group needs both classes')
   return {
     baseRates: options.baseRates,
     disparities: options.baseRates.map((b) =>

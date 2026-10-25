@@ -1,7 +1,7 @@
 /**
  * The tensor operations: arithmetic, comparisons and logic, mathematical functions, reductions, shape manipulation,
  * indexing and sorting, and the linear algebra basics, each a differentiable primitive with numpy semantics. Part of
- * `whitebox-engine/tensor`.
+ * `mdml-engine/tensor`.
  *
  * @inline
  */

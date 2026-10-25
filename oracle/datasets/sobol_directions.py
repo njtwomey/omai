@@ -12,7 +12,7 @@ from typing import cast
 import numpy as np
 import numpy.typing as npt
 import scipy
-from whitebox_oracle.vendor import number_list, sha256_of
+from mdml_oracle.vendor import number_list, sha256_of
 
 TARGET = "packages/engine/src/lib/random/sobol-directions.data.ts"
 DIMENSIONS = 1111

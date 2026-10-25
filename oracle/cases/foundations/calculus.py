@@ -6,9 +6,9 @@ from typing import cast
 import numpy as np
 import scipy
 import sympy
+from mdml_oracle.fixture import Case, case
 from scipy.integrate import trapezoid
 from scipy.optimize import newton
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "sympy": sympy.__version__}
 

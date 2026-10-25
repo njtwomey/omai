@@ -4,7 +4,7 @@
  * vector norms of any order.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { ReduceKernel } from '../backend.ts'
 import { batchedAxis } from '../batching.ts'
 import { arg, type BatchDim, type BatchResult, bind1, definePrimitive, type Primitive } from '../primitive.ts'
@@ -177,7 +177,7 @@ function reduceWith(
  * @returns The sum.
  * @example
  * ```ts
- * import { sum, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { sum, tensor, toArray } from 'mdml-engine/tensor'
  * const x = tensor([[1, 2], [3, 4]])
  * toArray(sum(x)) // => 10
  * toArray(sum(x, 0)) // => [4, 6]
@@ -197,7 +197,7 @@ export function sum(x: TensorLike, axis?: number | readonly number[], keepDims =
  * @returns The product.
  * @example
  * ```ts
- * import { prod, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { prod, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(prod(tensor([2, 3, 4]))) // => 24
  * ```
  */
@@ -215,7 +215,7 @@ export function prod(x: TensorLike, axis?: number | readonly number[], keepDims 
  * @returns The maximum.
  * @example
  * ```ts
- * import { max, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { max, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(max(tensor([[1, 5], [3, 2]]), 1)) // => [5, 3]
  * ```
  */
@@ -232,7 +232,7 @@ export function max(x: TensorLike, axis?: number | readonly number[], keepDims =
  * @returns The minimum.
  * @example
  * ```ts
- * import { min, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { min, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(min(tensor([[1, 5], [3, 2]]), 1)) // => [1, 2]
  * ```
  */
@@ -249,7 +249,7 @@ export function min(x: TensorLike, axis?: number | readonly number[], keepDims =
  * @returns The mean.
  * @example
  * ```ts
- * import { mean, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { mean, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(mean(tensor([[1, 2], [3, 4]]), 0)) // => [2, 3]
  * ```
  */
@@ -275,7 +275,7 @@ export interface VarianceOptions {
  * @returns The variance.
  * @example
  * ```ts
- * import { variance, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { variance, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(variance(tensor([1, 2, 3, 4]))) // => 1.25
  * toArray(variance(tensor([1, 2, 3, 4]), undefined, { ddof: 1 })) // => 1.666667
  * ```
@@ -285,8 +285,7 @@ export function variance(x: TensorLike, axis?: number | readonly number[], optio
   const axes = normaliseAxes(axis, v.shape.length)
   const n = sizeOf(axes.map((a) => v.shape[a] ?? 1))
   const ddof = options.ddof ?? 0
-  if (n - ddof <= 0)
-    throw new WhiteboxError('value', `variance: ${n} values leave no degrees of freedom with ddof ${ddof}`)
+  if (n - ddof <= 0) throw new MdmlError('value', `variance: ${n} values leave no degrees of freedom with ddof ${ddof}`)
   const centred = sub(v, mean(v, axes, true))
   return div(sum(square(centred), axes, options.keepDims ?? false), n - ddof)
 }
@@ -300,7 +299,7 @@ export function variance(x: TensorLike, axis?: number | readonly number[], optio
  * @returns The standard deviation.
  * @example
  * ```ts
- * import { std, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { std, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(std(tensor([2, 4, 4, 4, 5, 5, 7, 9]))) // => 2
  * ```
  */
@@ -317,7 +316,7 @@ export function std(x: TensorLike, axis?: number | readonly number[], options: V
  * @returns int32 indices.
  * @example
  * ```ts
- * import { argmax, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { argmax, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(argmax(tensor([[1, 5], [3, 2]]), 1)) // => [1, 0]
  * ```
  */
@@ -336,7 +335,7 @@ export function argmax(x: TensorLike, axis?: number, keepDims = false): Value {
  * @returns int32 indices.
  * @example
  * ```ts
- * import { argmin, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { argmin, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(argmin(tensor([3, 1, 2]))) // => 1
  * ```
  */
@@ -355,7 +354,7 @@ export function argmin(x: TensorLike, axis?: number, keepDims = false): Value {
  * @returns The running sums.
  * @example
  * ```ts
- * import { cumsum, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { cumsum, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(cumsum(tensor([1, 2, 3]))) // => [1, 3, 6]
  * ```
  */
@@ -378,7 +377,7 @@ export function cumsum(x: TensorLike, axis?: number, reverse = false): Value {
  * @returns The running products.
  * @example
  * ```ts
- * import { cumprod, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { cumprod, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(cumprod(tensor([1, 2, 3]))) // => [1, 2, 6]
  * ```
  */
@@ -402,7 +401,7 @@ export function cumprod(x: TensorLike, axis?: number, reverse = false): Value {
  * @concept log-sum-exp
  * @example
  * ```ts
- * import { logsumexp, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { logsumexp, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(logsumexp(tensor([1000, 1000]))) // => 1000.693147
  * ```
  */
@@ -430,7 +429,7 @@ export function logsumexp(x: TensorLike, axis?: number | readonly number[], keep
  * @concept softmax
  * @example
  * ```ts
- * import { softmax, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { softmax, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(softmax(tensor([0, Math.log(3)]))) // => [0.25, 0.75]
  * ```
  */
@@ -447,7 +446,7 @@ export function softmax(x: TensorLike, axis = -1): Value {
  * @returns Log-probabilities.
  * @example
  * ```ts
- * import { logSoftmax, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { logSoftmax, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(logSoftmax(tensor([0, 0]))) // => [-0.693147, -0.693147]
  * ```
  */
@@ -467,7 +466,7 @@ export function logSoftmax(x: TensorLike, axis = -1): Value {
  * @returns The norm.
  * @example
  * ```ts
- * import { norm, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { norm, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(norm(tensor([3, 4]))) // => 5
  * toArray(norm(tensor([3, -4]), 1)) // => 7
  * ```
@@ -478,6 +477,6 @@ export function norm(x: TensorLike, ord = 2, axis?: number | readonly number[], 
   if (ord === 1) return sum(abs(v), axis, keepDims)
   if (ord === Infinity) return max(abs(v), axis, keepDims)
   if (ord === -Infinity) return min(abs(v), axis, keepDims)
-  if (!(ord > 0)) throw new WhiteboxError('value', `norm: order must be positive, got ${ord}`)
+  if (!(ord > 0)) throw new MdmlError('value', `norm: order must be positive, got ${ord}`)
   return pow(sum(pow(abs(v), ord), axis, keepDims), 1 / ord)
 }

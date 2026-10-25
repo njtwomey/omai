@@ -4,6 +4,8 @@ Jaro-Winkler, Indel, LCSseq, fuzz.ratio, token_sort_ratio, token_set_ratio) and 
 from importlib.metadata import version
 
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from rapidfuzz import fuzz
 from rapidfuzz.distance import (
     OSA,
@@ -15,8 +17,6 @@ from rapidfuzz.distance import (
     LCSseq,
     Levenshtein,
 )
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"rapidfuzz": version("rapidfuzz")}
 

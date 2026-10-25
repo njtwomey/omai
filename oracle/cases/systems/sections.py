@@ -6,8 +6,8 @@ import numpy as np
 import numpy.typing as npt
 import scipy
 import scipy.signal as sg
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.lti import parts, sorted_parts
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.lti import parts, sorted_parts
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

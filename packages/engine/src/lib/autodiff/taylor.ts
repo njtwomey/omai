@@ -4,7 +4,7 @@
  * `taylorPolynomial`, the local model behind Taylor-series figures and Taylor methods.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   add,
   asTensor,
@@ -60,7 +60,7 @@ function jvpSeries<P>(
 ): MaybeZero[][] {
   const rule = primitive.jvp
   if (rule === undefined) {
-    throw new WhiteboxError('not-differentiable', `primitive ${primitive.name} has no derivative rule`, {
+    throw new MdmlError('not-differentiable', `primitive ${primitive.name} has no derivative rule`, {
       primitive: primitive.name,
     })
   }
@@ -110,7 +110,7 @@ function jvpSeries<P>(
  * @concept taylor-mode-autodiff
  * @example
  * ```ts
- * import { jetTrace } from 'whitebox-engine/autodiff'
+ * import { jetTrace } from 'mdml-engine/autodiff'
  * jetTrace(1, 3).order // => 3
  * ```
  */
@@ -181,12 +181,12 @@ function propagate(
  * @param primals - The point `x(0)`.
  * @param series - For each input, its derivatives along the curve, orders 1 to K.
  * @returns The output and its derivatives along the curve, orders 1 to K.
- * @throws WhiteboxError with code `value` when the series have different lengths.
+ * @throws MdmlError with code `value` when the series have different lengths.
  * @concept taylor-mode-autodiff
  * @example
  * ```ts
- * import { jet } from 'whitebox-engine/autodiff'
- * import { sin, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { jet } from 'mdml-engine/autodiff'
+ * import { sin, tensor, toArray } from 'mdml-engine/tensor'
  * const { out, series } = jet(sin, [tensor(0)], [[tensor(1), tensor(0), tensor(0)]])
  * toArray(out) // => 0
  * series.map((s) => toArray(s)) // => [1, 0, -1]
@@ -199,7 +199,7 @@ export function jet(
 ): { readonly out: Value; readonly series: readonly Value[] } {
   const order = series[0]?.length ?? 0
   if (series.length !== primals.length || series.some((s) => s.length !== order)) {
-    throw new WhiteboxError('value', 'jet: give one series of the same length per input')
+    throw new MdmlError('value', 'jet: give one series of the same length per input')
   }
   const ps = primals.map((p) => asTensor(p))
   let factorial = 1
@@ -224,8 +224,8 @@ export function jet(
  * @concept taylor-mode-autodiff
  * @example
  * ```ts
- * import { taylorCoefficients } from 'whitebox-engine/autodiff'
- * import { exp, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { taylorCoefficients } from 'mdml-engine/autodiff'
+ * import { exp, tensor, toArray } from 'mdml-engine/tensor'
  * taylorCoefficients(exp, tensor(0), tensor(1), 3).map((c) => toArray(c)) // => [1, 1, 0.5, 0.16666666666666666]
  * ```
  */
@@ -254,12 +254,12 @@ export interface TaylorPolynomial {
  * @param center - The expansion point.
  * @param order - The degree.
  * @returns The centre, the coefficients and an evaluator.
- * @throws WhiteboxError with code `shape` when `f` does not return a single value.
+ * @throws MdmlError with code `shape` when `f` does not return a single value.
  * @concept taylor-series
  * @example
  * ```ts
- * import { taylorPolynomial } from 'whitebox-engine/autodiff'
- * import { exp, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { taylorPolynomial } from 'mdml-engine/autodiff'
+ * import { exp, tensor, toArray } from 'mdml-engine/tensor'
  * const p = taylorPolynomial(exp, 0, 3)
  * p.coefficients // => [1, 1, 0.5, 0.16666666666666666]
  * toArray(p.evaluate(tensor([0, 1]))) // => [1, 2.6666666666666665]
@@ -268,7 +268,7 @@ export interface TaylorPolynomial {
 export function taylorPolynomial(f: (x: Value) => Value, center: number, order: number): TaylorPolynomial {
   const cs = taylorCoefficients(f, center, 1, order)
   const coefficients = cs.map((c) => {
-    if (sizeOf(c.shape) !== 1) throw new WhiteboxError('shape', 'taylorPolynomial: f must return a single value')
+    if (sizeOf(c.shape) !== 1) throw new MdmlError('shape', 'taylorPolynomial: f must return a single value')
     return toFlat(c as Tensor)[0] ?? Number.NaN
   })
   const evaluate = (x: TensorLike): Value => {

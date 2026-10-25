@@ -5,7 +5,7 @@
  * evaluating them on batches.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { dotProduct, unitVector } from '../foundations/index.ts'
 import type { Vec3 } from '../scene/index.ts'
 import {
@@ -44,8 +44,8 @@ const clamp0 = (x: Value): Value => maximum(x, 0)
  * @concept reflection
  * @example
  * ```ts
- * import { reflect } from 'whitebox-engine/graphics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { reflect } from 'mdml-engine/graphics'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(reflect([1, -1, 0], [0, 1, 0])) // => [1, 1, 0]
  * ```
  */
@@ -63,8 +63,8 @@ export function reflect(d: TensorLike, n: TensorLike): Value {
  * @concept blinn-phong
  * @example
  * ```ts
- * import { halfVector } from 'whitebox-engine/graphics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { halfVector } from 'mdml-engine/graphics'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(halfVector([1, 0, 0], [0, 1, 0])).map((x) => Math.round(x * 1e6) / 1e6) // => [0.707107, 0.707107, 0]
  * ```
  */
@@ -82,8 +82,8 @@ export function halfVector(l: TensorLike, v: TensorLike): Value {
  * @concept lambertian-reflectance
  * @example
  * ```ts
- * import { lambert } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { lambert } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(lambert([0, 0, 1], [0.6, 0, 0.8])) // => 0.8
  * item(lambert([0, 0, 1], [0, 0, -1])) // => 0
  * ```
@@ -105,8 +105,8 @@ export function lambert(n: TensorLike, l: TensorLike): Value {
  * @concept phong-shading
  * @example
  * ```ts
- * import { phong } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { phong } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(phong([0, 0, 1], [0, 0, 1], [0, 0, 1], 20)) // => 1
  * item(phong([0, 0, 1], [0.6, 0, 0.8], [-0.6, 0, 0.8], 10)) // => 1
  * ```
@@ -128,8 +128,8 @@ export function phong(n: TensorLike, l: TensorLike, v: TensorLike, shininess: Te
  * @concept blinn-phong
  * @example
  * ```ts
- * import { blinnPhong } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { blinnPhong } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(blinnPhong([0, 0, 1], [0.6, 0, 0.8], [-0.6, 0, 0.8], 50)) // => 1
  * ```
  */
@@ -146,8 +146,8 @@ export function blinnPhong(n: TensorLike, l: TensorLike, v: TensorLike, shinines
  * @concept brdf
  * @example
  * ```ts
- * import { lambertBrdf } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { lambertBrdf } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(lambertBrdf(Math.PI)) // => 1
  * ```
  */
@@ -168,8 +168,8 @@ export function lambertBrdf(albedo: TensorLike): Value {
  * @concept brdf
  * @example
  * ```ts
- * import { phongBrdf } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { phongBrdf } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(phongBrdf([0, 0, 1], [0, 0, 1], [0, 0, 1], 0)) * Math.PI // => 1
  * ```
  */
@@ -188,8 +188,8 @@ export function phongBrdf(n: TensorLike, l: TensorLike, v: TensorLike, shininess
  * @concept microfacet
  * @example
  * ```ts
- * import { blinnPhongDistribution } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { blinnPhongDistribution } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(blinnPhongDistribution(1, 0)) * Math.PI // => 1
  * ```
  */
@@ -210,8 +210,8 @@ export function blinnPhongDistribution(cosH: TensorLike, shininess: TensorLike):
  * @concept brdf
  * @example
  * ```ts
- * import { blinnPhongBrdf } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { blinnPhongBrdf } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(blinnPhongBrdf([0, 0, 1], [0, 0, 1], [0, 0, 1], 0)) * Math.PI // => 1
  * ```
  */
@@ -231,8 +231,8 @@ export function blinnPhongBrdf(n: TensorLike, l: TensorLike, v: TensorLike, shin
  * @concept microfacet
  * @example
  * ```ts
- * import { ggxDistribution } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { ggxDistribution } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(ggxDistribution(1, 1)) * Math.PI // => 1
  * item(ggxDistribution(1, 0.5)) * Math.PI // => 4
  * ```
@@ -254,8 +254,8 @@ export function ggxDistribution(cosH: TensorLike, alpha: TensorLike): Value {
  * @concept microfacet
  * @example
  * ```ts
- * import { smithG1 } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { smithG1 } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(smithG1(1, 0.5)) // => 1
  * ```
  */
@@ -275,8 +275,8 @@ export function smithG1(cosV: TensorLike, alpha: TensorLike): Value {
  * @concept microfacet
  * @example
  * ```ts
- * import { smithG } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { smithG } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(smithG(1, 1, 0.3)) // => 1
  * ```
  */
@@ -294,8 +294,8 @@ export function smithG(cosL: TensorLike, cosV: TensorLike, alpha: TensorLike): V
  * @concept fresnel-equations
  * @example
  * ```ts
- * import { fresnelSchlick } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { fresnelSchlick } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(fresnelSchlick(1, 0.04)) // => 0.04
  * item(fresnelSchlick(0, 0.04)) // => 1
  * ```
@@ -316,8 +316,8 @@ export function fresnelSchlick(cosTheta: TensorLike, f0: TensorLike): Value {
  * @concept fresnel-equations
  * @example
  * ```ts
- * import { fresnelDielectric } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { fresnelDielectric } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * Math.round(item(fresnelDielectric(1, 1, 1.5)) * 1e12) / 1e12 // => 0.04
  * item(fresnelDielectric(0.1, 1.5, 1)) // => 1
  * ```
@@ -347,8 +347,8 @@ export function fresnelDielectric(cosI: TensorLike, n1: TensorLike, n2: TensorLi
  * @concept microfacet
  * @example
  * ```ts
- * import { cookTorrance, ggxDistribution } from 'whitebox-engine/graphics'
- * import { toFlat, item } from 'whitebox-engine/tensor'
+ * import { cookTorrance, ggxDistribution } from 'mdml-engine/graphics'
+ * import { toFlat, item } from 'mdml-engine/tensor'
  * const f = toFlat(cookTorrance([0, 0, 1], [0, 0, 1], [0, 0, 1], 0.5, 1))[0]
  * Math.abs(f - item(ggxDistribution(1, 0.25)) / 4) < 1e-12 // => true
  * ```
@@ -387,8 +387,8 @@ export function cookTorrance(
  * @concept microfacet
  * @example
  * ```ts
- * import { metallicRoughness } from 'whitebox-engine/graphics'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { metallicRoughness } from 'mdml-engine/graphics'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(metallicRoughness([0, 0, 1], [0, 0, -1], [0, 0, 1], [1, 1, 1], 0.5, 0)) // => [0, 0, 0]
  * ```
  */
@@ -454,10 +454,10 @@ export interface Material {
  *
  * @param options - Any material fields.
  * @returns The material.
- * @throws WhiteboxError with code `value` for weights outside [0, 1] or a non-positive index or roughness.
+ * @throws MdmlError with code `value` for weights outside [0, 1] or a non-positive index or roughness.
  * @example
  * ```ts
- * import { material } from 'whitebox-engine/graphics'
+ * import { material } from 'mdml-engine/graphics'
  * material({ model: 'phong', albedo: [1, 0, 0] }).shininess // => 32
  * ```
  */
@@ -476,13 +476,13 @@ export function material(options: Partial<Material> = {}): Material {
   }
   const unit = (x: number): boolean => x >= 0 && x <= 1
   if (!(unit(m.metallic) && unit(m.mirror) && unit(m.transparency) && m.mirror + m.transparency <= 1)) {
-    throw new WhiteboxError(
+    throw new MdmlError(
       'value',
       'material: metallic, mirror and transparency must be in [0, 1], mirror + transparency <= 1',
     )
   }
   if (!(m.ior > 0 && m.roughness > 0 && m.roughness <= 1 && m.shininess >= 0)) {
-    throw new WhiteboxError('value', 'material: need ior > 0, roughness in (0, 1] and shininess >= 0')
+    throw new MdmlError('value', 'material: need ior > 0, roughness in (0, 1] and shininess >= 0')
   }
   return m
 }
@@ -501,8 +501,8 @@ export function material(options: Partial<Material> = {}): Material {
  * @concept brdf
  * @example
  * ```ts
- * import { brdf, material } from 'whitebox-engine/graphics'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { brdf, material } from 'mdml-engine/graphics'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(brdf(material({ albedo: [Math.PI, 0, 0] }), [0, 0, 1], [0, 0, 1], [0, 0, 1])) // => [1, 0, 0]
  * ```
  */
@@ -536,8 +536,8 @@ export function brdf(m: Material, n: TensorLike, l: TensorLike, v: TensorLike, a
  * @concept rendering-equation
  * @example
  * ```ts
- * import { material, shade } from 'whitebox-engine/graphics'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { material, shade } from 'mdml-engine/graphics'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(shade(material({ albedo: [1, 1, 1] }), [0, 0, 1], [0, 0, 1], [0, 0, 1], [Math.PI, 0, 0])) // => [1, 0, 0]
  * ```
  */

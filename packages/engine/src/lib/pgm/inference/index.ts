@@ -1,5 +1,5 @@
 /**
- * Inference algorithms for graphical models, part of `whitebox-engine/pgm`: exact methods (enumeration, variable
+ * Inference algorithms for graphical models, part of `mdml-engine/pgm`: exact methods (enumeration, variable
  * elimination, junction trees, forward-backward on chains), message passing (loopy and Gaussian belief propagation,
  * expectation propagation), variational methods, MAP search and sampling.
  *

@@ -3,10 +3,10 @@
  * by flip.
  */
 
-import { betaBinomialModel } from 'whitebox-engine/methods/models'
-import { bernoulli } from 'whitebox-engine/random'
-import { dict, int, real } from 'whitebox-engine/space'
-import { toFlat } from 'whitebox-engine/tensor'
+import { betaBinomialModel } from 'mdml-engine/methods/models'
+import { bernoulli } from 'mdml-engine/random'
+import { dict, int, real } from 'mdml-engine/space'
+import { toFlat } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 /** The beta-binomial model: a coin's bias, from flips, with its exact posterior. */

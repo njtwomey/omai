@@ -4,8 +4,8 @@ references are Gretton et al.'s statistics and gamma approximations written in n
 import numpy as np
 import scipy
 import scipy.stats as st
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

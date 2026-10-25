@@ -1,6 +1,6 @@
 import type { EChartsOption } from 'echarts'
+import type { Scene } from 'mdml-engine/scene'
 import { type ReactElement, type ReactNode, useCallback, useEffect, useMemo, useRef } from 'react'
-import type { Scene } from 'whitebox-engine/scene'
 import { type Figure, figure as makeFigure, scaleFigure } from '../../figure/figure.ts'
 import { tokens } from '../../theme/tokens.ts'
 import type { TableData } from '../../trace/tables.ts'
@@ -154,7 +154,7 @@ export function SceneFigure(props: {
       >
         {(size) => (
           <div
-            data-whitebox-svg=""
+            data-mdml-svg=""
             style={{
               width: size.width,
               height: size.height,

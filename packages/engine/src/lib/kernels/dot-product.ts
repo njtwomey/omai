@@ -6,7 +6,7 @@
  */
 
 import { jacrev } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   add,
   arcsin,
@@ -76,8 +76,8 @@ export interface LinearOptions {
  * @concept dot-product-kernels
  * @example
  * ```ts
- * import { linearKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { linearKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(linearKernel({ sigma0: 2 }).k([1, 2], [3, 4])) // => 15
  * ```
  */
@@ -113,19 +113,19 @@ export interface PolynomialOptions {
  *
  * @param options - Degree, gamma and offset.
  * @returns The kernel, hyperparameters `{ coef0, gamma }` (the degree is a setting).
- * @throws WhiteboxError `domain` for a degree that is not a positive integer.
+ * @throws MdmlError `domain` for a degree that is not a positive integer.
  * @concept dot-product-kernels
  * @example
  * ```ts
- * import { polynomialKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { polynomialKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(polynomialKernel({ degree: 2 }).k([1, 2], [3, 1])) // => 36
  * ```
  */
 export function polynomialKernel(options: PolynomialOptions = {}): Kernel {
   const degree = options.degree ?? 3
   if (!(Number.isInteger(degree) && degree >= 1))
-    throw new WhiteboxError('domain', `polynomialKernel: the degree must be a positive integer, got ${degree}`)
+    throw new MdmlError('domain', `polynomialKernel: the degree must be a positive integer, got ${degree}`)
   return defineKernel({
     name: 'polynomial',
     params: { coef0: param(options.coef0 ?? 1), gamma: param(options.gamma ?? 1) },
@@ -152,8 +152,8 @@ export interface SigmoidOptions {
  * @concept dot-product-kernels
  * @example
  * ```ts
- * import { sigmoidKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { sigmoidKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(sigmoidKernel({ coef0: 0 }).k([1, 0], [0, 1])) // => 0
  * ```
  */
@@ -175,8 +175,8 @@ export function sigmoidKernel(options: SigmoidOptions = {}): Kernel {
  * @concept dot-product-kernels
  * @example
  * ```ts
- * import { cosineSimilarityKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { cosineSimilarityKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(cosineSimilarityKernel().k([3, 0], [2, 2])) - Math.SQRT1_2) < 1e-15 // => true
  * ```
  */
@@ -213,13 +213,13 @@ export interface ArcCosineOptions {
  *
  * @param options - Order and depth.
  * @returns The kernel (no hyperparameters).
- * @throws WhiteboxError `domain` for an order other than 0, 1, 2 or a depth below 1.
+ * @throws MdmlError `domain` for an order other than 0, 1, 2 or a depth below 1.
  * @concept dot-product-kernels
  * @reference Y. Cho and L. K. Saul, Kernel methods for deep learning (NeurIPS 2009).
  * @example
  * ```ts
- * import { arcCosineKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { arcCosineKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(arcCosineKernel({ order: 0 }).k([1, 0], [0, 1])) // => 0.5
  * ```
  */
@@ -227,9 +227,9 @@ export function arcCosineKernel(options: ArcCosineOptions = {}): Kernel {
   const order = options.order ?? 1
   const depth = options.depth ?? 1
   if (order !== 0 && order !== 1 && order !== 2)
-    throw new WhiteboxError('domain', `arcCosineKernel: the order must be 0, 1 or 2, got ${String(order)}`)
+    throw new MdmlError('domain', `arcCosineKernel: the order must be 0, 1 or 2, got ${String(order)}`)
   if (!(Number.isInteger(depth) && depth >= 1))
-    throw new WhiteboxError('domain', `arcCosineKernel: the depth must be a positive integer, got ${depth}`)
+    throw new MdmlError('domain', `arcCosineKernel: the depth must be a positive integer, got ${depth}`)
   // J_n(0) / pi: the factor by which a layer maps k(x, x) to k(x, x)^n.
   const self = [1, 1, 3][order] as number
   const layer = (k: Value, dx: Value, dy: Value, gram: boolean): Value => {
@@ -320,14 +320,14 @@ function activationSelf(activation: 'relu' | 'erf', s: Value): { value: Value; d
  *
  * @param options - Depth, activation, variances and which kernel.
  * @returns The kernel, hyperparameters `{ biasVariance, weightVariance }`.
- * @throws WhiteboxError `domain` for a depth below 1.
+ * @throws MdmlError `domain` for a depth below 1.
  * @concept neural-tangent-kernel
  * @reference A. Jacot, F. Gabriel and C. Hongler, Neural tangent kernel (NeurIPS 2018); S. Arora et al., On exact
  *   computation with an infinitely wide neural net (NeurIPS 2019); R. Novak et al., Neural Tangents (ICLR 2020).
  * @example
  * ```ts
- * import { neuralTangentKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { neuralTangentKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(neuralTangentKernel({ weightVariance: 2 }).k([1, 1], [1, 1])) // => 4
  * ```
  */
@@ -336,7 +336,7 @@ export function neuralTangentKernel(options: NeuralTangentOptions = {}): Kernel 
   const activation = options.activation ?? 'relu'
   const kind = options.kind ?? 'ntk'
   if (!(Number.isInteger(depth) && depth >= 1))
-    throw new WhiteboxError('domain', `neuralTangentKernel: the depth must be a positive integer, got ${depth}`)
+    throw new MdmlError('domain', `neuralTangentKernel: the depth must be a positive integer, got ${depth}`)
   return defineKernel({
     name: kind,
     params: { biasVariance: param(options.biasVariance ?? 0), weightVariance: param(options.weightVariance ?? 1) },
@@ -390,8 +390,8 @@ export function neuralTangentKernel(options: NeuralTangentOptions = {}): Kernel 
  * @concept neural-tangent-kernel
  * @example
  * ```ts
- * import { empiricalNtk } from 'whitebox-engine/kernels'
- * import { matmul, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { empiricalNtk } from 'mdml-engine/kernels'
+ * import { matmul, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * const f = (w: Value, x: Value) => matmul(x, w)
  * toArray(empiricalNtk(f, tensor([0.3, -1]), [[1, 2], [0, 1]])) // => [[5, 2], [2, 1]]
  * ```

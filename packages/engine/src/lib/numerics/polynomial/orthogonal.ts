@@ -4,7 +4,7 @@
  * the Gauss quadrature rule of each family, and conversion to and from the power basis.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -44,7 +44,7 @@ function recurrence(family: Family, p: JacobiParameters): (n: number) => readonl
     case 'jacobi': {
       const a = p.alpha ?? 0
       const b = p.beta ?? 0
-      if (!(a > -1 && b > -1)) throw new WhiteboxError('value', 'jacobi: alpha and beta must exceed -1')
+      if (!(a > -1 && b > -1)) throw new MdmlError('value', 'jacobi: alpha and beta must exceed -1')
       return (n) => {
         if (n === 0) return [(a + b + 2) / 2, (a - b) / 2, 0]
         const s = 2 * n + a + b
@@ -67,8 +67,8 @@ function recurrence(family: Family, p: JacobiParameters): (n: number) => readonl
  * @concept orthogonal-polynomials
  * @example
  * ```ts
- * import { orthoval } from 'whitebox-engine/numerics/polynomial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { orthoval } from 'mdml-engine/numerics/polynomial'
+ * import { toArray } from 'mdml-engine/tensor'
  * // T_2(x) = 2x^2 - 1.
  * toArray(orthoval('chebyshev', [0, 0.5, 1], [0, 0, 1])) // => [-1, -0.5, 1]
  * ```
@@ -101,8 +101,8 @@ export function orthoval(family: Family, x: TensorLike, c: TensorLike, params: J
  * @returns `[m, deg + 1]`.
  * @example
  * ```ts
- * import { orthovander } from 'whitebox-engine/numerics/polynomial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { orthovander } from 'mdml-engine/numerics/polynomial'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(orthovander('hermite_e', [2], 2)) // => [[1, 2, 3]]
  * ```
  */
@@ -132,8 +132,8 @@ export function orthovander(family: Family, x: TensorLike, deg: number, params: 
  * @returns Series coefficients `[deg + 1]`.
  * @example
  * ```ts
- * import { orthofit } from 'whitebox-engine/numerics/polynomial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { orthofit } from 'mdml-engine/numerics/polynomial'
+ * import { toArray } from 'mdml-engine/tensor'
  * // x^2 = (P_0 + 2 P_2) / 3 in Legendre polynomials.
  * toArray(orthofit('legendre', [-1, -0.5, 0, 0.5, 1], [1, 0.25, 0, 0.25, 1], 2)).map((v) => Math.round(v * 1e12) / 1e12) // => [0.333333333333, 0, 0.666666666667]
  * ```
@@ -158,7 +158,7 @@ export function orthofit(
  * @returns Nodes and weights.
  * @example
  * ```ts
- * import { orthogauss } from 'whitebox-engine/numerics/polynomial'
+ * import { orthogauss } from 'mdml-engine/numerics/polynomial'
  * // Chebyshev weights are all pi / n.
  * Math.abs(orthogauss('chebyshev', 4).weights.data[0] - Math.PI / 4) < 1e-14 // => true
  * ```
@@ -196,7 +196,7 @@ export function orthogauss(family: Family, n: number, params: JacobiParameters =
  * @returns Power coefficients, lowest first.
  * @example
  * ```ts
- * import { orthoToPower } from 'whitebox-engine/numerics/polynomial'
+ * import { orthoToPower } from 'mdml-engine/numerics/polynomial'
  * orthoToPower('chebyshev', [0, 0, 0, 1]) // => [0, -3, 0, 4]
  * ```
  */
@@ -221,7 +221,7 @@ export function orthoToPower(family: Family, c: readonly number[], params: Jacob
  * @returns Series coefficients, lowest first.
  * @example
  * ```ts
- * import { powerToOrtho } from 'whitebox-engine/numerics/polynomial'
+ * import { powerToOrtho } from 'mdml-engine/numerics/polynomial'
  * powerToOrtho('chebyshev', [0, -3, 0, 4]) // => [0, 0, 0, 1]
  * ```
  */
@@ -271,7 +271,7 @@ function basisInPower(family: Family, deg: number, params: JacobiParameters): nu
  * @returns Power coefficients of the monic polynomial with the Gauss nodes as roots.
  * @example
  * ```ts
- * import { monicFromNodes } from 'whitebox-engine/numerics/polynomial'
+ * import { monicFromNodes } from 'mdml-engine/numerics/polynomial'
  * monicFromNodes('chebyshev', 2).map((v) => Math.round(v * 1e12) / 1e12) // => [-0.5, 0, 1]
  * ```
  */

@@ -7,7 +7,7 @@
 
 // TODO: expected model change, BALD (needs Bayesian neural nets), core-sets (k-centre greedy), density-weighted and
 // diversity strategies, BADGE.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import {
   consensusEntropySampling,
   entropySampling,
@@ -59,7 +59,7 @@ export const STRATEGY_NAMES: readonly StrategyName[] = [
  */
 export function subsampled(strategy: QueryStrategy, candidates: number): QueryStrategy {
   if (!(Number.isInteger(candidates) && candidates >= 1))
-    throw new WhiteboxError('value', 'subsampled: candidates must be a positive integer')
+    throw new MdmlError('value', 'subsampled: candidates must be a positive integer')
   return {
     name: `${strategy.name}-lite`,
     ...(strategy.committee === undefined ? {} : { committee: strategy.committee }),

@@ -3,7 +3,7 @@
  * importances (`importances`), partial dependence with ICE curves and accumulated local effects (`dependence`).
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import {
   accumulatedLocalEffects,
   accumulatedLocalEffects2D,
@@ -86,7 +86,7 @@ export function featureImportance(
   if (options.method === 'impurity') {
     const given = (fitted as { readonly featureImportances?: readonly number[] }).featureImportances
     if (given === undefined)
-      throw new WhiteboxError('value', `featureImportance: ${fitted.estimator} has no impurity importances`)
+      throw new MdmlError('value', `featureImportance: ${fitted.estimator} has no impurity importances`)
     const mean = [...given]
     const spread = mean.map(() => 0)
     return {
@@ -404,7 +404,7 @@ export function sageImportance(
   const y = yAll.slice(0, n).map((v) => (classify ? Math.max(0, classes.indexOf(v)) : v))
   const predict = (t: Tensor): Tensor => {
     const f = classify ? fitted.predictProba : fitted.predict
-    if (f === undefined) throw new WhiteboxError('value', `sageImportance: ${fitted.estimator} cannot predict`)
+    if (f === undefined) throw new MdmlError('value', `sageImportance: ${fitted.estimator} cannot predict`)
     return f(t)
   }
   const bgSize = Math.min(x.n, options.background ?? 30)

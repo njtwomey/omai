@@ -4,7 +4,7 @@
  * time.
  */
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { FeatureAttributions } from 'whitebox-engine/exposition'
+import type { FeatureAttributions } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -44,8 +44,8 @@ function asImage(values: readonly number[], h: number, w: number): number[][] {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { featureAttributions } from 'whitebox-engine/exposition'
- * import { attributionImageView } from 'whitebox-render/views'
+ * import { featureAttributions } from 'mdml-engine/exposition'
+ * import { attributionImageView } from 'mdml-render/views'
  * const r = featureAttributions({ method: 'occlusion', features: ['a', 'b', 'c', 'd'], output: 'y', baseValue: 0, values: [[1, 0, 0, -1]], data: [[1, 0, 0, 1]], predictions: [1], layout: { kind: 'image', shape: [2, 2] } })
  * attributionImageView(r).grid.length // => 2
  * ```
@@ -105,7 +105,7 @@ export interface TokenBox {
  * @returns A box per token.
  * @example
  * ```ts
- * import { tokenLayout } from 'whitebox-render/views'
+ * import { tokenLayout } from 'mdml-render/views'
  * tokenLayout(['ab', 'cd'], 1000, 10).map((b) => b.line) // => [0, 0]
  * tokenLayout(['ab', 'cd'], 30, 10).map((b) => b.line) // => [0, 1]
  * ```
@@ -136,8 +136,8 @@ export function tokenLayout(texts: readonly string[], width: number, fontSize: n
  * @returns The height in pixels.
  * @example
  * ```ts
- * import { figure } from 'whitebox-render/figure'
- * import { tokenStripHeight } from 'whitebox-render/views'
+ * import { figure } from 'mdml-render/figure'
+ * import { tokenStripHeight } from 'mdml-render/views'
  * tokenStripHeight(['a', 'b'], figure()) > 0 // => true
  * ```
  */
@@ -172,8 +172,8 @@ function tokenColour(v: number, max: number, mode: ColourMode): string {
  * @returns The ECharts option (drawn with graphic elements).
  * @example
  * ```ts
- * import { featureAttributions } from 'whitebox-engine/exposition'
- * import { tokenStripView } from 'whitebox-render/views'
+ * import { featureAttributions } from 'mdml-engine/exposition'
+ * import { tokenStripView } from 'mdml-render/views'
  * const r = featureAttributions({ method: 'ablation', features: ['not', 'bad'], output: 'P(positive)', baseValue: 0.5, values: [[0.2, -0.1]], data: [[1, 1]], predictions: [0.6], layout: { kind: 'tokens' } })
  * tokenStripView(r).graphic.length > 2 // => true
  * ```
@@ -252,8 +252,8 @@ export function tokenStripView(record: FeatureAttributions, options: ModalityVie
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { featureAttributions } from 'whitebox-engine/exposition'
- * import { attributionSeriesView } from 'whitebox-render/views'
+ * import { featureAttributions } from 'mdml-engine/exposition'
+ * import { attributionSeriesView } from 'mdml-render/views'
  * const r = featureAttributions({ method: 'occlusion', features: ['t0', 't1', 't2'], output: 'y', baseValue: 0, values: [[0, 1, -1]], data: [[1, 2, 3]], predictions: [0], layout: { kind: 'series' } })
  * attributionSeriesView(r).grid.length // => 2
  * ```

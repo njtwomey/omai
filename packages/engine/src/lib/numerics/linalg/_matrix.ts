@@ -1,6 +1,6 @@
 // Helpers shared by the linear-algebra primitives: batching of the kernels over leading axes, and the small matrix
 // operations (transpose of the last two axes, diagonal embedding, symmetrisation) the derivative rules are written in.
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   allocate,
@@ -20,14 +20,14 @@ import {
 
 /** The batch shape and matrix size of a value with at least two axes. */
 export function matrixShape(shape: readonly number[], name: string): { batch: number[]; m: number; n: number } {
-  if (shape.length < 2) throw new WhiteboxError('shape', `${name}: expected a matrix (at least two axes)`)
+  if (shape.length < 2) throw new MdmlError('shape', `${name}: expected a matrix (at least two axes)`)
   return { batch: shape.slice(0, -2), m: shape[shape.length - 2] ?? 0, n: shape[shape.length - 1] ?? 0 }
 }
 
 /** Require a square matrix (or batch of them) and return its size. */
 export function squareSize(shape: readonly number[], name: string): number {
   const { m, n } = matrixShape(shape, name)
-  if (m !== n) throw new WhiteboxError('shape', `${name}: expected a square matrix, got ${m} x ${n}`)
+  if (m !== n) throw new MdmlError('shape', `${name}: expected a square matrix, got ${m} x ${n}`)
   return n
 }
 

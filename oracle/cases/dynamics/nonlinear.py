@@ -6,8 +6,8 @@ Series: the logistic map at r = 4 and the x coordinate of the Henon map, generat
 
 import nolds
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"nolds": str(getattr(nolds, "__version__", "0.6"))}
 

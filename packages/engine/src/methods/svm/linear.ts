@@ -3,7 +3,7 @@
  * an L2 penalty, solved in the dual by coordinate descent traced step by step, one-versus-rest for several classes.
  */
 
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { coefficientTable, type Exposition, marginRecord } from '../../lib/exposition/index.ts'
 import {
@@ -156,7 +156,7 @@ export function linearSvc(hyper: Partial<LinearSvcHyper> = {}): ExplainedEstimat
       fit: (data: LearnData, h: LinearSvcHyper, options: FitOptions) => {
         const x = matrixView(data.x, 'linearSvc')
         const { classes, codes } = encodeLabels(data.y ?? [], 'linearSvc', x.n)
-        if (classes.length < 2) throw new WhiteboxError('value', 'linearSvc: needs two classes')
+        if (classes.length < 2) throw new MdmlError('value', 'linearSvc: needs two classes')
         const bias = h.fitIntercept ? h.interceptScaling : 0
         const key: Key = resolveKey(options, 'linearSvc')
         const problems = classes.length === 2 ? [1] : classes.map((_, c) => c)

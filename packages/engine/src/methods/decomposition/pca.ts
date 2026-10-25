@@ -4,7 +4,7 @@
  * likelihood. Also incremental PCA, which processes batches in constant memory and is traced batch by batch.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -143,7 +143,7 @@ export function pca(hyper: PcaHyper = {}): Estimator<PcaHyper, FittedPca> {
         const full = Math.min(m.n, m.d)
         const k = h.nComponents ?? full
         if (!(Number.isInteger(k) && k >= 1 && k <= full))
-          throw new WhiteboxError('value', `pca: nComponents must be in 1..${full}, got ${k}`)
+          throw new MdmlError('value', `pca: nComponents must be in 1..${full}, got ${k}`)
         const mean = columnMeans(m)
         const xc = centred(m, mean)
         let totalSquares = 0
@@ -354,7 +354,7 @@ export function incrementalPca(hyper: IncrementalPcaHyper = {}): Estimator<Incre
         const k = h.nComponents ?? Math.min(m.n, m.d)
         const batches = batchRanges(m.n, h.batchSize ?? 5 * m.d, k)
         if (batches.some(([a, b]) => b - a < k))
-          throw new WhiteboxError('value', 'incrementalPca: every batch needs at least nComponents rows')
+          throw new MdmlError('value', 'incrementalPca: every batch needs at least nComponents rows')
         const out = runAlgorithm(incrementalPcaAlgorithm(data.x, k, batches), {
           ...fitRunOptions(options, 'incremental-pca'),
           maxSteps: batches.length,

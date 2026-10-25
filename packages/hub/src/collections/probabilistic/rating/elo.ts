@@ -3,8 +3,8 @@
  * simulated tournaments.
  */
 
-import { eloRatings } from 'whitebox-engine/methods/models'
-import { choice, dict, real } from 'whitebox-engine/space'
+import { eloRatings } from 'mdml-engine/methods/models'
+import { choice, dict, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { comparisonsOf } from './_rating.ts'
 

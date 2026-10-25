@@ -13,8 +13,8 @@ import numpy.typing as npt
 import scipy
 import scipy.signal as sg
 import scipy.special as sp
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

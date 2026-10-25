@@ -50,7 +50,7 @@ const X_LIMIT = 2.4
  * @concept environments
  * @example
  * ```ts
- * import { cartPoleDynamics } from 'whitebox-engine/methods/rl'
+ * import { cartPoleDynamics } from 'mdml-engine/methods/rl'
  * cartPoleDynamics([0, 0, 0, 0], 1)[1] > 0 // => true
  * ```
  */
@@ -72,7 +72,7 @@ export function cartPoleDynamics(state: CartPoleState, action: number): CartPole
  * @returns Whether the episode ends.
  * @example
  * ```ts
- * import { cartPoleTerminated } from 'whitebox-engine/methods/rl'
+ * import { cartPoleTerminated } from 'mdml-engine/methods/rl'
  * cartPoleTerminated([3, 0, 0, 0]) // => true
  * ```
  */
@@ -88,7 +88,7 @@ export function cartPoleTerminated(state: CartPoleState): boolean {
  * @returns The scene.
  * @example
  * ```ts
- * import { renderCartPole } from 'whitebox-engine/methods/rl'
+ * import { renderCartPole } from 'mdml-engine/methods/rl'
  * renderCartPole([0, 0, 0, 0]).width // => 600
  * ```
  */
@@ -135,8 +135,8 @@ const CARTPOLE_DESCRIPTION = 'Balance a pole on a cart by pushing the cart left 
  * @concept environments
  * @example
  * ```ts
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = cartPole.create()
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 1
  * ```
@@ -197,7 +197,7 @@ const MC_GRAVITY = 0.0025
  * @returns The next state.
  * @example
  * ```ts
- * import { mountainCarDynamics } from 'whitebox-engine/methods/rl'
+ * import { mountainCarDynamics } from 'mdml-engine/methods/rl'
  * mountainCarDynamics([-1.2, -0.01], 0)[1] // => 0
  * ```
  */
@@ -279,8 +279,8 @@ const MC_DESCRIPTION = 'Drive an underpowered car up a hill by building momentum
  * @concept environments
  * @example
  * ```ts
- * import { mountainCar } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { mountainCar } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = mountainCar.create()
  * env.step(env.reset(key(0)).state, 2, key(1)).reward // => -1
  * ```
@@ -328,7 +328,7 @@ const MCC_GOAL = 0.45
  * @returns The next state.
  * @example
  * ```ts
- * import { continuousMountainCarDynamics } from 'whitebox-engine/methods/rl'
+ * import { continuousMountainCarDynamics } from 'mdml-engine/methods/rl'
  * continuousMountainCarDynamics([-0.5, 0], 1)[1] > 0 // => true
  * ```
  */
@@ -363,8 +363,8 @@ const MCC_DESCRIPTION = 'Drive an underpowered car up a hill with a continuous f
  * @concept environments
  * @example
  * ```ts
- * import { mountainCarContinuous } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { mountainCarContinuous } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = mountainCarContinuous.create()
  * env.step(env.reset(key(0)).state, [1], key(1)).reward // => -0.1
  * ```
@@ -418,7 +418,7 @@ const PENDULUM_DT = 0.05
  * @returns The wrapped angle.
  * @example
  * ```ts
- * import { angleNormalize } from 'whitebox-engine/methods/rl'
+ * import { angleNormalize } from 'mdml-engine/methods/rl'
  * angleNormalize(3 * Math.PI) // => -3.141592653589793
  * ```
  */
@@ -438,7 +438,7 @@ export function angleNormalize(x: number): number {
  * @returns The next state and the cost of the step (the reward is its negative).
  * @example
  * ```ts
- * import { pendulumDynamics } from 'whitebox-engine/methods/rl'
+ * import { pendulumDynamics } from 'mdml-engine/methods/rl'
  * pendulumDynamics([0, 0], 0).cost // => 0
  * ```
  */
@@ -502,8 +502,8 @@ const PENDULUM_DESCRIPTION = 'Swing a pendulum up and keep it upright with a lim
  * @concept environments
  * @example
  * ```ts
- * import { pendulum } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * pendulum.create().reset(key(0)).observation.length // => 3
  * ```
  */
@@ -597,7 +597,7 @@ const wrapAngle = (x: number, m: number, M: number): number => {
  * @returns The next state.
  * @example
  * ```ts
- * import { acrobotDynamics } from 'whitebox-engine/methods/rl'
+ * import { acrobotDynamics } from 'mdml-engine/methods/rl'
  * acrobotDynamics([0, 0, 0, 0], 1).map((x) => Math.abs(x) < 1e-15) // => [true, true, true, true]
  * ```
  */
@@ -625,7 +625,7 @@ export function acrobotDynamics(state: AcrobotState, action: number): AcrobotSta
  * @returns Whether the episode ends.
  * @example
  * ```ts
- * import { acrobotTerminated } from 'whitebox-engine/methods/rl'
+ * import { acrobotTerminated } from 'mdml-engine/methods/rl'
  * acrobotTerminated([Math.PI, 0, 0, 0]) // => true
  * ```
  */
@@ -669,8 +669,8 @@ const ACROBOT_DESCRIPTION = 'Swing the tip of a two-link pendulum above a bar by
  * @concept environments
  * @example
  * ```ts
- * import { acrobot } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { acrobot } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * acrobot.create().reset(key(0)).observation.length // => 6
  * ```
  */

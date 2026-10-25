@@ -68,7 +68,7 @@ export interface InferenceEngine {
  * @returns The verdict.
  * @example
  * ```ts
- * import { feasibility } from 'whitebox-engine/probprog'
+ * import { feasibility } from 'mdml-engine/probprog'
  * feasibility(false, 'exact', 0, 'no discrete sites').cost // => Infinity
  * ```
  */
@@ -83,8 +83,8 @@ export function feasibility(applies: boolean, quality: EngineQuality, cost: numb
  * @returns The tracer, policy and parent that are set.
  * @example
  * ```ts
- * import { runTracing } from 'whitebox-engine/probprog'
- * import { key } from 'whitebox-engine/random'
+ * import { runTracing } from 'mdml-engine/probprog'
+ * import { key } from 'mdml-engine/random'
  * Object.keys(runTracing({ key: key(0) })) // => []
  * ```
  */

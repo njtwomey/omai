@@ -4,7 +4,7 @@
  * rescaling, action repeat (frame skip), sticky actions, and observation transformation.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { type BoxSpace, box, type Space } from '../space/index.ts'
 import { type Env, type EnvModel, type EnvOracle, type Reset, resetAfter, type Step } from './env.ts'
@@ -61,13 +61,13 @@ export interface TimeLimitState<S> {
  * @concept environments
  * @example
  * ```ts
- * import { timeLimit } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { timeLimit } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * timeLimit(cartPole.create(), 10).spec.maxEpisodeSteps // => 10
  * ```
  */
 export function timeLimit<S, O, A>(env: Env<S, O, A>, maxSteps: number): Env<TimeLimitState<S>, O, A> {
-  if (!(maxSteps >= 1)) throw new WhiteboxError('value', `timeLimit: maxSteps must be at least 1, got ${maxSteps}`)
+  if (!(maxSteps >= 1)) throw new MdmlError('value', `timeLimit: maxSteps must be at least 1, got ${maxSteps}`)
   const resetFrom = env.resetFrom
   const inner = env.observe
   const start = (r: Reset<S, O>): Reset<TimeLimitState<S>, O> => ({ ...r, state: { inner: r.state, t: 0 } })
@@ -110,9 +110,9 @@ export interface EpisodeStatisticsState<S> {
  * @concept environments
  * @example
  * ```ts
- * import { episodeStatistics } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { episodeStatistics } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = episodeStatistics(cartPole.create())
  * env.step(env.reset(key(0)).state, 1, key(1)).state.episodeLength // => 1
  * ```
@@ -181,7 +181,7 @@ export interface RunningMeanStd {
  * @returns The statistics.
  * @example
  * ```ts
- * import { runningMeanStd } from 'whitebox-engine/rl'
+ * import { runningMeanStd } from 'mdml-engine/rl'
  * runningMeanStd(2).var // => [1, 1]
  * ```
  */
@@ -197,7 +197,7 @@ export function runningMeanStd(size: number, epsilon = 1e-4): RunningMeanStd {
  * @returns The updated statistics.
  * @example
  * ```ts
- * import { runningMeanStd, updateRunningMeanStd } from 'whitebox-engine/rl'
+ * import { runningMeanStd, updateRunningMeanStd } from 'mdml-engine/rl'
  * updateRunningMeanStd(runningMeanStd(1, 0), [[1], [3]]).mean // => [2]
  * ```
  */
@@ -241,9 +241,9 @@ export interface NormalizeRewardState<S> {
  * @concept environments
  * @example
  * ```ts
- * import { normalizeReward } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { normalizeReward } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = normalizeReward(cartPole.create())
  * env.step(env.reset(key(0)).state, 1, key(1)).reward > 1 // => true
  * ```
@@ -255,8 +255,8 @@ export function normalizeReward<S, O, A>(
   const gamma = options.gamma ?? 0.99
   const eps = options.epsilon ?? 1e-8
   const update = options.update ?? true
-  if (!(gamma >= 0 && gamma <= 1)) throw new WhiteboxError('value', 'normalizeReward: gamma must lie in [0, 1]')
-  if (!(eps > 0)) throw new WhiteboxError('value', 'normalizeReward: epsilon must be positive')
+  if (!(gamma >= 0 && gamma <= 1)) throw new MdmlError('value', 'normalizeReward: gamma must lie in [0, 1]')
+  if (!(eps > 0)) throw new MdmlError('value', 'normalizeReward: epsilon must be positive')
   const inner = env.observe
   return {
     spec: env.spec,
@@ -295,9 +295,9 @@ export function normalizeReward<S, O, A>(
  * @concept environments
  * @example
  * ```ts
- * import { transformReward } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { transformReward } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = transformReward(cartPole.create(), (r) => 2 * r)
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 2
  * ```
@@ -316,15 +316,15 @@ export function transformReward<S, O, A>(env: Env<S, O, A>, f: (reward: number) 
  * @concept environments
  * @example
  * ```ts
- * import { clipReward } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { clipReward } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = clipReward(cartPole.create(), 0, 0.5)
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 0.5
  * ```
  */
 export function clipReward<S, O, A>(env: Env<S, O, A>, min = -1, max = 1): Env<S, O, A> {
-  if (!(max >= min)) throw new WhiteboxError('value', 'clipReward: need max >= min')
+  if (!(max >= min)) throw new MdmlError('value', 'clipReward: need max >= min')
   return transformReward(env, (r) => Math.min(max, Math.max(min, r)))
 }
 
@@ -338,9 +338,9 @@ export function clipReward<S, O, A>(env: Env<S, O, A>, min = -1, max = 1): Env<S
  * @concept environments
  * @example
  * ```ts
- * import { transformAction } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { transformAction } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = transformAction(cartPole.create(), (push: boolean) => (push ? 1 : 0))
  * env.step(env.reset(key(0)).state, true, key(1)).reward // => 1
  * ```
@@ -357,7 +357,7 @@ function boxOf(
   space: Space,
   name: string,
 ): { readonly low: number[]; readonly high: number[]; readonly box: BoxSpace } {
-  if (space.kind !== 'box') throw new WhiteboxError('value', `${name}: needs a box action space`)
+  if (space.kind !== 'box') throw new MdmlError('value', `${name}: needs a box action space`)
   const n = space.shape.reduce((a, b) => a * b, 1)
   const at = (b: number | readonly number[], i: number): number => (typeof b === 'number' ? b : (b[i] ?? 0))
   return {
@@ -372,13 +372,13 @@ function boxOf(
  *
  * @param env - An environment with a box action space.
  * @returns The clipping environment.
- * @throws WhiteboxError with code `value` when the action space is not a box.
+ * @throws MdmlError with code `value` when the action space is not a box.
  * @concept environments
  * @example
  * ```ts
- * import { clipAction } from 'whitebox-engine/rl'
- * import { pendulum } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { clipAction } from 'mdml-engine/rl'
+ * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = clipAction(pendulum.create())
  * const s = env.reset(key(0)).state
  * env.step(s, [100], key(1)).state[1] === env.step(s, [2], key(1)).state[1] // => true
@@ -400,13 +400,13 @@ export function clipAction<S, O>(env: Env<S, O, readonly number[]>): Env<S, O, r
  * @param min - The new lower bound (default -1).
  * @param max - The new upper bound (default 1).
  * @returns The rescaling environment.
- * @throws WhiteboxError with code `value` when the action space is not a box or `min >= max`.
+ * @throws MdmlError with code `value` when the action space is not a box or `min >= max`.
  * @concept environments
  * @example
  * ```ts
- * import { rescaleAction } from 'whitebox-engine/rl'
- * import { pendulum } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { rescaleAction } from 'mdml-engine/rl'
+ * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = rescaleAction(pendulum.create(), -1, 1)
  * const s = env.reset(key(0)).state
  * env.step(s, [0.5], key(1)).state[1] === pendulum.create().step(s, [1], key(1)).state[1] // => true
@@ -417,7 +417,7 @@ export function rescaleAction<S, O>(
   min = -1,
   max = 1,
 ): Env<S, O, readonly number[]> {
-  if (!(max > min)) throw new WhiteboxError('value', 'rescaleAction: need min < max')
+  if (!(max > min)) throw new MdmlError('value', 'rescaleAction: need min < max')
   const { low, high, box: b } = boxOf(env.actionSpace, 'rescaleAction')
   return mapped<S, O, readonly number[], O, readonly number[]>(env, {
     actionSpace: box(min, max, b.shape),
@@ -435,15 +435,15 @@ export function rescaleAction<S, O>(
  * @concept environments
  * @example
  * ```ts
- * import { actionRepeat } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { actionRepeat } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = actionRepeat(cartPole.create(), 4)
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 4
  * ```
  */
 export function actionRepeat<S, O, A>(env: Env<S, O, A>, k: number): Env<S, O, A> {
-  if (!(Number.isInteger(k) && k >= 1)) throw new WhiteboxError('value', 'actionRepeat: k must be a positive integer')
+  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'actionRepeat: k must be a positive integer')
   const resetFrom = env.resetFrom
   const inner = env.observe
   return {
@@ -486,16 +486,16 @@ export interface StickyActionState<S, A> {
  * @concept environments
  * @example
  * ```ts
- * import { stickyAction } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { stickyAction } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = stickyAction(cartPole.create(), 1)
  * const s1 = env.step(env.reset(key(0)).state, 1, key(1)).state
  * env.step(s1, 0, key(2)).state.last // => 1
  * ```
  */
 export function stickyAction<S, O, A>(env: Env<S, O, A>, p = 0.25): Env<StickyActionState<S, A>, O, A> {
-  if (!(p >= 0 && p <= 1)) throw new WhiteboxError('value', 'stickyAction: p must lie in [0, 1]')
+  if (!(p >= 0 && p <= 1)) throw new MdmlError('value', 'stickyAction: p must lie in [0, 1]')
   const resetFrom = env.resetFrom
   const inner = env.observe
   const start = (r: Reset<S, O>): Reset<StickyActionState<S, A>, O> => ({ ...r, state: { inner: r.state } })
@@ -529,9 +529,9 @@ export function stickyAction<S, O, A>(env: Env<S, O, A>, p = 0.25): Env<StickyAc
  * @concept environments
  * @example
  * ```ts
- * import { transformObservation } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { transformObservation } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = transformObservation(cartPole.create(), (o) => o.length)
  * env.reset(key(0)).observation // => 4
  * ```

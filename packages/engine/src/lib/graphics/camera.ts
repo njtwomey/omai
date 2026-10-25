@@ -5,7 +5,7 @@
  * and box culling tests.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { applyHomogeneous } from '../foundations/index.ts'
 import { ddot } from '../numerics/linalg/blas.ts'
 import { type Key, uniform } from '../random/index.ts'
@@ -57,7 +57,7 @@ function checkPose(eye: Vec3, target: Vec3, up: Vec3): void {
 }
 
 function checkClip(near: number, far: number): void {
-  if (!(near > 0 && far > near)) throw new WhiteboxError('value', 'camera: need 0 < near < far')
+  if (!(near > 0 && far > near)) throw new MdmlError('value', 'camera: need 0 < near < far')
 }
 
 /**
@@ -66,12 +66,12 @@ function checkClip(near: number, far: number): void {
  *
  * @param options - Any camera fields.
  * @returns The camera.
- * @throws WhiteboxError with code `value` for an eye at the target, an up vector along the view, a field of view
+ * @throws MdmlError with code `value` for an eye at the target, an up vector along the view, a field of view
  *   outside (0, 180) or bad clipping distances.
  * @concept pinhole-camera
  * @example
  * ```ts
- * import { pinholeCamera } from 'whitebox-engine/graphics'
+ * import { pinholeCamera } from 'mdml-engine/graphics'
  * pinholeCamera({ fov: 60 }).eye // => [0, 0, 5]
  * ```
  */
@@ -86,7 +86,7 @@ export function pinholeCamera(options: Partial<Omit<PinholeCamera, 'kind'>> = {}
     far: options.far ?? 100,
   }
   checkPose(cam.eye, cam.target, cam.up)
-  if (!(cam.fov > 0 && cam.fov < 180)) throw new WhiteboxError('value', 'pinholeCamera: fov must be in (0, 180)')
+  if (!(cam.fov > 0 && cam.fov < 180)) throw new MdmlError('value', 'pinholeCamera: fov must be in (0, 180)')
   checkClip(cam.near, cam.far)
   return cam
 }
@@ -96,11 +96,11 @@ export function pinholeCamera(options: Partial<Omit<PinholeCamera, 'kind'>> = {}
  *
  * @param options - Any camera fields.
  * @returns The camera.
- * @throws WhiteboxError with code `value` for a bad pose, a non-positive height or bad clipping distances.
+ * @throws MdmlError with code `value` for a bad pose, a non-positive height or bad clipping distances.
  * @concept orthographic-projection
  * @example
  * ```ts
- * import { orthographicCamera } from 'whitebox-engine/graphics'
+ * import { orthographicCamera } from 'mdml-engine/graphics'
  * orthographicCamera({ height: 2 }).kind // => 'orthographic'
  * ```
  */
@@ -115,7 +115,7 @@ export function orthographicCamera(options: Partial<Omit<OrthographicCamera, 'ki
     far: options.far ?? 100,
   }
   checkPose(cam.eye, cam.target, cam.up)
-  if (!(cam.height > 0)) throw new WhiteboxError('value', 'orthographicCamera: height must be positive')
+  if (!(cam.height > 0)) throw new MdmlError('value', 'orthographicCamera: height must be positive')
   checkClip(cam.near, cam.far)
   return cam
 }
@@ -131,8 +131,8 @@ export function orthographicCamera(options: Partial<Omit<OrthographicCamera, 'ki
  * @concept pinhole-camera
  * @example
  * ```ts
- * import { fromSceneCamera } from 'whitebox-engine/graphics'
- * import { camera } from 'whitebox-engine/scene'
+ * import { fromSceneCamera } from 'mdml-engine/graphics'
+ * import { camera } from 'mdml-engine/scene'
  * const c = fromSceneCamera(camera({ azimuth: 0, elevation: 0, distance: 4 }), { width: 100, height: 100 })
  * [c.eye, c.up, c.kind] // => [[4, 0, 0], [0, 0, 1], 'pinhole']
  * ```
@@ -173,7 +173,7 @@ export interface CameraBasis {
  * @concept pinhole-camera
  * @example
  * ```ts
- * import { cameraBasis, pinholeCamera } from 'whitebox-engine/graphics'
+ * import { cameraBasis, pinholeCamera } from 'mdml-engine/graphics'
  * cameraBasis(pinholeCamera()) // => { right: [1, 0, 0], up: [0, 1, 0], forward: [0, 0, -1] }
  * ```
  */
@@ -191,11 +191,11 @@ export function cameraBasis(cam: RenderCamera): CameraBasis {
  * @param target - The point looked at.
  * @param up - The up direction.
  * @returns The matrix.
- * @throws WhiteboxError with code `value` for an eye at the target or an up vector along the view.
+ * @throws MdmlError with code `value` for an eye at the target or an up vector along the view.
  * @concept view-matrix
  * @example
  * ```ts
- * import { lookAt } from 'whitebox-engine/graphics'
+ * import { lookAt } from 'mdml-engine/graphics'
  * lookAt([0, 0, 5], [0, 0, 0], [0, 1, 0])[2] // => [0, 0, 1, -5]
  * ```
  */
@@ -219,16 +219,16 @@ export function lookAt(eye: Vec3, target: Vec3, up: Vec3): Mat4 {
  * @param near - Near clipping distance.
  * @param far - Far clipping distance.
  * @returns The matrix.
- * @throws WhiteboxError with code `value` for bad arguments.
+ * @throws MdmlError with code `value` for bad arguments.
  * @concept perspective-projection
  * @example
  * ```ts
- * import { perspective } from 'whitebox-engine/graphics'
+ * import { perspective } from 'mdml-engine/graphics'
  * perspective(90, 1, 1, 3).map((row) => row.map((x) => Math.round(x * 1e12) / 1e12)) // => [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -2, -3], [0, 0, -1, 0]]
  * ```
  */
 export function perspective(fovY: number, aspect: number, near: number, far: number): Mat4 {
-  if (!(fovY > 0 && fovY < 180 && aspect > 0)) throw new WhiteboxError('value', 'perspective: bad fov or aspect')
+  if (!(fovY > 0 && fovY < 180 && aspect > 0)) throw new MdmlError('value', 'perspective: bad fov or aspect')
   checkClip(near, far)
   const f = 1 / Math.tan((fovY * Math.PI) / 360)
   return [
@@ -250,11 +250,11 @@ export function perspective(fovY: number, aspect: number, near: number, far: num
  * @param near - Near distance.
  * @param far - Far distance.
  * @returns The matrix.
- * @throws WhiteboxError with code `value` for an empty box.
+ * @throws MdmlError with code `value` for an empty box.
  * @concept orthographic-projection
  * @example
  * ```ts
- * import { orthographic } from 'whitebox-engine/graphics'
+ * import { orthographic } from 'mdml-engine/graphics'
  * orthographic(-1, 1, -1, 1, 1, 3)[2] // => [0, 0, -1, -2]
  * ```
  */
@@ -266,7 +266,7 @@ export function orthographic(
   near: number,
   far: number,
 ): Mat4 {
-  if (!(right > left && top > bottom && far > near)) throw new WhiteboxError('value', 'orthographic: empty view box')
+  if (!(right > left && top > bottom && far > near)) throw new MdmlError('value', 'orthographic: empty view box')
   return [
     [2 / (right - left), 0, 0, -(right + left) / (right - left) + 0],
     [0, 2 / (top - bottom), 0, -(top + bottom) / (top - bottom) + 0],
@@ -283,7 +283,7 @@ export function orthographic(
  * @concept view-matrix
  * @example
  * ```ts
- * import { pinholeCamera, viewMatrix } from 'whitebox-engine/graphics'
+ * import { pinholeCamera, viewMatrix } from 'mdml-engine/graphics'
  * viewMatrix(pinholeCamera({ eye: [0, 0, 2] }))[2][3] // => -2
  * ```
  */
@@ -300,7 +300,7 @@ export function viewMatrix(cam: RenderCamera): Mat4 {
  * @concept perspective-projection
  * @example
  * ```ts
- * import { orthographicCamera, projectionMatrix } from 'whitebox-engine/graphics'
+ * import { orthographicCamera, projectionMatrix } from 'mdml-engine/graphics'
  * projectionMatrix(orthographicCamera({ height: 2 }), 2)[0][0] // => 0.25
  * ```
  */
@@ -329,7 +329,7 @@ function multiply4(a: Mat4, b: Mat4): Mat4 {
  * @concept perspective-projection
  * @example
  * ```ts
- * import { pinholeCamera, viewProjection } from 'whitebox-engine/graphics'
+ * import { pinholeCamera, viewProjection } from 'mdml-engine/graphics'
  * viewProjection(pinholeCamera({ fov: 90 }), 1)[3] // => [0, 0, -1, 5]
  * ```
  */
@@ -346,7 +346,7 @@ export function viewProjection(cam: RenderCamera, aspect: number): Mat4 {
  * @concept homogeneous-coordinates
  * @example
  * ```ts
- * import { lookAt, transformPoint } from 'whitebox-engine/graphics'
+ * import { lookAt, transformPoint } from 'mdml-engine/graphics'
  * transformPoint(lookAt([0, 0, 5], [0, 0, 0], [0, 1, 0]), [1, 2, 0]) // => [1, 2, -5, 1]
  * ```
  */
@@ -378,7 +378,7 @@ export interface PixelPoint {
  * @concept perspective-projection
  * @example
  * ```ts
- * import { pinholeCamera, projectToPixel } from 'whitebox-engine/graphics'
+ * import { pinholeCamera, projectToPixel } from 'mdml-engine/graphics'
  * const p = projectToPixel(pinholeCamera({ fov: 90 }), [0, 0, 0], 100, 50)
  * [p?.x, p?.y, p?.depth] // => [50, 25, 5]
  * ```
@@ -408,8 +408,8 @@ export function projectToPixel(cam: RenderCamera, p: Vec3, width: number, height
  * @concept perspective-projection
  * @example
  * ```ts
- * import { pinholeCamera, projectPoints } from 'whitebox-engine/graphics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pinholeCamera, projectPoints } from 'mdml-engine/graphics'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectPoints(pinholeCamera({ fov: 90 }), [[0, 0, 0]], 100, 50))[0].slice(0, 2) // => [50, 25]
  * ```
  */
@@ -439,7 +439,7 @@ export interface Ray {
  * @concept ray-generation
  * @example
  * ```ts
- * import { pinholeCamera, pixelRay } from 'whitebox-engine/graphics'
+ * import { pinholeCamera, pixelRay } from 'mdml-engine/graphics'
  * pixelRay(pinholeCamera(), 64, 48, 32, 24) // => { origin: [0, 0, 5], direction: [0, 0, -1] }
  * ```
  */
@@ -477,7 +477,7 @@ export interface RayBundle {
  * @concept ray-generation
  * @example
  * ```ts
- * import { cameraRays, pinholeCamera } from 'whitebox-engine/graphics'
+ * import { cameraRays, pinholeCamera } from 'mdml-engine/graphics'
  * const rays = cameraRays(pinholeCamera(), 4, 2)
  * [rays.origins.length, rays.directions[2] < 0] // => [24, true]
  * ```
@@ -489,7 +489,7 @@ export function cameraRays(
   options: { readonly key?: Key } = {},
 ): RayBundle {
   if (!(Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0)) {
-    throw new WhiteboxError('value', 'cameraRays: the image size must be positive integers')
+    throw new MdmlError('value', 'cameraRays: the image size must be positive integers')
   }
   const jitter = options.key === undefined ? undefined : uniform(options.key, [2 * width * height]).data
   const origins = new Float64Array(3 * width * height)
@@ -519,7 +519,7 @@ export type Plane4 = readonly [number, number, number, number]
  * @concept view-frustum
  * @example
  * ```ts
- * import { frustumPlanes, perspective } from 'whitebox-engine/graphics'
+ * import { frustumPlanes, perspective } from 'mdml-engine/graphics'
  * frustumPlanes(perspective(90, 1, 1, 10))[4] // => [0, 0, -1, -1]
  * ```
  */
@@ -544,7 +544,7 @@ export function frustumPlanes(m: Mat4): Plane4[] {
  * @concept view-frustum
  * @example
  * ```ts
- * import { cameraFrustum, pinholeCamera } from 'whitebox-engine/graphics'
+ * import { cameraFrustum, pinholeCamera } from 'mdml-engine/graphics'
  * cameraFrustum(pinholeCamera(), 1).length // => 6
  * ```
  */
@@ -563,7 +563,7 @@ const distance = (pl: Plane4, p: Vec3): number => pl[0] * p[0] + pl[1] * p[1] + 
  * @concept view-frustum
  * @example
  * ```ts
- * import { cameraFrustum, pinholeCamera, pointInFrustum } from 'whitebox-engine/graphics'
+ * import { cameraFrustum, pinholeCamera, pointInFrustum } from 'mdml-engine/graphics'
  * const f = cameraFrustum(pinholeCamera(), 1)
  * [pointInFrustum(f, [0, 0, 0]), pointInFrustum(f, [0, 0, 6])] // => [true, false]
  * ```
@@ -586,7 +586,7 @@ export type Containment = 'inside' | 'intersect' | 'outside'
  * @concept view-frustum
  * @example
  * ```ts
- * import { cameraFrustum, pinholeCamera, sphereInFrustum } from 'whitebox-engine/graphics'
+ * import { cameraFrustum, pinholeCamera, sphereInFrustum } from 'mdml-engine/graphics'
  * const f = cameraFrustum(pinholeCamera(), 1)
  * [sphereInFrustum(f, [0, 0, 0], 0.5), sphereInFrustum(f, [0, 0, 5], 0.5), sphereInFrustum(f, [0, 0, 8], 1)] // => ['inside', 'intersect', 'outside']
  * ```
@@ -612,7 +612,7 @@ export function sphereInFrustum(planes: readonly Plane4[], centre: Vec3, radius:
  * @concept view-frustum
  * @example
  * ```ts
- * import { boxInFrustum, cameraFrustum, pinholeCamera } from 'whitebox-engine/graphics'
+ * import { boxInFrustum, cameraFrustum, pinholeCamera } from 'mdml-engine/graphics'
  * const f = cameraFrustum(pinholeCamera(), 1)
  * [boxInFrustum(f, [-1, -1, -1], [1, 1, 1]), boxInFrustum(f, [10, 10, 10], [11, 11, 11])] // => ['inside', 'outside']
  * ```

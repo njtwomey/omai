@@ -50,8 +50,8 @@ function outcome(u: number, p: { win: number; draw: number }): [number, number] 
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { eloGames } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { eloGames } from 'mdml-engine/datasets'
  * generate(eloGames, { knobs: { players: 8, games: 40 } }).data.participants.shape // => [40, 2]
  * ```
  */
@@ -125,8 +125,8 @@ export const eloGames: DatasetGenerator<ComparisonData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { roundRobin } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { roundRobin } from 'mdml-engine/datasets'
  * generate(roundRobin, { knobs: { players: 4, rounds: 2 } }).data.participants.shape // => [12, 2]
  * ```
  */
@@ -203,8 +203,8 @@ export interface RaceOptions {
  * @returns The contests and their truth.
  * @example
  * ```ts
- * import { multiplayerRaces } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { multiplayerRaces } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * multiplayerRaces(key(0), { players: 10, races: 5, size: 4 }).data.ranks.shape // => [5, 4]
  * ```
  */
@@ -239,7 +239,7 @@ export function multiplayerRaces(key: Key, options: RaceOptions = {}): Generated
       meta: {
         name: 'multiplayerRaces',
         description: 'Multi-player contests in the TrueSkill model.',
-        source: 'whitebox-js generator',
+        source: 'mdml-js generator',
       },
     }),
     truth: {

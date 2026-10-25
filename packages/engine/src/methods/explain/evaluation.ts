@@ -6,7 +6,7 @@
  * follows how much a gradient map changes (`curves`, and the maps as `valueGrids`).
  */
 
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import {
   curveSet,
@@ -231,7 +231,7 @@ export function sanityChecks(
   options: SanityCheckOptions = {},
 ): Explained<{ readonly cascade: readonly number[]; readonly labelSimilarity?: number }> {
   const x = matrixView(data.x, 'sanityChecks')
-  if (!(Number.isInteger(row) && row >= 0 && row < x.n)) throw new WhiteboxError('value', `sanityChecks: no row ${row}`)
+  if (!(Number.isInteger(row) && row >= 0 && row < x.n)) throw new MdmlError('value', `sanityChecks: no row ${row}`)
   const key = options.key ?? makeKey(0)
   const method = options.method ?? 'saliency'
   const image = fromStorage(Float64Array.from(x.data.subarray(row * x.d, (row + 1) * x.d)), [1, x.d], 'float64')

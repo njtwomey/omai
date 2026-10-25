@@ -29,8 +29,8 @@ import { positivePow } from './_ops.ts'
  * @concept tone-mapping
  * @example
  * ```ts
- * import { exposure } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { exposure } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(exposure(0.25, 2)) // => 1
  * ```
  */
@@ -49,8 +49,8 @@ export function exposure(x: TensorLike, ev: TensorLike): Value {
  * @concept tone-mapping
  * @example
  * ```ts
- * import { reinhard } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { reinhard } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(reinhard(1)) // => 0.5
  * item(reinhard(4, 4)) // => 1
  * ```
@@ -69,8 +69,8 @@ export function reinhard(x: TensorLike, white?: number): Value {
  * @concept tone-mapping
  * @example
  * ```ts
- * import { acesFilm } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { acesFilm } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(acesFilm(0)) // => 0
  * item(acesFilm(100)) // => 1
  * ```
@@ -91,8 +91,8 @@ export function acesFilm(x: TensorLike): Value {
  * @concept gamma-correction
  * @example
  * ```ts
- * import { gammaEncode } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { gammaEncode } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(gammaEncode(0.25, 2)) // => 0.5
  * ```
  */
@@ -109,8 +109,8 @@ export function gammaEncode(x: TensorLike, gamma = 2.2): Value {
  * @concept gamma-correction
  * @example
  * ```ts
- * import { gammaDecode } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { gammaDecode } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * item(gammaDecode(0.5, 2)) // => 0.25
  * ```
  */
@@ -127,8 +127,8 @@ export function gammaDecode(x: TensorLike, gamma = 2.2): Value {
  * @concept gamma-correction
  * @example
  * ```ts
- * import { linearToSrgb } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { linearToSrgb } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * Math.round(item(linearToSrgb(1)) * 1e12) / 1e12 // => 1
  * Math.round(item(linearToSrgb(0.214041140482232)) * 1e9) / 1e9 // => 0.5
  * ```
@@ -147,8 +147,8 @@ export function linearToSrgb(x: TensorLike): Value {
  * @concept gamma-correction
  * @example
  * ```ts
- * import { srgbToLinear } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { srgbToLinear } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * Math.round(item(srgbToLinear(0.5)) * 1e12) / 1e12 // => 0.214041140482
  * ```
  */
@@ -166,8 +166,8 @@ export function srgbToLinear(x: TensorLike): Value {
  * @concept tone-mapping
  * @example
  * ```ts
- * import { luminance } from 'whitebox-engine/graphics'
- * import { item } from 'whitebox-engine/tensor'
+ * import { luminance } from 'mdml-engine/graphics'
+ * import { item } from 'mdml-engine/tensor'
  * Math.round(item(luminance([1, 1, 1])) * 1e12) / 1e12 // => 1
  * ```
  */

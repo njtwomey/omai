@@ -5,7 +5,7 @@
  * SMO proceeds.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type Exposition, marginRecord } from '../../lib/exposition/index.ts'
@@ -254,7 +254,7 @@ export function svc(hyper: Partial<SvcHyper> = {}): ExplainedEstimator<SvcHyper,
       fit: (data: LearnData, h: SvcHyper, options: FitOptions) => {
         const m = matrixView(data.x, 'svc')
         const { classes, codes } = encodeLabels(data.y ?? [], 'svc', m.n)
-        if (classes.length < 2) throw new WhiteboxError('value', 'svc: needs at least two classes')
+        if (classes.length < 2) throw new MdmlError('value', 'svc: needs at least two classes')
         const w = sampleWeightsOf(data.weights, m.n, 'svc')
         const kp = resolveKernel(h, m.data, m.d)
         const rows = Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))

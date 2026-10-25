@@ -5,7 +5,7 @@
  * Each is an offline learner with a function that trains it on a dataset.
  */
 
-import { argmaxOf, type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../../../lib/base/index.ts'
 import { mse } from '../../../lib/losses/index.ts'
 import { incrementalUpdate, type Tree } from '../../../lib/optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../../../lib/random/index.ts'
@@ -103,8 +103,8 @@ export interface IqlState {
  * @concept offline-rl
  * @example
  * ```ts
- * import { expectileLoss } from 'whitebox-engine/methods/rl/agents'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { expectileLoss } from 'mdml-engine/methods/rl/agents'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(expectileLoss(tensor([2, -2]), 0.75)) // => 2
  * ```
  */
@@ -126,8 +126,8 @@ export function expectileLoss(u: Value, tau: number): Value {
  * @concept offline-rl
  * @example
  * ```ts
- * import { iqlLearner } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
+ * import { iqlLearner } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
  * iqlLearner(pendulum.create()).config['expectile'] // => 0.7
  * ```
  */
@@ -250,9 +250,9 @@ function clipBox(sp: OfflineSpaces, a: readonly number[]): number[] {
  * @concept offline-rl
  * @example
  * ```ts
- * import { iql } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { iql } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: true, truncated: false }
  * iql(cartPole.create(), [t], { hidden: [4], steps: 30, learningRate: 1e-2 }).policy([0, 0, 0, 0], key(0)) // => 1
  * ```
@@ -314,8 +314,8 @@ export interface Td3BcState {
  * @concept offline-rl
  * @example
  * ```ts
- * import { td3bcLearner } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
+ * import { td3bcLearner } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
  * td3bcLearner(pendulum.create()).config['alpha'] // => 2.5
  * ```
  */
@@ -324,7 +324,7 @@ export function td3bcLearner<O>(
   options: Td3BcOptions = {},
 ): OfflineLearner<Td3BcState, O, readonly number[]> {
   const sp = offlineSpaces(env)
-  if (sp.discrete) throw new WhiteboxError('value', 'td3bc: needs a box action space')
+  if (sp.discrete) throw new MdmlError('value', 'td3bc: needs a box action space')
   const hidden = options.hidden ?? [64, 64]
   const key = options.key ?? makeKey(0)
   const gamma = options.gamma ?? 0.99
@@ -465,8 +465,8 @@ export function td3bcLearner<O>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { td3bc } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
+ * import { td3bc } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
  * const t = { observation: [1, 0, 0], action: [0.5], reward: 0, nextObservation: [1, 0, 0], terminated: false, truncated: false }
  * td3bc(pendulum.create(), [t], { hidden: [4], steps: 4 }).agent.name // => 'td3bc'
  * ```

@@ -4,7 +4,7 @@
  * upper bound on what any mask-based separator can achieve.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { float, samples } from '../_shared.ts'
 import { librosaIstft, librosaStft } from './_stft.ts'
@@ -52,7 +52,7 @@ const power = (s: Spectrum, i: number): number => (s.re[i] ?? 0) ** 2 + (s.im[i]
  * @concept time-frequency-masking
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const s = Array.from({ length: 2048 }, (_, i) => Math.sin(i / 3))
  * const n = Array.from({ length: 2048 }, (_, i) => 0.1 * Math.sin(i * 2.5))
  * audio.idealBinaryMask(s, n).shape // => [257, 17]
@@ -65,7 +65,7 @@ export function idealBinaryMask(
 ): Tensor {
   const s = spectrumOf(target, options, 'idealBinaryMask')
   const n = spectrumOf(interference, options, 'idealBinaryMask')
-  if (s.frames !== n.frames) throw new WhiteboxError('shape', 'idealBinaryMask: signals differ in length')
+  if (s.frames !== n.frames) throw new MdmlError('shape', 'idealBinaryMask: signals differ in length')
   const thr = 10 ** ((options.thresholdDb ?? 0) / 10)
   const m = Float64Array.from({ length: s.bins * s.frames }, (_, i) => (power(s, i) > thr * power(n, i) ? 1 : 0))
   return fromStorage(m, [s.bins, s.frames], 'float64')
@@ -81,8 +81,8 @@ export function idealBinaryMask(
  * @concept time-frequency-masking
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const s = Array.from({ length: 1024 }, (_, i) => Math.sin(i / 3))
  * toFlat(audio.idealRatioMask(s, s)).every((v) => Math.abs(v - Math.SQRT1_2) < 1e-9 || v === 0) // => true
  * ```
@@ -113,7 +113,7 @@ export function idealRatioMask(
  * @concept time-frequency-masking
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const s = Array.from({ length: 1024 }, (_, i) => Math.sin(i / 3))
  * audio.phaseSensitiveMask(s, s).shape // => [257, 9]
  * ```
@@ -141,7 +141,7 @@ export function phaseSensitiveMask(target: TensorLike, mixture: TensorLike, opti
  * @concept time-frequency-masking
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const y = Array.from({ length: 1024 }, (_, i) => Math.sin(i / 3))
  * const r = audio.applyMask(y, audio.idealBinaryMask(y, new Array(1024).fill(0)))
  * Math.abs((r[500] ?? 0) - (y[500] ?? 0)) < 1e-9 // => true
@@ -154,7 +154,7 @@ export function applyMask(mixture: TensorLike, mask: TensorLike, options: MaskOp
   const y = spectrumOf(x, options, 'applyMask')
   const m = samplesMatrix(mask)
   if ((m.shape[0] ?? 0) !== y.bins || (m.shape[1] ?? 0) !== y.frames)
-    throw new WhiteboxError('shape', 'applyMask: the mask does not match the STFT')
+    throw new MdmlError('shape', 'applyMask: the mask does not match the STFT')
   const re = Float64Array.from(y.re, (v, i) => v * Number(m.data[i] ?? 0))
   const im = Float64Array.from(y.im, (v, i) => v * Number(m.data[i] ?? 0))
   return librosaIstft(
@@ -167,7 +167,7 @@ export function applyMask(mixture: TensorLike, mask: TensorLike, options: MaskOp
 
 function samplesMatrix(x: TensorLike): Tensor {
   const v = primalOf(float(x))
-  if (v.shape.length !== 2) throw new WhiteboxError('shape', 'applyMask: masks are [bins, frames]')
+  if (v.shape.length !== 2) throw new MdmlError('shape', 'applyMask: masks are [bins, frames]')
   return v
 }
 
@@ -181,7 +181,7 @@ function samplesMatrix(x: TensorLike): Tensor {
  * @concept time-frequency-masking
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const a = Array.from({ length: 2048 }, (_, i) => Math.sin(i / 3))
  * const b = Array.from({ length: 2048 }, (_, i) => 0.5 * Math.sin(i * 2.4))
  * audio.oracleSeparation([a, b]).length // => 2
@@ -191,10 +191,10 @@ export function oracleSeparation(
   sources: readonly TensorLike[],
   options: MaskOptions & { readonly beta?: number } = {},
 ): Float64Array[] {
-  if (sources.length < 2) throw new WhiteboxError('value', 'oracleSeparation: need at least two sources')
+  if (sources.length < 2) throw new MdmlError('value', 'oracleSeparation: need at least two sources')
   const xs = sources.map((s) => samples(s, 'oracleSeparation'))
   const n = xs[0]?.length ?? 0
-  if (xs.some((x) => x.length !== n)) throw new WhiteboxError('shape', 'oracleSeparation: sources differ in length')
+  if (xs.some((x) => x.length !== n)) throw new MdmlError('shape', 'oracleSeparation: sources differ in length')
   const mixture = Float64Array.from({ length: n }, (_, i) => xs.reduce((s, x) => s + (x[i] ?? 0), 0))
   return xs.map((x) => {
     const rest = Float64Array.from(mixture, (v, i) => v - (x[i] ?? 0))

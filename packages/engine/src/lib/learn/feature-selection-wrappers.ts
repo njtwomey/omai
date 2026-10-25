@@ -4,7 +4,7 @@
  * selection, and stability selection, which keeps the features chosen on most of many random half-samples.
  */
 
-import { type Json, meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { foldIn, subsample } from '../random/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
@@ -38,7 +38,7 @@ function columns(data: LearnData, support: readonly boolean[]): LearnData {
 
 function importancesOf(fitted: Fitted, who: string): readonly number[] {
   const imp = fitted.featureImportances
-  if (imp === undefined) throw new WhiteboxError('value', `${who}: ${fitted.estimator} reports no featureImportances`)
+  if (imp === undefined) throw new MdmlError('value', `${who}: ${fitted.estimator} reports no featureImportances`)
   return imp
 }
 
@@ -80,7 +80,7 @@ interface RfePath {
 function stepSize(step: number, d: number, who: string): number {
   if (step > 0 && step < 1) return Math.max(1, Math.floor(step * d))
   if (!(Number.isInteger(step) && step >= 1))
-    throw new WhiteboxError('value', `${who}: step must be an integer >= 1 or a fraction`)
+    throw new MdmlError('value', `${who}: step must be an integer >= 1 or a fraction`)
   return step
 }
 
@@ -138,8 +138,8 @@ function targetCount(n: number | undefined, d: number): number {
  * @returns The estimator.
  * @example
  * ```ts
- * import { defineEstimator, rfe } from 'whitebox-engine/learn'
- * import { sum, toFlat } from 'whitebox-engine/tensor'
+ * import { defineEstimator, rfe } from 'mdml-engine/learn'
+ * import { sum, toFlat } from 'mdml-engine/tensor'
  * const byColumnSum = defineEstimator(
  *   { name: 'sums', kind: 'regressor', fit: (d) => ({ imp: toFlat(sum(d.x, 0)) }), methods: (p) => ({ featureImportances: p.imp }) },
  *   {},
@@ -195,9 +195,9 @@ export type RfecvParams = RfeParams & {
  * @returns The estimator.
  * @example
  * ```ts
- * import { rfecv } from 'whitebox-engine/learn'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { rfecv } from 'mdml-engine/learn'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const constant = defineEstimator(
  *   { name: 'c', kind: 'regressor', fit: (d) => ({ d: d.x.shape[1] }), methods: (p) => ({ featureImportances: Array.from({ length: p.d }, (_, j) => j), predict: (x) => full([x.shape[0]], 0) }) },
  *   {},
@@ -214,7 +214,7 @@ export function rfecv(options: RfecvOptions): Estimator<RfecvOptions, Fitted<Rfe
         const d = matrixView(data.x, 'rfecv', { allowNaN: true }).d
         const minFeatures = Math.min(h.minFeaturesToSelect ?? 1, d)
         const scorer = Object.values(scorersOf(h.scoring))[0]
-        if (scorer === undefined) throw new WhiteboxError('value', 'rfecv: no scorer')
+        if (scorer === undefined) throw new MdmlError('value', 'rfecv: no scorer')
         const key = keyFor(fitOptions, 'rfecv')
         const folds = splitIndices(checkCv(h.cv, h.estimator), splitInputOf(data, h.groups), foldIn(key, 0))
         const perFold = folds.map((fold: Fold, f) => {
@@ -299,9 +299,9 @@ export type SequentialParams = { readonly support: boolean[]; readonly order: nu
  * @returns The estimator.
  * @example
  * ```ts
- * import { sequentialFeatureSelector } from 'whitebox-engine/learn'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { sequentialFeatureSelector } from 'mdml-engine/learn'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
  * const firstColumn = defineEstimator(
  *   { name: 'first', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i * x.shape[1]])) }) },
  *   {},
@@ -329,7 +329,7 @@ export function sequentialFeatureSelector(
             ? Math.floor((h.nFeaturesToSelect as number) * d)
             : (h.nFeaturesToSelect as number)
         if (!(Number.isInteger(wanted) && wanted >= 1 && wanted < d)) {
-          throw new WhiteboxError('value', `sequentialFeatureSelector: nFeaturesToSelect must be in [1, ${d - 1}]`)
+          throw new MdmlError('value', `sequentialFeatureSelector: nFeaturesToSelect must be in [1, ${d - 1}]`)
         }
         const iterations = auto || forward ? wanted : d - wanted
         const key = keyFor(fitOptions, 'sequentialFeatureSelector')
@@ -410,7 +410,7 @@ export type StabilityParams = { readonly support: boolean[]; readonly frequencie
  * @returns The estimator.
  * @example
  * ```ts
- * import { selectKBest, fRegression, stabilitySelection } from 'whitebox-engine/learn'
+ * import { selectKBest, fRegression, stabilitySelection } from 'mdml-engine/learn'
  * const x = Array.from({ length: 40 }, (_, i) => [i, Math.sin(7 * i), (i * 13) % 7])
  * const y = x.map(([a]) => a)
  * stabilitySelection({ selector: selectKBest({ scoreFunc: fRegression, k: 1 }), nSubsamples: 20 }).fit({ x, y }).support // => [true, false, false]
@@ -427,9 +427,9 @@ export function stabilitySelection(
         const m = matrixView(data.x, 'stabilitySelection', { allowNaN: true })
         const b = h.nSubsamples ?? 100
         if (!(Number.isInteger(b) && b >= 1))
-          throw new WhiteboxError('value', 'stabilitySelection: nSubsamples must be >= 1')
+          throw new MdmlError('value', 'stabilitySelection: nSubsamples must be >= 1')
         const half = Math.floor(m.n / 2)
-        if (half < 2) throw new WhiteboxError('value', 'stabilitySelection: needs at least 4 samples')
+        if (half < 2) throw new MdmlError('value', 'stabilitySelection: needs at least 4 samples')
         const key = keyFor(fitOptions, 'stabilitySelection')
         const counts = new Float64Array(m.d)
         const algorithm: Algorithm<number> = {

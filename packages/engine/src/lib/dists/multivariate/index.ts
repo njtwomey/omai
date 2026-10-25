@@ -1,5 +1,5 @@
 /**
- * Multivariate distributions, part of `whitebox-engine/dists`: the multivariate, low-rank and matrix normals,
+ * Multivariate distributions, part of `mdml-engine/dists`: the multivariate, low-rank and matrix normals,
  * distributions on the simplex and over counts, Wishart and LKJ distributions over matrices, directional distributions
  * on circles and spheres, and copulas with their fitting.
  *

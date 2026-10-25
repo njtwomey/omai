@@ -4,8 +4,8 @@ list."""
 
 from importlib.metadata import version
 
+from mdml_oracle.fixture import Case, case
 from nltk.tokenize.punkt import PunktParameters, PunktSentenceTokenizer, PunktTrainer
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"nltk": version("nltk")}
 

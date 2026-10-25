@@ -5,7 +5,7 @@
  */
 
 import { valueAndGrad } from '../../autodiff/index.ts'
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { bijectors, type Support } from '../../dists/index.ts'
 import { adam, applyUpdates, type GradientTransformation } from '../../optim/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
@@ -63,9 +63,9 @@ export interface SviOptions<D> {
  * @concept variational-inference
  * @example
  * ```ts
- * import { autoNormal, initialParams, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { autoNormal, initialParams, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const model = () => { sample('x', normal(0, 1)) }
  * Object.keys(initialParams(key(0), model, autoNormal(model), undefined).values) // => ['x_auto_loc', 'x_auto_scale']
  * ```
@@ -102,9 +102,9 @@ export function initialParams<D = void>(
  * @concept variational-inference
  * @example
  * ```ts
- * import { observe, sample, sviAlgorithm } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { observe, sample, sviAlgorithm } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }
  * runAlgorithm(sviAlgorithm(model, undefined), { seed: 0, maxSteps: 5 }).steps // => 5
  * ```
@@ -208,10 +208,10 @@ export interface SviResult {
  * @concept variational-inference
  * @example
  * ```ts
- * import { observe, sample, svi } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { item } from 'whitebox-engine/tensor'
+ * import { observe, sample, svi } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 2) }
  * const r = svi(model, undefined, { key: key(0), numSteps: 1500 })
  * Math.abs(item(r.params['m_auto_loc'] ?? 0) - 1) < 0.2 // => true
@@ -321,7 +321,7 @@ export type SviEngineOptions = Omit<SviOptions<unknown>, 'guide'> & {
  * @concept inference-engines
  * @example
  * ```ts
- * import { sviEngine } from 'whitebox-engine/probprog'
+ * import { sviEngine } from 'mdml-engine/probprog'
  * sviEngine({ numSteps: 500 }).form // => 'variational'
  * ```
  */
@@ -362,16 +362,16 @@ export function sviEngine(options: SviEngineOptions = {}): InferenceEngine {
  *
  * @param result - The run.
  * @returns The averaged ELBO.
- * @throws WhiteboxError with code `value` for a run without steps.
+ * @throws MdmlError with code `value` for a run without steps.
  * @example
  * ```ts
- * import { finalElbo } from 'whitebox-engine/probprog'
+ * import { finalElbo } from 'mdml-engine/probprog'
  * finalElbo({ elbos: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }) // => 10
  * ```
  */
 export function finalElbo(result: Pick<SviResult, 'elbos'>): number {
   const n = result.elbos.length
-  if (n === 0) throw new WhiteboxError('value', 'finalElbo: no steps')
+  if (n === 0) throw new MdmlError('value', 'finalElbo: no steps')
   const tail = result.elbos.slice(Math.floor(n * 0.9))
   return tail.reduce((a, b) => a + b, 0) / tail.length
 }

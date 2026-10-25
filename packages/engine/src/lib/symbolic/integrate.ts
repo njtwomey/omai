@@ -6,7 +6,7 @@
  * limits for infinite bounds and a numeric quadrature check, and `Steps` variants that record the rules applied.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { withBudget, attempt as within } from './_budget.ts'
 import { isInfinite, MINUS_ONE, makeAdd, makeIntegral, makeMul, makePow, NAN, numFromFloat, ZERO } from './_canon.ts'
 import { expandExpr } from './_expand.ts'
@@ -198,7 +198,7 @@ function attempt(e: Expr, x: ExprSym, ctx: Ctx): Expr | undefined {
     try {
       F = within(SHARE, m)
     } catch (err) {
-      if (!(err instanceof WhiteboxError)) throw err
+      if (!(err instanceof MdmlError)) throw err
       F = undefined
     }
     if (verified(F, e, x) !== undefined) return record(ctx, rule, e, x, F as Expr)
@@ -280,7 +280,7 @@ function run(e: Expr, x: ExprSym, steps: Step[] | undefined, budget: WorkBudget 
  * @returns The antiderivative, possibly containing an unevaluated integral.
  * @example
  * ```ts
- * import { integrate, parse, sym, toText } from 'whitebox-engine/symbolic'
+ * import { integrate, parse, sym, toText } from 'mdml-engine/symbolic'
  * const x = sym('x')
  * toText(integrate(parse('x*exp(x)'), x)) // => 'x*exp(x) - exp(x)'
  * toText(integrate(parse('1/(x^2 + 1)'), x)) // => 'atan(x)'
@@ -301,7 +301,7 @@ export function integrate(e: Expr, x: ExprSym, budget?: WorkBudget): Expr {
  * @returns The antiderivative and its steps.
  * @example
  * ```ts
- * import { integrateSteps, parse, sym } from 'whitebox-engine/symbolic'
+ * import { integrateSteps, parse, sym } from 'mdml-engine/symbolic'
  * integrateSteps(parse('x*cos(x)'), sym('x')).steps.some((s) => s.rule.includes('by parts')) // => true
  * ```
  */
@@ -399,7 +399,7 @@ function definiteBody(
         Number.isFinite(lo) ? lo : Number.NEGATIVE_INFINITY,
         Number.isFinite(hi) ? hi : Number.POSITIVE_INFINITY,
       )
-      if (k > 0) throw new WhiteboxError('domain', 'definiteIntegral: the integrand has a pole in the interval')
+      if (k > 0) throw new MdmlError('domain', 'definiteIntegral: the integrand has a pole in the interval')
     }
   }
   const F = run(e, x, steps, undefined)
@@ -418,7 +418,7 @@ function definiteBody(
         })
       }
     } catch (err) {
-      if (!(err instanceof WhiteboxError)) throw err
+      if (!(err instanceof MdmlError)) throw err
       value = undefined
     }
   }
@@ -461,10 +461,10 @@ function definiteBody(
  * @param options - Numeric implementations for the check and the fallback, its tolerance, and the work budget.
  * @returns The value: exact when possible, a float from quadrature otherwise (also when the work budget runs out),
  *   or an unevaluated integral.
- * @throws WhiteboxError with code `domain` when a rational integrand has a pole in the interval.
+ * @throws MdmlError with code `domain` when a rational integrand has a pole in the interval.
  * @example
  * ```ts
- * import { definiteIntegral, oo, parse, sym, toText } from 'whitebox-engine/symbolic'
+ * import { definiteIntegral, oo, parse, sym, toText } from 'mdml-engine/symbolic'
  * const x = sym('x')
  * toText(definiteIntegral(parse('x^2'), x, 0, 3)) // => '9'
  * toText(definiteIntegral(parse('exp(-x)'), x, 0, oo)) // => '1'
@@ -485,7 +485,7 @@ export function definiteIntegral(e: Expr, x: ExprSym, a: ExprLike, b: ExprLike, 
  * @returns The value and its steps.
  * @example
  * ```ts
- * import { definiteIntegralSteps, parse, sym } from 'whitebox-engine/symbolic'
+ * import { definiteIntegralSteps, parse, sym } from 'mdml-engine/symbolic'
  * definiteIntegralSteps(parse('exp(x^2)'), sym('x'), 0, 1).steps.at(-1)?.rule // => 'numeric fallback (adaptive Gauss-Kronrod)'
  * ```
  */

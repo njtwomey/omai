@@ -8,9 +8,9 @@ import numpy as np
 import pingouin as pg
 import sklearn
 from causallearn.utils.cit import CIT
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from sklearn.metrics import mutual_info_score
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {
     "pingouin": pg.__version__,

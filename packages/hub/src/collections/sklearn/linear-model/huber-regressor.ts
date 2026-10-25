@@ -3,7 +3,7 @@
  * line with outliers and tabular regression data.
  */
 
-import { huberRegressor as huberRegressorMethod } from 'whitebox-engine/methods/linear'
+import { huberRegressor as huberRegressorMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

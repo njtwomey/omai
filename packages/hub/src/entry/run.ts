@@ -5,20 +5,20 @@
  * scikit-learn-style estimator and its hyperparameter space.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import { type Dataset, type Knobs, shuffleRows, take } from 'whitebox-engine/data'
-import { datasetCollections, datasetGenerators, loadEntry } from 'whitebox-engine/datasets'
-import type { Exposition } from 'whitebox-engine/exposition'
-import { decisionSurfaceOf, type Estimator, type LearnData } from 'whitebox-engine/learn'
-import { key } from 'whitebox-engine/random'
-import { contains, type DictSpace, defaults, dict, type Space, type SpaceValue } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import { type Dataset, type Knobs, shuffleRows, take } from 'mdml-engine/data'
+import { datasetCollections, datasetGenerators, loadEntry } from 'mdml-engine/datasets'
+import type { Exposition } from 'mdml-engine/exposition'
+import { decisionSurfaceOf, type Estimator, type LearnData } from 'mdml-engine/learn'
+import { key } from 'mdml-engine/random'
+import { contains, type DictSpace, defaults, dict, type Space, type SpaceValue } from 'mdml-engine/space'
 import type { HubEntry, HubProgress, HubRunInput } from './entry.ts'
 
 /** The data of a dataset that learners take: its features and, when it has them, its targets. */
 export function learnDataOf(data: Dataset | undefined): LearnData {
-  if (data === undefined) throw new WhiteboxError('value', 'learnDataOf: the entry runs without a dataset')
+  if (data === undefined) throw new MdmlError('value', 'learnDataOf: the entry runs without a dataset')
   const d = data as { readonly x?: LearnData['x']; readonly y?: LearnData['y'] }
-  if (d.x === undefined) throw new WhiteboxError('value', `learnDataOf: a ${data.kind} dataset has no features`)
+  if (d.x === undefined) throw new MdmlError('value', `learnDataOf: a ${data.kind} dataset has no features`)
   return data as unknown as LearnData
 }
 
@@ -43,8 +43,8 @@ export interface FitEstimatorOptions {
  * @returns The `params` and `run` of a {@link HubEntry}.
  * @example
  * ```ts
- * import { fitEstimator } from 'whitebox-hub'
- * import { lasso } from 'whitebox-engine/methods/linear'
+ * import { fitEstimator } from 'mdml-hub'
+ * import { lasso } from 'mdml-engine/methods/linear'
  * Object.keys(fitEstimator(lasso({ alpha: 0.1 })).params.spaces).includes('alpha') // => true
  * ```
  */
@@ -95,8 +95,8 @@ export function fitEstimator(
  * @returns The `params` and `run` of a {@link HubEntry}.
  * @example
  * ```ts
- * import { fitEither } from 'whitebox-hub'
- * import { decisionTreeClassifier, decisionTreeRegressor } from 'whitebox-engine/methods/trees'
+ * import { fitEither } from 'mdml-hub'
+ * import { decisionTreeClassifier, decisionTreeRegressor } from 'mdml-engine/methods/trees'
  * 'maxDepth' in fitEither(decisionTreeClassifier(), decisionTreeRegressor()).params.spaces // => true
  * ```
  */
@@ -153,7 +153,7 @@ const NO_DATA: Pick<HubState, 'collection' | 'dataset' | 'seed' | 'knobs'> = {
  * @returns The state.
  * @example
  * ```ts
- * import { catalogue, demoState } from 'whitebox-hub'
+ * import { catalogue, demoState } from 'mdml-hub'
  * const first = catalogue.entries[0]
  * first === undefined ? 0 : demoState(first).seed // => 0
  * ```
@@ -176,7 +176,7 @@ export function demoState(entry: HubEntry): HubState {
  * @param name - An entry name (default the first entry).
  * @param seed - The seed (default 0).
  * @returns The collection, the dataset name, the seed and the knobs.
- * @throws WhiteboxError `value` when the collection or the entry is unknown.
+ * @throws MdmlError `value` when the collection or the entry is unknown.
  */
 export function datasetState(
   collection: string,
@@ -184,9 +184,9 @@ export function datasetState(
   seed = 0,
 ): Pick<HubState, 'collection' | 'dataset' | 'seed' | 'knobs'> {
   const c = datasetCollections[collection]
-  if (c === undefined) throw new WhiteboxError('value', `datasetState: unknown dataset collection '${collection}'`)
+  if (c === undefined) throw new MdmlError('value', `datasetState: unknown dataset collection '${collection}'`)
   const e = name === undefined ? c.entries[0] : c.entries.find((x) => x.name === name)
-  if (e === undefined) throw new WhiteboxError('value', `datasetState: '${collection}' has no dataset '${name ?? ''}'`)
+  if (e === undefined) throw new MdmlError('value', `datasetState: '${collection}' has no dataset '${name ?? ''}'`)
   const space = 'generator' in e ? datasetGenerators[e.generator]?.knobs : undefined
   const knobs: Knobs =
     space === undefined ? {} : { ...(defaults(space) as Knobs), ...('knobs' in e ? (e.knobs ?? {}) : {}) }
@@ -198,13 +198,12 @@ export function datasetState(
  *
  * @param state - The state.
  * @returns The dataset.
- * @throws WhiteboxError `value` when the collection or the entry is unknown.
+ * @throws MdmlError `value` when the collection or the entry is unknown.
  */
 export function loadState(state: Pick<HubState, 'collection' | 'dataset' | 'seed' | 'knobs'>): Dataset {
   const c = datasetCollections[state.collection]
   const e = c?.entries.find((x) => x.name === state.dataset)
-  if (e === undefined)
-    throw new WhiteboxError('value', `loadState: no dataset '${state.dataset}' in '${state.collection}'`)
+  if (e === undefined) throw new MdmlError('value', `loadState: no dataset '${state.dataset}' in '${state.collection}'`)
   return loadEntry(e, key(state.seed), state.knobs).data
 }
 

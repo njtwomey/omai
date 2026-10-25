@@ -27,7 +27,7 @@ export interface ContextOptions {
  * @concept context
  * @example
  * ```ts
- * import { resolveKey, createContext } from 'whitebox-engine/context'
+ * import { resolveKey, createContext } from 'mdml-engine/context'
  * const ctx = createContext({ seed: 3 })
  * resolveKey({ ctx }, 'kmeans').words[0] === ctx.key('kmeans').words[0] // => true
  * ```
@@ -43,7 +43,7 @@ export function resolveKey(options: ContextOptions, name: string): Key {
  * @returns The tracer.
  * @example
  * ```ts
- * import { resolveTracer } from 'whitebox-engine/context'
+ * import { resolveTracer } from 'mdml-engine/context'
  * resolveTracer({}).enabled // => false
  * ```
  */
@@ -58,7 +58,7 @@ export function resolveTracer(options: ContextOptions): Tracer {
  * @returns The policy.
  * @example
  * ```ts
- * import { resolvePolicy } from 'whitebox-engine/context'
+ * import { resolvePolicy } from 'mdml-engine/context'
  * resolvePolicy({}).detail // => 'summary'
  * ```
  */

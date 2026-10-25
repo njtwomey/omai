@@ -5,7 +5,7 @@
  * one stage per step.
  */
 
-import { quantileOf, WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError, quantileOf } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type EnsembleStages, type Exposition, ensembleStages, treeRecord } from '../../lib/exposition/index.ts'
@@ -421,7 +421,7 @@ function boostingEstimator(
         }),
       fit: (data: LearnData, h: GradientBoostingHyper, options: FitOptions) => {
         const prepared = treeData(data, classifier, name)
-        if (classifier && prepared.classes.length < 2) throw new WhiteboxError('value', `${name}: needs two classes`)
+        if (classifier && prepared.classes.length < 2) throw new MdmlError('value', `${name}: needs two classes`)
         const loss = classifier ? logLoss(prepared.classes.length) : regressionLoss(h.loss, h.alpha)
         const r = runAlgorithm(boostingAlgorithm(prepared, loss, h), {
           maxSteps: h.nEstimators,

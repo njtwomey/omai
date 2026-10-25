@@ -3,7 +3,7 @@
  * two-dimensional data with outliers.
  */
 
-import { minCovDet as minCovDetMethod } from 'whitebox-engine/methods/covariance'
+import { minCovDet as minCovDetMethod } from 'mdml-engine/methods/covariance'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

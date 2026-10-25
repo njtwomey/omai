@@ -1,5 +1,5 @@
 /**
- * Training loops for modules, part of `whitebox-engine/nn`: the functional train step and its state, the traced `fit`
+ * Training loops for modules, part of `mdml-engine/nn`: the functional train step and its state, the traced `fit`
  * loop over a dataset, Lightning-style callbacks for logging, early stopping and checkpoints, and saving and loading
  * module state (including PyTorch state dicts).
  *

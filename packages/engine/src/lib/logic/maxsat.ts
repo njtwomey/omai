@@ -4,7 +4,7 @@
  * solved exactly by branch and bound as a traced algorithm.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { CdclCore, code } from './_cdcl.ts'
 import { type Cnf, cdcl, type Model, type SatRunOptions } from './sat.ts'
@@ -20,7 +20,7 @@ import { type Cnf, cdcl, type Model, type SatRunOptions } from './sat.ts'
  * @concept satisfiability
  * @example
  * ```ts
- * import { allModels, cnf } from 'whitebox-engine/logic'
+ * import { allModels, cnf } from 'mdml-engine/logic'
  * allModels(cnf([[1, 2]])).length // => 3
  * ```
  */
@@ -81,7 +81,7 @@ function solveCore(core: CdclCore, assumptions: readonly number[]): Model | null
  * @concept satisfiability
  * @example
  * ```ts
- * import { cnf, countModels } from 'whitebox-engine/logic'
+ * import { cnf, countModels } from 'mdml-engine/logic'
  * [countModels(cnf([[1, 2]])), countModels(cnf([[1], [-1]])), countModels(cnf([], 3))] // => [3, 0, 8]
  * ```
  */
@@ -165,7 +165,7 @@ export function countModels(f: Cnf): number {
  * @concept satisfiability
  * @example
  * ```ts
- * import { cnf, unsatCore } from 'whitebox-engine/logic'
+ * import { cnf, unsatCore } from 'mdml-engine/logic'
  * unsatCore(cnf([[1, 2], [-1], [3], [-2], [-3, 1]])) // => [0, 1, 3]
  * unsatCore(cnf([[1, 2]])) // => null
  * ```
@@ -383,13 +383,12 @@ function checkMaxSat(p: MaxSatProblem): void {
   for (const c of [...p.hard, ...p.soft.map((s) => s.clause)]) {
     for (const l of c) {
       if (!Number.isInteger(l) || l === 0 || Math.abs(l) > p.numVars) {
-        throw new WhiteboxError('value', `maxsat: invalid literal ${l}`)
+        throw new MdmlError('value', `maxsat: invalid literal ${l}`)
       }
     }
   }
   for (const s of p.soft) {
-    if (!(s.weight > 0) || !Number.isFinite(s.weight))
-      throw new WhiteboxError('value', 'maxsat: weights must be positive')
+    if (!(s.weight > 0) || !Number.isFinite(s.weight)) throw new MdmlError('value', 'maxsat: weights must be positive')
   }
 }
 
@@ -400,11 +399,11 @@ function checkMaxSat(p: MaxSatProblem): void {
  *
  * @param p - The problem.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for an invalid literal or a non-positive weight.
+ * @throws MdmlError with code `value` for an invalid literal or a non-positive weight.
  * @concept satisfiability
  * @example
  * ```ts
- * import { maxsatAlgorithm } from 'whitebox-engine/logic'
+ * import { maxsatAlgorithm } from 'mdml-engine/logic'
  * maxsatAlgorithm({ numVars: 1, hard: [], soft: [{ clause: [1], weight: 1 }] }).name // => 'maxsat-branch-and-bound'
  * ```
  */
@@ -420,11 +419,11 @@ export function maxsatAlgorithm(p: MaxSatProblem): Algorithm<MaxSatState> {
  * @param p - The problem.
  * @param options - A node budget (default 10000000) and tracing.
  * @returns The status, an optimal model and its cost, and the nodes explored.
- * @throws WhiteboxError with code `value` for an invalid literal or a non-positive weight.
+ * @throws MdmlError with code `value` for an invalid literal or a non-positive weight.
  * @concept satisfiability
  * @example
  * ```ts
- * import { maxsat } from 'whitebox-engine/logic'
+ * import { maxsat } from 'mdml-engine/logic'
  * // Choose at most one of x1, x2 (hard), preferring x1 (weight 3) over x2 (weight 2), and x3 unless x1 (weight 1).
  * const r = maxsat({ numVars: 3, hard: [[-1, -2]], soft: [{ clause: [1], weight: 3 }, { clause: [2], weight: 2 }, { clause: [3], weight: 1 }, { clause: [-1, -3], weight: 1 }] })
  * [r.status, r.cost] // => ['optimal', 3]

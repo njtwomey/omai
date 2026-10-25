@@ -1,5 +1,5 @@
+import { imageSteps } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { imageSteps } from 'whitebox-engine/exposition'
 import { imageFrames } from './images.ts'
 import { stillOf, viewFor } from './registry.ts'
 

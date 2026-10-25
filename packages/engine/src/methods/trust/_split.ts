@@ -1,5 +1,5 @@
 // Keyed splits of learn data into parts (train, calibration, test), shared by the trust methods.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type LearnData, matrixView, takeData } from '../../lib/learn/index.ts'
 import { type Key, permutation } from '../../lib/random/index.ts'
 import { toFlat } from '../../lib/tensor/index.ts'
@@ -14,7 +14,7 @@ export function splitRows(n: number, fractions: readonly number[], key: Key): nu
     out.push(order.slice(start, end).sort((a, b) => a - b))
     start = end
   }
-  if (out.some((p) => p.length === 0)) throw new WhiteboxError('value', `trust: ${n} rows are too few to split`)
+  if (out.some((p) => p.length === 0)) throw new MdmlError('value', `trust: ${n} rows are too few to split`)
   return out
 }
 

@@ -3,9 +3,9 @@
 
 import numpy as np
 import scipy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng, spd
 from scipy.stats import multivariate_normal
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng, spd
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

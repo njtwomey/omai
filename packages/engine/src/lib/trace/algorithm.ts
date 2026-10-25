@@ -5,7 +5,7 @@
  * slices for interactive pages.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Value } from '../tensor/index.ts'
 import type { RunStatus, TensorRole } from './events.ts'
@@ -123,7 +123,7 @@ function checkpoint<S>(algorithm: Algorithm<S>, run: RunHandle, state: S, t: num
  * @concept algorithm-protocol
  * @example
  * ```ts
- * import { runAlgorithm, recorder } from 'whitebox-engine/trace'
+ * import { runAlgorithm, recorder } from 'mdml-engine/trace'
  * const halve = {
  *   name: 'halve',
  *   config: {},
@@ -199,7 +199,7 @@ export function runAlgorithm<S>(algorithm: Algorithm<S>, options: RunOptions): R
  * @returns A generator of `{ t, state, status }`; `status` is set on the last item.
  * @example
  * ```ts
- * import { iterate } from 'whitebox-engine/trace'
+ * import { iterate } from 'mdml-engine/trace'
  * const count = { name: 'count', config: {}, init: () => 0, step: (s: number) => s + 1 }
  * Array.from(iterate(count, { maxSteps: 3 }), (x) => x.state) // => [0, 1, 2, 3]
  * ```
@@ -257,11 +257,11 @@ export interface SliceBudget {
  * @param options - Seed or key and the total step budget as for `runAlgorithm`, the slice to continue from, and a run
  * handle to record into.
  * @returns The slice reached; `status` is set once the algorithm is done or the total budget is used up.
- * @throws WhiteboxError with code `value` when the budget is not positive.
+ * @throws MdmlError with code `value` when the budget is not positive.
  * @concept algorithm-protocol
  * @example
  * ```ts
- * import { runFor, type Algorithm } from 'whitebox-engine/trace'
+ * import { runFor, type Algorithm } from 'mdml-engine/trace'
  * const count: Algorithm<number> = { name: 'count', config: {}, init: () => 0, step: (s) => s + 1 }
  * const first = runFor(count, { steps: 4 }, { maxSteps: 10 })
  * first.state // => 4
@@ -276,7 +276,7 @@ export function runFor<S>(
 ): Slice<S> {
   const steps = budget.steps ?? Number.POSITIVE_INFINITY
   if (!(steps > 0) || (budget.ms !== undefined && !(budget.ms > 0))) {
-    throw new WhiteboxError('value', 'runFor: the step and time budgets must be positive')
+    throw new MdmlError('value', 'runFor: the step and time budgets must be positive')
   }
   const root = rootKey(options)
   const stepsKey = foldIn(root, 1)

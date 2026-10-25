@@ -1,5 +1,5 @@
 /**
- * Hamiltonian Monte Carlo, BlackJAX and Stan style, part of `whitebox-engine/sampling`: symplectic integrators and
+ * Hamiltonian Monte Carlo, BlackJAX and Stan style, part of `mdml-engine/sampling`: symplectic integrators and
  * Euclidean metrics, the HMC, NUTS and Riemannian HMC kernels, and Stan's windowed adaptation of step size and mass
  * matrix, with ready-made multi-chain runners.
  *

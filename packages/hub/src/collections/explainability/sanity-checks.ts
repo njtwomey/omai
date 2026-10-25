@@ -3,11 +3,11 @@
  * on shuffled labels.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import { matrixView } from 'whitebox-engine/learn'
-import { sanityChecks as check, type SanityMethod } from 'whitebox-engine/methods/explain'
-import { lenet } from 'whitebox-engine/methods/neural/vision'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import { matrixView } from 'mdml-engine/learn'
+import { sanityChecks as check, type SanityMethod } from 'mdml-engine/methods/explain'
+import { lenet } from 'mdml-engine/methods/neural/vision'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 
@@ -39,7 +39,7 @@ export const sanityChecks: HubEntry = defineEntry({
   run: ({ data, params, key }) => {
     const learn = learnDataOf(data)
     const n = matrixView(learn.x, 'sanity-checks').n
-    if (n === 0) throw new WhiteboxError('value', 'sanity-checks: no images')
+    if (n === 0) throw new MdmlError('value', 'sanity-checks: no images')
     const epochs = Number(params['epochs'])
     const fitted = lenet({ epochs, snapshots: 2 }).fit(learn, { key, explain: false })
     return check(fitted, learn, Math.min(Number(params['row']), n - 1), {

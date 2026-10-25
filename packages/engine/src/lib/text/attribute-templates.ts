@@ -4,7 +4,7 @@
  * expansion over a token sequence, and MALLET's offset conjunctions.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** One token of a sequence as named columns (word, part of speech, ...), the input of attribute templates. */
 export type Token = Readonly<Record<string, string>>
@@ -37,7 +37,7 @@ export interface AttributeTemplateOptions {
  * @concept crf-features
  * @example
  * ```ts
- * import { expandAttributeTemplates } from 'whitebox-engine/text'
+ * import { expandAttributeTemplates } from 'mdml-engine/text'
  * const tokens = [{ w: 'the' }, { w: 'cat' }]
  * expandAttributeTemplates(tokens, [[['w', 0]], [['w', -1], ['w', 0]]]) // => [{ 'w[0]=the': 1 }, { 'w[0]=cat': 1, 'w[-1]|w[0]=the|cat': 1 }]
  * ```
@@ -89,11 +89,11 @@ export function expandAttributeTemplates(
  *
  * @param source - The templates.
  * @returns The templates.
- * @throws WhiteboxError with code `value` and the line number for a malformed cell.
+ * @throws MdmlError with code `value` and the line number for a malformed cell.
  * @concept crf-features
  * @example
  * ```ts
- * import { parseAttributeTemplates } from 'whitebox-engine/text'
+ * import { parseAttributeTemplates } from 'mdml-engine/text'
  * parseAttributeTemplates('w[0]\nw[-1]|pos[0]') // => [[['w', 0]], [['w', -1], ['pos', 0]]]
  * ```
  */
@@ -106,7 +106,7 @@ export function parseAttributeTemplates(source: string): AttributeTemplate[] {
       text.split('|').map((cell): readonly [string, number] => {
         const m = /^([^[\]|]+)\[(-?\d+)\]$/.exec(cell.trim())
         if (m === null)
-          throw new WhiteboxError('value', `attribute template ${k + 1}: malformed cell ${cell}`, { line: k + 1 })
+          throw new MdmlError('value', `attribute template ${k + 1}: malformed cell ${cell}`, { line: k + 1 })
         const offset = Number(m[2])
         return [m[1] ?? '', offset === 0 ? 0 : offset]
       }),
@@ -125,11 +125,11 @@ export function parseAttributeTemplates(source: string): AttributeTemplate[] {
  * @param conjunctions - The offset lists (for example `[[-1], [1], [-1, 0]]`).
  * @param options - Whether to keep the original features (default true).
  * @returns The conjoined features of each position.
- * @throws WhiteboxError with code `value` for a single offset 0 while original features are kept.
+ * @throws MdmlError with code `value` for a single offset 0 while original features are kept.
  * @concept crf-features
  * @example
  * ```ts
- * import { offsetConjunctions } from 'whitebox-engine/text'
+ * import { offsetConjunctions } from 'mdml-engine/text'
  * offsetConjunctions([{ 'W=a': 1 }, { 'W=b': 1 }], [[-1], [-1, 0]]) // => [{ 'W=a': 1 }, { 'W=b': 1, 'W=a@-1': 1, 'W=a@-1&W=b': 1 }]
  * ```
  */
@@ -141,7 +141,7 @@ export function offsetConjunctions(
   const keep = options.includeOriginalSingletons !== false
   for (const c of conjunctions)
     if (c.length === 1 && c[0] === 0 && keep)
-      throw new WhiteboxError('value', 'offsetConjunctions: original singletons are already included')
+      throw new MdmlError('value', 'offsetConjunctions: original singletons are already included')
   const lists = items.map((f) => Object.entries(f))
   return items.map((f, i) => {
     const out: Record<string, number> = keep ? { ...f } : {}

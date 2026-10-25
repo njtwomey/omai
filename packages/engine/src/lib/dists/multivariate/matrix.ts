@@ -4,7 +4,7 @@
  * matrices and their Cholesky factors, with the log multivariate gamma function that normalises them.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { cholesky, inv, solveTriangular } from '../../numerics/linalg/index.ts'
 import { digamma, lgamma } from '../../numerics/special/index.ts'
 import { foldIn, normal as normalNoise } from '../../random/index.ts'
@@ -59,8 +59,8 @@ const logDetFromTril = (l: Value): Value => mul(sum(log(diagonal(l, 0, -2, -1)),
  * @returns log Gamma_p(a), differentiable in a.
  * @example
  * ```ts
- * import { multigammaln } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { multigammaln } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(multigammaln(3, 1)) - Math.log(2)) < 1e-15 // => true
  * ```
  */
@@ -107,8 +107,8 @@ function bartlett(
  *   chi-square diagonals by implicit reparameterisation, so draws differentiate in df and the scale.
  * @example
  * ```ts
- * import { wishart } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { wishart } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(wishart(5, { covariance: [[1, 0], [0, 4]] }).mean()) // => [[5, 0], [0, 20]]
  * ```
  */
@@ -175,8 +175,8 @@ export function wishart(df: TensorLike, params: CovarianceParams): Distribution 
  *   is the Wishart's minus (p + 1) E[log |W|].
  * @example
  * ```ts
- * import { inverseWishart } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { inverseWishart } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(inverseWishart(5, [[2, 0], [0, 4]]).mean()) // => [[1, 0], [0, 2]]
  * ```
  */
@@ -271,14 +271,14 @@ function onion(
  *   draws, so samples differentiate in eta. Its mode is the identity (eta >= 1); other moments throw.
  * @example
  * ```ts
- * import { lkjCholesky } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { lkjCholesky } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * // Uniform over 2 x 2 correlations: the correlation r is uniform on (-1, 1), so p(L) = 1 / 2 at L_11 = 1.
  * Math.abs(item(lkjCholesky(2, 1).logProb([[1, 0], [0, 1]])) - Math.log(0.5)) < 1e-14 // => true
  * ```
  */
 export function lkjCholesky(dim: number, concentration: TensorLike = 1): Distribution {
-  if (!(Number.isInteger(dim) && dim >= 2)) throw new WhiteboxError('value', 'lkjCholesky: dim must be at least 2')
+  if (!(Number.isInteger(dim) && dim >= 2)) throw new MdmlError('value', 'lkjCholesky: dim must be at least 2')
   const [eta] = promoteFloat(concentration) as [Value]
   validateParams('lkjCholesky', { concentration: [eta, 'positive'] })
   const batchShape = [...eta.shape]
@@ -311,8 +311,8 @@ export function lkjCholesky(dim: number, concentration: TensorLike = 1): Distrib
  *   1 / (2 eta + d - 1); `rsample` is L L^T for an onion-method Cholesky draw.
  * @example
  * ```ts
- * import { lkj } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lkj } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lkj(2, 1).variance()) // => [[0, 0.3333333333333333], [0.3333333333333333, 0]]
  * ```
  */

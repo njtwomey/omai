@@ -5,7 +5,7 @@
  * correlated), Owen values and partition SHAP over feature hierarchies, and SAGE's global importance.
  */
 
-import { popcount, WhiteboxError } from '../base/index.ts'
+import { MdmlError, popcount } from '../base/index.ts'
 import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../games/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import { type FitOptions, type LearnData, requireTargets } from '../learn/estimator.ts'
@@ -31,7 +31,7 @@ function maskOf(bits: number, n: number): boolean[] {
  */
 function gameOf(value: CoalitionValue, n: number, who: string): CoalitionalGame {
   if (!(Number.isInteger(n) && n >= 1 && n <= MAX_EXACT_PLAYERS)) {
-    throw new WhiteboxError('value', `${who}: exact computation needs 1 to ${MAX_EXACT_PLAYERS} players, got ${n}`)
+    throw new MdmlError('value', `${who}: exact computation needs 1 to ${MAX_EXACT_PLAYERS} players, got ${n}`)
   }
   const table = new Float64Array(1 << n)
   for (let b = 0; b < table.length; b++) table[b] = value(maskOf(b, n))
@@ -51,7 +51,7 @@ function gameOf(value: CoalitionValue, n: number, who: string): CoalitionalGame 
  * @concept shapley-values
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * // A glove game: player 0 owns a left glove, players 1 and 2 right gloves; a pair is worth 1.
  * explain.shapleyValues((s) => (s[0] && (s[1] || s[2]) ? 1 : 0), 3).map((v) => Math.round(v * 1e12) / 1e12) // => [0.666666666667, 0.166666666667, 0.166666666667]
  * ```
@@ -71,7 +71,7 @@ export function shapleyValues(value: CoalitionValue, nPlayers: number): number[]
  * @returns The n x n matrix, row-major as nested arrays.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * // v(S) = 1 when both players are in: all the value is interaction.
  * explain.shapleyInteractionValues((s) => (s[0] && s[1] ? 1 : 0), 2) // => [[0, 0.5], [0.5, 0]]
  * ```
@@ -107,8 +107,8 @@ function evalRows(predict: PredictFunction, data: Float64Array, m: number, d: nu
  * @returns The coalition value function.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const sum = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i + 1]))
  * explain.interventionalValue(sum, [1, 1], [[0, 0], [2, 0]])([true, false]) // => 1
  * ```
@@ -117,7 +117,7 @@ export function interventionalValue(predict: PredictFunction, x: TensorLike, bac
   const xv = rowValues(x)
   const bg = matrixView(background, 'interventionalValue')
   if (xv.length !== bg.d)
-    throw new WhiteboxError('shape', 'interventionalValue: x and the background have different features')
+    throw new MdmlError('shape', 'interventionalValue: x and the background have different features')
   return (s) => {
     const data = Float64Array.from(bg.data)
     for (let r = 0; r < bg.n; r++) for (let j = 0; j < bg.d; j++) if (s[j] === true) data[r * bg.d + j] = xv[j] ?? 0
@@ -158,8 +158,8 @@ export interface ShapExplanation {
  * @returns The values and the base value.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[2 * i] - x.data[2 * i + 1]))
  * explain.kernelShap(linear, [[1, 1]], [[0, 0], [2, 2]]).values // => [[0, 0]]
  * ```
@@ -293,8 +293,8 @@ export interface SamplingShapleyOptions extends FitOptions {
  * @returns The estimates and their standard errors.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[2 * i] + x.data[2 * i + 1]))
  * explain.samplingShapley(linear, [1, 1], [[0, 0]], { nPermutations: 10 }).values // => [2, 1]
  * ```
@@ -310,7 +310,7 @@ export function samplingShapley(
   const d = xv.length
   const nPerm = options.nPermutations ?? 200
   if (!(Number.isInteger(nPerm) && nPerm >= 1))
-    throw new WhiteboxError('value', 'samplingShapley: nPermutations must be >= 1')
+    throw new MdmlError('value', 'samplingShapley: nPermutations must be >= 1')
   const key = keyFor(options, 'samplingShapley')
   type State = { readonly sum: Float64Array; readonly sumSq: Float64Array; readonly count: number }
   const algorithm: Algorithm<State> = {
@@ -374,8 +374,8 @@ export interface TreeModel {
  * @returns Predictions `[n]`.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * toFlat(explain.treePredict(stump, [[0], [1]])) // => [0, 1]
  * ```
@@ -418,7 +418,7 @@ interface PathElement {
  * @returns The values (`[n][d]`) and the base value (the cover-weighted mean leaf).
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * explain.treeShap(stump, [[1, 7]]) // => { values: [[0.5, 0]], baseValue: 0.5 }
  * ```
@@ -482,7 +482,7 @@ export function treeShap(tree: TreeModel, x: TensorLike): ShapExplanation {
       return total
     }
     const recurse = (node: number, path0: PathElement[], pz: number, po: number, pi: number, depth: number): void => {
-      if (depth > tree.value.length) throw new WhiteboxError('value', 'treeShap: the tree has a cycle')
+      if (depth > tree.value.length) throw new MdmlError('value', 'treeShap: the tree has a cycle')
       const path = extend(path0, pz, po, pi)
       const left = tree.childrenLeft[node] ?? -1
       if (left < 0) {
@@ -533,7 +533,7 @@ function expectedLeaf(tree: TreeModel, node: number): number {
  * @returns The coalition value function.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * explain.treeConditionalValue(stump, [1])([false]) // => 0.5
  * ```
@@ -542,7 +542,7 @@ export function treeConditionalValue(tree: TreeModel, x: TensorLike): CoalitionV
   const xv = rowValues(x)
   return (s) => {
     const go = (node: number, depth: number): number => {
-      if (depth > tree.value.length) throw new WhiteboxError('value', 'treeConditionalValue: the tree has a cycle')
+      if (depth > tree.value.length) throw new MdmlError('value', 'treeConditionalValue: the tree has a cycle')
       const left = tree.childrenLeft[node] ?? -1
       if (left < 0) return tree.value[node] ?? 0
       const right = tree.childrenRight[node] ?? -1
@@ -564,7 +564,7 @@ export function treeConditionalValue(tree: TreeModel, x: TensorLike): CoalitionV
  * @returns interactions[row][i][j].
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * explain.treeShapInteractions(stump, [[1, 7]]) // => [[[0.5, 0], [0, 0]]]
  * ```
@@ -586,7 +586,7 @@ export function treeShapInteractions(tree: TreeModel, x: TensorLike): number[][]
  * @returns The values and base value of the ensemble.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * explain.ensembleTreeShap([stump, stump], [[1]], { combine: 'sum' }).values // => [[1]]
  * ```
@@ -596,7 +596,7 @@ export function ensembleTreeShap(
   x: TensorLike,
   options: { readonly combine?: 'mean' | 'sum'; readonly scale?: number } = {},
 ): ShapExplanation {
-  if (trees.length === 0) throw new WhiteboxError('value', 'ensembleTreeShap: no trees')
+  if (trees.length === 0) throw new MdmlError('value', 'ensembleTreeShap: no trees')
   const parts = trees.map((t) => treeShap(t, x))
   const factor = (options.combine === 'sum' ? 1 : 1 / trees.length) * (options.scale ?? 1)
   const first = parts[0] as ShapExplanation
@@ -632,7 +632,7 @@ function factorial(k: number): number {
  * @returns One value per player.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * // v = 1 when player 0 joins player 1 or 2. Grouping 0 with 1 shifts value from 2 to them.
  * const v = (s) => (s[0] && (s[1] || s[2]) ? 1 : 0)
  * explain.owenValues(v, [[0, 1], 2]).map((x) => Math.round(x * 1e12) / 1e12) // => [0.75, 0.25, 0]
@@ -641,10 +641,10 @@ function factorial(k: number): number {
 export function owenValues(value: CoalitionValue, hierarchy: FeatureHierarchy): number[] {
   const leaves = leavesOf(hierarchy)
   const n = leaves.length
-  if (n > MAX_EXACT_PLAYERS) throw new WhiteboxError('value', `owenValues: at most ${MAX_EXACT_PLAYERS} players`)
+  if (n > MAX_EXACT_PLAYERS) throw new MdmlError('value', `owenValues: at most ${MAX_EXACT_PLAYERS} players`)
   const seen = new Set(leaves)
   if (seen.size !== n || leaves.some((j) => !(Number.isInteger(j) && j >= 0 && j < n)))
-    throw new WhiteboxError('value', 'owenValues: the hierarchy must hold each player 0..n-1 exactly once')
+    throw new MdmlError('value', 'owenValues: the hierarchy must hold each player 0..n-1 exactly once')
   const cache = new Map<number, number>()
   const v = (bits: number): number => {
     const known = cache.get(bits)
@@ -703,17 +703,17 @@ export function owenValues(value: CoalitionValue, hierarchy: FeatureHierarchy): 
  * @returns The binary hierarchy.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.hierarchyFromLinkage([[0, 1, 0.1, 2], [2, 3, 0.5, 3]], 3) // => [2, [0, 1]]
  * ```
  */
 export function hierarchyFromLinkage(linkage: readonly (readonly number[])[], n: number): FeatureHierarchy {
   if (n === 1) return 0
-  if (linkage.length !== n - 1) throw new WhiteboxError('shape', `hierarchyFromLinkage: ${n - 1} merges expected`)
+  if (linkage.length !== n - 1) throw new MdmlError('shape', `hierarchyFromLinkage: ${n - 1} merges expected`)
   const node = (id: number): FeatureHierarchy => {
     if (id < n) return id
     const row = linkage[id - n]
-    if (row === undefined) throw new WhiteboxError('value', `hierarchyFromLinkage: no cluster ${id}`)
+    if (row === undefined) throw new MdmlError('value', `hierarchyFromLinkage: no cluster ${id}`)
     return [node(row[0] ?? 0), node(row[1] ?? 0)]
   }
   return node(2 * n - 2)
@@ -744,7 +744,7 @@ function meanAndCovariance(bg: MatrixView): { mu: number[]; sigma: number[][] } 
  * @returns The binary hierarchy.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * // Columns 0 and 2 move together; 1 is unrelated.
  * explain.correlationHierarchy([[1, 5, 1], [2, 1, 2.1], [3, 4, 2.9], [4, 2, 4.2]]) // => [1, [0, 2]]
  * ```
@@ -803,8 +803,8 @@ export function correlationHierarchy(x: TensorLike): FeatureHierarchy {
  * @returns The values and the base value.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[2 * i] - x.data[2 * i + 1]))
  * // An additive model: Owen values equal Shapley values w (x - E x).
  * explain.partitionShap(linear, [[1, 1]], [[0, 0], [2, 4]], [0, 1]).values // => [[0, 1]]
@@ -819,8 +819,7 @@ export function partitionShap(
   const xs = matrixView(x, 'partitionShap')
   const bg = matrixView(background, 'partitionShap', { nFeatures: xs.d })
   const h = hierarchy ?? correlationHierarchy(fromStorage(bg.data, [bg.n, bg.d], 'float64'))
-  if (leavesOf(h).length !== xs.d)
-    throw new WhiteboxError('shape', 'partitionShap: the hierarchy must cover every feature')
+  if (leavesOf(h).length !== xs.d) throw new MdmlError('shape', 'partitionShap: the hierarchy must cover every feature')
   const baseValue = evalRows(predict, Float64Array.from(bg.data), bg.n, bg.d).reduce((a, b) => a + b, 0) / bg.n
   const bgT = fromStorage(bg.data, [bg.n, bg.d], 'float64')
   const values = Array.from({ length: xs.n }, (_, r) =>
@@ -853,7 +852,7 @@ export interface LinearShapOptions {
  * @returns The values and the base value w E x + b.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.linearShap([2, -1], 0.5, [[3, 1]], [[1, 1], [3, 3]]).values // => [[2, 1]]
  * ```
  */
@@ -938,8 +937,8 @@ export interface ConditionalValueOptions {
  * @returns The coalition value function.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * // Two perfectly correlated features: knowing the first fixes the second, so f = x2 has value 1 at x1 = 1.
  * const second = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i + 1]))
  * const v = explain.conditionalValue(second, [1, 1], [[-1, -1], [0, 0], [1, 1]], { method: 'empirical', sigma: 0.1 })
@@ -1051,8 +1050,8 @@ export interface SageResult {
  * @returns The values, their errors and the two end losses.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const first = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i]))
  * const x = [[0, 5], [2, -5]]
  * // Only the first feature matters: it removes all of the loss (1 at the mean prediction).
@@ -1099,7 +1098,7 @@ export function sage(
     lossFull += lossOf(i, imputed(i, all)) / m.n
   }
   if (options.exact === true) {
-    if (d > 12) throw new WhiteboxError('value', 'sage: exact SAGE takes at most 12 features')
+    if (d > 12) throw new MdmlError('value', 'sage: exact SAGE takes at most 12 features')
     const game: CoalitionValue = (s) => {
       let l = 0
       for (let i = 0; i < m.n; i++) l += lossOf(i, imputed(i, s)) / m.n

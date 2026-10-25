@@ -5,7 +5,7 @@
  * assumption checks alongside the p-values.
  */
 
-import { type Alternative, meanOf, type TestResult, varianceOf, WhiteboxError } from '../../base/index.ts'
+import { type Alternative, MdmlError, meanOf, type TestResult, varianceOf } from '../../base/index.ts'
 import { studentisedRange } from '../../dists/index.ts'
 import { item, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { covarianceOfColumns, eigvalsSym, logdetSpd, matmul, orthonormalContrasts, transpose } from '../_linear.ts'
@@ -59,7 +59,7 @@ function tTest(
  * @returns t, its p-value (df n - 1), the mean with its interval, Cohen's d and the normality check.
  * @example
  * ```ts
- * import { ttest1samp } from 'whitebox-engine/stats/tests'
+ * import { ttest1samp } from 'mdml-engine/stats/tests'
  * ttest1samp([1, 2, 3, 4, 5], 2).statistic // => 1.414214
  * ```
  */
@@ -100,7 +100,7 @@ export interface TtestIndOptions extends TestOptions {
  * @returns The t statistic, p-value, degrees of freedom, estimate and effect size.
  * @example
  * ```ts
- * import { ttestInd } from 'whitebox-engine/stats/tests'
+ * import { ttestInd } from 'mdml-engine/stats/tests'
  * ttestInd([1, 2, 3, 4], [3, 4, 5, 6]).statistic // => -2.19089
  * ttestInd([1, 2, 3, 4], [3, 4, 5, 6]).df // => 6
  * ```
@@ -149,7 +149,7 @@ export function ttestInd(x: TensorLike, y: TensorLike, options: TtestIndOptions 
  * @returns t, p-value (df n - 1), the mean difference with its interval and Cohen's d_av.
  * @example
  * ```ts
- * import { ttestRel } from 'whitebox-engine/stats/tests'
+ * import { ttestRel } from 'mdml-engine/stats/tests'
  * ttestRel([2, 4, 6, 9], [1, 2, 4, 5]).statistic // => 3.576237
  * ```
  */
@@ -194,7 +194,7 @@ export interface ZtestOptions extends TestOptions {
  * @returns z, its p-value and the estimate with its normal interval.
  * @example
  * ```ts
- * import { ztest } from 'whitebox-engine/stats/tests'
+ * import { ztest } from 'mdml-engine/stats/tests'
  * ztest([1, 2, 3, 4, 5], undefined, { value: 2, sigma: 1 }).statistic // => 2.236068
  * ```
  */
@@ -245,7 +245,7 @@ export function ztest(x: TensorLike, y?: TensorLike, options: ZtestOptions = {})
  * @returns The F statistic, p-value, degrees of freedom and effect size.
  * @example
  * ```ts
- * import { fOneway } from 'whitebox-engine/stats/tests'
+ * import { fOneway } from 'mdml-engine/stats/tests'
  * fOneway([[1, 2, 3], [4, 5, 6]]).statistic // => 13.5
  * ```
  */
@@ -281,7 +281,7 @@ export function fOneway(groups: readonly TensorLike[]): TestResult {
  * @returns The F statistic, p-value and degrees of freedom [k - 1, df2].
  * @example
  * ```ts
- * import { welchAnova } from 'whitebox-engine/stats/tests'
+ * import { welchAnova } from 'mdml-engine/stats/tests'
  * welchAnova([[1, 2, 3], [4, 5, 6]]).statistic // => 13.5
  * ```
  */
@@ -342,7 +342,7 @@ export interface TukeyHsd {
  * @returns The pairwise comparisons and their matrices.
  * @example
  * ```ts
- * import { tukeyHsd } from 'whitebox-engine/stats/tests'
+ * import { tukeyHsd } from 'mdml-engine/stats/tests'
  * tukeyHsd([[1, 2, 3], [4, 5, 6], [1, 2, 4]]).comparisons.length // => 3
  * ```
  */
@@ -409,13 +409,13 @@ export interface RmAnovaOptions {
  * @returns F, the uncorrected p-value, degrees of freedom and effect size.
  * @example
  * ```ts
- * import { rmAnova } from 'whitebox-engine/stats/tests'
+ * import { rmAnova } from 'mdml-engine/stats/tests'
  * rmAnova([[1, 2, 4], [2, 3, 4], [1, 3, 5], [2, 2, 6]]).df // => [2, 6]
  * ```
  */
 export function rmAnova(data: TensorLike, options: RmAnovaOptions = {}): TestResult {
   const { rows: n, cols: k, data: x } = rowsOf('rmAnova', data)
-  if (n < 2 || k < 2) throw new WhiteboxError('value', 'rmAnova: needs at least 2 subjects and 2 conditions')
+  if (n < 2 || k < 2) throw new MdmlError('value', 'rmAnova: needs at least 2 subjects and 2 conditions')
   const grand = meanOf(x)
   const condMeans = new Float64Array(k)
   const subjMeans = new Float64Array(n)

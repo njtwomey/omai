@@ -1,5 +1,5 @@
 // Radau IIA (order 5): scipy's Radau ported, with an implicit-function correction for traced steps.
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { LuFactorisation } from '../../numerics/linalg/index.ts'
 import { matmul, reshape, sliceAxis, stack, type Value } from '../../tensor/index.ts'
 import {
@@ -70,7 +70,7 @@ function predictFactor(hAbs: number, hAbsOld: number | undefined, err: number, e
 }
 
 export function radauStep(s: RadauState, cfg: ImplicitConfig): RadauState {
-  if (s.status !== 'running') throw new WhiteboxError('value', 'radau: the integration has ended')
+  if (s.status !== 'running') throw new MdmlError('value', 'radau: the integration has ended')
   if (atBound(s)) return { ...s, tOld: s.t, t: s.tBound, status: 'finished', attempts: [] }
   const c: Counter = { ...s.counts }
   const f = tally(s.f, c)

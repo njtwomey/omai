@@ -3,7 +3,7 @@
  * datasets.
  */
 
-import { fuzzyCMeans as fuzzyCMeansMethod } from 'whitebox-engine/methods/cluster'
+import { fuzzyCMeans as fuzzyCMeansMethod } from 'mdml-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

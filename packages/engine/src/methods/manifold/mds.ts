@@ -5,7 +5,7 @@
  * the other manifold methods share.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -49,7 +49,7 @@ export function classicalMds(
   k: number,
 ): { readonly embedding: Embedding; readonly eigenvalues: number[] } {
   const n = d.length
-  if (!(Number.isInteger(k) && k >= 1 && k <= n)) throw new WhiteboxError('value', `classicalMds: k must be in 1..${n}`)
+  if (!(Number.isInteger(k) && k >= 1 && k <= n)) throw new MdmlError('value', `classicalMds: k must be in 1..${n}`)
   const sq = d.map((r) => r.map((v) => v * v))
   const rowMean = sq.map((r) => r.reduce((a, v) => a + v, 0) / n)
   const all = rowMean.reduce((a, v) => a + v, 0) / n

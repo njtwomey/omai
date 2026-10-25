@@ -4,7 +4,7 @@
  * round is recorded as a board step.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, key as makeKey, permutation, split, uniform } from '../../lib/random/index.ts'
 
@@ -37,14 +37,14 @@ export interface SchellingResult {
  *
  * @param options - Town size, vacancy, threshold, rounds and key.
  * @returns The final town and the per-round shares, with a `boardSteps` record.
- * @throws WhiteboxError `value` for a vacancy or threshold outside [0, 1].
+ * @throws MdmlError `value` for a vacancy or threshold outside [0, 1].
  */
 export function schelling(options: SchellingOptions = {}): Explained<SchellingResult> {
   const size = options.size ?? 24
   const vacancy = options.vacancy ?? 0.1
   const threshold = options.threshold ?? 0.4
   if (!(vacancy > 0 && vacancy < 1 && threshold >= 0 && threshold <= 1))
-    throw new WhiteboxError('value', 'schelling: vacancy must be in (0, 1) and threshold in [0, 1]')
+    throw new MdmlError('value', 'schelling: vacancy must be in (0, 1) and threshold in [0, 1]')
   const n = size * size
   const [k0, ...rest] = split(options.key ?? makeKey(0), 2 + (options.rounds ?? 30)) as Key[]
   const u = uniform(k0 as Key, [n]).data

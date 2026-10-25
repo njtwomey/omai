@@ -3,8 +3,8 @@
  * policy snapshot (a map for grid worlds).
  */
 
+import type { EpisodeRecord } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
-import type { EpisodeRecord } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { type EpisodeViewOptions, episodeView } from '../../views/episodes.ts'
 import { RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'

@@ -2,7 +2,7 @@
  * Extensive-form games: sequential games with chance and hidden information, represented as trees with information sets
  * in OpenSpiel's style. Here are the tree and policy contracts, backward induction, best responses and exploitability,
  * counterfactual regret minimisation (full and Monte Carlo), the sequence form, and Kuhn and Leduc poker. Part of
- * `whitebox-engine/games`.
+ * `mdml-engine/games`.
  *
  * @inline
  */

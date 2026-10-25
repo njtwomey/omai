@@ -1,5 +1,5 @@
+import { explanationQuality } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { explanationQuality } from 'whitebox-engine/exposition'
 import { explanationQualityView, qualityLayout } from './explanation-quality.ts'
 import { stillOf, viewFor } from './registry.ts'
 

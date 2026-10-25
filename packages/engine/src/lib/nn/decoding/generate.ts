@@ -67,7 +67,7 @@ export interface DecodeState {
  * @concept decoding
  * @example
  * ```ts
- * import { decodingAlgorithm, bigramLanguageModel } from 'whitebox-engine/nn'
+ * import { decodingAlgorithm, bigramLanguageModel } from 'mdml-engine/nn'
  * decodingAlgorithm(bigramLanguageModel([[0, 1], [1, 0]]), [0], {}).name // => 'decode'
  * ```
  */
@@ -157,7 +157,7 @@ export interface GenerateResult {
  * @concept decoding
  * @example
  * ```ts
- * import { generate, bigramLanguageModel } from 'whitebox-engine/nn'
+ * import { generate, bigramLanguageModel } from 'mdml-engine/nn'
  * generate(bigramLanguageModel([[0, 5, 0], [0, 0, 5], [5, 0, 0]]), 'a', { maxNewTokens: 4 }).text // => 'bcab'
  * ```
  */

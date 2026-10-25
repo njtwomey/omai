@@ -4,7 +4,7 @@
  * whole batch (looping only for primitives without one).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   type BatchDim,
   type BatchResult,
@@ -88,8 +88,8 @@ function loopBatch<P>(
  * @concept vectorisation
  * @example
  * ```ts
- * import { batchTrace } from 'whitebox-engine/autodiff'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { batchTrace } from 'mdml-engine/autodiff'
+ * import { zeros } from 'mdml-engine/tensor'
  * batchTrace(1, 3).batched(zeros([3, 2]), 0).shape // => [2]
  * ```
  */
@@ -128,7 +128,7 @@ export type OutAxes = number | readonly number[]
 function leafAxes(result: unknown, outAxes: OutAxes, count: number): number[] {
   if (typeof outAxes === 'number') return new Array<number>(count).fill(outAxes)
   if (!Array.isArray(result) || result.length !== outAxes.length) {
-    throw new WhiteboxError('value', `vmap: ${outAxes.length} out-axes need an output array of that length`)
+    throw new MdmlError('value', `vmap: ${outAxes.length} out-axes need an output array of that length`)
   }
   return result.flatMap((r: unknown, i: number) =>
     new Array<number>(treeFlatten(r).leaves.length).fill(outAxes[i] ?? 0),
@@ -136,7 +136,7 @@ function leafAxes(result: unknown, outAxes: OutAxes, count: number): number[] {
 }
 
 function isConcreteValueError(e: unknown): boolean {
-  return e instanceof WhiteboxError && e.code === 'not-differentiable'
+  return e instanceof MdmlError && e.code === 'not-differentiable'
 }
 
 /**
@@ -152,13 +152,13 @@ function isConcreteValueError(e: unknown): boolean {
  * @param outAxes - Where the example axis goes in the output (one axis for all leaves, or one per element of an output
  *   array). Default 0.
  * @returns The vectorised function.
- * @throws WhiteboxError with code `shape` when batched arguments disagree on the batch size, and `value` when no
+ * @throws MdmlError with code `shape` when batched arguments disagree on the batch size, and `value` when no
  *   argument is batched.
  * @concept vectorisation
  * @example
  * ```ts
- * import { vmap, grad } from 'whitebox-engine/autodiff'
- * import { dot, mul, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { vmap, grad } from 'mdml-engine/autodiff'
+ * import { dot, mul, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * const rowDots = vmap((a: Value, b: Value) => dot(a, b), [0, null])
  * toArray(rowDots(tensor([[1, 2], [3, 4]]), tensor([1, 1]))) // => [3, 7]
  * const perExample = vmap(grad((x: Value) => sum(mul(x, x))))
@@ -173,7 +173,7 @@ export function vmap<A extends readonly unknown[], O>(
   return (...args: A): O => {
     const axes = typeof inAxes === 'number' || inAxes === null ? args.map(() => inAxes) : inAxes
     if (axes.length !== args.length) {
-      throw new WhiteboxError('value', `vmap: ${axes.length} in-axes for ${args.length} arguments`)
+      throw new MdmlError('value', `vmap: ${axes.length} in-axes for ${args.length} arguments`)
     }
     const sizes: number[] = []
     const flat = args.map((a, i) => {
@@ -188,8 +188,8 @@ export function vmap<A extends readonly unknown[], O>(
       return { leaves, def, dims }
     })
     const n = sizes[0]
-    if (n === undefined) throw new WhiteboxError('value', 'vmap: no argument is batched')
-    if (sizes.some((m) => m !== n)) throw new WhiteboxError('shape', `vmap: batch sizes differ ([${sizes.join(', ')}])`)
+    if (n === undefined) throw new MdmlError('value', 'vmap: no argument is batched')
+    if (sizes.some((m) => m !== n)) throw new MdmlError('shape', `vmap: batch sizes differ ([${sizes.join(', ')}])`)
     const batchedArgs = (pick: (leaf: Value, dim: number) => Value): A =>
       args.map((a, i) => {
         const fl = flat[i] ?? null

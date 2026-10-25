@@ -4,7 +4,7 @@
  * roots of a polynomial by companion-matrix eigenvalues polished with Newton steps.
  */
 
-import { maxOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -71,8 +71,8 @@ function power(t: Value, trailing: number): Value {
  * @concept piecewise-polynomials
  * @example
  * ```ts
- * import { ppoly } from 'whitebox-engine/numerics/interpolate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { ppoly } from 'mdml-engine/numerics/interpolate'
+ * import { toArray } from 'mdml-engine/tensor'
  * // x^2 on [0, 1] and 1 + 2(x - 1) on [1, 2].
  * toArray(ppoly([[1, 0], [0, 2], [0, 1]], [0, 1, 2]).evaluate([0.5, 1.5])) // => [0.25, 2]
  * ```
@@ -83,9 +83,9 @@ export function ppoly(coefficients: TensorLike, breakpoints: TensorLike, extrapo
   const xs = toFlat(x)
   const m = xs.length - 1
   if (c.shape.length < 2 || c.shape[1] !== m)
-    throw new WhiteboxError('shape', 'ppoly: coefficients must be [k + 1, m, ...]')
+    throw new MdmlError('shape', 'ppoly: coefficients must be [k + 1, m, ...]')
   for (let i = 0; i < m; i++) {
-    if (!((xs[i + 1] ?? 0) > (xs[i] ?? 0))) throw new WhiteboxError('value', 'ppoly: breakpoints must increase')
+    if (!((xs[i + 1] ?? 0) > (xs[i] ?? 0))) throw new MdmlError('value', 'ppoly: breakpoints must increase')
   }
   const k = (c.shape[0] ?? 1) - 1
   const trailing = c.shape.length - 2
@@ -168,7 +168,7 @@ export function ppoly(coefficients: TensorLike, breakpoints: TensorLike, extrapo
   }
 
   const roots = (): number[] => {
-    if (trailing !== 0) throw new WhiteboxError('shape', 'ppoly roots: only for a single output component')
+    if (trailing !== 0) throw new MdmlError('shape', 'ppoly roots: only for a single output component')
     const cs = toFlat(primalOf(c))
     const found: number[] = []
     for (let i = 0; i < m; i++) {

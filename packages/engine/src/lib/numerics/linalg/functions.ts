@@ -4,7 +4,7 @@
  * symmetric matrices through the eigendecomposition, and general `funm` by the Schur-Parlett method.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   abs,
   add,
@@ -63,8 +63,8 @@ const THETA13 = 5.371920351148152
  * @concept matrix-functions
  * @example
  * ```ts
- * import { expm } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { expm } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(expm([[0, 0], [0, 0]])) // => [[1, 0], [0, 1]]
  * ```
  */
@@ -121,8 +121,8 @@ export function expm(a: TensorLike): Value {
  * @returns `{ expm, frechet }`.
  * @example
  * ```ts
- * import { expmFrechet } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { expmFrechet } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(expmFrechet([[0]], [[1]]).frechet) // => [[1]]
  * ```
  */
@@ -149,12 +149,12 @@ export interface MatrixIterationOptions {
  * @param a - Square matrix.
  * @param options - Iteration cap and tolerance.
  * @returns sqrt(A).
- * @throws WhiteboxError with code `convergence` when the iteration does not converge.
+ * @throws MdmlError with code `convergence` when the iteration does not converge.
  * @concept matrix-functions
  * @example
  * ```ts
- * import { sqrtm } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sqrtm } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sqrtm([[4, 0], [0, 9]])) // => [[2, 0], [0, 3]]
  * ```
  */
@@ -173,7 +173,7 @@ export function sqrtm(a: TensorLike, options: MatrixIterationOptions = {}): Valu
     y = next
     if (change <= tol) return y
   }
-  throw new WhiteboxError('convergence', 'sqrtm: the Denman-Beavers iteration did not converge')
+  throw new MdmlError('convergence', 'sqrtm: the Denman-Beavers iteration did not converge')
 }
 
 // Gauss-Legendre nodes and weights on [0, 1] (8 points), for log(I + X) = sum_j w_j X (I + t_j X)^{-1}.
@@ -198,8 +198,8 @@ const GL8: readonly (readonly [number, number])[] = [
  * @concept matrix-functions
  * @example
  * ```ts
- * import { logm } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { logm } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(logm([[1, 0], [0, 1]])) // => [[0, 0], [0, 0]]
  * ```
  */
@@ -228,8 +228,8 @@ export function logm(a: TensorLike): Value {
  * @returns f(A).
  * @example
  * ```ts
- * import { funmSymmetric } from 'whitebox-engine/numerics/linalg'
- * import { toArray, square } from 'whitebox-engine/tensor'
+ * import { funmSymmetric } from 'mdml-engine/numerics/linalg'
+ * import { toArray, square } from 'mdml-engine/tensor'
  * toArray(funmSymmetric([[2, 0], [0, 3]], (w) => square(w))) // => [[4, 0], [0, 9]]
  * ```
  */
@@ -319,16 +319,16 @@ export interface FunmResult {
  * @concept matrix-functions
  * @example
  * ```ts
- * import { funm } from 'whitebox-engine/numerics/linalg'
- * import { complexOps as C } from 'whitebox-engine/numerics/differentiate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { funm } from 'mdml-engine/numerics/linalg'
+ * import { complexOps as C } from 'mdml-engine/numerics/differentiate'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(funm([[1, 0], [0, 2]], C.exp).value).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[2.718281828459, 0], [0, 7.389056098931]]
  * ```
  */
 export function funm(a: TensorLike, f: (z: ComplexNumber) => ComplexNumber): FunmResult {
   const t0 = concreteOrThrow(promoteFloat(a)[0] as Tensor, 'funm')
   const n = t0.shape[0] ?? 0
-  if (t0.shape.length !== 2 || t0.shape[1] !== n) throw new WhiteboxError('shape', 'funm: the matrix must be square')
+  if (t0.shape.length !== 2 || t0.shape[1] !== n) throw new MdmlError('shape', 'funm: the matrix must be square')
   const { t, z } = complexSchur(Float64Array.from(t0.data), n)
   const T = (i: number, j: number): ComplexNumber => ({ re: t.re[i * n + j] ?? 0, im: t.im[i * n + j] ?? 0 })
   const F: ComplexNumber[] = new Array(n * n).fill({ re: 0, im: 0 })

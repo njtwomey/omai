@@ -7,8 +7,8 @@ import arviz_base as azb
 import numpy as np
 from arviz_stats.base.array import array_stats
 from arviz_stats.summary import summary
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {
     "arviz-stats": importlib.metadata.version("arviz-stats"),
@@ -22,7 +22,7 @@ COLUMNS = ["mean", "sd", "lb", "ub", "ess_bulk", "ess_tail", "r_hat", "mcse_mean
 
 
 def summary_row(x: FloatArray, kind: str, prob: float) -> FloatArray:
-    """ArviZ's summary of one variable as the columns of whitebox's SummaryRow, in order."""
+    """ArviZ's summary of one variable as the columns of mdml's SummaryRow, in order."""
     tree = azb.from_dict({"posterior": {"x": x}})
     table: Any = summary(tree, round_to="none", ci_kind=kind, ci_prob=prob)
     perc = int(prob * 100)

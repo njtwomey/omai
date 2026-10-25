@@ -11,8 +11,8 @@ import numpy as np
 import numpy.typing as npt
 import scipy
 import scipy.signal as sig
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"control": ct.__version__, "scipy": scipy.__version__}
 

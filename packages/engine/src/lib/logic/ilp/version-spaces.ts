@@ -4,7 +4,7 @@
  * boundaries, enumeration of the version space, and classification of new instances by its vote.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 
 /**
@@ -29,7 +29,7 @@ export interface LabelledExample {
  * @returns True when every constraint is met.
  * @example
  * ```ts
- * import { coversInstance } from 'whitebox-engine/logic/ilp'
+ * import { coversInstance } from 'mdml-engine/logic/ilp'
  * [coversInstance(['sunny', '?'], ['sunny', 'warm']), coversInstance(['sunny', null], ['sunny', 'warm'])] // => [true, false]
  * ```
  */
@@ -45,7 +45,7 @@ export function coversInstance(h: Hypothesis, x: readonly string[]): boolean {
  * @returns True when `h1` is at least as general.
  * @example
  * ```ts
- * import { moreGeneral } from 'whitebox-engine/logic/ilp'
+ * import { moreGeneral } from 'mdml-engine/logic/ilp'
  * [moreGeneral(['?', 'warm'], ['sunny', 'warm']), moreGeneral(['sunny', 'warm'], ['?', 'warm'])] // => [true, false]
  * ```
  */
@@ -56,7 +56,7 @@ export function moreGeneral(h1: Hypothesis, h2: Hypothesis): boolean {
 
 function checkExamples(examples: readonly LabelledExample[], n: number, where: string): void {
   for (const e of examples) {
-    if (e.values.length !== n) throw new WhiteboxError('value', `${where}: every example needs ${n} attribute values`)
+    if (e.values.length !== n) throw new MdmlError('value', `${where}: every example needs ${n} attribute values`)
   }
 }
 
@@ -66,11 +66,11 @@ function checkExamples(examples: readonly LabelledExample[], n: number, where: s
  *
  * @param examples - The training examples.
  * @returns The hypothesis (all `null` when there are no positives).
- * @throws WhiteboxError with code `value` for examples of different lengths.
+ * @throws MdmlError with code `value` for examples of different lengths.
  * @concept version-spaces
  * @example
  * ```ts
- * import { findS } from 'whitebox-engine/logic/ilp'
+ * import { findS } from 'mdml-engine/logic/ilp'
  * const examples = [
  *   { values: ['sunny', 'warm', 'normal'], positive: true },
  *   { values: ['sunny', 'warm', 'high'], positive: true },
@@ -136,11 +136,11 @@ function dedupe(hs: readonly Hypothesis[]): Hypothesis[] {
  * @param examples - The training examples.
  * @param domains - The values of each attribute.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` when examples and domains disagree in length.
+ * @throws MdmlError with code `value` when examples and domains disagree in length.
  * @concept version-spaces
  * @example
  * ```ts
- * import { candidateEliminationAlgorithm } from 'whitebox-engine/logic/ilp'
+ * import { candidateEliminationAlgorithm } from 'mdml-engine/logic/ilp'
  * candidateEliminationAlgorithm([], [['a', 'b']]).name // => 'candidate-elimination'
  * ```
  */
@@ -239,11 +239,11 @@ export interface VersionSpace {
  * @param examples - The training examples.
  * @param domains - The values of each attribute.
  * @returns The specific and general boundaries.
- * @throws WhiteboxError with code `value` when examples and domains disagree in length.
+ * @throws MdmlError with code `value` when examples and domains disagree in length.
  * @concept version-spaces
  * @example
  * ```ts
- * import { candidateElimination } from 'whitebox-engine/logic/ilp'
+ * import { candidateElimination } from 'mdml-engine/logic/ilp'
  * // Mitchell's EnjoySport (table 2.1).
  * const domains = [['sunny', 'cloudy', 'rainy'], ['warm', 'cold'], ['normal', 'high'], ['strong', 'weak'], ['warm', 'cool'], ['same', 'change']]
  * const vs = candidateElimination([
@@ -272,7 +272,7 @@ export function candidateElimination(
  * @returns The hypotheses.
  * @example
  * ```ts
- * import { versionSpaceMembers } from 'whitebox-engine/logic/ilp'
+ * import { versionSpaceMembers } from 'mdml-engine/logic/ilp'
  * versionSpaceMembers({ specific: [['a', 'x']], general: [['?', '?']], domains: [['a', 'b'], ['x', 'y']], collapsed: false }).length // => 4
  * ```
  */
@@ -310,7 +310,7 @@ export interface VersionSpaceVote {
  * @returns The label and the vote counts.
  * @example
  * ```ts
- * import { classifyByVersionSpace } from 'whitebox-engine/logic/ilp'
+ * import { classifyByVersionSpace } from 'mdml-engine/logic/ilp'
  * const vs = { specific: [['a', 'x']], general: [['a', '?'], ['?', 'x']], domains: [['a', 'b'], ['x', 'y']], collapsed: false }
  * [classifyByVersionSpace(vs, ['a', 'x']).label, classifyByVersionSpace(vs, ['b', 'y']).label, classifyByVersionSpace(vs, ['a', 'y'])] // => ['positive', 'negative', { label: 'unknown', positive: 1, negative: 2 }]
  * ```

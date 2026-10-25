@@ -3,7 +3,7 @@
  * with a few informative features and one-dimensional regression curves.
  */
 
-import { lassoCV } from 'whitebox-engine/methods/linear'
+import { lassoCV } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

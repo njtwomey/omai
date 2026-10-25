@@ -3,7 +3,7 @@
  * two-dimensional clustering datasets such as the two moons.
  */
 
-import { dbscan as dbscanMethod } from 'whitebox-engine/methods/cluster'
+import { dbscan as dbscanMethod } from 'mdml-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

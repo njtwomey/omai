@@ -5,6 +5,8 @@ from collections.abc import Iterable
 import numpy as np
 import numpy.typing as npt
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from sklearn.model_selection import (
     GroupKFold,
     KFold,
@@ -18,8 +20,6 @@ from sklearn.model_selection import (
     TimeSeriesSplit,
     train_test_split,
 )
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

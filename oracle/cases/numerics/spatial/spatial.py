@@ -4,10 +4,10 @@ from typing import Literal
 
 import numpy as np
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from sklearn.cluster import KMeans
 from sklearn.neighbors import BallTree, KDTree, NearestNeighbors, kneighbors_graph, radius_neighbors_graph
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"sklearn": sklearn.__version__}
 

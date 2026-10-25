@@ -4,7 +4,7 @@
  * with k-means++ starts, a fit function and a class.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -163,7 +163,7 @@ export function fuzzyCMeans(
         }),
       fit: (data, h, options) => {
         const m = h.m ?? 2
-        if (!(m > 1)) throw new WhiteboxError('value', 'fuzzyCMeans: the fuzzifier must exceed 1')
+        if (!(m > 1)) throw new MdmlError('value', 'fuzzyCMeans: the fuzzifier must exceed 1')
         const run = fitRunOptions(options, 'fuzzy-c-means')
         const start = initialCentres(data.x, h.nClusters ?? 3, 'k-means++', run.key as Key)
         const out = runAlgorithm(fuzzyCMeansAlgorithm(data.x, start, m, h.tol ?? 1e-5), {

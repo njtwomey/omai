@@ -4,7 +4,7 @@
  * for alternating series, each turning slowly converging partial results into a much better limit estimate.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 
 /**
  * Richardson extrapolation of estimates A(h), A(h / r), A(h / r^2), ... whose error expands in powers h^p, h^2p, ...:
@@ -16,7 +16,7 @@ import { WhiteboxError } from '../../base/index.ts'
  * @concept extrapolation
  * @example
  * ```ts
- * import { richardson } from 'whitebox-engine/numerics/approximation'
+ * import { richardson } from 'mdml-engine/numerics/approximation'
  * // Central differences of sin at 1 with h = 0.4, 0.2, 0.1 extrapolate to cos(1).
  * const d = (h) => (Math.sin(1 + h) - Math.sin(1 - h)) / (2 * h)
  * Math.abs(richardson([d(0.4), d(0.2), d(0.1)]).value - Math.cos(1)) < 1e-7 // => true
@@ -26,7 +26,7 @@ export function richardson(
   estimates: readonly number[],
   options: { readonly ratio?: number; readonly order?: number } = {},
 ): { value: number; table: number[][] } {
-  if (estimates.length === 0) throw new WhiteboxError('value', 'richardson: no estimates')
+  if (estimates.length === 0) throw new MdmlError('value', 'richardson: no estimates')
   const r = options.ratio ?? 2
   const p = options.order ?? 2
   const table: number[][] = []
@@ -49,7 +49,7 @@ export function richardson(
  * @returns The accelerated sequence (two shorter).
  * @example
  * ```ts
- * import { aitken } from 'whitebox-engine/numerics/approximation'
+ * import { aitken } from 'mdml-engine/numerics/approximation'
  * // Partial sums of a geometric series become exact.
  * aitken([1, 1.5, 1.75]) // => [2]
  * ```
@@ -74,7 +74,7 @@ export function aitken(s: readonly number[]): number[] {
  * @returns The estimate and the even columns (column 0 is s).
  * @example
  * ```ts
- * import { wynnEpsilon } from 'whitebox-engine/numerics/approximation'
+ * import { wynnEpsilon } from 'mdml-engine/numerics/approximation'
  * // Partial sums of 1 - 1/2 + 1/3 - ... converge slowly to ln 2.
  * const s = []
  * for (let n = 1, acc = 0; n <= 12; n++) s.push((acc += (n % 2 ? 1 : -1) / n))
@@ -111,7 +111,7 @@ export function wynnEpsilon(s: readonly number[]): { value: number; columns: num
  * @returns The transformed sequence.
  * @example
  * ```ts
- * import { shanks } from 'whitebox-engine/numerics/approximation'
+ * import { shanks } from 'mdml-engine/numerics/approximation'
  * shanks([1, 1.5, 1.75, 1.875]) // => [2, 2]
  * ```
  */
@@ -127,7 +127,7 @@ export function shanks(s: readonly number[], k = 1): number[] {
  * @returns The accelerated sum.
  * @example
  * ```ts
- * import { eulerTransform } from 'whitebox-engine/numerics/approximation'
+ * import { eulerTransform } from 'mdml-engine/numerics/approximation'
  * // pi / 4 = 1 - 1/3 + 1/5 - ...
  * Math.abs(eulerTransform(Array.from({ length: 30 }, (_, n) => 1 / (2 * n + 1))) - Math.PI / 4) < 1e-9 // => true
  * ```

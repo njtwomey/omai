@@ -4,7 +4,7 @@
  * 2009) and Kruskal's stress.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { matrixView } from '../../lib/learn/index.ts'
 import { geometry } from '../../lib/numerics/index.ts'
 import { type TensorLike, toFlat } from '../../lib/tensor/index.ts'
@@ -31,7 +31,7 @@ export function neighbourRanks(x: TensorLike): number[][] {
 
 function checkK(n: number, k: number, who: string): void {
   if (!(Number.isInteger(k) && k >= 1 && k < n / 2))
-    throw new WhiteboxError('value', `${who}: nNeighbors must be in 1..${Math.ceil(n / 2) - 1}`)
+    throw new MdmlError('value', `${who}: nNeighbors must be in 1..${Math.ceil(n / 2) - 1}`)
 }
 
 /** The penalty of Venna and Kaski: sum over i of the ranks in `a` beyond k of the k nearest in `b`, normalised. */

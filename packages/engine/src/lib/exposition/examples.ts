@@ -4,7 +4,7 @@
  * dataset's prototypes and criticisms with the witness function that chose them.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 
 /** One counterfactual of a {@link CounterfactualSet}. */
@@ -58,11 +58,11 @@ export interface CounterfactualSet {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when the original, a counterfactual or the scales do not have one entry per feature;
+ * @throws MdmlError `shape` when the original, a counterfactual or the scales do not have one entry per feature;
  *   `value` when a changed or immutable feature is not named.
  * @example
  * ```ts
- * import { counterfactualSet } from 'whitebox-engine/exposition'
+ * import { counterfactualSet } from 'mdml-engine/exposition'
  * const r = counterfactualSet({ method: 'growing spheres', features: ['income', 'debt'], output: 'P(approve)', original: [30, 10], originalPrediction: 0.3, counterfactuals: [{ x: [36, 10], prediction: 0.6, distance: 6, valid: true, changed: [0] }] })
  * r.counterfactuals[0].changed // => [0]
  * ```
@@ -79,7 +79,7 @@ export function counterfactualSet(record: Omit<CounterfactualSet, 'kind'>): Coun
   )
   if (record.scales !== undefined) sameLength(k, 'scales', record.scales.length, d)
   const named = (j: number): void => {
-    if (!(Number.isInteger(j) && j >= 0 && j < d)) throw new WhiteboxError('value', `${k}: feature ${j} is not named`)
+    if (!(Number.isInteger(j) && j >= 0 && j < d)) throw new MdmlError('value', `${k}: feature ${j} is not named`)
   }
   for (const c of record.counterfactuals) for (const j of c.changed) named(j)
   for (const j of record.immutable ?? []) named(j)
@@ -94,7 +94,7 @@ export function counterfactualSet(record: Omit<CounterfactualSet, 'kind'>): Coun
  * @returns The indices where they differ.
  * @example
  * ```ts
- * import { changedFeatures } from 'whitebox-engine/exposition'
+ * import { changedFeatures } from 'mdml-engine/exposition'
  * changedFeatures([1, 2, 3], [1, 2.5, 3]) // => [1]
  * ```
  */
@@ -133,11 +133,11 @@ export interface PrototypeSet {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when the data do not match the indices or the features, or the points, labels and
+ * @throws MdmlError `shape` when the data do not match the indices or the features, or the points, labels and
  *   witness differ in rows.
  * @example
  * ```ts
- * import { prototypeSet } from 'whitebox-engine/exposition'
+ * import { prototypeSet } from 'mdml-engine/exposition'
  * const r = prototypeSet({ method: 'MMD-critic', features: ['a'], prototypes: [0], criticisms: [2], prototypeData: [[0]], criticismData: [[9]], witness: [-0.1, -0.1, 0.3] })
  * r.criticisms // => [2]
  * ```
@@ -153,6 +153,6 @@ export function prototypeSet(record: Omit<PrototypeSet, 'kind'>): PrototypeSet {
   if (record.points !== undefined) sameLength(k, 'points', record.points.length, n)
   if (record.labels !== undefined) sameLength(k, 'labels', record.labels.length, n)
   if (record.imageShape !== undefined && record.imageShape[0] * record.imageShape[1] !== d)
-    throw new WhiteboxError('shape', `${k}: images of ${record.imageShape.join('x')} for ${d} features`)
+    throw new MdmlError('shape', `${k}: images of ${record.imageShape.join('x')} for ${d} features`)
   return { kind: k, ...record }
 }

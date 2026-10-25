@@ -232,16 +232,16 @@ importers:
       react-dom:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
-      whitebox-engine:
+      mdml-engine:
         specifier: workspace:*
         version: link:../../packages/engine
-      whitebox-hub:
+      mdml-hub:
         specifier: workspace:*
         version: link:../../packages/hub
-      whitebox-meta:
+      mdml-meta:
         specifier: workspace:*
         version: link:../../packages/meta
-      whitebox-render:
+      mdml-render:
         specifier: workspace:*
         version: link:../../packages/render
     devDependencies:
@@ -272,10 +272,10 @@ importers:
 
   packages/hub:
     dependencies:
-      whitebox-engine:
+      mdml-engine:
         specifier: workspace:*
         version: link:../engine
-      whitebox-render:
+      mdml-render:
         specifier: workspace:*
         version: link:../render
     devDependencies:
@@ -294,13 +294,13 @@ importers:
       ts-morph:
         specifier: ^28.0.0
         version: 28.0.0
-      whitebox-engine:
+      mdml-engine:
         specifier: workspace:*
         version: link:../engine
-      whitebox-hub:
+      mdml-hub:
         specifier: workspace:*
         version: link:../hub
-      whitebox-render:
+      mdml-render:
         specifier: workspace:*
         version: link:../render
     devDependencies:
@@ -325,7 +325,7 @@ importers:
       katex:
         specifier: 0.16.47
         version: 0.16.47
-      whitebox-engine:
+      mdml-engine:
         specifier: workspace:*
         version: link:../engine
     devDependencies:

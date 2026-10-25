@@ -10,12 +10,12 @@
  *   what the folder is and what you will find in it. The generator keeps it and writes everything below it, so
  *   `--check` compares only the generated part. A folder without a summary is an error, as is a module file that does
  *   not open with its own paragraph (a doc comment followed by a blank line or the imports) saying what it is.
- * - whitebox-engine: every folder under src/lib and src/methods gets an index.ts that re-exports its files
+ * - mdml-engine: every folder under src/lib and src/methods gets an index.ts that re-exports its files
  *   (`export *`) and exposes each subfolder as a namespace (`export * as linalg`), except subfolders whose summary
- *   carries the `@inline` tag, which are re-exported flat (`tensor/ops` is part of `whitebox-engine/tensor`).
- * - whitebox-render and whitebox-meta: each part folder re-exports its files; the package root re-exports every part
+ *   carries the `@inline` tag, which are re-exported flat (`tensor/ops` is part of `mdml-engine/tensor`).
+ * - mdml-render and mdml-meta: each part folder re-exports its files; the package root re-exports every part
  *   except the ones listed in ROOT_EXCLUDE (React bindings, Node-only code, the module map).
- * - whitebox-meta/src/modules/index.ts maps every public entry point to a lazy import, for the example runner.
+ * - mdml-meta/src/modules/index.ts maps every public entry point to a lazy import, for the example runner.
  * Files that start with `_`, tests, type tests and `*.data.ts` payloads are never re-exported.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
@@ -82,7 +82,7 @@ function isInline(folder: string): boolean {
 
 const unsummarised: string[] = []
 const unopened: string[] = []
-// A file's own opening paragraph: a doc comment followed by a blank line or the imports (as whitebox-meta reads it).
+// A file's own opening paragraph: a doc comment followed by a blank line or the imports (as mdml-meta reads it).
 const OPENING = /^\s*\/\*\*[\s\S]*?\*\/(\n\s*\n|\nimport\b)/
 
 /** A generated index.ts: the folder's own summary, then the header and `body`; notes undocumented files. */
@@ -161,13 +161,13 @@ function moduleFiles(path: string, prefix = ''): string[] {
   ]
 }
 
-/** whitebox-hub's catalogue: every entry module under collections/, gathered by `buildCatalogue`. */
+/** mdml-hub's catalogue: every entry module under collections/, gathered by `buildCatalogue`. */
 const CATALOGUE_SUMMARY = `/**
  * The hub's catalogue: every entry defined under \`collections/\`, gathered into one list the hub app pages through.
  * Generated, so adding an entry module adds it here.
  */`
 const MODULES_SUMMARY = `/**
- * The module map: every public entry point of whitebox-engine, whitebox-render and whitebox-hub mapped to a lazy
+ * The module map: every public entry point of mdml-engine, mdml-render and mdml-hub mapped to a lazy
  * \`import()\`, so the example runner can resolve the imports of an example in Node and in the browser. Generated.
  */`
 
@@ -185,7 +185,7 @@ ${imports.join('\n')}${imports.length > 0 ? '\n' : ''}
  *
  * @example
  * \`\`\`ts
- * import { catalogue } from 'whitebox-hub'
+ * import { catalogue } from 'mdml-hub'
  * Array.isArray(catalogue.entries) // => true
  * \`\`\`
  */
@@ -196,20 +196,20 @@ export const catalogue: Catalogue = buildCatalogue([${modules.map((_, i) => `m${
 
 const entries: string[] = []
 for (const [kind, prefix] of [
-  ['lib', 'whitebox-engine'],
-  ['methods', 'whitebox-engine/methods'],
+  ['lib', 'mdml-engine'],
+  ['methods', 'mdml-engine/methods'],
 ] as const) {
   const base = join(ROOT, 'packages/engine/src', kind)
   if (!existsSync(base)) continue
   for (const d of dirs(base)) nested(join(base, d), entries, `${prefix}/${d}`)
 }
-flat('render', entries, 'whitebox-render')
-flat('meta', [], 'whitebox-meta')
-flat('hub', entries, 'whitebox-hub', ['collections'], ['catalogue'])
+flat('render', entries, 'mdml-render')
+flat('meta', [], 'mdml-meta')
+flat('hub', entries, 'mdml-hub', ['collections'], ['catalogue'])
 hubCatalogue()
 
 const loaders = entries
-  .filter((e) => !e.startsWith('whitebox-meta'))
+  .filter((e) => !e.startsWith('mdml-meta'))
   .sort()
   .map((e) => `  '${e}': () => import('${e}'),`)
 outputs.set(
@@ -221,15 +221,15 @@ ${HEADER}
 export type ModuleLoader = () => Promise<Readonly<Record<string, unknown>>>
 
 /**
- * Every public entry point of whitebox-engine and whitebox-render, mapped to a lazy import.
+ * Every public entry point of mdml-engine and mdml-render, mapped to a lazy import.
  *
  * The example runner resolves \`import\` statements in examples through this map, in Node and in the browser alike.
  *
  * @returns The map from module specifier to loader.
  * @example
  * \`\`\`ts
- * import { moduleLoaders } from 'whitebox-meta/modules'
- * 'whitebox-engine/tensor' in moduleLoaders // => true
+ * import { moduleLoaders } from 'mdml-meta/modules'
+ * 'mdml-engine/tensor' in moduleLoaders // => true
  * \`\`\`
  */
 export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {

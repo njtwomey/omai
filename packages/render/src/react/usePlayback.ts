@@ -4,9 +4,9 @@
  * with the same seed), with play, pause, step, seek and loop.
  */
 
+import type { Frame, Timeline } from 'mdml-engine/scene'
+import { type Algorithm, iterate } from 'mdml-engine/trace'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { Frame, Timeline } from 'whitebox-engine/scene'
-import { type Algorithm, iterate } from 'whitebox-engine/trace'
 import { advanceFrame, framesDue } from './playhead.ts'
 
 /**

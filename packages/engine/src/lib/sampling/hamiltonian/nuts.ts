@@ -4,7 +4,7 @@
  * Betancourt; as BlackJAX and NumPyro), its window adaptation, and `nuts` for several chains after Stan-style warm-up.
  */
 
-import { logAddExp, WhiteboxError } from '../../base/index.ts'
+import { logAddExp, MdmlError } from '../../base/index.ts'
 import { foldIn, uniformStream } from '../../random/index.ts'
 import { checkStepSize } from '../_mcmc.ts'
 import { type Adaptation, type Chains, type MCMCKernel, type SampleChainsOptions, sampleChains } from '../chains.ts'
@@ -84,15 +84,15 @@ export interface NUTSOptions extends HamiltonianOptions {
  * @param target - The target (with a gradient).
  * @param options - Step size, inverse mass matrix, integrator, divergence threshold and maximum tree depth.
  * @returns The kernel.
- * @throws WhiteboxError with code `value` for a target without a gradient, a non-positive step size or a maximum
+ * @throws MdmlError with code `value` for a target without a gradient, a non-positive step size or a maximum
  *   tree depth outside [1, 30].
  * @concept nuts
  * @reference M. D. Hoffman and A. Gelman, The No-U-Turn Sampler (JMLR 2014); M. Betancourt, A conceptual introduction
  *   to Hamiltonian Monte Carlo (2017), appendix A.
  * @example
  * ```ts
- * import { nutsKernel, numericTarget } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { nutsKernel, numericTarget } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * const k = nutsKernel(t, { stepSize: 0.5 })
  * const { info } = k.step(key(0), k.init([0.5]))
@@ -105,7 +105,7 @@ export function nutsKernel(target: LogDensity, options: NUTSOptions): MCMCKernel
   checkStepSize(stepSize, 'nutsKernel')
   const maxDepth = options.maxTreeDepth ?? 10
   if (!(Number.isInteger(maxDepth) && maxDepth >= 1 && maxDepth <= 30)) {
-    throw new WhiteboxError('value', 'nutsKernel: maxTreeDepth must be an integer in [1, 30]')
+    throw new MdmlError('value', 'nutsKernel: maxTreeDepth must be an integer in [1, 30]')
   }
   const metric = euclideanMetric(options.inverseMassMatrix ?? 1, target.dim)
   const step: Integrator = integrator(target, metric, options.integrator ?? 'velocityVerlet')
@@ -232,7 +232,7 @@ export type NUTSAdaptationOptions = Omit<NUTSOptions, 'stepSize' | 'inverseMassM
  * @concept window-adaptation
  * @example
  * ```ts
- * import { nutsAdaptation, numericTarget } from 'whitebox-engine/sampling'
+ * import { nutsAdaptation, numericTarget } from 'mdml-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * nutsAdaptation(t).dim // => 1
  * ```
@@ -255,8 +255,8 @@ export type NUTSRunOptions = NUTSAdaptationOptions & Omit<SampleChainsOptions, '
  * @concept nuts
  * @example
  * ```ts
- * import { nuts, numericTarget } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { nuts, numericTarget } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * Object.keys(nuts(t, { key: key(0), numChains: 1, numWarmup: 50, numDraws: 20 }).stats).includes('treeDepth') // => true
  * ```

@@ -5,7 +5,7 @@
  * singular spectrum analysis (SSA, the SVD of the lagged trajectory matrix).
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { fft, ifft } from '../numerics/fourier/index.ts'
 import { cubicSpline } from '../numerics/interpolate/index.ts'
 import { ddot } from '../numerics/linalg/blas.ts'
@@ -134,7 +134,7 @@ function pack(imfs: readonly Float64Array[], x: Float64Array): ModeDecomposition
  * @concept empirical-mode-decomposition
  * @example
  * ```ts
- * import { emd } from 'whitebox-engine/signal'
+ * import { emd } from 'mdml-engine/signal'
  * const x = Array.from({ length: 200 }, (_, i) => Math.sin(i / 3) + 0.5 * Math.sin(i / 20) + i / 100)
  * emd(x).imfs.shape[0] >= 2 // => true
  * ```
@@ -172,8 +172,8 @@ function std(x: Float64Array): number {
  * @concept empirical-mode-decomposition
  * @example
  * ```ts
- * import { eemd } from 'whitebox-engine/signal'
- * import { key } from 'whitebox-engine/random'
+ * import { eemd } from 'mdml-engine/signal'
+ * import { key } from 'mdml-engine/random'
  * const x = Array.from({ length: 128 }, (_, i) => Math.sin(i / 2) + Math.sin(i / 15))
  * eemd(x, { key: key(1), trials: 8, maxImfs: 3 }).imfs.shape // => [3, 128]
  * ```
@@ -211,8 +211,8 @@ export function eemd(x: TensorLike, options: EnsembleEmdOptions): ModeDecomposit
  * @concept empirical-mode-decomposition
  * @example
  * ```ts
- * import { ceemdan } from 'whitebox-engine/signal'
- * import { key } from 'whitebox-engine/random'
+ * import { ceemdan } from 'mdml-engine/signal'
+ * import { key } from 'mdml-engine/random'
  * const x = Array.from({ length: 128 }, (_, i) => Math.sin(i / 2) + Math.sin(i / 15))
  * ceemdan(x, { key: key(2), trials: 8, maxImfs: 3 }).imfs.shape[0] <= 3 // => true
  * ```
@@ -332,7 +332,7 @@ function vmdSetup(x: Float64Array): VmdSetup {
  * @concept variational-mode-decomposition
  * @example
  * ```ts
- * import { vmdAlgorithm } from 'whitebox-engine/signal'
+ * import { vmdAlgorithm } from 'mdml-engine/signal'
  * vmdAlgorithm([1, 2, 3, 4], { k: 2 }).name // => 'vmd'
  * ```
  */
@@ -341,7 +341,7 @@ export function vmdAlgorithm(x: TensorLike, options: VmdOptions): Algorithm<VmdS
   const setup = vmdSetup(s)
   const { t, freqs, fRe, fIm } = setup
   const k = options.k
-  if (!Number.isInteger(k) || k < 1) throw new WhiteboxError('value', 'vmd: k must be a positive integer')
+  if (!Number.isInteger(k) || k < 1) throw new MdmlError('value', 'vmd: k must be a positive integer')
   const alpha = options.alpha ?? 2000
   const tau = options.tau ?? 0
   const dc = options.dc ?? false
@@ -453,7 +453,7 @@ export interface VmdResult {
  * @concept variational-mode-decomposition
  * @example
  * ```ts
- * import { vmd } from 'whitebox-engine/signal'
+ * import { vmd } from 'mdml-engine/signal'
  * const x = Array.from({ length: 200 }, (_, i) => Math.cos(2 * Math.PI * 0.05 * i) + Math.cos(2 * Math.PI * 0.25 * i))
  * const r = vmd(x, { k: 2 })
  * Array.from(r.omega.data).map((w) => Math.round(w * 100) / 100) // => [0.05, 0.25]
@@ -526,8 +526,8 @@ export interface SsaResult {
  * @concept singular-spectrum-analysis
  * @example
  * ```ts
- * import { ssa } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { ssa } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const r = ssa([1, 2, 3, 4, 5, 6], 3)
  * Math.round(toFlat(r.components).slice(0, 6).reduce((a, v, i) => a + v + (toFlat(r.components)[6 + i] ?? 0) + (toFlat(r.components)[12 + i] ?? 0), 0) * 1e9) / 1e9 // => 21
  * ```
@@ -536,7 +536,7 @@ export function ssa(x: TensorLike, window?: number): SsaResult {
   const s = samples(x, 'ssa')
   const n = s.length
   const l = window ?? Math.floor(n / 2)
-  if (!(l >= 2 && l <= n - 1)) throw new WhiteboxError('value', 'ssa: the window must satisfy 2 <= L <= n - 1')
+  if (!(l >= 2 && l <= n - 1)) throw new MdmlError('value', 'ssa: the window must satisfy 2 <= L <= n - 1')
   const k = n - l + 1
   const traj = new Float64Array(l * k)
   for (let i = 0; i < l; i++) for (let j = 0; j < k; j++) traj[i * k + j] = s[i + j] ?? 0

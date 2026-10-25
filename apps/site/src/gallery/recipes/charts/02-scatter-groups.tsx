@@ -1,7 +1,7 @@
+import { key, normal } from 'mdml-engine/random'
+import { scatterChart } from 'mdml-render/charts'
+import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { key, normal } from 'whitebox-engine/random'
-import { scatterChart } from 'whitebox-render/charts'
-import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

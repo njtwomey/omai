@@ -6,13 +6,13 @@ import numpy as np
 import scipy
 import scipy.stats as st
 import statsmodels
+from mdml_oracle.fixture import Case, case
 from statsmodels.stats.proportion import (
     confint_proportions_2indep,
     proportion_confint,
     proportions_ztest,
     test_proportions_2indep,
 )
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "statsmodels": statsmodels.__version__}
 

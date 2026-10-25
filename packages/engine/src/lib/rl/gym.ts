@@ -4,7 +4,7 @@
  * tuples for code written in that style.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
 import { type Space, sample as sampleSpace } from '../space/index.ts'
@@ -30,8 +30,8 @@ export interface MakeConfig {
  * @concept environments
  * @example
  * ```ts
- * import { listEnvironments } from 'whitebox-engine/rl'
- * import * as rl from 'whitebox-engine/methods/rl'
+ * import { listEnvironments } from 'mdml-engine/rl'
+ * import * as rl from 'mdml-engine/methods/rl'
  * listEnvironments(rl).some((d) => d.id === 'CartPole-v1') // => true
  * ```
  */
@@ -44,7 +44,7 @@ export function listEnvironments(module: Readonly<Record<string, unknown>>): Env
 function lookup(id: string, registry: readonly EnvDefinition[] | undefined): EnvDefinition {
   const found = registry?.find((d) => d.id === id)
   if (found === undefined) {
-    throw new WhiteboxError(
+    throw new MdmlError(
       'value',
       `make: no environment '${id}' in the registry (pass registry: listEnvironments(module))`,
     )
@@ -60,12 +60,12 @@ function lookup(id: string, registry: readonly EnvDefinition[] | undefined): Env
  * @param options - Options for the definition.
  * @param config - Time-limit override, wrappers and the registry.
  * @returns The environment.
- * @throws WhiteboxError with code `value` for an id missing from the registry.
+ * @throws MdmlError with code `value` for an id missing from the registry.
  * @concept environments
  * @example
  * ```ts
- * import { make, listEnvironments } from 'whitebox-engine/rl'
- * import * as rl from 'whitebox-engine/methods/rl'
+ * import { make, listEnvironments } from 'mdml-engine/rl'
+ * import * as rl from 'mdml-engine/methods/rl'
  * make(rl.cartPole).spec.id // => 'CartPole-v1'
  * make('MountainCar-v0', {}, { registry: listEnvironments(rl) }).spec.maxEpisodeSteps // => 200
  * ```
@@ -95,8 +95,8 @@ export function make<S, O, A>(
  * @concept environments
  * @example
  * ```ts
- * import { GymEnv } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { GymEnv } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * const env = new GymEnv(cartPole)
  * env.reset({ seed: 0 })
  * env.step(1)[1] // => 1
@@ -162,7 +162,7 @@ export class GymEnv<O, A> {
 
   /** Advance one step: `[observation, reward, terminated, truncated, info]`. */
   step(action: A): [O, number, boolean, boolean, Readonly<Record<string, Json>>] {
-    if (this.done) throw new WhiteboxError('value', 'GymEnv.step: call reset() first (the episode has ended)')
+    if (this.done) throw new MdmlError('value', 'GymEnv.step: call reset() first (the episode has ended)')
     this.t += 1
     const r = this.env.step(this.current, action, foldIn(foldIn(this.key, 2 * this.resets + 1), this.t))
     this.current = r.state

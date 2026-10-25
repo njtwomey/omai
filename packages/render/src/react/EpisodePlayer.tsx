@@ -3,10 +3,10 @@
  * the `Player`, each frame captioned with its step, action, reward and return.
  */
 
+import { key as makeKey } from 'mdml-engine/random'
+import { type Env, type Episode, type Policy, runEpisode } from 'mdml-engine/rl'
+import type { Scene } from 'mdml-engine/scene'
 import { type ReactElement, useMemo } from 'react'
-import { key as makeKey } from 'whitebox-engine/random'
-import { type Env, type Episode, type Policy, runEpisode } from 'whitebox-engine/rl'
-import type { Scene } from 'whitebox-engine/scene'
 import { episodeSteps, stepCaption } from '../gym/frames.ts'
 import { cx } from './controls/classes.ts'
 import { FigureFrame } from './FigureFrame.tsx'

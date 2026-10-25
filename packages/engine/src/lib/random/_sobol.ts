@@ -1,6 +1,6 @@
 // The Sobol' engine behind sequences.ts: direction numbers (Joe and Kuo, new-joe-kuo-6.21201), the linear matrix
 // scramble and Gray-code generation, all in unsigned 32-bit integer arithmetic. Private to random/.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { SOBOL_DIMENSIONS, SOBOL_M, SOBOL_POLY } from './sobol-directions.data.ts'
 
 const BASE64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
@@ -105,16 +105,16 @@ export function scrambleDirections(v: Uint32Array, bits: number, random: Uint32A
 /** Validate the size, dimension, offset and bit count of a Sobol' request. */
 export function checkSobol(name: string, n: number, d: number, skip: number, bits: number): void {
   if (!Number.isInteger(bits) || bits < 1 || bits > 32) {
-    throw new WhiteboxError('value', `${name}: bits must be an integer in [1, 32], got ${bits}`)
+    throw new MdmlError('value', `${name}: bits must be an integer in [1, 32], got ${bits}`)
   }
   if (!Number.isInteger(d) || d < 1 || d > SOBOL_DIMENSIONS) {
-    throw new WhiteboxError('value', `${name}: dimension must be an integer in [1, ${SOBOL_DIMENSIONS}], got ${d}`)
+    throw new MdmlError('value', `${name}: dimension must be an integer in [1, ${SOBOL_DIMENSIONS}], got ${d}`)
   }
   if (!Number.isInteger(n) || n < 0 || !Number.isInteger(skip) || skip < 0) {
-    throw new WhiteboxError('value', `${name}: n and skip must be non-negative integers`)
+    throw new MdmlError('value', `${name}: n and skip must be non-negative integers`)
   }
   if (skip + n > 2 ** bits) {
-    throw new WhiteboxError('value', `${name}: at most 2^${bits} points, asked for indices up to ${skip + n - 1}`)
+    throw new MdmlError('value', `${name}: at most 2^${bits} points, asked for indices up to ${skip + n - 1}`)
   }
 }
 

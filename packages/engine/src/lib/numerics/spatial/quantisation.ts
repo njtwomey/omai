@@ -4,7 +4,7 @@
  * (IVF) indexes as in faiss, which search only the lists nearest the query.
  */
 
-import { argminOf, heap, WhiteboxError } from '../../base/index.ts'
+import { argminOf, heap, MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 
@@ -39,8 +39,8 @@ export interface Codebook {
  * @concept vector-quantisation
  * @example
  * ```ts
- * import { kmeansCodebook } from 'whitebox-engine/numerics/spatial'
- * import { key } from 'whitebox-engine/random'
+ * import { kmeansCodebook } from 'mdml-engine/numerics/spatial'
+ * import { key } from 'mdml-engine/random'
  * kmeansCodebook([[0], [0.1], [10], [10.1]], 2, { key: key(0) }).inertia < 0.011 // => true
  * ```
  */
@@ -57,15 +57,14 @@ export function kmeansCodebook(
   const t = concreteOrThrow(promoteFloat(data)[0] as Tensor, 'kmeansCodebook')
   const x = toFlat(t)
   const [n = 0, d = 0] = t.shape
-  if (k < 1 || k > n) throw new WhiteboxError('value', `kmeansCodebook: k must be in [1, ${n}]`)
+  if (k < 1 || k > n) throw new MdmlError('value', `kmeansCodebook: k must be in [1, ${n}]`)
   const c = new Float64Array(k * d)
   if (options.init !== undefined) {
     const init = toFlat(concreteOrThrow(promoteFloat(options.init)[0] as Tensor, 'kmeansCodebook init'))
-    if (init.length !== k * d) throw new WhiteboxError('shape', 'kmeansCodebook: init must be [k, d]')
+    if (init.length !== k * d) throw new MdmlError('shape', 'kmeansCodebook: init must be [k, d]')
     c.set(init)
   } else {
-    if (options.key === undefined)
-      throw new WhiteboxError('value', 'kmeansCodebook: a key is needed for k-means++ seeding')
+    if (options.key === undefined) throw new MdmlError('value', 'kmeansCodebook: a key is needed for k-means++ seeding')
     const u = uniform(options.key, [k]).data
     const first = Math.min(n - 1, Math.floor((u[0] ?? 0) * n))
     c.set(x.slice(first * d, first * d + d), 0)
@@ -160,8 +159,8 @@ export interface ProductQuantiser {
  * @concept product-quantisation
  * @example
  * ```ts
- * import { productQuantiser } from 'whitebox-engine/numerics/spatial'
- * import { key } from 'whitebox-engine/random'
+ * import { productQuantiser } from 'mdml-engine/numerics/spatial'
+ * import { key } from 'mdml-engine/random'
  * const pq = productQuantiser([[0, 0], [0, 1], [1, 0], [1, 1]], { m: 2, k: 2, key: key(0) })
  * Array.from(pq.encode([[1, 0]])).length // => 2
  * ```
@@ -174,7 +173,7 @@ export function productQuantiser(
   const x = toFlat(t)
   const [n = 0, d = 0] = t.shape
   const m = options.m ?? 4
-  if (d % m !== 0) throw new WhiteboxError('value', `productQuantiser: dimension ${d} is not divisible by ${m}`)
+  if (d % m !== 0) throw new MdmlError('value', `productQuantiser: dimension ${d} is not divisible by ${m}`)
   const ds = d / m
   const k = Math.min(options.k ?? 256, n)
   const codebooks = Array.from({ length: m }, (_, s) => {
@@ -285,8 +284,8 @@ export interface IvfIndex {
  * @returns The index.
  * @example
  * ```ts
- * import { ivfIndex } from 'whitebox-engine/numerics/spatial'
- * import { key } from 'whitebox-engine/random'
+ * import { ivfIndex } from 'mdml-engine/numerics/spatial'
+ * import { key } from 'mdml-engine/random'
  * ivfIndex([[0, 0], [0, 1], [9, 9], [9, 8]], { lists: 2, key: key(0) }).search([9, 8.6], 1).indices // => [2]
  * ```
  */

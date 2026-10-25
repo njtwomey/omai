@@ -4,7 +4,7 @@
  * log-likelihood and default link, plus the Tweedie compound Poisson-gamma distribution itself.
  */
 
-import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { gammainc, lbinom, lgamma, xlogy } from '../../numerics/special/index.ts'
 import { foldIn, gammaVariates, type Key, poisson as poissonDraw } from '../../random/index.ts'
 import {
@@ -134,8 +134,8 @@ const yLogRatio = (y: Value, mu: Value): Value => sub(xlogy(y, y), xlogy(y, mu))
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gaussian().deviance([1, 2], [0, 0])) // => 5
  * ```
  */
@@ -162,8 +162,8 @@ export function gaussian(link: Link = identity()): DispersionFamily {
  * @returns The family; `distribution(mu)` is binomial(trials, mu) on counts.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.binomial().variance(0.5)) // => 0.25
  * ```
  */
@@ -194,8 +194,8 @@ export function binomial(link: Link = logit(), trials = 1): DispersionFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.poisson().unitDeviance(2, 2)) // => 0
  * ```
  */
@@ -219,8 +219,8 @@ export function poisson(link: Link = logLink()): DispersionFamily {
  * @returns The family; `distribution(mu, phi)` is the gamma with mean mu and squared coefficient of variation phi.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gamma().variance(3)) // => 9
  * ```
  */
@@ -250,8 +250,8 @@ export function gamma(link: Link = inverse()): DispersionFamily {
  * @returns The family; `distribution(mu, phi)` is the inverse Gaussian with mean mu and shape 1 / phi.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.inverseGaussian().variance(2)) // => 8
  * ```
  */
@@ -283,13 +283,13 @@ export function inverseGaussian(link: Link = inverseSquared()): DispersionFamily
  * @returns The family; `distribution(mu)` is negativeBinomial(1 / alpha, 1 / (1 + alpha mu)).
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.negativeBinomial(0.5).variance(2)) // => 4
  * ```
  */
 export function negativeBinomial(alpha = 1, link: Link = logLink()): DispersionFamily {
-  if (!(alpha > 0)) throw new WhiteboxError('value', 'negativeBinomial family: alpha must be positive')
+  if (!(alpha > 0)) throw new MdmlError('value', 'negativeBinomial family: alpha must be positive')
   const r = 1 / alpha
   return defineFamily({
     name: 'negativeBinomial',
@@ -340,17 +340,17 @@ function tweedieLogProb(y: Value, mu: Value, phi: Value, p: number): Value {
  * @param power - Variance power p in (1, 2).
  * @returns The distribution: log density by Dunn and Smyth's series (the mass at zero for y = 0), CDF as a Poisson
  *   mixture of gamma CDFs, quantiles (0 inside the atom, numerical above), and sampling by the compound construction.
- * @throws WhiteboxError with code `value` for powers outside (1, 2).
+ * @throws MdmlError with code `value` for powers outside (1, 2).
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * // P(Y = 0) = exp(-mu^(2-p) / (phi (2-p))).
  * Math.abs(item(families.tweedieDistribution(1, 1, 1.5).prob(0)) - Math.exp(-2)) < 1e-15 // => true
  * ```
  */
 export function tweedieDistribution(mean: TensorLike, dispersion: TensorLike, power: number): Distribution {
-  if (!(power > 1 && power < 2)) throw new WhiteboxError('value', 'tweedie: the power must lie in (1, 2)')
+  if (!(power > 1 && power < 2)) throw new MdmlError('value', 'tweedie: the power must lie in (1, 2)')
   const [mu, phi] = promoteFloat(mean, dispersion) as [Value, Value]
   validateParams('tweedie', { mean: [mu, 'positive'], dispersion: [phi, 'positive'] })
   const batchShape = broadcastShapes(mu.shape, phi.shape)
@@ -413,13 +413,13 @@ export function tweedieDistribution(mean: TensorLike, dispersion: TensorLike, po
  * @returns The family; `distribution(mu, phi)` is {@link tweedieDistribution} (Poisson at p = 1, gamma at p = 2).
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.tweedie(1.5).variance(4)) // => 8
  * ```
  */
 export function tweedie(power: number, link: Link = logLink()): DispersionFamily {
-  if (!(power >= 1 && power <= 2)) throw new WhiteboxError('value', 'tweedie family: the power must lie in [1, 2]')
+  if (!(power >= 1 && power <= 2)) throw new MdmlError('value', 'tweedie family: the power must lie in [1, 2]')
   if (power === 1) return { ...poisson(link), name: 'tweedie' }
   if (power === 2) return { ...gamma(link), name: 'tweedie' }
   const p = power

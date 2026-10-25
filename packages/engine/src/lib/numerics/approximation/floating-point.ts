@@ -6,7 +6,7 @@
  */
 
 import { grad } from '../../autodiff/index.ts'
-import { kahanSum, pairwiseSum, WhiteboxError } from '../../base/index.ts'
+import { kahanSum, MdmlError, pairwiseSum } from '../../base/index.ts'
 import { item, tensor, type Value } from '../../tensor/index.ts'
 
 const buffer = new DataView(new ArrayBuffer(8))
@@ -30,7 +30,7 @@ function fromBits(b: bigint): number {
  * @concept floating-point
  * @example
  * ```ts
- * import { nextAfter } from 'whitebox-engine/numerics/approximation'
+ * import { nextAfter } from 'mdml-engine/numerics/approximation'
  * nextAfter(1, 2) - 1 // => 2.220446049250313e-16
  * ```
  */
@@ -49,7 +49,7 @@ export function nextAfter(x: number, y: number): number {
  * @returns The spacing.
  * @example
  * ```ts
- * import { ulp } from 'whitebox-engine/numerics/approximation'
+ * import { ulp } from 'mdml-engine/numerics/approximation'
  * ulp(1) // => 2.220446049250313e-16
  * ```
  */
@@ -66,7 +66,7 @@ export function ulp(x: number): number {
  * @returns Epsilon.
  * @example
  * ```ts
- * import { machineEpsilon } from 'whitebox-engine/numerics/approximation'
+ * import { machineEpsilon } from 'mdml-engine/numerics/approximation'
  * machineEpsilon('float32') // => 1.1920928955078125e-7
  * ```
  */
@@ -81,7 +81,7 @@ export function machineEpsilon(dtype: 'float64' | 'float32' = 'float64'): number
  * @returns The float32 value.
  * @example
  * ```ts
- * import { toFloat32 } from 'whitebox-engine/numerics/approximation'
+ * import { toFloat32 } from 'mdml-engine/numerics/approximation'
  * toFloat32(0.1) // => 0.10000000149011612
  * ```
  */
@@ -97,7 +97,7 @@ export function toFloat32(x: number): number {
  * @returns [s, e] with a + b = s + e exactly.
  * @example
  * ```ts
- * import { twoSum } from 'whitebox-engine/numerics/approximation'
+ * import { twoSum } from 'mdml-engine/numerics/approximation'
  * twoSum(1, 1e-16) // => [1, 1e-16]
  * ```
  */
@@ -122,7 +122,7 @@ function split(a: number): [number, number] {
  * @returns [p, e] with a b = p + e exactly (barring overflow).
  * @example
  * ```ts
- * import { twoProduct } from 'whitebox-engine/numerics/approximation'
+ * import { twoProduct } from 'mdml-engine/numerics/approximation'
  * const [p, e] = twoProduct(0.1, 0.1)
  * e !== 0 // => true
  * ```
@@ -148,7 +148,7 @@ export type SumMethod = 'naive' | 'kahan' | 'neumaier' | 'pairwise'
  * @concept floating-point
  * @example
  * ```ts
- * import { compensatedSum } from 'whitebox-engine/numerics/approximation'
+ * import { compensatedSum } from 'mdml-engine/numerics/approximation'
  * compensatedSum([1, 1e100, 1, -1e100], 'neumaier') // => 2
  * compensatedSum([1, 1e100, 1, -1e100], 'kahan') // => 0
  * ```
@@ -187,8 +187,8 @@ export function compensatedSum(xs: ArrayLike<number>, method: SumMethod = 'neuma
  * @returns The condition number.
  * @example
  * ```ts
- * import { conditionNumber } from 'whitebox-engine/numerics/approximation'
- * import { log } from 'whitebox-engine/tensor'
+ * import { conditionNumber } from 'mdml-engine/numerics/approximation'
+ * import { log } from 'mdml-engine/tensor'
  * // log is ill-conditioned near 1: cond = 1 / |log x|.
  * Math.round(conditionNumber((x) => log(x), 1.001)) // => 1000
  * ```
@@ -196,7 +196,7 @@ export function compensatedSum(xs: ArrayLike<number>, method: SumMethod = 'neuma
 export function conditionNumber(f: (x: Value) => Value, x: number): number {
   const fx = item(f(tensor(x)))
   const d = item(grad(f)(tensor(x)) as Value)
-  if (fx === 0) throw new WhiteboxError('value', 'conditionNumber: f(x) = 0')
+  if (fx === 0) throw new MdmlError('value', 'conditionNumber: f(x) = 0')
   return Math.abs((x * d) / fx)
 }
 
@@ -210,8 +210,8 @@ export function conditionNumber(f: (x: Value) => Value, x: number): number {
  * @returns The propagated standard deviation.
  * @example
  * ```ts
- * import { propagateError } from 'whitebox-engine/numerics/approximation'
- * import { prod } from 'whitebox-engine/tensor'
+ * import { propagateError } from 'mdml-engine/numerics/approximation'
+ * import { prod } from 'mdml-engine/tensor'
  * // The area of a 2 x 3 rectangle with sides known to 0.1: sqrt((3 * 0.1)^2 + (2 * 0.1)^2).
  * Math.abs(propagateError((v) => prod(v), [2, 3], [0.1, 0.1]) - Math.sqrt(0.13)) < 1e-12 // => true
  * ```
@@ -229,7 +229,7 @@ export function propagateError(f: (x: Value) => Value, x: readonly number[], sig
  * @returns Digits (Infinity when equal).
  * @example
  * ```ts
- * import { significantDigits } from 'whitebox-engine/numerics/approximation'
+ * import { significantDigits } from 'mdml-engine/numerics/approximation'
  * Math.round(significantDigits(3.14159, Math.PI)) // => 6
  * ```
  */

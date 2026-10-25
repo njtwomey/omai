@@ -1,10 +1,10 @@
 /**
  * Constraint satisfaction played value by value on the puzzle's own board, from the core's traced solvers
- * (`whitebox-engine/search`): backtracking with variable and value ordering and inference, or min-conflicts local
+ * (`mdml-engine/search`): backtracking with variable and value ordering and inference, or min-conflicts local
  * search. Ready-made plays put queens on a chess board, digits in a Sudoku and colours on a map.
  */
 
-import { type Json, WhiteboxError } from '../../lib/base/index.ts'
+import { type Json, MdmlError } from '../../lib/base/index.ts'
 import { type BoardLayout, type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, key as makeKey, randint } from '../../lib/random/index.ts'
 import {
@@ -153,7 +153,7 @@ export function playCsp<D>(
       frames.push({ ...drawn, caption, m: [s.assignments, s.backtracks, s.depth] })
       last = s
     }
-    if (last === undefined) throw new WhiteboxError('value', 'playCsp: the solver did not start')
+    if (last === undefined) throw new MdmlError('value', 'playCsp: the solver did not start')
     status = last.status === 'running' ? 'budget' : last.status
     final = status === 'solved' ? { ...assignment } : null
     steps = frames.length - 1
@@ -186,7 +186,7 @@ export function playCsp<D>(
       frames.push({ ...picture.draw(view), caption, m: [s.conflicts] })
       last = s
     }
-    if (last === undefined) throw new WhiteboxError('value', 'playCsp: the solver did not start')
+    if (last === undefined) throw new MdmlError('value', 'playCsp: the solver did not start')
     status = last.conflicts === 0 ? 'solved' : 'budget'
     final = status === 'solved' ? { ...last.assignment } : null
     steps = frames.length - 1

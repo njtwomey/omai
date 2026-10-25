@@ -1,5 +1,5 @@
 /**
- * MCMC diagnostics, as ArviZ, part of `whitebox-engine/sampling`: autocorrelation, R-hat, effective sample sizes and
+ * MCMC diagnostics, as ArviZ, part of `mdml-engine/sampling`: autocorrelation, R-hat, effective sample sizes and
  * Monte Carlo standard errors, highest density and equal-tailed intervals, and the posterior summary and health checks
  * (divergences, tree depth, E-BFMI) that say whether chains can be trusted.
  *

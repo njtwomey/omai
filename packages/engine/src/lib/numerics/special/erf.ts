@@ -29,8 +29,8 @@ const dawsnP = special('dawsn', misc.dawsn, [([x], out) => add(1, mul(mul(x as V
  * @concept special-functions
  * @example
  * ```ts
- * import { erf } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { erf } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(erf(0)) // => 0
  * ```
  */
@@ -45,8 +45,8 @@ export function erf(x: TensorLike): Value {
  * @returns erfc(x), differentiable.
  * @example
  * ```ts
- * import { erfc } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { erfc } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(erfc(0)) // => 1
  * ```
  */
@@ -61,8 +61,8 @@ export function erfc(x: TensorLike): Value {
  * @returns erfcx(x), differentiable.
  * @example
  * ```ts
- * import { erfcx } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { erfcx } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(erfcx(0)) // => 1
  * ```
  */
@@ -77,8 +77,8 @@ export function erfcx(x: TensorLike): Value {
  * @returns The x with erf(x) = y, differentiable.
  * @example
  * ```ts
- * import { erfinv } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { erfinv } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(erfinv(0)) // => 0
  * ```
  */
@@ -93,8 +93,8 @@ export function erfinv(y: TensorLike): Value {
  * @returns The x with erfc(x) = y, differentiable.
  * @example
  * ```ts
- * import { erfcinv } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { erfcinv } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(erfcinv(1)) // => 0
  * ```
  */
@@ -109,8 +109,8 @@ export function erfcinv(y: TensorLike): Value {
  * @returns D(x), differentiable (D' = 1 - 2 x D).
  * @example
  * ```ts
- * import { dawsn } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { dawsn } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(dawsn(0)) // => 0
  * ```
  */

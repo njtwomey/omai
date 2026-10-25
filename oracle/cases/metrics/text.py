@@ -10,6 +10,8 @@ import jiwer
 import numpy as np
 import sacrebleu
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from rouge_score import rouge_scorer
 from sacrebleu.metrics.chrf import CHRF
 from sacrebleu.metrics.ter import TER
@@ -20,8 +22,6 @@ from torchmetrics.functional.text.squad import (
     _compute_exact_match_score,  # pyright: ignore[reportPrivateUsage]
     _compute_f1_score,  # pyright: ignore[reportPrivateUsage]
 )
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {
     "jiwer": version("jiwer"),

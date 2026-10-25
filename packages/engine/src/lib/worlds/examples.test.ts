@@ -10,12 +10,12 @@ import * as trace from '../trace/index.ts'
 import * as worlds from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'whitebox-engine/worlds': worlds,
-  'whitebox-engine/graph': graph,
-  'whitebox-engine/scene': scene,
-  'whitebox-engine/random': random,
-  'whitebox-engine/tensor': tensor,
-  'whitebox-engine/trace': trace,
+  'mdml-engine/worlds': worlds,
+  'mdml-engine/graph': graph,
+  'mdml-engine/scene': scene,
+  'mdml-engine/random': random,
+  'mdml-engine/tensor': tensor,
+  'mdml-engine/trace': trace,
 }
 
 interface Example {

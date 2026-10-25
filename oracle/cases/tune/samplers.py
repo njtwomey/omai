@@ -7,9 +7,9 @@ import warnings
 
 import optuna
 import sklearn
+from mdml_oracle.fixture import Case, Json, case
 from optuna.samplers import QMCSampler
 from sklearn.model_selection import ParameterGrid
-from whitebox_oracle.fixture import Case, Json, case
 
 REFERENCE: dict[str, str] = {"optuna": optuna.__version__, "scikit-learn": sklearn.__version__}
 

@@ -55,12 +55,12 @@ const noise = (key: Key, shape: readonly number[], batch: readonly number[]): Va
  * @param loc - Mean.
  * @param scale - Standard deviation (positive).
  * @returns The distribution; `rsample` is loc + scale eps.
- * @throws WhiteboxError with code `value` when the scale is not positive.
+ * @throws MdmlError with code `value` when the scale is not positive.
  * @concept distributions
  * @example
  * ```ts
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(normal(0, 1).cdf(0)) // => 0.5
  * ```
  */
@@ -98,8 +98,8 @@ export function normal(loc: TensorLike = 0, scale: TensorLike = 1): Distribution
  * @returns The distribution; `rsample` is |scale eps|.
  * @example
  * ```ts
- * import { halfNormal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { halfNormal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(halfNormal(1).cdf(0)) // => 0
  * ```
  */
@@ -137,8 +137,8 @@ export function halfNormal(scale: TensorLike = 1): Distribution {
  * @returns The distribution; `rsample` is exp(mu + sigma eps).
  * @example
  * ```ts
- * import { logNormal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { logNormal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(logNormal(0, 1).cdf(1)) // => 0.5
  * ```
  */
@@ -178,8 +178,8 @@ export function logNormal(mu: TensorLike = 0, sigma: TensorLike = 1): Distributi
  * @returns The distribution; `rsample` is the inverse CDF of uniform noise, differentiable in every parameter.
  * @example
  * ```ts
- * import { truncatedNormal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { truncatedNormal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(truncatedNormal(0, 1, -1, 1).cdf(0)) - 0.5) < 1e-14 // => true
  * ```
  */
@@ -240,8 +240,8 @@ export function truncatedNormal(loc: TensorLike, scale: TensorLike, low: TensorL
  *   entropy are numerical (as in scipy) and differentiable.
  * @example
  * ```ts
- * import { skewNormal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { skewNormal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(skewNormal(0, 1, 0).cdf(0)) // => 0.5
  * Math.abs(item(skewNormal(0, 1, 3).mean()) - (3 / Math.sqrt(10)) * Math.sqrt(2 / Math.PI)) < 1e-15 // => true
  * ```

@@ -4,8 +4,8 @@
  */
 
 import type { EChartsCoreOption, ECharts as EChartsInstance } from 'echarts/core'
+import type { Pixels } from 'mdml-engine/scene'
 import { type CSSProperties, type ReactElement, useEffect, useRef, useState } from 'react'
-import type { Pixels } from 'whitebox-engine/scene'
 import { colourSelection, type ImageEncoder } from '../charts/selection.ts'
 import type { Figure } from '../figure/figure.ts'
 import { pngDataUrl } from '../svg/png.ts'
@@ -32,7 +32,7 @@ function canvasImage(pixels: Pixels): unknown {
 
 /** Props of {@link Chart}. */
 export interface ChartProps {
-  /** The option, from a `whitebox-render/charts` builder or written by hand. */
+  /** The option, from a `mdml-render/charts` builder or written by hand. */
   readonly option: EChartsCoreOption
   /** A figure giving the chart's fixed width and height (the builders' default figure is 640 by 400). */
   readonly figure?: Figure
@@ -154,7 +154,7 @@ export function Chart(props: ChartProps): ReactElement {
       ref={ref}
       className={props.className}
       style={{ width, height, maxWidth: '100%', ...props.style }}
-      data-whitebox-chart=""
+      data-mdml-chart=""
     />
   )
 }

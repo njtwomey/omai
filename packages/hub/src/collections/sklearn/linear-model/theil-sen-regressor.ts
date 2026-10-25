@@ -3,7 +3,7 @@
  * tabular regression data.
  */
 
-import { theilSenRegressor as theilSenRegressorMethod } from 'whitebox-engine/methods/linear'
+import { theilSenRegressor as theilSenRegressorMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

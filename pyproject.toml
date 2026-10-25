@@ -1,7 +1,7 @@
 [project]
-name = "whitebox-oracle"
+name = "mdml-oracle"
 version = "0.1.0"
-description = "Python ground truth for whitebox-js: golden fixtures and dataset vendoring."
+description = "Python ground truth for mdml-js: golden fixtures and dataset vendoring."
 requires-python = ">=3.13"
 dependencies = ["pydantic>=2", "pydantic-settings>=2", "numpy>=2"]
 
@@ -114,7 +114,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["oracle/whitebox_oracle"]
+packages = ["oracle/mdml_oracle"]
 
 [tool.ruff]
 line-length = 120
@@ -127,7 +127,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "ANN"]
 [tool.pyright]
 include = ["oracle"]
 pythonVersion = "3.13"
-# Resolve `whitebox_oracle` as local source, not as an installed library without a py.typed marker.
+# Resolve `mdml_oracle` as local source, not as an installed library without a py.typed marker.
 extraPaths = ["oracle"]
 typeCheckingMode = "strict"
 # Our own signatures are fully annotated (ruff ANN) and checked strictly. Several oracle libraries (scikit-learn,

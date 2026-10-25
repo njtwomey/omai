@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials } from 'whitebox-engine/exposition'
+import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { intervalChart } from '../charts/evaluation.ts'
@@ -49,8 +49,8 @@ export function isIntercept(name: string): boolean {
  * @returns The table.
  * @example
  * ```ts
- * import { coefficientTable } from 'whitebox-engine/exposition'
- * import { coefficientRows } from 'whitebox-render/views'
+ * import { coefficientTable } from 'mdml-engine/exposition'
+ * import { coefficientRows } from 'mdml-render/views'
  * coefficientRows(coefficientTable({ names: ['x'], estimates: [2], standardErrors: [0.1] })).columns // => ['coefficient', 'estimate', 'std. error', 'interval']
  * ```
  */

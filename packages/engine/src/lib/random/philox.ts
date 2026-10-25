@@ -1,6 +1,6 @@
 /**
  * The Philox4x32-10 block function (Salmon et al., 2011): a keyed bijection from a 128-bit counter to 128 random bits,
- * computed exactly in float64 arithmetic. It is the counter-based generator underneath every key in whitebox-js.
+ * computed exactly in float64 arithmetic. It is the counter-based generator underneath every key in mdml-js.
  */
 
 const M0 = 0xd2511f53
@@ -26,7 +26,7 @@ function mulhi(a: number, b: number): number {
  * The Philox4x32-10 block function (Salmon et al., 2011): a keyed bijection from a 128-bit counter to 128 random bits.
  *
  * Counter-based generators need no mutable state: the same key and counter always give the same bits, and any block
- * can be computed directly. This makes every random draw in whitebox-js reproducible and order independent.
+ * can be computed directly. This makes every random draw in mdml-js reproducible and order independent.
  *
  * @param counter - Four unsigned 32-bit words.
  * @param key - Two unsigned 32-bit words.
@@ -35,7 +35,7 @@ function mulhi(a: number, b: number): number {
  * @see https://www.thesalmons.org/john/random123/papers/random123sc11.pdf
  * @example
  * ```ts
- * import { philox4x32 } from 'whitebox-engine/random'
+ * import { philox4x32 } from 'mdml-engine/random'
  * philox4x32([0, 0, 0, 0], [0, 0]) // => [0x6627e8d5, 0xe169c58d, 0xbc57ac4c, 0x9b00dbd8]
  * ```
  */

@@ -4,7 +4,7 @@
  * alpha shapes, the boundary of the triangles below a circumradius.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 
 /** A point in the plane. */
@@ -59,7 +59,7 @@ export function toPoints(points: TensorLike | readonly Point2[]): Point2[] {
   if (Array.isArray(points) && (points.length === 0 || Array.isArray(points[0])))
     return (points as readonly Point2[]).map((p) => [p[0], p[1]])
   const t = concreteOrThrow(promoteFloat(points as TensorLike)[0] as Tensor, 'points')
-  if (t.shape.length !== 2 || t.shape[1] !== 2) throw new WhiteboxError('shape', 'points must be [n, 2]')
+  if (t.shape.length !== 2 || t.shape[1] !== 2) throw new MdmlError('shape', 'points must be [n, 2]')
   const flat = toFlat(t)
   return Array.from({ length: t.shape[0] ?? 0 }, (_, i) => [flat[2 * i] ?? 0, flat[2 * i + 1] ?? 0])
 }
@@ -74,14 +74,14 @@ export function toPoints(points: TensorLike | readonly Point2[]): Point2[] {
  * @concept delaunay
  * @example
  * ```ts
- * import { delaunay } from 'whitebox-engine/numerics/geometry'
+ * import { delaunay } from 'mdml-engine/numerics/geometry'
  * delaunay([[0, 0], [1, 0], [0, 1], [1, 1]]).simplices.length // => 2
  * ```
  */
 export function delaunay(points: TensorLike | readonly Point2[]): Delaunay {
   const pts = toPoints(points)
   const n = pts.length
-  if (n < 3) throw new WhiteboxError('value', 'delaunay: at least three points are needed')
+  if (n < 3) throw new MdmlError('value', 'delaunay: at least three points are needed')
   let minX = Number.POSITIVE_INFINITY
   let minY = Number.POSITIVE_INFINITY
   let maxX = Number.NEGATIVE_INFINITY
@@ -151,7 +151,7 @@ export function delaunay(points: TensorLike | readonly Point2[]): Delaunay {
   const simplices = tris
     .filter((t, i) => alive[i] && t[0] < n && t[1] < n && t[2] < n)
     .map((t): Tri => (orient(at(t[0]), at(t[1]), at(t[2])) > 0 ? t : [t[0], t[2], t[1]]))
-  if (simplices.length === 0) throw new WhiteboxError('value', 'delaunay: the points are collinear')
+  if (simplices.length === 0) throw new MdmlError('value', 'delaunay: the points are collinear')
   // Neighbours across the edge opposite each vertex.
   const edgeOwner = new Map<string, { tri: number; vertex: number }[]>()
   simplices.forEach((t, ti) => {
@@ -218,7 +218,7 @@ export function delaunay(points: TensorLike | readonly Point2[]): Delaunay {
  * @returns The three weights.
  * @example
  * ```ts
- * import { barycentricCoordinates } from 'whitebox-engine/numerics/geometry'
+ * import { barycentricCoordinates } from 'mdml-engine/numerics/geometry'
  * barycentricCoordinates([[0, 0], [1, 0], [0, 1]], [0.25, 0.25]) // => [0.5, 0.25, 0.25]
  * ```
  */
@@ -228,7 +228,7 @@ export function barycentricCoordinates(
 ): [number, number, number] {
   const [a, b, c] = triangle
   const area = orient(a, b, c)
-  if (area === 0) throw new WhiteboxError('value', 'barycentricCoordinates: degenerate triangle')
+  if (area === 0) throw new MdmlError('value', 'barycentricCoordinates: degenerate triangle')
   const l1 = orient(p, c, a) / area
   const l2 = orient(p, a, b) / area
   return [1 - l1 - l2, l1, l2]
@@ -256,7 +256,7 @@ export interface Voronoi {
  * @concept voronoi
  * @example
  * ```ts
- * import { voronoi } from 'whitebox-engine/numerics/geometry'
+ * import { voronoi } from 'mdml-engine/numerics/geometry'
  * voronoi([[0, 0], [2, 0], [0, 2], [2, 2], [1, 1]]).regions[4].length // => 4
  * ```
  */
@@ -308,7 +308,7 @@ export function voronoi(points: TensorLike | readonly Point2[]): Voronoi {
  * @returns The boundary edges and the kept triangles.
  * @example
  * ```ts
- * import { alphaShape } from 'whitebox-engine/numerics/geometry'
+ * import { alphaShape } from 'mdml-engine/numerics/geometry'
  * alphaShape([[0, 0], [1, 0], [0, 1], [1, 1]], 10).edges.length // => 4
  * ```
  */

@@ -5,7 +5,7 @@
  * record of what happened to each triangle.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Vec3 } from '../scene/index.ts'
 import { check3, cross3, dot3, normalise3, sub3 } from './_vec3.ts'
 import { cameraBasis, type RenderCamera, transformPoint, viewProjection } from './camera.ts'
@@ -31,7 +31,7 @@ export type Point2 = readonly [number, number]
  * @concept rasterisation
  * @example
  * ```ts
- * import { edgeFunction } from 'whitebox-engine/graphics'
+ * import { edgeFunction } from 'mdml-engine/graphics'
  * [edgeFunction([0, 0], [1, 0], [0, 1]), edgeFunction([0, 0], [1, 0], [0, -1])] // => [1, -1]
  * ```
  */
@@ -71,7 +71,7 @@ export const SUBPIXEL = 256
  * @concept rasterisation
  * @example
  * ```ts
- * import { rasteriseTriangle } from 'whitebox-engine/graphics'
+ * import { rasteriseTriangle } from 'mdml-engine/graphics'
  * rasteriseTriangle([0, 0], [4, 0], [0, 4], 4, 4).map((f) => [f.x, f.y]) // => [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [0, 2]]
  * ```
  */
@@ -126,7 +126,7 @@ export interface ClipVertex {
  * @concept clipping
  * @example
  * ```ts
- * import { clipPolygon } from 'whitebox-engine/graphics'
+ * import { clipPolygon } from 'mdml-engine/graphics'
  * const tri = [{ clip: [0, 0, 0, 1], attributes: [0] }, { clip: [2, 0, 0, 1], attributes: [1] }, { clip: [0, 0.5, 0, 1], attributes: [0] }]
  * clipPolygon(tri).map((v) => v.clip[0]) // => [0, 1, 1, 0]
  * ```
@@ -179,7 +179,7 @@ export function clipPolygon(polygon: readonly ClipVertex[]): ClipVertex[] {
  * @concept back-face-culling
  * @example
  * ```ts
- * import { isBackFacing, pinholeCamera } from 'whitebox-engine/graphics'
+ * import { isBackFacing, pinholeCamera } from 'mdml-engine/graphics'
  * const cam = pinholeCamera()
  * [isBackFacing(cam, [0, 0, 0], [1, 0, 0], [0, 1, 0]), isBackFacing(cam, [0, 0, 0], [0, 1, 0], [1, 0, 0])] // => [false, true]
  * ```
@@ -206,13 +206,13 @@ export interface DepthBuffer {
  * @concept depth-buffer
  * @example
  * ```ts
- * import { depthBuffer } from 'whitebox-engine/graphics'
+ * import { depthBuffer } from 'mdml-engine/graphics'
  * depthBuffer(2, 1).depth // => Float64Array.from([Infinity, Infinity])
  * ```
  */
 export function depthBuffer(width: number, height: number): DepthBuffer {
   if (!(Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0)) {
-    throw new WhiteboxError('value', 'depthBuffer: the size must be positive integers')
+    throw new MdmlError('value', 'depthBuffer: the size must be positive integers')
   }
   return { width, height, depth: new Float64Array(width * height).fill(Number.POSITIVE_INFINITY) }
 }
@@ -228,7 +228,7 @@ export function depthBuffer(width: number, height: number): DepthBuffer {
  * @concept depth-buffer
  * @example
  * ```ts
- * import { depthBuffer, depthTest } from 'whitebox-engine/graphics'
+ * import { depthBuffer, depthTest } from 'mdml-engine/graphics'
  * const b = depthBuffer(1, 1)
  * [depthTest(b, 0, 0, 0.5), depthTest(b, 0, 0, 0.7), depthTest(b, 0, 0, 0.2)] // => [true, false, true]
  * ```
@@ -263,11 +263,11 @@ export interface Mesh {
  * @param triangles - Index triples.
  * @param attributes - Optional colours, normals and texture coordinates per vertex.
  * @returns The mesh.
- * @throws WhiteboxError with code `value` for bad indices or attribute counts.
+ * @throws MdmlError with code `value` for bad indices or attribute counts.
  * @concept rasterisation
  * @example
  * ```ts
- * import { mesh } from 'whitebox-engine/graphics'
+ * import { mesh } from 'mdml-engine/graphics'
  * mesh([[0, 0, 0], [1, 0, 0], [0, 1, 0]], [[0, 1, 2]]).triangles.length // => 1
  * ```
  */
@@ -280,11 +280,11 @@ export function mesh(
   for (const [i, p] of positions.entries()) check3(p, `position ${i}`)
   for (const t of triangles) {
     if (!t.every((i) => Number.isInteger(i) && i >= 0 && i < n))
-      throw new WhiteboxError('value', 'mesh: index out of range')
+      throw new MdmlError('value', 'mesh: index out of range')
   }
   for (const [name, list] of Object.entries(attributes)) {
     if (list !== undefined && (list as readonly unknown[]).length !== n) {
-      throw new WhiteboxError('value', `mesh: ${name} needs one entry per vertex`)
+      throw new MdmlError('value', `mesh: ${name} needs one entry per vertex`)
     }
   }
   return { positions, triangles, ...attributes }
@@ -339,7 +339,7 @@ export interface RasterResult {
  * @concept rasterisation
  * @example
  * ```ts
- * import { mesh, pinholeCamera, rasteriseMesh } from 'whitebox-engine/graphics'
+ * import { mesh, pinholeCamera, rasteriseMesh } from 'mdml-engine/graphics'
  * const quad = mesh([[-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]], [[0, 1, 2], [0, 2, 3]], { colours: [[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]] })
  * const r = rasteriseMesh(quad, pinholeCamera({ eye: [0, 0, 3] }), { width: 8, height: 8 })
  * [Array.from(r.image.rgb.slice(3 * 36, 3 * 36 + 3)), r.triangles.map((t) => t.culled)] // => [[1, 0, 0], [false, false]]

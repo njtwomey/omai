@@ -3,7 +3,7 @@
  * regression data and one-dimensional regression curves.
  */
 
-import { bayesianRidge as bayesianRidgeMethod } from 'whitebox-engine/methods/linear'
+import { bayesianRidge as bayesianRidgeMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

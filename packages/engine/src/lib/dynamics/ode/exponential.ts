@@ -4,7 +4,7 @@
  * exponential Euler, and ETDRK4 (Cox and Matthews).
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { expm } from '../../numerics/linalg/index.ts'
 import { add, matmul, mul, primalOf, reshape, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
 import {
@@ -38,8 +38,8 @@ export interface SemilinearProblem {
  * @returns The field.
  * @example
  * ```ts
- * import { semilinearField } from 'whitebox-engine/dynamics/ode'
- * import { tensor, toArray, zerosLike } from 'whitebox-engine/tensor'
+ * import { semilinearField } from 'mdml-engine/dynamics/ode'
+ * import { tensor, toArray, zerosLike } from 'mdml-engine/tensor'
  * toArray(semilinearField({ linear: [-2], nonlinear: (_t, y) => zerosLike(y) })(0, tensor([3]))) // => [-6]
  * ```
  */
@@ -52,7 +52,7 @@ function applyLinear(l: Value, y: Value): Value {
   if (l.shape.length === y.shape.length && l.shape.every((n, i) => n === y.shape[i])) return mul(l, y)
   const n = numbersOf(y).length
   if (l.shape.length === 2 && l.shape[0] === n && l.shape[1] === n) return reshape(matmul(l, reshape(y, [n])), y.shape)
-  throw new WhiteboxError('shape', `the linear part [${l.shape}] fits neither the state [${y.shape}] nor [n, n]`)
+  throw new MdmlError('shape', `the linear part [${l.shape}] fits neither the state [${y.shape}] nor [n, n]`)
 }
 
 /**
@@ -65,7 +65,7 @@ function applyLinear(l: Value, y: Value): Value {
  * @concept exponential-integrator
  * @example
  * ```ts
- * import { phi } from 'whitebox-engine/dynamics/ode'
+ * import { phi } from 'mdml-engine/dynamics/ode'
  * phi(0, 3) // => [1, 1, 0.5, 0.16666666666666666]
  * ```
  */
@@ -104,15 +104,15 @@ export function phi(z: number, k: number): number[] {
  * @concept exponential-integrator
  * @example
  * ```ts
- * import { phiMatrix } from 'whitebox-engine/dynamics/ode'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { phiMatrix } from 'mdml-engine/dynamics/ode'
+ * import { toFlat } from 'mdml-engine/tensor'
  * phiMatrix([[0]], 2).map((m) => toFlat(m)) // => [[1], [1], [0.5]]
  * ```
  */
 export function phiMatrix(a: TensorLike, k: number): Tensor[] {
   const av = numbersOf(floatState(a))
   const n = Math.round(Math.sqrt(av.length))
-  if (n * n !== av.length) throw new WhiteboxError('shape', 'phiMatrix: a square matrix is needed')
+  if (n * n !== av.length) throw new MdmlError('shape', 'phiMatrix: a square matrix is needed')
   const m = n * (k + 1)
   const big = new Float64Array(m * m)
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) big[i * m + j] = av[i * n + j] ?? 0
@@ -182,7 +182,7 @@ function exponentialStepper(
   advance: (t: number, y: Value, h: number, n: (t: number, y: Value) => Value) => Value,
 ): Stepper<ExponentialState> {
   const dt = options.dt
-  if (!(dt > 0) || !Number.isFinite(dt)) throw new WhiteboxError('value', `${name}: dt must be positive`)
+  if (!(dt > 0) || !Number.isFinite(dt)) throw new MdmlError('value', `${name}: dt must be positive`)
   const full = semilinearField(problem)
   return {
     name,
@@ -195,7 +195,7 @@ function exponentialStepper(
       return { ...initialState(t0, y0, tBound, dt, c, order), f, fy, fOld: fy, counts: snapshot(c) }
     },
     step: (s) => {
-      if (s.status !== 'running') throw new WhiteboxError('value', `${name}: the integration has ended`)
+      if (s.status !== 'running') throw new MdmlError('value', `${name}: the integration has ended`)
       if (atBound(s)) return { ...s, tOld: s.t, t: s.tBound, status: 'finished', attempts: [] }
       const c: Counter = { ...s.counts }
       const n = tally(problem.nonlinear, c)
@@ -231,8 +231,8 @@ function exponentialStepper(
  * @concept exponential-integrator
  * @example
  * ```ts
- * import { exponentialEuler, semilinearField, solveIvp } from 'whitebox-engine/dynamics/ode'
- * import { toFlat, zerosLike } from 'whitebox-engine/tensor'
+ * import { exponentialEuler, semilinearField, solveIvp } from 'mdml-engine/dynamics/ode'
+ * import { toFlat, zerosLike } from 'mdml-engine/tensor'
  * const problem = { linear: [-2], nonlinear: (_t: number, y: never) => zerosLike(y) }
  * const sol = solveIvp(semilinearField(problem), [0, 1], [1], { method: exponentialEuler(problem, { dt: 0.5 }) })
  * Math.abs((toFlat(sol.y)[2] ?? 0) - Math.exp(-2)) < 1e-15 // => true
@@ -258,8 +258,8 @@ export function exponentialEuler(problem: SemilinearProblem, options: Exponentia
  * @reference Kassam and Trefethen (2005), Fourth-order time-stepping for stiff PDEs.
  * @example
  * ```ts
- * import { etdrk4 } from 'whitebox-engine/dynamics/ode'
- * import { zerosLike } from 'whitebox-engine/tensor'
+ * import { etdrk4 } from 'mdml-engine/dynamics/ode'
+ * import { zerosLike } from 'mdml-engine/tensor'
  * etdrk4({ linear: [-1], nonlinear: (_t, y) => zerosLike(y) }, { dt: 0.1 }).order // => 4
  * ```
  */

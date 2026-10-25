@@ -3,7 +3,7 @@ family relations, and the can-reach network of Quinlan (1990, figure 2) learned 
 the gain of every chosen literal are compared."""
 
 from cases.logic.ilp._ilp import foil
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"quinlan-1990": "Learning logical definitions from relations; reference port"}
 

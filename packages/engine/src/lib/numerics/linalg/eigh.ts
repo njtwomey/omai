@@ -113,8 +113,8 @@ export interface EighResult {
  * @concept linear-algebra
  * @example
  * ```ts
- * import { eigh } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { eigh } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(eigh([[2, 1], [1, 2]]).eigenvalues) // => [1, 3]
  * ```
  */
@@ -131,8 +131,8 @@ export function eigh(a: TensorLike, options: { readonly method?: EighMethod } = 
  * @returns The eigenvalues, differentiable (also at repeated eigenvalues, for symmetric functions of them).
  * @example
  * ```ts
- * import { eigvalsh } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { eigvalsh } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(eigvalsh([[4, 0], [0, 1]])) // => [1, 4]
  * ```
  */
@@ -158,7 +158,7 @@ export interface JacobiSweep {
  * @concept jacobi-eigenvalue
  * @example
  * ```ts
- * import { jacobiEigenSteps } from 'whitebox-engine/numerics/linalg'
+ * import { jacobiEigenSteps } from 'mdml-engine/numerics/linalg'
  * jacobiEigenSteps([[2, 1], [1, 2]]).sweeps[0].rotations.length // => 1
  * ```
  */

@@ -2,8 +2,8 @@
  * The standard view of a threshold sweep: the threshold explorer over the record, its threshold the reader's to drag.
  */
 
+import type { ThresholdSweep } from 'mdml-engine/exposition'
 import type { ReactElement } from 'react'
-import type { ThresholdSweep } from 'whitebox-engine/exposition'
 import { ThresholdExplorer, type ThresholdExplorerProps } from '../ThresholdExplorer.tsx'
 import type { RecordViewProps } from './_frame.tsx'
 

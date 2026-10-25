@@ -4,7 +4,7 @@
  * background, and the option update that redraws the selected layer.
  */
 
-import type { Pixels } from 'whitebox-engine/scene'
+import type { Pixels } from 'mdml-engine/scene'
 import { pngDataUrl } from '../svg/png.ts'
 
 /**
@@ -51,7 +51,7 @@ export const DIMMED_OPACITY = 0.15
  * @returns The dimmed red, green and blue.
  * @example
  * ```ts
- * import { dimColour } from 'whitebox-render/charts'
+ * import { dimColour } from 'mdml-render/charts'
  * dimColour([200, 100, 0], [0, 0, 0], 1) // => [200, 100, 0]
  * dimColour([200, 100, 0], [0, 0, 0], 0) // => [30, 15, 0]
  * ```
@@ -65,7 +65,7 @@ export function dimColour(rgb: readonly number[], background: readonly number[],
 }
 
 /** The key under which a visual map in a chart option carries its layer's {@link ColourSelect} and series id. */
-export const SELECT_KEY = '__whiteboxSelect'
+export const SELECT_KEY = '__mdmlSelect'
 
 interface Selectable {
   readonly series: string
@@ -94,7 +94,7 @@ function inside(v: number, lo: number, hi: number, spread: number): number {
  * @returns The weights, or undefined for the whole range.
  * @example
  * ```ts
- * import { selectionFilter } from 'whitebox-render/charts'
+ * import { selectionFilter } from 'mdml-render/charts'
  * const keep = selectionFilter({ min: 0, max: 10 }, [2, 5])
  * keep?.(3) // => 1
  * keep?.(7) // => 0
@@ -155,7 +155,7 @@ export function selectionFilter(
  * @returns The update, or undefined.
  * @example
  * ```ts
- * import { colourSelection, heatmapChart } from 'whitebox-render/charts'
+ * import { colourSelection, heatmapChart } from 'mdml-render/charts'
  * const option = heatmapChart([[0, 1], [2, 3]])
  * const id = option.visualMap[0].id
  * colourSelection(option, { visualMapId: id, selected: [1, 2] })?.series[0].id // => '__selectable-0'

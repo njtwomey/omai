@@ -5,7 +5,7 @@
  * and decision regions other clusterers reuse.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type ClusteringSteps, clusteringSteps, type DecisionSurface } from '../../lib/exposition/index.ts'
 import { type PairwiseKernelMetric, pairwiseKernels } from '../../lib/kernels/index.ts'
 import {
@@ -138,10 +138,10 @@ function meanVariance(data: Float64Array, n: number, d: number): number {
 export function initialCentres(x: TensorLike, k: number, init: KMeansInit, key: Key): number[][] {
   const m = matrixView(x, 'initialCentres')
   if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-    throw new WhiteboxError('value', `initialCentres: nClusters must be in 1..${m.n}, got ${k}`)
+    throw new MdmlError('value', `initialCentres: nClusters must be in 1..${m.n}, got ${k}`)
   if (typeof init !== 'string') {
     if (init.length !== k || init.some((r) => r.length !== m.d))
-      throw new WhiteboxError('shape', `initialCentres: init must be [${k}, ${m.d}]`)
+      throw new MdmlError('shape', `initialCentres: init must be [${k}, ${m.d}]`)
     return init.map((r) => [...r])
   }
   if (init === 'random') {
@@ -528,7 +528,7 @@ export function bisectingKMeans(hyper: BisectingKMeansHyper = {}): Estimator<Bis
         const m = matrixView(data.x, 'bisectingKMeans')
         const k = h.nClusters ?? 3
         if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-          throw new WhiteboxError('value', `bisectingKMeans: nClusters must be in 1..${m.n}`)
+          throw new MdmlError('value', `bisectingKMeans: nClusters must be in 1..${m.n}`)
         const row = (i: number): number[] => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d))
         const mean = (rows: readonly number[]): number[] => {
           const c = new Array<number>(m.d).fill(0)

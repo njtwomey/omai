@@ -4,7 +4,7 @@
  * autocorrelation pitch, the harmonic product spectrum and the FFT autocorrelation they rest on.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { irfft, nextFastLen, rfft } from '../../numerics/fourier/index.ts'
 import { betainc } from '../../numerics/special/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
@@ -24,7 +24,7 @@ import { getWindow } from '../windows/index.ts'
  * @concept autocorrelation
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * Array.from(audio.autocorrelate([1, 2, 3])).map((v) => Math.round(v * 1e9) / 1e9) // => [14, 8, 3]
  * ```
  */
@@ -73,17 +73,17 @@ function framesOf(y: TensorLike, options: YinOptions, name: string): Framed {
   const frameLength = options.frameLength ?? 2048
   const hop = options.hopLength ?? Math.floor(frameLength / 4)
   if (!(options.fmin > 0 && options.fmin < options.fmax && options.fmax <= sr / 2))
-    throw new WhiteboxError('value', `${name}: need 0 < fmin < fmax <= sr / 2`)
+    throw new MdmlError('value', `${name}: need 0 < fmin < fmax <= sr / 2`)
   const x0 = samples(y, name)
   const e = (options.center ?? true) ? Math.floor(frameLength / 2) : 0
   const x = new Float64Array(x0.length + 2 * e)
   x.set(x0, e)
-  if (x.length < frameLength) throw new WhiteboxError('value', `${name}: the signal is shorter than a frame`)
+  if (x.length < frameLength) throw new MdmlError('value', `${name}: the signal is shorter than a frame`)
   const count = 1 + Math.floor((x.length - frameLength) / hop)
   const frames = Array.from({ length: count }, (_, t) => x.slice(t * hop, t * hop + frameLength))
   const minPeriod = Math.floor(sr / options.fmax)
   const maxPeriod = Math.min(Math.ceil(sr / options.fmin), frameLength - 1)
-  if (minPeriod < 1 || minPeriod >= maxPeriod) throw new WhiteboxError('value', `${name}: the period range is empty`)
+  if (minPeriod < 1 || minPeriod >= maxPeriod) throw new MdmlError('value', `${name}: the period range is empty`)
   return { frames, minPeriod, maxPeriod, sr }
 }
 
@@ -146,7 +146,7 @@ function troughs(x: Float64Array): Uint8Array {
  * @concept pitch-estimation
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const y = Array.from({ length: 4096 }, (_, i) => Math.sin((2 * Math.PI * 220 * i) / 8000))
  * Math.round(audio.yin(y, { fmin: 80, fmax: 1000, sr: 8000, frameLength: 512 })[4] ?? 0) // => 220
  * ```
@@ -271,7 +271,7 @@ function localTransition(n: number, width: number): Float64Array {
  * @concept pitch-estimation
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const y = Array.from({ length: 4096 }, (_, i) => Math.sin((2 * Math.PI * 220 * i) / 8000))
  * const r = audio.pyin(y, { fmin: 80, fmax: 1000, sr: 8000, frameLength: 512 })
  * Math.round(r.f0[4] ?? 0) // => 220
@@ -372,7 +372,7 @@ export function pyin(y: TensorLike, options: PyinOptions): PyinResult {
  * @concept pitch-estimation
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const y = Array.from({ length: 4096 }, (_, i) => Math.sin((2 * Math.PI * 200 * i) / 8000))
  * Math.abs((audio.autocorrelationPitch(y, { fmin: 80, fmax: 1000, sr: 8000, frameLength: 512 })[4] ?? 0) - 200) < 2 // => true
  * ```
@@ -401,7 +401,7 @@ export function autocorrelationPitch(y: TensorLike, options: YinOptions): Float6
  * @concept pitch-estimation
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const y = Array.from({ length: 2048 }, (_, i) => [2, 3, 4].reduce((s, h) => s + Math.sin((2 * Math.PI * 150 * h * i) / 8000), 0))
  * Math.round(audio.harmonicProductSpectrum(y, 8000).f0 / 5) * 5 // => 150
  * ```

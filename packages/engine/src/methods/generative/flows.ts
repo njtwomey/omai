@@ -5,7 +5,7 @@
  */
 
 import { valueAndGrad } from '../../lib/autodiff/index.ts'
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type EmbeddingSteps, type Explained, type Exposition, embeddingSteps } from '../../lib/exposition/index.ts'
 import type { FitOptions, LearnData } from '../../lib/learn/index.ts'
 import { type ActivationName, blocks, type Params } from '../../lib/nn/index.ts'
@@ -144,7 +144,7 @@ interface FlowFrame {
  */
 export function realNvp(data: LearnData, options: RealNvpOptions = {}, fit: FitOptions = {}): Explained<RealNvpResult> {
   const p = prepare(data, 'realNvp')
-  if (p.d < 2) throw new WhiteboxError('value', 'realNvp: needs at least two features')
+  if (p.d < 2) throw new MdmlError('value', 'realNvp: needs at least two features')
   const key = runKey(fit)
   const d = p.d
   const hidden = options.hidden ?? 24

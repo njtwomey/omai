@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import {
   crfppFeatures,
   crfppWeightOffsets,
@@ -83,7 +83,7 @@ describe('CRF++ templates', () => {
         parseCrfppTemplate(src)
         expect.unreachable()
       } catch (e) {
-        expect(isWhiteboxError(e) && e.details['line'] === l && e.details['column'] === c).toBe(true)
+        expect(isMdmlError(e) && e.details['line'] === l && e.details['column'] === c).toBe(true)
       }
     }
     expect(() => crfppFeatures(parseCrfppTemplate('U:%x[0,3]'), [['a']])).toThrow(/column 3/)

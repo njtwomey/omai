@@ -3,8 +3,8 @@
  * generation by generation.
  */
 
-import { gameOfLife, type LifePattern } from 'whitebox-engine/methods/complex-systems'
-import { bool, choice, dict, int, real } from 'whitebox-engine/space'
+import { gameOfLife, type LifePattern } from 'mdml-engine/methods/complex-systems'
+import { bool, choice, dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 
 /** Conway's Game of Life. */

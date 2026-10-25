@@ -6,7 +6,7 @@
  * some procedural levels and test on held-out ones (Procgen's protocol).
  */
 
-import { type Json, linspaceNumbers, maxOf, meanOf, minOf, WhiteboxError } from '../../lib/base/index.ts'
+import { type Json, linspaceNumbers, MdmlError, maxOf, meanOf, minOf } from '../../lib/base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../../lib/random/index.ts'
 import {
   type Agent,
@@ -83,8 +83,8 @@ export interface StudyState<R> {
  * @concept studies
  * @example
  * ```ts
- * import { studyAlgorithm } from 'whitebox-engine/methods/rl'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { studyAlgorithm } from 'mdml-engine/methods/rl'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const alg = studyAlgorithm('squares', {}, [1, 2, 3], (u) => u * u, (r) => r)
  * runAlgorithm(alg, { maxSteps: 10 }).state.results // => [1, 4, 9]
  * ```
@@ -130,7 +130,7 @@ const seedList = (seeds: number | readonly number[] | undefined): readonly numbe
 
 function budgetOf(budget: StudyBudget, name: string): StudyBudget {
   if (budget.episodes === undefined && budget.maxSteps === undefined) {
-    throw new WhiteboxError('value', `${name}: give episodes or maxSteps`)
+    throw new MdmlError('value', `${name}: give episodes or maxSteps`)
   }
   return {
     ...(budget.episodes === undefined ? {} : { episodes: budget.episodes }),
@@ -280,12 +280,12 @@ export interface LearningCurveComparison {
  * @param options - Agents, tasks, seeds, budget, final-score rule, normalisation, curve grid, aggregate, bootstrap and
  *   run options.
  * @returns Runs, scores, curves, aggregates, pairwise probabilities of improvement, profiles and the best agent.
- * @throws WhiteboxError with code `value` without agents, tasks or a budget.
+ * @throws MdmlError with code `value` without agents, tasks or a budget.
  * @concept studies
  * @example
  * ```ts
- * import { make, policyAgent } from 'whitebox-engine/rl'
- * import { compareLearningCurves, frozenLake } from 'whitebox-engine/methods/rl'
+ * import { make, policyAgent } from 'mdml-engine/rl'
+ * import { compareLearningCurves, frozenLake } from 'mdml-engine/methods/rl'
  * const env = make(frozenLake, { isSlippery: false })
  * // The shortest path across the dry lake, and an agent that walks into the left wall.
  * const path = [1, 0, 0, 0, 1, 0, 0, 0, 2, 1, 0, 0, 0, 2, 2]
@@ -303,7 +303,7 @@ export interface LearningCurveComparison {
 export function compareLearningCurves(options: CompareLearningCurvesOptions): LearningCurveComparison {
   const names = Object.keys(options.agents)
   if (names.length === 0 || options.envs.length === 0) {
-    throw new WhiteboxError('value', 'compareLearningCurves: give at least one agent and one environment')
+    throw new MdmlError('value', 'compareLearningCurves: give at least one agent and one environment')
   }
   const budget = budgetOf(options, 'compareLearningCurves')
   const seeds = seedList(options.seeds)
@@ -426,9 +426,9 @@ export interface SensitivityResult {
  * @concept studies
  * @example
  * ```ts
- * import { make, policyAgent } from 'whitebox-engine/rl'
- * import { frozenLake, sensitivityStudy } from 'whitebox-engine/methods/rl'
- * import { dict, int } from 'whitebox-engine/space'
+ * import { make, policyAgent } from 'mdml-engine/rl'
+ * import { frozenLake, sensitivityStudy } from 'mdml-engine/methods/rl'
+ * import { dict, int } from 'mdml-engine/space'
  * const env = make(frozenLake, { isSlippery: false })
  * const r = sensitivityStudy({
  *   agent: (c) => policyAgent(() => (c as { a: number }).a) as never,
@@ -440,7 +440,7 @@ export interface SensitivityResult {
 export function sensitivityStudy(options: SensitivityOptions): SensitivityResult {
   const budget = budgetOf(options, 'sensitivityStudy')
   const configs = options.configs ?? grid(options.space, options.points ?? 3)
-  if (configs.length === 0) throw new WhiteboxError('value', 'sensitivityStudy: no configurations')
+  if (configs.length === 0) throw new MdmlError('value', 'sensitivityStudy: no configurations')
   const seeds = seedList(options.seeds)
   const units = configs.flatMap((config, setting) =>
     options.envs.flatMap((env, task) => seeds.map((seed) => ({ config, setting, env, task, seed }))),
@@ -524,9 +524,9 @@ export interface VisitCountingState<G> {
  * @concept exploration
  * @example
  * ```ts
- * import { policyAgent } from 'whitebox-engine/rl'
- * import { visitCountingAgent } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { policyAgent } from 'mdml-engine/rl'
+ * import { visitCountingAgent } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const a = visitCountingAgent(policyAgent(() => 0), 3)
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 2, terminated: true, truncated: false }
  * a.learn(a.init(key(0)), t, key(1)).visits // => [1, 0, 1]
@@ -631,12 +631,12 @@ export interface ExplorationResult {
  *
  * @param options - Agents, environment, step budget, seeds, state indexing, goal test and bootstrap and run options.
  * @returns Per-agent summaries and the runs.
- * @throws WhiteboxError with code `value` when the number of states is unknown.
+ * @throws MdmlError with code `value` when the number of states is unknown.
  * @concept exploration
  * @example
  * ```ts
- * import { make, policyAgent } from 'whitebox-engine/rl'
- * import { explorationStudy, frozenLake } from 'whitebox-engine/methods/rl'
+ * import { make, policyAgent } from 'mdml-engine/rl'
+ * import { explorationStudy, frozenLake } from 'mdml-engine/methods/rl'
  * const env = make(frozenLake, { isSlippery: false })
  * const r = explorationStudy({ agents: { left: () => policyAgent(() => 0) as never }, env, maxSteps: 20, seeds: 2, reps: 20 })
  * r.agents['left']?.finalCoverage.value // => 0.0625
@@ -645,8 +645,7 @@ export interface ExplorationResult {
 export function explorationStudy(options: ExplorationOptions): ExplorationResult {
   const space = options.env.observationSpace
   const nStates = options.nStates ?? (space.kind === 'discrete' ? space.n : undefined)
-  if (nStates === undefined)
-    throw new WhiteboxError('value', 'explorationStudy: give nStates for this observation space')
+  if (nStates === undefined) throw new MdmlError('value', 'explorationStudy: give nStates for this observation space')
   const names = Object.keys(options.agents)
   const seeds = seedList(options.seeds)
   const units = names.flatMap((agent) => seeds.map((seed) => ({ agent, seed })))
@@ -761,12 +760,12 @@ export interface GeneralisationResult {
  * @param options - Agents, the procedural definition and its options, training and test level ranges, seeds, budget,
  *   evaluation episodes and bootstrap and run options.
  * @returns Per-agent train and test scores and gaps, and the runs.
- * @throws WhiteboxError with code `value` when the level ranges overlap or no budget is given.
+ * @throws MdmlError with code `value` when the level ranges overlap or no budget is given.
  * @concept generalisation
  * @example
  * ```ts
- * import { policyAgent } from 'whitebox-engine/rl'
- * import { generalisationStudy, levelSplit, proceduralMaze } from 'whitebox-engine/methods/rl'
+ * import { policyAgent } from 'mdml-engine/rl'
+ * import { generalisationStudy, levelSplit, proceduralMaze } from 'mdml-engine/methods/rl'
  * const split = levelSplit(5, 5)
  * const r = generalisationStudy({
  *   agents: { still: () => policyAgent(() => 0) as never }, definition: proceduralMaze,
@@ -782,8 +781,7 @@ export function generalisationStudy(options: GeneralisationOptions): Generalisat
     train.numLevels === 0 ||
     test.numLevels === 0 ||
     (train.startLevel < test.startLevel + test.numLevels && test.startLevel < train.startLevel + train.numLevels)
-  if (overlap)
-    throw new WhiteboxError('value', 'generalisationStudy: training and test levels must be finite and disjoint')
+  if (overlap) throw new MdmlError('value', 'generalisationStudy: training and test levels must be finite and disjoint')
   const trainEnv = make(options.definition, { ...options.envOptions, ...train })
   const testEnv = make(options.definition, { ...options.envOptions, ...test })
   const names = Object.keys(options.agents)

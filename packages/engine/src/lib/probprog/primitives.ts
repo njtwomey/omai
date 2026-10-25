@@ -5,7 +5,7 @@
  * handler stack (`send`, `withMessenger`) they all go through.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Distribution, defineDistribution, type Support } from '../dists/index.ts'
 import type { Key } from '../random/index.ts'
 import { asTensor, broadcastShapes, type Tensor, type TensorLike, take, type Value, zeros } from '../tensor/index.ts'
@@ -123,7 +123,7 @@ export interface Messenger {
  * @returns The message.
  * @example
  * ```ts
- * import { message } from 'whitebox-engine/probprog'
+ * import { message } from 'mdml-engine/probprog'
  * message('sample', 'x').scale // => 1
  * ```
  */
@@ -169,8 +169,8 @@ export function message(type: SiteType, name: string, fields: Partial<Message> =
  * @returns The processed message.
  * @example
  * ```ts
- * import { message, send } from 'whitebox-engine/probprog'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { message, send } from 'mdml-engine/probprog'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * toArray(send(message('deterministic', 'd', { value: tensor(2) })).value ?? tensor(0)) // => 2
  * ```
  */
@@ -186,10 +186,10 @@ export function send(msg: Message): Message {
  * @returns What `fn` returns.
  * @example
  * ```ts
- * import { sample, withMessenger } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sample, withMessenger } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { toArray } from 'mdml-engine/tensor'
  * const x = withMessenger({ process: (m) => { m.key = key(0) } }, () => sample('x', normal(0, 1)))
  * Number.isFinite(toArray(x) as number) // => true
  * ```
@@ -208,7 +208,7 @@ export interface SampleOptions {
 }
 
 function siteValue(msg: Message): Value {
-  if (msg.value === undefined) throw new WhiteboxError('value', `${msg.type} ${msg.name}: no value was produced`)
+  if (msg.value === undefined) throw new MdmlError('value', `${msg.type} ${msg.name}: no value was produced`)
   return msg.value
 }
 
@@ -221,13 +221,13 @@ function siteValue(msg: Message): Value {
  * @param fn - The distribution.
  * @param options - An observed value, a sample shape and inference hints.
  * @returns The site's value.
- * @throws WhiteboxError with code `value` when a draw is needed but no handler supplied a key.
+ * @throws MdmlError with code `value` when a draw is needed but no handler supplied a key.
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { sample, seed, trace } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { sample, seed, trace } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const model = () => sample('x', normal(0, 1), { sampleShape: [3] })
  * trace(seed(model, key(0))).getTrace().sites.get('x')?.value.shape // => [3]
  * ```
@@ -253,9 +253,9 @@ export function sample(name: string, fn: Distribution, options: SampleOptions = 
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { observe } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { observe } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(observe('y', normal(0, 1), 1.5)) // => 1.5
  * ```
  */
@@ -277,8 +277,8 @@ export function observe(
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { deterministic, trace } from 'whitebox-engine/probprog'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { deterministic, trace } from 'mdml-engine/probprog'
+ * import { toArray } from 'mdml-engine/tensor'
  * const model = () => deterministic('d', [1, 2])
  * toArray(trace(model).getTrace().sites.get('d')?.value ?? [0]) // => [1, 2]
  * ```
@@ -306,8 +306,8 @@ export interface ParamOptions {
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { param } from 'whitebox-engine/probprog'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { param } from 'mdml-engine/probprog'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(param('scale', 2, { support: { kind: 'positive' } })) // => 2
  * ```
  */
@@ -346,8 +346,8 @@ function unitDistribution(logFactor: Value): Distribution {
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { factor, logJoint } from 'whitebox-engine/probprog'
- * import { item } from 'whitebox-engine/tensor'
+ * import { factor, logJoint } from 'mdml-engine/probprog'
+ * import { item } from 'mdml-engine/tensor'
  * item(logJoint(() => factor('penalty', [-1, -2]), undefined).logJoint) // => -3
  * ```
  */
@@ -399,7 +399,7 @@ function plateHandler(frame: PlateFrame, indices: Tensor<'int32'>): Messenger {
       try {
         trailing = broadcastShapes(expected.slice(overlap), own)
       } catch {
-        throw new WhiteboxError(
+        throw new MdmlError(
           'shape',
           `plate ${frame.name}: site ${msg.name} has batch shape [${own.join(', ')}], which does not fit plates of shape [${expected.join(', ')}]`,
           { site: msg.name, plate: frame.name },
@@ -430,14 +430,14 @@ function plateHandler(frame: PlateFrame, indices: Tensor<'int32'>): Messenger {
  * @param fn - The body, given the (sub)sample indices.
  * @param options - Subsample size or indices, and the batch dimension.
  * @returns What the body returns.
- * @throws WhiteboxError with code `value` for an invalid size or subsample, or `shape` when a site's batch shape
+ * @throws MdmlError with code `value` for an invalid size or subsample, or `shape` when a site's batch shape
  *   cannot fit the plates.
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { plate, sample, seed, trace } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { plate, sample, seed, trace } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const model = () => plate('data', 4, () => sample('x', normal(0, 1)))
  * trace(seed(model, key(0))).getTrace().sites.get('x')?.value.shape // => [4]
  * ```
@@ -449,11 +449,11 @@ export function plate<R>(
   options: PlateOptions = {},
 ): R {
   if (!Number.isInteger(size) || size < 0)
-    throw new WhiteboxError('value', `plate ${name}: size must be a non-negative integer`)
+    throw new MdmlError('value', `plate ${name}: size must be a non-negative integer`)
   const given = options.subsample === undefined ? undefined : asTensor(options.subsample)
   const subsampleSize = given?.shape[0] ?? options.subsampleSize ?? size
   if (!Number.isInteger(subsampleSize) || subsampleSize < 0 || subsampleSize > size)
-    throw new WhiteboxError('value', `plate ${name}: subsample size must be an integer in [0, ${size}]`)
+    throw new MdmlError('value', `plate ${name}: subsample size must be an integer in [0, ${size}]`)
   const msg = applyStack(
     message('plate', name, {
       size,
@@ -465,7 +465,7 @@ export function plate<R>(
   let dim = options.dim ?? -1
   if (options.dim === undefined) while (occupied.has(dim)) dim -= 1
   else if (occupied.has(dim) || dim >= 0)
-    throw new WhiteboxError('value', `plate ${name}: dim ${dim} is negative and free of enclosing plates`)
+    throw new MdmlError('value', `plate ${name}: dim ${dim} is negative and free of enclosing plates`)
   const indices = siteValue(msg) as Tensor<'int32'>
   const frame: PlateFrame = { name, size, subsampleSize: indices.shape[0] ?? subsampleSize, dim }
   return withHandler(plateHandler(frame, indices), () => fn(indices))
@@ -488,14 +488,14 @@ export interface MarkovOptions {
  * @param init - The initial carry.
  * @param options - The history (default 1).
  * @returns The final carry.
- * @throws WhiteboxError with code `value` for a negative length or history.
+ * @throws MdmlError with code `value` for a negative length or history.
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { markov, sample, seed, trace } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import type { Value } from 'whitebox-engine/tensor'
+ * import { markov, sample, seed, trace } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import type { Value } from 'mdml-engine/tensor'
  * const walk = () => markov('t', 3, (t, x: Value | number) => sample(`x${t}`, normal(x, 1)), 0)
  * [...trace(seed(walk, key(0))).getTrace().sites.keys()] // => ['t', 'x0', 'x1', 'x2']
  * ```
@@ -509,9 +509,9 @@ export function markov<C>(
 ): C {
   const history = options.history ?? 1
   if (!Number.isInteger(length) || length < 0)
-    throw new WhiteboxError('value', `markov ${name}: length must be a non-negative integer`)
+    throw new MdmlError('value', `markov ${name}: length must be a non-negative integer`)
   if (!Number.isInteger(history) || history < 0)
-    throw new WhiteboxError('value', `markov ${name}: history must be a non-negative integer`)
+    throw new MdmlError('value', `markov ${name}: history must be a non-negative integer`)
   const msg = applyStack(
     message('markov', name, {
       length,

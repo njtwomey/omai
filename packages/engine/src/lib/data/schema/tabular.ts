@@ -115,8 +115,8 @@ const DATASET_KINDS: readonly DatasetKind[] = [
  *
  * @example
  * ```ts
- * import { TensorSchema } from 'whitebox-engine/data'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { TensorSchema } from 'mdml-engine/data'
+ * import { tensor } from 'mdml-engine/tensor'
  * TensorSchema.safeParse(tensor([1, 2])).success // => true
  * ```
  */
@@ -129,7 +129,7 @@ const names = z.array(z.string()).readonly()
  *
  * @example
  * ```ts
- * import { DatasetMetaSchema } from 'whitebox-engine/data'
+ * import { DatasetMetaSchema } from 'mdml-engine/data'
  * DatasetMetaSchema.parse({ name: 'd', description: '', task: 'regression' }).task // => 'regression'
  * ```
  */
@@ -158,7 +158,7 @@ export const DatasetMetaSchema: z.ZodType<DatasetMeta> = z.object({
  *
  * @example
  * ```ts
- * import { RegressionDataSchema, xy } from 'whitebox-engine/data'
+ * import { RegressionDataSchema, xy } from 'mdml-engine/data'
  * RegressionDataSchema.safeParse(xy([[1]], [2])).success // => true
  * ```
  */
@@ -181,7 +181,7 @@ const IntTensorSchema = z.custom<Tensor<'int32'>>((v) => isTensor(v) && v.dtype 
  *
  * @example
  * ```ts
- * import { ClassificationDataSchema, xyClasses } from 'whitebox-engine/data'
+ * import { ClassificationDataSchema, xyClasses } from 'mdml-engine/data'
  * ClassificationDataSchema.safeParse(xyClasses([[1], [2]], [0, 1])).success // => true
  * ```
  */
@@ -200,7 +200,7 @@ export const ClassificationDataSchema: z.ZodType<ClassificationData> = z.object(
  *
  * @example
  * ```ts
- * import { MultilabelDataSchema } from 'whitebox-engine/data'
+ * import { MultilabelDataSchema } from 'mdml-engine/data'
  * MultilabelDataSchema.safeParse({ kind: 'multilabel' }).success // => false
  * ```
  */
@@ -219,7 +219,7 @@ export const MultilabelDataSchema: z.ZodType<MultilabelData> = z.object({
  *
  * @example
  * ```ts
- * import { MultiOutputDataSchema } from 'whitebox-engine/data'
+ * import { MultiOutputDataSchema } from 'mdml-engine/data'
  * MultiOutputDataSchema.safeParse({ kind: 'multioutput' }).success // => false
  * ```
  */
@@ -238,7 +238,7 @@ export const MultiOutputDataSchema: z.ZodType<MultiOutputData> = z.object({
  *
  * @example
  * ```ts
- * import { TableColumnSchema } from 'whitebox-engine/data'
+ * import { TableColumnSchema } from 'mdml-engine/data'
  * TableColumnSchema.safeParse({ kind: 'text', values: ['a', null] }).success // => true
  * ```
  */
@@ -258,7 +258,7 @@ export const TableColumnSchema: z.ZodType<TableColumn> = z.discriminatedUnion('k
  *
  * @example
  * ```ts
- * import { TableDataSchema, table } from 'whitebox-engine/data'
+ * import { TableDataSchema, table } from 'mdml-engine/data'
  * TableDataSchema.safeParse(table({ a: [1, 2] })).success // => true
  * ```
  */

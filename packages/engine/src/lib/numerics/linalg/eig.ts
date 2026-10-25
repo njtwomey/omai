@@ -4,7 +4,7 @@
  * classic power, inverse and Rayleigh quotient iterations with their histories for convergence figures.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { type Key, key as makeKey, normal } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { solveKernel } from './_kernels.ts'
@@ -21,7 +21,7 @@ export interface ComplexTensor {
 function concreteSquare(a: TensorLike, name: string): { data: Float64Array; n: number } {
   const [v] = promoteFloat(a)
   const t = concreteOrThrow(v as Tensor, name)
-  if (t.shape.length !== 2) throw new WhiteboxError('shape', `${name}: expected a single square matrix`)
+  if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a single square matrix`)
   return { data: Float64Array.from(t.data), n: squareSize(t.shape, name) }
 }
 
@@ -33,7 +33,7 @@ function concreteSquare(a: TensorLike, name: string): { data: Float64Array; n: n
  * @concept eigenvalues
  * @example
  * ```ts
- * import { hessenberg } from 'whitebox-engine/numerics/linalg'
+ * import { hessenberg } from 'mdml-engine/numerics/linalg'
  * hessenberg([[1, 2, 3], [4, 5, 6], [7, 8, 10]]).h.data[6] // => 0
  * ```
  */
@@ -49,11 +49,11 @@ export function hessenberg(a: TensorLike): { readonly h: Tensor; readonly q: Ten
  *
  * @param a - Square matrix.
  * @returns T and orthogonal Z.
- * @throws WhiteboxError with code `convergence` if the QR iteration stalls.
+ * @throws MdmlError with code `convergence` if the QR iteration stalls.
  * @concept eigenvalues
  * @example
  * ```ts
- * import { schur } from 'whitebox-engine/numerics/linalg'
+ * import { schur } from 'mdml-engine/numerics/linalg'
  * schur([[2, 0], [0, 1]]).t.data[2] // => 0
  * ```
  */
@@ -70,8 +70,8 @@ export function schur(a: TensorLike): { readonly t: Tensor; readonly z: Tensor }
  * @returns Real and imaginary parts.
  * @example
  * ```ts
- * import { eigvals } from 'whitebox-engine/numerics/linalg'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { eigvals } from 'mdml-engine/numerics/linalg'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(eigvals([[0, -1], [1, 0]]).im).sort((a, b) => a - b) // => [-1, 1]
  * ```
  */
@@ -94,8 +94,8 @@ export function eigvals(a: TensorLike): ComplexTensor {
  * @concept eigenvalues
  * @example
  * ```ts
- * import { eig } from 'whitebox-engine/numerics/linalg'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { eig } from 'mdml-engine/numerics/linalg'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(eig([[2, 1], [0, 3]]).values.re).sort((a, b) => a - b) // => [2, 3]
  * ```
  */
@@ -169,7 +169,7 @@ function start(n: number, options: EigenIterationOptions): Float64Array {
  * @concept eigenvalues
  * @example
  * ```ts
- * import { powerIteration } from 'whitebox-engine/numerics/linalg'
+ * import { powerIteration } from 'mdml-engine/numerics/linalg'
  * Math.round(powerIteration([[2, 0], [0, 1]]).value * 1e8) / 1e8 // => 2
  * ```
  */
@@ -202,7 +202,7 @@ export function powerIteration(a: TensorLike, options: EigenIterationOptions = {
  * @returns The eigenvalue nearest the shift, its vector and the history.
  * @example
  * ```ts
- * import { inverseIteration } from 'whitebox-engine/numerics/linalg'
+ * import { inverseIteration } from 'mdml-engine/numerics/linalg'
  * Math.round(inverseIteration([[2, 0], [0, 1]], 0.9).value * 1e8) / 1e8 // => 1
  * ```
  */
@@ -239,7 +239,7 @@ export function inverseIteration(
  * @returns An eigenvalue, its vector and the history.
  * @example
  * ```ts
- * import { rayleighQuotientIteration } from 'whitebox-engine/numerics/linalg'
+ * import { rayleighQuotientIteration } from 'mdml-engine/numerics/linalg'
  * rayleighQuotientIteration([[2, 1], [1, 2]], { x0: [1, 0.9] }).converged // => true
  * ```
  */

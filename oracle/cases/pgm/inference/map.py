@@ -5,10 +5,10 @@ directly as factor values, kept positive by a constant shift, which leaves the m
 
 import numpy as np
 import pgmpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.pgm import Potential, pgmpy_markov
 from pgmpy.inference import Mplp
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.pgm import Potential, pgmpy_markov
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

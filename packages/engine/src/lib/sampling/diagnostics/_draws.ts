@@ -1,5 +1,5 @@
 /** Draws of one quantity as `[chain, draw]` buffers, the input of every diagnostic (ArviZ's array interface). */
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { fourier } from '../../numerics/index.ts'
 import { ndtri } from '../../numerics/special/index.ts'
 import { add, asTensor, fromStorage, square, type Tensor, type TensorLike, toFlat, zeros } from '../../tensor/index.ts'
@@ -18,7 +18,7 @@ export function drawsOf(x: TensorLike, name: string): Draws {
   if (t.shape.length === 2) {
     return { data: Float64Array.from(toFlat(t)), chains: t.shape[0] ?? 0, draws: t.shape[1] ?? 0 }
   }
-  throw new WhiteboxError('shape', `${name}: draws must be [chain, draw] or [draw], got [${t.shape.join(', ')}]`)
+  throw new MdmlError('shape', `${name}: draws must be [chain, draw] or [draw], got [${t.shape.join(', ')}]`)
 }
 
 /**

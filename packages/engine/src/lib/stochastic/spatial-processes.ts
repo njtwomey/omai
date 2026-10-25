@@ -4,7 +4,7 @@
  * corrections (as astropy), which measure clustering or regularity against complete spatial randomness.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key, normal, poisson, uniform } from '../random/index.ts'
 import {
   add,
@@ -31,7 +31,7 @@ const UNIT: Window = { xmin: 0, xmax: 1, ymin: 0, ymax: 1 }
 
 function areaOf(w: Window): number {
   const a = (w.xmax - w.xmin) * (w.ymax - w.ymin)
-  if (!(a > 0)) throw new WhiteboxError('value', 'window: needs xmax > xmin and ymax > ymin')
+  if (!(a > 0)) throw new MdmlError('value', 'window: needs xmax > xmin and ymax > ymin')
   return a
 }
 
@@ -57,12 +57,12 @@ function asPoints(flat: readonly number[]): Tensor<'float64'> {
  * @param window - The rectangle (default the unit square).
  * @param maxIntensity - A bound on an intensity function (required for one).
  * @returns The points `[n, 2]`.
- * @throws WhiteboxError with code `value` when a function exceeds its bound.
+ * @throws MdmlError with code `value` when a function exceeds its bound.
  * @concept spatial-point-process
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { spatialPoisson } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { spatialPoisson } from 'mdml-engine/stochastic'
  * spatialPoisson(key(0), 50).shape[1] // => 2
  * ```
  */
@@ -75,7 +75,7 @@ export function spatialPoisson(
   const area = areaOf(window)
   const bound = typeof intensity === 'number' ? intensity : maxIntensity
   if (bound === undefined || !(bound >= 0)) {
-    throw new WhiteboxError('value', 'spatialPoisson: a non-negative intensity (or bound for a function) is needed')
+    throw new MdmlError('value', 'spatialPoisson: a non-negative intensity (or bound for a function) is needed')
   }
   const n = poisson(foldIn(key, 0), bound * area, [1]).data[0] ?? 0
   const pts = uniformPoints(foldIn(key, 1), n, window)
@@ -86,7 +86,7 @@ export function spatialPoisson(
     const x = pts[2 * i] ?? 0
     const y = pts[2 * i + 1] ?? 0
     const lam = intensity(x, y)
-    if (!(lam >= 0) || lam > bound * (1 + 1e-12)) throw new WhiteboxError('value', 'spatialPoisson: bound exceeded')
+    if (!(lam >= 0) || lam > bound * (1 + 1e-12)) throw new MdmlError('value', 'spatialPoisson: bound exceeded')
     if ((u[i] ?? 1) * bound < lam) kept.push(x, y)
   }
   return asPoints(kept)
@@ -108,7 +108,7 @@ function clusterProcess(
   offset: (key: Key, n: number) => number[],
 ): Tensor<'float64'> {
   areaOf(window)
-  if (!(params.parentRate >= 0 && params.meanChildren >= 0)) throw new WhiteboxError('value', 'cluster: bad rates')
+  if (!(params.parentRate >= 0 && params.meanChildren >= 0)) throw new MdmlError('value', 'cluster: bad rates')
   // parents in a window enlarged by the margin, so clusters straddling the edge are not lost
   const big = {
     xmin: window.xmin - margin,
@@ -141,8 +141,8 @@ function clusterProcess(
  * @concept cluster-process
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { thomasProcess } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { thomasProcess } from 'mdml-engine/stochastic'
  * thomasProcess(key(0), { parentRate: 10, meanChildren: 5, sigma: 0.02 }).shape[1] // => 2
  * ```
  */
@@ -151,7 +151,7 @@ export function thomasProcess(
   params: ClusterParams & { readonly sigma: number },
   window: Window = UNIT,
 ): Tensor<'float64'> {
-  if (!(params.sigma > 0)) throw new WhiteboxError('value', 'thomasProcess: sigma must be positive')
+  if (!(params.sigma > 0)) throw new MdmlError('value', 'thomasProcess: sigma must be positive')
   return clusterProcess(key, params, window, 4 * params.sigma, (k, n) =>
     Array.from(normal(k, [n, 2]).data, (z) => z * params.sigma),
   )
@@ -168,8 +168,8 @@ export function thomasProcess(
  * @concept cluster-process
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { maternClusterProcess } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { maternClusterProcess } from 'mdml-engine/stochastic'
  * maternClusterProcess(key(0), { parentRate: 10, meanChildren: 5, radius: 0.05 }).shape[1] // => 2
  * ```
  */
@@ -178,7 +178,7 @@ export function maternClusterProcess(
   params: ClusterParams & { readonly radius: number },
   window: Window = UNIT,
 ): Tensor<'float64'> {
-  if (!(params.radius > 0)) throw new WhiteboxError('value', 'maternClusterProcess: the radius must be positive')
+  if (!(params.radius > 0)) throw new MdmlError('value', 'maternClusterProcess: the radius must be positive')
   return clusterProcess(key, params, window, params.radius, (k, n) => {
     const u = uniform(k, [n, 2]).data
     const out: number[] = []
@@ -201,8 +201,8 @@ export function maternClusterProcess(
  * @concept ripleys-k
  * @example
  * ```ts
- * import { thomasK } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { thomasK } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(thomasK([0], { parentRate: 10, sigma: 0.1 })) // => [0]
  * ```
  */
@@ -229,7 +229,7 @@ export type RipleyCorrection = 'none' | 'translation' | 'ohser' | 'var-width' | 
  * @reference B. D. Ripley, The second-order analysis of stationary point processes, J. Appl. Prob. 13 (1976).
  * @example
  * ```ts
- * import { ripleysK } from 'whitebox-engine/stochastic'
+ * import { ripleysK } from 'mdml-engine/stochastic'
  * Array.from(ripleysK([[0.1, 0.1], [0.2, 0.1], [0.9, 0.9]], [0.05, 0.2])) // => [0, 0.3333333333333333]
  * ```
  */
@@ -242,7 +242,7 @@ export function ripleysK(
   const area = areaOf(w)
   const p = primalNumbers(points)
   const n = p.length / 2
-  if (n < 2) throw new WhiteboxError('value', 'ripleysK: needs at least two points')
+  if (n < 2) throw new MdmlError('value', 'ripleysK: needs at least two points')
   const width = w.xmax - w.xmin
   const height = w.ymax - w.ymin
   const out = new Float64Array(radii.length)
@@ -312,7 +312,7 @@ export function ripleysK(
  * @concept ripleys-k
  * @example
  * ```ts
- * import { ripleysL } from 'whitebox-engine/stochastic'
+ * import { ripleysL } from 'mdml-engine/stochastic'
  * Array.from(ripleysL([[0.1, 0.1], [0.2, 0.1], [0.9, 0.9]], [0.05])) // => [0]
  * ```
  */

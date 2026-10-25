@@ -1,16 +1,16 @@
 """Graph matrices against NetworkX (to_numpy_array, incidence_matrix, laplacian_matrix, normalized_laplacian_matrix,
 modularity_matrix) and scipy.sparse.csgraph.laplacian. The random-walk Laplacian, the transition matrix and the
 positional encodings have no library function, so they are formed from those matrices with numpy (eigh for the
-Laplacian encodings, with the sign convention of whitebox-js), on graphs with distinct eigenvalues; so are the GCN
+Laplacian encodings, with the sign convention of mdml-js), on graphs with distinct eigenvalues; so are the GCN
 normalised adjacency D~^{-1/2} (A + I) D~^{-1/2} and the mean aggregation D~^{-1} (A + I)."""
 
 import networkx as nx
 import numpy as np
 import scipy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.graphs import dense, directed_family, gnp, spec, undirected_family, weighted_family
+from mdml_oracle.helpers import FloatArray, sign_fixed
 from scipy.sparse.csgraph import laplacian as csgraph_laplacian
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.graphs import dense, directed_family, gnp, spec, undirected_family, weighted_family
-from whitebox_oracle.helpers import FloatArray, sign_fixed
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__, "scipy": scipy.__version__}
 

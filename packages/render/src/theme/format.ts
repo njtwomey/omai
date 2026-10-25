@@ -26,7 +26,7 @@ export interface FormatOptions {
  * @returns The text (`NaN`, `∞` and `−∞` for non-finite values).
  * @example
  * ```ts
- * import { formatNumber } from 'whitebox-render/theme'
+ * import { formatNumber } from 'mdml-render/theme'
  * formatNumber(0.49999999) // => '0.5'
  * formatNumber(123456) // => '1.23e5'
  * formatNumber(-0.00012) // => '-1.2e-4'
@@ -56,7 +56,7 @@ export function formatNumber(value: number, options: FormatOptions = {}): string
  * @returns The label.
  * @example
  * ```ts
- * import { formatPower } from 'whitebox-render/theme'
+ * import { formatPower } from 'mdml-render/theme'
  * formatPower(0.001) // => '10⁻³'
  * formatPower(1) // => '1'
  * formatPower(30) // => '30'
@@ -80,7 +80,7 @@ export function formatPower(value: number): string {
  * @returns The text.
  * @example
  * ```ts
- * import { formatPercent } from 'whitebox-render/theme'
+ * import { formatPercent } from 'mdml-render/theme'
  * formatPercent(0.256) // => '25.6%'
  * ```
  */
@@ -95,7 +95,7 @@ export function formatPercent(value: number, digits = 1): string {
  * @returns The text.
  * @example
  * ```ts
- * import { formatDuration } from 'whitebox-render/theme'
+ * import { formatDuration } from 'mdml-render/theme'
  * formatDuration(0.85) // => '850 ms'
  * formatDuration(200) // => '3 min 20 s'
  * ```
@@ -125,7 +125,7 @@ export function formatDuration(seconds: number): string {
  * @returns The text.
  * @example
  * ```ts
- * import { formatTime } from 'whitebox-render/theme'
+ * import { formatTime } from 'mdml-render/theme'
  * formatTime(Date.UTC(2024, 2, 5, 14, 30)) // => '14:30'
  * formatTime(Date.UTC(2024, 2, 5), 90 * 86400000) // => '2024-03-05'
  * ```
@@ -147,7 +147,7 @@ export function formatTime(ms: number, span = 86_400_000): string {
  * @returns The nice number.
  * @example
  * ```ts
- * import { niceNumber } from 'whitebox-render/theme'
+ * import { niceNumber } from 'mdml-render/theme'
  * niceNumber(0.37) // => 0.5
  * niceNumber(13, false) // => 20
  * ```
@@ -177,7 +177,7 @@ export interface Ticks {
  * @returns The ticks.
  * @example
  * ```ts
- * import { niceTicks } from 'whitebox-render/theme'
+ * import { niceTicks } from 'mdml-render/theme'
  * niceTicks(0.13, 0.92).ticks // => [0, 0.2, 0.4, 0.6, 0.8, 1]
  * niceTicks(-3, 7, 3).step // => 5
  * ```
@@ -208,7 +208,7 @@ export function niceTicks(lo: number, hi: number, count = 5): Ticks {
  * @returns The major ticks and the minor ticks.
  * @example
  * ```ts
- * import { logTicks } from 'whitebox-render/theme'
+ * import { logTicks } from 'mdml-render/theme'
  * logTicks(0.002, 300).major // => [0.001, 0.01, 0.1, 1, 10, 100, 1000]
  * logTicks(1, 10).minor.length // => 8
  * ```
@@ -241,7 +241,7 @@ export function logTicks(
  * @returns The step.
  * @example
  * ```ts
- * import { niceStep } from 'whitebox-render/theme'
+ * import { niceStep } from 'mdml-render/theme'
  * niceStep(0, 1) // => 0.005
  * ```
  */
@@ -259,7 +259,7 @@ export function niceStep(lo: number, hi: number, positions = 250): number {
  * @returns The number of decimals.
  * @example
  * ```ts
- * import { stepDecimals } from 'whitebox-render/theme'
+ * import { stepDecimals } from 'mdml-render/theme'
  * stepDecimals(0.05) // => 2
  * stepDecimals(1e-4) // => 4
  * stepDecimals(10) // => 0

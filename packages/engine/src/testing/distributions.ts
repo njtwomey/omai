@@ -1,4 +1,4 @@
-// Golden tests of distributions against scipy.stats / torch.distributions fixtures (oracle/whitebox_oracle/distributions.py).
+// Golden tests of distributions against scipy.stats / torch.distributions fixtures (oracle/mdml_oracle/distributions.py).
 // Node only; not published.
 import { describe, it } from 'vitest'
 import type { Distribution } from '../lib/dists/index.ts'

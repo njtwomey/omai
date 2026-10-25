@@ -14,14 +14,14 @@ import optuna
 import scipy
 import sklearn
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from optuna._gp.acqf import logei  # pyright: ignore[reportPrivateUsage]
 from optuna._gp.gp import GPRegressor, fit_kernel_params  # pyright: ignore[reportPrivateUsage]
 from optuna._gp.prior import default_log_prior  # pyright: ignore[reportPrivateUsage]
 from scipy.stats import norm
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import ConstantKernel, Matern
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {
     "optuna": optuna.__version__,

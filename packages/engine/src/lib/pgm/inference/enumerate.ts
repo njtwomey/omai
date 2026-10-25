@@ -24,7 +24,7 @@ import {
  * @concept exact-inference
  * @example
  * ```ts
- * import { bayesNet, enumerate, factorValues } from 'whitebox-engine/pgm'
+ * import { bayesNet, enumerate, factorValues } from 'mdml-engine/pgm'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.3, 0.7] }])
  * factorValues(enumerate(bn, ['a'])).map((p) => Math.round(p * 10) / 10) // => [0.3, 0.7]
  * ```

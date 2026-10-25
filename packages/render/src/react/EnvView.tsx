@@ -3,9 +3,9 @@
  * optionally decorated, with room for controls.
  */
 
+import type { Env } from 'mdml-engine/rl'
+import type { Scene } from 'mdml-engine/scene'
 import { type ReactElement, type ReactNode, useMemo } from 'react'
-import type { Env } from 'whitebox-engine/rl'
-import type { Scene } from 'whitebox-engine/scene'
 import { cx } from './controls/classes.ts'
 import { FigureFrame } from './FigureFrame.tsx'
 import { SceneView } from './SceneView.tsx'

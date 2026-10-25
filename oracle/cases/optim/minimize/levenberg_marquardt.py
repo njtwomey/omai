@@ -2,8 +2,8 @@
 
 import scipy
 import scipy.optimize as so
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.optim_problems import LS_T, LS_Y, RESIDUALS, ls_summary
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.optim_problems import LS_T, LS_Y, RESIDUALS, ls_summary
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

@@ -5,7 +5,7 @@
  * bricks, keyed noise).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { type Pixels, toPixels, type Vec3 } from '../scene/index.ts'
 import { concreteOrThrow, fromStorage, type Value } from '../tensor/index.ts'
@@ -30,7 +30,7 @@ export interface FloatImage {
 export type Rgba = readonly [number, number, number, number]
 
 const size = (n: number, what: string): number => {
-  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', `graphics: ${what} must be a positive integer`)
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', `graphics: ${what} must be a positive integer`)
   return n
 }
 
@@ -41,11 +41,11 @@ const size = (n: number, what: string): number => {
  * @param height - Height in pixels.
  * @param fill - The colour of pixel `(x, y)` (default black).
  * @returns The image.
- * @throws WhiteboxError with code `value` for a non-positive size.
+ * @throws MdmlError with code `value` for a non-positive size.
  * @concept texture-mapping
  * @example
  * ```ts
- * import { floatImage } from 'whitebox-engine/graphics'
+ * import { floatImage } from 'mdml-engine/graphics'
  * Array.from(floatImage(2, 1, (x) => [x, 0, 1]).rgb) // => [0, 0, 1, 1, 0, 1]
  * ```
  */
@@ -69,7 +69,7 @@ export function floatImage(width: number, height: number, fill?: (x: number, y: 
  * @concept gamma-correction
  * @example
  * ```ts
- * import { imageFromPixels } from 'whitebox-engine/graphics'
+ * import { imageFromPixels } from 'mdml-engine/graphics'
  * const img = imageFromPixels({ width: 1, height: 1, rgba: new Uint8ClampedArray([255, 0, 0, 128]) })
  * [img.rgb[0], img.rgb[1], Math.round((img.alpha?.[0] ?? 0) * 255)] // => [1, 0, 128]
  * ```
@@ -109,7 +109,7 @@ export interface DisplayOptions {
  * @concept tone-mapping
  * @example
  * ```ts
- * import { floatImage, imageToPixels } from 'whitebox-engine/graphics'
+ * import { floatImage, imageToPixels } from 'mdml-engine/graphics'
  * Array.from(imageToPixels(floatImage(1, 1, () => [1, 0.5, 4]), { encoding: 'linear' }).rgba) // => [255, 128, 255, 255]
  * ```
  */
@@ -155,7 +155,7 @@ export type Wrap = 'repeat' | 'clamp' | 'mirror'
  * @concept texture-mapping
  * @example
  * ```ts
- * import { wrapIndex } from 'whitebox-engine/graphics'
+ * import { wrapIndex } from 'mdml-engine/graphics'
  * [wrapIndex(-1, 4, 'repeat'), wrapIndex(-1, 4, 'clamp'), wrapIndex(-1, 4, 'mirror'), wrapIndex(5, 4, 'mirror')] // => [3, 0, 0, 2]
  * ```
  */
@@ -185,7 +185,7 @@ function texel(tex: FloatImage, x: number, y: number, wrap: Wrap): Rgba {
  * @concept texture-mapping
  * @example
  * ```ts
- * import { floatImage, sampleNearest } from 'whitebox-engine/graphics'
+ * import { floatImage, sampleNearest } from 'mdml-engine/graphics'
  * const t = floatImage(2, 1, (x) => [x, x, x])
  * [sampleNearest(t, 0.4, 0)[0], sampleNearest(t, 0.6, 0)[0], sampleNearest(t, 1.4, 0)[0]] // => [0, 1, 0]
  * ```
@@ -206,7 +206,7 @@ export function sampleNearest(tex: FloatImage, u: number, v: number, wrap: Wrap 
  * @concept texture-mapping
  * @example
  * ```ts
- * import { floatImage, sampleBilinear } from 'whitebox-engine/graphics'
+ * import { floatImage, sampleBilinear } from 'mdml-engine/graphics'
  * sampleBilinear(floatImage(2, 1, (x) => [x, x, x]), 0.5, 0.5, 'clamp')[0] // => 0.5
  * ```
  */
@@ -243,7 +243,7 @@ export interface MipChain {
  * @concept mipmapping
  * @example
  * ```ts
- * import { floatImage, mipmaps } from 'whitebox-engine/graphics'
+ * import { floatImage, mipmaps } from 'mdml-engine/graphics'
  * const chain = mipmaps(floatImage(4, 2, (x) => [x, 0, 0]))
  * [chain.levels.length, chain.levels[2].rgb[0]] // => [3, 1.5]
  * ```
@@ -294,7 +294,7 @@ export function mipmaps(tex: FloatImage): MipChain {
  * @concept mipmapping
  * @example
  * ```ts
- * import { mipLevel } from 'whitebox-engine/graphics'
+ * import { mipLevel } from 'mdml-engine/graphics'
  * mipLevel(4 / 64, 0, 0, 4 / 64, 64, 64) // => 2
  * ```
  */
@@ -323,7 +323,7 @@ export function mipLevel(
  * @concept mipmapping
  * @example
  * ```ts
- * import { floatImage, mipmaps, sampleMipmap } from 'whitebox-engine/graphics'
+ * import { floatImage, mipmaps, sampleMipmap } from 'mdml-engine/graphics'
  * const chain = mipmaps(floatImage(2, 2, (x, y) => [x + 2 * y, 0, 0]))
  * [sampleMipmap(chain, 0.1, 0.1, 1)[0], sampleMipmap(chain, 0.25, 0.25, 0.5, { wrap: 'clamp' })[0]] // => [1.5, 0.75]
  * ```
@@ -360,7 +360,7 @@ export function sampleMipmap(
  * @concept texture-mapping
  * @example
  * ```ts
- * import { sphereUv } from 'whitebox-engine/graphics'
+ * import { sphereUv } from 'mdml-engine/graphics'
  * [sphereUv([1, 0, 0]), sphereUv([0, 1, 0])[1]] // => [[0.5, 0.5], 0]
  * ```
  */
@@ -380,7 +380,7 @@ export function sphereUv(d: Vec3): [number, number] {
  * @concept texture-mapping
  * @example
  * ```ts
- * import { planarUv } from 'whitebox-engine/graphics'
+ * import { planarUv } from 'mdml-engine/graphics'
  * planarUv([1, 0, 3], [0, 0, 0], [2, 0, 0], [0, 0, 4]) // => [0.5, 0.75]
  * ```
  */
@@ -400,7 +400,7 @@ export function planarUv(p: Vec3, origin: Vec3, uAxis: Vec3, vAxis: Vec3): [numb
  * @concept texture-mapping
  * @example
  * ```ts
- * import { cylinderUv } from 'whitebox-engine/graphics'
+ * import { cylinderUv } from 'mdml-engine/graphics'
  * cylinderUv([-1, 1, 0], [0, 0, 0], 2) // => [1, 0.5]
  * ```
  */
@@ -418,7 +418,7 @@ export function cylinderUv(p: Vec3, base: Vec3, height: number): [number, number
  * @concept texture-mapping
  * @example
  * ```ts
- * import { cubeUv } from 'whitebox-engine/graphics'
+ * import { cubeUv } from 'mdml-engine/graphics'
  * cubeUv([1, 0, 0]) // => { face: 0, uv: [0.5, 0.5] }
  * cubeUv([0.5, -2, 1]).face // => 3
  * ```
@@ -448,7 +448,7 @@ export function cubeUv(d: Vec3): { readonly face: number; readonly uv: [number, 
     sc = z >= 0 ? x : -x
     tc = -y
   }
-  if (!(ma > 0)) throw new WhiteboxError('value', 'cubeUv: the direction must not be zero')
+  if (!(ma > 0)) throw new MdmlError('value', 'cubeUv: the direction must not be zero')
   return { face, uv: [(sc / ma + 1) / 2, (tc / ma + 1) / 2] }
 }
 
@@ -464,7 +464,7 @@ export function cubeUv(d: Vec3): { readonly face: number; readonly uv: [number, 
  * @concept procedural-texture
  * @example
  * ```ts
- * import { checkerboard } from 'whitebox-engine/graphics'
+ * import { checkerboard } from 'mdml-engine/graphics'
  * [checkerboard(0.05, 0.05)[0], checkerboard(0.2, 0.05)[0]] // => [1, 0.1]
  * ```
  */
@@ -503,7 +503,7 @@ export interface BrickOptions {
  * @concept procedural-texture
  * @example
  * ```ts
- * import { bricks } from 'whitebox-engine/graphics'
+ * import { bricks } from 'mdml-engine/graphics'
  * [bricks(0.25, 0.125)[0], bricks(0.25, 0.005)[0]] // => [0.6, 0.8]
  * ```
  */
@@ -531,7 +531,7 @@ export function bricks(u: number, v: number, options: BrickOptions = {}): Vec3 {
  * @concept procedural-texture
  * @example
  * ```ts
- * import { bakeTexture, checkerboard } from 'whitebox-engine/graphics'
+ * import { bakeTexture, checkerboard } from 'mdml-engine/graphics'
  * const t = bakeTexture(4, 4, (u, v) => checkerboard(u, v, { scale: 2 }))
  * [t.rgb[0], t.rgb[3 * 2]] // => [1, 0.1]
  * ```
@@ -552,8 +552,8 @@ export function bakeTexture(width: number, height: number, f: (u: number, v: num
  * @concept procedural-texture
  * @example
  * ```ts
- * import { noiseTexture } from 'whitebox-engine/graphics'
- * import { key } from 'whitebox-engine/random'
+ * import { noiseTexture } from 'mdml-engine/graphics'
+ * import { key } from 'mdml-engine/random'
  * const t = noiseTexture(key(0), 8, 8, { scale: 4 })
  * [t.rgb.length, t.rgb.every((x) => x >= 0 && x <= 1)] // => [192, true]
  * ```

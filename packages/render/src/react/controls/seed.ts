@@ -3,7 +3,7 @@
  * same seed always rerolls to the same next seed, within `MAX_SEED`.
  */
 
-import { foldIn, key, randomBits } from 'whitebox-engine/random'
+import { foldIn, key, randomBits } from 'mdml-engine/random'
 
 /** The largest seed {@link SeedInput} offers. */
 export const MAX_SEED = 999_999

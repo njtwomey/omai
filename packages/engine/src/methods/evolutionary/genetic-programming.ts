@@ -1,10 +1,10 @@
 /**
  * Symbolic regression by genetic programming: evolving expression trees over `x`, arithmetic (and optionally
  * trigonometric) functions and constants to fit points of a target function. Each generation's best program is recorded
- * as a simplified symbolic expression (via `whitebox-engine/symbolic`) with its curve over the data.
+ * as a simplified symbolic expression (via `mdml-engine/symbolic`) with its curve over the data.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type Explained, type Generation, populationSteps } from '../../lib/exposition/index.ts'
 import { type Key, key as makeKey } from '../../lib/random/index.ts'
 import {
@@ -65,7 +65,7 @@ export function treeToExpr(tree: ExprTree): Expr {
       case 'cos':
         return cos(x)
       default:
-        throw new WhiteboxError('value', `treeToExpr: unknown function ${t.op}`)
+        throw new MdmlError('value', `treeToExpr: unknown function ${t.op}`)
     }
   }
   return go(tree)
@@ -115,7 +115,7 @@ export interface SymbolicRegressionResult {
  */
 export function symbolicRegression(options: SymbolicRegressionOptions = {}): Explained<SymbolicRegressionResult> {
   const target = SYMBOLIC_TARGETS[options.target ?? 'quartic']
-  if (target === undefined) throw new WhiteboxError('value', `symbolicRegression: unknown target '${options.target}'`)
+  if (target === undefined) throw new MdmlError('value', `symbolicRegression: unknown target '${options.target}'`)
   const m = options.points ?? 20
   const xs = Array.from({ length: m }, (_, i) => -1 + (2 * i) / Math.max(1, m - 1))
   const ys = xs.map(target)
@@ -160,7 +160,7 @@ export function symbolicRegression(options: SymbolicRegressionOptions = {}): Exp
     })
     if (err < 1e-12) break
   }
-  if (best === undefined) throw new WhiteboxError('value', 'symbolicRegression: no generations')
+  if (best === undefined) throw new MdmlError('value', 'symbolicRegression: no generations')
   const record = populationSteps({
     method: 'genetic programming',
     lowerIsBetter: true,

@@ -3,8 +3,8 @@
  * in four, solved region by region with the colours each choice rules out.
  */
 
-import { AUSTRALIA, randomMap, solveMapColouring } from 'whitebox-engine/methods/gofai'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { AUSTRALIA, randomMap, solveMapColouring } from 'mdml-engine/methods/gofai'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { backtrackingControls, solverOptions } from './_csp.ts'
 

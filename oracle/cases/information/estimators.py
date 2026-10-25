@@ -10,10 +10,10 @@ import scipy.special as sp
 import scipy.stats as st
 import sklearn
 import sklearn.metrics as skm
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from npeet import entropy_estimators as ee  # pyright: ignore[reportMissingTypeStubs]
 from pyitlib import discrete_random_variable as drv  # pyright: ignore[reportMissingTypeStubs]
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 # NPEET and pyitlib annotate `base` as int through their defaults; any positive base works, and e gives nats.
 NATS: Any = np.e

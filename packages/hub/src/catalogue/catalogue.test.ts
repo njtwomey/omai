@@ -1,5 +1,5 @@
+import { isExposition } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { isExposition } from 'whitebox-engine/exposition'
 import { runDemo } from '../entry/run.ts'
 import { catalogue } from './index.ts'
 

@@ -5,7 +5,7 @@
  * traced algorithms.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { dnrm2 } from '../../numerics/linalg/index.ts'
 import { type CsrMatrix, cg, fromCoo, gmres } from '../../numerics/sparse/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
@@ -77,8 +77,8 @@ function runSteps(
   advance: (s: TimeStepState, t: number, h: number) => { u: Float64Array; prev: Float64Array | undefined },
   options: PdeTraceOptions,
 ): PdeSolution {
-  if (!(dt > 0)) throw new WhiteboxError('value', `${name}: dt must be positive`)
-  if (!(tEnd >= 0)) throw new WhiteboxError('value', `${name}: tEnd must be non-negative`)
+  if (!(dt > 0)) throw new MdmlError('value', `${name}: dt must be positive`)
+  if (!(tEnd >= 0)) throw new MdmlError('value', `${name}: tEnd must be non-negative`)
   const steps = Math.ceil(tEnd / dt - 1e-9)
   const algorithm: Algorithm<TimeStepState> = {
     name,
@@ -117,7 +117,7 @@ function runSteps(
 function initial(u0: TensorLike | ((x: number) => number), grid: Grid1d): Float64Array {
   if (typeof u0 === 'function') return Float64Array.from(grid.x, (x) => u0(x))
   const v = Float64Array.from(toFlat(asTensor(u0)))
-  if (v.length !== grid.n) throw new WhiteboxError('shape', `the initial condition needs ${grid.n} values`)
+  if (v.length !== grid.n) throw new MdmlError('shape', `the initial condition needs ${grid.n} values`)
   return v
 }
 
@@ -149,7 +149,7 @@ export interface HeatOptions extends PdeTraceOptions {
  * @concept heat-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, heat, laplacian1d } from 'whitebox-engine/dynamics/pde'
+ * import { dirichlet, grid1d, heat, laplacian1d } from 'mdml-engine/dynamics/pde'
  * const g = grid1d(0, 1, 21)
  * const u0 = Array.from(g.x, (x) => Math.sin(Math.PI * x))
  * const s = heat(laplacian1d(g, dirichlet(), dirichlet()), u0, { dt: 0.001, tEnd: 0.1 })
@@ -161,7 +161,7 @@ export function heat(op: DiscreteOperator, u0: TensorLike, options: HeatOptions)
   const theta = scheme === 'explicit' ? 0 : scheme === 'implicit' ? 1 : 0.5
   const n = op.size
   const start = applyDirichlet(Float64Array.from(toFlat(asTensor(u0))), op, 0)
-  if (start.length !== n) throw new WhiteboxError('shape', `heat: the initial condition needs ${n} values`)
+  if (start.length !== n) throw new MdmlError('shape', `heat: the initial condition needs ${n} values`)
   const fixedRows = new Set(op.fixed.map((f) => f.index))
   const factorCache = new Map<number, ReturnType<typeof shiftedLu>>()
   const rhsOf = (t: number): Float64Array => {
@@ -211,7 +211,7 @@ export function heat(op: DiscreteOperator, u0: TensorLike, options: HeatOptions)
  * @concept heat-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, heat1d } from 'whitebox-engine/dynamics/pde'
+ * import { dirichlet, grid1d, heat1d } from 'mdml-engine/dynamics/pde'
  * heat1d((x) => x * (1 - x), grid1d(0, 1, 11), { dt: 0.01, tEnd: 0.05, left: dirichlet(), right: dirichlet() }).t.length // => 6
  * ```
  */
@@ -255,7 +255,7 @@ export interface WaveOptions extends PdeTraceOptions {
  * @concept wave-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, wave1d } from 'whitebox-engine/dynamics/pde'
+ * import { dirichlet, grid1d, wave1d } from 'mdml-engine/dynamics/pde'
  * const g = grid1d(0, 1, 41)
  * const s = wave1d((x) => Math.sin(Math.PI * x), () => 0, g, { dt: 0.025, tEnd: 1, left: dirichlet(), right: dirichlet() })
  * Math.abs((s.u.data[s.u.data.length - 21] ?? 0) + 1) < 1e-2 // => true
@@ -316,7 +316,7 @@ export interface AdvectionOptions extends PdeTraceOptions {
  * @concept advection-equation
  * @example
  * ```ts
- * import { advection1d, grid1d } from 'whitebox-engine/dynamics/pde'
+ * import { advection1d, grid1d } from 'mdml-engine/dynamics/pde'
  * const g = grid1d(0, 1, 101)
  * const s = advection1d((x) => Math.sin(2 * Math.PI * x), g, { velocity: 1, dt: 0.01, tEnd: 1 })
  * Math.abs((s.u.data[s.u.data.length - 76] ?? 0) - 1) < 1e-12 // => true
@@ -397,11 +397,11 @@ export interface PoissonResult {
  * @param bcs - The conditions: [left, right] in 1-D, the four sides in 2-D.
  * @param options - Method, relaxation, tolerance and iteration cap.
  * @returns The solution, iterations and residual history.
- * @throws WhiteboxError with code `value` when multigrid does not fit the grid.
+ * @throws MdmlError with code `value` when multigrid does not fit the grid.
  * @concept poisson-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, poisson } from 'whitebox-engine/dynamics/pde'
+ * import { dirichlet, grid1d, poisson } from 'mdml-engine/dynamics/pde'
  * // u'' = 2, u(0) = u(1) = 0: u = x^2 - x.
  * const r = poisson(() => 2, grid1d(0, 1, 9), [dirichlet(), dirichlet()], { method: 'cg' })
  * Math.abs((r.u.data[4] ?? 0) + 0.25) < 1e-10 // => true
@@ -573,7 +573,7 @@ function multigridPoisson(
     (twoD && (!isPowerOfTwoPlusOne(ny) || nx !== ny || hx !== hy)) ||
     fixed.size !== boundaryCount
   ) {
-    throw new WhiteboxError(
+    throw new MdmlError(
       'value',
       'poisson: multigrid needs Dirichlet conditions and 2^k + 1 nodes per side (square cells)',
     )

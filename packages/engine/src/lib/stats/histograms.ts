@@ -4,7 +4,7 @@
  * and `binnedStatistic`, any statistic of the values falling in each bin.
  */
 
-import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { asTensor, fromStorage, item, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { mat, sample, sortedCopy, vec } from './_util.ts'
@@ -46,9 +46,8 @@ function outerEdges(a: Float64Array, range?: readonly [number, number]): [number
   let hi: number
   if (range !== undefined) {
     ;[lo, hi] = range
-    if (lo > hi) throw new WhiteboxError('value', 'histogram: range must be increasing')
-    if (!(Number.isFinite(lo) && Number.isFinite(hi)))
-      throw new WhiteboxError('value', 'histogram: range must be finite')
+    if (lo > hi) throw new MdmlError('value', 'histogram: range must be increasing')
+    if (!(Number.isFinite(lo) && Number.isFinite(hi))) throw new MdmlError('value', 'histogram: range must be finite')
   } else if (a.length === 0) {
     ;[lo, hi] = [0, 1]
   } else {
@@ -58,8 +57,7 @@ function outerEdges(a: Float64Array, range?: readonly [number, number]): [number
       if (v < lo) lo = v
       if (v > hi) hi = v
     }
-    if (!(Number.isFinite(lo) && Number.isFinite(hi)))
-      throw new WhiteboxError('value', 'histogram: data must be finite')
+    if (!(Number.isFinite(lo) && Number.isFinite(hi))) throw new MdmlError('value', 'histogram: data must be finite')
   }
   if (lo === hi) return [lo - 0.5, hi + 0.5]
   return [lo, hi]
@@ -123,7 +121,7 @@ function binWidth(rule: BinRule, a: Float64Array): number {
       return fd ? Math.min(fd, sturges) : sturges
     }
     default:
-      throw new WhiteboxError('value', `histogramBinEdges: unknown rule ${String(rule)}`)
+      throw new MdmlError('value', `histogramBinEdges: unknown rule ${String(rule)}`)
   }
 }
 
@@ -131,7 +129,7 @@ function edgesOf(a: Float64Array, options: HistogramOptions): { edges: number[];
   const bins = options.bins ?? 10
   if (typeof bins === 'string') {
     if (options.weights !== undefined)
-      throw new WhiteboxError('value', 'histogram: automatic bin rules do not support weights')
+      throw new MdmlError('value', 'histogram: automatic bin rules do not support weights')
     const [lo, hi] = outerEdges(a, options.range)
     const kept = options.range === undefined ? a : a.filter((v) => v >= lo && v <= hi)
     let count = 1
@@ -146,15 +144,15 @@ function edgesOf(a: Float64Array, options: HistogramOptions): { edges: number[];
   }
   if (typeof bins === 'number') {
     if (!(Number.isInteger(bins) && bins >= 1))
-      throw new WhiteboxError('value', 'histogram: bins must be a positive integer')
+      throw new MdmlError('value', 'histogram: bins must be a positive integer')
     const [lo, hi] = outerEdges(a, options.range)
     return { edges: linspace(lo, hi, bins), uniform: true }
   }
   const edges = toFlat(asTensor(bins))
   for (let i = 1; i < edges.length; i++)
     if (!((edges[i] ?? 0) >= (edges[i - 1] ?? 0)))
-      throw new WhiteboxError('value', 'histogram: bin edges must increase monotonically')
-  if (edges.length < 2) throw new WhiteboxError('value', 'histogram: need at least two edges')
+      throw new MdmlError('value', 'histogram: bin edges must increase monotonically')
+  if (edges.length < 2) throw new MdmlError('value', 'histogram: need at least two edges')
   return { edges, uniform: false }
 }
 
@@ -166,7 +164,7 @@ function edgesOf(a: Float64Array, options: HistogramOptions): { edges: number[];
  * @returns The edges, one more than the number of bins.
  * @example
  * ```ts
- * import { histogramBinEdges } from 'whitebox-engine/stats'
+ * import { histogramBinEdges } from 'mdml-engine/stats'
  * histogramBinEdges([0, 1, 2, 3, 4], { bins: 4 }) // => [0, 1, 2, 3, 4]
  * histogramBinEdges([1, 2, 3, 4, 5, 6, 7, 8], { bins: 'sturges' }) // => [1, 2.75, 4.5, 6.25, 8]
  * ```
@@ -225,7 +223,7 @@ export interface Histogram {
  * @returns The counts and the edges.
  * @example
  * ```ts
- * import { histogram } from 'whitebox-engine/stats'
+ * import { histogram } from 'mdml-engine/stats'
  * histogram([0, 1, 1, 2, 3], { bins: 3 }).counts // => [1, 2, 2]
  * histogram([0, 1, 1, 2, 3], { bins: 3, density: true }).counts // => [0.2, 0.4, 0.4]
  * ```
@@ -233,8 +231,7 @@ export interface Histogram {
 export function histogram(x: TensorLike, options: HistogramOptions & { readonly density?: boolean } = {}): Histogram {
   const a = sample('histogram', x, 0)
   const w = options.weights === undefined ? undefined : sample('histogram', options.weights)
-  if (w !== undefined && w.length !== a.length)
-    throw new WhiteboxError('shape', 'histogram: weights must match the data')
+  if (w !== undefined && w.length !== a.length) throw new MdmlError('shape', 'histogram: weights must match the data')
   const { edges, uniform } = edgesOf(a, options)
   const counts = countInto(a, edges, uniform, w)
   if (options.density === true) {
@@ -292,7 +289,7 @@ function axisEdges(a: Float64Array, bins: number | TensorLike, range?: readonly 
  * @returns The counts and both edge arrays.
  * @example
  * ```ts
- * import { histogram2d } from 'whitebox-engine/stats'
+ * import { histogram2d } from 'mdml-engine/stats'
  * histogram2d([0, 0, 1], [0, 1, 1], { bins: 2 }).counts // => [[1, 1], [0, 1]]
  * ```
  */
@@ -308,7 +305,7 @@ export function histogram2d(
 ): Histogram2d {
   const a = sample('histogram2d', x, 0)
   const b = sample('histogram2d', y, 0)
-  if (a.length !== b.length) throw new WhiteboxError('shape', 'histogram2d: x and y differ in length')
+  if (a.length !== b.length) throw new MdmlError('shape', 'histogram2d: x and y differ in length')
   const w = options.weights === undefined ? undefined : sample('histogram2d', options.weights)
   const bins = options.bins ?? 10
   const [bx, by] = typeof bins === 'number' ? [bins, bins] : bins
@@ -367,7 +364,7 @@ export interface BinnedStatistic {
  * @returns The statistic per bin, the edges and each observation's bin number.
  * @example
  * ```ts
- * import { binnedStatistic } from 'whitebox-engine/stats'
+ * import { binnedStatistic } from 'mdml-engine/stats'
  * binnedStatistic([0, 1, 2, 3], [1, 2, 3, 4], { bins: 2 }).statistic // => [1.5, 3.5]
  * binnedStatistic([0, 1, 2, 3], [1, 2, 3, 4], { bins: 2, statistic: 'sum' }).statistic // => [3, 7]
  * ```
@@ -383,7 +380,7 @@ export function binnedStatistic(
 ): BinnedStatistic {
   const a = sample('binnedStatistic', x)
   const v = sample('binnedStatistic', values)
-  if (a.length !== v.length) throw new WhiteboxError('shape', 'binnedStatistic: x and values differ in length')
+  if (a.length !== v.length) throw new MdmlError('shape', 'binnedStatistic: x and values differ in length')
   const edges = axisEdges(a, options.bins ?? 10, options.range)
   const bins = edges.length - 1
   const groups: number[][] = Array.from({ length: bins }, () => [])

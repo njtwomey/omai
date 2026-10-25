@@ -1,7 +1,7 @@
 /**
  * A fitted decision tree as plain arrays, in the layout of scikit-learn's `tree_` (split feature, threshold, children
  * and node values), and what can be done with one: the leaf and decision path of each row, predictions, depth and leaf
- * counts, a structure for drawing with whitebox-render, and indented text as in `export_text`.
+ * counts, a structure for drawing with mdml-render, and indented text as in `export_text`.
  */
 
 import { argmaxOf } from '../../lib/base/index.ts'
@@ -135,7 +135,7 @@ export function nLeaves(tree: TreeParams): number {
 const fmt = (v: number): string => (Number.isInteger(v) ? String(v) : v.toFixed(3))
 
 /**
- * A tree as a structure for whitebox-render: internal nodes labelled with their test, leaves with their prediction,
+ * A tree as a structure for mdml-render: internal nodes labelled with their test, leaves with their prediction,
  * edges labelled true and false.
  *
  * @param tree - The tree.

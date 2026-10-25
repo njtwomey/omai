@@ -4,7 +4,7 @@
  * the curve is supported. Built by `methods/explain` (`dependencePlot`, `aleEffects`) and drawn by render's
  * `DependenceView`.
  */
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 
 /** One feature's effect: the averaged curve over a grid, and optionally every row's curve (ICE). */
@@ -65,11 +65,11 @@ export interface Dependence {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `value` when a curve or surface names a feature that is not in `features`; `shape` when a
+ * @throws MdmlError `value` when a curve or surface names a feature that is not in `features`; `shape` when a
  *   curve's average, ICE curves or counts do not match its grid, or a surface's values its grids.
  * @example
  * ```ts
- * import { dependence } from 'whitebox-engine/exposition'
+ * import { dependence } from 'mdml-engine/exposition'
  * const r = dependence({ method: 'partial dependence', features: ['age', 'bmi'], output: 'prediction', curves: [{ feature: 1, grid: [0, 1], average: [2, 3], individual: [[1, 2], [3, 4]] }] })
  * r.curves[0].individual.length // => 2
  * ```
@@ -78,7 +78,7 @@ export function dependence(record: Omit<Dependence, 'kind'>): Dependence {
   const k = 'dependence'
   const d = record.features.length
   const feature = (f: number): void => {
-    if (!(Number.isInteger(f) && f >= 0 && f < d)) throw new WhiteboxError('value', `${k}: feature ${f} is not named`)
+    if (!(Number.isInteger(f) && f >= 0 && f < d)) throw new MdmlError('value', `${k}: feature ${f} is not named`)
   }
   for (const [i, c] of record.curves.entries()) {
     feature(c.feature)

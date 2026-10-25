@@ -3,7 +3,7 @@
  * two-dimensional clustering datasets.
  */
 
-import { agglomerativeClustering } from 'whitebox-engine/methods/cluster'
+import { agglomerativeClustering } from 'mdml-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

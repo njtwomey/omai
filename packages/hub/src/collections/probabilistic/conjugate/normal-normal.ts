@@ -3,10 +3,10 @@
  * posterior.
  */
 
-import { normalNormalModel } from 'whitebox-engine/methods/models'
-import { normal } from 'whitebox-engine/random'
-import { dict, int, real } from 'whitebox-engine/space'
-import { toFlat } from 'whitebox-engine/tensor'
+import { normalNormalModel } from 'mdml-engine/methods/models'
+import { normal } from 'mdml-engine/random'
+import { dict, int, real } from 'mdml-engine/space'
+import { toFlat } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 /** The normal-normal model: a mean from noisy measurements of known spread, with its exact posterior. */

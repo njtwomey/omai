@@ -72,8 +72,8 @@ function clusterCounts(n: number, weights: readonly number[], perClass: number):
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { makeClassification } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { makeClassification } from 'mdml-engine/datasets'
  * generate(makeClassification, { knobs: { nFeatures: 6, nInformative: 3, nRedundant: 1 } }).truth.relevantFeatures?.length // => 4
  * ```
  */
@@ -291,8 +291,8 @@ function clusterOf(counts: readonly number[], i: number): number {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { makeMultilabelClassification } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { makeMultilabelClassification } from 'mdml-engine/datasets'
  * generate(makeMultilabelClassification, { knobs: { n: 20, nClasses: 4 } }).data.y.shape // => [20, 4]
  * ```
  */

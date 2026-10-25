@@ -1,16 +1,16 @@
+import { dict, real } from 'mdml-engine/space'
+import { functionObjective, randomSampler, tune } from 'mdml-engine/tune'
+import { contourChart } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, Select, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { dict, real } from 'whitebox-engine/space'
-import { functionObjective, randomSampler, tune } from 'whitebox-engine/tune'
-import { contourChart } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, Select, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Contour of a study',
   question: 'How do I show how two hyperparameters interact?',
   explain:
-    '`contourChart` fits a Gaussian-process surrogate to the trials over two parameters (`contourData` in whitebox-engine’s `tune`) and draws its prediction as a smooth field with contour lines, the trials on top; log-scaled parameters sit on log axes. Here the best learning rate depends on the momentum, so the valley runs diagonally.',
+    '`contourChart` fits a Gaussian-process surrogate to the trials over two parameters (`contourData` in mdml-engine’s `tune`) and draws its prediction as a smooth field with contour lines, the trials on top; log-scaled parameters sit on log axes. Here the best learning rate depends on the momentum, so the valley runs diagonally.',
 }
 
 const FIG = figure({ width: 560, aspect: 1.3 })

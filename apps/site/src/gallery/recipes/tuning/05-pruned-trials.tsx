@@ -1,5 +1,4 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { dict, real } from 'whitebox-engine/space'
+import { dict, real } from 'mdml-engine/space'
 import {
   functionObjective,
   medianPruner,
@@ -7,10 +6,11 @@ import {
   randomSampler,
   successiveHalvingPruner,
   tune,
-} from 'whitebox-engine/tune'
-import { intermediateChart } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { Chart, Choice, ControlPanel, FigureFrame, useColourMode } from 'whitebox-render/react'
+} from 'mdml-engine/tune'
+import { intermediateChart } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { Chart, Choice, ControlPanel, FigureFrame, useColourMode } from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

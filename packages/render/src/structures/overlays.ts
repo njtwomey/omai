@@ -4,12 +4,12 @@
  * depth-first expansion orders from a root.
  */
 
-import type { Structure, StructureOverlay } from 'whitebox-engine/scene'
+import type { Structure, StructureOverlay } from 'mdml-engine/scene'
 
 /**
  * Frames of a traversal (a search's expansion order, a topological order): frame `t` makes node `order[t]` active
  * and the edge it was reached by, and numbers every node visited so far by when it was visited. (For message passing
- * recorded in a trace, see `messageFrames` in `whitebox-render/trace`.)
+ * recorded in a trace, see `messageFrames` in `mdml-render/trace`.)
  *
  * @param s - The structure.
  * @param order - Node ids in visiting order.
@@ -17,8 +17,8 @@ import type { Structure, StructureOverlay } from 'whitebox-engine/scene'
  * @returns One overlay per visit.
  * @example
  * ```ts
- * import { structure } from 'whitebox-engine/scene'
- * import { traversalFrames } from 'whitebox-render/structures'
+ * import { structure } from 'mdml-engine/scene'
+ * import { traversalFrames } from 'mdml-render/structures'
  * const s = structure('tree', [{ id: 'a', label: 'a', role: 'internal' }, { id: 'b', label: 'b', role: 'leaf' }], [{ from: 'a', to: 'b' }])
  * traversalFrames(s, ['a', 'b'])[1] // => { active: ['b'], edges: [{ from: 'a', to: 'b' }], badges: { a: { order: 1 }, b: { order: 2 } } }
  * ```
@@ -53,8 +53,8 @@ export function traversalFrames(
  * @returns The node ids in expansion order.
  * @example
  * ```ts
- * import { structure } from 'whitebox-engine/scene'
- * import { searchOrder } from 'whitebox-render/structures'
+ * import { structure } from 'mdml-engine/scene'
+ * import { searchOrder } from 'mdml-render/structures'
  * const s = structure('tree', ['r', 'a', 'b', 'c'].map((id) => ({ id, label: id, role: 'internal' as const })), [{ from: 'r', to: 'a' }, { from: 'r', to: 'b' }, { from: 'a', to: 'c' }])
  * [searchOrder(s, 'r', 'bfs'), searchOrder(s, 'r', 'dfs')] // => [['r', 'a', 'b', 'c'], ['r', 'a', 'c', 'b']]
  * ```

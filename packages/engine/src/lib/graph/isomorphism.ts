@@ -4,7 +4,7 @@
  * subgraph isomorphisms and monomorphisms, as in NetworkX's GraphMatcher.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { degree, type Graph, type GraphRunOptions } from './graph.ts'
 
@@ -55,7 +55,7 @@ export interface WlOptions {
  *   Weisfeiler-Lehman graph kernels, JMLR 12 (2011).
  * @example
  * ```ts
- * import { pathGraph, weisfeilerLehmanAlgorithm } from 'whitebox-engine/graph'
+ * import { pathGraph, weisfeilerLehmanAlgorithm } from 'mdml-engine/graph'
  * weisfeilerLehmanAlgorithm(pathGraph(4)).name // => 'weisfeiler-lehman'
  * ```
  */
@@ -111,7 +111,7 @@ function refiner(
  * @concept weisfeiler-lehman
  * @example
  * ```ts
- * import { pathGraph, weisfeilerLehman } from 'whitebox-engine/graph'
+ * import { pathGraph, weisfeilerLehman } from 'mdml-engine/graph'
  * const r = weisfeilerLehman(pathGraph(5))
  * [r.count, r.colours[0] === r.colours[4], r.colours[1] === r.colours[3]] // => [3, true, true]
  * ```
@@ -141,7 +141,7 @@ export function weisfeilerLehman(
  * @concept weisfeiler-lehman
  * @example
  * ```ts
- * import { cycleGraph, graph, pathGraph, wlHash } from 'whitebox-engine/graph'
+ * import { cycleGraph, graph, pathGraph, wlHash } from 'mdml-engine/graph'
  * wlHash(cycleGraph(4)) === wlHash(graph([[2, 3], [3, 0], [0, 1], [1, 2]])) // => true
  * wlHash(cycleGraph(4)) === wlHash(pathGraph(4)) // => false
  * ```
@@ -190,13 +190,13 @@ export interface MatchOptions {
  * @param mode - The kind of matching (default `'isomorphism'`).
  * @param options - A node compatibility test and a limit.
  * @returns A generator of mappings: `mapping[p]` is the host node of pattern node p.
- * @throws WhiteboxError with code `value` when one graph is directed and the other is not.
+ * @throws MdmlError with code `value` when one graph is directed and the other is not.
  * @concept graph-isomorphism
  * @reference L. P. Cordella, P. Foggia, C. Sansone and M. Vento, A (sub)graph isomorphism algorithm for matching large
  *   graphs, IEEE TPAMI 26 (2004).
  * @example
  * ```ts
- * import { cycleGraph, vf2 } from 'whitebox-engine/graph'
+ * import { cycleGraph, vf2 } from 'mdml-engine/graph'
  * Array.from(vf2(cycleGraph(4), cycleGraph(4))).length // => 8
  * ```
  */
@@ -207,7 +207,7 @@ export function* vf2(
   options: MatchOptions = {},
 ): Generator<number[]> {
   if (host.directed !== pattern.directed) {
-    throw new WhiteboxError('value', 'vf2: both graphs must be directed or both undirected')
+    throw new MdmlError('value', 'vf2: both graphs must be directed or both undirected')
   }
   const np = pattern.n
   const nh = host.n
@@ -344,7 +344,7 @@ export function* vf2(
  * @concept graph-isomorphism
  * @example
  * ```ts
- * import { isIsomorphic, petersenGraph, graph } from 'whitebox-engine/graph'
+ * import { isIsomorphic, petersenGraph, graph } from 'mdml-engine/graph'
  * isIsomorphic(petersenGraph(), petersenGraph()) // => true
  * isIsomorphic(graph([[0, 1], [1, 2]]), graph([[0, 1], [0, 2]])) // => true
  * ```
@@ -364,7 +364,7 @@ export function isIsomorphic(g1: Graph, g2: Graph, options: Omit<MatchOptions, '
  * @concept graph-isomorphism
  * @example
  * ```ts
- * import { completeGraph, pathGraph, subgraphIsomorphisms } from 'whitebox-engine/graph'
+ * import { completeGraph, pathGraph, subgraphIsomorphisms } from 'mdml-engine/graph'
  * subgraphIsomorphisms(completeGraph(4), pathGraph(3)).length // => 0
  * subgraphIsomorphisms(completeGraph(4), pathGraph(3), { induced: false }).length // => 24
  * ```
@@ -389,7 +389,7 @@ export function subgraphIsomorphisms(
  * @concept graph-isomorphism
  * @example
  * ```ts
- * import { cycleGraph, isSubgraphIsomorphic, petersenGraph } from 'whitebox-engine/graph'
+ * import { cycleGraph, isSubgraphIsomorphic, petersenGraph } from 'mdml-engine/graph'
  * [isSubgraphIsomorphic(petersenGraph(), cycleGraph(5)), isSubgraphIsomorphic(petersenGraph(), cycleGraph(4))] // => [true, false]
  * ```
  */

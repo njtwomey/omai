@@ -5,7 +5,7 @@
  * data values.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -32,8 +32,7 @@ import { makeInterpSpline } from './splines.ts'
 function axisPoints(x: TensorLike, name: string): number[] {
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, name))
   for (let i = 1; i < xs.length; i++) {
-    if (!((xs[i] ?? 0) > (xs[i - 1] ?? 0)))
-      throw new WhiteboxError('value', `${name}: points must be strictly increasing`)
+    if (!((xs[i] ?? 0) > (xs[i - 1] ?? 0))) throw new MdmlError('value', `${name}: points must be strictly increasing`)
   }
   return xs
 }
@@ -75,8 +74,7 @@ function axisWeights(xs: readonly number[], q: Value, method: GridMethod): Value
   const m = qp.length
   const degree = SPLINE_DEGREE[method]
   if (degree !== undefined) {
-    if (n <= degree)
-      throw new WhiteboxError('value', `${method} interpolation needs more than ${degree} points per axis`)
+    if (n <= degree) throw new MdmlError('value', `${method} interpolation needs more than ${degree} points per axis`)
     const identity = new Float64Array(n * n)
     for (let i = 0; i < n; i++) identity[i * n + i] = 1
     return reshape(makeInterpSpline(xs, fromStorage(identity, [n, n], 'float64'), degree).evaluate(q), [m, n])
@@ -132,8 +130,8 @@ function axisWeights(xs: readonly number[], q: Value, method: GridMethod): Value
  * @returns Interpolated values, the shape of x.
  * @example
  * ```ts
- * import { interp } from 'whitebox-engine/numerics/interpolate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { interp } from 'mdml-engine/numerics/interpolate'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(interp([-1, 0.5, 1.5, 9], [0, 1, 2], [10, 20, 0])) // => [10, 15, 10, 0]
  * ```
  */
@@ -209,8 +207,8 @@ export interface Interp1dOptions {
  * @returns The interpolating function.
  * @example
  * ```ts
- * import { interp1d } from 'whitebox-engine/numerics/interpolate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { interp1d } from 'mdml-engine/numerics/interpolate'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(interp1d([0, 1, 2], [0, 10, 20], { kind: 'previous' })([0.5, 1.5])) // => [0, 10]
  * ```
  */
@@ -229,7 +227,7 @@ export function interp1d(x: TensorLike, y: TensorLike, options: Interp1dOptions 
     const qp = toFlat(primalOf(qf))
     const outside = qp.map((v) => v < lo || v > hi)
     if (boundsError && outside.some(Boolean))
-      throw new WhiteboxError('value', 'interp1d: a query point is outside the data range')
+      throw new MdmlError('value', 'interp1d: a query point is outside the data range')
     let out: Value = matmul(axisWeights(xs, qf, kind), flat)
     if (options.fillValue !== 'extrapolate' && outside.some(Boolean)) {
       out = where(
@@ -264,8 +262,8 @@ export interface RegularGridOptions {
  * @concept grid-interpolation
  * @example
  * ```ts
- * import { regularGridInterpolator } from 'whitebox-engine/numerics/interpolate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { regularGridInterpolator } from 'mdml-engine/numerics/interpolate'
+ * import { toArray } from 'mdml-engine/tensor'
  * // f(x, y) = x + 10 y is reproduced exactly by multilinear interpolation.
  * const f = regularGridInterpolator([[0, 1, 2], [0, 1]], [[0, 10], [1, 11], [2, 12]])
  * toArray(f([[0.5, 0.5], [1.5, 0.25]])) // => [5.5, 4]
@@ -281,7 +279,7 @@ export function regularGridInterpolator(
   const d = axes.length
   axes.forEach((xs, k) => {
     if (v.shape[k] !== xs.length)
-      throw new WhiteboxError(
+      throw new MdmlError(
         'shape',
         `regularGridInterpolator: axis ${k} has ${xs.length} points but the values have ${v.shape[k]}`,
       )
@@ -294,14 +292,14 @@ export function regularGridInterpolator(
     const single = q0.shape.length === 1
     const q = single ? reshape(q0, [1, d]) : q0
     if (q.shape[q.shape.length - 1] !== d)
-      throw new WhiteboxError('shape', `regularGridInterpolator: query points must have ${d} coordinates`)
+      throw new MdmlError('shape', `regularGridInterpolator: query points must have ${d} coordinates`)
     const m = q.shape[0] ?? 0
     const qp = toFlat(primalOf(q))
     const outside = Array.from({ length: m }, (_, r) =>
       axes.some((xs, k) => (qp[r * d + k] ?? 0) < (xs[0] ?? 0) || (qp[r * d + k] ?? 0) > (xs[xs.length - 1] ?? 0)),
     )
     if (boundsError && outside.some(Boolean))
-      throw new WhiteboxError('value', 'regularGridInterpolator: a query point is outside the grid')
+      throw new MdmlError('value', 'regularGridInterpolator: a query point is outside the grid')
     // Contract axis 0 by matrix product, then each further axis by a per-point weighted sum.
     let acc: Value = matmul(
       axisWeights(axes[0] as number[], reshape(sliceAxis(q, 1, 0, 1), [m]), method),
@@ -334,8 +332,8 @@ export function regularGridInterpolator(
  * @returns Interpolated values `[q]`.
  * @example
  * ```ts
- * import { griddata } from 'whitebox-engine/numerics/interpolate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { griddata } from 'mdml-engine/numerics/interpolate'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(griddata([[0, 0], [1, 0], [0, 1], [1, 1]], [0, 1, 2, 3], [[0.5, 0.5], [0.25, 0.5]])) // => [1.5, 1.25]
  * ```
  */
@@ -394,7 +392,7 @@ export function griddata(
       weights[r * n + best] = 1
     }
   } else {
-    if (d !== 2) throw new WhiteboxError('value', 'griddata: linear interpolation needs planar points')
+    if (d !== 2) throw new MdmlError('value', 'griddata: linear interpolation needs planar points')
     const tri = delaunay(sites)
     for (let r = 0; r < m; r++) {
       const p: Point2 = [qf[2 * r] ?? 0, qf[2 * r + 1] ?? 0]

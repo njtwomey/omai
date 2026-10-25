@@ -1,7 +1,7 @@
+import { frozenLake } from 'mdml-engine/methods/rl'
+import { make } from 'mdml-engine/rl'
+import { ControlPanel, EnvView, SeedInput, Toggle, useEnvStepper, useHeldKeys } from 'mdml-render/react'
 import { type ReactNode, useEffect, useState } from 'react'
-import { frozenLake } from 'whitebox-engine/methods/rl'
-import { make } from 'whitebox-engine/rl'
-import { ControlPanel, EnvView, SeedInput, Toggle, useEnvStepper, useHeldKeys } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

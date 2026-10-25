@@ -56,9 +56,9 @@ export interface GCNConvOptions {
  * @concept graph-neural-networks
  * @example
  * ```ts
- * import { GCNConv } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { GCNConv } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { zeros } from 'mdml-engine/tensor'
  * new GCNConv(3, 2, { key: key(0) }).forward({ x: zeros([4, 3]), edgeIndex: [[0, 1], [1, 2]] }).shape // => [4, 2]
  * ```
  */
@@ -110,8 +110,8 @@ export interface GATConvOptions {
  * @concept graph-neural-networks
  * @example
  * ```ts
- * import { GATConv } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { GATConv } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * new GATConv(3, 2, { heads: 4, key: key(0) }).outputShape([5, 3]) // => [5, 8]
  * ```
  */
@@ -186,8 +186,8 @@ export interface SAGEConvOptions {
  * @concept graph-neural-networks
  * @example
  * ```ts
- * import { SAGEConv } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { SAGEConv } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * Object.keys(new SAGEConv(3, 2, { key: key(0) }).stateDict()) // => ['lin_l.bias', 'lin_l.weight', 'lin_r.weight']
  * ```
  */
@@ -245,8 +245,8 @@ export class SAGEConv extends GraphConv {
  * @concept graph-neural-networks
  * @example
  * ```ts
- * import { GINConv, Linear } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { GINConv, Linear } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * Object.keys(new GINConv(new Linear(3, 2, { key: key(0) }), { trainEps: true }).stateDict()) // => ['eps', 'nn.bias', 'nn.weight']
  * ```
  */

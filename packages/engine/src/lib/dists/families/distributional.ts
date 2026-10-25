@@ -5,7 +5,7 @@
  * for ordinal regression.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { log1mexp, logNdtr, logSigmoid } from '../../numerics/special/index.ts'
 import {
   add,
@@ -63,8 +63,8 @@ export interface DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families, laplace } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families, laplace } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const lap = families.defineDistributionalFamily('laplace', [
  *   { name: 'mu', link: families.identity() }, { name: 'b', link: families.log() },
  * ], ([m, b]) => laplace(m, b))
@@ -79,10 +79,7 @@ export function defineDistributionalFamily(
   const count = parameters.length
   const check = (xs: readonly TensorLike[]): Value[] => {
     if (xs.length !== count)
-      throw new WhiteboxError(
-        'value',
-        `${name}: needs ${count} parameters (${parameters.map((p) => p.name).join(', ')})`,
-      )
+      throw new MdmlError('value', `${name}: needs ${count} parameters (${parameters.map((p) => p.name).join(', ')})`)
     return xs.map((x) => promoteFloat(x)[0] as Value)
   }
   const fromPredictors = (predictors: readonly TensorLike[]): Distribution =>
@@ -104,8 +101,8 @@ const p = (name: string, link: Link): DistributionalParameter => ({ name, link }
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gamlssNormal().fromPredictors([1, 0]).stddev()) // => 1
  * ```
  */
@@ -121,8 +118,8 @@ export function gamlssNormal(): DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gamlssStudentT().distribution([0, 1, 3]).cdf(0)) // => 0.5
  * ```
  */
@@ -140,8 +137,8 @@ export function gamlssStudentT(): DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gamlssSkewNormal().distribution([0, 1, 0]).cdf(0)) // => 0.5
  * ```
  */
@@ -160,8 +157,8 @@ export function gamlssSkewNormal(): DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gamlssGamma().distribution([2, 0.5]).variance()) // => 1
  * ```
  */
@@ -178,8 +175,8 @@ export function gamlssGamma(): DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gamlssLogNormal().distribution([0, 1]).cdf(1)) // => 0.5
  * ```
  */
@@ -195,8 +192,8 @@ export function gamlssLogNormal(): DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(families.gamlssWeibull().distribution([2, 1]).mean()) - 2) < 1e-14 // => true
  * ```
  */
@@ -213,8 +210,8 @@ export function gamlssWeibull(): DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(families.gamlssBeta().distribution([0.3, 0.5]).variance()) - 0.25 * 0.21) < 1e-15 // => true
  * ```
  */
@@ -232,8 +229,8 @@ export function gamlssBeta(): DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gamlssPoisson().fromPredictors([0]).mean()) // => 1
  * ```
  */
@@ -248,8 +245,8 @@ export function gamlssPoisson(): DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gamlssNegativeBinomial().distribution([2, 0.5]).variance()) // => 4
  * ```
  */
@@ -266,8 +263,8 @@ export function gamlssNegativeBinomial(): DistributionalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.gamlssZeroInflatedPoisson().distribution([4, 0.25]).mean()) // => 3
  * ```
  */
@@ -308,8 +305,8 @@ export interface OrdinalFamily {
  * @returns The family.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.ordinalFamily('probit').distribution(0, [0]).prob(0)) // => 0.5
  * ```
  */

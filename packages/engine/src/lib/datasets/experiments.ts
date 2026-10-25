@@ -23,8 +23,8 @@ export type AbMetric = 'conversion' | 'continuous' | 'revenue'
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { abTest } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { abTest } from 'mdml-engine/datasets'
  * generate(abTest, { knobs: { users: 100 } }).data.columns['arm']?.kind // => 'categorical'
  * ```
  */

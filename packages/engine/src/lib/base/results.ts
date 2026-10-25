@@ -20,7 +20,7 @@ export interface Estimate {
 }
 
 /**
- * The result of every statistical test in whitebox-js.
+ * The result of every statistical test in mdml-js.
  *
  * @concept hypothesis-testing
  */
@@ -74,7 +74,7 @@ export interface MetricResult {
  * @returns The estimate.
  * @example
  * ```ts
- * import { estimate } from 'whitebox-engine/base'
+ * import { estimate } from 'mdml-engine/base'
  * estimate(1, 0.5).interval // => [0.020018, 1.979982]
  * ```
  */
@@ -98,7 +98,7 @@ export function estimate(value: number, standardError?: number, level = 0.95): E
  * @returns A one-line description.
  * @example
  * ```ts
- * import { formatResult } from 'whitebox-engine/base'
+ * import { formatResult } from 'mdml-engine/base'
  * formatResult({ value: 0.25, interval: [0.2, 0.3], level: 0.95 }) // => '0.25 (95% CI 0.2 to 0.3)'
  * ```
  */

@@ -6,7 +6,7 @@
  */
 
 import { jacfwd } from '../../autodiff/index.ts'
-import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { eigvals, type LuFactorisation, solve } from '../../numerics/linalg/index.ts'
 import { mul, reshape, sub, type TensorLike, type Value } from '../../tensor/index.ts'
 import { BDF_MAX_ORDER, bdfDense, bdfStep } from './_bdf.ts'
@@ -89,7 +89,7 @@ export interface RadauState extends StepperState {
  * @concept stiff-ode
  * @example
  * ```ts
- * import { radau } from 'whitebox-engine/dynamics/ode'
+ * import { radau } from 'mdml-engine/dynamics/ode'
  * radau().order // => 5
  * ```
  */
@@ -155,7 +155,7 @@ export interface BdfState extends StepperState {
  * @concept stiff-ode
  * @example
  * ```ts
- * import { bdf } from 'whitebox-engine/dynamics/ode'
+ * import { bdf } from 'mdml-engine/dynamics/ode'
  * bdf().stiff // => true
  * ```
  */
@@ -268,12 +268,12 @@ export interface DirkState extends StepperState {
  * @param tableau - The method.
  * @param options - Step size, Jacobian and Newton settings.
  * @returns The stepper.
- * @throws WhiteboxError with code `value` when dt is not positive.
+ * @throws MdmlError with code `value` when dt is not positive.
  * @concept stiff-ode
  * @example
  * ```ts
- * import { dirk, BACKWARD_EULER } from 'whitebox-engine/dynamics/ode'
- * import { mul, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { dirk, BACKWARD_EULER } from 'mdml-engine/dynamics/ode'
+ * import { mul, tensor, toArray } from 'mdml-engine/tensor'
  * const s = dirk(BACKWARD_EULER, { dt: 0.5 })
  * // y' = -y: one backward Euler step gives y / (1 + h).
  * toArray(s.step(s.init((_t, y) => mul(y, -1), 0, tensor([3]), 1)).y) // => [2]
@@ -281,7 +281,7 @@ export interface DirkState extends StepperState {
  */
 export function dirk(tableau: DirkTableau, options: DirkOptions): Stepper<DirkState> {
   const dt = options.dt
-  if (!(dt > 0) || !Number.isFinite(dt)) throw new WhiteboxError('value', `${tableau.name}: dt must be positive`)
+  if (!(dt > 0) || !Number.isFinite(dt)) throw new MdmlError('value', `${tableau.name}: dt must be positive`)
   const jac = options.jac ?? 'autodiff'
   const tol = options.newtonTol ?? 1e-10
   const maxNewton = options.maxNewton ?? 10
@@ -296,7 +296,7 @@ export function dirk(tableau: DirkTableau, options: DirkOptions): Stepper<DirkSt
       return { ...initialState(t0, y0, tBound, dt, c, tableau.order), f, fy, fOld: fy, counts: snapshot(c) }
     },
     step: (s) => {
-      if (s.status !== 'running') throw new WhiteboxError('value', `${tableau.name}: the integration has ended`)
+      if (s.status !== 'running') throw new MdmlError('value', `${tableau.name}: the integration has ended`)
       if (atBound(s)) return { ...s, tOld: s.t, t: s.tBound, status: 'finished', attempts: [] }
       const c: Counter = { ...s.counts }
       const f = tally(s.f, c)
@@ -416,7 +416,7 @@ function newtonStage(
  * @returns The stepper.
  * @example
  * ```ts
- * import { backwardEuler } from 'whitebox-engine/dynamics/ode'
+ * import { backwardEuler } from 'mdml-engine/dynamics/ode'
  * backwardEuler({ dt: 0.1 }).order // => 1
  * ```
  */
@@ -431,7 +431,7 @@ export function backwardEuler(options: DirkOptions): Stepper<DirkState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { trapezoid } from 'whitebox-engine/dynamics/ode'
+ * import { trapezoid } from 'mdml-engine/dynamics/ode'
  * trapezoid({ dt: 0.1 }).order // => 2
  * ```
  */
@@ -446,7 +446,7 @@ export function trapezoid(options: DirkOptions): Stepper<DirkState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { implicitMidpoint } from 'whitebox-engine/dynamics/ode'
+ * import { implicitMidpoint } from 'mdml-engine/dynamics/ode'
  * implicitMidpoint({ dt: 0.1 }).name // => 'implicit-midpoint'
  * ```
  */
@@ -461,7 +461,7 @@ export function implicitMidpoint(options: DirkOptions): Stepper<DirkState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { sdirk } from 'whitebox-engine/dynamics/ode'
+ * import { sdirk } from 'mdml-engine/dynamics/ode'
  * sdirk({ dt: 0.1, order: 3 }).order // => 3
  * ```
  */
@@ -493,7 +493,7 @@ const ROS_E32 = 6 + Math.SQRT2
  * @reference Shampine and Reichelt (1997), The MATLAB ODE suite.
  * @example
  * ```ts
- * import { rosenbrock23 } from 'whitebox-engine/dynamics/ode'
+ * import { rosenbrock23 } from 'mdml-engine/dynamics/ode'
  * rosenbrock23().order // => 2
  * ```
  */
@@ -518,7 +518,7 @@ export function rosenbrock23(options: ImplicitOptions = {}): Stepper<RosenbrockS
       return { ...base, hAbs, f, fy, k1: fy, k2: fy, h: 0, counts: snapshot(c) }
     },
     step: (s) => {
-      if (s.status !== 'running') throw new WhiteboxError('value', 'rosenbrock23: the integration has ended')
+      if (s.status !== 'running') throw new MdmlError('value', 'rosenbrock23: the integration has ended')
       if (atBound(s)) return { ...s, tOld: s.t, t: s.tBound, status: 'finished', attempts: [] }
       const c: Counter = { ...s.counts }
       const f = tally(s.f, c)
@@ -660,8 +660,8 @@ export interface StiffnessReport {
  * @concept stiffness
  * @example
  * ```ts
- * import { stiffness } from 'whitebox-engine/dynamics/ode'
- * import { matmul, tensor } from 'whitebox-engine/tensor'
+ * import { stiffness } from 'mdml-engine/dynamics/ode'
+ * import { matmul, tensor } from 'mdml-engine/tensor'
  * const a = tensor([[-1, 0], [0, -1000]])
  * const r = stiffness((_t, y) => matmul(a, y), 0, tensor([1, 1]), { h: 0.01 })
  * [r.ratio, r.stiff] // => [1000, true]

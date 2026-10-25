@@ -11,14 +11,14 @@ from typing import Any, cast
 import jax
 import jax.numpy as jnp
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.pgm import stable
 from numpyro import handlers
 from numpyro.infer import Trace_ELBO, TraceMeanField_ELBO
 from numpyro.infer.autoguide import AutoNormal
 from numpyro.infer.util import log_density
 from scipy.special import logsumexp
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.pgm import stable
 
 _spec = importlib.util.spec_from_file_location("probprog_models", Path(__file__).with_name("_models.py"))
 assert _spec is not None and _spec.loader is not None

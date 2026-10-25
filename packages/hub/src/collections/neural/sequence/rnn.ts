@@ -3,10 +3,10 @@
  * it must carry in its hidden state.
  */
 
-import { generate } from 'whitebox-engine/data'
-import { parityTask } from 'whitebox-engine/datasets'
-import { type RecurrentCell, recurrentTagger } from 'whitebox-engine/methods/neural/sequence'
-import { choice, dict, int, type SpaceValue } from 'whitebox-engine/space'
+import { generate } from 'mdml-engine/data'
+import { parityTask } from 'mdml-engine/datasets'
+import { type RecurrentCell, recurrentTagger } from 'mdml-engine/methods/neural/sequence'
+import { choice, dict, int, type SpaceValue } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 const num = (v: SpaceValue | undefined, fallback: number): number => (typeof v === 'number' ? v : fallback)

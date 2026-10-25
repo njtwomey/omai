@@ -3,7 +3,7 @@
 // live in optim; this only roots a smooth derivative.
 
 import { grad } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import { asTensor, item, type Tensor, type Value } from '../tensor/index.ts'
 
@@ -24,7 +24,7 @@ export function maximiseSmooth(
   hi: number,
   grid = 64,
 ): number {
-  if (!(hi > lo)) throw new WhiteboxError('value', 'maximise: needs lo < hi')
+  if (!(hi > lo)) throw new MdmlError('value', 'maximise: needs lo < hi')
   let best = lo
   let bestValue = Number.NEGATIVE_INFINITY
   for (let i = 0; i <= grid; i++) {

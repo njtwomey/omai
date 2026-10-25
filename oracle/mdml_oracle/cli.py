@@ -1,7 +1,7 @@
 """Generate or check golden fixtures (a typed pydantic-settings CLI).
 
-    uv run --group oracle-core python -m whitebox_oracle generate [--only tensor/,stats/tests/]
-    uv run --group oracle-core python -m whitebox_oracle check [--only ...]
+    uv run --group oracle-core python -m mdml_oracle generate [--only tensor/,stats/tests/]
+    uv run --group oracle-core python -m mdml_oracle check [--only ...]
 
 `--only` takes comma-separated path prefixes under oracle/cases/; a scoped check compares just those fixtures and their
 manifest entries (it is what `make verify` runs for the case modules a change touches).
@@ -44,7 +44,7 @@ class ManifestEntry(TypedDict):
 
 def load_module(path: Path) -> CaseModule:
     """Import a case module from its file path."""
-    spec = importlib.util.spec_from_file_location(f"whitebox_cases.{path.stem}", path)
+    spec = importlib.util.spec_from_file_location(f"mdml_cases.{path.stem}", path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)
@@ -93,7 +93,7 @@ def write_fixtures(paths: Paths, out_dir: Path, existing_manifest: Path | None =
         previous: list[ManifestEntry] = json.loads(source.read_text())["fixtures"]
         written = {m["fixture"] for m in manifest}
         manifest = sorted([m for m in previous if m["fixture"] not in written] + manifest, key=lambda m: m["fixture"])
-    catalogue = {"schema": "whitebox.fixtures/1", "fixtures": manifest}
+    catalogue = {"schema": "mdml.fixtures/1", "fixtures": manifest}
     existing.write_text(json.dumps(catalogue, indent=2) + "\n")
     return manifest
 
@@ -157,19 +157,19 @@ class Manifest(Paths):
                     "cases": len(cast(list[object], fixture["cases"])),
                 }
             )
-        catalogue = {"schema": "whitebox.fixtures/1", "fixtures": manifest}
+        catalogue = {"schema": "mdml.fixtures/1", "fixtures": manifest}
         (self.fixtures_dir / "manifest.json").write_text(json.dumps(catalogue, indent=2) + "\n")
         print(f"manifest: {len(manifest)} fixtures")
 
 
 class Oracle(BaseSettings):
-    """Python ground truth for whitebox-js."""
+    """Python ground truth for mdml-js."""
 
     model_config = SettingsConfigDict(
-        env_prefix="WHITEBOX_",
+        env_prefix="MDML_",
         env_file=ROOT / ".env",
         extra="ignore",
-        cli_prog_name="whitebox-oracle",
+        cli_prog_name="mdml-oracle",
         cli_kebab_case=True,
     )
 

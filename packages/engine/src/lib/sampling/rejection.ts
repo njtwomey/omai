@@ -4,7 +4,7 @@
  * piecewise-exponential envelope tightens with each rejection, and the ratio-of-uniforms method.
  */
 
-import { logAddExp, WhiteboxError } from '../base/index.ts'
+import { logAddExp, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, uniformStream } from '../random/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 import type { LogDensity, Proposal } from './target.ts'
@@ -40,14 +40,14 @@ export interface RejectionOptions {
  * @param q - The proposal.
  * @param options - Key, number of draws, log M and the proposal budget.
  * @returns The draws, proposals, acceptance rate, completeness and envelope violations.
- * @throws WhiteboxError with code `shape` when dimensions differ, and `value` for a bad number of draws.
+ * @throws MdmlError with code `shape` when dimensions differ, and `value` for a bad number of draws.
  * @concept rejection-sampling
  * @reference J. von Neumann, Various techniques used in connection with random digits (1951).
  * @example
  * ```ts
- * import { numericTarget, proposalFromDistribution, rejectionSample } from 'whitebox-engine/sampling'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { numericTarget, proposalFromDistribution, rejectionSample } from 'mdml-engine/sampling'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * // pi(x) = exp(-x^2 / 2) and q = N(0, 2^2): pi / q <= 2 sqrt(2 pi).
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const r = rejectionSample(t, proposalFromDistribution(normal(0, 2)), { key: key(0), n: 500, logEnvelope: Math.log(2 * Math.sqrt(2 * Math.PI)) })
@@ -59,10 +59,10 @@ export function rejectionSample(
   q: Proposal,
   options: RejectionOptions,
 ): RejectionResult & { readonly envelopeViolations: number } {
-  if (q.dim !== target.dim) throw new WhiteboxError('shape', 'rejectionSample: proposal and target dimensions differ')
+  if (q.dim !== target.dim) throw new MdmlError('shape', 'rejectionSample: proposal and target dimensions differ')
   const { n } = options
   if (!(Number.isInteger(n) && n >= 0))
-    throw new WhiteboxError('value', 'rejectionSample: n must be a non-negative integer')
+    throw new MdmlError('value', 'rejectionSample: n must be a non-negative integer')
   const dim = target.dim
   const budget = options.maxProposals ?? 1000 * Math.max(1, n)
   const out = new Float64Array(n * dim)
@@ -119,15 +119,15 @@ export interface AdaptiveRejectionOptions {
  * @param target - A one-dimensional log-concave target with a gradient.
  * @param options - Key, number of draws, starting points, domain, hull size and proposal budget.
  * @returns The draws `[n, 1]`, proposals, acceptance rate, completeness and the final abscissae.
- * @throws WhiteboxError with code `value` for a target that is not one-dimensional with a gradient, fewer than two
+ * @throws MdmlError with code `value` for a target that is not one-dimensional with a gradient, fewer than two
  *   starting points, points outside the domain, an envelope that cannot be normalised (wrong slopes at infinite
  *   bounds), or a density found not to be log-concave.
  * @concept adaptive-rejection-sampling
  * @reference W. R. Gilks and P. Wild, Adaptive rejection sampling for Gibbs sampling (Applied Statistics 1992).
  * @example
  * ```ts
- * import { adaptiveRejectionSample, numericTarget } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { adaptiveRejectionSample, numericTarget } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * const r = adaptiveRejectionSample(t, { key: key(0), n: 1000 })
  * r.acceptanceRate > 0.9 // => true
@@ -138,7 +138,7 @@ export function adaptiveRejectionSample(
   options: AdaptiveRejectionOptions,
 ): RejectionResult & { readonly abscissae: readonly number[] } {
   if (target.dim !== 1 || !target.hasGradient) {
-    throw new WhiteboxError('value', 'adaptiveRejectionSample: need a one-dimensional target with a gradient')
+    throw new MdmlError('value', 'adaptiveRejectionSample: need a one-dimensional target with a gradient')
   }
   const { n } = options
   const [lo, hi] = options.domain ?? [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY]
@@ -146,7 +146,7 @@ export function adaptiveRejectionSample(
   const budget = options.maxProposals ?? 100 * Math.max(1, n)
   const init = [...(options.initialPoints ?? [-1, 1])].sort((a, b) => a - b)
   if (init.length < 2 || init.some((x) => !(x > lo && x < hi))) {
-    throw new WhiteboxError('value', 'adaptiveRejectionSample: need two starting points inside the domain')
+    throw new MdmlError('value', 'adaptiveRejectionSample: need two starting points inside the domain')
   }
   const xs: number[] = []
   const hs: number[] = []
@@ -161,21 +161,18 @@ export function adaptiveRejectionSample(
     ds.splice(i, 0, r.grad[0] ?? 0)
     for (let j = 1; j < ds.length; j++) {
       if ((ds[j] ?? 0) > (ds[j - 1] ?? 0) + 1e-9 * (1 + Math.abs(ds[j - 1] ?? 0))) {
-        throw new WhiteboxError('value', 'adaptiveRejectionSample: the density is not log-concave')
+        throw new MdmlError('value', 'adaptiveRejectionSample: the density is not log-concave')
       }
     }
   }
   for (const x of init) insert(x)
   if (!hs.every(Number.isFinite))
-    throw new WhiteboxError('value', 'adaptiveRejectionSample: the log density must be finite at the starting points')
+    throw new MdmlError('value', 'adaptiveRejectionSample: the log density must be finite at the starting points')
   if (
     (lo === Number.NEGATIVE_INFINITY && !((ds[0] ?? 0) > 0)) ||
     (hi === Number.POSITIVE_INFINITY && !((ds[ds.length - 1] ?? 0) < 0))
   ) {
-    throw new WhiteboxError(
-      'value',
-      'adaptiveRejectionSample: with an infinite bound the outer tangents must point down',
-    )
+    throw new MdmlError('value', 'adaptiveRejectionSample: with an infinite bound the outer tangents must point down')
   }
 
   /** The envelope: breakpoints z_0..z_k and the log masses of the k tangent pieces. */
@@ -220,7 +217,7 @@ export function adaptiveRejectionSample(
     proposals += 1
     const total = env.logMass.reduce((a, b) => logAddExp(a, b), Number.NEGATIVE_INFINITY)
     if (!Number.isFinite(total))
-      throw new WhiteboxError('value', 'adaptiveRejectionSample: the envelope cannot be normalised')
+      throw new MdmlError('value', 'adaptiveRejectionSample: the envelope cannot be normalised')
     // Choose a piece by its mass, then invert its exponential CDF.
     let u = rand()
     let j = 0
@@ -299,15 +296,15 @@ export interface RatioOfUniformsOptions {
  * @param density - f(x) >= 0, unnormalised (log densities: pass exp of them).
  * @param options - Key, number of draws, bounds or search range, and the proposal budget.
  * @returns The draws `[n, 1]`, proposals, acceptance rate, completeness and the rectangle used.
- * @throws WhiteboxError with code `value` for a density that is zero on the search range or bounds that are not
+ * @throws MdmlError with code `value` for a density that is zero on the search range or bounds that are not
  *   finite.
  * @concept ratio-of-uniforms
  * @reference A. J. Kinderman and J. F. Monahan, Computer generation of random variables using the ratio of uniform
  *   deviates (ACM TOMS 1977).
  * @example
  * ```ts
- * import { ratioOfUniforms } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { ratioOfUniforms } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * // The standard normal: the region has area sqrt(2 pi) / 2 inside a 1 x 2 sqrt(2 / e) box.
  * const r = ratioOfUniforms((x) => Math.exp(-0.5 * x * x), { key: key(0), n: 2000 })
  * Math.abs(r.acceptanceRate - Math.sqrt(Math.PI * Math.E) / 4) < 0.03 // => true
@@ -336,11 +333,11 @@ export function ratioOfUniforms(
       vMin = Math.min(vMin, x * s)
       vMax = Math.max(vMax, x * s)
     }
-    if (!(uMax > 0)) throw new WhiteboxError('value', 'ratioOfUniforms: the density is zero on the search range')
+    if (!(uMax > 0)) throw new MdmlError('value', 'ratioOfUniforms: the density is zero on the search range')
     bounds = { uMax: 1.01 * uMax, vMin: 1.01 * vMin, vMax: 1.01 * vMax }
   }
   if (![bounds.uMax, bounds.vMin, bounds.vMax].every(Number.isFinite) || !(bounds.uMax > 0)) {
-    throw new WhiteboxError('value', 'ratioOfUniforms: the bounds must be finite with uMax > 0')
+    throw new MdmlError('value', 'ratioOfUniforms: the bounds must be finite with uMax > 0')
   }
   const budget = options.maxProposals ?? 1000 * Math.max(1, n)
   const rand = uniformStream(options.key, 64)

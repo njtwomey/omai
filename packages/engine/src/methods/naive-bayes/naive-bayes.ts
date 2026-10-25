@@ -6,7 +6,7 @@
  */
 
 // TODO: tree-augmented naive Bayes (Chow-Liu), AODE and k-dependence classifiers (bayes-net-classifiers.ts).
-import { argmaxOf, logSumExpOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, logSumExpOf, MdmlError } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type Exposition, type LikelihoodTable, likelihoodTable } from '../../lib/exposition/index.ts'
 import {
@@ -208,7 +208,7 @@ function fitParams(kind: NaiveBayesKind, data: LearnData, h: NaiveBayesHyper, wh
     return kind === 'bernoulli' ? (v > h.binarize ? 1 : 0) : v
   }
   if (kind !== 'gaussian' && kind !== 'categorical' && kind !== 'bernoulli')
-    for (const v of m.data) if (v < 0) throw new WhiteboxError('value', `${who}: features must be non-negative counts`)
+    for (const v of m.data) if (v < 0) throw new MdmlError('value', `${who}: features must be non-negative counts`)
   // Weighted feature totals per class.
   const counts = Array.from({ length: k }, () => new Array<number>(d).fill(0))
   for (let i = 0; i < n; i++)
@@ -275,7 +275,7 @@ function fitParams(kind: NaiveBayesKind, data: LearnData, h: NaiveBayesHyper, wh
     let max = 0
     for (let i = 0; i < n; i++) {
       const v = m.data[i * d + f] ?? 0
-      if (!(Number.isInteger(v) && v >= 0)) throw new WhiteboxError('value', `${who}: categories must be integers >= 0`)
+      if (!(Number.isInteger(v) && v >= 0)) throw new MdmlError('value', `${who}: categories must be integers >= 0`)
       max = Math.max(max, v)
     }
     const table = Array.from({ length: k }, () => new Array<number>(max + 1).fill(0))

@@ -5,7 +5,7 @@
  * adaptive conformal inference for shifting data, and coverage checks.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
@@ -35,7 +35,7 @@ const EPSILON = 1e-8
  * @concept conformal-prediction
  * @example
  * ```ts
- * import { conformalQuantile } from 'whitebox-engine/learn'
+ * import { conformalQuantile } from 'mdml-engine/learn'
  * conformalQuantile([5, 1, 4, 2, 3, 9, 7, 8, 6], 0.2) // => 8
  * conformalQuantile([1, 2], 0.1) // => Infinity
  * ```
@@ -45,7 +45,7 @@ export function conformalQuantile(scores: ArrayLike<number>, alpha: number): num
   const s = Array.from(scores)
     .filter((v) => !Number.isNaN(v))
     .sort((a, b) => a - b)
-  if (s.length === 0) throw new WhiteboxError('value', 'conformalQuantile: no calibration scores')
+  if (s.length === 0) throw new MdmlError('value', 'conformalQuantile: no calibration scores')
   const k = Math.ceil((1 - alpha) * (s.length + 1))
   return k > s.length ? Number.POSITIVE_INFINITY : (s[k - 1] ?? Number.POSITIVE_INFINITY)
 }
@@ -100,8 +100,8 @@ const vec = (v: ArrayLike<number>): Tensor => fromStorage(Float64Array.from(v), 
  * @returns The conformal regressor.
  * @example
  * ```ts
- * import { splitConformalRegressor } from 'whitebox-engine/learn'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { splitConformalRegressor } from 'mdml-engine/learn'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * const zero = { estimator: 'zero', kind: 'regressor', params: {}, predict: (x) => tensor(x.map(() => 0)) }
  * const c = splitConformalRegressor(zero, { x: [[0], [0], [0], [0]], y: [1, -2, 3, -4] }, { alpha: 0.2 })
  * toFlat(c.predictInterval([[0]]).upper) // => [4]
@@ -120,14 +120,14 @@ export function splitConformalRegressor(
   const scaleOf = (x: TensorLike, yhat: Float64Array): Float64Array => {
     if (score === 'absolute') return new Float64Array(yhat.length).fill(1)
     if (options.scale === undefined)
-      throw new WhiteboxError('value', 'splitConformalRegressor: normalised scores need a scale')
+      throw new MdmlError('value', 'splitConformalRegressor: normalised scores need a scale')
     return predictOf(options.scale, 'splitConformalRegressor')(x)
   }
   const yhat = predict(calibration.x)
   if (score === 'gamma') {
     // MAPIE's gamma score is signed and asymmetric: (y - yhat) / yhat, each tail at alpha / 2.
     if (Array.from(y).some((v) => v <= 0) || Array.from(yhat).some((v) => v <= 0)) {
-      throw new WhiteboxError('domain', 'splitConformalRegressor: gamma scores need positive targets and predictions')
+      throw new MdmlError('domain', 'splitConformalRegressor: gamma scores need positive targets and predictions')
     }
     const signed = Array.from(y, (v, i) => (v - (yhat[i] ?? 1)) / (yhat[i] ?? 1)).sort((a, b) => a - b)
     const k = Math.ceil((1 - alpha / 2) * (signed.length + 1))
@@ -178,8 +178,8 @@ export interface CqrOptions {
  * @returns The conformal regressor (its `quantile` is the lower correction).
  * @example
  * ```ts
- * import { conformalizedQuantileRegressor } from 'whitebox-engine/learn'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { conformalizedQuantileRegressor } from 'mdml-engine/learn'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * const constant = (c) => ({ estimator: 'c', kind: 'regressor', params: {}, predict: (x) => tensor(x.map(() => c)) })
  * const c = conformalizedQuantileRegressor({ lower: constant(-1), upper: constant(1) }, { x: [[0], [0], [0]], y: [0, 2, -3] }, { alpha: 0.5, symmetric: true })
  * toFlat(c.predictInterval([[0]]).upper) // => [2]
@@ -244,9 +244,9 @@ export interface CrossConformalOptions extends FitOptions {
  * @returns The conformal regressor (prediction: the mean of the fold models; its `quantile` is the residual quantile).
  * @example
  * ```ts
- * import { crossConformalRegressor, defineEstimator, rowsOf } from 'whitebox-engine/learn'
- * import { leaveOneOut } from 'whitebox-engine/learn/model-selection'
- * import { full, item, mean, toFlat } from 'whitebox-engine/tensor'
+ * import { crossConformalRegressor, defineEstimator, rowsOf } from 'mdml-engine/learn'
+ * import { leaveOneOut } from 'mdml-engine/learn/model-selection'
+ * import { full, item, mean, toFlat } from 'mdml-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) },
  *   {},
@@ -267,7 +267,7 @@ export function crossConformalRegressor(
   const y = targetVector(requireTargets(data, 'crossConformalRegressor'), 'crossConformalRegressor', n)
   const splitter = checkCv(options.cv, estimator)
   if (!splitter.partition)
-    throw new WhiteboxError('value', 'crossConformalRegressor: the splitter must partition the samples')
+    throw new MdmlError('value', 'crossConformalRegressor: the splitter must partition the samples')
   const key = keyFor(options, 'crossConformalRegressor')
   const folds = splitIndices(splitter, splitInputOf(data), foldIn(key, 0))
   const foldOf = new Int32Array(n)
@@ -350,8 +350,8 @@ export function crossConformalRegressor(
  * @returns The quantile of each group and an interval map that takes the test rows' groups.
  * @example
  * ```ts
- * import { mondrianConformalRegressor } from 'whitebox-engine/learn'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { mondrianConformalRegressor } from 'mdml-engine/learn'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * const zero = { estimator: 'zero', kind: 'regressor', params: {}, predict: (x) => tensor(x.map(() => 0)) }
  * const c = mondrianConformalRegressor(zero, { x: [[0], [0], [0], [0]], y: [1, 1, 5, 5] }, [0, 0, 1, 1], { alpha: 0.4 })
  * toFlat(c.predictInterval([[0], [0]], [0, 1]).upper) // => [1, 5]
@@ -369,7 +369,7 @@ export function mondrianConformalRegressor(
   const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'mondrianConformalRegressor')
   const predict = predictOf(fitted, 'mondrianConformalRegressor')
   const n = rowsOf(calibration.x)
-  if (groups.length !== n) throw new WhiteboxError('shape', 'mondrianConformalRegressor: one group per calibration row')
+  if (groups.length !== n) throw new MdmlError('shape', 'mondrianConformalRegressor: one group per calibration row')
   const y = targetVector(requireTargets(calibration, 'mondrian'), 'mondrian', n)
   const p = predict(calibration.x)
   const byGroup = new Map<number, number[]>()
@@ -448,8 +448,8 @@ function sortedDesc(p: ArrayLike<number>): number[] {
  * @returns The conformal classifier.
  * @example
  * ```ts
- * import { splitConformalClassifier } from 'whitebox-engine/learn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { splitConformalClassifier } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
  * const fixed = { estimator: 'fixed', kind: 'classifier', params: {}, classes: [0, 1], predictProba: (x) => tensor(x.map((r) => [r[0], 1 - r[0]])) }
  * const x = [[0.9], [0.8], [0.3], [0.6], [0.2], [0.1], [0.7], [0.4], [0.95]]
  * const c = splitConformalClassifier(fixed, { x, y: [0, 0, 1, 0, 1, 1, 0, 1, 0] }, { alpha: 0.2 })
@@ -470,8 +470,7 @@ export function splitConformalClassifier(
   const index = new Map(classes.map((c, i) => [c, i]))
   const labels = Array.from(targetVector(y, 'splitConformalClassifier'), (v) => {
     const c = index.get(v)
-    if (c === undefined)
-      throw new WhiteboxError('value', `splitConformalClassifier: calibration label ${v} is not a class`)
+    if (c === undefined) throw new MdmlError('value', `splitConformalClassifier: calibration label ${v} is not a class`)
     return c
   })
   const k = classes.length
@@ -579,8 +578,8 @@ export interface TuneRapsOptions {
  * @returns kReg, lambda, and the row indices left for calibration.
  * @example
  * ```ts
- * import { tuneRaps } from 'whitebox-engine/learn'
- * import { asTensor, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { tuneRaps } from 'mdml-engine/learn'
+ * import { asTensor, tensor, toArray } from 'mdml-engine/tensor'
  * const fixed = { estimator: 'f', kind: 'classifier', params: {}, classes: [0, 1, 2], predictProba: (x) => tensor(toArray(asTensor(x)).map((r) => [r[0], (1 - r[0]) * 0.7, (1 - r[0]) * 0.3])) }
  * const x = Array.from({ length: 50 }, (_, i) => [(i % 10) / 10])
  * const t = tuneRaps(fixed, { x, y: x.map((r, i) => (r[0] > 0.4 ? 0 : i % 2 === 0 ? 1 : 2)) }, { alpha: 0.2 })
@@ -595,7 +594,7 @@ export function tuneRaps(
   const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'tuneRaps')
   const n = rowsOf(calibration.x)
   const nTune = Math.max(1, Math.round((options.fraction ?? 0.2) * n))
-  if (nTune >= n) throw new WhiteboxError('value', 'tuneRaps: no calibration rows left after tuning')
+  if (nTune >= n) throw new MdmlError('value', 'tuneRaps: no calibration rows left after tuning')
   const order = toFlat(permutation(options.key ?? keyFor({}, 'tuneRaps'), n))
   const tuneRows = order.slice(0, nTune)
   const rest = order.slice(nTune).sort((a, b) => a - b)
@@ -656,7 +655,7 @@ export interface AciResult {
  * @returns The intervals, working levels, errors and coverage.
  * @example
  * ```ts
- * import { adaptiveConformalInference } from 'whitebox-engine/learn'
+ * import { adaptiveConformalInference } from 'mdml-engine/learn'
  * const y = Array.from({ length: 200 }, (_, t) => Math.sin(t) * (1 + t / 50))
  * const r = adaptiveConformalInference(y.map(() => 0), y, { alpha: 0.1, gamma: 0.05 })
  * Math.abs(r.coverage - 0.9) < 0.05 // => true
@@ -669,9 +668,9 @@ export function adaptiveConformalInference(
 ): AciResult {
   const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'adaptiveConformalInference')
   const gamma = options.gamma ?? 0.005
-  if (!(gamma > 0)) throw new WhiteboxError('value', 'adaptiveConformalInference: gamma must be positive')
+  if (!(gamma > 0)) throw new MdmlError('value', 'adaptiveConformalInference: gamma must be positive')
   const T = predictions.length
-  if (targets.length !== T) throw new WhiteboxError('shape', 'adaptiveConformalInference: one target per prediction')
+  if (targets.length !== T) throw new MdmlError('shape', 'adaptiveConformalInference: one target per prediction')
   type State = {
     readonly t: number
     readonly alphaT: number
@@ -743,8 +742,8 @@ export function adaptiveConformalInference(
  * @returns Coverage (fraction inside) and mean width.
  * @example
  * ```ts
- * import { intervalCoverage } from 'whitebox-engine/learn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { intervalCoverage } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
  * intervalCoverage({ prediction: tensor([0, 0]), lower: tensor([-1, -1]), upper: tensor([1, 1]) }, [0.5, 2]) // => { coverage: 0.5, width: 2 }
  * ```
  */

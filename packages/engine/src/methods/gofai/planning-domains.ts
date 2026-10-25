@@ -1,10 +1,10 @@
 /**
- * Planning domains for the STRIPS planners of `whitebox-engine/search`: the blocks world with a gripper (pick up, put
+ * Planning domains for the STRIPS planners of `mdml-engine/search`: the blocks world with a gripper (pick up, put
  * down, stack, unstack), the Sussman anomaly, random blocks problems, and `towersOf` for reading a state back as towers
  * to draw.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type Key, permutation, split, uniform } from '../../lib/random/index.ts'
 import { type PlanState, type StripsAction, type StripsProblem, strips } from '../../lib/search/index.ts'
 
@@ -19,13 +19,13 @@ export type Towers = readonly (readonly string[])[]
  * @param initial - The towers at the start.
  * @param goal - The towers wanted (every block in them is placed as shown).
  * @returns The STRIPS problem.
- * @throws WhiteboxError `value` when the two configurations hold different blocks or a block appears twice.
+ * @throws MdmlError `value` when the two configurations hold different blocks or a block appears twice.
  */
 export function blocksWorld(initial: Towers, goal: Towers): StripsProblem {
   const blocks = initial.flat()
-  if (new Set(blocks).size !== blocks.length) throw new WhiteboxError('value', 'blocksWorld: a block appears twice')
+  if (new Set(blocks).size !== blocks.length) throw new MdmlError('value', 'blocksWorld: a block appears twice')
   if (!goal.flat().every((b) => blocks.includes(b)))
-    throw new WhiteboxError('value', 'blocksWorld: the goal names a block not in the initial towers')
+    throw new MdmlError('value', 'blocksWorld: the goal names a block not in the initial towers')
   const facts = (towers: Towers, complete: boolean): string[] => {
     const out: string[] = complete ? ['handempty'] : []
     for (const t of towers)
@@ -119,8 +119,7 @@ export function towersOf(state: PlanState): BlocksPicture {
  * @returns The two configurations.
  */
 export function randomBlocks(key: Key, n = 5): { readonly initial: Towers; readonly goal: Towers } {
-  if (!(Number.isInteger(n) && n >= 1 && n <= 8))
-    throw new WhiteboxError('value', `randomBlocks: n = ${n} must be 1 to 8`)
+  if (!(Number.isInteger(n) && n >= 1 && n <= 8)) throw new MdmlError('value', `randomBlocks: n = ${n} must be 1 to 8`)
   const names = Array.from({ length: n }, (_, i) => String.fromCharCode(65 + i))
   const deal = (k: Key): string[][] => {
     const [a, b] = split(k, 2) as [Key, Key]

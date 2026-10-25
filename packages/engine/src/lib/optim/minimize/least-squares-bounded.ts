@@ -4,7 +4,7 @@
  * bound held fixed, as a traced algorithm.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { jtv, jv, lstsqSvd, robustCost, runLeastSquares, scaleForLoss } from './_least-squares.ts'
@@ -153,14 +153,14 @@ const columnScaleInv = (J: Float64Array, m: number, n: number, old?: Float64Arra
  * @param x0 - The start (inside the bounds).
  * @param options - Bounds, robust loss, variable scaling and tolerances (ftol, xtol, gtol: default 1e-8).
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` when the start lies outside the bounds.
+ * @throws MdmlError with code `value` when the start lies outside the bounds.
  * @concept least-squares
  * @reference C. Voglis and I. E. Lagaris, A rectangular trust region dogleg approach for unconstrained and bound
  * constrained nonlinear optimization, WSEAS (2004).
  * @example
  * ```ts
- * import { dogboxAlgorithm } from 'whitebox-engine/optim'
- * import { sub, type Value } from 'whitebox-engine/tensor'
+ * import { dogboxAlgorithm } from 'mdml-engine/optim'
+ * import { sub, type Value } from 'mdml-engine/tensor'
  * dogboxAlgorithm((p: Value) => sub(p, 3), [0], { bounds: [[null, 1]] }).name // => 'dogbox'
  * ```
  */
@@ -186,7 +186,7 @@ function dogboxOn(res: FlatResiduals, options: DogboxOptions): Algorithm<DogboxS
   for (let i = 0; i < n; i++) {
     const xi = res.x0[i] ?? 0
     if (!(xi >= (box.lower[i] ?? -Infinity) && xi <= (box.upper[i] ?? Infinity)))
-      throw new WhiteboxError('value', `dogbox: the start is outside the bounds (variable ${i})`)
+      throw new MdmlError('value', `dogbox: the start is outside the bounds (variable ${i})`)
   }
   const fixedScaleInv = (): Float64Array =>
     typeof xs === 'number' ? new Float64Array(n).fill(1 / xs) : Float64Array.from(xs as ArrayLike<number>, (v) => 1 / v)
@@ -376,8 +376,8 @@ function dogboxOn(res: FlatResiduals, options: DogboxOptions): Algorithm<DogboxS
  * @concept least-squares
  * @example
  * ```ts
- * import { dogbox } from 'whitebox-engine/optim'
- * import { sub, tensor, toFlat, type Value } from 'whitebox-engine/tensor'
+ * import { dogbox } from 'mdml-engine/optim'
+ * import { sub, tensor, toFlat, type Value } from 'mdml-engine/tensor'
  * const r = dogbox((p: Value) => sub(p, tensor([3, -3])), [0, 0], { bounds: [[-1, 1], [-1, 1]] })
  * [toFlat(r.x as Value), r.activeMask] // => [[1, -1], [1, -1]]
  * ```

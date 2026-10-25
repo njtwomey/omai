@@ -3,7 +3,7 @@
  * two-dimensional data with outliers.
  */
 
-import { localOutlierFactor as localOutlierFactorMethod } from 'whitebox-engine/methods/anomaly'
+import { localOutlierFactor as localOutlierFactorMethod } from 'mdml-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

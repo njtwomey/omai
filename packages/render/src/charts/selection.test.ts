@@ -1,5 +1,5 @@
+import type { Pixels } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
-import type { Pixels } from 'whitebox-engine/scene'
 import { parseColour } from '../theme/palettes.ts'
 import { tokens } from '../theme/tokens.ts'
 import { heatmap, heatmapChart, matrix } from './matrices.ts'

@@ -6,7 +6,7 @@
  */
 
 import { jacfwd } from '../autodiff/index.ts'
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import {
   add,
   concat,
@@ -98,11 +98,11 @@ export interface KernelSpec<P extends KernelParams> {
  * @param x - Points `[n, d]`, one point `[d]` or a scalar.
  * @param name - The calling function, for the error message.
  * @returns The rows and whether the input was a single point.
- * @throws WhiteboxError `shape` for inputs of rank 3 or more.
+ * @throws MdmlError `shape` for inputs of rank 3 or more.
  * @concept kernel-functions
  * @example
  * ```ts
- * import { asRows } from 'whitebox-engine/kernels'
+ * import { asRows } from 'mdml-engine/kernels'
  * asRows([1, 2, 3], 'example').rows.shape // => [1, 3]
  * asRows([[1], [2]], 'example').single // => false
  * ```
@@ -112,7 +112,7 @@ export function asRows(x: TensorLike, name: string): { readonly rows: Value; rea
   if (v.shape.length === 0) return { rows: reshape(v, [1, 1]), single: true }
   if (v.shape.length === 1) return { rows: reshape(v, [1, -1]), single: true }
   if (v.shape.length === 2) return { rows: v, single: false }
-  throw new WhiteboxError('shape', `${name}: points must be [d] or [n, d], got [${v.shape.join(', ')}]`)
+  throw new MdmlError('shape', `${name}: points must be [d] or [n, d], got [${v.shape.join(', ')}]`)
 }
 
 function structureOf(params: KernelParams): string {
@@ -127,7 +127,7 @@ function resolveConstraints(name: string, params: KernelParams, given: Readonly<
     if (c === 'positive' && isTensor(leaf)) {
       const values = Array.from(leaf.data)
       if (values.some((v) => v < 0 || Number.isNaN(v)))
-        throw new WhiteboxError('domain', `${name}: hyperparameter ${path} must be non-negative`, { values })
+        throw new MdmlError('domain', `${name}: hyperparameter ${path} must be non-negative`, { values })
       // log(0) is not finite, so a positive hyperparameter set to exactly zero is held fixed.
       if (values.length > 0 && values.every((v) => v === 0)) c = 'fixed'
     }
@@ -138,16 +138,16 @@ function resolveConstraints(name: string, params: KernelParams, given: Readonly<
 
 /**
  * Define a kernel from its matrix function: the result checks point shapes, handles single points, rebuilds itself
- * from new hyperparameters and supplies a diagonal. Every kernel in whitebox-js is made this way, and so can new ones.
+ * from new hyperparameters and supplies a diagonal. Every kernel in mdml-js is made this way, and so can new ones.
  *
  * @param spec - Name, hyperparameters, constraints, the matrix function and optionally a diagonal.
  * @returns The kernel.
- * @throws WhiteboxError `domain` for a negative positive-constrained hyperparameter; `shape` for bad points.
+ * @throws MdmlError `domain` for a negative positive-constrained hyperparameter; `shape` for bad points.
  * @concept kernel-functions
  * @example
  * ```ts
- * import { defineKernel } from 'whitebox-engine/kernels'
- * import { matmul, mul, swapaxes, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { defineKernel } from 'mdml-engine/kernels'
+ * import { matmul, mul, swapaxes, tensor, toArray } from 'mdml-engine/tensor'
  * const scaledLinear = defineKernel({
  *   name: 'scaled-linear',
  *   params: { variance: tensor(2) },
@@ -186,7 +186,7 @@ export function defineKernel<P extends KernelParams>(spec: KernelSpec<P>): Kerne
       }
       const b = asRows(y, spec.name)
       if (a.rows.shape[1] !== b.rows.shape[1])
-        throw new WhiteboxError('shape', `${spec.name}: points of dimension ${a.rows.shape[1]} and ${b.rows.shape[1]}`)
+        throw new MdmlError('shape', `${spec.name}: points of dimension ${a.rows.shape[1]} and ${b.rows.shape[1]}`)
       const out = spec.matrix(params, a.rows, b.rows, parts)
       if (a.single && b.single) return reshape(out, [])
       return a.single || b.single ? reshape(out, [-1]) : out
@@ -198,7 +198,7 @@ export function defineKernel<P extends KernelParams>(spec: KernelSpec<P>): Kerne
     },
     withParams(next: KernelParams): Kernel {
       if (structureOf(next) !== structure)
-        throw new WhiteboxError('value', `${spec.name}: withParams needs hyperparameters of the same structure`)
+        throw new MdmlError('value', `${spec.name}: withParams needs hyperparameters of the same structure`)
       return defineKernel({ ...spec, params: next as P, constraints })
     },
   }
@@ -223,7 +223,7 @@ function baseOf(p: KernelParams): KernelParams {
 }
 
 function combine(name: 'sum' | 'product', kernels: readonly Kernel[]): Kernel {
-  if (kernels.length === 0) throw new WhiteboxError('value', `${name}Kernel needs at least one kernel`)
+  if (kernels.length === 0) throw new MdmlError('value', `${name}Kernel needs at least one kernel`)
   const join = name === 'sum' ? add : mul
   const fold = (values: readonly Value[]): Value =>
     values.slice(1).reduce((acc: Value, v) => join(acc, v), values[0] as Value)
@@ -247,8 +247,8 @@ function combine(name: 'sum' | 'product', kernels: readonly Kernel[]): Kernel {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { constantKernel, linearKernel, sumKernel } from 'whitebox-engine/kernels'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { constantKernel, linearKernel, sumKernel } from 'mdml-engine/kernels'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sumKernel(linearKernel(), constantKernel({ value: 1 })).k([[1, 2]], [[3, 4]])) // => [[12]]
  * ```
  */
@@ -265,8 +265,8 @@ export function sumKernel(...kernels: readonly Kernel[]): Kernel {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { constantKernel, linearKernel, productKernel } from 'whitebox-engine/kernels'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { constantKernel, linearKernel, productKernel } from 'mdml-engine/kernels'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(productKernel(linearKernel(), constantKernel({ value: 2 })).k([[1, 2]], [[3, 4]])) // => [[22]]
  * ```
  */
@@ -284,8 +284,8 @@ export function productKernel(...kernels: readonly Kernel[]): Kernel {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { rbfKernel, scaleKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { rbfKernel, scaleKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(scaleKernel(rbfKernel(), 3).k([0], [0])) // => 3
  * ```
  */
@@ -313,8 +313,8 @@ export function scaleKernel(kernel: Kernel, outputScale: TensorLike = 1): Kernel
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { linearKernel, powerKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { linearKernel, powerKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(powerKernel(linearKernel(), 2).k([1, 2], [3, 1])) // => 25
  * ```
  */
@@ -342,8 +342,8 @@ export function powerKernel(kernel: Kernel, exponent: number): Kernel {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { linearKernel, onDimensions } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { linearKernel, onDimensions } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(onDimensions(linearKernel(), [1]).k([5, 2], [7, 3])) // => 6
  * ```
  */
@@ -374,7 +374,7 @@ export function onDimensions(kernel: Kernel, dims: readonly number[]): Kernel {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { ard, hyperparameters, rbfKernel } from 'whitebox-engine/kernels'
+ * import { ard, hyperparameters, rbfKernel } from 'mdml-engine/kernels'
  * hyperparameters(ard(rbfKernel({ lengthScale: 2 }), 3))[0]?.shape // => [3]
  * ```
  */
@@ -406,17 +406,17 @@ export function ard(kernel: Kernel, dim: number): Kernel {
  * @param kernel - The kernel.
  * @param paths - Pytree paths of the hyperparameters to fix (as in `kernel.constraints`).
  * @returns The kernel with those hyperparameters fixed, also after `withParams`.
- * @throws WhiteboxError `value` for an unknown path.
+ * @throws MdmlError `value` for an unknown path.
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { fixHyperparameters, rationalQuadraticKernel, theta } from 'whitebox-engine/kernels'
+ * import { fixHyperparameters, rationalQuadraticKernel, theta } from 'mdml-engine/kernels'
  * theta(fixHyperparameters(rationalQuadraticKernel(), ['alpha'])).shape // => [1]
  * ```
  */
 export function fixHyperparameters(kernel: Kernel, paths: readonly string[]): Kernel {
   for (const path of paths) {
-    if (!(path in kernel.constraints)) throw new WhiteboxError('value', `fixHyperparameters: no hyperparameter ${path}`)
+    if (!(path in kernel.constraints)) throw new MdmlError('value', `fixHyperparameters: no hyperparameter ${path}`)
   }
   const constraints = { ...kernel.constraints }
   for (const path of paths) constraints[path] = 'fixed'
@@ -450,7 +450,7 @@ export interface Hyperparameter {
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { hyperparameters, rationalQuadraticKernel } from 'whitebox-engine/kernels'
+ * import { hyperparameters, rationalQuadraticKernel } from 'mdml-engine/kernels'
  * hyperparameters(rationalQuadraticKernel()).map((h) => h.name) // => ['alpha', 'lengthScale']
  * ```
  */
@@ -474,8 +474,8 @@ export function hyperparameters(kernel: Kernel): Hyperparameter[] {
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { rbfKernel, theta } from 'whitebox-engine/kernels'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { rbfKernel, theta } from 'mdml-engine/kernels'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(theta(rbfKernel({ lengthScale: Math.E }))) // => [1]
  * ```
  */
@@ -495,11 +495,11 @@ export function theta(kernel: Kernel): Tensor<'float64'> {
  * @param kernel - The kernel.
  * @param t - theta `[p]` (possibly traced).
  * @returns The kernel with those hyperparameters.
- * @throws WhiteboxError `shape` when t has the wrong length.
+ * @throws MdmlError `shape` when t has the wrong length.
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { hyperparameters, rbfKernel, withTheta } from 'whitebox-engine/kernels'
+ * import { hyperparameters, rbfKernel, withTheta } from 'mdml-engine/kernels'
  * hyperparameters(withTheta(rbfKernel(), [1]))[0]?.value[0] === Math.E // => true
  * ```
  */
@@ -512,13 +512,13 @@ export function withTheta(kernel: Kernel, t: TensorLike): Kernel {
     const constraint = kernel.constraints[names[i] ?? ''] ?? 'positive'
     if (constraint === 'fixed') return leaf
     const size = sizeOf(leaf.shape)
-    if (offset + size > (v.shape[0] ?? 0)) throw new WhiteboxError('shape', 'withTheta: theta is too short')
+    if (offset + size > (v.shape[0] ?? 0)) throw new MdmlError('shape', 'withTheta: theta is too short')
     const slice = reshape(sliceAxis(v, 0, offset, offset + size), leaf.shape)
     offset += size
     return constraint === 'positive' ? exp(slice) : slice
   })
   if (v.shape.length !== 1 || offset !== v.shape[0])
-    throw new WhiteboxError('shape', `withTheta: theta must have ${offset} entries, got [${v.shape.join(', ')}]`)
+    throw new MdmlError('shape', `withTheta: theta must have ${offset} entries, got [${v.shape.join(', ')}]`)
   return kernel.withParams(treeUnflatten(def, next) as KernelParams)
 }
 
@@ -538,8 +538,8 @@ export interface GramOptions {
  * @concept kernel-functions
  * @example
  * ```ts
- * import { gram, linearKernel } from 'whitebox-engine/kernels'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { gram, linearKernel } from 'mdml-engine/kernels'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(gram(linearKernel(), [[1, 0], [1, 1]], { jitter: 0.5 })) // => [[1.5, 1], [1, 2.5]]
  * ```
  */
@@ -559,8 +559,8 @@ export function gram(kernel: Kernel, x: TensorLike, options: GramOptions = {}): 
  * @concept kernel-functions
  * @example
  * ```ts
- * import { crossGram, linearKernel } from 'whitebox-engine/kernels'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { crossGram, linearKernel } from 'mdml-engine/kernels'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(crossGram(linearKernel(), [[1, 2]], [[1, 0], [0, 1], [1, 1]])) // => [[1, 2, 3]]
  * ```
  */
@@ -586,7 +586,7 @@ export interface GramGradient {
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { gramGradient, rbfKernel } from 'whitebox-engine/kernels'
+ * import { gramGradient, rbfKernel } from 'mdml-engine/kernels'
  * gramGradient(rbfKernel(), [[0], [1], [3]]).gradient.shape // => [3, 3, 1]
  * ```
  */
@@ -614,7 +614,7 @@ function formatNumber(v: number): string {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { formatKernel, rbfKernel, scaleKernel, sumKernel, whiteNoiseKernel } from 'whitebox-engine/kernels'
+ * import { formatKernel, rbfKernel, scaleKernel, sumKernel, whiteNoiseKernel } from 'mdml-engine/kernels'
  * formatKernel(sumKernel(scaleKernel(rbfKernel({ lengthScale: 1.5 }), 2), whiteNoiseKernel({ noiseLevel: 0.1 })))
  * // => '2 * rbf(lengthScale=1.5) + white(noiseLevel=0.1)'
  * ```

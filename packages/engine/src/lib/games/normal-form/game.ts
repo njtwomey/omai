@@ -5,7 +5,7 @@
  * equilibria.
  */
 
-import { maxOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import type { RunOptions } from '../../trace/index.ts'
 import { decodeProfile, encodeProfile, profileCount, profileWeights, stridesOf } from './_profiles.ts'
@@ -51,31 +51,31 @@ export interface GameOptions {
  * @param payoffs - Player i's payoff tensor for each player i.
  * @param options - A name and action names (default `'0', '1', ...`).
  * @returns The game.
- * @throws WhiteboxError with code `shape` when the tensors disagree with each other or with the number of players.
+ * @throws MdmlError with code `shape` when the tensors disagree with each other or with the number of players.
  * @concept normal-form-game
  * @example
  * ```ts
- * import { normalFormGame } from 'whitebox-engine/games'
+ * import { normalFormGame } from 'mdml-engine/games'
  * const g = normalFormGame([[[1, 0], [0, 1]], [[1, 0], [0, 1]]], { name: 'coordination' })
  * g.shape // => [2, 2]
  * ```
  */
 export function normalFormGame(payoffs: readonly TensorLike[], options: GameOptions = {}): NormalFormGame {
-  if (payoffs.length === 0) throw new WhiteboxError('shape', 'normalFormGame: at least one player is needed')
+  if (payoffs.length === 0) throw new MdmlError('shape', 'normalFormGame: at least one player is needed')
   const tensors = payoffs.map((p) => asTensor(p))
   const shape = [...(tensors[0]?.shape ?? [])]
   if (shape.length !== payoffs.length || shape.some((k) => k < 1))
-    throw new WhiteboxError(
+    throw new MdmlError(
       'shape',
       `normalFormGame: ${payoffs.length} players need payoff tensors with ${payoffs.length} axes`,
     )
   for (const t of tensors)
     if (t.shape.length !== shape.length || t.shape.some((k, i) => k !== shape[i]))
-      throw new WhiteboxError('shape', 'normalFormGame: every payoff tensor must have the same shape')
+      throw new MdmlError('shape', 'normalFormGame: every payoff tensor must have the same shape')
   const actionNames = shape.map((k, p) => {
     const names = options.actionNames?.[p]
     if (names !== undefined && names.length !== k)
-      throw new WhiteboxError('shape', `normalFormGame: player ${p} has ${k} actions but ${names.length} names`)
+      throw new MdmlError('shape', `normalFormGame: player ${p} has ${k} actions but ${names.length} names`)
     return names ?? Array.from({ length: k }, (_, a) => String(a))
   })
   return {
@@ -97,18 +97,18 @@ export function normalFormGame(payoffs: readonly TensorLike[], options: GameOpti
  * @concept normal-form-game
  * @example
  * ```ts
- * import { bimatrixGame, payoffMatrices } from 'whitebox-engine/games'
+ * import { bimatrixGame, payoffMatrices } from 'mdml-engine/games'
  * payoffMatrices(bimatrixGame([[1, -1], [-1, 1]]))[1] // => [[-1, 1], [1, -1]]
  * ```
  */
 export function bimatrixGame(a: TensorLike, b?: TensorLike, options: GameOptions = {}): NormalFormGame {
   const at = asTensor(a)
-  if (at.shape.length !== 2) throw new WhiteboxError('shape', 'bimatrixGame: payoffs must be matrices')
+  if (at.shape.length !== 2) throw new MdmlError('shape', 'bimatrixGame: payoffs must be matrices')
   const bt = b === undefined ? Float64Array.from(toFlat(at), (v) => -v) : toFlat(asTensor(b))
   const [m, n] = at.shape as [number, number]
   const rows = (flat: ArrayLike<number>): number[][] =>
     Array.from({ length: m }, (_, i) => Array.from({ length: n }, (_, j) => flat[i * n + j] ?? 0))
-  if (bt.length !== m * n) throw new WhiteboxError('shape', 'bimatrixGame: A and B must have the same shape')
+  if (bt.length !== m * n) throw new MdmlError('shape', 'bimatrixGame: A and B must have the same shape')
   return normalFormGame([rows(toFlat(at)), rows(bt)], options)
 }
 
@@ -117,15 +117,15 @@ export function bimatrixGame(a: TensorLike, b?: TensorLike, options: GameOptions
  *
  * @param game - A two-player game.
  * @returns The row and column players' payoff matrices.
- * @throws WhiteboxError with code `value` for games with other than two players.
+ * @throws MdmlError with code `value` for games with other than two players.
  * @example
  * ```ts
- * import { bimatrixGame, payoffMatrices } from 'whitebox-engine/games'
+ * import { bimatrixGame, payoffMatrices } from 'mdml-engine/games'
  * payoffMatrices(bimatrixGame([[3, 0], [5, 1]], [[3, 5], [0, 1]]))[0] // => [[3, 0], [5, 1]]
  * ```
  */
 export function payoffMatrices(game: NormalFormGame): [number[][], number[][]] {
-  if (game.shape.length !== 2) throw new WhiteboxError('value', `${game.name}: payoff matrices need a two-player game`)
+  if (game.shape.length !== 2) throw new MdmlError('value', `${game.name}: payoff matrices need a two-player game`)
   const [m, n] = game.shape as [number, number]
   const mat = (p: number): number[][] =>
     Array.from({ length: m }, (_, i) => Array.from({ length: n }, (_, j) => game.payoffs[p]?.[i * n + j] ?? 0))
@@ -134,7 +134,7 @@ export function payoffMatrices(game: NormalFormGame): [number[][], number[][]] {
 
 function checkStrategies(game: NormalFormGame, strategies: readonly ArrayLike<number>[]): void {
   if (strategies.length !== game.shape.length || strategies.some((s, p) => s.length !== game.shape[p]))
-    throw new WhiteboxError('shape', `${game.name}: one strategy per player, one probability per action`)
+    throw new MdmlError('shape', `${game.name}: one strategy per player, one probability per action`)
 }
 
 /**
@@ -145,7 +145,7 @@ function checkStrategies(game: NormalFormGame, strategies: readonly ArrayLike<nu
  * @returns The payoffs.
  * @example
  * ```ts
- * import { prisonersDilemma, profilePayoffs } from 'whitebox-engine/games'
+ * import { prisonersDilemma, profilePayoffs } from 'mdml-engine/games'
  * profilePayoffs(prisonersDilemma(), [1, 0]) // => [5, 0]
  * ```
  */
@@ -162,7 +162,7 @@ export function profilePayoffs(game: NormalFormGame, profile: readonly number[])
  * @returns The expected payoffs.
  * @example
  * ```ts
- * import { expectedPayoffs, matchingPennies } from 'whitebox-engine/games'
+ * import { expectedPayoffs, matchingPennies } from 'mdml-engine/games'
  * expectedPayoffs(matchingPennies(), [[1, 0], [0.5, 0.5]]) // => [0, 0]
  * ```
  */
@@ -186,14 +186,14 @@ export function expectedPayoffs(game: NormalFormGame, strategies: readonly Array
  * @returns One value per action of `player`.
  * @example
  * ```ts
- * import { actionValues, rockPaperScissors } from 'whitebox-engine/games'
+ * import { actionValues, rockPaperScissors } from 'mdml-engine/games'
  * actionValues(rockPaperScissors(), 0, [[1, 0, 0], [1, 0, 0]]) // => [0, 1, -1]
  * ```
  */
 export function actionValues(game: NormalFormGame, player: number, strategies: readonly ArrayLike<number>[]): number[] {
   checkStrategies(game, strategies)
   const k = game.shape[player]
-  if (k === undefined) throw new WhiteboxError('value', `${game.name}: no player ${player}`)
+  if (k === undefined) throw new MdmlError('value', `${game.name}: no player ${player}`)
   const stride = stridesOf(game.shape)[player] ?? 1
   const w = profileWeights(game.shape, strategies, player)
   const u = game.payoffs[player] ?? new Float64Array(0)
@@ -216,7 +216,7 @@ export function actionValues(game: NormalFormGame, player: number, strategies: r
  * @concept best-response
  * @example
  * ```ts
- * import { bestResponses, matchingPennies } from 'whitebox-engine/games'
+ * import { bestResponses, matchingPennies } from 'mdml-engine/games'
  * bestResponses(matchingPennies(), 0, [[1, 0], [0.5, 0.5]]) // => [0, 1]
  * ```
  */
@@ -242,7 +242,7 @@ export function bestResponses(
  * @returns One non-negative gain per player.
  * @example
  * ```ts
- * import { deviationGains, prisonersDilemma } from 'whitebox-engine/games'
+ * import { deviationGains, prisonersDilemma } from 'mdml-engine/games'
  * deviationGains(prisonersDilemma(), [[1, 0], [1, 0]]) // => [2, 2]
  * ```
  */
@@ -261,7 +261,7 @@ export function deviationGains(game: NormalFormGame, strategies: readonly ArrayL
  * @concept nash-equilibrium
  * @example
  * ```ts
- * import { nashConv, rockPaperScissors } from 'whitebox-engine/games'
+ * import { nashConv, rockPaperScissors } from 'mdml-engine/games'
  * nashConv(rockPaperScissors(), [[1, 0, 0], [1 / 3, 1 / 3, 1 / 3]]) // => 1
  * ```
  */
@@ -282,7 +282,7 @@ export function nashConv(game: NormalFormGame, strategies: readonly ArrayLike<nu
  * @concept nash-equilibrium
  * @example
  * ```ts
- * import { isNash, matchingPennies } from 'whitebox-engine/games'
+ * import { isNash, matchingPennies } from 'mdml-engine/games'
  * [isNash(matchingPennies(), [[0.5, 0.5], [0.5, 0.5]]), isNash(matchingPennies(), [[1, 0], [1, 0]])] // => [true, false]
  * ```
  */
@@ -309,7 +309,7 @@ export function isNash(game: NormalFormGame, strategies: readonly ArrayLike<numb
  * @concept nash-equilibrium
  * @example
  * ```ts
- * import { battleOfTheSexes, pureNashEquilibria } from 'whitebox-engine/games'
+ * import { battleOfTheSexes, pureNashEquilibria } from 'mdml-engine/games'
  * pureNashEquilibria(battleOfTheSexes()).map((e) => e.payoffs) // => [[3, 2], [2, 3]]
  * ```
  */
@@ -343,7 +343,7 @@ export function pureNashEquilibria(game: NormalFormGame): Equilibrium[] {
  * @returns Whether the game is constant-sum.
  * @example
  * ```ts
- * import { isConstantSum, matchingPennies, prisonersDilemma } from 'whitebox-engine/games'
+ * import { isConstantSum, matchingPennies, prisonersDilemma } from 'mdml-engine/games'
  * [isConstantSum(matchingPennies()), isConstantSum(prisonersDilemma())] // => [true, false]
  * ```
  */
@@ -366,7 +366,7 @@ export function isConstantSum(game: NormalFormGame, tol = 1e-12): boolean {
  * @returns One uniform strategy per player.
  * @example
  * ```ts
- * import { rockPaperScissors, uniformProfile } from 'whitebox-engine/games'
+ * import { rockPaperScissors, uniformProfile } from 'mdml-engine/games'
  * uniformProfile(rockPaperScissors())[0].length // => 3
  * ```
  */

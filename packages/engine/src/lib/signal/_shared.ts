@@ -1,6 +1,6 @@
 // Shared plumbing for the signal domain: float views of inputs, primal number arrays, axis handling and small
 // constructors. Private to signal.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Lti } from '../systems/index.ts'
 import {
   fromStorage,
@@ -21,7 +21,7 @@ export function float(x: TensorLike): Value {
 /** A non-empty 1-D floating value. */
 export function vector(x: TensorLike, name: string): Value {
   const v = float(x)
-  if (v.shape.length !== 1 || (v.shape[0] ?? 0) === 0) throw new WhiteboxError('shape', `${name}: expected a 1-D array`)
+  if (v.shape.length !== 1 || (v.shape[0] ?? 0) === 0) throw new MdmlError('shape', `${name}: expected a 1-D array`)
   return v
 }
 
@@ -50,7 +50,7 @@ export function indexTensor(idx: readonly number[] | Int32Array): Tensor {
 /** Normalise an axis against a rank. */
 export function axisOf(axis: number, rank: number, name: string): number {
   const a = axis < 0 ? axis + rank : axis
-  if (a < 0 || a >= rank) throw new WhiteboxError('value', `${name}: axis ${axis} out of range for rank ${rank}`)
+  if (a < 0 || a >= rank) throw new MdmlError('value', `${name}: axis ${axis} out of range for rank ${rank}`)
   return a
 }
 
@@ -64,7 +64,7 @@ export function rowsOf(
   name: string,
 ): { readonly rows: Value; readonly n: number; readonly restore: (y: Value) => Value } {
   const rank = x.shape.length
-  if (rank === 0) throw new WhiteboxError('shape', `${name}: expected at least one axis`)
+  if (rank === 0) throw new MdmlError('shape', `${name}: expected at least one axis`)
   const a = axisOf(axis, rank, name)
   const moved = a === rank - 1 ? x : moveaxis(x, a, rank - 1)
   const lead = moved.shape.slice(0, -1)
@@ -103,7 +103,7 @@ export function sinc(x: number): number {
 
 /** Check a positive integer option. */
 export function positiveInt(value: number, name: string): number {
-  if (!Number.isInteger(value) || value < 1) throw new WhiteboxError('value', `${name} must be a positive integer`)
+  if (!Number.isInteger(value) || value < 1) throw new MdmlError('value', `${name} must be a positive integer`)
   return value
 }
 

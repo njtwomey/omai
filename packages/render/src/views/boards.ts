@@ -6,10 +6,10 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { BoardSteps, PopulationSteps } from 'whitebox-engine/exposition'
-import { covarianceEllipse } from 'whitebox-engine/numerics/geometry'
-import type { Pixels } from 'whitebox-engine/scene'
-import { toArray } from 'whitebox-engine/tensor'
+import type { BoardSteps, PopulationSteps } from 'mdml-engine/exposition'
+import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
+import type { Pixels } from 'mdml-engine/scene'
+import { toArray } from 'mdml-engine/tensor'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { contours } from '../charts/fields.ts'
@@ -111,7 +111,7 @@ function knownColour(name: string, mode: ColourMode): string | undefined {
  * @returns A CSS colour per category.
  * @example
  * ```ts
- * import { boardColours } from 'whitebox-render/views'
+ * import { boardColours } from 'mdml-render/views'
  * boardColours(['frontier', 'type A'])[1] // => '#1f77b4'
  * ```
  */

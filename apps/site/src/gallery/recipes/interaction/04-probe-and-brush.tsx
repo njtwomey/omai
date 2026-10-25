@@ -1,8 +1,7 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { key, normal } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
-import { cartesian, points as pointLayer } from 'whitebox-render/charts'
-import { brushSelection, figure } from 'whitebox-render/figure'
+import { key, normal } from 'mdml-engine/random'
+import { toArray } from 'mdml-engine/tensor'
+import { cartesian, points as pointLayer } from 'mdml-render/charts'
+import { brushSelection, figure } from 'mdml-render/figure'
 import {
   Brush,
   Chart,
@@ -14,14 +13,15 @@ import {
   Probe,
   useChartProjection,
   useColourMode,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Probe and brush',
   question: 'How do I read values under the pointer, and select a region of the data?',
   explain:
-    '`Probe` follows the pointer with a crosshair and hands its data coordinates to whatever it draws; `Brush` selects a rectangle by dragging (a press clears it) and `brushSelection` (from `whitebox-render/figure`) finds the data inside. Both sit in the same kind of overlay as the draggable points.',
+    '`Probe` follows the pointer with a crosshair and hands its data coordinates to whatever it draws; `Brush` selects a rectangle by dragging (a press clears it) and `brushSelection` (from `mdml-render/figure`) finds the data inside. Both sit in the same kind of overlay as the draggable points.',
 }
 
 const FIGURE = figure({ width: 440, aspect: 1.2 })

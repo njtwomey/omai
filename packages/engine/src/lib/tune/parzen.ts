@@ -5,7 +5,7 @@
  * acquisition, the log density ratio of good to bad trials.
  */
 
-import { logSumExpOf, WhiteboxError } from '../base/index.ts'
+import { logSumExpOf, MdmlError } from '../base/index.ts'
 import { truncatedNormal } from '../dists/index.ts'
 import { logIntervalProbability } from '../numerics/special/index.ts'
 import { categorical, foldIn, type Key, uniform } from '../random/index.ts'
@@ -24,7 +24,7 @@ const EPS = 1e-12
  * @returns Trials in the good group.
  * @example
  * ```ts
- * import { defaultGamma } from 'whitebox-engine/tune'
+ * import { defaultGamma } from 'mdml-engine/tune'
  * [defaultGamma(10), defaultGamma(11), defaultGamma(1000)] // => [1, 2, 25]
  * ```
  */
@@ -39,7 +39,7 @@ export function defaultGamma(n: number): number {
  * @returns Trials in the good group.
  * @example
  * ```ts
- * import { defaultGammaMultiObjective } from 'whitebox-engine/tune'
+ * import { defaultGammaMultiObjective } from 'mdml-engine/tune'
  * defaultGammaMultiObjective(1000) // => 100
  * ```
  */
@@ -54,7 +54,7 @@ export function defaultGammaMultiObjective(n: number): number {
  * @returns Trials in the good group.
  * @example
  * ```ts
- * import { hyperoptGamma } from 'whitebox-engine/tune'
+ * import { hyperoptGamma } from 'mdml-engine/tune'
  * hyperoptGamma(100) // => 3
  * ```
  */
@@ -70,7 +70,7 @@ export function hyperoptGamma(n: number): number {
  * @returns The weights.
  * @example
  * ```ts
- * import { defaultWeights } from 'whitebox-engine/tune'
+ * import { defaultWeights } from 'mdml-engine/tune'
  * defaultWeights(3) // => [1, 1, 1]
  * defaultWeights(27).slice(0, 3) // => [0.037037, 1, 1]
  * ```
@@ -182,14 +182,14 @@ function categoricalKernels(leaf: Leaf, observations: readonly number[], priorWe
  * @param observations - One row per observation, each the flat numbers of the leaves (option indices for options).
  * @param options - Prior weight, clipping, endpoints and weights.
  * @returns The estimator.
- * @throws WhiteboxError with code `value` for a negative prior weight or invalid weights.
+ * @throws MdmlError with code `value` for a negative prior weight or invalid weights.
  * @concept tree-structured-parzen-estimator
  * @reference Bergstra et al. (2011), Algorithms for hyper-parameter optimization; Watanabe (2023), Tree-structured
  *   Parzen estimator: understanding its algorithm components.
  * @example
  * ```ts
- * import { leavesOfSpace, parzenEstimator, parzenLogPdf } from 'whitebox-engine/tune'
- * import { real } from 'whitebox-engine/space'
+ * import { leavesOfSpace, parzenEstimator, parzenLogPdf } from 'mdml-engine/tune'
+ * import { real } from 'mdml-engine/space'
  * const pe = parzenEstimator(leavesOfSpace(real(0, 1)), [[0.1], [0.15], [0.2]])
  * pe.weights.length // => 4
  * (parzenLogPdf(pe, [[0.15]])[0] ?? 0) > (parzenLogPdf(pe, [[0.9]])[0] ?? 0) // => true
@@ -201,15 +201,15 @@ export function parzenEstimator(
   options: ParzenOptions = {},
 ): ParzenEstimator {
   const priorWeight = options.priorWeight ?? 1
-  if (!(priorWeight >= 0)) throw new WhiteboxError('value', `parzenEstimator: priorWeight must be non-negative`)
+  if (!(priorWeight >= 0)) throw new MdmlError('value', `parzenEstimator: priorWeight must be non-negative`)
   const n = observations.length
   const raw = options.predeterminedWeights ?? (options.weights ?? defaultWeights)(n).slice(0, n)
-  if (raw.length !== n) throw new WhiteboxError('value', `parzenEstimator: ${raw.length} weights for ${n} observations`)
+  if (raw.length !== n) throw new MdmlError('value', `parzenEstimator: ${raw.length} weights for ${n} observations`)
   if (raw.some((w) => !(w >= 0) || !Number.isFinite(w)))
-    throw new WhiteboxError('value', 'parzenEstimator: weights must be finite and non-negative')
+    throw new MdmlError('value', 'parzenEstimator: weights must be finite and non-negative')
   const w = n === 0 ? [1] : [...raw, priorWeight]
   const total = w.reduce((a, b) => a + b, 0)
-  if (!(total > 0)) throw new WhiteboxError('value', 'parzenEstimator: the weights sum to zero')
+  if (!(total > 0)) throw new MdmlError('value', 'parzenEstimator: the weights sum to zero')
   const o = {
     priorWeight,
     considerMagicClip: options.considerMagicClip ?? true,
@@ -248,8 +248,8 @@ function numericalLogPdf(k: Extract<ParzenKernels, { kind: 'numerical' }>, xs: r
  * @concept tree-structured-parzen-estimator
  * @example
  * ```ts
- * import { parzenEstimator, parzenLogPdf, leavesOfSpace } from 'whitebox-engine/tune'
- * import { choice } from 'whitebox-engine/space'
+ * import { parzenEstimator, parzenLogPdf, leavesOfSpace } from 'mdml-engine/tune'
+ * import { choice } from 'mdml-engine/space'
  * const pe = parzenEstimator(leavesOfSpace(choice(['a', 'b'])), [[0]])
  * Math.exp(parzenLogPdf(pe, [[0]])[0] ?? 0) // => 0.625
  * ```
@@ -288,9 +288,9 @@ export function parzenLogPdf(pe: ParzenEstimator, points: readonly (readonly num
  * @concept tree-structured-parzen-estimator
  * @example
  * ```ts
- * import { parzenEstimator, parzenSample, leavesOfSpace } from 'whitebox-engine/tune'
- * import { int } from 'whitebox-engine/space'
- * import { key } from 'whitebox-engine/random'
+ * import { parzenEstimator, parzenSample, leavesOfSpace } from 'mdml-engine/tune'
+ * import { int } from 'mdml-engine/space'
+ * import { key } from 'mdml-engine/random'
  * parzenSample(parzenEstimator(leavesOfSpace(int(1, 3)), [[2]]), key(0), 5).every(([v]) => [1, 2, 3].includes(v ?? 0)) // => true
  * ```
  */
@@ -339,8 +339,8 @@ export function parzenSample(pe: ParzenEstimator, key: Key, size: number): numbe
  * @returns The leaves in flattening order.
  * @example
  * ```ts
- * import { leavesOfSpace } from 'whitebox-engine/tune'
- * import { dict, real, choice } from 'whitebox-engine/space'
+ * import { leavesOfSpace } from 'mdml-engine/tune'
+ * import { dict, real, choice } from 'mdml-engine/space'
  * leavesOfSpace(dict({ lr: real(1e-4, 1, { log: true }), act: choice(['relu', 'tanh']) })).map((l) => [l.path, l.kind])
  * // => [['lr', 'float'], ['act', 'categorical']]
  * ```
@@ -360,8 +360,8 @@ export function leavesOfSpace(space: Space): Leaf[] {
  * @concept tree-structured-parzen-estimator
  * @example
  * ```ts
- * import { parzenEstimator, tpeAcquisition, leavesOfSpace } from 'whitebox-engine/tune'
- * import { real } from 'whitebox-engine/space'
+ * import { parzenEstimator, tpeAcquisition, leavesOfSpace } from 'mdml-engine/tune'
+ * import { real } from 'mdml-engine/space'
  * const leaves = leavesOfSpace(real(0, 1))
  * const [good, bad] = tpeAcquisition(parzenEstimator(leaves, [[0.1]]), parzenEstimator(leaves, [[0.9]]), [[0.1], [0.9]])
  * (good ?? 0) > 0 && (bad ?? 0) < 0 // => true

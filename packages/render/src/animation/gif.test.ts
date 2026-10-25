@@ -1,5 +1,5 @@
+import type { Pixels } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
-import type { Pixels } from 'whitebox-engine/scene'
 import { encodeGif, quantise } from './gif.ts'
 
 /** A minimal GIF decoder for the tests: the global palette and each frame's palette indices. */

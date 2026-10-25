@@ -4,9 +4,9 @@ from typing import Literal
 
 import numpy as np
 import scipy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from scipy.spatial.transform import Rotation, Slerp
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

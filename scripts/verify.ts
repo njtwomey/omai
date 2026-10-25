@@ -46,7 +46,7 @@ const GLOBAL_TS = [
   /^scripts\//,
   /^Makefile$/,
 ]
-const GLOBAL_PY = [/^pyproject\.toml$/, /^uv\.lock$/, /^oracle\/whitebox_oracle\//]
+const GLOBAL_PY = [/^pyproject\.toml$/, /^uv\.lock$/, /^oracle\/mdml_oracle\//]
 // Files whose change can affect every example: the catalogue extraction, the runner and its module loaders.
 const GLOBAL_EXAMPLES = [/^packages\/meta\/src\/(extract|runner|modules)\//]
 const EXAMPLES = ['node', 'scripts/examples.ts', '--methods', '--slowest', '0']
@@ -169,7 +169,7 @@ function plan(files: readonly string[]): Step[] {
   if (globalPy)
     steps.push({
       label: 'fixtures (all)',
-      command: ['uv', 'run', ...ORACLE_GROUPS, 'python', '-m', 'whitebox_oracle', 'check'],
+      command: ['uv', 'run', ...ORACLE_GROUPS, 'python', '-m', 'mdml_oracle', 'check'],
     })
   else {
     const only = [
@@ -190,15 +190,15 @@ function plan(files: readonly string[]): Step[] {
     if (only.length > 0)
       steps.push({
         label: `fixtures (${only.length} case modules)`,
-        command: ['uv', 'run', ...ORACLE_GROUPS, 'python', '-m', 'whitebox_oracle', 'check', '--only', only.join(',')],
+        command: ['uv', 'run', ...ORACLE_GROUPS, 'python', '-m', 'mdml_oracle', 'check', '--only', only.join(',')],
       })
   }
   return steps
 }
 
 // Several checkouts (agents' worktrees) verify at once; each test run already uses half the cores, so at most
-// WHITEBOX_VERIFY_SLOTS (default 2) run their tests together and the rest wait for a slot.
-const SLOTS_DIR = join(tmpdir(), 'whitebox-verify-slots')
+// MDML_VERIFY_SLOTS (default 2) run their tests together and the rest wait for a slot.
+const SLOTS_DIR = join(tmpdir(), 'mdml-verify-slots')
 
 function alive(pid: number): boolean {
   try {
@@ -210,7 +210,7 @@ function alive(pid: number): boolean {
 }
 
 function acquireSlot(): () => void {
-  const slots = Number(process.env['WHITEBOX_VERIFY_SLOTS'] ?? 2)
+  const slots = Number(process.env['MDML_VERIFY_SLOTS'] ?? 2)
   mkdirSync(SLOTS_DIR, { recursive: true })
   let announced = false
   for (;;) {

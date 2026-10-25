@@ -4,7 +4,7 @@
  * interpolation between the knots for prediction.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { posteriorGrid } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -41,7 +41,7 @@ export type FittedIsotonic = Fitted<IsotonicParams> & IsotonicVerbs
 
 function column(x: TensorLike, who: string): Float64Array {
   const t = asTensor(x)
-  if (t.shape.length === 2 && t.shape[1] !== 1) throw new WhiteboxError('shape', `${who}: expects one feature`)
+  if (t.shape.length === 2 && t.shape[1] !== 1) throw new MdmlError('shape', `${who}: expects one feature`)
   return Float64Array.from(toFlat(primalOf(t)))
 }
 

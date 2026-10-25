@@ -1,7 +1,7 @@
 // Game-tree search hub entries (private to this collection): a game, the search and its settings as controls, and
 // the search played node by node over the whole tree.
-import { playGameSearch, randomTree, textbookTree, ticTacToe } from 'whitebox-engine/methods/gofai'
-import { bool, choice, dict, int } from 'whitebox-engine/space'
+import { playGameSearch, randomTree, textbookTree, ticTacToe } from 'mdml-engine/methods/gofai'
+import { bool, choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry, type MethodRef } from '../../../entry/entry.ts'
 
 /** Tic-tac-toe positions small enough to draw their whole game tree. */

@@ -3,7 +3,7 @@
  * two-dimensional classification data and tabular classification data.
  */
 
-import { mlpClassifier as mlpClassifierMethod } from 'whitebox-engine/methods/neural/foundations'
+import { mlpClassifier as mlpClassifierMethod } from 'mdml-engine/methods/neural/foundations'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { mlpArchitecture, trainingRun } from '../_train.ts'
 

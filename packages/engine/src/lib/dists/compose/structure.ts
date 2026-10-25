@@ -4,7 +4,7 @@
  * samples, and the `deterministic` point mass, following torch.distributions, NumPyro and TFP.
  */
 
-import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { type Key, uniform as uniformNoise } from '../../random/index.ts'
 import {
   add,
@@ -73,12 +73,12 @@ export interface Independent extends Distribution {
  * @param base - The distribution.
  * @param reinterpretedBatchRank - How many trailing batch axes become event axes (default 1).
  * @returns The distribution.
- * @throws WhiteboxError with code `shape` when the base has fewer batch axes.
+ * @throws MdmlError with code `shape` when the base has fewer batch axes.
  * @example
  * ```ts
- * import { normal } from 'whitebox-engine/dists'
- * import { independent } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { normal } from 'mdml-engine/dists'
+ * import { independent } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * const d = independent(normal([0, 0], [1, 1]))
  * d.eventShape // => [2]
  * Math.abs(item(d.logProb([0, 0])) + Math.log(2 * Math.PI)) < 1e-15 // => true
@@ -88,7 +88,7 @@ export function independent(base: Distribution, reinterpretedBatchRank = 1): Ind
   const r = reinterpretedBatchRank
   const n = base.batchShape.length
   if (r < 0 || r > n)
-    throw new WhiteboxError('shape', `independent: cannot reinterpret ${r} of ${n} batch axes as event axes`)
+    throw new MdmlError('shape', `independent: cannot reinterpret ${r} of ${n} batch axes as event axes`)
   const spec: DistributionSpec = {
     name: 'independent',
     params: base.params,
@@ -124,9 +124,9 @@ export interface Transformed extends Distribution {
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors, normal } from 'whitebox-engine/dists'
- * import { transformed } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { bijectors, normal } from 'mdml-engine/dists'
+ * import { transformed } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * // exp of a normal is the log-normal.
  * const d = transformed(normal(0, 1), bijectors.exp())
  * item(d.cdf(1)) // => 0.5
@@ -206,16 +206,16 @@ function intervalSupport(lo: Value, hi: Value, bounds: Bounds): Support {
  * @returns The truncated distribution. Its mode is the base's mode clipped to the interval (exact for unimodal bases).
  * @example
  * ```ts
- * import { exponential } from 'whitebox-engine/dists'
- * import { truncated } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { exponential } from 'mdml-engine/dists'
+ * import { truncated } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * const d = truncated(exponential(1), { high: 1 })
  * Math.abs(item(d.cdf(1)) - 1) < 1e-15 // => true
  * Math.abs(item(d.prob(0)) - 1 / (1 - Math.exp(-1))) < 1e-14 // => true
  * ```
  */
 export function truncated(base: Distribution, bounds: Bounds): Distribution {
-  if (base.eventShape.length > 0) throw new WhiteboxError('shape', 'truncated: the base must be univariate')
+  if (base.eventShape.length > 0) throw new MdmlError('shape', 'truncated: the base must be univariate')
   return isDiscrete(base.support) ? truncatedDiscrete(base, bounds) : truncatedContinuous(base, bounds)
 }
 
@@ -355,15 +355,15 @@ const expSafe = (lp: Value): Value => {
  * @returns The (mixed) distribution; the mean and variance by quadrature, no entropy or mode.
  * @example
  * ```ts
- * import { normal } from 'whitebox-engine/dists'
- * import { censored } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { normal } from 'mdml-engine/dists'
+ * import { censored } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * const d = censored(normal(0, 1), { low: 0 })
  * Math.abs(item(d.prob(0)) - 0.5) < 1e-15 // => true
  * ```
  */
 export function censored(base: Distribution, bounds: Bounds): Distribution {
-  if (base.eventShape.length > 0) throw new WhiteboxError('shape', 'censored: the base must be univariate')
+  if (base.eventShape.length > 0) throw new MdmlError('shape', 'censored: the base must be univariate')
   const [lo, hi] = boundsOf(bounds)
   const loFinite = isfinite(lo)
   const hiFinite = isfinite(hi)
@@ -415,8 +415,8 @@ export function censored(base: Distribution, bounds: Bounds): Distribution {
  *   distinct atoms.
  * @example
  * ```ts
- * import { empirical } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { empirical } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * const d = empirical([1, 2, 2, 5])
  * item(d.prob(2)) // => 0.5
  * item(d.mean()) // => 2.5
@@ -425,7 +425,7 @@ export function censored(base: Distribution, bounds: Bounds): Distribution {
  */
 export function empirical(samples: TensorLike, weights?: TensorLike): Distribution {
   const [s] = promoteFloat(samples) as [Value]
-  if (s.shape.length === 0) throw new WhiteboxError('shape', 'empirical: samples need a leading axis')
+  if (s.shape.length === 0) throw new MdmlError('shape', 'empirical: samples need a leading axis')
   const n = s.shape[0] ?? 0
   const eventShape = s.shape.slice(1)
   const eventRank = eventShape.length
@@ -523,8 +523,8 @@ export function empirical(samples: TensorLike, weights?: TensorLike): Distributi
  * @returns The distribution.
  * @example
  * ```ts
- * import { deterministic } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { deterministic } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * item(deterministic(3).logProb(3)) // => 0
  * item(deterministic(3).cdf(2.5)) // => 0
  * ```

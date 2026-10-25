@@ -4,7 +4,7 @@
  * prediction (Gibbs and Candès, 2021), which adapts its level as data arrive so coverage holds under drift.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { conformalRecord, type Explained } from '../../lib/exposition/index.ts'
 import {
   adaptiveConformalInference,
@@ -69,7 +69,7 @@ export function conformalRegression(
   const key = options.key ?? makeKey(0)
   const [fitRows, calRows, test] = splitData(data, options.fractions ?? [0.4, 0.3, 0.3], foldIn(key, 0))
   if (fitRows === undefined || calRows === undefined || test === undefined)
-    throw new WhiteboxError('value', 'conformalRegression: no rows')
+    throw new MdmlError('value', 'conformalRegression: no rows')
   let regressor: ConformalRegressor
   let scores: number[] | undefined
   if (method === 'cv-plus') {
@@ -129,7 +129,7 @@ export function conformalRegression(
 }
 
 function targets(d: LearnData): number[] {
-  if (d.y === undefined) throw new WhiteboxError('value', 'conformal: the data needs targets')
+  if (d.y === undefined) throw new MdmlError('value', 'conformal: the data needs targets')
   return Array.from(targetVector(d.y, 'conformal'))
 }
 
@@ -170,7 +170,7 @@ export function conformalClassification(
   const key = options.key ?? makeKey(0)
   const [fitRows, calRows, test] = splitData(data, options.fractions ?? [0.4, 0.3, 0.3], foldIn(key, 0))
   if (fitRows === undefined || calRows === undefined || test === undefined)
-    throw new WhiteboxError('value', 'conformalClassification: no rows')
+    throw new MdmlError('value', 'conformalClassification: no rows')
   const fitted = estimator.fit(fitRows, { key: foldIn(key, 1), explain: false })
   const c = splitConformalClassifier(fitted, calRows, {
     alpha,
@@ -247,7 +247,7 @@ export function onlineConformal(
   const [a, b] = options.fractions ?? [0.3, 0.2]
   const [fitRows, calRows, stream] = splitData(data, [a, b, 1 - a - b], foldIn(key, 0))
   if (fitRows === undefined || calRows === undefined || stream === undefined)
-    throw new WhiteboxError('value', 'onlineConformal: no rows')
+    throw new MdmlError('value', 'onlineConformal: no rows')
   const fitted = estimator.fit(fitRows, { key: foldIn(key, 1), explain: false })
   const predict = (x: LearnData['x']): number[] =>
     Array.from(toFlat(requireVerb(fitted, 'predict', 'onlineConformal')(x)))

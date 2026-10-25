@@ -5,7 +5,7 @@
  * scored rows are kept, so `groupReportAt` can recompute the report at other thresholds.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 
 /** The rates a group report gives for each group (and overall), each a probability. */
@@ -124,11 +124,11 @@ export interface GroupReport {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when a per-group field does not have one entry per group, a table is not 2 by 2, or
+ * @throws MdmlError `shape` when a per-group field does not have one entry per group, a table is not 2 by 2, or
  *   the rows' columns differ in length; `value` when the reference is not a group.
  * @example
  * ```ts
- * import { groupReport, groupReportFromTables } from 'whitebox-engine/exposition'
+ * import { groupReport, groupReportFromTables } from 'mdml-engine/exposition'
  * const r = groupReport(groupReportFromTables({ attribute: 'sex', groups: ['m', 'f'], tables: [[[5, 1], [1, 3]], [[4, 0], [3, 2]]] }))
  * r.rates[1]?.selectionRate // => 0.2222222222222222
  * ```
@@ -142,7 +142,7 @@ export function groupReport(record: Omit<GroupReport, 'kind'>): GroupReport {
     rowsOf('groupReport', `tables[${g}]`, t, 2)
   }
   if (!(Number.isInteger(record.reference) && record.reference >= 0 && record.reference < k))
-    throw new WhiteboxError('value', `groupReport: the reference ${record.reference} is not one of ${k} groups`)
+    throw new MdmlError('value', `groupReport: the reference ${record.reference} is not one of ${k} groups`)
   if (record.roc !== undefined) {
     sameLength('groupReport', 'roc', record.roc.length, k)
     for (const [g, c] of record.roc.entries()) {
@@ -179,7 +179,7 @@ const ratio = (a: number, b: number): number => (b === 0 ? 0 : a / b)
  * @returns The rates.
  * @example
  * ```ts
- * import { tableRates } from 'whitebox-engine/exposition'
+ * import { tableRates } from 'mdml-engine/exposition'
  * tableRates([[8, 2], [1, 9]]).truePositiveRate // => 0.9
  * ```
  */
@@ -212,7 +212,7 @@ function spread(values: readonly number[]): number {
  * @returns The disparities.
  * @example
  * ```ts
- * import { groupDisparities, tableRates } from 'whitebox-engine/exposition'
+ * import { groupDisparities, tableRates } from 'mdml-engine/exposition'
  * const d = groupDisparities([tableRates([[5, 5], [0, 10]]), tableRates([[6, 4], [4, 6]])], 0)
  * d[0]?.value // => 0.25
  * ```
@@ -251,7 +251,7 @@ export type GroupTablesInput = Pick<GroupReport, 'attribute' | 'groups' | 'table
  * @returns The report's fields (pass them to {@link groupReport}).
  * @example
  * ```ts
- * import { groupReportFromTables } from 'whitebox-engine/exposition'
+ * import { groupReportFromTables } from 'mdml-engine/exposition'
  * groupReportFromTables({ attribute: 'a', groups: ['x', 'y'], tables: [[[1, 1], [0, 2]], [[3, 0], [1, 0]]] }).counts // => [4, 4]
  * ```
  */
@@ -281,10 +281,10 @@ export function groupReportFromTables(input: GroupTablesInput): Omit<GroupReport
  * @param record - A report with `scored` rows.
  * @param thresholds - A threshold per group (`score >= threshold` predicts positive).
  * @returns The report at those thresholds.
- * @throws WhiteboxError `value` when the report has no scored rows; `shape` without one threshold per group.
+ * @throws MdmlError `value` when the report has no scored rows; `shape` without one threshold per group.
  * @example
  * ```ts
- * import { groupReport, groupReportAt, groupReportFromTables } from 'whitebox-engine/exposition'
+ * import { groupReport, groupReportAt, groupReportFromTables } from 'mdml-engine/exposition'
  * const rows = { scores: [0.2, 0.6, 0.4, 0.9], labels: [0, 1, 0, 1], groups: [0, 0, 1, 1] }
  * const r = groupReport(groupReportFromTables({ attribute: 'a', groups: ['x', 'y'], tables: [[[1, 0], [0, 1]], [[1, 0], [0, 1]]], scored: rows }))
  * groupReportAt(r, [0.5, 0.3]).rates[1]?.falsePositiveRate // => 1
@@ -292,7 +292,7 @@ export function groupReportFromTables(input: GroupTablesInput): Omit<GroupReport
  */
 export function groupReportAt(record: GroupReport, thresholds: readonly number[]): GroupReport {
   const rows = record.scored
-  if (rows === undefined) throw new WhiteboxError('value', 'groupReportAt: the report has no scored rows')
+  if (rows === undefined) throw new MdmlError('value', 'groupReportAt: the report has no scored rows')
   sameLength('groupReportAt', 'thresholds', thresholds.length, record.groups.length)
   // At its own thresholds the report is itself, intervals and all (a randomised one cannot be re-derived from rows).
   if (thresholds.every((t, g) => t === record.thresholds[g])) return record

@@ -3,7 +3,7 @@
  * a small index for the tree, a search index fetched when someone searches, one file per source file with its full
  * symbol docs, and one small file per module with its types' declarations, for the hover on a type name. Every file is named by a hash of its content, so a browser may keep it forever.
  */
-import type { PackageDoc, SymbolDoc, SymbolKind } from 'whitebox-meta/schema'
+import type { PackageDoc, SymbolDoc, SymbolKind } from 'mdml-meta/schema'
 
 /** The URL folder (below the site's base) the files are served from. */
 export const DOCS_DATA = 'docs-data/'

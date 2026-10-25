@@ -9,6 +9,8 @@ from typing import Any, cast
 import moocore  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import pymoo  # pyright: ignore[reportMissingTypeStubs]
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from pymoo.algorithms.moo.nsga2 import NSGA2  # pyright: ignore[reportMissingTypeStubs]
 from pymoo.operators.survival.rank_and_crowding.metrics import (  # pyright: ignore[reportMissingTypeStubs]
     calc_crowding_distance,
@@ -16,8 +18,6 @@ from pymoo.operators.survival.rank_and_crowding.metrics import (  # pyright: ign
 from pymoo.optimize import minimize  # pyright: ignore[reportMissingTypeStubs]
 from pymoo.problems import get_problem  # pyright: ignore[reportMissingTypeStubs]
 from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting  # pyright: ignore[reportMissingTypeStubs]
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"pymoo": str(pymoo.__version__), "moocore": str(moocore.__version__)}
 

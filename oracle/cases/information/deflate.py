@@ -10,7 +10,7 @@ import io
 import zlib
 
 import numpy as np
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"zlib": zlib.ZLIB_RUNTIME_VERSION}
 

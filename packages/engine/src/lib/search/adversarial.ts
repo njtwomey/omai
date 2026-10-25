@@ -5,7 +5,7 @@
  * the principal variation.
  */
 
-import { argmaxOf, type Json, WhiteboxError } from '../base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { Generator, type Key } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { type SearchRunOptions, type StateKey, stateKeyOf } from './problem.ts'
@@ -150,9 +150,9 @@ function gameEngine<S, A>(
   const prunes = mode === 'alpha-beta' || mode === 'negamax-alpha-beta'
   const nega = mode === 'negamax' || mode === 'negamax-alpha-beta'
   if (mode === 'expectimax' && !isStochastic(game)) {
-    throw new WhiteboxError('value', 'expectimax: the game needs isChance and outcomes')
+    throw new MdmlError('value', 'expectimax: the game needs isChance and outcomes')
   }
-  if (!(limit >= 0)) throw new WhiteboxError('value', `${name}: the depth ${limit} must be non-negative`)
+  if (!(limit >= 0)) throw new MdmlError('value', `${name}: the depth ${limit} must be non-negative`)
   const rootPlayer = game.player(root)
   const chance = (s: S): boolean => mode === 'expectimax' && isStochastic(game) && game.isChance(s)
   const ordered = (s: S, mover: string, maximise: boolean): readonly A[] => {
@@ -358,7 +358,7 @@ function runGame<S, A>(algorithm: Algorithm<GameSearchState<A> & EngineState<S, 
  * @concept adversarial-search
  * @example
  * ```ts
- * import { minimaxAlgorithm } from 'whitebox-engine/search'
+ * import { minimaxAlgorithm } from 'mdml-engine/search'
  * const game = { initial: 0, player: () => 'MAX', actions: () => [], result: (s: number) => s, isTerminal: () => true, utility: () => 0 }
  * minimaxAlgorithm(game, 0).name // => 'minimax'
  * ```
@@ -381,7 +381,7 @@ export function minimaxAlgorithm<S, A>(
  * @concept adversarial-search
  * @example
  * ```ts
- * import { minimax } from 'whitebox-engine/search'
+ * import { minimax } from 'mdml-engine/search'
  * // AIMA figure 5.2: MAX moves a1, a2 or a3; MIN replies; leaves hold MAX's utility.
  * const tree: Record<string, string[]> = { A: ['B', 'C', 'D'], B: ['B1', 'B2', 'B3'], C: ['C1', 'C2', 'C3'], D: ['D1', 'D2', 'D3'] }
  * const utils: Record<string, number> = { B1: 3, B2: 12, B3: 8, C1: 2, C2: 4, C3: 6, D1: 14, D2: 5, D3: 2 }
@@ -406,7 +406,7 @@ export function minimax<S, A>(game: Game<S, A>, state: S, options: GameSearchOpt
  * @concept adversarial-search
  * @example
  * ```ts
- * import { alphaBetaAlgorithm } from 'whitebox-engine/search'
+ * import { alphaBetaAlgorithm } from 'mdml-engine/search'
  * const game = { initial: 0, player: () => 'MAX', actions: () => [], result: (s: number) => s, isTerminal: () => true, utility: () => 0 }
  * alphaBetaAlgorithm(game, 0).name // => 'alpha-beta'
  * ```
@@ -429,7 +429,7 @@ export function alphaBetaAlgorithm<S, A>(
  * @concept adversarial-search
  * @example
  * ```ts
- * import { alphaBeta } from 'whitebox-engine/search'
+ * import { alphaBeta } from 'mdml-engine/search'
  * const tree: Record<string, string[]> = { A: ['B', 'C', 'D'], B: ['B1', 'B2', 'B3'], C: ['C1', 'C2', 'C3'], D: ['D1', 'D2', 'D3'] }
  * const utils: Record<string, number> = { B1: 3, B2: 12, B3: 8, C1: 2, C2: 4, C3: 6, D1: 14, D2: 5, D3: 2 }
  * const game = { initial: 'A', player: (s: string) => (s === 'A' ? 'MAX' : 'MIN'), actions: (s: string) => tree[s] ?? [], result: (_s: string, a: string) => a, isTerminal: (s: string) => !(s in tree), utility: (s: string, p: string) => (p === 'MAX' ? 1 : -1) * (utils[s] ?? 0) }
@@ -457,7 +457,7 @@ export function alphaBeta<S, A>(
  * @concept adversarial-search
  * @example
  * ```ts
- * import { negamaxAlgorithm } from 'whitebox-engine/search'
+ * import { negamaxAlgorithm } from 'mdml-engine/search'
  * const game = { initial: 0, player: () => 'MAX', actions: () => [], result: (s: number) => s, isTerminal: () => true, utility: () => 0 }
  * negamaxAlgorithm(game, 0).name // => 'negamax'
  * ```
@@ -480,7 +480,7 @@ export function negamaxAlgorithm<S, A>(
  * @concept adversarial-search
  * @example
  * ```ts
- * import { negamax } from 'whitebox-engine/search'
+ * import { negamax } from 'mdml-engine/search'
  * const tree: Record<string, string[]> = { A: ['B', 'C', 'D'], B: ['B1', 'B2', 'B3'], C: ['C1', 'C2', 'C3'], D: ['D1', 'D2', 'D3'] }
  * const utils: Record<string, number> = { B1: 3, B2: 12, B3: 8, C1: 2, C2: 4, C3: 6, D1: 14, D2: 5, D3: 2 }
  * const game = { initial: 'A', player: (s: string) => (s === 'A' ? 'MAX' : 'MIN'), actions: (s: string) => tree[s] ?? [], result: (_s: string, a: string) => a, isTerminal: (s: string) => !(s in tree), utility: (s: string, p: string) => (p === 'MAX' ? 1 : -1) * (utils[s] ?? 0) }
@@ -505,11 +505,11 @@ export function negamax<S, A>(
  * @param state - The root position.
  * @param options - Depth (chance levels count as plies), evaluation, move ordering and node budget.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` when the game has no chance nodes.
+ * @throws MdmlError with code `value` when the game has no chance nodes.
  * @concept adversarial-search
  * @example
  * ```ts
- * import { expectimaxAlgorithm } from 'whitebox-engine/search'
+ * import { expectimaxAlgorithm } from 'mdml-engine/search'
  * const game = { initial: 0, player: () => 'MAX', actions: () => [], result: (s: number) => s, isTerminal: () => true, utility: () => 0, isChance: () => false, outcomes: () => [] }
  * expectimaxAlgorithm(game, 0).name // => 'expectimax'
  * ```
@@ -529,11 +529,11 @@ export function expectimaxAlgorithm<S, A>(
  * @param state - The root position.
  * @param options - Depth, evaluation, move ordering, node budget and tracing.
  * @returns The best action, the expected value for the player to move, and the effort.
- * @throws WhiteboxError with code `value` when the game has no chance nodes.
+ * @throws MdmlError with code `value` when the game has no chance nodes.
  * @concept adversarial-search
  * @example
  * ```ts
- * import { expectimax } from 'whitebox-engine/search'
+ * import { expectimax } from 'mdml-engine/search'
  * // MAX bets or passes; a bet is settled by a fair coin: +3 or -2. Passing is worth 0.
  * const game = {
  *   initial: 'start', player: () => 'MAX', actions: (s: string) => (s === 'start' ? ['bet', 'pass'] : []),
@@ -618,7 +618,7 @@ function mctsEngine<S, A>(
   const puct = options.prior !== undefined
   const c = options.c ?? (puct ? 1.5 : Math.SQRT2)
   const rolloutDepth = options.rolloutDepth ?? 1000
-  if (game.isTerminal(state)) throw new WhiteboxError('value', 'mcts: the root position is terminal')
+  if (game.isTerminal(state)) throw new MdmlError('value', 'mcts: the root position is terminal')
   const node = (s: S): TreeNode<S, A> => {
     const terminal = game.isTerminal(s)
     const actions = terminal ? [] : game.actions(s)
@@ -735,11 +735,11 @@ function mctsEngine<S, A>(
  * @param options - Exploration constant, priors, value function, rollout policy and depth (the simulation count is the
  * run's step budget).
  * @returns The algorithm; the state's `root` holds the visit statistics.
- * @throws WhiteboxError with code `value` when the root is terminal.
+ * @throws MdmlError with code `value` when the root is terminal.
  * @concept monte-carlo-tree-search
  * @example
  * ```ts
- * import { mctsAlgorithm } from 'whitebox-engine/search'
+ * import { mctsAlgorithm } from 'mdml-engine/search'
  * const game = { initial: 0, player: () => 'A', actions: () => [1, 2], result: (s: number, a: number) => s + a, isTerminal: (s: number) => s >= 3, utility: (s: number) => (s === 3 ? 1 : 0) }
  * mctsAlgorithm(game, 0).name // => 'mcts'
  * ```
@@ -760,11 +760,11 @@ export function mctsAlgorithm<S, A>(
  * @param options - Simulations (default 1000), exploration constant, priors, value function, rollout policy, a seed or
  * key, and tracing.
  * @returns The chosen action, the root actions with their visits and mean returns, and the simulations run.
- * @throws WhiteboxError with code `value` when the root is terminal.
+ * @throws MdmlError with code `value` when the root is terminal.
  * @concept monte-carlo-tree-search
  * @example
  * ```ts
- * import { mcts } from 'whitebox-engine/search'
+ * import { mcts } from 'mdml-engine/search'
  * // A one-player race to exactly 3: adding 1 then 2 (or 2 then 1) wins; overshooting scores 0.
  * const game = { initial: 0, player: () => 'A', actions: () => [1, 2, 3], result: (s: number, a: number) => s + a, isTerminal: (s: number) => s >= 3, utility: (s: number) => (s === 3 ? 1 : 0) }
  * mcts(game, 0, { simulations: 200, seed: 1 }).values.every((v) => v > 0.5) // => true
@@ -773,7 +773,7 @@ export function mctsAlgorithm<S, A>(
 export function mcts<S, A>(game: Game<S, A>, state: S, options: MctsOptions<S, A> = {}): MctsResult<A> {
   const { simulations = 1000, c: _c, prior: _p, value: _v, rollout: _r, rolloutDepth: _d, ...run } = options
   if (!(Number.isInteger(simulations) && simulations >= 1)) {
-    throw new WhiteboxError('value', `mcts: simulations ${simulations} must be a positive integer`)
+    throw new MdmlError('value', `mcts: simulations ${simulations} must be a positive integer`)
   }
   const { state: s } = runAlgorithm(mctsEngine(game, state, options), { ...run, maxSteps: simulations })
   const visits = s.tree.children.map((ch) => ch?.visits ?? 0)

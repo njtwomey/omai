@@ -5,7 +5,7 @@
  * iterations.
  */
 
-import { type Json, kahanSum, maxOf, WhiteboxError } from '../base/index.ts'
+import { type Json, kahanSum, MdmlError, maxOf } from '../base/index.ts'
 import { dasum, daxpy, dnrm2 } from '../numerics/linalg/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { degree, type Graph, type GraphRunOptions, inDegree, type NodeId, nodeIndex, outDegree } from './graph.ts'
@@ -20,7 +20,7 @@ import { IndexedQueue } from './structures.ts'
  * @concept centrality
  * @example
  * ```ts
- * import { degreeCentrality, starGraph } from 'whitebox-engine/graph'
+ * import { degreeCentrality, starGraph } from 'mdml-engine/graph'
  * Array.from(degreeCentrality(starGraph(3))) // => [1, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
  * ```
  */
@@ -77,7 +77,7 @@ function singleSource(
       const v = a.indices[k] ?? 0
       if (done[v] === 1 || v === u) continue
       const w = a.weights[k] ?? 0
-      if (w < 0) throw new WhiteboxError('domain', 'centrality: negative weights are not allowed')
+      if (w < 0) throw new MdmlError('domain', 'centrality: negative weights are not allowed')
       const alt = (dist[u] ?? 0) + w
       const dv = dist[v] ?? Number.POSITIVE_INFINITY
       if (alt < dv) {
@@ -107,7 +107,7 @@ function singleSource(
  * @concept centrality
  * @example
  * ```ts
- * import { closenessCentrality, pathGraph } from 'whitebox-engine/graph'
+ * import { closenessCentrality, pathGraph } from 'mdml-engine/graph'
  * Array.from(closenessCentrality(pathGraph(3))) // => [0.6666666666666666, 1, 0.6666666666666666]
  * ```
  */
@@ -150,7 +150,7 @@ export interface BetweennessOptions {
  * @reference U. Brandes, A faster algorithm for betweenness centrality, J. Math. Sociology 25 (2001).
  * @example
  * ```ts
- * import { betweennessCentrality, pathGraph } from 'whitebox-engine/graph'
+ * import { betweennessCentrality, pathGraph } from 'mdml-engine/graph'
  * Array.from(betweennessCentrality(pathGraph(3))) // => [0, 1, 0]
  * Array.from(betweennessCentrality(pathGraph(3), { normalized: false })) // => [0, 1, 0]
  * ```
@@ -189,7 +189,7 @@ export function betweennessCentrality(g: Graph, options: BetweennessOptions = {}
  * @concept centrality
  * @example
  * ```ts
- * import { edgeBetweennessCentrality, pathGraph } from 'whitebox-engine/graph'
+ * import { edgeBetweennessCentrality, pathGraph } from 'mdml-engine/graph'
  * Array.from(edgeBetweennessCentrality(pathGraph(3), { normalized: false })) // => [2, 2]
  * ```
  */
@@ -240,7 +240,7 @@ function observePower(s: PowerState) {
 function runPower(algorithm: Algorithm<PowerState>, maxIter: number, options: GraphRunOptions): PowerState {
   const result = runAlgorithm(algorithm, { ...options, maxSteps: maxIter })
   if (result.status !== 'converged') {
-    throw new WhiteboxError('convergence', `${algorithm.name}: no convergence in ${maxIter} iterations`)
+    throw new MdmlError('convergence', `${algorithm.name}: no convergence in ${maxIter} iterations`)
   }
   return result.state
 }
@@ -282,7 +282,7 @@ export interface PowerOptions extends GraphRunOptions {
  * @concept centrality
  * @example
  * ```ts
- * import { cycleGraph, eigenvectorCentralityAlgorithm } from 'whitebox-engine/graph'
+ * import { cycleGraph, eigenvectorCentralityAlgorithm } from 'mdml-engine/graph'
  * eigenvectorCentralityAlgorithm(cycleGraph(4)).name // => 'eigenvector-centrality'
  * ```
  */
@@ -299,7 +299,7 @@ export function eigenvectorCentralityAlgorithm(
     init: () => {
       const x = Float64Array.from({ length: g.n }, (_, i) => options.start?.[i] ?? 1)
       const total = kahanSum(x)
-      if (total === 0) throw new WhiteboxError('value', 'eigenvectorCentrality: the start vector sums to zero')
+      if (total === 0) throw new MdmlError('value', 'eigenvectorCentrality: the start vector sums to zero')
       return { x: Float64Array.from(x, (v) => v / total), error: Number.POSITIVE_INFINITY }
     },
     step: (s) => {
@@ -320,11 +320,11 @@ export function eigenvectorCentralityAlgorithm(
  * @param g - The graph.
  * @param options - `maxIter` (default 100), `tol` (default 1e-6), `weighted` (default false) and tracing.
  * @returns The centrality of each node.
- * @throws WhiteboxError with code `convergence` when the iteration does not converge.
+ * @throws MdmlError with code `convergence` when the iteration does not converge.
  * @concept centrality
  * @example
  * ```ts
- * import { completeGraph, eigenvectorCentrality } from 'whitebox-engine/graph'
+ * import { completeGraph, eigenvectorCentrality } from 'mdml-engine/graph'
  * Array.from(eigenvectorCentrality(completeGraph(4)), (v) => v.toFixed(4)) // => ['0.5000', '0.5000', '0.5000', '0.5000']
  * ```
  */
@@ -361,7 +361,7 @@ export interface KatzOptions extends PowerOptions {
  * @concept centrality
  * @example
  * ```ts
- * import { katzCentralityAlgorithm, pathGraph } from 'whitebox-engine/graph'
+ * import { katzCentralityAlgorithm, pathGraph } from 'mdml-engine/graph'
  * katzCentralityAlgorithm(pathGraph(3)).name // => 'katz-centrality'
  * ```
  */
@@ -397,11 +397,11 @@ export function katzCentralityAlgorithm(
  * @param options - `alpha` (default 0.1), `beta` (default 1), `normalized` (default true), `maxIter` (default 1000),
  *   `tol` (default 1e-6), `weighted` (default false) and tracing.
  * @returns The centrality of each node.
- * @throws WhiteboxError with code `convergence` when alpha is too large for the iteration to converge.
+ * @throws MdmlError with code `convergence` when alpha is too large for the iteration to converge.
  * @concept centrality
  * @example
  * ```ts
- * import { katzCentrality, starGraph } from 'whitebox-engine/graph'
+ * import { katzCentrality, starGraph } from 'mdml-engine/graph'
  * const x = katzCentrality(starGraph(4))
  * (x[0] ?? 0) > (x[1] ?? 0) // => true
  * ```
@@ -435,7 +435,7 @@ function distribution(n: number, v: ArrayLike<number> | undefined, name: string)
   if (v === undefined) return new Float64Array(n).fill(1 / n)
   const x = Float64Array.from({ length: n }, (_, i) => v[i] ?? 0)
   const total = kahanSum(x)
-  if (!(total > 0)) throw new WhiteboxError('value', `pagerank: the ${name} vector must have a positive sum`)
+  if (!(total > 0)) throw new MdmlError('value', `pagerank: the ${name} vector must have a positive sum`)
   return Float64Array.from(x, (p) => p / total)
 }
 
@@ -450,7 +450,7 @@ function distribution(n: number, v: ArrayLike<number> | undefined, name: string)
  * @concept pagerank
  * @example
  * ```ts
- * import { cycleGraph, pagerankAlgorithm } from 'whitebox-engine/graph'
+ * import { cycleGraph, pagerankAlgorithm } from 'mdml-engine/graph'
  * pagerankAlgorithm(cycleGraph(3)).name // => 'pagerank'
  * ```
  */
@@ -508,12 +508,12 @@ function sourceRow(g: Graph, k: number): number {
  * @param options - `alpha` (default 0.85), personalization, dangling, start, `maxIter` (default 100), `tol` (default
  *   1e-6), `weighted` (default true) and tracing.
  * @returns The PageRank of each node (sums to 1).
- * @throws WhiteboxError with code `convergence` when the iteration does not converge.
+ * @throws MdmlError with code `convergence` when the iteration does not converge.
  * @concept pagerank
  * @reference L. Page, S. Brin, R. Motwani and T. Winograd, The PageRank citation ranking (1999).
  * @example
  * ```ts
- * import { cycleGraph, pagerank } from 'whitebox-engine/graph'
+ * import { cycleGraph, pagerank } from 'mdml-engine/graph'
  * Array.from(pagerank(cycleGraph(4)), (v) => v.toFixed(3)) // => ['0.250', '0.250', '0.250', '0.250']
  * ```
  */
@@ -546,7 +546,7 @@ export interface HitsResult {
  * @concept hits
  * @example
  * ```ts
- * import { digraph, hitsAlgorithm } from 'whitebox-engine/graph'
+ * import { digraph, hitsAlgorithm } from 'mdml-engine/graph'
  * hitsAlgorithm(digraph([[0, 1]])).name // => 'hits'
  * ```
  */
@@ -593,12 +593,12 @@ export function hitsAlgorithm(
  * @param options - `maxIter` (default 100), `tol` (default 1e-8), `normalized` (default true: each sums to 1;
  *   otherwise each has maximum 1), `weighted` (default true), a start vector and tracing.
  * @returns Hub and authority scores.
- * @throws WhiteboxError with code `convergence` when the iteration does not converge.
+ * @throws MdmlError with code `convergence` when the iteration does not converge.
  * @concept hits
  * @reference J. Kleinberg, Authoritative sources in a hyperlinked environment, J. ACM 46 (1999).
  * @example
  * ```ts
- * import { digraph, hits } from 'whitebox-engine/graph'
+ * import { digraph, hits } from 'mdml-engine/graph'
  * const r = hits(digraph([[0, 2], [1, 2]]))
  * [Array.from(r.hubs), Array.from(r.authorities)] // => [[0.5, 0.5, 0], [0, 0, 1]]
  * ```
@@ -637,7 +637,7 @@ export function hits(
  * @returns The order nodes were settled in, the number of shortest paths to each node, and their predecessors.
  * @example
  * ```ts
- * import { cycleGraph, shortestPathCounts } from 'whitebox-engine/graph'
+ * import { cycleGraph, shortestPathCounts } from 'mdml-engine/graph'
  * Array.from(shortestPathCounts(cycleGraph(4), 0).sigma) // => [1, 1, 2, 1]
  * ```
  */

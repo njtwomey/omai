@@ -1,6 +1,6 @@
 import * as echarts from 'echarts'
+import { featureAttributions, importances } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { featureAttributions, importances } from 'whitebox-engine/exposition'
 import {
   attributionBarView,
   attributionFrames,

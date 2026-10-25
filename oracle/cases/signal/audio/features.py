@@ -7,9 +7,9 @@ from typing import Any
 
 import librosa
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.signal_helpers import tones
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.signal_helpers import tones
 
 REFERENCE: dict[str, str] = {"librosa": version("librosa"), "numpy": np.__version__}
 

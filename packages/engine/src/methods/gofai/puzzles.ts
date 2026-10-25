@@ -3,7 +3,7 @@
  * search) and map colouring, with Australia's states and random planar maps.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type Key, uniform } from '../../lib/random/index.ts'
 import { allDifferent, binaryConstraint, type Constraint, type Csp, csp } from '../../lib/search/index.ts'
 
@@ -15,7 +15,7 @@ import { allDifferent, binaryConstraint, type Constraint, type Csp, csp } from '
  * @returns The CSP.
  */
 export function nQueens(n: number): Csp<number> {
-  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', `nQueens: n = ${n} must be a positive integer`)
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', `nQueens: n = ${n} must be a positive integer`)
   const cols = Array.from({ length: n }, (_, i) => String(i))
   const rows = Array.from({ length: n }, (_, i) => i)
   const constraints = cols.flatMap((a, i) =>
@@ -37,11 +37,11 @@ export const SUDOKUS: Readonly<Record<'easy' | 'hard' | 'mini', string>> = {
  *
  * @param grid - The puzzle, 81 (or 16) characters, `.` or `0` for a blank.
  * @returns The CSP.
- * @throws WhiteboxError `value` for a grid of the wrong length.
+ * @throws MdmlError `value` for a grid of the wrong length.
  */
 export function sudoku(grid: string): Csp<number> {
   const side = grid.length === 16 ? 4 : grid.length === 81 ? 9 : 0
-  if (side === 0) throw new WhiteboxError('value', `sudoku: a grid has 16 or 81 cells, not ${grid.length}`)
+  if (side === 0) throw new MdmlError('value', `sudoku: a grid has 16 or 81 cells, not ${grid.length}`)
   const box = side === 4 ? 2 : 3
   const cells = Array.from({ length: side * side }, (_, i) => String(i))
   const digits = Array.from({ length: side }, (_, i) => i + 1)

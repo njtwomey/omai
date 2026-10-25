@@ -3,7 +3,7 @@
  * `EmbeddingBag` lookup tables, and the shape helpers `Flatten`, `Unflatten` and `Identity`.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
   asTensor,
@@ -33,7 +33,7 @@ export interface LinearOptions {
  * @concept modules
  * @example
  * ```ts
- * import { Linear } from 'whitebox-engine/nn'
+ * import { Linear } from 'mdml-engine/nn'
  * new Linear(3, 2).parameterCount() // => 8
  * ```
  */
@@ -64,10 +64,7 @@ export class Linear extends Module {
 
   outputShape(inputShape: readonly number[]): number[] {
     if (inputShape[inputShape.length - 1] !== this.inFeatures) {
-      throw new WhiteboxError(
-        'shape',
-        `Linear: expected ${this.inFeatures} input features, got [${inputShape.join(', ')}]`,
-      )
+      throw new MdmlError('shape', `Linear: expected ${this.inFeatures} input features, got [${inputShape.join(', ')}]`)
     }
     return [...inputShape.slice(0, -1), this.outFeatures]
   }
@@ -83,8 +80,8 @@ export class Linear extends Module {
  *
  * @example
  * ```ts
- * import { Bilinear } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { Bilinear } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * new Bilinear(2, 3, 4, { key: key(0) }).forward([[[1, 2]], [[1, 2, 3]]]).shape // => [1, 4]
  * ```
  */
@@ -156,8 +153,8 @@ const normaliseIndex = (i: number | undefined, n: number): number | undefined =>
  * @concept embeddings
  * @example
  * ```ts
- * import { Embedding } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { Embedding } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * new Embedding(10, 3, { key: key(0) }).forward([[1, 2], [3, 4]]).shape // => [2, 2, 3]
  * ```
  */
@@ -230,8 +227,8 @@ export type EmbeddingBagInput =
  *
  * @example
  * ```ts
- * import { EmbeddingBag } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { EmbeddingBag } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * new EmbeddingBag(10, 3, { key: key(0) }).forward([[1, 2], [3, 4]]).shape // => [2, 3]
  * ```
  */
@@ -302,7 +299,7 @@ export class EmbeddingBag extends Module<EmbeddingBagInput> {
  *
  * @example
  * ```ts
- * import { Flatten } from 'whitebox-engine/nn'
+ * import { Flatten } from 'mdml-engine/nn'
  * new Flatten().outputShape([2, 3, 4]) // => [2, 12]
  * ```
  */
@@ -338,7 +335,7 @@ export class Flatten extends Module {
  *
  * @example
  * ```ts
- * import { Unflatten } from 'whitebox-engine/nn'
+ * import { Unflatten } from 'mdml-engine/nn'
  * new Unflatten(1, [3, 4]).outputShape([2, 12]) // => [2, 3, 4]
  * ```
  */
@@ -362,8 +359,7 @@ export class Unflatten extends Module {
     const n = inputShape[d] ?? 0
     const known = this.sizes.filter((s) => s !== -1).reduce((a, b) => a * b, 1)
     const sizes = this.sizes.map((s) => (s === -1 ? n / known : s))
-    if (sizeOf(sizes) !== n)
-      throw new WhiteboxError('shape', `Unflatten: [${this.sizes.join(', ')}] does not fill ${n}`)
+    if (sizeOf(sizes) !== n) throw new MdmlError('shape', `Unflatten: [${this.sizes.join(', ')}] does not fill ${n}`)
     return [...inputShape.slice(0, d), ...sizes, ...inputShape.slice(d + 1)]
   }
 
@@ -377,7 +373,7 @@ export class Unflatten extends Module {
  *
  * @example
  * ```ts
- * import { Identity } from 'whitebox-engine/nn'
+ * import { Identity } from 'mdml-engine/nn'
  * new Identity().outputShape([2, 3]) // => [2, 3]
  * ```
  */

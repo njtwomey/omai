@@ -4,10 +4,10 @@ mean centred discrepancy and the number of points that fill the space."""
 
 import numpy as np
 import scipy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
 from scipy.stats import qmc
 from scipy.stats._sobol import _initialize_v  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

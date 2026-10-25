@@ -4,7 +4,7 @@
  * well per-feature Kolmogorov-Smirnov tests and a domain classifier detect the shift.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { curveSet, type Explained } from '../../lib/exposition/index.ts'
 import { type Estimator, type LearnData, matrixView, requireVerb, targetVector } from '../../lib/learn/index.ts'
 import { crossValPredict } from '../../lib/learn/model-selection/index.ts'
@@ -57,13 +57,13 @@ export function shiftStudy(
   data: LearnData,
   options: ShiftStudyOptions = {},
 ): Explained<{ readonly points: readonly ShiftPoint[] }> {
-  if (data.y === undefined) throw new WhiteboxError('value', 'shiftStudy: the data needs labels')
+  if (data.y === undefined) throw new MdmlError('value', 'shiftStudy: the data needs labels')
   const kind = options.kind ?? 'covariate'
   const key = options.key ?? makeKey(0)
   const magnitudes =
     options.magnitudes ?? (kind === 'covariate' ? [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5] : [0, 0.1, 0.2, 0.3, 0.4, 0.5])
   const [reference, current] = splitData(data, [0.5, 0.5], foldIn(key, 0))
-  if (reference === undefined || current === undefined) throw new WhiteboxError('value', 'shiftStudy: no rows')
+  if (reference === undefined || current === undefined) throw new MdmlError('value', 'shiftStudy: no rows')
   const model = estimator.fit(reference, { key: foldIn(key, 1), explain: false })
   const predict = requireVerb(model, 'predict', 'shiftStudy')
   const r = matrixView(reference.x, 'shiftStudy')

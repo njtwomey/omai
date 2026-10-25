@@ -5,9 +5,9 @@ from functools import partial
 import numpy as np
 import scipy
 import scipy.special as sp
+from mdml_oracle.fixture import Case
+from mdml_oracle.helpers import FloatArray, loguniform, reference, rng
 from scipy.stats import kstwobign
-from whitebox_oracle.fixture import Case
-from whitebox_oracle.helpers import FloatArray, loguniform, reference, rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

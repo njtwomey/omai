@@ -16,7 +16,7 @@ import type { PlanState, StripsProblem } from './strips.ts'
  * @concept planning-heuristics
  * @example
  * ```ts
- * import { hAdd, strips } from 'whitebox-engine/search'
+ * import { hAdd, strips } from 'mdml-engine/search'
  * const p = strips(['a'], ['c', 'd'], [
  *   { name: 'ab', pre: ['a'], add: ['b'], del: [] },
  *   { name: 'bc', pre: ['b'], add: ['c'], del: [] },
@@ -39,7 +39,7 @@ export function hAdd(problem: StripsProblem): (state: PlanState) => number {
  * @concept planning-heuristics
  * @example
  * ```ts
- * import { hMax, strips } from 'whitebox-engine/search'
+ * import { hMax, strips } from 'mdml-engine/search'
  * const p = strips(['a'], ['c', 'd'], [
  *   { name: 'ab', pre: ['a'], add: ['b'], del: [] },
  *   { name: 'bc', pre: ['b'], add: ['c'], del: [] },
@@ -62,7 +62,7 @@ export function hMax(problem: StripsProblem): (state: PlanState) => number {
  * @concept planning-heuristics
  * @example
  * ```ts
- * import { hFF, strips } from 'whitebox-engine/search'
+ * import { hFF, strips } from 'mdml-engine/search'
  * const p = strips(['a'], ['c', 'd'], [
  *   { name: 'ab', pre: ['a'], add: ['b'], del: [] },
  *   { name: 'bc', pre: ['b'], add: ['c'], del: [] },
@@ -86,7 +86,7 @@ export function hFF(problem: StripsProblem): (state: PlanState) => number {
  * @concept planning-heuristics
  * @example
  * ```ts
- * import { relaxedPlan, strips } from 'whitebox-engine/search'
+ * import { relaxedPlan, strips } from 'mdml-engine/search'
  * const p = strips(['a'], ['c'], [
  *   { name: 'ab', pre: ['a'], add: ['b'], del: ['a'] },
  *   { name: 'bc', pre: ['b'], add: ['c'], del: [] },

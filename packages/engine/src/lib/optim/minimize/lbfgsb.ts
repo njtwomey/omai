@@ -83,7 +83,7 @@ export interface LbfgsbState extends VectorState {
  * @returns max_i |proj g_i|.
  * @example
  * ```ts
- * import { boxOf, projectedGradientNorm } from 'whitebox-engine/optim'
+ * import { boxOf, projectedGradientNorm } from 'mdml-engine/optim'
  * // At the lower bound with a positive gradient, the bound blocks the descent direction.
  * projectedGradientNorm([0, 1], [3, -0.5], boxOf({ lower: 0 }, 2)) // => 0.5
  * ```
@@ -362,8 +362,8 @@ function subspaceMin(
  * SIAM J. Sci. Comput. 16 (1995); J. L. Morales and J. Nocedal, Remark on Algorithm 778, ACM TOMS 38 (2011).
  * @example
  * ```ts
- * import { lbfgsbAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { lbfgsbAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * lbfgsbAlgorithm((x: Value) => sum(square(x)), [1, 2], { bounds: { lower: 0.5 } }).name // => 'lbfgsb'
  * ```
  */
@@ -562,8 +562,8 @@ function lbfgsbOn(obj: FlatObjective, options: LbfgsbOptions): Algorithm<LbfgsbS
  * @concept quasi-newton
  * @example
  * ```ts
- * import { lbfgsb } from 'whitebox-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'whitebox-engine/tensor'
+ * import { lbfgsb } from 'mdml-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
  * const r = lbfgsb((x: Value) => sum(square(sub(x, 3))), [0, 0], { bounds: [[null, 1], [0, 5]] })
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [1, 3]
  * ```

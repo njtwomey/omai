@@ -3,7 +3,7 @@
  * gives, on two-dimensional data with outliers and two-dimensional densities.
  */
 
-import { covarianceEstimator } from 'whitebox-engine/methods/covariance'
+import { covarianceEstimator } from 'mdml-engine/methods/covariance'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

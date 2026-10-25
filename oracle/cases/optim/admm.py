@@ -2,9 +2,9 @@
 
 import numpy as np
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.optim_helpers import sparse_problem
 from sklearn.linear_model import Lasso
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.optim_helpers import sparse_problem
 
 REFERENCE: dict[str, str] = {"sklearn": sklearn.__version__}
 

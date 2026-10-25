@@ -3,7 +3,7 @@
  * weight-decay strength, scored on training and held-out rows, so the gap between them can be seen to close.
  */
 
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import { type Explained, type Exposition, learningCurve } from '../../../lib/exposition/index.ts'
 import type { FitOptions, LearnData } from '../../../lib/learn/index.ts'
 import type { ActivationName } from '../../../lib/nn/index.ts'
@@ -72,9 +72,9 @@ export function regularisationStudy(
 ): Explained<{ readonly results: readonly RegularisationResult[] }> {
   const kind = options.kind ?? 'dropout'
   const values = options.values ?? (kind === 'dropout' ? [0, 0.2, 0.5] : [0, 1e-3, 1e-2, 1e-1])
-  if (values.length === 0) throw new WhiteboxError('value', 'regularisationStudy: needs at least one strength')
+  if (values.length === 0) throw new MdmlError('value', 'regularisationStudy: needs at least one strength')
   if (kind === 'dropout' && values.some((v) => !(v >= 0 && v < 1)))
-    throw new WhiteboxError('value', 'regularisationStudy: dropout rates must be in [0, 1)')
+    throw new MdmlError('value', 'regularisationStudy: dropout rates must be in [0, 1)')
   const key = fit.key ?? makeKey(0)
   const task = taskOf(data, !isRegression(data), {
     who: 'regularisationStudy',

@@ -5,15 +5,8 @@
  * take.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import {
-  type Frame,
-  type Pixels,
-  rasterise,
-  type Scene,
-  type StructureOverlay,
-  type Timeline,
-} from 'whitebox-engine/scene'
+import { MdmlError } from 'mdml-engine/base'
+import { type Frame, type Pixels, rasterise, type Scene, type StructureOverlay, type Timeline } from 'mdml-engine/scene'
 import { diagram } from '../structures/diagram.ts'
 import { svgToPixels } from '../svg/export.ts'
 import { sceneToSvg } from '../svg/svg.ts'
@@ -27,8 +20,8 @@ import { type ColourMode, tokens } from '../theme/tokens.ts'
  * @returns One scene per frame, in order.
  * @example
  * ```ts
- * import { scene, timeline } from 'whitebox-engine/scene'
- * import { timelineScenes } from 'whitebox-render/animation'
+ * import { scene, timeline } from 'mdml-engine/scene'
+ * import { timelineScenes } from 'mdml-render/animation'
  * timelineScenes(timeline([{ kind: 'scene', step: 0, scene: scene(4, 3, []) }]))[0].width // => 4
  * ```
  */
@@ -50,15 +43,15 @@ export interface FrameOptions {
 
 /**
  * A scene as RGBA pixels: in a browser through its SVG (`sceneToSvg`) drawn on a canvas, so text and TeX come out as
- * on the page; elsewhere (Node) with whitebox-engine's software rasteriser, which leaves out text.
+ * on the page; elsewhere (Node) with mdml-engine's software rasteriser, which leaves out text.
  *
  * @param s - The scene.
  * @param options - Colour mode, output width and background.
  * @returns A promise of the pixels.
  * @example
  * ```ts
- * import { rect, scene } from 'whitebox-engine/scene'
- * import { rasteriseScene } from 'whitebox-render/animation'
+ * import { rect, scene } from 'mdml-engine/scene'
+ * import { rasteriseScene } from 'mdml-render/animation'
  * const px = await rasteriseScene(scene(4, 2, [rect(0, 0, 4, 2, { fill: '#ff0000' })]), { width: 8 })
  * [px.width, px.height, px.rgba[0]] // => [8, 4, 255]
  * ```
@@ -82,12 +75,12 @@ export async function rasteriseScene(s: Scene, options: FrameOptions = {}): Prom
  * @param tl - The timeline.
  * @param options - Colour mode, output width and background.
  * @returns A promise of the frames.
- * @throws WhiteboxError with code `value` for an empty timeline.
+ * @throws MdmlError with code `value` for an empty timeline.
  */
 export async function timelineFrames(tl: Timeline, options: FrameOptions = {}): Promise<Pixels[]> {
   const scenes = timelineScenes(tl)
   const first = scenes[0]
-  if (first === undefined) throw new WhiteboxError('value', 'timelineFrames: the timeline has no frames')
+  if (first === undefined) throw new MdmlError('value', 'timelineFrames: the timeline has no frames')
   const width = Math.round(options.width ?? first.width)
   const out: Pixels[] = []
   // Later scenes are drawn at the first one's size, so every frame matches.

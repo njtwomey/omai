@@ -4,7 +4,7 @@
  * converting them as `imshow` would), and transforming groups.
  */
 
-import { clamp, maxOf, minOf, WhiteboxError } from '../base/index.ts'
+import { clamp, MdmlError, maxOf, minOf } from '../base/index.ts'
 import type {
   CircleNode,
   EllipseNode,
@@ -35,7 +35,7 @@ import type {
  * @concept scene-graph
  * @example
  * ```ts
- * import { scene, circle } from 'whitebox-engine/scene'
+ * import { scene, circle } from 'mdml-engine/scene'
  * scene(100, 50, [circle(50, 25, 10, { fill: 'tab0' })]).children.length // => 1
  * ```
  */
@@ -59,7 +59,7 @@ export function scene(
  * @returns The node.
  * @example
  * ```ts
- * import { rect } from 'whitebox-engine/scene'
+ * import { rect } from 'mdml-engine/scene'
  * rect(0, 0, 10, 5, { fill: 'tab1' }).width // => 10
  * ```
  */
@@ -83,7 +83,7 @@ export function rect(
  * @returns The node.
  * @example
  * ```ts
- * import { circle } from 'whitebox-engine/scene'
+ * import { circle } from 'mdml-engine/scene'
  * circle(5, 5, 2).r // => 2
  * ```
  */
@@ -102,7 +102,7 @@ export function circle(cx: number, cy: number, r: number, style: Style & NodeBas
  * @returns The node.
  * @example
  * ```ts
- * import { ellipse } from 'whitebox-engine/scene'
+ * import { ellipse } from 'mdml-engine/scene'
  * ellipse(0, 0, 3, 1).rx // => 3
  * ```
  */
@@ -121,7 +121,7 @@ export function ellipse(cx: number, cy: number, rx: number, ry: number, style: S
  * @returns The node.
  * @example
  * ```ts
- * import { line } from 'whitebox-engine/scene'
+ * import { line } from 'mdml-engine/scene'
  * line(0, 0, 3, 4).x2 // => 3
  * ```
  */
@@ -140,7 +140,7 @@ export function line(x1: number, y1: number, x2: number, y2: number, style: Styl
  * @returns The node.
  * @example
  * ```ts
- * import { arrow } from 'whitebox-engine/scene'
+ * import { arrow } from 'mdml-engine/scene'
  * arrow(0, 0, 3, 4).arrow // => true
  * ```
  */
@@ -156,7 +156,7 @@ export function arrow(x1: number, y1: number, x2: number, y2: number, style: Sty
  * @returns The node.
  * @example
  * ```ts
- * import { path } from 'whitebox-engine/scene'
+ * import { path } from 'mdml-engine/scene'
  * path([[0, 0], [1, 1], [2, 0]]).points.length // => 3
  * ```
  */
@@ -175,7 +175,7 @@ export function path(
  * @returns The node.
  * @example
  * ```ts
- * import { polygon } from 'whitebox-engine/scene'
+ * import { polygon } from 'mdml-engine/scene'
  * polygon([[0, 0], [1, 0], [0, 1]]).closed // => true
  * ```
  */
@@ -193,7 +193,7 @@ export function polygon(points: readonly (readonly [number, number])[], style: S
  * @returns The node.
  * @example
  * ```ts
- * import { text } from 'whitebox-engine/scene'
+ * import { text } from 'mdml-engine/scene'
  * text(0, 10, 'hello', { anchor: 'middle' }).text // => 'hello'
  * ```
  */
@@ -216,7 +216,7 @@ export function text(
  * @returns The node.
  * @example
  * ```ts
- * import { tex } from 'whitebox-engine/scene'
+ * import { tex } from 'mdml-engine/scene'
  * tex(0, 0, '\\alpha').tex // => '\\alpha'
  * ```
  */
@@ -250,12 +250,12 @@ function flattenSource(source: ImageSource): { shape: number[]; data: ArrayLike<
   const c = Array.isArray(first) ? first.length : 0
   const data: number[] = []
   for (const row of rows) {
-    if (row.length !== w) throw new WhiteboxError('shape', 'toPixels: rows of different lengths')
+    if (row.length !== w) throw new MdmlError('shape', 'toPixels: rows of different lengths')
     for (const cell of row) {
       if (c === 0) data.push(cell as number)
       else {
         const channels = cell as readonly number[]
-        if (channels.length !== c) throw new WhiteboxError('shape', 'toPixels: pixels with different channel counts')
+        if (channels.length !== c) throw new MdmlError('shape', 'toPixels: pixels with different channel counts')
         data.push(...channels)
       }
     }
@@ -271,10 +271,10 @@ function flattenSource(source: ImageSource): { shape: number[]; data: ArrayLike<
  * @param source - A tensor or nested arrays of shape `[h, w]`, `[h, w, 1]`, `[h, w, 3]` or `[h, w, 4]`.
  * @param options - The value range mapped to 0 to 255.
  * @returns The pixels.
- * @throws WhiteboxError with code `shape` for any other shape or ragged arrays.
+ * @throws MdmlError with code `shape` for any other shape or ragged arrays.
  * @example
  * ```ts
- * import { toPixels } from 'whitebox-engine/scene'
+ * import { toPixels } from 'mdml-engine/scene'
  * Array.from(toPixels([[0, 1]]).rgba) // => [0, 0, 0, 255, 255, 255, 255, 255]
  * Array.from(toPixels([[[1, 0, 0]]]).rgba) // => [255, 0, 0, 255]
  * ```
@@ -283,9 +283,9 @@ export function toPixels(source: ImageSource, options: { readonly range?: readon
   const { shape, data } = flattenSource(source)
   const [h = 0, w = 0, c = 1] = shape
   if (shape.length < 2 || shape.length > 3 || ![1, 3, 4].includes(c)) {
-    throw new WhiteboxError('shape', `toPixels: need shape [h, w], [h, w, 1], [h, w, 3] or [h, w, 4], got [${shape}]`)
+    throw new MdmlError('shape', `toPixels: need shape [h, w], [h, w, 1], [h, w, 3] or [h, w, 4], got [${shape}]`)
   }
-  if (data.length !== h * w * c) throw new WhiteboxError('shape', 'toPixels: data does not match the shape')
+  if (data.length !== h * w * c) throw new MdmlError('shape', 'toPixels: data does not match the shape')
   const finite: number[] = []
   for (let i = 0; i < data.length; i++) {
     const v = data[i] as number
@@ -320,7 +320,7 @@ export function toPixels(source: ImageSource, options: { readonly range?: readon
  * @returns The node.
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/scene'
+ * import { image } from 'mdml-engine/scene'
  * image(0, 0, 10, 10, { width: 1, height: 1, rgba: new Uint8ClampedArray(4) }).width // => 10
  * image(0, 0, 20, 10, [[0, 0.5, 1]]).pixels.width // => 3
  * ```
@@ -345,7 +345,7 @@ export function image(
  * @returns The node.
  * @example
  * ```ts
- * import { group, circle } from 'whitebox-engine/scene'
+ * import { group, circle } from 'mdml-engine/scene'
  * group([circle(0, 0, 1)], { translate: [5, 5] }).translate // => [5, 5]
  * ```
  */
@@ -363,7 +363,7 @@ export function group(
  * @returns `true` for scenes.
  * @example
  * ```ts
- * import { isScene, scene } from 'whitebox-engine/scene'
+ * import { isScene, scene } from 'mdml-engine/scene'
  * isScene(scene(1, 1, [])) // => true
  * isScene({}) // => false
  * ```

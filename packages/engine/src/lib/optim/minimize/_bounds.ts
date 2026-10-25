@@ -1,5 +1,5 @@
 // Box bounds shared by the derivative-free and global methods (not exported from the barrel).
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { toFlat, type Value } from '../../tensor/index.ts'
 import type { Tree } from '../transform.ts'
 import { type Bounds, type Box, boxOf, clipToBox, type FlatObjective } from './objective.ts'
@@ -12,7 +12,7 @@ export function boundArrays(bounds: Bounds, n: number, name: string): BoundArray
   try {
     return boxOf(bounds, n)
   } catch (e) {
-    throw new WhiteboxError((e as WhiteboxError).code ?? 'value', `${name}: ${(e as Error).message}`)
+    throw new MdmlError((e as MdmlError).code ?? 'value', `${name}: ${(e as Error).message}`)
   }
 }
 
@@ -25,7 +25,7 @@ export function finiteBounds(bounds: Bounds, n: number, name: string): BoundArra
       !Number.isFinite(b.upper[i] ?? 0) ||
       (b.lower[i] ?? 0) >= (b.upper[i] ?? 0)
     )
-      throw new WhiteboxError('value', `${name}: bounds must be finite with lower < upper (parameter ${i})`)
+      throw new MdmlError('value', `${name}: bounds must be finite with lower < upper (parameter ${i})`)
   }
   return b
 }

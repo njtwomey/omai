@@ -4,7 +4,7 @@
  * downsampling), and the integral image (summed-area table) that gives any box sum in four lookups.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { extendIndex } from '../../numerics/convolution/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { float } from '../_shared.ts'
@@ -68,7 +68,7 @@ function indexOf(i: number, n: number, mode: InterpolationMode): number {
 
 function sampler(img: Image, options: InterpolationOptions): (coord: readonly number[]) => number {
   const order = options.order ?? 1
-  if (order !== 0 && order !== 1) throw new WhiteboxError('value', 'interpolation: only orders 0 and 1 are supported')
+  if (order !== 0 && order !== 1) throw new MdmlError('value', 'interpolation: only orders 0 and 1 are supported')
   const mode = options.mode ?? 'constant'
   const cval = options.cval ?? 0
   const rank = img.shape.length
@@ -145,8 +145,8 @@ function transformInto(
  * @concept image-interpolation
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.mapCoordinates([[0, 1], [2, 3]], [[0.5, 1], [0.5, 0]])) // => [1.5, 2]
  * ```
  */
@@ -154,7 +154,7 @@ export function mapCoordinates(x: TensorLike, coordinates: TensorLike, options: 
   const img = imageOf(x)
   const cv = primalOf(float(coordinates))
   const rank = img.shape.length
-  if ((cv.shape[0] ?? 0) !== rank) throw new WhiteboxError('shape', 'mapCoordinates: one coordinate row per input axis')
+  if ((cv.shape[0] ?? 0) !== rank) throw new MdmlError('shape', 'mapCoordinates: one coordinate row per input axis')
   const points = cv.shape.slice(1)
   const n = points.reduce((a, b) => a * b, 1)
   const data = cv.data
@@ -184,8 +184,8 @@ function reshapeTensor(t: Tensor, shape: readonly number[]): Tensor {
  * @concept geometric-transform
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.affineTransform([[1, 2], [3, 4]], [[0, 1], [1, 0]])) // => [[1, 3], [2, 4]]
  * ```
  */
@@ -237,8 +237,8 @@ export function affineTransform(
  * @concept geometric-transform
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.shift([1, 2, 3, 4], 1)) // => [0, 1, 2, 3]
  * ```
  */
@@ -259,8 +259,8 @@ export function shift(x: TensorLike, shift: number | readonly number[], options:
  * @concept geometric-transform
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.zoom([0, 2], 2)) // => [0, 0.6666666666666666, 1.3333333333333333, 2]
  * ```
  */
@@ -309,8 +309,8 @@ function zoomTo(
  * @concept geometric-transform
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.rotate([[1, 2], [3, 4]], 90)).map((r) => (r as number[]).map((v) => Math.round(v * 1e9) / 1e9)) // => [[2, 4], [1, 3]]
  * ```
  */
@@ -320,7 +320,7 @@ export function rotate(
   options: InterpolationOptions & { readonly reshape?: boolean } = {},
 ): Tensor {
   const img = imageOf(x)
-  if (img.shape.length !== 2) throw new WhiteboxError('shape', 'rotate: images are [H, W]')
+  if (img.shape.length !== 2) throw new MdmlError('shape', 'rotate: images are [H, W]')
   // scipy's cosdg and sindg: exact at multiples of 90 degrees.
   const r = ((angle % 360) + 360) % 360
   const quarter = r % 90 === 0 ? r / 90 : -1
@@ -412,15 +412,15 @@ export interface ResizeOptions {
  * @concept geometric-transform
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.resize([[0, 1], [2, 3]], [4, 4])).length // => 4
  * ```
  */
 export function resize(x: TensorLike, outputShape: readonly number[], options: ResizeOptions = {}): Tensor {
   const img = imageOf(x)
   if (outputShape.length !== img.shape.length)
-    throw new WhiteboxError('shape', 'resize: the output shape must have the image rank')
+    throw new MdmlError('shape', 'resize: the output shape must have the image rank')
   const factors = img.shape.map((n, d) => n / (outputShape[d] ?? 1))
   const mode = options.mode ?? 'reflect'
   const cval = options.cval ?? 0
@@ -467,7 +467,7 @@ export interface PyramidOptions {
  * @concept image-pyramid
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
+ * import { image } from 'mdml-engine/signal'
  * image.pyramidReduce(Array.from({ length: 8 }, () => new Array(8).fill(1))).shape // => [4, 4]
  * ```
  */
@@ -501,7 +501,7 @@ export function pyramidReduce(x: TensorLike, options: PyramidOptions = {}): Tens
  * @concept image-pyramid
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
+ * import { image } from 'mdml-engine/signal'
  * image.pyramidExpand([[1, 2], [3, 4]]).shape // => [4, 4]
  * ```
  */
@@ -537,7 +537,7 @@ export function pyramidExpand(x: TensorLike, options: PyramidOptions = {}): Tens
  * @concept image-pyramid
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
+ * import { image } from 'mdml-engine/signal'
  * image.pyramidGaussian(Array.from({ length: 8 }, () => new Array(8).fill(1))).map((l) => l.shape[0]) // => [8, 4, 2, 1]
  * ```
  */
@@ -563,14 +563,14 @@ export function pyramidGaussian(x: TensorLike, maxLayer = -1, options: PyramidOp
  * @concept integral-image
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.integralImage([[1, 2], [3, 4]])) // => [[1, 3], [4, 10]]
  * ```
  */
 export function integralImage(x: TensorLike): Tensor {
   const img = imageOf(x)
-  if (img.shape.length !== 2) throw new WhiteboxError('shape', 'integralImage: images are [H, W]')
+  if (img.shape.length !== 2) throw new MdmlError('shape', 'integralImage: images are [H, W]')
   const [h = 0, w = 0] = img.shape
   const out = new Float64Array(h * w)
   for (let y = 0; y < h; y++) {
@@ -596,7 +596,7 @@ export function integralImage(x: TensorLike): Tensor {
  * @concept integral-image
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
+ * import { image } from 'mdml-engine/signal'
  * image.integrate(image.integralImage([[1, 2], [3, 4]]), 0, 1, 1, 1) // => 6
  * ```
  */
@@ -618,8 +618,8 @@ export function integrate(table: TensorLike, r0: number, c0: number, r1: number,
  * @concept geometric-transform
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.warpPerspective([[1, 2], [3, 4]], [[1, 0, 0], [0, 1, 0], [0, 0, 1]])) // => [[1, 2], [3, 4]]
  * ```
  */
@@ -635,9 +635,9 @@ export function warpPerspective(
   } = {},
 ): Tensor {
   const img = imageOf(x)
-  if (img.shape.length !== 2) throw new WhiteboxError('shape', 'warpPerspective: images are [H, W]')
+  if (img.shape.length !== 2) throw new MdmlError('shape', 'warpPerspective: images are [H, W]')
   const m = toFlat(primalOf(float(h)))
-  if (m.length !== 9) throw new WhiteboxError('shape', 'warpPerspective: the homography is 3 x 3')
+  if (m.length !== 9) throw new MdmlError('shape', 'warpPerspective: the homography is 3 x 3')
   const mode = options.mode ?? 'constant'
   const cval = options.cval ?? 0
   const out = transformInto(

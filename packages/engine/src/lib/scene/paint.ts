@@ -3,7 +3,7 @@
  * the rest) their values, and `parsePaint`, which resolves a token or CSS colour string to RGBA.
  */
 
-import { clamp, WhiteboxError } from '../base/index.ts'
+import { clamp, MdmlError } from '../base/index.ts'
 import type { Paint, ThemeToken } from './types.ts'
 
 /** A colour: red, green and blue from 0 to 255 and alpha from 0 to 1. */
@@ -23,13 +23,13 @@ const TAB10 = {
 } as const
 
 /**
- * The colours the rasteriser gives theme tokens in light and dark mode (tab10 for `tab0` to `tab9`). whitebox-render's
+ * The colours the rasteriser gives theme tokens in light and dark mode (tab10 for `tab0` to `tab9`). mdml-render's
  * themes resolve the same tokens for SVG and charts.
  *
  * @returns The two palettes.
  * @example
  * ```ts
- * import { palettes } from 'whitebox-engine/scene'
+ * import { palettes } from 'mdml-engine/scene'
  * palettes.light.tab0 // => '#1f77b4'
  * ```
  */
@@ -59,7 +59,7 @@ export const palettes: {
 
 function hex(digits: string): number {
   const v = Number.parseInt(digits, 16)
-  if (!Number.isFinite(v)) throw new WhiteboxError('value', `parsePaint: bad hex digits '${digits}'`)
+  if (!Number.isFinite(v)) throw new MdmlError('value', `parsePaint: bad hex digits '${digits}'`)
   return v
 }
 
@@ -70,10 +70,10 @@ function hex(digits: string): number {
  * @param paint - The paint.
  * @param palette - Token colours (default the light palette).
  * @returns The colour, or `undefined` for `none`.
- * @throws WhiteboxError with code `value` for text that is not a colour.
+ * @throws MdmlError with code `value` for text that is not a colour.
  * @example
  * ```ts
- * import { parsePaint } from 'whitebox-engine/scene'
+ * import { parsePaint } from 'mdml-engine/scene'
  * parsePaint('#f80') // => [255, 136, 0, 1]
  * parsePaint('rgba(10, 20, 30, 0.5)') // => [10, 20, 30, 0.5]
  * parsePaint('tab3') // => [214, 39, 40, 1]
@@ -106,5 +106,5 @@ export function parsePaint(
       return [clamp(r, 0, 255), clamp(g, 0, 255), clamp(b, 0, 255), clamp(a, 0, 1)]
     }
   }
-  throw new WhiteboxError('value', `parsePaint: '${paint}' is not a colour`)
+  throw new MdmlError('value', `parsePaint: '${paint}' is not a colour`)
 }

@@ -6,9 +6,9 @@ import numpy as np
 import scipy
 import scipy.spatial.distance as sd
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from sklearn.metrics.pairwise import haversine_distances
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "sklearn": sklearn.__version__}
 

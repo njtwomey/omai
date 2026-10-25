@@ -4,7 +4,7 @@
  * difference a comparison of two groups can detect, and warnings about groups too small to measure.
  */
 
-import { type Estimate, type MetricResult, WhiteboxError } from '../base/index.ts'
+import { type Estimate, MdmlError, type MetricResult } from '../base/index.ts'
 import { labelValues, sortLabels } from '../metrics/_labels.ts'
 import type { MetricInput } from '../metrics/metric.ts'
 import { brentq } from '../numerics/roots/index.ts'
@@ -27,8 +27,7 @@ function columns(
   const t = labelValues(yTrue).map(Number)
   const p = labelValues(yPred).map(Number)
   const raw = labelValues(groups)
-  if (t.length !== p.length || t.length !== raw.length)
-    throw new WhiteboxError('shape', `${name}: inputs differ in length`)
+  if (t.length !== p.length || t.length !== raw.length) throw new MdmlError('shape', `${name}: inputs differ in length`)
   return { t, p, g: raw.map(String), names: sortLabels(raw).map(String) }
 }
 
@@ -63,7 +62,7 @@ export interface DisparityInterval {
  * @returns The estimate with its interval and the bootstrap distribution.
  * @example
  * ```ts
- * import { bootstrapDisparity, demographicParityDifference } from 'whitebox-engine/fairness'
+ * import { bootstrapDisparity, demographicParityDifference } from 'mdml-engine/fairness'
  * const yPred = [1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0]
  * const groups = ['a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']
  * const r = bootstrapDisparity(yPred, yPred, groups, (t, p, g) => demographicParityDifference(t, p, g), { seed: 1 })
@@ -128,7 +127,7 @@ export interface StatisticIntervals {
  * @returns Each output's interval and the bootstrap distribution.
  * @example
  * ```ts
- * import { bootstrapStatistics } from 'whitebox-engine/fairness'
+ * import { bootstrapStatistics } from 'mdml-engine/fairness'
  * const x = [1, 2, 3, 4, 5, 6, 7, 8]
  * const mean = (rows: Int32Array) => [rows.reduce((s, i) => s + (x[i] ?? 0), 0) / rows.length]
  * const [lo, hi] = bootstrapStatistics(x.length, mean, { seed: 0 }).intervals[0] ?? [0, 0]
@@ -140,7 +139,7 @@ export function bootstrapStatistics(
   statistic: (rows: Int32Array) => readonly number[],
   options: BootstrapStatisticsOptions = {},
 ): StatisticIntervals {
-  if (!(Number.isInteger(n) && n > 0)) throw new WhiteboxError('value', 'bootstrapStatistics: needs at least one row')
+  if (!(Number.isInteger(n) && n > 0)) throw new MdmlError('value', 'bootstrapStatistics: needs at least one row')
   const total = options.nResamples ?? 500
   const level = options.level ?? 0.95
   const k = options.key ?? makeKey(options.seed ?? 0)
@@ -187,7 +186,7 @@ export interface DisparityTest {
  * @returns The observed statistic, the p-value and the permutation distribution.
  * @example
  * ```ts
- * import { demographicParityDifference, permutationTestDisparity } from 'whitebox-engine/fairness'
+ * import { demographicParityDifference, permutationTestDisparity } from 'mdml-engine/fairness'
  * const groups = Array.from({ length: 40 }, (_, i) => (i < 20 ? 'a' : 'b'))
  * const yPred = groups.map((g, i) => (g === 'a' ? 1 : i % 5 === 0 ? 1 : 0))
  * const r = permutationTestDisparity(yPred, yPred, groups, (t, p, g) => demographicParityDifference(t, p, g), { seed: 0 })
@@ -251,7 +250,7 @@ export interface GroupRateIntervals {
  * @returns Each group's rates with intervals, in sorted group order.
  * @example
  * ```ts
- * import { groupRateIntervals } from 'whitebox-engine/fairness'
+ * import { groupRateIntervals } from 'mdml-engine/fairness'
  * const r = groupRateIntervals([1, 0, 1, 0], [1, 1, 1, 0], ['a', 'a', 'b', 'b'])
  * r[0]?.rates.selectionRate.value // => 1
  * r[0]?.rates.selectionRate.interval?.[1] // => 1
@@ -327,19 +326,18 @@ export interface DetectableDifference {
  *
  * @param options - The two group sizes, the base rate, alpha (default 0.05) and power (default 0.8).
  * @returns Cohen's h and the rate difference.
- * @throws WhiteboxError `value` for a group without rows or a base rate outside (0, 1).
+ * @throws MdmlError `value` for a group without rows or a base rate outside (0, 1).
  * @example
  * ```ts
- * import { minimumDetectableDifference } from 'whitebox-engine/fairness'
+ * import { minimumDetectableDifference } from 'mdml-engine/fairness'
  * minimumDetectableDifference({ n1: 100, n2: 100 }).effectSize.toFixed(4) // => '0.3962'
  * ```
  */
 export function minimumDetectableDifference(options: DetectableDifferenceOptions): DetectableDifference {
   const { n1, n2 } = options
   const base = options.baseRate ?? 0.5
-  if (!(n1 > 0 && n2 > 0)) throw new WhiteboxError('value', 'minimumDetectableDifference: both groups need rows')
-  if (!(base > 0 && base < 1))
-    throw new WhiteboxError('value', 'minimumDetectableDifference: baseRate must be in (0, 1)')
+  if (!(n1 > 0 && n2 > 0)) throw new MdmlError('value', 'minimumDetectableDifference: both groups need rows')
+  if (!(base > 0 && base < 1)) throw new MdmlError('value', 'minimumDetectableDifference: baseRate must be in (0, 1)')
   const alpha = options.alpha ?? 0.05
   const target = options.power ?? 0.8
   const power = (h: number): number => powerProportions({ effectSize: h, nobs: n1, ratio: n2 / n1, alpha }) - target
@@ -376,7 +374,7 @@ export interface GroupWarning {
  * @returns One warning per small group (none when every group is large enough).
  * @example
  * ```ts
- * import { smallGroupWarnings } from 'whitebox-engine/fairness'
+ * import { smallGroupWarnings } from 'mdml-engine/fairness'
  * smallGroupWarnings([1, 0, 1], ['a', 'a', 'b'], { minSize: 2, minPerClass: 1 }).map((w) => w.group) // => ['b']
  * ```
  */
@@ -387,7 +385,7 @@ export function smallGroupWarnings(
 ): GroupWarning[] {
   const t = labelValues(yTrue)
   const g = labelValues(groups)
-  if (t.length !== g.length) throw new WhiteboxError('shape', 'smallGroupWarnings: inputs differ in length')
+  if (t.length !== g.length) throw new MdmlError('shape', 'smallGroupWarnings: inputs differ in length')
   const minSize = options.minSize ?? 30
   const minPerClass = options.minPerClass ?? 10
   const out: GroupWarning[] = []

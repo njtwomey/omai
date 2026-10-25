@@ -1,8 +1,7 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { iris } from 'whitebox-engine/datasets'
-import { toArray } from 'whitebox-engine/tensor'
-import { type ScatterMatrixCell, scatterMatrix, scatterMatrixCells, type Table } from 'whitebox-render/charts'
-import { brushSelection, type Figure, figure } from 'whitebox-render/figure'
+import { iris } from 'mdml-engine/datasets'
+import { toArray } from 'mdml-engine/tensor'
+import { type ScatterMatrixCell, scatterMatrix, scatterMatrixCells, type Table } from 'mdml-render/charts'
+import { brushSelection, type Figure, figure } from 'mdml-render/figure'
 import {
   Brush,
   Chart,
@@ -13,7 +12,8 @@ import {
   InteractionOverlay,
   linearProjection,
   useColourMode,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

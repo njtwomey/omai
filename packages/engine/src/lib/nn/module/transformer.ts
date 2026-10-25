@@ -77,8 +77,8 @@ const sub = (p: Params, name: string): Params => (p[name] ?? {}) as Params
  * @returns `[n, n]`.
  * @example
  * ```ts
- * import { squareSubsequentMask } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { squareSubsequentMask } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(squareSubsequentMask(2)) // => [[0, -Infinity], [0, 0]]
  * ```
  */
@@ -142,9 +142,9 @@ abstract class TransformerBlockBase<I> extends Module<I, Value> {
  * @concept transformer
  * @example
  * ```ts
- * import { TransformerEncoderLayer } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { TransformerEncoderLayer } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { zeros } from 'mdml-engine/tensor'
  * new TransformerEncoderLayer(8, 2, { dimFeedforward: 16, batchFirst: true, key: key(0) }).eval().forward(zeros([2, 5, 8])).shape // => [2, 5, 8]
  * ```
  */
@@ -241,9 +241,9 @@ export class TransformerEncoderLayer extends TransformerBlockBase<Value | Encode
  * @concept transformer
  * @example
  * ```ts
- * import { TransformerDecoderLayer } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { TransformerDecoderLayer } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { zeros } from 'mdml-engine/tensor'
  * new TransformerDecoderLayer(8, 2, { dimFeedforward: 16, batchFirst: true, key: key(0) }).eval().forward({ tgt: zeros([1, 3, 8]), memory: zeros([1, 5, 8]) }).shape // => [1, 3, 8]
  * ```
  */
@@ -424,8 +424,8 @@ abstract class LayerStack<L extends Module<never, unknown>, I> extends Module<I,
  * @concept transformer
  * @example
  * ```ts
- * import { TransformerEncoder, TransformerEncoderLayer } from 'whitebox-engine/nn'
- * import { key, foldIn } from 'whitebox-engine/random'
+ * import { TransformerEncoder, TransformerEncoderLayer } from 'mdml-engine/nn'
+ * import { key, foldIn } from 'mdml-engine/random'
  * const enc = new TransformerEncoder((i) => new TransformerEncoderLayer(8, 2, { dimFeedforward: 16, key: foldIn(key(0), i) }), 2)
  * Object.keys(enc.stateDict()).filter((k) => k.startsWith('layers.1.norm2')) // => ['layers.1.norm2.bias', 'layers.1.norm2.weight']
  * ```
@@ -453,8 +453,8 @@ export class TransformerEncoder extends LayerStack<TransformerEncoderLayer, Valu
  * @concept transformer
  * @example
  * ```ts
- * import { TransformerDecoder, TransformerDecoderLayer } from 'whitebox-engine/nn'
- * import { key, foldIn } from 'whitebox-engine/random'
+ * import { TransformerDecoder, TransformerDecoderLayer } from 'mdml-engine/nn'
+ * import { key, foldIn } from 'mdml-engine/random'
  * new TransformerDecoder((i) => new TransformerDecoderLayer(8, 2, { dimFeedforward: 16, key: foldIn(key(0), i) }), 3).layers.length // => 3
  * ```
  */
@@ -499,9 +499,9 @@ export interface TransformerOptions extends TransformerLayerOptions {
  * @concept transformer
  * @example
  * ```ts
- * import { Transformer } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { Transformer } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { zeros } from 'mdml-engine/tensor'
  * const t = new Transformer(8, 2, { numEncoderLayers: 1, numDecoderLayers: 1, dimFeedforward: 16, batchFirst: true, key: key(0) })
  * t.eval().forward({ src: zeros([1, 4, 8]), tgt: zeros([1, 3, 8]) }).shape // => [1, 3, 8]
  * ```

@@ -3,7 +3,7 @@
  * on two-dimensional classification data and tabular classification data.
  */
 
-import { sgdClassifier as sgdClassifierEstimator } from 'whitebox-engine/methods/linear'
+import { sgdClassifier as sgdClassifierEstimator } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'
 

@@ -4,7 +4,7 @@
  * topological sorting, acyclicity and cycle finding, bipartite colouring and k-hop neighbourhoods.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import type { Adjacency, Graph, GraphRunOptions, NodeId } from './graph.ts'
 import { nodeIndex } from './graph.ts'
@@ -50,7 +50,7 @@ export interface BfsResult {
  * @concept graph-traversal
  * @example
  * ```ts
- * import { bfsAlgorithm, pathGraph } from 'whitebox-engine/graph'
+ * import { bfsAlgorithm, pathGraph } from 'mdml-engine/graph'
  * bfsAlgorithm(pathGraph(3), 0).name // => 'bfs'
  * ```
  */
@@ -114,7 +114,7 @@ export function bfsAlgorithm(
  * @concept graph-traversal
  * @example
  * ```ts
- * import { bfs, graph } from 'whitebox-engine/graph'
+ * import { bfs, graph } from 'mdml-engine/graph'
  * const r = bfs(graph([[0, 1], [0, 2], [1, 3], [2, 3]]), 0)
  * r.order // => [0, 1, 2, 3]
  * Array.from(r.distance) // => [0, 1, 1, 2]
@@ -197,7 +197,7 @@ export interface DfsResult {
  * @concept graph-traversal
  * @example
  * ```ts
- * import { dfsAlgorithm, pathGraph } from 'whitebox-engine/graph'
+ * import { dfsAlgorithm, pathGraph } from 'mdml-engine/graph'
  * dfsAlgorithm(pathGraph(3)).name // => 'dfs'
  * ```
  */
@@ -297,7 +297,7 @@ export function dfsAlgorithm(g: Graph, source?: NodeId): Algorithm<DfsState> {
  * @concept graph-traversal
  * @example
  * ```ts
- * import { dfs, digraph } from 'whitebox-engine/graph'
+ * import { dfs, digraph } from 'mdml-engine/graph'
  * const r = dfs(digraph([[0, 1], [1, 2], [2, 0], [0, 2]]), 0)
  * r.preorder // => [0, 1, 2]
  * r.postorder // => [2, 1, 0]
@@ -322,16 +322,16 @@ export function dfs(g: Graph, source?: NodeId, options: GraphRunOptions = {}): D
  *
  * @param g - A directed graph.
  * @returns The nodes in topological order.
- * @throws WhiteboxError with code `value` when the graph is undirected or has a cycle.
+ * @throws MdmlError with code `value` when the graph is undirected or has a cycle.
  * @concept topological-sort
  * @example
  * ```ts
- * import { digraph, topologicalSort } from 'whitebox-engine/graph'
+ * import { digraph, topologicalSort } from 'mdml-engine/graph'
  * topologicalSort(digraph([[2, 0], [1, 0], [2, 1]])) // => [2, 1, 0]
  * ```
  */
 export function topologicalSort(g: Graph): number[] {
-  if (!g.directed) throw new WhiteboxError('value', 'topologicalSort: the graph is undirected')
+  if (!g.directed) throw new MdmlError('value', 'topologicalSort: the graph is undirected')
   const indegree = Int32Array.from({ length: g.n }, (_, v) => (g.in.indptr[v + 1] ?? 0) - (g.in.indptr[v] ?? 0))
   const ready = new IndexedQueue(g.n)
   for (let v = 0; v < g.n; v++) if (indegree[v] === 0) ready.push(v, v)
@@ -344,7 +344,7 @@ export function topologicalSort(g: Graph): number[] {
       if (indegree[v] === 0) ready.push(v, v)
     }
   }
-  if (order.length < g.n) throw new WhiteboxError('value', 'topologicalSort: the graph has a cycle')
+  if (order.length < g.n) throw new MdmlError('value', 'topologicalSort: the graph has a cycle')
   return order
 }
 
@@ -355,7 +355,7 @@ export function topologicalSort(g: Graph): number[] {
  * @returns True for a directed graph without cycles (false for undirected graphs).
  * @example
  * ```ts
- * import { digraph, isDag } from 'whitebox-engine/graph'
+ * import { digraph, isDag } from 'mdml-engine/graph'
  * [isDag(digraph([[0, 1], [1, 2]])), isDag(digraph([[0, 1], [1, 0]]))] // => [true, false]
  * ```
  */
@@ -372,7 +372,7 @@ export function isDag(g: Graph): boolean {
  * @returns `[u, v]` edges forming a cycle, or null when there is none.
  * @example
  * ```ts
- * import { digraph, findCycle, graph } from 'whitebox-engine/graph'
+ * import { digraph, findCycle, graph } from 'mdml-engine/graph'
  * findCycle(digraph([[0, 1], [1, 2], [2, 1]])) // => [[1, 2], [2, 1]]
  * findCycle(graph([[0, 1], [1, 2]])) // => null
  * ```
@@ -405,7 +405,7 @@ export function findCycle(g: Graph, source?: NodeId): [number, number][] | null 
  * @concept bipartite-graphs
  * @example
  * ```ts
- * import { bipartiteColouring, cycleGraph } from 'whitebox-engine/graph'
+ * import { bipartiteColouring, cycleGraph } from 'mdml-engine/graph'
  * bipartiteColouring(cycleGraph(4)) // => [0, 1, 0, 1]
  * bipartiteColouring(cycleGraph(3)) // => null
  * ```
@@ -441,7 +441,7 @@ export function bipartiteColouring(g: Graph): number[] | null {
  * @concept bipartite-graphs
  * @example
  * ```ts
- * import { gridGraph, isBipartite, completeGraph } from 'whitebox-engine/graph'
+ * import { gridGraph, isBipartite, completeGraph } from 'mdml-engine/graph'
  * [isBipartite(gridGraph(3, 3)), isBipartite(completeGraph(3))] // => [true, false]
  * ```
  */
@@ -460,7 +460,7 @@ export function isBipartite(g: Graph): boolean {
  * @returns The nodes, ascending.
  * @example
  * ```ts
- * import { kHopNeighbourhood, pathGraph } from 'whitebox-engine/graph'
+ * import { kHopNeighbourhood, pathGraph } from 'mdml-engine/graph'
  * kHopNeighbourhood(pathGraph(6), 2, 2) // => [0, 1, 2, 3, 4]
  * ```
  */

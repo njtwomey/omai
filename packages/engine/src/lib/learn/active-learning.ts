@@ -5,7 +5,7 @@
  * label, and stream-based selective sampling.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, permutation } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
@@ -31,7 +31,7 @@ function probaRows(
  * @concept active-learning
  * @example
  * ```ts
- * import { leastConfidence } from 'whitebox-engine/learn'
+ * import { leastConfidence } from 'mdml-engine/learn'
  * leastConfidence([[0.9, 0.1], [0.5, 0.5]]) // => [0.09999999999999998, 0.5]
  * ```
  */
@@ -50,7 +50,7 @@ export function leastConfidence(proba: TensorLike): number[] {
  * @returns One margin per row.
  * @example
  * ```ts
- * import { classMargin } from 'whitebox-engine/learn'
+ * import { classMargin } from 'mdml-engine/learn'
  * classMargin([[0.7, 0.2, 0.1], [0.4, 0.35, 0.25]]).map((v) => Math.round(v * 100) / 100) // => [0.5, 0.05]
  * ```
  */
@@ -69,7 +69,7 @@ export function classMargin(proba: TensorLike): number[] {
  * @returns One entropy per row.
  * @example
  * ```ts
- * import { predictiveEntropy } from 'whitebox-engine/learn'
+ * import { predictiveEntropy } from 'mdml-engine/learn'
  * predictiveEntropy([[1, 0], [0.5, 0.5]]) // => [0, Math.LN2]
  * ```
  */
@@ -130,7 +130,7 @@ function scoreStrategy(
  * @returns The strategy.
  * @example
  * ```ts
- * import { uncertaintySampling } from 'whitebox-engine/learn'
+ * import { uncertaintySampling } from 'mdml-engine/learn'
  * uncertaintySampling().name // => 'uncertainty'
  * ```
  */
@@ -146,7 +146,7 @@ export function uncertaintySampling(): QueryStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { marginSampling } from 'whitebox-engine/learn'
+ * import { marginSampling } from 'mdml-engine/learn'
  * marginSampling().name // => 'margin'
  * ```
  */
@@ -162,7 +162,7 @@ export function marginSampling(): QueryStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { entropySampling } from 'whitebox-engine/learn'
+ * import { entropySampling } from 'mdml-engine/learn'
  * entropySampling().name // => 'entropy'
  * ```
  */
@@ -178,7 +178,7 @@ export function entropySampling(): QueryStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { randomSampling } from 'whitebox-engine/learn'
+ * import { randomSampling } from 'mdml-engine/learn'
  * randomSampling().name // => 'random'
  * ```
  */
@@ -199,7 +199,7 @@ function committeeVotes(ctx: QueryContext): { readonly classes: readonly number[
  * @returns The strategy (it uses the committee).
  * @example
  * ```ts
- * import { voteEntropySampling } from 'whitebox-engine/learn'
+ * import { voteEntropySampling } from 'mdml-engine/learn'
  * voteEntropySampling().committee // => true
  * ```
  */
@@ -248,7 +248,7 @@ function committeeProba(ctx: QueryContext): {
  * @returns The strategy (it uses the committee).
  * @example
  * ```ts
- * import { consensusEntropySampling } from 'whitebox-engine/learn'
+ * import { consensusEntropySampling } from 'mdml-engine/learn'
  * consensusEntropySampling().name // => 'consensus-entropy'
  * ```
  */
@@ -270,7 +270,7 @@ export function consensusEntropySampling(): QueryStrategy {
  * @returns The strategy (it uses the committee).
  * @example
  * ```ts
- * import { maxDisagreementSampling } from 'whitebox-engine/learn'
+ * import { maxDisagreementSampling } from 'mdml-engine/learn'
  * maxDisagreementSampling().name // => 'max-disagreement'
  * ```
  */
@@ -305,7 +305,7 @@ export function maxDisagreementSampling(): QueryStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { expectedErrorReduction } from 'whitebox-engine/learn'
+ * import { expectedErrorReduction } from 'mdml-engine/learn'
  * expectedErrorReduction({ loss: 'log' }).name // => 'expected-error-reduction'
  * ```
  */
@@ -358,7 +358,7 @@ function stackRows(a: MatrixView, b: MatrixView): MatrixView {
  * @returns The strategy.
  * @example
  * ```ts
- * import { rankedBatchSampling } from 'whitebox-engine/learn'
+ * import { rankedBatchSampling } from 'mdml-engine/learn'
  * rankedBatchSampling().name // => 'ranked-batch'
  * ```
  */
@@ -444,9 +444,9 @@ export interface ActiveLearningResult {
  * @returns The final model, the queried indices, the labelled data and the per-round scores.
  * @example
  * ```ts
- * import { activeLearning, uncertaintySampling } from 'whitebox-engine/learn'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { activeLearning, uncertaintySampling } from 'mdml-engine/learn'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
  * const threshold = defineEstimator(
  *   { name: 't', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => { const p = 1 / (1 + Math.exp(-x.data[i])); return [1 - p, p] })) }) },
  *   {},
@@ -461,8 +461,7 @@ export function activeLearning(estimator: Estimator, options: ActiveLearningOpti
   const labeled0 = matrixView(options.labeled.x, 'activeLearning', { nFeatures: pool.d })
   const y0 = targetVector(options.labeled.y ?? [], 'activeLearning', labeled0.n)
   const batch = options.batchSize ?? 1
-  if (!(Number.isInteger(batch) && batch >= 1))
-    throw new WhiteboxError('value', 'activeLearning: batchSize must be >= 1')
+  if (!(Number.isInteger(batch) && batch >= 1)) throw new MdmlError('value', 'activeLearning: batchSize must be >= 1')
   const budget = Math.min(options.budget ?? pool.n, pool.n)
   const key = keyFor(options, 'activeLearning')
   const scorer: Scorer | undefined =
@@ -522,11 +521,11 @@ export function activeLearning(estimator: Estimator, options: ActiveLearningOpti
       )
       const indices = picks.map((p) => s.remaining[p] ?? -1)
       if (indices.some((i) => i < 0) || new Set(indices).size !== indices.length) {
-        throw new WhiteboxError('value', `activeLearning: ${options.strategy.name} returned invalid pool indices`)
+        throw new MdmlError('value', `activeLearning: ${options.strategy.name} returned invalid pool indices`)
       }
       const labels = options.oracle(indices)
       if (labels.length !== indices.length)
-        throw new WhiteboxError('shape', 'activeLearning: the oracle must label every queried row')
+        throw new MdmlError('shape', 'activeLearning: the oracle must label every queried row')
       const x = stackRows(s.x, takeRows(pool, indices))
       const chosen = new Set(indices)
       const next: State = {
@@ -585,8 +584,8 @@ export interface StreamOptions extends FitOptions {
  * @returns The final model and the stream indices queried.
  * @example
  * ```ts
- * import { streamActiveLearning, defineEstimator } from 'whitebox-engine/learn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { streamActiveLearning, defineEstimator } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
  * const logistic = defineEstimator(
  *   { name: 'l', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => { const p = 1 / (1 + Math.exp(-x.data[i])); return [1 - p, p] })) }) },
  *   {},
@@ -660,7 +659,7 @@ export function streamActiveLearning(
  * @returns `[n + m, d]`.
  * @example
  * ```ts
- * import { appendRows } from 'whitebox-engine/learn'
+ * import { appendRows } from 'mdml-engine/learn'
  * appendRows([[1, 2]], [[3, 4]]).shape // => [2, 2]
  * ```
  */

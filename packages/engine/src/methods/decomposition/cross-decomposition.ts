@@ -4,7 +4,7 @@
  * (directions of maximal correlation between the blocks) and PLS-SVD, with fit functions and class wrappers.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -84,7 +84,7 @@ function powerMethod(
 ): { xw: number[]; yw: number[] } {
   const q = y[0]?.length ?? 0
   let yScore = Array.from({ length: q }, (_, j) => column(y, j)).find((c) => c.some((v) => Math.abs(v) > EPS))
-  if (yScore === undefined) throw new WhiteboxError('value', 'pls: the y residual is constant')
+  if (yScore === undefined) throw new MdmlError('value', 'pls: the y residual is constant')
   const xPinv = mode === 'B' ? pinvRows(x) : undefined
   const yPinv = mode === 'B' ? pinvRows(y) : undefined
   let xw: number[] = []
@@ -137,7 +137,7 @@ function fitPls(variant: PlsVariant, data: LearnData, h: PlsHyper): PlsParams {
   const q = yRows[0]?.length ?? 1
   const limit = variant === 'regression' ? p : Math.min(xm.n, p, q)
   if (!(Number.isInteger(k) && k >= 1 && k <= limit))
-    throw new WhiteboxError('value', `pls: nComponents must be in 1..${limit}`)
+    throw new MdmlError('value', `pls: nComponents must be in 1..${limit}`)
   const scale = h.scale ?? true
   const X = standardise(xRows, scale)
   const Y = standardise(yRows, scale)

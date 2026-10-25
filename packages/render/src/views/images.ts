@@ -5,8 +5,8 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { ImageSteps } from 'whitebox-engine/exposition'
-import type { Pixels } from 'whitebox-engine/scene'
+import type { ImageSteps } from 'mdml-engine/exposition'
+import type { Pixels } from 'mdml-engine/scene'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { lines } from '../charts/lines.ts'
 import { imageSeries } from '../charts/matrices.ts'

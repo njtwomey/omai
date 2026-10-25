@@ -4,7 +4,7 @@
  * rows, including intervals for regression and runs on a stream. `setSizes` summarises a conformal record's set sizes.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 
 /** One reliability curve: per non-empty bin the mean forecast, the observed frequency and the count, with its errors. */
@@ -42,10 +42,10 @@ export interface CalibrationRecord {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when a curve's columns (or its map's) differ in length.
+ * @throws MdmlError `shape` when a curve's columns (or its map's) differ in length.
  * @example
  * ```ts
- * import { calibrationRecord } from 'whitebox-engine/exposition'
+ * import { calibrationRecord } from 'mdml-engine/exposition'
  * const r = calibrationRecord({ nBins: 2, strategy: 'uniform', curves: [{ name: 'model', meanPredicted: [0.2, 0.8], observed: [0.1, 0.9], counts: [5, 5], ece: 0.1, mce: 0.1 }] })
  * r.curves[0]?.ece // => 0.1
  * ```
@@ -107,15 +107,15 @@ export interface ConformalRecord {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when the per-row columns differ in length; `value` for a level outside (0, 1).
+ * @throws MdmlError `shape` when the per-row columns differ in length; `value` for a level outside (0, 1).
  * @example
  * ```ts
- * import { conformalRecord } from 'whitebox-engine/exposition'
+ * import { conformalRecord } from 'mdml-engine/exposition'
  * conformalRecord({ task: 'regression', method: 'split', alpha: 0.1, coverage: 0.9, x: [0, 1], y: [1, 2], lower: [0, 1], upper: [2, 3] }).coverage // => 0.9
  * ```
  */
 export function conformalRecord(record: Omit<ConformalRecord, 'kind'>): ConformalRecord {
-  if (!(record.alpha > 0 && record.alpha < 1)) throw new WhiteboxError('value', 'conformal: alpha must be in (0, 1)')
+  if (!(record.alpha > 0 && record.alpha < 1)) throw new MdmlError('value', 'conformal: alpha must be in (0, 1)')
   const n = record.x?.length ?? record.sets?.length ?? 0
   for (const field of ['y', 'prediction', 'lower', 'upper'] as const) {
     const v = record[field]
@@ -141,7 +141,7 @@ export function conformalRecord(record: Omit<ConformalRecord, 'kind'>): Conforma
  * @returns Counts and coverage by set size.
  * @example
  * ```ts
- * import { conformalRecord, setSizes } from 'whitebox-engine/exposition'
+ * import { conformalRecord, setSizes } from 'mdml-engine/exposition'
  * const r = conformalRecord({ task: 'classification', method: 'lac', alpha: 0.1, coverage: 1, classes: ['a', 'b'], sets: [[0], [0, 1]], truth: [0, 1] })
  * setSizes(r).counts // => [0, 1, 1]
  * ```

@@ -3,8 +3,8 @@
  * overlay of active nodes, edges and value badges drawn over it.
  */
 
-import type { DiagramRecord } from 'whitebox-engine/exposition'
-import type { Scene } from 'whitebox-engine/scene'
+import type { DiagramRecord } from 'mdml-engine/exposition'
+import type { Scene } from 'mdml-engine/scene'
 import { diagram } from '../structures/diagram.ts'
 
 /**
@@ -16,9 +16,9 @@ import { diagram } from '../structures/diagram.ts'
  * @returns The scene.
  * @example
  * ```ts
- * import { diagramRecord } from 'whitebox-engine/exposition'
- * import { structure } from 'whitebox-engine/scene'
- * import { diagramScene } from 'whitebox-render/views'
+ * import { diagramRecord } from 'mdml-engine/exposition'
+ * import { structure } from 'mdml-engine/scene'
+ * import { diagramScene } from 'mdml-render/views'
  * const s = structure('net', [{ id: 'x', label: 'x', role: 'input' }, { id: 'y', label: 'y', role: 'output' }], [{ from: 'x', to: 'y' }])
  * diagramScene(diagramRecord({ structure: s })).kind // => 'scene'
  * ```

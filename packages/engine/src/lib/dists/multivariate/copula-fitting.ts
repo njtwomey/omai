@@ -4,7 +4,7 @@
  * copula's parameter by inverting Kendall's tau, as statsmodels does.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { eigh } from '../../numerics/linalg/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import {
@@ -49,7 +49,7 @@ function kendallTauB(x: readonly number[], y: readonly number[]): number {
 /** The columns of an `[n, d]` value as arrays. */
 function columns(data: TensorLike): number[][] {
   const [x] = promoteFloat(data) as [Value]
-  if (x.shape.length !== 2) throw new WhiteboxError('shape', 'copulas: data must be [n, d]')
+  if (x.shape.length !== 2) throw new MdmlError('shape', 'copulas: data must be [n, d]')
   const [n, d] = x.shape as [number, number]
   const flat = toFlat(primalOf(x))
   return Array.from({ length: d }, (_, j) => Array.from({ length: n }, (_, i) => flat[i * d + j] ?? 0))
@@ -63,8 +63,8 @@ function columns(data: TensorLike): number[][] {
  * @returns Values `[n, d]` in (0, 1).
  * @example
  * ```ts
- * import { pseudoObservations } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pseudoObservations } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(pseudoObservations([[3], [1], [2]])) // => [[0.75], [0.25], [0.5]]
  * ```
  */
@@ -94,8 +94,8 @@ export function pseudoObservations(data: TensorLike): Tensor {
  * @returns Kendall's taus `[d, d]` (ones on the diagonal).
  * @example
  * ```ts
- * import { kendallTauMatrix } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { kendallTauMatrix } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(kendallTauMatrix([[1, 3], [2, 2], [3, 1]])) // => [[1, -1], [-1, 1]]
  * ```
  */
@@ -132,11 +132,11 @@ function repairCorrelation(r: Tensor): Value {
  * @param data - Observations `[n, d]` (raw data or pseudo-observations: Kendall's tau is rank based).
  * @param options - `df` for the Student-t copula (default 4).
  * @returns The fitted copula.
- * @throws WhiteboxError with code `value` when the sample tau is outside the family's range.
+ * @throws MdmlError with code `value` when the sample tau is outside the family's range.
  * @example
  * ```ts
- * import { fitCopula } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { fitCopula } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * // Two concordant pairs and one discordant pair: tau = 1 / 3, so theta = 2 tau / (1 - tau) = 1.
  * Math.round(item(fitCopula('clayton', [[1, 1], [2, 3], [3, 2]]).params.theta) * 1e12) / 1e12 // => 1
  * ```
@@ -156,14 +156,13 @@ export function fitCopula(family: CopulaFamily, data: TensorLike, options: { rea
   const t = total / ((d * (d - 1)) / 2)
   switch (family) {
     case 'clayton':
-      if (!(t > 0 && t < 1)) throw new WhiteboxError('value', `fitCopula: Clayton needs tau in (0, 1), got ${t}`)
+      if (!(t > 0 && t < 1)) throw new MdmlError('value', `fitCopula: Clayton needs tau in (0, 1), got ${t}`)
       return claytonCopula((2 * t) / (1 - t), d)
     case 'gumbel':
-      if (!(t >= 0 && t < 1)) throw new WhiteboxError('value', `fitCopula: Gumbel needs tau in [0, 1), got ${t}`)
+      if (!(t >= 0 && t < 1)) throw new MdmlError('value', `fitCopula: Gumbel needs tau in [0, 1), got ${t}`)
       return gumbelCopula(1 / (1 - t), d)
     case 'frank': {
-      if (!(Math.abs(t) < 1) || t === 0)
-        throw new WhiteboxError('value', `fitCopula: Frank needs tau in (-1, 1) \\ {0}`)
+      if (!(Math.abs(t) < 1) || t === 0) throw new MdmlError('value', `fitCopula: Frank needs tau in (-1, 1) \\ {0}`)
       const f = (th: number): number => toFlat(frankCopula(th).kendallTau())[0] ?? 0
       const [lo, hi] = t > 0 ? [1e-6, 200] : [-200, -1e-6]
       return frankCopula(brentq((th) => f(th) - t, lo, hi).root, d)

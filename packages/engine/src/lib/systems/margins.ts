@@ -4,7 +4,7 @@
  * margin), and the frequencies where the Nyquist curve crosses the real axis.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { polyder, polymul } from '../numerics/polynomial/index.ts'
 import { evalAt, numbers, polyAddHf, rootsOf, toList, trimLeading } from './_shared.ts'
@@ -57,10 +57,10 @@ interface Loop {
 function loopOf(sys: Lti): Loop {
   const dims = dimensions(sys)
   if (dims.inputs !== 1 || dims.outputs !== 1) {
-    throw new WhiteboxError('shape', 'margins: one input and one output are needed')
+    throw new MdmlError('shape', 'margins: one input and one output are needed')
   }
   const g = toTf(sys)
-  if (g.num.shape.length !== 1) throw new WhiteboxError('shape', 'margins: one input and one output are needed')
+  if (g.num.shape.length !== 1) throw new MdmlError('shape', 'margins: one input and one output are needed')
   const num = trimLeading(numbers(g.num))
   const den = trimLeading(numbers(g.den))
   const dt = g.dt
@@ -133,7 +133,7 @@ function onUnitCircle(roots: readonly ComplexNumber[], dt: number, eps: number):
 function discreteCrossings(loop: Loop): { w180: number[]; wc: number[]; wstab: number[] } {
   const { num, den, dt } = loop
   const pq = num.length - den.length
-  if (pq > 0) throw new WhiteboxError('value', 'margins: the transfer function must be proper')
+  if (pq > 0) throw new MdmlError('value', 'margins: the transfer function must be proper')
   const numInv = [...num].reverse()
   const denInv = [...den].reverse()
   const shift = [1, ...new Array<number>(-pq).fill(0)]
@@ -179,7 +179,7 @@ function discreteCrossings(loop: Loop): { w180: number[]; wc: number[]; wstab: n
  * @concept stability-margins
  * @example
  * ```ts
- * import { allMargins, tf } from 'whitebox-engine/systems'
+ * import { allMargins, tf } from 'mdml-engine/systems'
  * allMargins(tf([6], [1, 6, 11, 6])).wpc.map((w) => Math.round(w * 1e9) / 1e9) // => [3.31662479]
  * ```
  */
@@ -229,7 +229,7 @@ const argBest = (xs: readonly number[], score: (x: number) => number): number =>
  * @concept stability-margins
  * @example
  * ```ts
- * import { stabilityMargins, tf } from 'whitebox-engine/systems'
+ * import { stabilityMargins, tf } from 'mdml-engine/systems'
  * Math.round(stabilityMargins(tf([6], [1, 6, 11, 6])).gm * 1e9) / 1e9 // => 10
  * ```
  */
@@ -260,7 +260,7 @@ export function stabilityMargins(sys: Lti): StabilityMargins {
  * @concept stability-margins
  * @example
  * ```ts
- * import { margin, tf } from 'whitebox-engine/systems'
+ * import { margin, tf } from 'mdml-engine/systems'
  * Math.round(margin(tf([6], [1, 6, 11, 6])).wcg * 1e6) / 1e6 // => 3.316625
  * ```
  */
@@ -282,7 +282,7 @@ export function margin(sys: Lti): {
  * @concept stability-margins
  * @example
  * ```ts
- * import { phaseCrossoverFrequencies, tf } from 'whitebox-engine/systems'
+ * import { phaseCrossoverFrequencies, tf } from 'mdml-engine/systems'
  * phaseCrossoverFrequencies(tf([1], [1, 1])).omega // => [0]
  * ```
  */

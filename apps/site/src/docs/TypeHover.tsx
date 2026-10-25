@@ -1,13 +1,14 @@
 /**
  * Type names that explain themselves: a type in a signature, a parameter's type or the prose links its page and, on
  * hover or keyboard focus, shows its declaration (highlighted) and one-line summary in a small popover that never
- * clips (whitebox-render's `Popover`). Names in code resolve only through the shown file's `refs` (its imports,
+ * clips (mdml-render's `Popover`). Names in code resolve only through the shown file's `refs` (its imports,
  * resolved when the catalogue was precompiled), so a global or private type stays plain; names in prose fall back to
  * the export of that name nearest the module. Definitions come from the target module's small types file, fetched on
  * the first hover.
  */
+
+import { Popover } from 'mdml-render/react'
 import { type Context, createContext, type ReactNode, useContext, useEffect, useId, useRef, useState } from 'react'
-import { Popover } from 'whitebox-render/react'
 import { highlight } from '../shell/highlight.ts'
 import { Link } from '../shell/Link.tsx'
 import { type Docs, symbolPath, useTypes } from './data.ts'

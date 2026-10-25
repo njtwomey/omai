@@ -1,5 +1,5 @@
 /**
- * The functional layer library, torch.nn.functional style and part of `whitebox-engine/nn`: stateless functions of
+ * The functional layer library, torch.nn.functional style and part of `mdml-engine/nn`: stateless functions of
  * tensors and explicit weights for activations, linear maps and embeddings, convolution, pooling, normalisation,
  * attention and position encodings, recurrent cells, state-space models, graph and set layers, regularisers and spatial
  * sampling. The modules are built on these.

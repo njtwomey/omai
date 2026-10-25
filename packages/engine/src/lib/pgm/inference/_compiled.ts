@@ -1,7 +1,7 @@
 // A discrete model compiled for message passing and sampling: evidence applied, variables and factors indexed, and the
 // variable-factor edges listed. Shared by belief propagation, the variational methods, EP, Gibbs sampling and MAP
 // (not re-exported).
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { type Factor, logFactor, reduceFactor } from '../factor.ts'
 import { type DiscreteModel, evidenceIndices, modelFactors, modelVariables } from '../models/factor-graph.ts'
 
@@ -71,7 +71,7 @@ export function compile(model: DiscreteModel, evidence: Readonly<Record<string, 
 export function compileFactor(f: Factor, index: ReadonlyMap<string, number>): CompiledFactor {
   const vars = f.variables.map((v) => {
     const i = index.get(v)
-    if (i === undefined) throw new WhiteboxError('value', `unknown variable ${v}`)
+    if (i === undefined) throw new MdmlError('value', `unknown variable ${v}`)
     return i
   })
   const d = vars.length
@@ -96,7 +96,7 @@ export function normaliseLog(m: Float64Array, mode: 'sum' | 'max' = 'sum'): numb
   let max = Number.NEGATIVE_INFINITY
   for (const v of m) if (v > max) max = v
   if (max === Number.NEGATIVE_INFINITY) {
-    throw new WhiteboxError('value', 'message passing: a message is zero everywhere (inconsistent evidence?)')
+    throw new MdmlError('value', 'message passing: a message is zero everywhere (inconsistent evidence?)')
   }
   let shift = max
   if (mode === 'sum') {

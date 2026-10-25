@@ -2,8 +2,8 @@
 
 from importlib.metadata import version
 
+from mdml_oracle.fixture import Case, case
 from nltk.tokenize import NLTKWordTokenizer, TreebankWordDetokenizer, TreebankWordTokenizer
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"nltk": version("nltk")}
 

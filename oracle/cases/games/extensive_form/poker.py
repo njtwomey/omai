@@ -7,7 +7,7 @@ from typing import Protocol
 
 import numpy as np
 import pyspiel
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"open_spiel": version("open_spiel")}
 

@@ -3,7 +3,7 @@
  * constructors for each, surfaces `z = f(x, y)` as grids of faces, and labelled coordinate axes.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { NodeBase, Paint, Style } from './types.ts'
 
 /** A point or vector in 3-D, `[x, y, z]`, with z up. */
@@ -73,7 +73,7 @@ export interface Scene3D {
  * @concept scene-graph
  * @example
  * ```ts
- * import { scene3d, point3d } from 'whitebox-engine/scene'
+ * import { scene3d, point3d } from 'mdml-engine/scene'
  * scene3d([point3d([0, 0, 0])]).items.length // => 1
  * ```
  */
@@ -89,7 +89,7 @@ export function scene3d(items: readonly Item3D[], options: { readonly title?: st
  * @returns The item.
  * @example
  * ```ts
- * import { point3d } from 'whitebox-engine/scene'
+ * import { point3d } from 'mdml-engine/scene'
  * point3d([1, 2, 3], { fill: 'tab1' }).at // => [1, 2, 3]
  * ```
  */
@@ -106,7 +106,7 @@ export function point3d(at: Vec3, style: Style & NodeBase & { readonly r?: numbe
  * @returns The item.
  * @example
  * ```ts
- * import { segment3d } from 'whitebox-engine/scene'
+ * import { segment3d } from 'mdml-engine/scene'
  * segment3d([0, 0, 0], [1, 0, 0]).to // => [1, 0, 0]
  * ```
  */
@@ -123,7 +123,7 @@ export function segment3d(from: Vec3, to: Vec3, style: Style & NodeBase = {}): S
  * @returns The item.
  * @example
  * ```ts
- * import { arrow3d } from 'whitebox-engine/scene'
+ * import { arrow3d } from 'mdml-engine/scene'
  * arrow3d([0, 0, 0], [0, 0, 1]).arrow // => true
  * ```
  */
@@ -139,7 +139,7 @@ export function arrow3d(from: Vec3, to: Vec3, style: Style & NodeBase = {}): Seg
  * @returns The item.
  * @example
  * ```ts
- * import { polyline3d } from 'whitebox-engine/scene'
+ * import { polyline3d } from 'mdml-engine/scene'
  * polyline3d([[0, 0, 0], [1, 0, 0], [1, 1, 0]], { closed: true }).closed // => true
  * ```
  */
@@ -160,7 +160,7 @@ export function polyline3d(
  * @returns The face.
  * @example
  * ```ts
- * import { triangle3d } from 'whitebox-engine/scene'
+ * import { triangle3d } from 'mdml-engine/scene'
  * triangle3d([0, 0, 0], [1, 0, 0], [0, 1, 0]).points.length // => 3
  * ```
  */
@@ -174,15 +174,15 @@ export function triangle3d(a: Vec3, b: Vec3, c: Vec3, style: Style & NodeBase = 
  * @param points - Three or more coplanar vertices in order.
  * @param style - Fill, stroke, id and title.
  * @returns The face.
- * @throws WhiteboxError with code `value` for fewer than three vertices.
+ * @throws MdmlError with code `value` for fewer than three vertices.
  * @example
  * ```ts
- * import { face3d } from 'whitebox-engine/scene'
+ * import { face3d } from 'mdml-engine/scene'
  * face3d([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]]).kind // => 'face'
  * ```
  */
 export function face3d(points: readonly Vec3[], style: Style & NodeBase = {}): Face3D {
-  if (points.length < 3) throw new WhiteboxError('value', 'face3d: a face needs at least three vertices')
+  if (points.length < 3) throw new MdmlError('value', 'face3d: a face needs at least three vertices')
   return { kind: 'face', points, ...style }
 }
 
@@ -195,7 +195,7 @@ export function face3d(points: readonly Vec3[], style: Style & NodeBase = {}): F
  * @returns The item.
  * @example
  * ```ts
- * import { label3d } from 'whitebox-engine/scene'
+ * import { label3d } from 'mdml-engine/scene'
  * label3d([1, 0, 0], 'x').text // => 'x'
  * ```
  */
@@ -212,10 +212,10 @@ export function label3d(at: Vec3, content: string, style: Omit<Label3D, 'kind' |
  * @param z - Heights as rows over `y` and columns over `x`, or the function.
  * @param style - Stroke and fill; `fill` may be a function of a cell's mean height and its row and column.
  * @returns The faces, `(y.length - 1) * (x.length - 1)` of them.
- * @throws WhiteboxError with code `shape` when the grid has fewer than two points per axis or `z` has the wrong shape.
+ * @throws MdmlError with code `shape` when the grid has fewer than two points per axis or `z` has the wrong shape.
  * @example
  * ```ts
- * import { surface3d } from 'whitebox-engine/scene'
+ * import { surface3d } from 'mdml-engine/scene'
  * surface3d([0, 1, 2], [0, 1], (x, y) => x * y).length // => 2
  * ```
  */
@@ -225,13 +225,13 @@ export function surface3d(
   z: readonly (readonly number[])[] | ((x: number, y: number) => number),
   style: Omit<Style, 'fill'> & { readonly fill?: Paint | ((z: number, i: number, j: number) => Paint) } = {},
 ): Face3D[] {
-  if (x.length < 2 || y.length < 2) throw new WhiteboxError('shape', 'surface3d: need at least two points per axis')
+  if (x.length < 2 || y.length < 2) throw new MdmlError('shape', 'surface3d: need at least two points per axis')
   const height = (i: number, j: number): number => {
     const xj = x[j] ?? 0
     const yi = y[i] ?? 0
     if (typeof z === 'function') return z(xj, yi)
     const v = z[i]?.[j]
-    if (v === undefined) throw new WhiteboxError('shape', `surface3d: z needs ${y.length} rows of ${x.length} values`)
+    if (v === undefined) throw new MdmlError('shape', `surface3d: z needs ${y.length} rows of ${x.length} values`)
     return v
   }
   const { fill = 'tab0', ...rest } = style
@@ -263,7 +263,7 @@ export function surface3d(
  * @returns Three arrows and three labels.
  * @example
  * ```ts
- * import { axes3d } from 'whitebox-engine/scene'
+ * import { axes3d } from 'mdml-engine/scene'
  * axes3d(2).filter((item) => item.kind === 'label').map((item) => (item as { text: string }).text) // => ['x', 'y', 'z']
  * ```
  */

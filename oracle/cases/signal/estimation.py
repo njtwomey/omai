@@ -9,10 +9,10 @@ import padasip as pa
 import scipy
 import scipy.signal as S
 import scipy.stats as st
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
+from mdml_oracle.signal_helpers import smooth_image, tones
 from padasip.filters import FilterLMS, FilterNLMS, FilterRLS
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
-from whitebox_oracle.signal_helpers import smooth_image, tones
 
 REFERENCE: dict[str, str] = {
     "scipy": scipy.__version__,

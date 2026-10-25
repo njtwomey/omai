@@ -3,11 +3,11 @@
  * then classified by logistic regression, on two-dimensional classification data.
  */
 
-import { type NamedStep, pipeline } from 'whitebox-engine/learn'
-import { polynomialFeatures, standardScaler } from 'whitebox-engine/learn/preprocessing'
-import { pca } from 'whitebox-engine/methods/decomposition'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { bool, dict, int, real } from 'whitebox-engine/space'
+import { type NamedStep, pipeline } from 'mdml-engine/learn'
+import { polynomialFeatures, standardScaler } from 'mdml-engine/learn/preprocessing'
+import { pca } from 'mdml-engine/methods/decomposition'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { bool, dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 

@@ -4,17 +4,17 @@
  * two quantiles.
  */
 
-import { quantileOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, quantileOf } from '../../base/index.ts'
 import { asTensor, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 
 function values(x: TensorLike, name: string): Float64Array {
   const v = Float64Array.from(toFlat(asTensor(x) as Tensor))
-  if (v.length === 0) throw new WhiteboxError('value', `${name}: no draws`)
+  if (v.length === 0) throw new MdmlError('value', `${name}: no draws`)
   return v
 }
 
 function checkProb(prob: number, name: string): void {
-  if (!(prob > 0 && prob <= 1)) throw new WhiteboxError('value', `${name}: prob must lie in (0, 1]`)
+  if (!(prob > 0 && prob <= 1)) throw new MdmlError('value', `${name}: prob must lie in (0, 1]`)
 }
 
 /** numpy's mod for a positive divisor: always in [0, m). */
@@ -76,12 +76,12 @@ export interface HdiOptions {
  * @param prob - The probability mass in (0, 1] (ArviZ's default is 0.89; there is no default here).
  * @param options - `circular`.
  * @returns `[low, high]`.
- * @throws WhiteboxError with code `value` for an empty input or prob outside (0, 1].
+ * @throws MdmlError with code `value` for an empty input or prob outside (0, 1].
  * @concept highest-density-interval
  * @reference R. J. Hyndman, Computing and graphing highest density regions (The American Statistician 1996).
  * @example
  * ```ts
- * import { hdi } from 'whitebox-engine/sampling'
+ * import { hdi } from 'mdml-engine/sampling'
  * hdi([0, 1, 2, 3, 4, 5, 6, 7, 8, 30], 0.8) // => [0, 8]
  * ```
  */
@@ -112,11 +112,11 @@ export interface HdiModesOptions {
  * @param prob - The probability mass in (0, 1].
  * @param options - The most intervals to return.
  * @returns The intervals `[low, high]` in increasing order, each with its probability.
- * @throws WhiteboxError with code `value` for an empty input, prob outside (0, 1] or non-integer draws.
+ * @throws MdmlError with code `value` for an empty input, prob outside (0, 1] or non-integer draws.
  * @concept highest-density-interval
  * @example
  * ```ts
- * import { hdiModes } from 'whitebox-engine/sampling'
+ * import { hdiModes } from 'mdml-engine/sampling'
  * hdiModes([0, 0, 0, 1, 1, 5, 5, 5, 6, 6], 0.9).map((m) => m.interval) // => [[0, 1], [5, 6]]
  * ```
  */
@@ -128,7 +128,7 @@ export function hdiModes(
   checkProb(prob, 'hdiModes')
   const v = values(x, 'hdiModes')
   if (!v.every(Number.isInteger)) {
-    throw new WhiteboxError('value', 'hdiModes: draws must be integers (continuous draws need a density estimate)')
+    throw new MdmlError('value', 'hdiModes: draws must be integers (continuous draws need a density estimate)')
   }
   const counts = new Map<number, number>()
   for (const a of v) counts.set(a, (counts.get(a) ?? 0) + 1)
@@ -178,11 +178,11 @@ export function hdiModes(
  * @param x - Draws (any shape, pooled).
  * @param prob - The probability mass in (0, 1].
  * @returns `[low, high]`.
- * @throws WhiteboxError with code `value` for an empty input or prob outside (0, 1].
+ * @throws MdmlError with code `value` for an empty input or prob outside (0, 1].
  * @concept credible-interval
  * @example
  * ```ts
- * import { eti } from 'whitebox-engine/sampling'
+ * import { eti } from 'mdml-engine/sampling'
  * eti([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.8) // => [1, 9]
  * ```
  */

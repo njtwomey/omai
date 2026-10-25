@@ -21,7 +21,7 @@ import { permutation } from './permutation.ts'
  * @concept counter-based-rng
  * @example
  * ```ts
- * import { Generator } from 'whitebox-engine/random'
+ * import { Generator } from 'mdml-engine/random'
  * const a = new Generator(7).normal([3])
  * const b = new Generator(7).normal([3])
  * a.data[2] === b.data[2] // => true
@@ -69,7 +69,7 @@ export class Generator {
  * @returns The generator.
  * @example
  * ```ts
- * import { defaultRng } from 'whitebox-engine/random'
+ * import { defaultRng } from 'mdml-engine/random'
  * defaultRng(0).uniform([2]).shape // => [2]
  * ```
  */

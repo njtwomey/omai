@@ -4,7 +4,7 @@
  * run from every initial label.
  */
 
-import { minOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, minOf } from '../../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { type Equilibrium, expectedPayoffs, type GameRunOptions, type NormalFormGame, payoffMatrices } from './game.ts'
 
@@ -150,12 +150,12 @@ function strategies(game: NormalFormGame, state: LemkeHowsonState): [number[], n
  * @param game - A two-player game.
  * @param options - The initial label.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for a game with other than two players or a label out of range.
+ * @throws MdmlError with code `value` for a game with other than two players or a label out of range.
  * @concept lemke-howson
  * @example
  * ```ts
- * import { lemkeHowsonAlgorithm, matchingPennies } from 'whitebox-engine/games'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { lemkeHowsonAlgorithm, matchingPennies } from 'mdml-engine/games'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(lemkeHowsonAlgorithm(matchingPennies()), { maxSteps: 10 }).state.status // => 'equilibrium'
  * ```
  */
@@ -163,11 +163,11 @@ export function lemkeHowsonAlgorithm(
   game: NormalFormGame,
   options: Pick<LemkeHowsonOptions, 'initialLabel'> = {},
 ): Algorithm<LemkeHowsonState> {
-  if (game.shape.length !== 2) throw new WhiteboxError('value', 'lemkeHowson: a two-player game is needed')
+  if (game.shape.length !== 2) throw new MdmlError('value', 'lemkeHowson: a two-player game is needed')
   const [m, n] = game.shape as [number, number]
   const k = options.initialLabel ?? 0
   if (!Number.isInteger(k) || k < 0 || k >= m + n)
-    throw new WhiteboxError('value', `lemkeHowson: the initial label must be an integer in [0, ${m + n})`)
+    throw new MdmlError('value', `lemkeHowson: the initial label must be an integer in [0, ${m + n})`)
   const w = m + n + 1
   const initialColumns: [number[], number[]] = [
     Array.from({ length: n }, (_, j) => m + j),
@@ -187,7 +187,7 @@ export function lemkeHowsonAlgorithm(
       const t = Float64Array.from(s.tableaux[p])
       const rows = p === 0 ? n : m
       const r = pivotRow(t, rows, w, s.entering, initialColumns[p])
-      if (r < 0) throw new WhiteboxError('convergence', 'lemkeHowson: unbounded ray (the payoffs should be positive)')
+      if (r < 0) throw new MdmlError('convergence', 'lemkeHowson: unbounded ray (the payoffs should be positive)')
       pivot(t, rows, w, r, s.entering)
       const basis = [...s.bases[p]]
       const leaving = basis[r] ?? -1
@@ -234,12 +234,12 @@ export function lemkeHowsonAlgorithm(
  * @param game - A two-player game.
  * @param options - The initial label, a pivot cap and tracing.
  * @returns The equilibrium, its payoffs, the pivots taken and the status.
- * @throws WhiteboxError with code `value` for a game with other than two players or a label out of range.
+ * @throws MdmlError with code `value` for a game with other than two players or a label out of range.
  * @concept lemke-howson
  * @reference Lemke and Howson (1964), Equilibrium points of bimatrix games; von Stengel (2007).
  * @example
  * ```ts
- * import { battleOfTheSexes, lemkeHowson } from 'whitebox-engine/games'
+ * import { battleOfTheSexes, lemkeHowson } from 'mdml-engine/games'
  * lemkeHowson(battleOfTheSexes(), { initialLabel: 0 }).strategies // => [[1, 0], [1, 0]]
  * ```
  */
@@ -267,7 +267,7 @@ export function lemkeHowson(game: NormalFormGame, options: LemkeHowsonOptions = 
  * @concept lemke-howson
  * @example
  * ```ts
- * import { lemkeHowsonEnumeration, rockPaperScissors } from 'whitebox-engine/games'
+ * import { lemkeHowsonEnumeration, rockPaperScissors } from 'mdml-engine/games'
  * lemkeHowsonEnumeration(rockPaperScissors()).length // => 6
  * ```
  */

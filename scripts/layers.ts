@@ -9,10 +9,10 @@
  * - The core never imports methods.
  * - The methods areas (packages/engine/src/methods/<area>) import any core domain and one another, again without a
  *   cycle.
- * - whitebox-engine never imports whitebox-render, whitebox-meta or whitebox-hub; whitebox-render never imports
- *   whitebox-meta, whitebox-hub or engine methods (it draws core contracts and exposition records, never algorithms);
+ * - mdml-engine never imports mdml-render, mdml-meta or mdml-hub; mdml-render never imports
+ *   mdml-meta, mdml-hub or engine methods (it draws core contracts and exposition records, never algorithms);
  *   headless render code never imports React or render/react.
- * - whitebox-hub composes: it imports the engine and render's public entry points, but no chart or drawing library
+ * - mdml-hub composes: it imports the engine and render's public entry points, but no chart or drawing library
  *   (echarts, d3, katex, three) and not meta. Its React lives in hub/react only.
  * Test files are exempt: tests may use higher layers to check lower ones.
  */
@@ -136,15 +136,15 @@ for (const file of files) {
         addEdge(areas, from.unit, to.unit, where)
       continue
     }
-    if (from.package === 'engine' && /^whitebox-(render|meta|hub)/.test(spec))
+    if (from.package === 'engine' && /^mdml-(render|meta|hub)/.test(spec))
       errors.push(`${where}: engine is the base package`)
-    if (from.package === 'render' && /^whitebox-(meta|hub)/.test(spec))
+    if (from.package === 'render' && /^mdml-(meta|hub)/.test(spec))
       errors.push(`${where}: render may not import meta or the hub`)
-    if (from.package === 'render' && spec.startsWith('whitebox-engine/methods'))
+    if (from.package === 'render' && spec.startsWith('mdml-engine/methods'))
       errors.push(`${where}: render draws contracts and exposition records, never methods`)
     if (from.package === 'hub' && /^(echarts|d3|katex|three|mathjax)(-|\/|$)/.test(spec))
       errors.push(`${where}: the hub composes render views and draws nothing itself`)
-    if (from.package === 'hub' && spec.startsWith('whitebox-meta')) errors.push(`${where}: the hub may not import meta`)
+    if (from.package === 'hub' && spec.startsWith('mdml-meta')) errors.push(`${where}: the hub may not import meta`)
     if (from.package === 'hub' && from.unit !== 'react' && /^(react|react-dom)(\/|$)/.test(spec))
       errors.push(`${where}: hub entries are data; React lives in hub/react`)
     if (from.package === 'render' && from.unit !== 'react' && /^(react|react-dom)(\/|$)/.test(spec)) {

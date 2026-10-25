@@ -34,10 +34,10 @@ export interface MarginRecord {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when the support and its coefficients differ in length.
+ * @throws MdmlError `shape` when the support and its coefficients differ in length.
  * @example
  * ```ts
- * import { marginRecord } from 'whitebox-engine/exposition'
+ * import { marginRecord } from 'mdml-engine/exposition'
  * marginRecord({ support: [0, 3], dualCoefficients: [0.5, -0.5], intercept: 0.1, margins: [1, 2, 3, 1] }).support // => [0, 3]
  * ```
  */

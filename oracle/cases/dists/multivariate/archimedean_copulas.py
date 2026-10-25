@@ -2,9 +2,9 @@
 
 import numpy as np
 import statsmodels
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from statsmodels.distributions.copula.api import ClaytonCopula, FrankCopula, GumbelCopula
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}
 

@@ -10,11 +10,11 @@ import sklearn
 import sklearn.metrics as M
 import torch
 import torchmetrics.functional.classification as TC
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
+from mdml_oracle.torch_helpers import to_torch
 from scipy.interpolate import interp1d
 from scipy.optimize import brentq
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
-from whitebox_oracle.torch_helpers import to_torch
 
 REFERENCE: dict[str, str] = {
     "torchmetrics": version("torchmetrics"),

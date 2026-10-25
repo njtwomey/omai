@@ -1,5 +1,5 @@
 /** Shared pieces of the Markov kernels: accept/reject with a key, starting states, and Welford accumulators. */
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Key, uniform } from '../random/index.ts'
 import type { MCMCState } from './chains.ts'
 import type { LogDensity } from './target.ts'
@@ -13,7 +13,7 @@ export function acceptWith(key: Key, alpha: number): boolean {
 
 /** Step sizes must be positive (infinite ones are allowed: they diverge and adaptation shrinks them). */
 export function checkStepSize(stepSize: number, name: string): void {
-  if (!(stepSize > 0)) throw new WhiteboxError('value', `${name}: the step size must be positive`)
+  if (!(stepSize > 0)) throw new MdmlError('value', `${name}: the step size must be positive`)
 }
 
 /** One uniform draw in [0, 1). */
@@ -24,7 +24,7 @@ export function uniformOne(key: Key): number {
 /** A starting state of a gradient-free kernel. */
 export function initState(target: LogDensity, position: ArrayLike<number>, name: string): MCMCState {
   if (position.length !== target.dim) {
-    throw new WhiteboxError('shape', `${name}: the position has ${position.length} values, need ${target.dim}`)
+    throw new MdmlError('shape', `${name}: the position has ${position.length} values, need ${target.dim}`)
   }
   const p = Float64Array.from(position)
   return { position: p, logDensity: target.logDensity(p) }

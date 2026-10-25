@@ -6,7 +6,7 @@
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { bijectors, type Distribution, type Support } from '../dists/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import {
@@ -68,17 +68,17 @@ export interface TargetOptions {
 
 function defaultNames(dim: number, names: readonly string[] | undefined): readonly string[] {
   if (names !== undefined && names.length !== dim) {
-    throw new WhiteboxError('value', `target: ${names.length} names for ${dim} coordinates`)
+    throw new MdmlError('value', `target: ${names.length} names for ${dim} coordinates`)
   }
   return names ?? Array.from({ length: dim }, (_, i) => `x[${i}]`)
 }
 
 function checkDim(dim: number, name: string): void {
-  if (!Number.isInteger(dim) || dim < 1) throw new WhiteboxError('value', `${name}: dim must be a positive integer`)
+  if (!Number.isInteger(dim) || dim < 1) throw new MdmlError('value', `${name}: dim must be a positive integer`)
 }
 
 function point(x: ArrayLike<number>, dim: number, name: string): Value {
-  if (x.length !== dim) throw new WhiteboxError('shape', `${name}: expected ${dim} coordinates, got ${x.length}`)
+  if (x.length !== dim) throw new MdmlError('shape', `${name}: expected ${dim} coordinates, got ${x.length}`)
   return fromStorage(Float64Array.from(x), [dim], 'float64')
 }
 
@@ -103,12 +103,12 @@ function identity(x: ArrayLike<number>): Float64Array {
  * @param dim - The number of coordinates.
  * @param options - Coordinate names.
  * @returns The target.
- * @throws WhiteboxError with code `value` when `dim` is not a positive integer.
+ * @throws MdmlError with code `value` when `dim` is not a positive integer.
  * @concept log-density
  * @example
  * ```ts
- * import { target } from 'whitebox-engine/sampling'
- * import { mul, square, sum } from 'whitebox-engine/tensor'
+ * import { target } from 'mdml-engine/sampling'
+ * import { mul, square, sum } from 'mdml-engine/tensor'
  * const t = target((x) => mul(-0.5, sum(square(x))), 2)
  * t.logDensity([1, 2]) // => -2.5
  * Array.from(t.valueAndGrad([1, 2]).grad) // => [-1, -2]
@@ -149,11 +149,11 @@ export interface NumericTargetOptions extends TargetOptions {
  * @param dim - The number of coordinates.
  * @param options - The gradient and coordinate names.
  * @returns The target.
- * @throws WhiteboxError with code `value` when `dim` is not a positive integer.
+ * @throws MdmlError with code `value` when `dim` is not a positive integer.
  * @concept log-density
  * @example
  * ```ts
- * import { numericTarget } from 'whitebox-engine/sampling'
+ * import { numericTarget } from 'mdml-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * t.valueAndGrad([2]).value // => -2
  * t.hasGradient // => true
@@ -167,8 +167,7 @@ export function numericTarget(
   checkDim(dim, 'numericTarget')
   const g = options.grad
   const at = (x: ArrayLike<number>): Float64Array => {
-    if (x.length !== dim)
-      throw new WhiteboxError('shape', `numericTarget: expected ${dim} coordinates, got ${x.length}`)
+    if (x.length !== dim) throw new MdmlError('shape', `numericTarget: expected ${dim} coordinates, got ${x.length}`)
     return Float64Array.from(x)
   }
   return {
@@ -180,7 +179,7 @@ export function numericTarget(
       return Number.isNaN(v) ? Number.NEGATIVE_INFINITY : v
     },
     valueAndGrad: (x) => {
-      if (g === undefined) throw new WhiteboxError('value', 'numericTarget: this target has no gradient')
+      if (g === undefined) throw new MdmlError('value', 'numericTarget: this target has no gradient')
       const p = at(x)
       return total(logDensity(p), Float64Array.from(g(p)))
     },
@@ -213,13 +212,13 @@ function product(shape: readonly number[]): number {
  * @param options - `unconstrained` (default true; false samples the raw density, for supports that are already R^n),
  *   and coordinate names.
  * @returns The target.
- * @throws WhiteboxError with code `shape` for a non-empty batch shape, and `not-implemented` for supports without a
+ * @throws MdmlError with code `shape` for a non-empty batch shape, and `not-implemented` for supports without a
  *   bijection from the reals (discrete supports, the sphere).
  * @concept log-density
  * @example
  * ```ts
- * import { targetFromDistribution } from 'whitebox-engine/sampling'
- * import { exponential } from 'whitebox-engine/dists'
+ * import { targetFromDistribution } from 'mdml-engine/sampling'
+ * import { exponential } from 'mdml-engine/dists'
  * const t = targetFromDistribution(exponential(1))
  * // u = log x: log p(e^u) + u = -1 at u = 0.
  * t.logDensity([0]) // => -1
@@ -231,10 +230,7 @@ export function targetFromDistribution(
   options: TargetOptions & { readonly unconstrained?: boolean } = {},
 ): LogDensity {
   if (dist.batchShape.length > 0) {
-    throw new WhiteboxError(
-      'shape',
-      `targetFromDistribution: batch shape [${dist.batchShape.join(', ')}] must be empty`,
-    )
+    throw new MdmlError('shape', `targetFromDistribution: batch shape [${dist.batchShape.join(', ')}] must be empty`)
   }
   const event = dist.eventShape
   if (options.unconstrained === false) {
@@ -253,7 +249,7 @@ export function targetFromDistribution(
     constrain: (x) => Float64Array.from(toFlat(bijector.forward(reshape(point(x, dim, 'constrain'), shape)))),
     unconstrain: (y) => {
       const n = product(event)
-      if (y.length !== n) throw new WhiteboxError('shape', `unconstrain: expected ${n} values, got ${y.length}`)
+      if (y.length !== n) throw new MdmlError('shape', `unconstrain: expected ${n} values, got ${y.length}`)
       return Float64Array.from(toFlat(bijector.inverse(reshape(Float64Array.from(y), [...event]))))
     },
   }
@@ -270,13 +266,13 @@ export function targetFromDistribution(
  * @param dim - The number of unconstrained coordinates.
  * @param options - Coordinate names.
  * @returns The target.
- * @throws WhiteboxError with code `shape` when the number of supports differs from `dim`, and `value` for supports
+ * @throws MdmlError with code `shape` when the number of supports differs from `dim`, and `value` for supports
  *   that are not elementwise.
  * @concept log-density
  * @example
  * ```ts
- * import { unconstrainedTarget } from 'whitebox-engine/sampling'
- * import { neg, sum } from 'whitebox-engine/tensor'
+ * import { unconstrainedTarget } from 'mdml-engine/sampling'
+ * import { neg, sum } from 'mdml-engine/tensor'
  * // An Exp(1) density on (0, inf), sampled as u = log y.
  * const t = unconstrainedTarget((y) => neg(sum(y)), [{ kind: 'positive' }], 1)
  * t.logDensity([0]) // => -1
@@ -308,11 +304,11 @@ const ELEMENTWISE = new Set(['real', 'positive', 'nonNegative', 'interval', 'gre
 /** One rank-0 bijector per coordinate, applied to the split vector. */
 function elementwise(supports: readonly Support[], dim: number): Bijector {
   if (supports.length !== dim) {
-    throw new WhiteboxError('shape', `unconstrainedTarget: ${supports.length} supports for ${dim} coordinates`)
+    throw new MdmlError('shape', `unconstrainedTarget: ${supports.length} supports for ${dim} coordinates`)
   }
   for (const s of supports) {
     if (!ELEMENTWISE.has(s.kind) && s.kind !== 'circular') {
-      throw new WhiteboxError('value', `unconstrainedTarget: the ${s.kind} support is not elementwise; pass a bijector`)
+      throw new MdmlError('value', `unconstrainedTarget: the ${s.kind} support is not elementwise; pass a bijector`)
     }
   }
   const parts = supports.map((s) => bijectors.bijectorForSupport(s))
@@ -348,12 +344,12 @@ export interface Proposal {
  *
  * @param spec - The dimension, a sampler and a log density.
  * @returns The proposal.
- * @throws WhiteboxError with code `value` when `dim` is not a positive integer.
+ * @throws MdmlError with code `value` when `dim` is not a positive integer.
  * @concept proposal-distribution
  * @example
  * ```ts
- * import { proposal } from 'whitebox-engine/sampling'
- * import { key, uniform } from 'whitebox-engine/random'
+ * import { proposal } from 'mdml-engine/sampling'
+ * import { key, uniform } from 'mdml-engine/random'
  * const q = proposal({ dim: 1, sample: (k) => uniform(k, [1]).data, logProb: () => 0 })
  * q.sampleMany(key(0), 3).length // => 3
  * ```
@@ -367,7 +363,7 @@ export function proposal(spec: {
   const { dim } = spec
   const sample = (k: Key): Float64Array => {
     const x = Float64Array.from(spec.sample(k))
-    if (x.length !== dim) throw new WhiteboxError('shape', `proposal: a draw has ${x.length} values, need ${dim}`)
+    if (x.length !== dim) throw new MdmlError('shape', `proposal: a draw has ${x.length} values, need ${dim}`)
     return x
   }
   const logProb = (x: ArrayLike<number>): number => {
@@ -394,22 +390,19 @@ export function proposal(spec: {
  *
  * @param dist - The distribution.
  * @returns The proposal.
- * @throws WhiteboxError with code `shape` for a non-empty batch shape.
+ * @throws MdmlError with code `shape` for a non-empty batch shape.
  * @concept proposal-distribution
  * @example
  * ```ts
- * import { proposalFromDistribution } from 'whitebox-engine/sampling'
- * import { normal } from 'whitebox-engine/dists'
+ * import { proposalFromDistribution } from 'mdml-engine/sampling'
+ * import { normal } from 'mdml-engine/dists'
  * const q = proposalFromDistribution(normal(0, 1))
  * Math.abs(q.logProb([0]) + 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
 export function proposalFromDistribution(dist: Distribution): Proposal {
   if (dist.batchShape.length > 0) {
-    throw new WhiteboxError(
-      'shape',
-      `proposalFromDistribution: batch shape [${dist.batchShape.join(', ')}] must be empty`,
-    )
+    throw new MdmlError('shape', `proposalFromDistribution: batch shape [${dist.batchShape.join(', ')}] must be empty`)
   }
   const event = [...dist.eventShape]
   const dim = product(event)
@@ -446,19 +439,19 @@ export interface FunnelOptions {
  * @param dim - The number of coordinates (at least 2): v first, then the x_i.
  * @param options - Centred or non-centred form, and the scale of v.
  * @returns The target, with names `v, x[1], ...`.
- * @throws WhiteboxError with code `value` when `dim < 2`.
+ * @throws MdmlError with code `value` when `dim < 2`.
  * @concept neals-funnel
  * @reference R. M. Neal, Slice sampling (Annals of Statistics 2003), section 8.
  * @example
  * ```ts
- * import { nealsFunnel } from 'whitebox-engine/sampling'
+ * import { nealsFunnel } from 'mdml-engine/sampling'
  * const f = nealsFunnel(2)
  * Math.abs(f.logDensity([0, 0]) - -0.5 * Math.log(2 * Math.PI * 9) + 0.5 * Math.log(2 * Math.PI)) < 1e-12 // => true
  * Array.from(nealsFunnel(2, { nonCentred: true }).constrain([1, 1])).map((v) => Math.round(v * 1e6) / 1e6) // => [3, 4.481689]
  * ```
  */
 export function nealsFunnel(dim: number, options: FunnelOptions = {}): LogDensity {
-  if (!(Number.isInteger(dim) && dim >= 2)) throw new WhiteboxError('value', 'nealsFunnel: dim must be at least 2')
+  if (!(Number.isInteger(dim) && dim >= 2)) throw new MdmlError('value', 'nealsFunnel: dim must be at least 2')
   const scale = options.scale ?? 3
   const names = ['v', ...Array.from({ length: dim - 1 }, (_, i) => `x[${i + 1}]`)]
   const LOG2PI = Math.log(2 * Math.PI)
@@ -512,7 +505,7 @@ export interface BananaOptions {
  * @reference H. Haario, E. Saksman and J. Tamminen, Adaptive proposal distribution for random walk Metropolis (1999).
  * @example
  * ```ts
- * import { banana } from 'whitebox-engine/sampling'
+ * import { banana } from 'mdml-engine/sampling'
  * const b = banana({ curvature: 0.03 })
  * // At the mode (0, -3): log N(0; 0, 100) + log N(0; 0, 1).
  * Math.abs(b.logDensity([0, -3]) - (-Math.log(2 * Math.PI) - Math.log(10))) < 1e-12 // => true

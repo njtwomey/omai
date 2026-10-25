@@ -6,7 +6,7 @@
  */
 
 import { jacfwd } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { eigvals, qr, solve } from '../numerics/linalg/index.ts'
 import { fsolve } from '../numerics/roots/index.ts'
 import {
@@ -54,8 +54,8 @@ const solverOf = (o: FlowOptions): { method: OdeMethodName; rtol: number; atol: 
  * @concept poincare-section
  * @example
  * ```ts
- * import { poincareSection } from 'whitebox-engine/dynamics'
- * import { stack, sliceAxis, sum, neg } from 'whitebox-engine/tensor'
+ * import { poincareSection } from 'mdml-engine/dynamics'
+ * import { stack, sliceAxis, sum, neg } from 'mdml-engine/tensor'
  * // The harmonic oscillator returns to x = 0 every 2 pi.
  * const f = (_t, y) => stack([sum(sliceAxis(y, 0, 1, 2)), neg(sum(sliceAxis(y, 0, 0, 1)))])
  * const s = poincareSection(f, [0, 1], (y) => y.data[0] ?? 0, { crossings: 3 })
@@ -103,8 +103,8 @@ export interface LimitCycle {
  * @concept limit-cycle
  * @example
  * ```ts
- * import { limitCycle } from 'whitebox-engine/dynamics'
- * import { stack, sliceAxis, sum, sub, mul } from 'whitebox-engine/tensor'
+ * import { limitCycle } from 'mdml-engine/dynamics'
+ * import { stack, sliceAxis, sum, sub, mul } from 'mdml-engine/tensor'
  * // van der Pol with mu = 1: period about 6.6633.
  * const f = (_t, y) => { const x = sum(sliceAxis(y, 0, 0, 1)); const v = sum(sliceAxis(y, 0, 1, 2)); return stack([v, sub(mul(sub(1, mul(x, x)), v), x)]) }
  * const c = limitCycle(f, [2, 0], 6.6)
@@ -160,8 +160,8 @@ export function limitCycle(
  * @concept floquet-theory
  * @example
  * ```ts
- * import { floquetMultipliers } from 'whitebox-engine/dynamics'
- * import { stack, sliceAxis, sum, neg } from 'whitebox-engine/tensor'
+ * import { floquetMultipliers } from 'mdml-engine/dynamics'
+ * import { stack, sliceAxis, sum, neg } from 'mdml-engine/tensor'
  * const f = (_t, y) => stack([sum(sliceAxis(y, 0, 1, 2)), neg(sum(sliceAxis(y, 0, 0, 1)))])
  * floquetMultipliers(f, [1, 0], 2 * Math.PI).re.map((v) => Math.round(v * 1e6) / 1e6) // => [1, 1]
  * ```
@@ -205,8 +205,8 @@ export interface LyapunovSpectrumOptions extends FlowOptions {
  * @concept lyapunov-exponent
  * @example
  * ```ts
- * import { lyapunovSpectrum } from 'whitebox-engine/dynamics'
- * import { mul } from 'whitebox-engine/tensor'
+ * import { lyapunovSpectrum } from 'mdml-engine/dynamics'
+ * import { mul } from 'mdml-engine/tensor'
  * // A linear flow y' = diag(1, -2) y has exponents 1 and -2.
  * lyapunovSpectrum((_t, y) => mul(y, [1, -2]), [1, 1], { tEnd: 5, transient: 0 }).exponents.map((v) => Math.round(v * 1e6) / 1e6) // => [1, -2]
  * ```
@@ -245,7 +245,7 @@ export function lyapunovSpectrum(
   for (let s = 0; s < steps; s++) {
     const z0 = concat([reshape(state, [n]), reshape(Q, [n * k])], 0)
     const sol = solveIvp(augmented, [s * interval, (s + 1) * interval], z0, { ...solver, tEval: [(s + 1) * interval] })
-    if (!sol.success) throw new WhiteboxError('convergence', `lyapunovSpectrum: ${sol.message}`)
+    if (!sol.success) throw new MdmlError('convergence', `lyapunovSpectrum: ${sol.message}`)
     const z = numbersOf(sol.ys.at(-1) as Value)
     state = fromNumbers(z.slice(0, n), shape)
     const { q, r } = qr(fromNumbers(z.slice(n), [n, k]))
@@ -269,18 +269,18 @@ export function lyapunovSpectrum(
  * @param dimension - The embedding dimension m.
  * @param lag - The delay (default 1).
  * @returns The embedded points.
- * @throws WhiteboxError with code `value` when the series is shorter than (m - 1) lag + 1.
+ * @throws MdmlError with code `value` when the series is shorter than (m - 1) lag + 1.
  * @concept delay-embedding
  * @example
  * ```ts
- * import { delayEmbedding } from 'whitebox-engine/dynamics'
+ * import { delayEmbedding } from 'mdml-engine/dynamics'
  * delayEmbedding([1, 2, 3, 4], 2, 2) // => [[1, 3], [2, 4]]
  * ```
  */
 export function delayEmbedding(series: readonly number[], dimension: number, lag = 1): number[][] {
   const minLen = (dimension - 1) * lag + 1
   if (series.length < minLen) {
-    throw new WhiteboxError('value', `delayEmbedding: need at least ${minLen} points for dimension ${dimension}`)
+    throw new MdmlError('value', `delayEmbedding: need at least ${minLen} points for dimension ${dimension}`)
   }
   return Array.from({ length: series.length - minLen + 1 }, (_, i) =>
     Array.from({ length: dimension }, (_, j) => series[i + j * lag] ?? 0),
@@ -324,7 +324,7 @@ function sampleStd(x: readonly number[]): number {
  * @concept correlation-dimension
  * @example
  * ```ts
- * import { correlationDimension } from 'whitebox-engine/dynamics'
+ * import { correlationDimension } from 'mdml-engine/dynamics'
  * // A sine fills a closed curve: dimension about 1.
  * const x = Array.from({ length: 400 }, (_, i) => Math.sin(0.1 * i))
  * Math.abs(correlationDimension(x, 2).dimension - 1) < 0.1 // => true
@@ -378,11 +378,11 @@ export function correlationDimension(
  * @param options - Embedding dimension (default 10), lag and minimum temporal separation (estimated as nolds does
  * when absent), trajectory length (default 20), tau (default 1) and fit offset.
  * @returns The exponent estimate and the divergence curve.
- * @throws WhiteboxError with code `value` when the series is too short.
+ * @throws MdmlError with code `value` when the series is too short.
  * @concept lyapunov-exponent
  * @example
  * ```ts
- * import { largestLyapunovExponent } from 'whitebox-engine/dynamics'
+ * import { largestLyapunovExponent } from 'mdml-engine/dynamics'
  * let x = 0.3
  * const s = Array.from({ length: 500 }, () => (x = 4 * x * (1 - x)))
  * largestLyapunovExponent(s, { dimension: 3, lag: 1, minTsep: 5, trajectoryLen: 4 }).exponent > 0.4 // => true
@@ -412,7 +412,7 @@ export function largestLyapunovExponent(
   const m = orbit.length
   const ntraj = m - trajectoryLen + 1
   if (ntraj <= 0 || ntraj < 2 * minTsep + 2) {
-    throw new WhiteboxError('value', 'largestLyapunovExponent: not enough data for these settings')
+    throw new MdmlError('value', 'largestLyapunovExponent: not enough data for these settings')
   }
   const neighbour = new Int32Array(ntraj)
   for (let i = 0; i < ntraj; i++) {
@@ -521,7 +521,7 @@ export interface RecurrenceMeasures {
  * @concept recurrence-quantification
  * @example
  * ```ts
- * import { recurrenceQuantification } from 'whitebox-engine/dynamics'
+ * import { recurrenceQuantification } from 'mdml-engine/dynamics'
  * // A periodic series is fully deterministic.
  * const x = Array.from({ length: 60 }, (_, i) => Math.sin((2 * Math.PI * i) / 10))
  * recurrenceQuantification(x, 0.01, { dimension: 2 }).determinism // => 1
@@ -693,11 +693,11 @@ function hopfTest(ev: { re: number[]; im: number[] }): number {
  * @param p0 - The starting parameter.
  * @param options - Step, number of steps, parameter range, direction, tolerance and tracing.
  * @returns The algorithm and its step budget.
- * @throws WhiteboxError with code `convergence` when x0 is not an equilibrium.
+ * @throws MdmlError with code `convergence` when x0 is not an equilibrium.
  * @example
  * ```ts
- * import { continuationAlgorithm } from 'whitebox-engine/dynamics'
- * import { add, mul } from 'whitebox-engine/tensor'
+ * import { continuationAlgorithm } from 'mdml-engine/dynamics'
+ * import { add, mul } from 'mdml-engine/tensor'
  * continuationAlgorithm((x, p) => add(mul(x, x), p), [-1], -1, { steps: 5 }).steps // => 5
  * ```
  */
@@ -713,7 +713,7 @@ export function continuationAlgorithm(
   const tol = options.tol ?? 1e-10
   const steps = options.steps ?? 100
   const corrected = fsolve((v) => reshape(F(v, fromNumbers([p0], [])), [n]), reshape(xv, [n]), { ftol: tol })
-  if (!corrected.converged) throw new WhiteboxError('convergence', 'continueEquilibria: x0 is not near an equilibrium')
+  if (!corrected.converged) throw new MdmlError('convergence', 'continueEquilibria: x0 is not near an equilibrium')
   const z0 = Float64Array.from([...numbersOf(corrected.x), p0])
   const tangentAt = (J: Float64Array, prev: Float64Array | undefined): Float64Array => {
     // Solve [J; prev^T] t = [0; 1] (or with e_p as the last row at the start).
@@ -826,8 +826,8 @@ function sumDot(v: Value, w: Float64Array): Value {
  * @concept bifurcation-continuation
  * @example
  * ```ts
- * import { continueEquilibria } from 'whitebox-engine/dynamics'
- * import { add, mul } from 'whitebox-engine/tensor'
+ * import { continueEquilibria } from 'mdml-engine/dynamics'
+ * import { add, mul } from 'mdml-engine/tensor'
  * // x' = p + x^2: a fold at p = 0, x = 0.
  * const r = continueEquilibria((x, p) => add(mul(x, x), p), [-1], -1, { ds: 0.1, steps: 30 })
  * Math.abs(r.bifurcations[0]?.p ?? 1) < 1e-2 // => true

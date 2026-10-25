@@ -7,6 +7,8 @@ from typing import Any
 import numpy as np
 import scipy
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from scipy.optimize import minimize
 from scipy.special import log_softmax, softmax
 from sklearn.calibration import CalibratedClassifierCV, _sigmoid_calibration, _TemperatureScaling  # pyright: ignore[reportPrivateUsage]
@@ -14,8 +16,6 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 from sklearn.naive_bayes import GaussianNB
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__, "scipy": scipy.__version__}
 

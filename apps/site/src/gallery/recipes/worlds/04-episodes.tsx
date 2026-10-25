@@ -1,7 +1,7 @@
+import { cartPole } from 'mdml-engine/methods/rl'
+import { make } from 'mdml-engine/rl'
+import { ControlPanel, EpisodePlayer, NumberField, SeedInput } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { cartPole } from 'whitebox-engine/methods/rl'
-import { make } from 'whitebox-engine/rl'
-import { ControlPanel, EpisodePlayer, NumberField, SeedInput } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

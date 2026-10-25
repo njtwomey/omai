@@ -5,7 +5,7 @@
  * combinations of the two.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { eigh, qr, solve, solveContinuousLyapunov, solveDiscreteLyapunov } from '../numerics/linalg/index.ts'
 import {
   add,
@@ -40,8 +40,8 @@ import { isStable } from './stability.ts'
  * @concept controllability
  * @example
  * ```ts
- * import { ctrb } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { ctrb } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(ctrb([[0, 1], [0, 0]], [[0], [1]])) // => [[0, 1], [1, 0]]
  * ```
  */
@@ -62,8 +62,8 @@ export function ctrb(a: TensorLike, b: TensorLike): Value {
  * @concept observability
  * @example
  * ```ts
- * import { obsv } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { obsv } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(obsv([[0, 1], [0, 0]], [[1, 0]])) // => [[1, 0], [0, 1]]
  * ```
  */
@@ -81,7 +81,7 @@ export function obsv(a: TensorLike, c: TensorLike): Value {
  * @concept controllability
  * @example
  * ```ts
- * import { isControllable, ss } from 'whitebox-engine/systems'
+ * import { isControllable, ss } from 'mdml-engine/systems'
  * isControllable(ss([[-1, 0], [0, -2]], [[1], [0]], [[1, 1]])) // => false
  * ```
  */
@@ -99,7 +99,7 @@ export function isControllable(sys: Lti, tol?: number): boolean {
  * @concept observability
  * @example
  * ```ts
- * import { isObservable, ss } from 'whitebox-engine/systems'
+ * import { isObservable, ss } from 'mdml-engine/systems'
  * isObservable(ss([[-1, 0], [0, -2]], [[1], [1]], [[1, 1]])) // => true
  * ```
  */
@@ -119,18 +119,18 @@ export type GramianType = 'c' | 'o' | 'cf' | 'of'
  * @param sys - A stable system.
  * @param type - 'c', 'o', 'cf' or 'of'.
  * @returns The Gramian or its factor, `[n, n]`.
- * @throws WhiteboxError with code `value` for an unstable system.
+ * @throws MdmlError with code `value` for an unstable system.
  * @concept gramians
  * @example
  * ```ts
- * import { gram, ss } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { gram, ss } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(gram(ss([[-1]], [[2]], [[1]]), 'c')) // => [[2]]
  * ```
  */
 export function gram(sys: Lti, type: GramianType): Value {
   const s = toSs(sys)
-  if (!isStable(s)) throw new WhiteboxError('value', 'gram: the system must be stable')
+  if (!isStable(s)) throw new MdmlError('value', 'gram: the system must be stable')
   const controllability = type === 'c' || type === 'cf'
   const a = controllability ? s.a : transpose(s.a)
   const q = controllability ? matmul(s.b, transpose(s.b)) : matmul(transpose(s.c), s.c)
@@ -170,7 +170,7 @@ export interface KalmanDecomposition {
  * @concept kalman-decomposition
  * @example
  * ```ts
- * import { kalmanDecomposition, ss } from 'whitebox-engine/systems'
+ * import { kalmanDecomposition, ss } from 'mdml-engine/systems'
  * const sys = ss([[-1, 0, 0], [0, -2, 0], [0, 0, -3]], [[1], [1], [0]], [[1, 0, 1]])
  * kalmanDecomposition(sys).dims // => { co: 1, cn: 1, uo: 1, un: 0 }
  * ```

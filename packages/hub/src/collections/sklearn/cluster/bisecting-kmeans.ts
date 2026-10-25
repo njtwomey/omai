@@ -3,7 +3,7 @@
  * clustering datasets.
  */
 
-import { bisectingKMeans } from 'whitebox-engine/methods/cluster'
+import { bisectingKMeans } from 'mdml-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

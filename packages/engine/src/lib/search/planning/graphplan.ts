@@ -4,7 +4,7 @@
  * the invariant mutex pairs read from the levelled-off graph.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import type { SearchRunOptions } from '../problem.ts'
 import { type StripsProblem, validatePlan } from './strips.ts'
@@ -312,7 +312,7 @@ function levelsOf(s: Internal): PlanningGraphLevel[] {
  * @concept graphplan
  * @example
  * ```ts
- * import { mutexPairs, strips } from 'whitebox-engine/search'
+ * import { mutexPairs, strips } from 'mdml-engine/search'
  * const p = strips(['home'], ['shop'], [
  *   { name: 'go', pre: ['home'], add: ['shop'], del: ['home'] },
  *   { name: 'back', pre: ['shop'], add: ['home'], del: ['shop'] },
@@ -358,7 +358,7 @@ export function mutexPairs(
  * @concept graphplan
  * @example
  * ```ts
- * import { graphplanAlgorithm, strips } from 'whitebox-engine/search'
+ * import { graphplanAlgorithm, strips } from 'mdml-engine/search'
  * graphplanAlgorithm(strips(['a'], ['a'], [])).name // => 'graphplan'
  * ```
  */
@@ -378,7 +378,7 @@ export function graphplanAlgorithm(
  * @concept graphplan
  * @example
  * ```ts
- * import { graphplan, strips } from 'whitebox-engine/search'
+ * import { graphplan, strips } from 'mdml-engine/search'
  * // The spare tire problem (AIMA figure 10.2), without the overnight action.
  * const tire = strips(['tire(flat)', 'tire(spare)', 'at(flat,axle)', 'at(spare,trunk)'], ['at(spare,axle)'], [
  *   { name: 'remove(spare,trunk)', pre: ['at(spare,trunk)'], add: ['at(spare,ground)'], del: ['at(spare,trunk)'] },
@@ -398,7 +398,7 @@ export function graphplan(
   const { state } = runAlgorithm(algorithm, { ...run, maxSteps: maxLevels + 1 })
   const plan = state.steps.flat()
   if (state.status === 'solved' && !validatePlan(problem, plan).valid) {
-    throw new WhiteboxError('convergence', 'graphplan: the extracted plan does not serialise (an internal error)')
+    throw new MdmlError('convergence', 'graphplan: the extracted plan does not serialise (an internal error)')
   }
   return {
     status: state.status === 'running' ? 'budget' : state.status,

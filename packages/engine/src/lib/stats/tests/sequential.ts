@@ -4,7 +4,7 @@
  * normal mean (mixture SPRT p-values and confidence sequences) that stays valid however often it is checked.
  */
 
-import { type TestResult, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, type TestResult } from '../../base/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import { type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -41,8 +41,8 @@ export interface SprtState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { sprtAlgorithm, sprtNormal } from 'whitebox-engine/stats/tests'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { sprtAlgorithm, sprtNormal } from 'mdml-engine/stats/tests'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const alg = sprtAlgorithm([2, 2, 2, 2], { logLikelihoodRatio: sprtNormal(0, 1, 1) })
  * runAlgorithm(alg, { maxSteps: 10 }).state.decision // => 'reject H0'
  * ```
@@ -52,7 +52,7 @@ export function sprtAlgorithm(observations: TensorLike, options: SprtOptions): A
   const alpha = options.alpha ?? 0.05
   const beta = options.beta ?? 0.2
   if (!(alpha > 0 && alpha < 1 && beta > 0 && beta < 1))
-    throw new WhiteboxError('value', 'sprt: alpha and beta lie in (0, 1)')
+    throw new MdmlError('value', 'sprt: alpha and beta lie in (0, 1)')
   const upper = Math.log((1 - beta) / alpha)
   const lower = Math.log(beta / (1 - alpha))
   return {
@@ -90,7 +90,7 @@ export interface SprtResult extends TestResult {
  * @returns The decision, the number of observations used and the path.
  * @example
  * ```ts
- * import { sprt, sprtBernoulli } from 'whitebox-engine/stats/tests'
+ * import { sprt, sprtBernoulli } from 'mdml-engine/stats/tests'
  * sprt([1, 1, 1, 1, 1, 1, 1, 1], { logLikelihoodRatio: sprtBernoulli(0.3, 0.7) }).n // => 4
  * ```
  */
@@ -121,7 +121,7 @@ export function sprt(observations: TensorLike, options: SprtOptions): SprtResult
  * @returns x => log f1(x) / f0(x).
  * @example
  * ```ts
- * import { sprtBernoulli } from 'whitebox-engine/stats/tests'
+ * import { sprtBernoulli } from 'mdml-engine/stats/tests'
  * sprtBernoulli(0.5, 0.5)(1) // => 0
  * ```
  */
@@ -138,7 +138,7 @@ export function sprtBernoulli(p0: number, p1: number): (x: number) => number {
  * @returns x => log f1(x) / f0(x).
  * @example
  * ```ts
- * import { sprtNormal } from 'whitebox-engine/stats/tests'
+ * import { sprtNormal } from 'mdml-engine/stats/tests'
  * sprtNormal(0, 1, 1)(0.5) // => 0
  * ```
  */
@@ -160,7 +160,7 @@ export type SpendingKind = 'obrien-fleming' | 'pocock' | 'power' | 'hwang-shih-d
  * @returns t => alpha spent by t.
  * @example
  * ```ts
- * import { spendingFunction } from 'whitebox-engine/stats/tests'
+ * import { spendingFunction } from 'mdml-engine/stats/tests'
  * spendingFunction('pocock', 0.05)(1) // => 0.05
  * ```
  */
@@ -211,7 +211,7 @@ export interface GroupSequentialDesign {
  * @returns The spent alpha, boundaries and nominal levels.
  * @example
  * ```ts
- * import { alphaSpending } from 'whitebox-engine/stats/tests'
+ * import { alphaSpending } from 'mdml-engine/stats/tests'
  * alphaSpending([1]).boundaries // => [1.959964]
  * ```
  */
@@ -229,7 +229,7 @@ export function alphaSpending(
   const sides = options.sides ?? 2
   for (let i = 0; i < times.length; i++)
     if (!((times[i] ?? 0) > (i === 0 ? 0 : (times[i - 1] ?? 0)) && (times[i] ?? 0) <= 1))
-      throw new WhiteboxError('value', 'alphaSpending: times must increase within (0, 1]')
+      throw new MdmlError('value', 'alphaSpending: times must increase within (0, 1]')
   // A symmetric two-sided design spends alpha / 2 in each tail.
   const perSide = spendingFunction(options.kind ?? 'obrien-fleming', sides === 2 ? alpha / 2 : alpha, {
     ...(options.rho === undefined ? {} : { rho: options.rho }),
@@ -322,7 +322,7 @@ export interface AlwaysValidOptions {
  * @returns The always-valid p-value after each observation (non-increasing).
  * @example
  * ```ts
- * import { alwaysValidPValues } from 'whitebox-engine/stats/tests'
+ * import { alwaysValidPValues } from 'mdml-engine/stats/tests'
  * alwaysValidPValues([0, 0, 0], { sigma: 1 }) // => [1, 1, 1]
  * ```
  */
@@ -353,7 +353,7 @@ export function alwaysValidPValues(x: TensorLike, options: AlwaysValidOptions): 
  * @returns The final mean as the statistic and the always-valid p-value.
  * @example
  * ```ts
- * import { msprt } from 'whitebox-engine/stats/tests'
+ * import { msprt } from 'mdml-engine/stats/tests'
  * msprt([1.2, 0.8, 1.5, 0.9, 1.1, 1.3, 0.7, 1.4], { sigma: 1 }).pValue < 0.05 // => true
  * ```
  */
@@ -375,7 +375,7 @@ export function msprt(x: TensorLike, options: AlwaysValidOptions): TestResult {
  * @returns The lower and upper bounds after each observation.
  * @example
  * ```ts
- * import { confidenceSequence } from 'whitebox-engine/stats/tests'
+ * import { confidenceSequence } from 'mdml-engine/stats/tests'
  * const cs = confidenceSequence([0.1, -0.2, 0.3], { sigma: 1 })
  * cs.lower.shape // => [3]
  * ```

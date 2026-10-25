@@ -4,12 +4,9 @@ Markov network with random potentials."""
 
 import numpy as np
 import pgmpy
-from pgmpy.factors.discrete import DiscreteFactor
-from pgmpy.inference import BeliefPropagation
-from pgmpy.models import DiscreteBayesianNetwork, DiscreteMarkovNetwork
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.pgm import (
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.pgm import (
     NETWORKS,
     checked,
     definition,
@@ -22,6 +19,9 @@ from whitebox_oracle.pgm import (
     pgmpy_model,
     random_potentials,
 )
+from pgmpy.factors.discrete import DiscreteFactor
+from pgmpy.inference import BeliefPropagation
+from pgmpy.models import DiscreteBayesianNetwork, DiscreteMarkovNetwork
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

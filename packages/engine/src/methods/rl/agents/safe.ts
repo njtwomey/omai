@@ -6,7 +6,7 @@
  * proposes.
  */
 
-import { argminOf, type Json, meanOf, minOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argminOf, type Json, MdmlError, meanOf, minOf } from '../../../lib/base/index.ts'
 import { adam, chain, clipByGlobalNorm } from '../../../lib/optim/index.ts'
 import type { Key } from '../../../lib/random/index.ts'
 import type { Agent, Env, EnvModel, Step, Transition } from '../../../lib/rl/index.ts'
@@ -37,9 +37,9 @@ export type CostFunction<S, O, A> = (state: S, action: A, step: Step<S, O>) => n
  * @concept safe-reinforcement-learning
  * @example
  * ```ts
- * import { costWrapper } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { costWrapper } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = costWrapper(cartPole.create(), (_s, a) => (a === 1 ? 0.5 : 0))
  * env.step(env.reset(key(0)).state, 1, key(1)).info.cost // => 0.5
  * ```
@@ -63,7 +63,7 @@ export function costWrapper<S, O, A>(env: Env<S, O, A>, cost: CostFunction<S, O,
  * @concept safe-reinforcement-learning
  * @example
  * ```ts
- * import { transitionCost } from 'whitebox-engine/methods/rl/agents'
+ * import { transitionCost } from 'mdml-engine/methods/rl/agents'
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 1, terminated: false, truncated: false }
  * [transitionCost({ ...t, info: { cost: 2 } }), transitionCost(t)] // => [2, 0]
  * ```
@@ -119,8 +119,8 @@ export interface LagrangianPpoState extends PolicyGradientState {
  * @reference Ray, Achiam and Amodei (2019), Benchmarking safe exploration in deep reinforcement learning.
  * @example
  * ```ts
- * import { lagrangianPpo } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { lagrangianPpo } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * lagrangianPpo(cartPole.create(), { costLimit: 5 }).config // => { costLimit: 5, nSteps: 256, gamma: 0.99, pid: false }
  * ```
  */
@@ -168,7 +168,7 @@ export function lagrangianPpo<A extends PolicyAction = PolicyAction>(
   const update = (s: LagrangianPpoState, k: Key): LagrangianPpoState => {
     const batch = prepareRollout(net, s.params, s.pending, gamma, lambda, costOf)
     const costs = batch.cost
-    if (costs === undefined) throw new WhiteboxError('value', 'lagrangianPpo: the cost head is missing')
+    if (costs === undefined) throw new MdmlError('value', 'lagrangianPpo: the cost head is missing')
     // With no finished episode in this rollout, keep the previous estimate of the episode cost.
     const jc = s.episodeCosts.length > 0 ? meanOf(s.episodeCosts) : s.previousCost
     const { lagrange, integral } = multiplier(s, jc)
@@ -276,7 +276,7 @@ export interface Shield<C, A> {
  * @concept safe-reinforcement-learning
  * @example
  * ```ts
- * import { predicateShield, shieldAction } from 'whitebox-engine/methods/rl/agents'
+ * import { predicateShield, shieldAction } from 'mdml-engine/methods/rl/agents'
  * const s = predicateShield((x: number, a: number) => x + a <= 3, [0, 1, 2])
  * shieldAction(s, 2, 2) // => { action: 0, replaced: true }
  * ```
@@ -298,8 +298,8 @@ export function predicateShield<C, A>(isSafe: (context: C, action: A) => boolean
  * @concept safe-reinforcement-learning
  * @example
  * ```ts
- * import { modelShield } from 'whitebox-engine/methods/rl/agents'
- * import { frozenLake } from 'whitebox-engine/methods/rl'
+ * import { modelShield } from 'mdml-engine/methods/rl/agents'
+ * import { frozenLake } from 'mdml-engine/methods/rl'
  * // On the dry lake, moving down from cell 1 falls into the hole at cell 5.
  * const model = frozenLake.create({ isSlippery: false }).model
  * const shield = model === undefined ? undefined : modelShield(model, (s) => s === 5)
@@ -348,7 +348,7 @@ export function modelShield<S, A>(
  * @concept safe-reinforcement-learning
  * @example
  * ```ts
- * import { predicateShield, shieldAction } from 'whitebox-engine/methods/rl/agents'
+ * import { predicateShield, shieldAction } from 'mdml-engine/methods/rl/agents'
  * shieldAction(predicateShield((_: null, a: number) => a !== 1, [0, 1]), null, 0) // => { action: 0, replaced: false }
  * ```
  */
@@ -361,7 +361,7 @@ export function shieldAction<C, A>(
   const risks = shield.actions.map((a) => shield.risk(context, a))
   const i = argminOf(risks)
   const action = shield.actions[i]
-  if (action === undefined) throw new WhiteboxError('value', 'shieldAction: the shield has no actions')
+  if (action === undefined) throw new MdmlError('value', 'shieldAction: the shield has no actions')
   return { action, replaced: true }
 }
 
@@ -379,9 +379,9 @@ export function shieldAction<C, A>(
  * @reference Alshiekh, Bloem, Ehlers, Koenighofer, Niekum and Topcu (2018), Safe reinforcement learning via shielding.
  * @example
  * ```ts
- * import { predicateShield, shield } from 'whitebox-engine/methods/rl/agents'
- * import { policyAgent } from 'whitebox-engine/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { predicateShield, shield } from 'mdml-engine/methods/rl/agents'
+ * import { policyAgent } from 'mdml-engine/rl'
+ * import { key } from 'mdml-engine/random'
  * const safe = shield(policyAgent(() => 1), predicateShield((_o: number, a: number) => a === 0, [0, 1]))
  * safe.act(safe.init(key(0)), 0, key(1)) // => 0
  * ```
@@ -412,9 +412,9 @@ export function shield<G, O, A, C = O>(
  * @concept safe-reinforcement-learning
  * @example
  * ```ts
- * import { predicateShield, shieldedEnv } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { predicateShield, shieldedEnv } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = shieldedEnv(cliffWalking.create(), predicateShield((s: number, a: number) => !(s === 36 && a === 1), [0, 1, 2, 3]))
  * env.step(36, 1, key(0)).info.shielded // => 1
  * ```

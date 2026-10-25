@@ -5,7 +5,7 @@
  * quadratic boundaries. Fit functions, classes and their exposition.
  */
 
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { coefficientTable, componentsRecord, type Exposition } from '../../lib/exposition/index.ts'
 import {
@@ -42,7 +42,7 @@ interface ClassStats {
 function classStats(m: MatrixView, y: TensorLike, priors: readonly number[] | undefined, who: string): ClassStats {
   const { classes, codes } = encodeLabels(y, who, m.n)
   const k = classes.length
-  if (k < 2) throw new WhiteboxError('value', `${who}: needs at least two classes`)
+  if (k < 2) throw new MdmlError('value', `${who}: needs at least two classes`)
   const rows = classes.map((_, c) => Array.from(codes.keys()).filter((i) => codes[i] === c))
   const means = rows.map((rs) =>
     Array.from({ length: m.d }, (_, j) => rs.reduce((a, i) => a + (m.data[i * m.d + j] ?? 0), 0) / rs.length),
@@ -224,7 +224,7 @@ export function linearDiscriminantAnalysis(hyper: Partial<LdaHyper> = {}): Expla
         const k = st.classes.length
         const d = m.d
         if (h.solver === 'svd' && h.shrinkage !== undefined)
-          throw new WhiteboxError('value', 'linearDiscriminantAnalysis: shrinkage needs the lsqr solver')
+          throw new MdmlError('value', 'linearDiscriminantAnalysis: shrinkage needs the lsqr solver')
         let sigma: number[]
         if (h.solver === 'svd') {
           // The pooled within-class covariance (the within-class scatter / n).
@@ -400,8 +400,7 @@ export function quadraticDiscriminantAnalysis(hyper: Partial<QdaHyper> = {}): Ex
         const st = classStats(m, data.y ?? [], h.priors, 'quadraticDiscriminantAnalysis')
         const d = m.d
         const covs = st.rows.map((rows, c) => {
-          if (rows.length < 2)
-            throw new WhiteboxError('value', 'quadraticDiscriminantAnalysis: each class needs two rows')
+          if (rows.length < 2) throw new MdmlError('value', 'quadraticDiscriminantAnalysis: each class needs two rows')
           const mu = st.means[c] ?? []
           const cov = new Array<number>(d * d).fill(0)
           for (const i of rows)

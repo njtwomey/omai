@@ -6,9 +6,9 @@ import scipy
 import scipy.stats as st
 import statsmodels
 import statsmodels.api as sm
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from scipy.stats import mstats
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "statsmodels": statsmodels.__version__}
 

@@ -4,7 +4,7 @@
  * browser.
  */
 
-import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'whitebox-engine/scene'
+import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'mdml-engine/scene'
 import { texToHtml } from '../maths/tex.ts'
 import { type ColourMode, resolvePaint } from '../theme/tokens.ts'
 import { arrowHeadPoints, smoothPathData, straightPathData } from './paths.ts'
@@ -17,7 +17,7 @@ import { pngDataUrl } from './png.ts'
  * @returns The escaped text.
  * @example
  * ```ts
- * import { escapeXml } from 'whitebox-render/svg'
+ * import { escapeXml } from 'mdml-render/svg'
  * escapeXml('a < b & "c"') // => 'a &lt; b &amp; &quot;c&quot;'
  * ```
  */
@@ -132,8 +132,8 @@ export interface SceneSvgOptions {
  * @returns The SVG text.
  * @example
  * ```ts
- * import { sceneToSvg } from 'whitebox-render/svg'
- * import { circle, scene } from 'whitebox-engine/scene'
+ * import { sceneToSvg } from 'mdml-render/svg'
+ * import { circle, scene } from 'mdml-engine/scene'
  * sceneToSvg(scene(10, 10, [circle(5, 5, 2, { fill: 'tab1' })])).includes('<circle cx="5" cy="5" r="2" fill="#ff7f0e"') // => true
  * ```
  */

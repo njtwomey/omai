@@ -104,7 +104,7 @@ function crossings(layers: readonly string[][], down: ReadonlyMap<string, readon
  * @returns Node boxes, edge routes (polylines through the ranks they cross), group boxes and the size.
  * @example
  * ```ts
- * import { layered } from 'whitebox-render/layout'
+ * import { layered } from 'mdml-render/layout'
  * const g = { nodes: ['a', 'b', 'c'].map((id) => ({ id, width: 40, height: 20 })), edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }] }
  * const l = layered(g)
  * l.nodes['a'].y < l.nodes['b'].y // => true

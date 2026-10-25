@@ -3,8 +3,8 @@
  * samples and the base grid warped into the data, step by step.
  */
 
-import { realNvp as realNvpMethod } from 'whitebox-engine/methods/generative'
-import { dict, int, real } from 'whitebox-engine/space'
+import { realNvp as realNvpMethod } from 'mdml-engine/methods/generative'
+import { dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 import { GENERATIVE_2D, num } from '../_shared.ts'

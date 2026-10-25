@@ -8,9 +8,9 @@ import imblearn
 import numpy as np
 from imblearn.over_sampling import ADASYN, SMOTE, BorderlineSMOTE, RandomOverSampler
 from imblearn.under_sampling import NearMiss, RandomUnderSampler, TomekLinks
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from sklearn.neighbors import NearestNeighbors
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"imbalanced-learn": imblearn.__version__}
 

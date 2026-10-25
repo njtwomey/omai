@@ -4,7 +4,7 @@
  * structure's data, the posteriors, the closed-form posterior predictive and the engine for the planner.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   bernoulli,
   betaBinomial,
@@ -59,39 +59,39 @@ export interface ConjugateData {
  * @param t - A trace of the program.
  * @param c - The structure.
  * @returns The data and known parameters.
- * @throws WhiteboxError with code `value` when the children's shapes do not line up with the prior, or the known
+ * @throws MdmlError with code `value` when the children's shapes do not line up with the prior, or the known
  *   parameters vary across observations.
  * @concept conjugate-priors
  * @example
  * ```ts
- * import { analyse, conjugateData, observe, plate, sample } from 'whitebox-engine/probprog'
- * import { gamma, poisson } from 'whitebox-engine/dists'
+ * import { analyse, conjugateData, observe, plate, sample } from 'mdml-engine/probprog'
+ * import { gamma, poisson } from 'mdml-engine/dists'
  * const model = () => { const r = sample('r', gamma(1, 1)); plate('n', 3, () => observe('k', poisson(r), [1, 4, 2])) }
  * const a = analyse(model, undefined)
  * conjugateData(a.prototype, a.conjugate[0]).data.shape // => [3]
  * ```
  */
 export function conjugateData(t: ProgramTrace, c: ConjugateStructure | undefined): ConjugateData {
-  if (c === undefined) throw new WhiteboxError('value', 'conjugateData: no conjugate structure')
+  if (c === undefined) throw new MdmlError('value', 'conjugateData: no conjugate structure')
   const prior = t.sites.get(c.prior)
-  if (prior?.type !== 'sample') throw new WhiteboxError('value', `conjugateData: no site ${c.prior}`)
+  if (prior?.type !== 'sample') throw new MdmlError('value', `conjugateData: no site ${c.prior}`)
   const thetaBatch = prior.value.shape.slice(0, prior.value.shape.length - prior.fn.eventShape.length)
   const pieces: Value[] = []
   let fixed: Record<string, Value> | undefined
   for (const name of c.children) {
     const child = t.sites.get(name)
-    if (child?.type !== 'sample') throw new WhiteboxError('value', `conjugateData: no site ${name}`)
+    if (child?.type !== 'sample') throw new MdmlError('value', `conjugateData: no site ${name}`)
     const rest = [...thetaBatch, ...child.fn.eventShape]
     const v = child.value
     const tail = v.shape.slice(v.shape.length - rest.length)
     if (v.shape.length < rest.length || tail.some((n, i) => n !== rest[i]))
-      throw new WhiteboxError('value', `conjugateData: ${name} does not line up with the prior ${c.prior}`)
+      throw new MdmlError('value', `conjugateData: ${name} does not line up with the prior ${c.prior}`)
     pieces.push(reshape(v, [-1, ...rest]))
     const f = fixedParameters(unexpanded(child.fn), c.pair)
-    if (f === undefined) throw new WhiteboxError('value', `conjugateData: ${name} lacks a known parameter`)
+    if (f === undefined) throw new MdmlError('value', `conjugateData: ${name} lacks a known parameter`)
     for (const [k, x] of Object.entries(f))
       if (product(x.shape) > Math.max(1, product(prior.value.shape)) * Math.max(1, product(child.fn.eventShape)))
-        throw new WhiteboxError('value', `conjugateData: the known ${k} of ${name} varies across observations`)
+        throw new MdmlError('value', `conjugateData: the known ${k} of ${name} varies across observations`)
     fixed = fixed ?? f
   }
   return { data: concat(pieces), fixed: fixed ?? {} }
@@ -106,9 +106,9 @@ export function conjugateData(t: ProgramTrace, c: ConjugateStructure | undefined
  * @concept conjugate-priors
  * @example
  * ```ts
- * import { analyse, conjugatePosteriors, observe, plate, sample } from 'whitebox-engine/probprog'
- * import { gamma, poisson } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { analyse, conjugatePosteriors, observe, plate, sample } from 'mdml-engine/probprog'
+ * import { gamma, poisson } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => { const r = sample('r', gamma(1, 1)); plate('n', 3, () => observe('k', poisson(r), [1, 4, 2])) }
  * const a = analyse(model, undefined)
  * // Gamma(1 + 7, 1 + 3): mean 2.
@@ -142,9 +142,9 @@ export function conjugatePosteriors(
  * @concept conjugate-priors
  * @example
  * ```ts
- * import { analyse, conjugatePosteriors, conjugatePredictive, observe, plate, sample } from 'whitebox-engine/probprog'
- * import { beta, bernoulli } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { analyse, conjugatePosteriors, conjugatePredictive, observe, plate, sample } from 'mdml-engine/probprog'
+ * import { beta, bernoulli } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => { const p = sample('p', beta(1, 1)); plate('n', 4, () => observe('y', bernoulli({ probs: p }), [1, 1, 0, 1])) }
  * const a = analyse(model, undefined)
  * const c = a.conjugate[0]
@@ -160,12 +160,12 @@ export function conjugatePredictive(
   const p = posterior.params
   const get = (name: string): Value => {
     const v = p[name]
-    if (v === undefined) throw new WhiteboxError('value', `conjugatePredictive: the posterior has no ${name}`)
+    if (v === undefined) throw new MdmlError('value', `conjugatePredictive: the posterior has no ${name}`)
     return v
   }
   const known = (name: string): Value => {
     const v = fixed[name]
-    if (v === undefined) throw new WhiteboxError('value', `conjugatePredictive: no known ${name}`)
+    if (v === undefined) throw new MdmlError('value', `conjugatePredictive: no known ${name}`)
     return primalOf(asTensor(v))
   }
   const key = `${c.likelihood}.${c.parameter}`
@@ -212,13 +212,13 @@ export function conjugatePredictive(
  * @param data - Its data.
  * @param analysis - Its analysis (default: analysed here).
  * @returns The exact posterior; `diagnostics.predictive` lists the sites with a closed-form predictive.
- * @throws WhiteboxError with code `value` when the program is not fully conjugate.
+ * @throws MdmlError with code `value` when the program is not fully conjugate.
  * @concept conjugate-priors
  * @example
  * ```ts
- * import { conjugateInference, observe, plate, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { conjugateInference, observe, plate, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const model = (y: number[]) => { const mu = sample('mu', normal(0, 1)); plate('n', y.length, () => observe('y', normal(mu, 1), y)) }
  * // Posterior N(sum y / (n + 1), 1 / (n + 1)).
  * item(conjugateInference(model, [1, 2, 3]).mean('mu')) // => 1.5
@@ -226,7 +226,7 @@ export function conjugatePredictive(
  */
 export function conjugateInference<D = void>(model: Model<D>, data: D, analysis?: ProgramAnalysis): Posterior {
   const a = analysis ?? analyse(model, data)
-  if (!a.fullyConjugate) throw new WhiteboxError('value', 'conjugateInference: the program is not fully conjugate')
+  if (!a.fullyConjugate) throw new MdmlError('value', 'conjugateInference: the program is not fully conjugate')
   const t = a.prototype
   const marginals = conjugatePosteriors(t, a.conjugate)
   const at: Record<string, Value> = {}
@@ -262,7 +262,7 @@ export function conjugateInference<D = void>(model: Model<D>, data: D, analysis?
     logProb: (values) =>
       Object.entries(marginals).reduce((s, [name, d]) => {
         const v = values[name]
-        if (v === undefined) throw new WhiteboxError('value', `conjugate posterior: no value for ${name}`)
+        if (v === undefined) throw new MdmlError('value', `conjugate posterior: no value for ${name}`)
         return s + toFlat(sum(d.logProb(v))).reduce((x, y) => x + y, 0)
       }, 0),
   })
@@ -276,8 +276,8 @@ export function conjugateInference<D = void>(model: Model<D>, data: D, analysis?
  * @concept inference-engines
  * @example
  * ```ts
- * import { analyse, conjugateEngine, observe, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
+ * import { analyse, conjugateEngine, observe, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
  * const a = analyse(() => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 0) }, undefined)
  * conjugateEngine().applies(a).applies // => true
  * ```

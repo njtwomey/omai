@@ -3,7 +3,7 @@
  * manifolds such as the Swiss roll and tabular data, starting from the handwritten digits.
  */
 
-import { umap as umapMethod } from 'whitebox-engine/methods/manifold'
+import { umap as umapMethod } from 'mdml-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 import { rowColours } from '../../../entry/slots.ts'

@@ -4,6 +4,7 @@
  * as GIF or WebM. `useFrameSize` tells content the size it is drawn at.
  */
 
+import type { Pixels } from 'mdml-engine/scene'
 import {
   type CSSProperties,
   createContext,
@@ -15,7 +16,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { Pixels } from 'whitebox-engine/scene'
 import { encodeGif } from '../animation/gif.ts'
 import { canEncodeVideo, encodeWebm } from '../animation/video.ts'
 import type { Figure } from '../figure/figure.ts'
@@ -158,8 +158,8 @@ async function recordFrames(
 
 /**
  * The whole figure inside an element as one SVG document: every chart in it (re-drawn by ECharts' SVG renderer at its
- * place), every scene (`SceneView`, or an inline SVG marked `data-whitebox-svg`) as drawn, and every overlay cell
- * (`data-whitebox-overlay`: TeX from `data-tex` as MathML, or its text), on the background colour. Panels are parts of
+ * place), every scene (`SceneView`, or an inline SVG marked `data-mdml-svg`) as drawn, and every overlay cell
+ * (`data-mdml-overlay`: TeX from `data-tex` as MathML, or its text), on the background colour. Panels are parts of
  * the figure, so they export together. A magnified element (an expanded frame's fixed content) exports at its own,
  * unmagnified size.
  *
@@ -182,7 +182,7 @@ export function figureSvg(
   })
   const parts: FigurePart[] = []
   const echarts = loadEcharts()
-  for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-chart]')) {
+  for (const el of root.querySelectorAll<HTMLElement>('[data-mdml-chart]')) {
     const chart = echarts.getInstanceByDom(el)
     if (chart === undefined) continue
     const at = place(el.getBoundingClientRect())
@@ -190,15 +190,15 @@ export function figureSvg(
     const height = Math.round(at.height)
     parts.push({ ...at, width, height, svg: chartToSvg(chart.getOption(), { width, height, mode: options.mode }) })
   }
-  // Inline SVG drawings (a SceneView in a `data-whitebox-svg` element) go in as they are drawn.
-  for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-svg]')) {
+  // Inline SVG drawings (a SceneView in a `data-mdml-svg` element) go in as they are drawn.
+  for (const el of root.querySelectorAll<HTMLElement>('[data-mdml-svg]')) {
     const svg = el.querySelector('svg')
     if (svg === null) continue
     parts.push({ ...place(svg.getBoundingClientRect()), svg: svg.outerHTML })
   }
   // Scenes (diagrams, worlds) are SVG already: each goes in as drawn, at its place.
-  for (const el of root.querySelectorAll<SVGSVGElement>('svg[data-whitebox-scene]')) {
-    if (el.closest('[data-whitebox-svg]') !== null) continue
+  for (const el of root.querySelectorAll<SVGSVGElement>('svg[data-mdml-scene]')) {
+    if (el.closest('[data-mdml-svg]') !== null) continue
     const at = place(el.getBoundingClientRect())
     if (at.width === 0 || at.height === 0) continue
     const copy = el.cloneNode(true) as SVGSVGElement
@@ -208,7 +208,7 @@ export function figureSvg(
     parts.push({ ...at, svg: new XMLSerializer().serializeToString(copy) })
   }
   if (options.overlays ?? true)
-    for (const el of root.querySelectorAll<HTMLElement>('[data-whitebox-overlay]')) {
+    for (const el of root.querySelectorAll<HTMLElement>('[data-mdml-overlay]')) {
       const at = place(el.getBoundingClientRect())
       const tex = el.dataset['tex']
       const colour = getComputedStyle(el).color
@@ -431,7 +431,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       <div
         ref={frameRef}
         style={{ position: 'relative', width, height, maxWidth: '100%', overflow: 'hidden' }}
-        data-whitebox-frame=""
+        data-mdml-frame=""
       >
         {!expanded && content(pageSize)}
       </div>

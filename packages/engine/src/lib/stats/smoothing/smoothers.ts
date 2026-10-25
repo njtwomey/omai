@@ -5,7 +5,7 @@
  * cross-validation.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { makeSmoothingSpline, type SmoothingSpline } from '../../numerics/interpolate/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import { asTensor, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
@@ -46,7 +46,7 @@ export interface LowessResult {
  * @returns The sorted covariate and the fit at it.
  * @example
  * ```ts
- * import { lowess } from 'whitebox-engine/stats/smoothing'
+ * import { lowess } from 'mdml-engine/stats/smoothing'
  * lowess([1, 2, 3, 4, 5], [2, 4, 6, 8, 10]).fitted // => [2, 4, 6, 8, 10]
  * ```
  */
@@ -54,7 +54,7 @@ export function lowess(x: TensorLike, y: TensorLike, options: LowessOptions = {}
   const { x: xs, y: ys } = sortedPairs('lowess', x, y)
   const n = xs.length
   const frac = options.frac ?? 2 / 3
-  if (!(frac >= 0 && frac <= 1)) throw new WhiteboxError('value', 'lowess: frac must lie in [0, 1]')
+  if (!(frac >= 0 && frac <= 1)) throw new MdmlError('value', 'lowess: frac must lie in [0, 1]')
   const delta = options.delta ?? 0
   let k = Math.trunc(frac * n + 1e-10)
   k = Math.min(n, Math.max(2, k))
@@ -157,7 +157,7 @@ export interface LoessOptions {
  * @returns The fitted values.
  * @example
  * ```ts
- * import { loess } from 'whitebox-engine/stats/smoothing'
+ * import { loess } from 'mdml-engine/stats/smoothing'
  * loess([0, 1, 2, 3, 4, 5, 6, 7], [0, 1, 4, 9, 16, 25, 36, 49]) // => [0, 1, 4, 9, 16, 25, 36, 49]
  * ```
  */
@@ -236,7 +236,7 @@ export interface KernelSmootherOptions {
 
 function bandwidthOf(xs: Float64Array, h: number | undefined): number {
   if (h !== undefined) {
-    if (!(h > 0)) throw new WhiteboxError('value', 'kernel smoother: the bandwidth must be positive')
+    if (!(h > 0)) throw new MdmlError('value', 'kernel smoother: the bandwidth must be positive')
     return h
   }
   let m = 0
@@ -257,7 +257,7 @@ function bandwidthOf(xs: Float64Array, h: number | undefined): number {
  * @returns The estimates.
  * @example
  * ```ts
- * import { nadarayaWatson } from 'whitebox-engine/stats/smoothing'
+ * import { nadarayaWatson } from 'mdml-engine/stats/smoothing'
  * nadarayaWatson([0, 1, 2], [1, 1, 1], [0.5], { bandwidth: 1 }) // => [1]
  * ```
  */
@@ -295,7 +295,7 @@ export function nadarayaWatson(
  * @returns The estimates.
  * @example
  * ```ts
- * import { localLinear } from 'whitebox-engine/stats/smoothing'
+ * import { localLinear } from 'mdml-engine/stats/smoothing'
  * localLinear([0, 1, 2, 3], [1, 3, 5, 7], [0, 1.5], { bandwidth: 1 }) // => [1, 4]
  * ```
  */
@@ -342,7 +342,7 @@ export interface RunningOptions {
  * @returns The statistic at each position.
  * @example
  * ```ts
- * import { runningStatistic } from 'whitebox-engine/stats/smoothing'
+ * import { runningStatistic } from 'mdml-engine/stats/smoothing'
  * runningStatistic([1, 5, 2, 8, 3], 3, (w) => w.reduce((m, v) => Math.max(m, v), -Infinity)) // => [NaN, 5, 8, 8, NaN]
  * ```
  */
@@ -354,7 +354,7 @@ export function runningStatistic(
 ): Tensor {
   const a = sample('runningStatistic', x, 1)
   if (!(Number.isInteger(window) && window >= 1))
-    throw new WhiteboxError('value', 'running: the window must be a positive integer')
+    throw new MdmlError('value', 'running: the window must be a positive integer')
   const n = a.length
   const offset = options.center === false ? window - 1 : Math.floor(window / 2)
   return vec(
@@ -376,7 +376,7 @@ export function runningStatistic(
  * @returns The running mean.
  * @example
  * ```ts
- * import { runningMean } from 'whitebox-engine/stats/smoothing'
+ * import { runningMean } from 'mdml-engine/stats/smoothing'
  * runningMean([1, 2, 3, 4, 5], 3) // => [NaN, 2, 3, 4, NaN]
  * ```
  */
@@ -393,7 +393,7 @@ export function runningMean(x: TensorLike, window: number, options: RunningOptio
  * @returns The running median.
  * @example
  * ```ts
- * import { runningMedian } from 'whitebox-engine/stats/smoothing'
+ * import { runningMedian } from 'mdml-engine/stats/smoothing'
  * runningMedian([1, 9, 2, 3, 8], 3) // => [NaN, 2, 3, 3, NaN]
  * ```
  */
@@ -411,7 +411,7 @@ export function runningMedian(x: TensorLike, window: number, options: RunningOpt
  * @returns The fitted spline with its penalty, GCV score and degrees of freedom.
  * @example
  * ```ts
- * import { smoothingSpline } from 'whitebox-engine/stats/smoothing'
+ * import { smoothingSpline } from 'mdml-engine/stats/smoothing'
  * smoothingSpline([0, 1, 2, 3, 4, 5, 6], [0, 1, 0, 1, 0, 1, 0], { df: 3 }).degreesOfFreedom // => 3
  * ```
  */
@@ -425,7 +425,7 @@ export function smoothingSpline(
   if (options.df === undefined) return makeSmoothingSpline(x, y, w)
   const target = options.df
   const n = sample('smoothingSpline', x, 5).length
-  if (!(target > 2 && target < n)) throw new WhiteboxError('value', 'smoothingSpline: df must lie in (2, n)')
+  if (!(target > 2 && target < n)) throw new MdmlError('value', 'smoothingSpline: df must lie in (2, n)')
   const f = (ll: number): number => makeSmoothingSpline(x, y, { ...w, lam: Math.exp(ll) }).degreesOfFreedom - target
   let lo = -30
   let hi = 30

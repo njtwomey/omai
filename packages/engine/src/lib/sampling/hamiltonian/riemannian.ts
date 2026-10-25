@@ -5,7 +5,7 @@
  */
 
 import { hessian, jacobian } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { ddot, dgemv, eigh } from '../../numerics/linalg/index.ts'
 import { foldIn, normal } from '../../random/index.ts'
 import { fromStorage, neg, reshape, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
@@ -97,10 +97,7 @@ function riemannianDynamics(target: LogDensity, options: Omit<RiemannianHMCOptio
   const fn = target.fn
   const userMetric = options.metric
   if (userMetric === undefined && fn === undefined) {
-    throw new WhiteboxError(
-      'value',
-      'riemannianHmcKernel: the SoftAbs metric needs a differentiable target (use target())',
-    )
+    throw new MdmlError('value', 'riemannianHmcKernel: the SoftAbs metric needs a differentiable target (use target())')
   }
   const n = target.dim
   const alpha = options.softAbsAlpha ?? 1e6
@@ -288,16 +285,16 @@ function attempt<T>(f: () => T): T | undefined {
  * @param target - The target (with `fn`, as built by `target`, when the metric is the default).
  * @param options - Step size, steps, metric, SoftAbs alpha, fixed-point iterations and tolerance, divergence threshold.
  * @returns The kernel. Transitions where the metric cannot be evaluated or factored count as divergent.
- * @throws WhiteboxError with code `value` for a target without a differentiable function (default metric), a
+ * @throws MdmlError with code `value` for a target without a differentiable function (default metric), a
  *   non-positive step size or an invalid number of steps.
  * @concept riemannian-hmc
  * @reference M. Girolami and B. Calderhead, Riemann manifold Langevin and Hamiltonian Monte Carlo methods (JRSS B
  *   2011); M. Betancourt, A general metric for Riemannian manifold Hamiltonian Monte Carlo (2013).
  * @example
  * ```ts
- * import { riemannianHmcKernel, target } from 'whitebox-engine/sampling'
- * import { mul, square, sum } from 'whitebox-engine/tensor'
- * import { key } from 'whitebox-engine/random'
+ * import { riemannianHmcKernel, target } from 'mdml-engine/sampling'
+ * import { mul, square, sum } from 'mdml-engine/tensor'
+ * import { key } from 'mdml-engine/random'
  * const t = target((x) => mul(-0.5, sum(square(x))), 2)
  * const k = riemannianHmcKernel(t, { stepSize: 0.3, numIntegrationSteps: 3 })
  * k.step(key(0), k.init([0.5, -0.5])).info.acceptanceRate > 0.9 // => true
@@ -306,7 +303,7 @@ function attempt<T>(f: () => T): T | undefined {
 export function riemannianHmcKernel(target: LogDensity, options: RiemannianHMCOptions): MCMCKernel {
   const { stepSize, numIntegrationSteps: steps } = options
   if (!(Number.isInteger(steps) && steps >= 1 && steps <= 10000)) {
-    throw new WhiteboxError('value', 'riemannianHmcKernel: numIntegrationSteps must be an integer in [1, 10000]')
+    throw new MdmlError('value', 'riemannianHmcKernel: numIntegrationSteps must be an integer in [1, 10000]')
   }
   const { geometry, leap, energy } = riemannianDynamics(target, options)
   const n = target.dim
@@ -323,7 +320,7 @@ export function riemannianHmcKernel(target: LogDensity, options: RiemannianHMCOp
     },
     init: (position) => {
       if (position.length !== n) {
-        throw new WhiteboxError('shape', `riemannianHmcKernel: the position has ${position.length} values, need ${n}`)
+        throw new MdmlError('shape', `riemannianHmcKernel: the position has ${position.length} values, need ${n}`)
       }
       const x = Float64Array.from(position)
       const s: MCMCState = { position: x, logDensity: target.logDensity(x) }
@@ -386,12 +383,12 @@ export interface RiemannianPoint {
  * @param momentum - The starting momentum.
  * @param options - Step size, number of steps, metric and fixed-point settings, as {@link riemannianHmcKernel}.
  * @returns The states, starting with the initial one.
- * @throws WhiteboxError with code `shape` for inputs of the wrong length, and `value` as {@link riemannianHmcKernel}.
+ * @throws MdmlError with code `shape` for inputs of the wrong length, and `value` as {@link riemannianHmcKernel}.
  * @concept riemannian-hmc
  * @example
  * ```ts
- * import { riemannianTrajectory, target } from 'whitebox-engine/sampling'
- * import { mul, square, sum } from 'whitebox-engine/tensor'
+ * import { riemannianTrajectory, target } from 'mdml-engine/sampling'
+ * import { mul, square, sum } from 'mdml-engine/tensor'
  * const t = target((x) => mul(-0.5, sum(square(x))), 2)
  * const path = riemannianTrajectory(t, [1, 0], [0, 1], { stepSize: 0.1, numIntegrationSteps: 5 })
  * Math.abs((path[5]?.energy ?? 0) - (path[0]?.energy ?? 0)) < 1e-2 // => true
@@ -405,11 +402,11 @@ export function riemannianTrajectory(
 ): RiemannianPoint[] {
   const n = target.dim
   if (position.length !== n || momentum.length !== n) {
-    throw new WhiteboxError('shape', `riemannianTrajectory: position and momentum need ${n} values`)
+    throw new MdmlError('shape', `riemannianTrajectory: position and momentum need ${n} values`)
   }
   const steps = options.numIntegrationSteps
   if (!(Number.isInteger(steps) && steps >= 0 && steps <= 10000)) {
-    throw new WhiteboxError('value', 'riemannianTrajectory: numIntegrationSteps must be an integer in [0, 10000]')
+    throw new MdmlError('value', 'riemannianTrajectory: numIntegrationSteps must be an integer in [0, 10000]')
   }
   const { geometry, leap, energy } = riemannianDynamics(target, options)
   let g = geometry(Float64Array.from(position))

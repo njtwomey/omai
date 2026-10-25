@@ -1,5 +1,5 @@
+import { dataBias, paretoFront, subgroupGrid, subgroupReport, tableRates } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { dataBias, paretoFront, subgroupGrid, subgroupReport, tableRates } from 'whitebox-engine/exposition'
 import { dataBiasPanels, dataBiasView } from './data-bias.ts'
 import { paretoFrontView } from './frontiers.ts'
 import { stillOf, viewFor } from './registry.ts'

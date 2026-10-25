@@ -3,7 +3,7 @@
  * rules), each with the statistics that qualify it (precision and coverage, coefficient, support and importance).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** One condition of a rule: feature `op` value, or the feature within [lower, upper]. */
 export interface RuleClause {
@@ -49,10 +49,10 @@ export interface RuleSet {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `value` when a clause or linear term names a feature that is not in `features`.
+ * @throws MdmlError `value` when a clause or linear term names a feature that is not in `features`.
  * @example
  * ```ts
- * import { ruleSet } from 'whitebox-engine/exposition'
+ * import { ruleSet } from 'mdml-engine/exposition'
  * const r = ruleSet({ method: 'anchors', features: ['age'], output: 'P(y)', rules: [{ clauses: [{ feature: 0, op: '>', threshold: 40 }], precision: 0.97, coverage: 0.3 }] })
  * r.rules[0].precision // => 0.97
  * ```
@@ -60,7 +60,7 @@ export interface RuleSet {
 export function ruleSet(record: Omit<RuleSet, 'kind'>): RuleSet {
   const d = record.features.length
   const named = (j: number): void => {
-    if (!(Number.isInteger(j) && j >= 0 && j < d)) throw new WhiteboxError('value', `rules: feature ${j} is not named`)
+    if (!(Number.isInteger(j) && j >= 0 && j < d)) throw new MdmlError('value', `rules: feature ${j} is not named`)
   }
   for (const r of record.rules) {
     for (const c of r.clauses) named(c.feature)
@@ -78,7 +78,7 @@ export function ruleSet(record: Omit<RuleSet, 'kind'>): RuleSet {
  * @returns The text.
  * @example
  * ```ts
- * import { ruleText } from 'whitebox-engine/exposition'
+ * import { ruleText } from 'mdml-engine/exposition'
  * ruleText({ clauses: [{ feature: 0, op: '>', threshold: 40 }, { feature: 1, op: 'in', lower: 1, upper: 2 }] }, ['age', 'kids']) // => 'age > 40 and 1 ≤ kids ≤ 2'
  * ```
  */

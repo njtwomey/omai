@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { CounterfactualSet, PrototypeSet } from 'whitebox-engine/exposition'
+import type { CounterfactualSet, PrototypeSet } from 'mdml-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { heatmap } from '../charts/matrices.ts'
 import { cartesian, layer } from '../charts/plot.ts'
@@ -39,9 +39,9 @@ export function counterfactualRows(record: CounterfactualSet, all = false): numb
  * @returns The height in pixels.
  * @example
  * ```ts
- * import { counterfactualSet } from 'whitebox-engine/exposition'
- * import { figure } from 'whitebox-render/figure'
- * import { counterfactualTableHeight } from 'whitebox-render/views'
+ * import { counterfactualSet } from 'mdml-engine/exposition'
+ * import { figure } from 'mdml-render/figure'
+ * import { counterfactualTableHeight } from 'mdml-render/views'
  * const r = counterfactualSet({ method: 'm', features: ['a', 'b'], output: 'y', original: [0, 0], originalPrediction: 0, counterfactuals: [{ x: [1, 0], prediction: 1, distance: 1, valid: true, changed: [0] }] })
  * counterfactualTableHeight(r, figure()) > 0 // => true
  * ```
@@ -81,8 +81,8 @@ function changeColour(delta: number, scale: number, mode: ColourMode): string {
  * @returns The ECharts option (drawn with graphic elements).
  * @example
  * ```ts
- * import { counterfactualSet } from 'whitebox-engine/exposition'
- * import { counterfactualTableView } from 'whitebox-render/views'
+ * import { counterfactualSet } from 'mdml-engine/exposition'
+ * import { counterfactualTableView } from 'mdml-render/views'
  * const r = counterfactualSet({ method: 'm', features: ['a', 'b'], output: 'y', original: [0, 0], originalPrediction: 0, counterfactuals: [{ x: [1, 0], prediction: 1, distance: 1, valid: true, changed: [0] }] })
  * counterfactualTableView(r).graphic.length > 4 // => true
  * ```
@@ -177,8 +177,8 @@ export function counterfactualTableView(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { prototypeSet } from 'whitebox-engine/exposition'
- * import { prototypeView } from 'whitebox-render/views'
+ * import { prototypeSet } from 'mdml-engine/exposition'
+ * import { prototypeView } from 'mdml-render/views'
  * const r = prototypeSet({ method: 'MMD-critic', features: ['a', 'b'], prototypes: [0], criticisms: [1], prototypeData: [[0, 0]], criticismData: [[3, 3]], witness: [0, 0.2], points: [[0, 0], [3, 3]] })
  * prototypeView(r).series.length // => 3
  * ```

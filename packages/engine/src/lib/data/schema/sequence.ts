@@ -60,7 +60,7 @@ function side(s: readonly (readonly number[])[] | TensorLike, mask: TensorLike |
  * @returns The dataset.
  * @example
  * ```ts
- * import { sequences } from 'whitebox-engine/data'
+ * import { sequences } from 'mdml-engine/data'
  * const d = sequences([[1, 2, 3], [2]], [[3, 2, 1], [2]], ['<pad>', 'a', 'b', 'c'])
  * d.inputs.shape // => [2, 3]
  * Array.from(d.inputMask.data) // => [1, 1, 1, 1, 0, 0]

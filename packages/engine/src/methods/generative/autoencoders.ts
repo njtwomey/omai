@@ -6,7 +6,7 @@
  */
 
 import { valueAndGrad } from '../../lib/autodiff/index.ts'
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type Explained, type Exposition, embeddingSteps, imageSteps } from '../../lib/exposition/index.ts'
 import type { FitOptions, LearnData } from '../../lib/learn/index.ts'
 import { bernoulliLogLikelihood, gaussianKl, gaussianLogLikelihood } from '../../lib/losses/index.ts'
@@ -146,7 +146,7 @@ export function vae(data: LearnData, options: VaeOptions = {}, fit: FitOptions =
   const likelihood = options.likelihood ?? 'gaussian'
   const p = prepare(data, 'vae', { standardise: likelihood === 'gaussian' })
   if (likelihood === 'bernoulli' && p.rows.some((r) => r.some((v) => v < 0 || v > 1)))
-    throw new WhiteboxError('value', 'vae: a Bernoulli decoder needs data in [0, 1]')
+    throw new MdmlError('value', 'vae: a Bernoulli decoder needs data in [0, 1]')
   const key = runKey(fit)
   const d = p.d
   const latent = options.latent ?? 2
@@ -154,8 +154,7 @@ export function vae(data: LearnData, options: VaeOptions = {}, fit: FitOptions =
   const activation = options.activation ?? 'tanh'
   const beta = options.beta ?? 1
   const noiseScale = options.noiseScale ?? 0.2
-  if (noiseScale !== 'learned' && !(noiseScale > 0))
-    throw new WhiteboxError('value', 'vae: noiseScale must be positive')
+  if (noiseScale !== 'learned' && !(noiseScale > 0)) throw new MdmlError('value', 'vae: noiseScale must be positive')
   const encoder = mlp([d, hidden, hidden, 2 * latent], activation, foldIn(key, 1))
   const decoder = mlp([latent, hidden, hidden, d], activation, foldIn(key, 2))
   const initial: Params = {
@@ -211,7 +210,7 @@ export function vae(data: LearnData, options: VaeOptions = {}, fit: FitOptions =
   }
   const shape = options.imageShape
   if (shape !== undefined && shape[0] * shape[1] !== d)
-    throw new WhiteboxError('value', `vae: images of ${shape[0]} by ${shape[1]} do not have ${d} pixels`)
+    throw new MdmlError('value', `vae: images of ${shape[0]} by ${shape[1]} do not have ${d} pixels`)
   const pictured = shape === undefined ? [] : pictureRows(p, shown.length, options.images ?? 10)
   const records = (frames: readonly Frame<VaeFrame>[], losses: Readonly<Record<string, readonly number[]>>) =>
     vaeRecords(p, shown, frames, losses, likelihood, shape === undefined ? undefined : { shape, rows: pictured })

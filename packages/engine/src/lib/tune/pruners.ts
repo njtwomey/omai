@@ -4,7 +4,7 @@
  * Hyperband, plus a pruner that never prunes.
  */
 
-import { type Json, quantileOf, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError, quantileOf } from '../base/index.ts'
 import { crc32 } from '../information/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import type { IntermediateValue, Study, StudyDirection, Trial } from './study.ts'
@@ -43,7 +43,7 @@ const KEEP: PruneDecision = { prune: false }
 const PRUNE: PruneDecision = { prune: true }
 
 function direction(study: Study, name: string): StudyDirection {
-  if (study.directions.length !== 1) throw new WhiteboxError('value', `${name}: pruning needs a single objective`)
+  if (study.directions.length !== 1) throw new MdmlError('value', `${name}: pruning needs a single objective`)
   return study.directions[0] as StudyDirection
 }
 
@@ -57,8 +57,7 @@ function valueAt(intermediate: readonly IntermediateValue[], step: number): numb
 }
 
 function nonNegativeInteger(x: number, what: string, name: string): void {
-  if (!(Number.isInteger(x) && x >= 0))
-    throw new WhiteboxError('value', `${name}: ${what} must be a non-negative integer`)
+  if (!(Number.isInteger(x) && x >= 0)) throw new MdmlError('value', `${name}: ${what} must be a non-negative integer`)
 }
 
 /** Whether `step` is the first report at or after the last pruning checkpoint (Optuna's `_is_first_in_interval_step`). */
@@ -89,17 +88,17 @@ export interface PercentilePrunerOptions {
  * @param percentile - The percentile in [0, 100] (25 keeps the top quarter of minimised values).
  * @param options - Startup trials, warm-up steps, interval and the minimum number of trials compared.
  * @returns The pruner.
- * @throws WhiteboxError with code `value` for a percentile outside [0, 100] or invalid counts.
+ * @throws MdmlError with code `value` for a percentile outside [0, 100] or invalid counts.
  * @concept early-stopping
  * @example
  * ```ts
- * import { percentilePruner } from 'whitebox-engine/tune'
+ * import { percentilePruner } from 'mdml-engine/tune'
  * percentilePruner(25).name // => 'percentile'
  * ```
  */
 export function percentilePruner(percentile: number, options: PercentilePrunerOptions = {}): Pruner {
   if (!(percentile >= 0 && percentile <= 100))
-    throw new WhiteboxError('value', `percentilePruner: percentile must be in [0, 100], got ${percentile}`)
+    throw new MdmlError('value', `percentilePruner: percentile must be in [0, 100], got ${percentile}`)
   const nStartup = options.nStartupTrials ?? 5
   const warmup = options.nWarmupSteps ?? 0
   const interval = options.intervalSteps ?? 1
@@ -107,9 +106,9 @@ export function percentilePruner(percentile: number, options: PercentilePrunerOp
   nonNegativeInteger(nStartup, 'nStartupTrials', 'percentilePruner')
   nonNegativeInteger(warmup, 'nWarmupSteps', 'percentilePruner')
   if (!(Number.isInteger(interval) && interval >= 1))
-    throw new WhiteboxError('value', 'percentilePruner: intervalSteps must be at least 1')
+    throw new MdmlError('value', 'percentilePruner: intervalSteps must be at least 1')
   if (!(Number.isInteger(nMin) && nMin >= 1))
-    throw new WhiteboxError('value', 'percentilePruner: nMinTrials must be at least 1')
+    throw new MdmlError('value', 'percentilePruner: nMinTrials must be at least 1')
   return {
     name: percentile === 50 ? 'median' : 'percentile',
     config: { percentile, nStartupTrials: nStartup, nWarmupSteps: warmup, intervalSteps: interval, nMinTrials: nMin },
@@ -154,7 +153,7 @@ export function percentilePruner(percentile: number, options: PercentilePrunerOp
  * @concept early-stopping
  * @example
  * ```ts
- * import { medianPruner } from 'whitebox-engine/tune'
+ * import { medianPruner } from 'mdml-engine/tune'
  * medianPruner({ nStartupTrials: 2 }).config // => { percentile: 50, nStartupTrials: 2, nWarmupSteps: 0, intervalSteps: 1, nMinTrials: 1 }
  * ```
  */
@@ -168,12 +167,12 @@ export function medianPruner(options: PercentilePrunerOptions = {}): Pruner {
  *
  * @param options - Bounds (at least one), warm-up steps and interval.
  * @returns The pruner.
- * @throws WhiteboxError with code `value` when neither bound is given or lower exceeds upper.
+ * @throws MdmlError with code `value` when neither bound is given or lower exceeds upper.
  * @concept early-stopping
  * @example
  * ```ts
- * import { thresholdPruner, createStudy } from 'whitebox-engine/tune'
- * import { real } from 'whitebox-engine/space'
+ * import { thresholdPruner, createStudy } from 'mdml-engine/tune'
+ * import { real } from 'mdml-engine/space'
  * const pruner = thresholdPruner({ upper: 10 })
  * pruner.prune(createStudy(real(0, 1)), { number: 0, params: 0, intermediate: [{ step: 0, value: 12 }], rungValues: [] }).prune // => true
  * ```
@@ -187,15 +186,15 @@ export function thresholdPruner(
   } = {},
 ): Pruner {
   if (options.lower === undefined && options.upper === undefined)
-    throw new WhiteboxError('value', 'thresholdPruner: give lower or upper')
+    throw new MdmlError('value', 'thresholdPruner: give lower or upper')
   const lower = options.lower ?? Number.NEGATIVE_INFINITY
   const upper = options.upper ?? Number.POSITIVE_INFINITY
-  if (lower > upper) throw new WhiteboxError('value', 'thresholdPruner: lower must not exceed upper')
+  if (lower > upper) throw new MdmlError('value', 'thresholdPruner: lower must not exceed upper')
   const warmup = options.nWarmupSteps ?? 0
   const interval = options.intervalSteps ?? 1
   nonNegativeInteger(warmup, 'nWarmupSteps', 'thresholdPruner')
   if (!(Number.isInteger(interval) && interval >= 1))
-    throw new WhiteboxError('value', 'thresholdPruner: intervalSteps must be at least 1')
+    throw new MdmlError('value', 'thresholdPruner: intervalSteps must be at least 1')
   return {
     name: 'threshold',
     config: {
@@ -236,19 +235,19 @@ function nanExtreme(values: readonly number[], max: boolean): number {
  * @param patience - Reports without improvement tolerated.
  * @param minDelta - The improvement that counts (default 0).
  * @returns The pruner.
- * @throws WhiteboxError with code `value` for a negative patience or delta.
+ * @throws MdmlError with code `value` for a negative patience or delta.
  * @concept early-stopping
  * @example
  * ```ts
- * import { patientPruner, createStudy } from 'whitebox-engine/tune'
- * import { real } from 'whitebox-engine/space'
+ * import { patientPruner, createStudy } from 'mdml-engine/tune'
+ * import { real } from 'mdml-engine/space'
  * const reports = [3, 2, 2.5, 2.4].map((value, step) => ({ step, value }))
  * patientPruner(undefined, 1).prune(createStudy(real(0, 1)), { number: 0, params: 0, intermediate: reports, rungValues: [] }).prune // => true
  * ```
  */
 export function patientPruner(wrapped: Pruner | undefined, patience: number, minDelta = 0): Pruner {
   nonNegativeInteger(patience, 'patience', 'patientPruner')
-  if (!(minDelta >= 0)) throw new WhiteboxError('value', 'patientPruner: minDelta must be non-negative')
+  if (!(minDelta >= 0)) throw new MdmlError('value', 'patientPruner: minDelta must be non-negative')
   return {
     name: 'patient',
     config: { patience, minDelta, wrapped: wrapped?.name ?? null },
@@ -340,12 +339,12 @@ function halving(
  * @param options - Minimum resource (or `'auto'`), reduction factor eta, minimum early-stopping rate s and bootstrap
  *   count.
  * @returns The pruner.
- * @throws WhiteboxError with code `value` for invalid settings.
+ * @throws MdmlError with code `value` for invalid settings.
  * @concept successive-halving
  * @reference Li et al. (2020), A system for massively parallel hyperparameter tuning (ASHA).
  * @example
  * ```ts
- * import { successiveHalvingPruner } from 'whitebox-engine/tune'
+ * import { successiveHalvingPruner } from 'mdml-engine/tune'
  * successiveHalvingPruner({ minResource: 1, reductionFactor: 3 }).name // => 'successiveHalving'
  * ```
  */
@@ -355,13 +354,13 @@ export function successiveHalvingPruner(options: SuccessiveHalvingPrunerOptions 
   const rate = options.minEarlyStoppingRate ?? 0
   const bootstrap = options.bootstrapCount ?? 0
   if (minResource !== 'auto' && !(Number.isInteger(minResource) && minResource >= 1))
-    throw new WhiteboxError('value', 'successiveHalvingPruner: minResource must be a positive integer or auto')
+    throw new MdmlError('value', 'successiveHalvingPruner: minResource must be a positive integer or auto')
   if (!(Number.isInteger(eta) && eta >= 2))
-    throw new WhiteboxError('value', 'successiveHalvingPruner: reductionFactor must be an integer of at least 2')
+    throw new MdmlError('value', 'successiveHalvingPruner: reductionFactor must be an integer of at least 2')
   nonNegativeInteger(rate, 'minEarlyStoppingRate', 'successiveHalvingPruner')
   nonNegativeInteger(bootstrap, 'bootstrapCount', 'successiveHalvingPruner')
   if (bootstrap > 0 && minResource === 'auto')
-    throw new WhiteboxError('value', 'successiveHalvingPruner: bootstrapCount needs an explicit minResource')
+    throw new MdmlError('value', 'successiveHalvingPruner: bootstrapCount needs an explicit minResource')
   return {
     name: 'successiveHalving',
     config: { minResource, reductionFactor: eta, minEarlyStoppingRate: rate, bootstrapCount: bootstrap },
@@ -393,7 +392,7 @@ function hyperbandBrackets(maxResource: number, minResource: number, eta: number
  * @returns The bracket index.
  * @example
  * ```ts
- * import { hyperbandBracketOf } from 'whitebox-engine/tune'
+ * import { hyperbandBracketOf } from 'mdml-engine/tune'
  * hyperbandBracketOf('study', 0, [3, 2, 1]) // => 0
  * ```
  */
@@ -416,12 +415,12 @@ export function hyperbandBracketOf(studyName: string, number: number, budgets: r
  * @param options - Minimum resource (default 1), maximum resource (or `'auto'`: the longest complete trial plus one),
  *   reduction factor (default 3) and bootstrap count.
  * @returns The pruner.
- * @throws WhiteboxError with code `value` for invalid settings.
+ * @throws MdmlError with code `value` for invalid settings.
  * @concept successive-halving
  * @reference Li et al. (2018), Hyperband: a novel bandit-based approach to hyperparameter optimization.
  * @example
  * ```ts
- * import { hyperbandPruner } from 'whitebox-engine/tune'
+ * import { hyperbandPruner } from 'mdml-engine/tune'
  * hyperbandPruner({ maxResource: 27 }).config // => { minResource: 1, maxResource: 27, reductionFactor: 3, bootstrapCount: 0 }
  * ```
  */
@@ -438,13 +437,13 @@ export function hyperbandPruner(
   const eta = options.reductionFactor ?? 3
   const bootstrap = options.bootstrapCount ?? 0
   if (maxResource !== 'auto' && !(Number.isInteger(maxResource) && maxResource >= minResource))
-    throw new WhiteboxError('value', 'hyperbandPruner: maxResource must be an integer of at least minResource, or auto')
+    throw new MdmlError('value', 'hyperbandPruner: maxResource must be an integer of at least minResource, or auto')
   if (!(Number.isInteger(minResource) && minResource >= 1))
-    throw new WhiteboxError('value', 'hyperbandPruner: minResource must be a positive integer')
+    throw new MdmlError('value', 'hyperbandPruner: minResource must be a positive integer')
   if (!(Number.isInteger(eta) && eta >= 2))
-    throw new WhiteboxError('value', 'hyperbandPruner: reductionFactor must be an integer of at least 2')
+    throw new MdmlError('value', 'hyperbandPruner: reductionFactor must be an integer of at least 2')
   if (bootstrap > 0 && maxResource === 'auto')
-    throw new WhiteboxError('value', 'hyperbandPruner: bootstrapCount needs an explicit maxResource')
+    throw new MdmlError('value', 'hyperbandPruner: bootstrapCount needs an explicit maxResource')
   return {
     name: 'hyperband',
     config: { minResource, maxResource, reductionFactor: eta, bootstrapCount: bootstrap },
@@ -466,8 +465,8 @@ export function hyperbandPruner(
  * @returns The pruner.
  * @example
  * ```ts
- * import { nopPruner, createStudy } from 'whitebox-engine/tune'
- * import { real } from 'whitebox-engine/space'
+ * import { nopPruner, createStudy } from 'mdml-engine/tune'
+ * import { real } from 'mdml-engine/space'
  * nopPruner().prune(createStudy(real(0, 1)), { number: 0, params: 0, intermediate: [], rungValues: [] }).prune // => false
  * ```
  */

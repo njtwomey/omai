@@ -1,7 +1,7 @@
 /**
  * The dataset schemas: one typed shape per kind of task (tabular, text, graphs, images, ranking, sequences, time
  * series, events, comparisons, trajectories), each with a checking constructor, plus the metadata and provenance every
- * dataset carries. Part of `whitebox-engine/data`.
+ * dataset carries. Part of `mdml-engine/data`.
  *
  * @inline
  */

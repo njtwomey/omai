@@ -3,8 +3,8 @@
  * coloured by group, revealed along x as a player.
  */
 
+import type { CurveSet } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
-import type { CurveSet } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { curveSetFrames, curveSetView } from '../../views/curves.ts'
 import { FramesPlayer, type PlayerViewProps, RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'

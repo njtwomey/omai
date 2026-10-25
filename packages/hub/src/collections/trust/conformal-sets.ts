@@ -3,10 +3,10 @@
  * two-dimensional classification data and tabular classification data.
  */
 
-import type { ClassificationScore } from 'whitebox-engine/learn'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { conformalClassification } from 'whitebox-engine/methods/trust'
-import { bool, choice, dict, real } from 'whitebox-engine/space'
+import type { ClassificationScore } from 'mdml-engine/learn'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { conformalClassification } from 'mdml-engine/methods/trust'
+import { bool, choice, dict, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

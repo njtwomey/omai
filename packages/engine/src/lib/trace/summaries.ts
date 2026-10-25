@@ -16,7 +16,7 @@ import type { TensorSummary } from './events.ts'
  * @returns The summary.
  * @example
  * ```ts
- * import { summarise } from 'whitebox-engine/trace'
+ * import { summarise } from 'mdml-engine/trace'
  * summarise([0, 3, 4]).norm // => 5
  * ```
  */
@@ -70,7 +70,7 @@ export function summarise(values: ArrayLike<number>, bins = 10): TensorSummary {
  * @returns The kept values and their flat indices.
  * @example
  * ```ts
- * import { subsample } from 'whitebox-engine/trace'
+ * import { subsample } from 'mdml-engine/trace'
  * subsample([10, 11, 12, 13, 14, 15, 16, 17, 18], 3) // => { values: [10, 14, 18], indices: [0, 4, 8] }
  * ```
  */

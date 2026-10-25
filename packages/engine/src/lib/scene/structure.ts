@@ -1,10 +1,10 @@
 /**
  * Structures: graph-shaped descriptions as data, with typed nodes (roles, ports, badges), edges between ports, groups
  * such as plates and repeated blocks, and annotations. They describe trees, networks, factor graphs, model
- * architectures and search trees for whitebox-render to lay out; the functions here build, merge and slice them.
+ * architectures and search trees for mdml-render to lay out; the functions here build, merge and slice them.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /**
  * The role of a node in a structure; renderers pick shapes and colours by role.
@@ -80,7 +80,7 @@ export interface StructureGroup {
 /**
  * A graph-shaped description as data: typed nodes, typed edges, groups and annotations. Graphical models,
  * computation graphs, network architectures, trees, automata and pipelines all describe themselves this way, and
- * whitebox-render lays out and draws any structure the same way.
+ * mdml-render lays out and draws any structure the same way.
  *
  * @concept structures
  */
@@ -106,7 +106,7 @@ export interface Structure {
  * @concept structures
  * @example
  * ```ts
- * import { structure } from 'whitebox-engine/scene'
+ * import { structure } from 'mdml-engine/scene'
  * const s = structure('example', [{ id: 'a', label: 'a', role: 'input' }, { id: 'b', label: 'b', role: 'output' }], [{ from: 'a', to: 'b' }])
  * s.nodes.length // => 2
  * ```
@@ -134,10 +134,10 @@ export function structure(
  * @param parts - The structures.
  * @param options - Id prefixes per part, and the type, title and direction of the result (default: the first part's).
  * @returns The merged structure.
- * @throws WhiteboxError with code `value` when `prefixes` does not have one entry per part.
+ * @throws MdmlError with code `value` when `prefixes` does not have one entry per part.
  * @example
  * ```ts
- * import { mergeStructures, structure } from 'whitebox-engine/scene'
+ * import { mergeStructures, structure } from 'mdml-engine/scene'
  * const a = structure('x', [{ id: 'a', label: 'a', role: 'input' }, { id: 'b', label: 'b', role: 'output' }], [{ from: 'a', to: 'b' }])
  * const b = structure('x', [{ id: 'b', label: 'b', role: 'output' }, { id: 'c', label: 'c', role: 'output' }], [{ from: 'b', to: 'c' }])
  * mergeStructures([a, b]).nodes.map((n) => n.id) // => ['a', 'b', 'c']
@@ -155,7 +155,7 @@ export function mergeStructures(
 ): Structure {
   const { prefixes } = options
   if (prefixes !== undefined && prefixes.length !== parts.length) {
-    throw new WhiteboxError('value', 'mergeStructures: give one prefix per structure')
+    throw new MdmlError('value', 'mergeStructures: give one prefix per structure')
   }
   const nodes = new Map<string, StructureNode>()
   const groups = new Map<string, StructureGroup>()
@@ -210,7 +210,7 @@ export function mergeStructures(
  * @returns `true` for structures.
  * @example
  * ```ts
- * import { isStructure, structure } from 'whitebox-engine/scene'
+ * import { isStructure, structure } from 'mdml-engine/scene'
  * isStructure(structure('x', [], [])) // => true
  * ```
  */
@@ -227,7 +227,7 @@ export function isStructure(value: unknown): value is Structure {
  * @returns The sub-structure.
  * @example
  * ```ts
- * import { structure, subStructure } from 'whitebox-engine/scene'
+ * import { structure, subStructure } from 'mdml-engine/scene'
  * const s = structure('x', [{ id: 'a', label: 'a', role: 'input' }, { id: 'b', label: 'b', role: 'output' }], [{ from: 'a', to: 'b' }])
  * subStructure(s, ['b'], 'ancestors').nodes.length // => 2
  * ```

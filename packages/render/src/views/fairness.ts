@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { GROUP_RATES, type GroupRateName, type GroupReport, groupReportAt } from 'whitebox-engine/exposition'
+import { GROUP_RATES, type GroupRateName, type GroupReport, groupReportAt } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -178,8 +178,8 @@ export function groupRocPanel(record: GroupReport, mode: ColourMode): Panel {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { groupReport, groupReportFromTables } from 'whitebox-engine/exposition'
- * import { groupReportView } from 'whitebox-render/views'
+ * import { groupReport, groupReportFromTables } from 'mdml-engine/exposition'
+ * import { groupReportView } from 'mdml-render/views'
  * const r = groupReport(groupReportFromTables({ attribute: 'a', groups: ['x', 'y'], tables: [[[5, 1], [1, 3]], [[4, 0], [3, 2]]] }))
  * groupReportView(r).grid.length // => 3
  * ```

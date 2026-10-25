@@ -33,7 +33,7 @@ export interface SearchTrials {
  * @returns The record.
  * @example
  * ```ts
- * import { searchTrials } from 'whitebox-engine/exposition'
+ * import { searchTrials } from 'mdml-engine/exposition'
  * searchTrials({ method: 'grid', parameters: ['alpha'], trials: [{ params: { alpha: 1 }, value: 0.8, state: 'complete' }], higherIsBetter: true, best: 0 }).best // => 0
  * ```
  */
@@ -68,10 +68,10 @@ export interface LearningCurve {
  *
  * @param curve - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when the scores do not match the sizes.
+ * @throws MdmlError `shape` when the scores do not match the sizes.
  * @example
  * ```ts
- * import { learningCurve } from 'whitebox-engine/exposition'
+ * import { learningCurve } from 'mdml-engine/exposition'
  * learningCurve({ sizes: [10, 20], train: [1, 0.95], validation: [0.6, 0.8] }).sizes // => [10, 20]
  * ```
  */

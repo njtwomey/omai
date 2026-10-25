@@ -6,7 +6,7 @@
  */
 
 import { customJvp } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -44,8 +44,8 @@ import { eigvals, lstsq } from '../linalg/index.ts'
  * @concept polynomials
  * @example
  * ```ts
- * import { polyval } from 'whitebox-engine/numerics/polynomial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { polyval } from 'mdml-engine/numerics/polynomial'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(polyval([0, 1, 2], [1, 2, 3])) // => [1, 6, 17]
  * ```
  */
@@ -71,8 +71,8 @@ export function polyval(x: TensorLike, c: TensorLike): Value {
  * @returns `[m, deg + 1]`.
  * @example
  * ```ts
- * import { polyvander } from 'whitebox-engine/numerics/polynomial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { polyvander } from 'mdml-engine/numerics/polynomial'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(polyvander([2, 3], 2)) // => [[1, 2, 4], [1, 3, 9]]
  * ```
  */
@@ -95,8 +95,8 @@ export function polyvander(x: TensorLike, deg: number): Value {
  * @returns Coefficients `[deg + 1]` (or `[deg + 1, k]`), lowest first.
  * @example
  * ```ts
- * import { polyfit } from 'whitebox-engine/numerics/polynomial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { polyfit } from 'mdml-engine/numerics/polynomial'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(polyfit([0, 1, 2, 3], [1, 3, 5, 7], 1)).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2]
  * ```
  */
@@ -151,7 +151,7 @@ export function polytrim(c: readonly number[], tol = 0): number[] {
  * @returns Coefficients of the derivative.
  * @example
  * ```ts
- * import { polyder } from 'whitebox-engine/numerics/polynomial'
+ * import { polyder } from 'mdml-engine/numerics/polynomial'
  * polyder([1, 2, 3, 4]) // => [2, 6, 12]
  * ```
  */
@@ -176,7 +176,7 @@ export function polyder(c: readonly number[], m = 1, scl = 1): number[] {
  * @returns Coefficients of the integral.
  * @example
  * ```ts
- * import { polyint } from 'whitebox-engine/numerics/polynomial'
+ * import { polyint } from 'mdml-engine/numerics/polynomial'
  * polyint([2, 6, 12]) // => [0, 2, 3, 4]
  * ```
  */
@@ -205,7 +205,7 @@ function horner(c: readonly number[], x: number): number {
  * @returns The sum, trimmed of trailing zeros.
  * @example
  * ```ts
- * import { polyadd } from 'whitebox-engine/numerics/polynomial'
+ * import { polyadd } from 'mdml-engine/numerics/polynomial'
  * polyadd([1, 2], [3, 4, 5]) // => [4, 6, 5]
  * ```
  */
@@ -221,7 +221,7 @@ export function polyadd(a: readonly number[], b: readonly number[]): number[] {
  * @returns a - b.
  * @example
  * ```ts
- * import { polysub } from 'whitebox-engine/numerics/polynomial'
+ * import { polysub } from 'mdml-engine/numerics/polynomial'
  * polysub([1, 2, 3], [1, 2]) // => [0, 0, 3]
  * ```
  */
@@ -237,7 +237,7 @@ export function polysub(a: readonly number[], b: readonly number[]): number[] {
  * @returns The product.
  * @example
  * ```ts
- * import { polymul } from 'whitebox-engine/numerics/polynomial'
+ * import { polymul } from 'mdml-engine/numerics/polynomial'
  * polymul([1, 1], [-1, 1]) // => [-1, 0, 1]
  * ```
  */
@@ -259,14 +259,14 @@ export function polymul(a: readonly number[], b: readonly number[]): number[] {
  * @returns Quotient and remainder.
  * @example
  * ```ts
- * import { polydiv } from 'whitebox-engine/numerics/polynomial'
+ * import { polydiv } from 'mdml-engine/numerics/polynomial'
  * polydiv([-1, 0, 1], [1, 1]) // => { quotient: [-1, 1], remainder: [0] }
  * ```
  */
 export function polydiv(a: readonly number[], b: readonly number[]): { quotient: number[]; remainder: number[] } {
   const d = polytrim(b)
   const lead = d[d.length - 1] ?? 0
-  if (lead === 0) throw new WhiteboxError('value', 'polydiv: division by the zero polynomial')
+  if (lead === 0) throw new MdmlError('value', 'polydiv: division by the zero polynomial')
   const r = [...a]
   const nq = a.length - d.length + 1
   if (nq <= 0) return { quotient: [0], remainder: polytrim(r) }
@@ -289,15 +289,15 @@ export function polydiv(a: readonly number[], b: readonly number[]): { quotient:
  * @returns `[n, n]` with n the degree.
  * @example
  * ```ts
- * import { companion } from 'whitebox-engine/numerics/polynomial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { companion } from 'mdml-engine/numerics/polynomial'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(companion([-2, 0, 1])) // => [[0, 2], [1, 0]]
  * ```
  */
 export function companion(c: readonly number[]): Tensor {
   const p = polytrim(c)
   const n = p.length - 1
-  if (n < 1) throw new WhiteboxError('value', 'companion: degree at least 1 is needed')
+  if (n < 1) throw new MdmlError('value', 'companion: degree at least 1 is needed')
   const lead = p[n] ?? 1
   const m = new Float64Array(n * n)
   for (let i = 1; i < n; i++) m[i * n + i - 1] = 1
@@ -320,7 +320,7 @@ export interface ComplexRoots {
  * @concept polynomial-roots
  * @example
  * ```ts
- * import { polyroots } from 'whitebox-engine/numerics/polynomial'
+ * import { polyroots } from 'mdml-engine/numerics/polynomial'
  * polyroots([-2, 0, 1]).re.map((v) => Math.round(v * 1e12) / 1e12) // => [-1.414213562373, 1.414213562373]
  * ```
  */
@@ -343,7 +343,7 @@ export function polyroots(c: readonly number[]): ComplexRoots {
  * @returns Coefficients, lowest first.
  * @example
  * ```ts
- * import { polyFromRoots } from 'whitebox-engine/numerics/polynomial'
+ * import { polyFromRoots } from 'mdml-engine/numerics/polynomial'
  * polyFromRoots([1, -1]) // => [-1, 0, 1]
  * ```
  */
@@ -404,15 +404,15 @@ const charpolyPrimitive = customJvp({
  * @concept polynomials
  * @example
  * ```ts
- * import { charpoly } from 'whitebox-engine/numerics/polynomial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { charpoly } from 'mdml-engine/numerics/polynomial'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(charpoly([[2, 0], [0, 3]])) // => [6, -5, 1]
  * ```
  */
 export function charpoly(a: TensorLike): Value {
   const [av] = promoteFloat(a) as [Value]
   if (av.shape.length !== 2 || av.shape[0] !== av.shape[1]) {
-    throw new WhiteboxError('shape', 'charpoly: expected a square matrix')
+    throw new MdmlError('shape', 'charpoly: expected a square matrix')
   }
   if ((av.shape[0] ?? 0) === 0) return fromStorage(new Float64Array([1]), [1], 'float64')
   return charpolyPrimitive(av)

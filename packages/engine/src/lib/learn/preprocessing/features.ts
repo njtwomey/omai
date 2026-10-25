@@ -4,7 +4,7 @@
  * `functionTransformer`, which wraps any function so it composes in a pipeline.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { bspline } from '../../numerics/interpolate/index.ts'
 import { kmeansCodebook } from '../../numerics/spatial/index.ts'
 import { bool, choice, dict, int, type Space } from '../../space/index.ts'
@@ -62,12 +62,12 @@ export const MAX_POLYNOMIAL_FEATURES = 100000
  *
  * @param hyper - degree (default 2), interactionOnly (default false) and includeBias (default true).
  * @returns The estimator.
- * @throws WhiteboxError with code `value` beyond {@link MAX_POLYNOMIAL_FEATURES} columns.
+ * @throws MdmlError with code `value` beyond {@link MAX_POLYNOMIAL_FEATURES} columns.
  * @concept feature-engineering
  * @example
  * ```ts
- * import { polynomialFeatures } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { polynomialFeatures } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const p = polynomialFeatures().fit({ x: [[2, 3]] })
  * toArray(p.transform([[2, 3]])) // => [[1, 2, 3, 4, 6, 9]]
  * p.featureNamesOut() // => ['1', 'x0', 'x1', 'x0^2', 'x0 x1', 'x1^2']
@@ -85,7 +85,7 @@ export function polynomialFeatures(
         const d = matrixView(data.x, 'polynomialFeatures').d
         const [lo, hi] = typeof h.degree === 'number' ? [0, h.degree] : h.degree
         if (!(Number.isInteger(lo) && Number.isInteger(hi) && lo >= 0 && hi >= lo)) {
-          throw new WhiteboxError('value', 'polynomialFeatures: degree must be integers 0 <= min <= max')
+          throw new MdmlError('value', 'polynomialFeatures: degree must be integers 0 <= min <= max')
         }
         const powers: number[][] = []
         if (h.includeBias) powers.push(new Array<number>(d).fill(0))
@@ -95,7 +95,7 @@ export function polynomialFeatures(
             for (const i of c) row[i] = (row[i] ?? 0) + 1
             powers.push(row)
             if (powers.length > MAX_POLYNOMIAL_FEATURES) {
-              throw new WhiteboxError('value', `polynomialFeatures: more than ${MAX_POLYNOMIAL_FEATURES} columns`)
+              throw new MdmlError('value', `polynomialFeatures: more than ${MAX_POLYNOMIAL_FEATURES} columns`)
             }
           }
         }
@@ -143,8 +143,8 @@ export function polynomialFeatures(
  * @returns The estimator.
  * @example
  * ```ts
- * import { interactionFeatures } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { interactionFeatures } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(interactionFeatures().fit({ x: [[2, 3, 5]] }).transform([[2, 3, 5]])) // => [[6, 10, 15]]
  * interactionFeatures({ pairs: [[0, 2]] }).fit({ x: [[2, 3, 5]] }).featureNamesOut() // => ['x0 x2']
  * ```
@@ -164,7 +164,7 @@ export function interactionFeatures(
         const pairs = h.pairs?.map(([a, b]) => [a, b]) ?? combos(d, 2, false)
         for (const [a = -1, b = -1] of pairs) {
           if (!(a >= 0 && a < d && b >= 0 && b < d))
-            throw new WhiteboxError('value', `interactionFeatures: pair ${a}, ${b} out of range`)
+            throw new MdmlError('value', `interactionFeatures: pair ${a}, ${b} out of range`)
         }
         return { pairs, d }
       },
@@ -219,8 +219,8 @@ export type SplineParams = { readonly knots: number[][]; readonly nSplines: numb
  * @returns The estimator.
  * @example
  * ```ts
- * import { splineFeatures } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { splineFeatures } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const s = splineFeatures({ nKnots: 3, degree: 1 }).fit({ x: [[0], [2]] })
  * toArray(s.transform([[0.5]])) // => [[0.5, 0.5, 0]]
  * s.featureNamesOut() // => ['x0_sp_0', 'x0_sp_1', 'x0_sp_2']
@@ -237,9 +237,9 @@ export function splineFeatures(
         dict({ nKnots: int(3, 20), degree: int(1, 5), knots: choice(['uniform', 'quantile']), includeBias: bool() }),
       fit: (data, h) => {
         const m = matrixView(data.x, 'splineFeatures', { minSamples: 2 })
-        if (h.nKnots < 2) throw new WhiteboxError('value', 'splineFeatures: nKnots must be at least 2')
+        if (h.nKnots < 2) throw new MdmlError('value', 'splineFeatures: nKnots must be at least 2')
         if (h.extrapolation === 'periodic' && h.nKnots <= h.degree) {
-          throw new WhiteboxError('value', 'splineFeatures: periodic splines need degree < nKnots')
+          throw new MdmlError('value', 'splineFeatures: periodic splines need degree < nKnots')
         }
         const k = h.degree
         const knots: number[][] = []
@@ -257,7 +257,7 @@ export function splineFeatures(
                 )
           for (let i = 1; i < base.length; i++) {
             if (!((base[i] ?? 0) > (base[i - 1] ?? 0)))
-              throw new WhiteboxError('value', 'splineFeatures: knots must be distinct')
+              throw new MdmlError('value', 'splineFeatures: knots must be distinct')
           }
           const nb = base.length
           if (h.extrapolation === 'periodic') {
@@ -314,7 +314,7 @@ export function splineFeatures(
               const evalAll = h.extrapolation === 'continue' || h.extrapolation === 'periodic'
               const idx = col.flatMap((_, i) => (evalAll || inside[i] === true ? [i] : []))
               if (h.extrapolation === 'error' && idx.length < col.length) {
-                throw new WhiteboxError('value', `splineFeatures: values beyond the knots in feature ${j}`)
+                throw new MdmlError('value', `splineFeatures: values beyond the knots in feature ${j}`)
               }
               const b = basisAt(
                 j,
@@ -394,8 +394,8 @@ export type KBinsParams = { readonly edges: number[][] }
  * @returns The estimator.
  * @example
  * ```ts
- * import { kBinsDiscretizer } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { kBinsDiscretizer } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const b = kBinsDiscretizer({ nBins: 2, strategy: 'uniform' }).fit({ x: [[0], [1], [4]] })
  * toArray(b.transform([[1], [3]])) // => [[0], [1]]
  * toArray(b.inverseTransform([[1]])) // => [[3]]
@@ -419,7 +419,7 @@ export function kBinsDiscretizer(
           const col = columnOf(m, j)
           const nb = typeof h.nBins === 'number' ? h.nBins : (h.nBins[j] ?? 5)
           if (!(Number.isInteger(nb) && nb >= 2))
-            throw new WhiteboxError('value', 'kBinsDiscretizer: nBins must be integers >= 2')
+            throw new MdmlError('value', 'kBinsDiscretizer: nBins must be integers >= 2')
           const lo = col.reduce((a, b) => Math.min(a, b))
           const hi = col.reduce((a, b) => Math.max(a, b))
           if (lo === hi) {
@@ -515,8 +515,8 @@ export function kBinsDiscretizer(
  * @returns The estimator.
  * @example
  * ```ts
- * import { binarizer } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { binarizer } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(binarizer({ threshold: 1 }).fit({ x: [[0]] }).transform([[0.5, 1, 2]])) // => [[0, 0, 1]]
  * ```
  */
@@ -559,11 +559,11 @@ export interface FunctionTransformerHyper {
  *
  * @param hyper - func, inverseFunc, checkInverse and featureNamesOut.
  * @returns The estimator.
- * @throws WhiteboxError with code `value` in fit when the inverse does not invert.
+ * @throws MdmlError with code `value` in fit when the inverse does not invert.
  * @example
  * ```ts
- * import { functionTransformer } from 'whitebox-engine/learn/preprocessing'
- * import { exp, log, toArray } from 'whitebox-engine/tensor'
+ * import { functionTransformer } from 'mdml-engine/learn/preprocessing'
+ * import { exp, log, toArray } from 'mdml-engine/tensor'
  * const f = functionTransformer({ func: log, inverseFunc: exp }).fit({ x: [[1], [Math.E]] })
  * toArray(f.transform([[Math.E]])) // => [[1]]
  * ```
@@ -594,7 +594,7 @@ export function functionTransformer(
             const a = m.data[i] ?? 0
             const b = back.data[i] ?? 0
             if (Number.isFinite(a) && Math.abs(a - b) > 1e-7 * (1 + Math.abs(a))) {
-              throw new WhiteboxError('value', 'functionTransformer: inverseFunc does not invert func on the fit data')
+              throw new MdmlError('value', 'functionTransformer: inverseFunc does not invert func on the fit data')
             }
           }
         }

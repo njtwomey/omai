@@ -5,7 +5,7 @@
  * density, sampling and conversion to factors.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import {
   choleskyLower,
@@ -56,11 +56,11 @@ export interface LinearGaussianBayesNet {
  *
  * @param nodes - The nodes.
  * @returns The network.
- * @throws WhiteboxError with code `value` for unknown parents, cycles, non-positive variances or mismatched weights.
+ * @throws MdmlError with code `value` for unknown parents, cycles, non-positive variances or mismatched weights.
  * @concept linear-gaussian-models
  * @example
  * ```ts
- * import { linearGaussianBayesNet } from 'whitebox-engine/pgm'
+ * import { linearGaussianBayesNet } from 'mdml-engine/pgm'
  * const g = linearGaussianBayesNet([
  *   { name: 'y', parents: ['x'], weights: [2], intercept: 1, variance: 0.5 },
  *   { name: 'x', parents: [], weights: [], intercept: 0, variance: 1 },
@@ -70,17 +70,16 @@ export interface LinearGaussianBayesNet {
  */
 export function linearGaussianBayesNet(nodes: readonly LinearGaussianNode[]): LinearGaussianBayesNet {
   if (new Set(nodes.map((n) => n.name)).size !== nodes.length)
-    throw new WhiteboxError('value', 'linearGaussianBayesNet: node names must be distinct')
+    throw new MdmlError('value', 'linearGaussianBayesNet: node names must be distinct')
   for (const n of nodes) {
-    if (!(n.variance > 0))
-      throw new WhiteboxError('value', `linearGaussianBayesNet: ${n.name} needs a positive variance`)
+    if (!(n.variance > 0)) throw new MdmlError('value', `linearGaussianBayesNet: ${n.name} needs a positive variance`)
     if (n.weights.length !== n.parents.length)
-      throw new WhiteboxError('shape', `linearGaussianBayesNet: ${n.name} needs one weight per parent`)
+      throw new MdmlError('shape', `linearGaussianBayesNet: ${n.name} needs one weight per parent`)
   }
   try {
     return { kind: 'linearGaussianBayesNet', nodes: topologicalOrder(nodes) }
   } catch (e) {
-    throw new WhiteboxError('value', `linearGaussianBayesNet: ${(e as Error).message}`)
+    throw new MdmlError('value', `linearGaussianBayesNet: ${(e as Error).message}`)
   }
 }
 
@@ -93,7 +92,7 @@ export function linearGaussianBayesNet(nodes: readonly LinearGaussianNode[]): Li
  * @concept linear-gaussian-models
  * @example
  * ```ts
- * import { linearGaussianBayesNet, toJointGaussian } from 'whitebox-engine/pgm'
+ * import { linearGaussianBayesNet, toJointGaussian } from 'mdml-engine/pgm'
  * const g = linearGaussianBayesNet([
  *   { name: 'x', parents: [], weights: [], intercept: 1, variance: 1 },
  *   { name: 'y', parents: ['x'], weights: [2], intercept: 0, variance: 0.5 },
@@ -131,7 +130,7 @@ export function toJointGaussian(g: LinearGaussianBayesNet): GaussianMoments {
  * @concept gaussian-factors
  * @example
  * ```ts
- * import { linearGaussianBayesNet, linearGaussianFactors } from 'whitebox-engine/pgm'
+ * import { linearGaussianBayesNet, linearGaussianFactors } from 'mdml-engine/pgm'
  * const g = linearGaussianBayesNet([{ name: 'x', parents: [], weights: [], intercept: 0, variance: 1 }])
  * linearGaussianFactors(g)[0]?.K // => [[1]]
  * ```
@@ -151,7 +150,7 @@ export function linearGaussianFactors(g: LinearGaussianBayesNet): GaussianFactor
  * @concept linear-gaussian-models
  * @example
  * ```ts
- * import { linearGaussianBayesNet, linearGaussianPosterior } from 'whitebox-engine/pgm'
+ * import { linearGaussianBayesNet, linearGaussianPosterior } from 'mdml-engine/pgm'
  * const g = linearGaussianBayesNet([
  *   { name: 'x', parents: [], weights: [], intercept: 0, variance: 1 },
  *   { name: 'y', parents: ['x'], weights: [1], intercept: 0, variance: 1 },
@@ -165,7 +164,7 @@ export function linearGaussianPosterior(
   evidence: Readonly<Record<string, number>> = {},
 ): GaussianMoments {
   for (const q of [...query, ...Object.keys(evidence)]) {
-    if (!g.nodes.some((n) => n.name === q)) throw new WhiteboxError('value', `unknown variable ${q}`)
+    if (!g.nodes.some((n) => n.name === q)) throw new MdmlError('value', `unknown variable ${q}`)
   }
   let joint = gaussianFactor([], [], [], 0)
   for (const f of linearGaussianFactors(g)) joint = gaussianProduct(joint, f)
@@ -184,8 +183,8 @@ export function linearGaussianPosterior(
  * @concept sampling
  * @example
  * ```ts
- * import { linearGaussianBayesNet, linearGaussianSample } from 'whitebox-engine/pgm'
- * import { key } from 'whitebox-engine/random'
+ * import { linearGaussianBayesNet, linearGaussianSample } from 'mdml-engine/pgm'
+ * import { key } from 'mdml-engine/random'
  * const g = linearGaussianBayesNet([{ name: 'x', parents: [], weights: [], intercept: 3, variance: 1e-30 }])
  * linearGaussianSample(g, key(0), 2).map((s) => Math.round(s['x'] ?? 0)) // => [3, 3]
  * ```
@@ -211,7 +210,7 @@ export function linearGaussianSample(g: LinearGaussianBayesNet, key: Key, n: num
  * @returns The total log-likelihood.
  * @example
  * ```ts
- * import { linearGaussianBayesNet, linearGaussianLogLikelihood } from 'whitebox-engine/pgm'
+ * import { linearGaussianBayesNet, linearGaussianLogLikelihood } from 'mdml-engine/pgm'
  * const g = linearGaussianBayesNet([{ name: 'x', parents: [], weights: [], intercept: 0, variance: 1 }])
  * linearGaussianLogLikelihood(g, [{ x: 0 }]) === -0.5 * Math.log(2 * Math.PI) // => true
  * ```
@@ -224,7 +223,7 @@ export function linearGaussianLogLikelihood(
   for (const row of rows) {
     for (const node of g.nodes) {
       const x = row[node.name]
-      if (x === undefined) throw new WhiteboxError('value', `linearGaussianLogLikelihood: a row has no ${node.name}`)
+      if (x === undefined) throw new MdmlError('value', `linearGaussianLogLikelihood: a row has no ${node.name}`)
       const mu = node.intercept + node.weights.reduce((acc, w, k) => acc + w * (row[node.parents[k] ?? ''] ?? 0), 0)
       total += -0.5 * Math.log(2 * Math.PI * node.variance) - ((x - mu) * (x - mu)) / (2 * node.variance)
     }
@@ -252,25 +251,25 @@ export interface Gmrf {
  * @param mean - The mean.
  * @param precision - The precision matrix.
  * @returns The field.
- * @throws WhiteboxError with code `value` when the precision is not symmetric positive definite.
+ * @throws MdmlError with code `value` when the precision is not symmetric positive definite.
  * @concept gaussian-markov-random-fields
  * @example
  * ```ts
- * import { gmrf } from 'whitebox-engine/pgm'
+ * import { gmrf } from 'mdml-engine/pgm'
  * gmrf(['a', 'b'], [0, 0], [[2, -1], [-1, 2]]).precision[0] // => [2, -1]
  * ```
  */
 export function gmrf(variables: readonly string[], mean: readonly number[], precision: Matrix): Gmrf {
   const n = variables.length
   if (mean.length !== n || precision.length !== n || precision.some((r) => r.length !== n))
-    throw new WhiteboxError('shape', `gmrf: expected ${n} means and a ${n} x ${n} precision`)
+    throw new MdmlError('shape', `gmrf: expected ${n} means and a ${n} x ${n} precision`)
   for (let i = 0; i < n; i++)
     for (let j = 0; j < i; j++)
       if (
         Math.abs((precision[i]?.[j] ?? 0) - (precision[j]?.[i] ?? 0)) >
         1e-10 * (1 + Math.abs(precision[i]?.[j] ?? 0))
       )
-        throw new WhiteboxError('value', 'gmrf: the precision must be symmetric')
+        throw new MdmlError('value', 'gmrf: the precision must be symmetric')
   logdetPositive(precision, 'gmrf')
   return { kind: 'gmrf', variables: [...variables], mean: [...mean], precision: symmetrise(precision) }
 }
@@ -295,11 +294,11 @@ export interface GmrfInformation {
  * @param precision - The precision matrix (symmetric).
  * @param potential - The potential vector h.
  * @returns The field.
- * @throws WhiteboxError with code `shape` for mismatched sizes, `value` for an asymmetric precision.
+ * @throws MdmlError with code `shape` for mismatched sizes, `value` for an asymmetric precision.
  * @concept gaussian-markov-random-fields
  * @example
  * ```ts
- * import { gmrfInformation } from 'whitebox-engine/pgm'
+ * import { gmrfInformation } from 'mdml-engine/pgm'
  * gmrfInformation(['a', 'b'], [[2, -1], [-1, 2]], [1, 0]).potential // => [1, 0]
  * ```
  */
@@ -310,14 +309,14 @@ export function gmrfInformation(
 ): GmrfInformation {
   const n = variables.length
   if (potential.length !== n || precision.length !== n || precision.some((r) => r.length !== n))
-    throw new WhiteboxError('shape', `gmrfInformation: expected ${n} potentials and a ${n} x ${n} precision`)
+    throw new MdmlError('shape', `gmrfInformation: expected ${n} potentials and a ${n} x ${n} precision`)
   for (let i = 0; i < n; i++)
     for (let j = 0; j < i; j++)
       if (
         Math.abs((precision[i]?.[j] ?? 0) - (precision[j]?.[i] ?? 0)) >
         1e-10 * (1 + Math.abs(precision[i]?.[j] ?? 0))
       )
-        throw new WhiteboxError('value', 'gmrfInformation: the precision must be symmetric')
+        throw new MdmlError('value', 'gmrfInformation: the precision must be symmetric')
   return {
     kind: 'gmrfInformation',
     variables: [...variables],
@@ -335,7 +334,7 @@ export function gmrfInformation(
  * @concept gaussian-markov-random-fields
  * @example
  * ```ts
- * import { linearGaussianBayesNet, gmrfFromLinearGaussian } from 'whitebox-engine/pgm'
+ * import { linearGaussianBayesNet, gmrfFromLinearGaussian } from 'mdml-engine/pgm'
  * const g = linearGaussianBayesNet([
  *   { name: 'x', parents: [], weights: [], intercept: 0, variance: 1 },
  *   { name: 'y', parents: ['x'], weights: [2], intercept: 0, variance: 1 },
@@ -366,7 +365,7 @@ export function gmrfFromLinearGaussian(g: LinearGaussianBayesNet): Gmrf {
  * @returns The graph.
  * @example
  * ```ts
- * import { gmrf, gmrfGraph } from 'whitebox-engine/pgm'
+ * import { gmrf, gmrfGraph } from 'mdml-engine/pgm'
  * [...(gmrfGraph(gmrf(['a', 'b', 'c'], [0, 0, 0], [[2, -1, 0], [-1, 2, -1], [0, -1, 2]])).get('a') ?? [])] // => ['b']
  * ```
  */
@@ -389,7 +388,7 @@ export function gmrfGraph(field: Gmrf, tol = 0): UndirectedGraph {
  * @concept gaussian-markov-random-fields
  * @example
  * ```ts
- * import { gmrf, gmrfConditional } from 'whitebox-engine/pgm'
+ * import { gmrf, gmrfConditional } from 'mdml-engine/pgm'
  * gmrfConditional(gmrf(['a', 'b'], [0, 0], [[2, -1], [-1, 2]]), { b: 2 }).mean // => [1]
  * ```
  */
@@ -415,7 +414,7 @@ export function gmrfConditional(field: Gmrf, evidence: Readonly<Record<string, n
  * @returns The covariance matrix.
  * @example
  * ```ts
- * import { gmrf, gmrfCovariance } from 'whitebox-engine/pgm'
+ * import { gmrf, gmrfCovariance } from 'mdml-engine/pgm'
  * gmrfCovariance(gmrf(['a'], [0], [[4]])) // => [[0.25]]
  * ```
  */
@@ -432,7 +431,7 @@ export function gmrfCovariance(field: Gmrf): number[][] {
  * @returns The log density.
  * @example
  * ```ts
- * import { gmrf, gmrfLogDensity } from 'whitebox-engine/pgm'
+ * import { gmrf, gmrfLogDensity } from 'mdml-engine/pgm'
  * gmrfLogDensity(gmrf(['a'], [0], [[1]]), { a: 0 }) === -0.5 * Math.log(2 * Math.PI) // => true
  * ```
  */
@@ -458,8 +457,8 @@ export function gmrfLogDensity(field: Gmrf, x: Readonly<Record<string, number>>)
  * @concept sampling
  * @example
  * ```ts
- * import { gmrf, gmrfSample } from 'whitebox-engine/pgm'
- * import { key } from 'whitebox-engine/random'
+ * import { gmrf, gmrfSample } from 'mdml-engine/pgm'
+ * import { key } from 'mdml-engine/random'
  * gmrfSample(gmrf(['a', 'b'], [0, 1], [[2, -1], [-1, 2]]), key(0), 3).length // => 3
  * ```
  */
@@ -486,7 +485,7 @@ export function gmrfSample(field: Gmrf, key: Key, n: number): Record<string, num
  * @returns The factor.
  * @example
  * ```ts
- * import { gmrf, gmrfToFactor } from 'whitebox-engine/pgm'
+ * import { gmrf, gmrfToFactor } from 'mdml-engine/pgm'
  * gmrfToFactor(gmrf(['a'], [2], [[3]])).h // => [6]
  * ```
  */

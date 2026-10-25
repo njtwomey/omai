@@ -3,8 +3,8 @@
  * comma or plus selection, on test functions of two variables.
  */
 
-import { evolutionStrategyOnPlane, type PlaneFunctionName } from 'whitebox-engine/methods/evolutionary'
-import { bool, dict, int, real } from 'whitebox-engine/space'
+import { evolutionStrategyOnPlane, type PlaneFunctionName } from 'mdml-engine/methods/evolutionary'
+import { bool, dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { objectiveControl } from './_plane.ts'
 

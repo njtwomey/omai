@@ -4,7 +4,7 @@
  * goes on.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 
 /** The images at one recorded step: per group, its images as flat row-major grey levels (row 0 at the top). */
@@ -43,11 +43,11 @@ export interface ImageSteps {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when a step has the wrong number of groups or an image the wrong number of pixels;
+ * @throws MdmlError `shape` when a step has the wrong number of groups or an image the wrong number of pixels;
  *   `value` when the size is not a positive integer.
  * @example
  * ```ts
- * import { imageSteps } from 'whitebox-engine/exposition'
+ * import { imageSteps } from 'mdml-engine/exposition'
  * const r = imageSteps({
  *   method: 'vae',
  *   height: 1,
@@ -61,7 +61,7 @@ export interface ImageSteps {
 export function imageSteps(record: Omit<ImageSteps, 'kind'>): ImageSteps {
   const { height, width } = record
   if (!(Number.isInteger(height) && height > 0 && Number.isInteger(width) && width > 0))
-    throw new WhiteboxError('value', `imageSteps: the size ${height} by ${width} is not positive whole pixels`)
+    throw new MdmlError('value', `imageSteps: the size ${height} by ${width} is not positive whole pixels`)
   for (const [t, step] of record.steps.entries()) {
     sameLength('imageSteps', `steps[${t}].images`, step.images.length, record.groups.length)
     for (const [g, group] of step.images.entries())

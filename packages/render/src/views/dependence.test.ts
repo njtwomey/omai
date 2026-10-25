@@ -1,5 +1,5 @@
+import { dependence } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { dependence } from 'whitebox-engine/exposition'
 import { dependenceSurfaceView, dependenceView, iceRows } from './dependence.ts'
 import { stillOf, viewFor } from './registry.ts'
 

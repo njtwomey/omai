@@ -3,7 +3,7 @@
  * manifolds such as the Swiss roll and tabular data.
  */
 
-import { fastIca as fastIcaMethod } from 'whitebox-engine/methods/decomposition'
+import { fastIca as fastIcaMethod } from 'mdml-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

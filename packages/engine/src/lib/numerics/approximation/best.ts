@@ -4,7 +4,7 @@
  * to the error's extrema until it equioscillates.
  */
 
-import { maxOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { solve } from '../linalg/index.ts'
 
@@ -47,7 +47,7 @@ const series = (c: readonly number[], t: number): number => c.reduce((s, ck, k) 
  * @concept minimax-approximation
  * @example
  * ```ts
- * import { remez } from 'whitebox-engine/numerics/approximation'
+ * import { remez } from 'mdml-engine/numerics/approximation'
  * // The best linear approximation of x^2 on [-1, 1] is 1/2, with error 1/2.
  * Math.abs(remez((x) => x * x, 1).error) // => 0.5
  * ```
@@ -128,7 +128,7 @@ export function remez(
       chosen = first < last ? chosen.slice(1) : chosen.slice(0, -1)
     }
     if (chosen.length < size)
-      throw new WhiteboxError('convergence', 'remez: the error has too few alternations (try a different degree)')
+      throw new MdmlError('convergence', 'remez: the error has too few alternations (try a different degree)')
     const maxError = maxOf(chosen.map((p) => Math.abs(p.v)))
     reference = chosen.map((p) => p.t)
     if (maxError - Math.abs(error) <= (options.tol ?? 1e-10) * Math.max(Math.abs(error), 1e-300)) {
@@ -163,7 +163,7 @@ export function remez(
  * @returns Values.
  * @example
  * ```ts
- * import { chebyshevSeries } from 'whitebox-engine/numerics/approximation'
+ * import { chebyshevSeries } from 'mdml-engine/numerics/approximation'
  * chebyshevSeries([0, 0, 1], [0.5]) // => [-0.5]
  * ```
  */

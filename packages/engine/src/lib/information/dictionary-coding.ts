@@ -4,7 +4,7 @@
  * (with their inverses), which rearrange data so that it compresses better, as in bzip2.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** A sequence of symbols: a string (its UTF-8 bytes) or integers. */
 export type SymbolInput = string | ArrayLike<number>
@@ -12,7 +12,7 @@ export type SymbolInput = string | ArrayLike<number>
 function symbolsOf(input: SymbolInput, name: string): number[] {
   const xs = typeof input === 'string' ? Array.from(new TextEncoder().encode(input)) : Array.from(input)
   if (xs.some((x) => !Number.isSafeInteger(x) || x < 0))
-    throw new WhiteboxError('value', `${name}: symbols must be non-negative integers`)
+    throw new MdmlError('value', `${name}: symbols must be non-negative integers`)
   return xs
 }
 
@@ -33,7 +33,7 @@ export interface Lz77Token {
  * @concept dictionary-coding
  * @example
  * ```ts
- * import { lz77Encode } from 'whitebox-engine/information'
+ * import { lz77Encode } from 'mdml-engine/information'
  * lz77Encode('abababc').map((t) => [t.offset, t.length, t.next]) // => [[0, 0, 97], [0, 0, 98], [2, 4, 99]]
  * ```
  */
@@ -44,8 +44,7 @@ export function lz77Encode(
   const xs = symbolsOf(input, 'lz77Encode')
   const window = options.window ?? 4096
   const maxLength = options.maxLength ?? 255
-  if (!(window >= 1 && maxLength >= 1))
-    throw new WhiteboxError('value', 'lz77Encode: window and maxLength must be >= 1')
+  if (!(window >= 1 && maxLength >= 1)) throw new MdmlError('value', 'lz77Encode: window and maxLength must be >= 1')
   const tokens: Lz77Token[] = []
   let i = 0
   while (i < xs.length) {
@@ -71,11 +70,11 @@ export function lz77Encode(
  *
  * @param tokens - Tokens from {@link lz77Encode}.
  * @returns The symbols.
- * @throws WhiteboxError with code `value` for an offset that reaches before the start.
+ * @throws MdmlError with code `value` for an offset that reaches before the start.
  * @concept dictionary-coding
  * @example
  * ```ts
- * import { lz77Decode } from 'whitebox-engine/information'
+ * import { lz77Decode } from 'mdml-engine/information'
  * lz77Decode([{ offset: 0, length: 0, next: 97 }, { offset: 1, length: 3, next: 98 }]) // => [97, 97, 97, 97, 98]
  * ```
  */
@@ -83,7 +82,7 @@ export function lz77Decode(tokens: readonly Lz77Token[]): number[] {
   const out: number[] = []
   for (const t of tokens) {
     if (t.length > 0 && (t.offset < 1 || t.offset > out.length))
-      throw new WhiteboxError('value', 'lz77Decode: offset out of range')
+      throw new MdmlError('value', 'lz77Decode: offset out of range')
     for (let j = 0; j < t.length; j++) out.push(out[out.length - t.offset] as number)
     if (t.next !== undefined) out.push(t.next)
   }
@@ -105,7 +104,7 @@ export interface Lz78Pair {
  * @concept dictionary-coding
  * @example
  * ```ts
- * import { lz78Encode } from 'whitebox-engine/information'
+ * import { lz78Encode } from 'mdml-engine/information'
  * lz78Encode([0, 1, 0, 0, 1, 0]).map((p) => [p.index, p.next]) // => [[0, 0], [0, 1], [1, 0], [2, 0]]
  * ```
  */
@@ -133,11 +132,11 @@ export function lz78Encode(input: SymbolInput): Lz78Pair[] {
  *
  * @param pairs - Pairs from {@link lz78Encode}.
  * @returns The symbols.
- * @throws WhiteboxError with code `value` for an index not yet in the dictionary.
+ * @throws MdmlError with code `value` for an index not yet in the dictionary.
  * @concept dictionary-coding
  * @example
  * ```ts
- * import { lz78Decode } from 'whitebox-engine/information'
+ * import { lz78Decode } from 'mdml-engine/information'
  * lz78Decode([{ index: 0, next: 5 }, { index: 1, next: 6 }, { index: 2 }]) // => [5, 5, 6, 5, 6]
  * ```
  */
@@ -146,7 +145,7 @@ export function lz78Decode(pairs: readonly Lz78Pair[]): number[] {
   const out: number[] = []
   for (const p of pairs) {
     const base = phrases[p.index]
-    if (base === undefined) throw new WhiteboxError('value', `lz78Decode: unknown phrase ${p.index}`)
+    if (base === undefined) throw new MdmlError('value', `lz78Decode: unknown phrase ${p.index}`)
     const phrase = p.next === undefined ? base : [...base, p.next]
     out.push(...phrase)
     phrases.push(phrase)
@@ -172,7 +171,7 @@ export interface LzwOptions {
  * @concept dictionary-coding
  * @example
  * ```ts
- * import { lzwEncode } from 'whitebox-engine/information'
+ * import { lzwEncode } from 'mdml-engine/information'
  * lzwEncode('TOBEORNOTTOBEORTOBEORNOT').slice(8) // => [84, 256, 258, 260, 265, 259, 261, 263]
  * ```
  */
@@ -180,13 +179,13 @@ export function lzwEncode(input: SymbolInput, options: LzwOptions = {}): number[
   const xs = symbolsOf(input, 'lzwEncode')
   const alphabet = options.alphabetSize ?? 256
   const maxCodes = options.maxCodes ?? 4096
-  if (maxCodes < alphabet) throw new WhiteboxError('value', 'lzwEncode: maxCodes is smaller than the alphabet')
+  if (maxCodes < alphabet) throw new MdmlError('value', 'lzwEncode: maxCodes is smaller than the alphabet')
   const dictionary = new Map<string, number>()
   let size = alphabet
   const codes: number[] = []
   let w = -1
   for (const x of xs) {
-    if (x >= alphabet) throw new WhiteboxError('value', `lzwEncode: symbol ${x} is outside the alphabet`)
+    if (x >= alphabet) throw new MdmlError('value', `lzwEncode: symbol ${x} is outside the alphabet`)
     if (w < 0) {
       w = x
       continue
@@ -211,11 +210,11 @@ export function lzwEncode(input: SymbolInput, options: LzwOptions = {}): number[
  * @param codes - Codes from {@link lzwEncode}.
  * @param options - The same alphabet size and dictionary limit as the encoder.
  * @returns The symbols.
- * @throws WhiteboxError with code `value` for an impossible code.
+ * @throws MdmlError with code `value` for an impossible code.
  * @concept dictionary-coding
  * @example
  * ```ts
- * import { lzwDecode, lzwEncode } from 'whitebox-engine/information'
+ * import { lzwDecode, lzwEncode } from 'mdml-engine/information'
  * new TextDecoder().decode(Uint8Array.from(lzwDecode(lzwEncode('abababab')))) // => 'abababab'
  * ```
  */
@@ -228,7 +227,7 @@ export function lzwDecode(codes: readonly number[], options: LzwOptions = {}): n
   for (const c of codes) {
     let entry = entries[c]
     if (entry === undefined) {
-      if (c !== entries.length || previous === undefined) throw new WhiteboxError('value', `lzwDecode: bad code ${c}`)
+      if (c !== entries.length || previous === undefined) throw new MdmlError('value', `lzwDecode: bad code ${c}`)
       entry = [...previous, previous[0] as number]
     }
     out.push(...entry)
@@ -254,7 +253,7 @@ export interface BwtResult {
  * @concept burrows-wheeler
  * @example
  * ```ts
- * import { bwt } from 'whitebox-engine/information'
+ * import { bwt } from 'mdml-engine/information'
  * const t = bwt('banana')
  * new TextDecoder().decode(Uint8Array.from(t.last)) // => 'nnbaaa'
  * t.index // => 3
@@ -292,11 +291,11 @@ export function bwt(input: SymbolInput): BwtResult {
  *
  * @param transform - The last column and index from {@link bwt}.
  * @returns The original symbols.
- * @throws WhiteboxError with code `value` for an index out of range.
+ * @throws MdmlError with code `value` for an index out of range.
  * @concept burrows-wheeler
  * @example
  * ```ts
- * import { inverseBwt } from 'whitebox-engine/information'
+ * import { inverseBwt } from 'mdml-engine/information'
  * new TextDecoder().decode(Uint8Array.from(inverseBwt({ last: [110, 110, 98, 97, 97, 97], index: 3 }))) // => 'banana'
  * ```
  */
@@ -304,7 +303,7 @@ export function inverseBwt(transform: BwtResult): number[] {
   const last = transform.last
   const n = last.length
   if (n === 0) return []
-  if (!(transform.index >= 0 && transform.index < n)) throw new WhiteboxError('value', 'inverseBwt: index out of range')
+  if (!(transform.index >= 0 && transform.index < n)) throw new MdmlError('value', 'inverseBwt: index out of range')
   const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (last[a] ?? 0) - (last[b] ?? 0) || a - b)
   // order[j] is the row of the last column holding the j-th symbol of the sorted first column.
   const out = new Array<number>(n)
@@ -326,7 +325,7 @@ export function inverseBwt(transform: BwtResult): number[] {
  * @concept burrows-wheeler
  * @example
  * ```ts
- * import { moveToFront } from 'whitebox-engine/information'
+ * import { moveToFront } from 'mdml-engine/information'
  * moveToFront([1, 1, 1, 0, 0, 2], 3) // => [1, 0, 0, 1, 0, 2]
  * ```
  */
@@ -335,7 +334,7 @@ export function moveToFront(input: SymbolInput, alphabetSize = 256): number[] {
   const list = Array.from({ length: alphabetSize }, (_, i) => i)
   return xs.map((x) => {
     const j = list.indexOf(x)
-    if (j < 0) throw new WhiteboxError('value', `moveToFront: symbol ${x} is outside the alphabet`)
+    if (j < 0) throw new MdmlError('value', `moveToFront: symbol ${x} is outside the alphabet`)
     list.splice(j, 1)
     list.unshift(x)
     return j
@@ -348,11 +347,11 @@ export function moveToFront(input: SymbolInput, alphabetSize = 256): number[] {
  * @param positions - Positions from {@link moveToFront}.
  * @param alphabetSize - The same alphabet size (default 256).
  * @returns The symbols.
- * @throws WhiteboxError with code `value` for a position outside the list.
+ * @throws MdmlError with code `value` for a position outside the list.
  * @concept burrows-wheeler
  * @example
  * ```ts
- * import { inverseMoveToFront } from 'whitebox-engine/information'
+ * import { inverseMoveToFront } from 'mdml-engine/information'
  * inverseMoveToFront([1, 0, 0, 1, 0, 2], 3) // => [1, 1, 1, 0, 0, 2]
  * ```
  */
@@ -360,7 +359,7 @@ export function inverseMoveToFront(positions: readonly number[], alphabetSize = 
   const list = Array.from({ length: alphabetSize }, (_, i) => i)
   return positions.map((j) => {
     const x = list[j]
-    if (x === undefined) throw new WhiteboxError('value', `inverseMoveToFront: position ${j} is outside the list`)
+    if (x === undefined) throw new MdmlError('value', `inverseMoveToFront: position ${j} is outside the list`)
     list.splice(j, 1)
     list.unshift(x)
     return x

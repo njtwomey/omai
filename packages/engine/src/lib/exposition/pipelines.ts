@@ -4,7 +4,7 @@
  * coefficients), and the final estimator's loss. `pipelineStages` checks that the stages chain.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 import type { DecisionSurface, SurfaceGrid } from './surfaces.ts'
 
@@ -106,7 +106,7 @@ function checkData(field: string, data: StageData, shape?: readonly [number, num
   const k = 'pipelineStages'
   rowsOf(k, `${field}.rows`, data.rows, data.columns.length)
   if (data.rows.length > data.n)
-    throw new WhiteboxError('shape', `${k}: ${field} has ${data.rows.length} rows but n is ${data.n}`)
+    throw new MdmlError('shape', `${k}: ${field} has ${data.rows.length} rows but n is ${data.n}`)
   if (data.labels !== undefined) sameLength(k, `${field}.labels`, data.labels.length, data.rows.length)
   if (data.targets !== undefined) sameLength(k, `${field}.targets`, data.targets.length, data.rows.length)
   if (data.stats !== undefined) sameLength(k, `${field}.stats`, data.stats.length, data.columns.length)
@@ -136,14 +136,14 @@ function checkStage(i: number, s: PipelineStage): void {
   if (s.output !== undefined) checkData(`${at}.output`, s.output, s.outputShape)
   for (const [j, p] of (s.parameters ?? []).entries()) checkParameter(`${at}.parameters[${j}]`, p)
   if (s.explainedVarianceRatio !== undefined && s.explainedVarianceRatio.length > s.outputShape[1])
-    throw new WhiteboxError('shape', `${k}: ${at}.explainedVarianceRatio is longer than the stage's output`)
+    throw new MdmlError('shape', `${k}: ${at}.explainedVarianceRatio is longer than the stage's output`)
   const loss = s.loss
   if (loss !== undefined) {
     const rows = s.surface?.rows?.points.length
-    if (rows === undefined) throw new WhiteboxError('shape', `${k}: ${at}.loss needs a surface with rows`)
+    if (rows === undefined) throw new MdmlError('shape', `${k}: ${at}.loss needs a surface with rows`)
     sameLength(k, `${at}.loss.values`, loss.values.length, rows)
     for (const r of loss.misclassified ?? [])
-      if (!(r >= 0 && r < rows)) throw new WhiteboxError('shape', `${k}: ${at}.loss.misclassified has row ${r}`)
+      if (!(r >= 0 && r < rows)) throw new MdmlError('shape', `${k}: ${at}.loss.misclassified has row ${r}`)
     if (loss.expected !== undefined && s.surface !== undefined) {
       sameLength(k, `${at}.loss.expected`, loss.expected.length, s.surface.y.length)
       rowsOf(k, `${at}.loss.expected`, loss.expected, s.surface.x.length)
@@ -157,11 +157,11 @@ function checkStage(i: number, s: PipelineStage): void {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when consecutive stages do not chain, a stage's data does not match its shape, a
+ * @throws MdmlError `shape` when consecutive stages do not chain, a stage's data does not match its shape, a
  * parameter's names do not match its entries, or a loss does not match its surface's rows.
  * @example
  * ```ts
- * import { pipelineStages } from 'whitebox-engine/exposition'
+ * import { pipelineStages } from 'mdml-engine/exposition'
  * pipelineStages({ stages: [] }).stages // => []
  * ```
  */
@@ -170,7 +170,7 @@ export function pipelineStages(record: Omit<PipelineStages, 'kind'>): PipelineSt
     const before = record.stages[i - 1]
     const after = record.stages[i]
     if (before !== undefined && after !== undefined && before.outputShape[1] !== after.inputShape[1])
-      throw new WhiteboxError(
+      throw new MdmlError(
         'shape',
         `pipelineStages: ${before.name} outputs ${before.outputShape[1]} columns but ${after.name} takes ${after.inputShape[1]}`,
       )

@@ -94,8 +94,8 @@ export function triangularSolve(a: Value, b: Value, options: TriangularOptions):
  * @concept linear-algebra
  * @example
  * ```ts
- * import { solveTriangular } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { solveTriangular } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(solveTriangular([[2, 0], [1, 1]], [2, 3], { lower: true })) // => [1, 2]
  * ```
  */
@@ -119,8 +119,8 @@ export function solveTriangular(a: TensorLike, b: TensorLike, options: SolveTria
  * @returns The inverse (triangular of the same kind), differentiable.
  * @example
  * ```ts
- * import { invTriangular } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { invTriangular } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(invTriangular([[2, 0], [0, 4]], { lower: true })) // => [[0.5, 0], [0, 0.25]]
  * ```
  */

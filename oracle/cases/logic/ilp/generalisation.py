@@ -3,7 +3,7 @@ pairs, and relative least general generalisations (head-connected, reduced) on L
 a grandparent task. Clauses are compared up to theta-equivalence."""
 
 from cases.logic.ilp._ilp import Lgg, parse, rlgg, show
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"plotkin-1970": "reference port of anti-unification (oracle/cases/logic/ilp/_ilp.py)"}
 

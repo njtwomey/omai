@@ -3,7 +3,7 @@
  * classification data and tabular classification data.
  */
 
-import { logisticRegression as logisticRegressionMethod } from 'whitebox-engine/methods/linear'
+import { logisticRegression as logisticRegressionMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

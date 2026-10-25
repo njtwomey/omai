@@ -3,8 +3,8 @@
  * until a formula fits the points.
  */
 
-import { type SymbolicTarget, symbolicRegression } from 'whitebox-engine/methods/evolutionary'
-import { bool, choice, dict, int, real } from 'whitebox-engine/space'
+import { type SymbolicTarget, symbolicRegression } from 'mdml-engine/methods/evolutionary'
+import { bool, choice, dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 
 /** Symbolic regression by genetic programming. */

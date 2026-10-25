@@ -1,6 +1,5 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { scatterChart } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
+import { scatterChart } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
 import {
   Chart,
   ControlPanel,
@@ -9,14 +8,15 @@ import {
   selectEntry,
   useColourMode,
   useDataset,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Dataset picker',
   question: 'How do I let the reader choose a toy dataset and turn its knobs?',
   explain:
-    '`DatasetPicker` offers the entries of a dataset collection from whitebox-engine (`classification2d` here), with arrows to step through them, a seed, and the chosen generator’s knobs as controls. `useDataset` generates the selection once per change; the same seed always gives the same data.',
+    '`DatasetPicker` offers the entries of a dataset collection from mdml-engine (`classification2d` here), with arrows to step through them, a seed, and the chosen generator’s knobs as controls. `useDataset` generates the selection once per change; the same seed always gives the same data.',
 }
 
 const FIGURE = figure({ aspect: 1.25 })

@@ -26,9 +26,7 @@ export function FolderPage(props: {
           <Crumbs path={folder.path} />
           {props.nav}
         </div>
-        <h1 className="font-mono text-2xl font-semibold">
-          {folder.path === '' ? 'whitebox-engine' : `${folder.path}/`}
-        </h1>
+        <h1 className="font-mono text-2xl font-semibold">{folder.path === '' ? 'mdml-engine' : `${folder.path}/`}</h1>
         {folder.path === '' && pkg !== undefined ? <p className="mt-2 text-fg-secondary">{pkg.description}</p> : null}
         {folder.summary === '' ? null : <p className="mt-2 text-fg-secondary">{folder.summary}</p>}
         {folder.module === undefined ? null : (

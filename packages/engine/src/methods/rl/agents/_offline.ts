@@ -1,6 +1,6 @@
 // Shared plumbing of the offline agents (private to methods/rl/agents): minibatches of a fixed dataset as tensors,
 // small MLPs as pure functions of their parameters, and action encodings for discrete and box action spaces.
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import { mlp } from '../../../lib/nn/index.ts'
 import type { Tree } from '../../../lib/optim/index.ts'
 import type { Key } from '../../../lib/random/index.ts'
@@ -50,7 +50,7 @@ export function offlineSpaces(env: { readonly observationSpace: Space; readonly 
       low: [],
       high: [],
     }
-  if (space.kind !== 'box') throw new WhiteboxError('value', 'offline agents need discrete or box actions')
+  if (space.kind !== 'box') throw new MdmlError('value', 'offline agents need discrete or box actions')
   const b = actionBox(space, 'offline')
   return {
     obsSize: f.size,

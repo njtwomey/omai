@@ -3,9 +3,9 @@
  * waterfall and a beeswarm of every row, on tabular regression and classification data.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import { explainDataset, explainPrediction } from 'whitebox-engine/methods/explain'
-import { dict, int } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import { explainDataset, explainPrediction } from 'mdml-engine/methods/explain'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { type ExplainedModel, fitModel, modelControl, rowControl } from './_explain.ts'
 
@@ -24,7 +24,7 @@ export const treeShap: HubEntry = defineEntry({
   }),
   run: ({ data, params, key }) => {
     const { fitted, learn, n } = fitModel(data, params['model'] as ExplainedModel, key)
-    if (n === 0) throw new WhiteboxError('value', 'tree-shap: no rows')
+    if (n === 0) throw new MdmlError('value', 'tree-shap: no rows')
     const row = Math.min(Number(params['row']), n - 1)
     const one = explainPrediction(fitted, learn, row, { method: 'tree' })
     const all = explainDataset(fitted, learn, { method: 'tree', maxRows: Number(params['rows']), key })

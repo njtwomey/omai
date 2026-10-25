@@ -4,7 +4,7 @@
  * ESPRIT subspace estimators of sinusoid frequencies, and Prony's method for sums of damped complex exponentials.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { complexOps as C } from '../numerics/differentiate/index.ts'
 import { eigh, eigvals, lstsq, pinv, solveToeplitz } from '../numerics/linalg/index.ts'
 import { polyroots } from '../numerics/polynomial/index.ts'
@@ -48,15 +48,15 @@ export interface ArModel {
  * @concept autoregressive-spectrum
  * @example
  * ```ts
- * import { levinsonDurbin } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { levinsonDurbin } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(levinsonDurbin([1, 0.5, 0.25]).ar).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0]
  * ```
  */
 export function levinsonDurbin(r: TensorLike): ArModel {
   const v = reshape(float(r), [-1])
   const p = (v.shape[0] ?? 1) - 1
-  if (p < 1) throw new WhiteboxError('value', 'levinsonDurbin: need autocovariances up to lag 1 at least')
+  if (p < 1) throw new MdmlError('value', 'levinsonDurbin: need autocovariances up to lag 1 at least')
   const at = (k: number): Value => reshape(sliceAxis(v, 0, k, k + 1), [])
   let phi: Value[] = [div(at(1), at(0))]
   let sig = sub(at(0), mul(phi[0] as Value, at(1)))
@@ -91,15 +91,14 @@ export interface YuleWalkerOptions {
  * @concept autoregressive-spectrum
  * @example
  * ```ts
- * import { yuleWalker } from 'whitebox-engine/signal'
+ * import { yuleWalker } from 'mdml-engine/signal'
  * yuleWalker([1, 2, 0, -1, 1, 3, 1, -2, 0, 1], 2).ar.shape // => [2]
  * ```
  */
 export function yuleWalker(x: TensorLike, order: number, options: YuleWalkerOptions = {}): ArModel {
   let v = reshape(float(x), [-1])
   const n = v.shape[0] ?? 0
-  if (!Number.isInteger(order) || order < 1 || order >= n)
-    throw new WhiteboxError('value', 'yuleWalker: 1 <= order < n')
+  if (!Number.isInteger(order) || order < 1 || order >= n) throw new MdmlError('value', 'yuleWalker: 1 <= order < n')
   if (options.demean ?? true) v = sub(v, mean(v))
   const adjusted = (options.method ?? 'adjusted') === 'adjusted'
   const r: Value[] = [div(sum(mul(v, v)), n)]
@@ -122,14 +121,14 @@ export function yuleWalker(x: TensorLike, order: number, options: YuleWalkerOpti
  * @concept autoregressive-spectrum
  * @example
  * ```ts
- * import { burg } from 'whitebox-engine/signal'
+ * import { burg } from 'mdml-engine/signal'
  * burg([1, 2, 0, -1, 1, 3, 1, -2, 0, 1], 3).ar.shape // => [3]
  * ```
  */
 export function burg(x: TensorLike, order: number, demean = true): ArModel {
   const raw = samples(x, 'burg')
   const n = raw.length
-  if (!Number.isInteger(order) || order < 1 || order > n - 1) throw new WhiteboxError('value', 'burg: 1 <= order < n')
+  if (!Number.isInteger(order) || order < 1 || order > n - 1) throw new MdmlError('value', 'burg: 1 <= order < n')
   let m = 0
   if (demean) for (const v of raw) m += v / n
   const xs = Float64Array.from(raw, (v) => v - m)
@@ -190,8 +189,8 @@ export interface ArSpectrumOptions {
  * @concept autoregressive-spectrum
  * @example
  * ```ts
- * import { arSpectrum } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { arSpectrum } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(arSpectrum({ ar: [0], sigma2: 1 }, { n: 3, onesided: false }).values) // => [1, 1, 1]
  * ```
  */
@@ -224,7 +223,7 @@ export function arSpectrum(
 function correlationMatrix(x: Float64Array, m: number): Float64Array {
   const n = x.length
   const count = n - m + 1
-  if (count < 1) throw new WhiteboxError('value', 'the correlation order must not exceed the signal length')
+  if (count < 1) throw new MdmlError('value', 'the correlation order must not exceed the signal length')
   const r = new Float64Array(m * m)
   for (let s = 0; s < count; s++) {
     for (let i = 0; i < m; i++) {
@@ -263,7 +262,7 @@ export interface MusicResult {
  * @concept subspace-methods
  * @example
  * ```ts
- * import { music } from 'whitebox-engine/signal'
+ * import { music } from 'mdml-engine/signal'
  * const x = Array.from({ length: 64 }, (_, n) => Math.cos(2 * Math.PI * 0.12 * n) + Math.cos(2 * Math.PI * 0.31 * n + 1))
  * music(x, 4).frequencies.map((f) => Math.round(f * 1e3) / 1e3) // => [0.12, 0.31]
  * ```
@@ -276,7 +275,7 @@ export function music(
   const xs = samples(x, 'music')
   const fs = options.fs ?? 1
   const m = Math.min(options.m ?? 2 * p + 2, xs.length)
-  if (!(p >= 1 && p < m)) throw new WhiteboxError('value', 'music: need 1 <= p < m')
+  if (!(p >= 1 && p < m)) throw new MdmlError('value', 'music: need 1 <= p < m')
   const v = toFlat(primalOf(eigh(constant(correlationMatrix(xs, m), [m, m])).eigenvectors))
   const nfft = options.nfft ?? 1024
   const bins = Math.floor(nfft / 2) + 1
@@ -330,7 +329,7 @@ export function music(
  * @concept subspace-methods
  * @example
  * ```ts
- * import { esprit } from 'whitebox-engine/signal'
+ * import { esprit } from 'mdml-engine/signal'
  * const x = Array.from({ length: 64 }, (_, n) => Math.cos(2 * Math.PI * 0.12 * n) + Math.cos(2 * Math.PI * 0.31 * n + 1))
  * esprit(x, 4).map((f) => Math.round(f * 1e6) / 1e6) // => [0.12, 0.31]
  * ```
@@ -339,7 +338,7 @@ export function esprit(x: TensorLike, p: number, options: SubspaceOptions = {}):
   const xs = samples(x, 'esprit')
   const fs = options.fs ?? 1
   const m = Math.min(options.m ?? 2 * p + 2, xs.length)
-  if (!(p >= 1 && p < m)) throw new WhiteboxError('value', 'esprit: need 1 <= p < m')
+  if (!(p >= 1 && p < m)) throw new MdmlError('value', 'esprit: need 1 <= p < m')
   const us = sliceAxis(eigh(constant(correlationMatrix(xs, m), [m, m])).eigenvectors, 1, m - p, m)
   const u1 = sliceAxis(us, 0, 0, m - 1)
   const u2 = sliceAxis(us, 0, 1, m)
@@ -378,7 +377,7 @@ export interface PronyResult {
  * @concept prony
  * @example
  * ```ts
- * import { prony } from 'whitebox-engine/signal'
+ * import { prony } from 'mdml-engine/signal'
  * const r = prony([1, 0.5, 0.25, 0.125, 0.0625], 1)
  * [Math.round((r.poles.re[0] ?? 0) * 1e12) / 1e12, Math.round((r.amplitudes.re[0] ?? 0) * 1e12) / 1e12] // => [0.5, 1]
  * ```
@@ -386,7 +385,7 @@ export interface PronyResult {
 export function prony(x: TensorLike, p: number, fs = 1): PronyResult {
   const xs = samples(x, 'prony')
   const n = xs.length
-  if (!Number.isInteger(p) || p < 1 || 2 * p > n) throw new WhiteboxError('value', 'prony: need 1 <= p and 2 p <= n')
+  if (!Number.isInteger(p) || p < 1 || 2 * p > n) throw new MdmlError('value', 'prony: need 1 <= p and 2 p <= n')
   // x[k] = -sum_j a_j x[k - j] for k = p .. n - 1.
   const rows = n - p
   const a = new Float64Array(rows * p)

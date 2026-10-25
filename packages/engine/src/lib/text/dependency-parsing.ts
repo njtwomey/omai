@@ -5,7 +5,7 @@
  * function.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /**
  * A dependency tree over tokens 1..n with an artificial root 0: `heads[i]` is the head of token i (`heads[0]` is -1).
@@ -20,11 +20,11 @@ export type Heads = readonly number[]
  * @param scores - The (n + 1) x (n + 1) arc scores.
  * @param options - Allow only one child of the root (default false).
  * @returns The heads and the tree's total score.
- * @throws WhiteboxError with code `shape` for a non-square score matrix.
+ * @throws MdmlError with code `shape` for a non-square score matrix.
  * @concept dependency-parsing
  * @example
  * ```ts
- * import { eisner } from 'whitebox-engine/text'
+ * import { eisner } from 'mdml-engine/text'
  * const s = [[0, 9, 2, 1], [0, 0, 8, 1], [0, 3, 0, 7], [0, 1, 2, 0]]
  * eisner(s) // => { heads: [-1, 0, 1, 2], score: 24 }
  * ```
@@ -34,7 +34,7 @@ export function eisner(
   options: { readonly singleRoot?: boolean } = {},
 ): { readonly heads: number[]; readonly score: number } {
   const n1 = scores.length
-  if (scores.some((r) => r.length !== n1)) throw new WhiteboxError('shape', 'eisner: scores must be square')
+  if (scores.some((r) => r.length !== n1)) throw new MdmlError('shape', 'eisner: scores must be square')
   const n = n1 - 1
   if (n <= 0) return { heads: [-1], score: 0 }
   const NEG = Number.NEGATIVE_INFINITY
@@ -132,7 +132,7 @@ export function eisner(
  * @concept dependency-parsing
  * @example
  * ```ts
- * import { isProjective } from 'whitebox-engine/text'
+ * import { isProjective } from 'mdml-engine/text'
  * [isProjective([-1, 2, 0, 2]), isProjective([-1, 3, 4, 0, 3])] // => [true, false]
  * ```
  */
@@ -157,11 +157,11 @@ export type ArcStandardTransition = 'shift' | 'left' | 'right'
  * @param n - The number of tokens.
  * @param transitions - The transitions.
  * @returns The heads (unattached tokens keep -1).
- * @throws WhiteboxError with code `value` for an illegal transition.
+ * @throws MdmlError with code `value` for an illegal transition.
  * @concept dependency-parsing
  * @example
  * ```ts
- * import { applyArcStandard } from 'whitebox-engine/text'
+ * import { applyArcStandard } from 'mdml-engine/text'
  * applyArcStandard(3, ['shift', 'shift', 'left', 'shift', 'right', 'right']) // => [-1, 2, 0, 2]
  * ```
  */
@@ -171,15 +171,15 @@ export function applyArcStandard(n: number, transitions: readonly ArcStandardTra
   let next = 1
   for (const t of transitions) {
     if (t === 'shift') {
-      if (next > n) throw new WhiteboxError('value', 'arc-standard: shift with an empty buffer')
+      if (next > n) throw new MdmlError('value', 'arc-standard: shift with an empty buffer')
       stack.push(next++)
       continue
     }
-    if (stack.length < 2) throw new WhiteboxError('value', `arc-standard: ${t} needs two items on the stack`)
+    if (stack.length < 2) throw new MdmlError('value', `arc-standard: ${t} needs two items on the stack`)
     const top = stack.pop() as number
     const below = stack.pop() as number
     if (t === 'left') {
-      if (below === 0) throw new WhiteboxError('value', 'arc-standard: the root cannot be a dependent')
+      if (below === 0) throw new MdmlError('value', 'arc-standard: the root cannot be a dependent')
       heads[below] = top
       stack.push(top)
     } else {
@@ -197,16 +197,16 @@ export function applyArcStandard(n: number, transitions: readonly ArcStandardTra
  *
  * @param heads - The tree (projective).
  * @returns The transitions.
- * @throws WhiteboxError with code `value` for a non-projective tree.
+ * @throws MdmlError with code `value` for a non-projective tree.
  * @concept dependency-parsing
  * @example
  * ```ts
- * import { arcStandardOracle } from 'whitebox-engine/text'
+ * import { arcStandardOracle } from 'mdml-engine/text'
  * arcStandardOracle([-1, 2, 0, 2]) // => ['shift', 'shift', 'left', 'shift', 'right', 'right']
  * ```
  */
 export function arcStandardOracle(heads: Heads): ArcStandardTransition[] {
-  if (!isProjective(heads)) throw new WhiteboxError('value', 'arcStandardOracle: the tree is not projective')
+  if (!isProjective(heads)) throw new MdmlError('value', 'arcStandardOracle: the tree is not projective')
   const n = heads.length - 1
   const remaining = new Array<number>(n + 1).fill(0)
   for (let d = 1; d <= n; d++) remaining[heads[d] ?? 0] = (remaining[heads[d] ?? 0] ?? 0) + 1
@@ -247,7 +247,7 @@ export function arcStandardOracle(heads: Heads): ArcStandardTransition[] {
  * @concept dependency-parsing
  * @example
  * ```ts
- * import { greedyArcStandard } from 'whitebox-engine/text'
+ * import { greedyArcStandard } from 'mdml-engine/text'
  * const gold = [-1, 2, 0, 2]
  * const score = (t: string, stack: readonly number[]) => {
  *   const top = stack[stack.length - 1] ?? 0, below = stack[stack.length - 2] ?? -1

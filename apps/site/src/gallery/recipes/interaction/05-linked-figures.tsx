@@ -1,8 +1,7 @@
-import { type ReactNode, useMemo } from 'react'
-import { iris } from 'whitebox-engine/datasets'
-import { toArray } from 'whitebox-engine/tensor'
-import { cartesian, points } from 'whitebox-render/charts'
-import { brushSelection, figure, linkStore } from 'whitebox-render/figure'
+import { iris } from 'mdml-engine/datasets'
+import { toArray } from 'mdml-engine/tensor'
+import { cartesian, points } from 'mdml-render/charts'
+import { brushSelection, figure, linkStore } from 'mdml-render/figure'
 import {
   Brush,
   Chart,
@@ -14,7 +13,8 @@ import {
   useChartProjection,
   useColourMode,
   useLinkState,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ReactNode, useMemo } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

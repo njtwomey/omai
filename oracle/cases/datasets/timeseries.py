@@ -2,8 +2,8 @@
 
 import numpy as np
 import statsmodels
+from mdml_oracle.fixture import Case, case
 from statsmodels.tsa.arima_process import arma_acovf
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}
 

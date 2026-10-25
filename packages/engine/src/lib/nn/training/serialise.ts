@@ -4,13 +4,13 @@
  * and layouts, so weights load as they are).
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { isTensor, type Tensor, type TensorJson, tensorFromJson, tensorToJson, treePaths } from '../../tensor/index.ts'
 import type { Module, Params } from '../module/module.ts'
 
 /** The serialised form of a module's state: format tag, module kind, and tensors by path. */
 export interface SavedState {
-  readonly format: 'whitebox.state/1'
+  readonly format: 'mdml.state/1'
   readonly kind: string
   /** Parameters by path, as tensor JSON (dtype, shape, flat data; non-finite numbers as strings). */
   readonly params: Readonly<Record<string, TensorJson>>
@@ -21,7 +21,7 @@ export interface SavedState {
 const encodeTree = (tree: Params): Record<string, TensorJson> => {
   const out: Record<string, TensorJson> = {}
   for (const [path, v] of Object.entries(treePaths(tree))) {
-    if (!isTensor(v)) throw new WhiteboxError('value', `save: ${path} is traced`)
+    if (!isTensor(v)) throw new MdmlError('value', `save: ${path} is traced`)
     out[path] = tensorToJson(v)
   }
   return out
@@ -36,14 +36,14 @@ const encodeTree = (tree: Params): Record<string, TensorJson> => {
  * @concept serialisation
  * @example
  * ```ts
- * import { saveState, Linear } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { saveState, Linear } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * Object.keys(saveState(new Linear(2, 1, { key: key(0) })).params) // => ['bias', 'weight']
  * ```
  */
 export function saveState(module: Module<never, unknown>): SavedState {
   return {
-    format: 'whitebox.state/1',
+    format: 'mdml.state/1',
     kind: module.kind,
     params: encodeTree(module.params),
     buffers: encodeTree(module.buffers),
@@ -60,11 +60,11 @@ const isTensorJson = (x: unknown): x is TensorJson =>
  * @param state - From {@link saveState} (or parsed from its JSON text).
  * @param options - `strict` (default true): every parameter and buffer must be present.
  * @returns The module.
- * @throws WhiteboxError with code `schema` for a different format and `value` or `shape` for mismatches.
+ * @throws MdmlError with code `schema` for a different format and `value` or `shape` for mismatches.
  * @example
  * ```ts
- * import { loadState, saveState, Linear } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { loadState, saveState, Linear } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * const a = new Linear(2, 1, { key: key(0) })
  * loadState(new Linear(2, 1, { key: key(1) }), saveState(a)).stateDict()['weight']?.data[0] === a.stateDict()['weight']?.data[0] // => true
  * ```
@@ -75,8 +75,8 @@ export function loadState<M extends Module<never, unknown>>(
   options: { readonly strict?: boolean } = {},
 ): M {
   const s = state as Partial<SavedState>
-  if (s.format !== 'whitebox.state/1' || s.params === undefined)
-    throw new WhiteboxError('schema', 'loadState: not a whitebox.state/1 document')
+  if (s.format !== 'mdml.state/1' || s.params === undefined)
+    throw new MdmlError('schema', 'loadState: not a mdml.state/1 document')
   const dict: Record<string, Tensor> = {}
   for (const [k, v] of Object.entries({ ...s.params, ...(s.buffers ?? {}) })) dict[k] = tensorFromJson(v)
   return module.loadStateDict(dict, options)
@@ -89,9 +89,9 @@ export function loadState<M extends Module<never, unknown>>(
  * @returns JSON text.
  * @example
  * ```ts
- * import { stateToText, Linear } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * JSON.parse(stateToText(new Linear(1, 1, { key: key(0) }))).format // => 'whitebox.state/1'
+ * import { stateToText, Linear } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * JSON.parse(stateToText(new Linear(1, 1, { key: key(0) }))).format // => 'mdml.state/1'
  * ```
  */
 export function stateToText(module: Module<never, unknown>): string {
@@ -106,8 +106,8 @@ export function stateToText(module: Module<never, unknown>): string {
  * @returns The module.
  * @example
  * ```ts
- * import { stateFromText, stateToText, Linear } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { stateFromText, stateToText, Linear } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * stateFromText(new Linear(1, 1), stateToText(new Linear(1, 1, { key: key(0) }))).kind // => 'Linear'
  * ```
  */
@@ -134,7 +134,7 @@ export interface TorchLoadOptions {
  * @returns The module.
  * @example
  * ```ts
- * import { loadTorchStateDict, Linear } from 'whitebox-engine/nn'
+ * import { loadTorchStateDict, Linear } from 'mdml-engine/nn'
  * const w = { dtype: 'float64', shape: [1, 1], data: [2] } as const
  * const b = { dtype: 'float64', shape: [1], data: [0] } as const
  * loadTorchStateDict(new Linear(1, 1), { 'module.weight': w, 'module.bias': b }, { rename: (k) => k.replace('module.', '') }).forward([[3]]).shape // => [1, 1]
@@ -148,7 +148,7 @@ export function loadTorchStateDict<M extends Module<never, unknown>>(
   const dict: Record<string, Tensor> = {}
   for (const [k, v] of Object.entries(stateDict)) {
     if (options.ignore?.(k) === true) continue
-    if (!isTensorJson(v)) throw new WhiteboxError('schema', `loadTorchStateDict: ${k} is not tensor JSON`)
+    if (!isTensorJson(v)) throw new MdmlError('schema', `loadTorchStateDict: ${k} is not tensor JSON`)
     dict[options.rename === undefined ? k : options.rename(k)] = tensorFromJson(v)
   }
   return module.loadStateDict(dict, { strict: options.strict ?? true })

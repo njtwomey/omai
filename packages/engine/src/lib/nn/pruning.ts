@@ -5,7 +5,7 @@
  * polynomial (Zhu and Gupta) sparsity schedules for gradual pruning, as in torch.nn.utils.prune.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   asTensor,
   fromStorage,
@@ -26,7 +26,7 @@ import type { Params } from './module/module.ts'
 export type Masks = Params
 
 const checkSparsity = (s: number, name: string): void => {
-  if (!(s >= 0 && s <= 1)) throw new WhiteboxError('value', `${name}: sparsity must be in [0, 1], got ${s}`)
+  if (!(s >= 0 && s <= 1)) throw new MdmlError('value', `${name}: sparsity must be in [0, 1], got ${s}`)
 }
 
 /** Indices of the k smallest scores (ties broken by position, so results are deterministic). */
@@ -52,8 +52,8 @@ const maskOf = (shape: readonly number[], zeroed: Iterable<number>, size: number
  * @concept pruning
  * @example
  * ```ts
- * import { magnitudeMask } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { magnitudeMask } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(magnitudeMask([0.1, -3, 0.5, 2], 0.5)) // => [0, 1, 0, 1]
  * ```
  */
@@ -82,8 +82,8 @@ export interface GlobalPruneOptions {
  * @returns Masks with the tree's structure.
  * @example
  * ```ts
- * import { globalMagnitudeMasks } from 'whitebox-engine/nn'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { globalMagnitudeMasks } from 'mdml-engine/nn'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * const m = globalMagnitudeMasks({ a: tensor([[1, 2]]), b: tensor([[3, 0.5]]) }, 0.5)
  * toArray(m['a'] as never) // => [[0, 1]]
  * ```
@@ -127,8 +127,8 @@ export function globalMagnitudeMasks(params: Params, sparsity: number, options: 
  * @returns A 0/1 mask with x's shape.
  * @example
  * ```ts
- * import { structuredMask } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { structuredMask } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(structuredMask([[1, 1], [0.1, 0.2], [3, 0]], 1 / 3)) // => [[1, 1], [0, 0], [1, 1]]
  * ```
  */
@@ -165,8 +165,8 @@ export function structuredMask(
  * @returns A 0/1 mask with x's shape.
  * @example
  * ```ts
- * import { nmMask } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { nmMask } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(nmMask([[0.1, -3, 0.5, 2]], 2, 4)) // => [[0, 1, 0, 1]]
  * ```
  */
@@ -174,7 +174,7 @@ export function nmMask(x: TensorLike, n: number, m: number): Tensor {
   const t = primalOf(asTensor(x))
   const last = t.shape[t.shape.length - 1] ?? 0
   if (!(n >= 0 && n <= m) || last % m !== 0)
-    throw new WhiteboxError('value', `nmMask: need 0 <= n <= m and the last axis (${last}) divisible by m`)
+    throw new MdmlError('value', `nmMask: need 0 <= n <= m and the last axis (${last}) divisible by m`)
   const data = toFlat(t)
   const zeroed: number[] = []
   for (let g = 0; g < data.length; g += m) {
@@ -193,8 +193,8 @@ export function nmMask(x: TensorLike, n: number, m: number): Tensor {
  * @returns The pruned parameters, differentiable in params (pruned entries get zero gradient).
  * @example
  * ```ts
- * import { applyMasks } from 'whitebox-engine/nn'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { applyMasks } from 'mdml-engine/nn'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * toArray(applyMasks({ w: tensor([1, 2]) }, { w: tensor([0, 1]) })['w'] as never) // => [0, 2]
  * ```
  */
@@ -209,7 +209,7 @@ export function applyMasks(params: Params, masks: Masks): Params {
  * @returns zeros / size.
  * @example
  * ```ts
- * import { sparsityOf } from 'whitebox-engine/nn'
+ * import { sparsityOf } from 'mdml-engine/nn'
  * sparsityOf([0, 1, 0, 2]) // => 0.5
  * ```
  */
@@ -234,8 +234,8 @@ export interface SparsityReport {
  * @returns The report.
  * @example
  * ```ts
- * import { sparsityReport } from 'whitebox-engine/nn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { sparsityReport } from 'mdml-engine/nn'
+ * import { tensor } from 'mdml-engine/tensor'
  * sparsityReport({ a: tensor([0, 1]), b: tensor([0, 0]) }).global // => 0.75
  * ```
  */
@@ -263,8 +263,8 @@ export function sparsityReport(params: Params): SparsityReport {
  * @reference Frankle and Carbin (2019), The lottery ticket hypothesis: finding sparse, trainable neural networks.
  * @example
  * ```ts
- * import { rewind } from 'whitebox-engine/nn'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { rewind } from 'mdml-engine/nn'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * toArray(rewind({ w: tensor([5, 6]) }, { w: tensor([1, 0]) })['w'] as never) // => [5, 0]
  * ```
  */
@@ -304,8 +304,8 @@ export interface IterativePruningResult {
  * @returns The final masks, the ticket and each round.
  * @example
  * ```ts
- * import { iterativeMagnitudePruning } from 'whitebox-engine/nn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { iterativeMagnitudePruning } from 'mdml-engine/nn'
+ * import { tensor } from 'mdml-engine/tensor'
  * iterativeMagnitudePruning({ w: tensor([[1, 2, 3, 4]]) }, (p) => p, { finalSparsity: 0.5, rounds: 2 }).rounds.length // => 2
  * ```
  */
@@ -347,7 +347,7 @@ export type SparsitySchedule = (step: number) => number
  * @returns The schedule.
  * @example
  * ```ts
- * import { constantSparsity } from 'whitebox-engine/nn'
+ * import { constantSparsity } from 'mdml-engine/nn'
  * [constantSparsity(0.5, 10)(5), constantSparsity(0.5, 10)(10)] // => [0, 0.5]
  * ```
  */
@@ -366,7 +366,7 @@ export function constantSparsity(sparsity: number, start = 0): SparsitySchedule 
  * @returns The schedule.
  * @example
  * ```ts
- * import { linearSparsity } from 'whitebox-engine/nn'
+ * import { linearSparsity } from 'mdml-engine/nn'
  * linearSparsity(0, 0.8, 0, 10)(5) // => 0.4
  * ```
  */
@@ -387,7 +387,7 @@ export function linearSparsity(initial: number, final: number, start: number, en
  * @reference Zhu and Gupta (2017), To prune, or not to prune: exploring the efficacy of pruning for model compression.
  * @example
  * ```ts
- * import { polynomialSparsity } from 'whitebox-engine/nn'
+ * import { polynomialSparsity } from 'mdml-engine/nn'
  * polynomialSparsity(0, 0.8, 0, 10)(10) // => 0.8
  * ```
  */
@@ -400,7 +400,7 @@ export function polynomialSparsity(
 ): SparsitySchedule {
   checkSparsity(initial, 'polynomialSparsity')
   checkSparsity(final, 'polynomialSparsity')
-  if (!(end > start)) throw new WhiteboxError('value', 'polynomialSparsity: need end > start')
+  if (!(end > start)) throw new MdmlError('value', 'polynomialSparsity: need end > start')
   return (step) => {
     if (step <= start) return initial
     if (step >= end) return final

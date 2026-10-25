@@ -5,9 +5,9 @@ import numpy as np
 import pingouin as pg
 import scipy
 import scipy.stats as st
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from scipy.integrate import quad
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"pingouin": pg.__version__, "scipy": scipy.__version__}
 

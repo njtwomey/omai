@@ -61,7 +61,7 @@ const gnmt = (logprob: number, length: number, alpha: number): number =>
  * @reference Wu et al. (2016), Google's neural machine translation system.
  * @example
  * ```ts
- * import { beamSearchAlgorithm, bigramLanguageModel } from 'whitebox-engine/nn'
+ * import { beamSearchAlgorithm, bigramLanguageModel } from 'mdml-engine/nn'
  * beamSearchAlgorithm(bigramLanguageModel([[0, 1], [1, 0]]), [0]).name // => 'beamSearch'
  * ```
  */
@@ -137,7 +137,7 @@ export function beamSearchAlgorithm(
  * @concept decoding
  * @example
  * ```ts
- * import { beamSearch, bigramLanguageModel } from 'whitebox-engine/nn'
+ * import { beamSearch, bigramLanguageModel } from 'mdml-engine/nn'
  * beamSearch(bigramLanguageModel([[0, 5], [5, 0]]), [0], { maxNewTokens: 3, beamWidth: 2 })[0]?.generated // => [1, 0, 1]
  * ```
  */

@@ -3,7 +3,7 @@
  * from the matrix profile (Yeh et al., 2016), so the most unusual windows of a series score highest.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type AnomalyScores, anomalyScores } from '../../lib/exposition/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
 import { discords, stump } from '../timeseries/index.ts'
@@ -21,7 +21,7 @@ import { discords, stump } from '../timeseries/index.ts'
 export function matrixProfileDiscords(series: TensorLike, m: number, k = 1): AnomalyScores {
   const t = toFlat(asTensor(series))
   if (!(Number.isInteger(m) && m >= 3 && m <= t.length / 2))
-    throw new WhiteboxError('value', `matrixProfileDiscords: the window must be in 3..${Math.floor(t.length / 2)}`)
+    throw new MdmlError('value', `matrixProfileDiscords: the window must be in 3..${Math.floor(t.length / 2)}`)
   const profile = stump(t, m)
   const scores = Array.from(profile.P, (v) => (Number.isFinite(v) ? v : 0))
   const found = discords(profile.P, m, k)

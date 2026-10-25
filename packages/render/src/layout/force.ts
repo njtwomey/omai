@@ -5,9 +5,9 @@
  * so well-connected nodes sit together.
  */
 
-import { eigh } from 'whitebox-engine/numerics/linalg'
-import { key as makeKey, uniform } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
+import { eigh } from 'mdml-engine/numerics/linalg'
+import { key as makeKey, uniform } from 'mdml-engine/random'
+import { toArray } from 'mdml-engine/tensor'
 import { type Box, type GraphLayout, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /** Options of {@link forceLayout}. */
@@ -49,7 +49,7 @@ function boxes(graph: LayoutGraph, xy: readonly (readonly [number, number])[]): 
  * @returns The layout, the iterations it took and its final energy.
  * @example
  * ```ts
- * import { forceLayout } from 'whitebox-render/layout'
+ * import { forceLayout } from 'mdml-render/layout'
  * const g = { nodes: ['a', 'b', 'c'].map((id) => ({ id, width: 10, height: 10 })), edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }] }
  * forceLayout(g, { seed: 1 }).nodes['a'].x === forceLayout(g, { seed: 1 }).nodes['a'].x // => true
  * ```
@@ -143,7 +143,7 @@ export function forceLayout(graph: LayoutGraph, options: ForceOptions = {}): For
  * @returns The layout.
  * @example
  * ```ts
- * import { circularLayout } from 'whitebox-render/layout'
+ * import { circularLayout } from 'mdml-render/layout'
  * const g = { nodes: ['a', 'b', 'c', 'd'].map((id) => ({ id, width: 10, height: 10 })), edges: [] }
  * const l = circularLayout(g, { radius: 50 })
  * Math.round(l.nodes['c'].y - l.nodes['a'].y) // => 100
@@ -173,7 +173,7 @@ export function circularLayout(
  * @returns The layout.
  * @example
  * ```ts
- * import { spectralLayout } from 'whitebox-render/layout'
+ * import { spectralLayout } from 'mdml-render/layout'
  * const g = { nodes: ['a', 'b', 'c', 'd'].map((id) => ({ id, width: 10, height: 10 })), edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }, { from: 'c', to: 'd' }] }
  * Object.keys(spectralLayout(g).nodes).length // => 4
  * ```

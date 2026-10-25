@@ -1,9 +1,9 @@
 """Controllability and observability matrices and Gramians (with their Cholesky factors) against python-control."""
 
 import control as ct
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.lti import schur_stable_system, stable_system
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.lti import schur_stable_system, stable_system
 
 REFERENCE: dict[str, str] = {"control": ct.__version__}
 

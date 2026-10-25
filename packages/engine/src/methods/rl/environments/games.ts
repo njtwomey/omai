@@ -5,7 +5,7 @@
  * such as the poker payoffs and the starting states of given deals.
  */
 
-import { maxOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError, maxOf } from '../../../lib/base/index.ts'
 import {
   CHANCE,
   type KuhnState,
@@ -83,8 +83,8 @@ const lineOf = (board: readonly number[], piece: number): readonly number[] | un
  * @concept multi-agent
  * @example
  * ```ts
- * import { ticTacToe } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { ticTacToe } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = ticTacToe.create()
  * env.legalActions?.(env.reset(key(0)), 'player_0').length // => 9
  * ```
@@ -154,7 +154,7 @@ const C4_COLS = 7
  * @concept multi-agent
  * @example
  * ```ts
- * import { connectFourLine } from 'whitebox-engine/methods/rl'
+ * import { connectFourLine } from 'mdml-engine/methods/rl'
  * const board = new Array(42).fill(0)
  * for (const c of [35, 36, 37, 38]) board[c] = 1
  * connectFourLine(board, 38) // => [35, 36, 37, 38]
@@ -189,8 +189,8 @@ export function connectFourLine(board: readonly number[], cell: number): number[
  * @concept multi-agent
  * @example
  * ```ts
- * import { connectFour } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { connectFour } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = connectFour.create()
  * env.step(env.reset(key(0)), 3, key(1)).state.board[38] // => 1
  * ```
@@ -274,7 +274,7 @@ export interface NimOptions {
  * @concept multi-agent
  * @example
  * ```ts
- * import { nimMove } from 'whitebox-engine/methods/rl'
+ * import { nimMove } from 'mdml-engine/methods/rl'
  * nimMove(9, 7) // => { heap: 1, take: 3 }
  * ```
  */
@@ -292,9 +292,9 @@ export function nimMove(action: number, maxTake: number): { readonly heap: numbe
  * @concept multi-agent
  * @example
  * ```ts
- * import { nim } from 'whitebox-engine/methods/rl'
- * import { playAec } from 'whitebox-engine/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { nim } from 'mdml-engine/methods/rl'
+ * import { playAec } from 'mdml-engine/rl'
+ * import { key } from 'mdml-engine/random'
  * playAec(nim.create({ heaps: [3] }), { player_0: () => 0, player_1: () => 0 }, key(0)).returns // => { player_0: 1, player_1: -1 }
  * ```
  */
@@ -315,7 +315,7 @@ export const nim: GameDefinition<NimState> = {
     const opts = (options ?? {}) as NimOptions
     const start = [...(opts.heaps ?? [1, 3, 5, 7])]
     if (start.length === 0 || start.some((h) => !Number.isInteger(h) || h < 1))
-      throw new WhiteboxError('value', 'nim: heaps must be positive integers')
+      throw new MdmlError('value', 'nim: heaps must be positive integers')
     const misere = opts.misere === true
     const maxTake = maxOf(start)
     const size = start.reduce((a, h) => a + h + 1, 0) + 1
@@ -396,7 +396,7 @@ const CARD_NAMES = ['J', 'Q', 'K']
  * @concept multi-agent
  * @example
  * ```ts
- * import { kuhnPokerState } from 'whitebox-engine/methods/rl'
+ * import { kuhnPokerState } from 'mdml-engine/methods/rl'
  * kuhnPokerState([2, 0]).toMove // => 0
  * ```
  */
@@ -414,13 +414,13 @@ export function kuhnPokerState(cards: readonly [number, number]): KuhnPokerState
  * @concept multi-agent
  * @example
  * ```ts
- * import { kuhnPayoff } from 'whitebox-engine/methods/rl'
+ * import { kuhnPayoff } from 'mdml-engine/methods/rl'
  * kuhnPayoff([0, 2], [1, 1]) // => [-2, 2]
  * ```
  */
 export function kuhnPayoff(cards: readonly [number, number], history: readonly number[]): [number, number] {
   if (!kuhnOver(cards, history))
-    throw new WhiteboxError('value', `kuhnPayoff: ${history.join(',')} is not a terminal history`)
+    throw new MdmlError('value', `kuhnPayoff: ${history.join(',')} is not a terminal history`)
   const r = KUHN.returns(kuhnRulesState(cards, history))
   return [r[0] ?? 0, r[1] ?? 0]
 }
@@ -434,8 +434,8 @@ export function kuhnPayoff(cards: readonly [number, number], history: readonly n
  * @concept multi-agent
  * @example
  * ```ts
- * import { kuhnPoker } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { kuhnPoker } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = kuhnPoker.create()
  * env.observe(env.reset(key(0)), 'player_0').length // => 11
  * ```
@@ -510,7 +510,7 @@ export const leducRank = (card: number): number => Math.floor(card / 2)
  * @concept multi-agent
  * @example
  * ```ts
- * import { leducPokerState } from 'whitebox-engine/methods/rl'
+ * import { leducPokerState } from 'mdml-engine/methods/rl'
  * leducPokerState([0, 5, 2]).contributions // => [1, 1]
  * ```
  */
@@ -527,7 +527,7 @@ export function leducPokerState(cards: readonly [number, number, number]): Leduc
  * @concept multi-agent
  * @example
  * ```ts
- * import { leducShowdown } from 'whitebox-engine/methods/rl'
+ * import { leducShowdown } from 'mdml-engine/methods/rl'
  * leducShowdown([0, 5, 1]) // => 0
  * ```
  */
@@ -570,8 +570,8 @@ const LEDUC_NAMES = ['J♠', 'J♥', 'Q♠', 'Q♥', 'K♠', 'K♥']
  * @concept multi-agent
  * @example
  * ```ts
- * import { leducPoker, leducPokerState } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { leducPoker, leducPokerState } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = leducPoker.create()
  * env.legalActions?.(leducPokerState([0, 5, 2]), 'player_0') // => [1, 2]
  * ```

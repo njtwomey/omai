@@ -4,7 +4,7 @@
  * special functions are computed in.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../../tensor/index.ts'
 import { solve } from '../linalg/index.ts'
 
@@ -19,14 +19,14 @@ import { solve } from '../linalg/index.ts'
  * @concept pade-approximation
  * @example
  * ```ts
- * import { pade } from 'whitebox-engine/numerics/approximation'
+ * import { pade } from 'mdml-engine/numerics/approximation'
  * // exp(x) [1/1] = (1 + x/2) / (1 - x/2).
  * pade([1, 1, 0.5], 1) // => { numerator: [1, 0.5], denominator: [1, -0.5] }
  * ```
  */
 export function pade(an: readonly number[], m: number, n?: number): { numerator: number[]; denominator: number[] } {
   const num = n ?? an.length - 1 - m
-  if (num < 0 || num + m + 1 > an.length) throw new WhiteboxError('value', 'pade: not enough Taylor coefficients')
+  if (num < 0 || num + m + 1 > an.length) throw new MdmlError('value', 'pade: not enough Taylor coefficients')
   const a = (k: number): number => (k < 0 ? 0 : (an[k] ?? 0))
   let q: number[] = [1]
   if (m > 0) {
@@ -59,7 +59,7 @@ export function pade(an: readonly number[], m: number, n?: number): { numerator:
  * @concept continued-fractions
  * @example
  * ```ts
- * import { continuedFraction } from 'whitebox-engine/numerics/approximation'
+ * import { continuedFraction } from 'mdml-engine/numerics/approximation'
  * // The golden ratio 1 + 1/(1 + 1/(1 + ...)).
  * Math.abs(continuedFraction(() => 1, () => 1).value - (1 + Math.sqrt(5)) / 2) < 1e-14 // => true
  * ```
@@ -87,5 +87,5 @@ export function continuedFraction(
     f *= delta
     if (Math.abs(delta - 1) < tol) return { value: f, terms: j }
   }
-  throw new WhiteboxError('convergence', 'continuedFraction: no convergence')
+  throw new MdmlError('convergence', 'continuedFraction: no convergence')
 }

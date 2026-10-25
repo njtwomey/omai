@@ -10,8 +10,8 @@ import numpy as np
 import numpy.typing as npt
 import sklearn
 import sklearn.metrics as M
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__, "pyprg": "0.1.1b7 (ported)"}
 

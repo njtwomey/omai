@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { concat, fromStorage, isTensor, type Tensor, take as takeRows } from '../tensor/index.ts'
 import type { TableColumn } from './schema/tabular.ts'
 
@@ -36,7 +36,7 @@ export function takeColumn(column: unknown, idx: Int32Array): unknown {
     for (const [name, c] of Object.entries(column as Record<string, TableColumn>)) out[name] = takeTableColumn(c, idx)
     return out
   }
-  throw new WhiteboxError('schema', 'take: a per-row field must be a tensor, an array or table columns')
+  throw new MdmlError('schema', 'take: a per-row field must be a tensor, an array or table columns')
 }
 
 function concatTableColumn(parts: readonly TableColumn[]): TableColumn {
@@ -53,7 +53,7 @@ function concatTableColumn(parts: readonly TableColumn[]): TableColumn {
     case 'categorical': {
       for (const p of parts) {
         if (p.kind !== 'categorical' || p.levels.join('\u0000') !== first.levels.join('\u0000'))
-          throw new WhiteboxError('value', 'concatRows: categorical columns must share their levels')
+          throw new MdmlError('value', 'concatRows: categorical columns must share their levels')
       }
       return {
         ...first,
@@ -87,12 +87,12 @@ export function concatColumns(parts: readonly unknown[]): unknown {
       out[name] = concatTableColumn(
         parts.map((p) => {
           const c = (p as Record<string, TableColumn>)[name]
-          if (c === undefined) throw new WhiteboxError('value', `concatRows: column ${name} is missing`)
+          if (c === undefined) throw new MdmlError('value', `concatRows: column ${name} is missing`)
           return c
         }),
       )
     }
     return out
   }
-  throw new WhiteboxError('schema', 'concatRows: a per-row field must be a tensor, an array or table columns')
+  throw new MdmlError('schema', 'concatRows: a per-row field must be a tensor, an array or table columns')
 }

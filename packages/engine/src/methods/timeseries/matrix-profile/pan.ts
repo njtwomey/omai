@@ -23,7 +23,7 @@ import { type MatrixProfileTrace, scrump, stump } from './algorithms.ts'
  * @concept matrix-profile
  * @example
  * ```ts
- * import { bfsIndices } from 'whitebox-engine/methods/timeseries'
+ * import { bfsIndices } from 'mdml-engine/methods/timeseries'
  * bfsIndices(10) // => [5, 2, 8, 1, 4, 7, 9, 0, 3, 6]
  * ```
  */
@@ -81,7 +81,7 @@ export interface StimpState {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stimpAlgorithm } from 'whitebox-engine/methods/timeseries'
+ * import { stimpAlgorithm } from 'mdml-engine/methods/timeseries'
  * stimpAlgorithm(Array.from({ length: 40 }, (_, i) => Math.sin(i / 3)), { maxM: 8 }).name // => 'stimp'
  * ```
  */
@@ -146,7 +146,7 @@ export interface PanOptions {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { panImage, stimp } from 'whitebox-engine/methods/timeseries'
+ * import { panImage, stimp } from 'mdml-engine/methods/timeseries'
  * const s = stimp(Array.from({ length: 40 }, (_, i) => Math.sin(i / 3) + 0.1 * Math.cos(i * 2.3)), { maxM: 6, percentage: 1 })
  * panImage(s).length // => 4
  * ```
@@ -217,7 +217,7 @@ export function panImage(state: StimpState, options: PanOptions = {}): Float64Ar
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stimp } from 'whitebox-engine/methods/timeseries'
+ * import { stimp } from 'mdml-engine/methods/timeseries'
  * Array.from(stimp(Array.from({ length: 40 }, (_, i) => Math.sin(i / 3)), { maxM: 6, percentage: 1 }).windows) // => [5, 4, 6, 3]
  * ```
  */

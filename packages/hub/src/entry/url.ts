@@ -4,8 +4,8 @@
  * out-of-range values, so a configured demo can be shared as a link.
  */
 
-import { datasetCollections, datasetGenerators } from 'whitebox-engine/datasets'
-import { contains, type DictSpace, type SpaceValue } from 'whitebox-engine/space'
+import { datasetCollections, datasetGenerators } from 'mdml-engine/datasets'
+import { contains, type DictSpace, type SpaceValue } from 'mdml-engine/space'
 import type { HubEntry } from './entry.ts'
 import { datasetState, demoState, type HubState } from './run.ts'
 
@@ -33,7 +33,7 @@ function knobSpace(collection: string, dataset: string): DictSpace | undefined {
  * @returns The query, without `?` (empty for the demo state).
  * @example
  * ```ts
- * import { catalogue, demoState, stateToQuery } from 'whitebox-hub'
+ * import { catalogue, demoState, stateToQuery } from 'mdml-hub'
  * const lasso = catalogue.byId.get('sklearn/linear-model/lasso')
  * lasso === undefined ? '' : stateToQuery(lasso, { ...demoState(lasso), seed: 3 }) // => 'seed=3'
  * ```
@@ -64,7 +64,7 @@ export function stateToQuery(entry: HubEntry, state: HubState): string {
  * @returns The state.
  * @example
  * ```ts
- * import { catalogue, stateFromQuery } from 'whitebox-hub'
+ * import { catalogue, stateFromQuery } from 'mdml-hub'
  * const lasso = catalogue.byId.get('sklearn/linear-model/lasso')
  * lasso === undefined ? 0 : stateFromQuery(lasso, '?seed=3&alpha=0.5').params['alpha'] // => 0.5
  * ```

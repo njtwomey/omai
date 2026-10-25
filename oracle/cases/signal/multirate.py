@@ -5,9 +5,9 @@ from typing import Any, Literal, cast
 
 import scipy
 import scipy.signal as S
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
-from whitebox_oracle.signal_helpers import tones
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
+from mdml_oracle.signal_helpers import tones
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

@@ -82,7 +82,7 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
  * @returns Its one-line description, if it has one.
  * @example
  * ```ts
- * import { collectionDescription } from 'whitebox-hub'
+ * import { collectionDescription } from 'mdml-hub'
  * collectionDescription('sklearn/svm') === undefined // => false
  * collectionDescription('nowhere') // => undefined
  * ```

@@ -3,7 +3,7 @@
  * and a few pairwise terms, learnt by cyclic gradient boosting over binned features, as InterpretML's EBM), their
  * predictions, per-row contributions and term importances, and points scorecards from logistic models.
  */
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { columnOf, matrixView, targetVector } from '../learn/validation.ts'
 import type { TensorLike } from '../tensor/index.ts'
@@ -88,7 +88,7 @@ function binOf(edges: readonly number[], v: number): number {
  * @returns The model.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const x = Array.from({ length: 40 }, (_, i) => [i % 4, Math.floor(i / 4) % 2])
  * const y = x.map(([a, b]) => 2 * a + (b === 1 ? 5 : 0))
  * const m = explain.explainableBoosting({ x, y }, { bins: 4, rounds: 300, learningRate: 0.2 })
@@ -98,7 +98,7 @@ function binOf(edges: readonly number[], v: number): number {
  */
 export function explainableBoosting(data: LearnData, options: ExplainableBoostingOptions = {}): GlassBoxModel {
   const m = matrixView(data.x, 'explainableBoosting')
-  if (data.y === undefined) throw new WhiteboxError('value', 'explainableBoosting: needs targets')
+  if (data.y === undefined) throw new MdmlError('value', 'explainableBoosting: needs targets')
   const y = targetVector(data.y, 'explainableBoosting', m.n)
   const task = options.task ?? 'regression'
   const lr = options.learningRate ?? 0.05
@@ -228,7 +228,7 @@ export function explainableBoosting(data: LearnData, options: ExplainableBoostin
  * @returns contributions[row][term].
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const model = { task: 'regression', intercept: 1, terms: [{ features: [0], edges: [0.5], values: [-1, 1] }] }
  * explain.glassBoxContributions(model, [[0], [1]]) // => [[-1], [1]]
  * ```
@@ -256,7 +256,7 @@ export function glassBoxContributions(model: GlassBoxModel, x: TensorLike): numb
  * @returns One prediction per row.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const model = { task: 'regression', intercept: 1, terms: [{ features: [0], edges: [0.5], values: [-1, 1] }] }
  * explain.glassBoxPredict(model, [[0], [1]]) // => [0, 2]
  * ```
@@ -276,7 +276,7 @@ export function glassBoxPredict(model: GlassBoxModel, x: TensorLike): number[] {
  * @returns One importance per term.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const model = { task: 'regression', intercept: 0, terms: [{ features: [0], edges: [0.5], values: [-1, 1] }] }
  * explain.termImportances(model, [[0], [1], [1]]) // => [1]
  * ```
@@ -322,7 +322,7 @@ export interface Scorecard {
  * @returns The scorecard.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const card = explain.scorecard([Math.LN2], 0, [[0], [0], [1], [1]], { bins: 2, pdo: 20, baseScore: 600, baseOdds: 1 })
  * card.features[0].points.map((p) => Math.round(p)) // => [0, 20]
  * ```

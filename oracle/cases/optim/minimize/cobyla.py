@@ -9,9 +9,9 @@ from typing import Any, cast
 import numpy as np
 import scipy
 import scipy.optimize as so
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
-from whitebox_oracle.optim_problems import PROBLEMS
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
+from mdml_oracle.optim_problems import PROBLEMS
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

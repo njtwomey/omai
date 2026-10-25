@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import {
   charpoly,
   det,
@@ -146,7 +146,7 @@ describe('matrices', () => {
       matrix([[1, 2], [3]])
       expect.unreachable()
     } catch (e) {
-      expect(isWhiteboxError(e) && e.code === 'shape').toBe(true)
+      expect(isMdmlError(e) && e.code === 'shape').toBe(true)
     }
   })
 })

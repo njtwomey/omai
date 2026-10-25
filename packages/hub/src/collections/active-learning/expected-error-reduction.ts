@@ -3,7 +3,7 @@
  * naive Bayes model's expected error on the unlabelled pool, on two-dimensional classification data.
  */
 
-import { gaussianNB } from 'whitebox-engine/methods/naive-bayes'
+import { gaussianNB } from 'mdml-engine/methods/naive-bayes'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { studyEntry } from './_study.ts'
 

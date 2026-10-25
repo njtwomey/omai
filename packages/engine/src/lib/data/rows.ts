@@ -4,7 +4,7 @@
  * resamples with their out-of-bag rows, and stacking datasets of the same kind.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, permutation, randint } from '../random/index.ts'
 import { isTensor, type Tensor, toFlat, type Value } from '../tensor/index.ts'
 import { concatColumns, takeColumn } from './_columns.ts'
@@ -24,10 +24,10 @@ function indexArray(indices: readonly number[] | Int32Array | Value): Int32Array
  * @param data - The dataset.
  * @param indices - Row indices (repeats allowed).
  * @returns A dataset of the selected rows, with the same metadata.
- * @throws WhiteboxError with code `value` for an index outside the rows.
+ * @throws MdmlError with code `value` for an index outside the rows.
  * @example
  * ```ts
- * import { take, xy } from 'whitebox-engine/data'
+ * import { take, xy } from 'mdml-engine/data'
  * take(xy([[1], [2], [3]], [10, 20, 30]), [2, 0]).y.data // => Float64Array [30, 10]
  * ```
  */
@@ -35,7 +35,7 @@ export function take<D extends Dataset>(data: D, indices: readonly number[] | In
   const idx = indexArray(indices)
   const n = rowCount(data)
   for (const i of idx) {
-    if (i < 0 || i >= n) throw new WhiteboxError('value', `take: row ${i} outside [0, ${n})`)
+    if (i < 0 || i >= n) throw new MdmlError('value', `take: row ${i} outside [0, ${n})`)
   }
   const out: Record<string, unknown> = { ...data }
   const record = data as unknown as Readonly<Record<string, unknown>>
@@ -51,8 +51,8 @@ export function take<D extends Dataset>(data: D, indices: readonly number[] | In
  * @returns The shuffled dataset.
  * @example
  * ```ts
- * import { shuffleRows, xy } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { shuffleRows, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * shuffleRows(xy([[1], [2], [3]], [1, 2, 3]), key(0)).y.shape // => [3]
  * ```
  */
@@ -68,7 +68,7 @@ export function shuffleRows<D extends Dataset>(data: D, key: Key): D {
  * @returns The labels `[n]`, or `undefined` when the dataset has none.
  * @example
  * ```ts
- * import { labelsOf, xyClasses } from 'whitebox-engine/data'
+ * import { labelsOf, xyClasses } from 'mdml-engine/data'
  * labelsOf(xyClasses([[0], [1]], [1, 0])) // => [1, 0]
  * ```
  */
@@ -89,7 +89,7 @@ export function labelsOf(data: Dataset): number[] | undefined {
 
 function sizeOf(size: number, n: number, name: string): number {
   const m = size < 1 ? Math.ceil(size * n) : Math.round(size)
-  if (m < 0 || m > n) throw new WhiteboxError('value', `${name}: size ${size} does not fit ${n} rows`)
+  if (m < 0 || m > n) throw new MdmlError('value', `${name}: size ${size} does not fit ${n} rows`)
   return m
 }
 
@@ -103,8 +103,8 @@ function sizeOf(size: number, n: number, name: string): number {
  * @returns Train and test row indices.
  * @example
  * ```ts
- * import { stratifiedIndices } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { stratifiedIndices } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * stratifiedIndices([0, 0, 0, 0, 1, 1], 3, key(0)).test.length // => 3
  * ```
  */
@@ -162,10 +162,10 @@ export interface SplitOptions {
  * @param data - The dataset.
  * @param options - Test size, shuffling key and stratification.
  * @returns `{ train, test }`.
- * @throws WhiteboxError with code `value` when a part would be empty, or stratification lacks labels or a key.
+ * @throws MdmlError with code `value` when a part would be empty, or stratification lacks labels or a key.
  * @example
  * ```ts
- * import { trainTestSplit, xy } from 'whitebox-engine/data'
+ * import { trainTestSplit, xy } from 'mdml-engine/data'
  * trainTestSplit(xy([[1], [2], [3], [4]], [1, 2, 3, 4])).test.y.shape // => [1]
  * ```
  */
@@ -176,11 +176,11 @@ export function trainTestSplit<D extends Dataset>(
   const n = rowCount(data)
   const nTest = sizeOf(options.testSize ?? 0.25, n, 'trainTestSplit')
   if (nTest <= 0 || nTest >= n)
-    throw new WhiteboxError('value', `trainTestSplit: test size ${nTest} leaves no rows to train on`)
+    throw new MdmlError('value', `trainTestSplit: test size ${nTest} leaves no rows to train on`)
   if (options.stratify === true) {
     const labels = labelsOf(data)
     if (labels === undefined || options.key === undefined)
-      throw new WhiteboxError('value', 'trainTestSplit: stratification needs class labels and a key')
+      throw new MdmlError('value', 'trainTestSplit: stratification needs class labels and a key')
     const { train, test } = stratifiedIndices(labels, nTest, options.key)
     return { train: take(data, train), test: take(data, test) }
   }
@@ -206,10 +206,10 @@ export interface ThreeWaySplitOptions {
  * @param data - The dataset.
  * @param options - Validation and test sizes, key and stratification.
  * @returns `{ train, val, test }`.
- * @throws WhiteboxError with code `value` when a part would be empty.
+ * @throws MdmlError with code `value` when a part would be empty.
  * @example
  * ```ts
- * import { trainValTestSplit, xy } from 'whitebox-engine/data'
+ * import { trainValTestSplit, xy } from 'mdml-engine/data'
  * const parts = trainValTestSplit(xy(Array.from({ length: 10 }, (_, i) => [i]), Array.from({ length: 10 }, (_, i) => i)), { valSize: 2, testSize: 3 })
  * [parts.train.y.shape[0], parts.val.y.shape[0], parts.test.y.shape[0]] // => [5, 2, 3]
  * ```
@@ -222,7 +222,7 @@ export function trainValTestSplit<D extends Dataset>(
   const nTest = sizeOf(options.testSize ?? 0.15, n, 'trainValTestSplit')
   const nVal = sizeOf(options.valSize ?? 0.15, n, 'trainValTestSplit')
   if (nTest <= 0 || nVal <= 0 || nTest + nVal >= n)
-    throw new WhiteboxError('value', `trainValTestSplit: sizes ${nVal} and ${nTest} leave no rows to train on`)
+    throw new MdmlError('value', `trainValTestSplit: sizes ${nVal} and ${nTest} leave no rows to train on`)
   const first = trainTestSplit(data, { ...options, testSize: nTest })
   const second = trainTestSplit(first.train, {
     ...options,
@@ -239,11 +239,11 @@ export function trainValTestSplit<D extends Dataset>(
  * @param data - The dataset.
  * @param options - Test size, key, and labels for datasets without class labels.
  * @returns `{ train, test }`.
- * @throws WhiteboxError with code `value` when there are no labels.
+ * @throws MdmlError with code `value` when there are no labels.
  * @example
  * ```ts
- * import { stratifiedSplit, xyClasses } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { stratifiedSplit, xyClasses } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * const d = xyClasses([[0], [1], [2], [3], [4], [5], [6], [7]], [0, 0, 0, 0, 0, 0, 1, 1])
  * Array.from(stratifiedSplit(d, { testSize: 0.5, key: key(1) }).test.y.data).filter((c) => c === 1).length // => 1
  * ```
@@ -253,7 +253,7 @@ export function stratifiedSplit<D extends Dataset>(
   options: { readonly testSize?: number; readonly key: Key; readonly labels?: readonly number[] },
 ): { readonly train: D; readonly test: D } {
   const labels = options.labels ?? labelsOf(data)
-  if (labels === undefined) throw new WhiteboxError('value', 'stratifiedSplit: the dataset has no class labels')
+  if (labels === undefined) throw new MdmlError('value', 'stratifiedSplit: the dataset has no class labels')
   const n = rowCount(data)
   const nTest = sizeOf(options.testSize ?? 0.25, n, 'stratifiedSplit')
   const { train, test } = stratifiedIndices(labels, nTest, options.key)
@@ -269,8 +269,8 @@ export function stratifiedSplit<D extends Dataset>(
  * @returns The resample, the out-of-bag rows and the drawn indices.
  * @example
  * ```ts
- * import { bootstrap, xy } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { bootstrap, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * const b = bootstrap(xy([[1], [2], [3], [4]], [1, 2, 3, 4]), key(0))
  * b.sample.y.shape[0] // => 4
  * ```
@@ -296,25 +296,25 @@ export function bootstrap<D extends Dataset>(
  *
  * @param parts - The datasets.
  * @returns One dataset with all rows in order.
- * @throws WhiteboxError with code `value` for no parts or mixed kinds.
+ * @throws MdmlError with code `value` for no parts or mixed kinds.
  * @example
  * ```ts
- * import { concatRows, xy } from 'whitebox-engine/data'
+ * import { concatRows, xy } from 'mdml-engine/data'
  * concatRows([xy([[1]], [1]), xy([[2], [3]], [2, 3])]).y.data // => Float64Array [1, 2, 3]
  * ```
  */
 export function concatRows<D extends Dataset>(parts: readonly D[]): D {
   const first = parts[0]
-  if (first === undefined) throw new WhiteboxError('value', 'concatRows: no datasets')
+  if (first === undefined) throw new MdmlError('value', 'concatRows: no datasets')
   for (const p of parts) {
-    if (p.kind !== first.kind) throw new WhiteboxError('value', `concatRows: cannot stack ${p.kind} with ${first.kind}`)
+    if (p.kind !== first.kind) throw new MdmlError('value', `concatRows: cannot stack ${p.kind} with ${first.kind}`)
   }
   const out: Record<string, unknown> = { ...first }
   for (const f of perRowFields(first)) {
     out[f] = concatColumns(
       parts.map((p) => {
         const c = (p as unknown as Record<string, unknown>)[f]
-        if (c === undefined) throw new WhiteboxError('value', `concatRows: field ${f} is missing from a part`)
+        if (c === undefined) throw new MdmlError('value', `concatRows: field ${f} is missing from a part`)
         return c
       }),
     )

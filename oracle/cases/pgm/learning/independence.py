@@ -7,10 +7,10 @@ from typing import Any, cast
 import numpy as np
 import pandas as pd
 import pgmpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.pgm import STUDENT, sample_rows
 from pgmpy.ci_tests import ChiSquare, FisherZ, GSq, Pearsonr
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.pgm import STUDENT, sample_rows
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

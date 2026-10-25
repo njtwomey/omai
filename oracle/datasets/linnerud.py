@@ -4,9 +4,9 @@ from typing import cast
 
 import numpy as np
 import sklearn
+from mdml_oracle.vendor import number_list, sha256_of, string_list
 from sklearn.datasets import load_linnerud
 from sklearn.utils import Bunch
-from whitebox_oracle.vendor import number_list, sha256_of, string_list
 
 TARGET = "packages/engine/src/lib/datasets/_data/linnerud.data.ts"
 

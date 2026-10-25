@@ -4,7 +4,7 @@
  * of a fitted logistic model, RuleFit's rules, and an anchor around one prediction (all three as `rules` records).
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import {
   type DependenceCurve,
@@ -63,7 +63,7 @@ function minMax(col: ArrayLike<number>): [number, number] {
  */
 export function explainableBoostingMachine(data: LearnData, options: EbmOptions = {}): Explained<EbmResult> {
   const x = matrixView(data.x, 'explainableBoostingMachine')
-  if (data.y === undefined) throw new WhiteboxError('value', 'explainableBoostingMachine: needs targets')
+  if (data.y === undefined) throw new MdmlError('value', 'explainableBoostingMachine: needs targets')
   const yRaw = Array.from(targetVector(data.y, 'explainableBoostingMachine', x.n))
   const classes = Array.from(new Set(yRaw)).sort((a, b) => a - b)
   const classify = options.task === 'classification' || (options.task === undefined && classes.length === 2)
@@ -146,7 +146,7 @@ export function logisticScorecard(
   const x = matrixView(data.x, 'logisticScorecard')
   const lin = linearScoresOf(fitted, x)
   if (lin === undefined || lin.b.length !== 1)
-    throw new WhiteboxError('value', 'logisticScorecard: needs a binary classifier linear in its inputs')
+    throw new MdmlError('value', 'logisticScorecard: needs a binary classifier linear in its inputs')
   const card = explain.scorecard(
     lin.w.map((r) => r[0] ?? 0),
     lin.b[0] ?? 0,
@@ -231,9 +231,9 @@ export function anchorExplanation(
 ): Explained<{ readonly anchor: explain.Anchor }> {
   const x = matrixView(data.x, 'anchorExplanation')
   if (!(Number.isInteger(row) && row >= 0 && row < x.n))
-    throw new WhiteboxError('value', `anchorExplanation: no row ${row}`)
+    throw new MdmlError('value', `anchorExplanation: no row ${row}`)
   const predictFn = fitted.predict
-  if (predictFn === undefined) throw new WhiteboxError('value', `anchorExplanation: ${fitted.estimator} cannot predict`)
+  if (predictFn === undefined) throw new MdmlError('value', `anchorExplanation: ${fitted.estimator} cannot predict`)
   const predict = (t: Tensor): Tensor => predictFn(t)
   const point = Array.from(x.data.subarray(row * x.d, (row + 1) * x.d))
   const anchor = explain.anchors(predict, point, fromStorage(x.data, [x.n, x.d], 'float64'), {

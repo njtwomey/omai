@@ -5,7 +5,7 @@
  */
 
 import { customVjp } from '../../autodiff/index.ts'
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import {
   fromStorage,
   mul,
@@ -67,7 +67,7 @@ function setup(a: CsrMatrix | TensorLike | LinearOperator, b: TensorLike, option
   const apply = numeric(op)
   const bv = Float64Array.from(toFlat(primalOf(promoteFloat(b)[0] as Value)))
   if (op.shape[0] !== bv.length || op.shape[1] !== bv.length)
-    throw new WhiteboxError('shape', 'Krylov solvers need a square operator matching b')
+    throw new MdmlError('shape', 'Krylov solvers need a square operator matching b')
   const x0 = options.x0 === undefined ? new Float64Array(bv.length) : Float64Array.from(options.x0)
   const tol = Math.max((options.rtol ?? 1e-5) * norm(bv), options.atol ?? 0)
   const precondition = options.preconditioner ?? ((r: Vec) => Float64Array.from(r))
@@ -105,7 +105,7 @@ const observe = (s: KrylovState) => ({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { cgAlgorithm } from 'whitebox-engine/numerics/sparse'
+ * import { cgAlgorithm } from 'mdml-engine/numerics/sparse'
  * cgAlgorithm([[4, 1], [1, 3]], [1, 2]).name // => 'cg'
  * ```
  */
@@ -152,8 +152,8 @@ export function cgAlgorithm(
  * @concept krylov-methods
  * @example
  * ```ts
- * import { cg } from 'whitebox-engine/numerics/sparse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { cg } from 'mdml-engine/numerics/sparse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(cg([[4, 1], [1, 3]], [1, 2], { rtol: 1e-12 }).x).map((v) => Math.round(v * 1e10) / 1e10) // => [0.0909090909, 0.6363636364]
  * ```
  */
@@ -185,7 +185,7 @@ export function cg(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { bicgstabAlgorithm } from 'whitebox-engine/numerics/sparse'
+ * import { bicgstabAlgorithm } from 'mdml-engine/numerics/sparse'
  * bicgstabAlgorithm([[4, 1], [2, 3]], [1, 2]).name // => 'bicgstab'
  * ```
  */
@@ -259,8 +259,8 @@ export function bicgstabAlgorithm(
  * @returns The solution with its residual history.
  * @example
  * ```ts
- * import { bicgstab } from 'whitebox-engine/numerics/sparse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { bicgstab } from 'mdml-engine/numerics/sparse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(bicgstab([[4, 1], [2, 3]], [1, 2], { rtol: 1e-12 }).x).map((v) => Math.round(v * 1e10) / 1e10) // => [0.1, 0.6]
  * ```
  */
@@ -293,7 +293,7 @@ export function bicgstab(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { gmresAlgorithm } from 'whitebox-engine/numerics/sparse'
+ * import { gmresAlgorithm } from 'mdml-engine/numerics/sparse'
  * gmresAlgorithm([[4, 1], [2, 3]], [1, 2]).name // => 'gmres'
  * ```
  */
@@ -394,8 +394,8 @@ export function gmresAlgorithm(
  * @returns The solution with its residual history.
  * @example
  * ```ts
- * import { gmres } from 'whitebox-engine/numerics/sparse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { gmres } from 'mdml-engine/numerics/sparse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(gmres([[4, 1], [2, 3]], [1, 2], { rtol: 1e-12 }).x).map((v) => Math.round(v * 1e10) / 1e10) // => [0.1, 0.6]
  * ```
  */
@@ -430,7 +430,7 @@ export function gmres(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { minresAlgorithm } from 'whitebox-engine/numerics/sparse'
+ * import { minresAlgorithm } from 'mdml-engine/numerics/sparse'
  * minresAlgorithm([[1, 2], [2, -1]], [1, 0]).name // => 'minres'
  * ```
  */
@@ -529,8 +529,8 @@ export function minresAlgorithm(
  * @returns The solution with its residual history.
  * @example
  * ```ts
- * import { minres } from 'whitebox-engine/numerics/sparse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { minres } from 'mdml-engine/numerics/sparse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(minres([[1, 2], [2, -1]], [1, 0], { rtol: 1e-12 }).x).map((v) => Math.round(v * 1e10) / 1e10) // => [0.2, 0.4]
  * ```
  */
@@ -558,7 +558,7 @@ export function minres(
  * @returns The preconditioner.
  * @example
  * ```ts
- * import { csr, jacobiPreconditioner } from 'whitebox-engine/numerics/sparse'
+ * import { csr, jacobiPreconditioner } from 'mdml-engine/numerics/sparse'
  * Array.from(jacobiPreconditioner(csr([[2, 0], [0, 4]]))(Float64Array.from([2, 2]))) // => [1, 0.5]
  * ```
  */
@@ -580,7 +580,7 @@ export function jacobiPreconditioner(a: CsrMatrix | TensorLike): Preconditioner 
  * @returns The preconditioner.
  * @example
  * ```ts
- * import { csr, incompleteCholesky } from 'whitebox-engine/numerics/sparse'
+ * import { csr, incompleteCholesky } from 'mdml-engine/numerics/sparse'
  * // For a tridiagonal matrix IC(0) is the exact Cholesky factor, so the preconditioner solves A z = r.
  * Array.from(incompleteCholesky(csr([[4, 1], [1, 3]]))(Float64Array.from([5, 4]))).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1]
  * ```
@@ -605,7 +605,7 @@ export function incompleteCholesky(a: CsrMatrix | TensorLike): Preconditioner {
       if (j < i) row.set(j, s / (rowJ.get(j) ?? 1))
       else {
         if (!(s > 0))
-          throw new WhiteboxError('value', 'incompleteCholesky: breakdown (the matrix is not positive definite enough)')
+          throw new MdmlError('value', 'incompleteCholesky: breakdown (the matrix is not positive definite enough)')
         row.set(i, Math.sqrt(s))
       }
     }
@@ -646,8 +646,8 @@ export type SolveMethod = 'cg' | 'bicgstab' | 'gmres' | 'minres'
  * @concept implicit-differentiation
  * @example
  * ```ts
- * import { csr, sparseSolve } from 'whitebox-engine/numerics/sparse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { csr, sparseSolve } from 'mdml-engine/numerics/sparse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sparseSolve(csr([[2, 0], [0, 4]]), [2, 2])) // => [1, 0.5]
  * ```
  */
@@ -671,7 +671,7 @@ export function sparseSolve(
     const f = method === 'cg' ? cg : method === 'bicgstab' ? bicgstab : method === 'minres' ? minres : gmres
     const r = f(m, rhs, opts)
     if (!r.converged)
-      throw new WhiteboxError('convergence', `sparseSolve: ${method} did not converge (residual ${r.residualNorm})`)
+      throw new MdmlError('convergence', `sparseSolve: ${method} did not converge (residual ${r.residualNorm})`)
     return Float64Array.from(r.x.data)
   }
   const [bv] = promoteFloat(b) as [Value]

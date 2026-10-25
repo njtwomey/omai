@@ -4,10 +4,10 @@ from typing import cast
 
 import numpy as np
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.vendor import csv_rows, fetch_pinned
 from sklearn.datasets import load_breast_cancer, load_digits, load_iris, load_wine
 from sklearn.utils import Bunch
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.vendor import csv_rows, fetch_pinned
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__, "numpy": np.__version__}
 PENGUINS_URL = "https://raw.githubusercontent.com/allisonhorst/palmerpenguins/main/inst/extdata/penguins.csv"

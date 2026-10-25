@@ -1,6 +1,6 @@
+import { type StructureOverlay, structure } from 'mdml-engine/scene'
+import { Player, StructureView, usePlayback } from 'mdml-render/react'
 import { type ReactNode, useMemo } from 'react'
-import { type StructureOverlay, structure } from 'whitebox-engine/scene'
-import { Player, StructureView, usePlayback } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

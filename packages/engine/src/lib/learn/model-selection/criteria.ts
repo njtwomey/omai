@@ -4,7 +4,7 @@
  * the simplest adequate model, and the .632 and .632+ bootstrap estimates of prediction error.
  */
 
-import { meanOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, meanOf } from '../../base/index.ts'
 import { bootstrapIndices, foldIn } from '../../random/index.ts'
 import { asTensor, isTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
@@ -21,7 +21,7 @@ import { rowsOf, takeData, targetVector } from '../validation.ts'
  * @concept information-criteria
  * @example
  * ```ts
- * import { aic } from 'whitebox-engine/learn/model-selection'
+ * import { aic } from 'mdml-engine/learn/model-selection'
  * aic(-10, 3) // => 26
  * ```
  */
@@ -36,15 +36,15 @@ export function aic(logLikelihood: number, k: number): number {
  * @param k - The number of parameters.
  * @param n - The number of observations (more than k + 1).
  * @returns AICc.
- * @throws WhiteboxError with code `domain` when n <= k + 1.
+ * @throws MdmlError with code `domain` when n <= k + 1.
  * @example
  * ```ts
- * import { aicc } from 'whitebox-engine/learn/model-selection'
+ * import { aicc } from 'mdml-engine/learn/model-selection'
  * aicc(-10, 3, 10) // => 30
  * ```
  */
 export function aicc(logLikelihood: number, k: number, n: number): number {
-  if (n <= k + 1) throw new WhiteboxError('domain', `aicc: needs n > k + 1 (n = ${n}, k = ${k})`)
+  if (n <= k + 1) throw new MdmlError('domain', `aicc: needs n > k + 1 (n = ${n}, k = ${k})`)
   return aic(logLikelihood, k) + (2 * k * (k + 1)) / (n - k - 1)
 }
 
@@ -57,7 +57,7 @@ export function aicc(logLikelihood: number, k: number, n: number): number {
  * @returns BIC (lower is better).
  * @example
  * ```ts
- * import { bic } from 'whitebox-engine/learn/model-selection'
+ * import { bic } from 'mdml-engine/learn/model-selection'
  * bic(-10, 2, Math.E ** 2) // => 24
  * ```
  */
@@ -73,7 +73,7 @@ export function bic(logLikelihood: number, k: number, n: number): number {
  * @returns The log-likelihood.
  * @example
  * ```ts
- * import { gaussianLogLikelihood } from 'whitebox-engine/learn/model-selection'
+ * import { gaussianLogLikelihood } from 'mdml-engine/learn/model-selection'
  * gaussianLogLikelihood(10, 10) === -5 * (Math.log(2 * Math.PI) + 1) // => true
  * ```
  */
@@ -91,7 +91,7 @@ export function gaussianLogLikelihood(rss: number, n: number): number {
  * @returns Cp (close to p for an unbiased model).
  * @example
  * ```ts
- * import { mallowsCp } from 'whitebox-engine/learn/model-selection'
+ * import { mallowsCp } from 'mdml-engine/learn/model-selection'
  * mallowsCp(20, 2, 12, 3) // => 4
  * ```
  */
@@ -107,15 +107,15 @@ export function mallowsCp(rss: number, sigma2: number, n: number, p: number): nu
  * @param n - The number of observations.
  * @param df - The effective degrees of freedom (trace of the hat matrix).
  * @returns The GCV score (lower is better).
- * @throws WhiteboxError with code `domain` when df >= n.
+ * @throws MdmlError with code `domain` when df >= n.
  * @example
  * ```ts
- * import { gcv } from 'whitebox-engine/learn/model-selection'
+ * import { gcv } from 'mdml-engine/learn/model-selection'
  * gcv(8, 10, 2) // => 1.25
  * ```
  */
 export function gcv(rss: number, n: number, df: number): number {
-  if (df >= n) throw new WhiteboxError('domain', 'gcv: the degrees of freedom must be below n')
+  if (df >= n) throw new MdmlError('domain', 'gcv: the degrees of freedom must be below n')
   return (n * rss) / (n - df) ** 2
 }
 
@@ -138,10 +138,10 @@ export interface SmootherLoo {
  * @param hat - The smoother (hat) matrix `[n, n]`.
  * @param y - The targets `[n]`.
  * @returns The LOO residuals, LOO MSE, GCV and degrees of freedom.
- * @throws WhiteboxError with code `domain` when some S_ii is 1 (a point fitted exactly by itself).
+ * @throws MdmlError with code `domain` when some S_ii is 1 (a point fitted exactly by itself).
  * @example
  * ```ts
- * import { linearSmootherLoo } from 'whitebox-engine/learn/model-selection'
+ * import { linearSmootherLoo } from 'mdml-engine/learn/model-selection'
  * // The mean as a smoother: S = J / n, so the LOO residual is (y_i - mean) n / (n - 1).
  * linearSmootherLoo([[0.5, 0.5], [0.5, 0.5]], [1, 3]).residuals // => [-2, 2]
  * ```
@@ -149,7 +149,7 @@ export interface SmootherLoo {
 export function linearSmootherLoo(hat: TensorLike, y: TensorLike): SmootherLoo {
   const s = asTensor(hat)
   if (!isTensor(s) || s.shape.length !== 2 || s.shape[0] !== s.shape[1]) {
-    throw new WhiteboxError('shape', 'linearSmootherLoo: the hat matrix must be square')
+    throw new MdmlError('shape', 'linearSmootherLoo: the hat matrix must be square')
   }
   const n = s.shape[0] ?? 0
   const v = targetVector(y, 'linearSmootherLoo', n)
@@ -161,7 +161,7 @@ export function linearSmootherLoo(hat: TensorLike, y: TensorLike): SmootherLoo {
     let fit = 0
     for (let j = 0; j < n; j++) fit += (sv[i * n + j] ?? 0) * (v[j] ?? 0)
     const h = sv[i * n + i] ?? 0
-    if (Math.abs(1 - h) < 1e-12) throw new WhiteboxError('domain', `linearSmootherLoo: leverage of point ${i} is 1`)
+    if (Math.abs(1 - h) < 1e-12) throw new MdmlError('domain', `linearSmootherLoo: leverage of point ${i} is 1`)
     const r = (v[i] ?? 0) - fit
     rss += r * r
     df += h
@@ -186,7 +186,7 @@ export interface OneStandardErrorOptions {
  * @returns The index of the chosen candidate.
  * @example
  * ```ts
- * import { oneStandardErrorRule } from 'whitebox-engine/learn/model-selection'
+ * import { oneStandardErrorRule } from 'mdml-engine/learn/model-selection'
  * oneStandardErrorRule([0.70, 0.78, 0.80, 0.79], [0.03, 0.03, 0.03, 0.03]) // => 1
  * ```
  */
@@ -196,7 +196,7 @@ export function oneStandardErrorRule(
   options: OneStandardErrorOptions = {},
 ): number {
   if (means.length === 0 || means.length !== standardErrors.length) {
-    throw new WhiteboxError('shape', 'oneStandardErrorRule: needs one standard error per mean')
+    throw new MdmlError('shape', 'oneStandardErrorRule: needs one standard error per mean')
   }
   let best = 0
   means.forEach((m, i) => {
@@ -247,9 +247,9 @@ export interface Bootstrap632Result {
  * @concept bootstrap
  * @example
  * ```ts
- * import { bootstrap632 } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator, rowsOf } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { bootstrap632 } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator, rowsOf } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([rowsOf(x)], 0) }) }, {})
  * bootstrap632(zero, { x: [[0], [1], [2], [3]], y: [1, 1, 1, 1] }, { nBootstraps: 20 }).error // => 1
  * ```
@@ -262,8 +262,7 @@ export function bootstrap632(
   const n = rowsOf(data.x)
   const y = targetVector(data.y ?? [], 'bootstrap632', n)
   const nBoot = options.nBootstraps ?? 200
-  if (!(Number.isInteger(nBoot) && nBoot >= 1))
-    throw new WhiteboxError('value', 'bootstrap632: nBootstraps must be >= 1')
+  if (!(Number.isInteger(nBoot) && nBoot >= 1)) throw new MdmlError('value', 'bootstrap632: nBootstraps must be >= 1')
   const loss =
     options.loss ??
     (estimator.kind === 'classifier'
@@ -308,7 +307,7 @@ export function bootstrap632(
   runAlgorithm(algorithm, { ...runOptionsFor(options, 'bootstrap632'), maxSteps: nBoot })
   const seen = Array.from(count.keys()).filter((i) => (count[i] ?? 0) > 0)
   if (seen.length === 0)
-    throw new WhiteboxError('value', 'bootstrap632: no sample was ever out of bag; use more replicates')
+    throw new MdmlError('value', 'bootstrap632: no sample was ever out of bag; use more replicates')
   const outOfBagError = meanOf(seen.map((i) => (sum[i] ?? 0) / (count[i] ?? 1)))
   let gamma = 0
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) gamma += loss(y[i] ?? 0, fullPred[j] ?? 0)

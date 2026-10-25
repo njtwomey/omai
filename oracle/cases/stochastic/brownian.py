@@ -5,7 +5,7 @@ levy) and the bridge's marginal moments (scipy.stats.norm of the conditional Gau
 import numpy as np
 import scipy
 import scipy.stats as st
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "numpy": np.__version__}
 

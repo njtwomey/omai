@@ -3,7 +3,7 @@
  * mean), on one-dimensional regression curves and tabular regression data.
  */
 
-import { kernelRidge as kernelRidgeMethod } from 'whitebox-engine/methods/kernel-methods'
+import { kernelRidge as kernelRidgeMethod } from 'mdml-engine/methods/kernel-methods'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

@@ -4,7 +4,7 @@
  * approximate indexes are checked against.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   fromStorage,
   primalOf,
@@ -45,8 +45,8 @@ export interface BruteOptions extends MetricOptions {
  * @concept nearest-neighbours
  * @example
  * ```ts
- * import { kNearest } from 'whitebox-engine/numerics/spatial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { kNearest } from 'mdml-engine/numerics/spatial'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(kNearest([[0, 0], [1, 0], [5, 5]], [[0.9, 0.1]], 2).indices) // => [[1, 0]]
  * ```
  */
@@ -60,8 +60,7 @@ export function kNearest(
   const d = cdist(queries ?? data, data, metric, metricOptions)
   const [q = 0, n = 0] = d.shape
   const values = toFlat(primalOf(d))
-  if (k > n - (excludeSelf ? 1 : 0))
-    throw new WhiteboxError('value', `kNearest: k = ${k} exceeds the number of candidates`)
+  if (k > n - (excludeSelf ? 1 : 0)) throw new MdmlError('value', `kNearest: k = ${k} exceeds the number of candidates`)
   const indices = new Int32Array(q * k)
   const flat = new Int32Array(q * k)
   for (let r = 0; r < q; r++) {
@@ -87,7 +86,7 @@ export function kNearest(
  * @returns Per query: indices and distances.
  * @example
  * ```ts
- * import { radiusNeighbours } from 'whitebox-engine/numerics/spatial'
+ * import { radiusNeighbours } from 'mdml-engine/numerics/spatial'
  * radiusNeighbours([[0, 0], [1, 0], [5, 5]], [[0, 0]], 1.5)[0].indices // => [0, 1]
  * ```
  */
@@ -119,9 +118,9 @@ export function radiusNeighbours(
  * @returns A sparse `[n, n]` matrix.
  * @example
  * ```ts
- * import { kNeighboursGraph } from 'whitebox-engine/numerics/spatial'
- * import { toDense } from 'whitebox-engine/numerics/sparse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { kNeighboursGraph } from 'mdml-engine/numerics/spatial'
+ * import { toDense } from 'mdml-engine/numerics/sparse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(toDense(kNeighboursGraph([[0], [1], [3]], 1))) // => [[0, 1, 0], [1, 0, 0], [0, 1, 0]]
  * ```
  */
@@ -160,8 +159,8 @@ export function kNeighboursGraph(
  * @returns A sparse `[n, n]` matrix.
  * @example
  * ```ts
- * import { radiusNeighboursGraph } from 'whitebox-engine/numerics/spatial'
- * import { nnz } from 'whitebox-engine/numerics/sparse'
+ * import { radiusNeighboursGraph } from 'mdml-engine/numerics/spatial'
+ * import { nnz } from 'mdml-engine/numerics/sparse'
  * nnz(radiusNeighboursGraph([[0], [1], [3]], 1.5)) // => 2
  * ```
  */

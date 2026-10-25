@@ -7,9 +7,9 @@ import * as ilp from './ilp/index.ts'
 import * as logic from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'whitebox-engine/logic': logic,
-  'whitebox-engine/logic/ilp': ilp,
-  'whitebox-engine/trace': trace,
+  'mdml-engine/logic': logic,
+  'mdml-engine/logic/ilp': ilp,
+  'mdml-engine/trace': trace,
 }
 
 interface Example {

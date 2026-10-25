@@ -4,7 +4,7 @@
  * coefficients along frequency only, so the signal can still be reconstructed from it.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type ComplexValue, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { constant, samples } from './_shared.ts'
 import type { TimeFrequency } from './signal.ts'
@@ -47,7 +47,7 @@ function transforms(y: TensorLike, options: ReassignmentOptions): Transforms {
   const x = samples(y, 'reassignment')
   const nFft = options.nFft ?? 2048
   const hop = options.hop ?? Math.floor(nFft / 4)
-  if (x.length < 1) throw new WhiteboxError('value', 'reassignment: empty signal')
+  if (x.length < 1) throw new MdmlError('value', 'reassignment: empty signal')
   const win = Float64Array.from(toFlat(getWindow(options.window ?? 'hann', nFft)))
   const dwin = Float64Array.from(win, (_, i) => ((win[(i + 1) % nFft] ?? 0) - (win[(i - 1 + nFft) % nFft] ?? 0)) / 2)
   const half = Math.floor(nFft / 2)
@@ -88,8 +88,8 @@ export interface ReassignedSpectrogram {
  * @concept reassignment
  * @example
  * ```ts
- * import { reassignedSpectrogram } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { reassignedSpectrogram } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const y = Array.from({ length: 512 }, (_, n) => Math.cos((2 * Math.PI * 1000 * n) / 8000))
  * const r = reassignedSpectrogram(y, { sr: 8000, nFft: 128 })
  * Math.round(toFlat(r.frequencies)[16 * r.frequencies.shape[1] + 5] ?? 0) // => 1000
@@ -107,7 +107,7 @@ export function reassignedSpectrogram(
   const t = transforms(y, options)
   const n = samples(y, 'reassignedSpectrogram').length
   const ref = options.refPower ?? 1e-6
-  if (ref < 0) throw new WhiteboxError('value', 'reassignedSpectrogram: refPower must be non-negative')
+  if (ref < 0) throw new MdmlError('value', 'reassignedSpectrogram: refPower must be non-negative')
   const total = t.bins * t.frames
   const f = new Float64Array(total)
   const tm = new Float64Array(total)
@@ -157,7 +157,7 @@ export function reassignedSpectrogram(
  * @concept synchrosqueezing
  * @example
  * ```ts
- * import { synchrosqueeze } from 'whitebox-engine/signal'
+ * import { synchrosqueeze } from 'mdml-engine/signal'
  * synchrosqueeze(new Array(256).fill(0).map((_, n) => Math.cos(0.3 * n)), { sr: 1, nFft: 64, hop: 1 }).values.re.shape // => [33, 257]
  * ```
  */
@@ -216,8 +216,8 @@ export function synchrosqueeze(
  * @concept synchrosqueezing
  * @example
  * ```ts
- * import { inverseSynchrosqueeze, synchrosqueeze } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { inverseSynchrosqueeze, synchrosqueeze } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const x = Array.from({ length: 128 }, (_, n) => Math.cos(0.3 * n) + 0.5 * Math.sin(0.05 * n * n / 4))
  * const back = toFlat(inverseSynchrosqueeze(synchrosqueeze(x, { sr: 1, nFft: 32, hop: 1 }), { nFft: 32 }))
  * Math.abs((back[40] ?? 0) - (x[40] ?? 0)) < 1e-12 // => true
@@ -231,7 +231,7 @@ export function inverseSynchrosqueeze(
   const nFft = options.nFft ?? 2 * (bins - 1)
   const win = toFlat(getWindow(options.window ?? 'hann', nFft))
   const centre = win[Math.floor(nFft / 2)] ?? 0
-  if (centre === 0) throw new WhiteboxError('value', 'inverseSynchrosqueeze: the window vanishes at its centre')
+  if (centre === 0) throw new MdmlError('value', 'inverseSynchrosqueeze: the window vanishes at its centre')
   const re = toFlat(primalOf(t.values.re))
   const out = new Float64Array(frames)
   for (let k = 0; k < bins; k++) for (let j = 0; j < frames; j++) out[j] = (out[j] ?? 0) + (re[k * frames + j] ?? 0)

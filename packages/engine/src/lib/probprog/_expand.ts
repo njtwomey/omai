@@ -1,7 +1,7 @@
 // Broadcasting a distribution to a larger batch shape (torch's and NumPyro's `Distribution.expand`), which plates use to
 // give every element of a plate its own independent draw. Singleton batch axes that grow get independent draws, never
 // copies.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Distribution, defineDistribution } from '../dists/index.ts'
 import type { Key } from '../random/index.ts'
 import { broadcastShapes, broadcastTo, reshape, shapesEqual, transpose, type Value } from '../tensor/index.ts'
@@ -49,13 +49,13 @@ function draw(
  * @param base - The distribution.
  * @param batchShape - The new batch shape.
  * @returns The expanded distribution (`base` itself when the shapes already agree).
- * @throws WhiteboxError with code `shape` when the batch shapes do not broadcast.
+ * @throws MdmlError with code `shape` when the batch shapes do not broadcast.
  */
 export function expandDistribution(base: Distribution, batchShape: readonly number[]): Distribution {
   if (shapesEqual(base.batchShape, batchShape)) return base
   const joined = broadcastShapes(base.batchShape, batchShape)
   if (!shapesEqual(joined, batchShape))
-    throw new WhiteboxError(
+    throw new MdmlError(
       'shape',
       `expand: batch shape [${base.batchShape.join(', ')}] does not broadcast to [${batchShape.join(', ')}]`,
     )

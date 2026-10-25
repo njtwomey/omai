@@ -6,7 +6,7 @@
  * risk-sensitive policies), plus readers of the learnt distributions for figures.
  */
 
-import { type Json, linspaceNumbers, WhiteboxError } from '../../../lib/base/index.ts'
+import { type Json, linspaceNumbers, MdmlError } from '../../../lib/base/index.ts'
 import { ndtr, ndtri } from '../../../lib/numerics/special/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../../../lib/random/index.ts'
 import type { Agent } from '../../../lib/rl/index.ts'
@@ -64,17 +64,17 @@ import {
  * @param vMax - The largest return.
  * @param atoms - The number of atoms (at least 2).
  * @returns The support.
- * @throws WhiteboxError with code `value` for fewer than two atoms or an empty range.
+ * @throws MdmlError with code `value` for fewer than two atoms or an empty range.
  * @concept distributional-rl
  * @example
  * ```ts
- * import { categoricalSupport } from 'whitebox-engine/methods/rl/agents'
+ * import { categoricalSupport } from 'mdml-engine/methods/rl/agents'
  * categoricalSupport(-1, 1, 5) // => [-1, -0.5, 0, 0.5, 1]
  * ```
  */
 export function categoricalSupport(vMin: number, vMax: number, atoms: number): number[] {
-  if (!(Number.isInteger(atoms) && atoms >= 2)) throw new WhiteboxError('value', 'categoricalSupport: need two atoms')
-  if (!(vMax > vMin)) throw new WhiteboxError('value', 'categoricalSupport: need vMin < vMax')
+  if (!(Number.isInteger(atoms) && atoms >= 2)) throw new MdmlError('value', 'categoricalSupport: need two atoms')
+  if (!(vMax > vMin)) throw new MdmlError('value', 'categoricalSupport: need vMin < vMax')
   return linspaceNumbers(vMin, vMax, atoms)
 }
 
@@ -93,7 +93,7 @@ export function categoricalSupport(vMin: number, vMax: number, atoms: number): n
  * @concept distributional-rl
  * @example
  * ```ts
- * import { categoricalProjection } from 'whitebox-engine/methods/rl/agents'
+ * import { categoricalProjection } from 'mdml-engine/methods/rl/agents'
  * categoricalProjection([[0, 1, 0]], [0.5], [0.5], -1, 1) // => [[0, 0.5, 0.5]]
  * ```
  */
@@ -150,8 +150,8 @@ export interface QuantileHuberOptions {
  * @concept distributional-rl
  * @example
  * ```ts
- * import { quantileHuberLoss } from 'whitebox-engine/methods/rl/agents'
- * import { item } from 'whitebox-engine/tensor'
+ * import { quantileHuberLoss } from 'mdml-engine/methods/rl/agents'
+ * import { item } from 'mdml-engine/tensor'
  * item(quantileHuberLoss([[0]], [[2]], [0.25], { kappa: 1 })) // => 0.375
  * ```
  */
@@ -183,7 +183,7 @@ export type RiskDistortion = 'neutral' | { readonly kind: 'cvar' | 'wang' | 'cpw
  * @concept distributional-rl
  * @example
  * ```ts
- * import { riskDistortion } from 'whitebox-engine/methods/rl/agents'
+ * import { riskDistortion } from 'mdml-engine/methods/rl/agents'
  * riskDistortion({ kind: 'cvar', eta: 0.25 })([0.5, 1]) // => [0.125, 0.25]
  * ```
  */
@@ -239,9 +239,9 @@ export interface ImplicitQuantileNetwork {
  * @concept distributional-rl
  * @example
  * ```ts
- * import { implicitQuantileNetwork } from 'whitebox-engine/methods/rl/agents'
- * import { key } from 'whitebox-engine/random'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { implicitQuantileNetwork } from 'mdml-engine/methods/rl/agents'
+ * import { key } from 'mdml-engine/random'
+ * import { tensor } from 'mdml-engine/tensor'
  * const net = implicitQuantileNetwork(3, 2, { hidden: [8], embedding: 4 }, key(0))
  * net.apply(net.params, tensor([[1, 0, 0]]), tensor([[0.1, 0.5, 0.9]])).shape // => [1, 3, 2]
  * ```
@@ -359,8 +359,8 @@ function categoricalHead(env: Spaces, options: C51Options): { head: Head; net: Q
  * @concept distributional-rl
  * @example
  * ```ts
- * import { c51 } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { c51 } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * c51(cartPole.create(), { atoms: 11, vMin: 0, vMax: 100 }).name // => 'c51'
  * ```
  */
@@ -387,8 +387,8 @@ export type RainbowOptions = C51Options
  * @concept distributional-rl
  * @example
  * ```ts
- * import { rainbow } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { rainbow } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * rainbow(cartPole.create()).config['nStep'] // => 3
  * ```
  */
@@ -424,9 +424,9 @@ export function rainbow(
  * @concept distributional-rl
  * @example
  * ```ts
- * import { c51, categoricalDistribution } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { c51, categoricalDistribution } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = cartPole.create()
  * const s = c51(env, { hidden: [8], atoms: 5 }).init(key(0))
  * categoricalDistribution(env, s, [0, 0, 0, 0], { hidden: [8], atoms: 5 }).probabilities.length // => 2
@@ -474,8 +474,8 @@ function quantileNet(env: Spaces, options: QrDqnOptions): QNetwork {
  * @concept distributional-rl
  * @example
  * ```ts
- * import { qrDqn } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { qrDqn } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * qrDqn(cartPole.create(), { quantiles: 8 }).config['quantiles'] // => 8
  * ```
  */
@@ -522,9 +522,9 @@ export function qrDqn(env: Spaces, options: QrDqnOptions = {}): Agent<Distributi
  * @concept distributional-rl
  * @example
  * ```ts
- * import { qrDqn, quantileDistribution } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { qrDqn, quantileDistribution } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = cartPole.create()
  * const s = qrDqn(env, { hidden: [8], quantiles: 4 }).init(key(0))
  * quantileDistribution(env, s, [0, 0, 0, 0], { hidden: [8], quantiles: 4 })[0]?.length // => 4
@@ -574,8 +574,8 @@ export interface IqnOptions extends Omit<DqnOptions, 'dueling' | 'noisy' | 'sigm
  * @concept distributional-rl
  * @example
  * ```ts
- * import { iqn } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { iqn } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * iqn(cartPole.create(), { distortion: { kind: 'cvar', eta: 0.25 } }).name // => 'iqn'
  * ```
  */
@@ -650,9 +650,9 @@ export function iqn(env: Spaces, options: IqnOptions = {}): Agent<Distributional
  * @concept distributional-rl
  * @example
  * ```ts
- * import { implicitQuantiles, iqn } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { implicitQuantiles, iqn } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = cartPole.create()
  * const s = iqn(env, { hidden: [8], embedding: 4 }).init(key(0))
  * implicitQuantiles(env, s, [0, 0, 0, 0], [0.1, 0.9], { hidden: [8], embedding: 4 })[1]?.length // => 2

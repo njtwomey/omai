@@ -1,9 +1,9 @@
 """Shape operations against numpy."""
 
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng, uniform
 from numpy.lib.stride_tricks import sliding_window_view
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng, uniform
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

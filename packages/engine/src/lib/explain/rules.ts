@@ -3,7 +3,7 @@
  * features (Friedman and Popescu 2008) with each rule's support and importance, and alibi's linearity measure of how
  * far a model departs from linear around a point.
  */
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { keyFor } from '../learn/_shared.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
@@ -31,7 +31,7 @@ export type Rule = readonly RuleCondition[]
  * @returns The rules, in node order.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * explain.treeRules(stump) // => [[{ feature: 0, op: '<=', threshold: 0.5 }], [{ feature: 0, op: '>', threshold: 0.5 }]]
  * ```
@@ -39,7 +39,7 @@ export type Rule = readonly RuleCondition[]
 export function treeRules(tree: TreeModel): Rule[] {
   const out: Rule[] = []
   const walk = (node: number, path: RuleCondition[], depth: number): void => {
-    if (depth > tree.value.length) throw new WhiteboxError('value', 'treeRules: the tree has a cycle')
+    if (depth > tree.value.length) throw new MdmlError('value', 'treeRules: the tree has a cycle')
     const left = tree.childrenLeft[node] ?? -1
     if (left < 0) return
     const right = tree.childrenRight[node] ?? -1
@@ -77,7 +77,7 @@ function simplify(rule: readonly RuleCondition[]): RuleCondition[] {
  * @returns 1 or 0 per row.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.ruleMask([{ feature: 0, op: '>', threshold: 1 }], [[0], [2]]) // => [0, 1]
  * ```
  */
@@ -139,7 +139,7 @@ export interface RuleFitModel {
  * @returns The model.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 10, (i % 7) / 7])
  * const y = x.map(([a]) => (a > 3 ? 2 : 0))
  * const r = explain.ruleFit({ x, y }, { nTrees: 5, linear: false })
@@ -148,7 +148,7 @@ export interface RuleFitModel {
  */
 export function ruleFit(data: LearnData, options: RuleFitOptions = {}): RuleFitModel {
   const m = matrixView(data.x, 'ruleFit')
-  if (data.y === undefined) throw new WhiteboxError('value', 'ruleFit: needs targets')
+  if (data.y === undefined) throw new MdmlError('value', 'ruleFit: needs targets')
   const y = targetVector(data.y, 'ruleFit', m.n)
   const key = options.key ?? keyFor({}, 'ruleFit')
   const nTrees = options.nTrees ?? 30
@@ -250,7 +250,7 @@ export function ruleFit(data: LearnData, options: RuleFitOptions = {}): RuleFitM
  * @returns One prediction per row.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const model = { intercept: 1, terms: [{ rule: [{ feature: 0, op: '>', threshold: 0 }], coefficient: 2, support: 0.5, importance: 1 }], bounds: [[-9, 9]] }
  * explain.ruleFitPredict(model, [[-1], [1]]) // => [1, 3]
  * ```
@@ -294,8 +294,8 @@ export interface LinearityOptions {
  * @returns The measure (non-negative).
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 3 * x.data[i] + 1))
  * explain.linearityMeasure(linear, [2]) < 1e-12 // => true
  * ```

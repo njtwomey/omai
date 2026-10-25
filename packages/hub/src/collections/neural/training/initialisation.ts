@@ -3,8 +3,8 @@
  * comparing schemes such as Xavier and Kaiming on two-dimensional classification data.
  */
 
-import { initialisationStudy as study } from 'whitebox-engine/methods/neural/training'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { initialisationStudy as study } from 'mdml-engine/methods/neural/training'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 

@@ -4,7 +4,7 @@
  * comparisons, computed by numerical quadrature.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { doubleExponentialRule } from '../../numerics/quadrature/index.ts'
 import { lgamma, ndtr, normalLogPdf } from '../../numerics/special/index.ts'
 import { foldIn, gammaVariates, normal as normalNoise } from '../../random/index.ts'
@@ -61,8 +61,8 @@ function lift(t: Tensor, axis: number, rank: number): Value {
  *   from E[Q^n] = E[R^n] E[S^-n], numerical mode and entropy, and non-reparameterised `sample`.
  * @example
  * ```ts
- * import { studentisedRange } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { studentisedRange } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(studentisedRange(3, 10).cdf(0)) // => 0
  * ```
  */
@@ -70,7 +70,7 @@ export function studentisedRange(k: TensorLike, df: TensorLike): Distribution {
   const [groups, nu] = promoteFloat(k, df) as [Value, Value]
   validateParams('studentisedRange', { k: [groups, 'positiveInteger'], df: [nu, 'positive'] })
   if (toFlat(primalOf(groups)).some((v) => v < 2))
-    throw new WhiteboxError('value', 'studentisedRange: k must be at least 2')
+    throw new MdmlError('value', 'studentisedRange: k must be at least 2')
   const batchShape = batchShapeOf(groups, nu)
   const b = (v: Value): Value => broadcastBatch(v, batchShape)
   const infinite = isinf(nu)

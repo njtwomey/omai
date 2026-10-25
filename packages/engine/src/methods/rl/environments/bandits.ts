@@ -5,7 +5,7 @@
  * oracle of the best expected reward, so an agent's regret can be measured.
  */
 
-import { argmaxOf, maxOf, minOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, MdmlError, maxOf, minOf } from '../../../lib/base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../../../lib/random/index.ts'
 import type { BanditEnv, EnvDefinition } from '../../../lib/rl/index.ts'
 import { rect, type Scene, scene, text } from '../../../lib/scene/index.ts'
@@ -63,7 +63,7 @@ function stationary(
   horizon: number,
   draw: (arm: number, k: Key) => number,
 ): BanditEnv<BanditState, number> {
-  if (means.length < 1) throw new WhiteboxError('value', `${id}: need at least one arm`)
+  if (means.length < 1) throw new MdmlError('value', `${id}: need at least one arm`)
   const best = maxOf(means)
   const bestArm = argmaxOf(means)
   return {
@@ -96,7 +96,7 @@ function stationary(
  * @concept bandits
  * @example
  * ```ts
- * import { bernoulliBandit } from 'whitebox-engine/methods/rl'
+ * import { bernoulliBandit } from 'mdml-engine/methods/rl'
  * bernoulliBandit.create({ probs: [0.2, 0.8] }).oracle?.optimalExpectedReward({ t: 0 }) // => 0.8
  * ```
  */
@@ -124,7 +124,7 @@ export const bernoulliBandit: EnvDefinition<BanditState, number, number> = {
  * @concept bandits
  * @example
  * ```ts
- * import { gaussianBandit } from 'whitebox-engine/methods/rl'
+ * import { gaussianBandit } from 'mdml-engine/methods/rl'
  * gaussianBandit.create().actionSpace // => { kind: 'discrete', n: 10, label: 'arm' }
  * ```
  */
@@ -167,8 +167,8 @@ export interface ContextualBanditState {
  * @concept bandits
  * @example
  * ```ts
- * import { contextualLinearBandit } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { contextualLinearBandit } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * contextualLinearBandit.create({ arms: 3, dimension: 4 }).reset(key(0)).observation.length // => 3
  * ```
  */
@@ -242,7 +242,7 @@ export const contextualLinearBandit: EnvDefinition<ContextualBanditState, readon
  * @concept bandits
  * @example
  * ```ts
- * import { adversarialBandit } from 'whitebox-engine/methods/rl'
+ * import { adversarialBandit } from 'mdml-engine/methods/rl'
  * adversarialBandit.create({ arms: 3, horizon: 10 }).spec.maxEpisodeSteps // => 10
  * ```
  */
@@ -320,8 +320,8 @@ export interface DriftingBanditState {
  * @concept bandits
  * @example
  * ```ts
- * import { nonStationaryBandit } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { nonStationaryBandit } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * nonStationaryBandit.create().reset(key(0)).state.means.length // => 10
  * ```
  */

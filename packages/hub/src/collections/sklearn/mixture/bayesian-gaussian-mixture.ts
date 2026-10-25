@@ -3,7 +3,7 @@
  * two-dimensional clustering datasets and two-dimensional densities.
  */
 
-import { bayesianGaussianMixture as bayesianGaussianMixtureMethod } from 'whitebox-engine/methods/mixture'
+import { bayesianGaussianMixture as bayesianGaussianMixtureMethod } from 'mdml-engine/methods/mixture'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

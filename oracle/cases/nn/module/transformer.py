@@ -4,10 +4,10 @@ encoder and decoder stacks with a final norm, and the encoder-decoder nn.Transfo
 
 import numpy as np
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
+from mdml_oracle.torch_helpers import to_numpy, to_torch
 from torch import nn
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
-from whitebox_oracle.torch_helpers import to_numpy, to_torch
 
 REFERENCE: dict[str, str] = {"torch": torch.__version__}
 

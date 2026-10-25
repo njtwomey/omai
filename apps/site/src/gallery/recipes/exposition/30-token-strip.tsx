@@ -1,8 +1,8 @@
+import { recordsOf } from 'mdml-engine/exposition'
+import { explainText, type TextMethod } from 'mdml-engine/methods/explain'
+import { key } from 'mdml-engine/random'
+import { Choice, ControlPanel, Select, TokenStripView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { explainText, type TextMethod } from 'whitebox-engine/methods/explain'
-import { key } from 'whitebox-engine/random'
-import { Choice, ControlPanel, Select, TokenStripView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

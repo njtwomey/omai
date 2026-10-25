@@ -5,7 +5,7 @@
  * over the objective's contours.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type Explained, type Generation, type PopulationSteps, populationSteps } from '../../lib/exposition/index.ts'
 import { type CmaesState, cmaesAlgorithm } from '../../lib/optim/index.ts'
 import { type Key, key as makeKey } from '../../lib/random/index.ts'
@@ -117,7 +117,7 @@ export function evolutionStrategyOnPlane(
       best: { fitness: bestValue, point: [best[0] ?? 0, best[1] ?? 0] },
     })
   }
-  if (gens.length === 0) throw new WhiteboxError('value', 'evolutionStrategyOnPlane: no generations')
+  if (gens.length === 0) throw new MdmlError('value', 'evolutionStrategyOnPlane: no generations')
   const method = `(${options.mu ?? 5} ${options.plus === true ? '+' : ','} ${options.lambda ?? 30})-ES`
   return {
     best: [best[0] ?? 0, best[1] ?? 0],
@@ -189,7 +189,7 @@ export function cmaesOnPlane(name: PlaneFunctionName, options: PlaneCmaesOptions
     })
     last = state
   }
-  if (last === undefined) throw new WhiteboxError('value', 'cmaesOnPlane: no generations')
+  if (last === undefined) throw new MdmlError('value', 'cmaesOnPlane: no generations')
   return {
     best,
     value: bestValue,

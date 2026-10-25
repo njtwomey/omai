@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { eightPuzzle, nQueensProblem } from '../../testing/search.ts'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import { graph } from '../graph/index.ts'
 import { messages, policies, recorder, runAlgorithm, validateAgainstSchema } from '../trace/index.ts'
 import {
@@ -89,7 +89,7 @@ describe('budgets and termination', () => {
     try {
       childNode(bad, rootNode(bad), 1)
     } catch (e) {
-      expect(isWhiteboxError(e, 'value')).toBe(true)
+      expect(isMdmlError(e, 'value')).toBe(true)
     }
     expect(() => depthLimitedSearch(integers, -1)).toThrow()
     expect(() => beamSearch(integers, { width: 0 })).toThrow()

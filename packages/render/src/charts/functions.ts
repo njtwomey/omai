@@ -5,8 +5,8 @@
  */
 
 import type { SeriesOption } from 'echarts'
-import { WhiteboxError } from 'whitebox-engine/base'
-import { contourLines } from 'whitebox-engine/numerics/geometry'
+import { MdmlError } from 'mdml-engine/base'
+import { contourLines } from 'mdml-engine/numerics/geometry'
 import type { Range } from '../figure/aspect.ts'
 import { extentOf } from '../figure/limits.ts'
 import type { ColourMode } from '../theme/tokens.ts'
@@ -61,7 +61,7 @@ export interface FunctionOptions extends FunctionStyle {
  * @returns The layer.
  * @example
  * ```ts
- * import { fn } from 'whitebox-render/charts'
+ * import { fn } from 'mdml-render/charts'
  * fn((x) => x * x, [-1, 1], { n: 3 }).series[0].data // => [[-1, 1], [0, 0], [1, 1]]
  * fn((x) => 1 / x, [-1, 1], { n: 5 }).series[0].data[2] // => [0, null]
  * ```
@@ -101,7 +101,7 @@ export function fn(f: (x: number) => number, range: Range, options: FunctionOpti
  * @returns The layer.
  * @example
  * ```ts
- * import { parametric } from 'whitebox-render/charts'
+ * import { parametric } from 'mdml-render/charts'
  * parametric(Math.cos, Math.sin, [0, 2 * Math.PI], { n: 5 }).extent.x // => [-1, 1]
  * ```
  */
@@ -125,7 +125,7 @@ export function parametric(
  * @returns The layer.
  * @example
  * ```ts
- * import { polar } from 'whitebox-render/charts'
+ * import { polar } from 'mdml-render/charts'
  * polar(() => 2, [0, Math.PI], { n: 3 }).extent // => { x: [-2, 2], y: [0, 2] }
  * ```
  */
@@ -152,7 +152,7 @@ export function polar(
  * @returns The layer.
  * @example
  * ```ts
- * import { implicit } from 'whitebox-render/charts'
+ * import { implicit } from 'mdml-render/charts'
  * const l = implicit((x, y) => x * x + y * y - 1, [-2, 2], [-2, 2], { n: 41 })
  * Math.round(l.extent.x[1] * 100) / 100 // => 1
  * ```
@@ -196,7 +196,7 @@ function slope(f: (x: number) => number, x0: number): number {
  * @returns The layer.
  * @example
  * ```ts
- * import { tangentLine } from 'whitebox-render/charts'
+ * import { tangentLine } from 'mdml-render/charts'
  * tangentLine((x) => x * x, 1, { derivative: 2, span: 2 }).series[0].data // => [[0, -1], [2, 3]]
  * ```
  */
@@ -225,7 +225,7 @@ export function tangentLine(
  * @returns The layer.
  * @example
  * ```ts
- * import { secantLine } from 'whitebox-render/charts'
+ * import { secantLine } from 'mdml-render/charts'
  * secantLine((x) => x * x, 0, 2, { extend: 0 }).series[0].data // => [[0, 0], [2, 4]]
  * ```
  */
@@ -235,7 +235,7 @@ export function secantLine(
   b: number,
   options: FunctionStyle & { readonly extend?: number } = {},
 ): Layer {
-  if (a === b) throw new WhiteboxError('value', 'secantLine: the two points must differ')
+  if (a === b) throw new MdmlError('value', 'secantLine: the two points must differ')
   const fa = f(a)
   const fb = f(b)
   const m = (fb - fa) / (b - a)
@@ -280,7 +280,7 @@ interface PolyApi {
  * @returns The layer, and the sum of the pieces' signed areas.
  * @example
  * ```ts
- * import { riemann } from 'whitebox-render/charts'
+ * import { riemann } from 'mdml-render/charts'
  * riemann((x) => x, [0, 1], 2, { rule: 'left' }).sum // => 0.25
  * riemann((x) => x, [0, 1], 2, { rule: 'trapezoid' }).sum // => 0.5
  * ```
@@ -291,7 +291,7 @@ export function riemann(
   n: number,
   options: FunctionStyle & { readonly rule?: RiemannRule; readonly opacity?: number } = {},
 ): Layer & { readonly sum: number } {
-  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', 'riemann: n must be a positive integer')
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'riemann: n must be a positive integer')
   const rule = options.rule ?? 'midpoint'
   const [a, b] = range
   const w = (b - a) / n
@@ -349,7 +349,7 @@ export function riemann(
  * @returns The layer.
  * @example
  * ```ts
- * import { taylor } from 'whitebox-render/charts'
+ * import { taylor } from 'mdml-render/charts'
  * taylor([1, 1, 1], 0, [0, 1], { n: 2 }).series[0].data // => [[0, 1], [1, 2.5]]
  * ```
  */
@@ -384,7 +384,7 @@ export function taylor(
  * @returns The layer (it does not affect the axis ranges).
  * @example
  * ```ts
- * import { referenceLines } from 'whitebox-render/charts'
+ * import { referenceLines } from 'mdml-render/charts'
  * referenceLines({ x: [0], y: [{ value: 1, label: 'target' }] }).series[0].markLine.data.length // => 2
  * ```
  */

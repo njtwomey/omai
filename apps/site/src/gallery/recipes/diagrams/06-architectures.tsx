@@ -1,4 +1,3 @@
-import { type ReactNode, useMemo, useState } from 'react'
 import {
   Conv2d,
   describe as describeNet,
@@ -9,17 +8,18 @@ import {
   Residual,
   Sequential,
   TransformerEncoderLayer,
-} from 'whitebox-engine/nn'
-import type { Structure } from 'whitebox-engine/scene'
-import { Choice, ControlPanel, SceneFrame, Select } from 'whitebox-render/react'
-import { type ArchitectureView, architecture } from 'whitebox-render/structures'
+} from 'mdml-engine/nn'
+import type { Structure } from 'mdml-engine/scene'
+import { Choice, ControlPanel, SceneFrame, Select } from 'mdml-render/react'
+import { type ArchitectureView, architecture } from 'mdml-render/structures'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Network architectures',
   question: 'How do I draw a neural network: as a diagram, a stack, its tensor shapes, or where its parameters are?',
   explain:
-    '`describe(module, inputShape)` in whitebox-engine turns a network into a `Structure` (layers with shapes, parameter counts and FLOPs; residual and parallel blocks as groups). `architecture(structure, view)` draws it four ways: the full `diagram`, a `compact` stack, the `shapes` of the tensors flowing through, and a `params` treemap.',
+    '`describe(module, inputShape)` in mdml-engine turns a network into a `Structure` (layers with shapes, parameter counts and FLOPs; residual and parallel blocks as groups). `architecture(structure, view)` draws it four ways: the full `diagram`, a `compact` stack, the `shapes` of the tensors flowing through, and a `params` treemap.',
 }
 
 function residualMlp(): Structure {

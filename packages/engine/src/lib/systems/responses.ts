@@ -4,7 +4,7 @@
  * initial state, and default time grids from the slowest pole.
  */
 
-import { type Json, linspaceNumbers, minOf, WhiteboxError } from '../base/index.ts'
+import { type Json, linspaceNumbers, MdmlError, minOf } from '../base/index.ts'
 import { interp } from '../numerics/interpolate/index.ts'
 import { eigvals, expm } from '../numerics/linalg/index.ts'
 import {
@@ -121,17 +121,17 @@ function inputMatrix(u: TensorLike | null, nt: number, m: number): Value | null 
   const uv = float(u)
   if (uv.shape.length === 0) {
     if (numbers(uv)[0] === 0) return null
-    throw new WhiteboxError('shape', 'lsim: a scalar input must be 0')
+    throw new MdmlError('shape', 'lsim: a scalar input must be 0')
   }
   const um = uv.shape.length === 1 ? reshape(uv, [-1, 1]) : uv
-  if ((um.shape[0] ?? 0) !== nt) throw new WhiteboxError('shape', 'lsim: the input needs one row per time')
-  if ((um.shape[1] ?? 0) !== m) throw new WhiteboxError('shape', `lsim: the system has ${m} inputs`)
+  if ((um.shape[0] ?? 0) !== nt) throw new MdmlError('shape', 'lsim: the input needs one row per time')
+  if ((um.shape[1] ?? 0) !== m) throw new MdmlError('shape', `lsim: the system has ${m} inputs`)
   return um
 }
 
 function timeGrid(s: StateSpace, u: Value | null, t: TensorLike | undefined): { times: number[]; u: Value | null } {
   if (!isDiscrete(s)) {
-    if (t === undefined) throw new WhiteboxError('value', 'lsim: continuous-time simulation needs the times')
+    if (t === undefined) throw new MdmlError('value', 'lsim: continuous-time simulation needs the times')
     return { times: numbers(float(t)), u }
   }
   // dlsim: samples every dt up to the last time, the input interpolated linearly onto them.
@@ -161,7 +161,7 @@ function timeGrid(s: StateSpace, u: Value | null, t: TensorLike | undefined): { 
  * @concept time-response
  * @example
  * ```ts
- * import { lsimAlgorithm, tf } from 'whitebox-engine/systems'
+ * import { lsimAlgorithm, tf } from 'mdml-engine/systems'
  * lsimAlgorithm(tf([1], [1, 1]), [1, 1, 1], [0, 1, 2]).algorithm.name // => 'lsim'
  * ```
  */
@@ -178,15 +178,15 @@ export function lsimAlgorithm(
   const raw = inputMatrix(u, given?.length ?? (u === null ? 0 : (float(u).shape[0] ?? 0)), m)
   const { times, u: um } = timeGrid(s, raw, t)
   const nt = times.length
-  if (nt === 0) throw new WhiteboxError('value', 'lsim: no samples')
+  if (nt === 0) throw new MdmlError('value', 'lsim: no samples')
   const h = nt > 1 ? (times[1] ?? 0) - (times[0] ?? 0) : 1
   if (!isDiscrete(s)) {
     for (let k = 1; k < nt; k++) {
       const step = (times[k] ?? 0) - (times[k - 1] ?? 0)
       if (Math.abs(step - h) > 1e-8 + 1e-5 * Math.abs(h))
-        throw new WhiteboxError('value', 'lsim: times must be equally spaced')
+        throw new MdmlError('value', 'lsim: times must be equally spaced')
     }
-    if ((times[0] ?? 0) < 0) throw new WhiteboxError('value', 'lsim: the initial time must be nonnegative')
+    if ((times[0] ?? 0) < 0) throw new MdmlError('value', 'lsim: the initial time must be nonnegative')
   }
   const r = recursion(s, h, options.interp === false ? 'zoh' : 'foh')
   let x0: Value = options.x0 === undefined ? zeros([n, 1]) : column(float(options.x0))
@@ -238,12 +238,12 @@ function finish(result: LsimState, t: Tensor, p: number): TimeResponse {
  * @param t - Sample times; in discrete time optional (then one sample per input row, dt apart).
  * @param options - Initial state, hold, and trace options.
  * @returns Times, outputs and states.
- * @throws WhiteboxError with code `value` for unequal time steps or a negative start.
+ * @throws MdmlError with code `value` for unequal time steps or a negative start.
  * @concept time-response
  * @example
  * ```ts
- * import { lsim, tf } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lsim, tf } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lsim(tf([1], [1, -0.5], { dt: 1 }), [1, 0, 0]).y) // => [0, 1, 0.5]
  * ```
  */
@@ -284,8 +284,8 @@ export interface ResponseOptions extends TraceOptions {
  * @returns The times.
  * @example
  * ```ts
- * import { defaultResponseTimes } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { defaultResponseTimes } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(defaultResponseTimes([[-7]], 3)) // => [0, 0.5, 1]
  * ```
  */
@@ -307,7 +307,7 @@ function responseTimes(s: StateSpace, options: ResponseOptions): Tensor {
 
 function channel(s: StateSpace, input: number): number {
   const m = s.b.shape[1] ?? 0
-  if (input < 0 || input >= m) throw new WhiteboxError('value', `the system has no input ${input}`)
+  if (input < 0 || input >= m) throw new MdmlError('value', `the system has no input ${input}`)
   return input
 }
 
@@ -321,8 +321,8 @@ function channel(s: StateSpace, input: number): number {
  * @concept time-response
  * @example
  * ```ts
- * import { step, tf } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { step, tf } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(step(tf([1], [1, -0.5], { dt: 1 }), { n: 3 }).y) // => [0, 1, 1.5]
  * ```
  */
@@ -348,8 +348,8 @@ export function step(sys: Lti, options: ResponseOptions = {}): TimeResponse {
  * @concept time-response
  * @example
  * ```ts
- * import { impulse, tf } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { impulse, tf } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(impulse(tf([1], [1, -0.5], { dt: 1 }), { n: 3 }).y) // => [0, 1, 0.5]
  * ```
  */
@@ -380,8 +380,8 @@ export function impulse(sys: Lti, options: ResponseOptions = {}): TimeResponse {
  * @concept time-response
  * @example
  * ```ts
- * import { initial, ss } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { initial, ss } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(initial(ss([[0.5]], [[1]], [[2]], [[0]], { dt: 1 }), [1], { n: 3 }).y) // => [2, 1, 0.5]
  * ```
  */

@@ -3,9 +3,9 @@ liblinear, on seeded data with sparse ground truth (the solutions are unique, so
 
 import numpy as np
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from sklearn.linear_model import Lasso, LogisticRegression
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"sklearn": sklearn.__version__}
 

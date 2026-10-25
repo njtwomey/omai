@@ -3,10 +3,10 @@
  * pairs, on two-dimensional clustering datasets.
  */
 
-import { copKMeans } from 'whitebox-engine/methods/cluster'
-import { split, uniform } from 'whitebox-engine/random'
-import { dict, int } from 'whitebox-engine/space'
-import { asTensor, toFlat } from 'whitebox-engine/tensor'
+import { copKMeans } from 'mdml-engine/methods/cluster'
+import { split, uniform } from 'mdml-engine/random'
+import { dict, int } from 'mdml-engine/space'
+import { asTensor, toFlat } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 

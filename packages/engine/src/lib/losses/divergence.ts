@@ -4,7 +4,7 @@
  * discrepancy (a kernel two-sample distance) and the entropic optimal transport loss computed by Sinkhorn iterations.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { xlogy } from '../numerics/special/index.ts'
 import {
   abs,
@@ -48,8 +48,8 @@ import { crossEntropy } from './classification.ts'
  * @concept kl-divergence
  * @example
  * ```ts
- * import { klDiv } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { klDiv } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(klDiv([[Math.log(0.5), Math.log(0.5)]], [[1, 0]], { reduction: 'batchmean' })) === Math.LN2 // => true
  * ```
  */
@@ -79,8 +79,8 @@ const probs = (x: Value, logits: boolean): Value => (logits ? softmax(x, -1) : x
  * @returns The divergence, differentiable.
  * @example
  * ```ts
- * import { klDivergence } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { klDivergence } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(klDivergence([1, 0], [0.5, 0.5])) === Math.LN2 // => true
  * ```
  */
@@ -106,8 +106,8 @@ export function klDivergence(
  * @returns The divergence, differentiable.
  * @example
  * ```ts
- * import { jensenShannon } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { jensenShannon } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(jensenShannon([1, 0], [0, 1], { base: 2 })) // => 1
  * ```
  */
@@ -148,8 +148,8 @@ export interface DistillationOptions {
  * @returns The scalar loss, differentiable in the student logits.
  * @example
  * ```ts
- * import { distillation } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { distillation } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(distillation([[1, 2]], [[1, 2]], { temperature: 3 })) // => 0
  * ```
  */
@@ -192,8 +192,8 @@ export interface MmdOptions {
  * @returns The scalar MMD^2, differentiable in both samples.
  * @example
  * ```ts
- * import { mmd } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { mmd } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(mmd([[0], [1]], [[0], [1]], { bandwidths: [1] })) // => 0
  * ```
  */
@@ -254,7 +254,7 @@ function medianDistance(dxx: Value, dyy: Value, dxy: Value): number {
   collect(dyy, true)
   collect(dxy, false)
   if (values.length === 0)
-    throw new WhiteboxError('value', 'mmd: the median heuristic needs concrete samples; pass bandwidths')
+    throw new MdmlError('value', 'mmd: the median heuristic needs concrete samples; pass bandwidths')
   values.sort((p, q) => p - q)
   const mid = values.length >> 1
   const med = values.length % 2 === 1 ? (values[mid] ?? 1) : ((values[mid - 1] ?? 1) + (values[mid] ?? 1)) / 2
@@ -308,8 +308,8 @@ function sinkhornCost(cost: Value, logA: Value, logB: Value, eps: number, maxIte
  * @returns The scalar loss.
  * @example
  * ```ts
- * import { sinkhorn } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { sinkhorn } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(sinkhorn([[0], [1]], [[0], [1]], { epsilon: 0.01 }))) < 1e-12 // => true
  * ```
  */

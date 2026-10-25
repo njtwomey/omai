@@ -6,10 +6,10 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { multivariateNormal } from 'whitebox-engine/dists'
-import type { ClusteringSteps, EmbeddingSteps, InputRows, MixtureSteps } from 'whitebox-engine/exposition'
-import { covarianceEllipse } from 'whitebox-engine/numerics/geometry'
-import { toArray, toFlat } from 'whitebox-engine/tensor'
+import { multivariateNormal } from 'mdml-engine/dists'
+import type { ClusteringSteps, EmbeddingSteps, InputRows, MixtureSteps } from 'mdml-engine/exposition'
+import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
+import { toArray, toFlat } from 'mdml-engine/tensor'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { decisionRegions } from '../charts/fields.ts'
@@ -358,7 +358,7 @@ export interface DendrogramLayout {
  * @returns The leaf order and the links.
  * @example
  * ```ts
- * import { dendrogramLayout } from 'whitebox-render/views'
+ * import { dendrogramLayout } from 'mdml-render/views'
  * dendrogramLayout([[0, 1, 1, 2], [2, 3, 2, 3]], 3).order // => [2, 0, 1]
  * ```
  */

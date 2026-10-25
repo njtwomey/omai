@@ -1,10 +1,10 @@
 /**
  * Genetic algorithms on toy problems, played generation by generation from the core's genetic algorithm
- * (`whitebox-engine/search`): bit strings for OneMax and a random 0/1 knapsack, recorded as a board of genomes, and
+ * (`mdml-engine/search`): bit strings for OneMax and a random 0/1 knapsack, recorded as a board of genomes, and
  * real vectors minimising an objective on the plane, recorded over its contours.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import {
   type BoardSteps,
   boardSteps,
@@ -145,7 +145,7 @@ export function evolveBitStrings(
   })
   const states = runGenerations(algorithm, generations, options.key ?? makeKey(0), problem.optimum)
   const last = states[states.length - 1]
-  if (last === undefined) throw new WhiteboxError('value', 'evolveBitStrings: no generations')
+  if (last === undefined) throw new MdmlError('value', 'evolveBitStrings: no generations')
   const order = (s: GeneticState<number[]>): number[] =>
     s.fitness
       .map((f, i) => [f, i] as const)
@@ -213,7 +213,7 @@ export function evolveOnPlane(
   })
   const states = runGenerations(algorithm, options.generations ?? 40, options.key ?? makeKey(0))
   const last = states[states.length - 1]
-  if (last === undefined) throw new WhiteboxError('value', 'evolveOnPlane: no generations')
+  if (last === undefined) throw new MdmlError('value', 'evolveOnPlane: no generations')
   const record = populationSteps({
     method: 'genetic algorithm',
     lowerIsBetter: true,

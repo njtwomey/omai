@@ -5,7 +5,7 @@
  * trivial self-matches.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { fftConvolve, oaConvolve } from '../numerics/convolution/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 import { float } from './_shared.ts'
@@ -32,15 +32,14 @@ export interface SubsequenceStats {
 
 /** The window length must be at least 3 (shorter z-normalised windows are meaningless, as STUMPY). */
 export function checkWindow(m: number, n: number): void {
-  if (!Number.isInteger(m) || m < 3)
-    throw new WhiteboxError('value', 'the window length must be an integer of at least 3')
-  if (m > n) throw new WhiteboxError('value', `the window length ${m} exceeds the series length ${n}`)
+  if (!Number.isInteger(m) || m < 3) throw new MdmlError('value', 'the window length must be an integer of at least 3')
+  if (m > n) throw new MdmlError('value', `the window length ${m} exceeds the series length ${n}`)
 }
 
 /** The series as a Float64Array of primal values. */
 export function seriesOf(t: TensorLike, name: string): Float64Array {
   const v = float(t)
-  if (v.shape.length !== 1) throw new WhiteboxError('shape', `${name}: expected a 1-D series`)
+  if (v.shape.length !== 1) throw new MdmlError('shape', `${name}: expected a 1-D series`)
   return Float64Array.from(primalOf(v).data)
 }
 
@@ -56,7 +55,7 @@ export function seriesOf(t: TensorLike, name: string): Float64Array {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { rollingMeanStd } from 'whitebox-engine/signal'
+ * import { rollingMeanStd } from 'mdml-engine/signal'
  * const { mean, std } = rollingMeanStd([1, 2, 3, 4], 2)
  * [Array.from(mean), Array.from(std)] // => [[1.5, 2.5, 3.5], [0.5, 0.5, 0.5]]
  * ```
@@ -70,7 +69,7 @@ export function rollingMeanStd(
   const finite = raw.every(Number.isFinite)
   const x = finite ? raw : Float64Array.from(raw, (v) => (Number.isFinite(v) ? v : 0))
   const l = x.length - m + 1
-  if (m < 1 || l < 1) throw new WhiteboxError('value', 'rollingMeanStd: the window must fit in the series')
+  if (m < 1 || l < 1) throw new MdmlError('value', 'rollingMeanStd: the window must fit in the series')
   const mean = new Float64Array(l)
   const std = new Float64Array(l)
   let mu = 0
@@ -117,7 +116,7 @@ export function rollingMeanStd(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { rollingIsConstant } from 'whitebox-engine/signal'
+ * import { rollingIsConstant } from 'mdml-engine/signal'
  * Array.from(rollingIsConstant([1, 1, 1, 2], 3)) // => [1, 0]
  * ```
  */
@@ -153,7 +152,7 @@ export function rollingIsConstant(t: TensorLike, m: number): Uint8Array {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { rollingIsFinite } from 'whitebox-engine/signal'
+ * import { rollingIsFinite } from 'mdml-engine/signal'
  * Array.from(rollingIsFinite([1, Number.NaN, 2, 3, 4], 2)) // => [0, 0, 1, 1]
  * ```
  */
@@ -180,7 +179,7 @@ export function rollingIsFinite(t: TensorLike, m: number): Uint8Array {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { subsequenceStats } from 'whitebox-engine/signal'
+ * import { subsequenceStats } from 'mdml-engine/signal'
  * Array.from(subsequenceStats([1, 1, 1, 2, 5], 3).isConstant) // => [1, 0, 0]
  * ```
  */
@@ -205,7 +204,7 @@ export function subsequenceStats(t: TensorLike, m: number): SubsequenceStats {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { slidingDotProduct } from 'whitebox-engine/signal'
+ * import { slidingDotProduct } from 'mdml-engine/signal'
  * Array.from(slidingDotProduct([1, 1], [1, 2, 3, 4])).map((v) => Math.round(v * 1e12) / 1e12) // => [3, 5, 7]
  * ```
  */
@@ -214,7 +213,7 @@ export function slidingDotProduct(q: TensorLike, t: TensorLike): Float64Array {
   const ta = t instanceof Float64Array ? t : seriesOf(t, 'slidingDotProduct')
   const m = qa.length
   const n = ta.length
-  if (m > n) throw new WhiteboxError('value', 'slidingDotProduct: the query is longer than the series')
+  if (m > n) throw new MdmlError('value', 'slidingDotProduct: the query is longer than the series')
   if (m * n <= 4096) return slidingDotProductDirect(qa, ta)
   const rev = Float64Array.from(qa).reverse()
   const conv = n > 16 * m ? oaConvolve(ta, rev) : fftConvolve(ta, rev)
@@ -230,7 +229,7 @@ export function slidingDotProduct(q: TensorLike, t: TensorLike): Float64Array {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { slidingDotProductDirect } from 'whitebox-engine/signal'
+ * import { slidingDotProductDirect } from 'mdml-engine/signal'
  * Array.from(slidingDotProductDirect([1, 1], [1, 2, 3, 4])) // => [3, 5, 7]
  * ```
  */
@@ -262,7 +261,7 @@ export function slidingDotProductDirect(q: TensorLike, t: TensorLike): Float64Ar
  * @concept matrix-profile
  * @example
  * ```ts
- * import { nextDotProduct } from 'whitebox-engine/signal'
+ * import { nextDotProduct } from 'mdml-engine/signal'
  * nextDotProduct(1 * 3 + 2 * 4, [1, 2, 3], [3, 4, 5], 0, 0, 2) // => 23
  * ```
  */
@@ -294,7 +293,7 @@ export function nextDotProduct(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { squaredZNormalizedDistance } from 'whitebox-engine/signal'
+ * import { squaredZNormalizedDistance } from 'mdml-engine/signal'
  * squaredZNormalizedDistance(3, 14, 2, Math.sqrt(2 / 3), 2, Math.sqrt(2 / 3), false, false) // => 0
  * ```
  */
@@ -328,7 +327,7 @@ export function squaredZNormalizedDistance(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { slidingDotProduct, subsequenceStats, zNormalizedDistanceProfile } from 'whitebox-engine/signal'
+ * import { slidingDotProduct, subsequenceStats, zNormalizedDistanceProfile } from 'mdml-engine/signal'
  * const s = subsequenceStats([1, 2, 3, 1, 2, 3], 3)
  * Array.from(zNormalizedDistanceProfile(slidingDotProduct([1, 2, 3], s.t), 2, Math.sqrt(2 / 3), false, s)).map((v) => Math.round(v * 1e6) / 1e6)[3] // => 0
  * ```
@@ -373,7 +372,7 @@ export function zNormalizedDistanceProfile(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { nonNormalizedDistanceProfile } from 'whitebox-engine/signal'
+ * import { nonNormalizedDistanceProfile } from 'mdml-engine/signal'
  * Array.from(nonNormalizedDistanceProfile([0, 0, 0], [3, 4, 0, 0, 0])) // => [5, 4, 0]
  * ```
  */
@@ -382,7 +381,7 @@ export function nonNormalizedDistanceProfile(q: TensorLike, t: TensorLike, p = 2
   const raw = t instanceof Float64Array ? t : seriesOf(t, 'nonNormalizedDistanceProfile')
   const m = qa.length
   const l = raw.length - m + 1
-  if (l < 1) throw new WhiteboxError('value', 'nonNormalizedDistanceProfile: the query is longer than the series')
+  if (l < 1) throw new MdmlError('value', 'nonNormalizedDistanceProfile: the query is longer than the series')
   const finite = rollingIsFinite(raw, m)
   const out = new Float64Array(l)
   if (qa.some((v) => !Number.isFinite(v))) return out.fill(Number.POSITIVE_INFINITY)
@@ -407,7 +406,7 @@ export function nonNormalizedDistanceProfile(q: TensorLike, t: TensorLike, p = 2
  * @concept matrix-profile
  * @example
  * ```ts
- * import { exclusionZone } from 'whitebox-engine/signal'
+ * import { exclusionZone } from 'mdml-engine/signal'
  * exclusionZone(10) // => 3
  * ```
  */
@@ -426,7 +425,7 @@ export function exclusionZone(m: number, denom = 4): number {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { applyExclusionZone } from 'whitebox-engine/signal'
+ * import { applyExclusionZone } from 'mdml-engine/signal'
  * Array.from(applyExclusionZone(new Float64Array(5), 1, 1, 9)) // => [9, 9, 9, 0, 0]
  * ```
  */
@@ -451,7 +450,7 @@ export function applyExclusionZone(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { zNormalize } from 'whitebox-engine/signal'
+ * import { zNormalize } from 'mdml-engine/signal'
  * Array.from(zNormalize([1, 2, 3])).map((v) => Math.round(v * 1e6) / 1e6) // => [-1.224745, 0, 1.224745]
  * ```
  */

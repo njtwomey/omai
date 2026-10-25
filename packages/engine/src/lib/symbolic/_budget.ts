@@ -6,7 +6,7 @@
 // may fail on its own (an integration method, a simplification candidate), opens a frame that never has more work
 // than its parent has left; what it spends is charged to the parent when it closes, so a parent whose child used up
 // everything is exhausted too (exhaustion is sticky: every later charge fails again).
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { WorkBudget } from './expr.ts'
 
 /** Work units of a top-level operation unless its budget says otherwise. @internal */
@@ -25,7 +25,7 @@ const stack: Frame[] = []
 let last = 0
 
 /** Raised when a frame runs out of work or an expansion would exceed the term cap. @internal */
-export class WorkExhausted extends WhiteboxError {
+export class WorkExhausted extends MdmlError {
   /** The frame whose operation takes its fallback. */
   readonly frame: object
   constructor(frame: Frame, message: string) {
@@ -89,7 +89,7 @@ export function withBudget<T>(budget: WorkBudget | undefined, body: () => T, fal
 }
 
 /**
- * Run a public operation without a fallback of its own: running out is a WhiteboxError with code `convergence`.
+ * Run a public operation without a fallback of its own: running out is a MdmlError with code `convergence`.
  * @internal
  */
 export function bounded<T>(name: string, body: () => T, budget?: WorkBudget): T {
@@ -102,7 +102,7 @@ export function bounded<T>(name: string, body: () => T, budget?: WorkBudget): T 
       caller.left = Math.min(caller.left, -1)
       throw new WorkExhausted(caller, `symbolic: the work budget of ${caller.limit} steps is exhausted`)
     }
-    throw new WhiteboxError('convergence', `${name}: the work budget is exhausted (raise it with withWorkBudget)`)
+    throw new MdmlError('convergence', `${name}: the work budget is exhausted (raise it with withWorkBudget)`)
   })
 }
 

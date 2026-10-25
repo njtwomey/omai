@@ -6,7 +6,7 @@
  */
 
 import { grad, jvp, valueAndGrad } from '../../../lib/autodiff/index.ts'
-import { type Json, meanOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { type Json, MdmlError, meanOf } from '../../../lib/base/index.ts'
 import type { Params } from '../../../lib/nn/index.ts'
 import { dnrm2 } from '../../../lib/numerics/linalg/index.ts'
 import { cg } from '../../../lib/numerics/sparse/index.ts'
@@ -70,8 +70,8 @@ export type { PolicyGradientOptions, PolicyGradientState } from './_on-policy-ag
  * @reference Schulman, Wolski, Dhariwal, Radford and Klimov (2017), Proximal policy optimization algorithms.
  * @example
  * ```ts
- * import { ppoClipObjective } from 'whitebox-engine/methods/rl/agents'
- * import { item } from 'whitebox-engine/tensor'
+ * import { ppoClipObjective } from 'mdml-engine/methods/rl/agents'
+ * import { item } from 'mdml-engine/tensor'
  * item(ppoClipObjective([0, 0], [0, 0], [1, 3])) // => 2
  * item(ppoClipObjective([Math.log(2)], [0], [1], 0.2)) // => 1.2
  * ```
@@ -100,8 +100,8 @@ export function ppoClipObjective(
  * @reference Schulman et al. (2017), Proximal policy optimization algorithms, section 4.
  * @example
  * ```ts
- * import { ppoKlObjective } from 'whitebox-engine/methods/rl/agents'
- * import { item } from 'whitebox-engine/tensor'
+ * import { ppoKlObjective } from 'mdml-engine/methods/rl/agents'
+ * import { item } from 'mdml-engine/tensor'
  * item(ppoKlObjective([0, 0], [0, 0], [1, 3], [0.5, 0.5], 2)) // => 1
  * ```
  */
@@ -126,7 +126,7 @@ export function ppoKlObjective(
  * @concept policy-gradient
  * @example
  * ```ts
- * import { adaptKlCoefficient } from 'whitebox-engine/methods/rl/agents'
+ * import { adaptKlCoefficient } from 'mdml-engine/methods/rl/agents'
  * [adaptKlCoefficient(1, 0.1, 0.01), adaptKlCoefficient(1, 0.001, 0.01), adaptKlCoefficient(1, 0.01, 0.01)] // => [2, 0.5, 1]
  * ```
  */
@@ -173,7 +173,7 @@ export interface TrpoStepResult {
  * @reference Schulman, Levine, Moritz, Jordan and Abbeel (2015), Trust region policy optimization.
  * @example
  * ```ts
- * import { trpoStep } from 'whitebox-engine/methods/rl/agents'
+ * import { trpoStep } from 'mdml-engine/methods/rl/agents'
  * trpoStep((v) => v.map((x) => 4 * x), [2, 0], { maxKl: 0.5, damping: 0 }).step // => [0.5, 0]
  * ```
  */
@@ -247,8 +247,8 @@ export interface ReinforceOptions extends PolicyGradientOptions {
  * @reference Williams (1992), Simple statistical gradient-following algorithms for connectionist reinforcement learning.
  * @example
  * ```ts
- * import { reinforce } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { reinforce } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * reinforce(cartPole.create(), { hidden: [16], baseline: 'average' }).name // => 'reinforce'
  * ```
  */
@@ -388,8 +388,8 @@ export interface A2cOptions extends PolicyGradientOptions {
  * @reference Mnih et al. (2016), Asynchronous methods for deep reinforcement learning.
  * @example
  * ```ts
- * import { a2c } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { a2c } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * a2c(cartPole.create(), { nSteps: 8 }).config // => { hidden: [64, 64], gamma: 0.99, nSteps: 8, gaeLambda: 1, entCoef: 0, vfCoef: 0.5 }
  * ```
  */
@@ -479,8 +479,8 @@ export interface TrpoOptions extends PolicyGradientOptions, TrpoStepOptions {
  * @reference Schulman, Levine, Moritz, Jordan and Abbeel (2015), Trust region policy optimization.
  * @example
  * ```ts
- * import { trpo } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { trpo } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * trpo(cartPole.create(), { maxKl: 0.02 }).name // => 'trpo'
  * ```
  */
@@ -627,8 +627,8 @@ export interface PpoOptions extends PolicyGradientOptions {
  * @reference Schulman et al. (2017), Proximal policy optimization algorithms.
  * @example
  * ```ts
- * import { ppo } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { ppo } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * ppo(cartPole.create(), { objective: 'kl' }).name // => 'ppo'
  * ```
  */
@@ -645,7 +645,7 @@ export function ppo<A extends PolicyAction = PolicyAction>(
   const klTarget = options.klTarget ?? 0.01
   const anneal = options.annealLearningRate ?? false
   const totalSteps = options.totalSteps
-  if (anneal && totalSteps === undefined) throw new WhiteboxError('value', 'ppo: annealing needs totalSteps')
+  if (anneal && totalSteps === undefined) throw new MdmlError('value', 'ppo: annealing needs totalSteps')
   const opt = withClip(
     options.optimizer ?? adam({ learningRate: options.learningRate ?? 3e-4, eps: 1e-5 }),
     options.maxGradNorm ?? 0.5,

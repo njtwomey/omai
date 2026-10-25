@@ -2,9 +2,9 @@
 
 import numpy as np
 import scipy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from scipy import stats
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

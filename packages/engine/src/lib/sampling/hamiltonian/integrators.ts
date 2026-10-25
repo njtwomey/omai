@@ -4,7 +4,7 @@
  * the Hamiltonian energy of a phase-space state, and whole trajectories for figures and teaching.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { ddot, dgemv } from '../../numerics/linalg/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import { asTensor, reshape, type Tensor, type TensorLike } from '../../tensor/index.ts'
@@ -40,11 +40,11 @@ export interface EuclideanMetric {
  *   row-major (length dim^2, as adaptation stores it); default 1, the identity.
  * @param dim - The dimension.
  * @returns The metric.
- * @throws WhiteboxError with code `value` for non-positive diagonals or a matrix that is not positive definite.
+ * @throws MdmlError with code `value` for non-positive diagonals or a matrix that is not positive definite.
  * @concept hamiltonian-monte-carlo
  * @example
  * ```ts
- * import { euclideanMetric } from 'whitebox-engine/sampling'
+ * import { euclideanMetric } from 'mdml-engine/sampling'
  * const m = euclideanMetric([2, 0.5], 2)
  * m.kineticEnergy([1, 2]) // => 2
  * Array.from(m.velocity([1, 2])) // => [2, 1]
@@ -69,7 +69,7 @@ export function euclideanMetric(inverseMassMatrix: TensorLike | number = 1, dim:
   }
   const diag = vectorOf(inverseMassMatrix as TensorLike | number, dim, 'euclideanMetric')
   if (!diag.every((v) => v > 0 && Number.isFinite(v))) {
-    throw new WhiteboxError('value', 'euclideanMetric: the inverse mass matrix diagonal must be positive and finite')
+    throw new MdmlError('value', 'euclideanMetric: the inverse mass matrix diagonal must be positive and finite')
   }
   const scale = diag.map((v) => 1 / Math.sqrt(v))
   const velocity = (p: ArrayLike<number>): Float64Array =>
@@ -118,7 +118,7 @@ export type Integrator = (state: IntegratorState, stepSize: number) => Integrato
  * @concept symplectic-integrators
  * @example
  * ```ts
- * import { INTEGRATOR_COEFFICIENTS } from 'whitebox-engine/sampling'
+ * import { INTEGRATOR_COEFFICIENTS } from 'mdml-engine/sampling'
  * INTEGRATOR_COEFFICIENTS.velocityVerlet // => [0.5, 1, 0.5]
  * // The position coefficients (odd places) sum to one step.
  * INTEGRATOR_COEFFICIENTS.yoshida.filter((_, i) => i % 2 === 1).reduce((a, b) => a + b, 0) // => 1
@@ -160,13 +160,13 @@ export type IntegratorScheme = keyof typeof INTEGRATOR_COEFFICIENTS | readonly n
  * @param scheme - `velocityVerlet` (default, the leapfrog), `mcLachlan`, `yoshida`, `omelyan` or coefficients of odd
  *   length.
  * @returns The integrator step.
- * @throws WhiteboxError with code `value` for a target without a gradient or coefficients of even length.
+ * @throws MdmlError with code `value` for a target without a gradient or coefficients of even length.
  * @concept symplectic-integrators
  * @reference R. I. McLachlan, On the numerical integration of ordinary differential equations by symmetric composition
  *   methods (SIAM J. Sci. Comput. 1995).
  * @example
  * ```ts
- * import { euclideanMetric, integrator, integratorState, numericTarget } from 'whitebox-engine/sampling'
+ * import { euclideanMetric, integrator, integratorState, numericTarget } from 'mdml-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * const step = integrator(t, euclideanMetric(1, 1))
  * const s = step(integratorState(t, [1], [0]), 0.1)
@@ -178,9 +178,9 @@ export function integrator(
   metric: EuclideanMetric,
   scheme: IntegratorScheme = 'velocityVerlet',
 ): Integrator {
-  if (!target.hasGradient) throw new WhiteboxError('value', 'integrator: the target has no gradient')
+  if (!target.hasGradient) throw new MdmlError('value', 'integrator: the target has no gradient')
   const coefficients = typeof scheme === 'string' ? INTEGRATOR_COEFFICIENTS[scheme] : scheme
-  if (coefficients.length % 2 !== 1) throw new WhiteboxError('value', 'integrator: need an odd number of coefficients')
+  if (coefficients.length % 2 !== 1) throw new MdmlError('value', 'integrator: need an odd number of coefficients')
   const dim = target.dim
   return (state, eps) => {
     let x = state.position
@@ -218,7 +218,7 @@ export function integrator(
  * @concept leapfrog-integrator
  * @example
  * ```ts
- * import { integratorState, leapfrog, numericTarget } from 'whitebox-engine/sampling'
+ * import { integratorState, leapfrog, numericTarget } from 'mdml-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * const s = leapfrog(t)(integratorState(t, [1], [0]), 0.1)
  * Math.round((s.momentum[0] ?? 0) * 1e6) / 1e6 // => -0.09975
@@ -235,10 +235,10 @@ export function leapfrog(target: LogDensity, metric?: EuclideanMetric): Integrat
  * @param position - The position.
  * @param momentum - The momentum.
  * @returns The state.
- * @throws WhiteboxError with code `shape` when the lengths differ from the target's dimension.
+ * @throws MdmlError with code `shape` when the lengths differ from the target's dimension.
  * @example
  * ```ts
- * import { integratorState, numericTarget } from 'whitebox-engine/sampling'
+ * import { integratorState, numericTarget } from 'mdml-engine/sampling'
  * const t = numericTarget((x) => -((x[0] ?? 0) ** 2), 1, { grad: (x) => [-2 * (x[0] ?? 0)] })
  * Array.from(integratorState(t, [3], [0]).grad) // => [-6]
  * ```
@@ -249,7 +249,7 @@ export function integratorState(
   momentum: ArrayLike<number>,
 ): IntegratorState {
   if (position.length !== target.dim || momentum.length !== target.dim) {
-    throw new WhiteboxError('shape', `integratorState: position and momentum need ${target.dim} values`)
+    throw new MdmlError('shape', `integratorState: position and momentum need ${target.dim} values`)
   }
   const x = Float64Array.from(position)
   const r = target.valueAndGrad(x)
@@ -266,7 +266,7 @@ export function integratorState(
  * @concept hamiltonian-monte-carlo
  * @example
  * ```ts
- * import { euclideanMetric, hamiltonian } from 'whitebox-engine/sampling'
+ * import { euclideanMetric, hamiltonian } from 'mdml-engine/sampling'
  * const s = { position: new Float64Array([0]), momentum: new Float64Array([2]), logDensity: -1, grad: new Float64Array([0]) }
  * hamiltonian(s, euclideanMetric(1, 1)) // => 3
  * ```
@@ -285,11 +285,11 @@ export function hamiltonian(state: IntegratorState, metric: EuclideanMetric): nu
  * @param stepSize - The step size (negative integrates backwards in time).
  * @param numSteps - The number of steps (at most 100000).
  * @returns The states, starting with `start`.
- * @throws WhiteboxError with code `value` for a negative, fractional or excessive number of steps.
+ * @throws MdmlError with code `value` for a negative, fractional or excessive number of steps.
  * @concept leapfrog-integrator
  * @example
  * ```ts
- * import { hamiltonianTrajectory, integratorState, leapfrog, numericTarget } from 'whitebox-engine/sampling'
+ * import { hamiltonianTrajectory, integratorState, leapfrog, numericTarget } from 'mdml-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * hamiltonianTrajectory(leapfrog(t), integratorState(t, [1], [0]), 0.1, 20).length // => 21
  * ```
@@ -301,7 +301,7 @@ export function hamiltonianTrajectory(
   numSteps: number,
 ): IntegratorState[] {
   if (!(Number.isInteger(numSteps) && numSteps >= 0 && numSteps <= 100000)) {
-    throw new WhiteboxError('value', 'hamiltonianTrajectory: numSteps must be an integer in [0, 100000]')
+    throw new MdmlError('value', 'hamiltonianTrajectory: numSteps must be an integer in [0, 100000]')
   }
   const out = [start]
   let s = start

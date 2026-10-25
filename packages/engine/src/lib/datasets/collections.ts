@@ -4,7 +4,7 @@
  * loads one.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Dataset } from '../data/index.ts'
 import { type Generated, generate, type Knobs } from '../data/index.ts'
 import type { Key } from '../random/index.ts'
@@ -45,7 +45,7 @@ function g(name: string, title: string, a?: Knobs | string, b?: Knobs): Collecti
  *
  * @example
  * ```ts
- * import { datasetCollections } from 'whitebox-engine/datasets'
+ * import { datasetCollections } from 'mdml-engine/datasets'
  * datasetCollections['classification2d']?.entries.map((e) => e.name).includes('moons') // => true
  * ```
  */
@@ -226,11 +226,11 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
  * @param key - The key for generated datasets.
  * @param knobs - Knob values overriding the entry's demo knobs.
  * @returns The dataset, with its generating truth for generated entries.
- * @throws WhiteboxError `value` when the entry names an unknown generator.
+ * @throws MdmlError `value` when the entry names an unknown generator.
  * @example
  * ```ts
- * import { datasetCollections, loadEntry } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { datasetCollections, loadEntry } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * const moons = datasetCollections['classification2d']?.entries[0]
  * moons === undefined ? 0 : loadEntry(moons, key(0)).data.kind // => 'classification'
  * ```
@@ -242,6 +242,6 @@ export function loadEntry(
 ): { readonly data: Dataset } & Partial<Generated> {
   if ('load' in entry) return { data: entry.load() }
   const generator = datasetGenerators[entry.generator]
-  if (generator === undefined) throw new WhiteboxError('value', `loadEntry: unknown generator '${entry.generator}'`)
+  if (generator === undefined) throw new MdmlError('value', `loadEntry: unknown generator '${entry.generator}'`)
   return generate(generator, { key, knobs: { ...entry.knobs, ...knobs } })
 }

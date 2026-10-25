@@ -1,7 +1,6 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { bakeTexture, bricks } from 'whitebox-engine/graphics'
-import { fromAscii, type Pose } from 'whitebox-engine/worlds'
-import { raycastViews } from 'whitebox-render/gym'
+import { bakeTexture, bricks } from 'mdml-engine/graphics'
+import { fromAscii, type Pose } from 'mdml-engine/worlds'
+import { raycastViews } from 'mdml-render/gym'
 import {
   ControlPanel,
   DraggablePoints,
@@ -13,7 +12,8 @@ import {
   SceneView,
   Toggle,
   useHeldKeys,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

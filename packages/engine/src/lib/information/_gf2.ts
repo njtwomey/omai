@@ -1,5 +1,5 @@
 // Linear algebra over GF(2) on 0/1 arrays, shared by the block codes and LDPC codes. Not exported.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** A binary matrix as rows of 0/1. */
 export type BitMatrix = readonly (readonly number[])[]
@@ -8,10 +8,10 @@ export type BitMatrix = readonly (readonly number[])[]
 export function bitMatrix(m: BitMatrix, name: string): number[][] {
   const cols = m[0]?.length ?? 0
   if (m.length === 0 || cols === 0 || m.some((r) => r.length !== cols))
-    throw new WhiteboxError('shape', `${name}: expected a non-empty rectangular 0/1 matrix`)
+    throw new MdmlError('shape', `${name}: expected a non-empty rectangular 0/1 matrix`)
   return m.map((r) =>
     r.map((v) => {
-      if (v !== 0 && v !== 1) throw new WhiteboxError('value', `${name}: entries must be 0 or 1`)
+      if (v !== 0 && v !== 1) throw new MdmlError('value', `${name}: entries must be 0 or 1`)
       return v
     }),
   )
@@ -79,7 +79,7 @@ export function solveRow(m: BitMatrix, c: readonly number[], name: string): numb
     c[j] ?? 0,
   ])
   const { rows, pivots } = rref(augmented)
-  if (pivots.includes(k)) throw new WhiteboxError('value', `${name}: the word is not a codeword`)
+  if (pivots.includes(k)) throw new MdmlError('value', `${name}: the word is not a codeword`)
   const x = new Array<number>(k).fill(0)
   pivots.forEach((p, i) => {
     x[p] = rows[i]?.[k] ?? 0

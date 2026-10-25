@@ -15,14 +15,14 @@ import * as trace from '../trace/index.ts'
 import * as sampling from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'whitebox-engine/sampling': sampling,
-  'whitebox-engine/tensor': tensor,
-  'whitebox-engine/random': random,
-  'whitebox-engine/dists': dists,
-  'whitebox-engine/trace': trace,
-  'whitebox-engine/autodiff': autodiff,
-  'whitebox-engine/base': base,
-  'whitebox-engine/numerics/linalg': linalg,
+  'mdml-engine/sampling': sampling,
+  'mdml-engine/tensor': tensor,
+  'mdml-engine/random': random,
+  'mdml-engine/dists': dists,
+  'mdml-engine/trace': trace,
+  'mdml-engine/autodiff': autodiff,
+  'mdml-engine/base': base,
+  'mdml-engine/numerics/linalg': linalg,
 }
 
 interface Example {

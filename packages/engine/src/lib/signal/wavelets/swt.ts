@@ -3,7 +3,7 @@
  * upsampling the filters instead, so every level keeps the signal's length and the transform is shift-invariant.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { add, matmul, mul, reshape, sliceAxis, type TensorLike, take, type Value } from '../../tensor/index.ts'
 import { constant, float, indexTensor, rowsOf } from '../_shared.ts'
 import { type DiscreteWavelet, type WaveletSpec, wavelet } from './families.ts'
@@ -50,11 +50,11 @@ export interface SwtOptions {
  * @param w - The wavelet.
  * @param options - Levels, start level and axis.
  * @returns [(cA_n, cD_n), ..., (cA_1, cD_1)], coarsest first, each the signal's length.
- * @throws WhiteboxError with code `value` when the length is not a multiple of 2^level.
+ * @throws MdmlError with code `value` when the length is not a multiple of 2^level.
  * @concept stationary-wavelet-transform
  * @example
  * ```ts
- * import { swt } from 'whitebox-engine/signal'
+ * import { swt } from 'mdml-engine/signal'
  * swt([1, 2, 3, 4, 5, 6, 7, 8], 'haar', { level: 2 }).map((c) => c.cA.shape[0]) // => [8, 8]
  * ```
  */
@@ -71,7 +71,7 @@ export function swt(
   const start = options.startLevel ?? 0
   const level = options.level ?? maxLevel - start
   if (n % 2 ** (start + level) !== 0)
-    throw new WhiteboxError('value', `swt: the length must be a multiple of 2^${start + level}`)
+    throw new MdmlError('value', `swt: the length must be a multiple of 2^${start + level}`)
   const f = wv.decLo.length
   const out: { cA: Value; cD: Value }[] = []
   let a = r.rows
@@ -98,8 +98,8 @@ export function swt(
  * @concept stationary-wavelet-transform
  * @example
  * ```ts
- * import { iswt, swt } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { iswt, swt } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(iswt(swt([3, 1, 4, 1, 5, 9, 2, 6], 'db2', { level: 2 }), 'db2')).map((v) => Math.round(v * 1e12) / 1e12) // => [3, 1, 4, 1, 5, 9, 2, 6]
  * ```
  */
@@ -109,7 +109,7 @@ export function iswt(
   options: { readonly axis?: number; readonly startLevel?: number } = {},
 ): Value {
   const first = coeffs[0]
-  if (first === undefined) throw new WhiteboxError('value', 'iswt: no coefficients')
+  if (first === undefined) throw new MdmlError('value', 'iswt: no coefficients')
   const wv: DiscreteWavelet = wavelet(w)
   const axis = options.axis ?? -1
   const r = rowsOf(float(first.cA), axis, 'iswt')

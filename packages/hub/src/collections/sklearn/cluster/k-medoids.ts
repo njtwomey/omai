@@ -3,7 +3,7 @@
  * clustering datasets.
  */
 
-import { kMedoids as kMedoidsMethod } from 'whitebox-engine/methods/cluster'
+import { kMedoids as kMedoidsMethod } from 'mdml-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

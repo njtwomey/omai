@@ -8,9 +8,9 @@ import scipy
 import scipy.linalg as sla
 import scipy.optimize as so
 import scipy.stats as st
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
 from numpy.polynomial import polynomial as npoly
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

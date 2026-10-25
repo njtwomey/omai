@@ -1,11 +1,11 @@
+import { generate } from 'mdml-engine/data'
+import { blobs, moons } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { dbscan, kmeans } from 'mdml-engine/methods/cluster'
+import { key } from 'mdml-engine/random'
+import { toArray } from 'mdml-engine/tensor'
+import { Choice, ClusteringPlayer, ControlPanel, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { generate } from 'whitebox-engine/data'
-import { blobs, moons } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { dbscan, kmeans } from 'whitebox-engine/methods/cluster'
-import { key } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
-import { Choice, ClusteringPlayer, ControlPanel, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

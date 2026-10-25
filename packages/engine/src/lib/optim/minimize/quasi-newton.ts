@@ -76,7 +76,7 @@ export interface BfgsState extends VectorState {
  * @concept quasi-newton
  * @example
  * ```ts
- * import { bfgsInverseUpdate } from 'whitebox-engine/optim'
+ * import { bfgsInverseUpdate } from 'mdml-engine/optim'
  * // After the update, H+ y = s (the secant equation).
  * const h = bfgsInverseUpdate(new Float64Array([1, 0, 0, 1]), new Float64Array([1, 0]), new Float64Array([2, 1]))
  * [h[0] * 2 + h[1] * 1, h[2] * 2 + h[3] * 1] // => [1, 0]
@@ -114,8 +114,8 @@ export function bfgsInverseUpdate(h: Float64Array, s: Float64Array, y: Float64Ar
  * @concept quasi-newton
  * @example
  * ```ts
- * import { bfgsAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { bfgsAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * bfgsAlgorithm((x: Value) => sum(square(x)), [1, 2]).name // => 'bfgs'
  * ```
  */
@@ -249,8 +249,8 @@ function bfgsOn(obj: FlatObjective, options: BfgsOptions): Algorithm<BfgsState> 
  * @concept quasi-newton
  * @example
  * ```ts
- * import { bfgs } from 'whitebox-engine/optim'
- * import { add, mul, square, sub, sum, toFlat, type Value } from 'whitebox-engine/tensor'
+ * import { bfgs } from 'mdml-engine/optim'
+ * import { add, mul, square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
  * const r = bfgs((x: Value) => add(sum(square(sub(x, 1))), mul(sum(square(x)), 0.5)), [3, -3])
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [0.666667, 0.666667]
  * ```
@@ -277,7 +277,7 @@ export function bfgs(
  * @concept quasi-newton
  * @example
  * ```ts
- * import { twoLoopRecursion } from 'whitebox-engine/optim'
+ * import { twoLoopRecursion } from 'mdml-engine/optim'
  * // One pair: H y = s.
  * Array.from(twoLoopRecursion([new Float64Array([1, 0])], [new Float64Array([2, 0])], [2, 0])) // => [1, 0]
  * ```
@@ -350,8 +350,8 @@ export interface LbfgsState extends VectorState {
  * @concept quasi-newton
  * @example
  * ```ts
- * import { lbfgsAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { lbfgsAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * lbfgsAlgorithm((x: Value) => sum(square(x)), [1, 2]).name // => 'lbfgs'
  * ```
  */
@@ -478,8 +478,8 @@ function lbfgsOn(obj: FlatObjective, options: LbfgsOptions): Algorithm<LbfgsStat
  * @concept quasi-newton
  * @example
  * ```ts
- * import { lbfgs } from 'whitebox-engine/optim'
- * import { square, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { lbfgs } from 'mdml-engine/optim'
+ * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
  * lbfgs((x: Value) => sum(square(sub(x, 3))), [0, 0, 0]).converged // => true
  * ```
  */

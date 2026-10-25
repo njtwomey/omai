@@ -2,10 +2,10 @@
 
 import numpy as np
 import scipy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
+from mdml_oracle.optim_problems import SMOOTH
 from scipy.optimize import _linesearch as ls  # pyright: ignore[reportPrivateUsage]  (scipy's line searches)
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
-from whitebox_oracle.optim_problems import SMOOTH
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

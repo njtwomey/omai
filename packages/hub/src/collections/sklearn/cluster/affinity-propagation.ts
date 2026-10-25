@@ -3,7 +3,7 @@
  * exemplars, on two-dimensional clustering datasets.
  */
 
-import { affinityPropagation as affinityPropagationMethod } from 'whitebox-engine/methods/cluster'
+import { affinityPropagation as affinityPropagationMethod } from 'mdml-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

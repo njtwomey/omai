@@ -4,7 +4,7 @@
  * the format the Python oracle writes.
  */
 
-import { decodeNumber, encodeNumber, WhiteboxError } from '../base/index.ts'
+import { decodeNumber, encodeNumber, MdmlError } from '../base/index.ts'
 import { cpu } from './cpu.ts'
 import { allocate, type DType } from './dtype.ts'
 import { sizeOf } from './shape.ts'
@@ -38,7 +38,7 @@ function formatNumber(x: number, dtype: DType, precision: number): string {
  * @returns The text.
  * @example
  * ```ts
- * import { formatTensor, tensor } from 'whitebox-engine/tensor'
+ * import { formatTensor, tensor } from 'mdml-engine/tensor'
  * formatTensor(tensor([[1, 2.5], [3, 4]])) // => 'tensor([[1, 2.5], [3, 4]])'
  * ```
  */
@@ -80,12 +80,12 @@ export interface TensorJson {
  * @returns The JSON form.
  * @example
  * ```ts
- * import { tensorToJson, tensor } from 'whitebox-engine/tensor'
+ * import { tensorToJson, tensor } from 'mdml-engine/tensor'
  * tensorToJson(tensor([1, Infinity])).data // => [1, 'inf']
  * ```
  */
 export function tensorToJson(t: Value): TensorJson {
-  if (isTraced(t)) throw new WhiteboxError('not-differentiable', 'tensorToJson needs a concrete tensor')
+  if (isTraced(t)) throw new MdmlError('not-differentiable', 'tensorToJson needs a concrete tensor')
   return { dtype: t.dtype, shape: [...t.shape], data: Array.from(t.data, encodeNumber) }
 }
 
@@ -94,10 +94,10 @@ export function tensorToJson(t: Value): TensorJson {
  *
  * @param json - The JSON form.
  * @returns The tensor.
- * @throws WhiteboxError with code `shape` when the data does not fill the shape.
+ * @throws MdmlError with code `shape` when the data does not fill the shape.
  * @example
  * ```ts
- * import { tensorFromJson, toArray } from 'whitebox-engine/tensor'
+ * import { tensorFromJson, toArray } from 'mdml-engine/tensor'
  * toArray(tensorFromJson({ dtype: 'float64', shape: [2], data: [1, '-inf'] })) // => [1, -Infinity]
  * ```
  */

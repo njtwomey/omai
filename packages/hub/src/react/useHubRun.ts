@@ -5,8 +5,8 @@
  * worker.
  */
 
+import type { Exposition } from 'mdml-engine/exposition'
 import { useEffect, useRef, useState } from 'react'
-import type { Exposition } from 'whitebox-engine/exposition'
 import { catalogue } from '../catalogue/index.ts'
 import type { HubEntry, HubProgress } from '../entry/entry.ts'
 import { type HubState, runDemo } from '../entry/run.ts'

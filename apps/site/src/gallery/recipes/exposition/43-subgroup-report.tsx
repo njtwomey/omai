@@ -1,10 +1,10 @@
+import { germanCredit } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { intersectionalAudit } from 'mdml-engine/methods/fairness'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { toFlat } from 'mdml-engine/tensor'
+import { ControlPanel, NumberField, SubgroupView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { germanCredit } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { intersectionalAudit } from 'whitebox-engine/methods/fairness'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { toFlat } from 'whitebox-engine/tensor'
-import { ControlPanel, NumberField, SubgroupView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

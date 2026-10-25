@@ -3,7 +3,7 @@
  * clustering datasets.
  */
 
-import { histogramDensity } from 'whitebox-engine/methods/mixture'
+import { histogramDensity } from 'mdml-engine/methods/mixture'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

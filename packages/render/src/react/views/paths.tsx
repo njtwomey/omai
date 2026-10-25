@@ -3,8 +3,8 @@
  * with standard-error bands, learning curves, and cost-complexity pruning paths.
  */
 
+import type { CrossValidationCurve, LearningCurve, PruningPath, RegularisationPath } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
-import type { CrossValidationCurve, LearningCurve, PruningPath, RegularisationPath } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import {
   type CrossValidationViewOptions,

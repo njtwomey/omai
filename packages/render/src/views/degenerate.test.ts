@@ -1,6 +1,6 @@
 import * as echarts from 'echarts'
+import { clusteringSteps, regularisationPath } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { clusteringSteps, regularisationPath } from 'whitebox-engine/exposition'
 import { regularisationPathView } from './paths.ts'
 import { clusteringFrames } from './steps.ts'
 

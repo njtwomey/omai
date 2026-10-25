@@ -1,6 +1,6 @@
 """CDC 2000 growth charts: LMS parameters of weight-for-age and stature-for-age, 2 to 20 years (public domain)."""
 
-from whitebox_oracle.vendor import csv_rows, fetch_pinned, render_table
+from mdml_oracle.vendor import csv_rows, fetch_pinned, render_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/growth-charts.data.ts"
 WEIGHT_URL = "https://www.cdc.gov/growthcharts/data/zscore/wtage.csv"

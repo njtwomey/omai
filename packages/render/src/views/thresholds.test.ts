@@ -1,5 +1,5 @@
+import { analyseThresholds } from 'mdml-engine/metrics'
 import { describe, expect, it } from 'vitest'
-import { analyseThresholds } from 'whitebox-engine/metrics'
 import { stillOf, viewFor } from './registry.ts'
 import {
   defaultThreshold,

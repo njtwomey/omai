@@ -5,9 +5,9 @@ from typing import Any, Literal
 
 import numpy as np
 import pywt
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from pywt._extensions._pywt import Wavelet  # pywt re-exports it untyped
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"pywt": pywt.__version__}
 

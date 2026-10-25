@@ -4,7 +4,7 @@
  * and inverses (as scipy.stats), and standardisation to zero mean and unit variance.
  */
 
-import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { chi2 } from '../dists/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import {
@@ -48,7 +48,7 @@ function expm1Ratio(lambda: Value, L: Value): Value {
  * @returns The profile log-likelihood.
  * @example
  * ```ts
- * import { boxcoxLlf } from 'whitebox-engine/stats'
+ * import { boxcoxLlf } from 'mdml-engine/stats'
  * boxcoxLlf(1, [1, 2, 3, 4]) // => -0.446287
  * ```
  */
@@ -59,7 +59,7 @@ export function boxcoxLlf(lambda: number, x: TensorLike): number {
 
 function positive(name: string, x: TensorLike): Float64Array {
   const a = sample(name, x, 2)
-  for (const v of a) if (!(v > 0)) throw new WhiteboxError('domain', `${name}: data must be positive`)
+  for (const v of a) if (!(v > 0)) throw new MdmlError('domain', `${name}: data must be positive`)
   return a
 }
 
@@ -80,7 +80,7 @@ function maximise(d: (lambda: number) => number, llf: (lambda: number) => number
     hi *= 2
   }
   if (Math.sign(d(lo)) === Math.sign(d(hi)))
-    throw new WhiteboxError('convergence', 'normmax: the log-likelihood has no interior maximum')
+    throw new MdmlError('convergence', 'normmax: the log-likelihood has no interior maximum')
   return maximiseSmooth(llf, d, lo, hi)
 }
 
@@ -92,7 +92,7 @@ function maximise(d: (lambda: number) => number, llf: (lambda: number) => number
  * @returns The lambda maximising the log-likelihood.
  * @example
  * ```ts
- * import { boxcoxNormmax } from 'whitebox-engine/stats'
+ * import { boxcoxNormmax } from 'mdml-engine/stats'
  * boxcoxNormmax([1, 2, 4, 8, 16]) // => 0
  * ```
  */
@@ -131,7 +131,7 @@ export interface PowerTransformResult {
  * @returns The transformed data and lambda.
  * @example
  * ```ts
- * import { boxcox } from 'whitebox-engine/stats'
+ * import { boxcox } from 'mdml-engine/stats'
  * boxcox([1, 4, 9], { lambda: 0.5 }).transformed // => [0, 2, 4]
  * ```
  */
@@ -167,7 +167,7 @@ function profileInterval(llf: (l: number) => number, at: number, level: number):
  * @returns The original values.
  * @example
  * ```ts
- * import { invBoxcox } from 'whitebox-engine/stats'
+ * import { invBoxcox } from 'mdml-engine/stats'
  * invBoxcox([0, 2, 4], 0.5) // => [1, 4, 9]
  * ```
  */
@@ -198,7 +198,7 @@ function llfYeo(a: Float64Array, lambda: number): number {
  * @returns The profile log-likelihood.
  * @example
  * ```ts
- * import { yeojohnsonLlf } from 'whitebox-engine/stats'
+ * import { yeojohnsonLlf } from 'mdml-engine/stats'
  * yeojohnsonLlf(1, [-1, 0, 1]) // => 0.608198
  * ```
  */
@@ -213,7 +213,7 @@ export function yeojohnsonLlf(lambda: number, x: TensorLike): number {
  * @returns The lambda maximising the log-likelihood.
  * @example
  * ```ts
- * import { yeojohnsonNormmax } from 'whitebox-engine/stats'
+ * import { yeojohnsonNormmax } from 'mdml-engine/stats'
  * Math.abs(yeojohnsonNormmax([-2, -1, 0, 1, 2]) - 1) < 1e-8 // => true
  * ```
  */
@@ -245,7 +245,7 @@ export function yeojohnsonNormmax(x: TensorLike): number {
  * @returns The transformed data and lambda.
  * @example
  * ```ts
- * import { yeojohnson } from 'whitebox-engine/stats'
+ * import { yeojohnson } from 'mdml-engine/stats'
  * yeojohnson([-1, 0, 3], { lambda: 1 }).transformed // => [-1, 0, 3]
  * ```
  */
@@ -268,7 +268,7 @@ export function yeojohnson(
  * @returns The original values.
  * @example
  * ```ts
- * import { invYeojohnson, yeojohnson } from 'whitebox-engine/stats'
+ * import { invYeojohnson, yeojohnson } from 'mdml-engine/stats'
  * invYeojohnson(yeojohnson([-1.5, 0, 2], { lambda: 0.4 }).transformed, 0.4) // => [-1.5, 0, 2]
  * ```
  */
@@ -291,7 +291,7 @@ export function invYeojohnson(y: TensorLike, lambda: number): Tensor {
  * @returns The standardised data, with the means and scales used.
  * @example
  * ```ts
- * import { standardise } from 'whitebox-engine/stats'
+ * import { standardise } from 'mdml-engine/stats'
  * standardise([[1, 10], [3, 30]]).transformed // => [[-1, -1], [1, 1]]
  * ```
  */

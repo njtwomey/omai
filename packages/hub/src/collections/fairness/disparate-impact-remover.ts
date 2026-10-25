@@ -3,9 +3,9 @@
  * same in every group, on tabular data with a protected attribute.
  */
 
-import type { Exposition } from 'whitebox-engine/exposition'
-import { fairnessAudit, disparateImpactRemover as repair } from 'whitebox-engine/methods/fairness'
-import { dict, real } from 'whitebox-engine/space'
+import type { Exposition } from 'mdml-engine/exposition'
+import { fairnessAudit, disparateImpactRemover as repair } from 'mdml-engine/methods/fairness'
+import { dict, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fairnessDataOf, fitClassifier } from './_shared.ts'
 

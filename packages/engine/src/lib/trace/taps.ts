@@ -25,8 +25,8 @@ export interface TapContext {
  * @concept tracing
  * @example
  * ```ts
- * import { tapContext } from 'whitebox-engine/trace'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { tapContext } from 'mdml-engine/trace'
+ * import { tensor } from 'mdml-engine/tensor'
  * const taps = tapContext()
  * taps.tap('h', tensor([1, 2]))
  * [...taps.entries.keys()] // => ['h']
@@ -56,8 +56,8 @@ export function tapContext(enabled = true): TapContext {
  * @concept tracing
  * @example
  * ```ts
- * import { policies, recorder, startRun, tapsFor } from 'whitebox-engine/trace'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { policies, recorder, startRun, tapsFor } from 'mdml-engine/trace'
+ * import { tensor } from 'mdml-engine/tensor'
  * const rec = recorder()
  * const run = startRun(rec, { name: 'net', seed: 0, config: {}, policy: policies.debug })
  * tapsFor(run, 0).tap('h', tensor([1, 2]))

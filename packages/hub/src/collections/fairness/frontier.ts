@@ -3,9 +3,9 @@
  * it, on tabular data with a protected attribute.
  */
 
-import type { ReductionConstraint } from 'whitebox-engine/fairness'
-import { fairnessFrontier } from 'whitebox-engine/methods/fairness'
-import { choice, dict } from 'whitebox-engine/space'
+import type { ReductionConstraint } from 'mdml-engine/fairness'
+import { fairnessFrontier } from 'mdml-engine/methods/fairness'
+import { choice, dict } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fairnessDataOf } from './_shared.ts'
 

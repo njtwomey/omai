@@ -26,7 +26,7 @@ export interface Heap<T> {
  * @returns The heap.
  * @example
  * ```ts
- * import { heap } from 'whitebox-engine/base'
+ * import { heap } from 'mdml-engine/base'
  * const h = heap((a: number, b: number) => a - b, [5, 1, 3])
  * h.pop() // => 1
  * ```

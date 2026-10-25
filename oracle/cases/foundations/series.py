@@ -7,8 +7,8 @@ import numpy as np
 import numpy.typing as npt
 import scipy
 import sympy
+from mdml_oracle.fixture import Case, case
 from scipy.optimize import minimize_scalar
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__, "sympy": sympy.__version__}
 

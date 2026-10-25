@@ -3,7 +3,7 @@
  * and one-dimensional regression curves.
  */
 
-import { ridgeCV } from 'whitebox-engine/methods/linear'
+import { ridgeCV } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

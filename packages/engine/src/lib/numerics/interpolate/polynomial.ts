@@ -4,7 +4,7 @@
  * avoid the Runge phenomenon, Lebesgue constants, and Runge's function itself.
  */
 
-import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -44,8 +44,8 @@ export interface Barycentric {
  * @concept polynomial-interpolation
  * @example
  * ```ts
- * import { barycentric } from 'whitebox-engine/numerics/interpolate'
- * import { item } from 'whitebox-engine/tensor'
+ * import { barycentric } from 'mdml-engine/numerics/interpolate'
+ * import { item } from 'mdml-engine/tensor'
  * item(barycentric([0, 1, 2], [1, 3, 7]).evaluate(1.5)) // => 4.75
  * ```
  */
@@ -53,7 +53,7 @@ export function barycentric(x: TensorLike, y: TensorLike, weights?: readonly num
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, 'barycentric'))
   const [yv] = promoteFloat(y) as [Value]
   const n = xs.length
-  if (yv.shape[0] !== n) throw new WhiteboxError('shape', 'barycentric: x and y must have the same length')
+  if (yv.shape[0] !== n) throw new MdmlError('shape', 'barycentric: x and y must have the same length')
   let w = weights === undefined ? barycentricWeights(xs) : [...weights]
   const scale = maxOf(w.map(Math.abs))
   w = w.map((v) => v / scale)
@@ -99,7 +99,7 @@ export function barycentricWeights(x: readonly number[]): number[] {
   return x.map((xj, j) => {
     let p = 1
     for (let k = 0; k < n; k++) if (k !== j) p *= (xj - (x[k] ?? 0)) / c
-    if (p === 0) throw new WhiteboxError('value', 'barycentricWeights: nodes must be distinct')
+    if (p === 0) throw new MdmlError('value', 'barycentricWeights: nodes must be distinct')
     return 1 / p
   })
 }
@@ -113,7 +113,7 @@ export function barycentricWeights(x: readonly number[]): number[] {
  * @returns Coefficients, highest power first.
  * @example
  * ```ts
- * import { lagrange } from 'whitebox-engine/numerics/interpolate'
+ * import { lagrange } from 'mdml-engine/numerics/interpolate'
  * lagrange([0, 1, 2], [1, 3, 7]) // => [1, 1, 1]
  * ```
  */
@@ -150,7 +150,7 @@ export function lagrange(x: readonly number[], y: readonly number[]): number[] {
  * @returns The nodes.
  * @example
  * ```ts
- * import { chebyshevNodes } from 'whitebox-engine/numerics/interpolate'
+ * import { chebyshevNodes } from 'mdml-engine/numerics/interpolate'
  * chebyshevNodes(3).map((v) => Math.round(v * 1e12) / 1e12) // => [-1, 0, 1]
  * ```
  */
@@ -178,8 +178,8 @@ export function equispacedNodes(n: number, interval: readonly [number, number] =
  * @returns The interpolant.
  * @example
  * ```ts
- * import { chebyshevInterpolant } from 'whitebox-engine/numerics/interpolate'
- * import { exp, item } from 'whitebox-engine/tensor'
+ * import { chebyshevInterpolant } from 'mdml-engine/numerics/interpolate'
+ * import { exp, item } from 'mdml-engine/tensor'
  * Math.abs(item(chebyshevInterpolant((x) => exp(x), 16).evaluate(0.3)) - Math.exp(0.3)) < 1e-14 // => true
  * ```
  */
@@ -203,7 +203,7 @@ export function chebyshevInterpolant(
  * @returns The estimate.
  * @example
  * ```ts
- * import { chebyshevNodes, lebesgueConstant } from 'whitebox-engine/numerics/interpolate'
+ * import { chebyshevNodes, lebesgueConstant } from 'mdml-engine/numerics/interpolate'
  * lebesgueConstant(chebyshevNodes(10)) < 2.5 // => true
  * ```
  */
@@ -238,8 +238,8 @@ export function lebesgueConstant(nodes: readonly number[], samples = 2000): numb
  * @returns Values.
  * @example
  * ```ts
- * import { runge } from 'whitebox-engine/numerics/interpolate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { runge } from 'mdml-engine/numerics/interpolate'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(runge([0, 0.2])) // => [1, 0.5]
  * ```
  */

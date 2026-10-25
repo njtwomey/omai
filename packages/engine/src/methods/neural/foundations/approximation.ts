@@ -4,7 +4,7 @@
  * individual units.
  */
 
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import { type Explained, type Exposition, learningCurve } from '../../../lib/exposition/index.ts'
 import type { FitOptions, LearnData } from '../../../lib/learn/index.ts'
 import type { ActivationName, Params } from '../../../lib/nn/index.ts'
@@ -55,7 +55,7 @@ export function universalApproximation(
   fit: FitOptions = {},
 ): Explained<{ readonly results: readonly ApproximationResult[] }> {
   const widths = options.widths ?? [1, 2, 4, 8, 16, 32]
-  if (widths.length === 0) throw new WhiteboxError('value', 'universalApproximation: needs at least one width')
+  if (widths.length === 0) throw new MdmlError('value', 'universalApproximation: needs at least one width')
   const key = fit.key ?? makeKey(0)
   const task = taskOf(data, false, {
     who: 'universalApproximation',
@@ -63,7 +63,7 @@ export function universalApproximation(
     holdOut: options.validationFraction ?? 0.25,
   })
   const d = task.x.shape[1] ?? 0
-  if (d !== 1) throw new WhiteboxError('shape', `universalApproximation: needs one feature, got ${d}`)
+  if (d !== 1) throw new MdmlError('shape', `universalApproximation: needs one feature, got ${d}`)
   const surfaces: Exposition[] = []
   const results: ApproximationResult[] = []
   let widest: { net: ReturnType<typeof buildMlp>; params: Params; width: number } | undefined

@@ -39,7 +39,7 @@ import {
 export type ReweighingCell = Omit<CoreCell, 'group'> & { readonly group: string }
 
 /**
- * Reweighing (`reweighingWeights` of `whitebox-engine/fairness`) on a dataset with a protected attribute: groups
+ * Reweighing (`reweighingWeights` of `mdml-engine/fairness`) on a dataset with a protected attribute: groups
  * whose good outcomes are rare get those outcomes weighted up. Exposition: a `coefficientTable` of the weights per group and label.
  *
  * @param data - Labelled data holding the protected attribute.
@@ -117,7 +117,7 @@ export interface DisparateImpactRemoverOptions {
 }
 
 /**
- * Disparate-impact removal (`repairFeatures` of `whitebox-engine/fairness`, Feldman et al.) on a dataset with a
+ * Disparate-impact removal (`repairFeatures` of `mdml-engine/fairness`, Feldman et al.) on a dataset with a
  * protected attribute: every feature but the protected one moves towards a distribution shared by the groups, keeping
  * ranks within groups, by `repairLevel`. A classifier fitted on fully repaired features cannot tell the groups apart from any single feature. Exposition: a
  * `curves` record of each group's distribution (empirical CDF) of the most group-dependent feature before and after.
@@ -125,7 +125,7 @@ export interface DisparateImpactRemoverOptions {
  * @param data - Data holding the protected attribute as a column, or with labels given in `sensitive`.
  * @param options - The attribute and the repair level (default 1).
  * @returns The repaired data, with the record.
- * @throws WhiteboxError `value` for a repair level outside [0, 1].
+ * @throws MdmlError `value` for a repair level outside [0, 1].
  */
 export function disparateImpactRemover(
   data: FairnessData,
@@ -191,7 +191,7 @@ export interface MitigatedFit {
 }
 
 /**
- * Massaging (`massageLabels` of `whitebox-engine/fairness`, Kamiran and Calders) on a dataset: a logistic regression
+ * Massaging (`massageLabels` of `mdml-engine/fairness`, Kamiran and Calders) on a dataset: a logistic regression
  * ranks the rows, the fewest labels that equalise the groups' label rates are swapped (the unprivileged negatives
  * ranked highest promoted, the privileged positives ranked lowest demoted), and a classifier is fitted to the massaged
  * labels. Exposition: the group reports of the classifier fitted to the original labels and to the massaged ones.
@@ -219,7 +219,7 @@ export function massaging(
 }
 
 /**
- * Preferential sampling (`preferentialSample` of `whitebox-engine/fairness`, Kamiran and Calders) on a dataset: every
+ * Preferential sampling (`preferentialSample` of `mdml-engine/fairness`, Kamiran and Calders) on a dataset: every
  * group-and-label cell is resampled to its size under independence, removing or duplicating the rows a logistic
  * regression ranks nearest the boundary, and a classifier is fitted to the resample. Exposition: the group reports
  * before and after, and a `coefficientTable` of each cell's size before and after.
@@ -258,7 +258,7 @@ export function preferentialSampling(
 export interface OptimisedPreprocessingOptions extends MitigationOptions, LabelMappingOptions {}
 
 /**
- * Optimised pre-processing of the labels (`optimisedLabelMapping` of `whitebox-engine/fairness`, after Calmon et al.)
+ * Optimised pre-processing of the labels (`optimisedLabelMapping` of `mdml-engine/fairness`, after Calmon et al.)
  * on a dataset: the randomised relabelling that changes the fewest labels while bringing every group's positive rate
  * within epsilon of a shared rate, labels drawn from it with the key, and a classifier fitted to them. Exposition: the
  * group reports before and after.
@@ -292,7 +292,7 @@ export function optimisedPreprocessing(
 export interface FairRepresentationMethodOptions extends MitigationOptions, Omit<FairRepresentationOptions, 'key'> {}
 
 /**
- * Learning fair representations (`learnFairRepresentation` of `whitebox-engine/fairness`, Zemel et al.) on a dataset:
+ * Learning fair representations (`learnFairRepresentation` of `mdml-engine/fairness`, Zemel et al.) on a dataset:
  * the features (standardised) are mapped to memberships of prototypes that reconstruct them, predict the label and are
  * shared alike by the groups; the prototypes' labels decide. Exposition: the group reports of a logistic regression on
  * the features and of the representation's predictions.

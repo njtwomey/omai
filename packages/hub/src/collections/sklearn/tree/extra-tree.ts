@@ -3,7 +3,7 @@
  * two-dimensional and tabular classification and regression data.
  */
 
-import { extraTreeClassifier, extraTreeRegressor } from 'whitebox-engine/methods/trees'
+import { extraTreeClassifier, extraTreeRegressor } from 'mdml-engine/methods/trees'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'
 

@@ -13,7 +13,7 @@
  * @returns The dot product.
  * @example
  * ```ts
- * import { ddot } from 'whitebox-engine/numerics/linalg'
+ * import { ddot } from 'mdml-engine/numerics/linalg'
  * ddot([1, 2, 3], [4, 5, 6]) // => 32
  * ```
  */
@@ -31,7 +31,7 @@ export function ddot(x: ArrayLike<number>, y: ArrayLike<number>): number {
  * @returns The index.
  * @example
  * ```ts
- * import { idamax } from 'whitebox-engine/numerics/linalg'
+ * import { idamax } from 'mdml-engine/numerics/linalg'
  * idamax([1, -3, 2]) // => 1
  * ```
  */
@@ -56,7 +56,7 @@ export function idamax(x: ArrayLike<number>): number {
  * @returns The sum.
  * @example
  * ```ts
- * import { dasum } from 'whitebox-engine/numerics/linalg'
+ * import { dasum } from 'mdml-engine/numerics/linalg'
  * dasum([1, -3, 2]) // => 6
  * ```
  */
@@ -73,7 +73,7 @@ export function dasum(x: ArrayLike<number>): number {
  * @returns |x|.
  * @example
  * ```ts
- * import { dnrm2 } from 'whitebox-engine/numerics/linalg'
+ * import { dnrm2 } from 'mdml-engine/numerics/linalg'
  * dnrm2([3e200, 4e200]) // => 5e200
  * ```
  */
@@ -100,7 +100,7 @@ export function dnrm2(x: ArrayLike<number>): number {
  * @returns y + alpha x.
  * @example
  * ```ts
- * import { daxpy } from 'whitebox-engine/numerics/linalg'
+ * import { daxpy } from 'mdml-engine/numerics/linalg'
  * Array.from(daxpy(2, [1, 1], [1, 2])) // => [3, 4]
  * ```
  */
@@ -118,7 +118,7 @@ export function daxpy(alpha: number, x: ArrayLike<number>, y: ArrayLike<number>)
  * @returns alpha x.
  * @example
  * ```ts
- * import { dscal } from 'whitebox-engine/numerics/linalg'
+ * import { dscal } from 'mdml-engine/numerics/linalg'
  * Array.from(dscal(0.5, [2, 4])) // => [1, 2]
  * ```
  */
@@ -139,7 +139,7 @@ export function dscal(alpha: number, x: ArrayLike<number>): Float64Array {
  * @returns The product.
  * @example
  * ```ts
- * import { dgemv } from 'whitebox-engine/numerics/linalg'
+ * import { dgemv } from 'mdml-engine/numerics/linalg'
  * Array.from(dgemv([1, 2, 3, 4], 2, 2, [1, 1], true)) // => [4, 6]
  * ```
  */

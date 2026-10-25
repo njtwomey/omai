@@ -64,8 +64,8 @@ export interface InfoNceOptions {
  * @concept contrastive-learning
  * @example
  * ```ts
- * import { infoNce } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { infoNce } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(infoNce([[1, 0], [0, 1]], [[1, 0], [0, 1]], { temperature: 1 })) - Math.log(1 + Math.exp(-1))) < 1e-15 // => true
  * ```
  */
@@ -102,8 +102,8 @@ export function infoNce(query: TensorLike, positive: TensorLike, options: InfoNc
  * @returns The scalar loss, differentiable in the embeddings.
  * @example
  * ```ts
- * import { ntXent } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { ntXent } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * const loss = ntXent([[1, 0], [1, 0], [0, 1], [0, 1]], [0, 0, 1, 1], { temperature: 1 })
  * Math.abs(item(loss) - Math.log(1 + 2 * Math.exp(-1))) < 1e-15 // => true
  * ```
@@ -138,8 +138,8 @@ export function ntXent(
  * @returns The loss, differentiable away from the hinge.
  * @example
  * ```ts
- * import { tripletMargin } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { tripletMargin } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(tripletMargin([[0, 0]], [[3, 4]], [[0, 1]], { eps: 0 })) // => 5
  * ```
  */
@@ -174,8 +174,8 @@ export function tripletMargin(
  * @returns The loss, differentiable (away from coincident dissimilar pairs).
  * @example
  * ```ts
- * import { contrastive } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { contrastive } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(contrastive([[0, 0], [0, 0]], [[0, 2], [0, 0.5]], [1, 0], { reduction: 'sum' })) // => 2.125
  * ```
  */
@@ -203,8 +203,8 @@ export function contrastive(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { cosineEmbedding } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { cosineEmbedding } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(cosineEmbedding([[1, 0]], [[0, 1]], [1])) // => 1
  * ```
  */
@@ -230,8 +230,8 @@ export function cosineEmbedding(
  * @returns The loss, differentiable away from the hinge.
  * @example
  * ```ts
- * import { hingeEmbedding } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { hingeEmbedding } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(hingeEmbedding([0.25, 2], [-1, 1], { reduction: 'sum' })) // => 2.75
  * ```
  */
@@ -255,8 +255,8 @@ export function hingeEmbedding(
  * @returns The scalar loss, differentiable in the features.
  * @example
  * ```ts
- * import { supervisedContrastive } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { supervisedContrastive } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * const loss = supervisedContrastive([[1, 0], [1, 0], [0, 1]], [0, 0, 1], { temperature: 1, baseTemperature: 1 })
  * Math.abs(item(loss) - Math.log(1 + Math.exp(-1))) < 1e-15 // => true
  * ```
@@ -294,8 +294,8 @@ export function supervisedContrastive(
  * @returns The scalar loss, differentiable in both embeddings (and in a traced logit scale).
  * @example
  * ```ts
- * import { clipLoss } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { clipLoss } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * const loss = clipLoss([[1, 0], [0, 1]], [[1, 0], [0, 1]], { logitScale: 1 })
  * Math.abs(item(loss) - Math.log(1 + Math.exp(-1))) < 1e-15 // => true
  * ```
@@ -345,8 +345,8 @@ const targetMask = (labels: TensorLike, c: number): Value => oneHot(asTensor(lab
  * @returns Logits `[N, C]` for a softmax cross-entropy, differentiable.
  * @example
  * ```ts
- * import { arcFaceLogits } from 'whitebox-engine/losses'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { arcFaceLogits } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(arcFaceLogits([[1, 0]], [[1, 0], [0, 1]], [1], { scale: 1, margin: 0 })) // => [[1, 0]]
  * ```
  */
@@ -380,8 +380,8 @@ export function arcFaceLogits(
  * @returns Logits `[N, C]`, differentiable.
  * @example
  * ```ts
- * import { cosFaceLogits } from 'whitebox-engine/losses'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { cosFaceLogits } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(cosFaceLogits([[1, 0]], [[1, 0], [0, 1]], [0], { scale: 2, margin: 0.25 })) // => [[1.5, 0]]
  * ```
  */
@@ -406,8 +406,8 @@ export function cosFaceLogits(
  * @returns The loss, differentiable in embeddings and centres.
  * @example
  * ```ts
- * import { arcFace } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { arcFace } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(arcFace([[1, 0]], [[1, 0], [-1, 0]], [0], { scale: 1, margin: 0 })) - Math.log(1 + Math.exp(-2))) < 1e-15 // => true
  * ```
  */
@@ -432,8 +432,8 @@ export function arcFace(
  * @returns The loss, differentiable in embeddings and centres.
  * @example
  * ```ts
- * import { cosFace } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { cosFace } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(cosFace([[1, 0]], [[1, 0], [-1, 0]], [0], { scale: 1, margin: 0 })) - Math.log(1 + Math.exp(-2))) < 1e-15 // => true
  * ```
  */

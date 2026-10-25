@@ -4,7 +4,7 @@
  * function or to zeros, poles and gain, and from a transfer function to sections.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { convolve } from '../numerics/convolution/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import type { ComplexArray } from '../numerics/polynomial/index.ts'
@@ -35,7 +35,7 @@ function cplxreal(zs: readonly ComplexNumber[]): ComplexNumber[] {
   const rest = sorted.filter((z) => Math.abs(z.im) > tol * Math.hypot(z.re, z.im))
   const pos = rest.filter((z) => z.im > 0)
   const neg = rest.filter((z) => z.im < 0)
-  if (pos.length !== neg.length) throw new WhiteboxError('value', 'zpk2sos: a complex value has no conjugate')
+  if (pos.length !== neg.length) throw new MdmlError('value', 'zpk2sos: a complex value has no conjugate')
   // Within runs of (nearly) equal real parts, order by the size of the imaginary part.
   const byRuns = (xs: ComplexNumber[]): ComplexNumber[] => {
     const out: ComplexNumber[] = []
@@ -56,7 +56,7 @@ function cplxreal(zs: readonly ComplexNumber[]): ComplexNumber[] {
   const paired = p.map((z, i) => {
     const w = n[i] as ComplexNumber
     if (Math.hypot(z.re - w.re, z.im + w.im) > tol * Math.hypot(w.re, w.im)) {
-      throw new WhiteboxError('value', 'zpk2sos: a complex value has no conjugate')
+      throw new MdmlError('value', 'zpk2sos: a complex value has no conjugate')
     }
     return C.of((z.re + w.re) / 2, (z.im - w.im) / 2)
   })
@@ -68,7 +68,7 @@ function nearest(from: readonly ComplexNumber[], to: ComplexNumber, which: 'real
   const ok = order.filter((i) => which === 'any' || isReal(from[i] as ComplexNumber) === (which === 'real'))
   const found = ok[0]
   // As scipy: minimal analog pairing cannot finish a first-order section when only complex zeros remain.
-  if (found === undefined) throw new WhiteboxError('value', `zpk2sos: no ${which} zero remains to pair with a pole`)
+  if (found === undefined) throw new MdmlError('value', `zpk2sos: no ${which} zero remains to pair with a pole`)
   return found
 }
 
@@ -105,12 +105,12 @@ const take = (xs: ComplexNumber[], i: number): ComplexNumber => xs.splice(i, 1)[
  * then advanced in time. {@link toSos} pairs such systems minimally. Where scipy fails (minimal pairing with only
  * complex zeros left for a real pole or a real zero), the real values get a section without them.
  *
- * @throws WhiteboxError with code `value` for an unpaired complex value or an invalid pairing.
+ * @throws MdmlError with code `value` for an unpaired complex value or an invalid pairing.
  * @concept second-order-sections
  * @example
  * ```ts
- * import { zpk2sos } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { zpk2sos } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(zpk2sos([-1], [0.5], 2)) // => [[2, 2, 0, 1, -0.5, 0]]
  * ```
  */
@@ -123,7 +123,7 @@ export function zpk2sos(
   const analog = options.analog ?? false
   const pairing = options.pairing ?? (analog ? 'minimal' : 'nearest')
   if (analog && pairing !== 'minimal') {
-    throw new WhiteboxError('value', "zpk2sos: analog conversion needs pairing 'minimal'")
+    throw new MdmlError('value', "zpk2sos: analog conversion needs pairing 'minimal'")
   }
   let z = toList(asComplexArray(zeros))
   let p = toList(asComplexArray(poles))
@@ -138,7 +138,7 @@ export function zpk2sos(
       z.push(C.of(0))
     }
   } else {
-    if (p.length < z.length) throw new WhiteboxError('value', 'zpk2sos: minimal pairing needs at least as many poles')
+    if (p.length < z.length) throw new MdmlError('value', 'zpk2sos: minimal pairing needs at least as many poles')
     nSections = Math.floor((p.length + 1) / 2)
   }
   z = cplxreal(z)
@@ -202,8 +202,7 @@ export function zpk2sos(
 }
 
 function checkSections(sos: Value, name: string): number {
-  if (sos.shape.length !== 2 || sos.shape[1] !== 6)
-    throw new WhiteboxError('shape', `${name}: expected [n, 6] sections`)
+  if (sos.shape.length !== 2 || sos.shape[1] !== 6) throw new MdmlError('shape', `${name}: expected [n, 6] sections`)
   return sos.shape[0] ?? 0
 }
 
@@ -215,8 +214,8 @@ function checkSections(sos: Value, name: string): number {
  * @returns The numerator and denominator (each of length 2n + 1).
  * @example
  * ```ts
- * import { sos2tf } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sos2tf } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sos2tf([[1, 1, 0, 1, -0.5, 0], [1, 0, 0, 1, 0, 0.25]]).den) // => [1, -0.5, 0.25, -0.125, 0]
  * ```
  */
@@ -244,7 +243,7 @@ export function sos2tf(sos: TensorLike): Polynomials {
  * @returns Zeros, poles and gain.
  * @example
  * ```ts
- * import { sos2zpk } from 'whitebox-engine/systems'
+ * import { sos2zpk } from 'mdml-engine/systems'
  * sos2zpk([[2, 2, 0, 1, -0.5, 0]]).poles.re // => [0, 0.5]
  * ```
  */
@@ -284,8 +283,8 @@ export function sos2zpk(sos: TensorLike, options: { readonly pad?: boolean } = {
  * @returns The sections `[n, 6]`.
  * @example
  * ```ts
- * import { tf2sos } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { tf2sos } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(tf2sos([2, 2], [1, -0.5])) // => [[2, 2, 0, 1, -0.5, 0]]
  * ```
  */

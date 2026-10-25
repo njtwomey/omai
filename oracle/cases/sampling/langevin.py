@@ -8,8 +8,8 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 from blackjax.vi import svgd
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 jax.config.update("jax_enable_x64", True)
 

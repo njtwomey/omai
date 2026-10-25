@@ -5,7 +5,7 @@
  * characteristic polynomials, small eigenproblems and diagonalisation, quadratic forms, and the geometry of the SVD.
  */
 
-import { maxOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { eigh, eigvals, eigvalsh, lstsq, nullSpace, pinv, svd } from '../numerics/linalg/index.ts'
 import {
   arrow,
@@ -27,13 +27,13 @@ type Matrix = number[][]
 
 function matrix(a: TensorLike, name: string): Matrix {
   const [v] = promoteFloat(a) as [Value]
-  if (v.shape.length !== 2) throw new WhiteboxError('shape', `${name}: expected a matrix [m, n]`)
+  if (v.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a matrix [m, n]`)
   return toArray(v) as Matrix
 }
 
 function square(a: TensorLike, name: string): Matrix {
   const m = matrix(a, name)
-  if (m.some((row) => row.length !== m.length)) throw new WhiteboxError('shape', `${name}: expected a square matrix`)
+  if (m.some((row) => row.length !== m.length)) throw new MdmlError('shape', `${name}: expected a square matrix`)
   return m
 }
 
@@ -156,7 +156,7 @@ export interface Elimination {
  * @concept gaussian-elimination
  * @example
  * ```ts
- * import { rowEchelon } from 'whitebox-engine/foundations'
+ * import { rowEchelon } from 'mdml-engine/foundations'
  * const e = rowEchelon([[1, 2], [3, 4]], { pivoting: 'first' })
  * e.matrix // => [[1, 2], [0, -2]]
  * e.steps[0].description // => 'R2 <- R2 - 3 R1'
@@ -177,7 +177,7 @@ export function rowEchelon(a: TensorLike, options: EliminationOptions = {}): Eli
  * @concept reduced-row-echelon-form
  * @example
  * ```ts
- * import { rref } from 'whitebox-engine/foundations'
+ * import { rref } from 'mdml-engine/foundations'
  * rref([[1, 2, 3], [2, 4, 7]]).matrix // => [[1, 2, 0], [0, 0, 1]]
  * rref([[1, 2, 3], [2, 4, 7]]).pivotColumns // => [0, 2]
  * ```
@@ -212,7 +212,7 @@ export interface LinearSystemSolution {
  * @concept linear-systems
  * @example
  * ```ts
- * import { solveByElimination } from 'whitebox-engine/foundations'
+ * import { solveByElimination } from 'mdml-engine/foundations'
  * const s = solveByElimination([[1, 1, 1], [0, 1, 2]], [6, 5])
  * s.particular // => [1, 5, 0]
  * s.nullSpace // => [[1, -2, 1]]
@@ -225,7 +225,7 @@ export function solveByElimination(
 ): LinearSystemSolution {
   const am = matrix(a, 'solveByElimination')
   const bv = toFlat(promoteFloat(b)[0] as Value)
-  if (bv.length !== am.length) throw new WhiteboxError('shape', 'solveByElimination: b needs one entry per row of A')
+  if (bv.length !== am.length) throw new MdmlError('shape', 'solveByElimination: b needs one entry per row of A')
   const n = am[0]?.length ?? 0
   const augmented = am.map((row, i) => [...row, bv[i] ?? 0])
   const { m, pivots, steps } = eliminate(augmented, true, options, n + 1)
@@ -261,7 +261,7 @@ export interface LuSteps {
  * @concept lu-decomposition
  * @example
  * ```ts
- * import { luSteps } from 'whitebox-engine/foundations'
+ * import { luSteps } from 'mdml-engine/foundations'
  * const f = luSteps([[1, 2], [3, 4]])
  * f.u // => [[3, 4], [0, 0.6666666666666667]]
  * f.l // => [[1, 0], [0.3333333333333333, 1]]
@@ -319,17 +319,17 @@ export interface CofactorTerm {
  *
  * @param a - A square matrix `[n, n]`.
  * @returns The determinant and the first-row terms.
- * @throws WhiteboxError with code `value` for n > 9.
+ * @throws MdmlError with code `value` for n > 9.
  * @concept determinant
  * @example
  * ```ts
- * import { detByCofactors } from 'whitebox-engine/foundations'
+ * import { detByCofactors } from 'mdml-engine/foundations'
  * detByCofactors([[2, 0, 1], [1, 3, 2], [1, 1, 2]]).value // => 6
  * ```
  */
 export function detByCofactors(a: TensorLike): { readonly value: number; readonly terms: CofactorTerm[] } {
   const am = square(a, 'detByCofactors')
-  if (am.length > 9) throw new WhiteboxError('value', 'detByCofactors: n! work; use detByElimination beyond 9 x 9')
+  if (am.length > 9) throw new MdmlError('value', 'detByCofactors: n! work; use detByElimination beyond 9 x 9')
   const det = (m: Matrix): number => {
     const n = m.length
     if (n === 0) return 1
@@ -367,7 +367,7 @@ function minorOf(m: Matrix, row: number, col: number): Matrix {
  * @concept determinant
  * @example
  * ```ts
- * import { detByElimination } from 'whitebox-engine/foundations'
+ * import { detByElimination } from 'mdml-engine/foundations'
  * const d = detByElimination([[0, 1], [2, 3]])
  * d.value // => -2
  * d.swaps // => 1
@@ -413,7 +413,7 @@ export interface FundamentalSubspaces {
  * @concept fundamental-subspaces
  * @example
  * ```ts
- * import { fundamentalSubspaces } from 'whitebox-engine/foundations'
+ * import { fundamentalSubspaces } from 'mdml-engine/foundations'
  * const s = fundamentalSubspaces([[1, 2], [2, 4]])
  * s.rank // => 1
  * s.nullSpace // => [[-2, 1]]
@@ -453,7 +453,7 @@ export function fundamentalSubspaces(a: TensorLike, options: EliminationOptions 
  * @concept basis
  * @example
  * ```ts
- * import { basisFromVectors } from 'whitebox-engine/foundations'
+ * import { basisFromVectors } from 'mdml-engine/foundations'
  * basisFromVectors([[1, 0, 1], [2, 0, 2], [0, 1, 0]]).indices // => [0, 2]
  * ```
  */
@@ -477,8 +477,8 @@ export function basisFromVectors(
  * @concept orthogonal-projection
  * @example
  * ```ts
- * import { projectionMatrix } from 'whitebox-engine/foundations'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectionMatrix } from 'mdml-engine/foundations'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectionMatrix([[1], [1]])).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[0.5, 0.5], [0.5, 0.5]]
  * ```
  */
@@ -514,7 +514,7 @@ export interface LeastSquaresProjection {
  * @concept least-squares
  * @example
  * ```ts
- * import { leastSquaresProjection } from 'whitebox-engine/foundations'
+ * import { leastSquaresProjection } from 'mdml-engine/foundations'
  * // The best line through (0, 0), (1, 1), (2, 1).
  * leastSquaresProjection([[1, 0], [1, 1], [1, 2]], [0, 1, 1]).x.map((v) => Math.round(v * 1e12) / 1e12) // => [0.166666666667, 0.5]
  * ```
@@ -561,11 +561,11 @@ export interface GridTransformation {
  * @param m - A 2x2 or 3x3 matrix.
  * @param options - Half-width of the grid (default 2) and lines per direction (default 5).
  * @returns The grid before and after, basis images, unit cell and determinant.
- * @throws WhiteboxError with code `shape` for other sizes.
+ * @throws MdmlError with code `shape` for other sizes.
  * @concept linear-transformations
  * @example
  * ```ts
- * import { gridTransformation } from 'whitebox-engine/foundations'
+ * import { gridTransformation } from 'mdml-engine/foundations'
  * const g = gridTransformation([[1, 1], [0, 1]])
  * g.basisImages // => [[1, 0], [1, 1]]
  * g.determinant // => 1
@@ -578,7 +578,7 @@ export function gridTransformation(
 ): GridTransformation {
   const mat = square(m, 'gridTransformation')
   const d = mat.length
-  if (d !== 2 && d !== 3) throw new WhiteboxError('shape', 'gridTransformation: a 2x2 or 3x3 matrix')
+  if (d !== 2 && d !== 3) throw new MdmlError('shape', 'gridTransformation: a 2x2 or 3x3 matrix')
   const extent = options.extent ?? 2
   const k = options.lines ?? 5
   const ticks = Array.from({ length: k }, (_, i) => (k === 1 ? 0 : -extent + (2 * extent * i) / (k - 1)))
@@ -626,7 +626,7 @@ export function gridTransformation(
  * @concept linear-transformations
  * @example
  * ```ts
- * import { linearMapScene } from 'whitebox-engine/foundations'
+ * import { linearMapScene } from 'mdml-engine/foundations'
  * linearMapScene([[0, -1], [1, 0]]).width // => 320
  * ```
  */
@@ -635,7 +635,7 @@ export function linearMapScene(
   options: { readonly extent?: number; readonly lines?: number; readonly size?: number } = {},
 ): Scene {
   const g = gridTransformation(m, options)
-  if (g.matrix.length !== 2) throw new WhiteboxError('shape', 'linearMapScene: a 2x2 matrix (use linearMapScene3d)')
+  if (g.matrix.length !== 2) throw new MdmlError('shape', 'linearMapScene: a 2x2 matrix (use linearMapScene3d)')
   const size = options.size ?? 320
   const extent = options.extent ?? 2
   const reach = Math.max(extent, maxOf(g.after.flat().map((p) => Math.max(Math.abs(p[0] ?? 0), Math.abs(p[1] ?? 0)))))
@@ -671,7 +671,7 @@ export function linearMapScene(
  * @concept linear-transformations
  * @example
  * ```ts
- * import { linearMapScene3d } from 'whitebox-engine/foundations'
+ * import { linearMapScene3d } from 'mdml-engine/foundations'
  * linearMapScene3d([[1, 0, 0], [0, 2, 0], [0, 0, 1]]).items.length > 20 // => true
  * ```
  */
@@ -680,7 +680,7 @@ export function linearMapScene3d(
   options: { readonly extent?: number; readonly lines?: number } = {},
 ): Scene3D {
   const g = gridTransformation(m, { extent: options.extent ?? 1, lines: options.lines ?? 3 })
-  if (g.matrix.length !== 3) throw new WhiteboxError('shape', 'linearMapScene3d: a 3x3 matrix')
+  if (g.matrix.length !== 3) throw new MdmlError('shape', 'linearMapScene3d: a 3x3 matrix')
   const v3 = (p: readonly number[]): Vec3 => [p[0] ?? 0, p[1] ?? 0, p[2] ?? 0]
   const items: Item3D[] = [
     ...axes3d(1),
@@ -709,7 +709,7 @@ export interface CharacteristicPolynomial {
  * @concept characteristic-polynomial
  * @example
  * ```ts
- * import { characteristicPolynomial } from 'whitebox-engine/foundations'
+ * import { characteristicPolynomial } from 'mdml-engine/foundations'
  * characteristicPolynomial([[2, 1], [1, 2]]).coefficients // => [1, -4, 3]
  * ```
  */
@@ -756,7 +756,7 @@ export interface SmallEigenpair {
  * @concept eigenvalues
  * @example
  * ```ts
- * import { smallEigen } from 'whitebox-engine/foundations'
+ * import { smallEigen } from 'mdml-engine/foundations'
  * const e = smallEigen([[2, 1], [1, 2]])
  * e.map((p) => Math.round(p.re * 1e12) / 1e12) // => [1, 3]
  * e[1].eigenvectors[0].map((v) => Math.round(v * 1e12) / 1e12) // => [0.707106781187, 0.707106781187]
@@ -825,7 +825,7 @@ export interface Diagonalisation {
  * @concept diagonalisation
  * @example
  * ```ts
- * import { diagonalise } from 'whitebox-engine/foundations'
+ * import { diagonalise } from 'mdml-engine/foundations'
  * diagonalise([[1, 1], [0, 1]]).diagonalisable // => false
  * diagonalise([[2, 0], [0, 3]]).d // => [2, 3]
  * ```
@@ -858,8 +858,8 @@ export function diagonalise(a: TensorLike): Diagonalisation {
  * @concept quadratic-forms
  * @example
  * ```ts
- * import { quadraticForm } from 'whitebox-engine/foundations'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { quadraticForm } from 'mdml-engine/foundations'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(quadraticForm([[1, 2], [0, 3]], [[1, 1]])) // => [6]
  * ```
  */
@@ -886,7 +886,7 @@ export type Definiteness =
  * @concept quadratic-forms
  * @example
  * ```ts
- * import { classifyQuadraticForm } from 'whitebox-engine/foundations'
+ * import { classifyQuadraticForm } from 'mdml-engine/foundations'
  * classifyQuadraticForm([[1, 2], [2, 1]]).definiteness // => 'indefinite'
  * classifyQuadraticForm([[1, 1], [1, 1]]).inertia // => [1, 0, 1]
  * ```
@@ -925,7 +925,7 @@ export function classifyQuadraticForm(
  * @concept principal-axes
  * @example
  * ```ts
- * import { principalAxes } from 'whitebox-engine/foundations'
+ * import { principalAxes } from 'mdml-engine/foundations'
  * principalAxes([[4, 0], [0, 1]]).semiAxes // => [1, 0.5]
  * ```
  */
@@ -968,14 +968,14 @@ export interface SvdGeometry {
  * @concept singular-value-decomposition
  * @example
  * ```ts
- * import { svdGeometry } from 'whitebox-engine/foundations'
+ * import { svdGeometry } from 'mdml-engine/foundations'
  * svdGeometry([[3, 0], [0, 2]]).singularValues // => [3, 2]
  * ```
  */
 export function svdGeometry(a: TensorLike, n = 64): SvdGeometry {
   const am = square(a, 'svdGeometry')
   const d = am.length
-  if (d !== 2 && d !== 3) throw new WhiteboxError('shape', 'svdGeometry: a 2x2 or 3x3 matrix')
+  if (d !== 2 && d !== 3) throw new MdmlError('shape', 'svdGeometry: a 2x2 or 3x3 matrix')
   const { u, s, vh } = svd(am)
   const um = toArray(u) as Matrix
   const sv = toFlat(s)

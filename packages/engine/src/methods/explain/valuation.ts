@@ -3,7 +3,7 @@
  * k-NN Shapley, data Banzhaf and Beta Shapley values find them, inspecting the lowest-valued rows first, as `curves`.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import { curveSet, type Explained } from '../../lib/exposition/index.ts'
 import { type Estimator, type LearnData, matrixView, targetVector } from '../../lib/learn/index.ts'
@@ -54,7 +54,7 @@ export function mislabelledRowStudy(
   options: MislabelledStudyOptions = {},
 ): Explained<MislabelledStudyResult> {
   const x = matrixView(data.x, 'mislabelledRowStudy')
-  if (data.y === undefined) throw new WhiteboxError('value', 'mislabelledRowStudy: needs labels')
+  if (data.y === undefined) throw new MdmlError('value', 'mislabelledRowStudy: needs labels')
   const key = options.key ?? makeKey(0)
   const order = Array.from(permutation(foldIn(key, 0), x.n).data as Int32Array)
   const nTrain = Math.min(options.trainRows ?? 100, Math.floor(x.n * 0.7))
@@ -63,7 +63,7 @@ export function mislabelledRowStudy(
   const testIdx = order.slice(nTrain, nTrain + nTest)
   const yAll = Array.from(targetVector(data.y, 'mislabelledRowStudy', x.n))
   const classes = Array.from(new Set(yAll)).sort((a, b) => a - b)
-  if (classes.length < 2) throw new WhiteboxError('value', 'mislabelledRowStudy: needs two or more classes')
+  if (classes.length < 2) throw new MdmlError('value', 'mislabelledRowStudy: needs two or more classes')
   const nFlip = Math.max(1, Math.round((options.flipFraction ?? 0.1) * nTrain))
   const flipped = Array.from(permutation(foldIn(key, 1), nTrain).data as Int32Array).slice(0, nFlip)
   const yTrain = trainIdx.map((i) => yAll[i] ?? 0)

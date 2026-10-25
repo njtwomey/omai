@@ -10,8 +10,8 @@ from typing import Any
 
 import numpy as np
 import opacus
+from mdml_oracle.fixture import Case, case
 from opacus.accountants.analysis.rdp import compute_rdp, get_privacy_spent
-from whitebox_oracle.fixture import Case, case
 
 _spec = importlib.util.find_spec("diffprivlib")
 if _spec is not None and _spec.submodule_search_locations is not None and "diffprivlib" not in sys.modules:

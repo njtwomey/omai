@@ -8,11 +8,11 @@ import mapie
 import numpy as np
 from mapie.classification import SplitConformalClassifier
 from mapie.regression import ConformalizedQuantileRegressor, CrossConformalRegressor, SplitConformalRegressor
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold, LeaveOneOut
 from sklearn.naive_bayes import GaussianNB
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"mapie": mapie.__version__}
 

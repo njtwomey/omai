@@ -13,8 +13,8 @@ import {
   type PipelineStages,
   type StageData,
   surfaceAt,
-} from 'whitebox-engine/exposition'
-import { arrow, group, line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'whitebox-engine/scene'
+} from 'mdml-engine/exposition'
+import { arrow, group, line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'mdml-engine/scene'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { contours } from '../charts/fields.ts'
@@ -228,8 +228,8 @@ function cell(v: number | string | readonly number[]): string {
  * @returns The scene.
  * @example
  * ```ts
- * import { pipelineStages } from 'whitebox-engine/exposition'
- * import { pipelineScene } from 'whitebox-render/views'
+ * import { pipelineStages } from 'mdml-engine/exposition'
+ * import { pipelineScene } from 'mdml-render/views'
  * pipelineScene(pipelineStages({ stages: [] })).kind // => 'scene'
  * ```
  */
@@ -310,8 +310,8 @@ export type PipelinePanel = 'scatter' | 'table' | 'projection' | 'surface'
  * @returns The steps, in order.
  * @example
  * ```ts
- * import { pipelineStages } from 'whitebox-engine/exposition'
- * import { pipelineSteps } from 'whitebox-render/views'
+ * import { pipelineStages } from 'mdml-engine/exposition'
+ * import { pipelineSteps } from 'mdml-render/views'
  * pipelineSteps(pipelineStages({ stages: [] })).length // => 0
  * ```
  */
@@ -341,7 +341,7 @@ export function pipelineSteps(record: PipelineStages): PipelineStep[] {
  * @returns The panel.
  * @example
  * ```ts
- * import { pipelinePanelOf } from 'whitebox-render/views'
+ * import { pipelinePanelOf } from 'mdml-render/views'
  * pipelinePanelOf({ name: 'input', kind: 'input', data: { columns: ['a', 'b'], rows: [], n: 0 } }) // => 'scatter'
  * pipelinePanelOf({ name: 'poly', kind: 'transformer', data: { columns: ['a', 'b', 'a^2'], rows: [], n: 0 } }) // => 'table'
  * ```
@@ -395,7 +395,7 @@ function columnLabel(data: StageData, j: number, ratio?: readonly number[]): str
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { pipelineScatterView } from 'whitebox-render/views'
+ * import { pipelineScatterView } from 'mdml-render/views'
  * const step = { name: 'input', kind: 'input', data: { columns: ['a', 'b'], rows: [[0, 1], [1, 0]], n: 2, labels: [0, 1] } }
  * pipelineScatterView(step).series.length // => 2
  * ```
@@ -422,7 +422,7 @@ export function pipelineScatterView(step: PipelineStep, options: PipelineStepVie
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { pipelineProjectionView } from 'whitebox-render/views'
+ * import { pipelineProjectionView } from 'mdml-render/views'
  * const stage = { name: 'pca', kind: 'transformer', inputColumns: ['a', 'b', 'c'], outputColumns: ['p0', 'p1'], inputSample: [], outputSample: [], inputShape: [2, 3], outputShape: [2, 2], learned: [], explainedVarianceRatio: [0.8, 0.2] }
  * const data = { columns: ['p0', 'p1'], rows: [[0, 1], [1, 0]], n: 2 }
  * pipelineProjectionView({ name: 'pca', kind: 'transformer', stage, data }).grid.length // => 2
@@ -494,8 +494,8 @@ export interface PipelineSurfaceOptions extends PipelineStepViewOptions {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { decisionSurface } from 'whitebox-engine/exposition'
- * import { pipelineSurfaceView } from 'whitebox-render/views'
+ * import { decisionSurface } from 'mdml-engine/exposition'
+ * import { pipelineSurfaceView } from 'mdml-render/views'
  * const surface = decisionSurface({ features: ['a', 'b'], x: [0, 1], y: [0, 1], probabilities: [[[0.9, 0.4], [0.6, 0.1]], [[0.1, 0.6], [0.4, 0.9]]] })
  * const stage = { name: 'model', kind: 'estimator', inputColumns: ['a', 'b'], outputColumns: ['p(0)', 'p(1)'], inputSample: [], outputSample: [], inputShape: [4, 2], outputShape: [4, 2], learned: [], surface }
  * pipelineSurfaceView({ name: 'model', kind: 'estimator', stage }).series.length > 0 // => true
@@ -572,7 +572,7 @@ export function pipelineSurfaceView(step: PipelineStep, options: PipelineSurface
  * @returns The shape line and the summary line.
  * @example
  * ```ts
- * import { pipelineStepSummary } from 'whitebox-render/views'
+ * import { pipelineStepSummary } from 'mdml-render/views'
  * pipelineStepSummary({ name: 'input', kind: 'input', data: { columns: ['a', 'b'], rows: [], n: 200 } }, ['0', '1'])
  * // => { shape: '200 × 2', detail: '2 classes' }
  * ```

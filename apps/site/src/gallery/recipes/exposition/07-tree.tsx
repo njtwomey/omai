@@ -1,8 +1,8 @@
+import { iris } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { type ClassificationCriterion, decisionTreeClassifier } from 'mdml-engine/methods/trees'
+import { Choice, ControlPanel, NumberField, TreeView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { iris } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { type ClassificationCriterion, decisionTreeClassifier } from 'whitebox-engine/methods/trees'
-import { Choice, ControlPanel, NumberField, TreeView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

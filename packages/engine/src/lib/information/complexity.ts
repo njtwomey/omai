@@ -5,7 +5,7 @@
  * time series.
  */
 
-import { meanOf, pairwiseSum, varianceOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, meanOf, pairwiseSum, varianceOf } from '../base/index.ts'
 import { nextAfter } from '../numerics/approximation/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { kdTree } from '../numerics/spatial/index.ts'
@@ -43,7 +43,7 @@ export interface CompressionOptions {
  * @concept compression-distance
  * @example
  * ```ts
- * import { normalisedCompressionDistance } from 'whitebox-engine/information'
+ * import { normalisedCompressionDistance } from 'mdml-engine/information'
  * const a = 'the quick brown fox jumps over the lazy dog. '.repeat(8)
  * normalisedCompressionDistance(a, a) < 0.1 // => true
  * ```
@@ -71,7 +71,7 @@ export function normalisedCompressionDistance(x: ByteInput, y: ByteInput, option
  * @concept compression-distance
  * @example
  * ```ts
- * import { compressionDistanceMatrix } from 'whitebox-engine/information'
+ * import { compressionDistanceMatrix } from 'mdml-engine/information'
  * compressionDistanceMatrix(['abcabcabc', 'abcabcabc'])[0][0] // => 0
  * ```
  */
@@ -105,7 +105,7 @@ export function compressionDistanceMatrix(items: readonly ByteInput[], options: 
  * @concept lempel-ziv-complexity
  * @example
  * ```ts
- * import { lempelZivComplexity } from 'whitebox-engine/information'
+ * import { lempelZivComplexity } from 'mdml-engine/information'
  * // Phrases 1 / 0 / 01 / 1110 / 1100 / 0010.
  * lempelZivComplexity('1001111011000010') // => 6
  * lempelZivComplexity('1001111011000010', { normalise: true }) // => 1.5
@@ -151,14 +151,14 @@ export function lempelZivComplexity(sequence: string | Labels, options: { readon
  * @concept entropy-rate
  * @example
  * ```ts
- * import { blockEntropy } from 'whitebox-engine/information'
+ * import { blockEntropy } from 'mdml-engine/information'
  * blockEntropy([0, 1, 0, 1, 0, 1, 0, 1, 0], 2, { base: 2 }) // => 1
  * ```
  */
 export function blockEntropy(sequence: Labels, length: number, options: { readonly base?: number } = {}): number {
   const { codes } = labelCodes(sequence, 'blockEntropy')
   if (!Number.isInteger(length) || length < 1 || length > codes.length)
-    throw new WhiteboxError('value', 'blockEntropy: the block length must lie in [1, n]')
+    throw new MdmlError('value', 'blockEntropy: the block length must lie in [1, n]')
   const blocks = Array.from({ length: codes.length - length + 1 }, (_, i) =>
     Array.from(codes.subarray(i, i + length)).join(','),
   )
@@ -178,7 +178,7 @@ export function blockEntropy(sequence: Labels, length: number, options: { readon
  * @concept entropy-rate
  * @example
  * ```ts
- * import { entropyRate } from 'whitebox-engine/information'
+ * import { entropyRate } from 'mdml-engine/information'
  * // A periodic sequence is fully predictable from its last symbol.
  * entropyRate([0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2]) // => 0
  * ```
@@ -190,7 +190,7 @@ export function entropyRate(
   const k = options.order ?? 1
   const { codes } = labelCodes(sequence, 'entropyRate')
   if (!Number.isInteger(k) || k < 0 || k >= codes.length)
-    throw new WhiteboxError('value', 'entropyRate: order must be an integer in [0, n)')
+    throw new MdmlError('value', 'entropyRate: order must be an integer in [0, n)')
   const starts = codes.length - k
   const key = (i: number, l: number): string => Array.from(codes.subarray(i, i + l)).join(',')
   const h = (l: number): number => {
@@ -213,7 +213,7 @@ export function entropyRate(
  * @concept entropy-rate
  * @example
  * ```ts
- * import { markovEntropyRate } from 'whitebox-engine/information'
+ * import { markovEntropyRate } from 'mdml-engine/information'
  * markovEntropyRate([[0.5, 0.5], [0.5, 0.5]], { base: 2 }) // => 1
  * ```
  */
@@ -221,12 +221,12 @@ export function markovEntropyRate(transition: TensorLike, options: { readonly ba
   const v = float(transition)
   const n = v.shape[0] ?? 0
   if (v.shape.length !== 2 || v.shape[1] !== n || n === 0)
-    throw new WhiteboxError('shape', 'markovEntropyRate: expected a square transition matrix')
+    throw new MdmlError('shape', 'markovEntropyRate: expected a square transition matrix')
   const p = toFlat(v)
   for (let i = 0; i < n; i++) {
     const row = p.slice(i * n, (i + 1) * n)
     if (row.some((x) => !(x >= 0)) || Math.abs(pairwiseSum(row) - 1) > 1e-9)
-      throw new WhiteboxError('value', `markovEntropyRate: row ${i} is not a distribution`)
+      throw new MdmlError('value', `markovEntropyRate: row ${i} is not a distribution`)
   }
   // (P^T - I) pi = 0 with the last equation replaced by sum pi = 1.
   const a = Array.from({ length: n }, (_, i) =>
@@ -264,9 +264,9 @@ function templateSetup(
   const xs = toFlat(float(x))
   const m = options.order ?? 2
   if (!Number.isInteger(m) || m < 1 || xs.length < m + 2)
-    throw new WhiteboxError('value', `${name}: need an integer order >= 1 and at least order + 2 samples`)
+    throw new MdmlError('value', `${name}: need an integer order >= 1 and at least order + 2 samples`)
   const r = options.tolerance ?? 0.2 * Math.sqrt(varianceOf(xs))
-  if (!(r >= 0)) throw new WhiteboxError('value', `${name}: the tolerance must be non-negative`)
+  if (!(r >= 0)) throw new MdmlError('value', `${name}: the tolerance must be non-negative`)
   return { xs, m, r }
 }
 
@@ -281,7 +281,7 @@ function templateSetup(
  * @concept approximate-entropy
  * @example
  * ```ts
- * import { approximateEntropy } from 'whitebox-engine/information'
+ * import { approximateEntropy } from 'mdml-engine/information'
  * // A period-two series is perfectly regular.
  * Math.abs(approximateEntropy([1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2])) < 0.05 // => true
  * ```
@@ -309,7 +309,7 @@ export function approximateEntropy(x: TensorLike, options: TemplateEntropyOption
  * @concept sample-entropy
  * @example
  * ```ts
- * import { sampleEntropy } from 'whitebox-engine/information'
+ * import { sampleEntropy } from 'mdml-engine/information'
  * sampleEntropy([1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2]) // => 0
  * ```
  */

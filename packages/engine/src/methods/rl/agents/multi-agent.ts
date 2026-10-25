@@ -5,7 +5,7 @@
  * games such as poker.
  */
 
-import { argmaxOf, type Json, meanOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError, meanOf } from '../../../lib/base/index.ts'
 import { solveZeroSum } from '../../../lib/games/index.ts'
 import { crossEntropy } from '../../../lib/losses/index.ts'
 import { mlp } from '../../../lib/nn/index.ts'
@@ -99,9 +99,9 @@ export interface IndependentLearnersOptions<O, A> extends TabularQOptions {
  * @concept multi-agent-learning
  * @example
  * ```ts
- * import { independentLearners } from 'whitebox-engine/methods/rl/agents'
- * import { matrixGame } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { independentLearners } from 'mdml-engine/methods/rl/agents'
+ * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = independentLearners(matrixGame.create())
  * Object.keys(agent.init(key(0))) // => ['player_0', 'player_1']
  * ```
@@ -191,12 +191,12 @@ export interface MinimaxQOptions {
  * @param env - The two-agent parallel environment.
  * @param options - Step sizes, discount and exploration.
  * @returns The joint agent (both players learn by minimax-Q).
- * @throws WhiteboxError with code `value` unless there are exactly two agents with discrete actions.
+ * @throws MdmlError with code `value` unless there are exactly two agents with discrete actions.
  * @concept multi-agent-learning
  * @example
  * ```ts
- * import { minimaxQ } from 'whitebox-engine/methods/rl/agents'
- * import { matrixGame } from 'whitebox-engine/methods/rl'
+ * import { minimaxQ } from 'mdml-engine/methods/rl/agents'
+ * import { matrixGame } from 'mdml-engine/methods/rl'
  * minimaxQ(matrixGame.create({ game: 'matchingPennies' })).name // => 'minimaxQ'
  * ```
  */
@@ -204,7 +204,7 @@ export function minimaxQ(
   env: MultiAgentSpaces,
   options: MinimaxQOptions = {},
 ): Agent<MinimaxQState, PerAgent<unknown>, PerAgent<number>> {
-  if (env.possibleAgents.length !== 2) throw new WhiteboxError('value', 'minimaxQ: needs exactly two agents')
+  if (env.possibleAgents.length !== 2) throw new MdmlError('value', 'minimaxQ: needs exactly two agents')
   const [p0, p1] = env.possibleAgents as [string, string]
   const n: Record<string, number> = {
     [p0]: actionCount(env.actionSpaces[p0] as Space, 'minimaxQ'),
@@ -282,9 +282,9 @@ export function minimaxQ(
  * @concept multi-agent-learning
  * @example
  * ```ts
- * import { minimaxQ, minimaxQStrategy } from 'whitebox-engine/methods/rl/agents'
- * import { matrixGame } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { minimaxQ, minimaxQStrategy } from 'mdml-engine/methods/rl/agents'
+ * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = minimaxQ(matrixGame.create({ game: 'rockPaperScissors' }))
  * minimaxQStrategy(agent.init(key(0)), 'player_0', 0).length // => 0
  * ```
@@ -338,8 +338,8 @@ const isAec = <S, O, A>(env: AecEnv<S, O, A> | ParallelEnv<S, O, A>): env is Aec
  * @concept self-play
  * @example
  * ```ts
- * import { dqn, selfPlayAlgorithm } from 'whitebox-engine/methods/rl/agents'
- * import { nim } from 'whitebox-engine/methods/rl'
+ * import { dqn, selfPlayAlgorithm } from 'mdml-engine/methods/rl/agents'
+ * import { nim } from 'mdml-engine/methods/rl'
  * const env = nim.create({ heaps: [1, 2] })
  * const spaces = { observationSpace: env.observationSpaces['player_0'], actionSpace: env.actionSpaces['player_0'] }
  * selfPlayAlgorithm(env, dqn(spaces, { hidden: [8] })).name // => 'selfPlay:dqn'
@@ -425,9 +425,9 @@ export interface SelfPlayResult<G> {
  * @concept self-play
  * @example
  * ```ts
- * import { selfPlay } from 'whitebox-engine/methods/rl/agents'
- * import { matrixGame } from 'whitebox-engine/methods/rl'
- * import { policyAgent } from 'whitebox-engine/rl'
+ * import { selfPlay } from 'mdml-engine/methods/rl/agents'
+ * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { policyAgent } from 'mdml-engine/rl'
  * selfPlay(matrixGame.create({ rounds: 5 }), policyAgent(() => 1), { generations: 2, stepsPerGeneration: 5 }).state.meanReturn // => 5
  * ```
  */
@@ -544,8 +544,8 @@ function averageProbabilities(
  * @concept fictitious-play
  * @example
  * ```ts
- * import { fictitiousSelfPlayAlgorithm } from 'whitebox-engine/methods/rl/agents'
- * import { kuhnPoker } from 'whitebox-engine/methods/rl'
+ * import { fictitiousSelfPlayAlgorithm } from 'mdml-engine/methods/rl/agents'
+ * import { kuhnPoker } from 'mdml-engine/methods/rl'
  * fictitiousSelfPlayAlgorithm(kuhnPoker.create(), { hidden: [16] }).name // => 'fictitiousSelfPlay'
  * ```
  */
@@ -691,8 +691,8 @@ export interface FictitiousSelfPlayResult {
  * @concept fictitious-play
  * @example
  * ```ts
- * import { fictitiousSelfPlay } from 'whitebox-engine/methods/rl/agents'
- * import { kuhnPoker } from 'whitebox-engine/methods/rl'
+ * import { fictitiousSelfPlay } from 'mdml-engine/methods/rl/agents'
+ * import { kuhnPoker } from 'mdml-engine/methods/rl'
  * const r = fictitiousSelfPlay(kuhnPoker.create(), { hidden: [8], averageHidden: [8], episodes: 3 })
  * r.averagePolicy('player_0', [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]).length // => 2
  * ```
@@ -719,7 +719,7 @@ export function fictitiousSelfPlay<S>(
   })
   const params = (agent: string): Tree => {
     const p = result.state.players[agent]
-    if (p === undefined) throw new WhiteboxError('value', `fictitiousSelfPlay: no agent ${agent}`)
+    if (p === undefined) throw new MdmlError('value', `fictitiousSelfPlay: no agent ${agent}`)
     return p.average
   }
   return {

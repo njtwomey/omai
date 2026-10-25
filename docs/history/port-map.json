@@ -1,5 +1,5 @@
 {
-  "schema": "whitebox.port-map/1",
+  "schema": "mdml.port-map/1",
   "reference": "aifn-engine",
   "entries": [
     {
@@ -24,7 +24,7 @@
       ],
       "depends": [],
       "tests": "contracts.test.ts: type-level satisfies/assignability tests",
-      "notes": "Tier-0 holds domain types: render specs PendulumRender/CartPoleRender (gym.ts:172,187), distributions, datasets, LTI. Split per domain in whitebox. Stream.position is mutable (random.ts). EntryKind is a closed union (registry.ts:12), so adding a kind means editing base."
+      "notes": "Tier-0 holds domain types: render specs PendulumRender/CartPoleRender (gym.ts:172,187), distributions, datasets, LTI. Split per domain in mdml. Stream.position is mutable (random.ts). EntryKind is a closed union (registry.ts:12), so adding a kind means editing base."
     },
     {
       "ref": "compute/foundation/errors",
@@ -44,7 +44,7 @@
       "depends": [],
       "tests": "errors.test.ts: names, kinds, instanceof, message style",
       "notes": "Flat one-level hierarchy (errors.ts:29-171) with a uniform 'op: message' style. Keep it, rename the base, and add a LinAlgError subclass here (today it lives in numerics/linalg).",
-      "slice": "Single WhiteboxError with codes."
+      "slice": "Single MdmlError with codes."
     },
     {
       "ref": "compute/foundation/registry",
@@ -218,7 +218,7 @@
       ],
       "depends": [],
       "tests": "data/real/*.test.ts check vendored files against their sources (hashes)",
-      "notes": "Only diabetes.py uses the vendor pin; ecg.py and hyphenation.py expect manual curl downloads. Vendored datasets are TS modules in src, inflating bundles; whitebox's remote asset cache could replace them."
+      "notes": "Only diabetes.py uses the vendor pin; ecg.py and hyphenation.py expect manual curl downloads. Vendored datasets are TS modules in src, inflating bundles; mdml's remote asset cache could replace them."
     },
     {
       "ref": "methods/data/synthetic/modifiers",
@@ -777,7 +777,7 @@
         "engine/lib/numerics/linalg"
       ],
       "tests": "1 file, ~10 tests incl. moment/fixture checks (fixtures/probability/samplers.json)",
-      "notes": "Algorithms are sound. Draws mutate Stream.position in place (random/stream.ts:162-172), so a stream arg is a stateful cursor, not a pure key; whitebox should pass split keys. Poisson inversion silently caps k at 1000 (samplers.ts:126)."
+      "notes": "Algorithms are sound. Draws mutate Stream.position in place (random/stream.ts:162-172), so a stream arg is a stateful cursor, not a pure key; mdml should pass split keys. Poisson inversion silently caps k at 1000 (samplers.ts:126)."
     },
     {
       "ref": "compute/graph/graph",
@@ -1078,7 +1078,7 @@
       ],
       "depends": ["engine/lib/base"],
       "tests": "1 file, ~8 tests",
-      "notes": "Truth tables only, capped at 20 atoms (formulas.ts:204). No CNF/Tseitin, DPLL/CDCL SAT or resolution refutation, which are gaps for the whitebox logic domain."
+      "notes": "Truth tables only, capped at 20 atoms (formulas.ts:204). No CNF/Tseitin, DPLL/CDCL SAT or resolution refutation, which are gaps for the mdml logic domain."
     },
     {
       "ref": "compute/logic/resolution",
@@ -2648,7 +2648,7 @@
         "engine/lib/signal"
       ],
       "tests": "80 unit tests + shap/captum/sklearn fixtures (explain.json: attribution, concepts, tree SHAP)",
-      "notes": "Uses solve/lstsq, not inverses (data.ts:184, shapley.ts:254). network.ts re-implements a dense MLP forward to avoid importing nn (network.ts:268); in whitebox put explanation above nn or take a forward fn. concepts.ts:80 ignores L-BFGS convergence."
+      "notes": "Uses solve/lstsq, not inverses (data.ts:184, shapley.ts:254). network.ts re-implements a dense MLP forward to avoid importing nn (network.ts:268); in mdml put explanation above nn or take a forward fn. concepts.ts:80 ignores L-BFGS convergence."
     },
     {
       "ref": "compute/learning/losses",
@@ -7125,7 +7125,7 @@
       ],
       "depends": [],
       "tests": "none",
-      "notes": "Dead compatibility barrels (e.g. controls/Choice.tsx:1 'export * from ./selection/Choice'). Not ported; whitebox uses one import path."
+      "notes": "Dead compatibility barrels (e.g. controls/Choice.tsx:1 'export * from ./selection/Choice'). Not ported; mdml uses one import path."
     },
     {
       "ref": "render/controls/base",
@@ -7160,7 +7160,7 @@
       ],
       "depends": ["render/react", "engine/lib/base"],
       "tests": "none",
-      "notes": "Depends on aifn-compute/interpreter (prelude, entrySignature), which has no tier in the whitebox layout. useProgram (program.tsx:85-98) keys the worker run on JSON.stringify(args). CodeBlock belongs to the docs gallery too (whitebox-docs/react)."
+      "notes": "Depends on aifn-compute/interpreter (prelude, entrySignature), which has no tier in the mdml layout. useProgram (program.tsx:85-98) keys the worker run on JSON.stringify(args). CodeBlock belongs to the docs gallery too (mdml-docs/react)."
     },
     {
       "ref": "render/controls/numeric",
@@ -7305,7 +7305,7 @@
       ],
       "depends": ["render/theme", "render/charts", "render/diagram", "render/layout"],
       "tests": "none",
-      "notes": "lib/utils.ts is a one-line re-export of the `cn` package. The root barrel flattens every subpath into one namespace (merge, live, number, float, row ...), which invites name clashes. whitebox-render should keep subpath exports only."
+      "notes": "lib/utils.ts is a one-line re-export of the `cn` package. The root barrel flattens every subpath into one namespace (merge, live, number, float, row ...), which invites name clashes. mdml-render should keep subpath exports only."
     },
     {
       "ref": "render/state (schema, store, url, number, step, figure state, probe, pin, pointer)",
@@ -7510,7 +7510,7 @@
       ],
       "depends": ["engine/lib/tensor", "docs/schema"],
       "tests": "none direct; all examples run by make examples-check",
-      "notes": "No expected values: an example passes if it runs and prints (check.ts:233), so numeric regressions are invisible; whitebox's `// => value` should assert. isExpression run.ts:146 is per line (multi-line expressions not shown). Synchronous, main thread, no timeout (run.ts:192).",
+      "notes": "No expected values: an example passes if it runs and prints (check.ts:233), so numeric regressions are invisible; mdml's `// => value` should assert. isExpression run.ts:146 is per line (multi-line expressions not shown). Synchronous, main thread, no timeout (run.ts:192).",
       "slice": "Runner with // => checking."
     },
     {
@@ -7609,7 +7609,7 @@
       ],
       "depends": ["render/react"],
       "tests": "SSR render (check.ts)",
-      "notes": "Relies on aifn-compute/interpreter (corePrelude), a compute module with no whitebox tier; decide whether to port (likely docs/runner territory)."
+      "notes": "Relies on aifn-compute/interpreter (corePrelude), a compute module with no mdml tier; decide whether to port (likely docs/runner territory)."
     },
     {
       "ref": "examples/src/recipes/{controls,interaction,animation}",
@@ -7664,7 +7664,7 @@
       ],
       "depends": ["render/charts", "render/theme", "render/react"],
       "tests": "SSR render + import boundary (check.ts); pixels via scripts/screenshot.ts",
-      "notes": "Data inline or a few lines of maths; aifn-compute only where a component takes a compute object (dist for Density). Good model for whitebox gallery."
+      "notes": "Data inline or a few lines of maths; aifn-compute only where a component takes a compute object (dist for Density). Good model for mdml gallery."
     },
     {
       "ref": "examples/src/shell (Home + hero figures)",
@@ -7730,7 +7730,7 @@
       ],
       "depends": ["docs/extract", "docs/runner"],
       "tests": "enforced by examples/check.ts --missing (report) and examples-check (examples/maths fail)",
-      "notes": "Reference file is compute/numerics/linalg/cholesky.ts. Explicitly forbids writing expected values in comments (cells print them), the opposite of whitebox's `// => value`. Missing docs are report-only, not gating (check.ts:247-250)."
+      "notes": "Reference file is compute/numerics/linalg/cholesky.ts. Explicitly forbids writing expected values in comments (cells print them), the opposite of mdml's `// => value`. Missing docs are report-only, not gating (check.ts:247-250)."
     },
     {
       "ref": "packages/*/test/fixtures (generate.py + gen/**/*.py)",
@@ -7788,7 +7788,7 @@
       ],
       "depends": [],
       "tests": "runs in make lint/test",
-      "notes": "Import extraction is regex over source text (layers.ts:249-254), not the TS AST; dynamic import with non-literal spec only flagged. Worth porting as whitebox's tier lint."
+      "notes": "Import extraction is regex over source text (layers.ts:249-254), not the TS AST; dynamic import with non-literal spec only flagged. Worth porting as mdml's tier lint."
     },
     {
       "ref": "scripts/map.ts",
@@ -7823,7 +7823,7 @@
       ],
       "depends": [],
       "tests": "scripts/smoke-packages.ts",
-      "notes": "package.ts:57-61 aifn-render uses aifn-methods (worker loads methods modules): render depends on methods; whitebox-render should not. sideEffects:true package-wide (package.ts:298) because registration happens at import; prevents tree-shaking."
+      "notes": "package.ts:57-61 aifn-render uses aifn-methods (worker loads methods modules): render depends on methods; mdml-render should not. sideEffects:true package-wide (package.ts:298) because registration happens at import; prevents tree-shaking."
     },
     {
       "ref": "scripts/screenshot.ts",

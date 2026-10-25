@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import {
   ACTIONS,
   type AgentState,
@@ -131,7 +131,7 @@ describe('rules', () => {
       applyRules(g, [], at(0), 7)
       expect.unreachable()
     } catch (e) {
-      expect(isWhiteboxError(e, 'value')).toBe(true)
+      expect(isMdmlError(e, 'value')).toBe(true)
     }
   })
 

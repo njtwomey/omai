@@ -1,8 +1,8 @@
+import { breastCancer } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { decisionTreeClassifier } from 'mdml-engine/methods/trees'
+import { ControlPanel, NumberField, PruningPathView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { breastCancer } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { decisionTreeClassifier } from 'whitebox-engine/methods/trees'
-import { ControlPanel, NumberField, PruningPathView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

@@ -4,7 +4,7 @@
  * control and Kalman filtering rest on.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   abs,
   add,
@@ -43,8 +43,8 @@ const norm1 = (a: Value): number => item(primalOf(max(sum(abs(a), 0))))
  * @concept matrix-equations
  * @example
  * ```ts
- * import { solveSylvester } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { solveSylvester } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(solveSylvester([[1]], [[2]], [[6]])) // => [[2]]
  * ```
  */
@@ -64,8 +64,8 @@ export function solveSylvester(a: TensorLike, b: TensorLike, q: TensorLike): Val
  * @returns X.
  * @example
  * ```ts
- * import { solveContinuousLyapunov } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { solveContinuousLyapunov } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(solveContinuousLyapunov([[-1]], [[-2]])) // => [[1]]
  * ```
  */
@@ -83,8 +83,8 @@ export function solveContinuousLyapunov(a: TensorLike, q: TensorLike): Value {
  * @returns X.
  * @example
  * ```ts
- * import { solveDiscreteLyapunov } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { solveDiscreteLyapunov } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(solveDiscreteLyapunov([[0.5]], [[0.75]])) // => [[1]]
  * ```
  */
@@ -103,12 +103,12 @@ export function solveDiscreteLyapunov(a: TensorLike, q: TensorLike): Value {
  *
  * @param a - Square matrix `[n, n]`.
  * @returns sign(A).
- * @throws WhiteboxError with code `convergence` when the iteration does not settle (eigenvalues on or near the axis).
+ * @throws MdmlError with code `convergence` when the iteration does not settle (eigenvalues on or near the axis).
  * @concept matrix-functions
  * @example
  * ```ts
- * import { signm } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { signm } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(signm([[-2, 0], [0, 3]])) // => [[-1, 0], [0, 1]]
  * ```
  */
@@ -124,7 +124,7 @@ export function signm(a: TensorLike): Value {
     z = next
     if (change <= 1e-14) return z
   }
-  throw new WhiteboxError('convergence', 'signm: the Newton iteration did not converge')
+  throw new MdmlError('convergence', 'signm: the Newton iteration did not converge')
 }
 
 /**
@@ -140,8 +140,8 @@ export function signm(a: TensorLike): Value {
  * @concept matrix-equations
  * @example
  * ```ts
- * import { solveCare } from 'whitebox-engine/numerics/linalg'
- * import { item } from 'whitebox-engine/tensor'
+ * import { solveCare } from 'mdml-engine/numerics/linalg'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(solveCare([[0]], [[1]], [[1]], [[1]])) - 1) < 1e-12 // => true
  * ```
  */
@@ -153,8 +153,8 @@ export function solveCare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
   try {
     z = signm(concat([concat([av, neg(g)], 1), concat([neg(qv), neg(mT(av))], 1)], 0))
   } catch (e) {
-    if (e instanceof WhiteboxError && e.code === 'convergence') {
-      throw new WhiteboxError('convergence', 'solveCare: the sign iteration did not converge')
+    if (e instanceof MdmlError && e.code === 'convergence') {
+      throw new MdmlError('convergence', 'solveCare: the sign iteration did not converge')
     }
     throw e
   }
@@ -177,8 +177,8 @@ export function solveCare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
  * @returns X (symmetric).
  * @example
  * ```ts
- * import { solveDare } from 'whitebox-engine/numerics/linalg'
- * import { item } from 'whitebox-engine/tensor'
+ * import { solveDare } from 'mdml-engine/numerics/linalg'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(solveDare([[1]], [[1]], [[1]], [[1]])) - (1 + Math.sqrt(5)) / 2) < 1e-12 // => true
  * ```
  */
@@ -201,5 +201,5 @@ export function solveDare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
     hk = nextH
     if (change <= 1e-14) return sym(hk)
   }
-  throw new WhiteboxError('convergence', 'solveDare: the doubling iteration did not converge')
+  throw new MdmlError('convergence', 'solveDare: the doubling iteration did not converge')
 }

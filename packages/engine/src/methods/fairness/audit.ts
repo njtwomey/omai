@@ -4,7 +4,7 @@
  * between groups. `buildGroupReport` assembles the `groupReport` record the other fairness methods return.
  */
 
-import { linspaceNumbers, WhiteboxError } from '../../lib/base/index.ts'
+import { linspaceNumbers, MdmlError } from '../../lib/base/index.ts'
 import {
   type Explained,
   GROUP_RATES,
@@ -296,10 +296,10 @@ export interface FairnessAudit {
   readonly attribute: string
   readonly groups: readonly string[]
   readonly thresholds: readonly number[]
-  /** fairlearn's MetricFrame rates per group and overall (`whitebox-engine/metrics` `groupRates`). */
+  /** fairlearn's MetricFrame rates per group and overall (`mdml-engine/metrics` `groupRates`). */
   readonly rates: Readonly<Record<string, GroupRates>>
   readonly overall: GroupRates
-  /** The parity metrics of `whitebox-engine/metrics` at the thresholds. */
+  /** The parity metrics of `mdml-engine/metrics` at the thresholds. */
   readonly disparities: {
     readonly demographicParityDifference: number
     readonly equalOpportunityDifference: number
@@ -324,7 +324,7 @@ export interface FairnessAudit {
  * @param data - Labelled data holding the protected attribute (a column, or labels given in `sensitive`).
  * @param options - The attribute, thresholds, reference group, whether the model saw the attribute, and the sweep.
  * @returns The rates and disparities, with the record.
- * @throws WhiteboxError `value` when the data has no labels or a threshold list does not match the groups.
+ * @throws MdmlError `value` when the data has no labels or a threshold list does not match the groups.
  */
 export function fairnessAudit(
   model: Fitted,
@@ -340,7 +340,7 @@ export function fairnessAudit(
   const given = options.threshold ?? (probability ? 0.5 : 0)
   const thresholds = typeof given === 'number' ? groups.names.map(() => given) : [...given]
   if (thresholds.length !== k)
-    throw new WhiteboxError('value', `fairnessAudit: ${thresholds.length} thresholds for ${k} groups`)
+    throw new MdmlError('value', `fairnessAudit: ${thresholds.length} thresholds for ${k} groups`)
   const predicted = scores.map((s, i) => (s >= (thresholds[groups.index[i] ?? 0] ?? 0) ? 1 : 0))
   const named = groups.index.map((g) => groups.names[g] ?? String(g))
   const r = groupRates(labels, predicted, named)
@@ -384,7 +384,7 @@ export function groupReportReference(groups: SensitiveGroups, reference?: number
   if (typeof reference === 'number') return reference
   if (typeof reference === 'string') {
     const at = groups.names.indexOf(reference)
-    if (at < 0) throw new WhiteboxError('value', `fairness: no group ${reference}`)
+    if (at < 0) throw new MdmlError('value', `fairness: no group ${reference}`)
     return at
   }
   const counts = groups.names.map(() => 0)

@@ -5,7 +5,7 @@
  * path integral control (MPPI).
  */
 
-import { argmaxOf, type Json, WhiteboxError } from '../base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../random/index.ts'
 import type { Space } from '../space/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -18,7 +18,7 @@ const u1 = (k: Key): number => uniform(k, []).data[0] ?? 0
 /** The actions of a discrete action space, `start .. start + n - 1`. */
 function discreteActions(space: Space, name: string): number[] {
   if (space.kind !== 'discrete')
-    throw new WhiteboxError('value', `${name}: needs a discrete action space or explicit actions`)
+    throw new MdmlError('value', `${name}: needs a discrete action space or explicit actions`)
   return Array.from({ length: space.n }, (_, i) => (space.start ?? 0) + i)
 }
 
@@ -84,8 +84,8 @@ export interface MctsResult<A> {
  * @concept monte-carlo-tree-search
  * @example
  * ```ts
- * import { mctsAlgorithm } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { mctsAlgorithm } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * mctsAlgorithm(cartPole.create(), [0, 0, 0, 0]).name // => 'mcts'
  * ```
  */
@@ -211,8 +211,8 @@ function summarise<S, A>(root: Node<S>, actions: readonly A[], simulations: numb
  * @concept monte-carlo-tree-search
  * @example
  * ```ts
- * import { mcts } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { mcts } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * mcts(cartPole.create(), [0, 0, 0.12, 0], { simulations: 300, depth: 25, c: 5 }).action // => 1
  * ```
  */
@@ -278,9 +278,9 @@ export interface GameMctsOptions<S> {
  * @concept monte-carlo-tree-search
  * @example
  * ```ts
- * import { gameMcts } from 'whitebox-engine/rl'
- * import { nim } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { gameMcts } from 'mdml-engine/rl'
+ * import { nim } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = nim.create({ heaps: [2] })
  * gameMcts(env, env.reset(key(0)), { simulations: 100 }).action // => 1
  * ```
@@ -363,7 +363,7 @@ export function gameMcts<S, O>(
     return g
   }
   const root = make(state)
-  if (root.player === undefined) throw new WhiteboxError('value', 'gameMcts: the game is over')
+  if (root.player === undefined) throw new MdmlError('value', 'gameMcts: the game is over')
   const sims = options.simulations ?? 200
   for (let i = 0; i < sims; i++) simulate(root, foldIn(k0, i))
   const best = argmaxOf(root.n)
@@ -391,8 +391,8 @@ export function gameMcts<S, O>(
  * @concept planning
  * @example
  * ```ts
- * import { rolloutPlanner } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { rolloutPlanner } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * rolloutPlanner(cartPole.create(), [0, 0, 0.1, 0], { rollouts: 8, horizon: 30 }).action // => 1
  * ```
  */
@@ -445,7 +445,7 @@ export function rolloutPlanner<S, O, A>(
 // ------------------------------------------------------------------------------------------------ action sequences
 
 function boxBounds(space: Space): { readonly low: number[]; readonly high: number[]; readonly dim: number } {
-  if (space.kind !== 'box') throw new WhiteboxError('value', 'planner: needs a box action space')
+  if (space.kind !== 'box') throw new MdmlError('value', 'planner: needs a box action space')
   const dim = space.shape.reduce((a, b) => a * b, 1)
   const at = (b: number | readonly number[], i: number): number => (typeof b === 'number' ? b : (b[i] ?? 0))
   return {
@@ -513,8 +513,8 @@ export interface CemPlannerState {
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { cemPlannerAlgorithm } from 'whitebox-engine/rl'
- * import { pendulum } from 'whitebox-engine/methods/rl'
+ * import { cemPlannerAlgorithm } from 'mdml-engine/rl'
+ * import { pendulum } from 'mdml-engine/methods/rl'
  * cemPlannerAlgorithm(pendulum.create(), [0, 0]).name // => 'cem'
  * ```
  */
@@ -613,8 +613,8 @@ export interface PlanResult {
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { cem } from 'whitebox-engine/rl'
- * import { mountainCarContinuous } from 'whitebox-engine/methods/rl'
+ * import { cem } from 'mdml-engine/rl'
+ * import { mountainCarContinuous } from 'mdml-engine/methods/rl'
  * cem(mountainCarContinuous.create(), [-0.5, 0], { horizon: 5, population: 16 }).plan.length // => 5
  * ```
  */
@@ -656,8 +656,8 @@ export function cem<S, O>(
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { mppi } from 'whitebox-engine/rl'
- * import { pendulum } from 'whitebox-engine/methods/rl'
+ * import { mppi } from 'mdml-engine/rl'
+ * import { pendulum } from 'mdml-engine/methods/rl'
  * mppi(pendulum.create(), [Math.PI, 0], { horizon: 4, population: 8 }).action.length // => 1
  * ```
  */

@@ -3,8 +3,8 @@
  * variance, on three-dimensional manifolds such as the Swiss roll and tabular data.
  */
 
-import { pca as pcaEstimator } from 'whitebox-engine/methods/decomposition'
-import { int } from 'whitebox-engine/space'
+import { pca as pcaEstimator } from 'mdml-engine/methods/decomposition'
+import { int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

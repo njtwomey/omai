@@ -4,7 +4,7 @@
  * positive-class scores and binary labels.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import {
   type Fitted,
   featureNamesOf,
@@ -47,7 +47,7 @@ export interface SensitiveGroups {
  * @param data - The data.
  * @param sensitive - The column or the labels (default the dataset's first sensitive attribute).
  * @returns The attribute, group names and each row's group.
- * @throws WhiteboxError `value` when no attribute is given or named, or a named column is missing; `shape` when the
+ * @throws MdmlError `value` when no attribute is given or named, or a named column is missing; `shape` when the
  *   labels do not match the rows.
  */
 export function sensitiveGroups(data: FairnessData, sensitive?: SensitiveSpec): SensitiveGroups {
@@ -56,13 +56,13 @@ export function sensitiveGroups(data: FairnessData, sensitive?: SensitiveSpec): 
   const known = data.meta?.sensitive ?? {}
   const spec = sensitive ?? Object.keys(known)[0]
   if (spec === undefined)
-    throw new WhiteboxError('value', 'sensitiveGroups: give the protected attribute (the dataset names none)')
+    throw new MdmlError('value', 'sensitiveGroups: give the protected attribute (the dataset names none)')
   if (typeof spec === 'object') {
-    if (spec.length !== m.n) throw new WhiteboxError('shape', `sensitiveGroups: ${spec.length} labels for ${m.n} rows`)
+    if (spec.length !== m.n) throw new MdmlError('shape', `sensitiveGroups: ${spec.length} labels for ${m.n} rows`)
     return fromValues('group', spec, undefined)
   }
   const column = typeof spec === 'number' ? spec : names.indexOf(spec)
-  if (column < 0 || column >= m.d) throw new WhiteboxError('value', `sensitiveGroups: no feature ${String(spec)}`)
+  if (column < 0 || column >= m.d) throw new MdmlError('value', `sensitiveGroups: no feature ${String(spec)}`)
   const attribute = names[column] ?? `x${column}`
   const values = Array.from({ length: m.n }, (_, i) => m.data[i * m.d + column] ?? 0)
   return { ...fromValues(attribute, values, known[attribute]), column }
@@ -121,7 +121,7 @@ export function positiveScores(
 
 /** Binary labels (1 for the positive class, the larger label) of the data's targets. */
 export function binaryLabels(data: LearnData, who: string): number[] {
-  if (data.y === undefined) throw new WhiteboxError('value', `${who}: the data needs labels`)
+  if (data.y === undefined) throw new MdmlError('value', `${who}: the data needs labels`)
   const y = Array.from(targetVector(data.y, who))
   const positive = y.every((v) => v === 0 || v === 1) ? 1 : Math.max(...y)
   return y.map((v) => (v === positive ? 1 : 0))

@@ -13,10 +13,10 @@ from fairlearn.reductions import (
     GridSearch,
     TruePositiveRateParity,
 )
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import LinearRegression
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"fairlearn": fairlearn.__version__}
 

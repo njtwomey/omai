@@ -1,5 +1,5 @@
+import { conceptScores, ruleSet, ruleText } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { conceptScores, ruleSet, ruleText } from 'whitebox-engine/exposition'
 import { stillOf, viewFor } from './registry.ts'
 import { conceptView, ruleListView } from './rules.ts'
 

@@ -3,8 +3,8 @@
  * out, on simulated tournaments.
  */
 
-import { glickoRatings } from 'whitebox-engine/methods/models'
-import { dict, real } from 'whitebox-engine/space'
+import { glickoRatings } from 'mdml-engine/methods/models'
+import { dict, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { comparisonsOf } from './_rating.ts'
 

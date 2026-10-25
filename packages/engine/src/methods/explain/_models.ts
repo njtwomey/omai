@@ -1,6 +1,6 @@
 // What an explainer needs from a fitted estimator (private to methods/explain): the output to explain as a
 // prediction function, its name, and the model's trees when it is a tree or an ensemble of trees.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import type * as explain from '../../lib/explain/index.ts'
 import { classNamesOf, type Fitted, type LearnData } from '../../lib/learn/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../../lib/tensor/index.ts'
@@ -59,9 +59,9 @@ export function modelOutput(
   classIndex?: number,
 ): ModelOutput {
   if (fitted.kind !== 'classifier') {
-    if (fitted.predict === undefined) throw new WhiteboxError('value', `explain: ${fitted.estimator} cannot predict`)
+    if (fitted.predict === undefined) throw new MdmlError('value', `explain: ${fitted.estimator} cannot predict`)
     if (kind === 'probability' || kind === 'raw')
-      throw new WhiteboxError('value', `explain: a ${fitted.kind} has no ${kind} output`)
+      throw new MdmlError('value', `explain: a ${fitted.kind} has no ${kind} output`)
     const p = fitted.predict
     return { kind: 'prediction', predict: (x) => column(p(x), 0), name: 'prediction' }
   }
@@ -69,17 +69,17 @@ export function modelOutput(
   const names = classNamesOf(data, classes)
   const k = classIndex ?? Math.max(0, classes.length - 1)
   if (!(Number.isInteger(k) && k >= 0 && (classes.length === 0 || k < classes.length)))
-    throw new WhiteboxError('value', `explain: class index ${k} out of range`)
+    throw new MdmlError('value', `explain: class index ${k} out of range`)
   const name = names[k] ?? String(k)
   const resolved = kind === 'auto' ? (isBoosting(fitted.params) ? 'raw' : 'probability') : kind
   if (resolved === 'prediction') {
-    if (fitted.predict === undefined) throw new WhiteboxError('value', `explain: ${fitted.estimator} cannot predict`)
+    if (fitted.predict === undefined) throw new MdmlError('value', `explain: ${fitted.estimator} cannot predict`)
     const p = fitted.predict
     return { kind: 'prediction', predict: (x) => column(p(x), 0), name: 'predicted class', classIndex: k }
   }
   if (resolved === 'raw') {
     const f = fitted.decisionFunction
-    if (f === undefined) throw new WhiteboxError('value', `explain: ${fitted.estimator} has no raw score`)
+    if (f === undefined) throw new MdmlError('value', `explain: ${fitted.estimator} has no raw score`)
     const binary = classes.length <= 2
     return {
       kind: 'raw',
@@ -93,7 +93,7 @@ export function modelOutput(
     }
   }
   const proba = fitted.predictProba
-  if (proba === undefined) throw new WhiteboxError('value', `explain: ${fitted.estimator} has no probabilities`)
+  if (proba === undefined) throw new MdmlError('value', `explain: ${fitted.estimator} has no probabilities`)
   return { kind: 'probability', predict: (x) => column(proba(x), k), name: `P(${name})`, classIndex: k }
 }
 

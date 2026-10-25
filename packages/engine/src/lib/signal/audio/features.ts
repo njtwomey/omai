@@ -5,7 +5,7 @@
  * that cuts a signal into overlapping windows.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { padArray } from '../../numerics/convolution/index.ts'
 import { dct } from '../../numerics/fourier/index.ts'
 import {
@@ -78,7 +78,7 @@ const boundaryOf = (center: boolean, mode: AudioPadMode): StftBoundary =>
  * @concept spectrogram
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * audio.spectrogram(new Array(4096).fill(0.1), { nFft: 512 }).shape // => [257, 33]
  * ```
  */
@@ -104,7 +104,7 @@ export function spectrogram(y: TensorLike, options: SpectrogramOptions = {}): Va
 
 /** A window of length win centred in nFft samples of zeros (librosa.util.pad_center). */
 function paddedWindow(window: WindowSpec, win: number, nFft: number): Tensor {
-  if (win > nFft) throw new WhiteboxError('value', 'spectrogram: winLength must be at most nFft')
+  if (win > nFft) throw new MdmlError('value', 'spectrogram: winLength must be at most nFft')
   const w = toFlat(getWindow(window, win))
   const out = new Float64Array(nFft)
   out.set(w, Math.floor((nFft - win) / 2))
@@ -124,7 +124,7 @@ export interface MelSpectrogramOptions extends SpectrogramOptions, MelFilterOpti
  * @concept mel-spectrogram
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * audio.melSpectrogram(new Array(4096).fill(0.1), 16000, { nFft: 512, nMels: 40 }).shape // => [40, 33]
  * ```
  */
@@ -152,8 +152,8 @@ export interface DbOptions {
  * @concept decibels
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.powerToDb([1, 10, 100, 1e-12])) // => [0, 10, 20, -60]
  * ```
  */
@@ -167,7 +167,7 @@ export function powerToDb(s: TensorLike, options: DbOptions = {}): Value {
   const db = sub(mul(log10(maximum(x, amin)), 10), 10 * Math.log10(Math.max(amin, Math.abs(ref))))
   const topDb = options.topDb === undefined ? 80 : options.topDb
   if (topDb === null) return db
-  if (topDb < 0) throw new WhiteboxError('value', 'powerToDb: topDb must be non-negative')
+  if (topDb < 0) throw new MdmlError('value', 'powerToDb: topDb must be non-negative')
   let top = Number.NEGATIVE_INFINITY
   for (const v of toFlat(primalOf(db))) top = Math.max(top, v)
   return maximum(db, top - topDb)
@@ -182,8 +182,8 @@ export function powerToDb(s: TensorLike, options: DbOptions = {}): Value {
  * @concept decibels
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.amplitudeToDb([1, 10])) // => [0, 20]
  * ```
  */
@@ -210,8 +210,8 @@ export function amplitudeToDb(s: TensorLike, options: DbOptions = {}): Value {
  * @concept decibels
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.dbToPower([0, 10, 20])).map((v) => Math.round(v * 1e9) / 1e9) // => [1, 10, 100]
  * ```
  */
@@ -242,7 +242,7 @@ export interface MfccOptions extends MelSpectrogramOptions {
  * @concept mfcc
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const y = Array.from({ length: 4096 }, (_, i) => Math.sin(i / 5))
  * audio.mfcc(y, 16000, { nFft: 512, nMels: 40, nMfcc: 13 }).shape // => [13, 33]
  * ```
@@ -260,7 +260,7 @@ export function mfcc(y: TensorLike, sr: number, options: MfccOptions = {}): Valu
  * @concept mfcc
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * audio.mfccFromDb([[1, 2], [3, 4], [5, 6]], { nMfcc: 2 }).shape // => [2, 2]
  * ```
  */
@@ -271,7 +271,7 @@ export function mfccFromDb(
   const n = options.nMfcc ?? 20
   const m = sliceAxis(dct(s, options.dctType ?? 2, { axis: 0, norm: options.dctNorm ?? 'ortho' }), 0, 0, n)
   const lifter = options.lifter ?? 0
-  if (lifter < 0) throw new WhiteboxError('value', 'mfcc: lifter must be non-negative')
+  if (lifter < 0) throw new MdmlError('value', 'mfcc: lifter must be non-negative')
   if (lifter === 0) return m
   const li = Float64Array.from(
     { length: m.shape[0] ?? 0 },
@@ -300,8 +300,8 @@ function unitColumns(s: Value): Value {
  * @concept spectral-features
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.spectralCentroid([[0], [1], [1]], 8)) // => [[3]]
  * ```
  */
@@ -323,8 +323,8 @@ export function spectralCentroid(s: TensorLike, sr: number): Value {
  * @concept spectral-features
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.spectralBandwidth([[0], [1], [1]], 8)) // => [[1]]
  * ```
  */
@@ -348,13 +348,13 @@ export function spectralBandwidth(s: TensorLike, sr: number, p = 2): Value {
  * @concept spectral-features
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.spectralRolloff([[1], [1], [8]], 8)) // => [[4]]
  * ```
  */
 export function spectralRolloff(s: TensorLike, sr: number, rollPercent = 0.85): Tensor {
-  if (!(rollPercent > 0 && rollPercent < 1)) throw new WhiteboxError('value', 'spectralRolloff: rollPercent in (0, 1)')
+  if (!(rollPercent > 0 && rollPercent < 1)) throw new MdmlError('value', 'spectralRolloff: rollPercent in (0, 1)')
   const v = primalOf(float(s))
   const [bins = 0, frames = 0] = v.shape
   const freq = toFlat(fftFrequencies(sr, 2 * (bins - 1)))
@@ -386,8 +386,8 @@ export function spectralRolloff(s: TensorLike, sr: number, rollPercent = 0.85): 
  * @concept spectral-features
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.spectralFlatness([[1], [1], [1]])) // => [[1]]
  * ```
  */
@@ -409,8 +409,8 @@ export function spectralFlatness(
  * @concept spectral-features
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.spectralFlux([[0, 3, 1], [0, 4, 4]])) // => [[0, 5, 0]]
  * ```
  */
@@ -448,7 +448,7 @@ export interface ChromaOptions extends SpectrogramOptions {
  * @concept chroma
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * const y = Array.from({ length: 8192 }, (_, i) => Math.sin((2 * Math.PI * 440 * i) / 22050))
  * audio.chromaStft(y, 22050).shape // => [12, 17]
  * ```
@@ -485,16 +485,16 @@ export function chromaStft(y: TensorLike, sr: number, options: ChromaOptions = {
  * @concept framing
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.frame([1, 2, 3, 4, 5], 3, 2)) // => [[1, 3], [2, 4], [3, 5]]
  * ```
  */
 export function frame(y: TensorLike, frameLength: number, hop: number): Value {
   const v = float(y)
   const n = v.shape[0] ?? 0
-  if (v.shape.length !== 1) throw new WhiteboxError('shape', 'frame: expected a 1-D signal')
-  if (n < frameLength) throw new WhiteboxError('value', 'frame: the signal is shorter than a frame')
+  if (v.shape.length !== 1) throw new MdmlError('shape', 'frame: expected a 1-D signal')
+  if (n < frameLength) throw new MdmlError('value', 'frame: the signal is shorter than a frame')
   const frames = 1 + Math.floor((n - frameLength) / hop)
   const idx = new Int32Array(frameLength * frames)
   for (let i = 0; i < frameLength; i++) for (let t = 0; t < frames; t++) idx[i * frames + t] = t * hop + i
@@ -528,8 +528,8 @@ function centred(y: Value, frameLength: number, center: boolean, mode: AudioPadM
  * @concept rms-energy
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.rms([1, -1, 1, -1, 1, -1, 1, -1], { frameLength: 4, hopLength: 4, center: false })) // => [[1, 1]]
  * ```
  */
@@ -550,16 +550,15 @@ export function rms(y: TensorLike, options: FrameOptions = {}): Value {
  * @concept rms-energy
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.rmsFromSpectrogram([[4], [0], [0]], 4)) // => [[1]]
  * ```
  */
 export function rmsFromSpectrogram(s: TensorLike, frameLength: number): Value {
   const v = float(s)
   const bins = v.shape[0] ?? 0
-  if (bins !== Math.floor(frameLength / 2) + 1)
-    throw new WhiteboxError('shape', 'rmsFromSpectrogram: bins do not match')
+  if (bins !== Math.floor(frameLength / 2) + 1) throw new MdmlError('shape', 'rmsFromSpectrogram: bins do not match')
   const w = Float64Array.from({ length: bins }, (_, k) =>
     k === 0 || (k === bins - 1 && frameLength % 2 === 0) ? 0.5 : 1,
   )
@@ -577,8 +576,8 @@ export function rmsFromSpectrogram(s: TensorLike, frameLength: number): Value {
  * @concept zero-crossing-rate
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.zeroCrossingRate([1, -1, 1, -1, 1, 1, 1, 1], { frameLength: 4, hopLength: 4, center: false })) // => [[0.75, 0]]
  * ```
  */

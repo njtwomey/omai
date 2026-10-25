@@ -4,7 +4,7 @@
  * effective dimension of a regularised kernel matrix, kernel PCA, and scikit-learn's `pairwise_kernels` by metric name.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { eigh, solve } from '../numerics/linalg/index.ts'
 import {
   add,
@@ -36,13 +36,13 @@ import { chi2Distance, chi2Kernel } from './structured.ts'
 
 function matrix(k: TensorLike, name: string): Value {
   const [v] = promoteFloat(k) as [Value]
-  if (v.shape.length !== 2) throw new WhiteboxError('shape', `${name}: expected a matrix, got [${v.shape.join(', ')}]`)
+  if (v.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a matrix, got [${v.shape.join(', ')}]`)
   return v
 }
 
 function square2(k: TensorLike, name: string): Value {
   const v = matrix(k, name)
-  if (v.shape[0] !== v.shape[1]) throw new WhiteboxError('shape', `${name}: expected a square matrix`)
+  if (v.shape[0] !== v.shape[1]) throw new MdmlError('shape', `${name}: expected a square matrix`)
   return v
 }
 
@@ -57,8 +57,8 @@ function square2(k: TensorLike, name: string): Value {
  * @concept kernel-matrices
  * @example
  * ```ts
- * import { centerKernel } from 'whitebox-engine/kernels'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { centerKernel } from 'mdml-engine/kernels'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(centerKernel([[1, 0], [0, 1]])) // => [[0.5, -0.5], [-0.5, 0.5]]
  * ```
  */
@@ -69,7 +69,7 @@ export function centerKernel(k: TensorLike, reference?: TensorLike): Value {
   }
   const fit = square2(reference, 'centerKernel')
   const v = matrix(k, 'centerKernel')
-  if (v.shape[1] !== fit.shape[0]) throw new WhiteboxError('shape', 'centerKernel: the cross-kernel must be [m, n]')
+  if (v.shape[1] !== fit.shape[0]) throw new MdmlError('shape', 'centerKernel: the cross-kernel must be [m, n]')
   return add(sub(sub(v, mean(fit, 0, true)), mean(v, 1, true)), mean(fit))
 }
 
@@ -92,15 +92,15 @@ export interface AlignmentOptions {
  *   Algorithms for learning kernels based on centered alignment (JMLR 13, 2012).
  * @example
  * ```ts
- * import { kernelAlignment } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { kernelAlignment } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(kernelAlignment([[1, 0], [0, 1]], [[2, 0], [0, 2]])) // => 1
  * ```
  */
 export function kernelAlignment(k1: TensorLike, k2: TensorLike, options: AlignmentOptions = {}): Value {
   const a = options.centred === true ? centerKernel(k1) : square2(k1, 'kernelAlignment')
   const b = options.centred === true ? centerKernel(k2) : square2(k2, 'kernelAlignment')
-  if (a.shape[0] !== b.shape[0]) throw new WhiteboxError('shape', 'kernelAlignment: the matrices differ in size')
+  if (a.shape[0] !== b.shape[0]) throw new MdmlError('shape', 'kernelAlignment: the matrices differ in size')
   return div(sum(mul(a, b)), sqrt(mul(sum(square(a)), sum(square(b)))))
 }
 
@@ -115,8 +115,8 @@ export function kernelAlignment(k1: TensorLike, k2: TensorLike, options: Alignme
  * @concept kernel-matrices
  * @example
  * ```ts
- * import { targetAlignment } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { targetAlignment } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(targetAlignment([[1, -1], [-1, 1]], [1, -1])) // => 1
  * ```
  */
@@ -140,7 +140,7 @@ function offDiagonal(k: Value): Value {
 function hsicValue(k: Value, l: Value, estimator: 'biased' | 'unbiased'): Value {
   const n = k.shape[0] ?? 0
   if (estimator === 'biased') return div(sum(mul(centerKernel(k), centerKernel(l))), (n - 1) * (n - 1))
-  if (n < 4) throw new WhiteboxError('value', 'hsic: the unbiased estimator needs at least 4 points')
+  if (n < 4) throw new MdmlError('value', 'hsic: the unbiased estimator needs at least 4 points')
   const kt = offDiagonal(k)
   const lt = offDiagonal(l)
   const first = sum(mul(kt, lt))
@@ -157,14 +157,14 @@ function hsicValue(k: Value, l: Value, estimator: 'biased' | 'unbiased'): Value 
  * @param l - The Gram matrix of the second variable `[n, n]` (same sample order).
  * @param options - Estimator and normalisation.
  * @returns The scalar statistic, differentiable in the Gram matrices.
- * @throws WhiteboxError `shape` for matrices of different sizes; `value` for the unbiased estimator with n < 4.
+ * @throws MdmlError `shape` for matrices of different sizes; `value` for the unbiased estimator with n < 4.
  * @concept kernel-independence
  * @reference A. Gretton et al., Measuring statistical dependence with Hilbert-Schmidt norms (ALT 2005); L. Song et al.,
  *   Feature selection via dependence maximization (JMLR 13, 2012).
  * @example
  * ```ts
- * import { hsic } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { hsic } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * const k = [[1, 0, 1], [0, 1, 0], [1, 0, 1]]
  * Math.round(item(hsic(k, k)) * 1e12) / 1e12 // => 0.444444444444
  * ```
@@ -172,7 +172,7 @@ function hsicValue(k: Value, l: Value, estimator: 'biased' | 'unbiased'): Value 
 export function hsic(k: TensorLike, l: TensorLike, options: HsicOptions = {}): Value {
   const a = square2(k, 'hsic')
   const b = square2(l, 'hsic')
-  if (a.shape[0] !== b.shape[0]) throw new WhiteboxError('shape', 'hsic: the Gram matrices differ in size')
+  if (a.shape[0] !== b.shape[0]) throw new MdmlError('shape', 'hsic: the Gram matrices differ in size')
   const estimator = options.estimator ?? 'biased'
   const value = hsicValue(a, b, estimator)
   if (options.normalise !== true) return value
@@ -198,13 +198,13 @@ export interface MmdStatisticOptions {
  * @param kxy - Cross-kernel `[m, n]`.
  * @param options - The estimator.
  * @returns The scalar statistic (the unbiased and linear ones can be negative).
- * @throws WhiteboxError `shape` for inconsistent matrices or, for the linear statistic, unequal or too small samples.
+ * @throws MdmlError `shape` for inconsistent matrices or, for the linear statistic, unequal or too small samples.
  * @concept kernel-two-sample
  * @reference A. Gretton et al., A kernel two-sample test (JMLR 13, 2012).
  * @example
  * ```ts
- * import { mmdSquared } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { mmdSquared } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(mmdSquared([[1, 0], [0, 1]], [[1, 1], [1, 1]], [[0.5, 0.5], [0.5, 0.5]])) // => 0.5
  * ```
  */
@@ -219,15 +219,15 @@ export function mmdSquared(
   const c = matrix(kxy, 'mmdSquared')
   const m = a.shape[0] ?? 0
   const n = b.shape[0] ?? 0
-  if (c.shape[0] !== m || c.shape[1] !== n) throw new WhiteboxError('shape', 'mmdSquared: kxy must be [m, n]')
+  if (c.shape[0] !== m || c.shape[1] !== n) throw new MdmlError('shape', 'mmdSquared: kxy must be [m, n]')
   const estimator = options.estimator ?? 'biased'
   if (estimator === 'biased') return sub(add(mean(a), mean(b)), mul(mean(c), 2))
   if (estimator === 'unbiased') {
-    if (m < 2 || n < 2) throw new WhiteboxError('shape', 'mmdSquared: the unbiased statistic needs two points a side')
+    if (m < 2 || n < 2) throw new MdmlError('shape', 'mmdSquared: the unbiased statistic needs two points a side')
     const within = (k: Value, size: number): Value => div(sum(offDiagonal(k)), size * (size - 1))
     return sub(add(within(a, m), within(b, n)), mul(mean(c), 2))
   }
-  if (m !== n || m < 2) throw new WhiteboxError('shape', 'mmdSquared: the linear statistic needs equal samples of >= 2')
+  if (m !== n || m < 2) throw new MdmlError('shape', 'mmdSquared: the linear statistic needs equal samples of >= 2')
   const pairs = Math.floor(m / 2)
   const flat = (k: Value, i: number, j: number): Value => sum(sliceAxis(sliceAxis(k, 0, i, i + 1), 1, j, j + 1))
   let total: Value | undefined
@@ -254,8 +254,8 @@ export function mmdSquared(
  *   17, 2005); A. Rudi and L. Rosasco, Generalization properties of learning with random features (NeurIPS 2017).
  * @example
  * ```ts
- * import { effectiveDimension } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { effectiveDimension } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(effectiveDimension([[3, 0], [0, 1]], 1)) // => 1.25
  * ```
  */
@@ -291,14 +291,14 @@ export interface KernelPcaOptions {
  * @param k - A Gram matrix `[n, n]`.
  * @param options - The number of components.
  * @returns Eigenvalues, eigenvectors, projections and the projection of new points.
- * @throws WhiteboxError `value` for more components than points.
+ * @throws MdmlError `value` for more components than points.
  * @concept kernel-pca
  * @reference B. Schölkopf, A. Smola and K.-R. Müller, Nonlinear component analysis as a kernel eigenvalue problem
  *   (Neural Computation 10, 1998).
  * @example
  * ```ts
- * import { kernelPca } from 'whitebox-engine/kernels'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { kernelPca } from 'mdml-engine/kernels'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(kernelPca([[2, 0], [0, 2]], { nComponents: 1 }).eigenvalues).map((v) => Math.round(v * 1e9) / 1e9) // => [2]
  * ```
  */
@@ -307,7 +307,7 @@ export function kernelPca(k: TensorLike, options: KernelPcaOptions = {}): Kernel
   const n = fit.shape[0] ?? 0
   const count = options.nComponents ?? n
   if (!(Number.isInteger(count) && count >= 1 && count <= n))
-    throw new WhiteboxError('value', `kernelPca: nComponents must be in 1..${n}, got ${count}`)
+    throw new MdmlError('value', `kernelPca: nComponents must be in 1..${n}, got ${count}`)
   const { eigenvalues, eigenvectors } = eigh(centerKernel(fit))
   const order = fromStorage(
     Int32Array.from({ length: count }, (_, i) => n - 1 - i),
@@ -365,8 +365,8 @@ export interface PairwiseKernelOptions {
  * @concept kernel-functions
  * @example
  * ```ts
- * import { pairwiseKernels } from 'whitebox-engine/kernels'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pairwiseKernels } from 'mdml-engine/kernels'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(pairwiseKernels([[1, 1]], [[2, 0]], 'polynomial', { degree: 2, coef0: 0, gamma: 1 })) // => [[4]]
  * ```
  */

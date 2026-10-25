@@ -1,5 +1,5 @@
+import { scene } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
-import { scene } from 'whitebox-engine/scene'
 import { episodeSteps, episodeTimeline, filmstrip, stepCaption } from './frames.ts'
 
 const episode = {

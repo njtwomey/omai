@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { NUMERIC_FUNCTIONS } from '../../testing/symbolic.ts'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import {
   definiteIntegral,
   definiteIntegralSteps,
@@ -128,7 +128,7 @@ describe('definiteIntegral', () => {
       definiteIntegral(parse('1/x^2'), x, -1, 1)
       expect.unreachable()
     } catch (e) {
-      expect(isWhiteboxError(e) && e.code === 'domain').toBe(true)
+      expect(isMdmlError(e) && e.code === 'domain').toBe(true)
     }
   })
 })

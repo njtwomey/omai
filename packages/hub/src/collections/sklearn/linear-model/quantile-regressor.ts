@@ -3,7 +3,7 @@
  * and tabular regression data.
  */
 
-import { quantileRegressor as quantileRegressorMethod } from 'whitebox-engine/methods/linear'
+import { quantileRegressor as quantileRegressorMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

@@ -1,5 +1,5 @@
+import { normal, poisson } from 'mdml-engine/dists'
 import { describe, expect, it } from 'vitest'
-import { normal, poisson } from 'whitebox-engine/dists'
 import { figure } from '../figure/figure.ts'
 import { barChart, bars, histogram, paretoChart } from './bars.ts'
 import {

@@ -5,7 +5,7 @@
  * view cone and the cells each ray visits.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import {
   circle,
   line,
@@ -63,7 +63,7 @@ export interface DdaResult {
 }
 
 function squareSize(w: World): [number, number] {
-  if (w.topology.kind !== 'square') throw new WhiteboxError('value', 'graphics: ray casting needs a square-grid world')
+  if (w.topology.kind !== 'square') throw new MdmlError('value', 'graphics: ray casting needs a square-grid world')
   return [w.topology.rows, w.topology.cols]
 }
 
@@ -80,12 +80,12 @@ const opaque = (w: World, cell: number): boolean => terrainOf(w, cell).opaque
  * @param angle - The direction in radians (0 east, clockwise on screen).
  * @param options - Range (default the map's diagonal plus one) and a step cap (default `rows + cols + 2`).
  * @returns The hit, the cells visited and the crossings.
- * @throws WhiteboxError with code `value` for other topologies.
+ * @throws MdmlError with code `value` for other topologies.
  * @concept ray-casting
  * @example
  * ```ts
- * import { ddaCast } from 'whitebox-engine/graphics'
- * import { fromAscii } from 'whitebox-engine/worlds'
+ * import { ddaCast } from 'mdml-engine/graphics'
+ * import { fromAscii } from 'mdml-engine/worlds'
  * const r = ddaCast(fromAscii(['#####', '#...#', '#####']), [1.5, 1.5], 0)
  * [r.hit?.distance, r.hit?.cell, r.hit?.face, r.cells] // => [2.5, 9, 3, [6, 7, 8, 9]]
  * ```
@@ -165,7 +165,7 @@ export function ddaCast(
  * @concept ray-casting
  * @example
  * ```ts
- * import { fisheyeCorrect } from 'whitebox-engine/graphics'
+ * import { fisheyeCorrect } from 'mdml-engine/graphics'
  * fisheyeCorrect(2, Math.PI / 3, 0) // => 1.0000000000000002
  * ```
  */
@@ -206,7 +206,7 @@ export interface RaycastOptions {
  * @concept ray-casting
  * @example
  * ```ts
- * import { columnAngles } from 'whitebox-engine/graphics'
+ * import { columnAngles } from 'mdml-engine/graphics'
  * columnAngles(0, 2, Math.PI / 2).map((a) => Math.round(a * 1e9) / 1e9) // => [-0.463647609, 0.463647609]
  * ```
  */
@@ -240,9 +240,9 @@ function settings(w: World, options: RaycastOptions) {
   const height = options.height ?? 48
   const fov = options.fov ?? Math.PI / 3
   if (!(Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0)) {
-    throw new WhiteboxError('value', 'raycast: the image size must be positive integers')
+    throw new MdmlError('value', 'raycast: the image size must be positive integers')
   }
-  if (!(fov > 0 && fov < Math.PI)) throw new WhiteboxError('value', 'raycast: fov must be in (0, pi)')
+  if (!(fov > 0 && fov < Math.PI)) throw new MdmlError('value', 'raycast: fov must be in (0, pi)')
   const eyeHeight = options.eyeHeight ?? 0.5
   // Focal length in pixels: half the width over tan(fov / 2); square pixels, so the same vertically.
   const focal = width / 2 / Math.tan(fov / 2)
@@ -270,9 +270,9 @@ function settings(w: World, options: RaycastOptions) {
  * @concept ray-casting
  * @example
  * ```ts
- * import { raycastAlgorithm } from 'whitebox-engine/graphics'
- * import { runAlgorithm } from 'whitebox-engine/trace'
- * import { fromAscii } from 'whitebox-engine/worlds'
+ * import { raycastAlgorithm } from 'mdml-engine/graphics'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fromAscii } from 'mdml-engine/worlds'
  * const a = raycastAlgorithm(fromAscii(['#####', '#...#', '#####']), { x: 1.5, y: 1.5, heading: 0 }, { width: 8 })
  * runAlgorithm(a, { maxSteps: 100 }).steps // => 8
  * ```
@@ -340,8 +340,8 @@ export function raycastAlgorithm(w: World, pose: Pose, options: RaycastOptions =
  * @concept ray-casting
  * @example
  * ```ts
- * import { castColumns } from 'whitebox-engine/graphics'
- * import { fromAscii } from 'whitebox-engine/worlds'
+ * import { castColumns } from 'mdml-engine/graphics'
+ * import { fromAscii } from 'mdml-engine/worlds'
  * const cols = castColumns(fromAscii(['#####', '#...#', '#####']), { x: 1.5, y: 1.5, heading: 0 }, { width: 4, height: 10 })
  * [cols.length, cols[1].hit?.cell, Math.round(cols[1].perpendicular * 1e9) / 1e9] // => [4, 9, 2.5]
  * ```
@@ -443,8 +443,8 @@ function surfaceAt(s: Surface, u: number, v: number): Vec3 {
  * @concept ray-casting
  * @example
  * ```ts
- * import { renderRaycast } from 'whitebox-engine/graphics'
- * import { fromAscii } from 'whitebox-engine/worlds'
+ * import { renderRaycast } from 'mdml-engine/graphics'
+ * import { fromAscii } from 'mdml-engine/worlds'
  * const room = fromAscii(['#######', '#.....#', '#.....#', '#.....#', '#######'])
  * const f = renderRaycast(room, { x: 1.5, y: 2.5, heading: 0 }, { width: 8, height: 6, floor: [0, 1, 0], ceiling: [0, 0, 1] })
  * [f.image.rgb.slice(0, 3), f.image.rgb.slice(3 * 40, 3 * 40 + 3)].map((c) => Array.from(c)) // => [[0, 0, 1], [0, 1, 0]]
@@ -573,8 +573,8 @@ export interface ViewConeRay {
  * @concept ray-casting
  * @example
  * ```ts
- * import { viewConeRays } from 'whitebox-engine/graphics'
- * import { fromAscii } from 'whitebox-engine/worlds'
+ * import { viewConeRays } from 'mdml-engine/graphics'
+ * import { fromAscii } from 'mdml-engine/worlds'
  * const rays = viewConeRays(fromAscii(['#####', '#...#', '#####']), { x: 1.5, y: 1.5, heading: 0 }, { rays: 3 })
  * rays.map((r) => r.hit?.cell) // => [2, 9, 12]
  * ```
@@ -621,8 +621,8 @@ export function viewConeRays(
  * @concept ray-casting
  * @example
  * ```ts
- * import { viewConeScene } from 'whitebox-engine/graphics'
- * import { fromAscii } from 'whitebox-engine/worlds'
+ * import { viewConeScene } from 'mdml-engine/graphics'
+ * import { fromAscii } from 'mdml-engine/worlds'
  * const s = viewConeScene(fromAscii(['#####', '#...#', '#####']), { x: 1.5, y: 1.5, heading: 0 }, { rays: 5 })
  * [s.width, s.children.filter((n) => n.id?.startsWith('ray-')).length] // => [160, 5]
  * ```

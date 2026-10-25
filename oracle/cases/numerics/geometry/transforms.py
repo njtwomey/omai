@@ -8,10 +8,10 @@ import numpy as np
 import scipy
 import scipy.linalg as sl
 import scipy.spatial as ss
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from scipy.spatial.transform import Rotation, Slerp
 from skimage.transform import FundamentalMatrixTransform, ProjectiveTransform
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "skimage": version("scikit-image")}
 

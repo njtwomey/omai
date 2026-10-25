@@ -4,7 +4,7 @@
  * graphs the articulation points, bridges and biconnected components, following scipy.sparse.csgraph and NetworkX.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { partitionFromLabels } from './_build.ts'
 import { type Graph, graph } from './graph.ts'
 
@@ -28,7 +28,7 @@ export interface Components {
  * @concept connected-components
  * @example
  * ```ts
- * import { connectedComponents, graph } from 'whitebox-engine/graph'
+ * import { connectedComponents, graph } from 'mdml-engine/graph'
  * const c = connectedComponents(graph([[0, 1], [2, 3]], { nodes: 5 }))
  * c.count // => 3
  * c.components // => [[0, 1], [2, 3], [4]]
@@ -67,7 +67,7 @@ export function connectedComponents(g: Graph, options: { readonly connection?: '
  * @returns True when there is one component.
  * @example
  * ```ts
- * import { graph, isConnected } from 'whitebox-engine/graph'
+ * import { graph, isConnected } from 'mdml-engine/graph'
  * [isConnected(graph([[0, 1], [1, 2]])), isConnected(graph([[0, 1]], { nodes: 3 }))] // => [true, false]
  * ```
  */
@@ -181,7 +181,7 @@ function kosaraju(g: Graph): Int32Array {
  * @reference R. Tarjan, Depth-first search and linear graph algorithms, SIAM J. Computing 1 (1972).
  * @example
  * ```ts
- * import { digraph, stronglyConnectedComponents } from 'whitebox-engine/graph'
+ * import { digraph, stronglyConnectedComponents } from 'mdml-engine/graph'
  * const g = digraph([[0, 1], [1, 0], [1, 2], [2, 3], [3, 2]])
  * stronglyConnectedComponents(g).components // => [[0, 1], [2, 3]]
  * stronglyConnectedComponents(g, { method: 'kosaraju' }).count // => 2
@@ -202,7 +202,7 @@ export function stronglyConnectedComponents(
  * @returns True when there is one strong component.
  * @example
  * ```ts
- * import { cycleGraph, isStronglyConnected, pathGraph } from 'whitebox-engine/graph'
+ * import { cycleGraph, isStronglyConnected, pathGraph } from 'mdml-engine/graph'
  * [isStronglyConnected(cycleGraph(4, { directed: true })), isStronglyConnected(pathGraph(3, { directed: true }))] // => [true, false]
  * ```
  */
@@ -225,16 +225,16 @@ export interface Condensation {
  *
  * @param g - A directed graph.
  * @returns The component DAG, the mapping from nodes to components, and the members.
- * @throws WhiteboxError with code `value` for an undirected graph.
+ * @throws MdmlError with code `value` for an undirected graph.
  * @example
  * ```ts
- * import { condensation, digraph } from 'whitebox-engine/graph'
+ * import { condensation, digraph } from 'mdml-engine/graph'
  * const c = condensation(digraph([[0, 1], [1, 0], [1, 2], [2, 3], [3, 2], [0, 3]]))
  * c.graph.edges.map((e) => [e.source, e.target]) // => [[0, 1]]
  * ```
  */
 export function condensation(g: Graph): Condensation {
-  if (!g.directed) throw new WhiteboxError('value', 'condensation: the graph is undirected')
+  if (!g.directed) throw new MdmlError('value', 'condensation: the graph is undirected')
   const scc = stronglyConnectedComponents(g)
   const edges: [number, number][] = []
   const seen = new Set<string>()
@@ -264,7 +264,7 @@ interface Biconnectivity {
 }
 
 function biconnectivity(g: Graph, where: string): Biconnectivity {
-  if (g.directed) throw new WhiteboxError('value', `${where}: the graph must be undirected`)
+  if (g.directed) throw new MdmlError('value', `${where}: the graph must be undirected`)
   const a = g.out
   const disc = new Int32Array(g.n).fill(-1)
   const low = new Int32Array(g.n)
@@ -331,11 +331,11 @@ function biconnectivity(g: Graph, where: string): Biconnectivity {
  *
  * @param g - An undirected graph.
  * @returns The articulation points, ascending.
- * @throws WhiteboxError with code `value` for a directed graph.
+ * @throws MdmlError with code `value` for a directed graph.
  * @concept biconnectivity
  * @example
  * ```ts
- * import { articulationPoints, barbellGraph } from 'whitebox-engine/graph'
+ * import { articulationPoints, barbellGraph } from 'mdml-engine/graph'
  * articulationPoints(barbellGraph(3, 1)) // => [2, 3, 4]
  * ```
  */
@@ -349,11 +349,11 @@ export function articulationPoints(g: Graph): number[] {
  *
  * @param g - An undirected graph.
  * @returns The bridges as `[u, v]` with `u < v`, sorted.
- * @throws WhiteboxError with code `value` for a directed graph.
+ * @throws MdmlError with code `value` for a directed graph.
  * @concept biconnectivity
  * @example
  * ```ts
- * import { barbellGraph, bridges } from 'whitebox-engine/graph'
+ * import { barbellGraph, bridges } from 'mdml-engine/graph'
  * bridges(barbellGraph(3, 1)) // => [[2, 3], [3, 4]]
  * ```
  */
@@ -374,11 +374,11 @@ export interface BiconnectedComponent {
  *
  * @param g - An undirected graph.
  * @returns The blocks, each with sorted nodes and sorted `[u, v]` (`u < v`) edges, ordered by their node lists.
- * @throws WhiteboxError with code `value` for a directed graph.
+ * @throws MdmlError with code `value` for a directed graph.
  * @concept biconnectivity
  * @example
  * ```ts
- * import { barbellGraph, biconnectedComponents } from 'whitebox-engine/graph'
+ * import { barbellGraph, biconnectedComponents } from 'mdml-engine/graph'
  * biconnectedComponents(barbellGraph(3, 1)).map((b) => b.nodes) // => [[0, 1, 2], [2, 3], [3, 4], [4, 5, 6]]
  * ```
  */

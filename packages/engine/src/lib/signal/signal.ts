@@ -4,7 +4,7 @@
  * conversion, and phase unwrapping (numpy.unwrap).
  */
 
-import { maxOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import {
   abs,
   absComplex,
@@ -79,24 +79,22 @@ export interface SignalOptions {
  * @param samples - Samples `[n]` or `[n, channels]`.
  * @param options - Sampling rate, start time, units and channel names.
  * @returns The signal.
- * @throws WhiteboxError with code `value` for a non-positive rate, `shape` for other ranks or mismatched names.
+ * @throws MdmlError with code `value` for a non-positive rate, `shape` for other ranks or mismatched names.
  * @concept sampled-signal
  * @example
  * ```ts
- * import { createSignal } from 'whitebox-engine/signal'
+ * import { createSignal } from 'mdml-engine/signal'
  * createSignal([0, 1, 0, -1], { fs: 4 }).fs // => 4
  * ```
  */
 export function createSignal(samples: TensorLike, options: SignalOptions = {}): Signal {
   const x = float(samples)
   const fs = options.fs ?? 1
-  if (!(fs > 0) || !Number.isFinite(fs))
-    throw new WhiteboxError('value', `createSignal: fs must be positive, got ${fs}`)
-  if (x.shape.length < 1 || x.shape.length > 2)
-    throw new WhiteboxError('shape', 'createSignal: samples are [n] or [n, c]')
+  if (!(fs > 0) || !Number.isFinite(fs)) throw new MdmlError('value', `createSignal: fs must be positive, got ${fs}`)
+  if (x.shape.length < 1 || x.shape.length > 2) throw new MdmlError('shape', 'createSignal: samples are [n] or [n, c]')
   const c = x.shape.length === 2 ? (x.shape[1] ?? 0) : 1
   if (options.channels !== undefined && options.channels.length !== c)
-    throw new WhiteboxError('shape', `createSignal: ${c} channels but ${options.channels.length} names`)
+    throw new MdmlError('shape', `createSignal: ${c} channels but ${options.channels.length} names`)
   return {
     samples: x,
     fs,
@@ -116,8 +114,8 @@ export function createSignal(samples: TensorLike, options: SignalOptions = {}): 
  * @concept sampled-signal
  * @example
  * ```ts
- * import { sampleTimes } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sampleTimes } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sampleTimes(4, 2)) // => [0, 0.5, 1, 1.5]
  * ```
  */
@@ -133,7 +131,7 @@ export function sampleTimes(n: number | Signal, fs = 1, start = 0): Tensor {
  * @returns n / fs.
  * @example
  * ```ts
- * import { createSignal, duration } from 'whitebox-engine/signal'
+ * import { createSignal, duration } from 'mdml-engine/signal'
  * duration(createSignal([1, 2, 3, 4], { fs: 2 })) // => 2
  * ```
  */
@@ -164,8 +162,8 @@ export interface DbOptions {
  * @concept decibels
  * @example
  * ```ts
- * import { magnitudeDb } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { magnitudeDb } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(magnitudeDb([1, 10, 100])) // => [0, 20, 40]
  * toArray(magnitudeDb([1, 10, 100], { power: true, ref: 'max' })) // => [-20, -10, 0]
  * ```
@@ -175,13 +173,13 @@ export function magnitudeDb(x: TensorLike | ComplexValue, options: DbOptions = {
   const mag = isComplex(x) ? absComplex(x) : abs(float(x as TensorLike))
   const p = power ? mag : mul(mag, mag)
   const amin = power ? (options.amin ?? 1e-10) : (options.amin ?? 1e-5) ** 2
-  if (!(amin > 0)) throw new WhiteboxError('value', 'magnitudeDb: amin must be positive')
+  if (!(amin > 0)) throw new MdmlError('value', 'magnitudeDb: amin must be positive')
   const refIn = options.ref ?? 1
   const peak = maxOf(primalOf(p).data)
   const ref = refIn === 'max' ? peak : power ? Math.abs(refIn) : refIn * refIn
   const db = sub(mul(10, log10(maximum(p, amin))), 10 * Math.log10(Math.max(amin, ref)))
   if (options.topDb === undefined) return db
-  if (!(options.topDb >= 0)) throw new WhiteboxError('value', 'magnitudeDb: topDb must be non-negative')
+  if (!(options.topDb >= 0)) throw new MdmlError('value', 'magnitudeDb: topDb must be non-negative')
   return maximum(db, sub(max(db), options.topDb))
 }
 
@@ -205,8 +203,8 @@ export interface UnwrapOptions {
  * @concept phase-unwrapping
  * @example
  * ```ts
- * import { unwrap } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { unwrap } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(unwrap([0, 1.5, 3.5, -2.5], { period: 4 })) // => [0, 1.5, 3.5, 1.5]
  * ```
  */

@@ -5,7 +5,7 @@
  * cross-fitting as in scikit-learn.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { interp } from '../numerics/interpolate/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { fminbound, lbfgs } from '../optim/index.ts'
@@ -53,7 +53,7 @@ function vector(x: TensorLike, who: string): Float64Array {
 
 function binaryTargets(y: TensorLike, n: number, who: string): Float64Array {
   const t = targetVector(y, who, n)
-  for (const v of t) if (v !== 0 && v !== 1) throw new WhiteboxError('value', `${who}: labels must be 0 or 1`)
+  for (const v of t) if (v !== 0 && v !== 1) throw new MdmlError('value', `${who}: labels must be 0 or 1`)
   return t
 }
 
@@ -68,7 +68,7 @@ function binaryTargets(y: TensorLike, n: number, who: string): Float64Array {
  * @concept isotonic-regression
  * @example
  * ```ts
- * import { poolAdjacentViolators } from 'whitebox-engine/learn'
+ * import { poolAdjacentViolators } from 'mdml-engine/learn'
  * poolAdjacentViolators([1, 3, 2, 4]) // => [1, 2.5, 2.5, 4]
  * ```
  */
@@ -174,8 +174,8 @@ function isotonicPredict(p: IsotonicParams): (scores: TensorLike) => Tensor {
  * @returns The calibrator.
  * @example
  * ```ts
- * import { isotonicCalibration } from 'whitebox-engine/learn'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { isotonicCalibration } from 'mdml-engine/learn'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const c = isotonicCalibration([0.1, 0.4, 0.35, 0.8], [0, 1, 0, 1])
  * toFlat(c.predict([0.1, 0.375, 0.9])) // => [0, 0.5, 1]
  * ```
@@ -230,7 +230,7 @@ function logisticNewton(
     )
       return beta
     if (beta.some((v) => !Number.isFinite(v)))
-      throw new WhiteboxError('convergence', `${who}: the fit diverged (separable scores?)`)
+      throw new MdmlError('convergence', `${who}: the fit diverged (separable scores?)`)
   }
   return beta
 }
@@ -247,7 +247,7 @@ function logisticNewton(
  * @concept probability-calibration
  * @example
  * ```ts
- * import { plattScaling } from 'whitebox-engine/learn'
+ * import { plattScaling } from 'mdml-engine/learn'
  * const c = plattScaling([-2, -1, 1, 2], [0, 0, 1, 1])
  * c.params.a < 0 // => true
  * ```
@@ -293,7 +293,7 @@ export type BetaParams = { readonly a: number; readonly b: number; readonly c: n
  * @returns The calibrator.
  * @example
  * ```ts
- * import { betaCalibration } from 'whitebox-engine/learn'
+ * import { betaCalibration } from 'mdml-engine/learn'
  * const c = betaCalibration([0.1, 0.3, 0.6, 0.9, 0.2, 0.8], [0, 0, 1, 1, 1, 0])
  * c.params.a >= 0 && c.params.b >= 0 // => true
  * ```
@@ -345,8 +345,8 @@ export type HistogramParams = { readonly edges: number[]; readonly values: numbe
  * @returns The calibrator.
  * @example
  * ```ts
- * import { histogramBinning } from 'whitebox-engine/learn'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { histogramBinning } from 'mdml-engine/learn'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const c = histogramBinning([0.1, 0.2, 0.7, 0.9], [0, 1, 1, 1], { nBins: 2 })
  * toFlat(c.predict([0.3, 0.8])) // => [0.5, 1]
  * ```
@@ -360,7 +360,7 @@ export function histogramBinning(
   const y = binaryTargets(labels, s.length, 'histogramBinning')
   const w = sampleWeightsOf(options.weights, s.length, 'histogramBinning')
   const k = options.nBins ?? 10
-  if (!(Number.isInteger(k) && k >= 1)) throw new WhiteboxError('value', 'histogramBinning: nBins must be >= 1')
+  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'histogramBinning: nBins must be >= 1')
   const sorted = Float64Array.from(s).sort()
   const edges =
     options.strategy === 'quantile'
@@ -390,7 +390,7 @@ export function histogramBinning(
  * @returns The logits, row-major.
  * @example
  * ```ts
- * import { logitsOf } from 'whitebox-engine/learn'
+ * import { logitsOf } from 'mdml-engine/learn'
  * Array.from(logitsOf([2]).data) // => [-2, 2]
  * ```
  */
@@ -431,7 +431,7 @@ function labelCodes(labels: TensorLike, n: number, k: number, who: string): Int3
   const t = targetVector(labels, who, n)
   return Int32Array.from(t, (v) => {
     if (!(Number.isInteger(v) && v >= 0 && v < k))
-      throw new WhiteboxError('value', `${who}: labels must be class indices in [0, ${k})`)
+      throw new MdmlError('value', `${who}: labels must be class indices in [0, ${k})`)
     return v
   })
 }
@@ -447,7 +447,7 @@ function labelCodes(labels: TensorLike, n: number, k: number, who: string): Int3
  * @returns The calibrator (multiclass: it predicts `[n, k]`), with the inverse temperature `beta` in its parameters.
  * @example
  * ```ts
- * import { temperatureScaling } from 'whitebox-engine/learn'
+ * import { temperatureScaling } from 'mdml-engine/learn'
  * const c = temperatureScaling([[4, 0], [3, 0], [0, 4], [3, 0]], [0, 0, 1, 1])
  * c.params.beta < 1 // => true
  * ```
@@ -490,7 +490,7 @@ export type VectorParams = { readonly scale: number[]; readonly bias: number[] }
  * @returns The calibrator.
  * @example
  * ```ts
- * import { vectorScaling } from 'whitebox-engine/learn'
+ * import { vectorScaling } from 'mdml-engine/learn'
  * const c = vectorScaling([[2, 0, 0], [0, 2, 0], [0, 0, 2], [2, 0, 0], [0, 0, 2], [0, 2, 0]], [0, 1, 2, 1, 2, 1])
  * c.params.scale.length // => 3
  * ```
@@ -575,7 +575,7 @@ function predictorFor(method: CalibrationMethod, params: Json): (scores: TensorL
   }
   const { scale, bias } = p as VectorParams
   return multiclass((v, j) => {
-    if (j >= scale.length) throw new WhiteboxError('shape', `vectorScaling: fitted for ${scale.length} classes`)
+    if (j >= scale.length) throw new MdmlError('shape', `vectorScaling: fitted for ${scale.length} classes`)
     return (scale[j] ?? 1) * v + (bias[j] ?? 0)
   })
 }
@@ -588,8 +588,8 @@ function predictorFor(method: CalibrationMethod, params: Json): (scores: TensorL
  * @returns The calibrator.
  * @example
  * ```ts
- * import { reviveCalibrator } from 'whitebox-engine/learn'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { reviveCalibrator } from 'mdml-engine/learn'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(reviveCalibrator('sigmoid', { a: -1, b: 0 }).predict([0])) // => [0.5]
  * ```
  */
@@ -616,7 +616,7 @@ function responseOf(
 ): { readonly values: Float64Array; readonly n: number; readonly k: number; readonly kind: 'decision' | 'proba' } {
   const f = fitted.decisionFunction ?? fitted.predictProba
   if (f === undefined)
-    throw new WhiteboxError('value', `calibration: ${fitted.estimator} has neither decisionFunction nor predictProba`)
+    throw new MdmlError('value', `calibration: ${fitted.estimator} has neither decisionFunction nor predictProba`)
   const out = f(x)
   const n = out.shape[0] ?? 0
   const k = out.shape.length === 2 ? (out.shape[1] ?? 1) : 1
@@ -744,8 +744,8 @@ export interface FittedCalibrated extends Fitted<CalibratedParams> {
  * @returns The estimator.
  * @example
  * ```ts
- * import { calibratedClassifierCV, defineEstimator } from 'whitebox-engine/learn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { calibratedClassifierCV, defineEstimator } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
  * const scoreByFirst = defineEstimator(
  *   { name: 'first', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], decisionFunction: (x) => tensor(x.shape === undefined ? x.map((r) => r[0]) : Array.from({ length: x.shape[0] }, (_, i) => x.data[i * x.shape[1]])) }) },
  *   {},
@@ -881,8 +881,8 @@ export function calibratedClassifierCV(
  * @returns Calibrated class probabilities as a function of features.
  * @example
  * ```ts
- * import { calibrateFitted } from 'whitebox-engine/learn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { calibrateFitted } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
  * const fitted = { estimator: 'raw', kind: 'classifier', params: {}, classes: [0, 1], decisionFunction: (x) => tensor(x.map((r) => r[0])) }
  * const proba = calibrateFitted(fitted, { x: [[-1], [-0.5], [0.5], [1]], y: [0, 1, 0, 1] }, 'isotonic')
  * proba([[2]]).shape // => [1, 2]

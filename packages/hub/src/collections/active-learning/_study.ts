@@ -1,9 +1,9 @@
 // Active-learning hub entries (private to this collection): a study's controls (the strategies of one family, the
 // start, the budget and the batch size) and a run on the chosen dataset.
 
-import type { Estimator } from 'whitebox-engine/learn'
-import { activeLearningStudy, type StrategyName } from 'whitebox-engine/methods/active-learning'
-import { choice, dict, int } from 'whitebox-engine/space'
+import type { Estimator } from 'mdml-engine/learn'
+import { activeLearningStudy, type StrategyName } from 'mdml-engine/methods/active-learning'
+import { choice, dict, int } from 'mdml-engine/space'
 import type { HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

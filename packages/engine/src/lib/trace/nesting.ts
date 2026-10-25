@@ -19,7 +19,7 @@ import { type Algorithm, type RunOptions, type RunResult, runAlgorithm, type Ste
  * @concept algorithm-protocol
  * @example
  * ```ts
- * import { recorder, runAlgorithm, subRun, type Algorithm } from 'whitebox-engine/trace'
+ * import { recorder, runAlgorithm, subRun, type Algorithm } from 'mdml-engine/trace'
  * const inner: Algorithm<number> = { name: 'inner', config: {}, init: () => 0, step: (s) => s + 1 }
  * const outer: Algorithm<number> = {
  *   name: 'outer', config: {}, init: () => 0,

@@ -3,8 +3,8 @@
  * one-dimensional regression curves.
  */
 
-import { universalApproximation as study } from 'whitebox-engine/methods/neural/foundations'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { universalApproximation as study } from 'mdml-engine/methods/neural/foundations'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry, type ViewSlot } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 

@@ -6,7 +6,7 @@
 
 // TODO: stream-based selective sampling studies (`streamActiveLearning` of the core) and several strategies averaged
 // over seeds with spreads.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import {
   type ClusteringSteps,
   clusteringSteps,
@@ -87,13 +87,13 @@ function initialRows(y: readonly number[], perClass: number, key: Key): number[]
  * @param data - Labelled classification data.
  * @param options - The estimator, strategy, start, budget, batch size, committee, candidates, baseline and key.
  * @returns The final model, the queried rows and the curves, with the exposition records.
- * @throws WhiteboxError `value` when the data has no labels or the start leaves no pool.
+ * @throws MdmlError `value` when the data has no labels or the start leaves no pool.
  */
 export function activeLearningStudy(
   data: LearnData,
   options: ActiveLearningStudyOptions,
 ): Explained<ActiveLearningStudy> {
-  if (data.y === undefined) throw new WhiteboxError('value', 'activeLearningStudy: the data needs labels')
+  if (data.y === undefined) throw new MdmlError('value', 'activeLearningStudy: the data needs labels')
   const m = matrixView(data.x, 'activeLearningStudy')
   const y = Array.from(targetVector(data.y, 'activeLearningStudy', m.n))
   const key = options.key ?? makeKey(0)
@@ -102,7 +102,7 @@ export function activeLearningStudy(
   const initial = initialRows(y, options.initialPerClass ?? 2, foldIn(key, 0))
   const start = new Set(initial)
   const poolRows = Array.from({ length: m.n }, (_, i) => i).filter((i) => !start.has(i))
-  if (poolRows.length === 0) throw new WhiteboxError('value', 'activeLearningStudy: no pool left after the start')
+  if (poolRows.length === 0) throw new MdmlError('value', 'activeLearningStudy: no pool left after the start')
   const budget = Math.min(options.budget ?? 30, poolRows.length)
   const labeled = takeData({ x: data.x, y }, initial)
   const pool = takeData({ x: data.x }, poolRows).x

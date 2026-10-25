@@ -5,7 +5,7 @@
  * length together.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { type DType, fromStorage, isTensor, stack, type Tensor, tensor } from '../tensor/index.ts'
 import { take } from './rows.ts'
@@ -36,7 +36,7 @@ export interface BatchOptions {
  * @concept datasets
  * @example
  * ```ts
- * import { batches, xy } from 'whitebox-engine/data'
+ * import { batches, xy } from 'mdml-engine/data'
  * batches(xy([[1], [2], [3]], [1, 2, 3]), { batchSize: 2 }).map((b) => b.y.shape[0]) // => [2, 1]
  * ```
  */
@@ -61,8 +61,8 @@ export function batches<D extends Dataset>(data: D, options: BatchOptions): D[] 
  * @returns The epoch's batches.
  * @example
  * ```ts
- * import { epochBatches, xy } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { epochBatches, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * epochBatches(xy([[1], [2], [3], [4]], [1, 2, 3, 4]), 0, { batchSize: 2, key: key(0) }).length // => 2
  * ```
  */
@@ -80,8 +80,8 @@ export function epochBatches<D extends Dataset>(data: D, epoch: number, options:
  * @returns One list of batches per epoch.
  * @example
  * ```ts
- * import { epochs, xy } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { epochs, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * epochs(xy([[1], [2], [3]], [1, 2, 3]), 2, { batchSize: 2, key: key(0) }).map((e) => e.length) // => [2, 2]
  * ```
  */
@@ -98,8 +98,8 @@ export function epochs<D extends Dataset>(data: D, nEpochs: number, options: Bat
  * @returns `{ epoch(e), length }`: the batches of epoch `e`, and the number of batches per epoch.
  * @example
  * ```ts
- * import { dataLoader, xy } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { dataLoader, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * const loader = dataLoader(xy([[1], [2], [3], [4], [5]], [1, 2, 3, 4, 5]), { batchSize: 2, key: key(0), dropLast: true })
  * loader.length // => 2
  * ```
@@ -125,21 +125,21 @@ export type CollateItem = Readonly<Record<string, number | boolean | readonly nu
  *
  * @param items - The items, all with the same fields and shapes.
  * @returns A tensor per field.
- * @throws WhiteboxError with code `value` for no items or mismatched fields.
+ * @throws MdmlError with code `value` for no items or mismatched fields.
  * @example
  * ```ts
- * import { collate } from 'whitebox-engine/data'
+ * import { collate } from 'mdml-engine/data'
  * collate([{ x: [1, 2], y: 0 }, { x: [3, 4], y: 1 }]).x.shape // => [2, 2]
  * ```
  */
 export function collate(items: readonly CollateItem[]): Readonly<Record<string, Tensor>> {
   const first = items[0]
-  if (first === undefined) throw new WhiteboxError('value', 'collate: no items')
+  if (first === undefined) throw new MdmlError('value', 'collate: no items')
   const out: Record<string, Tensor> = {}
   for (const name of Object.keys(first)) {
     const parts = items.map((it, i) => {
       const v = it[name]
-      if (v === undefined) throw new WhiteboxError('value', `collate: item ${i} has no field ${name}`)
+      if (v === undefined) throw new MdmlError('value', `collate: item ${i} has no field ${name}`)
       return v
     })
     const head = parts[0]
@@ -177,7 +177,7 @@ export interface PadOptions extends PadLayout {
  * @returns The padded values `[n, T, ...]`, the mask `[n, T]` and the kept lengths `[n]`.
  * @example
  * ```ts
- * import { padSequences } from 'whitebox-engine/data'
+ * import { padSequences } from 'mdml-engine/data'
  * const p = padSequences([[1, 2, 3], [4]], { padding: 'pre' })
  * Array.from(p.values.data) // => [1, 2, 3, 0, 0, 4]
  * Array.from(p.lengths.data) // => [3, 1]
@@ -231,10 +231,10 @@ export function padSequences(
  *
  * @param data - The dataset.
  * @returns One length per row.
- * @throws WhiteboxError with code `value` for datasets without sequence rows.
+ * @throws MdmlError with code `value` for datasets without sequence rows.
  * @example
  * ```ts
- * import { sequenceLengths, sequences } from 'whitebox-engine/data'
+ * import { sequenceLengths, sequences } from 'mdml-engine/data'
  * sequenceLengths(sequences([[1, 2], [3]], [[1], [2]], ['<pad>', 'a', 'b', 'c'])) // => [2, 1]
  * ```
  */
@@ -256,7 +256,7 @@ export function sequenceLengths(data: Dataset): number[] {
     case 'parallel':
       return data.source.map((s) => s.split(/\s+/).filter((w) => w.length > 0).length)
     default:
-      throw new WhiteboxError('value', `sequenceLengths: ${data.kind} data has no sequence rows`)
+      throw new MdmlError('value', `sequenceLengths: ${data.kind} data has no sequence rows`)
   }
 }
 
@@ -280,10 +280,10 @@ export interface BucketOptions {
  * @param data - The dataset.
  * @param options - Bucket boundaries, batch sizes, lengths, key and whether to drop partial batches.
  * @returns The batches.
- * @throws WhiteboxError with code `value` when the batch sizes do not match the buckets.
+ * @throws MdmlError with code `value` when the batch sizes do not match the buckets.
  * @example
  * ```ts
- * import { bucketBy, corpus } from 'whitebox-engine/data'
+ * import { bucketBy, corpus } from 'mdml-engine/data'
  * const c = corpus({ tokens: [[1], [1, 2, 3], [2], [3, 3, 3]], vocabulary: ['a', 'b', 'c', 'd'] })
  * bucketBy(c, { boundaries: [2], batchSize: 2 }).map((b) => b.tokens?.map((t) => t.length)) // => [[1, 1], [3, 3]]
  * ```
@@ -293,7 +293,7 @@ export function bucketBy<D extends Dataset>(data: D, options: BucketOptions): D[
   const nb = options.boundaries.length + 1
   const sizes =
     typeof options.batchSize === 'number' ? new Array<number>(nb).fill(options.batchSize) : options.batchSize
-  if (sizes.length !== nb) throw new WhiteboxError('value', `bucketBy: ${sizes.length} batch sizes for ${nb} buckets`)
+  if (sizes.length !== nb) throw new MdmlError('value', `bucketBy: ${sizes.length} batch sizes for ${nb} buckets`)
   const buckets: number[][] = Array.from({ length: nb }, () => [])
   for (const [i, len] of lengths.entries()) {
     let b = 0

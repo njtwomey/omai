@@ -5,7 +5,7 @@
  * restricted isometry constant).
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { ddot, dnrm2, lstsq, svd } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../random/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -23,7 +23,7 @@ interface Matrix {
 
 function matrix(a: TensorLike, name: string): Matrix {
   const t = primalOf(asTensor(a)) as Tensor
-  if (t.shape.length !== 2) throw new WhiteboxError('shape', `${name}: expected a matrix`)
+  if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a matrix`)
   return { data: Float64Array.from(t.data), rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0 }
 }
 
@@ -60,15 +60,15 @@ export interface SparseEncodeOptions {
  * @concept sparse-coding
  * @example
  * ```ts
- * import { sparseEncode } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sparseEncode } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sparseEncode([[3, 0.5]], [[1, 0], [0, 1]], { algorithm: 'threshold', alpha: 1 })) // => [[2, 0]]
  * ```
  */
 export function sparseEncode(x: TensorLike, dictionary: TensorLike, options: SparseEncodeOptions = {}): Tensor {
   const X = matrix(x, 'sparseEncode')
   const D = matrix(dictionary, 'sparseEncode')
-  if (X.cols !== D.cols) throw new WhiteboxError('shape', 'sparseEncode: samples and atoms differ in length')
+  if (X.cols !== D.cols) throw new MdmlError('shape', 'sparseEncode: samples and atoms differ in length')
   const algorithm = options.algorithm ?? 'lassoCd'
   const alpha = options.alpha ?? 1
   const k = D.rows
@@ -166,11 +166,10 @@ function normaliseRows(d: Vec, k: number, m: number): Vec {
 function initialAtoms(X: Matrix, k: number, options: DictionaryLearningOptions, key: Key): Vec {
   if (options.init !== undefined) {
     const init = matrix(options.init, 'dictionary learning')
-    if (init.rows !== k || init.cols !== X.cols)
-      throw new WhiteboxError('shape', 'init must be [nComponents, nFeatures]')
+    if (init.rows !== k || init.cols !== X.cols) throw new MdmlError('shape', 'init must be [nComponents, nFeatures]')
     return normaliseRows(init.data, k, X.cols)
   }
-  if (k > X.rows) throw new WhiteboxError('value', 'dictionary learning: more atoms than samples needs an init')
+  if (k > X.rows) throw new MdmlError('value', 'dictionary learning: more atoms than samples needs an init')
   const order = permutation(key, X.rows).data
   const d = new Float64Array(k * X.cols)
   for (let j = 0; j < k; j++) d.set(row(X, order[j] ?? 0), j * X.cols)
@@ -226,7 +225,7 @@ function step(previous: number, error: number): number {
  * @concept dictionary-learning
  * @example
  * ```ts
- * import { ksvdAlgorithm } from 'whitebox-engine/optim'
+ * import { ksvdAlgorithm } from 'mdml-engine/optim'
  * ksvdAlgorithm([[1, 0], [0, 1], [1, 1]], 2, 1).name // => 'ksvd'
  * ```
  */
@@ -336,7 +335,7 @@ function finish(
  * @concept dictionary-learning
  * @example
  * ```ts
- * import { ksvd } from 'whitebox-engine/optim'
+ * import { ksvd } from 'mdml-engine/optim'
  * ksvd([[2, 0], [0, 3], [1, 0]], 2, 1, { init: [[1, 0], [0, 1]] }).error // => 0
  * ```
  */
@@ -362,7 +361,7 @@ export function ksvd(
  * @concept dictionary-learning
  * @example
  * ```ts
- * import { modAlgorithm } from 'whitebox-engine/optim'
+ * import { modAlgorithm } from 'mdml-engine/optim'
  * modAlgorithm([[1, 0], [0, 1], [1, 1]], 2, 1).name // => 'mod'
  * ```
  */
@@ -418,7 +417,7 @@ export function modAlgorithm(
  * @concept dictionary-learning
  * @example
  * ```ts
- * import { mod } from 'whitebox-engine/optim'
+ * import { mod } from 'mdml-engine/optim'
  * mod([[2, 0], [0, 3], [1, 0]], 2, 1, { init: [[1, 0], [0, 1]] }).error // => 0
  * ```
  */
@@ -454,7 +453,7 @@ export interface OnlineDictionaryOptions extends DictionaryLearningOptions {
  * @concept dictionary-learning
  * @example
  * ```ts
- * import { onlineDictionaryLearningAlgorithm } from 'whitebox-engine/optim'
+ * import { onlineDictionaryLearningAlgorithm } from 'mdml-engine/optim'
  * onlineDictionaryLearningAlgorithm([[1, 0], [0, 1], [1, 1]], 2).name // => 'onlineDictionaryLearning'
  * ```
  */
@@ -541,8 +540,8 @@ export function onlineDictionaryLearningAlgorithm(
  * @concept dictionary-learning
  * @example
  * ```ts
- * import { onlineDictionaryLearning } from 'whitebox-engine/optim'
- * import { key } from 'whitebox-engine/random'
+ * import { onlineDictionaryLearning } from 'mdml-engine/optim'
+ * import { key } from 'mdml-engine/random'
  * onlineDictionaryLearning([[1, 0], [0, 1], [1, 1]], 2, { key: key(1), maxIterations: 5, alpha: 0.1 }).dictionary.shape // => [2, 2]
  * ```
  */
@@ -579,7 +578,7 @@ function normalisedGram(d: Matrix): Vec {
  * @concept compressed-sensing
  * @example
  * ```ts
- * import { mutualCoherence } from 'whitebox-engine/optim'
+ * import { mutualCoherence } from 'mdml-engine/optim'
  * Math.round(mutualCoherence([[1, 0, 1], [0, 1, 1]]) * 1e12) / 1e12 // => 0.707106781187
  * ```
  */
@@ -602,7 +601,7 @@ export function mutualCoherence(dictionary: TensorLike): number {
  * @concept compressed-sensing
  * @example
  * ```ts
- * import { babelFunction } from 'whitebox-engine/optim'
+ * import { babelFunction } from 'mdml-engine/optim'
  * babelFunction([[1, 0, 0], [0, 1, 0], [0, 0, 1]], 2) // => 0
  * ```
  */
@@ -630,7 +629,7 @@ export function babelFunction(dictionary: TensorLike, s: number): number {
  * @returns The bound (any s strictly below it is recoverable).
  * @example
  * ```ts
- * import { coherenceSparsityBound } from 'whitebox-engine/optim'
+ * import { coherenceSparsityBound } from 'mdml-engine/optim'
  * coherenceSparsityBound(0.25) // => 2.5
  * ```
  */
@@ -659,8 +658,8 @@ export interface RipEstimate {
  * @concept compressed-sensing
  * @example
  * ```ts
- * import { ripEstimate } from 'whitebox-engine/optim'
- * import { key } from 'whitebox-engine/random'
+ * import { ripEstimate } from 'mdml-engine/optim'
+ * import { key } from 'mdml-engine/random'
  * ripEstimate([[1, 0, 0], [0, 1, 0], [0, 0, 1]], 2, { key: key(0), samples: 5 }).delta // => 0
  * ```
  */
@@ -670,7 +669,7 @@ export function ripEstimate(
   options: { readonly key?: Key; readonly samples?: number } = {},
 ): RipEstimate {
   const d = matrix(dictionary, 'ripEstimate')
-  if (!(s >= 1 && s <= d.cols)) throw new WhiteboxError('value', `ripEstimate: s must be in 1..${d.cols}`)
+  if (!(s >= 1 && s <= d.cols)) throw new MdmlError('value', `ripEstimate: s must be in 1..${d.cols}`)
   const samples = options.samples ?? 200
   const base = options.key ?? makeKey(0)
   let lower = Infinity

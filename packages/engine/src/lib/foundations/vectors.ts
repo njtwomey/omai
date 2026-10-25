@@ -5,7 +5,7 @@
  * and intersections.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { daxpy, ddot, dnrm2, dscal } from '../numerics/linalg/blas.ts'
 import { lstsq, matrixRank } from '../numerics/linalg/index.ts'
 import {
@@ -45,8 +45,8 @@ function floats(...xs: readonly TensorLike[]): Value[] {
  * @concept dot-product
  * @example
  * ```ts
- * import { dotProduct } from 'whitebox-engine/foundations'
- * import { item } from 'whitebox-engine/tensor'
+ * import { dotProduct } from 'mdml-engine/foundations'
+ * import { item } from 'mdml-engine/tensor'
  * item(dotProduct([1, 2, 3], [4, 5, 6])) // => 32
  * ```
  */
@@ -63,8 +63,8 @@ export function dotProduct(a: TensorLike, b: TensorLike): Value {
  * @concept vector-norm
  * @example
  * ```ts
- * import { magnitude } from 'whitebox-engine/foundations'
- * import { item } from 'whitebox-engine/tensor'
+ * import { magnitude } from 'mdml-engine/foundations'
+ * import { item } from 'mdml-engine/tensor'
  * item(magnitude([3, 4])) // => 5
  * ```
  */
@@ -81,8 +81,8 @@ export function magnitude(a: TensorLike): Value {
  * @concept vector-norm
  * @example
  * ```ts
- * import { unitVector } from 'whitebox-engine/foundations'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { unitVector } from 'mdml-engine/foundations'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(unitVector([3, 4])) // => [0.6, 0.8]
  * ```
  */
@@ -98,12 +98,12 @@ export function unitVector(a: TensorLike): Value {
  * @param a - Vectors `[..., 3]` or `[..., 2]`.
  * @param b - Vectors of the same length.
  * @returns `a x b` `[..., 3]`, or `[...]` for 2-D input.
- * @throws WhiteboxError with code `shape` for other lengths.
+ * @throws MdmlError with code `shape` for other lengths.
  * @concept cross-product
  * @example
  * ```ts
- * import { crossProduct } from 'whitebox-engine/foundations'
- * import { item, toArray } from 'whitebox-engine/tensor'
+ * import { crossProduct } from 'mdml-engine/foundations'
+ * import { item, toArray } from 'mdml-engine/tensor'
  * toArray(crossProduct([1, 0, 0], [0, 1, 0])) // => [0, 0, 1]
  * item(crossProduct([2, 0], [1, 3])) // => 6
  * ```
@@ -112,7 +112,7 @@ export function crossProduct(a: TensorLike, b: TensorLike): Value {
   const [x, y] = floats(a, b) as [Value, Value]
   const n = x.shape[x.shape.length - 1]
   if (n !== y.shape[y.shape.length - 1] || (n !== 2 && n !== 3)) {
-    throw new WhiteboxError('shape', 'crossProduct: vectors must both have length 2 or 3')
+    throw new MdmlError('shape', 'crossProduct: vectors must both have length 2 or 3')
   }
   const [x0, x1, y0, y1] = [component(x, 0), component(x, 1), component(y, 0), component(y, 1)]
   if (n === 2) return sub(mul(x0, y1), mul(x1, y0))
@@ -131,8 +131,8 @@ export function crossProduct(a: TensorLike, b: TensorLike): Value {
  * @concept triple-product
  * @example
  * ```ts
- * import { tripleProduct } from 'whitebox-engine/foundations'
- * import { item } from 'whitebox-engine/tensor'
+ * import { tripleProduct } from 'mdml-engine/foundations'
+ * import { item } from 'mdml-engine/tensor'
  * item(tripleProduct([1, 0, 0], [0, 2, 0], [0, 0, 3])) // => 6
  * ```
  */
@@ -151,8 +151,8 @@ export function tripleProduct(a: TensorLike, b: TensorLike, c: TensorLike): Valu
  * @concept triple-product
  * @example
  * ```ts
- * import { vectorTripleProduct } from 'whitebox-engine/foundations'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { vectorTripleProduct } from 'mdml-engine/foundations'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(vectorTripleProduct([1, 0, 0], [1, 0, 0], [0, 1, 0])) // => [0, -1, 0]
  * ```
  */
@@ -169,8 +169,8 @@ export function vectorTripleProduct(a: TensorLike, b: TensorLike, c: TensorLike)
  * @concept vector-projection
  * @example
  * ```ts
- * import { projection } from 'whitebox-engine/foundations'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projection } from 'mdml-engine/foundations'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projection([2, 3], [1, 0])) // => [2, 0]
  * ```
  */
@@ -188,8 +188,8 @@ export function projection(a: TensorLike, onto: TensorLike): Value {
  * @concept vector-projection
  * @example
  * ```ts
- * import { scalarProjection } from 'whitebox-engine/foundations'
- * import { item } from 'whitebox-engine/tensor'
+ * import { scalarProjection } from 'mdml-engine/foundations'
+ * import { item } from 'mdml-engine/tensor'
  * item(scalarProjection([3, 4], [0, -2])) // => -4
  * ```
  */
@@ -207,8 +207,8 @@ export function scalarProjection(a: TensorLike, onto: TensorLike): Value {
  * @concept vector-projection
  * @example
  * ```ts
- * import { rejection } from 'whitebox-engine/foundations'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { rejection } from 'mdml-engine/foundations'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(rejection([2, 3], [1, 0])) // => [0, 3]
  * ```
  */
@@ -227,8 +227,8 @@ export function rejection(a: TensorLike, onto: TensorLike): Value {
  * @concept angle-between-vectors
  * @example
  * ```ts
- * import { angleBetween } from 'whitebox-engine/foundations'
- * import { item } from 'whitebox-engine/tensor'
+ * import { angleBetween } from 'mdml-engine/foundations'
+ * import { item } from 'mdml-engine/tensor'
  * item(angleBetween([1, 0], [0, 2])) // => 1.5707963267948966
  * ```
  */
@@ -250,7 +250,7 @@ export interface Orthonormalised {
 
 const rows = (vectors: TensorLike): number[][] => {
   const [v] = floats(vectors) as [Value]
-  if (v.shape.length !== 2) throw new WhiteboxError('shape', 'expected vectors as rows of a matrix [k, n]')
+  if (v.shape.length !== 2) throw new MdmlError('shape', 'expected vectors as rows of a matrix [k, n]')
   return toArray(v) as number[][]
 }
 
@@ -264,7 +264,7 @@ const rows = (vectors: TensorLike): number[][] => {
  * @concept orthonormalisation
  * @example
  * ```ts
- * import { orthonormalise } from 'whitebox-engine/foundations'
+ * import { orthonormalise } from 'mdml-engine/foundations'
  * const r = orthonormalise([[3, 4], [6, 8], [1, 0]])
  * r.independent // => [0, 2]
  * r.basis // => [[0.6, 0.8], [0.8, -0.6]]
@@ -300,7 +300,7 @@ export function orthonormalise(vectors: TensorLike, tol = 1e-10): Orthonormalise
  * @concept linear-independence
  * @example
  * ```ts
- * import { isLinearlyIndependent } from 'whitebox-engine/foundations'
+ * import { isLinearlyIndependent } from 'mdml-engine/foundations'
  * isLinearlyIndependent([[1, 0, 0], [0, 1, 0]]) // => true
  * isLinearlyIndependent([[1, 2], [2, 4]]) // => false
  * ```
@@ -319,7 +319,7 @@ export function isLinearlyIndependent(vectors: TensorLike, tol?: number): boolea
  * @concept span
  * @example
  * ```ts
- * import { spanDimension } from 'whitebox-engine/foundations'
+ * import { spanDimension } from 'mdml-engine/foundations'
  * spanDimension([[1, 0, 1], [0, 1, 1], [1, 1, 2]]) // => 2
  * ```
  */
@@ -347,7 +347,7 @@ export interface SpanMembership {
  * @concept span
  * @example
  * ```ts
- * import { inSpan } from 'whitebox-engine/foundations'
+ * import { inSpan } from 'mdml-engine/foundations'
  * inSpan([[1, 0, 0], [0, 1, 0]], [2, 3, 0]).coefficients // => [2, 3]
  * inSpan([[1, 0, 0], [0, 1, 0]], [0, 0, 1]).inSpan // => false
  * ```
@@ -388,17 +388,17 @@ export interface Plane {
  * @param p - A point.
  * @param q - Another point.
  * @returns The line.
- * @throws WhiteboxError with code `value` when the points coincide.
+ * @throws MdmlError with code `value` when the points coincide.
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { lineThrough } from 'whitebox-engine/foundations'
+ * import { lineThrough } from 'mdml-engine/foundations'
  * lineThrough([1, 1, 0], [3, 1, 0]).direction // => [2, 0, 0]
  * ```
  */
 export function lineThrough(p: readonly number[], q: readonly number[]): Line {
   const direction = Array.from(daxpy(-1, p, q))
-  if (dnrm2(direction) === 0) throw new WhiteboxError('value', 'lineThrough: the points coincide')
+  if (dnrm2(direction) === 0) throw new MdmlError('value', 'lineThrough: the points coincide')
   return { point: [...p], direction }
 }
 
@@ -409,17 +409,17 @@ export function lineThrough(p: readonly number[], q: readonly number[]): Line {
  * @param q - A point `[3]`.
  * @param r - A point `[3]`.
  * @returns The plane.
- * @throws WhiteboxError with code `value` when the points are collinear.
+ * @throws MdmlError with code `value` when the points are collinear.
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { planeThrough } from 'whitebox-engine/foundations'
+ * import { planeThrough } from 'mdml-engine/foundations'
  * planeThrough([0, 0, 0], [1, 0, 0], [0, 1, 0]).normal // => [0, 0, 1]
  * ```
  */
 export function planeThrough(p: readonly number[], q: readonly number[], r: readonly number[]): Plane {
   const normal = toFlat(crossProduct(Array.from(daxpy(-1, p, q)), Array.from(daxpy(-1, p, r))))
-  if (dnrm2(normal) === 0) throw new WhiteboxError('value', 'planeThrough: the points are collinear')
+  if (dnrm2(normal) === 0) throw new MdmlError('value', 'planeThrough: the points are collinear')
   return { point: [...p], normal }
 }
 
@@ -428,18 +428,18 @@ export function planeThrough(p: readonly number[], q: readonly number[], r: read
  *
  * @param coefficients - `[a, b, c, d]`.
  * @returns The plane.
- * @throws WhiteboxError with code `value` when the normal is zero.
+ * @throws MdmlError with code `value` when the normal is zero.
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { planeFromEquation } from 'whitebox-engine/foundations'
+ * import { planeFromEquation } from 'mdml-engine/foundations'
  * planeFromEquation([0, 0, 2, 4]).point // => [0, 0, 2]
  * ```
  */
 export function planeFromEquation(coefficients: readonly [number, number, number, number]): Plane {
   const [a, b, c, d] = coefficients
   const nn = a * a + b * b + c * c
-  if (nn === 0) throw new WhiteboxError('value', 'planeFromEquation: the normal is zero')
+  if (nn === 0) throw new MdmlError('value', 'planeFromEquation: the normal is zero')
   return { point: [(a * d) / nn, (b * d) / nn, (c * d) / nn], normal: [a, b, c] }
 }
 
@@ -451,7 +451,7 @@ export function planeFromEquation(coefficients: readonly [number, number, number
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { planeEquation, planeThrough } from 'whitebox-engine/foundations'
+ * import { planeEquation, planeThrough } from 'mdml-engine/foundations'
  * planeEquation(planeThrough([0, 0, 1], [1, 0, 1], [0, 1, 1])) // => [0, 0, 1, 1]
  * ```
  */
@@ -470,8 +470,8 @@ export function planeEquation(plane: Plane): [number, number, number, number] {
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { pointLineDistance } from 'whitebox-engine/foundations'
- * import { item } from 'whitebox-engine/tensor'
+ * import { pointLineDistance } from 'mdml-engine/foundations'
+ * import { item } from 'mdml-engine/tensor'
  * item(pointLineDistance([0, 3, 4], { point: [0, 0, 0], direction: [1, 0, 0] })) // => 5
  * ```
  */
@@ -489,8 +489,8 @@ export function pointLineDistance(x: TensorLike, line: Line): Value {
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { pointPlaneDistance } from 'whitebox-engine/foundations'
- * import { item } from 'whitebox-engine/tensor'
+ * import { pointPlaneDistance } from 'mdml-engine/foundations'
+ * import { item } from 'mdml-engine/tensor'
  * item(pointPlaneDistance([1, 1, -2], { point: [0, 0, 1], normal: [0, 0, 5] })) // => -3
  * ```
  */
@@ -522,7 +522,7 @@ export interface ClosestPoints {
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { closestPoints } from 'whitebox-engine/foundations'
+ * import { closestPoints } from 'mdml-engine/foundations'
  * closestPoints({ point: [0, 0, 0], direction: [1, 0, 0] }, { point: [0, 1, 2], direction: [0, 1, 0] }).distance // => 2
  * ```
  */
@@ -554,7 +554,7 @@ export function closestPoints(first: Line, second: Line, tol = 1e-12): ClosestPo
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { lineIntersection } from 'whitebox-engine/foundations'
+ * import { lineIntersection } from 'mdml-engine/foundations'
  * lineIntersection({ point: [0, 0], direction: [1, 1] }, { point: [2, 0], direction: [0, 1] }) // => [2, 2]
  * ```
  */
@@ -576,7 +576,7 @@ export function lineIntersection(first: Line, second: Line, tol = 1e-10): number
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { linePlaneIntersection } from 'whitebox-engine/foundations'
+ * import { linePlaneIntersection } from 'mdml-engine/foundations'
  * linePlaneIntersection({ point: [0, 0, 0], direction: [1, 1, 1] }, { point: [0, 0, 3], normal: [0, 0, 1] })?.point // => [3, 3, 3]
  * ```
  */
@@ -602,7 +602,7 @@ export function linePlaneIntersection(
  * @concept lines-and-planes
  * @example
  * ```ts
- * import { planeIntersection } from 'whitebox-engine/foundations'
+ * import { planeIntersection } from 'mdml-engine/foundations'
  * planeIntersection({ point: [0, 0, 1], normal: [0, 0, 1] }, { point: [2, 0, 0], normal: [1, 0, 0] }) // => { point: [2, 0, 1], direction: [0, 1, 0] }
  * ```
  */
@@ -634,8 +634,8 @@ export function planeIntersection(first: Plane, second: Plane, tol = 1e-12): Lin
  * @concept span
  * @example
  * ```ts
- * import { linearCombination } from 'whitebox-engine/foundations'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { linearCombination } from 'mdml-engine/foundations'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(linearCombination([[1, 0], [1, 1]], [2, 3])) // => [5, 3]
  * ```
  */

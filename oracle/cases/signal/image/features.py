@@ -10,9 +10,9 @@ import numpy as np
 import numpy.typing as npt
 import skimage.feature as F
 import skimage.transform as T
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
-from whitebox_oracle.signal_helpers import blocks_image, smooth_image
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
+from mdml_oracle.signal_helpers import blocks_image, smooth_image
 
 REFERENCE: dict[str, str] = {"scikit-image": version("scikit-image")}
 

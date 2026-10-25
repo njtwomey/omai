@@ -5,7 +5,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { extractCatalogue } from './catalogue.ts'
 
 // A miniature repository: a package with a nested namespace, a flat-inlined folder, a re-export and an internal.
-const root = mkdtempSync(join(tmpdir(), 'whitebox-meta-'))
+const root = mkdtempSync(join(tmpdir(), 'mdml-meta-'))
 const files: Record<string, string> = {
   'packages/mini/package.json': JSON.stringify({
     name: 'mini',

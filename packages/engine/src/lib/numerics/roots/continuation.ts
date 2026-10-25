@@ -5,7 +5,7 @@
  */
 
 import { jacobian } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   concat,
   fromStorage,
@@ -40,8 +40,8 @@ export interface HomotopyResult extends SystemResult {
  * @concept continuation
  * @example
  * ```ts
- * import { homotopy } from 'whitebox-engine/numerics/roots'
- * import { pow, sub, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { homotopy } from 'mdml-engine/numerics/roots'
+ * import { pow, sub, tensor, toArray } from 'mdml-engine/tensor'
  * Math.abs(toArray(homotopy((x) => sub(pow(x, 3), tensor([8])), [10]).x)[0] - 2) < 1e-10 // => true
  * ```
  */
@@ -55,7 +55,7 @@ export function homotopy(f: VectorFunction, x0: TensorLike, options: { readonly 
   for (let k = 1; k <= steps; k++) {
     const t = k / steps
     last = fsolve((v) => sub(f(v), mul(f0, 1 - t)), x)
-    if (!last.converged) throw new WhiteboxError('convergence', `homotopy: the corrector failed at t = ${t}`)
+    if (!last.converged) throw new MdmlError('convergence', `homotopy: the corrector failed at t = ${t}`)
     x = last.x
     path.push({ t, x: toFlat(last.x) })
   }
@@ -100,8 +100,8 @@ export interface ContinuationOptions {
  * @concept continuation
  * @example
  * ```ts
- * import { arcLengthContinuation } from 'whitebox-engine/numerics/roots'
- * import { add, square } from 'whitebox-engine/tensor'
+ * import { arcLengthContinuation } from 'mdml-engine/numerics/roots'
+ * import { add, square } from 'mdml-engine/tensor'
  * // x^2 + lambda = 0 folds at lambda = 0.
  * arcLengthContinuation((x, l) => add(square(x), l), [-1], -1, { ds: 0.1, steps: 30 }).folds.length // => 1
  * ```

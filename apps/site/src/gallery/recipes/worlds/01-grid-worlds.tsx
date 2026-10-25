@@ -1,4 +1,3 @@
-import { type ReactNode, useMemo, useState } from 'react'
 import {
   aimaGridWorld,
   cliffWalkingWorld,
@@ -10,9 +9,10 @@ import {
   taxiWorld,
   type World,
   windyGridWorld,
-} from 'whitebox-engine/worlds'
-import { worldView } from 'whitebox-render/gym'
-import { Choice, ControlPanel, SceneFrame, Select, Toggle } from 'whitebox-render/react'
+} from 'mdml-engine/worlds'
+import { worldView } from 'mdml-render/gym'
+import { Choice, ControlPanel, SceneFrame, Select, Toggle } from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

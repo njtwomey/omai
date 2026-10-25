@@ -39,8 +39,8 @@ export interface QpInteriorPointState {
  * @concept interior-point-methods
  * @example
  * ```ts
- * import { qpArrays, qpInteriorPointAlgorithm } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { qpArrays, qpInteriorPointAlgorithm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const qp = qpArrays({ P: [[2]], q: [-4], ub: [1] })
  * Math.round(runAlgorithm(qpInteriorPointAlgorithm(qp), { maxSteps: 50 }).state.x[0] * 1e6) / 1e6 // => 1
  * ```

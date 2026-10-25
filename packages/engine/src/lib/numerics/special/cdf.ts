@@ -50,8 +50,8 @@ const tDensity = (df: Value, t: Value): Value =>
  * @concept special-functions
  * @example
  * ```ts
- * import { stdtr } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { stdtr } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(stdtr(3, 0)) // => 0.5
  * ```
  */
@@ -110,8 +110,8 @@ const stdtritP = special('stdtrit', inc.stdtrit, [
  * @returns t, differentiable in both arguments (implicit function theorem).
  * @example
  * ```ts
- * import { stdtrit } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { stdtrit } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(stdtrit(1, 0.75)) - 1) < 1e-14 // => true
  * ```
  */
@@ -127,8 +127,8 @@ export function stdtrit(df: TensorLike, p: TensorLike): Value {
  * @returns P(X <= x), differentiable.
  * @example
  * ```ts
- * import { chdtr } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { chdtr } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(chdtr(2, 2)) - (1 - Math.exp(-1))) < 1e-15 // => true
  * ```
  */
@@ -146,8 +146,8 @@ export function chdtr(k: TensorLike, x: TensorLike): Value {
  * @returns P(X > x), differentiable.
  * @example
  * ```ts
- * import { chdtrc } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { chdtrc } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(chdtrc(2, 2)) - Math.exp(-1)) < 1e-15 // => true
  * ```
  */
@@ -166,8 +166,8 @@ export function chdtrc(k: TensorLike, x: TensorLike): Value {
  * @returns P(F <= x), differentiable.
  * @example
  * ```ts
- * import { fdtr } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { fdtr } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(fdtr(4, 4, 1)) // => 0.5
  * ```
  */
@@ -187,8 +187,8 @@ export function fdtr(d1: TensorLike, d2: TensorLike, x: TensorLike): Value {
  * @returns P(F > x), differentiable.
  * @example
  * ```ts
- * import { fdtrc } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { fdtrc } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(fdtrc(4, 4, 1)) // => 0.5
  * ```
  */
@@ -211,8 +211,8 @@ const smirnovPs = new Map<number, (d: TensorLike) => Value>()
  * @returns P(K > x), differentiable (the derivative is minus the Kolmogorov density).
  * @example
  * ```ts
- * import { kolmogorov } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { kolmogorov } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(kolmogorov(0)) // => 1
  * ```
  */
@@ -227,8 +227,8 @@ export function kolmogorov(x: TensorLike): Value {
  * @returns The density, differentiable (by finite differences).
  * @example
  * ```ts
- * import { kolmogorovPdf } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { kolmogorovPdf } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(kolmogorovPdf(0)) // => 0
  * ```
  */
@@ -245,8 +245,8 @@ export function kolmogorovPdf(x: TensorLike): Value {
  * @returns The probability, differentiable in d (by finite differences).
  * @example
  * ```ts
- * import { smirnov } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { smirnov } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(smirnov(1, 0.25)) // => 0.75
  * ```
  */

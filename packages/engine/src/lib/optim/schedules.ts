@@ -5,7 +5,7 @@
  * step count.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** A learning-rate schedule: the rate at each step count (from 0). */
 export type Schedule = (step: number) => number
@@ -17,7 +17,7 @@ export type Schedule = (step: number) => number
  * @returns The schedule.
  * @example
  * ```ts
- * import { constantSchedule } from 'whitebox-engine/optim'
+ * import { constantSchedule } from 'mdml-engine/optim'
  * constantSchedule(0.1)(100) // => 0.1
  * ```
  */
@@ -34,7 +34,7 @@ export function constantSchedule(value: number): Schedule {
  * @returns The schedule.
  * @example
  * ```ts
- * import { constantFactor } from 'whitebox-engine/optim'
+ * import { constantFactor } from 'mdml-engine/optim'
  * [constantFactor(1, 0.5, 2)(1), constantFactor(1, 0.5, 2)(2)] // => [0.5, 1]
  * ```
  */
@@ -51,7 +51,7 @@ export function constantFactor(init: number, factor: number, steps: number): Sch
  * @returns The schedule.
  * @example
  * ```ts
- * import { stepDecay } from 'whitebox-engine/optim'
+ * import { stepDecay } from 'mdml-engine/optim'
  * stepDecay(1, 10, 0.5)(25) // => 0.25
  * ```
  */
@@ -68,7 +68,7 @@ export function stepDecay(init: number, stepSize: number, gamma = 0.1): Schedule
  * @returns The schedule.
  * @example
  * ```ts
- * import { multiStepDecay } from 'whitebox-engine/optim'
+ * import { multiStepDecay } from 'mdml-engine/optim'
  * multiStepDecay(1, [5, 8], 0.5)(8) // => 0.25
  * ```
  */
@@ -96,7 +96,7 @@ export interface ExponentialDecayOptions {
  * @returns The schedule.
  * @example
  * ```ts
- * import { exponentialDecay } from 'whitebox-engine/optim'
+ * import { exponentialDecay } from 'mdml-engine/optim'
  * exponentialDecay(1, 0.5, 10)(20) // => 0.25
  * ```
  */
@@ -129,7 +129,7 @@ export function exponentialDecay(
  * @returns The schedule.
  * @example
  * ```ts
- * import { inverseTimeDecay } from 'whitebox-engine/optim'
+ * import { inverseTimeDecay } from 'mdml-engine/optim'
  * inverseTimeDecay(1, 0.5, 10)(20) // => 0.5
  * ```
  */
@@ -148,7 +148,7 @@ export function inverseTimeDecay(init: number, decayRate: number, steps = 1, sta
  * @returns The schedule.
  * @example
  * ```ts
- * import { cosineDecay } from 'whitebox-engine/optim'
+ * import { cosineDecay } from 'mdml-engine/optim'
  * cosineDecay(1, 100)(50) // => 0.5
  * ```
  */
@@ -170,7 +170,7 @@ export function cosineDecay(init: number, decaySteps: number, alpha = 0, exponen
  * @returns The schedule.
  * @example
  * ```ts
- * import { cosineWarmRestarts } from 'whitebox-engine/optim'
+ * import { cosineWarmRestarts } from 'mdml-engine/optim'
  * [cosineWarmRestarts(1, 10)(5), cosineWarmRestarts(1, 10)(10)] // => [0.5, 1]
  * ```
  */
@@ -208,7 +208,7 @@ export interface SgdrCycle {
  * @returns The schedule.
  * @example
  * ```ts
- * import { sgdr } from 'whitebox-engine/optim'
+ * import { sgdr } from 'mdml-engine/optim'
  * const s = sgdr([{ start: 0, peak: 1, end: 0, warmupSteps: 0, totalSteps: 10 }, { start: 0, peak: 0.5, end: 0, warmupSteps: 0, totalSteps: 10 }])
  * [s(5), s(10)] // => [0.5, 0.5]
  * ```
@@ -237,7 +237,7 @@ export function sgdr(cycles: readonly SgdrCycle[]): Schedule {
  * @returns The schedule.
  * @example
  * ```ts
- * import { linearSchedule } from 'whitebox-engine/optim'
+ * import { linearSchedule } from 'mdml-engine/optim'
  * linearSchedule(1, 0, 4)(1) // => 0.75
  * ```
  */
@@ -257,7 +257,7 @@ export function linearSchedule(init: number, end: number, steps: number, begin =
  * @returns The schedule.
  * @example
  * ```ts
- * import { polynomialDecay } from 'whitebox-engine/optim'
+ * import { polynomialDecay } from 'mdml-engine/optim'
  * polynomialDecay(1, 0, 2, 10)(5) // => 0.25
  * ```
  */
@@ -276,7 +276,7 @@ export function polynomialDecay(init: number, end: number, power: number, steps:
  * @returns The schedule.
  * @example
  * ```ts
- * import { warmupCosineDecay } from 'whitebox-engine/optim'
+ * import { warmupCosineDecay } from 'mdml-engine/optim'
  * warmupCosineDecay({ start: 0, peak: 1, end: 0, warmupSteps: 10, totalSteps: 110 })(10) // => 1
  * ```
  */
@@ -306,7 +306,7 @@ export function warmupCosineDecay(options: {
  * @returns The schedule.
  * @example
  * ```ts
- * import { warmupExponentialDecay } from 'whitebox-engine/optim'
+ * import { warmupExponentialDecay } from 'mdml-engine/optim'
  * warmupExponentialDecay({ start: 0, peak: 1, warmupSteps: 5, decayRate: 0.5, transitionSteps: 10 })(15) // => 0.5
  * ```
  */
@@ -336,7 +336,7 @@ export function warmupExponentialDecay(options: {
  * @returns The schedule.
  * @example
  * ```ts
- * import { warmupConstant } from 'whitebox-engine/optim'
+ * import { warmupConstant } from 'mdml-engine/optim'
  * [warmupConstant(0, 1, 4)(2), warmupConstant(0, 1, 4)(9)] // => [0.5, 1]
  * ```
  */
@@ -352,7 +352,7 @@ export function warmupConstant(start: number, peak: number, warmupSteps: number)
  * @returns The schedule.
  * @example
  * ```ts
- * import { piecewiseConstant } from 'whitebox-engine/optim'
+ * import { piecewiseConstant } from 'mdml-engine/optim'
  * piecewiseConstant([10, 20], [1, 0.1, 0.01])(15) // => 0.1
  * ```
  */
@@ -374,7 +374,7 @@ export function piecewiseConstant(boundaries: readonly number[], values: readonl
  * @returns The schedule.
  * @example
  * ```ts
- * import { piecewiseInterpolate } from 'whitebox-engine/optim'
+ * import { piecewiseInterpolate } from 'mdml-engine/optim'
  * piecewiseInterpolate('linear', 1, [[4, 0.5]])(2) // => 0.75
  * ```
  */
@@ -406,17 +406,17 @@ export function piecewiseInterpolate(
  * @param schedules - The schedules.
  * @param boundaries - One fewer increasing boundaries.
  * @returns The joined schedule.
- * @throws WhiteboxError with code `value` when the counts do not match.
+ * @throws MdmlError with code `value` when the counts do not match.
  * @example
  * ```ts
- * import { constantSchedule, joinSchedules, linearSchedule } from 'whitebox-engine/optim'
+ * import { constantSchedule, joinSchedules, linearSchedule } from 'mdml-engine/optim'
  * const s = joinSchedules([linearSchedule(0, 1, 10), constantSchedule(0.5)], [10])
  * [s(5), s(10)] // => [0.5, 0.5]
  * ```
  */
 export function joinSchedules(schedules: readonly Schedule[], boundaries: readonly number[]): Schedule {
   if (schedules.length !== boundaries.length + 1)
-    throw new WhiteboxError('value', 'joinSchedules needs one more schedule than boundaries')
+    throw new MdmlError('value', 'joinSchedules needs one more schedule than boundaries')
   return (t) => {
     let i = 0
     while (i < boundaries.length && t >= (boundaries[i] ?? Infinity)) i += 1
@@ -448,7 +448,7 @@ export interface OneCycleOptions {
  * @returns The schedule.
  * @example
  * ```ts
- * import { oneCycle } from 'whitebox-engine/optim'
+ * import { oneCycle } from 'mdml-engine/optim'
  * const s = oneCycle({ maxLr: 1, totalSteps: 11, pctStart: 0.5, anneal: 'linear', divFactor: 10 })
  * [s(0), Math.round(s(4.5) * 1e12) / 1e12] // => [0.1, 1]
  * ```
@@ -504,7 +504,7 @@ export interface CyclicalOptions {
  * @returns The schedule.
  * @example
  * ```ts
- * import { cyclical } from 'whitebox-engine/optim'
+ * import { cyclical } from 'mdml-engine/optim'
  * const s = cyclical({ baseLr: 0, maxLr: 1, stepSizeUp: 4 })
  * [s(2), s(4), s(6), s(8)] // => [0.5, 1, 0.5, 0]
  * ```
@@ -559,7 +559,7 @@ export interface PlateauState {
  * @returns `{ init, step }`.
  * @example
  * ```ts
- * import { reduceOnPlateau } from 'whitebox-engine/optim'
+ * import { reduceOnPlateau } from 'mdml-engine/optim'
  * const p = reduceOnPlateau({ patience: 1, factor: 0.5 })
  * let s = p.init(1)
  * for (const loss of [3, 2, 2, 2]) s = p.step(s, loss)

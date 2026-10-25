@@ -4,7 +4,7 @@
  * Grad-CAM over an image, as image-laid feature-attribution records; and a convolutional layer's conductance per
  * channel as value grids.
  */
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import { type Explained, featureAttributions, valueGrids } from '../../lib/exposition/index.ts'
 import { type Fitted, featureNamesOf, type LearnData, matrixView } from '../../lib/learn/index.ts'
@@ -72,8 +72,7 @@ export function explainNetwork(
   options: ExplainNetworkOptions = {},
 ): Explained<NetworkExplanation> {
   const x = matrixView(data.x, 'explainNetwork')
-  if (!(Number.isInteger(row) && row >= 0 && row < x.n))
-    throw new WhiteboxError('value', `explainNetwork: no row ${row}`)
+  if (!(Number.isInteger(row) && row >= 0 && row < x.n)) throw new MdmlError('value', `explainNetwork: no row ${row}`)
   const net = networkOf(fitted)
   const [, h, w] = net.shape
   const pixels = Array.from(x.data.subarray(row * x.d, (row + 1) * x.d))
@@ -162,7 +161,7 @@ export function explainLayer(
   options: { readonly classIndex?: number; readonly nSteps?: number } = {},
 ): Explained<{ readonly conductance: readonly (readonly (readonly number[])[])[]; readonly classIndex: number }> {
   const x = matrixView(data.x, 'explainLayer')
-  if (!(Number.isInteger(row) && row >= 0 && row < x.n)) throw new WhiteboxError('value', `explainLayer: no row ${row}`)
+  if (!(Number.isInteger(row) && row >= 0 && row < x.n)) throw new MdmlError('value', `explainLayer: no row ${row}`)
   const net = networkOf(fitted)
   const image = fromStorage(Float64Array.from(x.data.subarray(row * x.d, (row + 1) * x.d)), [1, x.d], 'float64')
   const model = compose(net.layers)

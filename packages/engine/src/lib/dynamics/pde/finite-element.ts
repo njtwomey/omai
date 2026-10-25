@@ -4,7 +4,7 @@
  * with Dirichlet values, the heat problem by the theta method, and L2 errors that show the convergence orders.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { type CsrMatrix, fromCoo } from '../../numerics/sparse/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
@@ -58,17 +58,17 @@ function shape1d(order: 1 | 2, xi: number): { n: number[]; dn: number[] } {
  * @param coefficients - k, c and f.
  * @param order - 1 or 2 (default 1).
  * @returns The system; its boundary nodes are the two ends.
- * @throws WhiteboxError with code `value` for a mesh that is not increasing.
+ * @throws MdmlError with code `value` for a mesh that is not increasing.
  * @concept finite-element
  * @example
  * ```ts
- * import { assemble1d } from 'whitebox-engine/dynamics/pde'
+ * import { assemble1d } from 'mdml-engine/dynamics/pde'
  * assemble1d([0, 0.5, 1], { f: 1 }, 2).size // => 5
  * ```
  */
 export function assemble1d(mesh: readonly number[], coefficients: FemCoefficients = {}, order: 1 | 2 = 1): FemSystem {
   if (mesh.length < 2 || mesh.some((x, i) => i > 0 && !(x > (mesh[i - 1] ?? 0)))) {
-    throw new WhiteboxError('value', 'assemble1d: the mesh must be increasing with at least one element')
+    throw new MdmlError('value', 'assemble1d: the mesh must be increasing with at least one element')
   }
   const elements = mesh.length - 1
   const n = order * elements + 1
@@ -148,10 +148,10 @@ export interface TriangleMesh {
  * @param yRange - [ay, by].
  * @param ny - Nodes in y (>= 2).
  * @returns The mesh.
- * @throws WhiteboxError with code `value` for fewer than two nodes per side.
+ * @throws MdmlError with code `value` for fewer than two nodes per side.
  * @example
  * ```ts
- * import { rectangleMesh } from 'whitebox-engine/dynamics/pde'
+ * import { rectangleMesh } from 'mdml-engine/dynamics/pde'
  * rectangleMesh([0, 1], 3, [0, 1], 3).triangles.length / 3 // => 8
  * ```
  */
@@ -161,7 +161,7 @@ export function rectangleMesh(
   yRange: readonly [number, number],
   ny: number,
 ): TriangleMesh {
-  if (nx < 2 || ny < 2) throw new WhiteboxError('value', 'rectangleMesh: at least two nodes per side')
+  if (nx < 2 || ny < 2) throw new MdmlError('value', 'rectangleMesh: at least two nodes per side')
   const points = new Float64Array(nx * ny * 2)
   const boundary: number[] = []
   for (let i = 0; i < nx; i++) {
@@ -195,7 +195,7 @@ export function rectangleMesh(
  * @concept finite-element
  * @example
  * ```ts
- * import { assemble2d, rectangleMesh } from 'whitebox-engine/dynamics/pde'
+ * import { assemble2d, rectangleMesh } from 'mdml-engine/dynamics/pde'
  * assemble2d(rectangleMesh([0, 1], 3, [0, 1], 3), { f: 1 }).size // => 9
  * ```
  */
@@ -212,7 +212,7 @@ export function assemble2d(mesh: TriangleMesh, coefficients: FemCoefficients = {
     const [p0, p1, p2] = v.map(P) as [[number, number], [number, number], [number, number]]
     const det = (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p2[0] - p0[0]) * (p1[1] - p0[1])
     const area = Math.abs(det) / 2
-    if (area === 0) throw new WhiteboxError('value', `assemble2d: triangle ${t} is degenerate`)
+    if (area === 0) throw new MdmlError('value', `assemble2d: triangle ${t} is degenerate`)
     // Gradients of the barycentric coordinates.
     const b = [p1[1] - p2[1], p2[1] - p0[1], p0[1] - p1[1]].map((x) => x / det)
     const c = [p2[0] - p1[0], p0[0] - p2[0], p1[0] - p0[0]].map((x) => x / det)
@@ -312,7 +312,7 @@ function dirichletRows(
  * @concept finite-element
  * @example
  * ```ts
- * import { assemble1d, solveFem } from 'whitebox-engine/dynamics/pde'
+ * import { assemble1d, solveFem } from 'mdml-engine/dynamics/pde'
  * // -u'' = 2 on [0, 1], u = 0 at both ends: u = x (1 - x), exact at the nodes for P1.
  * Math.abs((solveFem(assemble1d([0, 0.25, 0.5, 0.75, 1], { f: 2 })).data[2] ?? 0) - 0.25) < 1e-12 // => true
  * ```
@@ -345,7 +345,7 @@ export interface HeatFemOptions extends PdeTraceOptions {
  * @concept finite-element
  * @example
  * ```ts
- * import { assemble1d, heatFem } from 'whitebox-engine/dynamics/pde'
+ * import { assemble1d, heatFem } from 'mdml-engine/dynamics/pde'
  * const mesh = Array.from({ length: 21 }, (_, i) => i / 20)
  * const s = heatFem(assemble1d(mesh), (x) => Math.sin(Math.PI * x), { dt: 0.005, tEnd: 0.1 })
  * Math.abs((s.u.data[s.u.data.length - 11] ?? 0) - Math.exp(-(Math.PI ** 2) * 0.1)) < 2e-3 // => true
@@ -359,7 +359,7 @@ export function heatFem(
   const n = system.size
   const theta = options.theta ?? 0.5
   const dt = options.dt
-  if (!(dt > 0)) throw new WhiteboxError('value', 'heatFem: dt must be positive')
+  if (!(dt > 0)) throw new MdmlError('value', 'heatFem: dt must be positive')
   const start = Float64Array.from({ length: n }, (_, k) =>
     typeof u0 === 'function' ? u0(...coordsOf(system, k)) : (u0[k] ?? 0),
   )
@@ -437,7 +437,7 @@ export function heatFem(
  * @concept finite-element
  * @example
  * ```ts
- * import { assemble1d, femL2Error } from 'whitebox-engine/dynamics/pde'
+ * import { assemble1d, femL2Error } from 'mdml-engine/dynamics/pde'
  * femL2Error(assemble1d([0, 1]), [0, 1], (x) => x) // => 0
  * ```
  */

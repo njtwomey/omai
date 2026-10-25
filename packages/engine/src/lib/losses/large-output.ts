@@ -4,7 +4,7 @@
  * sampled softmax, which scores the true class against a few sampled candidates with a correction for the sampling.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { huffmanTree } from '../information/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import { type Key, randint, uniform } from '../random/index.ts'
@@ -51,17 +51,17 @@ export interface HuffmanCoding {
  *
  * @param counts - Class frequencies (positive), one per class; at least two classes.
  * @returns The coding: inner-node paths and branch bits per class.
- * @throws WhiteboxError with code `value` for fewer than two classes or a non-positive count.
+ * @throws MdmlError with code `value` for fewer than two classes or a non-positive count.
  * @example
  * ```ts
- * import { huffmanCoding } from 'whitebox-engine/losses'
+ * import { huffmanCoding } from 'mdml-engine/losses'
  * huffmanCoding([5, 1, 1]).codes // => [[1], [0, 0], [0, 1]]
  * ```
  */
 export function huffmanCoding(counts: readonly number[]): HuffmanCoding {
   const c = counts.length
-  if (c < 2) throw new WhiteboxError('value', 'huffmanCoding: needs at least two classes')
-  if (counts.some((w) => !(w > 0))) throw new WhiteboxError('value', 'huffmanCoding: counts must be positive')
+  if (c < 2) throw new MdmlError('value', 'huffmanCoding: needs at least two classes')
+  if (counts.some((w) => !(w > 0))) throw new MdmlError('value', 'huffmanCoding: counts must be positive')
   // Leaves are nodes 0..C-1 and inner node k is node C + k (a binary tree over C >= 2 leaves needs no padding).
   const { nodes } = huffmanTree(counts)
   const parent = new Int32Array(nodes.length).fill(-1)
@@ -123,8 +123,8 @@ export interface HierarchicalSoftmaxOptions {
  * @concept losses
  * @example
  * ```ts
- * import { hierarchicalSoftmax, huffmanCoding } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { hierarchicalSoftmax, huffmanCoding } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(hierarchicalSoftmax([[0, 0]], [[1, 1]], [0], huffmanCoding([1, 1]))) === Math.LN2 // => true
  * ```
  */
@@ -163,8 +163,8 @@ export function hierarchicalSoftmax(
  * @returns Log-probabilities `[N, C]`, differentiable.
  * @example
  * ```ts
- * import { hierarchicalSoftmaxLogProbs, huffmanCoding } from 'whitebox-engine/losses'
- * import { exp, sum, item } from 'whitebox-engine/tensor'
+ * import { hierarchicalSoftmaxLogProbs, huffmanCoding } from 'mdml-engine/losses'
+ * import { exp, sum, item } from 'mdml-engine/tensor'
  * const lp = hierarchicalSoftmaxLogProbs([[0.3, -1]], [[1, 2], [0.5, 0]], huffmanCoding([3, 1, 1]))
  * Math.abs(item(sum(exp(lp))) - 1) < 1e-15 // => true
  * ```
@@ -203,8 +203,8 @@ export type CandidateSampler = 'uniform' | 'log-uniform'
  * @returns The sampled class indices.
  * @example
  * ```ts
- * import { sampleClasses } from 'whitebox-engine/losses'
- * import { key } from 'whitebox-engine/random'
+ * import { sampleClasses } from 'mdml-engine/losses'
+ * import { key } from 'mdml-engine/random'
  * sampleClasses(key(0), 10, 5).every((c) => c >= 0 && c < 10) // => true
  * ```
  */
@@ -250,11 +250,11 @@ export interface SampledSoftmaxOptions {
  * @param target - Class indices `[N]`.
  * @param options - Candidates (explicit, or drawn with a key), proposal, biases, accidental-hit removal and reduction.
  * @returns The loss, differentiable in the hidden vectors, weights and biases.
- * @throws WhiteboxError with code `value` when neither `sampled` nor `key` with `nSampled` is given.
+ * @throws MdmlError with code `value` when neither `sampled` nor `key` with `nSampled` is given.
  * @example
  * ```ts
- * import { sampledSoftmax } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { sampledSoftmax } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * const loss = sampledSoftmax([[0, 0]], [[1, 0], [0, 1], [1, 1]], [0], { sampled: [1, 2], sampler: 'uniform' })
  * Math.abs(item(loss) - Math.log(3)) < 1e-15 // => true
  * ```
@@ -271,7 +271,7 @@ export function sampledSoftmax(
   let sampled = options.sampled
   if (sampled === undefined) {
     if (options.key === undefined || options.nSampled === undefined)
-      throw new WhiteboxError('value', 'sampledSoftmax: pass `sampled`, or `key` and `nSampled`')
+      throw new MdmlError('value', 'sampledSoftmax: pass `sampled`, or `key` and `nSampled`')
     sampled = sampleClasses(options.key, nClasses, options.nSampled, sampler)
   }
   const s = sampled.length

@@ -10,9 +10,9 @@ import math
 
 import numpy as np
 import scipy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
 from scipy import integrate, stats
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "numpy": np.__version__}
 HAZARD = 0.2

@@ -1,11 +1,5 @@
+import { decisionSurface, inputRows, type PipelineStage, pipelineStages, type StageData } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import {
-  decisionSurface,
-  inputRows,
-  type PipelineStage,
-  pipelineStages,
-  type StageData,
-} from 'whitebox-engine/exposition'
 import {
   pipelinePanelOf,
   pipelineProjectionView,

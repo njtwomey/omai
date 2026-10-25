@@ -5,7 +5,7 @@
  * `tsneSession` sets a run up for pages that step it live.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -281,12 +281,12 @@ export interface TsneSession {
  * @param hyper - As {@link tsne}.
  * @param key - The key for random initialisation.
  * @returns The algorithm, the iteration budget, and the affinities and bandwidths.
- * @throws WhiteboxError `value` when the perplexity is not below the number of rows.
+ * @throws MdmlError `value` when the perplexity is not below the number of rows.
  */
 export function tsneSession(data: LearnData, hyper: TsneHyper, key: Key): TsneSession {
   const m = matrixView(data.x, 'tsne', { minSamples: 4 })
   const perplexity = hyper.perplexity ?? 30
-  if (!(perplexity < m.n)) throw new WhiteboxError('value', `tsne: perplexity must be below n = ${m.n}`)
+  if (!(perplexity < m.n)) throw new MdmlError('value', `tsne: perplexity must be below n = ${m.n}`)
   const k = hyper.nComponents ?? 2
   const init = hyper.init ?? 'pca'
   let start: number[][]

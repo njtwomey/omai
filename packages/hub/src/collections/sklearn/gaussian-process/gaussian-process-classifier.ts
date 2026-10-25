@@ -3,7 +3,7 @@
  * by Laplace's method, on two-dimensional classification data and tabular classification data.
  */
 
-import { gaussianProcessClassifier as gaussianProcessClassifierMethod } from 'whitebox-engine/methods/gp'
+import { gaussianProcessClassifier as gaussianProcessClassifierMethod } from 'mdml-engine/methods/gp'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

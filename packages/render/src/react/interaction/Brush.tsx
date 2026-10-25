@@ -11,7 +11,7 @@ import { type DataRect, rectBetween } from './selection.ts'
 /**
  * Brush a rectangle: press and drag across the figure to select a region (`onChange` follows the drag), press without
  * dragging to clear it. With `axis`, the brush spans the whole height (`'x'`) or width (`'y'`). Pair with
- * `brushSelection` (from `whitebox-render/figure`) to select data, or put it in a `LinkStore` to filter linked figures.
+ * `brushSelection` (from `mdml-render/figure`) to select data, or put it in a `LinkStore` to filter linked figures.
  *
  * @param props - The selection, what to call with a new one, and the brushed axes.
  * @returns The brush, inside an {@link InteractionOverlay}.

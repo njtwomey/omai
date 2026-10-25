@@ -4,7 +4,7 @@
  * Bartlett-Hann, exponential and Lanczos.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { i0 } from '../../numerics/special/index.ts'
 import { type Tensor, toFlat } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'
@@ -19,8 +19,8 @@ import { boxcar, hann, type WindowOptions } from './cosine.ts'
  * @returns The window.
  * @example
  * ```ts
- * import { bartlett } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { bartlett } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(bartlett(5)) // => [0, 0.5, 1, 0.5, 0]
  * ```
  */
@@ -38,8 +38,8 @@ export function bartlett(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { triang } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { triang } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(triang(3)) // => [0.5, 1, 0.5]
  * ```
  */
@@ -66,8 +66,8 @@ export function triang(m: number, options: WindowOptions = {}): Tensor {
  * @concept window-functions
  * @example
  * ```ts
- * import { kaiser } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { kaiser } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(kaiser(3, 0)) // => [1, 1, 1]
  * ```
  */
@@ -91,18 +91,18 @@ export function kaiser(m: number, beta: number, options: WindowOptions = {}): Te
  * @param m - Length (even).
  * @param beta - Kaiser shape.
  * @returns The window (always symmetric).
- * @throws WhiteboxError with code `value` for an odd length.
+ * @throws MdmlError with code `value` for an odd length.
  * @example
  * ```ts
- * import { kaiserBesselDerived } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { kaiserBesselDerived } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const w = toFlat(kaiserBesselDerived(4, 2))
  * Math.round(((w[0] ?? 0) ** 2 + (w[2] ?? 0) ** 2) * 1e12) / 1e12 // => 1
  * ```
  */
 export function kaiserBesselDerived(m: number, beta: number): Tensor {
   if (m === 0) return constant([])
-  if (m % 2 !== 0) throw new WhiteboxError('value', 'kaiserBesselDerived: the length must be even')
+  if (m % 2 !== 0) throw new MdmlError('value', 'kaiserBesselDerived: the length must be even')
   const half = m / 2
   const k = toFlat(kaiser(half + 1, beta))
   const cum = new Float64Array(half + 1)
@@ -129,8 +129,8 @@ export function kaiserBesselDerived(m: number, beta: number): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { gaussian } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { gaussian } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(gaussian(3, 1)).map((v) => Math.round(v * 1e6) / 1e6) // => [0.606531, 1, 0.606531]
  * ```
  */
@@ -150,8 +150,8 @@ export function gaussian(m: number, std: number, options: WindowOptions = {}): T
  * @returns The window.
  * @example
  * ```ts
- * import { generalGaussian } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { generalGaussian } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(generalGaussian(3, 1, 1)).map((v) => Math.round(v * 1e6) / 1e6) // => [0.606531, 1, 0.606531]
  * ```
  */
@@ -171,8 +171,8 @@ export function generalGaussian(m: number, p: number, sig: number, options: Wind
  * @returns The window.
  * @example
  * ```ts
- * import { tukey } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { tukey } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(tukey(5, 0.5)) // => [0, 1, 1, 1, 0]
  * ```
  */
@@ -197,8 +197,8 @@ export function tukey(m: number, alpha = 0.5, options: WindowOptions = {}): Tens
  * @returns The window.
  * @example
  * ```ts
- * import { cosine } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { cosine } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(cosine(2)).map((v) => Math.round(v * 1e12) / 1e12) // => [0.707106781187, 0.707106781187]
  * ```
  */
@@ -216,8 +216,8 @@ export function cosine(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { parzen } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { parzen } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(parzen(3)).map((v) => Math.round(v * 1e12) / 1e12) // => [0.074074074074, 1, 0.074074074074]
  * ```
  */
@@ -239,8 +239,8 @@ export function parzen(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { bohman } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { bohman } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(bohman(3)) // => [0, 1, 0]
  * ```
  */
@@ -262,8 +262,8 @@ export function bohman(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { barthann } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { barthann } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(barthann(3)).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1, 0]
  * ```
  */
@@ -284,8 +284,8 @@ export function barthann(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { exponential } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { exponential } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(exponential(3)).map((v) => Math.round(v * 1e6) / 1e6) // => [0.367879, 1, 0.367879]
  * ```
  */
@@ -295,7 +295,7 @@ export function exponential(
 ): Tensor {
   const sym = options.sym ?? true
   if (sym && options.center !== undefined)
-    throw new WhiteboxError('value', 'exponential: a centre is only allowed for periodic windows (as scipy)')
+    throw new MdmlError('value', 'exponential: a centre is only allowed for periodic windows (as scipy)')
   const tau = options.tau ?? 1
   return build(m, sym, (len) => {
     const c = options.center ?? (len - 1) / 2
@@ -311,8 +311,8 @@ export function exponential(
  * @returns The window.
  * @example
  * ```ts
- * import { lanczos } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { lanczos } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(lanczos(3)).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1, 0]
  * ```
  */

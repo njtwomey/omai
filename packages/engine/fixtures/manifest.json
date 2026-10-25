@@ -1,5 +1,5 @@
 {
-  "schema": "whitebox.fixtures/1",
+  "schema": "mdml.fixtures/1",
   "fixtures": [
     {
       "fixture": "data/batching.json",

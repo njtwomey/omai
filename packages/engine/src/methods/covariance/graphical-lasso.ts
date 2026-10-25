@@ -5,7 +5,7 @@
  * class wrapper.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { regularisationPath } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -156,7 +156,7 @@ export function graphicalLasso(
   options: { readonly tol?: number; readonly enetTol?: number; readonly maxIter?: number } = {},
 ): GraphicalLassoState & { readonly nIter: number } {
   const rows = toArray(asTensor(s)) as number[][]
-  if (!(alpha >= 0)) throw new WhiteboxError('value', 'graphicalLasso: alpha must be non-negative')
+  if (!(alpha >= 0)) throw new MdmlError('value', 'graphicalLasso: alpha must be non-negative')
   const out = runAlgorithm(graphicalLassoAlgorithm(rows, alpha, options), { maxSteps: options.maxIter ?? 100 })
   return { ...out.state, nIter: out.steps }
 }

@@ -7,7 +7,7 @@
  * group (both as AIF360).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** The fairness constraint a threshold optimiser equalises across groups. */
 export type ThresholdConstraint =
@@ -78,7 +78,7 @@ function tradeoffPoints(
   const n = order.length
   const pos = labels.reduce((s, v) => s + (v === 1 ? 1 : 0), 0)
   const neg = n - pos
-  if (pos === 0 || neg === 0) throw new WhiteboxError('value', `thresholdOptimizer: group ${group} has one class only`)
+  if (pos === 0 || neg === 0) throw new MdmlError('value', `thresholdOptimizer: group ${group} has one class only`)
   const sorted = [...order.map((i) => scores[i] ?? 0), Number.NEGATIVE_INFINITY]
   const out: TradeoffPoint[] = []
   const count = [0, 0]
@@ -194,11 +194,11 @@ export interface OptimisedThresholds {
  * @param groups - Each row's group index.
  * @param options - Constraint, objective, grid size and flipping.
  * @returns The rules, the chosen point and the trade-off curves.
- * @throws WhiteboxError `value` when a group has one class only.
+ * @throws MdmlError `value` when a group has one class only.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { optimiseThresholds } from 'whitebox-engine/fairness'
+ * import { optimiseThresholds } from 'mdml-engine/fairness'
  * const r = optimiseThresholds([0.1, 0.3, 0.6, 0.8], [0, 0, 1, 1], [0, 0, 0, 0], { gridSize: 100 })
  * r.yBest // => 1
  * ```
@@ -309,7 +309,7 @@ const applies = (r: ThresholdRule, s: number): number =>
  * @returns P(positive decision) per row.
  * @example
  * ```ts
- * import { thresholdDecisions } from 'whitebox-engine/fairness'
+ * import { thresholdDecisions } from 'mdml-engine/fairness'
  * const rule = { p0: 0.5, rule0: { operator: '>' as const, threshold: 0.5 }, p1: 0.5, rule1: { operator: '>' as const, threshold: 0.2 } }
  * thresholdDecisions([rule], [0.1, 0.3, 0.9], [0, 0, 0]) // => [0, 0.5, 1]
  * ```
@@ -383,11 +383,11 @@ function generalisedRates(
  * @param groups - Group indices `[N]`.
  * @param options - The privileged group and the cost.
  * @returns The base rates, costs and mixing rates.
- * @throws WhiteboxError `shape` when the inputs differ in length.
+ * @throws MdmlError `shape` when the inputs differ in length.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { calibratedEqualisedOdds } from 'whitebox-engine/fairness'
+ * import { calibratedEqualisedOdds } from 'mdml-engine/fairness'
  * const r = calibratedEqualisedOdds([0.9, 0.2, 0.8, 0.1, 0.6, 0.4, 0.6, 0.4], [1, 0, 1, 0, 1, 0, 1, 0], [0, 0, 0, 0, 1, 1, 1, 1])
  * r.mixRates[0] > 0 // => true
  * r.mixRates[1] // => 0
@@ -400,7 +400,7 @@ export function calibratedEqualisedOdds(
   options: CalibratedEqualisedOddsOptions = {},
 ): CalibratedEqualisedOdds {
   if (scores.length !== labels.length || scores.length !== groups.length)
-    throw new WhiteboxError('shape', 'calibratedEqualisedOdds: inputs differ in length')
+    throw new MdmlError('shape', 'calibratedEqualisedOdds: inputs differ in length')
   const privileged = options.privileged ?? 0
   const sides = [0, 1].map((side) => groups.flatMap((g, i) => ((g === privileged) === (side === 0) ? [i] : [])))
   const baseRates = sides.map(
@@ -437,7 +437,7 @@ export function calibratedEqualisedOdds(
  * @returns Each row's probability of a positive decision.
  * @example
  * ```ts
- * import { calibratedEqualisedOdds, calibratedEqualisedOddsDecisions } from 'whitebox-engine/fairness'
+ * import { calibratedEqualisedOdds, calibratedEqualisedOddsDecisions } from 'mdml-engine/fairness'
  * const fit = { privileged: 0, baseRates: [0.4, 0.4], costs: [0, 0], trivialCosts: [0, 0], mixRates: [0.25, 0] } as const
  * calibratedEqualisedOddsDecisions(fit, [0.9, 0.1, 0.9], [0, 0, 1]) // => [0.75, 0, 1]
  * ```
@@ -504,7 +504,7 @@ export interface RejectOption {
  * @returns Each row's decision.
  * @example
  * ```ts
- * import { rejectOptionDecisions } from 'whitebox-engine/fairness'
+ * import { rejectOptionDecisions } from 'mdml-engine/fairness'
  * rejectOptionDecisions({ privileged: 0, threshold: 0.5, margin: 0.1 }, [0.55, 0.45, 0.8, 0.2], [0, 1, 0, 1]) // => [0, 1, 1, 0]
  * ```
  */
@@ -538,11 +538,11 @@ function linspace(a: number, b: number, n: number): number[] {
  * @param groups - Group indices `[N]`.
  * @param options - The privileged group, metric, bounds and grids.
  * @returns The threshold, margin, their balanced accuracy and metric, and the grid.
- * @throws WhiteboxError `shape` when the inputs differ in length.
+ * @throws MdmlError `shape` when the inputs differ in length.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { rejectOptionClassification } from 'whitebox-engine/fairness'
+ * import { rejectOptionClassification } from 'mdml-engine/fairness'
  * const scores = [0.9, 0.7, 0.6, 0.3, 0.55, 0.45, 0.4, 0.1]
  * const r = rejectOptionClassification(scores, [1, 1, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1], { thresholds: [0.1, 0.9, 9], margins: 5 })
  * r.feasible // => true
@@ -555,7 +555,7 @@ export function rejectOptionClassification(
   options: RejectOptionOptions = {},
 ): RejectOption {
   if (scores.length !== labels.length || scores.length !== groups.length)
-    throw new WhiteboxError('shape', 'rejectOptionClassification: inputs differ in length')
+    throw new MdmlError('shape', 'rejectOptionClassification: inputs differ in length')
   const privileged = options.privileged ?? 0
   const metricName = options.metric ?? 'statisticalParity'
   const [lb, ub] = options.bounds ?? [-0.05, 0.05]

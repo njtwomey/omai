@@ -5,7 +5,7 @@
  * table as gymnasium's toy-text ones are.
  */
 
-import { argmaxOf, type Json, maxOf, WhiteboxError } from '../base/index.ts'
+import { argmaxOf, type Json, MdmlError, maxOf } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { uniform } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
@@ -41,11 +41,11 @@ export type TabularPolicy = readonly number[] | readonly (readonly number[])[]
  * @param spec - `transitions[s][a][s']` probabilities, `rewards[s][a]` expected rewards (or `rewards[s][a][s']`),
  *   optional absorbing `terminalStates`, an initial distribution (default uniform) and the discount (default 1).
  * @returns The MDP.
- * @throws WhiteboxError with code `value` when a row of probabilities does not sum to one.
+ * @throws MdmlError with code `value` when a row of probabilities does not sum to one.
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { tabularMdp } from 'whitebox-engine/rl'
+ * import { tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.9 })
  * mdp.nStates // => 2
  * ```
@@ -69,7 +69,7 @@ export function tabularMdp(spec: {
       let total = 0
       for (let s2 = 0; s2 < nS; s2++) total += row[s2] ?? 0
       if (Math.abs(total - 1) > 1e-9) {
-        throw new WhiteboxError('value', `tabularMdp: transitions[${s}][${a}] sums to ${total}, not 1`)
+        throw new MdmlError('value', `tabularMdp: transitions[${s}][${a}] sums to ${total}, not 1`)
       }
       const r = spec.rewards[s]?.[a] ?? 0
       let er = 0
@@ -95,8 +95,8 @@ export function tabularMdp(spec: {
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { mdpFromModel } from 'whitebox-engine/rl'
- * import { frozenLake } from 'whitebox-engine/methods/rl'
+ * import { mdpFromModel } from 'mdml-engine/rl'
+ * import { frozenLake } from 'mdml-engine/methods/rl'
  * const model = frozenLake.create().model
  * model === undefined ? 0 : mdpFromModel(model, 0.99).nStates // => 16
  * ```
@@ -134,17 +134,17 @@ export function mdpFromModel<S, A>(model: EnvModel<S, A>, gamma = 1): TabularMdp
  * @param env - The environment.
  * @param gamma - The discount (default 1).
  * @returns The MDP.
- * @throws WhiteboxError with code `value` when the environment has no model.
+ * @throws MdmlError with code `value` when the environment has no model.
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { mdpFromEnv } from 'whitebox-engine/rl'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
+ * import { mdpFromEnv } from 'mdml-engine/rl'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
  * mdpFromEnv(cliffWalking.create()).nActions // => 4
  * ```
  */
 export function mdpFromEnv<S, O, A>(env: Env<S, O, A>, gamma = 1): TabularMdp {
-  if (env.model === undefined) throw new WhiteboxError('value', `mdpFromEnv: ${env.spec.id} has no model`)
+  if (env.model === undefined) throw new MdmlError('value', `mdpFromEnv: ${env.spec.id} has no model`)
   return mdpFromModel(env.model, gamma)
 }
 
@@ -186,7 +186,7 @@ const rows = (flat: Float64Array, n: number, m: number): number[][] =>
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { qFromV, tabularMdp } from 'whitebox-engine/rl'
+ * import { qFromV, tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1] })
  * qFromV(mdp, [0, 0]) // => [[0, 1], [0, 0]]
  * ```
@@ -203,7 +203,7 @@ export function qFromV(mdp: TabularMdp, V: readonly number[], gamma: number = md
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { greedyPolicy } from 'whitebox-engine/rl'
+ * import { greedyPolicy } from 'mdml-engine/rl'
  * greedyPolicy([[0, 2, 1], [3, 3, 0]]) // => [1, 0]
  * ```
  */
@@ -238,7 +238,7 @@ export interface ValueIterationState {
  * @concept value-iteration
  * @example
  * ```ts
- * import { tabularMdp, valueIterationAlgorithm } from 'whitebox-engine/rl'
+ * import { tabularMdp, valueIterationAlgorithm } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1] })
  * valueIterationAlgorithm(mdp).name // => 'valueIteration'
  * ```
@@ -301,7 +301,7 @@ export interface MdpSolution {
  * @concept value-iteration
  * @example
  * ```ts
- * import { tabularMdp, valueIteration } from 'whitebox-engine/rl'
+ * import { tabularMdp, valueIteration } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1] })
  * valueIteration(mdp).V // => [1, 0]
  * ```
@@ -329,11 +329,11 @@ export function valueIteration(
  * @param policy - One action per state, or action probabilities per state.
  * @param options - `method` (`'exact'` or `'iterative'`), tolerance, iteration cap and discount.
  * @returns The state values.
- * @throws WhiteboxError with code `value` when the exact system is singular (an improper policy with `gamma = 1`).
+ * @throws MdmlError with code `value` when the exact system is singular (an improper policy with `gamma = 1`).
  * @concept policy-evaluation
  * @example
  * ```ts
- * import { policyEvaluation, tabularMdp } from 'whitebox-engine/rl'
+ * import { policyEvaluation, tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.5 })
  * policyEvaluation(mdp, [0, 0]) // => [0, 0]
  * ```
@@ -364,7 +364,7 @@ export function policyEvaluation(
     try {
       return toFlat(solve(fromStorage(A, [nS, nS], 'float64'), fromStorage(Rpi, [nS], 'float64')))
     } catch {
-      throw new WhiteboxError('value', 'policyEvaluation: I - gamma P_pi is singular (the policy never terminates)')
+      throw new MdmlError('value', 'policyEvaluation: I - gamma P_pi is singular (the policy never terminates)')
     }
   }
   const tol = options.tol ?? 1e-12
@@ -403,7 +403,7 @@ export interface PolicyIterationState {
  * @concept policy-iteration
  * @example
  * ```ts
- * import { policyIterationAlgorithm, tabularMdp } from 'whitebox-engine/rl'
+ * import { policyIterationAlgorithm, tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.9 })
  * policyIterationAlgorithm(mdp).name // => 'policyIteration'
  * ```
@@ -457,7 +457,7 @@ export function policyIterationAlgorithm(
  * @concept policy-iteration
  * @example
  * ```ts
- * import { policyIteration, tabularMdp } from 'whitebox-engine/rl'
+ * import { policyIteration, tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.9 })
  * policyIteration(mdp).policy // => [1, 0]
  * ```
@@ -496,7 +496,7 @@ export function policyIteration(
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { occupancyMeasure, tabularMdp } from 'whitebox-engine/rl'
+ * import { occupancyMeasure, tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], initial: [1, 0], gamma: 0.5 })
  * occupancyMeasure(mdp, [0, 0]).state // => [2, 0]
  * ```
@@ -573,9 +573,9 @@ function categoricalIndex(probs: readonly number[], u: number): number {
  * @concept environments
  * @example
  * ```ts
- * import { tabularEnv } from 'whitebox-engine/rl'
- * import { scene } from 'whitebox-engine/scene'
- * import { key } from 'whitebox-engine/random'
+ * import { tabularEnv } from 'mdml-engine/rl'
+ * import { scene } from 'mdml-engine/scene'
+ * import { key } from 'mdml-engine/random'
  * const coin = tabularEnv({
  *   id: 'Coin-v0', description: 'one flip', nStates: 2, nActions: 1, initial: [1, 0], render: () => scene(1, 1, []),
  *   transitions: () => [{ probability: 1, state: 1, reward: 1, terminated: true }],

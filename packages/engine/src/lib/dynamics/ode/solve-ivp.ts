@@ -5,7 +5,7 @@
  * when a problem turns stiff.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import { stack, type TensorLike, type Value, zeros } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -96,7 +96,7 @@ function spectralRadius(j: Float64Array, n: number): number {
  * @concept stiffness
  * @example
  * ```ts
- * import { lsoda } from 'whitebox-engine/dynamics/ode'
+ * import { lsoda } from 'mdml-engine/dynamics/ode'
  * lsoda().name // => 'lsoda'
  * ```
  */
@@ -141,7 +141,7 @@ export function lsoda(options: ImplicitOptions = {}): Stepper<LsodaState> {
       }
     },
     step: (s) => {
-      if (s.status !== 'running') throw new WhiteboxError('value', 'lsoda: the integration has ended')
+      if (s.status !== 'running') throw new MdmlError('value', 'lsoda: the integration has ended')
       let state = s
       for (let attemptMode = 0; attemptMode < 2; attemptMode++) {
         const stepper = state.mode === 'adams' ? steppers.adams : steppers.bdf
@@ -256,10 +256,10 @@ export interface MethodOptions extends AdaptiveOptions, Omit<ImplicitOptions, ke
  * @param method - A method name or a stepper (returned as is).
  * @param options - Tolerances, step limits, controller, Jacobian, mass matrix and fixed step.
  * @returns The stepper.
- * @throws WhiteboxError with code `value` for an unknown name or a fixed-step method without `dt`.
+ * @throws MdmlError with code `value` for an unknown name or a fixed-step method without `dt`.
  * @example
  * ```ts
- * import { stepperFor } from 'whitebox-engine/dynamics/ode'
+ * import { stepperFor } from 'mdml-engine/dynamics/ode'
  * stepperFor('DOP853').order // => 8
  * ```
  */
@@ -287,7 +287,7 @@ export function stepperFor(method: OdeMethodName | Stepper, options: MethodOptio
       break
   }
   const dt = options.dt
-  if (dt === undefined) throw new WhiteboxError('value', `${method} is a fixed-step method: give dt`)
+  if (dt === undefined) throw new MdmlError('value', `${method} is a fixed-step method: give dt`)
   const fixed = FIXED[method]
   if (fixed !== undefined) return explicitRk(fixed, { dt }) as unknown as Stepper
   const dirkOptions = { dt, ...(options.jac === undefined ? {} : { jac: options.jac }) }
@@ -310,7 +310,7 @@ export function stepperFor(method: OdeMethodName | Stepper, options: MethodOptio
     case 'PECE':
       return pece({ ...dirkOptions, order }) as unknown as Stepper
     default:
-      throw new WhiteboxError('value', `unknown ODE method ${String(method)}`)
+      throw new MdmlError('value', `unknown ODE method ${String(method)}`)
   }
 }
 
@@ -391,7 +391,7 @@ function maxEventsOf(e: EventSpec): number {
   if (t === undefined || t === false || t === 0) return Number.POSITIVE_INFINITY
   if (t === true) return 1
   if (Number.isInteger(t) && t > 0) return t
-  throw new WhiteboxError('value', 'an event is terminal (true or a positive integer) or not')
+  throw new MdmlError('value', 'an event is terminal (true or a positive integer) or not')
 }
 
 /**
@@ -405,8 +405,8 @@ function maxEventsOf(e: EventSpec): number {
  * @returns The algorithm and a function turning its final state into the solution.
  * @example
  * ```ts
- * import { solveIvpAlgorithm } from 'whitebox-engine/dynamics/ode'
- * import { neg } from 'whitebox-engine/tensor'
+ * import { solveIvpAlgorithm } from 'mdml-engine/dynamics/ode'
+ * import { neg } from 'mdml-engine/tensor'
  * solveIvpAlgorithm((_t, y) => neg(y), [0, 1], [1]).algorithm.name // => 'solveIvp'
  * ```
  */
@@ -417,8 +417,7 @@ export function solveIvpAlgorithm(
   options: SolveIvpOptions = {},
 ): { readonly algorithm: Algorithm<IvpState>; readonly finish: (state: IvpState) => OdeSolution } {
   const [t0, tf] = tspan
-  if (!Number.isFinite(t0) || !Number.isFinite(tf))
-    throw new WhiteboxError('value', 'solveIvp: the span must be finite')
+  if (!Number.isFinite(t0) || !Number.isFinite(tf)) throw new MdmlError('value', 'solveIvp: the span must be finite')
   const y0v = floatState(y0)
   const stepper = stepperFor(options.method ?? 'RK45', options)
   const events =
@@ -430,11 +429,11 @@ export function solveIvpAlgorithm(
   if (tEval !== undefined) {
     const lo = Math.min(t0, tf)
     const hi = Math.max(t0, tf)
-    if (tEval.some((t) => t < lo || t > hi)) throw new WhiteboxError('value', 'solveIvp: tEval must lie in the span')
+    if (tEval.some((t) => t < lo || t > hi)) throw new MdmlError('value', 'solveIvp: tEval must lie in the span')
     for (let i = 1; i < tEval.length; i++) {
       const d = (tEval[i] ?? 0) - (tEval[i - 1] ?? 0)
       if ((forward && d <= 0) || (!forward && d >= 0)) {
-        throw new WhiteboxError('value', 'solveIvp: tEval must be sorted in the direction of integration')
+        throw new MdmlError('value', 'solveIvp: tEval must be sorted in the direction of integration')
       }
     }
     if (!forward) tEval = tEval.reverse()
@@ -656,12 +655,12 @@ export function solveIvpAlgorithm(
  * @param options - Method, tolerances (default rtol 1e-3, atol 1e-6), output times, dense output, events, step
  * budget and tracing.
  * @returns The solution (states time-major, `[nt, ...stateShape]`).
- * @throws WhiteboxError with code `value` for a bad span, method or output times.
+ * @throws MdmlError with code `value` for a bad span, method or output times.
  * @concept initial-value-problem
  * @example
  * ```ts
- * import { solveIvp } from 'whitebox-engine/dynamics/ode'
- * import { neg } from 'whitebox-engine/tensor'
+ * import { solveIvp } from 'mdml-engine/dynamics/ode'
+ * import { neg } from 'mdml-engine/tensor'
  * const sol = solveIvp((_t, y) => neg(y), [0, 1], [1], { rtol: 1e-10, atol: 1e-12, tEval: [1] })
  * Math.abs((sol.ys[0]?.data[0] ?? 0) - Math.exp(-1)) < 1e-9 // => true
  * ```
@@ -693,11 +692,11 @@ export interface OdeintOptions extends Omit<SolveIvpOptions, 'tEval' | 'events' 
  * @param times - Increasing (or decreasing) output times starting at the initial time.
  * @param options - As {@link solveIvp}.
  * @returns The states at the times.
- * @throws WhiteboxError with code `convergence` when the solver fails.
+ * @throws MdmlError with code `convergence` when the solver fails.
  * @example
  * ```ts
- * import { odeint } from 'whitebox-engine/dynamics/ode'
- * import { neg } from 'whitebox-engine/tensor'
+ * import { odeint } from 'mdml-engine/dynamics/ode'
+ * import { neg } from 'mdml-engine/tensor'
  * odeint((_t, y) => neg(y), [1], [0, 1, 2]).shape // => [3, 1]
  * ```
  */
@@ -709,7 +708,7 @@ function odeintStates(f: VectorField, y0: TensorLike, times: readonly number[], 
   const t0 = times[0]
   const t1 = times[times.length - 1]
   const y0v = floatState(y0)
-  if (t0 === undefined || t1 === undefined) throw new WhiteboxError('value', 'odeint: give at least one time')
+  if (t0 === undefined || t1 === undefined) throw new MdmlError('value', 'odeint: give at least one time')
   if (times.length === 1 || t0 === t1) return times.map(() => y0v)
   const sol = solveIvp(f, [t0, t1], y0v, {
     method: 'LSODA',
@@ -718,7 +717,7 @@ function odeintStates(f: VectorField, y0: TensorLike, times: readonly number[], 
     ...options,
     tEval: times,
   })
-  if (!sol.success) throw new WhiteboxError('convergence', `odeint: ${sol.message}`)
+  if (!sol.success) throw new MdmlError('convergence', `odeint: ${sol.message}`)
   // The first output is the initial state itself (exactly, and with its derivatives).
   return [y0v, ...sol.ys.slice(1)]
 }
@@ -732,8 +731,8 @@ function odeintStates(f: VectorField, y0: TensorLike, times: readonly number[], 
  * @returns `(f, y0, times) => states`.
  * @example
  * ```ts
- * import { odeSolver } from 'whitebox-engine/dynamics/ode'
- * import { neg, tensor } from 'whitebox-engine/tensor'
+ * import { odeSolver } from 'mdml-engine/dynamics/ode'
+ * import { neg, tensor } from 'mdml-engine/tensor'
  * odeSolver('RK4', { dt: 0.1 })((_t, y) => neg(y), tensor([1]), [0, 0.5, 1]).length // => 3
  * ```
  */
@@ -807,11 +806,11 @@ export interface DiffeqSolution {
  * @param y0 - The initial state.
  * @param options - Solver, interval, initial step, saving policy, controller, step budget and events.
  * @returns The solution with statistics and a result code.
- * @throws WhiteboxError with code `value` when a constant step is requested without dt0.
+ * @throws MdmlError with code `value` when a constant step is requested without dt0.
  * @example
  * ```ts
- * import { diffeqsolve } from 'whitebox-engine/dynamics/ode'
- * import { neg } from 'whitebox-engine/tensor'
+ * import { diffeqsolve } from 'mdml-engine/dynamics/ode'
+ * import { neg } from 'mdml-engine/tensor'
  * const s = diffeqsolve((_t, y) => neg(y), [1], { t0: 0, t1: 1, dt0: 0.1, stepsizeController: { kind: 'pid', rtol: 1e-8, atol: 1e-8 } })
  * [s.result, s.ts] // => ['successful', [1]]
  * ```
@@ -823,7 +822,7 @@ export function diffeqsolve(f: VectorField, y0: TensorLike, options: Diffeqsolve
   if (typeof name !== 'string') stepper = name
   else if (controller.kind === 'constant') {
     const dt = options.dt0
-    if (dt === undefined) throw new WhiteboxError('value', 'diffeqsolve: a constant step needs dt0')
+    if (dt === undefined) throw new MdmlError('value', 'diffeqsolve: a constant step needs dt0')
     const tableau = EMBEDDED[name] ?? FIXED[name]
     stepper =
       tableau === undefined

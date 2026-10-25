@@ -5,7 +5,7 @@
  */
 
 import { hessian } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { multivariateNormal, normal } from '../../dists/index.ts'
 import { cholesky, inv, slogdet } from '../../numerics/linalg/index.ts'
 import { lbfgs } from '../../optim/index.ts'
@@ -59,14 +59,14 @@ export interface LaplaceFit {
  * @param start - The starting point.
  * @param options - The iteration cap, gradient tolerance and tracing.
  * @returns The fit.
- * @throws WhiteboxError with code `value` when minus the Hessian at the mode is not positive definite (an improper or
+ * @throws MdmlError with code `value` when minus the Hessian at the mode is not positive definite (an improper or
  *   degenerate posterior).
  * @concept laplace-approximation
  * @example
  * ```ts
- * import { laplaceFit, observe, potentialEnergy, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { laplaceFit, observe, potentialEnergy, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * const um = potentialEnergy(() => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 2) }, undefined)
  * toArray(laplaceFit(um, [0]).mode).map((v) => Math.round(v * 1e8) / 1e8) // => [1]
  * ```
@@ -94,7 +94,7 @@ export function laplaceFit(
   try {
     cholesky(precision)
   } catch {
-    throw new WhiteboxError('value', 'laplace: minus the Hessian at the mode is not positive definite', {
+    throw new MdmlError('value', 'laplace: minus the Hessian at the mode is not positive definite', {
       gradNorm: r.gradNorm,
     })
   }
@@ -129,10 +129,10 @@ export interface LaplaceOptions {
  * @concept laplace-approximation
  * @example
  * ```ts
- * import { laplaceApproximation, observe, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { item } from 'whitebox-engine/tensor'
+ * import { laplaceApproximation, observe, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 2) }
  * Math.abs(item(laplaceApproximation(model, undefined, { key: key(0) }).variance('m')) - 0.5) < 1e-8 // => true
  * ```
@@ -233,7 +233,7 @@ export function laplaceApproximation<D = void>(
  * @concept inference-engines
  * @example
  * ```ts
- * import { laplaceEngine } from 'whitebox-engine/probprog'
+ * import { laplaceEngine } from 'mdml-engine/probprog'
  * laplaceEngine().name // => 'laplace'
  * ```
  */

@@ -3,7 +3,7 @@
  * manifolds such as the Swiss roll and tabular data.
  */
 
-import { factorAnalysis as factorAnalysisMethod } from 'whitebox-engine/methods/decomposition'
+import { factorAnalysis as factorAnalysisMethod } from 'mdml-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

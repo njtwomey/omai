@@ -4,7 +4,7 @@
  * moves, Sutton and Barto's wind, one-way cells, pickups and locked doors, resolved for one action by `applyRules`.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { offset, SQUARE_OFFSETS } from './_topology.ts'
 import { cellCoords, cellIndex, destination, type MoveOptions, passable, terrainOf, type World } from './world.ts'
 
@@ -76,7 +76,7 @@ export const ACTIONS: {
  * @returns The action set (`slot 0`, `slot 1`, ...).
  * @example
  * ```ts
- * import { slotActions, world } from 'whitebox-engine/worlds'
+ * import { slotActions, world } from 'mdml-engine/worlds'
  * slotActions(world({ topology: { kind: 'graph', n: 3, neighbours: [[1, 2], [0], [0]] } })).names // => ['slot 0', 'slot 1']
  * ```
  */
@@ -180,7 +180,7 @@ function selector(select: CellSelector): (cell: number, world: World) => boolean
  * @returns The rule set.
  * @example
  * ```ts
- * import { rules, stepReward, terminateOn } from 'whitebox-engine/worlds'
+ * import { rules, stepReward, terminateOn } from 'mdml-engine/worlds'
  * rules(stepReward(-1), [terminateOn('goals')]).map((r) => r.name) // => ['stepReward', 'terminateOn']
  * ```
  */
@@ -195,7 +195,7 @@ export function rules(...parts: readonly (Rule | readonly Rule[])[]): Rule[] {
  * @returns The rule.
  * @example
  * ```ts
- * import { stepReward } from 'whitebox-engine/worlds'
+ * import { stepReward } from 'mdml-engine/worlds'
  * stepReward(-1).name // => 'stepReward'
  * ```
  */
@@ -212,7 +212,7 @@ export function stepReward(reward: number): Rule {
  * @returns The rule.
  * @example
  * ```ts
- * import { rewardOn } from 'whitebox-engine/worlds'
+ * import { rewardOn } from 'mdml-engine/worlds'
  * rewardOn('goals', 1).name // => 'rewardOn'
  * ```
  */
@@ -232,7 +232,7 @@ export function rewardOn(select: CellSelector, reward: number, options: { readon
  * @returns The rule.
  * @example
  * ```ts
- * import { terrainCost } from 'whitebox-engine/worlds'
+ * import { terrainCost } from 'mdml-engine/worlds'
  * terrainCost().name // => 'terrainCost'
  * ```
  */
@@ -250,7 +250,7 @@ export function terrainCost(): Rule {
  * @returns The rule.
  * @example
  * ```ts
- * import { terminateOn } from 'whitebox-engine/worlds'
+ * import { terminateOn } from 'mdml-engine/worlds'
  * terminateOn('hazards').name // => 'terminateOn'
  * ```
  */
@@ -272,7 +272,7 @@ export function terminateOn(select: CellSelector): Rule {
  * @returns The rule.
  * @example
  * ```ts
- * import { teleport } from 'whitebox-engine/worlds'
+ * import { teleport } from 'mdml-engine/worlds'
  * teleport({ terrain: 'cliff' }, 'start').name // => 'teleport'
  * ```
  */
@@ -298,16 +298,16 @@ export function teleport(select: CellSelector, to: number | 'start' | ((cell: nu
  * @param branches - `[offset, probability]` pairs (probabilities summing to 1).
  * @param ring - How many actions form the ring.
  * @returns The rule.
- * @throws WhiteboxError with code `value` when the probabilities do not sum to 1.
+ * @throws MdmlError with code `value` when the probabilities do not sum to 1.
  * @example
  * ```ts
- * import { slip } from 'whitebox-engine/worlds'
+ * import { slip } from 'mdml-engine/worlds'
  * slip([[-1, 0.25], [0, 0.5], [1, 0.25]]).name // => 'slip'
  * ```
  */
 export function slip(branches: readonly (readonly [number, number])[], ring = 4): Rule {
   const total = branches.reduce((s, [, p]) => s + p, 0)
-  if (Math.abs(total - 1) > 1e-12) throw new WhiteboxError('value', `slip: probabilities sum to ${total}, not 1`)
+  if (Math.abs(total - 1) > 1e-12) throw new MdmlError('value', `slip: probabilities sum to ${total}, not 1`)
   return {
     name: 'slip',
     moves: (ms) =>
@@ -334,7 +334,7 @@ export function slip(branches: readonly (readonly [number, number])[], ring = 4)
  * @returns The rule.
  * @example
  * ```ts
- * import { slipUniform } from 'whitebox-engine/worlds'
+ * import { slipUniform } from 'mdml-engine/worlds'
  * slipUniform(2 / 3).name // => 'slipUniform'
  * ```
  */
@@ -365,7 +365,7 @@ export function slipUniform(success: number, ring = 4): Rule {
  * @returns The rule.
  * @example
  * ```ts
- * import { wind } from 'whitebox-engine/worlds'
+ * import { wind } from 'mdml-engine/worlds'
  * wind([0, 1, 2]).name // => 'wind'
  * ```
  */
@@ -395,7 +395,7 @@ export function wind(strengths: readonly number[], options: { readonly stochasti
  * @returns The rule.
  * @example
  * ```ts
- * import { oneWay } from 'whitebox-engine/worlds'
+ * import { oneWay } from 'mdml-engine/worlds'
  * oneWay({ 4: 1 }).name // => 'oneWay'
  * ```
  */
@@ -420,7 +420,7 @@ const holds = (w: World, s: AgentState, tracked: readonly number[], kind: 'key',
  * @returns The rule.
  * @example
  * ```ts
- * import { pickups } from 'whitebox-engine/worlds'
+ * import { pickups } from 'mdml-engine/worlds'
  * pickups().name // => 'pickups'
  * ```
  */
@@ -447,7 +447,7 @@ export function pickups(options: { readonly reward?: number } = {}): Rule {
  * @returns The rule.
  * @example
  * ```ts
- * import { lockedDoors } from 'whitebox-engine/worlds'
+ * import { lockedDoors } from 'mdml-engine/worlds'
  * lockedDoors().name // => 'lockedDoors'
  * ```
  */
@@ -466,7 +466,7 @@ export function lockedDoors(): Rule {
  * @returns Item indices; bit `j` of a state's `items` is item `trackedItems(w)[j]`.
  * @example
  * ```ts
- * import { fromAscii, trackedItems } from 'whitebox-engine/worlds'
+ * import { fromAscii, trackedItems } from 'mdml-engine/worlds'
  * trackedItems(fromAscii(['SKD$G'])) // => [0, 2]
  * ```
  */
@@ -532,10 +532,10 @@ function landing(
  * @param action - The action index.
  * @param options - The action set, move options and edge rule.
  * @returns The effects (unmerged, possibly with zero-probability branches removed).
- * @throws WhiteboxError with code `value` for an action outside the set.
+ * @throws MdmlError with code `value` for an action outside the set.
  * @example
  * ```ts
- * import { applyRules, fromAscii, rules, stepReward, terminateOn } from 'whitebox-engine/worlds'
+ * import { applyRules, fromAscii, rules, stepReward, terminateOn } from 'mdml-engine/worlds'
  * const w = fromAscii(['S.G'])
  * applyRules(w, rules(stepReward(-1), terminateOn('goals')), { cell: 1, items: 0, heading: -1 }, 1).map((e) => [e.cell, e.reward, e.terminated]) // => [[2, -1, true]]
  * ```
@@ -549,7 +549,7 @@ export function applyRules(
 ): Effect[] {
   const actions = options.actions ?? defaultActions(w)
   if (!Number.isInteger(action) || action < 0 || action >= actions.actions.length) {
-    throw new WhiteboxError('value', `applyRules: action ${action} is not in the action set`)
+    throw new MdmlError('value', `applyRules: action ${action} is not in the action set`)
   }
   const tracked = trackedItems(w)
   let ms: readonly Move[] = [{ probability: 1, action, push: [0, 0] }]
@@ -561,7 +561,7 @@ export function applyRules(
   for (const m of ms) {
     if (m.probability <= 0) continue
     const act = actions.actions[m.action]
-    if (act === undefined) throw new WhiteboxError('value', `applyRules: action ${m.action} is not in the action set`)
+    if (act === undefined) throw new MdmlError('value', `applyRules: action ${m.action} is not in the action set`)
     let heading = state.heading
     let direction = -1
     let cost = 1

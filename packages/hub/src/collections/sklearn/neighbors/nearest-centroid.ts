@@ -3,7 +3,7 @@
  * classification data and tabular classification data.
  */
 
-import { nearestCentroid as nearestCentroidMethod } from 'whitebox-engine/methods/neighbours'
+import { nearestCentroid as nearestCentroidMethod } from 'mdml-engine/methods/neighbours'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

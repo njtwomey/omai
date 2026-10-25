@@ -1,4 +1,4 @@
-// Helpers for the symbolic golden tests: the fixture output shape written by oracle/whitebox_oracle/symbolic.py and
+// Helpers for the symbolic golden tests: the fixture output shape written by oracle/mdml_oracle/symbolic.py and
 // value comparisons at its sample points. Not published.
 import fc from 'fast-check'
 import { z } from 'zod'
@@ -119,7 +119,7 @@ export function valuesAt(e: Expr, names: readonly string[]): [number, number][] 
 
 /** Assert that e has the reference values at every sample point where the reference is finite. */
 export function expectValues(e: Expr, out: SymbolicOutput, rtol: number, atol: number, label: string): void {
-  // Relations and connectives have truth values, which numpy and whitebox-js do not share a numeric form for.
+  // Relations and connectives have truth values, which numpy and mdml-js do not share a numeric form for.
   if (e.kind === 'rel' || e.kind === 'logic') return
   const got = valuesAt(e, out.names)
   let compared = 0

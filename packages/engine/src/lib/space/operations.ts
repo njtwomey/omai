@@ -4,7 +4,7 @@
  * from a vector of numbers.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { sizeOf } from '../tensor/index.ts'
 import { activeKeysOf, resolveDict } from './_active.ts'
@@ -34,7 +34,7 @@ function snap(low: number, high: number, step: number | undefined, x: number): n
  * @concept spaces
  * @example
  * ```ts
- * import { activeDims, choice, dict, int, real } from 'whitebox-engine/space'
+ * import { activeDims, choice, dict, int, real } from 'mdml-engine/space'
  * const s = dict({
  *   kind: choice(['linear', 'tree']),
  *   alpha: real(0, 1, { when: { key: 'kind', in: ['linear'] } }),
@@ -71,8 +71,8 @@ export function activeDims(space: Space, value: SpaceValue): string[] {
  * @concept spaces
  * @example
  * ```ts
- * import { sample, real } from 'whitebox-engine/space'
- * import { key } from 'whitebox-engine/random'
+ * import { sample, real } from 'mdml-engine/space'
+ * import { key } from 'mdml-engine/random'
  * const v = sample(real(0, 1), key(0)) as number
  * v >= 0 && v <= 1 // => true
  * ```
@@ -131,7 +131,7 @@ export function sample(space: Space, k: Key): SpaceValue {
  * @returns `true` when the value is a member.
  * @example
  * ```ts
- * import { contains, discrete } from 'whitebox-engine/space'
+ * import { contains, discrete } from 'mdml-engine/space'
  * contains(discrete(3), 2) // => true
  * contains(discrete(3), 3) // => false
  * ```
@@ -187,10 +187,10 @@ export function contains(space: Space, value: SpaceValue): boolean {
  * @param space - The space.
  * @param value - The value.
  * @returns The nearest member.
- * @throws WhiteboxError with code `value` for a choice value that is not an option.
+ * @throws MdmlError with code `value` for a choice value that is not an option.
  * @example
  * ```ts
- * import { clip, int } from 'whitebox-engine/space'
+ * import { clip, int } from 'mdml-engine/space'
  * clip(int(0, 5), 7.6) // => 5
  * ```
  */
@@ -221,7 +221,7 @@ export function clip(space: Space, value: SpaceValue): SpaceValue {
     }
     case 'choice':
       if (!space.options.includes(value as never))
-        throw new WhiteboxError('value', `clip: ${String(value)} is not an option`)
+        throw new MdmlError('value', `clip: ${String(value)} is not an option`)
       return value
     case 'bool':
       return value
@@ -237,7 +237,7 @@ export function clip(space: Space, value: SpaceValue): SpaceValue {
  * @returns The default value.
  * @example
  * ```ts
- * import { defaults, dict, real, choice } from 'whitebox-engine/space'
+ * import { defaults, dict, real, choice } from 'mdml-engine/space'
  * defaults(dict({ lr: real(1e-4, 1, { log: true }), act: choice(['relu', 'tanh']) })) // => { lr: 0.01, act: 'relu' }
  * ```
  */
@@ -286,7 +286,7 @@ export function defaults(space: Space): SpaceValue {
  * @returns The flat dimension.
  * @example
  * ```ts
- * import { flatDim, box, tuple, discrete } from 'whitebox-engine/space'
+ * import { flatDim, box, tuple, discrete } from 'mdml-engine/space'
  * flatDim(tuple([box(0, 1, [2, 2]), discrete(3)])) // => 5
  * ```
  */
@@ -315,7 +315,7 @@ export function flatDim(space: Space): number {
  * @returns The numbers.
  * @example
  * ```ts
- * import { flatten, dict, real, choice } from 'whitebox-engine/space'
+ * import { flatten, dict, real, choice } from 'mdml-engine/space'
  * flatten(dict({ a: real(0, 1), b: choice(['x', 'y']) }), { a: 0.5, b: 'y' }) // => [0.5, 1]
  * ```
  */
@@ -352,7 +352,7 @@ export function flatten(space: Space, value: SpaceValue): number[] {
  * @returns The value.
  * @example
  * ```ts
- * import { unflatten, dict, real, choice } from 'whitebox-engine/space'
+ * import { unflatten, dict, real, choice } from 'mdml-engine/space'
  * unflatten(dict({ a: real(0, 1), b: choice(['x', 'y']) }), [0.5, 1]) // => { a: 0.5, b: 'y' }
  * ```
  */

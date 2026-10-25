@@ -5,7 +5,7 @@
  * graph as a drawable structure.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
 import type { RunOptions } from '../trace/index.ts'
 import { assemble } from './_build.ts'
@@ -94,12 +94,12 @@ export interface GraphOptions {
  * @param edges - `[u, v]`, `[u, v, weight]` or `{ source, target, weight, data }`.
  * @param options - Directedness, the nodes (a count or labels), what repeated edges do, attributes and node data.
  * @returns The graph.
- * @throws WhiteboxError with code `value` for a negative or non-integer node index, a non-finite weight, or a repeated
+ * @throws MdmlError with code `value` for a negative or non-integer node index, a non-finite weight, or a repeated
  *   edge when `duplicates` is `'error'`.
  * @concept graphs
  * @example
  * ```ts
- * import { graph } from 'whitebox-engine/graph'
+ * import { graph } from 'mdml-engine/graph'
  * const g = graph([['a', 'b'], ['b', 'c', 2]])
  * g.n // => 3
  * g.edges.map((e) => e.weight) // => [1, 2]
@@ -117,7 +117,7 @@ export function graph(edges: readonly EdgeInput[], options: GraphOptions = {}): 
   for (const [i, l] of labels.entries()) if (!index.has(l)) index.set(l, i)
   const resolve = (v: NodeId): number => {
     if (typeof v === 'number') {
-      if (!Number.isInteger(v) || v < 0) throw new WhiteboxError('value', `graph: node index ${v} is not valid`)
+      if (!Number.isInteger(v) || v < 0) throw new MdmlError('value', `graph: node index ${v} is not valid`)
       while (labels.length <= v) {
         index.set(String(labels.length), labels.length)
         labels.push(String(labels.length))
@@ -142,7 +142,7 @@ export function graph(edges: readonly EdgeInput[], options: GraphOptions = {}): 
           (e as { weight?: number }).weight ?? 1,
           (e as { data?: Readonly<Record<string, Json>> }).data,
         ]
-    if (!Number.isFinite(w)) throw new WhiteboxError('value', `graph: edge weight ${w} is not finite`)
+    if (!Number.isFinite(w)) throw new MdmlError('value', `graph: edge weight ${w} is not finite`)
     let u = resolve(s)
     let v = resolve(t)
     if (!directed && u > v) [u, v] = [v, u]
@@ -154,7 +154,7 @@ export function graph(edges: readonly EdgeInput[], options: GraphOptions = {}): 
       data.push(d ?? {})
       continue
     }
-    if (duplicates === 'error') throw new WhiteboxError('value', `graph: repeated edge (${s}, ${t})`)
+    if (duplicates === 'error') throw new MdmlError('value', `graph: repeated edge (${s}, ${t})`)
     const old = out[at]?.weight ?? 0
     const weight =
       duplicates === 'sum'
@@ -178,7 +178,7 @@ export function graph(edges: readonly EdgeInput[], options: GraphOptions = {}): 
  * @returns The directed graph.
  * @example
  * ```ts
- * import { digraph, successors } from 'whitebox-engine/graph'
+ * import { digraph, successors } from 'mdml-engine/graph'
  * successors(digraph([[0, 1], [0, 2], [2, 0]]), 0) // => [1, 2]
  * ```
  */
@@ -193,7 +193,7 @@ export function digraph(edges: readonly EdgeInput[], options: Omit<GraphOptions,
  * @returns True for a graph.
  * @example
  * ```ts
- * import { graph, isGraph } from 'whitebox-engine/graph'
+ * import { graph, isGraph } from 'mdml-engine/graph'
  * [isGraph(graph([[0, 1]])), isGraph([[0, 1], [1, 0]])] // => [true, false]
  * ```
  */
@@ -207,17 +207,17 @@ export function isGraph(x: unknown): x is Graph {
  * @param g - The graph.
  * @param v - An index or a label.
  * @returns The index.
- * @throws WhiteboxError with code `value` when the node is not in the graph.
+ * @throws MdmlError with code `value` when the node is not in the graph.
  * @example
  * ```ts
- * import { graph, nodeIndex } from 'whitebox-engine/graph'
+ * import { graph, nodeIndex } from 'mdml-engine/graph'
  * nodeIndex(graph([['x', 'y']]), 'y') // => 1
  * ```
  */
 export function nodeIndex(g: Graph, v: NodeId): number {
   const i = typeof v === 'number' ? v : g.index.get(v)
   if (i === undefined || !Number.isInteger(i) || i < 0 || i >= g.n) {
-    throw new WhiteboxError('value', `node ${String(v)} is not in the graph`)
+    throw new MdmlError('value', `node ${String(v)} is not in the graph`)
   }
   return i
 }
@@ -234,7 +234,7 @@ function row(a: Adjacency, v: number): number[] {
  * @returns Neighbour indices, ascending and without repeats.
  * @example
  * ```ts
- * import { graph, neighbours } from 'whitebox-engine/graph'
+ * import { graph, neighbours } from 'mdml-engine/graph'
  * neighbours(graph([[0, 1], [1, 2], [1, 3]]), 1) // => [0, 2, 3]
  * ```
  */
@@ -252,7 +252,7 @@ export function neighbours(g: Graph, v: NodeId): number[] {
  * @returns Successor indices, ascending.
  * @example
  * ```ts
- * import { digraph, successors } from 'whitebox-engine/graph'
+ * import { digraph, successors } from 'mdml-engine/graph'
  * successors(digraph([[1, 0], [1, 2]]), 1) // => [0, 2]
  * ```
  */
@@ -268,7 +268,7 @@ export function successors(g: Graph, v: NodeId): number[] {
  * @returns Predecessor indices, ascending.
  * @example
  * ```ts
- * import { digraph, predecessors } from 'whitebox-engine/graph'
+ * import { digraph, predecessors } from 'mdml-engine/graph'
  * predecessors(digraph([[1, 0], [2, 0]]), 0) // => [1, 2]
  * ```
  */
@@ -296,7 +296,7 @@ function sideDegree(g: Graph, a: Adjacency, weighted: boolean, selfTwice: boolea
  * @returns The degree of each node.
  * @example
  * ```ts
- * import { degree, graph } from 'whitebox-engine/graph'
+ * import { degree, graph } from 'mdml-engine/graph'
  * degree(graph([[0, 1], [1, 2, 5]])) // => [1, 2, 1]
  * degree(graph([[0, 1], [1, 2, 5]]), { weighted: true }) // => [1, 6, 5]
  * ```
@@ -317,7 +317,7 @@ export function degree(g: Graph, options: { readonly weighted?: boolean } = {}):
  * @returns The in-degree of each node.
  * @example
  * ```ts
- * import { digraph, inDegree } from 'whitebox-engine/graph'
+ * import { digraph, inDegree } from 'mdml-engine/graph'
  * inDegree(digraph([[0, 1], [2, 1]])) // => [0, 2, 0]
  * ```
  */
@@ -333,7 +333,7 @@ export function inDegree(g: Graph, options: { readonly weighted?: boolean } = {}
  * @returns The out-degree of each node.
  * @example
  * ```ts
- * import { digraph, outDegree } from 'whitebox-engine/graph'
+ * import { digraph, outDegree } from 'mdml-engine/graph'
  * outDegree(digraph([[0, 1], [0, 2]])) // => [2, 0, 0]
  * ```
  */
@@ -351,7 +351,7 @@ export function outDegree(g: Graph, options: { readonly weighted?: boolean } = {
  * @returns The weight, or `undefined` when there is no such edge.
  * @example
  * ```ts
- * import { edgeWeight, graph } from 'whitebox-engine/graph'
+ * import { edgeWeight, graph } from 'mdml-engine/graph'
  * edgeWeight(graph([[0, 1, 2.5]]), 1, 0) // => 2.5
  * edgeWeight(graph([[0, 1, 2.5]]), 0, 0) // => undefined
  * ```
@@ -380,7 +380,7 @@ export function edgeWeight(g: Graph, u: NodeId, v: NodeId): number | undefined {
  * @returns True when the edge exists.
  * @example
  * ```ts
- * import { digraph, hasEdge } from 'whitebox-engine/graph'
+ * import { digraph, hasEdge } from 'mdml-engine/graph'
  * hasEdge(digraph([[0, 1]]), 0, 1) // => true
  * hasEdge(digraph([[0, 1]]), 1, 0) // => false
  * ```
@@ -398,7 +398,7 @@ export function hasEdge(g: Graph, u: NodeId, v: NodeId): boolean {
  * @returns The induced subgraph.
  * @example
  * ```ts
- * import { graph, subgraph } from 'whitebox-engine/graph'
+ * import { graph, subgraph } from 'mdml-engine/graph'
  * const h = subgraph(graph([['a', 'b'], ['b', 'c'], ['c', 'a'], ['c', 'd']]), ['a', 'c', 'd'])
  * h.labels // => ['a', 'c', 'd']
  * h.edges.length // => 2
@@ -435,7 +435,7 @@ export function subgraph(g: Graph, nodes: readonly NodeId[]): Graph {
  * @returns The reversed graph.
  * @example
  * ```ts
- * import { digraph, reverse, successors } from 'whitebox-engine/graph'
+ * import { digraph, reverse, successors } from 'mdml-engine/graph'
  * successors(reverse(digraph([[0, 1], [0, 2]])), 2) // => [0]
  * ```
  */
@@ -454,7 +454,7 @@ export function reverse(g: Graph): Graph {
  * @returns The undirected graph.
  * @example
  * ```ts
- * import { digraph, toUndirected } from 'whitebox-engine/graph'
+ * import { digraph, toUndirected } from 'mdml-engine/graph'
  * toUndirected(digraph([[0, 1, 2], [1, 0, 3]]), { combine: 'sum' }).edges // => [{ source: 0, target: 1, weight: 5 }]
  * ```
  */
@@ -495,7 +495,7 @@ export function toUndirected(g: Graph, options: { readonly combine?: 'max' | 'mi
  * @returns The directed graph.
  * @example
  * ```ts
- * import { graph, toDirected } from 'whitebox-engine/graph'
+ * import { graph, toDirected } from 'mdml-engine/graph'
  * toDirected(graph([[0, 1], [1, 2]])).edges.length // => 4
  * ```
  */
@@ -521,7 +521,7 @@ export function toDirected(g: Graph): Graph {
  * @returns The triples.
  * @example
  * ```ts
- * import { edgeList, graph } from 'whitebox-engine/graph'
+ * import { edgeList, graph } from 'mdml-engine/graph'
  * edgeList(graph([[1, 0, 3]])) // => [[0, 1, 3]]
  * ```
  */
@@ -540,7 +540,7 @@ export function edgeList(g: Graph): [number, number, number][] {
  * @concept structures
  * @example
  * ```ts
- * import { graph, toStructure } from 'whitebox-engine/graph'
+ * import { graph, toStructure } from 'mdml-engine/graph'
  * const s = toStructure(graph([['a', 'b', 2]]))
  * s.nodes.map((n) => n.label) // => ['a', 'b']
  * s.edges[0]?.label // => '2'

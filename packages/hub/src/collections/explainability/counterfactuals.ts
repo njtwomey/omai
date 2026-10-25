@@ -3,12 +3,12 @@
  * prototype-guided search or CEM, under actionability constraints, with robustness to refitting.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import { matrixView } from 'whitebox-engine/learn'
-import { randomForestClassifier } from 'whitebox-engine/methods/ensemble'
-import { type CounterfactualMethod, explainCounterfactuals } from 'whitebox-engine/methods/explain'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import { matrixView } from 'mdml-engine/learn'
+import { randomForestClassifier } from 'mdml-engine/methods/ensemble'
+import { type CounterfactualMethod, explainCounterfactuals } from 'mdml-engine/methods/explain'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 
@@ -36,7 +36,7 @@ export const counterfactuals: HubEntry = defineEntry({
   run: ({ data, params, key }) => {
     const learn = learnDataOf(data)
     const n = matrixView(learn.x, 'counterfactuals').n
-    if (n === 0) throw new WhiteboxError('value', 'counterfactuals: no rows')
+    if (n === 0) throw new MdmlError('value', 'counterfactuals: no rows')
     const forest = params['model'] === 'random forest'
     const est = forest ? randomForestClassifier({ nEstimators: 30, maxDepth: 6 }) : logisticRegression({ C: 1 })
     const fitted = est.fit(learn, { key, explain: false })

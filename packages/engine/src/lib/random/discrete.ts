@@ -4,7 +4,7 @@
  * geometric draws, plus Vose alias tables for O(1) sampling from a fixed discrete distribution.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { fromStorage, type Shape, sizeOf, type Tensor } from '../tensor/index.ts'
 import { unitDoubles } from './_unit.ts'
 import { binomialOne, poissonOne } from './_variates.ts'
@@ -25,15 +25,15 @@ function ints(shape: Shape, draw: (i: number) => number): Tensor<'int32'> {
  * @param low - Smallest value.
  * @param high - Exclusive upper bound.
  * @returns An int32 tensor.
- * @throws WhiteboxError with code `value` unless `high > low`.
+ * @throws MdmlError with code `value` unless `high > low`.
  * @example
  * ```ts
- * import { key, randint } from 'whitebox-engine/random'
+ * import { key, randint } from 'mdml-engine/random'
  * randint(key(0), [5], 0, 3).data.every((v) => v >= 0 && v < 3) // => true
  * ```
  */
 export function randint(k: Key, shape: Shape, low: number, high: number): Tensor<'int32'> {
-  if (!(high > low)) throw new WhiteboxError('value', `randint: need high > low, got [${low}, ${high})`)
+  if (!(high > low)) throw new MdmlError('value', `randint: need high > low, got [${low}, ${high})`)
   const u = unitDoubles(k, sizeOf(shape))
   return ints(shape, (i) => low + Math.floor((u[i] ?? 0) * (high - low)))
 }
@@ -47,7 +47,7 @@ export function randint(k: Key, shape: Shape, low: number, high: number): Tensor
  * @returns A bool tensor.
  * @example
  * ```ts
- * import { key, bernoulli } from 'whitebox-engine/random'
+ * import { key, bernoulli } from 'mdml-engine/random'
  * Array.from(bernoulli(key(0), 1, [3]).data) // => [1, 1, 1]
  * ```
  */
@@ -61,7 +61,7 @@ export function bernoulli(k: Key, p: number, shape: Shape): Tensor<'bool'> {
 function cumulative(weights: readonly number[], name: string): number[] {
   const total = weights.reduce((a, b) => a + b, 0)
   if (!(total > 0) || !Number.isFinite(total) || weights.some((w) => w < 0 || Number.isNaN(w))) {
-    throw new WhiteboxError('value', `${name}: weights must be non-negative with a positive finite sum`)
+    throw new MdmlError('value', `${name}: weights must be non-negative with a positive finite sum`)
   }
   let acc = 0
   return weights.map((w) => {
@@ -92,10 +92,10 @@ function invert(cdf: readonly number[], weights: readonly number[], u: number): 
  * @param shape - Output shape.
  * @param options - `logits`: treat `weights` as unnormalised log-probabilities.
  * @returns An int32 tensor of category indices.
- * @throws WhiteboxError with code `value` when the weights have no positive finite sum.
+ * @throws MdmlError with code `value` when the weights have no positive finite sum.
  * @example
  * ```ts
- * import { key, categorical } from 'whitebox-engine/random'
+ * import { key, categorical } from 'mdml-engine/random'
  * Array.from(categorical(key(0), [0, 1, 0], [4]).data) // => [1, 1, 1, 1]
  * ```
  */
@@ -125,15 +125,15 @@ export function categorical(
  * @param probs - Category probabilities (non-negative weights, normalised).
  * @param samples - Number of independent count vectors.
  * @returns An int32 tensor of shape `[samples, K]`, each row summing to `n`.
- * @throws WhiteboxError with code `value` for a bad `n` or weights without a positive finite sum.
+ * @throws MdmlError with code `value` for a bad `n` or weights without a positive finite sum.
  * @example
  * ```ts
- * import { key, multinomial } from 'whitebox-engine/random'
+ * import { key, multinomial } from 'mdml-engine/random'
  * Array.from(multinomial(key(0), 10, [0.5, 0.5], 1).data).reduce((a, b) => a + b) // => 10
  * ```
  */
 export function multinomial(k: Key, n: number, probs: readonly number[], samples: number): Tensor<'int32'> {
-  if (!Number.isInteger(n) || n < 0) throw new WhiteboxError('value', `multinomial: n must be a non-negative integer`)
+  if (!Number.isInteger(n) || n < 0) throw new MdmlError('value', `multinomial: n must be a non-negative integer`)
   const cdf = cumulative(probs, 'multinomial')
   const K = probs.length
   const next = uniformStream(k)
@@ -162,16 +162,16 @@ export function multinomial(k: Key, n: number, probs: readonly number[], samples
  * @param lambda - The rate (non-negative).
  * @param shape - Output shape.
  * @returns An int32 tensor.
- * @throws WhiteboxError with code `value` for a negative rate.
+ * @throws MdmlError with code `value` for a negative rate.
  * @reference Hormann (1993), The transformed rejection method for generating Poisson random variables.
  * @example
  * ```ts
- * import { key, poisson } from 'whitebox-engine/random'
+ * import { key, poisson } from 'mdml-engine/random'
  * poisson(key(0), 3, [5]).data.every((v) => v >= 0) // => true
  * ```
  */
 export function poisson(k: Key, lambda: number, shape: Shape): Tensor<'int32'> {
-  if (!(lambda >= 0)) throw new WhiteboxError('value', `poisson: rate must be non-negative, got ${lambda}`)
+  if (!(lambda >= 0)) throw new MdmlError('value', `poisson: rate must be non-negative, got ${lambda}`)
   const next = uniformStream(k)
   return ints(shape, () => poissonOne(lambda, next))
 }
@@ -185,18 +185,18 @@ export function poisson(k: Key, lambda: number, shape: Shape): Tensor<'int32'> {
  * @param p - Success probability.
  * @param shape - Output shape.
  * @returns An int32 tensor.
- * @throws WhiteboxError with code `value` unless `n` is a non-negative integer and `p` is in [0, 1].
+ * @throws MdmlError with code `value` unless `n` is a non-negative integer and `p` is in [0, 1].
  * @reference Kachitvichyanukul and Schmeiser (1988), Binomial random variate generation, CACM 31(2).
  * @example
  * ```ts
- * import { key, binomial } from 'whitebox-engine/random'
+ * import { key, binomial } from 'mdml-engine/random'
  * binomial(key(0), 10, 0.3, [5]).data.every((v) => v >= 0 && v <= 10) // => true
  * binomial(key(0), 1e6, 0.5, [3]).data.every((v) => Math.abs(v - 5e5) < 5000) // => true
  * ```
  */
 export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'int32'> {
   if (!(p >= 0 && p <= 1) || !Number.isInteger(n) || n < 0) {
-    throw new WhiteboxError('value', 'binomial: need an integer n >= 0 and p in [0, 1]')
+    throw new MdmlError('value', 'binomial: need an integer n >= 0 and p in [0, 1]')
   }
   const next = uniformStream(k)
   return ints(shape, () => binomialOne(n, p, next))
@@ -211,12 +211,12 @@ export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'in
  * @returns An int32 tensor of values at least 1.
  * @example
  * ```ts
- * import { key, geometric } from 'whitebox-engine/random'
+ * import { key, geometric } from 'mdml-engine/random'
  * Array.from(geometric(key(0), 1, [3]).data) // => [1, 1, 1]
  * ```
  */
 export function geometric(k: Key, p: number, shape: Shape): Tensor<'int32'> {
-  if (!(p > 0 && p <= 1)) throw new WhiteboxError('value', `geometric: p must be in (0, 1], got ${p}`)
+  if (!(p > 0 && p <= 1)) throw new MdmlError('value', `geometric: p must be in (0, 1], got ${p}`)
   const u = unitDoubles(k, sizeOf(shape))
   return ints(shape, (i) => (p === 1 ? 1 : Math.floor(Math.log(1 - (u[i] ?? 0)) / Math.log(1 - p)) + 1))
 }
@@ -234,7 +234,7 @@ export interface AliasTable {
  * @returns The table.
  * @example
  * ```ts
- * import { aliasTable } from 'whitebox-engine/random'
+ * import { aliasTable } from 'mdml-engine/random'
  * aliasTable([1, 1]).alias.length // => 2
  * ```
  */
@@ -274,7 +274,7 @@ export function aliasTable(weights: readonly number[]): AliasTable {
  * @returns An int32 tensor of category indices.
  * @example
  * ```ts
- * import { key, aliasTable, aliasSample } from 'whitebox-engine/random'
+ * import { key, aliasTable, aliasSample } from 'mdml-engine/random'
  * Array.from(aliasSample(key(0), aliasTable([0, 1]), [3]).data) // => [1, 1, 1]
  * ```
  */

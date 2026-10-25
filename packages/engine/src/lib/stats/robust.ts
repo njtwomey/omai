@@ -5,7 +5,7 @@
  * also as a traced algorithm.
  */
 
-import { type Estimate, meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { type Estimate, MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { subsample } from '../random/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -14,7 +14,7 @@ import { median } from './quantiles.ts'
 
 function cutCount(name: string, n: number, proportion: number): number {
   if (!(proportion >= 0 && proportion < 0.5))
-    throw new WhiteboxError('value', `${name}: the proportion must lie in [0, 0.5)`)
+    throw new MdmlError('value', `${name}: the proportion must lie in [0, 0.5)`)
   return Math.floor(n * proportion)
 }
 
@@ -27,7 +27,7 @@ function cutCount(name: string, n: number, proportion: number): number {
  * @returns The remaining values, sorted.
  * @example
  * ```ts
- * import { trimboth } from 'whitebox-engine/stats'
+ * import { trimboth } from 'mdml-engine/stats'
  * trimboth([5, 1, 9, 3, 7], 0.2) // => [3, 5, 7]
  * ```
  */
@@ -45,7 +45,7 @@ export function trimboth(x: TensorLike, proportion: number): Tensor {
  * @returns The trimmed mean.
  * @example
  * ```ts
- * import { trimMean } from 'whitebox-engine/stats'
+ * import { trimMean } from 'mdml-engine/stats'
  * trimMean([1, 2, 3, 4, 100], 0.2) // => 3
  * ```
  */
@@ -62,7 +62,7 @@ export function trimMean(x: TensorLike, proportion: number): number {
  * @returns The trimmed variance.
  * @example
  * ```ts
- * import { trimmedVariance } from 'whitebox-engine/stats'
+ * import { trimmedVariance } from 'mdml-engine/stats'
  * trimmedVariance([1, 2, 3, 4, 100], 0.2) // => 1
  * ```
  */
@@ -79,7 +79,7 @@ export function trimmedVariance(x: TensorLike, proportion: number, options: { re
  * @returns The winsorized sample.
  * @example
  * ```ts
- * import { winsorize } from 'whitebox-engine/stats'
+ * import { winsorize } from 'mdml-engine/stats'
  * winsorize([10, 1, 5, 3, 100], [0.2, 0.2]) // => [10, 3, 5, 3, 10]
  * ```
  */
@@ -88,7 +88,7 @@ export function winsorize(x: TensorLike, limits: readonly [number, number]): Ten
   const n = a.length
   const [lo, hi] = limits
   if (!(lo >= 0 && hi >= 0 && lo + hi < 1))
-    throw new WhiteboxError('value', 'winsorize: limits must be non-negative and sum below 1')
+    throw new MdmlError('value', 'winsorize: limits must be non-negative and sum below 1')
   const order = Array.from({ length: n }, (_, i) => i).sort((p, q) => (a[p] ?? 0) - (a[q] ?? 0) || p - q)
   const lowIdx = Math.trunc(lo * n)
   const upIdx = n - Math.trunc(hi * n)
@@ -108,7 +108,7 @@ export function winsorize(x: TensorLike, limits: readonly [number, number]): Ten
  * @returns The mean of the winsorized sample.
  * @example
  * ```ts
- * import { winsorizedMean } from 'whitebox-engine/stats'
+ * import { winsorizedMean } from 'mdml-engine/stats'
  * winsorizedMean([10, 1, 5, 3, 100], [0.2, 0.2]) // => 6.2
  * ```
  */
@@ -125,7 +125,7 @@ export function winsorizedMean(x: TensorLike, limits: readonly [number, number])
  * @returns The winsorized variance.
  * @example
  * ```ts
- * import { winsorizedVariance } from 'whitebox-engine/stats'
+ * import { winsorizedVariance } from 'mdml-engine/stats'
  * winsorizedVariance([10, 1, 5, 3, 100], [0.2, 0.2]) // => 12.7
  * ```
  */
@@ -171,7 +171,7 @@ function weight(norm: RobustNorm, c: number, u: number): number {
  * @returns The location estimate with its standard error and the final scale.
  * @example
  * ```ts
- * import { mEstimateLocation } from 'whitebox-engine/stats'
+ * import { mEstimateLocation } from 'mdml-engine/stats'
  * mEstimateLocation([1, 2, 3, 4, 100]).value < 4 // => true
  * ```
  */
@@ -228,7 +228,7 @@ export function mEstimateLocation(x: TensorLike, options: MEstimateOptions = {})
  * @returns The estimate.
  * @example
  * ```ts
- * import { huber } from 'whitebox-engine/stats'
+ * import { huber } from 'mdml-engine/stats'
  * huber([1, 2, 3, 4, 5]).value // => 3
  * ```
  */
@@ -244,7 +244,7 @@ export function huber(x: TensorLike, options: Omit<MEstimateOptions, 'norm'> = {
  * @returns The estimate.
  * @example
  * ```ts
- * import { tukeyBiweight } from 'whitebox-engine/stats'
+ * import { tukeyBiweight } from 'mdml-engine/stats'
  * tukeyBiweight([1, 2, 3, 4, 5]).value // => 3
  * ```
  */
@@ -293,8 +293,8 @@ export interface RansacState<M> {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { ransacAlgorithm } from 'whitebox-engine/stats'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { ransacAlgorithm } from 'mdml-engine/stats'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const mean = { fit: (p: readonly number[]) => p.reduce((s, v) => s + v, 0) / p.length, residual: (m: number, p: number) => p - m }
  * runAlgorithm(ransacAlgorithm([1, 1.1, 0.9, 50], mean, { minSamples: 1, residualThreshold: 0.5 }), { maxSteps: 20 }).state.bestInliers.length // => 3
  * ```
@@ -306,8 +306,7 @@ export function ransacAlgorithm<P, M>(
 ): Algorithm<RansacState<M>> {
   const n = points.length
   const m = options.minSamples
-  if (!(Number.isInteger(m) && m >= 1 && m <= n))
-    throw new WhiteboxError('value', 'ransac: minSamples must be in [1, n]')
+  if (!(Number.isInteger(m) && m >= 1 && m <= n)) throw new MdmlError('value', 'ransac: minSamples must be in [1, n]')
   const maxTrials = options.maxTrials ?? 100
   const stopP = options.stopProbability ?? 0.99
   const thr = options.residualThreshold
@@ -369,7 +368,7 @@ export interface RansacResult<M> {
  * @returns The refitted model, the inlier indices and the trials used.
  * @example
  * ```ts
- * import { ransac } from 'whitebox-engine/stats'
+ * import { ransac } from 'mdml-engine/stats'
  * const mean = { fit: (p: readonly number[]) => p.reduce((s, v) => s + v, 0) / p.length, residual: (m: number, p: number) => p - m }
  * ransac([1, 1.1, 0.9, 50], mean, { minSamples: 1, residualThreshold: 0.5, seed: 0 }).model // => 1
  * ```
@@ -378,6 +377,6 @@ export function ransac<P, M>(points: readonly P[], model: RansacModel<P, M>, opt
   const { minSamples: _m, residualThreshold: _r, maxTrials, stopProbability: _p, ...run } = options
   const r = runAlgorithm(ransacAlgorithm(points, model, options), { ...run, maxSteps: maxTrials ?? 100 })
   const inliers = r.state.bestInliers
-  if (inliers.length === 0) throw new WhiteboxError('convergence', 'ransac: no trial found any inlier')
+  if (inliers.length === 0) throw new MdmlError('convergence', 'ransac: no trial found any inlier')
   return { model: model.fit(inliers.map((i) => points[i] as P)), inliers, trials: r.state.trials }
 }

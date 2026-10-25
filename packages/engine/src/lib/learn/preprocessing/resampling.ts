@@ -4,7 +4,7 @@
  * synthesise minority samples by interpolating between neighbours, Tomek link removal and NearMiss under-sampling.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { beta, choice as drawChoice, foldIn, type Key, randint, uniform } from '../../random/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../../tensor/index.ts'
 import { keyFor } from '../_shared.ts'
@@ -50,7 +50,7 @@ export type SamplingStrategy =
  * @returns `true` for resamplers.
  * @example
  * ```ts
- * import { isResampler, randomUnderSampler } from 'whitebox-engine/learn/preprocessing'
+ * import { isResampler, randomUnderSampler } from 'mdml-engine/learn/preprocessing'
  * isResampler(randomUnderSampler()) // => true
  * ```
  */
@@ -83,10 +83,10 @@ function classesOf(data: LearnData, who: string): Classes {
  * @param strategy - The strategy.
  * @param direction - Under- or over-sampling.
  * @returns Target counts by class index (undefined: leave the class alone).
- * @throws WhiteboxError with code `value` for a ratio with more than two classes or impossible counts.
+ * @throws MdmlError with code `value` for a ratio with more than two classes or impossible counts.
  * @example
  * ```ts
- * import { samplingTargets } from 'whitebox-engine/learn/preprocessing'
+ * import { samplingTargets } from 'mdml-engine/learn/preprocessing'
  * samplingTargets([10, 4, 6], [0, 1, 2], 'auto', 'under') // => [4, undefined, 4]
  * samplingTargets([10, 4], [0, 1], 0.5, 'over') // => [undefined, 5]
  * ```
@@ -102,7 +102,7 @@ export function samplingTargets(
   const minority = counts.indexOf(min)
   const majority = counts.indexOf(max)
   if (typeof strategy === 'number') {
-    if (counts.length !== 2) throw new WhiteboxError('value', 'resampling: a ratio needs exactly two classes')
+    if (counts.length !== 2) throw new MdmlError('value', 'resampling: a ratio needs exactly two classes')
     return counts.map((_, i) => {
       if (direction === 'over') return i === minority ? Math.floor(strategy * max) : undefined
       return i === majority ? Math.floor(min / strategy) : undefined
@@ -113,7 +113,7 @@ export function samplingTargets(
       const target = strategy[label]
       if (target === undefined) return undefined
       if (direction === 'under' ? target > (counts[i] ?? 0) : target < (counts[i] ?? 0)) {
-        throw new WhiteboxError('value', `resampling: target ${target} for class ${label} goes the wrong way`)
+        throw new MdmlError('value', `resampling: target ${target} for class ${label} goes the wrong way`)
       }
       return target
     })
@@ -163,8 +163,8 @@ export interface RandomSamplerOptions {
  * @returns The resampler.
  * @example
  * ```ts
- * import { randomUnderSampler } from 'whitebox-engine/learn/preprocessing'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { randomUnderSampler } from 'mdml-engine/learn/preprocessing'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const r = randomUnderSampler().fitResample({ x: [[0], [1], [2], [3], [4]], y: [0, 0, 0, 1, 1] })
  * toFlat(r.y) // => [0, 0, 1, 1]
  * ```
@@ -202,8 +202,8 @@ export function randomUnderSampler(options: RandomSamplerOptions = {}): Resample
  * @returns The resampler.
  * @example
  * ```ts
- * import { randomOverSampler } from 'whitebox-engine/learn/preprocessing'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { randomOverSampler } from 'mdml-engine/learn/preprocessing'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const r = randomOverSampler().fitResample({ x: [[0], [1], [2], [3]], y: [0, 0, 0, 1] })
  * toFlat(r.y) // => [0, 0, 0, 1, 1, 1]
  * ```
@@ -293,8 +293,8 @@ export interface SmoteOptions {
  * @concept class-imbalance
  * @example
  * ```ts
- * import { smote } from 'whitebox-engine/learn/preprocessing'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { smote } from 'mdml-engine/learn/preprocessing'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const x = [[0, 0], [0.1, 0], [0.2, 0.1], [5, 5], [5.1, 5], [5, 5.2], [5.3, 5.1]]
  * const r = smote({ kNeighbors: 2 }).fitResample({ x, y: [1, 1, 1, 0, 0, 0, 0] })
  * toFlat(r.y).filter((v) => v === 1).length // => 4
@@ -320,7 +320,7 @@ export function smote(options: SmoteOptions = {}): Resampler {
         const t = targets[cls]
         if (t === undefined || t <= members.length) return
         if (members.length <= k)
-          throw new WhiteboxError('value', `smote: class ${c.classes[cls]} needs more than ${k} samples`)
+          throw new MdmlError('value', `smote: class ${c.classes[cls]} needs more than ${k} samples`)
         const xc = takeRows(c.m, members)
         const nbs = members.map((_, r) => nearest(xc, r, xc, k, r))
         const made = interpolate(foldIn(key, cls), xc, Array.from(members.keys()), nbs, xc, t - members.length, 1)
@@ -348,7 +348,7 @@ export function smote(options: SmoteOptions = {}): Resampler {
  * @returns Indices (into the data) of the class's danger samples.
  * @example
  * ```ts
- * import { borderlineSamples } from 'whitebox-engine/learn/preprocessing'
+ * import { borderlineSamples } from 'mdml-engine/learn/preprocessing'
  * const x = [[0], [1], [2], [3], [10], [11]]
  * borderlineSamples(x, [1, 0, 1, 1, 1, 1], 1, 2) // => [0, 2, 3]
  * ```
@@ -380,8 +380,8 @@ export interface BorderlineSmoteOptions extends SmoteOptions {
  * @returns The resampler.
  * @example
  * ```ts
- * import { borderlineSmote } from 'whitebox-engine/learn/preprocessing'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { borderlineSmote } from 'mdml-engine/learn/preprocessing'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const x = [[0], [0.5], [1], [1.5], [2], [2.5], [3], [1.2], [1.4], [5]]
  * const r = borderlineSmote({ kNeighbors: 2, mNeighbors: 4 }).fitResample({ x, y: [0, 0, 0, 0, 0, 0, 0, 1, 1, 1] })
  * toFlat(r.y).filter((v) => v === 1).length // => 7
@@ -462,10 +462,10 @@ function fromRows(m: MatrixView): Tensor {
  * @param total - The number of samples to generate.
  * @param k - Neighbours (default 5).
  * @returns Counts per member of the class, in index order.
- * @throws WhiteboxError with code `value` when no sample of the class has a neighbour of another class.
+ * @throws MdmlError with code `value` when no sample of the class has a neighbour of another class.
  * @example
  * ```ts
- * import { adasynCounts } from 'whitebox-engine/learn/preprocessing'
+ * import { adasynCounts } from 'mdml-engine/learn/preprocessing'
  * adasynCounts([[0], [1], [2], [10], [11]], [0, 0, 1, 1, 1], 0, 3, 2) // => [2, 2]
  * ```
  */
@@ -474,7 +474,7 @@ export function adasynCounts(x: LearnData['x'], y: LearnData['y'] & {}, label: n
   const members = c.members[c.classes.indexOf(label)] ?? []
   const ratio = members.map((i) => nearest(c.m, i, c.m, k, i).filter((t) => c.labels[t] !== label).length / k)
   const sum = ratio.reduce((a, b) => a + b, 0)
-  if (sum === 0) throw new WhiteboxError('value', 'adasyn: no sample has a neighbour of another class; use SMOTE')
+  if (sum === 0) throw new MdmlError('value', 'adasyn: no sample has a neighbour of another class; use SMOTE')
   // numpy's rint rounds half to even.
   return ratio.map((r) => {
     const v = (r / sum) * total
@@ -491,8 +491,8 @@ export function adasynCounts(x: LearnData['x'], y: LearnData['y'] & {}, label: n
  * @returns The resampler.
  * @example
  * ```ts
- * import { adasyn } from 'whitebox-engine/learn/preprocessing'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { adasyn } from 'mdml-engine/learn/preprocessing'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const x = [[0], [1], [2], [3], [4], [5], [2.5], [2.6], [9]]
  * const r = adasyn({ kNeighbors: 2 }).fitResample({ x, y: [0, 0, 0, 0, 0, 0, 1, 1, 1] })
  * toFlat(r.y).length > 9 // => true
@@ -553,7 +553,7 @@ export function adasyn(options: SmoteOptions = {}): Resampler {
  * @returns The resampler.
  * @example
  * ```ts
- * import { tomekLinks } from 'whitebox-engine/learn/preprocessing'
+ * import { tomekLinks } from 'mdml-engine/learn/preprocessing'
  * const r = tomekLinks().fitResample({ x: [[0], [0.4], [0.6], [3], [3.2]], y: [0, 0, 1, 0, 0] })
  * Array.from(r.indices) // => [0, 2, 3, 4]
  * ```
@@ -601,7 +601,7 @@ export interface NearMissOptions extends RandomSamplerOptions {
  * @returns The resampler.
  * @example
  * ```ts
- * import { nearMiss } from 'whitebox-engine/learn/preprocessing'
+ * import { nearMiss } from 'mdml-engine/learn/preprocessing'
  * const r = nearMiss({ nNeighbors: 1 }).fitResample({ x: [[0], [1], [5], [9], [10]], y: [1, 0, 0, 0, 1] })
  * Array.from(r.indices) // => [0, 1, 3, 4]
  * ```

@@ -8,7 +8,7 @@ import numpy as np
 import numpy.typing as npt
 from pydantic import BaseModel, Field
 
-SCHEMA = "whitebox.fixture/1"
+SCHEMA = "mdml.fixture/1"
 
 type Json = None | bool | int | float | str | list[Json] | dict[str, Json]
 """An encoded JSON value: what `encode` produces and what a fixture stores for inputs, parameters and outputs."""

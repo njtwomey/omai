@@ -5,7 +5,7 @@
  * pruning as a traced algorithm.
  */
 
-import { heap, type Json, WhiteboxError } from '../base/index.ts'
+import { heap, type Json, MdmlError } from '../base/index.ts'
 import { type Algorithm, runAlgorithm, type TracePolicy, type Tracer } from '../trace/index.ts'
 import { levenshtein } from './similarity.ts'
 
@@ -16,7 +16,7 @@ export interface FuzzyMatch {
 }
 
 function checkK(k: number, name: string): void {
-  if (!Number.isInteger(k) || k < 0) throw new WhiteboxError('value', `${name}: k must be a non-negative integer`)
+  if (!Number.isInteger(k) || k < 0) throw new MdmlError('value', `${name}: k must be a non-negative integer`)
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -51,16 +51,16 @@ function paddedQgrams(s: string, q: number): Map<string, number> {
  * @param strings - The strings.
  * @param q - The gram length (default 2).
  * @returns The index.
- * @throws WhiteboxError with code `value` for q below 1.
+ * @throws MdmlError with code `value` for q below 1.
  * @concept approximate-string-matching
  * @example
  * ```ts
- * import { qgramIndex } from 'whitebox-engine/text'
+ * import { qgramIndex } from 'mdml-engine/text'
  * qgramIndex(['abc', 'abd']).postings.get('ab') // => [[0, 1], [1, 1]]
  * ```
  */
 export function qgramIndex(strings: readonly string[], q = 2): QgramIndex {
-  if (!Number.isInteger(q) || q < 1) throw new WhiteboxError('value', 'qgramIndex: q must be a positive integer')
+  if (!Number.isInteger(q) || q < 1) throw new MdmlError('value', 'qgramIndex: q must be a positive integer')
   const postings = new Map<string, [number, number][]>()
   for (const [i, s] of strings.entries())
     for (const [g, c] of paddedQgrams(s, q)) {
@@ -80,11 +80,11 @@ export function qgramIndex(strings: readonly string[], q = 2): QgramIndex {
  * @param query - The query.
  * @param k - The largest edit distance.
  * @returns The matches (sorted by distance, then by index order) and the number of candidates verified.
- * @throws WhiteboxError with code `value` for a negative k.
+ * @throws MdmlError with code `value` for a negative k.
  * @concept approximate-string-matching
  * @example
  * ```ts
- * import { qgramIndex, qgramSearch } from 'whitebox-engine/text'
+ * import { qgramIndex, qgramSearch } from 'mdml-engine/text'
  * qgramSearch(qgramIndex(['kitten', 'sitting', 'mitten', 'bitter']), 'kitten', 1).matches // => [{ value: 'kitten', distance: 0 }, { value: 'mitten', distance: 1 }]
  * ```
  */
@@ -139,7 +139,7 @@ export interface BkTree {
  * @concept approximate-string-matching
  * @example
  * ```ts
- * import { bkTree } from 'whitebox-engine/text'
+ * import { bkTree } from 'mdml-engine/text'
  * bkTree(['book', 'books', 'cake', 'boo']).size // => 4
  * ```
  */
@@ -179,11 +179,11 @@ export function bkTree(
  * @param query - The query.
  * @param k - The largest distance.
  * @returns The matches (sorted by distance, then by word) and the number of distances computed.
- * @throws WhiteboxError with code `value` for a negative k.
+ * @throws MdmlError with code `value` for a negative k.
  * @concept approximate-string-matching
  * @example
  * ```ts
- * import { bkTree, bkSearch } from 'whitebox-engine/text'
+ * import { bkTree, bkSearch } from 'mdml-engine/text'
  * bkSearch(bkTree(['book', 'books', 'cake', 'boo', 'cape']), 'bool', 1).matches // => [{ value: 'boo', distance: 1 }, { value: 'book', distance: 1 }]
  * ```
  */
@@ -224,7 +224,7 @@ export interface TrieNode {
  * @concept approximate-string-matching
  * @example
  * ```ts
- * import { trie } from 'whitebox-engine/text'
+ * import { trie } from 'mdml-engine/text'
  * [...trie(['to', 'tea', 'ten']).children.get('t')?.children.keys() ?? []] // => ['o', 'e']
  * ```
  */
@@ -253,11 +253,11 @@ export function trie(words: Iterable<string>): TrieNode {
  * @param query - The query.
  * @param k - The largest edit distance.
  * @returns The matches (sorted by distance, then by word) and the number of trie nodes visited.
- * @throws WhiteboxError with code `value` for a negative k.
+ * @throws MdmlError with code `value` for a negative k.
  * @concept approximate-string-matching
  * @example
  * ```ts
- * import { trie, trieSearch } from 'whitebox-engine/text'
+ * import { trie, trieSearch } from 'mdml-engine/text'
  * trieSearch(trie(['tea', 'ten', 'to', 'inn']), 'tan', 1).matches // => [{ value: 'ten', distance: 1 }]
  * ```
  */
@@ -310,11 +310,11 @@ export interface ApproximateOccurrence {
  * @param text - The text.
  * @param k - The largest edit distance.
  * @returns The occurrences, by end position.
- * @throws WhiteboxError with code `value` for a negative k.
+ * @throws MdmlError with code `value` for a negative k.
  * @concept approximate-string-matching
  * @example
  * ```ts
- * import { sellers } from 'whitebox-engine/text'
+ * import { sellers } from 'mdml-engine/text'
  * sellers('survey', 'surgery', 2).map((o) => [o.start, o.end, o.distance]) // => [[0, 5, 2], [0, 6, 2], [0, 7, 2]]
  * ```
  */
@@ -403,12 +403,12 @@ function boundedLevenshtein(a: readonly string[], b: readonly string[], limit: n
  * @param k - How many matches to keep.
  * @param maxDistance - The largest distance of interest (default unbounded).
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for a k below 1.
+ * @throws MdmlError with code `value` for a k below 1.
  * @concept approximate-string-matching
  * @example
  * ```ts
- * import { topKFuzzyAlgorithm } from 'whitebox-engine/text'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { topKFuzzyAlgorithm } from 'mdml-engine/text'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const r = runAlgorithm(topKFuzzyAlgorithm('apple', ['apply', 'ape', 'maple', 'pineapple', 'a'], 2), { maxSteps: 10 })
  * [r.state.verified, r.state.prunedByLength + r.state.prunedEarly] // => [3, 2]
  * ```
@@ -419,7 +419,7 @@ export function topKFuzzyAlgorithm(
   k: number,
   maxDistance: number = Number.POSITIVE_INFINITY,
 ): Algorithm<TopKState> {
-  if (!Number.isInteger(k) || k < 1) throw new WhiteboxError('value', 'topKFuzzy: k must be a positive integer')
+  if (!Number.isInteger(k) || k < 1) throw new MdmlError('value', 'topKFuzzy: k must be a positive integer')
   const q = Array.from(query)
   return {
     name: 'topKFuzzy',
@@ -477,7 +477,7 @@ export function topKFuzzyAlgorithm(
  * @concept approximate-string-matching
  * @example
  * ```ts
- * import { topKFuzzy } from 'whitebox-engine/text'
+ * import { topKFuzzy } from 'mdml-engine/text'
  * topKFuzzy('apple', ['apply', 'ape', 'maple', 'pineapple', 'a'], 2) // => [{ value: 'apply', distance: 1 }, { value: 'ape', distance: 2 }]
  * ```
  */

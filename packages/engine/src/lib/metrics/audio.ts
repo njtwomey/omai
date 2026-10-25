@@ -5,7 +5,7 @@
  * supplied model.
  */
 
-import { argmaxOf, type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { argmaxOf, MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { solveToeplitz } from '../numerics/linalg/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
 import { dtw, firwin, hann, resamplePoly, stft } from '../signal/index.ts'
@@ -15,7 +15,7 @@ import { defineMetric, type MetricFunction, matrix, metricResult } from './metri
 /** A mono signal as a Float64Array. */
 function signal(name: string, x: TensorLike): Float64Array {
   const m = matrix(x)
-  if (m.shape.length !== 1) throw new WhiteboxError('shape', `${name}: signals are 1-D`)
+  if (m.shape.length !== 1) throw new MdmlError('shape', `${name}: signals are 1-D`)
   return m.data
 }
 
@@ -23,7 +23,7 @@ function signal(name: string, x: TensorLike): Float64Array {
 function signals(name: string, x: TensorLike): Float64Array[] {
   const m = matrix(x)
   if (m.shape.length === 1) return [m.data]
-  if (m.shape.length !== 2) throw new WhiteboxError('shape', `${name}: signals are [T] or [S, T]`)
+  if (m.shape.length !== 2) throw new MdmlError('shape', `${name}: signals are [T] or [S, T]`)
   const t = m.shape[1] ?? 0
   return Array.from({ length: m.shape[0] ?? 0 }, (_, i) => m.data.slice(i * t, (i + 1) * t))
 }
@@ -72,7 +72,7 @@ const pairs = (name: string, target: TensorLike, preds: TensorLike): [Float64Arr
   const t = signals(name, target)
   const p = signals(name, preds)
   if (t.length !== p.length || t.some((x, i) => x.length !== (p[i]?.length ?? -1)))
-    throw new WhiteboxError('shape', `${name}: target and preds differ in shape`)
+    throw new MdmlError('shape', `${name}: target and preds differ in shape`)
   return t.map((x, i) => [x, p[i] as Float64Array])
 }
 
@@ -110,7 +110,7 @@ function batched(
  * @concept audio-evaluation
  * @example
  * ```ts
- * import { signalNoiseRatio } from 'whitebox-engine/metrics'
+ * import { signalNoiseRatio } from 'mdml-engine/metrics'
  * Number(signalNoiseRatio([1, 2, 3, 4], [1, 2, 3, 3]).estimate.value.toFixed(6)) // => 14.771213
  * ```
  */
@@ -148,7 +148,7 @@ export interface SegmentalSnrOptions {
  * @returns The mean segmental SNR in dB.
  * @example
  * ```ts
- * import { segmentalSnr } from 'whitebox-engine/metrics'
+ * import { segmentalSnr } from 'mdml-engine/metrics'
  * const x = Array.from({ length: 400 }, (_, i) => Math.sin(i / 3))
  * segmentalSnr(x, x, { fs: 1000 }).estimate.value // => 35
  * ```
@@ -203,7 +203,7 @@ export interface SdrOptions {
  * @returns The metric result in dB.
  * @example
  * ```ts
- * import { signalDistortionRatio } from 'whitebox-engine/metrics'
+ * import { signalDistortionRatio } from 'mdml-engine/metrics'
  * const t = [1, 0.5, -0.3, 0.8, -1, 0.2, 0.4, 0]
  * // A delayed, scaled copy is within reach of the distortion filter.
  * signalDistortionRatio(t, [0, ...t.slice(0, 7).map((v) => 2 * v)], { filterLength: 4 }).estimate.value > 60 // => true
@@ -258,7 +258,7 @@ function siSdr(t0: Float64Array, p0: Float64Array, zeroMean: boolean): number {
  * @returns The metric result in dB.
  * @example
  * ```ts
- * import { scaleInvariantSdr } from 'whitebox-engine/metrics'
+ * import { scaleInvariantSdr } from 'mdml-engine/metrics'
  * const a = scaleInvariantSdr([1, 2, 3, 4], [1, 2, 3, 3]).estimate.value
  * const b = scaleInvariantSdr([1, 2, 3, 4], [5, 10, 15, 15]).estimate.value
  * Math.abs(a - b) < 1e-9 // => true
@@ -279,7 +279,7 @@ export const scaleInvariantSdr: MetricFunction<[TensorLike, TensorLike, { readon
  * @returns The metric result in dB.
  * @example
  * ```ts
- * import { scaleInvariantSnr } from 'whitebox-engine/metrics'
+ * import { scaleInvariantSnr } from 'mdml-engine/metrics'
  * scaleInvariantSnr([1, 2, 3, 4], [2, 3, 4, 5]).estimate.value > 100 // => true
  * ```
  */
@@ -309,7 +309,7 @@ export interface PermutationInvariantResult {
  * @returns The best mean value and the permutation.
  * @example
  * ```ts
- * import { permutationInvariant } from 'whitebox-engine/metrics'
+ * import { permutationInvariant } from 'mdml-engine/metrics'
  * const neg = (a: Float64Array, b: Float64Array) => -a.reduce((s, v, i) => s + (v - (b[i] ?? 0)) ** 2, 0)
  * permutationInvariant([[1, 0], [0, 1]], [[0, 1], [1, 0]], neg).permutation // => [1, 0]
  * ```
@@ -322,7 +322,7 @@ export function permutationInvariant(
 ): PermutationInvariantResult {
   const t = signals('permutationInvariant', target)
   const p = signals('permutationInvariant', preds)
-  if (t.length !== p.length) throw new WhiteboxError('shape', 'permutationInvariant: as many estimates as targets')
+  if (t.length !== p.length) throw new MdmlError('shape', 'permutationInvariant: as many estimates as targets')
   const s = t.length
   const m = t.map((ti) => p.map((pj) => metric(ti, pj)))
   const r = linearSumAssignment(m, { maximize: options.direction !== 'min' })
@@ -425,7 +425,7 @@ const norm = (x: ArrayLike<number>): number => Math.sqrt(dot(x, x))
  * @returns The intelligibility in about [0, 1] (1e-5 when too short).
  * @example
  * ```ts
- * import { shortTimeObjectiveIntelligibility } from 'whitebox-engine/metrics'
+ * import { shortTimeObjectiveIntelligibility } from 'mdml-engine/metrics'
  * const x = Array.from({ length: 12000 }, (_, i) => Math.sin(i / 7) * Math.sin(i / 900))
  * Number(shortTimeObjectiveIntelligibility(x, x, { fs: 10000 }).estimate.value.toFixed(6)) // => 1
  * ```
@@ -441,7 +441,7 @@ export const shortTimeObjectiveIntelligibility: MetricFunction<
   ): MetricResult => {
     let x = signal('shortTimeObjectiveIntelligibility', clean)
     let y = signal('shortTimeObjectiveIntelligibility', processed)
-    if (x.length !== y.length) throw new WhiteboxError('shape', 'shortTimeObjectiveIntelligibility: lengths differ')
+    if (x.length !== y.length) throw new MdmlError('shape', 'shortTimeObjectiveIntelligibility: lengths differ')
     if (options.fs !== STOI_FS) {
       x = resampleOct(x, STOI_FS, options.fs)
       y = resampleOct(y, STOI_FS, options.fs)
@@ -515,7 +515,7 @@ export interface LsdOptions {
  * @returns The distance in dB.
  * @example
  * ```ts
- * import { logSpectralDistance } from 'whitebox-engine/metrics'
+ * import { logSpectralDistance } from 'mdml-engine/metrics'
  * const x = Array.from({ length: 1024 }, (_, i) => Math.sin(i / 5))
  * logSpectralDistance(x, x).estimate.value // => 0
  * ```
@@ -546,7 +546,7 @@ export const logSpectralDistance: MetricFunction<[TensorLike, TensorLike, LsdOpt
 /**
  * The mel-cepstral distortion (Kubichek, 1993): (10 / ln 10) sqrt(2 sum_d (c_d - c'_d)^2) per frame, excluding the
  * energy coefficient c_0 by default, averaged over frames; with `align: 'dtw'` frames are first aligned by dynamic
- * time warping on the same distance (steps (1, 0), (0, 1), (1, 1)) and the mean is over the path. whitebox ships no
+ * time warping on the same distance (steps (1, 0), (0, 1), (1, 1)) and the mean is over the path. mdml ships no
  * mel-cepstral analysis; pass the cepstra of each frame.
  *
  * @param targetCepstra - Reference mel-cepstra `[T, D]`.
@@ -555,7 +555,7 @@ export const logSpectralDistance: MetricFunction<[TensorLike, TensorLike, LsdOpt
  * @returns The distortion in dB.
  * @example
  * ```ts
- * import { melCepstralDistortion } from 'whitebox-engine/metrics'
+ * import { melCepstralDistortion } from 'mdml-engine/metrics'
  * const k = 10 / Math.log(10)
  * melCepstralDistortion([[0, 1, 0]], [[5, 1, 1]]).estimate.value === k * Math.SQRT2 // => true
  * ```
@@ -573,7 +573,7 @@ export const melCepstralDistortion: MetricFunction<
     const b = matrix(predCepstra)
     const name = 'melCepstralDistortion'
     if (a.shape.length !== 2 || b.shape.length !== 2 || a.shape[1] !== b.shape[1])
-      throw new WhiteboxError('shape', `${name}: cepstra are [frames, D] with the same D`)
+      throw new MdmlError('shape', `${name}: cepstra are [frames, D] with the same D`)
     const d = a.shape[1] ?? 0
     const ta = a.shape[0] ?? 0
     const tb = b.shape[0] ?? 0
@@ -585,7 +585,7 @@ export const melCepstralDistortion: MetricFunction<
       return k * Math.sqrt(s)
     }
     if (options.align !== 'dtw') {
-      if (ta !== tb) throw new WhiteboxError('shape', `${name}: ${ta} and ${tb} frames; use align: 'dtw'`)
+      if (ta !== tb) throw new MdmlError('shape', `${name}: ${ta} and ${tb} frames; use align: 'dtw'`)
       let s = 0
       for (let i = 0; i < ta; i++) s += dist(i, i)
       return metricResult(name, s / ta, ta)
@@ -613,7 +613,7 @@ const polyval = (c: readonly number[], x: number): number => c.reduce((acc, v) =
 /**
  * DNSMOS (Reddy et al., 2021, 2022) from a supplied model, with torchmetrics' segmentation and calibration: the clip
  * (repeated up to 9.01 s) is cut into 9.01 s windows with 1 s hops, the P.835 outputs are mapped through the
- * published polynomial fits (personalised or not), and the scores are averaged over windows. whitebox ships no
+ * published polynomial fits (personalised or not), and the scores are averaged over windows. mdml ships no
  * networks; supply the ONNX models (or any stand-in) as functions. Audio must be at 16 kHz.
  *
  * @param audio - A mono clip `[T]` at 16 kHz.
@@ -622,7 +622,7 @@ const polyval = (c: readonly number[], x: number): number => c.reduce((acc, v) =
  * @returns The overall MOS, with p808, sig, bak and ovrl in the breakdown.
  * @example
  * ```ts
- * import { dnsmos } from 'whitebox-engine/metrics'
+ * import { dnsmos } from 'mdml-engine/metrics'
  * const model = { p835: () => [3, 3, 3] as const, p808: () => 3.5 }
  * dnsmos(new Array(16000).fill(0), model).breakdown?.['p808'] // => 3.5
  * ```
@@ -633,7 +633,7 @@ export const dnsmos: MetricFunction<[TensorLike, DnsmosModel, { readonly persona
     const fs = 16000
     const length = Math.trunc(9.01 * fs)
     let x = signal('dnsmos', audio)
-    if (x.length === 0) throw new WhiteboxError('value', 'dnsmos: empty audio')
+    if (x.length === 0) throw new MdmlError('value', 'dnsmos: empty audio')
     while (x.length < length) {
       const y = new Float64Array(2 * x.length)
       y.set(x)

@@ -11,11 +11,11 @@ from typing import Any, cast
 import jax
 import jax.numpy as jnp
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.pgm import stable
 from numpyro import handlers
 from numpyro.infer.util import potential_energy, unconstrain_fn
 from scipy.optimize import minimize
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.pgm import stable
 
 _spec = importlib.util.spec_from_file_location("probprog_models", Path(__file__).parent.parent / "_models.py")
 assert _spec is not None and _spec.loader is not None

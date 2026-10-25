@@ -34,7 +34,7 @@ const usableAce = (hand: readonly number[]): boolean => hand.includes(1) && hand
  * @returns The total.
  * @example
  * ```ts
- * import { blackjackSum } from 'whitebox-engine/methods/rl'
+ * import { blackjackSum } from 'mdml-engine/methods/rl'
  * blackjackSum([1, 6]) // => 17
  * ```
  */
@@ -71,7 +71,7 @@ export interface BlackjackOptions {
  * @returns The next hands, the reward and whether the hand is over.
  * @example
  * ```ts
- * import { blackjackStep } from 'whitebox-engine/methods/rl'
+ * import { blackjackStep } from 'mdml-engine/methods/rl'
  * blackjackStep({ player: [10, 9], dealer: [10, 7] }, 0, () => 2).reward // => 1
  * ```
  */
@@ -146,8 +146,8 @@ function renderBlackjack(s: BlackjackState): Scene {
  * @concept environments
  * @example
  * ```ts
- * import { blackjack } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { blackjack } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * blackjack.create().reset(key(0)).observation.length // => 3
  * ```
  */
@@ -209,7 +209,7 @@ export const TAXI_LOCATIONS: readonly (readonly [number, number])[] = ['R', 'G',
  * @returns The state index in 0..499.
  * @example
  * ```ts
- * import { taxiEncode } from 'whitebox-engine/methods/rl'
+ * import { taxiEncode } from 'mdml-engine/methods/rl'
  * taxiEncode(3, 1, 2, 0) // => 328
  * ```
  */
@@ -224,7 +224,7 @@ export function taxiEncode(row: number, col: number, passenger: number, destinat
  * @returns The parts.
  * @example
  * ```ts
- * import { taxiDecode } from 'whitebox-engine/methods/rl'
+ * import { taxiDecode } from 'mdml-engine/methods/rl'
  * taxiDecode(328) // => [3, 1, 2, 0]
  * ```
  */
@@ -253,7 +253,7 @@ const locIndex = (loc: readonly [number, number]): number => TAXI_LOCATIONS.find
  * @returns Six flags (south, north, east, west, pick-up, drop-off).
  * @example
  * ```ts
- * import { taxiActionMask } from 'whitebox-engine/methods/rl'
+ * import { taxiActionMask } from 'mdml-engine/methods/rl'
  * taxiActionMask(0) // => [1, 0, 1, 0, 1, 0]
  * ```
  */
@@ -294,7 +294,7 @@ const moveOrStay = (row: number, col: number, move: number): [number, number] =>
  * @returns The outcomes.
  * @example
  * ```ts
- * import { taxiTransitions, taxiEncode } from 'whitebox-engine/methods/rl'
+ * import { taxiTransitions, taxiEncode } from 'mdml-engine/methods/rl'
  * taxiTransitions(taxiEncode(0, 0, 4, 0), 5)[0]?.reward // => 20
  * ```
  */
@@ -395,7 +395,7 @@ export interface TaxiOptions {
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeTaxi } from 'whitebox-engine/methods/rl'
+ * import { makeTaxi } from 'mdml-engine/methods/rl'
  * makeTaxi().model?.states.length // => 500
  * ```
  */
@@ -451,7 +451,7 @@ export function makeTaxi(options: TaxiOptions = {}): Env<number, number, number>
  * @concept environments
  * @example
  * ```ts
- * import { taxi } from 'whitebox-engine/methods/rl'
+ * import { taxi } from 'mdml-engine/methods/rl'
  * taxi.create().actionSpace.kind // => 'discrete'
  * ```
  */
@@ -489,7 +489,7 @@ function renderChain(n: number, s: number, title: string, labels: readonly strin
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeNChain } from 'whitebox-engine/methods/rl'
+ * import { makeNChain } from 'mdml-engine/methods/rl'
  * makeNChain().model?.transitions(4, 0) // => [{ probability: 0.8, state: 4, reward: 10, terminated: false }, { probability: 0.2, state: 0, reward: 2, terminated: false }]
  * ```
  */
@@ -532,7 +532,7 @@ export function makeNChain(
  * @concept environments
  * @example
  * ```ts
- * import { nChain } from 'whitebox-engine/methods/rl'
+ * import { nChain } from 'mdml-engine/methods/rl'
  * nChain.create().spec.maxEpisodeSteps // => 1000
  * ```
  */
@@ -553,7 +553,7 @@ export const nChain: EnvDefinition<number, number, number> = {
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeRiverSwim } from 'whitebox-engine/methods/rl'
+ * import { makeRiverSwim } from 'mdml-engine/methods/rl'
  * makeRiverSwim().model?.transitions(0, 0)[0]?.reward // => 0.005
  * ```
  */
@@ -605,7 +605,7 @@ export function makeRiverSwim(
  * @concept environments
  * @example
  * ```ts
- * import { riverSwim } from 'whitebox-engine/methods/rl'
+ * import { riverSwim } from 'mdml-engine/methods/rl'
  * riverSwim.create().observationSpace // => { kind: 'discrete', n: 6, label: 'position across the river' }
  * ```
  */

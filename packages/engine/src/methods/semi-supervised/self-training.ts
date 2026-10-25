@@ -5,7 +5,7 @@
  */
 
 // TODO: co-training (two feature views) and tri-training (three bootstrapped learners voting).
-import { argmaxOf, type Json, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../../lib/base/index.ts'
 import { clusteringSteps, type Exposition, learningCurve } from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
@@ -139,8 +139,7 @@ function fitSelfTraining(
 ): { params: SelfTrainingParams; exposition: Exposition[] } {
   const m = matrixView(data.x, 'selfTraining')
   const { classes, codes } = semiSupervisedCodes(data.y ?? [], 'selfTraining', m.n)
-  if (!(h.threshold > 0 && h.threshold < 1))
-    throw new WhiteboxError('value', 'selfTraining: threshold must be in (0, 1)')
+  if (!(h.threshold > 0 && h.threshold < 1)) throw new MdmlError('value', 'selfTraining: threshold must be in (0, 1)')
   const fitOn = (s: Pick<SelfTrainingState, 'codes'>, key: Key, parent: FitOptions['parent']): Fitted => {
     const rows = s.codes.flatMap((c, i) => (c >= 0 ? [i] : []))
     const part = takeData({ x: data.x }, rows)

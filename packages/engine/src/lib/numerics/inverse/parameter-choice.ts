@@ -4,7 +4,7 @@
  * parameter grid scaled to the singular values.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { primalOf, toFlat } from '../../tensor/index.ts'
 import type { SpectralData } from './tikhonov.ts'
 
@@ -55,7 +55,7 @@ export interface ParameterChoice {
  * @concept l-curve
  * @example
  * ```ts
- * import { lCurve, spectralData } from 'whitebox-engine/numerics/inverse'
+ * import { lCurve, spectralData } from 'mdml-engine/numerics/inverse'
  * lCurve(spectralData([[1, 0, 0], [0, 0.1, 0], [0, 0, 0.001]], [1, 0.1, 0.01])).lambda > 0 // => true
  * ```
  */
@@ -120,7 +120,7 @@ export function lCurve(
  * @returns The minimiser and G along the scan.
  * @example
  * ```ts
- * import { gcv, spectralData } from 'whitebox-engine/numerics/inverse'
+ * import { gcv, spectralData } from 'mdml-engine/numerics/inverse'
  * gcv(spectralData([[1, 0], [0, 0.01], [0, 0]], [1, 0.02, 0.1]), 3).lambda > 0 // => true
  * ```
  */
@@ -157,7 +157,7 @@ export function gcv(
  * @returns The parameter.
  * @example
  * ```ts
- * import { discrepancyPrinciple, spectralData } from 'whitebox-engine/numerics/inverse'
+ * import { discrepancyPrinciple, spectralData } from 'mdml-engine/numerics/inverse'
  * discrepancyPrinciple(spectralData([[1, 0], [0, 0.1]], [1, 0.1]), 0.05) > 0 // => true
  * ```
  */
@@ -176,7 +176,7 @@ export function discrepancyPrinciple(
   let lo = Math.log((s[s.length - 1] ?? 1) * 1e-8 || 1e-300)
   let hi = Math.log((s[0] ?? 1) * 1e4)
   if (residual(Math.exp(lo)) > target)
-    throw new WhiteboxError('value', 'discrepancyPrinciple: the noise level is below the attainable residual')
+    throw new MdmlError('value', 'discrepancyPrinciple: the noise level is below the attainable residual')
   for (let it = 0; it < 200 && hi - lo > 1e-12; it++) {
     const mid = (lo + hi) / 2
     if (residual(Math.exp(mid)) > target) hi = mid
@@ -194,7 +194,7 @@ export function discrepancyPrinciple(
  * @returns The choice and the criterion.
  * @example
  * ```ts
- * import { quasiOptimality, spectralData } from 'whitebox-engine/numerics/inverse'
+ * import { quasiOptimality, spectralData } from 'mdml-engine/numerics/inverse'
  * quasiOptimality(spectralData([[1, 0], [0, 0.01]], [1, 0.02])).lambda > 0 // => true
  * ```
  */

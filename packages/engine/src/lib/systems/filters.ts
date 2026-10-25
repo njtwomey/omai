@@ -35,8 +35,8 @@ import { type FrequencyResponse, findfreqs } from './frequency.ts'
  * @concept frequency-response
  * @example
  * ```ts
- * import { freqs } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { freqs } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(freqs([1], [1, 1], [0]).h.re) // => [1]
  * ```
  */
@@ -71,8 +71,8 @@ export interface FreqzOptions {
  * @concept frequency-response
  * @example
  * ```ts
- * import { freqz } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { freqz } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(freqz([0.5, 0.5], [1], 2).h.re) // => [1, 0.5]
  * ```
  */

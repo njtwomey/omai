@@ -1,6 +1,6 @@
 // Constraint-satisfaction hub entries (private to this collection): the solver's settings as controls.
-import type { CspPlayOptions } from 'whitebox-engine/methods/gofai'
-import { choice, type Space, type SpaceValue } from 'whitebox-engine/space'
+import type { CspPlayOptions } from 'mdml-engine/methods/gofai'
+import { choice, type Space, type SpaceValue } from 'mdml-engine/space'
 
 /** The backtracking controls: variable ordering, value ordering and inference. */
 export const backtrackingControls: Readonly<Record<string, Space>> = {

@@ -2,7 +2,7 @@
  * English stop-word lists (scikit-learn's and gensim's) and their removal from token lists.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 // The Glasgow information retrieval group's list, as scikit-learn ships it (ENGLISH_STOP_WORDS).
 // biome-ignore format: a word list
@@ -51,18 +51,18 @@ export type StopWordList = 'sklearn' | 'gensim'
  *
  * @param name - The list (default `sklearn`).
  * @returns The stop words, sorted.
- * @throws WhiteboxError with code `value` for an unknown list.
+ * @throws MdmlError with code `value` for an unknown list.
  * @concept stop-words
  * @example
  * ```ts
- * import { stopWords } from 'whitebox-engine/text'
+ * import { stopWords } from 'mdml-engine/text'
  * [stopWords().length, stopWords('gensim').length, stopWords().includes('the')] // => [318, 337, true]
  * ```
  */
 export function stopWords(name: StopWordList = 'sklearn'): string[] {
   if (name === 'sklearn') return [...SKLEARN]
   if (name === 'gensim') return [...SKLEARN, ...GENSIM_EXTRA].sort()
-  throw new WhiteboxError('value', `stopWords: unknown list ${String(name)}`)
+  throw new MdmlError('value', `stopWords: unknown list ${String(name)}`)
 }
 
 /**
@@ -74,7 +74,7 @@ export function stopWords(name: StopWordList = 'sklearn'): string[] {
  * @concept stop-words
  * @example
  * ```ts
- * import { removeStopWords } from 'whitebox-engine/text'
+ * import { removeStopWords } from 'mdml-engine/text'
  * removeStopWords(['the', 'cat', 'sat', 'on', 'the', 'mat']) // => ['cat', 'sat', 'mat']
  * ```
  */

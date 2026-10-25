@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import { key } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { messages, metricSeries, recorder, runTree, tracePolicy } from '../trace/index.ts'
@@ -160,7 +160,7 @@ describe('tune', () => {
         sampler: { name: 'one', config: {}, multiObjective: false, ask: () => 0 },
       })
     } catch (e) {
-      expect(isWhiteboxError(e, 'value')).toBe(true)
+      expect(isMdmlError(e, 'value')).toBe(true)
     }
   })
   it('serialises its state for checkpoints', () => {

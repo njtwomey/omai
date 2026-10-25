@@ -4,7 +4,7 @@
  * a semi-supervised split that hides most labels (as `-1` for classes, sklearn's convention, or NaN for regression).
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { categorical, type Key, uniform } from '../../random/index.ts'
 import { choice, dict, real } from '../../space/index.ts'
 import { add, exp, fromStorage, matmul, mul, neg, sub, type Tensor, tensor, type Value } from '../../tensor/index.ts'
@@ -22,7 +22,7 @@ function projection(
 ): { z: Float64Array; score: (v: Value) => Value } {
   const [n = 0, d = 1] = x.shape
   const dir = direction ?? Array.from({ length: d }, (_, j) => (j === 0 ? 1 : 0))
-  if (dir.length !== d) throw new WhiteboxError('value', `shift: the direction needs ${d} entries`)
+  if (dir.length !== d) throw new MdmlError('value', `shift: the direction needs ${d} entries`)
   const { mean } = columnStats(x)
   const raw = Float64Array.from({ length: n }, (_, i) => {
     let s = 0
@@ -59,8 +59,8 @@ export interface CovariateShiftOptions {
  * @returns The shifted sample; `truth.extra.densityRatio` maps features to `w(x)`.
  * @example
  * ```ts
- * import { asGenerated, withCovariateShift, xy } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { asGenerated, withCovariateShift, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * const d = asGenerated(xy(Array.from({ length: 100 }, (_, i) => [i]), Array.from({ length: 100 }, (_, i) => i)))
  * const shifted = withCovariateShift(d, { strength: 3, key: key(0) })
  * Array.from(shifted.data.x.data).reduce((a, b) => a + b) / 100 > 60 // => true
@@ -120,8 +120,8 @@ export interface ConceptDriftOptions {
  * @returns The drifting data; `truth.changepoints` and `truth.latents.concepts`.
  * @example
  * ```ts
- * import { asGenerated, withConceptDrift, xyClasses } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { asGenerated, withConceptDrift, xyClasses } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * const d = withConceptDrift(asGenerated(xyClasses([[0], [1], [2], [3]], [0, 0, 0, 0], { classes: ['a', 'b'] })), { key: key(0) })
  * Array.from(d.data.y.data) // => [0, 0, 1, 1]
  * ```
@@ -174,7 +174,7 @@ export function withConceptDrift<D extends TabularData>(
     const f = truth.regressionFunction
     if (f !== undefined) extra['driftedRegressionFunction'] = (v: Value) => neg(f(v))
   } else {
-    throw new WhiteboxError('value', `withConceptDrift: needs classification or regression data, got ${data.kind}`)
+    throw new MdmlError('value', `withConceptDrift: needs classification or regression data, got ${data.kind}`)
   }
   return {
     data: { ...data, y },
@@ -208,10 +208,10 @@ export interface ShiftedSplitOptions {
  * @param data - Data with a feature matrix.
  * @param options - Direction, training fraction, mode, strength and key.
  * @returns `{ train, test, trainIndices, testIndices }`.
- * @throws WhiteboxError with code `value` for the soft mode without a key.
+ * @throws MdmlError with code `value` for the soft mode without a key.
  * @example
  * ```ts
- * import { shiftedSplit, xy } from 'whitebox-engine/data'
+ * import { shiftedSplit, xy } from 'mdml-engine/data'
  * const parts = shiftedSplit(xy([[3], [1], [2], [0]], [3, 1, 2, 0]))
  * Array.from(parts.test.x.data).sort() // => [2, 3]
  * ```
@@ -226,7 +226,7 @@ export function shiftedSplit<D extends TabularData>(
   let train: number[] = []
   let test: number[] = []
   if (options.mode === 'soft') {
-    if (options.key === undefined) throw new WhiteboxError('value', 'shiftedSplit: the soft mode needs a key')
+    if (options.key === undefined) throw new MdmlError('value', 'shiftedSplit: the soft mode needs a key')
     const u = uniform(options.key, [n]).data
     const strength = options.strength ?? 2
     const order = Array.from(z).sort((a, b) => a - b)
@@ -257,11 +257,11 @@ export interface SemiSupervisedOptions {
  * @param data - Classification or regression data.
  * @param options - Labelled size, stratification and key.
  * @returns `{ labelled, unlabelled, hidden, labelledIndices, unlabelledIndices }`.
- * @throws WhiteboxError with code `value` for other kinds of data.
+ * @throws MdmlError with code `value` for other kinds of data.
  * @example
  * ```ts
- * import { semiSupervisedSplit, xyClasses } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { semiSupervisedSplit, xyClasses } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * const s = semiSupervisedSplit(xyClasses([[0], [1], [2], [3]], [0, 1, 0, 1]), { labelled: 2, key: key(0) })
  * Array.from(s.unlabelled.y.data) // => [-1, -1]
  * ```
@@ -277,7 +277,7 @@ export function semiSupervisedSplit<D extends TabularData & Dataset>(
   readonly unlabelledIndices: number[]
 } {
   if (data.kind !== 'classification' && data.kind !== 'regression')
-    throw new WhiteboxError('value', `semiSupervisedSplit: needs classification or regression data, got ${data.kind}`)
+    throw new MdmlError('value', `semiSupervisedSplit: needs classification or regression data, got ${data.kind}`)
   const n = rowCount(data)
   const size = options.labelled ?? 0.1
   const m = size < 1 ? Math.ceil(size * n) : Math.round(size)
@@ -307,7 +307,7 @@ export function semiSupervisedSplit<D extends TabularData & Dataset>(
  *
  * @example
  * ```ts
- * import { covariateShiftModifier } from 'whitebox-engine/data'
+ * import { covariateShiftModifier } from 'mdml-engine/data'
  * covariateShiftModifier.name // => 'covariateShift'
  * ```
  */
@@ -324,7 +324,7 @@ export const covariateShiftModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { conceptDriftModifier } from 'whitebox-engine/data'
+ * import { conceptDriftModifier } from 'mdml-engine/data'
  * conceptDriftModifier.name // => 'conceptDrift'
  * ```
  */

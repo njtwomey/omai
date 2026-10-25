@@ -5,7 +5,7 @@
  * beta, gamma, mixture-density and multivariate normal distributions.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import type { Key } from '../../random/index.ts'
 import {
@@ -65,9 +65,9 @@ export interface ConditionalDistribution {
  * @returns The conditional distribution.
  * @example
  * ```ts
- * import { normal } from 'whitebox-engine/dists'
- * import { conditional } from 'whitebox-engine/dists/compose'
- * import { item, mul } from 'whitebox-engine/tensor'
+ * import { normal } from 'mdml-engine/dists'
+ * import { conditional } from 'mdml-engine/dists/compose'
+ * import { item, mul } from 'mdml-engine/tensor'
  * const regression = conditional('linear', (x) => normal(mul(x, 2), 1))
  * item(regression.condition(1.5).mean()) // => 3
  * ```
@@ -109,12 +109,12 @@ const symmetrise = (m: Value): Value => mul(add(m, transposeLast(m)), 0.5)
  * @param bias - b `[m]`.
  * @param noise - The noise covariance R as `{ covariance }`, `{ precision }` or `{ scaleTril }`.
  * @returns The conditional distribution.
- * @throws WhiteboxError with code `shape` when the shapes disagree.
+ * @throws MdmlError with code `shape` when the shapes disagree.
  * @example
  * ```ts
- * import { multivariateNormal } from 'whitebox-engine/dists'
- * import { linearGaussian } from 'whitebox-engine/dists/compose'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { multivariateNormal } from 'mdml-engine/dists'
+ * import { linearGaussian } from 'mdml-engine/dists/compose'
+ * import { toArray } from 'mdml-engine/tensor'
  * const obs = linearGaussian([[1]], [0], { covariance: [[1]] })
  * // A unit prior and a unit-noise observation of 2: the posterior mean is 1 and its variance 1/2.
  * toArray(obs.posterior(multivariateNormal([0], { covariance: [[1]] }), [2]).loc) // => [1]
@@ -122,10 +122,10 @@ const symmetrise = (m: Value): Value => mul(add(m, transposeLast(m)), 0.5)
  */
 export function linearGaussian(weights: TensorLike, bias: TensorLike, noise: CovarianceParams): LinearGaussian {
   const [a, b] = promoteFloat(weights, bias) as [Value, Value]
-  if (a.shape.length !== 2) throw new WhiteboxError('shape', 'linearGaussian: weights must be [m, n]')
+  if (a.shape.length !== 2) throw new MdmlError('shape', 'linearGaussian: weights must be [m, n]')
   const m = a.shape[0] ?? 0
   if ((b.shape[b.shape.length - 1] ?? -1) !== m)
-    throw new WhiteboxError('shape', `linearGaussian: the bias must end in ${m}`)
+    throw new MdmlError('shape', `linearGaussian: the bias must end in ${m}`)
   const noiseDist = multivariateNormal(b, noise)
   const r = noiseDist.covariance()
   const mean = (x: Value): Value => add(squeeze(matmul(a, expandDims(x, -1)), -1), b)
@@ -185,9 +185,9 @@ export interface GlmOptions {
  * @returns The conditional distribution.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { glmConditional } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { glmConditional } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * const logistic = glmConditional(families.binomial(), { coefficients: [2], intercept: -1 })
  * item(logistic.condition([0.5]).mean()) // => 0.5
  * ```
@@ -214,9 +214,9 @@ export function glmConditional(family: DispersionFamily, options: GlmOptions): C
  * @returns The conditional distribution.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { distributionalConditional } from 'whitebox-engine/dists/compose'
- * import { item, mul } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { distributionalConditional } from 'mdml-engine/dists/compose'
+ * import { item, mul } from 'mdml-engine/tensor'
  * const het = distributionalConditional(families.gamlssNormal(), [(x) => x, (x) => mul(x, 0)])
  * item(het.condition(2).mean()) // => 2
  * ```
@@ -233,7 +233,7 @@ const part = (raw: Value, i: number): Value => squeeze(sliceAxis(raw, -1, i, i +
 function lastAxis(raw: TensorLike, size: number, what: string): Value {
   const [v] = promoteFloat(raw) as [Value]
   if ((v.shape[v.shape.length - 1] ?? -1) !== size)
-    throw new WhiteboxError('shape', `${what}: the output's last axis must have ${size} entries`)
+    throw new MdmlError('shape', `${what}: the output's last axis must have ${size} entries`)
   return v
 }
 
@@ -246,8 +246,8 @@ function lastAxis(raw: TensorLike, size: number, what: string): Value {
  * @returns The distribution.
  * @example
  * ```ts
- * import { normalFromOutput } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { normalFromOutput } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(normalFromOutput([1, 0], 0).stddev()) - Math.LN2) < 1e-15 // => true
  * ```
  */
@@ -263,8 +263,8 @@ export function normalFromOutput(raw: TensorLike, minScale = 1e-6): Distribution
  * @returns The distribution.
  * @example
  * ```ts
- * import { bernoulliFromOutput } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { bernoulliFromOutput } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * item(bernoulliFromOutput(0).mean()) // => 0.5
  * ```
  */
@@ -279,8 +279,8 @@ export function bernoulliFromOutput(logits: TensorLike): Distribution {
  * @returns The distribution.
  * @example
  * ```ts
- * import { categoricalFromOutput } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { categoricalFromOutput } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * item(categoricalFromOutput([0, 0]).prob(1)) // => 0.5
  * ```
  */
@@ -295,8 +295,8 @@ export function categoricalFromOutput(logits: TensorLike): Distribution {
  * @returns The distribution.
  * @example
  * ```ts
- * import { poissonFromOutput } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { poissonFromOutput } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * item(poissonFromOutput(0).mean()) // => 1
  * ```
  */
@@ -312,8 +312,8 @@ export function poissonFromOutput(logRate: TensorLike): Distribution {
  * @returns The distribution.
  * @example
  * ```ts
- * import { negativeBinomialFromOutput } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { negativeBinomialFromOutput } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(negativeBinomialFromOutput([0, 0]).mean()) - 1) < 1e-14 // => true
  * ```
  */
@@ -332,8 +332,8 @@ export function negativeBinomialFromOutput(raw: TensorLike): Distribution {
  * @returns The distribution.
  * @example
  * ```ts
- * import { betaFromOutput } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { betaFromOutput } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * item(betaFromOutput([0, 0]).mean()) // => 0.5
  * ```
  */
@@ -350,8 +350,8 @@ export function betaFromOutput(raw: TensorLike): Distribution {
  * @returns The distribution.
  * @example
  * ```ts
- * import { gammaFromOutput } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { gammaFromOutput } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(gammaFromOutput([0, 0]).mean()) - 1) < 1e-5 // => true
  * ```
  */
@@ -369,8 +369,8 @@ export function gammaFromOutput(raw: TensorLike): Distribution {
  * @returns The mixture (reparameterised through its CDF).
  * @example
  * ```ts
- * import { mixtureDensityFromOutput } from 'whitebox-engine/dists/compose'
- * import { item } from 'whitebox-engine/tensor'
+ * import { mixtureDensityFromOutput } from 'mdml-engine/dists/compose'
+ * import { item } from 'mdml-engine/tensor'
  * item(mixtureDensityFromOutput([0, 0, -1, 1, 0, 0], 2).mean()) // => 0
  * ```
  */
@@ -392,8 +392,8 @@ export function mixtureDensityFromOutput(raw: TensorLike, components: number): M
  * @returns The distribution.
  * @example
  * ```ts
- * import { multivariateNormalFromOutput } from 'whitebox-engine/dists/compose'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { multivariateNormalFromOutput } from 'mdml-engine/dists/compose'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(multivariateNormalFromOutput([1, 2, 0, 0, 0], 2).covariance()) // => [[1, 0], [0, 1]]
  * ```
  */

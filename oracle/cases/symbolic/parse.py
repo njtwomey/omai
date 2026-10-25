@@ -3,14 +3,14 @@ and `implicit_multiplication` (2x, 3(x + 1), (x + 1)(x - 1)). The LaTeX parser h
 (`parse_latex` needs the ANTLR runtime), so it is checked by unit tests and round trips through `toLatex`."""
 
 import sympy as sp
+from mdml_oracle.fixture import Case
+from mdml_oracle.symbolic import SYMBOLS, expr_case
 from sympy.parsing.sympy_parser import (
     convert_xor,
     implicit_multiplication,
     parse_expr,
     standard_transformations,
 )
-from whitebox_oracle.fixture import Case
-from whitebox_oracle.symbolic import SYMBOLS, expr_case
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__}
 

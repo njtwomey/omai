@@ -6,10 +6,10 @@ from typing import Literal
 
 import numpy as np
 import optuna
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from optuna._hypervolume import compute_hypervolume  # pyright: ignore[reportPrivateUsage]
 from optuna.trial import TrialState, create_trial
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"optuna": optuna.__version__}
 

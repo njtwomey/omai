@@ -4,7 +4,7 @@
  * functions of the attributes, as a `subgroupReport` record.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type Explained, type SubgroupReport, subgroupReport } from '../../lib/exposition/index.ts'
 import { entropyDecomposition, richSubgroupAudit, subgroupRates } from '../../lib/fairness/index.ts'
 import type { Fitted } from '../../lib/learn/index.ts'
@@ -58,7 +58,7 @@ export interface IntersectionalAudit {
  * @param data - Labelled data holding the attributes.
  * @param options - The attributes, threshold, minimum subgroup size, entropy order and audit.
  * @returns The subgroups and the headline gap, with the record.
- * @throws WhiteboxError `value` without at least one attribute.
+ * @throws MdmlError `value` without at least one attribute.
  */
 export function intersectionalAudit(
   model: Fitted,
@@ -66,7 +66,7 @@ export function intersectionalAudit(
   options: IntersectionalAuditOptions = {},
 ): Explained<IntersectionalAudit> {
   const specs = options.attributes ?? Object.keys(data.meta?.sensitive ?? {})
-  if (specs.length === 0) throw new WhiteboxError('value', 'intersectionalAudit: give the protected attributes')
+  if (specs.length === 0) throw new MdmlError('value', 'intersectionalAudit: give the protected attributes')
   const groups = specs.map((s, a) => {
     const g = sensitiveGroups(data, s)
     const name = options.names?.[a]

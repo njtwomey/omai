@@ -1,6 +1,6 @@
+import { structure } from 'mdml-engine/scene'
+import { Choice, ControlPanel, StructureView } from 'mdml-render/react'
 import { type ReactNode, useState } from 'react'
-import { structure } from 'whitebox-engine/scene'
-import { Choice, ControlPanel, StructureView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

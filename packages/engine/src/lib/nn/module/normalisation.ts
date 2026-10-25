@@ -4,7 +4,7 @@
  * and `LocalResponseNorm`.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { full, item, tensor, type Value, zeros } from '../../tensor/index.ts'
 import {
   batchNorm,
@@ -74,7 +74,7 @@ abstract class StatNorm extends Module {
 
   protected check(x: Value): void {
     if (!this.ranks.includes(x.shape.length) || x.shape[1] !== this.numFeatures)
-      throw new WhiteboxError(
+      throw new MdmlError(
         'shape',
         `${this.kind}: expected ${this.numFeatures} channels on axis 1 of a ${this.ranks.join(' or ')}-D input, got [${x.shape.join(', ')}]`,
       )
@@ -94,7 +94,7 @@ abstract class StatNorm extends Module {
  *
  * @example
  * ```ts
- * import { BatchNormNd } from 'whitebox-engine/nn'
+ * import { BatchNormNd } from 'mdml-engine/nn'
  * new BatchNormNd('BatchNorm2d', 3, [4]).parameterCount() // => 6
  * ```
  */
@@ -136,7 +136,7 @@ export class BatchNormNd extends StatNorm {
  * @concept batch-normalisation
  * @example
  * ```ts
- * import { BatchNorm1d } from 'whitebox-engine/nn'
+ * import { BatchNorm1d } from 'mdml-engine/nn'
  * Object.keys(new BatchNorm1d(4).stateDict()) // => ['bias', 'weight', 'num_batches_tracked', 'running_mean', 'running_var']
  * ```
  */
@@ -152,7 +152,7 @@ export class BatchNorm1d extends BatchNormNd {
  * @concept batch-normalisation
  * @example
  * ```ts
- * import { BatchNorm2d } from 'whitebox-engine/nn'
+ * import { BatchNorm2d } from 'mdml-engine/nn'
  * new BatchNorm2d(8).parameterCount() // => 16
  * ```
  */
@@ -174,7 +174,7 @@ export class BatchNorm3d extends BatchNormNd {
  *
  * @example
  * ```ts
- * import { InstanceNormNd } from 'whitebox-engine/nn'
+ * import { InstanceNormNd } from 'mdml-engine/nn'
  * new InstanceNormNd('InstanceNorm1d', 3, [3]).parameterCount() // => 0
  * ```
  */
@@ -217,7 +217,7 @@ export class InstanceNorm1d extends InstanceNormNd {
  *
  * @example
  * ```ts
- * import { InstanceNorm2d } from 'whitebox-engine/nn'
+ * import { InstanceNorm2d } from 'mdml-engine/nn'
  * new InstanceNorm2d(3, { affine: true }).parameterCount() // => 6
  * ```
  */
@@ -251,7 +251,7 @@ const shapeOf = (s: number | readonly number[]): number[] => (typeof s === 'numb
  * @concept layer-normalisation
  * @example
  * ```ts
- * import { LayerNorm } from 'whitebox-engine/nn'
+ * import { LayerNorm } from 'mdml-engine/nn'
  * new LayerNorm(16).parameterCount() // => 32
  * ```
  */
@@ -299,7 +299,7 @@ export class LayerNorm extends Module {
  *
  * @example
  * ```ts
- * import { RMSNorm } from 'whitebox-engine/nn'
+ * import { RMSNorm } from 'mdml-engine/nn'
  * new RMSNorm(16).parameterCount() // => 16
  * ```
  */
@@ -342,7 +342,7 @@ export class RMSNorm extends Module {
  *
  * @example
  * ```ts
- * import { GroupNorm } from 'whitebox-engine/nn'
+ * import { GroupNorm } from 'mdml-engine/nn'
  * new GroupNorm(4, 16).parameterCount() // => 32
  * ```
  */
@@ -360,7 +360,7 @@ export class GroupNorm extends Module {
   ) {
     super()
     if (numChannels % numGroups !== 0)
-      throw new WhiteboxError('value', `GroupNorm: ${numChannels} channels do not divide into ${numGroups} groups`)
+      throw new MdmlError('value', `GroupNorm: ${numChannels} channels do not divide into ${numGroups} groups`)
     this.numGroups = numGroups
     this.numChannels = numChannels
     this.eps = options.eps ?? 1e-5
@@ -394,7 +394,7 @@ export class GroupNorm extends Module {
  *
  * @example
  * ```ts
- * import { LocalResponseNorm } from 'whitebox-engine/nn'
+ * import { LocalResponseNorm } from 'mdml-engine/nn'
  * new LocalResponseNorm(5).kind // => 'LocalResponseNorm'
  * ```
  */

@@ -15,10 +15,10 @@ from typing import Any, cast
 import numpy as np
 import scipy
 import sympy as sp
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from scipy.integrate import solve_ivp
 from scipy.signal import cont2discrete
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "sympy": sp.__version__, "numpy": np.__version__}
 

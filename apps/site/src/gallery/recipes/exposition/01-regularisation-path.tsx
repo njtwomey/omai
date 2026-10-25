@@ -1,9 +1,9 @@
+import { diabetes } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { standardScaler } from 'mdml-engine/learn/preprocessing'
+import { elasticNetCV } from 'mdml-engine/methods/linear'
+import { ControlPanel, NumberField, PathView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { diabetes } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { standardScaler } from 'whitebox-engine/learn/preprocessing'
-import { elasticNetCV } from 'whitebox-engine/methods/linear'
-import { ControlPanel, NumberField, PathView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

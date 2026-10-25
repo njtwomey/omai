@@ -5,7 +5,7 @@
  * strategies (`initToMedian`, `initToSample` and others) for finding a valid starting point.
  */
 
-import { quantileOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, quantileOf } from '../base/index.ts'
 import { bijectors, type Support } from '../dists/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../random/index.ts'
 import { type LogDensity, target } from '../sampling/index.ts'
@@ -79,13 +79,13 @@ export interface LogJointResult {
  * @param values - Values of latent sites (and params) by name.
  * @param options - A key for any latent site left without a value, and the plate nesting.
  * @returns The log joint and the trace it was computed from.
- * @throws WhiteboxError with code `value` when a latent site has no value and no key was given.
+ * @throws MdmlError with code `value` when a latent site has no value and no key was given.
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { logJoint, observe, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { logJoint, observe, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => { const mu = sample('mu', normal(0, 1)); observe('y', normal(mu, 1), 1) }
  * // log N(0; 0, 1) + log N(1; 0, 1) = -log(2 pi) - 1/2
  * Math.abs(item(logJoint(model, undefined, { mu: 0 }).logJoint) + Math.log(2 * Math.PI) + 0.5) < 1e-14 // => true
@@ -125,9 +125,9 @@ export function logJoint<D = void>(
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { observe, traceLogJoint, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { observe, traceLogJoint, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const t = traceOf(() => observe('y', normal(0, 1), 0), undefined)
  * Math.abs(item(traceLogJoint(t)) + 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
@@ -154,9 +154,9 @@ export function traceLogJoint(t: ProgramTrace, plateDepth: number = maxPlateNest
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { observe, siteLogProbs, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { observe, siteLogProbs, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const t = traceOf(() => observe('y', normal(0, 1), 0), undefined)
  * Object.keys(siteLogProbs(t)) // => ['y']
  * ```
@@ -229,12 +229,12 @@ function coordinateNames(layout: readonly LatentLayout[]): string[] {
  *
  * @param t - A trace of the program.
  * @returns The layout and the enumerated sites.
- * @throws WhiteboxError with code `value` for discrete latent sites that are not marked for enumeration.
+ * @throws MdmlError with code `value` for discrete latent sites that are not marked for enumeration.
  * @example
  * ```ts
- * import { latentLayout, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { dirichlet } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { latentLayout, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { dirichlet } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const t = traceOf(seed(() => sample('p', dirichlet([1, 1, 1])), key(0)), undefined)
  * latentLayout(t).layout[0]?.unconstrainedShape // => [2]
  * ```
@@ -253,7 +253,7 @@ export function latentLayout(t: ProgramTrace): {
         enumerated.push(site.name)
         continue
       }
-      throw new WhiteboxError(
+      throw new MdmlError(
         'value',
         isFiniteDiscrete(site.fn.support)
           ? `site ${site.name} is a discrete latent variable; mark it with enumerate(...) to sum it out`
@@ -281,13 +281,13 @@ export function latentLayout(t: ProgramTrace): {
  * @param data - Its data.
  * @param options - The prototype key and whether to enumerate discrete sites.
  * @returns The unconstrained model.
- * @throws WhiteboxError with code `value` for discrete latent sites when enumeration is off, or for a program without
+ * @throws MdmlError with code `value` for discrete latent sites when enumeration is off, or for a program without
  *   continuous latent sites.
  * @concept log-density
  * @example
  * ```ts
- * import { observe, potentialEnergy, sample } from 'whitebox-engine/probprog'
- * import { exponential, normal } from 'whitebox-engine/dists'
+ * import { observe, potentialEnergy, sample } from 'mdml-engine/probprog'
+ * import { exponential, normal } from 'mdml-engine/dists'
  * const model = () => { const s = sample('s', exponential(1)); observe('y', normal(0, s), 0) }
  * const pe = potentialEnergy(model, undefined)
  * // At u = 0: s = 1, so -(log Exp(1; 1) + log N(0; 0, 1) + log|ds/du|) = 1 + log(2 pi) / 2.
@@ -335,7 +335,7 @@ export function potentialEnergy<D = void>(
     const out = new Float64Array(dim)
     for (const l of layout) {
       const v = values[l.name]
-      if (v === undefined) throw new WhiteboxError('value', `unconstrain: no value for site ${l.name}`)
+      if (v === undefined) throw new MdmlError('value', `unconstrain: no value for site ${l.name}`)
       const x = broadcastTo(asTensor(v), l.shape)
       out.set(toFlat(primalOf(l.bijector.inverse(x))), l.offset)
     }
@@ -356,7 +356,7 @@ export function potentialEnergy<D = void>(
     return unconstrain(record)
   }
   if (dim === 0)
-    throw new WhiteboxError('value', 'potentialEnergy: the program has no continuous latent sites', {
+    throw new MdmlError('value', 'potentialEnergy: the program has no continuous latent sites', {
       enumerated: enumerated.length,
     })
   const base = target(fn, dim, { names: coordinateNames(layout) })
@@ -388,9 +388,9 @@ export function potentialEnergy<D = void>(
  * @concept log-density
  * @example
  * ```ts
- * import { constrainSites, sample } from 'whitebox-engine/probprog'
- * import { gamma } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { constrainSites, sample } from 'mdml-engine/probprog'
+ * import { gamma } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(constrainSites(() => sample('s', gamma(2, 1)), undefined, { s: 0 })['s'] ?? 0) // => 1
  * ```
  */
@@ -425,9 +425,9 @@ export function constrainSites<D = void>(
  * @concept log-density
  * @example
  * ```ts
- * import { sample, unconstrainSites } from 'whitebox-engine/probprog'
- * import { gamma } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { sample, unconstrainSites } from 'mdml-engine/probprog'
+ * import { gamma } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(unconstrainSites(() => sample('s', gamma(2, 1)), undefined, { s: 1 })['s'] ?? 1) // => 0
  * ```
  */
@@ -468,7 +468,7 @@ function sampleShapeOf(site: SampleSite): number[] {
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToSample } from 'whitebox-engine/probprog'
+ * import { initToSample } from 'mdml-engine/probprog'
  * typeof initToSample() // => 'function'
  * ```
  */
@@ -483,7 +483,7 @@ export function initToSample(): InitStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToMedian } from 'whitebox-engine/probprog'
+ * import { initToMedian } from 'mdml-engine/probprog'
  * typeof initToMedian({ numSamples: 5 }) // => 'function'
  * ```
  */
@@ -511,7 +511,7 @@ export function initToMedian(options: { readonly numSamples?: number } = {}): In
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToMean } from 'whitebox-engine/probprog'
+ * import { initToMean } from 'mdml-engine/probprog'
  * typeof initToMean() // => 'function'
  * ```
  */
@@ -536,7 +536,7 @@ export function initToMean(): InitStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToUniform } from 'whitebox-engine/probprog'
+ * import { initToUniform } from 'mdml-engine/probprog'
  * typeof initToUniform({ radius: 1 }) // => 'function'
  * ```
  */
@@ -556,7 +556,7 @@ export function initToUniform(options: { readonly radius?: number } = {}): InitS
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToFeasible } from 'whitebox-engine/probprog'
+ * import { initToFeasible } from 'mdml-engine/probprog'
  * typeof initToFeasible() // => 'function'
  * ```
  */
@@ -572,7 +572,7 @@ export function initToFeasible(): InitStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToValue } from 'whitebox-engine/probprog'
+ * import { initToValue } from 'mdml-engine/probprog'
  * typeof initToValue({ mu: 0 }) // => 'function'
  * ```
  */
@@ -611,9 +611,9 @@ export interface InitialParams {
  * @concept log-density
  * @example
  * ```ts
- * import { findInitialParams, potentialEnergy, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { findInitialParams, potentialEnergy, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const model = () => { sample('x', normal(0, 1)) }
  * findInitialParams(potentialEnergy(model, undefined), model, undefined, { key: key(0) }).valid // => true
  * ```
@@ -699,8 +699,8 @@ export function findInitialParams<D = void>(
  * @returns Stacked constrained values by site (latent and deterministic).
  * @example
  * ```ts
- * import { constrainDraws, potentialEnergy, sample } from 'whitebox-engine/probprog'
- * import { exponential } from 'whitebox-engine/dists'
+ * import { constrainDraws, potentialEnergy, sample } from 'mdml-engine/probprog'
+ * import { exponential } from 'mdml-engine/dists'
  * const um = potentialEnergy(() => { sample('s', exponential(1)) }, undefined)
  * constrainDraws(um, new Float64Array([0, 0]))['s']?.shape // => [2]
  * ```
@@ -735,8 +735,8 @@ export function constrainDraws(um: UnconstrainedModel, draws: Float64Array): Rec
  * @returns log density at u.
  * @example
  * ```ts
- * import { logDensityAt, potentialEnergy, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
+ * import { logDensityAt, potentialEnergy, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
  * const um = potentialEnergy(() => { sample('x', normal(0, 1)) }, undefined)
  * Math.abs(logDensityAt(um, [0]) + 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
@@ -754,8 +754,8 @@ export function logDensityAt(um: UnconstrainedModel, u: ArrayLike<number>): numb
  * @returns The `[dim]` vector.
  * @example
  * ```ts
- * import { packLatents, potentialEnergy, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
+ * import { packLatents, potentialEnergy, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
  * const um = potentialEnergy(() => { sample('x', normal(0, 1), { sampleShape: [2] }) }, undefined)
  * packLatents(um.layout, { x: [1, 2] }).shape // => [2]
  * ```
@@ -764,7 +764,7 @@ export function packLatents(layout: readonly LatentLayout[], values: Readonly<Re
   return concat(
     layout.map((l) => {
       const v = values[l.name]
-      if (v === undefined) throw new WhiteboxError('value', `packLatents: no value for ${l.name}`)
+      if (v === undefined) throw new MdmlError('value', `packLatents: no value for ${l.name}`)
       return reshape(asTensor(v), [l.size])
     }),
   )

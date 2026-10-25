@@ -4,7 +4,7 @@
  * sparse logistic regression.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import {
@@ -81,7 +81,7 @@ export interface OwlqnState extends VectorState {
  * @concept sparsity
  * @example
  * ```ts
- * import { pseudoGradient } from 'whitebox-engine/optim'
+ * import { pseudoGradient } from 'mdml-engine/optim'
  * Array.from(pseudoGradient([1, 0, 0, 0], [0.5, 0.5, -2, 2], 1)) // => [1.5, 0, -1, 1]
  * ```
  */
@@ -115,13 +115,13 @@ export function pseudoGradient(
  * @param x0 - The start.
  * @param options - The L1 weights, memory, tolerances and line-search constants.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for negative or mismatched weights.
+ * @throws MdmlError with code `value` for negative or mismatched weights.
  * @concept sparsity
  * @reference G. Andrew and J. Gao, Scalable training of L1-regularized log-linear models, ICML 2007.
  * @example
  * ```ts
- * import { owlqnAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { owlqnAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * owlqnAlgorithm((x: Value) => sum(square(x)), [1, 2], { l1: 0.1 }).name // => 'owlqn'
  * ```
  */
@@ -133,9 +133,9 @@ function owlqnOn(obj: FlatObjective, options: OwlqnOptions): Algorithm<OwlqnStat
   const n = obj.n
   const c = options.l1
   if (typeof c !== 'number' && c.length !== n)
-    throw new WhiteboxError('value', `owlqn: expected ${n} L1 weights, got ${c.length}`)
+    throw new MdmlError('value', `owlqn: expected ${n} L1 weights, got ${c.length}`)
   const weights = typeof c === 'number' ? new Float64Array(n).fill(c) : Float64Array.from(c)
-  if (weights.some((w) => w < 0)) throw new WhiteboxError('value', 'owlqn: L1 weights must be nonnegative')
+  if (weights.some((w) => w < 0)) throw new MdmlError('value', 'owlqn: L1 weights must be nonnegative')
   const memory = options.memory ?? 10
   const gtol = options.gradTol ?? 1e-5
   const ftol = options.ftol ?? 1e-10
@@ -288,8 +288,8 @@ function owlqnOn(obj: FlatObjective, options: OwlqnOptions): Algorithm<OwlqnStat
  * @concept sparsity
  * @example
  * ```ts
- * import { owlqn } from 'whitebox-engine/optim'
- * import { mul, square, sub, sum, tensor, toFlat, type Value } from 'whitebox-engine/tensor'
+ * import { owlqn } from 'mdml-engine/optim'
+ * import { mul, square, sub, sum, tensor, toFlat, type Value } from 'mdml-engine/tensor'
  * // 0.5 |x - a|^2 + 0.5 |x|_1 soft-thresholds a = [2, 0.3, -1] by 0.5.
  * const r = owlqn((x: Value) => mul(sum(square(sub(x, tensor([2, 0.3, -1])))), 0.5), [0, 0, 0], { l1: 0.5 })
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [1.5, 0, -0.5]

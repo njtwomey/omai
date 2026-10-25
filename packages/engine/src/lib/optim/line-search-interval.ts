@@ -125,7 +125,7 @@ function dcstep(
  * @reference J. J. More and D. J. Thuente, Line search algorithms with guaranteed sufficient decrease, ACM TOMS 20 (1994).
  * @example
  * ```ts
- * import { moreThuente } from 'whitebox-engine/optim'
+ * import { moreThuente } from 'mdml-engine/optim'
  * // phi(alpha) = (alpha - 0.25)^2: the first trial (alpha = 1) overshoots, interpolation finds the minimum
  * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
  * const r = moreThuente()(phi, { value: 0.0625, slope: -0.5 })
@@ -256,7 +256,7 @@ export interface HagerZhangOptions {
  * search, SIAM J. Optim. 16 (2005); Algorithm 851: CG_DESCENT, ACM TOMS 32 (2006).
  * @example
  * ```ts
- * import { hagerZhang } from 'whitebox-engine/optim'
+ * import { hagerZhang } from 'mdml-engine/optim'
  * // phi(alpha) = (alpha - 0.25)^2: the first trial (alpha = 1) overshoots, interpolation finds the minimum
  * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
  * const r = hagerZhang()(phi, { value: 0.0625, slope: -0.5 })
@@ -419,7 +419,7 @@ export interface Wolfe12Options {
  * @concept line-search
  * @example
  * ```ts
- * import { wolfe12 } from 'whitebox-engine/optim'
+ * import { wolfe12 } from 'mdml-engine/optim'
  * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
  * wolfe12()(phi, { value: 0.0625, slope: -0.5 }).alpha // => 0.25
  * ```

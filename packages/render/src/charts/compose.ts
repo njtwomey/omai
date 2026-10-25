@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { WhiteboxError } from 'whitebox-engine/base'
+import { MdmlError } from 'mdml-engine/base'
 import type { Range } from '../figure/aspect.ts'
 import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figure/figure.ts'
 import { type CellSpec, type GridSpec, layoutGrid, linkedGroups, sharedGroups } from '../figure/grid.ts'
@@ -44,8 +44,8 @@ export interface SubplotOptions {
  * @returns Each cell's rectangle by id.
  * @example
  * ```ts
- * import { subplotRects } from 'whitebox-render/charts'
- * import { figure, gridSpec } from 'whitebox-render/figure'
+ * import { subplotRects } from 'mdml-render/charts'
+ * import { figure, gridSpec } from 'mdml-render/figure'
  * subplotRects(gridSpec(1, 1), {}, figure())['r0c0'] // => { x: 56, y: 28, width: 564, height: 328 }
  * ```
  */
@@ -73,11 +73,11 @@ function bottomOf(c: CellSpec): number {
  * @param panels - Panels by cell id (cells without a panel stay empty).
  * @param options - Figure, title, legend, tooltip, linking and zoom.
  * @returns The ECharts option.
- * @throws WhiteboxError with code `value` when a panel names a cell that is not in the grid.
+ * @throws MdmlError with code `value` when a panel names a cell that is not in the grid.
  * @example
  * ```ts
- * import { histogram, points, subplots } from 'whitebox-render/charts'
- * import { withMarginals } from 'whitebox-render/figure'
+ * import { histogram, points, subplots } from 'mdml-render/charts'
+ * import { withMarginals } from 'mdml-render/figure'
  * const x = [0, 1, 2, 3]
  * const y = [1, 3, 2, 4]
  * const o = subplots(withMarginals(), {
@@ -99,7 +99,7 @@ export function subplots(
   const t = tokens(mode)
   const cells = new Map(grid.cells.map((c) => [c.id, c]))
   for (const id of Object.keys(panels))
-    if (!cells.has(id)) throw new WhiteboxError('value', `subplots: no cell '${id}' in the grid`)
+    if (!cells.has(id)) throw new MdmlError('value', `subplots: no cell '${id}' in the grid`)
   const rects = subplotRects(grid, panels, fig)
 
   // Shared axes: one range from the union of the group's data, under the first panel's limit policy.

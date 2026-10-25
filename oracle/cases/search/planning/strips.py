@@ -1,14 +1,14 @@
 """STRIPS planning against pyperplan: the grounded initial state and goal of PDDL instances (blocks world, gripper,
 the Sussman anomaly) and the optimal plan length found by pyperplan's breadth-first search, confirmed by its A* with
-h-max; whitebox-js grounds the same PDDL and plans forwards, backwards, by GraphPlan and partial-order planning."""
+h-max; mdml-js grounds the same PDDL and plans forwards, backwards, by GraphPlan and partial-order planning."""
 
 from importlib.metadata import version
 
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.planning import INSTANCES, task
 from pyperplan.heuristics.relaxation import hMaxHeuristic
 from pyperplan.search import astar_search, breadth_first_search
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.planning import INSTANCES, task
 
 REFERENCE: dict[str, str] = {"pyperplan": version("pyperplan")}
 

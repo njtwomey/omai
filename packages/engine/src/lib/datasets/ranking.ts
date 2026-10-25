@@ -4,7 +4,7 @@
  * factorisation, Zipfian long-tail interactions, and the small MovieLens set as a pinned remote asset.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   type DatasetGenerator,
   type DatasetRef,
@@ -36,8 +36,8 @@ function dotRow(a: Float64Array, i: number, b: Float64Array, j: number, rank: nu
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { lowRankRatings } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { lowRankRatings } from 'mdml-engine/datasets'
  * generate(lowRankRatings, { knobs: { users: 20, items: 30 } }).data.nItems // => 30
  * ```
  */
@@ -162,8 +162,8 @@ function clickKnobs(): DictSpace {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { clickLogs } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { clickLogs } from 'mdml-engine/datasets'
  * generate(clickLogs, { knobs: { sessions: 10, listLength: 5 } }).data.positions?.shape // => [50]
  * ```
  */
@@ -246,8 +246,8 @@ export const clickLogs: DatasetGenerator<InteractionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { implicitFeedback } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { implicitFeedback } from 'mdml-engine/datasets'
  * generate(implicitFeedback, { knobs: { users: 10, items: 10 } }).data.nUsers // => 10
  * ```
  */
@@ -306,8 +306,8 @@ export const implicitFeedback: DatasetGenerator<InteractionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { zipfianCatalogue } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { zipfianCatalogue } from 'mdml-engine/datasets'
  * generate(zipfianCatalogue, { knobs: { interactions: 100 } }).data.values.shape // => [100]
  * ```
  */
@@ -365,10 +365,10 @@ export const zipfianCatalogue: DatasetGenerator<InteractionData> = {
  *
  * @param bytes - The archive.
  * @returns The interactions.
- * @throws WhiteboxError with code `value` when the archive lacks `ratings.csv`.
+ * @throws MdmlError with code `value` when the archive lacks `ratings.csv`.
  * @example
  * ```ts
- * import { parseMovieLens } from 'whitebox-engine/datasets'
+ * import { parseMovieLens } from 'mdml-engine/datasets'
  * typeof parseMovieLens // => 'function'
  * ```
  */
@@ -376,7 +376,7 @@ export async function parseMovieLens(bytes: Uint8Array): Promise<InteractionData
   const files = await unzip(bytes)
   const find = (suffix: string) => [...files.entries()].find(([name]) => name.endsWith(suffix))?.[1]
   const ratings = find('ratings.csv')
-  if (ratings === undefined) throw new WhiteboxError('value', 'parseMovieLens: no ratings.csv in the archive')
+  if (ratings === undefined) throw new MdmlError('value', 'parseMovieLens: no ratings.csv in the archive')
   const movies = find('movies.csv')
   const rows = parseCsv(new TextDecoder().decode(ratings)).rows
   const titles = new Map<string, string>()
@@ -419,7 +419,7 @@ export async function parseMovieLens(bytes: Uint8Array): Promise<InteractionData
  *
  * @example
  * ```ts
- * import { movielensSmall } from 'whitebox-engine/datasets'
+ * import { movielensSmall } from 'mdml-engine/datasets'
  * movielensSmall.kind // => 'remote'
  * ```
  */

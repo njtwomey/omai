@@ -15,12 +15,12 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pgmpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.pgm import SPRINKLER, STUDENT, sample_rows
 from pgmpy.base import DAG, PDAG
 from pgmpy.causal_discovery import PC
 from pgmpy.estimators import TreeSearch
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.pgm import SPRINKLER, STUDENT, sample_rows
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__, "networkx": nx.__version__}
 

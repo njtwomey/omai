@@ -4,7 +4,7 @@
  * filtering backward sampling gives exact joint draws. Also the engine that offers it to the planner.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { Distribution } from '../../dists/index.ts'
 import { backwardSample, type ChainModel, forwardBackward, viterbi } from '../../pgm/index.ts'
 import type { Key } from '../../random/index.ts'
@@ -58,13 +58,13 @@ function chainProblem(a: ProgramAnalysis): string | undefined {
  * @param data - Its data.
  * @param analysis - Its analysis (default: analysed here).
  * @returns The chain form.
- * @throws WhiteboxError with code `value` when the program is not such a chain.
+ * @throws MdmlError with code `value` when the program is not such a chain.
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { chainForm, markov, observe, sample } from 'whitebox-engine/probprog'
- * import { bernoulli, categorical } from 'whitebox-engine/dists'
- * import { take, tensor, type Value } from 'whitebox-engine/tensor'
+ * import { chainForm, markov, observe, sample } from 'mdml-engine/probprog'
+ * import { bernoulli, categorical } from 'mdml-engine/dists'
+ * import { take, tensor, type Value } from 'mdml-engine/tensor'
  * const hmm = () => markov('t', 3, (t, z: Value | undefined) => {
  *   const s = sample(`z${t}`, categorical({ probs: z === undefined ? [0.5, 0.5] : take(tensor([[0.9, 0.1], [0.1, 0.9]]), z) }))
  *   observe(`y${t}`, bernoulli({ probs: take(tensor([0.2, 0.8]), s) }), 1)
@@ -76,7 +76,7 @@ function chainProblem(a: ProgramAnalysis): string | undefined {
 export function chainForm<D = void>(model: Model<D>, data: D, analysis?: ProgramAnalysis): ChainForm {
   const a = analysis ?? analyse(model, data)
   const problem = chainProblem(a)
-  if (problem !== undefined) throw new WhiteboxError('value', `chainForm: ${problem}`)
+  if (problem !== undefined) throw new MdmlError('value', `chainForm: ${problem}`)
   const latents = a.sites.filter((s) => s.role === 'latent')
   latents.sort((x, y) => (x.markov?.step ?? 0) - (y.markov?.step ?? 0))
   const sites = latents.map((s) => s.name)
@@ -115,7 +115,7 @@ export function chainForm<D = void>(model: Model<D>, data: D, analysis?: Program
       const [u, v] = vars as [string, string]
       const tu = step.get(u) ?? 0
       const tv = step.get(v) ?? 0
-      if (Math.abs(tu - tv) !== 1) throw new WhiteboxError('value', `chainForm: a factor links steps ${tu} and ${tv}`)
+      if (Math.abs(tu - tv) !== 1) throw new MdmlError('value', `chainForm: a factor links steps ${tu} and ${tv}`)
       const later = Math.max(tu, tv)
       const m = tu < tv ? values : toFlat(primalOf(transpose(primalOf(f.value))))
       const A = logTransition[later - 1] as number[][]
@@ -123,7 +123,7 @@ export function chainForm<D = void>(model: Model<D>, data: D, analysis?: Program
         for (let j = 0; j < states; j++) (A[i] as number[])[j] = (A[i]?.[j] ?? 0) + (m[i * states + j] ?? 0)
       continue
     }
-    throw new WhiteboxError('value', `chainForm: a factor of ${raw.site ?? '?'} involves ${vars.length} steps`)
+    throw new MdmlError('value', `chainForm: a factor of ${raw.site ?? '?'} involves ${vars.length} steps`)
   }
   return { sites, low, states, chain: { logInitial, logTransition, logEmission }, constant }
 }
@@ -147,9 +147,9 @@ export interface ChainInferenceOptions {
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { chainInference, markov, observe, sample } from 'whitebox-engine/probprog'
- * import { bernoulli, categorical } from 'whitebox-engine/dists'
- * import { take, tensor, type Value } from 'whitebox-engine/tensor'
+ * import { chainInference, markov, observe, sample } from 'mdml-engine/probprog'
+ * import { bernoulli, categorical } from 'mdml-engine/dists'
+ * import { take, tensor, type Value } from 'mdml-engine/tensor'
  * const hmm = () => markov('t', 3, (t, z: Value | undefined) => {
  *   const s = sample(`z${t}`, categorical({ probs: z === undefined ? [0.5, 0.5] : take(tensor([[0.9, 0.1], [0.1, 0.9]]), z) }))
  *   observe(`y${t}`, bernoulli({ probs: take(tensor([0.2, 0.8]), s) }), 1)
@@ -196,7 +196,7 @@ export function chainInference<D = void>(model: Model<D>, data: D, options: Chai
     logProb: (values) => {
       const path = form.sites.map((name) => {
         const v = values[name]
-        if (v === undefined) throw new WhiteboxError('value', `chain posterior: no value for ${name}`)
+        if (v === undefined) throw new MdmlError('value', `chain posterior: no value for ${name}`)
         return (toFlat(primalOf(asTensor(v as TensorLike)))[0] ?? 0) - form.low
       })
       let lp = form.constant
@@ -220,7 +220,7 @@ export function chainInference<D = void>(model: Model<D>, data: D, options: Chai
  * @concept inference-engines
  * @example
  * ```ts
- * import { chainEngine } from 'whitebox-engine/probprog'
+ * import { chainEngine } from 'mdml-engine/probprog'
  * chainEngine().name // => 'chain'
  * ```
  */

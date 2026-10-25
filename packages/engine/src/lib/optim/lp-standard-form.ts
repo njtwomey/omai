@@ -4,7 +4,7 @@
  * and the shared option, path and solution types of the linear-programming methods.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import type { RunOptions } from '../trace/index.ts'
 import { type Dense, expectLength, matrixFrom, vectorFrom } from './_programming.ts'
@@ -67,7 +67,7 @@ function boundsOf(bounds: LinearProgram['bounds'], n: number): { lower: Float64A
   const single = bounds.length === 2 && !Array.isArray(bounds[0]) && !Array.isArray(bounds[1])
   for (let j = 0; j < n; j++) {
     const bj = (single ? bounds : (bounds as readonly Bound[])[j]) as Bound | undefined
-    if (bj === undefined) throw new WhiteboxError('shape', `linprog: bounds must have one entry per variable (${n})`)
+    if (bj === undefined) throw new MdmlError('shape', `linprog: bounds must have one entry per variable (${n})`)
     lower[j] = bj[0] ?? -Infinity
     upper[j] = bj[1] ?? Infinity
   }
@@ -81,10 +81,10 @@ function boundsOf(bounds: LinearProgram['bounds'], n: number): { lower: Float64A
  *
  * @param problem - The program.
  * @returns The standard form with its maps back.
- * @throws WhiteboxError with code `shape` when the sizes disagree.
+ * @throws MdmlError with code `shape` when the sizes disagree.
  * @example
  * ```ts
- * import { standardForm } from 'whitebox-engine/optim'
+ * import { standardForm } from 'mdml-engine/optim'
  * const s = standardForm({ c: [1, 1], aUb: [[1, 2]], bUb: [4], bounds: [[0, 3], [null, null]] })
  * [s.a.rows, s.a.cols] // => [2, 5]
  * ```
@@ -208,7 +208,7 @@ export function standardForm(problem: LinearProgram): StandardForm {
  * @returns x.
  * @example
  * ```ts
- * import { fromStandard, standardForm } from 'whitebox-engine/optim'
+ * import { fromStandard, standardForm } from 'mdml-engine/optim'
  * const s = standardForm({ c: [1], bounds: [[2, null]] })
  * Array.from(fromStandard(s, [3])) // => [5]
  * ```

@@ -4,7 +4,7 @@
  * residual is largest until the residual sum of squares meets a smoothing factor.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   concreteOrThrow,
   fromStorage,
@@ -44,8 +44,8 @@ export interface SmoothingSpline {
  * @concept smoothing-splines
  * @example
  * ```ts
- * import { makeSmoothingSpline } from 'whitebox-engine/numerics/interpolate'
- * import { item } from 'whitebox-engine/tensor'
+ * import { makeSmoothingSpline } from 'mdml-engine/numerics/interpolate'
+ * import { item } from 'mdml-engine/tensor'
  * // A straight line is never penalised.
  * Math.abs(item(makeSmoothingSpline([0, 1, 2, 3, 4, 5], [1, 3, 5, 7, 9, 11], { lam: 10 }).spline.evaluate(2.5)) - 6) < 1e-10 // => true
  * ```
@@ -58,11 +58,11 @@ export function makeSmoothingSpline(
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, 'makeSmoothingSpline'))
   const [yv] = promoteFloat(y) as [Value]
   const n = xs.length
-  if (n < 5) throw new WhiteboxError('value', 'makeSmoothingSpline: at least five points are needed')
-  if (yv.shape.length !== 1 || yv.shape[0] !== n) throw new WhiteboxError('shape', 'makeSmoothingSpline: y must be [n]')
+  if (n < 5) throw new MdmlError('value', 'makeSmoothingSpline: at least five points are needed')
+  if (yv.shape.length !== 1 || yv.shape[0] !== n) throw new MdmlError('shape', 'makeSmoothingSpline: y must be [n]')
   const w = options.w ?? new Array<number>(n).fill(1)
   const h = xs.slice(1).map((v, i) => v - (xs[i] ?? 0))
-  if (h.some((v) => !(v > 0))) throw new WhiteboxError('value', 'makeSmoothingSpline: x must be strictly increasing')
+  if (h.some((v) => !(v > 0))) throw new MdmlError('value', 'makeSmoothingSpline: x must be strictly increasing')
   // Q (n x n-2) and R (n-2 x n-2) of Green and Silverman; K = Q R^{-1} Q^T is the roughness penalty matrix.
   const p = n - 2
   const q = new Float64Array(n * p)
@@ -166,7 +166,7 @@ export interface UnivariateSplineResult {
  * @returns The spline, its residual and knots.
  * @example
  * ```ts
- * import { univariateSpline } from 'whitebox-engine/numerics/interpolate'
+ * import { univariateSpline } from 'mdml-engine/numerics/interpolate'
  * const xs = Array.from({ length: 30 }, (_, i) => i / 5)
  * univariateSpline(xs, xs.map(Math.sin), { s: 1e-4 }).residual <= 1e-4 // => true
  * ```
@@ -182,7 +182,7 @@ export function univariateSpline(
   const k = options.k ?? 3
   const s = options.s ?? m
   const w = options.w ?? new Array<number>(m).fill(1)
-  if (m <= k) throw new WhiteboxError('value', `univariateSpline: degree ${k} needs more than ${k} points`)
+  if (m <= k) throw new MdmlError('value', `univariateSpline: degree ${k} needs more than ${k} points`)
   const lo = xs[0] ?? 0
   const hi = xs[m - 1] ?? 0
   const yp = toFlat(primalOf(yv))

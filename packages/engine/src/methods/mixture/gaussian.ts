@@ -4,7 +4,7 @@
  * diagonal or spherical covariances (M), from a k-means start and traced step by step. Also the BIC and AIC of a fit.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { multivariateNormal } from '../../lib/dists/index.ts'
 import { mixtureSteps } from '../../lib/exposition/index.ts'
 import {
@@ -257,7 +257,7 @@ export function initialMixture(
   const m = matrixView(x, 'gaussianMixture')
   const k = hyper.nComponents ?? 2
   if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-    throw new WhiteboxError('value', `gaussianMixture: nComponents must be in 1..${m.n}`)
+    throw new MdmlError('value', `gaussianMixture: nComponents must be in 1..${m.n}`)
   const init = hyper.init ?? 'kmeans'
   if (typeof init !== 'string')
     return {

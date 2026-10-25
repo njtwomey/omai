@@ -4,7 +4,7 @@
  * represents, and the ostinato consensus motif shared by several series. As in stumpy.
  */
 
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import { mass, seriesOf } from '../../../lib/signal/index.ts'
 import type { TensorLike } from '../../../lib/tensor/index.ts'
 import { stump } from './algorithms.ts'
@@ -45,7 +45,7 @@ export interface MpdistOptions {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { mpdist } from 'whitebox-engine/methods/timeseries'
+ * import { mpdist } from 'mdml-engine/methods/timeseries'
  * const a = Array.from({ length: 30 }, (_, i) => Math.sin(i / 2))
  * mpdist(a, a.slice(5), 6) < 1e-6 // => true
  * ```
@@ -140,15 +140,14 @@ export interface Snippets {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { snippets } from 'whitebox-engine/methods/timeseries'
+ * import { snippets } from 'mdml-engine/methods/timeseries'
  * const t = Array.from({ length: 64 }, (_, i) => (i < 32 ? Math.sin(i) : Math.sign(Math.sin(i / 2))))
  * snippets(t, 8, 2).indices.length // => 2
  * ```
  */
 export function snippets(t: TensorLike, m: number, k: number, options: SnippetOptions = {}): Snippets {
   const ta = seriesOf(t, 'snippets')
-  if (m > Math.floor(ta.length / 2))
-    throw new WhiteboxError('value', 'snippets: m must be at most half the series length')
+  if (m > Math.floor(ta.length / 2)) throw new MdmlError('value', 'snippets: m must be at most half the series length')
   const s =
     options.s !== undefined
       ? Math.min(Math.trunc(options.s), m)
@@ -256,7 +255,7 @@ const isClose = (a: number, b: number): boolean => Math.abs(a - b) <= 1e-8 + 1e-
  * @concept matrix-profile
  * @example
  * ```ts
- * import { ostinato } from 'whitebox-engine/methods/timeseries'
+ * import { ostinato } from 'mdml-engine/methods/timeseries'
  * const motif = [0, 3, 1, 4, 1]
  * const a = [5, 2, 7, ...motif, 2, 2, 9, 1]
  * const b = [1, 8, 2, 6, 3, 7, ...motif, 4]
@@ -267,7 +266,7 @@ const isClose = (a: number, b: number): boolean => Math.abs(a - b) <= 1e-8 + 1e-
 export function ostinato(series: readonly TensorLike[], m: number): Ostinato {
   const ts = series.map((s) => seriesOf(s, 'ostinato'))
   const k = ts.length
-  if (k < 2) throw new WhiteboxError('value', 'ostinato: need at least two series')
+  if (k < 2) throw new MdmlError('value', 'ostinato: need at least two series')
   let bsfRadius = Number.POSITIVE_INFINITY
   let bsfSeries = 0
   let bsfIdx = 0

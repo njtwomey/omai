@@ -23,7 +23,7 @@ export interface DelayedImpactStudyOptions {
 }
 
 /**
- * The delayed impact of lending policies (`delayedImpact`, `repeatedDecisions` of `whitebox-engine/fairness`):
+ * The delayed impact of lending policies (`delayedImpact`, `repeatedDecisions` of `mdml-engine/fairness`):
  * each group's outcome curve (expected mean score change against its selection rate) with the maximum-utility,
  * demographic-parity and equal-opportunity selections marked, and each group's mean score over repeated rounds under a
  * policy. Exposition: two `curves` records.

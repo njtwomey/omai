@@ -4,7 +4,7 @@
  * post-hoc comparisons that follow them (as scikit-posthocs), the sign test and the Brunner-Munzel test.
  */
 
-import { type TestResult, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, type TestResult } from '../../base/index.ts'
 import { studentisedRange } from '../../dists/index.ts'
 import { item, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { chi2Sf, groupsOf, mat, normCdf, normSf, paired, rowsOf, sample, tCdf, tSf } from '../_util.ts'
@@ -70,7 +70,7 @@ export interface MannWhitneyOptions extends TestOptions {
  * @returns U1 and its p-value.
  * @example
  * ```ts
- * import { mannWhitneyU } from 'whitebox-engine/stats/tests'
+ * import { mannWhitneyU } from 'mdml-engine/stats/tests'
  * mannWhitneyU([1, 2, 3], [4, 5, 6]).statistic // => 0
  * mannWhitneyU([1, 2, 3], [4, 5, 6]).pValue // => 0.1
  * ```
@@ -165,7 +165,7 @@ function signedRankStatistic(d: Float64Array, zeroMethod: ZeroMethod): { rPlus: 
  * @returns The statistic and its p-value; the effect size is the matched-pairs rank-biserial correlation.
  * @example
  * ```ts
- * import { wilcoxon } from 'whitebox-engine/stats/tests'
+ * import { wilcoxon } from 'mdml-engine/stats/tests'
  * wilcoxon([1.5, 2, -0.5, 3, 4.5, 2.5]).pValue // => 0.0625
  * ```
  */
@@ -183,7 +183,7 @@ export function wilcoxon(x: TensorLike, y?: TensorLike, options: WilcoxonOptions
   const nZero = d.filter((v) => v === 0).length
   const kept = zeroMethod === 'wilcox' ? d.filter((v) => v !== 0) : d
   const count = kept.length
-  if (count === 0) throw new WhiteboxError('value', 'wilcoxon: every difference is zero')
+  if (count === 0) throw new MdmlError('value', 'wilcoxon: every difference is zero')
   const ties = tieTerm(Float64Array.from(kept, Math.abs))
   let mn = (count * (count + 1)) / 4
   let se = count * (count + 1) * (2 * count + 1)
@@ -243,7 +243,7 @@ export function wilcoxon(x: TensorLike, y?: TensorLike, options: WilcoxonOptions
  * @returns H and its p-value.
  * @example
  * ```ts
- * import { kruskal } from 'whitebox-engine/stats/tests'
+ * import { kruskal } from 'mdml-engine/stats/tests'
  * kruskal([[1, 2, 3], [4, 5, 6]]).statistic // => 3.857143
  * ```
  */
@@ -273,7 +273,7 @@ export function kruskal(groups: readonly TensorLike[]): TestResult {
 
 function rowRanks(name: string, data: TensorLike): { n: number; k: number; ranks: Float64Array; ties: number } {
   const { rows: n, cols: k, data: x } = rowsOf(name, data)
-  if (n < 1 || k < 2) throw new WhiteboxError('value', `${name}: needs a blocks x treatments matrix with k >= 2`)
+  if (n < 1 || k < 2) throw new MdmlError('value', `${name}: needs a blocks x treatments matrix with k >= 2`)
   const ranks = new Float64Array(n * k)
   let ties = 0
   for (let i = 0; i < n; i++) {
@@ -292,7 +292,7 @@ function rowRanks(name: string, data: TensorLike): { n: number; k: number; ranks
  * @returns The chi-square statistic and its p-value.
  * @example
  * ```ts
- * import { friedman } from 'whitebox-engine/stats/tests'
+ * import { friedman } from 'mdml-engine/stats/tests'
  * friedman([[1, 2, 3], [1, 3, 2], [1, 2, 3], [2, 1, 3]]).statistic // => 4.5
  * ```
  */
@@ -335,7 +335,7 @@ function rangeSf(k: number): (q: number) => number {
  * @returns The pairwise statistics and p-values.
  * @example
  * ```ts
- * import { nemenyiFriedman } from 'whitebox-engine/stats/tests'
+ * import { nemenyiFriedman } from 'mdml-engine/stats/tests'
  * nemenyiFriedman([[1, 2, 3], [1, 3, 2], [1, 2, 3], [2, 1, 3]]).statistic.shape // => [3, 3]
  * ```
  */
@@ -366,7 +366,7 @@ export function nemenyiFriedman(data: TensorLike): PosthocResult {
  * @returns The pairwise statistics and p-values.
  * @example
  * ```ts
- * import { nemenyi } from 'whitebox-engine/stats/tests'
+ * import { nemenyi } from 'mdml-engine/stats/tests'
  * nemenyi([[1, 2, 3], [4, 5, 6], [7, 8, 9]]).pValue.shape // => [3, 3]
  * ```
  */
@@ -407,7 +407,7 @@ export function nemenyi(groups: readonly TensorLike[]): PosthocResult {
  * @returns M and its p-value.
  * @example
  * ```ts
- * import { signTest } from 'whitebox-engine/stats/tests'
+ * import { signTest } from 'mdml-engine/stats/tests'
  * signTest([1, 2, 3, 4, 5, 6, 7, -1], 0).pValue // => 0.0703125
  * ```
  */
@@ -421,7 +421,7 @@ export function signTest(x: TensorLike, mu0 = 0, options: TestOptions = {}): Tes
     else if (v < mu0) neg++
   }
   const n = pos + neg
-  if (n === 0) throw new WhiteboxError('value', 'signTest: every value equals mu0')
+  if (n === 0) throw new MdmlError('value', 'signTest: every value equals mu0')
   const p =
     alternative === 'two-sided'
       ? binomTest(Math.min(pos, neg), n, 0.5).pValue
@@ -446,7 +446,7 @@ export function signTest(x: TensorLike, mu0 = 0, options: TestOptions = {}): Tes
  * @returns The W statistic and its p-value.
  * @example
  * ```ts
- * import { brunnerMunzel } from 'whitebox-engine/stats/tests'
+ * import { brunnerMunzel } from 'mdml-engine/stats/tests'
  * brunnerMunzel([1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 4, 1, 1], [3, 3, 4, 3, 1, 2, 3, 1, 1, 5, 4]).statistic // => 3.137467
  * ```
  */

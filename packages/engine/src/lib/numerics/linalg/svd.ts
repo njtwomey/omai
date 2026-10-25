@@ -165,8 +165,8 @@ export interface SvdResult {
  * @concept linear-algebra
  * @example
  * ```ts
- * import { svd } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { svd } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(svd([[3, 0], [0, -2]]).s) // => [3, 2]
  * ```
  */
@@ -183,8 +183,8 @@ export function svd(a: TensorLike, options: { readonly method?: SvdMethod } = {}
  * @returns The singular values, differentiable.
  * @example
  * ```ts
- * import { svdvals } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { svdvals } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(svdvals([[0, 2], [1, 0]])) // => [2, 1]
  * ```
  */
@@ -201,8 +201,8 @@ export function svdvals(a: TensorLike): Value {
  * @returns The pseudo-inverse `[..., n, m]`, differentiable where the rank is locally constant.
  * @example
  * ```ts
- * import { pinv } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pinv } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(pinv([[2, 0], [0, 0]])) // => [[0.5, 0], [0, 0]]
  * ```
  */
@@ -224,8 +224,8 @@ export function pinv(a: TensorLike, rtol?: number): Value {
  * @returns U_r diag(s_r) Vh_r, differentiable.
  * @example
  * ```ts
- * import { lowRankApproximation } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lowRankApproximation } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lowRankApproximation([[3, 0], [0, 1]], 1)) // => [[3, 0], [0, 0]]
  * ```
  */
@@ -246,7 +246,7 @@ export function lowRankApproximation(a: TensorLike, rank: number): Value {
  * @returns The basis `[n, nullity]`.
  * @example
  * ```ts
- * import { nullSpace } from 'whitebox-engine/numerics/linalg'
+ * import { nullSpace } from 'mdml-engine/numerics/linalg'
  * nullSpace([[1, 1]]).shape // => [2, 1]
  * ```
  */
@@ -273,8 +273,8 @@ export function nullSpace(a: TensorLike, rcond?: number): Value {
  * @returns `{ u, p }`, differentiable.
  * @example
  * ```ts
- * import { polar } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { polar } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(polar([[2, 0], [0, 3]]).p) // => [[2, 0], [0, 3]]
  * ```
  */

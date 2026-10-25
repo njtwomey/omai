@@ -1,10 +1,10 @@
 /**
  * The ALE entry: a fitted model's first-order accumulated local effect of a feature and the pure interaction of a pair.
  */
-import { WhiteboxError } from 'whitebox-engine/base'
-import { matrixView } from 'whitebox-engine/learn'
-import { aleEffects } from 'whitebox-engine/methods/explain'
-import { dict, int } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import { matrixView } from 'mdml-engine/learn'
+import { aleEffects } from 'mdml-engine/methods/explain'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { type ExplainedModel, fitModel, modelControl } from './_explain.ts'
 
@@ -27,7 +27,7 @@ export const accumulatedLocalEffects: HubEntry = defineEntry({
   }),
   run: ({ data, params, key }) => {
     const { fitted, learn, n } = fitModel(data, params['model'] as ExplainedModel, key)
-    if (n === 0) throw new WhiteboxError('value', 'accumulated-local-effects: no rows')
+    if (n === 0) throw new MdmlError('value', 'accumulated-local-effects: no rows')
     const d = matrixView(learn.x, 'explainability', { allowNaN: true }).d
     const f = Math.min(Number(params['feature']), d - 1)
     const g = Math.min(Number(params['partner']), d - 1)

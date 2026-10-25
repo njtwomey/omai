@@ -5,7 +5,7 @@
  * vertices for figures.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import type { Vec3 } from '../scene/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -25,7 +25,7 @@ import type { FloatImage } from './textures.ts'
  * @concept importance-sampling
  * @example
  * ```ts
- * import { cosineHemisphere } from 'whitebox-engine/graphics'
+ * import { cosineHemisphere } from 'mdml-engine/graphics'
  * cosineHemisphere(0, 0) // => [0, 0, 1]
  * ```
  */
@@ -46,8 +46,8 @@ export function cosineHemisphere(u1: number, u2: number): Vec3 {
  * @concept importance-sampling
  * @example
  * ```ts
- * import { sampleCosineHemisphere } from 'whitebox-engine/graphics'
- * import { key } from 'whitebox-engine/random'
+ * import { sampleCosineHemisphere } from 'mdml-engine/graphics'
+ * import { key } from 'mdml-engine/random'
  * sampleCosineHemisphere(key(0), [0, 1, 0], 100).every((d) => d[1] >= 0) // => true
  * ```
  */
@@ -100,7 +100,7 @@ function bounce(s: RayScene, p: PathState, u: ArrayLike<number>, offset: number,
     return { point: null, normal: null, object: -1, event: 'miss', throughput: p.throughput, radiance: p.radiance }
   }
   const o = s.objects[hit.object]
-  if (o === undefined) throw new WhiteboxError('value', 'pathTrace: hit an unknown object')
+  if (o === undefined) throw new MdmlError('value', 'pathTrace: hit an unknown object')
   const m = o.material
   const n = hit.frontFace ? hit.normal : scale3(hit.normal, -1)
   const d = p.ray.direction
@@ -199,8 +199,8 @@ export interface PathTracerState {
  * @concept path-tracing
  * @example
  * ```ts
- * import { material, pathTracerAlgorithm, pinholeCamera, rayScene, sphere } from 'whitebox-engine/graphics'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { material, pathTracerAlgorithm, pinholeCamera, rayScene, sphere } from 'mdml-engine/graphics'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const s = rayScene([{ shape: sphere([0, 0, 0], 1), material: material() }], { background: [1, 1, 1] })
  * runAlgorithm(pathTracerAlgorithm(s, pinholeCamera(), 4, 4, { samples: 3 }), { seed: 0, maxSteps: 10 }).steps // => 3
  * ```
@@ -215,10 +215,10 @@ export function pathTracerAlgorithm(
   const samples = options.samples ?? 16
   const maxBounces = options.maxBounces ?? 4
   if (!(Number.isInteger(samples) && samples >= 1 && Number.isInteger(maxBounces) && maxBounces >= 0)) {
-    throw new WhiteboxError('value', 'pathTrace: samples must be >= 1 and maxBounces >= 0')
+    throw new MdmlError('value', 'pathTrace: samples must be >= 1 and maxBounces >= 0')
   }
   if (!(Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0)) {
-    throw new WhiteboxError('value', 'pathTrace: the image size must be positive integers')
+    throw new MdmlError('value', 'pathTrace: the image size must be positive integers')
   }
   const n = width * height
   const per = uniformsPerBounce(s)
@@ -295,8 +295,8 @@ export function pathTracerAlgorithm(
  * @concept path-tracing
  * @example
  * ```ts
- * import { material, pathTrace, pinholeCamera, rayScene, sphere } from 'whitebox-engine/graphics'
- * import { key } from 'whitebox-engine/random'
+ * import { material, pathTrace, pinholeCamera, rayScene, sphere } from 'mdml-engine/graphics'
+ * import { key } from 'mdml-engine/random'
  * const s = rayScene([{ shape: sphere([0, 0, 0], 1), material: material({ albedo: [0.5, 0.5, 0.5] }) }], { background: [1, 1, 1] })
  * const r = pathTrace(s, pinholeCamera(), 4, 4, { key: key(0), samples: 4, jitter: false })
  * [r.image.rgb[3 * 5], r.image.rgb[0]] // => [0.5, 1]
@@ -329,12 +329,12 @@ export function pathTrace(
  * @param key - The key; bounce `b` draws its uniforms from `foldIn(key, b)`.
  * @param options - The most scattering events (default 4).
  * @returns The radiance carried back and the vertices.
- * @throws WhiteboxError with code `value` for a zero or non-finite direction or a negative bounce cap.
+ * @throws MdmlError with code `value` for a zero or non-finite direction or a negative bounce cap.
  * @concept path-tracing
  * @example
  * ```ts
- * import { material, rayScene, sphere, tracePath } from 'whitebox-engine/graphics'
- * import { key } from 'whitebox-engine/random'
+ * import { material, rayScene, sphere, tracePath } from 'mdml-engine/graphics'
+ * import { key } from 'mdml-engine/random'
  * const s = rayScene([{ shape: sphere([0, 0, 0], 1), material: material({ albedo: [0.5, 0.5, 0.5] }) }], { background: [1, 1, 1] })
  * const p = tracePath(s, { origin: [0, 0, 3], direction: [0, 0, -1] }, key(0))
  * [p.radiance, p.vertices.map((v) => v.event)] // => [[0.5, 0.5, 0.5], ['diffuse', 'miss']]
@@ -347,7 +347,7 @@ export function tracePath(
   options: { readonly maxBounces?: number } = {},
 ): { readonly radiance: Vec3; readonly vertices: readonly PathVertex[] } {
   const maxBounces = options.maxBounces ?? 4
-  if (!(Number.isInteger(maxBounces) && maxBounces >= 0)) throw new WhiteboxError('value', 'tracePath: maxBounces >= 0')
+  if (!(Number.isInteger(maxBounces) && maxBounces >= 0)) throw new MdmlError('value', 'tracePath: maxBounces >= 0')
   const per = uniformsPerBounce(s)
   const start: Ray = {
     origin: check3(ray.origin, 'the ray origin'),

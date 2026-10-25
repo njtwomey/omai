@@ -4,7 +4,7 @@
  * performance on a validation set.
  */
 
-import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import {
   type Estimator,
   type LearnData,
@@ -32,18 +32,18 @@ export type EstimatorSource = Estimator | ((params: SpaceValue) => Estimator)
  * @param source - An estimator, or a factory from configurations to estimators.
  * @param params - The configuration (a record of hyperparameters for `with`).
  * @returns The estimator.
- * @throws WhiteboxError with code `value` when an estimator is given a configuration that is not a record.
+ * @throws MdmlError with code `value` when an estimator is given a configuration that is not a record.
  * @example
  * ```ts
- * import { estimatorFor } from 'whitebox-engine/tune'
- * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
+ * import { estimatorFor } from 'mdml-engine/tune'
+ * import { standardScaler } from 'mdml-engine/learn/preprocessing'
  * estimatorFor(standardScaler(), { withMean: false }).hyper // => { withMean: false, withStd: true }
  * ```
  */
 export function estimatorFor(source: EstimatorSource, params: SpaceValue): Estimator {
   if (typeof source === 'function') return source(params)
   if (typeof params !== 'object' || params === null || Array.isArray(params))
-    throw new WhiteboxError('value', `${source.name}: a configuration of an estimator is a record of hyperparameters`)
+    throw new MdmlError('value', `${source.name}: a configuration of an estimator is a record of hyperparameters`)
   return source.with(params as Readonly<Record<string, unknown>>)
 }
 
@@ -123,11 +123,11 @@ function fitAndScore(
  * @concept cross-validation
  * @example
  * ```ts
- * import { estimatorObjective, tune, gridSampler } from 'whitebox-engine/tune'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { meanSquaredError } from 'whitebox-engine/metrics'
- * import { dict, choice } from 'whitebox-engine/space'
- * import { asTensor, full } from 'whitebox-engine/tensor'
+ * import { estimatorObjective, tune, gridSampler } from 'mdml-engine/tune'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { meanSquaredError } from 'mdml-engine/metrics'
+ * import { dict, choice } from 'mdml-engine/space'
+ * import { asTensor, full } from 'mdml-engine/tensor'
  * const constant = defineEstimator(
  *   { name: 'constant', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([asTensor(x).shape[0] ?? 0], h.c) }) },
  *   { c: 0 },
@@ -182,10 +182,10 @@ export function estimatorObjective(
  * @concept model-selection
  * @example
  * ```ts
- * import { holdoutObjective } from 'whitebox-engine/tune'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { meanSquaredError } from 'whitebox-engine/metrics'
- * import { asTensor, full } from 'whitebox-engine/tensor'
+ * import { holdoutObjective } from 'mdml-engine/tune'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { meanSquaredError } from 'mdml-engine/metrics'
+ * import { asTensor, full } from 'mdml-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([asTensor(x).shape[0] ?? 0], 0) }) }, {})
  * holdoutObjective(zero, { x: [[0], [1]], y: [0, 1] }, { x: [[0], [1]], y: [1, 1] }, { metric: meanSquaredError }).directions // => ['minimize']
  * ```

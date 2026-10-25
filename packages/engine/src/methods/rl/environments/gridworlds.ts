@@ -5,7 +5,7 @@
  * locked doors and traps, and the four-rooms domain used to study options.
  */
 
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import { foldIn, type Key, uniform } from '../../../lib/random/index.ts'
 import { type Env, type EnvDefinition, type Outcome, tabularEnv } from '../../../lib/rl/index.ts'
 import { type Scene, type SceneNode, scene, text } from '../../../lib/scene/index.ts'
@@ -88,8 +88,8 @@ function worldEnv(t: WorldTask, spec: GridEnvSpec): Env<number, number, number> 
  * @returns The map rows.
  * @example
  * ```ts
- * import { randomFrozenLakeMap } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { randomFrozenLakeMap } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * randomFrozenLakeMap(key(0), 5)[4]?.[4] // => 'G'
  * ```
  */
@@ -128,7 +128,7 @@ export function randomFrozenLakeMap(key: Key, size = 8, p = 0.8): string[] {
  * @returns The environment, with its `P` table as the model.
  * @example
  * ```ts
- * import { makeFrozenLake } from 'whitebox-engine/methods/rl'
+ * import { makeFrozenLake } from 'mdml-engine/methods/rl'
  * makeFrozenLake({ mapName: '8x8' }).observationSpace // => { kind: 'discrete', n: 64, label: 'cell (row * ncol + col)' }
  * ```
  */
@@ -158,8 +158,8 @@ const frozenOptions = dict({
  * @concept environments
  * @example
  * ```ts
- * import { frozenLake } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { frozenLake } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * frozenLake.create().reset(key(0)).observation // => 0
  * ```
  */
@@ -176,7 +176,7 @@ export const frozenLake: EnvDefinition<number, number, number> = {
  * @concept environments
  * @example
  * ```ts
- * import { frozenLake8x8 } from 'whitebox-engine/methods/rl'
+ * import { frozenLake8x8 } from 'mdml-engine/methods/rl'
  * frozenLake8x8.create().spec.maxEpisodeSteps // => 200
  * ```
  */
@@ -201,8 +201,8 @@ export const frozenLake8x8: EnvDefinition<number, number, number> = {
  * @returns The environment, with its `P` table as the model.
  * @example
  * ```ts
- * import { makeCliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { makeCliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * makeCliffWalking().step(36, 1, key(0)).reward // => -100
  * ```
  */
@@ -225,8 +225,8 @@ export function makeCliffWalking(
  * @concept environments
  * @example
  * ```ts
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * cliffWalking.create().reset(key(0)).observation // => 36
  * ```
  */
@@ -243,7 +243,7 @@ export const cliffWalking: EnvDefinition<number, number, number> = {
  * @concept environments
  * @example
  * ```ts
- * import { cliffWalkingSlippery } from 'whitebox-engine/methods/rl'
+ * import { cliffWalkingSlippery } from 'mdml-engine/methods/rl'
  * cliffWalkingSlippery.create().model?.transitions(0, 0).length // => 3
  * ```
  */
@@ -276,7 +276,7 @@ export interface GridWorldOptions {
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeGridWorld } from 'whitebox-engine/methods/rl'
+ * import { makeGridWorld } from 'mdml-engine/methods/rl'
  * makeGridWorld().observationSpace // => { kind: 'discrete', n: 12, label: 'cell (row * ncol + col)' }
  * ```
  */
@@ -297,8 +297,8 @@ export function makeGridWorld(options: GridWorldOptions = {}): Env<number, numbe
  * @concept environments
  * @example
  * ```ts
- * import { gridWorld } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { gridWorld } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * gridWorld.create().reset(key(0)).observation // => 8
  * ```
  */
@@ -333,7 +333,7 @@ export interface WindyGridWorldOptions {
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeWindyGridWorld } from 'whitebox-engine/methods/rl'
+ * import { makeWindyGridWorld } from 'mdml-engine/methods/rl'
  * makeWindyGridWorld({ kingsMoves: true }).actionSpace // => { kind: 'discrete', n: 8, label: 'up, right, down, left, then diagonals' }
  * ```
  */
@@ -358,8 +358,8 @@ export function makeWindyGridWorld(options: WindyGridWorldOptions = {}): Env<num
  * @concept environments
  * @example
  * ```ts
- * import { windyGridWorld } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { windyGridWorld } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * windyGridWorld.create().step(33, 1, key(0)).observation // => 24
  * ```
  */
@@ -394,7 +394,7 @@ const URDL: readonly (readonly [number, number])[] = [
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeKeyMaze } from 'whitebox-engine/methods/rl'
+ * import { makeKeyMaze } from 'mdml-engine/methods/rl'
  * makeKeyMaze().observationSpace // => { kind: 'discrete', n: 108, label: 'cell + cells * hasKey' }
  * ```
  */
@@ -437,7 +437,7 @@ export function makeKeyMaze(
     .join('')
     .split('')
     .flatMap((ch, i) => (ch === 'S' ? [i] : []))
-  if (starts.length === 0) throw new WhiteboxError('value', 'keyMaze: the map has no start cell S')
+  if (starts.length === 0) throw new MdmlError('value', 'keyMaze: the map has no start cell S')
   for (const s of starts) initial[s] = 1 / starts.length
   return tabularEnv({
     id: 'KeyMaze-v0',
@@ -465,8 +465,8 @@ export function makeKeyMaze(
  * @concept environments
  * @example
  * ```ts
- * import { keyMaze } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { keyMaze } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * keyMaze.create().reset(key(0)).observation // => 10
  * ```
  */
@@ -488,7 +488,7 @@ export const keyMaze: EnvDefinition<number, number, number> = {
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeFourRooms } from 'whitebox-engine/methods/rl'
+ * import { makeFourRooms } from 'mdml-engine/methods/rl'
  * makeFourRooms().observationSpace.kind // => 'discrete'
  * ```
  */
@@ -512,7 +512,7 @@ export function makeFourRooms(
  * @concept environments
  * @example
  * ```ts
- * import { fourRooms } from 'whitebox-engine/methods/rl'
+ * import { fourRooms } from 'mdml-engine/methods/rl'
  * fourRooms.create().observationSpace // => { kind: 'discrete', n: 104, label: 'free cell index' }
  * ```
  */

@@ -271,7 +271,7 @@ function run<S extends { readonly solution: StandardSolution; readonly finished:
  * @concept linear-programming
  * @example
  * ```ts
- * import { linprogSimplex } from 'whitebox-engine/optim'
+ * import { linprogSimplex } from 'mdml-engine/optim'
  * const r = linprogSimplex({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
  * [r.status, r.fun] // => ['optimal', -5]
  * ```
@@ -293,7 +293,7 @@ export function linprogSimplex(problem: LinearProgram, options: LinprogOptions =
  * @concept linear-programming
  * @example
  * ```ts
- * import { linprogInteriorPoint } from 'whitebox-engine/optim'
+ * import { linprogInteriorPoint } from 'mdml-engine/optim'
  * const r = linprogInteriorPoint({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
  * Math.round(r.fun * 1e6) / 1e6 // => -5
  * ```
@@ -319,8 +319,8 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
  * @concept linear-programming
  * @example
  * ```ts
- * import { linprog } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { linprog } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * const r = linprog({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
  * toArray(r.x) // => [3, 1]
  * toArray(r.marginals.ineqlin) // => [-0.5, -0.5]

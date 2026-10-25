@@ -4,7 +4,7 @@
  * `decimate` as the default choice.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
+import { MdmlError } from 'mdml-engine/base'
 
 /** A point `[x, y]`. */
 export type XY = readonly [number, number]
@@ -17,17 +17,17 @@ export type XY = readonly [number, number]
  * @param points - The points, in increasing x.
  * @param threshold - How many points to keep (at least 3; at or above the input length returns it unchanged).
  * @returns The kept points.
- * @throws WhiteboxError with code `value` for a threshold below 3.
+ * @throws MdmlError with code `value` for a threshold below 3.
  * @example
  * ```ts
- * import { lttb } from 'whitebox-render/charts'
+ * import { lttb } from 'mdml-render/charts'
  * lttb([[0, 0], [1, 5], [2, 0], [3, 1], [4, 0]], 3) // => [[0, 0], [1, 5], [4, 0]]
  * ```
  */
 export function lttb(points: readonly XY[], threshold: number): XY[] {
   const n = points.length
   if (threshold >= n) return [...points]
-  if (!(threshold >= 3)) throw new WhiteboxError('value', 'lttb: keep at least 3 points')
+  if (!(threshold >= 3)) throw new MdmlError('value', 'lttb: keep at least 3 points')
   const out: XY[] = [points[0] as XY]
   const every = (n - 2) / (threshold - 2)
   let a = 0
@@ -72,7 +72,7 @@ export function lttb(points: readonly XY[], threshold: number): XY[] {
  * @returns The kept points.
  * @example
  * ```ts
- * import { minMaxDecimate } from 'whitebox-render/charts'
+ * import { minMaxDecimate } from 'mdml-render/charts'
  * minMaxDecimate([[0, 1], [1, 3], [2, 2], [3, 0], [4, 1], [5, 2]], 1) // => [[0, 1], [1, 3], [3, 0], [5, 2]]
  * ```
  */
@@ -108,7 +108,7 @@ export function minMaxDecimate(points: readonly XY[], buckets: number): XY[] {
  * @returns The kept x and y values.
  * @example
  * ```ts
- * import { decimate } from 'whitebox-render/charts'
+ * import { decimate } from 'mdml-render/charts'
  * decimate(Array.from({ length: 10000 }, (_, i) => Math.sin(i / 100)), 500).x.length // => 500
  * ```
  */

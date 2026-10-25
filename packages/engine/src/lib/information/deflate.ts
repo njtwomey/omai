@@ -4,7 +4,7 @@
  * level), and the CRC-32 and Adler-32 checksums they use.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { bitSink, type DeflateStrategy, deflateRaw } from './_deflate.ts'
 
 export type { DeflateStrategy } from './_deflate.ts'
@@ -17,11 +17,11 @@ export type ByteInput = Uint8Array | ArrayLike<number> | string
  *
  * @param input - Bytes, byte values or a string.
  * @returns The bytes (the input itself when it is already a Uint8Array).
- * @throws WhiteboxError with code `value` for values that are not bytes.
+ * @throws MdmlError with code `value` for values that are not bytes.
  * @concept deflate
  * @example
  * ```ts
- * import { asBytes } from 'whitebox-engine/information'
+ * import { asBytes } from 'mdml-engine/information'
  * Array.from(asBytes('hé')) // => [104, 195, 169]
  * ```
  */
@@ -31,7 +31,7 @@ export function asBytes(input: ByteInput): Uint8Array {
   const out = new Uint8Array(input.length)
   for (let i = 0; i < input.length; i++) {
     const b = input[i] ?? 0
-    if (!Number.isInteger(b) || b < 0 || b > 255) throw new WhiteboxError('value', `bytes: ${b} is not a byte`)
+    if (!Number.isInteger(b) || b < 0 || b > 255) throw new MdmlError('value', `bytes: ${b} is not a byte`)
     out[i] = b
   }
   return out
@@ -52,7 +52,7 @@ const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, n) => {
  * @concept checksums
  * @example
  * ```ts
- * import { crc32 } from 'whitebox-engine/information'
+ * import { crc32 } from 'mdml-engine/information'
  * crc32('123456789') // => 3421780262
  * ```
  */
@@ -72,7 +72,7 @@ export function crc32(input: ByteInput, crc = 0): number {
  * @concept checksums
  * @example
  * ```ts
- * import { adler32 } from 'whitebox-engine/information'
+ * import { adler32 } from 'mdml-engine/information'
  * adler32('Wikipedia') // => 300286872
  * ```
  */
@@ -102,7 +102,7 @@ export interface DeflateOptions {
 
 function checkLevel(level: number): void {
   if (!Number.isInteger(level) || level < 0 || level > 9)
-    throw new WhiteboxError('value', `deflate: level must be an integer from 0 to 9, got ${level}`)
+    throw new MdmlError('value', `deflate: level must be an integer from 0 to 9, got ${level}`)
 }
 
 /**
@@ -117,7 +117,7 @@ function checkLevel(level: number): void {
  * @concept deflate
  * @example
  * ```ts
- * import { deflate, inflate } from 'whitebox-engine/information'
+ * import { deflate, inflate } from 'mdml-engine/information'
  * const packed = deflate('abcabcabcabcabcabc')
  * packed.length // => 7
  * new TextDecoder().decode(inflate(packed)) // => 'abcabcabcabcabcabc'
@@ -186,7 +186,7 @@ function inflateAt(data: Uint8Array, start: number): { readonly output: Uint8Arr
   let out = new Uint8Array(Math.max(1024, 4 * (data.length - start)))
   let size = 0
   const fail = (why: string): never => {
-    throw new WhiteboxError('value', `inflate: ${why}`)
+    throw new MdmlError('value', `inflate: ${why}`)
   }
   const push = (b: number): void => {
     if (size === out.length) {
@@ -300,11 +300,11 @@ function inflateAt(data: Uint8Array, start: number): { readonly output: Uint8Arr
  *
  * @param input - The compressed bytes.
  * @returns The decompressed bytes.
- * @throws WhiteboxError with code `value` for invalid or truncated data.
+ * @throws MdmlError with code `value` for invalid or truncated data.
  * @concept deflate
  * @example
  * ```ts
- * import { inflate } from 'whitebox-engine/information'
+ * import { inflate } from 'mdml-engine/information'
  * // A fixed-Huffman block holding 'a'.
  * Array.from(inflate([0x4b, 0x04, 0x00])) // => [97]
  * ```
@@ -323,7 +323,7 @@ export function inflate(input: ByteInput): Uint8Array {
  * @concept deflate
  * @example
  * ```ts
- * import { zlibCompress } from 'whitebox-engine/information'
+ * import { zlibCompress } from 'mdml-engine/information'
  * Array.from(zlibCompress('')) // => [120, 156, 3, 0, 0, 0, 0, 1]
  * ```
  */
@@ -361,27 +361,27 @@ export function zlibCompress(input: ByteInput, options: DeflateOptions = {}): Ui
  *
  * @param input - The zlib stream.
  * @returns The decompressed bytes.
- * @throws WhiteboxError with code `value` for a bad header, a preset dictionary, corrupt data or a checksum mismatch.
+ * @throws MdmlError with code `value` for a bad header, a preset dictionary, corrupt data or a checksum mismatch.
  * @concept deflate
  * @example
  * ```ts
- * import { zlibCompress, zlibDecompress } from 'whitebox-engine/information'
+ * import { zlibCompress, zlibDecompress } from 'mdml-engine/information'
  * new TextDecoder().decode(zlibDecompress(zlibCompress('hello, hello'))) // => 'hello, hello'
  * ```
  */
 export function zlibDecompress(input: ByteInput): Uint8Array {
   const data = asBytes(input)
-  if (data.length < 6) throw new WhiteboxError('value', 'zlibDecompress: stream too short')
+  if (data.length < 6) throw new MdmlError('value', 'zlibDecompress: stream too short')
   const cmf = data[0] ?? 0
   const flg = data[1] ?? 0
   if ((cmf & 0x0f) !== 8 || cmf >> 4 > 7 || ((cmf << 8) | flg) % 31 !== 0)
-    throw new WhiteboxError('value', 'zlibDecompress: invalid header')
-  if (flg & 0x20) throw new WhiteboxError('value', 'zlibDecompress: preset dictionaries are not supported')
+    throw new MdmlError('value', 'zlibDecompress: invalid header')
+  if (flg & 0x20) throw new MdmlError('value', 'zlibDecompress: preset dictionaries are not supported')
   const { output, end } = inflateAt(data, 2)
-  if (end + 4 > data.length) throw new WhiteboxError('value', 'zlibDecompress: missing Adler-32 trailer')
+  if (end + 4 > data.length) throw new MdmlError('value', 'zlibDecompress: missing Adler-32 trailer')
   const want =
     (((data[end] ?? 0) << 24) | ((data[end + 1] ?? 0) << 16) | ((data[end + 2] ?? 0) << 8) | (data[end + 3] ?? 0)) >>> 0
-  if (adler32(output) !== want) throw new WhiteboxError('value', 'zlibDecompress: Adler-32 mismatch')
+  if (adler32(output) !== want) throw new MdmlError('value', 'zlibDecompress: Adler-32 mismatch')
   return output
 }
 
@@ -406,7 +406,7 @@ export interface GzipOptions extends DeflateOptions {
  * @concept deflate
  * @example
  * ```ts
- * import { gzipCompress } from 'whitebox-engine/information'
+ * import { gzipCompress } from 'mdml-engine/information'
  * Array.from(gzipCompress('', { level: 9 }).subarray(0, 10)) // => [31, 139, 8, 0, 0, 0, 0, 0, 2, 255]
  * ```
  */
@@ -442,11 +442,11 @@ export function gzipCompress(input: ByteInput, options: GzipOptions = {}): Uint8
  *
  * @param input - The gzip bytes.
  * @returns The concatenated decompressed members.
- * @throws WhiteboxError with code `value` for a bad header, corrupt data or a trailer mismatch.
+ * @throws MdmlError with code `value` for a bad header, corrupt data or a trailer mismatch.
  * @concept deflate
  * @example
  * ```ts
- * import { gzipCompress, gzipDecompress } from 'whitebox-engine/information'
+ * import { gzipCompress, gzipDecompress } from 'mdml-engine/information'
  * new TextDecoder().decode(gzipDecompress(gzipCompress('gzip me', { name: 'a.txt' }))) // => 'gzip me'
  * ```
  */
@@ -455,7 +455,7 @@ export function gzipDecompress(input: ByteInput): Uint8Array {
   const parts: Uint8Array[] = []
   let pos = 0
   const fail = (why: string): never => {
-    throw new WhiteboxError('value', `gzipDecompress: ${why}`)
+    throw new MdmlError('value', `gzipDecompress: ${why}`)
   }
   do {
     if (pos + 10 > data.length) fail('truncated header')

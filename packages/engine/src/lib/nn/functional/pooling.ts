@@ -4,7 +4,7 @@
  * output size, and global average and max pooling.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { im2col, padArray } from '../../numerics/convolution/index.ts'
 import {
   abs,
@@ -87,14 +87,13 @@ function geometry(
   name: string,
 ): Geometry {
   const d = typeof kernelSize === 'number' ? x.shape.length - 2 : kernelSize.length
-  if (d < 1 || x.shape.length !== d + 2)
-    throw new WhiteboxError('shape', `${name}: input must be [B, C, ...${d} spatial]`)
+  if (d < 1 || x.shape.length !== d + 2) throw new MdmlError('shape', `${name}: input must be [B, C, ...${d} spatial]`)
   const kernel = spread(kernelSize, d, 1)
   const stride = spread(options.stride, d, kernel)
   const padding = spread(options.padding, d, 0)
   const dilation = spread(options.dilation, d, 1)
   if (padding.some((p, i) => p > (kernel[i] ?? 1) / 2))
-    throw new WhiteboxError('value', `${name}: padding must be at most half the kernel size`)
+    throw new MdmlError('value', `${name}: padding must be at most half the kernel size`)
   const spatial = x.shape.slice(2)
   const out: number[] = []
   const extra: number[] = []
@@ -107,7 +106,7 @@ function geometry(
     let o = (options.ceilMode === true ? Math.ceil(num / s) : Math.floor(num / s)) + 1
     // A window must start inside the input or the left padding (PyTorch's rule).
     if (options.ceilMode === true && (o - 1) * s >= n + p) o -= 1
-    if (o < 1) throw new WhiteboxError('shape', `${name}: the kernel is larger than the padded input`)
+    if (o < 1) throw new MdmlError('shape', `${name}: the kernel is larger than the padded input`)
     out.push(o)
     extra.push(Math.max(0, (o - 1) * s + span - (n + 2 * p)))
   }
@@ -142,8 +141,8 @@ function unbatched(x: Value, kernelSize: SpatialSize, f: (v: Value) => Value): V
  * @concept pooling
  * @example
  * ```ts
- * import { maxPool } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { maxPool } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(maxPool([[[1, 3, 2, 5, 4]]], 2)) // => [[[3, 5]]]
  * ```
  */
@@ -166,8 +165,8 @@ export function maxPool(input: TensorLike, kernelSize: SpatialSize, options: Max
  * @returns The pooled values and int32 indices, both `[B, C, *O]`.
  * @example
  * ```ts
- * import { maxPoolWithIndices } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { maxPoolWithIndices } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(maxPoolWithIndices([[[1, 3, 2, 5, 4]]], 2).indices) // => [[[1, 3]]]
  * ```
  */
@@ -225,8 +224,8 @@ export interface MaxUnpoolOptions {
  * @returns `[B, C, *S]`, differentiable in `input`.
  * @example
  * ```ts
- * import { maxUnpool } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { maxUnpool } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(maxUnpool([[[3, 5]]], [[[1, 3]]], [2])) // => [[[0, 3, 0, 5]]]
  * ```
  */
@@ -261,8 +260,8 @@ export function maxUnpool(
  * @concept pooling
  * @example
  * ```ts
- * import { avgPool } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { avgPool } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(avgPool([[[1, 3, 2, 6]]], 2)) // => [[[2, 4]]]
  * ```
  */
@@ -311,8 +310,8 @@ export interface LpPoolOptions {
  * @returns `[B, C, *O]`.
  * @example
  * ```ts
- * import { lpPool } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lpPool } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lpPool([[[3, 4]]], 2, 2)) // => [[[5]]]
  * ```
  */
@@ -366,8 +365,8 @@ function adaptive(
  * @concept pooling
  * @example
  * ```ts
- * import { adaptiveAvgPool } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { adaptiveAvgPool } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(adaptiveAvgPool([[[1, 2, 3, 4, 5]]], 2)) // => [[[2, 4]]]
  * ```
  */
@@ -389,8 +388,8 @@ export function adaptiveAvgPool(input: TensorLike, outputSize: number | readonly
  * @returns `[B, C, *outputSize]`.
  * @example
  * ```ts
- * import { adaptiveMaxPool } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { adaptiveMaxPool } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(adaptiveMaxPool([[[1, 5, 3, 2, 4]]], 2)) // => [[[5, 4]]]
  * ```
  */
@@ -411,8 +410,8 @@ export function adaptiveMaxPool(input: TensorLike, outputSize: number | readonly
  * @returns `[B, C]` or `[B, C, 1, ...]`.
  * @example
  * ```ts
- * import { globalAvgPool } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { globalAvgPool } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(globalAvgPool([[[[1, 2], [3, 6]]]])) // => [[3]]
  * ```
  */
@@ -433,8 +432,8 @@ export function globalAvgPool(input: TensorLike, keepDims = false): Value {
  * @returns `[B, C]` or `[B, C, 1, ...]`.
  * @example
  * ```ts
- * import { globalMaxPool } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { globalMaxPool } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(globalMaxPool([[[[1, 2], [3, 6]]]])) // => [[6]]
  * ```
  */

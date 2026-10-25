@@ -5,7 +5,7 @@
  * draws.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { type AliasTable, aliasSample, type Key, uniform, uniformStream } from '../random/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../tensor/index.ts'
@@ -37,12 +37,12 @@ export interface InverseTransformStep {
  * @param quantile - F^-1, or a scalar distribution.
  * @param options - Whether to record the (u, x) pairs.
  * @returns The draws `[n]` and, with `steps`, each uniform and its image.
- * @throws WhiteboxError with code `value` for a negative or fractional n.
+ * @throws MdmlError with code `value` for a negative or fractional n.
  * @concept inverse-transform-sampling
  * @example
  * ```ts
- * import { inverseTransformSample } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { inverseTransformSample } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * // Exponential(1): F^-1(u) = -log(1 - u).
  * const r = inverseTransformSample(key(0), 3, (u) => -Math.log(1 - u), { steps: true })
  * r.steps?.every((s) => Math.abs(s.x + Math.log(1 - s.u)) < 1e-15) // => true
@@ -67,7 +67,7 @@ export function inverseTransformSample(
 }
 
 function checkN(n: number, name: string): void {
-  if (!(Number.isInteger(n) && n >= 0)) throw new WhiteboxError('value', `${name}: n must be a non-negative integer`)
+  if (!(Number.isInteger(n) && n >= 0)) throw new MdmlError('value', `${name}: n must be a non-negative integer`)
 }
 
 /** Options of {@link inverseTransformFromCdf}. */
@@ -100,8 +100,8 @@ export interface CdfInversionStep {
  * @concept inverse-transform-sampling
  * @example
  * ```ts
- * import { inverseTransformFromCdf } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { inverseTransformFromCdf } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * // The logistic distribution: F(x) = 1 / (1 + e^-x), F^-1(u) = log(u / (1 - u)).
  * const r = inverseTransformFromCdf(key(0), 4, (x) => 1 / (1 + Math.exp(-x)), { steps: true })
  * r.steps?.every((s) => Math.abs(s.x - Math.log(s.u / (1 - s.u))) < 1e-9) // => true
@@ -159,12 +159,12 @@ export interface DiscreteInverseStep {
  * @param probabilities - Non-negative weights (normalised here).
  * @param options - Whether to record each search.
  * @returns The indices `[n]` (as float64) and, with `steps`, each uniform and its search.
- * @throws WhiteboxError with code `value` for negative weights or weights summing to zero.
+ * @throws MdmlError with code `value` for negative weights or weights summing to zero.
  * @concept inverse-transform-sampling
  * @example
  * ```ts
- * import { discreteInverseTransform } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { discreteInverseTransform } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * Array.from(discreteInverseTransform(key(0), 5, [0, 0, 1]).samples.data) // => [2, 2, 2, 2, 2]
  * ```
  */
@@ -177,7 +177,7 @@ export function discreteInverseTransform(
   checkN(n, 'discreteInverseTransform')
   const total = probabilities.reduce((a, b) => a + b, 0)
   if (!probabilities.every((p) => p >= 0) || !(total > 0)) {
-    throw new WhiteboxError('value', 'discreteInverseTransform: weights must be non-negative with a positive sum')
+    throw new MdmlError('value', 'discreteInverseTransform: weights must be non-negative with a positive sum')
   }
   const u = uniform(key, [n]).data
   const steps: DiscreteInverseStep[] = []
@@ -219,8 +219,8 @@ export interface BoxMullerStep {
  *   Mathematical Statistics 1958).
  * @example
  * ```ts
- * import { boxMuller } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { boxMuller } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const r = boxMuller(key(0), 2, { steps: true })
  * const s = r.steps?.[0]
  * Math.abs((s?.z1 ?? 0) ** 2 + (s?.z2 ?? 0) ** 2 + 2 * Math.log(1 - (s?.u1 ?? 0))) < 1e-12 // => true
@@ -269,8 +269,8 @@ export interface PolarStep {
  * @reference G. Marsaglia and T. A. Bray, A convenient method for generating normal variables (SIAM Review 1964).
  * @example
  * ```ts
- * import { marsagliaPolar } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { marsagliaPolar } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const r = marsagliaPolar(key(0), 2000, { steps: true })
  * const rate = (r.steps ?? []).filter((s) => s.accepted).length / (r.steps?.length ?? 1)
  * Math.abs(rate - Math.PI / 4) < 0.04 // => true
@@ -318,13 +318,13 @@ export interface AliasStep {
  * @param weights - Non-negative weights.
  * @param options - Whether to return the construction steps.
  * @returns The draws `[n]` (as float64), the table and, with `steps`, the construction.
- * @throws WhiteboxError with code `value` for negative weights or weights summing to zero.
+ * @throws MdmlError with code `value` for negative weights or weights summing to zero.
  * @concept alias-method
  * @reference M. D. Vose, A linear algorithm for generating random numbers with a given distribution (IEEE TSE 1991).
  * @example
  * ```ts
- * import { aliasMethod } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { aliasMethod } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const r = aliasMethod(key(0), 10, [1, 3], { steps: true })
  * Array.from(r.table.alias) // => [1, 1]
  * r.steps?.length // => 1
@@ -340,7 +340,7 @@ export function aliasMethod(
   const k = weights.length
   const total = weights.reduce((a, b) => a + b, 0)
   if (k === 0 || !weights.every((w) => w >= 0) || !(total > 0)) {
-    throw new WhiteboxError('value', 'aliasMethod: weights must be non-negative with a positive sum')
+    throw new MdmlError('value', 'aliasMethod: weights must be non-negative with a positive sum')
   }
   const scaled = weights.map((w) => (w * k) / total)
   const probability = new Float64Array(k)

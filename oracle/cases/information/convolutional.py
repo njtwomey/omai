@@ -1,15 +1,15 @@
 """Convolutional encoding against scikit-commpy (its Viterbi decoder is not used: it fails under numpy 2, so the
 decoder is checked against brute-force maximum likelihood in the TypeScript tests).
 
-whitebox-js writes generators with the most significant bit on the current input (as MATLAB's poly2trellis and most
+mdml-js writes generators with the most significant bit on the current input (as MATLAB's poly2trellis and most
 textbooks); commpy puts the current input on the least significant bit, so its generators are the bit reversals."""
 
 import importlib.metadata
 import warnings
 
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")

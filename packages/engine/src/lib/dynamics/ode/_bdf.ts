@@ -1,5 +1,5 @@
 // Variable-order BDF/NDF: scipy's BDF ported, with an implicit-function correction for traced steps.
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { LuFactorisation } from '../../numerics/linalg/index.ts'
 import { isTensor, type Value } from '../../tensor/index.ts'
 import {
@@ -109,7 +109,7 @@ function failed(s: BdfState, c: Counter, attempts: StepAttempt[], message: strin
 
 /** One accepted BDF step (with any rejections before it), following scipy's `BDF._step_impl`. */
 export function bdfStep(s: BdfState, cfg: ImplicitConfig): BdfState {
-  if (s.status !== 'running') throw new WhiteboxError('value', 'bdf: the integration has ended')
+  if (s.status !== 'running') throw new MdmlError('value', 'bdf: the integration has ended')
   if (atBound(s)) return { ...s, tOld: s.t, t: s.tBound, status: 'finished', attempts: [] }
   const c: Counter = { ...s.counts }
   const f = tally(s.f, c)

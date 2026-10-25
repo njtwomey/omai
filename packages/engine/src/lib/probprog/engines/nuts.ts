@@ -4,7 +4,7 @@
  * those discrete sites back with `inferDiscrete`. Also the engine for the planner.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { categorical as drawCategorical, foldIn, type Key } from '../../random/index.ts'
 import { type Chains, diagnose, hmc, nuts } from '../../sampling/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
@@ -37,10 +37,10 @@ import { type EngineRunOptions, feasibility, type InferenceEngine } from './engi
  * @concept exact-inference
  * @example
  * ```ts
- * import { inferDiscrete, observe, sample } from 'whitebox-engine/probprog'
- * import { bernoulli, normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { item } from 'whitebox-engine/tensor'
+ * import { inferDiscrete, observe, sample } from 'mdml-engine/probprog'
+ * import { bernoulli, normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => { const c = sample('c', bernoulli({ probs: 0.5 })); observe('y', normal(c, 0.01), 1) }
  * item(inferDiscrete(model, undefined, {}, key(0))['c'] ?? 0) // => 1
  * ```
@@ -62,7 +62,7 @@ export function inferDiscrete<D = void>(
     const { factors, sumVars, scales } = traceFactors(t, depth)
     const { marginals } = enumeratedMarginals(factors, sumVars, scales)
     const mg = marginals.get(next.name)
-    if (mg === undefined) throw new WhiteboxError('value', `inferDiscrete: no marginal for ${next.name}`)
+    if (mg === undefined) throw new MdmlError('value', `inferDiscrete: no marginal for ${next.name}`)
     const probs = primalOf(mg.probs)
     const k = probs.shape[probs.shape.length - 1] ?? 1
     const batch = probs.shape.slice(0, -1)
@@ -81,7 +81,7 @@ export function inferDiscrete<D = void>(
     )
     fixed[next.name] = fromStorage(out, own.reduce((a, b) => a * b, 1) === count ? own : batch, 'float64')
   }
-  throw new WhiteboxError('value', 'inferDiscrete: too many enumerated sites')
+  throw new MdmlError('value', 'inferDiscrete: too many enumerated sites')
 }
 
 /** Options of {@link mcmc}. */
@@ -135,9 +135,9 @@ function failed(engine: string, reason: string, extra: Readonly<Record<string, J
  * @concept nuts
  * @example
  * ```ts
- * import { mcmc, observe, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { mcmc, observe, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const model = () => { const mu = sample('mu', normal(0, 1)); observe('y', normal(mu, 1), 1) }
  * const post = mcmc(model, undefined, { key: key(0), numChains: 1, numWarmup: 100, numDraws: 100 })
  * post.draws?.['mu']?.shape // => [100]
@@ -235,7 +235,7 @@ export function mcmc<D = void>(model: Model<D>, data: D, options: McmcOptions & 
  * @concept inference-engines
  * @example
  * ```ts
- * import { nutsEngine } from 'whitebox-engine/probprog'
+ * import { nutsEngine } from 'mdml-engine/probprog'
  * nutsEngine({ numDraws: 200 }).name // => 'nuts'
  * ```
  */

@@ -3,12 +3,12 @@
  * trains.
  */
 
-import { take } from 'whitebox-engine/data'
-import { digits } from 'whitebox-engine/datasets'
-import type { Exposition } from 'whitebox-engine/exposition'
-import type { LearnData } from 'whitebox-engine/learn'
-import { lenet as lenetMethod } from 'whitebox-engine/methods/neural/vision'
-import { choice, dict, int, real, type SpaceValue } from 'whitebox-engine/space'
+import { take } from 'mdml-engine/data'
+import { digits } from 'mdml-engine/datasets'
+import type { Exposition } from 'mdml-engine/exposition'
+import type { LearnData } from 'mdml-engine/learn'
+import { lenet as lenetMethod } from 'mdml-engine/methods/neural/vision'
+import { choice, dict, int, real, type SpaceValue } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 const num = (v: SpaceValue | undefined, fallback: number): number => (typeof v === 'number' ? v : fallback)

@@ -5,7 +5,7 @@
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { qr } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import { type DictSpace, dict, real } from '../space/index.ts'
@@ -90,13 +90,13 @@ const box = (d: number, lo: number, hi: number): [number, number][] => Array.fro
  * @returns The test function.
  * @example
  * ```ts
- * import { rosenbrock } from 'whitebox-engine/datasets'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { rosenbrock } from 'mdml-engine/datasets'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(rosenbrock().f(tensor([0, 0]))) // => 1
  * ```
  */
 export function rosenbrock(dim = 2): TestFunction {
-  if (dim < 2) throw new WhiteboxError('value', 'rosenbrock: needs at least two dimensions')
+  if (dim < 2) throw new MdmlError('value', 'rosenbrock: needs at least two dimensions')
   const f = (x: Value): Value => {
     const last = x.shape.length - 1
     const head = sliceAxis(x, last, 0, dim - 1)
@@ -112,7 +112,7 @@ export function rosenbrock(dim = 2): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { himmelblau } from 'whitebox-engine/datasets'
+ * import { himmelblau } from 'mdml-engine/datasets'
  * himmelblau().minimizers.length // => 4
  * ```
  */
@@ -143,8 +143,8 @@ export function himmelblau(): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { beale } from 'whitebox-engine/datasets'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { beale } from 'mdml-engine/datasets'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(beale().f(tensor([3, 0.5]))) // => 0
  * ```
  */
@@ -166,8 +166,8 @@ export function beale(): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { rastrigin } from 'whitebox-engine/datasets'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { rastrigin } from 'mdml-engine/datasets'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(rastrigin(3).f(tensor([0, 0, 0]))) // => 0
  * ```
  */
@@ -183,8 +183,8 @@ export function rastrigin(dim = 2): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { ackley } from 'whitebox-engine/datasets'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { ackley } from 'mdml-engine/datasets'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * Math.abs(item(ackley().f(tensor([0, 0])))) < 1e-12 // => true
  * ```
  */
@@ -205,7 +205,7 @@ export function ackley(dim = 2): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { branin } from 'whitebox-engine/datasets'
+ * import { branin } from 'mdml-engine/datasets'
  * branin().minimizers.length // => 3
  * ```
  */
@@ -255,8 +255,8 @@ export interface QuadraticOptions {
  * @returns The test function and its Hessian matrix.
  * @example
  * ```ts
- * import { quadraticBowl } from 'whitebox-engine/datasets'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { quadraticBowl } from 'mdml-engine/datasets'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(quadraticBowl({ dim: 2, condition: 4 }).f(tensor([1, 1]))) // => 2.5
  * ```
  */
@@ -304,7 +304,7 @@ export interface TuningSurface {
  * @returns The surface.
  * @example
  * ```ts
- * import { learningRateSurface } from 'whitebox-engine/datasets'
+ * import { learningRateSurface } from 'mdml-engine/datasets'
  * const s = learningRateSurface()
  * s.mean(s.optimum, s.maxBudget) === s.optimalValue // => true
  * ```
@@ -344,7 +344,7 @@ export function learningRateSurface(noise = 0.02): TuningSurface {
  * @returns The surface.
  * @example
  * ```ts
- * import { braninSurface } from 'whitebox-engine/datasets'
+ * import { braninSurface } from 'mdml-engine/datasets'
  * braninSurface().optimalValue // => 0.39788735772973816
  * ```
  */

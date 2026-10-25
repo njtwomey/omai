@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import { key } from '../random/index.ts'
 import {
   ACTIONS,
@@ -24,7 +24,7 @@ const valueError = (f: () => unknown): boolean => {
   try {
     f()
   } catch (e) {
-    return isWhiteboxError(e, 'value')
+    return isMdmlError(e, 'value')
   }
   return false
 }

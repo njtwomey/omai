@@ -135,7 +135,7 @@ export type TraceEvent =
  * @concept tracing
  */
 export interface Run {
-  readonly schema: 'whitebox.run/1'
+  readonly schema: 'mdml.run/1'
   readonly events: readonly TraceEvent[]
 }
 
@@ -160,7 +160,7 @@ const id = z.string()
  * @concept tracing
  * @example
  * ```ts
- * import { TraceEventSchema } from 'whitebox-engine/trace'
+ * import { TraceEventSchema } from 'mdml-engine/trace'
  * TraceEventSchema.parse({ type: 'metric', runId: 'r', step: 0, name: 'loss', value: 1 }).type // => 'metric'
  * ```
  */
@@ -222,11 +222,11 @@ export const TraceEventSchema: z.ZodType<TraceEvent> = z.discriminatedUnion('typ
  * @returns Parses a run.
  * @example
  * ```ts
- * import { RunSchema } from 'whitebox-engine/trace'
- * RunSchema.parse({ schema: 'whitebox.run/1', events: [] }).events.length // => 0
+ * import { RunSchema } from 'mdml-engine/trace'
+ * RunSchema.parse({ schema: 'mdml.run/1', events: [] }).events.length // => 0
  * ```
  */
 export const RunSchema: z.ZodType<Run> = z.object({
-  schema: z.literal('whitebox.run/1'),
+  schema: z.literal('mdml.run/1'),
   events: z.array(TraceEventSchema),
 })

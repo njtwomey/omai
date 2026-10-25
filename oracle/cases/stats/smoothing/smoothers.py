@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import scipy
 import statsmodels
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from scipy.interpolate import make_smoothing_spline
 from statsmodels.nonparametric.kernel_regression import KernelReg
 from statsmodels.nonparametric.smoothers_lowess import lowess
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {
     "statsmodels": statsmodels.__version__,

@@ -1,6 +1,6 @@
 // Shared plumbing of the two-player games (private to methods/rl/environments): seats and agent names, the turn-based
 // environment built from a game's rules (with illegal moves forfeiting the game), and board drawing.
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import type { Key } from '../../../lib/random/index.ts'
 import type { AecEnv, PerAgent } from '../../../lib/rl/index.ts'
 import { circle, line, rect, type Scene, type SceneNode, scene, text } from '../../../lib/scene/index.ts'
@@ -45,7 +45,7 @@ export interface TwoPlayerRules<S extends TurnState> {
 export function seatOf(agent: string): Seat {
   if (agent === 'player_0') return 0
   if (agent === 'player_1') return 1
-  throw new WhiteboxError('value', `no seat for agent ${agent}`)
+  throw new MdmlError('value', `no seat for agent ${agent}`)
 }
 
 /** The other seat. */
@@ -74,7 +74,7 @@ export function twoPlayerGame<S extends TurnState>(rules: TwoPlayerRules<S>): Ae
     observe: (s, agent) => rules.observe(s, seatOf(agent)),
     legalActions: (s, agent) => (s.over || seatOf(agent) !== s.toMove ? [] : rules.legal(s)),
     step: (s, action, k) => {
-      if (s.over) throw new WhiteboxError('value', `${rules.id}: the game is over`)
+      if (s.over) throw new MdmlError('value', `${rules.id}: the game is over`)
       if (!Number.isInteger(action) || !isLegal(s, action)) {
         const seat = s.toMove
         const rewards = rules.forfeitRewards?.(s, seat) ?? winLoss(other(seat))

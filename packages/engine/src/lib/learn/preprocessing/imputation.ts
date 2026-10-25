@@ -4,7 +4,7 @@
  * equations, which regresses each incomplete feature on the others over several rounds.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../../random/index.ts'
 import { choice, dict, int, type Space } from '../../space/index.ts'
@@ -77,11 +77,11 @@ function indicatorView(m: MatrixView, features: readonly number[], marker: numbe
  *
  * @param hyper - features, missingValues and errorOnNew.
  * @returns The estimator.
- * @throws WhiteboxError with code `value` in transform for missing values in a new feature when `errorOnNew`.
+ * @throws MdmlError with code `value` in transform for missing values in a new feature when `errorOnNew`.
  * @example
  * ```ts
- * import { missingIndicator } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { missingIndicator } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const m = missingIndicator().fit({ x: [[1, NaN], [2, 3]] })
  * toArray(m.transform([[NaN, NaN], [1, 2]])) // => throws value
  * toArray(m.transform([[1, NaN], [1, 2]])) // => [[1], [0]]
@@ -108,7 +108,7 @@ export function missingIndicator(
             const known = new Set(p.features)
             const fresh = missingColumns(m, h.missingValues).filter((j) => !known.has(j))
             if (fresh.length > 0) {
-              throw new WhiteboxError(
+              throw new MdmlError(
                 'value',
                 `missingIndicator: features ${fresh.join(', ')} have missing values only in transform`,
               )
@@ -174,8 +174,8 @@ function statistic(values: Float64Array, strategy: SimpleImputerHyper['strategy'
  * @concept imputation
  * @example
  * ```ts
- * import { simpleImputer } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { simpleImputer } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const s = simpleImputer().fit({ x: [[1, 2], [NaN, 4], [3, NaN]] })
  * toArray(s.transform([[NaN, NaN]])) // => [[2, 3]]
  * toArray(simpleImputer({ strategy: 'most_frequent' }).fit({ x: [[1], [2], [2]] }).transform([[NaN]])) // => [[2]]
@@ -219,7 +219,7 @@ export function simpleImputer(
             return fromView(h.addIndicator ? hstackViews([out, indicatorView(m, p.indicated, h.missingValues)]) : out)
           },
           inverseTransform: (x) => {
-            if (!h.addIndicator) throw new WhiteboxError('value', 'simpleImputer: inverseTransform needs addIndicator')
+            if (!h.addIndicator) throw new MdmlError('value', 'simpleImputer: inverseTransform needs addIndicator')
             const width = kept.length + p.indicated.length
             const m = matrixView(x, 'simpleImputer', { nFeatures: width })
             const out = new Float64Array(m.n * d).fill(Number.NaN)
@@ -290,8 +290,8 @@ function nanEuclidean(a: ArrayLike<number>, b: ArrayLike<number>, d: number): nu
  * @returns The estimator.
  * @example
  * ```ts
- * import { knnImputer } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { knnImputer } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const k = knnImputer({ nNeighbors: 2 }).fit({ x: [[0, 0], [1, 10], [2, 20], [9, 90]] })
  * toArray(k.transform([[1.4, NaN]])) // => [[1.4, 15]]
  * ```
@@ -477,8 +477,8 @@ export type IterativeImputerParams = {
  * @returns The estimator.
  * @example
  * ```ts
- * import { iterativeImputer } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { iterativeImputer } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const x = [[1, 2], [2, 4], [3, 6], [4, 8], [5, NaN]]
  * const f = iterativeImputer().fit({ x })
  * // The ridge regressor shrinks the slope a little: the fill is near, but below, 12.

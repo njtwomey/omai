@@ -1,6 +1,6 @@
 // Private helpers of the multi-agent learners (methods/rl/agents/multi-agent.ts): a tabular Q-learner, reservoir
 // sampling and observation encoding. Zero-sum stage games are solved by games.solveZeroSum.
-import { argmaxOf, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, MdmlError, maxOf } from '../../../lib/base/index.ts'
 import { linearSchedule } from '../../../lib/optim/index.ts'
 import { foldIn, type Key, uniform } from '../../../lib/random/index.ts'
 import type { Agent, Transition } from '../../../lib/rl/index.ts'
@@ -107,7 +107,7 @@ export function reservoirAdd<T>(r: Reservoir<T>, item: T, k: Key): Reservoir<T> 
 
 /** Draw `n` items uniformly with replacement. */
 export function reservoirSample<T>(r: Reservoir<T>, k: Key, n: number): T[] {
-  if (r.size === 0) throw new WhiteboxError('value', 'reservoirSample: the reservoir is empty')
+  if (r.size === 0) throw new MdmlError('value', 'reservoirSample: the reservoir is empty')
   const u = uniform(k, [n]).data
   return Array.from({ length: n }, (_, i) => {
     const slot = Math.min(r.size - 1, Math.floor((u[i] ?? 0) * r.size))
@@ -131,5 +131,5 @@ export function encodeObservation(space: Space | undefined, o: unknown): number[
     return out
   }
   if (Array.isArray(o)) return o.map((v) => Number(v))
-  throw new WhiteboxError('value', 'encodeObservation: observations must be numbers or number arrays')
+  throw new MdmlError('value', 'encodeObservation: observations must be numbers or number arrays')
 }

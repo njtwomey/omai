@@ -1,10 +1,10 @@
 /**
  * Adversarial search played node by node over a whole game tree, from the core's traced game searches
- * (`whitebox-engine/search`): minimax and alpha-beta, showing the node visited, the values backed up and the branches
+ * (`mdml-engine/search`): minimax and alpha-beta, showing the node visited, the values backed up and the branches
  * alpha-beta prunes. Games include textbook trees (AIMA figure 5.2), random trees and tic-tac-toe.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, randint } from '../../lib/random/index.ts'
 import { alphaBetaAlgorithm, type Game, type GameSearchState, minimaxAlgorithm } from '../../lib/search/index.ts'
@@ -33,14 +33,14 @@ const MOVES = 'abcdefghij'
  * @param leaves - The utilities of the leaves, left to right (`branching ^ depth` of them).
  * @param branching - Moves per node (2 to 10).
  * @returns The game.
- * @throws WhiteboxError `value` when the leaf count is not a power of the branching factor.
+ * @throws MdmlError `value` when the leaf count is not a power of the branching factor.
  */
 export function explicitTree(leaves: readonly number[], branching: number): ExplicitTree {
   if (!(Number.isInteger(branching) && branching >= 2 && branching <= MOVES.length))
-    throw new WhiteboxError('value', `explicitTree: the branching ${branching} must be an integer from 2 to 10`)
+    throw new MdmlError('value', `explicitTree: the branching ${branching} must be an integer from 2 to 10`)
   const depth = Math.round(Math.log(leaves.length) / Math.log(branching))
   if (branching ** depth !== leaves.length)
-    throw new WhiteboxError('value', `explicitTree: ${leaves.length} leaves is not a power of ${branching}`)
+    throw new MdmlError('value', `explicitTree: ${leaves.length} leaves is not a power of ${branching}`)
   const index = (path: string): number => [...path].reduce((i, m) => i * branching + MOVES.indexOf(m), 0)
   return {
     leaves,
@@ -114,10 +114,10 @@ function winner(board: string): 'X' | 'O' | null {
  * @param board - The position, nine characters (default the empty board); the player with fewer marks moves (X on
  *   ties).
  * @returns The game.
- * @throws WhiteboxError `value` for a malformed board.
+ * @throws MdmlError `value` for a malformed board.
  */
 export function ticTacToe(board = '.........'): Game<TicTacToeState, string> {
-  if (!/^[XO.]{9}$/.test(board)) throw new WhiteboxError('value', `ticTacToe: '${board}' is not a board`)
+  if (!/^[XO.]{9}$/.test(board)) throw new MdmlError('value', `ticTacToe: '${board}' is not a board`)
   const xs = [...board].filter((c) => c === 'X').length
   const os = [...board].filter((c) => c === 'O').length
   return {
@@ -185,7 +185,7 @@ function layTree<S>(game: Game<S, string>, root: S, cap: number): Laid {
   let leaf = 0
   const visit = (s: S, parent: number, move: string, depth: number): number => {
     if (t.labels.length >= cap)
-      throw new WhiteboxError('value', `playGameSearch: the game tree has more than ${cap} nodes; search a smaller one`)
+      throw new MdmlError('value', `playGameSearch: the game tree has more than ${cap} nodes; search a smaller one`)
     const i = t.labels.length
     t.labels.push(label(s))
     t.parent.push(parent)
@@ -288,7 +288,7 @@ export function playGameSearch<S>(
     cutoffSeries.push(s.cutoffs)
     last = s
   }
-  if (last === undefined) throw new WhiteboxError('value', 'playGameSearch: the search did not start')
+  if (last === undefined) throw new MdmlError('value', 'playGameSearch: the search did not start')
   const leaves = Math.max(1, ...tree.x) + 1
   const depth = Math.max(1, ...tree.depth)
   const dy = Math.max(1, (0.6 * leaves) / depth)

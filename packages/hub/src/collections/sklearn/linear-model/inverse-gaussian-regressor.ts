@@ -3,7 +3,7 @@
  * on one-dimensional GLM responses and tabular data.
  */
 
-import { inverseGaussianRegressor as inverseGaussianRegressorMethod } from 'whitebox-engine/methods/linear'
+import { inverseGaussianRegressor as inverseGaussianRegressorMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

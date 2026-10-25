@@ -3,8 +3,8 @@ recovered by unprojecting the near and far planes through the inverse view-proje
 built from the eight corners of the view volume (independently of the row combinations the engine uses)."""
 
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

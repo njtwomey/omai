@@ -4,7 +4,7 @@
  * indices; `encodeBatch` adds padding and truncation; `decode` turns ids back into text.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { UNI_SPACE, UNI_WORD } from './_classes.ts'
 import { type AlignedText, alignedText, originalSpan, sliceAligned } from './normalise.ts'
@@ -229,7 +229,7 @@ function modelTokens(
       return unigramTokenize(model.model, word)
     case 'WordLevel': {
       const id = model.vocab.get(word) ?? (model.unkToken === undefined ? undefined : model.vocab.get(model.unkToken))
-      if (id === undefined) throw new WhiteboxError('value', `encode: ${word} is not in the vocabulary`)
+      if (id === undefined) throw new MdmlError('value', `encode: ${word} is not in the vocabulary`)
       return [{ token: model.vocab.has(word) ? word : (model.unkToken ?? word), id, start: 0, end: word.length }]
     }
   }
@@ -297,7 +297,7 @@ function truncateEncoding(e: Work, maxLength: number, stride: number, direction:
   const n = e.ids.length
   if (maxLength >= n) return e
   if (maxLength === 0) return { ...emptyEncoding(), overflowing: [e] }
-  if (stride >= maxLength) throw new WhiteboxError('value', 'truncate: stride must be smaller than the maximum length')
+  if (stride >= maxLength) throw new MdmlError('value', 'truncate: stride must be smaller than the maximum length')
   const step = maxLength - stride
   const ranges: [number, number][] = []
   if (direction === 'right') {
@@ -344,8 +344,8 @@ function truncatePair(a: Work, b: Work | undefined, t: TruncationOptions, maxLen
   }
   const second = strategy === 'only_second'
   const target = second ? b : a
-  if (target === undefined) throw new WhiteboxError('value', 'truncate: the second sequence is missing')
-  if (target.ids.length <= remove) throw new WhiteboxError('value', 'truncate: the sequence is too short to truncate')
+  if (target === undefined) throw new MdmlError('value', 'truncate: the second sequence is missing')
+  if (target.ids.length <= remove) throw new MdmlError('value', 'truncate: the sequence is too short to truncate')
   const cut = truncateEncoding(target, target.ids.length - remove, stride, dir)
   return second ? [a, cut] : [cut, b]
 }
@@ -455,7 +455,7 @@ function postProcess(p: PostProcessorSpec | undefined, encs: Work[], addSpecial:
           if (e !== undefined) out.push(withSequence({ ...e, typeIds: e.typeIds.map(() => piece.typeId) }, i))
         } else if (addSpecial) {
           const sp = p.specialTokens[piece.special]
-          if (sp === undefined) throw new WhiteboxError('value', `postProcess: missing special token ${piece.special}`)
+          if (sp === undefined) throw new MdmlError('value', `postProcess: missing special token ${piece.special}`)
           out.push(specialEncoding(sp.ids, sp.tokens, piece.typeId))
         }
       }
@@ -527,12 +527,12 @@ function padTo(length: number, p: PaddingOptions): number {
  * @param pair - An optional second text.
  * @param options - Whether to add special tokens, and BPE dropout.
  * @returns The encoding.
- * @throws WhiteboxError with code `value` for impossible truncation or unknown tokens without an unknown token.
+ * @throws MdmlError with code `value` for impossible truncation or unknown tokens without an unknown token.
  * @concept tokenizer-pipeline
  * @example
  * ```ts
- * import { tokenizer, encode } from 'whitebox-engine/text'
- * import { wordPieceModel } from 'whitebox-engine/text/subword'
+ * import { tokenizer, encode } from 'mdml-engine/text'
+ * import { wordPieceModel } from 'mdml-engine/text/subword'
  * const tok = tokenizer({
  *   normalizer: { type: 'BertNormalizer' },
  *   preTokenizer: { type: 'BertPreTokenizer' },
@@ -580,7 +580,7 @@ function encodeWork(tok: Tokenizer, text: string, pair: string | undefined, opti
  * @concept tokenizer-pipeline
  * @example
  * ```ts
- * import { tokenizer, encodeBatch } from 'whitebox-engine/text'
+ * import { tokenizer, encodeBatch } from 'mdml-engine/text'
  * const tok = tokenizer({
  *   preTokenizer: { type: 'WhitespaceSplit' },
  *   model: { type: 'WordLevel', vocab: new Map([['[PAD]', 0], ['a', 1], ['b', 2]]), unkToken: '[PAD]' },
@@ -634,8 +634,8 @@ function idToToken(tok: Tokenizer, id: number): string | undefined {
  * @concept tokenizer-pipeline
  * @example
  * ```ts
- * import { tokenizer, decode } from 'whitebox-engine/text'
- * import { wordPieceModel } from 'whitebox-engine/text/subword'
+ * import { tokenizer, decode } from 'mdml-engine/text'
+ * import { wordPieceModel } from 'mdml-engine/text/subword'
  * const tok = tokenizer({
  *   model: { type: 'WordPiece', model: wordPieceModel(['[UNK]', '[CLS]', 'un', '##able']) },
  *   decoder: { type: 'WordPiece' },
@@ -665,19 +665,19 @@ export function decode(
  *
  * @param parts - Normaliser, pre-tokeniser, model, post-processor, decoder, added tokens, truncation, padding.
  * @returns The tokenizer.
- * @throws WhiteboxError with code `value` for repeated added token ids or a non-positive truncation length.
+ * @throws MdmlError with code `value` for repeated added token ids or a non-positive truncation length.
  * @concept tokenizer-pipeline
  * @example
  * ```ts
- * import { tokenizer, encode } from 'whitebox-engine/text'
+ * import { tokenizer, encode } from 'mdml-engine/text'
  * const tok = tokenizer({ preTokenizer: { type: 'Whitespace' }, model: { type: 'WordLevel', vocab: new Map([['[UNK]', 0], ['hi', 1]]), unkToken: '[UNK]' } })
  * encode(tok, 'hi there').tokens // => ['hi', '[UNK]']
  * ```
  */
 export function tokenizer(parts: Tokenizer): Tokenizer {
   const ids = (parts.addedTokens ?? []).map((t) => t.id)
-  if (new Set(ids).size !== ids.length) throw new WhiteboxError('value', 'tokenizer: added token ids must be distinct')
+  if (new Set(ids).size !== ids.length) throw new MdmlError('value', 'tokenizer: added token ids must be distinct')
   if (parts.truncation !== undefined && !(parts.truncation.maxLength >= 0))
-    throw new WhiteboxError('value', 'tokenizer: truncation needs a maximum length >= 0')
+    throw new MdmlError('value', 'tokenizer: truncation needs a maximum length >= 0')
   return { ...parts }
 }

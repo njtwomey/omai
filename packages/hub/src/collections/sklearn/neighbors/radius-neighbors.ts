@@ -3,7 +3,7 @@
  * tabular classification and regression data.
  */
 
-import { radiusNeighborsClassifier, radiusNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
+import { radiusNeighborsClassifier, radiusNeighborsRegressor } from 'mdml-engine/methods/neighbours'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'
 

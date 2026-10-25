@@ -4,7 +4,7 @@
  * softmax, ListMLE's Plackett-Luce likelihood and ApproxNDCG, a smooth surrogate of NDCG).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { logSigmoid, softplus } from '../numerics/special/index.ts'
 import {
   abs,
@@ -52,7 +52,7 @@ export type Gain = 'exponential' | 'linear'
 
 const listInputs = (scores: TensorLike, relevance: TensorLike, mask?: TensorLike): [Value, Value, Value] => {
   const [s, r] = promoteFloat(scores, relevance) as [Value, Value]
-  if (s.shape.length === 0) throw new WhiteboxError('shape', 'ranking losses need lists along the last axis')
+  if (s.shape.length === 0) throw new MdmlError('shape', 'ranking losses need lists along the last axis')
   const m = mask === undefined ? add(mul(r, 0), 1) : cast(promoteFloat(mask)[0] as Value, 'float64')
   return [s, r, m]
 }
@@ -79,8 +79,8 @@ const reducePairs = (terms: Value, pairs: Value, reduction: Reduction): Value =>
  * @returns The loss, differentiable away from the hinge.
  * @example
  * ```ts
- * import { marginRanking } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { marginRanking } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(marginRanking([1], [2], [1], { margin: 0.5 })) // => 1.5
  * ```
  */
@@ -105,8 +105,8 @@ export function marginRanking(
  * @concept learning-to-rank
  * @example
  * ```ts
- * import { rankNet } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { rankNet } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(rankNet([0, 0], [1, 0])) === Math.LN2 // => true
  * ```
  */
@@ -129,8 +129,8 @@ export function rankNet(
  * @returns The loss, differentiable away from the hinge.
  * @example
  * ```ts
- * import { pairwiseHinge } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { pairwiseHinge } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(pairwiseHinge([0.25, 0], [1, 0])) // => 0.75
  * ```
  */
@@ -155,8 +155,8 @@ export function pairwiseHinge(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { bpr } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { bpr } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(bpr([1], [1])) === Math.LN2 // => true
  * ```
  */
@@ -199,8 +199,8 @@ const ranksOf = (s: Value, m: Value): Value => {
  * @returns The loss, differentiable in the scores.
  * @example
  * ```ts
- * import { lambdaRank } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { lambdaRank } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(lambdaRank([0, 0], [1, 0])) - Math.LN2 * (1 - 1 / Math.log2(3))) < 1e-15 // => true
  * ```
  */
@@ -233,8 +233,8 @@ const maskedLogSoftmax = (x: Value, m: Value): Value =>
  * @returns The loss, differentiable in the scores.
  * @example
  * ```ts
- * import { listNet } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { listNet } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(listNet([0, 0], [1, 1])) - Math.LN2) < 1e-15 // => true
  * ```
  */
@@ -259,8 +259,8 @@ export function listNet(
  * @returns The loss, differentiable in the scores.
  * @example
  * ```ts
- * import { softmaxRanking } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { softmaxRanking } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(softmaxRanking([0, 0], [1, 0])) === Math.LN2 // => true
  * ```
  */
@@ -280,8 +280,8 @@ export function softmaxRanking(scores: TensorLike, relevance: TensorLike, option
  * @returns The loss, differentiable in the scores.
  * @example
  * ```ts
- * import { listMle } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { listMle } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(listMle([0, 0], [1, 0])) === Math.LN2 // => true
  * ```
  */
@@ -310,8 +310,8 @@ export function listMle(scores: TensorLike, relevance: TensorLike, options: Rank
  * @returns The loss (in [-1, 0]), differentiable in the scores.
  * @example
  * ```ts
- * import { approxNdcg } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { approxNdcg } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(approxNdcg([100, 0], [1, 0])) // => -1
  * ```
  */

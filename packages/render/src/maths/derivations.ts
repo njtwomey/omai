@@ -31,7 +31,7 @@ const TEXT_ESCAPES: Readonly<Record<string, string>> = {
  * @returns The TeX.
  * @example
  * ```ts
- * import { noteTex } from 'whitebox-render/maths'
+ * import { noteTex } from 'mdml-render/maths'
  * noteTex('add and subtract $(b/2a)^2$') // => '\\text{add and subtract }(b/2a)^2'
  * noteTex('50% of x_1') // => '\\text{50\\% of x\\_1}'
  * ```
@@ -57,7 +57,7 @@ export function noteTex(note: string): string {
  * @returns The TeX.
  * @example
  * ```ts
- * import { derivationTex } from 'whitebox-render/maths'
+ * import { derivationTex } from 'mdml-render/maths'
  * const t = derivationTex([{ tex: 'x &= 1' }, { tex: '2 - 1', note: 'rewrite' }])
  * t // => '\\begin{aligned}x &= 1 \\\\ &= 2 - 1 && \\text{rewrite}\\end{aligned}'
  * ```

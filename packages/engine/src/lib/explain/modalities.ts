@@ -3,7 +3,7 @@
  * explanation speaks of (tokens, superpixels, time windows), and predictors over those units, so every attribution in
  * this domain (ablation, Shapley values, LIME) applies to them unchanged.
  */
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import type { PredictFunction } from './shapley.ts'
 
@@ -22,7 +22,7 @@ export interface Tokens {
  * @returns The tokens and their spans.
  * @example
  * ```ts
- * import { tokenise } from 'whitebox-engine/explain'
+ * import { tokenise } from 'mdml-engine/explain'
  * tokenise('Not bad, really.').tokens // => ['Not', 'bad', 'really']
  * ```
  */
@@ -50,8 +50,8 @@ export function tokenise(text: string): Tokens {
  * @returns The predictor.
  * @example
  * ```ts
- * import { tokenPredictor } from 'whitebox-engine/explain'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { tokenPredictor } from 'mdml-engine/explain'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * const f = tokenPredictor(['good', 'not', 'bad'], (texts) => texts.map((t) => t.split(' ').filter((w) => w === 'good').length))
  * toFlat(f(tensor([[1, 1, 1], [0, 1, 1]]))) // => [1, 0]
  * ```
@@ -65,8 +65,7 @@ export function tokenPredictor(
     const z = asTensor(input)
     const m = z.shape[0] ?? 0
     const T = z.shape[1] ?? tokens.length
-    if (T !== tokens.length)
-      throw new WhiteboxError('shape', `tokenPredictor: ${T} columns for ${tokens.length} tokens`)
+    if (T !== tokens.length) throw new MdmlError('shape', `tokenPredictor: ${T} columns for ${tokens.length} tokens`)
     const v = toFlat(z)
     const texts = Array.from({ length: m }, (_, i) =>
       tokens
@@ -74,7 +73,7 @@ export function tokenPredictor(
         .join(' '),
     )
     const out = classify(texts)
-    if (out.length !== m) throw new WhiteboxError('shape', 'tokenPredictor: the classifier must score every text')
+    if (out.length !== m) throw new MdmlError('shape', 'tokenPredictor: the classifier must score every text')
     return fromStorage(Float64Array.from(out), [m], 'float64')
   }
 }
@@ -88,13 +87,13 @@ export function tokenPredictor(
  * @returns A segment id per pixel `[h * w]`.
  * @example
  * ```ts
- * import { gridSuperpixels } from 'whitebox-engine/explain'
+ * import { gridSuperpixels } from 'mdml-engine/explain'
  * gridSuperpixels([2, 4], 2) // => [0, 0, 1, 1, 0, 0, 1, 1]
  * ```
  */
 export function gridSuperpixels(shape: readonly [number, number], cell: number): number[] {
   const [h, w] = shape
-  if (!(Number.isInteger(cell) && cell >= 1)) throw new WhiteboxError('value', 'gridSuperpixels: cell must be >= 1')
+  if (!(Number.isInteger(cell) && cell >= 1)) throw new MdmlError('value', 'gridSuperpixels: cell must be >= 1')
   const across = Math.ceil(w / cell)
   return Array.from(
     { length: h * w },
@@ -123,7 +122,7 @@ export interface SlicOptions {
  * @returns A segment id per pixel `[h * w]`.
  * @example
  * ```ts
- * import { slicSuperpixels } from 'whitebox-engine/explain'
+ * import { slicSuperpixels } from 'mdml-engine/explain'
  * // A bright left half and a dark right half split at the edge.
  * const image = [0.9, 0.9, 0, 0, 0.9, 0.9, 0, 0]
  * slicSuperpixels(image, [2, 4], { nSegments: 2 }) // => [0, 0, 1, 1, 0, 0, 1, 1]
@@ -136,7 +135,7 @@ export function slicSuperpixels(
 ): number[] {
   const [h, w] = shape
   const px = toFlat(asTensor(image))
-  if (px.length !== h * w) throw new WhiteboxError('shape', `slicSuperpixels: ${px.length} pixels for ${h}x${w}`)
+  if (px.length !== h * w) throw new MdmlError('shape', `slicSuperpixels: ${px.length} pixels for ${h}x${w}`)
   const k = Math.max(1, options.nSegments ?? 16)
   const S = Math.max(1, Math.sqrt((h * w) / k))
   const mWeight = options.compactness ?? 10
@@ -204,13 +203,13 @@ export function slicSuperpixels(
  * @returns A window id per value `[length * channels]`.
  * @example
  * ```ts
- * import { timeWindows } from 'whitebox-engine/explain'
+ * import { timeWindows } from 'mdml-engine/explain'
  * timeWindows(5, 2) // => [0, 0, 1, 1, 2]
  * timeWindows(2, 1, 2) // => [0, 0, 1, 1]
  * ```
  */
 export function timeWindows(length: number, window: number, channels = 1): number[] {
-  if (!(Number.isInteger(window) && window >= 1)) throw new WhiteboxError('value', 'timeWindows: window must be >= 1')
+  if (!(Number.isInteger(window) && window >= 1)) throw new MdmlError('value', 'timeWindows: window must be >= 1')
   return Array.from({ length: length * channels }, (_, i) => Math.floor(Math.floor(i / channels) / window))
 }
 
@@ -221,7 +220,7 @@ export function timeWindows(length: number, window: number, channels = 1): numbe
  * @returns The features of each group.
  * @example
  * ```ts
- * import { maskGroups } from 'whitebox-engine/explain'
+ * import { maskGroups } from 'mdml-engine/explain'
  * maskGroups([3, 3, 1, 3]) // => [[0, 1, 3], [2]]
  * ```
  */
@@ -251,8 +250,8 @@ export function maskGroups(mask: readonly number[]): number[][] {
  * @returns The predictor over groups and the groups (feature indices of each, in id order of first appearance).
  * @example
  * ```ts
- * import { maskedPredictor } from 'whitebox-engine/explain'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { maskedPredictor } from 'mdml-engine/explain'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * const total = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[3 * i] + x.data[3 * i + 1] + x.data[3 * i + 2]))
  * const { predict } = maskedPredictor(total, [1, 2, 3], [0, 0, 1])
  * toFlat(predict(tensor([[1, 0], [0, 1]]))) // => [3, 3]
@@ -266,9 +265,9 @@ export function maskedPredictor(
 ): { readonly predict: PredictFunction; readonly groups: readonly (readonly number[])[] } {
   const xv = toFlat(asTensor(x))
   const d = xv.length
-  if (mask.length !== d) throw new WhiteboxError('shape', 'maskedPredictor: one group id per feature')
+  if (mask.length !== d) throw new MdmlError('shape', 'maskedPredictor: one group id per feature')
   const b = typeof baseline === 'number' ? new Array<number>(d).fill(baseline) : toFlat(asTensor(baseline))
-  if (b.length !== d) throw new WhiteboxError('shape', 'maskedPredictor: the baseline must be a number or [d]')
+  if (b.length !== d) throw new MdmlError('shape', 'maskedPredictor: the baseline must be a number or [d]')
   const groups = maskGroups(mask)
   const G = groups.length
   return {
@@ -276,7 +275,7 @@ export function maskedPredictor(
     predict: (input: Tensor) => {
       const z = asTensor(input)
       const m = z.shape[0] ?? 0
-      if ((z.shape[1] ?? G) !== G) throw new WhiteboxError('shape', `maskedPredictor: rows must have ${G} groups`)
+      if ((z.shape[1] ?? G) !== G) throw new MdmlError('shape', `maskedPredictor: rows must have ${G} groups`)
       const zv = toFlat(z)
       const data = new Float64Array(m * d)
       for (let i = 0; i < m; i++)
@@ -300,7 +299,7 @@ export function maskedPredictor(
  * @returns One value per feature.
  * @example
  * ```ts
- * import { expandGroups } from 'whitebox-engine/explain'
+ * import { expandGroups } from 'mdml-engine/explain'
  * expandGroups([2, 5], [[0, 1], [2]], 3) // => [2, 2, 5]
  * expandGroups([2, 5], [[0, 1], [2]], 3, { share: true }) // => [1, 1, 5]
  * ```

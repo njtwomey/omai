@@ -3,9 +3,9 @@
  * find them.
  */
 
-import { mislabelledRowStudy, type ValuationMethod } from 'whitebox-engine/methods/explain'
-import { kNeighborsClassifier } from 'whitebox-engine/methods/neighbours'
-import { dict, int, real } from 'whitebox-engine/space'
+import { mislabelledRowStudy, type ValuationMethod } from 'mdml-engine/methods/explain'
+import { kNeighborsClassifier } from 'mdml-engine/methods/neighbours'
+import { dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

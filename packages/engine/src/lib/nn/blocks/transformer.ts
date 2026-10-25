@@ -4,7 +4,7 @@
  * stacks of such blocks, an `EncoderDecoder` (T5 style) and a GPT- and LLaMA-shaped decoder-only `TransformerLM`.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { add, asTensor, isValue, mul, type TensorLike, type Value } from '../../tensor/index.ts'
 import { type ActivationName, activation } from '../functional/activations.ts'
@@ -36,8 +36,8 @@ export interface FeedForwardOptions {
  * @concept transformer
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new blocks.FeedForward(8).eval().forward(zeros([2, 3, 8])).shape // => [2, 3, 8]
  * ```
  */
@@ -85,8 +85,8 @@ export class FeedForward extends Composite {
  * @reference Shazeer (2020), GLU variants improve transformer.
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new blocks.GatedFeedForward(8, 16).forward(zeros([1, 2, 8])).shape // => [1, 2, 8]
  * ```
  */
@@ -184,8 +184,8 @@ const normOf = (kind: 'rms' | 'layer', dim: number, bias: boolean): Module =>
  * @concept transformer
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new blocks.TransformerBlock(8, 2, { numKvHeads: 1 }).forward({ x: zeros([1, 4, 8]) }).output.shape // => [1, 4, 8]
  * ```
  */
@@ -253,8 +253,7 @@ export class TransformerBlock extends Composite<BlockInput | Value, BlockOutput>
       return r.output
     })
     if (this.crossAttention) {
-      if (inp.context === undefined)
-        throw new WhiteboxError('value', 'TransformerBlock: cross-attention needs a context')
+      if (inp.context === undefined) throw new MdmlError('value', 'TransformerBlock: cross-attention needs a context')
       const context = asTensor(inp.context)
       h = sub(h, 'cross_norm', (v) => p.run<object, GroupedQueryOutput>('cross_attn', { x: v, context }).output)
     }
@@ -295,8 +294,8 @@ export interface StackOutput {
  * @concept transformer
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new blocks.TransformerStack(2, (i) => new blocks.TransformerBlock(8, 2)).forward({ x: zeros([1, 3, 8]) }).caches.length // => 2
  * ```
  */
@@ -374,8 +373,8 @@ export class TransformerStack extends Composite<StackInput | Value, StackOutput>
  * @concept transformer
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * const m = blocks.encoderDecoder(8, 2, { encoderLayers: 1, decoderLayers: 1 })
  * m.forward({ source: zeros([1, 5, 8]), target: zeros([1, 3, 8]) }).output.shape // => [1, 3, 8]
  * ```
@@ -430,7 +429,7 @@ export class EncoderDecoder extends Composite<
  * @returns The model.
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
+ * import { blocks } from 'mdml-engine/nn'
  * blocks.encoderDecoder(8, 2, { encoderLayers: 2, decoderLayers: 1 }).kind // => 'EncoderDecoder'
  * ```
  */
@@ -471,7 +470,7 @@ export type LMInput = TensorLike | { readonly tokens: TensorLike; readonly cache
  * @concept language-models
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
+ * import { blocks } from 'mdml-engine/nn'
  * new blocks.TransformerLM(50, 16, 2, 2).forward([[1, 2, 3]]).output.shape // => [1, 3, 50]
  * ```
  */

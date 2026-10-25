@@ -33,7 +33,7 @@ const SOUNDEX_CODES: Readonly<Record<string, string>> = {
  * @concept phonetic-encoding
  * @example
  * ```ts
- * import { soundex } from 'whitebox-engine/text'
+ * import { soundex } from 'mdml-engine/text'
  * ['Robert', 'Rupert', 'Tymczak', 'Pfister', 'Ashcraft'].map(soundex) // => ['R163', 'R163', 'T522', 'P236', 'A261']
  * ```
  */
@@ -69,7 +69,7 @@ const isIey = (c: string | undefined): boolean => c === 'I' || c === 'E' || c ==
  * @concept phonetic-encoding
  * @example
  * ```ts
- * import { metaphone } from 'whitebox-engine/text'
+ * import { metaphone } from 'mdml-engine/text'
  * ['Thompson', 'knight', 'Schmidt', 'Xavier', 'phonetic'].map(metaphone) // => ['0MPSN', 'NT', 'SXMTT', 'SFR', 'FNTK']
  * ```
  */

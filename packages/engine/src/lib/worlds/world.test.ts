@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import {
   cellAtPoint,
   cellCentre,
@@ -27,7 +27,7 @@ const throwsValue = (f: () => unknown): void => {
   try {
     f()
   } catch (e) {
-    expect(isWhiteboxError(e, 'value')).toBe(true)
+    expect(isMdmlError(e, 'value')).toBe(true)
     return
   }
   throw new Error('expected a value error')

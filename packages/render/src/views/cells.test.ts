@@ -1,6 +1,6 @@
 import * as echarts from 'echarts'
+import { confusionMatrix, valueGrids } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { confusionMatrix, valueGrids } from 'whitebox-engine/exposition'
 import { accuracyOf, cellsLayout, confusionFrames, valueGridFrames } from './cells.ts'
 
 function render(option: unknown): string {

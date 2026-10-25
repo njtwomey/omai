@@ -3,8 +3,8 @@
  * state (active nodes and edges, badges) for animations, with node sizes fixed once for a whole animation.
  */
 
+import type { Structure, StructureNode, StructureOverlay } from 'mdml-engine/scene'
 import { type ReactElement, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import type { Structure, StructureNode, StructureOverlay } from 'whitebox-engine/scene'
 import { type DiagramOptions, diagram } from '../structures/diagram.ts'
 import { cx, iconButtonClass } from './controls/classes.ts'
 import { FigureFrame, type FigureFrameProps } from './FigureFrame.tsx'
@@ -35,7 +35,7 @@ export interface StructureViewProps extends Omit<DiagramOptions, 'overlay' | 'fr
 type View = readonly [number, number, number, number]
 
 /**
- * A `Structure` drawn as a diagram (`diagram` in `whitebox-render/structures`), with pan (drag) and zoom (the buttons
+ * A `Structure` drawn as a diagram (`diagram` in `mdml-render/structures`), with pan (drag) and zoom (the buttons
  * under it, or the wheel with Ctrl or Cmd held), the hovered node's role, detail and badges shown beneath, and an
  * optional overlay of active nodes, edges and badges.
  *

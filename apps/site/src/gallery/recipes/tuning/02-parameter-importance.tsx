@@ -1,16 +1,16 @@
+import { choice, dict, int, real } from 'mdml-engine/space'
+import { correlationImportance, functionObjective, randomSampler, tune } from 'mdml-engine/tune'
+import { importanceChart } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { Chart, Choice, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { choice, dict, int, real } from 'whitebox-engine/space'
-import { correlationImportance, functionObjective, randomSampler, tune } from 'whitebox-engine/tune'
-import { importanceChart } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { Chart, Choice, ControlPanel, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Parameter importance',
   question: 'How do I show which hyperparameters mattered most?',
   explain:
-    '`importanceChart` draws importances (here `correlationImportance` from whitebox-engine’s `tune`, by rank or linear correlation) as bars, largest on top, each labelled with its share. The made-up loss depends on the learning rate and dropout and hardly at all on the batch size; correlations see only monotone trends, so with fewer trials the U-shaped effects can trade places.',
+    '`importanceChart` draws importances (here `correlationImportance` from mdml-engine’s `tune`, by rank or linear correlation) as bars, largest on top, each labelled with its share. The made-up loss depends on the learning rate and dropout and hardly at all on the batch size; correlations see only monotone trends, so with fewer trials the U-shaped effects can trade places.',
 }
 
 const FIG = figure({ width: 560, aspect: 2.2 })

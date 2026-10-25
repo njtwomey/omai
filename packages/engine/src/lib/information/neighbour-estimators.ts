@@ -5,7 +5,7 @@
  * (scikit-learn's mutual_info_classif).
  */
 
-import { meanOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, meanOf } from '../base/index.ts'
 import { kdTree } from '../numerics/spatial/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { item, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -32,8 +32,8 @@ export interface NeighbourOptions {
  * @concept entropy-estimation
  * @example
  * ```ts
- * import { kozachenkoLeonenkoEntropy } from 'whitebox-engine/information'
- * import { key, uniform } from 'whitebox-engine/random'
+ * import { kozachenkoLeonenkoEntropy } from 'mdml-engine/information'
+ * import { key, uniform } from 'mdml-engine/random'
  * // Uniform samples on [0, 1]: the entropy is log 1 = 0.
  * Math.abs(kozachenkoLeonenkoEntropy(uniform(key(0), [500]))) < 0.1 // => true
  * ```
@@ -67,7 +67,7 @@ export function kozachenkoLeonenkoEntropy(
  * @concept mutual-information
  * @example
  * ```ts
- * import { ksgMutualInformation } from 'whitebox-engine/information'
+ * import { ksgMutualInformation } from 'mdml-engine/information'
  * const x = Array.from({ length: 100 }, (_, i) => Math.sin(i))
  * // Y = X carries a lot of information; Y = a scrambled order carries little.
  * ksgMutualInformation(x, x.map((v) => 2 * v + 1)) > 2 // => true
@@ -128,7 +128,7 @@ export function ksgMutualInformation(
  * @concept mutual-information
  * @example
  * ```ts
- * import { ksgConditionalMutualInformation } from 'whitebox-engine/information'
+ * import { ksgConditionalMutualInformation } from 'mdml-engine/information'
  * const z = Array.from({ length: 100 }, (_, i) => Math.sin(i))
  * const x = z.map((v, i) => v + 0.1 * Math.cos(7 * i))
  * const y = z.map((v, i) => v + 0.1 * Math.cos(11 * i))
@@ -170,9 +170,9 @@ export function ksgConditionalMutualInformation(
  * @concept kl-divergence
  * @example
  * ```ts
- * import { knnKlDivergence } from 'whitebox-engine/information'
- * import { key, normal } from 'whitebox-engine/random'
- * import { add } from 'whitebox-engine/tensor'
+ * import { knnKlDivergence } from 'mdml-engine/information'
+ * import { key, normal } from 'mdml-engine/random'
+ * import { add } from 'mdml-engine/tensor'
  * // N(0, 1) against N(1, 1): the divergence is 1/2.
  * Math.abs(knnKlDivergence(normal(key(0), [500]), add(normal(key(1), [500]), 1)) - 0.5) < 0.15 // => true
  * ```
@@ -180,7 +180,7 @@ export function ksgConditionalMutualInformation(
 export function knnKlDivergence(x: TensorLike, y: TensorLike, options: NeighbourOptions = {}): number {
   const px = points(x, 'knnKlDivergence')
   const py = points(y, 'knnKlDivergence')
-  if (px.d !== py.d) throw new WhiteboxError('shape', 'knnKlDivergence: samples differ in dimension')
+  if (px.d !== py.d) throw new MdmlError('shape', 'knnKlDivergence: samples differ in dimension')
   const k = options.k ?? 3
   checkK(k, Math.min(px.n, py.n + 1), 'knnKlDivergence')
   const tx = tensorOf(px)
@@ -206,7 +206,7 @@ export function knnKlDivergence(x: TensorLike, y: TensorLike, options: Neighbour
  * @concept mutual-information
  * @example
  * ```ts
- * import { mixedMutualInformation } from 'whitebox-engine/information'
+ * import { mixedMutualInformation } from 'mdml-engine/information'
  * const x = [0.1, 0.2, 0.3, 0.4, 0.5, 5.1, 5.2, 5.3, 5.4, 5.5]
  * const y = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
  * // Separated classes: close to log 2.
@@ -220,7 +220,7 @@ export function mixedMutualInformation(
 ): number {
   const p = points(x, 'mixedMutualInformation')
   const { codes, m } = labelCodes(labels, 'mixedMutualInformation')
-  if (codes.length !== p.n) throw new WhiteboxError('shape', 'mixedMutualInformation: lengths differ')
+  if (codes.length !== p.n) throw new MdmlError('shape', 'mixedMutualInformation: lengths differ')
   const metric = options.metric ?? 'chebyshev'
   const counts = countsOf(codes, m)
   const radius = new Float64Array(p.n)
@@ -241,7 +241,7 @@ export function mixedMutualInformation(
     })
   }
   const kept = Array.from({ length: p.n }, (_, i) => i).filter((i) => (counts[codes[i] ?? 0] ?? 0) > 1)
-  if (kept.length === 0) throw new WhiteboxError('value', 'mixedMutualInformation: every label occurs once')
+  if (kept.length === 0) throw new MdmlError('value', 'mixedMutualInformation: every label occurs once')
   const q: Points = {
     data: Float64Array.from(kept.flatMap((i) => Array.from(p.data.subarray(i * p.d, (i + 1) * p.d)))),
     n: kept.length,

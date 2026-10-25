@@ -1,8 +1,8 @@
 """Symmetric eigendecomposition against numpy.linalg.eigh (eigenvector signs fixed by the shared convention)."""
 
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng, sign_fixed
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng, sign_fixed
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

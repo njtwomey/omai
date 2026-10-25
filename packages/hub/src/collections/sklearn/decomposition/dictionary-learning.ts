@@ -3,7 +3,7 @@
  * such as the Swiss roll and tabular data.
  */
 
-import { dictionaryLearning as dictionaryLearningMethod } from 'whitebox-engine/methods/decomposition'
+import { dictionaryLearning as dictionaryLearningMethod } from 'mdml-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

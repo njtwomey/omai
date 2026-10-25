@@ -3,9 +3,9 @@
  * mistake, on two-dimensional classification data.
  */
 
-import type { Exposition } from 'whitebox-engine/exposition'
-import { rosenblattPerceptron } from 'whitebox-engine/methods/neural/foundations'
-import { asTensor, toFlat } from 'whitebox-engine/tensor'
+import type { Exposition } from 'mdml-engine/exposition'
+import { rosenblattPerceptron } from 'mdml-engine/methods/neural/foundations'
+import { asTensor, toFlat } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator, learnDataOf } from '../../../entry/run.ts'
 

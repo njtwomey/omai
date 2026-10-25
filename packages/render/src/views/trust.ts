@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { type CalibrationRecord, type ConformalRecord, setSizes } from 'whitebox-engine/exposition'
+import { type CalibrationRecord, type ConformalRecord, setSizes } from 'mdml-engine/exposition'
 import { bars, histogram } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -32,8 +32,8 @@ function curveColours(record: CalibrationRecord): string[] {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { calibrationRecord } from 'whitebox-engine/exposition'
- * import { reliabilityView } from 'whitebox-render/views'
+ * import { calibrationRecord } from 'mdml-engine/exposition'
+ * import { reliabilityView } from 'mdml-render/views'
  * const r = calibrationRecord({ nBins: 2, strategy: 'uniform', curves: [{ name: 'model', meanPredicted: [0.2, 0.8], observed: [0.1, 0.9], counts: [5, 5], ece: 0.1, mce: 0.1 }] })
  * reliabilityView(r).grid.length // => 2
  * ```
@@ -214,8 +214,8 @@ function streamPanel(r: ConformalRecord, mode: ColourMode, upTo: number): Panel 
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { conformalRecord } from 'whitebox-engine/exposition'
- * import { conformalView } from 'whitebox-render/views'
+ * import { conformalRecord } from 'mdml-engine/exposition'
+ * import { conformalView } from 'mdml-render/views'
  * const r = conformalRecord({ task: 'regression', method: 'split', alpha: 0.1, coverage: 0.5, x: [0, 1], y: [1, 5], lower: [0, 1], upper: [2, 3], scores: [0.5, 1] })
  * conformalView(r).grid.length // => 2
  * ```

@@ -4,7 +4,7 @@
  * and the log-cosh and Huber errors that mirror the corresponding losses.
  */
 
-import { type Direction, type MetricSpec, maxOf, WhiteboxError } from '../base/index.ts'
+import { type Direction, MdmlError, type MetricSpec, maxOf } from '../base/index.ts'
 import { type Metric, type MetricOptions, perOutputMetric, weightedMean, weightedPercentile } from './metric.ts'
 
 const map = (n: number, f: (i: number) => number): Float64Array => Float64Array.from({ length: n }, (_, i) => f(i))
@@ -33,7 +33,7 @@ const spec = (name: string, direction: Direction, range: readonly [number, numbe
  * @concept regression-metrics
  * @example
  * ```ts
- * import { meanSquaredError } from 'whitebox-engine/metrics'
+ * import { meanSquaredError } from 'mdml-engine/metrics'
  * meanSquaredError([1, 2, 3], [1, 2, 5]).estimate.value // => 1.3333333333333333
  * ```
  */
@@ -53,7 +53,7 @@ export const meanSquaredError: Metric = perOutputMetric(spec('meanSquaredError',
  * @returns The metric result.
  * @example
  * ```ts
- * import { rootMeanSquaredError } from 'whitebox-engine/metrics'
+ * import { rootMeanSquaredError } from 'mdml-engine/metrics'
  * rootMeanSquaredError([0, 0], [3, 4]).estimate.value === Math.sqrt(12.5) // => true
  * ```
  */
@@ -77,7 +77,7 @@ export const rootMeanSquaredError: Metric = perOutputMetric(
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanAbsoluteError } from 'whitebox-engine/metrics'
+ * import { meanAbsoluteError } from 'mdml-engine/metrics'
  * meanAbsoluteError([1, 2], [2, 4]).estimate.value // => 1.5
  * ```
  */
@@ -97,7 +97,7 @@ export const meanAbsoluteError: Metric = perOutputMetric(spec('meanAbsoluteError
  * @returns The metric result.
  * @example
  * ```ts
- * import { medianAbsoluteError } from 'whitebox-engine/metrics'
+ * import { medianAbsoluteError } from 'mdml-engine/metrics'
  * medianAbsoluteError([0, 0, 0], [1, 5, 2]).estimate.value // => 2
  * ```
  */
@@ -119,7 +119,7 @@ export const medianAbsoluteError: Metric = perOutputMetric(
  * @returns The metric result.
  * @example
  * ```ts
- * import { maxError } from 'whitebox-engine/metrics'
+ * import { maxError } from 'mdml-engine/metrics'
  * maxError([1, 2, 3], [1, 5, 2]).estimate.value // => 3
  * ```
  */
@@ -137,7 +137,7 @@ export const maxError: Metric = perOutputMetric(spec('maxError', 'lower', [0, In
  * @returns The metric result.
  * @example
  * ```ts
- * import { r2Score } from 'whitebox-engine/metrics'
+ * import { r2Score } from 'mdml-engine/metrics'
  * r2Score([1, 2, 3], [1, 2, 3]).estimate.value // => 1
  * ```
  */
@@ -169,10 +169,10 @@ export interface AdjustedR2Options extends MetricOptions {
  * @param yPred - Predictions.
  * @param options - nFeatures and sample weights.
  * @returns The metric result.
- * @throws WhiteboxError with code `value` when n - p - 1 <= 0.
+ * @throws MdmlError with code `value` when n - p - 1 <= 0.
  * @example
  * ```ts
- * import { adjustedR2Score } from 'whitebox-engine/metrics'
+ * import { adjustedR2Score } from 'mdml-engine/metrics'
  * adjustedR2Score([1, 2, 3, 4], [1, 2, 3, 4], { nFeatures: 1 }).estimate.value // => 1
  * ```
  */
@@ -181,7 +181,7 @@ export const adjustedR2Score: Metric<AdjustedR2Options> = perOutputMetric<Adjust
   (t, p, w, o) => {
     const n = o.sampleWeight === undefined ? t.length : w.reduce((a, b) => a + b, 0)
     const dof = n - o.nFeatures - 1
-    if (!(dof > 0)) throw new WhiteboxError('value', `adjustedR2Score: needs more samples than nFeatures + 1`)
+    if (!(dof > 0)) throw new MdmlError('value', `adjustedR2Score: needs more samples than nFeatures + 1`)
     const r2 = r2Score(t, p, o.sampleWeight === undefined ? {} : { sampleWeight: w }).estimate.value
     return 1 - ((1 - r2) * (n - 1)) / dof
   },
@@ -197,7 +197,7 @@ export const adjustedR2Score: Metric<AdjustedR2Options> = perOutputMetric<Adjust
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanLogCoshError } from 'whitebox-engine/metrics'
+ * import { meanLogCoshError } from 'mdml-engine/metrics'
  * meanLogCoshError([0, 1], [0, 1]).estimate.value // => 0
  * ```
  */
@@ -227,7 +227,7 @@ export interface HuberOptions extends MetricOptions {
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanHuberLoss } from 'whitebox-engine/metrics'
+ * import { meanHuberLoss } from 'mdml-engine/metrics'
  * meanHuberLoss([0], [3], { delta: 1 }).estimate.value // => 2.5
  * ```
  */
@@ -254,7 +254,7 @@ export const meanHuberLoss: Metric<HuberOptions> = perOutputMetric<HuberOptions>
  * @returns The metric result.
  * @example
  * ```ts
- * import { explainedVarianceScore } from 'whitebox-engine/metrics'
+ * import { explainedVarianceScore } from 'mdml-engine/metrics'
  * explainedVarianceScore([1, 2, 3], [2, 3, 4]).estimate.value // => 1
  * ```
  */
@@ -278,8 +278,7 @@ export const explainedVarianceScore: Metric = perOutputMetric(
 )
 
 function requireNonNegative(name: string, t: Float64Array, p: Float64Array): void {
-  if (t.some((v) => v < 0) || p.some((v) => v < 0))
-    throw new WhiteboxError('value', `${name}: values must be non-negative`)
+  if (t.some((v) => v < 0) || p.some((v) => v < 0)) throw new MdmlError('value', `${name}: values must be non-negative`)
 }
 
 /**
@@ -291,7 +290,7 @@ function requireNonNegative(name: string, t: Float64Array, p: Float64Array): voi
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanSquaredLogError } from 'whitebox-engine/metrics'
+ * import { meanSquaredLogError } from 'mdml-engine/metrics'
  * meanSquaredLogError([0], [Math.E - 1]).estimate.value // => 1
  * ```
  */
@@ -316,7 +315,7 @@ export const meanSquaredLogError: Metric = perOutputMetric(
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanAbsolutePercentageError } from 'whitebox-engine/metrics'
+ * import { meanAbsolutePercentageError } from 'mdml-engine/metrics'
  * meanAbsolutePercentageError([2, 4], [1, 5]).estimate.value // => 0.375
  * ```
  */

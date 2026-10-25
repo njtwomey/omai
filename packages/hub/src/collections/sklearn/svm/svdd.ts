@@ -3,7 +3,7 @@
  * two-dimensional data with outliers.
  */
 
-import { svdd as svddMethod } from 'whitebox-engine/methods/svm'
+import { svdd as svddMethod } from 'mdml-engine/methods/svm'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

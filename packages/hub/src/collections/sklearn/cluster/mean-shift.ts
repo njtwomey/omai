@@ -3,7 +3,7 @@
  * datasets.
  */
 
-import { meanShift as meanShiftMethod } from 'whitebox-engine/methods/cluster'
+import { meanShift as meanShiftMethod } from 'mdml-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

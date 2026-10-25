@@ -4,7 +4,7 @@
  * max-product elimination, and MAP queries over a subset of variables.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { nullTracer, type RunHandle, startRun, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import {
   type Factor,
@@ -67,7 +67,7 @@ function prepare(model: DiscreteModel, keep: readonly string[], options: Elimina
   const evidence = evidenceIndices(model, options.evidence ?? {})
   for (const q of keep) {
     modelVariable(model, q)
-    if (q in evidence) throw new WhiteboxError('value', `${name}: ${q} is both queried and observed`)
+    if (q in evidence) throw new MdmlError('value', `${name}: ${q} is both queried and observed`)
   }
   const names = modelVariables(model).map((v) => v.name)
   const hidden = names.filter((v) => !keep.includes(v) && !(v in evidence))
@@ -78,7 +78,7 @@ function prepare(model: DiscreteModel, keep: readonly string[], options: Elimina
       ? eliminationOrder(interactionGraph(all, names), hidden, options.heuristic ?? 'minFill', card)
       : [...options.order]
   const missing = hidden.filter((v) => !order.includes(v))
-  if (missing.length > 0) throw new WhiteboxError('value', `${name}: the order misses ${missing.join(', ')}`)
+  if (missing.length > 0) throw new MdmlError('value', `${name}: the order misses ${missing.join(', ')}`)
   const run = startRun(options.tracer ?? nullTracer, {
     name,
     seed: null,
@@ -127,11 +127,11 @@ function eliminateAll(
  * @param query - The query variables.
  * @param options - Evidence, elimination order or heuristic, and tracer.
  * @returns The posterior over the query, log P(evidence), the order and the largest factor size.
- * @throws WhiteboxError with code `value` for unknown or observed query variables, or an incomplete order.
+ * @throws MdmlError with code `value` for unknown or observed query variables, or an incomplete order.
  * @concept variable-elimination
  * @example
  * ```ts
- * import { bayesNet, variableElimination, factorValues } from 'whitebox-engine/pgm'
+ * import { bayesNet, variableElimination, factorValues } from 'mdml-engine/pgm'
  * const bn = bayesNet([
  *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
  *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -167,7 +167,7 @@ export function variableElimination(
  * @concept partition-function
  * @example
  * ```ts
- * import { isingModel, logPartition } from 'whitebox-engine/pgm'
+ * import { isingModel, logPartition } from 'mdml-engine/pgm'
  * logPartition(isingModel({ rows: 1, cols: 2, coupling: 0 })) === Math.log(4) // => true
  * ```
  */
@@ -201,7 +201,7 @@ export interface MaxProductResult {
  * @concept map-inference
  * @example
  * ```ts
- * import { bayesNet, maxProductElimination } from 'whitebox-engine/pgm'
+ * import { bayesNet, maxProductElimination } from 'mdml-engine/pgm'
  * const bn = bayesNet([
  *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
  *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -244,7 +244,7 @@ export function maxProductElimination(model: DiscreteModel, options: Elimination
  * @returns The state names of the most probable assignment (in query order), and its posterior probability.
  * @example
  * ```ts
- * import { bayesNet, mapQuery } from 'whitebox-engine/pgm'
+ * import { bayesNet, mapQuery } from 'mdml-engine/pgm'
  * const bn = bayesNet([{ name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] }])
  * mapQuery(bn, ['rain']).assignment // => { rain: 'no' }
  * ```

@@ -5,7 +5,7 @@
  */
 
 import { grad, jacfwd, jvp, vjp } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   arg,
@@ -79,7 +79,7 @@ function forwardSolve(
     denseOutput: dense,
     maxSteps: options.maxSteps ?? 100000,
   })
-  if (!sol.success) throw new WhiteboxError('convergence', `odeintAdjoint: the forward solve failed: ${sol.message}`)
+  if (!sol.success) throw new MdmlError('convergence', `odeintAdjoint: the forward solve failed: ${sol.message}`)
   return { ys: [y0, ...sol.ys.slice(1)], sol: sol.sol, nfev: sol.nfev, steps: sol.nSteps }
 }
 
@@ -192,8 +192,7 @@ function adjointPass(
         }
         const z0 = fromNumbers(concatNumbers(numbersOf(yAt(k)), a, theta), [2 * n + np])
         const sol = solveIvp(field, [tk, tm], z0, { method, ...backTol, maxSteps: options.maxSteps ?? 100000 })
-        if (!sol.success)
-          throw new WhiteboxError('convergence', `odeintAdjoint: the backward solve failed: ${sol.message}`)
+        if (!sol.success) throw new MdmlError('convergence', `odeintAdjoint: the backward solve failed: ${sol.message}`)
         const z = numbersOf(sol.ys[sol.ys.length - 1] as Value)
         a = z.slice(n, 2 * n)
         theta = z.slice(2 * n)
@@ -247,7 +246,7 @@ function adjointPass(
             maxSteps: options.maxSteps ?? 100000,
           })
           if (!sol.success)
-            throw new WhiteboxError('convergence', `odeintAdjoint: the backward solve failed: ${sol.message}`)
+            throw new MdmlError('convergence', `odeintAdjoint: the backward solve failed: ${sol.message}`)
           const z = numbersOf(sol.ys[sol.ys.length - 1] as Value)
           a = z.slice(0, n)
           theta = z.slice(n)
@@ -284,14 +283,14 @@ function concatNumbers(...parts: readonly ArrayLike<number>[]): Float64Array {
  * @param params - The parameters (any shape).
  * @param options - Method (default DOP853), tolerances (default rtol 1e-8, atol 1e-10), adjoint variant and budget.
  * @returns The states `[nt, ...stateShape]`.
- * @throws WhiteboxError with code `convergence` when a solve fails.
+ * @throws MdmlError with code `convergence` when a solve fails.
  * @concept adjoint-method
  * @reference Chen, Rubanova, Bettencourt and Duvenaud (2018), Neural ordinary differential equations.
  * @example
  * ```ts
- * import { odeintAdjoint } from 'whitebox-engine/dynamics/ode'
- * import { grad } from 'whitebox-engine/autodiff'
- * import { item, mul, neg, sum, sliceAxis, tensor, type Value } from 'whitebox-engine/tensor'
+ * import { odeintAdjoint } from 'mdml-engine/dynamics/ode'
+ * import { grad } from 'mdml-engine/autodiff'
+ * import { item, mul, neg, sum, sliceAxis, tensor, type Value } from 'mdml-engine/tensor'
  * const loss = (k: Value): Value => sum(sliceAxis(odeintAdjoint((_t, y, p) => neg(mul(p, y)), tensor([1]), [0, 1], k), 0, 1, 2))
  * Math.abs(item(grad(loss)(tensor(0.5))) + Math.exp(-0.5)) < 1e-7 // => true
  * ```
@@ -303,7 +302,7 @@ export function odeintAdjoint(
   params: TensorLike,
   options: AdjointOptions = {},
 ): Value {
-  if (times.length === 0) throw new WhiteboxError('value', 'odeintAdjoint: give at least one time')
+  if (times.length === 0) throw new MdmlError('value', 'odeintAdjoint: give at least one time')
   const y = floatState(y0)
   const p = floatState(params)
   return arg(bind(solvePrimitive, [y, p], { f, times: [...times], options }), 0)
@@ -331,12 +330,12 @@ export interface ForwardSensitivities {
  * @param params - The parameters.
  * @param options - Method and tolerances.
  * @returns States and sensitivities at the times.
- * @throws WhiteboxError with code `convergence` when the solve fails.
+ * @throws MdmlError with code `convergence` when the solve fails.
  * @concept sensitivity-analysis
  * @example
  * ```ts
- * import { forwardSensitivities } from 'whitebox-engine/dynamics/ode'
- * import { mul, neg } from 'whitebox-engine/tensor'
+ * import { forwardSensitivities } from 'mdml-engine/dynamics/ode'
+ * import { mul, neg } from 'mdml-engine/tensor'
  * const s = forwardSensitivities((_t, y, p) => neg(mul(p, y)), [1], [0, 1], [0.5])
  * Math.abs((s.dp.data[1] ?? 0) + Math.exp(-0.5)) < 1e-7 // => true
  * ```
@@ -384,7 +383,7 @@ export function forwardSensitivities(
             tEval: times,
             maxSteps: options.maxSteps ?? 100000,
           })
-          if (!sol.success) throw new WhiteboxError('convergence', `forwardSensitivities: ${sol.message}`)
+          if (!sol.success) throw new MdmlError('convergence', `forwardSensitivities: ${sol.message}`)
           return [z0, ...sol.ys.slice(1)]
         })()
   const nt = times.length
@@ -438,8 +437,8 @@ export interface GradientEstimate {
  * @concept adjoint-method
  * @example
  * ```ts
- * import { compareGradientMethods } from 'whitebox-engine/dynamics/ode'
- * import { mul, neg, sum } from 'whitebox-engine/tensor'
+ * import { compareGradientMethods } from 'mdml-engine/dynamics/ode'
+ * import { mul, neg, sum } from 'mdml-engine/tensor'
  * const r = compareGradientMethods((_t, y, p) => neg(mul(p, y)), [1], [0, 1], [0.5], (ys) => sum(ys))
  * r.map((e) => e.method) // => ['direct', 'forward', 'backsolve', 'interpolated', 'checkpointed']
  * ```

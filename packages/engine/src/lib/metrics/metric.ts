@@ -5,7 +5,7 @@
  * and `streaming`, which accumulates a metric over batches as torchmetrics does.
  */
 
-import { estimate, type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { estimate, MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { asTensor, isValue, type TensorLike, toFlat } from '../tensor/index.ts'
 
 /** Options every metric accepts. */
@@ -37,7 +37,7 @@ export type MetricFunction<A extends readonly unknown[]> = ((...args: A) => Metr
  * @returns The function with `spec`.
  * @example
  * ```ts
- * import { defineMetric, metricResult } from 'whitebox-engine/metrics'
+ * import { defineMetric, metricResult } from 'mdml-engine/metrics'
  * const spec = { name: 'one', direction: 'higher', range: [0, 1], inputs: 'values', category: 'demo' } as const
  * const one = defineMetric(spec, () => metricResult('one', 1, 1))
  * one.spec.name // => 'one'
@@ -60,7 +60,7 @@ export function defineMetric<A extends readonly unknown[]>(
  * @returns The result.
  * @example
  * ```ts
- * import { metricResult } from 'whitebox-engine/metrics'
+ * import { metricResult } from 'mdml-engine/metrics'
  * metricResult('accuracy', 0.75, 4).estimate.value // => 0.75
  * ```
  */
@@ -89,17 +89,17 @@ export interface Columns {
  * @param n - The number of samples.
  * @param sampleWeight - The weights, if any.
  * @returns The weights.
- * @throws WhiteboxError with code `shape` when the length differs from n.
+ * @throws MdmlError with code `shape` when the length differs from n.
  * @example
  * ```ts
- * import { sampleWeights } from 'whitebox-engine/metrics'
+ * import { sampleWeights } from 'mdml-engine/metrics'
  * Array.from(sampleWeights('demo', 2)) // => [1, 1]
  * ```
  */
 export function sampleWeights(name: string, n: number, sampleWeight?: TensorLike): Float64Array {
   if (sampleWeight === undefined) return new Float64Array(n).fill(1)
   const w = Float64Array.from(toFlat(asTensor(sampleWeight)))
-  if (w.length !== n) throw new WhiteboxError('shape', `${name}: sampleWeight must have one entry per sample`)
+  if (w.length !== n) throw new MdmlError('shape', `${name}: sampleWeight must have one entry per sample`)
   return w
 }
 
@@ -110,7 +110,7 @@ export function sampleWeights(name: string, n: number, sampleWeight?: TensorLike
  * @returns Its values.
  * @example
  * ```ts
- * import { flat } from 'whitebox-engine/metrics'
+ * import { flat } from 'mdml-engine/metrics'
  * Array.from(flat([[1, 2], [3, 4]])) // => [1, 2, 3, 4]
  * ```
  */
@@ -131,7 +131,7 @@ export interface Matrix {
  * @returns Its shape and row-major values.
  * @example
  * ```ts
- * import { matrix } from 'whitebox-engine/metrics'
+ * import { matrix } from 'mdml-engine/metrics'
  * matrix([[1, 2], [3, 4]]).shape // => [2, 2]
  * ```
  */
@@ -145,9 +145,9 @@ export function columns(name: string, yTrue: TensorLike, yPred: TensorLike, opti
   const t = asTensor(yTrue)
   const p = asTensor(yPred)
   if (t.shape.length !== p.shape.length || t.shape.some((d, i) => d !== p.shape[i])) {
-    throw new WhiteboxError('shape', `${name}: yTrue [${t.shape.join(', ')}] and yPred [${p.shape.join(', ')}] differ`)
+    throw new MdmlError('shape', `${name}: yTrue [${t.shape.join(', ')}] and yPred [${p.shape.join(', ')}] differ`)
   }
-  if (t.shape.length > 2) throw new WhiteboxError('shape', `${name}: expected 1-D or 2-D targets`)
+  if (t.shape.length > 2) throw new MdmlError('shape', `${name}: expected 1-D or 2-D targets`)
   const n = t.shape[0] ?? 1
   const k = t.shape.length === 2 ? (t.shape[1] ?? 1) : 1
   const weight = sampleWeights(name, n, options.sampleWeight)
@@ -205,7 +205,7 @@ export function weightedMean(values: ArrayLike<number>, weight: ArrayLike<number
  * @returns The percentile (NaN when every weight is zero).
  * @example
  * ```ts
- * import { weightedPercentile } from 'whitebox-engine/metrics'
+ * import { weightedPercentile } from 'mdml-engine/metrics'
  * weightedPercentile([1, 2, 3, 4], undefined, 50) // => 2.5
  * ```
  */
@@ -283,7 +283,7 @@ export interface StreamingMetric<O extends MetricOptions, I> {
  * @returns The accumulator.
  * @example
  * ```ts
- * import { meanAbsoluteError, streaming } from 'whitebox-engine/metrics'
+ * import { meanAbsoluteError, streaming } from 'mdml-engine/metrics'
  * const s = streaming(meanAbsoluteError)
  * s.update([1, 2], [2, 2])
  * s.update([3], [5])
@@ -304,14 +304,14 @@ export function streaming<O extends MetricOptions, I extends MetricInput>(metric
     update(yTrue, yPred, sampleWeight) {
       const t = rows(yTrue)
       const p = rows(yPred)
-      if (t.length !== p.length) throw new WhiteboxError('shape', 'streaming: yTrue and yPred differ in length')
+      if (t.length !== p.length) throw new MdmlError('shape', 'streaming: yTrue and yPred differ in length')
       trues = trues.concat(t)
       preds = preds.concat(p)
       if (sampleWeight !== undefined) weighted = true
       weights = weights.concat(sampleWeight === undefined ? t.map(() => 1) : Array.from(flat(sampleWeight)))
     },
     compute(options) {
-      if (trues.length === 0) throw new WhiteboxError('value', 'streaming: no batches seen')
+      if (trues.length === 0) throw new MdmlError('value', 'streaming: no batches seen')
       const opts = { ...(options ?? {}), ...(weighted ? { sampleWeight: weights } : {}) } as unknown as O
       return metric(trues as unknown as I, preds as unknown as I, opts)
     },

@@ -5,9 +5,9 @@ from typing import Literal
 import numpy as np
 import scipy
 import scipy.interpolate as si
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from scipy.sparse.linalg import spsolve
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

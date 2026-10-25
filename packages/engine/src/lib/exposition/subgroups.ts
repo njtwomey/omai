@@ -5,7 +5,7 @@
  * the attributes' values.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 import type { GroupRateName, GroupRateValues } from './fairness.ts'
 
@@ -63,11 +63,11 @@ export interface SubgroupReport {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when a per-subgroup field does not have one entry per subgroup, a subgroup does not have
+ * @throws MdmlError `shape` when a per-subgroup field does not have one entry per subgroup, a subgroup does not have
  *   one value per attribute, or a table is not 2 by 2; `value` when a worst subgroup is not a subgroup.
  * @example
  * ```ts
- * import { subgroupReport, tableRates } from 'whitebox-engine/exposition'
+ * import { subgroupReport, tableRates } from 'mdml-engine/exposition'
  * const t = [[1, 0], [0, 1]]
  * const rate = { subgroup: 0, gap: 0 }
  * const r = subgroupReport({
@@ -92,7 +92,7 @@ export function subgroupReport(record: Omit<SubgroupReport, 'kind'>): SubgroupRe
   }
   for (const w of Object.values(record.worst))
     if (!(Number.isInteger(w.subgroup) && w.subgroup >= 0 && w.subgroup < Math.max(k, 1)))
-      throw new WhiteboxError('value', `subgroupReport: the worst subgroup ${w.subgroup} is not one of ${k}`)
+      throw new MdmlError('value', `subgroupReport: the worst subgroup ${w.subgroup} is not one of ${k}`)
   if (record.audit !== undefined)
     sameLength('subgroupReport', 'audit.weights', record.audit.weights.length, record.audit.features.length)
   return { kind: 'subgroupReport', ...record }
@@ -108,7 +108,7 @@ export function subgroupReport(record: Omit<SubgroupReport, 'kind'>): SubgroupRe
  * @returns The row and column labels, the values and the counts, `[rows][columns]`.
  * @example
  * ```ts
- * import { subgroupGrid, subgroupReport, tableRates } from 'whitebox-engine/exposition'
+ * import { subgroupGrid, subgroupReport, tableRates } from 'mdml-engine/exposition'
  * const tables = [[[1, 1], [0, 2]], [[2, 0], [1, 1]]]
  * const rate = { subgroup: 0, gap: 0 }
  * const zero = { selectionRate: 0, truePositiveRate: 0, falsePositiveRate: 0, precision: 0, accuracy: 0, baseRate: 0 }

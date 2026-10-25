@@ -5,7 +5,7 @@
  * domain.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { ndtr, ndtri, normalPdf } from '../../numerics/special/index.ts'
 import {
   abs,
@@ -86,16 +86,16 @@ const positive = (x: Value): Value => maximum(x, EPS)
  *
  * @param p - The power (nonzero).
  * @returns The link.
- * @throws WhiteboxError with code `value` for p = 0 (use the log link).
+ * @throws MdmlError with code `value` for p = 0 (use the log link).
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.power(2).inverse(9)) // => 3
  * ```
  */
 export function power(p: number): Link {
-  if (p === 0) throw new WhiteboxError('value', 'power link: p must be nonzero (the limit is the log link)')
+  if (p === 0) throw new MdmlError('value', 'power link: p must be nonzero (the limit is the log link)')
   return defineLink({
     name: p === 1 ? 'identity' : p === -1 ? 'inverse' : p === -2 ? 'inverseSquared' : p === 0.5 ? 'sqrt' : 'power',
     link: (mu) => (p === 1 ? mu : pow(mu, p)),
@@ -112,8 +112,8 @@ export function power(p: number): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.identity().link(2.5)) // => 2.5
  * ```
  */
@@ -127,8 +127,8 @@ export function identity(): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.inverse().link(4)) // => 0.25
  * ```
  */
@@ -142,8 +142,8 @@ export function inverse(): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.inverseSquared().inverse(0.25)) // => 2
  * ```
  */
@@ -157,8 +157,8 @@ export function inverseSquared(): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.sqrt().link(9)) // => 3
  * ```
  */
@@ -172,8 +172,8 @@ export function sqrt(): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.log().inverse(0)) // => 1
  * ```
  */
@@ -194,8 +194,8 @@ export function log(): Link {
  * @returns The link; the inverse is the stable sigmoid.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.logit().inverse(0)) // => 0.5
  * ```
  */
@@ -229,8 +229,8 @@ export function logit(): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.probit().link(0.5)) // => 0
  * ```
  */
@@ -254,8 +254,8 @@ export function probit(): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.cauchit().inverse(1)) // => 0.75
  * ```
  */
@@ -281,8 +281,8 @@ export function cauchit(): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.cloglog().inverse(0)) === 1 - Math.exp(-1) // => true
  * ```
  */
@@ -310,8 +310,8 @@ export function cloglog(): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.loglog().inverse(0)) === Math.exp(-1) // => true
  * ```
  */
@@ -340,8 +340,8 @@ export function loglog(): Link {
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { families } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(families.negativeBinomialLink(1).link(1)) === Math.log(0.5) // => true
  * ```
  */
@@ -379,7 +379,7 @@ export type LinkName =
  * @returns The link.
  * @example
  * ```ts
- * import { families } from 'whitebox-engine/dists'
+ * import { families } from 'mdml-engine/dists'
  * families.linkByName('probit').name // => 'probit'
  * ```
  */

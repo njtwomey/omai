@@ -6,7 +6,7 @@
 
 // TODO: normal-gamma (unknown mean and variance), Dirichlet-multinomial and normal-inverse-Wishart studies, the
 // predictive distributions, and CAVI on the same models compared with the exact posterior.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { beta, conjugatePosterior, type Distribution, gamma, normal } from '../../lib/dists/index.ts'
 import {
   coefficientTable,
@@ -97,7 +97,7 @@ function prefixes(n: number, max: number): number[] {
  * @param observations - The data `[n]`.
  * @param options - Likelihood, prior, known parameters, level, grid size and curve steps.
  * @returns The prior and posterior, the posterior mean and interval and the sequence, with the exposition records.
- * @throws WhiteboxError `value` when the prior's family does not suit the likelihood or a known parameter is missing.
+ * @throws MdmlError `value` when the prior's family does not suit the likelihood or a known parameter is missing.
  */
 export function conjugateModel(observations: TensorLike, options: ConjugateModelOptions): Explained<ConjugateModel> {
   const xs = Array.from(toFlat(asTensor(observations)))
@@ -105,9 +105,9 @@ export function conjugateModel(observations: TensorLike, options: ConjugateModel
   const fixed = options.fixed ?? {}
   const parameter = PARAMETER[likelihood]
   if (likelihood === 'binomial' && fixed['n'] === undefined)
-    throw new WhiteboxError('value', 'conjugateModel: the binomial likelihood needs the trials n in fixed')
+    throw new MdmlError('value', 'conjugateModel: the binomial likelihood needs the trials n in fixed')
   if (likelihood === 'normal' && fixed['scale'] === undefined)
-    throw new WhiteboxError('value', 'conjugateModel: the normal likelihood needs its known scale in fixed')
+    throw new MdmlError('value', 'conjugateModel: the normal likelihood needs its known scale in fixed')
   const level = options.level ?? 0.95
   const posteriorOf = (data: readonly number[]): Distribution =>
     data.length === 0 ? prior : conjugatePosterior(prior, likelihood, parameter, data as number[], fixed)

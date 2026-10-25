@@ -5,7 +5,7 @@
  * iteration.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -79,15 +79,15 @@ export interface BatchNormResult {
  *   covariate shift.
  * @example
  * ```ts
- * import { batchNorm } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { batchNorm } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(batchNorm([[1], [3]], { eps: 0 }).output) // => [[-1], [1]]
  * ```
  */
 export function batchNorm(input: TensorLike, options: BatchNormOptions = {}): BatchNormResult {
   const x = fl(input)
   const rank = x.shape.length
-  if (rank < 2) throw new WhiteboxError('shape', 'batchNorm: input must be [B, C, ...]')
+  if (rank < 2) throw new MdmlError('shape', 'batchNorm: input must be [B, C, ...]')
   const eps = options.eps ?? 1e-5
   const axes = [0, ...x.shape.slice(2).map((_, i) => i + 2)]
   const hasRunning = options.runningMean !== undefined && options.runningVar !== undefined
@@ -136,7 +136,7 @@ const lastAxes = (x: Value, normalizedShape: number | readonly number[], name: s
   const shape = typeof normalizedShape === 'number' ? [normalizedShape] : normalizedShape
   const rank = x.shape.length
   if (shape.some((n, i) => x.shape[rank - shape.length + i] !== n))
-    throw new WhiteboxError('shape', `${name}: input [${x.shape.join(', ')}] does not end in [${shape.join(', ')}]`)
+    throw new MdmlError('shape', `${name}: input [${x.shape.join(', ')}] does not end in [${shape.join(', ')}]`)
   return shape.map((_, i) => rank - shape.length + i)
 }
 
@@ -151,8 +151,8 @@ const lastAxes = (x: Value, normalizedShape: number | readonly number[], name: s
  * @concept layer-normalisation
  * @example
  * ```ts
- * import { layerNorm } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { layerNorm } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(layerNorm([[1, 3]], 2, { eps: 0 })) // => [[-1, 1]]
  * ```
  */
@@ -182,8 +182,8 @@ export function layerNorm(
  * @reference Zhang and Sennrich (2019), Root mean square layer normalization.
  * @example
  * ```ts
- * import { rmsNorm } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { rmsNorm } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(rmsNorm([[3, 4]], 2, { eps: 0 })).flat().map((v) => Math.round(v * 1e6) / 1e6) // => [0.848528, 1.131371]
  * ```
  */
@@ -211,15 +211,15 @@ export function rmsNorm(
  * @reference Wu and He (2018), Group normalization.
  * @example
  * ```ts
- * import { groupNorm } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { groupNorm } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(groupNorm([[[1], [3]]], 1, { eps: 0 })) // => [[[-1], [1]]]
  * ```
  */
 export function groupNorm(input: TensorLike, numGroups: number, options: AffineNormOptions = {}): Value {
   const x = fl(input)
   const [b = 0, c = 0, ...spatial] = x.shape
-  if (c % numGroups !== 0) throw new WhiteboxError('shape', `groupNorm: ${c} channels do not divide into ${numGroups}`)
+  if (c % numGroups !== 0) throw new MdmlError('shape', `groupNorm: ${c} channels do not divide into ${numGroups}`)
   const g = reshape(x, [b, numGroups, -1])
   const m = mean(g, 2, true)
   const v = variance(g, 2, { keepDims: true })
@@ -248,8 +248,8 @@ export interface InstanceNormOptions extends AffineNormOptions {
  * @returns The output and, when running statistics are given, their update.
  * @example
  * ```ts
- * import { instanceNorm } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { instanceNorm } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(instanceNorm([[[1, 3]]], { eps: 0 }).output) // => [[[-1, 1]]]
  * ```
  */
@@ -259,7 +259,7 @@ export function instanceNorm(input: TensorLike, options: InstanceNormOptions = {
   const useInput = options.useInputStats ?? true
   const hasRunning = options.runningMean !== undefined && options.runningVar !== undefined
   if (!useInput) {
-    if (!hasRunning) throw new WhiteboxError('value', 'instanceNorm: useInputStats false needs running statistics')
+    if (!hasRunning) throw new MdmlError('value', 'instanceNorm: useInputStats false needs running statistics')
     return batchNorm(x, { ...options, training: false })
   }
   // An instance is a channel of an example: fold the batch into the channels and use batch normalisation's arithmetic.
@@ -305,8 +305,8 @@ export function instanceNorm(input: TensorLike, options: InstanceNormOptions = {
  * @returns The normalised input.
  * @example
  * ```ts
- * import { localResponseNorm } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { localResponseNorm } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(localResponseNorm([[[0], [0]]], 2)) // => [[[0], [0]]]
  * ```
  */
@@ -337,8 +337,8 @@ export function localResponseNorm(input: TensorLike, size: number, alpha = 1e-4,
  * @returns The normalised input.
  * @example
  * ```ts
- * import { normalize } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { normalize } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(normalize([[3, 4]])) // => [[0.6, 0.8]]
  * ```
  */
@@ -363,8 +363,8 @@ const otherAxes = (rank: number, axis: number): number[] =>
  * @reference Salimans and Kingma (2016), Weight normalization.
  * @example
  * ```ts
- * import { weightNorm } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { weightNorm } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(weightNorm([[3, 4]], [[10]])) // => [[6, 8]]
  * ```
  */
@@ -411,8 +411,8 @@ export interface SpectralNormResult {
  * @reference Miyato, Kataoka, Koyama and Yoshida (2018), Spectral normalization for generative adversarial networks.
  * @example
  * ```ts
- * import { spectralNorm } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { spectralNorm } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(spectralNorm([[2, 0], [0, 1]], [1, 0], [1, 0]).sigma) // => 2
  * ```
  */

@@ -5,7 +5,7 @@
  * `CalibratedClassifierCV` and netcal) and compares them.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { calibrationRecord, type Explained, type ReliabilityCurve } from '../../lib/exposition/index.ts'
 import {
   type Calibrator,
@@ -45,7 +45,7 @@ export interface ReliabilityOptions {
 
 /**
  * One reliability curve of binary forecasts: the bins' mean forecast and observed frequency with the expected and
- * maximum calibration errors and the Brier score (`whitebox-engine/metrics`).
+ * maximum calibration errors and the Brier score (`mdml-engine/metrics`).
  *
  * @param name - The curve's name.
  * @param labels - Binary labels.
@@ -130,7 +130,7 @@ const NAMES: Readonly<Record<CalibratorName, string>> = {
  * @param data - Labelled rows (split into calibration and test rows unless `calibration` is given).
  * @param options - Calibrators, bins, calibration rows, groups and key.
  * @returns Each calibrator's map and its errors, with the record.
- * @throws WhiteboxError `value` when the model gives no probabilities.
+ * @throws MdmlError `value` when the model gives no probabilities.
  */
 export function calibrateClassifier(
   model: Fitted,
@@ -144,10 +144,10 @@ export function calibrateClassifier(
     options.calibration === undefined
       ? splitData(data, [0.5, 0.5], options.key ?? makeKey(0))
       : [options.calibration as FairnessData, data]
-  if (cal === undefined || test === undefined) throw new WhiteboxError('value', 'calibrateClassifier: no rows')
+  if (cal === undefined || test === undefined) throw new MdmlError('value', 'calibrateClassifier: no rows')
   const raw = (d: LearnData): number[] => {
     const s = positiveScores(model, d.x)
-    if (!s.probability) throw new WhiteboxError('value', 'calibrateClassifier: the model gives no probabilities')
+    if (!s.probability) throw new MdmlError('value', 'calibrateClassifier: the model gives no probabilities')
     return s.scores
   }
   const pCal = raw(cal)

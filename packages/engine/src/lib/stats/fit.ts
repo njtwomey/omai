@@ -6,7 +6,7 @@
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
-import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import {
   bernoulli,
   beta,
@@ -76,9 +76,9 @@ export interface NewtonMleOptions extends Partial<Omit<RunOptions, 'maxSteps' | 
  * @returns The algorithm.
  * @example
  * ```ts
- * import { newtonMleAlgorithm } from 'whitebox-engine/stats'
- * import { runAlgorithm } from 'whitebox-engine/trace'
- * import { mul, neg, square, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { newtonMleAlgorithm } from 'mdml-engine/stats'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mul, neg, square, sub, sum, type Value } from 'mdml-engine/tensor'
  * const ll = (eta: Value): Value => neg(sum(square(sub(eta, 3))))
  * Array.from(runAlgorithm(newtonMleAlgorithm(ll, [0]), { maxSteps: 20 }).state.eta) // => [3]
  * ```
@@ -108,8 +108,7 @@ export function newtonMleAlgorithm(
     }),
     init: () => {
       const ll = value(initial)
-      if (!Number.isFinite(ll))
-        throw new WhiteboxError('value', 'newtonMle: the log-likelihood is not finite at the start')
+      if (!Number.isFinite(ll)) throw new MdmlError('value', 'newtonMle: the log-likelihood is not finite at the start')
       return {
         eta: initial,
         logLikelihood: ll,
@@ -184,8 +183,8 @@ export interface NewtonMleResult {
  * @returns The maximiser and its log-likelihood.
  * @example
  * ```ts
- * import { newtonMle } from 'whitebox-engine/stats'
- * import { neg, square, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { newtonMle } from 'mdml-engine/stats'
+ * import { neg, square, sub, sum, type Value } from 'mdml-engine/tensor'
  * newtonMle((eta: Value): Value => neg(sum(square(sub(eta, 2)))), [0]).logLikelihood // => 0
  * ```
  */
@@ -216,8 +215,8 @@ export function newtonMle(
  * @returns The p x p observed information.
  * @example
  * ```ts
- * import { observedInformation } from 'whitebox-engine/stats'
- * import { mul, neg, square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { observedInformation } from 'mdml-engine/stats'
+ * import { mul, neg, square, sum, type Value } from 'mdml-engine/tensor'
  * observedInformation((t: Value): Value => neg(sum(mul(square(t), 2))), [1]) // => [[4]]
  * ```
  */
@@ -470,17 +469,17 @@ function sortedQuartiles(x: Float64Array): [number, number] {
  * @returns The parameters, standard errors, covariance, log-likelihood, AIC, BIC and the fitted distribution.
  * @example
  * ```ts
- * import { fitDistribution } from 'whitebox-engine/stats'
+ * import { fitDistribution } from 'mdml-engine/stats'
  * fitDistribution([1, 2, 3, 4], 'normal').params // => { loc: 2.5, scale: 1.118034 }
  * fitDistribution([1, 2, 3, 4], 'normal').standardErrors.loc // => 0.559017
  * ```
  */
 export function fitDistribution(x: TensorLike, family: FitFamily, options: NewtonMleOptions = {}): DistributionFit {
   const spec = FAMILIES[family]
-  if (spec === undefined) throw new WhiteboxError('value', `fitDistribution: unknown family ${String(family)}`)
+  if (spec === undefined) throw new MdmlError('value', `fitDistribution: unknown family ${String(family)}`)
   const a = sample('fitDistribution', x, 2)
   if (spec.check !== undefined && !spec.check(a))
-    throw new WhiteboxError('domain', `fitDistribution: the data are outside the support of ${family}`)
+    throw new MdmlError('domain', `fitDistribution: the data are outside the support of ${family}`)
   const data = asTensor(a)
   const p = spec.names.length
   const logit = family === 'negativeBinomial'

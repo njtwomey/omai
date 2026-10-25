@@ -32,7 +32,7 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - `make layers`, `make lint`, `make format`, `make typecheck`.
 - `make fixtures`: regenerate golden fixtures from the Python oracle (`oracle/cases/...`); tests never run Python. Scope
   it to what you changed: `mise exec -- uv run --group oracle-core --group oracle-torch --group oracle-prob --group
-  oracle-rl python -m whitebox_oracle generate --only stats/tests/,kernels/` (comma-separated prefixes).
+  oracle-rl python -m mdml_oracle generate --only stats/tests/,kernels/` (comma-separated prefixes).
   `make manifest` rebuilds `fixtures/manifest.json` from the fixture files (for merge conflicts) in under a second.
   Fixtures follow the standard in `docs/structure.md` section 9: prebuilt numpy/scipy/etc. functions as references, tiered
   tolerances (1e-12 exact, 1e-10 special functions and direct linear algebra, 1e-6 to 1e-8 iterative), no gradient
@@ -40,16 +40,16 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 
 ## Architecture in brief
 
-- Four packages: `packages/engine` (`whitebox-engine`: the core in `lib/`, headless methods in `methods/` that return
-  typed exposition records from `lib/exposition`), `packages/render` (`whitebox-render`, headless figures, views of
-  exposition records, React bindings), `packages/meta` (`whitebox-meta`, docs metadata and the example runner),
-  `packages/hub` (`whitebox-hub`, declarative entries composing methods and render views; no drawing of its own).
+- Four packages: `packages/engine` (`mdml-engine`: the core in `lib/`, headless methods in `methods/` that return
+  typed exposition records from `lib/exposition`), `packages/render` (`mdml-render`, headless figures, views of
+  exposition records, React bindings), `packages/meta` (`mdml-meta`, docs metadata and the example runner),
+  `packages/hub` (`mdml-hub`, declarative entries composing methods and render views; no drawing of its own).
   One private app, `apps/site` (`make dev`, http://localhost:5300), with three sections on a shared shell: the gallery
   (render, hand-written recipes), the hub (generated from its catalogue) and the docs (generated from the TSDoc).
 - Engine core is `packages/engine/src/lib/<domain>/`, applications are `packages/engine/src/methods/<area>/`. There are
   no tiers or metadata files: domains import one another, and areas one another, without cycles, and the core never
   imports methods (`make layers` reports any cycle as its path). Every folder is an import path
-  (`whitebox-engine/numerics/linalg`); subfolders are namespaces, or re-exported flat when their summary has `@inline`.
+  (`mdml-engine/numerics/linalg`); subfolders are namespaces, or re-exported flat when their summary has `@inline`.
 - The code documents itself: each folder's `index.ts` opens with a hand-written doc comment, a short paragraph on what
   the folder is and holds (`make barrels` keeps it above the generated exports), and each source file opens with a
   short paragraph on what it is and what to expect in it (no to-do lists or export lists). `make barrels` fails

@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 import scipy
 import scipy.optimize as so
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

@@ -1,5 +1,5 @@
 // Shared plumbing for the systems domain: number views of values, complex lists and highest-first polynomials.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { type ComplexArray, polyadd, polyFromRoots, polyroots, polytrim } from '../numerics/polynomial/index.ts'
 import { binom, factorial as factorialOf } from '../numerics/special/index.ts'
@@ -89,8 +89,7 @@ export function polyAddHf(a: readonly number[], b: readonly number[]): number[] 
 export function commonDt(name: string, ...dts: readonly number[]): number {
   const first = dts[0] ?? 0
   for (const dt of dts) {
-    if (dt !== first)
-      throw new WhiteboxError('value', `${name}: systems have different sample times (${dts.join(', ')})`)
+    if (dt !== first) throw new MdmlError('value', `${name}: systems have different sample times (${dts.join(', ')})`)
   }
   return first
 }

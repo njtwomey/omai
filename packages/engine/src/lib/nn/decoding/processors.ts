@@ -4,7 +4,7 @@
  * `composeProcessors` to chain them and helpers for log-probabilities and entropy of logits.
  */
 
-import { maxOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { logSoftmax, tensor, toFlat } from '../../tensor/index.ts'
 
 /** A logit processor: new logits for the next token from the current ones and the whole prefix (prompt included). */
@@ -19,7 +19,7 @@ const NEG = Number.NEGATIVE_INFINITY
  * @returns log p, or all -infinity when every logit is -infinity.
  * @example
  * ```ts
- * import { logProbs } from 'whitebox-engine/nn'
+ * import { logProbs } from 'mdml-engine/nn'
  * logProbs([0, 0]).map((v) => Math.round(v * 1e6) / 1e6) // => [-0.693147, -0.693147]
  * ```
  */
@@ -35,7 +35,7 @@ export function logProbs(logits: readonly number[]): number[] {
  * @returns -sum p log p.
  * @example
  * ```ts
- * import { entropyOfLogits } from 'whitebox-engine/nn'
+ * import { entropyOfLogits } from 'mdml-engine/nn'
  * entropyOfLogits([0, 0]) === Math.log(2) // => true
  * ```
  */
@@ -52,12 +52,12 @@ export function entropyOfLogits(logits: readonly number[]): number {
  * @returns The processor.
  * @example
  * ```ts
- * import { temperatureProcessor } from 'whitebox-engine/nn'
+ * import { temperatureProcessor } from 'mdml-engine/nn'
  * temperatureProcessor(2)([2, 4], []) // => [1, 2]
  * ```
  */
 export function temperatureProcessor(temperature: number): LogitProcessor {
-  if (!(temperature > 0)) throw new WhiteboxError('value', 'temperatureProcessor: the temperature must be positive')
+  if (!(temperature > 0)) throw new MdmlError('value', 'temperatureProcessor: the temperature must be positive')
   return (logits) => logits.map((z) => z / temperature)
 }
 
@@ -68,7 +68,7 @@ export function temperatureProcessor(temperature: number): LogitProcessor {
  * @returns The processor.
  * @example
  * ```ts
- * import { topKProcessor } from 'whitebox-engine/nn'
+ * import { topKProcessor } from 'mdml-engine/nn'
  * topKProcessor(2)([1, 3, 2], []) // => [-Infinity, 3, 2]
  * ```
  */
@@ -89,7 +89,7 @@ export function topKProcessor(k: number): LogitProcessor {
  * @reference Holtzman, Buys, Du, Forbes and Choi (2020), The curious case of neural text degeneration.
  * @example
  * ```ts
- * import { topPProcessor } from 'whitebox-engine/nn'
+ * import { topPProcessor } from 'mdml-engine/nn'
  * topPProcessor(0.6)([Math.log(0.5), Math.log(0.3), Math.log(0.2)], []) // => [Math.log(0.5), Math.log(0.3), -Infinity]
  * ```
  */
@@ -115,7 +115,7 @@ export function topPProcessor(p: number): LogitProcessor {
  * @returns The processor.
  * @example
  * ```ts
- * import { minPProcessor } from 'whitebox-engine/nn'
+ * import { minPProcessor } from 'mdml-engine/nn'
  * minPProcessor(0.4)([Math.log(0.6), Math.log(0.3), Math.log(0.1)], []) // => [Math.log(0.6), Math.log(0.3), -Infinity]
  * ```
  */
@@ -135,7 +135,7 @@ export function minPProcessor(p: number): LogitProcessor {
  * @returns The processor.
  * @example
  * ```ts
- * import { repetitionPenaltyProcessor } from 'whitebox-engine/nn'
+ * import { repetitionPenaltyProcessor } from 'mdml-engine/nn'
  * repetitionPenaltyProcessor(2)([4, -1, 3], [0, 1]) // => [2, -2, 3]
  * ```
  */
@@ -154,7 +154,7 @@ export function repetitionPenaltyProcessor(penalty: number): LogitProcessor {
  * @returns The processor.
  * @example
  * ```ts
- * import { frequencyPresenceProcessor } from 'whitebox-engine/nn'
+ * import { frequencyPresenceProcessor } from 'mdml-engine/nn'
  * frequencyPresenceProcessor({ frequency: 0.5, presence: 1 })([0, 0, 0], [1, 1, 2]) // => [0, -2, -1.5]
  * ```
  */
@@ -180,7 +180,7 @@ export function frequencyPresenceProcessor(
  * @returns One processor.
  * @example
  * ```ts
- * import { composeProcessors, temperatureProcessor, topKProcessor } from 'whitebox-engine/nn'
+ * import { composeProcessors, temperatureProcessor, topKProcessor } from 'mdml-engine/nn'
  * composeProcessors(temperatureProcessor(2), topKProcessor(1))([2, 4], []) // => [-Infinity, 2]
  * ```
  */

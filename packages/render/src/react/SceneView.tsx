@@ -3,8 +3,8 @@
  * resolved for the colour mode, 3-D layers projected, TeX labels typeset, with hover and click hit-testing.
  */
 
+import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'mdml-engine/scene'
 import { type CSSProperties, type PointerEvent, type ReactElement, type ReactNode, useMemo } from 'react'
-import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'whitebox-engine/scene'
 import { arrowHeadPoints, smoothPathData, straightPathData } from '../svg/paths.ts'
 import { pngDataUrl } from '../svg/png.ts'
 import { type ColourMode, type Tokens, resolvePaint as themePaint, tokens as themeTokens } from '../theme/tokens.ts'
@@ -235,7 +235,7 @@ function findNode(nodes: readonly SceneNode[], id: string): SceneNode | null {
 }
 
 /**
- * A `Scene` (plain data from whitebox-engine: environments, diagrams and models produce them) drawn as SVG elements,
+ * A `Scene` (plain data from mdml-engine: environments, diagrams and models produce them) drawn as SVG elements,
  * with theme tokens resolved for the colour mode, 3-D layers projected, TeX labels typeset, and hover and click
  * reported by node id. The scene keeps its own coordinates (a `viewBox`), so it scales to any drawn size.
  *
@@ -263,7 +263,7 @@ export function SceneView(props: SceneViewProps): ReactElement {
       style={{ display: 'block', maxWidth: '100%', height: 'auto', ...style }}
       role="img"
       aria-label={scene.title ?? 'scene'}
-      data-whitebox-scene=""
+      data-mdml-scene=""
       onPointerMove={
         onNodeHover === undefined
           ? undefined

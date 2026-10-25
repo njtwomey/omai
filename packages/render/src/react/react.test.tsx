@@ -28,7 +28,7 @@ describe('react bindings', () => {
       ),
     ).toBe('light:#ffffff')
   })
-  it('loads ECharts with the whitebox themes', () => {
+  it('loads ECharts with the mdml themes', () => {
     expect(typeof loadEcharts().init).toBe('function')
   })
 })

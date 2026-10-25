@@ -1,5 +1,5 @@
+import { CheckIcon, CopyIcon } from 'mdml-render/react'
 import { type ReactNode, useState } from 'react'
-import { CheckIcon, CopyIcon } from 'whitebox-render/react'
 import { highlight } from './highlight.ts'
 
 /**

@@ -5,12 +5,12 @@
  * entries of many modules into the catalogue, by id and by collection.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import type { Dataset, Knobs } from 'whitebox-engine/data'
-import { datasetCollections, datasetGenerators } from 'whitebox-engine/datasets'
-import type { Explained, Exposition, ExpositionKind } from 'whitebox-engine/exposition'
-import type { Key } from 'whitebox-engine/random'
-import { contains, type DictSpace, type SpaceValue } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import type { Dataset, Knobs } from 'mdml-engine/data'
+import { datasetCollections, datasetGenerators } from 'mdml-engine/datasets'
+import type { Explained, Exposition, ExpositionKind } from 'mdml-engine/exposition'
+import type { Key } from 'mdml-engine/random'
+import { contains, type DictSpace, type SpaceValue } from 'mdml-engine/space'
 
 /** Where a view sits on an entry's page. */
 export type ViewArea = 'main' | 'side' | 'below'
@@ -29,7 +29,7 @@ export interface SlotContext {
 export interface ViewSlot {
   readonly record: ExpositionKind
   /**
-   * A component of `whitebox-render/react` by name (`EpisodePlayer`, `EnvView`, a record view); omitted, the record
+   * A component of `mdml-render/react` by name (`EpisodePlayer`, `EnvView`, a record view); omitted, the record
    * kind's standard view (`ExpositionView`).
    */
   readonly view?: string
@@ -87,7 +87,7 @@ export interface HubEntry {
   readonly collection: string
   readonly tags: readonly string[]
   /**
-   * Dataset collection ids (`whitebox-engine/datasets`' `datasetCollections`); the first is the default. Empty for a
+   * Dataset collection ids (`mdml-engine/datasets`' `datasetCollections`); the first is the default. Empty for a
    * method that needs no dataset (an agent learning in an environment chosen by its parameters).
    */
   readonly datasets: readonly string[]
@@ -115,12 +115,12 @@ export interface HubEntry {
  *
  * @param spec - The entry without its `kind`.
  * @returns The entry.
- * @throws WhiteboxError `value` when the id is not under its collection, a dataset collection is unknown, or a knob
+ * @throws MdmlError `value` when the id is not under its collection, a dataset collection is unknown, or a knob
  *   does not fit the starting dataset.
  * @example
  * ```ts
- * import { defineEntry } from 'whitebox-hub'
- * import { dict } from 'whitebox-engine/space'
+ * import { defineEntry } from 'mdml-hub'
+ * import { dict } from 'mdml-engine/space'
  * const entry = defineEntry({
  *   id: 'demo/identity', title: 'Identity', summary: 'Returns nothing to explain.', collection: 'demo', tags: [],
  *   datasets: ['classification2d'], params: dict({}), run: () => ({ exposition: [] }), views: [],
@@ -130,20 +130,20 @@ export interface HubEntry {
  */
 export function defineEntry(spec: Omit<HubEntry, 'kind'>): HubEntry {
   if (!spec.id.startsWith(`${spec.collection}/`))
-    throw new WhiteboxError('value', `defineEntry: id '${spec.id}' is not under its collection '${spec.collection}'`)
+    throw new MdmlError('value', `defineEntry: id '${spec.id}' is not under its collection '${spec.collection}'`)
   for (const d of spec.datasets)
     if (datasetCollections[d] === undefined)
-      throw new WhiteboxError('value', `defineEntry: ${spec.id} names an unknown dataset collection '${d}'`)
+      throw new MdmlError('value', `defineEntry: ${spec.id} names an unknown dataset collection '${d}'`)
   const first = datasetCollections[spec.datasets[0] ?? '']
   if (spec.dataset !== undefined && first?.entries.every((e) => e.name !== spec.dataset) === true)
-    throw new WhiteboxError('value', `defineEntry: ${spec.id} starts from an unknown dataset '${spec.dataset}'`)
+    throw new MdmlError('value', `defineEntry: ${spec.id} starts from an unknown dataset '${spec.dataset}'`)
   if (spec.knobs !== undefined) {
     const start = first?.entries.find((e) => e.name === (spec.dataset ?? first.entries[0]?.name))
     const space = start !== undefined && 'generator' in start ? datasetGenerators[start.generator]?.knobs : undefined
     for (const [k, v] of Object.entries(spec.knobs)) {
       const s = space?.spaces[k]
       if (s === undefined || !contains(s, v))
-        throw new WhiteboxError('value', `defineEntry: ${spec.id} starts from a knob '${k}' its dataset does not take`)
+        throw new MdmlError('value', `defineEntry: ${spec.id} starts from a knob '${k}' its dataset does not take`)
     }
   }
   return { kind: 'hubEntry', ...spec }
@@ -156,7 +156,7 @@ export function defineEntry(spec: Omit<HubEntry, 'kind'>): HubEntry {
  * @returns `true` for values made by {@link defineEntry}.
  * @example
  * ```ts
- * import { isHubEntry } from 'whitebox-hub'
+ * import { isHubEntry } from 'mdml-hub'
  * isHubEntry({ kind: 'hubEntry' }) // => true
  * isHubEntry(3) // => false
  * ```
@@ -178,10 +178,10 @@ export interface Catalogue {
  *
  * @param modules - Module namespaces; every export that is a hub entry is collected.
  * @returns The catalogue, entries sorted by id.
- * @throws WhiteboxError `value` when two entries share an id.
+ * @throws MdmlError `value` when two entries share an id.
  * @example
  * ```ts
- * import { buildCatalogue } from 'whitebox-hub'
+ * import { buildCatalogue } from 'mdml-hub'
  * buildCatalogue([]).entries.length // => 0
  * ```
  */
@@ -191,7 +191,7 @@ export function buildCatalogue(modules: readonly Readonly<Record<string, unknown
     for (const value of Object.values(m)) {
       if (!isHubEntry(value)) continue
       if (byId.has(value.id) && byId.get(value.id) !== value)
-        throw new WhiteboxError('value', `buildCatalogue: two entries share the id '${value.id}'`)
+        throw new MdmlError('value', `buildCatalogue: two entries share the id '${value.id}'`)
       byId.set(value.id, value)
     }
   const entries = [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))

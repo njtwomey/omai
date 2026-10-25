@@ -5,7 +5,7 @@
  * governing equations from a library of candidate terms.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { eig, lstsq, pinv, solve, svd } from '../numerics/linalg/index.ts'
 import { leastSquares } from '../optim/index.ts'
 import {
@@ -54,11 +54,11 @@ export interface PolynomialModel {
  * @param u - Input series.
  * @param orders - na, nb and the delay nk (default 1).
  * @returns The polynomial coefficients and residuals.
- * @throws WhiteboxError with code `value` for mismatched lengths or too few samples.
+ * @throws MdmlError with code `value` for mismatched lengths or too few samples.
  * @concept system-identification
  * @example
  * ```ts
- * import { arx } from 'whitebox-engine/dynamics'
+ * import { arx } from 'mdml-engine/dynamics'
  * // y_t = 0.5 y_{t-1} + 2 u_{t-1}: a_1 = -0.5, b_1 = 2.
  * const u = [1, 0, 0, 1, 1, 0, 1, 0]
  * const y = [0]
@@ -73,12 +73,12 @@ export function arx(
 ): PolynomialModel {
   const ys = series(y)
   const us = series(u)
-  if (ys.length !== us.length) throw new WhiteboxError('value', 'arx: y and u need the same length')
+  if (ys.length !== us.length) throw new MdmlError('value', 'arx: y and u need the same length')
   const { na, nb } = orders
   const nk = orders.nk ?? 1
   const start = Math.max(na, nk + nb - 1)
   const rows = ys.length - start
-  if (rows <= na + nb) throw new WhiteboxError('value', 'arx: too few samples for these orders')
+  if (rows <= na + nb) throw new MdmlError('value', 'arx: too few samples for these orders')
   const X = new Float64Array(rows * (na + nb))
   const Y = new Float64Array(rows)
   for (let r = 0; r < rows; r++) {
@@ -114,8 +114,8 @@ export function arx(
  * @concept prediction-error-method
  * @example
  * ```ts
- * import { predictionError } from 'whitebox-engine/dynamics'
- * import { sub, mul } from 'whitebox-engine/tensor'
+ * import { predictionError } from 'mdml-engine/dynamics'
+ * import { sub, mul } from 'mdml-engine/tensor'
  * const r = predictionError((th) => sub(mul(th, [1, 2, 3]), [2, 4, 6]), [0])
  * Math.round((r.theta[0] ?? 0) * 1e8) / 1e8 // => 2
  * ```
@@ -140,7 +140,7 @@ export function predictionError(
  * @concept prediction-error-method
  * @example
  * ```ts
- * import { armax } from 'whitebox-engine/dynamics'
+ * import { armax } from 'mdml-engine/dynamics'
  * const u = Array.from({ length: 40 }, (_, t) => Math.sin(0.7 * t) + (t % 3 === 0 ? 1 : 0))
  * const y = [0]
  * for (let t = 1; t < 40; t++) y.push(0.6 * (y[t - 1] ?? 0) + (u[t - 1] ?? 0))
@@ -228,11 +228,11 @@ function blockHankel(data: Float64Array, dim: number, rows: number, cols: number
  * @param u - Inputs `[T, m]` (or `[T]`).
  * @param options - Model order and the number of block rows (default max(order + 1, 2 order)).
  * @returns A, B, C, D and the singular values.
- * @throws WhiteboxError with code `value` for too few samples.
+ * @throws MdmlError with code `value` for too few samples.
  * @concept subspace-identification
  * @example
  * ```ts
- * import { n4sid } from 'whitebox-engine/dynamics'
+ * import { n4sid } from 'mdml-engine/dynamics'
  * const u = Array.from({ length: 120 }, (_, t) => Math.sin(0.3 * t) + Math.cos(1.1 * t))
  * let x = 0
  * const y = u.map((v) => { const out = x; x = 0.8 * x + v; return out })
@@ -252,7 +252,7 @@ export function n4sid(
   const n = options.order
   const i = options.blockRows ?? Math.max(n + 1, 2 * n)
   const j = T - 2 * i + 1
-  if (j < 2 * i * (m + p)) throw new WhiteboxError('value', 'n4sid: too few samples for these block rows')
+  if (j < 2 * i * (m + p)) throw new MdmlError('value', 'n4sid: too few samples for these block rows')
   const yd = series(Y)
   const ud = series(U)
   const Up = fromNumbers(blockHankel(ud, m, i, j, 0), [i * m, j])
@@ -324,7 +324,7 @@ export interface DmdResult {
  * @concept dynamic-mode-decomposition
  * @example
  * ```ts
- * import { dmd } from 'whitebox-engine/dynamics'
+ * import { dmd } from 'mdml-engine/dynamics'
  * // Snapshots of x_{k+1} = diag(0.9, 0.5) x_k: the eigenvalues are 0.9 and 0.5.
  * const cols = [[1, 1]]
  * for (let k = 0; k < 5; k++) cols.push([0.9 * cols[k][0], 0.5 * cols[k][1]])
@@ -381,7 +381,7 @@ export type Dictionary = (x: Value) => Value
  * @concept dictionary-learning
  * @example
  * ```ts
- * import { polynomialLibrary } from 'whitebox-engine/dynamics'
+ * import { polynomialLibrary } from 'mdml-engine/dynamics'
  * polynomialLibrary(2, 2).names // => ['1', 'x0', 'x1', 'x0^2', 'x0 x1', 'x1^2']
  * ```
  */
@@ -430,7 +430,7 @@ export function polynomialLibrary(
  * @concept koopman-operator
  * @example
  * ```ts
- * import { edmd, polynomialLibrary } from 'whitebox-engine/dynamics'
+ * import { edmd, polynomialLibrary } from 'mdml-engine/dynamics'
  * // x' = 0.5 x on monomials 1, x, x^2: Koopman eigenvalues 1, 0.5 and 0.25.
  * const xs = [[0.3], [1.1], [-0.7], [2]]
  * const r = edmd(xs, xs.map(([v]) => [0.5 * v]), polynomialLibrary(1, 2).features)
@@ -479,7 +479,7 @@ export interface SindyOptions {
  * @concept sparse-regression
  * @example
  * ```ts
- * import { stlsq } from 'whitebox-engine/dynamics'
+ * import { stlsq } from 'mdml-engine/dynamics'
  * // The second feature is irrelevant: thresholding removes it and the refit gives 2 exactly.
  * Array.from(stlsq([[1, 1], [1, -1], [1, 1], [1, -1]], [[2], [2], [2], [2]]).data) // => [2, 0]
  * ```
@@ -557,7 +557,7 @@ export function stlsq(theta: TensorLike, targets: TensorLike, options: SindyOpti
  * @concept sindy
  * @example
  * ```ts
- * import { sindy } from 'whitebox-engine/dynamics'
+ * import { sindy } from 'mdml-engine/dynamics'
  * // The harmonic oscillator x0' = 2 x1, x1' = -2 x0 sampled over one period, with a linear library.
  * const xs = Array.from({ length: 64 }, (_, i) => [Math.cos((i * Math.PI) / 32), -Math.sin((i * Math.PI) / 32)])
  * const xdot = xs.map(([a, b]) => [2 * b, -2 * a])
@@ -575,7 +575,7 @@ export function sindy(
   if (options.derivatives !== undefined) D = primalOf(asTensor(options.derivatives))
   else {
     const dt = options.dt
-    if (dt === undefined) throw new WhiteboxError('value', 'sindy: give dt or the derivatives')
+    if (dt === undefined) throw new MdmlError('value', 'sindy: give dt or the derivatives')
     const out = new Float64Array(m * n)
     for (let r = 0; r < m; r++) {
       for (let c = 0; c < n; c++) {

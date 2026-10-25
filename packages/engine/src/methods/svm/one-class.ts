@@ -5,7 +5,7 @@
  * core's traced SMO.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { anomalyScores, type Exposition, marginRecord } from '../../lib/exposition/index.ts'
 import {
   decisionSurfaceOf,
@@ -110,7 +110,7 @@ function oneClassEstimator(
       fit: (data: LearnData, h: OneClassSvmHyper, options: FitOptions) => {
         const m = matrixView(data.x, method)
         const n = m.n
-        if (!(h.nu > 0 && h.nu <= 1)) throw new WhiteboxError('value', `${method}: nu must be in (0, 1]`)
+        if (!(h.nu > 0 && h.nu <= 1)) throw new MdmlError('value', `${method}: nu must be in (0, 1]`)
         const kp = resolveKernel(h, m.data, m.d)
         const rows = Array.from({ length: n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
         const K = kernelMatrix(kp, rows)

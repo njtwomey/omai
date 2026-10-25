@@ -1,5 +1,5 @@
 /**
- * Decoding for language models, part of `whitebox-engine/nn`: autoregressive generation with sampling and penalties,
+ * Decoding for language models, part of `mdml-engine/nn`: autoregressive generation with sampling and penalties,
  * beam search, speculative decoding with a draft model, the logit processors they share and constraints that restrict
  * which tokens may come next.
  *

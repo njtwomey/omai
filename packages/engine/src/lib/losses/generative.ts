@@ -6,7 +6,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { softplus } from '../numerics/special/index.ts'
 import { type Key, uniform } from '../random/index.ts'
@@ -46,8 +46,8 @@ export type GanObjective = 'minimax' | 'non-saturating' | 'wasserstein' | 'hinge
  * @concept generative-adversarial-networks
  * @example
  * ```ts
- * import { discriminatorLoss } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { discriminatorLoss } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(discriminatorLoss([2, 0], [-1, 1], { objective: 'hinge' })) // => 1.5
  * ```
  */
@@ -68,7 +68,7 @@ export function discriminatorLoss(
     case 'least-squares':
       return mul(add(mean(square(sub(r, 1))), mean(square(f))), 0.5)
     default:
-      throw new WhiteboxError('value', `unknown GAN objective ${String(options.objective)}`)
+      throw new MdmlError('value', `unknown GAN objective ${String(options.objective)}`)
   }
 }
 
@@ -82,8 +82,8 @@ export function discriminatorLoss(
  * @returns The scalar loss, differentiable in the outputs.
  * @example
  * ```ts
- * import { generatorLoss } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { generatorLoss } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(generatorLoss([0], { objective: 'non-saturating' })) === Math.LN2 // => true
  * ```
  */
@@ -100,7 +100,7 @@ export function generatorLoss(fakeLogits: TensorLike, options: { readonly object
     case 'least-squares':
       return mul(mean(square(sub(f, 1))), 0.5)
     default:
-      throw new WhiteboxError('value', `unknown GAN objective ${String(options.objective)}`)
+      throw new MdmlError('value', `unknown GAN objective ${String(options.objective)}`)
   }
 }
 
@@ -125,11 +125,11 @@ function squaredGradientNorms(critic: Critic, x: Value): Value {
  * @param options - weight (default 10), target norm (default 1), and the interpolation: `alpha` `[N]` given, or
  *   drawn uniformly with `key`.
  * @returns The scalar penalty.
- * @throws WhiteboxError with code `value` when neither `alpha` nor `key` is given.
+ * @throws MdmlError with code `value` when neither `alpha` nor `key` is given.
  * @example
  * ```ts
- * import { gradientPenalty } from 'whitebox-engine/losses'
- * import { item, mul, sum, type Value } from 'whitebox-engine/tensor'
+ * import { gradientPenalty } from 'mdml-engine/losses'
+ * import { item, mul, sum, type Value } from 'mdml-engine/tensor'
  * const critic = (x: Value) => sum(mul(x, 3), 1)
  * item(gradientPenalty(critic, [[0, 0]], [[1, 1]], { alpha: [0.5], weight: 1 })) === (Math.sqrt(18) - 1) ** 2 // => true
  * ```
@@ -145,7 +145,7 @@ export function gradientPenalty(
   let alpha: Value
   if (options.alpha !== undefined) alpha = promoteFloat(options.alpha)[0] as Value
   else if (options.key !== undefined) alpha = uniform(options.key, [n])
-  else throw new WhiteboxError('value', 'gradientPenalty: pass `alpha` or a `key`')
+  else throw new MdmlError('value', 'gradientPenalty: pass `alpha` or a `key`')
   const a = reshape(alpha, [n, ...x.shape.slice(1).map(() => 1)])
   const interpolates = add(mul(a, x), mul(sub(1, a), y))
   const norms = sqrt(squaredGradientNorms(critic, interpolates))
@@ -162,8 +162,8 @@ export function gradientPenalty(
  * @returns The scalar penalty, differentiable in the critic's parameters.
  * @example
  * ```ts
- * import { r1Penalty } from 'whitebox-engine/losses'
- * import { item, mul, sum, type Value } from 'whitebox-engine/tensor'
+ * import { r1Penalty } from 'mdml-engine/losses'
+ * import { item, mul, sum, type Value } from 'mdml-engine/tensor'
  * item(r1Penalty((x: Value) => sum(mul(x, 2), 1), [[1, 1]], { gamma: 1 })) // => 4
  * ```
  */
@@ -187,8 +187,8 @@ const perSample = (v: Value): Value => (v.shape.length <= 1 ? v : sum(reshape(v,
  * @concept variational-autoencoders
  * @example
  * ```ts
- * import { gaussianKl } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { gaussianKl } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(gaussianKl([[0, 0]], [[0, 0]])) // => 0
  * ```
  */
@@ -212,9 +212,9 @@ export function gaussianKl(
  * @returns The estimate, differentiable.
  * @example
  * ```ts
- * import { sampledKl } from 'whitebox-engine/losses'
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { sampledKl } from 'mdml-engine/losses'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(sampledKl(normal(0, 1), normal(0, 1), [0.3, -1])) // => 0
  * ```
  */
@@ -232,8 +232,8 @@ export function sampledKl(q: Distribution, p: Distribution, z: TensorLike): Valu
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { negativeElbo } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { negativeElbo } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(negativeElbo([-3, -1], [0.5, 0.5], { beta: 2 })) // => 3
  * ```
  */
@@ -255,8 +255,8 @@ export function negativeElbo(
  * @returns log p(x | z) per sample `[N]`, differentiable.
  * @example
  * ```ts
- * import { bernoulliLogLikelihood } from 'whitebox-engine/losses'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { bernoulliLogLikelihood } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(bernoulliLogLikelihood([[0, 0]], [[1, 0]])).map((v) => v / Math.LN2) // => [-2]
  * ```
  */
@@ -275,8 +275,8 @@ export function bernoulliLogLikelihood(logits: TensorLike, x: TensorLike): Value
  * @returns log p(x | z) per sample `[N]`, differentiable.
  * @example
  * ```ts
- * import { gaussianLogLikelihood } from 'whitebox-engine/losses'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { gaussianLogLikelihood } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(gaussianLogLikelihood([[0]], [[0]])).map((v) => v + 0.5 * Math.log(2 * Math.PI)) // => [0]
  * ```
  */
@@ -301,8 +301,8 @@ export function gaussianLogLikelihood(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { importanceWeightedBound } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { importanceWeightedBound } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(importanceWeightedBound([[-2, -2]])) - 2) < 1e-15 // => true
  * ```
  */
@@ -327,8 +327,8 @@ export function importanceWeightedBound(
  * @returns The loss, differentiable in the scores.
  * @example
  * ```ts
- * import { denoisingScoreMatching } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { denoisingScoreMatching } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(denoisingScoreMatching([[-2]], [[1]], [0.5])) // => 0
  * ```
  */
@@ -360,8 +360,8 @@ export type DiffusionParameterisation = 'epsilon' | 'x0' | 'v'
  * @returns The target, the shape of x0.
  * @example
  * ```ts
- * import { diffusionTarget } from 'whitebox-engine/losses'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { diffusionTarget } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(diffusionTarget('v', [1], [2], 0.5, 0.25)) // => [0.75]
  * ```
  */
@@ -391,8 +391,8 @@ export function diffusionTarget(
  * @returns The scalar loss, differentiable in the prediction.
  * @example
  * ```ts
- * import { diffusionLoss } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { diffusionLoss } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(diffusionLoss([1], [2], [1], 0.6, 0.8)) // => 0
  * ```
  */
@@ -420,8 +420,8 @@ export function diffusionLoss(
  * @returns The points x_t and target velocities.
  * @example
  * ```ts
- * import { flowMatchingPath } from 'whitebox-engine/losses'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { flowMatchingPath } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(flowMatchingPath([[0]], [[2]], [0.25]).xt) // => [[0.5]]
  * ```
  */
@@ -448,8 +448,8 @@ export function flowMatchingPath(
  * @returns The scalar loss, differentiable in the predictions.
  * @example
  * ```ts
- * import { flowMatching } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { flowMatching } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(flowMatching([[2]], [[0]], [[2]])) // => 0
  * ```
  */

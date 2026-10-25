@@ -5,7 +5,7 @@
  * ruptures.
  */
 
-import { logSumExpOf, WhiteboxError } from '../../base/index.ts'
+import { logSumExpOf, MdmlError } from '../../base/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -62,7 +62,7 @@ export interface RunPosterior {
  * @concept bayesian-changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * filtering.priorRun({ kind: 'bernoulli-beta', alpha: 1, beta: 1 }).predictiveMean() // => 0.5
  * ```
  */
@@ -134,16 +134,16 @@ export function priorRun(model: ConjugateModel): RunPosterior {
  *
  * @param lambda - The expected segment length (> 1).
  * @returns The hazard function of the run length.
- * @throws WhiteboxError with code `value` for lambda <= 1.
+ * @throws MdmlError with code `value` for lambda <= 1.
  * @concept hazard-function
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * filtering.constantHazard(100)(7) // => 0.01
  * ```
  */
 export function constantHazard(lambda: number): (runLength: number) => number {
-  if (!(lambda > 1)) throw new WhiteboxError('value', 'constantHazard: the mean segment length must exceed 1')
+  if (!(lambda > 1)) throw new MdmlError('value', 'constantHazard: the mean segment length must exceed 1')
   return () => 1 / lambda
 }
 
@@ -156,7 +156,7 @@ export function constantHazard(lambda: number): (runLength: number) => number {
  * @concept hazard-function
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * // Geometric lengths: the hazard is constant.
  * Math.round(filtering.survivalHazard((r) => 0.9 ** r)(3) * 1e12) / 1e12 // => 0.1
  * ```
@@ -207,11 +207,11 @@ interface BocpdState {
  * @param hazard - A constant hazard in (0, 1) or a function of the run length.
  * @param options - Pruning threshold and tracing.
  * @returns Run-length posteriors, MAP run lengths, change probabilities, predictives and the evidence.
- * @throws WhiteboxError with code `value` for a constant hazard outside (0, 1).
+ * @throws MdmlError with code `value` for a constant hazard outside (0, 1).
  * @concept bayesian-changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * const r = filtering.bocpd([0, 0.1, 5, 5.2], { kind: 'normal-known-variance', sigma: 0.5, priorMean: 0, priorStd: 5 }, 0.1)
  * r.mapRunLength // => [1, 2, 1, 2]
  * ```
@@ -223,7 +223,7 @@ export function bocpd(
   options: { readonly threshold?: number } & Partial<Omit<RunOptions, 'maxSteps' | 'start'>> = {},
 ): BocpdResult {
   if (typeof hazard === 'number' && !(hazard > 0 && hazard < 1))
-    throw new WhiteboxError('value', 'bocpd: the hazard must be in (0, 1)')
+    throw new MdmlError('value', 'bocpd: the hazard must be in (0, 1)')
   const h = typeof hazard === 'number' ? () => hazard : hazard
   const cut = options.threshold ?? -40
   const algorithm: Algorithm<BocpdState> = {
@@ -347,11 +347,11 @@ export interface OfflineOptions {
  * @param penalty - The penalty per segment (BIC: 2 log n for a mean change at unit variance).
  * @param options - Cost (default l2), minimum segment length and grid step.
  * @returns The segment end indices (sorted, the last is n), as ruptures reports them.
- * @throws WhiteboxError with code `value` when the series is shorter than one minimum segment.
+ * @throws MdmlError with code `value` when the series is shorter than one minimum segment.
  * @concept changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * filtering.pelt([0, 0, 0, 0, 5, 5, 5, 5], 1) // => [4, 8]
  * ```
  */
@@ -360,7 +360,7 @@ export function pelt(y: readonly number[], penalty: number, options: OfflineOpti
   const c = costFunction(y, options.cost ?? 'l2')
   const minSize = Math.max(options.minSize ?? 2, c.minSize)
   const jump = options.jump ?? 1
-  if (n < minSize) throw new WhiteboxError('value', 'pelt: the series is shorter than the minimum segment')
+  if (n < minSize) throw new MdmlError('value', 'pelt: the series is shorter than the minimum segment')
   // F[b]: optimal cost of y[0..b) including a penalty per segment; last[b]: the last changepoint before b.
   const F = new Map<number, number>([[0, 0]])
   const last = new Map<number, number>()
@@ -407,11 +407,11 @@ export function pelt(y: readonly number[], penalty: number, options: OfflineOpti
  * @param stop - `{ changepoints }` or `{ penalty }`.
  * @param options - Cost (default l2), minimum segment length and grid step.
  * @returns The segment end indices (sorted, the last is n).
- * @throws WhiteboxError with code `value` without a stopping rule.
+ * @throws MdmlError with code `value` without a stopping rule.
  * @concept changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * filtering.binarySegmentation([0, 0, 0, 5, 5, 5, 1, 1, 1], { changepoints: 2 }) // => [3, 6, 9]
  * ```
  */
@@ -421,7 +421,7 @@ export function binarySegmentation(
   options: OfflineOptions = {},
 ): number[] {
   if (stop.changepoints === undefined && stop.penalty === undefined) {
-    throw new WhiteboxError('value', 'binarySegmentation: give a number of changepoints or a penalty')
+    throw new MdmlError('value', 'binarySegmentation: give a number of changepoints or a penalty')
   }
   const n = y.length
   const c = costFunction(y, options.cost ?? 'l2')

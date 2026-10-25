@@ -1,8 +1,8 @@
+import { digits, iris } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { prototypesAndCriticisms } from 'mdml-engine/methods/explain'
+import { Choice, ControlPanel, NumberField, PrototypeView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { digits, iris } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { prototypesAndCriticisms } from 'whitebox-engine/methods/explain'
-import { Choice, ControlPanel, NumberField, PrototypeView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

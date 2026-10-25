@@ -1,11 +1,11 @@
+import { oldFaithful } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { standardScaler } from 'mdml-engine/learn/preprocessing'
+import { type CovarianceType, gaussianMixture } from 'mdml-engine/methods/mixture'
+import { key } from 'mdml-engine/random'
+import { toArray } from 'mdml-engine/tensor'
+import { Choice, ControlPanel, MixturePlayer, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { oldFaithful } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { standardScaler } from 'whitebox-engine/learn/preprocessing'
-import { type CovarianceType, gaussianMixture } from 'whitebox-engine/methods/mixture'
-import { key } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
-import { Choice, ControlPanel, MixturePlayer, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

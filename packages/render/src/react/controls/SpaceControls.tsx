@@ -3,8 +3,8 @@
  * segmented choices, selects, toggles), with conditional dimensions appearing as their conditions come to hold.
  */
 
+import type { Space, SpaceValue } from 'mdml-engine/space'
 import type { ReactNode } from 'react'
-import type { Space, SpaceValue } from 'whitebox-engine/space'
 import { Choice } from './Choice.tsx'
 import { cx, labelClass } from './classes.ts'
 import { NumberField } from './NumberField.tsx'

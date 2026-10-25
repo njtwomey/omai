@@ -5,7 +5,7 @@
  * against centralised critics that see every agent's observation and action.
  */
 
-import { argmaxOf, type Json, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError, maxOf } from '../../../lib/base/index.ts'
 import { mse } from '../../../lib/losses/index.ts'
 import { elu, mlp } from '../../../lib/nn/index.ts'
 import { adam, incrementalUpdate, linearSchedule, type Tree } from '../../../lib/optim/index.ts'
@@ -93,7 +93,7 @@ function valueDecomposition(
   const nA = actionCount(env.actionSpaces[agents[0] ?? ''] as Space, kind)
   for (const a of agents)
     if (actionCount(env.actionSpaces[a] as Space, kind) !== nA)
-      throw new WhiteboxError('value', `${kind}: every agent needs the same number of actions`)
+      throw new MdmlError('value', `${kind}: every agent needs the same number of actions`)
   const d = maxOf(agents.map((a) => encodedSize(env.observationSpaces[a])))
   const inputs = d + n
   const k0 = options.key ?? makeKey(0)
@@ -255,8 +255,8 @@ function valueDecomposition(
  * @concept value-decomposition
  * @example
  * ```ts
- * import { vdn } from 'whitebox-engine/methods/rl/agents'
- * import { cooperativeNavigation } from 'whitebox-engine/methods/rl'
+ * import { vdn } from 'mdml-engine/methods/rl/agents'
+ * import { cooperativeNavigation } from 'mdml-engine/methods/rl'
  * vdn(cooperativeNavigation.create({ agents: 2 }), { hidden: [16] }).name // => 'vdn'
  * ```
  */
@@ -280,8 +280,8 @@ export function vdn(
  * @concept value-decomposition
  * @example
  * ```ts
- * import { qmix } from 'whitebox-engine/methods/rl/agents'
- * import { cooperativeNavigation } from 'whitebox-engine/methods/rl'
+ * import { qmix } from 'mdml-engine/methods/rl/agents'
+ * import { cooperativeNavigation } from 'mdml-engine/methods/rl'
  * qmix(cooperativeNavigation.create({ agents: 2 }), { hidden: [16], embed: 8 }).name // => 'qmix'
  * ```
  */
@@ -352,9 +352,9 @@ export interface MaddpgState {
  * @concept actor-critic
  * @example
  * ```ts
- * import { maddpg } from 'whitebox-engine/methods/rl/agents'
- * import { cooperativeNavigation } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { maddpg } from 'mdml-engine/methods/rl/agents'
+ * import { cooperativeNavigation } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = maddpg(cooperativeNavigation.create({ agents: 2, continuous: true }), { hidden: [16] })
  * agent.init(key(0)).actors.length // => 2
  * ```

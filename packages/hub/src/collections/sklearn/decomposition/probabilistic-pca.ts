@@ -3,7 +3,7 @@
  * such as the Swiss roll and tabular data.
  */
 
-import { probabilisticPca as probabilisticPcaMethod } from 'whitebox-engine/methods/decomposition'
+import { probabilisticPca as probabilisticPcaMethod } from 'mdml-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

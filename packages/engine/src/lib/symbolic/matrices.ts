@@ -4,7 +4,7 @@
  * eigenvectors.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import { MINUS_ONE, makeAdd, makeMul, makePow, numFromRational, ONE, ZERO } from './_canon.ts'
 import { expandExpr } from './_expand.ts'
@@ -31,7 +31,7 @@ function shape(a: Matrix): [number, number] {
 
 function square(a: Matrix, what: string): number {
   const [n, m] = shape(a)
-  if (n !== m) throw new WhiteboxError('shape', `${what}: matrix must be square, got ${n}x${m}`)
+  if (n !== m) throw new MdmlError('shape', `${what}: matrix must be square, got ${n}x${m}`)
   return n
 }
 
@@ -57,16 +57,16 @@ function isZero(e: Expr): boolean {
  *
  * @param rows - The rows.
  * @returns The matrix.
- * @throws WhiteboxError with code `shape` for ragged rows.
+ * @throws MdmlError with code `shape` for ragged rows.
  * @example
  * ```ts
- * import { matrix } from 'whitebox-engine/symbolic'
+ * import { matrix } from 'mdml-engine/symbolic'
  * matrix([[1, 2], [3, 4]]).length // => 2
  * ```
  */
 export function matrix(rows: readonly (readonly ExprLike[])[]): Matrix {
   const m = rows[0]?.length ?? 0
-  if (rows.some((r) => r.length !== m)) throw new WhiteboxError('shape', 'matrix: rows must have equal length')
+  if (rows.some((r) => r.length !== m)) throw new MdmlError('shape', 'matrix: rows must have equal length')
   return rows.map((r) => r.map(asExpr))
 }
 
@@ -77,7 +77,7 @@ export function matrix(rows: readonly (readonly ExprLike[])[]): Matrix {
  * @returns The n x n identity.
  * @example
  * ```ts
- * import { identityMatrix, toText } from 'whitebox-engine/symbolic'
+ * import { identityMatrix, toText } from 'mdml-engine/symbolic'
  * toText(identityMatrix(2)[1]?.[1] ?? 0) // => '1'
  * ```
  */
@@ -92,7 +92,7 @@ export function identityMatrix(n: number): Matrix {
  * @returns Its transpose.
  * @example
  * ```ts
- * import { matrix, toText, transpose } from 'whitebox-engine/symbolic'
+ * import { matrix, toText, transpose } from 'mdml-engine/symbolic'
  * toText(transpose(matrix([[1, 2]]))[1]?.[0] ?? 0) // => '2'
  * ```
  */
@@ -107,10 +107,10 @@ export function transpose(a: Matrix): Matrix {
  * @param a - Left factor (n x k).
  * @param b - Right factor (k x m).
  * @returns The n x m product.
- * @throws WhiteboxError with code `shape` on mismatched sizes.
+ * @throws MdmlError with code `shape` on mismatched sizes.
  * @example
  * ```ts
- * import { matMul, matrix, parse, toText } from 'whitebox-engine/symbolic'
+ * import { matMul, matrix, parse, toText } from 'mdml-engine/symbolic'
  * toText(matMul(matrix([[parse('a'), 1]]), matrix([[2], [parse('b')]]))[0]?.[0] ?? 0) // => '2*a + b'
  * ```
  */
@@ -118,7 +118,7 @@ export function matMul(a: Matrix, b: Matrix): Matrix {
   return bounded('matMul', () => {
     const [n, k] = shape(a)
     const [k2, m] = shape(b)
-    if (k !== k2) throw new WhiteboxError('shape', `matMul: ${n}x${k} times ${k2}x${m}`)
+    if (k !== k2) throw new MdmlError('shape', `matMul: ${n}x${k} times ${k2}x${m}`)
     return Array.from({ length: n }, (_, i) =>
       Array.from({ length: m }, (_, j) =>
         normal(
@@ -166,7 +166,7 @@ function berkowitz(a: Matrix): Expr[] {
  * @returns The determinant.
  * @example
  * ```ts
- * import { det, matrix, parse, toText } from 'whitebox-engine/symbolic'
+ * import { det, matrix, parse, toText } from 'mdml-engine/symbolic'
  * toText(det(matrix([[parse('a'), parse('b')], [parse('c'), parse('d')]]))) // => 'a*d - b*c'
  * ```
  */
@@ -187,7 +187,7 @@ export function det(a: Matrix): Expr {
  * @returns The polynomial.
  * @example
  * ```ts
- * import { charpoly, matrix, sym, toText } from 'whitebox-engine/symbolic'
+ * import { charpoly, matrix, sym, toText } from 'mdml-engine/symbolic'
  * toText(charpoly(matrix([[1, 2], [2, 1]]), sym('lambda'))) // => 'lambda**2 - 2*lambda - 3'
  * ```
  */
@@ -209,10 +209,10 @@ function minor(a: Matrix, r: number, c: number): Matrix {
  *
  * @param a - A square, non-singular matrix.
  * @returns The inverse.
- * @throws WhiteboxError with code `singular` when the determinant is zero.
+ * @throws MdmlError with code `singular` when the determinant is zero.
  * @example
  * ```ts
- * import { inverse, matrix, toText } from 'whitebox-engine/symbolic'
+ * import { inverse, matrix, toText } from 'mdml-engine/symbolic'
  * inverse(matrix([[2, 1], [1, 1]])).map((r) => r.map(toText)) // => [['1', '-1'], ['-1', '2']]
  * ```
  */
@@ -220,7 +220,7 @@ export function inverse(a: Matrix): Matrix {
   return bounded('inverse', () => {
     const n = square(a, 'inverse')
     const d = det(a)
-    if (isZero(d)) throw new WhiteboxError('singular', 'inverse: the matrix is singular')
+    if (isZero(d)) throw new MdmlError('singular', 'inverse: the matrix is singular')
     const inv = makePow(d, MINUS_ONE)
     return Array.from({ length: n }, (_, i) =>
       Array.from({ length: n }, (_, j) => {
@@ -239,7 +239,7 @@ export function inverse(a: Matrix): Matrix {
  * @returns The basis vectors.
  * @example
  * ```ts
- * import { matrix, nullspace, toText } from 'whitebox-engine/symbolic'
+ * import { matrix, nullspace, toText } from 'mdml-engine/symbolic'
  * nullspace(matrix([[1, 2], [2, 4]])).map((v) => v.map(toText)) // => [['-2', '1']]
  * ```
  */
@@ -298,7 +298,7 @@ export function nullspace(a: Matrix): Expr[][] {
  * @returns The eigenvalues.
  * @example
  * ```ts
- * import { eigenvals, matrix, toText } from 'whitebox-engine/symbolic'
+ * import { eigenvals, matrix, toText } from 'mdml-engine/symbolic'
  * eigenvals(matrix([[2, 1], [1, 2]])).map((r) => toText(r.value)) // => ['1', '3']
  * ```
  */
@@ -317,7 +317,7 @@ export function eigenvals(a: Matrix): Root[] {
  * @returns One entry per distinct eigenvalue.
  * @example
  * ```ts
- * import { eigenvects, matrix, toText } from 'whitebox-engine/symbolic'
+ * import { eigenvects, matrix, toText } from 'mdml-engine/symbolic'
  * eigenvects(matrix([[2, 0], [0, 3]])).map((e) => e.vectors[0]?.map(toText)) // => [['1', '0'], ['0', '1']]
  * ```
  */

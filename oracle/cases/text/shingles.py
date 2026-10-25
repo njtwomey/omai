@@ -6,8 +6,8 @@ from importlib.metadata import version
 
 from gensim.models.fasttext import ft_ngram_hashes
 from gensim.models.fasttext_inner import compute_ngrams_bytes  # pyright: ignore[reportMissingModuleSource]
+from mdml_oracle.fixture import Case, case
 from nltk.util import everygrams, ngrams, skipgrams
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"nltk": version("nltk"), "gensim": version("gensim")}
 

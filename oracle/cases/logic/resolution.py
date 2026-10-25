@@ -5,7 +5,7 @@ exceptions, the dynamic database and depth limits). Answers are written canonica
 variables numbered `_V0`, `_V1`, ... by first occurrence."""
 
 from cases.logic._prolog import run_query
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"reference-prolog": "generator-based port (oracle/cases/logic/_prolog.py)"}
 

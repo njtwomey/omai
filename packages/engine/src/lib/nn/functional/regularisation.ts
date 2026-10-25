@@ -4,7 +4,7 @@
  * cutout, which blanks a random square of each image.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, normal, randint, uniform } from '../../random/index.ts'
 import {
   add,
@@ -29,11 +29,11 @@ export interface StochasticOptions {
 const fl = (x: TensorLike): Value => promoteFloat(x)[0] as Value
 
 function checkP(p: number, name: string): void {
-  if (!(p >= 0 && p <= 1)) throw new WhiteboxError('value', `${name}: p must be in [0, 1], got ${p}`)
+  if (!(p >= 0 && p <= 1)) throw new MdmlError('value', `${name}: p must be in [0, 1], got ${p}`)
 }
 
 function needKey(options: StochasticOptions, name: string): Key {
-  if (options.key === undefined) throw new WhiteboxError('value', `${name}: training mode needs a key`)
+  if (options.key === undefined) throw new MdmlError('value', `${name}: training mode needs a key`)
   return options.key
 }
 
@@ -52,9 +52,9 @@ const keepMask = (key: Key, shape: readonly number[], p: number): Value =>
  * @concept dropout
  * @example
  * ```ts
- * import { dropout } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { dropout } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(dropout([1, 1, 1, 1], 0.5, { key: key(0) })).every((v) => v === 0 || v === 2) // => true
  * ```
  */
@@ -77,8 +77,8 @@ export function dropout(input: TensorLike, p = 0.5, options: StochasticOptions =
  * @returns The input with dropped channels.
  * @example
  * ```ts
- * import { channelDropout } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { channelDropout } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * channelDropout([[[1, 1], [1, 1]]], 0.5, { key: key(0) }).shape // => [1, 2, 2]
  * ```
  */
@@ -86,7 +86,7 @@ export function channelDropout(input: TensorLike, p = 0.5, options: StochasticOp
   checkP(p, 'channelDropout')
   const x = fl(input)
   if (options.training === false || p === 0) return x
-  if (x.shape.length < 2) throw new WhiteboxError('shape', 'channelDropout: input must be [B, C, ...]')
+  if (x.shape.length < 2) throw new MdmlError('shape', 'channelDropout: input must be [B, C, ...]')
   const shape = [x.shape[0] ?? 1, x.shape[1] ?? 1, ...new Array<number>(x.shape.length - 2).fill(1)]
   if (p === 1) return mul(x, 0)
   return div(mul(x, keepMask(needKey(options, 'channelDropout'), shape, p)), 1 - p)
@@ -114,8 +114,8 @@ function alphaMask(x: Value, mask: Value, p: number): Value {
  * @reference Klambauer, Unterthiner, Mayr and Hochreiter (2017), Self-normalizing neural networks.
  * @example
  * ```ts
- * import { alphaDropout } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { alphaDropout } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(alphaDropout([1, 2], 0.5, { training: false })) // => [1, 2]
  * ```
  */
@@ -136,8 +136,8 @@ export function alphaDropout(input: TensorLike, p = 0.5, options: StochasticOpti
  * @returns The input with dropped channels.
  * @example
  * ```ts
- * import { featureAlphaDropout } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { featureAlphaDropout } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * featureAlphaDropout([[[1, 2]]], 0.5, { key: key(0) }).shape // => [1, 1, 2]
  * ```
  */
@@ -161,9 +161,9 @@ export function featureAlphaDropout(input: TensorLike, p = 0.5, options: Stochas
  * @reference Huang, Sun, Liu, Sedra and Weinberger (2016), Deep networks with stochastic depth.
  * @example
  * ```ts
- * import { dropPath } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { dropPath } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(dropPath([[1, 1], [1, 1]], 0, { key: key(0) })) // => [[1, 1], [1, 1]]
  * ```
  */
@@ -190,8 +190,8 @@ export function dropPath(
  * @returns The noisy input.
  * @example
  * ```ts
- * import { gaussianNoise } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { gaussianNoise } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(gaussianNoise([1, 2], 0.1, { training: false })) // => [1, 2]
  * ```
  */
@@ -220,16 +220,16 @@ export function gaussianNoise(
  * @reference DeVries and Taylor (2017), Improved regularization of convolutional neural networks with cutout.
  * @example
  * ```ts
- * import { cutout } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { cutout } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(cutout([[[[1, 1, 1], [1, 1, 1], [1, 1, 1]]]], 1, { key: key(0) })).filter((v) => v === 0).length // => 1
  * ```
  */
 export function cutout(input: TensorLike, size: number, options: StochasticOptions = {}): Value {
   const x = fl(input)
   if (options.training === false || size <= 0) return x
-  if (x.shape.length !== 4) throw new WhiteboxError('shape', 'cutout: input must be [B, C, H, W]')
+  if (x.shape.length !== 4) throw new MdmlError('shape', 'cutout: input must be [B, C, H, W]')
   const [b = 0, , h = 0, w = 0] = x.shape
   const k = needKey(options, 'cutout')
   const cy = randint(foldIn(k, 0), [b], 0, h).data

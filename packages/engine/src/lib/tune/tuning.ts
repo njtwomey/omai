@@ -4,7 +4,7 @@
  * Ray Tune's `Tuner.fit`), and `studyAlgorithm` exposes the same loop as an `Algorithm`.
  */
 
-import { type Encodable, fromJson, type Json, toJson, WhiteboxError } from '../base/index.ts'
+import { type Encodable, fromJson, type Json, MdmlError, toJson } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Space, SpaceValue } from '../space/index.ts'
 import {
@@ -151,7 +151,7 @@ function evaluateTrial(
     ...(assignment.budget === undefined ? {} : { budget: assignment.budget }),
     report: (step, value) => {
       if (prunedAt !== undefined) return true
-      if (!Number.isFinite(step)) throw new WhiteboxError('value', 'report: the step must be a finite number')
+      if (!Number.isFinite(step)) throw new MdmlError('value', 'report: the step must be a finite number')
       // A repeated step keeps its first value, as Optuna does.
       if (!intermediate.some((iv) => iv.step === step)) intermediate.push({ step, value })
       trialRun.metric(step, 'intermediate', value)
@@ -253,24 +253,24 @@ function constantRun(study: Study, n: number): boolean {
  * @param options - Sampler, pruner, schedule, directions, enqueued configurations, a study to resume and stopping
  *   rules.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` when there is no space or the directions do not match.
+ * @throws MdmlError with code `value` when there is no space or the directions do not match.
  * @concept hyperparameter-optimisation
  * @example
  * ```ts
- * import { functionObjective, studyAlgorithm } from 'whitebox-engine/tune'
- * import { real } from 'whitebox-engine/space'
+ * import { functionObjective, studyAlgorithm } from 'mdml-engine/tune'
+ * import { real } from 'mdml-engine/space'
  * studyAlgorithm(functionObjective((x) => (x as number) ** 2), real(-1, 1)).name // => 'study'
  * ```
  */
 export function studyAlgorithm(objective: Objective, space?: Space, options: TuneOptions = {}): Algorithm<StudyState> {
   const searchSpace = space ?? objective.space ?? options.study?.space
-  if (searchSpace === undefined) throw new WhiteboxError('value', 'tune: give a space (the objective has none)')
+  if (searchSpace === undefined) throw new MdmlError('value', 'tune: give a space (the objective has none)')
   const directions = options.directions ?? options.study?.directions ?? objective.directions
   if (directions.length !== objective.directions.length)
-    throw new WhiteboxError('value', 'tune: the directions do not match the objective')
+    throw new MdmlError('value', 'tune: the directions do not match the objective')
   const sampler = options.sampler ?? tpeSampler()
   if (directions.length > 1 && !sampler.multiObjective)
-    throw new WhiteboxError('value', `tune: the ${sampler.name} sampler handles one objective only`)
+    throw new MdmlError('value', `tune: the ${sampler.name} sampler handles one objective only`)
   const maxFailures = options.maxFailures ?? 20
   const constantTrials = options.constantTrials ?? 20
   const initial = (): Study =>
@@ -369,8 +369,8 @@ export function studyAlgorithm(objective: Objective, space?: Space, options: Tun
  * @concept hyperparameter-optimisation
  * @example
  * ```ts
- * import { functionObjective, tune, gridSampler } from 'whitebox-engine/tune'
- * import { dict, int } from 'whitebox-engine/space'
+ * import { functionObjective, tune, gridSampler } from 'mdml-engine/tune'
+ * import { dict, int } from 'mdml-engine/space'
  * const objective = functionObjective((p) => ((p as { k: number }).k - 3) ** 2)
  * const result = tune(objective, dict({ k: int(0, 5) }), { sampler: gridSampler({ points: 6 }), nTrials: 10 })
  * result.best?.params // => { k: 3 }

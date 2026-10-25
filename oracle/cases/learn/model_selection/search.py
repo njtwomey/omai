@@ -6,13 +6,13 @@ from typing import Any
 
 import numpy as np
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import GridSearchCV, KFold, RandomizedSearchCV, StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

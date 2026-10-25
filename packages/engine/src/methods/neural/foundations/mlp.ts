@@ -4,7 +4,7 @@
  * training with scikit-learn's schedules and initialisation. Fit functions, classes and the network builder.
  */
 
-import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { type Json, MdmlError } from '../../../lib/base/index.ts'
 import { type DecisionSurface, diagramRecord, type Exposition } from '../../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -228,7 +228,7 @@ function parseSizes(v: unknown): readonly number[] | undefined {
     .filter((s) => s !== '')
     .map(Number)
   if (sizes.some((s) => !(Number.isInteger(s) && s > 0)))
-    throw new WhiteboxError('value', `mlp: hiddenLayerSizes '${v}' is not a list of positive widths`)
+    throw new MdmlError('value', `mlp: hiddenLayerSizes '${v}' is not a list of positive widths`)
   return sizes
 }
 

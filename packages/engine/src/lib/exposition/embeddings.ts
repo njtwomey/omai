@@ -36,10 +36,10 @@ export interface ComponentsRecord {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when loadings, variances or scores do not match.
+ * @throws MdmlError `shape` when loadings, variances or scores do not match.
  * @example
  * ```ts
- * import { componentsRecord } from 'whitebox-engine/exposition'
+ * import { componentsRecord } from 'mdml-engine/exposition'
  * componentsRecord({ method: 'pca', features: ['x', 'y'], components: [[0.6, 0.8]], explainedVarianceRatio: [0.9] }).components // => [[0.6, 0.8]]
  * ```
  */
@@ -77,10 +77,10 @@ export interface EmbeddingSteps {
  *
  * @param steps - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when per-step columns differ in length.
+ * @throws MdmlError `shape` when per-step columns differ in length.
  * @example
  * ```ts
- * import { embeddingSteps } from 'whitebox-engine/exposition'
+ * import { embeddingSteps } from 'mdml-engine/exposition'
  * embeddingSteps({ method: 'tsne', positions: [[[0, 0], [1, 1]]], iterations: [0] }).iterations // => [0]
  * ```
  */

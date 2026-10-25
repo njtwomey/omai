@@ -4,7 +4,7 @@
  * statistic, and model comparison by elpd with stacking and pseudo-BMA weights.
  */
 
-import { logSumExpOf, WhiteboxError } from '../base/index.ts'
+import { logSumExpOf, MdmlError } from '../base/index.ts'
 import { lbfgs } from '../optim/index.ts'
 import { paretoSmoothedWeights } from '../sampling/index.ts'
 import {
@@ -46,10 +46,10 @@ export interface ElpdEstimate {
 
 function matrix(logLik: TensorLike): { readonly S: number; readonly N: number; readonly data: ArrayLike<number> } {
   const t = primalOf(asTensor(logLik))
-  if (t.shape.length !== 2) throw new WhiteboxError('shape', 'criticism: log-likelihoods must be [draws, observations]')
+  if (t.shape.length !== 2) throw new MdmlError('shape', 'criticism: log-likelihoods must be [draws, observations]')
   const S = t.shape[0] ?? 0
   const N = t.shape[1] ?? 0
-  if (S < 2) throw new WhiteboxError('value', 'criticism: need at least two draws')
+  if (S < 2) throw new MdmlError('value', 'criticism: need at least two draws')
   return { S, N, data: toFlat(t) }
 }
 
@@ -75,11 +75,11 @@ function seOf(pointwise: Float64Array, ddof: number): number {
  *
  * @param logLik - Pointwise log-likelihoods `[draws, observations]` (see `pointwiseLogLikelihood`).
  * @returns The estimate; `warning` when some p_waic_i exceeds 0.4.
- * @throws WhiteboxError with code `shape` for a non-matrix input, or `value` for fewer than two draws.
+ * @throws MdmlError with code `shape` for a non-matrix input, or `value` for fewer than two draws.
  * @concept model-comparison
  * @example
  * ```ts
- * import { waic } from 'whitebox-engine/probprog'
+ * import { waic } from 'mdml-engine/probprog'
  * // Two draws with identical log-likelihoods: no variance, so elpd = lppd.
  * waic([[-1, -2], [-1, -2]]).elpd // => -3
  * ```
@@ -122,13 +122,13 @@ export function waic(logLik: TensorLike): ElpdEstimate {
  * @param options - The relative efficiency of the draws (default 1) and the k threshold (default min(1 - 1 / log10 S,
  *   0.7), as ArviZ).
  * @returns The estimate with per-observation Pareto k; `warning` when some k exceeds the threshold.
- * @throws WhiteboxError with code `shape` for a non-matrix input, or `value` for fewer than 25 draws.
+ * @throws MdmlError with code `shape` for a non-matrix input, or `value` for fewer than 25 draws.
  * @concept model-comparison
  * @example
  * ```ts
- * import { psisLoo } from 'whitebox-engine/probprog'
- * import { key, normal } from 'whitebox-engine/random'
- * import { reshape } from 'whitebox-engine/tensor'
+ * import { psisLoo } from 'mdml-engine/probprog'
+ * import { key, normal } from 'mdml-engine/random'
+ * import { reshape } from 'mdml-engine/tensor'
  * const ll = reshape(normal(key(0), [400], { loc: -1, scale: 0.1 }), [200, 2])
  * psisLoo(ll).warning // => false
  * ```
@@ -189,8 +189,8 @@ export interface PredictiveCheck {
  * @concept predictive-checks
  * @example
  * ```ts
- * import { posteriorPredictiveCheck } from 'whitebox-engine/probprog'
- * import { item, max, tensor } from 'whitebox-engine/tensor'
+ * import { posteriorPredictiveCheck } from 'mdml-engine/probprog'
+ * import { item, max, tensor } from 'mdml-engine/tensor'
  * posteriorPredictiveCheck(tensor([0, 1]), tensor([[0, 2], [0, 0.5]]), (x) => item(max(x))).pValue // => 0.5
  * ```
  */
@@ -220,20 +220,20 @@ export function posteriorPredictiveCheck(
  *
  * @param pointwise - Each model's pointwise elpd (all of the same length).
  * @returns The weights (summing to one).
- * @throws WhiteboxError with code `value` for no models or unequal lengths.
+ * @throws MdmlError with code `value` for no models or unequal lengths.
  * @concept model-comparison
  * @example
  * ```ts
- * import { stackingWeights } from 'whitebox-engine/probprog'
+ * import { stackingWeights } from 'mdml-engine/probprog'
  * // The second model predicts every point better: it takes all the weight.
  * stackingWeights([[-2, -2, -2], [-1, -1, -1]]).map((w) => Math.round(w * 1e4) / 1e4) // => [0, 1]
  * ```
  */
 export function stackingWeights(pointwise: readonly ArrayLike<number>[]): number[] {
   const K = pointwise.length
-  if (K === 0) throw new WhiteboxError('value', 'stackingWeights: no models')
+  if (K === 0) throw new MdmlError('value', 'stackingWeights: no models')
   const N = pointwise[0]?.length ?? 0
-  if (pointwise.some((p) => p.length !== N)) throw new WhiteboxError('value', 'stackingWeights: unequal lengths')
+  if (pointwise.some((p) => p.length !== N)) throw new MdmlError('value', 'stackingWeights: unequal lengths')
   if (K === 1) return [1]
   // exp(elpd_ik - max_k elpd_ik): the shift cancels in the argmax.
   const rows = new Float64Array(N * K)
@@ -261,7 +261,7 @@ export function stackingWeights(pointwise: readonly ArrayLike<number>[]): number
  * @concept model-comparison
  * @example
  * ```ts
- * import { pseudoBmaWeights } from 'whitebox-engine/probprog'
+ * import { pseudoBmaWeights } from 'mdml-engine/probprog'
  * pseudoBmaWeights([0, Math.log(3)]) // => [0.25, 0.75]
  * ```
  */
@@ -292,11 +292,11 @@ export interface ComparisonRow {
  * @param estimates - Each model's estimate by name (all WAIC or all LOO, on the same observations).
  * @param options - The weighting method.
  * @returns One row per model, best first.
- * @throws WhiteboxError with code `value` when the estimates mix methods or observation counts.
+ * @throws MdmlError with code `value` when the estimates mix methods or observation counts.
  * @concept model-comparison
  * @example
  * ```ts
- * import { compareModels, waic } from 'whitebox-engine/probprog'
+ * import { compareModels, waic } from 'mdml-engine/probprog'
  * const a = waic([[-1, -1], [-1, -1]])
  * const b = waic([[-2, -1], [-2, -1]])
  * compareModels({ a, b }).map((r) => [r.name, r.elpdDiff]) // => [['a', 0], ['b', -1]]
@@ -308,9 +308,9 @@ export function compareModels(
 ): ComparisonRow[] {
   const names = Object.keys(estimates)
   const list = names.map((n) => estimates[n] as ElpdEstimate)
-  if (list.length === 0) throw new WhiteboxError('value', 'compareModels: no models')
+  if (list.length === 0) throw new MdmlError('value', 'compareModels: no models')
   if (new Set(list.map((e) => e.method)).size > 1 || new Set(list.map((e) => e.observations)).size > 1)
-    throw new WhiteboxError('value', 'compareModels: estimates must share the method and the observations')
+    throw new MdmlError('value', 'compareModels: estimates must share the method and the observations')
   const weights =
     options.method === 'pseudoBma'
       ? pseudoBmaWeights(list.map((e) => e.elpd))

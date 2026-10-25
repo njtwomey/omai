@@ -1,5 +1,5 @@
 // The LaTeX subset parser behind `parseLatex` (see parse.ts for the accepted syntax).
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { E, HALF, MINUS_ONE, makeAdd, makeMul, makePow, makeRel, numFromRational, OO, PI } from './_canon.ts'
 import { makeFn } from './_functions.ts'
 import { rawFloat } from './_node.ts'
@@ -162,7 +162,7 @@ class LatexParser {
     return t.t === 'cmd' && t.v === v
   }
   private fail(msg: string): never {
-    throw new WhiteboxError('value', `parseLatex: ${msg} at ${this.peek().pos}`)
+    throw new MdmlError('value', `parseLatex: ${msg} at ${this.peek().pos}`)
   }
   private expectChar(v: string): void {
     if (!this.isChar(v)) this.fail(`expected '${v}'`)

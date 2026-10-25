@@ -12,10 +12,10 @@ import jax.numpy as jnp
 import numpy as np
 import numpyro
 import numpyro.distributions as dist
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.pgm import stable
 from numpyro import handlers
 from numpyro.infer.util import log_density
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.pgm import stable
 
 _spec = importlib.util.spec_from_file_location("probprog_models", Path(__file__).with_name("_models.py"))
 assert _spec is not None and _spec.loader is not None

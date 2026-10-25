@@ -6,7 +6,7 @@ import re
 from importlib.metadata import version
 
 import pyphen
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"pyphen": version("pyphen")}
 

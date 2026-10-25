@@ -1,6 +1,6 @@
+import { macros, texError } from 'mdml-render/maths'
+import { Choice, ControlPanel, Tex } from 'mdml-render/react'
 import { type ReactNode, useState } from 'react'
-import { macros, texError } from 'whitebox-render/maths'
-import { Choice, ControlPanel, Tex } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

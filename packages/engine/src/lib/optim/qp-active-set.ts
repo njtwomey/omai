@@ -56,8 +56,8 @@ function independent(rows: readonly Float64Array[], basis: Float64Array[]): bool
  * @concept quadratic-programming
  * @example
  * ```ts
- * import { qpActiveSetAlgorithm, qpArrays } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { qpActiveSetAlgorithm, qpArrays } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const qp = qpArrays({ P: [[2, 0], [0, 2]], q: [-2, -5], G: [[1, 2], [-1, 2], [-1, -2]], h: [6, 2, 2], lb: [0, 0] })
  * runAlgorithm(qpActiveSetAlgorithm(qp, { x0: [2, 0] }), { maxSteps: 50 }).state.working // => [1]
  * ```

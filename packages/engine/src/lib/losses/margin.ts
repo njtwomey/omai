@@ -46,8 +46,8 @@ const margins = (scores: TensorLike, labels: TensorLike): Value => {
  * @concept losses
  * @example
  * ```ts
- * import { hinge } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { hinge } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(hinge([0.25, 2], [1, -1], { reduction: 'sum' })) // => 3.75
  * ```
  */
@@ -68,8 +68,8 @@ export function hinge(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { squaredHinge } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { squaredHinge } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(squaredHinge([0.5], [1])) // => 0.25
  * ```
  */
@@ -91,8 +91,8 @@ export function squaredHinge(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { logistic } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { logistic } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(logistic([0], [1])) === Math.LN2 // => true
  * ```
  */
@@ -109,8 +109,8 @@ export function logistic(scores: TensorLike, labels: TensorLike, options: LossOp
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { exponential } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { exponential } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(exponential([0], [1])) // => 1
  * ```
  */
@@ -128,8 +128,8 @@ export function exponential(scores: TensorLike, labels: TensorLike, options: Los
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { modifiedHuber } from 'whitebox-engine/losses'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { modifiedHuber } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(modifiedHuber([-2, 0], [1, 1], { reduction: 'none' })) // => [8, 1]
  * ```
  */
@@ -147,8 +147,8 @@ export function modifiedHuber(scores: TensorLike, labels: TensorLike, options: L
  * @returns The loss, differentiable away from zero.
  * @example
  * ```ts
- * import { perceptron } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { perceptron } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(perceptron([0.5, -2], [1, 1], { reduction: 'sum' })) // => 2
  * ```
  */
@@ -173,8 +173,8 @@ export interface MulticlassMarginOptions {
  * @returns The loss, differentiable away from ties.
  * @example
  * ```ts
- * import { crammerSinger } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { crammerSinger } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(crammerSinger([[2, 1.5, 0]], [0])) // => 0.5
  * ```
  */
@@ -199,8 +199,8 @@ export function crammerSinger(scores: TensorLike, target: TensorLike, options: M
  * @returns The loss, differentiable away from the hinges.
  * @example
  * ```ts
- * import { westonWatkins } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { westonWatkins } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(westonWatkins([[1, 1.5]], [0])) // => 0.75
  * ```
  */

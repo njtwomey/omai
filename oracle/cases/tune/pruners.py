@@ -9,6 +9,8 @@ from typing import Literal
 
 import numpy as np
 import optuna
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from optuna.pruners import (
     BasePruner,
     HyperbandPruner,
@@ -18,8 +20,6 @@ from optuna.pruners import (
     SuccessiveHalvingPruner,
     ThresholdPruner,
 )
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"optuna": optuna.__version__}
 

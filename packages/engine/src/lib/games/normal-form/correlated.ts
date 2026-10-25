@@ -4,7 +4,7 @@
  * or coarse correlated equilibrium, and the product distribution of independent strategies.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { type LinprogOptions, linprog } from '../../optim/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { decodeProfile, profileCount, stridesOf } from './_profiles.ts'
@@ -68,12 +68,12 @@ function incentiveRows(game: NormalFormGame, coarse: boolean): { player: number;
  * @param game - The game.
  * @param options - The objective, coarse or not, and options for the linear program.
  * @returns The distribution, the payoffs and the objective's value.
- * @throws WhiteboxError with code `convergence` when the linear program fails.
+ * @throws MdmlError with code `convergence` when the linear program fails.
  * @concept correlated-equilibrium
  * @reference Aumann (1974), Subjectivity and correlation in randomized strategies.
  * @example
  * ```ts
- * import { chicken, correlatedEquilibrium } from 'whitebox-engine/games'
+ * import { chicken, correlatedEquilibrium } from 'mdml-engine/games'
  * const ce = correlatedEquilibrium(chicken())
  * [ce.distribution.map((p) => Math.round(p * 1e9) / 1e9), Math.round(ce.value * 1e9) / 1e9] // => [[0.5, 0.25, 0.25, 0], 10.5]
  * ```
@@ -88,7 +88,7 @@ export function correlatedEquilibrium(game: NormalFormGame, options: CorrelatedO
   const c = new Array<number>(n).fill(0)
   if (Array.isArray(objective) || objective === 'welfare') {
     const weights = Array.isArray(objective) ? objective : new Array<number>(players).fill(1)
-    if (weights.length !== players) throw new WhiteboxError('shape', `${game.name}: one weight per player`)
+    if (weights.length !== players) throw new MdmlError('shape', `${game.name}: one weight per player`)
     for (let s = 0; s < total; s++)
       for (let p = 0; p < players; p++) c[s] = (c[s] ?? 0) - (weights[p] ?? 0) * (game.payoffs[p]?.[s] ?? 0)
   } else if (egalitarian) c[total] = -1
@@ -117,7 +117,7 @@ export function correlatedEquilibrium(game: NormalFormGame, options: CorrelatedO
     lp,
   )
   if (!r.success)
-    throw new WhiteboxError('convergence', `correlatedEquilibrium: the linear program ended with '${r.status}'`)
+    throw new MdmlError('convergence', `correlatedEquilibrium: the linear program ended with '${r.status}'`)
   const z = toFlat(r.x)
   const distribution = z.slice(0, total).map((v) => Math.max(0, v))
   const payoffs = game.payoffs.map((u) => distribution.reduce((s, v, k) => s + v * (u[k] ?? 0), 0))
@@ -133,11 +133,11 @@ export function correlatedEquilibrium(game: NormalFormGame, options: CorrelatedO
  * @param distribution - The probability of each joint profile, row-major.
  * @param options - `coarse` for the coarse notion.
  * @returns One non-negative gain per player.
- * @throws WhiteboxError with code `shape` for a distribution of the wrong length.
+ * @throws MdmlError with code `shape` for a distribution of the wrong length.
  * @concept correlated-equilibrium
  * @example
  * ```ts
- * import { correlatedGains, prisonersDilemma } from 'whitebox-engine/games'
+ * import { correlatedGains, prisonersDilemma } from 'mdml-engine/games'
  * correlatedGains(prisonersDilemma(), [1, 0, 0, 0]) // => [2, 2]
  * ```
  */
@@ -148,7 +148,7 @@ export function correlatedGains(
 ): number[] {
   const total = profileCount(game.shape)
   if (distribution.length !== total)
-    throw new WhiteboxError('shape', `${game.name}: ${total} profile probabilities expected`)
+    throw new MdmlError('shape', `${game.name}: ${total} profile probabilities expected`)
   const strides = stridesOf(game.shape)
   return game.shape.map((k, p) => {
     const stride = strides[p] ?? 1
@@ -183,7 +183,7 @@ export function correlatedGains(
  * @concept correlated-equilibrium
  * @example
  * ```ts
- * import { chicken, isCorrelatedEquilibrium } from 'whitebox-engine/games'
+ * import { chicken, isCorrelatedEquilibrium } from 'mdml-engine/games'
  * isCorrelatedEquilibrium(chicken(), [1 / 3, 1 / 3, 1 / 3, 0]) // => true
  * ```
  */
@@ -211,7 +211,7 @@ export function isCorrelatedEquilibrium(
  * @returns The probability of each joint profile.
  * @example
  * ```ts
- * import { jointDistribution, matchingPennies } from 'whitebox-engine/games'
+ * import { jointDistribution, matchingPennies } from 'mdml-engine/games'
  * jointDistribution(matchingPennies(), [[0.5, 0.5], [1, 0]]) // => [0.5, 0, 0.5, 0]
  * ```
  */

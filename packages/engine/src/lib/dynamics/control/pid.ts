@@ -5,7 +5,7 @@
  * tuning rules (Ziegler-Nichols, Cohen-Coon) plus relay auto-tuning.
  */
 
-import { clamp, WhiteboxError } from '../../base/index.ts'
+import { clamp, MdmlError } from '../../base/index.ts'
 import { c2dMatrices, isDiscrete, type Lti, toSs } from '../../systems/index.ts'
 import { primalOf, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -53,17 +53,17 @@ export interface PidController {
  *
  * @param options - Gains, sample time, filter, limits, anti-windup and setpoint weights.
  * @returns The controller.
- * @throws WhiteboxError with code `value` for a non-positive sample time.
+ * @throws MdmlError with code `value` for a non-positive sample time.
  * @concept pid-control
  * @example
  * ```ts
- * import { control } from 'whitebox-engine/dynamics'
+ * import { control } from 'mdml-engine/dynamics'
  * const pid = control.pid({ kp: 2, ki: 1, dt: 0.1 })
  * pid.step(pid.init(), 1, 0).u // => 2.1
  * ```
  */
 export function pid(options: PidOptions): PidController {
-  if (!(options.dt > 0)) throw new WhiteboxError('value', 'pid: the sample time must be positive')
+  if (!(options.dt > 0)) throw new MdmlError('value', 'pid: the sample time must be positive')
   const { kp, dt } = options
   const ki = options.ki ?? 0
   const kd = options.kd ?? 0
@@ -117,8 +117,8 @@ export interface PidResponse {
  * @concept pid-control
  * @example
  * ```ts
- * import { control } from 'whitebox-engine/dynamics'
- * import { tf } from 'whitebox-engine/systems'
+ * import { control } from 'mdml-engine/dynamics'
+ * import { tf } from 'mdml-engine/systems'
  * const r = control.simulatePid(tf([1], [1, 1]), control.pid({ kp: 2, ki: 2, dt: 0.01 }), { duration: 10 })
  * Math.abs((r.y.at(-1) ?? 0) - 1) < 1e-3 // => true
  * ```
@@ -135,7 +135,7 @@ export function simulatePid(
   const dt = controller.options.dt
   const sys = toSs(plant)
   const discrete = isDiscrete(sys)
-  if (discrete && Math.abs(sys.dt - dt) > 1e-12) throw new WhiteboxError('value', 'simulatePid: sample times differ')
+  if (discrete && Math.abs(sys.dt - dt) > 1e-12) throw new MdmlError('value', 'simulatePid: sample times differ')
   const m = discrete ? { a: sys.a, b: sys.b, c: sys.c, d: sys.d } : c2dMatrices(sys.a, sys.b, sys.c, sys.d, dt)
   const A = toFlat(primalOf(m.a))
   const B = toFlat(primalOf(m.b))
@@ -219,7 +219,7 @@ export interface PidGains {
  * @concept pid-tuning
  * @example
  * ```ts
- * import { control } from 'whitebox-engine/dynamics'
+ * import { control } from 'mdml-engine/dynamics'
  * control.zieglerNichols(10, 2) // => { kp: 6, ki: 6, kd: 1.5 }
  * ```
  */
@@ -241,16 +241,16 @@ export function zieglerNichols(ku: number, tu: number, type: 'P' | 'PI' | 'PID' 
  * @param theta - The dead time.
  * @param type - `P`, `PI` or `PID` (default).
  * @returns The gains.
- * @throws WhiteboxError with code `value` for non-positive tau or theta.
+ * @throws MdmlError with code `value` for non-positive tau or theta.
  * @concept pid-tuning
  * @example
  * ```ts
- * import { control } from 'whitebox-engine/dynamics'
+ * import { control } from 'mdml-engine/dynamics'
  * Math.round(control.cohenCoon(1, 10, 2, 'P').kp * 1e6) / 1e6 // => 5.333333
  * ```
  */
 export function cohenCoon(k: number, tau: number, theta: number, type: 'P' | 'PI' | 'PID' = 'PID'): PidGains {
-  if (!(tau > 0) || !(theta > 0)) throw new WhiteboxError('value', 'cohenCoon: tau and theta must be positive')
+  if (!(tau > 0) || !(theta > 0)) throw new MdmlError('value', 'cohenCoon: tau and theta must be positive')
   const r = theta / tau
   if (type === 'P') return { kp: (1 / (k * r)) * (1 + r / 3), ki: 0, kd: 0 }
   if (type === 'PI') {
@@ -288,8 +288,8 @@ export interface RelayAutotuneResult {
  * @concept relay-autotuning
  * @example
  * ```ts
- * import { control } from 'whitebox-engine/dynamics'
- * import { tf } from 'whitebox-engine/systems'
+ * import { control } from 'mdml-engine/dynamics'
+ * import { tf } from 'mdml-engine/systems'
  * // 1 / (s + 1)^3 has Ku = 8 and Tu = 2 pi / sqrt(3) = 3.628.
  * const r = control.relayAutotune(tf([1], [1, 3, 3, 1]), { dt: 0.005, duration: 60 })
  * Math.abs(r.tu - 3.628) < 0.1 && Math.abs(r.ku - 8) < 0.8 // => true

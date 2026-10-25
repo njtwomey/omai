@@ -1,5 +1,5 @@
+import { circle, group, path, rect, scene, sceneTimeline, structure, text, timeline } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
-import { circle, group, path, rect, scene, sceneTimeline, structure, text, timeline } from 'whitebox-engine/scene'
 import { liveSource, precomputedSource } from './playback.ts'
 import {
   easings,
@@ -71,7 +71,7 @@ describe('timeline', () => {
     expect(structureTimeline(s, [{}], { captions: ['c'] }).frames[0]?.caption).toBe('c')
     expect(frameAt(timeline([]), 3)).toBe(0)
     const run = {
-      schema: 'whitebox.run/1' as const,
+      schema: 'mdml.run/1' as const,
       events: [
         { type: 'frame' as const, runId: 'r', step: 0, frame: { cells: [1] } },
         { type: 'frame' as const, runId: 'r', step: 1, frame: { other: true } },

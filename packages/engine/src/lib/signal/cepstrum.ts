@@ -4,7 +4,7 @@
  * python-acoustics), liftering of low or high quefrencies, and pitch estimation from the strongest cepstral peak.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { fft, ifft } from '../numerics/fourier/index.ts'
 import {
   absComplex,
@@ -34,8 +34,8 @@ import { unwrap } from './signal.ts'
  * @concept cepstrum
  * @example
  * ```ts
- * import { realCepstrum } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { realCepstrum } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(realCepstrum([1, 0, 0, 0])) // => [0, 0, 0, 0]
  * ```
  */
@@ -61,8 +61,8 @@ export interface ComplexCepstrum {
  * @concept cepstrum
  * @example
  * ```ts
- * import { complexCepstrum } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { complexCepstrum } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(complexCepstrum([1, 0.5], 64).cepstrum).slice(0, 3).map((v) => Math.round(v * 1e9) / 1e9) // => [0, 0.5, -0.125]
  * ```
  */
@@ -87,8 +87,8 @@ export function complexCepstrum(x: TensorLike, n?: number): ComplexCepstrum {
  * @concept cepstrum
  * @example
  * ```ts
- * import { complexCepstrum, inverseComplexCepstrum } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { complexCepstrum, inverseComplexCepstrum } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(inverseComplexCepstrum(complexCepstrum([2, -1, 0.5, 0.25]))).map((v) => Math.round(v * 1e12) / 1e12) // => [2, -1, 0.5, 0.25]
  * ```
  */
@@ -111,8 +111,8 @@ export function inverseComplexCepstrum(c: ComplexCepstrum): Value {
  * @concept cepstrum
  * @example
  * ```ts
- * import { lifter } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lifter } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lifter([1, 2, 3, 4, 3, 2], 2)) // => [1, 2, 0, 0, 0, 2]
  * ```
  */
@@ -143,7 +143,7 @@ export function lifter(c: TensorLike, cutoff: number, kind: 'low' | 'high' | 'si
  * @concept pitch-estimation
  * @example
  * ```ts
- * import { cepstralPitch } from 'whitebox-engine/signal'
+ * import { cepstralPitch } from 'mdml-engine/signal'
  * const fs = 8000
  * const x = Array.from({ length: 1024 }, (_, n) => [1, 2, 3, 4, 5].reduce((a, h) => a + Math.cos((2 * Math.PI * 200 * h * n) / fs) / h, 0))
  * Math.abs(cepstralPitch(x, fs) - 200) < 10 // => true
@@ -160,7 +160,7 @@ export function cepstralPitch(
   const c = toFlat(realCepstrum(s))
   const lo = Math.max(1, Math.floor(fs / fmax))
   const hi = Math.min(c.length - 1, Math.ceil(fs / fmin))
-  if (lo >= hi) throw new WhiteboxError('value', 'cepstralPitch: the frame is too short for this pitch range')
+  if (lo >= hi) throw new MdmlError('value', 'cepstralPitch: the frame is too short for this pitch range')
   let best = lo
   for (let q = lo; q <= hi; q++) if ((c[q] ?? 0) > (c[best] ?? 0)) best = q
   return fs / best

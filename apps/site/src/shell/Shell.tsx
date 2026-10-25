@@ -1,20 +1,20 @@
+import { cssText } from 'mdml-render/theme'
 import { type ReactNode, useEffect, useState } from 'react'
-import { cssText } from 'whitebox-render/theme'
 import { ColourToggle } from './ColourToggle.tsx'
 import { Link } from './Link.tsx'
 
 /** The site's sections, in navigation order. */
 export const SECTIONS = [
-  { path: '/gallery', title: 'Gallery', summary: 'What whitebox-render can draw, lay out, control and animate.' },
+  { path: '/gallery', title: 'Gallery', summary: 'What mdml-render can draw, lay out, control and animate.' },
   {
     path: '/hub',
     title: 'Hub',
     summary: 'Worked methods with their datasets, controls and the views that explain them.',
   },
-  { path: '/docs', title: 'Docs', summary: 'The whitebox-engine reference, generated from the source.' },
+  { path: '/docs', title: 'Docs', summary: 'The mdml-engine reference, generated from the source.' },
 ] as const
 
-// whitebox-render's theme tokens as CSS variables, light on :root and dark under the `dark` class.
+// mdml-render's theme tokens as CSS variables, light on :root and dark under the `dark` class.
 const THEME_CSS = `${cssText('light', ':root')}\n${cssText('dark', '.dark')}`
 
 /**
@@ -58,7 +58,7 @@ export function Shell(props: {
         )}
         <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="size-3 rounded-sm bg-gradient-to-br from-[#1f77b4] via-[#2ca02c] to-[#ff7f0e]" />
-          whitebox
+          mdml
         </Link>
         <nav className="flex gap-1 text-sm">
           {SECTIONS.map((s) => (

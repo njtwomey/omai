@@ -5,7 +5,7 @@
  */
 
 import { grad, jvp } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { cholesky, inv, solveTriangular } from '../numerics/linalg/index.ts'
 import { lbeta, lbinom, lgamma, log1mexp, logIv } from '../numerics/special/index.ts'
 import {
@@ -145,7 +145,7 @@ function defineForm(spec: FormSpec): ExponentialFamilyForm {
 
 const param = (dist: Distribution, name: string): Value => {
   const p = dist.params[name]
-  if (p === undefined) throw new WhiteboxError('value', `exponentialFamily: ${dist.name} has no parameter ${name}`)
+  if (p === undefined) throw new MdmlError('value', `exponentialFamily: ${dist.name} has no parameter ${name}`)
   return p
 }
 const zeroMeasure = (x: Value): Value => mul(x, 0)
@@ -161,12 +161,12 @@ const LOG_2PI = Math.log(2 * Math.PI)
  * @param dist - The distribution.
  * @returns Its natural parameters, sufficient statistics, log partition, base measure, mean parameters and Fisher
  *   information.
- * @throws WhiteboxError with code `not-implemented` for distributions that are not (or not here) exponential families.
+ * @throws MdmlError with code `not-implemented` for distributions that are not (or not here) exponential families.
  * @concept exponential-families
  * @example
  * ```ts
- * import { exponentialFamily, poisson } from 'whitebox-engine/dists'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { exponentialFamily, poisson } from 'mdml-engine/dists'
+ * import { toFlat } from 'mdml-engine/tensor'
  * // For the Poisson, A(eta) = exp(eta): the Fisher information is exp(eta) = the rate.
  * toFlat(exponentialFamily(poisson(3)).fisherInformation()).map((v) => Math.round(v * 1e12) / 1e12) // => [3]
  * ```
@@ -477,6 +477,6 @@ export function exponentialFamily(dist: Distribution): ExponentialFamilyForm {
       })
     }
     default:
-      throw new WhiteboxError('not-implemented', `exponentialFamily: no exponential-family form for ${dist.name}`)
+      throw new MdmlError('not-implemented', `exponentialFamily: no exponential-family form for ${dist.name}`)
   }
 }

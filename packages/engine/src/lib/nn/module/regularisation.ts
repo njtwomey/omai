@@ -4,7 +4,7 @@
  * dropout, and `Cutout`.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import {
   alphaDropout,
@@ -26,7 +26,7 @@ class Stochastic extends Module {
 
   constructor(kind: string, p: number, fn: (x: Value, options: StochasticOptions) => Value) {
     super()
-    if (!(p >= 0 && p <= 1)) throw new WhiteboxError('value', `${kind}: p must be in [0, 1], got ${p}`)
+    if (!(p >= 0 && p <= 1)) throw new MdmlError('value', `${kind}: p must be in [0, 1], got ${p}`)
     this.kind = kind
     this.p = p
     this.fn = fn
@@ -35,7 +35,7 @@ class Stochastic extends Module {
   apply(_params: Params, x: Value, ctx: ApplyContext = {}): Value {
     const training = isTraining(ctx)
     if (training && ctx.key === undefined && this.p > 0)
-      throw new WhiteboxError('value', `${this.kind}: training mode needs a key in the apply context`)
+      throw new MdmlError('value', `${this.kind}: training mode needs a key in the apply context`)
     return this.fn(x, { training, ...(ctx.key === undefined ? {} : { key: ctx.key }) })
   }
 
@@ -54,7 +54,7 @@ class Stochastic extends Module {
  *
  * @example
  * ```ts
- * import { Dropout } from 'whitebox-engine/nn'
+ * import { Dropout } from 'mdml-engine/nn'
  * new Dropout(0.5).eval().forward([1, 2]).shape // => [2]
  * ```
  */
@@ -69,7 +69,7 @@ export class Dropout extends Stochastic {
  *
  * @example
  * ```ts
- * import { Dropout1d } from 'whitebox-engine/nn'
+ * import { Dropout1d } from 'mdml-engine/nn'
  * new Dropout1d(0.2).kind // => 'Dropout1d'
  * ```
  */
@@ -84,7 +84,7 @@ export class Dropout1d extends Stochastic {
  *
  * @example
  * ```ts
- * import { Dropout2d } from 'whitebox-engine/nn'
+ * import { Dropout2d } from 'mdml-engine/nn'
  * new Dropout2d(0.2).kind // => 'Dropout2d'
  * ```
  */
@@ -99,7 +99,7 @@ export class Dropout2d extends Stochastic {
  *
  * @example
  * ```ts
- * import { Dropout3d } from 'whitebox-engine/nn'
+ * import { Dropout3d } from 'mdml-engine/nn'
  * new Dropout3d(0.2).kind // => 'Dropout3d'
  * ```
  */
@@ -114,7 +114,7 @@ export class Dropout3d extends Stochastic {
  *
  * @example
  * ```ts
- * import { AlphaDropout } from 'whitebox-engine/nn'
+ * import { AlphaDropout } from 'mdml-engine/nn'
  * new AlphaDropout(0.1).kind // => 'AlphaDropout'
  * ```
  */
@@ -129,7 +129,7 @@ export class AlphaDropout extends Stochastic {
  *
  * @example
  * ```ts
- * import { FeatureAlphaDropout } from 'whitebox-engine/nn'
+ * import { FeatureAlphaDropout } from 'mdml-engine/nn'
  * new FeatureAlphaDropout(0.1).kind // => 'FeatureAlphaDropout'
  * ```
  */
@@ -144,7 +144,7 @@ export class FeatureAlphaDropout extends Stochastic {
  *
  * @example
  * ```ts
- * import { DropPath } from 'whitebox-engine/nn'
+ * import { DropPath } from 'mdml-engine/nn'
  * new DropPath(0.1).kind // => 'DropPath'
  * ```
  */
@@ -159,7 +159,7 @@ export class DropPath extends Stochastic {
  *
  * @example
  * ```ts
- * import { GaussianNoise } from 'whitebox-engine/nn'
+ * import { GaussianNoise } from 'mdml-engine/nn'
  * new GaussianNoise(0.1).kind // => 'GaussianNoise'
  * ```
  */
@@ -196,7 +196,7 @@ export class GaussianNoise extends Module {
  *
  * @example
  * ```ts
- * import { Cutout } from 'whitebox-engine/nn'
+ * import { Cutout } from 'mdml-engine/nn'
  * new Cutout(8).kind // => 'Cutout'
  * ```
  */

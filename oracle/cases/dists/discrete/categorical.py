@@ -2,10 +2,10 @@
 
 import numpy as np
 import scipy
+from mdml_oracle.distributions import distribution_cases, method_case
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, Unary, rng
 from scipy import special, stats
-from whitebox_oracle.distributions import distribution_cases, method_case
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, Unary, rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

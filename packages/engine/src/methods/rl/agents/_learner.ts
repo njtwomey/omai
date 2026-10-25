@@ -3,7 +3,7 @@
  * discrete actions or a regressor for box actions, trained on expert demonstrations with lib/losses.
  */
 
-import { argmaxOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../../lib/base/index.ts'
 import { crossEntropy, mse } from '../../../lib/losses/index.ts'
 import type { ActivationName, Params } from '../../../lib/nn/index.ts'
 import { type Key, key as makeKey } from '../../../lib/random/index.ts'
@@ -46,7 +46,7 @@ export function learner(
       : env.actionSpace.kind === 'box'
         ? env.actionSpace.shape.reduce((a, b) => a * b, 1)
         : 0
-  if (k === 0) throw new WhiteboxError('value', 'imitation: needs a discrete or box action space')
+  if (k === 0) throw new MdmlError('value', 'imitation: needs a discrete or box action space')
   const head = mlpNet([d, ...(options.hidden ?? [32]), k], options.activation ?? 'relu', options.key ?? makeKey(0))
   const predict = (p: Params, obs: Vec): PolicyAction => {
     const out = toFlat(head.apply(p, rowsTensor([obs], d)))

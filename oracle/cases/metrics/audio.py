@@ -11,6 +11,8 @@ import numpy as np
 import scipy
 import scipy.signal as ss
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from pystoi import stoi
 from torchmetrics.functional.audio import (
     permutation_invariant_training,
@@ -20,8 +22,6 @@ from torchmetrics.functional.audio import (
     signal_noise_ratio,
 )
 from torchmetrics.functional.audio.dnsmos import _polyfit_val  # pyright: ignore[reportPrivateUsage]
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {
     "torchmetrics": version("torchmetrics"),

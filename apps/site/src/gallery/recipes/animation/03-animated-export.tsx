@@ -1,8 +1,8 @@
+import { circle, line, rect, type Scene, scene, sceneTimeline, text } from 'mdml-engine/scene'
+import { animatedSvg, encodeGif, timelineFrames } from 'mdml-render/animation'
+import { ControlPanel, NumberField, Toggle, useColourMode } from 'mdml-render/react'
+import { svgDataUrl } from 'mdml-render/svg'
 import { type ReactNode, useMemo, useState } from 'react'
-import { circle, line, rect, type Scene, scene, sceneTimeline, text } from 'whitebox-engine/scene'
-import { animatedSvg, encodeGif, timelineFrames } from 'whitebox-render/animation'
-import { ControlPanel, NumberField, Toggle, useColourMode } from 'whitebox-render/react'
-import { svgDataUrl } from 'whitebox-render/svg'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

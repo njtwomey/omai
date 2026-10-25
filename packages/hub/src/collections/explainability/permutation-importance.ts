@@ -2,9 +2,9 @@
  * The feature importance entry: permutation (marginal or conditional), drop-column and impurity importances.
  */
 
-import { trainTestSplit } from 'whitebox-engine/data'
-import { dropColumnImportances, featureImportance } from 'whitebox-engine/methods/explain'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { trainTestSplit } from 'mdml-engine/data'
+import { dropColumnImportances, featureImportance } from 'mdml-engine/methods/explain'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 import { type ExplainedModel, fitModel, modelControl, modelOf } from './_explain.ts'

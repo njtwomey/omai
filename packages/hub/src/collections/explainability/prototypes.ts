@@ -2,8 +2,8 @@
  * The prototypes entry: MMD-critic's prototypes and criticisms of a dataset, on its principal components or as images.
  */
 
-import { prototypesAndCriticisms } from 'whitebox-engine/methods/explain'
-import { dict, int } from 'whitebox-engine/space'
+import { prototypesAndCriticisms } from 'mdml-engine/methods/explain'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

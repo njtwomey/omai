@@ -4,7 +4,7 @@
  * step, and helpers for increments, coarsening onto a coarser grid and reading states at a time.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import {
   asTensor,
@@ -85,16 +85,16 @@ export interface PathState {
  * @param steps - The number of steps (a positive integer).
  * @param t0 - The start time (default 0).
  * @returns `steps + 1` increasing times.
- * @throws WhiteboxError with code `value` unless `t1 > t0` and `steps` is a positive integer.
+ * @throws MdmlError with code `value` unless `t1 > t0` and `steps` is a positive integer.
  * @example
  * ```ts
- * import { timeGrid } from 'whitebox-engine/stochastic'
+ * import { timeGrid } from 'mdml-engine/stochastic'
  * Array.from(timeGrid(1, 4)) // => [0, 0.25, 0.5, 0.75, 1]
  * ```
  */
 export function timeGrid(t1: number, steps: number, t0 = 0): Float64Array {
   positiveInteger(steps, 'steps', 'timeGrid')
-  if (!(t1 > t0)) throw new WhiteboxError('value', 'timeGrid: need t1 > t0')
+  if (!(t1 > t0)) throw new MdmlError('value', 'timeGrid: need t1 > t0')
   const h = (t1 - t0) / steps
   return Float64Array.from({ length: steps + 1 }, (_, i) => (i === steps ? t1 : t0 + i * h))
 }
@@ -108,8 +108,8 @@ export function timeGrid(t1: number, steps: number, t0 = 0): Float64Array {
  * @concept stochastic-processes
  * @example
  * ```ts
- * import { pathAlgorithm } from 'whitebox-engine/stochastic'
- * import { add } from 'whitebox-engine/tensor'
+ * import { pathAlgorithm } from 'mdml-engine/stochastic'
+ * import { add } from 'mdml-engine/tensor'
  * pathAlgorithm({ name: 'drift', times: [0, 1, 2], x0: [0], step: (x, c) => add(x, c.dt) }).name // => 'drift'
  * ```
  */
@@ -155,9 +155,9 @@ export function pathAlgorithm(spec: PathSpec): Algorithm<PathState> {
  * @concept stochastic-processes
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { simulatePaths } from 'whitebox-engine/stochastic'
- * import { add, toArray } from 'whitebox-engine/tensor'
+ * import { key } from 'mdml-engine/random'
+ * import { simulatePaths } from 'mdml-engine/stochastic'
+ * import { add, toArray } from 'mdml-engine/tensor'
  * toArray(simulatePaths(key(0), { name: 'clock', times: [0, 1, 3], x0: [0], step: (x, c) => add(x, c.dt) }).values) // => [[0, 1, 3]]
  * ```
  */
@@ -174,7 +174,7 @@ export function simulatePaths(key: Key, spec: PathSpec, options: TraceOptions = 
  * @returns The items, oldest first.
  * @example
  * ```ts
- * import { historyArray } from 'whitebox-engine/stochastic'
+ * import { historyArray } from 'mdml-engine/stochastic'
  * historyArray({ item: 2, previous: { item: 1, previous: undefined } }) // => [1, 2]
  * ```
  */
@@ -191,14 +191,14 @@ export function historyArray<T>(history: History<T> | undefined): T[] {
  * @returns `[paths, n - 1, ...state]`.
  * @example
  * ```ts
- * import { pathIncrements } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pathIncrements } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(pathIncrements([[0, 1, 3]])) // => [[1, 2]]
  * ```
  */
 export function pathIncrements(values: TensorLike): Value {
   const x = asTensor(values)
-  if (x.shape.length < 2) throw new WhiteboxError('shape', 'pathIncrements: values must be [paths, n, ...state]')
+  if (x.shape.length < 2) throw new MdmlError('shape', 'pathIncrements: values must be [paths, n, ...state]')
   const n = x.shape[1] ?? 0
   return sub(sliceAxis(x, 1, 1, n), sliceAxis(x, 1, 0, n - 1))
 }
@@ -210,11 +210,11 @@ export function pathIncrements(values: TensorLike): Value {
  * @param increments - Increments `[paths, n, ...]` with `n` divisible by `factor`.
  * @param factor - The coarsening factor (a positive integer).
  * @returns `[paths, n / factor, ...]`.
- * @throws WhiteboxError with code `shape` when `n` is not a multiple of `factor`.
+ * @throws MdmlError with code `shape` when `n` is not a multiple of `factor`.
  * @example
  * ```ts
- * import { coarsenIncrements } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { coarsenIncrements } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(coarsenIncrements([[1, 2, 3, 4]], 2)) // => [[3, 7]]
  * ```
  */
@@ -222,8 +222,7 @@ export function coarsenIncrements(increments: TensorLike, factor: number): Value
   positiveInteger(factor, 'factor', 'coarsenIncrements')
   const x = asTensor(increments)
   const [p = 1, n = 0, ...rest] = x.shape
-  if (n % factor !== 0)
-    throw new WhiteboxError('shape', `coarsenIncrements: ${n} steps are not a multiple of ${factor}`)
+  if (n % factor !== 0) throw new MdmlError('shape', `coarsenIncrements: ${n} steps are not a multiple of ${factor}`)
   return sum(reshape(x, [p, n / factor, factor, ...rest]), 2)
 }
 
@@ -235,8 +234,8 @@ export function coarsenIncrements(increments: TensorLike, factor: number): Value
  * @returns `[paths, ...state]`.
  * @example
  * ```ts
- * import { valuesAt } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { valuesAt } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(valuesAt([[0, 1, 3], [0, 2, 5]], -1)) // => [3, 5]
  * ```
  */
@@ -244,8 +243,7 @@ export function valuesAt(paths: Paths | TensorLike, index: number): Value {
   const x = asTensor(isPaths(paths) ? paths.values : paths)
   const n = x.shape[1] ?? 0
   const i = index < 0 ? n + index : index
-  if (!(Number.isInteger(i) && i >= 0 && i < n))
-    throw new WhiteboxError('value', `valuesAt: index ${index} out of range`)
+  if (!(Number.isInteger(i) && i >= 0 && i < n)) throw new MdmlError('value', `valuesAt: index ${index} out of range`)
   return squeeze(sliceAxis(x, 1, i, i + 1), 1)
 }
 
@@ -256,7 +254,7 @@ export function valuesAt(paths: Paths | TensorLike, index: number): Value {
  * @returns `true` for `{ times, values }`.
  * @example
  * ```ts
- * import { isPaths, timeGrid } from 'whitebox-engine/stochastic'
+ * import { isPaths, timeGrid } from 'mdml-engine/stochastic'
  * isPaths({ times: timeGrid(1, 2), values: [[0, 0, 0]] }) // => true
  * ```
  */

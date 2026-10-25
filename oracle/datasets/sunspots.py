@@ -2,8 +2,8 @@
 
 import numpy as np
 import statsmodels
+from mdml_oracle.vendor import number_list, sha256_of
 from statsmodels.datasets import sunspots
-from whitebox_oracle.vendor import number_list, sha256_of
 
 TARGET = "packages/engine/src/lib/datasets/_data/sunspots.data.ts"
 

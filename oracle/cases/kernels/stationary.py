@@ -11,13 +11,13 @@ import numpy as np
 import scipy
 import sklearn
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng, uniform
+from mdml_oracle.kernels import anisotropic, gp_case
+from mdml_oracle.torch_helpers import to_numpy, to_torch
 from scipy.spatial.distance import cdist
 from sklearn.gaussian_process.kernels import RBF, ExpSineSquared, Matern, RationalQuadratic
 from sklearn.metrics.pairwise import laplacian_kernel
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng, uniform
-from whitebox_oracle.kernels import anisotropic, gp_case
-from whitebox_oracle.torch_helpers import to_numpy, to_torch
 
 REFERENCE: dict[str, str] = {
     "scikit-learn": sklearn.__version__,

@@ -5,8 +5,8 @@ from typing import cast
 
 import cvxpy as cp
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"cvxpy": version("cvxpy"), "clarabel": version("clarabel")}
 

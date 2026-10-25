@@ -5,7 +5,7 @@
  * token-sort, token-set).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { compareCodePoints, PY_SPACE } from './_classes.ts'
 
 /** A sequence to compare: a string (compared by code point) or an array of tokens. */
@@ -34,7 +34,7 @@ export interface EditWeights {
  * @concept edit-distance
  * @example
  * ```ts
- * import { levenshtein } from 'whitebox-engine/text'
+ * import { levenshtein } from 'mdml-engine/text'
  * levenshtein('kitten', 'sitting') // => 3
  * levenshtein('kitten', 'sitting', { substitution: 2 }) // => 5
  * ```
@@ -68,7 +68,7 @@ export function levenshtein<T>(a: Sequence<T>, b: Sequence<T>, weights: EditWeig
  * @concept edit-distance
  * @example
  * ```ts
- * import { levenshteinSimilarity } from 'whitebox-engine/text'
+ * import { levenshteinSimilarity } from 'mdml-engine/text'
  * levenshteinSimilarity('kitten', 'sitting') // => 0.5714285714285714
  * ```
  */
@@ -96,7 +96,7 @@ export interface EditCounts {
  * @concept edit-distance
  * @example
  * ```ts
- * import { editCounts } from 'whitebox-engine/text'
+ * import { editCounts } from 'mdml-engine/text'
  * editCounts(['the', 'cat', 'sat'], ['the', 'cat', 'sit', 'down']) // => { hits: 2, substitutions: 1, deletions: 0, insertions: 1 }
  * ```
  */
@@ -161,7 +161,7 @@ export function editCounts<T>(reference: Sequence<T>, hypothesis: Sequence<T>): 
  * @concept edit-distance
  * @example
  * ```ts
- * import { damerauLevenshtein } from 'whitebox-engine/text'
+ * import { damerauLevenshtein } from 'mdml-engine/text'
  * [damerauLevenshtein('ca', 'abc'), damerauLevenshtein('ca', 'abc', { restricted: true })] // => [2, 3]
  * ```
  */
@@ -237,18 +237,18 @@ export function damerauLevenshtein<T>(
  * @param a - The first sequence.
  * @param b - The second sequence.
  * @returns The number of mismatches.
- * @throws WhiteboxError with code `shape` for sequences of different lengths.
+ * @throws MdmlError with code `shape` for sequences of different lengths.
  * @concept edit-distance
  * @example
  * ```ts
- * import { hamming } from 'whitebox-engine/text'
+ * import { hamming } from 'mdml-engine/text'
  * hamming('karolin', 'kathrin') // => 3
  * ```
  */
 export function hamming<T>(a: Sequence<T>, b: Sequence<T>): number {
   const x = elements(a)
   const y = elements(b)
-  if (x.length !== y.length) throw new WhiteboxError('shape', 'hamming: sequences must have equal length')
+  if (x.length !== y.length) throw new MdmlError('shape', 'hamming: sequences must have equal length')
   let d = 0
   for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) d++
   return d
@@ -264,7 +264,7 @@ export function hamming<T>(a: Sequence<T>, b: Sequence<T>): number {
  * @concept string-similarity
  * @example
  * ```ts
- * import { jaro } from 'whitebox-engine/text'
+ * import { jaro } from 'mdml-engine/text'
  * jaro('MARTHA', 'MARHTA') // => 0.9444444444444445
  * ```
  */
@@ -325,17 +325,17 @@ export function jaro<T>(a: Sequence<T>, b: Sequence<T>): number {
  * @param b - The second sequence.
  * @param prefixWeight - The weight of each prefix element (default 0.1, at most 0.25).
  * @returns The similarity in [0, 1].
- * @throws WhiteboxError with code `value` for a prefix weight outside [0, 0.25].
+ * @throws MdmlError with code `value` for a prefix weight outside [0, 0.25].
  * @concept string-similarity
  * @example
  * ```ts
- * import { jaroWinkler } from 'whitebox-engine/text'
+ * import { jaroWinkler } from 'mdml-engine/text'
  * jaroWinkler('MARTHA', 'MARHTA') // => 0.9611111111111111
  * ```
  */
 export function jaroWinkler<T>(a: Sequence<T>, b: Sequence<T>, prefixWeight = 0.1): number {
   if (!(prefixWeight >= 0 && prefixWeight <= 0.25))
-    throw new WhiteboxError('value', 'jaroWinkler: prefixWeight must be in [0, 0.25]')
+    throw new MdmlError('value', 'jaroWinkler: prefixWeight must be in [0, 0.25]')
   const x = elements(a)
   const y = elements(b)
   if (x.length === 0 && y.length === 0) return 1
@@ -356,7 +356,7 @@ export function jaroWinkler<T>(a: Sequence<T>, b: Sequence<T>, prefixWeight = 0.
  * @concept longest-common-subsequence
  * @example
  * ```ts
- * import { lcsTable } from 'whitebox-engine/text'
+ * import { lcsTable } from 'mdml-engine/text'
  * lcsTable('ab', 'b').map((r) => Array.from(r)) // => [[0, 0], [0, 0], [0, 1]]
  * ```
  */
@@ -384,7 +384,7 @@ export function lcsTable<T>(a: Sequence<T>, b: Sequence<T>): Int32Array[] {
  * @concept longest-common-subsequence
  * @example
  * ```ts
- * import { longestCommonSubsequence } from 'whitebox-engine/text'
+ * import { longestCommonSubsequence } from 'mdml-engine/text'
  * longestCommonSubsequence('ABCBDAB', 'BDCABA').join('') // => 'BCBA'
  * ```
  */
@@ -416,7 +416,7 @@ export function longestCommonSubsequence<T>(a: Sequence<T>, b: Sequence<T>): (T 
  * @concept longest-common-subsequence
  * @example
  * ```ts
- * import { longestCommonSubstring } from 'whitebox-engine/text'
+ * import { longestCommonSubstring } from 'mdml-engine/text'
  * longestCommonSubstring('xabcdy', 'zbcdw') // => { startA: 2, startB: 1, length: 3 }
  * ```
  */
@@ -450,7 +450,7 @@ export function longestCommonSubstring<T>(
  * @concept edit-distance
  * @example
  * ```ts
- * import { indel } from 'whitebox-engine/text'
+ * import { indel } from 'mdml-engine/text'
  * indel('kitten', 'sitting') // => 5
  * ```
  */
@@ -481,7 +481,7 @@ function counts<T>(items: Items<T>): Map<T, number> {
  * @concept set-similarity
  * @example
  * ```ts
- * import { jaccard } from 'whitebox-engine/text'
+ * import { jaccard } from 'mdml-engine/text'
  * [jaccard(['a', 'b', 'c'], ['b', 'c', 'd']), jaccard(['a', 'a', 'b'], ['a', 'b', 'b'], { weighted: true })] // => [0.5, 0.5]
  * ```
  */
@@ -514,7 +514,7 @@ export function jaccard<T>(a: Items<T>, b: Items<T>, options: { readonly weighte
  * @concept set-similarity
  * @example
  * ```ts
- * import { containment } from 'whitebox-engine/text'
+ * import { containment } from 'mdml-engine/text'
  * containment(['a', 'b'], ['a', 'b', 'c', 'd']) // => 1
  * ```
  */
@@ -537,7 +537,7 @@ export function containment<T>(a: Iterable<T>, b: Iterable<T>): number {
  * @concept set-similarity
  * @example
  * ```ts
- * import { clippedOverlap } from 'whitebox-engine/text'
+ * import { clippedOverlap } from 'mdml-engine/text'
  * clippedOverlap(new Map([['a', 2], ['b', 1]]), new Map([['a', 1], ['c', 4]])) // => 1
  * ```
  */
@@ -554,7 +554,7 @@ export function clippedOverlap<K>(a: ReadonlyMap<K, number>, b: ReadonlyMap<K, n
  * @returns The sum of the counts.
  * @example
  * ```ts
- * import { countTotal } from 'whitebox-engine/text'
+ * import { countTotal } from 'mdml-engine/text'
  * countTotal(new Map([['a', 2], ['b', 3]])) // => 5
  * ```
  */
@@ -577,7 +577,7 @@ const indelRatio = (dist: number, lensum: number): number => (lensum === 0 ? 100
  * @concept string-similarity
  * @example
  * ```ts
- * import { ratio } from 'whitebox-engine/text'
+ * import { ratio } from 'mdml-engine/text'
  * ratio('this is a test', 'this is a test!') // => 96.55172413793103
  * ```
  */
@@ -597,7 +597,7 @@ export function ratio(a: string, b: string): number {
  * @concept string-similarity
  * @example
  * ```ts
- * import { tokenSortRatio } from 'whitebox-engine/text'
+ * import { tokenSortRatio } from 'mdml-engine/text'
  * tokenSortRatio('fuzzy wuzzy was a bear', 'wuzzy fuzzy was a bear') // => 100
  * ```
  */
@@ -615,7 +615,7 @@ export function tokenSortRatio(a: string, b: string): number {
  * @concept string-similarity
  * @example
  * ```ts
- * import { tokenSetRatio } from 'whitebox-engine/text'
+ * import { tokenSetRatio } from 'mdml-engine/text'
  * [tokenSetRatio('fuzzy was a bear', 'fuzzy fuzzy was a bear'), tokenSetRatio('fuzzy was a bear but not a dog', 'fuzzy was a bear but not a cat')] // => [100, 92.3076923076923]
  * ```
  */

@@ -55,8 +55,8 @@ function standardised(mean: TensorLike, std: TensorLike, best: number, xi: numbe
  * @reference Jones, Schonlau and Welch (1998), Efficient global optimization of expensive black-box functions.
  * @example
  * ```ts
- * import { expectedImprovement } from 'whitebox-engine/tune'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { expectedImprovement } from 'mdml-engine/tune'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(expectedImprovement([0], [1], 0)) // => [0.398942]
  * ```
  */
@@ -79,8 +79,8 @@ export function expectedImprovement(mean: TensorLike, std: TensorLike, best: num
  * @reference Ament et al. (2023), Unexpected improvements to expected improvement for Bayesian optimization.
  * @example
  * ```ts
- * import { logExpectedImprovement } from 'whitebox-engine/tune'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { logExpectedImprovement } from 'mdml-engine/tune'
+ * import { toFlat } from 'mdml-engine/tensor'
  * (toFlat(logExpectedImprovement([40], [1], 0))[0] ?? Number.NaN) > -Infinity // => true
  * ```
  */
@@ -111,8 +111,8 @@ export function logExpectedImprovement(mean: TensorLike, std: TensorLike, best: 
  * @concept bayesian-optimisation
  * @example
  * ```ts
- * import { probabilityOfImprovement } from 'whitebox-engine/tune'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { probabilityOfImprovement } from 'mdml-engine/tune'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(probabilityOfImprovement([0], [1], 0)) // => [0.5]
  * ```
  */
@@ -131,8 +131,8 @@ export function probabilityOfImprovement(mean: TensorLike, std: TensorLike, best
  * @concept bayesian-optimisation
  * @example
  * ```ts
- * import { logProbabilityOfImprovement } from 'whitebox-engine/tune'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { logProbabilityOfImprovement } from 'mdml-engine/tune'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(logProbabilityOfImprovement([0], [1], 0)) // => [-0.693147]
  * ```
  */
@@ -152,8 +152,8 @@ export function logProbabilityOfImprovement(mean: TensorLike, std: TensorLike, b
  * @reference Srinivas et al. (2010), Gaussian process optimization in the bandit setting.
  * @example
  * ```ts
- * import { lowerConfidenceBound } from 'whitebox-engine/tune'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { lowerConfidenceBound } from 'mdml-engine/tune'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(lowerConfidenceBound([1], [0.5], 2)) // => [0]
  * ```
  */
@@ -171,8 +171,8 @@ export function lowerConfidenceBound(mean: TensorLike, std: TensorLike, beta = 2
  * @concept bayesian-optimisation
  * @example
  * ```ts
- * import { upperConfidenceBound } from 'whitebox-engine/tune'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { upperConfidenceBound } from 'mdml-engine/tune'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(upperConfidenceBound([1], [0.5], 2)) // => [2]
  * ```
  */
@@ -192,8 +192,8 @@ export type Acquisition = (mean: Value, std: Value, best: number) => Value
  *
  * @example
  * ```ts
- * import { acquisitions } from 'whitebox-engine/tune'
- * import { asTensor, toFlat } from 'whitebox-engine/tensor'
+ * import { acquisitions } from 'mdml-engine/tune'
+ * import { asTensor, toFlat } from 'mdml-engine/tensor'
  * toFlat(acquisitions.LCB(asTensor([2]), asTensor([0.5]), 0)) // => [-1]
  * Object.keys(acquisitions) // => ['logEI', 'EI', 'PI', 'LCB']
  * ```
@@ -231,8 +231,8 @@ export interface AcquisitionSearchOptions {
  * @concept bayesian-optimisation
  * @example
  * ```ts
- * import { acquisitions, fitGpSurrogate, maximizeAcquisition } from 'whitebox-engine/tune'
- * import { key } from 'whitebox-engine/random'
+ * import { acquisitions, fitGpSurrogate, maximizeAcquisition } from 'mdml-engine/tune'
+ * import { key } from 'mdml-engine/random'
  * const xs = [[0.1], [0.4], [0.9]]
  * const gp = fitGpSurrogate(xs, [1, 0, 1])
  * const { point } = maximizeAcquisition(gp, acquisitions.EI, 0, key(0))
@@ -313,8 +313,8 @@ export interface GpSamplerOptions {
  * @reference Snoek, Larochelle and Adams (2012), Practical Bayesian optimization of machine learning algorithms.
  * @example
  * ```ts
- * import { gpSampler, functionObjective, tune } from 'whitebox-engine/tune'
- * import { real } from 'whitebox-engine/space'
+ * import { gpSampler, functionObjective, tune } from 'mdml-engine/tune'
+ * import { real } from 'mdml-engine/space'
  * const f = functionObjective((x) => ((x as number) - 0.7) ** 2)
  * (tune(f, real(0, 1), { sampler: gpSampler({ nStartupTrials: 4 }), nTrials: 10, seed: 0 }).best?.values[0] ?? 1) < 1e-3 // => true
  * ```

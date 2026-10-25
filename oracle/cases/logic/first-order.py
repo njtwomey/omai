@@ -6,7 +6,7 @@ No packaged prover serves as a reference: NLTK's ResolutionProver lacks factorin
 reads single-letter names as variables (it "proves" rel(a, c) from rel(a, b) and rel(b, c)), and SWI-Prolog, Prover9
 and E cannot be installed with uv."""
 
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {
     "pelletier-1986": "F. J. Pelletier, Seventy-five problems for testing automatic theorem provers, JAR 2 (1986)",

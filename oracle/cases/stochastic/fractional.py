@@ -4,8 +4,8 @@ correction, and dfa with half-overlapping or disjoint windows and detrending ord
 
 import nolds
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"nolds": "0.6.3", "numpy": np.__version__}
 

@@ -6,10 +6,10 @@ from typing import Any
 import numpy as np
 import sklearn
 import sklearn.experimental.enable_iterative_imputer  # noqa: F401  # pyright: ignore[reportUnusedImport]  (registers IterativeImputer)
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from sklearn.impute import IterativeImputer, KNNImputer, MissingIndicator, SimpleImputer
 from sklearn.linear_model import Ridge
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

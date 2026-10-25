@@ -1,4 +1,3 @@
-import { type ReactNode, useMemo, useState } from 'react'
 import {
   arrow,
   axes3d,
@@ -15,15 +14,16 @@ import {
   surface3d,
   tex,
   text,
-} from 'whitebox-engine/scene'
-import { ControlPanel, NumberField, SceneFrame, SceneView } from 'whitebox-render/react'
+} from 'mdml-engine/scene'
+import { ControlPanel, NumberField, SceneFrame, SceneView } from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
   title: 'Scenes',
   question: 'How do I draw a scene: shapes, arrows, curves, TeX, images and a 3-D layer?',
   explain:
-    'A `Scene` is plain data from whitebox-engine (`scene`, `rect`, `circle`, `path`, `arrow`, `text`, `tex`, `image`, `group`, `layer3d`); colours are theme tokens (`fg`, `accent`, `tab0` to `tab9`) or literal colours. `SceneView` draws it as SVG in the page’s colour mode and reports hover and clicks by node id: hover a shape, click to highlight it.',
+    'A `Scene` is plain data from mdml-engine (`scene`, `rect`, `circle`, `path`, `arrow`, `text`, `tex`, `image`, `group`, `layer3d`); colours are theme tokens (`fg`, `accent`, `tab0` to `tab9`) or literal colours. `SceneView` draws it as SVG in the page’s colour mode and reports hover and clicks by node id: hover a shape, click to highlight it.',
 }
 
 const checker = Array.from({ length: 8 }, (_, i) => Array.from({ length: 8 }, (_, j) => ((i + j) % 2 === 0 ? 1 : 0)))

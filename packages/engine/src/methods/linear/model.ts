@@ -6,7 +6,7 @@
  */
 
 // TODO: SAG and SAGA solvers (optim has them); ordinal (ordinal.ts) and mixed models (mixed.ts).
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import type { DispersionFamily, Link, LinkName } from '../../lib/dists/families/index.ts'
 import type { Distribution } from '../../lib/dists/index.ts'
 import { families } from '../../lib/dists/index.ts'
@@ -141,7 +141,7 @@ export function fitLinear(
   const design = designOf(data, who)
   const { family, link } = familyOf(h)
   if (!(h.alpha >= 0) || !(h.l1Ratio >= 0 && h.l1Ratio <= 1))
-    throw new WhiteboxError('value', `${who}: alpha must be >= 0 and l1Ratio in [0, 1]`)
+    throw new MdmlError('value', `${who}: alpha must be >= 0 and l1Ratio in [0, 1]`)
   const problem: GlmProblem = { design, family, link, alpha: h.alpha, l1Ratio: h.l1Ratio, fitIntercept: h.fitIntercept }
   const chosen = h.solver === 'auto' ? chooseSolver(problem) : { solver: h.solver, reason: 'chosen by the caller' }
   const solution = solveGlm(problem, {

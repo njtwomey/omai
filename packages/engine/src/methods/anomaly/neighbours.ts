@@ -4,7 +4,7 @@
  * scores a point by its distance to its k-th neighbour.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { neighbourRecord } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -49,8 +49,7 @@ export function localOutlierFactors(
   k: number,
 ): { readonly kDistance: number[]; readonly lrd: number[]; readonly lof: number[]; readonly neighbours: Near } {
   const n = matrixView(x, 'localOutlierFactor').n
-  if (!(Number.isInteger(k) && k >= 1 && k < n))
-    throw new WhiteboxError('value', `lof: nNeighbors must be in 1..${n - 1}`)
+  if (!(Number.isInteger(k) && k >= 1 && k < n)) throw new MdmlError('value', `lof: nNeighbors must be in 1..${n - 1}`)
   const nb = near(x, undefined, k)
   const kDistance = nb.distances.map((d) => d[k - 1] ?? 0)
   const lrdOf = (nbrs: readonly number[], dists: readonly number[]): number =>

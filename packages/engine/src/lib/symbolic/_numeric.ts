@@ -5,7 +5,7 @@
  * numerics).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { children } from './_node.ts'
 import { KNOWN_FUNCTIONS } from './_order.ts'
 import type { Expr } from './expr.ts'
@@ -248,7 +248,7 @@ export function evalReal(e: Expr, env: Readonly<Record<string, number>>, fns: Nu
   const m = new Map<string, C>()
   for (const [k, v] of Object.entries(env)) m.set(k, [v, 0])
   const missing = freeNames(e).filter((n) => !m.has(n))
-  if (missing.length > 0) throw new WhiteboxError('value', `evaluate: no value for ${missing.join(', ')}`)
+  if (missing.length > 0) throw new MdmlError('value', `evaluate: no value for ${missing.join(', ')}`)
   const v = evalReal1(e, m, fns)
   return v
 }
@@ -278,7 +278,7 @@ function evalReal1(e: Expr, env: ReadonlyMap<string, C>, fns: NumericFunctions):
       const x = xs[0] ?? Number.NaN
       const real = REAL[e.name]
       if (real !== undefined) return real(x, xs[1] ?? Number.NaN)
-      throw new WhiteboxError('not-implemented', `evaluate: no numeric implementation of ${e.name}; pass functions`)
+      throw new MdmlError('not-implemented', `evaluate: no numeric implementation of ${e.name}; pass functions`)
     }
     case 'const':
       if (e.name === 'I' || e.name === 'zoo' || e.name === 'nan') return Number.NaN
@@ -294,7 +294,7 @@ function evalReal1(e: Expr, env: ReadonlyMap<string, C>, fns: NumericFunctions):
       break
   }
   const z = evalComplex(e, env, fns)
-  if (z === undefined) throw new WhiteboxError('value', `evaluate: cannot evaluate ${e.kind}`)
+  if (z === undefined) throw new MdmlError('value', `evaluate: cannot evaluate ${e.kind}`)
   return Math.abs(z[1]) > 0 ? Number.NaN : z[0]
 }
 

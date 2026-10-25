@@ -3,8 +3,8 @@ phase_crossover_frequencies)."""
 
 import control as ct
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"control": ct.__version__}
 

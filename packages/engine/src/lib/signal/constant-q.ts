@@ -4,7 +4,7 @@
  * complex exponentials and the transform itself, matching librosa.cqt without early downsampling.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { fft } from '../numerics/fourier/index.ts'
 import {
   add,
@@ -37,7 +37,7 @@ import { enbw, getWindow, type WindowSpec } from './windows/index.ts'
  * @concept constant-q
  * @example
  * ```ts
- * import { cqtFrequencies } from 'whitebox-engine/signal'
+ * import { cqtFrequencies } from 'mdml-engine/signal'
  * cqtFrequencies(3, 100, 1) // => [100, 200, 400]
  * ```
  */
@@ -65,7 +65,7 @@ export interface CqtOptions {
 /** The relative bandwidths alpha of librosa's wavelet filters from the log-spacing of the centre frequencies. */
 function relativeBandwidth(freqs: readonly number[]): number[] {
   const n = freqs.length
-  if (n < 2) throw new WhiteboxError('value', 'cqt: at least two frequencies are needed')
+  if (n < 2) throw new MdmlError('value', 'cqt: at least two frequencies are needed')
   const logf = freqs.map(Math.log2)
   return freqs.map((_, k) => {
     const bpo =
@@ -97,11 +97,11 @@ export interface CqtFilters {
  *
  * @param options - Sampling rate, frequencies, filter scale, window and normalisation.
  * @returns The filters, their lengths, the frequencies and the cutoff.
- * @throws WhiteboxError with code `value` when the filters would exceed the Nyquist frequency.
+ * @throws MdmlError with code `value` when the filters would exceed the Nyquist frequency.
  * @concept constant-q
  * @example
  * ```ts
- * import { cqtFilters } from 'whitebox-engine/signal'
+ * import { cqtFilters } from 'mdml-engine/signal'
  * cqtFilters({ sr: 8000, fmin: 2000, nBins: 12 }).filters.re.shape // => [12, 128]
  * ```
  */
@@ -122,7 +122,7 @@ export function cqtFilters(options: CqtOptions = {}): CqtFilters {
     cutoff = Math.max(cutoff, f * (1 + (0.5 * bw) / q))
     return (q * sr) / f
   })
-  if (cutoff > sr / 2) throw new WhiteboxError('value', `cqt: the filters reach ${cutoff} Hz, beyond Nyquist ${sr / 2}`)
+  if (cutoff > sr / 2) throw new MdmlError('value', `cqt: the filters reach ${cutoff} Hz, beyond Nyquist ${sr / 2}`)
   let maxLen = 0
   for (const l of lengths) maxLen = Math.max(maxLen, l)
   const nFft = 2 ** Math.ceil(Math.log2(maxLen))
@@ -168,7 +168,7 @@ export function cqtFilters(options: CqtOptions = {}): CqtFilters {
  * @concept constant-q
  * @example
  * ```ts
- * import { cqt } from 'whitebox-engine/signal'
+ * import { cqt } from 'mdml-engine/signal'
  * const y = Array.from({ length: 2048 }, (_, n) => Math.cos((2 * Math.PI * 2500 * n) / 8000))
  * cqt(y, { sr: 8000, fmin: 2000, nBins: 12, hop: 256 }).values.re.shape // => [12, 9]
  * ```

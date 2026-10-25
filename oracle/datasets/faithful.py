@@ -1,6 +1,6 @@
 """Old Faithful geyser eruptions (Hardle 1991), R's datasets::faithful via Rdatasets."""
 
-from whitebox_oracle.vendor import csv_rows, fetch_pinned, render_table
+from mdml_oracle.vendor import csv_rows, fetch_pinned, render_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/faithful.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/datasets/faithful.csv"

@@ -1,7 +1,7 @@
 // Shared helpers of the mathematical-programming files (linear, quadratic, conic, integer, SMO): converting inputs to
 // row-major number arrays and dense solves on them through the public linear-algebra routines. Not exported from the
 // barrel.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { choleskyJitter, choSolve, dgemv, luFactor, luSolve } from '../numerics/linalg/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 
@@ -26,13 +26,13 @@ export function matrixFrom(x: TensorLike | undefined, cols: number, name: string
   if (data.length === 0) return { data, rows: 0, cols }
   const c = t.shape.length === 1 ? (t.shape[0] ?? 0) : (t.shape[t.shape.length - 1] ?? 0)
   if (c !== cols || t.shape.length > 2)
-    throw new WhiteboxError('shape', `${name} must have ${cols} columns, got shape [${t.shape.join(', ')}]`)
+    throw new MdmlError('shape', `${name} must have ${cols} columns, got shape [${t.shape.join(', ')}]`)
   return { data, rows: data.length / cols, cols }
 }
 
 /** Check that a vector has the expected length. */
 export function expectLength(x: Float64Array, n: number, name: string): void {
-  if (x.length !== n) throw new WhiteboxError('shape', `${name} must have length ${n}, got ${x.length}`)
+  if (x.length !== n) throw new MdmlError('shape', `${name} must have length ${n}, got ${x.length}`)
 }
 
 /** Solve A X = B for a square n x n A and B with k columns (row-major), by LU with partial pivoting. */

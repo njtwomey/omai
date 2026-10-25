@@ -3,8 +3,8 @@
  * autodiff at every step.
  */
 
-import { type BackpropActivation, backpropByHand } from 'whitebox-engine/methods/neural/foundations'
-import { choice, dict, int, real, type SpaceValue } from 'whitebox-engine/space'
+import { type BackpropActivation, backpropByHand } from 'mdml-engine/methods/neural/foundations'
+import { choice, dict, int, real, type SpaceValue } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 const options = (p: Readonly<Record<string, SpaceValue>>): Parameters<typeof backpropByHand>[0] => ({

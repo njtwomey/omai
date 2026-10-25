@@ -1,8 +1,8 @@
+import { diabetes } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { explainableBoostingMachine } from 'mdml-engine/methods/explain'
+import { ControlPanel, DependenceSurfaceView, DependenceView, ImportanceView, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { diabetes } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { explainableBoostingMachine } from 'whitebox-engine/methods/explain'
-import { ControlPanel, DependenceSurfaceView, DependenceView, ImportanceView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

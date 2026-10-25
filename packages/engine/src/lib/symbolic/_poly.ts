@@ -1,6 +1,6 @@
 // Sparse multivariate polynomials over the rationals (lex order, highest term first), dense univariate helpers, and
 // the conversion between expressions and polynomials over automatically chosen generators.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { charge, chargeTerms } from './_budget.ts'
 import { asCoeffMul, HALF, isNumeric, makeAdd, makeMul, makePow, numFromRational, ONE, ratOf } from './_canon.ts'
 import { makeFn } from './_functions.ts'
@@ -195,7 +195,7 @@ export function ptotalDeg(a: P): number {
 /** Leading term in lex order. @internal */
 export function plt(a: P): Term {
   const t = a.terms[0]
-  if (t === undefined) throw new WhiteboxError('value', 'poly: leading term of zero')
+  if (t === undefined) throw new MdmlError('value', 'poly: leading term of zero')
   return t
 }
 
@@ -504,7 +504,7 @@ export function uscale(a: U, c: Rational): U {
 export function udivmod(a: U, b: U): [U, U] {
   const bt = utrim(b)
   const db = bt.length - 1
-  if (db < 0) throw new WhiteboxError('domain', 'poly: division by zero polynomial')
+  if (db < 0) throw new MdmlError('domain', 'poly: division by zero polynomial')
   let r = utrim(a)
   const lb = bt[db] as Rational
   const q: U = new Array<Rational>(Math.max(0, r.length - db)).fill(R0)

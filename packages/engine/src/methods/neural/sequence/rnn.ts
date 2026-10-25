@@ -4,7 +4,7 @@
  * last one. Records the hidden states and predictions of a sequence as training goes on, and accuracy by position.
  */
 
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import type { SequenceData } from '../../../lib/data/index.ts'
 import {
   diagramRecord,
@@ -152,7 +152,7 @@ export function recurrentTagger(
   const tOut = data.targets.shape[1] ?? 0
   const final = tOut === 1 && tIn > 1
   if (!final && tOut !== tIn)
-    throw new WhiteboxError(
+    throw new MdmlError(
       'shape',
       `recurrentTagger: targets of length ${tOut} for inputs of length ${tIn} (needs equal lengths, or one target)`,
     )

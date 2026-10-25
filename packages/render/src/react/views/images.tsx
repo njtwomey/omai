@@ -3,8 +3,8 @@
  * beside the objective.
  */
 
+import type { ImageSteps } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
-import type { ImageSteps } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { imageAspect, imageFrames } from '../../views/images.ts'
 import { FramesPlayer, type PlayerViewProps, type RecordViewProps, useViewFigure } from './_frame.tsx'

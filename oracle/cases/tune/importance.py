@@ -8,11 +8,11 @@ import warnings
 from typing import Literal
 
 import optuna
+from mdml_oracle.fixture import Case, Json, case
+from mdml_oracle.helpers import rng
 from optuna.distributions import BaseDistribution, CategoricalDistribution, FloatDistribution, IntDistribution
 from optuna.importance import PedAnovaImportanceEvaluator
 from optuna.trial import FrozenTrial, create_trial
-from whitebox_oracle.fixture import Case, Json, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"optuna": optuna.__version__}
 

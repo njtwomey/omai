@@ -1,6 +1,6 @@
+import { bool, choice, defaults, dict, int, real, type SpaceValue } from 'mdml-engine/space'
+import { ControlPanel, SpaceControls } from 'mdml-render/react'
 import { type ReactNode, useState } from 'react'
-import { bool, choice, defaults, dict, int, real, type SpaceValue } from 'whitebox-engine/space'
-import { ControlPanel, SpaceControls } from 'whitebox-render/react'
 import { CodeBlock } from '../../../shell/CodeBlock.tsx'
 import type { Recipe } from '../../recipe.ts'
 

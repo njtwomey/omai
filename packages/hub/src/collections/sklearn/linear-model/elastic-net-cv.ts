@@ -3,7 +3,7 @@
  * informative features and one-dimensional regression curves.
  */
 
-import { elasticNetCV } from 'whitebox-engine/methods/linear'
+import { elasticNetCV } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

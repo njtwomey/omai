@@ -5,7 +5,7 @@
  * average), and the mean excess function that guides the choice of threshold.
  */
 
-import { type Estimate, meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { type Estimate, MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { type Distribution, generalisedExtremeValue, generalisedPareto } from '../dists/index.ts'
 import { asTensor, exp, item, sum, type Tensor, type TensorLike, take, toFlat, type Value } from '../tensor/index.ts'
 import { invSpd } from './_linear.ts'
@@ -73,7 +73,7 @@ function finish(
  * @returns The fit.
  * @example
  * ```ts
- * import { fitGev } from 'whitebox-engine/stats'
+ * import { fitGev } from 'mdml-engine/stats'
  * fitGev([1.2, 2.3, 1.9, 3.1, 2.2, 1.7, 2.8, 2.0, 2.5, 4.1]).converged // => true
  * ```
  */
@@ -105,14 +105,14 @@ export function fitGev(x: TensorLike, options: NewtonMleOptions = {}): ExtremeFi
  * @returns The fit (loc is the threshold, with no standard error).
  * @example
  * ```ts
- * import { fitGpd } from 'whitebox-engine/stats'
+ * import { fitGpd } from 'mdml-engine/stats'
  * fitGpd([0.2, 1.1, 0.5, 2.4, 0.1, 0.8, 1.6, 0.3, 0.9, 3.2]).params.loc // => 0
  * ```
  */
 export function fitGpd(x: TensorLike, options: NewtonMleOptions & { readonly threshold?: number } = {}): ExtremeFit {
   const u = options.threshold ?? 0
   const a = sample('fitGpd', x, 3)
-  for (const v of a) if (v < u) throw new WhiteboxError('domain', 'fitGpd: observations must exceed the threshold')
+  for (const v of a) if (v < u) throw new MdmlError('domain', 'fitGpd: observations must exceed the threshold')
   const data = asTensor(a)
   const e = Float64Array.from(a, (v) => v - u)
   const m = meanOf(e)
@@ -147,7 +147,7 @@ export interface PeaksOverThreshold {
  * @returns The exceedances, their indices and the rate per observation.
  * @example
  * ```ts
- * import { peaksOverThreshold } from 'whitebox-engine/stats'
+ * import { peaksOverThreshold } from 'mdml-engine/stats'
  * peaksOverThreshold([1, 5, 6, 1, 1, 7, 1], 4, { runLength: 1 }).exceedances // => [2, 3]
  * ```
  */
@@ -193,7 +193,7 @@ export function peaksOverThreshold(
  * @returns The return level with its normal interval.
  * @example
  * ```ts
- * import { returnLevel, type ExtremeFit } from 'whitebox-engine/stats'
+ * import { returnLevel, type ExtremeFit } from 'mdml-engine/stats'
  * const gumbel = { params: { loc: 0, scale: 1, shape: 0 } } as unknown as ExtremeFit
  * returnLevel(gumbel, 100).value // => 4.600149
  * ```
@@ -203,7 +203,7 @@ export function returnLevel(
   period: number,
   options: { readonly kind?: 'gev' | 'gpd'; readonly rate?: number; readonly level?: number } = {},
 ): Estimate {
-  if (!(period > 1)) throw new WhiteboxError('value', 'returnLevel: the period must exceed 1')
+  if (!(period > 1)) throw new MdmlError('value', 'returnLevel: the period must exceed 1')
   const { loc, scale, shape } = fit.params
   const kind = options.kind ?? 'gev'
   let value: number
@@ -266,7 +266,7 @@ export interface MeanExcess {
  * @returns The thresholds, mean excesses, interval bounds and counts.
  * @example
  * ```ts
- * import { meanExcess } from 'whitebox-engine/stats'
+ * import { meanExcess } from 'mdml-engine/stats'
  * meanExcess([1, 2, 3, 4, 5], { thresholds: [0, 2] }).meanExcess // => [3, 2]
  * ```
  */

@@ -3,7 +3,7 @@
  * two-dimensional and tabular classification and regression data.
  */
 
-import { kNeighborsClassifier, kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
+import { kNeighborsClassifier, kNeighborsRegressor } from 'mdml-engine/methods/neighbours'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'
 

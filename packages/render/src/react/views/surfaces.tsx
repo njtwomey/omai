@@ -4,8 +4,8 @@
  * the optimiser's path.
  */
 
+import type { DecisionSurface, HyperparameterSurface, PosteriorGrid } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
-import type { DecisionSurface, HyperparameterSurface, PosteriorGrid } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import {
   decisionSurfaceFrames,

@@ -5,7 +5,7 @@
  * multilabel confusion matrices.
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import {
   type ClassCounts,
@@ -89,7 +89,7 @@ function samplesAverage(
   options: AveragingOptions,
   rate: Rate,
 ): number {
-  if (!isMultilabel(yTrue)) throw new WhiteboxError('value', `${name}: 'samples' averaging needs multilabel targets`)
+  if (!isMultilabel(yTrue)) throw new MdmlError('value', `${name}: 'samples' averaging needs multilabel targets`)
   const t = indicator(name, yTrue as TensorLike)
   const p = indicator(name, yPred as TensorLike)
   const w = sampleWeights(name, t.n, options.sampleWeight)
@@ -132,14 +132,13 @@ function averaged(
   const size = n
   const breakdown = Object.fromEntries(c.classes.map((label, i) => [String(label), perClass[i] ?? Number.NaN]))
   if (average === 'binary') {
-    if (c.multilabel) throw new WhiteboxError('value', `${name}: 'binary' averaging needs binary targets; pass average`)
+    if (c.multilabel) throw new MdmlError('value', `${name}: 'binary' averaging needs binary targets; pass average`)
     const pos = options.posLabel ?? 1
-    if (k > 2)
-      throw new WhiteboxError('value', `${name}: targets are multi-class; pass average ('micro', 'macro', ...)`)
+    if (k > 2) throw new MdmlError('value', `${name}: targets are multi-class; pass average ('micro', 'macro', ...)`)
     const i = c.classes.indexOf(pos)
     if (i < 0) {
       if (k <= 1) return metricResult(name, rate(0, 0, 0, size, zd), size)
-      throw new WhiteboxError('value', `${name}: posLabel ${String(pos)} is not a class`)
+      throw new MdmlError('value', `${name}: posLabel ${String(pos)} is not a class`)
     }
     return metricResult(name, perClass[i] ?? Number.NaN, size)
   }
@@ -190,7 +189,7 @@ const fbetaRate =
  * @concept classification-metrics
  * @example
  * ```ts
- * import { precisionScore } from 'whitebox-engine/metrics'
+ * import { precisionScore } from 'mdml-engine/metrics'
  * precisionScore([0, 1, 1, 0], [1, 1, 1, 0]).estimate.value // => 0.6666666666666666
  * ```
  */
@@ -205,7 +204,7 @@ export const precisionScore: Metric<AveragingOptions, MetricInput> = rateMetric(
  * @returns The metric result.
  * @example
  * ```ts
- * import { recallScore } from 'whitebox-engine/metrics'
+ * import { recallScore } from 'mdml-engine/metrics'
  * recallScore([0, 1, 1, 0], [1, 1, 0, 0]).estimate.value // => 0.5
  * ```
  */
@@ -220,7 +219,7 @@ export const recallScore: Metric<AveragingOptions, MetricInput> = rateMetric('re
  * @returns The metric result.
  * @example
  * ```ts
- * import { sensitivityScore } from 'whitebox-engine/metrics'
+ * import { sensitivityScore } from 'mdml-engine/metrics'
  * sensitivityScore([0, 1, 1, 0], [1, 1, 0, 0]).estimate.value // => 0.5
  * ```
  */
@@ -235,7 +234,7 @@ export const sensitivityScore: Metric<AveragingOptions, MetricInput> = rateMetri
  * @returns The metric result.
  * @example
  * ```ts
- * import { specificityScore } from 'whitebox-engine/metrics'
+ * import { specificityScore } from 'mdml-engine/metrics'
  * specificityScore([0, 1, 1, 0], [1, 1, 0, 0]).estimate.value // => 0.5
  * ```
  */
@@ -253,7 +252,7 @@ export const specificityScore: Metric<AveragingOptions, MetricInput> = rateMetri
  * @returns The metric result.
  * @example
  * ```ts
- * import { negativePredictiveValue } from 'whitebox-engine/metrics'
+ * import { negativePredictiveValue } from 'mdml-engine/metrics'
  * negativePredictiveValue([0, 1, 1, 0], [1, 1, 0, 0]).estimate.value // => 0.5
  * ```
  */
@@ -271,7 +270,7 @@ export const negativePredictiveValue: Metric<AveragingOptions, MetricInput> = ra
  * @returns The metric result.
  * @example
  * ```ts
- * import { informedness } from 'whitebox-engine/metrics'
+ * import { informedness } from 'mdml-engine/metrics'
  * informedness([0, 1, 1, 0], [0, 1, 1, 0]).estimate.value // => 1
  * ```
  */
@@ -291,7 +290,7 @@ export const informedness: Metric<AveragingOptions, MetricInput> = rateMetric(
  * @returns The metric result.
  * @example
  * ```ts
- * import { markedness } from 'whitebox-engine/metrics'
+ * import { markedness } from 'mdml-engine/metrics'
  * markedness([0, 1, 1, 0], [0, 1, 1, 0]).estimate.value // => 1
  * ```
  */
@@ -317,7 +316,7 @@ export interface FbetaOptions extends AveragingOptions {
  * @returns The metric result.
  * @example
  * ```ts
- * import { fbetaScore } from 'whitebox-engine/metrics'
+ * import { fbetaScore } from 'mdml-engine/metrics'
  * fbetaScore([0, 1, 1, 0], [1, 1, 0, 0], { beta: 1 }).estimate.value // => 0.5
  * ```
  */
@@ -334,7 +333,7 @@ export const fbetaScore: Metric<FbetaOptions, MetricInput> = rateMetric<FbetaOpt
  * @returns The metric result.
  * @example
  * ```ts
- * import { f1Score } from 'whitebox-engine/metrics'
+ * import { f1Score } from 'mdml-engine/metrics'
  * f1Score([0, 1, 2, 2], [0, 2, 2, 2], { average: 'macro' }).estimate.value // => 0.6
  * ```
  */
@@ -350,7 +349,7 @@ export const f1Score: Metric<AveragingOptions, MetricInput> = rateMetric('f1Scor
  * @returns The metric result.
  * @example
  * ```ts
- * import { jaccardScore } from 'whitebox-engine/metrics'
+ * import { jaccardScore } from 'mdml-engine/metrics'
  * jaccardScore([0, 1, 1, 0], [1, 1, 0, 0]).estimate.value // => 0.3333333333333333
  * ```
  */
@@ -379,7 +378,7 @@ export interface PrecisionRecallFscoreSupport {
  * @returns Per-class arrays and the averages.
  * @example
  * ```ts
- * import { precisionRecallFscoreSupport } from 'whitebox-engine/metrics'
+ * import { precisionRecallFscoreSupport } from 'mdml-engine/metrics'
  * precisionRecallFscoreSupport([0, 1, 1], [0, 1, 0]).recall // => [1, 0.5]
  * ```
  */
@@ -428,7 +427,7 @@ export interface AccuracyOptions extends MetricOptions {
  * @concept classification-metrics
  * @example
  * ```ts
- * import { accuracyScore } from 'whitebox-engine/metrics'
+ * import { accuracyScore } from 'mdml-engine/metrics'
  * accuracyScore([0, 1, 2, 3], [0, 2, 1, 3]).estimate.value // => 0.5
  * ```
  */
@@ -470,7 +469,7 @@ export const accuracyScore: Metric<AccuracyOptions, MetricInput> = Object.assign
  * @returns The metric result.
  * @example
  * ```ts
- * import { subsetAccuracy } from 'whitebox-engine/metrics'
+ * import { subsetAccuracy } from 'mdml-engine/metrics'
  * subsetAccuracy([[1, 0], [1, 1]], [[1, 0], [0, 1]]).estimate.value // => 0.5
  * ```
  */
@@ -492,7 +491,7 @@ export const subsetAccuracy: Metric<AccuracyOptions, MetricInput> = Object.assig
  * @returns The metric result.
  * @example
  * ```ts
- * import { balancedAccuracyScore } from 'whitebox-engine/metrics'
+ * import { balancedAccuracyScore } from 'mdml-engine/metrics'
  * balancedAccuracyScore([0, 1, 0, 0], [0, 1, 0, 1]).estimate.value // => 0.8333333333333333
  * ```
  */
@@ -536,7 +535,7 @@ export interface ConfusionMatrix {
  * @returns The matrix and its class labels.
  * @example
  * ```ts
- * import { confusionMatrix } from 'whitebox-engine/metrics'
+ * import { confusionMatrix } from 'mdml-engine/metrics'
  * confusionMatrix([0, 1, 1, 2], [0, 1, 2, 2]).matrix // => [[1, 0, 0], [0, 1, 1], [0, 0, 1]]
  * ```
  */
@@ -582,7 +581,7 @@ export function confusionMatrix(
  * @returns One matrix per class (or sample).
  * @example
  * ```ts
- * import { multilabelConfusionMatrix } from 'whitebox-engine/metrics'
+ * import { multilabelConfusionMatrix } from 'mdml-engine/metrics'
  * multilabelConfusionMatrix([0, 1, 1], [0, 1, 0])[1] // => [[1, 0], [1, 1]]
  * ```
  */
@@ -593,7 +592,7 @@ export function multilabelConfusionMatrix(
 ): number[][][] {
   const name = 'multilabelConfusionMatrix'
   if (options.samplewise === true) {
-    if (!isMultilabel(yTrue)) throw new WhiteboxError('value', `${name}: samplewise needs multilabel targets`)
+    if (!isMultilabel(yTrue)) throw new MdmlError('value', `${name}: samplewise needs multilabel targets`)
     const t = indicator(name, yTrue as TensorLike)
     const p = indicator(name, yPred as TensorLike)
     const w = sampleWeights(name, t.n, options.sampleWeight)

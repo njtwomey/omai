@@ -4,7 +4,7 @@
  * them, over the core's K-SVD, MOD and online learners.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -78,7 +78,7 @@ export function truncatedSvd(hyper: TruncatedSvdHyper = {}): Estimator<Truncated
         const m = matrixView(data.x, 'truncatedSvd')
         const k = h.nComponents ?? 2
         if (!(Number.isInteger(k) && k >= 1 && k <= Math.min(m.n, m.d)))
-          throw new WhiteboxError('value', `truncatedSvd: nComponents must be in 1..${Math.min(m.n, m.d)}`)
+          throw new MdmlError('value', `truncatedSvd: nComponents must be in 1..${Math.min(m.n, m.d)}`)
         let s: number[]
         let vt: number[][]
         if (h.algorithm === 'randomized') {

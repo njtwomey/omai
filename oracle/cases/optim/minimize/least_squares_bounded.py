@@ -5,8 +5,8 @@ from typing import Literal
 import numpy as np
 import scipy
 import scipy.optimize as so
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.optim_problems import BOUNDED_RESIDUALS, LS_T, LS_Y, LS_Y_OUTLIERS, RESIDUALS, ls_summary
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.optim_problems import BOUNDED_RESIDUALS, LS_T, LS_Y, LS_Y_OUTLIERS, RESIDUALS, ls_summary
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

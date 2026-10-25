@@ -66,7 +66,7 @@ describe('checkpoints', () => {
     const rec = recorder()
     runAlgorithm(count, { maxSteps: 20, tracer: rec, policy: checkpointEvery(5) })
     expect(seek(count, rec.run(), 13, {})).toBe(13)
-    expect(() => seek(count, { schema: 'whitebox.run/1', events: [] }, 3, {})).toThrow()
+    expect(() => seek(count, { schema: 'mdml.run/1', events: [] }, 3, {})).toThrow()
     const { deserialise: _, ...plain } = count
     expect(() => resume(plain, { type: 'checkpoint', runId: 'r', step: 1, state: 1 }, { maxSteps: 1 })).toThrow()
   })

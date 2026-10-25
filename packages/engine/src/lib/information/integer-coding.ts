@@ -3,7 +3,7 @@
  * parameter that is optimal for a geometric distribution, and run-length encoding, each with its decoder.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** The Elias universal codes for positive integers. */
 export type EliasKind = 'gamma' | 'delta' | 'omega'
@@ -11,7 +11,7 @@ export type EliasKind = 'gamma' | 'delta' | 'omega'
 const binary = (n: number): number[] => Array.from(n.toString(2), (c) => (c === '1' ? 1 : 0))
 
 function checkInteger(n: number, min: number, name: string): void {
-  if (!Number.isSafeInteger(n) || n < min) throw new WhiteboxError('value', `${name}: ${n} is not an integer >= ${min}`)
+  if (!Number.isSafeInteger(n) || n < min) throw new MdmlError('value', `${name}: ${n} is not an integer >= ${min}`)
 }
 
 function eliasOne(n: number, kind: EliasKind): number[] {
@@ -45,7 +45,7 @@ function eliasOne(n: number, kind: EliasKind): number[] {
  * @concept universal-codes
  * @example
  * ```ts
- * import { eliasEncode } from 'whitebox-engine/information'
+ * import { eliasEncode } from 'mdml-engine/information'
  * eliasEncode([1, 5], 'gamma') // => [1, 0, 0, 1, 0, 1]
  * eliasEncode([10], 'delta') // => [0, 0, 1, 0, 0, 0, 1, 0]
  * eliasEncode([10], 'omega') // => [1, 1, 1, 0, 1, 0, 0]
@@ -66,18 +66,18 @@ export function eliasEncode(values: readonly number[], kind: EliasKind): number[
  * @param bits - The bits.
  * @param kind - The code used to encode them.
  * @returns The integers.
- * @throws WhiteboxError with code `value` when the bits end inside a codeword.
+ * @throws MdmlError with code `value` when the bits end inside a codeword.
  * @concept universal-codes
  * @example
  * ```ts
- * import { eliasDecode, eliasEncode } from 'whitebox-engine/information'
+ * import { eliasDecode, eliasEncode } from 'mdml-engine/information'
  * eliasDecode(eliasEncode([1, 2, 300], 'omega'), 'omega') // => [1, 2, 300]
  * ```
  */
 export function eliasDecode(bits: readonly number[], kind: EliasKind): number[] {
   let i = 0
   const take = (k: number): number => {
-    if (i + k > bits.length) throw new WhiteboxError('value', 'eliasDecode: the bits end inside a codeword')
+    if (i + k > bits.length) throw new MdmlError('value', 'eliasDecode: the bits end inside a codeword')
     let v = 0
     for (let j = 0; j < k; j++) v = 2 * v + ((bits[i++] ?? 0) & 1)
     return v
@@ -99,7 +99,7 @@ export function eliasDecode(bits: readonly number[], kind: EliasKind): number[] 
     } else {
       let n = 1
       for (;;) {
-        if (i >= bits.length) throw new WhiteboxError('value', 'eliasDecode: the bits end inside a codeword')
+        if (i >= bits.length) throw new MdmlError('value', 'eliasDecode: the bits end inside a codeword')
         if (bits[i] === 0) {
           i++
           break
@@ -123,7 +123,7 @@ export function eliasDecode(bits: readonly number[], kind: EliasKind): number[] 
  * @concept universal-codes
  * @example
  * ```ts
- * import { golombEncode } from 'whitebox-engine/information'
+ * import { golombEncode } from 'mdml-engine/information'
  * golombEncode([7], 3) // => [1, 1, 0, 1, 0]
  * golombEncode([5], 4) // => [1, 0, 0, 1]
  * ```
@@ -151,11 +151,11 @@ export function golombEncode(values: readonly number[], m: number): number[] {
  * @param bits - The bits.
  * @param m - The parameter used to encode them.
  * @returns The integers.
- * @throws WhiteboxError with code `value` when the bits end inside a codeword.
+ * @throws MdmlError with code `value` when the bits end inside a codeword.
  * @concept universal-codes
  * @example
  * ```ts
- * import { golombDecode, golombEncode } from 'whitebox-engine/information'
+ * import { golombDecode, golombEncode } from 'mdml-engine/information'
  * golombDecode(golombEncode([0, 4, 9, 2], 5), 5) // => [0, 4, 9, 2]
  * ```
  */
@@ -165,7 +165,7 @@ export function golombDecode(bits: readonly number[], m: number): number[] {
   const cutoff = 2 ** b - m
   let i = 0
   const bit = (): number => {
-    if (i >= bits.length) throw new WhiteboxError('value', 'golombDecode: the bits end inside a codeword')
+    if (i >= bits.length) throw new MdmlError('value', 'golombDecode: the bits end inside a codeword')
     return (bits[i++] ?? 0) & 1
   }
   const out: number[] = []
@@ -189,13 +189,13 @@ export function golombDecode(bits: readonly number[], m: number): number[] {
  * @concept universal-codes
  * @example
  * ```ts
- * import { golombParameter } from 'whitebox-engine/information'
+ * import { golombParameter } from 'mdml-engine/information'
  * golombParameter(0.5) // => 1
  * golombParameter(0.9) // => 7
  * ```
  */
 export function golombParameter(theta: number): number {
-  if (!(theta > 0 && theta < 1)) throw new WhiteboxError('value', 'golombParameter: theta must lie in (0, 1)')
+  if (!(theta > 0 && theta < 1)) throw new MdmlError('value', 'golombParameter: theta must lie in (0, 1)')
   return Math.max(1, Math.ceil(-Math.log(1 + theta) / Math.log(theta) - 1e-12))
 }
 
@@ -213,7 +213,7 @@ export interface Runs<T> {
  * @concept run-length-coding
  * @example
  * ```ts
- * import { runLengthEncode } from 'whitebox-engine/information'
+ * import { runLengthEncode } from 'mdml-engine/information'
  * runLengthEncode([0, 0, 0, 1, 1, 0]) // => { values: [0, 1, 0], lengths: [3, 2, 1] }
  * ```
  */
@@ -239,12 +239,12 @@ export function runLengthEncode<T extends number | string>(xs: readonly T[]): Ru
  * @concept run-length-coding
  * @example
  * ```ts
- * import { runLengthDecode } from 'whitebox-engine/information'
+ * import { runLengthDecode } from 'mdml-engine/information'
  * runLengthDecode({ values: ['a', 'b'], lengths: [2, 3] }) // => ['a', 'a', 'b', 'b', 'b']
  * ```
  */
 export function runLengthDecode<T extends number | string>(runs: Runs<T>): T[] {
-  if (runs.values.length !== runs.lengths.length) throw new WhiteboxError('shape', 'runLengthDecode: lengths differ')
+  if (runs.values.length !== runs.lengths.length) throw new MdmlError('shape', 'runLengthDecode: lengths differ')
   const out: T[] = []
   runs.values.forEach((v, i) => {
     const n = runs.lengths[i] ?? 0

@@ -6,9 +6,9 @@ from typing import Any
 
 import numpy as np
 import stumpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.timeseries_helpers import as_float, series
 from stumpy.mstump import multi_distance_profile
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.timeseries_helpers import as_float, series
 
 REFERENCE: dict[str, str] = {"stumpy": version("stumpy"), "numpy": np.__version__}
 

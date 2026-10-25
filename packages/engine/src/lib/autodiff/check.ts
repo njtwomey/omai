@@ -1,10 +1,10 @@
 /**
  * The conformance checks for derivative rules: central finite-difference gradients, the dot-product (adjoint) test that
  * forward and reverse mode agree, `gradCheck` for a scalar function, and `checkPrimitive`, the test every primitive in
- * whitebox-js passes (finite-difference vjp and jvp, their consistency, and no mutation of inputs).
+ * mdml-js passes (finite-difference vjp and jvp, their consistency, and no mutation of inputs).
  */
 
-import { maxOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../random/index.ts'
 import {
   asTensor,
@@ -22,7 +22,7 @@ import { jvp, vjp } from './transforms.ts'
 import { vmap } from './vmap.ts'
 
 function concrete(x: Value, where: string): Tensor {
-  if (!isTensor(x)) throw new WhiteboxError('not-differentiable', `${where} needs concrete values`)
+  if (!isTensor(x)) throw new MdmlError('not-differentiable', `${where} needs concrete values`)
   return x
 }
 
@@ -50,8 +50,8 @@ function perturb(x: Tensor, i: number, h: number): Tensor {
  * @concept gradient-check
  * @example
  * ```ts
- * import { numericalGradient } from 'whitebox-engine/autodiff'
- * import { mul, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { numericalGradient } from 'mdml-engine/autodiff'
+ * import { mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(numericalGradient((v: Value) => mul(mul(v, v), v), tensor([2]))) // => [12.000000]
  * ```
  */
@@ -176,8 +176,8 @@ function vmapAgainstLoop(
  * @concept gradient-check
  * @example
  * ```ts
- * import { dotProductTest } from 'whitebox-engine/autodiff'
- * import { matmul, sin, tensor, type Value } from 'whitebox-engine/tensor'
+ * import { dotProductTest } from 'mdml-engine/autodiff'
+ * import { matmul, sin, tensor, type Value } from 'mdml-engine/tensor'
  * dotProductTest((x: Value) => sin(matmul(tensor([[1, 2], [3, 4]]), x)), tensor([0.1, 0.2])).passed // => true
  * ```
  */
@@ -195,7 +195,7 @@ export function dotProductTest(f: (x: Value) => Value, x: TensorLike, options: C
 
 /**
  * Check the derivative rules of a function (usually a single primitive) at a point, the conformance test every
- * primitive in whitebox-js passes:
+ * primitive in mdml-js passes:
  *
  * 1. the reverse-mode derivative against central finite differences of `<g, f(x)>` for a random cotangent `g`;
  * 2. the forward-mode derivative against finite differences along a random tangent;
@@ -211,8 +211,8 @@ export function dotProductTest(f: (x: Value) => Value, x: TensorLike, options: C
  * @concept gradient-check
  * @example
  * ```ts
- * import { checkPrimitive } from 'whitebox-engine/autodiff'
- * import { mul, tensor } from 'whitebox-engine/tensor'
+ * import { checkPrimitive } from 'mdml-engine/autodiff'
+ * import { mul, tensor } from 'mdml-engine/tensor'
  * checkPrimitive(mul, [tensor([1, 2]), tensor([3, 4])]).passed // => true
  * ```
  */
@@ -293,8 +293,8 @@ export function checkPrimitive(
  * @concept gradient-check
  * @example
  * ```ts
- * import { gradCheck } from 'whitebox-engine/autodiff'
- * import { sum, tanh, tensor, type Value } from 'whitebox-engine/tensor'
+ * import { gradCheck } from 'mdml-engine/autodiff'
+ * import { sum, tanh, tensor, type Value } from 'mdml-engine/tensor'
  * gradCheck((x: Value) => sum(tanh(x)), tensor([0.1, -0.4])).passed // => true
  * ```
  */

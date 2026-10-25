@@ -4,7 +4,7 @@
  * conviction, the measures of how much more often Y appears with X than without it.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type CoefficientTable, coefficientTable, type Explained } from '../../lib/exposition/index.ts'
 import type { Itemset } from './itemsets.ts'
 
@@ -44,7 +44,7 @@ const keyOf = (items: readonly string[]): string => [...items].sort().join('\u00
  * @param itemsets - Frequent itemsets with their supports.
  * @param options - Minimum confidence and lift, and how many rules the record shows.
  * @returns The rules by lift, with a `coefficientTable` record of the top rules' lifts.
- * @throws WhiteboxError `value` when a subset of a frequent itemset is missing.
+ * @throws MdmlError `value` when a subset of a frequent itemset is missing.
  */
 export function associationRules(
   itemsets: readonly Itemset[],
@@ -55,7 +55,7 @@ export function associationRules(
   const support = new Map(itemsets.map((s) => [keyOf(s.items), s.support]))
   const of = (items: readonly string[]): number => {
     const s = support.get(keyOf(items))
-    if (s === undefined) throw new WhiteboxError('value', `associationRules: no support for {${items.join(', ')}}`)
+    if (s === undefined) throw new MdmlError('value', `associationRules: no support for {${items.join(', ')}}`)
     return s
   }
   const rules: AssociationRule[] = []

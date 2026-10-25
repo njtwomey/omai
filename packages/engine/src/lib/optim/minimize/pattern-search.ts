@@ -4,7 +4,7 @@
  * when nothing improves. Both are traced algorithms.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { type BoundArrays, boundArrays } from './_bounds.ts'
@@ -63,8 +63,8 @@ export interface HookeJeevesState extends VectorState {
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { hookeJeevesAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { hookeJeevesAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * hookeJeevesAlgorithm((x) => sum(square(x as Value)), [1, 2]).name // => 'hookeJeeves'
  * ```
  */
@@ -75,11 +75,11 @@ export function hookeJeevesAlgorithm(
 ): Algorithm<HookeJeevesState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new WhiteboxError('value', 'hookeJeeves: no parameters')
+  if (n === 0) throw new MdmlError('value', 'hookeJeeves: no parameters')
   const euclid = metricFunction('euclidean', n)
   const dist = (a: Float64Array, b: Float64Array): number => euclid(a, 0, b, 0)
   const box = options.bounds === undefined ? undefined : boundArrays(options.bounds, n, 'hookeJeeves')
-  if (!inBox(obj.x0, box)) throw new WhiteboxError('value', 'hookeJeeves: x0 is outside the bounds')
+  if (!inBox(obj.x0, box)) throw new MdmlError('value', 'hookeJeeves: x0 is outside the bounds')
   const stepTol = options.stepTol ?? 1e-6
   const shrink = options.shrink ?? 0.5
   const maxfun = options.maxEvaluations ?? 1000 * n
@@ -181,8 +181,8 @@ export function hookeJeevesAlgorithm(
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { hookeJeeves } from 'whitebox-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'whitebox-engine/tensor'
+ * import { hookeJeeves } from 'mdml-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
  * const r = hookeJeeves((x) => sum(square(sub(x as Value, [1, -2]))), [0, 0], { stepTol: 1e-9 })
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [1, -2]
  * ```
@@ -235,8 +235,8 @@ export interface CompassSearchState extends VectorState {
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { compassSearchAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { compassSearchAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * compassSearchAlgorithm((x) => sum(square(x as Value)), [1, 2]).name // => 'compassSearch'
  * ```
  */
@@ -247,9 +247,9 @@ export function compassSearchAlgorithm(
 ): Algorithm<CompassSearchState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new WhiteboxError('value', 'compassSearch: no parameters')
+  if (n === 0) throw new MdmlError('value', 'compassSearch: no parameters')
   const box = options.bounds === undefined ? undefined : boundArrays(options.bounds, n, 'compassSearch')
-  if (!inBox(obj.x0, box)) throw new WhiteboxError('value', 'compassSearch: x0 is outside the bounds')
+  if (!inBox(obj.x0, box)) throw new MdmlError('value', 'compassSearch: x0 is outside the bounds')
   const stepTol = options.stepTol ?? 1e-6
   const expansion = options.expansion ?? 2
   const contraction = options.contraction ?? 0.5
@@ -344,8 +344,8 @@ export function compassSearchAlgorithm(
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { compassSearch } from 'whitebox-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'whitebox-engine/tensor'
+ * import { compassSearch } from 'mdml-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
  * const r = compassSearch((x) => sum(square(sub(x as Value, [1, -2]))), [0, 0], { stepTol: 1e-9 })
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [1, -2]
  * ```

@@ -5,7 +5,7 @@
  * the Gini coefficient of exposure).
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import type { Grid } from './_scores.ts'
 import {
@@ -45,7 +45,7 @@ function rows(name: string, yTrue: TensorLike, yScore: TensorLike): { t: Grid; s
   const t = t0.shape.length === 1 ? { shape: [1, t0.shape[0] ?? 0], data: t0.data } : t0
   const s = s0.shape.length === 1 ? { shape: [1, s0.shape[0] ?? 0], data: s0.data } : s0
   if (t.shape[0] !== s.shape[0] || t.shape[1] !== s.shape[1])
-    throw new WhiteboxError('shape', `${name}: yTrue and yScore shapes differ`)
+    throw new MdmlError('shape', `${name}: yTrue and yScore shapes differ`)
   return { t, s, q: t.shape[0] ?? 0, l: t.shape[1] ?? 0 }
 }
 
@@ -95,7 +95,7 @@ function rankingMetric<O extends RankingOptions>(
  * @concept ranking-metrics
  * @example
  * ```ts
- * import { precisionAtK } from 'whitebox-engine/metrics'
+ * import { precisionAtK } from 'mdml-engine/metrics'
  * precisionAtK([[1, 0, 1, 0]], [[0.9, 0.8, 0.7, 0.1]], { k: 2 }).estimate.value // => 0.5
  * ```
  */
@@ -114,7 +114,7 @@ export const precisionAtK: Metric<RankingOptions> = rankingMetric('precisionAtK'
  * @returns The metric result.
  * @example
  * ```ts
- * import { recallAtK } from 'whitebox-engine/metrics'
+ * import { recallAtK } from 'mdml-engine/metrics'
  * recallAtK([[1, 0, 1, 0]], [[0.9, 0.8, 0.7, 0.1]], { k: 2 }).estimate.value // => 0.5
  * ```
  */
@@ -132,7 +132,7 @@ export const recallAtK: Metric<RankingOptions> = rankingMetric('recallAtK', (rel
  * @returns The metric result.
  * @example
  * ```ts
- * import { hitRate } from 'whitebox-engine/metrics'
+ * import { hitRate } from 'mdml-engine/metrics'
  * hitRate([[0, 0, 1], [1, 0, 0]], [[0.9, 0.8, 0.7], [0.9, 0.8, 0.7]], { k: 2 }).estimate.value // => 0.5
  * ```
  */
@@ -149,7 +149,7 @@ export const hitRate: Metric<RankingOptions> = rankingMetric('hitRate', (rel, o)
  * @returns The metric result.
  * @example
  * ```ts
- * import { rPrecision } from 'whitebox-engine/metrics'
+ * import { rPrecision } from 'mdml-engine/metrics'
  * rPrecision([[1, 0, 1, 0]], [[0.9, 0.8, 0.7, 0.1]]).estimate.value // => 0.5
  * ```
  */
@@ -178,7 +178,7 @@ export interface AveragePrecisionAtKOptions extends RankingOptions {
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanAveragePrecision } from 'whitebox-engine/metrics'
+ * import { meanAveragePrecision } from 'mdml-engine/metrics'
  * meanAveragePrecision([[1, 0, 1, 0]], [[0.9, 0.8, 0.7, 0.1]]).estimate.value // => 0.8333333333333333
  * ```
  */
@@ -211,7 +211,7 @@ export const meanAveragePrecision: Metric<AveragePrecisionAtKOptions> = rankingM
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanReciprocalRank } from 'whitebox-engine/metrics'
+ * import { meanReciprocalRank } from 'mdml-engine/metrics'
  * meanReciprocalRank([[0, 0, 1], [1, 0, 0]], [[0.9, 0.8, 0.7], [0.9, 0.8, 0.7]]).estimate.value // => 0.6666666666666666
  * ```
  */
@@ -269,7 +269,7 @@ function queryDcg(t: Grid, s: Grid, i: number, l: number, o: DcgOptions, byScore
  * @returns The metric result.
  * @example
  * ```ts
- * import { dcgScore } from 'whitebox-engine/metrics'
+ * import { dcgScore } from 'mdml-engine/metrics'
  * dcgScore([[3, 2, 0]], [[0.9, 0.8, 0.1]]).estimate.value // => 4.2618595071429155
  * ```
  */
@@ -289,7 +289,7 @@ export const dcgScore: Metric<DcgOptions> = rankingMetric<DcgOptions>(
  * @returns The metric result.
  * @example
  * ```ts
- * import { ndcgScore } from 'whitebox-engine/metrics'
+ * import { ndcgScore } from 'mdml-engine/metrics'
  * ndcgScore([[3, 2, 0]], [[0.9, 0.8, 0.1]]).estimate.value // => 1
  * ```
  */
@@ -308,7 +308,7 @@ export const ndcgScore: Metric<DcgOptions> = rankingMetric<DcgOptions>('ndcgScor
  * @returns The metric result.
  * @example
  * ```ts
- * import { expectedReciprocalRank } from 'whitebox-engine/metrics'
+ * import { expectedReciprocalRank } from 'mdml-engine/metrics'
  * expectedReciprocalRank([[1, 0]], [[0.9, 0.1]], { maxGrade: 1 }).estimate.value // => 0.5
  * ```
  */
@@ -344,7 +344,7 @@ export const expectedReciprocalRank: Metric<RankingOptions & { readonly maxGrade
  * @returns The metric result.
  * @example
  * ```ts
- * import { rankBiasedPrecision } from 'whitebox-engine/metrics'
+ * import { rankBiasedPrecision } from 'mdml-engine/metrics'
  * rankBiasedPrecision([[1, 1]], [[0.9, 0.1]], { persistence: 0.5 }).estimate.value // => 0.75
  * ```
  */
@@ -377,7 +377,7 @@ export type Recommendations = readonly (readonly number[])[]
  * @concept recommender-evaluation
  * @example
  * ```ts
- * import { catalogCoverage } from 'whitebox-engine/metrics'
+ * import { catalogCoverage } from 'mdml-engine/metrics'
  * catalogCoverage([[0, 1], [1, 2]], 6).estimate.value // => 0.5
  * ```
  */
@@ -399,7 +399,7 @@ export const catalogCoverage: MetricFunction<[Recommendations, number]> = define
  * @returns The metric result.
  * @example
  * ```ts
- * import { intraListDiversity } from 'whitebox-engine/metrics'
+ * import { intraListDiversity } from 'mdml-engine/metrics'
  * intraListDiversity([[0, 1]], [[1, 0], [0, 1]]).estimate.value // => 1
  * ```
  */
@@ -452,7 +452,7 @@ export const intraListDiversity: MetricFunction<
  * @returns The metric result, in bits.
  * @example
  * ```ts
- * import { novelty } from 'whitebox-engine/metrics'
+ * import { novelty } from 'mdml-engine/metrics'
  * Number(novelty([[0], [1]], [3, 1]).estimate.value.toFixed(6)) // => 1.207519
  * ```
  */
@@ -477,7 +477,7 @@ export const novelty: MetricFunction<[Recommendations, TensorLike]> = defineMetr
  * @returns The metric result.
  * @example
  * ```ts
- * import { serendipity } from 'whitebox-engine/metrics'
+ * import { serendipity } from 'mdml-engine/metrics'
  * serendipity([[0, 1, 2, 3]], [[0, 1]], [[0]]).estimate.value // => 0.25
  * ```
  */
@@ -505,7 +505,7 @@ export const serendipity: MetricFunction<[Recommendations, Recommendations, Reco
  * @returns The metric result.
  * @example
  * ```ts
- * import { exposureGini } from 'whitebox-engine/metrics'
+ * import { exposureGini } from 'mdml-engine/metrics'
  * exposureGini([[0, 1], [1, 0]], 2).estimate.value // => 0
  * ```
  */

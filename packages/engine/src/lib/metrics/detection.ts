@@ -4,7 +4,7 @@
  * detections over images under the COCO or Pascal VOC protocol.
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
 
@@ -49,7 +49,7 @@ const iouOf = (p: readonly number[], q: readonly number[]): number => {
  * @concept object-detection
  * @example
  * ```ts
- * import { boxIou } from 'whitebox-engine/metrics'
+ * import { boxIou } from 'mdml-engine/metrics'
  * boxIou([[0, 0, 2, 2]], [[1, 1, 3, 3]]) // => [[0.14285714285714285]]
  * ```
  */
@@ -66,7 +66,7 @@ export function boxIou(boxesA: Boxes, boxesB: Boxes): number[][] {
  * @returns The GIoU matrix.
  * @example
  * ```ts
- * import { generalizedBoxIou } from 'whitebox-engine/metrics'
+ * import { generalizedBoxIou } from 'mdml-engine/metrics'
  * generalizedBoxIou([[0, 0, 1, 1]], [[2, 0, 3, 1]]) // => [[-0.3333333333333333]]
  * ```
  */
@@ -98,7 +98,7 @@ function centrePenalty(p: readonly number[], q: readonly number[], encl: readonl
  * @returns The DIoU matrix.
  * @example
  * ```ts
- * import { distanceBoxIou } from 'whitebox-engine/metrics'
+ * import { distanceBoxIou } from 'mdml-engine/metrics'
  * distanceBoxIou([[0, 0, 1, 1]], [[0, 0, 1, 1]]) // => [[1]]
  * ```
  */
@@ -120,7 +120,7 @@ export function distanceBoxIou(boxesA: Boxes, boxesB: Boxes, options: { readonly
  * @returns The CIoU matrix.
  * @example
  * ```ts
- * import { completeBoxIou } from 'whitebox-engine/metrics'
+ * import { completeBoxIou } from 'mdml-engine/metrics'
  * completeBoxIou([[0, 0, 1, 1]], [[0, 0, 1, 1]]) // => [[1]]
  * ```
  */
@@ -472,11 +472,11 @@ function voc(
  * @param targets - Ground truth per image (same order).
  * @param options - protocol, iouThreshold (VOC) and maxDetections (COCO).
  * @returns The metric result (value: COCO's AP@[.5:.95] or VOC's mAP).
- * @throws WhiteboxError with code `shape` when the numbers of images differ.
+ * @throws MdmlError with code `shape` when the numbers of images differ.
  * @concept object-detection
  * @example
  * ```ts
- * import { detectionMeanAveragePrecision } from 'whitebox-engine/metrics'
+ * import { detectionMeanAveragePrecision } from 'mdml-engine/metrics'
  * const pred = [{ boxes: [[0, 0, 10, 10]], scores: [0.9], labels: [1] }]
  * const target = [{ boxes: [[0, 0, 10, 10]], labels: [1] }]
  * Number(detectionMeanAveragePrecision(pred, target).estimate.value.toFixed(6)) // => 1
@@ -491,7 +491,7 @@ export const detectionMeanAveragePrecision: MetricFunction<
     targets: readonly ImageTargets[],
     options: DetectionMapOptions = {},
   ): MetricResult => {
-    if (preds.length !== targets.length) throw new WhiteboxError('shape', 'one detection set per image of ground truth')
+    if (preds.length !== targets.length) throw new MdmlError('shape', 'one detection set per image of ground truth')
     const stats = (options.protocol ?? 'coco') === 'coco' ? coco(preds, targets, options) : voc(preds, targets, options)
     return metricResult('detectionMeanAveragePrecision', stats['map'] ?? Number.NaN, targets.length, stats)
   },

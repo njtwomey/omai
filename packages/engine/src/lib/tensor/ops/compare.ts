@@ -89,7 +89,7 @@ function cmp(p: Primitive<null>, a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { equal, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { equal, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(equal(tensor([1, 2]), 2)) // => [0, 1]
  * ```
  */
@@ -105,7 +105,7 @@ export function equal(a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { notEqual, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { notEqual, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(notEqual(tensor([1, 2]), 2)) // => [1, 0]
  * ```
  */
@@ -121,7 +121,7 @@ export function notEqual(a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { less, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { less, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(less(tensor([1, 3]), 2)) // => [1, 0]
  * ```
  */
@@ -137,7 +137,7 @@ export function less(a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { lessEqual, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { lessEqual, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(lessEqual(tensor([1, 2, 3]), 2)) // => [1, 1, 0]
  * ```
  */
@@ -153,7 +153,7 @@ export function lessEqual(a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { greater, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { greater, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(greater(tensor([1, 3]), 2)) // => [0, 1]
  * ```
  */
@@ -169,7 +169,7 @@ export function greater(a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { greaterEqual, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { greaterEqual, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(greaterEqual(tensor([1, 2, 3]), 2)) // => [0, 1, 1]
  * ```
  */
@@ -184,7 +184,7 @@ export function greaterEqual(a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { isnan, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { isnan, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(isnan(tensor([1, Number.NaN]))) // => [0, 1]
  * ```
  */
@@ -199,7 +199,7 @@ export function isnan(x: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { isfinite, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { isfinite, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(isfinite(tensor([1, Infinity, Number.NaN]))) // => [1, 0, 0]
  * ```
  */
@@ -214,7 +214,7 @@ export function isfinite(x: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { isinf, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { isinf, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(isinf(tensor([1, -Infinity]))) // => [0, 1]
  * ```
  */
@@ -230,7 +230,7 @@ export function isinf(x: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { logicalAnd, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { logicalAnd, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(logicalAnd(tensor([true, true]), tensor([true, false]))) // => [1, 0]
  * ```
  */
@@ -246,7 +246,7 @@ export function logicalAnd(a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { logicalOr, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { logicalOr, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(logicalOr(tensor([true, false]), tensor([false, false]))) // => [1, 0]
  * ```
  */
@@ -262,7 +262,7 @@ export function logicalOr(a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { logicalXor, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { logicalXor, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(logicalXor(tensor([true, true]), tensor([true, false]))) // => [0, 1]
  * ```
  */
@@ -277,7 +277,7 @@ export function logicalXor(a: TensorLike, b: TensorLike): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { logicalNot, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { logicalNot, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(logicalNot(tensor([true, false]))) // => [0, 1]
  * ```
  */
@@ -300,7 +300,7 @@ function count(a: TensorLike, b: TensorLike): Value {
  * @returns The selection.
  * @example
  * ```ts
- * import { where, greater, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { where, greater, tensor, toArray } from 'mdml-engine/tensor'
  * const x = tensor([-1, 2])
  * toArray(where(greater(x, 0), x, 0)) // => [0, 2]
  * ```
@@ -319,7 +319,7 @@ export function where(condition: TensorLike, a: TensorLike, b: TensorLike): Valu
  * @returns A bool value.
  * @example
  * ```ts
- * import { any, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { any, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(any(tensor([0, 0, 1]))) // => 1
  * ```
  */
@@ -335,7 +335,7 @@ export function any(x: TensorLike, axis?: number | readonly number[]): Value {
  * @returns A bool value.
  * @example
  * ```ts
- * import { all, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { all, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(all(tensor([1, 1, 0]))) // => 0
  * ```
  */
@@ -353,7 +353,7 @@ export function all(x: TensorLike, axis?: number | readonly number[]): Value {
  * @returns `true` when every element is close.
  * @example
  * ```ts
- * import { allclose, tensor } from 'whitebox-engine/tensor'
+ * import { allclose, tensor } from 'mdml-engine/tensor'
  * allclose(tensor([1, 2]), tensor([1, 2.000001])) // => true
  * ```
  */

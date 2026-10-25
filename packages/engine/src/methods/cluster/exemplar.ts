@@ -4,7 +4,7 @@
  * subclusters of a CF tree and then merges them by Ward agglomeration. Both mirror scikit-learn.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -170,7 +170,7 @@ export function affinityPropagation(
           { ...run, maxSteps: h.maxIter ?? 200 },
         )
         let exemplars = (out.state.recent.at(-1) ?? []).flatMap((v, i) => (v ? [i] : []))
-        if (exemplars.length === 0) throw new WhiteboxError('convergence', 'affinityPropagation: no exemplars emerged')
+        if (exemplars.length === 0) throw new MdmlError('convergence', 'affinityPropagation: no exemplars emerged')
         // sklearn's refinement: within each cluster, the member with the largest total similarity to the others.
         let c = exemplarLabels(s, exemplars)
         exemplars = exemplars.map((_, k) => {

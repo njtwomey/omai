@@ -3,9 +3,9 @@
  * data, on one-dimensional regression curves.
  */
 
-import { decisionTreeRegressor } from 'whitebox-engine/methods/trees'
-import { ensembleUncertainty } from 'whitebox-engine/methods/trust'
-import { dict, int } from 'whitebox-engine/space'
+import { decisionTreeRegressor } from 'mdml-engine/methods/trees'
+import { ensembleUncertainty } from 'mdml-engine/methods/trust'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

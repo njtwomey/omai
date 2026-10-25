@@ -4,7 +4,7 @@
  * paired comparison of policies under common random numbers, which reduces the variance of their difference.
  */
 
-import { type Json, meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -41,8 +41,8 @@ export interface RolloutOptions {
  * @concept rollouts
  * @example
  * ```ts
- * import { make, rolloutAlgorithm } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { make, rolloutAlgorithm } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * rolloutAlgorithm(make(cartPole), () => 0).name // => 'rollout'
  * ```
  */
@@ -119,8 +119,8 @@ function meanStd(xs: readonly number[]): { readonly mean: number; readonly std: 
  * @concept rollouts
  * @example
  * ```ts
- * import { make, evaluatePolicy } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { make, evaluatePolicy } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * evaluatePolicy(make(cartPole), () => 0, { episodes: 3 }).returns.length // => 3
  * ```
  */
@@ -162,13 +162,13 @@ export interface Episode<S, O, A> {
  * @param key - The key.
  * @param options - A step cap (default 100000) and whether to render frames.
  * @returns The episode.
- * @throws WhiteboxError with code `value` when the cap is reached before the episode ends and `strict` is set.
+ * @throws MdmlError with code `value` when the cap is reached before the episode ends and `strict` is set.
  * @concept rollouts
  * @example
  * ```ts
- * import { make, runEpisode } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { make, runEpisode } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const ep = runEpisode(make(cartPole), () => 1, key(0))
  * [ep.length === ep.rewards.length, ep.terminated] // => [true, true]
  * ```
@@ -218,7 +218,7 @@ export function runEpisode<S, O, A>(
     }
   }
   if (!terminated && !truncated && options.strict === true) {
-    throw new WhiteboxError('value', `runEpisode: no end of episode within ${cap} steps`)
+    throw new MdmlError('value', `runEpisode: no end of episode within ${cap} steps`)
   }
   return {
     observations,
@@ -270,8 +270,8 @@ export interface ComparisonResult {
  * @concept rollouts
  * @example
  * ```ts
- * import { compareAgents, make } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { compareAgents, make } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * const balance = (o: readonly number[]) => ((o[2] ?? 0) + 0.5 * (o[3] ?? 0) > 0 ? 1 : 0)
  * compareAgents(make(cartPole), { balance, push: () => 1 }, { episodes: 3 }).best // => 'balance'
  * ```
@@ -282,7 +282,7 @@ export function compareAgents<S, O, A>(
   options: { readonly episodes?: number; readonly key?: Key; readonly seed?: number; readonly maxSteps?: number } = {},
 ): ComparisonResult {
   const names = Object.keys(policies)
-  if (names.length === 0) throw new WhiteboxError('value', 'compareAgents: no policies given')
+  if (names.length === 0) throw new MdmlError('value', 'compareAgents: no policies given')
   const episodes = options.episodes ?? 20
   const root = options.key ?? makeKey(options.seed ?? 0)
   const returns: Record<string, number[]> = {}

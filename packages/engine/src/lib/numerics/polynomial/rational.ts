@@ -4,7 +4,7 @@
  * `invres` rebuilds the rational function from its expansion.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { polydiv, polyroots } from './power.ts'
 
 // Rational functions follow scipy.signal: coefficients highest degree first (in s for residue, in z^-1 for residuez).
@@ -128,7 +128,7 @@ export interface PartialFractions {
  * @concept partial-fractions
  * @example
  * ```ts
- * import { residue } from 'whitebox-engine/numerics/polynomial'
+ * import { residue } from 'mdml-engine/numerics/polynomial'
  * // 1 / (s^2 + 3s + 2) = 1 / (s + 1) - 1 / (s + 2).
  * residue([1], [1, 3, 2]).residues.re.map((v) => Math.round(v * 1e12) / 1e12) // => [1, -1]
  * ```
@@ -136,7 +136,7 @@ export interface PartialFractions {
 export function residue(b: readonly number[], a: readonly number[], tol = 1e-3): PartialFractions {
   const bt = trimLeading(b)
   const at = trimLeading(a)
-  if (at.length === 0 || at[0] === 0) throw new WhiteboxError('value', 'residue: the denominator is zero')
+  if (at.length === 0 || at[0] === 0) throw new MdmlError('value', 'residue: the denominator is zero')
   let numerator = bt
   let direct: number[] = []
   if (bt.length >= at.length) {
@@ -167,7 +167,7 @@ export function residue(b: readonly number[], a: readonly number[], tol = 1e-3):
  * @returns Residues, poles and the direct term (in z^-1, lowest power first).
  * @example
  * ```ts
- * import { residuez } from 'whitebox-engine/numerics/polynomial'
+ * import { residuez } from 'mdml-engine/numerics/polynomial'
  * // 1 / (1 - 0.5 z^-1): one pole at 0.5 with residue 1.
  * residuez([1], [1, -0.5]).poles.re // => [0.5]
  * ```
@@ -176,7 +176,7 @@ export function residuez(b: readonly number[], a: readonly number[], tol = 1e-3)
   const trimEnd = (c: readonly number[]): number[] => [...trimLeading([...c].reverse())].reverse()
   const bt = trimEnd(b)
   const at = trimEnd(a)
-  if (at.length === 0 || at[0] === 0) throw new WhiteboxError('value', 'residuez: a[0] must be non-zero')
+  if (at.length === 0 || at[0] === 0) throw new MdmlError('value', 'residuez: a[0] must be non-zero')
   // In w = z^-1: b(w) = sum b_i w^i, so the arrays are already lowest first in w.
   let numerator = bt
   let direct: number[] = []
@@ -223,7 +223,7 @@ export function residuez(b: readonly number[], a: readonly number[], tol = 1e-3)
  * @returns Numerator and denominator, highest first, complex in general.
  * @example
  * ```ts
- * import { invres } from 'whitebox-engine/numerics/polynomial'
+ * import { invres } from 'mdml-engine/numerics/polynomial'
  * invres({ re: [1, -1], im: [0, 0] }, { re: [-1, -2], im: [0, 0] }, []).denominator.re // => [1, 3, 2]
  * ```
  */

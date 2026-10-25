@@ -5,7 +5,7 @@
  * likelihood. Multiclass by one-vs-rest.
  */
 
-import { linspaceNumbers, maxOf, minOf, WhiteboxError } from '../../lib/base/index.ts'
+import { linspaceNumbers, MdmlError, maxOf, minOf } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { coefficientTable, type Exposition, hyperparameterSurface, posteriorGrid } from '../../lib/exposition/index.ts'
 import { hyperparameters, type Kernel, theta as thetaOf, withTheta } from '../../lib/kernels/index.ts'
@@ -276,7 +276,7 @@ export function gaussianProcessClassifier(hyper: Partial<GpcHyper> = {}): Explai
       fit: (data: LearnData, h: GpcHyper, options: FitOptions) => {
         const m = matrixView(data.x, 'gaussianProcessClassifier')
         const { classes, codes } = encodeLabels(data.y ?? [], 'gaussianProcessClassifier', m.n)
-        if (classes.length < 2) throw new WhiteboxError('value', 'gaussianProcessClassifier: needs two classes')
+        if (classes.length < 2) throw new MdmlError('value', 'gaussianProcessClassifier: needs two classes')
         const x = Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
         const targets = (classes.length === 2 ? [1] : classes.map((_, c) => c)).map((c) =>
           Array.from(codes, (v) => (v === c ? 1 : 0)),

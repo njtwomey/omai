@@ -4,14 +4,14 @@
  * maps cut from noise into bands such as water, grass, forest and mountain.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, uniform, uniformStream } from '../random/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { distanceField, regions } from './analysis.ts'
 import { TERRAINS, type TerrainSpec, type World, world } from './world.ts'
 
 const positive = (n: number, what: string): number => {
-  if (!Number.isInteger(n) || n < 1) throw new WhiteboxError('value', `worlds: ${what} must be a positive integer`)
+  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', `worlds: ${what} must be a positive integer`)
   return n
 }
 
@@ -52,12 +52,12 @@ export interface DungeonOptions {
  * @param key - The key.
  * @param options - Size, leaf size and depth.
  * @returns The dungeon.
- * @throws WhiteboxError with code `value` for a map smaller than a leaf.
+ * @throws MdmlError with code `value` for a map smaller than a leaf.
  * @concept procedural-generation
  * @example
  * ```ts
- * import { bspDungeon, regions } from 'whitebox-engine/worlds'
- * import { key } from 'whitebox-engine/random'
+ * import { bspDungeon, regions } from 'mdml-engine/worlds'
+ * import { key } from 'mdml-engine/random'
  * const d = bspDungeon(key(0), { rows: 20, cols: 30 })
  * [d.rooms.length > 1, regions(d.world).count] // => [true, 1]
  * ```
@@ -67,7 +67,7 @@ export function bspDungeon(key: Key, options: DungeonOptions = {}): Dungeon {
   const cols = positive(options.cols ?? 48, 'cols')
   const minLeaf = Math.max(3, options.minLeaf ?? 6)
   const maxDepth = Math.min(10, Math.max(0, options.maxDepth ?? 5))
-  if (rows < minLeaf || cols < minLeaf) throw new WhiteboxError('value', 'bspDungeon: the map is smaller than a leaf')
+  if (rows < minLeaf || cols < minLeaf) throw new MdmlError('value', 'bspDungeon: the map is smaller than a leaf')
   const next = uniformStream(key)
   const int = (lo: number, hi: number): number => lo + Math.min(hi - lo, Math.floor(next() * (hi - lo + 1)))
   const floor = new Uint8Array(rows * cols)
@@ -160,8 +160,8 @@ export interface CaveState {
  * @concept procedural-generation
  * @example
  * ```ts
- * import { caveAlgorithm } from 'whitebox-engine/worlds'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { caveAlgorithm } from 'mdml-engine/worlds'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(caveAlgorithm({ rows: 10, cols: 10 }), { seed: 0, maxSteps: 100 }).steps // => 5
  * ```
  */
@@ -226,8 +226,8 @@ export function caveAlgorithm(options: CaveOptions = {}): Algorithm<CaveState> {
  * @concept procedural-generation
  * @example
  * ```ts
- * import { cave, regions } from 'whitebox-engine/worlds'
- * import { key } from 'whitebox-engine/random'
+ * import { cave, regions } from 'mdml-engine/worlds'
+ * import { key } from 'mdml-engine/random'
  * regions(cave(key(2), { rows: 20, cols: 30 })).count // => 1
  * ```
  */
@@ -306,7 +306,7 @@ function octaves(
   let amplitude = 1
   let total = 0
   let period = options.scale ?? 8
-  if (!(period > 0)) throw new WhiteboxError('value', 'worlds: the noise scale must be positive')
+  if (!(period > 0)) throw new MdmlError('value', 'worlds: the noise scale must be positive')
   for (let o = 0; o < n; o++) {
     const width = Math.floor((cols - 1) / period) + 2
     const height = Math.floor((rows - 1) / period) + 2
@@ -338,8 +338,8 @@ function octaves(
  * @concept procedural-generation
  * @example
  * ```ts
- * import { valueNoise } from 'whitebox-engine/worlds'
- * import { key } from 'whitebox-engine/random'
+ * import { valueNoise } from 'mdml-engine/worlds'
+ * import { key } from 'mdml-engine/random'
  * const f = valueNoise(key(0), 16, 16, { octaves: 3 })
  * [f.length, f.every((v) => v >= 0 && v <= 1)] // => [256, true]
  * ```
@@ -370,8 +370,8 @@ export function valueNoise(key: Key, rows: number, cols: number, options: NoiseO
  * @concept procedural-generation
  * @example
  * ```ts
- * import { perlinNoise } from 'whitebox-engine/worlds'
- * import { key } from 'whitebox-engine/random'
+ * import { perlinNoise } from 'mdml-engine/worlds'
+ * import { key } from 'mdml-engine/random'
  * perlinNoise(key(0), 9, 9, { scale: 4 })[4 * 9 + 4] // => 0
  * ```
  */
@@ -414,8 +414,8 @@ export interface TerrainBand {
  * @concept procedural-generation
  * @example
  * ```ts
- * import { noiseTerrain, terrainOf } from 'whitebox-engine/worlds'
- * import { key } from 'whitebox-engine/random'
+ * import { noiseTerrain, terrainOf } from 'mdml-engine/worlds'
+ * import { key } from 'mdml-engine/random'
  * const w = noiseTerrain(key(0), { rows: 12, cols: 12 })
  * new Set(Array.from({ length: w.n }, (_, c) => terrainOf(w, c).name)).size > 1 // => true
  * ```

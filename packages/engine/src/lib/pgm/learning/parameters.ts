@@ -4,7 +4,7 @@
  * latent variables (a traced algorithm), and least-squares fitting of linear-Gaussian networks.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'
 import { dirichlet, foldIn, type Key } from '../../random/index.ts'
 import { toArray } from '../../tensor/index.ts'
@@ -46,7 +46,7 @@ export interface ParameterOptions {
  * @concept parameter-learning
  * @example
  * ```ts
- * import { stateCounts } from 'whitebox-engine/pgm/learning'
+ * import { stateCounts } from 'mdml-engine/pgm/learning'
  * stateCounts([{ a: 'x', b: 'u' }, { a: 'x', b: 'v' }, { a: 'y', b: 'v' }], 'b', ['a']).counts // => [[1, 1], [0, 1]]
  * ```
  */
@@ -97,8 +97,8 @@ function nodesFrom(
  * @concept parameter-learning
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { maximumLikelihood } from 'whitebox-engine/pgm/learning'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { maximumLikelihood } from 'mdml-engine/pgm/learning'
  * const bn = maximumLikelihood(dag([['a', 'b']]), [{ a: 'x', b: 'u' }, { a: 'x', b: 'v' }, { a: 'y', b: 'v' }])
  * bn.nodes.map((n) => n.cpt) // => [[2 / 3, 1 / 3], [0.5, 0.5, 0, 1]]
  * ```
@@ -138,12 +138,12 @@ export interface BayesianEstimateOptions extends ParameterOptions {
  * @param data - The rows.
  * @param options - Prior, equivalent sample size or pseudo-counts, states and weights.
  * @returns The fitted network.
- * @throws WhiteboxError with code `shape` for pseudo-count tables of the wrong size.
+ * @throws MdmlError with code `shape` for pseudo-count tables of the wrong size.
  * @concept parameter-learning
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { bayesianEstimate } from 'whitebox-engine/pgm/learning'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { bayesianEstimate } from 'mdml-engine/pgm/learning'
  * bayesianEstimate(dag([], ['a']), [{ a: 'x' }, { a: 'x' }, { a: 'y' }], { prior: 'K2' }).nodes[0]?.cpt // => [0.6, 0.4]
  * ```
  */
@@ -172,7 +172,7 @@ export function bayesianEstimate(
       const table = pc[v]
       if (table === undefined) return 0
       if (table.length !== q || table.some((row) => row.length !== r))
-        throw new WhiteboxError('shape', `bayesianEstimate: pseudo-counts for ${v} must be ${q} x ${r}`)
+        throw new MdmlError('shape', `bayesianEstimate: pseudo-counts for ${v} must be ${q} x ${r}`)
       return table[j]?.[k] ?? 0
     }
     return normaliseRows(counts.map((row, j) => row.map((c, k) => c + pseudo(j, k))))
@@ -189,8 +189,8 @@ export function bayesianEstimate(
  * @concept parameter-learning
  * @example
  * ```ts
- * import { bayesNet } from 'whitebox-engine/pgm'
- * import { dataLogLikelihood } from 'whitebox-engine/pgm/learning'
+ * import { bayesNet } from 'mdml-engine/pgm'
+ * import { dataLogLikelihood } from 'mdml-engine/pgm/learning'
  * const bn = bayesNet([{ name: 'a', states: ['x', 'y'], parents: [], cpt: [0.25, 0.75] }])
  * Math.abs(dataLogLikelihood(bn, [{ a: 'y' }, { a: null }]) - Math.log(0.75)) < 1e-12 // => true
  * ```
@@ -255,14 +255,14 @@ export interface EmState {
  * @param options - Latent states, initial parameters or a key (default: the run's key) for random ones, pseudo-counts
  * and the stopping rule.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for a variable without states.
+ * @throws MdmlError with code `value` for a variable without states.
  * @concept expectation-maximisation
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { emAlgorithm } from 'whitebox-engine/pgm/learning'
- * import { key } from 'whitebox-engine/random'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { emAlgorithm } from 'mdml-engine/pgm/learning'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const data = [{ a: 'x', b: 'u' }, { a: 'x', b: null }, { a: 'y', b: 'v' }]
  * runAlgorithm(emAlgorithm(dag([['a', 'b']]), data, { key: key(0) }), { maxSteps: 200 }).status // => 'converged'
  * ```
@@ -277,7 +277,7 @@ export function emAlgorithm(
   const observedNames = names.filter((v) => !(v in latent))
   const coded = code(data, observedNames, options.states, options.weights)
   const states: Record<string, readonly string[]> = { ...coded.states, ...latent }
-  for (const v of names) if (states[v] === undefined) throw new WhiteboxError('value', `em: no states for ${v}`)
+  for (const v of names) if (states[v] === undefined) throw new MdmlError('value', `em: no states for ${v}`)
   const pats = patterns(coded)
   const tol = options.tol ?? 1e-8
   const pseudo = options.pseudoCount ?? 0
@@ -375,9 +375,9 @@ export function emAlgorithm(
  * @concept expectation-maximisation
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { expectationMaximisation } from 'whitebox-engine/pgm/learning'
- * import { key } from 'whitebox-engine/random'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { expectationMaximisation } from 'mdml-engine/pgm/learning'
+ * import { key } from 'mdml-engine/random'
  * const data = [{ a: 'x', b: 'u' }, { a: 'x', b: null }, { a: 'y', b: 'v' }]
  * expectationMaximisation(dag([['a', 'b']]), data, { key: key(0) }).network.nodes[0]?.cpt.map((p) => Math.round(p * 1e6) / 1e6) // => [0.666667, 0.333333]
  * ```
@@ -419,8 +419,8 @@ export function expectationMaximisation(
  * @concept parameter-learning
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { fitLinearGaussian } from 'whitebox-engine/pgm/learning'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { fitLinearGaussian } from 'mdml-engine/pgm/learning'
  * const rows = [0, 1, 2, 3].map((x) => ({ x, y: 1 + 2 * x }))
  * fitLinearGaussian(dag([['x', 'y']]), rows).nodes.map((n) => Math.round(n.intercept * 1e9) / 1e9) // => [1.5, 1]
  * ```

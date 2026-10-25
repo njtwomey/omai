@@ -3,8 +3,8 @@
  * candidates first and strikes out values by forward checking.
  */
 
-import { SUDOKUS, solveSudoku } from 'whitebox-engine/methods/gofai'
-import { choice, dict } from 'whitebox-engine/space'
+import { SUDOKUS, solveSudoku } from 'mdml-engine/methods/gofai'
+import { choice, dict } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { backtrackingControls, solverOptions } from './_csp.ts'
 

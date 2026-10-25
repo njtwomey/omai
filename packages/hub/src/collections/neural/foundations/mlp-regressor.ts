@@ -3,7 +3,7 @@
  * one-dimensional regression curves and tabular regression data.
  */
 
-import { mlpRegressor as mlpRegressorMethod } from 'whitebox-engine/methods/neural/foundations'
+import { mlpRegressor as mlpRegressorMethod } from 'mdml-engine/methods/neural/foundations'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { mlpArchitecture, trainingRun } from '../_train.ts'
 

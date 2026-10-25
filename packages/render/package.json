@@ -1,7 +1,7 @@
 {
-  "name": "whitebox-render",
+  "name": "mdml-render",
   "version": "0.1.0",
-  "description": "whitebox-js figures: ECharts options, layouts, scene and structure drawing, SVG and animation export; React bindings.",
+  "description": "mdml-js figures: ECharts options, layouts, scene and structure drawing, SVG and animation export; React bindings.",
   "license": "MIT",
   "type": "module",
   "sideEffects": [
@@ -9,7 +9,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/njtwomey/whitebox-js.git",
+    "url": "git+https://github.com/njtwomey/mdml-js.git",
     "directory": "packages/render"
   },
   "files": [
@@ -37,7 +37,7 @@
   "dependencies": {
     "echarts": "^6.1.0",
     "katex": "0.16.47",
-    "whitebox-engine": "workspace:*"
+    "mdml-engine": "workspace:*"
   },
   "devDependencies": {
     "@types/katex": "^0.16.8",

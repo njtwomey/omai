@@ -3,7 +3,7 @@
  * SMO, with its support vectors marked, on two-dimensional classification data and tabular classification data.
  */
 
-import { svc as svcMethod } from 'whitebox-engine/methods/svm'
+import { svc as svcMethod } from 'mdml-engine/methods/svm'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

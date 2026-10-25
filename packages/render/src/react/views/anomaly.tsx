@@ -3,8 +3,8 @@
  * score with the flagged ones ringed, in one figure frame.
  */
 
+import type { AnomalyScores } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
-import type { AnomalyScores } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { type AnomalyViewOptions, anomalyView } from '../../views/anomaly.ts'
 import { RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'

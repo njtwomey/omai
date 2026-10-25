@@ -93,8 +93,8 @@ function observation(cells: readonly [number, number, number][], nc: number): nu
  * @returns The `[10][10][channels]` grid.
  * @example
  * ```ts
- * import { breakoutMinAtar, minatarGrid } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { breakoutMinAtar, minatarGrid } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const obs = breakoutMinAtar.create().reset(key(0)).observation
  * minatarGrid(obs, 4)[9]?.[4] // => [true, false, false, false]
  * ```
@@ -117,7 +117,7 @@ export function minatarGrid(observation: readonly number[], channels: number): b
  * @returns The scene.
  * @example
  * ```ts
- * import { renderMinAtar } from 'whitebox-engine/methods/rl'
+ * import { renderMinAtar } from 'mdml-engine/methods/rl'
  * renderMinAtar([[0, 0, 1]], ['a', 'b'], 'Demo').children.length // => 102
  * ```
  */
@@ -318,8 +318,8 @@ const BREAKOUT: Rules<BreakoutState> = {
  *   learning experiments.
  * @example
  * ```ts
- * import { breakoutMinAtar } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { breakoutMinAtar } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = breakoutMinAtar.create()
  * env.reset(key(0)).observation.length // => 400
  * env.channelNames // => ['paddle', 'ball', 'trail', 'brick']
@@ -421,7 +421,7 @@ const FREEWAY: Rules<FreewayState> = {
  * @concept environments
  * @example
  * ```ts
- * import { freewayMinAtar } from 'whitebox-engine/methods/rl'
+ * import { freewayMinAtar } from 'mdml-engine/methods/rl'
  * freewayMinAtar.create().actionSpace // => { kind: 'discrete', n: 3, label: 'n, u, d' }
  * ```
  */
@@ -544,8 +544,8 @@ const ASTERIX: Rules<AsterixState> = {
  * @concept environments
  * @example
  * ```ts
- * import { asterixMinAtar } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { asterixMinAtar } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * asterixMinAtar.create().reset(key(0)).info // => { difficulty: 0 }
  * ```
  */
@@ -696,7 +696,7 @@ const SPACE_INVADERS: Rules<SpaceInvadersState> = {
  * @concept environments
  * @example
  * ```ts
- * import { spaceInvadersMinAtar } from 'whitebox-engine/methods/rl'
+ * import { spaceInvadersMinAtar } from 'mdml-engine/methods/rl'
  * spaceInvadersMinAtar.channelNames.length // => 6
  * ```
  */
@@ -981,8 +981,8 @@ const SEAQUEST: Rules<SeaquestState> = {
  * @concept environments
  * @example
  * ```ts
- * import { seaquestMinAtar } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { seaquestMinAtar } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = seaquestMinAtar.create({ stickyActionProb: 0 })
  * const s = env.reset(key(0)).state
  * env.step(s, 4, key(1)).state.game.oxygen // => 199

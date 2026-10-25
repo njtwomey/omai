@@ -227,7 +227,7 @@ import * as m215 from '../collections/tuning/svc.ts'
  *
  * @example
  * ```ts
- * import { catalogue } from 'whitebox-hub'
+ * import { catalogue } from 'mdml-hub'
  * Array.isArray(catalogue.entries) // => true
  * ```
  */

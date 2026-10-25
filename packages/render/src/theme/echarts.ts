@@ -9,18 +9,18 @@ import { type ColourMode, tokens } from './tokens.ts'
 
 /**
  * The name under which a mode's theme is registered with ECharts (`echarts.registerTheme(themeName(mode),
- * echartsTheme(mode))`, done once by `whitebox-render/react`'s `Chart`).
+ * echartsTheme(mode))`, done once by `mdml-render/react`'s `Chart`).
  *
  * @param mode - The colour mode.
- * @returns `whitebox-light` or `whitebox-dark`.
+ * @returns `mdml-light` or `mdml-dark`.
  * @example
  * ```ts
- * import { themeName } from 'whitebox-render/theme'
- * themeName('dark') // => 'whitebox-dark'
+ * import { themeName } from 'mdml-render/theme'
+ * themeName('dark') // => 'mdml-dark'
  * ```
  */
 export function themeName(mode: ColourMode): string {
-  return `whitebox-${mode}`
+  return `mdml-${mode}`
 }
 
 /**
@@ -31,7 +31,7 @@ export function themeName(mode: ColourMode): string {
  * @returns An ECharts axis style fragment.
  * @example
  * ```ts
- * import { axisStyle } from 'whitebox-render/theme'
+ * import { axisStyle } from 'mdml-render/theme'
  * axisStyle('light').splitLine.lineStyle.color // => '#d0d7de'
  * ```
  */
@@ -85,7 +85,7 @@ export function axisStyle(
  * @returns A theme object for `echarts.registerTheme`.
  * @example
  * ```ts
- * import { echartsTheme } from 'whitebox-render/theme'
+ * import { echartsTheme } from 'mdml-render/theme'
  * echartsTheme('light').color[0] // => '#1f77b4'
  * ```
  */
@@ -134,7 +134,7 @@ function tooltipStyle(mode: ColourMode): Record<string, unknown> {
 
 /**
  * The base of every chart option: transparent background, tab10, token-coloured text, tooltip and legend styling, and
- * no animation. Builders in `whitebox-render/charts` start from it, so options look right even without the registered
+ * no animation. Builders in `mdml-render/charts` start from it, so options look right even without the registered
  * theme (in Node, slides and SVG export).
  *
  * @param mode - The colour mode.
@@ -142,7 +142,7 @@ function tooltipStyle(mode: ColourMode): Record<string, unknown> {
  * @returns An ECharts option fragment.
  * @example
  * ```ts
- * import { baseOption } from 'whitebox-render/theme'
+ * import { baseOption } from 'mdml-render/theme'
  * baseOption('dark').animation // => false
  * ```
  */

@@ -5,7 +5,7 @@
  * function and as a recipe modifier.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, normal, permutation, uniform } from '../../random/index.ts'
 import { choice, dict, int, real } from '../../space/index.ts'
 import {
@@ -77,11 +77,11 @@ export interface MissingOptions {
  * @param options - Mechanism, rate, columns, drivers, strength and key.
  * @returns The data with NaN gaps; `truth.latents.complete`, `truth.latents.missing` (bool `[n, d]`) and
  * `truth.latents.missingProbability`.
- * @throws WhiteboxError with code `value` for MAR without an observed driver column.
+ * @throws MdmlError with code `value` for MAR without an observed driver column.
  * @example
  * ```ts
- * import { asGenerated, withMissing, xy } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { asGenerated, withMissing, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * const d = withMissing(asGenerated(xy([[1, 2], [3, 4]], [0, 1])), { rate: 1, key: key(0) })
  * Array.from(d.data.x.data).every(Number.isNaN) // => true
  * ```
@@ -103,12 +103,10 @@ export function withMissing<D extends TabularData>(input: Generated<D>, options:
       const free = all.filter((j) => !masked.has(j))
       drivers = free.slice(0, 1)
     }
-    if (drivers.length === 0)
-      throw new WhiteboxError('value', 'withMissing: MAR needs an always-observed driver column')
+    if (drivers.length === 0) throw new MdmlError('value', 'withMissing: MAR needs an always-observed driver column')
     const dset = new Set(drivers)
     cols = columnsOf(options.columns ?? all.filter((j) => !dset.has(j)), d, 'withMissing')
-    if (cols.some((j) => dset.has(j)))
-      throw new WhiteboxError('value', 'withMissing: a driver column cannot lose values')
+    if (cols.some((j) => dset.has(j))) throw new MdmlError('value', 'withMissing: a driver column cannot lose values')
   } else {
     cols = columnsOf(options.columns, d, 'withMissing')
   }
@@ -172,11 +170,11 @@ export interface OutlierOptions {
  * @param input - Data with a feature matrix and its truth.
  * @param options - Fraction, what to contaminate, kind, scale and key.
  * @returns The contaminated data; `truth.latents.outliers` (bool `[n]`), `truth.latents.cleanX` and `cleanY`.
- * @throws WhiteboxError with code `value` when targets are contaminated for non-regression data.
+ * @throws MdmlError with code `value` when targets are contaminated for non-regression data.
  * @example
  * ```ts
- * import { asGenerated, withOutliers, xy } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { asGenerated, withOutliers, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * const d = withOutliers(asGenerated(xy([[0], [1], [2], [3]], [0, 1, 2, 3])), { fraction: 0.5, key: key(0) })
  * Array.from(d.truth.latents?.['outliers'].data).filter((v) => v === 1).length // => 2
  * ```
@@ -185,7 +183,7 @@ export function withOutliers<D extends TabularData>(input: Generated<D>, options
   const { data, truth } = requireTabular(input, 'withOutliers') as Generated<D>
   const where = options.target ?? 'features'
   if (where !== 'features' && data.kind !== 'regression')
-    throw new WhiteboxError('value', 'withOutliers: only regression targets can be contaminated')
+    throw new MdmlError('value', 'withOutliers: only regression targets can be contaminated')
   const scale = options.scale ?? 5
   const x = data.x
   const [n = 0, d = 1] = x.shape
@@ -256,8 +254,8 @@ export interface NuisanceOptions {
  * @returns The widened data, with feature names `nuisance0, ...`.
  * @example
  * ```ts
- * import { asGenerated, withNuisanceFeatures, xy } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { asGenerated, withNuisanceFeatures, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * withNuisanceFeatures(asGenerated(xy([[1], [2]], [1, 2])), { count: 2, key: key(0) }).data.featureNames // => ['x0', 'nuisance0', 'nuisance1']
  * ```
  */
@@ -349,8 +347,8 @@ export type TransformName = 'exp' | 'log' | 'sigmoid' | 'logit' | 'sinh' | 'arcs
  * @returns The transform with its inverse and log-Jacobian.
  * @example
  * ```ts
- * import { featureTransform } from 'whitebox-engine/data'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { featureTransform } from 'mdml-engine/data'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * toFlat(featureTransform('exp').inverse(tensor([1]))) // => [0]
  * ```
  */
@@ -431,8 +429,8 @@ export interface TransformOptions {
  * @returns The transformed data; `truth.latents.untransformed` keeps the original features.
  * @example
  * ```ts
- * import { asGenerated, withTransform, xy } from 'whitebox-engine/data'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { asGenerated, withTransform, xy } from 'mdml-engine/data'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * const g = withTransform(asGenerated(xy([[0], [1]], [0, 2]), { regressionFunction: (x) => x }), { transform: 'exp' })
  * toFlat(g.truth.regressionFunction?.(tensor([[1]])) ?? tensor([])) // => [0]
  * ```
@@ -468,7 +466,7 @@ function correlationFactor(
   structure: 'ar1' | 'equicorrelated',
 ): { m: number[][]; inv: number[][]; logDetInverse: number } {
   if (structure === 'ar1') {
-    if (!(Math.abs(rho) < 1)) throw new WhiteboxError('value', 'withCorrelatedFeatures: ar1 needs |rho| < 1')
+    if (!(Math.abs(rho) < 1)) throw new MdmlError('value', 'withCorrelatedFeatures: ar1 needs |rho| < 1')
     const s = Math.sqrt(1 - rho * rho)
     const m = Array.from({ length: d }, (_, i) =>
       Array.from({ length: d }, (_, j) => (j > i ? 0 : j === 0 ? rho ** i : s * rho ** (i - j))),
@@ -484,7 +482,7 @@ function correlationFactor(
     return { m, inv, logDetInverse: -(d - 1) * Math.log(s) }
   }
   if (!(rho > -1 / Math.max(1, d - 1) && rho < 1))
-    throw new WhiteboxError('value', `withCorrelatedFeatures: equicorrelation needs -1/(d-1) < rho < 1`)
+    throw new MdmlError('value', `withCorrelatedFeatures: equicorrelation needs -1/(d-1) < rho < 1`)
   const a = Math.sqrt(1 - rho)
   const b = (Math.sqrt(1 - rho + d * rho) - a) / d
   const c = (1 / Math.sqrt(1 - rho + d * rho) - 1 / a) / d
@@ -501,10 +499,10 @@ function correlationFactor(
  * @param input - Data with a feature matrix and its truth.
  * @param options - Correlation parameter, structure and columns.
  * @returns The mixed data; `truth.extra.correlation` holds the mixing matrix.
- * @throws WhiteboxError with code `value` for a parameter outside the valid range.
+ * @throws MdmlError with code `value` for a parameter outside the valid range.
  * @example
  * ```ts
- * import { asGenerated, withCorrelatedFeatures, xy } from 'whitebox-engine/data'
+ * import { asGenerated, withCorrelatedFeatures, xy } from 'mdml-engine/data'
  * const g = withCorrelatedFeatures(asGenerated(xy([[1, 0]], [0])), { rho: 0.5 })
  * Array.from(g.data.x.data) // => [1, 0.5]
  * ```
@@ -536,7 +534,7 @@ export function withCorrelatedFeatures<D extends TabularData>(
  *
  * @example
  * ```ts
- * import { missingModifier } from 'whitebox-engine/data'
+ * import { missingModifier } from 'mdml-engine/data'
  * missingModifier.name // => 'missing'
  * ```
  */
@@ -562,7 +560,7 @@ export const missingModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { outliersModifier } from 'whitebox-engine/data'
+ * import { outliersModifier } from 'mdml-engine/data'
  * outliersModifier.name // => 'outliers'
  * ```
  */
@@ -590,7 +588,7 @@ export const outliersModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { nuisanceFeaturesModifier } from 'whitebox-engine/data'
+ * import { nuisanceFeaturesModifier } from 'mdml-engine/data'
  * nuisanceFeaturesModifier.name // => 'nuisanceFeatures'
  * ```
  */
@@ -614,7 +612,7 @@ export const nuisanceFeaturesModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { transformModifier } from 'whitebox-engine/data'
+ * import { transformModifier } from 'mdml-engine/data'
  * transformModifier.name // => 'transform'
  * ```
  */
@@ -631,7 +629,7 @@ export const transformModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { correlatedFeaturesModifier } from 'whitebox-engine/data'
+ * import { correlatedFeaturesModifier } from 'mdml-engine/data'
  * correlatedFeaturesModifier.name // => 'correlatedFeatures'
  * ```
  */

@@ -1,11 +1,11 @@
 /**
  * The image attribution entry: occlusion, superpixel ablation and SHAP, RISE and LIME maps of a digit classifier.
  */
-import { WhiteboxError } from 'whitebox-engine/base'
-import { type Fitted, matrixView } from 'whitebox-engine/learn'
-import { randomForestClassifier } from 'whitebox-engine/methods/ensemble'
-import { explainImage, type ImageMethod } from 'whitebox-engine/methods/explain'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import { type Fitted, matrixView } from 'mdml-engine/learn'
+import { randomForestClassifier } from 'mdml-engine/methods/ensemble'
+import { explainImage, type ImageMethod } from 'mdml-engine/methods/explain'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 
@@ -29,7 +29,7 @@ export const imageAttributions: HubEntry = defineEntry({
   run: ({ data, params, key }) => {
     const learn = learnDataOf(data)
     const n = matrixView(learn.x, 'image-attributions').n
-    if (n === 0) throw new WhiteboxError('value', 'image-attributions: no images')
+    if (n === 0) throw new MdmlError('value', 'image-attributions: no images')
     const fitted: Fitted = randomForestClassifier({ nEstimators: 40, maxDepth: 8 }).fit(learn, { key, explain: false })
     const w = Number(params['window'])
     return explainImage(fitted, learn, Math.min(Number(params['row']), n - 1), {

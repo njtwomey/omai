@@ -1,12 +1,12 @@
+import { catalogue, collectionDescription, type HubEntry, type HubState } from 'mdml-hub'
+import { HubEntryView } from 'mdml-hub/react'
 import type { ReactNode } from 'react'
-import { catalogue, collectionDescription, type HubEntry, type HubState } from 'whitebox-hub'
-import { HubEntryView } from 'whitebox-hub/react'
 import { ErrorBoundary } from '../shell/ErrorBoundary.tsx'
 import { Link } from '../shell/Link.tsx'
 import { CardGrid, PageHeader, PageSection } from '../shell/layout.tsx'
 import { collectionPath, entryPath, groupsUnder } from './contents.ts'
 
-const SOURCE = 'https://github.com/njtwomey/whitebox-js/blob/main/packages/engine/src/'
+const SOURCE = 'https://github.com/njtwomey/mdml-js/blob/main/packages/engine/src/'
 
 // An entry's card: its title and the whole of its summary (no clamping, so nothing is cut off).
 function EntryCard(props: { readonly entry: HubEntry }): ReactNode {

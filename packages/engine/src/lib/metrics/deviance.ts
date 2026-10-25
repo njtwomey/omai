@@ -55,7 +55,7 @@ export function tweedieUnitDeviance(y: number, mu: number, power: number): numbe
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanTweedieDeviance } from 'whitebox-engine/metrics'
+ * import { meanTweedieDeviance } from 'mdml-engine/metrics'
  * meanTweedieDeviance([1, 2], [1, 2], { power: 1.5 }).estimate.value // => 0
  * ```
  */
@@ -77,7 +77,7 @@ export const meanTweedieDeviance: Metric<TweedieOptions> = perOutputMetric<Tweed
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanPoissonDeviance } from 'whitebox-engine/metrics'
+ * import { meanPoissonDeviance } from 'mdml-engine/metrics'
  * meanPoissonDeviance([0, 2], [1, 2]).estimate.value // => 1
  * ```
  */
@@ -99,7 +99,7 @@ export const meanPoissonDeviance: Metric = perOutputMetric(
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanGammaDeviance } from 'whitebox-engine/metrics'
+ * import { meanGammaDeviance } from 'mdml-engine/metrics'
  * meanGammaDeviance([2], [2]).estimate.value // => 0
  * ```
  */
@@ -125,7 +125,7 @@ export interface PinballOptions extends MetricOptions {
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanPinballLoss } from 'whitebox-engine/metrics'
+ * import { meanPinballLoss } from 'mdml-engine/metrics'
  * meanPinballLoss([1], [0], { alpha: 0.9 }).estimate.value // => 0.9
  * ```
  */
@@ -153,7 +153,7 @@ export const meanPinballLoss: Metric<PinballOptions> = perOutputMetric<PinballOp
  * @returns The metric result.
  * @example
  * ```ts
- * import { d2AbsoluteErrorScore } from 'whitebox-engine/metrics'
+ * import { d2AbsoluteErrorScore } from 'mdml-engine/metrics'
  * d2AbsoluteErrorScore([1, 2, 3], [1, 2, 3]).estimate.value // => 1
  * ```
  */
@@ -189,7 +189,7 @@ function d2Pinball(t: Float64Array, p: Float64Array, w: Float64Array, alpha: num
  * @returns The metric result.
  * @example
  * ```ts
- * import { d2PinballScore } from 'whitebox-engine/metrics'
+ * import { d2PinballScore } from 'mdml-engine/metrics'
  * d2PinballScore([1, 2, 3], [1, 2, 3], { alpha: 0.9 }).estimate.value // => 1
  * ```
  */
@@ -208,7 +208,7 @@ export const d2PinballScore: Metric<PinballOptions> = perOutputMetric<PinballOpt
  * @returns The metric result.
  * @example
  * ```ts
- * import { d2TweedieScore } from 'whitebox-engine/metrics'
+ * import { d2TweedieScore } from 'mdml-engine/metrics'
  * d2TweedieScore([1, 2, 3], [1, 2, 3], { power: 1 }).estimate.value // => 1
  * ```
  */

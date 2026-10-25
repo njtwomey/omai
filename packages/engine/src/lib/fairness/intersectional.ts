@@ -5,7 +5,7 @@
  * of individual benefits with their between- and within-group parts (Speicher et al. 2018; AIF360).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type GroupRateName, type GroupRateValues, tableRates } from '../exposition/index.ts'
 import { labelValues } from '../metrics/_labels.ts'
 import type { MetricInput } from '../metrics/metric.ts'
@@ -37,10 +37,10 @@ const byText = (a: string, b: string): number => {
  *
  * @param attributes - One or more sensitive features, each `[N]`.
  * @returns The subgroups, their names and sizes, and each row's subgroup.
- * @throws WhiteboxError `shape` when the attributes differ in length or there are none.
+ * @throws MdmlError `shape` when the attributes differ in length or there are none.
  * @example
  * ```ts
- * import { intersectionalGroups } from 'whitebox-engine/fairness'
+ * import { intersectionalGroups } from 'mdml-engine/fairness'
  * const g = intersectionalGroups([['f', 'm', 'f', 'm'], ['old', 'old', 'young', 'old']])
  * g.names // => ['f × old', 'f × young', 'm × old']
  * g.counts // => [1, 1, 2]
@@ -48,11 +48,11 @@ const byText = (a: string, b: string): number => {
  * ```
  */
 export function intersectionalGroups(attributes: readonly MetricInput[]): IntersectionalGroups {
-  if (attributes.length === 0) throw new WhiteboxError('shape', 'intersectionalGroups: give at least one attribute')
+  if (attributes.length === 0) throw new MdmlError('shape', 'intersectionalGroups: give at least one attribute')
   const columns = attributes.map((a) => labelValues(a).map(String))
   const n = columns[0]?.length ?? 0
   if (columns.some((c) => c.length !== n))
-    throw new WhiteboxError('shape', 'intersectionalGroups: attributes differ in length')
+    throw new MdmlError('shape', 'intersectionalGroups: attributes differ in length')
   const values = columns.map((c) => [...new Set(c)].sort(byText))
   const keys = Array.from({ length: n }, (_, i) => columns.map((c) => c[i] ?? ''))
   const seen = new Map<string, readonly string[]>()
@@ -116,7 +116,7 @@ const RATES: readonly GroupRateName[] = [
  * @returns The subgroups' tables and rates, the gaps and the worst subgroups.
  * @example
  * ```ts
- * import { subgroupRates } from 'whitebox-engine/fairness'
+ * import { subgroupRates } from 'mdml-engine/fairness'
  * const r = subgroupRates([1, 0, 1, 0], [1, 0, 0, 0], [['f', 'f', 'm', 'm'], ['a', 'b', 'a', 'b']])
  * r.groups.names // => ['f × a', 'f × b', 'm × a', 'm × b']
  * r.gaps.truePositiveRate // => 1
@@ -133,7 +133,7 @@ export function subgroupRates(
   const t = labelValues(yTrue).map((v) => (v === pos ? 1 : 0))
   const p = labelValues(yPred).map((v) => (v === pos ? 1 : 0))
   if (t.length !== p.length || t.length !== groups.index.length)
-    throw new WhiteboxError('shape', 'subgroupRates: inputs differ in length')
+    throw new MdmlError('shape', 'subgroupRates: inputs differ in length')
   const tables = groups.subgroups.map(() => [
     [0, 0],
     [0, 0],
@@ -197,10 +197,10 @@ export interface RichSubgroupAudit {
  * @param yPred - Predictions in [0, 1] `[N]` (hard decisions or probabilities of a positive decision).
  * @param options - The rate audited (default false positives).
  * @returns The subgroup, its defining function, and its rate, size and disparity.
- * @throws WhiteboxError `shape` when the inputs differ in length; `value` without rows of the audited class.
+ * @throws MdmlError `shape` when the inputs differ in length; `value` without rows of the audited class.
  * @example
  * ```ts
- * import { richSubgroupAudit } from 'whitebox-engine/fairness'
+ * import { richSubgroupAudit } from 'mdml-engine/fairness'
  * // Only the negative with a = 1 is flagged: the rest (a = 0) are flagged less than the average.
  * const r = richSubgroupAudit([[0], [0], [0], [1]], [0, 0, 0, 0], [0, 0, 0, 1])
  * r.members // => [1, 1, 1, 0]
@@ -223,9 +223,9 @@ export function richSubgroupAudit(
   const pred = yPred.map((v) => (fn ? 1 - v : v))
   const n = y.length
   if (protectedFeatures.length !== n || pred.length !== n)
-    throw new WhiteboxError('shape', 'richSubgroupAudit: inputs differ in length')
+    throw new MdmlError('shape', 'richSubgroupAudit: inputs differ in length')
   const subset = y.flatMap((v, i) => (v === 0 ? [i] : []))
-  if (subset.length === 0) throw new WhiteboxError('value', 'richSubgroupAudit: no rows of the audited class')
+  if (subset.length === 0) throw new MdmlError('value', 'richSubgroupAudit: no rows of the audited class')
   const baseline = subset.reduce((s, i) => s + (pred[i] ?? 0), 0) / subset.length
   const d = protectedFeatures[0]?.length ?? 0
   const design = subset.map((i) => [1, ...(protectedFeatures[i] ?? [])])
@@ -298,7 +298,7 @@ function entropyOf(b: readonly number[], alpha: number): number {
 function benefits(yTrue: MetricInput, yPred: MetricInput, pos: number | string): number[] {
   const t = labelValues(yTrue)
   const p = labelValues(yPred)
-  if (t.length !== p.length) throw new WhiteboxError('shape', 'entropy index: inputs differ in length')
+  if (t.length !== p.length) throw new MdmlError('shape', 'entropy index: inputs differ in length')
   return t.map((v, i) => (p[i] === pos ? 1 : 0) - (v === pos ? 1 : 0) + 1)
 }
 
@@ -313,7 +313,7 @@ function benefits(yTrue: MetricInput, yPred: MetricInput, pos: number | string):
  * @returns The index.
  * @example
  * ```ts
- * import { generalisedEntropyIndex } from 'whitebox-engine/fairness'
+ * import { generalisedEntropyIndex } from 'mdml-engine/fairness'
  * generalisedEntropyIndex([1, 1, 0, 0], [1, 1, 0, 0]) // => 0
  * generalisedEntropyIndex([1, 0, 0, 0], [1, 1, 0, 0]).toFixed(4) // => '0.0600'
  * ```
@@ -335,7 +335,7 @@ export function generalisedEntropyIndex(
  * @returns The index.
  * @example
  * ```ts
- * import { theilIndex } from 'whitebox-engine/fairness'
+ * import { theilIndex } from 'mdml-engine/fairness'
  * theilIndex([1, 0, 0, 0], [1, 1, 0, 0]).toFixed(4) // => '0.0541'
  * ```
  */
@@ -369,7 +369,7 @@ export interface EntropyDecomposition {
  * @returns The total, between and within parts.
  * @example
  * ```ts
- * import { entropyDecomposition } from 'whitebox-engine/fairness'
+ * import { entropyDecomposition } from 'mdml-engine/fairness'
  * // Group a gets every benefit, group b none: all of the inequality is between groups.
  * const r = entropyDecomposition([0, 0, 1, 1], [1, 1, 0, 0], ['a', 'a', 'b', 'b'])
  * r.within // => 0
@@ -385,7 +385,7 @@ export function entropyDecomposition(
   const b = benefits(yTrue, yPred, options.posLabel ?? 1)
   const isList = Array.isArray(groups) && groups.length > 0 && typeof groups[0] === 'object' && groups[0] !== null
   const g = intersectionalGroups(isList ? (groups as readonly MetricInput[]) : [groups as MetricInput])
-  if (g.index.length !== b.length) throw new WhiteboxError('shape', 'entropyDecomposition: inputs differ in length')
+  if (g.index.length !== b.length) throw new MdmlError('shape', 'entropyDecomposition: inputs differ in length')
   const sums = g.counts.map(() => 0)
   for (const [i, s] of g.index.entries()) sums[s] = (sums[s] ?? 0) + (b[i] ?? 0)
   const means = sums.map((s, k) => s / (g.counts[k] ?? 1))

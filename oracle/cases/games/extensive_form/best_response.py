@@ -7,10 +7,10 @@ from typing import Protocol, cast
 
 import numpy as np
 import pyspiel
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from open_spiel.python import policy as policy_lib
 from open_spiel.python.algorithms import best_response, exploitability
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"open_spiel": version("open_spiel")}
 

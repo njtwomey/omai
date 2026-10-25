@@ -1,8 +1,8 @@
+import { key, normal } from 'mdml-engine/random'
+import { histogram, points, subplots } from 'mdml-render/charts'
+import { figure, withMarginals } from 'mdml-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { key, normal } from 'whitebox-engine/random'
-import { histogram, points, subplots } from 'whitebox-render/charts'
-import { figure, withMarginals } from 'whitebox-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

@@ -6,13 +6,13 @@ from typing import Literal
 
 import numpy as np
 import statsmodels
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from statsmodels.sandbox.stats.runs import runstest_1samp
 from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tsa.adfvalues import mackinnoncrit, mackinnonp
 from statsmodels.tsa.stattools import adfuller, kpss
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}
 

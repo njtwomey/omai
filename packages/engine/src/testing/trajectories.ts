@@ -1,4 +1,4 @@
-// Optimiser trajectories on the oracle's test objective (oracle/whitebox_oracle/optim_helpers.py). Not published.
+// Optimiser trajectories on the oracle's test objective (oracle/mdml_oracle/optim_helpers.py). Not published.
 import { valueAndGrad } from '../lib/autodiff/index.ts'
 import type { GradientTransformation } from '../lib/optim/index.ts'
 import { applyUpdates } from '../lib/optim/index.ts'

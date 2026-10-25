@@ -5,7 +5,7 @@
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'
-import { type Json, minOf, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError, minOf } from '../base/index.ts'
 import { daxpy, ddot, dgemv, dnrm2, dscal, eigh } from '../numerics/linalg/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import {
@@ -65,7 +65,7 @@ export interface OgdOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { onlineGradientDescent } from 'whitebox-engine/optim'
+ * import { onlineGradientDescent } from 'mdml-engine/optim'
  * const l = onlineGradientDescent({ learningRate: 0.5, radius: 1 })
  * Array.from(l.play(l.update(l.init(2), new Float64Array([4, 0]), 1))) // => [-1, 0]
  * ```
@@ -104,7 +104,7 @@ export interface FtrlOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { ftrl } from 'whitebox-engine/optim'
+ * import { ftrl } from 'mdml-engine/optim'
  * const l = ftrl({ learningRate: 0.5, l1: 1 })
  * Array.from(l.play(l.update(l.init(2), new Float64Array([3, 0.5]), 1))) // => [-1, 0]
  * ```
@@ -143,7 +143,7 @@ export interface HedgeOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { hedge } from 'whitebox-engine/optim'
+ * import { hedge } from 'mdml-engine/optim'
  * const l = hedge({ learningRate: Math.log(3) })
  * Array.from(l.play(l.update(l.init(2), new Float64Array([1, 0]), 1)), (v) => Math.round(v * 1e12) / 1e12) // => [0.25, 0.75]
  * ```
@@ -189,7 +189,7 @@ export interface ExponentiatedGradientOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { exponentiatedGradient } from 'whitebox-engine/optim'
+ * import { exponentiatedGradient } from 'mdml-engine/optim'
  * const l = exponentiatedGradient({ learningRate: Math.log(3) })
  * Array.from(l.play(l.update(l.init(2), new Float64Array([1, 0]), 1)), (v) => Math.round(v * 1e12) / 1e12) // => [0.25, 0.75]
  * ```
@@ -255,7 +255,7 @@ function projectInNorm(y: Float64Array, a: Float64Array, radius: number): Float6
  * @concept online-learning
  * @example
  * ```ts
- * import { onlineNewtonStep } from 'whitebox-engine/optim'
+ * import { onlineNewtonStep } from 'mdml-engine/optim'
  * const l = onlineNewtonStep({ gamma: 1, epsilon: 1 })
  * Array.from(l.play(l.update(l.init(1), new Float64Array([1]), 1))) // => [-0.5]
  * ```
@@ -298,8 +298,8 @@ export type OnlineLoss = (x: Value) => Value
  * @returns The rounds.
  * @example
  * ```ts
- * import { linearLosses } from 'whitebox-engine/optim'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { linearLosses } from 'mdml-engine/optim'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(linearLosses([[1, 0]])[0](tensor([0.25, 0.75]))) // => 0.25
  * ```
  */
@@ -356,7 +356,7 @@ const SCHEMA = channels({
  * @concept online-learning
  * @example
  * ```ts
- * import { hedge, linearLosses, onlineAlgorithm } from 'whitebox-engine/optim'
+ * import { hedge, linearLosses, onlineAlgorithm } from 'mdml-engine/optim'
  * onlineAlgorithm(hedge(), linearLosses([[1, 0]]), { dim: 2, experts: true }).name // => 'online(hedge)'
  * ```
  */
@@ -397,7 +397,7 @@ export function onlineAlgorithm<S>(
     },
     step: (state) => {
       const f = losses[state.t]
-      if (f === undefined) throw new WhiteboxError('value', 'online: no loss for this round')
+      if (f === undefined) throw new MdmlError('value', 'online: no loss for this round')
       const x = fromStorage(Float64Array.from(state.play), [options.dim], 'float64')
       const { value, grad } = valueAndGrad(f)(x)
       const loss = item(value)
@@ -455,7 +455,7 @@ export interface OnlineResult {
  * @concept online-learning
  * @example
  * ```ts
- * import { hedge, linearLosses, runOnline } from 'whitebox-engine/optim'
+ * import { hedge, linearLosses, runOnline } from 'mdml-engine/optim'
  * const r = runOnline(hedge({ learningRate: 1 }), linearLosses([[1, 0], [1, 0]]), { dim: 2, experts: true })
  * r.comparatorLoss // => 0
  * ```

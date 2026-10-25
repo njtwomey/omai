@@ -4,7 +4,7 @@
  * variances need.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { sample, vec } from './_util.ts'
 
@@ -25,7 +25,7 @@ function order(x: ArrayLike<number>): number[] {
  * @returns The ranks.
  * @example
  * ```ts
- * import { ranksOf } from 'whitebox-engine/stats'
+ * import { ranksOf } from 'mdml-engine/stats'
  * ranksOf([10, 20, 10]) // => [1.5, 3, 1.5]
  * ranksOf([10, 20, 10], 'min') // => [1, 3, 1]
  * ```
@@ -60,10 +60,10 @@ export function ranksOf(x: ArrayLike<number>, method: RankMethod = 'average'): F
  * @param x - The sample (flattened).
  * @param options - method (default `'average'`).
  * @returns The ranks.
- * @throws WhiteboxError with code `value` for NaN entries.
+ * @throws MdmlError with code `value` for NaN entries.
  * @example
  * ```ts
- * import { rankdata } from 'whitebox-engine/stats'
+ * import { rankdata } from 'mdml-engine/stats'
  * rankdata([0, 2, 3, 2]) // => [1, 2.5, 4, 2.5]
  * rankdata([0, 2, 3, 2], { method: 'dense' }) // => [1, 2, 3, 2]
  * rankdata([0, 2, 3, 2], { method: 'ordinal' }) // => [1, 2, 4, 3]
@@ -71,7 +71,7 @@ export function ranksOf(x: ArrayLike<number>, method: RankMethod = 'average'): F
  */
 export function rankdata(x: TensorLike, options: { readonly method?: RankMethod } = {}): Tensor {
   const a = sample('rankdata', x, 0)
-  for (const v of a) if (Number.isNaN(v)) throw new WhiteboxError('value', 'rankdata: NaN values cannot be ranked')
+  for (const v of a) if (Number.isNaN(v)) throw new MdmlError('value', 'rankdata: NaN values cannot be ranked')
   return vec(ranksOf(a, options.method ?? 'average'))
 }
 
@@ -82,7 +82,7 @@ export function rankdata(x: TensorLike, options: { readonly method?: RankMethod 
  * @returns One count per distinct value.
  * @example
  * ```ts
- * import { tieCounts } from 'whitebox-engine/stats'
+ * import { tieCounts } from 'mdml-engine/stats'
  * tieCounts([3, 1, 3, 2, 3]) // => [1, 1, 3]
  * ```
  */
@@ -108,7 +108,7 @@ export function tieCounts(x: TensorLike): number[] {
  * @returns The factor in (0, 1].
  * @example
  * ```ts
- * import { tieCorrection } from 'whitebox-engine/stats'
+ * import { tieCorrection } from 'mdml-engine/stats'
  * tieCorrection([1, 2, 3]) // => 1
  * tieCorrection([1, 2.5, 2.5, 4]) // => 0.9
  * ```
@@ -129,7 +129,7 @@ export function tieCorrection(x: TensorLike): number {
  * @returns The tie term (0 without ties).
  * @example
  * ```ts
- * import { tieTerm } from 'whitebox-engine/stats'
+ * import { tieTerm } from 'mdml-engine/stats'
  * tieTerm([1, 1, 2, 3, 3, 3]) // => 30
  * ```
  */

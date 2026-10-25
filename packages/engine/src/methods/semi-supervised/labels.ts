@@ -4,7 +4,7 @@
  * targets into labelled codes and classes.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type LearnData, targetVector } from '../../lib/learn/index.ts'
 import { foldIn, type Key, permutation } from '../../lib/random/index.ts'
 import { type TensorLike, toFlat } from '../../lib/tensor/index.ts'
@@ -28,13 +28,13 @@ export interface HideLabelsOptions {
  * @param y - Class labels `[n]` (non-negative).
  * @param options - Labels kept per class (or a fraction) and the key.
  * @returns The targets with hidden labels set to -1.
- * @throws WhiteboxError `value` for negative labels or a fraction outside (0, 1].
+ * @throws MdmlError `value` for negative labels or a fraction outside (0, 1].
  */
 export function hideLabels(y: TensorLike, options: HideLabelsOptions): number[] {
   const values = Array.from(targetVector(y, 'hideLabels'))
-  if (values.some((v) => v < 0)) throw new WhiteboxError('value', 'hideLabels: labels must be non-negative')
+  if (values.some((v) => v < 0)) throw new MdmlError('value', 'hideLabels: labels must be non-negative')
   const f = options.fraction
-  if (f !== undefined && !(f > 0 && f <= 1)) throw new WhiteboxError('value', 'hideLabels: fraction must be in (0, 1]')
+  if (f !== undefined && !(f > 0 && f <= 1)) throw new MdmlError('value', 'hideLabels: fraction must be in (0, 1]')
   const classes = [...new Set(values)].sort((a, b) => a - b)
   const out = values.map(() => UNLABELLED)
   for (const [c, label] of classes.entries()) {
@@ -56,10 +56,10 @@ export function hideLabels(y: TensorLike, options: HideLabelsOptions): number[] 
  * @param data - Labelled learn data.
  * @param options - As {@link hideLabels}.
  * @returns The data with semi-supervised targets.
- * @throws WhiteboxError `value` when the data has no targets.
+ * @throws MdmlError `value` when the data has no targets.
  */
 export function withHiddenLabels<D extends LearnData>(data: D, options: HideLabelsOptions): D {
-  if (data.y === undefined) throw new WhiteboxError('value', 'withHiddenLabels: the data has no labels')
+  if (data.y === undefined) throw new MdmlError('value', 'withHiddenLabels: the data has no labels')
   return { ...data, y: hideLabels(data.y, options) }
 }
 
@@ -70,7 +70,7 @@ export function withHiddenLabels<D extends LearnData>(data: D, options: HideLabe
  * @param who - The caller (for errors).
  * @param n - The number of rows.
  * @returns The classes (ascending) and a code per row.
- * @throws WhiteboxError `value` when no row is labelled.
+ * @throws MdmlError `value` when no row is labelled.
  */
 export function semiSupervisedCodes(
   y: TensorLike,
@@ -79,7 +79,7 @@ export function semiSupervisedCodes(
 ): { readonly classes: number[]; readonly codes: number[] } {
   const values = Array.from(targetVector(y, who, n))
   const classes = [...new Set(values.filter((v) => v !== UNLABELLED))].sort((a, b) => a - b)
-  if (classes.length === 0) throw new WhiteboxError('value', `${who}: no labelled rows`)
+  if (classes.length === 0) throw new MdmlError('value', `${who}: no labelled rows`)
   const index = new Map(classes.map((c, i) => [c, i]))
   return { classes, codes: values.map((v) => index.get(v) ?? UNLABELLED) }
 }

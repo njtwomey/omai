@@ -3,9 +3,9 @@
 import numpy as np
 import scipy
 import scipy.linalg
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng, spd
-from whitebox_oracle.optim_trajectories import A_MATRIX, C_MATRIX, P0, P0_MATRIX, A, C, gradient
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng, spd
+from mdml_oracle.optim_trajectories import A_MATRIX, C_MATRIX, P0, P0_MATRIX, A, C, gradient
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

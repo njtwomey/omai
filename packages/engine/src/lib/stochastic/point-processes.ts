@@ -6,7 +6,7 @@
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { brentq, fsolve } from '../numerics/roots/index.ts'
 import { exponential, foldIn, type Key, poisson, uniform } from '../random/index.ts'
@@ -59,7 +59,7 @@ function eventAlgorithm(
   horizon: number,
   propose: (s: EventState, key: Key) => Proposal,
 ): Algorithm<EventState> {
-  if (!(horizon > 0 && Number.isFinite(horizon))) throw new WhiteboxError('value', `${name}: the horizon must be > 0`)
+  if (!(horizon > 0 && Number.isFinite(horizon))) throw new MdmlError('value', `${name}: the horizon must be > 0`)
   return {
     name,
     config: { ...config, horizon },
@@ -88,7 +88,7 @@ export interface EventOptions extends TraceOptions {
 function runEvents(key: Key, alg: Algorithm<EventState>, options: EventOptions): Float64Array {
   const cap = options.maxEvents ?? 1e6
   const r = runAlgorithm(alg, { ...traceOf(options), key, maxSteps: cap + 1 })
-  if (!r.state.finished) throw new WhiteboxError('convergence', `${alg.name}: more than ${cap} proposals`)
+  if (!r.state.finished) throw new MdmlError('convergence', `${alg.name}: more than ${cap} proposals`)
   return Float64Array.from(historyArray(r.state.events))
 }
 
@@ -107,14 +107,14 @@ function draw(key: Key, rate: number): number {
  * @concept poisson-process
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { poissonProcess } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { poissonProcess } from 'mdml-engine/stochastic'
  * poissonProcess(key(0), 0, 10).length // => 0
  * poissonProcess(key(0), 5, 2).every((t) => t > 0 && t <= 2) // => true
  * ```
  */
 export function poissonProcess(key: Key, rate: number, horizon: number, options: EventOptions = {}): Float64Array {
-  if (!(rate >= 0)) throw new WhiteboxError('value', 'poissonProcess: the rate must be >= 0')
+  if (!(rate >= 0)) throw new MdmlError('value', 'poissonProcess: the rate must be >= 0')
   if (rate === 0) return new Float64Array(0)
   const alg = eventAlgorithm('poisson-process', { rate }, horizon, (s, k) => ({
     t: s.t + draw(k, rate),
@@ -134,12 +134,12 @@ export function poissonProcess(key: Key, rate: number, horizon: number, options:
  * @param maxIntensity - A bound lambdaMax on lambda over [0, T].
  * @param options - The proposal cap and tracing.
  * @returns The event times.
- * @throws WhiteboxError with code `value` when the intensity exceeds the bound.
+ * @throws MdmlError with code `value` when the intensity exceeds the bound.
  * @concept poisson-process
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { inhomogeneousPoisson } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { inhomogeneousPoisson } from 'mdml-engine/stochastic'
  * inhomogeneousPoisson(key(0), (t) => (t < 1 ? 0 : 3), 2, 3).every((t) => t >= 1) // => true
  * ```
  */
@@ -150,12 +150,12 @@ export function inhomogeneousPoisson(
   maxIntensity: number,
   options: EventOptions = {},
 ): Float64Array {
-  if (!(maxIntensity > 0)) throw new WhiteboxError('value', 'inhomogeneousPoisson: the bound must be positive')
+  if (!(maxIntensity > 0)) throw new MdmlError('value', 'inhomogeneousPoisson: the bound must be positive')
   const alg = eventAlgorithm('thinning', { maxIntensity }, horizon, (s, k) => {
     const t = s.t + draw(foldIn(k, 0), maxIntensity)
     const lambda = t <= horizon ? intensity(t) : 0
     if (!(lambda >= 0) || lambda > maxIntensity * (1 + 1e-12)) {
-      throw new WhiteboxError('value', `inhomogeneousPoisson: intensity ${lambda} at ${t} is outside [0, bound]`)
+      throw new MdmlError('value', `inhomogeneousPoisson: intensity ${lambda} at ${t} is outside [0, bound]`)
     }
     return { t, accept: (uniform(foldIn(k, 1), [1]).data[0] ?? 1) * maxIntensity < lambda, memory: 0 }
   })
@@ -171,7 +171,7 @@ export function inhomogeneousPoisson(
  * @concept counting-process
  * @example
  * ```ts
- * import { countingProcess } from 'whitebox-engine/stochastic'
+ * import { countingProcess } from 'mdml-engine/stochastic'
  * Array.from(countingProcess([0.5, 1.2, 3], [0, 1, 2, 5])) // => [0, 1, 2, 3]
  * ```
  */
@@ -203,9 +203,9 @@ export function countingProcess(events: ArrayLike<number>, times: ArrayLike<numb
  * @concept renewal-process
  * @example
  * ```ts
- * import { gamma } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { renewalProcess } from 'whitebox-engine/stochastic'
+ * import { gamma } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { renewalProcess } from 'mdml-engine/stochastic'
  * renewalProcess(key(0), gamma(2, 2), 10).every((t) => t <= 10) // => true
  * ```
  */
@@ -217,7 +217,7 @@ export function renewalProcess(
 ): Float64Array {
   const alg = eventAlgorithm('renewal-process', {}, horizon, (s, k) => {
     const gap = primalNumbers(interarrival.sample(k, [1]))[0] ?? Number.NaN
-    if (!(gap >= 0)) throw new WhiteboxError('value', 'renewalProcess: gaps must be non-negative')
+    if (!(gap >= 0)) throw new MdmlError('value', 'renewalProcess: gaps must be non-negative')
     // a zero gap would not advance the clock: nudge by the smallest step
     return { t: s.t + Math.max(gap, Number.MIN_VALUE), accept: true, memory: 0 }
   })
@@ -236,8 +236,8 @@ export function renewalProcess(
  * @concept renewal-process
  * @example
  * ```ts
- * import { exponential } from 'whitebox-engine/dists'
- * import { renewalFunction } from 'whitebox-engine/stochastic'
+ * import { exponential } from 'mdml-engine/dists'
+ * import { renewalFunction } from 'mdml-engine/stochastic'
  * Math.abs(renewalFunction(exponential(2), 3, 3000).values.at(-1) - 6) < 0.01 // => true
  * ```
  */
@@ -247,7 +247,7 @@ export function renewalFunction(
   steps = 1000,
 ): { readonly times: Float64Array; readonly values: Float64Array } {
   positiveInteger(steps, 'steps', 'renewalFunction')
-  if (!(horizon > 0)) throw new WhiteboxError('value', 'renewalFunction: the horizon must be positive')
+  if (!(horizon > 0)) throw new MdmlError('value', 'renewalFunction: the horizon must be positive')
   const h = horizon / steps
   const times = Float64Array.from({ length: steps + 1 }, (_, i) => i * h)
   const f = primalNumbers(interarrival.cdf(fromStorage(times, [steps + 1], 'float64')))
@@ -282,7 +282,7 @@ function hawkesNumbers(p: HawkesParams): { mu: number; alpha: number; beta: numb
     number,
     number,
   ]
-  if (!(mu > 0 && alpha >= 0 && beta > 0)) throw new WhiteboxError('value', 'hawkes: need mu > 0, alpha >= 0, beta > 0')
+  if (!(mu > 0 && alpha >= 0 && beta > 0)) throw new MdmlError('value', 'hawkes: need mu > 0, alpha >= 0, beta > 0')
   return { mu, alpha, beta }
 }
 
@@ -301,8 +301,8 @@ function hawkesNumbers(p: HawkesParams): { mu: number; alpha: number; beta: numb
  * @reference Y. Ogata, On Lewis' simulation method for point processes, IEEE Trans. Inf. Theory 27 (1981).
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { hawkesProcess } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { hawkesProcess } from 'mdml-engine/stochastic'
  * hawkesProcess(key(0), { mu: 1, alpha: 0.5, beta: 1 }, 10).every((t) => t <= 10) // => true
  * ```
  */
@@ -334,8 +334,8 @@ export function hawkesProcess(
  * @concept hawkes-process
  * @example
  * ```ts
- * import { hawkesIntensity } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { hawkesIntensity } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(hawkesIntensity({ mu: 1, alpha: 2, beta: 1 }, [0], [0, 1])).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1.735758882343]
  * ```
  */
@@ -361,8 +361,8 @@ export function hawkesIntensity(params: HawkesParams, events: TensorLike, times:
  * @concept hawkes-process
  * @example
  * ```ts
- * import { hawkesLogLikelihood } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { hawkesLogLikelihood } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * // no excitation: a Poisson process, n log mu - mu T
  * Math.abs(item(hawkesLogLikelihood({ mu: 2, alpha: 0, beta: 1 }, [0.5, 1.5], 3)) - (2 * Math.log(2) - 6)) < 1e-12 // => true
  * ```
@@ -415,7 +415,7 @@ export interface HawkesEmState {
  *   EM-type algorithm, JASA 103 (2008).
  * @example
  * ```ts
- * import { hawkesEmAlgorithm } from 'whitebox-engine/stochastic'
+ * import { hawkesEmAlgorithm } from 'mdml-engine/stochastic'
  * hawkesEmAlgorithm([1, 2, 2.5], 3, { mu: 1, alpha: 0.5, beta: 1 }).name // => 'hawkes-em'
  * ```
  */
@@ -512,8 +512,8 @@ export function hawkesEmAlgorithm(
  * @concept hawkes-process
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { fitHawkes, hawkesProcess } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { fitHawkes, hawkesProcess } from 'mdml-engine/stochastic'
  * const events = hawkesProcess(key(0), { mu: 1, alpha: 0.6, beta: 1.5 }, 60)
  * fitHawkes(events, 60).converged // => true
  * ```
@@ -530,7 +530,7 @@ export function fitHawkes(
 ): HawkesFit {
   const ev = asFloat(asTensor(events))
   const n = ev.shape[0] ?? 0
-  if (n < 3) throw new WhiteboxError('value', 'fitHawkes: needs at least three events')
+  if (n < 3) throw new MdmlError('value', 'fitHawkes: needs at least three events')
   const rate = n / horizon
   const init = options.init ?? { mu: rate / 2, alpha: rate / 2, beta: rate }
   const em = runAlgorithm(hawkesEmAlgorithm(ev, horizon, init), {
@@ -593,8 +593,8 @@ export function fitHawkes(
  * @concept cox-process
  * @example
  * ```ts
- * import { key, uniform } from 'whitebox-engine/random'
- * import { coxProcess } from 'whitebox-engine/stochastic'
+ * import { key, uniform } from 'mdml-engine/random'
+ * import { coxProcess } from 'mdml-engine/stochastic'
  * // a mixed Poisson process: the rate is uniform on [1, 5]
  * const c = coxProcess(key(0), (k) => { const r = 1 + 4 * uniform(k, [1]).data[0]; return { intensity: () => r, max: r } }, 4)
  * c.events.every((t) => t <= 4) // => true
@@ -625,8 +625,8 @@ export function coxProcess(
  * @concept cox-process
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { logGaussianCoxProcess, ouCovariance } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { logGaussianCoxProcess, ouCovariance } from 'mdml-engine/stochastic'
  * logGaussianCoxProcess(key(0), [0.5, 1.5, 2.5], 1, { covariance: ouCovariance({ theta: 1, sigma: 0.5 }), mean: 1 }).counts.length // => 3
  * ```
  */
@@ -636,7 +636,7 @@ export function logGaussianCoxProcess(
   cellSize: number,
   options: { readonly covariance: CovarianceFunction; readonly mean?: TensorLike },
 ): { readonly intensity: Float64Array; readonly counts: Int32Array } {
-  if (!(cellSize > 0)) throw new WhiteboxError('value', 'logGaussianCoxProcess: the cell size must be positive')
+  if (!(cellSize > 0)) throw new MdmlError('value', 'logGaussianCoxProcess: the cell size must be positive')
   const c = asFloat(asTensor(centres))
   const cells = c.shape[0] ?? 0
   const meanValue = options.mean ?? 0
@@ -660,9 +660,9 @@ export function logGaussianCoxProcess(
  * @concept marked-point-process
  * @example
  * ```ts
- * import { exponential } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { markedPoissonProcess } from 'whitebox-engine/stochastic'
+ * import { exponential } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { markedPoissonProcess } from 'mdml-engine/stochastic'
  * const m = markedPoissonProcess(key(0), 3, 5, exponential(1))
  * m.marks.length === m.times.length // => true
  * ```

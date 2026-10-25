@@ -23,8 +23,8 @@ export interface WindowOptions {
  * @concept window-functions
  * @example
  * ```ts
- * import { generalCosine } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { generalCosine } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(generalCosine(3, [0.5, 0.5])) // => [0, 1, 0]
  * ```
  */
@@ -48,8 +48,8 @@ export function generalCosine(m: number, a: readonly number[], options: WindowOp
  * @returns The window.
  * @example
  * ```ts
- * import { generalHamming } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { generalHamming } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(generalHamming(3, 0.5)) // => [0, 1, 0]
  * ```
  */
@@ -65,8 +65,8 @@ export function generalHamming(m: number, alpha: number, options: WindowOptions 
  * @returns The window.
  * @example
  * ```ts
- * import { boxcar } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { boxcar } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(boxcar(3)) // => [1, 1, 1]
  * ```
  */
@@ -83,8 +83,8 @@ export function boxcar(m: number, options: WindowOptions = {}): Tensor {
  * @concept window-functions
  * @example
  * ```ts
- * import { hann } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { hann } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(hann(4, { sym: false })) // => [0, 0.5, 1, 0.5]
  * ```
  */
@@ -100,8 +100,8 @@ export function hann(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { hamming } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { hamming } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(hamming(3)).map((v) => Math.round(v * 1e12) / 1e12) // => [0.08, 1, 0.08]
  * ```
  */
@@ -117,8 +117,8 @@ export function hamming(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { blackman } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { blackman } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(blackman(3)).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1, 0]
  * ```
  */
@@ -134,8 +134,8 @@ export function blackman(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { blackmanHarris } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { blackmanHarris } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(blackmanHarris(3)).map((v) => Math.round(v * 1e8) / 1e8) // => [0.00006, 1, 0.00006]
  * ```
  */
@@ -151,8 +151,8 @@ export function blackmanHarris(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { nuttall } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { nuttall } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(nuttall(3)).map((v) => Math.round(v * 1e8) / 1e8) // => [0.0003628, 1, 0.0003628]
  * ```
  */
@@ -168,8 +168,8 @@ export function nuttall(m: number, options: WindowOptions = {}): Tensor {
  * @returns The window.
  * @example
  * ```ts
- * import { flattop } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { flattop } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * Math.round((toFlat(flattop(3))[1] ?? 0) * 1e9) / 1e9 // => 1.000000003
  * ```
  */

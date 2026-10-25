@@ -1,6 +1,6 @@
 // The layers of fitted networks as functions, for the gradient and concept explainers (private to methods/explain):
 // a LeNet of methods/neural rebuilt from its saved state, scaling first, its ReLUs marked.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import type * as explain from '../../lib/explain/index.ts'
 import type { Fitted } from '../../lib/learn/index.ts'
 import { loadState, type Module, type Params, type SavedState } from '../../lib/nn/index.ts'
@@ -33,8 +33,7 @@ function isLeNet(p: unknown): p is LeNetParams {
  */
 export function networkOf(fitted: Fitted, randomise?: { readonly layers: number; readonly key: Key }): NetworkLayers {
   const p = fitted.params
-  if (!isLeNet(p))
-    throw new WhiteboxError('value', `explain: ${fitted.estimator} is not a LeNet (methods/neural/vision)`)
+  if (!isLeNet(p)) throw new MdmlError('value', `explain: ${fitted.estimator} is not a LeNet (methods/neural/vision)`)
   const shape = p.imageShape as [number, number, number]
   const net = lenetNetwork(
     shape,

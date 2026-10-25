@@ -1,8 +1,8 @@
 /**
  * The Morris screening entry: elementary effects of a fitted model over the box its data span.
  */
-import { morrisScreening as screen } from 'whitebox-engine/methods/explain'
-import { dict, int } from 'whitebox-engine/space'
+import { morrisScreening as screen } from 'mdml-engine/methods/explain'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { type ExplainedModel, fitModel, modelControl } from './_explain.ts'
 

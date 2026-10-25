@@ -3,9 +3,9 @@
 import numpy as np
 import sklearn
 import sklearn.metrics as M
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from sklearn.metrics.cluster import contingency_matrix, pair_confusion_matrix
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

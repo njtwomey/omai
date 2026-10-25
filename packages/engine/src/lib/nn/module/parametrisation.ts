@@ -4,7 +4,7 @@
  * iteration in buffers) to bound the layer's Lipschitz constant, as in GAN discriminators.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import { item, norm, reshape, sizeOf, sqrt, square, sum, type Value } from '../../tensor/index.ts'
 import { normalize, spectralNorm, weightNorm } from '../functional/normalisation.ts'
@@ -21,8 +21,8 @@ const otherAxes = (rank: number, axis: number): number[] =>
  * @concept weight-normalisation
  * @example
  * ```ts
- * import { WeightNorm, Linear } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { WeightNorm, Linear } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * Object.keys(new WeightNorm(new Linear(3, 2, { key: key(0) })).stateDict()) // => ['bias', 'weight_g', 'weight_v']
  * ```
  */
@@ -43,7 +43,7 @@ export class WeightNorm<I, O> extends Module<I, O> {
 
   private decompose(params: Params): Params {
     const w = params[this.name] as Value | undefined
-    if (w === undefined) throw new WhiteboxError('value', `WeightNorm: the module has no parameter ${this.name}`)
+    if (w === undefined) throw new MdmlError('value', `WeightNorm: the module has no parameter ${this.name}`)
     const { [this.name]: _, ...rest } = params
     const g =
       this.dim === null
@@ -114,8 +114,8 @@ export interface SpectralNormModuleOptions {
  * @concept spectral-normalisation
  * @example
  * ```ts
- * import { SpectralNorm, Linear } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { SpectralNorm, Linear } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * Object.keys(new SpectralNorm(new Linear(3, 2, { key: key(0) }), { key: key(1) }).stateDict()) // => ['bias', 'weight_orig', 'weight_u', 'weight_v']
  * ```
  */
@@ -137,7 +137,7 @@ export class SpectralNorm<I, O> extends Module<I, O> {
     this.dim = options.dim ?? (module.kind.startsWith('ConvTranspose') ? 1 : 0)
     this.vectorKey = initKey('SpectralNorm', options.key)
     const w = module.params[this.name] as Value | undefined
-    if (w === undefined) throw new WhiteboxError('value', `SpectralNorm: the module has no parameter ${this.name}`)
+    if (w === undefined) throw new MdmlError('value', `SpectralNorm: the module has no parameter ${this.name}`)
     const { [this.name]: _, ...rest } = module.params
     this.params = { ...rest, [`${this.name}_orig`]: w }
     this.buffers = this.initBuffers()
@@ -216,8 +216,8 @@ export class SpectralNorm<I, O> extends Module<I, O> {
  * @returns sigma.
  * @example
  * ```ts
- * import { SpectralNorm, Linear, spectralNormEstimate } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { SpectralNorm, Linear, spectralNormEstimate } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * const sn = new SpectralNorm(new Linear(3, 2, { key: key(0) }), { key: key(1) })
  * sn.forward([[1, 2, 3]])
  * spectralNormEstimate(sn) > 0 // => true

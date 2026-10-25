@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { broadcastShapes, broadcastTo, div, mean, mul, sum, type Value } from '../tensor/index.ts'
 
 /** How a loss combines its elementwise terms: averaged, summed, or returned as they are. */
@@ -23,6 +23,6 @@ export function reduce(terms: Value, options: LossOptions = {}): Value {
       if (options.weight === undefined) return mean(weighted)
       return div(sum(weighted), sum(broadcastTo(options.weight, broadcastShapes(options.weight.shape, terms.shape))))
     default:
-      throw new WhiteboxError('value', `unknown reduction ${String(options.reduction)}`)
+      throw new MdmlError('value', `unknown reduction ${String(options.reduction)}`)
   }
 }

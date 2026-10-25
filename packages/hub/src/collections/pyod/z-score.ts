@@ -3,7 +3,7 @@
  * two-dimensional data with outliers.
  */
 
-import { zScoreDetector } from 'whitebox-engine/methods/anomaly'
+import { zScoreDetector } from 'mdml-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'
 

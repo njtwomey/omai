@@ -3,7 +3,7 @@
  * on tabular regression data and one-dimensional regression curves.
  */
 
-import { ridge as ridgeMethod } from 'whitebox-engine/methods/linear'
+import { ridge as ridgeMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

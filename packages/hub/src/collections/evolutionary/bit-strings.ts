@@ -3,8 +3,8 @@
  * knapsack problem, played generation by generation.
  */
 
-import { evolveBitStrings, knapsack, oneMax } from 'whitebox-engine/methods/evolutionary'
-import { choice, dict, int, real } from 'whitebox-engine/space'
+import { evolveBitStrings, knapsack, oneMax } from 'mdml-engine/methods/evolutionary'
+import { choice, dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 
 /** A genetic algorithm on bit strings: OneMax and the knapsack. */

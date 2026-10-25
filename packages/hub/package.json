@@ -1,13 +1,13 @@
 {
-  "name": "whitebox-hub",
+  "name": "mdml-hub",
   "version": "0.1.0",
-  "description": "whitebox-js hub: declarative entries that pair a method with dataset collections, controls and render views, and the generated catalogue the hub app is built from.",
+  "description": "mdml-js hub: declarative entries that pair a method with dataset collections, controls and render views, and the generated catalogue the hub app is built from.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/njtwomey/whitebox-js.git",
+    "url": "git+https://github.com/njtwomey/mdml-js.git",
     "directory": "packages/hub"
   },
   "files": [
@@ -33,8 +33,8 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "whitebox-engine": "workspace:*",
-    "whitebox-render": "workspace:*"
+    "mdml-engine": "workspace:*",
+    "mdml-render": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

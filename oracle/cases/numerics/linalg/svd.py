@@ -1,8 +1,8 @@
 """Singular value decomposition and its uses against numpy.linalg (singular vector signs fixed by the convention)."""
 
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng, sign_fixed
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng, sign_fixed
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

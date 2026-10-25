@@ -3,7 +3,7 @@
  * solutions built on it (`lstsq`), plus the elementary building blocks: Householder reflectors and Givens rotations.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   arg,
@@ -33,7 +33,7 @@ const rightSolveTransposed = (y: Value, r: Value): Value => mT(triangularSolve(r
 
 function requireTall(shape: readonly number[]): void {
   const { m, n } = matrixShape(shape, 'qr')
-  if (m < n) throw new WhiteboxError('not-differentiable', 'qr: derivatives need m >= n (full column rank)')
+  if (m < n) throw new MdmlError('not-differentiable', 'qr: derivatives need m >= n (full column rank)')
 }
 
 const qrPrimitive: Primitive<null> = definePrimitive<null>({
@@ -118,8 +118,8 @@ export interface QrResult {
  * @concept linear-algebra
  * @example
  * ```ts
- * import { qr } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { qr } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(qr([[3, 0], [4, 1]]).r)[0] // => [-5, -0.8]
  * ```
  */
@@ -138,8 +138,8 @@ export function qr(a: TensorLike): QrResult {
  * @returns The solution `[..., n, k]` or `[n]`, differentiable in both arguments.
  * @example
  * ```ts
- * import { lstsq } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lstsq } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lstsq([[1, 0], [0, 1], [0, 0]], [1, 2, 3])) // => [1, 2]
  * ```
  */
@@ -169,7 +169,7 @@ export function lstsq(a: TensorLike, b: TensorLike): Value {
  * @concept orthogonal-transformations
  * @example
  * ```ts
- * import { householderReflector } from 'whitebox-engine/numerics/linalg'
+ * import { householderReflector } from 'mdml-engine/numerics/linalg'
  * householderReflector([3, 4]).alpha // => -5
  * ```
  */
@@ -196,7 +196,7 @@ export function householderReflector(x: readonly number[]): {
  * @returns `{ c, s, r }`.
  * @example
  * ```ts
- * import { givensRotation } from 'whitebox-engine/numerics/linalg'
+ * import { givensRotation } from 'mdml-engine/numerics/linalg'
  * givensRotation(3, 4) // => { c: 0.6, s: 0.8, r: 5 }
  * ```
  */

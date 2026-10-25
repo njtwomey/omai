@@ -14,7 +14,7 @@ type Pt = readonly [number, number]
  * @returns The path data.
  * @example
  * ```ts
- * import { straightPathData } from 'whitebox-render/svg'
+ * import { straightPathData } from 'mdml-render/svg'
  * straightPathData([[0, 0], [1, 2]], true) // => 'M0,0L1,2Z'
  * ```
  */
@@ -32,7 +32,7 @@ export function straightPathData(points: readonly Pt[], closed = false): string 
  * @returns The path data.
  * @example
  * ```ts
- * import { smoothPathData } from 'whitebox-render/svg'
+ * import { smoothPathData } from 'mdml-render/svg'
  * smoothPathData([[0, 0], [1, 1], [2, 0]]).startsWith('M0,0C') // => true
  * ```
  */
@@ -61,7 +61,7 @@ export function smoothPathData(points: readonly Pt[], closed = false): string {
  * @returns The polygon's points.
  * @example
  * ```ts
- * import { arrowHeadPoints } from 'whitebox-render/svg'
+ * import { arrowHeadPoints } from 'mdml-render/svg'
  * arrowHeadPoints([0, 0], [10, 0], 4) // => '10,0 6,1.8 6,-1.8'
  * ```
  */

@@ -1,7 +1,7 @@
 // Itemset-mining hub entries (private to this collection): the baskets and thresholds as controls, the miner played,
 // and the association rules of what it found.
-import { apriori, associationRules, fpGrowth, marketBaskets, TEXTBOOK_BASKETS } from 'whitebox-engine/methods/patterns'
-import { choice, dict, int, real } from 'whitebox-engine/space'
+import { apriori, associationRules, fpGrowth, marketBaskets, TEXTBOOK_BASKETS } from 'mdml-engine/methods/patterns'
+import { choice, dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry, type MethodRef } from '../../entry/entry.ts'
 
 /** What an itemset-mining entry declares. */

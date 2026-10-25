@@ -4,7 +4,7 @@
  * mistakes for separable data.
  */
 
-import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { type Json, MdmlError } from '../../../lib/base/index.ts'
 import { coefficientTable, type Exposition, learningCurve } from '../../../lib/exposition/index.ts'
 import {
   classNamesOf,
@@ -122,7 +122,7 @@ export function rosenblattPerceptron(
         const x = matrixView(data.x, 'rosenblattPerceptron')
         const enc = encodeLabels(data.y ?? [], 'rosenblattPerceptron', x.n)
         if (enc.classes.length !== 2)
-          throw new WhiteboxError(
+          throw new MdmlError(
             'value',
             `rosenblattPerceptron: needs exactly two classes, got ${enc.classes.length} (use methods/linear's perceptron for more)`,
           )

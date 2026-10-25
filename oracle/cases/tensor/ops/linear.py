@@ -1,8 +1,8 @@
 """Products and contractions against numpy."""
 
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng, uniform
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng, uniform
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

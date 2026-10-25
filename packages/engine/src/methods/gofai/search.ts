@@ -1,11 +1,11 @@
 /**
- * Path search on grid worlds, played expansion by expansion from the core's traced searches (`whitebox-engine/search`):
+ * Path search on grid worlds, played expansion by expansion from the core's traced searches (`mdml-engine/search`):
  * breadth-first, depth-first, uniform-cost, greedy, A* and its weighted, iterative-deepening and bidirectional forms,
  * recording the frontier, the explored set, the node expanded and the path to it. `gridProblem` turns a grid world into
  * a search problem with an admissible heuristic.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import {
   aStarSearchAlgorithm,
@@ -51,13 +51,12 @@ export interface GridProblemOptions {
  * @param w - The world (its first start and its goals).
  * @param options - Connectivity and the heuristic's metric.
  * @returns The problem.
- * @throws WhiteboxError `value` when the world has no start or no goal.
+ * @throws MdmlError `value` when the world has no start or no goal.
  */
 export function gridProblem(w: World, options: GridProblemOptions = {}): BidirectionalProblem<number, number> {
   const start = w.starts[0]
   const goal = w.goals[0]
-  if (start === undefined || goal === undefined)
-    throw new WhiteboxError('value', 'gridProblem: needs a start and a goal')
+  if (start === undefined || goal === undefined) throw new MdmlError('value', 'gridProblem: needs a start and a goal')
   const connectivity = options.connectivity ?? 4
   const move = { connectivity }
   const metric = options.metric ?? (connectivity === 8 ? 'octile' : 'manhattan')
@@ -157,7 +156,7 @@ function pathOf(node: SearchNode<number, number> | null): number[] {
  */
 export function gridSearch(w: World, options: GridSearchOptions = {}): Explained<GridSearchResult> {
   const t = w.topology
-  if (t.kind !== 'square') throw new WhiteboxError('value', 'gridSearch: square grids only')
+  if (t.kind !== 'square') throw new MdmlError('value', 'gridSearch: square grids only')
   const name = options.algorithm ?? 'a-star'
   const problem = gridProblem(w, options)
   const maxExpansions = options.maxExpansions ?? 5000
@@ -252,7 +251,7 @@ export function gridSearch(w: World, options: GridSearchOptions = {}): Explained
     frames.push(frame(s, at))
     final = s
   }
-  if (final === undefined) throw new WhiteboxError('value', 'gridSearch: the search did not start')
+  if (final === undefined) throw new MdmlError('value', 'gridSearch: the search did not start')
   const status = final.status === 'running' ? 'budget' : final.status
   const solution = status === 'solved' ? final.solution : null
   const path = pathOf(solution)

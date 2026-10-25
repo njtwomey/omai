@@ -6,7 +6,7 @@
  */
 
 import { valueAndGrad } from '../../../lib/autodiff/index.ts'
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import {
   curveSet,
   type Explained,
@@ -140,7 +140,7 @@ export function initialisationStudy(
   fit: FitOptions = {},
 ): Explained<{ readonly schemes: readonly LayerStatistics[] }> {
   const schemes = options.schemes ?? ['small', 'xavier', 'kaiming', 'large']
-  if (schemes.length === 0) throw new WhiteboxError('value', 'initialisationStudy: needs at least one scheme')
+  if (schemes.length === 0) throw new MdmlError('value', 'initialisationStudy: needs at least one scheme')
   const key = fit.key ?? makeKey(0)
   const task = taskOf(data, !isRegression(data), { who: 'initialisationStudy', key })
   const d = task.x.shape[1] ?? 1

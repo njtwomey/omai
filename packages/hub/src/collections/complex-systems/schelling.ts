@@ -3,8 +3,8 @@
  * themselves into segregated blocks.
  */
 
-import { schelling } from 'whitebox-engine/methods/complex-systems'
-import { dict, int, real } from 'whitebox-engine/space'
+import { schelling } from 'mdml-engine/methods/complex-systems'
+import { dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 
 /** Schelling's segregation model. */

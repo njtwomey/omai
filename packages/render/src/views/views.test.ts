@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import {
   anomalyScores,
   type CoefficientTable,
@@ -25,7 +24,8 @@ import {
   searchTrials,
   type TreeNode,
   treeRecord,
-} from 'whitebox-engine/exposition'
+} from 'mdml-engine/exposition'
+import { describe, expect, it } from 'vitest'
 import { componentsView } from './components.ts'
 import { episodeView } from './episodes.ts'
 import { coefficientsAt, crossValidationView, regularisationPathView } from './paths.ts'

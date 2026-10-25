@@ -4,14 +4,14 @@
  * concrete colour.
  */
 
-import { type Paint, palettes, parsePaint, type ThemeToken } from 'whitebox-engine/scene'
+import { type Paint, palettes, parsePaint, type ThemeToken } from 'mdml-engine/scene'
 
 /** A colour mode: the light or the dark theme. */
 export type ColourMode = 'light' | 'dark'
 
 /**
  * The design tokens of one theme. The scene tokens (`fg`, `bg`, `surface`, `muted`, `grid`, `accent`, `tab0` to
- * `tab9`) are exactly whitebox-engine's `palettes`, so a scene rasterised in Node and the same scene drawn as SVG or in a
+ * `tab9`) are exactly mdml-engine's `palettes`, so a scene rasterised in Node and the same scene drawn as SVG or in a
  * chart agree. The rest are for chrome and semantics: `fgSecondary` (axis names, legends), `axis` (axis lines),
  * `tooltip` (tooltip background), `success`, `warning`, `danger` and `info`, and the font stack.
  */
@@ -66,7 +66,7 @@ const DARK: Tokens = {
  * @returns The tokens.
  * @example
  * ```ts
- * import { tokens } from 'whitebox-render/theme'
+ * import { tokens } from 'mdml-render/theme'
  * tokens('light').tab0 // => '#1f77b4'
  * tokens('dark').bg // => '#0d1117'
  * ```
@@ -116,7 +116,7 @@ function kebab(name: string): string {
  * @returns Property names mapped to values.
  * @example
  * ```ts
- * import { cssVariables } from 'whitebox-render/theme'
+ * import { cssVariables } from 'mdml-render/theme'
  * cssVariables('light')['--wb-accent'] // => '#0969da'
  * ```
  */
@@ -135,7 +135,7 @@ export function cssVariables(mode: ColourMode = 'light', prefix = 'wb'): Record<
  * @returns The CSS text.
  * @example
  * ```ts
- * import { cssText } from 'whitebox-render/theme'
+ * import { cssText } from 'mdml-render/theme'
  * cssText('dark', '.dark').startsWith('.dark {') // => true
  * ```
  */
@@ -155,7 +155,7 @@ export function cssText(mode: ColourMode = 'light', selector = ':root'): string 
  * @returns A CSS colour or `none`.
  * @example
  * ```ts
- * import { resolvePaint } from 'whitebox-render/theme'
+ * import { resolvePaint } from 'mdml-render/theme'
  * resolvePaint('tab1', 'light') // => '#ff7f0e'
  * resolvePaint('#123456', 'dark') // => '#123456'
  * ```
@@ -173,7 +173,7 @@ export function resolvePaint(paint: Paint, mode: ColourMode = 'light'): string {
  * @returns `true` for `fg`, `bg`, `surface`, `muted`, `grid`, `accent` and `tab0` to `tab9`.
  * @example
  * ```ts
- * import { isThemeToken } from 'whitebox-render/theme'
+ * import { isThemeToken } from 'mdml-render/theme'
  * isThemeToken('tab9') // => true
  * isThemeToken('#fff') // => false
  * ```
@@ -190,7 +190,7 @@ export function isThemeToken(name: string): name is ThemeToken {
  * @returns The channels.
  * @example
  * ```ts
- * import { paintRgba } from 'whitebox-render/theme'
+ * import { paintRgba } from 'mdml-render/theme'
  * paintRgba('fg', 'dark') // => [230, 237, 243, 1]
  * ```
  */

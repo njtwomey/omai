@@ -7,9 +7,9 @@ import numpy as np
 import scipy
 import scipy.stats as st
 import statsmodels
+from mdml_oracle.fixture import Case, case
 from scipy.stats.contingency import expected_freq, odds_ratio, relative_risk
 from statsmodels.stats.contingency_tables import cochrans_q, mcnemar
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "statsmodels": statsmodels.__version__}
 

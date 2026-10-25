@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { episodes, type Run } from 'whitebox-engine/trace'
+import { episodes, type Run } from 'mdml-engine/trace'
 import { modeOf } from '../charts/_data.ts'
 import { band, lines } from '../charts/lines.ts'
 import { cartesian, type Layer, type PlotOptions } from '../charts/plot.ts'
@@ -20,7 +20,7 @@ import type { ColourMode } from '../theme/tokens.ts'
  * @returns The means and standard deviations.
  * @example
  * ```ts
- * import { rolling } from 'whitebox-render/trace'
+ * import { rolling } from 'mdml-render/trace'
  * rolling([1, 3, 5], 2).mean // => [1, 2, 4]
  * ```
  */
@@ -45,9 +45,9 @@ export function rolling(values: readonly number[], window = 20): { readonly mean
  * @returns The layers.
  * @example
  * ```ts
- * import { episodeCurves } from 'whitebox-render/trace'
+ * import { episodeCurves } from 'mdml-render/trace'
  * const ep = (i: number) => ({ type: 'episode' as const, runId: 'r', episode: i, return: i, length: 10, terminated: true })
- * episodeCurves({ schema: 'whitebox.run/1', events: [ep(0), ep(1), ep(2)] }, { window: 2 }).length // => 3
+ * episodeCurves({ schema: 'mdml.run/1', events: [ep(0), ep(1), ep(2)] }, { window: 2 }).length // => 3
  * ```
  */
 export function episodeCurves(
@@ -89,8 +89,8 @@ export function episodeCurves(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { episodeChart } from 'whitebox-render/trace'
- * episodeChart({ schema: 'whitebox.run/1', events: [] }).xAxis[0].name // => 'episode'
+ * import { episodeChart } from 'mdml-render/trace'
+ * episodeChart({ schema: 'mdml.run/1', events: [] }).xAxis[0].name // => 'episode'
  * ```
  */
 export function episodeChart(
@@ -114,7 +114,7 @@ export function episodeChart(
  * @returns The cumulative regret per round.
  * @example
  * ```ts
- * import { cumulativeRegret } from 'whitebox-render/trace'
+ * import { cumulativeRegret } from 'mdml-render/trace'
  * cumulativeRegret([1, 0, 1], 1) // => [0, 1, 1]
  * ```
  */

@@ -90,8 +90,8 @@ function independentRows(form: StandardForm, tol: number): { keep: number[]; inc
  * @reference E. D. Andersen and K. D. Andersen, The MOSEK interior point optimizer for linear programming (2000).
  * @example
  * ```ts
- * import { lpInteriorPointAlgorithm, standardForm } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { lpInteriorPointAlgorithm, standardForm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const form = standardForm({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
  * runAlgorithm(lpInteriorPointAlgorithm(form), { maxSteps: 100 }).state.solution.status // => 'optimal'
  * ```

@@ -5,7 +5,7 @@
  * amplitude envelope (scipy.signal.hilbert).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { fft, ifft, rfft } from '../numerics/fourier/index.ts'
 import {
   absComplex,
@@ -43,14 +43,14 @@ import { getWindow, type WindowSpec } from './windows/index.ts'
  * @concept fourier-transform
  * @example
  * ```ts
- * import { dtft } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { dtft } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(dtft([1, 1], [0, 0.5]).re).map((v) => Math.round(v * 1e12) / 1e12) // => [2, 0]
  * ```
  */
 export function dtft(x: ComplexLike, frequencies: TensorLike, fs = 1): ComplexValue {
   const z = complex(x)
-  if (z.re.shape.length !== 1) throw new WhiteboxError('shape', 'dtft: expected a 1-D signal')
+  if (z.re.shape.length !== 1) throw new MdmlError('shape', 'dtft: expected a 1-D signal')
   const n = z.re.shape[0] ?? 0
   const f = toFlat(primalOf(float(frequencies)))
   const c = new Float64Array(n * f.length)
@@ -81,8 +81,8 @@ export function dtft(x: ComplexLike, frequencies: TensorLike, fs = 1): ComplexVa
  * @returns The padded input.
  * @example
  * ```ts
- * import { zeroPad } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { zeroPad } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(zeroPad([1, 2], 4)) // => [1, 2, 0, 0]
  * ```
  */
@@ -108,7 +108,7 @@ export function zeroPad(x: TensorLike, n: number, axis = -1): Value {
  * @concept frequency-resolution
  * @example
  * ```ts
- * import { frequencyResolution } from 'whitebox-engine/signal'
+ * import { frequencyResolution } from 'mdml-engine/signal'
  * frequencyResolution(100, 1000, 400) // => { resolution: 10, binSpacing: 2.5 }
  * ```
  */
@@ -117,7 +117,7 @@ export function frequencyResolution(
   fs = 1,
   nfft: number = n,
 ): { readonly resolution: number; readonly binSpacing: number } {
-  if (!(n > 0) || !(nfft > 0)) throw new WhiteboxError('value', 'frequencyResolution: lengths must be positive')
+  if (!(n > 0) || !(nfft > 0)) throw new MdmlError('value', 'frequencyResolution: lengths must be positive')
   return { resolution: fs / n, binSpacing: fs / nfft }
 }
 
@@ -140,7 +140,7 @@ export interface PeakFrequencyOptions {
  * @concept spectral-leakage
  * @example
  * ```ts
- * import { peakFrequency } from 'whitebox-engine/signal'
+ * import { peakFrequency } from 'mdml-engine/signal'
  * const x = Array.from({ length: 64 }, (_, n) => Math.cos(2 * Math.PI * 0.1234 * n))
  * Math.abs(peakFrequency(x) - 0.1234) < 1e-3 // => true
  * ```
@@ -178,7 +178,7 @@ export function peakFrequency(x: TensorLike, options: PeakFrequencyOptions = {})
  * @concept spectral-leakage
  * @example
  * ```ts
- * import { hann, leakageFraction } from 'whitebox-engine/signal'
+ * import { hann, leakageFraction } from 'mdml-engine/signal'
  * leakageFraction(64, 0) < 1e-20 // => true
  * leakageFraction(hann(64, { sym: false }), 0.5) < leakageFraction(64, 0.5) // => true
  * ```
@@ -211,8 +211,8 @@ export function leakageFraction(window: TensorLike | number, offset = 0.5, bins 
  * @concept parseval
  * @example
  * ```ts
- * import { parseval } from 'whitebox-engine/signal'
- * import { item } from 'whitebox-engine/tensor'
+ * import { parseval } from 'mdml-engine/signal'
+ * import { item } from 'mdml-engine/tensor'
  * const { time, frequency } = parseval([1, 2, 3, 4])
  * [item(time), Math.round(item(frequency) * 1e12) / 1e12] // => [30, 30]
  * ```
@@ -237,8 +237,8 @@ export function parseval(x: ComplexLike): { readonly time: Value; readonly frequ
  * @concept analytic-signal
  * @example
  * ```ts
- * import { hilbert } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { hilbert } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(hilbert([1, 0, -1, 0]).im).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1, 0, -1]
  * ```
  */
@@ -246,7 +246,7 @@ export function hilbert(x: TensorLike, n?: number, axis = -1): ComplexValue {
   const v = float(x)
   const a = axisOf(axis, v.shape.length, 'hilbert')
   const len = n ?? v.shape[a] ?? 0
-  if (len < 1) throw new WhiteboxError('value', 'hilbert: the length must be positive')
+  if (len < 1) throw new MdmlError('value', 'hilbert: the length must be positive')
   const h = new Float64Array(len)
   h[0] = 1
   if (len % 2 === 0) {
@@ -267,8 +267,8 @@ export function hilbert(x: TensorLike, n?: number, axis = -1): ComplexValue {
  * @concept analytic-signal
  * @example
  * ```ts
- * import { hilbertTransform } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { hilbertTransform } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(hilbertTransform([0, 1, 0, -1])).map((v) => Math.round(v * 1e12) / 1e12) // => [-1, 0, 1, 0]
  * ```
  */
@@ -285,8 +285,8 @@ export function hilbertTransform(x: TensorLike, axis = -1): Value {
  * @concept analytic-signal
  * @example
  * ```ts
- * import { envelope } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { envelope } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(envelope([1, 0, -1, 0])).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1, 1, 1]
  * ```
  */

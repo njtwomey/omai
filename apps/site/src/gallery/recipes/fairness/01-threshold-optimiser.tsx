@@ -1,12 +1,11 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { generate } from 'whitebox-engine/data'
-import { biasedCredit } from 'whitebox-engine/datasets'
-import { type ThresholdConstraint, thresholdDecisions } from 'whitebox-engine/fairness'
-import { buildGroupReport, positiveScores, sensitiveGroups, thresholdOptimizer } from 'whitebox-engine/methods/fairness'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { key } from 'whitebox-engine/random'
-import { cartesian, lines } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
+import { generate } from 'mdml-engine/data'
+import { biasedCredit } from 'mdml-engine/datasets'
+import { type ThresholdConstraint, thresholdDecisions } from 'mdml-engine/fairness'
+import { buildGroupReport, positiveScores, sensitiveGroups, thresholdOptimizer } from 'mdml-engine/methods/fairness'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { key } from 'mdml-engine/random'
+import { cartesian, lines } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
 import {
   Chart,
   Choice,
@@ -20,7 +19,8 @@ import {
   Toggle,
   useChartProjection,
   useColourMode,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

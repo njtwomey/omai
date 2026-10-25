@@ -4,7 +4,7 @@
  * extrapolates trapezoid estimates on halving steps and returns its table.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -41,7 +41,7 @@ function prepare(
   }
   const [xv] = promoteFloat(options.x) as [Value]
   if ((xv.shape[xv.shape.length - 1] ?? 0) !== n)
-    throw new WhiteboxError('shape', 'integration: x must match y along the axis')
+    throw new MdmlError('shape', 'integration: x must match y along the axis')
   const xs = (start: number, stop: number): Value => sliceAxis(xv, -1, start, stop)
   return { y: yv, axis, n, dx: (start, stop) => sub(xs(start + 1, stop + 1), xs(start, stop)) }
 }
@@ -55,8 +55,8 @@ function prepare(
  * @concept quadrature
  * @example
  * ```ts
- * import { trapezoid } from 'whitebox-engine/numerics/quadrature'
- * import { item } from 'whitebox-engine/tensor'
+ * import { trapezoid } from 'mdml-engine/numerics/quadrature'
+ * import { item } from 'mdml-engine/tensor'
  * item(trapezoid([0, 1, 4], { dx: 1 })) // => 3
  * ```
  */
@@ -76,8 +76,8 @@ export function trapezoid(y: TensorLike, options: SpacingOptions = {}): Value {
  * @returns The running integral.
  * @example
  * ```ts
- * import { cumulativeTrapezoid } from 'whitebox-engine/numerics/quadrature'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { cumulativeTrapezoid } from 'mdml-engine/numerics/quadrature'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(cumulativeTrapezoid([0, 1, 4], { initial: 0 })) // => [0, 0.5, 3]
  * ```
  */
@@ -105,8 +105,8 @@ export function cumulativeTrapezoid(
  * @concept quadrature
  * @example
  * ```ts
- * import { simpson } from 'whitebox-engine/numerics/quadrature'
- * import { item } from 'whitebox-engine/tensor'
+ * import { simpson } from 'mdml-engine/numerics/quadrature'
+ * import { item } from 'mdml-engine/tensor'
  * item(simpson([0, 1, 4], { dx: 1 })) // => 2.6666666666666665
  * ```
  */
@@ -166,8 +166,8 @@ export type RombergRow = readonly number[]
  * @returns The estimate and the Romberg table.
  * @example
  * ```ts
- * import { romberg } from 'whitebox-engine/numerics/quadrature'
- * import { exp } from 'whitebox-engine/tensor'
+ * import { romberg } from 'mdml-engine/numerics/quadrature'
+ * import { exp } from 'mdml-engine/tensor'
  * Math.abs(romberg((x) => exp(x), 0, 1).value - (Math.E - 1)) < 1e-10 // => true
  * ```
  */

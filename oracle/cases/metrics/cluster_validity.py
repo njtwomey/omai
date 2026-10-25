@@ -6,8 +6,8 @@ import numpy as np
 import scipy.spatial.distance as ssd
 import sklearn
 import sklearn.metrics as M
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

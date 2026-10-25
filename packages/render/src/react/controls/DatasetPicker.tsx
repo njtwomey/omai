@@ -4,9 +4,9 @@
  * change.
  */
 
+import type { Dataset, Generated } from 'mdml-engine/data'
+import type { DatasetCollection } from 'mdml-engine/datasets'
 import { type ReactNode, useMemo } from 'react'
-import type { Dataset, Generated } from 'whitebox-engine/data'
-import type { DatasetCollection } from 'whitebox-engine/datasets'
 import { collectionOf, type DatasetSelection, entryKnobSpace, loadSelection, selectEntry } from './datasets.ts'
 import { SeedInput } from './SeedInput.tsx'
 import { Select } from './Select.tsx'

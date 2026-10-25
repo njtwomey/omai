@@ -3,7 +3,7 @@
  * tabular regression data with a few informative features and one-dimensional regression curves.
  */
 
-import { elasticNet as elasticNetMethod } from 'whitebox-engine/methods/linear'
+import { elasticNet as elasticNetMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

@@ -1,6 +1,6 @@
 import * as echarts from 'echarts'
+import { normal } from 'mdml-engine/dists'
 import { describe, expect, it } from 'vitest'
-import { normal } from 'whitebox-engine/dists'
 import { withMarginals } from '../figure/grid.ts'
 import { barChart, histogram, paretoChart } from './bars.ts'
 import { subplots } from './compose.ts'

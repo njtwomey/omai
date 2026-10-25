@@ -4,7 +4,7 @@
  * fields and count its rows, which splitting, shuffling and batching build on.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { isTensor, type Tensor } from '../../tensor/index.ts'
 import type { ComparisonData } from './comparisons.ts'
 import type { CorpusData, ParallelData, SequenceLabellingData } from './corpus.ts'
@@ -136,7 +136,7 @@ const ROW_FIELDS: Readonly<Record<DatasetKind, readonly string[]>> = {
  * @concept datasets
  * @example
  * ```ts
- * import { perRowFields, xy } from 'whitebox-engine/data'
+ * import { perRowFields, xy } from 'mdml-engine/data'
  * perRowFields(xy([[1], [2]], [3, 4])) // => ['x', 'y']
  * ```
  */
@@ -153,12 +153,12 @@ function columnLength(column: unknown): number {
     let n = -1
     for (const c of Object.values(column as Record<string, unknown>)) {
       const m = tableColumnLength(c)
-      if (n >= 0 && m !== n) throw new WhiteboxError('shape', `table columns disagree in length (${n} and ${m})`)
+      if (n >= 0 && m !== n) throw new MdmlError('shape', `table columns disagree in length (${n} and ${m})`)
       n = m
     }
     return Math.max(n, 0)
   }
-  throw new WhiteboxError('schema', 'a per-row field must be a tensor, an array or a table of columns')
+  throw new MdmlError('schema', 'a per-row field must be a tensor, an array or a table of columns')
 }
 
 function tableColumnLength(c: unknown): number {
@@ -171,10 +171,10 @@ function tableColumnLength(c: unknown): number {
  *
  * @param data - The dataset.
  * @returns The number of rows.
- * @throws WhiteboxError with code `shape` when two per-row fields disagree.
+ * @throws MdmlError with code `shape` when two per-row fields disagree.
  * @example
  * ```ts
- * import { rowCount, xy } from 'whitebox-engine/data'
+ * import { rowCount, xy } from 'mdml-engine/data'
  * rowCount(xy([[1], [2], [3]], [1, 2, 3])) // => 3
  * ```
  */
@@ -188,7 +188,7 @@ export function rowCount(data: DatasetBase): number {
       n = m
       first = f
     } else if (m !== n) {
-      throw new WhiteboxError('shape', `${data.meta.name}: field ${f} has ${m} rows, ${first} has ${n}`)
+      throw new MdmlError('shape', `${data.meta.name}: field ${f} has ${m} rows, ${first} has ${n}`)
     }
   }
   return Math.max(n, 0)

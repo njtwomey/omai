@@ -7,7 +7,7 @@
  */
 
 import { grad, jacfwd, jvp } from '../../../lib/autodiff/index.ts'
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import type { Key } from '../../../lib/random/index.ts'
 import type { Env } from '../../../lib/rl/index.ts'
 import { scene } from '../../../lib/scene/index.ts'
@@ -137,8 +137,8 @@ const CP = { g: 9.8, massPole: 0.1, total: 1.1, halfLength: 0.5, poleMassLength:
  * @concept optimal-control
  * @example
  * ```ts
- * import { cartPoleModel } from 'whitebox-engine/methods/rl'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { cartPoleModel } from 'mdml-engine/methods/rl'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * toArray(cartPoleModel().dynamics(tensor([0, 1, 0, 0]), tensor([0]))) // => [0.02, 1, 0, 0]
  * ```
  */
@@ -184,8 +184,8 @@ export function cartPoleModel(): ControlModel {
  * @returns The wrapped angles.
  * @example
  * ```ts
- * import { angleNormalizeValue } from 'whitebox-engine/methods/rl'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { angleNormalizeValue } from 'mdml-engine/methods/rl'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * toArray(angleNormalizeValue(tensor([0, -1]))) // => [0, -1]
  * ```
  */
@@ -204,8 +204,8 @@ export function angleNormalizeValue(x: TensorLike): Value {
  * @concept optimal-control
  * @example
  * ```ts
- * import { pendulumModel } from 'whitebox-engine/methods/rl'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { pendulumModel } from 'mdml-engine/methods/rl'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(pendulumModel().cost(tensor([0, 1]), tensor([0]))) // => 0.1
  * ```
  */
@@ -244,8 +244,8 @@ export function pendulumModel(options: { readonly g?: number } = {}): ControlMod
  * @concept optimal-control
  * @example
  * ```ts
- * import { mountainCarContinuousModel } from 'whitebox-engine/methods/rl'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { mountainCarContinuousModel } from 'mdml-engine/methods/rl'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(mountainCarContinuousModel().cost(tensor([0.45, 0]), tensor([1]))) // => 0.1
  * ```
  */
@@ -313,8 +313,8 @@ function acrobotDerivatives(s: readonly Value[], a: Value): Value[] {
  * @concept optimal-control
  * @example
  * ```ts
- * import { acrobotModel } from 'whitebox-engine/methods/rl'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { acrobotModel } from 'mdml-engine/methods/rl'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * const next = toFlat(acrobotModel().dynamics(tensor([0, 0, 0, 0]), tensor([0])))
  * next.map((v) => Math.abs(v) < 1e-15) // => [true, true, true, true]
  * ```
@@ -346,8 +346,8 @@ export function acrobotModel(): ControlModel {
  * @concept optimal-control
  * @example
  * ```ts
- * import { pointMassModel } from 'whitebox-engine/methods/rl'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { pointMassModel } from 'mdml-engine/methods/rl'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(pointMassModel().cost(tensor([0, 0, 0, 0]), tensor([0, 0]))) // => -1
  * ```
  */
@@ -386,8 +386,8 @@ export function pointMassModel(options: PointMassOptions & { readonly goal?: rea
  * @concept optimal-control
  * @example
  * ```ts
- * import { reacher2dModel } from 'whitebox-engine/methods/rl'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { reacher2dModel } from 'mdml-engine/methods/rl'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(reacher2dModel({ target: [0.1, 0.11] }).cost(tensor([0, Math.PI / 2, 0, 0]), tensor([0, 0]))) < 1e-15 // => true
  * ```
  */
@@ -415,8 +415,8 @@ export function reacher2dModel(options: Reacher2DOptions & { readonly target?: r
  * @concept optimal-control
  * @example
  * ```ts
- * import { doubleIntegratorModel } from 'whitebox-engine/methods/rl'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { doubleIntegratorModel } from 'mdml-engine/methods/rl'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * toArray(doubleIntegratorModel({ dt: 0.5 }).dynamics(tensor([0, 1]), tensor([1]))) // => [0.625, 1.5]
  * ```
  */
@@ -451,7 +451,7 @@ export function doubleIntegratorModel(options: DoubleIntegratorOptions = {}): Co
  * @concept optimal-control
  * @example
  * ```ts
- * import { planarQuadrotorModel } from 'whitebox-engine/methods/rl'
+ * import { planarQuadrotorModel } from 'mdml-engine/methods/rl'
  * planarQuadrotorModel({ g: 10 }).equilibrium?.action // => [5, 5]
  * ```
  */
@@ -484,8 +484,8 @@ export function planarQuadrotorModel(
  * @concept optimal-control
  * @example
  * ```ts
- * import { cartDoublePendulumModel } from 'whitebox-engine/methods/rl'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { cartDoublePendulumModel } from 'mdml-engine/methods/rl'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * item(cartDoublePendulumModel().cost(tensor([0, 0, 0, 0, 0, 0]), tensor([0]))) // => -10
  * ```
  */
@@ -519,8 +519,8 @@ export function cartDoublePendulumModel(options: CartDoublePendulumOptions = {})
  * @concept optimal-control
  * @example
  * ```ts
- * import { doubleIntegratorModel, linearize } from 'whitebox-engine/methods/rl'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { doubleIntegratorModel, linearize } from 'mdml-engine/methods/rl'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(linearize(doubleIntegratorModel({ dt: 0.5 }), [0, 0], [0]).B) // => [[0.125], [0.5]]
  * ```
  */
@@ -577,7 +577,7 @@ const blank = (T: number, r: number, c: number): number[][][] =>
  * @concept optimal-control
  * @example
  * ```ts
- * import { doubleIntegratorModel, trajectoryDerivatives } from 'whitebox-engine/methods/rl'
+ * import { doubleIntegratorModel, trajectoryDerivatives } from 'mdml-engine/methods/rl'
  * const d = trajectoryDerivatives(doubleIntegratorModel(), [[1, 0], [0, 0]], [[0], [2]])
  * [d.fx[0], d.lx[0], d.luu[1]] // => [[[1, 0.1], [0, 1]], [2, 0], [[2]]]
  * ```
@@ -638,7 +638,7 @@ export function trajectoryDerivatives(
  * @concept optimal-control
  * @example
  * ```ts
- * import { doubleIntegratorModel, rolloutModel } from 'whitebox-engine/methods/rl'
+ * import { doubleIntegratorModel, rolloutModel } from 'mdml-engine/methods/rl'
  * rolloutModel(doubleIntegratorModel({ dt: 0.5 }), [0, 1], [[0]]) // => { states: [[0, 1], [0.5, 1]], cost: 1 }
  * ```
  */
@@ -671,7 +671,7 @@ export function rolloutModel(
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { doubleIntegratorModel, sequenceCosts } from 'whitebox-engine/methods/rl'
+ * import { doubleIntegratorModel, sequenceCosts } from 'mdml-engine/methods/rl'
  * sequenceCosts(doubleIntegratorModel(), [1, 0], [[[0]], [[1]]]) // => [1, 2]
  * ```
  */
@@ -709,8 +709,8 @@ export function sequenceCosts(
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { controlModelEnv, doubleIntegratorModel } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { controlModelEnv, doubleIntegratorModel } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * controlModelEnv(doubleIntegratorModel()).step([1, 0], [0], key(0)).reward // => -1
  * ```
  */
@@ -766,11 +766,11 @@ export function controlModelEnv(
  * @param state - The state.
  * @param action - The action.
  * @returns The largest absolute difference.
- * @throws WhiteboxError with code `shape` when the sizes differ.
+ * @throws MdmlError with code `shape` when the sizes differ.
  * @concept optimal-control
  * @example
  * ```ts
- * import { doubleIntegratorDynamics, doubleIntegratorModel, doubleIntegratorParameters, modelStepError } from 'whitebox-engine/methods/rl'
+ * import { doubleIntegratorDynamics, doubleIntegratorModel, doubleIntegratorParameters, modelStepError } from 'mdml-engine/methods/rl'
  * const p = doubleIntegratorParameters()
  * modelStepError(doubleIntegratorModel(), (s, a) => doubleIntegratorDynamics(s as never, a, p), [1, 2], [3]) // => 0
  * ```
@@ -783,7 +783,7 @@ export function modelStepError(
 ): number {
   const ours = toFlat(model.dynamics(f64(state, [model.stateSize]), f64(action, [model.actionSize])))
   const theirs = envStep(state, action)
-  if (theirs.length < ours.length) throw new WhiteboxError('shape', 'modelStepError: the environment state is smaller')
+  if (theirs.length < ours.length) throw new MdmlError('shape', 'modelStepError: the environment state is smaller')
   let worst = 0
   for (const [i, v] of ours.entries()) worst = Math.max(worst, Math.abs(v - (theirs[i] ?? 0)))
   return worst

@@ -5,7 +5,7 @@
  * and the best configuration.
  */
 
-import { type Json, meanOf, WhiteboxError } from '../../lib/base/index.ts'
+import { type Json, MdmlError, meanOf } from '../../lib/base/index.ts'
 import {
   type CrossValidationCurve,
   crossValidationCurve,
@@ -126,7 +126,7 @@ function samplerOf(options: TuneEstimatorOptions, space: Space, trials: number):
     case 'gp':
       return gpSampler({ nStartupTrials: startup })
     default:
-      throw new WhiteboxError('value', `tuneEstimator: unknown sampler '${String(s)}'`)
+      throw new MdmlError('value', `tuneEstimator: unknown sampler '${String(s)}'`)
   }
 }
 
@@ -135,7 +135,7 @@ function prunerOf(p: PrunerName | Pruner | undefined): Pruner | undefined {
   if (typeof p !== 'string') return p
   if (p === 'median') return medianPruner({ nStartupTrials: 5, nWarmupSteps: 1 })
   if (p === 'halving') return successiveHalvingPruner({ minResource: 1, reductionFactor: 3 })
-  throw new WhiteboxError('value', `tuneEstimator: unknown pruner '${String(p)}'`)
+  throw new MdmlError('value', `tuneEstimator: unknown pruner '${String(p)}'`)
 }
 
 /** A trial's value as the trials record shows it: its score, a pruned trial's last running mean, else NaN. */
@@ -252,11 +252,11 @@ function historyRecord(study: Study, scoreName: string): Exposition {
  *
  * @param options - The estimator, data, space, folds, scoring, sampler, budget, pruner, surface axes and run options.
  * @returns The study, the best configuration and the exposition records.
- * @throws WhiteboxError with code `value` for an unknown sampler or pruner, or a space with nothing to tune.
+ * @throws MdmlError with code `value` for an unknown sampler or pruner, or a space with nothing to tune.
  */
 export function tuneEstimator(options: TuneEstimatorOptions): Explained<TuneEstimatorResult> {
   const space = options.space ?? (typeof options.estimator === 'function' ? undefined : options.estimator.hyperSpace)
-  if (space === undefined) throw new WhiteboxError('value', 'tuneEstimator: give a space (the estimator has none)')
+  if (space === undefined) throw new MdmlError('value', 'tuneEstimator: give a space (the estimator has none)')
   const trials = options.trials ?? 30
   const sampler = samplerOf(options, space, trials)
   const pruner = prunerOf(options.pruner)

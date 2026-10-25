@@ -1,5 +1,5 @@
+import { circle, rect, scene, structure, timeline } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
-import { circle, rect, scene, structure, timeline } from 'whitebox-engine/scene'
 import { rasteriseScene, timelineFrames, timelineScenes } from './frames.ts'
 import { animatedSvg } from './svg.ts'
 

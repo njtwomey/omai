@@ -1,5 +1,5 @@
+import { calibrationRecord, conformalRecord } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { calibrationRecord, conformalRecord } from 'whitebox-engine/exposition'
 import { stillOf, viewFor } from './registry.ts'
 import { conformalFrames, conformalView, reliabilityView } from './trust.ts'
 

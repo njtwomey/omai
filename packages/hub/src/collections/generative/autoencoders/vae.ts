@@ -3,8 +3,8 @@
  * samples from the prior step by step.
  */
 
-import { vae as vaeMethod } from 'whitebox-engine/methods/generative'
-import { dict, int, real } from 'whitebox-engine/space'
+import { vae as vaeMethod } from 'mdml-engine/methods/generative'
+import { dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 import { GENERATIVE_2D, num } from '../_shared.ts'

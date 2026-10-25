@@ -4,7 +4,7 @@
  * problem the planners can solve.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { type StripsAction, type StripsProblem, strips } from './strips.ts'
 
 /** An s-expression: a symbol or a list. */
@@ -15,11 +15,11 @@ export type SExpr = string | readonly SExpr[]
  *
  * @param text - The source.
  * @returns The top-level expressions.
- * @throws WhiteboxError with code `value` on unbalanced parentheses.
+ * @throws MdmlError with code `value` on unbalanced parentheses.
  * @concept classical-planning
  * @example
  * ```ts
- * import { parseSExpr } from 'whitebox-engine/search'
+ * import { parseSExpr } from 'mdml-engine/search'
  * parseSExpr('(define (domain d) ; comment\n (:requirements :strips))') // => [['define', ['domain', 'd'], [':requirements', ':strips']]]
  * ```
  */
@@ -35,11 +35,11 @@ export function parseSExpr(text: string): SExpr[] {
     else if (t === ')') {
       const done = stack.pop()
       const parent = stack[stack.length - 1]
-      if (done === undefined || parent === undefined) throw new WhiteboxError('value', 'parseSExpr: unbalanced ")"')
+      if (done === undefined || parent === undefined) throw new MdmlError('value', 'parseSExpr: unbalanced ")"')
       parent.push(done)
     } else (stack[stack.length - 1] as SExpr[]).push(t.toLowerCase())
   }
-  if (stack.length !== 1) throw new WhiteboxError('value', 'parseSExpr: unbalanced "("')
+  if (stack.length !== 1) throw new MdmlError('value', 'parseSExpr: unbalanced "("')
   return stack[0] as SExpr[]
 }
 
@@ -91,12 +91,12 @@ export interface PddlProblem {
 const SUPPORTED = new Set([':strips', ':typing', ':equality'])
 
 function list(x: SExpr | undefined, what: string): readonly SExpr[] {
-  if (!Array.isArray(x)) throw new WhiteboxError('value', `pddl: expected a list for ${what}`)
+  if (!Array.isArray(x)) throw new MdmlError('value', `pddl: expected a list for ${what}`)
   return x as readonly SExpr[]
 }
 
 function sym(x: SExpr | undefined, what: string): string {
-  if (typeof x !== 'string') throw new WhiteboxError('value', `pddl: expected a symbol for ${what}`)
+  if (typeof x !== 'string') throw new MdmlError('value', `pddl: expected a symbol for ${what}`)
   return x
 }
 
@@ -107,7 +107,7 @@ function typedList(items: readonly SExpr[]): Typed[] {
     const t = sym(items[i], 'a typed list')
     if (t === '-') {
       const type = items[i + 1]
-      if (Array.isArray(type)) throw new WhiteboxError('not-implemented', 'pddl: either types are not supported')
+      if (Array.isArray(type)) throw new MdmlError('not-implemented', 'pddl: either types are not supported')
       for (const name of pending) out.push({ name, type: sym(type, 'a type') })
       pending = []
       i += 1
@@ -134,13 +134,13 @@ function literal(x: SExpr): Literal {
   if (l[0] === 'not') {
     const inner = atom(l[1])
     if (inner.predicate !== '=') {
-      throw new WhiteboxError('not-implemented', 'pddl: negative preconditions are outside the STRIPS subset')
+      throw new MdmlError('not-implemented', 'pddl: negative preconditions are outside the STRIPS subset')
     }
     return { atom: { predicate: '=', args: [inner.args[0] ?? '', inner.args[1] ?? ''] }, positive: false }
   }
   const head = l[0]
   if (head === 'or' || head === 'forall' || head === 'exists' || head === 'imply' || head === 'when') {
-    throw new WhiteboxError('not-implemented', `pddl: ${head} is outside the STRIPS subset`)
+    throw new MdmlError('not-implemented', `pddl: ${head} is outside the STRIPS subset`)
   }
   return { atom: atom(x), positive: true }
 }
@@ -156,23 +156,23 @@ function section(def: readonly SExpr[], key: string): readonly SExpr[] | undefin
  *
  * @param text - The domain source.
  * @returns The domain.
- * @throws WhiteboxError with code `not-implemented` for requirements or formulas outside the subset, or `value` for
+ * @throws MdmlError with code `not-implemented` for requirements or formulas outside the subset, or `value` for
  * malformed input.
  * @concept classical-planning
  * @example
  * ```ts
- * import { parseDomain } from 'whitebox-engine/search'
+ * import { parseDomain } from 'mdml-engine/search'
  * const d = parseDomain('(define (domain move) (:predicates (at ?x)) (:action go :parameters (?a ?b) :precondition (at ?a) :effect (and (at ?b) (not (at ?a)))))')
  * [d.name, d.actions[0]?.add[0]?.predicate] // => ['move', 'at']
  * ```
  */
 export function parseDomain(text: string): PddlDomain {
   const def = list(parseSExpr(text)[0], 'define')
-  if (def[0] !== 'define') throw new WhiteboxError('value', 'parseDomain: expected (define ...)')
+  if (def[0] !== 'define') throw new MdmlError('value', 'parseDomain: expected (define ...)')
   const name = sym(list(def[1], 'the domain name')[1], 'the domain name')
   for (const r of section(def, ':requirements')?.slice(1) ?? []) {
     if (!SUPPORTED.has(sym(r, 'a requirement'))) {
-      throw new WhiteboxError('not-implemented', `parseDomain: requirement ${String(r)} is outside the STRIPS subset`)
+      throw new MdmlError('not-implemented', `parseDomain: requirement ${String(r)} is outside the STRIPS subset`)
     }
   }
   const types = new Map<string, string>([['object', 'object']])
@@ -203,21 +203,21 @@ export function parseDomain(text: string): PddlDomain {
  *
  * @param text - The problem source.
  * @returns The problem.
- * @throws WhiteboxError with code `value` for malformed input, or `not-implemented` for a goal outside the subset.
+ * @throws MdmlError with code `value` for malformed input, or `not-implemented` for a goal outside the subset.
  * @concept classical-planning
  * @example
  * ```ts
- * import { parseProblem } from 'whitebox-engine/search'
+ * import { parseProblem } from 'mdml-engine/search'
  * const p = parseProblem('(define (problem p) (:domain move) (:objects home shop) (:init (at home)) (:goal (at shop)))')
  * [p.objects.length, p.goal[0]?.args] // => [2, ['shop']]
  * ```
  */
 export function parseProblem(text: string): PddlProblem {
   const def = list(parseSExpr(text)[0], 'define')
-  if (def[0] !== 'define') throw new WhiteboxError('value', 'parseProblem: expected (define ...)')
+  if (def[0] !== 'define') throw new MdmlError('value', 'parseProblem: expected (define ...)')
   const goal = conjunction(section(def, ':goal')?.[1]).map(literal)
   if (goal.some((g) => !g.positive || g.atom.predicate === '=')) {
-    throw new WhiteboxError('not-implemented', 'parseProblem: goals must be conjunctions of atoms')
+    throw new MdmlError('not-implemented', 'parseProblem: goals must be conjunctions of atoms')
   }
   return {
     name: sym(list(def[1], 'the problem name')[1], 'the problem name'),
@@ -236,7 +236,7 @@ export function parseProblem(text: string): PddlProblem {
  * @returns The fact, such as `(on a b)`.
  * @example
  * ```ts
- * import { fact } from 'whitebox-engine/search'
+ * import { fact } from 'mdml-engine/search'
  * [fact('on', ['a', 'b']), fact('handempty', [])] // => ['(on a b)', '(handempty)']
  * ```
  */
@@ -253,11 +253,11 @@ export function fact(predicate: string, args: readonly string[]): string {
  * @param domain - The domain.
  * @param problem - The problem.
  * @returns The STRIPS problem.
- * @throws WhiteboxError with code `value` when the problem names another domain or a type is unknown.
+ * @throws MdmlError with code `value` when the problem names another domain or a type is unknown.
  * @concept classical-planning
  * @example
  * ```ts
- * import { ground, parseDomain, parseProblem } from 'whitebox-engine/search'
+ * import { ground, parseDomain, parseProblem } from 'mdml-engine/search'
  * const d = parseDomain('(define (domain move) (:predicates (at ?x)) (:action go :parameters (?a ?b) :precondition (and (at ?a) (not (= ?a ?b))) :effect (and (at ?b) (not (at ?a)))))')
  * const p = parseProblem('(define (problem p) (:domain move) (:objects home shop) (:init (at home)) (:goal (at shop)))')
  * ground(d, p).actions.map((a) => a.name) // => ['(go home shop)', '(go shop home)']
@@ -265,17 +265,17 @@ export function fact(predicate: string, args: readonly string[]): string {
  */
 export function ground(domain: PddlDomain, problem: PddlProblem): StripsProblem {
   if (problem.domain !== domain.name) {
-    throw new WhiteboxError('value', `ground: the problem is for domain ${problem.domain}, not ${domain.name}`)
+    throw new MdmlError('value', `ground: the problem is for domain ${problem.domain}, not ${domain.name}`)
   }
   const objects = [...domain.constants, ...problem.objects]
   for (const t of [...objects, ...domain.actions.flatMap((a) => a.parameters)]) {
-    if (!domain.types.has(t.type)) throw new WhiteboxError('value', `ground: unknown type ${t.type} of ${t.name}`)
+    if (!domain.types.has(t.type)) throw new MdmlError('value', `ground: unknown type ${t.type} of ${t.name}`)
   }
   const isA = (type: string, want: string): boolean => {
     for (let t = type, guard = 0; guard < 100; guard++) {
       if (t === want) return true
       const parent = domain.types.get(t)
-      if (parent === undefined) throw new WhiteboxError('value', `ground: unknown type ${t}`)
+      if (parent === undefined) throw new MdmlError('value', `ground: unknown type ${t}`)
       if (parent === t) return want === 'object'
       t = parent
     }
@@ -349,11 +349,11 @@ export function ground(domain: PddlDomain, problem: PddlProblem): StripsProblem 
  * @param domainText - The domain source.
  * @param problemText - The problem source.
  * @returns The STRIPS problem.
- * @throws WhiteboxError as {@link parseDomain}, {@link parseProblem} and {@link ground} do.
+ * @throws MdmlError as {@link parseDomain}, {@link parseProblem} and {@link ground} do.
  * @concept classical-planning
  * @example
  * ```ts
- * import { pddl } from 'whitebox-engine/search'
+ * import { pddl } from 'mdml-engine/search'
  * const p = pddl('(define (domain move) (:action go :parameters (?a ?b) :precondition (at ?a) :effect (and (at ?b) (not (at ?a)))))', '(define (problem p) (:domain move) (:objects home shop) (:init (at home)) (:goal (at shop)))')
  * p.goal // => ['(at shop)']
  * ```

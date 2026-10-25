@@ -1,5 +1,5 @@
+import { featureAttributions } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { featureAttributions } from 'whitebox-engine/exposition'
 import { figure } from '../figure/figure.ts'
 import {
   attributionImageView,

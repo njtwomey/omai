@@ -184,8 +184,8 @@ function deterministic(env: Spaces, options: Td3Options, twin: boolean, name: st
  * @reference Lillicrap et al. (2016), Continuous control with deep reinforcement learning.
  * @example
  * ```ts
- * import { ddpg } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
+ * import { ddpg } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
  * ddpg(pendulum.create(), { noise: 'ornstein-uhlenbeck' }).name // => 'ddpg'
  * ```
  */
@@ -209,8 +209,8 @@ export function ddpg<A extends readonly number[] = readonly number[]>(
  * @reference Fujimoto, van Hoof and Meger (2018), Addressing function approximation error in actor-critic methods.
  * @example
  * ```ts
- * import { td3 } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
+ * import { td3 } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
  * td3(pendulum.create(), { policyDelay: 3 }).name // => 'td3'
  * ```
  */
@@ -276,8 +276,8 @@ const LOG_STD_MAX = 2
  *   algorithms and applications.
  * @example
  * ```ts
- * import { sac } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
+ * import { sac } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
  * sac(pendulum.create(), { alpha: 0.2 }).name // => 'sac'
  * ```
  */
@@ -389,8 +389,8 @@ export function sac<A extends readonly number[] = readonly number[]>(
  * @reference Christodoulou (2019), Soft actor-critic for discrete action settings.
  * @example
  * ```ts
- * import { sacDiscrete } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { sacDiscrete } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * sacDiscrete(cartPole.create(), { targetEntropyScale: 0.5 }).name // => 'sacDiscrete'
  * ```
  */

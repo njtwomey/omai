@@ -5,7 +5,7 @@
  * matrices.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -48,7 +48,7 @@ export interface DerivativeResult {
  * @concept finite-differences
  * @example
  * ```ts
- * import { derivative } from 'whitebox-engine/numerics/differentiate'
+ * import { derivative } from 'mdml-engine/numerics/differentiate'
  * Math.abs(derivative(Math.exp, 1).df - Math.E) < 1e-12 // => true
  * ```
  */
@@ -107,8 +107,8 @@ export interface GradientOptions {
  * @returns The derivative estimates, the shape of y.
  * @example
  * ```ts
- * import { gradient } from 'whitebox-engine/numerics/differentiate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { gradient } from 'mdml-engine/numerics/differentiate'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(gradient([1, 2, 4, 7, 11])) // => [1, 1.5, 2.5, 3.5, 4]
  * ```
  */
@@ -118,7 +118,7 @@ export function gradient(y: TensorLike, options: GradientOptions = {}): Value {
   const axis = (options.axis ?? 0) < 0 ? rank + (options.axis ?? 0) : (options.axis ?? 0)
   const n = yv.shape[axis] ?? 0
   const edge = options.edgeOrder ?? 1
-  if (n < edge + 1) throw new WhiteboxError('shape', `gradient: at least ${edge + 1} samples are needed along the axis`)
+  if (n < edge + 1) throw new MdmlError('shape', `gradient: at least ${edge + 1} samples are needed along the axis`)
   // Work on the last axis, then move it back.
   const z = moveaxis(yv, axis, -1)
   const at = (start: number, stop: number): Value => sliceAxis(z, -1, start, stop)
@@ -127,7 +127,7 @@ export function gradient(y: TensorLike, options: GradientOptions = {}): Value {
     typeof spacing === 'number'
       ? Array.from({ length: n }, (_, i) => i * spacing)
       : toFlat(concreteOrThrow(promoteFloat(spacing)[0] as Tensor, 'spacing'))
-  if (xs.length !== n) throw new WhiteboxError('shape', 'gradient: coordinates must match the axis length')
+  if (xs.length !== n) throw new MdmlError('shape', 'gradient: coordinates must match the axis length')
   const vector = (values: readonly number[]): Tensor =>
     fromStorage(Float64Array.from(values), [values.length], 'float64')
   const d = (i: number): number => (xs[i + 1] ?? 0) - (xs[i] ?? 0)
@@ -194,8 +194,8 @@ function steps(x: readonly number[], relative: number): number[] {
  * @returns The Jacobian `[m, n]`.
  * @example
  * ```ts
- * import { jacobianFd } from 'whitebox-engine/numerics/differentiate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { jacobianFd } from 'mdml-engine/numerics/differentiate'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(jacobianFd(([a, b]) => [a * b, a + b], [2, 3])).flat().map((v) => Math.round(v * 1e8) / 1e8) // => [3, 2, 1, 1]
  * ```
  */
@@ -233,8 +233,8 @@ export function jacobianFd(
  * @returns The Hessian `[n, n]`.
  * @example
  * ```ts
- * import { hessianFd } from 'whitebox-engine/numerics/differentiate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { hessianFd } from 'mdml-engine/numerics/differentiate'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(hessianFd(([a, b]) => a * a * b, [1, 2])).flat().map((v) => Math.round(v * 1e5) / 1e5) // => [4, 2, 2, 0]
  * ```
  */
@@ -278,14 +278,13 @@ export function hessianFd(
  * @concept finite-differences
  * @example
  * ```ts
- * import { finiteDifferenceWeights } from 'whitebox-engine/numerics/differentiate'
+ * import { finiteDifferenceWeights } from 'mdml-engine/numerics/differentiate'
  * finiteDifferenceWeights(2, [-1, 0, 1]) // => [1, -2, 1]
  * ```
  */
 export function finiteDifferenceWeights(order: number, stencil: readonly number[], x0 = 0): number[] {
   const n = stencil.length
-  if (order >= n)
-    throw new WhiteboxError('value', 'finiteDifferenceWeights: need more points than the derivative order')
+  if (order >= n) throw new MdmlError('value', 'finiteDifferenceWeights: need more points than the derivative order')
   // c[j][k]: weight of point j for derivative k, built point by point.
   const c: number[][] = Array.from({ length: n }, () => new Array<number>(order + 1).fill(0))
   let c1 = 1
@@ -394,7 +393,7 @@ export const complexOps: {
  * @returns The derivative.
  * @example
  * ```ts
- * import { complexStep, complexOps as C } from 'whitebox-engine/numerics/differentiate'
+ * import { complexStep, complexOps as C } from 'mdml-engine/numerics/differentiate'
  * complexStep((z) => C.mul(z, C.exp(z)), 0) // => 1
  * ```
  */
@@ -412,15 +411,15 @@ export function complexStep(f: (z: ComplexNumber) => ComplexNumber, x: number, h
  * @returns The matrix `[n, n]`.
  * @example
  * ```ts
- * import { differenceMatrix } from 'whitebox-engine/numerics/differentiate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { differenceMatrix } from 'mdml-engine/numerics/differentiate'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(differenceMatrix(3))[1] // => [-0.5, 0, 0.5]
  * ```
  */
 export function differenceMatrix(n: number, options: { readonly order?: 1 | 2; readonly h?: number } = {}): Tensor {
   const order = options.order ?? 1
   const h = options.h ?? 1
-  if (n < (order === 1 ? 3 : 4)) throw new WhiteboxError('value', 'differenceMatrix: too few points')
+  if (n < (order === 1 ? 3 : 4)) throw new MdmlError('value', 'differenceMatrix: too few points')
   const d = new Float64Array(n * n)
   const set = (r: number, c: number, v: number): void => {
     d[r * n + c] = v

@@ -1,4 +1,4 @@
-# whitebox-js: structure (v2)
+# mdml-js: structure (v2)
 
 This document is the table of contents of the whole library as designed: every package, folder and file, with what
 each file contains. It is written for review before implementation and does not describe existing code. Read it top to
@@ -50,7 +50,7 @@ Version 1 is kept at `docs/history/structure-v1.md`.
 17. **New method areas:** scientific machine learning (neural ODEs, PINNs, neural operators, equation discovery),
     active learning, federated learning, fairness, privacy, adversarial robustness, experimentation, LLM wrappers with
     text fingerprinting and watermarking, audio, complex systems, foundations studies.
-18. **A concept taxonomy** in `whitebox-meta`, so encyclopedia notes link to the functions that implement them.
+18. **A concept taxonomy** in `mdml-meta`, so encyclopedia notes link to the functions that implement them.
 
 ## 0.1 Review notes, answered
 
@@ -110,15 +110,15 @@ Version 1 is kept at `docs/history/structure-v1.md`.
 ## 1. Shape of the repository
 
 ```
-whitebox-js/
+mdml-js/
   packages/
-    engine/      whitebox-engine   compute: from tensors to reinforcement learning, plus datasets       (published)
-    render/      whitebox-render   headless figures: ECharts options, layouts, scenes, SVG, animation;  (published)
+    engine/      mdml-engine   compute: from tensors to reinforcement learning, plus datasets       (published)
+    render/      mdml-render   headless figures: ECharts options, layouts, scenes, SVG, animation;  (published)
                                    React bindings in a separate entry point
-    meta/        whitebox-meta     docs metadata: schema, extractor, example runner, worker, concepts   (published)
+    meta/        mdml-meta     docs metadata: schema, extractor, example runner, worker, concepts   (published)
   apps/
-    docs/        how to use whitebox-engine: how-tos, API reference, concepts, live examples, traces (private)
-    gallery/     what whitebox-render can draw: charts, diagrams, scenes, animations, environments    (private)
+    docs/        how to use mdml-engine: how-tos, API reference, concepts, live examples, traces (private)
+    gallery/     what mdml-render can draw: charts, diagrams, scenes, animations, environments    (private)
   oracle/        Python ground truth: golden fixtures and dataset vendoring (uv, pydantic)
   scripts/       repository tooling in TypeScript
   docs/          structure.md (this file), decisions.md, extending.md, conventions.md, concepts.yaml, history/
@@ -126,14 +126,14 @@ whitebox-js/
   CLAUDE.md, INIT.md, AUDIT.md, PORT.md
 ```
 
-`apps/site` is the one site: the gallery shows off `render`, the hub shows off `whitebox-hub` (its pages generated
+`apps/site` is the one site: the gallery shows off `render`, the hub shows off `mdml-hub` (its pages generated
 from the hub catalogue), and the docs document `engine`. Outside projects (the encyclopedia,
 the slide and blog tool) consume the three published packages as release tarballs.
 
 ## 2. Conventions every file follows
 
 **Entry points.** Every folder is an entry point. `packages/engine/src/lib/numerics/linalg/` is imported as
-`whitebox-engine/numerics/linalg`; its parent re-exports it as the namespace `linalg`. Index files are generated from
+`mdml-engine/numerics/linalg`; its parent re-exports it as the namespace `linalg`. Index files are generated from
 folder contents, so adding a file never edits another file.
 
 **Core and applications.** `packages/engine/src/lib/` is the core: general machinery. `packages/engine/src/methods/` is
@@ -148,12 +148,12 @@ of section 1 hold too.
 **Summaries live in the code.** The source explains itself, with no metadata files beside it:
 - A folder's summary is the doc comment that opens its `index.ts`: a short paragraph on what the folder is and what
   you will find in it (not an index of its files). The barrel generator keeps it and writes the exports below it. A
-  subfolder re-exported flat into its parent's entry point (`tensor/ops` into `whitebox-engine/tensor`) carries the
+  subfolder re-exported flat into its parent's entry point (`tensor/ops` into `mdml-engine/tensor`) carries the
   `@inline` tag in its summary.
 - A file opens with its own paragraph: what the file is and what to expect in it (for `shapley.ts`, what Shapley
   values are and which explainers it provides), as a doc comment followed by a blank line or the imports. No to-do
   lists and no lists of every export; hub entries under `collections/` can be one line.
-- `make barrels` fails on a folder or a module file without one; whitebox-meta reads both into the catalogue, and the
+- `make barrels` fails on a folder or a module file without one; mdml-meta reads both into the catalogue, and the
   docs show them on folder and file pages. A private file (`_tree.ts`) that defines a public symbol is shown too, so it
   opens with its paragraph as well (`make examples ARGS=--coverage` lists any that do not).
 
@@ -212,8 +212,8 @@ against finite differences, distribution identities, decomposition reconstructio
 oracle libraries.
 
 **Lazy loading.** Packages are `sideEffects: false` ESM with one entry point per folder, so bundlers load only what a
-page imports. `whitebox-meta/modules` maps every entry point to a lazy `import()`; large datasets are release assets
-fetched on demand; heavy work runs in a Web Worker through `whitebox-meta/worker`.
+page imports. `mdml-meta/modules` maps every entry point to a lazy `import()`; large datasets are release assets
+fetched on demand; heavy work runs in a Web Worker through `mdml-meta/worker`.
 
 ## 3. The common language
 
@@ -344,7 +344,7 @@ of traced search algorithms.
 A `Scene` is a 2-D drawing as data (with an optional 3-D layer projected by a camera). A `Structure` is any
 graph-shaped thing as data: typed nodes, typed edges, groups (plates, repeated blocks), ports and annotations.
 Graphical models, computation graphs, network architectures, decision trees, search trees, automata, pipelines and
-graphs all describe themselves as structures; whitebox-render lays out and draws any structure the same way.
+graphs all describe themselves as structures; mdml-render lays out and draws any structure the same way.
 
 ### 3.14 One worked path
 
@@ -356,10 +356,10 @@ A reader trains a classifier and sees every contract in turn:
    and `truth.bayesError()` gives the floor.
 5. `tune(estimatorObjective(est, data, { splitter: stratifiedKFold(5), metric: logLoss }), est.hyperSpace)` runs a
    study with Bayesian optimisation, each trial a child run.
-6. `describe(fitted)` gives a `Structure` of the network; whitebox-render draws it, plots the trace, and exports the
+6. `describe(fitted)` gives a `Structure` of the network; mdml-render draws it, plots the trace, and exports the
    training animation as a GIF.
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
-## 4. whitebox-engine core, `packages/engine/src/lib/`
+## 4. mdml-engine core, `packages/engine/src/lib/`
 
 The core has 41 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
@@ -411,8 +411,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 
 ### 4.1 `base/`
 
-- `errors.ts`: `WhiteboxError` (codes: shape, dtype, value, domain, schema, convergence, singular, not-implemented,
-  not-differentiable), `isWhiteboxError`, `invariant`, `assertShape`, `assertFinite`.
+- `errors.ts`: `MdmlError` (codes: shape, dtype, value, domain, schema, convergence, singular, not-implemented,
+  not-differentiable), `isMdmlError`, `invariant`, `assertShape`, `assertFinite`.
 - `json.ts`: `Json`, `JsonSchema`, `encodeNumber`/`decodeNumber`, `toJson`/`fromJson` (non-finite numbers, -0, typed
   arrays and bigints round-trip through tagged objects).
 - `results.ts`: the shared result shapes: `Estimate` (value, standard error, interval, level, method), `TestResult`
@@ -560,7 +560,7 @@ lambdify values)
   cap on the terms of intermediate expansions; defaults 2,000,000 units, a fraction of a second, and 2,000 terms.
   When the work runs out, `integrate` keeps the terms it finished and leaves the rest unevaluated, `definiteIntegral`
   falls back to quadrature, `simplify` returns the best form found so far, `factor` and `trigSimplify` the input,
-  and the others, `series` included, throw a WhiteboxError with code `convergence`; `integrate`, `series`,
+  and the others, `series` included, throw a MdmlError with code `convergence`; `integrate`, `series`,
   `simplify`, `factor` and `definiteIntegral` take a budget, `withWorkBudget` sets one for everything it calls).
 - `functions.ts`: function constructors with automatic evaluation: `fn` (any name; unknown names are undefined
   functions), `exp`, `log` (with optional base), `root`, `abs`, `sign`, `floor`, `ceiling`, `factorial`, `gamma`,
@@ -870,7 +870,7 @@ primitives; "custom" means a dedicated rule.
 
 One schema per task kind. Each schema declares its per-row fields, so one `take` and one `split` work for all of them.
 Every schema file also has a validating constructor that fills defaults (names, metadata). `schema/` and `modifiers/`
-are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `Modifier` (`labelNoiseModifier`,
+are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modifier` (`labelNoiseModifier`,
 `missingModifier`, and so on).
 - `schema/common.ts`: `DatasetMeta` (name, description, task, source, url, licence, citation, sha256, recipe, key),
   `DatasetKind`, `Dataset` (the union of every schema), `RecipeStamp`, `perRowFields`, `rowCount`.
@@ -1087,7 +1087,7 @@ string-named adjacency maps; `pgm.connectedComponents`, `topologicalOrder` and `
 oracle: scipy.stats, torch.distributions
 
 `continuous/`, `discrete/` and `multivariate/` are inlined into the entry point (`import { normal, gamma } from
-'whitebox-engine/dists'`); the other subfolders are namespaces (`bijectors`, `families`, `compose`). Sampling is a
+'mdml-engine/dists'`); the other subfolders are namespaces (`bijectors`, `families`, `compose`). Sampling is a
 primitive: its kernel draws from the concrete parameter values under any trace, and its derivative rule is the
 reparameterisation (`dists/_sampling.ts`).
 
@@ -1739,7 +1739,7 @@ jellyfish, Biopython, pyphen
 
 ### 4.22 `search/`: search, constraint satisfaction and planning (AIMA)
 
-oracle: aima-python (typed ports of its search, game and AC-3 code in `oracle/whitebox_oracle/aima_*.py`, since it is
+oracle: aima-python (typed ports of its search, game and AC-3 code in `oracle/mdml_oracle/aima_*.py`, since it is
 not packaged; expansion, goal-test, generation and node counts match exactly under its tie-break by state order) and
 hand-checked textbook fixtures; python-constraint (CSP solution sets); pyperplan (grounding, optimal plan lengths,
 h-add and h-max); pysubgroup (exhaustive WRAcc subgroup discovery); NetworkX (path costs)
@@ -2015,7 +2015,7 @@ A model is plain data. Every model type describes itself as a `Structure` (roles
 deterministic, decision, utility; plates and slices), and inference algorithms emit `message` events, so the drawing of
 a model can animate its inference. The `probprog` engines reuse these algorithms. Every discrete model (Bayes network,
 Markov network, factor graph) is accepted by every discrete inference routine. `models` and `inference` are inlined
-into `whitebox-engine/pgm`; `learning` and `causal` are namespaces.
+into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
 - `factor.ts`: discrete factors in log space (`factor`, `logFactor`, `unitFactor`, `DiscreteVariable`): product
   (`factorProduct`, `factorProductAll`), sum and max marginalisation (`marginalise`, `maxMarginalise`,
   `factorMarginal`), reduction by evidence (`reduceFactor`), normalisation, division (`factorDivide`, 0/0 = 0), powers,
@@ -2109,7 +2109,7 @@ The files follow the encyclopedia's evaluation chapters, in its order. Every met
 `MetricResult` (a few return richer records: curves, reports, PRDC, permutations); per-sample metrics accept sample
 weights where the reference does, and metrics over rows of samples (targets, predictions) can attach a confidence
 interval (`withInterval`). Metrics that need a pretrained network (LPIPS, DISTS, FID, KID, CLIPScore, BERTScore,
-Inception score) take its features, embeddings or outputs, and DNSMOS takes the networks as functions; whitebox ships
+Inception score) take its features, embeddings or outputs, and DNSMOS takes the networks as functions; mdml ships
 none of those weights.
 - `foundations.ts`: choosing a metric for a decision (`expectedCost`, `expectedUtility`, `bayesDecision`,
   `costThreshold`), `withInterval` (bootstrap: percentile, basic and BCa; analytic (Wald); Wilson; DeLong, with
@@ -2360,7 +2360,7 @@ engines. Shared golden programs: `oracle/cases/probprog/_models.py` and `src/tes
 A model is a function of its data that calls the primitives below inside an effect-handler context. `analyse` traces it
 once and describes it; every engine says whether it applies and at what cost; `infer` picks one, records the reason,
 runs it as a traced algorithm and returns a `Posterior`. Adding an engine is adding a file to `engines/` (inlined into
-`whitebox-engine/probprog`). The handler stack (`_stack.ts`) is internal bookkeeping like the transform depth of
+`mdml-engine/probprog`). The handler stack (`_stack.ts`) is internal bookkeeping like the transform depth of
 `autodiff`: pushed and popped by try/finally around one call, empty whenever no program runs.
 - `primitives.ts`: `sample` (observed with `obs`, sample shapes, inference hints), `observe`, `deterministic`, `param`
   (with a support), `plate` (dimensions allocated as NumPyro, subsampling with scaling, param slicing), `factor`,
@@ -2676,7 +2676,7 @@ One representation of a map, used by every application of it: a maze solved by b
 policy, a grid world in reinforcement learning, and the level a ray caster walks through are the same `World`. Movement
 can be discrete (cells and actions) or continuous (positions and headings over the same cells); each application takes
 the world and adds its own view (search problems in `search`, environments in `methods/rl`, renderers in `graphics`
-and whitebox-render).
+and mdml-render).
 
 oracle: none needed for most of it (exact constructions); networkx for connectivity, articulation points, bridges and
 shortest paths on the cell graph and for spanning-tree counts (the matrix-tree theorem behind the uniformity tests of
@@ -2976,12 +2976,12 @@ Left in 4.39 after round two (one line each):
 
 Four layers, each usable without the ones after it:
 
-| layer   | where                            | what it holds                                                                                                                                                  | draws?        |
-| ------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| core    | `packages/engine/src/lib/`       | the primitives of section 4 (a library, as PyTorch or Pyro are)                                                                                                | no            |
-| methods | `packages/engine/src/methods/`   | named algorithms and estimators (lasso, trees, k-means, UMAP, agents), headless, built from the core; each returns typed exposition records beside its results | no            |
-| views   | `packages/render/`               | reusable components, including one view per kind of exposition record                                                                                          | yes           |
-| hub     | `packages/hub/` (`whitebox-hub`) | declarative entries (a method, the dataset collections it suits, its controls, which views to show) and the generated catalogue the hub app is built from      | composes only |
+| layer   | where                          | what it holds                                                                                                                                                  | draws?        |
+| ------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| core    | `packages/engine/src/lib/`     | the primitives of section 4 (a library, as PyTorch or Pyro are)                                                                                                | no            |
+| methods | `packages/engine/src/methods/` | named algorithms and estimators (lasso, trees, k-means, UMAP, agents), headless, built from the core; each returns typed exposition records beside its results | no            |
+| views   | `packages/render/`             | reusable components, including one view per kind of exposition record                                                                                          | yes           |
+| hub     | `packages/hub/` (`mdml-hub`)   | declarative entries (a method, the dataset collections it suits, its controls, which views to show) and the generated catalogue the hub app is built from      | composes only |
 
 **Why four.** The core does not decide how it is used; the encyclopedia, a blog or a slide deck define their own uses.
 Methods are worked algorithms anyone can call. Views make the exposition reusable: a lasso, an elastic net and a GAM's
@@ -3063,7 +3063,7 @@ kind, each usable on its own in any page).
 - `react/HubEntryView.tsx`: lays out an entry from its declaration (dataset picker, method controls, the declared
   views, the trace player) and re-runs it on every change, debounced, in a Web Worker (`react/_worker.ts`, by catalogue
   id) or on the main thread for entries outside the catalogue, with a size limit (`maxRows`) for slow methods. A slot
-  names a record kind and optionally a `whitebox-render/react` component with props made on the page (an
+  names a record kind and optionally a `mdml-render/react` component with props made on the page (an
   `EpisodePlayer`'s environment and policy); a run may report progress with the records so far, which the widget
   draws live. The only React in the package, and composition only.
   Entries are data: `make layers` lets the hub import the engine and render's public views, but no chart library, and
@@ -3119,7 +3119,7 @@ exposition of the mathematics lives).
 for pickers: `classification2d`, `regression1d`, `clustering2d`, `density2d`, `anomaly2d`, `manifold3d`,
 `timeSeries`, `comparisons` (games and tournaments for rating systems), `textCorpora` and `environments` (the rl
 environments by family), each entry with its name, its generator, the `Space` of its knobs with demo defaults, and
-the methods it suits. whitebox-render turns a collection
+the methods it suits. mdml-render turns a collection
 and a method's `hyperSpace` into a dataset picker and parameter controls (see `react/controls/`).
 
 **Phases** (first pass; later phases follow the same contract):
@@ -3596,7 +3596,7 @@ built from: `text` (core), `models/hmm.ts`, `models/crf.ts`, `linear`, `naive-ba
 `llm/` (wrappers around language models)
 oracle: Hugging Face transformers for scoring and watermark detection on a small model
 built from: `nn/language-model.ts`, `nn/decoding.ts`, `text`, `retrieval`, `models/rating.ts`, `stats`
-- `adapters.ts`: `LanguageModel` implementations: local whitebox models, a deterministic mock for tests, and HTTP
+- `adapters.ts`: `LanguageModel` implementations: local mdml models, a deterministic mock for tests, and HTTP
   adapters for OpenAI-compatible and Anthropic-style APIs that take caller-supplied credentials and `fetch` (the library
   stores no keys).
 - `generation.ts`: sampling strategies over any language model, constrained generation (grammars, JSON schemas),
@@ -3821,7 +3821,7 @@ built from: `nn`, `losses/generative.ts`, `dists`, `stochastic` (SDEs and score 
 oracle: PyTorch (forward and backward with exported weights), Hugging Face for tokenizer-level checks
 built from: `nn`, `optim`, `losses`, `data`, `learn`, `metrics`
 
-Each model has `init`, `apply`, `describe` (its structure, drawn by whitebox-render), a traced training recipe, and an
+Each model has `init`, `apply`, `describe` (its structure, drawn by mdml-render), a traced training recipe, and an
 estimator where that makes sense. Sizes are chosen to train in a browser.
 
 Every trainer records how training went, so a page can play it: the parameters at up to 40 geometrically spaced epochs
@@ -4281,14 +4281,14 @@ gradient, reweighing and repair, the frontier, the impossibility); `exposition/4
 `42-conformal-intervals`; the `trust/` section holds conformal sets, coverage as data arrive, uncertainty, shift,
 robustness and the model card.
 
-## 6. whitebox-render, `packages/render/src/`
+## 6. mdml-render, `packages/render/src/`
 
 Headless first: everything outside `react/` returns data (ECharts options, layouts, scenes, SVG strings, encoded
 animation files) and runs in Node, so the slide and blog tools can render without a browser. `react/` binds the data to
-React 19. The package depends on whitebox-engine for its contracts (`Scene`, `Structure`, `Timeline`, `Run`, `Space`,
+React 19. The package depends on mdml-engine for its contracts (`Scene`, `Structure`, `Timeline`, `Run`, `Space`,
 `Distribution`) and never on its algorithms.
 
-Entry points: `whitebox-render` (every headless part), `whitebox-render/<part>`, `whitebox-render/react`.
+Entry points: `mdml-render` (every headless part), `mdml-render/<part>`, `mdml-render/react`.
 
 oracle: none; checked by snapshot tests of options, scenes and structures, and by browser tests in Chromium.
 
@@ -4515,11 +4515,11 @@ Design rules:
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
   or a prop), dark by default; no system-preference detection.
 
-## 7. whitebox-meta, `packages/meta/src/`
+## 7. mdml-meta, `packages/meta/src/`
 
 Turns the source into documentation data, runs examples and links functions to concepts. Entry points:
-`whitebox-meta` (schema, runner, concepts), `whitebox-meta/extract` (Node only), `whitebox-meta/modules`,
-`whitebox-meta/worker`, `whitebox-meta/react`, and the generated `whitebox-meta/catalogue.json`.
+`mdml-meta` (schema, runner, concepts), `mdml-meta/extract` (Node only), `mdml-meta/modules`,
+`mdml-meta/worker`, `mdml-meta/react`, and the generated `mdml-meta/catalogue.json`.
 
 `schema/`
 - `catalogue.ts`: `SymbolDoc` (id, package, module, name, kind, signature, summary, description, params, returns,
@@ -4570,7 +4570,7 @@ Turns the source into documentation data, runs examples and links functions to c
 `react/`
 - `live-example.ts`: `useLiveExample`, the state of an editable example (code, latest result, run on demand and on
   first view); the site draws it (`apps/site/src/docs/LiveExample.tsx`: highlighted editor, outcomes beside each
-  `// =>` line). Figures and traces rendered with whitebox-render come later.
+  `// =>` line). Figures and traces rendered with mdml-render come later.
 - `CodeEditor.tsx`: CodeMirror 6 with completion from the catalogue.
 - `ValueView.tsx`: any output (numbers, tensors, distributions, structures, scenes, charts, runs, timelines).
 - `ApiSymbol.tsx`, `ModuleIndex.tsx`, `Search.tsx`: browsing the catalogue.
@@ -4581,20 +4581,20 @@ Turns the source into documentation data, runs examples and links functions to c
 ## 8. The site, `apps/site/`
 
 One private Vite and React 19 app, served by `make dev` (http://localhost:5300) and built by `make site`, with three
-sections on one shell, in priority order: the gallery shows off whitebox-render, the hub shows off whitebox-hub, and
+sections on one shell, in priority order: the gallery shows off mdml-render, the hub shows off mdml-hub, and
 the docs document the engine. It consumes the packages exactly as an outside project does. aifn-engine's
 `examples/` app is the template: its shell, recipe registry, live-example pages, Markdown and docstring-driven docs
 pages are recycled rather than reinvented.
 
 `src/shell/`: the top bar with the three sections, a dark and light toggle at the top right (dark by default,
 remembered, set before first paint; no system-preference detection),
-theme tokens from `whitebox-render/theme`, Tailwind CSS, a dependency-free path router (`usePath`, `navigate`,
+theme tokens from `mdml-render/theme`, Tailwind CSS, a dependency-free path router (`usePath`, `navigate`,
 `Link`), the contents sidebar (`TocSidebar`: any tree of `TocNode`s, a filter, folders closed but for the way to
 the current page, folder names linking their pages) with previous and next links over the same tree (`PrevNext`, arrow
 keys too), and the recipe and code-view components (a live figure beside its own source, `ErrorBoundary` keeping a
 failing example to itself).
 
-`src/gallery/` (hand-written: what whitebox-render can show and how its pieces interact)
+`src/gallery/` (hand-written: what mdml-render can show and how its pieces interact)
 - Pages: the index of sections, a section, an entry (a figure with its source and export menu).
 - `recipes/<section>/NN-name.tsx`, gathered by `import.meta.glob`: charts, layouts (grids, shared axes, marginals,
   aspects, limit policies), colour and themes, statistical, fields (smooth grids, contours, regions), text and maths
@@ -4604,11 +4604,11 @@ failing example to itself).
   (maps, mazes, the ray-cast view), three-d. Every figure has one frame (expand, export) and a live control. Toy data only, no model training:
   model demos belong to the hub.
 
-`src/hub/` (generated from `whitebox-hub`'s catalogue)
+`src/hub/` (generated from `mdml-hub`'s catalogue)
 - Pages: collections and tags, a collection, an entry through `HubEntryView` (dataset picker, method controls, its
   views, its trace, its source). Adding a `defineEntry` adds its page; there is no per-entry site code.
 
-`src/docs/` (generated from `whitebox-meta`'s catalogue of the engine's TSDoc)
+`src/docs/` (generated from `mdml-meta`'s catalogue of the engine's TSDoc)
 - Navigation mirrors the source tree exactly (`lib/<domain>/<subfolder>/<file>`, `methods/<area>/...`, then the
   symbols of each file), as aifn-engine's docs: collapsed by default, only the current path expanded, a filter on
   top. Folder pages show the folder's summary (from its `index.ts`) and file cards each file's opening paragraph.
@@ -4624,14 +4624,14 @@ failing example to itself).
   and fetched on the first hover) and a search index of every export's summary (fetched when the search box is used,
   or once the page is idle), then `manifest.json` naming the current version.
 - Type names in signatures, parameter types and prose (`{@link}`, inline code) link their page and, on hover or
-  keyboard focus, show the type's declaration (highlighted) and lead sentence in whitebox-render's `Popover`
+  keyboard focus, show the type's declaration (highlighted) and lead sentence in mdml-render's `Popover`
   (`src/docs/TypeHover.tsx`); Escape or moving away closes it. Names in code resolve only through the file's `refs`,
   so globals and private types stay plain.
 - `plugins/`: `docs-data.ts` (writing the files, the staleness check), `build-docs.ts` (the command behind
   `make docs-catalogue`) and the Vite plugin `docs-catalogue.ts`. In dev it serves `<base>docs-data/*` from the
-  folder and `virtual:whitebox-docs/index` (the current index's URL); after an edit to the engine it regenerates in a
+  folder and `virtual:mdml-docs/index` (the current index's URL); after an edit to the engine it regenerates in a
   background process (debounced, low priority) while still serving the previous version, then sends
-  `whitebox-docs:update` and open pages fetch the new index. In a build it copies the files into `dist/docs-data/`.
+  `mdml-docs:update` and open pages fetch the new index. In a build it copies the files into `dist/docs-data/`.
 - Each section's code loads when the section is first visited (`React.lazy` in `main.tsx`), so the docs load none
   of the gallery's recipes or the hub's collections.
 
@@ -4644,11 +4644,11 @@ networkx, python-control with slycot), `oracle-torch` (torch, torchmetrics, torc
 rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel with ecos for its LPs, nashpy),
 `oracle-misc` (lifelines, mlxtend, pysubgroup, umap-learn, hdbscan, dowhy, econml, causal-learn, pysindy, faiss-cpu,
 implicit, optuna).
-- `oracle/whitebox_oracle/settings.py`: `OracleSettings` (reads the root `.env`; output paths; selection by path prefix
+- `oracle/mdml_oracle/settings.py`: `OracleSettings` (reads the root `.env`; output paths; selection by path prefix
   or group).
-- `oracle/whitebox_oracle/fixture.py`: `Case` and `Fixture` (inputs, outputs, tolerances, reference library and version,
+- `oracle/mdml_oracle/fixture.py`: `Case` and `Fixture` (inputs, outputs, tolerances, reference library and version,
   seed), JSON encoding of non-finite and complex numbers, deterministic writing.
-- `oracle/whitebox_oracle/cli.py`: `generate`, `check` (regenerate and diff), `list`.
+- `oracle/mdml_oracle/cli.py`: `generate`, `check` (regenerate and diff), `list`.
 - `oracle/cases/<domain>/<file>.py`: one case file per engine file with a Python counterpart, at the mirrored path.
 - `oracle/datasets/<name>.py`: dataset vendoring (pinned source, checksum, generated `*.data.ts` or a release asset with
   a manifest entry).
@@ -4659,7 +4659,7 @@ implicit, optuna).
 Python never runs in `make test`. `make fixtures` regenerates; a scheduled CI job runs `make fixtures-check` group by
 group.
 
-**The fixture standard.** Fixtures are a safeguard: they show that whitebox-js agrees with the established Python
+**The fixture standard.** Fixtures are a safeguard: they show that mdml-js agrees with the established Python
 library for the same computation. They do not set a higher bar than that library.
 1. Reference: the prebuilt numpy, scipy, scikit-learn, statsmodels (and so on) function itself, called as a user
    would. No arbitrary-precision references, and no reimplementations when a library function exists.
@@ -4685,7 +4685,7 @@ library for the same computation. They do not set a higher bar than that library
   merges and before a release.
 - `scripts/verify.ts`: the scoped gate (changed files against a base, `vitest related`, fixture-to-test lookup, the
   examples of the changed engine source files through `scripts/examples.ts --only <files>` (about 3 seconds for a
-  typical change, most of it building the catalogue; all examples when `scripts/` or whitebox-meta's `extract/`,
+  typical change, most of it building the catalogue; all examples when `scripts/` or mdml-meta's `extract/`,
   `runner/` or `modules/` change), scoped pyright and fixture checks).
 - `mise.toml`: Node, pnpm, Python and uv versions.
 - `scripts/barrels.ts`: every `index.ts` below its hand-written summary, and the module map; `--check`; fails on a
@@ -4697,7 +4697,7 @@ library for the same computation. They do not set a higher bar than that library
   `--coverage` reports documentation coverage). How-tos join it when they exist.
 - `apps/site/plugins/build-docs.ts` (`make docs-catalogue`): the docs catalogue extracted once (about 3 seconds) and
   written as the site's static docs files (section 8); `--if-stale` returns at once when they are newer than the
-  engine's source, whitebox-meta's `extract/` and `schema/`, and the generator.
+  engine's source, mdml-meta's `extract/` and `schema/`, and the generator.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).
 - `scripts/pack.ts`: build and pack the three packages; collect release assets with a manifest.
@@ -4711,7 +4711,7 @@ library for the same computation. They do not set a higher bar than that library
 
 ### scikit-learn
 
-| sklearn                                                     | whitebox                                              |
+| sklearn                                                     | mdml                                                  |
 | ----------------------------------------------------------- | ----------------------------------------------------- |
 | `base`, estimator API                                       | `lib/learn/estimator.ts`                              |
 | `linear_model`                                              | `methods/linear/`                                     |
@@ -4744,7 +4744,7 @@ library for the same computation. They do not set a higher bar than that library
 
 ### PyTorch and its ecosystem
 
-| library                               | whitebox                                                                    |
+| library                               | mdml                                                                        |
 | ------------------------------------- | --------------------------------------------------------------------------- |
 | `torch.Tensor`, operations            | `lib/tensor/`                                                               |
 | `torch.autograd`, `torch.func`        | `lib/autodiff/`                                                             |
@@ -4765,7 +4765,7 @@ library for the same computation. They do not set a higher bar than that library
 
 ### NumPy, SciPy and SymPy
 
-| library                               | whitebox                                          |
+| library                               | mdml                                              |
 | ------------------------------------- | ------------------------------------------------- |
 | `numpy` arrays and ufuncs             | `lib/tensor/`                                     |
 | `numpy.random`                        | `lib/random/`                                     |
@@ -4787,7 +4787,7 @@ library for the same computation. They do not set a higher bar than that library
 
 ### Other libraries
 
-| library                           | whitebox                                                                                          |
+| library                           | mdml                                                                                              |
 | --------------------------------- | ------------------------------------------------------------------------------------------------- |
 | statsmodels                       | `methods/linear/`, `methods/timeseries/`, `lib/stats/`                                            |
 | mgcv, pygam, gratia               | `methods/gam/`, `lib/stats/smoothing/`                                                            |
@@ -4835,16 +4835,16 @@ ones that import it rely on it. The first pass is a thin vertical slice that pro
 4. `pgm` (factors, Bayes networks, variable elimination, `toStructure`), `losses` (`mse`, cross-entropy), `nn` (linear
    layers, activations, `Sequential`, `fit`, `describe`), `rl` (`env.ts`, `gym.ts`, `rollout.ts`) with CartPole and its
    render, `data` (regression schema, generator and truth) with `friedman1` and `diabetes`, `metrics/regression.ts`.
-5. whitebox-render: theme, `charts/lines.ts`, `layout/layered.ts`, `structures/diagram.ts`, `trace/metrics.ts`,
+5. mdml-render: theme, `charts/lines.ts`, `layout/layered.ts`, `structures/diagram.ts`, `trace/metrics.ts`,
    `animation/gif.ts`, `svg/`, `react/` (Chart, SceneView, StructureView, TraceView, Player).
-6. whitebox-meta: schema, extractor, runner with `// =>` checks, module map, concept taxonomy; the docs app (with its gallery)
+6. mdml-meta: schema, extractor, runner with `// =>` checks, module map, concept taxonomy; the docs app (with its gallery)
    showing the slice; the oracle producing the first fixtures; CI, packing and the smoke test.
 
 After the slice, every remaining file in this document becomes a build task, taken in import order for the core and in
 "built from" order for methods.
 
 Effort: the engine (core, then methods) is built at high effort, each domain to its full plan line before the next
-one. whitebox-render, whitebox-meta and the docs app follow at normal effort, guided by the design rules of section 6
+one. mdml-render, mdml-meta and the docs app follow at normal effort, guided by the design rules of section 6
 and reusing aifn-engine's render and docs code where it already works.
 
 ## 13. Questions for the reviewer
@@ -4862,6 +4862,6 @@ and reusing aifn-engine's render and docs code where it already works.
 6. **Scenes and structures in the engine.** Both live low in the engine (`lib/scene`) so models and environments can describe
    themselves; the alternative is a small fifth package.
 7. **Datasets in the engine package.** Embedded static data enlarges the engine tarball; the alternative is a
-   `whitebox-datasets` package.
+   `mdml-datasets` package.
 8. **Scope.** Anything missing that a comprehensive library for machine learning, statistics, numerics and their
    mathematical foundations should have.

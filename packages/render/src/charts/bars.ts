@@ -5,9 +5,9 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { WhiteboxError } from 'whitebox-engine/base'
-import { type HistogramOptions, histogram as histogramOf } from 'whitebox-engine/stats'
-import { type TensorLike, toFlat } from 'whitebox-engine/tensor'
+import { MdmlError } from 'mdml-engine/base'
+import { type HistogramOptions, histogram as histogramOf } from 'mdml-engine/stats'
+import { type TensorLike, toFlat } from 'mdml-engine/tensor'
 import { extentOf } from '../figure/limits.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { colourFor, modeOf, numbers } from './_data.ts'
@@ -50,7 +50,7 @@ const BAR_MAX = 48
  * @returns The offset of the bar's centre.
  * @example
  * ```ts
- * import { barOffset } from 'whitebox-render/charts'
+ * import { barOffset } from 'mdml-render/charts'
  * barOffset(100, 1, 0) // => 0
  * barOffset(100, 2, 0) < 0 && barOffset(100, 2, 1) > 0 // => true
  * ```
@@ -77,10 +77,10 @@ interface ErrorApi {
  * @param groups - The groups (or a single array of heights).
  * @param options - Stacking, orientation, labels and colour mode.
  * @returns The layer, with the categories on the x (or y) axis.
- * @throws WhiteboxError with code `shape` when a group does not have one value per category.
+ * @throws MdmlError with code `shape` when a group does not have one value per category.
  * @example
  * ```ts
- * import { bars } from 'whitebox-render/charts'
+ * import { bars } from 'mdml-render/charts'
  * const l = bars(['a', 'b'], [{ name: 'n', values: [3, 5] }])
  * l.xCategories // => ['a', 'b']
  * l.extent // => { y: [0, 5], baseline: 'y' }
@@ -119,7 +119,7 @@ export function bars(
   }
   list.forEach((g, i) => {
     const v = numbers(g.values)
-    if (v.length !== categories.length) throw new WhiteboxError('shape', 'bars: give one value per category')
+    if (v.length !== categories.length) throw new MdmlError('shape', 'bars: give one value per category')
     const colour = colourFor(g.colour, mode, (options.colourOffset ?? 0) + i)
     v.forEach((h, k) => {
       if (h >= 0) totals[k] = (totals[k] ?? 0) + h
@@ -231,7 +231,7 @@ interface RectApi {
 }
 
 /**
- * A histogram of values as a layer: bins from whitebox-engine's `stats.histogram` (counts, densities, the automatic bin
+ * A histogram of values as a layer: bins from mdml-engine's `stats.histogram` (counts, densities, the automatic bin
  * rules, explicit edges, weights), drawn as adjoining bars on a value axis, so uneven bins keep their widths.
  *
  * @param values - The data.
@@ -239,7 +239,7 @@ interface RectApi {
  * @returns The layer.
  * @example
  * ```ts
- * import { histogram } from 'whitebox-render/charts'
+ * import { histogram } from 'mdml-render/charts'
  * const l = histogram([0, 1, 1, 2, 3], { bins: 3 })
  * l.extent // => { x: [0, 3], y: [0, 2], baseline: 'y' }
  * ```
@@ -314,7 +314,7 @@ export function histogram(values: TensorLike | readonly number[], options: Histo
  * @returns The bar layer and the cumulative-share layer.
  * @example
  * ```ts
- * import { pareto } from 'whitebox-render/charts'
+ * import { pareto } from 'mdml-render/charts'
  * pareto(['a', 'b'], [1, 3])[1].series[0].data // => [0.75, 1]
  * ```
  */
@@ -360,7 +360,7 @@ export function pareto(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { paretoChart } from 'whitebox-render/charts'
+ * import { paretoChart } from 'mdml-render/charts'
  * const o = paretoChart(['a', 'b', 'c'], [1, 5, 2])
  * o.xAxis[0].data // => ['b', 'c', 'a']
  * ```
@@ -386,7 +386,7 @@ export function paretoChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { barChart } from 'whitebox-render/charts'
+ * import { barChart } from 'mdml-render/charts'
  * barChart(['x', 'y'], [1, 2], { horizontal: true }).yAxis[0].data // => ['x', 'y']
  * ```
  */

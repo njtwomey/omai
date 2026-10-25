@@ -6,7 +6,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { FeatureAttributions, Importances } from 'whitebox-engine/exposition'
+import type { FeatureAttributions, Importances } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { cartesian, type Layer, layer } from '../charts/plot.ts'
@@ -41,8 +41,8 @@ export interface WaterfallViewOptions extends AttributionViewOptions {
  * @returns Feature indices.
  * @example
  * ```ts
- * import { featureAttributions } from 'whitebox-engine/exposition'
- * import { attributionOrder } from 'whitebox-render/views'
+ * import { featureAttributions } from 'mdml-engine/exposition'
+ * import { attributionOrder } from 'mdml-render/views'
  * const r = featureAttributions({ method: 'exact', features: ['a', 'b'], output: 'y', baseValue: 0, values: [[0.1, -2]], data: [[0, 0]], predictions: [-1.9] })
  * attributionOrder(r) // => [1, 0]
  * ```
@@ -292,8 +292,8 @@ export function waterfallView(record: FeatureAttributions, options: WaterfallVie
  * @returns The frames.
  * @example
  * ```ts
- * import { featureAttributions } from 'whitebox-engine/exposition'
- * import { attributionFrames } from 'whitebox-render/views'
+ * import { featureAttributions } from 'mdml-engine/exposition'
+ * import { attributionFrames } from 'mdml-render/views'
  * const r = featureAttributions({
  *   method: 'sampling', features: ['a', 'b'], output: 'y', baseValue: 0, values: [[1, -1]], data: [[0, 0]], predictions: [0],
  *   convergence: { row: 0, samples: [10, 20], estimates: [[0.8, -0.9], [1, -1]] },
@@ -527,8 +527,8 @@ export function dependenceScatterView(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { importances } from 'whitebox-engine/exposition'
- * import { importanceView } from 'whitebox-render/views'
+ * import { importances } from 'mdml-engine/exposition'
+ * import { importanceView } from 'mdml-render/views'
  * const r = importances({ method: 'permutation', features: ['a', 'b'], mean: [0.2, 0.01], spread: [0.02, 0.01], metric: 'accuracy', direction: 'higher' })
  * Array.isArray(importanceView(r).series) // => true
  * ```
@@ -606,8 +606,8 @@ interface ForceSegment {
  * @returns The segments, the base value and the end the attributions reach.
  * @example
  * ```ts
- * import { featureAttributions } from 'whitebox-engine/exposition'
- * import { forceSegments } from 'whitebox-render/views'
+ * import { featureAttributions } from 'mdml-engine/exposition'
+ * import { forceSegments } from 'mdml-render/views'
  * const r = featureAttributions({ method: 'exact', features: ['a', 'b'], output: 'y', baseValue: 1, values: [[2, -0.5]], data: [[0, 0]], predictions: [2.5] })
  * forceSegments(r, 0).segments.map((s) => [s.start, s.end]) // => [[0.5, 2.5], [2.5, 3]]
  * ```

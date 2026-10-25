@@ -8,9 +8,9 @@ from importlib.metadata import version
 import numpy as np
 from gensim.corpora import Dictionary
 from gensim.models.coherencemodel import CoherenceModel
+from mdml_oracle.fixture import Case, case
 from scipy.optimize import minimize_scalar
 from scipy.stats import zipfian
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"numpy": version("numpy"), "scipy": version("scipy"), "gensim": version("gensim")}
 

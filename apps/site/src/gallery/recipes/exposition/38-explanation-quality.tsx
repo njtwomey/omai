@@ -1,11 +1,11 @@
+import { diabetes } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { takeData } from 'mdml-engine/learn'
+import { randomForestRegressor } from 'mdml-engine/methods/ensemble'
+import { evaluateExplanations } from 'mdml-engine/methods/explain'
+import { key } from 'mdml-engine/random'
+import { ControlPanel, CurvesView, ExplanationQualityView, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { diabetes } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { takeData } from 'whitebox-engine/learn'
-import { randomForestRegressor } from 'whitebox-engine/methods/ensemble'
-import { evaluateExplanations } from 'whitebox-engine/methods/explain'
-import { key } from 'whitebox-engine/random'
-import { ControlPanel, CurvesView, ExplanationQualityView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

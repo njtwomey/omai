@@ -5,7 +5,7 @@
  * simplices, norm balls, affine sets, half-spaces and the PSD cone.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { eigh, solve, svd } from '../numerics/linalg/index.ts'
 import {
   abs,
@@ -56,8 +56,8 @@ const flatPrimal = (x: Value): Float64Array => Float64Array.from(toFlat(primalOf
  * @concept proximal-operators
  * @example
  * ```ts
- * import { proxL1 } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxL1 } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxL1([3, -0.5, -2], 1)) // => [2, 0, -1]
  * ```
  */
@@ -74,8 +74,8 @@ export function proxL1(x: TensorLike, t: TensorLike): Value {
  * @returns The shrunk value (zero when |x|_2 <= t).
  * @example
  * ```ts
- * import { proxL2 } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxL2 } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxL2([3, 4], 2.5)) // => [1.5, 2]
  * ```
  */
@@ -93,8 +93,8 @@ export function proxL2(x: TensorLike, t: number): Value {
  * @returns The scaled value.
  * @example
  * ```ts
- * import { proxSquaredL2 } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxSquaredL2 } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxSquaredL2([2, -4], 1)) // => [1, -2]
  * ```
  */
@@ -112,8 +112,8 @@ export function proxSquaredL2(x: TensorLike, t: number): Value {
  * @returns The proximal point.
  * @example
  * ```ts
- * import { proxElasticNet } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxElasticNet } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxElasticNet([3, -1], 1, { l1: 1, l2: 1 })) // => [1, 0]
  * ```
  */
@@ -131,8 +131,8 @@ export function proxElasticNet(x: TensorLike, t: number, weights: { readonly l1:
  * @returns The proximal point.
  * @example
  * ```ts
- * import { proxGroupLasso } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxGroupLasso } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxGroupLasso([3, 4, 0.1, 0.1], 2.5, [0, 0, 1, 1])) // => [1.5, 2, 0, 0]
  * ```
  */
@@ -143,7 +143,7 @@ export function proxGroupLasso(
   weights?: readonly number[],
 ): Value {
   const v = reshape(asTensor(x), [-1])
-  if (groups.length !== v.shape[0]) throw new WhiteboxError('shape', 'proxGroupLasso: one group index per entry')
+  if (groups.length !== v.shape[0]) throw new MdmlError('shape', 'proxGroupLasso: one group index per entry')
   const g = groups.reduce((m, i) => Math.max(m, i + 1), 0)
   const w = Float64Array.from({ length: g }, (_, i) => t * (weights?.[i] ?? 1))
   const ids = fromStorage(Int32Array.from(groups), [groups.length], 'int32')
@@ -161,8 +161,8 @@ export function proxGroupLasso(
  * @returns The proximal point (differentiable where singular values are distinct).
  * @example
  * ```ts
- * import { proxNuclear } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxNuclear } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxNuclear([[3, 0], [0, 1]], 2)) // => [[1, 0], [0, 0]]
  * ```
  */
@@ -180,8 +180,8 @@ export function proxNuclear(x: TensorLike, t: number): Value {
  * @returns The proximal point.
  * @example
  * ```ts
- * import { proxHuber } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxHuber } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxHuber([1, 10], 1, 1)) // => [0.5, 9]
  * ```
  */
@@ -198,8 +198,8 @@ export function proxHuber(x: TensorLike, t: number, delta = 1): Value {
  * @returns The proximal point.
  * @example
  * ```ts
- * import { proxLinf } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxLinf } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxLinf([3, 1], 1)) // => [2, 1]
  * ```
  */
@@ -216,8 +216,8 @@ export function proxLinf(x: TensorLike, t: number): Value {
  * @returns The proximal operator of g*.
  * @example
  * ```ts
- * import { proxConjugate, proxL1 } from 'whitebox-engine/optim'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { proxConjugate, proxL1 } from 'mdml-engine/optim'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * // The conjugate of |x|_1 is the indicator of the unit infinity ball: its prox clips to [-1, 1].
  * toArray(proxConjugate((x, t) => proxL1(x, t))(tensor([3, -0.5]), 2)) // => [1, -0.5]
  * ```
@@ -236,8 +236,8 @@ export function proxConjugate(prox: Prox): Prox {
  * @concept projections
  * @example
  * ```ts
- * import { projectBox } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectBox } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectBox([-2, 0.5, 3], 0, 1)) // => [0, 0.5, 1]
  * ```
  */
@@ -252,8 +252,8 @@ export function projectBox(x: TensorLike, lo: TensorLike, hi: TensorLike): Value
  * @returns The projection.
  * @example
  * ```ts
- * import { projectNonnegative } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectNonnegative } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectNonnegative([-1, 2])) // => [0, 2]
  * ```
  */
@@ -288,13 +288,13 @@ function simplexThreshold(a: Float64Array, z: number): { readonly mask: Float64A
  * @concept projections
  * @example
  * ```ts
- * import { projectSimplex } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectSimplex } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectSimplex([0.5, 1, -1])) // => [0.25, 0.75, 0]
  * ```
  */
 export function projectSimplex(x: TensorLike, z = 1): Value {
-  if (!(z > 0)) throw new WhiteboxError('value', `projectSimplex: the total must be positive, got ${z}`)
+  if (!(z > 0)) throw new MdmlError('value', `projectSimplex: the total must be positive, got ${z}`)
   const v = asTensor(x)
   const { mask, k } = simplexThreshold(flatPrimal(v), z)
   const m = fromStorage(mask, v.shape, 'float64')
@@ -312,8 +312,8 @@ export function projectSimplex(x: TensorLike, z = 1): Value {
  * @concept projections
  * @example
  * ```ts
- * import { projectL1Ball } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectL1Ball } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectL1Ball([2, -1], 1)) // => [1, 0]
  * ```
  */
@@ -336,8 +336,8 @@ export function projectL1Ball(x: TensorLike, r = 1): Value {
  * @concept projections
  * @example
  * ```ts
- * import { projectL2Ball } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectL2Ball } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectL2Ball([6, 8], 5)) // => [3, 4]
  * ```
  */
@@ -356,8 +356,8 @@ export function projectL2Ball(x: TensorLike, r = 1, center: TensorLike = 0): Val
  * @concept projections
  * @example
  * ```ts
- * import { projectAffine } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectAffine } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectAffine([1, 1], [[1, 1]], [0])) // => [0, 0]
  * ```
  */
@@ -379,8 +379,8 @@ export function projectAffine(x: TensorLike, a: TensorLike, b: TensorLike): Valu
  * @concept projections
  * @example
  * ```ts
- * import { projectHalfspace } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectHalfspace } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectHalfspace([2, 2], [1, 1], 2)) // => [1, 1]
  * ```
  */
@@ -401,8 +401,8 @@ export function projectHalfspace(x: TensorLike, a: TensorLike, b: number): Value
  * @concept projections
  * @example
  * ```ts
- * import { projectNuclearBall } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectNuclearBall } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectNuclearBall([[3, 0], [0, 1]], 2)) // => [[2, 0], [0, 0]]
  * ```
  */
@@ -419,8 +419,8 @@ export function projectNuclearBall(x: TensorLike, r = 1): Value {
  * @concept projections
  * @example
  * ```ts
- * import { projectPsd } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { projectPsd } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(projectPsd([[1, 0], [0, -1]])) // => [[1, 0], [0, 0]]
  * ```
  */

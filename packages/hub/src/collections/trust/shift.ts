@@ -3,9 +3,9 @@
  * classifier), on tabular classification data and two-dimensional classification data.
  */
 
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { type ShiftKind, shiftStudy } from 'whitebox-engine/methods/trust'
-import { choice, dict } from 'whitebox-engine/space'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { type ShiftKind, shiftStudy } from 'mdml-engine/methods/trust'
+import { choice, dict } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

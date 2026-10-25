@@ -5,7 +5,7 @@
  * learners can train in them.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
 import { dict, type Space } from '../space/index.ts'
@@ -99,9 +99,9 @@ export interface AecEpisode<S, A> {
  * @concept multi-agent
  * @example
  * ```ts
- * import { playAec } from 'whitebox-engine/rl'
- * import { nim } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { playAec } from 'mdml-engine/rl'
+ * import { nim } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const take1 = () => 0
  * playAec(nim.create({ heaps: [3] }), { player_0: take1, player_1: take1 }, key(0)).returns // => { player_0: 1, player_1: -1 }
  * ```
@@ -122,7 +122,7 @@ export function playAec<S, O, A>(
     const agent = env.currentAgent(state)
     if (agent === undefined) break
     const policy = policies[agent]
-    if (policy === undefined) throw new WhiteboxError('value', `playAec: no policy for ${agent}`)
+    if (policy === undefined) throw new MdmlError('value', `playAec: no policy for ${agent}`)
     const action = policy(env.observe(state, agent), foldIn(foldIn(key, 1), t))
     const r = env.step(state, action, foldIn(foldIn(key, 2), t))
     for (const [a, x] of Object.entries(r.rewards)) returns[a] = (returns[a] ?? 0) + x
@@ -148,8 +148,8 @@ export interface AecParallelState<S> {
  * @concept multi-agent
  * @example
  * ```ts
- * import { aecToParallel } from 'whitebox-engine/rl'
- * import { nim } from 'whitebox-engine/methods/rl'
+ * import { aecToParallel } from 'mdml-engine/rl'
+ * import { nim } from 'mdml-engine/methods/rl'
  * aecToParallel(nim.create()).possibleAgents // => ['player_0', 'player_1']
  * ```
  */
@@ -178,7 +178,7 @@ export function aecToParallel<S, O, A>(env: AecEnv<S, O, A>): ParallelEnv<AecPar
         const agent = env.currentAgent(inner)
         if (agent === undefined || acted.has(agent)) break
         const action = actions[agent]
-        if (action === undefined) throw new WhiteboxError('value', `aecToParallel: no action for ${agent}`)
+        if (action === undefined) throw new MdmlError('value', `aecToParallel: no action for ${agent}`)
         const r = env.step(inner, action, foldIn(k, i))
         for (const [a, x] of Object.entries(r.rewards)) rewards[a] = (rewards[a] ?? 0) + x
         inner = r.state
@@ -216,9 +216,9 @@ export interface ParallelAecState<S, O> {
  * @concept multi-agent
  * @example
  * ```ts
- * import { parallelToAec } from 'whitebox-engine/rl'
- * import { matrixGame } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { parallelToAec } from 'mdml-engine/rl'
+ * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = parallelToAec(matrixGame.create({ game: 'prisonersDilemma' }))
  * env.currentAgent(env.reset(key(0))) // => 'player_0'
  * ```
@@ -240,7 +240,7 @@ export function parallelToAec<S, O, A>(env: ParallelEnv<S, O, A>): AecEnv<Parall
     observe: (s, agent) => s.observations[agent] as O,
     step: (s, action, k) => {
       const agent = s.order.find((a) => !(a in s.pending) && !done(s, a))
-      if (agent === undefined) throw new WhiteboxError('value', 'parallelToAec: the episode is over')
+      if (agent === undefined) throw new MdmlError('value', 'parallelToAec: the episode is over')
       const pending = { ...s.pending, [agent]: action }
       const waiting = s.order.filter((a) => !(a in pending) && !done(s, a))
       if (waiting.length > 0) return { state: { ...s, pending }, rewards: {} }
@@ -278,8 +278,8 @@ export interface ParallelTimeLimitState<S> {
  * @concept multi-agent
  * @example
  * ```ts
- * import { parallelTimeLimit } from 'whitebox-engine/rl'
- * import { matrixGame } from 'whitebox-engine/methods/rl'
+ * import { parallelTimeLimit } from 'mdml-engine/rl'
+ * import { matrixGame } from 'mdml-engine/methods/rl'
  * parallelTimeLimit(matrixGame.create(), 5).spec.maxEpisodeSteps // => 5
  * ```
  */
@@ -326,9 +326,9 @@ export interface SingleAgentState<S, O> {
  * @concept multi-agent
  * @example
  * ```ts
- * import { singleAgentView } from 'whitebox-engine/rl'
- * import { matrixGame } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { singleAgentView } from 'mdml-engine/rl'
+ * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = singleAgentView(matrixGame.create({ game: 'prisonersDilemma' }), 'player_0', { player_1: () => 0 })
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 5
  * ```
@@ -338,7 +338,7 @@ export function singleAgentView<S, O, A>(
   agent: string,
   others: PerAgent<Policy<O, A>>,
 ): Env<SingleAgentState<S, O>, O, A> {
-  if (!env.possibleAgents.includes(agent)) throw new WhiteboxError('value', `singleAgentView: no agent ${agent}`)
+  if (!env.possibleAgents.includes(agent)) throw new MdmlError('value', `singleAgentView: no agent ${agent}`)
   return {
     spec: { ...env.spec, id: `${env.spec.id}/${agent}` },
     observationSpace: env.observationSpaces[agent] as Space,
@@ -356,7 +356,7 @@ export function singleAgentView<S, O, A>(
       for (const [i, a] of env.agents(s.inner).entries()) {
         if (a === agent) continue
         const policy = others[a]
-        if (policy === undefined) throw new WhiteboxError('value', `singleAgentView: no policy for ${a}`)
+        if (policy === undefined) throw new MdmlError('value', `singleAgentView: no policy for ${a}`)
         actions[a] = policy(s.observations[a] as O, foldIn(k, i + 1))
       }
       const r = env.step(s.inner, actions, foldIn(k, 0))
@@ -392,9 +392,9 @@ export interface ParallelEpisode<S> {
  * @concept multi-agent
  * @example
  * ```ts
- * import { playParallel, parallelTimeLimit } from 'whitebox-engine/rl'
- * import { matrixGame } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { playParallel, parallelTimeLimit } from 'mdml-engine/rl'
+ * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = parallelTimeLimit(matrixGame.create({ game: 'prisonersDilemma' }), 3)
  * playParallel(env, { player_0: () => 0, player_1: () => 0 }, key(0)).returns // => { player_0: 9, player_1: 9 }
  * ```
@@ -418,7 +418,7 @@ export function playParallel<S, O, A>(
     const actions: Record<string, A> = {}
     for (const [i, a] of live.entries()) {
       const policy = policies[a]
-      if (policy === undefined) throw new WhiteboxError('value', `playParallel: no policy for ${a}`)
+      if (policy === undefined) throw new MdmlError('value', `playParallel: no policy for ${a}`)
       actions[a] = policy(observations[a] as O, foldIn(foldIn(key, 1 + i), t))
     }
     const r = env.step(state, actions, foldIn(foldIn(key, 0x7e), t))
@@ -455,13 +455,13 @@ export type JointReward = 'sum' | 'mean' | { readonly agent: string }
  * @param env - The parallel environment.
  * @param options - `reward`: `'sum'` (default), `'mean'` or `{ agent }`.
  * @returns The joint environment.
- * @throws WhiteboxError with code `value` for an unknown reward agent, or when a live agent has no action.
+ * @throws MdmlError with code `value` for an unknown reward agent, or when a live agent has no action.
  * @concept multi-agent
  * @example
  * ```ts
- * import { jointEnv } from 'whitebox-engine/rl'
- * import { matrixGame } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { jointEnv } from 'mdml-engine/rl'
+ * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = jointEnv(matrixGame.create({ game: 'prisonersDilemma' }))
  * const r = env.step(env.reset(key(0)).state, { player_0: 1, player_1: 0 }, key(1))
  * [r.reward, r.info['rewards']] // => [5, { player_0: 5, player_1: 0 }]
@@ -473,7 +473,7 @@ export function jointEnv<S, O, A>(
 ): Env<JointState<S, O>, PerAgent<O>, PerAgent<A>> {
   const mode = options.reward ?? 'sum'
   if (typeof mode === 'object' && !env.possibleAgents.includes(mode.agent))
-    throw new WhiteboxError('value', `jointEnv: no agent ${mode.agent}`)
+    throw new MdmlError('value', `jointEnv: no agent ${mode.agent}`)
   const scalar = (rewards: PerAgent<number>): number => {
     if (typeof mode === 'object') return rewards[mode.agent] ?? 0
     let total = 0
@@ -493,7 +493,7 @@ export function jointEnv<S, O, A>(
       const acting: Record<string, A> = {}
       for (const a of live) {
         const action = actions[a]
-        if (action === undefined) throw new WhiteboxError('value', `jointEnv: no action for ${a}`)
+        if (action === undefined) throw new MdmlError('value', `jointEnv: no action for ${a}`)
         acting[a] = action
       }
       const r = env.step(s.inner, acting, k)
@@ -538,13 +538,13 @@ export interface AecViewState<S> {
  * @param agent - The agent to control.
  * @param others - Policies for the other agents.
  * @returns The single-agent environment.
- * @throws WhiteboxError with code `value` for an unknown agent or a missing policy.
+ * @throws MdmlError with code `value` for an unknown agent or a missing policy.
  * @concept multi-agent
  * @example
  * ```ts
- * import { aecSingleAgentView } from 'whitebox-engine/rl'
- * import { nim } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { aecSingleAgentView } from 'mdml-engine/rl'
+ * import { nim } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = aecSingleAgentView(nim.create({ heaps: [3] }), 'player_0', { player_1: () => 0 })
  * const r = env.step(env.reset(key(0)).state, 0, key(1))
  * env.step(r.state, 0, key(2)).reward // => 1
@@ -555,7 +555,7 @@ export function aecSingleAgentView<S, O, A>(
   agent: string,
   others: PerAgent<Policy<O, A>>,
 ): Env<AecViewState<S>, O, A> {
-  if (!env.possibleAgents.includes(agent)) throw new WhiteboxError('value', `aecSingleAgentView: no agent ${agent}`)
+  if (!env.possibleAgents.includes(agent)) throw new MdmlError('value', `aecSingleAgentView: no agent ${agent}`)
   // Play the other agents until it is the agent's turn or the game ends, summing the agent's rewards.
   const advance = (start: S, k: Key): { readonly state: S; readonly reward: number } => {
     let s = start
@@ -564,7 +564,7 @@ export function aecSingleAgentView<S, O, A>(
       const mover = env.currentAgent(s)
       if (mover === undefined || mover === agent) break
       const policy = others[mover]
-      if (policy === undefined) throw new WhiteboxError('value', `aecSingleAgentView: no policy for ${mover}`)
+      if (policy === undefined) throw new MdmlError('value', `aecSingleAgentView: no policy for ${mover}`)
       const r = env.step(s, policy(env.observe(s, mover), foldIn(k, 2 * t)), foldIn(k, 2 * t + 1))
       reward += r.rewards[agent] ?? 0
       s = r.state
@@ -601,7 +601,7 @@ export function aecSingleAgentView<S, O, A>(
           info: {},
         }
       }
-      if (mover !== agent) throw new WhiteboxError('value', `aecSingleAgentView: it is not ${agent}'s turn`)
+      if (mover !== agent) throw new MdmlError('value', `aecSingleAgentView: it is not ${agent}'s turn`)
       const r = env.step(s.inner, action, foldIn(k, 0))
       const next = advance(r.state, foldIn(k, 1))
       const over = env.currentAgent(next.state) === undefined
@@ -629,9 +629,9 @@ export function aecSingleAgentView<S, O, A>(
  * @concept multi-agent
  * @example
  * ```ts
- * import { stateObservations } from 'whitebox-engine/rl'
- * import { nim } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { stateObservations } from 'mdml-engine/rl'
+ * import { nim } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = stateObservations(nim.create({ heaps: [2, 2] }))
  * env.observe(env.reset(key(0)), 'player_1').heaps // => [2, 2]
  * ```

@@ -3,8 +3,8 @@
  * neighbours, played generation by generation.
  */
 
-import { elementaryAutomaton } from 'whitebox-engine/methods/complex-systems'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { elementaryAutomaton } from 'mdml-engine/methods/complex-systems'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 
 /** Wolfram's elementary cellular automata. */

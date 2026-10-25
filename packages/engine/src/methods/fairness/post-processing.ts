@@ -137,7 +137,7 @@ export function thresholdOptimizer(
 }
 
 /**
- * Calibrated equalised odds (`calibratedEqualisedOdds` of `whitebox-engine/fairness`, Pleiss et al.) on a fitted
+ * Calibrated equalised odds (`calibratedEqualisedOdds` of `mdml-engine/fairness`, Pleiss et al.) on a fitted
  * classifier: the cheaper group's scores are mixed with its base rate until the groups' generalised costs match.
  * Exposition: the group reports before and after (expected decisions).
  *
@@ -175,7 +175,7 @@ export function calibratedEqOdds(
 }
 
 /**
- * Reject-option classification (`rejectOptionClassification` of `whitebox-engine/fairness`, Kamiran et al.) on a fitted
+ * Reject-option classification (`rejectOptionClassification` of `mdml-engine/fairness`, Kamiran et al.) on a fitted
  * classifier. Exposition: the group reports before and after, and a `curves` record of balanced accuracy and the
  * fairness metric over thresholds at the chosen margin.
  *

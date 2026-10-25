@@ -5,7 +5,7 @@
  * frequencies.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   arcsinh,
@@ -45,8 +45,8 @@ const SLANEY_STEP = Math.log(6.4) / 27
  * @concept mel-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.hzToMel([0, 1000, 2000])).map((v) => Math.round(v * 1e6) / 1e6) // => [0, 15, 25.08188]
  * ```
  */
@@ -70,8 +70,8 @@ export function hzToMel(f: TensorLike, htk = false): Value {
  * @concept mel-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.melToHz([0, 15])).map((v) => Math.round(v * 1e6) / 1e6) // => [0, 1000]
  * ```
  */
@@ -95,13 +95,13 @@ export function melToHz(m: TensorLike, htk = false): Value {
  * @concept mel-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.melFrequencies(3, 0, 1000)).map((v) => Math.round(v * 1e6) / 1e6) // => [0, 500, 1000]
  * ```
  */
 export function melFrequencies(n = 128, fmin = 0, fmax = 11025, htk = false): Tensor {
-  if (!Number.isInteger(n) || n < 1) throw new WhiteboxError('value', 'melFrequencies: n must be a positive integer')
+  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'melFrequencies: n must be a positive integer')
   const lo = Number((hzToMel([fmin], htk) as Tensor).data[0] ?? 0)
   const hi = Number((hzToMel([fmax], htk) as Tensor).data[0] ?? 0)
   const mels = Float64Array.from({ length: n }, (_, i) => (n === 1 ? lo : lo + ((hi - lo) * i) / (n - 1)))
@@ -117,8 +117,8 @@ export function melFrequencies(n = 128, fmin = 0, fmax = 11025, htk = false): Te
  * @concept mel-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.fftFrequencies(8, 4)) // => [0, 2, 4]
  * ```
  */
@@ -139,8 +139,8 @@ export type BarkFormula = 'traunmuller' | 'zwicker' | 'schroeder'
  * @concept bark-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.hzToBark([1000])).map((v) => Math.round(v * 1e4) / 1e4) // => [8.5274]
  * ```
  */
@@ -164,8 +164,8 @@ export function hzToBark(f: TensorLike, formula: BarkFormula = 'traunmuller'): V
  * @concept bark-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.barkToHz(audio.hzToBark([300, 1000, 9000]))).map((v) => Math.round(v * 1e6) / 1e6) // => [300, 1000, 9000]
  * ```
  */
@@ -185,8 +185,8 @@ export function barkToHz(z: TensorLike, formula: Exclude<BarkFormula, 'zwicker'>
  * @concept erb-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.erbBandwidth([1000])).map((v) => Math.round(v * 1e6) / 1e6) // => [132.639]
  * ```
  */
@@ -202,8 +202,8 @@ export function erbBandwidth(f: TensorLike): Value {
  * @concept erb-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.hzToErb([1000])).map((v) => Math.round(v * 1e4) / 1e4) // => [15.6214]
  * ```
  */
@@ -219,8 +219,8 @@ export function hzToErb(f: TensorLike): Value {
  * @concept erb-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.erbToHz(audio.hzToErb([440]))).map((v) => Math.round(v * 1e9) / 1e9) // => [440]
  * ```
  */
@@ -239,13 +239,13 @@ export function erbToHz(e: TensorLike): Value {
  * @concept erb-scale
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { audio } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(audio.erbSpace(100, 8000, 3)).map((v) => Math.round(v)) // => [100, 1416, 8000]
  * ```
  */
 export function erbSpace(fmin: number, fmax: number, n: number): Tensor {
-  if (!Number.isInteger(n) || n < 1) throw new WhiteboxError('value', 'erbSpace: n must be a positive integer')
+  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'erbSpace: n must be a positive integer')
   const lo = 21.4 * Math.log10(1 + 4.37e-3 * fmin)
   const hi = 21.4 * Math.log10(1 + 4.37e-3 * fmax)
   return erbToHz(

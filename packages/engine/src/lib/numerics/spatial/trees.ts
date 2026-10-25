@@ -4,7 +4,7 @@
  * nodes and queries log what they pruned, for figures and comparisons.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Metric, type MetricOptions, metricFunction, type PointDistance, TRUE_METRICS } from '../geometry/index.ts'
 
@@ -78,7 +78,7 @@ interface Internal {
 
 function flatPoints(x: TensorLike, name: string): { data: number[]; n: number; d: number } {
   const t = concreteOrThrow(promoteFloat(x)[0] as Tensor, name)
-  if (t.shape.length !== 2) throw new WhiteboxError('shape', `${name}: points must be [n, d]`)
+  if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: points must be [n, d]`)
   return { data: toFlat(t), n: t.shape[0] ?? 0, d: t.shape[1] ?? 0 }
 }
 
@@ -113,13 +113,10 @@ function buildTree(kind: 'kd' | 'ball' | 'vp', x: TensorLike, options: TreeOptio
   const { data, n, d } = flatPoints(x, `${kind}Tree`)
   const metric = options.metric ?? 'euclidean'
   if (kind === 'kd' && !['euclidean', 'cityblock', 'chebyshev', 'minkowski'].includes(metric)) {
-    throw new WhiteboxError(
-      'value',
-      'kdTree: only Minkowski-family metrics (euclidean, cityblock, chebyshev, minkowski)',
-    )
+    throw new MdmlError('value', 'kdTree: only Minkowski-family metrics (euclidean, cityblock, chebyshev, minkowski)')
   }
   if (kind !== 'kd' && !TRUE_METRICS.has(metric))
-    throw new WhiteboxError('value', `${kind}Tree: ${metric} is not a metric (no triangle inequality)`)
+    throw new MdmlError('value', `${kind}Tree: ${metric} is not a metric (no triangle inequality)`)
   const p =
     metric === 'cityblock'
       ? 1
@@ -274,8 +271,8 @@ function buildTree(kind: 'kd' | 'ball' | 'vp', x: TensorLike, options: TreeOptio
 
   const query: SpatialTree['query'] = (queries, k, options = {}) => {
     const qs = flatPoints(queries, 'query')
-    if (qs.d !== d) throw new WhiteboxError('shape', 'query: dimension mismatch')
-    if (k < 1 || k > n) throw new WhiteboxError('value', `query: k must be in [1, ${n}]`)
+    if (qs.d !== d) throw new MdmlError('shape', 'query: dimension mismatch')
+    if (k < 1 || k > n) throw new MdmlError('value', `query: k must be in [1, ${n}]`)
     const indices = new Int32Array(qs.n * k)
     const distances = new Float64Array(qs.n * k)
     const logs: QueryLog[] = []
@@ -373,8 +370,8 @@ function buildTree(kind: 'kd' | 'ball' | 'vp', x: TensorLike, options: TreeOptio
  * @concept spatial-trees
  * @example
  * ```ts
- * import { kdTree } from 'whitebox-engine/numerics/spatial'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { kdTree } from 'mdml-engine/numerics/spatial'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(kdTree([[0, 0], [1, 0], [5, 5]], { leafSize: 1 }).query([[0.9, 0.1]], 1).indices) // => [[1]]
  * ```
  */
@@ -391,7 +388,7 @@ export function kdTree(data: TensorLike, options: TreeOptions = {}): SpatialTree
  * @returns The tree.
  * @example
  * ```ts
- * import { ballTree } from 'whitebox-engine/numerics/spatial'
+ * import { ballTree } from 'mdml-engine/numerics/spatial'
  * ballTree([[0, 0], [1, 0], [5, 5]], { metric: 'cityblock', leafSize: 1 }).countNeighbours([[0, 0]], 1) // => [2]
  * ```
  */
@@ -408,7 +405,7 @@ export function ballTree(data: TensorLike, options: TreeOptions = {}): SpatialTr
  * @returns The tree.
  * @example
  * ```ts
- * import { vpTree } from 'whitebox-engine/numerics/spatial'
+ * import { vpTree } from 'mdml-engine/numerics/spatial'
  * vpTree([[0, 0], [1, 0], [5, 5], [6, 5]], { leafSize: 1 }).queryRadius([[5.5, 5]], 1).indices // => [[2, 3]]
  * ```
  */

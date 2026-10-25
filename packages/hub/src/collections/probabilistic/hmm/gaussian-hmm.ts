@@ -3,10 +3,10 @@
  * series into regimes.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import type { TimeSeriesData } from 'whitebox-engine/data'
-import { gaussianHMM as gaussianHmmEstimator } from 'whitebox-engine/methods/models'
-import { asTensor, fromStorage, toFlat } from 'whitebox-engine/tensor'
+import { MdmlError } from 'mdml-engine/base'
+import type { TimeSeriesData } from 'mdml-engine/data'
+import { gaussianHMM as gaussianHmmEstimator } from 'mdml-engine/methods/models'
+import { asTensor, fromStorage, toFlat } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 
@@ -24,7 +24,7 @@ export const gaussianHmm: HubEntry = defineEntry({
   params: inner.params,
   run: (input) => {
     const series = input.data as TimeSeriesData | undefined
-    if (series?.kind !== 'timeseries') throw new WhiteboxError('value', 'gaussian-hmm: needs a time series')
+    if (series?.kind !== 'timeseries') throw new MdmlError('value', 'gaussian-hmm: needs a time series')
     const values = asTensor(series.values)
     const [n = 0, d = 1] = values.shape
     // Missing steps carry the last observed value forward.

@@ -25,7 +25,7 @@ import { type ApplyContext, childScope, initKey, Module, type Params } from './m
  * @concept upsampling
  * @example
  * ```ts
- * import { Upsample } from 'whitebox-engine/nn'
+ * import { Upsample } from 'mdml-engine/nn'
  * new Upsample({ scaleFactor: 2, mode: 'bilinear' }).outputShape([1, 3, 4, 5]) // => [1, 3, 8, 10]
  * ```
  */
@@ -121,7 +121,7 @@ export class PixelUnshuffle extends Module {
  *
  * @example
  * ```ts
- * import { PadNd } from 'whitebox-engine/nn'
+ * import { PadNd } from 'mdml-engine/nn'
  * new PadNd('ReflectionPad1d', 1, 2, 'reflect').outputShape([1, 1, 5]) // => [1, 1, 9]
  * ```
  */
@@ -271,7 +271,7 @@ export class CircularPad3d extends PadNd {
  * @concept vision-transformer
  * @example
  * ```ts
- * import { PatchEmbedding } from 'whitebox-engine/nn'
+ * import { PatchEmbedding } from 'mdml-engine/nn'
  * new PatchEmbedding(4, 3, 16).outputShape([2, 3, 32, 32]) // => [2, 64, 16]
  * ```
  */
@@ -322,8 +322,8 @@ export class PatchEmbedding extends Module {
  * @concept spatial-transformer
  * @example
  * ```ts
- * import { SpatialTransformer, Sequential, Flatten, Linear } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { SpatialTransformer, Sequential, Flatten, Linear } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * const loc = new Sequential(new Flatten(), new Linear(16, 6, { key: key(0) }))
  * new SpatialTransformer(loc).outputShape([2, 1, 4, 4]) // => [2, 1, 4, 4]
  * ```

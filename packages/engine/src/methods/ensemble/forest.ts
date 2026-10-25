@@ -5,7 +5,7 @@
  * spread of the trees.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution, normal } from '../../lib/dists/index.ts'
 import {
@@ -199,7 +199,7 @@ function forestEstimator(
       fit: (data: LearnData, h: ForestHyper, options: FitOptions) => {
         const prepared = treeData(data, classifier, name)
         const n = prepared.x.n
-        if (!(h.nEstimators >= 1)) throw new WhiteboxError('value', `${name}: nEstimators must be at least 1`)
+        if (!(h.nEstimators >= 1)) throw new MdmlError('value', `${name}: nEstimators must be at least 1`)
         const size =
           h.maxSamples === undefined ? n : h.maxSamples < 1 ? Math.max(1, Math.round(h.maxSamples * n)) : h.maxSamples
         const key = resolveKey(options, name)

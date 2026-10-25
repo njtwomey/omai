@@ -4,7 +4,7 @@
  * logistic and ordered probit, where increasing cutpoints divide a latent scale into ordered classes.
  */
 
-import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { log1mexp, logNdtr, logSigmoid } from '../../numerics/special/index.ts'
 import { type Key, uniform as uniformNoise } from '../../random/index.ts'
 import {
@@ -63,7 +63,7 @@ function logProbsOf(params: CategoricalParams, family: string): Value {
     validateParams(family, { probs: [p, 'nonNegative'] })
     raw = log(p)
   }
-  if (raw.shape.length === 0) throw new WhiteboxError('shape', `${family}: parameters need a category axis`)
+  if (raw.shape.length === 0) throw new MdmlError('shape', `${family}: parameters need a category axis`)
   return logSoftmax(raw, -1)
 }
 
@@ -83,8 +83,8 @@ function drawIndices(key: Key, cumulative: Value, shape: readonly number[], batc
  * @concept distributions
  * @example
  * ```ts
- * import { categorical } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { categorical } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(categorical({ probs: [0.2, 0.8] }).logProb(1)) - Math.log(0.8)) < 1e-15 // => true
  * ```
  */
@@ -153,8 +153,8 @@ function categoricalFromLogProbs(logp: Value, name: string, extra: Readonly<Reco
  *   (use `relaxedOneHotCategorical` or `straightThrough`).
  * @example
  * ```ts
- * import { oneHotCategorical } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { oneHotCategorical } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(oneHotCategorical({ probs: [0.2, 0.8] }).logProb([0, 1])) - Math.log(0.8)) < 1e-15 // => true
  * ```
  */
@@ -195,8 +195,8 @@ export function oneHotCategorical(params: CategoricalParams): Distribution {
  * @returns The distribution (no reparameterisation).
  * @example
  * ```ts
- * import { discreteUniform } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { discreteUniform } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(discreteUniform(1, 6).mean()) // => 3.5
  * item(discreteUniform(1, 6).cdf(2)) // => 0.3333333333333333
  * ```
@@ -240,9 +240,9 @@ export function discreteUniform(low: TensorLike, high: TensorLike): Distribution
  * @returns A categorical distribution with `predictor` and `cutpoints` among its parameters.
  * @example
  * ```ts
- * import { orderedCategorical } from 'whitebox-engine/dists'
- * import { logSigmoid } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { orderedCategorical } from 'mdml-engine/dists'
+ * import { logSigmoid } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(orderedCategorical(0, [0], logSigmoid, 'ordinal').prob(0)) // => 0.5
  * ```
  */
@@ -253,7 +253,7 @@ export function orderedCategorical(
   name: string,
 ): Distribution {
   const [eta, c] = promoteFloat(predictor, cutpoints) as [Value, Value]
-  if (c.shape.length === 0) throw new WhiteboxError('shape', `${name}: cutpoints need a category axis`)
+  if (c.shape.length === 0) throw new MdmlError('shape', `${name}: cutpoints need a category axis`)
   const z = sub(c, expandDims(eta, -1))
   const lead = z.shape.slice(0, -1)
   // log P(Y <= j) for j = 0 .. K-2, with log P(Y <= K-1) = 0, and log P(Y = j) as log(F_j - F_{j-1}).
@@ -273,8 +273,8 @@ export function orderedCategorical(
  * @returns The distribution over {0, ..., K-1}.
  * @example
  * ```ts
- * import { orderedLogistic } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { orderedLogistic } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(orderedLogistic(0, [-1, 1]).prob(1)) - (1 / (1 + Math.exp(-1)) - 1 / (1 + Math.exp(1)))) < 1e-15 // => true
  * ```
  */
@@ -290,8 +290,8 @@ export function orderedLogistic(predictor: TensorLike, cutpoints: TensorLike): D
  * @returns The distribution over {0, ..., K-1}.
  * @example
  * ```ts
- * import { orderedProbit } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { orderedProbit } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(orderedProbit(0, [0]).prob(1)) // => 0.5
  * ```
  */

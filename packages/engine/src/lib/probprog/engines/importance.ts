@@ -4,7 +4,7 @@
  * the evidence estimate and the Pareto k-hat diagnostic. Also the engine for the planner.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { foldIn } from '../../random/index.ts'
 import { importanceEss, logEvidence, paretoSmoothedWeights } from '../../sampling/index.ts'
 import { fromStorage, item, mul, primalOf, sum, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
@@ -34,10 +34,10 @@ export interface ImportanceOptions<D> {
  * @param traces - One trace per draw.
  * @param names - The sites to stack.
  * @returns The stacked values by site.
- * @throws WhiteboxError with code `value` when a draw lacks a site.
+ * @throws MdmlError with code `value` when a draw lacks a site.
  * @example
  * ```ts
- * import { deterministic, stackSiteValues, traceOf } from 'whitebox-engine/probprog'
+ * import { deterministic, stackSiteValues, traceOf } from 'mdml-engine/probprog'
  * const t = traceOf(() => deterministic('d', [1, 2]), undefined)
  * stackSiteValues([t, t], ['d'])['d']?.shape // => [2, 2]
  * ```
@@ -51,7 +51,7 @@ export function stackSiteValues(traces: readonly ProgramTrace[], names: readonly
     for (const t of traces) {
       const s = t.sites.get(name)
       if (s === undefined || s.type === 'plate' || s.type === 'markov')
-        throw new WhiteboxError('value', `site ${name} is missing from a draw`, { site: name })
+        throw new MdmlError('value', `site ${name} is missing from a draw`, { site: name })
       shape = s.value.shape
       rows.push(...toFlat(primalOf(s.value)))
     }
@@ -82,10 +82,10 @@ function observedLogProb(t: ProgramTrace): number {
  * @concept importance-sampling
  * @example
  * ```ts
- * import { importanceInference, observe, sample } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { item } from 'whitebox-engine/tensor'
+ * import { importanceInference, observe, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { item } from 'mdml-engine/tensor'
  * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }
  * const post = importanceInference(model, undefined, { key: key(0), numSamples: 4000 })
  * Math.abs(item(post.mean('m')) - 0.5) < 0.05 // => true
@@ -97,7 +97,7 @@ export function importanceInference<D = void>(
   options: ImportanceOptions<D> & EngineRunOptions,
 ): Posterior {
   const n = options.numSamples ?? 2000
-  if (!(Number.isInteger(n) && n >= 2)) throw new WhiteboxError('value', 'importance: numSamples must be at least 2')
+  if (!(Number.isInteger(n) && n >= 2)) throw new MdmlError('value', 'importance: numSamples must be at least 2')
   const traces: ProgramTrace[] = []
   const lw = new Float64Array(n)
   for (let i = 0; i < n; i++) {
@@ -160,7 +160,7 @@ export function importanceInference<D = void>(
  * @concept inference-engines
  * @example
  * ```ts
- * import { importanceEngine } from 'whitebox-engine/probprog'
+ * import { importanceEngine } from 'mdml-engine/probprog'
  * importanceEngine().form // => 'weighted'
  * ```
  */

@@ -4,7 +4,7 @@
  * alongside single and multiple shooting with Jacobians taken by differentiating through the integrator.
  */
 
-import { maxOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { pinv } from '../../numerics/linalg/index.ts'
 import { fsolve } from '../../numerics/roots/index.ts'
 import { concat, reshape, sliceAxis, sub, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
@@ -82,12 +82,12 @@ const MESSAGES = [
  * @param y - The initial guess `[n, m]`.
  * @param options - Parameters, singular term, tolerances and node budget.
  * @returns The solution with its mesh, spline, residuals and status.
- * @throws WhiteboxError with code `shape` or `value` for bad inputs.
+ * @throws MdmlError with code `shape` or `value` for bad inputs.
  * @concept boundary-value-problem
  * @example
  * ```ts
- * import { solveBvp } from 'whitebox-engine/dynamics/ode'
- * import { concat, neg, sliceAxis, sub, tensor } from 'whitebox-engine/tensor'
+ * import { solveBvp } from 'mdml-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub, tensor } from 'mdml-engine/tensor'
  * // y'' = -y on [0, pi/2], y(0) = 0, y(pi/2) = 1: y = sin x.
  * const fun = (_x, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
@@ -104,12 +104,12 @@ export function solveBvp(
 ): BvpSolution {
   let xs: Float64Array = numbersOf(floatState(x))
   const yv = floatState(y)
-  if (yv.shape.length !== 2) throw new WhiteboxError('shape', 'solveBvp: y must be [n, m]')
+  if (yv.shape.length !== 2) throw new MdmlError('shape', 'solveBvp: y must be [n, m]')
   const n = yv.shape[0] ?? 0
   const m0 = yv.shape[1] ?? 0
-  if (m0 !== xs.length) throw new WhiteboxError('shape', `solveBvp: y needs ${xs.length} columns`)
+  if (m0 !== xs.length) throw new MdmlError('shape', `solveBvp: y needs ${xs.length} columns`)
   let h: Float64Array = Float64Array.from({ length: xs.length - 1 }, (_, j) => (xs[j + 1] ?? 0) - (xs[j] ?? 0))
-  if (h.some((v) => !(v > 0))) throw new WhiteboxError('value', 'solveBvp: x must be strictly increasing')
+  if (h.some((v) => !(v > 0))) throw new MdmlError('value', 'solveBvp: x must be strictly increasing')
   let yN: Float64Array = Float64Array.from(numbersOf(yv))
   let p: Float64Array =
     options.p === undefined ? new Float64Array(0) : Float64Array.from(numbersOf(floatState(options.p)))
@@ -124,7 +124,7 @@ export function solveBvp(
   if (options.S !== undefined) {
     const sv = floatState(options.S)
     S = Float64Array.from(numbersOf(sv))
-    if (S.length !== n * n) throw new WhiteboxError('shape', `solveBvp: S must be ${n} x ${n}`)
+    if (S.length !== n * n) throw new MdmlError('shape', `solveBvp: S must be ${n} x ${n}`)
     const ps = numbersOf(pinv(sv))
     B = new Float64Array(n * n)
     for (let i = 0; i < n; i++) {
@@ -147,7 +147,7 @@ export function solveBvp(
     const out = numbersOf(
       fun(fromNumbers(xv, [xv.length]), fromNumbers(yy, [n, xv.length]), fromNumbers(pp, [pp.length])),
     )
-    if (out.length !== n * xv.length) throw new WhiteboxError('shape', `solveBvp: fun must return [${n}, ${xv.length}]`)
+    if (out.length !== n * xv.length) throw new MdmlError('shape', `solveBvp: fun must return [${n}, ${xv.length}]`)
     return Float64Array.from(out)
   }
   const field: NumField =
@@ -178,7 +178,7 @@ export function solveBvp(
         }
   const bcN: NumBc = (ya, yb, pp) => {
     const out = numbersOf(bc(fromNumbers(ya, [n]), fromNumbers(yb, [n]), fromNumbers(pp, [pp.length])))
-    if (out.length !== n + k) throw new WhiteboxError('shape', `solveBvp: bc must return ${n + k} residuals`)
+    if (out.length !== n + k) throw new MdmlError('shape', `solveBvp: bc must return ${n + k} residuals`)
     return Float64Array.from(out)
   }
   let status: 0 | 1 | 2 | 3 = 0
@@ -278,7 +278,7 @@ function integrate(f: VectorField, t0: number, t1: number, y0: Value, options: S
     atol: options.atol ?? 1e-12,
     tEval: [t1],
   })
-  if (!sol.success) throw new WhiteboxError('convergence', `shooting: the integration failed: ${sol.message}`)
+  if (!sol.success) throw new MdmlError('convergence', `shooting: the integration failed: ${sol.message}`)
   return sol.ys[sol.ys.length - 1] as Value
 }
 
@@ -295,8 +295,8 @@ function integrate(f: VectorField, t0: number, t1: number, y0: Value, options: S
  * @concept shooting-method
  * @example
  * ```ts
- * import { shooting } from 'whitebox-engine/dynamics/ode'
- * import { concat, neg, sliceAxis, sub } from 'whitebox-engine/tensor'
+ * import { shooting } from 'mdml-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub } from 'mdml-engine/tensor'
  * const f = (_t, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
  * const r = shooting(f, bc, [0, Math.PI / 2], [0, 0.5])
@@ -334,12 +334,12 @@ export function shooting(
  * @param guesses - Guesses `[nodes - 1, n]` for the state at each node but the last.
  * @param options - Integrator, tolerances and iteration cap.
  * @returns The states at the nodes and convergence information.
- * @throws WhiteboxError with code `value` for fewer than two nodes or mismatched guesses.
+ * @throws MdmlError with code `value` for fewer than two nodes or mismatched guesses.
  * @concept shooting-method
  * @example
  * ```ts
- * import { multipleShooting } from 'whitebox-engine/dynamics/ode'
- * import { concat, neg, sliceAxis, sub } from 'whitebox-engine/tensor'
+ * import { multipleShooting } from 'mdml-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub } from 'mdml-engine/tensor'
  * const f = (_t, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
  * const r = multipleShooting(f, bc, [0, 0.8, Math.PI / 2], [[0, 0.5], [0.5, 0.5]])
@@ -353,11 +353,11 @@ export function multipleShooting(
   guesses: TensorLike,
   options: ShootingOptions = {},
 ): ShootingResult {
-  if (nodes.length < 2) throw new WhiteboxError('value', 'multipleShooting: give at least two nodes')
+  if (nodes.length < 2) throw new MdmlError('value', 'multipleShooting: give at least two nodes')
   const g = floatState(guesses)
   const segments = nodes.length - 1
   if (g.shape.length !== 2 || g.shape[0] !== segments) {
-    throw new WhiteboxError('value', `multipleShooting: give ${segments} guesses as [${segments}, n]`)
+    throw new MdmlError('value', `multipleShooting: give ${segments} guesses as [${segments}, n]`)
   }
   const n = g.shape[1] ?? 0
   const residual = (z: Value): Value => {

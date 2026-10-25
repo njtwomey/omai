@@ -3,7 +3,7 @@
  * outliers and tabular regression data.
  */
 
-import { ransacRegressor as ransacRegressorMethod } from 'whitebox-engine/methods/linear'
+import { ransacRegressor as ransacRegressorMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

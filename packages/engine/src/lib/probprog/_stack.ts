@@ -2,7 +2,7 @@
 // for the duration of one call of the function it wraps and popped by try/finally, so the stack is empty whenever no
 // program is running. Like the transform depth in `autodiff/_level.ts`, this is internal bookkeeping: it never
 // changes a result and nothing outside a running program can observe it.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { permutation } from '../random/index.ts'
 import { arange, cast, slice, type Tensor } from '../tensor/index.ts'
 import type { Message, Messenger } from './primitives.ts'
@@ -31,9 +31,9 @@ function defaultProcess(msg: Message): void {
   switch (msg.type) {
     case 'sample': {
       const fn = msg.fn
-      if (fn === undefined) throw new WhiteboxError('value', `sample ${msg.name}: no distribution`)
+      if (fn === undefined) throw new MdmlError('value', `sample ${msg.name}: no distribution`)
       if (msg.key === undefined)
-        throw new WhiteboxError(
+        throw new MdmlError(
           'value',
           `sample ${msg.name}: no key to draw with; run the program under seed(model, key) or condition the site`,
           { site: msg.name },
@@ -43,10 +43,10 @@ function defaultProcess(msg: Message): void {
     }
     case 'param': {
       const init = msg.init
-      if (init === undefined) throw new WhiteboxError('value', `param ${msg.name}: no initial value`)
+      if (init === undefined) throw new MdmlError('value', `param ${msg.name}: no initial value`)
       if (typeof init === 'function') {
         if (msg.key === undefined)
-          throw new WhiteboxError('value', `param ${msg.name}: a random initialiser needs seed(model, key)`, {
+          throw new MdmlError('value', `param ${msg.name}: a random initialiser needs seed(model, key)`, {
             site: msg.name,
           })
         msg.value = init(msg.key)
@@ -61,7 +61,7 @@ function defaultProcess(msg: Message): void {
         return
       }
       if (msg.key === undefined)
-        throw new WhiteboxError('value', `plate ${msg.name}: subsampling needs a key; run under seed(model, key)`)
+        throw new MdmlError('value', `plate ${msg.name}: subsampling needs a key; run under seed(model, key)`)
       msg.value = slice(permutation(msg.key, size), [0], [sub]) as Tensor<'int32'>
       return
     }

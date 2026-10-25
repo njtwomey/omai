@@ -6,7 +6,7 @@
  */
 
 import { grad, hessian, jvp } from '../autodiff/index.ts'
-import { maxOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { contourLines } from '../numerics/geometry/index.ts'
 import { eigh } from '../numerics/linalg/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'
@@ -63,8 +63,8 @@ function derivativeCurve(r: ParametricCurve): ParametricCurve {
  * @concept parametric-curves
  * @example
  * ```ts
- * import { curveDerivatives } from 'whitebox-engine/foundations'
- * import { cos, sin, stack, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { curveDerivatives } from 'mdml-engine/foundations'
+ * import { cos, sin, stack, toArray, type Value } from 'mdml-engine/tensor'
  * const circle = (t: Value) => stack([cos(t), sin(t)], -1)
  * toArray(curveDerivatives(circle, 0, 2)[2]) // => [[-1, 0]]
  * ```
@@ -97,8 +97,8 @@ export interface CurveSamples {
  * @concept parametric-curves
  * @example
  * ```ts
- * import { sampleCurve } from 'whitebox-engine/foundations'
- * import { mul, stack, type Value } from 'whitebox-engine/tensor'
+ * import { sampleCurve } from 'mdml-engine/foundations'
+ * import { mul, stack, type Value } from 'mdml-engine/tensor'
  * sampleCurve((t: Value) => stack([t, mul(t, t)], -1), 0, 2, 3).points // => [[0, 0], [1, 1], [2, 4]]
  * ```
  */
@@ -116,8 +116,8 @@ export function sampleCurve(r: ParametricCurve, a: number, b: number, n = 100): 
  * @concept arc-length
  * @example
  * ```ts
- * import { curveSpeed } from 'whitebox-engine/foundations'
- * import { cos, mul, sin, stack, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { curveSpeed } from 'mdml-engine/foundations'
+ * import { cos, mul, sin, stack, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(curveSpeed((t: Value) => stack([mul(cos(t), 3), mul(sin(t), 3)], -1), [0, 1])) // => [3, 3]
  * ```
  */
@@ -136,8 +136,8 @@ export function curveSpeed(r: ParametricCurve, t: TensorLike): Value {
  * @concept arc-length
  * @example
  * ```ts
- * import { arcLength } from 'whitebox-engine/foundations'
- * import { cos, sin, stack, type Value } from 'whitebox-engine/tensor'
+ * import { arcLength } from 'mdml-engine/foundations'
+ * import { cos, sin, stack, type Value } from 'mdml-engine/tensor'
  * arcLength((t: Value) => stack([cos(t), sin(t)], -1), 0, Math.PI) // => 3.141592653589793
  * ```
  */
@@ -160,8 +160,8 @@ export function arcLength(
  * @concept arc-length
  * @example
  * ```ts
- * import { cumulativeArcLength } from 'whitebox-engine/foundations'
- * import { mul, stack, type Value } from 'whitebox-engine/tensor'
+ * import { cumulativeArcLength } from 'mdml-engine/foundations'
+ * import { mul, stack, type Value } from 'mdml-engine/tensor'
  * cumulativeArcLength((t: Value) => stack([mul(t, 3), mul(t, 4)], -1), [0, 1, 2]) // => [0, 5, 10]
  * ```
  */
@@ -182,8 +182,8 @@ export function cumulativeArcLength(r: ParametricCurve, t: readonly number[]): n
  * @concept curvature
  * @example
  * ```ts
- * import { curvature } from 'whitebox-engine/foundations'
- * import { cos, mul, sin, stack, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { curvature } from 'mdml-engine/foundations'
+ * import { cos, mul, sin, stack, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(curvature((t: Value) => stack([mul(cos(t), 2), mul(sin(t), 2)], -1), [0.3])) // => [0.5]
  * ```
  */
@@ -207,8 +207,8 @@ export function curvature(r: ParametricCurve, t: TensorLike): Value {
  * @concept torsion
  * @example
  * ```ts
- * import { torsion } from 'whitebox-engine/foundations'
- * import { cos, sin, stack, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { torsion } from 'mdml-engine/foundations'
+ * import { cos, sin, stack, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(torsion((t: Value) => stack([cos(t), sin(t), t], -1), [0])) // => [0.5]
  * ```
  */
@@ -238,12 +238,12 @@ export interface FrenetFrame {
  * @param r - A curve in 2-D or 3-D.
  * @param t - Parameters `[n]`.
  * @returns The frames.
- * @throws WhiteboxError with code `shape` for other dimensions.
+ * @throws MdmlError with code `shape` for other dimensions.
  * @concept frenet-serret
  * @example
  * ```ts
- * import { frenetFrame } from 'whitebox-engine/foundations'
- * import { cos, sin, stack, type Value } from 'whitebox-engine/tensor'
+ * import { frenetFrame } from 'mdml-engine/foundations'
+ * import { cos, sin, stack, type Value } from 'mdml-engine/tensor'
  * frenetFrame((t: Value) => stack([cos(t), sin(t)], -1), [0]).normal // => [[-1, 0]]
  * ```
  */
@@ -266,7 +266,7 @@ export function frenetFrame(r: ParametricCurve, t: TensorLike): FrenetFrame {
       torsion: null,
     }
   }
-  if (dim !== 3) throw new WhiteboxError('shape', 'frenetFrame: curves in 2-D or 3-D')
+  if (dim !== 3) throw new MdmlError('shape', 'frenetFrame: curves in 2-D or 3-D')
   const b = crossProduct(d1, d2)
   const binormal = div(b, keep(norm(b)))
   const normal = crossProduct(binormal, tangent)
@@ -290,8 +290,8 @@ export function frenetFrame(r: ParametricCurve, t: TensorLike): FrenetFrame {
  * @concept osculating-circle
  * @example
  * ```ts
- * import { osculatingCircle } from 'whitebox-engine/foundations'
- * import { mul, stack, type Value } from 'whitebox-engine/tensor'
+ * import { osculatingCircle } from 'mdml-engine/foundations'
+ * import { mul, stack, type Value } from 'mdml-engine/tensor'
  * osculatingCircle((t: Value) => stack([t, mul(t, t)], -1), [0]) // => { centres: [[0, 0.5]], radii: [0.5] }
  * ```
  */
@@ -320,8 +320,8 @@ export function osculatingCircle(
  * @concept evolute
  * @example
  * ```ts
- * import { evolute } from 'whitebox-engine/foundations'
- * import { cos, mul, sin, stack, type Value } from 'whitebox-engine/tensor'
+ * import { evolute } from 'mdml-engine/foundations'
+ * import { cos, mul, sin, stack, type Value } from 'mdml-engine/tensor'
  * evolute((t: Value) => stack([mul(cos(t), 2), sin(t)], -1), 0, 0, 1) // => [[1.5, 0]]
  * ```
  */
@@ -343,8 +343,8 @@ export type ImplicitCurve = (points: Value) => Value
  * @concept implicit-curves
  * @example
  * ```ts
- * import { traceImplicitCurve } from 'whitebox-engine/foundations'
- * import { mul, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { traceImplicitCurve } from 'mdml-engine/foundations'
+ * import { mul, sub, sum, type Value } from 'mdml-engine/tensor'
  * const circle = (p: Value) => sub(sum(mul(p, p), -1), 1)
  * traceImplicitCurve(circle, [[-2, 2], [-2, 2]], 41).length // => 1
  * ```
@@ -372,8 +372,8 @@ export function traceImplicitCurve(
  * @concept implicit-curves
  * @example
  * ```ts
- * import { implicitCurveGeometry } from 'whitebox-engine/foundations'
- * import { mul, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { implicitCurveGeometry } from 'mdml-engine/foundations'
+ * import { mul, sub, sum, type Value } from 'mdml-engine/tensor'
  * implicitCurveGeometry((p: Value) => sub(sum(mul(p, p), -1), 4), [2, 0]).curvature // => 0.5
  * ```
  */
@@ -389,7 +389,7 @@ export function implicitCurveGeometry(
   const fxy = h[0]?.[1] ?? 0
   const fyy = h[1]?.[1] ?? 0
   const len = Math.hypot(fx, fy)
-  if (len === 0) throw new WhiteboxError('value', 'implicitCurveGeometry: the gradient vanishes (a singular point)')
+  if (len === 0) throw new MdmlError('value', 'implicitCurveGeometry: the gradient vanishes (a singular point)')
   const k = (fy * fy * fxx - 2 * fx * fy * fxy + fx * fx * fyy) / len ** 3
   return { tangent: [-fy / len, fx / len], normal: [fx / len, fy / len], curvature: k }
 }
@@ -441,11 +441,11 @@ const angleOf = (v: readonly number[]): number => {
  * @param coefficients - `[A, B, C, D, E, F]`.
  * @param tol - Relative tolerance for zero discriminants and determinants (default 1e-12).
  * @returns The conic.
- * @throws WhiteboxError with code `value` when A, B and C are all zero (a line, not a conic).
+ * @throws MdmlError with code `value` when A, B and C are all zero (a line, not a conic).
  * @concept conic-sections
  * @example
  * ```ts
- * import { classifyConic } from 'whitebox-engine/foundations'
+ * import { classifyConic } from 'mdml-engine/foundations'
  * const c = classifyConic([1 / 25, 0, 1 / 9, 0, 0, -1])
  * c.type // => 'ellipse'
  * c.foci // => [[-4, 0], [4, 0]]
@@ -460,7 +460,7 @@ export function classifyConic(
   const [A, B, C, D, E, F] = coefficients
   const scale = maxOf(coefficients.map(Math.abs))
   if (Math.max(Math.abs(A), Math.abs(B), Math.abs(C)) <= tol * scale) {
-    throw new WhiteboxError('value', 'classifyConic: A, B and C are all zero')
+    throw new MdmlError('value', 'classifyConic: A, B and C are all zero')
   }
   const delta = A * C - (B * B) / 4
   const big =
@@ -594,7 +594,7 @@ export function classifyConic(
  * @concept conic-sections
  * @example
  * ```ts
- * import { classifyConic, conicPoints } from 'whitebox-engine/foundations'
+ * import { classifyConic, conicPoints } from 'mdml-engine/foundations'
  * conicPoints(classifyConic([1, 0, -1, 0, 0, -1]), 5).length // => 2
  * ```
  */
@@ -637,14 +637,14 @@ export function conicPoints(conic: Conic, n = 100, extent = 2): [number, number]
  * @concept bezier-curves
  * @example
  * ```ts
- * import { bernstein } from 'whitebox-engine/foundations'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { bernstein } from 'mdml-engine/foundations'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(bernstein(2, 1, [0, 0.5, 1])) // => [0, 0.5, 0]
  * ```
  */
 export function bernstein(n: number, i: number, t: TensorLike): Value {
   if (!(Number.isInteger(n) && Number.isInteger(i) && i >= 0 && i <= n)) {
-    throw new WhiteboxError('value', 'bernstein: need integers 0 <= i <= n')
+    throw new MdmlError('value', 'bernstein: need integers 0 <= i <= n')
   }
   const [tv] = promoteFloat(t) as [Value]
   let coef = 1
@@ -672,12 +672,12 @@ export interface DeCasteljau {
  * @concept bezier-curves
  * @example
  * ```ts
- * import { deCasteljau } from 'whitebox-engine/foundations'
+ * import { deCasteljau } from 'mdml-engine/foundations'
  * deCasteljau([[0, 0], [1, 2], [2, 0]], 0.5).point // => [1, 1]
  * ```
  */
 export function deCasteljau(control: readonly (readonly number[])[], t: number): DeCasteljau {
-  if (control.length === 0) throw new WhiteboxError('value', 'deCasteljau: no control points')
+  if (control.length === 0) throw new MdmlError('value', 'deCasteljau: no control points')
   const levels: number[][][] = [control.map((p) => [...p])]
   let current = levels[0] as number[][]
   while (current.length > 1) {
@@ -703,15 +703,15 @@ export function deCasteljau(control: readonly (readonly number[])[], t: number):
  * @concept bezier-curves
  * @example
  * ```ts
- * import { bezier } from 'whitebox-engine/foundations'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { bezier } from 'mdml-engine/foundations'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(bezier([[0, 0], [1, 2], [2, 0]], [0, 0.5, 1])) // => [[0, 0], [1, 1], [2, 0]]
  * ```
  */
 export function bezier(control: TensorLike, t: TensorLike): Value {
   const [c, tv0] = promoteFloat(control, t) as [Value, Value]
   const k = c.shape[0] ?? 0
-  if (c.shape.length !== 2 || k === 0) throw new WhiteboxError('shape', 'bezier: control points [k, d]')
+  if (c.shape.length !== 2 || k === 0) throw new MdmlError('shape', 'bezier: control points [k, d]')
   const tv = keep(params(tv0))
   let level = Array.from({ length: k }, (_, i) => squeeze(sliceAxis(c, 0, i, i + 1), 0))
   while (level.length > 1) {
@@ -734,7 +734,7 @@ export function bezier(control: TensorLike, t: TensorLike): Value {
  * @concept bezier-curves
  * @example
  * ```ts
- * import { bezierSplit } from 'whitebox-engine/foundations'
+ * import { bezierSplit } from 'mdml-engine/foundations'
  * bezierSplit([[0, 0], [2, 2], [4, 0]], 0.5).left // => [[0, 0], [1, 1], [2, 1]]
  * ```
  */
@@ -758,13 +758,13 @@ export function bezierSplit(
  * @concept bezier-curves
  * @example
  * ```ts
- * import { bezierDerivative } from 'whitebox-engine/foundations'
+ * import { bezierDerivative } from 'mdml-engine/foundations'
  * bezierDerivative([[0, 0], [1, 2], [2, 0]]) // => [[2, 4], [2, -4]]
  * ```
  */
 export function bezierDerivative(control: readonly (readonly number[])[]): number[][] {
   const n = control.length - 1
-  if (n < 1) throw new WhiteboxError('value', 'bezierDerivative: need at least two control points')
+  if (n < 1) throw new MdmlError('value', 'bezierDerivative: need at least two control points')
   return control.slice(1).map((p, i) => p.map((x, j) => n * (x - (control[i]?.[j] ?? 0))))
 }
 
@@ -777,7 +777,7 @@ export function bezierDerivative(control: readonly (readonly number[])[]): numbe
  * @concept bezier-curves
  * @example
  * ```ts
- * import { bezierElevate } from 'whitebox-engine/foundations'
+ * import { bezierElevate } from 'mdml-engine/foundations'
  * bezierElevate([[0, 0], [3, 3]]) // => [[0, 0], [1.5, 1.5], [3, 3]]
  * ```
  */

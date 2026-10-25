@@ -3,9 +3,9 @@
  * hyperparameters the estimator was made with.
  */
 
+import type { Estimator } from 'mdml-engine/learn'
+import { defaults, type SpaceValue } from 'mdml-engine/space'
 import type { ReactNode } from 'react'
-import type { Estimator } from 'whitebox-engine/learn'
-import { defaults, type SpaceValue } from 'whitebox-engine/space'
 import { SpaceControls } from './SpaceControls.tsx'
 
 /** Props of {@link MethodControls}. */

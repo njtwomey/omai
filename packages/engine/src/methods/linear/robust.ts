@@ -5,7 +5,7 @@
  * loss, as a linear program).
  */
 
-import { quantileOf, WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError, quantileOf } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { anomalyScores, coefficientTable, type Exposition } from '../../lib/exposition/index.ts'
 import {
@@ -384,7 +384,7 @@ export function theilSenRegressor(
       const design = designOf(data, 'theilSenRegressor')
       const { n, d } = design.x
       const k = d + (h.fitIntercept ? 1 : 0)
-      if (n < k) throw new WhiteboxError('value', `theilSenRegressor: needs at least ${k} samples`)
+      if (n < k) throw new MdmlError('value', `theilSenRegressor: needs at least ${k} samples`)
       const subsets =
         combinations(n, k, h.maxSubpopulation) ??
         Array.from({ length: h.maxSubpopulation }, (_, s) => Array.from(toFlat(subsample(foldKey(options, s), n, k))))
@@ -485,7 +485,7 @@ export function quantileRegressor(
         aEq[i * m + 2 * p + n + i] = -1
       }
       const r = linprog({ c, aEq: matrixTensor(aEq, n, m), bEq: vectorTensor(design.y) })
-      if (!r.success) throw new WhiteboxError('convergence', `quantileRegressor: ${r.message}`)
+      if (!r.success) throw new MdmlError('convergence', `quantileRegressor: ${r.message}`)
       const z = toFlat(r.x)
       const beta = Array.from({ length: p }, (_, j) => (z[j] ?? 0) - (z[p + j] ?? 0))
       const coef = beta.slice(0, d)

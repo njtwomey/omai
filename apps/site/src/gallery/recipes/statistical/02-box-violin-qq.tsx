@@ -1,8 +1,8 @@
+import { key, normal } from 'mdml-engine/random'
+import { boxPlot, qqPlot, subplots, violinPlot } from 'mdml-render/charts'
+import { figure, gridSpec } from 'mdml-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { key, normal } from 'whitebox-engine/random'
-import { boxPlot, qqPlot, subplots, violinPlot } from 'whitebox-render/charts'
-import { figure, gridSpec } from 'whitebox-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

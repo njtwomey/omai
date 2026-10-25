@@ -6,8 +6,8 @@ from typing import Literal
 import astropy
 import numpy as np
 from astropy.stats import RipleysKEstimator
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"astropy": astropy.__version__, "numpy": np.__version__}
 

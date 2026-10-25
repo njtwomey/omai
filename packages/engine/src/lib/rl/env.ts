@@ -117,8 +117,8 @@ export interface EnvDefinition<S = unknown, O = unknown, A = unknown> {
  * @concept environments
  * @example
  * ```ts
- * import { make, unwrapped } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { make, unwrapped } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * unwrapped(make(cartPole)).spec.maxEpisodeSteps // => 500
  * ```
  */
@@ -139,9 +139,9 @@ export function unwrapped(env: Env<unknown, unknown, unknown>): Env<unknown, unk
  * @concept environments
  * @example
  * ```ts
- * import { resetAfter } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { resetAfter } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * resetAfter(cartPole.create(), undefined, key(0)).observation.length // => 4
  * ```
  */
@@ -157,8 +157,8 @@ export function resetAfter<S, O, A>(env: Env<S, O, A>, previous: S | undefined, 
  * @returns Whether it is an {@link EnvDefinition}.
  * @example
  * ```ts
- * import { isEnvDefinition } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { isEnvDefinition } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * isEnvDefinition(cartPole) // => true
  * ```
  */

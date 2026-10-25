@@ -3,9 +3,9 @@
  * constraint auditor, traced over iterations on tabular data with a protected attribute.
  */
 
-import type { ReductionConstraint } from 'whitebox-engine/fairness'
-import { exponentiatedGradient as reduce } from 'whitebox-engine/methods/fairness'
-import { choice, dict, int, real } from 'whitebox-engine/space'
+import type { ReductionConstraint } from 'mdml-engine/fairness'
+import { exponentiatedGradient as reduce } from 'mdml-engine/methods/fairness'
+import { choice, dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fairnessDataOf } from './_shared.ts'
 

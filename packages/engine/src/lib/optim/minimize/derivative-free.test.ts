@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beale, himmelblau, quadratic, rosen } from '../../../testing/optim-problems.ts'
-import { isWhiteboxError } from '../../base/index.ts'
+import { isMdmlError } from '../../base/index.ts'
 import { add, concat, reshape, sliceAxis, square, sub, sum, toFlat, type Value } from '../../tensor/index.ts'
 import { messages, metricSeries, policies, recorder, tensorSeries } from '../../trace/index.ts'
 import { cobyla } from './cobyla.ts'
@@ -82,7 +82,7 @@ describe('Nelder-Mead', () => {
     try {
       bad()
     } catch (e) {
-      expect(isWhiteboxError(e, 'value')).toBe(true)
+      expect(isMdmlError(e, 'value')).toBe(true)
     }
   })
 })

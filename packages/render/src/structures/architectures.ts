@@ -1,5 +1,5 @@
 /**
- * Views of a neural network's structure, as `describe` in `whitebox-engine/nn` gives it: the full diagram (blocks and
+ * Views of a neural network's structure, as `describe` in `mdml-engine/nn` gives it: the full diagram (blocks and
  * repeats as groups, skip connections, tensor shapes on the edges), a compact stack of one box per layer, the flow of
  * tensor shapes, and a treemap of parameter counts, with `flowOrder` for animating a forward pass.
  */
@@ -13,7 +13,7 @@ import {
   type StructureNode,
   scene,
   text,
-} from 'whitebox-engine/scene'
+} from 'mdml-engine/scene'
 import { type DiagramOptions, diagram } from './diagram.ts'
 
 /** The views of a network's structure. */
@@ -203,7 +203,7 @@ function paramTreemap(s: Structure, width: number): Scene {
 }
 
 /**
- * Views of a network's structure (as `describe` in `whitebox-engine/nn` gives it): the full `diagram` (blocks and
+ * Views of a network's structure (as `describe` in `mdml-engine/nn` gives it): the full `diagram` (blocks and
  * repeats as groups, skip connections, shapes on the edges), a `compact` stack (one box per layer, no groups or edge
  * labels), the tensor-shape flow (`shapes`: each layer a bar sized by its output per example), and a treemap of where
  * the parameters are (`params`).
@@ -214,8 +214,8 @@ function paramTreemap(s: Structure, width: number): Scene {
  * @returns The scene.
  * @example
  * ```ts
- * import { describe, mlp } from 'whitebox-engine/nn'
- * import { architecture } from 'whitebox-render/structures'
+ * import { describe, mlp } from 'mdml-engine/nn'
+ * import { architecture } from 'mdml-render/structures'
  * architecture(describe(mlp([2, 4, 1]), [8, 2]), 'params').title // => 'parameters'
  * ```
  */

@@ -1,4 +1,4 @@
-# whitebox-js: the single interface for routine work. Run `make help` for the list.
+# mdml-js: the single interface for routine work. Run `make help` for the list.
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
@@ -64,15 +64,15 @@ coverage: ## Run tests with coverage thresholds
 
 .PHONY: fixtures
 fixtures: ## Regenerate golden fixtures from the Python oracle (needs the oracle groups)
-	$(UV) run --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl python -m whitebox_oracle generate
+	$(UV) run --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl python -m mdml_oracle generate
 
 .PHONY: fixtures-check
 fixtures-check: ## Regenerate fixtures to a temporary directory and fail on any difference
-	$(UV) run --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl python -m whitebox_oracle check
+	$(UV) run --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl python -m mdml_oracle check
 
 .PHONY: manifest
 manifest: ## Rebuild fixtures/manifest.json from the fixture files (for merge conflicts; runs no case module)
-	$(UV) run --group oracle-core python -m whitebox_oracle manifest
+	$(UV) run --group oracle-core python -m mdml_oracle manifest
 
 .PHONY: examples
 examples: ## Run every @example of the engine core and check its `// =>` lines (ARGS="--only stats --methods" etc.)

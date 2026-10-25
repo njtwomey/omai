@@ -4,7 +4,7 @@
  * hypothesis of a test, and confidence levels.
  */
 
-import { WhiteboxError } from './errors.ts'
+import { MdmlError } from './errors.ts'
 
 /** Convergence tolerances shared by iterative methods. */
 export interface Tolerance {
@@ -22,7 +22,7 @@ export type Reduction = 'mean' | 'sum' | 'none'
  * @returns The defaults.
  * @example
  * ```ts
- * import { defaultTolerance } from 'whitebox-engine/base'
+ * import { defaultTolerance } from 'mdml-engine/base'
  * defaultTolerance.maxIter // => 1000
  * ```
  */
@@ -35,7 +35,7 @@ export const defaultTolerance: Tolerance = { atol: 1e-10, rtol: 1e-8, maxIter: 1
  * @returns A complete tolerance.
  * @example
  * ```ts
- * import { resolveTolerance } from 'whitebox-engine/base'
+ * import { resolveTolerance } from 'mdml-engine/base'
  * resolveTolerance({ maxIter: 50 }).rtol // => 1e-8
  * ```
  */
@@ -49,7 +49,7 @@ export function resolveTolerance(partial: Partial<Tolerance> = {}): Tolerance {
  * @returns The default.
  * @example
  * ```ts
- * import { defaultReduction } from 'whitebox-engine/base'
+ * import { defaultReduction } from 'mdml-engine/base'
  * defaultReduction // => 'mean'
  * ```
  */
@@ -64,7 +64,7 @@ export type Alternative = 'two-sided' | 'less' | 'greater'
  * @returns The default.
  * @example
  * ```ts
- * import { defaultAlternative } from 'whitebox-engine/base'
+ * import { defaultAlternative } from 'mdml-engine/base'
  * defaultAlternative // => 'two-sided'
  * ```
  */
@@ -79,7 +79,7 @@ export type ConfidenceLevel = number
  * @returns The default.
  * @example
  * ```ts
- * import { defaultConfidenceLevel } from 'whitebox-engine/base'
+ * import { defaultConfidenceLevel } from 'mdml-engine/base'
  * defaultConfidenceLevel // => 0.95
  * ```
  */
@@ -90,15 +90,15 @@ export const defaultConfidenceLevel: ConfidenceLevel = 0.95
  *
  * @param level - The level, or undefined for the default.
  * @returns The level.
- * @throws WhiteboxError with code `value` when the level is outside (0, 1).
+ * @throws MdmlError with code `value` when the level is outside (0, 1).
  * @example
  * ```ts
- * import { resolveConfidenceLevel } from 'whitebox-engine/base'
+ * import { resolveConfidenceLevel } from 'mdml-engine/base'
  * resolveConfidenceLevel() // => 0.95
  * resolveConfidenceLevel(0.9) // => 0.9
  * ```
  */
 export function resolveConfidenceLevel(level: ConfidenceLevel = defaultConfidenceLevel): ConfidenceLevel {
-  if (!(level > 0 && level < 1)) throw new WhiteboxError('value', `confidence level must lie in (0, 1), got ${level}`)
+  if (!(level > 0 && level < 1)) throw new MdmlError('value', `confidence level must lie in (0, 1), got ${level}`)
   return level
 }

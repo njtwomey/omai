@@ -3,8 +3,8 @@
  * of a classifier's confusion matrix, both played through training when the record has steps.
  */
 
+import type { ConfusionMatrix, ValueGrids } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
-import type { ConfusionMatrix, ValueGrids } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { cellsLayout, confusionFrames, valueGridFrames } from '../../views/cells.ts'
 import { FramesPlayer, type PlayerViewProps, type RecordViewProps, useViewFigure } from './_frame.tsx'

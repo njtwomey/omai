@@ -5,8 +5,8 @@ inside the tokenizer.json HF serialises around it, so the test also checks loadi
 import json
 from importlib.metadata import version
 
+from mdml_oracle.fixture import Case, case
 from tokenizers import Regex, Tokenizer, decoders, models, normalizers, pre_tokenizers
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"tokenizers": version("tokenizers")}
 

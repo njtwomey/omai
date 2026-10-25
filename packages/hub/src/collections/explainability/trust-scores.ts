@@ -3,9 +3,9 @@
  * model's own confidence.
  */
 
-import { trainTestSplit } from 'whitebox-engine/data'
-import { trustScoreStudy } from 'whitebox-engine/methods/explain'
-import { dict, int, real } from 'whitebox-engine/space'
+import { trainTestSplit } from 'mdml-engine/data'
+import { trustScoreStudy } from 'mdml-engine/methods/explain'
+import { dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 import { type ExplainedModel, fitModel, modelControl } from './_explain.ts'

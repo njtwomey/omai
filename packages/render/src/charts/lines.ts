@@ -4,8 +4,8 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { WhiteboxError } from 'whitebox-engine/base'
-import { asTensor, type TensorLike, toFlat } from 'whitebox-engine/tensor'
+import { MdmlError } from 'mdml-engine/base'
+import { asTensor, type TensorLike, toFlat } from 'mdml-engine/tensor'
 import { extentOf, unionRange } from '../figure/limits.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { colourFor, dashType, modeOf, numbers } from './_data.ts'
@@ -39,7 +39,7 @@ export interface LineOptions {
 function pairs(c: Curve): [number, number][] {
   const y = numbers(c.y)
   const x = c.x === undefined ? y.map((_, i) => i) : numbers(c.x)
-  if (x.length !== y.length) throw new WhiteboxError('shape', 'lines: x and y must have the same length')
+  if (x.length !== y.length) throw new MdmlError('shape', 'lines: x and y must have the same length')
   return y.map((v, i) => [x[i] ?? i, v])
 }
 
@@ -51,7 +51,7 @@ function pairs(c: Curve): [number, number][] {
  * @returns The layer.
  * @example
  * ```ts
- * import { lines } from 'whitebox-render/charts'
+ * import { lines } from 'mdml-render/charts'
  * const l = lines([{ y: [1, 3, 2], name: 'loss' }])
  * l.extent // => { x: [0, 2], y: [1, 3] }
  * l.series[0].name // => 'loss'
@@ -118,7 +118,7 @@ interface PolygonApi {
  * @returns The layer.
  * @example
  * ```ts
- * import { band } from 'whitebox-render/charts'
+ * import { band } from 'mdml-render/charts'
  * band([{ x: [0, 1, 2], lower: [0, 0, 1], upper: [1, 2, 2] }]).extent // => { x: [0, 2], y: [0, 2] }
  * ```
  */
@@ -132,7 +132,7 @@ export function band(bands: readonly Band[], options: LineOptions = {}): Layer {
     const lo = numbers(b.lower)
     const hi = numbers(b.upper)
     if (lo.length !== x.length || hi.length !== x.length)
-      throw new WhiteboxError('shape', 'band: x, lower and upper must have the same length')
+      throw new MdmlError('shape', 'band: x, lower and upper must have the same length')
     const polygons: Pt[][] = []
     let run: number[] = []
     const flush = (): void => {
@@ -188,7 +188,7 @@ export function band(bands: readonly Band[], options: LineOptions = {}): Layer {
  * @returns The curves.
  * @example
  * ```ts
- * import { curvesFromTensor } from 'whitebox-render/charts'
+ * import { curvesFromTensor } from 'mdml-render/charts'
  * curvesFromTensor([1, 2, 3]).length // => 1
  * curvesFromTensor([[0, 1], [1, 3], [2, 5]])[0].y // => [1, 3, 5]
  * curvesFromTensor([[1, 2, 3], [4, 5, 6]], { names: ['a', 'b'] })[1].name // => 'b'
@@ -203,7 +203,7 @@ export function curvesFromTensor(t: TensorLike, options: { readonly names?: read
     return name === undefined ? {} : { name }
   }
   if (shape.length <= 1) return [{ y: flat, ...named(0) }]
-  if (shape.length !== 2) throw new WhiteboxError('shape', 'curvesFromTensor: give a 1-D or 2-D tensor')
+  if (shape.length !== 2) throw new MdmlError('shape', 'curvesFromTensor: give a 1-D or 2-D tensor')
   const [k = 0, n = 0] = shape
   if (n === 2 && k !== 2)
     return [{ x: flat.filter((_, i) => i % 2 === 0), y: flat.filter((_, i) => i % 2 === 1), ...named(0) }]
@@ -218,7 +218,7 @@ export function curvesFromTensor(t: TensorLike, options: { readonly names?: read
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { lineChart } from 'whitebox-render/charts'
+ * import { lineChart } from 'mdml-render/charts'
  * const o = lineChart([{ y: [3, 1, 2], name: 'a' }, { y: [1, 2, 3], name: 'b' }])
  * o.legend.show // => true
  * ```

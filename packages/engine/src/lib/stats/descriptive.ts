@@ -4,7 +4,7 @@
  * the standard error of the mean, the mode, and the geometric and harmonic means.
  */
 
-import { meanOf, pairwiseSum, varianceOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, meanOf, pairwiseSum, varianceOf } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { sample, vec } from './_util.ts'
 
@@ -28,8 +28,8 @@ export interface VarianceOptions extends WeightOptions {
 function weightsOf(name: string, w: TensorLike | undefined, n: number): Float64Array | undefined {
   if (w === undefined) return undefined
   const out = sample(name, w)
-  if (out.length !== n) throw new WhiteboxError('shape', `${name}: weights must match the data`)
-  for (const v of out) if (!(v >= 0)) throw new WhiteboxError('domain', `${name}: weights must be non-negative`)
+  if (out.length !== n) throw new MdmlError('shape', `${name}: weights must match the data`)
+  for (const v of out) if (!(v >= 0)) throw new MdmlError('domain', `${name}: weights must be non-negative`)
   return out
 }
 
@@ -54,7 +54,7 @@ function momentAbout(x: Float64Array, k: number, c: number, w?: Float64Array): n
  * @returns The mean.
  * @example
  * ```ts
- * import { mean } from 'whitebox-engine/stats'
+ * import { mean } from 'mdml-engine/stats'
  * mean([1, 2, 3, 6]) // => 3
  * mean([1, 3], { weights: [3, 1] }) // => 1.5
  * ```
@@ -74,7 +74,7 @@ export function mean(x: TensorLike, options: WeightOptions = {}): number {
  * @returns The variance (`NaN` when the divisor is not positive).
  * @example
  * ```ts
- * import { variance } from 'whitebox-engine/stats'
+ * import { variance } from 'mdml-engine/stats'
  * variance([1, 2, 3, 4]) // => 1.25
  * variance([1, 2, 3, 4], { ddof: 1 }) // => 1.6666666666666667
  * variance([1, 2, 3], { weights: [1, 2, 1], ddof: 1 }) // => 0.6666666666666666
@@ -105,7 +105,7 @@ export function variance(x: TensorLike, options: VarianceOptions = {}): number {
  * @returns The standard deviation.
  * @example
  * ```ts
- * import { std } from 'whitebox-engine/stats'
+ * import { std } from 'mdml-engine/stats'
  * std([2, 4, 4, 4, 5, 5, 7, 9]) // => 2
  * ```
  */
@@ -128,14 +128,13 @@ export interface MomentOptions extends WeightOptions {
  * @returns The moment; order 0 is 1 and order 1 about the mean is 0.
  * @example
  * ```ts
- * import { moment } from 'whitebox-engine/stats'
+ * import { moment } from 'mdml-engine/stats'
  * moment([1, 2, 3, 4, 5], 2) // => 2
  * moment([1, 2, 3], 1, { center: 0 }) // => 2
  * ```
  */
 export function moment(x: TensorLike, order: number, options: MomentOptions = {}): number {
-  if (!(Number.isInteger(order) && order >= 0))
-    throw new WhiteboxError('value', 'moment: order must be an integer >= 0')
+  if (!(Number.isInteger(order) && order >= 0)) throw new MdmlError('value', 'moment: order must be an integer >= 0')
   const a = sample('moment', x)
   const w = weightsOf('moment', options.weights, a.length)
   if (order === 0) return 1
@@ -159,7 +158,7 @@ export interface ShapeOptions extends WeightOptions {
  * @returns The skewness (`NaN` for a constant sample).
  * @example
  * ```ts
- * import { skewness } from 'whitebox-engine/stats'
+ * import { skewness } from 'mdml-engine/stats'
  * skewness([1, 2, 3]) // => 0
  * skewness([1, 1, 1, 4]) // => 1.1547005383792515
  * ```
@@ -193,7 +192,7 @@ export interface KurtosisOptions extends ShapeOptions {
  * @returns The kurtosis (`NaN` for a constant sample).
  * @example
  * ```ts
- * import { kurtosis } from 'whitebox-engine/stats'
+ * import { kurtosis } from 'mdml-engine/stats'
  * kurtosis([1, 2, 3, 4]) // => -1.36
  * kurtosis([1, 2, 3, 4], { fisher: false }) // => 1.64
  * ```
@@ -236,7 +235,7 @@ export interface Description {
  * @returns The description.
  * @example
  * ```ts
- * import { describe } from 'whitebox-engine/stats'
+ * import { describe } from 'mdml-engine/stats'
  * const d = describe([1, 2, 3, 4, 5])
  * [d.n, d.min, d.max, d.mean, d.variance, d.skewness] // => [5, 1, 5, 3, 2.5, 0]
  * ```
@@ -272,7 +271,7 @@ export function describe(
  * @returns The z-scores, one per observation.
  * @example
  * ```ts
- * import { zscore } from 'whitebox-engine/stats'
+ * import { zscore } from 'mdml-engine/stats'
  * zscore([1, 2, 3]) // => [-1.224745, 0, 1.224745]
  * ```
  */
@@ -291,7 +290,7 @@ export function zscore(x: TensorLike, options: { readonly ddof?: number } = {}):
  * @returns The standard error.
  * @example
  * ```ts
- * import { sem } from 'whitebox-engine/stats'
+ * import { sem } from 'mdml-engine/stats'
  * sem([1, 2, 3, 4]) // => 0.6454972243679028
  * ```
  */
@@ -313,7 +312,7 @@ export interface ModeResult {
  * @returns The mode and its count.
  * @example
  * ```ts
- * import { mode } from 'whitebox-engine/stats'
+ * import { mode } from 'mdml-engine/stats'
  * mode([3, 1, 3, 2, 1]) // => { mode: 1, count: 2 }
  * ```
  */
@@ -336,7 +335,7 @@ export function mode(x: TensorLike): ModeResult {
 
 function positiveSample(name: string, x: TensorLike): Float64Array {
   const a = sample(name, x)
-  for (const v of a) if (v < 0) throw new WhiteboxError('domain', `${name}: values must be non-negative`)
+  for (const v of a) if (v < 0) throw new MdmlError('domain', `${name}: values must be non-negative`)
   return a
 }
 
@@ -346,10 +345,10 @@ function positiveSample(name: string, x: TensorLike): Float64Array {
  * @param x - Non-negative values (a zero gives 0).
  * @param options - Optional weights.
  * @returns The geometric mean.
- * @throws WhiteboxError with code `domain` for negative values.
+ * @throws MdmlError with code `domain` for negative values.
  * @example
  * ```ts
- * import { geometricMean } from 'whitebox-engine/stats'
+ * import { geometricMean } from 'mdml-engine/stats'
  * geometricMean([1, 4]) // => 2
  * geometricMean([1, 2, 4]) // => 2
  * ```
@@ -367,10 +366,10 @@ export function geometricMean(x: TensorLike, options: { readonly weights?: Tenso
  * @param x - Non-negative values (a zero gives 0).
  * @param options - Optional weights.
  * @returns The harmonic mean.
- * @throws WhiteboxError with code `domain` for negative values.
+ * @throws MdmlError with code `domain` for negative values.
  * @example
  * ```ts
- * import { harmonicMean } from 'whitebox-engine/stats'
+ * import { harmonicMean } from 'mdml-engine/stats'
  * harmonicMean([1, 4, 4]) // => 2
  * ```
  */

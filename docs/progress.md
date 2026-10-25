@@ -38,7 +38,7 @@ each workstream left, and the queue for resuming. Everything below is on `main`;
   random, TPE, GP searches with pruning), classical AI (search, adversarial, CSPs, planning), evolutionary, patterns,
   complex systems, neural (MLPs, perceptron, backprop by hand, optimiser and training studies, LeNet, RNNs),
   generative (RealNVP, VAEs). Goldens against scikit-learn, scipy, statsmodels and hmmlearn where cheap.
-- **Docs**: `whitebox-meta` (catalogue extraction, example runner, coverage), docs section mirroring the source tree,
+- **Docs**: `mdml-meta` (catalogue extraction, example runner, coverage), docs section mirroring the source tree,
   highlighted, executable examples with `// =>` outcomes, search.
 - **Core fixes found on the way**: LP verdicts cross-checked, PELT exact with a minimum segment, symbolic product
   parsing, NUFFT accuracy, homography with four points, B-spline validation, BVH tie-breaking, `eigh` deflation,

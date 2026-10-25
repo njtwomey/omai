@@ -3,8 +3,8 @@
  * page can show a method's whole exposition without knowing its kinds.
  */
 
+import type { Exposition } from 'mdml-engine/exposition'
 import type { ReactElement } from 'react'
-import type { Exposition } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { AnomalyView } from './anomaly.tsx'
 import { AttributionView, ImportanceView } from './attributions.tsx'

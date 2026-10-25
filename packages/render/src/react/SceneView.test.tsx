@@ -1,6 +1,6 @@
+import { arrow, axes3d, circle, group, path, rect, scene, scene3d, text } from 'mdml-engine/scene'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { arrow, axes3d, circle, group, path, rect, scene, scene3d, text } from 'whitebox-engine/scene'
 import { tokens } from '../theme/tokens.ts'
 import { Scene3DView } from './Scene3DView.tsx'
 import { SceneView } from './SceneView.tsx'

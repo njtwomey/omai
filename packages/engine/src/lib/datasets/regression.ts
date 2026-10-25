@@ -83,8 +83,8 @@ const knobs = (minFeatures: number) =>
  * @returns The regression function at each row `[n]`.
  * @example
  * ```ts
- * import { friedman1Function } from 'whitebox-engine/datasets'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { friedman1Function } from 'mdml-engine/datasets'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * toFlat(friedman1Function(tensor([[0, 0, 0.5, 1, 1]]))) // => [15]
  * ```
  */
@@ -104,7 +104,7 @@ export function friedman1Function(x: Value): Value {
  * @returns The program.
  * @example
  * ```ts
- * import { friedman1Program } from 'whitebox-engine/datasets'
+ * import { friedman1Program } from 'mdml-engine/datasets'
  * friedman1Program(5, 1).target // => 'y'
  * ```
  */
@@ -131,8 +131,8 @@ export function friedman1Program(d: number, noise: number): GeneratingProgram {
  * @concept datasets
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { friedman1 } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { friedman1 } from 'mdml-engine/datasets'
  * generate(friedman1, { knobs: { n: 20, noise: 1 } }).truth.bayesError // => 1
  * ```
  */
@@ -185,8 +185,8 @@ const FRIEDMAN23_RANGES: readonly (readonly [number, number])[] = [
  * @returns The regression function `[n]`.
  * @example
  * ```ts
- * import { friedman2Function } from 'whitebox-engine/datasets'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { friedman2Function } from 'mdml-engine/datasets'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * toFlat(friedman2Function(tensor([[3, 1, 5, 1]]))) // => [5]
  * ```
  */
@@ -202,8 +202,8 @@ export function friedman2Function(x: Value): Value {
  * @returns The regression function `[n]`.
  * @example
  * ```ts
- * import { friedman3Function } from 'whitebox-engine/datasets'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { friedman3Function } from 'mdml-engine/datasets'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * toFlat(friedman3Function(tensor([[1, 1, 1, 1]]))) // => [0]
  * ```
  */
@@ -254,8 +254,8 @@ function friedman23(
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { friedman2 } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { friedman2 } from 'mdml-engine/datasets'
  * generate(friedman2).data.x.shape // => [100, 4]
  * ```
  */
@@ -270,8 +270,8 @@ export const friedman2: DatasetGenerator<RegressionData> = friedman23(
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { friedman3 } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { friedman3 } from 'mdml-engine/datasets'
  * generate(friedman3).data.featureNames // => ['x0', 'x1', 'x2', 'x3']
  * ```
  */
@@ -295,8 +295,8 @@ function design(k: Key, n: number, d: number, effectiveRank: number, tailStrengt
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { makeRegression } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { makeRegression } from 'mdml-engine/datasets'
  * generate(makeRegression, { knobs: { nInformative: 3 } }).truth.relevantFeatures // => [0, 1, 2]
  * ```
  */
@@ -380,8 +380,8 @@ export const makeRegression: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { sparseUncorrelated } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { sparseUncorrelated } from 'mdml-engine/datasets'
  * generate(sparseUncorrelated).truth.extra?.['coefficients'] // => [1, 2, -2, -1.5, 0, 0, 0, 0, 0, 0]
  * ```
  */

@@ -6,7 +6,7 @@
  * figures.
  */
 
-import { argmaxOf, heap, type Json, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, heap, type Json, MdmlError, maxOf } from '../../../lib/base/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../../../lib/random/index.ts'
 import type { Agent, Policy, Transition } from '../../../lib/rl/index.ts'
 import {
@@ -135,7 +135,7 @@ function controlAgent<O, G extends TabularState>(spec: ControlSpec<O, G>): Agent
   })
   const check = (code: number): number => {
     if (!(Number.isInteger(code) && code >= 0 && code < nS)) {
-      throw new WhiteboxError('value', `${spec.name}: state index ${code} is outside [0, ${nS})`)
+      throw new MdmlError('value', `${spec.name}: state index ${code} is outside [0, ${nS})`)
     }
     return code
   }
@@ -200,9 +200,9 @@ function controlAgent<O, G extends TabularState>(spec: ControlSpec<O, G>): Agent
  * @concept q-learning
  * @example
  * ```ts
- * import { qLearning } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { qLearning } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = qLearning(cliffWalking.create(), { alpha: 0.5, gamma: 1 })
  * const s = agent.learn(agent.init(key(0)), { observation: 36, action: 0, reward: -1, nextObservation: 24, terminated: false, truncated: false }, key(1))
  * s.Q[36 * 4] // => -0.5
@@ -240,9 +240,9 @@ export interface SarsaState extends TabularState {
  * @concept sarsa
  * @example
  * ```ts
- * import { sarsa } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { sarsa } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = sarsa(cliffWalking.create(), { alpha: 0.5 })
  * const t = { observation: 36, action: 0, reward: -1, nextObservation: 24, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).previous // => { s: 36, a: 0, r: -1, s2: 24 }
@@ -292,9 +292,9 @@ export interface ExpectedSarsaOptions<O> extends TabularOptions<O> {
  * @concept sarsa
  * @example
  * ```ts
- * import { expectedSarsa } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { expectedSarsa } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = expectedSarsa(cliffWalking.create(), { alpha: 0.5, targetEpsilon: 0 })
  * const t = { observation: 36, action: 0, reward: -1, nextObservation: 24, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).Q[144] // => -0.5
@@ -352,13 +352,13 @@ export interface NStepSarsaState extends TabularState {
  * @param env - The environment.
  * @param options - `n`, the expected variant, step size, discount, exploration and the observation coding.
  * @returns The agent.
- * @throws WhiteboxError with code `value` when `n` is not a positive integer.
+ * @throws MdmlError with code `value` when `n` is not a positive integer.
  * @concept sarsa
  * @example
  * ```ts
- * import { nStepSarsa } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { nStepSarsa } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = nStepSarsa(cliffWalking.create(), { n: 3 })
  * const t = { observation: 36, action: 0, reward: -1, nextObservation: 24, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).window // => [{ s: 36, a: 0, r: -1, s2: 24 }]
@@ -369,7 +369,7 @@ export function nStepSarsa<O>(
   options: NStepSarsaOptions<O> = {},
 ): Agent<NStepSarsaState, O, number> {
   const n = options.n ?? 4
-  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', 'nStepSarsa: n must be a positive integer')
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'nStepSarsa: n must be a positive integer')
   const expected = options.expected ?? false
   type Table = { readonly Q: Float64Array; readonly visits: Float64Array; readonly delta: number }
   // Update window[0] with its rewards and `tail` (gamma^k times the bootstrap value, already discounted).
@@ -456,9 +456,9 @@ export interface MonteCarloState extends TabularState {
  * @concept monte-carlo-methods
  * @example
  * ```ts
- * import { monteCarloControl } from 'whitebox-engine/methods/rl/agents'
- * import { blackjack } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { monteCarloControl } from 'mdml-engine/methods/rl/agents'
+ * import { blackjack } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * monteCarloControl(blackjack.create(), { exploringStarts: true }).init(key(0)).nStates // => 704
  * ```
  */
@@ -534,9 +534,9 @@ export interface SarsaLambdaState extends SarsaState {
  * @concept eligibility-traces
  * @example
  * ```ts
- * import { sarsaLambda } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { sarsaLambda } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * sarsaLambda(cliffWalking.create(), { lambda: 0.8, trace: 'replacing' }).init(key(0)).z.length // => 192
  * ```
  */
@@ -616,9 +616,9 @@ export interface DoubleQState extends TabularState {
  * @concept q-learning
  * @example
  * ```ts
- * import { doubleQLearning } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { doubleQLearning } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * doubleQLearning(cliffWalking.create()).init(key(0)).QA.length // => 192
  * ```
  */
@@ -721,9 +721,9 @@ export interface DynaQState extends TabularState {
  * @concept model-based-reinforcement-learning
  * @example
  * ```ts
- * import { dynaQ } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { dynaQ } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = dynaQ(cliffWalking.create(), { planningSteps: 5 })
  * const t = { observation: 36, action: 0, reward: -1, nextObservation: 24, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).model.observed // => [144]
@@ -812,9 +812,9 @@ const sweepOrder = (x: SweepEntry, y: SweepEntry): number => y.priority - x.prio
  * @concept model-based-reinforcement-learning
  * @example
  * ```ts
- * import { prioritizedSweeping } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { prioritizedSweeping } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = prioritizedSweeping(cliffWalking.create(), { alpha: 1, gamma: 1 })
  * const t = { observation: 36, action: 0, reward: -1, nextObservation: 24, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).Q[144] // => -1
@@ -995,9 +995,9 @@ function predictionAgent<O>(
  * @concept temporal-difference-learning
  * @example
  * ```ts
- * import { td0 } from 'whitebox-engine/methods/rl/agents'
- * import { riverSwim } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { td0 } from 'mdml-engine/methods/rl/agents'
+ * import { riverSwim } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = td0(riverSwim.create(), { alpha: 0.5, gamma: 0.9 })
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).V[0] // => 0.5
@@ -1031,9 +1031,9 @@ export interface TdLambdaOptions<O> extends TdOptions<O> {
  * @concept eligibility-traces
  * @example
  * ```ts
- * import { tdLambda } from 'whitebox-engine/methods/rl/agents'
- * import { riverSwim } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { tdLambda } from 'mdml-engine/methods/rl/agents'
+ * import { riverSwim } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = tdLambda(riverSwim.create(), { alpha: 0.5, lambda: 0.5, trace: 'dutch' })
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).V[0] // => 0.5
@@ -1078,9 +1078,9 @@ export function tdLambda<O>(env: TabularEnvLike<O>, options: TdLambdaOptions<O> 
  * @concept q-learning
  * @example
  * ```ts
- * import { qLearning, qTable } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { qLearning, qTable } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * qTable(qLearning(cliffWalking.create()).init(key(0)))[0] // => [0, 0, 0, 0]
  * ```
  */
@@ -1096,9 +1096,9 @@ export function qTable(state: TabularState): number[][] {
  * @concept temporal-difference-learning
  * @example
  * ```ts
- * import { td0, valueTable } from 'whitebox-engine/methods/rl/agents'
- * import { riverSwim } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { td0, valueTable } from 'mdml-engine/methods/rl/agents'
+ * import { riverSwim } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * valueTable(td0(riverSwim.create(), { initialValue: 1 }).init(key(0))) // => [1, 1, 1, 1, 1, 1]
  * ```
  */
@@ -1116,9 +1116,9 @@ export function valueTable(state: TabularState | TdState): number[] {
  * @concept q-learning
  * @example
  * ```ts
- * import { greedyTable, qLearning } from 'whitebox-engine/methods/rl/agents'
- * import { cliffWalking } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { greedyTable, qLearning } from 'mdml-engine/methods/rl/agents'
+ * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * greedyTable(qLearning(cliffWalking.create()).init(key(0))).length // => 48
  * ```
  */

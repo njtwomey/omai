@@ -1,11 +1,11 @@
+import { breastCancer, diabetes } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { randomForestClassifier } from 'mdml-engine/methods/ensemble'
+import { anchorExplanation, logisticScorecard, ruleFitExplanation } from 'mdml-engine/methods/explain'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { key } from 'mdml-engine/random'
+import { Choice, ControlPanel, RuleListView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { breastCancer, diabetes } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { randomForestClassifier } from 'whitebox-engine/methods/ensemble'
-import { anchorExplanation, logisticScorecard, ruleFitExplanation } from 'whitebox-engine/methods/explain'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { key } from 'whitebox-engine/random'
-import { Choice, ControlPanel, RuleListView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

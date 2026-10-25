@@ -1,5 +1,5 @@
 // Helpers shared by the learn modules (not exported from the domain).
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { resolveKey } from '../context/index.ts'
 import type { Key } from '../random/index.ts'
 import type { RunOptions } from '../trace/index.ts'
@@ -12,7 +12,7 @@ const EPS = 2.220446049250313e-16
 /** Default input feature names `x0, x1, ...` (sklearn's), or the given ones checked for length. */
 export function inputNames(d: number, input: readonly string[] | undefined, who: string): string[] {
   if (input === undefined) return Array.from({ length: d }, (_, j) => `x${j}`)
-  if (input.length !== d) throw new WhiteboxError('shape', `${who}: ${input.length} feature names for ${d} features`)
+  if (input.length !== d) throw new MdmlError('shape', `${who}: ${input.length} feature names for ${d} features`)
   return [...input]
 }
 

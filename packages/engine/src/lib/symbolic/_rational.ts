@@ -1,6 +1,6 @@
 // Exact rational arithmetic on bigints: the number field of symbolic expressions. Every rational is normalised
 // (positive denominator, numerator and denominator coprime), so equal values have equal representations.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { charge } from './_budget.ts'
 
 /** A normalised rational number n / d with d > 0 and gcd(n, d) = 1. @internal */
@@ -37,7 +37,7 @@ export function blcm(a: bigint, b: bigint): bigint {
 
 /** Build a normalised rational. @internal */
 export function rat(n: bigint, d: bigint = 1n): Rational {
-  if (d === 0n) throw new WhiteboxError('domain', 'rational: zero denominator')
+  if (d === 0n) throw new MdmlError('domain', 'rational: zero denominator')
   if (d < 0n) {
     n = -n
     d = -d
@@ -73,7 +73,7 @@ export function rmul(a: Rational, b: Rational): Rational {
 
 /** Quotient. @internal */
 export function rdiv(a: Rational, b: Rational): Rational {
-  if (b.n === 0n) throw new WhiteboxError('domain', 'rational: division by zero')
+  if (b.n === 0n) throw new MdmlError('domain', 'rational: division by zero')
   return rat(a.n * b.d, a.d * b.n)
 }
 
@@ -90,7 +90,7 @@ export function rabs(a: Rational): Rational {
 /** Integer power (negative exponents invert). @internal */
 export function rpow(a: Rational, k: number): Rational {
   if (k >= 0) return { n: a.n ** BigInt(k), d: a.d ** BigInt(k) }
-  if (a.n === 0n) throw new WhiteboxError('domain', 'rational: zero to a negative power')
+  if (a.n === 0n) throw new MdmlError('domain', 'rational: zero to a negative power')
   return rat(a.d ** BigInt(-k), a.n ** BigInt(-k))
 }
 
@@ -132,7 +132,7 @@ export function rnum(a: Rational): number {
  * @internal
  */
 export function rfromNumber(x: number): Rational {
-  if (!Number.isFinite(x)) throw new WhiteboxError('value', `rational: ${x} is not finite`)
+  if (!Number.isFinite(x)) throw new MdmlError('value', `rational: ${x} is not finite`)
   if (Number.isInteger(x)) return { n: BigInt(x), d: 1n }
   return rfromDecimal(String(x))
 }
@@ -140,7 +140,7 @@ export function rfromNumber(x: number): Rational {
 /** Parse a decimal string such as `-1.25e-3` exactly. @internal */
 export function rfromDecimal(text: string): Rational {
   const m = /^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/.exec(text.trim())
-  if (m === null) throw new WhiteboxError('value', `rational: cannot parse '${text}'`)
+  if (m === null) throw new MdmlError('value', `rational: cannot parse '${text}'`)
   const [, sign = '', whole = '', frac = '', expo = '0'] = m
   const digits = BigInt(`${whole}${frac}` || '0')
   const e = Number(expo) - frac.length
@@ -155,7 +155,7 @@ export function rstr(a: Rational): string {
 
 /** Integer k-th root of a non-negative bigint, rounded down. @internal */
 export function biroot(a: bigint, k: number): bigint {
-  if (a < 0n) throw new WhiteboxError('domain', 'iroot: negative argument')
+  if (a < 0n) throw new MdmlError('domain', 'iroot: negative argument')
   if (a < 2n || k === 1) return a
   const K = BigInt(k)
   // Newton iteration from an over-estimate.

@@ -2,7 +2,7 @@
 // integral with the complementary parameter (scipy.special.ellipkm1, by the arithmetic-geometric mean), the
 // inverse Jacobi functions of scipy's elliptic design by Landen transformations, the bounded scalar minimiser of
 // scipy.optimize.fminbound (written here rather than imported from optim) and the secant iteration of scipy.optimize.newton.
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
 import { ellipk } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
@@ -50,7 +50,7 @@ function arcJacSn(w: ComplexNumber, m: number): ComplexNumber {
     const kp = Math.sqrt((1 - kk) * (1 + kk))
     ks.push((1 - kp) / (1 + kp))
     niter++
-    if (niter > 10) throw new WhiteboxError('convergence', 'ellip: the Landen transformation does not converge')
+    if (niter > 10) throw new MdmlError('convergence', 'ellip: the Landen transformation does not converge')
   }
   let kProd = Math.PI / 2
   for (const v of ks.slice(1)) kProd *= 1 + v
@@ -66,7 +66,7 @@ function arcJacSn(w: ComplexNumber, m: number): ComplexNumber {
 /** The real inverse Jacobi sc function, from arcsn of an imaginary argument (scipy's _arc_jac_sc1). */
 export function arcJacSc1(w: number, m: number): number {
   const z = arcJacSn(C.of(0, w), m)
-  if (Math.abs(z.re) > 1e-14) throw new WhiteboxError('value', 'ellip: arc sc did not stay imaginary')
+  if (Math.abs(z.re) > 1e-14) throw new MdmlError('value', 'ellip: arc sc did not stay imaginary')
   return z.im
 }
 
@@ -178,5 +178,5 @@ export function secant(f: (x: number) => number, x0: number, tol = 1.48e-8, maxi
     p1 = p
     q1 = f(p1)
   }
-  throw new WhiteboxError('convergence', 'secant: no convergence')
+  throw new MdmlError('convergence', 'secant: no convergence')
 }

@@ -3,8 +3,8 @@
  * two-dimensional classification data and one-dimensional regression curves.
  */
 
-import { regularisationStudy as study } from 'whitebox-engine/methods/neural/training'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { regularisationStudy as study } from 'mdml-engine/methods/neural/training'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry, type ViewSlot } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 

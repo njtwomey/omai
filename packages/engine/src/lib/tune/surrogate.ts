@@ -4,7 +4,7 @@
  * observations as Optuna's `GPSampler` does, with the posterior mean and standard deviation at new points.
  */
 
-import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { maternKernel } from '../kernels/index.ts'
 import { choleskyJitter, choSolve, solveTriangular } from '../numerics/linalg/index.ts'
 import { lbfgsb } from '../optim/index.ts'
@@ -200,7 +200,7 @@ function buildSurrogate(
  * @concept gaussian-process-regression
  * @example
  * ```ts
- * import { gpPosterior } from 'whitebox-engine/tune'
+ * import { gpPosterior } from 'mdml-engine/tune'
  * const p = gpPosterior([[0], [1]], [0, 1], [[0]], { lengthScales: [1], kernelScale: 1, noise: 1e-10 })
  * Math.abs(p.mean[0] ?? 1) < 1e-6 && (p.std[0] ?? 1) < 1e-4 // => true
  * ```
@@ -234,11 +234,11 @@ export function gpPosterior(
  * @param y - Observed values.
  * @param options - Categorical columns, their sizes and the optimiser's iterations.
  * @returns The surrogate.
- * @throws WhiteboxError with code `shape` when x and y differ in length or x is empty.
+ * @throws MdmlError with code `shape` when x and y differ in length or x is empty.
  * @concept gaussian-process-regression
  * @example
  * ```ts
- * import { fitGpSurrogate } from 'whitebox-engine/tune'
+ * import { fitGpSurrogate } from 'mdml-engine/tune'
  * const xs = [0, 0.25, 0.5, 0.75, 1].map((v) => [v])
  * const gp = fitGpSurrogate(xs, xs.map(([v]) => Math.sin(6 * (v ?? 0))))
  * Math.abs((gp.predict([[0.5]]).mean[0] ?? 0) - Math.sin(3)) < 0.05 // => true
@@ -250,7 +250,7 @@ export function fitGpSurrogate(
   options: GpOptions = {},
 ): GpSurrogate {
   const n = x.length
-  if (n === 0 || y.length !== n) throw new WhiteboxError('shape', 'fitGpSurrogate: need rows with one value each')
+  if (n === 0 || y.length !== n) throw new MdmlError('shape', 'fitGpSurrogate: need rows with one value each')
   const d = x[0]?.length ?? 0
   const categorical = options.categorical ?? new Array<boolean>(d).fill(false)
   const sizes = options.sizes ?? new Array<number>(d).fill(1)

@@ -4,7 +4,7 @@
  * and cluster block splits that test on unseen regions. Also conversions between splitters and lists of index pairs.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { kmeansCodebook } from '../../numerics/spatial/index.ts'
 import { foldIn } from '../../random/index.ts'
 import { fromStorage } from '../../tensor/index.ts'
@@ -36,7 +36,7 @@ export interface TimeSeriesSplitOptions {
  * @concept time-series-cross-validation
  * @example
  * ```ts
- * import { splitIndices, timeSeriesSplit } from 'whitebox-engine/learn/model-selection'
+ * import { splitIndices, timeSeriesSplit } from 'mdml-engine/learn/model-selection'
  * splitIndices(timeSeriesSplit(3), { n: 8 }).map((f) => [f.train.length, Array.from(f.test)]) // => [[2, [2, 3]], [4, [4, 5]], [6, [6, 7]]]
  * ```
  */
@@ -51,12 +51,9 @@ export function timeSeriesSplit(nSplits = 5, options: TimeSeriesSplitOptions = {
     split: (input) => {
       const n = input.n
       const testSize = options.testSize ?? Math.floor(n / (nSplits + 1))
-      if (nSplits + 1 > n) throw new WhiteboxError('value', `timeSeriesSplit: ${nSplits + 1} folds for ${n} samples`)
+      if (nSplits + 1 > n) throw new MdmlError('value', `timeSeriesSplit: ${nSplits + 1} folds for ${n} samples`)
       if (n - gap - testSize * nSplits <= 0 || testSize < 1) {
-        throw new WhiteboxError(
-          'value',
-          `timeSeriesSplit: too many splits for ${n} samples (test ${testSize}, gap ${gap})`,
-        )
+        throw new MdmlError('value', `timeSeriesSplit: too many splits for ${n} samples (test ${testSize}, gap ${gap})`)
       }
       const folds: Fold[] = []
       for (let start = n - nSplits * testSize; start < n; start += testSize) {
@@ -88,7 +85,7 @@ export interface WindowOptions {
  * @returns The splitter.
  * @example
  * ```ts
- * import { slidingWindowSplit, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { slidingWindowSplit, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(slidingWindowSplit(3, { testSize: 2 }), { n: 8 }).map((f) => Array.from(f.train)) // => [[0, 1, 2], [2, 3, 4]]
  * ```
  */
@@ -106,7 +103,7 @@ export function slidingWindowSplit(trainSize: number, options: WindowOptions = {
  * @returns The splitter.
  * @example
  * ```ts
- * import { expandingWindowSplit, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { expandingWindowSplit, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(expandingWindowSplit(3, { testSize: 2 }), { n: 8 }).map((f) => f.train.length) // => [3, 5]
  * ```
  */
@@ -125,7 +122,7 @@ function windowSplitter(name: string, size: number, options: WindowOptions, expa
       const trainEnd = s + size
       out.push({ train: range(expanding ? 0 : s, trainEnd), test: range(trainEnd + gap, trainEnd + gap + testSize) })
     }
-    if (out.length === 0) throw new WhiteboxError('value', `${name}: no window fits in ${n} samples`)
+    if (out.length === 0) throw new MdmlError('value', `${name}: no window fits in ${n} samples`)
     return out
   }
   return {
@@ -155,7 +152,7 @@ export interface BlockedOptions {
  * @returns The splitter.
  * @example
  * ```ts
- * import { blockedTimeSeriesSplit, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { blockedTimeSeriesSplit, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(blockedTimeSeriesSplit(2, { trainFraction: 0.6 }), { n: 10 }).map((f) => Array.from(f.test)) // => [[3, 4], [8, 9]]
  * ```
  */
@@ -170,13 +167,12 @@ export function blockedTimeSeriesSplit(nSplits = 5, options: BlockedOptions = {}
     nSplits: () => nSplits,
     split: (input) => {
       const k = Math.floor(input.n / nSplits)
-      if (k < 2) throw new WhiteboxError('value', `blockedTimeSeriesSplit: blocks of ${k} samples are too short`)
+      if (k < 2) throw new MdmlError('value', `blockedTimeSeriesSplit: blocks of ${k} samples are too short`)
       return Array.from({ length: nSplits }, (_, b) => {
         const start = b * k
         const stop = b === nSplits - 1 ? input.n : start + k
         const mid = start + Math.max(1, Math.floor(frac * (stop - start)))
-        if (mid + gap >= stop)
-          throw new WhiteboxError('value', 'blockedTimeSeriesSplit: no test samples left in a block')
+        if (mid + gap >= stop) throw new MdmlError('value', 'blockedTimeSeriesSplit: no test samples left in a block')
         return { train: range(start, mid), test: range(mid + gap, stop) }
       })
     },
@@ -204,7 +200,7 @@ export interface PurgedOptions {
  * @reference de Prado (2018), Advances in Financial Machine Learning, chapter 7.
  * @example
  * ```ts
- * import { purgedKFold, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { purgedKFold, splitIndices } from 'mdml-engine/learn/model-selection'
  * const folds = splitIndices(purgedKFold(3, { horizon: 1, embargo: 1 }), { n: 9 })
  * Array.from(folds[1].train) // => [0, 1, 8]
  * ```
@@ -221,7 +217,7 @@ export function purgedKFold(nSplits = 5, options: PurgedOptions = {}): Splitter 
       const n = input.n
       const ends = Int32Array.from({ length: n }, (_, i) => {
         const e = options.labelEnds === undefined ? i + (options.horizon ?? 0) : (options.labelEnds[i] ?? i)
-        if (e < i) throw new WhiteboxError('value', `purgedKFold: label end ${e} before sample ${i}`)
+        if (e < i) throw new MdmlError('value', `purgedKFold: label end ${e} before sample ${i}`)
         return Math.min(e, n - 1)
       })
       const e = options.embargo ?? 0
@@ -242,8 +238,8 @@ export function purgedKFold(nSplits = 5, options: PurgedOptions = {}): Splitter 
 
 function coordinatesOf(input: SplitInput, who: string): { readonly data: ArrayLike<number>; readonly dims: number } {
   const c = input.coordinates
-  if (c === undefined) throw new WhiteboxError('value', `${who}: needs coordinates`)
-  if (c.data.length !== input.n * c.dims) throw new WhiteboxError('shape', `${who}: coordinates must be [n, dims]`)
+  if (c === undefined) throw new MdmlError('value', `${who}: needs coordinates`)
+  if (c.data.length !== input.n * c.dims) throw new MdmlError('shape', `${who}: coordinates must be [n, dims]`)
   return c
 }
 
@@ -265,13 +261,13 @@ export interface SpatialBlockOptions {
  * @returns The splitter (it needs `coordinates`).
  * @example
  * ```ts
- * import { spatialBlockSplit, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { spatialBlockSplit, splitIndices } from 'mdml-engine/learn/model-selection'
  * const coordinates = { data: [0.1, 0.1, 0.2, 0.3, 5.1, 5.2, 5.3, 5.1], dims: 2 }
  * splitIndices(spatialBlockSplit(2, { blockSize: 1 }), { n: 4, coordinates }).map((f) => Array.from(f.test)) // => [[2, 3], [0, 1]]
  * ```
  */
 export function spatialBlockSplit(nSplits: number, options: SpatialBlockOptions): Splitter {
-  if (!(options.blockSize > 0)) throw new WhiteboxError('value', 'spatialBlockSplit: blockSize must be positive')
+  if (!(options.blockSize > 0)) throw new MdmlError('value', 'spatialBlockSplit: blockSize must be positive')
   const inner = groupKFold(nSplits, { shuffle: options.shuffle ?? false })
   const blocks = (input: SplitInput): Float64Array => {
     const c = coordinatesOf(input, 'spatialBlockSplit')
@@ -313,7 +309,7 @@ export interface ClusterBlockOptions {
  * @returns The splitter (it needs `coordinates`; the key seeds k-means).
  * @example
  * ```ts
- * import { clusterBlockSplit, foldsAreDisjoint, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { clusterBlockSplit, foldsAreDisjoint, splitIndices } from 'mdml-engine/learn/model-selection'
  * const coordinates = { data: [0, 0, 0.1, 0, 9, 9, 9.1, 9], dims: 2 }
  * const folds = splitIndices(clusterBlockSplit(2, { nClusters: 2 }), { n: 4, coordinates })
  * folds.map((f) => f.test.length) // => [2, 2]
@@ -346,7 +342,7 @@ export function clusterBlockSplit(nSplits: number, options: ClusterBlockOptions 
  * @returns Plain index arrays.
  * @example
  * ```ts
- * import { asIndexPairs, kFold, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { asIndexPairs, kFold, splitIndices } from 'mdml-engine/learn/model-selection'
  * asIndexPairs(splitIndices(kFold(2), { n: 2 })) // => [[[1], [0]], [[0], [1]]]
  * ```
  */
@@ -361,7 +357,7 @@ export function asIndexPairs(folds: readonly Fold[]): [number[], number[]][] {
  * @returns The splitter.
  * @example
  * ```ts
- * import { fromIndexPairs, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { fromIndexPairs, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(fromIndexPairs([[[0, 1], [2]]]), { n: 3 })[0].test[0] // => 2
  * ```
  */
@@ -375,7 +371,7 @@ export function fromIndexPairs(pairs: readonly (readonly [readonly number[], rea
       pairs.map(([train, test]) => {
         for (const i of [...train, ...test]) {
           if (!(Number.isInteger(i) && i >= 0 && i < input.n))
-            throw new WhiteboxError('value', `fromIndexPairs: index ${i} out of range`)
+            throw new MdmlError('value', `fromIndexPairs: index ${i} out of range`)
         }
         return { train: Int32Array.from(train), test: Int32Array.from(test) }
       }),

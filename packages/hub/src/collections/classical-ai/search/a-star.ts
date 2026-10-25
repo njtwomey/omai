@@ -3,7 +3,7 @@
  * several times over), played expansion by expansion on grid maps and mazes.
  */
 
-import { choice, real } from 'whitebox-engine/space'
+import { choice, real } from 'mdml-engine/space'
 import type { HubEntry } from '../../../entry/entry.ts'
 import { searchEntry } from './_search.ts'
 

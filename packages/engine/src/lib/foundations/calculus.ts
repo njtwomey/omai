@@ -7,7 +7,7 @@
  */
 
 import { taylorCoefficients, taylorPolynomial } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import { item, linspace, onesLike, promoteFloat, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
@@ -32,8 +32,8 @@ const at = (f: RealFunction, x: number): number => evalAt(f, [x])[0] ?? Number.N
  * @concept derivative
  * @example
  * ```ts
- * import { derivatives } from 'whitebox-engine/foundations'
- * import { mul, type Value } from 'whitebox-engine/tensor'
+ * import { derivatives } from 'mdml-engine/foundations'
+ * import { mul, type Value } from 'mdml-engine/tensor'
  * derivatives((x: Value) => mul(x, mul(x, x)), [2], 3) // => [[8], [12], [12], [6]]
  * ```
  */
@@ -96,8 +96,8 @@ function oneSided(
  * @concept limits
  * @example
  * ```ts
- * import { limit } from 'whitebox-engine/foundations'
- * import { div, sin, sign, type Value } from 'whitebox-engine/tensor'
+ * import { limit } from 'mdml-engine/foundations'
+ * import { div, sin, sign, type Value } from 'mdml-engine/tensor'
  * Math.round(limit((x: Value) => div(sin(x), x), 0).value * 1e12) / 1e12 // => 1
  * limit((x: Value) => sign(x), 0).exists // => false
  * ```
@@ -149,8 +149,8 @@ export type DifferenceScheme = 'forward' | 'backward' | 'central'
  * @concept difference-quotient
  * @example
  * ```ts
- * import { differenceQuotient } from 'whitebox-engine/foundations'
- * import { mul, type Value } from 'whitebox-engine/tensor'
+ * import { differenceQuotient } from 'mdml-engine/foundations'
+ * import { mul, type Value } from 'mdml-engine/tensor'
  * differenceQuotient((x: Value) => mul(x, x), 3, 0.5) // => 6.5
  * differenceQuotient((x: Value) => mul(x, x), 3, 0.5, 'central') // => 6
  * ```
@@ -180,8 +180,8 @@ export function differenceQuotient(
  * @concept difference-quotient
  * @example
  * ```ts
- * import { secantTable } from 'whitebox-engine/foundations'
- * import { exp } from 'whitebox-engine/tensor'
+ * import { secantTable } from 'mdml-engine/foundations'
+ * import { exp } from 'mdml-engine/tensor'
  * secantTable(exp, 0, { steps: [0.1, 0.01] }).map((r) => r.error < 0.06) // => [true, true]
  * ```
  */
@@ -220,8 +220,8 @@ export interface RiemannSum {
  * @concept riemann-sums
  * @example
  * ```ts
- * import { riemannSum } from 'whitebox-engine/foundations'
- * import { mul, type Value } from 'whitebox-engine/tensor'
+ * import { riemannSum } from 'mdml-engine/foundations'
+ * import { mul, type Value } from 'mdml-engine/tensor'
  * riemannSum((x: Value) => mul(x, x), 0, 1, 2, 'left').value // => 0.125
  * riemannSum((x: Value) => mul(x, x), 0, 1, 2, 'trapezoid').value // => 0.375
  * ```
@@ -233,7 +233,7 @@ export function riemannSum(
   n: number,
   rule: RiemannRule = 'midpoint',
 ): RiemannSum {
-  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', 'riemannSum: n must be a positive integer')
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'riemannSum: n must be a positive integer')
   const dx = (b - a) / n
   const edges = Array.from({ length: n + 1 }, (_, i) => (i === n ? b : a + i * dx))
   const mids = Array.from({ length: n }, (_, i) => a + (i + 0.5) * dx)
@@ -275,8 +275,8 @@ export interface FundamentalTheoremCheck {
  * @concept fundamental-theorem-of-calculus
  * @example
  * ```ts
- * import { fundamentalTheorem } from 'whitebox-engine/foundations'
- * import { cos } from 'whitebox-engine/tensor'
+ * import { fundamentalTheorem } from 'mdml-engine/foundations'
+ * import { cos } from 'mdml-engine/tensor'
  * fundamentalTheorem(cos, 0, [0.5, 1, 2]).maxError < 1e-7 // => true
  * ```
  */
@@ -325,8 +325,8 @@ export interface TaylorApproximation {
  * @concept taylor-series
  * @example
  * ```ts
- * import { taylorApproximation } from 'whitebox-engine/foundations'
- * import { exp } from 'whitebox-engine/tensor'
+ * import { taylorApproximation } from 'mdml-engine/foundations'
+ * import { exp } from 'mdml-engine/tensor'
  * const t = taylorApproximation(exp, 0, 2, [-1, 1])
  * t.coefficients // => [1, 1, 0.5]
  * Math.round(t.remainderBound([1])[0] * 1e12) / 1e12 // => 0.45304697141
@@ -340,7 +340,7 @@ export function taylorApproximation(
   samples = 201,
 ): TaylorApproximation {
   if (!(Number.isInteger(order) && order >= 0))
-    throw new WhiteboxError('value', 'taylorApproximation: order must be a non-negative integer')
+    throw new MdmlError('value', 'taylorApproximation: order must be a non-negative integer')
   const p = taylorPolynomial(f, center, order)
   const grid = toFlat(linspace(interval[0], interval[1], samples))
   const next = derivatives(f, grid, order + 1)[order + 1] ?? []
@@ -387,8 +387,8 @@ export interface NewtonRun {
  * @concept newtons-method
  * @example
  * ```ts
- * import { newtonSteps } from 'whitebox-engine/foundations'
- * import { mul, sub, type Value } from 'whitebox-engine/tensor'
+ * import { newtonSteps } from 'mdml-engine/foundations'
+ * import { mul, sub, type Value } from 'mdml-engine/tensor'
  * const r = newtonSteps((x: Value) => sub(mul(x, x), 2), 1)
  * r.root // => 1.4142135623730951
  * r.steps[0].next // => 1.5
@@ -436,8 +436,8 @@ export interface CriticalPoint {
  * @concept second-derivative-test
  * @example
  * ```ts
- * import { secondDerivativeTest } from 'whitebox-engine/foundations'
- * import { cos } from 'whitebox-engine/tensor'
+ * import { secondDerivativeTest } from 'mdml-engine/foundations'
+ * import { cos } from 'mdml-engine/tensor'
  * secondDerivativeTest(cos, 0) // => 'maximum'
  * ```
  */
@@ -476,8 +476,8 @@ function rootsOn(g: (xs: readonly number[]) => number[], a: number, b: number, n
  * @concept critical-points
  * @example
  * ```ts
- * import { criticalPoints } from 'whitebox-engine/foundations'
- * import { mul, sub, type Value } from 'whitebox-engine/tensor'
+ * import { criticalPoints } from 'mdml-engine/foundations'
+ * import { mul, sub, type Value } from 'mdml-engine/tensor'
  * criticalPoints((x: Value) => sub(mul(x, mul(x, x)), mul(3, x)), -2, 2.1).map((c) => [c.x, c.kind]) // => [[-1, 'maximum'], [1, 'minimum']]
  * ```
  */
@@ -501,8 +501,8 @@ export function criticalPoints(f: RealFunction, a: number, b: number, n = 400): 
  * @concept mean-value-theorem
  * @example
  * ```ts
- * import { meanValuePoints } from 'whitebox-engine/foundations'
- * import { mul, type Value } from 'whitebox-engine/tensor'
+ * import { meanValuePoints } from 'mdml-engine/foundations'
+ * import { mul, type Value } from 'mdml-engine/tensor'
  * meanValuePoints((x: Value) => mul(x, x), 0, 2) // => { slope: 2, points: [1] }
  * ```
  */
@@ -528,8 +528,8 @@ export function meanValuePoints(
  * @concept derivative
  * @example
  * ```ts
- * import { tangentLine } from 'whitebox-engine/foundations'
- * import { mul, type Value } from 'whitebox-engine/tensor'
+ * import { tangentLine } from 'mdml-engine/foundations'
+ * import { mul, type Value } from 'mdml-engine/tensor'
  * tangentLine((x: Value) => mul(x, x), 3) // => { slope: 6, intercept: -9 }
  * ```
  */
@@ -550,8 +550,8 @@ export function tangentLine(f: RealFunction, x: number): { readonly slope: numbe
  * @concept fundamental-theorem-of-calculus
  * @example
  * ```ts
- * import { definiteIntegral } from 'whitebox-engine/foundations'
- * import { cos, sin } from 'whitebox-engine/tensor'
+ * import { definiteIntegral } from 'mdml-engine/foundations'
+ * import { cos, sin } from 'mdml-engine/tensor'
  * definiteIntegral(cos, sin, 0, Math.PI / 2).byAntiderivative // => 1
  * ```
  */

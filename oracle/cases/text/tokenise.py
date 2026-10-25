@@ -7,9 +7,9 @@ from importlib.metadata import version
 from typing import Literal
 
 import regex
+from mdml_oracle.fixture import Case, case
 from nltk.tokenize import regexp_tokenize, wordpunct_tokenize
 from tokenizers import pre_tokenizers
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {
     "nltk": version("nltk"),

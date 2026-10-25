@@ -3,7 +3,7 @@
  * two-dimensional classification data and tabular classification data.
  */
 
-import { outputCodeClassifier } from 'whitebox-engine/methods/multiclass'
+import { outputCodeClassifier } from 'mdml-engine/methods/multiclass'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

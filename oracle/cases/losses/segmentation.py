@@ -9,11 +9,11 @@ from typing import Any
 import monai
 import numpy as np
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
+from mdml_oracle.torch_helpers import to_numpy, to_torch
 from monai.losses.dice import DiceLoss
 from monai.losses.tversky import TverskyLoss
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
-from whitebox_oracle.torch_helpers import to_numpy, to_torch
 
 REFERENCE: dict[str, str] = {"monai": monai.__version__, "torch": torch.__version__}
 

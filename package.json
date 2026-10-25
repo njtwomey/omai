@@ -1,8 +1,8 @@
 {
-  "name": "whitebox-js",
+  "name": "mdml-js",
   "private": true,
   "type": "module",
-  "description": "whitebox-js: a traced, self-documenting ML library (engine, render, meta) with docs and gallery apps.",
+  "description": "mdml-js: a traced, self-documenting ML library (engine, render, meta) with docs and gallery apps.",
   "license": "MIT",
   "engines": {
     "node": ">=24"

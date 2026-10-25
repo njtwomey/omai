@@ -5,7 +5,7 @@
  * planted rules.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   type DatasetGenerator,
   type Generated,
@@ -42,7 +42,7 @@ function pairs(flat: readonly number[]): number[][] {
  * @returns The graph (one graph with node labels).
  * @example
  * ```ts
- * import { karateClub } from 'whitebox-engine/datasets'
+ * import { karateClub } from 'mdml-engine/datasets'
  * karateClub().graphs[0]?.edges.shape // => [78, 2]
  * ```
  */
@@ -71,7 +71,7 @@ export function karateClub(): GraphData {
  * @returns The weighted graph with character names.
  * @example
  * ```ts
- * import { lesMiserables } from 'whitebox-engine/datasets'
+ * import { lesMiserables } from 'mdml-engine/datasets'
  * lesMiserables().graphs[0]?.nNodes // => 77
  * ```
  */
@@ -116,8 +116,8 @@ function sbmEdges(k: Key, blocks: readonly number[], p: (a: number, b: number) =
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { contextualSbm } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { contextualSbm } from 'mdml-engine/datasets'
  * generate(contextualSbm, { knobs: { nodes: 60, features: 4 } }).data.graphs[0]?.nodeFeatures?.shape // => [60, 4]
  * ```
  */
@@ -235,11 +235,11 @@ export const GRAPH_FAMILIES: readonly GraphFamily[] = [
  * @param n - The number of nodes.
  * @param options - `p`, `m` and `r` (defaults 0.2, 2 and 0.3).
  * @returns The graph.
- * @throws WhiteboxError with code `value` for an unknown family.
+ * @throws MdmlError with code `value` for an unknown family.
  * @example
  * ```ts
- * import { familyGraph } from 'whitebox-engine/datasets'
- * import { key } from 'whitebox-engine/random'
+ * import { familyGraph } from 'mdml-engine/datasets'
+ * import { key } from 'mdml-engine/random'
  * familyGraph(key(0), 'tree', 10).edges.shape // => [9, 2]
  * ```
  */
@@ -346,7 +346,7 @@ export function familyGraph(
       return graphRecord(edges, { nNodes: n, nodeFeatures: matrix(pts, n, 2) })
     }
     default:
-      throw new WhiteboxError('value', `familyGraph: unknown family ${String(family)}`)
+      throw new MdmlError('value', `familyGraph: unknown family ${String(family)}`)
   }
   return graphRecord(edges, { nNodes: n })
 }
@@ -358,8 +358,8 @@ export function familyGraph(
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { graphFamilies } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { graphFamilies } from 'mdml-engine/datasets'
  * generate(graphFamilies, { knobs: { graphs: 20 } }).data.classes?.length // => 10
  * ```
  */
@@ -400,7 +400,7 @@ export const graphFamilies: DatasetGenerator<GraphData> = {
  * @returns The graphs and their exact properties.
  * @example
  * ```ts
- * import { smallMolecules } from 'whitebox-engine/datasets'
+ * import { smallMolecules } from 'mdml-engine/datasets'
  * const m = smallMolecules()
  * (m.truth.extra?.['formulas'] as string[])[m.data.graphs.length - 2] // => 'C8H10N4O2'
  * ```
@@ -446,7 +446,7 @@ export function smallMolecules(): Generated<GraphData> {
       meta: {
         name: 'smallMolecules',
         description: `${MOLECULES.length} common small molecules as heavy-atom graphs, labelled aromatic or not.`,
-        source: 'whitebox-js (SMILES of common molecules)',
+        source: 'mdml-js (SMILES of common molecules)',
         licence: 'Public domain (chemical facts)',
       },
     }),
@@ -474,8 +474,8 @@ const RELATIONS = ['parentOf', 'childOf', 'spouseOf', 'siblingOf', 'grandparentO
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { kinshipTriples } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { kinshipTriples } from 'mdml-engine/datasets'
  * generate(kinshipTriples).data.relationNames.length // => 6
  * ```
  */

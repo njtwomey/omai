@@ -5,7 +5,7 @@
  * and bootstrap are also traced algorithms with explicit keys.
  */
 
-import { type Alternative, type Estimate, meanOf, type TestResult, varianceOf, WhiteboxError } from '../base/index.ts'
+import { type Alternative, type Estimate, MdmlError, meanOf, type TestResult, varianceOf } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, permutation, randint } from '../random/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -211,8 +211,8 @@ const RESAMPLING_SCHEMA = channels({
  * @returns The algorithm; run it with `runAlgorithm`, or call {@link permutationTest}.
  * @example
  * ```ts
- * import { permutationTestAlgorithm, meanDifference } from 'whitebox-engine/stats'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { permutationTestAlgorithm, meanDifference } from 'mdml-engine/stats'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const alg = permutationTestAlgorithm([[1, 2], [3, 4]], meanDifference)
  * runAlgorithm(alg, { maxSteps: 10 }).state.nullDistribution.length // => 6
  * ```
@@ -225,8 +225,8 @@ export function permutationTestAlgorithm(
   const data = samples.map((s) => sample('permutationTest', s, 1))
   const type = options.permutationType ?? 'independent'
   if (type !== 'independent' && data.some((d) => d.length !== data[0]?.length))
-    throw new WhiteboxError('shape', `permutationTest: '${type}' permutations need samples of equal length`)
-  if (type === 'independent' && data.length < 2) throw new WhiteboxError('value', 'permutationTest: needs two samples')
+    throw new MdmlError('shape', `permutationTest: '${type}' permutations need samples of equal length`)
+  if (type === 'independent' && data.length < 2) throw new MdmlError('value', 'permutationTest: needs two samples')
   const nResamples = options.nResamples ?? 9999
   const count = arrangements(type, data)
   const exact = count <= nResamples
@@ -265,7 +265,7 @@ export function permutationTestAlgorithm(
  * @returns The statistic, its p-value and the null distribution.
  * @example
  * ```ts
- * import { meanDifference, permutationTest } from 'whitebox-engine/stats'
+ * import { meanDifference, permutationTest } from 'mdml-engine/stats'
  * permutationTest([[1, 2, 3], [4, 5, 6]], meanDifference).pValue // => 0.1
  * ```
  */
@@ -302,7 +302,7 @@ export function permutationTest(
  * @returns mean(x) - mean(y).
  * @example
  * ```ts
- * import { meanDifference } from 'whitebox-engine/stats'
+ * import { meanDifference } from 'mdml-engine/stats'
  * meanDifference(Float64Array.of(3, 5), Float64Array.of(1, 2)) // => 2.5
  * ```
  */
@@ -395,8 +395,8 @@ function jackknifeSe(values: readonly number[]): number {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { bootstrapAlgorithm } from 'whitebox-engine/stats'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { bootstrapAlgorithm } from 'mdml-engine/stats'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const alg = bootstrapAlgorithm([[1, 2, 3, 4]], (x) => x[0] ?? 0, { nResamples: 50 })
  * runAlgorithm(alg, { seed: 1, maxSteps: 10 }).state.distribution.length // => 50
  * ```
@@ -409,7 +409,7 @@ export function bootstrapAlgorithm(
   const data = samples.map((s) => sample('bootstrap', s, 2))
   const paired = options.paired ?? false
   if (paired && data.some((d) => d.length !== data[0]?.length))
-    throw new WhiteboxError('shape', 'bootstrap: paired samples must have equal lengths')
+    throw new MdmlError('shape', 'bootstrap: paired samples must have equal lengths')
   const total = options.nResamples ?? 9999
   const batch = options.batch ?? 200
   const studentize = options.method === 'studentized'
@@ -450,7 +450,7 @@ export function bootstrapAlgorithm(
  * @returns The estimate with its bootstrap standard error and interval, the bias and the bootstrap distribution.
  * @example
  * ```ts
- * import { bootstrap, mean } from 'whitebox-engine/stats'
+ * import { bootstrap, mean } from 'mdml-engine/stats'
  * const r = bootstrap([[2, 4, 3, 5, 4, 6, 5, 3]], (x) => mean(x), { seed: 0, nResamples: 500, method: 'percentile' })
  * r.estimate.value // => 4
  * ```
@@ -532,7 +532,7 @@ export interface JackknifeResult {
  * @returns The corrected estimate with its standard error, the plain statistic, the bias and the values.
  * @example
  * ```ts
- * import { jackknife, mean } from 'whitebox-engine/stats'
+ * import { jackknife, mean } from 'mdml-engine/stats'
  * jackknife([1, 2, 3, 4], (x) => mean(x)).estimate.standardError // => 0.6454972243679028
  * ```
  */
@@ -588,8 +588,8 @@ export interface MonteCarloOptions extends ResamplingRunOptions {
  * @returns The statistic, its p-value and the null distribution.
  * @example
  * ```ts
- * import { monteCarloTest, mean } from 'whitebox-engine/stats'
- * import { normal as gaussian } from 'whitebox-engine/random'
+ * import { monteCarloTest, mean } from 'mdml-engine/stats'
+ * import { normal as gaussian } from 'mdml-engine/random'
  * const r = monteCarloTest([[0.1, -0.3, 0.2, 0.4]], (k, n) => gaussian(k, [n]).data, (x) => mean(x), { seed: 3, nResamples: 99 })
  * r.pValue > 0.05 // => true
  * ```
@@ -603,7 +603,7 @@ export function monteCarloTest(
   const data = samples.map((s) => sample('monteCarloTest', s, 1))
   const samplers = typeof rvs === 'function' ? data.map(() => rvs) : rvs
   if (samplers.length !== data.length)
-    throw new WhiteboxError('value', 'monteCarloTest: give one sampler per sample (or one for all)')
+    throw new MdmlError('value', 'monteCarloTest: give one sampler per sample (or one for all)')
   const alternative = resolveAlternative(options.alternative)
   const total = options.nResamples ?? 9999
   const batch = options.batch ?? 200
@@ -620,7 +620,7 @@ export function monteCarloTest(
         const k = foldIn(ctx.key, r)
         const sim = data.map((d, g) => {
           const f = samplers[g]
-          if (f === undefined) throw new WhiteboxError('value', 'monteCarloTest: missing sampler')
+          if (f === undefined) throw new MdmlError('value', 'monteCarloTest: missing sampler')
           return Float64Array.from(f(foldIn(k, g), d.length))
         })
         next.push(statistic(...sim))

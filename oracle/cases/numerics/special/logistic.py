@@ -3,8 +3,8 @@
 import numpy as np
 import scipy
 import scipy.special as sp
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, reference, rng, softplus
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, reference, rng, softplus
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

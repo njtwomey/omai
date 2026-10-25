@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { sliceAxis, toFlat } from '../../tensor/index.ts'
 import type { LanguageModel } from '../language-model.ts'
 import { maskProcessor } from './constraints.ts'
@@ -58,8 +58,7 @@ export function chain(options: GenerateOptions, promptLength: number): { pre: Lo
 export const promptIds = (lm: LanguageModel, prompt: readonly number[] | string): number[] => {
   const ids = typeof prompt === 'string' ? lm.tokenizer.encode(prompt) : [...prompt]
   if (ids.length === 0) {
-    if (lm.tokenizer.bosId === undefined)
-      throw new WhiteboxError('value', 'decoding: an empty prompt needs a BOS token')
+    if (lm.tokenizer.bosId === undefined) throw new MdmlError('value', 'decoding: an empty prompt needs a BOS token')
     return [lm.tokenizer.bosId]
   }
   return ids

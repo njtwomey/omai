@@ -70,8 +70,8 @@ function shapeSupport(shape: Value, end: Value, zeroLow: Value | null): Support 
  * @concept distributions
  * @example
  * ```ts
- * import { gumbel } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { gumbel } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(gumbel(0, 1).cdf(0)) === Math.exp(-1) // => true
  * ```
  */
@@ -117,8 +117,8 @@ export function gumbel(loc: TensorLike = 0, scale: TensorLike = 1): Distribution
  *   entropy; `rsample` is the quantile of uniform noise, differentiable in all three parameters.
  * @example
  * ```ts
- * import { generalisedExtremeValue } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { generalisedExtremeValue } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(generalisedExtremeValue(0, 1, 0).cdf(0)) === Math.exp(-1) // => true
  * ```
  */
@@ -199,8 +199,8 @@ export function generalisedExtremeValue(
  *   quantile of uniform noise.
  * @example
  * ```ts
- * import { generalisedPareto } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { generalisedPareto } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(generalisedPareto(0, 1, 0).mean()) // => 1
  * item(generalisedPareto(0, 2, 0.5).mean()) // => 4
  * ```
@@ -261,8 +261,8 @@ export function generalisedPareto(loc: TensorLike = 0, scale: TensorLike = 1, sh
  *   variance for alpha <= 2.
  * @example
  * ```ts
- * import { frechet } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { frechet } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(frechet(1).cdf(1)) === Math.exp(-1) // => true
  * ```
  */

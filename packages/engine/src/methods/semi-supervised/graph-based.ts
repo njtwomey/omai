@@ -6,7 +6,7 @@
  */
 
 // TODO: harmonic functions with class mass normalisation (Zhu, Ghahramani and Lafferty 2003) as a third variant.
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import { type ClusteringSteps, clusteringSteps, type Exposition } from '../../lib/exposition/index.ts'
 import { pairwiseKernels } from '../../lib/kernels/index.ts'
 import {
@@ -273,7 +273,7 @@ function fitGraphLabels(
   const who = `label${variant === 'propagation' ? 'Propagation' : 'Spreading'}`
   const m = matrixView(data.x, who)
   if (!(variant === 'propagation' || (h.alpha > 0 && h.alpha < 1)))
-    throw new WhiteboxError('value', `${who}: alpha must be in (0, 1)`)
+    throw new MdmlError('value', `${who}: alpha must be in (0, 1)`)
   const { classes, codes } = semiSupervisedCodes(data.y ?? [], who, m.n)
   const k = classes.length
   const graph = graphMatrix(affinity(m, h, data.x), m.n, variant)

@@ -228,7 +228,7 @@ function colLogLikelihood(countA: number, countB: number, countAB: number, n: nu
  * @concept sentence-segmentation
  * @example
  * ```ts
- * import { trainPunkt } from 'whitebox-engine/text'
+ * import { trainPunkt } from 'mdml-engine/text'
  * const text = 'Mr. Smith arrived. He saw Mr. Jones. Mr. Brown left. Then Mr. Smith left too. '.repeat(3)
  * trainPunkt(text).abbrevTypes.has('mr') // => true
  * ```
@@ -371,7 +371,7 @@ const ASCII_SPACE = new Set([' ', '\t', '\n', '\r', '\x0b', '\x0c'])
  * @concept sentence-segmentation
  * @example
  * ```ts
- * import { sentenceSpans } from 'whitebox-engine/text'
+ * import { sentenceSpans } from 'mdml-engine/text'
  * const s = 'Hello there. "How are you?" she asked.'
  * sentenceSpans(s).map(([a, b]) => s.slice(a, b)) // => ['Hello there.', '"How are you?"', 'she asked.']
  * ```
@@ -456,7 +456,7 @@ export function sentenceSpans(
  * @concept sentence-segmentation
  * @example
  * ```ts
- * import { splitSentences } from 'whitebox-engine/text'
+ * import { splitSentences } from 'mdml-engine/text'
  * splitSentences('Dr. Who arrived at 10 a.m. sharp. Then he left!', { abbreviations: ['dr', 'a.m'] }) // => ['Dr. Who arrived at 10 a.m. sharp.', 'Then he left!']
  * ```
  */

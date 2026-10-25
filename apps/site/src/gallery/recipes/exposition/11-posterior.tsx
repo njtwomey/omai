@@ -1,10 +1,10 @@
+import { recordsOf } from 'mdml-engine/exposition'
+import { maternKernel, rbfKernel, scaleKernel } from 'mdml-engine/kernels'
+import { gaussianProcessRegressor } from 'mdml-engine/methods/gp'
+import { key, normal, uniform } from 'mdml-engine/random'
+import { toFlat } from 'mdml-engine/tensor'
+import { Choice, ControlPanel, NumberField, PosteriorView, SeedInput } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { maternKernel, rbfKernel, scaleKernel } from 'whitebox-engine/kernels'
-import { gaussianProcessRegressor } from 'whitebox-engine/methods/gp'
-import { key, normal, uniform } from 'whitebox-engine/random'
-import { toFlat } from 'whitebox-engine/tensor'
-import { Choice, ControlPanel, NumberField, PosteriorView, SeedInput } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

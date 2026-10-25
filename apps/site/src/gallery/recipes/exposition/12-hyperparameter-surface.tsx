@@ -1,9 +1,9 @@
+import { recordsOf } from 'mdml-engine/exposition'
+import { gaussianProcessRegressor } from 'mdml-engine/methods/gp'
+import { key, normal, uniform } from 'mdml-engine/random'
+import { toFlat } from 'mdml-engine/tensor'
+import { ControlPanel, HyperparameterSurfaceView, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { gaussianProcessRegressor } from 'whitebox-engine/methods/gp'
-import { key, normal, uniform } from 'whitebox-engine/random'
-import { toFlat } from 'whitebox-engine/tensor'
-import { ControlPanel, HyperparameterSurfaceView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

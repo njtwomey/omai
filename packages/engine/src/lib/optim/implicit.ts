@@ -5,7 +5,7 @@
  */
 
 import { grad, jacobian, jvp, vjp } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { solve as denseSolve } from '../numerics/linalg/index.ts'
 import { fixedPoint } from '../numerics/roots/index.ts'
 import { cg, gmres, type LinearOperator } from '../numerics/sparse/index.ts'
@@ -78,8 +78,7 @@ function linearSolve(
   }
   const solver = method === 'cg' ? cg : gmres
   const r = solver(op, primalOf(b), { rtol: params.options.tol ?? 1e-12, maxIterations: 10 * n + 10 })
-  if (!r.converged)
-    throw new WhiteboxError('convergence', `implicit differentiation: the ${method} solve did not converge`)
+  if (!r.converged) throw new MdmlError('convergence', `implicit differentiation: the ${method} solve did not converge`)
   return reshape(r.x, x.shape)
 }
 
@@ -123,9 +122,9 @@ const implicitPrimitive: Primitive<ImplicitParams> = definePrimitive<ImplicitPar
  * @concept implicit-differentiation
  * @example
  * ```ts
- * import { implicitRoot } from 'whitebox-engine/optim'
- * import { grad } from 'whitebox-engine/autodiff'
- * import { mul, sqrt, sub, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { implicitRoot } from 'mdml-engine/optim'
+ * import { grad } from 'mdml-engine/autodiff'
+ * import { mul, sqrt, sub, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * // x^2 = theta: x* = sqrt(theta), dx/dtheta = 1 / (2 sqrt(theta)).
  * const root = implicitRoot((x, t) => sub(mul(x, x), t as Value), (t) => sqrt(t))
  * toArray(grad((t: Value) => sum(root(t)))(tensor([4]))) // => [0.25]
@@ -142,7 +141,7 @@ export function implicitRoot(
     const x = primalOf(promoteFloat(solver(...concrete))[0] as Value) as Tensor
     const out = primalOf(F(x, ...concrete))
     if (sizeOf(out.shape) !== sizeOf(x.shape))
-      throw new WhiteboxError('shape', 'implicitRoot: F(x, theta) must have as many entries as x')
+      throw new MdmlError('shape', 'implicitRoot: F(x, theta) must have as many entries as x')
     return arg(bind(implicitPrimitive, [x, ...thetas.map((t) => promoteFloat(t)[0] as Value)], params), 0)
   }
 }
@@ -168,9 +167,9 @@ export interface ImplicitFixedPointOptions extends ImplicitOptions {
  * @concept implicit-differentiation
  * @example
  * ```ts
- * import { implicitFixedPoint } from 'whitebox-engine/optim'
- * import { grad } from 'whitebox-engine/autodiff'
- * import { add, mul, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { implicitFixedPoint } from 'mdml-engine/optim'
+ * import { grad } from 'mdml-engine/autodiff'
+ * import { add, mul, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * // x = x / 2 + theta: x* = 2 theta, dx/dtheta = 2.
  * const fp = implicitFixedPoint((x, t) => add(mul(x, 0.5), t as Value), undefined, { x0: [0] })
  * toArray(grad((t: Value) => sum(fp(t)))(tensor([1]))).map((v) => Math.round(v * 1e8) / 1e8) // => [2]
@@ -184,7 +183,7 @@ export function implicitFixedPoint(
   const solve: ImplicitSolver =
     solver ??
     ((...thetas) => {
-      if (options.x0 === undefined) throw new WhiteboxError('value', 'implicitFixedPoint: give a solver or x0')
+      if (options.x0 === undefined) throw new MdmlError('value', 'implicitFixedPoint: give a solver or x0')
       const start = primalOf(asTensor(options.x0))
       const r = fixedPoint((v) => flatOf(T(reshape(v, start.shape), ...thetas)), flatOf(start), {
         xtol: options.xtol ?? 1e-14,
@@ -214,9 +213,9 @@ export interface ImplicitArgminOptions extends ImplicitOptions {
  * @concept implicit-differentiation
  * @example
  * ```ts
- * import { implicitArgmin } from 'whitebox-engine/optim'
- * import { grad } from 'whitebox-engine/autodiff'
- * import { add, div, mul, square, sub, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { implicitArgmin } from 'mdml-engine/optim'
+ * import { grad } from 'mdml-engine/autodiff'
+ * import { add, div, mul, square, sub, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * // argmin (x - 3)^2 + theta x^2 = 3 / (1 + theta); at theta = 1 the derivative is -3 / 4.
  * const xs = implicitArgmin((x, t) => sum(add(square(sub(x, 3)), mul(t as Value, square(x)))), (t) => div(3, add(t, 1)))
  * toArray(grad((t: Value) => sum(xs(t)))(tensor([1]))) // => [-0.75]
@@ -230,7 +229,7 @@ export function implicitArgmin(
   const solve: ImplicitSolver =
     solver ??
     ((...thetas) => {
-      if (options.x0 === undefined) throw new WhiteboxError('value', 'implicitArgmin: give a solver or x0')
+      if (options.x0 === undefined) throw new MdmlError('value', 'implicitArgmin: give a solver or x0')
       return minimize((x) => f(x as Value, ...thetas), primalOf(asTensor(options.x0))).x as Value
     })
   const stationarity: Residual = (x, ...thetas) => grad((v: Value) => f(v, ...thetas))(x)

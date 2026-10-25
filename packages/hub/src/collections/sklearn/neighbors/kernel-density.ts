@@ -3,7 +3,7 @@
  * the data, on two-dimensional densities and clustering datasets.
  */
 
-import { kernelDensity as kernelDensityMethod } from 'whitebox-engine/methods/mixture'
+import { kernelDensity as kernelDensityMethod } from 'mdml-engine/methods/mixture'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

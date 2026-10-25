@@ -5,7 +5,7 @@
  */
 
 import type { Json } from '../base/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   add,
   arg,
@@ -178,14 +178,14 @@ const tv1dPrimitive: Primitive<null> = definePrimitive<null>({
  * @concept proximal-operators
  * @example
  * ```ts
- * import { proxTv1d } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxTv1d } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxTv1d([0, 0, 4, 4], 1)) // => [0.5, 0.5, 3.5, 3.5]
  * ```
  */
 export function proxTv1d(y: TensorLike, lambda: TensorLike): Value {
   const [yv, lv] = promoteFloat(y, lambda) as [Value, Value]
-  if (yv.shape.length !== 1) throw new WhiteboxError('shape', 'proxTv1d: the signal must be a vector')
+  if (yv.shape.length !== 1) throw new MdmlError('shape', 'proxTv1d: the signal must be a vector')
   return arg(bind(tv1dPrimitive, [yv, lv], null), 0)
 }
 
@@ -222,13 +222,13 @@ export interface Tv2dState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { tv2dAlgorithm } from 'whitebox-engine/optim'
+ * import { tv2dAlgorithm } from 'mdml-engine/optim'
  * tv2dAlgorithm([[0, 1], [1, 0]], 0.1).name // => 'tv2d'
  * ```
  */
 export function tv2dAlgorithm(b: TensorLike, lambda: number, options: Tv2dOptions = {}): Algorithm<Tv2dState> {
   const image = concreteOrThrow(promoteFloat(b)[0] as Value, 'proxTv2d') as Tensor
-  if (image.shape.length !== 2) throw new WhiteboxError('shape', 'proxTv2d: the image must be a matrix')
+  if (image.shape.length !== 2) throw new MdmlError('shape', 'proxTv2d: the image must be a matrix')
   const m = image.shape[0] ?? 0
   const n = image.shape[1] ?? 0
   const bv = Float64Array.from(image.data)
@@ -322,12 +322,12 @@ export function tv2dAlgorithm(b: TensorLike, lambda: number, options: Tv2dOption
  * @param lambda - The regularisation weight.
  * @param options - Isotropy, box constraints, tolerance, iteration cap (default 2000) and run options.
  * @returns The denoised image.
- * @throws WhiteboxError with code `not-differentiable` for a traced image.
+ * @throws MdmlError with code `not-differentiable` for a traced image.
  * @concept proximal-operators
  * @example
  * ```ts
- * import { proxTv2d } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { proxTv2d } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(proxTv2d([[1, 1], [1, 1]], 0.5)) // => [[1, 1], [1, 1]]
  * ```
  */

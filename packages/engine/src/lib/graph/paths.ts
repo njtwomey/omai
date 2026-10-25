@@ -4,7 +4,7 @@
  * predecessors, Yen's k shortest loopless paths, and a `shortestPath` front door that picks a method from the weights.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
 import { IndexedQueue } from './structures.ts'
@@ -59,7 +59,7 @@ function dijkstraCore(
       const v = a.indices[k] ?? 0
       if (done[v] === 1 || blockedEdges?.has(a.edges[k] ?? -1) === true || blockedNodes?.has(v) === true) continue
       const w = weight(k)
-      if (w < 0) throw new WhiteboxError('domain', 'dijkstra: negative edge weights need bellmanFord or johnson')
+      if (w < 0) throw new MdmlError('domain', 'dijkstra: negative edge weights need bellmanFord or johnson')
       const alt = du + w
       if (alt < (distance[v] ?? Number.POSITIVE_INFINITY)) {
         distance[v] = alt
@@ -79,11 +79,11 @@ function dijkstraCore(
  * @param source - The source.
  * @param options - `weighted` (default true), and a `target` to stop at once it is settled.
  * @returns Distances and predecessors.
- * @throws WhiteboxError with code `domain` when a negative weight is reached.
+ * @throws MdmlError with code `domain` when a negative weight is reached.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { dijkstra, graph } from 'whitebox-engine/graph'
+ * import { dijkstra, graph } from 'mdml-engine/graph'
  * const r = dijkstra(graph([[0, 1, 4], [0, 2, 1], [2, 1, 2], [1, 3, 5]]), 0)
  * Array.from(r.distance) // => [0, 3, 1, 8]
  * Array.from(r.predecessor) // => [-1, 2, 0, 1]
@@ -107,11 +107,11 @@ export function dijkstra(
  * @param source - The source.
  * @param options - `weighted` (default true).
  * @returns Distances and predecessors.
- * @throws WhiteboxError with code `value` when a negative cycle is reachable from the source.
+ * @throws MdmlError with code `value` when a negative cycle is reachable from the source.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { bellmanFord, digraph } from 'whitebox-engine/graph'
+ * import { bellmanFord, digraph } from 'mdml-engine/graph'
  * Array.from(bellmanFord(digraph([[0, 1, 4], [0, 2, 5], [2, 1, -3]]), 0).distance) // => [0, 2, 5]
  * ```
  */
@@ -140,7 +140,7 @@ export function bellmanFord(g: Graph, source: NodeId, options: PathOptions = {})
     return changed
   }
   for (let round = 0; round < g.n - 1; round++) if (!relax()) return { source: s, distance, predecessor }
-  if (relax()) throw new WhiteboxError('value', 'bellmanFord: the graph has a negative cycle')
+  if (relax()) throw new MdmlError('value', 'bellmanFord: the graph has a negative cycle')
   return { source: s, distance, predecessor }
 }
 
@@ -162,11 +162,11 @@ export interface AStarResult {
  * @param target - The target.
  * @param options - The heuristic (default 0) and `weighted` (default true).
  * @returns The path, its length and the nodes expanded.
- * @throws WhiteboxError with code `domain` for a negative weight.
+ * @throws MdmlError with code `domain` for a negative weight.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { aStar, gridGraph } from 'whitebox-engine/graph'
+ * import { aStar, gridGraph } from 'mdml-engine/graph'
  * const g = gridGraph(3, 3)
  * const manhattan = (v: number) => Math.abs(Math.floor(v / 3) - 2) + Math.abs((v % 3) - 2)
  * const r = aStar(g, 0, 8, { heuristic: manhattan })
@@ -199,7 +199,7 @@ export function aStar(
       const v = a.indices[k] ?? 0
       if (closed[v] === 1) continue
       const w = weight(k)
-      if (w < 0) throw new WhiteboxError('domain', 'aStar: negative edge weights are not allowed')
+      if (w < 0) throw new MdmlError('domain', 'aStar: negative edge weights are not allowed')
       const alt = (cost[u] ?? 0) + w
       if (alt < (cost[v] ?? Number.POSITIVE_INFINITY)) {
         cost[v] = alt
@@ -219,12 +219,12 @@ export function aStar(
  * @param g - The graph.
  * @param options - `weighted` (default true).
  * @returns The distance matrix and the predecessor matrix.
- * @throws WhiteboxError with code `value` when there is a negative cycle.
+ * @throws MdmlError with code `value` when there is a negative cycle.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { floydWarshall, pathGraph } from 'whitebox-engine/graph'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { floydWarshall, pathGraph } from 'mdml-engine/graph'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(floydWarshall(pathGraph(3)).distance) // => [[0, 1, 2], [1, 0, 1], [2, 1, 0]]
  * ```
  */
@@ -240,7 +240,7 @@ export function floydWarshall(g: Graph, options: PathOptions = {}): AllPairsShor
       const v = a.indices[k] ?? 0
       const w = weight(k)
       if (u === v) {
-        if (w < 0) throw new WhiteboxError('value', 'floydWarshall: the graph has a negative cycle')
+        if (w < 0) throw new MdmlError('value', 'floydWarshall: the graph has a negative cycle')
         continue
       }
       if (w < (d[u * n + v] ?? Number.POSITIVE_INFINITY)) {
@@ -263,7 +263,7 @@ export function floydWarshall(g: Graph, options: PathOptions = {}): AllPairsShor
     }
   }
   for (let i = 0; i < n; i++) {
-    if ((d[i * n + i] ?? 0) < 0) throw new WhiteboxError('value', 'floydWarshall: the graph has a negative cycle')
+    if ((d[i * n + i] ?? 0) < 0) throw new MdmlError('value', 'floydWarshall: the graph has a negative cycle')
   }
   return { distance: fromStorage(d, [n, n], 'float64'), predecessor: fromStorage(p, [n, n], 'int32') }
 }
@@ -276,12 +276,12 @@ export function floydWarshall(g: Graph, options: PathOptions = {}): AllPairsShor
  * @param g - The graph.
  * @param options - `weighted` (default true).
  * @returns The distance matrix and the predecessor matrix.
- * @throws WhiteboxError with code `value` when there is a negative cycle.
+ * @throws MdmlError with code `value` when there is a negative cycle.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { digraph, johnson } from 'whitebox-engine/graph'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { digraph, johnson } from 'mdml-engine/graph'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(johnson(digraph([[0, 1, 2], [1, 2, -1]])).distance)[0] // => [0, 2, 1]
  * ```
  */
@@ -304,7 +304,7 @@ export function johnson(g: Graph, options: PathOptions = {}): AllPairsShortestPa
         }
       }
     }
-    if (changed && round === n) throw new WhiteboxError('value', 'johnson: the graph has a negative cycle')
+    if (changed && round === n) throw new MdmlError('value', 'johnson: the graph has a negative cycle')
   }
   const reweighted = (k: number): number => {
     const u = g.out.indices[k] ?? 0
@@ -347,7 +347,7 @@ function sourceOf(g: Graph, k: number): number {
  * @returns The nodes from source to target, or null when the target is unreachable.
  * @example
  * ```ts
- * import { dijkstra, pathGraph, reconstructPath } from 'whitebox-engine/graph'
+ * import { dijkstra, pathGraph, reconstructPath } from 'mdml-engine/graph'
  * reconstructPath(dijkstra(pathGraph(4), 0).predecessor, 0, 3) // => [0, 1, 2, 3]
  * ```
  */
@@ -392,7 +392,7 @@ export interface WeightedPath {
  * @reference J. Y. Yen, Finding the k shortest loopless paths in a network, Management Science 17 (1971).
  * @example
  * ```ts
- * import { cycleGraph, kShortestPaths } from 'whitebox-engine/graph'
+ * import { cycleGraph, kShortestPaths } from 'mdml-engine/graph'
  * kShortestPaths(cycleGraph(5), 0, 2, 2).map((p) => p.path) // => [[0, 1, 2], [0, 4, 3, 2]]
  * ```
  */
@@ -469,7 +469,7 @@ export function kShortestPaths(
  * @returns The path and its length, or null when the target is unreachable.
  * @example
  * ```ts
- * import { graph, shortestPath } from 'whitebox-engine/graph'
+ * import { graph, shortestPath } from 'mdml-engine/graph'
  * shortestPath(graph([['a', 'b', 1], ['b', 'c', 1], ['a', 'c', 5]]), 'a', 'c') // => { path: [0, 1, 2], cost: 2 }
  * ```
  */

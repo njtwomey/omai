@@ -1,6 +1,6 @@
 """Constraint satisfaction against python-constraint (every solution of n-queens, Australia map colouring, a
 cryptarithm and 4x4 Sudoku; the unique solution of aima-python's harder1 Sudoku) and against aima-python's AC-3 (a
-typed port in whitebox_oracle.aima_csp: arc-consistent domains of partially assigned map colourings, n-queens and the
+typed port in mdml_oracle.aima_csp: arc-consistent domains of partially assigned map colourings, n-queens and the
 easy1 Sudoku, which AC-3 solves outright)."""
 
 from collections.abc import Callable
@@ -8,7 +8,7 @@ from importlib.metadata import version
 
 import constraint as pc
 import numpy as np
-from whitebox_oracle.aima_csp import (
+from mdml_oracle.aima_csp import (
     AUSTRALIA_NEIGHBOURS,
     EASY1,
     HARDER1,
@@ -19,7 +19,7 @@ from whitebox_oracle.aima_csp import (
     sudoku,
     sudoku_units,
 )
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {
     "python-constraint2": version("python-constraint2"),

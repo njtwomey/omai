@@ -5,8 +5,8 @@
  */
 
 import type { SeriesOption } from 'echarts'
-import { type Frame, type Structure, type StructureOverlay, type Timeline, timeline } from 'whitebox-engine/scene'
-import { messages, type Run } from 'whitebox-engine/trace'
+import { type Frame, type Structure, type StructureOverlay, type Timeline, timeline } from 'mdml-engine/scene'
+import { messages, type Run } from 'mdml-engine/trace'
 import { type Layer, layer } from '../charts/plot.ts'
 import { categoricalColour } from '../theme/palettes.ts'
 
@@ -19,9 +19,9 @@ import { categoricalColour } from '../theme/palettes.ts'
  * @returns The layer, rows as categories.
  * @example
  * ```ts
- * import { messageTimeline } from 'whitebox-render/trace'
+ * import { messageTimeline } from 'mdml-render/trace'
  * const m = (step: number, from: string, to: string) => ({ type: 'message' as const, runId: 'r', step, kind: 'belief', from, to, payload: null })
- * messageTimeline({ schema: 'whitebox.run/1', events: [m(0, 'a', 'b'), m(1, 'b', 'c')] }).yCategories // => ['a → b', 'b → c']
+ * messageTimeline({ schema: 'mdml.run/1', events: [m(0, 'a', 'b'), m(1, 'b', 'c')] }).yCategories // => ['a → b', 'b → c']
  * ```
  */
 export function messageTimeline(run: Run, options: { readonly kind?: string } = {}): Layer {
@@ -60,10 +60,10 @@ export function messageTimeline(run: Run, options: { readonly kind?: string } = 
  * @returns The timeline, one frame per step with messages.
  * @example
  * ```ts
- * import { messageFrames } from 'whitebox-render/trace'
- * import { structure } from 'whitebox-engine/scene'
+ * import { messageFrames } from 'mdml-render/trace'
+ * import { structure } from 'mdml-engine/scene'
  * const s = structure('g', [{ id: 'a', label: 'a', role: 'latent' }, { id: 'b', label: 'b', role: 'latent' }], [{ from: 'a', to: 'b' }])
- * const run = { schema: 'whitebox.run/1' as const, events: [{ type: 'message' as const, runId: 'r', step: 2, kind: 'm', from: 'a', to: 'b', payload: 0.5 }] }
+ * const run = { schema: 'mdml.run/1' as const, events: [{ type: 'message' as const, runId: 'r', step: 2, kind: 'm', from: 'a', to: 'b', payload: 0.5 }] }
  * messageFrames(s, run).frames[0].overlay.badges // => { b: { message: 0.5 } }
  * ```
  */

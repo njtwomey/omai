@@ -4,7 +4,7 @@
  * shared by the other solvers, and a ready stepper for each method.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import { attempt, checked, counter, initialState, snapshot, statusAfter, tally, towards } from './_step.ts'
 import { allFinite, combine, numbersOf, type Term } from './_vec.ts'
@@ -32,11 +32,11 @@ export interface ButcherTableau {
  * @param c - The stage times.
  * @param order - The classical order.
  * @returns The tableau.
- * @throws WhiteboxError with code `value` when the tableau is not explicit or inconsistent.
+ * @throws MdmlError with code `value` when the tableau is not explicit or inconsistent.
  * @concept runge-kutta
  * @example
  * ```ts
- * import { butcherTableau } from 'whitebox-engine/dynamics/ode'
+ * import { butcherTableau } from 'mdml-engine/dynamics/ode'
  * butcherTableau('midpoint', [[], [0.5]], [0, 1], [0, 0.5], 2).b // => [0, 1]
  * ```
  */
@@ -49,18 +49,18 @@ export function butcherTableau(
 ): ButcherTableau {
   const s = b.length
   if (c.length !== s || a.length !== s) {
-    throw new WhiteboxError('value', `butcherTableau: ${name} needs ${s} stage times and coupling rows`)
+    throw new MdmlError('value', `butcherTableau: ${name} needs ${s} stage times and coupling rows`)
   }
   const rows = a.map((row, i) => {
     if (row.slice(i).some((v) => v !== 0)) {
-      throw new WhiteboxError('value', `butcherTableau: ${name} is not explicit (row ${i} reaches the diagonal)`)
+      throw new MdmlError('value', `butcherTableau: ${name} is not explicit (row ${i} reaches the diagonal)`)
     }
     return Array.from({ length: i }, (_, j) => row[j] ?? 0)
   })
   rows.forEach((row, i) => {
     const sum = row.reduce((x, y) => x + y, 0)
     if (Math.abs(sum - (c[i] ?? 0)) > 1e-12 * Math.max(1, Math.abs(sum))) {
-      throw new WhiteboxError('value', `butcherTableau: ${name} row ${i} sums to ${sum}, not c = ${c[i]}`)
+      throw new MdmlError('value', `butcherTableau: ${name} row ${i} sums to ${sum}, not c = ${c[i]}`)
     }
   })
   return { name, a: rows, b: [...b], c: [...c], order }
@@ -112,8 +112,8 @@ export const RK38: ButcherTableau = butcherTableau(
  * @returns The stage derivatives.
  * @example
  * ```ts
- * import { rkStages, EULER } from 'whitebox-engine/dynamics/ode'
- * import { tensor, toArray } from 'whitebox-engine/tensor'
+ * import { rkStages, EULER } from 'mdml-engine/dynamics/ode'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
  * rkStages((_t, y) => y, 0, tensor([2]), 0.1, EULER).map((k) => toArray(k)) // => [[2]]
  * ```
  */
@@ -151,8 +151,8 @@ export function rkStages(
  * @concept runge-kutta
  * @example
  * ```ts
- * import { rkStep, RK4 } from 'whitebox-engine/dynamics/ode'
- * import { item, tensor } from 'whitebox-engine/tensor'
+ * import { rkStep, RK4 } from 'mdml-engine/dynamics/ode'
+ * import { item, tensor } from 'mdml-engine/tensor'
  * // dy/dt = 1 integrates exactly.
  * Math.abs(item(rkStep((_t, y) => tensor([1]), 0, tensor([0]), 0.5, RK4)) - 0.5) < 1e-15 // => true
  * ```
@@ -186,19 +186,19 @@ export interface FixedStepState extends StepperState {
  * @param tableau - The method.
  * @param options - The step size.
  * @returns The stepper.
- * @throws WhiteboxError with code `value` when `dt` is not positive.
+ * @throws MdmlError with code `value` when `dt` is not positive.
  * @concept runge-kutta
  * @example
  * ```ts
- * import { explicitRk, RK4 } from 'whitebox-engine/dynamics/ode'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { explicitRk, RK4 } from 'mdml-engine/dynamics/ode'
+ * import { tensor } from 'mdml-engine/tensor'
  * const s = explicitRk(RK4, { dt: 0.1 })
  * s.step(s.init((_t, y) => y, 0, tensor([1]), 1)).t // => 0.1
  * ```
  */
 export function explicitRk(tableau: ButcherTableau, options: FixedStepOptions): Stepper<FixedStepState> {
   const dt = options.dt
-  if (!(dt > 0) || !Number.isFinite(dt)) throw new WhiteboxError('value', `${tableau.name}: dt must be positive`)
+  if (!(dt > 0) || !Number.isFinite(dt)) throw new MdmlError('value', `${tableau.name}: dt must be positive`)
   return {
     name: tableau.name,
     order: tableau.order,
@@ -210,7 +210,7 @@ export function explicitRk(tableau: ButcherTableau, options: FixedStepOptions): 
       return { ...initialState(t0, y0, tBound, dt, c, tableau.order), f, fy, fOld: fy, dt, counts: snapshot(c) }
     },
     step: (s) => {
-      if (s.status !== 'running') throw new WhiteboxError('value', `${tableau.name}: the integration has ended`)
+      if (s.status !== 'running') throw new MdmlError('value', `${tableau.name}: the integration has ended`)
       if (s.t === s.tBound) return { ...s, tOld: s.t, status: 'finished' }
       const c = { ...s.counts }
       const f = tally(s.f, c)
@@ -243,7 +243,7 @@ export function explicitRk(tableau: ButcherTableau, options: FixedStepOptions): 
  * @returns The stepper.
  * @example
  * ```ts
- * import { euler } from 'whitebox-engine/dynamics/ode'
+ * import { euler } from 'mdml-engine/dynamics/ode'
  * euler({ dt: 0.1 }).order // => 1
  * ```
  */
@@ -258,7 +258,7 @@ export function euler(options: FixedStepOptions): Stepper<FixedStepState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { heun } from 'whitebox-engine/dynamics/ode'
+ * import { heun } from 'mdml-engine/dynamics/ode'
  * heun({ dt: 0.1 }).order // => 2
  * ```
  */
@@ -273,7 +273,7 @@ export function heun(options: FixedStepOptions): Stepper<FixedStepState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { midpoint } from 'whitebox-engine/dynamics/ode'
+ * import { midpoint } from 'mdml-engine/dynamics/ode'
  * midpoint({ dt: 0.1 }).name // => 'midpoint'
  * ```
  */
@@ -288,7 +288,7 @@ export function midpoint(options: FixedStepOptions): Stepper<FixedStepState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { ralston } from 'whitebox-engine/dynamics/ode'
+ * import { ralston } from 'mdml-engine/dynamics/ode'
  * ralston({ dt: 0.1 }).name // => 'ralston'
  * ```
  */
@@ -303,7 +303,7 @@ export function ralston(options: FixedStepOptions): Stepper<FixedStepState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { kutta3 } from 'whitebox-engine/dynamics/ode'
+ * import { kutta3 } from 'mdml-engine/dynamics/ode'
  * kutta3({ dt: 0.1 }).order // => 3
  * ```
  */
@@ -318,7 +318,7 @@ export function kutta3(options: FixedStepOptions): Stepper<FixedStepState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { rk4 } from 'whitebox-engine/dynamics/ode'
+ * import { rk4 } from 'mdml-engine/dynamics/ode'
  * rk4({ dt: 0.1 }).order // => 4
  * ```
  */
@@ -333,7 +333,7 @@ export function rk4(options: FixedStepOptions): Stepper<FixedStepState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { rk38 } from 'whitebox-engine/dynamics/ode'
+ * import { rk38 } from 'mdml-engine/dynamics/ode'
  * rk38({ dt: 0.1 }).name // => 'rk38'
  * ```
  */

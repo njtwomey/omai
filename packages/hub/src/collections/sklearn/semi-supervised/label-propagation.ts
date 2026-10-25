@@ -3,7 +3,7 @@
  * to the unlabelled points, on two-dimensional classification data.
  */
 
-import { labelPropagation as labelPropagationEstimator } from 'whitebox-engine/methods/semi-supervised'
+import { labelPropagation as labelPropagationEstimator } from 'mdml-engine/methods/semi-supervised'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { withHiddenLabels } from './_hidden.ts'
 

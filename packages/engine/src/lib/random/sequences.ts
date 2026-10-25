@@ -4,7 +4,7 @@
  * and Poisson disk (blue-noise) samples by Bridson's algorithm in any dimension.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 import { checkSobol, directions, drawSobol, scrambleDirections } from './_sobol.ts'
 import { normalFrom, unitDoubles } from './_unit.ts'
@@ -28,12 +28,12 @@ export interface SobolOptions {
  * @param d - Dimension, 1 to 1111 (the dimensions embedded from the Joe-Kuo table).
  * @param options - `skip` (first index, scipy's `fast_forward`) and `bits` (default 30).
  * @returns A float64 tensor `[n, d]` in `[0, 1)`.
- * @throws WhiteboxError with code `value` for an unsupported dimension or bit count, or more than `2^bits` points.
+ * @throws MdmlError with code `value` for an unsupported dimension or bit count, or more than `2^bits` points.
  * @concept quasi-random
  * @see https://web.maths.unsw.edu.au/~fkuo/sobol/
  * @example
  * ```ts
- * import { sobol } from 'whitebox-engine/random'
+ * import { sobol } from 'mdml-engine/random'
  * Array.from(sobol(4, 2).data) // => [0, 0, 0.5, 0.5, 0.75, 0.25, 0.25, 0.75]
  * Array.from(sobol(2, 2, { skip: 3 }).data) // => [0.25, 0.75, 0.375, 0.375]
  * ```
@@ -58,13 +58,13 @@ export function sobol(n: number, d: number, options: SobolOptions = {}): Tensor<
  * @param d - Dimension, 1 to 1111.
  * @param options - `skip` (first index) and `bits` (default 30).
  * @returns A float64 tensor `[n, d]` in `[0, 1)`.
- * @throws WhiteboxError with code `value` for an unsupported dimension or bit count, or more than `2^bits` points.
+ * @throws MdmlError with code `value` for an unsupported dimension or bit count, or more than `2^bits` points.
  * @concept quasi-random
  * @reference Matousek (1998), On the L2-discrepancy for anchored boxes; Owen (2003), Variance with alternative
  * scramblings of digital nets.
  * @example
  * ```ts
- * import { key, scrambledSobol } from 'whitebox-engine/random'
+ * import { key, scrambledSobol } from 'mdml-engine/random'
  * const x = scrambledSobol(key(0), 8, 1)
  * Array.from(x.data, (u) => Math.floor(u * 8)).sort() // => [0, 1, 2, 3, 4, 5, 6, 7]
  * ```
@@ -122,11 +122,11 @@ function radicalInverse(i: number, base: number): number {
  * @param d - Dimension.
  * @param options - `skip`: index of the first point (default 1).
  * @returns A float64 tensor `[n, d]` in the unit cube.
- * @throws WhiteboxError with code `value` for a negative or non-integer `skip`.
+ * @throws MdmlError with code `value` for a negative or non-integer `skip`.
  * @concept quasi-random
  * @example
  * ```ts
- * import { halton } from 'whitebox-engine/random'
+ * import { halton } from 'mdml-engine/random'
  * Array.from(halton(2, 2).data) // => [0.5, 0.333333, 0.25, 0.666667]
  * Array.from(halton(2, 2, { skip: 0 }).data) // => [0, 0, 0.5, 0.333333]
  * ```
@@ -134,7 +134,7 @@ function radicalInverse(i: number, base: number): number {
 export function halton(n: number, d: number, options: { readonly skip?: number } = {}): Tensor<'float64'> {
   const skip = options.skip ?? 1
   if (!Number.isInteger(skip) || skip < 0) {
-    throw new WhiteboxError('value', `halton: skip must be a non-negative integer, got ${skip}`)
+    throw new MdmlError('value', `halton: skip must be a non-negative integer, got ${skip}`)
   }
   const primes = firstPrimes(d)
   const out = new Float64Array(n * d)
@@ -154,7 +154,7 @@ export function halton(n: number, d: number, options: { readonly skip?: number }
  * @concept quasi-random
  * @example
  * ```ts
- * import { key, latinHypercube } from 'whitebox-engine/random'
+ * import { key, latinHypercube } from 'mdml-engine/random'
  * const x = latinHypercube(key(0), 4, 1)
  * Array.from(x.data, (v) => Math.floor(v * 4)).sort() // => [0, 1, 2, 3]
  * Array.from(latinHypercube(key(0), 4, 1, { centered: true }).data).sort() // => [0.125, 0.375, 0.625, 0.875]
@@ -210,12 +210,12 @@ const MAX_CELLS = 2 ** 24
  * @param radius - Minimum distance between points, in the units of the box.
  * @param options - `n`, `candidates`, `hypersphere`, `lower` and `upper`.
  * @returns A float64 tensor `[m, d]` of points in the closed box.
- * @throws WhiteboxError with code `value` for invalid arguments or a grid of more than 2^24 cells.
+ * @throws MdmlError with code `value` for invalid arguments or a grid of more than 2^24 cells.
  * @concept quasi-random
  * @reference Bridson (2007), Fast Poisson disk sampling in arbitrary dimensions, SIGGRAPH sketches.
  * @example
  * ```ts
- * import { key, poissonDisk } from 'whitebox-engine/random'
+ * import { key, poissonDisk } from 'mdml-engine/random'
  * const x = poissonDisk(key(0), 2, 0.2)
  * const [x0 = 0, y0 = 0, x1 = 0, y1 = 0] = x.data
  * Math.hypot(x0 - x1, y0 - y1) >= 0.2 // => true
@@ -228,22 +228,19 @@ export function poissonDisk(k: Key, d: number, radius: number, options: PoissonD
   const limit = options.n ?? Infinity
   const candidates = options.candidates ?? 30
   const surface = options.hypersphere === 'surface'
-  if (!Number.isInteger(d) || d < 1) throw new WhiteboxError('value', `poissonDisk: dimension must be positive`)
-  if (!(radius > 0) || !Number.isFinite(radius)) throw new WhiteboxError('value', 'poissonDisk: radius must be > 0')
+  if (!Number.isInteger(d) || d < 1) throw new MdmlError('value', `poissonDisk: dimension must be positive`)
+  if (!(radius > 0) || !Number.isFinite(radius)) throw new MdmlError('value', 'poissonDisk: radius must be > 0')
   if (lower.length !== d || upper.length !== d || lower.some((lo, j) => !((upper[j] ?? 0) > lo))) {
-    throw new WhiteboxError('value', 'poissonDisk: bounds must have length d with upper > lower')
+    throw new MdmlError('value', 'poissonDisk: bounds must have length d with upper > lower')
   }
   if (!(limit >= 0) || !Number.isInteger(candidates) || candidates < 1) {
-    throw new WhiteboxError('value', 'poissonDisk: n must be non-negative and candidates a positive integer')
+    throw new MdmlError('value', 'poissonDisk: n must be non-negative and candidates a positive integer')
   }
   const cell = radius / Math.sqrt(d)
   const size = lower.map((lo, j) => Math.max(1, Math.ceil(((upper[j] ?? 1) - lo) / cell)))
   const total = size.reduce((a, b) => a * b, 1)
   if (total > MAX_CELLS) {
-    throw new WhiteboxError(
-      'value',
-      `poissonDisk: the grid would have ${total} cells; use a larger radius or fewer dims`,
-    )
+    throw new MdmlError('value', `poissonDisk: the grid would have ${total} cells; use a larger radius or fewer dims`)
   }
   const stride = new Array<number>(d)
   for (let j = d - 1, s = 1; j >= 0; j--) {

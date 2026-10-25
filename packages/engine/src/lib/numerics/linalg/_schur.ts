@@ -1,6 +1,6 @@
 // Hessenberg reduction and the real Schur form by Francis double-shift QR (Golub and Van Loan, algorithms 7.4.2, 7.5.1
 // and 7.5.2), on single row-major matrices.
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 
 const EPS = 2.220446049250313e-16
 
@@ -86,7 +86,7 @@ export function schurKernel(a: Float64Array, n: number): { t: Float64Array; z: F
       continue
     }
     iterations += 1
-    if (iterations > 60 * n) throw new WhiteboxError('convergence', 'schur: QR iteration did not converge')
+    if (iterations > 60 * n) throw new MdmlError('convergence', 'schur: QR iteration did not converge')
     francisStep(h, z, n, lo, hi, iterations)
   }
   return { t: h, z }

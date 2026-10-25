@@ -6,7 +6,7 @@
  * environment's oracle.
  */
 
-import { argmaxOf, type Json, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError, maxOf } from '../../../lib/base/index.ts'
 import { cholesky, choSolve, ddot, dnrm2, solveTriangular } from '../../../lib/numerics/linalg/index.ts'
 import { categorical, foldIn, gammaVariates, type Key, key as makeKey, normal } from '../../../lib/random/index.ts'
 import {
@@ -45,7 +45,7 @@ export interface BanditState {
 }
 
 const arms = (env: BanditSpaces, name: string): number => {
-  if (env.actionSpace.kind !== 'discrete') throw new WhiteboxError('value', `${name}: needs discrete arms`)
+  if (env.actionSpace.kind !== 'discrete') throw new MdmlError('value', `${name}: needs discrete arms`)
   return env.actionSpace.n
 }
 
@@ -140,9 +140,9 @@ export interface EpsilonGreedyBanditState extends BanditState {
  * @concept bandits
  * @example
  * ```ts
- * import { epsilonGreedyBandit } from 'whitebox-engine/methods/rl/agents'
- * import { bernoulliBandit } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { epsilonGreedyBandit } from 'mdml-engine/methods/rl/agents'
+ * import { bernoulliBandit } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = epsilonGreedyBandit(bernoulliBandit.create(), { alpha: 0.5, initialValue: 2 })
  * const t = { observation: 0, action: 1, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).estimates[1] // => 1.5
@@ -199,9 +199,9 @@ export interface Ucb1Options {
  * @concept upper-confidence-bounds
  * @example
  * ```ts
- * import { ucb1 } from 'whitebox-engine/methods/rl/agents'
- * import { bernoulliBandit } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { ucb1 } from 'mdml-engine/methods/rl/agents'
+ * import { bernoulliBandit } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = ucb1(bernoulliBandit.create())
  * agent.act(agent.init(key(0)), 0, key(1)) // => 0
  * ```
@@ -241,8 +241,8 @@ export interface KlUcbOptions {
  * @concept upper-confidence-bounds
  * @example
  * ```ts
- * import { klUcb } from 'whitebox-engine/methods/rl/agents'
- * import { gaussianBandit } from 'whitebox-engine/methods/rl'
+ * import { klUcb } from 'mdml-engine/methods/rl/agents'
+ * import { gaussianBandit } from 'mdml-engine/methods/rl'
  * klUcb(gaussianBandit.create(), { family: 'gaussian' }).name // => 'klUcb'
  * ```
  */
@@ -286,9 +286,9 @@ export interface ThompsonBernoulliState extends BanditState {
  * @concept thompson-sampling
  * @example
  * ```ts
- * import { thompsonBernoulli } from 'whitebox-engine/methods/rl/agents'
- * import { bernoulliBandit } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { thompsonBernoulli } from 'mdml-engine/methods/rl/agents'
+ * import { bernoulliBandit } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = thompsonBernoulli(bernoulliBandit.create())
  * const t = { observation: 0, action: 2, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * Array.from(agent.learn(agent.init(key(0)), t, key(1)).alpha) // => [1, 1, 2, 1, 1]
@@ -357,9 +357,9 @@ export interface GaussianPosterior {
  * @concept thompson-sampling
  * @example
  * ```ts
- * import { gaussianPosterior, thompsonGaussian } from 'whitebox-engine/methods/rl/agents'
- * import { gaussianBandit } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { gaussianPosterior, thompsonGaussian } from 'mdml-engine/methods/rl/agents'
+ * import { gaussianBandit } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = thompsonGaussian(gaussianBandit.create({ means: [0, 1] }), { variance: 1 })
  * const t = { observation: 0, action: 1, reward: 2, nextObservation: 0, terminated: false, truncated: false }
  * gaussianPosterior(agent.learn(agent.init(key(0)), t, key(1)), { variance: 1 }) // => { mean: [0, 1], precision: [1, 2] }
@@ -402,8 +402,8 @@ export function gaussianPosterior(state: BanditState, options: ThompsonGaussianO
  * @concept thompson-sampling
  * @example
  * ```ts
- * import { thompsonGaussian } from 'whitebox-engine/methods/rl/agents'
- * import { gaussianBandit } from 'whitebox-engine/methods/rl'
+ * import { thompsonGaussian } from 'mdml-engine/methods/rl/agents'
+ * import { gaussianBandit } from 'mdml-engine/methods/rl'
  * thompsonGaussian(gaussianBandit.create(), { variance: 1 }).name // => 'thompsonGaussian'
  * ```
  */
@@ -470,9 +470,9 @@ export interface Exp3State extends BanditState {
  * @concept adversarial-bandits
  * @example
  * ```ts
- * import { exp3 } from 'whitebox-engine/methods/rl/agents'
- * import { adversarialBandit } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { exp3 } from 'mdml-engine/methods/rl/agents'
+ * import { adversarialBandit } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = exp3(adversarialBandit.create({ arms: 2 }), { gamma: 0.5 })
  * Array.from(agent.init(key(0)).probabilities) // => [0.5, 0.5]
  * ```
@@ -480,7 +480,7 @@ export interface Exp3State extends BanditState {
 export function exp3(env: BanditSpaces, options: Exp3Options = {}): Agent<Exp3State, unknown, number> {
   const k = arms(env, 'exp3')
   const gamma = options.gamma ?? 0.1
-  if (!(gamma > 0 && gamma <= 1)) throw new WhiteboxError('value', 'exp3: gamma must be in (0, 1]')
+  if (!(gamma > 0 && gamma <= 1)) throw new MdmlError('value', 'exp3: gamma must be in (0, 1]')
   const [lo, hi] = options.rewardRange ?? [0, 1]
   const probabilitiesOf = (lw: Float64Array): Float64Array => {
     const m = maxOf(lw)
@@ -539,9 +539,9 @@ export interface GradientBanditState extends BanditState {
  * @concept policy-gradient
  * @example
  * ```ts
- * import { gradientBandit } from 'whitebox-engine/methods/rl/agents'
- * import { bernoulliBandit } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { gradientBandit } from 'mdml-engine/methods/rl/agents'
+ * import { bernoulliBandit } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = gradientBandit(bernoulliBandit.create({ probs: [0.5, 0.5] }), { alpha: 1, baseline: false })
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * Array.from(agent.learn(agent.init(key(0)), t, key(1)).preferences) // => [0.5, -0.5]
@@ -617,7 +617,7 @@ function dimensionOf(env: BanditSpaces, options: LinearBanditOptions, name: stri
   if (options.dimension !== undefined) return options.dimension
   const space = env.observationSpace
   if (space?.kind === 'tuple' && space.spaces[0] !== undefined) return flatDim(space.spaces[0])
-  throw new WhiteboxError('value', `${name}: give the feature dimension`)
+  throw new MdmlError('value', `${name}: give the feature dimension`)
 }
 
 function linearInit(base: BanditState, models: number, d: number, lambda: number): LinearBanditState {
@@ -699,9 +699,9 @@ export interface LinUcbOptions extends LinearBanditOptions {
  * @concept contextual-bandits
  * @example
  * ```ts
- * import { linUcb } from 'whitebox-engine/methods/rl/agents'
- * import { contextualLinearBandit } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { linUcb } from 'mdml-engine/methods/rl/agents'
+ * import { contextualLinearBandit } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = linUcb(contextualLinearBandit.create({ arms: 2, dimension: 2 }), { lambda: 3 })
  * const t = { observation: [[1, 0], [0, 1]], action: 0, reward: 2, nextObservation: [[1, 0], [0, 1]], terminated: false, truncated: false }
  * Array.from(agent.learn(agent.init(key(0)), t, key(1)).theta[0] ?? []) // => [0.5, 0]
@@ -735,8 +735,8 @@ export interface LinearThompsonOptions extends LinearBanditOptions {
  * @concept thompson-sampling
  * @example
  * ```ts
- * import { linearThompson } from 'whitebox-engine/methods/rl/agents'
- * import { contextualLinearBandit } from 'whitebox-engine/methods/rl'
+ * import { linearThompson } from 'mdml-engine/methods/rl/agents'
+ * import { contextualLinearBandit } from 'mdml-engine/methods/rl'
  * linearThompson(contextualLinearBandit.create(), { v: 0.5 }).name // => 'linearThompson'
  * ```
  */
@@ -778,12 +778,12 @@ export interface BanditRun<G> {
  * @param agent - The agent.
  * @param options - Pulls (default the horizon, else 1000) and the key or seed.
  * @returns The final agent state, the actions, rewards and cumulative regret.
- * @throws WhiteboxError with code `value` when the environment has no oracle.
+ * @throws MdmlError with code `value` when the environment has no oracle.
  * @concept regret
  * @example
  * ```ts
- * import { runBandit, ucb1 } from 'whitebox-engine/methods/rl/agents'
- * import { bernoulliBandit } from 'whitebox-engine/methods/rl'
+ * import { runBandit, ucb1 } from 'mdml-engine/methods/rl/agents'
+ * import { bernoulliBandit } from 'mdml-engine/methods/rl'
  * const env = bernoulliBandit.create({ probs: [0.25, 0.75] })
  * runBandit(env, ucb1(env), { pulls: 2 }).regret // => [0.5, 0.5]
  * ```
@@ -793,7 +793,7 @@ export function runBandit<G, S, O>(
   agent: Agent<G, O, number>,
   options: { readonly pulls?: number; readonly seed?: number; readonly key?: Key } = {},
 ): BanditRun<G> {
-  if (!isBandit(env)) throw new WhiteboxError('value', `runBandit: ${env.spec.id} has no oracle or discrete arms`)
+  if (!isBandit(env)) throw new MdmlError('value', `runBandit: ${env.spec.id} has no oracle or discrete arms`)
   const oracle = env.oracle
   const pulls = options.pulls ?? env.spec.maxEpisodeSteps ?? 1000
   const root = options.key ?? makeKey(options.seed ?? 0)

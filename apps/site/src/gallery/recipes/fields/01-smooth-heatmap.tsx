@@ -1,8 +1,8 @@
+import { cartesian, contours, heatmap, type Smoothing } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { Chart, Choice, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
+import { formatNumber } from 'mdml-render/theme'
 import { type ReactNode, useMemo, useState } from 'react'
-import { cartesian, contours, heatmap, type Smoothing } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { Chart, Choice, ControlPanel, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
-import { formatNumber } from 'whitebox-render/theme'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

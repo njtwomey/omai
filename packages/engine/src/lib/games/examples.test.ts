@@ -8,10 +8,10 @@ import * as trace from '../trace/index.ts'
 import * as games from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'whitebox-engine/games': games,
-  'whitebox-engine/random': random,
-  'whitebox-engine/tensor': tensor,
-  'whitebox-engine/trace': trace,
+  'mdml-engine/games': games,
+  'mdml-engine/random': random,
+  'mdml-engine/tensor': tensor,
+  'mdml-engine/trace': trace,
 }
 
 interface Example {

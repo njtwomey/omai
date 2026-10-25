@@ -4,7 +4,7 @@
  * and chance-adjusted forms, homogeneity, completeness and V-measure, purity and B-cubed precision, recall and F1.
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { arange, toFlat } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
@@ -37,7 +37,7 @@ export interface ContingencyMatrix {
  * @concept clustering-evaluation
  * @example
  * ```ts
- * import { contingencyMatrix } from 'whitebox-engine/metrics'
+ * import { contingencyMatrix } from 'mdml-engine/metrics'
  * contingencyMatrix([0, 0, 1, 1], [1, 1, 1, 0]).matrix // => [[0, 2], [1, 1]]
  * ```
  */
@@ -48,7 +48,7 @@ export function contingencyMatrix(
 ): ContingencyMatrix {
   const t = labelValues(labelsTrue)
   const p = labelValues(labelsPred)
-  if (t.length !== p.length) throw new WhiteboxError('shape', 'contingencyMatrix: labellings differ in length')
+  if (t.length !== p.length) throw new MdmlError('shape', 'contingencyMatrix: labellings differ in length')
   const classes = sortLabels(t)
   const clusters = sortLabels(p)
   const w = sampleWeights('contingencyMatrix', t.length, options.sampleWeight)
@@ -84,7 +84,7 @@ const table = (t: MetricInput, p: MetricInput, o: MetricOptions): readonly (read
  * @returns The 2 x 2 matrix.
  * @example
  * ```ts
- * import { pairConfusionMatrix } from 'whitebox-engine/metrics'
+ * import { pairConfusionMatrix } from 'mdml-engine/metrics'
  * pairConfusionMatrix([0, 0, 1, 1], [0, 0, 1, 1]) // => [[8, 0], [0, 4]]
  * ```
  */
@@ -120,7 +120,7 @@ const _pairs = (x: number): number => (x * (x - 1)) / 2
  * @returns The metric result.
  * @example
  * ```ts
- * import { randScore } from 'whitebox-engine/metrics'
+ * import { randScore } from 'mdml-engine/metrics'
  * randScore([0, 0, 1, 2], [0, 0, 1, 1]).estimate.value // => 0.8333333333333334
  * ```
  */
@@ -144,7 +144,7 @@ export const randScore: Metric<MetricOptions, MetricInput> = Object.assign(
  * @returns The metric result, in [-0.5, 1].
  * @example
  * ```ts
- * import { adjustedRandScore } from 'whitebox-engine/metrics'
+ * import { adjustedRandScore } from 'mdml-engine/metrics'
  * adjustedRandScore([0, 0, 1, 1], [1, 1, 0, 0]).estimate.value // => 1
  * ```
  */
@@ -172,7 +172,7 @@ export const adjustedRandScore: Metric<MetricOptions, MetricInput> = Object.assi
  * @returns The metric result.
  * @example
  * ```ts
- * import { fowlkesMallowsScore } from 'whitebox-engine/metrics'
+ * import { fowlkesMallowsScore } from 'mdml-engine/metrics'
  * fowlkesMallowsScore([0, 0, 1, 1], [0, 0, 1, 1]).estimate.value // => 1
  * ```
  */
@@ -221,7 +221,7 @@ function mutualInformation(m: readonly (readonly number[])[]): number {
  * @returns The metric result.
  * @example
  * ```ts
- * import { mutualInfoScore } from 'whitebox-engine/metrics'
+ * import { mutualInfoScore } from 'mdml-engine/metrics'
  * Math.abs(mutualInfoScore([0, 0, 1, 1], [1, 1, 0, 0]).estimate.value - Math.LN2) < 1e-15 // => true
  * ```
  */
@@ -255,7 +255,7 @@ const generalisedMean = (a: number, b: number, method: AverageMethod): number =>
  * @returns The metric result.
  * @example
  * ```ts
- * import { normalizedMutualInfoScore } from 'whitebox-engine/metrics'
+ * import { normalizedMutualInfoScore } from 'mdml-engine/metrics'
  * Number(normalizedMutualInfoScore([0, 0, 1, 1], [1, 1, 0, 0]).estimate.value.toFixed(12)) // => 1
  * ```
  */
@@ -311,10 +311,10 @@ function expectedMutualInformation(rows: readonly number[], cols: readonly numbe
  * @param labelsPred - Cluster labels `[N]`.
  * @param options - averageMethod (default 'arithmetic') and integer sample weights.
  * @returns The metric result.
- * @throws WhiteboxError with code `value` for non-integer sample weights.
+ * @throws MdmlError with code `value` for non-integer sample weights.
  * @example
  * ```ts
- * import { adjustedMutualInfoScore } from 'whitebox-engine/metrics'
+ * import { adjustedMutualInfoScore } from 'mdml-engine/metrics'
  * Number(adjustedMutualInfoScore([0, 0, 1, 1], [1, 1, 0, 0]).estimate.value.toFixed(12)) // => 1
  * ```
  */
@@ -328,7 +328,7 @@ export const adjustedMutualInfoScore: Metric<MetricOptions & { readonly averageM
       const m = table(labelsTrue, labelsPred, options)
       const { rows, cols, n } = margins(m)
       if (!Number.isInteger(n) || m.some((r) => r.some((v) => !Number.isInteger(v))))
-        throw new WhiteboxError('value', 'adjustedMutualInfoScore: sample weights must be integer counts')
+        throw new MdmlError('value', 'adjustedMutualInfoScore: sample weights must be integer counts')
       const count = labelValues(labelsTrue).length
       if ((rows.length === 1 && cols.length === 1) || (rows.length === 0 && cols.length === 0))
         return metricResult('adjustedMutualInfoScore', 1, count)
@@ -361,7 +361,7 @@ export interface HomogeneityCompleteness {
  * @returns The three scores.
  * @example
  * ```ts
- * import { homogeneityCompletenessVMeasure } from 'whitebox-engine/metrics'
+ * import { homogeneityCompletenessVMeasure } from 'mdml-engine/metrics'
  * homogeneityCompletenessVMeasure([0, 0, 1, 1], [0, 1, 2, 3]).homogeneity // => 1
  * ```
  */
@@ -413,7 +413,7 @@ const hcvMetric = (
  * @returns The metric result.
  * @example
  * ```ts
- * import { homogeneityScore } from 'whitebox-engine/metrics'
+ * import { homogeneityScore } from 'mdml-engine/metrics'
  * homogeneityScore([0, 0, 1, 1], [0, 0, 0, 0]).estimate.value // => 0
  * ```
  */
@@ -428,7 +428,7 @@ export const homogeneityScore: Metric<MetricOptions, MetricInput> = hcvMetric('h
  * @returns The metric result.
  * @example
  * ```ts
- * import { completenessScore } from 'whitebox-engine/metrics'
+ * import { completenessScore } from 'mdml-engine/metrics'
  * completenessScore([0, 0, 1, 1], [0, 0, 0, 0]).estimate.value // => 1
  * ```
  */
@@ -446,7 +446,7 @@ export const completenessScore: Metric<MetricOptions, MetricInput> = hcvMetric(
  * @returns The metric result.
  * @example
  * ```ts
- * import { vMeasureScore } from 'whitebox-engine/metrics'
+ * import { vMeasureScore } from 'mdml-engine/metrics'
  * Number(vMeasureScore([0, 0, 1, 1], [1, 1, 0, 0]).estimate.value.toFixed(12)) // => 1
  * ```
  */
@@ -464,7 +464,7 @@ export const vMeasureScore: Metric<MetricOptions & { readonly beta?: number }, M
  * @returns The metric result.
  * @example
  * ```ts
- * import { purityScore } from 'whitebox-engine/metrics'
+ * import { purityScore } from 'mdml-engine/metrics'
  * purityScore([0, 0, 1, 1, 1], [0, 0, 0, 1, 1]).estimate.value // => 0.8
  * ```
  */
@@ -496,7 +496,7 @@ export interface BCubed {
  * @returns The three scores.
  * @example
  * ```ts
- * import { bCubed } from 'whitebox-engine/metrics'
+ * import { bCubed } from 'mdml-engine/metrics'
  * bCubed([0, 0, 1, 1], [0, 0, 1, 1]).f1 // => 1
  * ```
  */
@@ -527,7 +527,7 @@ export function bCubed(labelsTrue: MetricInput, labelsPred: MetricInput, options
  * @returns The metric result, with precision and recall in the breakdown.
  * @example
  * ```ts
- * import { bCubedF1 } from 'whitebox-engine/metrics'
+ * import { bCubedF1 } from 'mdml-engine/metrics'
  * bCubedF1([0, 0, 1, 1], [0, 0, 0, 0]).breakdown?.recall // => 1
  * ```
  */

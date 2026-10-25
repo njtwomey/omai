@@ -4,7 +4,7 @@
  * single-step cells `RNNCell`, `LSTMCell` and `GRUCell`.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { asTensor, expandDims, isValue, squeeze, type TensorLike, type Value, zeros } from '../../tensor/index.ts'
 import {
@@ -63,7 +63,7 @@ const isPacked = (x: unknown): x is PackedSequence =>
  *
  * @example
  * ```ts
- * import { RNNBase } from 'whitebox-engine/nn'
+ * import { RNNBase } from 'mdml-engine/nn'
  * new RNNBase('GRU', 3, 4).parameterCount() // => 108
  * ```
  */
@@ -96,9 +96,9 @@ export class RNNBase extends Module<RecurrentInput, RecurrentOutput> {
     this.dropout = options.dropout ?? 0
     this.bidirectional = options.bidirectional ?? false
     this.projSize = options.projSize ?? 0
-    if (this.projSize > 0 && mode !== 'LSTM') throw new WhiteboxError('value', 'projSize is only for LSTM')
+    if (this.projSize > 0 && mode !== 'LSTM') throw new MdmlError('value', 'projSize is only for LSTM')
     if (this.projSize >= hiddenSize && this.projSize > 0)
-      throw new WhiteboxError('value', 'projSize must be smaller than hiddenSize')
+      throw new MdmlError('value', 'projSize must be smaller than hiddenSize')
     this.params = this.initParams(initKey(this.kind, options.key))
   }
 
@@ -229,8 +229,8 @@ export class RNNBase extends Module<RecurrentInput, RecurrentOutput> {
  * @concept recurrent-networks
  * @example
  * ```ts
- * import { RNN } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { RNN } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new RNN(3, 4, { numLayers: 2, bidirectional: true }).forward(zeros([5, 2, 3])).h.shape // => [4, 2, 4]
  * ```
  */
@@ -251,8 +251,8 @@ export class RNN extends RNNBase {
  * @concept recurrent-networks
  * @example
  * ```ts
- * import { LSTM } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { LSTM } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new LSTM(3, 4, { batchFirst: true }).forward(zeros([2, 5, 3])).c?.shape // => [1, 2, 4]
  * ```
  */
@@ -272,8 +272,8 @@ export class LSTM extends RNNBase {
  * @concept recurrent-networks
  * @example
  * ```ts
- * import { GRU } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { GRU } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new GRU(3, 4).forward(zeros([5, 2, 3])).output.shape // => [5, 2, 4]
  * ```
  */
@@ -353,8 +353,8 @@ abstract class CellBase<O> extends Module<CellInput, O> {
  *
  * @example
  * ```ts
- * import { RNNCell } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { RNNCell } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new RNNCell(3, 4).forward(zeros([2, 3])).shape // => [2, 4]
  * ```
  */
@@ -385,8 +385,8 @@ export class RNNCell extends CellBase<Value> {
  *
  * @example
  * ```ts
- * import { LSTMCell } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { LSTMCell } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new LSTMCell(3, 4).forward(zeros([2, 3]))[1].shape // => [2, 4]
  * ```
  */
@@ -411,8 +411,8 @@ export class LSTMCell extends CellBase<readonly [Value, Value]> {
  *
  * @example
  * ```ts
- * import { GRUCell } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { GRUCell } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new GRUCell(3, 4).forward({ input: zeros([3]), h: zeros([4]) }).shape // => [4]
  * ```
  */

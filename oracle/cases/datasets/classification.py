@@ -2,8 +2,8 @@
 
 import numpy as np
 import sklearn
+from mdml_oracle.fixture import Case, case
 from sklearn.datasets import make_circles, make_gaussian_quantiles, make_hastie_10_2, make_moons
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

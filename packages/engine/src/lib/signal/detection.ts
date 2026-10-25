@@ -5,7 +5,7 @@
  * form.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { chi2, noncentralChi2, normal } from '../dists/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 import { constant, samples } from './_shared.ts'
@@ -45,14 +45,14 @@ export interface EnergyDetectorOptions {
  * @concept detection-theory
  * @example
  * ```ts
- * import { energyDetector } from 'whitebox-engine/signal'
+ * import { energyDetector } from 'mdml-engine/signal'
  * energyDetector([0.1, -0.2, 3, 2.5], { window: 2, noiseVariance: 0.1 }).detected // => [false, true]
  * ```
  */
 export function energyDetector(x: TensorLike, options: EnergyDetectorOptions): DetectionResult {
   const s = samples(x, 'energyDetector')
   const n = options.window ?? s.length
-  if (!Number.isInteger(n) || n < 1) throw new WhiteboxError('value', 'energyDetector: the window must be positive')
+  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'energyDetector: the window must be positive')
   const pfa = options.pfa ?? 1e-3
   const t = options.noiseVariance * scalar(chi2(n).isf(pfa))
   const stats: number[] = []
@@ -81,7 +81,7 @@ export interface MatchedDetectorOptions {
  * @concept detection-theory
  * @example
  * ```ts
- * import { matchedFilterDetector } from 'whitebox-engine/signal'
+ * import { matchedFilterDetector } from 'mdml-engine/signal'
  * matchedFilterDetector([0, 0, 3, 3, 0, 0], [1, 1], { noiseVariance: 0.1 }).detected // => [false, true, true, true, false]
  * ```
  */
@@ -141,7 +141,7 @@ function osPfa(n: number, k: number, alpha: number): number {
  * @concept cfar
  * @example
  * ```ts
- * import { cfar } from 'whitebox-engine/signal'
+ * import { cfar } from 'mdml-engine/signal'
  * const p = [1, 1.2, 0.8, 1, 1.1, 0.9, 30, 1, 0.9, 1.1, 1, 1.2, 0.8]
  * cfar(p, { train: 3, guard: 1, pfa: 1e-3 }).detected.indexOf(true) // => 6
  * ```
@@ -162,7 +162,7 @@ export function cfar(
   if (method === 'ca') alpha = half(n) / n
   else if (method === 'go' || method === 'so') alpha = half(train) / train
   else {
-    if (!(rank >= 1 && rank <= n)) throw new WhiteboxError('value', 'cfar: the rank must lie in 1 .. 2 train')
+    if (!(rank >= 1 && rank <= n)) throw new MdmlError('value', 'cfar: the rank must lie in 1 .. 2 train')
     rank = Math.round(rank)
     let lo = 0
     let hi = 1
@@ -204,7 +204,7 @@ export function cfar(
  * @concept detection-theory
  * @example
  * ```ts
- * import { rocKnownSignal } from 'whitebox-engine/signal'
+ * import { rocKnownSignal } from 'mdml-engine/signal'
  * rocKnownSignal([0.5], 0).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5]
  * ```
  */
@@ -224,7 +224,7 @@ export function rocKnownSignal(pfa: readonly number[], d2: number): number[] {
  * @concept detection-theory
  * @example
  * ```ts
- * import { rocEnergyDetector } from 'whitebox-engine/signal'
+ * import { rocEnergyDetector } from 'mdml-engine/signal'
  * rocEnergyDetector([0.01], 10, 3)[0] > 0.9 // => true
  * ```
  */

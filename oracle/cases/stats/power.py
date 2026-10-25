@@ -4,8 +4,8 @@ from typing import Literal
 
 import numpy as np
 import statsmodels
+from mdml_oracle.fixture import Case, case
 from statsmodels.stats.power import FTestAnovaPower, GofChisquarePower, NormalIndPower, TTestIndPower, TTestPower
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}
 

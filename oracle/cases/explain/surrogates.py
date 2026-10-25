@@ -8,9 +8,9 @@ import lime
 import numpy as np
 import sklearn
 from lime.lime_base import LimeBase
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"lime": "0.2.0.1", "scikit-learn": sklearn.__version__}
 _ = lime

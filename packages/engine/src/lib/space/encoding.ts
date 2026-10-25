@@ -4,7 +4,7 @@
  * neighbourhoods that local search (hill climbing, simulated annealing, tabu search) explores.
  */
 
-import { clamp, WhiteboxError } from '../base/index.ts'
+import { clamp, MdmlError } from '../base/index.ts'
 import { sizeOf } from '../tensor/index.ts'
 import { activeKeysOf, conditionHolds, resolveDict } from './_active.ts'
 import { defaults, flatDim } from './operations.ts'
@@ -42,7 +42,7 @@ function snap(low: number, high: number, step: number | undefined, x: number): n
  * @concept spaces
  * @example
  * ```ts
- * import { encode, dict, real } from 'whitebox-engine/space'
+ * import { encode, dict, real } from 'mdml-engine/space'
  * encode(dict({ lr: real(1e-4, 1, { log: true }) }), { lr: 0.01 }) // => [0.5]
  * ```
  */
@@ -88,7 +88,7 @@ export function encode(space: Space, value: SpaceValue): number[] {
  * @returns The value.
  * @example
  * ```ts
- * import { decode, dict, int, choice } from 'whitebox-engine/space'
+ * import { decode, dict, int, choice } from 'mdml-engine/space'
  * decode(dict({ k: int(1, 9), act: choice(['relu', 'tanh']) }), [0.5, 1]) // => { k: 5, act: 'tanh' }
  * ```
  */
@@ -137,10 +137,10 @@ export function decode(space: Space, u: readonly number[]): SpaceValue {
  * @param space - A space without boxes or vector spaces (those have no finite grid).
  * @param points - Points per continuous dimension (default 5).
  * @returns The configurations, in row-major order.
- * @throws WhiteboxError with code `value` for box, multi-discrete and multi-binary spaces.
+ * @throws MdmlError with code `value` for box, multi-discrete and multi-binary spaces.
  * @example
  * ```ts
- * import { grid, dict, real, bool } from 'whitebox-engine/space'
+ * import { grid, dict, real, bool } from 'mdml-engine/space'
  * grid(dict({ a: real(0, 1), b: bool() }), 3).length // => 6
  * ```
  */
@@ -187,7 +187,7 @@ export function grid(space: Space, points = 5): SpaceValue[] {
       return configs.map((c) => resolveDict(space, (k) => c[k] as SpaceValue))
     }
     default:
-      throw new WhiteboxError('value', `grid: ${space.kind} spaces have no grid`)
+      throw new MdmlError('value', `grid: ${space.kind} spaces have no grid`)
   }
 }
 
@@ -200,7 +200,7 @@ export function grid(space: Space, points = 5): SpaceValue[] {
  * @returns The distance.
  * @example
  * ```ts
- * import { distance, real } from 'whitebox-engine/space'
+ * import { distance, real } from 'mdml-engine/space'
  * distance(real(0, 10), 0, 10) // => 1
  * ```
  */
@@ -219,7 +219,7 @@ export function distance(space: Space, a: SpaceValue, b: SpaceValue): number {
  * @returns The number of coordinates.
  * @example
  * ```ts
- * import { encodedDim, dict, real, bool } from 'whitebox-engine/space'
+ * import { encodedDim, dict, real, bool } from 'mdml-engine/space'
  * encodedDim(dict({ a: real(0, 1), b: bool() })) // => 2
  * ```
  */
@@ -326,11 +326,11 @@ function neighboursOf(s: Space, v: SpaceValue, points: number): SpaceValue[] {
  * @param value - A member of the space.
  * @param options - Grid points per real dimension (default 11, so steps of a tenth of the range).
  * @returns The neighbours, dimension by dimension.
- * @throws WhiteboxError with code `value` when `points` is not an integer of at least 2.
+ * @throws MdmlError with code `value` when `points` is not an integer of at least 2.
  * @concept spaces
  * @example
  * ```ts
- * import { neighbours, dict, int, bool, choice } from 'whitebox-engine/space'
+ * import { neighbours, dict, int, bool, choice } from 'mdml-engine/space'
  * neighbours(dict({ k: int(1, 9), flag: bool() }), { k: 1, flag: false }) // => [{ k: 2, flag: false }, { k: 1, flag: true }]
  * const s = dict({ kind: choice(['a', 'b']), depth: int(1, 3, { when: { key: 'kind', in: ['b'] } }) })
  * neighbours(s, { kind: 'a' }) // => [{ kind: 'b', depth: 2 }]
@@ -339,7 +339,7 @@ function neighboursOf(s: Space, v: SpaceValue, points: number): SpaceValue[] {
 export function neighbours(space: Space, value: SpaceValue, options: { readonly points?: number } = {}): SpaceValue[] {
   const points = options.points ?? 11
   if (!(Number.isInteger(points) && points >= 2)) {
-    throw new WhiteboxError('value', 'neighbours: points must be an integer of at least 2')
+    throw new MdmlError('value', 'neighbours: points must be an integer of at least 2')
   }
   return neighboursOf(space, value, points)
 }

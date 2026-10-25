@@ -63,8 +63,8 @@ import { binaryLogits, cdfBySum, entropyBySum, isCount, largest, modeBySearch } 
  * @concept distributions
  * @example
  * ```ts
- * import { poisson } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { poisson } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(poisson(2).prob(0)) - Math.exp(-2)) < 1e-15 // => true
  * ```
  */
@@ -105,8 +105,8 @@ export function poisson(rate: TensorLike): Distribution {
  * @returns The distribution (no reparameterisation).
  * @example
  * ```ts
- * import { geometric } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { geometric } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(geometric(0.25).mean()) // => 4
  * ```
  */
@@ -158,8 +158,8 @@ export function geometric(probs: TensorLike): Distribution {
  * @returns The distribution (no reparameterisation).
  * @example
  * ```ts
- * import { negativeBinomial } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { negativeBinomial } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(negativeBinomial(3, 0.5).mean()) // => 3
  * ```
  */
@@ -222,8 +222,8 @@ export function negativeBinomial(n: TensorLike, probs: TensorLike): Distribution
  * @returns The distribution (no reparameterisation); the CDF and entropy sum the pmf over its finite support.
  * @example
  * ```ts
- * import { hypergeometric } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { hypergeometric } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(hypergeometric(20, 7, 12).mean()) // => 4.2
  * ```
  */
@@ -289,8 +289,8 @@ export type GateParams = { readonly probs: TensorLike } | { readonly logits: Ten
  * @returns The distribution (no reparameterisation); quantiles, mode and entropy from the pmf.
  * @example
  * ```ts
- * import { poisson, zeroInflated } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { poisson, zeroInflated } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(zeroInflated(poisson(2), { probs: 0.3 }).prob(0)) - (0.3 + 0.7 * Math.exp(-2))) < 1e-15 // => true
  * ```
  */
@@ -340,8 +340,8 @@ export function zeroInflated(base: Distribution, gate: GateParams): Distribution
  * @returns The distribution.
  * @example
  * ```ts
- * import { zeroInflatedPoisson } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { zeroInflatedPoisson } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(zeroInflatedPoisson(4, 0.25).mean()) // => 3
  * ```
  */
@@ -360,8 +360,8 @@ export function zeroInflatedPoisson(rate: TensorLike, gate: TensorLike): Distrib
  * @returns The distribution.
  * @example
  * ```ts
- * import { zeroInflatedNegativeBinomial } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { zeroInflatedNegativeBinomial } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(zeroInflatedNegativeBinomial(3, 0.5, 0.5).mean()) // => 1.5
  * ```
  */

@@ -18,7 +18,7 @@ type ComplexArray = npt.NDArray[np.complex128]
 
 NAMES: tuple[str, ...] = ("x", "y", "z", "a", "b", "c", "t", "p", "q", "r", "s", "k", "n", "u", "v", "w", "lam")
 SYMBOLS: dict[str, sp.Symbol] = {n: sp.Symbol(n) for n in NAMES}
-"""Plain (complex) symbols, as `sym(name)` in whitebox-js."""
+"""Plain (complex) symbols, as `sym(name)` in mdml-js."""
 
 # Sample points for up to four symbols: each symbol gets its own row, chosen away from the usual singularities.
 POINTS: list[list[float]] = [
@@ -49,7 +49,7 @@ def parse(text: str, local: Mapping[str, object] | None = None) -> sp.Expr:
 
 
 def to_text(e: sp.Basic) -> str:
-    """SymPy's `str()`, the form whitebox-js's `toText` reproduces."""
+    """SymPy's `str()`, the form mdml-js's `toText` reproduces."""
     return str(e)
 
 
@@ -111,7 +111,7 @@ def expr_case(
 ) -> Case:
     """A case whose output is a SymPy expression: its text, LaTeX and values at the sample points.
 
-    `exact` says whether whitebox-js should reproduce SymPy's text; otherwise only the values are compared.
+    `exact` says whether mdml-js should reproduce SymPy's text; otherwise only the values are compared.
     """
     names = sorted(set(free_names(result)) | {n for s in inputs for n in input_names(s)})
     return case(

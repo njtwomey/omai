@@ -4,7 +4,7 @@
  * and conversion to Chomsky normal form.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** A grammar symbol on a right-hand side: a nonterminal or a terminal word. */
 export type GrammarSymbol = { readonly nonterminal: string } | { readonly terminal: string }
@@ -35,11 +35,11 @@ export interface ParseTree {
  *
  * @param source - The grammar.
  * @returns The grammar.
- * @throws WhiteboxError with code `value` (with the line) for malformed rules or probabilities not summing to one.
+ * @throws MdmlError with code `value` (with the line) for malformed rules or probabilities not summing to one.
  * @concept context-free-grammars
  * @example
  * ```ts
- * import { grammar } from 'whitebox-engine/text'
+ * import { grammar } from 'mdml-engine/text'
  * const g = grammar("S -> NP VP\nNP -> 'I' | Det N\nVP -> V NP\nDet -> 'a'\nN -> 'cat'\nV -> 'saw'")
  * [g.start, g.productions.length] // => ['S', 7]
  * ```
@@ -52,13 +52,13 @@ export function grammar(source: string): Grammar {
     const line = raw.replace(/#.*$/, '').trim()
     if (line.length === 0) continue
     const m = /^([^\s'"|[\]]+)\s*->(.*)$/.exec(line)
-    if (m === null) throw new WhiteboxError('value', `grammar line ${k + 1}: expected A -> ...`, { line: k + 1 })
+    if (m === null) throw new MdmlError('value', `grammar line ${k + 1}: expected A -> ...`, { line: k + 1 })
     const lhs = m[1] ?? ''
     start ??= lhs
     for (const alt of splitAlternatives(m[2] ?? '', k + 1)) {
       const { symbols, probability } = parseAlternative(alt, k + 1)
       if (probabilistic && probability === undefined)
-        throw new WhiteboxError(
+        throw new MdmlError(
           'value',
           `grammar line ${k + 1}: a probabilistic grammar needs a probability on every rule`,
           { line: k + 1 },
@@ -66,13 +66,13 @@ export function grammar(source: string): Grammar {
       productions.push({ lhs, rhs: symbols, probability: probability ?? 1 })
     }
   }
-  if (start === undefined) throw new WhiteboxError('value', 'grammar: no productions')
+  if (start === undefined) throw new MdmlError('value', 'grammar: no productions')
   if (probabilistic) {
     const sums = new Map<string, number>()
     for (const p of productions) sums.set(p.lhs, (sums.get(p.lhs) ?? 0) + p.probability)
     for (const [lhs, s] of sums)
       if (Math.abs(s - 1) > 1e-6)
-        throw new WhiteboxError('value', `grammar: the probabilities of ${lhs} sum to ${s}, not 1`)
+        throw new MdmlError('value', `grammar: the probabilities of ${lhs} sum to ${s}, not 1`)
   }
   return { start, productions }
 }
@@ -93,7 +93,7 @@ function splitAlternatives(s: string, line: number): string[] {
       cur = ''
     } else cur += ch
   }
-  if (quote !== undefined) throw new WhiteboxError('value', `grammar line ${line}: unterminated quote`, { line })
+  if (quote !== undefined) throw new MdmlError('value', `grammar line ${line}: unterminated quote`, { line })
   out.push(cur)
   return out
 }
@@ -114,7 +114,7 @@ function parseAlternative(s: string, line: number): { symbols: GrammarSymbol[]; 
     else symbols.push({ nonterminal: m[4] ?? '' })
   }
   if (s.slice(at).trim().length > 0)
-    throw new WhiteboxError('value', `grammar line ${line}: cannot read ${s.slice(at).trim()}`, { line })
+    throw new MdmlError('value', `grammar line ${line}: cannot read ${s.slice(at).trim()}`, { line })
   return probability === undefined ? { symbols } : { symbols, probability }
 }
 
@@ -126,7 +126,7 @@ function parseAlternative(s: string, line: number): { symbols: GrammarSymbol[]; 
  * @concept context-free-grammars
  * @example
  * ```ts
- * import { treeToString } from 'whitebox-engine/text'
+ * import { treeToString } from 'mdml-engine/text'
  * treeToString({ label: 'S', children: [{ label: 'NP', children: ['I'] }, 'ran'] }) // => '(S (NP I) ran)'
  * ```
  */
@@ -151,11 +151,11 @@ function isCnf(g: Grammar): boolean {
  * @param tokens - The words.
  * @param options - The most trees to enumerate (default 1000).
  * @returns Whether the sentence is in the language, the number of parses and the trees.
- * @throws WhiteboxError with code `value` for a grammar not in CNF.
+ * @throws MdmlError with code `value` for a grammar not in CNF.
  * @concept parsing
  * @example
  * ```ts
- * import { grammar, cyk } from 'whitebox-engine/text'
+ * import { grammar, cyk } from 'mdml-engine/text'
  * const g = grammar("S -> NP VP\nVP -> V NP\nNP -> 'she' | 'fish'\nV -> 'eats'")
  * cyk(g, ['she', 'eats', 'fish']).count // => 1
  * ```
@@ -165,7 +165,7 @@ export function cyk(
   tokens: readonly string[],
   options: { readonly maxTrees?: number } = {},
 ): { readonly recognised: boolean; readonly count: number; readonly trees: ParseTree[] } {
-  if (!isCnf(g)) throw new WhiteboxError('value', 'cyk: the grammar must be in Chomsky normal form')
+  if (!isCnf(g)) throw new MdmlError('value', 'cyk: the grammar must be in Chomsky normal form')
   const n = tokens.length
   if (n === 0) return { recognised: false, count: 0, trees: [] }
   // count[i][j] maps a nonterminal to its number of derivations of tokens[i, j).
@@ -231,7 +231,7 @@ interface EarleyItem {
  * @concept parsing
  * @example
  * ```ts
- * import { grammar, earley, treeToString } from 'whitebox-engine/text'
+ * import { grammar, earley, treeToString } from 'mdml-engine/text'
  * const g = grammar("S -> NP VP\nNP -> Det N | NP PP | 'I'\nVP -> V NP | VP PP\nPP -> P NP\nDet -> 'the'\nN -> 'man' | 'telescope'\nV -> 'saw'\nP -> 'with'")
  * earley(g, 'I saw the man with the telescope'.split(' ')).trees.length // => 2
  * ```
@@ -338,18 +338,18 @@ export function earley(
  *
  * @param g - The grammar.
  * @returns An equivalent grammar in CNF (the same language; probabilities preserved for PCFGs).
- * @throws WhiteboxError with code `value` for empty productions.
+ * @throws MdmlError with code `value` for empty productions.
  * @concept context-free-grammars
  * @example
  * ```ts
- * import { grammar, toChomskyNormalForm, cyk } from 'whitebox-engine/text'
+ * import { grammar, toChomskyNormalForm, cyk } from 'mdml-engine/text'
  * const g = toChomskyNormalForm(grammar("S -> 'a' S 'b' | 'a' 'b'"))
  * cyk(g, ['a', 'a', 'b', 'b']).recognised // => true
  * ```
  */
 export function toChomskyNormalForm(g: Grammar): Grammar {
   if (g.productions.some((p) => p.rhs.length === 0))
-    throw new WhiteboxError('value', 'toChomskyNormalForm: empty productions are not supported')
+    throw new MdmlError('value', 'toChomskyNormalForm: empty productions are not supported')
   const out: Production[] = []
   const lexical = new Map<string, string>()
   const term = (t: string): string => {

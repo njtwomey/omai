@@ -8,9 +8,9 @@ import scipy
 import scipy.stats as st
 import sympy
 import sympy.stats as ss
+from mdml_oracle.fixture import Case, case
 from sympy.logic.boolalg import Boolean
 from sympy.stats.frv import FiniteDensity
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "sympy": sympy.__version__}
 

@@ -1,5 +1,5 @@
 // The objective control shared by the entries on the plane (private to this collection).
-import { type ChoiceSpace, choice } from 'whitebox-engine/space'
+import { type ChoiceSpace, choice } from 'mdml-engine/space'
 
 /**
  * The objective to minimise.

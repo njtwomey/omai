@@ -10,11 +10,11 @@ import pingouin as pg
 import scipy
 import scipy.stats as st
 import statsmodels
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from scipy.optimize import brentq
 from scipy.stats.contingency import association
 from statsmodels.stats.proportion import proportion_effectsize
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {
     "pingouin": pg.__version__,

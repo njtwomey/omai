@@ -2,9 +2,9 @@
  * The model-agnostic attribution entry: Kernel SHAP, exact and sampled Shapley values and LIME for any fitted model.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import { type AttributionMethod, explainPrediction } from 'whitebox-engine/methods/explain'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import { type AttributionMethod, explainPrediction } from 'mdml-engine/methods/explain'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { type ExplainedModel, fitModel, modelControl, rowControl } from './_explain.ts'
 
@@ -40,7 +40,7 @@ export const modelAgnostic: HubEntry = defineEntry({
   }),
   run: ({ data, params, key }) => {
     const { fitted, learn, n } = fitModel(data, params['model'] as ExplainedModel, key)
-    if (n === 0) throw new WhiteboxError('value', 'model-agnostic: no rows')
+    if (n === 0) throw new MdmlError('value', 'model-agnostic: no rows')
     const method = params['method'] as AttributionMethod
     return explainPrediction(fitted, learn, Math.min(Number(params['row']), n - 1), {
       method,

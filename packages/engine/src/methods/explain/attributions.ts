@@ -3,7 +3,7 @@
  * by Tree SHAP, exact or Kernel SHAP, sampling SHAP (with its convergence) or LIME, over the output a model is read by.
  */
 
-import { meanOf, varianceOf, WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError, meanOf, varianceOf } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import { curveSet, type Explained, type Exposition, featureAttributions } from '../../lib/exposition/index.ts'
 import { type Fitted, featureNamesOf, type LearnData, matrixView } from '../../lib/learn/index.ts'
@@ -82,14 +82,14 @@ function setup(fitted: Fitted, data: LearnData, options: ExplainOptions, who: st
   const wanted = options.method ?? 'auto'
   const method: AttributionMethod = wanted === 'auto' ? (trees === undefined ? 'kernel' : 'tree') : wanted
   if (method === 'tree' && trees === undefined)
-    throw new WhiteboxError(
+    throw new MdmlError(
       'value',
       `${who}: the tree explainer needs a tree, a forest or a boosted model explaining its ${output.kind === 'raw' ? 'raw score' : 'prediction or probability'}`,
     )
   if ((method === 'conditional' || method === 'partition') && x.d > 12)
-    throw new WhiteboxError('value', `${who}: the ${method} explainer takes at most 12 features`)
+    throw new MdmlError('value', `${who}: the ${method} explainer takes at most 12 features`)
   if (method === 'exact' && x.d > explain.MAX_EXACT_PLAYERS)
-    throw new WhiteboxError('value', `${who}: the exact explainer takes at most ${explain.MAX_EXACT_PLAYERS} features`)
+    throw new MdmlError('value', `${who}: the exact explainer takes at most ${explain.MAX_EXACT_PLAYERS} features`)
   return { method, x, features: featureNamesOf(data, x.d), output, key: options.key ?? makeKey(0) }
 }
 
@@ -183,7 +183,7 @@ function explainRows(
   const predictions = predictRows(s, xs)
   if (s.method === 'tree') {
     const trees = treeEnsembleOf(fitted, s.output)
-    if (trees === undefined) throw new WhiteboxError('value', 'explain: the model has no trees')
+    if (trees === undefined) throw new MdmlError('value', 'explain: the model has no trees')
     const r = explain.ensembleTreeShap(trees.trees, xs, { combine: trees.combine, scale: trees.scale })
     const factor = (trees.combine === 'mean' ? 1 / trees.trees.length : 1) * trees.scale
     const interactions =
@@ -248,8 +248,7 @@ function explainRows(
   }
   if (s.method === 'sampling') {
     const total = options.nPermutations ?? 200
-    if (!(Number.isInteger(total) && total >= 2))
-      throw new WhiteboxError('value', 'explain: nPermutations must be >= 2')
+    if (!(Number.isInteger(total) && total >= 2)) throw new MdmlError('value', 'explain: nPermutations must be >= 2')
     const parts = xs.map((x, r) =>
       r === 0 && convergence
         ? samplingWithConvergence(s, x, background, total)
@@ -324,7 +323,7 @@ function linearCoefficients(s: Setup): { readonly coef: number[]; readonly inter
   const want = intercept + coef.reduce((a, w, j) => a + w * (check[j] ?? 0), 0)
   const got = out[d + 1] ?? 0
   if (Math.abs(want - got) > 1e-8 * (1 + Math.abs(got)))
-    throw new WhiteboxError('value', 'explain: the linear explainer needs a model linear in its inputs')
+    throw new MdmlError('value', 'explain: the linear explainer needs a model linear in its inputs')
   return { coef, intercept }
 }
 
@@ -397,7 +396,7 @@ export function explainPrediction(
 ): Explained<PredictionExplanation> {
   const s = setup(fitted, data, options, 'explainPrediction')
   if (!(Number.isInteger(row) && row >= 0 && row < s.x.n))
-    throw new WhiteboxError('value', `explainPrediction: row ${row} is not in the data`)
+    throw new MdmlError('value', `explainPrediction: row ${row} is not in the data`)
   const r = explainRows(fitted, s, [row], options, true)
   const values = r.values[0] ?? []
   const record = featureAttributions({
@@ -478,7 +477,7 @@ export function explainDataset(
     })()
   for (const i of rows)
     if (!(Number.isInteger(i) && i >= 0 && i < s.x.n))
-      throw new WhiteboxError('value', `explainDataset: row ${i} is not in the data`)
+      throw new MdmlError('value', `explainDataset: row ${i} is not in the data`)
   const r = explainRows(fitted, s, rows, options, false)
   const record = featureAttributions({
     method: s.method,

@@ -1,10 +1,10 @@
+import { normal } from 'mdml-engine/dists'
+import { key } from 'mdml-engine/random'
+import { toArray } from 'mdml-engine/tensor'
+import { cartesian, ecdfCurve, lines } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, SeedInput, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { normal } from 'whitebox-engine/dists'
-import { key } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
-import { cartesian, ecdfCurve, lines } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, SeedInput, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

@@ -2,8 +2,8 @@
  * Hub entry for a real-coded genetic algorithm with simulated binary crossover, on test functions of two variables.
  */
 
-import { evolveOnPlane, type PlaneFunctionName } from 'whitebox-engine/methods/evolutionary'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { evolveOnPlane, type PlaneFunctionName } from 'mdml-engine/methods/evolutionary'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { objectiveControl } from './_plane.ts'
 

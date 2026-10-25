@@ -4,7 +4,7 @@
  * by kernel ridge regression for mapping back to the input space.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import { kernelPca as coreKernelPca, type PairwiseKernelMetric, pairwiseKernels } from '../../lib/kernels/index.ts'
 import {
@@ -92,7 +92,7 @@ export function kernelPca(hyper: KernelPcaHyper = {}): Estimator<KernelPcaHyper,
         const m = matrixView(data.x, 'kernelPca', { minSamples: 2 })
         const k = h.nComponents ?? m.n
         if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-          throw new WhiteboxError('value', `kernelPca: nComponents must be in 1..${m.n}`)
+          throw new MdmlError('value', `kernelPca: nComponents must be in 1..${m.n}`)
         const gamma = h.gamma ?? 1 / m.d
         const kernel = kernelOf(h, gamma)
         const rows = Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))

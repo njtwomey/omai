@@ -2,8 +2,8 @@
 logarithmic forms, and one-sided limits at poles. The value is SymPy's exact result (text and value)."""
 
 import sympy as sp
-from whitebox_oracle.fixture import Case
-from whitebox_oracle.symbolic import SYMBOLS, expr_case, parse
+from mdml_oracle.fixture import Case
+from mdml_oracle.symbolic import SYMBOLS, expr_case, parse
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__}
 

@@ -3,7 +3,7 @@
  * boundaries, on two-dimensional classification data and tabular classification data.
  */
 
-import { quadraticDiscriminantAnalysis as quadraticDiscriminantAnalysisMethod } from 'whitebox-engine/methods/discriminant'
+import { quadraticDiscriminantAnalysis as quadraticDiscriminantAnalysisMethod } from 'mdml-engine/methods/discriminant'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

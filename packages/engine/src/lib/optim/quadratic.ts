@@ -4,7 +4,7 @@
  * and Bertsekas' projected Newton method for box-constrained problems.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -78,10 +78,10 @@ export interface QpOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'
  *
  * @param problem - The program.
  * @returns The arrays.
- * @throws WhiteboxError with code `shape` when the sizes disagree.
+ * @throws MdmlError with code `shape` when the sizes disagree.
  * @example
  * ```ts
- * import { qpArrays } from 'whitebox-engine/optim'
+ * import { qpArrays } from 'mdml-engine/optim'
  * const qp = qpArrays({ P: [[1, 0], [0, 1]], q: [0, 0], lb: [1, -Infinity] })
  * [qp.G.rows, Array.from(qp.h)] // => [1, [-1]]
  * ```
@@ -90,7 +90,7 @@ export function qpArrays(problem: QuadraticProgram): QpArrays {
   const q = vectorFrom(problem.q)
   const n = q.length
   const P = matrixFrom(problem.P, n, 'P')
-  if (P.rows !== n) throw new WhiteboxError('shape', `P must be ${n} x ${n}`)
+  if (P.rows !== n) throw new MdmlError('shape', `P must be ${n} x ${n}`)
   const G = matrixFrom(problem.G, n, 'G')
   const h = vectorFrom(problem.h)
   expectLength(h, G.rows, 'h')
@@ -166,7 +166,7 @@ export interface KktResiduals {
  * @returns The residuals.
  * @example
  * ```ts
- * import { kktResiduals, qpArrays } from 'whitebox-engine/optim'
+ * import { kktResiduals, qpArrays } from 'mdml-engine/optim'
  * const qp = qpArrays({ P: [[2]], q: [-2], G: [[1]], h: [0.5] })
  * kktResiduals(qp, [0.5], [], [1]).stationarity // => 0
  * ```
@@ -220,7 +220,7 @@ function solveWith<S extends { readonly solution: QpSolution }>(
  * @concept quadratic-programming
  * @example
  * ```ts
- * import { qpActiveSet, qpArrays } from 'whitebox-engine/optim'
+ * import { qpActiveSet, qpArrays } from 'mdml-engine/optim'
  * const qp = qpArrays({ P: [[2, 0], [0, 2]], q: [-2, -5], G: [[1, 2], [-1, 2], [-1, -2]], h: [6, 2, 2], lb: [0, 0] })
  * Array.from(qpActiveSet(qp).x) // => [1.4, 1.7]
  * ```
@@ -239,7 +239,7 @@ export function qpActiveSet(qp: QpArrays, options: QpOptions = {}): QpSolution {
  * @concept quadratic-programming
  * @example
  * ```ts
- * import { qpArrays, qpInteriorPoint } from 'whitebox-engine/optim'
+ * import { qpArrays, qpInteriorPoint } from 'mdml-engine/optim'
  * const qp = qpArrays({ P: [[2, 0], [0, 2]], q: [-2, -5], G: [[1, 2], [-1, 2], [-1, -2]], h: [6, 2, 2], lb: [0, 0] })
  * Array.from(qpInteriorPoint(qp).x, (v) => Math.round(v * 1e6) / 1e6) // => [1.4, 1.7]
  * ```
@@ -277,8 +277,8 @@ export interface QuadprogResult {
  * @concept quadratic-programming
  * @example
  * ```ts
- * import { quadprog } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { quadprog } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * const r = quadprog({ P: [[1, 0], [0, 1]], q: [-1, -1], A: [[1, 1]], b: [1] })
  * toArray(r.x) // => [0.5, 0.5]
  * ```
@@ -343,8 +343,8 @@ const project = (x: ArrayLike<number>, lb: Float64Array, ub: Float64Array): Floa
  * @reference D. P. Bertsekas, Projected Newton methods for optimization problems with simple constraints (1982).
  * @example
  * ```ts
- * import { boxQpAlgorithm } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { boxQpAlgorithm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const alg = boxQpAlgorithm([[2, 0], [0, 2]], [-4, 2], [0, 0], [1, 1])
  * Array.from(runAlgorithm(alg, { maxSteps: 50 }).state.x) // => [1, 0]
  * ```
@@ -482,8 +482,8 @@ export interface BoxQpResult {
  * @concept quadratic-programming
  * @example
  * ```ts
- * import { boxQp } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { boxQp } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(boxQp([[2, 1], [1, 2]], [-6, 0], [-Infinity, 0], [2, Infinity]).x) // => [2, 0]
  * ```
  */

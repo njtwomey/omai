@@ -4,7 +4,7 @@
  * lag and time to suppress those cross terms, as in the tftb toolbox.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { fft } from '../numerics/fourier/index.ts'
 import { type ComplexLike, complex, primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 import { constant, float } from './_shared.ts'
@@ -33,7 +33,7 @@ interface Analytic {
 
 function signalOf(x: TensorLike | ComplexLike, analytic: boolean): Analytic {
   const z = analytic ? hilbert(float(x as TensorLike)) : complex(x as ComplexLike)
-  if (z.re.shape.length !== 1) throw new WhiteboxError('shape', 'wigner: expected a 1-D signal')
+  if (z.re.shape.length !== 1) throw new MdmlError('shape', 'wigner: expected a 1-D signal')
   return { re: Float64Array.from(primalOf(z.re).data), im: Float64Array.from(primalOf(z.im).data) }
 }
 
@@ -50,7 +50,7 @@ function finish(re: Float64Array, im: Float64Array, n: number, t: number, fs: nu
 
 function window(h: TensorLike | undefined, defaultLength: number): Float64Array {
   const w = h === undefined ? toFlat(hamming(defaultLength)) : toFlat(primalOf(float(h)))
-  if (w.length % 2 === 0) throw new WhiteboxError('value', 'wigner: windows must have odd length')
+  if (w.length % 2 === 0) throw new MdmlError('value', 'wigner: windows must have odd length')
   return Float64Array.from(w)
 }
 
@@ -98,7 +98,7 @@ function lagTable(z: Analytic, n: number, h: Float64Array | null): { re: Float64
  * @concept wigner-ville
  * @example
  * ```ts
- * import { wignerVille } from 'whitebox-engine/signal'
+ * import { wignerVille } from 'mdml-engine/signal'
  * wignerVille(new Array(16).fill(0).map((_, i) => Math.cos(i))).values.shape // => [16, 16]
  * ```
  */
@@ -119,7 +119,7 @@ export function wignerVille(x: TensorLike | ComplexLike, options: WignerOptions 
  * @concept wigner-ville
  * @example
  * ```ts
- * import { pseudoWignerVille } from 'whitebox-engine/signal'
+ * import { pseudoWignerVille } from 'mdml-engine/signal'
  * pseudoWignerVille(new Array(16).fill(0).map((_, i) => Math.cos(i))).values.shape // => [16, 16]
  * ```
  */
@@ -144,7 +144,7 @@ export function pseudoWignerVille(
  * @concept wigner-ville
  * @example
  * ```ts
- * import { smoothedPseudoWignerVille } from 'whitebox-engine/signal'
+ * import { smoothedPseudoWignerVille } from 'mdml-engine/signal'
  * smoothedPseudoWignerVille(new Array(16).fill(0).map((_, i) => Math.cos(i))).values.shape // => [16, 16]
  * ```
  */

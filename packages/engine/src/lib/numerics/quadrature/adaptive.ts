@@ -95,8 +95,8 @@ function transform(f: (x: Value) => Value, a: number, b: number): { g: (t: Value
  * @concept quadrature
  * @example
  * ```ts
- * import { quad } from 'whitebox-engine/numerics/quadrature'
- * import { exp, item, neg, square } from 'whitebox-engine/tensor'
+ * import { quad } from 'mdml-engine/numerics/quadrature'
+ * import { exp, item, neg, square } from 'mdml-engine/tensor'
  * Math.abs(item(quad((x) => exp(neg(square(x))), -Infinity, Infinity).value) - Math.sqrt(Math.PI)) < 1e-10 // => true
  * ```
  */
@@ -169,8 +169,8 @@ export function quad(f: (x: Value) => Value, a: number, b: number, options: Quad
  * @returns The estimate and the number of evaluations.
  * @example
  * ```ts
- * import { adaptiveSimpson } from 'whitebox-engine/numerics/quadrature'
- * import { sin } from 'whitebox-engine/tensor'
+ * import { adaptiveSimpson } from 'mdml-engine/numerics/quadrature'
+ * import { sin } from 'mdml-engine/tensor'
  * Math.abs(adaptiveSimpson((x) => sin(x), 0, Math.PI).value - 2) < 1e-9 // => true
  * ```
  */
@@ -227,8 +227,8 @@ export function adaptiveSimpson(
  * @returns The value (differentiable in f's parameters) and the levels used.
  * @example
  * ```ts
- * import { tanhSinh } from 'whitebox-engine/numerics/quadrature'
- * import { item, log } from 'whitebox-engine/tensor'
+ * import { tanhSinh } from 'mdml-engine/numerics/quadrature'
+ * import { item, log } from 'mdml-engine/tensor'
  * Math.abs(item(tanhSinh((x) => log(x), 0, 1).value) + 1) < 1e-10 // => true
  * ```
  */

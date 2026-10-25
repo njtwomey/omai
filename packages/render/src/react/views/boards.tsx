@@ -3,8 +3,8 @@
  * and an evolving population played generation by generation with its best and mean fitness.
  */
 
+import type { BoardSteps, PopulationSteps } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
-import type { BoardSteps, PopulationSteps } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { boardFrames, populationFrames } from '../../views/boards.ts'
 import { FramesPlayer, type PlayerViewProps, type RecordViewProps, useViewFigure } from './_frame.tsx'

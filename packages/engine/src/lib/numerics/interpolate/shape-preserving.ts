@@ -4,7 +4,7 @@
  * intervals.
  */
 
-import { maxOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import {
   abs,
   add,
@@ -30,10 +30,10 @@ import { cubicHermiteSpline } from './splines.ts'
 function prepare(x: TensorLike, y: TensorLike, name: string): { xs: number[]; y: Value; h: Tensor; rank: number } {
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, name))
   const [yv] = promoteFloat(y) as [Value]
-  if (yv.shape[0] !== xs.length) throw new WhiteboxError('shape', `${name}: x and y must have the same length`)
-  if (xs.length < 2) throw new WhiteboxError('value', `${name}: at least two points are needed`)
+  if (yv.shape[0] !== xs.length) throw new MdmlError('shape', `${name}: x and y must have the same length`)
+  if (xs.length < 2) throw new MdmlError('value', `${name}: at least two points are needed`)
   for (let i = 1; i < xs.length; i++) {
-    if (!((xs[i] ?? 0) > (xs[i - 1] ?? 0))) throw new WhiteboxError('value', `${name}: x must be strictly increasing`)
+    if (!((xs[i] ?? 0) > (xs[i - 1] ?? 0))) throw new MdmlError('value', `${name}: x must be strictly increasing`)
   }
   const rank = yv.shape.length
   const dx = xs.slice(1).map((v, i) => v - (xs[i] ?? 0))
@@ -61,8 +61,8 @@ const mask = (values: readonly boolean[], like: Value): Tensor =>
  * @concept monotone-interpolation
  * @example
  * ```ts
- * import { pchip } from 'whitebox-engine/numerics/interpolate'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pchip } from 'mdml-engine/numerics/interpolate'
+ * import { toArray } from 'mdml-engine/tensor'
  * // Flat data stays flat (a cubic spline would ring).
  * toArray(pchip([0, 1, 2, 3], [0, 0, 1, 1]).evaluate([0.5, 2.5])) // => [0, 1]
  * ```
@@ -126,15 +126,15 @@ export function pchip(x: TensorLike, y: TensorLike, extrapolate = true): PPoly {
  * @returns The piecewise cubic.
  * @example
  * ```ts
- * import { akima } from 'whitebox-engine/numerics/interpolate'
- * import { item } from 'whitebox-engine/tensor'
+ * import { akima } from 'mdml-engine/numerics/interpolate'
+ * import { item } from 'mdml-engine/tensor'
  * item(akima([0, 1, 2, 3, 4], [0, 1, 2, 3, 4]).evaluate(2.5)) // => 2.5
  * ```
  */
 export function akima(x: TensorLike, y: TensorLike, method: 'akima' | 'makima' = 'akima', extrapolate = true): PPoly {
   const { xs, y: yv, h } = prepare(x, y, 'akima')
   const n = xs.length
-  if (n < 3) throw new WhiteboxError('value', 'akima: at least three points are needed')
+  if (n < 3) throw new MdmlError('value', 'akima: at least three points are needed')
   const inner = div(sub(sliceAxis(yv, 0, 1, n), sliceAxis(yv, 0, 0, n - 1)), h)
   // Two extrapolated secants at each end: m[1] = 2 m[2] - m[3], m[0] = 2 m[1] - m[2], and symmetrically.
   const at = (i: number): Value => sliceAxis(inner, 0, i, i + 1)

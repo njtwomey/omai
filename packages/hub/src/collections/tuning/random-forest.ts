@@ -3,8 +3,8 @@
  * cross-validation, on two-dimensional classification data and tabular classification data.
  */
 
-import { randomForestClassifier } from 'whitebox-engine/methods/ensemble'
-import { dict, int } from 'whitebox-engine/space'
+import { randomForestClassifier } from 'mdml-engine/methods/ensemble'
+import { dict, int } from 'mdml-engine/space'
 import type { HubEntry } from '../../entry/entry.ts'
 import { tuningEntry } from './_tuning.ts'
 

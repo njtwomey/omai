@@ -4,7 +4,7 @@
  * curves.
  */
 
-import { orthogonalMatchingPursuit as orthogonalMatchingPursuitMethod } from 'whitebox-engine/methods/linear'
+import { orthogonalMatchingPursuit as orthogonalMatchingPursuitMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

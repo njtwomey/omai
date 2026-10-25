@@ -4,7 +4,7 @@
  * the minimum expected detection cost, and Drummond and Holte's cost curve.
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { labelValues } from './_labels.ts'
 import { type CurveOptions, confusionMatrixAtThresholds, rocCurve } from './curves.ts'
@@ -48,7 +48,7 @@ export interface FixedRateOptions extends CurveOptions {
  * @concept operating-points
  * @example
  * ```ts
- * import { recallAtFixedPrecision } from 'whitebox-engine/metrics'
+ * import { recallAtFixedPrecision } from 'mdml-engine/metrics'
  * recallAtFixedPrecision([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8], { min: 0.6 }).estimate.value // => 1
  * ```
  */
@@ -84,7 +84,7 @@ export const recallAtFixedPrecision: Metric<FixedRateOptions, MetricInput> = Obj
  * @returns The metric result.
  * @example
  * ```ts
- * import { precisionAtFixedRecall } from 'whitebox-engine/metrics'
+ * import { precisionAtFixedRecall } from 'mdml-engine/metrics'
  * precisionAtFixedRecall([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8], { min: 1 }).estimate.value // => 0.6666666666666666
  * ```
  */
@@ -120,7 +120,7 @@ export const precisionAtFixedRecall: Metric<FixedRateOptions, MetricInput> = Obj
  * @returns The metric result.
  * @example
  * ```ts
- * import { sensitivityAtSpecificity } from 'whitebox-engine/metrics'
+ * import { sensitivityAtSpecificity } from 'mdml-engine/metrics'
  * sensitivityAtSpecificity([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8], { min: 0.5 }).estimate.value // => 1
  * ```
  */
@@ -146,7 +146,7 @@ export const sensitivityAtSpecificity: Metric<FixedRateOptions, MetricInput> = O
  * @returns The metric result.
  * @example
  * ```ts
- * import { specificityAtSensitivity } from 'whitebox-engine/metrics'
+ * import { specificityAtSensitivity } from 'mdml-engine/metrics'
  * specificityAtSensitivity([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8], { min: 1 }).estimate.value // => 0.5
  * ```
  */
@@ -175,7 +175,7 @@ const firstThreshold = (t: number): number => (t === Number.POSITIVE_INFINITY ? 
  * @returns The metric result.
  * @example
  * ```ts
- * import { fprAtTpr } from 'whitebox-engine/metrics'
+ * import { fprAtTpr } from 'mdml-engine/metrics'
  * fprAtTpr([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8], { min: 0.95 }).estimate.value // => 0.5
  * ```
  */
@@ -200,7 +200,7 @@ export const fprAtTpr: Metric<FixedRateOptions, MetricInput> = Object.assign(
  * @returns The metric result (with the threshold for 'nearest').
  * @example
  * ```ts
- * import { equalErrorRate } from 'whitebox-engine/metrics'
+ * import { equalErrorRate } from 'mdml-engine/metrics'
  * equalErrorRate([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).estimate.value // => 0.5
  * ```
  */
@@ -234,7 +234,7 @@ export const equalErrorRate: Metric<CurveOptions & { readonly method?: 'interpol
           return metricResult('equalErrorRate', fpr, labelValues(yTrue).length)
         }
       }
-      throw new WhiteboxError('value', 'equalErrorRate: the ROC curve does not cross FPR = FNR')
+      throw new MdmlError('value', 'equalErrorRate: the ROC curve does not cross FPR = FNR')
     },
     { spec: spec('equalErrorRate', 'lower') },
   )
@@ -249,7 +249,7 @@ export const equalErrorRate: Metric<CurveOptions & { readonly method?: 'interpol
  * @returns The metric result.
  * @example
  * ```ts
- * import { youdenIndex } from 'whitebox-engine/metrics'
+ * import { youdenIndex } from 'mdml-engine/metrics'
  * youdenIndex([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).breakdown?.threshold // => 0.8
  * ```
  */
@@ -288,7 +288,7 @@ export interface CostOptions extends CurveOptions {
  * @returns The metric result.
  * @example
  * ```ts
- * import { minimumExpectedCost } from 'whitebox-engine/metrics'
+ * import { minimumExpectedCost } from 'mdml-engine/metrics'
  * minimumExpectedCost([0, 1], [0.2, 0.9]).estimate.value // => 0
  * ```
  */
@@ -333,7 +333,7 @@ export interface CostCurve {
  * @returns The curve.
  * @example
  * ```ts
- * import { costCurve } from 'whitebox-engine/metrics'
+ * import { costCurve } from 'mdml-engine/metrics'
  * costCurve([0, 1], [0.2, 0.9], { points: 3 }).normalizedExpectedCost // => [0, 0, 0]
  * ```
  */

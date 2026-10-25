@@ -5,7 +5,7 @@
  * them inside their primitive definitions whatever the module evaluation order.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { broadcastTo, expandDims, moveaxis, reshape } from './ops/shape.ts'
 import { type BatchDim, type BatchResult, bind, type Primitive } from './primitive.ts'
 import { normaliseAxis } from './shape.ts'
@@ -23,7 +23,7 @@ import type { Value } from './traced.ts'
  * @concept vectorisation
  * @example
  * ```ts
- * import { moveBatchAxis, zeros } from 'whitebox-engine/tensor'
+ * import { moveBatchAxis, zeros } from 'mdml-engine/tensor'
  * moveBatchAxis(zeros([2, 5]), 1, 0, 5).shape // => [5, 2]
  * moveBatchAxis(zeros([2]), null, 0, 3).shape // => [3, 2]
  * ```
@@ -48,7 +48,7 @@ export function moveBatchAxis(x: Value, dim: BatchDim, to: number, size: number)
  * @concept vectorisation
  * @example
  * ```ts
- * import { batchedAxis } from 'whitebox-engine/tensor'
+ * import { batchedAxis } from 'mdml-engine/tensor'
  * batchedAxis(0, 0) // => 1
  * batchedAxis(0, 1) // => 0
  * ```
@@ -68,7 +68,7 @@ export function batchedAxis(axis: number, dim: number): number {
  * @concept vectorisation
  * @example
  * ```ts
- * import { batchAtFront, zeros } from 'whitebox-engine/tensor'
+ * import { batchAtFront, zeros } from 'mdml-engine/tensor'
  * batchAtFront([zeros([2, 4]), zeros([2])], [1, null], 4).map((x) => x.shape) // => [[4, 2], [4, 2]]
  * ```
  */
@@ -85,11 +85,11 @@ export function batchAtFront(inputs: readonly Value[], dims: readonly BatchDim[]
  * @param dims - Their batch axes (at least one is not `null`).
  * @param coreRank - Trailing axes that must not hold the batch axis (2 for matrix products, 0 for elementwise).
  * @returns The aligned inputs and the batch axis of the result.
- * @throws WhiteboxError with code `value` when no input is batched.
+ * @throws MdmlError with code `value` when no input is batched.
  * @concept vectorisation
  * @example
  * ```ts
- * import { alignBatched, zeros } from 'whitebox-engine/tensor'
+ * import { alignBatched, zeros } from 'mdml-engine/tensor'
  * const { values, dim } = alignBatched([zeros([3, 2]), zeros([4, 2])], [0, null])
  * values[0].shape // => [3, 1, 2]
  * dim // => 0
@@ -110,7 +110,7 @@ export function alignBatched(
     else if (first === null) first = d
     else if (first !== d) same = false
   })
-  if (first === null) throw new WhiteboxError('value', 'alignBatched: no input is batched')
+  if (first === null) throw new MdmlError('value', 'alignBatched: no input is batched')
   const d0: number = first
   const full = (x: Value, i: number): boolean => dims[i] === null || x.shape.length === rank + 1
   if (same && inputs.every(full) && d0 < rank + 1 - coreRank) return { values: [...inputs], dim: d0 }
@@ -142,7 +142,7 @@ export function alignBatched(
  * @concept vectorisation
  * @example
  * ```ts
- * import { batchElementwise, addPrimitive, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { batchElementwise, addPrimitive, tensor, toArray } from 'mdml-engine/tensor'
  * const r = batchElementwise(addPrimitive, [tensor([[1, 2], [3, 4]]), tensor([10, 20])], [0, null], null)
  * toArray(r.outputs[0]) // => [[11, 22], [13, 24]]
  * ```
@@ -171,7 +171,7 @@ export function batchElementwise<P>(
  * @concept vectorisation
  * @example
  * ```ts
- * import { batchLeading, matmulPrimitive, eye, zeros } from 'whitebox-engine/tensor'
+ * import { batchLeading, matmulPrimitive, eye, zeros } from 'mdml-engine/tensor'
  * batchLeading(matmulPrimitive, [zeros([3, 2, 2]), eye(2)], [0, null], null, 3).outputs[0].shape // => [3, 2, 2]
  * ```
  */

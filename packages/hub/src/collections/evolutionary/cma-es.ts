@@ -3,8 +3,8 @@
  * objective's shape, on test functions of two variables.
  */
 
-import { cmaesOnPlane, type PlaneFunctionName } from 'whitebox-engine/methods/evolutionary'
-import { dict, int, real } from 'whitebox-engine/space'
+import { cmaesOnPlane, type PlaneFunctionName } from 'mdml-engine/methods/evolutionary'
+import { dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { objectiveControl } from './_plane.ts'
 

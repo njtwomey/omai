@@ -6,9 +6,9 @@ python-control requires G QN G^T to be exactly symmetric, so the noise enters th
 
 import control as ct
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
-from whitebox_oracle.lti import schur_stable_system, stable_system
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
+from mdml_oracle.lti import schur_stable_system, stable_system
 
 REFERENCE: dict[str, str] = {"control": ct.__version__}
 

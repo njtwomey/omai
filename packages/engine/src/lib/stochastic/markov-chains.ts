@@ -5,7 +5,7 @@
  * paths.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { totalVariation } from '../information/index.ts'
 import { eigh, eigvals, matrixPower, solve } from '../numerics/linalg/index.ts'
 import { categorical, foldIn, type Key } from '../random/index.ts'
@@ -71,11 +71,11 @@ export interface ChainClassification {
  *
  * @param p - The transition matrix `[n, n]` (rows sum to one).
  * @returns The classification.
- * @throws WhiteboxError with code `value` or `shape` for a matrix that is not stochastic.
+ * @throws MdmlError with code `value` or `shape` for a matrix that is not stochastic.
  * @concept markov-chains
  * @example
  * ```ts
- * import { classifyStates } from 'whitebox-engine/stochastic'
+ * import { classifyStates } from 'mdml-engine/stochastic'
  * const c = classifyStates([[0, 1, 0], [1, 0, 0], [0.5, 0, 0.5]])
  * c.classes // => [[0, 1], [2]]
  * c.periods // => [2, 1]
@@ -107,20 +107,20 @@ export function classifyStates(p: TensorLike): ChainClassification {
  *
  * @param p - The transition matrix.
  * @returns pi `[n]` (zero on transient states).
- * @throws WhiteboxError with code `value` when there are several closed classes (no unique stationary law; see
+ * @throws MdmlError with code `value` when there are several closed classes (no unique stationary law; see
  *   {@link stationaryDistributions}).
  * @concept stationary-distribution
  * @example
  * ```ts
- * import { stationaryDistribution } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { stationaryDistribution } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(stationaryDistribution([[0.9, 0.1], [0.5, 0.5]])).map((v) => Math.round(v * 1e12) / 1e12) // => [0.833333333333, 0.166666666667]
  * ```
  */
 export function stationaryDistribution(p: TensorLike): Value {
   const { n, rows } = maybeStochasticRows(p, 'stationaryDistribution')
   if (rows !== undefined && classify(n, rows).closed.filter((x) => x).length !== 1) {
-    throw new WhiteboxError('value', 'stationaryDistribution: several closed classes; use stationaryDistributions')
+    throw new MdmlError('value', 'stationaryDistribution: several closed classes; use stationaryDistributions')
   }
   return stationarySolve(sub(asFloat(asTensor(p)), eye(n)), n)
 }
@@ -134,8 +134,8 @@ export function stationaryDistribution(p: TensorLike): Value {
  * @concept stationary-distribution
  * @example
  * ```ts
- * import { stationaryDistributions } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { stationaryDistributions } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(stationaryDistributions([[1, 0, 0], [0.2, 0.6, 0.2], [0, 0, 1]])) // => [[1, 0, 0], [0, 0, 1]]
  * ```
  */
@@ -164,13 +164,13 @@ export function stationaryDistributions(p: TensorLike): Tensor<'float64'> {
  * @concept markov-chains
  * @example
  * ```ts
- * import { distributionAfter } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { distributionAfter } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(distributionAfter([[0, 1], [1, 0]], [1, 0], 3)) // => [0, 1]
  * ```
  */
 export function distributionAfter(p: TensorLike, p0: TensorLike, steps: number): Value {
-  if (!(Number.isInteger(steps) && steps >= 0)) throw new WhiteboxError('value', 'distributionAfter: steps >= 0')
+  if (!(Number.isInteger(steps) && steps >= 0)) throw new MdmlError('value', 'distributionAfter: steps >= 0')
   maybeStochasticRows(p, 'distributionAfter')
   return matmul(asFloat(asTensor(p0)), matrixPower(asFloat(asTensor(p)), steps))
 }
@@ -197,12 +197,12 @@ export interface Absorption {
  *
  * @param p - The transition matrix, with an absorbing state reachable from every other state.
  * @returns The analysis, indexed by the transient and absorbing states.
- * @throws WhiteboxError with code `value` when the chain has no absorbing state or some state cannot reach one.
+ * @throws MdmlError with code `value` when the chain has no absorbing state or some state cannot reach one.
  * @concept absorbing-markov-chains
  * @example
  * ```ts
- * import { absorption } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { absorption } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * const a = absorption([[1, 0, 0], [0.5, 0, 0.5], [0, 0, 1]])
  * toArray(a.probabilities) // => [[0.5, 0.5]]
  * toArray(a.expectedSteps) // => [1]
@@ -212,10 +212,10 @@ export function absorption(p: TensorLike): Absorption {
   const { n, rows } = stochasticRows(p, 'absorption')
   const c = classify(n, rows)
   const absorbing = [...c.absorbing]
-  if (absorbing.length === 0) throw new WhiteboxError('value', 'absorption: the chain has no absorbing state')
+  if (absorbing.length === 0) throw new MdmlError('value', 'absorption: the chain has no absorbing state')
   const transient = Array.from({ length: n }, (_, i) => i).filter((i) => !absorbing.includes(i))
   if (transient.some((i) => c.recurrent[i] === true)) {
-    throw new WhiteboxError('value', 'absorption: some non-absorbing states never reach an absorbing state')
+    throw new MdmlError('value', 'absorption: some non-absorbing states never reach an absorbing state')
   }
   const k = transient.length
   if (k === 0) {
@@ -249,8 +249,8 @@ export function absorption(p: TensorLike): Absorption {
  * @concept hitting-times
  * @example
  * ```ts
- * import { hittingProbabilities } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { hittingProbabilities } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * // a fair gambler's ruin on {0, 1, 2, 3}: reach 3 before 0
  * toArray(hittingProbabilities([[1, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0.5, 0, 0.5], [0, 0, 0, 1]], [3])).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 0.333333333333, 0.666666666667, 1]
  * ```
@@ -280,8 +280,8 @@ export function hittingProbabilities(p: TensorLike, target: readonly number[]): 
  * @concept hitting-times
  * @example
  * ```ts
- * import { expectedHittingTimes } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { expectedHittingTimes } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(expectedHittingTimes([[0.5, 0.5], [0, 1]], [1])) // => [2, 0]
  * ```
  */
@@ -308,8 +308,8 @@ export function expectedHittingTimes(p: TensorLike, target: readonly number[]): 
  * @concept hitting-times
  * @example
  * ```ts
- * import { meanReturnTimes } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { meanReturnTimes } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(meanReturnTimes([[0, 1], [1, 0]])) // => [2, 2]
  * ```
  */
@@ -335,7 +335,7 @@ export interface MixingTime {
  * @concept mixing-time
  * @example
  * ```ts
- * import { mixingTime } from 'whitebox-engine/stochastic'
+ * import { mixingTime } from 'mdml-engine/stochastic'
  * mixingTime([[0.5, 0.5], [0.5, 0.5]]).time // => 1
  * mixingTime([[0, 1], [1, 0]], { maxSteps: 50 }).time // => Infinity
  * ```
@@ -346,7 +346,7 @@ export function mixingTime(
 ): MixingTime {
   const eps = options.epsilon ?? 0.25
   const cap = options.maxSteps ?? 10000
-  if (!(eps > 0 && eps < 1)) throw new WhiteboxError('value', 'mixingTime: epsilon must be in (0, 1)')
+  if (!(eps > 0 && eps < 1)) throw new MdmlError('value', 'mixingTime: epsilon must be in (0, 1)')
   const { n, rows } = stochasticRows(p, 'mixingTime')
   const pi = asTensor(primalNumbers(stationaryDistribution(p)))
   const m = tensorOf(rows)
@@ -382,7 +382,7 @@ export interface SpectralGap {
  * @concept spectral-gap
  * @example
  * ```ts
- * import { spectralGap } from 'whitebox-engine/stochastic'
+ * import { spectralGap } from 'mdml-engine/stochastic'
  * spectralGap([[0.75, 0.25], [0.25, 0.75]]).gap // => 0.5
  * ```
  */
@@ -420,8 +420,8 @@ export function spectralGap(p: TensorLike): SpectralGap {
  * @concept reversibility
  * @example
  * ```ts
- * import { symmetrisedTransition } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { symmetrisedTransition } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(symmetrisedTransition([[0.5, 0.5], [0.25, 0.75]])).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[0.5, 0.353553390593], [0.353553390593, 0.75]]
  * ```
  */
@@ -439,7 +439,7 @@ export function symmetrisedTransition(p: TensorLike): Value {
  * @concept reversibility
  * @example
  * ```ts
- * import { isReversible } from 'whitebox-engine/stochastic'
+ * import { isReversible } from 'mdml-engine/stochastic'
  * isReversible([[0.5, 0.5, 0], [0.25, 0.5, 0.25], [0, 0.5, 0.5]]) // => true
  * isReversible([[0, 1, 0], [0, 0, 1], [1, 0, 0]]) // => false
  * ```
@@ -464,8 +464,8 @@ export function isReversible(p: TensorLike, tol = 1e-10): boolean {
  * @concept reversibility
  * @example
  * ```ts
- * import { timeReversal } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { timeReversal } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(timeReversal([[0, 1, 0], [0, 0, 1], [1, 0, 0]])).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[0, 0, 1], [1, 0, 0], [0, 1, 0]]
  * ```
  */
@@ -487,9 +487,9 @@ export function timeReversal(p: TensorLike): Value {
  * @concept markov-chains
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { simulateChain } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { key } from 'mdml-engine/random'
+ * import { simulateChain } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(simulateChain(key(0), [[0, 1], [1, 0]], 0, 4).values) // => [[0, 1, 0, 1, 0]]
  * ```
  */
@@ -504,9 +504,9 @@ export function simulateChain(
   const paths = typeof x0 === 'number' ? positiveInteger(options.paths ?? 1, 'paths', 'simulateChain') : x0.length
   const start = typeof x0 === 'number' ? new Array<number>(paths).fill(x0) : [...x0]
   for (const s of start) {
-    if (!(Number.isInteger(s) && s >= 0 && s < rows.length)) throw new WhiteboxError('value', 'simulateChain: bad x0')
+    if (!(Number.isInteger(s) && s >= 0 && s < rows.length)) throw new MdmlError('value', 'simulateChain: bad x0')
   }
-  if (!(Number.isInteger(steps) && steps >= 0)) throw new WhiteboxError('value', 'simulateChain: steps >= 0')
+  if (!(Number.isInteger(steps) && steps >= 0)) throw new MdmlError('value', 'simulateChain: steps >= 0')
   return simulatePaths(
     key,
     {
@@ -530,9 +530,9 @@ export function simulateChain(
  * @concept markov-chains
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { nextStates } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { key } from 'mdml-engine/random'
+ * import { nextStates } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(nextStates([0, 1], [[0, 1], [1, 0]], key(0))) // => [1, 0]
  * ```
  */
@@ -549,7 +549,7 @@ export function nextStates(x: TensorLike, rows: readonly (readonly number[])[], 
  * @concept markov-chains
  * @example
  * ```ts
- * import { occupation } from 'whitebox-engine/stochastic'
+ * import { occupation } from 'mdml-engine/stochastic'
  * Array.from(occupation({ times: Float64Array.from([0, 1, 2, 3]), values: [[0, 1, 1, 1]] }, 2)) // => [0.25, 0.75]
  * ```
  */

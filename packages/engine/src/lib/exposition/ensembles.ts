@@ -34,10 +34,10 @@ export interface EnsembleStages {
  *
  * @param stages - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when the per-stage columns differ in length.
+ * @throws MdmlError `shape` when the per-stage columns differ in length.
  * @example
  * ```ts
- * import { ensembleStages } from 'whitebox-engine/exposition'
+ * import { ensembleStages } from 'mdml-engine/exposition'
  * ensembleStages({ method: 'adaboost', weights: [0.8, 0.5], trainScores: [0.7, 0.85] }).method // => 'adaboost'
  * ```
  */

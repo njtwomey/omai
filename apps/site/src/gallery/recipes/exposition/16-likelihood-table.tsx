@@ -1,8 +1,8 @@
+import { iris } from 'mdml-engine/datasets'
+import { gaussianNB } from 'mdml-engine/methods/naive-bayes'
+import { toArray } from 'mdml-engine/tensor'
+import { ControlPanel, LikelihoodView, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { iris } from 'whitebox-engine/datasets'
-import { gaussianNB } from 'whitebox-engine/methods/naive-bayes'
-import { toArray } from 'whitebox-engine/tensor'
-import { ControlPanel, LikelihoodView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

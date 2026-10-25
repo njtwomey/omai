@@ -9,8 +9,8 @@ import json
 from importlib.metadata import version
 from typing import Any
 
+from mdml_oracle.fixture import Case, case
 from tokenizers import Tokenizer, models, pre_tokenizers, trainers
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"tokenizers": version("tokenizers")}
 

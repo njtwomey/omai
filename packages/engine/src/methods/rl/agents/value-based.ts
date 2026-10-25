@@ -5,7 +5,7 @@
  * prioritised replay, n-step returns and noisy exploration as options, and a reader of its action values.
  */
 
-import { argmaxOf, type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../../../lib/base/index.ts'
 import { huber } from '../../../lib/losses/index.ts'
 import { linear } from '../../../lib/nn/index.ts'
 import { type GradientTransformation, incrementalUpdate, linearSchedule, type Tree } from '../../../lib/optim/index.ts'
@@ -111,8 +111,8 @@ export type QLayerParams = Readonly<Record<string, Tensor | Value>>
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { qLayerInit } from 'whitebox-engine/methods/rl/agents'
- * import { key } from 'whitebox-engine/random'
+ * import { qLayerInit } from 'mdml-engine/methods/rl/agents'
+ * import { key } from 'mdml-engine/random'
  * Object.keys(qLayerInit(key(0), 3, 2, true, 0.5)) // => ['weightMu', 'biasMu', 'weightSigma', 'biasSigma']
  * ```
  */
@@ -150,9 +150,9 @@ export function qLayerInit(
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { qLayer, qLayerInit } from 'whitebox-engine/methods/rl/agents'
- * import { key } from 'whitebox-engine/random'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { qLayer, qLayerInit } from 'mdml-engine/methods/rl/agents'
+ * import { key } from 'mdml-engine/random'
+ * import { tensor } from 'mdml-engine/tensor'
  * qLayer(qLayerInit(key(0), 3, 2, false, 0.5), tensor([[1, 2, 3]])).shape // => [1, 2]
  * ```
  */
@@ -181,9 +181,9 @@ export function qLayer(p: QLayerParams, x: Value, noise?: Key): Value {
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { qNetwork } from 'whitebox-engine/methods/rl/agents'
- * import { key } from 'whitebox-engine/random'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { qNetwork } from 'mdml-engine/methods/rl/agents'
+ * import { key } from 'mdml-engine/random'
+ * import { tensor } from 'mdml-engine/tensor'
  * const net = qNetwork(4, 2, { hidden: [8], dueling: true }, key(0))
  * net.apply(net.params, tensor([[0, 0, 0, 0]])).shape // => [1, 2]
  * ```
@@ -291,8 +291,8 @@ const stack = (rows: readonly (readonly number[])[], d: number): Tensor => rowsT
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { dqn } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { dqn } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * dqn(cartPole.create(), { double: true, dueling: true }).name // => 'dqn'
  * ```
  */
@@ -468,9 +468,9 @@ export function dqn(env: Spaces, options: DqnOptions = {}): Agent<DqnState, read
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { dqn, qValues } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { dqn, qValues } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = cartPole.create()
  * qValues(env, dqn(env, { hidden: [8] }).init(key(0)), [0, 0, 0, 0], { hidden: [8] }).length // => 2
  * ```
@@ -484,6 +484,6 @@ export function qValues(
   const d = observationSize(env.observationSpace)
   const nA = actionCount(env.actionSpace, 'qValues')
   const net = qNetwork(d, nA, options, makeKey(0))
-  if (net.atoms !== 1) throw new WhiteboxError('value', 'qValues: distributional networks need their own readout')
+  if (net.atoms !== 1) throw new MdmlError('value', 'qValues: distributional networks need their own readout')
   return toFlat(net.apply(state.params, rowsTensor([observation], d)))
 }

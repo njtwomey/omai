@@ -5,7 +5,7 @@
  * intervals of an estimate.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { chi2 } from '../dists/index.ts'
 import { fft, fftfreq, rfft, rfftfreq } from '../numerics/fourier/index.ts'
 import {
@@ -52,7 +52,7 @@ function detrendRows(rows: Value, type: 'linear' | 'constant' | 'none', bp: read
   const n = rows.shape[1] ?? 0
   if (type === 'constant') return sub(rows, mean(rows, 1, true))
   const edges = [...new Set([0, ...bp, n])].sort((a, b) => a - b)
-  if (edges.some((b) => b > n || b < 0)) throw new WhiteboxError('value', 'detrend: breakpoints must lie in [0, n]')
+  if (edges.some((b) => b > n || b < 0)) throw new MdmlError('value', 'detrend: breakpoints must lie in [0, n]')
   const parts: Value[] = []
   for (let s = 0; s + 1 < edges.length; s++) {
     const lo = edges[s] ?? 0
@@ -79,8 +79,8 @@ function detrendRows(rows: Value, type: 'linear' | 'constant' | 'none', bp: read
  * @concept detrending
  * @example
  * ```ts
- * import { detrend } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { detrend } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(detrend([1, 3, 5, 7])).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 0, 0, 0]
  * ```
  */
@@ -129,17 +129,17 @@ function segmentsOf(n: number, options: WelchOptions, name: string): Segments {
   let nperseg: number
   if (isWindowSpec(w)) {
     nperseg = Math.min(options.nperseg ?? 256, n)
-    if (nperseg < 1) throw new WhiteboxError('value', `${name}: nperseg must be positive`)
+    if (nperseg < 1) throw new MdmlError('value', `${name}: nperseg must be positive`)
     win = getWindow(w, nperseg)
   } else {
     win = primalOf(reshape(float(w), [-1]))
     nperseg = options.nperseg ?? win.shape[0] ?? 0
-    if (nperseg !== win.shape[0]) throw new WhiteboxError('value', `${name}: nperseg must equal the window length`)
+    if (nperseg !== win.shape[0]) throw new MdmlError('value', `${name}: nperseg must equal the window length`)
   }
   const nfft = options.nfft ?? nperseg
-  if (nfft < nperseg) throw new WhiteboxError('value', `${name}: nfft must be at least nperseg`)
+  if (nfft < nperseg) throw new MdmlError('value', `${name}: nfft must be at least nperseg`)
   const noverlap = options.noverlap ?? Math.floor(nperseg / 2)
-  if (noverlap >= nperseg) throw new WhiteboxError('value', `${name}: noverlap must be less than nperseg`)
+  if (noverlap >= nperseg) throw new MdmlError('value', `${name}: noverlap must be less than nperseg`)
   return { win, nperseg, noverlap, nfft }
 }
 
@@ -229,7 +229,7 @@ function crossProduct(x: ComplexValue, y: ComplexValue): ComplexValue {
  * @concept power-spectral-density
  * @example
  * ```ts
- * import { csd } from 'whitebox-engine/signal'
+ * import { csd } from 'mdml-engine/signal'
  * csd([1, 2, 3, 4, 5, 6, 7, 8], [1, 0, 1, 0, 1, 0, 1, 0], { nperseg: 4 }).values.re.shape // => [3]
  * ```
  */
@@ -278,8 +278,8 @@ export function csd(x: TensorLike, y: TensorLike, options: WelchOptions = {}): S
  * @concept power-spectral-density
  * @example
  * ```ts
- * import { welch } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { welch } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(welch([1, -1, 1, -1, 1, -1, 1, -1], { nperseg: 4, window: 'boxcar' }).values) // => [0, 0, 4]
  * ```
  */
@@ -318,8 +318,8 @@ export interface PeriodogramOptions {
  * @concept power-spectral-density
  * @example
  * ```ts
- * import { periodogram } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { periodogram } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(periodogram([1, -1, 1, -1]).values) // => [0, 0, 4]
  * ```
  */
@@ -355,8 +355,8 @@ export function periodogram(x: TensorLike, options: PeriodogramOptions = {}): Sp
  * @concept power-spectral-density
  * @example
  * ```ts
- * import { bartlettSpectrum } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { bartlettSpectrum } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(bartlettSpectrum([1, -1, 1, -1, 1, -1, 1, -1], 4).values) // => [0, 0, 4]
  * ```
  */
@@ -374,8 +374,8 @@ export function bartlettSpectrum(x: TensorLike, nperseg: number, options: WelchO
  * @concept coherence
  * @example
  * ```ts
- * import { coherence } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { coherence } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const x = [1, 3, -2, 0.5, 2, -1, 0, 1.5, -0.5, 2.5, 1, -2]
  * toFlat(coherence(x, x.map((v) => 2 * v), { nperseg: 4 }).values).every((c) => Math.abs(c - 1) < 1e-12) // => true
  * ```
@@ -410,7 +410,7 @@ export interface BlackmanTukeyOptions {
  * @concept power-spectral-density
  * @example
  * ```ts
- * import { blackmanTukey } from 'whitebox-engine/signal'
+ * import { blackmanTukey } from 'mdml-engine/signal'
  * blackmanTukey([1, 2, 0, -1, 3, 1, -2, 0], { maxLag: 3 }).values.shape // => [5]
  * ```
  */
@@ -467,7 +467,7 @@ export interface MultitaperOptions {
  * @concept multitaper
  * @example
  * ```ts
- * import { multitaper } from 'whitebox-engine/signal'
+ * import { multitaper } from 'mdml-engine/signal'
  * multitaper(new Array(64).fill(0).map((_, i) => Math.sin(i)), { nw: 3 }).values.shape // => [33]
  * ```
  */
@@ -538,7 +538,7 @@ export function multitaper(x: TensorLike, options: MultitaperOptions = {}): Spec
  * @concept spectral-confidence
  * @example
  * ```ts
- * import { welchDof } from 'whitebox-engine/signal'
+ * import { welchDof } from 'mdml-engine/signal'
  * welchDof(1024, 128, 0, 'boxcar') // => 16
  * ```
  */
@@ -568,8 +568,8 @@ export function welchDof(n: number, nperseg: number, noverlap: number, window: W
  * @concept spectral-confidence
  * @example
  * ```ts
- * import { spectralConfidenceInterval } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { spectralConfidenceInterval } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const { lower, upper } = spectralConfidenceInterval([1], 2)
  * [Math.round((toFlat(lower)[0] ?? 0) * 1e4) / 1e4, Math.round((toFlat(upper)[0] ?? 0) * 1e4) / 1e4] // => [0.2711, 39.4979]
  * ```
@@ -579,8 +579,8 @@ export function spectralConfidenceInterval(
   dof: number,
   level = 0.95,
 ): { readonly lower: Value; readonly upper: Value } {
-  if (!(dof > 0)) throw new WhiteboxError('value', 'spectralConfidenceInterval: dof must be positive')
-  if (!(level > 0 && level < 1)) throw new WhiteboxError('value', 'spectralConfidenceInterval: level must be in (0, 1)')
+  if (!(dof > 0)) throw new MdmlError('value', 'spectralConfidenceInterval: dof must be positive')
+  if (!(level > 0 && level < 1)) throw new MdmlError('value', 'spectralConfidenceInterval: level must be in (0, 1)')
   const p = float(psd)
   const d = chi2(dof)
   const a = 1 - level

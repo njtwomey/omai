@@ -1,7 +1,7 @@
+import { lines, subplots } from 'mdml-render/charts'
+import { figure, gridSpec, type LimitPolicy, type Range } from 'mdml-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { lines, subplots } from 'whitebox-render/charts'
-import { figure, gridSpec, type LimitPolicy, type Range } from 'whitebox-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

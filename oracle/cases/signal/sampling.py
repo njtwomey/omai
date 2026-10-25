@@ -4,8 +4,8 @@ from importlib.metadata import version
 
 import librosa
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "librosa": version("librosa")}
 

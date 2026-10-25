@@ -1,10 +1,10 @@
 // Fairness hub entries (private to this collection): the fairness data of a run, and a classifier fitted with or
 // without the protected attribute.
 
-import type { Fitted } from 'whitebox-engine/learn'
-import { type FairnessData, sensitiveGroups, withoutColumns } from 'whitebox-engine/methods/fairness'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { bool } from 'whitebox-engine/space'
+import type { Fitted } from 'mdml-engine/learn'
+import { type FairnessData, sensitiveGroups, withoutColumns } from 'mdml-engine/methods/fairness'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { bool } from 'mdml-engine/space'
 import type { HubRunInput } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

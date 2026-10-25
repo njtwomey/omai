@@ -4,15 +4,15 @@
  * prevalence and accuracy; hovering a rate outlines its numerator and denominator.
  */
 
+import { type ConfusionMatrix, confusionMargins, tableCost } from 'mdml-engine/metrics'
 import { type ReactNode, useMemo, useState } from 'react'
-import { type ConfusionMatrix, confusionMargins, tableCost } from 'whitebox-engine/metrics'
 import { formatNumber, formatPercent } from '../theme/format.ts'
 import { mixColours } from '../theme/palettes.ts'
 import { useTokens } from './theme.tsx'
 
 /** Props of {@link ContingencyTable}. */
 export interface ContingencyTableProps {
-  /** A confusion matrix of counts (`confusionMatrix` or `thresholdConfusion` from `whitebox-engine/metrics`): rows actual, columns predicted. */
+  /** A confusion matrix of counts (`confusionMatrix` or `thresholdConfusion` from `mdml-engine/metrics`): rows actual, columns predicted. */
   readonly table: ConfusionMatrix
   /** A name per class, in the table's order (default the labels). */
   readonly classNames?: readonly string[]
@@ -30,7 +30,7 @@ export interface ContingencyTableProps {
   /**
    * Misclassification costs, `costs[actual][predicted]` in the table's class order (correct decisions usually 0, and
    * negative to count as benefits): each cell then shows its count times its cost, and the corner the total cost and
-   * the cost per case (`tableCost` from `whitebox-engine/metrics`).
+   * the cost per case (`tableCost` from `mdml-engine/metrics`).
    */
   readonly costs?: readonly (readonly number[])[]
   /** The names of the two axes (default "actual" and "predicted"). */
@@ -75,8 +75,8 @@ const join = (...parts: (string | false | undefined)[]): string => parts.filter(
  * @returns The table.
  * @example
  * ```tsx
- * import { ContingencyTable } from 'whitebox-render/react'
- * import { thresholdConfusion } from 'whitebox-engine/metrics'
+ * import { ContingencyTable } from 'mdml-render/react'
+ * import { thresholdConfusion } from 'mdml-engine/metrics'
  * <ContingencyTable table={thresholdConfusion(y, scores, 0.5)} classNames={['benign', 'malignant']} positive={1} />
  * ```
  */

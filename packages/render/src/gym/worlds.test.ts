@@ -1,6 +1,6 @@
+import type { SceneNode } from 'mdml-engine/scene'
+import { fromAscii } from 'mdml-engine/worlds'
 import { describe, expect, it } from 'vitest'
-import type { SceneNode } from 'whitebox-engine/scene'
-import { fromAscii } from 'whitebox-engine/worlds'
 import { pathFrames, raycastViews, worldView } from './worlds.ts'
 
 const flatten = (nodes: readonly SceneNode[]): SceneNode[] =>

@@ -4,7 +4,7 @@
  * the file's Oniguruma regular expressions to JavaScript.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { UNI_SPACE, UNI_WORD } from './_classes.ts'
 import {
   type AlignedText,
@@ -77,11 +77,11 @@ function byteLevelAligned(a: AlignedText): AlignedText {
  * @param spec - The normaliser.
  * @param text - The aligned text.
  * @returns The normalised aligned text.
- * @throws WhiteboxError with code `value` for an unknown normaliser.
+ * @throws MdmlError with code `value` for an unknown normaliser.
  * @concept tokenizer-pipeline
  * @example
  * ```ts
- * import { alignedText, applyNormalizer } from 'whitebox-engine/text'
+ * import { alignedText, applyNormalizer } from 'mdml-engine/text'
  * applyNormalizer({ type: 'BertNormalizer', lowercase: true }, alignedText('Héllo\tWORLD 中文')).text // => 'hello world  中  文 '
  * ```
  */
@@ -128,7 +128,7 @@ export function applyNormalizer(spec: NormalizerSpec, text: AlignedText): Aligne
     case 'Sequence':
       return spec.normalizers.reduce((t, n) => applyNormalizer(n, t), text)
     default:
-      throw new WhiteboxError('value', `applyNormalizer: unknown normalizer ${(spec as { type: string }).type}`)
+      throw new MdmlError('value', `applyNormalizer: unknown normalizer ${(spec as { type: string }).type}`)
   }
 }
 
@@ -178,11 +178,11 @@ function splitAligned(
  * @param pieces - The pieces so far.
  * @param first - Whether the first piece starts the input (for Metaspace's `first` scheme).
  * @returns The new pieces (empty ones dropped).
- * @throws WhiteboxError with code `value` for an unknown pre-tokeniser.
+ * @throws MdmlError with code `value` for an unknown pre-tokeniser.
  * @concept tokenizer-pipeline
  * @example
  * ```ts
- * import { alignedText, applyPreTokenizer } from 'whitebox-engine/text'
+ * import { alignedText, applyPreTokenizer } from 'mdml-engine/text'
  * applyPreTokenizer({ type: 'ByteLevel', addPrefixSpace: true }, [alignedText('Hello world')]).map((p) => p.text) // => ['ĠHello', 'Ġworld']
  * ```
  */
@@ -244,7 +244,7 @@ export function applyPreTokenizer(spec: PreTokenizerSpec, pieces: readonly Align
     case 'Sequence':
       return spec.pretokenizers.reduce<AlignedText[]>((ps, s) => applyPreTokenizer(s, ps, first), [...pieces])
     default:
-      throw new WhiteboxError('value', `applyPreTokenizer: unknown pre-tokenizer ${(spec as { type: string }).type}`)
+      throw new MdmlError('value', `applyPreTokenizer: unknown pre-tokenizer ${(spec as { type: string }).type}`)
   }
 }
 
@@ -286,11 +286,11 @@ function cleanup(s: string): string {
  * @param spec - The decoder.
  * @param tokens - The tokens (or the pieces of the previous decoder).
  * @returns The decoded pieces.
- * @throws WhiteboxError with code `value` for an unknown decoder.
+ * @throws MdmlError with code `value` for an unknown decoder.
  * @concept tokenizer-pipeline
  * @example
  * ```ts
- * import { decodeChain } from 'whitebox-engine/text'
+ * import { decodeChain } from 'mdml-engine/text'
  * decodeChain({ type: 'WordPiece' }, ['un', '##aff', '##able', 'ok', '.']).join('') // => 'unaffable ok.'
  * ```
  */
@@ -380,7 +380,7 @@ export function decodeChain(spec: DecoderSpec, tokens: readonly string[]): strin
     case 'Sequence':
       return spec.decoders.reduce<string[]>((ts, d) => decodeChain(d, ts), [...tokens])
     default:
-      throw new WhiteboxError('value', `decodeChain: unknown decoder ${(spec as { type: string }).type}`)
+      throw new MdmlError('value', `decodeChain: unknown decoder ${(spec as { type: string }).type}`)
   }
 }
 
@@ -391,16 +391,16 @@ export function decodeChain(spec: DecoderSpec, tokens: readonly string[]): strin
  *
  * @param source - The pattern.
  * @returns The regular expression (global, Unicode).
- * @throws WhiteboxError with code `value` for syntax JavaScript lacks (atomic groups).
+ * @throws MdmlError with code `value` for syntax JavaScript lacks (atomic groups).
  * @concept tokenizer-pipeline
  * @example
  * ```ts
- * import { hfRegex } from 'whitebox-engine/text'
+ * import { hfRegex } from 'mdml-engine/text'
  * 'Hi  there'.match(hfRegex('\\s+(?!\\S)|\\w+'))?.length // => 3
  * ```
  */
 export function hfRegex(source: string): RegExp {
-  if (source.includes('(?>')) throw new WhiteboxError('value', 'hfRegex: atomic groups are not supported')
+  if (source.includes('(?>')) throw new MdmlError('value', 'hfRegex: atomic groups are not supported')
   let out = ''
   let inClass = false
   for (let i = 0; i < source.length; i++) {
@@ -432,6 +432,6 @@ export function hfRegex(source: string): RegExp {
   try {
     return new RegExp(out, 'gu')
   } catch {
-    throw new WhiteboxError('value', `hfRegex: cannot translate ${source}`)
+    throw new MdmlError('value', `hfRegex: cannot translate ${source}`)
   }
 }

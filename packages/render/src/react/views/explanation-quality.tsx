@@ -2,8 +2,8 @@
  * The React view of explanation-quality records: a panel per metric and the explainers' agreement.
  */
 
+import type { ExplanationQuality } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
-import type { ExplanationQuality } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { explanationQualityView, qualityLayout } from '../../views/explanation-quality.ts'
 import { RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'

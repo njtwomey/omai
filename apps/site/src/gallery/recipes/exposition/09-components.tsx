@@ -1,9 +1,9 @@
+import { wine } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { standardScaler } from 'mdml-engine/learn/preprocessing'
+import { pca } from 'mdml-engine/methods/decomposition'
+import { ComponentsView, ControlPanel, NumberField, Toggle } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { wine } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { standardScaler } from 'whitebox-engine/learn/preprocessing'
-import { pca } from 'whitebox-engine/methods/decomposition'
-import { ComponentsView, ControlPanel, NumberField, Toggle } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

@@ -3,7 +3,7 @@
  * the Swiss roll and tabular data.
  */
 
-import { incrementalPca as incrementalPcaMethod } from 'whitebox-engine/methods/decomposition'
+import { incrementalPca as incrementalPcaMethod } from 'mdml-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

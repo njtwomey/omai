@@ -1,7 +1,7 @@
+import { decisionTreeClassifier } from 'mdml-engine/methods/trees'
+import type { SpaceValue } from 'mdml-engine/space'
+import { ControlPanel, MethodControls } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { decisionTreeClassifier } from 'whitebox-engine/methods/trees'
-import type { SpaceValue } from 'whitebox-engine/space'
-import { ControlPanel, MethodControls } from 'whitebox-render/react'
 import { CodeBlock } from '../../../shell/CodeBlock.tsx'
 import type { Recipe } from '../../recipe.ts'
 

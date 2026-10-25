@@ -4,7 +4,7 @@
  * observations and actions, and tuples and dicts that compose them, with conditional dimensions declared by `when`.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /**
  * Descriptive metadata every space can carry (for documentation, controls and reports), and the condition that makes
@@ -125,8 +125,8 @@ export type SpaceValue =
   | { readonly [k: string]: SpaceValue }
 
 function checkInterval(low: number, high: number, log: boolean | undefined, name: string): void {
-  if (!(high >= low)) throw new WhiteboxError('value', `${name}: need high >= low, got [${low}, ${high}]`)
-  if (log === true && !(low > 0)) throw new WhiteboxError('value', `${name}: a log scale needs low > 0`)
+  if (!(high >= low)) throw new MdmlError('value', `${name}: need high >= low, got [${low}, ${high}]`)
+  if (log === true && !(low > 0)) throw new MdmlError('value', `${name}: a log scale needs low > 0`)
 }
 
 /**
@@ -139,7 +139,7 @@ function checkInterval(low: number, high: number, log: boolean | undefined, name
  * @concept spaces
  * @example
  * ```ts
- * import { real } from 'whitebox-engine/space'
+ * import { real } from 'mdml-engine/space'
  * real(1e-4, 1, { log: true, label: 'learning rate' }).log // => true
  * ```
  */
@@ -157,7 +157,7 @@ export function real(low: number, high: number, options: Omit<RealSpace, 'kind' 
  * @returns The space.
  * @example
  * ```ts
- * import { int } from 'whitebox-engine/space'
+ * import { int } from 'mdml-engine/space'
  * int(1, 10).high // => 10
  * ```
  */
@@ -174,7 +174,7 @@ export function int(low: number, high: number, options: Omit<IntSpace, 'kind' | 
  * @returns The space.
  * @example
  * ```ts
- * import { choice } from 'whitebox-engine/space'
+ * import { choice } from 'mdml-engine/space'
  * choice(['relu', 'tanh']).options.length // => 2
  * ```
  */
@@ -182,7 +182,7 @@ export function choice<T extends string | number | boolean>(
   options: readonly T[],
   meta: Omit<ChoiceSpace<T>, 'kind' | 'options'> = {},
 ): ChoiceSpace<T> {
-  if (options.length === 0) throw new WhiteboxError('value', 'choice: need at least one option')
+  if (options.length === 0) throw new MdmlError('value', 'choice: need at least one option')
   return { kind: 'choice', options, ...meta }
 }
 
@@ -193,7 +193,7 @@ export function choice<T extends string | number | boolean>(
  * @returns The space.
  * @example
  * ```ts
- * import { bool } from 'whitebox-engine/space'
+ * import { bool } from 'mdml-engine/space'
  * bool({ default: true }).default // => true
  * ```
  */
@@ -211,7 +211,7 @@ export function bool(meta: Omit<BoolSpace, 'kind'> = {}): BoolSpace {
  * @returns The space.
  * @example
  * ```ts
- * import { box } from 'whitebox-engine/space'
+ * import { box } from 'mdml-engine/space'
  * box(-1, 1, [2]).shape // => [2]
  * ```
  */
@@ -232,12 +232,12 @@ export function box(
  * @returns The space.
  * @example
  * ```ts
- * import { discrete } from 'whitebox-engine/space'
+ * import { discrete } from 'mdml-engine/space'
  * discrete(4).n // => 4
  * ```
  */
 export function discrete(n: number, options: Omit<DiscreteSpace, 'kind' | 'n'> = {}): DiscreteSpace {
-  if (!Number.isInteger(n) || n < 1) throw new WhiteboxError('value', 'discrete: n must be a positive integer')
+  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'discrete: n must be a positive integer')
   return { kind: 'discrete', n, ...options }
 }
 
@@ -249,7 +249,7 @@ export function discrete(n: number, options: Omit<DiscreteSpace, 'kind' | 'n'> =
  * @returns The space.
  * @example
  * ```ts
- * import { multiDiscrete } from 'whitebox-engine/space'
+ * import { multiDiscrete } from 'mdml-engine/space'
  * multiDiscrete([3, 2]).nvec // => [3, 2]
  * ```
  */
@@ -268,7 +268,7 @@ export function multiDiscrete(
  * @returns The space.
  * @example
  * ```ts
- * import { multiBinary } from 'whitebox-engine/space'
+ * import { multiBinary } from 'mdml-engine/space'
  * multiBinary(3).n // => 3
  * ```
  */
@@ -284,7 +284,7 @@ export function multiBinary(n: number, meta: Omit<MultiBinarySpace, 'kind' | 'n'
  * @returns The space.
  * @example
  * ```ts
- * import { tuple, discrete } from 'whitebox-engine/space'
+ * import { tuple, discrete } from 'mdml-engine/space'
  * tuple([discrete(2), discrete(3)]).spaces.length // => 2
  * ```
  */
@@ -300,7 +300,7 @@ export function tuple(spaces: readonly Space[], meta: SpaceMeta = {}): TupleSpac
  * @returns The space.
  * @example
  * ```ts
- * import { dict, real, choice } from 'whitebox-engine/space'
+ * import { dict, real, choice } from 'mdml-engine/space'
  * Object.keys(dict({ lr: real(1e-4, 1, { log: true }), act: choice(['relu', 'tanh']) }).spaces) // => ['lr', 'act']
  * ```
  */

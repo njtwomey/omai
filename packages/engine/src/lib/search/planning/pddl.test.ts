@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError } from '../../base/index.ts'
+import { isMdmlError } from '../../base/index.ts'
 import { forwardPlan, ground, parseDomain, parseProblem, parseSExpr, pddl } from '../index.ts'
 
 const logistics = `
@@ -43,7 +43,7 @@ describe('PDDL', () => {
       try {
         f()
       } catch (e) {
-        return isWhiteboxError(e) ? e.code : 'other'
+        return isMdmlError(e) ? e.code : 'other'
       }
       return undefined
     }

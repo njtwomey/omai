@@ -1,6 +1,6 @@
+import { axes3d, label3d, point3d, polyline3d, scene3d, surface3d } from 'mdml-engine/scene'
+import { Choice, ControlPanel, FigureFrame, Scene3DView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { axes3d, label3d, point3d, polyline3d, scene3d, surface3d } from 'whitebox-engine/scene'
-import { Choice, ControlPanel, FigureFrame, Scene3DView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

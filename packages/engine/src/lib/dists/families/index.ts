@@ -1,5 +1,5 @@
 /**
- * Regression families, available as `whitebox-engine/dists/families`: the link functions and exponential dispersion
+ * Regression families, available as `mdml-engine/dists/families`: the link functions and exponential dispersion
  * families of generalised linear models (as statsmodels.genmod), and the distributional (GAMLSS) and ordinal families
  * in which every parameter can depend on covariates.
  */

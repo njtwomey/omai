@@ -4,7 +4,7 @@
  * finer grids until the coefficients fall below machine precision (as the chebfun constructor).
  */
 
-import { maxOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import {
   add,
   fromStorage,
@@ -48,14 +48,14 @@ export interface Chebyshev {
  * @returns The expansion.
  * @example
  * ```ts
- * import { chebyshev } from 'whitebox-engine/numerics/approximation'
- * import { item } from 'whitebox-engine/tensor'
+ * import { chebyshev } from 'mdml-engine/numerics/approximation'
+ * import { item } from 'mdml-engine/tensor'
  * item(chebyshev([0, 0, 1]).evaluate(0.5)) // => -0.5
  * ```
  */
 export function chebyshev(coefficients: readonly number[], domain: readonly [number, number] = [-1, 1]): Chebyshev {
   const [a, b] = domain
-  if (!(b > a)) throw new WhiteboxError('value', 'chebyshev: the domain must be an increasing interval')
+  if (!(b > a)) throw new MdmlError('value', 'chebyshev: the domain must be an increasing interval')
   const c = coefficients.length === 0 ? [0] : [...coefficients]
   const toT = (x: Value): Value => mul(add(mul(x, 2), -(a + b)), 1 / (b - a))
   const evaluate = (x: TensorLike): Value => {
@@ -185,7 +185,7 @@ function trimCoefficients(c: readonly number[]): number[] {
  * @returns The coefficients.
  * @example
  * ```ts
- * import { chebyshevCoefficients } from 'whitebox-engine/numerics/approximation'
+ * import { chebyshevCoefficients } from 'mdml-engine/numerics/approximation'
  * // x^2 = (T_0 + T_2) / 2.
  * chebyshevCoefficients([1, 0, 1]).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0, 0.5]
  * ```
@@ -211,8 +211,8 @@ export function chebyshevCoefficients(values: readonly number[]): number[] {
  * @concept chebyshev-approximation
  * @example
  * ```ts
- * import { chebfun } from 'whitebox-engine/numerics/approximation'
- * import { exp } from 'whitebox-engine/tensor'
+ * import { chebfun } from 'mdml-engine/numerics/approximation'
+ * import { exp } from 'mdml-engine/tensor'
  * const f = chebfun((x) => exp(x))
  * f.coefficients.length < 20 && Math.abs(f.sum() - (Math.E - 1 / Math.E)) < 1e-14 // => true
  * ```
@@ -229,7 +229,7 @@ export function chebfun(
     const xs = Array.from({ length: n }, (_, j) => (a + b) / 2 + ((b - a) / 2) * Math.cos((j * Math.PI) / (n - 1)))
     const values = toFlat(primalOf(f(fromStorage(Float64Array.from(xs), [n], 'float64'))))
     if (values.some((v) => !Number.isFinite(v)))
-      throw new WhiteboxError('value', 'chebfun: the function is not finite on the domain')
+      throw new MdmlError('value', 'chebfun: the function is not finite on the domain')
     const c = chebyshevCoefficients(values)
     const scale = Math.max(maxOf(c.map(Math.abs)), Number.MIN_VALUE)
     // Converged when the last few coefficients (an eighth of them, at least 4) are all negligible.
@@ -241,5 +241,5 @@ export function chebfun(
       return chebyshev(c.slice(0, last + 1), domain)
     }
   }
-  throw new WhiteboxError('convergence', `chebfun: no convergence with ${maxPoints} points (is the function smooth?)`)
+  throw new MdmlError('convergence', `chebfun: no convergence with ${maxPoints} points (is the function smooth?)`)
 }

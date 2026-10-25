@@ -4,7 +4,7 @@
  * densities cost O(d r^2) and the matrix normal distribution with separate row and column covariances.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { cholesky, choSolve, inv, solve, solveTriangular } from '../../numerics/linalg/index.ts'
 import { foldIn, normal as normalNoise } from '../../random/index.ts'
 import {
@@ -61,8 +61,8 @@ const transposeLast = (m: Value): Value => swapaxes(m, -1, -2)
  * @returns The factor L with covariance L L^T.
  * @example
  * ```ts
- * import { scaleTrilOf } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { scaleTrilOf } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(scaleTrilOf({ covariance: [[4, 0], [0, 9]] })) // => [[2, 0], [0, 3]]
  * ```
  */
@@ -81,12 +81,12 @@ export function scaleTrilOf(params: CovarianceParams): Value {
  * @param loc - Mean `[..., d]`.
  * @param params - `{ covariance }`, `{ precision }` or `{ scaleTril }` (`[..., d, d]`).
  * @returns The distribution; `rsample` is loc + L eps.
- * @throws WhiteboxError with code `shape` when the shapes disagree.
+ * @throws MdmlError with code `shape` when the shapes disagree.
  * @concept distributions
  * @example
  * ```ts
- * import { multivariateNormal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { multivariateNormal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(multivariateNormal([0, 0], { covariance: [[1, 0], [0, 1]] }).logProb([0, 0])) + Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -94,10 +94,10 @@ export function multivariateNormal(loc: TensorLike, params: CovarianceParams): M
   const [mu] = promoteFloat(loc) as [Value]
   const scaleTril = scaleTrilOf(params)
   if (scaleTril.shape.length < 2)
-    throw new WhiteboxError('shape', 'multivariateNormal: the covariance must be a [..., d, d] matrix')
+    throw new MdmlError('shape', 'multivariateNormal: the covariance must be a [..., d, d] matrix')
   const d = scaleTril.shape[scaleTril.shape.length - 1] ?? 0
   if ((mu.shape[mu.shape.length - 1] ?? -1) !== d)
-    throw new WhiteboxError('shape', `multivariateNormal: loc must end in ${d}`)
+    throw new MdmlError('shape', `multivariateNormal: loc must end in ${d}`)
   const batchShape = broadcastShapes(mu.shape.slice(0, -1), scaleTril.shape.slice(0, -2))
   const single = scaleTril.shape.length === 2
   const logDet = sum(log(diagonal(scaleTril, 0, -2, -1)), -1)
@@ -177,8 +177,8 @@ export interface LowRankMultivariateNormal extends Distribution {
  * @returns The distribution; `rsample` is loc + W eps_r + sqrt(D) eps_d.
  * @example
  * ```ts
- * import { lowRankMultivariateNormal } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lowRankMultivariateNormal } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lowRankMultivariateNormal([0, 0], [[1], [2]], [1, 1]).variance()) // => [2, 5]
  * ```
  */
@@ -188,11 +188,11 @@ export function lowRankMultivariateNormal(
   covDiag: TensorLike,
 ): LowRankMultivariateNormal {
   const [mu, w, dg] = promoteFloat(loc, covFactor, covDiag) as [Value, Value, Value]
-  if (w.shape.length < 2) throw new WhiteboxError('shape', 'lowRankMultivariateNormal: the factor must be [..., d, r]')
+  if (w.shape.length < 2) throw new MdmlError('shape', 'lowRankMultivariateNormal: the factor must be [..., d, r]')
   const d = w.shape[w.shape.length - 2] ?? 0
   const r = w.shape[w.shape.length - 1] ?? 0
   if ((mu.shape[mu.shape.length - 1] ?? -1) !== d || (dg.shape[dg.shape.length - 1] ?? -1) !== d)
-    throw new WhiteboxError('shape', `lowRankMultivariateNormal: loc and the diagonal must end in ${d}`)
+    throw new MdmlError('shape', `lowRankMultivariateNormal: loc and the diagonal must end in ${d}`)
   const batchShape = broadcastShapes(
     broadcastShapes(mu.shape.slice(0, -1), w.shape.slice(0, -2)),
     dg.shape.slice(0, -1),
@@ -242,14 +242,14 @@ export function lowRankMultivariateNormal(
  * @returns The distribution with event shape `[n, p]`; `rsample` is M + L_U Z L_V^T.
  * @example
  * ```ts
- * import { matrixNormal } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { matrixNormal } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(matrixNormal([[0, 0]], [[2]], [[1, 0], [0, 3]]).variance()) // => [[2, 6]]
  * ```
  */
 export function matrixNormal(mean: TensorLike, rowCov: TensorLike, colCov: TensorLike): Distribution {
   const [m, u, v] = promoteFloat(mean, rowCov, colCov) as [Value, Value, Value]
-  if (m.shape.length < 2) throw new WhiteboxError('shape', 'matrixNormal: the mean must be [..., n, p]')
+  if (m.shape.length < 2) throw new MdmlError('shape', 'matrixNormal: the mean must be [..., n, p]')
   const n = m.shape[m.shape.length - 2] ?? 0
   const p = m.shape[m.shape.length - 1] ?? 0
   const lu = cholesky(u)

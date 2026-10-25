@@ -4,7 +4,7 @@
  * with k-means, which separates clusters that are connected but not convex.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { clusteringSteps, recordsOf } from '../../lib/exposition/index.ts'
 import { spectralEmbedding } from '../../lib/graph/index.ts'
 import { pairwiseKernels } from '../../lib/kernels/index.ts'
@@ -42,7 +42,7 @@ export function affinityMatrix(
     return toArray(pairwiseKernels(x, undefined, 'rbf', { gamma: options.gamma ?? 1 / m.d })) as number[][]
   const k = options.nNeighbors ?? Math.max(Math.floor(m.n / 10), 1)
   if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-    throw new WhiteboxError('value', `affinityMatrix: nNeighbors must be in 1..${m.n}`)
+    throw new MdmlError('value', `affinityMatrix: nNeighbors must be in 1..${m.n}`)
   const a = Array.from({ length: m.n }, (_, i) => Array.from({ length: m.n }, (_, j) => (i === j ? 1 : 0)))
   if (k > 1) {
     const idx = Array.from(kNearest(x, undefined, k - 1, { excludeSelf: true }).indices.data)

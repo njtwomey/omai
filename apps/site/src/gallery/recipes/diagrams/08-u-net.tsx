@@ -1,6 +1,6 @@
+import { ControlPanel, NumberField, Player, SceneFrame, Toggle, usePlayback } from 'mdml-render/react'
+import { uNet, uNetOrder, unetLevels } from 'mdml-render/structures'
 import { type ReactNode, useMemo, useState } from 'react'
-import { ControlPanel, NumberField, Player, SceneFrame, Toggle, usePlayback } from 'whitebox-render/react'
-import { uNet, uNetOrder, unetLevels } from 'whitebox-render/structures'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

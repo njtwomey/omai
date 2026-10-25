@@ -5,7 +5,7 @@
  * a target acceptance rate.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { dgemv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
@@ -27,7 +27,7 @@ import type { LogDensity, Proposal } from './target.ts'
  * @concept metropolis-hastings
  * @example
  * ```ts
- * import { metropolisAcceptance } from 'whitebox-engine/sampling'
+ * import { metropolisAcceptance } from 'mdml-engine/sampling'
  * metropolisAcceptance(0, Math.log(0.25), 0, 0) // => 0.25
  * metropolisAcceptance(-1, 0, 0, 0) // => 1
  * ```
@@ -77,8 +77,8 @@ export interface MoveProposal {
  * @reference W. K. Hastings, Monte Carlo sampling methods using Markov chains and their applications (Biometrika 1970).
  * @example
  * ```ts
- * import { metropolisHastings, numericTarget, sampleChain } from 'whitebox-engine/sampling'
- * import { key, uniform } from 'whitebox-engine/random'
+ * import { metropolisHastings, numericTarget, sampleChain } from 'mdml-engine/sampling'
+ * import { key, uniform } from 'mdml-engine/random'
  * // A walk on {0, 1, 2} with target weights 1 : 2 : 1.
  * const t = numericTarget((x) => Math.log([1, 2, 1][x[0] ?? 0] ?? 0), 1)
  * const k = metropolisHastings(t, (k, x) => ({
@@ -103,7 +103,7 @@ export function metropolisHastings(
       const m = propose(foldIn(key, 0), state.position)
       const proposal = Float64Array.from(m.proposal)
       if (proposal.length !== target.dim) {
-        throw new WhiteboxError('shape', `metropolisHastings: a proposal has ${proposal.length} values`)
+        throw new MdmlError('shape', `metropolisHastings: a proposal has ${proposal.length} values`)
       }
       const lp = target.logDensity(proposal)
       const alpha = metropolisAcceptance(state.logDensity, lp, m.logForward, m.logBackward)
@@ -127,13 +127,13 @@ export interface RandomWalkOptions {
  * @param target - The target.
  * @param options - Proposal scale or covariance.
  * @returns The kernel.
- * @throws WhiteboxError with code `value` for non-positive scales or a covariance that is not positive definite.
+ * @throws MdmlError with code `value` for non-positive scales or a covariance that is not positive definite.
  * @concept random-walk-metropolis
  * @reference N. Metropolis et al., Equation of state calculations by fast computing machines (J. Chem. Phys. 1953).
  * @example
  * ```ts
- * import { randomWalkMetropolis, numericTarget } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { randomWalkMetropolis, numericTarget } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const k = randomWalkMetropolis(t, { scale: 1 })
  * k.step(key(0), k.init([0])).info.acceptanceRate <= 1 // => true
@@ -147,7 +147,7 @@ export function randomWalkMetropolis(target: LogDensity, options: RandomWalkOpti
       : lowerCholesky(squareMatrix(options.covariance, dim, 'randomWalkMetropolis'), dim, 'randomWalkMetropolis')
   const scale = vectorOf(options.scale ?? 2.38 / Math.sqrt(dim), dim, 'randomWalkMetropolis')
   if (!scale.every((s) => s > 0 && Number.isFinite(s))) {
-    throw new WhiteboxError('value', 'randomWalkMetropolis: scales must be positive and finite')
+    throw new MdmlError('value', 'randomWalkMetropolis: scales must be positive and finite')
   }
   return rwmKernel(target, factor, scale, 'randomWalkMetropolis')
 }
@@ -187,14 +187,14 @@ function rwmKernel(
  * @param target - The target.
  * @param q - The proposal (see `proposalFromDistribution`).
  * @returns The kernel.
- * @throws WhiteboxError with code `shape` when the proposal's dimension differs from the target's.
+ * @throws MdmlError with code `shape` when the proposal's dimension differs from the target's.
  * @concept independence-sampler
  * @reference L. Tierney, Markov chains for exploring posterior distributions (Annals of Statistics 1994).
  * @example
  * ```ts
- * import { independenceMetropolis, numericTarget, proposalFromDistribution } from 'whitebox-engine/sampling'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { independenceMetropolis, numericTarget, proposalFromDistribution } from 'mdml-engine/sampling'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * // A proposal equal to the target accepts every move.
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const k = independenceMetropolis(t, proposalFromDistribution(normal(0, 1)))
@@ -203,7 +203,7 @@ function rwmKernel(
  */
 export function independenceMetropolis(target: LogDensity, q: Proposal): MCMCKernel {
   if (q.dim !== target.dim) {
-    throw new WhiteboxError(
+    throw new MdmlError(
       'shape',
       `independenceMetropolis: the proposal has dimension ${q.dim}, the target ${target.dim}`,
     )
@@ -252,13 +252,13 @@ export interface AdaptiveMetropolisOptions {
  * @param target - The target.
  * @param options - Initial scale, adaptation start, scale factor and regulariser.
  * @returns The kernel (its state carries the running mean and covariance).
- * @throws WhiteboxError with code `value` for non-positive scales or a negative regulariser.
+ * @throws MdmlError with code `value` for non-positive scales or a negative regulariser.
  * @concept adaptive-metropolis
  * @reference H. Haario, E. Saksman and J. Tamminen, An adaptive Metropolis algorithm (Bernoulli 2001).
  * @example
  * ```ts
- * import { adaptiveMetropolis, banana, sampleChain } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { adaptiveMetropolis, banana, sampleChain } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const r = sampleChain(adaptiveMetropolis(banana()), [0, 0], { key: key(0), numDraws: 200 })
  * r.state.count // => 201
  * ```
@@ -273,7 +273,7 @@ export function adaptiveMetropolis(
   const sd = options.scaleFactor ?? (2.38 * 2.38) / dim
   const eps = options.epsilon ?? 1e-6
   if (!(initialScale > 0 && sd > 0 && eps >= 0)) {
-    throw new WhiteboxError('value', 'adaptiveMetropolis: scales must be positive and epsilon non-negative')
+    throw new MdmlError('value', 'adaptiveMetropolis: scales must be positive and epsilon non-negative')
   }
   return {
     name: 'adaptiveMetropolis',
@@ -341,13 +341,13 @@ function scaledKernel(target: LogDensity, logScale: number, shape: Float64Array 
  * @param target - The target.
  * @param options - Target acceptance, shape learning and starting scale.
  * @returns The adaptation (pass to `sampleChains`); its parameters are the scale and the shape factor.
- * @throws WhiteboxError with code `value` unless 0 < targetAcceptance < 1.
+ * @throws MdmlError with code `value` unless 0 < targetAcceptance < 1.
  * @concept adaptive-metropolis
  * @reference C. Andrieu and J. Thoms, A tutorial on adaptive MCMC (Statistics and Computing 2008).
  * @example
  * ```ts
- * import { banana, randomWalkAdaptation, sampleChains } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { banana, randomWalkAdaptation, sampleChains } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const c = sampleChains(randomWalkAdaptation(banana()), { key: key(0), numChains: 1, numWarmup: 200, numDraws: 50 })
  * typeof (c.parameters[0] as { scale: number }).scale // => 'number'
  * ```
@@ -356,7 +356,7 @@ export function randomWalkAdaptation(target: LogDensity, options: RandomWalkAdap
   const dim = target.dim
   const goal = options.targetAcceptance ?? 0.234
   if (!(goal > 0 && goal < 1)) {
-    throw new WhiteboxError('value', 'randomWalkAdaptation: targetAcceptance must lie in (0, 1)')
+    throw new MdmlError('value', 'randomWalkAdaptation: targetAcceptance must lie in (0, 1)')
   }
   const learnShape = options.adaptCovariance ?? true
   const initialScale = options.initialScale ?? 2.38 / Math.sqrt(dim)

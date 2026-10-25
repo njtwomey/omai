@@ -3,7 +3,7 @@
  * Unigram or WordLevel), post-processor, decoder, truncation and padding are read into a ready tokenizer pipeline.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { bpeModel } from './subword/bpe.ts'
 import { unigramModel } from './subword/unigram.ts'
 import { wordPieceModel } from './subword/wordpiece.ts'
@@ -30,7 +30,7 @@ type Obj = Readonly<Record<string, unknown>>
 
 const obj = (x: unknown, where: string): Obj => {
   if (x === null || typeof x !== 'object' || Array.isArray(x))
-    throw new WhiteboxError('schema', `loadTokenizer: ${where} must be an object`)
+    throw new MdmlError('schema', `loadTokenizer: ${where} must be an object`)
   return x as Obj
 }
 const str = (x: unknown, fallback?: string): string => (typeof x === 'string' ? x : (fallback ?? ''))
@@ -39,14 +39,14 @@ const bool = (x: unknown, fallback: boolean): boolean => (typeof x === 'boolean'
 const list = (x: unknown): readonly unknown[] => (Array.isArray(x) ? x : [])
 
 function notImplemented(kind: string, type: string): never {
-  throw new WhiteboxError('not-implemented', `loadTokenizer: the ${kind} ${type} is not supported`)
+  throw new MdmlError('not-implemented', `loadTokenizer: the ${kind} ${type} is not supported`)
 }
 
 function pattern(x: unknown): TokenizerPattern {
   const o = obj(x, 'pattern')
   if (typeof o['String'] === 'string') return o['String']
   if (typeof o['Regex'] === 'string') return hfRegex(o['Regex'])
-  throw new WhiteboxError('schema', 'loadTokenizer: a pattern is a String or a Regex')
+  throw new MdmlError('schema', 'loadTokenizer: a pattern is a String or a Regex')
 }
 
 const BEHAVIORS: Readonly<Record<string, SplitBehavior>> = {
@@ -318,12 +318,12 @@ function padding(x: unknown): PaddingOptions | undefined {
  *
  * @param json - The file's text or its parsed object.
  * @returns The tokenizer.
- * @throws WhiteboxError with code `schema` for malformed input and `not-implemented` for components not supported
+ * @throws MdmlError with code `schema` for malformed input and `not-implemented` for components not supported
  * (the Precompiled normaliser, UnicodeScripts).
  * @concept tokenizer-pipeline
  * @example
  * ```ts
- * import { loadTokenizer, encode } from 'whitebox-engine/text'
+ * import { loadTokenizer, encode } from 'mdml-engine/text'
  * const tok = loadTokenizer({ pre_tokenizer: { type: 'Whitespace' }, model: { type: 'WordLevel', vocab: { '[UNK]': 0, hi: 1 }, unk_token: '[UNK]' } })
  * encode(tok, 'hi you').ids // => [1, 0]
  * ```
@@ -334,7 +334,7 @@ export function loadTokenizer(json: string | Readonly<Record<string, unknown>>):
     try {
       parsed = JSON.parse(json)
     } catch {
-      throw new WhiteboxError('schema', 'loadTokenizer: not valid JSON')
+      throw new MdmlError('schema', 'loadTokenizer: not valid JSON')
     }
   }
   const o = obj(parsed, 'tokenizer')

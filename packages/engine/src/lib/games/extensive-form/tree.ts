@@ -5,7 +5,7 @@
  * normal form.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { type NormalFormGame, normalFormGame } from '../normal-form/index.ts'
 import { CHANCE, nodeValues, policyTable, TERMINAL, tablePolicy } from './_tree.ts'
 
@@ -79,12 +79,12 @@ export type TabularPolicy = Readonly<Record<string, readonly number[]>>
  * @param game - The game.
  * @param options - A cap on nodes (default 1000000).
  * @returns The tree.
- * @throws WhiteboxError with code `value` when the tree is larger than the cap or an information set's legal actions
+ * @throws MdmlError with code `value` when the tree is larger than the cap or an information set's legal actions
  * differ between its states.
  * @concept extensive-form-game
  * @example
  * ```ts
- * import { gameTree, kuhnPoker } from 'whitebox-engine/games'
+ * import { gameTree, kuhnPoker } from 'mdml-engine/games'
  * const t = gameTree(kuhnPoker())
  * [t.nodes.length, t.infosets.length] // => [58, 12]
  * ```
@@ -95,7 +95,7 @@ export function gameTree<S>(game: ExtensiveGame<S>, options: { readonly maxNodes
   const infosets: { key: string; player: number; actions: number[]; actionNames: string[]; nodes: number[] }[] = []
   const index = new Map<string, number>()
   const visit = (state: S, parent: number, depth: number): number => {
-    if (nodes.length >= maxNodes) throw new WhiteboxError('value', `${game.name}: more than ${maxNodes} nodes`)
+    if (nodes.length >= maxNodes) throw new MdmlError('value', `${game.name}: more than ${maxNodes} nodes`)
     const id = nodes.length
     const player = game.currentPlayer(state)
     const placeholder: GameNode = {
@@ -140,10 +140,7 @@ export function gameTree<S>(game: ExtensiveGame<S>, options: { readonly maxNodes
       info.actions.length !== actions.length ||
       info.actions.some((a, i) => a !== actions[i])
     )
-      throw new WhiteboxError(
-        'value',
-        `${game.name}: the states of information set '${key}' disagree on player or actions`,
-      )
+      throw new MdmlError('value', `${game.name}: the states of information set '${key}' disagree on player or actions`)
     info.nodes.push(id)
     const children = actions.map((a) => visit(game.apply(state, a), id, depth + 1))
     nodes[id] = { ...placeholder, infoset: k, actions, children }
@@ -160,7 +157,7 @@ export function gameTree<S>(game: ExtensiveGame<S>, options: { readonly maxNodes
  * @returns The tree.
  * @example
  * ```ts
- * import { gameTree, kuhnPoker, treeOf } from 'whitebox-engine/games'
+ * import { gameTree, kuhnPoker, treeOf } from 'mdml-engine/games'
  * const t = gameTree(kuhnPoker())
  * treeOf(t) === t // => true
  * ```
@@ -176,7 +173,7 @@ export function treeOf<S>(game: ExtensiveGame<S> | GameTree): GameTree {
  * @returns Uniform probabilities at every information set.
  * @example
  * ```ts
- * import { gameTree, kuhnPoker, uniformPolicy } from 'whitebox-engine/games'
+ * import { gameTree, kuhnPoker, uniformPolicy } from 'mdml-engine/games'
  * uniformPolicy(gameTree(kuhnPoker()))['0'] // => [0.5, 0.5]
  * ```
  */
@@ -196,7 +193,7 @@ export function uniformPolicy(tree: GameTree): TabularPolicy {
  * @concept extensive-form-game
  * @example
  * ```ts
- * import { expectedReturns, kuhnPoker, uniformPolicy, gameTree } from 'whitebox-engine/games'
+ * import { expectedReturns, kuhnPoker, uniformPolicy, gameTree } from 'mdml-engine/games'
  * const t = gameTree(kuhnPoker())
  * expectedReturns(t, uniformPolicy(t)).map((v) => Math.round(v * 1e9) / 1e9) // => [0.125, -0.125]
  * ```
@@ -223,11 +220,11 @@ export interface BackwardInductionResult {
  *
  * @param game - A perfect-information game (every information set a single node) or its tree.
  * @returns The root values, the pure policy and every node's value.
- * @throws WhiteboxError with code `value` when some information set holds more than one node.
+ * @throws MdmlError with code `value` when some information set holds more than one node.
  * @concept backward-induction
  * @example
  * ```ts
- * import { backwardInduction, treeGame } from 'whitebox-engine/games'
+ * import { backwardInduction, treeGame } from 'mdml-engine/games'
  * // The ultimatum game with a pie of 2: offer 0 or 1 to the responder, who accepts or rejects.
  * const g = treeGame('ultimatum', 2, { player: 0, actions: [
  *   { label: 'offer 0', child: { player: 1, actions: [{ label: 'accept', child: { returns: [2, 0] } }, { label: 'reject', child: { returns: [0, 0] } }] } },
@@ -240,7 +237,7 @@ export function backwardInduction<S>(game: ExtensiveGame<S> | GameTree): Backwar
   const tree = treeOf(game)
   for (const info of tree.infosets)
     if (info.nodes.length > 1)
-      throw new WhiteboxError(
+      throw new MdmlError(
         'value',
         `${tree.name}: information set '${info.key}' has several nodes; backward induction needs perfect information`,
       )
@@ -301,7 +298,7 @@ export type TreeSpec =
  * @concept extensive-form-game
  * @example
  * ```ts
- * import { gameTree, treeGame } from 'whitebox-engine/games'
+ * import { gameTree, treeGame } from 'mdml-engine/games'
  * const g = treeGame('coin', 1, { chance: [{ p: 0.5, child: { returns: [1] } }, { p: 0.5, child: { returns: [-1] } }] })
  * gameTree(g).nodes.length // => 3
  * ```
@@ -311,7 +308,7 @@ export function treeGame(name: string, numPlayers: number, root: TreeSpec): Exte
     let node = root
     for (const i of path) {
       const next = 'chance' in node ? node.chance[i]?.child : 'actions' in node ? node.actions[i]?.child : undefined
-      if (next === undefined) throw new WhiteboxError('value', `${name}: no action ${i} at [${path.join(', ')}]`)
+      if (next === undefined) throw new MdmlError('value', `${name}: no action ${i} at [${path.join(', ')}]`)
       node = next
     }
     return node
@@ -359,11 +356,11 @@ export function treeGame(name: string, numPlayers: number, root: TreeSpec): Exte
  * @param game - The game or its tree.
  * @param options - A cap on each player's strategies (default 4096).
  * @returns The normal-form game; strategy names list `key=action` for every information set.
- * @throws WhiteboxError with code `value` when a player has more strategies than the cap.
+ * @throws MdmlError with code `value` when a player has more strategies than the cap.
  * @concept extensive-form-game
  * @example
  * ```ts
- * import { kuhnPoker, toNormalForm } from 'whitebox-engine/games'
+ * import { kuhnPoker, toNormalForm } from 'mdml-engine/games'
  * toNormalForm(kuhnPoker()).shape // => [64, 64]
  * ```
  */
@@ -379,7 +376,7 @@ export function toNormalForm<S>(
   const counts = own.map((ks, p) => {
     let c = 1
     for (const k of ks) c *= tree.infosets[k]?.actions.length ?? 1
-    if (c > cap) throw new WhiteboxError('value', `${tree.name}: player ${p} has ${c} pure strategies (cap ${cap})`)
+    if (c > cap) throw new MdmlError('value', `${tree.name}: player ${p} has ${c} pure strategies (cap ${cap})`)
     return c
   })
   // Pure strategy s of player p: mixed-radix digits over its information sets.

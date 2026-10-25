@@ -3,8 +3,8 @@
  * terms and their importances.
  */
 
-import { explainableBoostingMachine } from 'whitebox-engine/methods/explain'
-import { dict, int, real } from 'whitebox-engine/space'
+import { explainableBoostingMachine } from 'mdml-engine/methods/explain'
+import { dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

@@ -3,8 +3,8 @@ are exact (numpy.linalg.solve and the diagonal of numpy.linalg.inv); on a loopy 
 
 import networkx as nx
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "networkx": nx.__version__}
 

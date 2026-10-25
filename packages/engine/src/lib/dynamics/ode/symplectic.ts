@@ -5,7 +5,7 @@
  */
 
 import { grad } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { item, mul, stack, sum, type TensorLike, type Value } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { combine, floatState, numbersOf } from './_vec.ts'
@@ -32,8 +32,8 @@ export interface SeparableSystem {
  * @concept hamiltonian-mechanics
  * @example
  * ```ts
- * import { separableHamiltonian } from 'whitebox-engine/dynamics/ode'
- * import { mul, sum, tensor } from 'whitebox-engine/tensor'
+ * import { separableHamiltonian } from 'mdml-engine/dynamics/ode'
+ * import { mul, sum, tensor } from 'mdml-engine/tensor'
  * const sho = separableHamiltonian((q) => mul(sum(mul(q, q)), 0.5))
  * sho.energy?.(tensor([1]), tensor([1])) // => 1
  * ```
@@ -99,8 +99,8 @@ export const YOSHIDA4: SplittingMethod = {
  * @concept symplectic-integrator
  * @example
  * ```ts
- * import { separableHamiltonian, symplecticStep } from 'whitebox-engine/dynamics/ode'
- * import { mul, sum, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { separableHamiltonian, symplecticStep } from 'mdml-engine/dynamics/ode'
+ * import { mul, sum, tensor, toArray } from 'mdml-engine/tensor'
  * const free = separableHamiltonian(() => mul(sum(tensor([0])), 0))
  * toArray(symplecticStep(free, tensor([0]), tensor([2]), 0.5).q) // => [1]
  * ```
@@ -170,11 +170,11 @@ const SCHEMA = channels({
  * @param tspan - [t0, t1].
  * @param options - Step, method and thinning.
  * @returns The algorithm and its step count.
- * @throws WhiteboxError with code `value` for a non-positive step.
+ * @throws MdmlError with code `value` for a non-positive step.
  * @example
  * ```ts
- * import { separableHamiltonian, symplecticAlgorithm } from 'whitebox-engine/dynamics/ode'
- * import { mul, sum } from 'whitebox-engine/tensor'
+ * import { separableHamiltonian, symplecticAlgorithm } from 'mdml-engine/dynamics/ode'
+ * import { mul, sum } from 'mdml-engine/tensor'
  * symplecticAlgorithm(separableHamiltonian((q) => mul(sum(mul(q, q)), 0.5)), [1], [0], [0, 1], { dt: 0.1 }).steps // => 10
  * ```
  */
@@ -186,7 +186,7 @@ export function symplecticAlgorithm(
   options: SymplecticOptions,
 ): { readonly algorithm: Algorithm<SymplecticState>; readonly steps: number } {
   const dt = options.dt
-  if (!(dt > 0)) throw new WhiteboxError('value', 'symplecticIntegrate: dt must be positive')
+  if (!(dt > 0)) throw new MdmlError('value', 'symplecticIntegrate: dt must be positive')
   const method = options.method ?? STORMER_VERLET
   const span = tspan[1] - tspan[0]
   const steps = Math.max(0, Math.round(Math.abs(span) / dt))
@@ -234,8 +234,8 @@ export function symplecticAlgorithm(
  * @concept symplectic-integrator
  * @example
  * ```ts
- * import { FOREST_RUTH, separableHamiltonian, symplecticIntegrate } from 'whitebox-engine/dynamics/ode'
- * import { mul, sum } from 'whitebox-engine/tensor'
+ * import { FOREST_RUTH, separableHamiltonian, symplecticIntegrate } from 'mdml-engine/dynamics/ode'
+ * import { mul, sum } from 'mdml-engine/tensor'
  * const sho = separableHamiltonian((q) => mul(sum(mul(q, q)), 0.5))
  * const tr = symplecticIntegrate(sho, [1], [0], [0, 100], { dt: 0.1, method: FOREST_RUTH })
  * Math.abs((tr.energy.at(-1) ?? 0) - 0.5) < 1e-5 // => true
@@ -279,17 +279,17 @@ export interface EnergyDrift {
  * @param t - Times.
  * @param energy - The energies at those times.
  * @returns The drift statistics.
- * @throws WhiteboxError with code `value` when the lengths differ or there is no data.
+ * @throws MdmlError with code `value` when the lengths differ or there is no data.
  * @concept symplectic-integrator
  * @example
  * ```ts
- * import { energyDrift } from 'whitebox-engine/dynamics/ode'
+ * import { energyDrift } from 'mdml-engine/dynamics/ode'
  * Math.round(energyDrift([0, 1, 2], [1, 1.1, 1.2]).slope * 10) / 10 // => 0.1
  * ```
  */
 export function energyDrift(t: readonly number[], energy: readonly number[]): EnergyDrift {
   if (t.length !== energy.length || t.length === 0) {
-    throw new WhiteboxError('value', 'energyDrift: give one energy per time')
+    throw new MdmlError('value', 'energyDrift: give one energy per time')
   }
   const h0 = energy[0] ?? 0
   const scale = Math.max(Math.abs(h0), Number.MIN_VALUE)

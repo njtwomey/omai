@@ -5,10 +5,10 @@ DeLong algorithm of Sun and Xu (2014) in its widely used numpy form; decision me
 import numpy as np
 import scipy.stats as st
 import statsmodels
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from statsmodels.stats.contingency_tables import mcnemar
 from statsmodels.stats.proportion import proportion_confint
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}
 

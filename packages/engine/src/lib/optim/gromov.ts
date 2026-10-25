@@ -4,7 +4,7 @@
  * gradient) and entropic (Sinkhorn-based) solvers as traced algorithms, as in POT's `ot.gromov`.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import {
   add,
   fromStorage,
@@ -92,7 +92,7 @@ function setup(c1: TensorLike, c2: TensorLike, p: TensorLike, q: TensorLike, los
   const n = pv.shape[0] ?? 0
   const m = qv.shape[0] ?? 0
   if (C1.shape[0] !== n || C1.shape[1] !== n || C2.shape[0] !== m || C2.shape[1] !== m)
-    throw new WhiteboxError('shape', 'gromovWasserstein: C1 must be [n, n] and C2 [m, m] for p [n] and q [m]')
+    throw new MdmlError('shape', 'gromovWasserstein: C1 must be [n, n] and C2 [m, m] for p [n] and q [m]')
   const symmetric = isSymmetric(C1) && isSymmetric(C2)
   const forward = terms(C1, C2, pv, qv, loss)
   const backward = symmetric ? forward : terms(swapaxes(C1, 0, 1), swapaxes(C2, 0, 1), pv, qv, loss)
@@ -135,7 +135,7 @@ function quadraticStep(a: number, b: number): number {
  * @concept optimal-transport
  * @example
  * ```ts
- * import { gromovWassersteinAlgorithm } from 'whitebox-engine/optim'
+ * import { gromovWassersteinAlgorithm } from 'mdml-engine/optim'
  * gromovWassersteinAlgorithm([[0, 1], [1, 0]], [[0, 1], [1, 0]], [0.5, 0.5], [0.5, 0.5]).name // => 'gromovWasserstein'
  * ```
  */
@@ -203,7 +203,7 @@ export function gromovWassersteinAlgorithm(
  * @concept optimal-transport
  * @example
  * ```ts
- * import { gromovWasserstein } from 'whitebox-engine/optim'
+ * import { gromovWasserstein } from 'mdml-engine/optim'
  * // Two copies of the same three-point space: the discrepancy is zero.
  * const c = [[0, 1, 2], [1, 0, 1], [2, 1, 0]]
  * Math.abs(gromovWasserstein(c, c, [0.2, 0.3, 0.5], [0.2, 0.3, 0.5]).distance) < 1e-12 // => true
@@ -257,7 +257,7 @@ export interface EntropicGromovOptions extends Partial<Omit<RunOptions, 'maxStep
  * @concept optimal-transport
  * @example
  * ```ts
- * import { entropicGromovWassersteinAlgorithm } from 'whitebox-engine/optim'
+ * import { entropicGromovWassersteinAlgorithm } from 'mdml-engine/optim'
  * entropicGromovWassersteinAlgorithm([[0, 1], [1, 0]], [[0, 1], [1, 0]], [0.5, 0.5], [0.5, 0.5], 0.1).name // => 'entropicGromovWasserstein'
  * ```
  */
@@ -316,8 +316,8 @@ export function entropicGromovWassersteinAlgorithm(
  * @concept optimal-transport
  * @example
  * ```ts
- * import { entropicGromovWasserstein } from 'whitebox-engine/optim'
- * import { sum, toArray } from 'whitebox-engine/tensor'
+ * import { entropicGromovWasserstein } from 'mdml-engine/optim'
+ * import { sum, toArray } from 'mdml-engine/tensor'
  * const r = entropicGromovWasserstein([[0, 1], [1, 0]], [[0, 2], [2, 0]], [0.5, 0.5], [0.5, 0.5], 0.5)
  * Math.round((toArray(sum(r.plan)) as number) * 1e9) / 1e9 // => 1
  * ```

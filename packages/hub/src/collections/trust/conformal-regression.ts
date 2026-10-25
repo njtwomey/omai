@@ -3,9 +3,9 @@
  * rows, on one-dimensional regression curves with noise that varies.
  */
 
-import { kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
-import { type ConformalRegressionMethod, conformalRegression as conformal } from 'whitebox-engine/methods/trust'
-import { choice, dict, real } from 'whitebox-engine/space'
+import { kNeighborsRegressor } from 'mdml-engine/methods/neighbours'
+import { type ConformalRegressionMethod, conformalRegression as conformal } from 'mdml-engine/methods/trust'
+import { choice, dict, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

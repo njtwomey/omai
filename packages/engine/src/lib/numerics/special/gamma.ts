@@ -44,8 +44,8 @@ const lfactorialP = special('lfactorial', (n) => k.lgamma(n + 1), [([n]) => diga
  * @concept special-functions
  * @example
  * ```ts
- * import { gamma } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { gamma } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(gamma(5)) // => 24
  * ```
  */
@@ -60,8 +60,8 @@ export function gamma(x: TensorLike): Value {
  * @returns log |Gamma(x)|, differentiable (derivative psi).
  * @example
  * ```ts
- * import { lgamma } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { lgamma } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(lgamma(1)) // => 0
  * ```
  */
@@ -76,8 +76,8 @@ export function lgamma(x: TensorLike): Value {
  * @returns 1 / Gamma(x), differentiable away from the non-positive integers.
  * @example
  * ```ts
- * import { rgamma } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { rgamma } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(rgamma(-2)) // => 0
  * ```
  */
@@ -92,8 +92,8 @@ export function rgamma(x: TensorLike): Value {
  * @returns psi(x), differentiable (derivative trigamma).
  * @example
  * ```ts
- * import { digamma } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { digamma } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(digamma(1)) + 0.5772156649015329) < 1e-15 // => true
  * ```
  */
@@ -109,8 +109,8 @@ export function digamma(x: TensorLike): Value {
  * @returns psi^(n)(x), differentiable in x (derivative psi^(n+1)).
  * @example
  * ```ts
- * import { polygamma } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { polygamma } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(polygamma(1, 1)) - Math.PI ** 2 / 6) < 1e-15 // => true
  * ```
  */
@@ -131,8 +131,8 @@ export function polygamma(n: number, x: TensorLike): Value {
  * @returns psi'(x), differentiable.
  * @example
  * ```ts
- * import { trigamma } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { trigamma } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(trigamma(1)) - Math.PI ** 2 / 6) < 1e-15 // => true
  * ```
  */
@@ -148,8 +148,8 @@ export function trigamma(x: TensorLike): Value {
  * @returns B(a, b), differentiable.
  * @example
  * ```ts
- * import { beta } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { beta } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(beta(1, 1)) // => 1
  * ```
  */
@@ -165,8 +165,8 @@ export function beta(a: TensorLike, b: TensorLike): Value {
  * @returns log B(a, b), differentiable.
  * @example
  * ```ts
- * import { lbeta } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { lbeta } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(lbeta(1, 1)) // => 0
  * ```
  */
@@ -181,8 +181,8 @@ export function lbeta(a: TensorLike, b: TensorLike): Value {
  * @returns n!, differentiable through Gamma(n + 1).
  * @example
  * ```ts
- * import { factorial } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { factorial } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(factorial(5)) // => 120
  * ```
  */
@@ -197,8 +197,8 @@ export function factorial(n: TensorLike): Value {
  * @returns log n!, differentiable.
  * @example
  * ```ts
- * import { lfactorial } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { lfactorial } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(lfactorial(0)) // => 0
  * ```
  */
@@ -214,8 +214,8 @@ export function lfactorial(n: TensorLike): Value {
  * @returns C(n, k), differentiable through the gamma extension.
  * @example
  * ```ts
- * import { binom } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { binom } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(binom(5, 2)) // => 10
  * ```
  */
@@ -231,8 +231,8 @@ export function binom(n: TensorLike, k: TensorLike): Value {
  * @returns log C(n, k), differentiable.
  * @example
  * ```ts
- * import { lbinom } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { lbinom } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(lbinom(4, 0)) // => 0
  * ```
  */

@@ -31,7 +31,7 @@ export interface EquationTemplate {
  * @returns The template.
  * @example
  * ```ts
- * import { tex, toTex } from 'whitebox-render/maths'
+ * import { tex, toTex } from 'mdml-render/maths'
  * const mu = 1.5
  * toTex(tex`\mu = ${mu}`) // => '\\mu = \\htmlClass{wb-slot}{1.5}'
  * ```
@@ -48,7 +48,7 @@ export function tex(strings: TemplateStringsArray, ...slots: Slot[]): EquationTe
  * @returns The live value.
  * @example
  * ```ts
- * import { live } from 'whitebox-render/maths'
+ * import { live } from 'mdml-render/maths'
  * live(0.123456, { digits: 2 }).digits // => 2
  * ```
  */
@@ -64,7 +64,7 @@ export function live(value: number | string, options: Omit<LiveValue, 'value'> =
  * @returns The TeX.
  * @example
  * ```ts
- * import { numberTex } from 'whitebox-render/maths'
+ * import { numberTex } from 'mdml-render/maths'
  * numberTex(0.00012) // => '1.2 \\times 10^{-4}'
  * numberTex(-Infinity) // => '-\\infty'
  * ```
@@ -84,7 +84,7 @@ export function numberTex(value: number, digits?: number): string {
  * @returns The TeX.
  * @example
  * ```ts
- * import { live, tex, toTex } from 'whitebox-render/maths'
+ * import { live, tex, toTex } from 'mdml-render/maths'
  * toTex(tex`\sigma^2 = ${live(0.25, { strong: true })}`) // => '\\sigma^2 = \\htmlClass{wb-slot wb-slot-strong}{0.25}'
  * toTex('x') // => 'x'
  * ```
@@ -110,7 +110,7 @@ export function toTex(t: EquationTemplate | string): string {
  * @returns The TeX.
  * @example
  * ```ts
- * import { bindTex } from 'whitebox-render/maths'
+ * import { bindTex } from 'mdml-render/maths'
  * bindTex('y = {{a}} x + {{b}}', { a: 2, b: -1 }) // => 'y = \\htmlClass{wb-slot}{2} x + \\htmlClass{wb-slot}{-1}'
  * ```
  */

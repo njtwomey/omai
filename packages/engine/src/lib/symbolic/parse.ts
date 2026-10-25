@@ -3,7 +3,7 @@
  * subset of LaTeX (fractions, roots, powers and subscripts, implicit multiplication, absolute values).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   E,
   FALSE,
@@ -67,7 +67,7 @@ function tokenize(src: string): Token[] {
       continue
     }
     const op = OPS.find((o) => src.startsWith(o, i))
-    if (op === undefined) throw new WhiteboxError('value', `parse: unexpected '${ch}' at ${i}`)
+    if (op === undefined) throw new MdmlError('value', `parse: unexpected '${ch}' at ${i}`)
     out.push({ t: 'op', v: op, pos: i })
     i += op.length
   }
@@ -133,13 +133,13 @@ class TextParser {
   }
   private expect(v: string): void {
     const t = this.next()
-    if (t.t !== 'op' || t.v !== v) throw new WhiteboxError('value', `parse: expected '${v}' at ${t.pos}`)
+    if (t.t !== 'op' || t.v !== v) throw new MdmlError('value', `parse: expected '${v}' at ${t.pos}`)
   }
 
   parseAll(): Expr {
     const e = this.logic()
     if (this.peek().t !== 'end')
-      throw new WhiteboxError('value', `parse: unexpected '${this.peek().v}' at ${this.peek().pos}`)
+      throw new MdmlError('value', `parse: unexpected '${this.peek().v}' at ${this.peek().pos}`)
     return e
   }
 
@@ -258,7 +258,7 @@ class TextParser {
   }
   private special(name: string): Expr | undefined {
     const symOf = (e: Expr | undefined, what: string): ExprSym => {
-      if (e?.kind !== 'sym') throw new WhiteboxError('value', `parse: ${what} needs a symbol`)
+      if (e?.kind !== 'sym') throw new MdmlError('value', `parse: ${what} needs a symbol`)
       return e
     }
     switch (name) {
@@ -367,7 +367,7 @@ class TextParser {
       this.expect(')')
       return e
     }
-    throw new WhiteboxError('value', `parse: unexpected '${t.v || 'end of input'}' at ${t.pos}`)
+    throw new MdmlError('value', `parse: unexpected '${t.v || 'end of input'}' at ${t.pos}`)
   }
 }
 
@@ -393,10 +393,10 @@ function firstSymbol(e: Expr): ExprSym | undefined {
  * @param src - The text.
  * @param options - Symbols to bind by name and whether decimals are exact.
  * @returns The expression in canonical form.
- * @throws WhiteboxError with code `value` on a syntax error.
+ * @throws MdmlError with code `value` on a syntax error.
  * @example
  * ```ts
- * import { parse, toText } from 'whitebox-engine/symbolic'
+ * import { parse, toText } from 'mdml-engine/symbolic'
  * toText(parse('2x^2 + 3x - x')) // => '2*x**2 + 2*x'
  * toText(parse('sqrt(8) * sin(pi/6)')) // => 'sqrt(2)'
  * ```
@@ -418,10 +418,10 @@ export function parse(src: string, options: ParseOptions = {}): Expr {
  * @param src - The LaTeX source.
  * @param options - Symbols to bind by name and whether decimals are exact.
  * @returns The expression.
- * @throws WhiteboxError with code `value` on unsupported or malformed input.
+ * @throws MdmlError with code `value` on unsupported or malformed input.
  * @example
  * ```ts
- * import { parseLatex, toText } from 'whitebox-engine/symbolic'
+ * import { parseLatex, toText } from 'mdml-engine/symbolic'
  * toText(parseLatex('\\frac{x^{2}}{2} + \\sin{\\left(x \\right)}')) // => 'x**2/2 + sin(x)'
  * toText(parseLatex('2xy')) // => '2*x*y'
  * ```

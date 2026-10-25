@@ -38,7 +38,7 @@ export type ComplexLike = TensorLike | ComplexPairLike
  * @returns `true` for objects with `re` and `im` fields.
  * @example
  * ```ts
- * import { isComplex } from 'whitebox-engine/tensor'
+ * import { isComplex } from 'mdml-engine/tensor'
  * isComplex({ re: [1], im: [0] }) // => true
  * isComplex([1, 2]) // => false
  * ```
@@ -55,7 +55,7 @@ export function isComplex(x: unknown): x is ComplexPairLike {
  * @returns The pair, floating point, the parts broadcast to a common dtype.
  * @example
  * ```ts
- * import { complex, toArray } from 'whitebox-engine/tensor'
+ * import { complex, toArray } from 'mdml-engine/tensor'
  * toArray(complex([1, 2]).im) // => [0, 0]
  * toArray(complex([1, 2], [3, 4]).im) // => [3, 4]
  * ```
@@ -80,7 +80,7 @@ export function complex(re: ComplexLike, im?: TensorLike): ComplexValue {
  * @returns Re z.
  * @example
  * ```ts
- * import { real, toArray } from 'whitebox-engine/tensor'
+ * import { real, toArray } from 'mdml-engine/tensor'
  * toArray(real({ re: [1, 2], im: [3, 4] })) // => [1, 2]
  * ```
  */
@@ -95,7 +95,7 @@ export function real(z: ComplexLike): Value {
  * @returns Im z.
  * @example
  * ```ts
- * import { imag, toArray } from 'whitebox-engine/tensor'
+ * import { imag, toArray } from 'mdml-engine/tensor'
  * toArray(imag([5])) // => [0]
  * ```
  */
@@ -111,7 +111,7 @@ export function imag(z: ComplexLike): Value {
  * @returns a + b.
  * @example
  * ```ts
- * import { cAdd, toArray } from 'whitebox-engine/tensor'
+ * import { cAdd, toArray } from 'mdml-engine/tensor'
  * toArray(cAdd({ re: [1], im: [2] }, { re: [3], im: [4] }).im) // => [6]
  * ```
  */
@@ -127,7 +127,7 @@ export function cAdd(a: ComplexValue, b: ComplexValue): ComplexValue {
  * @returns a - b.
  * @example
  * ```ts
- * import { cSub, toArray } from 'whitebox-engine/tensor'
+ * import { cSub, toArray } from 'mdml-engine/tensor'
  * toArray(cSub({ re: [1], im: [2] }, { re: [3], im: [4] }).re) // => [-2]
  * ```
  */
@@ -143,7 +143,7 @@ export function cSub(a: ComplexValue, b: ComplexValue): ComplexValue {
  * @returns a b.
  * @example
  * ```ts
- * import { cMul, toArray } from 'whitebox-engine/tensor'
+ * import { cMul, toArray } from 'mdml-engine/tensor'
  * toArray(cMul({ re: [0], im: [1] }, { re: [0], im: [1] }).re) // => [-1]
  * ```
  */
@@ -159,7 +159,7 @@ export function cMul(a: ComplexValue, b: ComplexValue): ComplexValue {
  * @returns a / b.
  * @example
  * ```ts
- * import { cDiv, toArray } from 'whitebox-engine/tensor'
+ * import { cDiv, toArray } from 'mdml-engine/tensor'
  * // (1 + 2i) / (1 + i) = 1.5 + 0.5i.
  * toArray(cDiv({ re: [1], im: [2] }, { re: [1], im: [1] }).re) // => [1.5]
  * ```
@@ -179,7 +179,7 @@ export function cDiv(a: ComplexValue, b: ComplexValue): ComplexValue {
  * @returns conj z.
  * @example
  * ```ts
- * import { conj, toArray } from 'whitebox-engine/tensor'
+ * import { conj, toArray } from 'mdml-engine/tensor'
  * toArray(conj({ re: [1], im: [2] }).im) // => [-2]
  * ```
  */
@@ -196,7 +196,7 @@ export function conj(z: ComplexLike): ComplexValue {
  * @returns s a.
  * @example
  * ```ts
- * import { cScale, toArray } from 'whitebox-engine/tensor'
+ * import { cScale, toArray } from 'mdml-engine/tensor'
  * toArray(cScale({ re: [1], im: [2] }, 3).im) // => [6]
  * ```
  */
@@ -211,7 +211,7 @@ export function cScale(a: ComplexValue, s: TensorLike): ComplexValue {
  * @returns |z|.
  * @example
  * ```ts
- * import { absComplex, toArray } from 'whitebox-engine/tensor'
+ * import { absComplex, toArray } from 'mdml-engine/tensor'
  * toArray(absComplex({ re: [3], im: [4] })) // => [5]
  * ```
  */
@@ -227,7 +227,7 @@ export function absComplex(z: ComplexLike): Value {
  * @returns arg z.
  * @example
  * ```ts
- * import { angle, toArray } from 'whitebox-engine/tensor'
+ * import { angle, toArray } from 'mdml-engine/tensor'
  * toArray(angle({ re: [0, -1], im: [1, 0] })) // => [1.570796, 3.141593]
  * ```
  */
@@ -244,7 +244,7 @@ export function angle(z: ComplexLike): Value {
  * @returns The pair.
  * @example
  * ```ts
- * import { polar, toArray } from 'whitebox-engine/tensor'
+ * import { polar, toArray } from 'mdml-engine/tensor'
  * toArray(polar([2], [0]).re) // => [2]
  * ```
  */
@@ -260,7 +260,7 @@ export function polar(r: TensorLike, theta: TensorLike): ComplexValue {
  * @returns exp(a).
  * @example
  * ```ts
- * import { cExp, toArray } from 'whitebox-engine/tensor'
+ * import { cExp, toArray } from 'mdml-engine/tensor'
  * toArray(cExp({ re: [0], im: [0] }).re) // => [1]
  * ```
  */
@@ -276,7 +276,7 @@ export function cExp(a: ComplexValue): ComplexValue {
  * @returns cos theta + i sin theta.
  * @example
  * ```ts
- * import { cis, toArray } from 'whitebox-engine/tensor'
+ * import { cis, toArray } from 'mdml-engine/tensor'
  * toArray(cis([0]).re) // => [1]
  * ```
  */

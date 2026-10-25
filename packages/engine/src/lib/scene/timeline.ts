@@ -44,7 +44,7 @@ export interface Timeline {
  * @returns The timeline.
  * @example
  * ```ts
- * import { timeline, scene } from 'whitebox-engine/scene'
+ * import { timeline, scene } from 'mdml-engine/scene'
  * timeline([{ kind: 'scene', step: 1, scene: scene(1, 1, []) }]).frames.length // => 1
  * ```
  */
@@ -64,7 +64,7 @@ export function timeline(
  * @returns The timeline.
  * @example
  * ```ts
- * import { sceneTimeline, scene } from 'whitebox-engine/scene'
+ * import { sceneTimeline, scene } from 'mdml-engine/scene'
  * sceneTimeline([scene(1, 1, []), scene(1, 1, [])]).frames[1].step // => 1
  * ```
  */
@@ -85,7 +85,7 @@ export function sceneTimeline(
  * @returns `true` for timelines.
  * @example
  * ```ts
- * import { isTimeline, timeline } from 'whitebox-engine/scene'
+ * import { isTimeline, timeline } from 'mdml-engine/scene'
  * isTimeline(timeline([])) // => true
  * ```
  */

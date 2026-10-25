@@ -3,7 +3,7 @@
  * boundaries, on two-dimensional classification data and tabular classification data.
  */
 
-import { linearDiscriminantAnalysis as linearDiscriminantAnalysisMethod } from 'whitebox-engine/methods/discriminant'
+import { linearDiscriminantAnalysis as linearDiscriminantAnalysisMethod } from 'mdml-engine/methods/discriminant'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

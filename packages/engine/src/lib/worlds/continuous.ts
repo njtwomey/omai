@@ -4,7 +4,7 @@
  * slips through corners, fields of view, and distances to the nearest wall.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { closestPointOnSegment, raySegmentHit, segmentsTouch, sweptCircleHit } from '../numerics/geometry/index.ts'
 import { alongSegment, buildIndex, inBox, type SegmentIndex, segmentOf } from './_geometry.ts'
 import { step } from './_topology.ts'
@@ -32,7 +32,7 @@ export interface WorldGeometry {
 
 function segmentsOf(w: World, blocks: (cell: number) => boolean): number[] {
   const t = w.topology
-  if (t.kind === 'graph') throw new WhiteboxError('value', 'worlds: graph worlds have no continuous geometry')
+  if (t.kind === 'graph') throw new MdmlError('value', 'worlds: graph worlds have no continuous geometry')
   const out: number[] = []
   for (let c = 0; c < w.n; c++) {
     if (blocks(c)) continue
@@ -56,11 +56,11 @@ function segmentsOf(w: World, blocks: (cell: number) => boolean): number[] {
  * @param w - A square or hexagonal world.
  * @param kind - Which segments (default `'solid'`).
  * @returns The segments as point pairs.
- * @throws WhiteboxError with code `value` for graph worlds.
+ * @throws MdmlError with code `value` for graph worlds.
  * @concept collision-detection
  * @example
  * ```ts
- * import { fromAscii, wallSegments } from 'whitebox-engine/worlds'
+ * import { fromAscii, wallSegments } from 'mdml-engine/worlds'
  * wallSegments(fromAscii(['.'])) // => [[[0, 0], [1, 0]], [[1, 0], [1, 1]], [[1, 1], [0, 1]], [[0, 1], [0, 0]]]
  * wallSegments(fromAscii(['..#'])).length // => 6
  * ```
@@ -82,11 +82,11 @@ export function wallSegments(w: World, kind: 'solid' | 'opaque' = 'solid'): [[nu
  *
  * @param w - A square or hexagonal world.
  * @returns The geometry.
- * @throws WhiteboxError with code `value` for graph worlds.
+ * @throws MdmlError with code `value` for graph worlds.
  * @concept collision-detection
  * @example
  * ```ts
- * import { fromAscii, worldGeometry } from 'whitebox-engine/worlds'
+ * import { fromAscii, worldGeometry } from 'mdml-engine/worlds'
  * worldGeometry(fromAscii(['..', '.#'])).solid.count // => 8
  * ```
  */
@@ -126,11 +126,11 @@ const SKIN = 1e-9
  * @param radius - The radius (at least 0).
  * @param options - Slide along walls (default true) and the contact cap (default 4).
  * @returns The motion.
- * @throws WhiteboxError with code `value` for a negative radius.
+ * @throws MdmlError with code `value` for a negative radius.
  * @concept collision-detection
  * @example
  * ```ts
- * import { fromAscii, moveCircle, worldGeometry } from 'whitebox-engine/worlds'
+ * import { fromAscii, moveCircle, worldGeometry } from 'mdml-engine/worlds'
  * const g = worldGeometry(fromAscii(['..#']))
  * const m = moveCircle(g, [0.5, 0.5], [3, 0], 0.25)
  * [Math.round(m.position[0] * 1e6) / 1e6, m.collided] // => [1.75, true]
@@ -144,7 +144,7 @@ export function moveCircle(
   radius: number,
   options: { readonly slide?: boolean; readonly maxBounces?: number } = {},
 ): Motion {
-  if (!(radius >= 0)) throw new WhiteboxError('value', 'moveCircle: the radius must be at least 0')
+  if (!(radius >= 0)) throw new MdmlError('value', 'moveCircle: the radius must be at least 0')
   let p: [number, number] = [from[0], from[1]]
   let rem: [number, number] = [displacement[0], displacement[1]]
   let collided = false
@@ -205,7 +205,7 @@ export function moveCircle(
  * @concept collision-detection
  * @example
  * ```ts
- * import { fromAscii, stepPose, worldGeometry } from 'whitebox-engine/worlds'
+ * import { fromAscii, stepPose, worldGeometry } from 'mdml-engine/worlds'
  * const g = worldGeometry(fromAscii(['....']))
  * const r = stepPose(g, { x: 0.5, y: 0.5, heading: 0 }, { forward: 1 })
  * [r.pose.x, r.collided] // => [1.5, false]
@@ -247,7 +247,7 @@ export interface RayHit {
  * @returns The hit, or null when nothing is hit in range.
  * @example
  * ```ts
- * import { castRay, fromAscii, worldGeometry } from 'whitebox-engine/worlds'
+ * import { castRay, fromAscii, worldGeometry } from 'mdml-engine/worlds'
  * const hit = castRay(worldGeometry(fromAscii(['...#'])), [0.5, 0.5], 0)
  * [hit?.distance, hit?.normal, hit?.cell] // => [2.5, [-1, 0], 3]
  * ```
@@ -291,7 +291,7 @@ export function castRay(
  * @concept collision-detection
  * @example
  * ```ts
- * import { fromAscii, sweepSegment, worldGeometry } from 'whitebox-engine/worlds'
+ * import { fromAscii, sweepSegment, worldGeometry } from 'mdml-engine/worlds'
  * const g = worldGeometry(fromAscii(['..#']))
  * sweepSegment(g, [0.5, 0.5], [2.5, 0.5]) // => { t: 0.75, point: [2, 0.5], normal: [-1, 0] }
  * sweepSegment(g, [0.5, 0.5], [1.5, 0.5]) // => null
@@ -329,7 +329,7 @@ export function sweepSegment(
  * @returns Whether the line of sight is clear.
  * @example
  * ```ts
- * import { fromAscii, lineOfSight, worldGeometry } from 'whitebox-engine/worlds'
+ * import { fromAscii, lineOfSight, worldGeometry } from 'mdml-engine/worlds'
  * const g = worldGeometry(fromAscii(['...', '.#.', '...']))
  * [lineOfSight(g, [0.5, 0.5], [2.5, 0.5]), lineOfSight(g, [0.5, 0.5], [2.5, 2.5])] // => [true, false]
  * ```
@@ -352,7 +352,7 @@ export function lineOfSight(g: WorldGeometry, a: readonly [number, number], b: r
  * @returns Whether the line of sight is clear.
  * @example
  * ```ts
- * import { cellLineOfSight, fromAscii, worldGeometry } from 'whitebox-engine/worlds'
+ * import { cellLineOfSight, fromAscii, worldGeometry } from 'mdml-engine/worlds'
  * cellLineOfSight(worldGeometry(fromAscii(['.#.'])), 0, 2) // => false
  * ```
  */
@@ -378,7 +378,7 @@ export interface FieldOfView {
  * @returns The visible cells and polygon.
  * @example
  * ```ts
- * import { fieldOfView, fromAscii, worldGeometry } from 'whitebox-engine/worlds'
+ * import { fieldOfView, fromAscii, worldGeometry } from 'mdml-engine/worlds'
  * const g = worldGeometry(fromAscii(['....', '.#..']))
  * fieldOfView(g, { x: 0.5, y: 0.5, heading: 0 }, { angle: Math.PI }).cells // => [0, 1, 2, 3, 4]
  * ```
@@ -425,7 +425,7 @@ export function fieldOfView(
  * @returns The distance (Infinity when the world has no solid segment).
  * @example
  * ```ts
- * import { distanceToWalls, fromAscii, worldGeometry } from 'whitebox-engine/worlds'
+ * import { distanceToWalls, fromAscii, worldGeometry } from 'mdml-engine/worlds'
  * distanceToWalls(worldGeometry(fromAscii(['...', '...', '...'])), [1.5, 1]) // => 1
  * ```
  */
@@ -486,10 +486,10 @@ function edt1d(f: Float64Array): Float64Array {
  * @param w - The world.
  * @param options - The metric (default `'euclidean'`) and whether the border is a wall (default false).
  * @returns The distance of each cell (Infinity when nothing is impassable).
- * @throws WhiteboxError with code `value` for a grid metric on a non-square world.
+ * @throws MdmlError with code `value` for a grid metric on a non-square world.
  * @example
  * ```ts
- * import { fromAscii, wallDistanceField } from 'whitebox-engine/worlds'
+ * import { fromAscii, wallDistanceField } from 'mdml-engine/worlds'
  * Array.from(wallDistanceField(fromAscii(['#...']))) // => [0, 1, 2, 3]
  * Array.from(wallDistanceField(fromAscii(['#..', '...']), { metric: 'chessboard' })) // => [0, 1, 2, 1, 1, 2]
  * Array.from(wallDistanceField(fromAscii(['..']), { metric: 'exact' })) // => [0.5, 0.5]
@@ -505,7 +505,7 @@ export function wallDistanceField(
     return Float64Array.from({ length: w.n }, (_, c) => (passable(w, c) ? distanceToWalls(g, cellCentre(w, c)) : 0))
   }
   const t = w.topology
-  if (t.kind !== 'square') throw new WhiteboxError('value', `wallDistanceField: '${metric}' needs a square grid`)
+  if (t.kind !== 'square') throw new MdmlError('value', `wallDistanceField: '${metric}' needs a square grid`)
   const pad = options.border === true ? 1 : 0
   const rows = t.rows + 2 * pad
   const cols = t.cols + 2 * pad

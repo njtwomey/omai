@@ -4,7 +4,7 @@
  * refit the best, and nested cross-validation for an unbiased estimate of the tuned model's performance.
  */
 
-import { type Json, meanOf, varianceOf, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError, meanOf, varianceOf } from '../../base/index.ts'
 import { crossValidationCurve, type Explained, type Exposition, searchTrials } from '../../exposition/index.ts'
 import { foldIn, permutation } from '../../random/index.ts'
 import { type Space, type SpaceValue, sample } from '../../space/index.ts'
@@ -34,10 +34,10 @@ export const MAX_CANDIDATES = 100000
  *
  * @param grid - A grid or a list of grids.
  * @returns The candidates.
- * @throws WhiteboxError with code `value` beyond {@link MAX_CANDIDATES} candidates.
+ * @throws MdmlError with code `value` beyond {@link MAX_CANDIDATES} candidates.
  * @example
  * ```ts
- * import { parameterGrid } from 'whitebox-engine/learn/model-selection'
+ * import { parameterGrid } from 'mdml-engine/learn/model-selection'
  * parameterGrid({ b: [1, 2], a: ['x', 'y'] }) // => [{ a: 'x', b: 1 }, { a: 'x', b: 2 }, { a: 'y', b: 1 }, { a: 'y', b: 2 }]
  * ```
  */
@@ -48,7 +48,7 @@ export function parameterGrid(grid: ParamGrid): Candidate[] {
     const keys = Object.keys(g).sort()
     const total = keys.reduce((p, k) => p * (g[k]?.length ?? 0), 1)
     if (out.length + total > MAX_CANDIDATES)
-      throw new WhiteboxError('value', `parameterGrid: more than ${MAX_CANDIDATES} candidates`)
+      throw new MdmlError('value', `parameterGrid: more than ${MAX_CANDIDATES} candidates`)
     for (let i = 0; i < total; i++) {
       let r = i
       const c: Record<string, unknown> = {}
@@ -87,8 +87,8 @@ function flattenValue(v: SpaceValue, prefix = ''): Record<string, unknown> {
  * @returns The candidates (nested space values flattened to `step.param` names).
  * @example
  * ```ts
- * import { parameterSampler } from 'whitebox-engine/learn/model-selection'
- * import { key } from 'whitebox-engine/random'
+ * import { parameterSampler } from 'mdml-engine/learn/model-selection'
+ * import { key } from 'mdml-engine/random'
  * parameterSampler({ a: [1, 2, 3] }, 5, key(0)).length // => 3
  * ```
  */
@@ -97,7 +97,7 @@ export function parameterSampler(
   nIter: number,
   key: Parameters<typeof sample>[1],
 ): Candidate[] {
-  if (!(Number.isInteger(nIter) && nIter >= 1)) throw new WhiteboxError('value', 'parameterSampler: nIter must be >= 1')
+  if (!(Number.isInteger(nIter) && nIter >= 1)) throw new MdmlError('value', 'parameterSampler: nIter must be >= 1')
   if (typeof (distributions as Space).kind === 'string') {
     const space = distributions as Space
     return Array.from({ length: nIter }, (_, i) => flattenValue(sample(space, foldIn(key, i))))
@@ -153,9 +153,9 @@ function rankMin(values: readonly number[]): number[] {
  * @returns The results.
  * @example
  * ```ts
- * import { evaluateCandidates } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { evaluateCandidates } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const r = evaluateCandidates(constant, [{ c: 0 }, { c: 2 }], { x: [[0], [1]], y: [2, 2] }, { cv: 2, scoring: 'neg_mean_absolute_error' })
  * r.bestParams // => { c: 2 }
@@ -167,7 +167,7 @@ export function evaluateCandidates(
   data: LearnData,
   options: SearchOptions = {},
 ): SearchResult {
-  if (candidates.length === 0) throw new WhiteboxError('value', 'search: no candidates')
+  if (candidates.length === 0) throw new MdmlError('value', 'search: no candidates')
   const key = keyFor(options, 'search')
   const splitter = checkCv(options.cv, estimator)
   const folds = splitIndices(splitter, splitInputOf(data, options.groups), foldIn(key, 0))
@@ -182,7 +182,7 @@ export function evaluateCandidates(
   const scorerNames = Object.keys(scorersOf(options.scoring))
   const refitBy = typeof options.refit === 'string' ? options.refit : scorerNames[0]
   if (refitBy === undefined || !scorerNames.includes(refitBy))
-    throw new WhiteboxError('value', `search: refit by unknown scorer ${String(refitBy)}`)
+    throw new MdmlError('value', `search: refit by unknown scorer ${String(refitBy)}`)
   type Row = {
     readonly test: Readonly<Record<string, readonly number[]>>
     readonly train?: Readonly<Record<string, readonly number[]>>
@@ -267,9 +267,9 @@ export function evaluateCandidates(
  * @concept hyperparameter-search
  * @example
  * ```ts
- * import { gridSearchCV } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { gridSearchCV } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const r = gridSearchCV(constant, { c: [0, 1, 2, 3] }, { x: [[0], [1], [2]], y: [1, 1, 1] }, { cv: 3, scoring: 'neg_mean_squared_error' })
  * r.rankTestScore.neg_mean_squared_error // => [2, 1, 2, 4]
@@ -347,9 +347,9 @@ function searchExposition(result: SearchResult, method: string): Exposition[] {
  * @returns The search results.
  * @example
  * ```ts
- * import { randomizedSearchCV } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { randomizedSearchCV } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const r = randomizedSearchCV(constant, { c: [0, 1, 2] }, { x: [[0], [1]], y: [1, 1] }, { cv: 2, nIter: 3, scoring: 'neg_mean_absolute_error' })
  * r.bestParams // => { c: 1 }
@@ -362,8 +362,7 @@ export function randomizedSearchCV(
   options: SearchOptions & { readonly nIter?: number } = {},
 ): Explained<SearchResult> {
   const space = distributions ?? estimator.hyperSpace
-  if (space === undefined)
-    throw new WhiteboxError('value', `randomizedSearchCV: ${estimator.name} declares no hyperSpace`)
+  if (space === undefined) throw new MdmlError('value', `randomizedSearchCV: ${estimator.name} declares no hyperSpace`)
   const candidates = parameterSampler(space, options.nIter ?? 10, foldIn(keyFor(options, 'randomizedSearchCV'), 0))
   const result = evaluateCandidates(estimator, candidates, data, options)
   return { ...result, exposition: searchExposition(result, 'random') }
@@ -400,9 +399,9 @@ export interface NestedResult {
  * @returns The outer scores, the chosen candidates and their mean and deviation.
  * @example
  * ```ts
- * import { nestedCrossValidation } from 'whitebox-engine/learn/model-selection'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full } from 'whitebox-engine/tensor'
+ * import { nestedCrossValidation } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full } from 'mdml-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const r = nestedCrossValidation(constant, { c: [0, 1] }, { x, y: [1, 1, 1, 1, 1, 1] }, { outerCv: 2, innerCv: 3, scoring: 'neg_mean_absolute_error' })
@@ -419,7 +418,7 @@ export function nestedCrossValidation(
   const outer = splitIndices(checkCv(options.outerCv ?? 5, estimator), splitInputOf(data), foldIn(key, 0))
   const candidates = parameterGrid(grid)
   const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new WhiteboxError('value', 'nestedCrossValidation: no scorer')
+  if (scorer === undefined) throw new MdmlError('value', 'nestedCrossValidation: no scorer')
   type State = readonly { readonly score: number; readonly chosen: Candidate }[]
   const algorithm: Algorithm<State> = {
     name: 'nested-cross-validation',
@@ -435,7 +434,7 @@ export function nestedCrossValidation(
         ...(options.scoring === undefined ? {} : { scoring: options.scoring }),
       })
       const best = inner.bestEstimator
-      if (best === undefined) throw new WhiteboxError('value', 'nestedCrossValidation: the inner search did not refit')
+      if (best === undefined) throw new MdmlError('value', 'nestedCrossValidation: the inner search did not refit')
       return [...s, { score: scorer.score(best, takeData(data, fold.test)), chosen: inner.bestParams }]
     },
     done: (s) => (s.length >= outer.length ? 'completed' : undefined),

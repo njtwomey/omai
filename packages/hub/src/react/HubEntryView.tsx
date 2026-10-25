@@ -1,17 +1,16 @@
 /**
  * The live page of a hub entry as a React component: a dataset picker over the entry's dataset collections, controls
- * generated from its parameter space, and its view slots drawn with whitebox-render, re-run (debounced, off the main
+ * generated from its parameter space, and its view slots drawn with mdml-render, re-run (debounced, off the main
  * thread where it can) whenever the data or a control changes.
  */
 
-import { type ComponentType, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { datasetCollections } from 'whitebox-engine/datasets'
-import type { Exposition } from 'whitebox-engine/exposition'
-import type { SpaceValue } from 'whitebox-engine/space'
-import { asTensor, type TensorLike, toArray, toFlat } from 'whitebox-engine/tensor'
-import { viewFor } from 'whitebox-render'
-import { type Figure, figure } from 'whitebox-render/figure'
-import * as renderReact from 'whitebox-render/react'
+import { datasetCollections } from 'mdml-engine/datasets'
+import type { Exposition } from 'mdml-engine/exposition'
+import type { SpaceValue } from 'mdml-engine/space'
+import { asTensor, type TensorLike, toArray, toFlat } from 'mdml-engine/tensor'
+import { viewFor } from 'mdml-render'
+import { type Figure, figure } from 'mdml-render/figure'
+import * as renderReact from 'mdml-render/react'
 import {
   ControlPanel,
   DatasetPicker,
@@ -20,7 +19,8 @@ import {
   SeedInput,
   Select,
   SpaceControls,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ComponentType, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import type { HubEntry, SlotContext, ViewSlot } from '../entry/entry.ts'
 import { datasetState, demoState, entryData, type HubState } from '../entry/run.ts'
 import { RecordSummary } from './RecordSummary.tsx'
@@ -80,7 +80,7 @@ function useWidth(ref: RefObject<HTMLElement | null>): number {
   return width
 }
 
-/** A component of `whitebox-render/react` by name, if there is one. */
+/** A component of `mdml-render/react` by name, if there is one. */
 function renderComponent(name: string): ComponentType<Record<string, unknown>> | undefined {
   const c = (renderReact as Readonly<Record<string, unknown>>)[name]
   return typeof c === 'function' ? (c as ComponentType<Record<string, unknown>>) : undefined

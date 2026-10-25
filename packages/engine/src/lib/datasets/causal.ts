@@ -44,8 +44,8 @@ function totalEffects(b: readonly (readonly number[])[], order: readonly number[
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { linearScm } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { linearScm } from 'mdml-engine/datasets'
  * generate(linearScm, { knobs: { variables: 4 } }).truth.structure?.nodes.length // => 4
  * ```
  */
@@ -141,8 +141,8 @@ export const linearScm: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { treatmentEffects } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { treatmentEffects } from 'mdml-engine/datasets'
  * generate(treatmentEffects, { knobs: { ate: 2 } }).truth.effects?.ate // => 2
  * ```
  */
@@ -261,8 +261,8 @@ function matrixSlice(v: Value, d: number): Value {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { instrumentalVariables } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { instrumentalVariables } from 'mdml-engine/datasets'
  * generate(instrumentalVariables, { knobs: { effect: 1.5 } }).truth.effects?.ate // => 1.5
  * ```
  */

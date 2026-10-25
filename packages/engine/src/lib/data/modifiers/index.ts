@@ -1,7 +1,7 @@
 /**
  * Modifiers: keyed changes applied to generated or real data with their knobs as a `Space`, covering feature corruption
  * (missingness, outliers, transforms, correlation), label corruption and class balance, and distribution shift. Part of
- * `whitebox-engine/data`.
+ * `mdml-engine/data`.
  *
  * @inline
  */

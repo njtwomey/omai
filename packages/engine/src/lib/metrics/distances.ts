@@ -3,7 +3,7 @@
  * style), the Procrustes disparity between configurations, and the Hausdorff and Chamfer distances between point sets.
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { cdist, metricFunction, procrustes } from '../numerics/geometry/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'
 import { defineMetric, flat, type MetricFunction, matrix, metricResult } from './metric.ts'
@@ -24,7 +24,7 @@ const spec = (
 const vectors = (name: string, u: TensorLike, v: TensorLike): [Float64Array, Float64Array] => {
   const a = flat(u)
   const b = flat(v)
-  if (a.length !== b.length) throw new WhiteboxError('shape', `${name}: vectors differ in length`)
+  if (a.length !== b.length) throw new MdmlError('shape', `${name}: vectors differ in length`)
   return [a, b]
 }
 
@@ -39,7 +39,7 @@ const vectors = (name: string, u: TensorLike, v: TensorLike): [Float64Array, Flo
  * @concept distances
  * @example
  * ```ts
- * import { minkowskiDistance } from 'whitebox-engine/metrics'
+ * import { minkowskiDistance } from 'mdml-engine/metrics'
  * minkowskiDistance([0, 0], [3, 4]).estimate.value // => 5
  * ```
  */
@@ -65,7 +65,7 @@ export const minkowskiDistance: MetricFunction<
  * @returns The metric result, in [-1, 1].
  * @example
  * ```ts
- * import { cosineSimilarity } from 'whitebox-engine/metrics'
+ * import { cosineSimilarity } from 'mdml-engine/metrics'
  * Math.abs(cosineSimilarity([1, 0], [1, 1]).estimate.value - Math.SQRT1_2) < 1e-15 // => true
  * ```
  */
@@ -76,7 +76,7 @@ export const cosineSimilarity: MetricFunction<[TensorLike, TensorLike]> = define
     const b = matrix(v)
     const d = a.shape[a.shape.length - 1] ?? 1
     const rows = a.data.length / d
-    if (b.data.length !== a.data.length) throw new WhiteboxError('shape', 'cosineSimilarity: inputs differ in shape')
+    if (b.data.length !== a.data.length) throw new MdmlError('shape', 'cosineSimilarity: inputs differ in shape')
     let total = 0
     for (let r = 0; r < rows; r++) {
       let dot = 0
@@ -105,7 +105,7 @@ export const cosineSimilarity: MetricFunction<[TensorLike, TensorLike]> = define
  * @returns The metric result.
  * @example
  * ```ts
- * import { mahalanobisDistance } from 'whitebox-engine/metrics'
+ * import { mahalanobisDistance } from 'mdml-engine/metrics'
  * mahalanobisDistance([0, 0], [2, 0], [[0.25, 0], [0, 1]]).estimate.value // => 1
  * ```
  */
@@ -126,7 +126,7 @@ export const mahalanobisDistance: MetricFunction<[TensorLike, TensorLike, Tensor
  * @returns The metric result, in [0, 1].
  * @example
  * ```ts
- * import { procrustesDisparity } from 'whitebox-engine/metrics'
+ * import { procrustesDisparity } from 'mdml-engine/metrics'
  * procrustesDisparity([[0, 0], [1, 0], [0, 1]], [[0, 0], [2, 0], [0, 2]]).estimate.value < 1e-24 // => true
  * ```
  */
@@ -164,7 +164,7 @@ function nearest(a: TensorLike, b: TensorLike): { ab: number[]; ba: number[] } {
  * @returns The metric result.
  * @example
  * ```ts
- * import { hausdorffDistance } from 'whitebox-engine/metrics'
+ * import { hausdorffDistance } from 'mdml-engine/metrics'
  * hausdorffDistance([[0, 0], [1, 0]], [[0, 0], [4, 0]]).estimate.value // => 3
  * ```
  */
@@ -195,7 +195,7 @@ export const hausdorffDistance: MetricFunction<[TensorLike, TensorLike, { readon
  * @returns The metric result.
  * @example
  * ```ts
- * import { chamferDistance } from 'whitebox-engine/metrics'
+ * import { chamferDistance } from 'mdml-engine/metrics'
  * chamferDistance([[0, 0]], [[0, 2], [0, 0]]).estimate.value // => 2
  * ```
  */

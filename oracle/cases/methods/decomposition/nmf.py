@@ -4,9 +4,9 @@ from importlib.metadata import version
 from typing import Any
 
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from sklearn.decomposition import NMF
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": version("scikit-learn"), "numpy": np.__version__}
 

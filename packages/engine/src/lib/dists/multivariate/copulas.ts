@@ -4,7 +4,7 @@
  * `copulaDistribution`, which joins any marginals with a copula into one joint distribution.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { cholesky, solveTriangular } from '../../numerics/linalg/index.ts'
 import { lgamma, ndtr, ndtri, owensT, stdtr, stdtrit } from '../../numerics/special/index.ts'
 import { foldIn, type Key, normal as normalNoise } from '../../random/index.ts'
@@ -85,8 +85,8 @@ export interface CopulaSpec {
  * @concept copulas
  * @example
  * ```ts
- * import { defineCopula } from 'whitebox-engine/dists'
- * import { item, mul, sum } from 'whitebox-engine/tensor'
+ * import { defineCopula } from 'mdml-engine/dists'
+ * import { item, mul, sum } from 'mdml-engine/tensor'
  * const independence = defineCopula({
  *   name: 'independence', dim: 2, params: {},
  *   logDensity: (u) => mul(sum(u, -1), 0), kendallTau: () => mul(sum([0]), 0),
@@ -130,9 +130,9 @@ function bivariateNormalCdf(h0: Value, k0: Value, rho: Value): Value {
 function correlationParts(correlation: TensorLike, family: string): { r: Value; l: Value; logDet: Value; d: number } {
   const [r] = promoteFloat(correlation) as [Value]
   if (r.shape.length !== 2 || r.shape[0] !== r.shape[1])
-    throw new WhiteboxError('shape', `${family}: the correlation must be a single d x d matrix`)
+    throw new MdmlError('shape', `${family}: the correlation must be a single d x d matrix`)
   if (!toFlat(primalOf(inSupport({ kind: 'correlation' }, r))).every((ok) => ok === 1))
-    throw new WhiteboxError('value', `${family}: not a positive-definite correlation matrix`)
+    throw new MdmlError('value', `${family}: not a positive-definite correlation matrix`)
   const l = cholesky(r)
   return { r, l, logDet: mul(sum(log(diagonal(l)), -1), 2), d: r.shape[0] ?? 0 }
 }
@@ -149,8 +149,8 @@ const ellipticalTau = (r: Value): Value => mul(arcsin(r), 2 / Math.PI)
  * @concept copulas
  * @example
  * ```ts
- * import { gaussianCopula } from 'whitebox-engine/dists'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { gaussianCopula } from 'mdml-engine/dists'
+ * import { toFlat } from 'mdml-engine/tensor'
  * // Kendall's tau of a Gaussian copula: (2 / pi) asin(rho).
  * toFlat(gaussianCopula([[1, 0.5], [0.5, 1]]).kendallTau()).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 0.333333333333, 0.333333333333, 1]
  * ```
@@ -193,8 +193,8 @@ export function gaussianCopula(correlation: TensorLike): Copula {
  *   S = sqrt(V / df), by quadrature over S.
  * @example
  * ```ts
- * import { studentTCopula } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { studentTCopula } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * // Independence-like correlation still has t-copula dependence: the density at the centre exceeds 1.
  * item(studentTCopula([[1, 0], [0, 1]], 3).density([0.5, 0.5])) > 1 // => true
  * ```
@@ -264,11 +264,11 @@ export function studentTCopula(correlation: TensorLike, df: TensorLike): Copula 
  * @param marginals - One univariate distribution per coordinate (each with a CDF and quantile function).
  * @returns The distribution with event shape `[d]`: draws are marginal quantiles of copula draws (reparameterised when
  *   the copula is), the mean and variance are the marginals'; the mode and entropy throw.
- * @throws WhiteboxError with code `shape` when the number of marginals differs from the copula's dimension.
+ * @throws MdmlError with code `shape` when the number of marginals differs from the copula's dimension.
  * @example
  * ```ts
- * import { copulaDistribution, exponential, gaussianCopula, normal } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { copulaDistribution, exponential, gaussianCopula, normal } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * const d = copulaDistribution(gaussianCopula([[1, 0.5], [0.5, 1]]), [normal(1, 2), exponential(2)])
  * toArray(d.mean()) // => [1, 0.5]
  * ```
@@ -276,10 +276,10 @@ export function studentTCopula(correlation: TensorLike, df: TensorLike): Copula 
 export function copulaDistribution(copula: Copula, marginals: readonly Distribution[]): Distribution {
   const d = copula.dim
   if (marginals.length !== d)
-    throw new WhiteboxError('shape', `copulaDistribution: ${d} dimensions but ${marginals.length} marginals`)
+    throw new MdmlError('shape', `copulaDistribution: ${d} dimensions but ${marginals.length} marginals`)
   for (const m of marginals)
     if (m.eventShape.length > 0 || m.batchShape.length > 0)
-      throw new WhiteboxError('shape', 'copulaDistribution: marginals must be scalar and unbatched')
+      throw new MdmlError('shape', 'copulaDistribution: marginals must be scalar and unbatched')
   const toCube = (x: Value): Value =>
     stack(
       marginals.map((m, i) => m.cdf(coordinate(x, i))),

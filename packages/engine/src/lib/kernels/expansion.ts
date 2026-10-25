@@ -5,7 +5,7 @@
  * kernel_approximation), and the errors of the approximate Gram matrix.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type ContextOptions, resolveKey } from '../context/index.ts'
 import { fft, ifft } from '../numerics/fourier/index.ts'
 import { qr, svd, svdvals } from '../numerics/linalg/index.ts'
@@ -117,7 +117,7 @@ function spectralFrequencies(k: Key, kernel: Kernel, d: number, n: number): { we
     }
     case 'exponential':
       if (kernel.config['power'] !== 1)
-        throw new WhiteboxError('not-implemented', 'randomFourierFeatures: only the exponent 1 (Matérn 1/2) is sampled')
+        throw new MdmlError('not-implemented', 'randomFourierFeatures: only the exponent 1 (Matérn 1/2) is sampled')
       return { weights: studentT(1), scale: 1 }
     case 'rational-quadratic': {
       const alpha = item(primalOf(kernel.params['alpha'] as Value))
@@ -129,14 +129,14 @@ function spectralFrequencies(k: Key, kernel: Kernel, d: number, n: number): { we
       return { weights: frequencies(cauchy(foldIn(k, 2), [d, n])), scale: 1 }
     }
     default:
-      throw new WhiteboxError('not-implemented', `randomFourierFeatures: no spectral sampler for ${kernel.name}`)
+      throw new MdmlError('not-implemented', `randomFourierFeatures: no spectral sampler for ${kernel.name}`)
   }
 }
 
 function fourierMap(name: string, weights: Tensor<'float64'>, offset: Tensor<'float64'>, scale: number) {
   const n = offset.shape[0] ?? 0
   if (weights.shape.length !== 2 || weights.shape[1] !== n || offset.shape.length !== 1)
-    throw new WhiteboxError('shape', `${name}: weights [d, D] and offset [D]`)
+    throw new MdmlError('shape', `${name}: weights [d, D] and offset [D]`)
   const factor = Math.sqrt((2 * scale) / n)
   return {
     name,
@@ -159,13 +159,13 @@ function fourierMap(name: string, weights: Tensor<'float64'>, offset: Tensor<'fl
  *
  * @param options - Input dimension, number of features, kernel and key; or the draws.
  * @returns The feature map with its frequencies and phases.
- * @throws WhiteboxError `not-implemented` for a kernel without a spectral sampler.
+ * @throws MdmlError `not-implemented` for a kernel without a spectral sampler.
  * @concept random-features
  * @reference A. Rahimi and B. Recht, Random features for large-scale kernel machines (NeurIPS 2007).
  * @example
  * ```ts
- * import { randomFourierFeatures } from 'whitebox-engine/kernels'
- * import { key } from 'whitebox-engine/random'
+ * import { randomFourierFeatures } from 'mdml-engine/kernels'
+ * import { key } from 'mdml-engine/random'
  * randomFourierFeatures({ inputDim: 3, nComponents: 50, key: key(0) }).transform([[1, 2, 3]]).shape // => [1, 50]
  * ```
  */
@@ -203,8 +203,8 @@ export interface OrthogonalRandomOptions extends ContextOptions {
  * @reference F. X. Yu et al., Orthogonal random features (NeurIPS 2016).
  * @example
  * ```ts
- * import { orthogonalRandomFeatures } from 'whitebox-engine/kernels'
- * import { key } from 'whitebox-engine/random'
+ * import { orthogonalRandomFeatures } from 'mdml-engine/kernels'
+ * import { key } from 'mdml-engine/random'
  * orthogonalRandomFeatures({ inputDim: 2, nComponents: 5, key: key(1) }).weights.shape // => [2, 5]
  * ```
  */
@@ -259,7 +259,7 @@ export interface NystroemOptions extends ContextOptions {
  * @reference C. K. I. Williams and M. Seeger, Using the Nyström method to speed up kernel machines (NeurIPS 2001).
  * @example
  * ```ts
- * import { linearKernel, nystroem } from 'whitebox-engine/kernels'
+ * import { linearKernel, nystroem } from 'mdml-engine/kernels'
  * nystroem(linearKernel(), [[1, 0], [0, 1], [1, 1]], { indices: [0, 1] }).transform([[2, 3]]).shape // => [1, 2]
  * ```
  */
@@ -302,12 +302,12 @@ export interface AdditiveChi2Options {
  *
  * @param options - Steps and interval.
  * @returns The feature map.
- * @throws WhiteboxError `value` for more than 3 steps without an interval.
+ * @throws MdmlError `value` for more than 3 steps without an interval.
  * @concept random-features
  * @reference A. Vedaldi and A. Zisserman, Efficient additive kernels via explicit feature maps (TPAMI 2012).
  * @example
  * ```ts
- * import { additiveChi2Sampler } from 'whitebox-engine/kernels'
+ * import { additiveChi2Sampler } from 'mdml-engine/kernels'
  * additiveChi2Sampler({ sampleSteps: 2 }).transform([[1, 2, 0]]).shape // => [1, 9]
  * ```
  */
@@ -316,15 +316,15 @@ export function additiveChi2Sampler(options: AdditiveChi2Options = {}): FeatureM
   const defaults: Readonly<Record<number, number>> = { 1: 0.8, 2: 0.5, 3: 0.4 }
   const interval = options.sampleInterval ?? defaults[steps]
   if (!(Number.isInteger(steps) && steps >= 1))
-    throw new WhiteboxError('value', `additiveChi2Sampler: sampleSteps must be a positive integer, got ${steps}`)
+    throw new MdmlError('value', `additiveChi2Sampler: sampleSteps must be a positive integer, got ${steps}`)
   if (interval === undefined)
-    throw new WhiteboxError('value', 'additiveChi2Sampler: give sampleInterval for more than 3 sample steps')
+    throw new MdmlError('value', 'additiveChi2Sampler: give sampleInterval for more than 3 sample steps')
   return {
     name: 'additive-chi2',
     transform(x: TensorLike): Value {
       const { rows, single } = rowsOf(x, 'additiveChi2Sampler')
       if (isTensor(rows) && Array.from(rows.data).some((v) => v < 0))
-        throw new WhiteboxError('domain', 'additiveChi2Sampler: features must be non-negative')
+        throw new MdmlError('domain', 'additiveChi2Sampler: features must be non-negative')
       const nonzero = greater(rows, 0)
       const safe = where(nonzero, rows, 1)
       const blocks = [where(nonzero, sqrt(mul(safe, interval)), 0)]
@@ -370,8 +370,8 @@ export type SkewedChi2SamplerOptions =
  *   kernels (DAGM 2010).
  * @example
  * ```ts
- * import { skewedChi2Sampler } from 'whitebox-engine/kernels'
- * import { key } from 'whitebox-engine/random'
+ * import { skewedChi2Sampler } from 'mdml-engine/kernels'
+ * import { key } from 'mdml-engine/random'
  * skewedChi2Sampler({ inputDim: 2, nComponents: 8, key: key(0) }).transform([0.5, 1]).shape // => [8]
  * ```
  */
@@ -398,7 +398,7 @@ export function skewedChi2Sampler(options: SkewedChi2SamplerOptions): SkewedChi2
     transform(x: TensorLike): Value {
       const { rows, single } = rowsOf(x, 'skewedChi2Sampler')
       if (isTensor(rows) && Array.from(rows.data).some((v) => v <= -c))
-        throw new WhiteboxError('domain', `skewedChi2Sampler: features must exceed -${c}`)
+        throw new MdmlError('domain', `skewedChi2Sampler: features must exceed -${c}`)
       const projection = add(matmul(log(add(rows, c)), weights), offset)
       return finish(mul(cos(projection), Math.sqrt(2 / n)), single)
     },
@@ -441,13 +441,13 @@ function countSketchMatrix(index: readonly number[], signs: readonly number[], n
  *
  * @param options - Factor dimensions, sketch size and key; or the hashes.
  * @returns The sketch with its hashes.
- * @throws WhiteboxError `shape` when hashes and inputs disagree.
+ * @throws MdmlError `shape` when hashes and inputs disagree.
  * @concept random-features
  * @reference N. Pham and R. Pagh, Fast and scalable polynomial kernels via explicit feature maps (KDD 2013).
  * @example
  * ```ts
- * import { tensorSketch } from 'whitebox-engine/kernels'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { tensorSketch } from 'mdml-engine/kernels'
+ * import { toArray } from 'mdml-engine/tensor'
  * const t = tensorSketch({ indexHash: [[0, 1], [1, 0]], bitHash: [[1, 1], [1, -1]], nComponents: 2 })
  * toArray(t.sketch([[1, 2]], [[3, 4]])).map((r) => r.map(Math.round)) // => [[2, -5]]
  * ```
@@ -467,7 +467,7 @@ export function tensorSketch(options: TensorSketchOptions): TensorSketch {
     )
   }
   if (indexHash.length !== bitHash.length || indexHash.some((r, p) => r.length !== bitHash[p]?.length))
-    throw new WhiteboxError('shape', 'tensorSketch: indexHash and bitHash must have the same shape')
+    throw new MdmlError('shape', 'tensorSketch: indexHash and bitHash must have the same shape')
   const matrices = indexHash.map((r, p) => countSketchMatrix(r, bitHash[p] ?? [], n))
   return {
     indexHash,
@@ -475,7 +475,7 @@ export function tensorSketch(options: TensorSketchOptions): TensorSketch {
     nComponents: n,
     sketch(...xs: readonly TensorLike[]): Value {
       if (xs.length !== matrices.length)
-        throw new WhiteboxError('shape', `tensorSketch: expected ${matrices.length} inputs, got ${xs.length}`)
+        throw new MdmlError('shape', `tensorSketch: expected ${matrices.length} inputs, got ${xs.length}`)
       const parts = xs.map((x) => rowsOf(x, 'tensorSketch'))
       const spectra = parts.map((part, p) => fft(matmul(part.rows, matrices[p] as Value), undefined, -1))
       const product = spectra.slice(1).reduce((acc, z) => cMul(acc, z), spectra[0] as (typeof spectra)[number])
@@ -518,8 +518,8 @@ export type PolynomialCountSketchOptions = {
  * @reference N. Pham and R. Pagh, Fast and scalable polynomial kernels via explicit feature maps (KDD 2013).
  * @example
  * ```ts
- * import { polynomialCountSketch } from 'whitebox-engine/kernels'
- * import { key } from 'whitebox-engine/random'
+ * import { polynomialCountSketch } from 'mdml-engine/kernels'
+ * import { key } from 'mdml-engine/random'
  * polynomialCountSketch({ inputDim: 3, degree: 2, nComponents: 16, key: key(0) }).transform([[1, 2, 3]]).shape // => [1, 16]
  * ```
  */
@@ -560,7 +560,7 @@ export function polynomialCountSketch(options: PolynomialCountSketchOptions): Po
  * @concept random-features
  * @example
  * ```ts
- * import { additiveChi2Sampler, approximateGram } from 'whitebox-engine/kernels'
+ * import { additiveChi2Sampler, approximateGram } from 'mdml-engine/kernels'
  * approximateGram(additiveChi2Sampler(), [[1, 2], [2, 1]]).shape // => [2, 2]
  * ```
  */
@@ -589,18 +589,18 @@ export interface ApproximationError {
  * @param exact - The exact kernel matrix.
  * @param approximate - Its approximation (for example from {@link approximateGram}).
  * @returns The errors.
- * @throws WhiteboxError `shape` when the shapes differ.
+ * @throws MdmlError `shape` when the shapes differ.
  * @concept random-features
  * @example
  * ```ts
- * import { approximationError } from 'whitebox-engine/kernels'
+ * import { approximationError } from 'mdml-engine/kernels'
  * Math.round(approximationError([[2, 0], [0, 2]], [[1, 0], [0, 2]]).relative * 1e9) / 1e9 // => 0.353553391
  * ```
  */
 export function approximationError(exact: TensorLike, approximate: TensorLike): ApproximationError {
   const [a, b] = promoteFloat(exact, approximate) as [Value, Value]
   if (a.shape.join(',') !== b.shape.join(','))
-    throw new WhiteboxError('shape', 'approximationError: the matrices must have the same shape')
+    throw new MdmlError('shape', 'approximationError: the matrices must have the same shape')
   const diff = sub(a, b)
   const frobenius = Math.sqrt(item(sum(square(diff))))
   const scale = Math.sqrt(item(sum(square(a))))

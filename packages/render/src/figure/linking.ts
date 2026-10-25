@@ -38,7 +38,7 @@ export interface LinkStore {
  * @returns The store.
  * @example
  * ```ts
- * import { linkStore } from 'whitebox-render/figure'
+ * import { linkStore } from 'mdml-render/figure'
  * const link = linkStore()
  * link.set({ hover: 3 })
  * link.get().hover // => 3
@@ -72,7 +72,7 @@ export function linkStore(initial: Partial<LinkState> = {}): LinkStore {
  * @returns The new selection.
  * @example
  * ```ts
- * import { toggleSelection } from 'whitebox-render/figure'
+ * import { toggleSelection } from 'mdml-render/figure'
  * toggleSelection([1, 2], 2) // => [1]
  * toggleSelection([1], 3) // => [1, 3]
  * ```
@@ -89,7 +89,7 @@ export function toggleSelection(selection: readonly (string | number)[], item: s
  * @returns The indices of the points inside.
  * @example
  * ```ts
- * import { brushSelection } from 'whitebox-render/figure'
+ * import { brushSelection } from 'mdml-render/figure'
  * brushSelection([[0, 0], [1, 1], [2, 2]], { x: [0.5, 3] }) // => [1, 2]
  * ```
  */

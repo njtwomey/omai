@@ -3,7 +3,7 @@
  * manifolds such as the Swiss roll and tabular data.
  */
 
-import { diffusionMap as diffusionMapMethod } from 'whitebox-engine/methods/manifold'
+import { diffusionMap as diffusionMapMethod } from 'mdml-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 import { rowColours } from '../../../entry/slots.ts'

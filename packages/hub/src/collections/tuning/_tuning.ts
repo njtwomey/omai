@@ -1,9 +1,9 @@
 // The hub entry of a hyperparameter search (private to collections/tuning): the search's own settings as controls,
 // a run that reports the trials so far, and the views of the trials, the surface and the best-so-far curve.
-import { WhiteboxError } from 'whitebox-engine/base'
-import type { Estimator } from 'whitebox-engine/learn'
-import { type PrunerName, type SamplerName, tuneEstimator } from 'whitebox-engine/methods/tuning'
-import { choice, dict, int, type Space } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import type { Estimator } from 'mdml-engine/learn'
+import { type PrunerName, type SamplerName, tuneEstimator } from 'mdml-engine/methods/tuning'
+import { choice, dict, int, type Space } from 'mdml-engine/space'
 import { defineEntry, type HubEntry, type MethodRef, type ViewSlot } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 
@@ -47,7 +47,7 @@ export function tuningEntry(spec: TuningEntrySpec): HubEntry {
       pruner: choice(['none', 'median', 'halving'], { default: 'none', label: 'pruner' }),
     }),
     run: ({ data, params, key, progress }) => {
-      if (data === undefined) throw new WhiteboxError('value', `tuning/${spec.name}: needs a dataset`)
+      if (data === undefined) throw new MdmlError('value', `tuning/${spec.name}: needs a dataset`)
       const trials = Number(params['trials'])
       return tuneEstimator({
         estimator: spec.estimator,

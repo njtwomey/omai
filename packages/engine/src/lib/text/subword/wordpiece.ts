@@ -4,7 +4,7 @@
  * training.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { TracePolicy, Tracer } from '../../trace/index.ts'
 import { compareCodePoints } from '../_classes.ts'
 import { type BpeTrainingOptions, type SubwordToken, trainBpe } from './bpe.ts'
@@ -26,11 +26,11 @@ export interface WordPieceModel {
  * @param vocab - Token to id (or a token list, ids in order).
  * @param options - Unknown token, prefix and word length limit.
  * @returns The model.
- * @throws WhiteboxError with code `value` when the unknown token is not in the vocabulary.
+ * @throws MdmlError with code `value` when the unknown token is not in the vocabulary.
  * @concept wordpiece
  * @example
  * ```ts
- * import { wordPieceModel } from 'whitebox-engine/text/subword'
+ * import { wordPieceModel } from 'mdml-engine/text/subword'
  * wordPieceModel(['[UNK]', 'un', '##aff', '##able']).vocab.get('##able') // => 3
  * ```
  */
@@ -47,7 +47,7 @@ export function wordPieceModel(
     : new Map(vocab as ReadonlyMap<string, number>)
   const unkToken = options.unkToken ?? '[UNK]'
   if (!map.has(unkToken))
-    throw new WhiteboxError('value', `wordPieceModel: the unknown token ${unkToken} is not in the vocabulary`)
+    throw new MdmlError('value', `wordPieceModel: the unknown token ${unkToken} is not in the vocabulary`)
   return {
     vocab: map,
     unkToken,
@@ -67,7 +67,7 @@ export function wordPieceModel(
  * @concept wordpiece
  * @example
  * ```ts
- * import { wordPieceModel, wordPieceTokenize } from 'whitebox-engine/text/subword'
+ * import { wordPieceModel, wordPieceTokenize } from 'mdml-engine/text/subword'
  * const m = wordPieceModel(['[UNK]', 'un', '##aff', '##able', 'a'])
  * [wordPieceTokenize(m, 'unaffable').map((t) => t.token), wordPieceTokenize(m, 'unx').map((t) => t.token)] // => [['un', '##aff', '##able'], ['[UNK]']]
  * ```
@@ -123,7 +123,7 @@ export interface WordPieceTrainingOptions extends Omit<BpeTrainingOptions, 'endO
  * @concept wordpiece
  * @example
  * ```ts
- * import { trainWordPiece, wordPieceTokenize } from 'whitebox-engine/text/subword'
+ * import { trainWordPiece, wordPieceTokenize } from 'mdml-engine/text/subword'
  * const m = trainWordPiece(new Map([['hugging', 10], ['hug', 5], ['hugs', 6]]), { vocabSize: 14 })
  * wordPieceTokenize(m, 'hugs').map((t) => t.token) // => ['hug', '##s']
  * ```

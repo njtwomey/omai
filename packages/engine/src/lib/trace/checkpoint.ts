@@ -4,7 +4,7 @@
  * earlier checkpoint.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Algorithm, type RunOptions, type RunResult, runAlgorithm } from './algorithm.ts'
 import type { CheckpointEvent, Run } from './events.ts'
 import { policies, type TracePolicy } from './policy.ts'
@@ -16,10 +16,10 @@ import { policies, type TracePolicy } from './policy.ts'
  * @param n - The interval in steps (a positive integer).
  * @param policy - The policy to extend (default `minimal`).
  * @returns The policy with checkpoints on.
- * @throws WhiteboxError with code `value` when `n` is not a positive integer.
+ * @throws MdmlError with code `value` when `n` is not a positive integer.
  * @example
  * ```ts
- * import { checkpointEvery, recorder, runAlgorithm, type Algorithm } from 'whitebox-engine/trace'
+ * import { checkpointEvery, recorder, runAlgorithm, type Algorithm } from 'mdml-engine/trace'
  * const count: Algorithm<number> = {
  *   name: 'count', config: {}, init: () => 0, step: (s) => s + 1,
  *   serialise: (s) => s, deserialise: (j) => j as number,
@@ -30,7 +30,7 @@ import { policies, type TracePolicy } from './policy.ts'
  * ```
  */
 export function checkpointEvery(n: number, policy: TracePolicy = policies.minimal): TracePolicy {
-  if (!(Number.isInteger(n) && n > 0)) throw new WhiteboxError('value', 'checkpointEvery: n must be a positive integer')
+  if (!(Number.isInteger(n) && n > 0)) throw new MdmlError('value', 'checkpointEvery: n must be a positive integer')
   return { ...policy, checkpoints: true, checkpointInterval: n }
 }
 
@@ -42,10 +42,10 @@ export function checkpointEvery(n: number, policy: TracePolicy = policies.minima
  * @param checkpoint - A checkpoint event from a recorded run.
  * @param options - The original seed or key, and how many more steps to run.
  * @returns The continued run's result.
- * @throws WhiteboxError with code `value` when the algorithm cannot deserialise states.
+ * @throws MdmlError with code `value` when the algorithm cannot deserialise states.
  * @example
  * ```ts
- * import { resume, type Algorithm } from 'whitebox-engine/trace'
+ * import { resume, type Algorithm } from 'mdml-engine/trace'
  * const count: Algorithm<number> = {
  *   name: 'count', config: {}, init: () => 0, step: (s) => s + 1,
  *   serialise: (s) => s, deserialise: (j) => j as number,
@@ -59,7 +59,7 @@ export function resume<S>(
   options: Omit<RunOptions, 'start'>,
 ): RunResult<S> {
   if (algorithm.deserialise === undefined) {
-    throw new WhiteboxError('value', `resume: ${algorithm.name} does not deserialise states`)
+    throw new MdmlError('value', `resume: ${algorithm.name} does not deserialise states`)
   }
   return runAlgorithm(algorithm, {
     ...options,
@@ -76,15 +76,15 @@ export function resume<S>(
  * @param step - The step to reconstruct.
  * @param options - The original seed or key.
  * @returns The state at `step`.
- * @throws WhiteboxError with code `value` when no checkpoint at or before `step` exists.
+ * @throws MdmlError with code `value` when no checkpoint at or before `step` exists.
  * @example
  * ```ts
- * import { seek, type Algorithm } from 'whitebox-engine/trace'
+ * import { seek, type Algorithm } from 'mdml-engine/trace'
  * const count: Algorithm<number> = {
  *   name: 'count', config: {}, init: () => 0, step: (s) => s + 1,
  *   serialise: (s) => s, deserialise: (j) => j as number,
  * }
- * const run = { schema: 'whitebox.run/1' as const, events: [{ type: 'checkpoint' as const, runId: 'r', step: 4, state: 4 }] }
+ * const run = { schema: 'mdml.run/1' as const, events: [{ type: 'checkpoint' as const, runId: 'r', step: 4, state: 4 }] }
  * seek(count, run, 6, { seed: 0 }) // => 6
  * ```
  */
@@ -92,6 +92,6 @@ export function seek<S>(algorithm: Algorithm<S>, run: Run, step: number, options
   let best: CheckpointEvent | undefined
   for (const e of run.events)
     if (e.type === 'checkpoint' && e.step <= step && (best === undefined || e.step > best.step)) best = e
-  if (best === undefined) throw new WhiteboxError('value', `seek: no checkpoint at or before step ${step}`)
+  if (best === undefined) throw new MdmlError('value', `seek: no checkpoint at or before step ${step}`)
   return resume(algorithm, best, { ...options, maxSteps: step - best.step }).state
 }

@@ -4,10 +4,10 @@ scores (mean squared error, which scikit-learn reports negated), their ranks and
 
 import numpy as np
 import sklearn
+from mdml_oracle.fixture import Case, Json, case
+from mdml_oracle.helpers import rng
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import GridSearchCV
-from whitebox_oracle.fixture import Case, Json, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

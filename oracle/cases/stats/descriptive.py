@@ -4,9 +4,9 @@ import numpy as np
 import scipy
 import scipy.stats as st
 import statsmodels
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from statsmodels.stats.weightstats import DescrStatsW
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {
     "numpy": np.__version__,

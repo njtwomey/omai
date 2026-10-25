@@ -4,7 +4,7 @@
  * repeats, constant padding, and `slidingWindowView` with step and dilation.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { batchAtFront, batchedAxis, moveBatchAxis } from '../batching.ts'
 import { cpu } from '../cpu.ts'
 import { resultType } from '../dtype.ts'
@@ -157,10 +157,10 @@ function zerosOf(x: Value): Value {
  * @param x - Input.
  * @param shape - The new shape.
  * @returns The reshaped value.
- * @throws WhiteboxError with code `shape` when sizes differ.
+ * @throws MdmlError with code `shape` when sizes differ.
  * @example
  * ```ts
- * import { reshape, arange } from 'whitebox-engine/tensor'
+ * import { reshape, arange } from 'mdml-engine/tensor'
  * reshape(arange(0, 6), [2, -1]).shape // => [2, 3]
  * ```
  */
@@ -168,11 +168,11 @@ export function reshape(x: TensorLike, shape: Shape): Value {
   const v = val(x)
   const total = sizeOf(v.shape)
   const known = shape.filter((n) => n !== -1)
-  if (shape.length - known.length > 1) throw new WhiteboxError('shape', 'reshape: at most one axis may be -1')
+  if (shape.length - known.length > 1) throw new MdmlError('shape', 'reshape: at most one axis may be -1')
   const knownSize = sizeOf(known)
   const resolved = shape.map((n) => (n === -1 ? total / knownSize : n))
   if (sizeOf(resolved) !== total || resolved.some((n) => !Number.isInteger(n) || n < 0)) {
-    throw new WhiteboxError('shape', `reshape: cannot view ${formatShape(v.shape)} as ${formatShape(shape)}`, {
+    throw new MdmlError('shape', `reshape: cannot view ${formatShape(v.shape)} as ${formatShape(shape)}`, {
       from: v.shape,
       to: shape,
     })
@@ -188,7 +188,7 @@ export function reshape(x: TensorLike, shape: Shape): Value {
  * @returns A 1-D value.
  * @example
  * ```ts
- * import { flatten, tensor } from 'whitebox-engine/tensor'
+ * import { flatten, tensor } from 'mdml-engine/tensor'
  * flatten(tensor([[1, 2], [3, 4]])).shape // => [4]
  * ```
  */
@@ -204,7 +204,7 @@ export function flatten(x: TensorLike): Value {
  * @returns The transposed value.
  * @example
  * ```ts
- * import { transpose, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { transpose, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(transpose(tensor([[1, 2, 3]]))) // => [[1], [2], [3]]
  * ```
  */
@@ -225,7 +225,7 @@ export function transpose(x: TensorLike, perm?: readonly number[]): Value {
  * @returns The value with the axes swapped.
  * @example
  * ```ts
- * import { swapaxes, zeros } from 'whitebox-engine/tensor'
+ * import { swapaxes, zeros } from 'mdml-engine/tensor'
  * swapaxes(zeros([2, 3, 4]), 0, 2).shape // => [4, 3, 2]
  * ```
  */
@@ -249,7 +249,7 @@ export function swapaxes(x: TensorLike, a: number, b: number): Value {
  * @returns The value with the axis moved.
  * @example
  * ```ts
- * import { moveaxis, zeros } from 'whitebox-engine/tensor'
+ * import { moveaxis, zeros } from 'mdml-engine/tensor'
  * moveaxis(zeros([2, 3, 4]), 0, -1).shape // => [3, 4, 2]
  * ```
  */
@@ -271,7 +271,7 @@ export function moveaxis(x: TensorLike, source: number, destination: number): Va
  * @returns The expanded value.
  * @example
  * ```ts
- * import { expandDims, zeros } from 'whitebox-engine/tensor'
+ * import { expandDims, zeros } from 'mdml-engine/tensor'
  * expandDims(zeros([3]), 0).shape // => [1, 3]
  * ```
  */
@@ -289,10 +289,10 @@ export function expandDims(x: TensorLike, axis: number): Value {
  * @param x - Input.
  * @param axis - Axes to remove; each must have length 1.
  * @returns The squeezed value.
- * @throws WhiteboxError with code `shape` when a named axis does not have length 1.
+ * @throws MdmlError with code `shape` when a named axis does not have length 1.
  * @example
  * ```ts
- * import { squeeze, zeros } from 'whitebox-engine/tensor'
+ * import { squeeze, zeros } from 'mdml-engine/tensor'
  * squeeze(zeros([1, 3, 1])).shape // => [3]
  * ```
  */
@@ -304,7 +304,7 @@ export function squeeze(x: TensorLike, axis?: number | readonly number[]): Value
       ? v.shape.map((n, i) => (n === 1 ? i : -1)).filter((i) => i >= 0)
       : (typeof axis === 'number' ? [axis] : axis).map((a) => normaliseAxis(a, rank))
   for (const a of axes) {
-    if (v.shape[a] !== 1) throw new WhiteboxError('shape', `squeeze: axis ${a} has length ${v.shape[a]}, not 1`)
+    if (v.shape[a] !== 1) throw new MdmlError('shape', `squeeze: axis ${a} has length ${v.shape[a]}, not 1`)
   }
   return reshape(
     v,
@@ -318,10 +318,10 @@ export function squeeze(x: TensorLike, axis?: number | readonly number[]): Value
  * @param x - Input.
  * @param shape - A shape `x` broadcasts to.
  * @returns The broadcast value.
- * @throws WhiteboxError with code `shape` when `x` does not broadcast to `shape`.
+ * @throws MdmlError with code `shape` when `x` does not broadcast to `shape`.
  * @example
  * ```ts
- * import { broadcastTo, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { broadcastTo, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(broadcastTo(tensor([1, 2]), [2, 2])) // => [[1, 2], [1, 2]]
  * ```
  */
@@ -330,7 +330,7 @@ export function broadcastTo(x: TensorLike, shape: Shape): Value {
   if (shapesEqual(v.shape, shape)) return v
   const target = broadcastShapes(v.shape, shape)
   if (!shapesEqual(target, shape)) {
-    throw new WhiteboxError('shape', `cannot broadcast ${formatShape(v.shape)} to ${formatShape(shape)}`)
+    throw new MdmlError('shape', `cannot broadcast ${formatShape(v.shape)} to ${formatShape(shape)}`)
   }
   return bind1(broadcastPrimitive, [v], { shape: [...shape] })
 }
@@ -343,7 +343,7 @@ export function broadcastTo(x: TensorLike, shape: Shape): Value {
  * @returns A value with exactly `shape`.
  * @example
  * ```ts
- * import { sumToShape, ones, toArray } from 'whitebox-engine/tensor'
+ * import { sumToShape, ones, toArray } from 'mdml-engine/tensor'
  * toArray(sumToShape(ones([3, 2]), [2])) // => [3, 3]
  * ```
  */
@@ -364,22 +364,22 @@ export function sumToShape(x: TensorLike, shape: Shape): Value {
  * @param xs - Values with equal shapes except along `axis`.
  * @param axis - The axis (default 0).
  * @returns The concatenation.
- * @throws WhiteboxError with code `shape` when shapes disagree off the axis.
+ * @throws MdmlError with code `shape` when shapes disagree off the axis.
  * @example
  * ```ts
- * import { concat, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { concat, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(concat([tensor([1, 2]), tensor([3])])) // => [1, 2, 3]
  * ```
  */
 export function concat(xs: readonly TensorLike[], axis = 0): Value {
   const vs = xs.map(val)
   const first = vs[0]
-  if (first === undefined) throw new WhiteboxError('value', 'concat: need at least one value')
+  if (first === undefined) throw new MdmlError('value', 'concat: need at least one value')
   const a = normaliseAxis(axis, first.shape.length)
   const dtype = vs.reduce((d, v) => resultType(d, v.dtype), first.dtype)
   for (const v of vs) {
     if (v.shape.length !== first.shape.length || v.shape.some((n, i) => i !== a && n !== first.shape[i])) {
-      throw new WhiteboxError(
+      throw new MdmlError(
         'shape',
         `concat: ${formatShape(v.shape)} does not match ${formatShape(first.shape)} off axis ${a}`,
       )
@@ -397,7 +397,7 @@ export function concat(xs: readonly TensorLike[], axis = 0): Value {
  * @returns The stack.
  * @example
  * ```ts
- * import { stack, tensor } from 'whitebox-engine/tensor'
+ * import { stack, tensor } from 'mdml-engine/tensor'
  * stack([tensor([1, 2]), tensor([3, 4])]).shape // => [2, 2]
  * ```
  */
@@ -418,7 +418,7 @@ export function stack(xs: readonly TensorLike[], axis = 0): Value {
  * @returns The slice.
  * @example
  * ```ts
- * import { sliceAxis, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { sliceAxis, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(sliceAxis(tensor([[1, 2, 3]]), 1, 1, 3)) // => [[2, 3]]
  * ```
  */
@@ -439,10 +439,10 @@ export function sliceAxis(x: TensorLike, axis: number, start: number, stop: numb
  * @param sections - A number of equal sections, or the indices at which to split.
  * @param axis - The axis (default 0).
  * @returns The pieces.
- * @throws WhiteboxError with code `shape` when equal sections do not divide the axis.
+ * @throws MdmlError with code `shape` when equal sections do not divide the axis.
  * @example
  * ```ts
- * import { split, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { split, tensor, toArray } from 'mdml-engine/tensor'
  * split(tensor([1, 2, 3, 4]), 2).map(toArray) // => [[1, 2], [3, 4]]
  * split(tensor([1, 2, 3, 4]), [1]).map(toArray) // => [[1], [2, 3, 4]]
  * ```
@@ -453,7 +453,7 @@ export function split(x: TensorLike, sections: number | readonly number[], axis 
   const n = v.shape[a] ?? 0
   let cuts: number[]
   if (typeof sections === 'number') {
-    if (n % sections !== 0) throw new WhiteboxError('shape', `split: ${sections} sections do not divide length ${n}`)
+    if (n % sections !== 0) throw new MdmlError('shape', `split: ${sections} sections do not divide length ${n}`)
     cuts = Array.from({ length: sections - 1 }, (_, i) => ((i + 1) * n) / sections)
   } else cuts = [...sections]
   const bounds = [0, ...cuts, n]
@@ -469,7 +469,7 @@ export function split(x: TensorLike, sections: number | readonly number[], axis 
  * @returns The chunks.
  * @example
  * ```ts
- * import { chunk, arange } from 'whitebox-engine/tensor'
+ * import { chunk, arange } from 'mdml-engine/tensor'
  * chunk(arange(0, 5), 2).map((c) => c.shape[0]) // => [3, 2]
  * ```
  */
@@ -491,7 +491,7 @@ export function chunk(x: TensorLike, n: number, axis = 0): Value[] {
  * @returns The flipped value.
  * @example
  * ```ts
- * import { flip, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { flip, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(flip(tensor([1, 2, 3]))) // => [3, 2, 1]
  * ```
  */
@@ -519,7 +519,7 @@ export function flip(x: TensorLike, axis?: number | readonly number[]): Value {
  * @returns The rolled value.
  * @example
  * ```ts
- * import { roll, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { roll, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(roll(tensor([1, 2, 3, 4]), 1)) // => [4, 1, 2, 3]
  * ```
  */
@@ -541,7 +541,7 @@ export function roll(x: TensorLike, shift: number, axis?: number): Value {
  * @returns The tiled value.
  * @example
  * ```ts
- * import { tile, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { tile, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(tile(tensor([1, 2]), [2])) // => [1, 2, 1, 2]
  * ```
  */
@@ -568,7 +568,7 @@ export function tile(x: TensorLike, reps: readonly number[]): Value {
  * @returns The value with elements repeated.
  * @example
  * ```ts
- * import { repeat, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { repeat, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(repeat(tensor([1, 2]), 2)) // => [1, 1, 2, 2]
  * ```
  */
@@ -593,14 +593,14 @@ export function repeat(x: TensorLike, repeats: number | readonly number[], axis?
  * @returns The padded value.
  * @example
  * ```ts
- * import { pad, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { pad, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(pad(tensor([1, 2]), [[1, 2]])) // => [0, 1, 2, 0, 0]
  * ```
  */
 export function pad(x: TensorLike, widths: readonly (readonly [number, number])[], value = 0): Value {
   const v = val(x)
   const all = widths.length === 1 ? v.shape.map(() => widths[0] as readonly [number, number]) : widths
-  if (all.length !== v.shape.length) throw new WhiteboxError('shape', `pad: need ${v.shape.length} width pairs`)
+  if (all.length !== v.shape.length) throw new MdmlError('shape', `pad: need ${v.shape.length} width pairs`)
   return bind1(padPrimitive, [v], { widths: all, value })
 }
 
@@ -624,10 +624,10 @@ export interface SlidingWindowOptions {
  * @param windowShape - The window length, or one per axis.
  * @param options - Axes, steps and dilations.
  * @returns The windows: the shape of x with each window axis replaced by its count, then the window lengths.
- * @throws WhiteboxError with code `value` when a window does not fit.
+ * @throws MdmlError with code `value` when a window does not fit.
  * @example
  * ```ts
- * import { slidingWindowView, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { slidingWindowView, tensor, toArray } from 'mdml-engine/tensor'
  * toArray(slidingWindowView(tensor([0, 1, 2, 3, 4]), 3)) // => [[0, 1, 2], [1, 2, 3], [2, 3, 4]]
  * toArray(slidingWindowView(tensor([0, 1, 2, 3, 4, 5]), 2, { step: 2, dilation: 3 })) // => [[0, 3], [2, 5]]
  * ```
@@ -647,7 +647,7 @@ export function slidingWindowView(
         ? [options.axis]
         : options.axis
   if (rawAxes.length !== windows.length)
-    throw new WhiteboxError('shape', 'slidingWindowView: need one axis per window length')
+    throw new MdmlError('shape', 'slidingWindowView: need one axis per window length')
   const per = (o: number | readonly number[] | undefined, i: number): number =>
     o === undefined ? 1 : typeof o === 'number' ? o : (o[i] ?? 1)
   for (const [i, w] of windows.entries()) {
@@ -665,10 +665,9 @@ export function slidingWindowView(
         dilation >= 1
       )
     )
-      throw new WhiteboxError('value', 'slidingWindowView: window, step and dilation must be positive integers')
+      throw new MdmlError('value', 'slidingWindowView: window, step and dilation must be positive integers')
     const span = dilation * (w - 1) + 1
-    if (span > n)
-      throw new WhiteboxError('value', `slidingWindowView: a window spanning ${span} exceeds axis length ${n}`)
+    if (span > n) throw new MdmlError('value', `slidingWindowView: a window spanning ${span} exceeds axis length ${n}`)
     const count = Math.floor((n - span) / step) + 1
     const idx = new Int32Array(count * w)
     for (let k = 0; k < count; k++) for (let j = 0; j < w; j++) idx[k * w + j] = k * step + j * dilation

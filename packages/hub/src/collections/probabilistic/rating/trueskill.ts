@@ -3,8 +3,8 @@
  * tournaments.
  */
 
-import { trueSkillRatings } from 'whitebox-engine/methods/models'
-import { dict, real } from 'whitebox-engine/space'
+import { trueSkillRatings } from 'mdml-engine/methods/models'
+import { dict, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { comparisonsOf } from './_rating.ts'
 

@@ -6,9 +6,9 @@ import pandas as pd
 import pingouin as pg
 import scipy.stats as st
 import statsmodels
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from statsmodels.multivariate.manova import MANOVA
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"pingouin": pg.__version__, "statsmodels": statsmodels.__version__}
 

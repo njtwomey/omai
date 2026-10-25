@@ -6,8 +6,8 @@ import hmmlearn
 import numpy as np
 import numpy.typing as npt
 from hmmlearn.hmm import CategoricalHMM, GaussianHMM
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng, spd
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng, spd
 
 REFERENCE: dict[str, str] = {"hmmlearn": hmmlearn.__version__}
 

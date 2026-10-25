@@ -34,10 +34,10 @@ export interface ExplanationQuality {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when a metric or the agreement matrix does not have one entry per explainer.
+ * @throws MdmlError `shape` when a metric or the agreement matrix does not have one entry per explainer.
  * @example
  * ```ts
- * import { explanationQuality } from 'whitebox-engine/exposition'
+ * import { explanationQuality } from 'mdml-engine/exposition'
  * const r = explanationQuality({ explainers: ['SHAP', 'LIME'], metrics: [{ name: 'deletion AUC', category: 'faithfulness', values: [0.2, 0.3], better: 'lower' }] })
  * r.metrics[0].values.length // => 2
  * ```

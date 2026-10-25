@@ -7,10 +7,10 @@ from collections.abc import Hashable
 from typing import cast
 
 import pgmpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.pgm import NETWORKS, NodeSpec, checked, definition, exact_posterior, ordered, pgmpy_model
 from pgmpy.factors.discrete import DiscreteFactor
 from pgmpy.inference import CausalInference
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.pgm import NETWORKS, NodeSpec, checked, definition, exact_posterior, ordered, pgmpy_model
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

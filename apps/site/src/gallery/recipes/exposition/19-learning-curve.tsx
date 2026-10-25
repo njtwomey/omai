@@ -1,10 +1,10 @@
+import { breastCancer } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { learningCurve } from 'mdml-engine/learn/model-selection'
+import { decisionTreeClassifier } from 'mdml-engine/methods/trees'
+import { key } from 'mdml-engine/random'
+import { ControlPanel, LearningCurveView, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { breastCancer } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { learningCurve } from 'whitebox-engine/learn/model-selection'
-import { decisionTreeClassifier } from 'whitebox-engine/methods/trees'
-import { key } from 'whitebox-engine/random'
-import { ControlPanel, LearningCurveView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

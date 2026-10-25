@@ -1,7 +1,7 @@
 /**
  * Evolutionary computation: genetic algorithms, evolution strategies and genetic programming with their selection,
  * crossover and mutation operators, and quality-diversity search (MAP-Elites, novelty search). Part of
- * `whitebox-engine/search`.
+ * `mdml-engine/search`.
  *
  * @inline
  */

@@ -1,11 +1,11 @@
+import { breastCancer } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { gridSearchCV, randomizedSearchCV } from 'mdml-engine/learn/model-selection'
+import { standardScaler } from 'mdml-engine/learn/preprocessing'
+import { kNeighborsClassifier } from 'mdml-engine/methods/neighbours'
+import { key } from 'mdml-engine/random'
+import { Choice, ControlPanel, NumberField, SearchTrialsView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { breastCancer } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { gridSearchCV, randomizedSearchCV } from 'whitebox-engine/learn/model-selection'
-import { standardScaler } from 'whitebox-engine/learn/preprocessing'
-import { kNeighborsClassifier } from 'whitebox-engine/methods/neighbours'
-import { key } from 'whitebox-engine/random'
-import { Choice, ControlPanel, NumberField, SearchTrialsView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

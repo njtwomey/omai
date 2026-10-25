@@ -1,4 +1,4 @@
-"""Shared settings for the oracle: paths, read from flags, environment variables (WHITEBOX_*) and the root `.env`."""
+"""Shared settings for the oracle: paths, read from flags, environment variables (MDML_*) and the root `.env`."""
 
 from pathlib import Path
 

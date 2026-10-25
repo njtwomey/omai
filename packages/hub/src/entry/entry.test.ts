@@ -1,5 +1,5 @@
+import { dict } from 'mdml-engine/space'
 import { describe, expect, it } from 'vitest'
-import { dict } from 'whitebox-engine/space'
 import { catalogue } from '../catalogue/index.ts'
 import { buildCatalogue, defineEntry, type HubEntry } from './entry.ts'
 import { datasetState, demoState, runDemo } from './run.ts'

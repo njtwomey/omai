@@ -5,7 +5,7 @@
  * that distinguishes them.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Graph, transitionMatrix } from '../graph/index.ts'
 import { lbinom } from '../numerics/special/index.ts'
 import { foldIn, type Key, normal, randint, uniform } from '../random/index.ts'
@@ -32,7 +32,7 @@ import { simulateChain } from './markov-chains.ts'
 import { type History, historyArray, type Paths, simulatePaths, type TraceOptions } from './paths.ts'
 
 function integerSteps(steps: number, where: string): number {
-  if (!(Number.isInteger(steps) && steps >= 0)) throw new WhiteboxError('value', `${where}: steps must be >= 0`)
+  if (!(Number.isInteger(steps) && steps >= 0)) throw new MdmlError('value', `${where}: steps must be >= 0`)
   return steps
 }
 
@@ -61,16 +61,16 @@ export interface WalkOptions extends TraceOptions {
  * @concept random-walks
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { simpleRandomWalk } from 'whitebox-engine/stochastic'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { key } from 'mdml-engine/random'
+ * import { simpleRandomWalk } from 'mdml-engine/stochastic'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(simpleRandomWalk(key(0), 10, { p: 1 }).values).at(-1) // => 10
  * ```
  */
 export function simpleRandomWalk(key: Key, steps: number, options: WalkOptions = {}): Paths {
   integerSteps(steps, 'simpleRandomWalk')
   const p = options.p ?? 0.5
-  if (!(p >= 0 && p <= 1)) throw new WhiteboxError('value', 'simpleRandomWalk: p must be in [0, 1]')
+  if (!(p >= 0 && p <= 1)) throw new MdmlError('value', 'simpleRandomWalk: p must be in [0, 1]')
   const paths = positiveInteger(options.paths ?? 1, 'paths', 'simpleRandomWalk')
   return simulatePaths(
     key,
@@ -99,8 +99,8 @@ export function simpleRandomWalk(key: Key, steps: number, options: WalkOptions =
  * @concept random-walks
  * @example
  * ```ts
- * import { simpleWalkPmf } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { simpleWalkPmf } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(simpleWalkPmf([-2, -1, 0, 2], 2)).map((v) => Math.round(v * 1e12) / 1e12) // => [0.25, 0, 0.5, 0.25]
  * ```
  */
@@ -134,8 +134,8 @@ export function simpleWalkPmf(k: TensorLike, steps: number, p: TensorLike = 0.5)
  * @concept random-walks
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { latticeWalk } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { latticeWalk } from 'mdml-engine/stochastic'
  * latticeWalk(key(0), 5, { dim: 3, paths: 2 }).values.shape // => [2, 6, 3]
  * ```
  */
@@ -182,9 +182,9 @@ export function latticeWalk(
  * @concept random-walks-on-graphs
  * @example
  * ```ts
- * import { cycleGraph } from 'whitebox-engine/graph'
- * import { key } from 'whitebox-engine/random'
- * import { graphRandomWalk } from 'whitebox-engine/stochastic'
+ * import { cycleGraph } from 'mdml-engine/graph'
+ * import { key } from 'mdml-engine/random'
+ * import { graphRandomWalk } from 'mdml-engine/stochastic'
  * graphRandomWalk(key(0), cycleGraph(5), 0, 8, { paths: 3 }).values.shape // => [3, 9]
  * ```
  */
@@ -212,18 +212,18 @@ export function graphRandomWalk(
  * @param g - An undirected graph without isolated nodes.
  * @param options - `weighted` (default true).
  * @returns pi `[n]`.
- * @throws WhiteboxError with code `value` for a directed graph or an isolated node.
+ * @throws MdmlError with code `value` for a directed graph or an isolated node.
  * @concept random-walks-on-graphs
  * @example
  * ```ts
- * import { starGraph } from 'whitebox-engine/graph'
- * import { graphWalkStationary } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { starGraph } from 'mdml-engine/graph'
+ * import { graphWalkStationary } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(graphWalkStationary(starGraph(3))) // => [0.5, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666]
  * ```
  */
 export function graphWalkStationary(g: Graph, options: { readonly weighted?: boolean } = {}): Tensor<'float64'> {
-  if (g.directed) throw new WhiteboxError('value', 'graphWalkStationary: needs an undirected graph')
+  if (g.directed) throw new MdmlError('value', 'graphWalkStationary: needs an undirected graph')
   const weighted = options.weighted ?? true
   const d = new Float64Array(g.n)
   for (const e of g.edges) {
@@ -233,7 +233,7 @@ export function graphWalkStationary(g: Graph, options: { readonly weighted?: boo
   }
   let total = 0
   for (const v of d) {
-    if (!(v > 0)) throw new WhiteboxError('value', 'graphWalkStationary: isolated nodes have no stationary mass')
+    if (!(v > 0)) throw new MdmlError('value', 'graphWalkStationary: isolated nodes have no stationary mass')
     total += v
   }
   return vector(Array.from(d, (v) => v / total))
@@ -264,8 +264,8 @@ export interface SelfAvoidingWalks {
  *   chains, J. Chem. Phys. 23 (1955).
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { selfAvoidingWalks } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { selfAvoidingWalks } from 'mdml-engine/stochastic'
  * Array.from(selfAvoidingWalks(key(0), 2, { walks: 3 }).weights) // => [12, 12, 12]
  * ```
  */
@@ -320,7 +320,7 @@ export interface SelfAvoidingState {
  * @concept self-avoiding-walks
  * @example
  * ```ts
- * import { selfAvoidingWalkAlgorithm } from 'whitebox-engine/stochastic'
+ * import { selfAvoidingWalkAlgorithm } from 'mdml-engine/stochastic'
  * selfAvoidingWalkAlgorithm(2, 10).name // => 'rosenbluth'
  * ```
  */
@@ -381,11 +381,11 @@ export function selfAvoidingWalkAlgorithm(dim: number, walks: number): Algorithm
  * @param steps - The walk length (at most 16 in two dimensions, the enumeration being exponential).
  * @param dim - The dimension (default 2).
  * @returns c_n.
- * @throws WhiteboxError with code `value` when the enumeration would be too large.
+ * @throws MdmlError with code `value` when the enumeration would be too large.
  * @concept self-avoiding-walks
  * @example
  * ```ts
- * import { countSelfAvoidingWalks } from 'whitebox-engine/stochastic'
+ * import { countSelfAvoidingWalks } from 'mdml-engine/stochastic'
  * [0, 1, 2, 3, 4, 5].map((n) => countSelfAvoidingWalks(n)) // => [1, 4, 12, 36, 100, 284]
  * ```
  */
@@ -393,7 +393,7 @@ export function countSelfAvoidingWalks(steps: number, dim = 2): number {
   integerSteps(steps, 'countSelfAvoidingWalks')
   positiveInteger(dim, 'dim', 'countSelfAvoidingWalks')
   if (steps * Math.log(2 * dim - 1) > 16 * Math.log(3) + 1e-9) {
-    throw new WhiteboxError('value', 'countSelfAvoidingWalks: too many walks to enumerate')
+    throw new MdmlError('value', 'countSelfAvoidingWalks: too many walks to enumerate')
   }
   const visited = new Set<string>()
   const site = new Array<number>(dim).fill(0)
@@ -442,8 +442,8 @@ export interface LevyFlightOptions extends TraceOptions {
  * @concept levy-flights
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { levyFlight } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { levyFlight } from 'mdml-engine/stochastic'
  * levyFlight(key(0), 20, { alpha: 1.2, paths: 2 }).values.shape // => [2, 21, 2]
  * ```
  */
@@ -451,7 +451,7 @@ export function levyFlight(key: Key, steps: number, options: LevyFlightOptions =
   integerSteps(steps, 'levyFlight')
   const alpha = options.alpha ?? 1.5
   const scale = options.scale ?? 1
-  if (!(alpha > 0 && scale > 0)) throw new WhiteboxError('value', 'levyFlight: alpha and scale must be positive')
+  if (!(alpha > 0 && scale > 0)) throw new MdmlError('value', 'levyFlight: alpha and scale must be positive')
   const dim = positiveInteger(options.dim ?? 2, 'dim', 'levyFlight')
   const paths = positiveInteger(options.paths ?? 1, 'paths', 'levyFlight')
   return simulatePaths(
@@ -499,19 +499,19 @@ export interface GamblersRuin {
  * @param n - The target.
  * @param p - The probability of winning a round (default 1/2).
  * @returns The win and ruin probabilities and the expected duration.
- * @throws WhiteboxError with code `value` for invalid arguments.
+ * @throws MdmlError with code `value` for invalid arguments.
  * @concept gamblers-ruin
  * @example
  * ```ts
- * import { gamblersRuin } from 'whitebox-engine/stochastic'
+ * import { gamblersRuin } from 'mdml-engine/stochastic'
  * gamblersRuin(3, 10) // => { winProbability: 0.3, ruinProbability: 0.7, expectedDuration: 21 }
  * ```
  */
 export function gamblersRuin(i: number, n: number, p = 0.5): GamblersRuin {
   if (!(Number.isInteger(n) && n >= 1 && Number.isInteger(i) && i >= 0 && i <= n)) {
-    throw new WhiteboxError('value', 'gamblersRuin: need integers 0 <= i <= n, n >= 1')
+    throw new MdmlError('value', 'gamblersRuin: need integers 0 <= i <= n, n >= 1')
   }
-  if (!(p > 0 && p < 1)) throw new WhiteboxError('value', 'gamblersRuin: p must be in (0, 1)')
+  if (!(p > 0 && p < 1)) throw new MdmlError('value', 'gamblersRuin: p must be in (0, 1)')
   const q = 1 - p
   if (Math.abs(p - q) < 1e-12) {
     const win = i / n
@@ -541,7 +541,7 @@ export interface RuinState {
  * @concept gamblers-ruin
  * @example
  * ```ts
- * import { gamblersRuinAlgorithm } from 'whitebox-engine/stochastic'
+ * import { gamblersRuinAlgorithm } from 'mdml-engine/stochastic'
  * gamblersRuinAlgorithm(2, 4, 0.5, 10).name // => 'gamblers-ruin'
  * ```
  */
@@ -584,12 +584,12 @@ export function gamblersRuinAlgorithm(i: number, n: number, p: number, gamblers:
  * @param p - The probability of winning a round (default 1/2).
  * @param options - Gamblers (default 1000), the round cap (default 100000) and tracing.
  * @returns Whether each gambler won and how many rounds each played.
- * @throws WhiteboxError with code `convergence` when some gambler is still playing at the cap.
+ * @throws MdmlError with code `convergence` when some gambler is still playing at the cap.
  * @concept gamblers-ruin
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { simulateGamblersRuin } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { simulateGamblersRuin } from 'mdml-engine/stochastic'
  * Array.from(simulateGamblersRuin(key(0), 1, 2, 0.5, { gamblers: 3 }).rounds) // => [1, 1, 1]
  * ```
  */
@@ -607,7 +607,7 @@ export function simulateGamblersRuin(
     maxSteps: cap,
   })
   if (r.status !== 'completed' || r.state.fortunes.some((f) => f > 0 && f < n)) {
-    throw new WhiteboxError('convergence', `simulateGamblersRuin: games still running after ${cap} rounds`)
+    throw new MdmlError('convergence', `simulateGamblersRuin: games still running after ${cap} rounds`)
   }
   return { won: Uint8Array.from(r.state.fortunes, (f) => (f === n ? 1 : 0)), rounds: r.state.rounds }
 }
@@ -621,7 +621,7 @@ export function simulateGamblersRuin(
  * @concept random-walks
  * @example
  * ```ts
- * import { meanSquaredDisplacement } from 'whitebox-engine/stochastic'
+ * import { meanSquaredDisplacement } from 'mdml-engine/stochastic'
  * Array.from(meanSquaredDisplacement({ times: Float64Array.from([0, 1, 2]), values: [[0, 1, 2], [0, -1, 0]] })) // => [0, 1, 2]
  * ```
  */

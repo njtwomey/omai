@@ -3,7 +3,7 @@
  * manifolds such as the Swiss roll.
  */
 
-import { isomap as isomapMethod } from 'whitebox-engine/methods/manifold'
+import { isomap as isomapMethod } from 'mdml-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 import { rowColours } from '../../../entry/slots.ts'

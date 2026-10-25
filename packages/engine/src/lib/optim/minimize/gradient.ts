@@ -4,7 +4,7 @@
  * and Dai-Yuan choices), and coordinate descent with cyclic, random or greedy order.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, dscal, idamax } from '../../numerics/linalg/index.ts'
 import { permutation } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
@@ -64,8 +64,8 @@ export interface GradientDescentState extends VectorState {
  * @concept gradient-descent
  * @example
  * ```ts
- * import { gradientDescentAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { gradientDescentAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * gradientDescentAlgorithm((x: Value) => sum(square(x)), [1, 2]).name // => 'gradientDescent'
  * ```
  */
@@ -172,8 +172,8 @@ function gradientDescentOn(obj: FlatObjective, options: GradientDescentOptions):
  * @concept gradient-descent
  * @example
  * ```ts
- * import { gradientDescent } from 'whitebox-engine/optim'
- * import { square, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { gradientDescent } from 'mdml-engine/optim'
+ * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
  * gradientDescent((x: Value) => sum(square(sub(x, 2))), [0, 0], { step: 'bb1' }).converged // => true
  * ```
  */
@@ -244,8 +244,8 @@ function betaOf(kind: ConjugateGradientBeta, g: Float64Array, gNew: Float64Array
  * @concept conjugate-gradient
  * @example
  * ```ts
- * import { conjugateGradientAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { conjugateGradientAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * conjugateGradientAlgorithm((x: Value) => sum(square(x)), [1, 2]).name // => 'conjugateGradient'
  * ```
  */
@@ -362,8 +362,8 @@ function conjugateGradientOn(obj: FlatObjective, options: ConjugateGradientOptio
  * @concept conjugate-gradient
  * @example
  * ```ts
- * import { conjugateGradient } from 'whitebox-engine/optim'
- * import { square, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { conjugateGradient } from 'mdml-engine/optim'
+ * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
  * conjugateGradient((x: Value) => sum(square(sub(x, 2))), [0, 0, 0]).steps // => 1
  * ```
  */
@@ -410,8 +410,8 @@ export interface CoordinateDescentState extends VectorState {
  * @concept coordinate-descent
  * @example
  * ```ts
- * import { coordinateDescentAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { coordinateDescentAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * coordinateDescentAlgorithm((x: Value) => sum(square(x)), [1, 2]).name // => 'coordinateDescent'
  * ```
  */
@@ -431,7 +431,7 @@ function coordinateDescentOn(obj: FlatObjective, options: CoordinateDescentOptio
   const gtol = options.gradTol ?? 1e-5
   const ftol = options.ftol ?? 1e-12
   if (update === 'gradient' && !(lr > 0))
-    throw new WhiteboxError('value', 'coordinateDescent: learningRate must be positive')
+    throw new MdmlError('value', 'coordinateDescent: learningRate must be positive')
   return {
     name: 'coordinateDescent',
     config: configOf(options),
@@ -534,8 +534,8 @@ function coordinateDescentOn(obj: FlatObjective, options: CoordinateDescentOptio
  * @concept coordinate-descent
  * @example
  * ```ts
- * import { coordinateDescent } from 'whitebox-engine/optim'
- * import { add, mul, square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { coordinateDescent } from 'mdml-engine/optim'
+ * import { add, mul, square, sum, type Value } from 'mdml-engine/tensor'
  * // A separable quadratic: one sweep of exact coordinate minimisation solves it.
  * coordinateDescent((x: Value) => sum(add(square(x), mul(x, -2))), [0, 5], { update: 'newton' }).steps // => 1
  * ```

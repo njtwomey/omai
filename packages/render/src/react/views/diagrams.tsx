@@ -3,8 +3,8 @@
  * each step's overlay of active nodes, edges and value badges played over it.
  */
 
+import type { DiagramRecord } from 'mdml-engine/exposition'
 import { type ReactElement, useEffect, useMemo, useRef } from 'react'
-import type { DiagramRecord } from 'whitebox-engine/exposition'
 import { Player } from '../Player.tsx'
 import { StructureView } from '../StructureView.tsx'
 import { usePlayback } from '../usePlayback.ts'

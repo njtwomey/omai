@@ -4,7 +4,7 @@
  * weights, and `approximateQuery` for posteriors estimated from samples.
  */
 
-import { type Json, logSumExpOf, WhiteboxError } from '../../base/index.ts'
+import { type Json, logSumExpOf, MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import { type Factor, logFactor } from '../factor.ts'
@@ -28,8 +28,8 @@ export type Sample = Record<string, number>
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, rejectionSample } from 'whitebox-engine/pgm'
- * import { key } from 'whitebox-engine/random'
+ * import { bayesNet, rejectionSample } from 'mdml-engine/pgm'
+ * import { key } from 'mdml-engine/random'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
  * rejectionSample(bn, key(0), 100, { b: '1' }).samples.every((s) => s['a'] === 1) // => true
  * ```
@@ -58,8 +58,8 @@ export function rejectionSample(
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, likelihoodWeighting } from 'whitebox-engine/pgm'
- * import { key } from 'whitebox-engine/random'
+ * import { bayesNet, likelihoodWeighting } from 'mdml-engine/pgm'
+ * import { key } from 'mdml-engine/random'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.2, 0.8] }])
  * const r = likelihoodWeighting(bn, key(0), 3, { b: '1' })
  * r.logWeights.map((w) => Math.round(Math.exp(w) * 10) / 10).every((w) => w === 0.1 || w === 0.8) // => true
@@ -111,7 +111,7 @@ export function likelihoodWeighting(
  * @concept sampling
  * @example
  * ```ts
- * import { effectiveSampleSize } from 'whitebox-engine/pgm'
+ * import { effectiveSampleSize } from 'mdml-engine/pgm'
  * effectiveSampleSize([0, 0, 0, 0]) // => 4
  * ```
  */
@@ -129,11 +129,11 @@ export function effectiveSampleSize(logWeights: readonly number[]): number {
  * @param variables - The variables to estimate (a joint over all of them, in this order).
  * @param logWeights - Log importance weights (default: equal).
  * @returns The estimated distribution as a normalised factor.
- * @throws WhiteboxError with code `value` when there are no samples or every weight is zero.
+ * @throws MdmlError with code `value` when there are no samples or every weight is zero.
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, sampleMarginal, factorValues } from 'whitebox-engine/pgm'
+ * import { bayesNet, sampleMarginal, factorValues } from 'mdml-engine/pgm'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }])
  * factorValues(sampleMarginal(bn, [{ a: 0 }, { a: 1 }, { a: 1 }, { a: 1 }], ['a'])) // => [0.25, 0.75]
  * ```
@@ -155,7 +155,7 @@ export function sampleMarginal(
   const logs = cells.map(logSumExpOf)
   const total = logSumExpOf(logs)
   if (total === Number.NEGATIVE_INFINITY)
-    throw new WhiteboxError('value', 'sampleMarginal: no samples with positive weight')
+    throw new MdmlError('value', 'sampleMarginal: no samples with positive weight')
   return logFactor(
     variables,
     card,
@@ -216,12 +216,12 @@ function logProbabilityOf(c: Compiled, x: Int32Array): number {
  * @param model - The model.
  * @param options - Evidence and the starting state.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` when the starting state has zero probability.
+ * @throws MdmlError with code `value` when the starting state has zero probability.
  * @concept gibbs-sampling
  * @example
  * ```ts
- * import { isingModel, gibbsSamplingAlgorithm } from 'whitebox-engine/pgm'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { isingModel, gibbsSamplingAlgorithm } from 'mdml-engine/pgm'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(gibbsSamplingAlgorithm(isingModel({ rows: 2, cols: 2 })), { maxSteps: 10, seed: 1 }).steps // => 10
  * ```
  */
@@ -246,7 +246,7 @@ export function gibbsSamplingAlgorithm(model: DiscreteModel, options: GibbsOptio
       const x = start()
       const lp = logProbabilityOf(c, x)
       if (lp === Number.NEGATIVE_INFINITY)
-        throw new WhiteboxError('value', 'gibbs: the starting state has zero probability')
+        throw new MdmlError('value', 'gibbs: the starting state has zero probability')
       return { x, logProbability: lp }
     },
     step: (state, ctx) => {
@@ -263,7 +263,7 @@ export function gibbsSamplingAlgorithm(model: DiscreteModel, options: GibbsOptio
         }
         const z = logSumExpOf(logs)
         if (z === Number.NEGATIVE_INFINITY)
-          throw new WhiteboxError('value', `gibbs: ${c.names[i]} has no state of positive probability`)
+          throw new MdmlError('value', `gibbs: ${c.names[i]} has no state of positive probability`)
         let acc = 0
         let pick = k - 1
         for (let s = 0; s < k; s++) {
@@ -293,8 +293,8 @@ export function gibbsSamplingAlgorithm(model: DiscreteModel, options: GibbsOptio
  * @concept gibbs-sampling
  * @example
  * ```ts
- * import { bayesNet, gibbsSample } from 'whitebox-engine/pgm'
- * import { key } from 'whitebox-engine/random'
+ * import { bayesNet, gibbsSample } from 'mdml-engine/pgm'
+ * import { key } from 'mdml-engine/random'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
  * gibbsSample(bn, key(0), 5, { evidence: { b: '1' } }).every((s) => s['a'] === 1) // => true
  * ```
@@ -337,12 +337,12 @@ export function gibbsSample(model: DiscreteModel, key: Key, n: number, options: 
  * @param options - The method (default `likelihoodWeighting` for Bayes networks, `gibbs` otherwise), number of
  * samples (default 10000), key, evidence and Gibbs options.
  * @returns The estimated posterior over the query, in query order.
- * @throws WhiteboxError with code `value` for rejection or likelihood weighting on a model that is not a Bayes network.
+ * @throws MdmlError with code `value` for rejection or likelihood weighting on a model that is not a Bayes network.
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, approximateQuery, factorValues } from 'whitebox-engine/pgm'
- * import { key } from 'whitebox-engine/random'
+ * import { bayesNet, approximateQuery, factorValues } from 'mdml-engine/pgm'
+ * import { key } from 'mdml-engine/random'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
  * factorValues(approximateQuery(bn, ['a'], { evidence: { b: '1' }, key: key(0), n: 200 })) // => [0, 1]
  * ```
@@ -360,10 +360,10 @@ export function approximateQuery(
   const method = options.method ?? (model.kind === 'bayesNet' ? 'likelihoodWeighting' : 'gibbs')
   const evidence = options.evidence ?? {}
   for (const q of query) {
-    if (q in evidenceIndices(model, evidence)) throw new WhiteboxError('value', `approximateQuery: ${q} is observed`)
+    if (q in evidenceIndices(model, evidence)) throw new MdmlError('value', `approximateQuery: ${q} is observed`)
   }
   if (method === 'gibbs') return sampleMarginal(model, gibbsSample(model, options.key, n, options), query)
-  if (model.kind !== 'bayesNet') throw new WhiteboxError('value', `approximateQuery: ${method} needs a Bayes network`)
+  if (model.kind !== 'bayesNet') throw new MdmlError('value', `approximateQuery: ${method} needs a Bayes network`)
   for (const q of query) bayesNode(model, q)
   if (method === 'rejection')
     return sampleMarginal(model, rejectionSample(model, options.key, n, evidence).samples, query)

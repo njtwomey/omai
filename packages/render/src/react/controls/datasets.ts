@@ -3,16 +3,16 @@
  * of an entry with its demo knobs, and generating or loading the selected dataset with its generating truth.
  */
 
-import type { Dataset, Generated, Knobs } from 'whitebox-engine/data'
+import type { Dataset, Generated, Knobs } from 'mdml-engine/data'
 import {
   type CollectionEntry,
   type DatasetCollection,
   datasetCollections,
   datasetGenerators,
   loadEntry,
-} from 'whitebox-engine/datasets'
-import { key } from 'whitebox-engine/random'
-import { type DictSpace, defaults } from 'whitebox-engine/space'
+} from 'mdml-engine/datasets'
+import { key } from 'mdml-engine/random'
+import { type DictSpace, defaults } from 'mdml-engine/space'
 
 /** What a dataset picker has chosen: an entry of a collection, the seed it is generated with, and its knobs. */
 export interface DatasetSelection {

@@ -2,7 +2,7 @@
 // with their original coordinates, labels and names for the records), small MLPs, minibatches, and the training loop
 // every model runs through `runAlgorithm`: a step function returning named losses, with frames captured at a few dozen
 // steps spaced geometrically (dense early, where training changes fastest), so a page can play the training back.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import type { Exposition } from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
@@ -55,7 +55,7 @@ export function prepare(
   options: { readonly standardise?: boolean; readonly isotropic?: boolean } = {},
 ): Prepared {
   const m = matrixView(data.x, who)
-  if (m.n < 2) throw new WhiteboxError('value', `${who}: needs at least two rows`)
+  if (m.n < 2) throw new MdmlError('value', `${who}: needs at least two rows`)
   const { n, d } = m
   const mean = new Array<number>(d).fill(0)
   const scale = new Array<number>(d).fill(1)

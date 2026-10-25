@@ -4,7 +4,7 @@
  * concentration steps from random subsets (traced), then reweighted and corrected for consistency.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { chi2 } from '../../lib/dists/index.ts'
 import {
   defineExplainedEstimator,
@@ -142,7 +142,7 @@ export function minCovDet(hyper: MinCovDetHyper = {}): Estimator<MinCovDetHyper,
         const m = matrixView(data.x, 'minCovDet', { minSamples: 3 })
         const hSize =
           h.supportFraction === undefined ? Math.ceil(0.5 * (m.n + m.d + 1)) : Math.ceil(h.supportFraction * m.n)
-        if (hSize <= m.d) throw new WhiteboxError('value', 'minCovDet: the support must have more rows than features')
+        if (hSize <= m.d) throw new MdmlError('value', 'minCovDet: the support must have more rows than features')
         const run = fitRunOptions(options, 'min-cov-det')
         const key = run.key as Key
         const refine = (start: readonly number[], steps: number) =>

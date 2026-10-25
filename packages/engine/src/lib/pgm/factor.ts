@@ -5,7 +5,7 @@
  * argmax and entropy.
  */
 
-import { logSumExpOf, WhiteboxError } from '../base/index.ts'
+import { logSumExpOf, MdmlError } from '../base/index.ts'
 
 /**
  * A discrete variable: a name and the names of its states.
@@ -76,11 +76,9 @@ function odometer(
 }
 
 function checkScope(variables: readonly string[], cardinality: readonly number[], n: number, name: string): void {
-  if (variables.length !== cardinality.length) throw new WhiteboxError('shape', `${name}: one cardinality per variable`)
-  if (new Set(variables).size !== variables.length)
-    throw new WhiteboxError('value', `${name}: variables must be distinct`)
-  if (n !== size(cardinality))
-    throw new WhiteboxError('shape', `${name}: ${n} values for ${size(cardinality)} assignments`)
+  if (variables.length !== cardinality.length) throw new MdmlError('shape', `${name}: one cardinality per variable`)
+  if (new Set(variables).size !== variables.length) throw new MdmlError('value', `${name}: variables must be distinct`)
+  if (n !== size(cardinality)) throw new MdmlError('shape', `${name}: ${n} values for ${size(cardinality)} assignments`)
 }
 
 /**
@@ -90,11 +88,11 @@ function checkScope(variables: readonly string[], cardinality: readonly number[]
  * @param cardinality - Number of states of each.
  * @param values - The values (stored as logs; zeros become -inf).
  * @returns The factor.
- * @throws WhiteboxError with code `shape` when the sizes disagree, `value` for repeated variables.
+ * @throws MdmlError with code `shape` when the sizes disagree, `value` for repeated variables.
  * @concept factors
  * @example
  * ```ts
- * import { factor } from 'whitebox-engine/pgm'
+ * import { factor } from 'mdml-engine/pgm'
  * factor(['a'], [2], [0.3, 0.7]).logValues.length // => 2
  * ```
  */
@@ -114,11 +112,11 @@ export function factor(
  * @param cardinality - Number of states of each.
  * @param logValues - The log values.
  * @returns The factor.
- * @throws WhiteboxError with code `shape` when the sizes disagree.
+ * @throws MdmlError with code `shape` when the sizes disagree.
  * @concept factors
  * @example
  * ```ts
- * import { logFactor, factorValues } from 'whitebox-engine/pgm'
+ * import { logFactor, factorValues } from 'mdml-engine/pgm'
  * factorValues(logFactor(['a'], [2], [0, Math.log(2)])) // => [1, 2]
  * ```
  */
@@ -139,7 +137,7 @@ export function logFactor(
  * @returns The factor.
  * @example
  * ```ts
- * import { unitFactor, factorValues } from 'whitebox-engine/pgm'
+ * import { unitFactor, factorValues } from 'mdml-engine/pgm'
  * factorValues(unitFactor(['a'], [3])) // => [1, 1, 1]
  * ```
  */
@@ -154,7 +152,7 @@ export function unitFactor(variables: readonly string[], cardinality: readonly n
  * @returns The values.
  * @example
  * ```ts
- * import { factor, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, factorValues } from 'mdml-engine/pgm'
  * factorValues(factor(['a'], [2], [0.25, 0.75])) // => [0.25, 0.75]
  * ```
  */
@@ -169,7 +167,7 @@ function unionScope(a: Factor, b: Factor, name: string): { variables: string[]; 
     const ia = a.variables.indexOf(v)
     const ib = b.variables.indexOf(v)
     if (ia >= 0 && ib >= 0 && a.cardinality[ia] !== b.cardinality[ib]) {
-      throw new WhiteboxError('value', `${name}: ${v} has cardinality ${a.cardinality[ia]} and ${b.cardinality[ib]}`)
+      throw new MdmlError('value', `${name}: ${v} has cardinality ${a.cardinality[ia]} and ${b.cardinality[ib]}`)
     }
     return (ia >= 0 ? a.cardinality[ia] : b.cardinality[ib]) ?? 1
   })
@@ -182,11 +180,11 @@ function unionScope(a: Factor, b: Factor, name: string): { variables: string[]; 
  * @param a - First factor.
  * @param b - Second factor.
  * @returns The product, over a's variables followed by b's new ones.
- * @throws WhiteboxError with code `value` when a shared variable has different cardinalities.
+ * @throws MdmlError with code `value` when a shared variable has different cardinalities.
  * @concept factors
  * @example
  * ```ts
- * import { factor, factorProduct, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, factorProduct, factorValues } from 'mdml-engine/pgm'
  * factorValues(factorProduct(factor(['a'], [2], [1, 2]), factor(['b'], [2], [3, 4]))) // => [3, 4, 6, 8]
  * ```
  */
@@ -208,7 +206,7 @@ export function factorProduct(a: Factor, b: Factor): Factor {
  * @returns Their product.
  * @example
  * ```ts
- * import { factor, factorProductAll, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, factorProductAll, factorValues } from 'mdml-engine/pgm'
  * factorValues(factorProductAll([factor(['a'], [2], [1, 2]), factor(['a'], [2], [3, 4])])) // => [3, 8]
  * ```
  */
@@ -224,17 +222,17 @@ export function factorProductAll(factors: readonly Factor[]): Factor {
  * @param a - The numerator.
  * @param b - The denominator.
  * @returns The quotient over a's variables.
- * @throws WhiteboxError with code `value` when `b` mentions a variable `a` does not, or divides a non-zero by zero.
+ * @throws MdmlError with code `value` when `b` mentions a variable `a` does not, or divides a non-zero by zero.
  * @concept factors
  * @example
  * ```ts
- * import { factor, factorDivide, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, factorDivide, factorValues } from 'mdml-engine/pgm'
  * factorValues(factorDivide(factor(['a', 'b'], [2, 2], [2, 4, 0, 8]), factor(['a'], [2], [2, 0]))) // => [1, 2, 0, Infinity]
  * ```
  */
 export function factorDivide(a: Factor, b: Factor): Factor {
   for (const v of b.variables) {
-    if (!a.variables.includes(v)) throw new WhiteboxError('value', `factorDivide: ${v} is not in the numerator`)
+    if (!a.variables.includes(v)) throw new MdmlError('value', `factorDivide: ${v} is not in the numerator`)
   }
   unionScope(a, b, 'factorDivide')
   const out = new Float64Array(a.logValues.length)
@@ -256,7 +254,7 @@ export function factorDivide(a: Factor, b: Factor): Factor {
  * @returns f^power (0^0 is taken as 1 only for power 0).
  * @example
  * ```ts
- * import { factor, factorPower, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, factorPower, factorValues } from 'mdml-engine/pgm'
  * factorValues(factorPower(factor(['a'], [2], [4, 9]), 0.5)) // => [2, 3]
  * ```
  */
@@ -268,7 +266,7 @@ export function factorPower(f: Factor, power: number): Factor {
 /** Eliminate variables by summing (log-sum-exp) or maximising over their states. */
 function eliminate(f: Factor, variables: readonly string[], mode: 'sum' | 'max', name: string): Factor {
   for (const v of variables)
-    if (!f.variables.includes(v)) throw new WhiteboxError('value', `${name}: ${v} is not in the factor`)
+    if (!f.variables.includes(v)) throw new MdmlError('value', `${name}: ${v} is not in the factor`)
   const keep = f.variables.filter((v) => !variables.includes(v))
   const card = keep.map((v) => f.cardinality[f.variables.indexOf(v)] ?? 1)
   const s = strides(card)
@@ -300,11 +298,11 @@ function eliminate(f: Factor, variables: readonly string[], mode: 'sum' | 'max',
  * @param f - The factor.
  * @param variables - Variables to sum out.
  * @returns The marginal factor.
- * @throws WhiteboxError with code `value` for a variable not in the factor.
+ * @throws MdmlError with code `value` for a variable not in the factor.
  * @concept factors
  * @example
  * ```ts
- * import { factor, marginalise, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, marginalise, factorValues } from 'mdml-engine/pgm'
  * factorValues(marginalise(factor(['a', 'b'], [2, 2], [1, 2, 3, 4]), ['b'])) // => [3, 7]
  * ```
  */
@@ -318,10 +316,10 @@ export function marginalise(f: Factor, variables: readonly string[]): Factor {
  * @param f - The factor.
  * @param variables - Variables to maximise out.
  * @returns The max-marginal factor.
- * @throws WhiteboxError with code `value` for a variable not in the factor.
+ * @throws MdmlError with code `value` for a variable not in the factor.
  * @example
  * ```ts
- * import { factor, maxMarginalise, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, maxMarginalise, factorValues } from 'mdml-engine/pgm'
  * factorValues(maxMarginalise(factor(['a', 'b'], [2, 2], [1, 2, 3, 4]), ['b'])) // => [2, 4]
  * ```
  */
@@ -335,16 +333,16 @@ export function maxMarginalise(f: Factor, variables: readonly string[]): Factor 
  * @param f - The factor.
  * @param variables - A permutation of its variables.
  * @returns The permuted factor.
- * @throws WhiteboxError with code `value` when `variables` is not a permutation of the factor's variables.
+ * @throws MdmlError with code `value` when `variables` is not a permutation of the factor's variables.
  * @example
  * ```ts
- * import { factor, permuteFactor, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, permuteFactor, factorValues } from 'mdml-engine/pgm'
  * factorValues(permuteFactor(factor(['a', 'b'], [2, 2], [1, 2, 3, 4]), ['b', 'a'])) // => [1, 3, 2, 4]
  * ```
  */
 export function permuteFactor(f: Factor, variables: readonly string[]): Factor {
   if (variables.length !== f.variables.length || variables.some((v) => !f.variables.includes(v))) {
-    throw new WhiteboxError('value', `permuteFactor: [${variables.join(', ')}] is not a permutation of the scope`)
+    throw new MdmlError('value', `permuteFactor: [${variables.join(', ')}] is not a permutation of the scope`)
   }
   if (f.variables.every((v, i) => v === variables[i])) return f
   const card = variables.map((v) => f.cardinality[f.variables.indexOf(v)] ?? 1)
@@ -363,16 +361,16 @@ export function permuteFactor(f: Factor, variables: readonly string[]): Factor {
  * @param variables - The variables to keep, in the order wanted.
  * @param mode - Sum (default) or max marginal.
  * @returns The marginal factor over exactly `variables`.
- * @throws WhiteboxError with code `value` for a variable not in the factor.
+ * @throws MdmlError with code `value` for a variable not in the factor.
  * @example
  * ```ts
- * import { factor, factorMarginal, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, factorMarginal, factorValues } from 'mdml-engine/pgm'
  * factorValues(factorMarginal(factor(['a', 'b'], [2, 2], [1, 2, 3, 4]), ['b'])) // => [4, 6]
  * ```
  */
 export function factorMarginal(f: Factor, variables: readonly string[], mode: 'sum' | 'max' = 'sum'): Factor {
   for (const v of variables) {
-    if (!f.variables.includes(v)) throw new WhiteboxError('value', `factorMarginal: ${v} is not in the factor`)
+    if (!f.variables.includes(v)) throw new MdmlError('value', `factorMarginal: ${v} is not in the factor`)
   }
   const rest = f.variables.filter((v) => !variables.includes(v))
   return permuteFactor(eliminate(f, rest, mode, 'factorMarginal'), variables)
@@ -384,10 +382,10 @@ export function factorMarginal(f: Factor, variables: readonly string[], mode: 's
  * @param f - The factor.
  * @param evidence - Observed states (indices) by variable; variables not in the factor are ignored.
  * @returns The reduced factor.
- * @throws WhiteboxError with code `value` for a state index out of range.
+ * @throws MdmlError with code `value` for a state index out of range.
  * @example
  * ```ts
- * import { factor, reduceFactor, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, reduceFactor, factorValues } from 'mdml-engine/pgm'
  * factorValues(reduceFactor(factor(['a', 'b'], [2, 2], [1, 2, 3, 4]), { a: 1 })) // => [3, 4]
  * ```
  */
@@ -400,7 +398,7 @@ export function reduceFactor(f: Factor, evidence: Readonly<Record<string, number
     const k = f.variables.indexOf(v)
     const state = evidence[v] ?? 0
     if (!(state >= 0 && state < (f.cardinality[k] ?? 0)) || !Number.isInteger(state)) {
-      throw new WhiteboxError('value', `reduceFactor: ${v} has no state ${state}`)
+      throw new MdmlError('value', `reduceFactor: ${v} has no state ${state}`)
     }
     offset += state * (s[k] ?? 0)
   }
@@ -419,17 +417,17 @@ export function reduceFactor(f: Factor, evidence: Readonly<Record<string, number
  *
  * @param f - The factor.
  * @returns The normalised factor.
- * @throws WhiteboxError with code `value` when every entry is zero.
+ * @throws MdmlError with code `value` when every entry is zero.
  * @example
  * ```ts
- * import { factor, normaliseFactor, factorValues } from 'whitebox-engine/pgm'
+ * import { factor, normaliseFactor, factorValues } from 'mdml-engine/pgm'
  * factorValues(normaliseFactor(factor(['a'], [2], [1, 3]))) // => [0.25, 0.75]
  * ```
  */
 export function normaliseFactor(f: Factor): Factor {
   const total = logSumExpOf(f.logValues)
   if (total === NEG) {
-    throw new WhiteboxError('value', 'normaliseFactor: the factor is zero everywhere (inconsistent evidence?)')
+    throw new MdmlError('value', 'normaliseFactor: the factor is zero everywhere (inconsistent evidence?)')
   }
   return { ...f, logValues: f.logValues.map((v) => v - total) }
 }
@@ -441,7 +439,7 @@ export function normaliseFactor(f: Factor): Factor {
  * @returns log sum of its values.
  * @example
  * ```ts
- * import { factor, logTotal } from 'whitebox-engine/pgm'
+ * import { factor, logTotal } from 'mdml-engine/pgm'
  * logTotal(factor(['a'], [2], [1, 1])) === Math.LN2 // => true
  * ```
  */
@@ -466,7 +464,7 @@ function flatIndex(f: Factor, assignment: Readonly<Record<string, number>>): num
  * @returns The value there.
  * @example
  * ```ts
- * import { factor, factorAt } from 'whitebox-engine/pgm'
+ * import { factor, factorAt } from 'mdml-engine/pgm'
  * factorAt(factor(['a', 'b'], [2, 2], [1, 2, 3, 4]), { a: 1, b: 0 }) // => 3
  * ```
  */
@@ -482,7 +480,7 @@ export function factorAt(f: Factor, assignment: Readonly<Record<string, number>>
  * @returns The log value there.
  * @example
  * ```ts
- * import { factor, logFactorAt } from 'whitebox-engine/pgm'
+ * import { factor, logFactorAt } from 'mdml-engine/pgm'
  * logFactorAt(factor(['a'], [2], [1, 0]), { a: 1 }) // => -Infinity
  * ```
  */
@@ -497,7 +495,7 @@ export function logFactorAt(f: Factor, assignment: Readonly<Record<string, numbe
  * @returns A state index for each variable.
  * @example
  * ```ts
- * import { factor, factorArgmax } from 'whitebox-engine/pgm'
+ * import { factor, factorArgmax } from 'mdml-engine/pgm'
  * factorArgmax(factor(['a', 'b'], [2, 2], [1, 5, 3, 4])) // => { a: 0, b: 1 }
  * ```
  */
@@ -531,7 +529,7 @@ function unflatten(
  * @returns The assignments.
  * @example
  * ```ts
- * import { allAssignments } from 'whitebox-engine/pgm'
+ * import { allAssignments } from 'mdml-engine/pgm'
  * allAssignments(['a', 'b'], [2, 2]).length // => 4
  * ```
  */
@@ -546,7 +544,7 @@ export function allAssignments(variables: readonly string[], cardinality: readon
  * @returns -sum p log p.
  * @example
  * ```ts
- * import { factor, factorEntropy } from 'whitebox-engine/pgm'
+ * import { factor, factorEntropy } from 'mdml-engine/pgm'
  * factorEntropy(factor(['a'], [2], [0.5, 0.5])) === Math.LN2 // => true
  * ```
  */

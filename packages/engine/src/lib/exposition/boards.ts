@@ -4,7 +4,7 @@
  * nodes, and each step gives every cell's category, text and a caption.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 
 /**
@@ -66,11 +66,11 @@ function cellCount(layout: BoardLayout): number {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when a step has the wrong number of cells or labels, or a metric the wrong number of
+ * @throws MdmlError `shape` when a step has the wrong number of cells or labels, or a metric the wrong number of
  *   values; `value` when a category index or an edge is out of range.
  * @example
  * ```ts
- * import { boardSteps } from 'whitebox-engine/exposition'
+ * import { boardSteps } from 'mdml-engine/exposition'
  * const r = boardSteps({
  *   method: 'bfs',
  *   layout: { type: 'grid', rows: 1, columns: 3 },
@@ -87,14 +87,14 @@ export function boardSteps(record: Omit<BoardSteps, 'kind'>): BoardSteps {
   if (record.layout.type === 'graph') {
     for (const [a, b] of record.layout.edges)
       if (!(a >= 0 && a < n && b >= 0 && b < n))
-        throw new WhiteboxError('value', `boardSteps: the edge ${a}-${b} names a node outside 0..${n - 1}`)
+        throw new MdmlError('value', `boardSteps: the edge ${a}-${b} names a node outside 0..${n - 1}`)
   }
   for (const [t, step] of record.steps.entries()) {
     sameLength('boardSteps', `steps[${t}].cells`, step.cells.length, n)
     if (step.labels !== undefined) sameLength('boardSteps', `steps[${t}].labels`, step.labels.length, n)
     for (const c of step.cells)
       if (!(Number.isInteger(c) && c >= 0 && c < k))
-        throw new WhiteboxError('value', `boardSteps: steps[${t}] has the category ${c}, outside 0..${k - 1}`)
+        throw new MdmlError('value', `boardSteps: steps[${t}] has the category ${c}, outside 0..${k - 1}`)
   }
   for (const m of record.metrics ?? [])
     sameLength('boardSteps', `metrics.${m.name}`, m.values.length, record.steps.length)

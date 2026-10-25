@@ -294,8 +294,8 @@ function locate(data: TrajectoryData, g: number): readonly [number, number] {
  * @concept offline-rl
  * @example
  * ```ts
- * import { decisionTransformerLearner } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { decisionTransformerLearner } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * decisionTransformerLearner(cartPole.create(), { context: 4 }).config // => { context: 4, embedding: 32, heads: 2, layers: 1 }
  * ```
  */
@@ -435,9 +435,9 @@ export interface DecisionTransformerAgentState {
  * @concept offline-rl
  * @example
  * ```ts
- * import { decisionTransformerAgent, decisionTransformerLearner } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { decisionTransformerAgent, decisionTransformerLearner } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = cartPole.create()
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: true, truncated: false }
  * const s = decisionTransformerLearner(env, { context: 2, embedding: 4 }).init(key(0), [t])
@@ -500,8 +500,8 @@ export interface DecisionTransformerResult<O, A> {
  * @concept offline-rl
  * @example
  * ```ts
- * import { decisionTransformer } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { decisionTransformer } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: true, truncated: false }
  * decisionTransformer(cartPole.create(), [t], { context: 2, embedding: 4, steps: 2 }).steps // => 2
  * ```
@@ -526,9 +526,9 @@ export function decisionTransformer<O, A>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { evaluateInContext } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { make, policyAgent } from 'whitebox-engine/rl'
+ * import { evaluateInContext } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { make, policyAgent } from 'mdml-engine/rl'
  * evaluateInContext(make(cartPole), policyAgent(() => 0), { episodes: 2 }).returns.length // => 2
  * ```
  */

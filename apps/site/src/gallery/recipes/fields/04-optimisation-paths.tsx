@@ -1,8 +1,8 @@
+import { cartesian } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
+import { optimisationPaths } from 'mdml-render/trace'
 import { type ReactNode, useMemo, useState } from 'react'
-import { cartesian } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'whitebox-render/react'
-import { optimisationPaths } from 'whitebox-render/trace'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

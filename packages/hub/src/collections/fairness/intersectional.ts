@@ -3,9 +3,9 @@
  * the worst subgroup, the entropy of benefits between and within subgroups, and a GerryFair rich-subgroup audit.
  */
 
-import { type FairnessData, intersectionalAudit, sensitiveGroups } from 'whitebox-engine/methods/fairness'
-import { choice, dict, int } from 'whitebox-engine/space'
-import { asTensor, toFlat } from 'whitebox-engine/tensor'
+import { type FairnessData, intersectionalAudit, sensitiveGroups } from 'mdml-engine/methods/fairness'
+import { choice, dict, int } from 'mdml-engine/space'
+import { asTensor, toFlat } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { awareParam, fairnessDataOf, fitClassifier } from './_shared.ts'
 

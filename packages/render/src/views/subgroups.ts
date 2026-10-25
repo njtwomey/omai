@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { type GroupRateName, type SubgroupReport, subgroupGrid } from 'whitebox-engine/exposition'
+import { type GroupRateName, type SubgroupReport, subgroupGrid } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -96,8 +96,8 @@ export function subgroupBarsPanel(record: SubgroupReport, mode: ColourMode, rate
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { subgroupReport, tableRates } from 'whitebox-engine/exposition'
- * import { subgroupView } from 'whitebox-render/views'
+ * import { subgroupReport, tableRates } from 'mdml-engine/exposition'
+ * import { subgroupView } from 'mdml-render/views'
  * const tables = [[[1, 1], [0, 2]], [[2, 0], [1, 1]]]
  * const rate = { subgroup: 0, gap: 0 }
  * const zero = { selectionRate: 0, truePositiveRate: 0, falsePositiveRate: 0, precision: 0, accuracy: 0, baseRate: 0 }

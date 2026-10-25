@@ -4,7 +4,7 @@
  * rebuilt with its rendered frames by deterministic replay from the nearest checkpoint.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
 import {
@@ -189,8 +189,8 @@ function trainStep<G, S, O, A>(
  * @concept agents
  * @example
  * ```ts
- * import { make, policyAgent, trainingAlgorithm } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { make, policyAgent, trainingAlgorithm } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * trainingAlgorithm(make(cartPole), policyAgent(() => 1)).name // => 'train:policy'
  * ```
  */
@@ -249,12 +249,12 @@ export interface TrainResult<G, S, O> {
  * @param options - Episodes or a step budget (`maxSteps`, default 100000), evaluation, checkpoints, and the run options
  *   (key, seed, tracer, policy).
  * @returns The trained agent state, returns per episode, evaluations and the final state.
- * @throws WhiteboxError with code `value` when neither `episodes` nor `maxSteps` is given.
+ * @throws MdmlError with code `value` when neither `episodes` nor `maxSteps` is given.
  * @concept agents
  * @example
  * ```ts
- * import { make, policyAgent, trainAgent } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { make, policyAgent, trainAgent } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * trainAgent(make(cartPole), policyAgent(() => 1), { episodes: 2 }).returns.length // => 2
  * ```
  */
@@ -265,7 +265,7 @@ export function trainAgent<G, S, O, A>(
 ): TrainResult<G, S, O> {
   const { episodes, evalEvery, evalEpisodes, evalEnv, checkpoints, maxSteps, ...run } = options
   if (episodes === undefined && maxSteps === undefined) {
-    throw new WhiteboxError('value', 'trainAgent: give episodes or maxSteps')
+    throw new MdmlError('value', 'trainAgent: give episodes or maxSteps')
   }
   const key = run.key ?? makeKey(run.seed ?? 0)
   const alg = trainingAlgorithm(env, agent, {
@@ -301,12 +301,12 @@ export function trainAgent<G, S, O, A>(
  * @param result - The result of {@link trainAgent} (or anything with its final `state` and `key`).
  * @param episode - The episode index (0-based).
  * @returns The episode with states, observations, actions, rewards and frames.
- * @throws WhiteboxError with code `value` when the episode was not finished in the run.
+ * @throws MdmlError with code `value` when the episode was not finished in the run.
  * @concept agents
  * @example
  * ```ts
- * import { make, policyAgent, replayEpisode, trainAgent } from 'whitebox-engine/rl'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { make, policyAgent, replayEpisode, trainAgent } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * const env = make(cartPole)
  * const agent = policyAgent(() => 1)
  * const result = trainAgent(env, agent, { episodes: 3 })
@@ -322,7 +322,7 @@ export function replayEpisode<G, S, O, A>(
   const final = result.state
   const start = final.episodeStarts[episode]
   if (start === undefined || episode >= final.episode) {
-    throw new WhiteboxError('value', `replayEpisode: episode ${episode} did not finish in this run`)
+    throw new MdmlError('value', `replayEpisode: episode ${episode} did not finish in this run`)
   }
   let cp: TrainCheckpoint<G, S, O> | undefined
   for (const c of final.checkpoints) if (c.step <= start) cp = c

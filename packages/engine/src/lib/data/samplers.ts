@@ -4,7 +4,7 @@
  * plus `balancedWeights` for inverse-frequency class weights.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { categorical, foldIn, type Key, permutation, randint, uniform } from '../random/index.ts'
 
 /**
@@ -22,7 +22,7 @@ export type Sampler = (epoch: number) => Int32Array
  * @returns The sampler.
  * @example
  * ```ts
- * import { sequentialSampler } from 'whitebox-engine/data'
+ * import { sequentialSampler } from 'mdml-engine/data'
  * Array.from(sequentialSampler(3)(0)) // => [0, 1, 2]
  * ```
  */
@@ -45,18 +45,18 @@ export interface RandomSamplerOptions {
  * @param key - The base key; epoch `e` uses `foldIn(key, e)`.
  * @param options - Replacement and samples per epoch.
  * @returns The sampler.
- * @throws WhiteboxError with code `value` when more samples than rows are asked for without replacement.
+ * @throws MdmlError with code `value` when more samples than rows are asked for without replacement.
  * @example
  * ```ts
- * import { randomSampler } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { randomSampler } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * Array.from(randomSampler(4, key(0))(0)).sort() // => [0, 1, 2, 3]
  * ```
  */
 export function randomSampler(n: number, key: Key, options: RandomSamplerOptions = {}): Sampler {
   const m = options.numSamples ?? n
   if (options.replacement !== true && m > n)
-    throw new WhiteboxError('value', `randomSampler: ${m} samples from ${n} rows need replacement`)
+    throw new MdmlError('value', `randomSampler: ${m} samples from ${n} rows need replacement`)
   return (epoch) => {
     const k = foldIn(key, epoch)
     if (options.replacement === true) return Int32Array.from(randint(k, [m], 0, n).data)
@@ -73,11 +73,11 @@ export function randomSampler(n: number, key: Key, options: RandomSamplerOptions
  * @param key - The base key.
  * @param options - Whether to draw with replacement (default true).
  * @returns The sampler.
- * @throws WhiteboxError with code `value` when too few rows have positive weight for sampling without replacement.
+ * @throws MdmlError with code `value` when too few rows have positive weight for sampling without replacement.
  * @example
  * ```ts
- * import { weightedRandomSampler } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { weightedRandomSampler } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * Array.from(weightedRandomSampler([0, 1, 0], 3, key(0))(0)) // => [1, 1, 1]
  * ```
  */
@@ -89,10 +89,7 @@ export function weightedRandomSampler(
 ): Sampler {
   const positive = weights.filter((w) => w > 0).length
   if (options.replacement === false && numSamples > positive)
-    throw new WhiteboxError(
-      'value',
-      `weightedRandomSampler: ${numSamples} draws from ${positive} rows without replacement`,
-    )
+    throw new MdmlError('value', `weightedRandomSampler: ${numSamples} draws from ${positive} rows without replacement`)
   return (epoch) => {
     const k = foldIn(key, epoch)
     if (options.replacement !== false) return Int32Array.from(categorical(k, weights, [numSamples]).data)
@@ -112,8 +109,8 @@ export function weightedRandomSampler(
  * @returns The sampler.
  * @example
  * ```ts
- * import { subsetRandomSampler } from 'whitebox-engine/data'
- * import { key } from 'whitebox-engine/random'
+ * import { subsetRandomSampler } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
  * Array.from(subsetRandomSampler([5, 7], key(0))(0)).sort() // => [5, 7]
  * ```
  */
@@ -132,7 +129,7 @@ export function subsetRandomSampler(indices: readonly number[], key: Key): Sampl
  * @returns A weight per row.
  * @example
  * ```ts
- * import { balancedWeights } from 'whitebox-engine/data'
+ * import { balancedWeights } from 'mdml-engine/data'
  * balancedWeights([0, 0, 0, 1]) // => [0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 2]
  * ```
  */
@@ -152,12 +149,12 @@ export function balancedWeights(labels: readonly number[]): number[] {
  * @returns A function from the epoch to its batches of indices.
  * @example
  * ```ts
- * import { batchSampler, sequentialSampler } from 'whitebox-engine/data'
+ * import { batchSampler, sequentialSampler } from 'mdml-engine/data'
  * batchSampler(sequentialSampler(5), 2)(0).map((b) => Array.from(b)) // => [[0, 1], [2, 3], [4]]
  * ```
  */
 export function batchSampler(sampler: Sampler, batchSize: number, dropLast = false): (epoch: number) => Int32Array[] {
-  if (!(batchSize >= 1)) throw new WhiteboxError('value', `batchSampler: batch size ${batchSize} must be at least 1`)
+  if (!(batchSize >= 1)) throw new MdmlError('value', `batchSampler: batch size ${batchSize} must be at least 1`)
   return (epoch) => {
     const order = sampler(epoch)
     const out: Int32Array[] = []

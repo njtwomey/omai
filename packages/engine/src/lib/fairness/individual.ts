@@ -5,7 +5,7 @@
  * programme).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { linprog } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, randint } from '../random/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -25,11 +25,11 @@ export type RowMetric = (a: readonly number[], b: readonly number[]) => number
  * @param decisions - Decisions or scores `[n]`.
  * @param options - k (default 5) and the metric (default Euclidean).
  * @returns The consistency, in [0, 1] for decisions in [0, 1].
- * @throws WhiteboxError `shape` when the inputs differ in length.
+ * @throws MdmlError `shape` when the inputs differ in length.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { consistency } from 'whitebox-engine/fairness'
+ * import { consistency } from 'mdml-engine/fairness'
  * consistency([[0], [0.1], [5], [5.1]], [1, 1, 0, 0], { k: 2 }) // => 1
  * consistency([[0], [0.1], [5], [5.1]], [1, 0, 0, 1], { k: 2 }) // => 0.5
  * ```
@@ -40,7 +40,7 @@ export function consistency(
   options: { readonly k?: number; readonly metric?: RowMetric } = {},
 ): number {
   const n = x.length
-  if (decisions.length !== n) throw new WhiteboxError('shape', 'consistency: one decision per row')
+  if (decisions.length !== n) throw new MdmlError('shape', 'consistency: one decision per row')
   const k = Math.min(n, options.k ?? 5)
   const metric = options.metric ?? euclidean
   let total = 0
@@ -91,7 +91,7 @@ export interface LipschitzFairness {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { lipschitzFairness } from 'whitebox-engine/fairness'
+ * import { lipschitzFairness } from 'mdml-engine/fairness'
  * const r = lipschitzFairness([[0], [0.1], [1]], [0, 0.5, 1])
  * r.violationRate.toFixed(3) // => '0.333'
  * r.worstRatio // => 5
@@ -103,7 +103,7 @@ export function lipschitzFairness(
   options: LipschitzOptions = {},
 ): LipschitzFairness {
   const n = x.length
-  if (outputs.length !== n) throw new WhiteboxError('shape', 'lipschitzFairness: one output per row')
+  if (outputs.length !== n) throw new MdmlError('shape', 'lipschitzFairness: one output per row')
   const L = options.constant ?? 1
   const metric = options.metric ?? euclidean
   const pairs: [number, number][] = []
@@ -149,11 +149,11 @@ export function lipschitzFairness(
  * @param scores - Each row's probability of being positive (the utility of deciding positive) `[n]`.
  * @param options - The constant and metric.
  * @returns Each row's probability of a positive decision.
- * @throws WhiteboxError `value` above 400 rows.
+ * @throws MdmlError `value` above 400 rows.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { fairnessThroughAwareness } from 'whitebox-engine/fairness'
+ * import { fairnessThroughAwareness } from 'mdml-engine/fairness'
  * // Two close rows with opposite scores must be decided nearly alike.
  * fairnessThroughAwareness([[0], [0.2]], [0.9, 0.2]).map((p) => p.toFixed(1)) // => ['1.0', '0.8']
  * ```
@@ -164,9 +164,8 @@ export function fairnessThroughAwareness(
   options: { readonly constant?: number; readonly metric?: RowMetric } = {},
 ): number[] {
   const n = x.length
-  if (scores.length !== n) throw new WhiteboxError('shape', 'fairnessThroughAwareness: one score per row')
-  if (n > 400)
-    throw new WhiteboxError('value', 'fairnessThroughAwareness: at most 400 rows (the programme is quadratic)')
+  if (scores.length !== n) throw new MdmlError('shape', 'fairnessThroughAwareness: one score per row')
+  if (n > 400) throw new MdmlError('value', 'fairnessThroughAwareness: at most 400 rows (the programme is quadratic)')
   const L = options.constant ?? 1
   const metric = options.metric ?? euclidean
   const aUb: number[][] = []
@@ -189,6 +188,6 @@ export function fairnessThroughAwareness(
     ...(aUb.length === 0 ? {} : { aUb, bUb }),
     bounds: [0, 1],
   })
-  if (!r.success) throw new WhiteboxError('value', `fairnessThroughAwareness: ${r.message}`)
+  if (!r.success) throw new MdmlError('value', `fairnessThroughAwareness: ${r.message}`)
   return Array.from(toFlat(r.x))
 }

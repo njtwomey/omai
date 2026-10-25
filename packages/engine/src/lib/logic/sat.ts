@@ -5,7 +5,7 @@
  * search.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { Generator } from '../random/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { CdclCore, type CdclStats, code, dimacs, luby } from './_cdcl.ts'
@@ -53,11 +53,11 @@ export type SatRunOptions = Partial<Pick<RunOptions, 'tracer' | 'policy' | 'pare
  * @param clauses - The clauses.
  * @param numVars - The number of variables (at least the largest variable used).
  * @returns The formula.
- * @throws WhiteboxError with code `value` for a zero or non-integer literal, or too small a variable count.
+ * @throws MdmlError with code `value` for a zero or non-integer literal, or too small a variable count.
  * @concept satisfiability
  * @example
  * ```ts
- * import { cnf } from 'whitebox-engine/logic'
+ * import { cnf } from 'mdml-engine/logic'
  * cnf([[1, -2], [2, 3]]).numVars // => 3
  * ```
  */
@@ -65,11 +65,11 @@ export function cnf(clauses: readonly (readonly number[])[], numVars?: number): 
   let n = 0
   for (const c of clauses) {
     for (const l of c) {
-      if (!Number.isInteger(l) || l === 0) throw new WhiteboxError('value', `cnf: invalid literal ${l}`)
+      if (!Number.isInteger(l) || l === 0) throw new MdmlError('value', `cnf: invalid literal ${l}`)
       n = Math.max(n, Math.abs(l))
     }
   }
-  if (numVars !== undefined && numVars < n) throw new WhiteboxError('value', `cnf: numVars ${numVars} < ${n}`)
+  if (numVars !== undefined && numVars < n) throw new MdmlError('value', `cnf: numVars ${numVars} < ${n}`)
   return { numVars: numVars ?? n, clauses: clauses.map((c) => [...c]) }
 }
 
@@ -78,10 +78,10 @@ export function cnf(clauses: readonly (readonly number[])[], numVars?: number): 
  *
  * @param text - The DIMACS text.
  * @returns The formula.
- * @throws WhiteboxError with code `value` for a missing or malformed header or an unterminated clause.
+ * @throws MdmlError with code `value` for a missing or malformed header or an unterminated clause.
  * @example
  * ```ts
- * import { parseDimacs } from 'whitebox-engine/logic'
+ * import { parseDimacs } from 'mdml-engine/logic'
  * parseDimacs('c example\np cnf 3 2\n1 -2 0\n2 3 0\n').clauses // => [[1, -2], [2, 3]]
  * ```
  */
@@ -94,21 +94,21 @@ export function parseDimacs(text: string): Cnf {
     if (line === '' || line.startsWith('c') || line.startsWith('%')) continue
     if (line.startsWith('p')) {
       const parts = line.split(/\s+/)
-      if (parts[1] !== 'cnf' || parts.length < 4) throw new WhiteboxError('value', `parseDimacs: bad header "${line}"`)
+      if (parts[1] !== 'cnf' || parts.length < 4) throw new MdmlError('value', `parseDimacs: bad header "${line}"`)
       numVars = Number(parts[2])
       continue
     }
     for (const tok of line.split(/\s+/)) {
       const l = Number(tok)
-      if (!Number.isInteger(l)) throw new WhiteboxError('value', `parseDimacs: bad literal "${tok}"`)
+      if (!Number.isInteger(l)) throw new MdmlError('value', `parseDimacs: bad literal "${tok}"`)
       if (l === 0) {
         clauses.push(current)
         current = []
       } else current.push(l)
     }
   }
-  if (numVars < 0) throw new WhiteboxError('value', 'parseDimacs: missing "p cnf" header')
-  if (current.length > 0) throw new WhiteboxError('value', 'parseDimacs: last clause is not terminated by 0')
+  if (numVars < 0) throw new MdmlError('value', 'parseDimacs: missing "p cnf" header')
+  if (current.length > 0) throw new MdmlError('value', 'parseDimacs: last clause is not terminated by 0')
   return cnf(clauses, numVars)
 }
 
@@ -120,7 +120,7 @@ export function parseDimacs(text: string): Cnf {
  * @returns The text.
  * @example
  * ```ts
- * import { cnf, toDimacs } from 'whitebox-engine/logic'
+ * import { cnf, toDimacs } from 'mdml-engine/logic'
  * toDimacs(cnf([[1, -2]])) // => 'p cnf 2 1\n1 -2 0\n'
  * ```
  */
@@ -137,7 +137,7 @@ export function toDimacs(f: Cnf, comments: readonly string[] = []): string {
  * @returns True when every clause has a true literal.
  * @example
  * ```ts
- * import { cnf, satisfies } from 'whitebox-engine/logic'
+ * import { cnf, satisfies } from 'mdml-engine/logic'
  * [satisfies(cnf([[1, -2], [2]]), [1, 2]), satisfies(cnf([[1, -2], [2]]), [-1, 2])] // => [true, false]
  * ```
  */
@@ -428,7 +428,7 @@ function dpllMachine(f: Cnf, options: DpllOptions): Algorithm<DpllMachine> {
  * @concept satisfiability
  * @example
  * ```ts
- * import { cnf, dpllAlgorithm } from 'whitebox-engine/logic'
+ * import { cnf, dpllAlgorithm } from 'mdml-engine/logic'
  * dpllAlgorithm(cnf([[1]])).name // => 'dpll'
  * ```
  */
@@ -445,7 +445,7 @@ export function dpllAlgorithm(f: Cnf, options: DpllOptions = {}): Algorithm<Dpll
  * @concept satisfiability
  * @example
  * ```ts
- * import { cnf, dpll } from 'whitebox-engine/logic'
+ * import { cnf, dpll } from 'mdml-engine/logic'
  * dpll(cnf([[1, 2], [-1, 2], [1, -2]])).model // => [1, 2]
  * dpll(cnf([[1, 2], [-1, 2], [1, -2], [-1, -2]])).status // => 'unsat'
  * ```
@@ -518,7 +518,7 @@ function cdclMachine(f: Cnf, options: CdclOptions): Algorithm<CdclMachine> {
   const maxConflicts = options.maxConflicts ?? 1_000_000
   for (const a of options.assumptions ?? []) {
     if (!Number.isInteger(a) || a === 0 || Math.abs(a) > f.numVars) {
-      throw new WhiteboxError('value', `cdcl: assumption ${a} is not a literal of the formula`)
+      throw new MdmlError('value', `cdcl: assumption ${a} is not a literal of the formula`)
     }
   }
   return {
@@ -631,12 +631,12 @@ function cdclMachine(f: Cnf, options: CdclOptions): Algorithm<CdclMachine> {
  * @param f - The formula.
  * @param options - Assumptions, restarts, decay and a conflict budget.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for an assumption that is not a literal of the formula.
+ * @throws MdmlError with code `value` for an assumption that is not a literal of the formula.
  * @concept satisfiability
  * @reference N. Eén and N. Sörensson, An extensible SAT-solver, SAT 2003.
  * @example
  * ```ts
- * import { cdclAlgorithm, cnf } from 'whitebox-engine/logic'
+ * import { cdclAlgorithm, cnf } from 'mdml-engine/logic'
  * cdclAlgorithm(cnf([[1, 2]])).name // => 'cdcl'
  * ```
  */
@@ -651,11 +651,11 @@ export function cdclAlgorithm(f: Cnf, options: CdclOptions = {}): Algorithm<Cdcl
  * @param options - Assumptions, restarts, decay, a conflict budget and tracing.
  * @returns The status, a model when satisfiable, the failed assumptions when unsatisfiable under assumptions, and the
  *   effort.
- * @throws WhiteboxError with code `value` for an assumption that is not a literal of the formula.
+ * @throws MdmlError with code `value` for an assumption that is not a literal of the formula.
  * @concept satisfiability
  * @example
  * ```ts
- * import { cdcl, cnf } from 'whitebox-engine/logic'
+ * import { cdcl, cnf } from 'mdml-engine/logic'
  * // The pigeonhole principle: 3 pigeons do not fit in 2 holes (x_ph: pigeon p in hole h).
  * const x = (p, h) => 2 * p + h + 1
  * const php = cnf([[x(0, 0), x(0, 1)], [x(1, 0), x(1, 1)], [x(2, 0), x(2, 1)],
@@ -712,7 +712,7 @@ interface WalksatMachine extends WalksatState {
 function walksatMachine(f: Cnf, options: WalksatOptions): Algorithm<WalksatMachine> {
   const noise = options.noise ?? 0.5
   const maxFlips = options.maxFlips ?? 100_000
-  if (!(noise >= 0 && noise <= 1)) throw new WhiteboxError('value', 'walksat: noise must be in [0, 1]')
+  if (!(noise >= 0 && noise <= 1)) throw new MdmlError('value', 'walksat: noise must be in [0, 1]')
   const n = f.numVars
   const trueLit = (a: readonly boolean[], l: number): boolean => (l > 0 ? a[l] === true : a[-l] === false)
   const unsatClauses = (a: readonly boolean[]): (readonly number[])[] =>
@@ -789,11 +789,11 @@ function walksatMachine(f: Cnf, options: WalksatOptions): Algorithm<WalksatMachi
  * @param f - The formula.
  * @param options - Noise, a flip budget, and a seed or key.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for a noise outside [0, 1].
+ * @throws MdmlError with code `value` for a noise outside [0, 1].
  * @concept satisfiability
  * @example
  * ```ts
- * import { cnf, walksatAlgorithm } from 'whitebox-engine/logic'
+ * import { cnf, walksatAlgorithm } from 'mdml-engine/logic'
  * walksatAlgorithm(cnf([[1]])).name // => 'walksat'
  * ```
  */
@@ -807,11 +807,11 @@ export function walksatAlgorithm(f: Cnf, options: WalksatOptions = {}): Algorith
  * @param f - The formula.
  * @param options - Noise, a flip budget, a seed or key, and tracing.
  * @returns `sat` with a model, or `unknown` when the flips run out.
- * @throws WhiteboxError with code `value` for a noise outside [0, 1].
+ * @throws MdmlError with code `value` for a noise outside [0, 1].
  * @concept satisfiability
  * @example
  * ```ts
- * import { cnf, satisfies, walksat } from 'whitebox-engine/logic'
+ * import { cnf, satisfies, walksat } from 'mdml-engine/logic'
  * const f = cnf([[1, 2, 3], [-1, -2], [-2, -3], [-1, -3], [2, 3]])
  * const r = walksat(f, { seed: 1 })
  * [r.status, satisfies(f, r.model)] // => ['sat', true]
@@ -837,7 +837,7 @@ export function walksat(f: Cnf, options: WalksatOptions = {}): SatResult {
  * @returns The status, a model, and the effort.
  * @example
  * ```ts
- * import { cnf, solveSat } from 'whitebox-engine/logic'
+ * import { cnf, solveSat } from 'mdml-engine/logic'
  * solveSat(cnf([[1, -2], [2]])).model // => [1, 2]
  * ```
  */

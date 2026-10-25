@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { type DecisionSurface, type MarginRecord, surfaceAt } from 'whitebox-engine/exposition'
+import { type DecisionSurface, type MarginRecord, surfaceAt } from 'mdml-engine/exposition'
 import { histogram } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'

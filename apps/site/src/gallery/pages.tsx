@@ -12,7 +12,7 @@ export function GalleryHome(props: { readonly nav?: ReactNode }): ReactNode {
       <PageHeader
         title="The render gallery"
         actions={props.nav}
-        lede={`${ENTRIES.length} small live recipes for whitebox-render: what it draws, how figures are laid out, and how its controls, interactions and players work. Each page shows the figure beside the code that makes it.`}
+        lede={`${ENTRIES.length} small live recipes for mdml-render: what it draws, how figures are laid out, and how its controls, interactions and players work. Each page shows the figure beside the code that makes it.`}
       />
       {SECTIONS.map((s) => {
         const items = entriesOf(s.id)

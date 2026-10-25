@@ -4,7 +4,7 @@
  * for search, whole-structure scores and structure priors.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
 import { item, toArray } from '../../tensor/index.ts'
@@ -79,7 +79,7 @@ function discreteLocal(
       return s + (score === 'bdeu' ? q : observed.length) * lg(alpha) - q * r * lg(beta)
     }
     default:
-      throw new WhiteboxError('value', `unknown score ${String(score)}`)
+      throw new MdmlError('value', `unknown score ${String(score)}`)
   }
 }
 
@@ -98,7 +98,7 @@ function discreteLocal(
  * @concept structure-learning
  * @example
  * ```ts
- * import { localScore } from 'whitebox-engine/pgm/learning'
+ * import { localScore } from 'mdml-engine/pgm/learning'
  * const data = [{ a: 0, b: 0 }, { a: 1, b: 1 }, { a: 1, b: 1 }, { a: 0, b: 1 }]
  * localScore(data, 'b', ['a'], 'logLikelihood') > localScore(data, 'b', [], 'logLikelihood') // => true
  * ```
@@ -125,7 +125,7 @@ export function localScore(
  * @concept structure-learning
  * @example
  * ```ts
- * import { discreteScorer, localScore } from 'whitebox-engine/pgm/learning'
+ * import { discreteScorer, localScore } from 'mdml-engine/pgm/learning'
  * const data = [{ a: 0, b: 0 }, { a: 1, b: 1 }, { a: 1, b: 0 }]
  * discreteScorer(data, ['a', 'b'], 'k2')('b', ['a']) === localScore(data, 'b', ['a'], 'k2') // => true
  * ```
@@ -163,7 +163,7 @@ export function discreteScorer(
  * @concept structure-learning
  * @example
  * ```ts
- * import { gaussianLocalScore } from 'whitebox-engine/pgm/learning'
+ * import { gaussianLocalScore } from 'mdml-engine/pgm/learning'
  * const data = [0, 1, 2, 3, 4].map((x) => ({ x, y: 2 * x + (x % 2 === 0 ? 0.1 : -0.1) }))
  * gaussianLocalScore(data, 'y', ['x']) > gaussianLocalScore(data, 'y', []) // => true
  * ```
@@ -187,7 +187,7 @@ export function gaussianLocalScore(
  * @concept structure-learning
  * @example
  * ```ts
- * import { gaussianScorer } from 'whitebox-engine/pgm/learning'
+ * import { gaussianScorer } from 'mdml-engine/pgm/learning'
  * const data = [0, 1, 2, 3].map((x) => ({ x, y: x * x }))
  * Number.isFinite(gaussianScorer(data, ['x', 'y'], 'aicGauss')('y', ['x'])) // => true
  * ```
@@ -231,8 +231,8 @@ export function gaussianScorer(
  * @concept structure-learning
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { structureScore } from 'whitebox-engine/pgm/learning'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { structureScore } from 'mdml-engine/pgm/learning'
  * const data = [{ a: 0, b: 0 }, { a: 1, b: 1 }, { a: 1, b: 1 }, { a: 0, b: 0 }]
  * structureScore(dag([['a', 'b']]), data, 'bic') > structureScore(dag([], ['a', 'b']), data, 'bic') // => true
  * ```
@@ -263,7 +263,7 @@ export function structureScore(
  * @concept structure-learning
  * @example
  * ```ts
- * import { structurePrior } from 'whitebox-engine/pgm/learning'
+ * import { structurePrior } from 'mdml-engine/pgm/learning'
  * [structurePrior('bic', 2, 3), structurePrior('bds', 0, 2) === -Math.LN2] // => [0, true]
  * ```
  */

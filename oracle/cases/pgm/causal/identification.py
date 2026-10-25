@@ -8,10 +8,10 @@ from typing import cast
 
 import numpy as np
 import pgmpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.pgm import ASIA, STUDENT
 from pgmpy.base import DAG
 from pgmpy.inference import CausalInference
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.pgm import ASIA, STUDENT
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

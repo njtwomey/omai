@@ -4,7 +4,7 @@
  * the central path, and semidefinite programs in standard form (`sdp`) built on it.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { cholesky, choSolve, ddot, dnrm2, eigvalsh } from '../numerics/linalg/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -62,7 +62,7 @@ function blocksOf(problem: ConicProgram): Blocks {
   const lmi = (problem.lmi ?? []).map((l) => {
     const F0 = vectorFrom(l.F0)
     const p = Math.round(Math.sqrt(F0.length))
-    if (l.F.length !== n) throw new WhiteboxError('shape', `each LMI needs one matrix per variable (${n})`)
+    if (l.F.length !== n) throw new MdmlError('shape', `each LMI needs one matrix per variable (${n})`)
     return { p, F0, F: l.F.map((f) => vectorFrom(f)) }
   })
   return { n, c, G, h: vectorFrom(problem.h), A, b: vectorFrom(problem.b), soc, lmi }
@@ -271,8 +271,8 @@ export interface ConicOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'sta
  * @reference S. Boyd and L. Vandenberghe, Convex Optimization (2004), chapter 11.
  * @example
  * ```ts
- * import { conicBarrierAlgorithm } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { conicBarrierAlgorithm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * // minimise x + y over the disc |(x, y)| <= 1
  * const alg = conicBarrierAlgorithm({ c: [1, 1], soc: [{ A: [[1, 0], [0, 1]], b: [0, 0], c: [0, 0], d: 1 }] })
  * const s = runAlgorithm(alg, { maxSteps: 100 }).state
@@ -477,7 +477,7 @@ export interface ConicResult {
  * @concept conic-programming
  * @example
  * ```ts
- * import { conicProgram } from 'whitebox-engine/optim'
+ * import { conicProgram } from 'mdml-engine/optim'
  * // minimise t subject to |(x - 3, x + 1)| <= t (the best x is 1)
  * const r = conicProgram({ c: [0, 1], soc: [{ A: [[1, 0], [1, 0]], b: [-3, 1], c: [0, 1], d: 0 }] })
  * Math.round(r.fun * 1e6) / 1e6 // => 2.828427
@@ -569,7 +569,7 @@ export interface SdpResult {
  * @concept conic-programming
  * @example
  * ```ts
- * import { sdp } from 'whitebox-engine/optim'
+ * import { sdp } from 'mdml-engine/optim'
  * // The smallest eigenvalue of C as min tr(C X) with tr(X) = 1.
  * const r = sdp([[2, 1], [1, 2]], [[[1, 0], [0, 1]]], [1])
  * Math.round(r.fun * 1e6) / 1e6 // => 1

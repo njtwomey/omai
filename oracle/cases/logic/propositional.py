@@ -8,6 +8,8 @@ from importlib.metadata import version
 from typing import cast
 
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from sympy import Symbol
 from sympy.logic.boolalg import (
     And,
@@ -20,8 +22,6 @@ from sympy.logic.boolalg import (
     simplify_logic,
 )
 from sympy.logic.inference import satisfiable
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"sympy": version("sympy")}
 

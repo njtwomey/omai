@@ -5,7 +5,7 @@
  * and the grid search over multipliers that traces the accuracy-fairness trade-off.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Estimator, type Fitted, requireVerb } from '../learn/index.ts'
 import { linprog } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
@@ -253,12 +253,12 @@ const MIN_ITER = 5
  * @param data - Features, binary labels and group indices.
  * @param options - Constraint, epsilon, iterations, step size, nu and key.
  * @returns The members, their weights, the decisions, the steps and the unconstrained baseline.
- * @throws WhiteboxError `value` for an epsilon that is not positive.
+ * @throws MdmlError `value` for an epsilon that is not positive.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { exponentiatedGradientReduction } from 'whitebox-engine/fairness'
- * import { logisticRegression } from 'whitebox-engine/methods/linear'
+ * import { exponentiatedGradientReduction } from 'mdml-engine/fairness'
+ * import { logisticRegression } from 'mdml-engine/methods/linear'
  * const x = [[0], [1], [2], [3], [0.5], [1.5], [2.5], [3.5]]
  * const r = exponentiatedGradientReduction(logisticRegression(), { x, labels: [0, 0, 1, 1, 0, 1, 1, 1], groups: [0, 0, 0, 0, 1, 1, 1, 1] }, { iterations: 3 })
  * r.steps.length // => 3
@@ -272,7 +272,7 @@ export function exponentiatedGradientReduction(
   const { x, labels, groups } = data
   const constraint = options.constraint ?? 'demographicParity'
   const epsilon = options.epsilon ?? 0.01
-  if (!(epsilon > 0)) throw new WhiteboxError('value', 'exponentiatedGradientReduction: epsilon must be positive')
+  if (!(epsilon > 0)) throw new MdmlError('value', 'exponentiatedGradientReduction: epsilon must be positive')
   const maxIter = options.iterations ?? 50
   const B = 1 / epsilon
   const bound = options.differenceBound ?? 0.01
@@ -505,8 +505,8 @@ function integerGrid(dim: number, units: number): number[][] {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { gridReduction } from 'whitebox-engine/fairness'
- * import { logisticRegression } from 'whitebox-engine/methods/linear'
+ * import { gridReduction } from 'mdml-engine/fairness'
+ * import { logisticRegression } from 'mdml-engine/methods/linear'
  * const x = [[0], [1], [2], [3], [0.5], [1.5], [2.5], [3.5]]
  * gridReduction(logisticRegression(), { x, labels: [0, 0, 1, 1, 0, 1, 1, 1], groups: [0, 0, 0, 0, 1, 1, 1, 1] }, { gridSize: 3 }).length // => 3
  * ```

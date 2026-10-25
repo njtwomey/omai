@@ -13,18 +13,18 @@ import * as trace from '../trace/index.ts'
 import * as dynamics from './index.ts'
 
 const MODULES: Readonly<Record<string, unknown>> = {
-  'whitebox-engine/autodiff': autodiff,
-  'whitebox-engine/base': base,
-  'whitebox-engine/random': random,
-  'whitebox-engine/systems': systems,
-  'whitebox-engine/tensor': tensor,
-  'whitebox-engine/trace': trace,
-  'whitebox-engine/dynamics': dynamics,
-  'whitebox-engine/dynamics/ode': dynamics.ode,
-  'whitebox-engine/dynamics/pde': (dynamics as Record<string, unknown>)['pde'],
-  'whitebox-engine/dynamics/control': (dynamics as Record<string, unknown>)['control'],
-  'whitebox-engine/dynamics/filtering': (dynamics as Record<string, unknown>)['filtering'],
-  ...Object.fromEntries(Object.entries(numerics).map(([k, v]) => [`whitebox-engine/numerics/${k}`, v])),
+  'mdml-engine/autodiff': autodiff,
+  'mdml-engine/base': base,
+  'mdml-engine/random': random,
+  'mdml-engine/systems': systems,
+  'mdml-engine/tensor': tensor,
+  'mdml-engine/trace': trace,
+  'mdml-engine/dynamics': dynamics,
+  'mdml-engine/dynamics/ode': dynamics.ode,
+  'mdml-engine/dynamics/pde': (dynamics as Record<string, unknown>)['pde'],
+  'mdml-engine/dynamics/control': (dynamics as Record<string, unknown>)['control'],
+  'mdml-engine/dynamics/filtering': (dynamics as Record<string, unknown>)['filtering'],
+  ...Object.fromEntries(Object.entries(numerics).map(([k, v]) => [`mdml-engine/numerics/${k}`, v])),
 }
 
 interface Example {

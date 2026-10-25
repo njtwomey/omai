@@ -1,8 +1,8 @@
+import { cartesian, heatmap, type RampSpec } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { Chart, ControlPanel, FigureFrame, Select, Toggle, useColourMode } from 'mdml-render/react'
+import { colourBlindCheck, divergingRamp, sequentialRamp, simulateColourVision, tab10 } from 'mdml-render/theme'
 import { type ReactNode, useMemo, useState } from 'react'
-import { cartesian, heatmap, type RampSpec } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { Chart, ControlPanel, FigureFrame, Select, Toggle, useColourMode } from 'whitebox-render/react'
-import { colourBlindCheck, divergingRamp, sequentialRamp, simulateColourVision, tab10 } from 'whitebox-render/theme'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

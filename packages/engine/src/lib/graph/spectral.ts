@@ -5,7 +5,7 @@
  * Dirichlet energy, the Fiedler vector and spectral embeddings (dense or by traced subspace iteration).
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { chebyshevCoefficients } from '../numerics/approximation/index.ts'
 import { ddot, dnrm2, eigh, qr } from '../numerics/linalg/index.ts'
 import { eigsh } from '../numerics/sparse/index.ts'
@@ -94,8 +94,8 @@ export interface GraphFourier {
  *   30 (2013).
  * @example
  * ```ts
- * import { cycleGraph, graphFourierTransform } from 'whitebox-engine/graph'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { cycleGraph, graphFourierTransform } from 'mdml-engine/graph'
+ * import { toArray } from 'mdml-engine/tensor'
  * const f = graphFourierTransform(cycleGraph(4), [1, 1, 1, 1])
  * toArray(f.coefficients).map((c) => Math.round(Math.abs(c) * 1e9) / 1e9) // => [2, 0, 0, 0]
  * ```
@@ -119,8 +119,8 @@ export function graphFourierTransform(l: ShiftOperator, x: TensorLike, options: 
  * @concept graph-signal-processing
  * @example
  * ```ts
- * import { graphFourierTransform, inverseGraphFourierTransform, pathGraph } from 'whitebox-engine/graph'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { graphFourierTransform, inverseGraphFourierTransform, pathGraph } from 'mdml-engine/graph'
+ * import { toArray } from 'mdml-engine/tensor'
  * const f = graphFourierTransform(pathGraph(3), [3, 1, 2])
  * toArray(inverseGraphFourierTransform(f.basis, f.coefficients)).map((v) => Math.round(v * 1e9) / 1e9) // => [3, 1, 2]
  * ```
@@ -143,8 +143,8 @@ export function inverseGraphFourierTransform(basis: TensorLike, coefficients: Te
  * @concept graph-signal-processing
  * @example
  * ```ts
- * import { pathGraph, spectralFilter } from 'whitebox-engine/graph'
- * import { onesLike, toArray } from 'whitebox-engine/tensor'
+ * import { pathGraph, spectralFilter } from 'mdml-engine/graph'
+ * import { onesLike, toArray } from 'mdml-engine/tensor'
  * toArray(spectralFilter(pathGraph(3), [1, 2, 3], (w) => onesLike(w))).map((v) => Math.round(v * 1e9) / 1e9) // => [1, 2, 3]
  * ```
  */
@@ -172,8 +172,8 @@ export function spectralFilter(
  * @reference R. I. Kondor and J. Lafferty, Diffusion kernels on graphs and other discrete structures (ICML 2002).
  * @example
  * ```ts
- * import { heatKernel, pathGraph } from 'whitebox-engine/graph'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { heatKernel, pathGraph } from 'mdml-engine/graph'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(heatKernel(pathGraph(3), 0)).map((r) => r.map((v) => Math.round(v * 1e9) / 1e9)) // => [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
  * ```
  */
@@ -194,8 +194,8 @@ export function heatKernel(l: ShiftOperator, t: TensorLike, options: LaplacianCh
  * @concept graph-signal-processing
  * @example
  * ```ts
- * import { heatDiffusion, pathGraph } from 'whitebox-engine/graph'
- * import { sum, item } from 'whitebox-engine/tensor'
+ * import { heatDiffusion, pathGraph } from 'mdml-engine/graph'
+ * import { sum, item } from 'mdml-engine/tensor'
  * Math.round(item(sum(heatDiffusion(pathGraph(4), [1, 0, 0, 0], 2))) * 1e9) / 1e9 // => 1
  * ```
  */
@@ -220,8 +220,8 @@ export function heatDiffusion(l: ShiftOperator, x: TensorLike, t: TensorLike, op
  *   localized spectral filtering (NeurIPS 2016).
  * @example
  * ```ts
- * import { chebyshevFilter, normalisedLaplacian, pathGraph } from 'whitebox-engine/graph'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { chebyshevFilter, normalisedLaplacian, pathGraph } from 'mdml-engine/graph'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(chebyshevFilter(normalisedLaplacian(pathGraph(3)), [1, 2, 3], [2])) // => [2, 4, 6]
  * ```
  */
@@ -237,7 +237,7 @@ export function chebyshevFilter(
   const scaled = sub(mul(op, 2 / lambdaMax), eye(n))
   const [theta] = promoteFloat(coefficients) as [Value]
   const order = theta.shape[theta.shape.length - 1] ?? 0
-  if (order === 0) throw new WhiteboxError('value', 'chebyshevFilter: give at least one coefficient')
+  if (order === 0) throw new MdmlError('value', 'chebyshevFilter: give at least one coefficient')
   const { columns, vector } = asColumns(x)
   const coef = (k: number): Value => sum(sliceAxis(theta, -1, k, k + 1), -1)
   let previous = columns
@@ -255,7 +255,7 @@ export function chebyshevFilter(
 
 /**
  * The Chebyshev coefficients of a frequency response on [0, lambdaMax], for {@link chebyshevFilter}: interpolation at
- * order + 1 Chebyshev points (via `chebyshevCoefficients` of `whitebox-engine/numerics/approximation`), so a smooth
+ * order + 1 Chebyshev points (via `chebyshevCoefficients` of `mdml-engine/numerics/approximation`), so a smooth
  * response such as the heat kernel e^{-t lambda} is approximated without diagonalising the Laplacian.
  *
  * @param response - The response h(lambda).
@@ -265,7 +265,7 @@ export function chebyshevFilter(
  * @concept graph-signal-processing
  * @example
  * ```ts
- * import { chebyshevFilterCoefficients } from 'whitebox-engine/graph'
+ * import { chebyshevFilterCoefficients } from 'mdml-engine/graph'
  * chebyshevFilterCoefficients((x) => 3, 2).map((c) => Math.round(c * 1e12) / 1e12) // => [3, 0, 0]
  * ```
  */
@@ -274,8 +274,7 @@ export function chebyshevFilterCoefficients(
   order: number,
   lambdaMax = 2,
 ): number[] {
-  if (!(Number.isInteger(order) && order >= 0))
-    throw new WhiteboxError('value', 'chebyshevFilterCoefficients: bad order')
+  if (!(Number.isInteger(order) && order >= 0)) throw new MdmlError('value', 'chebyshevFilterCoefficients: bad order')
   if (order === 0) return [response(lambdaMax / 2)]
   const values = Array.from({ length: order + 1 }, (_, j) =>
     response((lambdaMax / 2) * (1 + Math.cos((j * Math.PI) / order))),
@@ -307,7 +306,7 @@ function kernelFunction(kernel: WaveletKernel): (x: Value) => Value {
  *   and Computational Harmonic Analysis 30 (2011).
  * @example
  * ```ts
- * import { cycleGraph, graphWavelets } from 'whitebox-engine/graph'
+ * import { cycleGraph, graphWavelets } from 'mdml-engine/graph'
  * graphWavelets(cycleGraph(6), [1, 2]).shape // => [2, 6, 6]
  * graphWavelets(cycleGraph(6), [1, 2], { signal: [1, 0, 0, 0, 0, 0] }).shape // => [2, 6]
  * ```
@@ -348,8 +347,8 @@ export function graphWavelets(
  *   S. Günnemann, Predict then propagate (ICLR 2019).
  * @example
  * ```ts
- * import { pathGraph, propagate } from 'whitebox-engine/graph'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pathGraph, propagate } from 'mdml-engine/graph'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(propagate(pathGraph(3), [3, 0, 3], { kind: 'rw', selfLoops: false })) // => [0, 3, 0]
  * ```
  */
@@ -365,7 +364,7 @@ export function propagate(
   } = {},
 ): Value {
   const { steps = 1, teleport, ...normalisation } = options
-  if (!(Number.isInteger(steps) && steps >= 0)) throw new WhiteboxError('value', 'propagate: steps must be >= 0')
+  if (!(Number.isInteger(steps) && steps >= 0)) throw new MdmlError('value', 'propagate: steps must be >= 0')
   const op = normalisedAdjacency(a, normalisation)
   const { columns, vector } = asColumns(x)
   let h = columns
@@ -388,8 +387,8 @@ export function propagate(
  * @concept graph-signal-processing
  * @example
  * ```ts
- * import { dirichletEnergy, pathGraph } from 'whitebox-engine/graph'
- * import { item } from 'whitebox-engine/tensor'
+ * import { dirichletEnergy, pathGraph } from 'mdml-engine/graph'
+ * import { item } from 'mdml-engine/tensor'
  * item(dirichletEnergy(pathGraph(3), [0, 1, 3])) // => 5
  * ```
  */
@@ -401,16 +400,16 @@ export function dirichletEnergy(l: ShiftOperator, x: TensorLike, options: Laplac
 /**
  * The Fiedler vector (NetworkX fiedler_vector): the eigenvector of the second-smallest eigenvalue of the Laplacian
  * (the algebraic connectivity), unit length with its largest-magnitude entry positive. Dense by default, or by the
- * Lanczos solver of `whitebox-engine/numerics/sparse` for large graphs.
+ * Lanczos solver of `mdml-engine/numerics/sparse` for large graphs.
  *
  * @param g - A connected graph with at least two nodes.
  * @param options - `normalised` (default false), `weighted` (default true) and `method` (`'dense'` or `'lanczos'`).
  * @returns The vector.
- * @throws WhiteboxError with code `value` for fewer than two nodes.
+ * @throws MdmlError with code `value` for fewer than two nodes.
  * @concept spectral-clustering
  * @example
  * ```ts
- * import { fiedlerVector, pathGraph } from 'whitebox-engine/graph'
+ * import { fiedlerVector, pathGraph } from 'mdml-engine/graph'
  * Array.from(fiedlerVector(pathGraph(3)), (v) => Math.round(v * 1e4) / 1e4 + 0) // => [0.7071, 0, -0.7071]
  * ```
  */
@@ -418,7 +417,7 @@ export function fiedlerVector(
   g: Graph,
   options: LaplacianChoice & { readonly method?: 'dense' | 'lanczos' } = {},
 ): Float64Array {
-  if (g.n < 2) throw new WhiteboxError('value', 'fiedlerVector: the graph needs at least two nodes')
+  if (g.n < 2) throw new MdmlError('value', 'fiedlerVector: the graph needs at least two nodes')
   if (options.method === 'lanczos' && g.n > 2) {
     const l = laplacianCsr(g, options)
     const r = eigsh(l, 2, { which: 'SA' })
@@ -444,7 +443,7 @@ export function fiedlerVector(
  * @concept spectral-clustering
  * @example
  * ```ts
- * import { barbellGraph, spectralEmbedding } from 'whitebox-engine/graph'
+ * import { barbellGraph, spectralEmbedding } from 'mdml-engine/graph'
  * spectralEmbedding(barbellGraph(4, 0), 2).shape // => [8, 2]
  * ```
  */
@@ -458,7 +457,7 @@ export function spectralEmbedding(
   const n = l.shape[l.shape.length - 1] ?? 0
   const first = options.dropFirst === true ? 1 : 0
   if (!(Number.isInteger(k) && k >= 1 && k + first <= n)) {
-    throw new WhiteboxError('value', `spectralEmbedding: k must be in [1, ${n - first}]`)
+    throw new MdmlError('value', `spectralEmbedding: k must be in [1, ${n - first}]`)
   }
   const y = sliceAxis(eigh(l).eigenvectors, -1, first, first + k)
   if (options.rowNormalise !== true) return y
@@ -490,7 +489,7 @@ export interface SubspaceState {
  * @concept spectral-clustering
  * @example
  * ```ts
- * import { barbellGraph, spectralEmbeddingAlgorithm } from 'whitebox-engine/graph'
+ * import { barbellGraph, spectralEmbeddingAlgorithm } from 'mdml-engine/graph'
  * spectralEmbeddingAlgorithm(barbellGraph(4, 0), 2).name // => 'spectral-subspace-iteration'
  * ```
  */
@@ -500,7 +499,7 @@ export function spectralEmbeddingAlgorithm(
   options: { readonly tol?: number; readonly weighted?: boolean } = {},
 ): Algorithm<SubspaceState> {
   const n = g.n
-  if (!(Number.isInteger(k) && k >= 1 && k <= n)) throw new WhiteboxError('value', `spectral iteration: k in [1, ${n}]`)
+  if (!(Number.isInteger(k) && k >= 1 && k <= n)) throw new MdmlError('value', `spectral iteration: k in [1, ${n}]`)
   const tol = options.tol ?? 1e-8
   const l = laplacianCsr(g, {
     normalised: true,
@@ -587,11 +586,11 @@ export function spectralEmbeddingAlgorithm(
  * @param options - `tol` (default 1e-8), `maxIter` (default 10000), `weighted`, and the seed, key and tracing.
  * @returns The eigenvalues (ascending) and the eigenvectors `[n, k]` as columns, each with its largest-magnitude entry
  *   positive.
- * @throws WhiteboxError with code `convergence` when the iteration does not converge.
+ * @throws MdmlError with code `convergence` when the iteration does not converge.
  * @concept spectral-clustering
  * @example
  * ```ts
- * import { barbellGraph, iterativeSpectralEmbedding } from 'whitebox-engine/graph'
+ * import { barbellGraph, iterativeSpectralEmbedding } from 'mdml-engine/graph'
  * Math.round(iterativeSpectralEmbedding(barbellGraph(4, 0), 2).values[0] * 1e6) / 1e6 // => 0
  * ```
  */
@@ -607,7 +606,7 @@ export function iterativeSpectralEmbedding(
   })
   const result = runAlgorithm(algorithm, { ...run, maxSteps: maxIter })
   if (result.status !== 'converged') {
-    throw new WhiteboxError('convergence', `iterativeSpectralEmbedding: no convergence in ${maxIter} iterations`)
+    throw new MdmlError('convergence', `iterativeSpectralEmbedding: no convergence in ${maxIter} iterations`)
   }
   const n = g.n
   const b = Float64Array.from(result.state.basis)

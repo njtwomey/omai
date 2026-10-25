@@ -6,7 +6,7 @@
  * expectations of demonstrations.
  */
 
-import { type Json, meanOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { type Json, MdmlError, meanOf } from '../../../lib/base/index.ts'
 import { binaryCrossEntropyWithLogits } from '../../../lib/losses/index.ts'
 import type { ActivationName, Params } from '../../../lib/nn/index.ts'
 import { adam, type Tree } from '../../../lib/optim/index.ts'
@@ -96,8 +96,8 @@ export interface DaggerState<A> {
  *   online learning.
  * @example
  * ```ts
- * import { daggerAlgorithm } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { daggerAlgorithm } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * daggerAlgorithm(cartPole.create(), (o) => ((o[2] ?? 0) > 0 ? 1 : 0)).name // => 'dagger'
  * ```
  */
@@ -217,9 +217,9 @@ export interface DaggerResult<A> {
  * @concept imitation-learning
  * @example
  * ```ts
- * import { dagger } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { timeLimit } from 'whitebox-engine/rl'
+ * import { dagger } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { timeLimit } from 'mdml-engine/rl'
  * dagger(timeLimit(cartPole.create(), 20), (o) => ((o[2] ?? 0) > 0 ? 1 : 0), { iterations: 1 }).dataset.length // => 40
  * ```
  */
@@ -294,8 +294,8 @@ export interface GailState {
  * @reference Ho and Ermon (2016), Generative adversarial imitation learning.
  * @example
  * ```ts
- * import { gail } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { gail } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * gail(cartPole.create(), [{ observation: [0, 0, 0, 0], action: 1 }]).name // => 'gail'
  * ```
  */
@@ -304,7 +304,7 @@ export function gail<A extends PolicyAction = PolicyAction>(
   demonstrations: readonly Demonstration<A>[],
   options: GailOptions = {},
 ): Agent<GailState, Vec, A> {
-  if (demonstrations.length === 0) throw new WhiteboxError('value', 'gail: needs demonstrations')
+  if (demonstrations.length === 0) throw new MdmlError('value', 'gail: needs demonstrations')
   const inner = ppo<A>(env, options)
   const nSteps = options.nSteps ?? 256
   const d = observationSize(env.observationSpace)
@@ -453,8 +453,8 @@ function rewardTable(mdp: TabularMdp, reward: readonly number[] | readonly (read
  * @concept inverse-reinforcement-learning
  * @example
  * ```ts
- * import { softValueIteration } from 'whitebox-engine/methods/rl/agents'
- * import { tabularMdp } from 'whitebox-engine/rl'
+ * import { softValueIteration } from 'mdml-engine/methods/rl/agents'
+ * import { tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[0, 1], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 0], [0, 0]], terminalStates: [1] })
  * softValueIteration(mdp, [0, 0]).policy[0] // => [0.5, 0.5]
  * ```
@@ -518,8 +518,8 @@ export function softValueIteration(
  * @concept inverse-reinforcement-learning
  * @example
  * ```ts
- * import { stateVisitationFrequencies } from 'whitebox-engine/methods/rl/agents'
- * import { tabularMdp } from 'whitebox-engine/rl'
+ * import { stateVisitationFrequencies } from 'mdml-engine/methods/rl/agents'
+ * import { tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[0, 1]], [[0, 1]]], rewards: [[0], [0]], terminalStates: [1], initial: [1, 0] })
  * stateVisitationFrequencies(mdp, [[1], [1]], { horizon: 3 }) // => [1, 0]
  * ```
@@ -562,7 +562,7 @@ export function stateVisitationFrequencies(
  * @concept inverse-reinforcement-learning
  * @example
  * ```ts
- * import { featureExpectations } from 'whitebox-engine/methods/rl/agents'
+ * import { featureExpectations } from 'mdml-engine/methods/rl/agents'
  * featureExpectations([[0, 1], [0]], [[1, 0], [0, 1]]) // => [1, 0.5]
  * ```
  */
@@ -627,8 +627,8 @@ export interface MaxEntIrlState {
  * @reference Ziebart, Maas, Bagnell and Dey (2008), Maximum entropy inverse reinforcement learning.
  * @example
  * ```ts
- * import { maxEntIrlAlgorithm } from 'whitebox-engine/methods/rl/agents'
- * import { tabularMdp } from 'whitebox-engine/rl'
+ * import { maxEntIrlAlgorithm } from 'mdml-engine/methods/rl/agents'
+ * import { tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[0, 1], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 0], [0, 0]], terminalStates: [1] })
  * maxEntIrlAlgorithm(mdp, [[0]]).name // => 'maxEntIrl'
  * ```
@@ -712,8 +712,8 @@ export interface MaxEntIrlResult extends MaxEntIrlState {
  * @concept inverse-reinforcement-learning
  * @example
  * ```ts
- * import { maxEntIrl } from 'whitebox-engine/methods/rl/agents'
- * import { tabularMdp } from 'whitebox-engine/rl'
+ * import { maxEntIrl } from 'mdml-engine/methods/rl/agents'
+ * import { tabularMdp } from 'mdml-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[0, 1], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 0], [0, 0]], terminalStates: [1], initial: [1, 0] })
  * maxEntIrl(mdp, [[0]]).converged // => true
  * ```

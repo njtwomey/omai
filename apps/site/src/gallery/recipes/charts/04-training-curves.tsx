@@ -1,8 +1,8 @@
+import { key, normal } from 'mdml-engine/random'
+import type { Run, TraceEvent } from 'mdml-engine/trace'
+import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'mdml-render/react'
+import { metricChart } from 'mdml-render/trace'
 import { type ReactNode, useMemo, useState } from 'react'
-import { key, normal } from 'whitebox-engine/random'
-import type { Run, TraceEvent } from 'whitebox-engine/trace'
-import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'whitebox-render/react'
-import { metricChart } from 'whitebox-render/trace'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {
@@ -30,7 +30,7 @@ const events: TraceEvent[] = Array.from({ length: 300 }, (_, t): TraceEvent[] =>
     value: 2 * Math.exp(-t / 80) + 0.25 + 0.05 * (noise[300 + t] ?? 0),
   },
 ]).flat()
-const run: Run = { schema: 'whitebox.run/1', events }
+const run: Run = { schema: 'mdml.run/1', events }
 
 export default function TrainingCurves(): ReactNode {
   const mode = useColourMode()

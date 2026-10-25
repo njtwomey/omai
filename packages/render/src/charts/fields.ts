@@ -5,10 +5,10 @@
  */
 
 import type { SeriesOption } from 'echarts'
-import { WhiteboxError } from 'whitebox-engine/base'
-import { contourLevels, contourLines } from 'whitebox-engine/numerics/geometry'
-import type { Pixels } from 'whitebox-engine/scene'
-import type { TensorLike } from 'whitebox-engine/tensor'
+import { MdmlError } from 'mdml-engine/base'
+import { contourLevels, contourLines } from 'mdml-engine/numerics/geometry'
+import type { Pixels } from 'mdml-engine/scene'
+import type { TensorLike } from 'mdml-engine/tensor'
 import type { Range } from '../figure/aspect.ts'
 import { extentOf } from '../figure/limits.ts'
 import { formatNumber } from '../theme/format.ts'
@@ -39,7 +39,7 @@ export interface ContourOptions {
 }
 
 /**
- * Contour lines of a gridded field (marching squares from whitebox-engine's `numerics.geometry.contourLines`), one
+ * Contour lines of a gridded field (marching squares from mdml-engine's `numerics.geometry.contourLines`), one
  * line series per level with gaps between separate lines, and a label per level.
  *
  * @param z - Values `[rows, cols]`.
@@ -47,7 +47,7 @@ export interface ContourOptions {
  * @returns The layer.
  * @example
  * ```ts
- * import { contours } from 'whitebox-render/charts'
+ * import { contours } from 'mdml-render/charts'
  * const l = contours([[0, 0, 0], [0, 1, 0], [0, 0, 0]], { levels: [0.5], labels: false })
  * l.series.length // => 1
  * l.series[0].data.length // => 5
@@ -136,7 +136,7 @@ export function contours(z: TensorLike, options: ContourOptions = {}): Layer {
  * @returns K margin grids.
  * @example
  * ```ts
- * import { argmaxMargins } from 'whitebox-render/charts'
+ * import { argmaxMargins } from 'mdml-render/charts'
  * argmaxMargins([[[0.2, 0.7]], [[0.8, 0.3]]]) // => [[[-0.6000000000000001, 0.39999999999999997]], [[0.6000000000000001, -0.39999999999999997]]]
  * ```
  */
@@ -145,7 +145,7 @@ export function argmaxMargins(fields: readonly TensorLike[]): number[][][] {
   const first = grids[0]
   if (first === undefined) return []
   if (grids.some((g) => g.rows !== first.rows || g.cols !== first.cols))
-    throw new WhiteboxError('shape', 'argmaxMargins: the fields must have the same shape')
+    throw new MdmlError('shape', 'argmaxMargins: the fields must have the same shape')
   return grids.map((g, k) =>
     Array.from({ length: g.rows }, (_, r) =>
       Array.from({ length: g.cols }, (_, c) => {
@@ -186,7 +186,7 @@ export interface DecisionRegionOptions {
  * @returns The layer.
  * @example
  * ```ts
- * import { decisionRegions } from 'whitebox-render/charts'
+ * import { decisionRegions } from 'mdml-render/charts'
  * const l = decisionRegions([[[0.9, 0.1], [0.8, 0.3]], [[0.1, 0.9], [0.2, 0.7]]], { x: [-1, 1], y: [-1, 1] })
  * l.extent // => { x: [-1, 1], y: [-1, 1], tight: true }
  * ```
@@ -195,7 +195,7 @@ export function decisionRegions(probabilities: readonly TensorLike[], options: D
   const mode = options.mode ?? 'light'
   const grids: Grid2D[] = probabilities.map((p) => grid2d(p, 'decisionRegions'))
   const first = grids[0]
-  if (first === undefined) throw new WhiteboxError('value', 'decisionRegions: give at least one class')
+  if (first === undefined) throw new MdmlError('value', 'decisionRegions: give at least one class')
   const K = grids.length
   const x = axisCoords(options.x, first.cols)
   const y = axisCoords(options.y, first.rows)
@@ -274,10 +274,10 @@ export interface FieldArrowOptions {
  * @param field - The field `(x, y) => [u, v]`.
  * @param options - Ranges, grid size, length mode and scale.
  * @returns The arrows.
- * @throws WhiteboxError with code `value` when the grid has fewer than two points along an axis.
+ * @throws MdmlError with code `value` when the grid has fewer than two points along an axis.
  * @example
  * ```ts
- * import { fieldArrows } from 'whitebox-render/charts'
+ * import { fieldArrows } from 'mdml-render/charts'
  * fieldArrows(() => [1, 0], { x: [0, 1], y: [0, 1], n: 2 })[0] // => { from: [-0.4, 0], to: [0.4, 0], magnitude: 1 }
  * ```
  */
@@ -287,7 +287,7 @@ export function fieldArrows(
 ): FieldArrow[] {
   const { x, y, n = 15, length = 'unit', scale = 0.8 } = options
   const [nx, ny] = typeof n === 'number' ? [n, n] : n
-  if (!(nx >= 2 && ny >= 2)) throw new WhiteboxError('value', 'fieldArrows: n must be at least 2 along each axis')
+  if (!(nx >= 2 && ny >= 2)) throw new MdmlError('value', 'fieldArrows: n must be at least 2 along each axis')
   const dx = (x[1] - x[0]) / (nx - 1)
   const dy = (y[1] - y[0]) / (ny - 1)
   const samples: { cx: number; cy: number; gu: number; gv: number; cell: number; magnitude: number }[] = []
@@ -317,7 +317,7 @@ export function fieldArrows(
  * @returns The layer.
  * @example
  * ```ts
- * import { fieldArrows, vectorField } from 'whitebox-render/charts'
+ * import { fieldArrows, vectorField } from 'mdml-render/charts'
  * vectorField(fieldArrows((x, y) => [-y, x], { x: [-1, 1], y: [-1, 1], n: 3 })).series[0].data.length // => 8
  * ```
  */
@@ -359,7 +359,7 @@ export function vectorField(
 }
 
 /**
- * Streamlines (trajectories of a field, e.g. from whitebox-engine's `dynamics.streamline`) as lines, with an arrow head
+ * Streamlines (trajectories of a field, e.g. from mdml-engine's `dynamics.streamline`) as lines, with an arrow head
  * at the middle of each to show the direction of flow.
  *
  * @param paths - Each path as `[x, y]` points (or an `[m, 2]` tensor) in time order.
@@ -367,7 +367,7 @@ export function vectorField(
  * @returns The layer.
  * @example
  * ```ts
- * import { streamlines } from 'whitebox-render/charts'
+ * import { streamlines } from 'mdml-render/charts'
  * streamlines([[[0, 0], [1, 0], [2, 1]]]).extent // => { x: [0, 2], y: [0, 1] }
  * ```
  */

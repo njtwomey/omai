@@ -4,7 +4,7 @@
  * stationarity, and the Wald-Wolfowitz runs test of randomness.
  */
 
-import { meanOf, type TestResult, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, meanOf, type TestResult } from '../../base/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { ols } from '../_linear.ts'
 import { chi2Sf, normCdf, normSf, sample } from '../_util.ts'
@@ -46,7 +46,7 @@ export interface LjungBoxOptions {
  * @returns Q at the lag and its p-value.
  * @example
  * ```ts
- * import { ljungBox } from 'whitebox-engine/stats/tests'
+ * import { ljungBox } from 'mdml-engine/stats/tests'
  * ljungBox([1, -1, 1, -1, 1, -1, 1, -1, 1, -1], { lags: 1 }).statistic // => 10.8
  * ```
  */
@@ -55,7 +55,7 @@ export function ljungBox(x: TensorLike, options: LjungBoxOptions = {}): TestResu
   const n = a.length
   const lags = options.lags ?? Math.min(10, Math.floor(n / 5))
   if (!(Number.isInteger(lags) && lags >= 1 && lags < n))
-    throw new WhiteboxError('value', 'ljungBox: lags must be in [1, n)')
+    throw new MdmlError('value', 'ljungBox: lags must be in [1, n)')
   const r = acf(a, lags)
   let q = 0
   for (let k = 1; k <= lags; k++) q += options.boxPierce === true ? (r[k] ?? 0) ** 2 : (r[k] ?? 0) ** 2 / (n - k)
@@ -79,7 +79,7 @@ export function ljungBox(x: TensorLike, options: LjungBoxOptions = {}): TestResu
  * @returns d and its asymptotic two-sided p-value.
  * @example
  * ```ts
- * import { durbinWatson } from 'whitebox-engine/stats/tests'
+ * import { durbinWatson } from 'mdml-engine/stats/tests'
  * durbinWatson([1, -1, 1, -1]).statistic // => 3
  * ```
  */
@@ -157,7 +157,7 @@ const poly = (c: readonly number[], x: number): number => {
  * @returns The p-value.
  * @example
  * ```ts
- * import { mackinnonp } from 'whitebox-engine/stats/tests'
+ * import { mackinnonp } from 'mdml-engine/stats/tests'
  * mackinnonp(-2.86154) // => 0.05
  * ```
  */
@@ -176,7 +176,7 @@ export function mackinnonp(stat: number, regression: TrendTerms = 'c'): number {
  * @returns The three critical values.
  * @example
  * ```ts
- * import { mackinnoncrit } from 'whitebox-engine/stats/tests'
+ * import { mackinnoncrit } from 'mdml-engine/stats/tests'
  * mackinnoncrit(Number.POSITIVE_INFINITY) // => [-3.43035, -2.86154, -2.56677]
  * ```
  */
@@ -232,7 +232,7 @@ export interface AdfOptions {
  * @returns The ADF statistic and its p-value (small p rejects a unit root).
  * @example
  * ```ts
- * import { adfuller } from 'whitebox-engine/stats/tests'
+ * import { adfuller } from 'mdml-engine/stats/tests'
  * const x = [0.5, -0.2, 0.3, 0.1, -0.4, 0.2, 0.6, -0.3, 0.1, 0.4, -0.5, 0.2, 0.3, -0.1, 0.2, -0.6, 0.4, 0.1, -0.2, 0.3]
  * adfuller(x, { autolag: null, maxlag: 1 }).pValue < 0.05 // => true
  * ```
@@ -245,14 +245,14 @@ export function adfuller(x: TensorLike, options: AdfOptions = {}): TestResult {
     lo = Math.min(lo, v)
     hi = Math.max(hi, v)
   }
-  if (lo === hi) throw new WhiteboxError('value', 'adfuller: the series is constant')
+  if (lo === hi) throw new MdmlError('value', 'adfuller: the series is constant')
   const regression = options.regression ?? 'c'
   const n = a.length
   const ntrend = regression === 'n' ? 0 : regression.length
   let maxlag = options.maxlag ?? Math.min(Math.floor(n / 2) - ntrend - 1, Math.ceil(12 * (n / 100) ** 0.25))
-  if (maxlag < 0) throw new WhiteboxError('value', 'adfuller: the sample is too short for the regression')
+  if (maxlag < 0) throw new MdmlError('value', 'adfuller: the sample is too short for the regression')
   if (options.maxlag !== undefined && maxlag > Math.floor(n / 2) - ntrend - 1)
-    throw new WhiteboxError('value', 'adfuller: maxlag must be less than n / 2 - 1 - ntrend')
+    throw new MdmlError('value', 'adfuller: maxlag must be less than n / 2 - 1 - ntrend')
   maxlag = Math.floor(maxlag)
   const autolag = options.autolag === undefined ? 'AIC' : options.autolag
   let usedlag = maxlag
@@ -325,7 +325,7 @@ export interface KpssOptions {
  * @returns The KPSS statistic and its interpolated p-value.
  * @example
  * ```ts
- * import { kpss } from 'whitebox-engine/stats/tests'
+ * import { kpss } from 'mdml-engine/stats/tests'
  * kpss([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], { nlags: 2 }).pValue // => 0.037877
  * ```
  */
@@ -364,8 +364,7 @@ export function kpss(x: TensorLike, options: KpssOptions = {}): TestResult {
     const sHat = s1 / s0
     nlags = Math.min(Math.trunc(1.1447 * (sHat * sHat) ** (1 / 3) * n ** (1 / 3)), n - 1)
   } else {
-    if (!(Number.isInteger(opt) && opt >= 0 && opt < n))
-      throw new WhiteboxError('value', 'kpss: nlags must be in [0, n)')
+    if (!(Number.isInteger(opt) && opt >= 0 && opt < n)) throw new MdmlError('value', 'kpss: nlags must be in [0, n)')
     nlags = opt
   }
   let cum = 0
@@ -409,7 +408,7 @@ export function kpss(x: TensorLike, options: KpssOptions = {}): TestResult {
  * @returns z and its two-sided p-value.
  * @example
  * ```ts
- * import { runsTest } from 'whitebox-engine/stats/tests'
+ * import { runsTest } from 'mdml-engine/stats/tests'
  * runsTest([1, 2, 1, 2, 1, 2, 1, 2, 1, 2]).statistic > 2 // => true
  * ```
  */

@@ -24,8 +24,8 @@ export type Distortion = 'calibrated' | 'overconfident' | 'underconfident' | 'sh
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { miscalibratedPredictions } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { miscalibratedPredictions } from 'mdml-engine/datasets'
  * generate(miscalibratedPredictions, { knobs: { classes: 3, n: 10 } }).data.x.shape // => [10, 3]
  * ```
  */
@@ -130,8 +130,8 @@ export type SurvivalModel = 'weibull' | 'exponential' | 'lognormal'
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { survivalData } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { survivalData } from 'mdml-engine/datasets'
  * generate(survivalData, { knobs: { n: 10 } }).data.targetNames // => ['time', 'event']
  * ```
  */

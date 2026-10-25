@@ -5,7 +5,7 @@
  * (scipy.stats.combine_pvalues).
  */
 
-import { type TestResult, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, type TestResult } from '../../base/index.ts'
 import type { Tensor, TensorLike } from '../../tensor/index.ts'
 import { chi2Cdf, chi2Sf, normPpf, normSf, sample, tSf, vec } from '../_util.ts'
 import { testResult } from './result.ts'
@@ -23,7 +23,7 @@ export type CorrectionMethod =
 
 function pValuesOf(name: string, p: TensorLike): Float64Array {
   const a = sample(name, p)
-  for (const v of a) if (!(v >= 0 && v <= 1)) throw new WhiteboxError('value', `${name}: p-values must lie in [0, 1]`)
+  for (const v of a) if (!(v >= 0 && v <= 1)) throw new MdmlError('value', `${name}: p-values must lie in [0, 1]`)
   return a
 }
 
@@ -37,7 +37,7 @@ function pValuesOf(name: string, p: TensorLike): Float64Array {
  * @returns The adjusted p-values, in the original order.
  * @example
  * ```ts
- * import { adjustPValues } from 'whitebox-engine/stats/tests'
+ * import { adjustPValues } from 'mdml-engine/stats/tests'
  * adjustPValues([0.01, 0.04, 0.03], 'holm') // => [0.03, 0.06, 0.06]
  * adjustPValues([0.01, 0.04, 0.03], 'benjamini-hochberg') // => [0.03, 0.04, 0.04]
  * ```
@@ -89,7 +89,7 @@ export function adjustPValues(p: TensorLike, method: CorrectionMethod): Tensor {
       break
     }
     default:
-      throw new WhiteboxError('value', `adjustPValues: unknown method ${String(method)}`)
+      throw new MdmlError('value', `adjustPValues: unknown method ${String(method)}`)
   }
   order.forEach((i, r) => {
     out[i] = Math.min(1, adjusted[r] ?? 1)
@@ -116,7 +116,7 @@ export interface MultipleTestsResult {
  * @returns Rejections, adjusted p-values and the implied per-test levels.
  * @example
  * ```ts
- * import { multipleTests } from 'whitebox-engine/stats/tests'
+ * import { multipleTests } from 'mdml-engine/stats/tests'
  * multipleTests([0.01, 0.04, 0.03], { method: 'bonferroni' }).reject // => [true, false, false]
  * ```
  */
@@ -142,7 +142,7 @@ export function multipleTests(
  * @returns The adjusted p-values.
  * @example
  * ```ts
- * import { bonferroni } from 'whitebox-engine/stats/tests'
+ * import { bonferroni } from 'mdml-engine/stats/tests'
  * bonferroni([0.01, 0.2]) // => [0.02, 0.4]
  * ```
  */
@@ -157,7 +157,7 @@ export function bonferroni(p: TensorLike): Tensor {
  * @returns The adjusted p-values.
  * @example
  * ```ts
- * import { holm } from 'whitebox-engine/stats/tests'
+ * import { holm } from 'mdml-engine/stats/tests'
  * holm([0.01, 0.2]) // => [0.02, 0.2]
  * ```
  */
@@ -172,7 +172,7 @@ export function holm(p: TensorLike): Tensor {
  * @returns The adjusted p-values.
  * @example
  * ```ts
- * import { hochberg } from 'whitebox-engine/stats/tests'
+ * import { hochberg } from 'mdml-engine/stats/tests'
  * hochberg([0.03, 0.04]) // => [0.04, 0.04]
  * ```
  */
@@ -187,7 +187,7 @@ export function hochberg(p: TensorLike): Tensor {
  * @returns The adjusted p-values.
  * @example
  * ```ts
- * import { benjaminiHochberg } from 'whitebox-engine/stats/tests'
+ * import { benjaminiHochberg } from 'mdml-engine/stats/tests'
  * benjaminiHochberg([0.01, 0.02, 0.03, 0.5]) // => [0.04, 0.04, 0.04, 0.5]
  * ```
  */
@@ -203,7 +203,7 @@ export function benjaminiHochberg(p: TensorLike): Tensor {
  * @returns The adjusted p-values.
  * @example
  * ```ts
- * import { benjaminiYekutieli } from 'whitebox-engine/stats/tests'
+ * import { benjaminiYekutieli } from 'mdml-engine/stats/tests'
  * benjaminiYekutieli([0.01, 0.02]) // => [0.03, 0.03]
  * ```
  */
@@ -223,7 +223,7 @@ export type CombineMethod = 'fisher' | 'pearson' | 'tippett' | 'stouffer' | 'mud
  * @returns The combined statistic and p-value.
  * @example
  * ```ts
- * import { combinePValues } from 'whitebox-engine/stats/tests'
+ * import { combinePValues } from 'mdml-engine/stats/tests'
  * combinePValues([0.1, 0.1]).pValue // => 0.056052
  * ```
  */
@@ -251,7 +251,7 @@ export function combinePValues(
       break
     case 'stouffer': {
       const w = options.weights === undefined ? new Float64Array(k).fill(1) : sample('combinePValues', options.weights)
-      if (w.length !== k) throw new WhiteboxError('shape', 'combinePValues: weights must match the p-values')
+      if (w.length !== k) throw new MdmlError('shape', 'combinePValues: weights must match the p-values')
       let dot = 0
       let norm = 0
       for (let i = 0; i < k; i++) {
@@ -269,7 +269,7 @@ export function combinePValues(
       break
     }
     default:
-      throw new WhiteboxError('value', `combinePValues: unknown method ${String(method)}`)
+      throw new MdmlError('value', `combinePValues: unknown method ${String(method)}`)
   }
   return testResult({ test: 'combined p-values', statistic, pValue, method })
 }

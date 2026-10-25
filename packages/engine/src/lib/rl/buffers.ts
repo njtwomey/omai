@@ -5,7 +5,7 @@
  * samples subsequences for sequence models.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key, permutation, randint, uniform } from '../random/index.ts'
 import type { Transition } from './agent.ts'
 import { gae } from './returns.ts'
@@ -37,17 +37,17 @@ export interface ReplayBuffer<T> {
  * @param capacity - The maximum number of items; older items are overwritten first.
  * @param options - The chunk size (default the square root of the capacity, at least 16).
  * @returns The buffer.
- * @throws WhiteboxError with code `value` for a capacity below 1.
+ * @throws MdmlError with code `value` for a capacity below 1.
  * @concept experience-replay
  * @example
  * ```ts
- * import { replayBuffer } from 'whitebox-engine/rl'
+ * import { replayBuffer } from 'mdml-engine/rl'
  * replayBuffer<number>(100).size // => 0
  * ```
  */
 export function replayBuffer<T>(capacity: number, options: { readonly chunkSize?: number } = {}): ReplayBuffer<T> {
   if (!(Number.isInteger(capacity) && capacity >= 1)) {
-    throw new WhiteboxError('value', 'replayBuffer: capacity must be a positive integer')
+    throw new MdmlError('value', 'replayBuffer: capacity must be a positive integer')
   }
   const chunkSize = options.chunkSize ?? Math.max(16, Math.ceil(Math.sqrt(capacity)))
   return { capacity, chunkSize, chunks: [], size: 0, next: 0, added: 0 }
@@ -62,7 +62,7 @@ export function replayBuffer<T>(capacity: number, options: { readonly chunkSize?
  * @concept experience-replay
  * @example
  * ```ts
- * import { bufferAdd, bufferItems, replayBuffer } from 'whitebox-engine/rl'
+ * import { bufferAdd, bufferItems, replayBuffer } from 'mdml-engine/rl'
  * let b = replayBuffer<number>(2)
  * for (const x of [1, 2, 3]) b = bufferAdd(b, x)
  * bufferItems(b) // => [2, 3]
@@ -90,16 +90,16 @@ export function bufferAdd<T>(buffer: ReplayBuffer<T>, item: T): ReplayBuffer<T> 
  * @param buffer - The buffer.
  * @param slot - A slot in `[0, size)`.
  * @returns The item.
- * @throws WhiteboxError with code `value` for an empty slot.
+ * @throws MdmlError with code `value` for an empty slot.
  * @concept experience-replay
  * @example
  * ```ts
- * import { bufferAdd, bufferGet, replayBuffer } from 'whitebox-engine/rl'
+ * import { bufferAdd, bufferGet, replayBuffer } from 'mdml-engine/rl'
  * bufferGet(bufferAdd(replayBuffer<string>(4), 'a'), 0) // => 'a'
  * ```
  */
 export function bufferGet<T>(buffer: ReplayBuffer<T>, slot: number): T {
-  if (!(slot >= 0 && slot < buffer.size)) throw new WhiteboxError('value', `bufferGet: slot ${slot} is empty`)
+  if (!(slot >= 0 && slot < buffer.size)) throw new MdmlError('value', `bufferGet: slot ${slot} is empty`)
   return (buffer.chunks[Math.floor(slot / buffer.chunkSize)] as readonly T[])[slot % buffer.chunkSize] as T
 }
 
@@ -111,7 +111,7 @@ export function bufferGet<T>(buffer: ReplayBuffer<T>, slot: number): T {
  * @concept experience-replay
  * @example
  * ```ts
- * import { bufferAdd, bufferItems, replayBuffer } from 'whitebox-engine/rl'
+ * import { bufferAdd, bufferItems, replayBuffer } from 'mdml-engine/rl'
  * bufferItems(bufferAdd(bufferAdd(replayBuffer<number>(3), 1), 2)) // => [1, 2]
  * ```
  */
@@ -127,12 +127,12 @@ export function bufferItems<T>(buffer: ReplayBuffer<T>): T[] {
  * @param key - The key.
  * @param n - The batch size.
  * @returns The sampled slots and items.
- * @throws WhiteboxError with code `value` for an empty buffer.
+ * @throws MdmlError with code `value` for an empty buffer.
  * @concept experience-replay
  * @example
  * ```ts
- * import { bufferAdd, bufferSample, replayBuffer } from 'whitebox-engine/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { bufferAdd, bufferSample, replayBuffer } from 'mdml-engine/rl'
+ * import { key } from 'mdml-engine/random'
  * bufferSample(bufferAdd(replayBuffer<number>(4), 7), key(0), 3).items // => [7, 7, 7]
  * ```
  */
@@ -141,7 +141,7 @@ export function bufferSample<T>(
   key: Key,
   n: number,
 ): { readonly slots: number[]; readonly items: T[] } {
-  if (buffer.size === 0) throw new WhiteboxError('value', 'bufferSample: the buffer is empty')
+  if (buffer.size === 0) throw new MdmlError('value', 'bufferSample: the buffer is empty')
   const slots = Array.from(randint(key, [n], 0, buffer.size).data)
   return { slots, items: slots.map((s) => bufferGet(buffer, s)) }
 }
@@ -177,13 +177,12 @@ const EMPTY_LEAF: SumNode = { sum: 0, min: Infinity }
  * @concept experience-replay
  * @example
  * ```ts
- * import { sumTree, sumTreeTotal } from 'whitebox-engine/rl'
+ * import { sumTree, sumTreeTotal } from 'mdml-engine/rl'
  * sumTreeTotal(sumTree(8)) // => 0
  * ```
  */
 export function sumTree(capacity: number): SumTree {
-  if (!(Number.isInteger(capacity) && capacity >= 1))
-    throw new WhiteboxError('value', 'sumTree: capacity must be positive')
+  if (!(Number.isInteger(capacity) && capacity >= 1)) throw new MdmlError('value', 'sumTree: capacity must be positive')
   const depth = Math.ceil(Math.log2(Math.max(capacity, 1)))
   let node = EMPTY_LEAF
   for (let d = 0; d < depth; d++) node = { sum: 0, min: Infinity, left: node, right: node }
@@ -197,18 +196,17 @@ export function sumTree(capacity: number): SumTree {
  * @param index - The leaf in `[0, capacity)`.
  * @param value - A non-negative value.
  * @returns The new tree.
- * @throws WhiteboxError with code `value` for an index out of range or a negative value.
+ * @throws MdmlError with code `value` for an index out of range or a negative value.
  * @concept experience-replay
  * @example
  * ```ts
- * import { sumTree, sumTreeSet, sumTreeTotal } from 'whitebox-engine/rl'
+ * import { sumTree, sumTreeSet, sumTreeTotal } from 'mdml-engine/rl'
  * sumTreeTotal(sumTreeSet(sumTreeSet(sumTree(4), 0, 1), 3, 2)) // => 3
  * ```
  */
 export function sumTreeSet(tree: SumTree, index: number, value: number): SumTree {
-  if (!(index >= 0 && index < tree.capacity))
-    throw new WhiteboxError('value', `sumTreeSet: index ${index} out of range`)
-  if (!(value >= 0)) throw new WhiteboxError('value', 'sumTreeSet: values must be non-negative')
+  if (!(index >= 0 && index < tree.capacity)) throw new MdmlError('value', `sumTreeSet: index ${index} out of range`)
+  if (!(value >= 0)) throw new MdmlError('value', 'sumTreeSet: values must be non-negative')
   const set = (node: SumNode, depth: number, offset: number): SumNode => {
     if (depth === 0) return { sum: value, min: value }
     const half = 2 ** (depth - 1)
@@ -230,7 +228,7 @@ export function sumTreeSet(tree: SumTree, index: number, value: number): SumTree
  * @concept experience-replay
  * @example
  * ```ts
- * import { sumTree, sumTreeGet, sumTreeSet } from 'whitebox-engine/rl'
+ * import { sumTree, sumTreeGet, sumTreeSet } from 'mdml-engine/rl'
  * sumTreeGet(sumTreeSet(sumTree(4), 2, 5), 2) // => 5
  * ```
  */
@@ -256,7 +254,7 @@ export function sumTreeGet(tree: SumTree, index: number): number {
  * @concept experience-replay
  * @example
  * ```ts
- * import { sumTree, sumTreeSet, sumTreeTotal } from 'whitebox-engine/rl'
+ * import { sumTree, sumTreeSet, sumTreeTotal } from 'mdml-engine/rl'
  * sumTreeTotal(sumTreeSet(sumTree(2), 1, 4)) // => 4
  * ```
  */
@@ -272,7 +270,7 @@ export function sumTreeTotal(tree: SumTree): number {
  * @concept experience-replay
  * @example
  * ```ts
- * import { sumTree, sumTreeMin, sumTreeSet } from 'whitebox-engine/rl'
+ * import { sumTree, sumTreeMin, sumTreeSet } from 'mdml-engine/rl'
  * sumTreeMin(sumTreeSet(sumTreeSet(sumTree(4), 0, 3), 1, 2)) // => 2
  * ```
  */
@@ -290,7 +288,7 @@ export function sumTreeMin(tree: SumTree): number {
  * @concept experience-replay
  * @example
  * ```ts
- * import { sumTree, sumTreeFind, sumTreeSet } from 'whitebox-engine/rl'
+ * import { sumTree, sumTreeFind, sumTreeSet } from 'mdml-engine/rl'
  * const t = sumTreeSet(sumTreeSet(sumTree(4), 0, 1), 2, 3)
  * [sumTreeFind(t, 0.5), sumTreeFind(t, 1.5)] // => [0, 2]
  * ```
@@ -337,7 +335,7 @@ export interface PrioritizedReplayBuffer<T> {
  * @concept experience-replay
  * @example
  * ```ts
- * import { prioritizedReplay } from 'whitebox-engine/rl'
+ * import { prioritizedReplay } from 'mdml-engine/rl'
  * prioritizedReplay<number>(8).alpha // => 0.6
  * ```
  */
@@ -363,7 +361,7 @@ export function prioritizedReplay<T>(
  * @concept experience-replay
  * @example
  * ```ts
- * import { prioritizedAdd, prioritizedReplay } from 'whitebox-engine/rl'
+ * import { prioritizedAdd, prioritizedReplay } from 'mdml-engine/rl'
  * prioritizedAdd(prioritizedReplay<number>(4), 1).buffer.size // => 1
  * ```
  */
@@ -395,12 +393,12 @@ export interface PrioritizedSample<T> {
  * @param n - The batch size.
  * @param beta - The importance-sampling exponent (default 0.4; annealed to 1 in the paper).
  * @returns Slots, items, weights and probabilities.
- * @throws WhiteboxError with code `value` for an empty buffer.
+ * @throws MdmlError with code `value` for an empty buffer.
  * @concept experience-replay
  * @example
  * ```ts
- * import { prioritizedAdd, prioritizedReplay, prioritizedSample } from 'whitebox-engine/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { prioritizedAdd, prioritizedReplay, prioritizedSample } from 'mdml-engine/rl'
+ * import { key } from 'mdml-engine/random'
  * prioritizedSample(prioritizedAdd(prioritizedReplay<number>(4), 9), key(0), 2).weights // => [1, 1]
  * ```
  */
@@ -411,7 +409,7 @@ export function prioritizedSample<T>(
   beta = 0.4,
 ): PrioritizedSample<T> {
   const size = buffer.buffer.size
-  if (size === 0) throw new WhiteboxError('value', 'prioritizedSample: the buffer is empty')
+  if (size === 0) throw new MdmlError('value', 'prioritizedSample: the buffer is empty')
   const total = sumTreeTotal(buffer.tree)
   const u = uniform(key, [n]).data
   const segment = total / n
@@ -439,7 +437,7 @@ export function prioritizedSample<T>(
  * @concept experience-replay
  * @example
  * ```ts
- * import { prioritizedAdd, prioritizedReplay, prioritizedUpdate } from 'whitebox-engine/rl'
+ * import { prioritizedAdd, prioritizedReplay, prioritizedUpdate } from 'mdml-engine/rl'
  * prioritizedUpdate(prioritizedAdd(prioritizedReplay<number>(4), 1), [0], [3]).maxPriority // => 3.000001
  * ```
  */
@@ -484,12 +482,12 @@ export interface NStepBuffer<O, A> {
  * @concept experience-replay
  * @example
  * ```ts
- * import { nStepBuffer } from 'whitebox-engine/rl'
+ * import { nStepBuffer } from 'mdml-engine/rl'
  * nStepBuffer(3, 0.99).pending.length // => 0
  * ```
  */
 export function nStepBuffer<O, A>(n: number, gamma: number): NStepBuffer<O, A> {
-  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', 'nStepBuffer: n must be a positive integer')
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'nStepBuffer: n must be a positive integer')
   return { n, gamma, pending: [] }
 }
 
@@ -525,7 +523,7 @@ function combine<O, A>(items: readonly Transition<O, A>[], gamma: number): NStep
  * @concept experience-replay
  * @example
  * ```ts
- * import { nStepAdd, nStepBuffer } from 'whitebox-engine/rl'
+ * import { nStepAdd, nStepBuffer } from 'mdml-engine/rl'
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 1, terminated: false, truncated: false }
  * const { buffer } = nStepAdd(nStepBuffer<number, number>(2, 0.5), t)
  * nStepAdd(buffer, { ...t, observation: 1, nextObservation: 2 }).ready[0]?.reward // => 1.5
@@ -578,7 +576,7 @@ export interface RolloutBuffer<O, A> {
  * @concept policy-gradient
  * @example
  * ```ts
- * import { rolloutBuffer } from 'whitebox-engine/rl'
+ * import { rolloutBuffer } from 'mdml-engine/rl'
  * rolloutBuffer().steps.length // => 0
  * ```
  */
@@ -595,7 +593,7 @@ export function rolloutBuffer<O, A>(): RolloutBuffer<O, A> {
  * @concept policy-gradient
  * @example
  * ```ts
- * import { rolloutAdd, rolloutBuffer } from 'whitebox-engine/rl'
+ * import { rolloutAdd, rolloutBuffer } from 'mdml-engine/rl'
  * const s = { observation: 0, action: 1, reward: 1, value: 0, logProb: 0, terminated: false, truncated: false }
  * rolloutAdd(rolloutBuffer<number, number>(), s).steps.length // => 1
  * ```
@@ -616,7 +614,7 @@ export function rolloutAdd<O, A>(buffer: RolloutBuffer<O, A>, step: RolloutStep<
  * @concept advantage-estimation
  * @example
  * ```ts
- * import { rolloutAdd, rolloutAdvantages, rolloutBuffer } from 'whitebox-engine/rl'
+ * import { rolloutAdd, rolloutAdvantages, rolloutBuffer } from 'mdml-engine/rl'
  * const s = { observation: 0, action: 0, reward: 1, value: 0, logProb: 0, terminated: true, truncated: false }
  * rolloutAdvantages(rolloutAdd(rolloutBuffer<number, number>(), s), 0).advantages // => [1]
  * ```
@@ -649,8 +647,8 @@ export function rolloutAdvantages<O, A>(
  * @concept policy-gradient
  * @example
  * ```ts
- * import { minibatchIndices } from 'whitebox-engine/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { minibatchIndices } from 'mdml-engine/rl'
+ * import { key } from 'mdml-engine/random'
  * minibatchIndices(5, 2, key(0)).map((b) => b.length) // => [2, 2, 1]
  * ```
  */
@@ -683,13 +681,13 @@ export interface EpisodeStore<T> {
  * @concept experience-replay
  * @example
  * ```ts
- * import { episodeStore } from 'whitebox-engine/rl'
+ * import { episodeStore } from 'mdml-engine/rl'
  * episodeStore<number>(10).episodes.length // => 0
  * ```
  */
 export function episodeStore<T>(capacity: number): EpisodeStore<T> {
   if (!(Number.isInteger(capacity) && capacity >= 1))
-    throw new WhiteboxError('value', 'episodeStore: capacity must be positive')
+    throw new MdmlError('value', 'episodeStore: capacity must be positive')
   return { capacity, episodes: [], current: [] }
 }
 
@@ -703,7 +701,7 @@ export function episodeStore<T>(capacity: number): EpisodeStore<T> {
  * @concept experience-replay
  * @example
  * ```ts
- * import { episodeAdd, episodeStore } from 'whitebox-engine/rl'
+ * import { episodeAdd, episodeStore } from 'mdml-engine/rl'
  * episodeAdd(episodeAdd(episodeStore<number>(5), 1, false), 2, true).episodes // => [[1, 2]]
  * ```
  */
@@ -722,12 +720,12 @@ export function episodeAdd<T>(store: EpisodeStore<T>, item: T, done: boolean): E
  * @param batch - The number of sequences.
  * @param length - The window length.
  * @returns The sequences.
- * @throws WhiteboxError with code `value` when no episode has finished.
+ * @throws MdmlError with code `value` when no episode has finished.
  * @concept experience-replay
  * @example
  * ```ts
- * import { episodeAdd, episodeStore, sampleSequences } from 'whitebox-engine/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { episodeAdd, episodeStore, sampleSequences } from 'mdml-engine/rl'
+ * import { key } from 'mdml-engine/random'
  * let s = episodeStore<number>(5)
  * for (const x of [1, 2, 3]) s = episodeAdd(s, x, x === 3)
  * sampleSequences(s, key(0), 2, 3) // => [[1, 2, 3], [1, 2, 3]]
@@ -735,7 +733,7 @@ export function episodeAdd<T>(store: EpisodeStore<T>, item: T, done: boolean): E
  */
 export function sampleSequences<T>(store: EpisodeStore<T>, key: Key, batch: number, length: number): T[][] {
   const eps = store.episodes
-  if (eps.length === 0) throw new WhiteboxError('value', 'sampleSequences: no finished episodes')
+  if (eps.length === 0) throw new MdmlError('value', 'sampleSequences: no finished episodes')
   const windows = eps.map((e) => Math.max(1, e.length - length + 1))
   let total = 0
   for (const w of windows) total += w

@@ -4,7 +4,7 @@
  * AdaBoost.R2 for regression, combined by the weighted median.
  */
 
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type EnsembleStages, type Exposition, ensembleStages, treeRecord } from '../../lib/exposition/index.ts'
@@ -184,7 +184,7 @@ function sammeAlgorithm(data: TreeData, h: AdaBoostHyper): Algorithm<BoostState>
       if (err <= 0) return { ...s, ...base, weights: [...s.weights, 1], stop: true }
       if (err >= 1 - 1 / k) {
         if (s.trees.length === 0)
-          throw new WhiteboxError('value', 'adaBoost: the first weak learner is no better than chance')
+          throw new MdmlError('value', 'adaBoost: the first weak learner is no better than chance')
         return { ...s, stop: true }
       }
       const alpha = h.learningRate * (Math.log((1 - err) / err) + Math.log(k - 1))
@@ -240,7 +240,7 @@ function r2Algorithm(data: TreeData, h: AdaBoostHyper): Algorithm<BoostState> {
       const base = { trees: [...s.trees, g.tree], targets: [...s.targets, Array.from(s.sampleWeight)] }
       if (err <= 0) return { ...s, ...base, weights: [...s.weights, 1], stop: true }
       if (err >= 0.5) {
-        if (s.trees.length === 0) throw new WhiteboxError('value', 'adaBoost: the first weak learner is too weak')
+        if (s.trees.length === 0) throw new MdmlError('value', 'adaBoost: the first weak learner is too weak')
         return { ...s, stop: true }
       }
       const beta = err / (1 - err)

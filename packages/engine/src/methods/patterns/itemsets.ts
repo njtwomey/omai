@@ -5,7 +5,7 @@
  * generated baskets with planted associations.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, uniform } from '../../lib/random/index.ts'
 
@@ -92,8 +92,8 @@ const keyOf = (items: readonly string[]): string => items.join('\u0001')
 
 function checkOptions(transactions: Transactions, options: ItemsetOptions, name: string): number {
   const minSupport = options.minSupport ?? 0.2
-  if (!(minSupport > 0 && minSupport <= 1)) throw new WhiteboxError('value', `${name}: minSupport must be in (0, 1]`)
-  if (transactions.length === 0) throw new WhiteboxError('value', `${name}: no transactions`)
+  if (!(minSupport > 0 && minSupport <= 1)) throw new MdmlError('value', `${name}: minSupport must be in (0, 1]`)
+  if (transactions.length === 0) throw new MdmlError('value', `${name}: no transactions`)
   return Math.ceil(minSupport * transactions.length - 1e-9)
 }
 

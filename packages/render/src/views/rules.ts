@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { type ConceptScores, type RuleSet, ruleText } from 'whitebox-engine/exposition'
+import { type ConceptScores, type RuleSet, ruleText } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { cartesian, type Layer, layer } from '../charts/plot.ts'
@@ -36,8 +36,8 @@ function padded(fig: Figure, labels: readonly string[]): Figure {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { ruleSet } from 'whitebox-engine/exposition'
- * import { ruleListView } from 'whitebox-render/views'
+ * import { ruleSet } from 'mdml-engine/exposition'
+ * import { ruleListView } from 'mdml-render/views'
  * const r = ruleSet({ method: 'anchors', features: ['age'], output: 'P(y)', rules: [{ clauses: [{ feature: 0, op: '>', threshold: 40 }], precision: 0.97, coverage: 0.3 }] })
  * ruleListView(r).series.length > 0 // => true
  * ```
@@ -109,8 +109,8 @@ export function ruleListView(record: RuleSet, options: RuleListOptions = {}): EC
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { conceptScores } from 'whitebox-engine/exposition'
- * import { conceptView } from 'whitebox-render/views'
+ * import { conceptScores } from 'mdml-engine/exposition'
+ * import { conceptView } from 'mdml-render/views'
  * const r = conceptScores({ method: 'TCAV', target: 'zebra', layer: 'l', concepts: [{ name: 'striped', scores: [0.9, 0.8], randomScores: [0.5, 0.4], mean: 0.85, pValue: 0.01 }] })
  * conceptView(r).series.length > 2 // => true
  * ```

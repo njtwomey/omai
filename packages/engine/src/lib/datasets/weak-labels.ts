@@ -39,8 +39,8 @@ function gaussianClasses(
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { labellingFunctions } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { labellingFunctions } from 'mdml-engine/datasets'
  * generate(labellingFunctions, { knobs: { functions: 4 } }).data.featureNames // => ['lf0', 'lf1', 'lf2', 'lf3']
  * ```
  */
@@ -143,8 +143,8 @@ export const labellingFunctions: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { crowdLabels } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { crowdLabels } from 'mdml-engine/datasets'
  * generate(crowdLabels, { knobs: { items: 10, perItem: 3 } }).data.values.shape // => [30]
  * ```
  */
@@ -228,8 +228,8 @@ export const crowdLabels: DatasetGenerator<InteractionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { positiveUnlabelled } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { positiveUnlabelled } from 'mdml-engine/datasets'
  * generate(positiveUnlabelled).data.classes // => ['unlabelled', 'labelled']
  * ```
  */
@@ -296,8 +296,8 @@ export const positiveUnlabelled: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { labelProportionBags } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { labelProportionBags } from 'mdml-engine/datasets'
  * (generate(labelProportionBags, { knobs: { n: 100, bagSize: 10 } }).truth.extra?.['proportions'] as number[][]).length // => 10
  * ```
  */

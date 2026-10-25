@@ -3,7 +3,7 @@
  * such as the handwritten digits.
  */
 
-import { categoricalNB } from 'whitebox-engine/methods/naive-bayes'
+import { categoricalNB } from 'mdml-engine/methods/naive-bayes'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

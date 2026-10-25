@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { grad, jacfwd, vmap } from '../autodiff/index.ts'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import { erf } from '../numerics/special/index.ts'
 import { minimize } from '../optim/index.ts'
 import { type Tree, tensor, toArray, type Value } from '../tensor/index.ts'
@@ -90,7 +90,7 @@ describe('compile', () => {
       compile(parse('I*x'), [x])(1)
       expect.unreachable()
     } catch (e) {
-      expect(isWhiteboxError(e) && e.code === 'not-implemented').toBe(true)
+      expect(isMdmlError(e) && e.code === 'not-implemented').toBe(true)
     }
   })
 })

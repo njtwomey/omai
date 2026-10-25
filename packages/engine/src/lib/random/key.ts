@@ -4,7 +4,7 @@
  * generator, and `keyFromPath` derives a key from a seed and a path of names.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { philox4x32 } from './philox.ts'
 
 /**
@@ -30,17 +30,17 @@ const BITS_TAG = 0
  *
  * @param seed - A non-negative safe integer.
  * @returns The key.
- * @throws WhiteboxError with code `value` for negative or non-integer seeds.
+ * @throws MdmlError with code `value` for negative or non-integer seeds.
  * @concept counter-based-rng
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
+ * import { key } from 'mdml-engine/random'
  * key(42).words // => [42, 0]
  * ```
  */
 export function key(seed: number): Key {
   if (!Number.isSafeInteger(seed) || seed < 0) {
-    throw new WhiteboxError('value', `key: seed must be a non-negative safe integer, got ${seed}`, { seed })
+    throw new MdmlError('value', `key: seed must be a non-negative safe integer, got ${seed}`, { seed })
   }
   return { kind: 'key', words: [seed >>> 0, Math.floor(seed / 2 ** 32) >>> 0] }
 }
@@ -53,7 +53,7 @@ export function key(seed: number): Key {
  * @returns The child keys.
  * @example
  * ```ts
- * import { key, split } from 'whitebox-engine/random'
+ * import { key, split } from 'mdml-engine/random'
  * const [a, b] = split(key(0))
  * a?.words[0] === b?.words[0] // => false
  * ```
@@ -75,7 +75,7 @@ export function split(k: Key, n = 2): Key[] {
  * @returns The derived key; the same inputs always give the same key.
  * @example
  * ```ts
- * import { key, foldIn } from 'whitebox-engine/random'
+ * import { key, foldIn } from 'mdml-engine/random'
  * foldIn(key(0), 3).words[0] === foldIn(key(0), 3).words[0] // => true
  * ```
  */
@@ -92,7 +92,7 @@ export function foldIn(k: Key, data: number): Key {
  * @returns The words.
  * @example
  * ```ts
- * import { key, randomBits } from 'whitebox-engine/random'
+ * import { key, randomBits } from 'mdml-engine/random'
  * randomBits(key(0), 4).length // => 4
  * ```
  */
@@ -112,7 +112,7 @@ export function randomBits(k: Key, n: number): Uint32Array {
  * @returns `true` for keys.
  * @example
  * ```ts
- * import { isKey, key } from 'whitebox-engine/random'
+ * import { isKey, key } from 'mdml-engine/random'
  * isKey(key(1)) // => true
  * ```
  */
@@ -140,7 +140,7 @@ function hashName(name: string): number {
  * @concept counter-based-rng
  * @example
  * ```ts
- * import { keyFromPath } from 'whitebox-engine/random'
+ * import { keyFromPath } from 'mdml-engine/random'
  * keyFromPath(0, 'init', 3).words[0] === keyFromPath(0, 'init', 3).words[0] // => true
  * keyFromPath(0, 'init').words[0] === keyFromPath(0, 'data').words[0] // => false
  * ```

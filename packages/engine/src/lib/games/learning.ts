@@ -4,7 +4,7 @@
  * with perturbed utilities as in nashpy, and best-response dynamics, each as a traced algorithm.
  */
 
-import { maxOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { uniformStream } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TensorChannel, type TraceSchema } from '../trace/index.ts'
 import { actionValues, type GameRunOptions, type NormalFormGame, nashConv } from './normal-form/index.ts'
@@ -65,7 +65,7 @@ function startCounts(game: NormalFormGame, initial: FictitiousPlayOptions['initi
     initial !== undefined &&
     (initial.length !== game.shape.length || initial.some((c, p) => c.length !== game.shape[p]))
   )
-    throw new WhiteboxError('shape', `${game.name}: one initial count per action of every player`)
+    throw new MdmlError('shape', `${game.name}: one initial count per action of every player`)
   return game.shape.map((k, p) => (initial?.[p] === undefined ? new Array<number>(k).fill(0) : [...(initial[p] ?? [])]))
 }
 
@@ -81,8 +81,8 @@ function startCounts(game: NormalFormGame, initial: FictitiousPlayOptions['initi
  * @concept fictitious-play
  * @example
  * ```ts
- * import { fictitiousPlayAlgorithm, matchingPennies } from 'whitebox-engine/games'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { fictitiousPlayAlgorithm, matchingPennies } from 'mdml-engine/games'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(fictitiousPlayAlgorithm(matchingPennies()), { maxSteps: 4 }).state.plays // => [[0, 0], [0, 1], [0, 1], [1, 1]]
  * ```
  */
@@ -144,7 +144,7 @@ function finish(game: NormalFormGame, state: FictitiousPlayState): FictitiousPla
  * @concept fictitious-play
  * @example
  * ```ts
- * import { fictitiousPlay, rockPaperScissors } from 'whitebox-engine/games'
+ * import { fictitiousPlay, rockPaperScissors } from 'mdml-engine/games'
  * const r = fictitiousPlay(rockPaperScissors(), { iterations: 3000 })
  * r.nashConv < 0.05 // => true
  * ```
@@ -174,8 +174,8 @@ export interface StochasticFictitiousPlayOptions extends Omit<FictitiousPlayOpti
  * @concept fictitious-play
  * @example
  * ```ts
- * import { matchingPennies, stochasticFictitiousPlayAlgorithm } from 'whitebox-engine/games'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { matchingPennies, stochasticFictitiousPlayAlgorithm } from 'mdml-engine/games'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(stochasticFictitiousPlayAlgorithm(matchingPennies()), { maxSteps: 50, seed: 1 }).state.t // => 50
  * ```
  */
@@ -185,7 +185,7 @@ export function stochasticFictitiousPlayAlgorithm(
 ): Algorithm<FictitiousPlayState> {
   const eta = options.eta ?? 0.1
   const epsilonBar = options.epsilonBar ?? 0.01
-  if (!(eta > 0)) throw new WhiteboxError('value', 'stochasticFictitiousPlay: eta must be positive')
+  if (!(eta > 0)) throw new MdmlError('value', 'stochasticFictitiousPlay: eta must be positive')
   const base = fictitiousPlayAlgorithm(
     game,
     options.initialCounts === undefined ? {} : { initialCounts: options.initialCounts },
@@ -225,7 +225,7 @@ export function stochasticFictitiousPlayAlgorithm(
  * @concept fictitious-play
  * @example
  * ```ts
- * import { matchingPennies, stochasticFictitiousPlay } from 'whitebox-engine/games'
+ * import { matchingPennies, stochasticFictitiousPlay } from 'mdml-engine/games'
  * stochasticFictitiousPlay(matchingPennies(), { iterations: 2000, seed: 3 }).nashConv < 0.1 // => true
  * ```
  */
@@ -266,8 +266,8 @@ export interface BestResponseDynamicsState {
  * @concept best-response
  * @example
  * ```ts
- * import { bestResponseDynamicsAlgorithm, prisonersDilemma } from 'whitebox-engine/games'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { bestResponseDynamicsAlgorithm, prisonersDilemma } from 'mdml-engine/games'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(bestResponseDynamicsAlgorithm(prisonersDilemma()), { maxSteps: 10 }).state.path // => [[0, 0], [1, 0], [1, 1]]
  * ```
  */
@@ -277,7 +277,7 @@ export function bestResponseDynamicsAlgorithm(
 ): Algorithm<BestResponseDynamicsState> {
   const start = [...(options.start ?? game.shape.map(() => 0))]
   if (start.length !== game.shape.length || start.some((a, p) => a < 0 || a >= (game.shape[p] ?? 0)))
-    throw new WhiteboxError('value', `${game.name}: the start must be one valid action per player`)
+    throw new MdmlError('value', `${game.name}: the start must be one valid action per player`)
   const pure = (profile: readonly number[]): number[][] =>
     profile.map((a, p) => Array.from({ length: game.shape[p] ?? 0 }, (_, b) => (b === a ? 1 : 0)))
   const improve = (profile: readonly number[]): number[] | undefined => {
@@ -319,7 +319,7 @@ export function bestResponseDynamicsAlgorithm(
  * @concept best-response
  * @example
  * ```ts
- * import { bestResponseDynamics, matchingPennies } from 'whitebox-engine/games'
+ * import { bestResponseDynamics, matchingPennies } from 'mdml-engine/games'
  * bestResponseDynamics(matchingPennies()).status // => 'cycle'
  * ```
  */

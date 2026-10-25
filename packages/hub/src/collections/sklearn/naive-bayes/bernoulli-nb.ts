@@ -3,7 +3,7 @@
  * data such as the handwritten digits and two-dimensional classification data.
  */
 
-import { bernoulliNB } from 'whitebox-engine/methods/naive-bayes'
+import { bernoulliNB } from 'mdml-engine/methods/naive-bayes'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

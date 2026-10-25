@@ -4,7 +4,7 @@
  * models (GPT-2, tiktoken encodings and others), HF tokenizers' `Split` behaviours, and BERT's pre-tokenisation.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { boundary, globalRegExp, PY_SPACE, PY_WORD, UNI_SPACE, UNI_WORD } from './_classes.ts'
 
 /** A half-open `[start, end)` range of UTF-16 code units in a text. */
@@ -26,7 +26,7 @@ function sliceAll(text: string, spans: readonly Span[]): string[] {
  * @concept tokenisation
  * @example
  * ```ts
- * import { regexSpans } from 'whitebox-engine/text'
+ * import { regexSpans } from 'mdml-engine/text'
  * regexSpans('ab, cd', /\w+/) // => [[0, 2], [4, 6]]
  * ```
  */
@@ -60,7 +60,7 @@ export function regexSpans(
  * @concept tokenisation
  * @example
  * ```ts
- * import { regexTokenize } from 'whitebox-engine/text'
+ * import { regexTokenize } from 'mdml-engine/text'
  * regexTokenize('a1 b22', /\d+/) // => ['1', '22']
  * regexTokenize('a,b,,c', ',', { gaps: true }) // => ['a', 'b', 'c']
  * ```
@@ -83,7 +83,7 @@ const PY_SPACES = new RegExp(`[${PY_SPACE}]+`, 'gu')
  * @concept tokenisation
  * @example
  * ```ts
- * import { whitespaceTokenize } from 'whitebox-engine/text'
+ * import { whitespaceTokenize } from 'mdml-engine/text'
  * whitespaceTokenize(' a\tb c\n') // => ['a', 'b', 'c']
  * ```
  */
@@ -108,18 +108,18 @@ export const WORD_PUNCT_PATTERN: RegExp = new RegExp(`[${UNI_WORD}]+|[^${UNI_WOR
  * @param text - The text.
  * @param pattern - The token pattern (default {@link SKLEARN_TOKEN_PATTERN}).
  * @returns The tokens.
- * @throws WhiteboxError with code `value` for a pattern with more than one capturing group.
+ * @throws MdmlError with code `value` for a pattern with more than one capturing group.
  * @concept tokenisation
  * @example
  * ```ts
- * import { wordTokenize } from 'whitebox-engine/text'
+ * import { wordTokenize } from 'mdml-engine/text'
  * wordTokenize("I can't stop, naïve café!") // => ['can', 'stop', 'naïve', 'café']
  * ```
  */
 export function wordTokenize(text: string, pattern: RegExp = SKLEARN_TOKEN_PATTERN): string[] {
   const re = globalRegExp(pattern)
   const groups = new RegExp(`${re.source}|`, re.flags.replace('g', '')).exec('')?.length ?? 1
-  if (groups > 2) throw new WhiteboxError('value', 'wordTokenize: at most one capturing group')
+  if (groups > 2) throw new MdmlError('value', 'wordTokenize: at most one capturing group')
   const out: string[] = []
   for (const m of text.matchAll(re)) out.push(groups === 2 ? (m[1] ?? '') : m[0])
   return out
@@ -133,7 +133,7 @@ export function wordTokenize(text: string, pattern: RegExp = SKLEARN_TOKEN_PATTE
  * @concept tokenisation
  * @example
  * ```ts
- * import { wordPunctTokenize } from 'whitebox-engine/text'
+ * import { wordPunctTokenize } from 'mdml-engine/text'
  * wordPunctTokenize('$3.88, ok?!') // => ['$', '3', '.', '88', ',', 'ok', '?!']
  * ```
  */
@@ -149,7 +149,7 @@ export function wordPunctTokenize(text: string): string[] {
  * @concept tokenisation
  * @example
  * ```ts
- * import { characterTokenize } from 'whitebox-engine/text'
+ * import { characterTokenize } from 'mdml-engine/text'
  * characterTokenize('a😀b') // => ['a', '😀', 'b']
  * ```
  */
@@ -168,7 +168,7 @@ let graphemes: Intl.Segmenter | undefined
  * @concept tokenisation
  * @example
  * ```ts
- * import { graphemeTokenize } from 'whitebox-engine/text'
+ * import { graphemeTokenize } from 'mdml-engine/text'
  * graphemeTokenize('é👍🏽🇮🇪') // => ['é', '👍🏽', '🇮🇪']
  * ```
  */
@@ -226,7 +226,7 @@ export const PRE_TOKENIZER_PATTERNS: Readonly<Record<'gpt2' | 'cl100k' | 'o200k'
  * @concept pre-tokenisation
  * @example
  * ```ts
- * import { preTokenize } from 'whitebox-engine/text'
+ * import { preTokenize } from 'mdml-engine/text'
  * preTokenize("Hello world's 12345!!", 'gpt2') // => ['Hello', ' world', "'s", ' 12345', '!!']
  * preTokenize('12345 apples', 'cl100k') // => ['123', '45', ' apples']
  * ```
@@ -277,7 +277,7 @@ function segments(text: string, delimiter: Delimiter): (readonly [number, number
  * @concept pre-tokenisation
  * @example
  * ```ts
- * import { splitSpans } from 'whitebox-engine/text'
+ * import { splitSpans } from 'mdml-engine/text'
  * splitSpans('a-b--c', '-', 'mergedWithPrevious') // => [[0, 2], [2, 4], [4, 5], [5, 6]]
  * splitSpans('a-b--c', '-', 'contiguous') // => [[0, 1], [1, 2], [2, 3], [3, 5], [5, 6]]
  * ```
@@ -325,7 +325,7 @@ export function splitSpans(
       kept.reverse()
       break
     default:
-      throw new WhiteboxError('value', `splitSpans: unknown behavior ${String(behavior)}`)
+      throw new MdmlError('value', `splitSpans: unknown behavior ${String(behavior)}`)
   }
   return kept.filter(([a, b]) => b > a)
 }
@@ -341,7 +341,7 @@ const WHITE = new RegExp(`[${UNI_SPACE}]`, 'u')
  * @returns True for punctuation.
  * @example
  * ```ts
- * import { isBertPunctuation } from 'whitebox-engine/text'
+ * import { isBertPunctuation } from 'mdml-engine/text'
  * ['$', '«', 'a', '€'].map(isBertPunctuation) // => [true, true, false, false]
  * ```
  */
@@ -357,7 +357,7 @@ export function isBertPunctuation(codePoint: string): boolean {
  * @concept pre-tokenisation
  * @example
  * ```ts
- * import { bertPreTokenize } from 'whitebox-engine/text'
+ * import { bertPreTokenize } from 'mdml-engine/text'
  * const s = "Hey, it's 3.5!"
  * bertPreTokenize(s).map(([a, b]) => s.slice(a, b)) // => ['Hey', ',', 'it', "'", 's', '3', '.', '5', '!']
  * ```

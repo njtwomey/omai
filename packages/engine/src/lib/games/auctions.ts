@@ -5,7 +5,7 @@
  * bundle bids.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** The outcome of a single-item auction. */
 export interface AuctionOutcome {
@@ -49,7 +49,7 @@ function outcome(
   values: readonly number[] | undefined,
 ): AuctionOutcome {
   if (values !== undefined && values.length !== bids.length)
-    throw new WhiteboxError('shape', 'auction: one value per bidder')
+    throw new MdmlError('shape', 'auction: one value per bidder')
   return {
     winner,
     price: winner >= 0 ? (payments[winner] ?? 0) : 0,
@@ -70,7 +70,7 @@ function outcome(
  * @concept auctions
  * @example
  * ```ts
- * import { firstPriceAuction } from 'whitebox-engine/games'
+ * import { firstPriceAuction } from 'mdml-engine/games'
  * firstPriceAuction([3, 7, 5]).price // => 7
  * ```
  */
@@ -94,7 +94,7 @@ export function firstPriceAuction(bids: readonly number[], options: AuctionOptio
  * @concept auctions
  * @example
  * ```ts
- * import { secondPriceAuction } from 'whitebox-engine/games'
+ * import { secondPriceAuction } from 'mdml-engine/games'
  * secondPriceAuction([3, 7, 5], { values: [3, 7, 5] }).utilities // => [0, 2, 0]
  * ```
  */
@@ -120,7 +120,7 @@ export function secondPriceAuction(bids: readonly number[], options: AuctionOpti
  * @concept auctions
  * @example
  * ```ts
- * import { allPayAuction } from 'whitebox-engine/games'
+ * import { allPayAuction } from 'mdml-engine/games'
  * allPayAuction([3, 7, 5]).payments // => [3, 7, 5]
  * ```
  */
@@ -138,11 +138,11 @@ export function allPayAuction(bids: readonly number[], options: AuctionOptions =
  * @param value - The bidder's value in [0, 1].
  * @param bidders - The number of bidders (at least 1).
  * @returns The equilibrium bid.
- * @throws WhiteboxError with code `value` for an unknown format or fewer than one bidder.
+ * @throws MdmlError with code `value` for an unknown format or fewer than one bidder.
  * @concept revenue-equivalence
  * @example
  * ```ts
- * import { equilibriumBid } from 'whitebox-engine/games'
+ * import { equilibriumBid } from 'mdml-engine/games'
  * [equilibriumBid('first-price', 0.8, 4), equilibriumBid('second-price', 0.8, 4)] // => [0.6000000000000001, 0.8]
  * ```
  */
@@ -151,12 +151,12 @@ export function equilibriumBid(
   value: number,
   bidders: number,
 ): number {
-  if (!(bidders >= 1)) throw new WhiteboxError('value', 'equilibriumBid: at least one bidder')
+  if (!(bidders >= 1)) throw new MdmlError('value', 'equilibriumBid: at least one bidder')
   const n = bidders
   if (format === 'first-price') return ((n - 1) / n) * value
   if (format === 'second-price') return value
   if (format === 'all-pay') return ((n - 1) / n) * value ** n
-  throw new WhiteboxError('value', `equilibriumBid: unknown format '${String(format)}'`)
+  throw new MdmlError('value', `equilibriumBid: unknown format '${String(format)}'`)
 }
 
 /**
@@ -170,7 +170,7 @@ export function equilibriumBid(
  * @concept revenue-equivalence
  * @example
  * ```ts
- * import { expectedRevenue } from 'whitebox-engine/games'
+ * import { expectedRevenue } from 'mdml-engine/games'
  * [expectedRevenue(2), expectedRevenue(1, 0.5)] // => [0.3333333333333333, 0.25]
  * ```
  */
@@ -200,11 +200,11 @@ export interface VcgOutcome {
  *
  * @param valuations - `valuations[i][o]`: agent i's value for outcome o.
  * @returns The outcome, welfare, payments and utilities.
- * @throws WhiteboxError with code `shape` when the agents value different numbers of outcomes.
+ * @throws MdmlError with code `shape` when the agents value different numbers of outcomes.
  * @concept vcg
  * @example
  * ```ts
- * import { vcg } from 'whitebox-engine/games'
+ * import { vcg } from 'mdml-engine/games'
  * // One item, three bidders: outcome i gives it to bidder i.
  * vcg([[3, 0, 0], [0, 7, 0], [0, 0, 5]]).payments // => [0, 5, 0]
  * ```
@@ -212,7 +212,7 @@ export interface VcgOutcome {
 export function vcg(valuations: readonly (readonly number[])[]): VcgOutcome {
   const k = valuations[0]?.length ?? 0
   if (k === 0 || valuations.some((v) => v.length !== k))
-    throw new WhiteboxError('shape', 'vcg: every agent values the same outcomes')
+    throw new MdmlError('shape', 'vcg: every agent values the same outcomes')
   const welfare = (o: number, skip: number): number => {
     let s = 0
     for (const [i, v] of valuations.entries()) if (i !== skip) s += v[o] ?? 0
@@ -256,7 +256,7 @@ export interface CombinatorialOutcome extends Omit<VcgOutcome, 'outcome'> {
  * @concept vcg
  * @example
  * ```ts
- * import { combinatorialAuction } from 'whitebox-engine/games'
+ * import { combinatorialAuction } from 'mdml-engine/games'
  * // The classic example: one bidder wants both items for 2, two others one item each for 2.
  * const r = combinatorialAuction([{ bidder: 0, bundle: [0, 1], value: 2 }, { bidder: 1, bundle: [0], value: 2 }, { bidder: 2, bundle: [1], value: 2 }])
  * [r.accepted, r.payments] // => [[1, 2], [0, 0, 0]]

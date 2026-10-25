@@ -4,11 +4,11 @@ probability as the sum over InsideChartParser's parses."""
 
 from importlib.metadata import version
 
+from mdml_oracle.fixture import Case, case
 from nltk import CFG, PCFG
 from nltk.parse import ChartParser, EarleyChartParser, ViterbiParser
 from nltk.parse.pchart import InsideChartParser
 from nltk.tree import Tree
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"nltk": version("nltk")}
 

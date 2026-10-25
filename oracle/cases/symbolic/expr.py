@@ -1,10 +1,10 @@
-"""Automatic evaluation on construction: each input, built by SymPy's `sympify`, printed by `str()`. whitebox-js parses
+"""Automatic evaluation on construction: each input, built by SymPy's `sympify`, printed by `str()`. mdml-js parses
 the same text and must print the same canonical form (combined coefficients, merged powers, exact radicals, special
 values of functions)."""
 
 import sympy as sp
-from whitebox_oracle.fixture import Case
-from whitebox_oracle.symbolic import expr_case, parse
+from mdml_oracle.fixture import Case
+from mdml_oracle.symbolic import expr_case, parse
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__}
 

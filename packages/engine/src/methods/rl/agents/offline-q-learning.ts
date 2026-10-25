@@ -5,7 +5,7 @@
  * a learnt model of the behaviour policy finds likely).
  */
 
-import { argmaxOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../../lib/base/index.ts'
 import { crossEntropy, huber } from '../../../lib/losses/index.ts'
 import { incrementalUpdate, type Tree } from '../../../lib/optim/index.ts'
 import { foldIn, key as makeKey } from '../../../lib/random/index.ts'
@@ -77,7 +77,7 @@ export interface OfflineQState {
 
 function qLearnerParts(env: Spaces, options: OfflineQOptions, name: string) {
   const sp = offlineSpaces(env)
-  if (!sp.discrete) throw new WhiteboxError('value', `${name}: needs a discrete action space`)
+  if (!sp.discrete) throw new MdmlError('value', `${name}: needs a discrete action space`)
   const hidden = options.hidden ?? [64, 64]
   const opt = optimiserOf(options, 1e-3)
   const gamma = options.gamma ?? 0.99
@@ -106,8 +106,8 @@ const chosen = (q: Value, mask: Value): Value => sum(mul(q, mask), -1)
  * @concept offline-rl
  * @example
  * ```ts
- * import { cqlLearner } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { cqlLearner } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * cqlLearner(cartPole.create(), { alpha: 4 }).config['alpha'] // => 4
  * ```
  */
@@ -208,9 +208,9 @@ function qTargets(
  * @concept offline-rl
  * @example
  * ```ts
- * import { cql } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { cql } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: true, truncated: false }
  * cql(cartPole.create(), [t], { hidden: [4], steps: 50 }).policy([0, 0, 0, 0], key(0)) // => 1
  * ```
@@ -234,9 +234,9 @@ export function cql<O>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { offlineDqn } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { offlineDqn } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: true, truncated: false }
  * offlineDqn(cartPole.create(), [t], { hidden: [4], steps: 5 }).agent.name // => 'offlineDqn'
  * ```
@@ -270,8 +270,8 @@ export interface BcqOptions extends OfflineQOptions {
  * @concept offline-rl
  * @example
  * ```ts
- * import { bcqLearner } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
+ * import { bcqLearner } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
  * bcqLearner(cartPole.create()).config['threshold'] // => 0.3
  * ```
  */
@@ -352,9 +352,9 @@ export function bcqLearner<O>(env: Spaces, options: BcqOptions = {}): OfflineLea
  * @concept offline-rl
  * @example
  * ```ts
- * import { bcq } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { bcq } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 0, nextObservation: [0, 0, 0, 0], terminated: true, truncated: false }
  * bcq(cartPole.create(), [t], { hidden: [4], steps: 50, learningRate: 0.05 }).policy([0, 0, 0, 0], key(0)) // => 1
  * ```

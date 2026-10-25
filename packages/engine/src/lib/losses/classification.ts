@@ -5,7 +5,7 @@
  * down-weight easy examples.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import {
   add,
@@ -46,8 +46,8 @@ import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
  * @concept losses
  * @example
  * ```ts
- * import { binaryCrossEntropyWithLogits } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { binaryCrossEntropyWithLogits } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(binaryCrossEntropyWithLogits([0], [1])) === Math.LN2 // => true
  * ```
  */
@@ -76,8 +76,8 @@ const smoothBinary = (y: Value, eps: number | undefined): Value =>
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { binaryCrossEntropy } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { binaryCrossEntropy } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(binaryCrossEntropy([0.5], [0])) === Math.LN2 // => true
  * ```
  */
@@ -104,8 +104,8 @@ export function binaryCrossEntropy(
  * @concept losses
  * @example
  * ```ts
- * import { focal } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { focal } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(focal([0], [1], { alpha: -1, gamma: 1 })) === Math.LN2 / 2 // => true
  * ```
  */
@@ -136,8 +136,8 @@ export function focal(
  * @returns The loss, differentiable in the logits.
  * @example
  * ```ts
- * import { categoricalFocal } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { categoricalFocal } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(categoricalFocal([[0, 0]], [1], { gamma: 1 })) === Math.LN2 / 2 // => true
  * ```
  */
@@ -175,8 +175,8 @@ export function categoricalFocal(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { multiLabelSoftMargin } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { multiLabelSoftMargin } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(multiLabelSoftMargin([[0, 0]], [[1, 0]])) === Math.LN2 // => true
  * ```
  */
@@ -214,8 +214,8 @@ export interface CrossEntropyOptions {
  * @concept losses
  * @example
  * ```ts
- * import { crossEntropy } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { crossEntropy } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(crossEntropy([[0, 0]], [1])) - Math.LN2) < 1e-15 // => true
  * ```
  */
@@ -233,7 +233,7 @@ export function crossEntropy(logits: TensorLike, target: TensorLike, options: Cr
     return reduce(terms, { reduction: options.reduction ?? 'mean' })
   }
   if (t.shape.length !== z.shape.length - 1)
-    throw new WhiteboxError('shape', 'crossEntropy: targets must be [...] or [..., C]')
+    throw new MdmlError('shape', 'crossEntropy: targets must be [...] or [..., C]')
   const ignore = options.ignoreIndex
   const keep = ignore === undefined ? undefined : cast(sub(1, cast(equal(t, ignore), 'float64')), 'float64')
   // Ignored targets gather class 0 (any valid class) and are then masked out.
@@ -261,8 +261,8 @@ export function crossEntropy(logits: TensorLike, target: TensorLike, options: Cr
  * @returns The loss, differentiable in the log-probabilities.
  * @example
  * ```ts
- * import { nllLoss } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { nllLoss } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(nllLoss([[-1, -2]], [1])) // => 2
  * ```
  */

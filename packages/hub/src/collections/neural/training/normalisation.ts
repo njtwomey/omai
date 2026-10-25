@@ -3,8 +3,8 @@
  * two-dimensional classification data.
  */
 
-import { normalisationStudy as study } from 'whitebox-engine/methods/neural/training'
-import { dict, int } from 'whitebox-engine/space'
+import { normalisationStudy as study } from 'mdml-engine/methods/neural/training'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry, type ViewSlot } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 

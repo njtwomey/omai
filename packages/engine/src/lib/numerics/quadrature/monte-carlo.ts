@@ -4,7 +4,7 @@
  * weights.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, halton, type Key, uniform } from '../../random/index.ts'
 import {
   add,
@@ -63,9 +63,9 @@ function standardError(values: Value, n: number): number {
  * @concept monte-carlo
  * @example
  * ```ts
- * import { monteCarlo } from 'whitebox-engine/numerics/quadrature'
- * import { key } from 'whitebox-engine/random'
- * import { item, sum, square } from 'whitebox-engine/tensor'
+ * import { monteCarlo } from 'mdml-engine/numerics/quadrature'
+ * import { key } from 'mdml-engine/random'
+ * import { item, sum, square } from 'mdml-engine/tensor'
  * const r = monteCarlo((p) => sum(square(p), -1), [[0, 1], [0, 1]], key(0), 20000)
  * Math.abs(item(r.value) - 2 / 3) < 4 * r.standardError // => true
  * ```
@@ -94,9 +94,9 @@ export function monteCarlo(
  * @returns The estimate and its standard error.
  * @example
  * ```ts
- * import { quasiMonteCarlo } from 'whitebox-engine/numerics/quadrature'
- * import { key } from 'whitebox-engine/random'
- * import { item, sum, square } from 'whitebox-engine/tensor'
+ * import { quasiMonteCarlo } from 'mdml-engine/numerics/quadrature'
+ * import { key } from 'mdml-engine/random'
+ * import { item, sum, square } from 'mdml-engine/tensor'
  * Math.abs(item(quasiMonteCarlo((p) => sum(square(p), -1), [[0, 1], [0, 1]], key(0), 1024).value) - 2 / 3) < 1e-3 // => true
  * ```
  */
@@ -107,7 +107,7 @@ export function quasiMonteCarlo(
   n: number,
   replicates = 16,
 ): MonteCarloResult {
-  if (replicates < 2) throw new WhiteboxError('value', 'quasiMonteCarlo: at least two replicates are needed')
+  if (replicates < 2) throw new MdmlError('value', 'quasiMonteCarlo: at least two replicates are needed')
   const d = box.length
   const base = halton(n, d).data as Float64Array
   const estimates: Value[] = []
@@ -148,9 +148,9 @@ export interface ImportanceResult extends MonteCarloResult {
  * @concept importance-sampling
  * @example
  * ```ts
- * import { importanceIntegral } from 'whitebox-engine/numerics/quadrature'
- * import { key, normal } from 'whitebox-engine/random'
- * import { exp, item, mul, neg, square, sum, sub } from 'whitebox-engine/tensor'
+ * import { importanceIntegral } from 'mdml-engine/numerics/quadrature'
+ * import { key, normal } from 'mdml-engine/random'
+ * import { exp, item, mul, neg, square, sum, sub } from 'mdml-engine/tensor'
  * // The integral of exp(-x^2) over the line, with a standard normal proposal: sqrt(pi).
  * const proposal = { sample: (k, n) => normal(k, [n, 1]), logDensity: (p) => sub(mul(sum(square(p), -1), -0.5), 0.9189385332046727) }
  * const r = importanceIntegral((p) => exp(neg(sum(square(p), -1))), proposal, key(1), 20000)

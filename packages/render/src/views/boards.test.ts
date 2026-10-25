@@ -1,5 +1,5 @@
+import { boardSteps, populationSteps } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { boardSteps, populationSteps } from 'whitebox-engine/exposition'
 import { boardColours, boardFrames, populationFrames } from './boards.ts'
 import { stillOf, viewFor } from './registry.ts'
 

@@ -3,7 +3,7 @@
 from importlib.metadata import version
 
 import jellyfish
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"jellyfish": version("jellyfish")}
 

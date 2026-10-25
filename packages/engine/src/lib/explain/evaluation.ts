@@ -6,7 +6,7 @@
  * and the agreement between explainers.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { keyFor } from '../learn/_shared.ts'
 import type { Estimator, LearnData } from '../learn/estimator.ts'
 import { type Scoring, scorersOf } from '../learn/scoring.ts'
@@ -26,7 +26,7 @@ function rowsOf(x: TensorLike, who: string): { n: number; d: number; data: Float
 
 function checkAttributions(a: AttributionRows, n: number, d: number, who: string): void {
   if (a.length !== n || a.some((r) => r.length !== d))
-    throw new WhiteboxError('shape', `${who}: attributions must have one row of ${d} values per input`)
+    throw new MdmlError('shape', `${who}: attributions must have one row of ${d} values per input`)
 }
 
 function order(values: readonly number[], descending: boolean): number[] {
@@ -78,8 +78,8 @@ export interface DeletionCurve {
  * @returns The curves, their mean and their areas.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const sum = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i + 1]))
  * explain.deletionCurve(sum, [[3, 1]], [[3, 1]], { steps: 3 }).curves // => [[4, 1, 0]]
  * ```
@@ -93,7 +93,7 @@ export function deletionCurve(
   const m = rowsOf(x, 'deletionCurve')
   checkAttributions(attributions, m.n, m.d, 'deletionCurve')
   const steps = options.steps ?? 11
-  if (!(Number.isInteger(steps) && steps >= 2)) throw new WhiteboxError('value', 'deletionCurve: steps must be >= 2')
+  if (!(Number.isInteger(steps) && steps >= 2)) throw new MdmlError('value', 'deletionCurve: steps must be >= 2')
   const base = baselineRows(options.baseline, m.n, m.d, 'deletionCurve')
   const fractions = Array.from({ length: steps }, (_, s) => s / (steps - 1))
   const insertion = options.mode === 'insertion'
@@ -153,8 +153,8 @@ function pearson(a: readonly number[], b: readonly number[]): number {
  * @returns One correlation per row.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[3 * i] - x.data[3 * i + 1] + 3 * x.data[3 * i + 2]))
  * // The exact attributions w x of a linear model are perfectly faithful.
  * explain.faithfulnessCorrelation(linear, [[1, 2, 1]], [[2, -2, 3]], { subsetSize: 1, nRuns: 20 })[0].toFixed(6) // => '1.000000'
@@ -203,8 +203,8 @@ export function faithfulnessCorrelation(
  * @returns One share per row.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const sum = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i + 1]))
  * explain.monotonicity(sum, [[3, 1]], [[3, 1]]) // => [1]
  * ```
@@ -259,9 +259,9 @@ export interface RoarOptions {
  * @returns The shares and the score after retraining at each.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
  * // A model that predicts the first column: removing it first ruins the score at once.
  * const first = defineEstimator({ name: 'first', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => tensor(x.map((r) => r[0])) }) }, {})
  * const data = { x: [[1, 0], [2, 0], [3, 0]], y: [1, 2, 3] }
@@ -282,7 +282,7 @@ export function removeAndRetrain(
   checkAttributions(trainAttributions, tr.n, tr.d, 'removeAndRetrain')
   checkAttributions(testAttributions, te.n, te.d, 'removeAndRetrain')
   const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new WhiteboxError('value', 'removeAndRetrain: no scorer')
+  if (scorer === undefined) throw new MdmlError('value', 'removeAndRetrain: no scorer')
   const mean = Array.from({ length: tr.d }, (_, j) => {
     let s = 0
     for (let i = 0; i < tr.n; i++) s += tr.data[i * tr.d + j] ?? 0
@@ -357,8 +357,8 @@ function perturbations(
  * @returns Per row, the maximum and the average relative change.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { toArray } from 'mdml-engine/tensor'
  * // A constant explanation never changes.
  * explain.sensitivity((x) => toArray(x).map(() => [1, 2]), [[0, 0]], { nSamples: 4 }) // => { max: [0], average: [0] }
  * ```
@@ -391,8 +391,8 @@ export function sensitivity(
  * @returns One estimate per row.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { toArray } from 'mdml-engine/tensor'
  * // The explanation 2x changes twice as fast as its input.
  * const twice = (x) => toArray(x).map((r) => r.map((v) => 2 * v))
  * explain.localLipschitz(twice, [[0, 0]], { nSamples: 5 }).map((v) => Math.round(v * 1e9) / 1e9) // => [2]
@@ -423,7 +423,7 @@ export function localLipschitz(explainer: Explainer, x: TensorLike, options: Sen
  * @returns hit, mass and rank.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.localisation([0.25, 0.5, 0.25, -0.2], [false, true, true, false]) // => { hit: true, mass: 0.75, rank: 0.5 }
  * ```
  */
@@ -431,7 +431,7 @@ export function localisation(
   attribution: readonly number[],
   mask: readonly boolean[],
 ): { readonly hit: boolean; readonly mass: number; readonly rank: number } {
-  if (mask.length !== attribution.length) throw new WhiteboxError('shape', 'localisation: one mask entry per feature')
+  if (mask.length !== attribution.length) throw new MdmlError('shape', 'localisation: one mask entry per feature')
   const ranked = order(attribution, true)
   const k = mask.filter(Boolean).length
   const pos = attribution.reduce((s, v) => s + Math.max(0, v), 0)
@@ -452,7 +452,7 @@ export function localisation(
  * @returns sparseness and entropy.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.complexity([1, 1, 1, 1]).sparseness // => 0
  * explain.complexity([0, 0, 0, 5]).entropy // => 0
  * ```
@@ -502,7 +502,7 @@ export type SimilarityMetric = 'spearman' | 'pearson' | 'topk' | 'sign'
  * @returns The similarity, 1 for identical rankings.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.explanationSimilarity([3, -2, 1], [6, -4, 2]) // => 1
  * explain.explanationSimilarity([3, 0, 0, 1], [0, 3, 0, 1], { metric: 'topk', k: 2 }) // => 0.5
  * ```
@@ -512,7 +512,7 @@ export function explanationSimilarity(
   b: readonly number[],
   options: { readonly metric?: SimilarityMetric; readonly k?: number } = {},
 ): number {
-  if (a.length !== b.length) throw new WhiteboxError('shape', 'explanationSimilarity: explanations differ in features')
+  if (a.length !== b.length) throw new MdmlError('shape', 'explanationSimilarity: explanations differ in features')
   const metric = options.metric ?? 'spearman'
   if (metric === 'pearson') return pearson(a, b)
   if (metric === 'spearman') return pearson(ranks(a.map(Math.abs)), ranks(b.map(Math.abs)))
@@ -533,7 +533,7 @@ export function explanationSimilarity(
  * @returns The symmetric matrix of mean similarities (1 on the diagonal).
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.explainerAgreement([[[1, 2, 3]], [[2, 4, 6]], [[3, 2, 1]]]) // => [[1, 1, -1], [1, 1, -1], [-1, -1, 1]]
  * ```
  */
@@ -544,7 +544,7 @@ export function explainerAgreement(
   const e = explanations.length
   const n = explanations[0]?.length ?? 0
   for (const x of explanations)
-    if (x.length !== n) throw new WhiteboxError('shape', 'explainerAgreement: explainers differ in rows')
+    if (x.length !== n) throw new MdmlError('shape', 'explainerAgreement: explainers differ in rows')
   return Array.from({ length: e }, (_, a) =>
     Array.from({ length: e }, (_, b) => {
       if (a === b) return 1
@@ -566,7 +566,7 @@ export function explainerAgreement(
  * @returns One gap per row.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.completenessGap([[1, 2], [1, 1]], [4, 4], [1]) // => [0, 1]
  * ```
  */
@@ -575,7 +575,7 @@ export function completenessGap(
   outputs: readonly number[],
   baselineOutputs: readonly number[],
 ): number[] {
-  if (outputs.length !== attributions.length) throw new WhiteboxError('shape', 'completenessGap: one output per row')
+  if (outputs.length !== attributions.length) throw new MdmlError('shape', 'completenessGap: one output per row')
   return attributions.map((a, i) => {
     const b = baselineOutputs.length === 1 ? (baselineOutputs[0] ?? 0) : (baselineOutputs[i] ?? 0)
     return Math.abs(a.reduce((s, v) => s + v, 0) - ((outputs[i] ?? 0) - b))

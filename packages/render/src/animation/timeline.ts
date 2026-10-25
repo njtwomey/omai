@@ -4,7 +4,7 @@
  * scenes and in-between frames (`tweenTimeline`), and `frameAt`, the frame shown at a time.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
+import { MdmlError } from 'mdml-engine/base'
 import {
   type Frame,
   isScene,
@@ -14,8 +14,8 @@ import {
   type StructureOverlay,
   type Timeline,
   timeline,
-} from 'whitebox-engine/scene'
-import { frames as frameEvents, type Run } from 'whitebox-engine/trace'
+} from 'mdml-engine/scene'
+import { frames as frameEvents, type Run } from 'mdml-engine/trace'
 
 /** An easing curve: progress in [0, 1] to eased progress in [0, 1]. */
 export type Easing = (t: number) => number
@@ -87,8 +87,8 @@ function lerpChildren(a: readonly SceneNode[], b: readonly SceneNode[], t: numbe
  * @returns The blended scene.
  * @example
  * ```ts
- * import { interpolateScene } from 'whitebox-render/animation'
- * import { circle, scene } from 'whitebox-engine/scene'
+ * import { interpolateScene } from 'mdml-render/animation'
+ * import { circle, scene } from 'mdml-engine/scene'
  * const s = interpolateScene(scene(10, 10, [circle(0, 0, 1)]), scene(10, 10, [circle(4, 0, 3)]), 0.5)
  * s.children[0] // => { kind: 'circle', cx: 2, cy: 0, r: 2 }
  * ```
@@ -111,16 +111,16 @@ export function interpolateScene(a: Scene, b: Scene, t: number): Scene {
  * @param k - Frames per original frame (at least 1).
  * @param easing - The easing between frames (default `easeInOut`).
  * @returns The tweened timeline.
- * @throws WhiteboxError with code `value` for k below 1.
+ * @throws MdmlError with code `value` for k below 1.
  * @example
  * ```ts
- * import { tweenTimeline } from 'whitebox-render/animation'
- * import { scene, sceneTimeline } from 'whitebox-engine/scene'
+ * import { tweenTimeline } from 'mdml-render/animation'
+ * import { scene, sceneTimeline } from 'mdml-engine/scene'
  * tweenTimeline(sceneTimeline([scene(1, 1, []), scene(1, 1, [])]), 4).frames.length // => 5
  * ```
  */
 export function tweenTimeline(tl: Timeline, k: number, easing: Easing = easings.easeInOut): Timeline {
-  if (!(Number.isInteger(k) && k >= 1)) throw new WhiteboxError('value', 'tweenTimeline: k must be an integer >= 1')
+  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'tweenTimeline: k must be an integer >= 1')
   const out: Frame[] = []
   tl.frames.forEach((f, i) => {
     const next = tl.frames[i + 1]
@@ -145,8 +145,8 @@ export function tweenTimeline(tl: Timeline, k: number, easing: Easing = easings.
  * @returns The timeline.
  * @example
  * ```ts
- * import { sweepTimeline } from 'whitebox-render/animation'
- * import { circle, scene } from 'whitebox-engine/scene'
+ * import { sweepTimeline } from 'mdml-render/animation'
+ * import { circle, scene } from 'mdml-engine/scene'
  * sweepTimeline([1, 2, 3], (r) => scene(10, 10, [circle(5, 5, r)])).frames.length // => 3
  * ```
  */
@@ -175,9 +175,9 @@ export function sweepTimeline<V>(
  * @returns The timeline (frames whose payload is neither a scene nor decodable are skipped).
  * @example
  * ```ts
- * import { runTimeline } from 'whitebox-render/animation'
- * import { scene } from 'whitebox-engine/scene'
- * const run = { schema: 'whitebox.run/1' as const, events: [{ type: 'frame' as const, runId: 'r', step: 0, frame: scene(2, 2, []) as never }] }
+ * import { runTimeline } from 'mdml-render/animation'
+ * import { scene } from 'mdml-engine/scene'
+ * const run = { schema: 'mdml.run/1' as const, events: [{ type: 'frame' as const, runId: 'r', step: 0, frame: scene(2, 2, []) as never }] }
  * runTimeline(run).frames.length // => 1
  * ```
  */
@@ -207,8 +207,8 @@ export function runTimeline(
  * @returns The timeline.
  * @example
  * ```ts
- * import { structureTimeline } from 'whitebox-render/animation'
- * import { structure } from 'whitebox-engine/scene'
+ * import { structureTimeline } from 'mdml-render/animation'
+ * import { structure } from 'mdml-engine/scene'
  * structureTimeline(structure('s', [], []), [{ active: ['a'] }, { active: ['b'] }]).frames[1].overlay.active // => ['b']
  * ```
  */
@@ -235,8 +235,8 @@ export function structureTimeline(
  * @returns The frame index (0 for an empty timeline).
  * @example
  * ```ts
- * import { frameAt } from 'whitebox-render/animation'
- * import { scene, sceneTimeline } from 'whitebox-engine/scene'
+ * import { frameAt } from 'mdml-render/animation'
+ * import { scene, sceneTimeline } from 'mdml-engine/scene'
  * const tl = sceneTimeline([scene(1, 1, []), scene(1, 1, []), scene(1, 1, [])], { fps: 2 })
  * frameAt(tl, 0.6) // => 1
  * frameAt(tl, 9) // => 2

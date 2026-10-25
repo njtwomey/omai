@@ -3,7 +3,7 @@
  * lemma), on three-dimensional manifolds such as the Swiss roll and tabular data.
  */
 
-import { randomProjection as randomProjectionMethod } from 'whitebox-engine/methods/decomposition'
+import { randomProjection as randomProjectionMethod } from 'mdml-engine/methods/decomposition'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

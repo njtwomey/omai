@@ -4,7 +4,7 @@
  * python-control's `system_norm`.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { eigvals, solve, svdvals } from '../numerics/linalg/index.ts'
 import {
   add,
@@ -37,8 +37,8 @@ import { isStable, poles } from './stability.ts'
  * @concept system-norms
  * @example
  * ```ts
- * import { h2Norm, tf } from 'whitebox-engine/systems'
- * import { item } from 'whitebox-engine/tensor'
+ * import { h2Norm, tf } from 'mdml-engine/systems'
+ * import { item } from 'mdml-engine/tensor'
  * item(h2Norm(tf([1], [1, 1]))) // => 0.7071067811865476
  * ```
  */
@@ -115,8 +115,8 @@ function bilinearToContinuous(s: StateSpace): StateSpace {
  * @concept system-norms
  * @example
  * ```ts
- * import { hinfNorm, tf } from 'whitebox-engine/systems'
- * import { item } from 'whitebox-engine/tensor'
+ * import { hinfNorm, tf } from 'mdml-engine/systems'
+ * import { item } from 'mdml-engine/tensor'
  * Math.round(item(hinfNorm(tf([1], [1, 0.2, 1])).norm) * 1e8) / 1e8 // => 5.02518908
  * ```
  */
@@ -169,17 +169,17 @@ export function hinfNorm(sys: Lti, options: { readonly tol?: number } = {}): Hin
  * @param sys - The system.
  * @param p - 2 or 'inf'.
  * @returns The norm, a scalar value.
- * @throws WhiteboxError with code `value` for another p.
+ * @throws MdmlError with code `value` for another p.
  * @concept system-norms
  * @example
  * ```ts
- * import { systemNorm, tf } from 'whitebox-engine/systems'
- * import { item } from 'whitebox-engine/tensor'
+ * import { systemNorm, tf } from 'mdml-engine/systems'
+ * import { item } from 'mdml-engine/tensor'
  * item(systemNorm(tf([2], [1, 1]), 'inf')) // => 2
  * ```
  */
 export function systemNorm(sys: Lti, p: 2 | 'inf'): Value {
   if (p === 2) return h2Norm(sys)
   if (p === 'inf') return hinfNorm(sys).norm
-  throw new WhiteboxError('value', `systemNorm: p must be 2 or 'inf', got ${String(p)}`)
+  throw new MdmlError('value', `systemNorm: p must be 2 or 'inf', got ${String(p)}`)
 }

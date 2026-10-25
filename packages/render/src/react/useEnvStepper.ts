@@ -3,9 +3,9 @@
  * from the seed and the step, so the same seed and actions always give the same episode.
  */
 
+import { foldIn, key as makeKey } from 'mdml-engine/random'
+import type { Env } from 'mdml-engine/rl'
 import { useCallback, useMemo, useState } from 'react'
-import { foldIn, key as makeKey } from 'whitebox-engine/random'
-import type { Env } from 'whitebox-engine/rl'
 
 /** What {@link useEnvStepper} returns: the episode so far and the actions that drive it. */
 export interface EnvStepper<S, O, A> {

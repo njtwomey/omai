@@ -1,16 +1,16 @@
 /**
- * Run every `@example` of whitebox-engine's exports and check each `// =>` line (docs/structure.md section 2).
+ * Run every `@example` of mdml-engine's exports and check each `// =>` line (docs/structure.md section 2).
  *
  *   node scripts/examples.ts [--only <prefix>[,<prefix>...]] [--methods] [--workers N] [--timeout ms] [--json file]
  *                            [--slowest N] [--quiet] [--coverage]
  *
- * The catalogue comes from whitebox-meta/extract and the examples run through whitebox-meta's runner in worker
- * threads (default 2, or WHITEBOX_EXAMPLE_WORKERS), each importing the engine from source. An example that runs past
+ * The catalogue comes from mdml-meta/extract and the examples run through mdml-meta's runner in worker
+ * threads (default 2, or MDML_EXAMPLE_WORKERS), each importing the engine from source. An example that runs past
  * the time limit (default 20 s) has its worker stopped and replaced. The core (`lib/`) is strict: any failure exits 1.
  * `--methods` also runs the methods' examples, which are optional and reported without failing.
- * `--only` keeps examples whose module (`whitebox-engine/numerics/linalg`) or file (`packages/engine/src/lib/stats`)
+ * `--only` keeps examples whose module (`mdml-engine/numerics/linalg`) or file (`packages/engine/src/lib/stats`)
  * starts with one of the prefixes. `--coverage` also reports documentation coverage of the core and the
- * folders and files of every package without a summary (whitebox-meta/extract).
+ * folders and files of every package without a summary (mdml-meta/extract).
  */
 import { availableParallelism } from 'node:os'
 import { join } from 'node:path'
@@ -107,7 +107,7 @@ async function main(): Promise<void> {
   const withMethods = args.includes('--methods')
   const jobs: Job[] = []
   for (const s of catalogue.symbols) {
-    const strict = !s.module.startsWith('whitebox-engine/methods/')
+    const strict = !s.module.startsWith('mdml-engine/methods/')
     if (!strict && !withMethods) continue
     const examples = [
       ...s.examples.map((e) => ({ e, symbol: s.id })),
@@ -122,7 +122,7 @@ async function main(): Promise<void> {
   const nWorkers = Math.max(
     1,
     Math.min(
-      Number(option(args, '--workers') ?? process.env['WHITEBOX_EXAMPLE_WORKERS'] ?? 2),
+      Number(option(args, '--workers') ?? process.env['MDML_EXAMPLE_WORKERS'] ?? 2),
       availableParallelism(),
       jobs.length,
     ),

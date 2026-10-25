@@ -8,9 +8,9 @@ import jax.numpy as jnp
 import numpy as np
 import optax  # pyright: ignore[reportMissingTypeStubs]
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
 from torch.optim import lr_scheduler
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"torch": torch.__version__, "optax": optax.__version__}
 

@@ -5,7 +5,7 @@
  * of whether the weights can be trusted.
  */
 
-import { type Estimate, logSumExpOf, WhiteboxError } from '../base/index.ts'
+import { type Estimate, logSumExpOf, MdmlError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { ess as essOf } from './diagnostics/convergence.ts'
@@ -13,7 +13,7 @@ import type { LogDensity, Proposal } from './target.ts'
 
 function values(x: TensorLike, name: string): Float64Array {
   const v = Float64Array.from(toFlat(asTensor(x) as Tensor))
-  if (v.length === 0) throw new WhiteboxError('value', `${name}: no values`)
+  if (v.length === 0) throw new MdmlError('value', `${name}: no values`)
   return v.map((u) => (Number.isNaN(u) ? Number.NEGATIVE_INFINITY : u))
 }
 
@@ -23,11 +23,11 @@ function values(x: TensorLike, name: string): Float64Array {
  *
  * @param logWeights - Unnormalised log weights.
  * @returns The normalised weights.
- * @throws WhiteboxError with code `value` for an empty input.
+ * @throws MdmlError with code `value` for an empty input.
  * @concept importance-sampling
  * @example
  * ```ts
- * import { normaliseLogWeights } from 'whitebox-engine/sampling'
+ * import { normaliseLogWeights } from 'mdml-engine/sampling'
  * Array.from(normaliseLogWeights([0, Math.log(3)])) // => [0.25, 0.75]
  * ```
  */
@@ -46,7 +46,7 @@ export function normaliseLogWeights(logWeights: TensorLike): Float64Array {
  * @concept importance-sampling
  * @example
  * ```ts
- * import { importanceEss } from 'whitebox-engine/sampling'
+ * import { importanceEss } from 'mdml-engine/sampling'
  * importanceEss([0, 0, 0, 0]) // => 4
  * ```
  */
@@ -65,12 +65,12 @@ export function importanceEss(logWeights: TensorLike): number {
  * @param values - f(x_i) for each draw.
  * @param logWeights - log pi(x_i) - log q(x_i), unnormalised.
  * @returns The estimate (value, standard error, normal 95% interval) with the effective sample size.
- * @throws WhiteboxError with code `shape` when the lengths differ.
+ * @throws MdmlError with code `shape` when the lengths differ.
  * @concept importance-sampling
  * @reference A. B. Owen, Monte Carlo theory, methods and examples (2013), chapter 9.
  * @example
  * ```ts
- * import { selfNormalisedEstimate } from 'whitebox-engine/sampling'
+ * import { selfNormalisedEstimate } from 'mdml-engine/sampling'
  * selfNormalisedEstimate([1, 2, 3], [0, 0, Math.log(2)]).value // => 2.25
  * ```
  */
@@ -81,7 +81,7 @@ export function selfNormalisedEstimate(
   const f = Float64Array.from(toFlat(asTensor(values) as Tensor))
   const w = normaliseLogWeights(logWeights)
   if (f.length !== w.length) {
-    throw new WhiteboxError('shape', `selfNormalisedEstimate: ${f.length} values for ${w.length} weights`)
+    throw new MdmlError('shape', `selfNormalisedEstimate: ${f.length} values for ${w.length} weights`)
   }
   let mu = 0
   for (let i = 0; i < f.length; i++) mu += (w[i] ?? 0) * (f[i] ?? 0)
@@ -111,7 +111,7 @@ export function selfNormalisedEstimate(
  * @concept importance-sampling
  * @example
  * ```ts
- * import { logEvidence } from 'whitebox-engine/sampling'
+ * import { logEvidence } from 'mdml-engine/sampling'
  * logEvidence([Math.log(2), Math.log(4)]).value === Math.log(3) // => true
  * ```
  */
@@ -148,14 +148,14 @@ export interface ImportanceResult {
  * @param q - The proposal (heavier tails than the target keep the weights' variance finite).
  * @param options - Key and number of draws.
  * @returns Draws, log weights, normalised weights, log evidence and ESS.
- * @throws WhiteboxError with code `shape` when the proposal's dimension differs from the target's, and `value` for a
+ * @throws MdmlError with code `shape` when the proposal's dimension differs from the target's, and `value` for a
  *   number of draws that is not a positive integer.
  * @concept importance-sampling
  * @example
  * ```ts
- * import { importanceSampling, numericTarget, proposalFromDistribution } from 'whitebox-engine/sampling'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { importanceSampling, numericTarget, proposalFromDistribution } from 'mdml-engine/sampling'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * // An unnormalised N(0, 1): Z = sqrt(2 pi).
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const r = importanceSampling(t, proposalFromDistribution(normal(0, 2)), { key: key(0), n: 4000 })
@@ -168,14 +168,10 @@ export function importanceSampling(
   options: { readonly key: Key; readonly n: number },
 ): ImportanceResult {
   if (q.dim !== target.dim) {
-    throw new WhiteboxError(
-      'shape',
-      `importanceSampling: the proposal has dimension ${q.dim}, the target ${target.dim}`,
-    )
+    throw new MdmlError('shape', `importanceSampling: the proposal has dimension ${q.dim}, the target ${target.dim}`)
   }
   const { n } = options
-  if (!(Number.isInteger(n) && n >= 1))
-    throw new WhiteboxError('value', 'importanceSampling: n must be a positive integer')
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'importanceSampling: n must be a positive integer')
   const dim = target.dim
   const xs = q.sampleMany(options.key, n)
   const lq = q.logProbMany(xs)
@@ -268,7 +264,7 @@ function paretoTail(
   const maxTail = tail[tailLength - 1] ?? 0
   const minTail = tail[0] ?? 0
   if (!(Math.abs(maxTail - minTail) >= 2.2250738585072014e-308)) {
-    throw new WhiteboxError('value', 'paretoSmoothedWeights: all tail values are the same')
+    throw new MdmlError('value', 'paretoSmoothedWeights: all tail values are the same')
   }
   if (logScale) {
     tail = tail.map(Math.exp)
@@ -309,13 +305,13 @@ export interface ParetoSmoothedWeights {
  * @param logRatios - Log importance ratios log pi(x_i) - log q(x_i) (at least 5 per tail).
  * @param options - The relative efficiency r_eff of the draws (default 1: independent draws).
  * @returns The smoothed, normalised log weights, k-hat and the tail length.
- * @throws WhiteboxError with code `value` for fewer than 25 ratios or a constant tail.
+ * @throws MdmlError with code `value` for fewer than 25 ratios or a constant tail.
  * @concept pareto-smoothed-importance-sampling
  * @reference A. Vehtari, D. Simpson, A. Gelman, Y. Yao and J. Gabry, Pareto smoothed importance sampling (JMLR 2024).
  * @example
  * ```ts
- * import { paretoSmoothedWeights } from 'whitebox-engine/sampling'
- * import { key, normal } from 'whitebox-engine/random'
+ * import { paretoSmoothedWeights } from 'mdml-engine/sampling'
+ * import { key, normal } from 'mdml-engine/random'
  * const r = paretoSmoothedWeights(normal(key(0), [400], { scale: 0.5 }).data)
  * r.paretoK < 0.7 // => true
  * r.tailLength // => 60
@@ -329,7 +325,7 @@ export function paretoSmoothedWeights(
   const n = x.length
   const rEff = options.rEff ?? 1
   const tailLength = tailLengthFor(n, rEff)
-  if (tailLength < 5) throw new WhiteboxError('value', 'paretoSmoothedWeights: need at least 25 draws (5 in the tail)')
+  if (tailLength < 5) throw new MdmlError('value', 'paretoSmoothedWeights: need at least 25 draws (5 in the tail)')
   const { values: smoothed, k } = paretoTail(x, tailLength, true, true)
   const z = logSumExpOf(smoothed)
   return {
@@ -360,12 +356,12 @@ export interface ParetoKOptions {
  * @param draws - Draws `[chain, draw]` or `[draw]`.
  * @param options - Tail and relative efficiency.
  * @returns k-hat.
- * @throws WhiteboxError with code `value` for too few draws or a constant tail.
+ * @throws MdmlError with code `value` for too few draws or a constant tail.
  * @concept pareto-smoothed-importance-sampling
  * @example
  * ```ts
- * import { paretoKHat } from 'whitebox-engine/sampling'
- * import { key, normal, studentT } from 'whitebox-engine/random'
+ * import { paretoKHat } from 'mdml-engine/sampling'
+ * import { key, normal, studentT } from 'mdml-engine/random'
  * paretoKHat(normal(key(0), [1000]).data) < paretoKHat(studentT(key(0), [1000], 1).data) // => true
  * ```
  */
@@ -379,7 +375,7 @@ export function paretoKHat(draws: TensorLike, options: ParetoKOptions = {}): num
     m = Math.min(m, Math.floor(n / 2))
     m = Math.max(m, 5)
   }
-  if (m < 5 || m >= n) throw new WhiteboxError('value', 'paretoKHat: too few draws for a tail fit')
+  if (m < 5 || m >= n) throw new MdmlError('value', 'paretoKHat: too few draws for a tail fit')
   if (tail === 'both') {
     return Math.max(
       paretoTail(
@@ -422,7 +418,7 @@ export interface WeightDiagnostics {
  * @concept pareto-smoothed-importance-sampling
  * @example
  * ```ts
- * import { weightDiagnostics } from 'whitebox-engine/sampling'
+ * import { weightDiagnostics } from 'mdml-engine/sampling'
  * weightDiagnostics([0, 0, 0, 0]).ess // => 4
  * ```
  */

@@ -6,12 +6,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import {
-  type DecisionSurface,
-  type HyperparameterSurface,
-  type PosteriorGrid,
-  surfaceAt,
-} from 'whitebox-engine/exposition'
+import { type DecisionSurface, type HyperparameterSurface, type PosteriorGrid, surfaceAt } from 'mdml-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { contours, decisionRegions } from '../charts/fields.ts'
 import { band, lines } from '../charts/lines.ts'
@@ -320,8 +315,8 @@ export function surfaceAxes(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { decisionSurface } from 'whitebox-engine/exposition'
- * import { decisionSurfaceView } from 'whitebox-render/views'
+ * import { decisionSurface } from 'mdml-engine/exposition'
+ * import { decisionSurfaceView } from 'mdml-render/views'
  * const s = decisionSurface({ features: ['a', 'b'], x: [0, 1], y: [0, 1], probabilities: [[[0.9, 0.4], [0.6, 0.1]], [[0.1, 0.6], [0.4, 0.9]]] })
  * decisionSurfaceView(s).series.length > 0 // => true
  * ```
@@ -465,8 +460,8 @@ export interface PosteriorViewOptions extends ViewOptions {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { posteriorGrid } from 'whitebox-engine/exposition'
- * import { posteriorView } from 'whitebox-render/views'
+ * import { posteriorGrid } from 'mdml-engine/exposition'
+ * import { posteriorView } from 'mdml-render/views'
  * const g = posteriorGrid({ inputs: [[0], [1], [2]], mean: [0, 1, 0], variance: [1, 0.1, 1], observed: { inputs: [[1]], targets: [1] } })
  * posteriorView(g).series.some((s) => s.name === 'observed') // => true
  * ```

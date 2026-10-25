@@ -3,7 +3,7 @@
  * squared, Huber or epsilon-insensitive loss, on tabular regression data and one-dimensional regression curves.
  */
 
-import { sgdRegressor as sgdRegressorEstimator } from 'whitebox-engine/methods/linear'
+import { sgdRegressor as sgdRegressorEstimator } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'
 

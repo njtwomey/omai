@@ -1,7 +1,7 @@
+import { cartesian, lines, points } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { Chart, FigureFrame, Player, useColourMode, usePlayback } from 'mdml-render/react'
 import { type ReactNode, useMemo } from 'react'
-import { cartesian, lines, points } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { Chart, FigureFrame, Player, useColourMode, usePlayback } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

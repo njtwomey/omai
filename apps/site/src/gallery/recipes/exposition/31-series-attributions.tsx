@@ -1,9 +1,9 @@
+import { recordsOf } from 'mdml-engine/exposition'
+import { defineEstimator } from 'mdml-engine/learn'
+import { explainSeries, type SeriesMethod } from 'mdml-engine/methods/explain'
+import { asTensor, tensor, toFlat } from 'mdml-engine/tensor'
+import { AttributionSeriesView, Choice, ControlPanel, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { defineEstimator } from 'whitebox-engine/learn'
-import { explainSeries, type SeriesMethod } from 'whitebox-engine/methods/explain'
-import { asTensor, tensor, toFlat } from 'whitebox-engine/tensor'
-import { AttributionSeriesView, Choice, ControlPanel, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

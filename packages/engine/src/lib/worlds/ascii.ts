@@ -4,7 +4,7 @@
  * terrain indices. The default legend covers terrains, starts, goals, keys, doors and pickups.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { hasWall, type ItemKind, type ItemSpec, TERRAINS, type TerrainSpec, type World, world } from './world.ts'
 
 /** How an ASCII character reads: a terrain, and whether the cell is a start, a goal, holds an item or is a landmark. */
@@ -70,11 +70,11 @@ function palette(extra: readonly TerrainSpec[] | undefined): TerrainSpec[] {
  * @param rows - The map, one string per row (all the same length).
  * @param options - Extra legend entries and terrains, the format, square or hexagonal cells, and a name.
  * @returns The world.
- * @throws WhiteboxError with code `value` for ragged rows, unknown characters or a malformed wall drawing.
+ * @throws MdmlError with code `value` for ragged rows, unknown characters or a malformed wall drawing.
  * @concept grid-worlds
  * @example
  * ```ts
- * import { fromAscii } from 'whitebox-engine/worlds'
+ * import { fromAscii } from 'mdml-engine/worlds'
  * const w = fromAscii(['S.#', '..G'])
  * [w.n, w.starts, w.goals] // => [6, [0], [5]]
  * fromAscii(['#####', '#. .#', '#####'], { format: 'walls' }).walls[0] // => 0
@@ -84,13 +84,13 @@ export function fromAscii(rows: readonly string[], options: AsciiOptions = {}): 
   const legend: Legend = { ...ASCII_LEGEND, ...options.legend }
   const width = rows[0]?.length ?? 0
   if (rows.length === 0 || width === 0 || rows.some((r) => r.length !== width)) {
-    throw new WhiteboxError('value', 'fromAscii: rows must be non-empty and of equal length')
+    throw new MdmlError('value', 'fromAscii: rows must be non-empty and of equal length')
   }
   const walled = options.format === 'walls'
   if (walled && (rows.length % 2 === 0 || width % 2 === 0 || rows.length < 3 || width < 3)) {
-    throw new WhiteboxError('value', 'fromAscii: a wall drawing has 2 rows + 1 lines of 2 cols + 1 characters')
+    throw new MdmlError('value', 'fromAscii: a wall drawing has 2 rows + 1 lines of 2 cols + 1 characters')
   }
-  if (walled && options.topology === 'hex') throw new WhiteboxError('value', 'fromAscii: wall drawings are square')
+  if (walled && options.topology === 'hex') throw new MdmlError('value', 'fromAscii: wall drawings are square')
   const nr = walled ? (rows.length - 1) / 2 : rows.length
   const nc = walled ? (width - 1) / 2 : width
   const terrain: string[] = []
@@ -102,7 +102,7 @@ export function fromAscii(rows: readonly string[], options: AsciiOptions = {}): 
     for (let c = 0; c < nc; c++) {
       const ch = walled ? (rows[2 * r + 1]?.[2 * c + 1] ?? '') : (rows[r]?.[c] ?? '')
       const g = legend[ch]
-      if (g === undefined) throw new WhiteboxError('value', `fromAscii: unknown character '${ch}' at row ${r}`)
+      if (g === undefined) throw new MdmlError('value', `fromAscii: unknown character '${ch}' at row ${r}`)
       const cell = r * nc + c
       terrain.push(g.terrain)
       if (g.start === true) starts.push(cell)
@@ -159,18 +159,18 @@ function glyphMatches(w: World, cell: number, g: Glyph, starts: Set<number>, goa
  * @param w - A square-grid world (hexagonal worlds are written row by row, without the half-cell shift).
  * @param options - Extra legend entries and the format (`'cells'` or `'walls'`).
  * @returns The rows.
- * @throws WhiteboxError with code `value` for graph worlds, or a wall drawing of a hexagonal world.
+ * @throws MdmlError with code `value` for graph worlds, or a wall drawing of a hexagonal world.
  * @example
  * ```ts
- * import { fromAscii, toAscii } from 'whitebox-engine/worlds'
+ * import { fromAscii, toAscii } from 'mdml-engine/worlds'
  * toAscii(fromAscii(['S #', '..G'])) // => ['S.#', '..G']
  * toAscii(fromAscii(['S.', '.G']), { format: 'walls' }) // => ['#####', '#S..#', '#.#.#', '#..G#', '#####']
  * ```
  */
 export function toAscii(w: World, options: Pick<AsciiOptions, 'legend' | 'format'> = {}): string[] {
   const t = w.topology
-  if (t.kind === 'graph') throw new WhiteboxError('value', 'toAscii: graph worlds have no grid')
-  if (options.format === 'walls' && t.kind !== 'square') throw new WhiteboxError('value', 'toAscii: walls need squares')
+  if (t.kind === 'graph') throw new MdmlError('value', 'toAscii: graph worlds have no grid')
+  if (options.format === 'walls' && t.kind !== 'square') throw new MdmlError('value', 'toAscii: walls need squares')
   const legend = [...Object.entries(options.legend ?? {}), ...Object.entries(ASCII_LEGEND)]
   const starts = new Set(w.starts)
   const goals = new Set(w.goals)
@@ -203,10 +203,10 @@ export function toAscii(w: World, options: Pick<AsciiOptions, 'legend' | 'format
  * @param rows - The cells, row by row (all rows the same length).
  * @param options - Terrains, starts, goals, square or hexagonal cells and a name.
  * @returns The world.
- * @throws WhiteboxError with code `value` for ragged rows or unknown terrains.
+ * @throws MdmlError with code `value` for ragged rows or unknown terrains.
  * @example
  * ```ts
- * import { fromRows, toAscii } from 'whitebox-engine/worlds'
+ * import { fromRows, toAscii } from 'mdml-engine/worlds'
  * toAscii(fromRows([[0, 1], ['water', 0]], { goals: [3] })) // => ['.#', '~G']
  * ```
  */
@@ -222,13 +222,13 @@ export function fromRows(
 ): World {
   const cols = rows[0]?.length ?? 0
   if (rows.length === 0 || cols === 0 || rows.some((r) => r.length !== cols)) {
-    throw new WhiteboxError('value', 'fromRows: rows must be non-empty and of equal length')
+    throw new MdmlError('value', 'fromRows: rows must be non-empty and of equal length')
   }
   const names = (options.terrains ?? TERRAINS).map((x) => x.name)
   const terrain = rows.flatMap((row) =>
     row.map((v) => {
       const k = typeof v === 'number' ? v : names.indexOf(v)
-      if (!(k >= 0 && k < names.length)) throw new WhiteboxError('value', `fromRows: unknown terrain ${String(v)}`)
+      if (!(k >= 0 && k < names.length)) throw new MdmlError('value', `fromRows: unknown terrain ${String(v)}`)
       return k
     }),
   )

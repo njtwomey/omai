@@ -5,7 +5,7 @@
  * is zero exactly when the variables are independent.
  */
 
-import { type Estimate, meanOf, type TestResult, WhiteboxError } from '../base/index.ts'
+import { type Estimate, MdmlError, meanOf, type TestResult } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { asTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { pinvSym } from './_linear.ts'
@@ -57,7 +57,7 @@ function fisherInterval(
  * @returns r as the statistic (and estimate, with its interval) and the p-value (df N - 2).
  * @example
  * ```ts
- * import { pearson } from 'whitebox-engine/stats'
+ * import { pearson } from 'mdml-engine/stats'
  * pearson([1, 2, 3, 4, 5], [2, 4, 5, 4, 5]).statistic // => 0.774597
  * ```
  */
@@ -95,7 +95,7 @@ export function pearson(x: TensorLike, y: TensorLike, options: TestOptions = {})
  * @returns rho with its interval and p-value.
  * @example
  * ```ts
- * import { spearman } from 'whitebox-engine/stats'
+ * import { spearman } from 'mdml-engine/stats'
  * spearman([1, 2, 3, 4, 5], [5, 6, 7, 8, 7]).statistic // => 0.820783
  * ```
  */
@@ -225,7 +225,7 @@ export interface KendallOptions extends TestOptions {
  * @returns tau with its interval and p-value.
  * @example
  * ```ts
- * import { kendallTau } from 'whitebox-engine/stats'
+ * import { kendallTau } from 'mdml-engine/stats'
  * kendallTau([1, 2, 3, 4], [1, 3, 2, 4]).statistic // => 0.6666666666666666
  * kendallTau([1, 2, 3, 4], [1, 3, 2, 4]).pValue // => 0.3333333333333333
  * ```
@@ -264,7 +264,7 @@ export function kendallTau(x: TensorLike, y: TensorLike, options: KendallOptions
   tau = Math.min(1, Math.max(-1, tau))
   let method = options.method ?? 'auto'
   if (method === 'exact' && (xtie !== 0 || ytie !== 0))
-    throw new WhiteboxError('value', 'kendallTau: ties found; the exact method cannot be used')
+    throw new MdmlError('value', 'kendallTau: ties found; the exact method cannot be used')
   if (method === 'auto')
     method = xtie === 0 && ytie === 0 && (n <= 33 || Math.min(dis, tot - dis) <= 1) ? 'exact' : 'asymptotic'
   let pValue: number
@@ -312,7 +312,7 @@ function variables(name: string, x: TensorLike, y: TensorLike | undefined, rowva
   const a = read(x)
   if (y === undefined) return a
   const b = read(y)
-  if (a.cols !== b.cols) throw new WhiteboxError('shape', `${name}: x and y have different numbers of observations`)
+  if (a.cols !== b.cols) throw new MdmlError('shape', `${name}: x and y have different numbers of observations`)
   return { rows: a.rows + b.rows, cols: a.cols, data: Float64Array.from([...a.data, ...b.data]) }
 }
 
@@ -326,7 +326,7 @@ function variables(name: string, x: TensorLike, y: TensorLike | undefined, rowva
  * @returns The K x K covariance matrix.
  * @example
  * ```ts
- * import { cov } from 'whitebox-engine/stats'
+ * import { cov } from 'mdml-engine/stats'
  * cov([[0, 1, 2], [2, 1, 0]]) // => [[1, -1], [-1, 1]]
  * ```
  */
@@ -338,7 +338,7 @@ export function cov(x: TensorLike, y?: TensorLike, options: CovOptions = {}): Te
   const fw = options.fweights === undefined ? undefined : Float64Array.from(toFlat(asTensor(options.fweights)))
   const aw = options.aweights === undefined ? undefined : Float64Array.from(toFlat(asTensor(options.aweights)))
   for (const v of [fw, aw])
-    if (v !== undefined && v.length !== n) throw new WhiteboxError('shape', 'cov: weights must match the observations')
+    if (v !== undefined && v.length !== n) throw new MdmlError('shape', 'cov: weights must match the observations')
   if (fw !== undefined || aw !== undefined)
     w = Float64Array.from({ length: n }, (_, i) => (fw?.[i] ?? 1) * (aw?.[i] ?? 1))
   const ddof = options.ddof ?? 1
@@ -383,7 +383,7 @@ export function cov(x: TensorLike, y?: TensorLike, options: CovOptions = {}): Te
  * @returns The K x K correlation matrix, clipped to [-1, 1].
  * @example
  * ```ts
- * import { corrcoef } from 'whitebox-engine/stats'
+ * import { corrcoef } from 'mdml-engine/stats'
  * corrcoef([[1, 2, 3], [2, 4, 7]]) // => [[1, 0.993399], [0.993399, 1]]
  * ```
  */
@@ -411,7 +411,7 @@ export function corrcoef(x: TensorLike, y?: TensorLike, options: Omit<CovOptions
  * @returns The partial correlation with its interval and p-value.
  * @example
  * ```ts
- * import { partialCorrelation } from 'whitebox-engine/stats'
+ * import { partialCorrelation } from 'mdml-engine/stats'
  * partialCorrelation([1, 2, 3, 4, 5, 6], [2, 1, 4, 3, 6, 5], [1, 3, 2, 5, 4, 6]).statistic // => 0.981703
  * ```
  */
@@ -425,7 +425,7 @@ export function partialCorrelation(
   const [a, b] = paired('partialCorrelation', x, y, 3)
   const n = a.length
   const z = rowsOf('partialCorrelation', covariates)
-  if (z.rows !== n) throw new WhiteboxError('shape', 'partialCorrelation: covariates must have one row per observation')
+  if (z.rows !== n) throw new MdmlError('shape', 'partialCorrelation: covariates must have one row per observation')
   const k = z.cols
   const p = k + 2
   const cols: Float64Array[] = [a, b]
@@ -462,13 +462,13 @@ export function partialCorrelation(
  * @returns r with its interval and p-value.
  * @example
  * ```ts
- * import { pointBiserial } from 'whitebox-engine/stats'
+ * import { pointBiserial } from 'mdml-engine/stats'
  * pointBiserial([0, 0, 1, 1], [1, 2, 3, 5]).statistic // => 0.845154
  * ```
  */
 export function pointBiserial(binary: TensorLike, x: TensorLike, options: TestOptions = {}): TestResult {
   for (const v of toFlat(asTensor(binary)))
-    if (v !== 0 && v !== 1) throw new WhiteboxError('value', 'pointBiserial: the first variable must be 0 or 1')
+    if (v !== 0 && v !== 1) throw new MdmlError('value', 'pointBiserial: the first variable must be 0 or 1')
   return { ...pearson(binary, x, options), test: 'point-biserial correlation' }
 }
 
@@ -531,7 +531,7 @@ export function distanceCorrelationOf(A: Float64Array, B: Float64Array, n: numbe
  * @returns The distance correlation in [0, 1].
  * @example
  * ```ts
- * import { distanceCorrelation } from 'whitebox-engine/stats'
+ * import { distanceCorrelation } from 'mdml-engine/stats'
  * distanceCorrelation([1, 2, 3, 4, 5], [1, 4, 9, 16, 25]).value // => 0.986916
  * ```
  */
@@ -542,7 +542,7 @@ export function distanceCorrelation(
 ): Estimate {
   const a = rowsOf('distanceCorrelation', x)
   const b = rowsOf('distanceCorrelation', y)
-  if (a.rows !== b.rows) throw new WhiteboxError('shape', 'distanceCorrelation: x and y differ in length')
+  if (a.rows !== b.rows) throw new MdmlError('shape', 'distanceCorrelation: x and y differ in length')
   const n = a.rows
   const value = distanceCorrelationOf(centredDistances(a), centredDistances(b), n)
   if (options.key === undefined && options.seed === undefined) return { value, method: 'V-statistic' }

@@ -4,7 +4,7 @@
  * corrupted.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { curveSet, type Explained } from '../../lib/exposition/index.ts'
 import {
   type Fitted,
@@ -54,7 +54,7 @@ export function robustnessStudy(
   data: LearnData,
   options: RobustnessStudyOptions = {},
 ): Explained<RobustnessStudy> {
-  if (data.y === undefined) throw new WhiteboxError('value', 'robustnessStudy: the data needs labels')
+  if (data.y === undefined) throw new MdmlError('value', 'robustnessStudy: the data needs labels')
   const m = matrixView(data.x, 'robustnessStudy')
   const y = Array.from(targetVector(data.y, 'robustnessStudy', m.n))
   const key = options.key ?? makeKey(0)

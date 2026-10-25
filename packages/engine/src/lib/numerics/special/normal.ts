@@ -49,8 +49,8 @@ const owensTP = special('owensT', misc.owensT, [
  * @concept special-functions
  * @example
  * ```ts
- * import { ndtr } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { ndtr } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(ndtr(0)) // => 0.5
  * ```
  */
@@ -65,8 +65,8 @@ export function ndtr(x: TensorLike): Value {
  * @returns log Phi(x), differentiable.
  * @example
  * ```ts
- * import { logNdtr } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { logNdtr } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(logNdtr(-40)) < -800 // => true
  * ```
  */
@@ -81,8 +81,8 @@ export function logNdtr(x: TensorLike): Value {
  * @returns The x with Phi(x) = p, differentiable.
  * @example
  * ```ts
- * import { ndtri } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { ndtri } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(ndtri(0.5)) // => 0
  * ```
  */
@@ -97,8 +97,8 @@ export function ndtri(p: TensorLike): Value {
  * @returns phi(x), differentiable.
  * @example
  * ```ts
- * import { normalPdf } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { normalPdf } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(normalPdf(0)) // => 0.398942280401433
  * ```
  */
@@ -113,8 +113,8 @@ export function normalPdf(x: TensorLike): Value {
  * @returns log phi(x), differentiable.
  * @example
  * ```ts
- * import { normalLogPdf } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { normalLogPdf } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * item(normalLogPdf(0)) // => -0.918938533204673
  * ```
  */
@@ -131,8 +131,8 @@ export function normalLogPdf(x: TensorLike): Value {
  * @returns T(h, a), differentiable in both arguments.
  * @example
  * ```ts
- * import { owensT } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { owensT } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(owensT(0, 1)) - 0.125) < 1e-15 // => true
  * ```
  */
@@ -149,8 +149,8 @@ export function owensT(h: TensorLike, a: TensorLike): Value {
  * @returns The log interval probability, differentiable.
  * @example
  * ```ts
- * import { logIntervalProbability } from 'whitebox-engine/numerics/special'
- * import { item } from 'whitebox-engine/tensor'
+ * import { logIntervalProbability } from 'mdml-engine/numerics/special'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(logIntervalProbability(-Infinity, 0)) - Math.log(0.5)) < 1e-15 // => true
  * ```
  */

@@ -4,7 +4,7 @@
  * value by path while keeping conditional dimensions in line with their conditions.
  */
 
-import { activeDims, defaults, type Space, type SpaceValue } from 'whitebox-engine/space'
+import { activeDims, defaults, type Space, type SpaceValue } from 'mdml-engine/space'
 import type { NumberSpec } from './number.ts'
 import type { OptionValue } from './options.ts'
 

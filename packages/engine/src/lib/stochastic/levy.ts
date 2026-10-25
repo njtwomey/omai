@@ -5,7 +5,7 @@
  * clock) with its closed-form density and moments.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Distribution, gamma } from '../dists/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'
 import { kv, lgamma } from '../numerics/special/index.ts'
@@ -63,15 +63,15 @@ export interface CompoundPoissonOptions extends TraceOptions {
  * @concept compound-poisson-process
  * @example
  * ```ts
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
- * import { compoundPoisson, timeGrid } from 'whitebox-engine/stochastic'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { compoundPoisson, timeGrid } from 'mdml-engine/stochastic'
  * compoundPoisson(key(0), timeGrid(1, 10), { rate: 3, jumps: normal(0, 1), paths: 2 }).values.shape // => [2, 11]
  * ```
  */
 export function compoundPoisson(key: Key, times: TimesLike, options: CompoundPoissonOptions): Paths {
   const t = asTimes(times, 'compoundPoisson')
-  if (!(options.rate >= 0)) throw new WhiteboxError('value', 'compoundPoisson: the rate must be >= 0')
+  if (!(options.rate >= 0)) throw new MdmlError('value', 'compoundPoisson: the rate must be >= 0')
   const paths = positiveInteger(options.paths ?? 1, 'paths', 'compoundPoisson')
   const drift = options.drift ?? 0
   return simulatePaths(
@@ -109,8 +109,8 @@ export function compoundPoisson(key: Key, times: TimesLike, options: CompoundPoi
  * @concept compound-poisson-process
  * @example
  * ```ts
- * import { normal } from 'whitebox-engine/dists'
- * import { compoundPoissonMoments } from 'whitebox-engine/stochastic'
+ * import { normal } from 'mdml-engine/dists'
+ * import { compoundPoissonMoments } from 'mdml-engine/stochastic'
  * compoundPoissonMoments(2, 3, normal(1, 1)) // => { mean: 6, variance: 12 }
  * ```
  */
@@ -146,9 +146,9 @@ function stableParts(p: StableParams): { alpha: Value; beta: Value; scale: Value
   ]
   const a = primalNumbers(alpha)[0] ?? Number.NaN
   const b = primalNumbers(beta)[0] ?? Number.NaN
-  if (!(a > 0 && a <= 2)) throw new WhiteboxError('value', 'stable: alpha must be in (0, 2]')
-  if (!(b >= -1 && b <= 1)) throw new WhiteboxError('value', 'stable: beta must be in [-1, 1]')
-  if (!((primalNumbers(scale)[0] ?? 0) > 0)) throw new WhiteboxError('value', 'stable: the scale must be positive')
+  if (!(a > 0 && a <= 2)) throw new MdmlError('value', 'stable: alpha must be in (0, 2]')
+  if (!(b >= -1 && b <= 1)) throw new MdmlError('value', 'stable: beta must be in [-1, 1]')
+  if (!((primalNumbers(scale)[0] ?? 0) > 0)) throw new MdmlError('value', 'stable: the scale must be positive')
   return { alpha, beta, scale, loc, a, b }
 }
 
@@ -167,8 +167,8 @@ function stableParts(p: StableParams): { alpha: Value; beta: Value; scale: Value
  *   (1976); R. Weron, On the Chambers-Mallows-Stuck method, Statistics and Probability Letters 28 (1996).
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { stableSample } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { stableSample } from 'mdml-engine/stochastic'
  * stableSample(key(0), [5], { alpha: 1.5, beta: 0.5 }).shape // => [5]
  * ```
  */
@@ -206,8 +206,8 @@ export function stableSample(key: Key, shape: readonly number[], params: StableP
  * @concept stable-distributions
  * @example
  * ```ts
- * import { stableCharacteristicFunction } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { stableCharacteristicFunction } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(stableCharacteristicFunction([0, 1], { alpha: 2 }).re) // => [1, Math.exp(-1)]
  * ```
  */
@@ -274,8 +274,8 @@ function inversion(
  * @concept stable-distributions
  * @example
  * ```ts
- * import { stablePdf } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { stablePdf } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * // alpha = 1, beta = 0 is the Cauchy law: f(0) = 1 / pi
  * Math.abs(toArray(stablePdf([0], { alpha: 1 }))[0] - 1 / Math.PI) < 1e-9 // => true
  * ```
@@ -296,8 +296,8 @@ export function stablePdf(x: TensorLike, params: StableParams): Value {
  * @concept stable-distributions
  * @example
  * ```ts
- * import { stableCdf } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { stableCdf } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * Math.abs(toArray(stableCdf([0], { alpha: 1.3 }))[0] - 0.5) < 1e-9 // => true
  * ```
  */
@@ -318,8 +318,8 @@ export function stableCdf(x: TensorLike, params: StableParams): Value {
  * @concept stable-distributions
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { stableProcess, timeGrid } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { stableProcess, timeGrid } from 'mdml-engine/stochastic'
  * stableProcess(key(0), timeGrid(1, 20), { alpha: 1.7, paths: 3 }).values.shape // => [3, 21]
  * ```
  */
@@ -372,8 +372,8 @@ export interface VarianceGammaParams {
  * @concept variance-gamma
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { timeGrid, varianceGammaProcess } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { timeGrid, varianceGammaProcess } from 'mdml-engine/stochastic'
  * varianceGammaProcess(key(0), timeGrid(1, 10), { theta: -0.1, sigma: 0.2, nu: 0.3, paths: 2 }).values.shape // => [2, 11]
  * ```
  */
@@ -415,8 +415,8 @@ export function varianceGammaProcess(
  * @concept variance-gamma
  * @example
  * ```ts
- * import { varianceGammaDensity } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { varianceGammaDensity } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(varianceGammaDensity(0.1, 1, { theta: 0, sigma: 0.2, nu: 0.1 })) > 0 // => true
  * ```
  */
@@ -451,8 +451,8 @@ export function varianceGammaDensity(x: TensorLike, t: TensorLike, params: Varia
  * @concept variance-gamma
  * @example
  * ```ts
- * import { varianceGammaCharacteristicFunction } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { varianceGammaCharacteristicFunction } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(varianceGammaCharacteristicFunction([0], 1, { theta: 0.1, sigma: 0.2, nu: 0.5 }).re) // => [1]
  * ```
  */
@@ -491,7 +491,7 @@ function arg(re: Value, im: Value): Value {
  * @concept variance-gamma
  * @example
  * ```ts
- * import { varianceGammaMoments } from 'whitebox-engine/stochastic'
+ * import { varianceGammaMoments } from 'mdml-engine/stochastic'
  * varianceGammaMoments(2, { theta: 0.5, sigma: 1, nu: 2 }) // => { mean: 1, variance: 3 }
  * ```
  */

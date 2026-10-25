@@ -15,23 +15,23 @@ import * as trace from '../trace/index.ts'
 import * as learn from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'whitebox-engine/autodiff': autodiff,
-  'whitebox-engine/base': base,
-  'whitebox-engine/data': data,
-  'whitebox-engine/exposition': exposition,
-  'whitebox-engine/metrics': metrics,
-  'whitebox-engine/random': random,
-  'whitebox-engine/space': space,
-  'whitebox-engine/stats': stats,
-  'whitebox-engine/tensor': tensor,
-  'whitebox-engine/trace': trace,
-  'whitebox-engine/learn': learn,
+  'mdml-engine/autodiff': autodiff,
+  'mdml-engine/base': base,
+  'mdml-engine/data': data,
+  'mdml-engine/exposition': exposition,
+  'mdml-engine/metrics': metrics,
+  'mdml-engine/random': random,
+  'mdml-engine/space': space,
+  'mdml-engine/stats': stats,
+  'mdml-engine/tensor': tensor,
+  'mdml-engine/trace': trace,
+  'mdml-engine/learn': learn,
   ...Object.fromEntries(
     Object.entries(learn)
       .filter(([, v]) => typeof v === 'object' && v !== null && !Array.isArray(v))
       .flatMap(([k, v]) => {
         const folder = k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)
-        return [[`whitebox-engine/learn/${folder}`, v as Readonly<Record<string, unknown>>]]
+        return [[`mdml-engine/learn/${folder}`, v as Readonly<Record<string, unknown>>]]
       }),
   ),
 }
@@ -118,7 +118,7 @@ describe('documentation examples', () => {
             try {
               f()
             } catch (e) {
-              expect(base.isWhiteboxError(e, code as base.ErrorCode), text).toBe(true)
+              expect(base.isMdmlError(e, code as base.ErrorCode), text).toBe(true)
             }
           },
         )

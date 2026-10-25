@@ -3,7 +3,7 @@
  * neighbour, on two-dimensional data with outliers.
  */
 
-import { knnDetector as knnDetectorMethod } from 'whitebox-engine/methods/anomaly'
+import { knnDetector as knnDetectorMethod } from 'mdml-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'
 

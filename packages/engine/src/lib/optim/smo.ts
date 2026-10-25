@@ -4,7 +4,7 @@
  * Includes the C-SVC and epsilon-SVR duals, which return the solution as a kernel expansion.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
@@ -87,8 +87,8 @@ export interface SmoResult {
  * support vector machines (2005).
  * @example
  * ```ts
- * import { smoAlgorithm } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { smoAlgorithm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const alg = smoAlgorithm({ Q: [[1, 0], [0, 1]], p: [-1, -1], y: [1, -1], C: 10 })
  * Array.from(runAlgorithm(alg, { maxSteps: 10 }).state.alpha) // => [1, 1]
  * ```
@@ -98,7 +98,7 @@ export function smoAlgorithm(problem: SmoProblem, options: SmoOptions = {}): Alg
   const n = p.length
   const Q = matrixFrom(problem.Q, n, 'Q').data
   const y = vectorFrom(problem.y)
-  if (y.length !== n || y.some((v) => v !== 1 && v !== -1)) throw new WhiteboxError('value', 'smo: y must be +1 or -1')
+  if (y.length !== n || y.some((v) => v !== 1 && v !== -1)) throw new MdmlError('value', 'smo: y must be +1 or -1')
   const C = typeof problem.C === 'number' ? new Float64Array(n).fill(problem.C) : vectorFrom(problem.C)
   const eps = options.tol ?? 1e-3
   const secondOrder = options.selection !== 'first-order'
@@ -349,7 +349,7 @@ function rhoOf(alpha: Float64Array, grad: Float64Array, y: Float64Array, C: Floa
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { smo } from 'whitebox-engine/optim'
+ * import { smo } from 'mdml-engine/optim'
  * const r = smo({ Q: [[1, 0], [0, 1]], p: [-1, -1], y: [1, -1], C: 10 })
  * [r.objective, r.rho] // => [-1, 0]
  * ```
@@ -401,8 +401,8 @@ export interface SvmDualResult extends SmoResult {
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { svcDual } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { svcDual } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * const K = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
  * toArray(svcDual(K, [1, -1, -1], 10, { tol: 1e-12 }).coef).map((v) => Math.round(v * 1e6) / 1e6) // => [1.333333, -0.666667, -0.666667]
  * ```
@@ -437,7 +437,7 @@ export function svcDual(
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { svrDual } from 'whitebox-engine/optim'
+ * import { svrDual } from 'mdml-engine/optim'
  * const r = svrDual([[1, 0], [0, 1]], [1, -1], 10, 0.1)
  * Math.round(r.bias * 1e9) / 1e9 // => 0
  * ```

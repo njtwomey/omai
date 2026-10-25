@@ -5,11 +5,11 @@ BICGauss, AICGauss) on continuous data."""
 import numpy as np
 import pandas as pd
 import pgmpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.pgm import STUDENT, sample_rows
 from pgmpy.base import DAG
 from pgmpy.structure_score import AIC, BIC, K2, AICGauss, BDeu, BDs, BICGauss, LogLikelihood, LogLikelihoodGauss
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.pgm import STUDENT, sample_rows
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

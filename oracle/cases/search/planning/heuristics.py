@@ -1,16 +1,16 @@
 """Relaxation heuristics against pyperplan's hAddHeuristic and hMaxHeuristic (Bonet and Geffner's h-add and h-max):
 their values on every state along an optimal plan of each PDDL instance. pyperplan's FF heuristic is not compared:
-its relaxed plan breaks cost ties by the iteration order of a Python set, which varies between runs; whitebox-js's
+its relaxed plan breaks cost ties by the iteration order of a Python set, which varies between runs; mdml-js's
 h-FF is checked by properties (between h-max and h-add, a valid relaxed plan)."""
 
 from importlib.metadata import version
 
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.planning import INSTANCES, task
 from pyperplan.heuristics.relaxation import hAddHeuristic, hMaxHeuristic
 from pyperplan.search import breadth_first_search
 from pyperplan.search.searchspace import make_root_node
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.planning import INSTANCES, task
 
 REFERENCE: dict[str, str] = {"pyperplan": version("pyperplan")}
 

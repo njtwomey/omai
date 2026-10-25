@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { expectConformant } from '../../testing/check.ts'
 import { grad, numericalGradient } from '../autodiff/index.ts'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import { matmul, mul, sum, swapaxes, tensor, toArray, toFlat, type Value } from '../tensor/index.ts'
 import {
   ard,
@@ -46,7 +46,7 @@ function throwsCode(f: () => unknown, code: string): void {
   try {
     f()
   } catch (e) {
-    expect(isWhiteboxError(e, code as never)).toBe(true)
+    expect(isMdmlError(e, code as never)).toBe(true)
     return
   }
   throw new Error('expected a throw')

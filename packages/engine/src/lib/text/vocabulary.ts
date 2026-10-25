@@ -3,7 +3,7 @@
  * first, or from a fixed list, and mapping between tokens and ids with an unknown token for words outside it.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { compareCodePoints } from './_classes.ts'
 
 /**
@@ -42,11 +42,11 @@ export interface VocabularyOptions {
  * @param documents - Token lists (or one token list).
  * @param options - Count threshold, size limit, specials, unknown token and order.
  * @returns The vocabulary.
- * @throws WhiteboxError with code `value` for repeated special tokens or a size limit below the number of specials.
+ * @throws MdmlError with code `value` for repeated special tokens or a size limit below the number of specials.
  * @concept vocabulary
  * @example
  * ```ts
- * import { buildVocabulary } from 'whitebox-engine/text'
+ * import { buildVocabulary } from 'mdml-engine/text'
  * const v = buildVocabulary([['a', 'b', 'a'], ['c', 'b', 'a']], { specials: ['<pad>'], unk: '<unk>', maxSize: 4 })
  * [v.tokens, v.counts] // => [['<pad>', '<unk>', 'a', 'b'], [0, 0, 3, 2]]
  * ```
@@ -60,7 +60,7 @@ export function buildVocabulary(
   ) as readonly (readonly string[])[]
   const specials = [...(options.specials ?? [])]
   if (options.unk !== undefined && !specials.includes(options.unk)) specials.push(options.unk)
-  if (new Set(specials).size !== specials.length) throw new WhiteboxError('value', 'buildVocabulary: repeated specials')
+  if (new Set(specials).size !== specials.length) throw new MdmlError('value', 'buildVocabulary: repeated specials')
   const counts = new Map<string, number>()
   for (const d of docs) for (const t of d) counts.set(t, (counts.get(t) ?? 0) + 1)
   for (const s of specials) counts.delete(s)
@@ -70,7 +70,7 @@ export function buildVocabulary(
     b[1] - a[1] || compareCodePoints(a[0], b[0])
   if (options.maxSize !== undefined) {
     const room = options.maxSize - specials.length
-    if (room < 0) throw new WhiteboxError('value', 'buildVocabulary: maxSize is smaller than the specials')
+    if (room < 0) throw new MdmlError('value', 'buildVocabulary: maxSize is smaller than the specials')
     if (entries.length > room) {
       const keep = new Set(
         [...entries]
@@ -100,11 +100,11 @@ export function buildVocabulary(
  * @param tokens - The tokens.
  * @param options - Special tokens among them and the unknown token.
  * @returns The vocabulary.
- * @throws WhiteboxError with code `value` for repeated tokens.
+ * @throws MdmlError with code `value` for repeated tokens.
  * @concept vocabulary
  * @example
  * ```ts
- * import { vocabularyFromTokens } from 'whitebox-engine/text'
+ * import { vocabularyFromTokens } from 'mdml-engine/text'
  * vocabularyFromTokens(['[UNK]', 'a', 'b'], { unk: '[UNK]' }).index.get('b') // => 2
  * ```
  */
@@ -112,7 +112,7 @@ export function vocabularyFromTokens(
   tokens: readonly string[],
   options: { readonly specials?: readonly string[]; readonly unk?: string } = {},
 ): Vocabulary {
-  if (new Set(tokens).size !== tokens.length) throw new WhiteboxError('value', 'vocabularyFromTokens: repeated tokens')
+  if (new Set(tokens).size !== tokens.length) throw new MdmlError('value', 'vocabularyFromTokens: repeated tokens')
   const specials = [...(options.specials ?? [])]
   if (options.unk !== undefined && !specials.includes(options.unk)) specials.push(options.unk)
   return {
@@ -130,11 +130,11 @@ export function vocabularyFromTokens(
  * @param vocab - The vocabulary.
  * @param tokens - The tokens.
  * @returns The ids.
- * @throws WhiteboxError with code `value` for an unknown token when the vocabulary has no unknown token.
+ * @throws MdmlError with code `value` for an unknown token when the vocabulary has no unknown token.
  * @concept vocabulary
  * @example
  * ```ts
- * import { buildVocabulary, encodeTokens } from 'whitebox-engine/text'
+ * import { buildVocabulary, encodeTokens } from 'mdml-engine/text'
  * encodeTokens(buildVocabulary([['a', 'b']], { unk: '<unk>' }), ['b', 'z']) // => [2, 0]
  * ```
  */
@@ -142,7 +142,7 @@ export function encodeTokens(vocab: Vocabulary, tokens: readonly string[]): numb
   const unk = vocab.unk === undefined ? undefined : vocab.index.get(vocab.unk)
   return tokens.map((t) => {
     const id = vocab.index.get(t) ?? unk
-    if (id === undefined) throw new WhiteboxError('value', `encodeTokens: ${t} is not in the vocabulary`)
+    if (id === undefined) throw new MdmlError('value', `encodeTokens: ${t} is not in the vocabulary`)
     return id
   })
 }
@@ -154,11 +154,11 @@ export function encodeTokens(vocab: Vocabulary, tokens: readonly string[]): numb
  * @param ids - The ids.
  * @param options - Whether to drop special tokens.
  * @returns The tokens.
- * @throws WhiteboxError with code `value` for an id outside the vocabulary.
+ * @throws MdmlError with code `value` for an id outside the vocabulary.
  * @concept vocabulary
  * @example
  * ```ts
- * import { buildVocabulary, decodeTokens } from 'whitebox-engine/text'
+ * import { buildVocabulary, decodeTokens } from 'mdml-engine/text'
  * decodeTokens(buildVocabulary([['a', 'b']], { specials: ['<s>'] }), [0, 1, 2], { skipSpecials: true }) // => ['a', 'b']
  * ```
  */
@@ -171,7 +171,7 @@ export function decodeTokens(
   const out: string[] = []
   for (const id of ids) {
     const t = vocab.tokens[id]
-    if (t === undefined) throw new WhiteboxError('value', `decodeTokens: id ${id} is out of range`)
+    if (t === undefined) throw new MdmlError('value', `decodeTokens: id ${id} is out of range`)
     if (options.skipSpecials === true && specials.has(t)) continue
     out.push(t)
   }

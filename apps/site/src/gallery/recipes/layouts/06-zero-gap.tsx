@@ -1,7 +1,7 @@
+import { band, lines, type Panel } from 'mdml-render/charts'
+import { figure, gridSpec } from 'mdml-render/figure'
+import { ControlPanel, FigureFrame, FigureGrid, NumberField, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { band, lines, type Panel } from 'whitebox-render/charts'
-import { figure, gridSpec } from 'whitebox-render/figure'
-import { ControlPanel, FigureFrame, FigureGrid, NumberField, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

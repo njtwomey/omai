@@ -3,7 +3,7 @@
  * on tabular classification data and tabular regression data.
  */
 
-import { graphicalLassoEstimator } from 'whitebox-engine/methods/covariance'
+import { graphicalLassoEstimator } from 'mdml-engine/methods/covariance'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

@@ -5,10 +5,9 @@ import itertools
 
 import numpy as np
 import pgmpy
-from pgmpy.models import DiscreteMarkovNetwork
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
-from whitebox_oracle.pgm import (
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
+from mdml_oracle.pgm import (
     Potential,
     checked,
     joint_table,
@@ -17,6 +16,7 @@ from whitebox_oracle.pgm import (
     random_potentials,
     ve_query,
 )
+from pgmpy.models import DiscreteMarkovNetwork
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 
@@ -34,7 +34,7 @@ QUERIES: list[tuple[list[str], dict[str, int]]] = [
 
 
 def grid(rows: int, cols: int) -> tuple[list[str], list[tuple[str, str]]]:
-    """Vertices s_r_c and the right and down edges of a grid, in whitebox-js's order."""
+    """Vertices s_r_c and the right and down edges of a grid, in mdml-js's order."""
     name = [[f"s_{r}_{c}" for c in range(cols)] for r in range(rows)]
     vertices = [name[r][c] for r in range(rows) for c in range(cols)]
     edges: list[tuple[str, str]] = []

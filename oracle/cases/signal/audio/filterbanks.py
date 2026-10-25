@@ -8,8 +8,8 @@ import librosa
 import numpy as np
 import scipy
 import scipy.signal as S
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"librosa": version("librosa"), "scipy": scipy.__version__}
 

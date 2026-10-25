@@ -4,7 +4,7 @@
  * algorithm (farthest first), including the 3-D layers embedded in 2-D scenes.
  */
 
-import { clamp, WhiteboxError } from '../base/index.ts'
+import { clamp, MdmlError } from '../base/index.ts'
 import { arrow, group, line, polygon, scene, tex, text } from './build.ts'
 import type { Item3D, Scene3D, Vec3 } from './three-d.ts'
 import type { Layer3DNode, NodeBase, Paint, Scene, SceneNode, Style } from './types.ts'
@@ -32,21 +32,21 @@ export interface Camera {
  *
  * @param options - Any camera fields.
  * @returns The camera.
- * @throws WhiteboxError with code `value` for a non-positive distance, a field of view outside (0, 180) or a
+ * @throws MdmlError with code `value` for a non-positive distance, a field of view outside (0, 180) or a
  * non-positive extent.
  * @example
  * ```ts
- * import { camera } from 'whitebox-engine/scene'
+ * import { camera } from 'mdml-engine/scene'
  * camera({ projection: 'orthographic', azimuth: 0 }).elevation // => 30
  * ```
  */
 export function camera(options: Partial<Camera> = {}): Camera {
   const distance = options.distance ?? 5
   const fov = options.fov ?? 35
-  if (!(distance > 0)) throw new WhiteboxError('value', 'camera: distance must be positive')
-  if (!(fov > 0 && fov < 180)) throw new WhiteboxError('value', 'camera: fov must be in (0, 180) degrees')
+  if (!(distance > 0)) throw new MdmlError('value', 'camera: distance must be positive')
+  if (!(fov > 0 && fov < 180)) throw new MdmlError('value', 'camera: fov must be in (0, 180) degrees')
   const extent = options.extent ?? distance * Math.tan((fov * Math.PI) / 360)
-  if (!(extent > 0)) throw new WhiteboxError('value', 'camera: extent must be positive')
+  if (!(extent > 0)) throw new MdmlError('value', 'camera: extent must be positive')
   return {
     projection: options.projection ?? 'perspective',
     azimuth: options.azimuth ?? -60,
@@ -67,7 +67,7 @@ export function camera(options: Partial<Camera> = {}): Camera {
  * @returns The moved camera.
  * @example
  * ```ts
- * import { camera, orbit } from 'whitebox-engine/scene'
+ * import { camera, orbit } from 'mdml-engine/scene'
  * orbit(camera({ elevation: 80 }), 15, 30).elevation // => 90
  * ```
  */
@@ -102,7 +102,7 @@ function itemPoints(item: Item3D): readonly Vec3[] {
  * @returns The fitted camera (unchanged for an empty scene).
  * @example
  * ```ts
- * import { camera, fitCamera, scene3d, point3d } from 'whitebox-engine/scene'
+ * import { camera, fitCamera, scene3d, point3d } from 'mdml-engine/scene'
  * fitCamera(camera(), scene3d([point3d([0, 0, 0]), point3d([2, 2, 2])])).target // => [1, 1, 1]
  * ```
  */
@@ -144,7 +144,7 @@ export interface Projected {
  * @returns Image coordinates (y down) and depth, or `undefined`.
  * @example
  * ```ts
- * import { camera, projectPoint } from 'whitebox-engine/scene'
+ * import { camera, projectPoint } from 'mdml-engine/scene'
  * projectPoint(camera(), [0, 0, 0], { width: 100, height: 100 }) // => { x: 50, y: 50, depth: 5 }
  * ```
  */
@@ -270,7 +270,7 @@ function projectItem(
  * @concept scene-graph
  * @example
  * ```ts
- * import { camera, project, scene3d, segment3d } from 'whitebox-engine/scene'
+ * import { camera, project, scene3d, segment3d } from 'mdml-engine/scene'
  * const view = camera({ azimuth: -90, elevation: 0 })
  * project(scene3d([segment3d([0, 0, 0], [1, 0, 0])]), view, { width: 100, height: 100 }).children[0].kind // => 'line'
  * ```
@@ -316,7 +316,7 @@ export function project(
  * @returns The node.
  * @example
  * ```ts
- * import { camera, layer3d, scene3d } from 'whitebox-engine/scene'
+ * import { camera, layer3d, scene3d } from 'mdml-engine/scene'
  * layer3d(scene3d([]), camera(), { x: 0, y: 0, width: 200, height: 200 }).kind // => 'layer3d'
  * ```
  */
@@ -350,7 +350,7 @@ function flattenLayers(nodes: readonly SceneNode[]): SceneNode[] {
  * @returns The scene without 3-D layers.
  * @example
  * ```ts
- * import { camera, layer3d, point3d, projectLayers, scene, scene3d } from 'whitebox-engine/scene'
+ * import { camera, layer3d, point3d, projectLayers, scene, scene3d } from 'mdml-engine/scene'
  * const layer = layer3d(scene3d([point3d([0, 0, 0])]), camera(), { x: 10, y: 10, width: 80, height: 80 })
  * projectLayers(scene(100, 100, [layer])).children[0].kind // => 'group'
  * ```

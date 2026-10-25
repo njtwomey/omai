@@ -5,7 +5,7 @@
  * searches.
  */
 
-import { type MetricResult, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import {
   accuracyScore,
   averagePrecisionScore,
@@ -77,14 +77,14 @@ function positive(t: Tensor): Tensor {
  * Turn a metric into a scorer (sklearn.metrics.make_scorer): the scorer calls the chosen verb of the fitted estimator
  * on `data.x`, compares with `data.y` (weighted by `data.weights`) and negates losses.
  *
- * @param metric - A metric function (from `whitebox-engine/metrics` or your own).
+ * @param metric - A metric function (from `mdml-engine/metrics` or your own).
  * @param options - name, response, greaterIsBetter, positiveColumn, passLabels and metricOptions.
  * @returns The scorer.
  * @example
  * ```ts
- * import { makeScorer } from 'whitebox-engine/learn'
- * import { meanAbsoluteError } from 'whitebox-engine/metrics'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import { makeScorer } from 'mdml-engine/learn'
+ * import { meanAbsoluteError } from 'mdml-engine/metrics'
+ * import { tensor } from 'mdml-engine/tensor'
  * const scorer = makeScorer(meanAbsoluteError, { greaterIsBetter: false, name: 'neg_mae' })
  * const fitted = { estimator: 'zero', kind: 'regressor', params: {}, predict: () => tensor([0, 0]) }
  * scorer.score(fitted, { x: [[1], [2]], y: [1, 3] }) // => -2
@@ -189,10 +189,10 @@ const SCORERS: Readonly<Record<ScorerName, () => Scorer>> = {
  *
  * @param scoring - A {@link ScorerName} or a scorer.
  * @returns The scorer.
- * @throws WhiteboxError with code `value` for an unknown name.
+ * @throws MdmlError with code `value` for an unknown name.
  * @example
  * ```ts
- * import { getScorer } from 'whitebox-engine/learn'
+ * import { getScorer } from 'mdml-engine/learn'
  * getScorer('neg_mean_squared_error').name // => 'neg_mean_squared_error'
  * getScorer('nope') // => throws value
  * ```
@@ -200,7 +200,7 @@ const SCORERS: Readonly<Record<ScorerName, () => Scorer>> = {
 export function getScorer(scoring: ScorerName | Scorer): Scorer {
   if (typeof scoring !== 'string') return scoring
   const make = SCORERS[scoring]
-  if (make === undefined) throw new WhiteboxError('value', `getScorer: unknown scorer ${String(scoring)}`)
+  if (make === undefined) throw new MdmlError('value', `getScorer: unknown scorer ${String(scoring)}`)
   return make()
 }
 
@@ -211,7 +211,7 @@ export function getScorer(scoring: ScorerName | Scorer): Scorer {
  * @returns The scorer.
  * @example
  * ```ts
- * import { scorerFor } from 'whitebox-engine/learn'
+ * import { scorerFor } from 'mdml-engine/learn'
  * scorerFor(undefined).name // => 'score'
  * ```
  */
@@ -230,7 +230,7 @@ export type Scoring = ScorerName | Scorer | readonly (ScorerName | Scorer)[] | u
  * @returns The scorers by name, in order.
  * @example
  * ```ts
- * import { scorersOf } from 'whitebox-engine/learn'
+ * import { scorersOf } from 'mdml-engine/learn'
  * Object.keys(scorersOf(['r2', 'neg_mean_absolute_error'])) // => ['r2', 'neg_mean_absolute_error']
  * ```
  */

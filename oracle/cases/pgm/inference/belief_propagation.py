@@ -6,12 +6,12 @@ Asia after three iterations, so the loopy cases use networks where it converges.
 import numpy as np
 import pgmpy
 import pyagrum as gum
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.pgm import SPRINKLER, NodeSpec, Potential, definition, hashables, random_potentials, stable
 from pgmpy.factors.discrete import DiscreteFactor
 from pgmpy.inference import BeliefPropagationWithMessagePassing
 from pgmpy.models import FactorGraph
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.pgm import SPRINKLER, NodeSpec, Potential, definition, hashables, random_potentials, stable
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__, "pyagrum": gum.__version__}
 

@@ -1,9 +1,9 @@
+import { iris, wine } from 'mdml-engine/datasets'
+import { toArray } from 'mdml-engine/tensor'
+import { type AxisBrush, brushFromAxisEvent, brushRows, parallelCoordinates, type Table } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
+import { Chart, Choice, ColumnOrder, ControlPanel, FigureFrame, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { iris, wine } from 'whitebox-engine/datasets'
-import { toArray } from 'whitebox-engine/tensor'
-import { type AxisBrush, brushFromAxisEvent, brushRows, parallelCoordinates, type Table } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
-import { Chart, Choice, ColumnOrder, ControlPanel, FigureFrame, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

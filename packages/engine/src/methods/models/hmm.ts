@@ -7,7 +7,7 @@
 
 // TODO: Gaussian-mixture emissions (hmmlearn's GMMHMM), tied and spherical covariances, Baum-Welch through the
 // probprog EM engine on the HMM as a program, Bayesian (Dirichlet-prior) and variational HMMs.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import {
   coefficientTable,
   decisionSurface,
@@ -156,7 +156,7 @@ function sequencesOf(data: LearnData, m: MatrixView): MatrixView[] {
     out.push({ n: len, d: m.d, data: m.data.subarray(at * m.d, (at + len) * m.d) })
     at += len
   }
-  if (at !== m.n) throw new WhiteboxError('shape', `hmm: lengths sum to ${at}, not ${m.n} rows`)
+  if (at !== m.n) throw new MdmlError('shape', `hmm: lengths sum to ${at}, not ${m.n} rows`)
   return out
 }
 
@@ -315,7 +315,7 @@ function initialHmm(
     let maxSym = 0
     for (const v of all.data) {
       if (!(Number.isInteger(v) && v >= 0))
-        throw new WhiteboxError('value', 'categoricalHMM: symbols must be integers >= 0')
+        throw new MdmlError('value', 'categoricalHMM: symbols must be integers >= 0')
       maxSym = Math.max(maxSym, v)
     }
     const S = h.nFeatures ?? maxSym + 1
@@ -429,7 +429,7 @@ function hmmVerbs(p: HmmParams): HmmVerbs {
 function fitHmm(data: LearnData, h: HmmHyper, options: FitOptions): { params: HmmParams; exposition: Exposition[] } {
   const name = h.emission === 'categorical' ? 'categoricalHMM' : 'gaussianHMM'
   if (!(Number.isInteger(h.nComponents) && h.nComponents >= 1))
-    throw new WhiteboxError('value', `${name}: nComponents must be a positive integer`)
+    throw new MdmlError('value', `${name}: nComponents must be a positive integer`)
   const m = sequenceView(data.x, name)
   const sequences = sequencesOf(data, m)
   const run = fitRunOptions(options, name)

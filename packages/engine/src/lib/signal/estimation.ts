@@ -5,7 +5,7 @@
  * maximises output SNR for a known template.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { correlate, fftConvolve } from '../numerics/convolution/index.ts'
 import { irfft, rfft } from '../numerics/fourier/index.ts'
 import { solveToeplitz } from '../numerics/linalg/index.ts'
@@ -50,8 +50,8 @@ import { burg } from './parametric.ts'
  * @concept wiener-filter
  * @example
  * ```ts
- * import { nonCausalWiener } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { nonCausalWiener } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(nonCausalWiener([2, 2, 2, 2], [1, 1, 1], 1)).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1, 1, 1]
  * ```
  */
@@ -60,7 +60,7 @@ export function nonCausalWiener(y: TensorLike, signalPsd: TensorLike, noisePsd: 
   const n = v.shape[0] ?? 0
   const s = reshape(float(signalPsd), [-1])
   if ((s.shape[0] ?? 0) !== Math.floor(n / 2) + 1)
-    throw new WhiteboxError('shape', 'nonCausalWiener: the spectra must have n / 2 + 1 bins')
+    throw new MdmlError('shape', 'nonCausalWiener: the spectra must have n / 2 + 1 bins')
   const gain = div(s, add(s, float(noisePsd)))
   return irfft(cScale(rfft(v), gain), n)
 }
@@ -76,8 +76,8 @@ export function nonCausalWiener(y: TensorLike, signalPsd: TensorLike, noisePsd: 
  * @concept wiener-filter
  * @example
  * ```ts
- * import { firWiener } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { firWiener } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const x = Array.from({ length: 2000 }, (_, i) => Math.sin(1.3 * i) + Math.cos(0.4 * i))
  * const d = x.map((v, i) => 2 * v + 0.5 * (x[i - 1] ?? 0))
  * toFlat(firWiener(x, d, 2).taps).map((v) => Math.round(v * 10) / 10) // => [2, 0.5]
@@ -91,8 +91,8 @@ export function firWiener(
   const xv = vector(x, 'firWiener')
   const dv = vector(d, 'firWiener')
   const n = xv.shape[0] ?? 0
-  if ((dv.shape[0] ?? 0) !== n) throw new WhiteboxError('shape', 'firWiener: x and d must have the same length')
-  if (!Number.isInteger(order) || order < 1 || order > n) throw new WhiteboxError('value', 'firWiener: 1 <= order <= n')
+  if ((dv.shape[0] ?? 0) !== n) throw new MdmlError('shape', 'firWiener: x and d must have the same length')
+  if (!Number.isInteger(order) || order < 1 || order > n) throw new MdmlError('value', 'firWiener: 1 <= order <= n')
   const r: Value[] = []
   const p: Value[] = []
   for (let k = 0; k < order; k++) {
@@ -115,7 +115,7 @@ export function firWiener(
  * @concept wiener-filter
  * @example
  * ```ts
- * import { wiener } from 'whitebox-engine/signal'
+ * import { wiener } from 'mdml-engine/signal'
  * wiener([1, 5, 2, 8, 3, 7, 4]).shape // => [7]
  * ```
  */
@@ -123,7 +123,7 @@ export function wiener(x: TensorLike, size: number | readonly number[] = 3, nois
   const v = float(x)
   const rank = v.shape.length
   const k = typeof size === 'number' ? new Array<number>(rank).fill(size) : [...size]
-  if (k.length !== rank) throw new WhiteboxError('shape', 'wiener: one window size per axis')
+  if (k.length !== rank) throw new MdmlError('shape', 'wiener: one window size per axis')
   const count = k.reduce((a, b) => a * b, 1)
   const box = ones(k)
   const m = div(fftConvolve(v, box, 'same'), count)
@@ -144,7 +144,7 @@ export function wiener(x: TensorLike, size: number | readonly number[] = 3, nois
  * @concept linear-prediction
  * @example
  * ```ts
- * import { lpc } from 'whitebox-engine/signal'
+ * import { lpc } from 'mdml-engine/signal'
  * lpc([1, 0.5, 0.25, 0.125, 0.0625, 0.03125], 1).shape // => [2]
  * ```
  */
@@ -162,8 +162,8 @@ export function lpc(y: TensorLike, order: number): Value {
  * @concept linear-prediction
  * @example
  * ```ts
- * import { predictionResidual } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { predictionResidual } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(predictionResidual([1, 0.5, 0.25], [1, -0.5])) // => [1, 0, 0]
  * ```
  */
@@ -180,8 +180,8 @@ export function predictionResidual(y: TensorLike, a: TensorLike): Value {
  * @concept linear-prediction
  * @example
  * ```ts
- * import { linearPredict } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { linearPredict } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(linearPredict([1, 0.5, 0.25], [1, -0.5])) // => [0, 0.5, 0.25]
  * ```
  */
@@ -201,8 +201,8 @@ export function linearPredict(y: TensorLike, a: TensorLike): Value {
  * @concept matched-filter
  * @example
  * ```ts
- * import { matchedFilter } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { matchedFilter } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(matchedFilter([0, 1, 2, 1, 0, 0], [1, 2, 1])) // => [4, 6, 4, 1]
  * ```
  */
@@ -219,7 +219,7 @@ export function matchedFilter(x: TensorLike, template: TensorLike, mode: 'valid'
  * @concept matched-filter
  * @example
  * ```ts
- * import { matchedFilterSnr } from 'whitebox-engine/signal'
+ * import { matchedFilterSnr } from 'mdml-engine/signal'
  * matchedFilterSnr([1, 2, 1], 0.5) // => 12
  * ```
  */

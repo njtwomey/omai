@@ -5,7 +5,7 @@
  * which combines them.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
@@ -43,17 +43,17 @@ export interface DualAveragingOptions {
  *
  * @param stepSize - The starting step size eps_0 (positive).
  * @returns The state.
- * @throws WhiteboxError with code `value` for a step size that is not positive and finite.
+ * @throws MdmlError with code `value` for a step size that is not positive and finite.
  * @concept dual-averaging
  * @example
  * ```ts
- * import { dualAveragingInit } from 'whitebox-engine/sampling'
+ * import { dualAveragingInit } from 'mdml-engine/sampling'
  * dualAveragingInit(1).mu === Math.log(10) // => true
  * ```
  */
 export function dualAveragingInit(stepSize: number): DualAveragingState {
   if (!(stepSize > 0 && Number.isFinite(stepSize))) {
-    throw new WhiteboxError('value', 'dualAveragingInit: the step size must be positive and finite')
+    throw new MdmlError('value', 'dualAveragingInit: the step size must be positive and finite')
   }
   return { logStepSize: Math.log(stepSize), logStepSizeAvg: 0, step: 1, avgError: 0, mu: Math.log(10 * stepSize) }
 }
@@ -73,7 +73,7 @@ export function dualAveragingInit(stepSize: number): DualAveragingState {
  *   methods for convex problems (Mathematical Programming 2009).
  * @example
  * ```ts
- * import { dualAveragingInit, dualAveragingUpdate } from 'whitebox-engine/sampling'
+ * import { dualAveragingInit, dualAveragingUpdate } from 'mdml-engine/sampling'
  * // Acceptance above the target makes the step size grow.
  * dualAveragingUpdate(dualAveragingInit(1), 1).logStepSize > 0 // => true
  * ```
@@ -106,7 +106,7 @@ export function dualAveragingUpdate(
  * @concept dual-averaging
  * @example
  * ```ts
- * import { dualAveragingFinal, dualAveragingInit } from 'whitebox-engine/sampling'
+ * import { dualAveragingFinal, dualAveragingInit } from 'mdml-engine/sampling'
  * dualAveragingFinal(dualAveragingInit(0.5)) // => 1
  * ```
  */
@@ -138,8 +138,8 @@ export interface ReasonableStepSizeOptions {
  * @concept dual-averaging
  * @example
  * ```ts
- * import { findReasonableStepSize, hmcKernel, numericTarget } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { findReasonableStepSize, hmcKernel, numericTarget } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2 / 0.01, 1, { grad: (x) => [-(x[0] ?? 0) / 0.01] })
  * const kernelFor = (stepSize: number) => hmcKernel(t, { stepSize, numIntegrationSteps: 1 })
  * findReasonableStepSize(kernelFor, kernelFor(1).init([0.1]), { key: key(0) }) < 1 // => true
@@ -185,11 +185,11 @@ export interface MassMatrixState {
  * @param dim - The dimension.
  * @param options - `dense` (default false: a diagonal matrix) and an initial inverse mass matrix.
  * @returns The state.
- * @throws WhiteboxError with code `shape` for an initial matrix of the wrong shape.
+ * @throws MdmlError with code `shape` for an initial matrix of the wrong shape.
  * @concept mass-matrix-adaptation
  * @example
  * ```ts
- * import { massMatrixInit } from 'whitebox-engine/sampling'
+ * import { massMatrixInit } from 'mdml-engine/sampling'
  * Array.from(massMatrixInit(2, { dense: true }).inverseMassMatrix) // => [1, 0, 0, 1]
  * ```
  */
@@ -220,7 +220,7 @@ export function massMatrixInit(
  * @concept mass-matrix-adaptation
  * @example
  * ```ts
- * import { massMatrixInit, massMatrixUpdate } from 'whitebox-engine/sampling'
+ * import { massMatrixInit, massMatrixUpdate } from 'mdml-engine/sampling'
  * massMatrixUpdate(massMatrixInit(1), [2]).count // => 1
  * ```
  */
@@ -238,7 +238,7 @@ export function massMatrixUpdate(state: MassMatrixState, position: ArrayLike<num
  * @concept mass-matrix-adaptation
  * @example
  * ```ts
- * import { massMatrixFinal, massMatrixInit, massMatrixUpdate } from 'whitebox-engine/sampling'
+ * import { massMatrixFinal, massMatrixInit, massMatrixUpdate } from 'mdml-engine/sampling'
  * let s = massMatrixInit(1)
  * for (const x of [0, 2, 4]) s = massMatrixUpdate(s, [x])
  * // Variance 4 from three draws: (3 / 8) 4 + 1e-3 (5 / 8).
@@ -283,12 +283,12 @@ export interface WindowScheduleOptions {
  * @param numSteps - The number of warm-up iterations.
  * @param options - Buffer and first window sizes.
  * @returns One stage per iteration.
- * @throws WhiteboxError with code `value` for a negative or fractional number of steps.
+ * @throws MdmlError with code `value` for a negative or fractional number of steps.
  * @concept window-adaptation
  * @reference Stan Reference Manual, HMC algorithm parameters: automatic parameter tuning.
  * @example
  * ```ts
- * import { windowSchedule } from 'whitebox-engine/sampling'
+ * import { windowSchedule } from 'mdml-engine/sampling'
  * const s = windowSchedule(1000)
  * // Windows of 25, 50, 100, 200 and the stretched last one, between buffers of 75 and 50.
  * s.flatMap((x, i) => (x.windowEnd ? [i] : [])) // => [99, 149, 249, 449, 949]
@@ -296,7 +296,7 @@ export interface WindowScheduleOptions {
  */
 export function windowSchedule(numSteps: number, options: WindowScheduleOptions = {}): WindowStage[] {
   if (!(Number.isInteger(numSteps) && numSteps >= 0)) {
-    throw new WhiteboxError('value', 'windowSchedule: numSteps must be a non-negative integer')
+    throw new MdmlError('value', 'windowSchedule: numSteps must be a non-negative integer')
   }
   const fast: WindowStage = { slow: false, windowEnd: false }
   if (numSteps < 20) return Array.from({ length: numSteps }, () => fast)
@@ -376,8 +376,8 @@ function clampLog(x: number): number {
  * @concept window-adaptation
  * @example
  * ```ts
- * import { hmcKernel, numericTarget, sampleChains, windowAdaptation } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { hmcKernel, numericTarget, sampleChains, windowAdaptation } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2 / 4, 1, { grad: (x) => [-(x[0] ?? 0) / 4] })
  * const adapt = windowAdaptation(1, (p) => hmcKernel(t, { ...p, numIntegrationSteps: 5 }))
  * const c = sampleChains(adapt, { key: key(1), numChains: 1, numWarmup: 150, numDraws: 10 })

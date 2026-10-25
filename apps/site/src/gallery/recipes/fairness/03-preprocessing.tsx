@@ -1,25 +1,18 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { generate } from 'whitebox-engine/data'
-import { biasedCredit } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
+import { generate } from 'mdml-engine/data'
+import { biasedCredit } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
 import {
   disparateImpactRemover,
   type FairnessData,
   fairnessAudit,
   reweighedFit,
   withoutColumns,
-} from 'whitebox-engine/methods/fairness'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { key } from 'whitebox-engine/random'
-import { figure } from 'whitebox-render/figure'
-import {
-  Choice,
-  CoefficientTableView,
-  ControlPanel,
-  CurvesView,
-  GroupReportView,
-  NumberField,
-} from 'whitebox-render/react'
+} from 'mdml-engine/methods/fairness'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { key } from 'mdml-engine/random'
+import { figure } from 'mdml-render/figure'
+import { Choice, CoefficientTableView, ControlPanel, CurvesView, GroupReportView, NumberField } from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

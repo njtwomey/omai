@@ -1,8 +1,7 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { impossibilityStudy } from 'whitebox-engine/methods/fairness'
-import { key } from 'whitebox-engine/random'
-import { figure } from 'whitebox-render/figure'
+import { recordsOf } from 'mdml-engine/exposition'
+import { impossibilityStudy } from 'mdml-engine/methods/fairness'
+import { key } from 'mdml-engine/random'
+import { figure } from 'mdml-render/figure'
 import {
   Chart,
   ControlPanel,
@@ -13,8 +12,9 @@ import {
   Overlaid,
   useChartProjection,
   useColourMode,
-} from 'whitebox-render/react'
-import { curveSetView } from 'whitebox-render/views'
+} from 'mdml-render/react'
+import { curveSetView } from 'mdml-render/views'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

@@ -4,11 +4,11 @@ from typing import cast
 
 import numpy as np
 import scipy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.vendor import csv_rows, fetch_pinned
 from scipy.stats import norm
 from sklearn.datasets import load_linnerud
 from sklearn.utils import Bunch
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.vendor import csv_rows, fetch_pinned
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 ANSCOMBE_URL = "https://vincentarelbundock.github.io/Rdatasets/csv/datasets/anscombe.csv"

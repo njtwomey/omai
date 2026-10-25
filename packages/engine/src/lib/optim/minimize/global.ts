@@ -4,7 +4,7 @@
  * keep the best point seen.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import { Generator } from '../../random/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
@@ -94,8 +94,8 @@ function reflectInto(x: Float64Array, box: BoundArrays | undefined): Float64Arra
  * @concept simulated-annealing
  * @example
  * ```ts
- * import { simulatedAnnealingAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { simulatedAnnealingAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * simulatedAnnealingAlgorithm((x) => sum(square(x as Value)), [1, 2]).name // => 'simulatedAnnealing'
  * ```
  */
@@ -106,7 +106,7 @@ export function simulatedAnnealingAlgorithm(
 ): Algorithm<SimulatedAnnealingState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new WhiteboxError('value', 'simulatedAnnealing: no parameters')
+  if (n === 0) throw new MdmlError('value', 'simulatedAnnealing: no parameters')
   const euclid = metricFunction('euclidean', n)
   const box = options.bounds === undefined ? undefined : boundArrays(options.bounds, n, 'simulatedAnnealing')
   const t0 = options.initialTemperature ?? 1
@@ -241,8 +241,8 @@ export function simulatedAnnealingAlgorithm(
  * @concept simulated-annealing
  * @example
  * ```ts
- * import { simulatedAnnealing } from 'whitebox-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'whitebox-engine/tensor'
+ * import { simulatedAnnealing } from 'mdml-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
  * const r = simulatedAnnealing((x) => sum(square(sub(x as Value, 1))), [3], { seed: 0, maxIterations: 300 })
  * Math.abs((toFlat(r.x as Value)[0] ?? 0) - 1) < 0.05 // => true
  * ```
@@ -306,8 +306,8 @@ export interface BasinHoppingState extends VectorState {
  * @concept basin-hopping
  * @example
  * ```ts
- * import { basinHoppingAlgorithm } from 'whitebox-engine/optim'
- * import { square, sum, type Value } from 'whitebox-engine/tensor'
+ * import { basinHoppingAlgorithm } from 'mdml-engine/optim'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
  * basinHoppingAlgorithm((x) => sum(square(x as Value)), [1, 2]).name // => 'basinHopping'
  * ```
  */
@@ -318,7 +318,7 @@ export function basinHoppingAlgorithm(
 ): Algorithm<BasinHoppingState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new WhiteboxError('value', 'basinHopping: no parameters')
+  if (n === 0) throw new MdmlError('value', 'basinHopping: no parameters')
   const box = options.bounds === undefined ? undefined : boundArrays(options.bounds, n, 'basinHopping')
   const temperature = options.temperature ?? 1
   const interval = options.interval ?? 50
@@ -436,8 +436,8 @@ export function basinHoppingAlgorithm(
  * @concept basin-hopping
  * @example
  * ```ts
- * import { basinHopping } from 'whitebox-engine/optim'
- * import { add, cos, mul, square, sum, toFlat, type Value } from 'whitebox-engine/tensor'
+ * import { basinHopping } from 'mdml-engine/optim'
+ * import { add, cos, mul, square, sum, toFlat, type Value } from 'mdml-engine/tensor'
  * // cos(14.5 x - 0.3) + (x + 0.2) x has its global minimum near x = -0.195 (scipy's example)
  * const f = (x: unknown) => sum(add(cos(add(mul(x as Value, 14.5), -0.3)), mul(add(x as Value, 0.2), x as Value)))
  * const r = basinHopping(f, [1], { seed: 1, maxIterations: 30 })

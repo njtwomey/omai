@@ -2,7 +2,7 @@
 // normalised Taylor coefficients of x(t) = sum_k x_k t^k (x_k = x^(k)(0) / k!), `null` for a zero coefficient. Each rule
 // is the standard recurrence for its function (Griewank and Walther, "Evaluating Derivatives", chapter 13), written
 // with operations so that the coefficients are themselves differentiable.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   type Aval,
   add,
@@ -226,7 +226,7 @@ function primitiveOf(op: (...xs: Value[]) => Value, avals: readonly Aval[]): Pri
     return { kind: 'traced', shape: a.shape, dtype: a.dtype, trace }
   }
   op(...avals.map(make))
-  if (found === null) throw new WhiteboxError('value', 'jet: an operation bound no primitive')
+  if (found === null) throw new MdmlError('value', 'jet: an operation bound no primitive')
   return found
 }
 
@@ -346,7 +346,7 @@ export function linearSeries<P>(
   order: number,
 ): MaybeZero[][] {
   const rule = primitive.jvp
-  if (rule === undefined) throw new WhiteboxError('not-differentiable', `primitive ${primitive.name} has no jvp rule`)
+  if (rule === undefined) throw new MdmlError('not-differentiable', `primitive ${primitive.name} has no jvp rule`)
   const primals = series.map(primal)
   const out: MaybeZero[][] = outputs.map((o) => [o])
   for (let k = 1; k <= order; k++) {

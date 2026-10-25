@@ -3,8 +3,8 @@
  * accuracy, on two-dimensional classification data.
  */
 
-import { svc as svcMethod } from 'whitebox-engine/methods/svm'
-import { dict, real } from 'whitebox-engine/space'
+import { svc as svcMethod } from 'mdml-engine/methods/svm'
+import { dict, real } from 'mdml-engine/space'
 import type { HubEntry } from '../../entry/entry.ts'
 import { tuningEntry } from './_tuning.ts'
 

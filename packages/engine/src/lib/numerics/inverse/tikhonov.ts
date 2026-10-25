@@ -5,7 +5,7 @@
  * figures.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -41,7 +41,7 @@ export interface SpectralData {
  * @returns u, s, vh and beta.
  * @example
  * ```ts
- * import { spectralData } from 'whitebox-engine/numerics/inverse'
+ * import { spectralData } from 'mdml-engine/numerics/inverse'
  * spectralData([[2, 0], [0, 1]], [2, 3]).s.shape // => [2]
  * ```
  */
@@ -62,8 +62,8 @@ export function spectralData(a: TensorLike, b: TensorLike): SpectralData {
  * @concept regularisation
  * @example
  * ```ts
- * import { filterFactors } from 'whitebox-engine/numerics/inverse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { filterFactors } from 'mdml-engine/numerics/inverse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(filterFactors([2, 1], 1)) // => [0.8, 0.5]
  * ```
  */
@@ -86,8 +86,8 @@ export function filterFactors(s: TensorLike, parameter: number, method: 'tikhono
  * @returns The solution `[n]`.
  * @example
  * ```ts
- * import { spectralData, tikhonov } from 'whitebox-engine/numerics/inverse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { spectralData, tikhonov } from 'mdml-engine/numerics/inverse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(tikhonov(spectralData([[1, 0], [0, 1]], [2, 4]), 1)) // => [1, 2]
  * ```
  */
@@ -105,8 +105,8 @@ export function tikhonov(data: SpectralData, lambda: number): Value {
  * @returns The solution `[n]`.
  * @example
  * ```ts
- * import { spectralData, tsvd } from 'whitebox-engine/numerics/inverse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { spectralData, tsvd } from 'mdml-engine/numerics/inverse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(tsvd(spectralData([[2, 0], [0, 1e-8]], [2, 1]), 1)) // => [1, 0]
  * ```
  */
@@ -128,8 +128,8 @@ export function tsvd(data: SpectralData, k: number): Value {
  * @returns The solution.
  * @example
  * ```ts
- * import { tikhonovGeneral } from 'whitebox-engine/numerics/inverse'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { tikhonovGeneral } from 'mdml-engine/numerics/inverse'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(tikhonovGeneral([[1, 0], [0, 1]], [2, 4], 1)).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2]
  * ```
  */
@@ -152,7 +152,7 @@ export function tikhonovGeneral(
 
 /** The second-difference regulariser L `[n - 2, n]` (rows [1, -2, 1]), a common smoothness prior. */
 export function secondDifference(n: number): Tensor {
-  if (n < 3) throw new WhiteboxError('value', 'secondDifference: n must be at least 3')
+  if (n < 3) throw new MdmlError('value', 'secondDifference: n must be at least 3')
   const rows = Array.from({ length: n - 2 }, (_, i) =>
     Array.from({ length: n }, (_, j) => (j === i || j === i + 2 ? 1 : j === i + 1 ? -2 : 0)),
   )
@@ -182,7 +182,7 @@ export interface PathPoint {
  * @returns One point per parameter.
  * @example
  * ```ts
- * import { spectralData, tikhonovPath } from 'whitebox-engine/numerics/inverse'
+ * import { spectralData, tikhonovPath } from 'mdml-engine/numerics/inverse'
  * tikhonovPath(spectralData([[1, 0], [0, 0.1]], [1, 1]), [1, 1], [0.01, 1]).length // => 2
  * ```
  */

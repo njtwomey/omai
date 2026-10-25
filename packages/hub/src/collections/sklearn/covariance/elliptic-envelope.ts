@@ -3,7 +3,7 @@
  * data with outliers.
  */
 
-import { ellipticEnvelope as ellipticEnvelopeMethod } from 'whitebox-engine/methods/anomaly'
+import { ellipticEnvelope as ellipticEnvelopeMethod } from 'mdml-engine/methods/anomaly'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

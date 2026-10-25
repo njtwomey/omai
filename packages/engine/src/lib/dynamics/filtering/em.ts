@@ -4,7 +4,7 @@
  * closed form. Provided as a traced algorithm and as `kalmanEm`, which returns the fitted model.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { solve, symmetricPart } from '../../numerics/linalg/index.ts'
 import {
   add,
@@ -118,11 +118,11 @@ function eStep(
  * @param options - Which parameters to learn and the convergence tolerance on the log-likelihood (default 1e-8,
  * relative).
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for missing observations.
+ * @throws MdmlError with code `value` for missing observations.
  * @concept expectation-maximisation
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * filtering.emAlgorithm({ F: [[1]], H: [[1]], Q: [[1]], R: [[1]], x0: [0], P0: [[1]] }, [[1], [2], [1.5]]).name // => 'kalman-em'
  * ```
  */
@@ -133,7 +133,7 @@ export function emAlgorithm(
 ): Algorithm<EmState> {
   const Z = asTensor(observations)
   if (numbersOf(Z).some((v) => !Number.isFinite(v)))
-    throw new WhiteboxError('value', 'kalmanEm: missing observations are not supported')
+    throw new MdmlError('value', 'kalmanEm: missing observations are not supported')
   const learn = { F: true, H: true, Q: true, R: true, x0: true, P0: true, ...options.learn }
   const tol = options.tol ?? 1e-8
   const start = {
@@ -195,7 +195,7 @@ export function emAlgorithm(
  * @concept expectation-maximisation
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * const r = filtering.kalmanEm({ F: [[1]], H: [[1]], Q: [[1]], R: [[1]], x0: [0], P0: [[1]] }, [[1], [2], [1.5], [1.7]], { maxIterations: 5, learn: { F: false, H: false } })
  * r.history.every((v, i) => i === 0 || v >= (r.history[i - 1] ?? 0) - 1e-9) // => true
  * ```

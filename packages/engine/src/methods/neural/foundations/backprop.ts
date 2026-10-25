@@ -5,7 +5,7 @@
  */
 
 import { valueAndGrad } from '../../../lib/autodiff/index.ts'
-import { WhiteboxError } from '../../../lib/base/index.ts'
+import { MdmlError } from '../../../lib/base/index.ts'
 import {
   coefficientTable,
   diagramRecord,
@@ -184,9 +184,9 @@ export function backpropByHand(options: BackpropOptions = {}): Explained<Backpro
   const activation = options.activation ?? 'logistic'
   const xs = options.x ?? XOR_X
   const ys = options.y ?? XOR_Y
-  if (sizes.length < 2) throw new WhiteboxError('value', 'backpropByHand: needs at least an input and an output layer')
+  if (sizes.length < 2) throw new MdmlError('value', 'backpropByHand: needs at least an input and an output layer')
   if (xs.length !== ys.length || xs.length === 0)
-    throw new WhiteboxError('value', 'backpropByHand: needs as many targets as rows, and at least one row')
+    throw new MdmlError('value', 'backpropByHand: needs as many targets as rows, and at least one row')
   const L = sizes.length
   const lr = options.learningRate ?? 0.5
   // The same initial weights as the library network: W[l][j][k], b[l][j] for l = 1..L-1.

@@ -55,11 +55,11 @@ export interface DataBias {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when a per-group field does not have one entry per group, or the proxies' columns
+ * @throws MdmlError `shape` when a per-group field does not have one entry per group, or the proxies' columns
  *   differ in length.
  * @example
  * ```ts
- * import { dataBias } from 'whitebox-engine/exposition'
+ * import { dataBias } from 'mdml-engine/exposition'
  * const r = dataBias({ attribute: 'sex', groups: ['f', 'm'], reference: 1, counts: [40, 60], shares: [0.4, 0.6],
  *   baseRates: [0.3, 0.5], overallBaseRate: 0.42, disparities: [] })
  * r.kind // => 'dataBias'

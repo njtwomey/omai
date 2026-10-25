@@ -21,21 +21,21 @@ import * as trace from '../trace/index.ts'
 import * as probprog from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'whitebox-engine/probprog': probprog,
-  'whitebox-engine/sampling': sampling,
-  'whitebox-engine/pgm': pgm,
-  'whitebox-engine/optim': optim,
-  'whitebox-engine/data': data,
-  'whitebox-engine/scene': scene,
-  'whitebox-engine/stats': stats,
-  'whitebox-engine/dists/compose': dists.compose,
-  'whitebox-engine/tensor': tensor,
-  'whitebox-engine/random': random,
-  'whitebox-engine/dists': dists,
-  'whitebox-engine/trace': trace,
-  'whitebox-engine/autodiff': autodiff,
-  'whitebox-engine/base': base,
-  'whitebox-engine/numerics/linalg': linalg,
+  'mdml-engine/probprog': probprog,
+  'mdml-engine/sampling': sampling,
+  'mdml-engine/pgm': pgm,
+  'mdml-engine/optim': optim,
+  'mdml-engine/data': data,
+  'mdml-engine/scene': scene,
+  'mdml-engine/stats': stats,
+  'mdml-engine/dists/compose': dists.compose,
+  'mdml-engine/tensor': tensor,
+  'mdml-engine/random': random,
+  'mdml-engine/dists': dists,
+  'mdml-engine/trace': trace,
+  'mdml-engine/autodiff': autodiff,
+  'mdml-engine/base': base,
+  'mdml-engine/numerics/linalg': linalg,
 }
 
 interface Example {

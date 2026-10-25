@@ -3,7 +3,7 @@
  * two-dimensional classification data and tabular classification data.
  */
 
-import { onlinePerceptron } from 'whitebox-engine/methods/linear'
+import { onlinePerceptron } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { fitEstimator } from '../../entry/run.ts'
 

@@ -1,4 +1,4 @@
-import { type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricSpec } from '../base/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
 import type { MetricInput } from './metric.ts'
 
@@ -28,7 +28,7 @@ export function positives(yTrue: MetricInput, posLabel: Label | undefined): Floa
   let pos = posLabel
   if (pos === undefined) {
     const classes = sortLabels(t)
-    if (classes.length > 2) throw new WhiteboxError('value', 'binary curves need two classes or a posLabel')
+    if (classes.length > 2) throw new MdmlError('value', 'binary curves need two classes or a posLabel')
     pos = classes.includes(1) ? 1 : (classes[classes.length - 1] ?? 1)
   }
   return Float64Array.from(t, (v) => (v === pos ? 1 : 0))

@@ -5,7 +5,7 @@
  */
 
 import { jacfwd } from '../../autodiff/index.ts'
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { cholesky, eigh, solve, symmetricPart } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../../random/index.ts'
 import {
@@ -65,7 +65,7 @@ function runFilter<S extends { x: Value; P: Value; means: Value[]; covs: Value[]
 ): NonlinearFilterResult {
   const Z = asTensor(observations)
   const T = Z.shape[0] ?? 0
-  if (T === 0) throw new WhiteboxError('value', `${name}: no observations`)
+  if (T === 0) throw new MdmlError('value', `${name}: no observations`)
   const algorithm: Algorithm<S> = {
     name,
     config: { steps: T },
@@ -104,8 +104,8 @@ interface FilterState {
  * @concept extended-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { mul, toArray } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { mul, toArray } from 'mdml-engine/tensor'
  * // With linear f and h the EKF is the Kalman filter.
  * toArray(filtering.extendedKalmanFilter({ f: (x) => x, h: (x) => x, Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[2]]).means) // => [[1]]
  * ```
@@ -161,7 +161,7 @@ export interface SigmaPoints {
  * @concept unscented-transform
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * filtering.merweSigmaPoints(2, 1, 2, 1).wm.length // => 5
  * ```
  */
@@ -197,7 +197,7 @@ export function merweSigmaPoints(n: number, alpha: number, beta: number, kappa: 
  * @concept unscented-transform
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * filtering.julierSigmaPoints(1, 2).wm // => [0.6666666666666666, 0.16666666666666666, 0.16666666666666666]
  * ```
  */
@@ -230,8 +230,8 @@ export function julierSigmaPoints(n: number, kappa: number = 3 - n): SigmaPoints
  * @concept unscented-transform
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(filtering.unscentedTransform([[0], [1], [-1]], [0, 0.5, 0.5], [0, 0.5, 0.5]).P) // => [[1]]
  * ```
  */
@@ -265,8 +265,8 @@ export function unscentedTransform(
  * @concept unscented-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { toArray } from 'mdml-engine/tensor'
  * const r = filtering.unscentedKalmanFilter({ f: (x) => x, h: (x) => x, Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[2]])
  * toArray(r.means).map((v) => Math.round(v[0] * 1e10) / 1e10) // => [1]
  * ```
@@ -333,8 +333,8 @@ function logDiag(L: Value): Value {
  * @concept ensemble-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { key } from 'whitebox-engine/random'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { key } from 'mdml-engine/random'
  * const r = filtering.ensembleKalmanFilter({ f: (x) => x, h: (x) => x, Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[2]], { size: 2000, key: key(0) })
  * Math.abs((r.means.data[0] ?? 0) - 1) < 0.1 // => true
  * ```

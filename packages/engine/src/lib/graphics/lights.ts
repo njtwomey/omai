@@ -4,7 +4,7 @@
  * under these lights with a shadow-ray visibility test per sample.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { foldIn, isKey, type Key, uniform } from '../random/index.ts'
 import type { Vec3 } from '../scene/index.ts'
 import { concreteOrThrow, fromStorage } from '../tensor/index.ts'
@@ -40,7 +40,7 @@ export type Light =
  * @concept light-sources
  * @example
  * ```ts
- * import { pointLight } from 'whitebox-engine/graphics'
+ * import { pointLight } from 'mdml-engine/graphics'
  * pointLight([0, 2, 0], [10, 10, 10]).kind // => 'point'
  * ```
  */
@@ -57,7 +57,7 @@ export function pointLight(position: Vec3, intensity: Vec3): Light {
  * @concept light-sources
  * @example
  * ```ts
- * import { directionalLight } from 'whitebox-engine/graphics'
+ * import { directionalLight } from 'mdml-engine/graphics'
  * directionalLight([0, 0, -2], [1, 1, 1]).direction // => [0, 0, -1]
  * ```
  */
@@ -78,11 +78,11 @@ export function directionalLight(direction: Vec3, irradiance: Vec3): Light {
  * @param radiance - Emitted radiance per channel.
  * @param options - Samples per side (default 4, so 16 shadow rays).
  * @returns The light.
- * @throws WhiteboxError with code `value` for parallel edges or a sample count below 1.
+ * @throws MdmlError with code `value` for parallel edges or a sample count below 1.
  * @concept light-sources
  * @example
  * ```ts
- * import { areaLight } from 'whitebox-engine/graphics'
+ * import { areaLight } from 'mdml-engine/graphics'
  * areaLight([0, 2, 0], [1, 0, 0], [0, 0, 1], [5, 5, 5]).samples // => 4
  * ```
  */
@@ -94,7 +94,7 @@ export function areaLight(
   options: { readonly samples?: number } = {},
 ): Light {
   const samples = options.samples ?? 4
-  if (!(Number.isInteger(samples) && samples >= 1)) throw new WhiteboxError('value', 'areaLight: samples must be >= 1')
+  if (!(Number.isInteger(samples) && samples >= 1)) throw new MdmlError('value', 'areaLight: samples must be >= 1')
   const u = check3(edgeU, 'edgeU')
   const v = check3(edgeV, 'edgeV')
   normalise3(cross3(u, v), 'edgeU x edgeV')
@@ -131,7 +131,7 @@ export interface LightSample {
  * @concept light-sources
  * @example
  * ```ts
- * import { lightSamples, pointLight } from 'whitebox-engine/graphics'
+ * import { lightSamples, pointLight } from 'mdml-engine/graphics'
  * lightSamples(pointLight([0, 0, 2], [4, 4, 4]), [0, 0, 0]) // => [{ direction: [0, 0, 1], distance: 2, irradiance: [1, 1, 1] }]
  * ```
  */
@@ -193,7 +193,7 @@ export function lightSamples(light: Light, point: Vec3, jitter?: Key | ArrayLike
  * @concept rendering-equation
  * @example
  * ```ts
- * import { material, pointLight, shadePoints } from 'whitebox-engine/graphics'
+ * import { material, pointLight, shadePoints } from 'mdml-engine/graphics'
  * const m = material({ albedo: [Math.PI, Math.PI, Math.PI] })
  * Array.from(shadePoints(m, [0, 0, 0], [0, 0, 1], [0, 0, 1], [pointLight([0, 0, 1], [1, 2, 3])])) // => [1, 2, 3]
  * ```

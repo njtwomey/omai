@@ -5,7 +5,7 @@
  * density to its modes). Each is traced so its growth can be replayed.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -240,7 +240,7 @@ export function opticsOrdering(
 ): OpticsOrdering {
   const n = matrixView(x, 'opticsOrdering').n
   if (!(Number.isInteger(minSamples) && minSamples >= 1 && minSamples <= n))
-    throw new WhiteboxError('value', `opticsOrdering: minSamples must be in 1..${n}`)
+    throw new MdmlError('value', `opticsOrdering: minSamples must be in 1..${n}`)
   const dist = distances(x)
   const coreDistances = Array.from({ length: n }, (_, i) => {
     const row = dist.slice(i * n, (i + 1) * n).sort((a, b) => a - b)

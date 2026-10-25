@@ -4,10 +4,10 @@
  * operating point) and in the contingency table with its rates and costs.
  */
 
+import { sweepAt, type ThresholdSweep } from 'mdml-engine/exposition'
+import { analyseThresholds, type MetricInput } from 'mdml-engine/metrics'
+import type { TensorLike } from 'mdml-engine/tensor'
 import { type ReactElement, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { sweepAt, type ThresholdSweep } from 'whitebox-engine/exposition'
-import { analyseThresholds, type MetricInput } from 'whitebox-engine/metrics'
-import type { TensorLike } from 'whitebox-engine/tensor'
 import { type Figure, figure as makeFigure } from '../figure/figure.ts'
 import { formatNumber } from '../theme/format.ts'
 import {

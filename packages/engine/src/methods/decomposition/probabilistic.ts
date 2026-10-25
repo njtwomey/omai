@@ -5,7 +5,7 @@
  * likelihoods.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -338,7 +338,7 @@ export function factorAnalysis(hyper: FactorAnalysisHyper = {}): Estimator<Facto
         const m = matrixView(data.x, 'factorAnalysis', { minSamples: 2 })
         const k = h.nComponents ?? m.d
         if (!(Number.isInteger(k) && k >= 1 && k <= m.d))
-          throw new WhiteboxError('value', `factorAnalysis: nComponents must be in 1..${m.d}`)
+          throw new MdmlError('value', `factorAnalysis: nComponents must be in 1..${m.d}`)
         const out = runAlgorithm(factorAnalysisAlgorithm(data.x, k, h.tol ?? 1e-2), {
           ...fitRunOptions(options, 'factor-analysis'),
           maxSteps: h.maxIter ?? 1000,

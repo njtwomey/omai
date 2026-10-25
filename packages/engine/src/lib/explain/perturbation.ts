@@ -4,7 +4,7 @@
  * Morris elementary effects. Each needs only a prediction function; masks from `modalities.ts` carry them to text,
  * images and series.
  */
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { keyFor } from '../learn/_shared.ts'
 import { matrixView } from '../learn/validation.ts'
 import { foldIn, type Key, permutation, randint, uniform } from '../random/index.ts'
@@ -16,11 +16,11 @@ import type { PredictFunction } from './shapley.ts'
 /** Group ids per feature: validated, and the groups in first-seen order. */
 function groupsOf(mask: readonly number[] | undefined, d: number, who: string): number[][] {
   const ids = mask ?? Array.from({ length: d }, (_, j) => j)
-  if (ids.length !== d) throw new WhiteboxError('shape', `${who}: the feature mask needs one group per feature`)
+  if (ids.length !== d) throw new MdmlError('shape', `${who}: the feature mask needs one group per feature`)
   const order: number[] = []
   const members = new Map<number, number[]>()
   ids.forEach((g, j) => {
-    if (!Number.isInteger(g)) throw new WhiteboxError('value', `${who}: group ids must be integers`)
+    if (!Number.isInteger(g)) throw new MdmlError('value', `${who}: group ids must be integers`)
     const list = members.get(g)
     if (list === undefined) {
       members.set(g, [j])
@@ -50,8 +50,8 @@ export interface FeatureAblationOptions {
  * @returns Attributions `[n][d]`.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[2 * i] - x.data[2 * i + 1]))
  * explain.featureAblation(linear, [[1, 3]]) // => [[2, -3]]
  * explain.featureAblation(linear, [[1, 3]], { featureMask: [0, 0] }) // => [[-1, -1]]
@@ -101,8 +101,8 @@ export interface OcclusionOptions {
  * @returns Attributions `[n][prod(shape)]`.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const total = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[3 * i] + x.data[3 * i + 1] + x.data[3 * i + 2]))
  * // Windows of two over [1, 2, 3]: [1, 2] removes 3, [2, 3] removes 5.
  * explain.occlusion(total, [[1, 2, 3]], { shape: [3], window: [2] }) // => [[3, 4, 5]]
@@ -112,13 +112,13 @@ export function occlusion(predict: PredictFunction, x: TensorLike, options: Occl
   const m = matrixView(x, 'occlusion')
   const shape = options.shape
   const size = shape.reduce((a, b) => a * b, 1)
-  if (size !== m.d) throw new WhiteboxError('shape', `occlusion: shape ${shape.join('x')} does not hold ${m.d} values`)
-  if (options.window.length !== shape.length) throw new WhiteboxError('shape', 'occlusion: one window size per axis')
+  if (size !== m.d) throw new MdmlError('shape', `occlusion: shape ${shape.join('x')} does not hold ${m.d} values`)
+  if (options.window.length !== shape.length) throw new MdmlError('shape', 'occlusion: one window size per axis')
   const strides = options.strides ?? shape.map(() => 1)
   const starts = shape.map((s, a) => {
     const w = options.window[a] ?? 1
     const st = strides[a] ?? 1
-    if (!(Number.isInteger(w) && w >= 1 && w <= s)) throw new WhiteboxError('value', 'occlusion: bad window size')
+    if (!(Number.isInteger(w) && w >= 1 && w <= s)) throw new MdmlError('value', 'occlusion: bad window size')
     // captum's count, ceil((s - w) / stride) + 1: a last window that would overrun the edge is clipped to it.
     const count = Math.ceil((s - w) / st) + 1
     return Array.from({ length: count }, (_, i) => i * st)
@@ -204,8 +204,8 @@ function riseMask(key: Key, h: number, w: number, s: number, p: number): Float64
  * @returns Saliency maps `[n][h * w]`.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * // The model reads only the top-left pixel of a 4 x 4 image: it gets the largest saliency.
  * const corner = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[16 * i]))
  * const s = explain.rise(corner, [new Array(16).fill(1)], { shape: [4, 4], nMasks: 200, cells: 2 })[0]
@@ -215,11 +215,11 @@ function riseMask(key: Key, h: number, w: number, s: number, p: number): Float64
 export function rise(predict: PredictFunction, x: TensorLike, options: RiseOptions): number[][] {
   const m = matrixView(x, 'rise')
   const [h, w] = options.shape
-  if (h * w !== m.d) throw new WhiteboxError('shape', `rise: shape ${h}x${w} does not hold ${m.d} values`)
+  if (h * w !== m.d) throw new MdmlError('shape', `rise: shape ${h}x${w} does not hold ${m.d} values`)
   const nMasks = options.nMasks ?? 1000
   const s = options.cells ?? 7
   const p = options.keep ?? 0.5
-  if (!(p > 0 && p <= 1)) throw new WhiteboxError('value', 'rise: keep must be in (0, 1]')
+  if (!(p > 0 && p <= 1)) throw new MdmlError('value', 'rise: keep must be in (0, 1]')
   const key = options.key ?? keyFor({}, 'rise')
   const base = baselineRows(options.baseline, m.n, m.d, 'rise')
   const sal = new Float64Array(m.n * m.d)
@@ -285,8 +285,8 @@ export interface MorrisResult {
  * @returns mu, mu*, sigma and every effect.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * // Linear: every effect is the coefficient times the range.
  * const f = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 3 * x.data[2 * i] - x.data[2 * i + 1]))
  * explain.morrisEffects(f, [[0, 1], [0, 2]], { nTrajectories: 4 }).muStar.map((v) => Math.round(v * 1e9) / 1e9) // => [3, 2]
@@ -298,10 +298,10 @@ export function morrisEffects(
   options: MorrisOptions = {},
 ): MorrisResult {
   const d = bounds.length
-  if (d === 0) throw new WhiteboxError('value', 'morrisEffects: no features')
+  if (d === 0) throw new MdmlError('value', 'morrisEffects: no features')
   const r = options.nTrajectories ?? 20
   const p = options.levels ?? 4
-  if (!(Number.isInteger(p) && p >= 2)) throw new WhiteboxError('value', 'morrisEffects: levels must be >= 2')
+  if (!(Number.isInteger(p) && p >= 2)) throw new MdmlError('value', 'morrisEffects: levels must be >= 2')
   const delta = p / (2 * (p - 1))
   const key = options.key ?? keyFor({}, 'morrisEffects')
   // Grid levels from which a step of delta stays inside [0, 1].

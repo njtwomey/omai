@@ -1,11 +1,11 @@
+import { generate } from 'mdml-engine/data'
+import { makeClassification } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { type ShiftKind, shiftStudy } from 'mdml-engine/methods/trust'
+import { key } from 'mdml-engine/random'
+import { Choice, ControlPanel, CurvesView } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { generate } from 'whitebox-engine/data'
-import { makeClassification } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { type ShiftKind, shiftStudy } from 'whitebox-engine/methods/trust'
-import { key } from 'whitebox-engine/random'
-import { Choice, ControlPanel, CurvesView } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

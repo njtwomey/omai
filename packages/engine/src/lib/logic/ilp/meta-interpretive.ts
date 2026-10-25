@@ -5,7 +5,7 @@
  * ways each tested program fails; both as traced algorithms.
  */
 
-import { type Json, WhiteboxError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { parseTerm } from '../parse.ts'
 import { consult, type Database, solve } from '../resolution.ts'
@@ -34,7 +34,7 @@ export interface Metarule {
  *
  * @example
  * ```ts
- * import { METARULES } from 'whitebox-engine/logic/ilp'
+ * import { METARULES } from 'mdml-engine/logic/ilp'
  * Object.keys(METARULES) // => ['ident', 'inverse', 'precon', 'postcon', 'chain', 'tailrec']
  * ```
  */
@@ -93,8 +93,8 @@ export interface Metasub {
  * @returns The first-order clause.
  * @example
  * ```ts
- * import { METARULES, metaruleClause } from 'whitebox-engine/logic/ilp'
- * import { clauseToString } from 'whitebox-engine/logic'
+ * import { METARULES, metaruleClause } from 'mdml-engine/logic/ilp'
+ * import { clauseToString } from 'mdml-engine/logic'
  * clauseToString(metaruleClause(METARULES.chain, { P: 'grandparent', Q: 'parent', R: 'parent' })) // => 'grandparent(A,B) :- parent(A,C), parent(C,B).'
  * ```
  */
@@ -176,7 +176,7 @@ function asAtom(x: Term | string): Term {
 function metaruleOf(m: Metarule | string): Metarule {
   if (typeof m !== 'string') return m
   const r = METARULES[m]
-  if (r === undefined) throw new WhiteboxError('value', `metagol: unknown metarule ${m}`)
+  if (r === undefined) throw new MdmlError('value', `metagol: unknown metarule ${m}`)
   return r
 }
 
@@ -301,8 +301,8 @@ function* provePositives(
  * @returns The clauses.
  * @example
  * ```ts
- * import { metagolProgram } from 'whitebox-engine/logic/ilp'
- * import { clauseToString } from 'whitebox-engine/logic'
+ * import { metagolProgram } from 'mdml-engine/logic/ilp'
+ * import { clauseToString } from 'mdml-engine/logic'
  * metagolProgram([{ metarule: 'inverse', symbols: { P: 'child', Q: 'parent' } }]).map((c) => clauseToString(c)) // => ['child(A,B) :- parent(B,A).']
  * ```
  */
@@ -327,7 +327,7 @@ function metagolMachine(task: MilTask, options: MetagolOptions): Algorithm<Metag
   const maxDepth = options.maxDepth ?? 12
   const maxSteps = options.maxSteps ?? 200_000
   const first = pos[0]
-  if (first === undefined) throw new WhiteboxError('value', 'metagol: no positive examples')
+  if (first === undefined) throw new MdmlError('value', 'metagol: no positive examples')
   const target = first.kind === 'compound' ? first.functor : first.kind === 'atom' ? first.name : ''
   const targetArity = first.kind === 'compound' ? first.args.length : 0
   const arities = new Map<string, number>()
@@ -405,11 +405,11 @@ function metagolMachine(task: MilTask, options: MetagolOptions): Algorithm<Metag
  * @param task - Background, its predicates, examples and metarules.
  * @param options - Program size, invented predicates and budgets.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for no positives or an unknown metarule.
+ * @throws MdmlError with code `value` for no positives or an unknown metarule.
  * @concept meta-interpretive-learning
  * @example
  * ```ts
- * import { metagolAlgorithm } from 'whitebox-engine/logic/ilp'
+ * import { metagolAlgorithm } from 'mdml-engine/logic/ilp'
  * metagolAlgorithm({ background: 'q(a, b).', predicates: ['q/2'], positive: ['p(a, b)'], negative: [], metarules: ['ident'] }).name // => 'metagol'
  * ```
  */
@@ -431,14 +431,14 @@ export interface MilResult {
  * @param task - Background, its predicates, examples and metarules.
  * @param options - Program size, invented predicates, budgets and tracing.
  * @returns The status, the program (canonical variable names) and the candidates tried.
- * @throws WhiteboxError with code `value` for no positives or an unknown metarule.
+ * @throws MdmlError with code `value` for no positives or an unknown metarule.
  * @concept meta-interpretive-learning
  * @reference S. H. Muggleton, D. Lin and A. Tamaddoni-Nezhad, Meta-interpretive learning of higher-order dyadic Datalog,
  *   Machine Learning 100 (2015).
  * @example
  * ```ts
- * import { metagol } from 'whitebox-engine/logic/ilp'
- * import { clauseToString } from 'whitebox-engine/logic'
+ * import { metagol } from 'mdml-engine/logic/ilp'
+ * import { clauseToString } from 'mdml-engine/logic'
  * const background = 'parent(ann, amy). parent(ann, andy). parent(amy, amelia). parent(andy, spongebob).'
  * const r = metagol({ background, predicates: ['parent/2'], positive: ['grandparent(ann, amelia)', 'grandparent(ann, spongebob)'], negative: ['grandparent(amy, amelia)'], metarules: ['ident', 'chain'] })
  * r.program.map((c) => clauseToString(c)) // => ['grandparent(A,B) :- parent(A,C), parent(C,B).']
@@ -530,7 +530,7 @@ const LFF_SCHEMA: TraceSchema = channels({
 function parsePredicate(p: string): [string, number] {
   const i = p.lastIndexOf('/')
   const arity = Number(p.slice(i + 1))
-  if (i <= 0 || !Number.isInteger(arity)) throw new WhiteboxError('value', `learnFromFailures: ${p} is not name/arity`)
+  if (i <= 0 || !Number.isInteger(arity)) throw new MdmlError('value', `learnFromFailures: ${p} is not name/arity`)
   return [p.slice(0, i), arity]
 }
 
@@ -705,11 +705,11 @@ function failureMachine(task: FailureTask, options: FailureOptions): Algorithm<F
  * @param task - Background, head and body predicates, and examples.
  * @param options - Clause and program size limits and budgets.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for a predicate not written `name/arity`.
+ * @throws MdmlError with code `value` for a predicate not written `name/arity`.
  * @concept meta-interpretive-learning
  * @example
  * ```ts
- * import { learnFromFailuresAlgorithm } from 'whitebox-engine/logic/ilp'
+ * import { learnFromFailuresAlgorithm } from 'mdml-engine/logic/ilp'
  * learnFromFailuresAlgorithm({ background: 'q(a).', head: 'p/1', body: ['q/1'], positive: ['p(a)'], negative: [] }).name // => 'learning-from-failures'
  * ```
  */
@@ -723,13 +723,13 @@ export function learnFromFailuresAlgorithm(task: FailureTask, options: FailureOp
  * @param task - Background, head and body predicates, and examples.
  * @param options - Clause and program size limits, budgets and tracing.
  * @returns The status, the program (canonical variables) and the hypotheses tested.
- * @throws WhiteboxError with code `value` for a predicate not written `name/arity`.
+ * @throws MdmlError with code `value` for a predicate not written `name/arity`.
  * @concept meta-interpretive-learning
  * @reference A. Cropper and R. Morel, Learning programs by learning from failures, Machine Learning 110 (2021).
  * @example
  * ```ts
- * import { learnFromFailures } from 'whitebox-engine/logic/ilp'
- * import { clauseToString } from 'whitebox-engine/logic'
+ * import { learnFromFailures } from 'mdml-engine/logic/ilp'
+ * import { clauseToString } from 'mdml-engine/logic'
  * const background = 'parent(ann, amy). parent(ann, andy). parent(amy, amelia). parent(andy, spongebob).'
  * const r = learnFromFailures({ background, head: 'grandparent/2', body: ['parent/2'], positive: ['grandparent(ann, amelia)', 'grandparent(ann, spongebob)'], negative: ['grandparent(amy, amelia)', 'grandparent(ann, amy)'] })
  * r.program.map((c) => clauseToString(c)) // => ['grandparent(A,B) :- parent(A,C), parent(C,B).']

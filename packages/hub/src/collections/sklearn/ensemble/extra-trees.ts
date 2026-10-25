@@ -3,7 +3,7 @@
  * regression data.
  */
 
-import { extraTreesClassifier, extraTreesRegressor } from 'whitebox-engine/methods/ensemble'
+import { extraTreesClassifier, extraTreesRegressor } from 'mdml-engine/methods/ensemble'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'
 

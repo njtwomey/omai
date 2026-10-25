@@ -5,7 +5,7 @@
  * counterfactuals for linear models with Gaussian noise.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { inverse, matVec, solveVector, symmetrise } from '../_dense.ts'
 import { allAssignments, type Factor, factor, factorValues } from '../factor.ts'
 import { variableElimination } from '../inference/elimination.ts'
@@ -15,7 +15,7 @@ import { type DiscreteAssignment, evaluateAssignment, type Scm } from './scm.ts'
 
 function discreteVariables(m: Scm): DiscreteAssignment[] {
   return m.variables.map((v) => {
-    if (v.kind !== 'discrete') throw new WhiteboxError('value', 'counterfactuals: needs a discrete model')
+    if (v.kind !== 'discrete') throw new MdmlError('value', 'counterfactuals: needs a discrete model')
     return v
   })
 }
@@ -37,11 +37,11 @@ const twinName = (v: string): string => `${v}*`
  * @param m - A discrete model.
  * @param interventions - The counterfactual interventions.
  * @returns The twin Bayes network.
- * @throws WhiteboxError with code `value` for a linear model or unknown states.
+ * @throws MdmlError with code `value` for a linear model or unknown states.
  * @concept counterfactuals
  * @example
  * ```ts
- * import { scm, twinNetwork } from 'whitebox-engine/pgm/causal'
+ * import { scm, twinNetwork } from 'mdml-engine/pgm/causal'
  * const m = scm([{ kind: 'discrete', name: 'x', states: ['0', '1'], parents: [], noise: [0.5, 0.5], assign: [0, 1] }])
  * twinNetwork(m, { x: '1' }).nodes.map((n) => n.name) // => ['U_x', 'x', 'x*']
  * ```
@@ -86,8 +86,8 @@ export function twinNetwork(m: Scm, interventions: Interventions): BayesNet {
  * @concept counterfactuals
  * @example
  * ```ts
- * import { scm, counterfactual } from 'whitebox-engine/pgm/causal'
- * import { factorValues } from 'whitebox-engine/pgm'
+ * import { scm, counterfactual } from 'mdml-engine/pgm/causal'
+ * import { factorValues } from 'mdml-engine/pgm'
  * // y copies x unless the noise flips it; seeing x = 1, y = 1 rules the flip out, so had x been 0, y would be 0.
  * const m = scm([
  *   { kind: 'discrete', name: 'x', states: ['0', '1'], parents: [], noise: [0.5, 0.5], assign: [0, 1] },
@@ -117,8 +117,8 @@ export function counterfactual(
  * @concept counterfactuals
  * @example
  * ```ts
- * import { scm, abduction } from 'whitebox-engine/pgm/causal'
- * import { factorValues } from 'whitebox-engine/pgm'
+ * import { scm, abduction } from 'mdml-engine/pgm/causal'
+ * import { factorValues } from 'mdml-engine/pgm'
  * const m = scm([{ kind: 'discrete', name: 'x', states: ['0', '1'], parents: [], noise: [0.5, 0.5], assign: [0, 1] }])
  * factorValues(abduction(m, { x: '1' })) // => [0, 1]
  * ```
@@ -145,8 +145,8 @@ export function abduction(m: Scm, evidence: Readonly<Record<string, string | num
  * @concept counterfactuals
  * @example
  * ```ts
- * import { scm, abductActPredict } from 'whitebox-engine/pgm/causal'
- * import { factorValues } from 'whitebox-engine/pgm'
+ * import { scm, abductActPredict } from 'mdml-engine/pgm/causal'
+ * import { factorValues } from 'mdml-engine/pgm'
  * const m = scm([
  *   { kind: 'discrete', name: 'x', states: ['0', '1'], parents: [], noise: [0.5, 0.5], assign: [0, 1] },
  *   { kind: 'discrete', name: 'y', states: ['0', '1'], parents: ['x'], noise: [0.9, 0.1], assign: [0, 1, 1, 0] },
@@ -165,7 +165,7 @@ export function abductActPredict(
   const acted = doIntervention(m, interventions) as Scm
   const card = query.map((q) => {
     const v = vars.find((x) => x.name === q)
-    if (v === undefined) throw new WhiteboxError('value', `unknown variable ${q}`)
+    if (v === undefined) throw new MdmlError('value', `unknown variable ${q}`)
     return v.states.length
   })
   const out = new Array<number>(card.reduce((a, b) => a * b, 1)).fill(0)
@@ -202,7 +202,7 @@ export function abductActPredict(
  * @concept counterfactuals
  * @example
  * ```ts
- * import { scm, causationProbabilities } from 'whitebox-engine/pgm/causal'
+ * import { scm, causationProbabilities } from 'mdml-engine/pgm/causal'
  * const m = scm([
  *   { kind: 'discrete', name: 'x', states: ['0', '1'], parents: [], noise: [0.5, 0.5], assign: [0, 1] },
  *   { kind: 'discrete', name: 'y', states: ['0', '1'], parents: ['x'], noise: [0.9, 0.1], assign: [0, 1, 1, 0] },
@@ -242,11 +242,11 @@ export function causationProbabilities(
  * @param interventions - Numeric interventions.
  * @param query - The query variables.
  * @returns The counterfactual mean and covariance of the query.
- * @throws WhiteboxError with code `value` for discrete models or non-Gaussian noise.
+ * @throws MdmlError with code `value` for discrete models or non-Gaussian noise.
  * @concept counterfactuals
  * @example
  * ```ts
- * import { scm, linearCounterfactual } from 'whitebox-engine/pgm/causal'
+ * import { scm, linearCounterfactual } from 'mdml-engine/pgm/causal'
  * const m = scm([
  *   { kind: 'linear', name: 'x', parents: [], weights: [], intercept: 0, noise: { distribution: 'normal', scale: 1 } },
  *   { kind: 'linear', name: 'y', parents: ['x'], weights: [2], intercept: 0, noise: { distribution: 'normal', scale: 1 } },
@@ -265,7 +265,7 @@ export function linearCounterfactual(
   const n = names.length
   const lin = m.variables.map((v) => {
     if (v.kind !== 'linear' || v.noise.distribution !== 'normal')
-      throw new WhiteboxError('value', 'linearCounterfactual: needs linear assignments with normal noise')
+      throw new MdmlError('value', 'linearCounterfactual: needs linear assignments with normal noise')
     return v
   })
   const reduced = (cut: boolean): { L: number[][]; b: number[] } => {
@@ -313,7 +313,7 @@ export function linearCounterfactual(
   )
   const qi = query.map((q) => {
     const i = names.indexOf(q)
-    if (i < 0) throw new WhiteboxError('value', `unknown variable ${q}`)
+    if (i < 0) throw new MdmlError('value', `unknown variable ${q}`)
     return i
   })
   const covariance = qi.map((i) =>

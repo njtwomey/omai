@@ -5,7 +5,7 @@
  * matrix profile.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import {
   applyExclusionZone,
@@ -54,7 +54,7 @@ function queryStats(q: Float64Array): { mu: number; sigma: number; constant: boo
  * @concept mass
  * @example
  * ```ts
- * import { mass } from 'whitebox-engine/signal'
+ * import { mass } from 'mdml-engine/signal'
  * Array.from(mass([1, 2, 3], [0, 1, 2, 3, 9, 4, 5, 6])).map((v) => Math.round(v * 1e6) / 1e6).filter((v) => v === 0).length // => 3
  * ```
  */
@@ -62,8 +62,8 @@ export function mass(q: TensorLike, t: TensorLike, options: MassOptions = {}): F
   const qa = q instanceof Float64Array ? q : seriesOf(q, 'mass')
   const ta = t instanceof Float64Array ? t : seriesOf(t, 'mass')
   const m = qa.length
-  if (m < 3) throw new WhiteboxError('value', 'mass: the query must have at least 3 samples')
-  if (m > ta.length) throw new WhiteboxError('value', 'mass: the query is longer than the series')
+  if (m < 3) throw new MdmlError('value', 'mass: the query must have at least 3 samples')
+  if (m > ta.length) throw new MdmlError('value', 'mass: the query is longer than the series')
   if (!(options.normalize ?? true)) return nonNormalizedDistanceProfile(qa, ta, options.p ?? 2)
   if (qa.some((v) => !Number.isFinite(v))) return new Float64Array(ta.length - m + 1).fill(Number.POSITIVE_INFINITY)
   const stats = subsequenceStats(ta, m)
@@ -82,7 +82,7 @@ export function mass(q: TensorLike, t: TensorLike, options: MassOptions = {}): F
  * @concept mass
  * @example
  * ```ts
- * import { mass, massChunked } from 'whitebox-engine/signal'
+ * import { mass, massChunked } from 'mdml-engine/signal'
  * const t = Array.from({ length: 100 }, (_, i) => Math.sin(i / 3) + i / 50)
  * const a = mass([0, 1, 0.5, -1], t)
  * const b = massChunked([0, 1, 0.5, -1], t, 16)
@@ -93,7 +93,7 @@ export function massChunked(q: TensorLike, t: TensorLike, chunk = 4096): Float64
   const qa = q instanceof Float64Array ? q : seriesOf(q, 'massChunked')
   const ta = t instanceof Float64Array ? t : seriesOf(t, 'massChunked')
   const m = qa.length
-  if (chunk < m) throw new WhiteboxError('value', 'massChunked: the chunk must be at least the query length')
+  if (chunk < m) throw new MdmlError('value', 'massChunked: the chunk must be at least the query length')
   if (qa.some((v) => !Number.isFinite(v))) return new Float64Array(ta.length - m + 1).fill(Number.POSITIVE_INFINITY)
   const stats = subsequenceStats(ta, m)
   const l = ta.length - m + 1
@@ -126,7 +126,7 @@ export interface DistanceProfileOptions extends MassOptions {
  * @concept mass
  * @example
  * ```ts
- * import { distanceProfile } from 'whitebox-engine/signal'
+ * import { distanceProfile } from 'mdml-engine/signal'
  * distanceProfile([0, 1, 2, 3, 2, 1, 0, 1, 2, 3], 4, 0)[0] // => Infinity
  * ```
  */
@@ -138,7 +138,7 @@ export function distanceProfile(
 ): Float64Array {
   const ta = t instanceof Float64Array ? t : seriesOf(t, 'distanceProfile')
   if (!Number.isInteger(idx) || idx < 0 || idx > ta.length - m)
-    throw new WhiteboxError('value', 'distanceProfile: idx out of range')
+    throw new MdmlError('value', 'distanceProfile: idx out of range')
   const d = mass(ta.slice(idx, idx + m), ta, options)
   if (options.excludeTrivial ?? true) applyExclusionZone(d, idx, exclusionZone(m))
   return d

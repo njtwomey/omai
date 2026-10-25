@@ -5,7 +5,7 @@
  * ratio used to grow decision trees.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { entr, relEntr, xlogy } from '../numerics/special/index.ts'
 import {
   abs,
@@ -49,7 +49,7 @@ function prepared(x: TensorLike, options: DiscreteOptions): Value {
 function table(x: TensorLike, rank: number | undefined, name: string): Value {
   const v = float(x)
   if (rank !== undefined && v.shape.length !== rank)
-    throw new WhiteboxError('shape', `${name}: expected a table of rank ${rank}, got shape [${v.shape.join(', ')}]`)
+    throw new MdmlError('shape', `${name}: expected a table of rank ${rank}, got shape [${v.shape.join(', ')}]`)
   return normaliseAlong(v)
 }
 
@@ -70,8 +70,8 @@ function marginalEntropy(p: Value, keep: readonly number[]): Value {
  * @concept entropy
  * @example
  * ```ts
- * import { entropy } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { entropy } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * item(entropy([1, 1, 1, 1], { base: 2 })) // => 2
  * ```
  */
@@ -88,8 +88,8 @@ export function entropy(p: TensorLike, options: DiscreteOptions = {}): Value {
  * @concept entropy
  * @example
  * ```ts
- * import { binaryEntropy } from 'whitebox-engine/information'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { binaryEntropy } from 'mdml-engine/information'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(binaryEntropy([0, 0.5, 1], { base: 2 })) // => [0, 1, 0]
  * ```
  */
@@ -107,8 +107,8 @@ export function binaryEntropy(p: TensorLike, options: TableOptions = {}): Value 
  * @concept entropy
  * @example
  * ```ts
- * import { jointEntropy } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { jointEntropy } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * item(jointEntropy([[1, 1], [1, 1]], { base: 2 })) // => 2
  * ```
  */
@@ -127,8 +127,8 @@ export function jointEntropy(joint: TensorLike, options: TableOptions = {}): Val
  * @concept entropy
  * @example
  * ```ts
- * import { conditionalEntropy } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { conditionalEntropy } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * // X is a copy of Y: knowing Y leaves no uncertainty.
  * item(conditionalEntropy([[1, 0], [0, 1]])) // => 0
  * ```
@@ -141,7 +141,7 @@ export function conditionalEntropy(
   const p = table(joint, undefined, 'conditionalEntropy')
   const rank = p.shape.length
   const axes = (typeof given === 'number' ? [given] : given).map((a) => (a < 0 ? a + rank : a))
-  if (axes.some((a) => a < 0 || a >= rank)) throw new WhiteboxError('value', 'conditionalEntropy: axis out of range')
+  if (axes.some((a) => a < 0 || a >= rank)) throw new MdmlError('value', 'conditionalEntropy: axis out of range')
   return inBase(sub(sum(entr(p)), marginalEntropy(p, axes)), options.base)
 }
 
@@ -155,8 +155,8 @@ export function conditionalEntropy(
  * @concept cross-entropy
  * @example
  * ```ts
- * import { crossEntropy } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { crossEntropy } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * item(crossEntropy([1, 0], [0.5, 0.5], { base: 2 })) // => 1
  * ```
  */
@@ -176,8 +176,8 @@ export function crossEntropy(p: TensorLike, q: TensorLike, options: DiscreteOpti
  * @concept kl-divergence
  * @example
  * ```ts
- * import { relativeEntropy } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { relativeEntropy } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * item(relativeEntropy([0.5, 0.5], [0.25, 0.75], { base: 2 })) // => 0.20751874963942185
  * ```
  */
@@ -202,8 +202,8 @@ export interface JensenShannonOptions extends DiscreteOptions {
  * @concept jensen-shannon
  * @example
  * ```ts
- * import { jensenShannonDivergence } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { jensenShannonDivergence } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * item(jensenShannonDivergence([1, 0], [0, 1], { base: 2 })) // => 1
  * ```
  */
@@ -226,8 +226,8 @@ export function jensenShannonDivergence(p: TensorLike, q: TensorLike, options: J
  * @concept jensen-shannon
  * @example
  * ```ts
- * import { jensenShannonDistance } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { jensenShannonDistance } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * item(jensenShannonDistance([1, 0], [0, 1], { base: 2 })) // => 1
  * ```
  */
@@ -246,8 +246,8 @@ export function jensenShannonDistance(p: TensorLike, q: TensorLike, options: Dis
  * @concept total-variation
  * @example
  * ```ts
- * import { totalVariation } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { totalVariation } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * item(totalVariation([0.5, 0.5], [1, 0])) // => 0.5
  * ```
  */
@@ -265,8 +265,8 @@ export function totalVariation(p: TensorLike, q: TensorLike, options: DiscreteOp
  * @concept mutual-information
  * @example
  * ```ts
- * import { mutualInformation } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { mutualInformation } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * item(mutualInformation([[1, 0], [0, 1]], { base: 2 })) // => 1
  * ```
  */
@@ -285,8 +285,8 @@ export function mutualInformation(joint: TensorLike, options: TableOptions = {})
  * @concept mutual-information
  * @example
  * ```ts
- * import { conditionalMutualInformation } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { conditionalMutualInformation } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * // X = Y = Z: once Z is known, X tells nothing more about Y.
  * item(conditionalMutualInformation([[[1, 0], [0, 0]], [[0, 0], [0, 1]]])) // => 0
  * ```
@@ -310,8 +310,8 @@ export function conditionalMutualInformation(joint: TensorLike, options: TableOp
  * @concept mutual-information
  * @example
  * ```ts
- * import { interactionInformation } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { interactionInformation } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * // Z = X xor Y with fair independent bits: pure synergy of one bit.
  * Math.round(item(interactionInformation([[[1, 0], [0, 1]], [[0, 1], [1, 0]]], { base: 2 })) * 1e9) / 1e9 // => -1
  * ```
@@ -319,7 +319,7 @@ export function conditionalMutualInformation(joint: TensorLike, options: TableOp
 export function interactionInformation(joint: TensorLike, options: TableOptions = {}): Value {
   const p = table(joint, undefined, 'interactionInformation')
   const rank = p.shape.length
-  if (rank < 2) throw new WhiteboxError('shape', 'interactionInformation: needs at least two variables')
+  if (rank < 2) throw new MdmlError('shape', 'interactionInformation: needs at least two variables')
   let total: Value = float(0)
   for (let mask = 1; mask < 1 << rank; mask++) {
     const keep = Array.from({ length: rank }, (_, i) => i).filter((i) => (mask >> i) & 1)
@@ -338,8 +338,8 @@ export function interactionInformation(joint: TensorLike, options: TableOptions 
  * @concept mutual-information
  * @example
  * ```ts
- * import { pointwiseMutualInformation } from 'whitebox-engine/information'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pointwiseMutualInformation } from 'mdml-engine/information'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(pointwiseMutualInformation([[1, 0], [0, 1]], { base: 2 })) // => [[1, -Infinity], [-Infinity, 1]]
  * ```
  */
@@ -359,8 +359,8 @@ export function pointwiseMutualInformation(joint: TensorLike, options: TableOpti
  * @concept mutual-information
  * @example
  * ```ts
- * import { normalisedPointwiseMutualInformation } from 'whitebox-engine/information'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { normalisedPointwiseMutualInformation } from 'mdml-engine/information'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(normalisedPointwiseMutualInformation([[1, 0], [0, 1]])) // => [[1, -1], [-1, 1]]
  * ```
  */
@@ -383,8 +383,8 @@ export function normalisedPointwiseMutualInformation(joint: TensorLike): Value {
  * @concept information-gain
  * @example
  * ```ts
- * import { informationGain } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { informationGain } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * // A perfect split of a balanced two-class node gains one bit.
  * item(informationGain([[5, 0], [0, 5]], { base: 2 })) // => 1
  * ```
@@ -405,8 +405,8 @@ export function informationGain(counts: TensorLike, options: TableOptions = {}):
  * @concept information-gain
  * @example
  * ```ts
- * import { gainRatio } from 'whitebox-engine/information'
- * import { item } from 'whitebox-engine/tensor'
+ * import { gainRatio } from 'mdml-engine/information'
+ * import { item } from 'mdml-engine/tensor'
  * item(gainRatio([[5, 0], [0, 5]])) // => 1
  * ```
  */

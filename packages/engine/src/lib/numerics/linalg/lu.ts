@@ -72,12 +72,12 @@ const solvePrimitive: Primitive<null> = definePrimitive<null>({
  * @param a - Square matrix `[..., n, n]`.
  * @param b - Right-hand side `[..., n, k]` or `[n]`.
  * @returns The solution, differentiable in both arguments.
- * @throws WhiteboxError with code `value` when A is exactly singular.
+ * @throws MdmlError with code `value` when A is exactly singular.
  * @concept linear-algebra
  * @example
  * ```ts
- * import { solve } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { solve } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(solve([[3, 1], [1, 2]], [9, 8])) // => [2, 3]
  * ```
  */
@@ -96,8 +96,8 @@ export function solve(a: TensorLike, b: TensorLike): Value {
  * @returns A^{-1}, differentiable.
  * @example
  * ```ts
- * import { inv } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { inv } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(inv([[2, 0], [0, 4]])) // => [[0.5, 0], [0, 0.25]]
  * ```
  */
@@ -198,8 +198,8 @@ export interface LuResult {
  * @concept linear-algebra
  * @example
  * ```ts
- * import { lu } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lu } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lu([[1, 2], [3, 4]]).p) // => [[0, 1], [1, 0]]
  * ```
  */
@@ -225,7 +225,7 @@ export interface LuFactorisation {
  * @returns The packed factors and pivot indices.
  * @example
  * ```ts
- * import { luFactor } from 'whitebox-engine/numerics/linalg'
+ * import { luFactor } from 'mdml-engine/numerics/linalg'
  * Array.from(luFactor([[1, 2], [3, 4]]).piv.data) // => [1, 1]
  * ```
  */
@@ -245,8 +245,8 @@ export function luFactor(a: TensorLike): LuFactorisation {
  * @returns The solution.
  * @example
  * ```ts
- * import { luFactor, luSolve } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { luFactor, luSolve } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(luSolve(luFactor([[3, 1], [1, 2]]), [9, 8])) // => [2, 3]
  * ```
  */

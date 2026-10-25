@@ -5,7 +5,7 @@
  * recurrent unit (LRU) with its initialisation.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { expm, solve } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import {
@@ -63,8 +63,8 @@ export type Discretisation = 'zoh' | 'bilinear'
  * @concept state-space-models
  * @example
  * ```ts
- * import { discretise } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { discretise } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(discretise([[0]], [1], 0.5).b) // => [0.5]
  * ```
  */
@@ -76,7 +76,7 @@ export function discretise(a: TensorLike, b: TensorLike, dt: number, method: Dis
   const n = av.shape[0] ?? 0
   const m = bv.shape[1] ?? 0
   if (av.shape.length !== 2 || av.shape[1] !== n || bv.shape[0] !== n)
-    throw new WhiteboxError('shape', 'discretise: A must be [N, N] and B [N, M]')
+    throw new MdmlError('shape', 'discretise: A must be [N, N] and B [N, M]')
   let ab: Value
   let bb: Value
   if (method === 'zoh') {
@@ -107,8 +107,8 @@ export function discretise(a: TensorLike, b: TensorLike, dt: number, method: Dis
  * @concept state-space-models
  * @example
  * ```ts
- * import { discretiseDiagonal } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { discretiseDiagonal } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(discretiseDiagonal([0], [2], 0.5).b) // => [1]
  * ```
  */
@@ -152,8 +152,8 @@ export function discretiseDiagonal(
  * @reference Gu, Goel and Re (2022), Efficiently modeling long sequences with structured state spaces.
  * @example
  * ```ts
- * import { ssmKernel } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { ssmKernel } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(ssmKernel({ a: [0.5], b: [1] }, [1], 3)) // => [1, 0.5, 0.25]
  * ```
  */
@@ -194,8 +194,8 @@ export function ssmKernel(
  * @returns `[..., L]`.
  * @example
  * ```ts
- * import { causalConvolution } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { causalConvolution } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(causalConvolution([1, 0, 0], [1, 0.5, 0.25])) // => [1, 0.5, 0.25]
  * ```
  */
@@ -235,8 +235,8 @@ export function causalConvolution(u: TensorLike, kernel: TensorLike, d: TensorLi
  * @returns `[L]`.
  * @example
  * ```ts
- * import { ssmRecurrence } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { ssmRecurrence } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(ssmRecurrence({ a: [0.5], b: [1] }, [1], [1, 0, 0])) // => [1, 0.5, 0.25]
  * ```
  */
@@ -272,8 +272,8 @@ export function ssmRecurrence(
  * @returns Every state `[T, ...]`.
  * @example
  * ```ts
- * import { linearRecurrence } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { linearRecurrence } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(linearRecurrence([[0.5], [0.5], [0.5]], [[1], [1], [1]])) // => [[1], [1.5], [1.75]]
  * ```
  */
@@ -322,8 +322,8 @@ export interface SelectiveScanInput {
  * @reference Gu and Dao (2023), Mamba: linear-time sequence modeling with selective state spaces.
  * @example
  * ```ts
- * import { selectiveScan } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { selectiveScan } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(selectiveScan({ x: [[[1], [0]]], dt: [[[1], [1]]], a: [[-1]], b: [[[1], [1]]], c: [[[1], [1]]] }).y) // => [[[1], [0.36787944117144233]]]
  * ```
  */
@@ -367,8 +367,8 @@ export function selectiveScan(input: SelectiveScanInput): { readonly y: Value; r
  *   sequence length.
  * @example
  * ```ts
- * import { deltaRule } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { deltaRule } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(deltaRule([[1, 0]], [[1, 0]], [[3]], [1]).output) // => [[3]]
  * ```
  */
@@ -432,8 +432,8 @@ export interface LRUParams {
  * @returns The parameters.
  * @example
  * ```ts
- * import { lruInit } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
+ * import { lruInit } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
  * lruInit(key(0), 4, 2).bRe.shape // => [4, 2]
  * ```
  */
@@ -476,8 +476,8 @@ export function lruInit(
  * @returns Real and imaginary parts `[N]`.
  * @example
  * ```ts
- * import { lruEigenvalues } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lruEigenvalues } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lruEigenvalues({ nuLog: [0], thetaLog: [-100] }).re) // => [0.36787944117144233]
  * ```
  */
@@ -500,9 +500,9 @@ export function lruEigenvalues(params: { readonly nuLog: TensorLike; readonly th
  * @reference Orvieto et al. (2023), Resurrecting recurrent neural networks for long sequences.
  * @example
  * ```ts
- * import { lru, lruInit } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { lru, lruInit } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { zeros } from 'mdml-engine/tensor'
  * lru(lruInit(key(0), 4, 2), zeros([5, 2])).shape // => [5, 2]
  * ```
  */

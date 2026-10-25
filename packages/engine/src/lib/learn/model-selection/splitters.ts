@@ -5,7 +5,7 @@
  * splits, with a leakage check.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { integerOption } from '../validation.ts'
@@ -52,7 +52,7 @@ export interface Splitter {
  * @returns The folds.
  * @example
  * ```ts
- * import { kFold, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { kFold, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(kFold(3), { n: 7 }).map((f) => Array.from(f.test)) // => [[0, 1, 2], [3, 4], [5, 6]]
  * ```
  */
@@ -74,7 +74,7 @@ function sorted(xs: Iterable<number>): Int32Array {
  * @returns The fold, both sets sorted.
  * @example
  * ```ts
- * import { complementFold } from 'whitebox-engine/learn/model-selection'
+ * import { complementFold } from 'mdml-engine/learn/model-selection'
  * Array.from(complementFold(4, [2, 0]).train) // => [1, 3]
  * ```
  */
@@ -92,7 +92,7 @@ function shuffled(key: Key, n: number): number[] {
 }
 
 function need<T>(value: T | undefined, what: string, who: string): T {
-  if (value === undefined) throw new WhiteboxError('value', `${who}: needs ${what}`)
+  if (value === undefined) throw new MdmlError('value', `${who}: needs ${what}`)
   return value
 }
 
@@ -122,7 +122,7 @@ export interface KFoldOptions {
  * @concept cross-validation
  * @example
  * ```ts
- * import { kFold, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { kFold, splitIndices } from 'mdml-engine/learn/model-selection'
  * Array.from(splitIndices(kFold(2), { n: 5 })[0].train) // => [3, 4]
  * ```
  */
@@ -135,7 +135,7 @@ export function kFold(nSplits = 5, options: KFoldOptions = {}): Splitter {
     partition: true,
     nSplits: () => nSplits,
     split: (input, key) => {
-      if (nSplits > input.n) throw new WhiteboxError('value', `kFold: ${nSplits} folds for ${input.n} samples`)
+      if (nSplits > input.n) throw new MdmlError('value', `kFold: ${nSplits} folds for ${input.n} samples`)
       const order = shuffle ? shuffled(key, input.n) : Array.from({ length: input.n }, (_, i) => i)
       const folds: Fold[] = []
       let start = 0
@@ -157,10 +157,10 @@ export function kFold(nSplits = 5, options: KFoldOptions = {}): Splitter {
  * @param nSplits - The number of folds (at least 2).
  * @param options - Whether to shuffle.
  * @returns The splitter (it needs `y`).
- * @throws WhiteboxError with code `value` when every class has fewer members than folds.
+ * @throws MdmlError with code `value` when every class has fewer members than folds.
  * @example
  * ```ts
- * import { splitIndices, stratifiedKFold } from 'whitebox-engine/learn/model-selection'
+ * import { splitIndices, stratifiedKFold } from 'mdml-engine/learn/model-selection'
  * const y = [0, 0, 0, 0, 1, 1]
  * splitIndices(stratifiedKFold(2), { n: 6, y }).map((f) => Array.from(f.test)) // => [[0, 1, 4], [2, 3, 5]]
  * ```
@@ -183,7 +183,7 @@ export function stratifiedKFold(nSplits = 5, options: KFoldOptions = {}): Splitt
       const counts = new Array<number>(k).fill(0)
       for (const c of yEnc) counts[c] = (counts[c] ?? 0) + 1
       if (counts.every((c) => c < nSplits)) {
-        throw new WhiteboxError('value', `stratifiedKFold: n_splits=${nSplits} exceeds the members of every class`)
+        throw new MdmlError('value', `stratifiedKFold: n_splits=${nSplits} exceeds the members of every class`)
       }
       const order = Array.from(yEnc).sort((a, b) => a - b)
       const allocation = Array.from({ length: nSplits }, (_, f) => {
@@ -222,7 +222,7 @@ export function stratifiedKFold(nSplits = 5, options: KFoldOptions = {}): Splitt
  * @returns The splitter (it needs `groups`).
  * @example
  * ```ts
- * import { groupKFold, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { groupKFold, splitIndices } from 'mdml-engine/learn/model-selection'
  * const groups = [1, 1, 1, 2, 2, 3]
  * splitIndices(groupKFold(2), { n: 6, groups }).map((f) => Array.from(f.test)) // => [[0, 1, 2], [3, 4, 5]]
  * ```
@@ -238,7 +238,7 @@ export function groupKFold(nSplits = 5, options: KFoldOptions = {}): Splitter {
     split: (input, key) => {
       const { codes, counts } = encode(need(input.groups, 'groups', 'groupKFold'))
       const g = counts.length
-      if (nSplits > g) throw new WhiteboxError('value', `groupKFold: ${nSplits} folds for ${g} groups`)
+      if (nSplits > g) throw new MdmlError('value', `groupKFold: ${nSplits} folds for ${g} groups`)
       const groupFold = new Int32Array(g)
       if (shuffle) {
         const perm = shuffled(key, g)
@@ -286,7 +286,7 @@ function std(xs: readonly number[]): number {
  * @returns The splitter (it needs `y` and `groups`).
  * @example
  * ```ts
- * import { splitIndices, stratifiedGroupKFold } from 'whitebox-engine/learn/model-selection'
+ * import { splitIndices, stratifiedGroupKFold } from 'mdml-engine/learn/model-selection'
  * const y = [0, 0, 1, 1, 0, 1, 0, 1]
  * const groups = [1, 1, 2, 2, 3, 3, 4, 4]
  * splitIndices(stratifiedGroupKFold(2), { n: 8, y, groups }).map((f) => f.test.length) // => [4, 4]
@@ -305,7 +305,7 @@ export function stratifiedGroupKFold(nSplits = 5, options: KFoldOptions = {}): S
       const gs = encode(need(input.groups, 'groups', 'stratifiedGroupKFold'))
       const k = ys.counts.length
       const g = gs.counts.length
-      if (nSplits > g) throw new WhiteboxError('value', `stratifiedGroupKFold: ${nSplits} folds for ${g} groups`)
+      if (nSplits > g) throw new MdmlError('value', `stratifiedGroupKFold: ${nSplits} folds for ${g} groups`)
       let perGroup = Array.from({ length: g }, () => new Array<number>(k).fill(0))
       for (let i = 0; i < input.n; i++) {
         const row = perGroup[gs.codes[i] ?? 0] as number[]
@@ -364,7 +364,7 @@ export function stratifiedGroupKFold(nSplits = 5, options: KFoldOptions = {}): S
  * @returns The splitter.
  * @example
  * ```ts
- * import { leaveOneOut, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { leaveOneOut, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(leaveOneOut(), { n: 3 }).map((f) => Array.from(f.train)) // => [[1, 2], [0, 2], [0, 1]]
  * ```
  */
@@ -375,7 +375,7 @@ export function leaveOneOut(): Splitter {
     partition: true,
     nSplits: (input) => input.n,
     split: (input) => {
-      if (input.n < 2) throw new WhiteboxError('value', 'leaveOneOut: needs at least 2 samples')
+      if (input.n < 2) throw new MdmlError('value', 'leaveOneOut: needs at least 2 samples')
       return Array.from({ length: input.n }, (_, i) => complementFold(input.n, [i]))
     },
   }
@@ -388,7 +388,7 @@ function combinations(n: number, k: number, cap: number, who: string): number[][
   if (k > n) return out
   for (;;) {
     out.push([...c])
-    if (out.length > cap) throw new WhiteboxError('value', `${who}: more than ${cap} splits`)
+    if (out.length > cap) throw new MdmlError('value', `${who}: more than ${cap} splits`)
     let i = k - 1
     while (i >= 0 && c[i] === n - k + i) i--
     if (i < 0) return out
@@ -408,7 +408,7 @@ export const MAX_COMBINATION_SPLITS = 100000
  * @returns The splitter.
  * @example
  * ```ts
- * import { leavePOut, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { leavePOut, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(leavePOut(2), { n: 3 }).map((f) => Array.from(f.test)) // => [[0, 1], [0, 2], [1, 2]]
  * ```
  */
@@ -420,7 +420,7 @@ export function leavePOut(p: number): Splitter {
     partition: p === 1,
     nSplits: (input) => combinations(input.n, p, MAX_COMBINATION_SPLITS, 'leavePOut').length,
     split: (input) => {
-      if (input.n <= p) throw new WhiteboxError('value', `leavePOut: p=${p} needs more than ${p} samples`)
+      if (input.n <= p) throw new MdmlError('value', `leavePOut: p=${p} needs more than ${p} samples`)
       return combinations(input.n, p, MAX_COMBINATION_SPLITS, 'leavePOut').map((c) => complementFold(input.n, c))
     },
   }
@@ -432,7 +432,7 @@ export function leavePOut(p: number): Splitter {
  * @returns The splitter (it needs `groups`).
  * @example
  * ```ts
- * import { leaveOneGroupOut, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { leaveOneGroupOut, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(leaveOneGroupOut(), { n: 4, groups: [7, 3, 7, 3] }).map((f) => Array.from(f.test)) // => [[1, 3], [0, 2]]
  * ```
  */
@@ -449,7 +449,7 @@ export function leaveOneGroupOut(): Splitter {
  * @returns The splitter (it needs `groups`).
  * @example
  * ```ts
- * import { leavePGroupsOut, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { leavePGroupsOut, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(leavePGroupsOut(2), { n: 3, groups: [0, 1, 2] }).map((f) => Array.from(f.test)) // => [[0, 1], [0, 2], [1, 2]]
  * ```
  */
@@ -465,7 +465,7 @@ export function leavePGroupsOut(p: number, name = 'leave-p-groups-out'): Splitte
     },
     split: (input) => {
       const { codes, counts } = encode(need(input.groups, 'groups', name))
-      if (counts.length <= p) throw new WhiteboxError('value', `${name}: needs more than ${p} groups`)
+      if (counts.length <= p) throw new MdmlError('value', `${name}: needs more than ${p} groups`)
       return combinations(counts.length, p, MAX_COMBINATION_SPLITS, name).map((chosen) => {
         const set = new Set(chosen)
         return complementFold(
@@ -485,7 +485,7 @@ export function leavePGroupsOut(p: number, name = 'leave-p-groups-out'): Splitte
  * @returns The splitter (for exactly `testFold.length` samples).
  * @example
  * ```ts
- * import { predefinedSplit, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { predefinedSplit, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(predefinedSplit([0, 1, -1, 1]), { n: 4 }).map((f) => Array.from(f.test)) // => [[0], [1, 3]]
  * ```
  */
@@ -498,7 +498,7 @@ export function predefinedSplit(testFold: readonly number[]): Splitter {
     nSplits: () => folds.length,
     split: (input) => {
       if (input.n !== testFold.length) {
-        throw new WhiteboxError('shape', `predefinedSplit: ${testFold.length} fold ids for ${input.n} samples`)
+        throw new MdmlError('shape', `predefinedSplit: ${testFold.length} fold ids for ${input.n} samples`)
       }
       return folds.map((f) =>
         complementFold(
@@ -519,7 +519,7 @@ export function predefinedSplit(testFold: readonly number[]): Splitter {
  * @returns The splitter.
  * @example
  * ```ts
- * import { kFold, repeated, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { kFold, repeated, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(repeated(kFold(3, { shuffle: true }), 2), { n: 9 }).length // => 6
  * ```
  */
@@ -542,7 +542,7 @@ export function repeated(splitter: Splitter, nRepeats = 10): Splitter {
  * @returns The splitter.
  * @example
  * ```ts
- * import { repeatedKFold } from 'whitebox-engine/learn/model-selection'
+ * import { repeatedKFold } from 'mdml-engine/learn/model-selection'
  * repeatedKFold(5, 3).nSplits({ n: 20 }) // => 15
  * ```
  */
@@ -558,7 +558,7 @@ export function repeatedKFold(nSplits = 5, nRepeats = 10): Splitter {
  * @returns The splitter (it needs `y`).
  * @example
  * ```ts
- * import { repeatedStratifiedKFold } from 'whitebox-engine/learn/model-selection'
+ * import { repeatedStratifiedKFold } from 'mdml-engine/learn/model-selection'
  * repeatedStratifiedKFold(2, 2).nSplits({ n: 8 }) // => 4
  * ```
  */
@@ -580,10 +580,10 @@ export interface SizeOptions {
  * @param options - The sizes.
  * @param defaultTest - The test size when neither is given.
  * @returns `[nTrain, nTest]`.
- * @throws WhiteboxError with code `value` for sizes that do not fit.
+ * @throws MdmlError with code `value` for sizes that do not fit.
  * @example
  * ```ts
- * import { splitSizes } from 'whitebox-engine/learn/model-selection'
+ * import { splitSizes } from 'mdml-engine/learn/model-selection'
  * splitSizes(10, { testSize: 0.25 }) // => [7, 3]
  * splitSizes(10, { trainSize: 4, testSize: 3 }) // => [4, 3]
  * ```
@@ -592,7 +592,7 @@ export function splitSizes(n: number, options: SizeOptions, defaultTest = 0.25):
   const count = (s: number, round: (v: number) => number, what: string): number => {
     if (s > 0 && s < 1) return round(s * n)
     if (Number.isInteger(s) && s >= 1 && s < n) return s
-    throw new WhiteboxError('value', `split: ${what}=${s} must be a fraction in (0, 1) or a count in [1, ${n - 1}]`)
+    throw new MdmlError('value', `split: ${what}=${s} must be a fraction in (0, 1) or a count in [1, ${n - 1}]`)
   }
   const test = options.testSize ?? (options.trainSize === undefined ? defaultTest : undefined)
   let nTest = test === undefined ? undefined : count(test, Math.ceil, 'testSize')
@@ -600,7 +600,7 @@ export function splitSizes(n: number, options: SizeOptions, defaultTest = 0.25):
   if (nTrain === undefined) nTrain = n - (nTest ?? 0)
   if (nTest === undefined) nTest = n - nTrain
   if (nTrain + nTest > n || nTrain < 1) {
-    throw new WhiteboxError('value', `split: train ${nTrain} + test ${nTest} do not fit in ${n} samples`)
+    throw new MdmlError('value', `split: train ${nTrain} + test ${nTest} do not fit in ${n} samples`)
   }
   return [nTrain, nTest]
 }
@@ -614,7 +614,7 @@ export function splitSizes(n: number, options: SizeOptions, defaultTest = 0.25):
  * @returns The splitter.
  * @example
  * ```ts
- * import { shuffleSplit, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { shuffleSplit, splitIndices } from 'mdml-engine/learn/model-selection'
  * splitIndices(shuffleSplit(3, { testSize: 0.2 }), { n: 10 }).map((f) => f.test.length) // => [2, 2, 2]
  * ```
  */
@@ -667,7 +667,7 @@ function approximateMode(counts: readonly number[], total: number, key: Key): nu
  * @returns The splitter (it needs `y`).
  * @example
  * ```ts
- * import { splitIndices, stratifiedShuffleSplit } from 'whitebox-engine/learn/model-selection'
+ * import { splitIndices, stratifiedShuffleSplit } from 'mdml-engine/learn/model-selection'
  * const y = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
  * const [f] = splitIndices(stratifiedShuffleSplit(1, { testSize: 0.5 }), { n: 10, y })
  * Array.from(f.test).filter((i) => y[i] === 1).length // => 2
@@ -684,7 +684,7 @@ export function stratifiedShuffleSplit(nSplits = 10, options: SizeOptions = {}):
       const { codes, counts } = encode(need(input.y, 'labels y', 'stratifiedShuffleSplit'))
       const [nTrain, nTest] = splitSizes(input.n, options, 0.1)
       if (nTrain < counts.length || nTest < counts.length) {
-        throw new WhiteboxError('value', 'stratifiedShuffleSplit: train and test sets must each hold every class')
+        throw new MdmlError('value', 'stratifiedShuffleSplit: train and test sets must each hold every class')
       }
       return Array.from({ length: nSplits }, (_, s) => {
         const k = foldIn(key, s)
@@ -713,7 +713,7 @@ export function stratifiedShuffleSplit(nSplits = 10, options: SizeOptions = {}):
  * @returns The splitter (it needs `groups`).
  * @example
  * ```ts
- * import { groupShuffleSplit, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { groupShuffleSplit, splitIndices } from 'mdml-engine/learn/model-selection'
  * const groups = [0, 0, 1, 1, 2, 2, 3, 3]
  * const [f] = splitIndices(groupShuffleSplit(1, { testSize: 0.25 }), { n: 8, groups })
  * f.test.length // => 2
@@ -760,7 +760,7 @@ export interface HoldoutOptions extends SizeOptions {
  * @returns The splitter (one fold).
  * @example
  * ```ts
- * import { holdout, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { holdout, splitIndices } from 'mdml-engine/learn/model-selection'
  * const [f] = splitIndices(holdout({ testSize: 0.3, shuffle: false }), { n: 10 })
  * Array.from(f.test) // => [7, 8, 9]
  * ```
@@ -808,7 +808,7 @@ export interface ThreeWayOptions {
  * @returns The splitter (one fold with `validation`).
  * @example
  * ```ts
- * import { splitIndices, trainValidationTestSplit } from 'whitebox-engine/learn/model-selection'
+ * import { splitIndices, trainValidationTestSplit } from 'mdml-engine/learn/model-selection'
  * const [f] = splitIndices(trainValidationTestSplit({ shuffle: false }), { n: 10 })
  * [f.train.length, f.validation.length, f.test.length] // => [6, 2, 2]
  * ```
@@ -826,7 +826,7 @@ export function trainValidationTestSplit(options: ThreeWayOptions = {}): Splitte
       const nVal = v > 0 && v < 1 ? Math.ceil(v * input.n) : v
       const nTrain = input.n - nTest - nVal
       if (!(nTrain >= 1 && nVal >= 1)) {
-        throw new WhiteboxError('value', `trainValidationTestSplit: sizes leave ${nTrain} training samples`)
+        throw new MdmlError('value', `trainValidationTestSplit: sizes leave ${nTrain} training samples`)
       }
       const order = shuffle ? shuffled(key, input.n) : Array.from({ length: input.n }, (_, i) => i)
       return [
@@ -848,7 +848,7 @@ export function trainValidationTestSplit(options: ThreeWayOptions = {}): Splitte
  * @returns `true` when every fold's sets are disjoint and in [0, n).
  * @example
  * ```ts
- * import { foldsAreDisjoint, kFold, splitIndices } from 'whitebox-engine/learn/model-selection'
+ * import { foldsAreDisjoint, kFold, splitIndices } from 'mdml-engine/learn/model-selection'
  * foldsAreDisjoint(splitIndices(kFold(3), { n: 9 }), 9) // => true
  * ```
  */

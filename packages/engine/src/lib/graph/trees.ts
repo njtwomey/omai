@@ -4,7 +4,7 @@
  * tours, and lowest common ancestors by binary lifting.
  */
 
-import { kahanSum, WhiteboxError } from '../base/index.ts'
+import { kahanSum, MdmlError } from '../base/index.ts'
 import { connectedComponents } from './components.ts'
 import { type Edge, type Graph, graph, type NodeId, nodeIndex } from './graph.ts'
 import { IndexedQueue, UnionFind } from './structures.ts'
@@ -98,11 +98,11 @@ function boruvka(g: Graph, before: (p: number, q: number) => number): number[] {
  * @param g - An undirected graph.
  * @param options - `algorithm` and `maximum` (default false).
  * @returns The tree's edges, total weight and graph.
- * @throws WhiteboxError with code `value` for a directed graph.
+ * @throws MdmlError with code `value` for a directed graph.
  * @concept spanning-trees
  * @example
  * ```ts
- * import { graph, minimumSpanningTree } from 'whitebox-engine/graph'
+ * import { graph, minimumSpanningTree } from 'mdml-engine/graph'
  * const g = graph([[0, 1, 4], [0, 2, 1], [1, 2, 2], [1, 3, 5], [2, 3, 8]])
  * minimumSpanningTree(g).weight // => 8
  * minimumSpanningTree(g, { algorithm: 'prim' }).edges.map((e) => [e.source, e.target]) // => [[0, 2], [1, 2], [1, 3]]
@@ -113,7 +113,7 @@ export function minimumSpanningTree(
   g: Graph,
   options: { readonly algorithm?: SpanningTreeAlgorithm; readonly maximum?: boolean } = {},
 ): SpanningTree {
-  if (g.directed) throw new WhiteboxError('value', 'minimumSpanningTree: the graph must be undirected')
+  if (g.directed) throw new MdmlError('value', 'minimumSpanningTree: the graph must be undirected')
   const maximum = options.maximum ?? false
   const before = edgeOrder(g, maximum)
   const algorithm = options.algorithm ?? 'kruskal'
@@ -138,7 +138,7 @@ export function minimumSpanningTree(
  * @returns True for a tree (false for the empty graph and for directed graphs).
  * @example
  * ```ts
- * import { balancedTree, cycleGraph, isTree } from 'whitebox-engine/graph'
+ * import { balancedTree, cycleGraph, isTree } from 'mdml-engine/graph'
  * [isTree(balancedTree(2, 3)), isTree(cycleGraph(4))] // => [true, false]
  * ```
  */
@@ -153,7 +153,7 @@ export function isTree(g: Graph): boolean {
  * @returns True for a forest.
  * @example
  * ```ts
- * import { graph, isForest } from 'whitebox-engine/graph'
+ * import { graph, isForest } from 'mdml-engine/graph'
  * isForest(graph([[0, 1], [2, 3]])) // => true
  * ```
  */
@@ -183,18 +183,18 @@ export interface RootedTree {
  * @param g - An undirected graph whose component of `root` is a tree.
  * @param root - The root.
  * @returns The rooted tree.
- * @throws WhiteboxError with code `value` when the graph is directed or the root's component has a cycle.
+ * @throws MdmlError with code `value` when the graph is directed or the root's component has a cycle.
  * @concept trees
  * @example
  * ```ts
- * import { balancedTree, rootTree } from 'whitebox-engine/graph'
+ * import { balancedTree, rootTree } from 'mdml-engine/graph'
  * const t = rootTree(balancedTree(2, 2), 0)
  * Array.from(t.depth) // => [0, 1, 1, 2, 2, 2, 2]
  * t.children[1] // => [3, 4]
  * ```
  */
 export function rootTree(g: Graph, root: NodeId): RootedTree {
-  if (g.directed) throw new WhiteboxError('value', 'rootTree: the graph must be undirected')
+  if (g.directed) throw new MdmlError('value', 'rootTree: the graph must be undirected')
   const r = nodeIndex(g, root)
   const a = g.out
   const parent = new Int32Array(g.n).fill(-1)
@@ -209,7 +209,7 @@ export function rootTree(g: Graph, root: NodeId): RootedTree {
     for (let k = a.indptr[u] ?? 0; k < (a.indptr[u + 1] ?? 0); k++) {
       const v = a.indices[k] ?? 0
       if (v === parent[u]) continue
-      if (depth[v] !== -1 || v === u) throw new WhiteboxError('value', 'rootTree: the component has a cycle')
+      if (depth[v] !== -1 || v === u) throw new MdmlError('value', 'rootTree: the component has a cycle')
       parent[v] = u
       depth[v] = (depth[u] ?? 0) + 1
       distance[v] = (distance[u] ?? 0) + (a.weights[k] ?? 0)
@@ -227,7 +227,7 @@ export function rootTree(g: Graph, root: NodeId): RootedTree {
  * @returns Subtree sizes.
  * @example
  * ```ts
- * import { balancedTree, rootTree, subtreeSizes } from 'whitebox-engine/graph'
+ * import { balancedTree, rootTree, subtreeSizes } from 'mdml-engine/graph'
  * Array.from(subtreeSizes(rootTree(balancedTree(2, 2), 0))) // => [7, 3, 3, 1, 1, 1, 1]
  * ```
  */
@@ -250,7 +250,7 @@ export function subtreeSizes(tree: RootedTree): Int32Array {
  * @returns The order.
  * @example
  * ```ts
- * import { balancedTree, rootTree, treeOrder } from 'whitebox-engine/graph'
+ * import { balancedTree, rootTree, treeOrder } from 'mdml-engine/graph'
  * const t = rootTree(balancedTree(2, 2), 0)
  * treeOrder(t) // => [0, 1, 3, 4, 2, 5, 6]
  * treeOrder(t, 'post') // => [3, 4, 1, 5, 6, 2, 0]
@@ -286,7 +286,7 @@ export function treeOrder(tree: RootedTree, kind: 'pre' | 'post' | 'level' = 'pr
  * @returns The tour.
  * @example
  * ```ts
- * import { eulerTour, pathGraph, rootTree } from 'whitebox-engine/graph'
+ * import { eulerTour, pathGraph, rootTree } from 'mdml-engine/graph'
  * eulerTour(rootTree(pathGraph(3), 1)) // => [1, 0, 1, 2, 1]
  * ```
  */
@@ -323,7 +323,7 @@ export interface LcaIndex {
  * @concept trees
  * @example
  * ```ts
- * import { balancedTree, lcaIndex, rootTree } from 'whitebox-engine/graph'
+ * import { balancedTree, lcaIndex, rootTree } from 'mdml-engine/graph'
  * const index = lcaIndex(rootTree(balancedTree(2, 3), 0))
  * [index.lca(7, 10), index.lca(7, 8), index.lca(3, 14)] // => [1, 3, 0]
  * ```
@@ -337,7 +337,7 @@ export function lcaIndex(tree: RootedTree): LcaIndex {
   }
   const lca = (u: number, v: number): number => {
     if ((tree.depth[u] ?? -1) < 0 || (tree.depth[v] ?? -1) < 0) {
-      throw new WhiteboxError('value', `lca: nodes ${u} and ${v} are not both in the tree`)
+      throw new MdmlError('value', `lca: nodes ${u} and ${v} are not both in the tree`)
     }
     let a = u
     let b = v
@@ -366,17 +366,17 @@ export function lcaIndex(tree: RootedTree): LcaIndex {
  * @param u - A node.
  * @param v - Another node.
  * @returns Their lowest common ancestor.
- * @throws WhiteboxError with code `value` when a node is outside the tree.
+ * @throws MdmlError with code `value` when a node is outside the tree.
  * @concept trees
  * @example
  * ```ts
- * import { balancedTree, lowestCommonAncestor, rootTree } from 'whitebox-engine/graph'
+ * import { balancedTree, lowestCommonAncestor, rootTree } from 'mdml-engine/graph'
  * lowestCommonAncestor(rootTree(balancedTree(2, 2), 0), 3, 4) // => 1
  * ```
  */
 export function lowestCommonAncestor(tree: RootedTree, u: number, v: number): number {
   if ((tree.depth[u] ?? -1) < 0 || (tree.depth[v] ?? -1) < 0) {
-    throw new WhiteboxError('value', `lowestCommonAncestor: nodes ${u} and ${v} are not both in the tree`)
+    throw new MdmlError('value', `lowestCommonAncestor: nodes ${u} and ${v} are not both in the tree`)
   }
   let a = u
   let b = v

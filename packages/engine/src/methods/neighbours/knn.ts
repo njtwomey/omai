@@ -4,7 +4,7 @@
  * radius-neighbour forms (every training row within a radius), by brute-force search with the core's metrics.
  */
 
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import { categorical, type Distribution, normal } from '../../lib/dists/index.ts'
 import { type Exposition, type NeighbourRecord, neighbourRecord } from '../../lib/exposition/index.ts'
 import {
@@ -198,7 +198,7 @@ function neighboursEstimator(
         }),
       fit: (data: LearnData, h: NeighboursHyper) => {
         const m = matrixView(data.x, name)
-        if (!radius && !(h.nNeighbors >= 1)) throw new WhiteboxError('value', `${name}: nNeighbors must be at least 1`)
+        if (!radius && !(h.nNeighbors >= 1)) throw new MdmlError('value', `${name}: nNeighbors must be at least 1`)
         const x = Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
         const labels = classifier ? encodeLabels(data.y ?? [], name, m.n) : undefined
         const params: NeighboursParams = {

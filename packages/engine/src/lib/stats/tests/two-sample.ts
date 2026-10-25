@@ -5,7 +5,7 @@
  * the samples apart.
  */
 
-import { type Alternative, maxOf, meanOf, minOf, type TestResult, WhiteboxError } from '../../base/index.ts'
+import { type Alternative, MdmlError, maxOf, meanOf, minOf, type TestResult } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../../random/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { matrixRankSym, ols, pinvSym } from '../_linear.ts'
@@ -28,7 +28,7 @@ import { resolveAlternative, type TestOptions, testResult } from './result.ts'
  * @returns D (D+ or D-) and its p-value.
  * @example
  * ```ts
- * import { ks2samp } from 'whitebox-engine/stats/tests'
+ * import { ks2samp } from 'mdml-engine/stats/tests'
  * ks2samp([1, 2, 3, 4], [5, 6, 7, 8]).pValue // => 0.028571
  * ```
  */
@@ -138,7 +138,7 @@ function gcdOf(a: number, b: number): number {
  * @returns T and its p-value.
  * @example
  * ```ts
- * import { cramervonmises2samp } from 'whitebox-engine/stats/tests'
+ * import { cramervonmises2samp } from 'mdml-engine/stats/tests'
  * cramervonmises2samp([1, 2, 3, 4], [5, 6, 7, 8]).pValue // => 0.028571
  * ```
  */
@@ -186,7 +186,7 @@ export function cramervonmises2samp(
  * @returns The standardised A^2_akN and its p-value.
  * @example
  * ```ts
- * import { andersonKsamp } from 'whitebox-engine/stats/tests'
+ * import { andersonKsamp } from 'mdml-engine/stats/tests'
  * andersonKsamp([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]).pValue // => 0.004356
  * ```
  */
@@ -196,7 +196,7 @@ export function andersonKsamp(samples: readonly TensorLike[]): TestResult {
   const Z = sortedCopy(gs.flatMap((g) => Array.from(g)))
   const N = Z.length
   const Zstar = Array.from(new Set(Z)).sort((p, q) => p - q)
-  if (Zstar.length < 2) throw new WhiteboxError('value', 'andersonKsamp: needs more than one distinct observation')
+  if (Zstar.length < 2) throw new MdmlError('value', 'andersonKsamp: needs more than one distinct observation')
   const n = gs.map((g) => g.length)
   const left = (s: ArrayLike<number>, v: number): number => {
     let lo = 0
@@ -327,7 +327,7 @@ export interface DistanceOptions {
  * @returns The distance.
  * @example
  * ```ts
- * import { energyDistance } from 'whitebox-engine/stats/tests'
+ * import { energyDistance } from 'mdml-engine/stats/tests'
  * energyDistance([0], [2]) // => 2
  * ```
  */
@@ -347,7 +347,7 @@ export function energyDistance(u: TensorLike, v: TensorLike, options: DistanceOp
  * @returns The distance.
  * @example
  * ```ts
- * import { wassersteinDistance } from 'whitebox-engine/stats/tests'
+ * import { wassersteinDistance } from 'mdml-engine/stats/tests'
  * wassersteinDistance([0, 1, 3], [5, 6, 8]) // => 5
  * ```
  */
@@ -383,7 +383,7 @@ function distanceTest(
  * @returns The energy distance and its permutation p-value.
  * @example
  * ```ts
- * import { energyTest } from 'whitebox-engine/stats/tests'
+ * import { energyTest } from 'mdml-engine/stats/tests'
  * energyTest([1, 2, 3, 4], [5, 6, 7, 8]).pValue // => 0.028571
  * ```
  */
@@ -400,7 +400,7 @@ export function energyTest(x: TensorLike, y: TensorLike, options: DistanceTestOp
  * @returns The Wasserstein distance and its permutation p-value.
  * @example
  * ```ts
- * import { wassersteinTest } from 'whitebox-engine/stats/tests'
+ * import { wassersteinTest } from 'mdml-engine/stats/tests'
  * wassersteinTest([1, 2, 3, 4], [5, 6, 7, 8]).pValue // => 0.028571
  * ```
  */
@@ -418,7 +418,7 @@ export function wassersteinTest(x: TensorLike, y: TensorLike, options: DistanceT
  * @returns W and its chi-square p-value.
  * @example
  * ```ts
- * import { eppsSingleton } from 'whitebox-engine/stats/tests'
+ * import { eppsSingleton } from 'mdml-engine/stats/tests'
  * eppsSingleton([1, 2, 3, 4, 5, 6], [6, 7, 8, 9, 10, 11]).pValue < 0.05 // => true
  * ```
  */
@@ -430,7 +430,7 @@ export function eppsSingleton(
   const a = sample('eppsSingleton', x, 5)
   const b = sample('eppsSingleton', y, 5)
   const t = options.t ?? [0.4, 0.8]
-  for (const v of t) if (!(v > 0)) throw new WhiteboxError('value', 'eppsSingleton: t must be positive')
+  for (const v of t) if (!(v > 0)) throw new MdmlError('value', 'eppsSingleton: t must be positive')
   const nx = a.length
   const ny = b.length
   const n = nx + ny
@@ -497,7 +497,7 @@ export interface ClassifierTestOptions {
  * @returns The held-out accuracy and its p-value.
  * @example
  * ```ts
- * import { classifierTwoSampleTest } from 'whitebox-engine/stats/tests'
+ * import { classifierTwoSampleTest } from 'mdml-engine/stats/tests'
  * const threshold = (_x: readonly (readonly number[])[], _y: readonly number[], t: readonly (readonly number[])[]) =>
  *   t.map((p) => ((p[0] ?? 0) > 5 ? 1 : 0))
  * classifierTwoSampleTest([1, 2, 3, 4, 2, 3], [7, 8, 9, 8, 7, 9], threshold, { seed: 0 }).statistic // => 1
@@ -511,7 +511,7 @@ export function classifierTwoSampleTest(
 ): TestResult {
   const a = rowsOf('classifierTwoSampleTest', x)
   const b = rowsOf('classifierTwoSampleTest', y)
-  if (a.cols !== b.cols) throw new WhiteboxError('shape', 'classifierTwoSampleTest: samples differ in dimension')
+  if (a.cols !== b.cols) throw new MdmlError('shape', 'classifierTwoSampleTest: samples differ in dimension')
   const points: number[][] = []
   const labels: number[] = []
   for (let i = 0; i < a.rows; i++) {

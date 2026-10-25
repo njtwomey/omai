@@ -5,7 +5,7 @@
  * interval.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { log1mexp } from '../numerics/special/index.ts'
 import {
@@ -45,9 +45,9 @@ import { type LossOptions, reduce } from './_reduce.ts'
  * @concept maximum-likelihood
  * @example
  * ```ts
- * import { negativeLogLikelihood } from 'whitebox-engine/losses'
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { negativeLogLikelihood } from 'mdml-engine/losses'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(negativeLogLikelihood(normal(0, 1), [0])) - 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -69,9 +69,9 @@ export type ConditionalLike = (inputs: Value) => Distribution
  * @returns The loss, differentiable in whatever the model closes over.
  * @example
  * ```ts
- * import { conditionalNll } from 'whitebox-engine/losses'
- * import { normal } from 'whitebox-engine/dists'
- * import { item, type Value } from 'whitebox-engine/tensor'
+ * import { conditionalNll } from 'mdml-engine/losses'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item, type Value } from 'mdml-engine/tensor'
  * const model = (x: Value) => normal(x, 1)
  * Math.abs(item(conditionalNll(model, [1, 2], [1, 2])) - 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
@@ -97,8 +97,8 @@ export function conditionalNll(
  * @returns The loss, differentiable in logits, means and scales.
  * @example
  * ```ts
- * import { mixtureDensityNll } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { mixtureDensityNll } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(mixtureDensityNll([[0, 0]], [[0, 0]], [[1, 1]], [0])) - 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -141,8 +141,8 @@ export interface HeteroscedasticOptions extends LossOptions {
  * @returns The loss, differentiable in means and log-variances.
  * @example
  * ```ts
- * import { heteroscedasticGaussianNll } from 'whitebox-engine/losses'
- * import { item } from 'whitebox-engine/tensor'
+ * import { heteroscedasticGaussianNll } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
  * item(heteroscedasticGaussianNll([0], [0], [2])) // => 2
  * ```
  */
@@ -171,12 +171,12 @@ export function heteroscedasticGaussianNll(
  * @param upper - Upper bounds (+Infinity for right-censored; equal to lower for exact).
  * @param options - Reduction and weights.
  * @returns The loss, differentiable in the distribution's parameters.
- * @throws WhiteboxError with code `value` for an interval that is unbounded on both sides, or with lower > upper.
+ * @throws MdmlError with code `value` for an interval that is unbounded on both sides, or with lower > upper.
  * @example
  * ```ts
- * import { censoredNll } from 'whitebox-engine/losses'
- * import { normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { censoredNll } from 'mdml-engine/losses'
+ * import { normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(censoredNll(normal(0, 1), [0], [Infinity])) === Math.LN2 // => true
  * ```
  */
@@ -190,12 +190,12 @@ export function censoredNll(
   const hi = asTensor(upper, 'float64')
   const l = toFlat(lo)
   const u = toFlat(hi)
-  if (l.length !== u.length) throw new WhiteboxError('shape', 'censoredNll: lower and upper must have the same shape')
+  if (l.length !== u.length) throw new MdmlError('shape', 'censoredNll: lower and upper must have the same shape')
   const kinds = l.map((a, i): Kind => {
     const b = u[i] ?? Number.NaN
-    if (!(a <= b)) throw new WhiteboxError('value', `censoredNll: lower ${a} exceeds upper ${b}`)
+    if (!(a <= b)) throw new MdmlError('value', `censoredNll: lower ${a} exceeds upper ${b}`)
     if (a === -Infinity && b === Infinity)
-      throw new WhiteboxError('value', 'censoredNll: (-inf, inf) carries no information')
+      throw new MdmlError('value', 'censoredNll: (-inf, inf) carries no information')
     if (a === b) return 'exact'
     if (b === Infinity) return 'right'
     if (a === -Infinity) return 'left'

@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { metricSeries, type Run } from 'whitebox-engine/trace'
+import { metricSeries, type Run } from 'mdml-engine/trace'
 import { modeOf } from '../charts/_data.ts'
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer, type PlotOptions } from '../charts/plot.ts'
@@ -19,8 +19,8 @@ import type { ColourMode } from '../theme/tokens.ts'
  * @returns The metric names.
  * @example
  * ```ts
- * import { metricNames } from 'whitebox-render/trace'
- * metricNames({ schema: 'whitebox.run/1', events: [{ type: 'metric', runId: 'r', step: 0, name: 'loss', value: 1 }] }) // => ['loss']
+ * import { metricNames } from 'mdml-render/trace'
+ * metricNames({ schema: 'mdml.run/1', events: [{ type: 'metric', runId: 'r', step: 0, name: 'loss', value: 1 }] }) // => ['loss']
  * ```
  */
 export function metricNames(run: Run): string[] {
@@ -38,7 +38,7 @@ export function metricNames(run: Run): string[] {
  * @returns The smoothed values.
  * @example
  * ```ts
- * import { smoothEma } from 'whitebox-render/trace'
+ * import { smoothEma } from 'mdml-render/trace'
  * smoothEma([1, 1, 1], 0.9) // => [1, 1, 1]
  * smoothEma([0, 10], 0.5) // => [0, 6.666666666666667]
  * ```
@@ -77,8 +77,8 @@ export interface MetricCurveOptions {
  * @returns The layer.
  * @example
  * ```ts
- * import { metricCurves } from 'whitebox-render/trace'
- * const run = { schema: 'whitebox.run/1' as const, events: [0, 1, 2].map((t) => ({ type: 'metric' as const, runId: 'r', step: t, name: 'loss', value: 3 - t })) }
+ * import { metricCurves } from 'mdml-render/trace'
+ * const run = { schema: 'mdml.run/1' as const, events: [0, 1, 2].map((t) => ({ type: 'metric' as const, runId: 'r', step: t, name: 'loss', value: 3 - t })) }
  * metricCurves(run).extent // => { x: [0, 2], y: [1, 3] }
  * metricCurves(run, ['loss'], { smoothing: 0.5 }).series.length // => 2
  * ```
@@ -110,8 +110,8 @@ export function metricCurves(run: Run, names?: readonly string[], options: Metri
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { metricChart } from 'whitebox-render/trace'
- * const run = { schema: 'whitebox.run/1' as const, events: [{ type: 'metric' as const, runId: 'r', step: 0, name: 'loss', value: 1 }] }
+ * import { metricChart } from 'mdml-render/trace'
+ * const run = { schema: 'mdml.run/1' as const, events: [{ type: 'metric' as const, runId: 'r', step: 0, name: 'loss', value: 1 }] }
  * metricChart(run, ['loss'], { log: true }).yAxis[0].type // => 'log'
  * ```
  */
@@ -141,8 +141,8 @@ export function metricChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { runsChart } from 'whitebox-render/trace'
- * const run = (v: number) => ({ schema: 'whitebox.run/1' as const, events: [{ type: 'metric' as const, runId: 'r', step: 0, name: 'loss', value: v }] })
+ * import { runsChart } from 'mdml-render/trace'
+ * const run = (v: number) => ({ schema: 'mdml.run/1' as const, events: [{ type: 'metric' as const, runId: 'r', step: 0, name: 'loss', value: v }] })
  * runsChart([{ name: 'a', run: run(1) }, { name: 'b', run: run(2) }], 'loss').legend.data // => ['a', 'b']
  * ```
  */

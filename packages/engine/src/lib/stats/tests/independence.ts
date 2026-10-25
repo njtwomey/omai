@@ -5,7 +5,7 @@
  * test, as causal-learn).
  */
 
-import { type TestResult, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, type TestResult } from '../../base/index.ts'
 import { mutualInformation as tableMutualInformation } from '../../information/index.ts'
 import { dsyev } from '../../numerics/linalg/index.ts'
 import { gammainc } from '../../numerics/special/index.ts'
@@ -37,7 +37,7 @@ export interface IndependenceOptions extends ResamplingRunOptions {
  * @returns The distance correlation and its p-value.
  * @example
  * ```ts
- * import { distanceCovarianceTest } from 'whitebox-engine/stats/tests'
+ * import { distanceCovarianceTest } from 'mdml-engine/stats/tests'
  * const x = [-3, -2, -1, 0, 1, 2, 3]
  * distanceCovarianceTest(x, x.map((v) => v * v), { seed: 1 }).statistic // => 0.50532
  * ```
@@ -45,7 +45,7 @@ export interface IndependenceOptions extends ResamplingRunOptions {
 export function distanceCovarianceTest(x: TensorLike, y: TensorLike, options: IndependenceOptions = {}): TestResult {
   const a = rowsOf('distanceCovarianceTest', x)
   const b = rowsOf('distanceCovarianceTest', y)
-  if (a.rows !== b.rows) throw new WhiteboxError('shape', 'distanceCovarianceTest: x and y differ in length')
+  if (a.rows !== b.rows) throw new MdmlError('shape', 'distanceCovarianceTest: x and y differ in length')
   const n = a.rows
   const A = centredDistances(a)
   const B = centredDistances(b)
@@ -107,7 +107,7 @@ function hoeffdingStatistic(x: Float64Array, y: Float64Array): number {
  * @returns D (on Hmisc's scale, 30 times Hoeffding's) and its p-value.
  * @example
  * ```ts
- * import { hoeffdingD } from 'whitebox-engine/stats/tests'
+ * import { hoeffdingD } from 'mdml-engine/stats/tests'
  * hoeffdingD([1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6]).statistic // => 1
  * ```
  */
@@ -140,7 +140,7 @@ export function hoeffdingD(x: TensorLike, y: TensorLike, options: IndependenceOp
  * @returns The mutual information, at least 0.
  * @example
  * ```ts
- * import { mutualInformation } from 'whitebox-engine/stats/tests'
+ * import { mutualInformation } from 'mdml-engine/stats/tests'
  * mutualInformation([0, 0, 1, 1], [0, 0, 1, 1], { discrete: true }) // => 0.693147
  * ```
  */
@@ -193,7 +193,7 @@ function plugInMI(
  * @returns The mutual information and its p-value.
  * @example
  * ```ts
- * import { mutualInformationTest } from 'whitebox-engine/stats/tests'
+ * import { mutualInformationTest } from 'mdml-engine/stats/tests'
  * const x = [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
  * mutualInformationTest(x, x, { discrete: true, seed: 0 }).pValue < 0.01 // => true
  * ```
@@ -225,7 +225,7 @@ function columnsOf(name: string, data: TensorLike, indices: readonly number[]): 
   const m = rowsOf(name, data)
   return indices.map((j) => {
     if (!(Number.isInteger(j) && j >= 0 && j < m.cols))
-      throw new WhiteboxError('value', `${name}: column ${j} is out of range`)
+      throw new MdmlError('value', `${name}: column ${j} is out of range`)
     return Float64Array.from({ length: m.rows }, (_, i) => m.data[i * m.cols + j] ?? 0)
   })
 }
@@ -241,7 +241,7 @@ function columnsOf(name: string, data: TensorLike, indices: readonly number[]): 
  * @returns The partial correlation as the statistic and the two-sided p-value.
  * @example
  * ```ts
- * import { partialCorrelationTest } from 'whitebox-engine/stats/tests'
+ * import { partialCorrelationTest } from 'mdml-engine/stats/tests'
  * const data = [[1, 2, 1], [2, 1, 1], [3, 4, 2], [4, 3, 2], [5, 6, 3], [6, 5, 3.5]]
  * partialCorrelationTest(data, 0, 1, []).statistic // => 0.828571
  * ```
@@ -277,7 +277,7 @@ export function partialCorrelationTest(data: TensorLike, x: number, y: number, z
  * @returns The statistic, its p-value and degrees of freedom.
  * @example
  * ```ts
- * import { gTestConditional } from 'whitebox-engine/stats/tests'
+ * import { gTestConditional } from 'mdml-engine/stats/tests'
  * gTestConditional([[0, 0], [0, 0], [1, 1], [1, 1], [0, 1], [1, 0]], 0, 1).df // => 1
  * ```
  */
@@ -367,7 +367,7 @@ export interface KernelCIOptions {
  * application in causal discovery, UAI (2011).
  * @example
  * ```ts
- * import { kernelCITest } from 'whitebox-engine/stats/tests'
+ * import { kernelCITest } from 'mdml-engine/stats/tests'
  * const data = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((z) => [z + Math.sin(z), z * 0.5 + Math.cos(3 * z), z])
  * kernelCITest(data, 0, 1, [2]).pValue > 0 // => true
  * ```
@@ -379,8 +379,7 @@ export function kernelCITest(
   z: readonly number[],
   options: KernelCIOptions = {},
 ): TestResult {
-  if (z.length === 0)
-    throw new WhiteboxError('value', 'kernelCITest: needs a conditioning set (use hsicTest without one)')
+  if (z.length === 0) throw new MdmlError('value', 'kernelCITest: needs a conditioning set (use hsicTest without one)')
   const [cx = new Float64Array(), cy = new Float64Array(), ...czs] = columnsOf('kernelCITest', data, [x, y, ...z])
   const n = cx.length
   const zscore = (c: Float64Array): Float64Array => {

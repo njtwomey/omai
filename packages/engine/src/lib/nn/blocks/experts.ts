@@ -5,7 +5,7 @@
  * output with the routing and losses.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
   add,
@@ -68,8 +68,8 @@ const topRows = (scores: Tensor, k: number): number[][] => {
  * @concept mixture-of-experts
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(blocks.softmaxRouting([[0, 0]]).weights) // => [[0.5, 0.5]]
  * ```
  */
@@ -91,15 +91,15 @@ export function softmaxRouting(logits: TensorLike): Routing {
  * @concept mixture-of-experts
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(blocks.topKRouting([[2, 0, 1]], 1).weights) // => [[1, 0, 0]]
  * ```
  */
 export function topKRouting(logits: TensorLike, k: number, options: { readonly normalise?: boolean } = {}): Routing {
   const z = fl(logits)
   const [t = 0, e = 0] = z.shape
-  if (k < 1 || k > e) throw new WhiteboxError('value', `topKRouting: k must be in [1, ${e}]`)
+  if (k < 1 || k > e) throw new MdmlError('value', `topKRouting: k must be in [1, ${e}]`)
   const probs = softmax(z, -1)
   const dispatch = dispatchOf(topRows(primalOf(z), k), t, e)
   let weights = mul(probs, dispatch)
@@ -120,7 +120,7 @@ export function topKRouting(logits: TensorLike, k: number, options: { readonly n
  * @reference Shazeer et al. (2017), Outrageously large neural networks: the sparsely-gated mixture-of-experts layer.
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
+ * import { blocks } from 'mdml-engine/nn'
  * blocks.noisyTopKRouting([[2, 0, 1]], [[0, 0, 0]], 2, { training: false }).dispatch.shape // => [1, 3]
  * ```
  */
@@ -132,7 +132,7 @@ export function noisyTopKRouting(
 ): Routing {
   const z = fl(logits)
   if (options.training === false) return topKRouting(z, k)
-  if (options.key === undefined) throw new WhiteboxError('value', 'noisyTopKRouting: training needs a key')
+  if (options.key === undefined) throw new MdmlError('value', 'noisyTopKRouting: training needs a key')
   const noisy = add(z, mul(normal(options.key, z.shape), softplus(fl(noiseLogits))))
   return topKRouting(noisy, k)
 }
@@ -148,8 +148,8 @@ export function noisyTopKRouting(
  * @reference Fedus, Zoph and Shazeer (2022), Switch transformers.
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(blocks.switchRouting([[1, 0], [1, 0], [1, 0]], 0.5).dispatch) // => [[1, 0], [0, 0], [0, 0]]
  * ```
  */
@@ -178,8 +178,8 @@ export function switchRouting(logits: TensorLike, capacityFactor = 1.25): Routin
  * @reference Zhou et al. (2022), Mixture-of-experts with expert choice routing.
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(blocks.expertChoiceRouting([[3, 0], [2, 1], [0, 3]], 1).dispatch) // => [[1, 0], [0, 0], [0, 1]]
  * ```
  */
@@ -208,8 +208,8 @@ export function expertChoiceRouting(logits: TensorLike, capacity?: number): Rout
  * @returns The loss (differentiable in the router probabilities).
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { item } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { item } from 'mdml-engine/tensor'
  * item(blocks.loadBalancingLoss(blocks.topKRouting([[1, 0], [0, 1]], 1))) // => 1
  * ```
  */
@@ -230,8 +230,8 @@ export function loadBalancingLoss(routing: Routing): Value {
  * @reference Zoph et al. (2022), ST-MoE: designing stable and transferable sparse expert models.
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { item } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { item } from 'mdml-engine/tensor'
  * item(blocks.routerZLoss([[0, 0]])) // => 0.4804530139182014
  * ```
  */
@@ -247,8 +247,8 @@ export function routerZLoss(logits: TensorLike): Value {
  * @returns The loss.
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { item } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { item } from 'mdml-engine/tensor'
  * item(blocks.importanceLoss(blocks.softmaxRouting([[0, 0]]))) // => 0
  * ```
  */
@@ -296,8 +296,8 @@ export interface MixtureOfExpertsOutput {
  * @concept mixture-of-experts
  * @example
  * ```ts
- * import { blocks } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { blocks } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * new blocks.MixtureOfExperts(8, 4, { k: 2 }).forward(zeros([2, 3, 8])).output.shape // => [2, 3, 8]
  * ```
  */

@@ -6,7 +6,7 @@
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'
-import { isWhiteboxError } from '../base/index.ts'
+import { isMdmlError } from '../base/index.ts'
 import { CONJUGATES, type ConjugatePair, type Distribution, exponentialFamily, type Support } from '../dists/index.ts'
 import { inv } from '../numerics/linalg/index.ts'
 import { connectedComponents, graphEdges, undirectedGraph } from '../pgm/index.ts'
@@ -175,7 +175,7 @@ function hasLogProb(site: SampleSite): boolean {
     site.fn.logProb(site.value)
     return true
   } catch (e) {
-    if (isWhiteboxError(e) && e.code === 'not-implemented') return false
+    if (isMdmlError(e) && e.code === 'not-implemented') return false
     throw e
   }
 }
@@ -268,9 +268,9 @@ function parameterOf(d: Distribution, likelihood: string, parameter: string): Va
  * @returns The fixed parameters by name, or undefined when one is missing.
  * @example
  * ```ts
- * import { fixedParameters } from 'whitebox-engine/probprog'
- * import { conjugatePrior, normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { fixedParameters } from 'mdml-engine/probprog'
+ * import { conjugatePrior, normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const pair = conjugatePrior('normal', 'loc')
  * pair === undefined ? 0 : item(fixedParameters(normal(0, 2), pair)?.['scale'] ?? 0) // => 2
  * ```
@@ -293,9 +293,9 @@ export function fixedParameters(d: Distribution, pair: ConjugatePair): Record<st
  * @returns The parameter's value, or undefined.
  * @example
  * ```ts
- * import { pairParameter } from 'whitebox-engine/probprog'
- * import { conjugatePrior, normal } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { pairParameter } from 'mdml-engine/probprog'
+ * import { conjugatePrior, normal } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * // The variance of a normal is the square of its scale.
  * const pair = conjugatePrior('normal', 'variance')
  * pair === undefined ? 0 : item(pairParameter(normal(0, 3), pair) ?? 0) // => 9
@@ -476,8 +476,8 @@ function graphShapeOf(
  * @concept model-analysis
  * @example
  * ```ts
- * import { analyse, observe, plate, sample } from 'whitebox-engine/probprog'
- * import { beta, bernoulli } from 'whitebox-engine/dists'
+ * import { analyse, observe, plate, sample } from 'mdml-engine/probprog'
+ * import { beta, bernoulli } from 'mdml-engine/dists'
  * const coin = (flips: number[]) => {
  *   const p = sample('p', beta(2, 2))
  *   plate('flips', flips.length, () => observe('y', bernoulli({ probs: p }), flips))
@@ -710,8 +710,8 @@ export function analyse<D = void>(model: Model<D>, data: D, options: AnalyseOpti
  * @returns True when the site can be enumerated.
  * @example
  * ```ts
- * import { analyse, isEnumerable, sample } from 'whitebox-engine/probprog'
- * import { bernoulli } from 'whitebox-engine/dists'
+ * import { analyse, isEnumerable, sample } from 'mdml-engine/probprog'
+ * import { bernoulli } from 'mdml-engine/dists'
  * const a = analyse(() => { sample('c', bernoulli({ probs: 0.5 })) }, undefined)
  * isEnumerable(a.sites[0]) // => true
  * ```

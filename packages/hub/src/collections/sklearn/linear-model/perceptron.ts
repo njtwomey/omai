@@ -3,7 +3,7 @@
  * separator, on two-dimensional classification data and tabular classification data.
  */
 
-import { perceptron as perceptronMethod } from 'whitebox-engine/methods/linear'
+import { perceptron as perceptronMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

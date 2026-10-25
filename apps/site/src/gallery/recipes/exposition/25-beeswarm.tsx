@@ -1,9 +1,8 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { diabetes } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { gradientBoostingRegressor, randomForestRegressor } from 'whitebox-engine/methods/ensemble'
-import { explainDataset } from 'whitebox-engine/methods/explain'
-import { key } from 'whitebox-engine/random'
+import { diabetes } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { gradientBoostingRegressor, randomForestRegressor } from 'mdml-engine/methods/ensemble'
+import { explainDataset } from 'mdml-engine/methods/explain'
+import { key } from 'mdml-engine/random'
 import {
   AttributionBarView,
   BeeswarmView,
@@ -11,7 +10,8 @@ import {
   ControlPanel,
   DependenceScatterView,
   Select,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

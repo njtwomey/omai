@@ -5,11 +5,11 @@ import numpy as np
 import sklearn
 import statsmodels
 import statsmodels.api as sm
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from sklearn.linear_model import ElasticNet, LassoCV, OrthogonalMatchingPursuit, Ridge, RidgeCV, lasso_path
 from sklearn.model_selection import KFold
 from statsmodels.stats.outliers_influence import variance_inflation_factor
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__, "statsmodels": statsmodels.__version__}
 

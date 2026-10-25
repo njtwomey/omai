@@ -6,7 +6,7 @@
  * over a receding horizon; and a cross-entropy-method planner.
  */
 
-import { argminOf, clamp, type Json, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
+import { argminOf, clamp, type Json, MdmlError, maxOf } from '../../../lib/base/index.ts'
 import { dlqr, type IlqrOptions, ilqr } from '../../../lib/dynamics/control/index.ts'
 import { type Key, key as makeKey } from '../../../lib/random/index.ts'
 import { type Agent, cem, type Env, mppi, type Transition } from '../../../lib/rl/index.ts'
@@ -41,8 +41,8 @@ export interface LqrSolution {
  * @concept optimal-control
  * @example
  * ```ts
- * import { lqr } from 'whitebox-engine/methods/rl/agents'
- * import { item } from 'whitebox-engine/tensor'
+ * import { lqr } from 'mdml-engine/methods/rl/agents'
+ * import { item } from 'mdml-engine/tensor'
  * Number(item(lqr([[1]], [[1]], [[1]], [[1]]).K).toFixed(12)) // => 0.618033988750
  * ```
  */
@@ -91,13 +91,13 @@ export interface LqrAgentState {
  * @param model - The model (for example `cartPoleModel()` or `doubleIntegratorModel()`).
  * @param options - Cost matrices, operating point and the state of an observation.
  * @returns The agent.
- * @throws WhiteboxError with code `value` when no operating point is given and the model has no equilibrium.
+ * @throws MdmlError with code `value` when no operating point is given and the model has no equilibrium.
  * @concept optimal-control
  * @example
  * ```ts
- * import { lqrAgent } from 'whitebox-engine/methods/rl/agents'
- * import { cartPoleModel } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { lqrAgent } from 'mdml-engine/methods/rl/agents'
+ * import { cartPoleModel } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = lqrAgent<number>(cartPoleModel())
  * agent.greedy(agent.init(key(0)), [0, 0, 0.05, 0]) // => 1
  * ```
@@ -108,7 +108,7 @@ export function lqrAgent<A = readonly number[]>(
 ): Agent<LqrAgentState, readonly number[], A> {
   const x0 = options.state ?? model.equilibrium?.state
   const u0 = options.action ?? model.equilibrium?.action
-  if (x0 === undefined || u0 === undefined) throw new WhiteboxError('value', 'lqrAgent: give an operating point')
+  if (x0 === undefined || u0 === undefined) throw new MdmlError('value', 'lqrAgent: give an operating point')
   const toState = options.toState ?? ((o: readonly number[]) => o)
   const Q = options.Q ?? asRows(eye(model.stateSize))
   const R = options.R ?? asRows(eye(model.actionSize))
@@ -170,8 +170,8 @@ export interface SwingUpState {
  * @concept optimal-control
  * @example
  * ```ts
- * import { swingUpAgent } from 'whitebox-engine/methods/rl/agents'
- * import { key } from 'whitebox-engine/random'
+ * import { swingUpAgent } from 'mdml-engine/methods/rl/agents'
+ * import { key } from 'mdml-engine/random'
  * const agent = swingUpAgent()
  * agent.greedy(agent.init(key(0)), [-1, 0, 1]) // => [2]
  * ```
@@ -302,9 +302,9 @@ export interface MpcAgentOptions {
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { mpcAgent } from 'whitebox-engine/methods/rl/agents'
- * import { pendulumModel } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { mpcAgent } from 'mdml-engine/methods/rl/agents'
+ * import { pendulumModel } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const toState = (o: readonly number[]) => [Math.atan2(o[1] ?? 0, o[0] ?? 1), o[2] ?? 0]
  * const agent = mpcAgent(pendulumModel(), { horizon: 10, toState })
  * Math.abs(agent.greedy(agent.init(key(0)), [1, 0.1, 0])[0] ?? 0) <= 2 // => true
@@ -387,9 +387,9 @@ export interface CemAgentOptions<S, O> {
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { cemAgent } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { cemAgent } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const agent = cemAgent(pendulum.create(), { toState: (o) => [Math.atan2(o[1] ?? 0, o[0] ?? 1), o[2] ?? 0] as const, horizon: 5, population: 16 })
  * agent.act(agent.init(key(0)), [1, 0, 0], key(1)).length // => 1
  * ```

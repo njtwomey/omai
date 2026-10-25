@@ -4,7 +4,7 @@
  * path with the best and one-standard-error choices of the penalty.
  */
 
-import { argminOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argminOf, MdmlError } from '../../lib/base/index.ts'
 import {
   type CrossValidationCurve,
   crossValidationCurve,
@@ -178,13 +178,13 @@ export interface CvPath {
  * @param data - Features, targets and weights.
  * @param options - Path options and the splitter.
  * @returns The fold errors, the best and one-standard-error penalties and the cross-validation curve.
- * @throws WhiteboxError `value` when the splitter yields no folds.
+ * @throws MdmlError `value` when the splitter yields no folds.
  */
 export function cvPath(data: LearnData, options: CvPathOptions = {}): CvPath {
   const design = designOf(data, 'cvPath')
   const alphas = alphaGrid(design, options)
   const folds = splitIndices(options.cv ?? kFold(5), { n: design.x.n }, makeKey(0))
-  if (folds.length === 0) throw new WhiteboxError('value', 'cvPath: the splitter gave no folds')
+  if (folds.length === 0) throw new MdmlError('value', 'cvPath: the splitter gave no folds')
   const { d } = design.x
   const take = (rows: Int32Array): Design => {
     return {

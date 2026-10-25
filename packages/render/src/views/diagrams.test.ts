@@ -1,6 +1,6 @@
+import { diagramRecord } from 'mdml-engine/exposition'
+import { structure } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
-import { diagramRecord } from 'whitebox-engine/exposition'
-import { structure } from 'whitebox-engine/scene'
 import { diagramScene } from './diagrams.ts'
 import { stillOf, viewFor } from './registry.ts'
 

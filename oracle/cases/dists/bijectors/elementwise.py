@@ -2,10 +2,10 @@
 
 import numpy as np
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.torch_helpers import to_numpy, to_torch
 from torch.distributions import transforms as T
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.torch_helpers import to_numpy, to_torch
 
 REFERENCE: dict[str, str] = {"torch": torch.__version__}
 

@@ -3,8 +3,8 @@
  * above the decoded path and the true states.
  */
 
+import type { StateSequence } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
-import type { StateSequence } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { stateSequenceView } from '../../views/sequences.ts'
 import { RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'

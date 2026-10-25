@@ -6,7 +6,7 @@
  * and behaviour cloning as the simplest learner.
  */
 
-import { argmaxOf, type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../../../lib/base/index.ts'
 import { crossEntropy, gaussianNll, mse } from '../../../lib/losses/index.ts'
 import type { Tree } from '../../../lib/optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal, randint } from '../../../lib/random/index.ts'
@@ -56,9 +56,9 @@ export interface CollectOptions {
  * @concept offline-rl
  * @example
  * ```ts
- * import { collectDataset } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { make } from 'whitebox-engine/rl'
+ * import { collectDataset } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { make } from 'mdml-engine/rl'
  * const data = collectDataset(make(cartPole), () => 1, { episodes: 2 })
  * data.filter((t) => t.terminated).length // => 2
  * ```
@@ -98,7 +98,7 @@ export function collectDataset<S, O, A>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { datasetEpisodes } from 'whitebox-engine/methods/rl/agents'
+ * import { datasetEpisodes } from 'mdml-engine/methods/rl/agents'
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * datasetEpisodes([t, { ...t, terminated: true }, t]).map((e) => e.length) // => [2, 1]
  * ```
@@ -159,13 +159,13 @@ export interface OfflineState<G> {
  * @param dataset - The dataset.
  * @param options - Steps and batch size.
  * @returns The algorithm.
- * @throws WhiteboxError with code `value` for an empty dataset.
+ * @throws MdmlError with code `value` for an empty dataset.
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloningLearner, offlineAlgorithm } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { behaviourCloningLearner, offlineAlgorithm } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: false, truncated: false }
  * offlineAlgorithm(behaviourCloningLearner(cartPole.create()), [t]).name // => 'behaviourCloning'
  * ```
@@ -175,7 +175,7 @@ export function offlineAlgorithm<G, O, A>(
   dataset: Dataset<O, A>,
   options: OfflineOptions = {},
 ): Algorithm<OfflineState<G>> {
-  if (dataset.length === 0) throw new WhiteboxError('value', `${learner.name}: the dataset is empty`)
+  if (dataset.length === 0) throw new MdmlError('value', `${learner.name}: the dataset is empty`)
   const steps = options.steps ?? 1000
   const batchSize = options.batchSize ?? 64
   return {
@@ -204,9 +204,9 @@ export function offlineAlgorithm<G, O, A>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloningLearner, offlineAgent } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { behaviourCloningLearner, offlineAgent } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const learner = behaviourCloningLearner(cartPole.create(), { hidden: [4] })
  * offlineAgent(learner, learner.init(key(0), [])).name // => 'behaviourCloning'
  * ```
@@ -244,9 +244,9 @@ export interface OfflineResult<G, O, A> {
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloningLearner, trainOffline } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { behaviourCloningLearner, trainOffline } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: false, truncated: false }
  * trainOffline(behaviourCloningLearner(cartPole.create(), { hidden: [4] }), [t], { steps: 20 }).policy([0, 0, 0, 0], key(0)) // => 1
  * ```
@@ -316,8 +316,8 @@ function policyNet(sp: OfflineSpaces, hidden: readonly number[], key: Key) {
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloningLearner } from 'whitebox-engine/methods/rl/agents'
- * import { pendulum } from 'whitebox-engine/methods/rl'
+ * import { behaviourCloningLearner } from 'mdml-engine/methods/rl/agents'
+ * import { pendulum } from 'mdml-engine/methods/rl'
  * behaviourCloningLearner(pendulum.create(), { loss: 'gaussian' }).config // => { hidden: [64, 64], loss: 'gaussian' }
  * ```
  */
@@ -391,9 +391,9 @@ function clipToBox(sp: OfflineSpaces, a: readonly number[]): number[] {
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloning } from 'whitebox-engine/methods/rl/agents'
- * import { cartPole } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { behaviourCloning } from 'mdml-engine/methods/rl/agents'
+ * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 0, reward: 1, nextObservation: [0, 0, 0, 0], terminated: false, truncated: false }
  * behaviourCloning(cartPole.create(), [t], { hidden: [4], steps: 50, learningRate: 0.05 }).policy([0, 0, 0, 0], key(0)) // => 0
  * ```

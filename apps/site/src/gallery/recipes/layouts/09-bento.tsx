@@ -1,7 +1,7 @@
+import { heatmap, histogram, lines, type Panel, points } from 'mdml-render/charts'
+import { bento, figure } from 'mdml-render/figure'
+import { ControlPanel, FigureFrame, FigureGrid, Select, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { heatmap, histogram, lines, type Panel, points } from 'whitebox-render/charts'
-import { bento, figure } from 'whitebox-render/figure'
-import { ControlPanel, FigureFrame, FigureGrid, Select, useColourMode } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

@@ -4,7 +4,7 @@
  * one-dimensional regression curves.
  */
 
-import { lasso as lassoEstimator } from 'whitebox-engine/methods/linear'
+import { lasso as lassoEstimator } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

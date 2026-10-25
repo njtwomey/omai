@@ -12,12 +12,12 @@ import gpytorch
 import numpy as np
 import sklearn
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng, uniform
+from mdml_oracle.kernels import call, gp_case
+from mdml_oracle.torch_helpers import to_numpy, to_torch
 from sklearn.gaussian_process.kernels import DotProduct
 from sklearn.metrics.pairwise import cosine_similarity, linear_kernel, polynomial_kernel, sigmoid_kernel
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng, uniform
-from whitebox_oracle.kernels import call, gp_case
-from whitebox_oracle.torch_helpers import to_numpy, to_torch
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__, "gpytorch": gpytorch.__version__}
 

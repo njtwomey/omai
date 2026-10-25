@@ -3,9 +3,9 @@
  * and live, an algorithm stepped through the engine's `iterate` as frames are asked for, within a step budget per call.
  */
 
-import type { Key } from 'whitebox-engine/random'
-import type { Frame, Timeline } from 'whitebox-engine/scene'
-import { type Algorithm, iterate } from 'whitebox-engine/trace'
+import type { Key } from 'mdml-engine/random'
+import type { Frame, Timeline } from 'mdml-engine/scene'
+import { type Algorithm, iterate } from 'mdml-engine/trace'
 
 /**
  * Frames to play, from either playback mode behind one interface: precomputed (a finished sequence or timeline) or
@@ -31,7 +31,7 @@ export interface PlaybackSource<F> {
  * @returns The source.
  * @example
  * ```ts
- * import { precomputedSource } from 'whitebox-render/animation'
+ * import { precomputedSource } from 'mdml-render/animation'
  * const src = precomputedSource(['a', 'b'])
  * src.frame(1) // => 'b'
  * src.done() // => true
@@ -62,7 +62,7 @@ export interface LiveOptions {
 }
 
 /**
- * A live source: steps an algorithm (whitebox-engine's `iterate`) as frames are asked for, turning states into frames,
+ * A live source: steps an algorithm (mdml-engine's `iterate`) as frames are asked for, turning states into frames,
  * within a per-call step budget. Deterministic: the same seed gives the same frames however playback is paced.
  *
  * @param algorithm - The algorithm.
@@ -71,7 +71,7 @@ export interface LiveOptions {
  * @returns The source.
  * @example
  * ```ts
- * import { liveSource } from 'whitebox-render/animation'
+ * import { liveSource } from 'mdml-render/animation'
  * const count = { name: 'count', config: {}, init: () => 0, step: (s: number) => s + 1 }
  * const src = liveSource(count, (s) => s * 10, { maxSteps: 5, budget: 2 })
  * src.ensure(10) // => 2

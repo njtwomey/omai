@@ -4,7 +4,7 @@
  * slope limiters, Godunov and MUSCL-Hancock schemes, and the exact Burgers Riemann solution for comparison.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import type { PdeTraceOptions } from './finite-difference.ts'
@@ -27,7 +27,7 @@ export const BURGERS: Flux = { f: (u) => 0.5 * u * u, df: (u) => u, critical: 0 
  * @returns The flux.
  * @example
  * ```ts
- * import { linearFlux } from 'whitebox-engine/dynamics/pde'
+ * import { linearFlux } from 'mdml-engine/dynamics/pde'
  * linearFlux(2).f(3) // => 6
  * ```
  */
@@ -50,7 +50,7 @@ export type NumericalFlux = (flux: Flux, uL: number, uR: number) => number
  * @concept godunov-method
  * @example
  * ```ts
- * import { BURGERS, godunovFlux } from 'whitebox-engine/dynamics/pde'
+ * import { BURGERS, godunovFlux } from 'mdml-engine/dynamics/pde'
  * // A transonic rarefaction takes the sonic value f(0) = 0.
  * godunovFlux(BURGERS, -1, 1) // => 0
  * ```
@@ -78,7 +78,7 @@ export function godunovFlux(flux: Flux, uL: number, uR: number): number {
  * @returns The interface flux.
  * @example
  * ```ts
- * import { BURGERS, rusanovFlux } from 'whitebox-engine/dynamics/pde'
+ * import { BURGERS, rusanovFlux } from 'mdml-engine/dynamics/pde'
  * rusanovFlux(BURGERS, 1, 1) // => 0.5
  * ```
  */
@@ -159,11 +159,11 @@ function totalVariation(u: Float64Array, periodic: boolean): number {
  * @param cells - The number of cells.
  * @param options - Flux, final time, step or CFL, scheme, limiter, Riemann solver and boundary.
  * @returns Snapshots with mass and total variation.
- * @throws WhiteboxError with code `value` for a non-positive cell count or a mismatched initial condition.
+ * @throws MdmlError with code `value` for a non-positive cell count or a mismatched initial condition.
  * @concept finite-volume
  * @example
  * ```ts
- * import { BURGERS, conservationLaw } from 'whitebox-engine/dynamics/pde'
+ * import { BURGERS, conservationLaw } from 'mdml-engine/dynamics/pde'
  * const s = conservationLaw((x) => (x < 0.5 ? 1 : 0), [0, 1], 100, { flux: BURGERS, tEnd: 0.2, boundary: 'outflow' })
  * Math.abs((s.mass.at(-1) ?? 0) - (s.mass[0] ?? 0) - 0.2 * 0.5) < 1e-12 // => true
  * ```
@@ -174,12 +174,12 @@ export function conservationLaw(
   cells: number,
   options: ConservationOptions,
 ): ConservationSolution {
-  if (!Number.isInteger(cells) || cells < 2) throw new WhiteboxError('value', 'conservationLaw: at least two cells')
+  if (!Number.isInteger(cells) || cells < 2) throw new MdmlError('value', 'conservationLaw: at least two cells')
   const [a, b] = domain
   const dx = (b - a) / cells
   const x = Array.from({ length: cells }, (_, i) => a + (i + 0.5) * dx)
   const init = typeof u0 === 'function' ? Float64Array.from(x, (xi) => u0(xi)) : Float64Array.from(u0)
-  if (init.length !== cells) throw new WhiteboxError('value', `conservationLaw: give ${cells} cell averages`)
+  if (init.length !== cells) throw new MdmlError('value', `conservationLaw: give ${cells} cell averages`)
   const flux = options.flux
   const periodic = (options.boundary ?? 'periodic') === 'periodic'
   const limiter = typeof options.limiter === 'function' ? options.limiter : LIMITERS[options.limiter ?? 'minmod']
@@ -286,7 +286,7 @@ export function conservationLaw(
  * @concept riemann-problem
  * @example
  * ```ts
- * import { burgersRiemann } from 'whitebox-engine/dynamics/pde'
+ * import { burgersRiemann } from 'mdml-engine/dynamics/pde'
  * [burgersRiemann(1, 0, 0.4, 1), burgersRiemann(1, 0, 0.6, 1), burgersRiemann(0, 1, 0.5, 1)] // => [1, 0, 0.5]
  * ```
  */

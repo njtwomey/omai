@@ -1,5 +1,5 @@
 /**
- * Hypothesis tests, scipy.stats, statsmodels and pingouin style, available as `whitebox-engine/stats/tests`: tests of
+ * Hypothesis tests, scipy.stats, statsmodels and pingouin style, available as `mdml-engine/stats/tests`: tests of
  * means, proportions, contingency tables, distributions and goodness of fit, ranks, variances, independence,
  * multivariate data and time series, plus kernel, Bayesian, equivalence and sequential tests and multiple-testing
  * corrections, all returning a common `TestResult` with effect sizes and assumption checks.

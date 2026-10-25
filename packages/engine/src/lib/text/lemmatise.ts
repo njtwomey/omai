@@ -3,7 +3,7 @@
  * applying detachment rules per part of speech and irregular-form exception lists against a lexicon of known lemmas.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** A WordNet part of speech: noun, verb, adjective, satellite adjective, adverb. */
 export type WordNetPos = 'n' | 'v' | 'a' | 's' | 'r'
@@ -64,7 +64,7 @@ export interface Lexicon {
  * @concept lemmatisation
  * @example
  * ```ts
- * import { lexicon } from 'whitebox-engine/text'
+ * import { lexicon } from 'mdml-engine/text'
  * lexicon({ n: ['dog'], v: ['dog', 'run'] }).lemmas.get('dog')?.size // => 2
  * ```
  */
@@ -87,8 +87,7 @@ export function lexicon(
 }
 
 function checkPos(pos: WordNetPos): void {
-  if (!(pos in MORPHOLOGICAL_SUBSTITUTIONS))
-    throw new WhiteboxError('value', `lemmatize: unknown part of speech ${pos}`)
+  if (!(pos in MORPHOLOGICAL_SUBSTITUTIONS)) throw new MdmlError('value', `lemmatize: unknown part of speech ${pos}`)
 }
 
 /**
@@ -100,11 +99,11 @@ function checkPos(pos: WordNetPos): void {
  * @param pos - The part of speech.
  * @param lex - The lexicon.
  * @returns The candidate lemmas, in order.
- * @throws WhiteboxError with code `value` for an unknown part of speech.
+ * @throws MdmlError with code `value` for an unknown part of speech.
  * @concept lemmatisation
  * @example
  * ```ts
- * import { lexicon, morphy } from 'whitebox-engine/text'
+ * import { lexicon, morphy } from 'mdml-engine/text'
  * const lex = lexicon({ n: ['church', 'churche', 'axis', 'axe'] }, { n: { axes: ['axis', 'axe'] } })
  * [morphy('churches', 'n', lex), morphy('axes', 'n', lex)] // => [['churche', 'church'], ['axis', 'axe']]
  * ```
@@ -132,11 +131,11 @@ export function morphy(form: string, pos: WordNetPos, lex: Lexicon): string[] {
  * @param word - The word.
  * @param options - The part of speech (default noun) and an optional lexicon.
  * @returns The lemma.
- * @throws WhiteboxError with code `value` for an unknown part of speech.
+ * @throws MdmlError with code `value` for an unknown part of speech.
  * @concept lemmatisation
  * @example
  * ```ts
- * import { lemmatize } from 'whitebox-engine/text'
+ * import { lemmatize } from 'mdml-engine/text'
  * ['churches', 'wolves', 'women', 'ponies', 'mice'].map((w) => lemmatize(w)) // => ['church', 'wolf', 'woman', 'pony', 'mouse']
  * [lemmatize('went', { pos: 'v' }), lemmatize('better', { pos: 'a' })] // => ['go', 'good']
  * ```

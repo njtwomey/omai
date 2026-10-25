@@ -4,7 +4,7 @@
  * resampling on low effective sample size, and particle smoothing by forward filtering and backward simulation.
  */
 
-import { logSumExpOf, WhiteboxError } from '../../base/index.ts'
+import { logSumExpOf, MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../../random/index.ts'
 import {
   asTensor,
@@ -55,18 +55,18 @@ function searchSorted(c: Float64Array, u: number): number {
  * @param scheme - The scheme.
  * @param u - Uniform variates in [0, 1): N for multinomial, stratified and residual, the first one for systematic.
  * @returns N particle indices.
- * @throws WhiteboxError with code `value` when there are too few uniforms.
+ * @throws MdmlError with code `value` when there are too few uniforms.
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
+ * import { filtering } from 'mdml-engine/dynamics'
  * filtering.resampleIndices([0.1, 0.2, 0.7], 'systematic', [0.5]) // => [1, 2, 2]
  * ```
  */
 export function resampleIndices(weights: readonly number[], scheme: Resampling, u: readonly number[]): number[] {
   const N = weights.length
   const needed = scheme === 'systematic' ? 1 : N
-  if (u.length < needed) throw new WhiteboxError('value', `resampleIndices: ${scheme} needs ${needed} uniforms`)
+  if (u.length < needed) throw new MdmlError('value', `resampleIndices: ${scheme} needs ${needed} uniforms`)
   if (scheme === 'residual') {
     const out: number[] = []
     const residual = new Float64Array(N)
@@ -179,7 +179,7 @@ function runPf(
   const threshold = options.essThreshold ?? 0.5
   const root = options.key ?? makeKey(0)
   if (auxiliary && model.predict === undefined)
-    throw new WhiteboxError('value', 'auxiliaryParticleFilter: the model needs predict')
+    throw new MdmlError('value', 'auxiliaryParticleFilter: the model needs predict')
   const zAt = (t: number): Value => reshape(sliceAxis(Z, 0, t, t + 1), Z.shape.slice(1))
   const algorithm: Algorithm<PfState> = {
     name,
@@ -274,9 +274,9 @@ function runPf(
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { key, normal } from 'whitebox-engine/random'
- * import { add, mul, sub, sum, square } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { key, normal } from 'mdml-engine/random'
+ * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
  * const model = {
  *   initial: (k, n) => normal(k, [n, 1]),
  *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
@@ -302,13 +302,13 @@ export function bootstrapParticleFilter(
  * @param observations - `[T, ...]`.
  * @param options - Particle count, resampling scheme, key and tracing.
  * @returns Weighted means, the log-evidence, ESS and the particle history.
- * @throws WhiteboxError with code `value` when the model has no `predict`.
+ * @throws MdmlError with code `value` when the model has no `predict`.
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { key, normal } from 'whitebox-engine/random'
- * import { add, mul, sub, sum, square } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { key, normal } from 'mdml-engine/random'
+ * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
  * const model = {
  *   initial: (k, n) => normal(k, [n, 1]),
  *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
@@ -334,13 +334,13 @@ export function auxiliaryParticleFilter(
  * @param filtered - A particle filter's output.
  * @param options - Number of trajectories (default 100) and key.
  * @returns The smoothed means `[T, d]` and the sampled trajectories `[M, T, d]`.
- * @throws WhiteboxError with code `value` when the model has no transition density.
+ * @throws MdmlError with code `value` when the model has no transition density.
  * @concept particle-smoother
  * @example
  * ```ts
- * import { filtering } from 'whitebox-engine/dynamics'
- * import { key, normal } from 'whitebox-engine/random'
- * import { add, mul, sub, sum, square } from 'whitebox-engine/tensor'
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { key, normal } from 'mdml-engine/random'
+ * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
  * const model = {
  *   initial: (k, n) => normal(k, [n, 1]),
  *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
@@ -357,7 +357,7 @@ export function particleSmoother(
   options: { readonly trajectories?: number; readonly key?: Key } = {},
 ): { readonly means: Tensor; readonly trajectories: Tensor } {
   const logT = model.logTransition
-  if (logT === undefined) throw new WhiteboxError('value', 'particleSmoother: the model needs logTransition')
+  if (logT === undefined) throw new MdmlError('value', 'particleSmoother: the model needs logTransition')
   const M = options.trajectories ?? 100
   const T = filtered.particles.length
   const root = options.key ?? makeKey(0)

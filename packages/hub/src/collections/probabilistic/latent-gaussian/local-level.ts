@@ -3,11 +3,11 @@
  * recovered by Kalman filtering and RTS smoothing, on time series.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import type { TimeSeriesData } from 'whitebox-engine/data'
-import { linearGaussianStateSpace, type StructuralModel } from 'whitebox-engine/methods/models'
-import { bool, choice, dict, int } from 'whitebox-engine/space'
-import { asTensor, toFlat } from 'whitebox-engine/tensor'
+import { MdmlError } from 'mdml-engine/base'
+import type { TimeSeriesData } from 'mdml-engine/data'
+import { linearGaussianStateSpace, type StructuralModel } from 'mdml-engine/methods/models'
+import { bool, choice, dict, int } from 'mdml-engine/space'
+import { asTensor, toFlat } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 /** A local-level (or local-trend) model: a hidden random walk seen through noise, smoothed by Kalman and RTS. */
@@ -29,7 +29,7 @@ export const localLevel: HubEntry = defineEntry({
   }),
   run: ({ data, params }) => {
     const series = data as TimeSeriesData | undefined
-    if (series?.kind !== 'timeseries') throw new WhiteboxError('value', 'local-level: needs a time series')
+    if (series?.kind !== 'timeseries') throw new MdmlError('value', 'local-level: needs a time series')
     const values = asTensor(series.values)
     const d = values.shape[1] ?? 1
     const first = toFlat(values).filter((_, i) => i % d === 0)

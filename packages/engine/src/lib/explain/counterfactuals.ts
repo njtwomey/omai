@@ -7,7 +7,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { argmaxOf, WhiteboxError } from '../base/index.ts'
+import { argmaxOf, MdmlError } from '../base/index.ts'
 import { dijkstra, graph } from '../graph/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import type { FitOptions } from '../learn/estimator.ts'
@@ -39,7 +39,7 @@ import type { DifferentiableModel } from './gradients.ts'
 
 function rowOf(x: TensorLike, who: string): Float64Array {
   const v = Float64Array.from(toFlat(asTensor(x)))
-  if (v.length === 0) throw new WhiteboxError('shape', `${who}: empty point`)
+  if (v.length === 0) throw new MdmlError('shape', `${who}: empty point`)
   return v
 }
 
@@ -50,7 +50,7 @@ function rowOf(x: TensorLike, who: string): Float64Array {
  * @returns One scale per feature.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.medianAbsoluteDeviations([[0, 1], [1, 1], [4, 1]]) // => [1, 1]
  * ```
  */
@@ -116,8 +116,8 @@ function scalarModel(model: DifferentiableModel, d: number): (v: Float64Array) =
  * @concept counterfactual-explanations
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { matmul } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { matmul } from 'mdml-engine/tensor'
  * const score = (v) => matmul(v, [[1], [2]])
  * const cf = explain.wachterCounterfactual(score, [0, 0], { target: 2, tolerance: 0.01 })
  * cf.valid // => true
@@ -132,7 +132,7 @@ export function wachterCounterfactual(
   const x0 = rowOf(x, 'wachterCounterfactual')
   const d = x0.length
   const scales = options.scales ?? new Array<number>(d).fill(1)
-  if (scales.length !== d) throw new WhiteboxError('shape', 'wachterCounterfactual: one scale per feature')
+  if (scales.length !== d) throw new MdmlError('shape', 'wachterCounterfactual: one scale per feature')
   const fixed = new Set(options.immutable ?? [])
   const tol = options.tolerance ?? 0.05
   const f = scalarModel(model, d)
@@ -238,8 +238,8 @@ export interface DiverseCounterfactuals {
  * @returns The counterfactuals, their predictions and validity, and the diversity.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { matmul, sigmoid } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { matmul, sigmoid } from 'mdml-engine/tensor'
  * const proba = (v) => sigmoid(matmul(v, [[2], [2]]))
  * const r = explain.diverseCounterfactuals(proba, [-1, -1], { count: 3 })
  * r.valid // => [true, true, true]
@@ -253,7 +253,7 @@ export function diverseCounterfactuals(
   const x0 = rowOf(x, 'diverseCounterfactuals')
   const d = x0.length
   const k = options.count ?? 4
-  if (!(Number.isInteger(k) && k >= 1)) throw new WhiteboxError('value', 'diverseCounterfactuals: count must be >= 1')
+  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'diverseCounterfactuals: count must be >= 1')
   const scales = fromStorage(Float64Array.from(options.scales ?? new Array<number>(d).fill(1)), [1, d], 'float64')
   const xt = fromStorage(
     Float64Array.from({ length: k * d }, (_, i) => x0[i % d] ?? 0),
@@ -377,8 +377,8 @@ export interface FacePath {
  * @returns The path, or undefined when no acceptable point is reachable.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const sign = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[i] > 2 ? 1 : 0)))
  * const data = [[0], [0.5], [1], [1.5], [2], [2.5], [3]]
  * explain.faceCounterfactual(sign, [0.1], data, { accept: (p) => p === 1, kNeighbors: 2 }).counterfactual // => [2.5]
@@ -474,7 +474,7 @@ export interface Recourse {
  * @returns The action, its cost and feasibility.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * // Score 2 x0 + x1 - 4 at (0, 0); raising x0 is twice as effective per unit as x1.
  * explain.linearRecourse([2, 1], -4, [0, 0], { bounds: [[0, 1], [0, 5]] }) // => { action: [1, 2], cost: 3, feasible: true }
  * ```
@@ -487,9 +487,9 @@ export function linearRecourse(
 ): Recourse {
   const x0 = rowOf(x, 'linearRecourse')
   const d = x0.length
-  if (weights.length !== d) throw new WhiteboxError('shape', 'linearRecourse: one weight per feature')
+  if (weights.length !== d) throw new MdmlError('shape', 'linearRecourse: one weight per feature')
   const costs = options.costs ?? new Array<number>(d).fill(1)
-  if (costs.some((c) => !(c > 0))) throw new WhiteboxError('value', 'linearRecourse: costs must be positive')
+  if (costs.some((c) => !(c > 0))) throw new MdmlError('value', 'linearRecourse: costs must be positive')
   const fixed = new Set(options.immutable ?? [])
   const score = weights.reduce((s, w, j) => s + w * (x0[j] ?? 0), intercept)
   let need = (options.margin ?? 0) - score
@@ -541,7 +541,7 @@ export interface ActionViolation {
  * @returns Every violation (empty when the counterfactual is actionable).
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.actionViolations([30, 2], [29, 3], { monotone: { 0: 'increase' } }) // => [{ feature: 0, reason: 'increase only' }]
  * ```
  */
@@ -552,7 +552,7 @@ export function actionViolations(
 ): ActionViolation[] {
   const a = rowOf(x, 'actionViolations')
   const b = rowOf(counterfactual, 'actionViolations')
-  if (a.length !== b.length) throw new WhiteboxError('shape', 'actionViolations: the points differ in features')
+  if (a.length !== b.length) throw new MdmlError('shape', 'actionViolations: the points differ in features')
   const out: ActionViolation[] = []
   const fixed = new Set(constraints.immutable ?? [])
   const ints = new Set(constraints.integer ?? [])
@@ -582,7 +582,7 @@ export function actionViolations(
  * @returns The nearest actionable point (feature by feature).
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.projectActions([30, 2, 1], [29, 3.6, 5], { monotone: { 0: 'increase' }, integer: [1], immutable: [2] }) // => [30, 4, 1]
  * ```
  */
@@ -634,8 +634,8 @@ export interface GrowingSpheresOptions {
  * @returns The counterfactual, or undefined when no enemy is found.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const f = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i]))
  * const cf = explain.growingSpheres(f, [0, 0], { accept: (p) => p > 1 })
  * cf.valid && cf.x[1] === 0 // => true
@@ -830,8 +830,8 @@ function classGapLoss(scores: Value, target: number, k: number, sign: 1 | -1, ka
  * @returns The pertinent negative, or undefined when none is found.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { matmul } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { matmul } from 'mdml-engine/tensor'
  * // Two classes by the sign of x1 - x2: raising x2 above x1 flips it.
  * const scores = (v) => matmul(v, [[1, -1], [-1, 1]])
  * const pn = explain.pertinentNegative(scores, [1, 0.5], { beta: 0.01 })
@@ -885,8 +885,8 @@ export function pertinentNegative(
  * @returns The pertinent positive, or undefined when none is found.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { add, matmul } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { add, matmul } from 'mdml-engine/tensor'
  * // Class 0 needs x1 > 0.5; x2 is irrelevant, so the pertinent positive keeps part of x1 only.
  * const scores = (v) => add(matmul(v, [[1, 0], [0, 0]]), [[0, 0.5]])
  * const pp = explain.pertinentPositive(scores, [2, 3])
@@ -943,8 +943,8 @@ export interface PrototypeOptions extends ContrastiveOptions {
  * @returns The counterfactual with its prototype and target class, or undefined when none is found.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { matmul } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { matmul } from 'mdml-engine/tensor'
  * const scores = (v) => matmul(v, [[1, -1], [-1, 1]])
  * const train = [[2, 0], [3, 1], [0, 2], [1, 3]]
  * const r = explain.prototypeCounterfactual(scores, [2, 1], train, [0, 0, 1, 1], { kPrototype: 2 })
@@ -961,7 +961,7 @@ export function prototypeCounterfactual(
   const x0 = rowOf(x, 'prototypeCounterfactual')
   const d = x0.length
   const m = matrixView(train, 'prototypeCounterfactual', { nFeatures: d })
-  if (labels.length !== m.n) throw new WhiteboxError('shape', 'prototypeCounterfactual: one label per training row')
+  if (labels.length !== m.n) throw new MdmlError('shape', 'prototypeCounterfactual: one label per training row')
   const s0 = classScores(model, Array.from(x0))
   const t = options.classIndex ?? argmaxOf(s0)
   const kp = options.kPrototype ?? 5
@@ -993,7 +993,7 @@ export function prototypeCounterfactual(
   }
   const proto = target === undefined ? undefined : prototypes.get(target)
   if (target === undefined || proto === undefined)
-    throw new WhiteboxError('value', 'prototypeCounterfactual: no other class to move to')
+    throw new MdmlError('value', 'prototypeCounterfactual: no other class to move to')
   const theta = options.theta ?? 1
   const xt = fromStorage(Float64Array.from(x0), [d], 'float64')
   const pt = fromStorage(Float64Array.from(proto), [d], 'float64')
@@ -1046,8 +1046,8 @@ export function prototypeCounterfactual(
  * @returns The share of models that accept it, and each model's verdict.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const shifted = (c) => (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i] - c))
  * explain.recourseRobustness([shifted(0), shifted(0.5), shifted(2)], [1], (p) => p > 0).share // => 0.6666666666666666
  * ```
@@ -1058,7 +1058,7 @@ export function recourseRobustness(
   accept: (prediction: number) => boolean,
 ): { readonly share: number; readonly accepted: readonly boolean[] } {
   const p = rowOf(counterfactual, 'recourseRobustness')
-  if (predictors.length === 0) throw new WhiteboxError('value', 'recourseRobustness: no models')
+  if (predictors.length === 0) throw new MdmlError('value', 'recourseRobustness: no models')
   const accepted = predictors.map((f) =>
     accept(toFlat(f(fromStorage(Float64Array.from(p), [1, p.length], 'float64')))[0] ?? Number.NaN),
   )

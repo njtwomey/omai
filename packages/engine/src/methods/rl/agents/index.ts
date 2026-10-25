@@ -1,5 +1,5 @@
 /**
- * The reinforcement-learning agents, the `agents` namespace of `whitebox-engine/methods/rl`: tabular and deep
+ * The reinforcement-learning agents, the `agents` namespace of `mdml-engine/methods/rl`: tabular and deep
  * value-based learners, policy gradients and actor-critics, distributional, model-based and planning agents, offline,
  * imitation, hierarchical, safe and exploration methods, multi-agent learners and bandit agents. All follow the agent
  * contract of `lib/rl`, so any of them can be trained and evaluated on any environment whose spaces it supports.

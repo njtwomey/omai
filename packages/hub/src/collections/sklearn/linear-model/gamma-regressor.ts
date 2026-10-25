@@ -3,7 +3,7 @@
  * and tabular data.
  */
 
-import { gammaRegressor as gammaRegressorMethod } from 'whitebox-engine/methods/linear'
+import { gammaRegressor as gammaRegressorMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

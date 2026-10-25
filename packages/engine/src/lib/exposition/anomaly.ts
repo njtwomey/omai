@@ -24,10 +24,10 @@ export interface AnomalyScores {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when the evidence does not match the scores.
+ * @throws MdmlError `shape` when the evidence does not match the scores.
  * @example
  * ```ts
- * import { anomalyScores } from 'whitebox-engine/exposition'
+ * import { anomalyScores } from 'mdml-engine/exposition'
  * anomalyScores({ method: 'isolationForest', scores: [0.4, 0.9], threshold: 0.6 }).threshold // => 0.6
  * ```
  */

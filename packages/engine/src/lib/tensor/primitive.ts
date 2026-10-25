@@ -5,7 +5,7 @@
  * from being materialised.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Tensor } from './tensor.ts'
 import { type Aval, isTraced, lift, type Trace, type Traced, type Value } from './traced.ts'
 
@@ -67,7 +67,7 @@ export interface Primitive<P> {
  * @concept primitives
  * @example
  * ```ts
- * import { definePrimitive, bind1, tensor, mul, toArray } from 'whitebox-engine/tensor'
+ * import { definePrimitive, bind1, tensor, mul, toArray } from 'mdml-engine/tensor'
  * const triple = definePrimitive<null>({
  *   name: 'triple',
  *   abstractEval: ([x]) => [x],
@@ -93,8 +93,8 @@ export function definePrimitive<P>(spec: Primitive<P>): Primitive<P> {
  * @concept primitives
  * @example
  * ```ts
- * import { bind, tensor } from 'whitebox-engine/tensor'
- * import { addPrimitive } from 'whitebox-engine/tensor'
+ * import { bind, tensor } from 'mdml-engine/tensor'
+ * import { addPrimitive } from 'mdml-engine/tensor'
  * bind(addPrimitive, [tensor(1), tensor(2)], null)[0].shape // => []
  * ```
  */
@@ -116,7 +116,7 @@ export function bind<P>(primitive: Primitive<P>, inputs: readonly Value[], param
  * @returns Its only output.
  * @example
  * ```ts
- * import { bind1, tensor, toArray, addPrimitive } from 'whitebox-engine/tensor'
+ * import { bind1, tensor, toArray, addPrimitive } from 'mdml-engine/tensor'
  * toArray(bind1(addPrimitive, [tensor([1]), tensor([2])], null)) // => [3]
  * ```
  */
@@ -124,7 +124,7 @@ export function bind1<P>(primitive: Primitive<P>, inputs: readonly Value[], para
   const out = bind(primitive, inputs, params)
   const first = out[0]
   if (out.length !== 1 || first === undefined) {
-    throw new WhiteboxError('value', `primitive ${primitive.name} has ${out.length} outputs; use bind`)
+    throw new MdmlError('value', `primitive ${primitive.name} has ${out.length} outputs; use bind`)
   }
   return first
 }
@@ -136,14 +136,14 @@ export function bind1<P>(primitive: Primitive<P>, inputs: readonly Value[], para
  * @param xs - The list.
  * @param i - The index.
  * @returns The element.
- * @throws WhiteboxError with code `value` when the list is too short.
+ * @throws MdmlError with code `value` when the list is too short.
  * @example
  * ```ts
- * import { arg } from 'whitebox-engine/tensor'
+ * import { arg } from 'mdml-engine/tensor'
  * arg([10, 20], 1) // => 20
  * ```
  */
 export function arg<T>(xs: readonly T[], i: number): T {
-  if (i >= xs.length) throw new WhiteboxError('value', `expected at least ${i + 1} arguments, got ${xs.length}`)
+  if (i >= xs.length) throw new MdmlError('value', `expected at least ${i + 1} arguments, got ${xs.length}`)
   return xs[i] as T
 }

@@ -4,7 +4,7 @@
  * samples for larger data. Mirrors scikit-learn-extra's `KMedoids`.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -173,7 +173,7 @@ export function kMedoids(
         const m = matrixView(data.x, 'kMedoids')
         const k = h.nClusters ?? 3
         if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-          throw new WhiteboxError('value', `kMedoids: nClusters must be in 1..${m.n}`)
+          throw new MdmlError('value', `kMedoids: nClusters must be in 1..${m.n}`)
         const rows = Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
         const d = toArray(geometry.cdist(rows, rows)) as number[][]
         const run = fitRunOptions(options, 'k-medoids')

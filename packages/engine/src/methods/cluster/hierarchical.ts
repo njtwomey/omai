@@ -5,7 +5,7 @@
  * correlation, and dendrogram layout.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -300,7 +300,7 @@ export function agglomerativeClustering(
         const m = matrixView(data.x, 'agglomerativeClustering')
         const k = h.nClusters ?? 2
         if (h.distanceThreshold === undefined && !(Number.isInteger(k) && k >= 1 && k <= m.n))
-          throw new WhiteboxError('value', `agglomerativeClustering: nClusters must be in 1..${m.n}`)
+          throw new MdmlError('value', `agglomerativeClustering: nClusters must be in 1..${m.n}`)
         const run = fitRunOptions(options, 'agglomerative')
         const out = runAlgorithm(agglomerationAlgorithm(data.x, h.linkage ?? 'ward'), { ...run, maxSteps: m.n })
         const merges = [...out.state.merges]

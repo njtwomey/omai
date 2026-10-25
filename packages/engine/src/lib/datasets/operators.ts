@@ -21,8 +21,8 @@ import { matrix, stamp } from './_util.ts'
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { antiderivativeOperator } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { antiderivativeOperator } from 'mdml-engine/datasets'
  * generate(antiderivativeOperator, { knobs: { n: 3, points: 20 } }).data.y.shape // => [3, 20]
  * ```
  */
@@ -123,8 +123,8 @@ const periodicKnobs = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { heatOperator } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { heatOperator } from 'mdml-engine/datasets'
  * generate(heatOperator, { knobs: { n: 2, points: 16 } }).data.x.shape // => [2, 16]
  * ```
  */
@@ -196,8 +196,8 @@ function burgersSolve(a: readonly number[], b: readonly number[], nu: number, ti
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { burgersOperator } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { burgersOperator } from 'mdml-engine/datasets'
  * generate(burgersOperator, { knobs: { n: 2, points: 32 } }).data.y.shape // => [2, 32]
  * ```
  */

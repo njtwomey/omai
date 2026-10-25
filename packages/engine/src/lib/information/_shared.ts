@@ -1,5 +1,5 @@
 // Small helpers shared by the information files: normalisation, logarithm bases and label coding. Not exported.
-import { pairwiseSum, WhiteboxError } from '../base/index.ts'
+import { MdmlError, pairwiseSum } from '../base/index.ts'
 import { asFloat, div, sum, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 
 /** A float value of the input. */
@@ -16,7 +16,7 @@ export function normaliseAlong(p: Value, axis?: number | readonly number[]): Val
 export function inBase(v: Value, base: number | undefined): Value {
   if (base === undefined) return v
   if (!(base > 0) || base === 1)
-    throw new WhiteboxError('value', `information: base must be positive and not 1, got ${base}`)
+    throw new MdmlError('value', `information: base must be positive and not 1, got ${base}`)
   return div(v, Math.log(base))
 }
 
@@ -24,7 +24,7 @@ export function inBase(v: Value, base: number | undefined): Value {
 export function logOfBase(base: number | undefined): number {
   if (base === undefined) return 1
   if (!(base > 0) || base === 1)
-    throw new WhiteboxError('value', `information: base must be positive and not 1, got ${base}`)
+    throw new MdmlError('value', `information: base must be positive and not 1, got ${base}`)
   return Math.log(base)
 }
 
@@ -47,7 +47,7 @@ export function labelCodes(labels: Labels, name: string): { readonly codes: Int3
     }
     codes[i] = c
   })
-  if (xs.length === 0) throw new WhiteboxError('value', `${name}: no samples`)
+  if (xs.length === 0) throw new MdmlError('value', `${name}: no samples`)
   return { codes, m: index.size }
 }
 

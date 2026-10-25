@@ -5,7 +5,7 @@
  * scipy.signal.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
 import { ellipj, ellipk } from '../../numerics/special/index.ts'
 import type { ZerosPolesGainData } from '../../systems/index.ts'
@@ -40,7 +40,7 @@ function unpack(s: ZerosPolesGainData): Zpk {
 }
 
 function order(n: number): number {
-  if (!Number.isInteger(n) || n < 0) throw new WhiteboxError('value', 'the filter order must be a non-negative integer')
+  if (!Number.isInteger(n) || n < 0) throw new MdmlError('value', 'the filter order must be a non-negative integer')
   return n
 }
 
@@ -56,7 +56,7 @@ const neg = (z: ComplexNumber): ComplexNumber => C.of(-z.re, -z.im)
  * @concept iir-design
  * @example
  * ```ts
- * import { buttap } from 'whitebox-engine/signal'
+ * import { buttap } from 'mdml-engine/signal'
  * buttap(1) // => { zeros: { re: [], im: [] }, poles: { re: [-1], im: [0] }, gain: 1 }
  * ```
  */
@@ -79,7 +79,7 @@ export function buttap(n: number): ZerosPolesGainData {
  * @concept iir-design
  * @example
  * ```ts
- * import { cheb1ap } from 'whitebox-engine/signal'
+ * import { cheb1ap } from 'mdml-engine/signal'
  * Math.round(cheb1ap(1, 3).poles.re[0] * 1e6) / 1e6 // => -1.002377
  * ```
  */
@@ -108,7 +108,7 @@ export function cheb1ap(n: number, rp: number): ZerosPolesGainData {
  * @concept iir-design
  * @example
  * ```ts
- * import { cheb2ap } from 'whitebox-engine/signal'
+ * import { cheb2ap } from 'mdml-engine/signal'
  * cheb2ap(2, 20).zeros.re.length // => 2
  * ```
  */
@@ -139,11 +139,11 @@ export function cheb2ap(n: number, rs: number): ZerosPolesGainData {
  * @param rp - Passband ripple in dB.
  * @param rs - Stopband attenuation in dB.
  * @returns Zeros, poles and gain.
- * @throws WhiteboxError with code `value` for impossible specifications.
+ * @throws MdmlError with code `value` for impossible specifications.
  * @concept iir-design
  * @example
  * ```ts
- * import { ellipap } from 'whitebox-engine/signal'
+ * import { ellipap } from 'mdml-engine/signal'
  * ellipap(3, 1, 40).poles.re.length // => 3
  * ```
  */
@@ -157,7 +157,7 @@ export function ellipap(n: number, rp: number, rs: number): ZerosPolesGainData {
   const epsSq = pow10m1(0.1 * rp)
   const eps = Math.sqrt(epsSq)
   const ck1Sq = epsSq / pow10m1(0.1 * rs)
-  if (ck1Sq === 0) throw new WhiteboxError('value', 'ellipap: cannot design a filter with these rp and rs')
+  if (ck1Sq === 0) throw new MdmlError('value', 'ellipap: cannot design a filter with these rp and rs')
   const val0 = item(ellipk(ck1Sq))
   const m = ellipDeg(n, ck1Sq)
   const capk = item(ellipk(m))
@@ -266,7 +266,7 @@ export type BesselNorm = 'phase' | 'delay' | 'mag'
  * @concept iir-design
  * @example
  * ```ts
- * import { besselap } from 'whitebox-engine/signal'
+ * import { besselap } from 'mdml-engine/signal'
  * besselap(1, 'delay') // => { zeros: { re: [], im: [] }, poles: { re: [-1], im: [0] }, gain: 1 }
  * ```
  */
@@ -290,13 +290,13 @@ export function besselap(n: number, norm: BesselNorm = 'phase'): ZerosPolesGainD
   } else if (norm === 'phase') {
     const s = 10 ** (-Math.log10(aLast) / n)
     p = p.map((q) => C.mul(q, s))
-  } else throw new WhiteboxError('value', `besselap: unknown normalisation '${norm as string}'`)
+  } else throw new MdmlError('value', `besselap: unknown normalisation '${norm as string}'`)
   return pack({ z: [], p, k })
 }
 
 function degree(s: Zpk): number {
   const d = s.p.length - s.z.length
-  if (d < 0) throw new WhiteboxError('value', 'improper transfer function: more zeros than poles')
+  if (d < 0) throw new MdmlError('value', 'improper transfer function: more zeros than poles')
   return d
 }
 
@@ -309,7 +309,7 @@ function degree(s: Zpk): number {
  * @concept frequency-transformations
  * @example
  * ```ts
- * import { buttap, lp2lpZpk } from 'whitebox-engine/signal'
+ * import { buttap, lp2lpZpk } from 'mdml-engine/signal'
  * lp2lpZpk(buttap(1), 3).poles.re // => [-3]
  * ```
  */
@@ -327,7 +327,7 @@ export function lp2lpZpk(s: ZerosPolesGainData, wo = 1): ZerosPolesGainData {
  * @concept frequency-transformations
  * @example
  * ```ts
- * import { buttap, lp2hpZpk } from 'whitebox-engine/signal'
+ * import { buttap, lp2hpZpk } from 'mdml-engine/signal'
  * lp2hpZpk(buttap(1), 2).zeros.re // => [0]
  * ```
  */
@@ -355,7 +355,7 @@ function bandSplit(v: ComplexNumber, wo: number): [ComplexNumber, ComplexNumber]
  * @concept frequency-transformations
  * @example
  * ```ts
- * import { buttap, lp2bpZpk } from 'whitebox-engine/signal'
+ * import { buttap, lp2bpZpk } from 'mdml-engine/signal'
  * lp2bpZpk(buttap(1), 1, 1).poles.re.length // => 2
  * ```
  */
@@ -383,7 +383,7 @@ export function lp2bpZpk(s: ZerosPolesGainData, wo = 1, bw = 1): ZerosPolesGainD
  * @concept frequency-transformations
  * @example
  * ```ts
- * import { buttap, lp2bsZpk } from 'whitebox-engine/signal'
+ * import { buttap, lp2bsZpk } from 'mdml-engine/signal'
  * lp2bsZpk(buttap(1), 2, 1).zeros.im // => [2, -2]
  * ```
  */
@@ -417,12 +417,12 @@ export function lp2bsZpk(s: ZerosPolesGainData, wo = 1, bw = 1): ZerosPolesGainD
  * @concept bilinear-transform
  * @example
  * ```ts
- * import { bilinearZpk, buttap } from 'whitebox-engine/signal'
+ * import { bilinearZpk, buttap } from 'mdml-engine/signal'
  * bilinearZpk(buttap(1), 0.5) // => { zeros: { re: [-1], im: [0] }, poles: { re: [0], im: [0] }, gain: 0.5 }
  * ```
  */
 export function bilinearZpk(s: ZerosPolesGainData, fs: number): ZerosPolesGainData {
-  if (!(fs > 0)) throw new WhiteboxError('value', 'bilinearZpk: fs must be positive')
+  if (!(fs > 0)) throw new MdmlError('value', 'bilinearZpk: fs must be positive')
   const u = unpack(s)
   const d = degree(u)
   const fs2 = 2 * fs

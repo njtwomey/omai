@@ -5,7 +5,7 @@
  * graphs.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { type Dag, type DirectedModel, dag, dagEdges, type UndirectedGraph, undirectedGraph } from '../graphs.ts'
 
 /**
@@ -34,11 +34,11 @@ const sortEdges = (es: Iterable<readonly [string, string]>): [string, string][] 
  * @param directed - Directed edges.
  * @param undirected - Undirected edges.
  * @returns The PDAG, edges sorted.
- * @throws WhiteboxError with code `value` when a pair has both a directed and an undirected edge.
+ * @throws MdmlError with code `value` when a pair has both a directed and an undirected edge.
  * @concept markov-equivalence
  * @example
  * ```ts
- * import { pdag } from 'whitebox-engine/pgm/learning'
+ * import { pdag } from 'mdml-engine/pgm/learning'
  * pdag(['a'], [['a', 'b']], [['c', 'b']]).undirected // => [['b', 'c']]
  * ```
  */
@@ -55,7 +55,7 @@ export function pdag(
   const u = new Map(undirected.map(([a, b]) => [pair(a, b).join('\u0000'), pair(a, b)]))
   for (const [a, b] of directed) {
     if (u.has(pair(a, b).join('\u0000')))
-      throw new WhiteboxError('value', `pdag: ${a}-${b} is both directed and undirected`)
+      throw new MdmlError('value', `pdag: ${a}-${b} is both directed and undirected`)
   }
   return {
     kind: 'pdag',
@@ -82,8 +82,8 @@ function adjacency(g: DirectedModel | Pdag): UndirectedGraph {
  * @concept markov-equivalence
  * @example
  * ```ts
- * import { dag, graphEdges } from 'whitebox-engine/pgm'
- * import { skeleton } from 'whitebox-engine/pgm/learning'
+ * import { dag, graphEdges } from 'mdml-engine/pgm'
+ * import { skeleton } from 'mdml-engine/pgm/learning'
  * graphEdges(skeleton(dag([['b', 'a']]))) // => [['a', 'b']]
  * ```
  */
@@ -100,8 +100,8 @@ export function skeleton(g: DirectedModel | Pdag): UndirectedGraph {
  * @concept markov-equivalence
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { immoralities } from 'whitebox-engine/pgm/learning'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { immoralities } from 'mdml-engine/pgm/learning'
  * immoralities(dag([['a', 'c'], ['b', 'c'], ['c', 'd']])) // => [['a', 'c', 'b']]
  * ```
  */
@@ -131,8 +131,8 @@ export function immoralities(g: DirectedModel): [string, string, string][] {
  * @concept markov-equivalence
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { isMarkovEquivalent } from 'whitebox-engine/pgm/learning'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { isMarkovEquivalent } from 'mdml-engine/pgm/learning'
  * [isMarkovEquivalent(dag([['a', 'b'], ['b', 'c']]), dag([['c', 'b'], ['b', 'a']])), isMarkovEquivalent(dag([['a', 'b'], ['c', 'b']]), dag([['b', 'a'], ['b', 'c']]))] // => [true, false]
  * ```
  */
@@ -203,7 +203,7 @@ function mutable(p: Pdag): Mutable {
  * @concept markov-equivalence
  * @example
  * ```ts
- * import { pdag, meekRules } from 'whitebox-engine/pgm/learning'
+ * import { pdag, meekRules } from 'mdml-engine/pgm/learning'
  * meekRules(pdag([], [['a', 'b']], [['b', 'c']])).directed // => [['a', 'b'], ['b', 'c']]
  * ```
  */
@@ -275,8 +275,8 @@ export function meekRules(p: Pdag, options: { readonly r4?: boolean } = {}): Pda
  * @concept markov-equivalence
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { cpdag } from 'whitebox-engine/pgm/learning'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { cpdag } from 'mdml-engine/pgm/learning'
  * const c = cpdag(dag([['a', 'c'], ['b', 'c'], ['c', 'd']]))
  * [c.directed, c.undirected] // => [[['a', 'c'], ['b', 'c'], ['c', 'd']], []]
  * ```
@@ -301,12 +301,12 @@ export function cpdag(g: DirectedModel): Pdag {
  *
  * @param p - The PDAG.
  * @returns A DAG with the same skeleton, the same orientations and no new immoralities.
- * @throws WhiteboxError with code `value` when the PDAG has no consistent extension.
+ * @throws MdmlError with code `value` when the PDAG has no consistent extension.
  * @concept markov-equivalence
  * @example
  * ```ts
- * import { dagEdges } from 'whitebox-engine/pgm'
- * import { pdag, pdagToDag } from 'whitebox-engine/pgm/learning'
+ * import { dagEdges } from 'mdml-engine/pgm'
+ * import { pdag, pdagToDag } from 'mdml-engine/pgm/learning'
  * dagEdges(pdagToDag(pdag([], [], [['a', 'b'], ['b', 'c']]))).length // => 2
  * ```
  */
@@ -326,7 +326,7 @@ export function pdagToDag(p: Pdag): Dag {
         break
       }
     }
-    if (pick === undefined) throw new WhiteboxError('value', 'pdagToDag: the PDAG has no consistent extension')
+    if (pick === undefined) throw new MdmlError('value', 'pdagToDag: the PDAG has no consistent extension')
     for (const y of m.undirectedNeighbours(pick).filter(alive)) {
       edges.push([y, pick])
       m.orient(y, pick)
@@ -346,8 +346,8 @@ export function pdagToDag(p: Pdag): Dag {
  * @concept structure-learning
  * @example
  * ```ts
- * import { dag } from 'whitebox-engine/pgm'
- * import { structuralHammingDistance } from 'whitebox-engine/pgm/learning'
+ * import { dag } from 'mdml-engine/pgm'
+ * import { structuralHammingDistance } from 'mdml-engine/pgm/learning'
  * structuralHammingDistance(dag([['a', 'b'], ['b', 'c']]), dag([['b', 'a'], ['a', 'c']], ['b'])) // => 3
  * ```
  */

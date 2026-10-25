@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { sweepAt, type ThresholdSweep } from 'whitebox-engine/exposition'
+import { sweepAt, type ThresholdSweep } from 'mdml-engine/exposition'
 import { histogram } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -263,8 +263,8 @@ export function thresholdPanelOption(panel: Panel, figure: Figure): EChartsOptio
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { analyseThresholds } from 'whitebox-engine/metrics'
- * import { thresholdSweepView } from 'whitebox-render/views'
+ * import { analyseThresholds } from 'mdml-engine/metrics'
+ * import { thresholdSweepView } from 'mdml-render/views'
  * const r = analyseThresholds([0, 0, 1, 1], [0.1, 0.6, 0.4, 0.9], { costs: [[0, 1], [5, 0]] })
  * thresholdSweepView(r, { threshold: 0.5 }).grid.length // => 4
  * ```

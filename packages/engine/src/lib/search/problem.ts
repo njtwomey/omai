@@ -4,7 +4,7 @@
  * paths; the effective branching factor; problems over explicit graphs; and the search tree as a drawable structure.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Graph, type NodeId, nodeIndex } from '../graph/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import { type Structure, type StructureNode, structure } from '../scene/index.ts'
@@ -114,7 +114,7 @@ export interface SearchOptions extends SearchRunOptions {
  * @returns A function from states to keys.
  * @example
  * ```ts
- * import { stateKeyOf } from 'whitebox-engine/search'
+ * import { stateKeyOf } from 'mdml-engine/search'
  * stateKeyOf({})([1, 2]) // => '[1,2]'
  * stateKeyOf({ key: (s: number[]) => s.length })([1, 2]) // => 2
  * ```
@@ -131,7 +131,7 @@ export function stateKeyOf<S>(problem: { key?(state: S): StateKey }): (state: S)
  * @returns A node for the initial state with cost 0 and depth 0.
  * @example
  * ```ts
- * import { rootNode } from 'whitebox-engine/search'
+ * import { rootNode } from 'mdml-engine/search'
  * rootNode({ initial: 'a', actions: () => [], result: (s: string) => s, isGoal: () => false }).depth // => 0
  * ```
  */
@@ -146,10 +146,10 @@ export function rootNode<S, A>(problem: SearchProblem<S, A>): SearchNode<S, A> {
  * @param parent - The node.
  * @param action - An action available in the node's state.
  * @returns The child node.
- * @throws WhiteboxError with code `value` when the step cost is negative or not a number.
+ * @throws MdmlError with code `value` when the step cost is negative or not a number.
  * @example
  * ```ts
- * import { childNode, rootNode } from 'whitebox-engine/search'
+ * import { childNode, rootNode } from 'mdml-engine/search'
  * const p = { initial: 0, actions: () => [1, 2], result: (s: number, a: number) => s + a, isGoal: () => false }
  * childNode(p, rootNode(p), 2).state // => 2
  * ```
@@ -157,7 +157,7 @@ export function rootNode<S, A>(problem: SearchProblem<S, A>): SearchNode<S, A> {
 export function childNode<S, A>(problem: SearchProblem<S, A>, parent: SearchNode<S, A>, action: A): SearchNode<S, A> {
   const state = problem.result(parent.state, action)
   const step = problem.stepCost === undefined ? 1 : problem.stepCost(parent.state, action, state)
-  if (!(step >= 0)) throw new WhiteboxError('value', `search: step cost ${step} must be a non-negative number`)
+  if (!(step >= 0)) throw new MdmlError('value', `search: step cost ${step} must be a non-negative number`)
   return { state, parent, action, pathCost: parent.pathCost + step, depth: parent.depth + 1 }
 }
 
@@ -169,7 +169,7 @@ export function childNode<S, A>(problem: SearchProblem<S, A>, parent: SearchNode
  * @returns The child nodes.
  * @example
  * ```ts
- * import { expand, rootNode } from 'whitebox-engine/search'
+ * import { expand, rootNode } from 'mdml-engine/search'
  * const p = { initial: 0, actions: () => [1, 2], result: (s: number, a: number) => s + a, isGoal: () => false }
  * expand(p, rootNode(p)).map((n) => n.state) // => [1, 2]
  * ```
@@ -185,7 +185,7 @@ export function expand<S, A>(problem: SearchProblem<S, A>, node: SearchNode<S, A
  * @returns The path of nodes, root first.
  * @example
  * ```ts
- * import { childNode, pathNodes, rootNode } from 'whitebox-engine/search'
+ * import { childNode, pathNodes, rootNode } from 'mdml-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: () => false }
  * pathNodes(childNode(p, rootNode(p), 1)).length // => 2
  * ```
@@ -203,7 +203,7 @@ export function pathNodes<S, A>(node: SearchNode<S, A>): SearchNode<S, A>[] {
  * @returns The states, initial first.
  * @example
  * ```ts
- * import { childNode, rootNode, solutionPath } from 'whitebox-engine/search'
+ * import { childNode, rootNode, solutionPath } from 'mdml-engine/search'
  * const p = { initial: 0, actions: () => [5], result: (s: number, a: number) => s + a, isGoal: () => false }
  * solutionPath(childNode(p, rootNode(p), 5)) // => [0, 5]
  * ```
@@ -219,7 +219,7 @@ export function solutionPath<S, A>(node: SearchNode<S, A>): S[] {
  * @returns The actions, first first.
  * @example
  * ```ts
- * import { childNode, rootNode, solutionActions } from 'whitebox-engine/search'
+ * import { childNode, rootNode, solutionActions } from 'mdml-engine/search'
  * const p = { initial: 0, actions: () => [5], result: (s: number, a: number) => s + a, isGoal: () => false }
  * solutionActions(childNode(p, rootNode(p), 5)) // => [5]
  * ```
@@ -237,10 +237,10 @@ export function solutionActions<S, A>(node: SearchNode<S, A>): A[] {
  * @param problem - The problem.
  * @param actions - The actions.
  * @returns The final state, the path cost, and whether the final state is a goal.
- * @throws WhiteboxError with code `value` when an action is not available in the state it is applied to.
+ * @throws MdmlError with code `value` when an action is not available in the state it is applied to.
  * @example
  * ```ts
- * import { replay } from 'whitebox-engine/search'
+ * import { replay } from 'mdml-engine/search'
  * const p = { initial: 0, actions: () => [1, 2], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * replay(p, [1, 2]) // => { state: 3, cost: 2, goal: true }
  * ```
@@ -254,7 +254,7 @@ export function replay<S, A>(
   for (const a of actions) {
     const available = problem.actions(node.state)
     const match = available.find((b) => same(a, b))
-    if (match === undefined) throw new WhiteboxError('value', `replay: action ${JSON.stringify(a)} is not available`)
+    if (match === undefined) throw new MdmlError('value', `replay: action ${JSON.stringify(a)} is not available`)
     node = childNode(problem, node, match)
   }
   return { state: node.state, cost: node.pathCost, goal: problem.isGoal(node.state) }
@@ -269,7 +269,7 @@ export function replay<S, A>(
  * @returns b*, or NaN when the depth is not positive.
  * @example
  * ```ts
- * import { effectiveBranchingFactor } from 'whitebox-engine/search'
+ * import { effectiveBranchingFactor } from 'mdml-engine/search'
  * effectiveBranchingFactor(52, 5).toFixed(2) // => '1.92'
  * effectiveBranchingFactor(6, 2) // => 2
  * ```
@@ -296,15 +296,15 @@ export function effectiveBranchingFactor(generated: number, depth: number): numb
  * its successors in adjacency order, step costs are edge weights (the smallest of parallel edges), and the goal is
  * the target node.
  *
- * @param g - The graph (from `whitebox-engine/graph`).
+ * @param g - The graph (from `mdml-engine/graph`).
  * @param source - The start node.
  * @param target - The goal node.
  * @param options - A heuristic on node indices (default 0).
  * @returns The problem; states are labelled by the graph's node labels.
  * @example
  * ```ts
- * import { graph } from 'whitebox-engine/graph'
- * import { graphProblem, uniformCostSearch } from 'whitebox-engine/search'
+ * import { graph } from 'mdml-engine/graph'
+ * import { graphProblem, uniformCostSearch } from 'mdml-engine/search'
  * const g = graph([['a', 'b', 1], ['b', 'c', 1], ['a', 'c', 3]])
  * uniformCostSearch(graphProblem(g, 'a', 'c')).cost // => 2
  * ```
@@ -347,10 +347,10 @@ export function graphProblem(
  * @param options - How to label states (default `String`) and actions (default `JSON.stringify` unless strings or
  * numbers).
  * @returns The structure (type `search-tree`).
- * @throws WhiteboxError with code `value` when the result holds no tree.
+ * @throws MdmlError with code `value` when the result holds no tree.
  * @example
  * ```ts
- * import { breadthFirstSearch, searchTree } from 'whitebox-engine/search'
+ * import { breadthFirstSearch, searchTree } from 'mdml-engine/search'
  * const p = { initial: 1, actions: (s: number) => (s < 4 ? [0, 1] : []), result: (s: number, a: number) => 2 * s + a, isGoal: (s: number) => s === 5 }
  * searchTree(breadthFirstSearch(p, { recordTree: true })).nodes.length // => 5
  * ```
@@ -360,7 +360,7 @@ export function searchTree<S, A>(
   options: { readonly label?: (state: S) => string; readonly actionLabel?: (action: A) => string } = {},
 ): Structure {
   const tree = result.tree
-  if (tree === undefined) throw new WhiteboxError('value', 'searchTree: run the search with recordTree: true')
+  if (tree === undefined) throw new MdmlError('value', 'searchTree: run the search with recordTree: true')
   const label = options.label ?? ((s: S) => (typeof s === 'string' ? s : JSON.stringify(s)))
   const actionLabel = options.actionLabel ?? ((a: A) => (typeof a === 'string' ? a : JSON.stringify(a)))
   const ids = new Map<SearchNode<S, A>, string>()

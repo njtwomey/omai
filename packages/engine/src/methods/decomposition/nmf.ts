@@ -5,7 +5,7 @@
  * class.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -267,7 +267,7 @@ export function nmf(hyper: NmfHyper = {}): Estimator<NmfHyper, FittedNmf> {
         }),
       fit: (data, h, options) => {
         const x = asRows(data.x, 'nmf')
-        if (x.some((r) => r.some((v) => v < 0))) throw new WhiteboxError('value', 'nmf: the data must be non-negative')
+        if (x.some((r) => r.some((v) => v < 0))) throw new MdmlError('value', 'nmf: the data must be non-negative')
         const n = x.length
         const d = x[0]?.length ?? 0
         const k = h.nComponents ?? Math.min(n, d)

@@ -7,9 +7,9 @@ from typing import Any
 import arviz_base as azb
 import arviz_stats as azs
 import numpy as np
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from scipy.special import logsumexp
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {
     "arviz-stats": importlib.metadata.version("arviz-stats"),

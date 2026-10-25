@@ -4,7 +4,7 @@
  * value and condition pairs.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { makeLogic, makePiecewise, makeRel, TRUE } from './_canon.ts'
 import { asExpr, type Expr, type ExprLike, type RelOp } from './expr.ts'
 
@@ -21,7 +21,7 @@ const rel =
  * @returns The relation.
  * @example
  * ```ts
- * import { eq, sym, toText } from 'whitebox-engine/symbolic'
+ * import { eq, sym, toText } from 'mdml-engine/symbolic'
  * toText(eq(sym('x'), 1)) // => 'Eq(x, 1)'
  * ```
  */
@@ -35,7 +35,7 @@ export const eq: (lhs: ExprLike, rhs: ExprLike) => Expr = rel('==')
  * @returns The relation.
  * @example
  * ```ts
- * import { ne, toText } from 'whitebox-engine/symbolic'
+ * import { ne, toText } from 'mdml-engine/symbolic'
  * toText(ne(1, 2)) // => 'True'
  * ```
  */
@@ -49,7 +49,7 @@ export const ne: (lhs: ExprLike, rhs: ExprLike) => Expr = rel('!=')
  * @returns The relation.
  * @example
  * ```ts
- * import { lt, sym, toText } from 'whitebox-engine/symbolic'
+ * import { lt, sym, toText } from 'mdml-engine/symbolic'
  * toText(lt(sym('x'), 0)) // => 'x < 0'
  * ```
  */
@@ -63,7 +63,7 @@ export const lt: (lhs: ExprLike, rhs: ExprLike) => Expr = rel('<')
  * @returns The relation.
  * @example
  * ```ts
- * import { le, pi, toText } from 'whitebox-engine/symbolic'
+ * import { le, pi, toText } from 'mdml-engine/symbolic'
  * toText(le(3, pi)) // => 'True'
  * ```
  */
@@ -77,7 +77,7 @@ export const le: (lhs: ExprLike, rhs: ExprLike) => Expr = rel('<=')
  * @returns The relation.
  * @example
  * ```ts
- * import { gt, sym, toText } from 'whitebox-engine/symbolic'
+ * import { gt, sym, toText } from 'mdml-engine/symbolic'
  * toText(gt(sym('x'), 0)) // => 'x > 0'
  * ```
  */
@@ -91,7 +91,7 @@ export const gt: (lhs: ExprLike, rhs: ExprLike) => Expr = rel('>')
  * @returns The relation.
  * @example
  * ```ts
- * import { ge, sym, toText } from 'whitebox-engine/symbolic'
+ * import { ge, sym, toText } from 'mdml-engine/symbolic'
  * toText(ge(sym('x'), 1)) // => 'x >= 1'
  * ```
  */
@@ -104,7 +104,7 @@ export const ge: (lhs: ExprLike, rhs: ExprLike) => Expr = rel('>=')
  * @returns Their conjunction.
  * @example
  * ```ts
- * import { and, gt, lt, sym, toText } from 'whitebox-engine/symbolic'
+ * import { and, gt, lt, sym, toText } from 'mdml-engine/symbolic'
  * const x = sym('x')
  * toText(and(gt(x, 0), lt(x, 1))) // => '(x > 0) & (x < 1)'
  * ```
@@ -120,7 +120,7 @@ export function and(...conditions: readonly Expr[]): Expr {
  * @returns Their disjunction.
  * @example
  * ```ts
- * import { gt, lt, or, sym, toText } from 'whitebox-engine/symbolic'
+ * import { gt, lt, or, sym, toText } from 'mdml-engine/symbolic'
  * const x = sym('x')
  * toText(or(lt(x, -1), gt(x, 1))) // => '(x > 1) | (x < -1)'
  * ```
@@ -136,7 +136,7 @@ export function or(...conditions: readonly Expr[]): Expr {
  * @returns Its negation.
  * @example
  * ```ts
- * import { lt, not, sym, toText } from 'whitebox-engine/symbolic'
+ * import { lt, not, sym, toText } from 'mdml-engine/symbolic'
  * toText(not(lt(sym('x'), 0))) // => 'x >= 0'
  * ```
  */
@@ -150,16 +150,16 @@ export function not(condition: Expr): Expr {
  *
  * @param pieces - Pairs `[value, condition]`, or a bare value for the last piece.
  * @returns The piecewise expression.
- * @throws WhiteboxError with code `value` when no pieces are given.
+ * @throws MdmlError with code `value` when no pieces are given.
  * @example
  * ```ts
- * import { gt, neg, piecewise, sym, toText } from 'whitebox-engine/symbolic'
+ * import { gt, neg, piecewise, sym, toText } from 'mdml-engine/symbolic'
  * const x = sym('x')
  * toText(piecewise([x, gt(x, 0)], neg(x))) // => 'Piecewise((x, x > 0), (-x, True))'
  * ```
  */
 export function piecewise(...pieces: readonly (readonly [ExprLike, Expr] | ExprLike)[]): Expr {
-  if (pieces.length === 0) throw new WhiteboxError('value', 'piecewise: no pieces')
+  if (pieces.length === 0) throw new MdmlError('value', 'piecewise: no pieces')
   return makePiecewise(
     pieces.map((p) => (Array.isArray(p) ? [asExpr(p[0] as ExprLike), p[1] as Expr] : [asExpr(p as ExprLike), TRUE])),
   )

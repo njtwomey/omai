@@ -3,9 +3,8 @@ Markov blankets, on the Asia and student networks."""
 
 import numpy as np
 import pgmpy
-from pgmpy.inference import VariableElimination
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.pgm import (
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.pgm import (
     ASIA,
     STUDENT,
     NodeSpec,
@@ -18,6 +17,7 @@ from whitebox_oracle.pgm import (
     stable,
     ve_query,
 )
+from pgmpy.inference import VariableElimination
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

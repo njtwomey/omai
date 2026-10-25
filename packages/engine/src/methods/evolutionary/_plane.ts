@@ -4,7 +4,7 @@
  * over contours.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { ackley, himmelblau, rastrigin, rosenbrock, type TestFunction } from '../../lib/datasets/index.ts'
 import { item, tensor, toFlat } from '../../lib/tensor/index.ts'
 
@@ -41,7 +41,7 @@ const FUNCTIONS: Readonly<Record<PlaneFunctionName, () => TestFunction>> = {
  */
 export function planeFunction(name: PlaneFunctionName, resolution = 61): PlaneFunction {
   const make = FUNCTIONS[name]
-  if (make === undefined) throw new WhiteboxError('value', `planeFunction: unknown function '${name}'`)
+  if (make === undefined) throw new MdmlError('value', `planeFunction: unknown function '${name}'`)
   const t = make()
   // Ackley's usual box is mostly flat: look at its centre.
   const [bx = [-5, 5], by = [-5, 5]] = name === 'ackley' ? [[-5, 5] as const, [-5, 5] as const] : t.bounds

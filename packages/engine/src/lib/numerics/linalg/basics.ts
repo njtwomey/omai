@@ -4,7 +4,7 @@
  * definiteness.
  */
 
-import { maxOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import {
   abs,
   allclose,
@@ -96,8 +96,8 @@ export interface SlogdetResult {
  * @concept linear-algebra
  * @example
  * ```ts
- * import { slogdet } from 'whitebox-engine/numerics/linalg'
- * import { item } from 'whitebox-engine/tensor'
+ * import { slogdet } from 'mdml-engine/numerics/linalg'
+ * import { item } from 'mdml-engine/tensor'
  * item(slogdet([[0, 2], [3, 0]]).sign) // => -1
  * ```
  */
@@ -114,8 +114,8 @@ export function slogdet(a: TensorLike): SlogdetResult {
  * @returns det A, differentiable for non-singular A.
  * @example
  * ```ts
- * import { det } from 'whitebox-engine/numerics/linalg'
- * import { item } from 'whitebox-engine/tensor'
+ * import { det } from 'mdml-engine/numerics/linalg'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(det([[1, 2], [3, 4]])) + 2) < 1e-14 // => true
  * ```
  */
@@ -138,8 +138,8 @@ export type NormOrder = 'fro' | 'nuc' | number
  * @concept linear-algebra
  * @example
  * ```ts
- * import { norm } from 'whitebox-engine/numerics/linalg'
- * import { item } from 'whitebox-engine/tensor'
+ * import { norm } from 'mdml-engine/numerics/linalg'
+ * import { item } from 'mdml-engine/tensor'
  * item(norm([3, 4])) // => 5
  * item(norm([[1, 2], [3, 4]], 1)) // => 6
  * ```
@@ -157,7 +157,7 @@ export function norm(x: TensorLike, ord?: NormOrder): Value {
   if (o === -1) return min(sum(abs(v), -2), -1)
   if (o === Number.POSITIVE_INFINITY) return max(sum(abs(v), -1), -1)
   if (o === Number.NEGATIVE_INFINITY) return min(sum(abs(v), -1), -1)
-  throw new WhiteboxError('value', `norm: unsupported matrix norm ${String(o)}`)
+  throw new MdmlError('value', `norm: unsupported matrix norm ${String(o)}`)
 }
 
 function vectorNorm(v: Value, ord: NormOrder): Value {
@@ -167,7 +167,7 @@ function vectorNorm(v: Value, ord: NormOrder): Value {
   if (ord === 0) return sum(greater(abs(v), 0), -1)
   if (ord === 1) return sum(abs(v), -1)
   if (typeof ord === 'number') return powNorm(abs(v), ord)
-  throw new WhiteboxError('value', `norm: unsupported vector norm ${String(ord)}`)
+  throw new MdmlError('value', `norm: unsupported vector norm ${String(ord)}`)
 }
 
 function powNorm(a: Value, p: number): Value {
@@ -183,8 +183,8 @@ function powNorm(a: Value, p: number): Value {
  * @returns The condition number, differentiable.
  * @example
  * ```ts
- * import { cond } from 'whitebox-engine/numerics/linalg'
- * import { item } from 'whitebox-engine/tensor'
+ * import { cond } from 'mdml-engine/numerics/linalg'
+ * import { item } from 'mdml-engine/tensor'
  * item(cond([[2, 0], [0, 0.5]])) // => 4
  * ```
  */
@@ -206,7 +206,7 @@ export function cond(a: TensorLike, p: NormOrder = 2): Value {
  * @returns The rank.
  * @example
  * ```ts
- * import { matrixRank } from 'whitebox-engine/numerics/linalg'
+ * import { matrixRank } from 'mdml-engine/numerics/linalg'
  * matrixRank([[1, 2], [2, 4]]) // => 1
  * ```
  */
@@ -227,13 +227,13 @@ export function matrixRank(a: TensorLike, tol?: number): number {
  * @returns A^k, differentiable.
  * @example
  * ```ts
- * import { matrixPower } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { matrixPower } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(matrixPower([[1, 1], [0, 1]], 3)) // => [[1, 3], [0, 1]]
  * ```
  */
 export function matrixPower(a: TensorLike, k: number): Value {
-  if (!Number.isInteger(k)) throw new WhiteboxError('value', 'matrixPower: the power must be an integer')
+  if (!Number.isInteger(k)) throw new MdmlError('value', 'matrixPower: the power must be an integer')
   const [v] = promoteFloat(a) as [Value]
   const n = squareSize(v.shape, 'matrixPower')
   let base = k < 0 ? inv(v) : v
@@ -255,7 +255,7 @@ export function matrixPower(a: TensorLike, k: number): Value {
  * @returns `true` when symmetric.
  * @example
  * ```ts
- * import { isSymmetric } from 'whitebox-engine/numerics/linalg'
+ * import { isSymmetric } from 'mdml-engine/numerics/linalg'
  * isSymmetric([[1, 2], [2, 1]]) // => true
  * ```
  */
@@ -271,11 +271,11 @@ export function isSymmetric(a: TensorLike, tol = 1e-10): boolean {
  *
  * @param a - Matrix `[..., n, n]`.
  * @returns The symmetric part, same shape.
- * @throws WhiteboxError with code `shape` when the matrices are not square.
+ * @throws MdmlError with code `shape` when the matrices are not square.
  * @example
  * ```ts
- * import { symmetricPart } from 'whitebox-engine/numerics/linalg'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { symmetricPart } from 'mdml-engine/numerics/linalg'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(symmetricPart([[1, 2], [4, 3]])) // => [[1, 3], [3, 3]]
  * ```
  */
@@ -292,7 +292,7 @@ export function symmetricPart(a: TensorLike): Value {
  * @returns `true` when positive definite.
  * @example
  * ```ts
- * import { isPositiveDefinite } from 'whitebox-engine/numerics/linalg'
+ * import { isPositiveDefinite } from 'mdml-engine/numerics/linalg'
  * isPositiveDefinite([[2, 1], [1, 2]]) // => true
  * isPositiveDefinite([[1, 2], [2, 1]]) // => false
  * ```

@@ -3,7 +3,7 @@
  * tabular regression data with a few informative features and one-dimensional regression curves.
  */
 
-import { linearRegression as linearRegressionMethod } from 'whitebox-engine/methods/linear'
+import { linearRegression as linearRegressionMethod } from 'mdml-engine/methods/linear'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

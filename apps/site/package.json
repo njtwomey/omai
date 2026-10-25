@@ -1,9 +1,9 @@
 {
-  "name": "whitebox-site",
+  "name": "mdml-site",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "The whitebox-js site: the render gallery, the hub and the engine docs in one app.",
+  "description": "The mdml-js site: the render gallery, the hub and the engine docs in one app.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,10 +12,10 @@
   "dependencies": {
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "whitebox-engine": "workspace:*",
-    "whitebox-hub": "workspace:*",
-    "whitebox-meta": "workspace:*",
-    "whitebox-render": "workspace:*"
+    "mdml-engine": "workspace:*",
+    "mdml-hub": "workspace:*",
+    "mdml-meta": "workspace:*",
+    "mdml-render": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

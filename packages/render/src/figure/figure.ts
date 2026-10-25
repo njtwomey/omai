@@ -4,7 +4,7 @@
  * the padding.
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
+import { MdmlError } from 'mdml-engine/base'
 import type { ColourMode } from '../theme/tokens.ts'
 
 /** Where a figure will be shown; each medium has a default width, aspect and type size. */
@@ -71,10 +71,10 @@ export const MEDIA: Readonly<
  *
  * @param aspect - The aspect.
  * @returns Width over height.
- * @throws WhiteboxError with code `value` for a non-positive or malformed aspect.
+ * @throws MdmlError with code `value` for a non-positive or malformed aspect.
  * @example
  * ```ts
- * import { parseAspect } from 'whitebox-render/figure'
+ * import { parseAspect } from 'mdml-render/figure'
  * parseAspect('2:1') // => 2
  * parseAspect(1.5) // => 1.5
  * ```
@@ -87,7 +87,7 @@ export function parseAspect(aspect: number | string): number {
           const [w, h] = aspect.split(':').map(Number)
           return w !== undefined && h !== undefined ? w / h : Number.NaN
         })()
-  if (!(value > 0 && Number.isFinite(value))) throw new WhiteboxError('value', `figure: bad aspect '${aspect}'`)
+  if (!(value > 0 && Number.isFinite(value))) throw new MdmlError('value', `figure: bad aspect '${aspect}'`)
   return value
 }
 
@@ -99,7 +99,7 @@ export function parseAspect(aspect: number | string): number {
  * @returns The figure.
  * @example
  * ```ts
- * import { figure } from 'whitebox-render/figure'
+ * import { figure } from 'mdml-render/figure'
  * figure().height // => 400
  * figure({ medium: 'slide' }).height // => 540
  * figure({ width: 400, aspect: '2:1' }).height // => 200
@@ -109,7 +109,7 @@ export function figure(options: FigureOptions = {}): Figure {
   const medium = options.medium ?? 'page'
   const d = MEDIA[medium]
   const width = options.width ?? d.width
-  if (!(width > 0)) throw new WhiteboxError('value', 'figure: width must be positive')
+  if (!(width > 0)) throw new MdmlError('value', 'figure: width must be positive')
   const aspect =
     options.height !== undefined
       ? parseAspect(width / options.height)
@@ -139,7 +139,7 @@ export function figure(options: FigureOptions = {}): Figure {
  * @returns The scaled figure.
  * @example
  * ```ts
- * import { figure, scaleFigure } from 'whitebox-render/figure'
+ * import { figure, scaleFigure } from 'mdml-render/figure'
  * scaleFigure(figure(), 1280).height // => 800
  * ```
  */
@@ -170,7 +170,7 @@ export interface Rect {
  * @returns The rectangle.
  * @example
  * ```ts
- * import { figure, plotArea } from 'whitebox-render/figure'
+ * import { figure, plotArea } from 'mdml-render/figure'
  * plotArea(figure()).width // => 564
  * ```
  */

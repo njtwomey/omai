@@ -4,7 +4,7 @@
  * frequency table or by adaptive counts.
  */
 
-import { pairwiseSum, WhiteboxError } from '../base/index.ts'
+import { MdmlError, pairwiseSum } from '../base/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { float } from './_shared.ts'
 
@@ -34,11 +34,10 @@ function model(spec: FrequencyModel, name: string): Model {
   const counts = adaptive
     ? new Array<number>(spec.alphabetSize).fill(1)
     : spec.frequencies.map((f) => {
-        if (!Number.isInteger(f) || f < 0)
-          throw new WhiteboxError('value', `${name}: frequencies must be integers >= 0`)
+        if (!Number.isInteger(f) || f < 0) throw new MdmlError('value', `${name}: frequencies must be integers >= 0`)
         return f
       })
-  if (counts.length === 0) throw new WhiteboxError('value', `${name}: empty alphabet`)
+  if (counts.length === 0) throw new MdmlError('value', `${name}: empty alphabet`)
   const increment = adaptive ? (spec.increment ?? 1) : 0
   let cumulative: number[] = []
   const rebuild = (): void => {
@@ -48,7 +47,7 @@ function model(spec: FrequencyModel, name: string): Model {
   rebuild()
   const total = (): number => cumulative[counts.length] ?? 0
   if (total() > MAX_TOTAL || total() === 0)
-    throw new WhiteboxError('value', `${name}: the frequencies must total between 1 and ${MAX_TOTAL}`)
+    throw new MdmlError('value', `${name}: the frequencies must total between 1 and ${MAX_TOTAL}`)
   return {
     size: counts.length,
     total,
@@ -76,7 +75,7 @@ function model(spec: FrequencyModel, name: string): Model {
 
 function checkSymbol(m: Model, s: number, name: string): void {
   if (!Number.isInteger(s) || s < 0 || s >= m.size || m.freq(s) === 0)
-    throw new WhiteboxError('value', `${name}: symbol ${s} has zero probability or is out of range`)
+    throw new MdmlError('value', `${name}: symbol ${s} has zero probability or is out of range`)
 }
 
 /**
@@ -89,17 +88,17 @@ function checkSymbol(m: Model, s: number, name: string): void {
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { frequencyTable } from 'whitebox-engine/information'
+ * import { frequencyTable } from 'mdml-engine/information'
  * frequencyTable([0.5, 0.3, 0.2], 10) // => [5, 3, 2]
  * ```
  */
 export function frequencyTable(probs: TensorLike, total: number = MAX_TOTAL): number[] {
   const p = toFlat(float(probs))
   const sum = pairwiseSum(p)
-  if (p.some((v) => !(v >= 0)) || !(sum > 0)) throw new WhiteboxError('value', 'frequencyTable: invalid probabilities')
+  if (p.some((v) => !(v >= 0)) || !(sum > 0)) throw new MdmlError('value', 'frequencyTable: invalid probabilities')
   const positive = p.filter((v) => v > 0).length
   if (!Number.isInteger(total) || total < positive || total > MAX_TOTAL)
-    throw new WhiteboxError('value', `frequencyTable: total must be an integer in [${positive}, ${MAX_TOTAL}]`)
+    throw new MdmlError('value', `frequencyTable: total must be an integer in [${positive}, ${MAX_TOTAL}]`)
   const spare = total - positive
   const exact = p.map((v) => (v / sum) * spare)
   const freq = p.map((v, i) => (v > 0 ? 1 + Math.floor(exact[i] ?? 0) : 0))
@@ -131,7 +130,7 @@ const QUARTER = 2 ** 30
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { arithmeticDecode, arithmeticEncode } from 'whitebox-engine/information'
+ * import { arithmeticDecode, arithmeticEncode } from 'mdml-engine/information'
  * const spec = { kind: 'static', frequencies: [3, 1] } as const
  * const bits = arithmeticEncode([0, 0, 1, 0, 0, 0], spec)
  * arithmeticDecode(bits, 6, spec) // => [0, 0, 1, 0, 0, 0]
@@ -185,7 +184,7 @@ export function arithmeticEncode(symbols: readonly number[], spec: FrequencyMode
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { arithmeticDecode, arithmeticEncode } from 'whitebox-engine/information'
+ * import { arithmeticDecode, arithmeticEncode } from 'mdml-engine/information'
  * const spec = { kind: 'adaptive', alphabetSize: 3 } as const
  * arithmeticDecode(arithmeticEncode([2, 2, 2, 1], spec), 4, spec) // => [2, 2, 2, 1]
  * ```
@@ -238,7 +237,7 @@ const u32 = (x: number): number => x >>> 0
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { rangeDecode, rangeEncode } from 'whitebox-engine/information'
+ * import { rangeDecode, rangeEncode } from 'mdml-engine/information'
  * const spec = { kind: 'static', frequencies: [6, 1, 1] } as const
  * rangeDecode(rangeEncode([0, 0, 1, 0, 2], spec), 5, spec) // => [0, 0, 1, 0, 2]
  * ```
@@ -284,7 +283,7 @@ export function rangeEncode(symbols: readonly number[], spec: FrequencyModel): U
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { rangeDecode, rangeEncode } from 'whitebox-engine/information'
+ * import { rangeDecode, rangeEncode } from 'mdml-engine/information'
  * const spec = { kind: 'adaptive', alphabetSize: 2 } as const
  * rangeDecode(rangeEncode([1, 1, 1, 0, 1], spec), 5, spec) // => [1, 1, 1, 0, 1]
  * ```

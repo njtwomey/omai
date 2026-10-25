@@ -1,7 +1,7 @@
 // Internal helpers of the chart builders: converting inputs to plain numbers and resolving colours.
-import { WhiteboxError } from 'whitebox-engine/base'
-import type { Paint } from 'whitebox-engine/scene'
-import { asTensor, type TensorLike, toFlat } from 'whitebox-engine/tensor'
+import { MdmlError } from 'mdml-engine/base'
+import type { Paint } from 'mdml-engine/scene'
+import { asTensor, type TensorLike, toFlat } from 'mdml-engine/tensor'
 import { categoricalColour } from '../theme/palettes.ts'
 import { type ColourMode, resolvePaint } from '../theme/tokens.ts'
 
@@ -21,7 +21,7 @@ export interface Grid2D {
 /** A 2-D grid from nested arrays or a 2-D tensor. */
 export function grid2d(z: TensorLike, name: string): Grid2D {
   const t = asTensor(z)
-  if (!('shape' in t) || t.shape.length !== 2) throw new WhiteboxError('shape', `${name}: the grid must be 2-D`)
+  if (!('shape' in t) || t.shape.length !== 2) throw new MdmlError('shape', `${name}: the grid must be 2-D`)
   const [rows = 0, cols = 0] = t.shape
   return { rows, cols, values: Float64Array.from(toFlat(t)) }
 }
@@ -50,7 +50,7 @@ export function axisCoords(coords: readonly number[] | readonly [number, number]
     const [a = 0, b = 1] = coords
     return Array.from({ length: n }, (_, i) => (n === 1 ? (a + b) / 2 : a + ((b - a) * i) / (n - 1)))
   }
-  throw new WhiteboxError('shape', 'axis coordinates: give one value per grid line or a [low, high] range')
+  throw new MdmlError('shape', 'axis coordinates: give one value per grid line or a [low, high] range')
 }
 
 /** The colour mode of a chart's options: the stated mode, else the figure's, else light. */

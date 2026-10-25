@@ -5,10 +5,10 @@ Systems: random stabilisable ones of a few sizes and the zero-order-hold double 
 
 import numpy as np
 import scipy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng, spd
 from scipy.linalg import solve, solve_discrete_are
 from scipy.signal import cont2discrete
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng, spd
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

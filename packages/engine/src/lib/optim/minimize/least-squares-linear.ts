@@ -4,7 +4,7 @@
  * (`scipy.optimize.lsq_linear`), both as traced algorithms.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2 } from '../../numerics/linalg/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -49,10 +49,10 @@ export interface ActiveSetState {
 
 function matrix(a: TensorLike, b: TensorLike): { A: Float64Array; bv: Float64Array; m: number; n: number } {
   const At = asTensor(a)
-  if (At.shape.length !== 2) throw new WhiteboxError('shape', 'A must be a matrix')
+  if (At.shape.length !== 2) throw new MdmlError('shape', 'A must be a matrix')
   const [m, n] = At.shape as [number, number]
   const bv = Float64Array.from(toFlat(asTensor(b)))
-  if (bv.length !== m) throw new WhiteboxError('shape', `b has ${bv.length} entries for ${m} rows`)
+  if (bv.length !== m) throw new MdmlError('shape', `b has ${bv.length} entries for ${m} rows`)
   return { A: Float64Array.from(toFlat(At)), bv, m, n }
 }
 
@@ -104,7 +104,7 @@ const observe = (s: ActiveSetState) => ({
  * @reference C. L. Lawson and R. J. Hanson, Solving Least Squares Problems, Prentice-Hall (1974), chapter 23.
  * @example
  * ```ts
- * import { nnlsAlgorithm } from 'whitebox-engine/optim'
+ * import { nnlsAlgorithm } from 'mdml-engine/optim'
  * nnlsAlgorithm([[1, 0], [0, 1]], [1, -1]).name // => 'nnls'
  * ```
  */
@@ -238,8 +238,8 @@ function finish(
  * @concept least-squares
  * @example
  * ```ts
- * import { nnls } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { nnls } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * const r = nnls([[1, 0], [1, 0], [0, 1]], [2, 1, -1])
  * [toArray(r.x), r.residualNorm] // => [[1.5, 0], 1.224744871391589]
  * ```
@@ -264,7 +264,7 @@ export function nnls(a: TensorLike, b: TensorLike, options: LinearLeastSquaresOp
  * Statistics 10 (1995).
  * @example
  * ```ts
- * import { bvlsAlgorithm } from 'whitebox-engine/optim'
+ * import { bvlsAlgorithm } from 'mdml-engine/optim'
  * bvlsAlgorithm([[1, 0], [0, 1]], [3, -3], { lower: -1, upper: 1 }).name // => 'bvls'
  * ```
  */
@@ -408,8 +408,8 @@ export interface LsqLinearOptions extends LinearLeastSquaresOptions {
  * @concept least-squares
  * @example
  * ```ts
- * import { lsqLinear } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lsqLinear } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * const r = lsqLinear([[1, 0], [0, 1], [1, 1]], [2, 2, 2], { bounds: { lower: 0, upper: 0.5 } })
  * [toArray(r.x), r.activeMask] // => [[0.5, 0.5], [1, 1]]
  * ```

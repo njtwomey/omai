@@ -9,9 +9,9 @@ import numpy as np
 import sewar.full_ref as S
 import skimage.metrics as K
 import torch
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from torchmetrics.functional.image import universal_image_quality_index
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {
     "scikit-image": version("scikit-image"),

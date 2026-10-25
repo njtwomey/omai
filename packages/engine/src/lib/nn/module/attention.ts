@@ -4,7 +4,7 @@
  * and value head) with rotary positions and a KV cache of earlier positions for incremental decoding.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   asTensor,
@@ -82,9 +82,9 @@ export interface MultiheadAttentionOptions {
  * @concept attention
  * @example
  * ```ts
- * import { MultiheadAttention } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { MultiheadAttention } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { zeros } from 'mdml-engine/tensor'
  * new MultiheadAttention(8, 2, { batchFirst: true, key: key(0) }).forward(zeros([3, 5, 8])).weights?.shape // => [3, 5, 5]
  * ```
  */
@@ -103,7 +103,7 @@ export class MultiheadAttention extends Module<Value | AttentionInput, Attention
   constructor(embedDim: number, numHeads: number, options: MultiheadAttentionOptions = {}) {
     super()
     if (embedDim % numHeads !== 0)
-      throw new WhiteboxError('value', `MultiheadAttention: ${embedDim} does not divide into ${numHeads} heads`)
+      throw new MdmlError('value', `MultiheadAttention: ${embedDim} does not divide into ${numHeads} heads`)
     this.embedDim = embedDim
     this.numHeads = numHeads
     this.kdim = options.kdim ?? embedDim
@@ -218,7 +218,7 @@ export interface KVCache {
  * @returns A cache with no positions.
  * @example
  * ```ts
- * import { emptyKVCache } from 'whitebox-engine/nn'
+ * import { emptyKVCache } from 'mdml-engine/nn'
  * emptyKVCache(2, 1, 4).keys.shape // => [2, 1, 0, 4]
  * ```
  */
@@ -274,9 +274,9 @@ export interface GroupedQueryOptions {
  *   checkpoints.
  * @example
  * ```ts
- * import { GroupedQueryAttention } from 'whitebox-engine/nn'
- * import { key } from 'whitebox-engine/random'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { GroupedQueryAttention } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { zeros } from 'mdml-engine/tensor'
  * new GroupedQueryAttention(8, 4, { numKvHeads: 2, key: key(0) }).forward({ x: zeros([1, 3, 8]) }).cache.keys.shape // => [1, 2, 3, 2]
  * ```
  */
@@ -299,7 +299,7 @@ export class GroupedQueryAttention extends Module<GroupedQueryInput, GroupedQuer
     this.numHeads = numHeads
     this.numKvHeads = options.numKvHeads ?? numHeads
     if (numHeads % this.numKvHeads !== 0)
-      throw new WhiteboxError('value', `GroupedQueryAttention: ${numHeads} heads do not divide into ${this.numKvHeads}`)
+      throw new MdmlError('value', `GroupedQueryAttention: ${numHeads} heads do not divide into ${this.numKvHeads}`)
     this.headDim = options.headDim ?? embedDim / numHeads
     this.bias = options.bias ?? false
     this.causal = options.causal ?? true

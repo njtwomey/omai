@@ -4,7 +4,7 @@
  * bipartite matching by Hopcroft-Karp, as in NetworkX and scipy.
  */
 
-import { kahanSum, WhiteboxError } from '../base/index.ts'
+import { kahanSum, MdmlError } from '../base/index.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
 import { IndexedQueue } from './structures.ts'
 import { bipartiteColouring } from './traversal.ts'
@@ -31,7 +31,7 @@ function residualNetwork(g: Graph, capacity: ArrayLike<number> | undefined): Res
   const lists: number[][] = Array.from({ length: g.n }, () => [])
   for (const [e, edge] of g.edges.entries()) {
     const c = capacity === undefined ? edge.weight : (capacity[e] ?? 0)
-    if (!(c >= 0)) throw new WhiteboxError('value', `flow: edge ${e} has a negative or missing capacity`)
+    if (!(c >= 0)) throw new MdmlError('value', `flow: edge ${e} has a negative or missing capacity`)
     cap[e] = c
     to[2 * e] = edge.target
     to[2 * e + 1] = edge.source
@@ -52,7 +52,7 @@ function edgeFlows(r: Residual): Float64Array {
 function augment(r: Residual, path: readonly number[]): number {
   let bottleneck = Number.POSITIVE_INFINITY
   for (const a of path) bottleneck = Math.min(bottleneck, r.residual[a] ?? 0)
-  if (bottleneck === Number.POSITIVE_INFINITY) throw new WhiteboxError('value', 'maxFlow: the flow is unbounded')
+  if (bottleneck === Number.POSITIVE_INFINITY) throw new MdmlError('value', 'maxFlow: the flow is unbounded')
   for (const a of path) {
     r.residual[a] = (r.residual[a] ?? 0) - bottleneck
     r.residual[a ^ 1] = (r.residual[a ^ 1] ?? 0) + bottleneck
@@ -163,7 +163,7 @@ function solveMaxFlow(
 ): { r: Residual; s: number; value: number; augmentations: number } {
   const s = nodeIndex(g, source)
   const t = nodeIndex(g, sink)
-  if (s === t) throw new WhiteboxError('value', 'maxFlow: source and sink are the same node')
+  if (s === t) throw new MdmlError('value', 'maxFlow: source and sink are the same node')
   const r = residualNetwork(g, options.capacity)
   const out = options.method === 'edmonds-karp' ? edmondsKarp(r, s, t) : dinic(r, s, t)
   return { r, s, ...out }
@@ -179,11 +179,11 @@ function solveMaxFlow(
  * @param sink - The sink.
  * @param options - Capacities (default the weights) and `method`.
  * @returns The flow value, the flow on each edge and the number of augmenting paths.
- * @throws WhiteboxError with code `value` for a negative capacity, an unbounded flow or source equal to sink.
+ * @throws MdmlError with code `value` for a negative capacity, an unbounded flow or source equal to sink.
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, maxFlow } from 'whitebox-engine/graph'
+ * import { digraph, maxFlow } from 'mdml-engine/graph'
  * const g = digraph([[0, 1, 3], [0, 2, 2], [1, 2, 1], [1, 3, 2], [2, 3, 3]])
  * maxFlow(g, 0, 3).value // => 5
  * maxFlow(g, 0, 3, { method: 'edmonds-karp' }).value // => 5
@@ -220,7 +220,7 @@ export interface MinCut {
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, minCut } from 'whitebox-engine/graph'
+ * import { digraph, minCut } from 'mdml-engine/graph'
  * const c = minCut(digraph([[0, 1, 3], [0, 2, 2], [1, 2, 1], [1, 3, 2], [2, 3, 3]]), 0, 3)
  * [c.value, c.partition[0]] // => [5, [0]]
  * ```
@@ -269,12 +269,12 @@ export interface MinCostFlow {
  * @param options - Capacities (default the weights; Infinity allowed when the cost is non-negative) and the `cost` per
  *   edge (default 1).
  * @returns The total cost and the flow on each edge.
- * @throws WhiteboxError with code `value` for an undirected graph, unbalanced demands, an unbounded negative-cost edge
+ * @throws MdmlError with code `value` for an undirected graph, unbalanced demands, an unbounded negative-cost edge
  *   or infeasible demands.
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, minCostFlow } from 'whitebox-engine/graph'
+ * import { digraph, minCostFlow } from 'mdml-engine/graph'
  * const g = digraph([[0, 1], [0, 2], [1, 3], [2, 3]])
  * const r = minCostFlow(g, [-4, 0, 0, 4], { capacity: [4, 2, 3, 5], cost: [2, 1, 1, 3] })
  * [r.cost, Array.from(r.flow)] // => [13, [3, 1, 3, 1]]
@@ -285,10 +285,10 @@ export function minCostFlow(
   demand: ArrayLike<number>,
   options: FlowOptions & { readonly cost?: ArrayLike<number> } = {},
 ): MinCostFlow {
-  if (!g.directed) throw new WhiteboxError('value', 'minCostFlow: the graph must be directed')
-  if (demand.length !== g.n) throw new WhiteboxError('value', 'minCostFlow: give one demand per node')
+  if (!g.directed) throw new MdmlError('value', 'minCostFlow: the graph must be directed')
+  if (demand.length !== g.n) throw new MdmlError('value', 'minCostFlow: give one demand per node')
   const total = kahanSum(demand)
-  if (Math.abs(total) > 1e-9) throw new WhiteboxError('value', 'minCostFlow: the demands do not sum to zero')
+  if (Math.abs(total) > 1e-9) throw new MdmlError('value', 'minCostFlow: the demands do not sum to zero')
   const m = g.edges.length
   const cost = Float64Array.from({ length: m }, (_, e) => options.cost?.[e] ?? 1)
   // Arcs 0 .. 2m - 1 as in the residual network, then 2m + 2v (virtual source to v) and 2m + 2v + 1 back, and
@@ -315,11 +315,11 @@ export function minCostFlow(
   }
   for (const [e, edge] of g.edges.entries()) {
     const cap = options.capacity === undefined ? edge.weight : (options.capacity[e] ?? 0)
-    if (!(cap >= 0)) throw new WhiteboxError('value', `minCostFlow: edge ${e} has a negative or missing capacity`)
+    if (!(cap >= 0)) throw new MdmlError('value', `minCostFlow: edge ${e} has a negative or missing capacity`)
     const c = cost[e] ?? 0
     if (c < 0) {
       // Saturate: the reverse arc then has positive cost, and the endpoints' balances change.
-      if (cap === Number.POSITIVE_INFINITY) throw new WhiteboxError('value', 'minCostFlow: unbounded negative cost')
+      if (cap === Number.POSITIVE_INFINITY) throw new MdmlError('value', 'minCostFlow: unbounded negative cost')
       addArc(2 * e + 1, edge.target, edge.source, cap, -c)
       flow[e] = cap
       base += c * cap
@@ -358,8 +358,7 @@ export function minCostFlow(
         }
       }
     }
-    if (dist[T] === Number.POSITIVE_INFINITY)
-      throw new WhiteboxError('value', 'minCostFlow: the demands are infeasible')
+    if (dist[T] === Number.POSITIVE_INFINITY) throw new MdmlError('value', 'minCostFlow: the demands are infeasible')
     for (let v = 0; v < nodes; v++)
       if (dist[v] !== Number.POSITIVE_INFINITY) potential[v] = (potential[v] ?? 0) + (dist[v] ?? 0)
     let push = required - routed
@@ -391,7 +390,7 @@ export function minCostFlow(
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, maxFlowMinCost } from 'whitebox-engine/graph'
+ * import { digraph, maxFlowMinCost } from 'mdml-engine/graph'
  * const g = digraph([[0, 1, 1], [0, 2, 1], [1, 3, 1], [2, 3, 1], [1, 2, 1]])
  * const r = maxFlowMinCost(g, 0, 3, { cost: [1, 5, 1, 1, 1] })
  * [r.value, r.cost] // => [2, 8]
@@ -430,13 +429,13 @@ export interface Matching {
  * @param g - A bipartite graph (edge directions are ignored).
  * @param options - The left nodes (default: colour 0 of {@link bipartiteColouring}).
  * @returns The matching size, the partners and the pairs.
- * @throws WhiteboxError with code `value` when the graph is not bipartite or an edge joins two left nodes.
+ * @throws MdmlError with code `value` when the graph is not bipartite or an edge joins two left nodes.
  * @concept matching
  * @reference J. Hopcroft and R. Karp, An n^{5/2} algorithm for maximum matchings in bipartite graphs, SIAM J. Computing
  *   2 (1973).
  * @example
  * ```ts
- * import { bipartiteMatching, graph } from 'whitebox-engine/graph'
+ * import { bipartiteMatching, graph } from 'mdml-engine/graph'
  * bipartiteMatching(graph([[0, 3], [0, 4], [1, 3], [2, 5]])).size // => 3
  * ```
  */
@@ -444,13 +443,13 @@ export function bipartiteMatching(g: Graph, options: { readonly left?: readonly 
   const isLeft = new Uint8Array(g.n)
   if (options.left === undefined) {
     const colour = bipartiteColouring(g)
-    if (colour === null) throw new WhiteboxError('value', 'bipartiteMatching: the graph is not bipartite')
+    if (colour === null) throw new MdmlError('value', 'bipartiteMatching: the graph is not bipartite')
     for (let v = 0; v < g.n; v++) isLeft[v] = colour[v] === 0 ? 1 : 0
   } else for (const v of options.left) isLeft[nodeIndex(g, v)] = 1
   const adj: number[][] = Array.from({ length: g.n }, () => [])
   for (const e of g.edges) {
     if (isLeft[e.source] === isLeft[e.target]) {
-      throw new WhiteboxError('value', `bipartiteMatching: edge (${e.source}, ${e.target}) lies within one side`)
+      throw new MdmlError('value', `bipartiteMatching: edge (${e.source}, ${e.target}) lies within one side`)
     }
     const [l, r] = isLeft[e.source] === 1 ? [e.source, e.target] : [e.target, e.source]
     adj[l]?.push(r)

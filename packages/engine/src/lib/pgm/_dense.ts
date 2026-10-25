@@ -1,6 +1,6 @@
 // Small dense-matrix conveniences over numerics/linalg for the Gaussian models (not re-exported): plain number[][] in,
 // plain number[][] out.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { cholesky, ddot, dgemv, inv, slogdet, solve } from '../numerics/linalg/index.ts'
 import { item, toArray } from '../tensor/index.ts'
 
@@ -27,7 +27,7 @@ export function solveVector(a: Matrix, b: readonly number[]): number[] {
 export function logdetPositive(a: Matrix, name: string): number {
   if (a.length === 0) return 0
   const { sign, logabsdet } = slogdet(a.map((r) => [...r]))
-  if (item(sign) <= 0) throw new WhiteboxError('value', `${name}: the matrix is not positive definite`)
+  if (item(sign) <= 0) throw new MdmlError('value', `${name}: the matrix is not positive definite`)
   return item(logabsdet)
 }
 
@@ -72,5 +72,5 @@ export function symmetrise(a: Matrix): number[][] {
 /** Check a square symmetric matrix of a given size. */
 export function checkSquare(a: Matrix, n: number, name: string): void {
   if (a.length !== n || a.some((r) => r.length !== n))
-    throw new WhiteboxError('shape', `${name}: expected a ${n} x ${n} matrix`)
+    throw new MdmlError('shape', `${name}: expected a ${n} x ${n} matrix`)
 }

@@ -1,7 +1,7 @@
 // Truncated Laurent series in a variable t at 0, as exact coefficient lists with a known absolute order, composed
 // node by node (sums, products, inverses, powers, exp, log, sin, cos and, for any other known function, Taylor
 // composition from its derivatives). A logarithm of t is carried as a placeholder symbol in the coefficients.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { isNegative, isPositive } from './_assume.ts'
 import { WorkExhausted } from './_budget.ts'
 import { isInfinite, isRat, MINUS_ONE, makeAdd, makeMul, makePow, NAN, numFromRational, ONE, ZERO } from './_canon.ts'
@@ -96,7 +96,7 @@ export function sMul(a: S, b: S): S {
 /** Split a = c0 t^v (1 + u): returns [c0, v, u] with u of valuation at least 1. */
 function splitLead(a: S): [Expr, number, S] {
   const c0 = a.c[0]
-  if (c0 === undefined) throw new WhiteboxError('convergence', 'series: not enough terms (cancellation)')
+  if (c0 === undefined) throw new MdmlError('convergence', 'series: not enough terms (cancellation)')
   const inv0 = makePow(c0, MINUS_ONE)
   const m = a.n - a.v
   const u = make(
@@ -149,7 +149,7 @@ export function sPow(a: S, r: Expr): S {
   const [c0, v, u] = splitLead(a)
   const vr = makeMul([numFromRational(rat(BigInt(v))), r])
   if (vr.kind !== 'num' || vr.d !== 1n) {
-    throw new WhiteboxError('not-implemented', 'series: fractional powers of t (Puiseux series) are not supported')
+    throw new MdmlError('not-implemented', 'series: fractional powers of t (Puiseux series) are not supported')
   }
   const m = a.n - a.v
   // (1 + u)^r = Σ binom(r, k) u^k
@@ -179,7 +179,7 @@ function factorial(k: number): bigint {
 
 /** Split a = a0 + u with u of valuation >= 1 (a must have no negative powers). */
 function splitConstant(a: S, what: string): [Expr, S] {
-  if (a.v < 0) throw new WhiteboxError('not-implemented', `series: ${what} has an essential singularity here`)
+  if (a.v < 0) throw new MdmlError('not-implemented', `series: ${what} has an essential singularity here`)
   const a0 = a.v === 0 ? (a.c[0] as Expr) : ZERO
   const u = a.v === 0 ? make(1, a.c.slice(1), a.n) : a
   return [a0, u]
@@ -234,7 +234,7 @@ export function sGeneric(name: string, a: S): S {
   for (let k = 0; k < m; k++) {
     const val = substitute(cur, [[z, a0]])
     if (isInfinite(val) || val.key === NAN.key) {
-      throw new WhiteboxError('not-implemented', `series: ${name} is not analytic at ${a0.key}`)
+      throw new MdmlError('not-implemented', `series: ${name} is not analytic at ${a0.key}`)
     }
     ds.push(makeMul([val, numFromRational(rat(1n, factorial(k)))]))
     cur = diff(cur, z)
@@ -295,15 +295,15 @@ function toSeries1(e: Expr, t: ExprSym, n: number, steps?: Step[]): S {
           if (lead !== undefined && isNegative(lead) === true) return sScale(s, MINUS_ONE)
           const z = lead === undefined ? undefined : evalComplexConstant(lead)
           if (z !== undefined && z[1] === 0) return z[0] >= 0 ? s : sScale(s, MINUS_ONE)
-          throw new WhiteboxError('not-implemented', 'series: Abs of a series with unknown sign')
+          throw new MdmlError('not-implemented', 'series: Abs of a series with unknown sign')
         }
         default:
-          if (e.args.length !== 1) throw new WhiteboxError('not-implemented', `series: ${e.name} of several arguments`)
+          if (e.args.length !== 1) throw new MdmlError('not-implemented', `series: ${e.name} of several arguments`)
           return sGeneric(e.name, go(a))
       }
     }
     default:
-      throw new WhiteboxError('not-implemented', `series: cannot expand a ${e.kind}`)
+      throw new MdmlError('not-implemented', `series: cannot expand a ${e.kind}`)
   }
 }
 
@@ -325,12 +325,12 @@ export function seriesAt0(e: Expr, t: ExprSym, n: number, steps?: Step[]): S {
       s = toSeries(e, t, n + extra, extra === 0 ? steps : undefined)
     } catch (err) {
       // Cancellation is retried with more terms; running out of work is not.
-      if (err instanceof WhiteboxError && err.code === 'convergence' && !(err instanceof WorkExhausted)) continue
+      if (err instanceof MdmlError && err.code === 'convergence' && !(err instanceof WorkExhausted)) continue
       throw err
     }
     if (s.n >= n) return { v: s.v, c: s.c.slice(0, Math.max(0, n - s.v)), n }
   }
-  throw new WhiteboxError('convergence', 'series: too much cancellation to reach the requested order')
+  throw new MdmlError('convergence', 'series: too much cancellation to reach the requested order')
 }
 
 /** Whether a series coefficient is identically 1 (helper for callers). @internal */

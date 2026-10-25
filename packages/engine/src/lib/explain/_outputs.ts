@@ -1,6 +1,6 @@
 // Shared by the perturbation explainers (private to lib/explain): reading a model's target output for many rows, and
 // broadcasting a baseline to every row.
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { asTensor, fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
 import type { Target } from './gradients.ts'
 import type { PredictFunction } from './shapley.ts'
@@ -19,7 +19,7 @@ export function targetOutputs(
   const v = toFlat(out)
   return Float64Array.from({ length: m }, (_, i) => {
     const t = typeof target === 'number' ? target : (target?.[rowOf(i)] ?? 0)
-    if (!(Number.isInteger(t) && t >= 0 && t < k)) throw new WhiteboxError('value', `target ${t} outside [0, ${k})`)
+    if (!(Number.isInteger(t) && t >= 0 && t < k)) throw new MdmlError('value', `target ${t} outside [0, ${k})`)
     return v[i * k + t] ?? 0
   })
 }
@@ -36,5 +36,5 @@ export function baselineRows(
   const b = toFlat(asTensor(baseline))
   if (b.length === n * d) return Float64Array.from(b)
   if (b.length === d) return Float64Array.from({ length: n * d }, (_, i) => b[i % d] ?? 0)
-  throw new WhiteboxError('shape', `${who}: the baseline must be a number, [d] or [n, d]`)
+  throw new MdmlError('shape', `${who}: the baseline must be a number, [d] or [n, d]`)
 }

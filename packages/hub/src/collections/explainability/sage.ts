@@ -1,9 +1,9 @@
 /**
  * The SAGE entry: global importance as each feature's Shapley share of the loss a fitted model removes.
  */
-import { trainTestSplit } from 'whitebox-engine/data'
-import { sageImportance } from 'whitebox-engine/methods/explain'
-import { dict, int } from 'whitebox-engine/space'
+import { trainTestSplit } from 'mdml-engine/data'
+import { sageImportance } from 'mdml-engine/methods/explain'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 import { type ExplainedModel, fitModel, modelControl } from './_explain.ts'

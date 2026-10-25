@@ -1,5 +1,5 @@
 /**
- * The reinforcement-learning environments, part of `whitebox-engine/methods/rl`: gymnasium's classic control and
+ * The reinforcement-learning environments, part of `mdml-engine/methods/rl`: gymnasium's classic control and
  * toy-text tasks, grid worlds, bandits, continuous-control tasks with differentiable models of their dynamics, MinAtar
  * games, procedurally generated mazes, two-player board and card games, and simultaneous-move multi-agent environments,
  * all following the environment contracts of `lib/rl`.

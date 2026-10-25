@@ -27,7 +27,7 @@ export interface Tracer {
  * @returns The no-op tracer.
  * @example
  * ```ts
- * import { nullTracer } from 'whitebox-engine/trace'
+ * import { nullTracer } from 'mdml-engine/trace'
  * nullTracer.enabled // => false
  * ```
  */
@@ -46,7 +46,7 @@ export interface Recorder extends Tracer {
  * @concept tracing
  * @example
  * ```ts
- * import { recorder, startRun } from 'whitebox-engine/trace'
+ * import { recorder, startRun } from 'mdml-engine/trace'
  * const rec = recorder()
  * const run = startRun(rec, { name: 'demo', seed: 0, config: {} })
  * run.metric(0, 'loss', 1.5)
@@ -62,7 +62,7 @@ export function recorder(): Recorder {
     emit: (event) => {
       events.push(event)
     },
-    run: () => ({ schema: 'whitebox.run/1', events: [...events] }),
+    run: () => ({ schema: 'mdml.run/1', events: [...events] }),
   }
 }
 
@@ -73,7 +73,7 @@ export function recorder(): Recorder {
  * @returns The combined tracer.
  * @example
  * ```ts
- * import { tee, recorder } from 'whitebox-engine/trace'
+ * import { tee, recorder } from 'mdml-engine/trace'
  * const a = recorder()
  * const b = recorder()
  * tee(a, b).emit({ type: 'metric', runId: 'r', step: 0, name: 'x', value: 1 })
@@ -97,7 +97,7 @@ export function tee(...tracers: readonly Tracer[]): Tracer {
  * @returns The filtering tracer.
  * @example
  * ```ts
- * import { filtered, recorder } from 'whitebox-engine/trace'
+ * import { filtered, recorder } from 'mdml-engine/trace'
  * const rec = recorder()
  * filtered(rec, (e) => e.type !== 'log').emit({ type: 'log', runId: 'r', step: 0, level: 'info', text: 'hi' })
  * rec.events.length // => 0
@@ -167,7 +167,7 @@ export interface RunHandle {
  * @concept tracing
  * @example
  * ```ts
- * import { recorder, startRun } from 'whitebox-engine/trace'
+ * import { recorder, startRun } from 'mdml-engine/trace'
  * startRun(recorder(), { name: 'sgd', seed: 3, config: { lr: 0.1 } }).runId // => 'sgd:3'
  * ```
  */

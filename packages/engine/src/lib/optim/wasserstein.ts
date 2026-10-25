@@ -5,7 +5,7 @@
  * projections) or free support.
  */
 
-import { type Json, logSumExpOf, WhiteboxError } from '../base/index.ts'
+import { type Json, logSumExpOf, MdmlError } from '../base/index.ts'
 import { type Key, key as makeKey, normal } from '../random/index.ts'
 import {
   abs,
@@ -45,10 +45,10 @@ export interface Wasserstein1dOptions {
 
 function normalisedWeights(w: TensorLike | undefined, n: number, name: string): Vec {
   const out = w === undefined ? new Float64Array(n).fill(1) : Float64Array.from(toFlat(primalOf(asTensor(w))))
-  if (out.length !== n) throw new WhiteboxError('shape', `${name}: one weight per value`)
+  if (out.length !== n) throw new MdmlError('shape', `${name}: one weight per value`)
   let s = 0
   for (const v of out) s += v
-  if (!(s > 0)) throw new WhiteboxError('value', `${name}: the weights must have positive mass`)
+  if (!(s > 0)) throw new MdmlError('value', `${name}: the weights must have positive mass`)
   return Float64Array.from(out, (v) => v / s)
 }
 
@@ -101,15 +101,15 @@ function wassersteinPower(u: Value, v: Value, uw: Vec, vw: Vec, p: number): Valu
  * @concept optimal-transport
  * @example
  * ```ts
- * import { wasserstein1d } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { wasserstein1d } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(wasserstein1d([0, 1, 3], [5, 6, 8])) // => 5
  * ```
  */
 export function wasserstein1d(u: TensorLike, v: TensorLike, options: Wasserstein1dOptions = {}): Value {
   const [uv, vv] = promoteFloat(u, v) as [Value, Value]
   const p = options.p ?? 1
-  if (!(p >= 1)) throw new WhiteboxError('value', `wasserstein1d: p must be at least 1, got ${p}`)
+  if (!(p >= 1)) throw new MdmlError('value', `wasserstein1d: p must be at least 1, got ${p}`)
   const n = uv.shape[0] ?? 0
   const k = vv.shape[0] ?? 0
   const power = wassersteinPower(
@@ -147,15 +147,15 @@ export interface SlicedOptions {
  * @concept optimal-transport
  * @example
  * ```ts
- * import { slicedWasserstein } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { slicedWasserstein } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(slicedWasserstein([[0, 0], [1, 0]], [[0, 2], [1, 2]], { projections: [[0], [1]] })) // => 2
  * ```
  */
 export function slicedWasserstein(x: TensorLike, y: TensorLike, options: SlicedOptions = {}): Value {
   const [xv, yv] = promoteFloat(x, y) as [Value, Value]
   if (xv.shape.length !== 2 || yv.shape.length !== 2 || xv.shape[1] !== yv.shape[1])
-    throw new WhiteboxError('shape', 'slicedWasserstein: the clouds must be [n, d] and [k, d]')
+    throw new MdmlError('shape', 'slicedWasserstein: the clouds must be [n, d] and [k, d]')
   const d = xv.shape[1] ?? 0
   const p = options.p ?? 2
   let theta: Value
@@ -206,7 +206,7 @@ export interface BarycenterState {
  * @concept optimal-transport
  * @example
  * ```ts
- * import { sinkhornBarycenterAlgorithm } from 'whitebox-engine/optim'
+ * import { sinkhornBarycenterAlgorithm } from 'mdml-engine/optim'
  * sinkhornBarycenterAlgorithm([[0.5, 0.1], [0.5, 0.9]], [[0, 1], [1, 0]], 0.1).name // => 'sinkhornBarycenter'
  * ```
  */
@@ -220,7 +220,7 @@ export function sinkhornBarycenterAlgorithm(
   const M = primalOf(promoteFloat(cost)[0] as Value) as Tensor
   const n = A.shape[0] ?? 0
   const N = A.shape[1] ?? 0
-  if (M.shape[0] !== n || M.shape[1] !== n) throw new WhiteboxError('shape', 'sinkhornBarycenter: cost must be [n, n]')
+  if (M.shape[0] !== n || M.shape[1] !== n) throw new MdmlError('shape', 'sinkhornBarycenter: cost must be [n, n]')
   const w = Float64Array.from(options.weights ?? new Float64Array(N).fill(1 / N))
   const tol = options.tol ?? 1e-9
   const logA = Float64Array.from(A.data, (v) => Math.log(v))
@@ -311,8 +311,8 @@ export interface BarycenterResult {
  * @concept optimal-transport
  * @example
  * ```ts
- * import { sinkhornBarycenter } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sinkhornBarycenter } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * // Two identical inputs: the barycentre is (close to) the input.
  * toArray(sinkhornBarycenter([[0.3, 0.3], [0.7, 0.7]], [[0, 1], [1, 0]], 0.05).barycenter).map((v) => Math.round(v * 1e6) / 1e6) // => [0.3, 0.7]
  * ```
@@ -368,7 +368,7 @@ export interface FreeSupportState {
  * @concept optimal-transport
  * @example
  * ```ts
- * import { freeSupportBarycenterAlgorithm } from 'whitebox-engine/optim'
+ * import { freeSupportBarycenterAlgorithm } from 'mdml-engine/optim'
  * freeSupportBarycenterAlgorithm([[[0]], [[2]]], [[1], [1]], [[5]]).name // => 'freeSupportBarycenter'
  * ```
  */
@@ -437,8 +437,8 @@ export function freeSupportBarycenterAlgorithm(
  * @concept optimal-transport
  * @example
  * ```ts
- * import { freeSupportBarycenter } from 'whitebox-engine/optim'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { freeSupportBarycenter } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(freeSupportBarycenter([[[0]], [[2]]], [[1], [1]], [[5]]).support) // => [[1]]
  * ```
  */
@@ -449,7 +449,7 @@ export function freeSupportBarycenter(
   options: FreeSupportOptions = {},
 ): { readonly support: Tensor; readonly iterations: number; readonly converged: boolean } {
   if (locations.length !== masses.length || locations.length === 0)
-    throw new WhiteboxError('value', 'freeSupportBarycenter: give matching locations and masses')
+    throw new MdmlError('value', 'freeSupportBarycenter: give matching locations and masses')
   const { b: _b, weights: _w, tol: _t, maxIterations, ...run } = options
   const X0 = primalOf(promoteFloat(init)[0] as Value)
   const result = runAlgorithm(freeSupportBarycenterAlgorithm(locations, masses, init, options), {

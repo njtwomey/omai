@@ -2,8 +2,8 @@
 expressions per unknown."""
 
 import sympy as sp
-from whitebox_oracle.fixture import Case, Json, case
-from whitebox_oracle.symbolic import SYMBOLS, expr_case, parse
+from mdml_oracle.fixture import Case, Json, case
+from mdml_oracle.symbolic import SYMBOLS, expr_case, parse
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__}
 

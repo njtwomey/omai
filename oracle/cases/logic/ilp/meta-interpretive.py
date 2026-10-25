@@ -4,7 +4,7 @@ example), and the recursive ancestor relation. The expected programs are the sys
 coverage (every positive, no negative) is confirmed with the reference Prolog interpreter."""
 
 from cases.logic._prolog import Machine
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {
     "metagol": "github.com/metagol/metagol examples; checked with oracle/cases/logic/_prolog.py",

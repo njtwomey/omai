@@ -4,7 +4,7 @@
  * Berlekamp-Massey algorithm, a Chien search and Forney's formula.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /** Arithmetic in the finite field GF(2^m), by exponent and logarithm tables of a primitive element. */
 export interface GaloisField {
@@ -50,36 +50,36 @@ const PRIMITIVE: Readonly<Record<number, number>> = {
  * @param m - Bits per element (2 to 16; default 8, as for bytes).
  * @param primitive - The primitive polynomial (default 0x11d for m = 8, the usual choice for Reed-Solomon).
  * @returns The field.
- * @throws WhiteboxError with code `value` when the polynomial is not primitive.
+ * @throws MdmlError with code `value` when the polynomial is not primitive.
  * @concept finite-fields
  * @example
  * ```ts
- * import { galoisField } from 'whitebox-engine/information'
+ * import { galoisField } from 'mdml-engine/information'
  * const f = galoisField(8)
  * f.mul(2, 0x8e) // => 1
  * f.mul(f.inverse(7), 7) // => 1
  * ```
  */
 export function galoisField(m = 8, primitive?: number): GaloisField {
-  if (!Number.isInteger(m) || m < 2 || m > 16) throw new WhiteboxError('value', 'galoisField: m must be in [2, 16]')
+  if (!Number.isInteger(m) || m < 2 || m > 16) throw new MdmlError('value', 'galoisField: m must be in [2, 16]')
   const prim = primitive ?? PRIMITIVE[m] ?? 0
   const size = 1 << m
   const exp = new Int32Array(2 * size)
   const log = new Int32Array(size).fill(-1)
   let x = 1
   for (let i = 0; i < size - 1; i++) {
-    if (log[x] !== -1) throw new WhiteboxError('value', `galoisField: 0x${prim.toString(16)} is not primitive`)
+    if (log[x] !== -1) throw new MdmlError('value', `galoisField: 0x${prim.toString(16)} is not primitive`)
     exp[i] = x
     log[x] = i
     x <<= 1
     if (x & size) x ^= prim
   }
-  if (x !== 1) throw new WhiteboxError('value', `galoisField: 0x${prim.toString(16)} is not primitive`)
+  if (x !== 1) throw new MdmlError('value', `galoisField: 0x${prim.toString(16)} is not primitive`)
   for (let i = size - 1; i < 2 * size; i++) exp[i] = exp[i - (size - 1)] ?? 0
   const order = size - 1
   const mul = (a: number, b: number): number => (a === 0 || b === 0 ? 0 : (exp[(log[a] ?? 0) + (log[b] ?? 0)] ?? 0))
   const div = (a: number, b: number): number => {
-    if (b === 0) throw new WhiteboxError('value', 'galoisField: division by zero')
+    if (b === 0) throw new MdmlError('value', 'galoisField: division by zero')
     return a === 0 ? 0 : (exp[((log[a] ?? 0) - (log[b] ?? 0) + order) % order] ?? 0)
   }
   return {
@@ -121,7 +121,7 @@ export interface ReedSolomonCode {
  * @concept reed-solomon
  * @example
  * ```ts
- * import { reedSolomon } from 'whitebox-engine/information'
+ * import { reedSolomon } from 'mdml-engine/information'
  * reedSolomon(2).generator // => [1, 3, 2]
  * ```
  */
@@ -131,7 +131,7 @@ export function reedSolomon(
 ): ReedSolomonCode {
   const field = galoisField(options.m ?? 8, options.primitive)
   if (!Number.isInteger(nsym) || nsym < 1 || nsym >= field.size - 1)
-    throw new WhiteboxError('value', `reedSolomon: nsym must be an integer in [1, ${field.size - 2}]`)
+    throw new MdmlError('value', `reedSolomon: nsym must be an integer in [1, ${field.size - 2}]`)
   const fcr = options.fcr ?? 0
   let g = [1]
   for (let i = 0; i < nsym; i++) {
@@ -149,7 +149,7 @@ export function reedSolomon(
 function symbols(code: ReedSolomonCode, xs: ArrayLike<number>, name: string): number[] {
   const out = Array.from(xs)
   if (out.some((v) => !Number.isInteger(v) || v < 0 || v >= code.field.size))
-    throw new WhiteboxError('value', `${name}: symbols must be integers in [0, ${code.field.size - 1}]`)
+    throw new MdmlError('value', `${name}: symbols must be integers in [0, ${code.field.size - 1}]`)
   return out
 }
 
@@ -163,14 +163,14 @@ function symbols(code: ReedSolomonCode, xs: ArrayLike<number>, name: string): nu
  * @concept reed-solomon
  * @example
  * ```ts
- * import { reedSolomon, rsEncode } from 'whitebox-engine/information'
+ * import { reedSolomon, rsEncode } from 'mdml-engine/information'
  * rsEncode(reedSolomon(4), [1, 2, 3, 4]).slice(4) // => [117, 163, 178, 96]
  * ```
  */
 export function rsEncode(code: ReedSolomonCode, message: ArrayLike<number>): number[] {
   const msg = symbols(code, message, 'rsEncode')
   if (msg.length + code.nsym > code.field.size - 1)
-    throw new WhiteboxError('value', `rsEncode: at most ${code.field.size - 1 - code.nsym} message symbols`)
+    throw new MdmlError('value', `rsEncode: at most ${code.field.size - 1 - code.nsym} message symbols`)
   const g = code.generator
   const out = [...msg, ...new Array<number>(code.nsym).fill(0)]
   for (let i = 0; i < msg.length; i++) {
@@ -215,11 +215,11 @@ export interface RsDecodeResult {
  * @param received - The received codeword (message symbols then nsym parity symbols).
  * @param options - Known erasure positions (indices into `received`).
  * @returns The corrected message and codeword and the corrected positions.
- * @throws WhiteboxError with code `value` when there are too many errors to correct.
+ * @throws MdmlError with code `value` when there are too many errors to correct.
  * @concept reed-solomon
  * @example
  * ```ts
- * import { reedSolomon, rsDecode, rsEncode } from 'whitebox-engine/information'
+ * import { reedSolomon, rsDecode, rsEncode } from 'mdml-engine/information'
  * const code = reedSolomon(4)
  * const word = rsEncode(code, [1, 2, 3, 4])
  * word[1] = 99
@@ -237,11 +237,11 @@ export function rsDecode(
   const n = r.length
   const nsym = code.nsym
   if (n <= nsym || n > f.size - 1)
-    throw new WhiteboxError('value', `rsDecode: expected ${nsym + 1} to ${f.size - 1} symbols`)
+    throw new MdmlError('value', `rsDecode: expected ${nsym + 1} to ${f.size - 1} symbols`)
   const erasures = [...new Set(options.erasures ?? [])]
   if (erasures.some((e) => !Number.isInteger(e) || e < 0 || e >= n))
-    throw new WhiteboxError('value', 'rsDecode: erasure positions out of range')
-  if (erasures.length > nsym) throw new WhiteboxError('value', 'rsDecode: too many erasures')
+    throw new MdmlError('value', 'rsDecode: erasure positions out of range')
+  if (erasures.length > nsym) throw new MdmlError('value', 'rsDecode: too many erasures')
   const locatorOf = (i: number): number => f.pow(2, n - 1 - i)
   const syndromesOf = (word: readonly number[]): number[] =>
     Array.from({ length: nsym }, (_, j) => {
@@ -283,11 +283,11 @@ export function rsDecode(
   }
   while (lambda.length > 1 && lambda[lambda.length - 1] === 0) lambda.pop()
   const degree = lambda.length - 1
-  if (2 * (degree - rho) + rho > nsym) throw new WhiteboxError('value', 'rsDecode: too many errors to correct')
+  if (2 * (degree - rho) + rho > nsym) throw new MdmlError('value', 'rsDecode: too many errors to correct')
   // Chien search over the positions of this (possibly shortened) word.
   const positions: number[] = []
   for (let i = 0; i < n; i++) if (evalLow(f, lambda, f.inverse(locatorOf(i))) === 0) positions.push(i)
-  if (positions.length !== degree) throw new WhiteboxError('value', 'rsDecode: too many errors to correct')
+  if (positions.length !== degree) throw new MdmlError('value', 'rsDecode: too many errors to correct')
   // Forney: e = X^(1 - fcr) Omega(X^-1) / Lambda'(X^-1), with Omega = S Lambda mod x^nsym.
   const omega = mulLow(f, s, lambda).slice(0, nsym)
   const derivative = lambda.slice(1).map((c, i) => (i % 2 === 0 ? c : 0))
@@ -296,12 +296,11 @@ export function rsDecode(
     const x = locatorOf(i)
     const xInv = f.inverse(x)
     const denominator = evalLow(f, derivative, xInv)
-    if (denominator === 0) throw new WhiteboxError('value', 'rsDecode: too many errors to correct')
+    if (denominator === 0) throw new MdmlError('value', 'rsDecode: too many errors to correct')
     const magnitude = f.mul(f.pow(x, 1 - code.fcr), f.div(evalLow(f, omega, xInv), denominator))
     corrected[i] = (corrected[i] ?? 0) ^ magnitude
   }
-  if (syndromesOf(corrected).some((v) => v !== 0))
-    throw new WhiteboxError('value', 'rsDecode: too many errors to correct')
+  if (syndromesOf(corrected).some((v) => v !== 0)) throw new MdmlError('value', 'rsDecode: too many errors to correct')
   return done(
     corrected,
     positions.filter((i) => corrected[i] !== r[i] || erasures.includes(i)),

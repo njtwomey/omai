@@ -4,7 +4,7 @@
  * detector returns, and score normalisation and combination for ensembles of detectors (Aggarwal and Sathe, 2015).
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { anomalyScores, type Exposition } from '../../lib/exposition/index.ts'
 import { decisionSurfaceOf, type Fitted, type LearnData, matrixView } from '../../lib/learn/index.ts'
 import { quantile } from '../../lib/stats/index.ts'
@@ -55,8 +55,7 @@ export function outlierVerbs(scores: (x: TensorLike) => number[], threshold: num
  * @returns The (1 - contamination) quantile.
  */
 export function contaminationThreshold(scores: readonly number[], contamination: number): number {
-  if (!(contamination > 0 && contamination <= 0.5))
-    throw new WhiteboxError('value', 'contamination must be in (0, 0.5]')
+  if (!(contamination > 0 && contamination <= 0.5)) throw new MdmlError('value', 'contamination must be in (0, 0.5]')
   return quantile(scores as number[], 1 - contamination)
 }
 
@@ -150,9 +149,9 @@ export function combineScores(
     readonly contamination?: number
   } = {},
 ): ReturnType<typeof anomalyScores> {
-  if (scores.length === 0) throw new WhiteboxError('value', 'combineScores: no detectors')
+  if (scores.length === 0) throw new MdmlError('value', 'combineScores: no detectors')
   const n = scores[0]?.length ?? 0
-  if (scores.some((s) => s.length !== n)) throw new WhiteboxError('shape', 'combineScores: detectors disagree on rows')
+  if (scores.some((s) => s.length !== n)) throw new MdmlError('shape', 'combineScores: detectors disagree on rows')
   const norm = scores.map((s) => normaliseScores(s, options.normalisation ?? 'zscore'))
   const how = options.combination ?? 'mean'
   const combined = Array.from({ length: n }, (_, i) => {

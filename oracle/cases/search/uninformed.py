@@ -1,4 +1,4 @@
-"""Uninformed search against aima-python (a typed port in whitebox_oracle.aima_search: breadth-first and depth-first
+"""Uninformed search against aima-python (a typed port in mdml_oracle.aima_search: breadth-first and depth-first
 graph search, depth-limited and iterative deepening search, uniform-cost search) on the Romania map, the eight puzzle
 and incremental n-queens, comparing solutions, costs and aima-python's expansion, goal-test and generation counts.
 Uniform-cost costs on the Romania map are also checked against NetworkX's Dijkstra, the cost bidirectional search
@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 import networkx as nx
 import numpy as np
-from whitebox_oracle.aima_search import (
+from mdml_oracle.aima_search import (
     ROMANIA,
     EightPuzzle,
     GraphProblem,
@@ -23,7 +23,7 @@ from whitebox_oracle.aima_search import (
     undirected,
     uniform_cost_search,
 )
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"aima-python": "port of search.py (2024)", "networkx": nx.__version__}
 

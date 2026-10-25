@@ -53,8 +53,8 @@ export interface Agent<G, O, A> {
  * @concept agents
  * @example
  * ```ts
- * import { behaviourPolicy, type Agent } from 'whitebox-engine/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { behaviourPolicy, type Agent } from 'mdml-engine/rl'
+ * import { key } from 'mdml-engine/random'
  * const always: Agent<null, number, number> = {
  *   name: 'always', config: {}, init: () => null, act: () => 1, learn: (s) => s, greedy: () => 1,
  * }
@@ -74,8 +74,8 @@ export function behaviourPolicy<G, O, A>(agent: Agent<G, O, A>, state: G): Polic
  * @concept agents
  * @example
  * ```ts
- * import { greedyPolicyOf, type Agent } from 'whitebox-engine/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { greedyPolicyOf, type Agent } from 'mdml-engine/rl'
+ * import { key } from 'mdml-engine/random'
  * const echo: Agent<null, number, number> = {
  *   name: 'echo', config: {}, init: () => null, act: (_, o) => o, learn: (s) => s, greedy: (_, o) => o,
  * }
@@ -96,8 +96,8 @@ export function greedyPolicyOf<G, O, A>(agent: Agent<G, O, A>, state: G): Policy
  * @concept agents
  * @example
  * ```ts
- * import { policyAgent } from 'whitebox-engine/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { policyAgent } from 'mdml-engine/rl'
+ * import { key } from 'mdml-engine/random'
  * const a = policyAgent((o: number) => o + 1)
  * a.act(a.init(key(0)), 1, key(1)) // => 2
  * ```

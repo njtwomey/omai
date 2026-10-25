@@ -4,7 +4,7 @@
  * by a minimum graph cut of a data term plus a contrast-sensitive smoothness term (Boykov and Jolly).
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { digraph, minCut } from '../../graph/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { float } from '../_shared.ts'
@@ -53,7 +53,7 @@ function histogram(data: Float64Array, nbins: number): { counts: Float64Array; c
  * @concept thresholding
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
+ * import { image } from 'mdml-engine/signal'
  * image.thresholdOtsu([0, 0, 0, 1, 10, 10, 11, 10], 4) // => 1.375
  * ```
  */
@@ -103,7 +103,7 @@ export function thresholdOtsu(x: TensorLike, nbins = 256): number {
  * @concept thresholding
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
+ * import { image } from 'mdml-engine/signal'
  * const t = image.thresholdLi([1, 1.2, 0.9, 1.1, 7, 7.5, 6.8, 7.2])
  * t > 1.2 && t < 6.8 // => true
  * ```
@@ -209,8 +209,8 @@ class Heap {
  * @concept watershed
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.watershed([[0, 1, 5, 1, 0]], [[1, 0, 0, 0, 2]])) // => [[1, 1, 1, 2, 2]]
  * ```
  */
@@ -220,10 +220,10 @@ export function watershed(
   options: { readonly connectivity?: 1 | 2; readonly mask?: TensorLike } = {},
 ): Tensor {
   const img = valuesOf(x)
-  if (img.shape.length !== 2) throw new WhiteboxError('shape', 'watershed: images are [H, W]')
+  if (img.shape.length !== 2) throw new MdmlError('shape', 'watershed: images are [H, W]')
   const [h = 0, w = 0] = img.shape
   const lab = valuesOf(markers).data
-  if (lab.length !== h * w) throw new WhiteboxError('shape', 'watershed: markers must have the image shape')
+  if (lab.length !== h * w) throw new MdmlError('shape', 'watershed: markers must have the image shape')
   const mask = options.mask === undefined ? new Float64Array(h * w).fill(1) : valuesOf(options.mask).data
   const out = Float64Array.from(lab, (v, i) => ((mask[i] ?? 0) !== 0 ? v : 0))
   // Neighbours ordered as scikit-image: by distance, then by raveled offset.
@@ -277,8 +277,8 @@ export function watershed(
  * @concept graph-segmentation
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const x = Array.from({ length: 10 }, () => Array.from({ length: 10 }, (_, j) => (j < 5 ? 0 : 1)))
  * new Set(toFlat(image.felzenszwalb(x, { minSize: 20 }))).size // => 2
  * ```
@@ -290,7 +290,7 @@ export function felzenszwalb(
   const v = valuesOf(x)
   const [h = 0, w = 0, c = 1] = v.shape
   if (v.shape.length < 2 || v.shape.length > 3)
-    throw new WhiteboxError('shape', 'felzenszwalb: images are [H, W] or [H, W, C]')
+    throw new MdmlError('shape', 'felzenszwalb: images are [H, W] or [H, W, C]')
   const sigma = options.sigma ?? 0.8
   const smoothed = Float64Array.from(
     primalOf(gaussianFilter(fromStorage(v.data, [h, w, c], 'float64'), [sigma, sigma, 0], { mode: 'reflect' })).data,
@@ -391,14 +391,14 @@ export interface GraphCutOptions {
  * @concept graph-cuts
  * @example
  * ```ts
- * import { image } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { image } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(image.graphCut([[0.1, 0.9, 0.8], [0.2, 0.7, 0.1]], { foreground: 0.8, background: 0.1, lambda: 0.05 }).mask) // => [[0, 1, 1], [0, 1, 0]]
  * ```
  */
 export function graphCut(x: TensorLike, options: GraphCutOptions): { readonly mask: Tensor; readonly energy: number } {
   const v = valuesOf(x)
-  if (v.shape.length !== 2) throw new WhiteboxError('shape', 'graphCut: images are [H, W]')
+  if (v.shape.length !== 2) throw new MdmlError('shape', 'graphCut: images are [H, W]')
   const [h = 0, w = 0] = v.shape
   const n = h * w
   const lambda = options.lambda ?? 1

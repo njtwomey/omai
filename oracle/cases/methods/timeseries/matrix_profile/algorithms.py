@@ -7,10 +7,10 @@ from importlib.metadata import version
 import numpy as np
 import numpy.typing as npt
 import stumpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
+from mdml_oracle.timeseries_helpers import series
 from stumpy.stamp import stamp as reference_stamp
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
-from whitebox_oracle.timeseries_helpers import series
 
 REFERENCE: dict[str, str] = {"stumpy": version("stumpy"), "numpy": np.__version__}
 

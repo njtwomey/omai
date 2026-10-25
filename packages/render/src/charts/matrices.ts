@@ -5,10 +5,10 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { WhiteboxError } from 'whitebox-engine/base'
-import { contourLevels } from 'whitebox-engine/numerics/geometry'
-import { type ImageSource, type Pixels, toPixels } from 'whitebox-engine/scene'
-import type { TensorLike } from 'whitebox-engine/tensor'
+import { MdmlError } from 'mdml-engine/base'
+import { contourLevels } from 'mdml-engine/numerics/geometry'
+import { type ImageSource, type Pixels, toPixels } from 'mdml-engine/scene'
+import type { TensorLike } from 'mdml-engine/tensor'
 import type { Range } from '../figure/aspect.ts'
 import { extentOf } from '../figure/limits.ts'
 import { pngDataUrl } from '../svg/png.ts'
@@ -75,7 +75,7 @@ export interface HeatmapOptions {
  * @returns The stops.
  * @example
  * ```ts
- * import { rampStops } from 'whitebox-render/charts'
+ * import { rampStops } from 'mdml-render/charts'
  * rampStops(undefined, 'light', true)[0] // => '#2166ac'
  * rampStops(['#000', '#fff'], 'dark') // => ['#000', '#fff']
  * ```
@@ -101,7 +101,7 @@ interface ImageApi {
  * @returns The series.
  * @example
  * ```ts
- * import { imageSeries } from 'whitebox-render/charts'
+ * import { imageSeries } from 'mdml-render/charts'
  * imageSeries({ width: 1, height: 1, rgba: new Uint8ClampedArray(4) }, [0, 1], [0, 1]).type // => 'custom'
  * ```
  */
@@ -206,7 +206,7 @@ function paintGrid(
  * @returns The layer: the image and a colour bar.
  * @example
  * ```ts
- * import { heatmap } from 'whitebox-render/charts'
+ * import { heatmap } from 'mdml-render/charts'
  * const l = heatmap([[0, 1], [1, 2]], { x: [0, 1], y: [0, 1] })
  * l.extent // => { x: [0, 1], y: [0, 1], tight: true }
  * l.colourBar.min // => 0
@@ -215,7 +215,7 @@ function paintGrid(
 export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
   const mode = options.mode ?? 'light'
   const g = grid2d(z, 'heatmap')
-  if (g.rows < 1 || g.cols < 1) throw new WhiteboxError('shape', 'heatmap: the grid is empty')
+  if (g.rows < 1 || g.cols < 1) throw new MdmlError('shape', 'heatmap: the grid is empty')
   const smooth = options.smooth ?? 'bicubic'
   const xs = axisCoords(options.x, g.cols)
   const ys = axisCoords(options.y, g.rows)
@@ -305,7 +305,7 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
 }
 
 /**
- * An image from pixels, or from a 2-D (grey) or RGB(A) tensor as whitebox-engine's `toPixels` reads it (imshow-style),
+ * An image from pixels, or from a 2-D (grey) or RGB(A) tensor as mdml-engine's `toPixels` reads it (imshow-style),
  * covering a data rectangle (default one unit per pixel, row 0 at the top).
  *
  * @param source - Pixels or image data.
@@ -313,7 +313,7 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
  * @returns The layer.
  * @example
  * ```ts
- * import { image } from 'whitebox-render/charts'
+ * import { image } from 'mdml-render/charts'
  * image([[0, 1], [1, 0]]).extent // => { x: [0, 2], y: [0, 2], tight: true }
  * ```
  */
@@ -361,7 +361,7 @@ interface CellApi {
  * @returns The layer, with categories on both axes.
  * @example
  * ```ts
- * import { matrix } from 'whitebox-render/charts'
+ * import { matrix } from 'mdml-render/charts'
  * const l = matrix([[1, 2], [3, 4]], { rowLabels: ['a', 'b'] })
  * l.yCategories // => ['b', 'a']
  * l.series[0].data.length // => 4
@@ -373,7 +373,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
   const rows = options.rowLabels ?? Array.from({ length: g.rows }, (_, i) => String(i))
   const cols = options.colLabels ?? Array.from({ length: g.cols }, (_, j) => String(j))
   if (rows.length !== g.rows || cols.length !== g.cols)
-    throw new WhiteboxError('shape', 'matrix: give one label per row and per column')
+    throw new MdmlError('shape', 'matrix: give one label per row and per column')
   const [lo, hi] = options.range ?? extentOf(g.values) ?? [0, 1]
   const centre = options.centre
   const stops = rampStops(options.ramp, mode, centre !== undefined)
@@ -474,7 +474,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { confusionMatrixChart } from 'whitebox-render/charts'
+ * import { confusionMatrixChart } from 'mdml-render/charts'
  * confusionMatrixChart([[5, 1], [2, 7]], ['cat', 'dog']).xAxis[0].name // => 'predicted'
  * ```
  */
@@ -517,7 +517,7 @@ export function confusionMatrixChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { correlationChart } from 'whitebox-render/charts'
+ * import { correlationChart } from 'mdml-render/charts'
  * correlationChart([[1, 0.5], [0.5, 1]], ['a', 'b']).visualMap[0].min // => -1
  * ```
  */
@@ -541,7 +541,7 @@ export function correlationChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { heatmapChart } from 'whitebox-render/charts'
+ * import { heatmapChart } from 'mdml-render/charts'
  * heatmapChart([[0, 1], [2, 3]], { smooth: 'cells' }).xAxis[0].min // => -0.5
  * ```
  */

@@ -5,7 +5,7 @@
  * for the linear case, Gillespie simulation and the Yule pure-birth law.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { categorical, exponential, foldIn, type Key, multinomial } from '../random/index.ts'
 import {
   add,
@@ -39,7 +39,7 @@ export type OffspringPmf = TensorLike
 
 function pmfOf(pmf: OffspringPmf, where: string): { p: Value; data: number[] } {
   const p = asFloat(asTensor(pmf))
-  if (p.shape.length !== 1 || (p.shape[0] ?? 0) === 0) throw new WhiteboxError('shape', `${where}: pmf must be [K + 1]`)
+  if (p.shape.length !== 1 || (p.shape[0] ?? 0) === 0) throw new MdmlError('shape', `${where}: pmf must be [K + 1]`)
   const data = primalNumbers(p)
   checkProbabilities(data, where, 1e-9)
   return { p, data }
@@ -55,8 +55,8 @@ function pmfOf(pmf: OffspringPmf, where: string): { p: Value; data: number[] } {
  * @concept generating-functions
  * @example
  * ```ts
- * import { offspringPgf } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { offspringPgf } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(offspringPgf([0.25, 0.5, 0.25], 0.5)) // => 0.5625
  * ```
  */
@@ -89,7 +89,7 @@ function pgfDerivative(pk: readonly number[], s: number): number {
  * @concept branching-processes
  * @example
  * ```ts
- * import { offspringMoments } from 'whitebox-engine/stochastic'
+ * import { offspringMoments } from 'mdml-engine/stochastic'
  * offspringMoments([0.25, 0.25, 0.5]) // => { mean: 1.25, variance: 0.6875 }
  * ```
  */
@@ -113,12 +113,12 @@ export function offspringMoments(pmf: OffspringPmf): { readonly mean: number; re
  * @param pmf - The offspring probabilities.
  * @param options - `tol` (default 1e-14) and the iteration cap `maxIter` (default 100000).
  * @returns q.
- * @throws WhiteboxError with code `convergence` when the iteration does not settle within the cap.
+ * @throws MdmlError with code `convergence` when the iteration does not settle within the cap.
  * @concept branching-processes
  * @example
  * ```ts
- * import { extinctionProbability } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { extinctionProbability } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * // p = (1/4, 1/4, 1/2): G(s) = s solves to q = 1/2
  * Math.round(item(extinctionProbability([0.25, 0.25, 0.5])) * 1e12) / 1e12 // => 0.5
  * item(extinctionProbability([0.5, 0, 0.5])) // => 1
@@ -155,7 +155,7 @@ export function extinctionProbability(
       q -= f / d
     }
     if (!converged && Math.abs(pgfNumbers(data, q) - q) > 1e-10) {
-      throw new WhiteboxError('convergence', 'extinctionProbability: the iteration did not converge')
+      throw new MdmlError('convergence', 'extinctionProbability: the iteration did not converge')
     }
   }
   if (q >= 1 || q <= 0) return add(mul(sum(p), 0), q)
@@ -174,15 +174,15 @@ export function extinctionProbability(
  * @concept branching-processes
  * @example
  * ```ts
- * import { extinctionByGeneration } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { extinctionByGeneration } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(extinctionByGeneration([0.5, 0, 0.5], 2)) // => [0, 0.5, 0.625]
  * ```
  */
 export function extinctionByGeneration(pmf: OffspringPmf, generations: number): Value {
   const { p } = pmfOf(pmf, 'extinctionByGeneration')
   if (!(Number.isInteger(generations) && generations >= 0)) {
-    throw new WhiteboxError('value', 'extinctionByGeneration: generations must be >= 0')
+    throw new MdmlError('value', 'extinctionByGeneration: generations must be >= 0')
   }
   const out: Value[] = [mul(sum(p), 0)]
   for (let n = 0; n < generations; n++) out.push(offspringPgf(p, out[n] as Value))
@@ -200,7 +200,7 @@ export function extinctionByGeneration(pmf: OffspringPmf, generations: number): 
  * @concept branching-processes
  * @example
  * ```ts
- * import { galtonWatsonMoments } from 'whitebox-engine/stochastic'
+ * import { galtonWatsonMoments } from 'mdml-engine/stochastic'
  * galtonWatsonMoments([0.25, 0.25, 0.5], 2) // => { mean: 1.5625, variance: 1.93359375 }
  * ```
  */
@@ -209,7 +209,7 @@ export function galtonWatsonMoments(
   n: number,
   z0 = 1,
 ): { readonly mean: number; readonly variance: number } {
-  if (!(Number.isInteger(n) && n >= 0)) throw new WhiteboxError('value', 'galtonWatsonMoments: n must be >= 0')
+  if (!(Number.isInteger(n) && n >= 0)) throw new MdmlError('value', 'galtonWatsonMoments: n must be >= 0')
   const { mean: m, variance: s2 } = offspringMoments(pmf)
   const mean = z0 * m ** n
   const variance = Math.abs(m - 1) < 1e-15 ? z0 * n * s2 : (z0 * s2 * m ** (n - 1) * (m ** n - 1)) / (m - 1)
@@ -234,7 +234,7 @@ export interface GaltonWatsonState {
  * @concept branching-processes
  * @example
  * ```ts
- * import { galtonWatsonAlgorithm } from 'whitebox-engine/stochastic'
+ * import { galtonWatsonAlgorithm } from 'mdml-engine/stochastic'
  * galtonWatsonAlgorithm([0.5, 0.5]).name // => 'galton-watson'
  * ```
  */
@@ -244,7 +244,7 @@ export function galtonWatsonAlgorithm(
 ): Algorithm<GaltonWatsonState> {
   const { data } = pmfOf(pmf, 'galtonWatson')
   const z0 = options.z0 ?? 1
-  if (!(Number.isInteger(z0) && z0 >= 0)) throw new WhiteboxError('value', 'galtonWatson: z0 must be an integer >= 0')
+  if (!(Number.isInteger(z0) && z0 >= 0)) throw new MdmlError('value', 'galtonWatson: z0 must be an integer >= 0')
   const paths = positiveInteger(options.paths ?? 1, 'paths', 'galtonWatson')
   const cap = options.maxPopulation ?? 1e7
   return {
@@ -293,9 +293,9 @@ export function galtonWatsonAlgorithm(
  * @concept branching-processes
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { galtonWatson } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { key } from 'mdml-engine/random'
+ * import { galtonWatson } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(galtonWatson(key(0), [0, 0, 1], 3)) // => [[1, 2, 4, 8]]
  * ```
  */
@@ -306,7 +306,7 @@ export function galtonWatson(
   options: { readonly z0?: number; readonly paths?: number; readonly maxPopulation?: number } & TraceOptions = {},
 ): Tensor<'float64'> {
   if (!(Number.isInteger(generations) && generations >= 0)) {
-    throw new WhiteboxError('value', 'galtonWatson: generations must be >= 0')
+    throw new MdmlError('value', 'galtonWatson: generations must be >= 0')
   }
   const { z0, paths, maxPopulation, ...trace } = options
   const alg = galtonWatsonAlgorithm(pmf, {
@@ -338,8 +338,8 @@ export interface BirthDeathRates {
  * @concept birth-death-processes
  * @example
  * ```ts
- * import { birthDeathGenerator } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { birthDeathGenerator } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(birthDeathGenerator({ birth: () => 1, death: (n) => 2 * n }, 2)) // => [[-1, 1, 0], [2, -3, 1], [0, 4, -4]]
  * ```
  */
@@ -350,7 +350,7 @@ export function birthDeathGenerator(rates: BirthDeathRates, maxPopulation: numbe
   for (let i = 0; i < n; i++) {
     const up = i < maxPopulation ? rates.birth(i) : 0
     const down = i > 0 ? rates.death(i) : 0
-    if (!(up >= 0 && down >= 0)) throw new WhiteboxError('value', 'birthDeathGenerator: rates must be >= 0')
+    if (!(up >= 0 && down >= 0)) throw new MdmlError('value', 'birthDeathGenerator: rates must be >= 0')
     if (i < maxPopulation) q[i * n + i + 1] = up
     if (i > 0) q[i * n + i - 1] = down
     q[i * n + i] = -(up + down)
@@ -368,8 +368,8 @@ export function birthDeathGenerator(rates: BirthDeathRates, maxPopulation: numbe
  * @concept birth-death-processes
  * @example
  * ```ts
- * import { birthDeathStationary } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { birthDeathStationary } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(birthDeathStationary({ birth: () => 1, death: () => 1 }, 3)) // => [0.25, 0.25, 0.25, 0.25]
  * ```
  */
@@ -378,7 +378,7 @@ export function birthDeathStationary(rates: BirthDeathRates, maxPopulation: numb
   const logW = new Float64Array(maxPopulation + 1)
   for (let n = 1; n <= maxPopulation; n++) {
     const mu = rates.death(n)
-    if (!(mu > 0)) throw new WhiteboxError('value', 'birthDeathStationary: death rates must be positive')
+    if (!(mu > 0)) throw new MdmlError('value', 'birthDeathStationary: death rates must be positive')
     logW[n] = (logW[n - 1] ?? 0) + Math.log(rates.birth(n - 1)) - Math.log(mu)
   }
   let top = Number.NEGATIVE_INFINITY
@@ -409,8 +409,8 @@ export interface LinearBirthDeathParams {
  * @concept birth-death-processes
  * @example
  * ```ts
- * import { linearBirthDeath } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { linearBirthDeath } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * const bd = linearBirthDeath({ lambda: 2, mu: 1 })
  * item(bd.ultimateExtinction(1)) // => 0.5
  * Math.round(item(bd.extinctionBy(1e3)) * 1e12) / 1e12 // => 0.5
@@ -425,7 +425,7 @@ export function linearBirthDeath(params: LinearBirthDeathParams): {
   const [lambda, mu] = promoteFloat(params.lambda, params.mu) as [Value, Value]
   const l = primalNumbers(lambda)[0] ?? 0
   const m = primalNumbers(mu)[0] ?? 0
-  if (!(l >= 0 && m >= 0)) throw new WhiteboxError('value', 'linearBirthDeath: rates must be >= 0')
+  if (!(l >= 0 && m >= 0)) throw new MdmlError('value', 'linearBirthDeath: rates must be >= 0')
   const r = sub(lambda, mu)
   const one = (t: TensorLike): Value => {
     if (Math.abs(l - m) < 1e-14) {
@@ -469,13 +469,13 @@ export interface BirthDeathState {
  * @concept birth-death-processes
  * @example
  * ```ts
- * import { birthDeathAlgorithm } from 'whitebox-engine/stochastic'
+ * import { birthDeathAlgorithm } from 'mdml-engine/stochastic'
  * birthDeathAlgorithm({ birth: (n) => n, death: (n) => n }, 5, 1).name // => 'birth-death'
  * ```
  */
 export function birthDeathAlgorithm(rates: BirthDeathRates, n0: number, horizon: number): Algorithm<BirthDeathState> {
-  if (!(Number.isInteger(n0) && n0 >= 0)) throw new WhiteboxError('value', 'birthDeath: n0 must be an integer >= 0')
-  if (!(horizon > 0)) throw new WhiteboxError('value', 'birthDeath: the horizon must be positive')
+  if (!(Number.isInteger(n0) && n0 >= 0)) throw new MdmlError('value', 'birthDeath: n0 must be an integer >= 0')
+  if (!(horizon > 0)) throw new MdmlError('value', 'birthDeath: the horizon must be positive')
   return {
     name: 'birth-death',
     config: { n0, horizon },
@@ -484,7 +484,7 @@ export function birthDeathAlgorithm(rates: BirthDeathRates, n0: number, horizon:
     step: (s, ctx) => {
       const up = rates.birth(s.n)
       const down = s.n > 0 ? rates.death(s.n) : 0
-      if (!(up >= 0 && down >= 0)) throw new WhiteboxError('value', 'birthDeath: rates must be >= 0')
+      if (!(up >= 0 && down >= 0)) throw new MdmlError('value', 'birthDeath: rates must be >= 0')
       const total = up + down
       if (total <= 0) return { ...s, finished: true }
       const t = s.t + (exponential(foldIn(ctx.key, 0), [1], total).data[0] ?? 0)
@@ -507,12 +507,12 @@ export function birthDeathAlgorithm(rates: BirthDeathRates, n0: number, horizon:
  * @param horizon - The end time.
  * @param options - The event cap (default 1e6) and tracing.
  * @returns The event times and the population after each event (starting with time 0 and n0).
- * @throws WhiteboxError with code `convergence` when the cap is reached before the horizon.
+ * @throws MdmlError with code `convergence` when the cap is reached before the horizon.
  * @concept birth-death-processes
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { simulateBirthDeath } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { simulateBirthDeath } from 'mdml-engine/stochastic'
  * simulateBirthDeath(key(0), { birth: () => 0, death: (n) => n }, 3, 1e3).sizes.at(-1) // => 0
  * ```
  */
@@ -525,7 +525,7 @@ export function simulateBirthDeath(
 ): { readonly times: Float64Array; readonly sizes: Int32Array } {
   const cap = options.maxEvents ?? 1e6
   const r = runAlgorithm(birthDeathAlgorithm(rates, n0, horizon), { ...traceOf(options), key, maxSteps: cap + 1 })
-  if (!r.state.finished) throw new WhiteboxError('convergence', `simulateBirthDeath: more than ${cap} events`)
+  if (!r.state.finished) throw new MdmlError('convergence', `simulateBirthDeath: more than ${cap} events`)
   const events = historyArray(r.state.events)
   return { times: Float64Array.from(events, (e) => e.t), sizes: Int32Array.from(events, (e) => e.n) }
 }
@@ -542,8 +542,8 @@ export function simulateBirthDeath(
  * @concept birth-death-processes
  * @example
  * ```ts
- * import { yulePmf } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { yulePmf } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(yulePmf(1, Math.LN2, 1)) // => 0.5
  * ```
  */

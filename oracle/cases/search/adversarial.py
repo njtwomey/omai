@@ -1,9 +1,9 @@
-"""Game-tree search against aima-python (a typed port in whitebox_oracle.aima_games: minimax_decision,
+"""Game-tree search against aima-python (a typed port in mdml_oracle.aima_games: minimax_decision,
 alpha_beta_search, alpha_beta_cutoff_search) on tic-tac-toe positions and small connect-four boards, comparing the
 chosen move, the root value and the number of nodes visited (aima-python's move order, first best move kept)."""
 
 import numpy as np
-from whitebox_oracle.aima_games import (
+from mdml_oracle.aima_games import (
     ConnectFour,
     Counter,
     TicTacToe,
@@ -11,7 +11,7 @@ from whitebox_oracle.aima_games import (
     minimax_decision,
     play,
 )
-from whitebox_oracle.fixture import Case, case
+from mdml_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"aima-python": "port of games.py (2024)"}
 

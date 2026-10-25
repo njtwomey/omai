@@ -5,7 +5,7 @@
  * for.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { complexOps as C } from '../../numerics/differentiate/index.ts'
 import {
   type FrequencyResponse,
@@ -36,8 +36,8 @@ import type { FilterSpec } from './order.ts'
  * @concept frequency-response
  * @example
  * ```ts
- * import { sosfreqz } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sosfreqz } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sosfreqz([[0.5, 0.5, 0, 1, 0, 0]], 2).h.re) // => [1, 0.5]
  * ```
  */
@@ -49,7 +49,7 @@ export function sosfreqz(
   const s = isLti(sos) ? toSos(sos).sections : float(sos)
   const count = s.shape[0] ?? 0
   if (s.shape.length !== 2 || s.shape[1] !== 6 || count === 0)
-    throw new WhiteboxError('shape', 'sosfreqz: sections must be [n, 6] with n > 0')
+    throw new MdmlError('shape', 'sosfreqz: sections must be [n, 6] with n > 0')
   let out: FrequencyResponse | null = null
   for (let i = 0; i < count; i++) {
     const row = reshape(sliceAxis(s, 0, i, i + 1), [6])
@@ -81,8 +81,8 @@ function gridOf(worN: number | TensorLike, options: FreqzOptions): { w: number[]
  * @concept frequency-response
  * @example
  * ```ts
- * import { freqzZpk } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { freqzZpk } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(freqzZpk({ zeros: { re: [-1], im: [0] }, poles: { re: [0], im: [0] }, gain: 0.5 }, 2).h.re) // => [1, 0.5]
  * ```
  */
@@ -123,8 +123,8 @@ export interface DelayResponse {
  * @concept group-delay
  * @example
  * ```ts
- * import { groupDelay } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { groupDelay } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(groupDelay([1, 2, 1], [1], 3).delay).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1, 1]
  * ```
  */
@@ -168,8 +168,8 @@ export function groupDelay(
  * @concept group-delay
  * @example
  * ```ts
- * import { phaseDelay } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { phaseDelay } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(phaseDelay([1, 2, 1], [1], 3).delay).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1, 1]
  * ```
  */
@@ -203,8 +203,8 @@ export function phaseDelay(
  * @concept frequency-response
  * @example
  * ```ts
- * import { butter, frequencyResponse } from 'whitebox-engine/signal'
- * import { absComplex, toFlat } from 'whitebox-engine/tensor'
+ * import { butter, frequencyResponse } from 'mdml-engine/signal'
+ * import { absComplex, toFlat } from 'mdml-engine/tensor'
  * Math.round((toFlat(absComplex(frequencyResponse(butter(4, 0.3), [0]).h))[0] ?? 0) * 1e12) / 1e12 // => 1
  * ```
  */
@@ -244,7 +244,7 @@ export interface SpecificationCheck {
  * @concept filter-specification
  * @example
  * ```ts
- * import { checkSpecification, iirdesign } from 'whitebox-engine/signal'
+ * import { checkSpecification, iirdesign } from 'mdml-engine/signal'
  * const spec = { wp: 0.2, ws: 0.3, gpass: 1, gstop: 40 }
  * checkSpecification(iirdesign(spec, { ftype: 'butter' }), spec).meets // => true
  * ```
@@ -277,7 +277,7 @@ export function checkSpecification(
   }
   let peak = 0
   for (const [i, x] of f.entries()) if (inPass(x)) peak = Math.max(peak, mag[i] ?? 0)
-  if (peak === 0) throw new WhiteboxError('value', 'checkSpecification: no passband gain on the grid')
+  if (peak === 0) throw new MdmlError('value', 'checkSpecification: no passband gain on the grid')
   let loss = 0
   let atten = Number.POSITIVE_INFINITY
   for (const [i, x] of f.entries()) {

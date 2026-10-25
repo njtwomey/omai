@@ -5,7 +5,7 @@
  * true run-length posterior.
  */
 
-import { logSumExpOf, WhiteboxError } from '../base/index.ts'
+import { logSumExpOf, MdmlError } from '../base/index.ts'
 import { type DatasetGenerator, type TimeSeriesData, timeSeries } from '../data/index.ts'
 import { bocpd, type ConjugateModel } from '../dynamics/filtering/index.ts'
 import { foldIn, gamma, normal, poisson, uniform } from '../random/index.ts'
@@ -141,10 +141,10 @@ export interface BocpdResult {
  * @param model - The segment model and its prior.
  * @param hazard - The probability of a changepoint before each step, or a function of the run length so far.
  * @returns Run-length posteriors, predictives and the evidence.
- * @throws WhiteboxError with code `value` for a constant hazard outside (0, 1).
+ * @throws MdmlError with code `value` for a constant hazard outside (0, 1).
  * @example
  * ```ts
- * import { exactBocpd } from 'whitebox-engine/datasets'
+ * import { exactBocpd } from 'mdml-engine/datasets'
  * const r = exactBocpd([0, 0.1, 5, 5.2], { kind: 'mean', sigma: 0.5, priorMean: 0, priorStd: 5 }, 0.1)
  * r.mapRunLength // => [1, 2, 1, 2]
  * ```
@@ -155,7 +155,7 @@ export function exactBocpd(
   hazard: number | ((runLength: number) => number),
 ): BocpdResult {
   if (typeof hazard === 'number' && !(hazard > 0 && hazard < 1))
-    throw new WhiteboxError('value', 'exactBocpd: the hazard must be in (0, 1)')
+    throw new MdmlError('value', 'exactBocpd: the hazard must be in (0, 1)')
   const conjugate = conjugateOf(model)
   if (conjugate !== undefined) {
     const r = bocpd(y, conjugate, hazard)
@@ -239,8 +239,8 @@ function modelOf(kind: ChangeKind, noise: number, shift: number, meanRate: numbe
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { changepointSeries } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { changepointSeries } from 'mdml-engine/datasets'
  * generate(changepointSeries, { knobs: { n: 100, kind: 'rate' } }).data.values.shape // => [100, 1]
  * ```
  */

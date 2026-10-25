@@ -6,6 +6,8 @@ from typing import Any
 
 import numpy as np
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 from sklearn.feature_selection import (
     RFE,
     RFECV,
@@ -26,8 +28,6 @@ from sklearn.feature_selection import (
 )
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.model_selection import KFold
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

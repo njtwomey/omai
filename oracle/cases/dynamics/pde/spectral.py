@@ -6,8 +6,8 @@ interpolant, which numpy.polynomial.chebyshev computes from the fitted coefficie
 
 import numpy as np
 import numpy.polynomial.chebyshev as cheb
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

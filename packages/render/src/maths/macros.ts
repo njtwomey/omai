@@ -52,7 +52,7 @@ function family(
  *
  * @example
  * ```ts
- * import { macros } from 'whitebox-render/maths'
+ * import { macros } from 'mdml-render/maths'
  * macros['\\xvec'] // => '\\mathbf{x}'
  * ```
  */
@@ -192,7 +192,7 @@ export const macros: Readonly<Record<string, string>> = {
  * @returns The extended registry.
  * @example
  * ```ts
- * import { extendMacros } from 'whitebox-render/maths'
+ * import { extendMacros } from 'mdml-render/maths'
  * extendMacros({ '\\loss': '\\mathcal{L}' })['\\loss'] // => '\\mathcal{L}'
  * ```
  */

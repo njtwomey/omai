@@ -4,7 +4,7 @@
  * counts from predictions and labels.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 
 /** The confusion counts at one recorded step of training (an epoch). */
@@ -34,10 +34,10 @@ export interface ConfusionMatrix {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when the counts (or a step's) are not one row and column per class.
+ * @throws MdmlError `shape` when the counts (or a step's) are not one row and column per class.
  * @example
  * ```ts
- * import { confusionMatrix } from 'whitebox-engine/exposition'
+ * import { confusionMatrix } from 'mdml-engine/exposition'
  * confusionMatrix({ classes: ['cat', 'dog'], counts: [[5, 1], [2, 7]] }).counts[1] // => [2, 7]
  * ```
  */
@@ -59,10 +59,10 @@ export function confusionMatrix(record: Omit<ConfusionMatrix, 'kind'>): Confusio
  * @param predicted - The predicted class index of every row.
  * @param classes - The number of classes.
  * @returns counts[i][j]: rows of true class i predicted as j.
- * @throws WhiteboxError `shape` when the two do not have the same length; `value` for an index outside the classes.
+ * @throws MdmlError `shape` when the two do not have the same length; `value` for an index outside the classes.
  * @example
  * ```ts
- * import { confusionCounts } from 'whitebox-engine/exposition'
+ * import { confusionCounts } from 'mdml-engine/exposition'
  * confusionCounts([0, 0, 1, 1], [0, 1, 1, 1], 2) // => [[1, 1], [0, 2]]
  * ```
  */
@@ -73,7 +73,7 @@ export function confusionCounts(truth: ArrayLike<number>, predicted: ArrayLike<n
     const t = truth[i] ?? -1
     const p = predicted[i] ?? -1
     if (!(Number.isInteger(t) && Number.isInteger(p) && t >= 0 && p >= 0 && t < classes && p < classes))
-      throw new WhiteboxError('value', `confusionCounts: row ${i} has a class outside 0..${classes - 1}`)
+      throw new MdmlError('value', `confusionCounts: row ${i} has a class outside 0..${classes - 1}`)
     ;(counts[t] as number[])[p] = (counts[t]?.[p] ?? 0) + 1
   }
   return counts

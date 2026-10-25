@@ -1,5 +1,5 @@
+import { ControlPanel, Derivation, NumberField } from 'mdml-render/react'
 import { type ReactNode, useState } from 'react'
-import { ControlPanel, Derivation, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

@@ -4,7 +4,7 @@
  * evolution by the theta method, and the stationary density both in closed form and from the discrete generator.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import { sparseLu, sparseLuSolve } from '../ode/_sparse-lu.ts'
@@ -44,11 +44,11 @@ export interface FokkerPlanckGrid {
  * @param domain - [a, b].
  * @param cells - Number of cells.
  * @returns Cell centres and the generator G (dp/dt = G p).
- * @throws WhiteboxError with code `value` for fewer than two cells or a vanishing diffusion.
+ * @throws MdmlError with code `value` for fewer than two cells or a vanishing diffusion.
  * @concept fokker-planck
  * @example
  * ```ts
- * import { scharfetterGummel } from 'whitebox-engine/dynamics/pde'
+ * import { scharfetterGummel } from 'mdml-engine/dynamics/pde'
  * scharfetterGummel({ drift: (x) => -x, sigma: () => 1 }, [-3, 3], 10).centres.length // => 10
  * ```
  */
@@ -57,7 +57,7 @@ export function scharfetterGummel(
   domain: readonly [number, number],
   cells: number,
 ): FokkerPlanckGrid {
-  if (!Number.isInteger(cells) || cells < 2) throw new WhiteboxError('value', 'scharfetterGummel: at least two cells')
+  if (!Number.isInteger(cells) || cells < 2) throw new MdmlError('value', 'scharfetterGummel: at least two cells')
   const [a, b] = domain
   const dx = (b - a) / cells
   const centres = Float64Array.from({ length: cells }, (_, i) => a + (i + 0.5) * dx)
@@ -66,7 +66,7 @@ export function scharfetterGummel(
     const xf = a + (i + 1) * dx
     const s = process.sigma(xf)
     const D = 0.5 * s * s
-    if (!(D > 0)) throw new WhiteboxError('value', `scharfetterGummel: the diffusion vanishes at x = ${xf}`)
+    if (!(D > 0)) throw new MdmlError('value', `scharfetterGummel: the diffusion vanishes at x = ${xf}`)
     const P = (process.drift(xf) * dx) / D
     // Flux J = c_left p_i - c_right p_{i+1}; cell i loses J / dx, cell i + 1 gains it.
     const cl = (D / dx) * bernoulli(-P)
@@ -152,7 +152,7 @@ function moments(x: Float64Array, p: Float64Array, dx: number): { mean: number; 
  * @concept fokker-planck
  * @example
  * ```ts
- * import { fokkerPlanck } from 'whitebox-engine/dynamics/pde'
+ * import { fokkerPlanck } from 'mdml-engine/dynamics/pde'
  * // Ornstein-Uhlenbeck dX = -X dt + dW from a point mass near 1: the mean decays as e^{-t}.
  * const ev = fokkerPlanck({ drift: (x) => -x, sigma: () => 1 }, (x) => Math.exp(-((x - 1) ** 2) / 0.02), [-4, 4], 200, { dt: 0.01, tEnd: 1 })
  * Math.abs((ev.mean.at(-1) ?? 0) - Math.exp(-1)) < 1e-2 // => true
@@ -168,14 +168,14 @@ export function fokkerPlanck(
   const grid = scharfetterGummel(process, domain, cells)
   const x = grid.centres
   const start = typeof p0 === 'function' ? Float64Array.from(x, (v) => p0(v)) : Float64Array.from(p0)
-  if (start.length !== cells) throw new WhiteboxError('value', `fokkerPlanck: give ${cells} initial densities`)
+  if (start.length !== cells) throw new MdmlError('value', `fokkerPlanck: give ${cells} initial densities`)
   // Normalise to a probability density.
   const mass0 = start.reduce((s, v) => s + v * grid.dx, 0)
-  if (!(mass0 > 0)) throw new WhiteboxError('value', 'fokkerPlanck: the initial density has no mass')
+  if (!(mass0 > 0)) throw new MdmlError('value', 'fokkerPlanck: the initial density has no mass')
   for (let i = 0; i < cells; i++) start[i] = (start[i] ?? 0) / mass0
   const theta = options.theta ?? 1
   const dt = options.dt
-  if (!(dt > 0)) throw new WhiteboxError('value', 'fokkerPlanck: dt must be positive')
+  if (!(dt > 0)) throw new MdmlError('value', 'fokkerPlanck: dt must be positive')
   const lu = assemble(grid, 1, -theta * dt)
   const steps = Math.ceil(options.tEnd / dt - 1e-9)
   const every = Math.max(1, options.every ?? 1)
@@ -237,7 +237,7 @@ export function fokkerPlanck(
  * @concept fokker-planck
  * @example
  * ```ts
- * import { stationaryDensity } from 'whitebox-engine/dynamics/pde'
+ * import { stationaryDensity } from 'mdml-engine/dynamics/pde'
  * // OU with theta = 1, sigma = 1: N(0, 1/2), density 1/sqrt(pi) at 0.
  * const s = stationaryDensity({ drift: (x) => -x, sigma: () => 1 }, [-6, 6], 401)
  * Math.abs((s.p[200] ?? 0) - 1 / Math.sqrt(Math.PI)) < 1e-4 // => true
@@ -274,7 +274,7 @@ export function stationaryDensity(
  * @concept fokker-planck
  * @example
  * ```ts
- * import { stationaryDensityDiscrete } from 'whitebox-engine/dynamics/pde'
+ * import { stationaryDensityDiscrete } from 'mdml-engine/dynamics/pde'
  * const s = stationaryDensityDiscrete({ drift: (x) => -x, sigma: () => 1 }, [-6, 6], 120)
  * Math.abs(s.p.reduce((a, v) => a + v * 0.1, 0) - 1) < 1e-12 // => true
  * ```

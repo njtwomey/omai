@@ -3,8 +3,8 @@
  * data with a protected attribute.
  */
 
-import { reweighedFit } from 'whitebox-engine/methods/fairness'
-import { dict } from 'whitebox-engine/space'
+import { reweighedFit } from 'mdml-engine/methods/fairness'
+import { dict } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { awareParam, fairnessDataOf } from './_shared.ts'
 

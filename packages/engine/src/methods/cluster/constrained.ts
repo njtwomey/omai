@@ -4,7 +4,7 @@
  * `brokenConstraints` for the pairs a labelling violates.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { clusteringSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -61,7 +61,7 @@ export interface ConstrainedAssignment {
  * @param constraints - Must-link and cannot-link pairs.
  * @param strict - Throw instead of relaxing (default false).
  * @returns Labels, inertia and the relaxed rows.
- * @throws WhiteboxError `value` when `strict` and some row has no feasible cluster.
+ * @throws MdmlError `value` when `strict` and some row has no feasible cluster.
  */
 export function constrainedAssignment(
   x: TensorLike,
@@ -101,7 +101,7 @@ export function constrainedAssignment(
       }
     }
     if (bestBroken > 0) {
-      if (strict) throw new WhiteboxError('value', `copKMeans: row ${i} has no cluster satisfying its constraints`)
+      if (strict) throw new MdmlError('value', `copKMeans: row ${i} has no cluster satisfying its constraints`)
       relaxed.push(i)
     }
     labels[i] = best

@@ -5,11 +5,11 @@ DAGs and on the student and Asia networks."""
 import networkx as nx
 import numpy as np
 import pgmpy
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
+from mdml_oracle.pgm import ASIA, STUDENT
 from pgmpy.base import DAG
 from pgmpy.metrics import SHD
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
-from whitebox_oracle.pgm import ASIA, STUDENT
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

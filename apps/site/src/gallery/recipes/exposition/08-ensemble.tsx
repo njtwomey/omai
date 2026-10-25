@@ -1,14 +1,10 @@
+import { generate } from 'mdml-engine/data'
+import { moons } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { adaBoostClassifier, gradientBoostingClassifier, randomForestClassifier } from 'mdml-engine/methods/ensemble'
+import { key } from 'mdml-engine/random'
+import { Choice, ControlPanel, EnsembleView, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { generate } from 'whitebox-engine/data'
-import { moons } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import {
-  adaBoostClassifier,
-  gradientBoostingClassifier,
-  randomForestClassifier,
-} from 'whitebox-engine/methods/ensemble'
-import { key } from 'whitebox-engine/random'
-import { Choice, ControlPanel, EnsembleView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

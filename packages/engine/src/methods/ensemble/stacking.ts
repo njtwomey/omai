@@ -4,7 +4,7 @@
  * predictions. Classifier and regressor functions, classes and their exposition.
  */
 
-import { argmaxOf, type Json, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type Exposition, ensembleStages } from '../../lib/exposition/index.ts'
@@ -99,7 +99,7 @@ function votingEstimator(
       name,
       kind: classifier ? 'classifier' : 'regressor',
       fit: (data: LearnData, h: VotingHyper, options: FitOptions) => {
-        if (h.estimators.length === 0) throw new WhiteboxError('value', `${name}: needs at least one estimator`)
+        if (h.estimators.length === 0) throw new MdmlError('value', `${name}: needs at least one estimator`)
         const { y, classes } = targetsOf(data, classifier, name)
         const key = resolveKey(options, name)
         const fitted = h.estimators.map(([, est], m) => est.fit(data, { key: foldIn(key, m) }))
@@ -250,7 +250,7 @@ function stackingEstimator(
       name,
       kind: classifier ? 'classifier' : 'regressor',
       fit: (data: LearnData, h: StackingHyper, options: FitOptions) => {
-        if (h.estimators.length === 0) throw new WhiteboxError('value', `${name}: needs at least one estimator`)
+        if (h.estimators.length === 0) throw new MdmlError('value', `${name}: needs at least one estimator`)
         const { y, classes } = targetsOf(data, classifier, name)
         const key = resolveKey(options, name)
         const oof = h.estimators.map(([, est], m) => {

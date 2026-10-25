@@ -2,7 +2,7 @@
 
 The TypeScript golden test defines the same problems by name. Explicit Runge-Kutta methods follow scipy's algorithm
 step for step, so they are compared tightly (with exact evaluation counts); Radau and BDF follow it up to the Newton
-iterations (scipy is given the analytic Jacobian; whitebox-js differentiates the field), and LSODA and odeint use a
+iterations (scipy is given the analytic Jacobian; mdml-js differentiates the field), and LSODA and odeint use a
 different implementation of the same idea, so those compare at a tolerance tied to the solver tolerance.
 """
 
@@ -12,8 +12,8 @@ from typing import Literal
 import numpy as np
 import scipy
 import scipy.integrate as si
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

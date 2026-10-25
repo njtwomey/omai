@@ -1,5 +1,5 @@
+import { groupReport, groupReportFromTables } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
-import { groupReport, groupReportFromTables } from 'whitebox-engine/exposition'
 import { groupReportView, groupSweepView } from './fairness.ts'
 import { stillOf, viewFor } from './registry.ts'
 

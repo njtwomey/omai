@@ -3,11 +3,11 @@
  * showing the latent space, reconstructions and samples as it trains.
  */
 
-import { digits } from 'whitebox-engine/datasets'
-import type { LearnData } from 'whitebox-engine/learn'
-import { vae as vaeMethod } from 'whitebox-engine/methods/generative'
-import { dict, int, real } from 'whitebox-engine/space'
-import { div } from 'whitebox-engine/tensor'
+import { digits } from 'mdml-engine/datasets'
+import type { LearnData } from 'mdml-engine/learn'
+import { vae as vaeMethod } from 'mdml-engine/methods/generative'
+import { dict, int, real } from 'mdml-engine/space'
+import { div } from 'mdml-engine/tensor'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { num } from '../_shared.ts'
 

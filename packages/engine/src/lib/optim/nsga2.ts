@@ -4,7 +4,7 @@
  * traced algorithm whose populations can be shown generation by generation.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { Generator, type Key, latinHypercube } from '../random/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
@@ -40,8 +40,8 @@ export interface SbxOptions {
  * @concept genetic-operators
  * @example
  * ```ts
- * import { sbxCrossover } from 'whitebox-engine/optim'
- * import { key } from 'whitebox-engine/random'
+ * import { sbxCrossover } from 'mdml-engine/optim'
+ * import { key } from 'mdml-engine/random'
  * const [c1, c2] = sbxCrossover(key(0), [0, 1], [1, 0], [[0, 1], [0, 1]], { probability: 1 })
  * c1.every((v) => v >= 0 && v <= 1) && c2.every((v) => v >= 0 && v <= 1) // => true
  * ```
@@ -121,8 +121,8 @@ export interface PolynomialMutationOptions {
  * @concept genetic-operators
  * @example
  * ```ts
- * import { polynomialMutation } from 'whitebox-engine/optim'
- * import { key } from 'whitebox-engine/random'
+ * import { polynomialMutation } from 'mdml-engine/optim'
+ * import { key } from 'mdml-engine/random'
  * const y = polynomialMutation(key(1), [0.5, 0.5], [[0, 1], [0, 1]], { probability: 1 })
  * y.every((v) => v >= 0 && v <= 1) && (y[0] !== 0.5 || y[1] !== 0.5) // => true
  * ```
@@ -256,8 +256,8 @@ function constrainedDominates(a: Individual, b: Individual): boolean {
  * @concept nsga-ii
  * @example
  * ```ts
- * import { nsga2Algorithm } from 'whitebox-engine/optim'
- * import { square, stack, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { nsga2Algorithm } from 'mdml-engine/optim'
+ * import { square, stack, sub, sum, type Value } from 'mdml-engine/tensor'
  * const f = (x: unknown) => stack([sum(square(x as Value)), sum(square(sub(x as Value, 2)))])
  * nsga2Algorithm(f, [0], { bounds: [[-5, 5]] }).name // => 'nsga2'
  * ```
@@ -265,10 +265,10 @@ function constrainedDominates(a: Individual, b: Individual): boolean {
 export function nsga2Algorithm(f: VectorObjective, x0: Parameters, options: Nsga2Options): Algorithm<Nsga2State> {
   const shape = flatObjective(() => fromStorage(new Float64Array([0]), [], 'float64'), x0)
   const n = shape.n
-  if (n === 0) throw new WhiteboxError('value', 'nsga2: no parameters')
+  if (n === 0) throw new MdmlError('value', 'nsga2: no parameters')
   const box = finiteBounds(options.bounds, n, 'nsga2')
   const size = 2 * Math.ceil((options.popSize ?? 100) / 2)
-  if (size < 4) throw new WhiteboxError('value', 'nsga2: popSize must be at least 4')
+  if (size < 4) throw new MdmlError('value', 'nsga2: popSize must be at least 4')
   const constraints = options.constraints ?? []
   const evaluate = (x: Float64Array): Individual => {
     const tree = shape.unravel(x)
@@ -392,8 +392,8 @@ export function nsga2Algorithm(f: VectorObjective, x0: Parameters, options: Nsga
  * @concept nsga-ii
  * @example
  * ```ts
- * import { nsga2 } from 'whitebox-engine/optim'
- * import { square, stack, sub, sum, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { nsga2 } from 'mdml-engine/optim'
+ * import { square, stack, sub, sum, toArray, type Value } from 'mdml-engine/tensor'
  * // Schaffer's problem: f1 = x^2, f2 = (x - 2)^2, Pareto set [0, 2]
  * const f = (x: unknown) => stack([sum(square(x as Value)), sum(square(sub(x as Value, 2)))])
  * const r = nsga2(f, [0], { bounds: [[-5, 5]], popSize: 20, maxIterations: 30, seed: 0 })

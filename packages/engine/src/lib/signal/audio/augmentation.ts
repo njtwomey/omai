@@ -4,7 +4,7 @@
  * and mixing a signal with noise at a chosen signal-to-noise ratio.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
 import { type ComplexValue, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { float, samples } from '../_shared.ts'
@@ -38,14 +38,14 @@ export interface SpecAugmentOptions {
  * @concept data-augmentation
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { key } from 'whitebox-engine/random'
+ * import { audio } from 'mdml-engine/signal'
+ * import { key } from 'mdml-engine/random'
  * audio.specAugment(Array.from({ length: 20 }, () => new Array(30).fill(1)), key(0)).shape // => [20, 30]
  * ```
  */
 export function specAugment(s: TensorLike, key: Key, options: SpecAugmentOptions = {}): Tensor {
   const v = primalOf(float(s))
-  if (v.shape.length !== 2) throw new WhiteboxError('shape', 'specAugment: expected a [bins, frames] spectrogram')
+  if (v.shape.length !== 2) throw new MdmlError('shape', 'specAugment: expected a [bins, frames] spectrogram')
   const [bins = 0, frames = 0] = v.shape
   const out = Float64Array.from(v.data, Number)
   const fm = options.freqMasks ?? 2
@@ -78,13 +78,13 @@ export function specAugment(s: TensorLike, key: Key, options: SpecAugmentOptions
  * @concept phase-vocoder
  * @example
  * ```ts
- * import { audio, stft } from 'whitebox-engine/signal'
+ * import { audio, stft } from 'mdml-engine/signal'
  * const z = stft(Array.from({ length: 512 }, (_, i) => Math.sin(i / 4)), { nperseg: 64, noverlap: 48, scaling: 'none' }).values
  * audio.phaseVocoder(z, 2).re.shape // => [33, 17]
  * ```
  */
 export function phaseVocoder(d: ComplexValue, rate: number): { readonly re: Tensor; readonly im: Tensor } {
-  if (!(rate > 0)) throw new WhiteboxError('value', 'phaseVocoder: rate must be positive')
+  if (!(rate > 0)) throw new MdmlError('value', 'phaseVocoder: rate must be positive')
   const re = primalOf(d.re)
   const im = primalOf(d.im)
   const [bins = 0, frames = 0] = re.shape
@@ -135,7 +135,7 @@ export interface StretchOptions {
  * @concept phase-vocoder
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * audio.timeStretch(Array.from({ length: 4096 }, (_, i) => Math.sin(i / 7)), 2, { nFft: 256 }).length // => 2048
  * ```
  */
@@ -163,7 +163,7 @@ export function timeStretch(y: TensorLike, rate: number, options: StretchOptions
  * @concept phase-vocoder
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * audio.pitchShift(Array.from({ length: 4096 }, (_, i) => Math.sin(i / 7)), 8000, 12, { nFft: 256 }).length // => 4096
  * ```
  */
@@ -195,14 +195,14 @@ export function pitchShift(
  * @concept data-augmentation
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
+ * import { audio } from 'mdml-engine/signal'
  * Array.from(audio.mixAtSnr([1, -1, 1, -1], [1, 1, 1, 1], 0)) // => [2, 0, 2, 0]
  * ```
  */
 export function mixAtSnr(signal: TensorLike, noise: TensorLike, snrDb: number): Float64Array {
   const s = samples(signal, 'mixAtSnr')
   const n = samples(noise, 'mixAtSnr')
-  if (n.length < s.length) throw new WhiteboxError('shape', 'mixAtSnr: the noise is shorter than the signal')
+  if (n.length < s.length) throw new MdmlError('shape', 'mixAtSnr: the noise is shorter than the signal')
   let ps = 0
   let pn = 0
   for (let i = 0; i < s.length; i++) {
@@ -223,8 +223,8 @@ export function mixAtSnr(signal: TensorLike, noise: TensorLike, snrDb: number): 
  * @concept data-augmentation
  * @example
  * ```ts
- * import { audio } from 'whitebox-engine/signal'
- * import { key } from 'whitebox-engine/random'
+ * import { audio } from 'mdml-engine/signal'
+ * import { key } from 'mdml-engine/random'
  * audio.addNoise(new Array(100).fill(1), key(0), 20).length // => 100
  * ```
  */

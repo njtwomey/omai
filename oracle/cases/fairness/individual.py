@@ -3,9 +3,9 @@
 import aif360
 import numpy as np
 from aif360.metrics import BinaryLabelDatasetMetric
-from whitebox_oracle.fairness import binary_dataset
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fairness import binary_dataset
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"aif360": aif360.__version__}
 

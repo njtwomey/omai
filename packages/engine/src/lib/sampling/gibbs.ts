@@ -4,7 +4,7 @@
  * bracket), and elliptical slice sampling for posteriors with a Gaussian prior (as BlackJAX), all as MCMC kernels.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { ddot, dgemv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, uniformStream } from '../random/index.ts'
 import { asTensor, type Tensor, type TensorLike } from '../tensor/index.ts'
@@ -40,15 +40,15 @@ export interface GibbsOptions {
  * @param blocks - The blocks and their conditional samplers.
  * @param options - Systematic or random scan, and a target for traced log densities.
  * @returns The kernel (acceptance rate 1).
- * @throws WhiteboxError with code `value` for no blocks or indices outside [0, dim), and `shape` when a block returns
+ * @throws MdmlError with code `value` for no blocks or indices outside [0, dim), and `shape` when a block returns
  *   the wrong number of values.
  * @concept gibbs-sampling
  * @reference S. Geman and D. Geman, Stochastic relaxation, Gibbs distributions, and the Bayesian restoration of images
  *   (IEEE PAMI 1984).
  * @example
  * ```ts
- * import { blockedGibbs, sampleChain } from 'whitebox-engine/sampling'
- * import { key, normal } from 'whitebox-engine/random'
+ * import { blockedGibbs, sampleChain } from 'mdml-engine/sampling'
+ * import { key, normal } from 'mdml-engine/random'
  * // A bivariate normal with correlation 0.5 from its two conditionals.
  * const rho = 0.5
  * const s = Math.sqrt(1 - rho * rho)
@@ -60,10 +60,10 @@ export interface GibbsOptions {
  * ```
  */
 export function blockedGibbs(dim: number, blocks: readonly GibbsBlock[], options: GibbsOptions = {}): MCMCKernel {
-  if (blocks.length === 0) throw new WhiteboxError('value', 'blockedGibbs: need at least one block')
+  if (blocks.length === 0) throw new MdmlError('value', 'blockedGibbs: need at least one block')
   for (const b of blocks) {
     if (b.indices.length === 0 || !b.indices.every((i) => Number.isInteger(i) && i >= 0 && i < dim)) {
-      throw new WhiteboxError('value', `blockedGibbs: block indices must lie in [0, ${dim})`)
+      throw new MdmlError('value', `blockedGibbs: block indices must lie in [0, ${dim})`)
     }
   }
   const scan = options.scan ?? 'systematic'
@@ -72,7 +72,7 @@ export function blockedGibbs(dim: number, blocks: readonly GibbsBlock[], options
   const update = (key: Key, x: Float64Array, b: GibbsBlock): Float64Array => {
     const v = b.sample(key, x)
     if (v.length !== b.indices.length) {
-      throw new WhiteboxError('shape', `blockedGibbs: a block of ${b.indices.length} returned ${v.length} values`)
+      throw new MdmlError('shape', `blockedGibbs: a block of ${b.indices.length} returned ${v.length} values`)
     }
     const next = Float64Array.from(x)
     b.indices.forEach((i, j) => {
@@ -85,7 +85,7 @@ export function blockedGibbs(dim: number, blocks: readonly GibbsBlock[], options
     dim,
     config: { dim, blocks: blocks.map((b) => [...b.indices]), scan },
     init: (position) => {
-      if (position.length !== dim) throw new WhiteboxError('shape', `blockedGibbs: the position needs ${dim} values`)
+      if (position.length !== dim) throw new MdmlError('shape', `blockedGibbs: the position needs ${dim} values`)
       const x = Float64Array.from(position)
       const s: MCMCState = { position: x, logDensity: density(x) }
       return s
@@ -124,13 +124,13 @@ export interface SliceOptions {
  * @param target - The target (no gradient needed).
  * @param options - Bracket width, stepping-out cap and shrinkage cap.
  * @returns The kernel; `numSteps` reports the log-density evaluations of the transition.
- * @throws WhiteboxError with code `value` for non-positive widths or caps.
+ * @throws MdmlError with code `value` for non-positive widths or caps.
  * @concept slice-sampling
  * @reference R. M. Neal, Slice sampling (Annals of Statistics 2003), sections 4 and 5.
  * @example
  * ```ts
- * import { numericTarget, sliceSampler } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { numericTarget, sliceSampler } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const k = sliceSampler(t, { width: 2 })
  * (k.step(key(0), k.init([0.3])).info.numSteps ?? 0) >= 2 // => true
@@ -142,14 +142,14 @@ export function sliceSampler(target: LogDensity, options: SliceOptions = {}): MC
   const m = options.maxStepsOut ?? 50
   const maxShrink = options.maxShrink ?? 200
   if (!width.every((w) => w > 0 && Number.isFinite(w)) || !(m >= 0) || !(maxShrink >= 1)) {
-    throw new WhiteboxError('value', 'sliceSampler: widths must be positive and the caps non-negative')
+    throw new MdmlError('value', 'sliceSampler: widths must be positive and the caps non-negative')
   }
   return {
     name: 'slice',
     dim,
     config: { dim, width: Array.from(width), maxStepsOut: m, maxShrink },
     init: (position) => {
-      if (position.length !== dim) throw new WhiteboxError('shape', `sliceSampler: the position needs ${dim} values`)
+      if (position.length !== dim) throw new MdmlError('shape', `sliceSampler: the position needs ${dim} values`)
       const x = Float64Array.from(position)
       const s: MCMCState = { position: x, logDensity: target.logDensity(x) }
       return s
@@ -234,14 +234,14 @@ export interface EllipticalSliceOptions {
  * @param options - The cap on angle proposals.
  * @returns The kernel; the log density reported is log L + log N(x; mu, Sigma) up to a constant, and `numSteps` the
  *   number of likelihood evaluations.
- * @throws WhiteboxError with code `value` for a covariance that is not positive definite, and `shape` for a mean of
+ * @throws MdmlError with code `value` for a covariance that is not positive definite, and `shape` for a mean of
  *   the wrong length.
  * @concept elliptical-slice-sampling
  * @reference I. Murray, R. P. Adams and D. J. C. MacKay, Elliptical slice sampling (AISTATS 2010).
  * @example
  * ```ts
- * import { ellipticalSlice, sampleChain } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { ellipticalSlice, sampleChain } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * // A N(0, 1) prior and a N(1; x, 1) likelihood: the posterior is N(0.5, 0.5).
  * const k = ellipticalSlice((x) => -0.5 * ((x[0] ?? 0) - 1) ** 2, { covariance: 1 }, 1)
  * sampleChain(k, [0], { key: key(0), numDraws: 5 }).draws.length // => 5
@@ -277,7 +277,7 @@ export function ellipticalSlice(
     dim,
     config: { dim, maxIter },
     init: (position) => {
-      if (position.length !== dim) throw new WhiteboxError('shape', `ellipticalSlice: the position needs ${dim} values`)
+      if (position.length !== dim) throw new MdmlError('shape', `ellipticalSlice: the position needs ${dim} values`)
       const x = Float64Array.from(position)
       const s: MCMCState = { position: x, logDensity: ll(x) + logPrior(x) }
       return s

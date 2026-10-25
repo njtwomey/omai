@@ -7,7 +7,7 @@
 
 // TODO: averaged SGD (`average`), early stopping on a validation split, class weights, partial_fit, and the
 // one-class SGD SVM.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type CoefficientTable, coefficientTable, type Exposition, learningCurve } from '../../lib/exposition/index.ts'
 import {
   classNamesOf,
@@ -234,8 +234,8 @@ export function plainSgdAlgorithm(
   const lr = settings.learningRate
   const pa = lr === 'pa1' || lr === 'pa2'
   if ((lr === 'constant' || lr === 'invscaling' || lr === 'adaptive' || pa) && !(settings.eta0 > 0))
-    throw new WhiteboxError('value', `sgd: eta0 must be positive for the ${lr} schedule`)
-  if (lr === 'optimal' && !(alpha > 0)) throw new WhiteboxError('value', 'sgd: the optimal schedule needs alpha > 0')
+    throw new MdmlError('value', `sgd: eta0 must be positive for the ${lr} schedule`)
+  if (lr === 'optimal' && !(alpha > 0)) throw new MdmlError('value', 'sgd: the optimal schedule needs alpha > 0')
   const typw = Math.sqrt(1 / Math.sqrt(alpha))
   const optimalInit = lr === 'optimal' ? 1 / ((typw / Math.max(1, loss.dloss(1, -typw))) * alpha) : 0
   const tol = settings.tol ?? Number.NEGATIVE_INFINITY
@@ -494,7 +494,7 @@ function fitSgdClassifier(
   const x = matrixView(data.x, name)
   const { classes: labels, codes } = encodeLabels(data.y ?? [], name, x.n)
   const classes = [...labels]
-  if (classes.length < 2) throw new WhiteboxError('value', `${name}: needs at least two classes`)
+  if (classes.length < 2) throw new MdmlError('value', `${name}: needs at least two classes`)
   const rows = classes.length === 2 ? 1 : classes.length
   const targets = Array.from({ length: rows }, (_, r) =>
     Float64Array.from(codes, (c) => (rows === 1 ? (c === 1 ? 1 : -1) : c === r ? 1 : -1)),

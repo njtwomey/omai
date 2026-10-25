@@ -5,7 +5,7 @@
  * coefficients (numerical, and exact for Brownian motion).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { choleskyJitter, choSolve, eigh, solveTriangular } from '../numerics/linalg/index.ts'
 import { type Key, normal } from '../random/index.ts'
 import {
@@ -52,7 +52,7 @@ export type CovarianceFunction = (x: Value, y: Value) => Value
 function points(x: TensorLike): Value {
   const v = asFloat(asTensor(x))
   if (v.shape.length === 1) return expandDims(v, -1)
-  if (v.shape.length !== 2) throw new WhiteboxError('shape', 'gaussian process: points must be [n] or [n, d]')
+  if (v.shape.length !== 2) throw new MdmlError('shape', 'gaussian process: points must be [n] or [n, d]')
   return v
 }
 
@@ -71,8 +71,8 @@ function times(x: Value, y: Value): [Value, Value] {
  * @concept gaussian-processes
  * @example
  * ```ts
- * import { brownianCovariance, covarianceMatrix } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { brownianCovariance, covarianceMatrix } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(covarianceMatrix(brownianCovariance(), [1, 2])) // => [[1, 1], [1, 2]]
  * ```
  */
@@ -89,8 +89,8 @@ export function covarianceMatrix(k: CovarianceFunction, x: TensorLike, y?: Tenso
  * @concept brownian-motion
  * @example
  * ```ts
- * import { brownianCovariance } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { brownianCovariance } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(brownianCovariance(2)([[0.5]], [[3]])) // => 2
  * ```
  */
@@ -111,13 +111,13 @@ export function brownianCovariance(sigma: TensorLike = 1): CovarianceFunction {
  * @concept brownian-bridge
  * @example
  * ```ts
- * import { bridgeCovariance } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { bridgeCovariance } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(bridgeCovariance()([[0.5]], [[0.5]])) // => 0.25
  * ```
  */
 export function bridgeCovariance(horizon = 1, sigma: TensorLike = 1): CovarianceFunction {
-  if (!(horizon > 0)) throw new WhiteboxError('value', 'bridgeCovariance: the horizon must be positive')
+  if (!(horizon > 0)) throw new MdmlError('value', 'bridgeCovariance: the horizon must be positive')
   const [s2] = promoteFloat(mul(sigma, sigma)) as [Value]
   return (x, y) => {
     const [s, t] = times(asTensor(x), asTensor(y))
@@ -134,8 +134,8 @@ export function bridgeCovariance(horizon = 1, sigma: TensorLike = 1): Covariance
  * @concept ornstein-uhlenbeck
  * @example
  * ```ts
- * import { ouCovariance } from 'whitebox-engine/stochastic'
- * import { item } from 'whitebox-engine/tensor'
+ * import { ouCovariance } from 'mdml-engine/stochastic'
+ * import { item } from 'mdml-engine/tensor'
  * item(ouCovariance({ theta: 0.5, sigma: 1 })([[0]], [[0]])) // => 1
  * ```
  */
@@ -176,8 +176,8 @@ function meanValues(mean: GpSampleOptions['mean'], x: Value): Value {
  * @concept gaussian-processes
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { brownianCovariance, sampleGaussianProcess } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { brownianCovariance, sampleGaussianProcess } from 'mdml-engine/stochastic'
  * sampleGaussianProcess(key(0), brownianCovariance(), [0.1, 0.5, 1], { paths: 4 }).shape // => [4, 3]
  * ```
  */
@@ -223,8 +223,8 @@ export interface GaussianProcessPosterior {
  * @concept gaussian-process-regression
  * @example
  * ```ts
- * import { brownianCovariance, conditionGaussianProcess } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { brownianCovariance, conditionGaussianProcess } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * // Brownian motion seen at t = 1: at t = 0.5 the mean halves and the variance is the bridge's, 1/4
  * const post = conditionGaussianProcess(brownianCovariance(), [1], [2], [0.5], { noise: 0 })
  * toArray(post.mean) // => [1]
@@ -242,7 +242,7 @@ export function conditionGaussianProcess(
   const xb = points(xTest)
   const n = xa.shape[0] ?? 0
   const y = asFloat(asTensor(yTrain))
-  if (y.shape.length !== 1 || y.shape[0] !== n) throw new WhiteboxError('shape', 'conditionGaussianProcess: y is [n]')
+  if (y.shape.length !== 1 || y.shape[0] !== n) throw new MdmlError('shape', 'conditionGaussianProcess: y is [n]')
   const noise = options.noise ?? 1e-10
   const kxx = add(k(xa, xa), mul(eye(n), noise))
   const factor = choleskyJitter(kxx).l
@@ -269,8 +269,8 @@ export function conditionGaussianProcess(
  * @concept gaussian-process-regression
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { brownianCovariance, conditionGaussianProcess, samplePosterior } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { brownianCovariance, conditionGaussianProcess, samplePosterior } from 'mdml-engine/stochastic'
  * const post = conditionGaussianProcess(brownianCovariance(), [1], [2], [0.25, 0.5, 0.75], { noise: 1e-8 })
  * samplePosterior(key(0), post, 3).shape // => [3, 3]
  * ```
@@ -316,8 +316,8 @@ function trapezoidWeights(t: Float64Array): Float64Array {
  * @concept karhunen-loeve
  * @example
  * ```ts
- * import { brownianCovariance, karhunenLoeve, timeGrid } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { brownianCovariance, karhunenLoeve, timeGrid } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * const kl = karhunenLoeve(brownianCovariance(), timeGrid(1, 400), 2)
  * Math.abs(toArray(kl.eigenvalues)[0] - 4 / Math.PI ** 2) < 1e-4 // => true
  * ```
@@ -325,7 +325,7 @@ function trapezoidWeights(t: Float64Array): Float64Array {
 export function karhunenLoeve(k: CovarianceFunction, times: ArrayLike<number>, terms?: number): KarhunenLoeve {
   const t = Float64Array.from(times)
   const n = t.length
-  if (n < 2) throw new WhiteboxError('value', 'karhunenLoeve: needs at least two grid points')
+  if (n < 2) throw new MdmlError('value', 'karhunenLoeve: needs at least two grid points')
   const keep = terms === undefined ? n : positiveInteger(Math.min(terms, n), 'terms', 'karhunenLoeve')
   const w = trapezoidWeights(t)
   const root = fromStorage(Float64Array.from(w, Math.sqrt), [n], 'float64')
@@ -365,8 +365,8 @@ export function karhunenLoeve(k: CovarianceFunction, times: ArrayLike<number>, t
  * @concept karhunen-loeve
  * @example
  * ```ts
- * import { brownianKarhunenLoeve } from 'whitebox-engine/stochastic'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { brownianKarhunenLoeve } from 'mdml-engine/stochastic'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(brownianKarhunenLoeve([0, 1], 1).eigenvalues)[0] === 4 / Math.PI ** 2 // => true
  * ```
  */
@@ -374,7 +374,7 @@ export function brownianKarhunenLoeve(times: ArrayLike<number>, terms: number): 
   positiveInteger(terms, 'terms', 'brownianKarhunenLoeve')
   const t = Float64Array.from(times)
   const horizon = t[t.length - 1] ?? 1
-  if (!(horizon > 0)) throw new WhiteboxError('value', 'brownianKarhunenLoeve: the grid must end after 0')
+  if (!(horizon > 0)) throw new MdmlError('value', 'brownianKarhunenLoeve: the grid must end after 0')
   const n = t.length
   const freq = Array.from({ length: terms }, (_, k) => ((k + 0.5) * Math.PI) / horizon)
   const phi = new Float64Array(terms * n)
@@ -403,8 +403,8 @@ export function brownianKarhunenLoeve(times: ArrayLike<number>, terms: number): 
  * @concept karhunen-loeve
  * @example
  * ```ts
- * import { key } from 'whitebox-engine/random'
- * import { brownianKarhunenLoeve, sampleKarhunenLoeve, timeGrid } from 'whitebox-engine/stochastic'
+ * import { key } from 'mdml-engine/random'
+ * import { brownianKarhunenLoeve, sampleKarhunenLoeve, timeGrid } from 'mdml-engine/stochastic'
  * sampleKarhunenLoeve(key(0), brownianKarhunenLoeve(timeGrid(1, 50), 20), 5).shape // => [5, 51]
  * ```
  */

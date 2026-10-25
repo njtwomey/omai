@@ -3,7 +3,7 @@
  * clustering datasets.
  */
 
-import { kmeans as kmeansEstimator } from 'whitebox-engine/methods/cluster'
+import { kmeans as kmeansEstimator } from 'mdml-engine/methods/cluster'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

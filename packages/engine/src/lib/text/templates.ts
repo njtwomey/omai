@@ -4,7 +4,7 @@
  * feature index with frequency cut-off, CRF++'s weight layout, and inspection of which template produced which feature.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 
 /**
  * A token-by-attribute table: one row per token of a sequence, one column per attribute (word, part of speech, ...),
@@ -36,8 +36,8 @@ export interface CrfppTemplate {
 /** CRF++'s largest context offset (kMaxContextSize). */
 const MAX_CONTEXT = 8
 
-function syntaxError(format: string, line: number, column: number, message: string): WhiteboxError {
-  return new WhiteboxError('value', `${format} template line ${line}, column ${column}: ${message}`, { line, column })
+function syntaxError(format: string, line: number, column: number, message: string): MdmlError {
+  return new MdmlError('value', `${format} template line ${line}, column ${column}: ${message}`, { line, column })
 }
 
 /**
@@ -48,12 +48,12 @@ function syntaxError(format: string, line: number, column: number, message: stri
  *
  * @param source - The template file's text.
  * @returns The unigram and bigram templates, in file order.
- * @throws WhiteboxError with code `value` and `{ line, column }` details for a line of unknown type or a malformed
+ * @throws MdmlError with code `value` and `{ line, column }` details for a line of unknown type or a malformed
  * macro.
  * @concept crf-features
  * @example
  * ```ts
- * import { parseCrfppTemplate } from 'whitebox-engine/text'
+ * import { parseCrfppTemplate } from 'mdml-engine/text'
  * const t = parseCrfppTemplate('# words\nU00:%x[-1,0]\nU01:%x[0,0]/%x[0,1]\n\nB')
  * [t.unigram.length, t.bigram[0]?.source, t.unigram[1]?.parts] // => [2, 'B', ['U01:', { row: 0, col: 0 }, '/', { row: 0, col: 1 }]]
  * ```
@@ -97,7 +97,7 @@ export function parseCrfppTemplate(source: string): CrfppTemplate {
 function crfppCell(table: TokenTable, position: number, macro: CrfppMacro, line: CrfppLine): string {
   const width = table[0]?.length ?? 0
   if (macro.col >= width)
-    throw new WhiteboxError('value', `CRF++ template line ${line.line}: column ${macro.col} is out of range`, {
+    throw new MdmlError('value', `CRF++ template line ${line.line}: column ${macro.col} is out of range`, {
       line: line.line,
     })
   const i = position + macro.row
@@ -114,11 +114,11 @@ function crfppCell(table: TokenTable, position: number, macro: CrfppMacro, line:
  * @param table - The token-by-attribute table.
  * @param position - The current token.
  * @returns The feature string (for example `U01:the/DT`).
- * @throws WhiteboxError with code `value` for a column outside the table.
+ * @throws MdmlError with code `value` for a column outside the table.
  * @concept crf-features
  * @example
  * ```ts
- * import { parseCrfppTemplate, expandCrfppLine } from 'whitebox-engine/text'
+ * import { parseCrfppTemplate, expandCrfppLine } from 'mdml-engine/text'
  * const [line] = parseCrfppTemplate('U02:%x[-1,0]|%x[1,1]').unigram
  * line === undefined ? '' : expandCrfppLine(line, [['the', 'DT'], ['cat', 'NN']], 0) // => 'U02:_B-1|NN'
  * ```
@@ -144,11 +144,11 @@ export interface SequenceFeatures {
  * @param template - The parsed template.
  * @param table - The token-by-attribute table.
  * @returns The features of each position.
- * @throws WhiteboxError with code `value` for a column outside the table.
+ * @throws MdmlError with code `value` for a column outside the table.
  * @concept crf-features
  * @example
  * ```ts
- * import { parseCrfppTemplate, crfppFeatures } from 'whitebox-engine/text'
+ * import { parseCrfppTemplate, crfppFeatures } from 'mdml-engine/text'
  * const t = parseCrfppTemplate('U00:%x[0,0]\nU01:%x[-1,0]/%x[0,0]\nB')
  * crfppFeatures(t, [['He'], ['ran']]) // => { unigram: [['U00:He', 'U01:_B-1/He'], ['U00:ran', 'U01:He/ran']], bigram: [[], ['B']] }
  * ```
@@ -198,11 +198,11 @@ function wapitiBoundary(i: number, length: number): string {
  *
  * @param source - The pattern file's text.
  * @returns The pattern lines.
- * @throws WhiteboxError with code `value` and `{ line, column }` details for malformed lines.
+ * @throws MdmlError with code `value` and `{ line, column }` details for malformed lines.
  * @concept crf-features
  * @example
  * ```ts
- * import { parseWapitiPatterns } from 'whitebox-engine/text'
+ * import { parseWapitiPatterns } from 'mdml-engine/text'
  * parseWapitiPatterns('*:Cap=%t[0,0,"^\\u"]').map((l) => l.kind) // => ['*']
  * ```
  */
@@ -281,11 +281,11 @@ function wapitiRegex(source: string): string {
  * @param patterns - The parsed patterns.
  * @param table - The token-by-attribute table.
  * @returns The features of each position.
- * @throws WhiteboxError with code `value` for a column outside the table.
+ * @throws MdmlError with code `value` for a column outside the table.
  * @concept crf-features
  * @example
  * ```ts
- * import { parseWapitiPatterns, wapitiFeatures } from 'whitebox-engine/text'
+ * import { parseWapitiPatterns, wapitiFeatures } from 'mdml-engine/text'
  * const p = parseWapitiPatterns('u:w=%x[-1,0]\n*:cap=%t[0,0,"^\\u"]\nU:suf=%m[0,0,"..$"]')
  * wapitiFeatures(p, [['The'], ['cat']]).unigram // => [['u:w=_x-1', '*:cap=true', 'U:suf=he'], ['u:w=The', '*:cap=false', 'U:suf=at']]
  * ```
@@ -300,7 +300,7 @@ export function wapitiFeatures(patterns: readonly WapitiLine[], table: TokenTabl
         continue
       }
       if (p.col >= width)
-        throw new WhiteboxError('value', `Wapiti pattern line ${l.line}: column ${p.col} is out of range`, {
+        throw new MdmlError('value', `Wapiti pattern line ${l.line}: column ${p.col} is out of range`, {
           line: l.line,
         })
       const i = p.absolute ? (p.offset < 0 ? table.length + p.offset : p.offset) : t + p.offset
@@ -338,7 +338,7 @@ export interface FeatureIndex {
  * @concept crf-features
  * @example
  * ```ts
- * import { featureIndex } from 'whitebox-engine/text'
+ * import { featureIndex } from 'mdml-engine/text'
  * featureIndex([[['a', 'b'], ['a']], [{ a: 1, c: 1 }]], { minFrequency: 2 }).features // => ['a']
  * ```
  */
@@ -371,7 +371,7 @@ export function featureIndex(
  * @concept crf-features
  * @example
  * ```ts
- * import { featureIndex, crfppWeightOffsets } from 'whitebox-engine/text'
+ * import { featureIndex, crfppWeightOffsets } from 'mdml-engine/text'
  * const r = crfppWeightOffsets(featureIndex([[['U00:a', 'B'], ['U00:b', 'B']]]), 3)
  * [[...r.offsets], r.size] // => [[['U00:a', 0], ['B', 3], ['U00:b', 12]], 15]
  * ```
@@ -410,7 +410,7 @@ export interface FeatureFiring {
  * @concept crf-features
  * @example
  * ```ts
- * import { parseCrfppTemplate, fireFeatures } from 'whitebox-engine/text'
+ * import { parseCrfppTemplate, fireFeatures } from 'mdml-engine/text'
  * fireFeatures(parseCrfppTemplate('U00:%x[0,0]\nB'), [['a'], ['b']], 1).map((f) => f.feature) // => ['U00:b', 'B']
  * ```
  */

@@ -29,7 +29,7 @@ export interface PrecisionRecallCurve {
  * @concept precision-recall
  * @example
  * ```ts
- * import { precisionRecallCurve } from 'whitebox-engine/metrics'
+ * import { precisionRecallCurve } from 'mdml-engine/metrics'
  * precisionRecallCurve([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).recall // => [1, 1, 0.5, 0.5, 0]
  * ```
  */
@@ -88,7 +88,7 @@ export interface AveragePrecisionOptions extends CurveOptions {
  * @concept precision-recall
  * @example
  * ```ts
- * import { averagePrecisionScore } from 'whitebox-engine/metrics'
+ * import { averagePrecisionScore } from 'mdml-engine/metrics'
  * averagePrecisionScore([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).estimate.value // => 0.8333333333333333
  * ```
  */
@@ -218,7 +218,7 @@ function prgPoints(yTrue: MetricInput, yScore: TensorLike, options: CurveOptions
  * @concept precision-recall
  * @example
  * ```ts
- * import { prGainCurve } from 'whitebox-engine/metrics'
+ * import { prGainCurve } from 'mdml-engine/metrics'
  * prGainCurve([0, 1, 1, 0, 1], [0.1, 0.9, 0.8, 0.7, 0.3]).recallGain.at(-1) // => 1
  * ```
  */
@@ -242,7 +242,7 @@ export function prGainCurve(yTrue: MetricInput, yScore: TensorLike, options: Cur
  * @returns The metric result.
  * @example
  * ```ts
- * import { prGainAuc } from 'whitebox-engine/metrics'
+ * import { prGainAuc } from 'mdml-engine/metrics'
  * prGainAuc([0, 1, 1, 0], [0.1, 0.9, 0.8, 0.2]).estimate.value // => 1
  * ```
  */

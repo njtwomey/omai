@@ -1,11 +1,11 @@
+import { generate } from 'mdml-engine/data'
+import { blobs } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { isolationForest, localOutlierFactor } from 'mdml-engine/methods/anomaly'
+import { key, uniform } from 'mdml-engine/random'
+import { toArray } from 'mdml-engine/tensor'
+import { AnomalyView, Choice, ControlPanel, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { generate } from 'whitebox-engine/data'
-import { blobs } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { isolationForest, localOutlierFactor } from 'whitebox-engine/methods/anomaly'
-import { key, uniform } from 'whitebox-engine/random'
-import { toArray } from 'whitebox-engine/tensor'
-import { AnomalyView, Choice, ControlPanel, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

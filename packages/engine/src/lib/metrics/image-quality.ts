@@ -4,7 +4,7 @@
  * angle mapper, ERGAS and RASE for multispectral images, and LPIPS and DISTS from supplied network features.
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { convNd } from '../numerics/convolution/index.ts'
 import { image as filters } from '../signal/index.ts'
 import { fromStorage, primalOf, reshape, type TensorLike, type Value } from '../tensor/index.ts'
@@ -23,8 +23,7 @@ interface Plane {
 function planes(name: string, image: TensorLike): Plane[] {
   const m = matrix(image)
   const [h = 0, w = 0, c = 1] = m.shape
-  if (m.shape.length < 2 || m.shape.length > 3)
-    throw new WhiteboxError('shape', `${name}: images are [H, W] or [H, W, C]`)
+  if (m.shape.length < 2 || m.shape.length > 3) throw new MdmlError('shape', `${name}: images are [H, W] or [H, W, C]`)
   return Array.from({ length: c }, (_, k) => ({
     h,
     w,
@@ -37,7 +36,7 @@ function pairOfPlanes(name: string, a: TensorLike, b: TensorLike): [Plane[], Pla
   const pa = planes(name, a)
   const pb = planes(name, b)
   if (pa.length !== pb.length || pa[0]?.h !== pb[0]?.h || pa[0]?.w !== pb[0]?.w)
-    throw new WhiteboxError('shape', `${name}: images differ in shape`)
+    throw new MdmlError('shape', `${name}: images differ in shape`)
   return [pa, pb]
 }
 
@@ -138,7 +137,7 @@ function rangeOf(image: TensorLike): number {
 const mseOf = (a: TensorLike, b: TensorLike): number => {
   const x = matrix(a).data
   const y = matrix(b).data
-  if (x.length !== y.length) throw new WhiteboxError('shape', 'images differ in size')
+  if (x.length !== y.length) throw new MdmlError('shape', 'images differ in size')
   let s = 0
   for (const [i, v] of x.entries()) s += (v - (y[i] ?? 0)) ** 2
   return s / x.length
@@ -153,7 +152,7 @@ const mseOf = (a: TensorLike, b: TensorLike): number => {
  * @concept image-quality
  * @example
  * ```ts
- * import { imageMeanSquaredError } from 'whitebox-engine/metrics'
+ * import { imageMeanSquaredError } from 'mdml-engine/metrics'
  * imageMeanSquaredError([[0, 0], [0, 0]], [[1, 1], [1, 1]]).estimate.value // => 1
  * ```
  */
@@ -172,7 +171,7 @@ export const imageMeanSquaredError: MetricFunction<[TensorLike, TensorLike]> = d
  * @returns The metric result (Infinity for identical images).
  * @example
  * ```ts
- * import { peakSignalNoiseRatio } from 'whitebox-engine/metrics'
+ * import { peakSignalNoiseRatio } from 'mdml-engine/metrics'
  * peakSignalNoiseRatio([[0, 1]], [[0.1, 0.9]], { dataRange: 1 }).estimate.value.toFixed(4) // => '20.0000'
  * ```
  */
@@ -244,7 +243,7 @@ function ssimPlane(x: Plane, y: Plane, o: SsimOptions, r: number): number {
  * @returns The metric result, in [-1, 1].
  * @example
  * ```ts
- * import { structuralSimilarity } from 'whitebox-engine/metrics'
+ * import { structuralSimilarity } from 'mdml-engine/metrics'
  * const img = Array.from({ length: 8 }, (_, i) => Array.from({ length: 8 }, (_, j) => (i * j) % 5))
  * Number(structuralSimilarity(img, img).estimate.value.toFixed(12)) // => 1
  * ```
@@ -318,7 +317,7 @@ function complexPowerProduct(bases: readonly number[], powers: readonly number[]
  * @returns The metric result.
  * @example
  * ```ts
- * import { multiScaleSsim } from 'whitebox-engine/metrics'
+ * import { multiScaleSsim } from 'mdml-engine/metrics'
  * const img = Array.from({ length: 24 }, (_, i) => Array.from({ length: 24 }, (_, j) => Math.sin(i * j)))
  * Number(multiScaleSsim(img, img).estimate.value.toFixed(12)) // => 1
  * ```
@@ -352,7 +351,7 @@ export const multiScaleSsim: MetricFunction<
     const ws = options.winSize ?? 11
     let weights = options.weights ?? [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
     const minDim = Math.min(a[0]?.h ?? 0, a[0]?.w ?? 0)
-    if (minDim < ws) throw new WhiteboxError('shape', `multiScaleSsim: images must be at least ${ws} pixels on a side`)
+    if (minDim < ws) throw new MdmlError('shape', `multiScaleSsim: images must be at least ${ws} pixels on a side`)
     const maxScales = Math.floor(Math.log2(minDim / ws)) + 1
     if (weights.length > maxScales) weights = weights.slice(0, maxScales)
     const r = options.dataRange ?? 1
@@ -392,7 +391,7 @@ export const multiScaleSsim: MetricFunction<
  * @returns The metric result (1 for identical images, can exceed 1 for enhanced images).
  * @example
  * ```ts
- * import { visualInformationFidelity } from 'whitebox-engine/metrics'
+ * import { visualInformationFidelity } from 'mdml-engine/metrics'
  * const img = Array.from({ length: 48 }, (_, i) => Array.from({ length: 48 }, (_, j) => 100 * Math.sin(i / 3) * Math.cos(j / 4)))
  * Number(visualInformationFidelity(img, img).estimate.value.toFixed(10)) // => 1
  * ```
@@ -472,7 +471,7 @@ export const visualInformationFidelity: MetricFunction<[TensorLike, TensorLike, 
  * @returns The metric result, in [-1, 1].
  * @example
  * ```ts
- * import { universalImageQualityIndex } from 'whitebox-engine/metrics'
+ * import { universalImageQualityIndex } from 'mdml-engine/metrics'
  * const img = Array.from({ length: 16 }, (_, i) => Array.from({ length: 16 }, (_, j) => 1 + ((i + 2 * j) % 7)))
  * Number(universalImageQualityIndex(img, img).estimate.value.toFixed(10)) // => 1
  * ```
@@ -534,7 +533,7 @@ function spectra(image: TensorLike): { n: number; c: number; data: Float64Array 
  * @returns The metric result.
  * @example
  * ```ts
- * import { spectralAngleMapper } from 'whitebox-engine/metrics'
+ * import { spectralAngleMapper } from 'mdml-engine/metrics'
  * spectralAngleMapper([[[1, 0]]], [[[0, 1]]]).estimate.value === Math.PI / 2 // => true
  * ```
  */
@@ -573,7 +572,7 @@ export const spectralAngleMapper: MetricFunction<[TensorLike, TensorLike]> = def
  * @returns The metric result.
  * @example
  * ```ts
- * import { ergas } from 'whitebox-engine/metrics'
+ * import { ergas } from 'mdml-engine/metrics'
  * ergas([[[2]]], [[[1]]], { ratio: 1 }).estimate.value // => 50
  * ```
  */
@@ -601,7 +600,7 @@ export const ergas: MetricFunction<[TensorLike, TensorLike, { readonly ratio?: n
  * @returns The metric result.
  * @example
  * ```ts
- * import { relativeAverageSpectralError } from 'whitebox-engine/metrics'
+ * import { relativeAverageSpectralError } from 'mdml-engine/metrics'
  * const img = Array.from({ length: 12 }, () => Array.from({ length: 12 }, () => [2]))
  * relativeAverageSpectralError(img, img).estimate.value // => 0
  * ```
@@ -644,7 +643,7 @@ export type FeatureStack = readonly TensorLike[]
 
 /**
  * LPIPS from supplied features (Zhang et al., 2018): sum over layers of the spatial mean of
- * sum_c w_lc (xhat - yhat)^2, with features unit-normalised over channels. whitebox ships no network; pass the
+ * sum_c w_lc (xhat - yhat)^2, with features unit-normalised over channels. mdml ships no network; pass the
  * activations of AlexNet, VGG or any extractor and its learned linear weights (or ones for the unweighted variant).
  *
  * @param featuresX - Feature maps of the first image, one `[H, W, C]` per layer.
@@ -653,7 +652,7 @@ export type FeatureStack = readonly TensorLike[]
  * @returns The metric result (0 for identical features).
  * @example
  * ```ts
- * import { lpipsFromFeatures } from 'whitebox-engine/metrics'
+ * import { lpipsFromFeatures } from 'mdml-engine/metrics'
  * Number(lpipsFromFeatures([[[[1, 0]]]], [[[[0, 1]]]]).estimate.value.toFixed(6)) // => 2
  * ```
  */
@@ -661,7 +660,7 @@ export const lpipsFromFeatures: MetricFunction<[FeatureStack, FeatureStack, (rea
   spec('lpipsFromFeatures', 'lower', [0, Infinity]),
   (featuresX: FeatureStack, featuresY: FeatureStack, weights?: readonly TensorLike[]): MetricResult => {
     if (featuresX.length !== featuresY.length)
-      throw new WhiteboxError('shape', 'lpips: one feature map per layer for each image')
+      throw new MdmlError('shape', 'lpips: one feature map per layer for each image')
     let total = 0
     for (const [l, fx] of featuresX.entries()) {
       const x = spectra(fx)
@@ -692,7 +691,7 @@ export const lpipsFromFeatures: MetricFunction<[FeatureStack, FeatureStack, (rea
  * DISTS from supplied features (Ding et al., 2020): 1 - sum over layers and channels of alpha S_texture + beta
  * S_structure, with S_texture = (2 mu_x mu_y + c1) / (mu_x^2 + mu_y^2 + c1) and S_structure = (2 sigma_xy + c2) /
  * (sigma_x^2 + sigma_y^2 + c2) from the global statistics of each channel; alpha and beta are normalised to sum to 1.
- * Pass the VGG activations (the image itself first) and the learned weights; whitebox ships no network.
+ * Pass the VGG activations (the image itself first) and the learned weights; mdml ships no network.
  *
  * @param featuresX - Feature maps of the first image, one `[H, W, C]` per layer.
  * @param featuresY - Feature maps of the second image.
@@ -701,7 +700,7 @@ export const lpipsFromFeatures: MetricFunction<[FeatureStack, FeatureStack, (rea
  * @returns The metric result (0 for identical features).
  * @example
  * ```ts
- * import { distsFromFeatures } from 'whitebox-engine/metrics'
+ * import { distsFromFeatures } from 'mdml-engine/metrics'
  * distsFromFeatures([[[[1], [2]]]], [[[[1], [2]]]]).estimate.value // => 0
  * ```
  */

@@ -5,7 +5,7 @@
  * information criteria.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type CoefficientTable, coefficientTable, type Explained } from '../../lib/exposition/index.ts'
 import { featureNamesOf, type LearnData } from '../../lib/learn/index.ts'
 import { inv, pinv } from '../../lib/numerics/linalg/index.ts'
@@ -146,7 +146,7 @@ export interface OlsSummary {
  * @param data - Features, targets and optional weights.
  * @param options - Intercept (default true), covariance type (default nonrobust) and interval level.
  * @returns The summary, with its coefficient table as exposition.
- * @throws WhiteboxError `value` when there are no residual degrees of freedom.
+ * @throws MdmlError `value` when there are no residual degrees of freedom.
  */
 export function olsSummary(data: LearnData, options: OlsSummaryOptions = {}): Explained<OlsSummary> {
   const fitIntercept = options.fitIntercept ?? true
@@ -155,7 +155,7 @@ export function olsSummary(data: LearnData, options: OlsSummaryOptions = {}): Ex
   const { n, d } = design.x
   const { a, p } = withIntercept(design, fitIntercept)
   const dfResid = n - p
-  if (dfResid <= 0) throw new WhiteboxError('value', 'olsSummary: needs more samples than coefficients')
+  if (dfResid <= 0) throw new MdmlError('value', 'olsSummary: needs more samples than coefficients')
   const fit = leastSquaresSolve(design, 0, fitIntercept, 'svd')
   const beta = [...fit.coef, ...(fitIntercept ? [fit.intercept] : [])]
   const w = design.w

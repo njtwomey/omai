@@ -4,7 +4,7 @@
  * SVD of PPMI, and random indexing. Also nearest words by cosine similarity and word analogies (a : b :: c : ?).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { ddot, dnrm2, svd } from '../numerics/linalg/index.ts'
 import { type Key, randomBits } from '../random/index.ts'
 import { asTensor, type TensorLike, toArray } from '../tensor/index.ts'
@@ -36,7 +36,7 @@ export interface CooccurrenceOptions {
  * @concept distributional-semantics
  * @example
  * ```ts
- * import { cooccurrence } from 'whitebox-engine/text'
+ * import { cooccurrence } from 'mdml-engine/text'
  * const m = cooccurrence([['a', 'b', 'c']], { window: 1 })
  * [m.words, m.rows.map((r) => Array.from(r))] // => [['a', 'b', 'c'], [[0, 1, 0], [1, 0, 1], [0, 1, 0]]]
  * ```
@@ -44,7 +44,7 @@ export interface CooccurrenceOptions {
 export function cooccurrence(sentences: readonly (readonly string[])[], options: CooccurrenceOptions = {}): WordMatrix {
   const window = options.window ?? 2
   if (!Number.isInteger(window) || window < 1)
-    throw new WhiteboxError('value', 'cooccurrence: window must be a positive integer')
+    throw new MdmlError('value', 'cooccurrence: window must be a positive integer')
   const counts = new Map<string, number>()
   for (const s of sentences) for (const w of s) counts.set(w, (counts.get(w) ?? 0) + 1)
   const words = [...counts]
@@ -81,7 +81,7 @@ export function cooccurrence(sentences: readonly (readonly string[])[], options:
  * @concept distributional-semantics
  * @example
  * ```ts
- * import { pmi } from 'whitebox-engine/text'
+ * import { pmi } from 'mdml-engine/text'
  * Array.from(pmi({ words: ['a', 'b'], rows: [Float64Array.of(2, 2), Float64Array.of(2, 2)] }).rows[0] ?? []) // => [0, 0]
  * ```
  */
@@ -132,11 +132,11 @@ function rowsOf(x: TensorLike | readonly Float64Array[]): Float64Array[] {
  * @param x - The document-term matrix (rows are documents).
  * @param k - The number of dimensions.
  * @returns The singular values, document vectors and term vectors.
- * @throws WhiteboxError with code `value` for k outside [1, min(m, n)].
+ * @throws MdmlError with code `value` for k outside [1, min(m, n)].
  * @concept latent-semantic-analysis
  * @example
  * ```ts
- * import { lsa } from 'whitebox-engine/text'
+ * import { lsa } from 'mdml-engine/text'
  * lsa([[1, 1, 0], [1, 1, 0], [0, 0, 1]], 1).singularValues // => [2]
  * ```
  */
@@ -148,7 +148,7 @@ export function lsa(
   const m = rows.length
   const n = rows[0]?.length ?? 0
   if (!Number.isInteger(k) || k < 1 || k > Math.min(m, n))
-    throw new WhiteboxError('value', 'lsa: k must be in [1, min(m, n)]')
+    throw new MdmlError('value', 'lsa: k must be in [1, min(m, n)]')
   const { u, s, vh } = svd(rows.map((r) => Array.from(r)))
   const U = toArray(u) as number[][]
   const S = (toArray(s) as number[]).slice(0, k)
@@ -168,18 +168,18 @@ export function lsa(
  * @param k - The dimension.
  * @param options - The eigenvalue weighting.
  * @returns The word vectors.
- * @throws WhiteboxError with code `value` for k outside [1, min(rows, cols)].
+ * @throws MdmlError with code `value` for k outside [1, min(rows, cols)].
  * @concept distributional-semantics
  * @example
  * ```ts
- * import { svdWordVectors } from 'whitebox-engine/text'
+ * import { svdWordVectors } from 'mdml-engine/text'
  * svdWordVectors({ words: ['a', 'b'], rows: [Float64Array.of(4, 0), Float64Array.of(0, 1)] }, 1).rows.map((r) => Array.from(r)) // => [[2], [0]]
  * ```
  */
 export function svdWordVectors(m: WordMatrix, k: number, options: { readonly power?: number } = {}): WordMatrix {
   const n = Math.min(m.rows.length, m.rows[0]?.length ?? 0)
   if (!Number.isInteger(k) || k < 1 || k > n)
-    throw new WhiteboxError('value', 'svdWordVectors: k must be in [1, min(rows, cols)]')
+    throw new MdmlError('value', 'svdWordVectors: k must be in [1, min(rows, cols)]')
   const { u, s } = svd(m.rows.map((r) => Array.from(r)))
   const U = toArray(u) as number[][]
   const S = (toArray(s) as number[]).slice(0, k).map((v) => v ** (options.power ?? 0.5))
@@ -195,12 +195,12 @@ export function svdWordVectors(m: WordMatrix, k: number, options: { readonly pow
  * @param key - The key for the index vectors.
  * @param options - Dimension (default 300), nonzeros (default 8) and window (default 2).
  * @returns The context vectors (vocabulary in code point order).
- * @throws WhiteboxError with code `value` for nonzeros above the dimension.
+ * @throws MdmlError with code `value` for nonzeros above the dimension.
  * @concept random-indexing
  * @example
  * ```ts
- * import { randomIndexing } from 'whitebox-engine/text'
- * import { key } from 'whitebox-engine/random'
+ * import { randomIndexing } from 'mdml-engine/text'
+ * import { key } from 'mdml-engine/random'
  * randomIndexing([['a', 'b']], key(0), { dimension: 16, nonzeros: 2, window: 1 }).rows[0]?.reduce((s, v) => s + Math.abs(v), 0) // => 2
  * ```
  */
@@ -211,7 +211,7 @@ export function randomIndexing(
 ): WordMatrix {
   const dim = options.dimension ?? 300
   const nz = options.nonzeros ?? 8
-  if (!(nz >= 1 && nz <= dim)) throw new WhiteboxError('value', 'randomIndexing: nonzeros must be in [1, dimension]')
+  if (!(nz >= 1 && nz <= dim)) throw new MdmlError('value', 'randomIndexing: nonzeros must be in [1, dimension]')
   const counts = cooccurrence(sentences, { window: options.window ?? 2 })
   const words = counts.words
   // Index vectors: a partial Fisher-Yates shuffle of the positions, signs from further draws.
@@ -254,11 +254,11 @@ function unit(v: ArrayLike<number>): Float64Array {
  * @param query - A word of the vocabulary or a vector.
  * @param topn - How many (default 10).
  * @returns The words and similarities, most similar first.
- * @throws WhiteboxError with code `value` for an unknown word.
+ * @throws MdmlError with code `value` for an unknown word.
  * @concept distributional-semantics
  * @example
  * ```ts
- * import { nearestWords } from 'whitebox-engine/text'
+ * import { nearestWords } from 'mdml-engine/text'
  * const v = { words: ['cat', 'dog', 'car'], rows: [Float64Array.of(1, 0.1), Float64Array.of(1, 0.2), Float64Array.of(0, 1)] }
  * nearestWords(v, 'cat', 1)[0]?.word // => 'dog'
  * ```
@@ -272,7 +272,7 @@ export function nearestWords(
   const exclude = new Set<number>()
   if (typeof query === 'string') {
     const i = vectors.words.indexOf(query)
-    if (i < 0) throw new WhiteboxError('value', `nearestWords: ${query} is not in the vocabulary`)
+    if (i < 0) throw new MdmlError('value', `nearestWords: ${query} is not in the vocabulary`)
     q = unit(vectors.rows[i] ?? [])
     exclude.add(i)
   } else q = unit(query)
@@ -305,11 +305,11 @@ function rank(
  * @param c - The word whose counterpart is sought.
  * @param options - The method (default `3cosadd`) and how many answers (default 1).
  * @returns The answers with their scores.
- * @throws WhiteboxError with code `value` for an unknown word.
+ * @throws MdmlError with code `value` for an unknown word.
  * @concept distributional-semantics
  * @example
  * ```ts
- * import { analogy } from 'whitebox-engine/text'
+ * import { analogy } from 'mdml-engine/text'
  * const v = { words: ['man', 'woman', 'king', 'queen', 'apple'], rows: [[1, 0, 0], [1, 1, 0], [1, 0, 1], [1, 1, 1], [0, 0.2, 0]].map((r) => Float64Array.from(r)) }
  * analogy(v, 'man', 'woman', 'king')[0]?.word // => 'queen'
  * ```
@@ -323,7 +323,7 @@ export function analogy(
 ): { readonly word: string; readonly similarity: number }[] {
   const idx = [a, b, c].map((w) => {
     const i = vectors.words.indexOf(w)
-    if (i < 0) throw new WhiteboxError('value', `analogy: ${w} is not in the vocabulary`)
+    if (i < 0) throw new MdmlError('value', `analogy: ${w} is not in the vocabulary`)
     return i
   })
   const [ua, ub, uc] = idx.map((i) => unit(vectors.rows[i] ?? [])) as [Float64Array, Float64Array, Float64Array]

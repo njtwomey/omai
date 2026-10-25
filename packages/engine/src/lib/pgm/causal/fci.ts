@@ -342,8 +342,8 @@ function discriminate(g: Marks, a: string, b: string, c: string): string | undef
  * @concept causal-discovery
  * @example
  * ```ts
- * import { fci } from 'whitebox-engine/pgm/causal'
- * import { key, normal } from 'whitebox-engine/random'
+ * import { fci } from 'mdml-engine/pgm/causal'
+ * import { key, normal } from 'mdml-engine/random'
  * // a -> c <- b: the collider is oriented, the other marks stay circles.
  * const z = normal(key(3), [500, 3]).data
  * const rows = Array.from({ length: 500 }, (_, i) => { const a = z[3 * i] ?? 0, b = z[3 * i + 1] ?? 0; return { a, b, c: a + b + 0.5 * (z[3 * i + 2] ?? 0) } })

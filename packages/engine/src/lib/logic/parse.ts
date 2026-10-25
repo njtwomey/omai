@@ -4,7 +4,7 @@
  * grammar rules into ordinary clauses with difference lists.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   atom,
   type Clause,
@@ -36,8 +36,8 @@ const isDigit = (c: string | undefined): boolean => c !== undefined && c >= '0' 
 const isAlnum = (c: string | undefined): boolean => c !== undefined && /[A-Za-z0-9_]/.test(c)
 const isLayout = (c: string | undefined): boolean => c !== undefined && /\s/.test(c)
 
-function syntaxError(message: string, offset: number): WhiteboxError {
-  return new WhiteboxError('value', `syntax error at ${offset}: ${message}`, { offset })
+function syntaxError(message: string, offset: number): MdmlError {
+  return new MdmlError('value', `syntax error at ${offset}: ${message}`, { offset })
 }
 
 function readEscape(text: string, i: number, quote: string): [string, number] {
@@ -86,10 +86,10 @@ function readEscape(text: string, i: number, quote: string): [string, number] {
  *
  * @param text - The source.
  * @returns The tokens.
- * @throws WhiteboxError with code `value` for an unterminated quote or comment.
+ * @throws MdmlError with code `value` for an unterminated quote or comment.
  * @example
  * ```ts
- * import { tokenize } from 'whitebox-engine/logic'
+ * import { tokenize } from 'mdml-engine/logic'
  * tokenize("p(X) :- q('a b', 0'c). % done").map((t) => t.text) // => ['p', '(', 'X', ')', ':-', 'q', '(', 'a b', ',', '99', ')', '.']
  * ```
  */
@@ -486,7 +486,7 @@ class Parser {
         } catch (e) {
           // `- (1)` style operands failed: fall back to reading the operator as an atom.
           this.pos = save
-          if (!(e instanceof WhiteboxError)) throw e
+          if (!(e instanceof MdmlError)) throw e
         }
       }
     }
@@ -521,10 +521,10 @@ function copyOperators(ops: Operators | undefined): Operators {
  * @param text - The text.
  * @param options - Operators and the reading of double-quoted text.
  * @returns The term.
- * @throws WhiteboxError with code `value` on a syntax error.
+ * @throws MdmlError with code `value` on a syntax error.
  * @example
  * ```ts
- * import { parseTerm, termToString } from 'whitebox-engine/logic'
+ * import { parseTerm, termToString } from 'mdml-engine/logic'
  * termToString(parseTerm('X is 2 + 3 * 4')) // => 'X is 2+3*4'
  * termToString(parseTerm('[H|T]')) // => '[H|T]'
  * parseTerm('- 1').kind // => 'compound'
@@ -541,10 +541,10 @@ export function parseTerm(text: string, options: ParseOptions = {}): Term {
  * @param text - The clause text.
  * @param options - Operators and double-quote reading.
  * @returns The clause.
- * @throws WhiteboxError with code `value` on a syntax error.
+ * @throws MdmlError with code `value` on a syntax error.
  * @example
  * ```ts
- * import { parseClause, termToString } from 'whitebox-engine/logic'
+ * import { parseClause, termToString } from 'mdml-engine/logic'
  * const c = parseClause('ancestor(X, Y) :- parent(X, Z), ancestor(Z, Y).')
  * [termToString(c.head), c.body.length] // => ['ancestor(X,Y)', 2]
  * ```
@@ -579,10 +579,10 @@ function opNames(t: Term): string[] {
  * @param text - The program.
  * @param options - Initial operators and double-quote reading.
  * @returns The clauses, directives and final operator table.
- * @throws WhiteboxError with code `value` on a syntax error.
+ * @throws MdmlError with code `value` on a syntax error.
  * @example
  * ```ts
- * import { parseProgram } from 'whitebox-engine/logic'
+ * import { parseProgram } from 'mdml-engine/logic'
  * const p = parseProgram(`
  *   % family
  *   parent(tom, bob).  parent(bob, ann).
@@ -634,10 +634,10 @@ export function parseProgram(text: string, options: ParseOptions = {}): ParsedPr
  * @param head - The rule's head (a non-terminal).
  * @param body - The rule's body.
  * @returns The clause.
- * @throws WhiteboxError with code `value` for a head that is not callable.
+ * @throws MdmlError with code `value` for a head that is not callable.
  * @example
  * ```ts
- * import { clauseToString, parseTerm, translateDcg } from 'whitebox-engine/logic'
+ * import { clauseToString, parseTerm, translateDcg } from 'mdml-engine/logic'
  * clauseToString(translateDcg(parseTerm('greeting'), parseTerm('[hello], name'))) // => 'greeting(_DCG0,_DCG1) :- _DCG0=[hello|_DCG2], name(_DCG2,_DCG1).'
  * ```
  */
@@ -647,7 +647,7 @@ export function translateDcg(head: Term, body: Term): Clause {
   const extend = (t: Term, s0: Term, s: Term): Term => {
     if (t.kind === 'atom') return compound(t.name, [s0, s])
     if (t.kind === 'compound') return compound(t.functor, [...t.args, s0, s])
-    throw new WhiteboxError('value', `translateDcg: ${t.kind} is not a non-terminal`)
+    throw new MdmlError('value', `translateDcg: ${t.kind} is not a non-terminal`)
   }
   const eq = (a: Term, b: Term): Term => compound('=', [a, b])
   const trans = (t: Term, s0: Term, s: Term): Term => {
@@ -696,10 +696,10 @@ export interface ParsedQuery {
  * @param text - The query.
  * @param options - Operators and double-quote reading.
  * @returns The goal and its variable names.
- * @throws WhiteboxError with code `value` on a syntax error.
+ * @throws MdmlError with code `value` on a syntax error.
  * @example
  * ```ts
- * import { parseQuery } from 'whitebox-engine/logic'
+ * import { parseQuery } from 'mdml-engine/logic'
  * parseQuery('?- append(X, Y, [1,2]), _ = Y.').variables // => ['X', 'Y']
  * ```
  */

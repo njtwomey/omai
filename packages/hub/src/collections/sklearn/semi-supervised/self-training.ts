@@ -3,7 +3,7 @@
  * unlabelled points round by round, on two-dimensional classification data.
  */
 
-import { selfTraining as selfTrainingEstimator } from 'whitebox-engine/methods/semi-supervised'
+import { selfTraining as selfTrainingEstimator } from 'mdml-engine/methods/semi-supervised'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { withHiddenLabels } from './_hidden.ts'
 

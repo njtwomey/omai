@@ -1,4 +1,4 @@
-# INIT: whitebox-js
+# INIT: mdml-js
 
 These are instructions for Claude, not a skill or a slash command. Follow them when the user's message starts with the word `init`. The rest of that message is the brief: optional notes followed by the path of the existing implementation, for example `init <notes> /path/to/existing/implementation`.
 
@@ -6,7 +6,7 @@ The last path-like token is the reference implementation. Everything else is not
 
 ## What I want
 
-A TypeScript library, whitebox-js, that re-creates the scope of the reference with a cleaner, more procedural structure. It is not a line-by-line port. It is a library, not a product. It publishes three packages (`whitebox-engine`, `whitebox-render`, `whitebox-meta`) and contains two private apps: `apps/docs` (how to use the engine) and `apps/gallery` (what the renderer can draw). Other projects consume the packages, among them an encyclopedia and a tool that makes slide decks and blog posts. Everything here must serve those consumers: run, inspect, trace and draw every capability, and describe itself as structured data that they can render.
+A TypeScript library, mdml-js, that re-creates the scope of the reference with a cleaner, more procedural structure. It is not a line-by-line port. It is a library, not a product. It publishes three packages (`mdml-engine`, `mdml-render`, `mdml-meta`) and contains two private apps: `apps/docs` (how to use the engine) and `apps/gallery` (what the renderer can draw). Other projects consume the packages, among them an encyclopedia and a tool that makes slide decks and blog posts. Everything here must serve those consumers: run, inspect, trace and draw every capability, and describe itself as structured data that they can render.
 
 The scope is the union of the reference and this list: numerics, autodiff, distributions, statistics (including GAMs), classical ML (kernels and kernel expansion, SVM, trees, ensembles, Gaussian processes), neural networks (functional and torch-like Module/Sequential forms, and named architectures such as transformers), optimization, dynamics and sequential models, probabilistic programming, probabilistic graphical models (directed, undirected, factor graphs, with inference), logic and ILP, reinforcement learning with a gymnasium-like environment interface that makes new environments easy to add, and datasets. Areas that exist in the reference but not in this list (graph algorithms, signal processing, text, generative models, retrieval, evaluation, learning theory, information theory, vision and others) are in scope. Nothing is dropped except defects and duplicates.
 

@@ -4,7 +4,7 @@
  * and a learned direction, and trees are grown with second-order (Newton) leaf values, traced iteration by iteration.
  */
 
-import { quantileOf, WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError, quantileOf } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type EnsembleStages, type Exposition, ensembleStages } from '../../lib/exposition/index.ts'
@@ -507,7 +507,7 @@ function histEstimator(
         const y = classifier
           ? Float64Array.from(encodeLabels(data.y ?? [], name, x.n).codes)
           : targetVector(data.y ?? [], name, x.n)
-        if (classifier && classes.length < 2) throw new WhiteboxError('value', `${name}: needs two classes`)
+        if (classifier && classes.length < 2) throw new MdmlError('value', `${name}: needs two classes`)
         const key = resolveKey(options, name)
         const order = Array.from(toFlat(permutation(key, x.n)))
         const nValid = h.earlyStopping ? Math.max(1, Math.floor(h.validationFraction * x.n)) : 0

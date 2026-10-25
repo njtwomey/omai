@@ -1,7 +1,7 @@
 /**
  * The matrix profile and what it is used for: exact, approximate, incremental, multidimensional and pan-window profiles
  * of a time series, with motif and discord discovery, chains, segmentation into regimes and snippets, and studies on
- * planted ground truth. Part of `whitebox-engine/methods/timeseries`.
+ * planted ground truth. Part of `mdml-engine/methods/timeseries`.
  *
  * @inline
  */

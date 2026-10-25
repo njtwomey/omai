@@ -12,14 +12,14 @@ import * as trace from '../trace/index.ts'
 import * as stochastic from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'whitebox-engine/autodiff': autodiff,
-  'whitebox-engine/base': base,
-  'whitebox-engine/dists': dists,
-  'whitebox-engine/graph': graph,
-  'whitebox-engine/random': random,
-  'whitebox-engine/stochastic': stochastic,
-  'whitebox-engine/tensor': tensor,
-  'whitebox-engine/trace': trace,
+  'mdml-engine/autodiff': autodiff,
+  'mdml-engine/base': base,
+  'mdml-engine/dists': dists,
+  'mdml-engine/graph': graph,
+  'mdml-engine/random': random,
+  'mdml-engine/stochastic': stochastic,
+  'mdml-engine/tensor': tensor,
+  'mdml-engine/trace': trace,
 }
 
 interface Example {
@@ -95,7 +95,7 @@ describe('documentation examples', () => {
             try {
               f()
             } catch (e) {
-              expect(base.isWhiteboxError(e, code as base.ErrorCode), text).toBe(true)
+              expect(base.isMdmlError(e, code as base.ErrorCode), text).toBe(true)
             }
           },
         )

@@ -1,7 +1,7 @@
+import { type MazeAlgorithmName, type MazeState, mazeAlgorithm, mazeOf } from 'mdml-engine/worlds'
+import { worldView } from 'mdml-render/gym'
+import { ControlPanel, Player, SceneFrame, SeedInput, Select, useLiveRun } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { type MazeAlgorithmName, type MazeState, mazeAlgorithm, mazeOf } from 'whitebox-engine/worlds'
-import { worldView } from 'whitebox-render/gym'
-import { ControlPanel, Player, SceneFrame, SeedInput, Select, useLiveRun } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

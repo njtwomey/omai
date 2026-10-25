@@ -4,7 +4,7 @@
  * snapshot gradients so they converge as fast as full-gradient methods at the cost of one example per step.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { daxpy, idamax } from '../numerics/linalg/index.ts'
 import { randint } from '../random/index.ts'
 import type { Value } from '../tensor/index.ts'
@@ -74,7 +74,7 @@ function setup(
   name: string,
 ): Setup {
   const step = options.learningRate ?? (options.lipschitz === undefined ? Number.NaN : 1 / (factor * options.lipschitz))
-  if (!(step > 0)) throw new WhiteboxError('value', `${name} needs a positive learningRate or lipschitz constant`)
+  if (!(step > 0)) throw new MdmlError('value', `${name} needs a positive learningRate or lipschitz constant`)
   const terms = new Map<number, FlatObjective>()
   const objective = flatObjective((p) => problem.term(p, 0), x0)
   const termOf = (i: number): FlatObjective => {
@@ -176,8 +176,8 @@ function finish(
  * @concept variance-reduction
  * @example
  * ```ts
- * import { sagAlgorithm } from 'whitebox-engine/optim'
- * import { square, sub, type Value } from 'whitebox-engine/tensor'
+ * import { sagAlgorithm } from 'mdml-engine/optim'
+ * import { square, sub, type Value } from 'mdml-engine/tensor'
  * sagAlgorithm({ n: 2, term: (x, i) => square(sub(x as Value, i)) }, [0], { lipschitz: 2 }).name // => 'sag'
  * ```
  */
@@ -251,8 +251,8 @@ export function sagAlgorithm(
  * @concept variance-reduction
  * @example
  * ```ts
- * import { sag } from 'whitebox-engine/optim'
- * import { square, sub, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { sag } from 'mdml-engine/optim'
+ * import { square, sub, toArray, type Value } from 'mdml-engine/tensor'
  * const r = sag({ n: 3, term: (x, i) => square(sub(x as Value, i)) }, [0], { lipschitz: 2, tol: 1e-12 })
  * Math.round((toArray(r.x as Value) as number[])[0] * 1e8) / 1e8 // => 1
  * ```
@@ -274,8 +274,8 @@ export function sag(problem: FiniteSum, x0: Parameters, options: VarianceReduced
  * @concept variance-reduction
  * @example
  * ```ts
- * import { sagaAlgorithm } from 'whitebox-engine/optim'
- * import { square, sub, type Value } from 'whitebox-engine/tensor'
+ * import { sagaAlgorithm } from 'mdml-engine/optim'
+ * import { square, sub, type Value } from 'mdml-engine/tensor'
  * sagaAlgorithm({ n: 2, term: (x, i) => square(sub(x as Value, i)) }, [0], { lipschitz: 2 }).name // => 'saga'
  * ```
  */
@@ -339,8 +339,8 @@ export function sagaAlgorithm(
  * @concept variance-reduction
  * @example
  * ```ts
- * import { saga } from 'whitebox-engine/optim'
- * import { square, sub, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { saga } from 'mdml-engine/optim'
+ * import { square, sub, toArray, type Value } from 'mdml-engine/tensor'
  * const r = saga({ n: 3, term: (x, i) => square(sub(x as Value, i)) }, [0], { lipschitz: 2, tol: 1e-12 })
  * Math.round((toArray(r.x as Value) as number[])[0] * 1e8) / 1e8 // => 1
  * ```
@@ -367,8 +367,8 @@ export interface SvrgOptions extends VarianceReducedOptions {
  * @concept variance-reduction
  * @example
  * ```ts
- * import { svrgAlgorithm } from 'whitebox-engine/optim'
- * import { square, sub, type Value } from 'whitebox-engine/tensor'
+ * import { svrgAlgorithm } from 'mdml-engine/optim'
+ * import { square, sub, type Value } from 'mdml-engine/tensor'
  * svrgAlgorithm({ n: 2, term: (x, i) => square(sub(x as Value, i)) }, [0], { lipschitz: 2 }).name // => 'svrg'
  * ```
  */
@@ -422,8 +422,8 @@ export function svrgAlgorithm(
  * @concept variance-reduction
  * @example
  * ```ts
- * import { svrg } from 'whitebox-engine/optim'
- * import { square, sub, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { svrg } from 'mdml-engine/optim'
+ * import { square, sub, toArray, type Value } from 'mdml-engine/tensor'
  * const r = svrg({ n: 3, term: (x, i) => square(sub(x as Value, i)) }, [0], { learningRate: 0.2, tol: 1e-12 })
  * Math.round((toArray(r.x as Value) as number[])[0] * 1e8) / 1e8 // => 1
  * ```

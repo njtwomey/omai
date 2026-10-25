@@ -78,7 +78,7 @@ export interface LoggerOptions {
  * @concept training-callbacks
  * @example
  * ```ts
- * import { gradNormLogger } from 'whitebox-engine/nn'
+ * import { gradNormLogger } from 'mdml-engine/nn'
  * gradNormLogger().name // => 'gradNormLogger'
  * ```
  */
@@ -106,7 +106,7 @@ export function gradNormLogger(options: LoggerOptions = {}): Callback {
  * @returns The callback.
  * @example
  * ```ts
- * import { paramNormLogger } from 'whitebox-engine/nn'
+ * import { paramNormLogger } from 'mdml-engine/nn'
  * paramNormLogger({ every: 10 }).name // => 'paramNormLogger'
  * ```
  */
@@ -135,7 +135,7 @@ export function paramNormLogger(options: LoggerOptions = {}): Callback {
  * @returns The callback.
  * @example
  * ```ts
- * import { valueLogger } from 'whitebox-engine/nn'
+ * import { valueLogger } from 'mdml-engine/nn'
  * valueLogger().name // => 'valueLogger'
  * ```
  */
@@ -158,7 +158,7 @@ export function valueLogger(options: { readonly every?: number } = {}): Callback
  * @returns The callback.
  * @example
  * ```ts
- * import { learningRateMonitor } from 'whitebox-engine/nn'
+ * import { learningRateMonitor } from 'mdml-engine/nn'
  * learningRateMonitor((t) => 0.1 / (1 + t)).name // => 'learningRateMonitor'
  * ```
  */
@@ -190,7 +190,7 @@ export interface EarlyStoppingOptions {
  * @concept training-callbacks
  * @example
  * ```ts
- * import { earlyStopping } from 'whitebox-engine/nn'
+ * import { earlyStopping } from 'mdml-engine/nn'
  * earlyStopping({ patience: 5 }).name // => 'earlyStopping'
  * ```
  */
@@ -230,7 +230,7 @@ export function earlyStopping(options: EarlyStoppingOptions = {}): Callback & { 
  * @returns The callback, with `best()` returning the best value and its parameters.
  * @example
  * ```ts
- * import { bestCheckpoint } from 'whitebox-engine/nn'
+ * import { bestCheckpoint } from 'mdml-engine/nn'
  * bestCheckpoint().best().params // => undefined
  * ```
  */
@@ -287,7 +287,7 @@ export interface PlateauOptions {
  * @concept training-callbacks
  * @example
  * ```ts
- * import { reduceLROnPlateau } from 'whitebox-engine/nn'
+ * import { reduceLROnPlateau } from 'mdml-engine/nn'
  * reduceLROnPlateau({ patience: 2 }).scale() // => 1
  * ```
  */
@@ -348,7 +348,7 @@ export function reduceLROnPlateau(options: PlateauOptions = {}): Callback & { re
  * @concept training-callbacks
  * @example
  * ```ts
- * import { activationLogger } from 'whitebox-engine/nn'
+ * import { activationLogger } from 'mdml-engine/nn'
  * activationLogger().tapsActivations // => true
  * ```
  */

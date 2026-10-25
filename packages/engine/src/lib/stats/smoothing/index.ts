@@ -1,5 +1,5 @@
 /**
- * Smoothing for regression, available as `whitebox-engine/stats/smoothing`: the penalised spline and radial bases of
+ * Smoothing for regression, available as `mdml-engine/stats/smoothing`: the penalised spline and radial bases of
  * generalised additive models (as mgcv and patsy) with their penalties and constraints, and the classical scatterplot
  * smoothers (LOWESS, LOESS, kernel regression, running statistics and smoothing splines).
  */

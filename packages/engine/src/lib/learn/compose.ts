@@ -5,7 +5,7 @@
  * fits on transformed targets and maps predictions back.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { type Exposition, type PipelineStage, pipelineStages } from '../exposition/index.ts'
 import { r2Score } from '../metrics/index.ts'
 import { foldIn } from '../random/index.ts'
@@ -54,7 +54,7 @@ export interface FitCache {
  * @returns The cache.
  * @example
  * ```ts
- * import { fitCache } from 'whitebox-engine/learn'
+ * import { fitCache } from 'mdml-engine/learn'
  * const cache = fitCache()
  * cache.size() // => 0
  * ```
@@ -119,11 +119,11 @@ function routeChanges(steps: readonly NamedStep[], changes: Readonly<Record<stri
     const dot = k.indexOf('.')
     const name = dot < 0 ? k : k.slice(0, dot)
     const entry = out.find(([n]) => n === name)
-    if (entry === undefined) throw new WhiteboxError('value', `no step named ${name}`)
+    if (entry === undefined) throw new MdmlError('value', `no step named ${name}`)
     if (dot < 0 && (isEstimator(v) || isResampler(v) || v === 'passthrough')) entry[1] = v as Step
     else {
       const step = entry[1]
-      if (!isEstimator(step)) throw new WhiteboxError('value', `step ${name} has no hyperparameters`)
+      if (!isEstimator(step)) throw new MdmlError('value', `step ${name} has no hyperparameters`)
       entry[1] = step.with(dot < 0 ? (v as Readonly<Record<string, unknown>>) : { [k.slice(dot + 1)]: v })
     }
   }
@@ -245,13 +245,13 @@ function namesAfter(f: Fitted | undefined, input: readonly string[], d: number):
  * @param steps - Named steps.
  * @param options - A fit cache, and how many training rows each stage's recorded data carries.
  * @returns The estimator.
- * @throws WhiteboxError with code `value` for duplicate names or a non-transformer before the last step.
+ * @throws MdmlError with code `value` for duplicate names or a non-transformer before the last step.
  * @concept pipelines
  * @example
  * ```ts
- * import { pipeline } from 'whitebox-engine/learn'
- * import { polynomialFeatures, standardScaler } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pipeline } from 'mdml-engine/learn'
+ * import { polynomialFeatures, standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const p = pipeline([['poly', polynomialFeatures({ includeBias: false })], ['scale', standardScaler()]])
  * const f = p.fit({ x: [[0], [1], [2]] })
  * toArray(f.transform([[1]])) // => [[0, -0.3922322702763681]]
@@ -263,9 +263,9 @@ export function pipeline(
   steps: readonly NamedStep[],
   options: PipelineOptions = {},
 ): Estimator<PipelineHyper, FittedPipeline> {
-  if (steps.length === 0) throw new WhiteboxError('value', 'pipeline: needs at least one step')
+  if (steps.length === 0) throw new MdmlError('value', 'pipeline: needs at least one step')
   if (new Set(steps.map(([n]) => n)).size !== steps.length)
-    throw new WhiteboxError('value', 'pipeline: step names must be unique')
+    throw new MdmlError('value', 'pipeline: step names must be unique')
   const last = steps[steps.length - 1]?.[1]
   const kind: EstimatorKind = isEstimator(last) ? last.kind : 'transformer'
   const space = stepSpace(steps)
@@ -329,7 +329,7 @@ export function pipeline(
         for (const f of fitted) {
           if (f === undefined) continue
           if (f.featureNamesOut === undefined) {
-            throw new WhiteboxError('value', `pipeline: ${f.estimator} does not name its output features`)
+            throw new MdmlError('value', `pipeline: ${f.estimator} does not name its output features`)
           }
           names = f.featureNamesOut(names)
         }
@@ -421,7 +421,7 @@ export function pipeline(
               stages: stageOf('transformer', s.data.x, (i) => [...i], []),
             }
           if (isResampler(step)) {
-            if (isLast) throw new WhiteboxError('value', 'pipeline: a resampler cannot be the last step')
+            if (isLast) throw new MdmlError('value', 'pipeline: a resampler cannot be the last step')
             const r = step.fitResample(s.data, inner)
             return {
               index: s.index + 1,
@@ -526,8 +526,8 @@ export function pipeline(
  * @returns The pipeline.
  * @example
  * ```ts
- * import { makePipeline } from 'whitebox-engine/learn'
- * import { standardScaler, minMaxScaler } from 'whitebox-engine/learn/preprocessing'
+ * import { makePipeline } from 'mdml-engine/learn'
+ * import { standardScaler, minMaxScaler } from 'mdml-engine/learn/preprocessing'
  * makePipeline(standardScaler(), minMaxScaler()).hyper.steps.map(([n]) => n) // => ['standard-scaler', 'min-max-scaler']
  * ```
  */
@@ -571,9 +571,9 @@ function scaled(m: MatrixView, w: number | undefined): MatrixView {
  * @returns The estimator.
  * @example
  * ```ts
- * import { featureUnion } from 'whitebox-engine/learn'
- * import { minMaxScaler, standardScaler } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { featureUnion } from 'mdml-engine/learn'
+ * import { minMaxScaler, standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const u = featureUnion([['z', standardScaler()], ['m', minMaxScaler()]]).fit({ x: [[0], [2]] })
  * toArray(u.transform([[2]])) // => [[1, 1]]
  * u.featureNamesOut() // => ['z__x0', 'm__x0']
@@ -623,7 +623,7 @@ export function featureUnion(
           if (p.fitted === undefined) return []
           const names = p.fitted.featureNamesOut?.(input)
           if (names === undefined)
-            throw new WhiteboxError('value', `featureUnion: ${p.fitted.estimator} does not name its outputs`)
+            throw new MdmlError('value', `featureUnion: ${p.fitted.estimator} does not name its outputs`)
           return names.map((nm) => `${p.name}__${nm}`)
         }),
     }
@@ -682,9 +682,9 @@ export interface ColumnTransformerHyper {
  * @returns The estimator.
  * @example
  * ```ts
- * import { columnTransformer } from 'whitebox-engine/learn'
- * import { oneHotEncoder, standardScaler } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { columnTransformer } from 'mdml-engine/learn'
+ * import { oneHotEncoder, standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const ct = columnTransformer([['num', standardScaler(), [0]], ['cat', oneHotEncoder(), [1]]], { remainder: 'passthrough' })
  * const f = ct.fit({ x: [[0, 1, 7], [2, 2, 8]] })
  * toArray(f.transform([[2, 1, 9]])) // => [[1, 1, 0, 9]]
@@ -701,13 +701,13 @@ export function columnTransformer(
     verboseFeatureNamesOut: options.verboseFeatureNamesOut ?? true,
   }
   if (new Set(transformers.map(([n]) => n)).size !== transformers.length) {
-    throw new WhiteboxError('value', 'columnTransformer: names must be unique')
+    throw new MdmlError('value', 'columnTransformer: names must be unique')
   }
   const plan = (d: number): ColumnSpec[] => {
     const used = new Set(transformers.flatMap(([, , cols]) => cols))
     for (const c of used)
       if (!(Number.isInteger(c) && c >= 0 && c < d))
-        throw new WhiteboxError('value', `columnTransformer: column ${c} out of range`)
+        throw new MdmlError('value', `columnTransformer: column ${c} out of range`)
     const rest = Array.from({ length: d }, (_, j) => j).filter((j) => !used.has(j))
     return [...transformers, ...(rest.length > 0 ? [['remainder', hyper.remainder, rest] as ColumnSpec] : [])]
   }
@@ -750,8 +750,7 @@ export function columnTransformer(
           const sub = cols.map((c) => names[c] ?? '')
           const f = fitted[i]
           const out = t === 'passthrough' || f === undefined ? sub : f.featureNamesOut?.(sub)
-          if (out === undefined)
-            throw new WhiteboxError('value', `columnTransformer: ${name} does not name its outputs`)
+          if (out === undefined) throw new MdmlError('value', `columnTransformer: ${name} does not name its outputs`)
           return hyper.verboseFeatureNamesOut ? out.map((nm) => `${name}__${nm}`) : out
         })
       },
@@ -817,11 +816,11 @@ export interface TransformedTargetHyper {
  *
  * @param hyper - The regressor and the transformer or functions.
  * @returns The estimator.
- * @throws WhiteboxError with code `value` when the inverse does not invert.
+ * @throws MdmlError with code `value` when the inverse does not invert.
  * @example
  * ```ts
- * import { transformedTargetRegressor, defineEstimator } from 'whitebox-engine/learn'
- * import { tensor, toFlat } from 'whitebox-engine/tensor'
+ * import { transformedTargetRegressor, defineEstimator } from 'mdml-engine/learn'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
  * const meanOfTargets = defineEstimator(
  *   {
  *     name: 'mean',
@@ -857,7 +856,7 @@ export function transformedTargetRegressor(
       return hyper.inverseFunc === undefined ? y : Float64Array.from(y, hyper.inverseFunc)
     }
   if ((hyper.func === undefined) !== (hyper.inverseFunc === undefined)) {
-    throw new WhiteboxError('value', 'transformedTargetRegressor: give both func and inverseFunc')
+    throw new MdmlError('value', 'transformedTargetRegressor: give both func and inverseFunc')
   }
   const build = (
     regressor: Fitted,
@@ -902,7 +901,7 @@ export function transformedTargetRegressor(
       const back = inverseOf(transformer)(yt)
       for (let i = 0; i < y.length; i++) {
         if (Math.abs((back[i] ?? 0) - (y[i] ?? 0)) > 1e-7 * (1 + Math.abs(y[i] ?? 0))) {
-          throw new WhiteboxError('value', 'transformedTargetRegressor: the inverse does not invert the transform on y')
+          throw new MdmlError('value', 'transformedTargetRegressor: the inverse does not invert the transform on y')
         }
       }
       const regressor = hyper.regressor.fit(

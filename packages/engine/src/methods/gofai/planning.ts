@@ -4,7 +4,7 @@
  * on a table with the gripper above.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import {
   applyAction,
@@ -63,7 +63,7 @@ export function planBlocks(initial: Towers, goal: Towers, options: BlocksPlanOpt
   const problem = blocksWorld(initial, goal)
   const blocks = [...initial.flat()].sort()
   const n = blocks.length
-  if (n === 0) throw new WhiteboxError('value', 'planBlocks: no blocks')
+  if (n === 0) throw new MdmlError('value', 'planBlocks: no blocks')
   const p = forwardProblem(problem, options.heuristic ?? 'h-ff')
   const maxExpansions = options.maxExpansions ?? 20_000
   const o = { maxExpansions }
@@ -117,7 +117,7 @@ export function planBlocks(initial: Towers, goal: Towers, options: BlocksPlanOpt
     }
     last = s
   }
-  if (last === undefined) throw new WhiteboxError('value', 'planBlocks: the search did not start')
+  if (last === undefined) throw new MdmlError('value', 'planBlocks: the search did not start')
   const status = last.status === 'running' ? 'budget' : last.status
   const solution = status === 'solved' ? last.solution : null
   const actions: StripsAction[] = []

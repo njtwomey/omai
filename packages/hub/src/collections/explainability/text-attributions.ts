@@ -1,8 +1,8 @@
 /**
  * The text attribution entry: word-level ablation, Shapley values and LIME for a small sentiment scorer with negation.
  */
-import { explainText, type TextMethod } from 'whitebox-engine/methods/explain'
-import { choice, dict } from 'whitebox-engine/space'
+import { explainText, type TextMethod } from 'mdml-engine/methods/explain'
+import { choice, dict } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 
 const LEXICON: Readonly<Record<string, number>> = {

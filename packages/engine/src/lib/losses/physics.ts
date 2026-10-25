@@ -6,7 +6,7 @@
  */
 
 import { grad, vjp } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   abs,
   asTensor,
@@ -55,8 +55,8 @@ export interface FieldDerivatives {
  * @concept physics-informed-networks
  * @example
  * ```ts
- * import { fieldDerivatives } from 'whitebox-engine/losses'
- * import { mul, sum, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { fieldDerivatives } from 'mdml-engine/losses'
+ * import { mul, sum, toArray, type Value } from 'mdml-engine/tensor'
  * const u = (x: Value) => sum(mul(x, x), 1)
  * toArray(fieldDerivatives(u, [[1, 2]]).laplacian as Value) // => [4]
  * ```
@@ -67,7 +67,7 @@ export function fieldDerivatives(
   options: { readonly order?: 1 | 2 } = {},
 ): FieldDerivatives {
   const [x] = promoteFloat(points) as [Value]
-  if (x.shape.length !== 2) throw new WhiteboxError('shape', 'fieldDerivatives: points must be [N, d]')
+  if (x.shape.length !== 2) throw new MdmlError('shape', 'fieldDerivatives: points must be [N, d]')
   const d = x.shape[1] ?? 1
   const value = u(x)
   const gradientOf = (p: Value): Value => grad((v: Value) => sum(u(v)))(p)
@@ -94,8 +94,8 @@ export function fieldDerivatives(
  * @returns The loss, differentiable in the field's parameters.
  * @example
  * ```ts
- * import { pdeResidualLoss } from 'whitebox-engine/losses'
- * import { item, mul, sub, sum, type Value } from 'whitebox-engine/tensor'
+ * import { pdeResidualLoss } from 'mdml-engine/losses'
+ * import { item, mul, sub, sum, type Value } from 'mdml-engine/tensor'
  * const u = (x: Value) => sum(mul(x, x), 1)
  * item(pdeResidualLoss(u, [[0.1, 0.2], [0.3, 0.4]], (d) => sub(d.laplacian as Value, 4))) // => 0
  * ```
@@ -127,11 +127,11 @@ export interface BoundaryOptions extends LossOptions {
  * @param values - Prescribed values `[N]`.
  * @param options - kind, normals, reduction and weights.
  * @returns The loss, differentiable in the field's parameters.
- * @throws WhiteboxError with code `value` for a Neumann condition without normals.
+ * @throws MdmlError with code `value` for a Neumann condition without normals.
  * @example
  * ```ts
- * import { boundaryLoss } from 'whitebox-engine/losses'
- * import { item, mul, sum, type Value } from 'whitebox-engine/tensor'
+ * import { boundaryLoss } from 'mdml-engine/losses'
+ * import { item, mul, sum, type Value } from 'mdml-engine/tensor'
  * const u = (x: Value) => sum(mul(x, x), 1)
  * item(boundaryLoss(u, [[1, 0]], [2], { kind: 'neumann', normals: [[1, 0]] })) // => 0
  * ```
@@ -139,7 +139,7 @@ export interface BoundaryOptions extends LossOptions {
 export function boundaryLoss(u: Field, points: TensorLike, values: TensorLike, options: BoundaryOptions = {}): Value {
   const [x, g] = promoteFloat(points, values) as [Value, Value]
   if ((options.kind ?? 'dirichlet') === 'dirichlet') return reduce(square(sub(u(x), g)), options)
-  if (options.normals === undefined) throw new WhiteboxError('value', 'boundaryLoss: Neumann conditions need normals')
+  if (options.normals === undefined) throw new MdmlError('value', 'boundaryLoss: Neumann conditions need normals')
   const n = promoteFloat(options.normals)[0] as Value
   const normal = sum(mul(fieldDerivatives(u, x, { order: 1 }).gradient, n), 1)
   return reduce(square(sub(normal, g)), options)
@@ -156,8 +156,8 @@ export function boundaryLoss(u: Field, points: TensorLike, values: TensorLike, o
  * @returns The loss, differentiable in the field's parameters.
  * @example
  * ```ts
- * import { initialConditionLoss } from 'whitebox-engine/losses'
- * import { item, mul, sum, type Value } from 'whitebox-engine/tensor'
+ * import { initialConditionLoss } from 'mdml-engine/losses'
+ * import { item, mul, sum, type Value } from 'mdml-engine/tensor'
  * const u = (p: Value) => sum(mul(p, p), 1)
  * item(initialConditionLoss(u, [[0.5, 0]], [0.25])) // => 0
  * ```
@@ -193,8 +193,8 @@ const flatAbs = (tree: unknown): number[] => treeLeaves(tree).flatMap((leaf) => 
  * @returns One weight per term (the first is 1).
  * @example
  * ```ts
- * import { gradientNormWeights } from 'whitebox-engine/losses'
- * import { mul, sum, tensor, type Value } from 'whitebox-engine/tensor'
+ * import { gradientNormWeights } from 'mdml-engine/losses'
+ * import { mul, sum, tensor, type Value } from 'mdml-engine/tensor'
  * const terms = [(p: Value) => sum(mul(p, 4)), (p: Value) => sum(mul(p, 2))]
  * gradientNormWeights(terms, tensor([1, 1]), { alpha: 1 }) // => [1, 2]
  * ```
@@ -232,8 +232,8 @@ export type PointwiseTerm<P> = (params: P) => Value
  * @returns One weight per term.
  * @example
  * ```ts
- * import { ntkWeights } from 'whitebox-engine/losses'
- * import { mul, tensor, type Value } from 'whitebox-engine/tensor'
+ * import { ntkWeights } from 'mdml-engine/losses'
+ * import { mul, tensor, type Value } from 'mdml-engine/tensor'
  * ntkWeights([(p: Value) => mul(p, 1), (p: Value) => mul(p, 3)], tensor([1, 2])) // => [10, 1.1111111111111112]
  * ```
  */

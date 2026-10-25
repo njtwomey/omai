@@ -19,7 +19,7 @@ import {
   scene,
   tex,
   text,
-} from 'whitebox-engine/scene'
+} from 'mdml-engine/scene'
 import { circularLayout, forceLayout } from '../layout/force.ts'
 import { type Box, boxBoundary, type EdgeRoute, type GraphLayout, type LayoutGraph } from '../layout/graph.ts'
 import { bipartiteLayout } from '../layout/grids.ts'
@@ -247,8 +247,8 @@ function depthOf(s: Structure, id: string): number {
  * @returns The scene, with node ids as scene ids (edges are `edge:<index>`, groups `group:<id>`).
  * @example
  * ```ts
- * import { structure } from 'whitebox-engine/scene'
- * import { diagram } from 'whitebox-render/structures'
+ * import { structure } from 'mdml-engine/scene'
+ * import { diagram } from 'mdml-render/structures'
  * const s = structure('bayes-net', [{ id: 'z', label: 'z', role: 'latent' }, { id: 'x', label: 'x', role: 'observed' }], [{ from: 'z', to: 'x' }])
  * diagram(s).kind // => 'scene'
  * ```

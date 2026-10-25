@@ -6,7 +6,7 @@
  * constrained parameters.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, split as splitKey, uniform } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import {
@@ -124,7 +124,7 @@ export type SamplerStat = (typeof STAT_NAMES)[number]
  * @concept tracing
  * @example
  * ```ts
- * import { samplerSchema } from 'whitebox-engine/sampling'
+ * import { samplerSchema } from 'mdml-engine/sampling'
  * Object.keys(samplerSchema(2).metrics).includes('divergent') // => true
  * ```
  */
@@ -169,8 +169,8 @@ function infoMetrics(info: TransitionInfo | undefined, logDensity: number): Reco
  * @concept markov-chain-monte-carlo
  * @example
  * ```ts
- * import { randomWalkMetropolis, samplerAlgorithm, numericTarget } from 'whitebox-engine/sampling'
- * import { recorder, runAlgorithm, metricSeries } from 'whitebox-engine/trace'
+ * import { randomWalkMetropolis, samplerAlgorithm, numericTarget } from 'mdml-engine/sampling'
+ * import { recorder, runAlgorithm, metricSeries } from 'mdml-engine/trace'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const rec = recorder()
  * runAlgorithm(samplerAlgorithm(randomWalkMetropolis(t, { scale: 1 }), [0]), { seed: 1, maxSteps: 5, tracer: rec })
@@ -256,8 +256,7 @@ export interface ChainResult<S extends MCMCState = MCMCState> extends ChainDraws
 }
 
 function checkCount(n: number, name: string, min: number): number {
-  if (!Number.isInteger(n) || n < min)
-    throw new WhiteboxError('value', `sampleChain: ${name} must be an integer >= ${min}`)
+  if (!Number.isInteger(n) || n < min) throw new MdmlError('value', `sampleChain: ${name} must be an integer >= ${min}`)
   return n
 }
 
@@ -269,12 +268,12 @@ function checkCount(n: number, name: string, min: number): number {
  * @param position - The starting position.
  * @param options - Key, number of draws, warm-up, thinning, whether to keep warm-up draws, tracer and policy.
  * @returns The draws `[numDraws * dim]`, per-draw statistics, optional warm-up draws and the last state.
- * @throws WhiteboxError with code `value` for negative or fractional counts.
+ * @throws MdmlError with code `value` for negative or fractional counts.
  * @concept markov-chain-monte-carlo
  * @example
  * ```ts
- * import { randomWalkMetropolis, sampleChain, numericTarget } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { randomWalkMetropolis, sampleChain, numericTarget } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const r = sampleChain(randomWalkMetropolis(t, { scale: 2 }), [0], { key: key(0), numDraws: 100, numWarmup: 50, thin: 2 })
  * r.draws.length // => 100
@@ -365,11 +364,11 @@ function startOf(init: ChainInit | undefined, key: Key, chain: number, dim: numb
   else if (init.length > 0 && typeof init[0] !== 'number') {
     const each = init as readonly ArrayLike<number>[]
     const q = each[chain]
-    if (q === undefined) throw new WhiteboxError('value', `sampleChains: no starting point for chain ${chain}`)
+    if (q === undefined) throw new MdmlError('value', `sampleChains: no starting point for chain ${chain}`)
     p = q
   } else p = init as ArrayLike<number>
   if (p.length !== dim)
-    throw new WhiteboxError('shape', `sampleChains: a starting point has ${p.length} values, need ${dim}`)
+    throw new MdmlError('shape', `sampleChains: a starting point has ${p.length} values, need ${dim}`)
   return Float64Array.from(p)
 }
 
@@ -408,12 +407,12 @@ function stackDraws(per: readonly ChainDraws[], numDraws: number, dim: number): 
  * @param sampler - A kernel (fixed parameters) or an adaptation (tunes a kernel during warm-up).
  * @param options - Key, chains, draws, warm-up, thinning, starting points, names, tracer and policy.
  * @returns The chains.
- * @throws WhiteboxError with code `value` for invalid counts, and `shape` for starting points of the wrong length.
+ * @throws MdmlError with code `value` for invalid counts, and `shape` for starting points of the wrong length.
  * @concept markov-chain-monte-carlo
  * @example
  * ```ts
- * import { randomWalkMetropolis, sampleChains, numericTarget } from 'whitebox-engine/sampling'
- * import { key } from 'whitebox-engine/random'
+ * import { randomWalkMetropolis, sampleChains, numericTarget } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const c = sampleChains(randomWalkMetropolis(t, { scale: 2 }), { key: key(0), numChains: 2, numDraws: 50, numWarmup: 20 })
  * c.draws.shape // => [2, 50, 1]
@@ -428,8 +427,7 @@ export function sampleChains<S extends MCMCState>(
   const numWarmup = checkCount(options.numWarmup ?? 0, 'numWarmup', 0)
   const dim = sampler.dim
   const names = options.names ?? Array.from({ length: dim }, (_, i) => `x[${i}]`)
-  if (names.length !== dim)
-    throw new WhiteboxError('value', `sampleChains: ${names.length} names for ${dim} coordinates`)
+  if (names.length !== dim) throw new MdmlError('value', `sampleChains: ${names.length} names for ${dim} coordinates`)
   const run = startRun(options.tracer ?? nullTracer, {
     name: 'sampleChains',
     seed: null,
@@ -498,11 +496,11 @@ function drawsOf(chains: Chains): Float64Array {
  * @param chains - The chains.
  * @param which - The coordinate's index or name.
  * @returns A `[chain, draw]` tensor.
- * @throws WhiteboxError with code `value` for an unknown coordinate.
+ * @throws MdmlError with code `value` for an unknown coordinate.
  * @example
  * ```ts
- * import { chainsFromDraws, parameterDraws } from 'whitebox-engine/sampling'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { chainsFromDraws, parameterDraws } from 'mdml-engine/sampling'
+ * import { toArray } from 'mdml-engine/tensor'
  * const c = chainsFromDraws([[[1, 10], [2, 20]]], { names: ['a', 'b'] })
  * toArray(parameterDraws(c, 'b')) // => [[10, 20]]
  * ```
@@ -510,7 +508,7 @@ function drawsOf(chains: Chains): Float64Array {
 export function parameterDraws(chains: Chains, which: number | string): Tensor<'float64'> {
   const i = typeof which === 'number' ? which : chains.names.indexOf(which)
   if (!(Number.isInteger(i) && i >= 0 && i < chains.dim)) {
-    throw new WhiteboxError('value', `parameterDraws: unknown coordinate ${String(which)}`)
+    throw new MdmlError('value', `parameterDraws: unknown coordinate ${String(which)}`)
   }
   const { numChains, numDraws, dim } = chains
   const x = drawsOf(chains)
@@ -527,7 +525,7 @@ export function parameterDraws(chains: Chains, which: number | string): Tensor<'
  * @returns The pooled draws.
  * @example
  * ```ts
- * import { chainsFromDraws, flattenChains } from 'whitebox-engine/sampling'
+ * import { chainsFromDraws, flattenChains } from 'mdml-engine/sampling'
  * flattenChains(chainsFromDraws([[[1], [2]], [[3], [4]]])).shape // => [4, 1]
  * ```
  */
@@ -563,16 +561,16 @@ function selectDraws(chains: Chains, keep: readonly number[]): Chains {
  * @param chains - The chains.
  * @param factor - The thinning factor (a positive integer).
  * @returns The thinned chains (warm-up draws dropped).
- * @throws WhiteboxError with code `value` for a factor that is not a positive integer.
+ * @throws MdmlError with code `value` for a factor that is not a positive integer.
  * @example
  * ```ts
- * import { chainsFromDraws, thin } from 'whitebox-engine/sampling'
+ * import { chainsFromDraws, thin } from 'mdml-engine/sampling'
  * thin(chainsFromDraws([[[1], [2], [3], [4], [5]]]), 2).numDraws // => 3
  * ```
  */
 export function thin(chains: Chains, factor: number): Chains {
   if (!(Number.isInteger(factor) && factor >= 1))
-    throw new WhiteboxError('value', 'thin: factor must be a positive integer')
+    throw new MdmlError('value', 'thin: factor must be a positive integer')
   const keep: number[] = []
   for (let d = 0; d < chains.numDraws; d += factor) keep.push(d)
   return selectDraws(chains, keep)
@@ -585,16 +583,16 @@ export function thin(chains: Chains, factor: number): Chains {
  * @param chains - The chains.
  * @param n - Draws to drop per chain.
  * @returns The remaining draws.
- * @throws WhiteboxError with code `value` unless 0 <= n <= numDraws.
+ * @throws MdmlError with code `value` unless 0 <= n <= numDraws.
  * @example
  * ```ts
- * import { chainsFromDraws, discardWarmup } from 'whitebox-engine/sampling'
+ * import { chainsFromDraws, discardWarmup } from 'mdml-engine/sampling'
  * discardWarmup(chainsFromDraws([[[1], [2], [3]]]), 2).numDraws // => 1
  * ```
  */
 export function discardWarmup(chains: Chains, n: number): Chains {
   if (!(Number.isInteger(n) && n >= 0 && n <= chains.numDraws)) {
-    throw new WhiteboxError('value', 'discardWarmup: n must be an integer in [0, numDraws]')
+    throw new MdmlError('value', 'discardWarmup: n must be an integer in [0, numDraws]')
   }
   return selectDraws(
     chains,
@@ -609,10 +607,10 @@ export function discardWarmup(chains: Chains, n: number): Chains {
  * @param draws - The draws.
  * @param options - Coordinate names and per-draw statistics `[chain, draw]`.
  * @returns The chains.
- * @throws WhiteboxError with code `shape` unless the draws have two or three axes.
+ * @throws MdmlError with code `shape` unless the draws have two or three axes.
  * @example
  * ```ts
- * import { chainsFromDraws } from 'whitebox-engine/sampling'
+ * import { chainsFromDraws } from 'mdml-engine/sampling'
  * chainsFromDraws([[1, 2, 3], [4, 5, 6]]).draws.shape // => [2, 3, 1]
  * ```
  */
@@ -625,7 +623,7 @@ export function chainsFromDraws(
 ): Chains {
   const x = asTensor(draws)
   if (x.shape.length !== 2 && x.shape.length !== 3) {
-    throw new WhiteboxError('shape', 'chainsFromDraws: draws must be [chain, draw] or [chain, draw, dim]')
+    throw new MdmlError('shape', 'chainsFromDraws: draws must be [chain, draw] or [chain, draw, dim]')
   }
   const numChains = x.shape[0] ?? 0
   const numDraws = x.shape[1] ?? 0
@@ -633,12 +631,12 @@ export function chainsFromDraws(
   const data = Float64Array.from((x as Tensor).data as ArrayLike<number>)
   const names = options.names ?? Array.from({ length: dim }, (_, i) => `x[${i}]`)
   if (names.length !== dim)
-    throw new WhiteboxError('value', `chainsFromDraws: ${names.length} names for ${dim} coordinates`)
+    throw new MdmlError('value', `chainsFromDraws: ${names.length} names for ${dim} coordinates`)
   const stats: Partial<Record<SamplerStat, Tensor<'float64'>>> = {}
   for (const [name, v] of Object.entries(options.stats ?? {})) {
     const t = asTensor(v as TensorLike) as Tensor
     if (t.shape[0] !== numChains || t.shape[1] !== numDraws) {
-      throw new WhiteboxError('shape', `chainsFromDraws: statistic ${name} must be [chain, draw]`)
+      throw new MdmlError('shape', `chainsFromDraws: statistic ${name} must be [chain, draw]`)
     }
     stats[name as SamplerStat] = fromStorage(
       Float64Array.from(t.data as ArrayLike<number>),
@@ -667,9 +665,9 @@ export function chainsFromDraws(
  * @returns The constrained chains.
  * @example
  * ```ts
- * import { chainsFromDraws, constrainChains, targetFromDistribution } from 'whitebox-engine/sampling'
- * import { exponential } from 'whitebox-engine/dists'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { chainsFromDraws, constrainChains, targetFromDistribution } from 'mdml-engine/sampling'
+ * import { exponential } from 'mdml-engine/dists'
+ * import { toArray } from 'mdml-engine/tensor'
  * const c = constrainChains(chainsFromDraws([[[0], [Math.log(2)]]]), targetFromDistribution(exponential(1)))
  * toArray(c.draws) // => [[[1], [2]]]
  * ```

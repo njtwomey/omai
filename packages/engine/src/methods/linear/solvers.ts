@@ -5,7 +5,7 @@
  * and says why.
  */
 
-import { type Json, WhiteboxError } from '../../lib/base/index.ts'
+import { type Json, MdmlError } from '../../lib/base/index.ts'
 import type { DispersionFamily, Link } from '../../lib/dists/families/index.ts'
 import { collecting, type MatrixView } from '../../lib/learn/index.ts'
 import { cholesky, choSolve, ddot, lstsq, svd } from '../../lib/numerics/linalg/index.ts'
@@ -171,7 +171,7 @@ export function leastSquaresSolve(
     }
     try {
       coef = Float64Array.from(toFlat(primalOf(choSolve(cholesky(matrixTensor(g, d, d)), vectorTensor(r)))))
-      if (coef.some((v) => !Number.isFinite(v))) throw new WhiteboxError('value', 'singular')
+      if (coef.some((v) => !Number.isFinite(v))) throw new MdmlError('value', 'singular')
     } catch {
       // A singular Gram matrix (collinear features): fall back to the minimum-norm SVD solution.
       coef = svdRidge(c.x, n, d, c.y, [lambda])[0] ?? new Float64Array(d)
@@ -449,7 +449,7 @@ export function quasiNewtonSolve(problem: GlmProblem, options: SolveOptions = {}
  * @param problem - The problem.
  * @param options - Solver, iterations, tolerance, warm start and run options.
  * @returns The solution.
- * @throws WhiteboxError `value` when a direct least-squares solver is asked for a problem it cannot solve.
+ * @throws MdmlError `value` when a direct least-squares solver is asked for a problem it cannot solve.
  */
 export function solveGlm(problem: GlmProblem, options: SolveOptions = {}): GlmSolution {
   const solver =
@@ -458,7 +458,7 @@ export function solveGlm(problem: GlmProblem, options: SolveOptions = {}): GlmSo
   const s = sumOf(problem.design.w)
   if (solver === 'cholesky' || solver === 'qr' || solver === 'svd') {
     if (!isLeastSquares(problem) || l1)
-      throw new WhiteboxError('value', `solveGlm: ${solver} solves least squares without an L1 penalty only`)
+      throw new MdmlError('value', `solveGlm: ${solver} solves least squares without an L1 penalty only`)
     const r = leastSquaresSolve(problem.design, problem.alpha * s, problem.fitIntercept, solver)
     const objective = glmObjective(problem, r.coef, r.intercept)
     return { ...r, solver, iterations: 1, converged: true, objective, history: [objective] }

@@ -4,7 +4,7 @@
  * ordinary network, grounding of observations, and maximum-likelihood fitting of the shared tables by pooling counts.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { topologicalOrder } from '../graphs.ts'
 import { type BayesNet, type BayesNode, bayesNet } from './bayes-net.ts'
 
@@ -38,12 +38,12 @@ export interface PlateModel {
  *
  * @param variables - The template variables.
  * @returns The model (variables in topological order, plates in first-use order).
- * @throws WhiteboxError with code `value` for unknown parents, parents outside the child's plates, cycles, or CPTs of
+ * @throws MdmlError with code `value` for unknown parents, parents outside the child's plates, cycles, or CPTs of
  * the wrong size.
  * @concept plate-models
  * @example
  * ```ts
- * import { plateModel } from 'whitebox-engine/pgm'
+ * import { plateModel } from 'mdml-engine/pgm'
  * const m = plateModel([
  *   { name: 'skill', states: ['lo', 'hi'], plates: ['student'], parents: [], cpt: [0.5, 0.5] },
  *   { name: 'pass', states: ['no', 'yes'], plates: ['student', 'exam'], parents: ['skill'], cpt: [0.6, 0.4, 0.1, 0.9] },
@@ -53,25 +53,25 @@ export interface PlateModel {
  */
 export function plateModel(variables: readonly PlateVariable[]): PlateModel {
   const byName = new Map(variables.map((v) => [v.name, v]))
-  if (byName.size !== variables.length) throw new WhiteboxError('value', 'plateModel: variable names must be distinct')
+  if (byName.size !== variables.length) throw new MdmlError('value', 'plateModel: variable names must be distinct')
   for (const v of variables) {
     for (const p of v.parents) {
       const parent = byName.get(p)
-      if (parent === undefined) throw new WhiteboxError('value', `plateModel: ${v.name} has unknown parent ${p}`)
+      if (parent === undefined) throw new MdmlError('value', `plateModel: ${v.name} has unknown parent ${p}`)
       for (const plate of parent.plates) {
         if (!v.plates.includes(plate))
-          throw new WhiteboxError('value', `plateModel: parent ${p} is in plate ${plate}, which ${v.name} is not in`)
+          throw new MdmlError('value', `plateModel: parent ${p} is in plate ${plate}, which ${v.name} is not in`)
       }
     }
     const rows = v.parents.reduce((k, p) => k * (byName.get(p)?.states.length ?? 1), 1)
     if (v.cpt.length !== rows * v.states.length)
-      throw new WhiteboxError('value', `plateModel: ${v.name} needs ${rows * v.states.length} CPT entries`)
+      throw new MdmlError('value', `plateModel: ${v.name} needs ${rows * v.states.length} CPT entries`)
   }
   let ordered: PlateVariable[]
   try {
     ordered = topologicalOrder(variables)
   } catch (e) {
-    throw new WhiteboxError('value', `plateModel: ${(e as Error).message}`)
+    throw new MdmlError('value', `plateModel: ${(e as Error).message}`)
   }
   const plates = [...new Set(variables.flatMap((v) => v.plates))]
   return { kind: 'plateModel', plates, variables: ordered }
@@ -86,7 +86,7 @@ export function plateModel(variables: readonly PlateVariable[]): PlateModel {
  * @returns The ground name.
  * @example
  * ```ts
- * import { groundName } from 'whitebox-engine/pgm'
+ * import { groundName } from 'mdml-engine/pgm'
  * groundName({ name: 'grade', states: [], plates: ['student', 'course'], parents: [], cpt: [] }, { student: 'ann', course: 'cs1' }) // => 'grade[ann,cs1]'
  * ```
  */
@@ -112,7 +112,7 @@ function product(
   let out: Record<string, string>[] = [{}]
   for (const p of plates) {
     const es = elements[p]
-    if (es === undefined) throw new WhiteboxError('value', `ground: no elements for plate ${p}`)
+    if (es === undefined) throw new MdmlError('value', `ground: no elements for plate ${p}`)
     out = out.flatMap((t) => es.map((e) => ({ ...t, [p]: e })))
   }
   return out
@@ -127,11 +127,11 @@ function product(
  * @param elements - The elements of each plate.
  * @param options - Relations restricting which index tuples exist.
  * @returns The ground Bayes network.
- * @throws WhiteboxError with code `value` for plates without elements or relation tuples of the wrong length.
+ * @throws MdmlError with code `value` for plates without elements or relation tuples of the wrong length.
  * @concept plate-models
  * @example
  * ```ts
- * import { plateModel, groundPlateModel } from 'whitebox-engine/pgm'
+ * import { plateModel, groundPlateModel } from 'mdml-engine/pgm'
  * const m = plateModel([
  *   { name: 'skill', states: ['lo', 'hi'], plates: ['student'], parents: [], cpt: [0.5, 0.5] },
  *   { name: 'pass', states: ['no', 'yes'], plates: ['student', 'exam'], parents: ['skill'], cpt: [0.6, 0.4, 0.1, 0.9] },
@@ -153,7 +153,7 @@ export function groundPlateModel(
         ? product(v.plates, elements)
         : relation.map((t) => {
             if (t.length !== v.plates.length)
-              throw new WhiteboxError('value', `ground: ${v.name} needs ${v.plates.length}-tuples`)
+              throw new MdmlError('value', `ground: ${v.name} needs ${v.plates.length}-tuples`)
             return Object.fromEntries(v.plates.map((p, i) => [p, t[i] ?? '']))
           })
     for (const index of tuples) {
@@ -181,11 +181,11 @@ export interface PlateObservation {
  * @param model - The plate model.
  * @param observations - Observations of template variables at plate elements.
  * @returns Evidence (state names) by ground variable.
- * @throws WhiteboxError with code `value` for unknown variables or states.
+ * @throws MdmlError with code `value` for unknown variables or states.
  * @concept plate-models
  * @example
  * ```ts
- * import { plateModel, groundEvidence } from 'whitebox-engine/pgm'
+ * import { plateModel, groundEvidence } from 'mdml-engine/pgm'
  * const m = plateModel([{ name: 'skill', states: ['lo', 'hi'], plates: ['student'], parents: [], cpt: [0.5, 0.5] }])
  * groundEvidence(m, [{ variable: 'skill', index: { student: 'ann' }, state: 'hi' }]) // => { 'skill[ann]': 'hi' }
  * ```
@@ -194,9 +194,9 @@ export function groundEvidence(model: PlateModel, observations: readonly PlateOb
   const out: Record<string, string> = {}
   for (const o of observations) {
     const v = model.variables.find((x) => x.name === o.variable)
-    if (v === undefined) throw new WhiteboxError('value', `groundEvidence: unknown variable ${o.variable}`)
+    if (v === undefined) throw new MdmlError('value', `groundEvidence: unknown variable ${o.variable}`)
     if (!v.states.includes(o.state))
-      throw new WhiteboxError('value', `groundEvidence: ${o.variable} has no state ${o.state}`)
+      throw new MdmlError('value', `groundEvidence: ${o.variable} has no state ${o.state}`)
     out[groundName(v, o.index)] = o.state
   }
   return out
@@ -215,7 +215,7 @@ export function groundEvidence(model: PlateModel, observations: readonly PlateOb
  * @concept plate-models
  * @example
  * ```ts
- * import { plateModel, fitPlateModel } from 'whitebox-engine/pgm'
+ * import { plateModel, fitPlateModel } from 'mdml-engine/pgm'
  * const m = plateModel([{ name: 'coin', states: ['h', 't'], plates: ['toss'], parents: [], cpt: [0.5, 0.5] }])
  * const obs = ['h', 'h', 't', 'h'].map((state, i) => ({ variable: 'coin', index: { toss: String(i) }, state }))
  * fitPlateModel(m, { toss: ['0', '1', '2', '3'] }, obs).variables[0]?.cpt // => [0.75, 0.25]

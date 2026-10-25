@@ -1,10 +1,10 @@
+import { diabetes } from 'mdml-engine/datasets'
+import { recordsOf } from 'mdml-engine/exposition'
+import { kFold } from 'mdml-engine/learn/model-selection'
+import { standardScaler } from 'mdml-engine/learn/preprocessing'
+import { lassoCV } from 'mdml-engine/methods/linear'
+import { ControlPanel, CrossValidationView, NumberField } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { diabetes } from 'whitebox-engine/datasets'
-import { recordsOf } from 'whitebox-engine/exposition'
-import { kFold } from 'whitebox-engine/learn/model-selection'
-import { standardScaler } from 'whitebox-engine/learn/preprocessing'
-import { lassoCV } from 'whitebox-engine/methods/linear'
-import { ControlPanel, CrossValidationView, NumberField } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

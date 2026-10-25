@@ -5,7 +5,7 @@
  * (`prototypes`); and trust scores against the model's confidence (`curves`).
  */
 
-import { argmaxOf, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, MdmlError } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import {
   changedFeatures,
@@ -132,10 +132,10 @@ export function explainCounterfactuals(
   options: CounterfactualOptions = {},
 ): Explained<CounterfactualExplanation> {
   if (fitted.kind !== 'classifier' || fitted.predictProba === undefined)
-    throw new WhiteboxError('value', 'explainCounterfactuals: needs a classifier with probabilities')
+    throw new MdmlError('value', 'explainCounterfactuals: needs a classifier with probabilities')
   const x = matrixView(data.x, 'explainCounterfactuals')
   if (!(Number.isInteger(row) && row >= 0 && row < x.n))
-    throw new WhiteboxError('value', `explainCounterfactuals: no row ${row}`)
+    throw new MdmlError('value', `explainCounterfactuals: no row ${row}`)
   const d = x.d
   const features = featureNamesOf(data, d)
   const classes = (fitted as { readonly classes?: readonly number[] }).classes ?? []
@@ -174,7 +174,7 @@ export function explainCounterfactuals(
   const needGradient = (): Differentiable => {
     const g = differentiableOf(fitted, x)
     if (g === undefined)
-      throw new WhiteboxError(
+      throw new MdmlError(
         'value',
         `explainCounterfactuals: ${method} needs a model linear in its inputs; use growing spheres or FACE`,
       )
@@ -390,10 +390,10 @@ export function trustScoreStudy(
   test: LearnData,
   options: explain.TrustScoreOptions = {},
 ): Explained<{ readonly scores: readonly number[] }> {
-  if (fitted.predictProba === undefined) throw new WhiteboxError('value', 'trustScoreStudy: needs probabilities')
+  if (fitted.predictProba === undefined) throw new MdmlError('value', 'trustScoreStudy: needs probabilities')
   const classes = (fitted as { readonly classes?: readonly number[] }).classes ?? []
   const t = matrixView(test.x, 'trustScoreStudy')
-  if (test.y === undefined) throw new WhiteboxError('value', 'trustScoreStudy: the test data need labels')
+  if (test.y === undefined) throw new MdmlError('value', 'trustScoreStudy: the test data need labels')
   const y = targetVector(test.y, 'trustScoreStudy', t.n)
   const proba = fitted.predictProba(fromStorage(t.data, [t.n, t.d], 'float64'))
   const k = proba.shape[1] ?? 1

@@ -5,7 +5,7 @@
  * options, and the tabular option-critic, which learns the options' policies and terminations from reward alone.
  */
 
-import { argmaxOf, type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../../../lib/base/index.ts'
 import { expit } from '../../../lib/numerics/special/index.ts'
 import { foldIn, type Key, uniform } from '../../../lib/random/index.ts'
 import {
@@ -57,7 +57,7 @@ export interface Option {
  * @concept options-framework
  * @example
  * ```ts
- * import { primitiveOptions } from 'whitebox-engine/methods/rl/agents'
+ * import { primitiveOptions } from 'mdml-engine/methods/rl/agents'
  * const [up] = primitiveOptions(4)
  * [up?.policy(7), up?.termination(7)] // => [[1, 0, 0, 0], 1]
  * ```
@@ -83,8 +83,8 @@ export function primitiveOptions(nActions: number): Option[] {
  * @concept options-framework
  * @example
  * ```ts
- * import { subgoalOption } from 'whitebox-engine/methods/rl/agents'
- * import { makeCliffWalking } from 'whitebox-engine/methods/rl'
+ * import { subgoalOption } from 'mdml-engine/methods/rl/agents'
+ * import { makeCliffWalking } from 'mdml-engine/methods/rl'
  * const env = makeCliffWalking()
  * const right = env.model === undefined ? undefined : subgoalOption(env.model, [0, 1, 2], 3)
  * right?.policy(0) // => [0, 1, 0, 0]
@@ -179,12 +179,12 @@ function roomsOf(layout: readonly string[]): {
  * @param env - A four-rooms environment with its model (default goal and success probability, or any).
  * @param options - The layout (default `FOUR_ROOMS`) and the sub-MDP discount (default 0.9).
  * @returns Eight options for the standard layout.
- * @throws WhiteboxError with code `value` when the environment has no model.
+ * @throws MdmlError with code `value` when the environment has no model.
  * @concept options-framework
  * @example
  * ```ts
- * import { hallwayOptions } from 'whitebox-engine/methods/rl/agents'
- * import { makeFourRooms } from 'whitebox-engine/methods/rl'
+ * import { hallwayOptions } from 'mdml-engine/methods/rl/agents'
+ * import { makeFourRooms } from 'mdml-engine/methods/rl'
  * hallwayOptions(makeFourRooms()).length // => 8
  * ```
  */
@@ -193,7 +193,7 @@ export function hallwayOptions(
   options: { readonly layout?: readonly string[]; readonly gamma?: number } = {},
 ): Option[] {
   const model = env.model
-  if (model === undefined) throw new WhiteboxError('value', 'hallwayOptions: the environment has no model')
+  if (model === undefined) throw new MdmlError('value', 'hallwayOptions: the environment has no model')
   const { cells, rooms, hallways } = roomsOf(options.layout ?? FOUR_ROOMS)
   const adjacent = (i: number, j: number): boolean => {
     const [r1, c1] = cells[i] ?? [0, 0]
@@ -308,7 +308,7 @@ function optionAgent<O>(
   const nS = coding.nStates
   const opts = o.options
   const nO = opts.length
-  if (nO === 0) throw new WhiteboxError('value', `${name}: give at least one option`)
+  if (nO === 0) throw new MdmlError('value', `${name}: give at least one option`)
   const gamma = o.gamma ?? 0.99
   const alpha = o.alpha ?? 0.1
   const epsilon = o.epsilon ?? 0.1
@@ -438,13 +438,13 @@ function optionAgent<O>(
  * @param env - The environment (discrete observations, or give `encode`).
  * @param options - The options, step size, discount, exploration and the observation coding.
  * @returns The agent.
- * @throws WhiteboxError with code `value` when no options are given.
+ * @throws MdmlError with code `value` when no options are given.
  * @concept options-framework
  * @example
  * ```ts
- * import { primitiveOptions, smdpQLearning } from 'whitebox-engine/methods/rl/agents'
- * import { makeFourRooms } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { primitiveOptions, smdpQLearning } from 'mdml-engine/methods/rl/agents'
+ * import { makeFourRooms } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const env = makeFourRooms()
  * smdpQLearning(env, { options: primitiveOptions(4) }).init(key(0)).Q.length // => 416
  * ```
@@ -468,8 +468,8 @@ export function smdpQLearning<O>(
  * @concept options-framework
  * @example
  * ```ts
- * import { hallwayOptions, intraOptionQLearning, primitiveOptions } from 'whitebox-engine/methods/rl/agents'
- * import { makeFourRooms } from 'whitebox-engine/methods/rl'
+ * import { hallwayOptions, intraOptionQLearning, primitiveOptions } from 'mdml-engine/methods/rl/agents'
+ * import { makeFourRooms } from 'mdml-engine/methods/rl'
  * const env = makeFourRooms()
  * intraOptionQLearning(env, { options: [...hallwayOptions(env), ...primitiveOptions(4)] }).name // => 'intraOptionQLearning'
  * ```
@@ -489,9 +489,9 @@ export function intraOptionQLearning<O>(
  * @concept options-framework
  * @example
  * ```ts
- * import { optionValues, primitiveOptions, smdpQLearning } from 'whitebox-engine/methods/rl/agents'
- * import { makeFourRooms } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { optionValues, primitiveOptions, smdpQLearning } from 'mdml-engine/methods/rl/agents'
+ * import { makeFourRooms } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * optionValues(smdpQLearning(makeFourRooms(), { options: primitiveOptions(4) }).init(key(0)))[0] // => [0, 0, 0, 0]
  * ```
  */
@@ -564,9 +564,9 @@ export interface OptionCriticState {
  * @concept option-critic
  * @example
  * ```ts
- * import { optionCritic } from 'whitebox-engine/methods/rl/agents'
- * import { makeFourRooms } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { optionCritic } from 'mdml-engine/methods/rl/agents'
+ * import { makeFourRooms } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * optionCritic(makeFourRooms(), { nOptions: 4 }).init(key(0)).theta.length // => 1664
  * ```
  */
@@ -706,9 +706,9 @@ export function optionCritic<O>(
  * @concept option-critic
  * @example
  * ```ts
- * import { optionCritic, optionTerminations } from 'whitebox-engine/methods/rl/agents'
- * import { makeFourRooms } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { optionCritic, optionTerminations } from 'mdml-engine/methods/rl/agents'
+ * import { makeFourRooms } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * optionTerminations(optionCritic(makeFourRooms()).init(key(0)))[0]?.[0] // => 0.5
  * ```
  */

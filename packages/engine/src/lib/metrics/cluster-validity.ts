@@ -4,7 +4,7 @@
  * the Dunn index, as in scikit-learn.
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { cdist, type Metric as DistanceName } from '../numerics/geometry/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { labelValues, sortLabels } from './_labels.ts'
@@ -34,7 +34,7 @@ function clusters(
   const points = matrix(x)
   const l = labelValues(labels)
   const n = points.shape[0] ?? 0
-  if (l.length !== n) throw new WhiteboxError('shape', `${name}: one label per sample`)
+  if (l.length !== n) throw new MdmlError('shape', `${name}: one label per sample`)
   const classes = sortLabels(l)
   const pos = new Map(classes.map((c, i) => [c, i]))
   return { points, idx: Int32Array.from(l, (v) => pos.get(v) ?? 0), k: classes.length, n }
@@ -44,7 +44,7 @@ function clusters(
 function distances(x: TensorLike, n: number, metric: DistanceName | 'precomputed' | undefined): Float64Array {
   if (metric === 'precomputed') return matrix(x).data
   const d = matrix(cdist(x, x, metric ?? 'euclidean')).data
-  if (d.length !== n * n) throw new WhiteboxError('shape', 'distance matrix has the wrong size')
+  if (d.length !== n * n) throw new MdmlError('shape', 'distance matrix has the wrong size')
   return d
 }
 
@@ -57,17 +57,16 @@ function distances(x: TensorLike, n: number, metric: DistanceName | 'precomputed
  * @param labels - Cluster labels `[N]` (between 2 and N - 1 clusters).
  * @param options - The distance metric.
  * @returns One coefficient per sample.
- * @throws WhiteboxError with code `value` for fewer than 2 or more than N - 1 clusters.
+ * @throws MdmlError with code `value` for fewer than 2 or more than N - 1 clusters.
  * @example
  * ```ts
- * import { silhouetteSamples } from 'whitebox-engine/metrics'
+ * import { silhouetteSamples } from 'mdml-engine/metrics'
  * silhouetteSamples([[0], [1], [10], [11]], [0, 0, 1, 1])[0] // => 0.9047619047619048
  * ```
  */
 export function silhouetteSamples(x: TensorLike, labels: MetricInput, options: ValidityOptions = {}): number[] {
   const c = clusters('silhouetteSamples', x, labels)
-  if (c.k < 2 || c.k > c.n - 1)
-    throw new WhiteboxError('value', `silhouette: ${c.k} clusters; needs 2 to n_samples - 1`)
+  if (c.k < 2 || c.k > c.n - 1) throw new MdmlError('value', `silhouette: ${c.k} clusters; needs 2 to n_samples - 1`)
   const d = distances(x, c.n, options.metric)
   const sizes = new Float64Array(c.k)
   for (const i of c.idx) sizes[i] = (sizes[i] ?? 0) + 1
@@ -95,7 +94,7 @@ export function silhouetteSamples(x: TensorLike, labels: MetricInput, options: V
  * @concept cluster-validity
  * @example
  * ```ts
- * import { silhouetteScore } from 'whitebox-engine/metrics'
+ * import { silhouetteScore } from 'mdml-engine/metrics'
  * Number(silhouetteScore([[0], [1], [10], [11]], [0, 0, 1, 1]).estimate.value.toFixed(4)) // => 0.8997
  * ```
  */
@@ -139,7 +138,7 @@ function centroids(
  * @returns The metric result (higher is better).
  * @example
  * ```ts
- * import { calinskiHarabaszScore } from 'whitebox-engine/metrics'
+ * import { calinskiHarabaszScore } from 'mdml-engine/metrics'
  * calinskiHarabaszScore([[0], [2], [10], [12]], [0, 0, 1, 1]).estimate.value // => 50
  * ```
  */
@@ -147,7 +146,7 @@ export const calinskiHarabaszScore: MetricFunction<[TensorLike, MetricInput]> = 
   spec('calinskiHarabaszScore', 'higher', [0, Infinity]),
   (x: TensorLike, labels: MetricInput): MetricResult => {
     const c = clusters('calinskiHarabaszScore', x, labels)
-    if (c.k < 2 || c.k > c.n - 1) throw new WhiteboxError('value', 'calinskiHarabaszScore: needs 2 to n - 1 clusters')
+    if (c.k < 2 || c.k > c.n - 1) throw new MdmlError('value', 'calinskiHarabaszScore: needs 2 to n - 1 clusters')
     const { c: mu, mean, sizes, d } = centroids(c.points, c.idx, c.k)
     let between = 0
     for (let q = 0; q < c.k; q++) {
@@ -174,7 +173,7 @@ export const calinskiHarabaszScore: MetricFunction<[TensorLike, MetricInput]> = 
  * @returns The metric result.
  * @example
  * ```ts
- * import { daviesBouldinScore } from 'whitebox-engine/metrics'
+ * import { daviesBouldinScore } from 'mdml-engine/metrics'
  * daviesBouldinScore([[0], [2], [10], [12]], [0, 0, 1, 1]).estimate.value // => 0.2
  * ```
  */
@@ -182,7 +181,7 @@ export const daviesBouldinScore: MetricFunction<[TensorLike, MetricInput]> = def
   spec('daviesBouldinScore', 'lower', [0, Infinity]),
   (x: TensorLike, labels: MetricInput): MetricResult => {
     const c = clusters('daviesBouldinScore', x, labels)
-    if (c.k < 2 || c.k > c.n - 1) throw new WhiteboxError('value', 'daviesBouldinScore: needs 2 to n - 1 clusters')
+    if (c.k < 2 || c.k > c.n - 1) throw new MdmlError('value', 'daviesBouldinScore: needs 2 to n - 1 clusters')
     const { c: mu, sizes, d } = centroids(c.points, c.idx, c.k)
     const scatter = new Float64Array(c.k)
     for (let i = 0; i < c.n; i++) {
@@ -227,7 +226,7 @@ export const daviesBouldinScore: MetricFunction<[TensorLike, MetricInput]> = def
  * @returns The metric result.
  * @example
  * ```ts
- * import { dunnIndex } from 'whitebox-engine/metrics'
+ * import { dunnIndex } from 'mdml-engine/metrics'
  * dunnIndex([[0], [2], [10], [12]], [0, 0, 1, 1]).estimate.value // => 4
  * ```
  */
@@ -235,7 +234,7 @@ export const dunnIndex: MetricFunction<[TensorLike, MetricInput, ValidityOptions
   spec('dunnIndex', 'higher', [0, Infinity]),
   (x: TensorLike, labels: MetricInput, options: ValidityOptions = {}): MetricResult => {
     const c = clusters('dunnIndex', x, labels)
-    if (c.k < 2) throw new WhiteboxError('value', 'dunnIndex: needs at least 2 clusters')
+    if (c.k < 2) throw new MdmlError('value', 'dunnIndex: needs at least 2 clusters')
     const d = distances(x, c.n, options.metric)
     let separation = Number.POSITIVE_INFINITY
     let diameter = 0

@@ -4,7 +4,7 @@
  * point by linear programming, and the nucleolus, the allocation that lexicographically minimises the largest excesses.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { matrixRank } from '../numerics/linalg/index.ts'
 import { type LinprogOptions, linprog } from '../optim/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -29,16 +29,16 @@ function indicator(n: number, mask: number): number[] {
  * @param game - The game.
  * @param x - One payoff per player.
  * @returns The excess of every coalition, indexed by bitmask (0 for the empty coalition).
- * @throws WhiteboxError with code `shape` for an allocation of the wrong length.
+ * @throws MdmlError with code `shape` for an allocation of the wrong length.
  * @concept core
  * @example
  * ```ts
- * import { excesses, gloveGame } from 'whitebox-engine/games'
+ * import { excesses, gloveGame } from 'mdml-engine/games'
  * excesses(gloveGame(1, 1), [0.5, 0.5]) // => [0, -0.5, -0.5, 0]
  * ```
  */
 export function excesses(game: CoalitionalGame, x: readonly number[]): number[] {
-  if (x.length !== game.n) throw new WhiteboxError('shape', 'excesses: one payoff per player')
+  if (x.length !== game.n) throw new MdmlError('shape', 'excesses: one payoff per player')
   return Array.from(game.values, (v, m) => (m === 0 ? 0 : v - share(x, m)))
 }
 
@@ -53,7 +53,7 @@ export function excesses(game: CoalitionalGame, x: readonly number[]): number[] 
  * @concept core
  * @example
  * ```ts
- * import { gloveGame, isInCore } from 'whitebox-engine/games'
+ * import { gloveGame, isInCore } from 'mdml-engine/games'
  * [isInCore(gloveGame(1, 2), [1, 0, 0]), isInCore(gloveGame(1, 2), [0.5, 0.25, 0.25])] // => [true, false]
  * ```
  */
@@ -80,17 +80,17 @@ export interface LeastCoreResult {
  * @param game - The game (at least two players).
  * @param options - Options for the linear program.
  * @returns Epsilon and an allocation in the least core.
- * @throws WhiteboxError with code `value` for a one-player game, `convergence` when the program fails.
+ * @throws MdmlError with code `value` for a one-player game, `convergence` when the program fails.
  * @concept core
  * @example
  * ```ts
- * import { coalitionalGame, leastCore } from 'whitebox-engine/games'
+ * import { coalitionalGame, leastCore } from 'mdml-engine/games'
  * Math.round(leastCore(coalitionalGame(3, (s) => (s.length >= 2 ? 1 : 0))).epsilon * 1e9) / 1e9 // => 0.333333333
  * ```
  */
 export function leastCore(game: CoalitionalGame, options: LinprogOptions = {}): LeastCoreResult {
   const { n, values } = game
-  if (n < 2) throw new WhiteboxError('value', 'leastCore: at least two players are needed')
+  if (n < 2) throw new MdmlError('value', 'leastCore: at least two players are needed')
   const full = values.length - 1
   const aUb: number[][] = []
   const bUb: number[] = []
@@ -109,7 +109,7 @@ export function leastCore(game: CoalitionalGame, options: LinprogOptions = {}): 
     },
     options,
   )
-  if (!r.success) throw new WhiteboxError('convergence', `leastCore: the linear program ended with '${r.status}'`)
+  if (!r.success) throw new MdmlError('convergence', `leastCore: the linear program ended with '${r.status}'`)
   const z = toFlat(r.x)
   return { epsilon: z[n] ?? 0, allocation: z.slice(0, n) }
 }
@@ -123,7 +123,7 @@ export function leastCore(game: CoalitionalGame, options: LinprogOptions = {}): 
  * @concept core
  * @example
  * ```ts
- * import { coalitionalGame, corePoint, gloveGame } from 'whitebox-engine/games'
+ * import { coalitionalGame, corePoint, gloveGame } from 'mdml-engine/games'
  * [corePoint(gloveGame(1, 2))?.map((v) => Math.round(v * 1e9) / 1e9), corePoint(coalitionalGame(3, (s) => (s.length >= 2 ? 1 : 0)))] // => [[1, 0, 0], null]
  * ```
  */
@@ -148,12 +148,12 @@ export function corePoint(
  * @param game - The game.
  * @param options - `pre` for the prenucleolus, and options for the linear programs.
  * @returns The nucleolus.
- * @throws WhiteboxError with code `value` when there are no imputations (`v(N) < sum of v(i)`), `convergence` when a
+ * @throws MdmlError with code `value` when there are no imputations (`v(N) < sum of v(i)`), `convergence` when a
  * linear program fails.
  * @concept nucleolus
  * @example
  * ```ts
- * import { bankruptcyGame, nucleolus } from 'whitebox-engine/games'
+ * import { bankruptcyGame, nucleolus } from 'mdml-engine/games'
  * nucleolus(bankruptcyGame(200, [100, 200, 300])).map((v) => Math.round(v * 1e6) / 1e6) // => [50, 75, 75]
  * ```
  */
@@ -165,7 +165,7 @@ export function nucleolus(game: CoalitionalGame, options: LinprogOptions & { rea
   let singles = 0
   for (let i = 0; i < n; i++) singles += values[1 << i] ?? 0
   if (!pre && (values[full] ?? 0) < singles - 1e-12)
-    throw new WhiteboxError('value', 'nucleolus: the game has no imputations (v(N) < sum of v(i))')
+    throw new MdmlError('value', 'nucleolus: the game has no imputations (v(N) < sum of v(i))')
   const bounds = Array.from({ length: n }, (_, i) => [pre ? null : (values[1 << i] ?? 0), null] as const)
   const free = new Set<number>()
   for (let m = 1; m < full; m++) free.add(m)
@@ -192,7 +192,7 @@ export function nucleolus(game: CoalitionalGame, options: LinprogOptions & { rea
       },
       lp,
     )
-    if (!r.success) throw new WhiteboxError('convergence', `nucleolus: the linear program ended with '${r.status}'`)
+    if (!r.success) throw new MdmlError('convergence', `nucleolus: the linear program ended with '${r.status}'`)
     const z = toFlat(r.x)
     const t = z[n] ?? 0
     x = z.slice(0, n)

@@ -3,7 +3,7 @@
  * on two-dimensional classification data and tabular classification data.
  */
 
-import { oneVsRestClassifier } from 'whitebox-engine/methods/multiclass'
+import { oneVsRestClassifier } from 'mdml-engine/methods/multiclass'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 

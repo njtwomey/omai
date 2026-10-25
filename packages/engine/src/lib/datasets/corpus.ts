@@ -4,7 +4,7 @@
  * linkage, textbook worked examples, nursery rhymes, and Karpathy's Tiny Shakespeare as a pinned remote asset.
  */
 
-import { argmaxOf, softmaxOf, WhiteboxError } from '../base/index.ts'
+import { argmaxOf, MdmlError, softmaxOf } from '../base/index.ts'
 import { type CorpusData, corpus, type DatasetGenerator, type DatasetRef } from '../data/index.ts'
 import { categorical, dirichlet, foldIn, type Key, normal, poisson, uniform } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
@@ -88,8 +88,8 @@ function ldaLogLikelihood(
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { topicCorpus } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { topicCorpus } from 'mdml-engine/datasets'
  * generate(topicCorpus, { knobs: { topics: 'bars', nDocs: 20 } }).data.vocabulary?.length // => 25
  * ```
  */
@@ -172,8 +172,8 @@ export const topicCorpus: DatasetGenerator<CorpusData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { naiveBayesCorpus } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { naiveBayesCorpus } from 'mdml-engine/datasets'
  * generate(naiveBayesCorpus, { knobs: { nClasses: 3 } }).data.classes // => ['class0', 'class1', 'class2']
  * ```
  */
@@ -247,8 +247,8 @@ export const naiveBayesCorpus: DatasetGenerator<CorpusData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { driftingTopics } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { driftingTopics } from 'mdml-engine/datasets'
  * (generate(driftingTopics, { knobs: { slices: 4 } }).truth.latents?.['topics'] as number[][][]).length // => 4
  * ```
  */
@@ -340,7 +340,7 @@ export type WorkedExample = 'deerwester' | 'caesar'
  * @returns The corpus.
  * @example
  * ```ts
- * import { workedExampleCorpus } from 'whitebox-engine/datasets'
+ * import { workedExampleCorpus } from 'mdml-engine/datasets'
  * workedExampleCorpus('deerwester').documents?.length // => 9
  * ```
  */
@@ -371,7 +371,7 @@ export function workedExampleCorpus(name: WorkedExample): CorpusData {
       },
     )
   }
-  throw new WhiteboxError('value', `workedExampleCorpus: unknown corpus ${String(name)}`)
+  throw new MdmlError('value', `workedExampleCorpus: unknown corpus ${String(name)}`)
 }
 
 /**
@@ -381,7 +381,7 @@ export function workedExampleCorpus(name: WorkedExample): CorpusData {
  * @returns The corpus.
  * @example
  * ```ts
- * import { nurseryRhymes } from 'whitebox-engine/datasets'
+ * import { nurseryRhymes } from 'mdml-engine/datasets'
  * nurseryRhymes().classes?.[0] // => 'Mary Had a Little Lamb'
  * ```
  */
@@ -404,7 +404,7 @@ export function nurseryRhymes(): CorpusData {
  * @returns The corpus.
  * @example
  * ```ts
- * import { parseTinyShakespeare } from 'whitebox-engine/datasets'
+ * import { parseTinyShakespeare } from 'mdml-engine/datasets'
  * parseTinyShakespeare(new TextEncoder().encode('First:\nHi.\n\nSecond:\nHo.\n')).documents?.length // => 2
  * ```
  */
@@ -430,7 +430,7 @@ export function parseTinyShakespeare(bytes: Uint8Array): CorpusData {
  *
  * @example
  * ```ts
- * import { tinyShakespeare } from 'whitebox-engine/datasets'
+ * import { tinyShakespeare } from 'mdml-engine/datasets'
  * tinyShakespeare.size // => 1115394
  * ```
  */
@@ -467,8 +467,8 @@ function shingleJaccard(a: readonly number[], b: readonly number[], k: number): 
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { nearDuplicateCorpus } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { nearDuplicateCorpus } from 'mdml-engine/datasets'
  * generate(nearDuplicateCorpus, { knobs: { nOriginals: 10, duplicated: 0.5, copies: 2 } }).data.documents?.length // => 20
  * ```
  */

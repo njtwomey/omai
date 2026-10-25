@@ -5,7 +5,7 @@
  * codes, and encoding and decoding with any prefix code.
  */
 
-import { heap, type Json, pairwiseSum, WhiteboxError } from '../base/index.ts'
+import { heap, type Json, MdmlError, pairwiseSum } from '../base/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { float } from './_shared.ts'
@@ -19,14 +19,14 @@ export interface PrefixCode {
 function probabilities(p: TensorLike, name: string): number[] {
   const xs = toFlat(float(p))
   if (xs.length === 0 || xs.some((v) => !(v >= 0)))
-    throw new WhiteboxError('value', `${name}: probabilities must be non-negative and not empty`)
+    throw new MdmlError('value', `${name}: probabilities must be non-negative and not empty`)
   const total = pairwiseSum(xs)
-  if (!(total > 0)) throw new WhiteboxError('value', `${name}: probabilities sum to zero`)
+  if (!(total > 0)) throw new MdmlError('value', `${name}: probabilities sum to zero`)
   return xs.map((v) => v / total)
 }
 
 function checkArity(arity: number, name: string): void {
-  if (!Number.isInteger(arity) || arity < 2) throw new WhiteboxError('value', `${name}: arity must be an integer >= 2`)
+  if (!Number.isInteger(arity) || arity < 2) throw new MdmlError('value', `${name}: arity must be an integer >= 2`)
 }
 
 /**
@@ -40,7 +40,7 @@ function checkArity(arity: number, name: string): void {
  * @concept kraft-inequality
  * @example
  * ```ts
- * import { kraftSum } from 'whitebox-engine/information'
+ * import { kraftSum } from 'mdml-engine/information'
  * kraftSum([1, 2, 3, 3]) // => 1
  * kraftSum([1, 1, 2]) // => 1.25
  * ```
@@ -60,7 +60,7 @@ const wordKey = (w: readonly number[]): string => w.join(',')
  * @concept prefix-codes
  * @example
  * ```ts
- * import { isPrefixFree } from 'whitebox-engine/information'
+ * import { isPrefixFree } from 'mdml-engine/information'
  * isPrefixFree([[0], [1, 0], [1, 1]]) // => true
  * isPrefixFree([[0], [0, 1]]) // => false
  * ```
@@ -83,7 +83,7 @@ export function isPrefixFree(codewords: readonly (readonly number[])[]): boolean
  * @concept prefix-codes
  * @example
  * ```ts
- * import { isUniquelyDecodable } from 'whitebox-engine/information'
+ * import { isUniquelyDecodable } from 'mdml-engine/information'
  * isUniquelyDecodable([[0], [0, 1]]) // => true
  * isUniquelyDecodable([[0], [0, 1], [1, 0]]) // => false
  * ```
@@ -128,7 +128,7 @@ export function isUniquelyDecodable(codewords: readonly (readonly number[])[]): 
  * @concept source-coding
  * @example
  * ```ts
- * import { expectedLength } from 'whitebox-engine/information'
+ * import { expectedLength } from 'mdml-engine/information'
  * expectedLength([1, 2, 3, 3], [0.5, 0.25, 0.125, 0.125]) // => 1.75
  * ```
  */
@@ -137,7 +137,7 @@ export function expectedLength(code: PrefixCode | readonly number[], probs: Tens
     ? (code as readonly number[])
     : (code as PrefixCode).codewords.map((w) => w.length)
   const p = probabilities(probs, 'expectedLength')
-  if (p.length !== lengths.length) throw new WhiteboxError('shape', 'expectedLength: lengths and probabilities differ')
+  if (p.length !== lengths.length) throw new MdmlError('shape', 'expectedLength: lengths and probabilities differ')
   return pairwiseSum(p.map((v, i) => v * (lengths[i] ?? 0)))
 }
 
@@ -171,8 +171,8 @@ export interface HuffmanState {
  * @concept huffman-coding
  * @example
  * ```ts
- * import { huffmanAlgorithm } from 'whitebox-engine/information'
- * import { runAlgorithm } from 'whitebox-engine/trace'
+ * import { huffmanAlgorithm } from 'mdml-engine/information'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * runAlgorithm(huffmanAlgorithm([0.5, 0.25, 0.25]), { maxSteps: 10 }).steps // => 2
  * ```
  */
@@ -248,11 +248,11 @@ export interface HuffmanTree {
  * @param weights - Non-negative symbol weights, at least one.
  * @param options - The code alphabet size (default 2).
  * @returns The tree: leaves `0..n-1` are the symbols, inner nodes follow in merge order, the root is last.
- * @throws WhiteboxError with code `value` for an empty or negative weight list or a bad arity.
+ * @throws MdmlError with code `value` for an empty or negative weight list or a bad arity.
  * @concept huffman-coding
  * @example
  * ```ts
- * import { huffmanTree } from 'whitebox-engine/information'
+ * import { huffmanTree } from 'mdml-engine/information'
  * const t = huffmanTree([5, 1, 1])
  * t.nodes.map((n) => n.children) // => [[], [], [], [1, 2], [3, 0]]
  * t.root // => 4
@@ -261,7 +261,7 @@ export interface HuffmanTree {
 export function huffmanTree(weights: TensorLike, options: { readonly arity?: number } = {}): HuffmanTree {
   const w = toFlat(float(weights))
   if (w.length === 0 || w.some((v) => !(v >= 0)))
-    throw new WhiteboxError('value', 'huffmanTree: weights must be non-negative and not empty')
+    throw new MdmlError('value', 'huffmanTree: weights must be non-negative and not empty')
   const arity = options.arity ?? 2
   checkArity(arity, 'huffmanTree')
   const m = w.length
@@ -303,7 +303,7 @@ export interface HuffmanCode extends PrefixCode {
  * @concept huffman-coding
  * @example
  * ```ts
- * import { huffman } from 'whitebox-engine/information'
+ * import { huffman } from 'mdml-engine/information'
  * huffman([0.5, 0.25, 0.125, 0.125]).lengths // => [1, 2, 3, 3]
  * huffman([0.4, 0.3, 0.2, 0.1], { arity: 3 }).lengths // => [1, 1, 2, 2]
  * ```
@@ -342,18 +342,18 @@ export function huffman(
  * @param lengths - Codeword length of each symbol (0 marks an unused symbol).
  * @param options - The code alphabet size (default 2).
  * @returns The code.
- * @throws WhiteboxError with code `value` when the lengths violate the Kraft inequality.
+ * @throws MdmlError with code `value` when the lengths violate the Kraft inequality.
  * @concept prefix-codes
  * @example
  * ```ts
- * import { canonicalCode } from 'whitebox-engine/information'
+ * import { canonicalCode } from 'mdml-engine/information'
  * canonicalCode([2, 1, 3, 3]).codewords // => [[1, 0], [0], [1, 1, 0], [1, 1, 1]]
  * ```
  */
 export function canonicalCode(lengths: readonly number[], options: { readonly arity?: number } = {}): PrefixCode {
   const arity = options.arity ?? 2
   if (kraftSum(lengths, arity) > 1 + 1e-12)
-    throw new WhiteboxError('value', 'canonicalCode: the lengths violate the Kraft inequality')
+    throw new MdmlError('value', 'canonicalCode: the lengths violate the Kraft inequality')
   const order = lengths
     .map((l, i) => [l, i] as const)
     .filter(([l]) => l > 0)
@@ -386,7 +386,7 @@ export function canonicalCode(lengths: readonly number[], options: { readonly ar
  * @concept shannon-fano
  * @example
  * ```ts
- * import { shannonFano } from 'whitebox-engine/information'
+ * import { shannonFano } from 'mdml-engine/information'
  * shannonFano([0.35, 0.17, 0.17, 0.16, 0.15]).codewords.map((w) => w.length) // => [2, 2, 2, 3, 3]
  * ```
  */
@@ -430,7 +430,7 @@ export function shannonFano(probs: TensorLike): PrefixCode {
  * @concept shannon-fano
  * @example
  * ```ts
- * import { shannonCode } from 'whitebox-engine/information'
+ * import { shannonCode } from 'mdml-engine/information'
  * shannonCode([0.5, 0.25, 0.25]).codewords // => [[0], [1, 0], [1, 1]]
  * ```
  */
@@ -467,7 +467,7 @@ export function shannonCode(probs: TensorLike, options: { readonly arity?: numbe
  * @concept prefix-codes
  * @example
  * ```ts
- * import { canonicalCode, prefixEncode } from 'whitebox-engine/information'
+ * import { canonicalCode, prefixEncode } from 'mdml-engine/information'
  * prefixEncode(canonicalCode([1, 2, 2]), [0, 2, 1]) // => [0, 1, 1, 1, 0]
  * ```
  */
@@ -475,7 +475,7 @@ export function prefixEncode(code: PrefixCode, symbols: readonly number[]): numb
   const out: number[] = []
   for (const s of symbols) {
     const w = code.codewords[s]
-    if (w === undefined || w.length === 0) throw new WhiteboxError('value', `prefixEncode: symbol ${s} has no codeword`)
+    if (w === undefined || w.length === 0) throw new MdmlError('value', `prefixEncode: symbol ${s} has no codeword`)
     out.push(...w)
   }
   return out
@@ -487,17 +487,17 @@ export function prefixEncode(code: PrefixCode, symbols: readonly number[]): numb
  * @param code - A prefix-free code.
  * @param digits - The encoded digits.
  * @returns The symbols.
- * @throws WhiteboxError with code `value` for a code that is not prefix-free, an invalid digit sequence or a truncated
+ * @throws MdmlError with code `value` for a code that is not prefix-free, an invalid digit sequence or a truncated
  *   final codeword.
  * @concept prefix-codes
  * @example
  * ```ts
- * import { canonicalCode, prefixDecode } from 'whitebox-engine/information'
+ * import { canonicalCode, prefixDecode } from 'mdml-engine/information'
  * prefixDecode(canonicalCode([1, 2, 2]), [0, 1, 1, 1, 0]) // => [0, 2, 1]
  * ```
  */
 export function prefixDecode(code: PrefixCode, digits: readonly number[]): number[] {
-  if (!isPrefixFree(code.codewords)) throw new WhiteboxError('value', 'prefixDecode: the code is not prefix-free')
+  if (!isPrefixFree(code.codewords)) throw new MdmlError('value', 'prefixDecode: the code is not prefix-free')
   interface Trie {
     symbol?: number
     next: Map<number, Trie>
@@ -520,12 +520,12 @@ export function prefixDecode(code: PrefixCode, digits: readonly number[]): numbe
   let t = root
   for (const d of digits) {
     const n = t.next.get(d)
-    if (n === undefined) throw new WhiteboxError('value', 'prefixDecode: the digits are not a sequence of codewords')
+    if (n === undefined) throw new MdmlError('value', 'prefixDecode: the digits are not a sequence of codewords')
     if (n.symbol !== undefined) {
       out.push(n.symbol)
       t = root
     } else t = n
   }
-  if (t !== root) throw new WhiteboxError('value', 'prefixDecode: the last codeword is truncated')
+  if (t !== root) throw new MdmlError('value', 'prefixDecode: the last codeword is truncated')
   return out
 }

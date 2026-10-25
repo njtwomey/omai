@@ -3,7 +3,7 @@
  * three-dimensional manifolds such as the Swiss roll and tabular data.
  */
 
-import { spectralEmbedding as spectralEmbeddingMethod } from 'whitebox-engine/methods/manifold'
+import { spectralEmbedding as spectralEmbeddingMethod } from 'mdml-engine/methods/manifold'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEstimator } from '../../../entry/run.ts'
 import { rowColours } from '../../../entry/slots.ts'

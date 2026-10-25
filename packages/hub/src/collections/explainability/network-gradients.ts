@@ -2,11 +2,11 @@
  * The network gradient entry: saliency, integrated gradients, noise tunnels, GradientSHAP, guided backpropagation and
  * Grad-CAM maps of a LeNet trained on the digits, and its last convolution's conductance per channel.
  */
-import { WhiteboxError } from 'whitebox-engine/base'
-import { matrixView } from 'whitebox-engine/learn'
-import { explainLayer, explainNetwork, type NetworkMethod } from 'whitebox-engine/methods/explain'
-import { lenet } from 'whitebox-engine/methods/neural/vision'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import { matrixView } from 'mdml-engine/learn'
+import { explainLayer, explainNetwork, type NetworkMethod } from 'mdml-engine/methods/explain'
+import { lenet } from 'mdml-engine/methods/neural/vision'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 
@@ -52,7 +52,7 @@ export const networkGradients: HubEntry = defineEntry({
   run: ({ data, params, key }) => {
     const learn = learnDataOf(data)
     const n = matrixView(learn.x, 'network-gradients').n
-    if (n === 0) throw new WhiteboxError('value', 'network-gradients: no images')
+    if (n === 0) throw new MdmlError('value', 'network-gradients: no images')
     const fitted = lenet({ epochs: Number(params['epochs']), snapshots: 2 }).fit(learn, { key, explain: false })
     const row = Math.min(Number(params['row']), n - 1)
     const map = explainNetwork(fitted, learn, row, { method: params['method'] as NetworkMethod, key })

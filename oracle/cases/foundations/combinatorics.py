@@ -8,10 +8,10 @@ from typing import cast
 
 import numpy as np
 import sympy
+from mdml_oracle.fixture import Case, case
 from sympy.combinatorics import Permutation
 from sympy.functions.combinatorial.numbers import partition, stirling, subfactorial
 from sympy.utilities.iterables import partitions
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"sympy": sympy.__version__}
 

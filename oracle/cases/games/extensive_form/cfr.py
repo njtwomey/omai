@@ -8,9 +8,9 @@ from typing import Protocol
 
 import numpy as np
 import pyspiel
+from mdml_oracle.fixture import Case, case
 from open_spiel.python import policy as policy_lib
 from open_spiel.python.algorithms import cfr, discounted_cfr, exploitability
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"open_spiel": version("open_spiel")}
 

@@ -4,7 +4,7 @@
  * Adams, and the cosine kernel, with the parameterisations of scikit-learn and GPyTorch.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { cdist } from '../numerics/geometry/index.ts'
 import { kv, lgamma } from '../numerics/special/index.ts'
 import {
@@ -60,7 +60,7 @@ function constantDiag(x: Value, value: Value | number): Value {
 
 function isotropic(name: string, lengthScale: Value): void {
   if (lengthScale.shape.length !== 0)
-    throw new WhiteboxError('shape', `${name}: the length scale must be a scalar (the kernel is isotropic)`)
+    throw new MdmlError('shape', `${name}: the length scale must be a scalar (the kernel is isotropic)`)
 }
 
 /** Options of {@link rbfKernel}. */
@@ -79,8 +79,8 @@ export interface LengthScaleOptions {
  * @reference C. E. Rasmussen and C. K. I. Williams, Gaussian Processes for Machine Learning (2006), section 4.2.
  * @example
  * ```ts
- * import { rbfKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { rbfKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(rbfKernel({ lengthScale: 2 }).k([0, 0], [0, 2])) === Math.exp(-0.5) // => true
  * ```
  */
@@ -108,19 +108,19 @@ export interface MaternOptions extends LengthScaleOptions {
  *
  * @param options - Length scale and smoothness.
  * @returns The kernel, hyperparameters `{ lengthScale }` (nu is a setting).
- * @throws WhiteboxError `domain` for nu <= 0.
+ * @throws MdmlError `domain` for nu <= 0.
  * @concept stationary-kernels
  * @reference B. Matérn, Spatial Variation (1960); Rasmussen and Williams (2006), section 4.2.1.
  * @example
  * ```ts
- * import { maternKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { maternKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(maternKernel({ nu: 0.5 }).k([0], [1])) === Math.exp(-1) // => true
  * ```
  */
 export function maternKernel(options: MaternOptions = {}): Kernel {
   const nu = options.nu ?? 1.5
-  if (!(nu > 0)) throw new WhiteboxError('domain', `maternKernel: nu must be positive, got ${nu}`)
+  if (!(nu > 0)) throw new MdmlError('domain', `maternKernel: nu must be positive, got ${nu}`)
   const profile = (r: Value): Value => {
     if (nu === 0.5) return exp(neg(r))
     if (nu === 1.5) {
@@ -169,8 +169,8 @@ export interface RationalQuadraticOptions extends LengthScaleOptions {
  * @reference Rasmussen and Williams (2006), equation 4.19.
  * @example
  * ```ts
- * import { rationalQuadraticKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { rationalQuadraticKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(rationalQuadraticKernel({ alpha: 1 }).k([0], [Math.sqrt(2)])) // => 0.5
  * ```
  */
@@ -200,20 +200,20 @@ export interface ExponentialOptions extends LengthScaleOptions {
  *
  * @param options - Length scale and exponent.
  * @returns The kernel, hyperparameters `{ lengthScale }` (the exponent is a setting).
- * @throws WhiteboxError `domain` for an exponent outside (0, 2].
+ * @throws MdmlError `domain` for an exponent outside (0, 2].
  * @concept stationary-kernels
  * @reference Rasmussen and Williams (2006), equation 4.18.
  * @example
  * ```ts
- * import { exponentialKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { exponentialKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(exponentialKernel({ lengthScale: 2 }).k([0], [2])) === Math.exp(-1) // => true
  * ```
  */
 export function exponentialKernel(options: ExponentialOptions = {}): Kernel {
   const power = options.power ?? 1
   if (!(power > 0 && power <= 2))
-    throw new WhiteboxError('domain', `exponentialKernel: the exponent must be in (0, 2], got ${power}`)
+    throw new MdmlError('domain', `exponentialKernel: the exponent must be in (0, 2], got ${power}`)
   return defineKernel({
     name: 'exponential',
     params: { lengthScale: param(options.lengthScale ?? 1) },
@@ -238,8 +238,8 @@ export function exponentialKernel(options: ExponentialOptions = {}): Kernel {
  * @concept stationary-kernels
  * @example
  * ```ts
- * import { laplacianKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { laplacianKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(laplacianKernel().k([0, 0], [1, -1])) === Math.exp(-2) // => true
  * ```
  */
@@ -274,13 +274,13 @@ function periodicPart(d: Value, lengthScale: Value, period: Value): Value {
  *
  * @param options - Length scale and period.
  * @returns The kernel, hyperparameters `{ lengthScale, period }`.
- * @throws WhiteboxError `shape` for a vector length scale (the kernel is isotropic).
+ * @throws MdmlError `shape` for a vector length scale (the kernel is isotropic).
  * @concept stationary-kernels
  * @reference D. J. C. MacKay, Introduction to Gaussian processes (1998).
  * @example
  * ```ts
- * import { periodicKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { periodicKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(periodicKernel({ period: 2 }).k([0.3], [4.3])) - 1) < 1e-12 // => true
  * ```
  */
@@ -311,13 +311,13 @@ export interface LocallyPeriodicOptions extends PeriodicOptions {
  *
  * @param options - Length scale, period and envelope length scale.
  * @returns The kernel, hyperparameters `{ decay, lengthScale, period }`.
- * @throws WhiteboxError `shape` for a vector length scale.
+ * @throws MdmlError `shape` for a vector length scale.
  * @concept stationary-kernels
  * @reference D. Duvenaud, Automatic Model Construction with Gaussian Processes (PhD thesis, 2014), chapter 2.
  * @example
  * ```ts
- * import { locallyPeriodicKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { locallyPeriodicKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * Math.abs(item(locallyPeriodicKernel({ period: 1, decay: 1 }).k([0], [1])) - Math.exp(-0.5)) < 1e-12 // => true
  * ```
  */
@@ -357,13 +357,13 @@ export interface SpectralMixtureOptions {
  *
  * @param options - Weights, means and scales.
  * @returns The kernel, hyperparameters `{ means, scales, weights }`.
- * @throws WhiteboxError `shape` when the shapes disagree.
+ * @throws MdmlError `shape` when the shapes disagree.
  * @concept stationary-kernels
  * @reference A. G. Wilson and R. P. Adams, Gaussian process kernels for pattern discovery and extrapolation (ICML 2013).
  * @example
  * ```ts
- * import { spectralMixtureKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { spectralMixtureKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * const k = spectralMixtureKernel({ weights: [2], means: [[0.5]], scales: [[0]] })
  * Math.abs(item(k.k([0], [1])) + 2) < 1e-12 // => true
  * ```
@@ -379,7 +379,7 @@ export function spectralMixtureKernel(options: SpectralMixtureOptions): Kernel {
     means.shape[0] !== q ||
     scales.shape.join(',') !== means.shape.join(',')
   )
-    throw new WhiteboxError('shape', 'spectralMixtureKernel: weights [Q], means [Q, d] and scales [Q, d]')
+    throw new MdmlError('shape', 'spectralMixtureKernel: weights [Q], means [Q, d] and scales [Q, d]')
   const dim = means.shape[1] ?? 0
   return defineKernel({
     name: 'spectral-mixture',
@@ -387,8 +387,7 @@ export function spectralMixtureKernel(options: SpectralMixtureOptions): Kernel {
     stationary: true,
     config: { components: q },
     matrix: (p, x, y) => {
-      if ((x.shape[1] ?? 0) !== dim)
-        throw new WhiteboxError('shape', `spectralMixtureKernel: points must be [n, ${dim}]`)
+      if ((x.shape[1] ?? 0) !== dim) throw new MdmlError('shape', `spectralMixtureKernel: points must be [n, ${dim}]`)
       const other = y ?? x
       // tau [1, m, n, d] against the components [Q, 1, 1, d].
       const tau = expandDims(sub(expandDims(x, 1), expandDims(other, 0)), 0)
@@ -418,8 +417,8 @@ export interface CosineOptions {
  * @concept stationary-kernels
  * @example
  * ```ts
- * import { cosineKernel } from 'whitebox-engine/kernels'
- * import { item } from 'whitebox-engine/tensor'
+ * import { cosineKernel } from 'mdml-engine/kernels'
+ * import { item } from 'mdml-engine/tensor'
  * item(cosineKernel({ period: 2 }).k([0], [2])) // => -1
  * ```
  */

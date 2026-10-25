@@ -2,7 +2,7 @@
 // encoded targets, the output layer's kind, held-out rows), its loss and score, MLP builders with a choice of
 // initialisation, normalisation and dropout, the predictions of a network under any parameters (for snapshots), and
 // the decision surface they draw.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import {
   type ConfusionMatrix,
   confusionCounts,
@@ -109,7 +109,7 @@ export function taskOf(
   const x = inputs(data.x, options.who)
   const n = x.shape[0] ?? 0
   const d = x.shape[1] ?? 0
-  if (data.y === undefined) throw new WhiteboxError('value', `${options.who}: needs targets y`)
+  if (data.y === undefined) throw new MdmlError('value', `${options.who}: needs targets y`)
   const featureNames = featureNamesOf(data, d)
   let rows: Rows
   let classes: number[] = []
@@ -118,7 +118,7 @@ export function taskOf(
   if (classifier) {
     const enc = encodeLabels(data.y, options.who, n)
     classes = [...enc.classes]
-    if (classes.length < 2) throw new WhiteboxError('value', `${options.who}: needs at least two classes`)
+    if (classes.length < 2) throw new MdmlError('value', `${options.who}: needs at least two classes`)
     output = classes.length === 2 ? 'logistic' : 'softmax'
     nOut = classes.length === 2 ? 1 : classes.length
     rows = { x, y: tensor(Array.from(enc.codes)) }

@@ -66,8 +66,8 @@ function draws(k: Key, family: string, mu: readonly number[], dispersion: number
  *
  * @example
  * ```ts
- * import { generate } from 'whitebox-engine/data'
- * import { glmCurve } from 'whitebox-engine/datasets'
+ * import { generate } from 'mdml-engine/data'
+ * import { glmCurve } from 'mdml-engine/datasets'
  * const { data } = generate(glmCurve, { knobs: { n: 50, family: 'poisson' } })
  * Array.from(data.y.data).every((v) => Number.isInteger(v) && v >= 0) // => true
  * ```

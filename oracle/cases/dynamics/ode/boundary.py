@@ -9,8 +9,8 @@ scipy's Radau on the ODE form at tight tolerance.
 import numpy as np
 import scipy
 import scipy.integrate as si
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

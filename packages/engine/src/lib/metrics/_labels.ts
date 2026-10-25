@@ -1,4 +1,4 @@
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { isStringInput, type MetricInput, sampleWeights } from './metric.ts'
 
@@ -39,7 +39,7 @@ export function encodeLabels(
 ): EncodedLabels {
   const t = labelValues(yTrue)
   const p = labelValues(yPred)
-  if (t.length !== p.length) throw new WhiteboxError('shape', `${name}: yTrue and yPred have different lengths`)
+  if (t.length !== p.length) throw new MdmlError('shape', `${name}: yTrue and yPred have different lengths`)
   const classes = options.labels === undefined ? sortLabels([...t, ...p]) : [...options.labels]
   const index = new Map<Label, number>(classes.map((c, i) => [c, i]))
   return {
@@ -91,7 +91,7 @@ export interface Indicator {
 /** Read a 2-D 0/1 indicator matrix. */
 export function indicator(name: string, x: TensorLike): Indicator {
   const t = asTensor(x)
-  if (t.shape.length !== 2) throw new WhiteboxError('shape', `${name}: expected an [N, L] indicator matrix`)
+  if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: expected an [N, L] indicator matrix`)
   return { n: t.shape[0] ?? 0, l: t.shape[1] ?? 0, data: Float64Array.from(toFlat(t)) }
 }
 

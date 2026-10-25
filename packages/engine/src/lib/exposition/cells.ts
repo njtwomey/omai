@@ -4,7 +4,7 @@
  * of training so a view can play them.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 
 /** One grid of values drawn as cells: values[i][j] in row i (row 0 at the top, as an image) and column j. */
@@ -55,10 +55,10 @@ export interface ValueGrids {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when a grid is ragged, or a step does not give every grid at its size.
+ * @throws MdmlError `shape` when a grid is ragged, or a step does not give every grid at its size.
  * @example
  * ```ts
- * import { valueGrids } from 'whitebox-engine/exposition'
+ * import { valueGrids } from 'mdml-engine/exposition'
  * const r = valueGrids({ grids: [{ name: 'filter 1', values: [[1, 0], [0, -1]] }], diverging: true })
  * r.grids[0]?.values // => [[1, 0], [0, -1]]
  * ```
@@ -74,6 +74,6 @@ export function valueGrids(record: Omit<ValueGrids, 'kind'>): ValueGrids {
     }
   }
   if (record.columns !== undefined && !(Number.isInteger(record.columns) && record.columns >= 1))
-    throw new WhiteboxError('value', 'valueGrids: columns must be a positive integer')
+    throw new MdmlError('value', 'valueGrids: columns must be a positive integer')
   return { kind: 'valueGrids', ...record }
 }

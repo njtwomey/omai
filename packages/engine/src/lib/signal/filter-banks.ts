@@ -5,7 +5,7 @@
  * both approximation and detail at every level.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { type ComplexValue, flip, mul, sliceAxis, type TensorLike, type Value } from '../tensor/index.ts'
 import { constant, float, samples } from './_shared.ts'
@@ -26,8 +26,8 @@ import { type DiscreteWavelet, type WaveletSpec, wavelet } from './wavelets/fami
  * @concept filter-banks
  * @example
  * ```ts
- * import { qmf } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { qmf } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(qmf([1, 2, 3])) // => [3, -2, 1]
  * ```
  */
@@ -53,7 +53,7 @@ export interface TwoChannelBank {
  * @concept filter-banks
  * @example
  * ```ts
- * import { waveletBank } from 'whitebox-engine/signal'
+ * import { waveletBank } from 'mdml-engine/signal'
  * waveletBank('db2').h0.length // => 4
  * ```
  */
@@ -93,7 +93,7 @@ export interface ReconstructionCheck {
  * @concept perfect-reconstruction
  * @example
  * ```ts
- * import { checkReconstruction, waveletBank } from 'whitebox-engine/signal'
+ * import { checkReconstruction, waveletBank } from 'mdml-engine/signal'
  * checkReconstruction(waveletBank('bior2.2')).perfect // => true
  * ```
  */
@@ -131,7 +131,7 @@ function magnitude(h: readonly number[], n: number): number[] {
  * @concept perfect-reconstruction
  * @example
  * ```ts
- * import { powerComplementarity, waveletBank } from 'whitebox-engine/signal'
+ * import { powerComplementarity, waveletBank } from 'mdml-engine/signal'
  * powerComplementarity(waveletBank('db4')) < 1e-12 // => true
  * ```
  */
@@ -163,7 +163,7 @@ export interface DftBankOptions {
  * @concept filter-banks
  * @example
  * ```ts
- * import { dftAnalysis } from 'whitebox-engine/signal'
+ * import { dftAnalysis } from 'mdml-engine/signal'
  * dftAnalysis(new Array(32).fill(1), { channels: 8 }).re.shape // => [8, 9]
  * ```
  */
@@ -190,8 +190,8 @@ export function dftAnalysis(x: TensorLike, options: DftBankOptions): ComplexValu
  * @concept perfect-reconstruction
  * @example
  * ```ts
- * import { dftAnalysis, dftSynthesis } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { dftAnalysis, dftSynthesis } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const x = [1, 2, 0, -1, 3, 1, -2, 0, 1, 2, 0, 1, 3, -1, 0, 2]
  * toFlat(dftSynthesis(dftAnalysis(x, { channels: 8, decimation: 2 }), 16, { channels: 8, decimation: 2 })).slice(0, 3).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2, 0]
  * ```
@@ -206,7 +206,7 @@ export function dftSynthesis(subbands: ComplexValue, n: number, options: DftBank
     inputOnesided: false,
     scaling: 'none',
   }).x
-  if ((y.shape[0] ?? 0) < n) throw new WhiteboxError('value', 'dftSynthesis: too few subband frames for this length')
+  if ((y.shape[0] ?? 0) < n) throw new MdmlError('value', 'dftSynthesis: too few subband frames for this length')
   return sliceAxis(y, 0, 0, n)
 }
 
@@ -229,7 +229,7 @@ export interface WaveletPacket {
  * @concept wavelet-packets
  * @example
  * ```ts
- * import { waveletPacket } from 'whitebox-engine/signal'
+ * import { waveletPacket } from 'mdml-engine/signal'
  * waveletPacket(new Array(16).fill(1), 'haar', { level: 2 }).nodes.size // => 7
  * ```
  */
@@ -270,7 +270,7 @@ export function waveletPacket(
  * @concept wavelet-packets
  * @example
  * ```ts
- * import { packetPaths } from 'whitebox-engine/signal'
+ * import { packetPaths } from 'mdml-engine/signal'
  * packetPaths(2, 'freq') // => ['aa', 'ad', 'dd', 'da']
  * ```
  */
@@ -296,8 +296,8 @@ export function packetPaths(level: number, order: 'natural' | 'freq' = 'natural'
  * @concept wavelet-packets
  * @example
  * ```ts
- * import { packetReconstruct, waveletPacket } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { packetReconstruct, waveletPacket } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(packetReconstruct(waveletPacket([3, 1, 4, 1, 5, 9, 2, 6], 'haar', { level: 2 }))).map((v) => Math.round(v * 1e12) / 1e12) // => [3, 1, 4, 1, 5, 9, 2, 6]
  * ```
  */
@@ -305,7 +305,7 @@ export function packetReconstruct(packet: WaveletPacket, level: number = packet.
   const current = new Map<string, Value>()
   for (const p of packetPaths(level)) {
     const v = packet.nodes.get(p)
-    if (v === undefined) throw new WhiteboxError('value', `packetReconstruct: missing node '${p}'`)
+    if (v === undefined) throw new MdmlError('value', `packetReconstruct: missing node '${p}'`)
     current.set(p, v)
   }
   for (let l = level; l > 0; l--) {

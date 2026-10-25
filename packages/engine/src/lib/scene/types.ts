@@ -181,7 +181,7 @@ export type SceneNode =
 
 /**
  * A complete drawing in its own coordinate system (y grows downwards, as in SVG). Scenes are plain data: environments,
- * diagrams and models produce them, and whitebox-render draws them as SVG, React elements, images or animation frames.
+ * diagrams and models produce them, and mdml-render draws them as SVG, React elements, images or animation frames.
  *
  * @concept scene-graph
  */

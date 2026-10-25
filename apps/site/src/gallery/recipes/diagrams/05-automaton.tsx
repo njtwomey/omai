@@ -1,6 +1,6 @@
+import { structure } from 'mdml-engine/scene'
+import { ControlPanel, Player, Select, StructureView, usePlayback } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { structure } from 'whitebox-engine/scene'
-import { ControlPanel, Player, Select, StructureView, usePlayback } from 'whitebox-render/react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

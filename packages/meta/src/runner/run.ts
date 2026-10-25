@@ -12,15 +12,15 @@ import { type TransformedExample, transformExample } from './transform.ts'
 
 /** Where examples find their imports, and how long they may take. */
 export interface RunOptions {
-  /** Lazy loaders by specifier, normally `moduleLoaders` from `whitebox-meta/modules`. */
+  /** Lazy loaders by specifier, normally `moduleLoaders` from `mdml-meta/modules`. */
   readonly loaders?: Readonly<Record<string, ModuleLoader>>
   /** Modules already in hand, by specifier; they take precedence over the loaders. */
   readonly modules?: Readonly<Record<string, unknown>>
   /** The longest an example may wait on promises, in milliseconds (default 30 000). */
   readonly timeoutMs?: number
-  /** Whether a value is a figure, for `// => figure` (default: `isScene` from `whitebox-engine/scene`). */
+  /** Whether a value is a figure, for `// => figure` (default: `isScene` from `mdml-engine/scene`). */
   readonly isFigure?: (value: unknown) => boolean
-  /** Whether a value is a trace, for `// => trace` (default: `isRun` from `whitebox-engine/trace`). */
+  /** Whether a value is a trace, for `// => trace` (default: `isRun` from `mdml-engine/trace`). */
   readonly isTrace?: (value: unknown) => boolean
 }
 
@@ -113,10 +113,10 @@ export async function runExample(example: Example | string, options: RunOptions 
   }
   const kinds = new Set(parsed.expectations.map((e) => e.kind))
   const isFigure = kinds.has('figure')
-    ? await recogniser(options.isFigure, 'whitebox-engine/scene', 'isScene', options)
+    ? await recogniser(options.isFigure, 'mdml-engine/scene', 'isScene', options)
     : () => false
   const isTrace = kinds.has('trace')
-    ? await recogniser(options.isTrace, 'whitebox-engine/trace', 'isRun', options)
+    ? await recogniser(options.isTrace, 'mdml-engine/trace', 'isRun', options)
     : () => false
   let error: ExampleError | undefined
   try {

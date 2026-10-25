@@ -1,5 +1,5 @@
 /**
- * The hub's entry contract and the machinery around it, part of `whitebox-hub`: how an entry is declared and gathered
+ * The hub's entry contract and the machinery around it, part of `mdml-hub`: how an entry is declared and gathered
  * into a catalogue, how its demo state is built, run and kept in a URL, the collection descriptions, and shared
  * view-slot helpers.
  */

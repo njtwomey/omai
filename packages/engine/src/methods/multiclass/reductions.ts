@@ -5,7 +5,7 @@
  * binary classifier can be the member.
  */
 
-import { argmaxOf, type Json, WhiteboxError } from '../../lib/base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'
 import { type Exposition, ensembleStages } from '../../lib/exposition/index.ts'
@@ -150,7 +150,7 @@ function reduction(
         const m = matrixView(data.x, name)
         const { classes, codes } = encodeLabels(data.y ?? [], name, m.n)
         const k = classes.length
-        if (k < 2) throw new WhiteboxError('value', `${name}: needs two classes`)
+        if (k < 2) throw new MdmlError('value', `${name}: needs two classes`)
         const key = resolveKey(options, name)
         let table: number[][]
         if (kind === 'ovr') table = classes.map((_, c) => classes.map((_, b) => (b === c ? 1 : 0)))

@@ -6,7 +6,7 @@
  */
 
 import { jvp } from '../autodiff/index.ts'
-import { kahanSum, WhiteboxError } from '../base/index.ts'
+import { kahanSum, MdmlError } from '../base/index.ts'
 import { convolve, fftConvolve } from '../numerics/convolution/index.ts'
 import { abs, mul, onesLike, promoteFloat, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 
@@ -28,20 +28,20 @@ export type RandomVariable<T> = (outcome: T) => number
  * @param outcomes - The outcomes.
  * @param weights - Non-negative weights, one per outcome (default all equal).
  * @returns The space.
- * @throws WhiteboxError with code `value` for negative weights, a length mismatch or zero total.
+ * @throws MdmlError with code `value` for negative weights, a length mismatch or zero total.
  * @concept probability-spaces
  * @example
  * ```ts
- * import { probabilitySpace } from 'whitebox-engine/foundations'
+ * import { probabilitySpace } from 'mdml-engine/foundations'
  * probabilitySpace(['H', 'T'], [3, 1]).probabilities // => [0.75, 0.25]
  * ```
  */
 export function probabilitySpace<T>(outcomes: readonly T[], weights?: readonly number[]): ProbabilitySpace<T> {
   const w = weights ?? outcomes.map(() => 1)
-  if (w.length !== outcomes.length) throw new WhiteboxError('value', 'probabilitySpace: one weight per outcome')
-  if (w.some((x) => !(x >= 0))) throw new WhiteboxError('value', 'probabilitySpace: weights must be non-negative')
+  if (w.length !== outcomes.length) throw new MdmlError('value', 'probabilitySpace: one weight per outcome')
+  if (w.some((x) => !(x >= 0))) throw new MdmlError('value', 'probabilitySpace: weights must be non-negative')
   const total = kahanSum(w)
-  if (!(total > 0)) throw new WhiteboxError('value', 'probabilitySpace: the weights sum to zero')
+  if (!(total > 0)) throw new MdmlError('value', 'probabilitySpace: the weights sum to zero')
   return { outcomes: [...outcomes], probabilities: w.map((x) => x / total) }
 }
 
@@ -54,7 +54,7 @@ export function probabilitySpace<T>(outcomes: readonly T[], weights?: readonly n
  * @concept independence
  * @example
  * ```ts
- * import { probabilitySpace, productSpace } from 'whitebox-engine/foundations'
+ * import { probabilitySpace, productSpace } from 'mdml-engine/foundations'
  * const coin = probabilitySpace(['H', 'T'])
  * productSpace(coin, coin).outcomes // => [['H', 'H'], ['H', 'T'], ['T', 'H'], ['T', 'T']]
  * ```
@@ -80,7 +80,7 @@ export function productSpace<A, B>(a: ProbabilitySpace<A>, b: ProbabilitySpace<B
  * @concept independence
  * @example
  * ```ts
- * import { powerSpace, probabilitySpace } from 'whitebox-engine/foundations'
+ * import { powerSpace, probabilitySpace } from 'mdml-engine/foundations'
  * powerSpace(probabilitySpace([1, 2, 3, 4, 5, 6]), 2).outcomes.length // => 36
  * ```
  */
@@ -102,7 +102,7 @@ export function powerSpace<T>(space: ProbabilitySpace<T>, n: number): Probabilit
  * @concept events
  * @example
  * ```ts
- * import { eventProbability, probabilitySpace } from 'whitebox-engine/foundations'
+ * import { eventProbability, probabilitySpace } from 'mdml-engine/foundations'
  * eventProbability(probabilitySpace([1, 2, 3, 4, 5, 6]), (x) => x % 2 === 0) // => 0.5
  * ```
  */
@@ -117,18 +117,18 @@ export function eventProbability<T>(space: ProbabilitySpace<T>, event: Event<T>)
  * @param a - The event of interest.
  * @param given - The conditioning event (positive probability).
  * @returns P(A | B).
- * @throws WhiteboxError with code `value` when P(B) = 0.
+ * @throws MdmlError with code `value` when P(B) = 0.
  * @concept conditional-probability
  * @example
  * ```ts
- * import { conditionalProbability, powerSpace, probabilitySpace } from 'whitebox-engine/foundations'
+ * import { conditionalProbability, powerSpace, probabilitySpace } from 'mdml-engine/foundations'
  * const dice = powerSpace(probabilitySpace([1, 2, 3, 4, 5, 6]), 2)
  * conditionalProbability(dice, ([a, b]) => a + b === 8, ([a]) => a === 3) // => 0.16666666666666666
  * ```
  */
 export function conditionalProbability<T>(space: ProbabilitySpace<T>, a: Event<T>, given: Event<T>): number {
   const pb = eventProbability(space, given)
-  if (!(pb > 0)) throw new WhiteboxError('value', 'conditionalProbability: the conditioning event has probability 0')
+  if (!(pb > 0)) throw new MdmlError('value', 'conditionalProbability: the conditioning event has probability 0')
   return eventProbability(space, (o) => a(o) && given(o)) / pb
 }
 
@@ -141,7 +141,7 @@ export function conditionalProbability<T>(space: ProbabilitySpace<T>, a: Event<T
  * @concept conditional-probability
  * @example
  * ```ts
- * import { conditionSpace, probabilitySpace } from 'whitebox-engine/foundations'
+ * import { conditionSpace, probabilitySpace } from 'mdml-engine/foundations'
  * conditionSpace(probabilitySpace([1, 2, 3, 4]), (x) => x > 2).probabilities // => [0.5, 0.5]
  * ```
  */
@@ -171,22 +171,22 @@ export interface BayesUpdate {
  * @param prior - Prior probabilities (normalised if they do not sum to one).
  * @param likelihood - `P(D | H_i)` for each hypothesis.
  * @returns The update.
- * @throws WhiteboxError with code `value` when the evidence is zero or the lengths differ.
+ * @throws MdmlError with code `value` when the evidence is zero or the lengths differ.
  * @concept bayes-rule
  * @example
  * ```ts
- * import { bayesRule } from 'whitebox-engine/foundations'
+ * import { bayesRule } from 'mdml-engine/foundations'
  * // Two urns, equally likely; a red ball has probability 0.3 from the first and 0.8 from the second.
  * bayesRule([0.5, 0.5], [0.3, 0.8]).posterior // => [0.2727272727272727, 0.7272727272727273]
  * ```
  */
 export function bayesRule(prior: readonly number[], likelihood: readonly number[]): BayesUpdate {
-  if (prior.length !== likelihood.length) throw new WhiteboxError('value', 'bayesRule: one likelihood per hypothesis')
+  if (prior.length !== likelihood.length) throw new MdmlError('value', 'bayesRule: one likelihood per hypothesis')
   const total = kahanSum(prior)
   const p = prior.map((x) => x / total)
   const joint = p.map((x, i) => x * (likelihood[i] ?? 0))
   const evidence = kahanSum(joint)
-  if (!(evidence > 0)) throw new WhiteboxError('value', 'bayesRule: the data have probability 0 under every hypothesis')
+  if (!(evidence > 0)) throw new MdmlError('value', 'bayesRule: the data have probability 0 under every hypothesis')
   return { prior: p, likelihood: [...likelihood], joint, evidence, posterior: joint.map((x) => x / evidence) }
 }
 
@@ -211,7 +211,7 @@ export interface DiagnosticTest {
  * @concept bayes-rule
  * @example
  * ```ts
- * import { diagnosticTest } from 'whitebox-engine/foundations'
+ * import { diagnosticTest } from 'mdml-engine/foundations'
  * // A 99% accurate test for a 1-in-100 condition: a positive means 50%.
  * diagnosticTest({ prevalence: 0.01, sensitivity: 0.99, specificity: 0.99 }).positivePredictive // => 0.5
  * ```
@@ -223,7 +223,7 @@ export function diagnosticTest(options: {
 }): DiagnosticTest {
   const { prevalence: p, sensitivity: se, specificity: sp } = options
   for (const v of [p, se, sp])
-    if (!(v >= 0 && v <= 1)) throw new WhiteboxError('value', 'diagnosticTest: probabilities in [0, 1]')
+    if (!(v >= 0 && v <= 1)) throw new MdmlError('value', 'diagnosticTest: probabilities in [0, 1]')
   const positive = bayesRule([p, 1 - p], [se, 1 - sp])
   const negative = bayesRule([p, 1 - p], [1 - se, sp])
   return {
@@ -245,7 +245,7 @@ export function diagnosticTest(options: {
  * @concept independence
  * @example
  * ```ts
- * import { independent, powerSpace, probabilitySpace } from 'whitebox-engine/foundations'
+ * import { independent, powerSpace, probabilitySpace } from 'mdml-engine/foundations'
  * const dice = powerSpace(probabilitySpace([1, 2, 3, 4, 5, 6]), 2)
  * independent(dice, ([a]) => a === 1, ([a, b]) => a + b === 7).independent // => true
  * independent(dice, ([a]) => a === 1, ([a, b]) => a + b === 6).independent // => false
@@ -274,14 +274,14 @@ export function independent<T>(
  * @concept independence
  * @example
  * ```ts
- * import { mutuallyIndependent, powerSpace, probabilitySpace } from 'whitebox-engine/foundations'
+ * import { mutuallyIndependent, powerSpace, probabilitySpace } from 'mdml-engine/foundations'
  * // Two fair coins: "first is H", "second is H", "they agree" are pairwise but not mutually independent.
  * const coins = powerSpace(probabilitySpace(['H', 'T']), 2)
  * mutuallyIndependent(coins, [([a]) => a === 'H', ([, b]) => b === 'H', ([a, b]) => a === b]) // => false
  * ```
  */
 export function mutuallyIndependent<T>(space: ProbabilitySpace<T>, events: readonly Event<T>[], tol = 1e-12): boolean {
-  if (events.length > 16) throw new WhiteboxError('value', 'mutuallyIndependent: at most 16 events')
+  if (events.length > 16) throw new MdmlError('value', 'mutuallyIndependent: at most 16 events')
   const p = events.map((e) => eventProbability(space, e))
   for (let mask = 1; mask < 1 << events.length; mask++) {
     const ix = events.map((_, i) => i).filter((i) => mask & (1 << i))
@@ -308,7 +308,7 @@ export interface Pmf {
  * @concept random-variables
  * @example
  * ```ts
- * import { distributionOf, powerSpace, probabilitySpace } from 'whitebox-engine/foundations'
+ * import { distributionOf, powerSpace, probabilitySpace } from 'mdml-engine/foundations'
  * const coins = powerSpace(probabilitySpace([0, 1]), 3)
  * distributionOf(coins, (o) => o[0] + o[1] + o[2]) // => { values: [0, 1, 2, 3], probabilities: [0.125, 0.375, 0.375, 0.125] }
  * ```
@@ -334,7 +334,7 @@ export function distributionOf<T>(space: ProbabilitySpace<T>, x: RandomVariable<
  * @concept expectation
  * @example
  * ```ts
- * import { expectation, probabilitySpace } from 'whitebox-engine/foundations'
+ * import { expectation, probabilitySpace } from 'mdml-engine/foundations'
  * expectation(probabilitySpace([1, 2, 3, 4, 5, 6]), (o) => o) // => 3.5
  * ```
  */
@@ -353,7 +353,7 @@ export function expectation<T>(space: ProbabilitySpace<T> | Pmf, x?: RandomVaria
  * @concept variance
  * @example
  * ```ts
- * import { probabilitySpace, varianceOf } from 'whitebox-engine/foundations'
+ * import { probabilitySpace, varianceOf } from 'mdml-engine/foundations'
  * varianceOf(probabilitySpace([1, 2, 3, 4, 5, 6]), (o) => o) // => 2.9166666666666665
  * ```
  */
@@ -377,7 +377,7 @@ export function varianceOf<T>(space: ProbabilitySpace<T> | Pmf, x?: RandomVariab
  * @concept covariance
  * @example
  * ```ts
- * import { covarianceOf, powerSpace, probabilitySpace } from 'whitebox-engine/foundations'
+ * import { covarianceOf, powerSpace, probabilitySpace } from 'mdml-engine/foundations'
  * const dice = powerSpace(probabilitySpace([1, 2, 3, 4, 5, 6]), 2)
  * covarianceOf(dice, ([a]) => a, ([a, b]) => a + b) // => 2.916666666666667
  * ```
@@ -397,7 +397,7 @@ export function covarianceOf<T>(space: ProbabilitySpace<T>, x: RandomVariable<T>
  * @concept transformations-of-random-variables
  * @example
  * ```ts
- * import { transformPmf } from 'whitebox-engine/foundations'
+ * import { transformPmf } from 'mdml-engine/foundations'
  * transformPmf({ values: [-1, 0, 1], probabilities: [0.25, 0.5, 0.25] }, (x) => x * x) // => { values: [0, 1], probabilities: [0.5, 0.5] }
  * ```
  */
@@ -415,8 +415,8 @@ export function transformPmf(pmf: Pmf, g: (x: number) => number): Pmf {
  * @concept transformations-of-random-variables
  * @example
  * ```ts
- * import { transformDensity } from 'whitebox-engine/foundations'
- * import { exp, log, mul, neg, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { transformDensity } from 'mdml-engine/foundations'
+ * import { exp, log, mul, neg, toArray, type Value } from 'mdml-engine/tensor'
  * // If X ~ Exp(1) then Y = X / 2 ~ Exp(2): f_Y(y) = 2 e^(-2y).
  * const fY = transformDensity((x: Value) => exp(neg(x)), (y: Value) => mul(y, 2))
  * toArray(fY([0.5])) // => [0.7357588823428847]
@@ -437,18 +437,18 @@ export function transformDensity(density: (x: Value) => Value, inverse: (y: Valu
  * @param a - The pmf of X (integer values).
  * @param b - The pmf of Y (integer values).
  * @returns The pmf of X + Y.
- * @throws WhiteboxError with code `value` for non-integer values.
+ * @throws MdmlError with code `value` for non-integer values.
  * @concept convolution-of-distributions
  * @example
  * ```ts
- * import { sumPmf } from 'whitebox-engine/foundations'
+ * import { sumPmf } from 'mdml-engine/foundations'
  * const die = { values: [1, 2, 3, 4, 5, 6], probabilities: [1, 1, 1, 1, 1, 1].map((x) => x / 6) }
  * sumPmf(die, die).probabilities[5] // => 0.16666666666666666
  * ```
  */
 export function sumPmf(a: Pmf, b: Pmf): Pmf {
   const dense = (p: Pmf): { start: number; probs: number[] } => {
-    if (p.values.some((v) => !Number.isInteger(v))) throw new WhiteboxError('value', 'sumPmf: integer values only')
+    if (p.values.some((v) => !Number.isInteger(v))) throw new MdmlError('value', 'sumPmf: integer values only')
     const start = p.values[0] ?? 0
     const end = p.values[p.values.length - 1] ?? 0
     const probs = Array.from({ length: end - start + 1 }, () => 0)
@@ -481,8 +481,8 @@ export function sumPmf(a: Pmf, b: Pmf): Pmf {
  * @concept convolution-of-distributions
  * @example
  * ```ts
- * import { sumDensity } from 'whitebox-engine/foundations'
- * import { div, exp, mul, neg, type Value } from 'whitebox-engine/tensor'
+ * import { sumDensity } from 'mdml-engine/foundations'
+ * import { div, exp, mul, neg, type Value } from 'mdml-engine/tensor'
  * // The sum of two standard normals is N(0, 2), with density 1 / (2 sqrt(pi)) at 0.
  * const phi = (x: Value) => div(exp(neg(mul(mul(x, x), 0.5))), Math.sqrt(2 * Math.PI))
  * const s = sumDensity(phi, phi, [-8, 8], 801)
@@ -517,7 +517,7 @@ export function sumDensity(
  * @concept convolution-of-distributions
  * @example
  * ```ts
- * import { diceSum } from 'whitebox-engine/foundations'
+ * import { diceSum } from 'mdml-engine/foundations'
  * diceSum(3).probabilities[7] // => 0.125
  * ```
  */

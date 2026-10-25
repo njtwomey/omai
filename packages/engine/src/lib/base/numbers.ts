@@ -15,7 +15,7 @@
  * @returns `true` when close.
  * @example
  * ```ts
- * import { isClose } from 'whitebox-engine/base'
+ * import { isClose } from 'mdml-engine/base'
  * isClose(0.1 + 0.2, 0.3) // => true
  * ```
  */
@@ -35,7 +35,7 @@ export function isClose(a: number, b: number, rtol = 1e-9, atol = 0): boolean {
  * @returns `true` when the lengths match and every pair is close.
  * @example
  * ```ts
- * import { allClose } from 'whitebox-engine/base'
+ * import { allClose } from 'mdml-engine/base'
  * allClose([1, 2], [1, 2 + 1e-12]) // => true
  * ```
  */
@@ -54,7 +54,7 @@ export function allClose(a: ArrayLike<number>, b: ArrayLike<number>, rtol = 1e-9
  * @returns `x` limited to `[lo, hi]`.
  * @example
  * ```ts
- * import { clamp } from 'whitebox-engine/base'
+ * import { clamp } from 'mdml-engine/base'
  * clamp(5, 0, 1) // => 1
  * ```
  */
@@ -69,7 +69,7 @@ export function clamp(x: number, lo: number, hi: number): number {
  * @returns Their sum.
  * @example
  * ```ts
- * import { kahanSum } from 'whitebox-engine/base'
+ * import { kahanSum } from 'mdml-engine/base'
  * kahanSum([1e16, 1, -1e16]) // => 1
  * ```
  */
@@ -93,7 +93,7 @@ export function kahanSum(xs: ArrayLike<number>): number {
  * @returns Their sum.
  * @example
  * ```ts
- * import { pairwiseSum } from 'whitebox-engine/base'
+ * import { pairwiseSum } from 'mdml-engine/base'
  * pairwiseSum([1, 2, 3, 4]) // => 10
  * ```
  */
@@ -117,7 +117,7 @@ export function pairwiseSum(xs: ArrayLike<number>): number {
  * @returns The maximum, `-Infinity` for an empty list, `NaN` if any element is NaN.
  * @example
  * ```ts
- * import { maxOf } from 'whitebox-engine/base'
+ * import { maxOf } from 'mdml-engine/base'
  * maxOf([3, 9, 2]) // => 9
  * ```
  */
@@ -138,7 +138,7 @@ export function maxOf(xs: ArrayLike<number>): number {
  * @returns The minimum, `Infinity` for an empty list, `NaN` if any element is NaN.
  * @example
  * ```ts
- * import { minOf } from 'whitebox-engine/base'
+ * import { minOf } from 'mdml-engine/base'
  * minOf([3, 9, 2]) // => 2
  * ```
  */
@@ -160,7 +160,7 @@ export function minOf(xs: ArrayLike<number>): number {
  * @returns The log-sum-exp, `-Infinity` for an empty list or all `-Infinity`, `NaN` if any element is NaN.
  * @example
  * ```ts
- * import { logSumExpOf } from 'whitebox-engine/base'
+ * import { logSumExpOf } from 'mdml-engine/base'
  * logSumExpOf([1000, 1000]) === 1000 + Math.LN2 // => true
  * ```
  */
@@ -180,7 +180,7 @@ export function logSumExpOf(xs: ArrayLike<number>): number {
  * @returns The index, or -1 for an empty list.
  * @example
  * ```ts
- * import { argmaxOf } from 'whitebox-engine/base'
+ * import { argmaxOf } from 'mdml-engine/base'
  * argmaxOf([3, 9, 9, 2]) // => 1
  * ```
  */
@@ -204,7 +204,7 @@ export function argmaxOf(xs: ArrayLike<number>): number {
  * @returns The index, or -1 for an empty list.
  * @example
  * ```ts
- * import { argminOf } from 'whitebox-engine/base'
+ * import { argminOf } from 'mdml-engine/base'
  * argminOf([3, 1, 1, 2]) // => 1
  * ```
  */
@@ -230,7 +230,7 @@ export function argminOf(xs: ArrayLike<number>): number {
  * @returns The list.
  * @example
  * ```ts
- * import { range } from 'whitebox-engine/base'
+ * import { range } from 'mdml-engine/base'
  * range(4) // => [0, 1, 2, 3]
  * range(1, 7, 2) // => [1, 3, 5]
  * ```
@@ -252,7 +252,7 @@ export function range(start: number, stop?: number, step = 1): number[] {
  * @returns The list.
  * @example
  * ```ts
- * import { linspaceNumbers } from 'whitebox-engine/base'
+ * import { linspaceNumbers } from 'mdml-engine/base'
  * linspaceNumbers(0, 1, 5) // => [0, 0.25, 0.5, 0.75, 1]
  * ```
  */
@@ -270,7 +270,7 @@ export function linspaceNumbers(start: number, stop: number, n = 50): number[] {
  * @returns Probabilities summing to one.
  * @example
  * ```ts
- * import { softmaxOf } from 'whitebox-engine/base'
+ * import { softmaxOf } from 'mdml-engine/base'
  * softmaxOf([0, 0]) // => [0.5, 0.5]
  * ```
  */
@@ -288,7 +288,7 @@ export function softmaxOf(xs: ArrayLike<number>): number[] {
  * @returns The quantile, `NaN` for an empty list.
  * @example
  * ```ts
- * import { quantileOf } from 'whitebox-engine/base'
+ * import { quantileOf } from 'mdml-engine/base'
  * quantileOf([4, 1, 3, 2], 0.5) // => 2.5
  * quantileOf([1, 2, 3, 4, 5], 0.25) // => 2
  * ```
@@ -316,7 +316,7 @@ export function quantileOf(xs: ArrayLike<number>, q: number): number {
  * @returns The log of the sum; `-Infinity` when both are `-Infinity`.
  * @example
  * ```ts
- * import { logAddExp } from 'whitebox-engine/base'
+ * import { logAddExp } from 'mdml-engine/base'
  * logAddExp(0, 0) === Math.LN2 // => true
  * logAddExp(-Infinity, 2) // => 2
  * ```
@@ -335,7 +335,7 @@ export function logAddExp(a: number, b: number): number {
  * @returns The mean.
  * @example
  * ```ts
- * import { meanOf } from 'whitebox-engine/base'
+ * import { meanOf } from 'mdml-engine/base'
  * meanOf([1, 2, 6]) // => 3
  * ```
  */
@@ -351,7 +351,7 @@ export function meanOf(xs: ArrayLike<number>): number {
  * @returns The variance.
  * @example
  * ```ts
- * import { varianceOf } from 'whitebox-engine/base'
+ * import { varianceOf } from 'mdml-engine/base'
  * varianceOf([1, 2, 3, 4], 1) // => 1.6666666666666667
  * ```
  */
@@ -371,7 +371,7 @@ export function varianceOf(xs: ArrayLike<number>, ddof = 0): number {
  * @returns How many bits are 1.
  * @example
  * ```ts
- * import { popcount } from 'whitebox-engine/base'
+ * import { popcount } from 'mdml-engine/base'
  * popcount(0b1011) // => 3
  * popcount(0) // => 0
  * ```

@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import scipy
 import scipy.stats as st
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__, "pandas": pd.__version__}
 

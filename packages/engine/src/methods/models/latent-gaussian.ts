@@ -6,7 +6,7 @@
 
 // TODO: factor analysis, PPCA and Bayesian PCA as programs (decomposition/ has the EM estimators), seasonal and
 // regression components (state-space.ts), and multivariate observations in the exposition.
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { kalmanEm, kalmanFilter, type LinearGaussianModel, rtsSmoother } from '../../lib/dynamics/filtering/index.ts'
 import {
   coefficientTable,
@@ -65,7 +65,7 @@ EM needs a complete series, the variances are then kept at their starting values
  * @param series - The observations `[T]` (or `[T, 1]`).
  * @param options - The model, starting variances, whether to learn, iterations and tolerance.
  * @returns The model, the smoothed and filtered levels and the likelihoods, with the exposition records.
- * @throws WhiteboxError `value` for an empty series.
+ * @throws MdmlError `value` for an empty series.
  */
 export function linearGaussianStateSpace(
   series: TensorLike,
@@ -73,7 +73,7 @@ export function linearGaussianStateSpace(
 ): Explained<StateSpaceFit> {
   const z = Array.from(toFlat(asTensor(series)))
   const T = z.length
-  if (T === 0) throw new WhiteboxError('value', 'linearGaussianStateSpace: no observations')
+  if (T === 0) throw new MdmlError('value', 'linearGaussianStateSpace: no observations')
   const seen = z.filter((v) => Number.isFinite(v))
   const mean = seen.reduce((a, v) => a + v, 0) / Math.max(seen.length, 1)
   const variance = seen.reduce((a, v) => a + (v - mean) ** 2, 0) / Math.max(seen.length - 1, 1) || 1

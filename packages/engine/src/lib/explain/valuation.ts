@@ -5,7 +5,7 @@
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
-import { meanOf, WhiteboxError } from '../base/index.ts'
+import { MdmlError, meanOf } from '../base/index.ts'
 import { innerFitOptions, keyFor, runOptionsFor } from '../learn/_shared.ts'
 import type { Estimator, FitOptions, LearnData } from '../learn/estimator.ts'
 import { type Scorer, type Scoring, scorersOf } from '../learn/scoring.ts'
@@ -59,8 +59,8 @@ export interface InfluenceResult {
  * @concept data-valuation
  * @example
  * ```ts
- * import { influenceFunctions } from 'whitebox-engine/explain'
- * import { mul, square, sub, sum } from 'whitebox-engine/tensor'
+ * import { influenceFunctions } from 'mdml-engine/explain'
+ * import { mul, square, sub, sum } from 'mdml-engine/tensor'
  * // Least squares on a mean: theta = mean(y) = 2. Up-weighting the outlier at 4 raises the test loss at 1 (+4);
  * // up-weighting a point at 1 lowers it (-2).
  * const loss = (p, x, y) => square(sub(sum(p), y))
@@ -117,8 +117,8 @@ export interface Checkpoint {
  * @returns tracin[test][train].
  * @example
  * ```ts
- * import { tracIn } from 'whitebox-engine/explain'
- * import { mul, square, sub, sum } from 'whitebox-engine/tensor'
+ * import { tracIn } from 'mdml-engine/explain'
+ * import { mul, square, sub, sum } from 'mdml-engine/tensor'
  * const loss = (p, x, y) => square(sub(sum(mul(p, x)), y))
  * tracIn(loss, [{ params: [0], learningRate: 0.5 }], { x: [[1], [1]], y: [1, -1] }, { x: [[1]], y: [1] }) // => [[2, -2]]
  * ```
@@ -129,7 +129,7 @@ export function tracIn(
   train: LearnData,
   test: LearnData,
 ): number[][] {
-  if (checkpoints.length === 0) throw new WhiteboxError('value', 'tracIn: needs at least one checkpoint')
+  if (checkpoints.length === 0) throw new MdmlError('value', 'tracIn: needs at least one checkpoint')
   const xs = rows(train.x, 'tracIn')
   const ys = targetVector(train.y ?? [], 'tracIn', xs.length)
   const xt = rows(test.x, 'tracIn')
@@ -183,9 +183,9 @@ export interface DataShapleyResult {
  * @returns The values, their standard errors and the full utility.
  * @example
  * ```ts
- * import { dataShapley } from 'whitebox-engine/explain'
- * import { defineEstimator, rowsOf } from 'whitebox-engine/learn'
- * import { full, item, mean } from 'whitebox-engine/tensor'
+ * import { dataShapley } from 'mdml-engine/explain'
+ * import { defineEstimator, rowsOf } from 'mdml-engine/learn'
+ * import { full, item, mean } from 'mdml-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) },
  *   {},
@@ -202,10 +202,9 @@ export function dataShapley(
 ): DataShapleyResult {
   const n = rowsOf(train.x)
   const scorer: Scorer | undefined = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new WhiteboxError('value', 'dataShapley: no scorer')
+  if (scorer === undefined) throw new MdmlError('value', 'dataShapley: no scorer')
   const nPerm = options.nPermutations ?? 100
-  if (!(Number.isInteger(nPerm) && nPerm >= 1))
-    throw new WhiteboxError('value', 'dataShapley: nPermutations must be >= 1')
+  if (!(Number.isInteger(nPerm) && nPerm >= 1)) throw new MdmlError('value', 'dataShapley: nPermutations must be >= 1')
   const empty = options.emptyUtility ?? 0
   const key = keyFor(options, 'dataShapley')
   const utility = (idx: readonly number[], opts: FitOptions): number => {
@@ -272,7 +271,7 @@ export function dataShapley(
  * @returns One value per training point.
  * @example
  * ```ts
- * import { knnShapley } from 'whitebox-engine/explain'
+ * import { knnShapley } from 'mdml-engine/explain'
  * // The near point with the right label is worth most; the wrong label is worth less than nothing.
  * knnShapley([[0], [1], [5]], [1, 0, 1], [[0]], [1], 1).map((v) => Math.round(v * 1e6) / 1e6) // => [0.833333, -0.166667, 0.333333]
  * ```
@@ -288,7 +287,7 @@ export function knnShapley(
   const te = matrixView(testX, 'knnShapley', { nFeatures: tr.d })
   const ytr = targetVector(trainY, 'knnShapley', tr.n)
   const yte = targetVector(testY, 'knnShapley', te.n)
-  if (!(Number.isInteger(k) && k >= 1)) throw new WhiteboxError('value', 'knnShapley: k must be >= 1')
+  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'knnShapley: k must be >= 1')
   const N = tr.n
   const total = new Float64Array(N)
   for (let j = 0; j < te.n; j++) {
@@ -323,7 +322,7 @@ export function knnShapley(
  * @returns The utility of each subset of training points (a coalition value).
  * @example
  * ```ts
- * import { knnUtility } from 'whitebox-engine/explain'
+ * import { knnUtility } from 'mdml-engine/explain'
  * knnUtility([[0], [1]], [1, 0], [[0]], [1], 1)([true, true]) // => 1
  * ```
  */
@@ -364,8 +363,8 @@ export function knnUtility(
  * @returns The summed loss (differentiable in the parameters).
  * @example
  * ```ts
- * import { totalLoss } from 'whitebox-engine/explain'
- * import { item, square, sub, sum } from 'whitebox-engine/tensor'
+ * import { totalLoss } from 'mdml-engine/explain'
+ * import { item, square, sub, sum } from 'mdml-engine/tensor'
  * item(totalLoss((p, x, y) => square(sub(sum(p), y)), [1], { x: [[0], [0]], y: [0, 3] })) // => 5
  * ```
  */
@@ -392,9 +391,9 @@ export type SubsetUtility = (rows: readonly number[]) => number
  * @returns The utility.
  * @example
  * ```ts
- * import { subsetUtility } from 'whitebox-engine/explain'
- * import { defineEstimator, rowsOf } from 'whitebox-engine/learn'
- * import { full, item, mean } from 'whitebox-engine/tensor'
+ * import { subsetUtility } from 'mdml-engine/explain'
+ * import { defineEstimator, rowsOf } from 'mdml-engine/learn'
+ * import { full, item, mean } from 'mdml-engine/tensor'
  * const meanModel = defineEstimator({ name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) }, {})
  * const u = subsetUtility(meanModel, { x: [[0], [0]], y: [1, 3] }, { x: [[0]], y: [1] }, { scoring: 'neg_mean_absolute_error' })
  * u([0]) // => 0
@@ -407,7 +406,7 @@ export function subsetUtility(
   options: { readonly scoring?: Scoring; readonly emptyUtility?: number } = {},
 ): SubsetUtility {
   const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new WhiteboxError('value', 'subsetUtility: no scorer')
+  if (scorer === undefined) throw new MdmlError('value', 'subsetUtility: no scorer')
   const empty = options.emptyUtility ?? 0
   return (rows) => {
     if (rows.length === 0) return empty
@@ -444,7 +443,7 @@ function logBeta(a: number, b: number): number {
  * @returns One value per point and the standard errors.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * // An additive utility: each point is worth its own value, whatever the weights.
  * const worth = [1, 2, -1]
  * const u = (rows) => rows.reduce((s, i) => s + worth[i], 0)
@@ -456,7 +455,7 @@ export function betaShapley(
   n: number,
   options: BetaShapleyOptions = {},
 ): { readonly values: readonly number[]; readonly standardErrors: readonly number[] } {
-  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', 'betaShapley: needs at least one point')
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'betaShapley: needs at least one point')
   const a = options.alpha ?? 16
   const b = options.beta ?? 1
   const logB = logBeta(a, b)
@@ -501,7 +500,7 @@ export function betaShapley(
  * @returns One value per point.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const worth = [1, 2, -1]
  * const u = (rows) => rows.reduce((s, i) => s + worth[i], 0)
  * explain.dataBanzhaf(u, 3, { nSamples: 400 }).values.map((v) => Math.round(v)) // => [1, 2, -1]
@@ -512,7 +511,7 @@ export function dataBanzhaf(
   n: number,
   options: { readonly nSamples?: number; readonly key?: Key } = {},
 ): { readonly values: readonly number[] } {
-  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', 'dataBanzhaf: needs at least one point')
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'dataBanzhaf: needs at least one point')
   const key = options.key ?? keyFor({}, 'dataBanzhaf')
   const ns = options.nSamples ?? 200
   const inSum = new Float64Array(n)
@@ -556,7 +555,7 @@ export function dataBanzhaf(
  * @returns values[test][train], and alpha.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const r = explain.representerValues([[1, 0], [0, 1]], [-2, 1], [[1, 1]], 0.25)
  * r.values // => [[2, -1]]
  * ```
@@ -570,8 +569,8 @@ export function representerValues(
   const tr = matrixView(trainFeatures, 'representerValues')
   const te = matrixView(testFeatures, 'representerValues', { nFeatures: tr.d })
   if (outputGradients.length !== tr.n)
-    throw new WhiteboxError('shape', 'representerValues: one gradient per training point')
-  if (!(lambda > 0)) throw new WhiteboxError('value', 'representerValues: lambda must be positive')
+    throw new MdmlError('shape', 'representerValues: one gradient per training point')
+  if (!(lambda > 0)) throw new MdmlError('value', 'representerValues: lambda must be positive')
   const alpha = outputGradients.map((g) => -g / (2 * lambda * tr.n))
   const values = Array.from({ length: te.n }, (_, t) =>
     alpha.map((a, i) => {

@@ -5,7 +5,7 @@
  * median, Savitzky-Golay (local least-squares polynomials), moving average and exponentially weighted moving average.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { convolve } from '../../numerics/convolution/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'
 import { type Lti, toSos, toTf } from '../../systems/index.ts'
@@ -50,7 +50,7 @@ const ONE = constant([1])
 
 function coefficient(v: TensorLike, name: string): Value {
   const c = float(v)
-  if (c.shape.length !== 1 || (c.shape[0] ?? 0) === 0) throw new WhiteboxError('shape', `${name}: coefficients are 1-D`)
+  if (c.shape.length !== 1 || (c.shape[0] ?? 0) === 0) throw new MdmlError('shape', `${name}: coefficients are 1-D`)
   return c
 }
 
@@ -62,7 +62,7 @@ function padTo(v: Value, n: number): Value {
 /** Filter rows `[batch, n]` with optional initial state rows `[batch, k]`; also the final state when asked. */
 function filterRows(b: Value, a: Value, x: Value, zi: Value | null, state: boolean): { y: Value; zf: Value | null } {
   const k = Math.max(b.shape[0] ?? 1, a.shape[0] ?? 1) - 1
-  if ((primalOf(a).data[0] ?? 0) === 0) throw new WhiteboxError('value', 'lfilter: a[0] must be non-zero')
+  if ((primalOf(a).data[0] ?? 0) === 0) throw new MdmlError('value', 'lfilter: a[0] must be non-zero')
   const a0 = reshape(sliceAxis(a, 0, 0, 1), [])
   const bn = div(padTo(b, k + 1), a0)
   const an = div(padTo(a, k + 1), a0)
@@ -110,7 +110,7 @@ function stateRows(zi: TensorLike, x: Value, axis: number, k: number, name: stri
   const z = float(zi)
   const expected = x.shape.map((s, i) => (i === (axis < 0 ? axis + x.shape.length : axis) ? k : s))
   if (z.shape.length !== expected.length || z.shape.some((s, i) => s !== expected[i]))
-    throw new WhiteboxError('shape', `${name}: zi must have shape [${expected.join(', ')}]`)
+    throw new MdmlError('shape', `${name}: zi must have shape [${expected.join(', ')}]`)
   return rowsOf(z, axis, name).rows
 }
 
@@ -130,12 +130,12 @@ export interface LfilterOptions {
  * @param x - Signal.
  * @param options - Axis, and an initial state.
  * @returns The filtered signal, or the signal and the final state when `zi` is given.
- * @throws WhiteboxError with code `value` when a[0] is zero, `shape` for a mis-shaped state.
+ * @throws MdmlError with code `value` when a[0] is zero, `shape` for a mis-shaped state.
  * @concept digital-filters
  * @example
  * ```ts
- * import { lfilter } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lfilter } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lfilter([1], [1, -0.5], [1, 0, 0, 0])) // => [1, 0.5, 0.25, 0.125]
  * toArray(lfilter([1, 1], [2], [1, 2, 3], { zi: [1] }).zf) // => [1.5]
  * ```
@@ -172,19 +172,19 @@ export function lfilter(
  * @param b - Numerator.
  * @param a - Denominator.
  * @returns zi `[max(len(a), len(b)) - 1]`.
- * @throws WhiteboxError with code `value` when a[0] is zero or sum(a) is zero (a pole at z = 1).
+ * @throws MdmlError with code `value` when a[0] is zero or sum(a) is zero (a pole at z = 1).
  * @concept digital-filters
  * @example
  * ```ts
- * import { lfilterZi } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lfilterZi } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lfilterZi([0.5, 0.5], [1])) // => [0.5]
  * ```
  */
 export function lfilterZi(b: TensorLike, a: TensorLike): Value {
   const bv = coefficient(b, 'lfilterZi')
   const av = coefficient(a, 'lfilterZi')
-  if ((primalOf(av).data[0] ?? 0) === 0) throw new WhiteboxError('value', 'lfilterZi: a[0] must be non-zero')
+  if ((primalOf(av).data[0] ?? 0) === 0) throw new MdmlError('value', 'lfilterZi: a[0] must be non-zero')
   const n = Math.max(bv.shape[0] ?? 1, av.shape[0] ?? 1)
   const a0 = reshape(sliceAxis(av, 0, 0, 1), [])
   const bn = div(padTo(bv, n), a0)
@@ -192,7 +192,7 @@ export function lfilterZi(b: TensorLike, a: TensorLike): Value {
   const sa = sum(an)
   let total = 0
   for (const v of primalOf(sa).data) total += v
-  if (total === 0) throw new WhiteboxError('value', 'lfilterZi: sum(a) is zero (a pole at z = 1)')
+  if (total === 0) throw new MdmlError('value', 'lfilterZi: sum(a) is zero (a pole at z = 1)')
   const yInf = div(sum(bn), sa)
   return sliceAxis(cumsum(sub(bn, mul(yInf, an)), 0, true), 0, 1, n)
 }
@@ -209,8 +209,8 @@ export function lfilterZi(b: TensorLike, a: TensorLike): Value {
  * @concept digital-filters
  * @example
  * ```ts
- * import { lfiltic } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { lfiltic } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(lfiltic([1], [1, -0.5], [2])) // => [1]
  * ```
  */
@@ -240,7 +240,7 @@ export function lfiltic(b: TensorLike, a: TensorLike, y: TensorLike, x?: TensorL
 function sections(sos: TensorLike | Lti, name: string): Value {
   if (isLti(sos)) return toSos(sos).sections
   const s = float(sos as TensorLike)
-  if (s.shape.length !== 2 || s.shape[1] !== 6) throw new WhiteboxError('shape', `${name}: sos must be [sections, 6]`)
+  if (s.shape.length !== 2 || s.shape[1] !== 6) throw new MdmlError('shape', `${name}: sos must be [sections, 6]`)
   return s
 }
 
@@ -260,8 +260,8 @@ function sectionCoefficients(s: Value, i: number): { b: Value; a: Value } {
  * @concept second-order-sections
  * @example
  * ```ts
- * import { sosfilt } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sosfilt } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sosfilt([[1, 0, 0, 1, -0.5, 0]], [1, 0, 0])) // => [1, 0.5, 0.25]
  * ```
  */
@@ -284,7 +284,7 @@ export function sosfilt(
   let rows = r.rows
   const finals: Value[] = []
   const zi = options.zi === undefined ? null : float(options.zi)
-  if (zi !== null && zi.shape[0] !== count) throw new WhiteboxError('shape', 'sosfilt: zi needs one state per section')
+  if (zi !== null && zi.shape[0] !== count) throw new MdmlError('shape', 'sosfilt: zi needs one state per section')
   for (let i = 0; i < count; i++) {
     const { b, a } = sectionCoefficients(s, i)
     const z =
@@ -306,8 +306,8 @@ export function sosfilt(
  * @concept second-order-sections
  * @example
  * ```ts
- * import { sosfiltZi } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sosfiltZi } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sosfiltZi([[0.5, 0.5, 0, 1, 0, 0]])) // => [[0.5, 0]]
  * ```
  */
@@ -359,7 +359,7 @@ function extendRows(x: Value, edge: number, type: PadType): Value {
 function edgeOf(options: FiltfiltOptions, ntaps: number, n: number, name: string): number {
   const type = options.padtype ?? 'odd'
   const edge = type === 'none' ? 0 : (options.padlen ?? 3 * ntaps)
-  if (n <= edge) throw new WhiteboxError('value', `${name}: the signal must be longer than padlen (${edge})`)
+  if (n <= edge) throw new MdmlError('value', `${name}: the signal must be longer than padlen (${edge})`)
   return edge
 }
 
@@ -424,12 +424,12 @@ function gust(b: Value, a: Value, x: Value, irlen: number | undefined): Value {
  * @param x - Signal (longer than padlen).
  * @param options - Axis, padding type and length, method.
  * @returns The filtered signal, the shape of x.
- * @throws WhiteboxError with code `value` when the signal is not longer than padlen.
+ * @throws MdmlError with code `value` when the signal is not longer than padlen.
  * @concept zero-phase-filtering
  * @example
  * ```ts
- * import { filtfilt } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { filtfilt } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(filtfilt([0.5, 0.5], [1], [2, 2, 2, 2, 2, 2, 2])).map((v) => Math.round(v * 1e12) / 1e12) // => [2, 2, 2, 2, 2, 2, 2]
  * ```
  */
@@ -459,8 +459,8 @@ export function filtfilt(b: TensorLike, a: TensorLike, x: TensorLike, options: F
  * @concept zero-phase-filtering
  * @example
  * ```ts
- * import { sosfiltfilt } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { sosfiltfilt } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(sosfiltfilt([[0.5, 0.5, 0, 1, 0, 0]], [3, 3, 3, 3, 3, 3, 3, 3, 3, 3])).map((v) => Math.round(v * 1e12) / 1e12) // => [3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
  * ```
  */
@@ -502,18 +502,18 @@ export function sosfiltfilt(sos: TensorLike | Lti, x: TensorLike, options: Filtf
  * @param x - Signal.
  * @param options - Axis.
  * @returns The filtered signal.
- * @throws WhiteboxError with code `value` for a continuous-time system.
+ * @throws MdmlError with code `value` for a continuous-time system.
  * @concept digital-filters
  * @example
  * ```ts
- * import { applyFilter } from 'whitebox-engine/signal'
- * import { tf } from 'whitebox-engine/systems'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { applyFilter } from 'mdml-engine/signal'
+ * import { tf } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(applyFilter(tf([1, 0], [1, -0.5], { dt: 1 }), [1, 0, 0])) // => [1, 0.5, 0.25]
  * ```
  */
 export function applyFilter(system: Lti, x: TensorLike, options: LfilterOptions = {}): Value {
-  if (system.dt === 0) throw new WhiteboxError('value', 'applyFilter: the system must be discrete (dt > 0)')
+  if (system.dt === 0) throw new MdmlError('value', 'applyFilter: the system must be discrete (dt > 0)')
   if (system.kind === 'tf' && system.num.shape.length === 1) {
     // Highest-degree-first polynomials in z become coefficients of z^-1 after left-aligning the degrees.
     const num = system.num
@@ -533,12 +533,12 @@ export function applyFilter(system: Lti, x: TensorLike, options: LfilterOptions 
  * @param x - Input.
  * @param kernelSize - Odd window size, one per axis or shared (default 3).
  * @returns The filtered input.
- * @throws WhiteboxError with code `value` for an even kernel size.
+ * @throws MdmlError with code `value` for an even kernel size.
  * @concept median-filter
  * @example
  * ```ts
- * import { medfilt } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { medfilt } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(medfilt([1, 9, 2, 3, 8], 3)) // => [1, 2, 3, 3, 3]
  * ```
  */
@@ -546,8 +546,8 @@ export function medfilt(x: TensorLike, kernelSize: number | readonly number[] = 
   const v = float(x)
   const rank = v.shape.length
   const k = typeof kernelSize === 'number' ? new Array<number>(rank).fill(kernelSize) : [...kernelSize]
-  if (k.length !== rank) throw new WhiteboxError('shape', 'medfilt: one kernel size per axis')
-  if (k.some((s) => s % 2 !== 1 || s < 1)) throw new WhiteboxError('value', 'medfilt: kernel sizes must be odd')
+  if (k.length !== rank) throw new MdmlError('shape', 'medfilt: one kernel size per axis')
+  if (k.some((s) => s % 2 !== 1 || s < 1)) throw new MdmlError('value', 'medfilt: kernel sizes must be odd')
   const padded = pad(
     v,
     k.map((s): [number, number] => [(s - 1) / 2, (s - 1) / 2]),
@@ -601,23 +601,22 @@ function factorial(n: number): number {
  * @param polyorder - Polynomial order (less than the window length).
  * @param options - Derivative, spacing, position and use.
  * @returns The coefficients `[windowLength]`.
- * @throws WhiteboxError with code `value` for an order at least the window length or a position outside it.
+ * @throws MdmlError with code `value` for an order at least the window length or a position outside it.
  * @concept savitzky-golay
  * @example
  * ```ts
- * import { savgolCoeffs } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { savgolCoeffs } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(savgolCoeffs(5, 2)).map((v) => Math.round(v * 35 * 1e9) / 1e9) // => [-3, 12, 17, 12, -3]
  * ```
  */
 export function savgolCoeffs(windowLength: number, polyorder: number, options: SavgolCoeffsOptions = {}): Value {
-  if (polyorder >= windowLength)
-    throw new WhiteboxError('value', 'savgolCoeffs: polyorder must be less than window_length')
+  if (polyorder >= windowLength) throw new MdmlError('value', 'savgolCoeffs: polyorder must be less than window_length')
   const deriv = options.deriv ?? 0
   const delta = options.delta ?? 1
   const half = Math.floor(windowLength / 2)
   const pos = options.pos ?? (windowLength % 2 === 0 ? half - 0.5 : half)
-  if (!(pos >= 0 && pos < windowLength)) throw new WhiteboxError('value', 'savgolCoeffs: pos must be in the window')
+  if (!(pos >= 0 && pos < windowLength)) throw new MdmlError('value', 'savgolCoeffs: pos must be in the window')
   if (deriv > polyorder) return zeros([windowLength])
   let t = Array.from({ length: windowLength }, (_, i) => i - pos)
   if ((options.use ?? 'conv') === 'conv') t = t.reverse()
@@ -667,12 +666,12 @@ function edgeMatrix(
  * @param polyorder - Polynomial order.
  * @param options - Derivative, spacing, axis, edge mode and constant.
  * @returns The filtered signal.
- * @throws WhiteboxError with code `value` when, in 'interp' mode, the window is longer than the signal.
+ * @throws MdmlError with code `value` when, in 'interp' mode, the window is longer than the signal.
  * @concept savitzky-golay
  * @example
  * ```ts
- * import { savgolFilter } from 'whitebox-engine/signal'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import { savgolFilter } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
  * toFlat(savgolFilter([1, 4, 9, 16, 25, 36], 5, 2)).map((v) => Math.round(v * 1e9) / 1e9) // => [1, 4, 9, 16, 25, 36]
  * ```
  */
@@ -693,7 +692,7 @@ export function savgolFilter(
   }
   const r = rowsOf(v, axis, 'savgolFilter')
   const n = r.n
-  if (windowLength > n) throw new WhiteboxError('value', 'savgolFilter: window_length must not exceed the signal')
+  if (windowLength > n) throw new MdmlError('value', 'savgolFilter: window_length must not exceed the signal')
   const half = Math.floor(windowLength / 2)
   const middle = convolveAlong(r.rows, coeffs, 1, 'constant', 0)
   const left = matmul(
@@ -743,14 +742,13 @@ function convolveAlong(
  * @concept moving-average
  * @example
  * ```ts
- * import { movingAverage } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { movingAverage } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(movingAverage([1, 2, 3, 4, 5], 2)) // => [1.5, 2.5, 3.5, 4.5]
  * ```
  */
 export function movingAverage(x: TensorLike, window: number, mode: 'valid' | 'same' | 'full' = 'valid'): Value {
-  if (!Number.isInteger(window) || window < 1)
-    throw new WhiteboxError('value', 'movingAverage: the window must be >= 1')
+  if (!Number.isInteger(window) || window < 1) throw new MdmlError('value', 'movingAverage: the window must be >= 1')
   return convolve(float(x), constant(new Float64Array(window).fill(1 / window)), mode)
 }
 
@@ -766,13 +764,13 @@ export function movingAverage(x: TensorLike, window: number, mode: 'valid' | 'sa
  * @concept moving-average
  * @example
  * ```ts
- * import { exponentialMovingAverage } from 'whitebox-engine/signal'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { exponentialMovingAverage } from 'mdml-engine/signal'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(exponentialMovingAverage([2, 4, 4], 0.5, false)) // => [2, 3, 3.5]
  * ```
  */
 export function exponentialMovingAverage(x: TensorLike, alpha: number, adjust = true): Value {
-  if (!(alpha > 0 && alpha <= 1)) throw new WhiteboxError('value', 'exponentialMovingAverage: alpha must be in (0, 1]')
+  if (!(alpha > 0 && alpha <= 1)) throw new MdmlError('value', 'exponentialMovingAverage: alpha must be in (0, 1]')
   const v = float(x)
   const r = rowsOf(v, -1, 'exponentialMovingAverage')
   const a = constant([1, alpha - 1])

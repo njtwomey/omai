@@ -4,7 +4,7 @@
  * with the list of true metrics they may use.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   abs,
   add,
@@ -127,8 +127,8 @@ function inverseCovariance(x: Value): Tensor {
  * @concept distances
  * @example
  * ```ts
- * import { cdist } from 'whitebox-engine/numerics/geometry'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { cdist } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(cdist([[0, 0]], [[3, 4], [1, 0]])) // => [[5, 1]]
  * ```
  */
@@ -140,7 +140,7 @@ export function cdist(
 ): Value {
   const [a, b] = promoteFloat(xa, xb) as [Value, Value]
   if (a.shape.length !== 2 || b.shape.length !== 2 || a.shape[1] !== b.shape[1])
-    throw new WhiteboxError('shape', 'cdist: inputs must be [m, d] and [n, d]')
+    throw new MdmlError('shape', 'cdist: inputs must be [m, d] and [n, d]')
   const d = a.shape[1] ?? 0
   const weights = options.w === undefined ? undefined : reshape(promoteFloat(options.w)[0] as Value, [1, 1, d])
   const weigh = (x: Value): Value => (weights === undefined ? x : mul(x, weights))
@@ -220,7 +220,7 @@ export function cdist(
       return safeDivide(num, den)
     }
     case 'haversine': {
-      if (d !== 2) throw new WhiteboxError('shape', 'cdist: haversine needs [latitude, longitude] rows')
+      if (d !== 2) throw new MdmlError('shape', 'cdist: haversine needs [latitude, longitude] rows')
       const lat1 = reshape(sliceAxis(a, 1, 0, 1), [-1, 1])
       const lat2 = reshape(sliceAxis(b, 1, 0, 1), [1, -1])
       const dlat = sub(lat2, lat1)
@@ -241,8 +241,8 @@ export function cdist(
  * @returns The condensed distances.
  * @example
  * ```ts
- * import { pdist } from 'whitebox-engine/numerics/geometry'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { pdist } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(pdist([[0, 0], [3, 4], [6, 8]])) // => [5, 10, 5]
  * ```
  */
@@ -268,8 +268,8 @@ export function pdist(x: TensorLike, metric: Metric = 'euclidean', options: Metr
  * @returns The other form.
  * @example
  * ```ts
- * import { squareform } from 'whitebox-engine/numerics/geometry'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { squareform } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(squareform([5, 10, 5])) // => [[0, 5, 10], [5, 0, 5], [10, 5, 0]]
  * ```
  */
@@ -278,7 +278,7 @@ export function squareform(d: TensorLike): Value {
   if (v.shape.length === 1) {
     const len = v.shape[0] ?? 0
     const n = (1 + Math.sqrt(1 + 8 * len)) / 2
-    if (!Number.isInteger(n)) throw new WhiteboxError('shape', 'squareform: the length is not n (n - 1) / 2')
+    if (!Number.isInteger(n)) throw new MdmlError('shape', 'squareform: the length is not n (n - 1) / 2')
     // Gather from [0, d_0, d_1, ...] with index 0 on the diagonal.
     const idx = new Int32Array(n * n)
     let k = 1
@@ -295,7 +295,7 @@ export function squareform(d: TensorLike): Value {
   }
   const n = v.shape[0] ?? 0
   if (v.shape.length !== 2 || v.shape[1] !== n)
-    throw new WhiteboxError('shape', 'squareform: expected a vector or a square matrix')
+    throw new MdmlError('shape', 'squareform: expected a vector or a square matrix')
   const idx: number[] = []
   for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) idx.push(i * n + j)
   return take(reshape(v, [-1]), fromStorage(Int32Array.from(idx), [idx.length], 'int32'), 0)
@@ -328,7 +328,7 @@ export const TRUE_METRICS: ReadonlySet<Metric> = new Set<Metric>([
  * @returns The distance function.
  * @example
  * ```ts
- * import { metricFunction } from 'whitebox-engine/numerics/geometry'
+ * import { metricFunction } from 'mdml-engine/numerics/geometry'
  * metricFunction('cityblock', 2)([0, 0, 1, 2], 0, [0, 0, 1, 2], 2) // => 3
  * ```
  */
@@ -366,7 +366,7 @@ export function metricFunction(metric: Metric, dim: number, options: MetricOptio
       }
     }
     case 'seuclidean': {
-      if (options.v === undefined) throw new WhiteboxError('value', 'metricFunction: seuclidean needs the variances v')
+      if (options.v === undefined) throw new MdmlError('value', 'metricFunction: seuclidean needs the variances v')
       const v = toFlat(primalOf(promoteFloat(options.v)[0] as Value))
       return (a, ia, b, ib) => {
         let s = 0
@@ -376,7 +376,7 @@ export function metricFunction(metric: Metric, dim: number, options: MetricOptio
     }
     case 'mahalanobis': {
       if (options.vi === undefined)
-        throw new WhiteboxError('value', 'metricFunction: mahalanobis needs the inverse covariance vi')
+        throw new MdmlError('value', 'metricFunction: mahalanobis needs the inverse covariance vi')
       const vi = toFlat(primalOf(promoteFloat(options.vi)[0] as Value))
       return (a, ia, b, ib) => {
         let s = 0

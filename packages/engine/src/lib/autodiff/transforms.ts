@@ -4,7 +4,7 @@
  * Hessian-vector and vector-Hessian products that never form the full matrix.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   asTensor,
   isFloat,
@@ -28,10 +28,7 @@ import { backward, isReverseValueOf, type ReverseValue, reverseTrace } from './r
 function checkFloatLeaves(leaves: readonly Value[], where: string): void {
   for (const leaf of leaves) {
     if (!isFloat(leaf.dtype)) {
-      throw new WhiteboxError(
-        'dtype',
-        `${where}: can only differentiate with respect to float values, got ${leaf.dtype}`,
-      )
+      throw new MdmlError('dtype', `${where}: can only differentiate with respect to float values, got ${leaf.dtype}`)
     }
   }
 }
@@ -46,8 +43,8 @@ function checkFloatLeaves(leaves: readonly Value[], where: string): void {
  * @concept reverse-mode-autodiff
  * @example
  * ```ts
- * import { vjp } from 'whitebox-engine/autodiff'
- * import { mul, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { vjp } from 'mdml-engine/autodiff'
+ * import { mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * const { out, pullback } = vjp((x: Value) => mul(x, x), tensor([1, 2]))
  * toArray(pullback(tensor([1, 1])) as Value) // => [2, 4]
  * ```
@@ -91,12 +88,12 @@ export interface GradOptions {
  * @param f - A function from a pytree of values to a scalar value (or `[scalar, aux]` with `hasAux`).
  * @param options - `hasAux`.
  * @returns A function from a pytree to `{ value, grad, aux }`, where `grad` mirrors the input.
- * @throws WhiteboxError with code `shape` when `f` does not return a single-element value.
+ * @throws MdmlError with code `shape` when `f` does not return a single-element value.
  * @concept reverse-mode-autodiff
  * @example
  * ```ts
- * import { valueAndGrad } from 'whitebox-engine/autodiff'
- * import { mul, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { valueAndGrad } from 'mdml-engine/autodiff'
+ * import { mul, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * const f = valueAndGrad((p: { w: Value }) => sum(mul(p.w, p.w)))
  * const { value, grad } = f({ w: tensor([1, 2]) })
  * toArray(value) // => 5
@@ -119,7 +116,7 @@ export function valueAndGrad<P>(
       return r as Value
     }, params)
     if (sizeOf(out.shape) !== 1) {
-      throw new WhiteboxError('shape', `grad: function must return a single value, got shape [${out.shape.join(', ')}]`)
+      throw new MdmlError('shape', `grad: function must return a single value, got shape [${out.shape.join(', ')}]`)
     }
     const grad = pullback(ones(out.shape, { dtype: out.dtype }) as Value)
     return { value: out, grad, aux }
@@ -135,8 +132,8 @@ export function valueAndGrad<P>(
  * @concept reverse-mode-autodiff
  * @example
  * ```ts
- * import { grad } from 'whitebox-engine/autodiff'
- * import { mul, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { grad } from 'mdml-engine/autodiff'
+ * import { mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(grad((x: Value) => mul(x, x))(tensor(3))) // => 6
  * ```
  */
@@ -157,8 +154,8 @@ export function grad<P>(
  * @concept reverse-mode-autodiff
  * @example
  * ```ts
- * import { gradAndAux } from 'whitebox-engine/autodiff'
- * import { mul, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { gradAndAux } from 'mdml-engine/autodiff'
+ * import { mul, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * const f = gradAndAux((x: Value) => [sum(mul(x, x)), { size: x.shape[0] }] as const)
  * const { grad, aux } = f(tensor([1, 2]))
  * toArray(grad) // => [2, 4]
@@ -186,8 +183,8 @@ export function gradAndAux<P, A>(
  * @concept forward-mode-autodiff
  * @example
  * ```ts
- * import { jvp } from 'whitebox-engine/autodiff'
- * import { sin, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { jvp } from 'mdml-engine/autodiff'
+ * import { sin, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(jvp((x: Value) => sin(x), tensor(0), tensor(1)).tangent as Value) // => 1
  * ```
  */
@@ -230,8 +227,8 @@ function basis(shape: readonly number[], dtype: Value['dtype'], i: number): Valu
  * @concept jacobian
  * @example
  * ```ts
- * import { jacrev } from 'whitebox-engine/autodiff'
- * import { mul, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { jacrev } from 'mdml-engine/autodiff'
+ * import { mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(jacrev((x: Value) => mul(x, tensor([2, 3])))(tensor([1, 1]))) // => [[2, 0], [0, 3]]
  * ```
  */
@@ -253,8 +250,8 @@ export function jacrev(f: (x: Value) => Value): (x: TensorLike) => Value {
  * @concept jacobian
  * @example
  * ```ts
- * import { jacfwd } from 'whitebox-engine/autodiff'
- * import { mul, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { jacfwd } from 'mdml-engine/autodiff'
+ * import { mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(jacfwd((x: Value) => mul(x, x))(tensor([1, 2]))) // => [[2, 0], [0, 4]]
  * ```
  */
@@ -278,8 +275,8 @@ export function jacfwd(f: (x: Value) => Value): (x: TensorLike) => Value {
  * @concept jacobian
  * @example
  * ```ts
- * import { jacobian } from 'whitebox-engine/autodiff'
- * import { sum, mul, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { jacobian } from 'mdml-engine/autodiff'
+ * import { sum, mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(jacobian((x: Value) => sum(mul(x, x)))(tensor([1, 2]))) // => [2, 4]
  * ```
  */
@@ -299,8 +296,8 @@ export function jacobian(f: (x: Value) => Value): (x: TensorLike) => Value {
  * @concept hessian
  * @example
  * ```ts
- * import { hessian } from 'whitebox-engine/autodiff'
- * import { mul, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { hessian } from 'mdml-engine/autodiff'
+ * import { mul, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(hessian((x: Value) => sum(mul(mul(x, x), x)))(tensor([1, 2]))) // => [[6, 0], [0, 12]]
  * ```
  */
@@ -318,8 +315,8 @@ export function hessian(f: (x: Value) => Value): (x: TensorLike) => Value {
  * @concept hessian
  * @example
  * ```ts
- * import { hvp } from 'whitebox-engine/autodiff'
- * import { mul, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { hvp } from 'mdml-engine/autodiff'
+ * import { mul, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(hvp((x: Value) => sum(mul(mul(x, x), x)), tensor([1, 2]), tensor([1, 0]))) // => [6, 0]
  * ```
  */
@@ -340,8 +337,8 @@ export function hvp(f: (x: Value) => Value, x: TensorLike, v: TensorLike): Value
  * @concept hessian
  * @example
  * ```ts
- * import { vhp } from 'whitebox-engine/autodiff'
- * import { mul, sum, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { vhp } from 'mdml-engine/autodiff'
+ * import { mul, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * toArray(vhp((x: Value) => sum(mul(mul(x, x), x)), tensor([1, 2]), tensor([1, 0]))) // => [6, 0]
  * ```
  */
@@ -361,8 +358,8 @@ export function vhp(f: (x: Value) => Value, x: TensorLike, v: TensorLike): Value
  * @concept forward-mode-autodiff
  * @example
  * ```ts
- * import { linearize } from 'whitebox-engine/autodiff'
- * import { mul, tensor, toArray, type Value } from 'whitebox-engine/tensor'
+ * import { linearize } from 'mdml-engine/autodiff'
+ * import { mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
  * const { tangentAt } = linearize((x: Value) => mul(x, x), tensor(3))
  * toArray(tangentAt(tensor(1))) // => 6
  * ```

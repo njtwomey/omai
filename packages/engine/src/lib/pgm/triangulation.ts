@@ -5,7 +5,7 @@
  * intersection property.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { maximalCliques as cliques } from '../graph/index.ts'
 import { copyGraph, indexedGraph, link } from './_graph.ts'
 import { connectedComponents, type UndirectedGraph, undirectedGraph } from './graphs.ts'
@@ -26,7 +26,7 @@ export type EliminationHeuristic = 'minDegree' | 'minFill' | 'minWeight' | 'weig
  * @concept elimination-orderings
  * @example
  * ```ts
- * import { undirectedGraph, eliminationCost } from 'whitebox-engine/pgm'
+ * import { undirectedGraph, eliminationCost } from 'mdml-engine/pgm'
  * eliminationCost(undirectedGraph([['a', 'b'], ['a', 'c']]), 'a', 'minFill') // => 1
  * ```
  */
@@ -82,7 +82,7 @@ function eliminateVertex(g: Map<string, Set<string>>, v: string): { clique: stri
  * @concept elimination-orderings
  * @example
  * ```ts
- * import { eliminationOrder, undirectedGraph } from 'whitebox-engine/pgm'
+ * import { eliminationOrder, undirectedGraph } from 'mdml-engine/pgm'
  * eliminationOrder(undirectedGraph([['a', 'b'], ['b', 'c']]), ['a', 'b', 'c'], 'minDegree') // => ['a', 'b', 'c']
  * ```
  */
@@ -132,11 +132,11 @@ export interface Triangulation {
  * @param graph - The graph.
  * @param order - An order of all vertices (default: greedy min-fill).
  * @returns The chordal graph, the fill-in edges, the maximal cliques and the order.
- * @throws WhiteboxError with code `value` when the order misses or repeats a vertex.
+ * @throws MdmlError with code `value` when the order misses or repeats a vertex.
  * @concept triangulation
  * @example
  * ```ts
- * import { triangulate, undirectedGraph } from 'whitebox-engine/pgm'
+ * import { triangulate, undirectedGraph } from 'mdml-engine/pgm'
  * const square = undirectedGraph([['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a']])
  * triangulate(square, ['a', 'b', 'c', 'd']).fillIns // => [['b', 'd']]
  * ```
@@ -145,7 +145,7 @@ export function triangulate(graph: UndirectedGraph, order?: readonly string[]): 
   const vertices = [...graph.keys()]
   const ord = order ?? eliminationOrder(graph, vertices, 'minFill')
   if (ord.length !== vertices.length || new Set(ord).size !== ord.length || ord.some((v) => !graph.has(v))) {
-    throw new WhiteboxError('value', 'triangulate: the order must list every vertex once')
+    throw new MdmlError('value', 'triangulate: the order must list every vertex once')
   }
   const g = copyGraph(graph)
   const chordal = copyGraph(graph)
@@ -174,7 +174,7 @@ export function triangulate(graph: UndirectedGraph, order?: readonly string[]): 
  * @returns The visit order.
  * @example
  * ```ts
- * import { maximumCardinalitySearch, undirectedGraph } from 'whitebox-engine/pgm'
+ * import { maximumCardinalitySearch, undirectedGraph } from 'mdml-engine/pgm'
  * maximumCardinalitySearch(undirectedGraph([['a', 'b'], ['b', 'c']])) // => ['a', 'b', 'c']
  * ```
  */
@@ -207,7 +207,7 @@ export function maximumCardinalitySearch(graph: UndirectedGraph): string[] {
  * @concept triangulation
  * @example
  * ```ts
- * import { isChordal, undirectedGraph } from 'whitebox-engine/pgm'
+ * import { isChordal, undirectedGraph } from 'mdml-engine/pgm'
  * isChordal(undirectedGraph([['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a']])) // => false
  * ```
  */
@@ -222,7 +222,7 @@ export function isChordal(graph: UndirectedGraph): boolean {
  * @returns Each clique sorted, the list sorted.
  * @example
  * ```ts
- * import { maximalCliques, undirectedGraph } from 'whitebox-engine/pgm'
+ * import { maximalCliques, undirectedGraph } from 'mdml-engine/pgm'
  * maximalCliques(undirectedGraph([['a', 'b'], ['b', 'c'], ['a', 'c'], ['c', 'd']])) // => [['a', 'b', 'c'], ['c', 'd']]
  * ```
  */
@@ -243,7 +243,7 @@ export function maximalCliques(graph: UndirectedGraph): string[][] {
  * @concept treewidth
  * @example
  * ```ts
- * import { inducedWidth, undirectedGraph } from 'whitebox-engine/pgm'
+ * import { inducedWidth, undirectedGraph } from 'mdml-engine/pgm'
  * inducedWidth(undirectedGraph([['a', 'b'], ['b', 'c']]), ['b', 'a', 'c']) // => 2
  * ```
  */
@@ -259,11 +259,11 @@ export function inducedWidth(graph: UndirectedGraph, order: readonly string[]): 
  * @param graph - The graph.
  * @param method - `exact` (default for up to 20 vertices) or `heuristic`.
  * @returns The treewidth (or its upper bound).
- * @throws WhiteboxError with code `value` for an exact request on more than 24 vertices.
+ * @throws MdmlError with code `value` for an exact request on more than 24 vertices.
  * @concept treewidth
  * @example
  * ```ts
- * import { treewidth, undirectedGraph } from 'whitebox-engine/pgm'
+ * import { treewidth, undirectedGraph } from 'mdml-engine/pgm'
  * treewidth(undirectedGraph([['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a']])) // => 2
  * ```
  */
@@ -277,7 +277,7 @@ export function treewidth(graph: UndirectedGraph, method?: 'exact' | 'heuristic'
       inducedWidth(graph, eliminationOrder(graph, vertices, 'minFill')),
     )
   }
-  if (n > 24) throw new WhiteboxError('value', `treewidth: exact treewidth of ${n} vertices is too expensive`)
+  if (n > 24) throw new MdmlError('value', `treewidth: exact treewidth of ${n} vertices is too expensive`)
   if (n === 0) return -1
   const index = new Map(vertices.map((v, i) => [v, i]))
   const adj = vertices.map((v) => {
@@ -338,7 +338,7 @@ export interface JunctionTree {
  * @concept junction-trees
  * @example
  * ```ts
- * import { junctionTree, undirectedGraph } from 'whitebox-engine/pgm'
+ * import { junctionTree, undirectedGraph } from 'mdml-engine/pgm'
  * const jt = junctionTree(undirectedGraph([['a', 'b'], ['b', 'c']]))
  * jt.cliques // => [['a', 'b'], ['b', 'c']]
  * jt.edges // => [{ from: 0, to: 1, separator: ['b'] }]
@@ -383,7 +383,7 @@ export function junctionTree(graph: UndirectedGraph, order?: readonly string[]):
  * @concept junction-trees
  * @example
  * ```ts
- * import { hasRunningIntersection } from 'whitebox-engine/pgm'
+ * import { hasRunningIntersection } from 'mdml-engine/pgm'
  * hasRunningIntersection({ cliques: [['a', 'b'], ['c'], ['b', 'c']], edges: [{ from: 0, to: 1, separator: [] }, { from: 1, to: 2, separator: ['c'] }] }) // => false
  * ```
  */

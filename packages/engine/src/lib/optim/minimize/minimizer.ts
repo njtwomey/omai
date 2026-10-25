@@ -40,9 +40,9 @@ export interface MinimizerOptions {
  * @concept optimisers
  * @example
  * ```ts
- * import { minimizer, sgd } from 'whitebox-engine/optim'
- * import { runAlgorithm } from 'whitebox-engine/trace'
- * import { square, sum, tensor } from 'whitebox-engine/tensor'
+ * import { minimizer, sgd } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { square, sum, tensor } from 'mdml-engine/tensor'
  * const alg = minimizer((x) => sum(square(x as never)), tensor([3]), sgd({ learningRate: 0.25 }))
  * runAlgorithm(alg, { maxSteps: 100 }).state.value < 1e-20 // => true
  * ```
@@ -111,8 +111,8 @@ function isTransformation(m: unknown): m is GradientTransformation {
  * @returns The result.
  * @example
  * ```ts
- * import { minimize, sgd } from 'whitebox-engine/optim'
- * import { square, sub, sum, tensor, toArray } from 'whitebox-engine/tensor'
+ * import { minimize, sgd } from 'mdml-engine/optim'
+ * import { square, sub, sum, tensor, toArray } from 'mdml-engine/tensor'
  * const r = minimize((x) => sum(square(sub(x as never, 2))), tensor([0, 5]), { method: sgd({ learningRate: 0.4 }), maxSteps: 200, gradTol: 1e-10 })
  * r.converged // => true
  * ```

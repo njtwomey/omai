@@ -4,7 +4,7 @@
  * at a number of standard deviations or a coverage probability.
  */
 
-import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -51,13 +51,13 @@ export interface ContourOptions {
  * @concept marching-squares
  * @example
  * ```ts
- * import { contourLines } from 'whitebox-engine/numerics/geometry'
+ * import { contourLines } from 'mdml-engine/numerics/geometry'
  * contourLines([[0, 0, 0], [0, 1, 0], [0, 0, 0]], 0.5)[0].length // => 5
  * ```
  */
 export function contourLines(z: TensorLike, level: number, options: ContourOptions = {}): [number, number][][] {
   const t = concreteOrThrow(promoteFloat(z)[0] as Tensor, 'contourLines')
-  if (t.shape.length !== 2) throw new WhiteboxError('shape', 'contourLines: z must be 2-D')
+  if (t.shape.length !== 2) throw new MdmlError('shape', 'contourLines: z must be 2-D')
   const [rows = 0, cols = 0] = t.shape
   const v = toFlat(t)
   const at = (r: number, c: number): number => v[r * cols + c] ?? Number.NaN
@@ -200,7 +200,7 @@ function assemble(segments: readonly [Pt, Pt][]): Pt[][] {
  * @returns Increasing levels.
  * @example
  * ```ts
- * import { contourLevels } from 'whitebox-engine/numerics/geometry'
+ * import { contourLevels } from 'mdml-engine/numerics/geometry'
  * contourLevels([0, 1], 4) // => [0.25, 0.5, 0.75]
  * ```
  */
@@ -229,7 +229,7 @@ export function contourLevels(z: TensorLike, n = 7): number[] {
  * @returns One entry per level with its paths.
  * @example
  * ```ts
- * import { isolines } from 'whitebox-engine/numerics/geometry'
+ * import { isolines } from 'mdml-engine/numerics/geometry'
  * isolines([[0, 1], [2, 3]], [1.5]).length // => 1
  * ```
  */
@@ -262,8 +262,8 @@ export interface CovarianceEllipse {
  * @returns Points, semi-axes and orientation.
  * @example
  * ```ts
- * import { covarianceEllipse } from 'whitebox-engine/numerics/geometry'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(covarianceEllipse([0, 0], [[4, 0], [0, 1]]).semiAxes) // => [2, 1]
  * ```
  */

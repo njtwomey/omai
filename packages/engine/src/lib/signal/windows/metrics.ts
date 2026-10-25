@@ -4,7 +4,7 @@
  * against leakage.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { rfft } from '../../numerics/fourier/index.ts'
 import { type TensorLike, toFlat } from '../../tensor/index.ts'
 import { samples } from '../_shared.ts'
@@ -18,7 +18,7 @@ import { samples } from '../_shared.ts'
  * @concept window-functions
  * @example
  * ```ts
- * import { enbw, hann } from 'whitebox-engine/signal'
+ * import { enbw, hann } from 'mdml-engine/signal'
  * enbw(hann(64, { sym: false })) // => 1.5
  * ```
  */
@@ -30,7 +30,7 @@ export function enbw(window: TensorLike): number {
     s1 += v
     s2 += v * v
   }
-  if (s1 === 0) throw new WhiteboxError('value', 'enbw: the window sums to zero')
+  if (s1 === 0) throw new MdmlError('value', 'enbw: the window sums to zero')
   return (w.length * s2) / (s1 * s1)
 }
 
@@ -41,7 +41,7 @@ export function enbw(window: TensorLike): number {
  * @returns sum w / n.
  * @example
  * ```ts
- * import { coherentGain, hann } from 'whitebox-engine/signal'
+ * import { coherentGain, hann } from 'mdml-engine/signal'
  * coherentGain(hann(4, { sym: false })) // => 0.5
  * ```
  */
@@ -76,11 +76,11 @@ export interface WindowMetrics {
  * @param window - The window samples (length at least 2).
  * @param oversample - The zero-padding factor of the response grid (default 64).
  * @returns The metrics.
- * @throws WhiteboxError with code `value` when the response has no null (a window too short to have sidelobes).
+ * @throws MdmlError with code `value` when the response has no null (a window too short to have sidelobes).
  * @concept window-functions
  * @example
  * ```ts
- * import { hann, windowMetrics } from 'whitebox-engine/signal'
+ * import { hann, windowMetrics } from 'mdml-engine/signal'
  * const m = windowMetrics(hann(64, { sym: false }))
  * Math.round(m.sidelobeLevel * 10) / 10 // => -31.5
  * m.mainLobeWidth // => 4
@@ -95,7 +95,7 @@ export function windowMetrics(window: TensorLike, oversample = 64): WindowMetric
   const im = toFlat(spec.im)
   const mag = Float64Array.from(re, (r, k) => Math.hypot(r, im[k] ?? 0))
   const peak = mag[0] ?? 0
-  if (peak === 0) throw new WhiteboxError('value', 'windowMetrics: the window sums to zero')
+  if (peak === 0) throw new MdmlError('value', 'windowMetrics: the window sums to zero')
   let nullAt = -1
   for (let k = 1; k + 1 < mag.length; k++) {
     if ((mag[k] ?? 0) <= (mag[k - 1] ?? 0) && (mag[k] ?? 0) < (mag[k + 1] ?? 0)) {
@@ -103,7 +103,7 @@ export function windowMetrics(window: TensorLike, oversample = 64): WindowMetric
       break
     }
   }
-  if (nullAt < 0) throw new WhiteboxError('value', 'windowMetrics: no main-lobe null on the grid')
+  if (nullAt < 0) throw new MdmlError('value', 'windowMetrics: no main-lobe null on the grid')
   let side = 0
   for (let k = nullAt; k < mag.length; k++) side = Math.max(side, mag[k] ?? 0)
   // Half power: interpolate linearly in magnitude between grid points.

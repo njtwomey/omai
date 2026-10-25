@@ -9,8 +9,8 @@ from typing import cast
 import nashpy as nash
 import numpy as np
 import numpy.typing as npt
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"nashpy": nash.__version__}
 
@@ -18,7 +18,7 @@ type Bimatrix = tuple[FloatArray, FloatArray]
 
 
 def textbook() -> dict[str, Bimatrix]:
-    """The classic games, as in whitebox-engine/games (normal-form/classic.ts)."""
+    """The classic games, as in mdml-engine/games (normal-form/classic.ts)."""
 
     def zero_sum(a: list[list[float]]) -> Bimatrix:
         m = np.array(a, dtype=np.float64)

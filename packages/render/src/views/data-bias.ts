@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { DataBias } from 'whitebox-engine/exposition'
+import type { DataBias } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -106,8 +106,8 @@ export function dataBiasPanels(record: DataBias, mode: ColourMode): Record<strin
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { dataBias } from 'whitebox-engine/exposition'
- * import { dataBiasView } from 'whitebox-render/views'
+ * import { dataBias } from 'mdml-engine/exposition'
+ * import { dataBiasView } from 'mdml-render/views'
  * const r = dataBias({ attribute: 'sex', groups: ['f', 'm'], reference: 1, counts: [40, 60], shares: [0.4, 0.6],
  *   baseRates: [0.3, 0.5], overallBaseRate: 0.42, disparities: [] })
  * dataBiasView(r).grid.length // => 2

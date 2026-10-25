@@ -61,7 +61,7 @@ function make(
  * @concept context
  * @example
  * ```ts
- * import { createContext } from 'whitebox-engine/context'
+ * import { createContext } from 'mdml-engine/context'
  * const ctx = createContext({ seed: 42 })
  * ctx.key('init').words[0] === createContext({ seed: 42 }).key('init').words[0] // => true
  * ```
@@ -85,7 +85,7 @@ export function createContext(options: CreateContextOptions = {}): Context {
  * @returns The child context.
  * @example
  * ```ts
- * import { createContext, derive } from 'whitebox-engine/context'
+ * import { createContext, derive } from 'mdml-engine/context'
  * const ctx = createContext({ seed: 1 })
  * derive(ctx, 'data').key('x').words[0] === ctx.key('data', 'x').words[0] // => true
  * ```
@@ -110,7 +110,7 @@ export function derive(
  * @returns `true` for contexts.
  * @example
  * ```ts
- * import { createContext, isContext } from 'whitebox-engine/context'
+ * import { createContext, isContext } from 'mdml-engine/context'
  * isContext(createContext()) // => true
  * ```
  */

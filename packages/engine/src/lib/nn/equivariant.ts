@@ -5,7 +5,7 @@
  * checking the property numerically.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import {
   abs,
@@ -40,8 +40,8 @@ const fl = (x: TensorLike): Value => promoteFloat(x)[0] as Value
  * @concept equivariance
  * @example
  * ```ts
- * import { rotate90 } from 'whitebox-engine/nn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { rotate90 } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(rotate90([[1, 2], [3, 4]])) // => [[2, 4], [1, 3]]
  * ```
  */
@@ -49,7 +49,7 @@ export function rotate90(x: TensorLike, k = 1): Value {
   let v = fl(x)
   const r = ((k % 4) + 4) % 4
   const a = v.shape.length - 2
-  if (a < 0) throw new WhiteboxError('shape', 'rotate90: need at least two axes')
+  if (a < 0) throw new MdmlError('shape', 'rotate90: need at least two axes')
   for (let i = 0; i < r; i++) v = flip(swapaxes(v, a, a + 1), a)
   return v
 }
@@ -63,8 +63,8 @@ export function rotate90(x: TensorLike, k = 1): Value {
  * @returns The transformed features.
  * @example
  * ```ts
- * import { p4Transform } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { p4Transform } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * p4Transform(zeros([1, 2, 4, 3, 3]), 1).shape // => [1, 2, 4, 3, 3]
  * ```
  */
@@ -105,15 +105,15 @@ const addBias = (y: Value, bias: TensorLike | undefined): Value => {
  * @reference Cohen and Welling (2016), Group equivariant convolutional networks.
  * @example
  * ```ts
- * import { p4LiftingConv } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { p4LiftingConv } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * p4LiftingConv(zeros([1, 1, 5, 5]), zeros([2, 1, 3, 3]), { padding: 1 }).shape // => [1, 2, 4, 5, 5]
  * ```
  */
 export function p4LiftingConv(input: TensorLike, weight: TensorLike, options: P4ConvOptions = {}): Value {
   const w = fl(weight)
   if (w.shape.length !== 4 || w.shape[2] !== w.shape[3])
-    throw new WhiteboxError('shape', 'p4LiftingConv: weight must be [C_out, C_in, k, k]')
+    throw new MdmlError('shape', 'p4LiftingConv: weight must be [C_out, C_in, k, k]')
   const outs = [0, 1, 2, 3].map((r) => conv2d(input, rotate90(w, r), convOptions(options)))
   return addBias(stack(outs, 2), options.bias)
 }
@@ -129,8 +129,8 @@ export function p4LiftingConv(input: TensorLike, weight: TensorLike, options: P4
  * @concept group-convolution
  * @example
  * ```ts
- * import { p4GroupConv } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { p4GroupConv } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * p4GroupConv(zeros([1, 2, 4, 5, 5]), zeros([3, 2, 4, 3, 3])).shape // => [1, 3, 4, 3, 3]
  * ```
  */
@@ -138,9 +138,9 @@ export function p4GroupConv(input: TensorLike, weight: TensorLike, options: P4Co
   const x = fl(input)
   const w = fl(weight)
   if (x.shape.length !== 5 || x.shape[2] !== 4)
-    throw new WhiteboxError('shape', 'p4GroupConv: input must be [B, C, 4, H, W]')
+    throw new MdmlError('shape', 'p4GroupConv: input must be [B, C, 4, H, W]')
   if (w.shape.length !== 5 || w.shape[2] !== 4)
-    throw new WhiteboxError('shape', 'p4GroupConv: weight must be [C_out, C_in, 4, k, k]')
+    throw new MdmlError('shape', 'p4GroupConv: weight must be [C_out, C_in, 4, k, k]')
   const [b = 1, cin = 1, , h = 1, wd = 1] = x.shape
   const [cout = 1, , , k = 1] = w.shape
   const flat = reshape(x, [b, cin * 4, h, wd])
@@ -161,8 +161,8 @@ export function p4GroupConv(input: TensorLike, weight: TensorLike, options: P4Co
  * @returns `[B, C, H, W]`.
  * @example
  * ```ts
- * import { orientationPool } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { orientationPool } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * orientationPool(zeros([1, 2, 4, 3, 3])).shape // => [1, 2, 3, 3]
  * ```
  */
@@ -182,8 +182,8 @@ export function orientationPool(x: TensorLike, reduce: 'max' | 'mean' = 'max'): 
  * @returns The error (zero for an exactly equivariant map, up to rounding).
  * @example
  * ```ts
- * import { equivarianceError, rotate90 } from 'whitebox-engine/nn'
- * import { mul } from 'whitebox-engine/tensor'
+ * import { equivarianceError, rotate90 } from 'mdml-engine/nn'
+ * import { mul } from 'mdml-engine/tensor'
  * equivarianceError((v) => mul(v, 2), [[1, 2], [3, 4]], rotate90, rotate90) // => 0
  * ```
  */
@@ -206,8 +206,8 @@ export function equivarianceError(
  * @returns The error.
  * @example
  * ```ts
- * import { invarianceError, rotate90 } from 'whitebox-engine/nn'
- * import { sum } from 'whitebox-engine/tensor'
+ * import { invarianceError, rotate90 } from 'mdml-engine/nn'
+ * import { sum } from 'mdml-engine/tensor'
  * invarianceError((v) => sum(v), [[1, 2], [3, 4]], rotate90) // => 0
  * ```
  */
@@ -295,7 +295,7 @@ abstract class P4ConvBase extends Module {
  * @concept group-convolution
  * @example
  * ```ts
- * import { P4LiftingConv } from 'whitebox-engine/nn'
+ * import { P4LiftingConv } from 'mdml-engine/nn'
  * new P4LiftingConv(1, 4, 3, { padding: 1 }).outputShape([2, 1, 8, 8]) // => [2, 4, 4, 8, 8]
  * ```
  */
@@ -319,7 +319,7 @@ export class P4LiftingConv extends P4ConvBase {
  * @concept group-convolution
  * @example
  * ```ts
- * import { P4GroupConv } from 'whitebox-engine/nn'
+ * import { P4GroupConv } from 'mdml-engine/nn'
  * new P4GroupConv(4, 4, 3).outputShape([2, 4, 4, 8, 8]) // => [2, 4, 4, 6, 6]
  * ```
  */
@@ -342,7 +342,7 @@ export class P4GroupConv extends P4ConvBase {
  *
  * @example
  * ```ts
- * import { OrientationPool } from 'whitebox-engine/nn'
+ * import { OrientationPool } from 'mdml-engine/nn'
  * new OrientationPool().outputShape([2, 3, 4, 5, 5]) // => [2, 3, 5, 5]
  * ```
  */
@@ -377,8 +377,8 @@ export class OrientationPool extends Module {
  * @returns `[B, C, H, W]`.
  * @example
  * ```ts
- * import { orientation } from 'whitebox-engine/nn'
- * import { zeros } from 'whitebox-engine/tensor'
+ * import { orientation } from 'mdml-engine/nn'
+ * import { zeros } from 'mdml-engine/tensor'
  * orientation(zeros([1, 2, 4, 3, 3]), 2).shape // => [1, 2, 3, 3]
  * ```
  */

@@ -3,8 +3,8 @@
  * minibatches, on two-dimensional classification data and one-dimensional regression curves.
  */
 
-import { optimiserRace as race } from 'whitebox-engine/methods/neural/training'
-import { dict, int, real } from 'whitebox-engine/space'
+import { optimiserRace as race } from 'mdml-engine/methods/neural/training'
+import { dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry, type ViewSlot } from '../../../entry/entry.ts'
 import { learnDataOf } from '../../../entry/run.ts'
 

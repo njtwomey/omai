@@ -4,9 +4,9 @@
  * every few frames side by side.
  */
 
-import type { Json } from 'whitebox-engine/base'
-import type { Episode } from 'whitebox-engine/rl'
-import { grid, type Scene, type Timeline, timeline } from 'whitebox-engine/scene'
+import type { Json } from 'mdml-engine/base'
+import type { Episode } from 'mdml-engine/rl'
+import { grid, type Scene, type Timeline, timeline } from 'mdml-engine/scene'
 
 /** What happened at one step of an episode, as a player shows it under the frame. */
 export interface EpisodeStep {
@@ -28,7 +28,7 @@ export interface EpisodeStep {
  * @returns `length + 1` steps.
  * @example
  * ```ts
- * import { episodeSteps } from 'whitebox-render/gym'
+ * import { episodeSteps } from 'mdml-render/gym'
  * const ep = { observations: [0, 1], states: [0, 1], actions: [1], rewards: [2], infos: [{}], return: 2, length: 1, terminated: true, truncated: false }
  * episodeSteps(ep).map((s) => s.return) // => [0, 2]
  * ```
@@ -60,8 +60,8 @@ export function episodeSteps<S, O, A>(episode: Episode<S, O, A>): EpisodeStep[] 
  * @returns The timeline (empty when the episode has no frames).
  * @example
  * ```ts
- * import { scene } from 'whitebox-engine/scene'
- * import { episodeTimeline } from 'whitebox-render/gym'
+ * import { scene } from 'mdml-engine/scene'
+ * import { episodeTimeline } from 'mdml-render/gym'
  * const ep = { observations: [0, 1], states: [0, 1], actions: [1], rewards: [2], infos: [{}], return: 2, length: 1, terminated: true, truncated: false, frames: [scene(1, 1, []), scene(1, 1, [])] }
  * episodeTimeline(ep).frames[1].caption // => 't = 1 · action 1 · reward 2 · return 2 (terminated)'
  * ```

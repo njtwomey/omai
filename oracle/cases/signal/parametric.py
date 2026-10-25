@@ -8,8 +8,8 @@ from typing import Literal
 import numpy as np
 import statsmodels.regression.linear_model as lm
 import statsmodels.tsa.stattools as ts
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import rng
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"statsmodels": version("statsmodels"), "numpy": np.__version__}
 

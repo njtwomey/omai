@@ -6,7 +6,7 @@
  * beside the inner agent's.
  */
 
-import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
+import { type Json, MdmlError } from '../../../lib/base/index.ts'
 import { crossEntropy, mse } from '../../../lib/losses/index.ts'
 import { mlp } from '../../../lib/nn/index.ts'
 import type { Schedule, Tree } from '../../../lib/optim/index.ts'
@@ -95,8 +95,8 @@ export interface IntrinsicState<G, B> {
  * @concept exploration
  * @example
  * ```ts
- * import { countBonusModule, dqn, intrinsicReward } from 'whitebox-engine/methods/rl/agents'
- * import { riverSwim } from 'whitebox-engine/methods/rl'
+ * import { countBonusModule, dqn, intrinsicReward } from 'mdml-engine/methods/rl/agents'
+ * import { riverSwim } from 'mdml-engine/methods/rl'
  * const env = riverSwim.create()
  * intrinsicReward(dqn(env), countBonusModule(env), { scale: 0.1 }).name // => 'dqn+count'
  * ```
@@ -203,9 +203,9 @@ export interface CountBonusOptions {
  * @concept exploration
  * @example
  * ```ts
- * import { countBonusModule } from 'whitebox-engine/methods/rl/agents'
- * import { riverSwim } from 'whitebox-engine/methods/rl'
- * import { key } from 'whitebox-engine/random'
+ * import { countBonusModule } from 'mdml-engine/methods/rl/agents'
+ * import { riverSwim } from 'mdml-engine/methods/rl'
+ * import { key } from 'mdml-engine/random'
  * const m = countBonusModule(riverSwim.create(), { beta: 0.5 })
  * const t = { observation: 0, action: 1, reward: 0, nextObservation: 1, terminated: false, truncated: false }
  * let s = m.init(key(0))
@@ -293,8 +293,8 @@ export interface RndState {
  * @concept exploration
  * @example
  * ```ts
- * import { rndModule } from 'whitebox-engine/methods/rl/agents'
- * import { riverSwim } from 'whitebox-engine/methods/rl'
+ * import { rndModule } from 'mdml-engine/methods/rl/agents'
+ * import { riverSwim } from 'mdml-engine/methods/rl'
  * rndModule(riverSwim.create(), { features: 8 }).name // => 'rnd'
  * ```
  */
@@ -402,8 +402,8 @@ export interface IcmState {
  * @concept exploration
  * @example
  * ```ts
- * import { icmModule } from 'whitebox-engine/methods/rl/agents'
- * import { riverSwim } from 'whitebox-engine/methods/rl'
+ * import { icmModule } from 'mdml-engine/methods/rl/agents'
+ * import { riverSwim } from 'mdml-engine/methods/rl'
  * icmModule(riverSwim.create()).config['beta'] // => 0.2
  * ```
  */
@@ -412,7 +412,7 @@ export function icmModule<O, A>(env: Spaces, options: IcmOptions = {}): BonusMod
   const act = spaceFeatures(env.actionSpace)
   const discreteActions = env.actionSpace.kind === 'discrete'
   if (!(discreteActions || env.actionSpace.kind === 'box'))
-    throw new WhiteboxError('value', 'icmModule: needs discrete or box actions')
+    throw new MdmlError('value', 'icmModule: needs discrete or box actions')
   const hidden = options.hidden ?? [64]
   const k = options.features ?? 32
   const key = options.key ?? makeKey(0)

@@ -4,7 +4,7 @@
  * checks and option validation.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { asTensor, fromStorage, isTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import type { LearnData } from './estimator.ts'
 
@@ -36,10 +36,10 @@ export interface MatrixCheckOptions {
  * @param who - The caller (for errors).
  * @param options - Whether NaN and infinities are allowed, and the expected number of columns and rows.
  * @returns The matrix view.
- * @throws WhiteboxError with code `shape` for a non-2-D input or a wrong column count, `value` for non-finite entries.
+ * @throws MdmlError with code `shape` for a non-2-D input or a wrong column count, `value` for non-finite entries.
  * @example
  * ```ts
- * import { matrixView } from 'whitebox-engine/learn'
+ * import { matrixView } from 'mdml-engine/learn'
  * matrixView([[1, 2], [3, 4]], 'demo').d // => 2
  * matrixView([1, 2], 'demo') // => throws shape
  * matrixView([[1, NaN]], 'demo') // => throws value
@@ -47,10 +47,10 @@ export interface MatrixCheckOptions {
  */
 export function matrixView(x: TensorLike, who: string, options: MatrixCheckOptions = {}): MatrixView {
   const v = asTensor(x)
-  if (!isTensor(v)) throw new WhiteboxError('value', `${who}: expected concrete data, not a traced value`)
+  if (!isTensor(v)) throw new MdmlError('value', `${who}: expected concrete data, not a traced value`)
   const t = v
   if (t.shape.length !== 2) {
-    throw new WhiteboxError(
+    throw new MdmlError(
       'shape',
       `${who}: expected a 2-D feature matrix [n, d], got shape [${t.shape.join(', ')}]` +
         (t.shape.length === 1 ? ' (reshape a single feature to [n, 1], a single sample to [1, d])' : ''),
@@ -60,19 +60,19 @@ export function matrixView(x: TensorLike, who: string, options: MatrixCheckOptio
   const n = t.shape[0] ?? 0
   const d = t.shape[1] ?? 0
   if (n < (options.minSamples ?? 1)) {
-    throw new WhiteboxError('shape', `${who}: needs at least ${options.minSamples ?? 1} samples, got ${n}`)
+    throw new MdmlError('shape', `${who}: needs at least ${options.minSamples ?? 1} samples, got ${n}`)
   }
   if (options.nFeatures !== undefined && d !== options.nFeatures) {
-    throw new WhiteboxError('shape', `${who}: expected ${options.nFeatures} features (as in fit), got ${d}`)
+    throw new MdmlError('shape', `${who}: expected ${options.nFeatures} features (as in fit), got ${d}`)
   }
   const data = t.dtype === 'float64' ? (t.data as Float64Array) : Float64Array.from(toFlat(t))
   for (let i = 0; i < data.length; i++) {
     const v = data[i] ?? 0
     if (Number.isNaN(v) && options.allowNaN !== true) {
-      throw new WhiteboxError('value', `${who}: NaN at row ${Math.floor(i / d)}, column ${i % d} (impute first)`)
+      throw new MdmlError('value', `${who}: NaN at row ${Math.floor(i / d)}, column ${i % d} (impute first)`)
     }
     if (!Number.isNaN(v) && !Number.isFinite(v) && options.allowInfinite !== true) {
-      throw new WhiteboxError('value', `${who}: infinite value at row ${Math.floor(i / d)}, column ${i % d}`)
+      throw new MdmlError('value', `${who}: infinite value at row ${Math.floor(i / d)}, column ${i % d}`)
     }
   }
   return { n, d, data }
@@ -87,7 +87,7 @@ export function matrixView(x: TensorLike, who: string, options: MatrixCheckOptio
  * @returns The `[n, d]` float64 tensor.
  * @example
  * ```ts
- * import { asFloatMatrix } from 'whitebox-engine/learn'
+ * import { asFloatMatrix } from 'mdml-engine/learn'
  * asFloatMatrix([[1, 2]], 'demo').dtype // => 'float64'
  * ```
  */
@@ -103,7 +103,7 @@ export function asFloatMatrix(x: TensorLike, who: string, options: MatrixCheckOp
  * @returns The `[n, d]` tensor.
  * @example
  * ```ts
- * import { fromView } from 'whitebox-engine/learn'
+ * import { fromView } from 'mdml-engine/learn'
  * fromView({ n: 1, d: 2, data: new Float64Array([1, 2]) }).shape // => [1, 2]
  * ```
  */
@@ -119,7 +119,7 @@ export function fromView(m: MatrixView): Tensor<'float64'> {
  * @returns Its values.
  * @example
  * ```ts
- * import { columnOf, matrixView } from 'whitebox-engine/learn'
+ * import { columnOf, matrixView } from 'mdml-engine/learn'
  * Array.from(columnOf(matrixView([[1, 2], [3, 4]], 'demo'), 1)) // => [2, 4]
  * ```
  */
@@ -137,7 +137,7 @@ export function columnOf(m: MatrixView, j: number): Float64Array {
  * @returns A new view.
  * @example
  * ```ts
- * import { matrixView, takeRows } from 'whitebox-engine/learn'
+ * import { matrixView, takeRows } from 'mdml-engine/learn'
  * Array.from(takeRows(matrixView([[1], [2], [3]], 'demo'), [2, 0]).data) // => [3, 1]
  * ```
  */
@@ -158,7 +158,7 @@ export function takeRows(m: MatrixView, rows: ArrayLike<number>): MatrixView {
  * @returns A new view.
  * @example
  * ```ts
- * import { matrixView, takeColumns } from 'whitebox-engine/learn'
+ * import { matrixView, takeColumns } from 'mdml-engine/learn'
  * Array.from(takeColumns(matrixView([[1, 2, 3]], 'demo'), [2, 0]).data) // => [3, 1]
  * ```
  */
@@ -175,10 +175,10 @@ export function takeColumns(m: MatrixView, cols: readonly number[]): MatrixView 
  *
  * @param parts - Views with the same number of rows.
  * @returns The joined view.
- * @throws WhiteboxError with code `shape` when the row counts differ.
+ * @throws MdmlError with code `shape` when the row counts differ.
  * @example
  * ```ts
- * import { hstackViews, matrixView } from 'whitebox-engine/learn'
+ * import { hstackViews, matrixView } from 'mdml-engine/learn'
  * Array.from(hstackViews([matrixView([[1]], 'a'), matrixView([[2, 3]], 'b')]).data) // => [1, 2, 3]
  * ```
  */
@@ -186,7 +186,7 @@ export function hstackViews(parts: readonly MatrixView[]): MatrixView {
   const n = parts[0]?.n ?? 0
   let d = 0
   for (const p of parts) {
-    if (p.n !== n) throw new WhiteboxError('shape', `hstack: ${p.n} rows where ${n} were expected`)
+    if (p.n !== n) throw new MdmlError('shape', `hstack: ${p.n} rows where ${n} were expected`)
     d += p.d
   }
   const out = new Float64Array(n * d)
@@ -205,10 +205,10 @@ export function hstackViews(parts: readonly MatrixView[]): MatrixView {
  * @param who - The caller (for errors).
  * @param n - The number of rows required, when known.
  * @returns The values.
- * @throws WhiteboxError with code `shape` for other shapes or lengths, `value` for non-finite entries.
+ * @throws MdmlError with code `shape` for other shapes or lengths, `value` for non-finite entries.
  * @example
  * ```ts
- * import { targetVector } from 'whitebox-engine/learn'
+ * import { targetVector } from 'mdml-engine/learn'
  * Array.from(targetVector([[1], [2]], 'demo')) // => [1, 2]
  * targetVector([1, 2], 'demo', 3) // => throws shape
  * ```
@@ -216,13 +216,13 @@ export function hstackViews(parts: readonly MatrixView[]): MatrixView {
 export function targetVector(y: TensorLike, who: string, n?: number): Float64Array {
   const t = asTensor(y)
   if (!(t.shape.length === 1 || (t.shape.length === 2 && t.shape[1] === 1))) {
-    throw new WhiteboxError('shape', `${who}: expected targets [n], got shape [${t.shape.join(', ')}]`)
+    throw new MdmlError('shape', `${who}: expected targets [n], got shape [${t.shape.join(', ')}]`)
   }
   const out = Float64Array.from(toFlat(t))
   if (n !== undefined && out.length !== n) {
-    throw new WhiteboxError('shape', `${who}: ${out.length} targets for ${n} samples`)
+    throw new MdmlError('shape', `${who}: ${out.length} targets for ${n} samples`)
   }
-  for (const v of out) if (!Number.isFinite(v)) throw new WhiteboxError('value', `${who}: targets must be finite`)
+  for (const v of out) if (!Number.isFinite(v)) throw new MdmlError('value', `${who}: targets must be finite`)
   return out
 }
 
@@ -243,7 +243,7 @@ export interface EncodedLabels {
  * @returns The classes and codes.
  * @example
  * ```ts
- * import { encodeLabels } from 'whitebox-engine/learn'
+ * import { encodeLabels } from 'mdml-engine/learn'
  * const e = encodeLabels([5, 2, 5], 'demo')
  * e.classes // => [2, 5]
  * Array.from(e.codes) // => [1, 0, 1]
@@ -263,10 +263,10 @@ export function encodeLabels(y: TensorLike, who: string, n?: number): EncodedLab
  * @param classes - The fitted classes.
  * @param who - The caller (for errors).
  * @returns The codes.
- * @throws WhiteboxError with code `value` for a label not among the classes.
+ * @throws MdmlError with code `value` for a label not among the classes.
  * @example
  * ```ts
- * import { codesFor } from 'whitebox-engine/learn'
+ * import { codesFor } from 'mdml-engine/learn'
  * Array.from(codesFor([5, 2], [2, 5], 'demo')) // => [1, 0]
  * codesFor([3], [2, 5], 'demo') // => throws value
  * ```
@@ -275,7 +275,7 @@ export function codesFor(y: TensorLike, classes: readonly number[], who: string)
   const index = new Map(classes.map((c, i) => [c, i]))
   return Int32Array.from(targetVector(y, who), (v) => {
     const c = index.get(v)
-    if (c === undefined) throw new WhiteboxError('value', `${who}: label ${v} was not seen in fit`)
+    if (c === undefined) throw new MdmlError('value', `${who}: label ${v} was not seen in fit`)
     return c
   })
 }
@@ -287,10 +287,10 @@ export function codesFor(y: TensorLike, classes: readonly number[], who: string)
  * @param n - The number of samples.
  * @param who - The caller (for errors).
  * @returns The weights.
- * @throws WhiteboxError with code `shape` for a wrong length, `value` for negative or non-finite weights.
+ * @throws MdmlError with code `shape` for a wrong length, `value` for negative or non-finite weights.
  * @example
  * ```ts
- * import { sampleWeightsOf } from 'whitebox-engine/learn'
+ * import { sampleWeightsOf } from 'mdml-engine/learn'
  * Array.from(sampleWeightsOf(undefined, 2, 'demo')) // => [1, 1]
  * sampleWeightsOf([1, -1], 2, 'demo') // => throws value
  * ```
@@ -298,9 +298,9 @@ export function codesFor(y: TensorLike, classes: readonly number[], who: string)
 export function sampleWeightsOf(weights: TensorLike | undefined, n: number, who: string): Float64Array {
   if (weights === undefined) return new Float64Array(n).fill(1)
   const w = Float64Array.from(toFlat(asTensor(weights)))
-  if (w.length !== n) throw new WhiteboxError('shape', `${who}: ${w.length} sample weights for ${n} samples`)
+  if (w.length !== n) throw new MdmlError('shape', `${who}: ${w.length} sample weights for ${n} samples`)
   for (const v of w) {
-    if (!(Number.isFinite(v) && v >= 0)) throw new WhiteboxError('value', `${who}: weights must be finite and >= 0`)
+    if (!(Number.isFinite(v) && v >= 0)) throw new MdmlError('value', `${who}: weights must be finite and >= 0`)
   }
   return w
 }
@@ -312,7 +312,7 @@ export function sampleWeightsOf(weights: TensorLike | undefined, n: number, who:
  * @returns The number of rows.
  * @example
  * ```ts
- * import { rowsOf } from 'whitebox-engine/learn'
+ * import { rowsOf } from 'mdml-engine/learn'
  * rowsOf([[1, 2], [3, 4], [5, 6]]) // => 3
  * ```
  */
@@ -329,10 +329,10 @@ export function rowsOf(x: TensorLike): number {
  * @param who - The caller (for errors).
  * @param lengths - Named row counts.
  * @returns The common count.
- * @throws WhiteboxError with code `shape` when they differ.
+ * @throws MdmlError with code `shape` when they differ.
  * @example
  * ```ts
- * import { consistentLength } from 'whitebox-engine/learn'
+ * import { consistentLength } from 'mdml-engine/learn'
  * consistentLength('demo', { x: 3, y: 3 }) // => 3
  * consistentLength('demo', { x: 3, y: 2 }) // => throws shape
  * ```
@@ -342,7 +342,7 @@ export function consistentLength(who: string, lengths: Readonly<Record<string, n
   const n = entries[0]?.[1] ?? 0
   for (const [name, m] of entries) {
     if (m !== n) {
-      throw new WhiteboxError(
+      throw new MdmlError(
         'shape',
         `${who}: inconsistent numbers of samples (${entries.map(([k, v]) => `${k}: ${v}`).join(', ')})`,
         {
@@ -362,17 +362,17 @@ export function consistentLength(who: string, lengths: Readonly<Record<string, n
  * @param who - The caller.
  * @param min - The smallest allowed value (default 1).
  * @returns The value.
- * @throws WhiteboxError with code `value` otherwise.
+ * @throws MdmlError with code `value` otherwise.
  * @example
  * ```ts
- * import { integerOption } from 'whitebox-engine/learn'
+ * import { integerOption } from 'mdml-engine/learn'
  * integerOption(3, 'nSplits', 'demo', 2) // => 3
  * integerOption(1.5, 'nSplits', 'demo') // => throws value
  * ```
  */
 export function integerOption(value: number, name: string, who: string, min = 1): number {
   if (!Number.isInteger(value) || value < min) {
-    throw new WhiteboxError('value', `${who}: ${name} must be an integer >= ${min}, got ${value}`)
+    throw new MdmlError('value', `${who}: ${name} must be an integer >= ${min}, got ${value}`)
   }
   return value
 }
@@ -386,17 +386,17 @@ export function integerOption(value: number, name: string, who: string, min = 1)
  * @param lo - Lower bound (exclusive, default 0).
  * @param hi - Upper bound (exclusive, default 1).
  * @returns The value.
- * @throws WhiteboxError with code `value` otherwise.
+ * @throws MdmlError with code `value` otherwise.
  * @example
  * ```ts
- * import { fractionOption } from 'whitebox-engine/learn'
+ * import { fractionOption } from 'mdml-engine/learn'
  * fractionOption(0.1, 'alpha', 'demo') // => 0.1
  * fractionOption(1, 'alpha', 'demo') // => throws value
  * ```
  */
 export function fractionOption(value: number, name: string, who: string, lo = 0, hi = 1): number {
   if (!(value > lo && value < hi)) {
-    throw new WhiteboxError('value', `${who}: ${name} must lie in (${lo}, ${hi}), got ${value}`)
+    throw new MdmlError('value', `${who}: ${name} must lie in (${lo}, ${hi}), got ${value}`)
   }
   return value
 }
@@ -410,8 +410,8 @@ export function fractionOption(value: number, name: string, who: string, lo = 0,
  * @returns The subset.
  * @example
  * ```ts
- * import { takeData } from 'whitebox-engine/learn'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { takeData } from 'mdml-engine/learn'
+ * import { toArray } from 'mdml-engine/tensor'
  * const d = takeData({ x: [[1], [2], [3]], y: [10, 20, 30] }, [2, 0])
  * toArray(d.y) // => [30, 10]
  * ```
@@ -419,14 +419,14 @@ export function fractionOption(value: number, name: string, who: string, lo = 0,
 export function takeData<D extends LearnData>(data: D, rows: ArrayLike<number>): D {
   const take = (v: TensorLike): Tensor => {
     const t = asTensor(v)
-    if (!isTensor(t)) throw new WhiteboxError('value', 'takeData: expected concrete data')
+    if (!isTensor(t)) throw new MdmlError('value', 'takeData: expected concrete data')
     const n = t.shape[0] ?? 0
     const width = n === 0 ? 0 : t.data.length / n
     const out = new Float64Array(rows.length * width)
     const src = t.dtype === 'float64' ? (t.data as Float64Array) : Float64Array.from(toFlat(t))
     for (let r = 0; r < rows.length; r++) {
       const i = rows[r] ?? 0
-      if (!(i >= 0 && i < n)) throw new WhiteboxError('value', `takeData: row ${i} outside [0, ${n})`)
+      if (!(i >= 0 && i < n)) throw new MdmlError('value', `takeData: row ${i} outside [0, ${n})`)
       out.set(src.subarray(i * width, (i + 1) * width), r * width)
     }
     return fromStorage(out, [rows.length, ...t.shape.slice(1)], 'float64')

@@ -67,10 +67,10 @@ export interface InteractionArrays {
  * @param arrays - Users, items, values and the optional fields.
  * @param meta - Name, description and provenance.
  * @returns The dataset.
- * @throws WhiteboxError with code `shape` when the fields disagree in length.
+ * @throws MdmlError with code `shape` when the fields disagree in length.
  * @example
  * ```ts
- * import { interactions } from 'whitebox-engine/data'
+ * import { interactions } from 'mdml-engine/data'
  * interactions({ users: [0, 1, 1], items: [2, 0, 1], values: [5, 3, 4] }).nItems // => 3
  * ```
  */
@@ -114,7 +114,7 @@ export function interactions(arrays: InteractionArrays, meta: Partial<DatasetMet
  * @returns The dataset.
  * @example
  * ```ts
- * import { queryData } from 'whitebox-engine/data'
+ * import { queryData } from 'mdml-engine/data'
  * queryData([[1], [2], [3]], [2, 0, 1], [0, 0, 1]).queries.shape // => [3]
  * ```
  */

@@ -4,7 +4,7 @@
  * non-Gaussianity, traced step by step. The fit function, a class, and the symmetric decorrelation it relies on.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -154,7 +154,7 @@ export function fastIca(hyper: FastIcaHyper = {}): Estimator<FastIcaHyper, Fitte
         const m = matrixView(data.x, 'fastIca', { minSamples: 2 })
         const k = h.nComponents ?? Math.min(m.n, m.d)
         if (!(Number.isInteger(k) && k >= 1 && k <= Math.min(m.n, m.d)))
-          throw new WhiteboxError('value', `fastIca: nComponents must be in 1..${Math.min(m.n, m.d)}`)
+          throw new MdmlError('value', `fastIca: nComponents must be in 1..${Math.min(m.n, m.d)}`)
         const mean = columnMeans(m)
         const xc = centred(m, mean)
         const { s, vt } = thinSvd(xc, m.n, m.d)

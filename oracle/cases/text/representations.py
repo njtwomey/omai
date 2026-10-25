@@ -8,9 +8,9 @@ from typing import Any, cast
 
 import numpy as np
 from gensim.models import KeyedVectors
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.helpers import FloatArray, rng
 from sklearn.feature_extraction.text import TfidfVectorizer
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {
     "numpy": version("numpy"),

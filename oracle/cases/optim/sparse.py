@@ -3,10 +3,10 @@
 import numpy as np
 import scipy
 import sklearn
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.optim_helpers import sparse_problem
 from scipy.optimize import linprog
 from sklearn.linear_model import ElasticNet, Lasso, OrthogonalMatchingPursuit
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.optim_helpers import sparse_problem
 
 REFERENCE: dict[str, str] = {"sklearn": sklearn.__version__, "scipy": scipy.__version__}
 

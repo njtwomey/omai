@@ -3,9 +3,9 @@
  * demographic parity or equalised odds, on tabular data with a protected attribute.
  */
 
-import type { ThresholdConstraint } from 'whitebox-engine/fairness'
-import { thresholdOptimizer as optimise } from 'whitebox-engine/methods/fairness'
-import { choice, dict } from 'whitebox-engine/space'
+import type { ThresholdConstraint } from 'mdml-engine/fairness'
+import { thresholdOptimizer as optimise } from 'mdml-engine/methods/fairness'
+import { choice, dict } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { awareParam, fairnessDataOf, fitClassifier } from './_shared.ts'
 

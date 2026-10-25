@@ -4,7 +4,7 @@
  * under such a table.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import type { GameTree, TabularPolicy } from './tree.ts'
 
 /** The `currentPlayer` of a chance node. */
@@ -18,7 +18,7 @@ export function policyTable(tree: GameTree, policy: TabularPolicy): Float64Array
     const p = policy[info.key]
     const k = info.actions.length
     if (p === undefined) return new Float64Array(k).fill(1 / k)
-    if (p.length !== k) throw new WhiteboxError('shape', `policy for '${info.key}' needs ${k} probabilities`)
+    if (p.length !== k) throw new MdmlError('shape', `policy for '${info.key}' needs ${k} probabilities`)
     return Float64Array.from(p)
   })
 }

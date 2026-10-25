@@ -3,9 +3,9 @@
  * reliability diagrams before and after, on tabular classification data.
  */
 
-import { gaussianNB } from 'whitebox-engine/methods/naive-bayes'
-import { calibrateClassifier } from 'whitebox-engine/methods/trust'
-import { dict, int } from 'whitebox-engine/space'
+import { gaussianNB } from 'mdml-engine/methods/naive-bayes'
+import { calibrateClassifier } from 'mdml-engine/methods/trust'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

@@ -1,5 +1,5 @@
+import { type SceneNode, structure } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
-import { type SceneNode, structure } from 'whitebox-engine/scene'
 import { diagram } from './diagram.ts'
 import { styleFor } from './styles.ts'
 
@@ -73,7 +73,7 @@ describe('diagram', () => {
 
 describe('architectures', () => {
   it('draws a network four ways, counting parameters once', async () => {
-    const { describe: describeNet, mlp, TransformerEncoderLayer } = await import('whitebox-engine/nn')
+    const { describe: describeNet, mlp, TransformerEncoderLayer } = await import('mdml-engine/nn')
     const { architecture, flowOrder } = await import('./architectures.ts')
     const s = describeNet(mlp([2, 4, 1]), [8, 2])
     expect(flowOrder(s).map((n) => n.label)).toEqual(['input', 'Linear', 'ReLU', 'Linear', 'output'])

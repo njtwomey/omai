@@ -1,5 +1,5 @@
 /**
- * whitebox-hub: declarative entries that pair an engine method with dataset collections, controls and render views, and
+ * mdml-hub: declarative entries that pair an engine method with dataset collections, controls and render views, and
  * the generated catalogue the hub app is built from. The entries live under `collections/`, grouped as the hub's pages
  * are; `entry` holds the entry contract and the helpers that run a demo and keep its state in a URL, and `react` the
  * live view of an entry.

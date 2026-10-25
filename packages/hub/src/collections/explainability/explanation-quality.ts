@@ -3,8 +3,8 @@
  * complexity and completeness, with their agreement and deletion and insertion curves.
  */
 
-import { evaluateExplanations } from 'whitebox-engine/methods/explain'
-import { dict, int } from 'whitebox-engine/space'
+import { evaluateExplanations } from 'mdml-engine/methods/explain'
+import { dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { type ExplainedModel, fitModel, modelControl } from './_explain.ts'
 

@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { isWhiteboxError, minOf } from '../base/index.ts'
+import { isMdmlError, minOf } from '../base/index.ts'
 import type { Tensor } from '../tensor/index.ts'
 import { halton, key, latinHypercube, poissonDisk, scrambledSobol, sobol, uniform } from './index.ts'
 
@@ -66,7 +66,7 @@ describe('sobol', () => {
         f()
         expect.unreachable()
       } catch (e) {
-        expect(isWhiteboxError(e, 'value')).toBe(true)
+        expect(isMdmlError(e, 'value')).toBe(true)
       }
     }
   })

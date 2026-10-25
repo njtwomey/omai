@@ -4,7 +4,7 @@
  * Cramer's V for contingency tables, eta and omega squared for one-way layouts, and Cliff's delta.
  */
 
-import { type Estimate, meanOf, resolveConfidenceLevel, varianceOf, WhiteboxError } from '../base/index.ts'
+import { type Estimate, MdmlError, meanOf, resolveConfidenceLevel, varianceOf } from '../base/index.ts'
 import { noncentralChi2, noncentralF } from '../dists/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'
 import { chi2Cdf, fCdf, groupsOf, normPpf, rootAbove, rowsOf, sample, tPpf } from './_util.ts'
@@ -47,7 +47,7 @@ function rawD(
   const a = sample(name, x, 2)
   if (typeof y === 'number') return { d: (meanOf(a) - y) / Math.sqrt(varianceOf(a, 1)), nx: a.length, ny: 1 }
   const b = sample(name, y, 2)
-  if (paired && a.length !== b.length) throw new WhiteboxError('shape', `${name}: paired samples differ in length`)
+  if (paired && a.length !== b.length) throw new MdmlError('shape', `${name}: paired samples differ in length`)
   const sd = paired
     ? Math.sqrt((varianceOf(a, 1) + varianceOf(b, 1)) / 2)
     : Math.sqrt(((a.length - 1) * varianceOf(a, 1) + (b.length - 1) * varianceOf(b, 1)) / (a.length + b.length - 2))
@@ -66,7 +66,7 @@ function rawD(
  * @returns The effect size with its interval.
  * @example
  * ```ts
- * import { cohensD } from 'whitebox-engine/stats'
+ * import { cohensD } from 'mdml-engine/stats'
  * cohensD([2, 4, 6], [1, 3, 5]).value // => 0.5
  * cohensD([2, 4, 6], 2).value // => 1
  * ```
@@ -88,7 +88,7 @@ export function cohensD(x: TensorLike, y: TensorLike | number, options: MeanDiff
  * @returns The effect size with its interval.
  * @example
  * ```ts
- * import { hedgesG } from 'whitebox-engine/stats'
+ * import { hedgesG } from 'mdml-engine/stats'
  * hedgesG([2, 4, 6], [1, 3, 5]).value // => 0.4
  * ```
  */
@@ -110,7 +110,7 @@ export function hedgesG(x: TensorLike, y: TensorLike | number, options: MeanDiff
  * @returns The effect size with its interval.
  * @example
  * ```ts
- * import { glassDelta } from 'whitebox-engine/stats'
+ * import { glassDelta } from 'mdml-engine/stats'
  * glassDelta([3, 5, 7], [1, 2, 3]).value // => 3
  * ```
  */
@@ -136,7 +136,7 @@ export function glassDelta(x: TensorLike, y: TensorLike, options: { readonly lev
  * @returns The effect size (with an interval when n1 and n2 are given).
  * @example
  * ```ts
- * import { cohensH } from 'whitebox-engine/stats'
+ * import { cohensH } from 'mdml-engine/stats'
  * cohensH(0.5, 0.5).value // => 0
  * cohensH(1, 0).value // => 3.141592653589793
  * ```
@@ -146,8 +146,7 @@ export function cohensH(
   p2: number,
   options: { readonly n1?: number; readonly n2?: number; readonly level?: number } = {},
 ): EffectSize {
-  for (const p of [p1, p2])
-    if (!(p >= 0 && p <= 1)) throw new WhiteboxError('domain', 'cohensH: proportions lie in [0, 1]')
+  for (const p of [p1, p2]) if (!(p >= 0 && p <= 1)) throw new MdmlError('domain', 'cohensH: proportions lie in [0, 1]')
   const h = 2 * Math.asin(Math.sqrt(p1)) - 2 * Math.asin(Math.sqrt(p2))
   if (options.n1 === undefined || options.n2 === undefined) return { name: "Cohen's h", value: h }
   const level = resolveConfidenceLevel(options.level)
@@ -179,7 +178,7 @@ function noncentralityBounds(cdf: (lambda: number) => number, level: number, sca
  * @returns The effect size with its interval.
  * @example
  * ```ts
- * import { cramersV } from 'whitebox-engine/stats'
+ * import { cramersV } from 'mdml-engine/stats'
  * cramersV([[10, 0], [0, 10]]).value // => 1
  * cramersV([[5, 5], [5, 5]]).value // => 0
  * ```
@@ -256,7 +255,7 @@ function etaBounds(F: number, df1: number, df2: number, level: number): [number,
  * @returns The effect size with its interval.
  * @example
  * ```ts
- * import { etaSquared } from 'whitebox-engine/stats'
+ * import { etaSquared } from 'mdml-engine/stats'
  * etaSquared([[1, 2, 3], [4, 5, 6]]).value // => 0.7714285714285715
  * ```
  */
@@ -276,7 +275,7 @@ export function etaSquared(groups: readonly TensorLike[], options: { readonly le
  * @returns The effect size with its interval.
  * @example
  * ```ts
- * import { omegaSquared } from 'whitebox-engine/stats'
+ * import { omegaSquared } from 'mdml-engine/stats'
  * omegaSquared([[1, 2, 3], [4, 5, 6]]).value // => 0.6756756756756757
  * ```
  */
@@ -301,7 +300,7 @@ export function omegaSquared(groups: readonly TensorLike[], options: { readonly 
  * (1993).
  * @example
  * ```ts
- * import { cliffsDelta } from 'whitebox-engine/stats'
+ * import { cliffsDelta } from 'mdml-engine/stats'
  * cliffsDelta([3, 4, 5], [1, 2, 3]).value // => 0.8888888888888888
  * ```
  */

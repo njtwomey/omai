@@ -14,7 +14,7 @@ import type { SlotContext } from './entry.ts'
  * @returns `{ labels }` or `{ values }` for the view, or nothing when the data has neither labels nor targets.
  * @example
  * ```ts
- * import { rowColours } from 'whitebox-hub'
+ * import { rowColours } from 'mdml-hub'
  * rowColours({ targets: [0, 0.5, 1], params: {} }).values // => [0, 0.5, 1]
  * rowColours({ labels: [2, 0], params: {} }).labels // => [2, 0]
  * ```

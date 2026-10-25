@@ -7,13 +7,13 @@ import warnings
 
 import numpy as np
 import sklearn
+from mdml_oracle.fixture import Case, Json, case
+from mdml_oracle.helpers import rng
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.experimental import enable_halving_search_cv  # pyright: ignore[reportUnusedImport]  # noqa: F401
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import HalvingGridSearchCV, HalvingRandomSearchCV
-from whitebox_oracle.fixture import Case, Json, case
-from whitebox_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 

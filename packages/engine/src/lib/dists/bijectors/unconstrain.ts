@@ -4,7 +4,7 @@
  * change of variables so that samplers and optimisers can work on the whole real line.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { add, sub, type TensorLike, type Value } from '../../tensor/index.ts'
 import type { Distribution, Support } from '../distribution.ts'
 import { type Bijector, chain } from './bijector.ts'
@@ -20,11 +20,11 @@ import { choleskyOuterProduct, correlationCholesky, lowerCholesky, ordered, stic
  *
  * @param support - The support.
  * @returns The bijector from the unconstrained space onto the support.
- * @throws WhiteboxError with code `not-implemented` for discrete supports and the sphere (no bijection from R^n).
+ * @throws MdmlError with code `not-implemented` for discrete supports and the sphere (no bijection from R^n).
  * @example
  * ```ts
- * import { bijectors } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { bijectors } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * item(bijectors.bijectorForSupport({ kind: 'positive' }).forward(0)) // => 1
  * ```
  */
@@ -58,7 +58,7 @@ export function bijectorForSupport(support: Support): Bijector {
     case 'correlation':
       return chain([correlationCholesky(), choleskyOuterProduct('correlation')])
     default:
-      throw new WhiteboxError(
+      throw new MdmlError(
         'not-implemented',
         `bijectorForSupport: the ${support.kind} support has no bijection from unconstrained reals`,
       )
@@ -74,8 +74,8 @@ export function bijectorForSupport(support: Support): Bijector {
  * @returns The log density on the unconstrained space.
  * @example
  * ```ts
- * import { bijectors, exponential } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { bijectors, exponential } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const d = exponential(1)
  * const onLine = bijectors.transformLogDensity((x) => d.logProb(x), bijectors.exp())
  * item(onLine(0)) // => -1
@@ -93,8 +93,8 @@ export function transformLogDensity(logDensity: (x: Value) => Value, bijector: B
  * @returns The bijector and the unconstrained log density.
  * @example
  * ```ts
- * import { bijectors, beta } from 'whitebox-engine/dists'
- * import { item } from 'whitebox-engine/tensor'
+ * import { bijectors, beta } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
  * const { logDensity } = bijectors.unconstrained(beta(2, 2))
  * // At u = 0: log p(1/2) + log(1/4) = log 1.5 - log 4.
  * Math.abs(item(logDensity(0)) - Math.log(1.5 / 4)) < 1e-14 // => true

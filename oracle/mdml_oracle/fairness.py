@@ -6,7 +6,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from whitebox_oracle.helpers import FloatArray
+from mdml_oracle.helpers import FloatArray
 
 # AIF360 logs a warning for every optional backend it cannot import; keep the generator's output quiet.
 logging.getLogger().setLevel(logging.ERROR)

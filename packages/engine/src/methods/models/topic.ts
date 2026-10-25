@@ -7,7 +7,7 @@
 
 // TODO: LDA as a probprog program with the variational engine (sklearn's online and batch VB), labelled LDA, held-out
 // perplexity by importance sampling; pLSA, HDP, correlated and dynamic topic models (topic-extensions.ts).
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { coefficientTable, componentsRecord, type Exposition, mixtureSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -84,13 +84,13 @@ function tokensOf(x: TensorLike, who: string): { doc: Int32Array; word: Int32Arr
   for (let d = 0; d < m.n; d++)
     for (let w = 0; w < m.d; w++) {
       const c = m.data[d * m.d + w] ?? 0
-      if (!(Number.isInteger(c) && c >= 0)) throw new WhiteboxError('value', `${who}: counts must be integers >= 0`)
+      if (!(Number.isInteger(c) && c >= 0)) throw new MdmlError('value', `${who}: counts must be integers >= 0`)
       for (let r = 0; r < c; r++) {
         doc.push(d)
         word.push(w)
       }
     }
-  if (doc.length === 0) throw new WhiteboxError('value', `${who}: the corpus has no tokens`)
+  if (doc.length === 0) throw new MdmlError('value', `${who}: the corpus has no tokens`)
   return { doc: Int32Array.from(doc), word: Int32Array.from(word), nDocs: m.n, vocab: m.d }
 }
 
@@ -253,7 +253,7 @@ function thinned(last: number, max: number): number[] {
 function fitLda(data: LearnData, h: LdaHyper, options: FitOptions): { params: LdaParams; exposition: Exposition[] } {
   const who = 'latentDirichletAllocation'
   const K = h.nTopics
-  if (!(Number.isInteger(K) && K >= 1)) throw new WhiteboxError('value', `${who}: nTopics must be a positive integer`)
+  if (!(Number.isInteger(K) && K >= 1)) throw new MdmlError('value', `${who}: nTopics must be a positive integer`)
   const alpha = h.alpha ?? 1 / K
   const eta = h.eta ?? 1 / K
   const tok = tokensOf(data.x, who)
@@ -372,7 +372,7 @@ export class LatentDirichletAllocation extends ExplainedEstimatorClass<LdaHyper,
  *
  * @param corpus - Token ids per document and the vocabulary.
  * @returns `{ x, featureNames }`.
- * @throws WhiteboxError `value` when the corpus has no tokens.
+ * @throws MdmlError `value` when the corpus has no tokens.
  */
 export function documentTermCounts(corpus: {
   readonly tokens?: readonly (readonly number[])[]
@@ -381,7 +381,7 @@ export function documentTermCounts(corpus: {
   const tokens = corpus.tokens ?? []
   let V = corpus.vocabulary?.length ?? 0
   for (const doc of tokens) for (const w of doc) V = Math.max(V, w + 1)
-  if (tokens.length === 0 || V === 0) throw new WhiteboxError('value', 'documentTermCounts: the corpus has no tokens')
+  if (tokens.length === 0 || V === 0) throw new MdmlError('value', 'documentTermCounts: the corpus has no tokens')
   const counts = new Float64Array(tokens.length * V)
   for (const [d, doc] of tokens.entries()) for (const w of doc) counts[d * V + w] = (counts[d * V + w] ?? 0) + 1
   const names = Array.from({ length: V }, (_, w) => corpus.vocabulary?.[w] ?? `w${w}`)

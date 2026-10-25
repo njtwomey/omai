@@ -5,7 +5,7 @@
  * over `t` steps.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import { spectralEmbedding as graphSpectralEmbedding } from '../../lib/graph/index.ts'
 import { pairwiseKernels } from '../../lib/kernels/index.ts'
@@ -59,7 +59,7 @@ export function spectralEmbedding(
         // sklearn's laplacian ignores self-loops.
         const off = a.map((r, i) => r.map((v, j) => (i === j ? 0 : v)))
         const degree = off.map((r) => Math.sqrt(r.reduce((s, v) => s + v, 0)))
-        if (degree.some((v) => v === 0)) throw new WhiteboxError('value', 'spectralEmbedding: a row has no neighbours')
+        if (degree.some((v) => v === 0)) throw new MdmlError('value', 'spectralEmbedding: a row has no neighbours')
         const u = toArray(graphSpectralEmbedding(off, k, { dropFirst: true })) as number[][]
         const embedding = u.map((r, i) => r.map((v) => v / (degree[i] ?? 1)))
         const graph = off.flatMap((r, i) =>

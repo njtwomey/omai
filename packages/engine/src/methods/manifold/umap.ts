@@ -5,7 +5,7 @@
  * run up for live stepping.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import { spectralEmbedding as graphSpectralEmbedding } from '../../lib/graph/index.ts'
 import {
@@ -59,8 +59,7 @@ export function fuzzySimplicialSet(
   k: number,
 ): { readonly weights: number[][]; readonly sigmas: number[]; readonly rhos: number[] } {
   const n = matrixView(x, 'fuzzySimplicialSet').n
-  if (!(Number.isInteger(k) && k >= 2 && k <= n))
-    throw new WhiteboxError('value', `umap: nNeighbors must be in 2..${n}`)
+  if (!(Number.isInteger(k) && k >= 2 && k <= n)) throw new MdmlError('value', `umap: nNeighbors must be in 2..${n}`)
   const { edges } = neighbourEdges(x, k - 1)
   const dist: number[][] = Array.from({ length: n }, () => [])
   const nbr: number[][] = Array.from({ length: n }, () => [])

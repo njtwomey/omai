@@ -1,7 +1,6 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import type { Algorithm } from 'whitebox-engine/trace'
-import { cartesian, lines, points } from 'whitebox-render/charts'
-import { figure } from 'whitebox-render/figure'
+import type { Algorithm } from 'mdml-engine/trace'
+import { cartesian, lines, points } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
 import {
   Chart,
   ControlPanel,
@@ -11,7 +10,8 @@ import {
   type Point2,
   useColourMode,
   useLiveRun,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

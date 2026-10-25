@@ -3,8 +3,8 @@
  * features that act as proxies for the group, and how much a fitted model amplifies the gap.
  */
 
-import { dataBiasAudit } from 'whitebox-engine/methods/fairness'
-import { dict } from 'whitebox-engine/space'
+import { dataBiasAudit } from 'mdml-engine/methods/fairness'
+import { dict } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { awareParam, fairnessDataOf, fitClassifier } from './_shared.ts'
 

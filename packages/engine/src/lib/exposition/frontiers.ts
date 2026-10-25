@@ -4,7 +4,7 @@
  * front, and the point a selection rule chose; views draw the points, the fronts as steps and the choice.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 
 /** One family of candidates: their violations, accuracies, labels and the indices of its front. */
@@ -38,11 +38,11 @@ export interface ParetoFront {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws WhiteboxError `shape` when a family's columns differ in length; `value` when a front index or the chosen
+ * @throws MdmlError `shape` when a family's columns differ in length; `value` when a front index or the chosen
  *   candidate is not a candidate.
  * @example
  * ```ts
- * import { paretoFront } from 'whitebox-engine/exposition'
+ * import { paretoFront } from 'mdml-engine/exposition'
  * const r = paretoFront({ violationName: 'gap', families: [{ name: 'grid', violation: [0.1, 0.2], accuracy: [0.7, 0.8], front: [0, 1] }] })
  * r.families[0]?.front // => [0, 1]
  * ```
@@ -54,13 +54,13 @@ export function paretoFront(record: Omit<ParetoFront, 'kind'>): ParetoFront {
     if (fam.labels !== undefined) sameLength('paretoFront', `families[${f}].labels`, fam.labels.length, n)
     for (const i of fam.front)
       if (!(Number.isInteger(i) && i >= 0 && i < n))
-        throw new WhiteboxError('value', `paretoFront: families[${f}].front holds ${i}, not a candidate`)
+        throw new MdmlError('value', `paretoFront: families[${f}].front holds ${i}, not a candidate`)
   }
   const c = record.chosen
   if (c !== undefined) {
     const fam = record.families[c.family]
     if (fam === undefined || !(c.index >= 0 && c.index < fam.violation.length))
-      throw new WhiteboxError('value', 'paretoFront: the chosen candidate is not a candidate')
+      throw new MdmlError('value', 'paretoFront: the chosen candidate is not a candidate')
   }
   return { kind: 'paretoFront', ...record }
 }

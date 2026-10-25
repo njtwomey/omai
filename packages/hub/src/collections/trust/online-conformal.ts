@@ -3,9 +3,9 @@
  * whose noise drifts, on one-dimensional regression curves.
  */
 
-import { kNeighborsRegressor } from 'whitebox-engine/methods/neighbours'
-import { onlineConformal as online } from 'whitebox-engine/methods/trust'
-import { dict, int, real } from 'whitebox-engine/space'
+import { kNeighborsRegressor } from 'mdml-engine/methods/neighbours'
+import { onlineConformal as online } from 'mdml-engine/methods/trust'
+import { dict, int, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 

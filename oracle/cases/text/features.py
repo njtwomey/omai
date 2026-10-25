@@ -7,9 +7,9 @@ from typing import Any, cast
 
 import numpy as np
 import numpy.typing as npt
+from mdml_oracle.fixture import Case, case
 from rank_bm25 import BM25Okapi, BM25Plus
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer, TfidfVectorizer
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scikit-learn": version("scikit-learn"), "rank-bm25": version("rank-bm25")}
 
@@ -57,7 +57,7 @@ CAMEL = {
 
 
 def camel(cfg: dict[str, Any]) -> dict[str, Any]:
-    """scikit-learn option names to whitebox-js option names (tuples to lists)."""
+    """scikit-learn option names to mdml-js option names (tuples to lists)."""
     return {CAMEL[k]: (list(v) if isinstance(v, tuple) else v) for k, v in cfg.items()}
 
 

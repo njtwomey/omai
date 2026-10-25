@@ -1,11 +1,10 @@
-import { type ReactNode, useMemo, useRef, useState } from 'react'
-import { iris } from 'whitebox-engine/datasets'
-import { standardScaler } from 'whitebox-engine/learn/preprocessing'
-import { tsneSession, umapSession } from 'whitebox-engine/methods/manifold'
-import { key } from 'whitebox-engine/random'
-import type { Algorithm } from 'whitebox-engine/trace'
-import { lines, type Panel, points } from 'whitebox-render/charts'
-import { figure, gridSpec } from 'whitebox-render/figure'
+import { iris } from 'mdml-engine/datasets'
+import { standardScaler } from 'mdml-engine/learn/preprocessing'
+import { tsneSession, umapSession } from 'mdml-engine/methods/manifold'
+import { key } from 'mdml-engine/random'
+import type { Algorithm } from 'mdml-engine/trace'
+import { lines, type Panel, points } from 'mdml-render/charts'
+import { figure, gridSpec } from 'mdml-render/figure'
 import {
   Choice,
   ControlPanel,
@@ -15,7 +14,8 @@ import {
   Player,
   useColourMode,
   useLiveRun,
-} from 'whitebox-render/react'
+} from 'mdml-render/react'
+import { type ReactNode, useMemo, useRef, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
 export const recipe: Recipe = {

@@ -1,4 +1,4 @@
-import { catalogue, type HubEntry } from 'whitebox-hub'
+import { catalogue, type HubEntry } from 'mdml-hub'
 import type { PageRef } from '../shell/PrevNext.tsx'
 import type { TocNode } from '../shell/toc.ts'
 

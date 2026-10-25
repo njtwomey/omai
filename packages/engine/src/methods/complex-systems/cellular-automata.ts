@@ -4,7 +4,7 @@
  * by generation from classic starting patterns.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, key as makeKey, uniform } from '../../lib/random/index.ts'
 
@@ -27,14 +27,14 @@ export interface ElementaryOptions {
  * @param rule - The rule number, 0 to 255 (30 chaotic, 90 Sierpinski, 110 universal, 184 traffic).
  * @param options - Width, steps, start and key.
  * @returns The rows, with a `boardSteps` record.
- * @throws WhiteboxError `value` for a rule outside 0 to 255.
+ * @throws MdmlError `value` for a rule outside 0 to 255.
  */
 export function elementaryAutomaton(
   rule: number,
   options: ElementaryOptions = {},
 ): Explained<{ readonly rows: readonly (readonly number[])[] }> {
   if (!(Number.isInteger(rule) && rule >= 0 && rule <= 255))
-    throw new WhiteboxError('value', `elementaryAutomaton: rule ${rule} is not 0 to 255`)
+    throw new MdmlError('value', `elementaryAutomaton: rule ${rule} is not 0 to 255`)
   const width = options.width ?? 63
   const steps = options.steps ?? 40
   const first =
@@ -139,7 +139,7 @@ export function gameOfLife(
     const r0 = pattern === 'gosper gun' ? 1 : Math.floor((rows - shape.length) / 2)
     const c0 = pattern === 'gosper gun' ? 1 : Math.floor((cols - (shape[0]?.length ?? 0)) / 2)
     if (shape.length > rows || (shape[0]?.length ?? 0) > cols)
-      throw new WhiteboxError('value', `gameOfLife: the ${pattern} does not fit a ${rows} by ${cols} board`)
+      throw new MdmlError('value', `gameOfLife: the ${pattern} does not fit a ${rows} by ${cols} board`)
     shape.forEach((line, r) => {
       for (const [c, ch] of [...line].entries()) if (ch === '#') board[(r0 + r) * cols + c0 + c] = 1
     })

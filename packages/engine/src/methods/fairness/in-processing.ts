@@ -1,6 +1,6 @@
 /**
  * Fair classification during training on a dataset with a protected attribute, wrapping the reductions of
- * `whitebox-engine/fairness`: exponentiated gradient, which yields a randomised classifier meeting a demographic-parity
+ * `mdml-engine/fairness`: exponentiated gradient, which yields a randomised classifier meeting a demographic-parity
  * or equalised-odds constraint, and a grid search over multipliers, each audited before and after (as in fairlearn).
  */
 
@@ -53,7 +53,7 @@ export interface ExponentiatedGradient extends ExponentiatedGradientReduction {
 }
 
 /**
- * Fair classification by exponentiated gradient (`exponentiatedGradientReduction` of `whitebox-engine/fairness`) on a
+ * Fair classification by exponentiated gradient (`exponentiatedGradientReduction` of `mdml-engine/fairness`) on a
  * dataset with a protected attribute, logistic regression by default. Exposition: the trade-off moving over the
  * iterations (error and violation of the randomised classifier and of each best response, the price on the
  * violation), the path in (violation, error) space from the unconstrained classifier, and the group reports before
@@ -136,7 +136,7 @@ export interface GridSearchReductionOptions {
 }
 
 /**
- * Fair classification by a grid of multipliers (`gridReduction` of `whitebox-engine/fairness`, fairlearn's
+ * Fair classification by a grid of multipliers (`gridReduction` of `mdml-engine/fairness`, fairlearn's
  * `GridSearch`) on a dataset with a protected attribute. Exposition: a `curves` record of error against violation over
  * the grid, with fairlearn's choice (the least half error plus half violation) marked.
  *
@@ -184,7 +184,7 @@ export interface FairLinearFit {
 }
 
 /**
- * The prejudice remover (`prejudiceRemover` of `whitebox-engine/fairness`) on a dataset: one logistic regression per
+ * The prejudice remover (`prejudiceRemover` of `mdml-engine/fairness`) on a dataset: one logistic regression per
  * group, penalised by eta times the mutual information between decision and group. Exposition: the group reports
  * with eta 0 and at the eta asked.
  *
@@ -213,7 +213,7 @@ export function prejudiceRemoverFit(
 }
 
 /**
- * Adversarial debiasing (`adversarialDebiasing` of `whitebox-engine/fairness`) on a dataset: a logistic predictor
+ * Adversarial debiasing (`adversarialDebiasing` of `mdml-engine/fairness`) on a dataset: a logistic predictor
  * trained against an adversary recovering the group from its output. Exposition: the group reports of the predictor
  * without the adversary (weight 0) and with it, and a `curves` record of both losses over training.
  *
@@ -249,7 +249,7 @@ export function adversarialDebiasingFit(
 }
 
 /**
- * Fairness-constrained logistic regression (`fairConstrainedLogistic` of `whitebox-engine/fairness`, Zafar et al.) on a
+ * Fairness-constrained logistic regression (`fairConstrainedLogistic` of `mdml-engine/fairness`, Zafar et al.) on a
  * dataset. Exposition: the group reports of the unconstrained and the constrained fit.
  *
  * @param data - Labelled data holding the protected attribute.
@@ -274,7 +274,7 @@ export function fairConstrainedFit(
 }
 
 /**
- * The meta fair classifier for the statistical rate (`metaFairClassifier` of `whitebox-engine/fairness`) on a
+ * The meta fair classifier for the statistical rate (`metaFairClassifier` of `mdml-engine/fairness`) on a
  * dataset: a logistic regression's posteriors thresholded per group to the most accurate decisions whose selection-rate
  * ratio is at least tau. Exposition: the group reports at 0.5 and at the per-group thresholds.
  *
@@ -302,7 +302,7 @@ export function metaFairFit(
 }
 
 /**
- * GerryFair (`gerryFairClassifier` of `whitebox-engine/fairness`) on a dataset, the protected attribute's indicators as
+ * GerryFair (`gerryFairClassifier` of `mdml-engine/fairness`) on a dataset, the protected attribute's indicators as
  * the subgroup features. Exposition: the group reports of a logistic regression and of GerryFair's average classifier,
  * and a `curves` record of the error and the worst subgroup violation over the rounds.
  *

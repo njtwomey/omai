@@ -50,7 +50,7 @@ function recordValue(run: RunHandle, name: string, role: TensorRole, value: unkn
  * @concept tracing
  * @example
  * ```ts
- * import { instrument, metricSeries, recorder } from 'whitebox-engine/trace'
+ * import { instrument, metricSeries, recorder } from 'mdml-engine/trace'
  * const rec = recorder()
  * const hyp = instrument((a: number, b: number) => Math.hypot(a, b), { name: 'hypot', tracer: rec })
  * hyp(3, 4) // => 5
@@ -113,7 +113,7 @@ export function instrument<A extends readonly unknown[], R>(
  * @concept tracing
  * @example
  * ```ts
- * import { traceCall, recorder } from 'whitebox-engine/trace'
+ * import { traceCall, recorder } from 'mdml-engine/trace'
  * const rec = recorder()
  * traceCall('sum', (run) => { run.metric(0, 'partial', 1); return 1 }, { tracer: rec }) // => 1
  * rec.events.length // => 3

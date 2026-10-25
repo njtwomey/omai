@@ -3,8 +3,8 @@
  * inferred from the rolls alone.
  */
 
-import { casinoStudy } from 'whitebox-engine/methods/models'
-import { bool, dict, int } from 'whitebox-engine/space'
+import { casinoStudy } from 'mdml-engine/methods/models'
+import { bool, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 
 /** The occasionally dishonest casino: which die was it? An HMM decodes the dice from the rolls alone. */

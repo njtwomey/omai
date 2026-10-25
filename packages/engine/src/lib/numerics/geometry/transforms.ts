@@ -4,7 +4,7 @@
  * fundamental matrix by the eight-point algorithm, and the Procrustes and Kabsch alignments of point sets.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -32,7 +32,7 @@ type Mat3 = readonly number[]
 
 const qnorm = (q: Quat): Quat => {
   const n = Math.hypot(q[0], q[1], q[2], q[3])
-  if (n === 0) throw new WhiteboxError('value', 'rotation: zero quaternion')
+  if (n === 0) throw new MdmlError('value', 'rotation: zero quaternion')
   return [q[0] / n, q[1] / n, q[2] / n, q[3] / n]
 }
 
@@ -121,12 +121,12 @@ export interface Rotation {
  * @concept rotations
  * @example
  * ```ts
- * import { rotationFromQuat } from 'whitebox-engine/numerics/geometry'
+ * import { rotationFromQuat } from 'mdml-engine/numerics/geometry'
  * rotationFromQuat([0, 0, Math.SQRT1_2, Math.SQRT1_2]).asEuler('xyz', true).map((v) => Math.round(v * 1e10) / 1e10) // => [0, 0, 90]
  * ```
  */
 export function rotationFromQuat(q: readonly number[]): Rotation {
-  if (q.length !== 4) throw new WhiteboxError('shape', 'rotationFromQuat: a quaternion has four entries')
+  if (q.length !== 4) throw new MdmlError('shape', 'rotationFromQuat: a quaternion has four entries')
   const quat = qnorm([q[0] ?? 0, q[1] ?? 0, q[2] ?? 0, q[3] ?? 0])
   const matrix = quatToMatrix(quat)
   const self: Rotation = {
@@ -164,11 +164,11 @@ export function rotationFromQuat(q: readonly number[]): Rotation {
 }
 
 function parseSeq(seq: string): { axes: number[]; extrinsic: boolean } {
-  if (!/^([xyz]{3}|[XYZ]{3})$/.test(seq)) throw new WhiteboxError('value', `rotation: bad Euler sequence ${seq}`)
+  if (!/^([xyz]{3}|[XYZ]{3})$/.test(seq)) throw new MdmlError('value', `rotation: bad Euler sequence ${seq}`)
   const lower = seq.toLowerCase()
   const axes = [...lower].map((c) => AXES[c] ?? 0)
   if (axes[0] === axes[1] || axes[1] === axes[2])
-    throw new WhiteboxError('value', 'rotation: consecutive Euler axes must differ')
+    throw new MdmlError('value', 'rotation: consecutive Euler axes must differ')
   return { axes, extrinsic: seq === lower }
 }
 
@@ -231,14 +231,14 @@ function eulerFromQuat(quat: Quat, seq: string, degrees: boolean): [number, numb
  * @returns The rotation.
  * @example
  * ```ts
- * import { rotationFromMatrix } from 'whitebox-engine/numerics/geometry'
+ * import { rotationFromMatrix } from 'mdml-engine/numerics/geometry'
  * rotationFromMatrix([[0, -1, 0], [1, 0, 0], [0, 0, 1]]).magnitude() // => 1.5707963267948966
  * ```
  */
 export function rotationFromMatrix(m: TensorLike): Rotation {
   const t = concreteOrThrow(promoteFloat(m)[0] as Tensor, 'rotationFromMatrix')
   if (t.shape.length !== 2 || t.shape[0] !== 3 || t.shape[1] !== 3)
-    throw new WhiteboxError('shape', 'rotationFromMatrix: expected a 3 x 3 matrix')
+    throw new MdmlError('shape', 'rotationFromMatrix: expected a 3 x 3 matrix')
   return rotationFromQuat([...matrixToQuat(toFlat(t))])
 }
 
@@ -250,7 +250,7 @@ export function rotationFromMatrix(m: TensorLike): Rotation {
  * @returns The rotation.
  * @example
  * ```ts
- * import { rotationFromRotvec } from 'whitebox-engine/numerics/geometry'
+ * import { rotationFromRotvec } from 'mdml-engine/numerics/geometry'
  * rotationFromRotvec([0, 0, Math.PI]).asQuat().map((v) => Math.round(v * 1e12) / 1e12) // => [0, 0, 1, 0]
  * ```
  */
@@ -273,14 +273,14 @@ export function rotationFromRotvec(v: readonly number[], degrees = false): Rotat
  * @returns The rotation.
  * @example
  * ```ts
- * import { rotationFromEuler } from 'whitebox-engine/numerics/geometry'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { rotationFromEuler } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(rotationFromEuler('z', [90], true).apply([1, 0, 0])).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1, 0]
  * ```
  */
 export function rotationFromEuler(seq: string, angles: readonly number[], degrees = false): Rotation {
   if (!/^([xyz]{1,3}|[XYZ]{1,3})$/.test(seq) || angles.length !== seq.length) {
-    throw new WhiteboxError('value', `rotationFromEuler: ${seq} needs one angle per axis`)
+    throw new MdmlError('value', `rotationFromEuler: ${seq} needs one angle per axis`)
   }
   const k = degrees ? Math.PI / 180 : 1
   const extrinsic = seq === seq.toLowerCase()
@@ -302,7 +302,7 @@ export function rotationFromEuler(seq: string, angles: readonly number[], degree
  * @returns The interpolated rotation.
  * @example
  * ```ts
- * import { rotationFromEuler, slerp } from 'whitebox-engine/numerics/geometry'
+ * import { rotationFromEuler, slerp } from 'mdml-engine/numerics/geometry'
  * Math.round(slerp(rotationFromEuler('z', [0]), rotationFromEuler('z', [90], true), 0.5).asEuler('xyz', true)[2]) // => 45
  * ```
  */
@@ -333,16 +333,15 @@ export interface AffineMap {
  * @returns The map.
  * @example
  * ```ts
- * import { affine } from 'whitebox-engine/numerics/geometry'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { affine } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(affine([[2, 0], [0, 1]], [1, 1]).apply([[1, 1]])) // => [[3, 2]]
  * ```
  */
 export function affine(matrix: TensorLike, translation?: TensorLike): AffineMap {
   const [m] = promoteFloat(matrix) as [Value]
   const d = m.shape[0] ?? 0
-  if (m.shape.length !== 2 || m.shape[1] !== d)
-    throw new WhiteboxError('shape', 'affine: the linear part must be square')
+  if (m.shape.length !== 2 || m.shape[1] !== d) throw new MdmlError('shape', 'affine: the linear part must be square')
   const [t] = promoteFloat(translation ?? new Array<number>(d).fill(0)) as [Value]
   const self: AffineMap = {
     matrix: m,
@@ -387,7 +386,7 @@ export interface NormalisedPoints {
  * @returns The normalised points and the transform.
  * @example
  * ```ts
- * import { normalisePoints } from 'whitebox-engine/numerics/geometry'
+ * import { normalisePoints } from 'mdml-engine/numerics/geometry'
  * normalisePoints([[0, 0], [2, 0], [0, 2], [2, 2]]).transform[0][0] // => 1
  * ```
  */
@@ -403,7 +402,7 @@ export function normalisePoints(points: TensorLike): NormalisedPoints {
   }
   let meanSquare = 0
   for (let i = 0; i < n; i++) meanSquare += (((f[2 * i] ?? 0) - cx) ** 2 + ((f[2 * i + 1] ?? 0) - cy) ** 2) / n
-  if (meanSquare === 0) throw new WhiteboxError('value', 'normalisePoints: all points coincide')
+  if (meanSquare === 0) throw new MdmlError('value', 'normalisePoints: all points coincide')
   const s = Math.SQRT2 / Math.sqrt(meanSquare)
   const out = new Float64Array(2 * n)
   for (let i = 0; i < n; i++) {
@@ -455,7 +454,7 @@ function nullVector(rows: readonly number[][]): number[] {
  * @concept homography
  * @example
  * ```ts
- * import { homography } from 'whitebox-engine/numerics/geometry'
+ * import { homography } from 'mdml-engine/numerics/geometry'
  * homography([[0, 0], [1, 0], [1, 1], [0, 1]], [[0, 0], [2, 0], [2, 2], [0, 2]]).map((r) => r.map((v) => Math.round(v * 1e10) / 1e10)) // => [[2, 0, 0], [0, 2, 0], [0, 0, 1]]
  * ```
  */
@@ -464,7 +463,7 @@ export function homography(src: TensorLike, dst: TensorLike): number[][] {
   const b = normalisePoints(dst)
   const n = a.points.shape[0] ?? 0
   if (n < 4 || b.points.shape[0] !== n)
-    throw new WhiteboxError('value', 'homography: at least four correspondences are needed')
+    throw new MdmlError('value', 'homography: at least four correspondences are needed')
   const p = toFlat(a.points)
   const q = toFlat(b.points)
   const rows: number[][] = []
@@ -490,8 +489,8 @@ export function homography(src: TensorLike, dst: TensorLike): number[][] {
  * @returns Mapped points `[n, 2]` (differentiable in the points).
  * @example
  * ```ts
- * import { applyHomography } from 'whitebox-engine/numerics/geometry'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { applyHomography } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(applyHomography([[1, 0, 0], [0, 1, 0], [0, 1, 1]], [[2, 1]])) // => [[1, 0.5]]
  * ```
  */
@@ -516,7 +515,7 @@ export function applyHomography(h: readonly (readonly number[])[], points: Tenso
  * @concept epipolar-geometry
  * @example
  * ```ts
- * import { fundamentalMatrix } from 'whitebox-engine/numerics/geometry'
+ * import { fundamentalMatrix } from 'mdml-engine/numerics/geometry'
  * const x1 = [[0, 0], [1, 0], [0, 1], [1, 1], [2, 1], [1, 2], [3, 1], [2, 3]]
  * fundamentalMatrix(x1, x1.map(([x, y]) => [x + 1, y])).length // => 3
  * ```
@@ -526,7 +525,7 @@ export function fundamentalMatrix(x1: TensorLike, x2: TensorLike): number[][] {
   const b = normalisePoints(x2)
   const n = a.points.shape[0] ?? 0
   if (n < 8 || b.points.shape[0] !== n)
-    throw new WhiteboxError('value', 'fundamentalMatrix: at least eight correspondences are needed')
+    throw new MdmlError('value', 'fundamentalMatrix: at least eight correspondences are needed')
   const p = toFlat(a.points)
   const q = toFlat(b.points)
   const rows: number[][] = []
@@ -565,8 +564,8 @@ export function fundamentalMatrix(x1: TensorLike, x2: TensorLike): number[][] {
  * @returns R and the scale.
  * @example
  * ```ts
- * import { orthogonalProcrustes } from 'whitebox-engine/numerics/geometry'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { orthogonalProcrustes } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
  * toArray(orthogonalProcrustes([[1, 0], [0, 1]], [[0, 1], [-1, 0]]).rotation).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[0, 1], [-1, 0]]
  * ```
  */
@@ -585,8 +584,8 @@ export function orthogonalProcrustes(a: TensorLike, b: TensorLike): { rotation: 
  * @returns The standardised first configuration, the fitted second, and the disparity.
  * @example
  * ```ts
- * import { procrustes } from 'whitebox-engine/numerics/geometry'
- * import { item } from 'whitebox-engine/tensor'
+ * import { procrustes } from 'mdml-engine/numerics/geometry'
+ * import { item } from 'mdml-engine/tensor'
  * // A rotated, scaled and shifted copy fits perfectly.
  * item(procrustes([[0, 0], [1, 0], [0, 2]], [[5, 5], [5, 7], [1, 5]]).disparity) < 1e-24 // => true
  * ```
@@ -594,7 +593,7 @@ export function orthogonalProcrustes(a: TensorLike, b: TensorLike): { rotation: 
 export function procrustes(data1: TensorLike, data2: TensorLike): { mtx1: Value; mtx2: Value; disparity: Value } {
   const [a0, b0] = promoteFloat(data1, data2) as [Value, Value]
   if (a0.shape.length !== 2 || a0.shape[0] !== b0.shape[0] || a0.shape[1] !== b0.shape[1])
-    throw new WhiteboxError('shape', 'procrustes: inputs must have the same shape')
+    throw new MdmlError('shape', 'procrustes: inputs must have the same shape')
   const centre = (x: Value): Value => sub(x, mean(x, 0, true))
   const unit = (x: Value): Value => div(x, sqrt(sum(mul(x, x))))
   const mtx1 = unit(centre(a0))
@@ -616,8 +615,8 @@ export function procrustes(data1: TensorLike, data2: TensorLike): { mtx1: Value;
  * @concept rigid-alignment
  * @example
  * ```ts
- * import { kabsch } from 'whitebox-engine/numerics/geometry'
- * import { item } from 'whitebox-engine/tensor'
+ * import { kabsch } from 'mdml-engine/numerics/geometry'
+ * import { item } from 'mdml-engine/tensor'
  * item(kabsch([[0, 0], [1, 0], [0, 1]], [[1, 1], [1, 2], [0, 1]]).rmsd) < 1e-12 // => true
  * ```
  */

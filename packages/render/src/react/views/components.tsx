@@ -3,8 +3,8 @@
  * scree with the cumulative share of variance, and the loadings as a matrix.
  */
 
+import type { ComponentsRecord } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
-import type { ComponentsRecord } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { type ComponentsViewOptions, componentsView } from '../../views/components.ts'
 import { RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'

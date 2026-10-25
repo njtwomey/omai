@@ -1,11 +1,11 @@
 """Deterministic graph families against NetworkX's generators, as sorted edge lists on relabelled nodes (grid nodes
-(i, j) become i * n + j and hypercube nodes their binary codes, matching whitebox-js). Random models draw from
-whitebox-js keys, so they are checked by statistical properties in the TypeScript tests instead."""
+(i, j) become i * n + j and hypercube nodes their binary codes, matching mdml-js). Random models draw from
+mdml-js keys, so they are checked by statistical properties in the TypeScript tests instead."""
 
 import networkx as nx
 import numpy as np
-from whitebox_oracle.fixture import Case, case
-from whitebox_oracle.graphs import NxGraph, edges_of, karate, relabelled
+from mdml_oracle.fixture import Case, case
+from mdml_oracle.graphs import NxGraph, edges_of, karate, relabelled
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__}
 

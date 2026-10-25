@@ -3,7 +3,7 @@
  * rules found by a bandit search), and global surrogate trees with their fidelity to the model.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import type { FitOptions } from '../learn/estimator.ts'
 import { columnOf, type MatrixView, matrixView, takeColumns, targetVector } from '../learn/validation.ts'
@@ -113,7 +113,7 @@ function forwardSelection(m: MatrixView, y: Float64Array, w: Float64Array, k: nu
  * @concept local-surrogates
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * const z = [[0, 0], [1, 0], [0, 1], [1, 1]]
  * const r = explain.limeFit(z, [0, 2, 1, 3], [0, 1, 1, Math.SQRT2], { alpha: 0, featureSelection: 'none' })
  * r.weights.map(([j, w]) => [j, Math.round(w * 1e9) / 1e9]) // => [[0, 2], [1, 1]]
@@ -183,8 +183,8 @@ export interface LimeOptions extends LimeFitOptions {
  * @returns The explanation (weights refer to standardised features).
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 3 * x.data[2 * i]))
  * const train = [[0, 0], [1, 5], [2, 1], [3, 7]]
  * explain.lime(linear, [1, 1], train, { nSamples: 200, nFeatures: 1 }).weights[0][0] // => 0
@@ -255,8 +255,8 @@ export interface LimeMaskedOptions extends LimeFitOptions {
  * @returns The explanation (weights per interpretable feature).
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * // Only the second unit matters.
  * const f = (z) => tensor(Array.from({ length: z.shape[0] }, (_, i) => 2 * z.data[3 * i + 1]))
  * explain.limeMasked(f, 3, { nSamples: 200, nFeatures: 1 }).weights[0][0] // => 1
@@ -268,7 +268,7 @@ export function limeMasked(
   options: LimeMaskedOptions = {},
 ): LimeExplanation {
   const d = nFeatures
-  if (!(Number.isInteger(d) && d >= 1)) throw new WhiteboxError('value', 'limeMasked: needs at least one feature')
+  if (!(Number.isInteger(d) && d >= 1)) throw new MdmlError('value', 'limeMasked: needs at least one feature')
   const ns = options.nSamples ?? 1000
   const key = options.key ?? keyFor({}, 'limeMasked')
   const data = new Float64Array(ns * d).fill(1)
@@ -358,8 +358,8 @@ function klBound(p: number, level: number, upper: boolean): number {
  * @returns The anchor.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const firstPositive = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[2 * i] > 0 ? 1 : 0)))
  * const train = Array.from({ length: 40 }, (_, i) => [((i * 7) % 20) - 10, (i * 3) % 5])
  * explain.anchors(firstPositive, [8, 1], train).predicates.map((p) => p.feature) // => [0]
@@ -559,8 +559,8 @@ export interface SurrogateTreeOptions {
  * @returns The tree as arrays (leaf values are means, or for classification the majority class).
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { toFlat } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const t = explain.surrogateTree([[0], [1], [2], [3]], [0, 0, 5, 5], { maxDepth: 1 })
  * t.threshold[0] // => 1.5
  * toFlat(explain.treePredict(t, [[0.5], [2.5]])) // => [0, 5]
@@ -666,7 +666,7 @@ export function surrogateTree(x: TensorLike, targets: TensorLike, options: Surro
  * @returns The fidelity (1 is perfect).
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
+ * import * as explain from 'mdml-engine/explain'
  * explain.fidelity([1, 2, 3], [1, 2, 3]) // => 1
  * explain.fidelity([0, 1, 1, 0], [0, 1, 0, 0], 'classification') // => 0.75
  * ```
@@ -700,8 +700,8 @@ export function fidelity(
  * @returns The tree and its fidelity on the data.
  * @example
  * ```ts
- * import * as explain from 'whitebox-engine/explain'
- * import { tensor } from 'whitebox-engine/tensor'
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
  * const step = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[i] > 1 ? 1 : 0)))
  * explain.globalSurrogate(step, [[0], [1], [2], [3]], { maxDepth: 1 }).fidelity // => 1
  * ```

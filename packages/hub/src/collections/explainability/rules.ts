@@ -3,12 +3,12 @@
  * logistic model's points scorecard).
  */
 
-import { WhiteboxError } from 'whitebox-engine/base'
-import { matrixView } from 'whitebox-engine/learn'
-import { randomForestClassifier } from 'whitebox-engine/methods/ensemble'
-import { anchorExplanation, logisticScorecard, ruleFitExplanation } from 'whitebox-engine/methods/explain'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
-import { choice, dict, int } from 'whitebox-engine/space'
+import { MdmlError } from 'mdml-engine/base'
+import { matrixView } from 'mdml-engine/learn'
+import { randomForestClassifier } from 'mdml-engine/methods/ensemble'
+import { anchorExplanation, logisticScorecard, ruleFitExplanation } from 'mdml-engine/methods/explain'
+import { logisticRegression } from 'mdml-engine/methods/linear'
+import { choice, dict, int } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
 
@@ -31,7 +31,7 @@ export const rules: HubEntry = defineEntry({
   run: ({ data, params, key }) => {
     const learn = learnDataOf(data)
     const n = matrixView(learn.x, 'rules').n
-    if (n === 0) throw new WhiteboxError('value', 'rules: no rows')
+    if (n === 0) throw new MdmlError('value', 'rules: no rows')
     if (params['kind'] === 'RuleFit') return ruleFitExplanation(learn, { nTrees: Number(params['trees']), key })
     if (params['kind'] === 'scorecard')
       return logisticScorecard(logisticRegression({ C: 1 }).fit(learn), learn, { bins: 3 })

@@ -5,7 +5,7 @@
  * of draws.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   add,
   asTensor,
@@ -38,7 +38,7 @@ function fill(shape: Shape, draw: (i: number) => number): Tensor<'float64'> {
  * @concept counter-based-rng
  * @example
  * ```ts
- * import { key, uniform } from 'whitebox-engine/random'
+ * import { key, uniform } from 'mdml-engine/random'
  * uniform(key(0), [1000]).data.every((u) => u >= 0 && u < 1) // => true
  * ```
  */
@@ -64,7 +64,7 @@ export function uniform(
  * @concept counter-based-rng
  * @example
  * ```ts
- * import { foldIn, key, uniform, uniformStream } from 'whitebox-engine/random'
+ * import { foldIn, key, uniform, uniformStream } from 'mdml-engine/random'
  * const next = uniformStream(key(0), 4)
  * const draws = [next(), next(), next(), next(), next()]
  * draws[4] === uniform(foldIn(key(0), 1), [4]).data[0] // => true
@@ -73,7 +73,7 @@ export function uniform(
  */
 export function uniformStream(k: Key, block = 256): () => number {
   if (!(Number.isInteger(block) && block >= 1))
-    throw new WhiteboxError('value', 'uniformStream: block must be a positive integer')
+    throw new MdmlError('value', 'uniformStream: block must be a positive integer')
   let b = 0
   let buf = unitDoubles(foldIn(k, b), block)
   let i = 0
@@ -97,7 +97,7 @@ export function uniformStream(k: Key, block = 256): () => number {
  * @concept normal-distribution
  * @example
  * ```ts
- * import { key, normal } from 'whitebox-engine/random'
+ * import { key, normal } from 'mdml-engine/random'
  * const x = normal(key(1), [20000])
  * Math.abs(x.data.reduce((a, b) => a + b, 0) / 20000) < 0.03 // => true
  * ```
@@ -132,17 +132,17 @@ export function normal(
  * @param lower - Lower bound (may be `-Infinity`).
  * @param upper - Upper bound (may be `Infinity`).
  * @returns A float64 tensor of standard truncated normals.
- * @throws WhiteboxError with code `value` unless `upper > lower`.
+ * @throws MdmlError with code `value` unless `upper > lower`.
  * @reference Robert (1995), Simulation of truncated normal variables, Statistics and Computing 5.
  * @example
  * ```ts
- * import { key, truncatedNormal } from 'whitebox-engine/random'
+ * import { key, truncatedNormal } from 'mdml-engine/random'
  * truncatedNormal(key(0), [100], 1, 2).data.every((v) => v >= 1 && v <= 2) // => true
  * truncatedNormal(key(0), [100], 8, Infinity).data.every((v) => v >= 8) // => true
  * ```
  */
 export function truncatedNormal(k: Key, shape: Shape, lower: number, upper: number): Tensor<'float64'> {
-  if (!(upper > lower)) throw new WhiteboxError('value', 'truncatedNormal: need upper > lower')
+  if (!(upper > lower)) throw new MdmlError('value', 'truncatedNormal: need upper > lower')
   const next = uniformStream(k)
   return fill(shape, () => truncatedOne(lower, upper, next))
 }
@@ -156,7 +156,7 @@ export function truncatedNormal(k: Key, shape: Shape, lower: number, upper: numb
  * @returns A float64 tensor.
  * @example
  * ```ts
- * import { key, exponential } from 'whitebox-engine/random'
+ * import { key, exponential } from 'mdml-engine/random'
  * exponential(key(0), [5]).data.every((v) => v >= 0) // => true
  * ```
  */
@@ -175,7 +175,7 @@ export function exponential(k: Key, shape: Shape, rate = 1): Tensor<'float64'> {
  * @returns A float64 tensor.
  * @example
  * ```ts
- * import { key, laplace } from 'whitebox-engine/random'
+ * import { key, laplace } from 'mdml-engine/random'
  * laplace(key(0), [3]).shape // => [3]
  * ```
  */
@@ -198,7 +198,7 @@ export function laplace(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float
  * @returns A float64 tensor.
  * @example
  * ```ts
- * import { key, logistic } from 'whitebox-engine/random'
+ * import { key, logistic } from 'mdml-engine/random'
  * logistic(key(0), [3]).shape // => [3]
  * ```
  */
@@ -220,7 +220,7 @@ export function logistic(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'floa
  * @returns A float64 tensor.
  * @example
  * ```ts
- * import { key, gumbel } from 'whitebox-engine/random'
+ * import { key, gumbel } from 'mdml-engine/random'
  * gumbel(key(0), [3]).shape // => [3]
  * ```
  */
@@ -239,7 +239,7 @@ export function gumbel(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float6
  * @returns A float64 tensor.
  * @example
  * ```ts
- * import { key, cauchy } from 'whitebox-engine/random'
+ * import { key, cauchy } from 'mdml-engine/random'
  * cauchy(key(0), [3]).shape // => [3]
  * ```
  */
@@ -255,15 +255,15 @@ export function cauchy(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float6
  * @param shape - Output shape.
  * @param alpha - The shape parameter (positive).
  * @returns A float64 tensor.
- * @throws WhiteboxError with code `value` for non-positive `alpha`.
+ * @throws MdmlError with code `value` for non-positive `alpha`.
  * @example
  * ```ts
- * import { key, gamma } from 'whitebox-engine/random'
+ * import { key, gamma } from 'mdml-engine/random'
  * gamma(key(0), [4], 2).data.every((v) => v > 0) // => true
  * ```
  */
 export function gamma(k: Key, shape: Shape, alpha: number): Tensor<'float64'> {
-  if (!(alpha > 0)) throw new WhiteboxError('value', `gamma: alpha must be positive, got ${alpha}`)
+  if (!(alpha > 0)) throw new MdmlError('value', `gamma: alpha must be positive, got ${alpha}`)
   const next = uniformStream(k)
   return fill(shape, () => gammaOne(alpha, next))
 }
@@ -275,10 +275,10 @@ export function gamma(k: Key, shape: Shape, alpha: number): Tensor<'float64'> {
  * @param k - The random key.
  * @param alphas - Shape parameters (positive).
  * @returns The variates.
- * @throws WhiteboxError with code `value` for a non-positive shape.
+ * @throws MdmlError with code `value` for a non-positive shape.
  * @example
  * ```ts
- * import { key, gammaVariates } from 'whitebox-engine/random'
+ * import { key, gammaVariates } from 'mdml-engine/random'
  * gammaVariates(key(0), [0.5, 2, 30]).every((v) => v > 0) // => true
  * ```
  */
@@ -286,7 +286,7 @@ export function gammaVariates(k: Key, alphas: ArrayLike<number>): Float64Array {
   const out = new Float64Array(alphas.length)
   for (let i = 0; i < alphas.length; i++) {
     const alpha = alphas[i] ?? Number.NaN
-    if (!(alpha > 0)) throw new WhiteboxError('value', `gammaVariates: alpha must be positive, got ${alpha}`)
+    if (!(alpha > 0)) throw new MdmlError('value', `gammaVariates: alpha must be positive, got ${alpha}`)
     out[i] = gammaOne(alpha, uniformStream(foldIn(k, i)))
   }
   return out
@@ -301,15 +301,15 @@ export function gammaVariates(k: Key, alphas: ArrayLike<number>): Float64Array {
  * @param a - First shape parameter (positive).
  * @param b - Second shape parameter (positive).
  * @returns A float64 tensor in [0, 1].
- * @throws WhiteboxError with code `value` for non-positive shapes.
+ * @throws MdmlError with code `value` for non-positive shapes.
  * @example
  * ```ts
- * import { key, beta } from 'whitebox-engine/random'
+ * import { key, beta } from 'mdml-engine/random'
  * beta(key(0), [4], 2, 3).data.every((v) => v >= 0 && v <= 1) // => true
  * ```
  */
 export function beta(k: Key, shape: Shape, a: number, b: number): Tensor<'float64'> {
-  if (!(a > 0 && b > 0)) throw new WhiteboxError('value', `beta: shapes must be positive, got ${a} and ${b}`)
+  if (!(a > 0 && b > 0)) throw new MdmlError('value', `beta: shapes must be positive, got ${a} and ${b}`)
   const next = uniformStream(k)
   return fill(shape, () => {
     const lx = logGammaOne(a, next)
@@ -327,7 +327,7 @@ export function beta(k: Key, shape: Shape, a: number, b: number): Tensor<'float6
  * @returns A float64 tensor.
  * @example
  * ```ts
- * import { key, chisquare } from 'whitebox-engine/random'
+ * import { key, chisquare } from 'mdml-engine/random'
  * chisquare(key(0), [3], 2).shape // => [3]
  * ```
  */
@@ -345,7 +345,7 @@ export function chisquare(k: Key, shape: Shape, df: number): Tensor<'float64'> {
  * @returns A float64 tensor.
  * @example
  * ```ts
- * import { key, studentT } from 'whitebox-engine/random'
+ * import { key, studentT } from 'mdml-engine/random'
  * studentT(key(0), [3], 5).shape // => [3]
  * ```
  */
@@ -364,15 +364,15 @@ export function studentT(k: Key, shape: Shape, df: number): Tensor<'float64'> {
  * @param alpha - Concentrations (length K, positive).
  * @param n - Number of samples.
  * @returns A float64 tensor of shape `[n, K]`.
- * @throws WhiteboxError with code `value` for a non-positive concentration.
+ * @throws MdmlError with code `value` for a non-positive concentration.
  * @example
  * ```ts
- * import { key, dirichlet } from 'whitebox-engine/random'
+ * import { key, dirichlet } from 'mdml-engine/random'
  * Math.abs(Array.from(dirichlet(key(0), [1, 2, 3], 1).data).reduce((a, b) => a + b) - 1) < 1e-12 // => true
  * ```
  */
 export function dirichlet(k: Key, alpha: readonly number[], n: number): Tensor<'float64'> {
-  if (alpha.some((a) => !(a > 0))) throw new WhiteboxError('value', 'dirichlet: concentrations must be positive')
+  if (alpha.some((a) => !(a > 0))) throw new MdmlError('value', 'dirichlet: concentrations must be positive')
   const K = alpha.length
   const next = uniformStream(k)
   const out = new Float64Array(n * K)
@@ -405,7 +405,7 @@ export function dirichlet(k: Key, alpha: readonly number[], n: number): Tensor<'
  * @returns A value of shape `[n, d]`.
  * @example
  * ```ts
- * import { key, multivariateNormal } from 'whitebox-engine/random'
+ * import { key, multivariateNormal } from 'mdml-engine/random'
  * multivariateNormal(key(0), [0, 0], [[1, 0], [0.5, 1]], 4).shape // => [4, 2]
  * ```
  */
@@ -427,7 +427,7 @@ export function multivariateNormal(k: Key, mean: TensorLike, scaleTril: TensorLi
  * @returns A float64 tensor of angles in (-pi, pi].
  * @example
  * ```ts
- * import { key, vonMises } from 'whitebox-engine/random'
+ * import { key, vonMises } from 'mdml-engine/random'
  * vonMises(key(0), [10], 0, 4).data.every((v) => Math.abs(v) <= Math.PI) // => true
  * ```
  */

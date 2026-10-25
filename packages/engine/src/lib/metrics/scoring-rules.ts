@@ -4,7 +4,7 @@
  * and the multivariate energy score.
  */
 
-import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'
 import { ndtr, normalPdf } from '../numerics/special/index.ts'
@@ -65,8 +65,8 @@ const summarise = (name: string, values: readonly number[], options: ScoreOption
  * @concept proper-scoring-rules
  * @example
  * ```ts
- * import { logScore } from 'whitebox-engine/metrics'
- * import { normal } from 'whitebox-engine/dists'
+ * import { logScore } from 'mdml-engine/metrics'
+ * import { normal } from 'mdml-engine/dists'
  * Math.abs(logScore(normal(0, 1), [0]).estimate.value - 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -79,7 +79,7 @@ export const logScore: MetricFunction<[Distribution, TensorLike, ScoreOptions?]>
 /** A parameter of a distribution broadcast to the observations. */
 const param = (dist: Distribution, key: string, y: Value): Value => {
   const p = dist.params[key]
-  if (p === undefined) throw new WhiteboxError('value', `${dist.name} has no parameter ${key}`)
+  if (p === undefined) throw new MdmlError('value', `${dist.name} has no parameter ${key}`)
   return broadcastTo(p, broadcastShape(p.shape, y.shape))
 }
 
@@ -194,8 +194,8 @@ function quadratureCrps(dist: Distribution, y: Float64Array): number[] {
  * @returns The mean CRPS (lower is better), in the units of y.
  * @example
  * ```ts
- * import { crps } from 'whitebox-engine/metrics'
- * import { normal } from 'whitebox-engine/dists'
+ * import { crps } from 'mdml-engine/metrics'
+ * import { normal } from 'mdml-engine/dists'
  * Math.abs(crps(normal(0, 1), [0]).estimate.value - (Math.SQRT2 - 1) / Math.sqrt(Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -220,8 +220,8 @@ export const crps: MetricFunction<[Distribution, TensorLike, ScoreOptions?]> = d
  * @returns The mean spherical score.
  * @example
  * ```ts
- * import { sphericalScore } from 'whitebox-engine/metrics'
- * import { categorical } from 'whitebox-engine/dists'
+ * import { sphericalScore } from 'mdml-engine/metrics'
+ * import { categorical } from 'mdml-engine/dists'
  * sphericalScore(categorical({ probs: [0, 1] }), [1]).estimate.value // => 1
  * ```
  */
@@ -274,7 +274,7 @@ const logColumn =
  * @returns The mean energy score (lower is better).
  * @example
  * ```ts
- * import { energyScore } from 'whitebox-engine/metrics'
+ * import { energyScore } from 'mdml-engine/metrics'
  * energyScore([[0, 0], [0, 0]], [3, 4]).estimate.value // => 5
  * ```
  */

@@ -3,8 +3,8 @@
  * of a protected attribute, on tabular data with a protected attribute.
  */
 
-import { fairnessAudit as audit } from 'whitebox-engine/methods/fairness'
-import { dict, real } from 'whitebox-engine/space'
+import { fairnessAudit as audit } from 'mdml-engine/methods/fairness'
+import { dict, real } from 'mdml-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { awareParam, fairnessDataOf, fitClassifier } from './_shared.ts'
 

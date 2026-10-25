@@ -6,7 +6,7 @@
  * y).predict(x)` code.
  */
 
-import { type Json, WhiteboxError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import type { Context } from '../context/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { accuracyScore, r2Score } from '../metrics/index.ts'
@@ -150,16 +150,16 @@ function optionalWeights(data: LearnData): { readonly sampleWeight?: TensorLike 
  * @param data - The data.
  * @param who - The caller (for the error).
  * @returns `data.y`.
- * @throws WhiteboxError with code `value` when `y` is missing.
+ * @throws MdmlError with code `value` when `y` is missing.
  * @example
  * ```ts
- * import { requireTargets } from 'whitebox-engine/learn'
+ * import { requireTargets } from 'mdml-engine/learn'
  * requireTargets({ x: [[1]], y: [2] }, 'demo') // => [2]
  * requireTargets({ x: [[1]] }, 'demo') // => throws value
  * ```
  */
 export function requireTargets(data: LearnData, who: string): TensorLike {
-  if (data.y === undefined) throw new WhiteboxError('value', `${who}: this step needs targets y`)
+  if (data.y === undefined) throw new MdmlError('value', `${who}: this step needs targets y`)
   return data.y
 }
 
@@ -174,8 +174,8 @@ export function requireTargets(data: LearnData, who: string): TensorLike {
  * @concept estimator-protocol
  * @example
  * ```ts
- * import { defineEstimator } from 'whitebox-engine/learn'
- * import { full, mean, item, toFlat } from 'whitebox-engine/tensor'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { full, mean, item, toFlat } from 'mdml-engine/tensor'
  * const meanRegressor = defineEstimator(
  *   {
  *     name: 'mean',
@@ -231,8 +231,8 @@ export function defineEstimator<H extends Hyper, P extends Json, V extends Verbs
  * @returns The new estimator.
  * @example
  * ```ts
- * import { cloneEstimator } from 'whitebox-engine/learn'
- * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
+ * import { cloneEstimator } from 'mdml-engine/learn'
+ * import { standardScaler } from 'mdml-engine/learn/preprocessing'
  * cloneEstimator(standardScaler(), { withMean: false }).hyper.withMean // => false
  * ```
  */
@@ -250,8 +250,8 @@ export function cloneEstimator<H extends Hyper, F extends Fitted>(
  * @returns `true` for an estimator.
  * @example
  * ```ts
- * import { isEstimator } from 'whitebox-engine/learn'
- * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
+ * import { isEstimator } from 'mdml-engine/learn'
+ * import { standardScaler } from 'mdml-engine/learn/preprocessing'
  * isEstimator(standardScaler()) // => true
  * isEstimator({ fit: 1 }) // => false
  * ```
@@ -278,8 +278,8 @@ export type With<V extends keyof Verbs> = Fitted & Required<Pick<Verbs, V>>
  * @returns `true` when the verb is available; the type narrows.
  * @example
  * ```ts
- * import { can } from 'whitebox-engine/learn'
- * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
+ * import { can } from 'mdml-engine/learn'
+ * import { standardScaler } from 'mdml-engine/learn/preprocessing'
  * const f = standardScaler().fit({ x: [[1], [3]] })
  * can(f, 'inverseTransform') // => true
  * can(f, 'predictProba') // => false
@@ -296,11 +296,11 @@ export function can<V extends keyof Verbs>(fitted: Fitted, verb: V): fitted is W
  * @param verb - The verb.
  * @param who - The caller (for the error).
  * @returns The verb's function.
- * @throws WhiteboxError with code `value` when the estimator lacks the verb.
+ * @throws MdmlError with code `value` when the estimator lacks the verb.
  * @example
  * ```ts
- * import { requireVerb } from 'whitebox-engine/learn'
- * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
+ * import { requireVerb } from 'mdml-engine/learn'
+ * import { standardScaler } from 'mdml-engine/learn/preprocessing'
  * const f = standardScaler().fit({ x: [[1], [3]] })
  * typeof requireVerb(f, 'transform', 'demo') // => 'function'
  * requireVerb(f, 'predict', 'demo') // => throws value
@@ -309,7 +309,7 @@ export function can<V extends keyof Verbs>(fitted: Fitted, verb: V): fitted is W
 export function requireVerb<V extends keyof Verbs>(fitted: Fitted, verb: V, who: string): NonNullable<Verbs[V]> {
   const f = fitted[verb]
   if (typeof f !== 'function') {
-    throw new WhiteboxError('value', `${who}: ${fitted.estimator} has no ${verb}`, { estimator: fitted.estimator })
+    throw new MdmlError('value', `${who}: ${fitted.estimator} has no ${verb}`, { estimator: fitted.estimator })
   }
   return f as NonNullable<Verbs[V]>
 }
@@ -321,8 +321,8 @@ export function requireVerb<V extends keyof Verbs>(fitted: Fitted, verb: V, who:
  * @returns `true` for classifiers.
  * @example
  * ```ts
- * import { isClassifier } from 'whitebox-engine/learn'
- * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
+ * import { isClassifier } from 'mdml-engine/learn'
+ * import { standardScaler } from 'mdml-engine/learn/preprocessing'
  * isClassifier(standardScaler().fit({ x: [[1], [3]] })) // => false
  * ```
  */
@@ -343,8 +343,8 @@ export interface SerialisedFitted {
  * @returns `{ estimator, params }`.
  * @example
  * ```ts
- * import { serialiseFitted } from 'whitebox-engine/learn'
- * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
+ * import { serialiseFitted } from 'mdml-engine/learn'
+ * import { standardScaler } from 'mdml-engine/learn/preprocessing'
  * serialiseFitted(standardScaler().fit({ x: [[1], [3]] })).estimator // => 'standard-scaler'
  * ```
  */
@@ -358,12 +358,12 @@ export function serialiseFitted(fitted: Fitted): SerialisedFitted {
  * @param estimator - The estimator (same name and hyperparameters as at fit time).
  * @param json - What {@link serialiseFitted} produced.
  * @returns The fitted value with its verbs.
- * @throws WhiteboxError with code `value` when the names differ.
+ * @throws MdmlError with code `value` when the names differ.
  * @example
  * ```ts
- * import { revive, serialiseFitted } from 'whitebox-engine/learn'
- * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { revive, serialiseFitted } from 'mdml-engine/learn'
+ * import { standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const est = standardScaler()
  * const json = JSON.parse(JSON.stringify(serialiseFitted(est.fit({ x: [[1], [3]] }))))
  * toArray(revive(est, json).transform([[3]])) // => [[1]]
@@ -371,7 +371,7 @@ export function serialiseFitted(fitted: Fitted): SerialisedFitted {
  */
 export function revive<H extends Hyper, F extends Fitted>(estimator: Estimator<H, F>, json: SerialisedFitted): F {
   if (json.estimator !== estimator.name) {
-    throw new WhiteboxError('value', `revive: parameters of ${json.estimator} given to ${estimator.name}`)
+    throw new MdmlError('value', `revive: parameters of ${json.estimator} given to ${estimator.name}`)
   }
   return estimator.revive(json.params)
 }
@@ -384,9 +384,9 @@ export function revive<H extends Hyper, F extends Fitted>(estimator: Estimator<H
  * @concept estimator-protocol
  * @example
  * ```ts
- * import { EstimatorClass } from 'whitebox-engine/learn'
- * import { standardScaler } from 'whitebox-engine/learn/preprocessing'
- * import { toArray } from 'whitebox-engine/tensor'
+ * import { EstimatorClass } from 'mdml-engine/learn'
+ * import { standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { toArray } from 'mdml-engine/tensor'
  * const scaler = new EstimatorClass(standardScaler())
  * toArray(scaler.fitTransform([[1], [3]])) // => [[-1], [1]]
  * scaler.getParams().withMean // => true
@@ -410,7 +410,7 @@ export class EstimatorClass<H extends Hyper = Hyper, F extends Fitted = Fitted> 
 
   /** The fitted value, or an error when `fit` has not been called. */
   get model(): F {
-    if (this.fitted === undefined) throw new WhiteboxError('value', `${this.estimator.name}: call fit first`)
+    if (this.fitted === undefined) throw new MdmlError('value', `${this.estimator.name}: call fit first`)
     return this.fitted
   }
 

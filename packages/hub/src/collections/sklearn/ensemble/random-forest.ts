@@ -3,7 +3,7 @@
  * two-dimensional and tabular classification and regression data.
  */
 
-import { randomForestClassifier, randomForestRegressor } from 'whitebox-engine/methods/ensemble'
+import { randomForestClassifier, randomForestRegressor } from 'mdml-engine/methods/ensemble'
 import { defineEntry, type HubEntry } from '../../../entry/entry.ts'
 import { fitEither } from '../../../entry/run.ts'
 

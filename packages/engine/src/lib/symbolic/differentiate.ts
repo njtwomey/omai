@@ -4,7 +4,7 @@
  * record the rule applied at each node (sum, product, power, chain rule) for worked derivations.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import {
   asCoeffMul,
@@ -168,7 +168,7 @@ function dRaw(e: Expr, x: ExprSym, steps: Step[] | undefined): Expr {
       const f = e.args.length === 1 ? outer(e.name, u, e.args) : undefined
       if (f === undefined) {
         if (KNOWN_FUNCTIONS.has(e.name) && e.args.length === 1) {
-          throw new WhiteboxError('not-implemented', `diff: no derivative rule for ${e.name}`)
+          throw new MdmlError('not-implemented', `diff: no derivative rule for ${e.name}`)
         }
         return record(steps, 'undefined function', e, x, makeDerivative(e, [[x, 1]]))
       }
@@ -194,7 +194,7 @@ function dRaw(e: Expr, x: ExprSym, steps: Step[] | undefined): Expr {
     case 'order':
       return makeOrder(d(e.expr, x, steps), e.variable, e.point)
     default:
-      throw new WhiteboxError('not-implemented', `diff: cannot differentiate a ${e.kind}`)
+      throw new MdmlError('not-implemented', `diff: cannot differentiate a ${e.kind}`)
   }
 }
 
@@ -207,7 +207,7 @@ function specs(vars: readonly DiffSpec[]): [ExprSym, number][] {
     } else out.push([typeof v === 'string' ? sym(v) : (v as ExprSym), 1])
   }
   if (out.some(([, k]) => !Number.isInteger(k) || k < 0)) {
-    throw new WhiteboxError('value', 'diff: orders must be non-negative integers')
+    throw new MdmlError('value', 'diff: orders must be non-negative integers')
   }
   return out
 }
@@ -223,7 +223,7 @@ function specs(vars: readonly DiffSpec[]): [ExprSym, number][] {
  * @returns The derivative.
  * @example
  * ```ts
- * import { diff, parse, toText } from 'whitebox-engine/symbolic'
+ * import { diff, parse, toText } from 'mdml-engine/symbolic'
  * toText(diff(parse('x^2*sin(x)'), 'x')) // => 'x**2*cos(x) + 2*x*sin(x)'
  * toText(diff(parse('x^3*y^2'), 'x', 'y')) // => '6*x**2*y'
  * ```
@@ -245,7 +245,7 @@ export function diff(e: Expr, ...vars: readonly DiffSpec[]): Expr {
  * @returns The derivative and its steps.
  * @example
  * ```ts
- * import { diffSteps, parse } from 'whitebox-engine/symbolic'
+ * import { diffSteps, parse } from 'mdml-engine/symbolic'
  * diffSteps(parse('sin(x^2)'), 'x').steps.map((s) => s.rule) // => ['power rule', 'chain rule']
  * ```
  */
@@ -266,7 +266,7 @@ export function diffSteps(e: Expr, ...vars: readonly DiffSpec[]): Derivation {
  * @returns ∂e/∂v for each variable.
  * @example
  * ```ts
- * import { gradient, parse, toText } from 'whitebox-engine/symbolic'
+ * import { gradient, parse, toText } from 'mdml-engine/symbolic'
  * gradient(parse('x^2*y'), ['x', 'y']).map(toText) // => ['2*x*y', 'x**2']
  * ```
  */
@@ -284,7 +284,7 @@ export function gradient(e: Expr, vars: readonly (ExprSym | string)[]): Expr[] {
  * @returns The matrix.
  * @example
  * ```ts
- * import { jacobian, parse, toText } from 'whitebox-engine/symbolic'
+ * import { jacobian, parse, toText } from 'mdml-engine/symbolic'
  * jacobian([parse('x*y'), parse('x + y')], ['x', 'y']).map((r) => r.map(toText)) // => [['y', 'x'], ['1', '1']]
  * ```
  */
@@ -302,7 +302,7 @@ export function jacobian(fs: readonly Expr[], vars: readonly (ExprSym | string)[
  * @returns H[i][j] = ∂²e/∂v_i∂v_j.
  * @example
  * ```ts
- * import { hessian, parse, toText } from 'whitebox-engine/symbolic'
+ * import { hessian, parse, toText } from 'mdml-engine/symbolic'
  * hessian(parse('x^2*y + y^3'), ['x', 'y']).map((r) => r.map(toText)) // => [['2*y', '2*x'], ['2*x', '6*y']]
  * ```
  */
@@ -346,7 +346,7 @@ function implicit(eq: Expr, y: ExprSym, x: ExprSym, n: number, steps: Step[] | u
  * @returns The derivative in lowest terms.
  * @example
  * ```ts
- * import { implicitDiff, parse, sym, toText } from 'whitebox-engine/symbolic'
+ * import { implicitDiff, parse, sym, toText } from 'mdml-engine/symbolic'
  * toText(implicitDiff(parse('x^2 + y^2 - 4'), sym('y'), sym('x'))) // => '-x/y'
  * ```
  */
@@ -366,7 +366,7 @@ export function implicitDiff(eq: Expr, y: ExprSym, x: ExprSym, n = 1): Expr {
  * @returns The derivative and its steps.
  * @example
  * ```ts
- * import { implicitDiffSteps, parse, sym } from 'whitebox-engine/symbolic'
+ * import { implicitDiffSteps, parse, sym } from 'mdml-engine/symbolic'
  * implicitDiffSteps(parse('x*y - 1'), sym('y'), sym('x')).steps.length > 0 // => true
  * ```
  */

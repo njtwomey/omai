@@ -5,7 +5,7 @@
  */
 
 import { hessian } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import {
   bijectors,
   compose,
@@ -108,11 +108,11 @@ const product = (shape: readonly number[]): number => shape.reduce((a, b) => a *
  * @param model - The model.
  * @param data - Its data.
  * @returns The guide sites.
- * @throws WhiteboxError with code `value` for discrete latent sites with unbounded support.
+ * @throws MdmlError with code `value` for discrete latent sites with unbounded support.
  * @example
  * ```ts
- * import { guideSites, plate, sample } from 'whitebox-engine/probprog'
- * import { gamma } from 'whitebox-engine/dists'
+ * import { guideSites, plate, sample } from 'mdml-engine/probprog'
+ * import { gamma } from 'mdml-engine/dists'
  * guideSites(() => plate('n', 5, () => sample('s', gamma(2, 2)), { subsampleSize: 2 }), undefined)[0]?.shape // => [5]
  * ```
  */
@@ -124,7 +124,7 @@ export function guideSites<D = void>(model: Model<D>, data: D): GuideSite[] {
     if (site.type !== 'sample' || site.isObserved) continue
     if (isDiscrete(site.fn.support)) {
       if (site.infer.enumerate === 'parallel') continue
-      throw new WhiteboxError('value', `guide: discrete site ${site.name} cannot be summed out`, { site: site.name })
+      throw new MdmlError('value', `guide: discrete site ${site.name} cannot be summed out`, { site: site.name })
     }
     const batchRank = site.fn.batchShape.length
     const shape = [...site.value.shape]
@@ -257,7 +257,7 @@ function delta(value: Value, logDensity: Value, eventRank: number): Distribution
 
 function paramOf(params: Readonly<Record<string, TensorLike>>, name: string): Value {
   const v = params[name]
-  if (v === undefined) throw new WhiteboxError('value', `guide: no parameter ${name}`)
+  if (v === undefined) throw new MdmlError('value', `guide: no parameter ${name}`)
   return primalOf(asTensor(v))
 }
 
@@ -282,9 +282,9 @@ function constrainFlat(sites: readonly GuideSite[], u: Value, n: number): Record
  * @concept variational-inference
  * @example
  * ```ts
- * import { autoNormal, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { gamma } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { autoNormal, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { gamma } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const guide = autoNormal(() => { sample('s', gamma(2, 2)) })
  * [...traceOf(seed(guide, key(0)), undefined).sites.keys()] // => ['s_auto_loc', 's_auto_scale', 's']
  * ```
@@ -355,7 +355,7 @@ export function autoNormal<D = void>(model: Model<D>, options: AutoGuideOptions 
         logProb: (values) =>
           sites.reduce((acc, s) => {
             const v = values[s.name]
-            if (v === undefined) throw new WhiteboxError('value', `guide posterior: no value for ${s.name}`)
+            if (v === undefined) throw new MdmlError('value', `guide posterior: no value for ${s.name}`)
             return acc + toFlat(sum((ms[s.name] as Distribution).logProb(v))).reduce((x, y) => x + y, 0)
           }, 0),
       })
@@ -373,9 +373,9 @@ export function autoNormal<D = void>(model: Model<D>, options: AutoGuideOptions 
  * @concept variational-inference
  * @example
  * ```ts
- * import { autoDelta, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { autoDelta, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * [...traceOf(seed(autoDelta(() => { sample('x', normal(0, 1)) }), key(0)), undefined).sites.keys()] // => ['x_auto_loc', 'x']
  * ```
  */
@@ -449,7 +449,7 @@ function jointGuide<D = void>(
     const sites = sitesOf(data)
     const sub = sites.find((s) => s.subsampled)
     if (sub !== undefined)
-      throw new WhiteboxError('value', `${kind}: site ${sub.name} is in a subsampled plate; use autoNormal`)
+      throw new MdmlError('value', `${kind}: site ${sub.name} is in a subsampled plate; use autoNormal`)
     const D = dimOf(sites)
     const z = sample('_auto_latent', family.latent(D, sites, initFlat(sites)), { infer: { isAuxiliary: true } })
     for (const s of sites) {
@@ -499,9 +499,9 @@ function jointGuide<D = void>(
  * @concept variational-inference
  * @example
  * ```ts
- * import { autoMultivariateNormal, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { autoMultivariateNormal, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const t = traceOf(seed(autoMultivariateNormal(() => { sample('a', normal(0, 1)); sample('b', normal(0, 1)) }), key(0)), undefined)
  * t.sites.get('auto_scale_tril')?.value.shape // => [2, 2]
  * ```
@@ -535,9 +535,9 @@ export function autoMultivariateNormal<D = void>(model: Model<D>, options: AutoG
  * @concept variational-inference
  * @example
  * ```ts
- * import { autoLowRankMultivariateNormal, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { autoLowRankMultivariateNormal, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const guide = autoLowRankMultivariateNormal(() => { sample('x', normal(0, 1), { sampleShape: [4] }) }, { rank: 1 })
  * traceOf(seed(guide, key(0)), undefined).sites.get('auto_cov_factor')?.value.shape // => [4, 1]
  * ```
@@ -583,9 +583,9 @@ export function autoLowRankMultivariateNormal<D = void>(
  * @concept laplace-approximation
  * @example
  * ```ts
- * import { autoLaplace, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { autoLaplace, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * [...traceOf(seed(autoLaplace(() => { sample('x', normal(0, 1)) }), key(0)), undefined).sites.keys()] // => ['auto_loc', '_auto_latent', 'x']
  * ```
  */
@@ -627,9 +627,9 @@ export interface AutoIafOptions extends AutoGuideOptions {
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { autoIafNormal, sample, seed, traceOf } from 'whitebox-engine/probprog'
- * import { normal } from 'whitebox-engine/dists'
- * import { key } from 'whitebox-engine/random'
+ * import { autoIafNormal, sample, seed, traceOf } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
  * const guide = autoIafNormal(() => { sample('x', normal(0, 1), { sampleShape: [3] }) }, { numFlows: 1 })
  * traceOf(seed(guide, key(0)), undefined).sites.has('auto_iaf_0_w1') // => true
  * ```

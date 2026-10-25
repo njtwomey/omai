@@ -4,7 +4,7 @@
  * and `svds` for the largest singular triplets, as scipy.sparse.linalg.
  */
 
-import { WhiteboxError } from '../../base/index.ts'
+import { MdmlError } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { ddot as dot, eigh, dnrm2 as norm } from '../linalg/index.ts'
@@ -14,7 +14,7 @@ type Vec = Float64Array
 
 function numeric(op: LinearOperator, transpose = false): (x: Vec) => Vec {
   const f = transpose ? op.rmatvec : op.matvec
-  if (f === undefined) throw new WhiteboxError('value', 'the operator has no transpose product')
+  if (f === undefined) throw new MdmlError('value', 'the operator has no transpose product')
   return (x) => Float64Array.from(toFlat(primalOf(f(fromStorage(x, [x.length], 'float64')))))
 }
 
@@ -58,7 +58,7 @@ export interface LanczosResult {
  * @concept lanczos
  * @example
  * ```ts
- * import { lanczos } from 'whitebox-engine/numerics/sparse'
+ * import { lanczos } from 'mdml-engine/numerics/sparse'
  * lanczos([[2, 1], [1, 2]], 2).alpha.length // => 2
  * ```
  */
@@ -110,7 +110,7 @@ export interface ArnoldiResult {
  * @returns The Hessenberg matrix `[m + 1, m]` and the basis.
  * @example
  * ```ts
- * import { arnoldi } from 'whitebox-engine/numerics/sparse'
+ * import { arnoldi } from 'mdml-engine/numerics/sparse'
  * arnoldi([[1, 2], [0, 3]], 2).hessenberg.shape // => [3, 2]
  * ```
  */
@@ -187,7 +187,7 @@ function ritz(a: LanczosResult): { values: number[]; vectors: number[][] } {
  * @concept lanczos
  * @example
  * ```ts
- * import { diagCsr, eigsh } from 'whitebox-engine/numerics/sparse'
+ * import { diagCsr, eigsh } from 'mdml-engine/numerics/sparse'
  * Array.from(eigsh(diagCsr([1, 5, 3, 9, 2]), 2).values.data).map((v) => Math.round(v * 1e10) / 1e10) // => [5, 9]
  * ```
  */
@@ -205,7 +205,7 @@ export function eigsh(
   const op = asOperator(a)
   const apply = numeric(op)
   const n = op.shape[0]
-  if (!(k >= 1 && k < n)) throw new WhiteboxError('value', `eigsh: k must be in [1, ${n - 1}]`)
+  if (!(k >= 1 && k < n)) throw new MdmlError('value', `eigsh: k must be in [1, ${n - 1}]`)
   const which = options.which ?? 'LM'
   const tol = options.tol ?? 1e-10
   const m = Math.min(n, options.ncv ?? Math.max(2 * k + 1, 20))
@@ -255,7 +255,7 @@ export function eigsh(
     if (lockedNow === 0) {
       restarts++
       if (restarts > (options.maxRestarts ?? 300))
-        throw new WhiteboxError('convergence', 'eigsh: no convergence within the restart limit')
+        throw new MdmlError('convergence', 'eigsh: no convergence within the restart limit')
       // Restart from the wanted Ritz vectors, the leading one weighted most.
       const next = new Float64Array(n)
       vecs.forEach((v, i) => {
@@ -297,7 +297,7 @@ export function eigsh(
  * @returns Singular values (ascending, as scipy), left and right vectors.
  * @example
  * ```ts
- * import { svds } from 'whitebox-engine/numerics/sparse'
+ * import { svds } from 'mdml-engine/numerics/sparse'
  * Array.from(svds([[3, 0, 0], [0, 4, 0], [0, 0, 1]], 1).s.data).map((v) => Math.round(v * 1e10) / 1e10) // => [4]
  * ```
  */

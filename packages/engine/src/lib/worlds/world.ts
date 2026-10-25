@@ -5,7 +5,7 @@
  * under 4- or 8-connectivity).
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import type { Paint } from '../scene/index.ts'
 import {
   cellAt,
@@ -169,25 +169,25 @@ export interface WorldSpec {
 function checkTopology(t: Topology): void {
   if (t.kind === 'graph') {
     if (!Number.isInteger(t.n) || t.n < 1 || t.neighbours.length !== t.n) {
-      throw new WhiteboxError('value', 'world: a graph topology needs n >= 1 nodes and one neighbour list per node')
+      throw new MdmlError('value', 'world: a graph topology needs n >= 1 nodes and one neighbour list per node')
     }
     for (const [v, list] of t.neighbours.entries()) {
-      if (list.length > 32) throw new WhiteboxError('value', `world: node ${v} has more than 32 neighbours`)
+      if (list.length > 32) throw new MdmlError('value', `world: node ${v} has more than 32 neighbours`)
       for (const u of list) {
         if (!Number.isInteger(u) || u < 0 || u >= t.n || u === v || !(t.neighbours[u] ?? []).includes(v)) {
-          throw new WhiteboxError('value', `world: neighbour lists must be symmetric, loop-free indices (node ${v})`)
+          throw new MdmlError('value', `world: neighbour lists must be symmetric, loop-free indices (node ${v})`)
         }
       }
     }
     return
   }
   if (!(Number.isInteger(t.rows) && Number.isInteger(t.cols) && t.rows >= 1 && t.cols >= 1)) {
-    throw new WhiteboxError('value', 'world: rows and cols must be positive integers')
+    throw new MdmlError('value', 'world: rows and cols must be positive integers')
   }
 }
 
 function checkCell(n: number, cell: number, what: string): number {
-  if (!Number.isInteger(cell) || cell < 0 || cell >= n) throw new WhiteboxError('value', `world: ${what} ${cell}`)
+  if (!Number.isInteger(cell) || cell < 0 || cell >= n) throw new MdmlError('value', `world: ${what} ${cell}`)
   return cell
 }
 
@@ -196,12 +196,12 @@ function checkCell(n: number, cell: number, what: string): number {
  *
  * @param spec - The topology, terrains, cell terrain, walls, items, starts, goals, landmarks and name.
  * @returns The world.
- * @throws WhiteboxError with code `value` for bad sizes, unknown terrains, out-of-range cells or walls between cells
+ * @throws MdmlError with code `value` for bad sizes, unknown terrains, out-of-range cells or walls between cells
  *   that are not side neighbours.
  * @concept grid-worlds
  * @example
  * ```ts
- * import { world } from 'whitebox-engine/worlds'
+ * import { world } from 'mdml-engine/worlds'
  * const w = world({ topology: { kind: 'square', rows: 2, cols: 3 }, walls: [[0, 1]], goals: [5] })
  * w.n // => 6
  * w.walls[0] // => 2
@@ -212,16 +212,16 @@ export function world(spec: WorldSpec): World {
   checkTopology(t)
   const n = cellCount(t)
   const terrains = (spec.terrains ?? TERRAINS).map(terrain)
-  if (terrains.length === 0 || terrains.length > 256) throw new WhiteboxError('value', 'world: 1 to 256 terrains')
+  if (terrains.length === 0 || terrains.length > 256) throw new MdmlError('value', 'world: 1 to 256 terrains')
   const byName = new Map(terrains.map((x, i) => [x.name, i]))
   const cells = new Uint8Array(n)
   if (spec.terrain !== undefined) {
-    if (spec.terrain.length !== n) throw new WhiteboxError('value', `world: terrain needs ${n} entries`)
+    if (spec.terrain.length !== n) throw new MdmlError('value', `world: terrain needs ${n} entries`)
     for (let i = 0; i < n; i++) {
       const v = spec.terrain[i]
       const k = typeof v === 'string' ? byName.get(v) : v
       if (k === undefined || !Number.isInteger(k) || k < 0 || k >= terrains.length) {
-        throw new WhiteboxError('value', `world: unknown terrain ${String(v)} at cell ${i}`)
+        throw new MdmlError('value', `world: unknown terrain ${String(v)} at cell ${i}`)
       }
       cells[i] = k
     }
@@ -256,7 +256,7 @@ export function world(spec: WorldSpec): World {
 function closeSide(t: Topology, walls: Uint32Array, a: number, b: number, closed = true): void {
   const side = sideBetween(t, a, b)
   if (side < 0 || side >= sideCount(t, a)) {
-    throw new WhiteboxError('value', `world: cells ${a} and ${b} do not share a side`)
+    throw new MdmlError('value', `world: cells ${a} and ${b} do not share a side`)
   }
   const back = oppositeSide(t, a, side, b)
   if (closed) {
@@ -275,10 +275,10 @@ function closeSide(t: Topology, walls: Uint32Array, a: number, b: number, closed
  * @param pairs - Pairs of cells sharing a side.
  * @param closed - Close (default) or open them.
  * @returns A new world.
- * @throws WhiteboxError with code `value` when two cells do not share a side.
+ * @throws MdmlError with code `value` when two cells do not share a side.
  * @example
  * ```ts
- * import { hasWall, setWalls, world } from 'whitebox-engine/worlds'
+ * import { hasWall, setWalls, world } from 'mdml-engine/worlds'
  * const w = setWalls(world({ topology: { kind: 'square', rows: 1, cols: 2 } }), [[0, 1]])
  * hasWall(w, 1, 3) // => true
  * ```
@@ -297,16 +297,16 @@ export function setWalls(w: World, pairs: readonly (readonly [number, number])[]
  * @param cells - The cells.
  * @param name - A terrain name from the world's palette.
  * @returns A new world.
- * @throws WhiteboxError with code `value` for an unknown terrain or cell.
+ * @throws MdmlError with code `value` for an unknown terrain or cell.
  * @example
  * ```ts
- * import { passable, setTerrain, world } from 'whitebox-engine/worlds'
+ * import { passable, setTerrain, world } from 'mdml-engine/worlds'
  * passable(setTerrain(world({ topology: { kind: 'square', rows: 1, cols: 2 } }), [1], 'wall'), 1) // => false
  * ```
  */
 export function setTerrain(w: World, cells: readonly number[], name: string): World {
   const k = w.terrains.findIndex((x) => x.name === name)
-  if (k < 0) throw new WhiteboxError('value', `setTerrain: unknown terrain '${name}'`)
+  if (k < 0) throw new MdmlError('value', `setTerrain: unknown terrain '${name}'`)
   const out = Uint8Array.from(w.terrain)
   for (const c of cells) out[checkCell(w.n, c, 'cell')] = k
   return { ...w, terrain: out }
@@ -321,16 +321,16 @@ export function setTerrain(w: World, cells: readonly number[], name: string): Wo
  * @param row - The row.
  * @param col - The column.
  * @returns The cell index `row * cols + col`, or -1 off the grid.
- * @throws WhiteboxError with code `value` for graph worlds.
+ * @throws MdmlError with code `value` for graph worlds.
  * @example
  * ```ts
- * import { cellIndex, fromAscii } from 'whitebox-engine/worlds'
+ * import { cellIndex, fromAscii } from 'mdml-engine/worlds'
  * cellIndex(fromAscii(['...', '...']), 1, 2) // => 5
  * ```
  */
 export function cellIndex(w: World, row: number, col: number): number {
   const t = w.topology
-  if (t.kind === 'graph') throw new WhiteboxError('value', 'cellIndex: graph worlds have no rows')
+  if (t.kind === 'graph') throw new MdmlError('value', 'cellIndex: graph worlds have no rows')
   return row < 0 || row >= t.rows || col < 0 || col >= t.cols ? -1 : row * t.cols + col
 }
 
@@ -340,16 +340,16 @@ export function cellIndex(w: World, row: number, col: number): number {
  * @param w - A square or hexagonal world.
  * @param cell - The cell.
  * @returns `[row, col]`.
- * @throws WhiteboxError with code `value` for graph worlds.
+ * @throws MdmlError with code `value` for graph worlds.
  * @example
  * ```ts
- * import { cellCoords, fromAscii } from 'whitebox-engine/worlds'
+ * import { cellCoords, fromAscii } from 'mdml-engine/worlds'
  * cellCoords(fromAscii(['...', '...']), 5) // => [1, 2]
  * ```
  */
 export function cellCoords(w: World, cell: number): [number, number] {
   const t = w.topology
-  if (t.kind === 'graph') throw new WhiteboxError('value', 'cellCoords: graph worlds have no rows')
+  if (t.kind === 'graph') throw new MdmlError('value', 'cellCoords: graph worlds have no rows')
   return [Math.floor(cell / t.cols), cell % t.cols]
 }
 
@@ -362,7 +362,7 @@ export function cellCoords(w: World, cell: number): [number, number] {
  * @returns `[x, y]`.
  * @example
  * ```ts
- * import { cellCentre, fromAscii } from 'whitebox-engine/worlds'
+ * import { cellCentre, fromAscii } from 'mdml-engine/worlds'
  * cellCentre(fromAscii(['...', '...']), 5) // => [2.5, 1.5]
  * ```
  */
@@ -379,7 +379,7 @@ export function cellCentre(w: World, cell: number): [number, number] {
  * @returns The cell, or -1 off the map (always -1 for graph worlds).
  * @example
  * ```ts
- * import { cellAtPoint, fromAscii } from 'whitebox-engine/worlds'
+ * import { cellAtPoint, fromAscii } from 'mdml-engine/worlds'
  * cellAtPoint(fromAscii(['...', '...']), 2.2, 1.9) // => 5
  * cellAtPoint(fromAscii(['...', '...'], { topology: 'hex' }), 1, 1.4) // => 3
  * ```
@@ -396,7 +396,7 @@ export function cellAtPoint(w: World, x: number, y: number): number {
  * @returns The corners (four or six; none for graph worlds).
  * @example
  * ```ts
- * import { cellCorners, fromAscii } from 'whitebox-engine/worlds'
+ * import { cellCorners, fromAscii } from 'mdml-engine/worlds'
  * cellCorners(fromAscii(['..']), 1) // => [[1, 0], [2, 0], [2, 1], [1, 1]]
  * ```
  */
@@ -411,7 +411,7 @@ export function cellCorners(w: World, cell: number): [number, number][] {
  * @returns `[width, height]`.
  * @example
  * ```ts
- * import { fromAscii, worldSize } from 'whitebox-engine/worlds'
+ * import { fromAscii, worldSize } from 'mdml-engine/worlds'
  * worldSize(fromAscii(['...', '...'])) // => [3, 2]
  * ```
  */
@@ -442,7 +442,7 @@ export interface MoveOptions {
  * @returns Whether it is passable.
  * @example
  * ```ts
- * import { fromAscii, passable } from 'whitebox-engine/worlds'
+ * import { fromAscii, passable } from 'mdml-engine/worlds'
  * [passable(fromAscii(['.#']), 0), passable(fromAscii(['.#']), 1)] // => [true, false]
  * ```
  */
@@ -456,16 +456,16 @@ export function passable(w: World, cell: number): boolean {
  * @param w - The world.
  * @param cell - The cell.
  * @returns Its terrain.
- * @throws WhiteboxError with code `value` for a cell off the map.
+ * @throws MdmlError with code `value` for a cell off the map.
  * @example
  * ```ts
- * import { fromAscii, terrainOf } from 'whitebox-engine/worlds'
+ * import { fromAscii, terrainOf } from 'mdml-engine/worlds'
  * terrainOf(fromAscii(['.~']), 1).cost // => 5
  * ```
  */
 export function terrainOf(w: World, cell: number): Terrain {
   const t = w.terrains[w.terrain[checkCell(w.n, cell, 'cell')] ?? 0]
-  if (t === undefined) throw new WhiteboxError('value', `terrainOf: cell ${cell} has no terrain`)
+  if (t === undefined) throw new MdmlError('value', `terrainOf: cell ${cell} has no terrain`)
   return t
 }
 
@@ -478,7 +478,7 @@ export function terrainOf(w: World, cell: number): Terrain {
  * @returns Whether that side is closed.
  * @example
  * ```ts
- * import { fromAscii, hasWall } from 'whitebox-engine/worlds'
+ * import { fromAscii, hasWall } from 'mdml-engine/worlds'
  * hasWall(fromAscii(['#####', '#.#.#', '#####'], { format: 'walls' }), 0, 1) // => true
  * ```
  */
@@ -509,7 +509,7 @@ function sideMove(w: World, cell: number, side: number, options: MoveOptions): n
  * @returns The cell entered, or -1.
  * @example
  * ```ts
- * import { destination, fromAscii } from 'whitebox-engine/worlds'
+ * import { destination, fromAscii } from 'mdml-engine/worlds'
  * const w = fromAscii(['..', '#.'])
  * [destination(w, 0, 1), destination(w, 0, 2), destination(w, 0, 5, { connectivity: 8 })] // => [1, -1, -1]
  * destination(w, 0, 5, { connectivity: 8, corners: 'loose' }) // => 3
@@ -545,7 +545,7 @@ export function destination(w: World, cell: number, direction: number, options: 
  * @returns `[direction, cell]` pairs.
  * @example
  * ```ts
- * import { exits, fromAscii } from 'whitebox-engine/worlds'
+ * import { exits, fromAscii } from 'mdml-engine/worlds'
  * exits(fromAscii(['...', '.#.']), 1) // => [[1, 2], [3, 0]]
  * ```
  */
@@ -570,7 +570,7 @@ export function exits(w: World, cell: number, options: MoveOptions = {}): [numbe
  * @returns The neighbours, in direction order.
  * @example
  * ```ts
- * import { fromAscii, neighbours } from 'whitebox-engine/worlds'
+ * import { fromAscii, neighbours } from 'mdml-engine/worlds'
  * const w = fromAscii(['...', '...', '...'])
  * [neighbours(w, 4).length, neighbours(w, 4, { connectivity: 8 }).length] // => [4, 8]
  * ```
@@ -586,19 +586,19 @@ export function neighbours(w: World, cell: number, options: MoveOptions = {}): n
  *
  * @param w - A square-grid world.
  * @returns The blocking-cell world (starts, goals, items and landmarks moved with their cells).
- * @throws WhiteboxError with code `value` for other topologies, or a palette without `floor` and `wall`.
+ * @throws MdmlError with code `value` for other topologies, or a palette without `floor` and `wall`.
  * @example
  * ```ts
- * import { fromAscii, toAscii, wallsToBlocks } from 'whitebox-engine/worlds'
+ * import { fromAscii, toAscii, wallsToBlocks } from 'mdml-engine/worlds'
  * toAscii(wallsToBlocks(fromAscii(['#####', '#S#G#', '#####'], { format: 'walls' }))) // => ['#####', '#S#G#', '#####']
  * ```
  */
 export function wallsToBlocks(w: World): World {
   const t = w.topology
-  if (t.kind !== 'square') throw new WhiteboxError('value', 'wallsToBlocks: square worlds only')
+  if (t.kind !== 'square') throw new MdmlError('value', 'wallsToBlocks: square worlds only')
   const floor = w.terrains.findIndex((x) => x.name === 'floor')
   const wall = w.terrains.findIndex((x) => x.name === 'wall')
-  if (floor < 0 || wall < 0) throw new WhiteboxError('value', 'wallsToBlocks: the palette needs floor and wall')
+  if (floor < 0 || wall < 0) throw new MdmlError('value', 'wallsToBlocks: the palette needs floor and wall')
   const cols = 2 * t.cols + 1
   const map = (cell: number): number => (2 * Math.floor(cell / t.cols) + 1) * cols + 2 * (cell % t.cols) + 1
   const terrain = new Array<number>((2 * t.rows + 1) * cols).fill(wall)

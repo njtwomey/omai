@@ -4,7 +4,7 @@
  * several seeds of one experiment.
  */
 
-import { WhiteboxError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type Run, RunSchema, type TraceEvent } from './events.ts'
 
 /**
@@ -14,8 +14,8 @@ import { type Run, RunSchema, type TraceEvent } from './events.ts'
  * @returns JSON text.
  * @example
  * ```ts
- * import { exportRun } from 'whitebox-engine/trace'
- * exportRun({ schema: 'whitebox.run/1', events: [] }) // => '{"schema":"whitebox.run/1","events":[]}'
+ * import { exportRun } from 'mdml-engine/trace'
+ * exportRun({ schema: 'mdml.run/1', events: [] }) // => '{"schema":"mdml.run/1","events":[]}'
  * ```
  */
 export function exportRun(run: Run): string {
@@ -27,17 +27,17 @@ export function exportRun(run: Run): string {
  *
  * @param input - JSON text or a parsed value.
  * @returns The validated run.
- * @throws WhiteboxError with code `schema` when the input is not a valid run.
+ * @throws MdmlError with code `schema` when the input is not a valid run.
  * @example
  * ```ts
- * import { parseRun } from 'whitebox-engine/trace'
- * parseRun('{"schema":"whitebox.run/1","events":[]}').events.length // => 0
+ * import { parseRun } from 'mdml-engine/trace'
+ * parseRun('{"schema":"mdml.run/1","events":[]}').events.length // => 0
  * ```
  */
 export function parseRun(input: unknown): Run {
   const value = typeof input === 'string' ? (JSON.parse(input) as unknown) : input
   const parsed = RunSchema.safeParse(value)
-  if (!parsed.success) throw new WhiteboxError('schema', `invalid run: ${parsed.error.message}`)
+  if (!parsed.success) throw new MdmlError('schema', `invalid run: ${parsed.error.message}`)
   return parsed.data
 }
 
@@ -54,9 +54,9 @@ export type ReplayHandlers = {
  * @returns Nothing.
  * @example
  * ```ts
- * import { replay } from 'whitebox-engine/trace'
+ * import { replay } from 'mdml-engine/trace'
  * let n = 0
- * replay({ schema: 'whitebox.run/1', events: [{ type: 'metric', runId: 'r', step: 0, name: 'x', value: 1 }] }, {
+ * replay({ schema: 'mdml.run/1', events: [{ type: 'metric', runId: 'r', step: 0, name: 'x', value: 1 }] }, {
  *   metric: () => { n++ },
  * })
  * n // => 1
@@ -76,12 +76,12 @@ export function replay(run: Run, handlers: ReplayHandlers): void {
  * @returns One run holding all events in order.
  * @example
  * ```ts
- * import { mergeRuns } from 'whitebox-engine/trace'
- * mergeRuns([{ schema: 'whitebox.run/1', events: [] }]).events.length // => 0
+ * import { mergeRuns } from 'mdml-engine/trace'
+ * mergeRuns([{ schema: 'mdml.run/1', events: [] }]).events.length // => 0
  * ```
  */
 export function mergeRuns(runs: readonly Run[]): Run {
-  return { schema: 'whitebox.run/1', events: runs.flatMap((r) => r.events) }
+  return { schema: 'mdml.run/1', events: runs.flatMap((r) => r.events) }
 }
 
 /**
@@ -91,8 +91,8 @@ export function mergeRuns(runs: readonly Run[]): Run {
  * @returns `true` for valid runs.
  * @example
  * ```ts
- * import { isRun } from 'whitebox-engine/trace'
- * isRun({ schema: 'whitebox.run/1', events: [] }) // => true
+ * import { isRun } from 'mdml-engine/trace'
+ * isRun({ schema: 'mdml.run/1', events: [] }) // => true
  * ```
  */
 export function isRun(value: unknown): value is Run {

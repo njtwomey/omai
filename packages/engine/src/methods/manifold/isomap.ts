@@ -5,7 +5,7 @@
  * reuse.
  */
 
-import { WhiteboxError } from '../../lib/base/index.ts'
+import { MdmlError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import { floydWarshall, graph as makeGraph } from '../../lib/graph/index.ts'
 import { defineExplainedEstimator, type Estimator, EstimatorClass, matrixView } from '../../lib/learn/index.ts'
@@ -29,8 +29,7 @@ export function neighbourEdges(
   k: number,
 ): { readonly edges: NeighbourEdges; readonly indices: number[][] } {
   const n = matrixView(x, 'neighbourEdges').n
-  if (!(Number.isInteger(k) && k >= 1 && k < n))
-    throw new WhiteboxError('value', `neighbours: k must be in 1..${n - 1}`)
+  if (!(Number.isInteger(k) && k >= 1 && k < n)) throw new MdmlError('value', `neighbours: k must be in 1..${n - 1}`)
   const nb = kNearest(x, undefined, k, { excludeSelf: true })
   const idx = Array.from(nb.indices.data)
   const dist = toFlat(nb.distances)
@@ -46,7 +45,7 @@ export function neighbourEdges(
  * @param x - Points `[n, d]`.
  * @param k - Neighbours per row.
  * @returns The distances `[n][n]` and the graph's edges.
- * @throws WhiteboxError `value` when the graph is disconnected.
+ * @throws MdmlError `value` when the graph is disconnected.
  */
 export function geodesicDistances(
   x: TensorLike,
@@ -57,7 +56,7 @@ export function geodesicDistances(
   const g = makeGraph(edges, { nodes: n, duplicates: 'min' })
   const distances = toArray(floydWarshall(g).distance) as number[][]
   if (distances.some((r) => r.some((v) => !Number.isFinite(v))))
-    throw new WhiteboxError('value', 'isomap: the neighbour graph is disconnected; raise nNeighbors')
+    throw new MdmlError('value', 'isomap: the neighbour graph is disconnected; raise nNeighbors')
   return { distances, edges }
 }
 

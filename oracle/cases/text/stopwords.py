@@ -3,8 +3,8 @@
 from importlib.metadata import version
 
 from gensim.parsing.preprocessing import STOPWORDS
+from mdml_oracle.fixture import Case, case
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-from whitebox_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"scikit-learn": version("scikit-learn"), "gensim": version("gensim")}
 

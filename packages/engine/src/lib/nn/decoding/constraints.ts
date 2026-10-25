@@ -19,7 +19,7 @@ export type TokenConstraint = (generated: readonly number[]) => readonly boolean
  * @returns The processor.
  * @example
  * ```ts
- * import { maskProcessor } from 'whitebox-engine/nn'
+ * import { maskProcessor } from 'mdml-engine/nn'
  * maskProcessor(() => new Set([1]), 0)([5, 1, 3], []) // => [-Infinity, 1, -Infinity]
  * ```
  */
@@ -52,7 +52,7 @@ export interface TokenAutomaton<S> {
  * @concept constrained-decoding
  * @example
  * ```ts
- * import { automatonConstraint } from 'whitebox-engine/nn'
+ * import { automatonConstraint } from 'mdml-engine/nn'
  * // Alternate tokens 0 and 1, starting with 0.
  * const c = automatonConstraint({ start: 0, next: (s, t) => (t === s ? 1 - s : undefined) }, 2)
  * [...c([0, 1, 0])] // => [1]
@@ -95,7 +95,7 @@ interface TrieNode {
  * @concept constrained-decoding
  * @example
  * ```ts
- * import { trieConstraint } from 'whitebox-engine/nn'
+ * import { trieConstraint } from 'mdml-engine/nn'
  * [...trieConstraint([[0, 1], [0, 2], [3]], 5, 4)([0])] // => [1, 2]
  * ```
  */

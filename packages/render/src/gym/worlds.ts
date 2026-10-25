@@ -5,7 +5,7 @@
  * a path.
  */
 
-import { imageToPixels, type RaycastFrame, type RaycastRenderOptions, renderRaycast } from 'whitebox-engine/graphics'
+import { imageToPixels, type RaycastFrame, type RaycastRenderOptions, renderRaycast } from 'mdml-engine/graphics'
 import {
   arrow,
   circle,
@@ -18,8 +18,8 @@ import {
   type SceneNode,
   scene,
   text,
-} from 'whitebox-engine/scene'
-import { cellCentre, cellCorners, type Pose, toScene, type World, type WorldSceneOptions } from 'whitebox-engine/worlds'
+} from 'mdml-engine/scene'
+import { cellCentre, cellCorners, type Pose, toScene, type World, type WorldSceneOptions } from 'mdml-engine/worlds'
 
 /** The unit vector (x right, y down) of each direction name, for policy arrows. */
 const VECTORS: Readonly<Record<string, readonly [number, number]>> = {
@@ -72,8 +72,8 @@ function centre(w: World, cell: number, k: number): [number, number] {
  * @returns The scene.
  * @example
  * ```ts
- * import { fromAscii } from 'whitebox-engine/worlds'
- * import { worldView } from 'whitebox-render/gym'
+ * import { fromAscii } from 'mdml-engine/worlds'
+ * import { worldView } from 'mdml-render/gym'
  * worldView(fromAscii(['S.', '.G']), { policy: [1, 2, 1, 0] }).children.some((n) => n.id === 'policy') // => true
  * ```
  */
@@ -164,8 +164,8 @@ export interface RaycastViews {
  * @returns The two scenes and the frame.
  * @example
  * ```ts
- * import { fromAscii } from 'whitebox-engine/worlds'
- * import { raycastViews } from 'whitebox-render/gym'
+ * import { fromAscii } from 'mdml-engine/worlds'
+ * import { raycastViews } from 'mdml-render/gym'
  * const v = raycastViews(fromAscii(['#####', '#...#', '#####']), { x: 1.5, y: 1.5, heading: 0 }, { width: 16, height: 12 })
  * v.firstPerson.children[0].kind // => 'image'
  * ```

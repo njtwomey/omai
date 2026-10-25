@@ -67,7 +67,7 @@ export interface ColourBar {
  * @returns The layer.
  * @example
  * ```ts
- * import { layer } from 'whitebox-render/charts'
+ * import { layer } from 'mdml-render/charts'
  * layer([{ type: 'line', data: [[0, 1], [1, 2]] }], { x: [0, 1], y: [1, 2] }).series.length // => 1
  * ```
  */
@@ -168,7 +168,7 @@ function linearTicks(
  * @returns The range.
  * @example
  * ```ts
- * import { logRange } from 'whitebox-render/charts'
+ * import { logRange } from 'mdml-render/charts'
  * logRange({ kind: 'auto', pad: 0.05 }, [0.25, 1.6]) // => [0.2, 2]
  * logRange({ kind: 'auto', nice: true }, [0.25, 1.6]) // => [0.1, 10]
  * ```
@@ -218,7 +218,7 @@ function niceUp(v: number): number {
  * @returns The parts.
  * @example
  * ```ts
- * import { layer, panelParts } from 'whitebox-render/charts'
+ * import { layer, panelParts } from 'mdml-render/charts'
  * const p = panelParts([layer([{ type: 'line', data: [[0, 0], [2, 4]] }], { x: [0, 2], y: [0, 4], tight: true })], {}, { x: 50, y: 20, width: 300, height: 200 }, 0, 0, 0)
  * p.ranges.x // => [0, 2]
  * ```
@@ -418,8 +418,8 @@ function endLabel(max: number, label: string | undefined): string {
  * @returns The option's top-level fields.
  * @example
  * ```ts
- * import { chartFrame } from 'whitebox-render/charts'
- * import { figure } from 'whitebox-render/figure'
+ * import { chartFrame } from 'mdml-render/charts'
+ * import { figure } from 'mdml-render/figure'
  * chartFrame(figure(), { title: 'Loss' }).title // => { text: 'Loss', left: 8, top: 4, textStyle: { fontSize: 13, fontWeight: 600, color: '#1f2328' } }
  * ```
  */
@@ -473,7 +473,7 @@ export function chartFrame(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { cartesian, lines } from 'whitebox-render/charts'
+ * import { cartesian, lines } from 'mdml-render/charts'
  * const option = cartesian([lines([{ x: [0, 1, 2], y: [0, 1, 4] }])], { x: { label: 'x', limits: [0, 2] } })
  * option.xAxis[0].min // => 0
  * ```

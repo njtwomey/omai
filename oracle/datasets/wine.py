@@ -3,9 +3,9 @@
 from typing import cast
 
 import sklearn
+from mdml_oracle.vendor import render_classification
 from sklearn.datasets import load_wine
 from sklearn.utils import Bunch
-from whitebox_oracle.vendor import render_classification
 
 TARGET = "packages/engine/src/lib/datasets/_data/wine.data.ts"
 
