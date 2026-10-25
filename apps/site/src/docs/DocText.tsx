@@ -1,6 +1,16 @@
 import { Fragment, type ReactNode } from 'react'
 import { Link } from '../shell/Link.tsx'
 import { type Docs, symbolPath } from './data.ts'
+import { TypeRef } from './TypeHover.tsx'
+
+const TYPE_KINDS = new Set(['interface', 'type', 'class', 'enum'])
+
+/** Whether a name is a documented type as seen from a module (so it gets the hover). */
+function isType(docs: Docs, name: string, near: string): boolean {
+  const s = docs.find(name, near)
+  const kind = s?.file.symbols.find((x) => x.name === s.name)?.kind
+  return kind !== undefined && TYPE_KINDS.has(kind)
+}
 
 /** Inline marks of a doc comment: `code`, {@link name} and **strong**. */
 function inline(text: string, docs: Docs, near: string): ReactNode[] {
@@ -9,12 +19,18 @@ function inline(text: string, docs: Docs, near: string): ReactNode[] {
   return parts.map((part) => {
     const i = `${offset}`
     offset += part.length
-    if (part.startsWith('`'))
+    if (part.startsWith('`')) {
+      const code = part.slice(1, -1)
       return (
         <code key={i} className="rounded bg-surface px-1 py-0.5 font-mono text-[0.85em]">
-          {part.slice(1, -1)}
+          {/^[A-Z][\w$]*$/.test(code) && isType(docs, code, near) ? (
+            <TypeRef docs={docs} name={code} near={near} className="text-accent" />
+          ) : (
+            code
+          )}
         </code>
       )
+    }
     if (part.startsWith('{@link')) {
       const [target = '', ...label] = part
         .slice(6, -1)
@@ -26,6 +42,10 @@ function inline(text: string, docs: Docs, near: string): ReactNode[] {
         <code key={i} className="font-mono text-[0.85em]">
           {text}
         </code>
+      ) : isType(docs, s.name, near) ? (
+        <TypeRef key={i} docs={docs} name={s.name} near={near} className="font-mono text-[0.85em] text-accent">
+          {text}
+        </TypeRef>
       ) : (
         <Link
           key={i}

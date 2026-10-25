@@ -4311,8 +4311,14 @@ failing example to itself).
   `make site`, a no-op when its output is newer than the engine's source) writes static files named by content hash
   to `apps/site/.generated/docs/` (gitignored): a small index for the tree (folders with summaries, files with their
   exports' names and kinds: about 0.5 MB where the whole catalogue is 7 MB), one data file per source file (its
-  comment and full `SymbolDoc`s, fetched when a page shows it) and a search index of every export's summary (fetched
-  when the search box is used, or once the page is idle), then `manifest.json` naming the current version.
+  comment, full `SymbolDoc`s and `refs`: the type names in its signatures resolved through its imports to
+  `[module, name]`), a types file per module (each exported type's declaration and lead sentence, named in the index
+  and fetched on the first hover) and a search index of every export's summary (fetched when the search box is used,
+  or once the page is idle), then `manifest.json` naming the current version.
+- Type names in signatures, parameter types and prose (`{@link}`, inline code) link their page and, on hover or
+  keyboard focus, show the type's declaration (highlighted) and lead sentence in whitebox-render's `Popover`
+  (`src/docs/TypeHover.tsx`); Escape or moving away closes it. Names in code resolve only through the file's `refs`,
+  so globals and private types stay plain.
 - `plugins/`: `docs-data.ts` (writing the files, the staleness check), `build-docs.ts` (the command behind
   `make docs-catalogue`) and the Vite plugin `docs-catalogue.ts`. In dev it serves `<base>docs-data/*` from the
   folder and `virtual:whitebox-docs/index` (the current index's URL); after an edit to the engine it regenerates in a

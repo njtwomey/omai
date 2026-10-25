@@ -6,7 +6,7 @@
  */
 import { useEffect, useState } from 'react'
 import type { PackageDoc, SymbolKind } from 'whitebox-meta/schema'
-import type { WireFileData, WireIndex, WireSearch } from './wire.ts'
+import type { WireFileData, WireIndex, WireSearch, WireTypes } from './wire.ts'
 
 /** An export as the index lists it. */
 export interface IndexSymbol {
@@ -29,6 +29,8 @@ export interface IndexFolder {
   readonly path: string
   readonly module: string
   readonly summary: string
+  /** The URL of its types file (declarations for the hover on a type name), when it exports types. */
+  readonly types?: string
 }
 
 /** The index as the pages use it. */
@@ -48,7 +50,7 @@ export function fromWire(wire: WireIndex, url: string): DocsIndex {
     version: wire.version,
     search: dir + wire.search,
     packages: wire.packages,
-    folders: wire.folders,
+    folders: wire.folders.map((f) => (f.types === undefined ? f : { ...f, types: dir + f.types })),
     files: wire.files.map((f) => ({
       path: f.path,
       module: f.module,
@@ -77,6 +79,10 @@ export interface Docs extends DocsIndex {
   readonly file: (path: string) => IndexFile | undefined
   /** Where a symbol of this name is defined, preferring the given file's module, for `{@link name}`. */
   readonly find: (name: string, nearModule?: string) => { readonly file: IndexFile; readonly name: string } | undefined
+  /** The export of a module with this name. */
+  readonly symbol: (module: string, name: string) => { readonly file: IndexFile; readonly name: string } | undefined
+  /** The URL of a module's types file. */
+  readonly typesUrl: (module: string) => string | undefined
 }
 
 /** The URL of a folder or file path of the tree. */
@@ -119,6 +125,10 @@ export function withLookups(index: DocsIndex): Docs {
     filesIn.set(dir, [...(filesIn.get(dir) ?? []), f])
   }
   const byName = new Map<string, { file: IndexFile; name: string }[]>()
+  const inModule = new Map<string, { file: IndexFile; name: string }>()
+  for (const f of index.files)
+    for (const s of f.symbols) inModule.set(`${f.module}#${s.name}`, { file: f, name: s.name })
+  const types = new Map(index.folders.map((f) => [f.module, f.types]))
   for (const f of index.files)
     for (const s of f.symbols) byName.set(s.name, [...(byName.get(s.name) ?? []), { file: f, name: s.name }])
   const byPath = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
@@ -138,6 +148,8 @@ export function withLookups(index: DocsIndex): Docs {
       }
     },
     file: (path) => files.get(path),
+    symbol: (module, name) => inModule.get(`${module}#${name}`),
+    typesUrl: (module) => types.get(module),
     find: (name, nearModule) => {
       const all = byName.get(name) ?? []
       return all.find((s) => s.file.module === nearModule) ?? all.find((s) => s.file.path.startsWith('lib/')) ?? all[0]
@@ -260,4 +272,28 @@ export function useSearch(index: DocsIndex, wanted: boolean): WireSearch | null 
     }
   }, [index, wanted])
   return search !== null && search.url === index.search ? search.value : null
+}
+
+const typesCache = new Map<string, Promise<WireTypes>>()
+
+/** A module's types file (fetched once, when first wanted), or `null` while it loads or when `url` is undefined. */
+export function useTypes(url: string | undefined): WireTypes | null {
+  const [types, setTypes] = useState<{ readonly url: string; readonly value: WireTypes } | null>(null)
+  useEffect(() => {
+    if (url === undefined) return
+    let live = true
+    let p = typesCache.get(url)
+    if (p === undefined) {
+      p = fetchJson<WireTypes>(url)
+      typesCache.set(url, p)
+      p.catch(() => typesCache.delete(url))
+    }
+    void p.then((value) => {
+      if (live) setTypes({ url, value })
+    })
+    return () => {
+      live = false
+    }
+  }, [url])
+  return types !== null && types.url === url ? types.value : null
 }

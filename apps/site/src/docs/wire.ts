@@ -1,7 +1,7 @@
 /**
  * The precompiled docs catalogue as files (`apps/site/plugins/docs-data.ts` writes them, the docs pages fetch them):
- * a small index for the tree, a search index fetched when someone searches, and one file per source file with its
- * full symbol docs. Every file is named by a hash of its content, so a browser may keep it forever.
+ * a small index for the tree, a search index fetched when someone searches, one file per source file with its full
+ * symbol docs, and one small file per module with its types' declarations, for the hover on a type name. Every file is named by a hash of its content, so a browser may keep it forever.
  */
 import type { PackageDoc, SymbolDoc, SymbolKind } from 'whitebox-meta/schema'
 
@@ -24,7 +24,26 @@ export interface WireFolder {
   readonly path: string
   readonly module: string
   readonly summary: string
+  /** The name of its types file (`types/<hash>.json`, a {@link WireTypes}), when it exports types. */
+  readonly types?: string
 }
+
+/** The type names a file's docs use, each resolved (through the file's imports) to `[module, name]`. */
+export type WireRefs = Readonly<Record<string, readonly [string, string]>>
+
+/** A type as its hover shows it. */
+export interface WireType {
+  /** Its file, below `packages/engine/src`. */
+  readonly file: string
+  readonly kind: SymbolKind
+  /** Its declaration (long ones cut). */
+  readonly signature: string
+  /** Its one-sentence summary. */
+  readonly summary: string
+}
+
+/** The types (interfaces, type aliases, classes, enums) one module exports, by name. */
+export type WireTypes = Readonly<Record<string, WireType>>
 
 /** The index: what the tree, folder pages, file headers and `{@link}`s need. */
 export interface WireIndex {
@@ -46,6 +65,8 @@ export interface WireSearch {
 export interface WireFileData {
   readonly description: string
   readonly symbols: readonly SymbolDoc[]
+  /** The type names its docs use, resolved. */
+  readonly refs: WireRefs
 }
 
 /** What the generator writes last, naming the current index. */
