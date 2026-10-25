@@ -1,3 +1,10 @@
+/**
+ * Building datasets from plain arrays and moving between datasets and tensors: constructors for regression,
+ * classification, multilabel and multi-output sets, `table` for mixed-type data frames and `tableToXy` to encode one as
+ * a feature matrix (one-hot categoricals), `toTensors` and `fromTensors` for transforming per-row fields, and
+ * `describe`, a pandas-style summary of a dataset.
+ */
+
 import { quantileOf, WhiteboxError } from '../base/index.ts'
 import { asTensor, cast, fromStorage, isTensor, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { cardinality, concrete, concreteFloat, defaultNames, metaFor } from './schema/_coerce.ts'

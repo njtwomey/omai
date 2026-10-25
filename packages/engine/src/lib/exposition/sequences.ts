@@ -1,3 +1,8 @@
+/**
+ * The exposition record of a hidden-state model reading a sequence (hidden Markov models, switching models): each
+ * state's posterior at each time, the decoded path and, when known, the true states.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 

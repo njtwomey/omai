@@ -1,3 +1,9 @@
+/**
+ * The exposition record of an evolving population, generation by generation, for genetic algorithms, evolution
+ * strategies, CMA-ES and genetic programming: every individual's fitness and either its position on the objective's
+ * surface or its genome.
+ */
+
 import { rowsOf, sameLength } from './_check.ts'
 
 /** One generation of an evolving population. */

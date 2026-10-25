@@ -1,3 +1,9 @@
+/**
+ * Exposition records for Bayesian and tuned models: a predictive distribution on a grid of inputs with its mean, bands
+ * and samples (Gaussian processes, Bayesian regression), and an objective over a grid of two hyperparameters, such as a
+ * marginal likelihood, with the optimiser's path across it.
+ */
+
 import { rowsOf, sameLength } from './_check.ts'
 
 /** A predictive distribution on a grid of inputs (GPs, Bayesian regression), with samples. */

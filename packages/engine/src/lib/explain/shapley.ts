@@ -1,3 +1,10 @@
+/**
+ * Shapley values: each feature's average marginal contribution to a model's prediction over all coalitions of the other
+ * features, the attribution SHAP is built on. Exact enumeration and interaction values for any cooperative game with
+ * few players, Kernel SHAP and permutation sampling for models with more features, and Tree SHAP for decision trees and
+ * tree ensembles, each returning per-feature values that sum to the prediction minus the base value.
+ */
+
 import { popcount, WhiteboxError } from '../base/index.ts'
 import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../games/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'

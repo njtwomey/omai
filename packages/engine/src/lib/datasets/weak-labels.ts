@@ -1,3 +1,9 @@
+/**
+ * Weak supervision with known clean labels: labelling functions that vote or abstain (data programming, as in Snorkel),
+ * crowdsourced labels from workers with their own confusion matrices (the Dawid-Skene setting), positive-unlabelled
+ * data under SCAR or biased labelling, and bags with only their label proportions observed.
+ */
+
 import { softmaxOf } from '../base/index.ts'
 import {
   type ClassificationData,

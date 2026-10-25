@@ -1,3 +1,9 @@
+/**
+ * Small real classification datasets vendored into the bundle: Fisher's iris, the UCI wine and Wisconsin breast cancer
+ * data, the 8 by 8 handwritten digits (as features and as images), the Palmer penguins and the Titanic survival table,
+ * as in scikit-learn's `load_*` functions.
+ */
+
 import {
   type ClassificationData,
   type ImageData,

@@ -1,3 +1,9 @@
+/**
+ * Datasets for fairness audits and mitigation: synthetic credit decisions with a protected group and controllable bias
+ * (representation imbalance, a real base-rate gap, historical label bias, noisier measurements of the minority and a
+ * proxy feature), the Statlog German credit data, and Titanic survival with sex and age as protected attributes.
+ */
+
 import { type ClassificationData, type DatasetGenerator, type Knobs, xyClasses } from '../data/index.ts'
 import { ndtr } from '../numerics/special/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'

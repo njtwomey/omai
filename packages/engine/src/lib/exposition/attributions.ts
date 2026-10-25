@@ -1,3 +1,9 @@
+/**
+ * Exposition records for feature attributions: additive per-row attributions such as SHAP values or LIME weights (a
+ * base value plus one contribution per feature), the running estimates of a sampled attribution as samples accrue, and
+ * global importances (permutation importance, impurity decrease, mean |SHAP|) with their spread.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 

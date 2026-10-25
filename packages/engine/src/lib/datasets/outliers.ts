@@ -1,4 +1,9 @@
-// Contaminated datasets: clean data with a known fraction of outliers, for robust regression and anomaly detection.
+/**
+ * Contaminated datasets: clean data with a known fraction of outliers, labelled so detectors can be scored against the
+ * truth. Gaussian blobs and two moons with scattered outliers for anomaly detection (as in scikit-learn's comparison),
+ * and a noisy line with outliers for robust regression.
+ */
+
 import {
   type ClassificationData,
   type DatasetGenerator,

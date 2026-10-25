@@ -1,4 +1,9 @@
-// One-dimensional responses of generalised linear models: counts and positive skewed targets with a log link.
+/**
+ * One-dimensional responses of generalised linear models with a log link: counts (Poisson, negative binomial) and
+ * positive skewed targets (gamma, inverse Gaussian, Tweedie) whose mean is `exp(intercept + slope x)`, for fitting and
+ * checking GLMs.
+ */
+
 import { type DatasetGenerator, type RegressionData, xy } from '../data/index.ts'
 import {
   type Distribution,

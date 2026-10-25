@@ -1,3 +1,9 @@
+/**
+ * Fairness before training, as in AIF360: reweighing, which weights each row so the label is independent of the group
+ * in the weighted data, and disparate-impact repair, which moves each feature towards a distribution shared by all
+ * groups while keeping ranks within each group.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** One cell of {@link reweighingWeights}: a group and a label, how many rows it has and expects, and its weight. */

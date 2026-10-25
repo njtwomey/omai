@@ -1,3 +1,8 @@
+/**
+ * The schema for image datasets: pixels as `[n, h, w, c]` tensors (channels last, values in [0, 1]) with optional class
+ * labels, bounding boxes and segmentation masks. The `images` constructor checks that they agree.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Tensor, TensorLike } from '../../tensor/index.ts'
 import { checkRows, concrete, concreteFloat, metaFor } from './_coerce.ts'

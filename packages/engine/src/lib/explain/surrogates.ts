@@ -1,3 +1,9 @@
+/**
+ * Surrogate explanations: simpler models that imitate a complex one. LIME (a locally weighted linear model fitted to
+ * perturbations around a point), anchors (high-precision if-then rules around a point found by beam search with bandit
+ * sampling), and global surrogate trees with their fidelity to the model.
+ */
+
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import type { FitOptions } from '../learn/estimator.ts'
 import { columnOf, type MatrixView, matrixView, takeColumns, targetVector } from '../learn/validation.ts'

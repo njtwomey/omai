@@ -1,3 +1,9 @@
+/**
+ * The schema for logged environment transitions, the data of offline reinforcement learning and bandits: one row per
+ * step with states, actions, rewards and episode boundaries, and the behaviour policy's probability of each logged
+ * action when it is known.
+ */
+
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { checkRows, concrete, concreteFloat, metaFor } from './_coerce.ts'
 import type { DatasetMeta } from './common.ts'

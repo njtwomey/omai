@@ -1,3 +1,8 @@
+/**
+ * The exposition record of a margin method (support vector machines, SVDD): the support vectors with their dual
+ * coefficients, how the dual was solved, and the decision surface with its margins.
+ */
+
 import { rowsOf, sameLength } from './_check.ts'
 import type { InputRows } from './rows.ts'
 import type { DecisionSurface } from './surfaces.ts'

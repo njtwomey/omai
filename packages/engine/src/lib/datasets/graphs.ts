@@ -1,3 +1,10 @@
+/**
+ * Graph datasets: the karate club and Les Misérables networks, contextual stochastic block models for node
+ * classification, a graph-classification set of random graphs labelled by family (Erdős-Rényi, Barabási-Albert,
+ * Watts-Strogatz, grids, trees and more), small molecules read from SMILES, and kinship knowledge-graph triples with
+ * planted rules.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   type DatasetGenerator,

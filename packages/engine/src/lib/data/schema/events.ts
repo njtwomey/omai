@@ -1,3 +1,8 @@
+/**
+ * The schema for point-process data: event times, event locations or both, with optional marks, observed over a window.
+ * The `events` constructor builds and checks one.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Tensor, TensorLike } from '../../tensor/index.ts'
 import { cardinality, checkRows, concrete, concreteFloat, metaFor } from './_coerce.ts'

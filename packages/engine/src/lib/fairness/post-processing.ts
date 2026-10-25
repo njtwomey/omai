@@ -1,3 +1,9 @@
+/**
+ * Fairness after training by threshold adjustment (Hardt, Price and Srebro, 2016; fairlearn's `ThresholdOptimizer`):
+ * per-group randomised thresholds on a score that satisfy a constraint such as demographic parity or equalised odds
+ * exactly in expectation while maximising accuracy or another objective, and the decisions they give each row.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** The fairness constraint a threshold optimiser equalises across groups. */

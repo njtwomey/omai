@@ -1,3 +1,10 @@
+/**
+ * Modifiers that change the labels or class balance of a dataset: label noise from a known transition matrix (symmetric
+ * or pair-flip), subsampling to exact prevalences, label shift that resamples towards new class priors while `p(x | y)`
+ * stays fixed, and long-tailed or step class imbalance. Clean labels and the transition are kept in the truth, and each
+ * modifier is also available as a recipe modifier.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { categorical, dirichlet, foldIn, type Key, permutation, uniform } from '../../random/index.ts'
 import { choice, dict, real } from '../../space/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Small real regression datasets: the diabetes data of least angle regression, Anscombe's quartet, Linnerud, Motor
+ * Trend cars, and California housing as a pinned remote asset. Also CDC growth charts as LMS parameters, with a
+ * generator of children's measurements whose conditional quantiles are known exactly.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   type DatasetGenerator,

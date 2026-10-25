@@ -1,3 +1,9 @@
+/**
+ * Loading datasets by reference: embedded data bundled as generated modules, or remote files pinned by their SHA-256,
+ * fetched, verified and parsed. Downloaded bytes go through an asset cache, in memory or in the browser's IndexedDB so
+ * they survive reloads, and `load` checks the checksum before parsing or caching anything.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Dataset } from './schema/common.ts'
 

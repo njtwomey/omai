@@ -1,3 +1,9 @@
+/**
+ * The decision surface, the most common exposition record: a model's predictions on a grid over two input features
+ * (decision regions, probability maps, regression surfaces), optionally with the surface at recorded steps of training
+ * such as SMO steps, IRLS iterations or boosting stages. `surfaceAt` gives the record as it was at one step.
+ */
+
 import { rowsOf, sameLength } from './_check.ts'
 import type { InputRows } from './rows.ts'
 
