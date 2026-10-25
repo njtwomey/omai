@@ -40,6 +40,7 @@ import {
   toFlat,
   type Value,
 } from '../../lib/tensor/index.ts'
+import { linearScoresOf } from './_models.ts'
 
 /** The counterfactual methods {@link explainCounterfactuals} offers. */
 export type CounterfactualMethod = 'growing spheres' | 'face' | 'wachter' | 'dice' | 'prototype' | 'cem'
@@ -55,29 +56,15 @@ interface Differentiable {
  * d + 1 points and checked at a data row, as differentiable functions; undefined for other models.
  */
 function differentiableOf(fitted: Fitted, x: ReturnType<typeof matrixView>): Differentiable | undefined {
-  const f = fitted.decisionFunction
-  if (f === undefined) return undefined
-  const d = x.d
-  const probe = [
-    new Array<number>(d).fill(0),
-    ...Array.from({ length: d }, (_, j) => Array.from({ length: d }, (_, i) => (i === j ? 1 : 0))),
-    Array.from(x.data.subarray(0, d)),
-  ]
-  const out = f(probe)
-  const k = out.shape.length === 2 ? (out.shape[1] ?? 1) : 1
-  const v = toFlat(out)
-  const at = (r: number, c: number): number => v[r * k + c] ?? 0
-  const b = Array.from({ length: k }, (_, c) => at(0, c))
-  const w = Array.from({ length: d }, (_, j) => Array.from({ length: k }, (_, c) => at(j + 1, c) - (b[c] ?? 0)))
-  for (let c = 0; c < k; c++) {
-    const want = (b[c] ?? 0) + w.reduce((s, row, j) => s + (row[c] ?? 0) * (probe[d + 1]?.[j] ?? 0), 0)
-    if (Math.abs(want - at(d + 1, c)) > 1e-8 * (1 + Math.abs(want))) return undefined
-  }
+  const lin = linearScoresOf(fitted, x)
+  if (lin === undefined) return undefined
+  const { w, b } = lin
+  const k = b.length
   if (k === 1) {
     // A binary score s: class scores [-s/2, s/2], P(1) = sigmoid(s).
     const w2 = w.map((row) => [-(row[0] ?? 0) / 2, (row[0] ?? 0) / 2])
     const b2 = [[-(b[0] ?? 0) / 2, (b[0] ?? 0) / 2]]
-    const lin = (u: Value): Value =>
+    const score = (u: Value): Value =>
       add(
         matmul(
           u,
@@ -88,7 +75,7 @@ function differentiableOf(fitted: Fitted, x: ReturnType<typeof matrixView>): Dif
     return {
       scores: (u) => add(matmul(u, w2), b2),
       probability: (cls) => (u) => {
-        const p = squeeze(sigmoid(lin(u)), -1)
+        const p = squeeze(sigmoid(score(u)), -1)
         return cls === 1 ? p : sub(1, p)
       },
     }

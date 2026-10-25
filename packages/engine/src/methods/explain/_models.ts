@@ -159,3 +159,32 @@ export function treeEnsembleOf(fitted: Fitted, output: ModelOutput): TreeEnsembl
   }
   return undefined
 }
+
+/**
+ * The weights `[d][k]` and intercepts `[k]` of a model whose decision function is linear in its inputs (logistic
+ * regression, a linear SVM), read off d + 1 evaluations and checked at a data row; undefined for other models.
+ */
+export function linearScoresOf(
+  fitted: Fitted,
+  x: { readonly n: number; readonly d: number; readonly data: Float64Array },
+): { readonly w: number[][]; readonly b: number[] } | undefined {
+  const f = fitted.decisionFunction
+  if (f === undefined || x.n === 0) return undefined
+  const d = x.d
+  const probe = [
+    new Array<number>(d).fill(0),
+    ...Array.from({ length: d }, (_, j) => Array.from({ length: d }, (_, i) => (i === j ? 1 : 0))),
+    Array.from(x.data.subarray(0, d)),
+  ]
+  const out = f(probe)
+  const k = out.shape.length === 2 ? (out.shape[1] ?? 1) : 1
+  const v = toFlat(out)
+  const at = (r: number, c: number): number => v[r * k + c] ?? 0
+  const b = Array.from({ length: k }, (_, c) => at(0, c))
+  const w = Array.from({ length: d }, (_, j) => Array.from({ length: k }, (_, c) => at(j + 1, c) - (b[c] ?? 0)))
+  for (let c = 0; c < k; c++) {
+    const want = (b[c] ?? 0) + w.reduce((s, row, j) => s + (row[c] ?? 0) * (probe[d + 1]?.[j] ?? 0), 0)
+    if (Math.abs(want - at(d + 1, c)) > 1e-8 * (1 + Math.abs(want))) return undefined
+  }
+  return { w, b }
+}

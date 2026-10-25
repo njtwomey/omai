@@ -1,6 +1,7 @@
 /**
  * Data attribution: which training rows a model owes its behaviour to. Influence functions, TracIn over checkpoints,
- * Monte Carlo data Shapley and the exact k-nearest-neighbour Shapley values.
+ * Monte Carlo data Shapley, the exact k-nearest-neighbour Shapley values, Beta Shapley and data Banzhaf over any
+ * subset utility, and representer point values.
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
@@ -10,7 +11,8 @@ import type { Estimator, FitOptions, LearnData } from '../learn/estimator.ts'
 import { type Scorer, type Scoring, scorersOf } from '../learn/scoring.ts'
 import { matrixView, rowsOf, takeData, targetVector } from '../learn/validation.ts'
 import { solve } from '../numerics/linalg/index.ts'
-import { foldIn, permutation } from '../random/index.ts'
+import { lgamma as logGamma } from '../numerics/special/_kernels.ts'
+import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { add, asTensor, fromStorage, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 
@@ -374,4 +376,209 @@ export function totalLoss(loss: ExampleLoss, params: Value, data: LearnData): Va
     (acc, x, i) => add(acc, loss(params, x, ys[i] ?? 0)),
     fromStorage(new Float64Array([0]), [], 'float64'),
   )
+}
+
+/** A utility of training subsets: the test score of a model fitted on those rows. */
+export type SubsetUtility = (rows: readonly number[]) => number
+
+/**
+ * The utility of training subsets for an estimator: fit on the rows and score on the test data, with a fixed
+ * utility for the empty set and for subsets the estimator cannot fit (one class only, too few rows).
+ *
+ * @param estimator - The estimator.
+ * @param train - Training data.
+ * @param test - The data the utility is measured on.
+ * @param options - scoring (default the estimator's score) and emptyUtility (default 0).
+ * @returns The utility.
+ * @example
+ * ```ts
+ * import { subsetUtility } from 'whitebox-engine/explain'
+ * import { defineEstimator, rowsOf } from 'whitebox-engine/learn'
+ * import { full, item, mean } from 'whitebox-engine/tensor'
+ * const meanModel = defineEstimator({ name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) }, {})
+ * const u = subsetUtility(meanModel, { x: [[0], [0]], y: [1, 3] }, { x: [[0]], y: [1] }, { scoring: 'neg_mean_absolute_error' })
+ * u([0]) // => 0
+ * ```
+ */
+export function subsetUtility(
+  estimator: Estimator,
+  train: LearnData,
+  test: LearnData,
+  options: { readonly scoring?: Scoring; readonly emptyUtility?: number } = {},
+): SubsetUtility {
+  const scorer = Object.values(scorersOf(options.scoring))[0]
+  if (scorer === undefined) throw new WhiteboxError('value', 'subsetUtility: no scorer')
+  const empty = options.emptyUtility ?? 0
+  return (rows) => {
+    if (rows.length === 0) return empty
+    try {
+      return scorer.score(estimator.fit(takeData(train, rows), { explain: false }), test)
+    } catch {
+      return empty
+    }
+  }
+}
+
+/** Options of {@link betaShapley}. */
+export interface BetaShapleyOptions extends FitOptions {
+  /** The Beta(alpha, beta) weights on subset sizes (default 16 and 1, Kwon and Zou's choice; 1 and 1 is Shapley). */
+  readonly alpha?: number
+  readonly beta?: number
+  /** Permutations sampled (default 100). */
+  readonly nPermutations?: number
+}
+
+function logBeta(a: number, b: number): number {
+  return logGamma(a) + logGamma(b) - logGamma(a + b)
+}
+
+/**
+ * Beta Shapley (Kwon and Zou 2022): a semivalue that weights a point's marginal contributions by the size of the
+ * subset it joins, w(j) = n C(n - 1, j - 1) B(j + beta - 1, n - j + alpha) / B(alpha, beta), estimated over random
+ * permutations (in which the size a point joins is uniform). With alpha > beta small subsets weigh more, where a noisy
+ * or mislabelled point's harm shows most; alpha = beta = 1 is data Shapley.
+ *
+ * @param utility - The utility of training subsets (see {@link subsetUtility}).
+ * @param n - The number of training points.
+ * @param options - alpha, beta, nPermutations and key.
+ * @returns One value per point and the standard errors.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * // An additive utility: each point is worth its own value, whatever the weights.
+ * const worth = [1, 2, -1]
+ * const u = (rows) => rows.reduce((s, i) => s + worth[i], 0)
+ * explain.betaShapley(u, 3, { nPermutations: 20, alpha: 1, beta: 1 }).values.map((v) => Math.round(v * 1e9) / 1e9) // => [1, 2, -1]
+ * ```
+ */
+export function betaShapley(
+  utility: SubsetUtility,
+  n: number,
+  options: BetaShapleyOptions = {},
+): { readonly values: readonly number[]; readonly standardErrors: readonly number[] } {
+  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', 'betaShapley: needs at least one point')
+  const a = options.alpha ?? 16
+  const b = options.beta ?? 1
+  const logB = logBeta(a, b)
+  // The weight of joining a subset of size s (j = s + 1).
+  const weight = Array.from({ length: n }, (_, s) => {
+    const j = s + 1
+    const logChoose = logGamma(n) - logGamma(j) - logGamma(n - j + 1)
+    return n * Math.exp(logChoose + logBeta(j + b - 1, n - j + a) - logB)
+  })
+  const key = keyFor(options, 'betaShapley')
+  const nPerm = options.nPermutations ?? 100
+  const sum = new Float64Array(n)
+  const sumSq = new Float64Array(n)
+  for (let t = 0; t < nPerm; t++) {
+    const order = toFlat(permutation(foldIn(key, t), n))
+    let prev = utility([])
+    const prefix: number[] = []
+    order.forEach((i, s) => {
+      prefix.push(i)
+      const cur = utility(prefix)
+      const c = (weight[s] ?? 1) * (cur - prev)
+      sum[i] = (sum[i] ?? 0) + c
+      sumSq[i] = (sumSq[i] ?? 0) + c * c
+      prev = cur
+    })
+  }
+  const values = Array.from(sum, (v) => v / nPerm)
+  const standardErrors = Array.from(sumSq, (v, i) =>
+    nPerm < 2 ? Number.NaN : Math.sqrt(Math.max(0, v / nPerm - (values[i] ?? 0) ** 2) / (nPerm - 1)),
+  )
+  return { values, standardErrors }
+}
+
+/**
+ * Data Banzhaf (Wang and Jia 2023) by the maximum sample reuse estimator: draw random training subsets, each point in
+ * with probability one half; a point's value is the mean utility of the subsets that hold it minus that of those that
+ * do not. Every sample informs every point, and the Banzhaf weighting is the most robust semivalue to noisy utilities.
+ *
+ * @param utility - The utility of training subsets.
+ * @param n - The number of training points.
+ * @param options - nSamples (default 200) and key.
+ * @returns One value per point.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * const worth = [1, 2, -1]
+ * const u = (rows) => rows.reduce((s, i) => s + worth[i], 0)
+ * explain.dataBanzhaf(u, 3, { nSamples: 400 }).values.map((v) => Math.round(v)) // => [1, 2, -1]
+ * ```
+ */
+export function dataBanzhaf(
+  utility: SubsetUtility,
+  n: number,
+  options: { readonly nSamples?: number; readonly key?: Key } = {},
+): { readonly values: readonly number[] } {
+  if (!(Number.isInteger(n) && n >= 1)) throw new WhiteboxError('value', 'dataBanzhaf: needs at least one point')
+  const key = options.key ?? keyFor({}, 'dataBanzhaf')
+  const ns = options.nSamples ?? 200
+  const inSum = new Float64Array(n)
+  const inCount = new Float64Array(n)
+  const outSum = new Float64Array(n)
+  const outCount = new Float64Array(n)
+  for (let t = 0; t < ns; t++) {
+    const u = toFlat(uniform(foldIn(key, t), [n]))
+    const rows = Array.from({ length: n }, (_, i) => i).filter((i) => (u[i] ?? 0) < 0.5)
+    const value = utility(rows)
+    const member = new Set(rows)
+    for (let i = 0; i < n; i++) {
+      if (member.has(i)) {
+        inSum[i] = (inSum[i] ?? 0) + value
+        inCount[i] = (inCount[i] ?? 0) + 1
+      } else {
+        outSum[i] = (outSum[i] ?? 0) + value
+        outCount[i] = (outCount[i] ?? 0) + 1
+      }
+    }
+  }
+  return {
+    values: Array.from({ length: n }, (_, i) =>
+      (inCount[i] ?? 0) === 0 || (outCount[i] ?? 0) === 0
+        ? 0
+        : (inSum[i] ?? 0) / (inCount[i] ?? 1) - (outSum[i] ?? 0) / (outCount[i] ?? 1),
+    ),
+  }
+}
+
+/**
+ * Representer point values (Yeh, Kim, Yen and Ravikumar 2018): for a model whose last layer is linear with an L2
+ * penalty lambda, at a stationary point the prediction decomposes over the training points as
+ * f(x_t) = sum_i alpha_i phi_i . phi_t with alpha_i = -(1 / (2 lambda n)) dL/df(x_i); each training point's
+ * representer value for a test point is alpha_i (phi_i . phi_t), positive points excitatory and negative inhibitory.
+ *
+ * @param trainFeatures - The last layer's inputs for the training points `[n, p]`.
+ * @param outputGradients - The loss's gradient with respect to the model's output at each training point `[n]`.
+ * @param testFeatures - The last layer's inputs for the test points `[m, p]`.
+ * @param lambda - The L2 penalty of the last layer.
+ * @returns values[test][train], and alpha.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * const r = explain.representerValues([[1, 0], [0, 1]], [-2, 1], [[1, 1]], 0.25)
+ * r.values // => [[2, -1]]
+ * ```
+ */
+export function representerValues(
+  trainFeatures: TensorLike,
+  outputGradients: readonly number[],
+  testFeatures: TensorLike,
+  lambda: number,
+): { readonly values: readonly (readonly number[])[]; readonly alpha: readonly number[] } {
+  const tr = matrixView(trainFeatures, 'representerValues')
+  const te = matrixView(testFeatures, 'representerValues', { nFeatures: tr.d })
+  if (outputGradients.length !== tr.n)
+    throw new WhiteboxError('shape', 'representerValues: one gradient per training point')
+  if (!(lambda > 0)) throw new WhiteboxError('value', 'representerValues: lambda must be positive')
+  const alpha = outputGradients.map((g) => -g / (2 * lambda * tr.n))
+  const values = Array.from({ length: te.n }, (_, t) =>
+    alpha.map((a, i) => {
+      let dot = 0
+      for (let j = 0; j < tr.d; j++) dot += (tr.data[i * tr.d + j] ?? 0) * (te.data[t * tr.d + j] ?? 0)
+      return a * dot
+    }),
+  )
+  return { values, alpha }
 }
