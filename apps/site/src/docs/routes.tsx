@@ -5,6 +5,7 @@ import { type Docs, type Folder, type IndexFile, useDocs, useFileData } from './
 import { FilePage } from './FilePage.tsx'
 import { FolderPage } from './FolderPage.tsx'
 import { SymbolPage } from './SymbolPage.tsx'
+import { RefsContext } from './TypeHover.tsx'
 import { DOCS_HOME, docsToc } from './toc.ts'
 
 /** What a docs path names, following the source tree: a folder, a file, or an export of a file. */
@@ -44,7 +45,11 @@ function SymbolTarget(props: {
         No export {props.name} in {props.file.path}.
       </p>
     )
-  return <SymbolPage docs={props.docs} file={props.file} symbol={symbol} nav={props.nav} />
+  return (
+    <RefsContext.Provider value={data.refs}>
+      <SymbolPage docs={props.docs} file={props.file} symbol={symbol} nav={props.nav} />
+    </RefsContext.Provider>
+  )
 }
 
 const tocs = new WeakMap<Docs, ReturnType<typeof docsToc>>()

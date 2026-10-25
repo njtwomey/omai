@@ -1,13 +1,45 @@
 import type { ReactNode } from 'react'
 import type { Example, MemberDoc, ParamDoc, SymbolDoc } from 'whitebox-meta/schema'
 import { CodeBlock } from '../shell/CodeBlock.tsx'
+import { highlight } from '../shell/highlight.ts'
 import { Crumbs } from './Crumbs.tsx'
 import { DocInline, DocText } from './DocText.tsx'
 import { baseName, type Docs, type IndexFile } from './data.ts'
 import { LiveExample } from './LiveExample.tsx'
+import { TypeRef } from './TypeHover.tsx'
 
-function Code(props: { readonly code: string; readonly title?: string }): ReactNode {
-  return <CodeBlock code={props.code} title={props.title ?? 'signature'} />
+/** A signature, its type names linking their pages with their definitions on hover. */
+function Code(props: { readonly code: string; readonly docs: Docs; readonly near: string }): ReactNode {
+  const { docs, near } = props
+  return (
+    <CodeBlock
+      code={props.code}
+      title="signature"
+      renderType={(name, key) => <TypeRef key={key} docs={docs} name={name} near={near} code className="tok-type" />}
+    />
+  )
+}
+
+/** A type expression (a parameter's type), highlighted, its type names linked as in signatures. */
+function TypeText(props: { readonly text: string; readonly docs: Docs; readonly near: string }): ReactNode {
+  const { docs, near } = props
+  return (
+    <>
+      {highlight(props.text).map((t, i) =>
+        t.kind === undefined ? (
+          t.text
+        ) : t.kind === 'type' ? (
+          // biome-ignore lint/suspicious/noArrayIndexKey: tokens are a fixed sequence for this text
+          <TypeRef key={i} docs={docs} name={t.text} near={near} code className="tok-type" />
+        ) : (
+          // biome-ignore lint/suspicious/noArrayIndexKey: tokens are a fixed sequence for this text
+          <span key={i} className={`tok-${t.kind}`}>
+            {t.text}
+          </span>
+        ),
+      )}
+    </>
+  )
 }
 
 function Params(props: {
@@ -32,8 +64,8 @@ function Params(props: {
               {p.name}
               {p.optional ? <span className="text-muted">?</span> : null}
             </td>
-            <td className="py-1.5 pr-4 font-mono text-xs text-fg-secondary">
-              {p.type}
+            <td className="site-code py-1.5 pr-4 font-mono text-xs text-fg-secondary">
+              <TypeText text={p.type} docs={props.docs} near={props.near} />
               {p.defaultValue === '' ? null : <span className="text-muted"> = {p.defaultValue}</span>}
             </td>
             <td className="py-1.5">
@@ -74,7 +106,7 @@ function Member(props: { readonly member: MemberDoc; readonly docs: Docs; readon
         {m.static ? 'static ' : ''}
         {m.name}
       </h3>
-      <Code code={m.signature} />
+      <Code code={m.signature} docs={props.docs} near={props.near} />
       {m.summary === '' ? null : (
         <DocText
           text={[m.summary, m.description].filter((t) => t !== '').join('\n\n')}
@@ -102,7 +134,7 @@ export function SymbolBody(props: { readonly docs: Docs; readonly symbol: Symbol
   return (
     <div className="space-y-6">
       {s.deprecated === undefined ? null : <p className="text-sm text-danger">Deprecated: {s.deprecated}</p>}
-      <Code code={s.signature} />
+      <Code code={s.signature} docs={docs} near={near} />
       <DocText text={[s.summary, s.description].filter((t) => t !== '').join('\n\n')} docs={docs} near={near} />
       {s.params.length === 0 ? null : (
         <Section title="Parameters">

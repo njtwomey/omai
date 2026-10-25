@@ -26,6 +26,6 @@ if (args.includes('--if-stale') && !isStale()) {
     process.stdout.write(
       `docs catalogue: ${catalogue.files.length} files, ${catalogue.symbols.length} symbols in ${OUT}\n` +
         `  extracted in ${((t1 - t0) / 1000).toFixed(1)} s, written in ${((t2 - t1) / 1000).toFixed(2)} s\n` +
-        `  index ${kb(r.index)}, search ${kb(r.search)}, file data ${kb(r.files)} (largest ${kb(r.largestFile)})\n`,
+        `  index ${kb(r.index)}, search ${kb(r.search)}, file data ${kb(r.files)} (largest ${kb(r.largestFile)}), types ${kb(r.types)}\n`,
     )
 }
