@@ -58,6 +58,7 @@ export const collectionDescriptions: Readonly<Record<string, string>> = {
   trust:
     'Trust: calibrated probabilities, conformal intervals and sets with guaranteed coverage, uncertainty, shift, robustness and model cards.',
   tuning: 'Hyperparameter searches over a method and a dataset: every trial, and what the search learned.',
+  graphics: 'Rendering: images computed by following light through a scene, watched as they form.',
   'complex-systems':
     'Complex systems: simple local rules (cells, agents) and the large patterns they grow, played step by step.',
   evolutionary:

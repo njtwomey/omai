@@ -45,6 +45,12 @@ export interface SceneObject {
   readonly material: Material
   readonly albedoMap?: FloatImage | ((u: number, v: number) => Vec3)
   readonly name?: string
+  /**
+   * The object is the visible surface of one of the scene's lights (a lamp panel over an area light). The path tracer
+   * then counts its emission only on camera and specular paths: after a diffuse bounce the light's next-event estimate
+   * has already counted it.
+   */
+  readonly lightSurface?: boolean
 }
 
 /**

@@ -41,8 +41,11 @@ function mosaic(
   const ink = parseColour(t.fg)
   const gap = parseColour(t.grid)
   const { height: h, width: w } = record
+  const channels = record.channels ?? 1
   const [lo, hi] = record.range ?? [0, 1]
   const span = hi > lo ? hi - lo : 1
+  const unit = (x: number | undefined): number => Math.min(1, Math.max(0, ((x ?? lo) - lo) / span))
+  // Grey levels run from the background to the ink; colour values are drawn as they are.
   // Each pixel of an image as k by k screen pixels, a one-pixel line between tiles.
   const k = Math.max(2, Math.min(8, Math.floor(64 / Math.max(h, w))))
   const tileW = w * k + 1
@@ -60,8 +63,12 @@ function mosaic(
     for (const [c, img] of group.slice(0, columns).entries())
       for (let r = 0; r < h; r++)
         for (let q = 0; q < w; q++) {
-          const v = Math.min(1, Math.max(0, ((img[r * w + q] ?? lo) - lo) / span))
-          const colour = [0, 1, 2].map((ch) => (bg[ch] ?? 0) + v * ((ink[ch] ?? 0) - (bg[ch] ?? 0)))
+          const at = (r * w + q) * channels
+          const v = unit(img[at])
+          const colour =
+            channels === 3
+              ? [0, 1, 2].map((ch) => 255 * unit(img[at + ch]))
+              : [0, 1, 2].map((ch) => (bg[ch] ?? 0) + v * ((ink[ch] ?? 0) - (bg[ch] ?? 0)))
           for (let a = 0; a < k; a++)
             for (let b = 0; b < k; b++) {
               const y = 1 + g * tileH + r * k + a

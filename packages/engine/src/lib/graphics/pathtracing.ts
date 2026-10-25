@@ -88,6 +88,8 @@ interface PathState {
   throughput: Vec3
   radiance: Vec3
   alive: boolean
+  /** The last scattering event was diffuse (so a light surface's emission was already estimated by next-event). */
+  afterDiffuse?: boolean
 }
 
 // One bounce of one path, driven by explicit uniforms `u[offset ...]`: add emission and next-event estimates of the
@@ -104,7 +106,8 @@ function bounce(s: RayScene, p: PathState, u: ArrayLike<number>, offset: number,
   const m = o.material
   const n = hit.frontFace ? hit.normal : scale3(hit.normal, -1)
   const d = p.ray.direction
-  p.radiance = madd3(p.radiance, mul3(p.throughput, m.emission), 1)
+  if (!(o.lightSurface === true && p.afterDiffuse === true))
+    p.radiance = madd3(p.radiance, mul3(p.throughput, m.emission), 1)
   const w = splitWeights(m, -dot3(d, n), hit.frontFace)
   const choice = u[offset] ?? 0
   const lift = (side: number): Vec3 =>
@@ -134,6 +137,7 @@ function bounce(s: RayScene, p: PathState, u: ArrayLike<number>, offset: number,
     const [t, b] = basis3(n)
     const [x, y, z] = cosineHemisphere(u[offset + 1] ?? 0, u[offset + 2] ?? 0)
     p.ray = { origin: lift(1), direction: normalise3(madd3(madd3(scale3(t, x), b, y), n, z)) }
+    p.afterDiffuse = true
     if (last) p.alive = false
     return {
       point: hit.point,
@@ -154,6 +158,7 @@ function bounce(s: RayScene, p: PathState, u: ArrayLike<number>, offset: number,
     p.ray = { origin: lift(-1), direction: refracted }
     event = 'refract'
   }
+  p.afterDiffuse = false
   if (last) p.alive = false
   return {
     point: hit.point,

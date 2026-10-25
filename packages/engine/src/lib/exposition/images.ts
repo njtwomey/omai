@@ -1,17 +1,20 @@
 /**
- * The exposition record for small grey images at recorded steps of training, in named groups drawn as rows of a mosaic:
- * a generative model's data, its reconstructions and its samples from fixed noise, so a view can play them as training
- * goes on.
+ * The exposition record for small images at recorded steps, in named groups drawn as rows of a mosaic: a generative
+ * model's data, its reconstructions and its samples from fixed noise as training goes on, or a render converging as
+ * samples accumulate. Grey levels or colour.
  */
 
 import { MdmlError } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 
-/** The images at one recorded step: per group, its images as flat row-major grey levels (row 0 at the top). */
+/**
+ * The images at one recorded step: per group, its images as flat row-major grey levels (row 0 at the top), or
+ * interleaved red, green and blue values when the record has three channels.
+ */
 export interface ImageStep {
   /** The iteration (training step, epoch) the images were taken after; 0 is the initial model. */
   readonly iteration: number
-  /** images[g][k]: image k of group g, `height` times `width` grey levels. */
+  /** images[g][k]: image k of group g, `height` times `width` times `channels` values. */
   readonly images: readonly (readonly (readonly number[])[])[]
   /** The training objective at this step. */
   readonly objective?: number
@@ -27,6 +30,8 @@ export interface ImageSteps {
   /** Each image's size in pixels. */
   readonly height: number
   readonly width: number
+  /** Values per pixel: 1 for grey levels (the default), 3 for colour (red, green, blue in the range). */
+  readonly channels?: 1 | 3
   /** The groups' names, in drawing order ('data', 'reconstruction', 'samples'). */
   readonly groups: readonly string[]
   readonly steps: readonly ImageStep[]
@@ -60,13 +65,15 @@ export interface ImageSteps {
  */
 export function imageSteps(record: Omit<ImageSteps, 'kind'>): ImageSteps {
   const { height, width } = record
+  const channels = record.channels ?? 1
   if (!(Number.isInteger(height) && height > 0 && Number.isInteger(width) && width > 0))
     throw new MdmlError('value', `imageSteps: the size ${height} by ${width} is not positive whole pixels`)
+  if (channels !== 1 && channels !== 3) throw new MdmlError('value', `imageSteps: ${channels} channels, not 1 or 3`)
   for (const [t, step] of record.steps.entries()) {
     sameLength('imageSteps', `steps[${t}].images`, step.images.length, record.groups.length)
     for (const [g, group] of step.images.entries())
       for (const [k, img] of group.entries())
-        sameLength('imageSteps', `steps[${t}].images[${g}][${k}]`, img.length, height * width)
+        sameLength('imageSteps', `steps[${t}].images[${g}][${k}]`, img.length, height * width * channels)
   }
   return { kind: 'imageSteps', ...record }
 }

@@ -81,6 +81,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/methods/generative': () => import('mdml-engine/methods/generative'),
   'mdml-engine/methods/gofai': () => import('mdml-engine/methods/gofai'),
   'mdml-engine/methods/gp': () => import('mdml-engine/methods/gp'),
+  'mdml-engine/methods/graphics': () => import('mdml-engine/methods/graphics'),
   'mdml-engine/methods/information': () => import('mdml-engine/methods/information'),
   'mdml-engine/methods/kernel-methods': () => import('mdml-engine/methods/kernel-methods'),
   'mdml-engine/methods/linear': () => import('mdml-engine/methods/linear'),
