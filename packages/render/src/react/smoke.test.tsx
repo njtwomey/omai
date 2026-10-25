@@ -5,6 +5,7 @@ import { structure } from 'whitebox-engine/scene'
 import { bool, choice, dict, int, real } from 'whitebox-engine/space'
 import { ContingencyTable } from './ContingencyTable.tsx'
 import { Choice } from './controls/Choice.tsx'
+import { ColumnOrder, moveItem } from './controls/ColumnOrder.tsx'
 import { ControlLayout, ControlPanel, PanelArea } from './controls/ControlPanel.tsx'
 import { DatasetPicker } from './controls/DatasetPicker.tsx'
 import { selectEntry } from './controls/datasets.ts'
@@ -27,6 +28,13 @@ import type { PlaybackController } from './usePlayback.ts'
 const noop = (): void => {}
 
 describe('React bindings render on the server', () => {
+  it('draws column chips to reorder and flip', () => {
+    const html = renderToString(<ColumnOrder order={['a', 'b']} onOrder={noop} inverted={['b']} onInvert={noop} />)
+    expect(html).toContain('draggable="true"')
+    expect(html).toContain('aria-pressed="true"')
+    expect(moveItem(['a', 'b', 'c'], 2, 0)).toEqual(['c', 'a', 'b'])
+  })
+
   it('draws draggable lines bound to a value', () => {
     const projection = linearProjection({ x: [0, 10], y: [0, 1], width: 200, height: 100 })
     const html = renderToString(
