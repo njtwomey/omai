@@ -2,9 +2,11 @@ import { gaussianNB, learnGolden, leastSquares, num, rows } from '../../testing/
 import { pipeline } from '../learn/compose.ts'
 import type { Fitted } from '../learn/estimator.ts'
 import { polynomialFeatures } from '../learn/preprocessing/index.ts'
-import type { Tensor } from '../tensor/index.ts'
+import { type Tensor, toFlat } from '../tensor/index.ts'
 import {
   accumulatedLocalEffects,
+  accumulatedLocalEffects2D,
+  dropColumnImportance,
   functionalAnova,
   hStatistic,
   partialDependence,
@@ -51,6 +53,28 @@ learnGolden('inspection against sklearn.inspection', 'explain/inspection', {
       bins: num(p, 'bins'),
     })
     return { edges: r.edges, effects: r.effects[0] ?? [] }
+  },
+  ale2d: ([x, y], p) => {
+    const [j, k] = features(p) as [number, number]
+    const r = accumulatedLocalEffects2D(polyModel(x as Tensor, y as Tensor), x as Tensor, [j, k], {
+      bins: num(p, 'bins'),
+    })
+    return { edges: [...r.edges[0], ...r.edges[1]], effects: r.effects, counts: r.counts }
+  },
+  dropColumn: ([x, y], p) => {
+    const split = num(p, 'split')
+    const xr = rows(x as Tensor)
+    const yr = toFlat(y as Tensor)
+    const est = pipeline([
+      ['poly', polynomialFeatures()],
+      ['lr', leastSquares()],
+    ])
+    const r = dropColumnImportance(
+      est,
+      { x: xr.slice(0, split), y: yr.slice(0, split) },
+      { test: { x: xr.slice(split), y: yr.slice(split) } },
+    )
+    return { baseline: r.baseline, importances: r.importances }
   },
   hStatistic: ([x, y, xs]) => {
     const f = polyModel(x as Tensor, y as Tensor)

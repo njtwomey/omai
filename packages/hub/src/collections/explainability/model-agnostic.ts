@@ -1,3 +1,6 @@
+/**
+ * The model-agnostic attribution entry: Kernel SHAP, exact and sampled Shapley values and LIME for any fitted model.
+ */
 import { WhiteboxError } from 'whitebox-engine/base'
 import { type AttributionMethod, explainPrediction } from 'whitebox-engine/methods/explain'
 import { choice, dict, int } from 'whitebox-engine/space'

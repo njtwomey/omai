@@ -1,3 +1,6 @@
+/**
+ * The Tree SHAP entry: exact Shapley values of a forest or a booster, one prediction's waterfall and every row's swarm.
+ */
 import { WhiteboxError } from 'whitebox-engine/base'
 import { explainDataset, explainPrediction } from 'whitebox-engine/methods/explain'
 import { dict, int } from 'whitebox-engine/space'

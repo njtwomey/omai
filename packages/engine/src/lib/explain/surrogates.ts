@@ -1,3 +1,7 @@
+/**
+ * Surrogate explanations: LIME's locally weighted linear models (with its feature selection), anchors (high-precision
+ * rules found by a bandit search), and global surrogate trees with their fidelity to the model.
+ */
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import type { FitOptions } from '../learn/estimator.ts'
 import { columnOf, type MatrixView, matrixView, takeColumns, targetVector } from '../learn/validation.ts'

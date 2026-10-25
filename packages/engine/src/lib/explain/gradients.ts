@@ -1,3 +1,8 @@
+/**
+ * Gradient attributions for differentiable models (captum's family): saliency, input times gradient, integrated
+ * gradients with their quadrature rules, SmoothGrad, expected gradients and DeepLIFT's rescale rule, each returning one
+ * attribution per input feature and row.
+ */
 import { vjp } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { keyFor } from '../learn/_shared.ts'

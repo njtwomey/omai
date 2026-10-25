@@ -447,7 +447,7 @@
       "reference": {
         "scikit-learn": "1.9.1"
       },
-      "cases": 10
+      "cases": 12
     },
     {
       "fixture": "explain/shapley.json",

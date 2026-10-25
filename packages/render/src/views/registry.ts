@@ -8,6 +8,7 @@ import { boardFrames, populationFrames } from './boards.ts'
 import { confusionFrames, valueGridFrames } from './cells.ts'
 import { componentsView } from './components.ts'
 import { curveSetView } from './curves.ts'
+import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
 import { episodeView } from './episodes.ts'
 import { groupReportView } from './fairness.ts'
@@ -354,6 +355,14 @@ const REGISTRY: Registry = {
       const frames = attributionFrames(r, o)
       return frames.option(frames.count - 1)
     },
+  },
+  dependence: {
+    kind: 'dependence',
+    component: 'DependenceView',
+    title: 'Feature dependence',
+    plays: false,
+    accepts: [],
+    still: (r, o) => dependenceView(r, o),
   },
   importances: {
     kind: 'importances',

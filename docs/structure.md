@@ -2798,6 +2798,11 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Global effects and importance (`inspection.ts`): partial dependence and ICE (centred, derivative), ALE (first and
   second order), permutation, drop-column and conditional permutation importance, H-statistics and functional ANOVA,
   SHAP summaries (mean |value|, beeswarm data, dependence and interaction data).
+  Built: `partialDependence` (ICE kept), `centredIce`, `iceDerivative`, `accumulatedLocalEffects`,
+  `accumulatedLocalEffects2D` (ALEPlot's second order), `permutationImportance`, `dropColumnImportance`,
+  `conditionalPermutationImportance` (Strobl's strata of correlated features), `hStatistic`, `functionalAnova`; SHAP
+  summaries are `methods/explain`'s `explainDataset`. Goldens: sklearn PD/ICE and permutation importance, numpy ALE
+  (both orders) and drop-column refits.
 - Surrogates and rules (`surrogates.ts`, `rules.ts`): global surrogate trees and fidelity, anchors (precision and
   coverage), RuleFit-style rule ensembles, rule lists and Boolean rules (BRCG-style), linearity measure.
 - Example-based (`examples.ts`): prototypes and criticisms (MMD-critic, ProtoSelect), k-nearest explanations, gradient
@@ -4060,8 +4065,10 @@ built from: `explain`, `learn`, `metrics`
   interaction partner), with the sampling estimate's convergence recorded (and as a `curves` record); `_models.ts`
   picks the output explained (prediction, probability, a booster's log odds) and reads trees, forests and gradient
   boosting as Tree SHAP models.
-- `inspection.ts`: `featureImportance` (permutation, with every repeat, or impurity), PDP and ICE, ALE and interaction
-  strength for any fitted estimator.
+- `inspection.ts`: `featureImportance` (permutation, with every repeat; conditional permutation; or impurity),
+  `dropColumnImportances` (refits), `dependencePlot` (PDP with ICE curves raw, centred or derivative, the rug, two-way
+  surfaces) and `aleEffects` (first and second order) for any fitted estimator: `importances` and `dependence`
+  records (`lib/exposition/dependence.ts`), drawn by `DependenceView` and `DependenceSurfaceView`. Built.
 - `counterfactuals.ts`: counterfactual explanations and recourse for a fitted classifier, with constraints.
 - `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
 - `gradients.ts`: gradient attributions for neural models (`methods/neural`), drawn over images and tabular inputs.

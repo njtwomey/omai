@@ -1,3 +1,8 @@
+/**
+ * Counterfactual explanations and recourse: the smallest change to a row that flips a model's decision. Wachter's
+ * gradient search, diverse (DiCE-style) sets, FACE paths through dense regions of the data, and linear recourse with
+ * costs, each with distances scaled by the training data's median absolute deviations.
+ */
 import { grad } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { dijkstra, graph } from '../graph/index.ts'

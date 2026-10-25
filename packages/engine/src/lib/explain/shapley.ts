@@ -1,3 +1,8 @@
+/**
+ * The Shapley family of attributions: exact Shapley and interaction values of any coalition game, the interventional
+ * value function of a model, Kernel SHAP, permutation-sampling Shapley values, and Tree SHAP (path-dependent) with its
+ * interaction values for single trees and ensembles.
+ */
 import { popcount, WhiteboxError } from '../base/index.ts'
 import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../games/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
