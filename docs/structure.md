@@ -3915,6 +3915,70 @@ built from: `tune`, `gp`, `ensemble`, `kernels`, `optim`
 - `multi-objective.ts`: ParEGO, MOTPE, expected hypervolume improvement.
 - `portfolios.ts`: portfolios and warm starting across tasks.
 - `importance.ts`: fANOVA hyperparameter importance.
+### 5.20 Explainability, fairness and trustworthiness (`explain/`, `fairness/`, `trust/`, `privacy/`, `adversarial/`)
+
+The core already computes the quantities (`lib/learn/explain/`: exact, kernel, sampling and tree SHAP and interaction
+values, LIME, anchors, surrogate trees and fidelity, saliency, integrated gradients, SmoothGrad, expected gradients,
+DeepLIFT, Wachter, DiCE and FACE counterfactuals, linear recourse; `lib/learn/inspection.ts`: permutation importance,
+partial dependence and ICE, ALE, the H-statistic, functional ANOVA; `lib/learn/valuation.ts`: influence functions,
+TracIn, data Shapley, k-NN Shapley; `lib/metrics/fairness.ts`: group rates, demographic parity, equal opportunity,
+equalised odds, predictive parity, disparate impact, calibration by group). These areas turn them into methods over
+any fitted estimator, each returning exposition records that views draw and the hub and gallery show; process shown
+over time where there is one (sampling SHAP converging, mitigation trading accuracy for parity, conformal coverage
+as data arrive).
+
+oracle: shap (exact and tree explainers), scikit-learn inspection (permutation importance, partial dependence),
+fairlearn (metrics, ExponentiatedGradient, ThresholdOptimizer), MAPIE (conformal), netcal (calibration); goldens only
+where cheap and important.
+
+Exposition records added to `lib/exposition/`: `featureAttributions` (per row: base value, one value per feature,
+the feature values, the prediction; optional interaction values), `dependence` (PDP with ICE curves or ALE per
+feature, with the data's rug), `importances` (per feature: mean and spread across repeats, the metric and its
+direction), `counterfactuals` (original row, counterfactuals, changed features, distances, validity), `groupReport`
+(per group: rates, counts, metrics and gaps against a reference group, at one or many thresholds), `calibration`
+(reliability bins, ECE, MCE, per group optionally), `conformal` (prediction sets or intervals with nominal and
+empirical coverage). Views in render (`views/`, `react/views/`): waterfall and force plots, beeswarm summary, bar of
+mean |SHAP|, dependence scatter coloured by an interacting feature, PDP with ICE, ALE, importance bars with intervals,
+counterfactual tables with the changes highlighted, group comparison panels (rates side by side, gap bars, per-group
+ROC with thresholds), reliability diagrams, conformal bands and set sizes.
+
+`explain/` (shap, lime, alibi, interpret, sklearn.inspection)
+built from: `learn/explain`, `learn/inspection`, `learn/valuation`, `metrics`
+- `attributions.ts`: `explainPrediction(model, data, row, { method: 'tree' | 'kernel' | 'exact' | 'sampling' |
+  'lime' })` and `explainDataset` (attributions for many rows: summary and beeswarm), with the sampling estimate's
+  convergence recorded.
+- `inspection.ts`: permutation importance, PDP and ICE, ALE and interaction strength for any fitted estimator.
+- `counterfactuals.ts`: counterfactual explanations and recourse for a fitted classifier, with constraints.
+- `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
+- `gradients.ts`: gradient attributions for neural models (`methods/neural`), drawn over images and tabular inputs.
+- `valuation.ts`: which training rows matter (influence, data Shapley, k-NN Shapley), with mislabelled-row studies.
+
+`fairness/` (fairlearn, AIF360)
+built from: `learn`, `metrics/fairness.ts`, `optim`, `datasets` (with protected attributes)
+- `audit.ts`: `fairnessAudit(model, data, { sensitive })`: group report across thresholds and metrics.
+- `preprocessing.ts`: reweighing, disparate-impact removal, fair representations.
+- `in-processing.ts`: reductions (exponentiated gradient, grid search) traced over iterations, adversarial debiasing.
+- `post-processing.ts`: threshold optimisation for equalised odds or demographic parity, reject-option classification.
+- `studies.ts`: impossibility results (calibration against equalised odds), the accuracy–fairness frontier.
+
+`trust/` (MAPIE, netcal, uncertainty and robustness)
+built from: `learn`, `metrics`, `stats`, `dists`
+- `calibration.ts`: reliability diagrams, ECE and MCE, Platt scaling, isotonic and temperature calibration.
+- `conformal.ts`: split, cross and adaptive conformal prediction (intervals and sets), coverage as data arrive.
+- `uncertainty.ts`: aleatoric and epistemic uncertainty (ensembles, MC dropout, GP and Bayesian posteriors).
+- `shift.ts`: dataset and concept drift detection (two-sample tests, classifier-based), performance under shift.
+- `robustness.ts`: sensitivity to perturbations and missing values, stability of explanations.
+- `model-cards.ts`: a model card from a fitted estimator's records (performance by group, calibration, limits).
+
+`privacy/` and `adversarial/`: as in 5.3 (DP training and statistics, membership inference; FGSM, PGD, defences),
+each with the same records and views.
+
+Datasets: `lib/datasets` gains tabular datasets with protected attributes (a credit or income-like generator with a
+controllable dependence on the attribute, and vendored public ones where licences allow) for audits and mitigation.
+
+Hub: collections `explainability/`, `fairness/`, `trust/`. Gallery: the exposition section gains a recipe per new
+view, driven by real methods on small data, with live controls.
+
 ## 6. whitebox-render, `packages/render/src/`
 
 Headless first: everything outside `react/` returns data (ECharts options, layouts, scenes, SVG strings, encoded
