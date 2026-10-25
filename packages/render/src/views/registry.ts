@@ -24,6 +24,7 @@ import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
 import { attributionImageView, attributionSeriesView, tokenStripView } from './modalities.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
+import { conceptView, ruleListView } from './rules.ts'
 import { stateSequenceView } from './sequences.ts'
 import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
@@ -384,6 +385,22 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => counterfactualTableView(r, o),
+  },
+  concepts: {
+    kind: 'concepts',
+    component: 'ConceptView',
+    title: 'Concept scores (TCAV)',
+    plays: false,
+    accepts: [],
+    still: (r, o) => conceptView(r, o),
+  },
+  rules: {
+    kind: 'rules',
+    component: 'RuleListView',
+    title: 'Rules',
+    plays: false,
+    accepts: [],
+    still: (r, o) => ruleListView(r, o),
   },
   prototypes: {
     kind: 'prototypes',

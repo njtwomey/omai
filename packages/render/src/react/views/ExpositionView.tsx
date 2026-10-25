@@ -20,6 +20,7 @@ import { GroupReportView } from './fairness.tsx'
 import { ImagePlayer } from './images.tsx'
 import { MarginView } from './margins.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
+import { ConceptView, RuleListView } from './rules.tsx'
 import { StateSequenceView } from './sequences.tsx'
 import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
@@ -127,6 +128,10 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <CounterfactualView record={record} {...common} />
     case 'prototypes':
       return <PrototypeView record={record} {...common} />
+    case 'concepts':
+      return <ConceptView record={record} {...common} />
+    case 'rules':
+      return <RuleListView record={record} {...common} />
     case 'groupReport':
       return <GroupReportView record={record} {...common} />
     case 'calibration':
