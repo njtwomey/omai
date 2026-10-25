@@ -1,142 +1,162 @@
 /**
- * Fairness during training by reduction, as in fairlearn's `reductions`: fair classification becomes a sequence of
+ * Fairness during training by reduction, ports of fairlearn's `reductions`: fair classification becomes a sequence of
  * cost-sensitive problems under a demographic-parity or equalised-odds constraint. Exponentiated gradient (a game
- * between a learner and a constraint player, giving a randomised classifier) and a grid search over multipliers that
- * traces the accuracy-fairness trade-off.
+ * between a learner and a constraint player, giving a randomised classifier; golden against fairlearn's final mixture)
+ * and the grid search over multipliers that traces the accuracy-fairness trade-off.
  */
 
 import { WhiteboxError } from '../base/index.ts'
 import { type Estimator, type Fitted, requireVerb } from '../learn/index.ts'
 import { linprog } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
-import { type TensorLike, toFlat } from '../tensor/index.ts'
+import { asTensor, fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
 
 /** The moment a reduction constrains: demographic parity or equalised odds. */
 export type ReductionConstraint = 'demographicParity' | 'equalisedOdds'
 
 /**
- * The constraint moments of a reduction (Agarwal et al., 2018): for each group (and, for equalised odds, each label)
- * the gap between the group's mean decision and everyone's, each with a positive and a negative side. `gamma` gives
- * the moments of decisions; `gradient` the derivative of `sum_j lambda_j gamma_j` with respect to each row's decision.
+ * fairlearn's utility-parity moments, laid out as fairlearn lays them out: constraints indexed by sign (+ then -), then
+ * event (`all`, or each label for equalised odds), then group; `gamma` of decisions is each group's mean decision in
+ * an event minus the event's; `signedWeights` of multipliers is each row's `U . lambda`.
  */
 interface Moments {
-  readonly count: number
+  /** Constraints per sign: events x groups. */
+  readonly half: number
+  readonly k: number
+  readonly events: number
+  readonly n: number
   gamma(h: readonly number[]): number[]
-  gradient(lambda: readonly number[]): Float64Array
+  signedWeights(lambda: readonly number[]): number[]
+  project(lambda: readonly number[]): number[]
+  /** The non-reference basis of the grid search: for each event, every group but the last to appear. */
+  readonly basis: readonly number[]
 }
 
-function moments(
-  constraint: ReductionConstraint,
-  groups: readonly number[],
-  labels: readonly number[],
-  k: number,
-): Moments {
+function moments(constraint: ReductionConstraint, groups: readonly number[], labels: readonly number[]): Moments {
   const n = groups.length
-  // Cells: a group (demographic parity) or a group and a label (equalised odds); each compared with its label's rows.
-  const cells = constraint === 'demographicParity' ? k : 2 * k
-  const cellOf = (i: number): number =>
-    constraint === 'demographicParity' ? (groups[i] ?? 0) : 2 * (groups[i] ?? 0) + (labels[i] ?? 0)
-  const baseOf = (i: number): number => (constraint === 'demographicParity' ? 0 : (labels[i] ?? 0))
-  const cellSize = new Array<number>(cells).fill(0)
-  const baseSize = [0, 0]
+  const k = Math.max(...groups) + 1
+  const events = constraint === 'demographicParity' ? 1 : 2
+  const eventOf = (i: number): number => (constraint === 'demographicParity' ? 0 : labels[i] === 1 ? 1 : 0)
+  const half = events * k
+  const cell = (e: number, g: number): number => e * k + g
+  const pEvent = new Array<number>(events).fill(0)
+  const pCell = new Array<number>(half).fill(0)
   for (let i = 0; i < n; i++) {
-    cellSize[cellOf(i)] = (cellSize[cellOf(i)] ?? 0) + 1
-    baseSize[baseOf(i)] = (baseSize[baseOf(i)] ?? 0) + 1
+    pEvent[eventOf(i)] = (pEvent[eventOf(i)] ?? 0) + 1 / n
+    pCell[cell(eventOf(i), groups[i] ?? 0)] = (pCell[cell(eventOf(i), groups[i] ?? 0)] ?? 0) + 1 / n
   }
-  const baseOfCell = (c: number): number => (constraint === 'demographicParity' ? 0 : c % 2)
+  // Groups in order of appearance (fairlearn's `unique()`); the last is left out of the grid's basis.
+  const seen: number[] = []
+  for (const g of groups) if (!seen.includes(g)) seen.push(g)
+  const basis: number[] = []
+  for (let e = 0; e < events; e++) for (const g of seen.slice(0, -1)) basis.push(cell(e, g))
   return {
-    count: 2 * cells,
+    half,
+    k,
+    events,
+    n,
+    basis,
     gamma: (h) => {
-      const cellSum = new Array<number>(cells).fill(0)
-      const baseSum = [0, 0]
+      const sumEvent = new Array<number>(events).fill(0)
+      const sumCell = new Array<number>(half).fill(0)
       for (let i = 0; i < n; i++) {
-        cellSum[cellOf(i)] = (cellSum[cellOf(i)] ?? 0) + (h[i] ?? 0)
-        baseSum[baseOf(i)] = (baseSum[baseOf(i)] ?? 0) + (h[i] ?? 0)
+        const e = eventOf(i)
+        sumEvent[e] = (sumEvent[e] ?? 0) + (h[i] ?? 0)
+        sumCell[cell(e, groups[i] ?? 0)] = (sumCell[cell(e, groups[i] ?? 0)] ?? 0) + (h[i] ?? 0)
       }
-      const gap = cellSum.map((s, c) => {
-        const size = cellSize[c] ?? 0
-        const b = baseOfCell(c)
-        return size === 0 ? 0 : s / size - (baseSum[b] ?? 0) / Math.max(1, baseSize[b] ?? 0)
+      const plus = sumCell.map((s, c) => {
+        const e = Math.floor(c / k)
+        const pc = pCell[c] ?? 0
+        if (pc === 0) return 0
+        return s / n / pc - (sumEvent[e] ?? 0) / n / (pEvent[e] ?? 1)
       })
-      return [...gap, ...gap.map((v) => -v)]
+      return [...plus, ...plus.map((v) => -v)]
     },
-    gradient: (lambda) => {
-      const out = new Float64Array(n)
-      for (let i = 0; i < n; i++) {
-        const c = cellOf(i)
-        const b = baseOf(i)
+    signedWeights: (lambda) =>
+      Array.from({ length: n }, (_, i) => {
+        const e = eventOf(i)
+        const own = cell(e, groups[i] ?? 0)
         let s = 0
-        for (let d = 0; d < cells; d++) {
-          if (baseOfCell(d) !== b) continue
-          const net = (lambda[d] ?? 0) - (lambda[d + cells] ?? 0)
-          s += net * ((d === c ? 1 / Math.max(1, cellSize[d] ?? 0) : 0) - 1 / Math.max(1, baseSize[b] ?? 0))
+        for (let g = 0; g < k; g++) {
+          const c = cell(e, g)
+          const pc = pCell[c] ?? 0
+          if (pc === 0) continue
+          const net = (lambda[c] ?? 0) - (lambda[c + half] ?? 0)
+          // U[+, e, g] = 1{e} / P(e) - 1{e, g} / P(e, g); U[-] its negative.
+          s += net * (1 / (pEvent[e] ?? 1) - (c === own ? 1 / pc : 0))
         }
-        out[i] = s
+        return s
+      }),
+    project: (lambda) => {
+      const signed = Array.from({ length: half }, (_, c) => (lambda[c] ?? 0) - (lambda[c + half] ?? 0))
+      for (let e = 0; e < events; e++) {
+        const cells = Array.from({ length: k }, (_, g) => cell(e, g)).filter((c) => (pCell[c] ?? 0) > 0)
+        const prob = cells.map((c) => (pCell[c] ?? 0) / (pEvent[e] ?? 1))
+        const normalised = cells.map((c, j) => (signed[c] ?? 0) / (prob[j] ?? 1))
+        const order = normalised.map((_, j) => j).sort((a, b) => (normalised[a] ?? 0) - (normalised[b] ?? 0) || a - b)
+        const half_ = prob.reduce((s, v) => s + v, 0) / 2
+        let acc = 0
+        let pos = 0
+        // numpy searchsorted (left) of half the mass in the cumulative probabilities.
+        for (; pos < order.length; pos++) {
+          acc += prob[order[pos] ?? 0] ?? 0
+          if (acc >= half_) break
+        }
+        const shift = normalised[order[Math.min(pos, order.length - 1)] ?? 0] ?? 0
+        cells.forEach((c, j) => {
+          signed[c] = (signed[c] ?? 0) - (prob[j] ?? 0) * shift
+        })
       }
-      return out
+      return [...signed.map((v) => Math.max(0, v)), ...signed.map((v) => Math.max(0, -v))]
     },
   }
 }
 
-/** The largest constraint violation of decisions: the worst |gap| of any group's mean decision. */
-function violation(m: Moments, h: readonly number[]): number {
-  return Math.max(0, ...m.gamma(h))
+/** A fitted best response: the classifier, its decisions on the training rows, error and moments. */
+interface Hypothesis {
+  readonly fitted: Fitted
+  readonly decisions: number[]
+  readonly error: number
+  readonly gamma: number[]
 }
 
-/** The cost-sensitive best response: a classifier fitted to the signed costs of predicting positive. */
-function bestResponse(
+/** The constant classifier fairlearn substitutes (a DummyClassifier) when the relabelled target has one class. */
+function constantFitted(value: number): Fitted {
+  return {
+    estimator: 'constant',
+    predict: (x: TensorLike) => {
+      const rows = matrixRows(x)
+      return fromStorage(new Float64Array(rows).fill(value), [rows], 'float64')
+    },
+  } as unknown as Fitted
+}
+
+function matrixRows(x: TensorLike): number {
+  const t = asTensor(x)
+  return t.shape[0] ?? 0
+}
+
+/** The cost-sensitive oracle: relabel rows by the sign of their signed weight, weight them by its size, and fit. */
+function callOracle(
   estimator: Estimator,
   x: TensorLike,
   labels: readonly number[],
-  m: Moments,
-  lambda: readonly number[],
+  signed: readonly number[],
+  normalise: boolean,
   key: Key,
-): { readonly fitted: Fitted; readonly decisions: number[] } {
+): Fitted {
   const n = labels.length
-  const g = m.gradient(lambda)
-  // Cost of predicting 1 minus predicting 0: the error's (1 for a negative, -1 for a positive) plus the moments'.
-  const cost = labels.map((y, i) => (y === 1 ? -1 : 1) / n + (g[i] ?? 0))
-  const total = cost.reduce((s, c) => s + Math.abs(c), 0)
-  const weights = cost.map((c) => (total === 0 ? 1 : (Math.abs(c) * n) / total))
-  const target = cost.map((c) => (c < 0 ? 1 : 0))
-  // A degenerate target (every row wants the same decision) is a constant classifier.
-  if (target.every((t) => t === target[0])) {
-    const constant = target[0] ?? 0
-    return { fitted: { estimator: 'constant' } as unknown as Fitted, decisions: labels.map(() => constant) }
-  }
-  const fitted = estimator.fit({ x, y: target, weights }, { key, explain: false })
-  return { fitted, decisions: Array.from(toFlat(requireVerb(fitted, 'predict', 'exponentiatedGradientReduction')(x))) }
+  const target = signed.map((w) => (w > 0 ? 1 : 0))
+  const total = signed.reduce((s, w) => s + Math.abs(w), 0)
+  const weights = signed.map((w) => (normalise ? (n * Math.abs(w)) / total : Math.abs(w)))
+  if (target.every((t) => t === target[0])) return constantFitted(target[0] ?? 0)
+  return estimator.fit({ x, y: target, weights }, { key, explain: false })
 }
 
-/**
- * The mixture of hypotheses with the least error whose moments exceed epsilon by at most a slack priced at the bound
- * (fairlearn's `solve_linprog`): minimise sum_h w_h err_h + B s subject to sum_h w_h (gamma_jh - epsilon) <= s for
- * every moment j, the weights a distribution and s >= 0.
- */
-function bestMixture(
-  errors: readonly number[],
-  gammas: readonly (readonly number[])[],
-  epsilon: number,
-  bound: number,
-): number[] {
-  const t = errors.length
-  if (t === 1) return [1]
-  const moments = gammas[0]?.length ?? 0
-  const aUb = Array.from({ length: moments }, (_, j) => [...gammas.map((g) => (g[j] ?? 0) - epsilon), -1])
-  const r = linprog({
-    c: [...errors, bound],
-    aUb,
-    bUb: new Array<number>(moments).fill(0),
-    aEq: [[...new Array<number>(t).fill(1), 0]],
-    bEq: [1],
-  })
-  if (!r.success) return errors.map(() => 1 / t)
-  const w = Array.from(toFlat(r.x))
-    .slice(0, t)
-    .map((v) => Math.max(0, v))
-  const total = w.reduce((a, b) => a + b, 0)
-  return w.map((v) => v / total)
-}
+const errorOf = (labels: readonly number[], h: readonly number[]): number =>
+  labels.reduce((s, y, i) => s + Math.abs(y - (h[i] ?? 0)), 0) / Math.max(1, labels.length)
+
+const dot = (a: readonly number[], b: readonly number[]): number => a.reduce((s, v, i) => s + v * (b[i] ?? 0), 0)
 
 /** The rows a reduction learns from: features, binary labels and each row's group index. */
 export interface ReductionData {
@@ -149,14 +169,16 @@ export interface ReductionData {
 export interface ExponentiatedGradientReductionOptions {
   /** The constraint (default `demographicParity`). */
   readonly constraint?: ReductionConstraint
-  /** The allowed violation of each moment (default 0.01). */
+  /** fairlearn's eps (default 0.01): the multipliers' bound is 1 / epsilon. */
   readonly epsilon?: number
-  /** Iterations (default 30). */
+  /** The allowed violation of each moment (default 0.01, the constraint's difference_bound in fairlearn). */
+  readonly differenceBound?: number
+  /** The iteration cap (default 50, fairlearn's max_iter). */
   readonly iterations?: number
-  /** The bound on the multipliers' total (default 1 / epsilon, at most 100). */
-  readonly bound?: number
   /** The step size times the bound (default 2, fairlearn's `eta0`). */
   readonly eta?: number
+  /** The duality-gap tolerance (default fairlearn's: half the spread of the first classifier's errors over sqrt(n)). */
+  readonly nu?: number
   readonly key?: Key
 }
 
@@ -166,9 +188,11 @@ export interface ReductionStep {
   /** The error and violation of this iteration's best response. */
   readonly error: number
   readonly violation: number
-  /** The error and violation of the best mixture of the best responses so far (the randomised classifier). */
+  /** The error and violation of this iteration's mixture (the randomised classifier). */
   readonly averageError: number
   readonly averageViolation: number
+  /** The duality gap of this iteration's mixture. */
+  readonly gap: number
   /** The largest net price on a constraint, how hard the constraints push. */
   readonly lambdaTotal: number
 }
@@ -181,26 +205,37 @@ export interface ExponentiatedGradientReduction {
   /** P(positive decision) for each row under the randomised classifier. */
   readonly decisions: readonly number[]
   readonly steps: readonly ReductionStep[]
+  /** The iteration whose mixture was kept (the last with the smallest gap) and its gap. */
+  readonly bestIteration: number
+  readonly bestGap: number
   /** The unconstrained classifier's positive-class probabilities, error and violation, for comparison. */
   readonly baseline: { readonly scores: readonly number[]; readonly error: number; readonly violation: number }
 }
 
-const errorOf = (labels: readonly number[], h: readonly number[]): number =>
-  labels.reduce((s, y, i) => s + Math.abs(y - (h[i] ?? 0)), 0) / Math.max(1, labels.length)
+// fairlearn's constants (`_exponentiated_gradient/_constants.py`).
+const PRECISION = 1e-8
+const ACCURACY_MUL = 0.5
+const REGRET_CHECK_START_T = 5
+const REGRET_CHECK_INCREASE_T = 1.6
+const SHRINK_REGRET = 0.8
+const SHRINK_ETA = 0.8
+const MIN_ITER = 5
 
 /**
- * Fair classification by reduction to a sequence of cost-sensitive problems (Agarwal et al., 2018; fairlearn's
- * `ExponentiatedGradient`): a game between a learner, which fits the best classifier for the current prices of the
- * constraint violations (a weighted fit with relabelled rows), and an auditor, which raises the price of every
- * violated moment by exponentiated gradient with fairlearn's step `eta0 / B`. The best mixture of the learner's
- * classifiers (a small linear program over their errors and moments, as fairlearn) is a randomised classifier whose
- * violation shrinks towards `epsilon` as error rises a little.
+ * Fair classification by reduction to a sequence of cost-sensitive problems (Agarwal et al., 2018), a port of fairlearn's
+ * `ExponentiatedGradient`: a game between a learner, which fits the best classifier for the current prices of the
+ * constraint violations (rows relabelled by the sign of their cost and weighted by its size), and an auditor, which
+ * raises the price of every violated moment by exponentiated gradient. Each iteration keeps the better (smaller duality
+ * gap) of the average of the best responses so far and the best mixture of them by linear programme, stops once the gap
+ * falls below nu, and returns the mixture of the iteration with the smallest gap: a randomised classifier whose
+ * violation is near the difference bound. As fairlearn, `epsilon` sets the multipliers' bound (1 / epsilon) and the
+ * constraint's own difference bound (default 0.01) the violation allowed.
  *
- * @param estimator - A classifier that accepts sample weights and gives probabilities.
+ * @param estimator - A classifier that accepts sample weights.
  * @param data - Features, binary labels and group indices.
- * @param options - Constraint, epsilon, iterations, bound, step size and key.
+ * @param options - Constraint, epsilon, iterations, step size, nu and key.
  * @returns The members, their weights, the decisions, the steps and the unconstrained baseline.
- * @throws WhiteboxError `value` for a negative epsilon.
+ * @throws WhiteboxError `value` for an epsilon that is not positive.
  * @concept algorithmic-fairness
  * @example
  * ```ts
@@ -219,55 +254,178 @@ export function exponentiatedGradientReduction(
   const { x, labels, groups } = data
   const constraint = options.constraint ?? 'demographicParity'
   const epsilon = options.epsilon ?? 0.01
-  if (!(epsilon >= 0)) throw new WhiteboxError('value', 'exponentiatedGradientReduction: epsilon must be at least 0')
-  const iterations = options.iterations ?? 30
-  const bound = options.bound ?? Math.min(100, 1 / Math.max(epsilon, 1e-9))
-  const eta = options.eta ?? 2
+  if (!(epsilon > 0)) throw new WhiteboxError('value', 'exponentiatedGradientReduction: epsilon must be positive')
+  const maxIter = options.iterations ?? 50
+  const B = 1 / epsilon
+  const bound = options.differenceBound ?? 0.01
   const key = options.key ?? makeKey(0)
-  const m = moments(constraint, groups, labels, Math.max(...groups) + 1)
-  const base = estimator.fit({ x, y: labels }, { key: foldIn(key, 0), explain: false })
-  const baseProba = Array.from(toFlat(requireVerb(base, 'predictProba', 'exponentiatedGradientReduction')(x)))
-  const baseScores = labels.map((_, i) => baseProba[2 * i + 1] ?? 0)
-  const baseDecisions = baseScores.map((s) => (s >= 0.5 ? 1 : 0))
-  const theta = new Array<number>(m.count).fill(0)
-  const members: Fitted[] = []
-  const hs: number[][] = []
-  const errors: number[] = []
-  const gammas: number[][] = []
+  const m = moments(constraint, groups, labels)
+  const n = labels.length
+  const objectiveWeights = labels.map((y) => 2 * (y === 1 ? 1 : 0) - 1)
+  const hs: Hypothesis[] = []
+  let calls = 0
+  const predict = (f: Fitted): number[] =>
+    Array.from(toFlat(requireVerb(f, 'predict', 'exponentiatedGradientReduction')(x)))
+  const bestH = (lambda: readonly number[]): number => {
+    const sw = m.signedWeights(lambda)
+    const fitted = callOracle(
+      estimator,
+      x,
+      labels,
+      objectiveWeights.map((w, i) => w + (sw[i] ?? 0)),
+      true,
+      foldIn(key, ++calls),
+    )
+    const decisions = predict(fitted)
+    const error = errorOf(labels, decisions)
+    const gamma = m.gamma(decisions)
+    const value = error + dot(gamma, lambda)
+    let best = -1
+    let bestValue = Number.POSITIVE_INFINITY
+    for (const [j, h] of hs.entries()) {
+      const v = h.error + dot(h.gamma, lambda)
+      if (v < bestValue) {
+        bestValue = v
+        best = j
+      }
+    }
+    if (value < bestValue - PRECISION) {
+      hs.push({ fitted, decisions, error, gamma })
+      return hs.length - 1
+    }
+    return best
+  }
+  // The Lagrangian of a mixture (weights over hs) at multipliers: (L, L_high, gamma, error).
+  const evaluate = (q: readonly number[], lambda: readonly number[]) => {
+    const error = hs.reduce((s, h, j) => s + h.error * (q[j] ?? 0), 0)
+    const gamma = Array.from({ length: 2 * m.half }, (_, c) =>
+      hs.reduce((s, h, j) => s + (h.gamma[c] ?? 0) * (q[j] ?? 0), 0),
+    )
+    const projected = m.project(lambda)
+    const L = error + projected.reduce((s, l, c) => s + l * ((gamma[c] ?? 0) - bound), 0)
+    const maxConstraint = Math.max(...gamma.map((g) => g - bound))
+    return { L, high: error + (maxConstraint > 0 ? B * maxConstraint : 0), gamma, error }
+  }
+  const evalGap = (q: readonly number[], lambda: readonly number[], nu: number) => {
+    const e = evaluate(q, lambda)
+    let low = e.L
+    const gap = (): number => Math.max(e.L - low, e.high - e.L)
+    for (const mul of [1, 2, 5, 10]) {
+      const idx = bestH(lambda.map((l) => mul * l))
+      const single = hs.map((_, j) => (j === idx ? 1 : 0))
+      const lm = evaluate(single, lambda).L
+      if (lm < low) low = lm
+      if (gap() > nu + PRECISION) break
+    }
+    return { ...e, gap: gap() }
+  }
+  let linprogCache: { n: number; q: number[]; gap: number } | undefined
+  const solveLinprog = (nu: number) => {
+    if (linprogCache !== undefined && linprogCache.n === hs.length) return linprogCache
+    const t = hs.length
+    const c = [...hs.map((h) => h.error), B]
+    const aUb = Array.from({ length: 2 * m.half }, (_, j) => [...hs.map((h) => (h.gamma[j] ?? 0) - bound), -1])
+    const primal = linprog({ c, aUb, bUb: aUb.map(() => 0), aEq: [[...hs.map(() => 1), 0]], bEq: [1] })
+    const q = Array.from(toFlat(primal.x)).slice(0, t)
+    // The dual: maximise over lambda >= 0 and a free w, as fairlearn's second linprog.
+    const rows = 2 * m.half
+    const dualC = [...new Array<number>(rows).fill(0), -1]
+    const dualA = Array.from({ length: t + 1 }, (_, j) => [
+      ...Array.from({ length: rows }, (_, i) => -(aUb[i]?.[j] ?? 0)),
+      j < t ? 1 : 0,
+    ])
+    const dual = linprog({
+      c: dualC,
+      aUb: dualA,
+      bUb: c,
+      bounds: [...new Array<[number, null]>(rows).fill([0, null]), [null, null]],
+    })
+    const lambda = Array.from(toFlat(dual.x)).slice(0, rows)
+    const result = { n: hs.length, q, lambda, gap: 0 }
+    result.gap = evalGap(q, lambda, nu).gap
+    linprogCache = result
+    return result
+  }
+  let theta = new Array<number>(2 * m.half).fill(0)
+  const qsum = new Map<number, number>()
+  const lambdaSum = new Array<number>(2 * m.half).fill(0)
+  const gapsEG: number[] = []
+  const gaps: number[] = []
+  const qs: number[][] = []
   const steps: ReductionStep[] = []
-  // fairlearn's step: eta0 / B, constant.
-  const step = eta / bound
-  let weights: number[] = []
-  for (let t = 0; t < iterations; t++) {
+  let nu = options.nu
+  let eta = 0
+  let lastRegretChecked = REGRET_CHECK_START_T
+  let lastGap = Number.POSITIVE_INFINITY
+  for (let t = 0; t < maxIter; t++) {
     const ex = theta.map(Math.exp)
     const z = 1 + ex.reduce((s, v) => s + v, 0)
-    const lambda = ex.map((v) => (bound * v) / z)
-    const r = bestResponse(estimator, x, labels, m, lambda, foldIn(key, t + 1))
-    members.push(r.fitted)
-    hs.push(r.decisions)
-    errors.push(errorOf(labels, r.decisions))
-    const gamma = m.gamma(r.decisions)
-    gammas.push(gamma)
-    weights = bestMixture(errors, gammas, epsilon, bound)
-    const mixture = labels.map((_, i) => hs.reduce((s, h, k) => s + (weights[k] ?? 0) * (h[i] ?? 0), 0))
-    const half = m.count / 2
+    const lambda = ex.map((v) => (B * v) / z)
+    for (let c = 0; c < lambda.length; c++) lambdaSum[c] = (lambdaSum[c] ?? 0) + (lambda[c] ?? 0)
+    const lambdaEG = lambdaSum.map((v) => v / (t + 1))
+    const hIdx = bestH(lambda)
+    const h = hs[hIdx] as Hypothesis
+    if (t === 0) {
+      if (nu === undefined) {
+        const absErr = h.decisions.map((d, i) => Math.abs(d - (labels[i] ?? 0)))
+        const mean = absErr.reduce((s, v) => s + v, 0) / n
+        const sd = Math.sqrt(absErr.reduce((s, v) => s + (v - mean) ** 2, 0) / Math.max(1, n - 1))
+        nu = (ACCURACY_MUL * sd) / Math.sqrt(n)
+      }
+      eta = (options.eta ?? 2) / B
+    }
+    qsum.set(hIdx, (qsum.get(hIdx) ?? 0) + 1)
+    const total = [...qsum.values()].reduce((s, v) => s + v, 0)
+    const qEG = hs.map((_, j) => (qsum.get(j) ?? 0) / total)
+    const resultEG = evalGap(qEG, lambdaEG, nu as number)
+    gapsEG.push(resultEG.gap)
+    const lp = t === 0 ? undefined : solveLinprog(nu as number)
+    const useLP = lp !== undefined && !(resultEG.gap < lp.gap)
+    const q = useLP ? lp.q : qEG
+    qs.push(q)
+    gaps.push(useLP ? lp.gap : resultEG.gap)
+    const mixture = labels.map((_, i) => hs.reduce((s, hh, j) => s + (q[j] ?? 0) * (hh.decisions[i] ?? 0), 0))
     steps.push({
       iteration: t + 1,
-      error: errors[t] ?? 0,
-      violation: violation(m, r.decisions),
+      error: h.error,
+      violation: Math.max(0, ...h.gamma),
       averageError: errorOf(labels, mixture),
-      averageViolation: violation(m, mixture),
-      lambdaTotal: Math.max(...lambda.slice(0, half).map((v, j) => Math.abs(v - (lambda[j + half] ?? 0)))),
+      averageViolation: Math.max(0, ...m.gamma(mixture)),
+      gap: gaps[t] ?? Number.NaN,
+      lambdaTotal: Math.max(...lambda.slice(0, m.half).map((v, c) => Math.abs(v - (lambda[c + m.half] ?? 0)))),
     })
-    for (let j = 0; j < theta.length; j++) theta[j] = (theta[j] ?? 0) + step * ((gamma[j] ?? 0) - epsilon)
+    if ((gaps[t] ?? 0) < (nu as number) && t >= MIN_ITER) break
+    if (t >= lastRegretChecked * REGRET_CHECK_INCREASE_T) {
+      const bestGap = Math.min(...gapsEG)
+      if (bestGap > lastGap * SHRINK_REGRET) eta *= SHRINK_ETA
+      lastRegretChecked = t
+      lastGap = bestGap
+    }
+    theta = theta.map((v, c) => v + eta * ((h.gamma[c] ?? 0) - bound))
   }
-  const decisions = labels.map((_, i) => hs.reduce((s, h, k) => s + (weights[k] ?? 0) * (h[i] ?? 0), 0))
+  const minGap = Math.min(...gaps)
+  let bestIteration = 0
+  for (const [t, g] of gaps.entries()) if (g <= minGap + PRECISION) bestIteration = t
+  const chosen = qs[bestIteration] ?? []
+  const weights = hs.map((_, j) => chosen[j] ?? 0)
+  const decisions = labels.map((_, i) => hs.reduce((s, h, j) => s + (weights[j] ?? 0) * (h.decisions[i] ?? 0), 0))
+  // The unconstrained classifier, for comparison.
+  const base = estimator.fit({ x, y: labels }, { key: foldIn(key, 0), explain: false })
+  const proba = typeof base.predictProba === 'function' ? Array.from(toFlat(base.predictProba(x))) : undefined
+  const baseDecisions = predict(base)
+  const scores = proba === undefined ? baseDecisions : labels.map((_, i) => proba[2 * i + 1] ?? 0)
   return {
-    members,
+    members: hs.map((h) => h.fitted),
     weights,
     decisions,
     steps,
-    baseline: { scores: baseScores, error: errorOf(labels, baseDecisions), violation: violation(m, baseDecisions) },
+    bestIteration: bestIteration + 1,
+    bestGap: gaps[bestIteration] ?? Number.NaN,
+    baseline: {
+      scores,
+      error: errorOf(labels, baseDecisions),
+      violation: Math.max(0, ...m.gamma(baseDecisions)),
+    },
   }
 }
 
@@ -275,35 +433,57 @@ export function exponentiatedGradientReduction(
 export interface GridReductionOptions {
   /** The constraint (default `demographicParity`). */
   readonly constraint?: ReductionConstraint
-  /** Multipliers tried, from -bound to bound (default 21). */
+  /** Multiplier vectors tried (default 10, fairlearn's grid_size). */
   readonly gridSize?: number
-  /**
-   * The largest multiplier (default 0.5). A multiplier prices a unit of a group's gap against a unit of mean error, so a
-   * small group's rows flip once it passes about P(group) / (1 - P(group)).
-   */
+  /** The largest multiplier (default 2, fairlearn's grid_limit). */
   readonly bound?: number
-  /** The group the others' gaps are priced against (default 0). */
-  readonly reference?: number
+  /** The weight of the violation against the error when picking the best point (default 0.5). */
+  readonly constraintWeight?: number
   readonly key?: Key
 }
 
 /** One classifier of {@link gridReduction}. */
 export interface GridPoint {
+  /** The signed multiplier on each basis constraint (one per event and non-final group). */
   readonly lambda: number
+  readonly lambdas: readonly number[]
   readonly error: number
+  /** The largest moment (fairlearn's `gamma.max()`): the worst gap of a group's mean decision over everyone's. */
   readonly violation: number
   readonly fitted: Fitted
+  /** Whether it is the point fairlearn's tradeoff rule picks. */
+  readonly best: boolean
+}
+
+/** fairlearn's integer grid: every vector of `dim` integers with |entries| summing to at most `units`, in its order. */
+function integerGrid(dim: number, units: number): number[][] {
+  const out: number[][] = []
+  const entry = new Array<number>(dim).fill(0)
+  const accumulate = (index: number, max: number): void => {
+    if (index === dim) {
+      out.push([...entry])
+      return
+    }
+    for (let v = -max; v <= max; v++) {
+      entry[index] = v
+      accumulate(index + 1, max - Math.abs(v))
+    }
+  }
+  accumulate(0, units)
+  return out
 }
 
 /**
- * Fair classification by a grid of multipliers (fairlearn's `GridSearch`): for each multiplier, the best classifier for
- * that price on the gap between the non-reference groups and the reference, giving a family of deterministic
- * classifiers that trace the trade-off between error and violation.
+ * Fair classification by a grid of multipliers, a port of fairlearn's `GridSearch`: fairlearn's grid of multiplier
+ * vectors (integer points of the cross-polytope on the basis of non-redundant constraints, scaled to `bound`), for each
+ * the classifier best for those prices (rows relabelled by the sign of their cost and weighted by its size), each
+ * point's error and largest moment, and the point minimising `(1 - w) error + w violation`. With two groups the grid is
+ * one multiplier, the price on the first group's gap.
  *
  * @param estimator - A classifier that accepts sample weights.
  * @param data - Features, binary labels and group indices.
- * @param options - Constraint, grid size, bound, reference group and key.
- * @returns The classifiers with their multiplier, error and violation.
+ * @param options - Constraint, grid size, bound, constraint weight and key.
+ * @returns The classifiers with their multipliers, error and violation, the best marked.
  * @concept algorithmic-fairness
  * @example
  * ```ts
@@ -319,24 +499,43 @@ export function gridReduction(
   options: GridReductionOptions = {},
 ): GridPoint[] {
   const { x, labels, groups } = data
-  const constraint = options.constraint ?? 'demographicParity'
-  const m = moments(constraint, groups, labels, Math.max(...groups) + 1)
-  const size = options.gridSize ?? 21
-  const bound = options.bound ?? 0.5
+  const m = moments(options.constraint ?? 'demographicParity', groups, labels)
+  const size = options.gridSize ?? 10
+  const limit = options.bound ?? 2
+  const w = options.constraintWeight ?? 0.5
   const key = options.key ?? makeKey(0)
-  const reference = options.reference ?? 0
-  const cells = m.count / 2
-  return Array.from({ length: size }, (_, s) => {
-    const lam = size === 1 ? 0 : -bound + (2 * bound * s) / (size - 1)
-    // Price every non-reference cell's gap at lam (positive side) or -lam (negative side).
-    const lambda = new Array<number>(m.count).fill(0)
-    for (let c = 0; c < cells; c++) {
-      const g = constraint === 'demographicParity' ? c : Math.floor(c / 2)
-      if (g === reference) continue
-      if (lam >= 0) lambda[c] = lam
-      else lambda[c + cells] = -lam
+  const dim = m.basis.length
+  let units = Math.max(0, Math.floor((size / 2 ** dim) ** (1 / dim) - 1))
+  let grid = integerGrid(dim, units)
+  while (grid.length < size) grid = integerGrid(dim, ++units)
+  const vectors = grid.slice(0, size).map((v) => v.map((c) => (c * limit) / units))
+  const objective = labels.map((y) => 2 * (y === 1 ? 1 : 0) - 1)
+  const points = vectors.map((coefs, s) => {
+    const lambda = new Array<number>(2 * m.half).fill(0)
+    coefs.forEach((c, j) => {
+      const cell = m.basis[j] ?? 0
+      if (c > 0) lambda[cell] = c
+      else lambda[cell + m.half] = -c
+    })
+    const sw = m.signedWeights(lambda)
+    const fitted = callOracle(
+      estimator,
+      x,
+      labels,
+      objective.map((o, i) => o + (sw[i] ?? 0)),
+      false,
+      foldIn(key, s),
+    )
+    const decisions = Array.from(toFlat(requireVerb(fitted, 'predict', 'gridReduction')(x)))
+    return {
+      lambda: coefs[0] ?? 0,
+      lambdas: coefs,
+      error: errorOf(labels, decisions),
+      violation: Math.max(...m.gamma(decisions)),
+      fitted,
     }
-    const r = bestResponse(estimator, x, labels, m, lambda, foldIn(key, s))
-    return { lambda: lam, error: errorOf(labels, r.decisions), violation: violation(m, r.decisions), fitted: r.fitted }
   })
+  const losses = points.map((p) => (1 - w) * p.error + w * p.violation)
+  const best = losses.indexOf(Math.min(...losses))
+  return points.map((p, i) => ({ ...p, best: i === best }))
 }

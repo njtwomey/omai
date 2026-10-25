@@ -38,8 +38,10 @@ describe('post-processing', () => {
 
 describe('in-processing', () => {
   it('exponentiated gradient trades a little error for a much smaller violation, traced', () => {
-    const r = exponentiatedGradient(data, { iterations: 12, epsilon: 0.02 })
-    expect(r.steps).toHaveLength(12)
+    const r = exponentiatedGradient(data, { iterations: 12, epsilon: 0.02, differenceBound: 0.02 })
+    // fairlearn's stopping rule may end the game early, once the duality gap is small.
+    expect(r.steps.length).toBeGreaterThan(5)
+    expect(r.steps.length).toBeLessThanOrEqual(12)
     const last = r.steps[r.steps.length - 1]
     expect(last?.averageViolation).toBeLessThan(0.05)
     expect(last?.averageError).toBeGreaterThanOrEqual(r.baseline.error - 0.02)
@@ -52,7 +54,7 @@ describe('in-processing', () => {
 
   it('equalised odds moments work too', () => {
     const r = exponentiatedGradient(data, { iterations: 6, constraint: 'equalisedOdds' })
-    expect(r.steps[5]?.averageViolation).toBeLessThan(r.baseline.violation)
+    expect(r.steps.at(-1)?.averageViolation).toBeLessThan(r.baseline.violation)
   })
 
   it('a grid of multipliers traces error against violation', () => {
@@ -112,6 +114,9 @@ describe('studies', () => {
     const acc = f.thresholds.map((p) => p.accuracy)
     expect(acc).toEqual([...acc].sort((a, b) => a - b))
     expect(recordsOf(f.exposition, 'curves')[0]?.series).toHaveLength(2)
+    const [front] = recordsOf(f.exposition, 'paretoFront')
+    expect(front?.families).toHaveLength(2)
+    expect(f.chosen.violation).toBeLessThanOrEqual(0.05)
   })
 
   it('calibrated scores with unequal base rates cannot also have equal error rates', () => {

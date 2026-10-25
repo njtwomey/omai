@@ -2910,8 +2910,9 @@ Aequitas (group bias); goldens where cheap
   (`generalisedEntropyIndex`, `theilIndex`, `entropyDecomposition`, golden against AIF360's ClassificationMetric).
   Built; record `subgroupReport` (`lib/exposition/subgroups.ts`, `subgroupGrid`), views `subgroupView` (heatmap over
   the attributes beside sorted subgroup bars) and the React `SubgroupView`.
-- Individual fairness (`individual.ts`): consistency (k-NN), Lipschitz fairness under a task metric, fairness through
-  awareness.
+- Individual fairness (`individual.ts`): consistency among nearest neighbours (`consistency`, AIF360's), Lipschitz
+  fairness under a task metric with every violating pair (`lipschitzFairness`), fairness through awareness as a linear
+  programme (`fairnessThroughAwareness`). Built (core).
 - Causal fairness (`causal.ts`): counterfactual fairness, total, direct and indirect (path-specific) discrimination,
   against a structural causal model written in `probprog`.
 - Regression and scores (`regression.ts`): bounded group loss, statistical parity and equal opportunity in
@@ -2924,16 +2925,30 @@ Aequitas (group bias); goldens where cheap
   and held-out combined AUC) of the protected attribute (`proxyScores`), bias amplification by a model
   (`biasAmplification`, Wang and Russakovsky's BiasAmp). Built; record `dataBias` (`lib/exposition/data-bias.ts`),
   views `dataBiasView` and the React `DataBiasView`.
-- Pre-processing (`preprocessing.ts`): reweighing, massaging, preferential sampling, disparate-impact removal (with a
-  repair level), optimised pre-processing, learning fair representations.
-- In-processing (`in-processing.ts`): reductions (exponentiated gradient and grid search over constraint moments:
-  demographic parity, equalised odds, true- and false-positive parity, error-rate parity, bounded group loss),
-  prejudice remover, adversarial debiasing, meta fair classifier, fairness-constrained convex learning (Zafar), GerryFair.
+- Pre-processing (`preprocessing.ts`): reweighing (golden against AIF360's Reweighing), massaging (`massageLabels`),
+  preferential sampling (`preferentialSample`), disparate-impact removal with a repair level (`repairFeatures`, Feldman
+  et al.'s geometric repair; AIF360's remover runs BlackBoxAuditing's combinatorial repairer, which moves values to
+  other observed values, so no golden), optimised pre-processing of the labels (`optimisedLabelMapping`, Calmon et
+  al.'s programme on the label alone, a linear programme), learning fair representations (`learnFairRepresentation`,
+  `fairRepresentationMemberships`; random starts, so no golden against AIF360's LFR). Built.
+- In-processing (`in-processing.ts`): reductions, ports of fairlearn's ExponentiatedGradient (with its duality-gap
+  stopping, linear-programme mixtures and eta shrinking; golden against fairlearn's final mixture and decisions for
+  demographic parity and equalised odds, with a deterministic weighted least-squares learner in both) and GridSearch
+  (fairlearn's grid generator and tradeoff rule; golden against its errors, violations and choice). Moments:
+  demographic parity and equalised odds (TODO: true- and false-positive parity, error-rate parity, bounded group loss).
+  `fair-classifiers.ts`: the prejudice remover (`prejudiceRemover`), adversarial debiasing (`adversarialDebiasing`,
+  Zhang et al.'s projected update), fairness-constrained logistic regression (`fairConstrainedLogistic`, Zafar et al.,
+  by SLSQP), the meta fair classifier for the statistical rate (`metaFairClassifier`, Celis et al.), GerryFair
+  (`gerryFairClassifier`, fictitious play against `richSubgroupAudit`; AIF360's `update_costs` charges every row the
+  first member's indicator, a bug this does not copy, so no golden). Built.
 - Post-processing (`post-processing.ts`): threshold optimisation per group (demographic parity, equal opportunity,
-  equalised odds; randomised thresholds), calibrated equalised odds, reject-option classification.
-- Trade-offs and selection (`frontiers.ts`): accuracy–fairness Pareto frontiers over models and hyperparameters,
-  fairness-aware model selection, the impossibility results (calibration against error-rate balance; independence,
-  separation and sufficiency) on generated data.
+  equalised odds; randomised thresholds; golden against fairlearn's ThresholdOptimizer), calibrated equalised odds
+  (`calibratedEqualisedOdds`, golden against AIF360's mixing rates for each cost), reject-option classification
+  (`rejectOptionClassification`, golden against AIF360's threshold and margin for each metric). Built.
+- Trade-offs and selection (`frontiers.ts`): accuracy–fairness Pareto frontiers (`paretoFrontier`), fairness-aware
+  model selection (`selectFairModel`: within a violation budget, or priced), the frontier of one group's threshold
+  (`thresholdFrontier`), the impossibility results on given scores (`impossibilityAt`). Built; record `paretoFront`
+  (`lib/exposition/frontiers.ts`) and view `paretoFrontView`; `methods/fairness/studies.ts` is built on it.
 - Dynamics (`dynamics.ts`): delayed impact of decisions (Liu et al.), feedback loops over repeated rounds, fairness
   under distribution shift.
 
@@ -4175,15 +4190,20 @@ built from: `fairness`, `learn`, `metrics`, `optim`, `datasets` (with protected 
   move each group's threshold), per-group ROC curves and a sweep; `buildGroupReport` for scores, randomised decisions
   and per-group thresholds.
 - `preprocessing.ts`: `reweighing` and `reweighedFit` (weights and the group reports with and without them),
-  `disparateImpactRemover` (repaired data and each group's distribution of the most group-dependent feature).
+  `disparateImpactRemover` (repaired data and each group's distribution of the most group-dependent feature); round
+  two: `massaging`, `preferentialSampling`, `optimisedPreprocessing`, `fairRepresentation`.
 - `in-processing.ts`: `exponentiatedGradient` (the trade-off moving over iterations, the path from the unconstrained
-  model, group reports before and after) and `gridSearchReduction`.
+  model, group reports before and after) and `gridSearchReduction`; round two: `prejudiceRemoverFit`,
+  `adversarialDebiasingFit` (with the losses over training), `fairConstrainedFit`, `metaFairFit`, `gerryFairFit` (with
+  error and violation over the rounds), each with the group reports before and after (`_mitigation.ts`).
 - `post-processing.ts`: `thresholdOptimizer` (group reports before and after, the trade-off curves with the choice,
-  `rulesAt` for other shared rates).
+  `rulesAt` for other shared rates); round two: `calibratedEqOdds`, `rejectOption` (with balanced accuracy and the
+  metric over thresholds).
 - `intersectional.ts`: `intersectionalAudit(model, data, { attributes })`: a `subgroupReport` (rates over the
   attributes' combinations, entropy decomposition, GerryFair audit over indicators of the attributes). Built.
 - `data-bias.ts`: `dataBiasAudit(data, { cleanLabels, populationShares, model })`: a `dataBias` record. Built.
-- `studies.ts`: `fairnessFrontier` (accuracy against violation, in training and after it) and `impossibilityStudy`
+- `studies.ts`: `fairnessFrontier` (a `paretoFront` of accuracy against violation, in training and after it, with the
+  model selection's choice) and `impossibilityStudy`
   (calibrated scores against equalised odds and predictive parity as the base-rate gap grows).
 
 `trust/` (MAPIE, netcal, uncertainty and robustness)
@@ -4229,12 +4249,15 @@ disparate-impact remover, frontier, impossibility; round two: intersectional aud
 
 Round two built so far: the shared threshold layer (`thresholdSweep` record, `ThresholdExplorer`, section 6), group
 report intervals and warnings, `subgroupReport` and `dataBias` records with their views, gallery recipes
-`exposition/43-subgroup-report` and `44-data-bias`. Gallery: the exposition section gains a recipe per new
+`exposition/43-subgroup-report` and `44-data-bias`, and the `paretoFront` record (view `paretoFrontView`, React
+`ParetoFrontView`). Round two's new methods have smoke tests but no hub entries (the hub and gallery are paused).
+TODO (parked by the user): move the gallery's model-heavy `fairness/` and `trust/` recipes to hub entries, keeping as
+small exposition recipes only the views not otherwise shown (conformal sets and the online stream). Gallery: the exposition section gains a recipe per new
 view, driven by real methods on small data, with live controls (`exposition/40-group-report`: per-group thresholds
-dragged on each group's scores); the `fairness/` section holds the mitigation recipes (threshold optimiser with a
-draggable shared rate, exponentiated gradient with a draggable ε, reweighing and repair, the frontier, the
-impossibility); `exposition/41-reliability-diagram` and `42-conformal-intervals`; the `trust/` section holds
-conformal sets, coverage as data arrive, uncertainty, shift, robustness and the model card.
+dragged on each group's scores); the `fairness/` section holds the mitigation recipes (threshold optimiser, exponentiated
+gradient, reweighing and repair, the frontier, the impossibility); `exposition/41-reliability-diagram` and
+`42-conformal-intervals`; the `trust/` section holds conformal sets, coverage as data arrive, uncertainty, shift,
+robustness and the model card.
 
 ## 6. whitebox-render, `packages/render/src/`
 

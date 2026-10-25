@@ -6,13 +6,22 @@
 
 import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'
 import {
+  type CalibratedCost,
+  type CalibratedEqualisedOdds,
+  calibratedEqualisedOdds,
+  calibratedEqualisedOddsDecisions,
   type GroupThresholdRule,
   type OptimisedThresholds,
   type OptimiseThresholdsOptions,
   optimiseThresholds,
+  type RejectOption,
+  type RejectOptionOptions,
+  rejectOptionClassification,
+  rejectOptionDecisions,
   thresholdDecisions,
 } from '../../lib/fairness/index.ts'
 import type { Fitted } from '../../lib/learn/index.ts'
+import { type MitigationOptions, mitigationData, reportOf } from './_mitigation.ts'
 import { buildGroupReport, groupReportReference } from './audit.ts'
 import {
   binaryLabels,
@@ -124,5 +133,93 @@ export function thresholdOptimizer(
     decisions,
     predictProbabilities: (s, g) => thresholdDecisions(fitted.rules, s, g),
     exposition,
+  }
+}
+
+/**
+ * Calibrated equalised odds (`calibratedEqualisedOdds` of `whitebox-engine/fairness`, Pleiss et al.) on a fitted
+ * classifier: the cheaper group's scores are mixed with its base rate until the groups' generalised costs match.
+ * Exposition: the group reports before and after (expected decisions).
+ *
+ * @param model - A fitted binary classifier with probabilities.
+ * @param data - Labelled data holding the protected attribute.
+ * @param options - The attribute, privileged group, cost and whether the model saw the attribute.
+ * @returns The fitted post-processor and the decisions, with the records.
+ */
+export function calibratedEqOdds(
+  model: Fitted,
+  data: FairnessData,
+  options: MitigationOptions & { readonly cost?: CalibratedCost; readonly dropSensitive?: boolean } = {},
+): Explained<{ readonly fit: CalibratedEqualisedOdds; readonly decisions: readonly number[] }> {
+  const d = mitigationData(data, options, 'calibratedEqOdds')
+  const x = options.dropSensitive === true ? d.unaware.x : data.x
+  const { scores } = positiveScores(model, x)
+  const fit = calibratedEqualisedOdds(scores, d.labels, d.groups.index, {
+    privileged: d.privileged,
+    ...(options.cost === undefined ? {} : { cost: options.cost }),
+  })
+  const decisions = calibratedEqualisedOddsDecisions(fit, scores, d.groups.index)
+  return {
+    fit,
+    decisions,
+    exposition: [
+      reportOf(d, 'before', scores),
+      reportOf(
+        d,
+        `calibrated equalised odds (mix ${fit.mixRates.map((r) => r.toFixed(3)).join(', ')})`,
+        scores,
+        decisions,
+      ),
+    ],
+  }
+}
+
+/**
+ * Reject-option classification (`rejectOptionClassification` of `whitebox-engine/fairness`, Kamiran et al.) on a fitted
+ * classifier. Exposition: the group reports before and after, and a `curves` record of balanced accuracy and the
+ * fairness metric over thresholds at the chosen margin.
+ *
+ * @param model - A fitted binary classifier with probabilities.
+ * @param data - Labelled data holding the protected attribute.
+ * @param options - The attribute, privileged group, metric, bounds, grids and whether the model saw the attribute.
+ * @returns The fitted rule and the decisions, with the records.
+ */
+export function rejectOption(
+  model: Fitted,
+  data: FairnessData,
+  options: MitigationOptions & Omit<RejectOptionOptions, 'privileged'> & { readonly dropSensitive?: boolean } = {},
+): Explained<{ readonly fit: RejectOption; readonly decisions: readonly number[] }> {
+  const d = mitigationData(data, options, 'rejectOption')
+  const x = options.dropSensitive === true ? d.unaware.x : data.x
+  const { scores } = positiveScores(model, x)
+  const fit = rejectOptionClassification(scores, d.labels, d.groups.index, { ...options, privileged: d.privileged })
+  const decisions = rejectOptionDecisions(fit, scores, d.groups.index)
+  // The grid along the thresholds at the chosen margin's position in each threshold's row of margins.
+  const perThreshold = fit.grid.margins.length / new Set(fit.grid.thresholds).size
+  const chosen = fit.grid.thresholds.findIndex((t, i) => t === fit.threshold && fit.grid.margins[i] === fit.margin)
+  const position = chosen < 0 ? 0 : chosen % perThreshold
+  const atMargin = fit.grid.thresholds.flatMap((_, i) => (i % perThreshold === position ? [i] : []))
+  return {
+    fit,
+    decisions,
+    exposition: [
+      reportOf(d, 'before', scores),
+      reportOf(
+        d,
+        `reject option (threshold ${fit.threshold.toFixed(2)}, margin ${fit.margin.toFixed(3)})`,
+        scores,
+        decisions,
+      ),
+      curveSet({
+        x: atMargin.map((i) => fit.grid.thresholds[i] ?? 0),
+        xLabel: 'classification threshold',
+        yLabel: 'value',
+        series: [
+          { name: 'balanced accuracy', y: atMargin.map((i) => fit.grid.balancedAccuracy[i] ?? 0) },
+          { name: 'fairness metric', y: atMargin.map((i) => fit.grid.metric[i] ?? 0) },
+        ],
+        marks: [{ x: fit.threshold, label: 'chosen' }],
+      }),
+    ],
   }
 }

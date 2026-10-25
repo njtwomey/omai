@@ -493,6 +493,14 @@
       "cases": 33
     },
     {
+      "fixture": "fairness/in_processing.json",
+      "source": "oracle/cases/fairness/in_processing.py",
+      "reference": {
+        "fairlearn": "0.15.0"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "fairness/inference.json",
       "source": "oracle/cases/fairness/inference.py",
       "reference": {
@@ -512,9 +520,18 @@
       "fixture": "fairness/post_processing.json",
       "source": "oracle/cases/fairness/post_processing.py",
       "reference": {
-        "fairlearn": "0.15.0"
+        "fairlearn": "0.15.0",
+        "aif360": "0.6.1"
       },
-      "cases": 3
+      "cases": 9
+    },
+    {
+      "fixture": "fairness/preprocessing.json",
+      "source": "oracle/cases/fairness/preprocessing.py",
+      "reference": {
+        "aif360": "0.6.1"
+      },
+      "cases": 1
     },
     {
       "fixture": "foundations/calculus.json",

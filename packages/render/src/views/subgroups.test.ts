@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { dataBias, subgroupGrid, subgroupReport, tableRates } from 'whitebox-engine/exposition'
+import { dataBias, paretoFront, subgroupGrid, subgroupReport, tableRates } from 'whitebox-engine/exposition'
 import { dataBiasPanels, dataBiasView } from './data-bias.ts'
+import { paretoFrontView } from './frontiers.ts'
 import { stillOf, viewFor } from './registry.ts'
 import { subgroupBarsPanel, subgroupHeatmapPanel, subgroupView } from './subgroups.ts'
 
@@ -90,5 +91,27 @@ describe('subgroup and data-bias views', () => {
     })
     expect((dataBiasView(full) as unknown as Opt).grid).toHaveLength(4)
     expect(viewFor('dataBias').component).toBe('DataBiasView')
+  })
+})
+
+describe('Pareto front view', () => {
+  it('draws every family, its front, the marks and the choice', () => {
+    const r = paretoFront({
+      violationName: 'gap',
+      families: [
+        { name: 'grid', violation: [0.1, 0.2, 0.3], accuracy: [0.7, 0.8, 0.75], front: [0, 1] },
+        { name: 'thresholds', violation: [0.05, 0.15], accuracy: [0.72, 0.79], front: [0, 1] },
+      ],
+      marks: [{ violation: 0, accuracy: 0.7, label: 'exact' }],
+      chosen: { family: 1, index: 1, rule: 'best within 0.2' },
+    })
+    const o = paretoFrontView(r) as unknown as Opt
+    expect(o.series.some((s) => s.name === 'grid')).toBe(true)
+    expect(o.series.some((s) => s.name === 'exact')).toBe(true)
+    expect(o.series.some((s) => s.name?.startsWith('chosen'))).toBe(true)
+    expect(viewFor('paretoFront').component).toBe('ParetoFrontView')
+    expect(() =>
+      paretoFront({ violationName: 'g', families: [{ name: 'a', violation: [0], accuracy: [1], front: [3] }] }),
+    ).toThrow(/candidate/)
   })
 })

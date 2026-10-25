@@ -6,12 +6,16 @@
 
 import { generate } from '../../lib/data/index.ts'
 import { biasedCredit } from '../../lib/datasets/index.ts'
-import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'
+import { curveSet, type Explained, type Exposition, paretoFront } from '../../lib/exposition/index.ts'
 import {
-  calibrationByGroup,
+  type ImpossibilityPoint,
+  impossibilityAt,
   optimiseThresholds,
+  paretoFrontier,
   type ReductionConstraint,
+  selectFairModel,
   thresholdDecisions,
+  thresholdFrontier,
 } from '../../lib/fairness/index.ts'
 import type { Estimator } from '../../lib/learn/index.ts'
 import { foldIn, type Key, key as makeKey } from '../../lib/random/index.ts'
@@ -35,8 +39,10 @@ export interface FairnessFrontierOptions {
   readonly constraint?: ReductionConstraint
   /** Multipliers in the reduction's grid (default 41). */
   readonly gridSize?: number
-  /** The largest multiplier of the grid (default 0.5). */
+  /** The largest multiplier of the grid (default 2, fairlearn's grid_limit). */
   readonly bound?: number
+  /** The violation budget of the model selection (default 0.05). */
+  readonly maxViolation?: number
   /** Thresholds tried for the disadvantaged group (default 41). */
   readonly thresholds?: number
   readonly estimator?: Estimator
@@ -51,29 +57,27 @@ export interface FrontierPoint {
   readonly how: string
 }
 
-/** The upper-left frontier of points: those no other point beats in both accuracy and violation, by violation. */
-function paretoFront(points: readonly FrontierPoint[]): FrontierPoint[] {
-  const sorted = [...points].sort((a, b) => a.violation - b.violation || b.accuracy - a.accuracy)
-  const out: FrontierPoint[] = []
-  for (const p of sorted) if (out.length === 0 || p.accuracy > (out[out.length - 1]?.accuracy ?? 0)) out.push(p)
-  return out
-}
-
 /**
  * The accuracy–fairness frontier of a dataset: how much accuracy each amount of unfairness buys, traced two ways. In
- * training, a grid of prices on the constraint's violation (`gridSearchReduction`); after training, the unconstrained
- * model's scores with the disadvantaged group's threshold moved while the others keep theirs. Each family is reduced
- * to its Pareto front. Exposition: a `curves` record of accuracy against violation, one series per family, with the
- * exact threshold optimiser's violation (zero in expectation) marked.
+ * training, fairlearn's grid of multipliers on the constraint's violation (`gridSearchReduction`); after training, the
+ * unconstrained model's scores with the disadvantaged group's threshold moved while the others keep theirs
+ * (`thresholdFrontier`). Each family is reduced to its Pareto front, and fairness-aware model selection
+ * (`selectFairModel`) picks the most accurate candidate within the violation budget. Exposition: a `curves` record of
+ * both fronts with the exact threshold optimiser (zero violation in expectation) marked, and a `paretoFront` record of
+ * every candidate, both fronts, the optimiser and the choice.
  *
  * @param data - Labelled data holding the protected attribute.
- * @param options - Constraint, grid, thresholds, estimator and key.
- * @returns Both fronts, with the record.
+ * @param options - Constraint, grid, thresholds, budget, estimator and key.
+ * @returns Both fronts and the chosen candidate, with the record.
  */
 export function fairnessFrontier(
   data: FairnessData,
   options: FairnessFrontierOptions = {},
-): Explained<{ readonly reduction: readonly FrontierPoint[]; readonly thresholds: readonly FrontierPoint[] }> {
+): Explained<{
+  readonly reduction: readonly FrontierPoint[]
+  readonly thresholds: readonly FrontierPoint[]
+  readonly chosen: FrontierPoint
+}> {
   const constraint = options.constraint ?? 'demographicParity'
   const key = options.key ?? makeKey(0)
   const estimator = options.estimator ?? logisticRegression()
@@ -83,45 +87,30 @@ export function fairnessFrontier(
   const grid = gridSearchReduction(data, {
     constraint,
     gridSize: options.gridSize ?? 41,
-    bound: options.bound ?? 0.5,
+    ...(options.bound === undefined ? {} : { bound: options.bound }),
     estimator,
     dropSensitive: drop,
     key: foldIn(key, 0),
     ...(options.sensitive === undefined ? {} : { sensitive: options.sensitive }),
   })
-  const reduction = paretoFront(
-    grid.points.map((p) => ({
-      accuracy: 1 - p.error,
-      violation: p.violation,
-      how: `multiplier ${p.lambda.toFixed(2)}`,
-    })),
-  )
+  const reductionAll = grid.points.map((p) => ({
+    accuracy: 1 - p.error,
+    violation: p.violation,
+    how: `multiplier ${p.lambdas.map((l) => l.toFixed(2)).join(', ')}`,
+  }))
   // Post-processing: the unconstrained scores, the lowest-selected group's threshold swept.
   const x = drop ? withoutColumns(data, [groups.column as number]).x : data.x
   const model = estimator.fit({ x, y: labels }, { key: foldIn(key, 1), explain: false })
   const { scores } = positiveScores(model, x)
-  const base = buildGroupReport({
-    scores,
-    labels,
-    groups,
-    thresholds: groups.names.map(() => 0.5),
-    sweep: 0,
-    keepRows: false,
+  const swept = thresholdFrontier(scores, labels, groups.index, {
+    constraint,
+    count: options.thresholds ?? 41,
   })
-  let target = 0
-  for (const [g, r] of base.rates.entries()) if (r.selectionRate < (base.rates[target]?.selectionRate ?? 1)) target = g
-  const count = options.thresholds ?? 41
-  const violationOf = (r: typeof base): number => {
-    const name = constraint === 'demographicParity' ? 'demographic parity difference' : 'equalised odds difference'
-    return r.disparities.find((d) => d.name === name)?.value ?? 0
-  }
-  const swept = Array.from({ length: count }, (_, t) => {
-    const cut = 0.05 + (0.9 * t) / Math.max(1, count - 1)
-    const thresholds = groups.names.map((_, g) => (g === target ? cut : 0.5))
-    const r = buildGroupReport({ scores, labels, groups, thresholds, sweep: 0, keepRows: false })
-    return { accuracy: r.overall.accuracy, violation: violationOf(r), how: `threshold ${cut.toFixed(2)}` }
-  })
-  const front = paretoFront(swept)
+  const thresholdAll = swept.points.map((p, t) => ({
+    ...p,
+    how: `${groups.names[swept.group] ?? ''} threshold ${(swept.thresholds[t] ?? 0).toFixed(2)}`,
+  }))
+  const reductionFront = paretoFrontier(reductionAll)
   const optimiser = optimiseThresholds(scores, labels, groups.index, {
     constraint: constraint === 'demographicParity' ? 'demographicParity' : 'equalisedOdds',
   })
@@ -130,31 +119,69 @@ export function fairnessFrontier(
     scores,
     labels,
     groups,
-    thresholds: base.thresholds,
+    thresholds: groups.names.map(() => 0.5),
     decisions,
     sweep: 0,
     keepRows: false,
+    intervals: false,
   })
+  const name = constraint === 'demographicParity' ? 'demographic parity difference' : 'equalised odds difference'
+  const exactViolation = exact.disparities.find((d) => d.name === name)?.value ?? 0
+  const budget = options.maxViolation ?? 0.05
+  const all = [...reductionAll, ...thresholdAll]
+  const pick = selectFairModel(all, { maxViolation: budget })
+  const family = pick < reductionAll.length ? 0 : 1
   const exposition: Exposition[] = [
     curveSet({
-      xLabel: constraint === 'demographicParity' ? 'demographic parity difference' : 'equalised odds difference',
+      xLabel: name,
       yLabel: 'accuracy',
       series: [
         {
           name: 'in training (grid of multipliers)',
-          x: reduction.map((p) => p.violation),
-          y: reduction.map((p) => p.accuracy),
+          x: reductionFront.map((i) => reductionAll[i]?.violation ?? 0),
+          y: reductionFront.map((i) => reductionAll[i]?.accuracy ?? 0),
         },
         {
-          name: `after training (${groups.names[target] ?? ''} threshold)`,
-          x: front.map((p) => p.violation),
-          y: front.map((p) => p.accuracy),
+          name: `after training (${groups.names[swept.group] ?? ''} threshold)`,
+          x: swept.front.map((i) => thresholdAll[i]?.violation ?? 0),
+          y: swept.front.map((i) => thresholdAll[i]?.accuracy ?? 0),
         },
       ],
-      marks: [{ x: violationOf(exact), label: `threshold optimiser: accuracy ${exact.overall.accuracy.toFixed(3)}` }],
+      marks: [{ x: exactViolation, label: `threshold optimiser: accuracy ${exact.overall.accuracy.toFixed(3)}` }],
+    }),
+    paretoFront({
+      label: 'accuracy–fairness frontier',
+      violationName: name,
+      families: [
+        {
+          name: 'in training (grid of multipliers)',
+          violation: reductionAll.map((p) => p.violation),
+          accuracy: reductionAll.map((p) => p.accuracy),
+          labels: reductionAll.map((p) => p.how),
+          front: reductionFront,
+        },
+        {
+          name: `after training (${groups.names[swept.group] ?? ''} threshold)`,
+          violation: thresholdAll.map((p) => p.violation),
+          accuracy: thresholdAll.map((p) => p.accuracy),
+          labels: thresholdAll.map((p) => p.how),
+          front: [...swept.front],
+        },
+      ],
+      marks: [{ violation: exactViolation, accuracy: exact.overall.accuracy, label: 'threshold optimiser' }],
+      chosen: {
+        family,
+        index: family === 0 ? pick : pick - reductionAll.length,
+        rule: `most accurate with violation at most ${budget}`,
+      },
     }),
   ]
-  return { reduction, thresholds: front, exposition }
+  return {
+    reduction: reductionFront.map((i) => reductionAll[i] as FrontierPoint),
+    thresholds: swept.front.map((i) => thresholdAll[i] as FrontierPoint),
+    chosen: all[pick] as FrontierPoint,
+    exposition,
+  }
 }
 
 /** Options of {@link impossibilityStudy}. */
@@ -166,19 +193,8 @@ export interface ImpossibilityStudyOptions {
   readonly key?: Key
 }
 
-/** One base-rate gap of {@link impossibilityStudy}. */
-export interface ImpossibilityPoint {
-  readonly gap: number
-  /** The groups' base rates. */
-  readonly baseRates: readonly number[]
-  /** Calibrated scores at one threshold: the within-group calibration gap and the error-rate disparities. */
-  readonly calibrationGap: number
-  readonly equalisedOdds: number
-  readonly predictiveParity: number
-  /** After equalising odds by post-processing: the disparities again. */
-  readonly equalisedOddsAfter: number
-  readonly predictiveParityAfter: number
-}
+/** One base-rate gap of {@link impossibilityStudy}: `impossibilityAt` of the generated data's true posterior. */
+export type ImpossibilityStudyPoint = ImpossibilityPoint & { readonly gap: number }
 
 /**
  * The impossibility of calibration and equalised odds together (Kleinberg, Mullainathan and Raghavan, 2016;
@@ -193,7 +209,7 @@ export interface ImpossibilityPoint {
  */
 export function impossibilityStudy(
   options: ImpossibilityStudyOptions = {},
-): Explained<{ readonly points: readonly ImpossibilityPoint[] }> {
+): Explained<{ readonly points: readonly ImpossibilityStudyPoint[] }> {
   const gaps = options.gaps ?? [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
   const key = options.key ?? makeKey(0)
   const points = gaps.map((gap, s) => {
@@ -205,28 +221,7 @@ export function impossibilityStudy(
     const scores = Array.from({ length: p.length / 2 }, (_, i) => p[2 * i + 1] ?? 0)
     const labels = Array.from(toFlat(data.y))
     const groups = sensitiveGroups(data)
-    const before = buildGroupReport({ scores, labels, groups, thresholds: [0.5, 0.5], sweep: 0, keepRows: false })
-    const opt = optimiseThresholds(scores, labels, groups.index, { constraint: 'equalisedOdds' })
-    const decisions = thresholdDecisions(opt.rules, scores, groups.index)
-    const after = buildGroupReport({
-      scores,
-      labels,
-      groups,
-      thresholds: [0.5, 0.5],
-      decisions,
-      sweep: 0,
-      keepRows: false,
-    })
-    const named = (r: typeof before, name: string): number => r.disparities.find((d) => d.name === name)?.value ?? 0
-    return {
-      gap,
-      baseRates: before.rates.map((r) => r.baseRate),
-      calibrationGap: calibrationByGroup(labels, scores, groups.index, { nBins: 10 }).estimate.value,
-      equalisedOdds: named(before, 'equalised odds difference'),
-      predictiveParity: named(before, 'predictive parity difference'),
-      equalisedOddsAfter: named(after, 'equalised odds difference'),
-      predictiveParityAfter: named(after, 'predictive parity difference'),
-    }
+    return { gap, ...impossibilityAt(scores, labels, groups.index) }
   })
   const x = points.map((q) => Math.abs((q.baseRates[0] ?? 0) - (q.baseRates[1] ?? 0)))
   return {

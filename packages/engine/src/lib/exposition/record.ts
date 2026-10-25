@@ -21,6 +21,7 @@ import type { ConfusionMatrix } from './evaluation.ts'
 import type { CounterfactualSet, PrototypeSet } from './examples.ts'
 import type { ExplanationQuality } from './explanation-quality.ts'
 import type { GroupReport } from './fairness.ts'
+import type { ParetoFront } from './frontiers.ts'
 import type { ImageSteps } from './images.ts'
 import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from './linear.ts'
 import type { MarginRecord } from './margins.ts'
@@ -87,6 +88,7 @@ export type Exposition =
   | ThresholdSweep
   | SubgroupReport
   | DataBias
+  | ParetoFront
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -174,4 +176,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'thresholdSweep',
   'subgroupReport',
   'dataBias',
+  'paretoFront',
 ])

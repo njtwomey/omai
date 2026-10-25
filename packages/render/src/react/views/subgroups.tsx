@@ -1,15 +1,23 @@
 /**
- * React views of subgroup fairness: the subgroup report (one rate as a heatmap over the attributes beside every
- * subgroup's rate, with a choice of rate and the entropy and rich-subgroup audit beneath), and the data-bias record
- * (representation, base rates, proxies and label flips, with the label disparities).
+ * React views of subgroup fairness and trade-offs: the subgroup report (one rate as a heatmap over the attributes beside
+ * every subgroup's rate, with a choice of rate and the entropy and rich-subgroup audit beneath), the data-bias record
+ * (representation, base rates, proxies and label flips, with the label disparities), and the Pareto front of accuracy
+ * against a fairness violation.
  */
 
 import { type ReactElement, useCallback, useState } from 'react'
-import { type DataBias, GROUP_RATES, type GroupRateName, type SubgroupReport } from 'whitebox-engine/exposition'
+import {
+  type DataBias,
+  GROUP_RATES,
+  type GroupRateName,
+  type ParetoFront,
+  type SubgroupReport,
+} from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { formatNumber } from '../../theme/format.ts'
 import { dataBiasView } from '../../views/data-bias.ts'
 import { GROUP_RATE_LABELS } from '../../views/fairness.ts'
+import { paretoFrontView } from '../../views/frontiers.ts'
 import { subgroupView } from '../../views/subgroups.ts'
 import { Select } from '../controls/Select.tsx'
 import { DataTable, RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'
@@ -116,4 +124,19 @@ export function DataBiasView(props: RecordViewProps<DataBias>): ReactElement {
   return (
     <RecordFigure {...props} figure={figure} build={build} filename={props.filename ?? 'data-bias'} footer={footer} />
   )
+}
+
+const FRONT_FIGURE = { aspect: 1.5 } as const
+
+/**
+ * A Pareto-front record: candidates by accuracy and violation, each family's front, reference marks and the choice.
+ *
+ * @param props - The record and the figure and frame settings.
+ * @returns The figure.
+ */
+export function ParetoFrontView(props: RecordViewProps<ParetoFront>): ReactElement {
+  const figure = useViewFigure(props.figure, FRONT_FIGURE)
+  const { record } = props
+  const build = useCallback((fig: Figure) => paretoFrontView(record, { figure: fig }), [record])
+  return <RecordFigure {...props} figure={figure} build={build} filename={props.filename ?? 'pareto-front'} />
 }
