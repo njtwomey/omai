@@ -4,7 +4,7 @@
  */
 
 import { mislabelledRowStudy, type ValuationMethod } from 'whitebox-engine/methods/explain'
-import { logisticRegression } from 'whitebox-engine/methods/linear'
+import { kNeighborsClassifier } from 'whitebox-engine/methods/neighbours'
 import { dict, int, real } from 'whitebox-engine/space'
 import { defineEntry, type HubEntry } from '../../entry/entry.ts'
 import { learnDataOf } from '../../entry/run.ts'
@@ -20,12 +20,12 @@ export const mislabelledRows: HubEntry = defineEntry({
   dataset: 'breastCancer',
   params: dict({
     flip: real(0.02, 0.4, { default: 0.15, label: 'share of labels flipped' }),
-    rows: int(30, 200, { default: 80, label: 'training rows' }),
-    samples: int(10, 300, { default: 60, log: true, label: 'Banzhaf subsets' }),
-    permutations: int(2, 60, { default: 10, label: 'Beta Shapley permutations' }),
+    rows: int(30, 200, { default: 60, label: 'training rows' }),
+    samples: int(10, 300, { default: 40, log: true, label: 'Banzhaf subsets' }),
+    permutations: int(2, 60, { default: 5, label: 'Beta Shapley permutations' }),
   }),
   run: ({ data, params, key }) =>
-    mislabelledRowStudy(logisticRegression({ C: 1 }), learnDataOf(data), {
+    mislabelledRowStudy(kNeighborsClassifier({ nNeighbors: 5 }), learnDataOf(data), {
       flipFraction: Number(params['flip']),
       trainRows: Number(params['rows']),
       nSamples: Number(params['samples']),

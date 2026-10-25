@@ -16,6 +16,7 @@ import { DependenceView } from './dependence.tsx'
 import { DiagramPlayer } from './diagrams.tsx'
 import { EpisodeView } from './episodes.tsx'
 import { CounterfactualView, PrototypeView } from './examples.tsx'
+import { ExplanationQualityView } from './explanation-quality.tsx'
 import { GroupReportView } from './fairness.tsx'
 import { ImagePlayer } from './images.tsx'
 import { MarginView } from './margins.tsx'
@@ -133,6 +134,8 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <ConceptView record={record} {...common} />
     case 'rules':
       return <RuleListView record={record} {...common} />
+    case 'explanationQuality':
+      return <ExplanationQualityView record={record} {...common} />
     case 'groupReport':
       return <GroupReportView record={record} {...common} />
     case 'calibration':

@@ -47,7 +47,7 @@ export const networkGradients: HubEntry = defineEntry({
       { default: 'integratedGradients', label: 'explainer' },
     ),
     row: int(0, 799, { default: 4, label: 'image' }),
-    epochs: int(1, 20, { default: 4, label: 'training epochs' }),
+    epochs: int(1, 20, { default: 3, label: 'training epochs' }),
   }),
   run: ({ data, params, key }) => {
     const learn = learnDataOf(data)

@@ -20,6 +20,7 @@ import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
 import { episodeView } from './episodes.ts'
 import { counterfactualTableView, prototypeView } from './examples.ts'
+import { explanationQualityView } from './explanation-quality.ts'
 import { groupReportView } from './fairness.ts'
 import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
@@ -411,6 +412,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => conceptView(r, o),
+  },
+  explanationQuality: {
+    kind: 'explanationQuality',
+    component: 'ExplanationQualityView',
+    title: 'Explanation quality',
+    plays: false,
+    accepts: [],
+    still: (r, o) => explanationQualityView(r, o),
   },
   rules: {
     kind: 'rules',
