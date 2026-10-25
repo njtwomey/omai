@@ -8,6 +8,7 @@ import { driftingTopics, naiveBayesCorpus, nearDuplicateCorpus, tinyShakespeare,
 import { densitySamples } from './densities.ts'
 import { hawkesProcess, inhomogeneousPoisson, poissonProcess, spatialPoisson } from './events.ts'
 import { abTest } from './experiments.ts'
+import { biasedCredit } from './fairness.ts'
 import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, kinshipTriples } from './graphs.ts'
 import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes } from './images.ts'
@@ -63,6 +64,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   arma,
   associativeRecall,
   barsAndStripes,
+  biasedCredit,
   blobs,
   blobsWithOutliers,
   burgersOperator,

@@ -54,6 +54,11 @@ export interface DatasetMeta {
   readonly recipe?: RecipeStamp
   /** The words of the key the data was generated with. */
   readonly key?: readonly [number, number]
+  /**
+   * Feature columns holding protected attributes (sex, an age band, a group), each with the names of its coded values
+   * in order (`{ female: ['male', 'female'] }`): fairness audits group the rows by them.
+   */
+  readonly sensitive?: Readonly<Record<string, readonly string[]>>
 }
 
 /** What every dataset schema has: its kind and its metadata. */

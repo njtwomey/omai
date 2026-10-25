@@ -2799,7 +2799,10 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   (embedding per iteration, neighbour graph, calibrated bandwidths, stress);
 - `AnomalyScores` (scores, thresholds, per-point evidence);
 - `DecisionSurface` (predictions and probabilities on a grid over two features);
-- `PipelineStages` (each stage's input and output data, fitted parameters and shape changes);
+- `PipelineStages` (each stage's input and output data, fitted parameters and shape changes; per stage up to a few
+  hundred output rows with their classes and per-column statistics, the parameters in full with the names of their
+  entries, a projection's explained variance, and on the final estimator the whole pipeline's `DecisionSurface` over
+  the raw inputs with its training loss per row and the loss it expects over the grid);
 - `SearchTrials` (every trial of a grid, random or Bayesian search with values and pruning decisions) and
   `LearningCurve`;
 - `EpisodeRecord` (per episode returns; per step state, action, reward and frame; value and policy snapshots).
@@ -3831,6 +3834,12 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   `makeMultilabelClassification`.
 - `classification-real.ts`: `iris`, `wine`, `breastCancer`, 8 by 8 digits (`digits`, `digitImages`), Titanic
   (`titanic`, R's survival table expanded to rows), penguins (`penguins` as a table, `penguinsClassification`).
+- `fairness.ts`: data with protected attributes (named with their coded values in `meta.sensitive`): `biasedCredit`
+  (a group with knobs for representation, a real base-rate gap, label bias, noisier measurements and a proxy feature;
+  exact posterior, Bayes error, clean labels and base rates), the vendored Statlog German credit data
+  (`germanCredit`, UCI, CC BY 4.0; sex derived from the personal status) and `titanicSurvival` (sex protected); the
+  collection `fairnessTabular` gathers presets of the generator (biased labels, an under-represented group, a real
+  gap, a withheld group with a proxy, no bias) and the two real datasets.
 - `clustering.ts`: `rings`, `anisotropicBlobs`, `unequalVarianceBlobs`, `oldFaithful`, with true clusters (and
   exact posteriors for the generators).
 - `manifolds.ts`: `swissRoll` (optionally with a hole), `sCurve`, `severedSphere`, `torus`, with latent coordinates;
@@ -4308,8 +4317,14 @@ failing example to itself).
   `make site`, a no-op when its output is newer than the engine's source) writes static files named by content hash
   to `apps/site/.generated/docs/` (gitignored): a small index for the tree (folders with summaries, files with their
   exports' names and kinds: about 0.5 MB where the whole catalogue is 7 MB), one data file per source file (its
-  comment and full `SymbolDoc`s, fetched when a page shows it) and a search index of every export's summary (fetched
-  when the search box is used, or once the page is idle), then `manifest.json` naming the current version.
+  comment, full `SymbolDoc`s and `refs`: the type names in its signatures resolved through its imports to
+  `[module, name]`), a types file per module (each exported type's declaration and lead sentence, named in the index
+  and fetched on the first hover) and a search index of every export's summary (fetched when the search box is used,
+  or once the page is idle), then `manifest.json` naming the current version.
+- Type names in signatures, parameter types and prose (`{@link}`, inline code) link their page and, on hover or
+  keyboard focus, show the type's declaration (highlighted) and lead sentence in whitebox-render's `Popover`
+  (`src/docs/TypeHover.tsx`); Escape or moving away closes it. Names in code resolve only through the file's `refs`,
+  so globals and private types stay plain.
 - `plugins/`: `docs-data.ts` (writing the files, the staleness check), `build-docs.ts` (the command behind
   `make docs-catalogue`) and the Vite plugin `docs-catalogue.ts`. In dev it serves `<base>docs-data/*` from the
   folder and `virtual:whitebox-docs/index` (the current index's URL); after an edit to the engine it regenerates in a

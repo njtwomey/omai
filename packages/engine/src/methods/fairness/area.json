@@ -1,1 +1,4 @@
-{ "summary": "Fairness metrics and mitigation.", "dependsOn": [] }
+{
+  "summary": "Fairness: audits across protected groups, and mitigation before, during and after training.",
+  "dependsOn": ["linear"]
+}

@@ -9,6 +9,7 @@ import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
 import type { EnsembleStages } from './ensembles.ts'
 import type { EpisodeRecord } from './episodes.ts'
 import type { ConfusionMatrix } from './evaluation.ts'
+import type { GroupReport } from './fairness.ts'
 import type { ImageSteps } from './images.ts'
 import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from './linear.ts'
 import type { MarginRecord } from './margins.ts'
@@ -59,6 +60,7 @@ export type Exposition =
   | ImageSteps
   | FeatureAttributions
   | Importances
+  | GroupReport
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -134,4 +136,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'imageSteps',
   'featureAttributions',
   'importances',
+  'groupReport',
 ])

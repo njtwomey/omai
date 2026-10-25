@@ -9,6 +9,7 @@ import { ComponentsView } from './components.tsx'
 import { CurvesView } from './curves.tsx'
 import { DiagramPlayer } from './diagrams.tsx'
 import { EpisodeView } from './episodes.tsx'
+import { GroupReportView } from './fairness.tsx'
 import { ImagePlayer } from './images.tsx'
 import { MarginView } from './margins.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
@@ -111,5 +112,7 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <AttributionView record={record} {...common} />
     case 'importances':
       return <ImportanceView record={record} {...common} />
+    case 'groupReport':
+      return <GroupReportView record={record} {...common} />
   }
 }
