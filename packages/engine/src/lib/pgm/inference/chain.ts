@@ -1,3 +1,9 @@
+/**
+ * Inference on chains, hidden Markov models and linear-chain CRFs: the forward-backward algorithm (filtered and
+ * smoothed marginals, pairwise posteriors and the likelihood, scaled or in log space), forward filtering, Viterbi
+ * decoding of the most probable path, posterior decoding and forward filtering backward sampling for exact path draws.
+ */
+
 import { argmaxOf, logSumExpOf, maxOf, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { nullTracer, type RunHandle, startRun, type TracePolicy, type Tracer } from '../../trace/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Regression losses, torch.nn.functional style: mean squared and absolute errors, Huber, smooth L1 and log-cosh, the
+ * pinball (quantile) and expectile losses, Poisson and Gaussian negative log-likelihoods, and the Tweedie deviance for
+ * counts and positive skewed targets.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { logaddexp, xlogy } from '../numerics/special/index.ts'
 import {

@@ -1,3 +1,9 @@
+/**
+ * Saving and loading a module's parameters and buffers: a JSON form with dtype and shape per tensor, text round trips,
+ * and `loadTorchStateDict`, which loads a PyTorch state dict exported as tensor JSON (the modules use PyTorch's names
+ * and layouts, so weights load as they are).
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { isTensor, type Tensor, type TensorJson, tensorFromJson, tensorToJson, treePaths } from '../../tensor/index.ts'
 import type { Module, Params } from '../module/module.ts'

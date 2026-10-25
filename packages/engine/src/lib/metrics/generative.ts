@@ -1,3 +1,9 @@
+/**
+ * Metrics for generative models computed from features or embeddings: the Inception score, the Frechet (FID) and kernel
+ * (KID) Inception distances, precision, recall, density and coverage of generated samples, CLIPScore for image-text
+ * agreement and the Vendi diversity score.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { eigvalsh, funmSymmetric } from '../numerics/linalg/index.ts'
 import { type Key, key as makeKey, permutation, split } from '../random/index.ts'

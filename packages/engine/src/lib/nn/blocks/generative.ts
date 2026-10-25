@@ -1,3 +1,10 @@
+/**
+ * Building blocks of generative models. Timestep and noise-level embeddings with the time-conditioned residual, spatial
+ * attention and down and up stages of a diffusion U-Net (laid out as diffusers' blocks), and the affine (RealNVP) and
+ * additive (NICE) coupling layers of normalising flows, which return their output with the log-determinant of the
+ * Jacobian.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {

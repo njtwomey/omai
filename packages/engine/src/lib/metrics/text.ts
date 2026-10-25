@@ -1,3 +1,10 @@
+/**
+ * Text metrics for speech recognition, translation, summarisation and generation: word, character and match error rates
+ * and word information measures (jiwer), BLEU, chrF and TER as sacrebleu computes them, ROUGE-N, ROUGE-L and ROUGE-Lsum
+ * as rouge-score does, SQuAD's exact match and token F1, BERTScore from embeddings, perplexity from logits and
+ * distinct-n diversity.
+ */
+
 import { type MetricResult, type MetricSpec, maxOf, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import {

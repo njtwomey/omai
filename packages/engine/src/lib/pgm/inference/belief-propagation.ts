@@ -1,3 +1,10 @@
+/**
+ * Belief propagation (message passing) on the factor graph of any discrete model: sum-product for marginals or
+ * max-product for max-marginals, with flooding, sequential or residual schedules and damping, exact on trees and an
+ * approximation (loopy BP) otherwise. A traced algorithm, the function returning beliefs with the Bethe approximation
+ * of log Z, and the Bethe free energy.
+ */
+
 import { heap, type Json, WhiteboxError } from '../../base/index.ts'
 import {
   type Algorithm,

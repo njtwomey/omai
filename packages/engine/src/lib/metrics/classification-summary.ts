@@ -1,3 +1,10 @@
+/**
+ * Summary scores of a classifier beyond precision and recall: the Matthews correlation coefficient, Cohen's kappa
+ * (agreement beyond chance, with a quadratic-weighted form for ordinal classes), likelihood ratios and the diagnostic
+ * odds ratio, Hamming and zero-one loss, top-k accuracy, the multilabel ranking metrics, and scikit-learn's
+ * `classificationReport`.
+ */
+
 import { type MetricResult, type MetricSpec, maxOf, minOf, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { fixed, right } from './_format.ts'

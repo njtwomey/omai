@@ -1,3 +1,9 @@
+/**
+ * The graphs underneath graphical models: directed acyclic graphs with topological order, ancestors and descendants,
+ * undirected graphs, moral and interaction graphs, connected components and graph separation, the global Markov
+ * property of Markov networks.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { connectedComponents as components, graph, isDag, topologicalSort } from '../graph/index.ts'
 import { indexedGraph, link, mutableGraph } from './_graph.ts'

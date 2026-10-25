@@ -1,3 +1,9 @@
+/**
+ * Stochastic regularisers as functions of a key, active only in training: dropout and its channel and alpha variants,
+ * drop path (stochastic depth, which skips whole residual branches), Gaussian noise injection and Gaussian dropout, and
+ * cutout, which blanks a random square of each image.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, normal, randint, uniform } from '../../random/index.ts'
 import {

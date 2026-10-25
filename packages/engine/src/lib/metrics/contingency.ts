@@ -1,3 +1,9 @@
+/**
+ * Working with confusion (contingency) tables: their margins and the rates read along rows and columns, the 2 by 2
+ * table of scores cut at a threshold, and the cost of a table, or of every threshold, under a matrix of
+ * misclassification costs.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'

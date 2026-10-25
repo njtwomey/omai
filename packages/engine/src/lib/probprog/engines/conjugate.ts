@@ -1,3 +1,9 @@
+/**
+ * Closed-form inference for conjugate programs, where every latent site is a conjugate prior of its observed children
+ * (beta-Bernoulli, normal-normal, gamma-Poisson and the rest), so each posterior is a conjugate update. Gathering each
+ * structure's data, the posteriors, the closed-form posterior predictive and the engine for the planner.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   bernoulli,

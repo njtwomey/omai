@@ -1,3 +1,9 @@
+/**
+ * Precision-recall analysis of binary scorers: the precision-recall curve and average precision as in scikit-learn, and
+ * Flach and Kull's precision-recall-gain curve with its area, which rescales precision and recall so that areas behave
+ * like ROC AUC.
+ */
+
 import type { MetricResult } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'

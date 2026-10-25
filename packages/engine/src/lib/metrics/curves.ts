@@ -1,3 +1,9 @@
+/**
+ * Threshold curves of binary scorers, scikit-learn style: confusion counts at every threshold, the ROC curve (true
+ * against false positive rate) and its area `rocAucScore` (binary, partial and multi-class), the trapezoidal `auc`, and
+ * the detection error tradeoff (DET) curve.
+ */
+
 import { type MetricResult, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'

@@ -1,3 +1,9 @@
+/**
+ * Conditional independence tests for constraint-based structure learning, pgmpy style: the chi-square and G-tests for
+ * discrete variables, Fisher's z and the partial-correlation t test for continuous ones, and an independence oracle
+ * over a data set that the PC and FCI learners query.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'
 import { chdtrc, ndtr, stdtr } from '../../numerics/special/index.ts'

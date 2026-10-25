@@ -1,3 +1,10 @@
+/**
+ * Exact inference for linear-Gaussian programs, where every site is Gaussian with a mean linear in earlier sites: the
+ * program is read off as one linear system by differentiating it, then conditioned on the observations by dense
+ * Gaussian conditioning or, for chains, by Kalman filtering and Rauch-Tung-Striebel smoothing. Also the engine for the
+ * planner.
+ */
+
 import { jacobian } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import { type Distribution, multivariateNormal, normal } from '../../dists/index.ts'

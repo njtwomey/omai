@@ -1,3 +1,9 @@
+/**
+ * Input checking and array plumbing shared by the learners: reading feature matrices and target vectors as float64 with
+ * scikit-learn's errors, encoding class labels, sample weights, row and column selection on fast matrix views, length
+ * checks and option validation.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { asTensor, fromStorage, isTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import type { LearnData } from './estimator.ts'

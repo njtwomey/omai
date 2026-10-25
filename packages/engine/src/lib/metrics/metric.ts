@@ -1,3 +1,10 @@
+/**
+ * The metric contract: a metric is a function of targets and predictions returning a `MetricResult`, with a
+ * specification (name, direction, range, inputs, category) attached by `defineMetric`. Also the input readers every
+ * metric uses (flattening, shapes, columns, sample weights), per-output averaging, scikit-learn's weighted percentile
+ * and `streaming`, which accumulates a metric over batches as torchmetrics does.
+ */
+
 import { estimate, type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { asTensor, isValue, type TensorLike, toFlat } from '../tensor/index.ts'
 

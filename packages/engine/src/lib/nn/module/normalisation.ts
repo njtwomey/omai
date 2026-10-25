@@ -1,3 +1,9 @@
+/**
+ * Normalisation layers as modules, torch.nn style: batch normalisation in one, two and three dimensions with running
+ * statistics updated in training and used in evaluation, instance normalisation, `LayerNorm`, `RMSNorm`, `GroupNorm`
+ * and `LocalResponseNorm`.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { full, item, tensor, type Value, zeros } from '../../tensor/index.ts'
 import {

@@ -1,3 +1,9 @@
+/**
+ * The Gaussian-process surrogate of Bayesian optimisation and the importance evaluators: a Matern-5/2 kernel with one
+ * length scale per parameter (automatic relevance determination, Hamming distance for options), fitted to standardised
+ * observations as Optuna's `GPSampler` does, with the posterior mean and standard deviation at new points.
+ */
+
 import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { maternKernel } from '../kernels/index.ts'
 import { choleskyJitter, choSolve, solveTriangular } from '../numerics/linalg/index.ts'

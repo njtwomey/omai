@@ -1,3 +1,10 @@
+/**
+ * Speculative decoding (Leviathan et al. 2023; Chen et al. 2023): a cheap draft model proposes several tokens, the
+ * target model scores them in one pass and a rejection rule keeps a prefix, so the output follows the target model's
+ * distribution exactly while calling it less often. A traced `speculativeAlgorithm` and the `speculativeDecode`
+ * function, reporting acceptance statistics.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../../base/index.ts'
 import { categorical, foldIn, type Key, key as makeKey, uniform } from '../../random/index.ts'
 import type { Tensor } from '../../tensor/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Losses for classifiers with very many classes, such as word vocabularies, where a full softmax is too costly: the
+ * hierarchical softmax over a Huffman code of the classes (word2vec's), which costs O(log C) per example, and the
+ * sampled softmax, which scores the true class against a few sampled candidates with a correction for the sampling.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { huffmanTree } from '../information/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'

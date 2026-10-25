@@ -1,3 +1,9 @@
+/**
+ * Variational objectives, which score how well a guide (an approximate posterior) fits a model: the standard ELBO
+ * estimator with reparameterised and score-function gradients (NumPyro's `Trace_ELBO`), the mean-field ELBO with
+ * closed-form KL terms, the Renyi divergence bound and the importance-weighted (IWAE) bound.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { klDivergence } from '../dists/index.ts'
 import { foldIn, type Key } from '../random/index.ts'

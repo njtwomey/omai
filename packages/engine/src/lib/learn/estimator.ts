@@ -1,3 +1,11 @@
+/**
+ * The estimator protocol every learner in the library follows, scikit-learn's ideas in functional form: an `Estimator`
+ * has hyperparameters and an optional tuning space, and `fit` returns a new `Fitted` value whose parameters are plain
+ * JSON and whose verbs (`predict`, `transform`, `predictProba` and so on) are closures over them. `defineEstimator`,
+ * cloning, capability guards, serialisation and revival, and the `EstimatorClass` wrapper for `new X().fit(x,
+ * y).predict(x)` code.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import type { Context } from '../context/index.ts'
 import type { Distribution } from '../dists/index.ts'

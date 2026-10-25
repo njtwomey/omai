@@ -1,3 +1,10 @@
+/**
+ * Composing estimators, scikit-learn style: `pipeline` chains transformers and a final estimator (with
+ * imbalanced-learn's resampling steps and an optional cache of fitted steps), `featureUnion` concatenates transformers'
+ * outputs, `columnTransformer` applies different transformers to different columns, and `transformedTargetRegressor`
+ * fits on transformed targets and maps predictions back.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Exposition, type PipelineStage, pipelineStages } from '../exposition/index.ts'
 import { r2Score } from '../metrics/index.ts'

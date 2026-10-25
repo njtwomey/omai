@@ -1,3 +1,10 @@
+/**
+ * Mixture-of-experts layers: a router sends each token to a few of many feed-forward experts, so capacity grows without
+ * the cost of running every expert. The routing rules (dense softmax, top-k, noisy top-k, Switch and expert choice),
+ * the auxiliary load-balancing, router z- and importance losses, and the `MixtureOfExperts` layer that returns its
+ * output with the routing and losses.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {

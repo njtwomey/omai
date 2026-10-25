@@ -1,3 +1,10 @@
+/**
+ * Losses for physics-informed neural networks (PINNs), which fit a network to a differential equation by penalising its
+ * residual: field derivatives at collocation points by automatic differentiation, the PDE residual, boundary-condition
+ * and initial-condition terms, and two schemes for balancing the terms (gradient-norm learning-rate annealing and
+ * neural-tangent-kernel weights).
+ */
+
 import { grad, vjp } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import {

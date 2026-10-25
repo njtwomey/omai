@@ -1,3 +1,10 @@
+/**
+ * Gaussian factors in canonical (information) form, the continuous counterpart of discrete factors used by Gaussian
+ * elimination and belief propagation: conversion to and from moment form, product and division (parameters add and
+ * subtract), marginalisation by Schur complement, conditioning on observed values, and the factor of a linear-Gaussian
+ * node.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   checkSquare,

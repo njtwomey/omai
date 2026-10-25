@@ -1,3 +1,9 @@
+/**
+ * A dataset's generating program: `generatingProgram` wraps a probabilistic program over rows of features and targets
+ * so a synthetic dataset can carry its ground truth, giving exact per-row log densities, draws of new rows and, where
+ * it exists, the true regression function.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type GeneratingProgram, posteriorFromJoint } from '../data/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'

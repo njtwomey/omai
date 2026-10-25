@@ -1,3 +1,9 @@
+/**
+ * The language-model contract used by decoding and the NLP methods: a `Tokenizer` and a `LanguageModel` that returns
+ * next-token logits for batches of token sequences. A character tokenizer, a bigram model from a table, an adapter from
+ * any module mapping token ids to logits, and helpers for next-token logits, sequence log-probability and perplexity.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   asTensor,

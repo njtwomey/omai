@@ -1,3 +1,9 @@
+/**
+ * Model criticism and comparison, ArviZ style: WAIC and Pareto-smoothed importance-sampling leave-one-out
+ * cross-validation (PSIS-LOO) as estimates of out-of-sample predictive accuracy, posterior predictive checks of a test
+ * statistic, and model comparison by elpd with stacking and pseudo-BMA weights.
+ */
+
 import { logSumExpOf, WhiteboxError } from '../base/index.ts'
 import { lbfgs } from '../optim/index.ts'
 import { paretoSmoothedWeights } from '../sampling/index.ts'

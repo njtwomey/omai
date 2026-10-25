@@ -1,3 +1,9 @@
+/**
+ * Image segmentation metrics: the Dice coefficient and IoU of binary masks, per-class mean IoU of label maps, the
+ * Hausdorff distance between mask boundaries (MONAI style), the boundary F1 score and panoptic quality, which scores
+ * matched segments of both things and stuff.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { classCounts, encodeLabels, labelValues } from './_labels.ts'

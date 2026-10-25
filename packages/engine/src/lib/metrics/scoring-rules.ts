@@ -1,3 +1,9 @@
+/**
+ * Proper scoring rules for probabilistic forecasts, which reward a forecaster for reporting its true beliefs: the
+ * logarithmic score, the continuous ranked probability score (CRPS) in closed form or from samples, the spherical score
+ * and the multivariate energy score.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'

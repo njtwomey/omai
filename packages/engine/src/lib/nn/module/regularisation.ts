@@ -1,3 +1,9 @@
+/**
+ * Stochastic regularisation layers as modules, active only in training mode and drawing from the apply context's key:
+ * dropout and its channel and alpha variants, `DropPath` (stochastic depth, as in timm), Gaussian noise and Gaussian
+ * dropout, and `Cutout`.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import {

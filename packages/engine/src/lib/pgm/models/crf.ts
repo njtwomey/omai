@@ -1,3 +1,10 @@
+/**
+ * Conditional random fields, which model the labels of structured outputs given observed features. Linear-chain CRFs
+ * (Lafferty et al. 2001) in CRFsuite and CRF++ forms with scores, likelihoods, marginals, Viterbi decoding and
+ * penalised maximum-likelihood training as a traced run, and general CRFs on arbitrary graphs trained with exact or
+ * loopy belief propagation marginals.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import type { GradientTransformation } from '../../optim/index.ts'
 import { adam } from '../../optim/index.ts'

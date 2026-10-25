@@ -1,3 +1,9 @@
+/**
+ * Exact inference for discrete-state chain programs (hidden Markov models written as a markov loop): the program is
+ * turned into a chain of potentials, and forward-backward gives posterior marginals and the evidence, while forward
+ * filtering backward sampling gives exact joint draws. Also the engine that offers it to the planner.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Distribution } from '../../dists/index.ts'
 import { backwardSample, type ChainModel, forwardBackward, viterbi } from '../../pgm/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * State-space sequence models, the linear recurrences behind S4, Mamba and their relatives: discretising a continuous
+ * model (zero-order hold or bilinear), the convolution kernel and recurrent views of the same linear system,
+ * elementwise linear recurrences, Mamba's input-dependent selective scan, the delta rule of DeltaNet and the linear
+ * recurrent unit (LRU) with its initialisation.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { expm, solve } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'

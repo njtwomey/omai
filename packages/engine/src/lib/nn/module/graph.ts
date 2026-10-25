@@ -1,3 +1,9 @@
+/**
+ * Graph convolution layers as modules, mirroring PyTorch Geometric's parameter names: `GCNConv`, the graph attention
+ * layer `GATConv`, GraphSAGE's `SAGEConv` and the graph isomorphism layer `GINConv`, each taking node features with an
+ * edge index.
+ */
+
 import { foldIn, type Key } from '../../random/index.ts'
 import { type TensorLike, tensor, type Value, zeros } from '../../tensor/index.ts'
 import { type Aggregation, gatConv, gcnConv, ginConv, sageConv } from '../functional/graph.ts'

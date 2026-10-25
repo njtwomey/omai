@@ -1,3 +1,9 @@
+/**
+ * Operating points of a binary scorer, the single thresholds a deployment chooses: recall at fixed precision and the
+ * reverse, sensitivity at fixed specificity and the reverse, FPR at a given TPR, the equal error rate, Youden's index,
+ * the minimum expected detection cost, and Drummond and Holte's cost curve.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { labelValues } from './_labels.ts'

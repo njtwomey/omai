@@ -1,3 +1,10 @@
+/**
+ * Ranking and recommendation metrics: precision and recall at k, hit rate, R-precision, mean average precision, mean
+ * reciprocal rank, DCG and NDCG, expected reciprocal rank and rank-biased precision for search results, and
+ * beyond-accuracy measures of recommendation lists (catalogue coverage, intra-list diversity, novelty, serendipity and
+ * the Gini coefficient of exposure).
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import type { Grid } from './_scores.ts'

@@ -1,3 +1,9 @@
+/**
+ * Variable elimination, exact inference that sums (or maximises) hidden variables out one at a time in a chosen order:
+ * posterior queries given evidence, the log partition function or evidence, the most probable explanation by
+ * max-product elimination, and MAP queries over a subset of variables.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { nullTracer, type RunHandle, startRun, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import {

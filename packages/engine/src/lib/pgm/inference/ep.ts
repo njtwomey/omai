@@ -1,3 +1,10 @@
+/**
+ * Expectation propagation (Minka 2001), approximate inference that refines one site approximation at a time by matching
+ * moments with the true factor: a fully factorised version on discrete factor graphs, and the Gaussian version for
+ * latent-Gaussian models (a Gaussian prior with non-Gaussian likelihood sites, as in GP classification), returning the
+ * posterior and a log-evidence estimate.
+ */
+
 import { type Json, logAddExp, WhiteboxError } from '../../base/index.ts'
 import { gaussHermite } from '../../numerics/quadrature/index.ts'
 import { logNdtr } from '../../numerics/special/index.ts'

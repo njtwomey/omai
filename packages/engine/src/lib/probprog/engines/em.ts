@@ -1,3 +1,9 @@
+/**
+ * Expectation maximisation on probabilistic programs: point estimates of the parameters (and MAP values of the
+ * remaining sites) with discrete or linear-Gaussian latent sites marginalised exactly in the E-step. A traced
+ * `emAlgorithm`, the `em` function returning a posterior, and the engine for the planner.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { bijectors, compose, type Distribution, type Support } from '../../dists/index.ts'
 import { cholesky } from '../../numerics/linalg/index.ts'

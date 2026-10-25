@@ -1,3 +1,9 @@
+/**
+ * Containers that compose modules: `Sequential`, `ModuleList` and `ModuleDict` as in torch.nn, a `Residual` connection,
+ * `Parallel` branches combined by sum, concatenation or a function, `Composite` (the base of the named-part blocks such
+ * as transformer and U-Net blocks), `Lambda` for small glue functions, and the `mlp` builder.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { add, concat, stack, type Value } from '../../tensor/index.ts'

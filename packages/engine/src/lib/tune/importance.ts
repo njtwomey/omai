@@ -1,3 +1,9 @@
+/**
+ * Hyperparameter importance from a finished study, which says which parameters mattered for the objective: rank
+ * correlation, permutation importance on a Gaussian-process surrogate, functional ANOVA (fANOVA, the share of the
+ * surrogate's variance each parameter explains) and PED-ANOVA, which compares the best trials with the rest.
+ */
+
 import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation, scrambledSobol } from '../random/index.ts'
 import { pearson, spearman } from '../stats/index.ts'

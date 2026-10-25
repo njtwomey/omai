@@ -1,3 +1,10 @@
+/**
+ * Differential privacy, which bounds how much any single person's data can change a released result, diffprivlib and
+ * opacus style. The Laplace, Gaussian (classic and analytic calibration) and exponential mechanisms, randomised
+ * response, basic, advanced and heterogeneous composition of privacy budgets, and the Renyi-DP accountant for DP-SGD
+ * with the subsampled Gaussian mechanism.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { erf, logNdtr } from '../numerics/special/index.ts'
 import { bernoulli, categorical, type Key, laplace, normal } from '../random/index.ts'

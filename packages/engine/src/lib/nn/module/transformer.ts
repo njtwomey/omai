@@ -1,3 +1,9 @@
+/**
+ * The transformer layers of torch.nn: encoder and decoder layers (self-attention, cross-attention and a feed-forward
+ * block, each with a residual connection and layer normalisation, post-norm or pre-norm), encoder and decoder stacks,
+ * the full encoder-decoder `Transformer` with PyTorch's initialisation, and `squareSubsequentMask` for causal decoding.
+ */
+
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,

@@ -1,3 +1,9 @@
+/**
+ * Position encodings as modules: the original Transformer's sinusoidal encoding, BERT and GPT-2's learned absolute
+ * position embeddings, and `RotaryEmbedding`, which rotates queries or keys by position (RoPE) so attention scores
+ * depend on relative position.
+ */
+
 import { foldIn, type Key } from '../../random/index.ts'
 import { add, type Value } from '../../tensor/index.ts'
 import { applyRotary, learnedPositions, rotaryAngles, sinusoidalPositions } from '../functional/positional.ts'

@@ -1,3 +1,9 @@
+/**
+ * Layers for sets, where the output must not depend on the order of the elements: masked pooling over padded sets (Deep
+ * Sets) and the Set Transformer's attention blocks, `mab`, `sab`, the induced `isab` that attends through a few learnt
+ * points, and `pma`, which pools a set into k vectors by attention.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

@@ -1,3 +1,9 @@
+/**
+ * Predictive distributions of probabilistic programs, NumPyro style: draws from the prior predictive and the posterior
+ * predictive, and per-observation log-likelihoods under posterior draws, flattened into the matrix that WAIC and LOO
+ * take.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import {

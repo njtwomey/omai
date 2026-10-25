@@ -1,3 +1,9 @@
+/**
+ * Objectives for tuning `learn` estimators: `estimatorObjective` scores a configuration by cross-validated performance
+ * (each fold's fit a child run of the trial, with intermediate reports for pruning), and `holdoutObjective` by
+ * performance on a validation set.
+ */
+
 import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import {
   type Estimator,

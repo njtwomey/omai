@@ -1,3 +1,10 @@
+/**
+ * Approximate Bayesian computation (ABC), likelihood-free inference for models that can be simulated but whose
+ * likelihood cannot be evaluated: parameters are kept when the simulated data's summary statistics land close to the
+ * observed ones. A `simulator` distribution, default summaries, rejection ABC, ABC-SMC with a shrinking tolerance, and
+ * the engine that offers them to the planner.
+ */
+
 import { type Json, logSumExpOf, quantileOf, WhiteboxError } from '../../base/index.ts'
 import { bijectors, type Distribution, defineDistribution, multivariateNormal, unavailable } from '../../dists/index.ts'
 import { cholesky } from '../../numerics/linalg/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Weight initialisers, torch.nn.init style: fan computation and the recommended gain per activation, Xavier (Glorot),
+ * Kaiming (He) and LeCun schemes in uniform and normal forms, PyTorch's default, constant, uniform, normal and
+ * truncated normal draws, orthogonal and identity matrices, the Dirac convolution weight and sparse initialisation.
+ * Each draws from an explicit key.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { qr } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, permutation, truncatedNormal, uniform } from '../random/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Resampling for imbalanced classes, imbalanced-learn style: resamplers change the training rows (and are applied only
+ * during fit in a pipeline). Random under- and over-sampling, SMOTE and its borderline variant and ADASYN, which
+ * synthesise minority samples by interpolating between neighbours, Tomek link removal and NearMiss under-sampling.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { beta, choice as drawChoice, foldIn, type Key, randint, uniform } from '../../random/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../../tensor/index.ts'

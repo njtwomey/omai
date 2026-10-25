@@ -1,3 +1,9 @@
+/**
+ * The linear layers as functions, torch.nn.functional style: the affine map `linear` with PyTorch's `[out, in]` weight
+ * layout, the `bilinear` map, `embedding` lookup and `embeddingBag`, which reduces bags of embedding rows by sum, mean
+ * or max without materialising them.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

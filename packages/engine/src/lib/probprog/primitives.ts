@@ -1,3 +1,10 @@
+/**
+ * The primitives probabilistic programs are written with, NumPyro style: `sample` and `observe` for random variables,
+ * `param` for learnable parameters, `deterministic` for recorded values, `factor` for extra log-density terms, `plate`
+ * for conditionally independent repetitions and `markov` for loops with sequential dependence. Also the message and
+ * handler stack (`send`, `withMessenger`) they all go through.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Distribution, defineDistribution, type Support } from '../dists/index.ts'
 import type { Key } from '../random/index.ts'

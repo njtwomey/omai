@@ -1,3 +1,10 @@
+/**
+ * Likelihood losses for probabilistic models: the negative log-likelihood of observations under any distribution or of
+ * targets under a conditional distribution (a likelihood head), the mixture density network loss, the heteroscedastic
+ * Gaussian loss with a predicted log-variance, and the likelihood of censored observations known only to lie in an
+ * interval.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { log1mexp } from '../numerics/special/index.ts'
