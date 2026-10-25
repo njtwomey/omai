@@ -1,6 +1,9 @@
 import type { EChartsCoreOption, ECharts as EChartsInstance } from 'echarts/core'
 import { type CSSProperties, type ReactElement, useEffect, useRef, useState } from 'react'
+import type { Pixels } from 'whitebox-engine/scene'
+import { colourSelection, type ImageEncoder } from '../charts/selection.ts'
 import type { Figure } from '../figure/figure.ts'
+import { pngDataUrl } from '../svg/png.ts'
 import { themeName } from '../theme/echarts.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { loadEcharts } from './echarts.ts'
@@ -9,6 +12,18 @@ import { useColourMode } from './theme.tsx'
 
 /** An ECharts event handler: the event's parameters and the chart instance. */
 export type ChartEventHandler = (params: unknown, chart: EChartsInstance) => void
+
+// A repainted image as a canvas (drawn at once, where a data URL would be decoded first and flicker while dragging).
+function canvasImage(pixels: Pixels): unknown {
+  if (typeof document === 'undefined') return pngDataUrl(pixels)
+  const canvas = document.createElement('canvas')
+  canvas.width = pixels.width
+  canvas.height = pixels.height
+  const ctx = canvas.getContext('2d')
+  if (ctx === null) return pngDataUrl(pixels)
+  ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.rgba), pixels.width, pixels.height), 0, 0)
+  return canvas
+}
 
 /** Props of {@link Chart}. */
 export interface ChartProps {
@@ -84,6 +99,29 @@ export function Chart(props: ChartProps): ReactElement {
   useEffect(() => {
     chart?.setOption(option, { notMerge: !merge, lazyUpdate: true })
   }, [chart, option, merge])
+
+  // Colour bar selections: layers ECharts cannot recolour (images, baked cells) are repainted with the values outside
+  // the selection dimmed, at most once per animation frame while a handle is dragged.
+  useEffect(() => {
+    if (chart === null) return
+    const encode: ImageEncoder = renderer === 'svg' ? pngDataUrl : canvasImage
+    let pending: unknown
+    let frame: number | undefined
+    const flush = (): void => {
+      frame = undefined
+      const update = colourSelection(optionRef.current, pending, encode)
+      if (update !== undefined && !chart.isDisposed()) chart.setOption(update)
+    }
+    const onSelect = (params: unknown): void => {
+      pending = params
+      if (frame === undefined) frame = requestAnimationFrame(flush)
+    }
+    chart.on('datarangeselected', onSelect)
+    return () => {
+      chart.off('datarangeselected', onSelect)
+      if (frame !== undefined) cancelAnimationFrame(frame)
+    }
+  }, [chart, renderer])
 
   useEffect(() => {
     if (chart === null || onEvents === undefined) return
