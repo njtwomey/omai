@@ -1,7 +1,10 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
+import { sweepAt } from '../exposition/index.ts'
 import { accuracyScore, confusionMatrix } from './classification.ts'
-import { confusionMargins, tableCost, thresholdConfusion, thresholdCosts } from './contingency.ts'
+import { analyseThresholds, confusionMargins, tableCost, thresholdConfusion, thresholdCosts } from './contingency.ts'
+import { rocAucScore } from './curves.ts'
+import { averagePrecisionScore } from './precision-recall.ts'
 
 describe('contingency tables', () => {
   it('margins of a binary table name every rate', () => {
@@ -176,6 +179,72 @@ describe('misclassification costs', () => {
         },
       ),
       { numRuns: 200 },
+    )
+  })
+})
+
+describe('threshold analysis', () => {
+  it('names the classes, keeps the rows and reads any threshold back', () => {
+    const r = analyseThresholds(['ham', 'spam', 'spam', 'ham'], [0.2, 0.7, 0.5, 0.5], { posLabel: 'spam' })
+    expect(r.classes).toEqual(['ham', 'spam'])
+    expect(r.thresholds).toEqual([0.2, 0.5, 0.7, Number.POSITIVE_INFINITY])
+    expect(r.scored?.labels).toEqual([0, 1, 1, 0])
+    expect(sweepAt(r, 0.6).table).toEqual([
+      [2, 0],
+      [1, 1],
+    ])
+    expect(sweepAt(r, 9).selectionRate).toBe(0)
+    expect(Number.isNaN(sweepAt(r, 9).precision)).toBe(true)
+    expect(r.cost).toBeUndefined()
+    expect(analyseThresholds([0, 1], [0, 1], { keepRows: false }).scored).toBeUndefined()
+    expect(() => analyseThresholds([0, 1], [0, Number.NaN])).toThrow(/NaN/)
+    expect(() => analyseThresholds([0, 1], [0, 1], { costs: [[0, 1]] })).toThrow(/2 by 2/)
+  })
+
+  it('weights rows and leaves the areas undefined with one class', () => {
+    const r = analyseThresholds([0, 1, 1], [0.9, 0.9, 0.1], { sampleWeight: [2, 3, 5] })
+    expect(sweepAt(r, 0.5).table).toEqual([
+      [0, 2],
+      [5, 3],
+    ])
+    expect(r.positives).toBe(8)
+    expect(Number.isNaN(analyseThresholds([1, 1], [0.2, 0.4]).rocAuc)).toBe(true)
+  })
+
+  it('agrees with thresholdConfusion, thresholdCosts and the curve metrics at every threshold (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(fc.boolean(), fc.integer({ min: 0, max: 20 }), fc.integer({ min: 1, max: 4 })), {
+          minLength: 1,
+          maxLength: 30,
+        }),
+        fc.tuple(fc.integer({ min: 0, max: 9 }), fc.integer({ min: 0, max: 9 })),
+        (rows, [fp, fn]) => {
+          const y = [0, 1, ...rows.map(([b]) => (b ? 1 : 0))]
+          const s = [3, 7, ...rows.map(([, v]) => v / 2)]
+          const w = [1, 1, ...rows.map(([, , k]) => k)]
+          const costs = [
+            [0, fp],
+            [fn, 0],
+          ]
+          const r = analyseThresholds(y, s, { costs, sampleWeight: w })
+          const cut = thresholdCosts(y, s, costs, { sampleWeight: w })
+          const tablesAgree = r.thresholds.every(
+            (t, i) =>
+              JSON.stringify(sweepAt(r, t).table) ===
+                JSON.stringify(thresholdConfusion(y, s, t, { sampleWeight: w }).matrix) && sweepAt(r, t).index === i,
+          )
+          const close = (a: number, b: number): boolean => Math.abs(a - b) < 1e-9
+          return (
+            tablesAgree &&
+            r.cost?.every((c, i) => close(c, cut.totals[i] ?? Number.NaN)) === true &&
+            r.thresholds[r.cheapest ?? -1] === cut.best.threshold &&
+            close(r.rocAuc, rocAucScore(y, s, { sampleWeight: w }).estimate.value) &&
+            close(r.averagePrecision, averagePrecisionScore(y, s, { sampleWeight: w }).estimate.value)
+          )
+        },
+      ),
+      { numRuns: 150 },
     )
   })
 })

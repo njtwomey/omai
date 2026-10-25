@@ -29,6 +29,7 @@ import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
 import { decisionSurfaceFrames, decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
 import { coefficientView, likelihoodView, neighbourView, searchTrialsView } from './tables.ts'
+import { thresholdSweepView } from './thresholds.ts'
 import { treeScene } from './trees.ts'
 import { conformalFrames, conformalView, reliabilityView } from './trust.ts'
 
@@ -341,6 +342,14 @@ const REGISTRY: Registry = {
       const frames = conformalFrames(r, o)
       return frames.option(frames.count - 1)
     },
+  },
+  thresholdSweep: {
+    kind: 'thresholdSweep',
+    component: 'ThresholdSweepView',
+    title: 'Threshold sweep',
+    plays: false,
+    accepts: [],
+    still: (r, o) => thresholdSweepView(r, o),
   },
   confusionMatrix: {
     kind: 'confusionMatrix',

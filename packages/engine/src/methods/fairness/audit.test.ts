@@ -54,4 +54,18 @@ describe('fairnessAudit', () => {
     expect(b.groups).toEqual(['a', 'b'])
     expect(recordsOf(b.exposition, 'groupReport')[0]?.reference).toBe(1)
   })
+
+  it('gives intervals around every rate and disparity, and p-values that find the gap', () => {
+    const [r] = recordsOf(audit.exposition, 'groupReport')
+    const iv = r?.intervals
+    expect(iv?.rates).toHaveLength(2)
+    const [lo, hi] = iv?.rates[1]?.selectionRate ?? [0, 0]
+    expect(lo).toBeLessThanOrEqual(r?.rates[1]?.selectionRate ?? -1)
+    expect(hi).toBeGreaterThanOrEqual(r?.rates[1]?.selectionRate ?? 2)
+    expect(iv?.disparities).toHaveLength(r?.disparities.length ?? -1)
+    expect(iv?.pValues?.[0]).toBeLessThan(0.05)
+    expect(groupReportAt(r ?? (undefined as never), [0.4, 0.4]).intervals).toBeUndefined()
+    const none = fairnessAudit(model, data, { intervals: false })
+    expect(recordsOf(none.exposition, 'groupReport')[0]?.intervals).toBeUndefined()
+  })
 })

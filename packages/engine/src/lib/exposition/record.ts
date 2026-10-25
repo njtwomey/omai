@@ -28,6 +28,7 @@ import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
 import type { DecisionSurface } from './surfaces.ts'
+import type { ThresholdSweep } from './thresholds.ts'
 import type { PruningPath, TreeRecord } from './trees.ts'
 import type { CalibrationRecord, ConformalRecord } from './trust.ts'
 
@@ -75,6 +76,7 @@ export type Exposition =
   | GroupReport
   | CalibrationRecord
   | ConformalRecord
+  | ThresholdSweep
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -156,4 +158,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'groupReport',
   'calibration',
   'conformal',
+  'thresholdSweep',
 ])

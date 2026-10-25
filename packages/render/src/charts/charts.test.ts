@@ -177,7 +177,7 @@ describe('bars', () => {
     )
     expect(l.extent.y).toEqual([-2, 3])
     expect(l.series.map((s) => opt(s).type)).toEqual(['bar', 'custom', 'bar'])
-    const item = opt(l.series[1]).renderItem({}, api([1, 2, 0.5]))
+    const item = opt(l.series[1]).renderItem({}, api([1, 1.5, 2.5]))
     expect(item.children[1].shape).toEqual({ x1: 0, y1: 1.5, x2: 0, y2: 2.5 })
     const h = bars(['a'], [3], { horizontal: true })
     expect(h.yCategories).toEqual(['a'])

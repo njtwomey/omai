@@ -1,13 +1,16 @@
 /**
- * Working with confusion (contingency) tables: their margins and the rates read along rows and columns, the 2 by 2
- * table of scores cut at a threshold, and the cost of a table, or of every threshold, under a matrix of
- * misclassification costs.
+ * Contingency tables of a binary or multiclass classifier and what is written around them: the margins and rates
+ * (confusionMargins), the table of scores cut at a threshold (thresholdConfusion), misclassification costs of a table
+ * and at every threshold (tableCost, thresholdCosts), and the shared threshold layer, analyseThresholds, which sweeps
+ * every distinct threshold in one sorted pass into a thresholdSweep exposition record.
  */
 
 import { WhiteboxError } from '../base/index.ts'
+import { type ThresholdSweep, thresholdSweep } from '../exposition/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
 import type { ConfusionMatrix } from './classification.ts'
+import { auc } from './curves.ts'
 import { flat, type MetricInput, type MetricOptions, sampleWeights } from './metric.ts'
 
 /**
@@ -203,48 +206,176 @@ export function thresholdCosts(
   costs: readonly (readonly number[])[],
   options: ThresholdConfusionOptions = {},
 ): ThresholdCosts {
+  checkCosts('thresholdCosts', costs)
+  const sweep = sweepScores('thresholdCosts', yTrue, yScore, options)
+  const totals = sweepCost(sweep, costs)
+  const best = cheapestIndex(totals)
+  return {
+    thresholds: sweep.thresholds,
+    totals,
+    best: { threshold: sweep.thresholds[best] ?? Number.POSITIVE_INFINITY, total: totals[best] ?? 0 },
+  }
+}
+
+function checkCosts(name: string, costs: readonly (readonly number[])[]): void {
   if (costs.length !== 2 || costs.some((row) => row.length !== 2))
-    throw new WhiteboxError('shape', 'thresholdCosts: the cost matrix must be 2 by 2')
+    throw new WhiteboxError('shape', `${name}: the cost matrix must be 2 by 2`)
+}
+
+/** The counts of scores cut at every distinct threshold, from one sorted pass. */
+interface ScoreSweep {
+  readonly negative: Label
+  readonly positive: Label
+  /** Every distinct score ascending, then +Infinity. */
+  readonly thresholds: number[]
+  readonly tp: number[]
+  readonly fp: number[]
+  readonly positives: number
+  readonly negatives: number
+  /** Each row's score, and whether it is positive. */
+  readonly scores: Float64Array
+  readonly isPositive: boolean[]
+}
+
+// Sweep thresholds upwards: at a threshold equal to a distinct score, every sample at or above it is positive, so the
+// counts at each threshold are the totals less what lies below it.
+function sweepScores(
+  name: string,
+  yTrue: MetricInput,
+  yScore: TensorLike,
+  options: ThresholdConfusionOptions,
+): ScoreSweep {
   const t = labelValues(yTrue)
   const s = flat(yScore)
-  if (s.length !== t.length) throw new WhiteboxError('shape', 'thresholdCosts: yTrue and yScore have different lengths')
+  if (s.length !== t.length) throw new WhiteboxError('shape', `${name}: yTrue and yScore have different lengths`)
+  for (const v of s) if (Number.isNaN(v)) throw new WhiteboxError('value', `${name}: a score is NaN`)
   const classes = sortLabels(t)
-  if (classes.length > 2) throw new WhiteboxError('value', 'thresholdCosts: needs two classes')
-  const pos = options.posLabel ?? (classes.includes(1) ? 1 : (classes[classes.length - 1] ?? 1))
-  const w = sampleWeights('thresholdCosts', t.length, options.sampleWeight)
-  const [[cTn = 0, cFp = 0] = [], [cFn = 0, cTp = 0] = []] = costs
+  if (classes.length > 2) throw new WhiteboxError('value', `${name}: needs two classes`)
+  const positive = options.posLabel ?? (classes.includes(1) ? 1 : (classes[classes.length - 1] ?? 1))
+  const negative =
+    classes.find((c) => c !== positive) ?? (typeof positive === 'number' ? (positive === 0 ? 1 : 0) : `not ${positive}`)
+  const w = sampleWeights(name, t.length, options.sampleWeight)
+  const isPositive = t.map((v) => v === positive)
   const order = Array.from({ length: t.length }, (_, i) => i).sort((a, b) => (s[a] ?? 0) - (s[b] ?? 0))
   let positives = 0
   let negatives = 0
   for (let i = 0; i < t.length; i++) {
-    if (t[i] === pos) positives += w[i] ?? 0
+    if (isPositive[i] === true) positives += w[i] ?? 0
     else negatives += w[i] ?? 0
   }
-  // Sweep thresholds upwards: at a threshold equal to a distinct score, every sample at or above it is positive.
   const thresholds: number[] = []
-  const totals: number[] = []
+  const tp: number[] = []
+  const fp: number[] = []
   let belowPos = 0
   let belowNeg = 0
-  const total = (): number =>
-    belowNeg * cTn + (negatives - belowNeg) * cFp + belowPos * cFn + (positives - belowPos) * cTp
   for (let r = 0; r < order.length; ) {
     const value = s[order[r] ?? 0] ?? 0
     thresholds.push(value)
-    totals.push(total())
+    tp.push(positives - belowPos)
+    fp.push(negatives - belowNeg)
     while (r < order.length && (s[order[r] ?? 0] ?? 0) === value) {
       const i = order[r] ?? 0
-      if (t[i] === pos) belowPos += w[i] ?? 0
+      if (isPositive[i] === true) belowPos += w[i] ?? 0
       else belowNeg += w[i] ?? 0
       r++
     }
   }
   thresholds.push(Number.POSITIVE_INFINITY)
-  totals.push(total())
+  tp.push(positives - belowPos)
+  fp.push(negatives - belowNeg)
+  return { negative, positive, thresholds, tp, fp, positives, negatives, scores: s, isPositive }
+}
+
+function sweepCost(sweep: ScoreSweep, costs: readonly (readonly number[])[]): number[] {
+  const [[cTn = 0, cFp = 0] = [], [cFn = 0, cTp = 0] = []] = costs
+  return sweep.tp.map((tp, i) => {
+    const fp = sweep.fp[i] ?? 0
+    return (sweep.negatives - fp) * cTn + fp * cFp + (sweep.positives - tp) * cFn + tp * cTp
+  })
+}
+
+function cheapestIndex(totals: readonly number[]): number {
   let best = 0
   for (let i = 1; i < totals.length; i++) if ((totals[i] ?? 0) < (totals[best] ?? 0)) best = i
-  return {
-    thresholds,
-    totals,
-    best: { threshold: thresholds[best] ?? Number.POSITIVE_INFINITY, total: totals[best] ?? 0 },
-  }
+  return best
+}
+
+/** Options of {@link analyseThresholds}. */
+export interface AnalyseThresholdsOptions extends ThresholdConfusionOptions {
+  /** A 2 by 2 cost matrix, `[[cost of TN, cost of FP], [cost of FN, cost of TP]]`: adds the cost and the cheapest. */
+  readonly costs?: readonly (readonly number[])[]
+  /** Names of the negative and positive class (default the labels as text). */
+  readonly classNames?: readonly [string, string]
+  /** Keep the scored rows in the record, for score-distribution views (default true). */
+  readonly keepRows?: boolean
+}
+
+/**
+ * Every threshold of a binary classifier's scores at once, as a `thresholdSweep` exposition record: at each distinct
+ * score (and +Infinity) the four counts, the true- and false-positive rates, precision, selection rate and accuracy,
+ * the total cost and the cheapest threshold when costs are given, and the areas under the ROC and precision-recall
+ * curves. One sorted pass, so every threshold costs O(1) after sorting; `sweepAt` reads any threshold back.
+ *
+ * @param yTrue - Binary labels.
+ * @param yScore - Scores, higher meaning more positive.
+ * @param options - Costs, posLabel, class names, sample weights and whether to keep the rows.
+ * @returns The sweep.
+ * @throws WhiteboxError `shape` for lengths that differ or a cost matrix that is not 2 by 2; `value` with more than two
+ *   classes or a NaN score.
+ * @concept classification-metrics
+ * @example
+ * ```ts
+ * import { analyseThresholds } from 'whitebox-engine/metrics'
+ * const r = analyseThresholds([0, 0, 1, 1], [0.1, 0.6, 0.4, 0.9], { costs: [[0, 1], [5, 0]] })
+ * r.thresholds // => [0.1, 0.4, 0.6, 0.9, Infinity]
+ * r.tp // => [2, 2, 1, 1, 0]
+ * r.cost // => [2, 1, 6, 5, 10]
+ * r.thresholds[r.cheapest ?? 0] // => 0.4
+ * r.rocAuc // => 0.75
+ * ```
+ */
+export function analyseThresholds(
+  yTrue: MetricInput,
+  yScore: TensorLike,
+  options: AnalyseThresholdsOptions = {},
+): ThresholdSweep {
+  if (options.costs !== undefined) checkCosts('analyseThresholds', options.costs)
+  const sweep = sweepScores('analyseThresholds', yTrue, yScore, options)
+  const { positives: P, negatives: N } = sweep
+  const ratio = (a: number, b: number): number => (b === 0 ? Number.NaN : a / b)
+  const tn = sweep.fp.map((fp) => N - fp)
+  const fn = sweep.tp.map((tp) => P - tp)
+  const tpr = sweep.tp.map((tp) => ratio(tp, P))
+  const fpr = sweep.fp.map((fp) => ratio(fp, N))
+  const precision = sweep.tp.map((tp, i) => ratio(tp, tp + (sweep.fp[i] ?? 0)))
+  let averagePrecision = P === 0 ? Number.NaN : 0
+  if (P > 0)
+    for (let i = 0; i + 1 < tpr.length; i++) {
+      const step = (tpr[i] ?? 0) - (tpr[i + 1] ?? 0)
+      if (step > 0) averagePrecision += step * (precision[i] ?? 0)
+    }
+  const cost = options.costs === undefined ? undefined : sweepCost(sweep, options.costs)
+  return thresholdSweep({
+    classes: options.classNames ?? [String(sweep.negative), String(sweep.positive)],
+    thresholds: sweep.thresholds,
+    tp: sweep.tp,
+    fp: sweep.fp,
+    tn,
+    fn,
+    tpr,
+    fpr,
+    precision,
+    selectionRate: sweep.tp.map((tp, i) => ratio(tp + (sweep.fp[i] ?? 0), P + N)),
+    accuracy: sweep.tp.map((tp, i) => ratio(tp + (tn[i] ?? 0), P + N)),
+    positives: P,
+    negatives: N,
+    ...(options.costs === undefined || cost === undefined
+      ? {}
+      : { costs: options.costs.map((row) => [...row]), cost, cheapest: cheapestIndex(cost) }),
+    rocAuc: P === 0 || N === 0 ? Number.NaN : auc(fpr, tpr),
+    averagePrecision,
+    ...(options.keepRows === false
+      ? {}
+      : { scored: { scores: Array.from(sweep.scores), labels: sweep.isPositive.map((p) => (p ? 1 : 0)) } }),
+  })
 }
