@@ -1,3 +1,10 @@
+/**
+ * Plotkin's generalisation theory, the lattice that inductive logic programming searches: theta-subsumption between
+ * clauses and equivalence under it, least general generalisation (anti-unification) of terms and clauses, clause
+ * reduction, relative least general generalisation against background knowledge as in Golem, and pruning of body
+ * literals not linked to the head.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type FolClause, type FolLiteral, subsumes } from '../first-order.ts'
 import {

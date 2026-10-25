@@ -1,3 +1,10 @@
+/**
+ * Autoregressive text generation, one token per step: greedy or sampled decoding with temperature, top-k, top-p and
+ * min-p filtering, repetition, frequency and presence penalties, extra logit processors and token constraints. Provided
+ * as the traced `decodingAlgorithm` and the `generate` function that runs it and returns the tokens with their
+ * log-probabilities.
+ */
+
 import { argmaxOf, type Json, maxOf } from '../../base/index.ts'
 import { categorical, foldIn, type Key, key as makeKey } from '../../random/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Sentence splitting: Punkt, the unsupervised method nltk uses, which learns abbreviations, collocations and sentence
+ * starters from raw text and then decides whether each period ends a sentence. Training, sentence spans, and a
+ * `splitSentences` front door that also accepts a fixed abbreviation list.
+ */
+
 import { PY_SPACE, UNI_SPACE, UNI_WORD } from './_classes.ts'
 import type { Span } from './tokenise.ts'
 

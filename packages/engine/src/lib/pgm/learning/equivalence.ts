@@ -1,3 +1,10 @@
+/**
+ * Markov equivalence of DAGs, the classes of graphs that encode the same conditional independencies and so cannot be
+ * told apart from observational data: PDAGs, skeletons and immoralities, the equivalence test, Meek's orientation
+ * rules, the CPDAG (essential graph) of a DAG, a DAG extension of a PDAG, and the structural Hamming distance between
+ * graphs.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Dag, type DirectedModel, dag, dagEdges, type UndirectedGraph, undirectedGraph } from '../graphs.ts'
 

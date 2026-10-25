@@ -1,3 +1,10 @@
+/**
+ * The tree-structured Parzen estimator (TPE, Bergstra et al. 2011; Optuna's `TPESampler`): split the finished trials
+ * into a good group and the rest, fit a Parzen estimator to each, and propose the candidate with the largest density
+ * ratio. Also Optuna's split for several objectives, with ties in a front broken by greedy hypervolume subset
+ * selection.
+ */
+
 import { argmaxOf, type Json } from '../base/index.ts'
 import { hypervolume, nonDominatedSort } from '../optim/index.ts'
 import { foldIn } from '../random/index.ts'

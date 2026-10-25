@@ -1,3 +1,10 @@
+/**
+ * Continuous Gaussian graphical models: linear-Gaussian Bayes networks (each node linear in its parents plus Gaussian
+ * noise, so the joint is Gaussian) with their joint Gaussian, posteriors by Gaussian elimination, sampling and
+ * likelihood, and Gaussian Markov random fields given by a sparse precision matrix, with conditioning, covariance, log
+ * density, sampling and conversion to factors.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import {

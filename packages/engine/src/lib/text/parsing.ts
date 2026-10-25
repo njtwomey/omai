@@ -1,3 +1,9 @@
+/**
+ * Context-free grammars and chart parsing: grammars in nltk's notation (optionally probabilistic), parse trees and
+ * their bracketed form, CYK parsing for grammars in Chomsky normal form, Earley parsing for any context-free grammar,
+ * and conversion to Chomsky normal form.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** A grammar symbol on a right-hand side: a nonterminal or a terminal word. */

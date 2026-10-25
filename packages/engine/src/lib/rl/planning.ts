@@ -1,3 +1,10 @@
+/**
+ * Planning with an environment used as its own model: Monte Carlo tree search (UCT, or PUCT with priors and a value
+ * function as in AlphaZero) as a traced algorithm, its version for turn-based two-player games, Monte Carlo rollout
+ * planning, and the action-sequence planners used in model-based control, the cross-entropy method and model predictive
+ * path integral control (MPPI).
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../random/index.ts'
 import type { Space } from '../space/index.ts'

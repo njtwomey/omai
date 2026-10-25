@@ -1,3 +1,10 @@
+/**
+ * First-order logic and automated theorem proving by resolution: parsing and printing formulas with quantifiers,
+ * conversion to clausal form (negation normal form, Skolemisation), clause subsumption, and an Otter-style given-clause
+ * prover as a traced algorithm. Proofs can be checked and drawn as structures, and small clause sets can be tested for
+ * finite models.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Structure, type StructureNode, structure } from '../scene/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'

@@ -1,3 +1,11 @@
+/**
+ * The `Module` base class: neural network modules in PyTorch's shape (forward, parameters, buffers, state dicts, train
+ * and eval modes) over a pure functional core, where `apply(params, x, ctx)` computes the output from explicit
+ * parameters. Also the apply context that carries the training flag, keys, buffers and activation taps, the child
+ * routing composite modules use, and `functional`, which gives a module's Flax-style `init` and `apply` for `grad` and
+ * custom loops.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Context, defaultContext } from '../../context/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'

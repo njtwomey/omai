@@ -1,3 +1,8 @@
+/**
+ * Geometry of scene nodes: bounding boxes, composing, applying and inverting the similarity transforms of groups, and
+ * layout helpers that translate, rotate, scale and fit nodes into a box or tile several scenes into a grid.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { group } from './build.ts'
 import type { GroupNode, Scene, SceneNode, Transform } from './types.ts'

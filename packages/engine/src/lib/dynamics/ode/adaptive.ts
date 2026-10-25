@@ -1,3 +1,10 @@
+/**
+ * Adaptive explicit Runge-Kutta solvers: embedded pairs whose two solutions of different order give a local error
+ * estimate that sets the next step size. The tableaux (Heun-Euler, Bogacki-Shampine, Fehlberg, Cash-Karp,
+ * Dormand-Prince, Tsitouras, DOP853), integral and PI step controllers, and a generic stepper that follows scipy's
+ * `RungeKutta`, with `rk23`, `rk45` and `dop853` matching scipy's methods.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import * as dop from './_dop853.ts'

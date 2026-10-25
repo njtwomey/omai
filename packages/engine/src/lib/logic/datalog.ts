@@ -1,3 +1,10 @@
+/**
+ * Datalog: function-free logic programs evaluated bottom-up to the set of all facts they imply, the basis of deductive
+ * databases. Reading programs in Prolog syntax with safety checks and stratified negation, naive and semi-naive
+ * evaluation as a traced algorithm, least models, queries against a model, and derivation trees showing how each fact
+ * was obtained.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { condensation, digraph, topologicalSort } from '../graph/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'

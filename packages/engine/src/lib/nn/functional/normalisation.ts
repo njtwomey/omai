@@ -1,3 +1,10 @@
+/**
+ * Normalisation layers as functions, torch.nn.functional style: batch, layer, RMS, group, instance and local response
+ * normalisation, Lp normalisation along an axis, and the weight reparametrisations: weight normalisation (`w = g v /
+ * ||v||`) and spectral normalisation, which divides a weight by its largest singular value estimated by power
+ * iteration.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

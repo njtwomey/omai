@@ -1,3 +1,9 @@
+/**
+ * The Laplace approximation of a program's posterior: find the MAP point of the unconstrained log density with L-BFGS,
+ * take the Hessian there, and use the normal with the inverse Hessian as covariance, pushed back onto each site's
+ * support. The fit, the approximation and the engine for the planner.
+ */
+
 import { hessian } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import { multivariateNormal, normal } from '../../dists/index.ts'

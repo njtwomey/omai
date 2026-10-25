@@ -1,3 +1,9 @@
+/**
+ * Identifying causal effects from a causal graph, pgmpy style: the back-door and front-door criteria with every (or a
+ * minimal) adjustment set, the adjustment formulas evaluated on a network's observational distribution,
+ * `identifyEffect` for the simple cases of the ID algorithm, and checks for instrumental variables.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Factor, factor, factorValues } from '../factor.ts'
 import { type DagNode, type DirectedModel, descendants } from '../graphs.ts'

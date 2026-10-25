@@ -1,3 +1,8 @@
+/**
+ * Token vocabularies: building one from tokenised documents with frequency cut-offs, a size limit and special tokens
+ * first, or from a fixed list, and mapping between tokens and ids with an unknown token for words outside it.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { compareCodePoints } from './_classes.ts'
 

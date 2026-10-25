@@ -1,3 +1,9 @@
+/**
+ * CRFsuite-style attribute templates for sequence labelling: each template joins the values of chosen columns at chosen
+ * offsets around a token (such as `w[-1]|w[0]`, the previous and current words) into one feature. Template parsing and
+ * expansion over a token sequence, and MALLET's offset conjunctions.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** One token of a sequence as named columns (word, part of speech, ...), the input of attribute templates. */

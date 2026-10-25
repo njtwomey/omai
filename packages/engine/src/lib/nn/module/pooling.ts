@@ -1,3 +1,8 @@
+/**
+ * Pooling layers as modules, torch.nn style: max, average and Lp pooling in one, two and three dimensions, adaptive
+ * average and max pooling to a fixed output size, Keras-style global pooling and `MaxUnpool`.
+ */
+
 import { asTensor, type TensorLike, type Value } from '../../tensor/index.ts'
 import type { SpatialSize } from '../functional/conv.ts'
 import {

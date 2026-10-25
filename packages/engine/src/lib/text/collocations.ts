@@ -1,3 +1,9 @@
+/**
+ * Collocation finding: discovering word pairs and triples that occur together more often than chance, as nltk does.
+ * Bigram and trigram counts within a window, the association measures (Student's t, chi-square, PMI, likelihood ratio,
+ * Poisson-Stirling, Jaccard and others) from their marginals, and scoring and ranking every n-gram.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { hypergeometric } from '../dists/index.ts'
 import { item } from '../tensor/index.ts'

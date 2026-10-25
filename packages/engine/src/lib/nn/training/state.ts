@@ -1,3 +1,9 @@
+/**
+ * The functional training step, Flax style: a `TrainState` holding parameters, optimiser state, buffers, the step and
+ * its key, and the pieces of one step: loss and gradients on a minibatch, applying gradients through the optimiser with
+ * frozen parameters masked, gradient accumulation and `trainStep`, which combines them.
+ */
+
 import { valueAndGrad } from '../../autodiff/index.ts'
 import { applyUpdates, type GradientTransformation, globalNorm } from '../../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../../random/index.ts'

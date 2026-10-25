@@ -1,3 +1,10 @@
+/**
+ * Continuous-depth blocks: neural ODEs, where a network defines the derivative of a hidden state and the output is the
+ * solution of that differential equation at given times. `ODEBlock` (Chen et al. 2018, with gradients through the
+ * solver or by the adjoint method), its augmented and second-order variants, the neural controlled differential
+ * equation `CDEBlock` driven by an input path, and the neural SDE `SDEBlock` with learnt drift and diffusion.
+ */
+
 import { customVjp, vjp } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import type { Key } from '../../random/index.ts'

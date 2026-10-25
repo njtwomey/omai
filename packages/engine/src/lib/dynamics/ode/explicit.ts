@@ -1,3 +1,9 @@
+/**
+ * Fixed-step explicit Runge-Kutta methods described by their Butcher tableaux: a checked tableau builder, the classical
+ * tableaux (Euler, Heun, midpoint, Ralston, Kutta's third order, RK4 and the 3/8 rule), the stage and step functions
+ * shared by the other solvers, and a ready stepper for each method.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import { attempt, checked, counter, initialState, snapshot, statusAfter, tally, towards } from './_step.ts'

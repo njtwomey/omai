@@ -1,3 +1,9 @@
+/**
+ * Structure scores for score-based structure learning, pgmpy style: decomposable local scores of a variable given its
+ * parents for discrete data (log-likelihood, BIC, AIC, K2, BDeu and BDs) and for linear-Gaussian data, cached scorers
+ * for search, whole-structure scores and structure priors.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'

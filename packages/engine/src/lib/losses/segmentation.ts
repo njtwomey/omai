@@ -1,3 +1,9 @@
+/**
+ * Segmentation losses that optimise overlap directly rather than per-pixel accuracy, MONAI style with classes on the
+ * last axis: soft Dice, Tversky (trading false positives against false negatives) and focal Tversky, and the Lovasz
+ * hinge and Lovasz-softmax losses, convex surrogates of the IoU.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   abs,

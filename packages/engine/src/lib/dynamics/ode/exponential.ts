@@ -1,3 +1,9 @@
+/**
+ * Exponential integrators for stiff semilinear problems y' = L y + N(t, y), which integrate the linear part exactly
+ * through matrix or diagonal exponentials. The phi functions evaluated without cancellation (scalar and matrix forms),
+ * exponential Euler, and ETDRK4 (Cox and Matthews).
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { expm } from '../../numerics/linalg/index.ts'
 import { add, matmul, mul, primalOf, reshape, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'

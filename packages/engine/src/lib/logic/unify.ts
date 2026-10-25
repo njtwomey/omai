@@ -1,3 +1,10 @@
+/**
+ * Unification: finding a substitution that makes two terms identical, the core operation of resolution and Prolog.
+ * Substitutions and their application and composition, Robinson unification with an optional occurs check, a trailed
+ * binding store for backtracking search, renaming apart, one-way matching and variant tests, and the Martelli-Montanari
+ * rules as a traced algorithm that shows each step.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { type Clause, type Compound, type Term, termToString, termVariables, type Var } from './terms.ts'

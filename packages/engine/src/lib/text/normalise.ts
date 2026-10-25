@@ -1,3 +1,10 @@
+/**
+ * Text normalisation: Unicode normal forms (NFC, NFD, NFKC, NFKD), full case folding, accent stripping, whitespace
+ * collapsing and a pipeline combining them. Also aligned text, which keeps for every normalised character the range of
+ * the original it came from, with the mapping, filtering, replacement and slicing operations that tokenizers need to
+ * report offsets.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { CASE_FOLDING_EXCEPTIONS, COMBINING_RANGES } from './_unicode.data.ts'
 

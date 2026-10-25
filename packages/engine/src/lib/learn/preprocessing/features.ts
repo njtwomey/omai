@@ -1,3 +1,9 @@
+/**
+ * Feature expansions and transforms, scikit-learn style: polynomial and interaction features, B-spline basis
+ * expansions, binning of continuous features by width, quantiles or k-means, thresholding to 0 or 1, and
+ * `functionTransformer`, which wraps any function so it composes in a pipeline.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { bspline } from '../../numerics/interpolate/index.ts'
 import { kmeansCodebook } from '../../numerics/spatial/index.ts'

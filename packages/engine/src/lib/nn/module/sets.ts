@@ -1,3 +1,9 @@
+/**
+ * The Set Transformer's blocks as modules, for inputs that are sets of vectors with optional padding masks:
+ * `SetAttentionBlock` (self-attention among elements), `InducedSetAttentionBlock` (attention through a few learnt
+ * inducing points) and `PoolingByMultiheadAttention`, which pools a set into k vectors.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { asTensor, full, isValue, type TensorLike, type Value, zeros } from '../../tensor/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * External clustering metrics, which compare a clustering with reference labels, scikit-learn style: contingency and
+ * pair confusion matrices, the Rand and adjusted Rand indices, Fowlkes-Mallows, mutual information with its normalised
+ * and chance-adjusted forms, homogeneity, completeness and V-measure, purity and B-cubed precision, recall and F1.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { arange, toFlat } from '../tensor/index.ts'

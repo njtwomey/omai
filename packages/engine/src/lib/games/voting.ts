@@ -1,3 +1,10 @@
+/**
+ * Social choice: aggregating ranked ballots into a collective choice. Preference profiles, scoring rules (plurality,
+ * Borda), pairwise majorities with Condorcet winners and losers, Copeland and the Smith set, instant-runoff voting, and
+ * a search for the classic paradoxes (majority cycles, Condorcet winners losing), with the Tennessee capital and
+ * Condorcet paradox profiles as examples.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../base/index.ts'
 
 /**

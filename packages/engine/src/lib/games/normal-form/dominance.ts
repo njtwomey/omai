@@ -1,3 +1,9 @@
+/**
+ * Dominated strategies: actions that some other pure or mixed strategy beats against everything the others might do.
+ * Tests for strict and weak dominance, iterated elimination of dominated strategies, restriction of a game to a subset
+ * of actions, and pure-strategy security levels.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import { linprog } from '../../optim/index.ts'
 import { actionRows, decodeProfile, profileCount, stridesOf } from './_profiles.ts'

@@ -1,3 +1,10 @@
+/**
+ * Linear algebra the way it is taught, with every step recorded: Gaussian and Gauss-Jordan elimination to row echelon
+ * and reduced row echelon form, solving linear systems, LU factorisation, determinants by cofactors and by elimination,
+ * the four fundamental subspaces, projections and least squares, pictures of linear maps of the plane and space,
+ * characteristic polynomials, small eigenproblems and diagonalisation, quadratic forms, and the geometry of the SVD.
+ */
+
 import { maxOf, WhiteboxError } from '../base/index.ts'
 import { eigh, eigvals, eigvalsh, lstsq, nullSpace, pinv, svd } from '../numerics/linalg/index.ts'
 import {

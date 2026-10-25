@@ -1,3 +1,10 @@
+/**
+ * Quantisation, which stores weights as low-bit integers with a scale and zero point: quantisation parameters per
+ * tensor or per channel, quantise, dequantise and fake quantisation with a straight-through gradient for
+ * quantisation-aware training, error measures, the GPTQ and AWQ post-training algorithms for linear layers, and
+ * `quantiseModule` for round-to-nearest quantisation of a whole parameter tree.
+ */
+
 import { customVjp } from '../autodiff/index.ts'
 import { maxOf, minOf, WhiteboxError } from '../base/index.ts'
 import { cholesky, inv } from '../numerics/linalg/index.ts'

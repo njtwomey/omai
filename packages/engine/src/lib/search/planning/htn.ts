@@ -1,3 +1,9 @@
+/**
+ * Hierarchical task network planning: compound tasks are decomposed by methods into subtasks until only primitive
+ * STRIPS actions remain. A SHOP-style total-order forward decomposition planner as a traced algorithm, and the
+ * decomposition as a drawable tree.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Structure, type StructureNode, structure } from '../../scene/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'

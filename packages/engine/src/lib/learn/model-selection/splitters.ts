@@ -1,3 +1,10 @@
+/**
+ * Cross-validation splitters, scikit-learn style: the `Splitter` contract (folds as a pure function of the data and a
+ * key) and the standard schemes: k-fold and its stratified, group and stratified-group variants, leave-one-out and
+ * leave-p-out (of samples or groups), predefined and repeated splits, shuffle splits, holdout and train-validation-test
+ * splits, with a leakage check.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'

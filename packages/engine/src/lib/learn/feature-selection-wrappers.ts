@@ -1,3 +1,9 @@
+/**
+ * Wrapper feature selection, which chooses features by refitting a model on candidate subsets: recursive feature
+ * elimination (`rfe`, and `rfecv` with the count chosen by cross-validation), greedy forward or backward sequential
+ * selection, and stability selection, which keeps the features chosen on most of many random half-samples.
+ */
+
 import { type Json, meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, subsample } from '../random/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'

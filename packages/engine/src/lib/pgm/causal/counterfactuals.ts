@@ -1,3 +1,10 @@
+/**
+ * Counterfactuals in structural causal models: what an outcome would have been under an intervention, given what was
+ * actually observed. The twin network construction, Pearl's three steps of abduction, action and prediction,
+ * counterfactual distributions of discrete models, the probabilities of necessity and sufficiency, and closed-form
+ * counterfactuals for linear models with Gaussian noise.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { inverse, matVec, solveVector, symmetrise } from '../_dense.ts'
 import { allAssignments, type Factor, factor, factorValues } from '../factor.ts'

@@ -1,3 +1,9 @@
+/**
+ * Attention layers as modules: `MultiheadAttention` with torch.nn.MultiheadAttention's parameter layout (so PyTorch
+ * weights load directly), and `GroupedQueryAttention` (Ainslie et al. 2023, where several query heads share each key
+ * and value head) with rotary positions and a KV cache of earlier positions for incremental decoding.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {

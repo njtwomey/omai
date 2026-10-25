@@ -1,3 +1,10 @@
+/**
+ * Trigonometry: degree and radian conversion, angle wrapping, the unit circle, quadrants and reference angles,
+ * quadrant-aware inverses and all solutions of trigonometric equations in an interval, the standard identities as
+ * checkable functions, the laws of cosines and sines, Heron's formula in a numerically stable form, and solving
+ * triangles from any three known parts (SSS, SAS, ASA, AAS, SSA).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   abs,

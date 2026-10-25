@@ -1,3 +1,10 @@
+/**
+ * Beam search for sequence models: keep the most likely partial sequences, extend each by every token, retire the ones
+ * that end and rank hypotheses by a length-normalised score (GNMT's penalty). Provided as a traced
+ * `beamSearchAlgorithm` and the `beamSearch` function that runs it, both honouring logit processors and token
+ * constraints.
+ */
+
 import { type Json, maxOf } from '../../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import type { LanguageModel } from '../language-model.ts'

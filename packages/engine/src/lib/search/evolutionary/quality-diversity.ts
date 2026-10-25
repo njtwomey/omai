@@ -1,3 +1,9 @@
+/**
+ * Quality-diversity search, which seeks many good solutions that behave differently rather than one best. MAP-Elites,
+ * which keeps the fittest solution in each cell of a grid over behaviour descriptors, and novelty search, which rewards
+ * behaviours far from those seen before, both as traced algorithms.
+ */
+
 import { meanOf, WhiteboxError } from '../../base/index.ts'
 import { kNearest } from '../../numerics/spatial/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'

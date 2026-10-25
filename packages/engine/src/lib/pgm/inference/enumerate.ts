@@ -1,3 +1,8 @@
+/**
+ * Exact inference by brute-force enumeration of every joint assignment: exponential in the number of variables, and the
+ * reference the other inference algorithms are tested against.
+ */
+
 import { logSumExpOf } from '../../base/index.ts'
 import { allAssignments, type Factor, logFactor } from '../factor.ts'
 import {

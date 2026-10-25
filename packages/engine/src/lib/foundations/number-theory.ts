@@ -1,3 +1,10 @@
+/**
+ * Elementary number theory with the steps shown: Euclid's algorithm and its extended form with Bezout coefficients, gcd
+ * and lcm, modular arithmetic (residues, inverses, square-and-multiply exponentiation), the sieve of Eratosthenes,
+ * Miller-Rabin primality testing, factorisation by trial division and Pollard's rho, Euler's totient and divisors, the
+ * Chinese remainder theorem, continued fractions and convergents, and exact Fibonacci and Lucas numbers.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 function integer(x: number, name: string): number {

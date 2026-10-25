@@ -1,3 +1,9 @@
+/**
+ * Describing a network's architecture: a per-layer table of shapes, parameter counts and estimated FLOPs, memory
+ * estimates as torchinfo makes them, a torchinfo-style text `summary`, and `describe`, which turns a module (or, with
+ * `describeFunction`, any functional model through its computation graph) into a `Structure` for drawing as a diagram.
+ */
+
 import { computationGraph } from '../autodiff/index.ts'
 import {
   type Structure,

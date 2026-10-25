@@ -1,3 +1,9 @@
+/**
+ * Rules that turn a world into a task: agent states (cell, held items, heading), the standard action sets, and
+ * composable rules for rewards, terrain costs, termination, teleports (as CliffWalking's cliff), slippery and noisy
+ * moves, Sutton and Barto's wind, one-way cells, pickups and locked doors, resolved for one action by `applyRules`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { offset, SQUARE_OFFSETS } from './_topology.ts'
 import { cellCoords, cellIndex, destination, type MoveOptions, passable, terrainOf, type World } from './world.ts'

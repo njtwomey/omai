@@ -1,3 +1,9 @@
+/**
+ * Procedural level generation from keys: dungeons of rooms and corridors by binary space partitioning, caves grown by a
+ * cellular automaton (as a traced algorithm) and reduced to their largest region, value and Perlin noise, and terrain
+ * maps cut from noise into bands such as water, grass, forest and mountain.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, uniform, uniformStream } from '../random/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'

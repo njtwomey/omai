@@ -1,3 +1,9 @@
+/**
+ * Graph isomorphism: deciding whether two graphs are the same up to relabelling nodes. Weisfeiler-Lehman colour
+ * refinement (as a traced algorithm) and the WL graph hash, and VF2-style backtracking search for isomorphisms,
+ * subgraph isomorphisms and monomorphisms, as in NetworkX's GraphMatcher.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { degree, type Graph, type GraphRunOptions } from './graph.ts'

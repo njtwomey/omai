@@ -1,3 +1,9 @@
+/**
+ * Corpus and vocabulary statistics: fitting Zipf's law to word frequencies and Heaps' law to vocabulary growth, lexical
+ * diversity measures (type-token ratio and its corrected forms), tokeniser statistics such as fertility and
+ * compression, and topic coherence as gensim's CoherenceModel computes it.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { lstsq } from '../numerics/linalg/index.ts'
 import { brentq } from '../numerics/roots/index.ts'

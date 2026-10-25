@@ -1,3 +1,9 @@
+/**
+ * The posterior interface every inference engine returns, whatever its form (exact distributions, equally weighted or
+ * weighted draws, a variational approximation or a point estimate): marginals, joint draws, moments, quantiles, log
+ * density and evidence where available, diagnostics and a summary table. Constructors for each form.
+ */
+
 import { type Estimate, type Json, quantileOf, WhiteboxError } from '../base/index.ts'
 import { compose, type Distribution } from '../dists/index.ts'
 import { weightedPercentile } from '../metrics/index.ts'

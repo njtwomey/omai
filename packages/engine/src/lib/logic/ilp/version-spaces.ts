@@ -1,3 +1,9 @@
+/**
+ * Version spaces for concept learning over attribute-value examples (Mitchell): conjunctive hypotheses and their
+ * more-general-than order, Find-S, candidate elimination as a traced algorithm maintaining the specific and general
+ * boundaries, enumeration of the version space, and classification of new instances by its vote.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 

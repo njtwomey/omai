@@ -1,3 +1,10 @@
+/**
+ * Local search, which improves a single complete state by moving between neighbours instead of building paths: hill
+ * climbing (with sideways moves and random restarts), simulated annealing with exponential, geometric and logarithmic
+ * cooling schedules, tabu search, local beam search and late acceptance hill climbing, as traced algorithms. Also
+ * neighbourhoods for permutations and bit strings, and local search over any configuration space.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../base/index.ts'
 import { Generator, type Key } from '../random/index.ts'
 import { type Space, type SpaceValue, sample, neighbours as spaceNeighbours } from '../space/index.ts'

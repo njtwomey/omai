@@ -1,3 +1,9 @@
+/**
+ * Margin losses on a score f and a label y in {-1, +1}: the hinge (SVM) and squared hinge, logistic, exponential
+ * (AdaBoost's), modified Huber and perceptron losses, plus the Crammer-Singer and Weston-Watkins multi-class hinge
+ * losses.
+ */
+
 import { softplus } from '../numerics/special/index.ts'
 import {
   add,

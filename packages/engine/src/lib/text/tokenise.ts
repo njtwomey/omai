@@ -1,3 +1,9 @@
+/**
+ * Basic tokenisation into words, characters and pieces, each with its spans in the text: regular-expression, whitespace
+ * and word tokenisers as in nltk and scikit-learn, Unicode grapheme clusters, the pre-tokeniser patterns of well-known
+ * models (GPT-2, tiktoken encodings and others), HF tokenizers' `Split` behaviours, and BERT's pre-tokenisation.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { boundary, globalRegExp, PY_SPACE, PY_WORD, UNI_SPACE, UNI_WORD } from './_classes.ts'
 

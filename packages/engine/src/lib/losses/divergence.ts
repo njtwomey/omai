@@ -1,3 +1,9 @@
+/**
+ * Losses that measure the distance between distributions: torch's `klDiv`, the KL and Jensen-Shannon divergences
+ * between categorical distributions, knowledge distillation from a teacher's softened outputs, the maximum mean
+ * discrepancy (a kernel two-sample distance) and the entropic optimal transport loss computed by Sinkhorn iterations.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { xlogy } from '../numerics/special/index.ts'
 import {

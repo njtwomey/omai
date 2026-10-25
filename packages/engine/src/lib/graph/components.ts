@@ -1,3 +1,9 @@
+/**
+ * Connectivity structure of graphs: connected components (weak or strong for directed graphs, by Tarjan's or Kosaraju's
+ * algorithm), the condensation of a directed graph into a DAG of strongly connected components, and for undirected
+ * graphs the articulation points, bridges and biconnected components, following scipy.sparse.csgraph and NetworkX.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { partitionFromLabels } from './_build.ts'
 import { type Graph, graph } from './graph.ts'

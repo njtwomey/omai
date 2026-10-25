@@ -1,3 +1,10 @@
+/**
+ * Spectral methods, which represent a solution by global basis functions (Fourier modes or Chebyshev polynomials) for
+ * very high accuracy on smooth problems. Fourier wavenumbers, FFT derivatives and dealiasing; Chebyshev points,
+ * differentiation matrices and a collocation BVP solver; and ETDRK4 in Fourier space with the Kuramoto-Sivashinsky, KdV
+ * and Allen-Cahn equations as ready solvers.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fft, ifft } from '../../numerics/fourier/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'

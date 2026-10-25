@@ -1,3 +1,10 @@
+/**
+ * Differential geometry of surfaces in space: parametric surfaces with partial derivatives by autodiff, normals and
+ * tangent planes, the first and second fundamental forms, Gaussian, mean and principal curvatures, standard surfaces
+ * (graphs, surfaces of revolution, sphere, torus), surface area, Christoffel symbols and geodesics, and faces for
+ * drawing a surface coloured by a quantity such as curvature.
+ */
+
 import { jvp } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { cubature, productGaussRule } from '../numerics/quadrature/index.ts'

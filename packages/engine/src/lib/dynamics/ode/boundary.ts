@@ -1,3 +1,9 @@
+/**
+ * Boundary value problems for ODEs, where conditions are given at both ends of an interval rather than at the start.
+ * `solveBvp` ports scipy's `solve_bvp` (fourth-order Lobatto IIIA collocation with damped Newton and mesh refinement),
+ * alongside single and multiple shooting with Jacobians taken by differentiating through the integrator.
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import { pinv } from '../../numerics/linalg/index.ts'
 import { fsolve } from '../../numerics/roots/index.ts'

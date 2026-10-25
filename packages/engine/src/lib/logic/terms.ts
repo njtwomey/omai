@@ -1,3 +1,9 @@
+/**
+ * First-order terms, the data of logic programming: atoms, variables, numbers, compounds and lists, with clauses built
+ * from them. Constructors, groundness and variable collection, structural equality and Prolog's standard order of
+ * terms, conjunction helpers, the operator table, and printing terms and clauses as Prolog text.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** A constant symbol (Prolog atom): `a`, `'hello world'`, `[]`. */

@@ -1,3 +1,9 @@
+/**
+ * Recurrent networks as modules, torch.nn style: `RNN`, `LSTM` and `GRU` (stacked, optionally bidirectional, with
+ * PyTorch's weight names and initialisation, accepting padded batches with lengths or packed sequences) and the
+ * single-step cells `RNNCell`, `LSTMCell` and `GRUCell`.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { asTensor, expandDims, isValue, squeeze, type TensorLike, type Value, zeros } from '../../tensor/index.ts'

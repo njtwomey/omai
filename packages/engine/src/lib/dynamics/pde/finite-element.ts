@@ -1,3 +1,9 @@
+/**
+ * The finite-element method for elliptic and parabolic problems of the form -div(k grad u) + c u = f: assembly of
+ * linear and quadratic elements in 1-D and linear triangles in 2-D (with a structured rectangle mesh), the steady solve
+ * with Dirichlet values, the heat problem by the theta method, and L2 errors that show the convergence orders.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type CsrMatrix, fromCoo } from '../../numerics/sparse/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'

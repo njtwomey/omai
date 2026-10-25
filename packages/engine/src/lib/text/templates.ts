@@ -1,3 +1,9 @@
+/**
+ * Feature templates for CRF sequence labellers: CRF++ templates with `%x[row,col]` macros and Wapiti patterns, parsed
+ * and expanded over a token-by-attribute table into the unigram and bigram feature strings of each position, plus a
+ * feature index with frequency cut-off, CRF++'s weight layout, and inspection of which template produced which feature.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /**

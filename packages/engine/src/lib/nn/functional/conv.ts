@@ -1,3 +1,9 @@
+/**
+ * Convolutions as functions over any number of spatial axes (torch.nn.functional style, cross-correlation as in deep
+ * learning): `conv1d`, `conv2d` and `conv3d` with stride, padding modes, dilation and groups, depthwise and separable
+ * convolutions, transposed convolutions for upsampling, and `unfold` and `fold` for sliding local blocks.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { col2im, convNd, convTranspose, im2col } from '../../numerics/convolution/index.ts'
 import { expandDims, promoteFloat, squeeze, type TensorLike, type Value } from '../../tensor/index.ts'

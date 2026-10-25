@@ -1,3 +1,10 @@
+/**
+ * Triangulation and junction trees, the graph machinery behind exact inference: greedy elimination orderings
+ * (min-degree, min-weight, min-fill), triangulation into a chordal graph, maximum cardinality search and the chordality
+ * test, maximal cliques, induced width and exact treewidth, and the construction of a junction tree with the running
+ * intersection property.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { maximalCliques as cliques } from '../graph/index.ts'
 import { copyGraph, indexedGraph, link } from './_graph.ts'

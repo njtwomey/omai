@@ -1,3 +1,9 @@
+/**
+ * Delete-relaxation heuristics for classical planning, which estimate the distance to the goal by ignoring the facts
+ * actions delete: the additive heuristic h-add and the admissible h-max (Bonet and Geffner, HSP), and the FF heuristic
+ * with its relaxed plan (Hoffmann and Nebel).
+ */
+
 import { compile, extractPlan, relaxation, relaxedCosts } from './_relaxed.ts'
 import type { PlanState, StripsProblem } from './strips.ts'
 

@@ -1,3 +1,9 @@
+/**
+ * Vectorised environments: several copies of an environment stepped together with independent keys and automatic
+ * resets, as gymnasium's SyncVectorEnv and gymnax's vmap, plus `GymVectorEnv`, a stateful version returning gymnasium's
+ * batched tuples.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Space } from '../space/index.ts'

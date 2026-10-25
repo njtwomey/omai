@@ -1,3 +1,9 @@
+/**
+ * Exact inference for programs whose latent sites are all finite and discrete (Pyro's `TraceEnum` and
+ * `infer_discrete`): the program is grounded into a factor graph from `pgm`, a junction tree is calibrated for
+ * marginals and the evidence, and exact joint draws follow. Also the engine for the planner.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Distribution } from '../../dists/index.ts'
 import {

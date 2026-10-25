@@ -1,3 +1,10 @@
+/**
+ * Analysis of a finished study, as the data behind Optuna's visualisations: the trials as a table, the optimisation
+ * history and running best, intermediate values, parallel coordinates, slice and contour data (with a Gaussian-process
+ * surrogate over two parameters), the Pareto front and hypervolume history of multi-objective studies, and the
+ * empirical distribution of objective values.
+ */
+
 import { type Json, linspaceNumbers, WhiteboxError } from '../base/index.ts'
 import { type TableData, table } from '../data/index.ts'
 import { hypervolume } from '../optim/index.ts'

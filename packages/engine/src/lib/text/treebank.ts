@@ -1,3 +1,9 @@
+/**
+ * Penn Treebank tokenisation, as nltk implements it: the classic Treebank tokeniser (contractions split, punctuation
+ * separated), nltk's improved version behind `word_tokenize`, token spans in the original text, and the detokeniser
+ * that undoes the spacing.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { boundary, PY_END, PY_SPACE, PY_WORD, UNI_SPACE, UNI_WORD } from './_classes.ts'
 import type { Span } from './tokenise.ts'

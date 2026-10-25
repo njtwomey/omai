@@ -1,3 +1,9 @@
+/**
+ * Graph traversal: breadth-first and depth-first search as traced algorithms (BFS by layers with distances and parents,
+ * DFS with pre- and postorder and tree, back, forward and cross edge classification), and what follows from them:
+ * topological sorting, acyclicity and cycle finding, bipartite colouring and k-hop neighbourhoods.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import type { Adjacency, Graph, GraphRunOptions, NodeId } from './graph.ts'

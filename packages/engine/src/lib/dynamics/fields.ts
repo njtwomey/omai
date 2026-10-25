@@ -1,3 +1,10 @@
+/**
+ * Vector-field analysis for phase portraits: Jacobians, divergence and curl by automatic differentiation; equilibria
+ * found by Newton's method from many seeds and classified from their eigenvalues (saddle, node, spiral, centre);
+ * nullclines by marching squares; streamlines and differentiable flow maps; and the stable and unstable manifolds of
+ * saddles.
+ */
+
 import { jacfwd } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { contourLines } from '../numerics/geometry/index.ts'

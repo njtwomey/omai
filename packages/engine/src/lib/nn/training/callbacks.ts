@@ -1,3 +1,9 @@
+/**
+ * Training callbacks in the spirit of PyTorch Lightning's hooks: loggers of gradient norms, parameter norms, full
+ * tensors, learning rates and tapped activations into the run's trace, plus early stopping, best-checkpoint keeping and
+ * reducing the learning rate on a plateau.
+ */
+
 import { item, norm, treePaths, type Value } from '../../tensor/index.ts'
 import type { RunHandle, TensorRole } from '../../trace/index.ts'
 import type { Params } from '../module/module.ts'

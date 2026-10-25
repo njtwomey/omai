@@ -1,3 +1,9 @@
+/**
+ * Hamiltonian Monte Carlo with the No-U-Turn Sampler on probabilistic programs (NumPyro's `MCMC(NUTS(model))`):
+ * sampling the unconstrained density with Jacobian corrections and enumerated discrete sites summed out, then drawing
+ * those discrete sites back with `inferDiscrete`. Also the engine for the planner.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { categorical as drawCategorical, foldIn, type Key } from '../../random/index.ts'
 import { type Chains, diagnose, hmc, nuts } from '../../sampling/index.ts'

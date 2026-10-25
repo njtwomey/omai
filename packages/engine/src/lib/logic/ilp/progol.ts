@@ -1,3 +1,9 @@
+/**
+ * Progol-style inverse entailment for inductive logic programming: mode declarations describe which literals may
+ * appear, each seed example is saturated into its most specific bottom clause relative to the background knowledge, and
+ * a covering loop searches the clauses that generalise it for the best-scoring one, as in Progol and Aleph.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { parseTerm } from '../parse.ts'

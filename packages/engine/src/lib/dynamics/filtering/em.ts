@@ -1,3 +1,9 @@
+/**
+ * Parameter learning for linear-Gaussian state-space models by expectation maximisation (Shumway and Stoffer): the
+ * E-step runs the Kalman filter and RTS smoother, the M-step updates the transition, observation and noise matrices in
+ * closed form. Provided as a traced algorithm and as `kalmanEm`, which returns the fitted model.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { solve, symmetricPart } from '../../numerics/linalg/index.ts'
 import {

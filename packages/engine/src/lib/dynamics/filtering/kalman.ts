@@ -1,3 +1,10 @@
+/**
+ * The Kalman filter for linear-Gaussian state-space models, filterpy style: the predict and Joseph-form update steps, a
+ * traced filter over a sequence with missing observations and the exact log-likelihood, the Rauch-Tung-Striebel
+ * smoother, and the steady-state gain. Also the consistency checks (normalised innovation and estimation error squared)
+ * used to test whether a filter's covariances are honest.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { chi2 } from '../../dists/index.ts'
 import { cholesky, choleskyLogdet, choSolve, solve, solveDare, symmetricPart } from '../../numerics/linalg/index.ts'

@@ -1,3 +1,8 @@
+/**
+ * The basic layers as modules, torch.nn style: `Linear` and `Bilinear` with PyTorch's initialisation, `Embedding` and
+ * `EmbeddingBag` lookup tables, and the shape helpers `Flatten`, `Unflatten` and `Identity`.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {

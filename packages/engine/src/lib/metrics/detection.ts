@@ -1,3 +1,9 @@
+/**
+ * Object detection metrics, torchvision and pycocotools style: pairwise box intersection over union and its
+ * generalised, distance and complete variants, and `detectionMeanAveragePrecision`, the mean average precision of
+ * detections over images under the COCO or Pascal VOC protocol.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'

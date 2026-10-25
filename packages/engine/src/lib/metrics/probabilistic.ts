@@ -1,3 +1,9 @@
+/**
+ * Metrics for predicted class probabilities: log loss and its D^2 score, the Brier score and Murphy's decomposition
+ * into reliability, resolution and uncertainty, the calibration (reliability) curve, and the expected, maximum and
+ * classwise calibration errors.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'

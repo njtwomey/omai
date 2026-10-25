@@ -1,3 +1,9 @@
+/**
+ * Environment wrappers that change what the agent observes, as in gymnasium: running normalisation, frame stacking,
+ * flattening structured observations, one-hot encoding of discrete states, appending the time step, and pixel
+ * observations rendered from the environment's scenes by the software rasteriser.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { rasterise } from '../scene/index.ts'

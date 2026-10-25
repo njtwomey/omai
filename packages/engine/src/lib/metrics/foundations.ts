@@ -1,3 +1,10 @@
+/**
+ * Machinery around metrics: confidence intervals for any metric by bootstrap or analytic methods, comparison of two
+ * models (DeLong's test for correlated ROC AUCs, McNemar's test, the paired bootstrap), `evaluate` for many metrics in
+ * one pass, and cost-sensitive decisions: expected cost and utility, Bayes decisions under a cost matrix and the
+ * cost-minimising threshold.
+ */
+
 import { type Estimate, type MetricResult, type MetricSpec, type TestResult, WhiteboxError } from '../base/index.ts'
 import { betainc, chdtrc, ndtr, ndtri } from '../numerics/special/index.ts'
 import { bootstrapIndices, type Key, key as makeKey, split } from '../random/index.ts'

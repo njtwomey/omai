@@ -1,3 +1,10 @@
+/**
+ * The core classification metrics computed from the confusion matrix, scikit-learn style: precision, recall
+ * (sensitivity), specificity, negative predictive value, informedness and markedness, F-beta and F1, the Jaccard index
+ * and accuracy, with binary, micro, macro, weighted and per-sample averaging, plus `confusionMatrix` and the per-class
+ * multilabel confusion matrices.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import {

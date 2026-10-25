@@ -1,3 +1,10 @@
+/**
+ * Complex analysis for teaching: polar form, principal logarithms, powers, roots and the trigonometric functions, n-th
+ * roots and roots of unity, domain colouring of complex functions, Mobius transformations with composition, fixed
+ * points and classification, standard conformal maps and the images of grids under them, the Cauchy-Riemann check, and
+ * contour integrals with residues, Laurent coefficients, winding numbers and the argument principle.
+ */
+
 import { jvp } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'

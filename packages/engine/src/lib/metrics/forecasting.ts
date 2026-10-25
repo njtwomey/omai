@@ -1,3 +1,9 @@
+/**
+ * Forecast accuracy metrics, sktime and M-competition style: percentage errors (MAPE, sMAPE, WMAPE), the scaled errors
+ * MASE and RMSSE (relative to a naive forecast), interval scores, MSIS and coverage for prediction intervals,
+ * multi-quantile loss, the continuous ranked probability score (CRPS) for ensembles and Gaussians, and Theil's U2.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { normal } from '../dists/index.ts'
 import type { TensorLike } from '../tensor/index.ts'

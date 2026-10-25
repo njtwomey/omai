@@ -1,3 +1,10 @@
+/**
+ * Counterfactual regret minimisation (CFR), the standard method for solving imperfect-information games such as poker:
+ * regrets are accumulated at every information set and the average policy converges to a Nash equilibrium. A traced
+ * algorithm following OpenSpiel's CFR, CFR+, linear CFR and discounted CFR solvers step for step, with exploitability
+ * tracked along the way.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Algorithm, runAlgorithm } from '../../trace/index.ts'
 import type { GameRunOptions } from '../normal-form/index.ts'

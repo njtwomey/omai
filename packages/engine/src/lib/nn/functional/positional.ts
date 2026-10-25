@@ -1,3 +1,9 @@
+/**
+ * Position encodings for attention models, which tell a permutation-blind attention layer where each token sits: the
+ * Transformer's sinusoidal encodings, learned absolute positions, rotary position embeddings (RoPE, which rotate
+ * queries and keys so scores depend on relative position) and ALiBi's linear distance biases.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

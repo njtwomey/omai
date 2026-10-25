@@ -1,3 +1,9 @@
+/**
+ * The Unigram language-model tokeniser (Kudo 2018; SentencePiece and HF tokenizers): each word is segmented into the
+ * pieces that maximise the product of their probabilities. Viterbi and n-best segmentation, sampling of segmentations
+ * for subword regularisation, and training that prunes a large seed vocabulary by EM, as a traced algorithm.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { type Key, randomBits } from '../../random/index.ts'
 import { type Algorithm, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'

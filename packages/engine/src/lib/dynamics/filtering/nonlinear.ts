@@ -1,3 +1,9 @@
+/**
+ * Kalman filtering for nonlinear state-space models: the extended Kalman filter, which linearises the dynamics and
+ * observation by automatic differentiation; the unscented Kalman filter with Van der Merwe or Julier sigma points and
+ * the unscented transform; and the ensemble Kalman filter with perturbed observations, all following filterpy.
+ */
+
 import { jacfwd } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import { cholesky, eigh, solve, symmetricPart } from '../../numerics/linalg/index.ts'

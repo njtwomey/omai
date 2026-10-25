@@ -1,3 +1,10 @@
+/**
+ * Matrix representations of graphs: dense and sparse adjacency, incidence and degree matrices, the combinatorial,
+ * normalised and random-walk Laplacians, transition and modularity matrices, the normalised adjacency used for message
+ * passing in graph neural networks, and Laplacian and random-walk positional encodings, following NetworkX and
+ * scipy.sparse.csgraph.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { eigh } from '../numerics/linalg/index.ts'
 import { type CsrMatrix, csr, primalValues } from '../numerics/sparse/index.ts'

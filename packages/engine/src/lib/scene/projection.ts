@@ -1,3 +1,9 @@
+/**
+ * Viewing 3-D scenes: an orbit camera with matplotlib's azimuth and elevation conventions, orbiting and fitting the
+ * camera to a scene, projection of points, and projection of a whole 3-D scene to a 2-D scene by the painter's
+ * algorithm (farthest first), including the 3-D layers embedded in 2-D scenes.
+ */
+
 import { clamp, WhiteboxError } from '../base/index.ts'
 import { arrow, group, line, polygon, scene, tex, text } from './build.ts'
 import type { Item3D, Scene3D, Vec3 } from './three-d.ts'

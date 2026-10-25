@@ -1,3 +1,9 @@
+/**
+ * Transformer building blocks in the modern pre-norm form: plain and gated (SwiGLU-style) feed-forward blocks, a
+ * `TransformerBlock` with grouped-query self-attention, rotary positions, a KV cache and optional cross-attention,
+ * stacks of such blocks, an `EncoderDecoder` (T5 style) and a GPT- and LLaMA-shaped decoder-only `TransformerLM`.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { add, asTensor, isValue, mul, type TensorLike, type Value } from '../../tensor/index.ts'

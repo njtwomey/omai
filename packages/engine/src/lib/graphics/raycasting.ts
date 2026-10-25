@@ -1,3 +1,10 @@
+/**
+ * Grid ray casting, the technique of early first-person games: rays are marched cell by cell through a 2-D tile world
+ * by the DDA of Amanatides and Woo, and each screen column draws one wall slice. Column casting as a traced algorithm
+ * with fish-eye correction, a renderer with textured walls, floors and billboard sprites, and top-down figures of the
+ * view cone and the cells each ray visits.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import {
   circle,

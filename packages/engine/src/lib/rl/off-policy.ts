@@ -1,3 +1,10 @@
+/**
+ * Off-policy evaluation: estimating how well a new policy would do from data logged under a different one. For
+ * contextual bandits, inverse propensity scoring, its self-normalised and clipped forms, the direct method and the
+ * doubly robust estimator; for sequential decisions, fitted Q evaluation, exactly in the tabular case or with any
+ * regressor, as traced algorithms.
+ */
+
 import { type Estimate, estimate, type Json, meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import type { Transition } from './agent.ts'

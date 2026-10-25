@@ -1,3 +1,9 @@
+/**
+ * Pooling as functions over any number of spatial axes (torch.nn.functional style): max pooling (optionally with
+ * indices, and its partial inverse `maxUnpool`), average and power-average (Lp) pooling, adaptive pooling to a fixed
+ * output size, and global average and max pooling.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { im2col, padArray } from '../../numerics/convolution/index.ts'
 import {

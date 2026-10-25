@@ -1,3 +1,9 @@
+/**
+ * Light sources for shading: point lights with inverse-square falloff, directional lights, and rectangular area lights
+ * sampled with stratified or jittered samples (which give soft shadows), plus shading of a batch of surface points
+ * under these lights with a shadow-ray visibility test per sample.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, isKey, type Key, uniform } from '../random/index.ts'
 import type { Vec3 } from '../scene/index.ts'

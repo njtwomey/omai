@@ -1,3 +1,10 @@
+/**
+ * Auction theory: how the rules of an auction shape who wins and what they pay. Sealed-bid first-price, second-price
+ * (Vickrey) and all-pay auctions with reserve prices, the symmetric equilibrium bids and expected revenues for uniform
+ * values (revenue equivalence), and the Vickrey-Clarke-Groves mechanism, also applied to combinatorial auctions with
+ * bundle bids.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** The outcome of a single-item auction. */

@@ -1,3 +1,9 @@
+/**
+ * Missing-value imputation, scikit-learn style: missing-value indicators, the simple imputer (mean, median, most
+ * frequent or a constant), k-nearest-neighbour imputation with NaN-aware distances, and iterative imputation by chained
+ * equations, which regresses each incomplete feature on the others over several rounds.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../../random/index.ts'

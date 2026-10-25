@@ -1,3 +1,9 @@
+/**
+ * Informed (heuristic) search, AIMA style: best-first search on an evaluation function, greedy best-first, A* and
+ * weighted A*, IDA*, recursive best-first search and beam search, each as a traced algorithm recording its frontier.
+ * Also checks that a heuristic is admissible or consistent on every reachable state, against true costs from Dijkstra.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { digraph, dijkstra } from '../graph/index.ts'
 import type { Algorithm } from '../trace/index.ts'

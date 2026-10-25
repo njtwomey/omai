@@ -1,3 +1,9 @@
+/**
+ * Sequential Monte Carlo on probabilistic programs: a bootstrap particle filter over a program's markov loop (weighted
+ * particle paths and an evidence estimate) and adaptive-tempering SMC, which moves particles from the prior to the
+ * posterior, for programs without markov structure. Also the engine for the planner.
+ */
+
 import { type Json, logSumExpOf, WhiteboxError } from '../../base/index.ts'
 import { bijectors } from '../../dists/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'

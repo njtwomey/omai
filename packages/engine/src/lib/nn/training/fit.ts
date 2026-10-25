@@ -1,3 +1,9 @@
+/**
+ * Minibatch training of a module: `fitAlgorithm` runs the loop as a traced `Algorithm` (loss on each minibatch in
+ * training mode, gradients, optimiser update, optional validation and callbacks), and `fit` runs it on a dataset and
+ * loads the trained parameters and buffers back into the module.
+ */
+
 import type { Json } from '../../base/index.ts'
 import { epochBatches, rowCount, type TabularData } from '../../data/index.ts'
 import { clipByGlobalNorm, type GradientTransformation, globalNorm, type LearningRate } from '../../optim/index.ts'

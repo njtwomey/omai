@@ -1,3 +1,11 @@
+/**
+ * Single-variable calculus computed and shown step by step: numerical limits with Richardson extrapolation, difference
+ * quotients and secant tables converging to the derivative, Riemann sums with their rectangles, the fundamental theorem
+ * checked numerically, Taylor polynomials with the Lagrange error bound, Newton's method with every step, critical
+ * points and the second-derivative test, mean value points and tangent lines, with derivatives from automatic
+ * differentiation.
+ */
+
 import { taylorCoefficients, taylorPolynomial } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'

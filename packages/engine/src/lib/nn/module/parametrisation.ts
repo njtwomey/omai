@@ -1,3 +1,9 @@
+/**
+ * Weight reparametrisations that wrap a module, as torch.nn.utils does: `WeightNorm`, which splits a weight into a
+ * direction and a magnitude, and `SpectralNorm`, which divides it by its largest singular value (tracked by power
+ * iteration in buffers) to bound the layer's Lipschitz constant, as in GAN discriminators.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import { item, norm, reshape, sizeOf, sqrt, square, sum, type Value } from '../../tensor/index.ts'

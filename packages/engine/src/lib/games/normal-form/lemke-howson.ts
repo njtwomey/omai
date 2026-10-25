@@ -1,3 +1,9 @@
+/**
+ * The Lemke-Howson algorithm, which finds a Nash equilibrium of a two-player game by complementary pivoting along a
+ * path of best-response polytope vertices. A traced version that records every pivot, the solver as in nashpy, and the
+ * run from every initial label.
+ */
+
 import { minOf, WhiteboxError } from '../../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { type Equilibrium, expectedPayoffs, type GameRunOptions, type NormalFormGame, payoffMatrices } from './game.ts'

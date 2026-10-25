@@ -1,3 +1,9 @@
+/**
+ * Model predictive control: at each step, plan the inputs over a finite horizon by optimisation, apply only the first,
+ * and plan again from the new state. Linear MPC in condensed form as a quadratic program, a traced receding-horizon
+ * loop around a plant, and nonlinear MPC that plans with warm-started iLQR.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { qpInteriorPoint, quadprog } from '../../optim/index.ts'
 import { asTensor, matmul, primalOf, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'

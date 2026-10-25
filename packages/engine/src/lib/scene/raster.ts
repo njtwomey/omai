@@ -1,3 +1,8 @@
+/**
+ * A small software rasteriser that draws a scene into RGBA pixels without a browser, used for pixel observations in
+ * reinforcement learning, animation frames in Node and image tests.
+ */
+
 import { clamp, WhiteboxError } from '../base/index.ts'
 import { palettes, parsePaint, type Rgba } from './paint.ts'
 import { projectLayers } from './projection.ts'

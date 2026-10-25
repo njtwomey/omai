@@ -1,3 +1,9 @@
+/**
+ * Constrained decoding: rules restricting which tokens may come next, applied by masking the forbidden logits to minus
+ * infinity. A mask processor, constraints from a deterministic token automaton (grammar-constrained decoding) and from
+ * a trie of allowed sequences (a fixed list of choices or labels).
+ */
+
 import type { LogitProcessor } from './processors.ts'
 
 const NEG = Number.NEGATIVE_INFINITY

@@ -1,3 +1,9 @@
+/**
+ * The activation functions as parameter-free modules in torch.nn's shape (`ReLU`, `GELU`, `SiLU`, `Softmax` and the
+ * rest), plus `PReLU` with learnt slopes and `activationModule` to build one by name, for use inside `Sequential` and
+ * other containers.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { full, logSoftmax, mul, sigmoid, softmax, tanh, type Value } from '../../tensor/index.ts'
 import {

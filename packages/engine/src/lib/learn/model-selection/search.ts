@@ -1,3 +1,9 @@
+/**
+ * Hyperparameter search with cross-validation, scikit-learn style: grids and random candidates (`parameterGrid`,
+ * `parameterSampler`), `gridSearchCV` and `randomizedSearchCV`, which cross-validate every candidate, rank them and
+ * refit the best, and nested cross-validation for an unbiased estimate of the tuned model's performance.
+ */
+
 import { type Json, meanOf, varianceOf, WhiteboxError } from '../../base/index.ts'
 import { crossValidationCurve, type Explained, type Exposition, searchTrials } from '../../exposition/index.ts'
 import { foldIn, permutation } from '../../random/index.ts'

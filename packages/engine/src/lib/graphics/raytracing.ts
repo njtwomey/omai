@@ -1,3 +1,10 @@
+/**
+ * Whitted ray tracing: following rays from the camera into a scene and spawning reflection, refraction and shadow rays
+ * at each hit. The ray-traced scene (objects in a bounding-volume hierarchy, lights and background), Snell's law and
+ * Schlick's Fresnel term, a renderer as a traced algorithm with one step per ray generation, and the full ray tree of a
+ * single ray for figures.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { dotProduct } from '../foundations/index.ts'
 import type { Key } from '../random/index.ts'

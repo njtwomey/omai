@@ -1,3 +1,10 @@
+/**
+ * Effect handlers, the mechanism that gives a probabilistic program its meanings, NumPyro style: each handler
+ * intercepts the messages a program's sites send and rewrites or records them. Tracing, seeding, conditioning,
+ * substituting and replaying values, blocking, scaling and masking log densities, Pearl's do-operator, enumeration
+ * marks for discrete sites, `uncondition`, and `handle` for custom handlers.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Distribution, Support } from '../dists/index.ts'
 import { foldIn, type Key } from '../random/index.ts'

@@ -1,3 +1,8 @@
+/**
+ * Loading HF tokenizers' `tokenizer.json` files: the added tokens, normaliser, pre-tokeniser, model (BPE, WordPiece,
+ * Unigram or WordLevel), post-processor, decoder, truncation and padding are read into a ready tokenizer pipeline.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bpeModel } from './subword/bpe.ts'
 import { unigramModel } from './subword/unigram.ts'

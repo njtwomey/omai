@@ -1,3 +1,10 @@
+/**
+ * Bayesian optimisation with a Gaussian-process surrogate: the acquisition functions that decide where to evaluate next
+ * by trading predicted value against uncertainty (expected improvement and its stable logarithm, probability of
+ * improvement, confidence bounds), their maximisation over the unit cube, and `gpSampler`, which mirrors Optuna's
+ * `GPSampler`.
+ */
+
 import type { Json } from '../base/index.ts'
 import { erfc, erfcx, logNdtr, ndtr, normalPdf } from '../numerics/special/index.ts'
 import { lbfgsb } from '../optim/index.ts'

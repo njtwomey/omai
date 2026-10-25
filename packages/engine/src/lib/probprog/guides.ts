@@ -1,3 +1,9 @@
+/**
+ * Automatic guides, the approximate posteriors fitted by variational inference, NumPyro style: mean-field normal, point
+ * mass (MAP), full-rank and low-rank multivariate normal, Laplace and normalising-flow (inverse autoregressive flow)
+ * guides, each built from the model's continuous latent sites on their unconstrained scale.
+ */
+
 import { hessian } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import {

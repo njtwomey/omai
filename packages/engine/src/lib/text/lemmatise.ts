@@ -1,3 +1,8 @@
+/**
+ * Rule-based lemmatisation: reducing an inflected word to its dictionary form. WordNet's morphy as nltk implements it,
+ * applying detachment rules per part of speech and irregular-form exception lists against a lexicon of known lemmas.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** A WordNet part of speech: noun, verb, adjective, satellite adjective, adverb. */

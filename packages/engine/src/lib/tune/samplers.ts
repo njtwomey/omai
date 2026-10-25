@@ -1,3 +1,9 @@
+/**
+ * Samplers, the strategies that propose a study's next configuration from its finished trials, Optuna style: grid
+ * search, random search, quasi-random Sobol', Halton and Latin hypercube designs, CMA-ES and Nelder-Mead from `optim`
+ * on the unit-cube encoding of the space, and an evolutionary sampler (NSGA-II for several objectives).
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { cmaesAlgorithm, crowdingDistance, nelderMeadAlgorithm, nonDominatedSort } from '../optim/index.ts'
 import {

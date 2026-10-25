@@ -1,3 +1,9 @@
+/**
+ * The sequence form of two-player extensive-form games (von Stengel): strategies as realisation plans over action
+ * sequences, which keeps the representation linear in the size of the tree. Building the sequence form and solving
+ * zero-sum games with it by linear programming.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type LinprogOptions, linprog } from '../../optim/index.ts'
 import { toFlat } from '../../tensor/index.ts'

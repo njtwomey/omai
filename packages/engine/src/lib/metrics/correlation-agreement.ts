@@ -1,3 +1,9 @@
+/**
+ * Correlation and agreement between two variables or raters: Pearson, Spearman and Kendall correlations, Lin's
+ * concordance correlation, Bland-Altman limits of agreement, Cramer's V and Theil's U for categorical variables,
+ * intraclass correlations, weighted Cohen's kappa, Fleiss' kappa for many raters and Krippendorff's alpha.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { cov, kendallTau as kendallTest, spearman } from '../stats/index.ts'

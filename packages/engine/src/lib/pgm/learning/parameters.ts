@@ -1,3 +1,9 @@
+/**
+ * Learning the parameters of Bayes networks from data: state counts, maximum likelihood and Bayesian (Dirichlet prior)
+ * estimates of conditional probability tables, the data log-likelihood, expectation maximisation for missing values and
+ * latent variables (a traced algorithm), and least-squares fitting of linear-Gaussian networks.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'
 import { dirichlet, foldIn, type Key } from '../../random/index.ts'

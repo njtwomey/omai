@@ -1,3 +1,10 @@
+/**
+ * Influence diagrams (Howard and Matheson 1984), Bayes networks extended with decision nodes and utility nodes for
+ * decision making under uncertainty: construction and validation, information sets, the network a policy defines,
+ * expected utility, the optimal policy by backward induction, and the value of information of observing a variable
+ * before deciding.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { allAssignments, factorValues } from '../factor.ts'
 import { descendants, topologicalOrder } from '../graphs.ts'

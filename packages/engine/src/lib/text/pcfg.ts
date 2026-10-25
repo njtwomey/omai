@@ -1,3 +1,9 @@
+/**
+ * Probabilistic context-free grammars: the most probable (Viterbi) parse as nltk's ViterbiParser finds it, the total
+ * probability of a sentence, the inside-outside algorithm giving expected production counts, and unsupervised grammar
+ * estimation by EM with inside-outside as a traced algorithm.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, runAlgorithm, type TracePolicy, type Tracer } from '../trace/index.ts'
 import type { Grammar, GrammarSymbol, ParseTree, Production } from './parsing.ts'

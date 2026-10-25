@@ -1,3 +1,10 @@
+/**
+ * Score-based and functional causal discovery from observational data: greedy equivalence search (GES, Chickering
+ * 2002), which searches Markov equivalence classes by score, DirectLiNGAM, which exploits non-Gaussian noise to orient
+ * a linear model, and NOTEARS, which learns a DAG by continuous optimisation with a smooth acyclicity constraint. GES
+ * and NOTEARS are traced algorithms.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../../base/index.ts'
 import { expm, lstsq } from '../../numerics/linalg/index.ts'
 import { applyUpdates, type GradientTransformation } from '../../optim/index.ts'

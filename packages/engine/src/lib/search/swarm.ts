@@ -1,3 +1,9 @@
+/**
+ * Swarm intelligence: search by many simple agents sharing information. Ant colony optimisation for the travelling
+ * salesman problem (Ant System and MAX-MIN), where ants build tours guided by evaporating pheromone trails, and binary
+ * particle swarm optimisation over bit strings, both as traced algorithms.
+ */
+
 import { argmaxOf, meanOf, WhiteboxError } from '../base/index.ts'
 import { foldIn } from '../random/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
