@@ -70,9 +70,10 @@ export class Counter {
   'packages/mini/src/lib/core/ops/index.ts': "/**\n * Operations.\n *\n * @inline\n */\nexport * from './scale.ts'\n",
   'packages/mini/src/lib/core/ops/scale.ts':
     '/** Scale a number.\n *\n * @param x - The number.\n * @param options - Options.\n */\nexport const scale = (x: number, { by = 2 }: { by?: number } = {}): number => x * by\n',
-  'packages/mini/src/lib/core/deep/index.ts': "export * from './deep.ts'\n",
+  'packages/mini/src/lib/core/deep/index.ts': "export * from './deep.ts'\nexport * from './plain.ts'\n",
   'packages/mini/src/lib/core/deep/deep.ts':
     "/** Deep things, said once. */\n\nimport { add } from '../maths.ts'\n/** The answer. */\nexport const answer: number = 42\nexport { add as plus }\n",
+  'packages/mini/src/lib/core/deep/plain.ts': '/** Plain things, said once. */\n\nexport const plain: number = 1\n',
 }
 for (const [path, text] of Object.entries(files)) {
   mkdirSync(dirname(join(root, path)), { recursive: true })
@@ -126,7 +127,9 @@ describe('extractCatalogue', () => {
     const summary = (p: string) => c.files.find((f) => f.path === `packages/mini/src/lib/core/${p}`)?.summary
     expect(summary('deep/deep.ts')).toBe('Deep things, said once.')
     expect(summary('maths.ts')).toBe('')
-    expect(c.files.map((f) => f.module)).toEqual(['mini/core', 'mini/core', 'mini/core/deep'])
+    expect(summary('deep/plain.ts')).toBe('Plain things, said once.')
+    expect(sym('mini/core/deep#plain')?.summary).toBe('')
+    expect(c.files.map((f) => f.module)).toEqual(['mini/core', 'mini/core', 'mini/core/deep', 'mini/core/deep'])
   })
 
   it('reads public class members', () => {

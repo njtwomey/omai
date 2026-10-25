@@ -1,3 +1,9 @@
+/**
+ * Views of a group fairness report: each group's rates (selection, true- and false-positive rates) side by side, each
+ * group's gap to the reference group, the groups' ROC curves with their operating points, and the rates over a shared
+ * threshold sweep.
+ */
+
 import type { EChartsOption } from 'echarts'
 import { GROUP_RATES, type GroupRateName, type GroupReport, groupReportAt } from 'whitebox-engine/exposition'
 import { bars } from '../charts/bars.ts'

@@ -1,3 +1,9 @@
+/**
+ * Scalar root finding, scipy.optimize style: bracketing methods (bisection, Brent's method, Ridders' method, TOMS 748)
+ * and open methods (Newton, secant, Halley), each returning the root with its evaluation history for convergence
+ * figures, and `scalarRootOf`, a root that is differentiable in a parameter through the implicit function theorem.
+ */
+
 import { customVjp, jvp as forward, grad } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import { div, item, mul, neg, primalOf, tensor, type Value } from '../../tensor/index.ts'

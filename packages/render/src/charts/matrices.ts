@@ -1,3 +1,9 @@
+/**
+ * Gridded values as pictures: heatmaps of fields drawn as one smoothly upsampled image (bicubic or bilinear), filled
+ * contour bands or blocky cells, images from pixels or tensors (imshow style), and labelled matrices for confusion,
+ * correlation, attention and kernel matrices, each cell coloured along a ramp with its value written in it.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import { contourLevels } from 'whitebox-engine/numerics/geometry'

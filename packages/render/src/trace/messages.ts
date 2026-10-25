@@ -1,3 +1,9 @@
+/**
+ * Message passing from a run's `message` events: a timeline with one row per edge and a mark at each step a message
+ * passed along it, and animation frames of the structure with the edges carrying messages active and their payloads as
+ * badges.
+ */
+
 import type { SeriesOption } from 'echarts'
 import { type Frame, type Structure, type StructureOverlay, type Timeline, timeline } from 'whitebox-engine/scene'
 import { messages, type Run } from 'whitebox-engine/trace'

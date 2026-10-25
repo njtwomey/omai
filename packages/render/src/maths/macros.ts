@@ -1,4 +1,8 @@
-// The macro set follows aifn-engine's math-macros (vectors, matrices, sets, operators, delimiters, distributions).
+/**
+ * The shared TeX macro registry, following aifn-engine's maths macros: bold vectors and matrices, calligraphic sets,
+ * number systems, probability and expectation, operators, delimiters and distributions, so every page and package
+ * writes the same symbols, with `extendMacros` for adding more without touching the shared set.
+ */
 
 const LOWER = 'abcdefghijklmnopqrstuvwxyz'.split('')
 const UPPER = LOWER.map((c) => c.toUpperCase())

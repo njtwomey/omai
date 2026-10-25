@@ -1,3 +1,10 @@
+/**
+ * Floating-point arithmetic made visible: neighbours and gaps of doubles (`nextAfter`, `ulp`, machine epsilon),
+ * rounding to float32, error-free transformations (TwoSum and TwoProduct), summation algorithms to compare their
+ * rounding errors, condition numbers and first-order error propagation from autodiff, and counts of correct significant
+ * digits.
+ */
+
 import { grad } from '../../autodiff/index.ts'
 import { kahanSum, pairwiseSum, WhiteboxError } from '../../base/index.ts'
 import { item, tensor, type Value } from '../../tensor/index.ts'

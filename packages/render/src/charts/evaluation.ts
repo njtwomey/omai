@@ -1,3 +1,9 @@
+/**
+ * Model evaluation figures from the engine's `metrics`: ROC and precision-recall curves, reliability (calibration)
+ * diagrams, learning and validation curves with spread bands, residual plots, and forest plots and bars of metric
+ * results with their intervals.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import type { Estimate, MetricResult } from 'whitebox-engine/base'
 import type { CalibrationCurve, PrecisionRecallCurve, RocCurve } from 'whitebox-engine/metrics'

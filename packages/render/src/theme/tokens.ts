@@ -1,3 +1,9 @@
+/**
+ * Design tokens of the light and dark themes (foreground, background, surface, muted, grid, accent, semantic colours
+ * and `tab0` to `tab9`), as values, as `--wb-*` CSS custom properties, and as the resolution of a scene's paint to a
+ * concrete colour.
+ */
+
 import { type Paint, palettes, parsePaint, type ThemeToken } from 'whitebox-engine/scene'
 
 /** A colour mode: the light or the dark theme. */

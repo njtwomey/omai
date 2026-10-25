@@ -1,3 +1,8 @@
+/**
+ * The React view of a curve set: several curves on shared axes (an optimiser race, rating trajectories with bands),
+ * coloured by group, revealed along x as a player.
+ */
+
 import { type ReactElement, useCallback } from 'react'
 import type { CurveSet } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

@@ -1,3 +1,8 @@
+/**
+ * The error function family as differentiable elementwise operations: `erf`, `erfc` (accurate in the far tail), the
+ * scaled `erfcx`, the inverses `erfinv` and `erfcinv`, and Dawson's integral.
+ */
+
 import { add, exp, mul, neg, square, type TensorLike, type Value } from '../../tensor/index.ts'
 import { special } from './_elementwise.ts'
 import * as k from './_kernels.ts'

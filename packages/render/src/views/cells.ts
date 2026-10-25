@@ -1,3 +1,9 @@
+/**
+ * Player frames for value grids and confusion matrices: grids of values (feature maps, filters, hidden states) as
+ * blocky small multiples on one shared colour range, and a classifier's confusion matrix with counts or row shares and
+ * the accuracy, each played through training when the record has steps.
+ */
+
 import type { EChartsOption } from 'echarts'
 import type { ConfusionMatrix, ValueGrids } from 'whitebox-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'

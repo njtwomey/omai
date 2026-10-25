@@ -1,3 +1,9 @@
+/**
+ * Structured matrices and their solvers, scipy.linalg style: Toeplitz, circulant, Hankel and block-diagonal
+ * constructors, tridiagonal, banded (LAPACK band storage) and Toeplitz solves, and Kronecker-product systems solved
+ * without forming the product.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

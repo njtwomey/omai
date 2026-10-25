@@ -1,3 +1,9 @@
+/**
+ * Smoothing splines for noisy data: the cubic smoothing spline that trades fit against curvature by a penalty (scipy's
+ * `make_smoothing_spline`, by Reinsch's method), and FITPACK-style `univariateSpline`, which inserts knots where the
+ * residual is largest until the residual sum of squares meets a smoothing factor.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   concreteOrThrow,

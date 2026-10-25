@@ -1,3 +1,9 @@
+/**
+ * React views of staged models: an ensemble played stage by stage (scores, member weights, sample weights or residuals
+ * over the rows), and a fitted pipeline as a strip of step cards with the selected step's output shown large in the
+ * form that suits it, beside its data and fitted parameters.
+ */
+
 import { type CSSProperties, type ReactElement, type ReactNode, useCallback, useMemo, useState } from 'react'
 import type { EnsembleStages, PipelineStages, StageData, StageParameter } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

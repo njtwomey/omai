@@ -1,6 +1,9 @@
-// Segments as obstacles: closest points, ray and swept-circle contact times, and a robust touching test. These are the
-// collision primitives behind continuous motion in worlds (walls are segments) and anything else that moves points or
-// discs among line segments.
+/**
+ * Line segments as obstacles: closest points on a segment, where a ray first hits one, when a moving circle first
+ * touches one, and whether two segments touch (collinear overlap included). These are the collision primitives behind
+ * continuous motion in worlds, where walls are segments, and anything else that moves points or discs among segments.
+ */
+
 import { orient, type Point2 } from './triangulation.ts'
 
 /** A contact with a segment: the time (or ray parameter) of first contact and the unit normal there. */

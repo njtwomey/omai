@@ -47,10 +47,16 @@ function hasModifier(node: ts.Node, kind: ts.SyntaxKind): boolean {
   return modifiersOf(node).some((m) => m.kind === kind)
 }
 
+// A file's own opening comment: one followed by a blank line or the imports, not a first declaration's doc.
+const OPENING = /^\s*(\/\*\*[\s\S]*?\*\/)(\n\s*\n|\nimport\b)/
+
 /** The doc comment directly before a node, unframed, with the 0-based file line of its first line. */
 function docOf(sf: ts.SourceFile, node: ts.Node): { text: string; line: number } | undefined {
   const ranges = ts.getLeadingCommentRanges(sf.text, node.getFullStart()) ?? []
-  const last = ranges.filter((r) => sf.text.startsWith('/**', r.pos)).at(-1)
+  // The file's opening paragraph never documents the declaration that happens to follow it.
+  const opening = OPENING.exec(sf.text)
+  const fileEnd = opening === null ? -1 : opening.index + opening[0].length - (opening[2] as string).length
+  const last = ranges.filter((r) => sf.text.startsWith('/**', r.pos) && r.end !== fileEnd).at(-1)
   if (last === undefined) return undefined
   return {
     text: unframeComment(sf.text.slice(last.pos, last.end)),
@@ -491,9 +497,8 @@ export function readSymbols(project: Project): SymbolsResult {
       files: e.files.map((f) => relativeTo(project, f)),
     }
   })
-  // A file's own opening comment: one followed by a blank line or the imports, not a first declaration's doc.
   const fileDoc = (file: string, module: string): FileDoc => {
-    const m = /^\s*(\/\*\*[\s\S]*?\*\/)(\n\s*\n|\nimport\b)/.exec(reader.source(file).text)
+    const m = OPENING.exec(reader.source(file).text)
     const doc = m === null ? undefined : parseDocComment(unframeComment(m[1] as string))
     return { path: relativeTo(project, file), module, summary: doc?.summary ?? '', description: doc?.description ?? '' }
   }

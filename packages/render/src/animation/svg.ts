@@ -1,3 +1,8 @@
+/**
+ * Self-playing animated SVG: `animatedSvg` draws every frame of a timeline into one document and shows them in turn
+ * with CSS keyframes, so the file plays on its own in a browser, a slide or a README, with no script.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import { isTimeline, type Scene, type Timeline } from 'whitebox-engine/scene'
 import { escapeXml, sceneToSvg } from '../svg/svg.ts'

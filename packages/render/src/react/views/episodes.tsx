@@ -1,3 +1,8 @@
+/**
+ * The React view of a reinforcement-learning run: returns with their rolling mean, episode lengths, and a value and
+ * policy snapshot (a map for grid worlds).
+ */
+
 import { type ReactElement, useCallback } from 'react'
 import type { EpisodeRecord } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

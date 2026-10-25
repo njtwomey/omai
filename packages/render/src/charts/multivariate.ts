@@ -1,3 +1,9 @@
+/**
+ * Charts of tables with many columns: parallel coordinates (one axis per column, one polyline per row) with axis
+ * brushing that filters rows, radar charts, and scatter matrices (every pair of columns as a scatter, histograms on the
+ * diagonal), plus the layout helpers overlays need to place themselves on these charts.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Range } from '../figure/aspect.ts'

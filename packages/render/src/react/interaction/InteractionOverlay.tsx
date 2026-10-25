@@ -1,3 +1,9 @@
+/**
+ * The SVG layer laid exactly over a figure, in which interaction tools draw and read the pointer through a projection
+ * between data and pixels; `Overlaid` stacks a figure and its overlay, and `Backdrop` catches presses that miss every
+ * handle.
+ */
+
 import { createContext, type PointerEvent, type ReactNode, useContext, useMemo, useRef } from 'react'
 import type { Point2, Projection } from './projection.ts'
 

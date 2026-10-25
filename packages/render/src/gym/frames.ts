@@ -1,3 +1,9 @@
+/**
+ * Episodes of an environment as pictures: each step of an episode (the reset, then each action with its reward and
+ * running return) as a captioned frame of a `Timeline` for the player and for GIF or video export, and filmstrips of
+ * every few frames side by side.
+ */
+
 import type { Json } from 'whitebox-engine/base'
 import type { Episode } from 'whitebox-engine/rl'
 import { grid, type Scene, type Timeline, timeline } from 'whitebox-engine/scene'

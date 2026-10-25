@@ -1,3 +1,9 @@
+/**
+ * Laying out controls: `ControlPanel` arranges them in columns, rows or named bento areas and collapses from its title,
+ * `PanelArea` places one cell, and `ControlLayout` puts a panel beside a figure (a left or right sidebar, stacked on
+ * narrow screens) or in a bar above or below it.
+ */
+
 import { type CSSProperties, createContext, type ReactNode, useContext, useId, useState } from 'react'
 import { cx } from './classes.ts'
 import { ChevronDownIcon } from './icons.tsx'

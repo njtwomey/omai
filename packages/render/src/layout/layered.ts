@@ -1,3 +1,9 @@
+/**
+ * A layered (Sugiyama-style) layout for directed graphs, as dagre draws them: cycles broken by reversing edges, ranks
+ * by longest path, long edges routed through virtual points, crossings reduced by repeated barycentre ordering with
+ * groups kept together, and coordinates that keep the spacing. The default layout of structure diagrams.
+ */
+
 import {
   type Box,
   boxBoundary,

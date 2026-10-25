@@ -1,3 +1,9 @@
+/**
+ * The visual language of each kind of structure: how nodes of each role (latent and observed variables, factors,
+ * operations, decisions, states), edges of each kind and groups of each kind are drawn for graphical models, trees,
+ * automata, neural networks and a generic fallback, looked up with `styleFor`.
+ */
+
 import type { NodeRole, Paint, StructureEdge, StructureGroup } from 'whitebox-engine/scene'
 
 /** The outline of a node. */

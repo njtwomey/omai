@@ -1,3 +1,9 @@
+/**
+ * Figures of a hyperparameter study, after Optuna's visualisations: the optimisation history with the running best,
+ * parameter importances, slice plots of the objective against each parameter, a contour plot of a Gaussian-process
+ * surrogate over two parameters, and the intermediate values of every trial with pruned trials greyed.
+ */
+
 import type { EChartsOption } from 'echarts'
 import {
   contourData,

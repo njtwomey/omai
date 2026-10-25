@@ -1,3 +1,8 @@
+/**
+ * Optimisation paths over an objective: a parameter channel's first two elements traced over a run, drawn as polylines
+ * with start and end markers over the objective's filled contours.
+ */
+
 import type { SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import { type Run, tensorSeries } from 'whitebox-engine/trace'

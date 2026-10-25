@@ -1,3 +1,8 @@
+/**
+ * The small inline SVG icons the controls and player use: chevrons, play, pause, step and rewind, a die, light and dark
+ * mode symbols, copy, check, menu, close and sliders, each sized by one prop.
+ */
+
 import type { ReactNode, SVGProps } from 'react'
 
 /** Props of an icon: any SVG attribute; `size` sets width and height in pixels (default 16). */

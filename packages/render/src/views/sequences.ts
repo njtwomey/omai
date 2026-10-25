@@ -1,3 +1,8 @@
+/**
+ * The view of a hidden-state model's reading of a sequence (an HMM, say): each state's posterior over time stacked to
+ * one as a strip, with the decoded path and the true states as coloured strips beneath.
+ */
+
 import type { EChartsOption } from 'echarts'
 import type { StateSequence } from 'whitebox-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'

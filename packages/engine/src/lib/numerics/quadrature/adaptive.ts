@@ -1,3 +1,10 @@
+/**
+ * Adaptive quadrature of a function on an interval: globally adaptive Gauss-Kronrod (QUADPACK's qag, the core of
+ * `scipy.integrate.quad`), which keeps bisecting the subinterval with the largest error estimate, adaptive Simpson with
+ * Richardson correction, and tanh-sinh (double-exponential) quadrature, which copes with endpoint singularities.
+ * Subintervals are reported for figures.
+ */
+
 import {
   add,
   div,

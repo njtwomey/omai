@@ -1,3 +1,8 @@
+/**
+ * Hovering over data points: as the pointer moves, reports the index of the point nearest to it on screen within a
+ * radius, or -1 when none is near.
+ */
+
 import type { ReactNode } from 'react'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'
 import type { Point2 } from './projection.ts'

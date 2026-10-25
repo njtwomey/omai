@@ -1,3 +1,8 @@
+/**
+ * Typesetting TeX with KaTeX and the shared macros, as HTML, MathML or both: `texToHtml`, a caching renderer, a parse
+ * check and the compact marker shown in place of TeX that does not parse.
+ */
+
 import katex from 'katex'
 import { macros as sharedMacros } from './macros.ts'
 

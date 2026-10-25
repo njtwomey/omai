@@ -1,3 +1,9 @@
+/**
+ * Elliptic integrals and functions, scipy.special style (parameter m = k^2): the complete and incomplete integrals of
+ * the first and second kinds, by Carlson's symmetric forms, and the Jacobi elliptic functions sn, cn and dn with the
+ * amplitude, which give the exact motion of a pendulum.
+ */
+
 import {
   add,
   div,

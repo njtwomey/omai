@@ -1,3 +1,8 @@
+/**
+ * Zeta functions and exponential-type integrals: the Riemann and Hurwitz zeta functions, the Lambert W function, the
+ * exponential integrals E_n and Ei, the sine and cosine integrals, and the Fresnel integrals, matching scipy.special.
+ */
+
 import {
   add,
   cos,

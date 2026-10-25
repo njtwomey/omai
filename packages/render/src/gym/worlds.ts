@@ -1,3 +1,10 @@
+/**
+ * Drawing `worlds` worlds: `worldView` shows any world from above (terrain, walls, items, goals, an agent and its path)
+ * with the overlays of search and reinforcement learning (frontiers, explored cells, policy arrows, values on cells),
+ * `raycastViews` gives the first-person ray-cast view beside its top-down map and view cone, and `pathFrames` animates
+ * a path.
+ */
+
 import { imageToPixels, type RaycastFrame, type RaycastRenderOptions, renderRaycast } from 'whitebox-engine/graphics'
 import {
   arrow,

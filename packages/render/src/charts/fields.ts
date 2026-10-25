@@ -1,3 +1,9 @@
+/**
+ * Figures of two-dimensional fields: contour lines by marching squares, a classifier's decision regions coloured by the
+ * winning class and faded where it is unsure (with `argmaxMargins` giving the boundaries), vector fields as arrows
+ * coloured by magnitude, and streamlines with arrow heads showing the direction of flow.
+ */
+
 import type { SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import { contourLevels, contourLines } from 'whitebox-engine/numerics/geometry'

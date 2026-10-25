@@ -1,3 +1,8 @@
+/**
+ * A hook reading a figure `LinkStore`, re-rendering when any linked figure changes the shared hover, pointer,
+ * selection, brush or zoom.
+ */
+
 import { useSyncExternalStore } from 'react'
 import type { LinkState, LinkStore } from '../../figure/linking.ts'
 

@@ -1,3 +1,8 @@
+/**
+ * Stepping an environment by hand in React: reset from a seed, then each `step(action)` advances it with keys derived
+ * from the seed and the step, so the same seed and actions always give the same episode.
+ */
+
 import { useCallback, useMemo, useState } from 'react'
 import { foldIn, key as makeKey } from 'whitebox-engine/random'
 import type { Env } from 'whitebox-engine/rl'

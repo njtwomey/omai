@@ -1,3 +1,9 @@
+/**
+ * LU factorisation with partial pivoting and what is built on it: `solve` and `inv` (numpy.linalg), `lu` with explicit
+ * permutation, and the packed `luFactor` and `luSolve` pair (scipy.linalg) for solving many right-hand sides with one
+ * factorisation.
+ */
+
 import {
   add,
   arg,

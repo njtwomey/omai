@@ -1,3 +1,8 @@
+/**
+ * Run summaries as table data: one row per run in a trace (children indented under their parents) with its name,
+ * status, steps, seed and the final value of each summary metric, ready for any table component.
+ */
+
 import { type Run, type RunNode, runTree } from 'whitebox-engine/trace'
 
 /** A table as data: column names and rows of cells, for any table component. */

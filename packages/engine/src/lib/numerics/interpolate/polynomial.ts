@@ -1,3 +1,9 @@
+/**
+ * Polynomial interpolation through points: the stable barycentric form (scipy's `BarycentricInterpolator`) and its
+ * weights, the Lagrange power-basis form kept for teaching, Chebyshev and equispaced nodes, Chebyshev interpolants that
+ * avoid the Runge phenomenon, Lebesgue constants, and Runge's function itself.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,

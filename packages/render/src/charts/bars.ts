@@ -1,3 +1,9 @@
+/**
+ * Bar charts as layers and charts: grouped or stacked bars over categories (vertical or horizontal, with error bars),
+ * histograms binned by the engine's `stats.histogram` and drawn as adjoining bars on a value axis, and Pareto charts
+ * (sorted bars with the cumulative share as a line on a second axis).
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import { type HistogramOptions, histogram as histogramOf } from 'whitebox-engine/stats'

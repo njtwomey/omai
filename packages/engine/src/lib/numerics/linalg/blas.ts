@@ -1,5 +1,9 @@
-// Level-1 and level-2 BLAS kernels on plain number arrays, for algorithms that iterate on primal values (Krylov
-// solvers, Lanczos, regularising iterations). Differentiable code uses the tensor operations instead.
+/**
+ * Level-1 and level-2 BLAS kernels on plain number arrays (`ddot`, `dnrm2`, `daxpy`, `dscal`, `dgemv` and friends), for
+ * algorithms that iterate on primal values such as Krylov solvers, Lanczos and regularising iterations. These are the
+ * shared helpers every such algorithm uses instead of local copies; differentiable code uses the tensor operations
+ * instead.
+ */
 
 /**
  * The dot product sum_i x_i y_i (BLAS ddot).

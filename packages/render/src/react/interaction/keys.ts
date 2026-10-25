@@ -1,3 +1,8 @@
+/**
+ * Keyboard capture for figures that play like games: `useHeldKeys` makes a figure focusable and tracks the bound keys
+ * held while it has focus, per press and per frame, without scrolling the page or catching keys meant for inputs.
+ */
+
 import { type FocusEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
 
 /** Props to spread on the element that captures keys: focusable, with the key handlers. */

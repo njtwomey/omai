@@ -1,3 +1,9 @@
+/**
+ * Partial fractions of rational functions, scipy.signal style: `residue` expands b(s)/a(s) into poles, residues and a
+ * direct term (with repeated poles), `residuez` does the same for discrete-time transfer functions in z^-1, and
+ * `invres` rebuilds the rational function from its expansion.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { polydiv, polyroots } from './power.ts'
 

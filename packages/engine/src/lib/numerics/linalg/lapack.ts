@@ -1,6 +1,10 @@
-// Dense LAPACK-style routines on plain row-major number arrays, for algorithms that iterate on primal values
-// (Newton and trust-region methods, quasi-Newton updates, active-set solvers). Differentiable code uses the tensor
-// operations of this folder instead.
+/**
+ * Dense LAPACK-style routines on plain row-major number arrays (`dpotrf`, `dgesv`, `dsyev`, `dgeqrf`, `dgesvd` and
+ * friends), for algorithms that iterate on primal values, such as Newton and trust-region methods, quasi-Newton updates
+ * and active-set solvers. They report failure instead of throwing where LAPACK does; differentiable code uses the
+ * tensor routines of this folder instead.
+ */
+
 import { eighQlKernel, qrKernel, solveKernel, svdKernel, triangularKernel } from './_kernels.ts'
 
 /**

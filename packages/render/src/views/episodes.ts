@@ -1,3 +1,8 @@
+/**
+ * The view of a reinforcement-learning run: every episode's return with its rolling mean and spread, the episode
+ * lengths, and a snapshot of the value function and policy, as a map with arrows for grid worlds.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import type { EpisodeRecord } from 'whitebox-engine/exposition'
 import { bars } from '../charts/bars.ts'

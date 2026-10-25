@@ -1,3 +1,9 @@
+/**
+ * Quadrature of sampled values, numpy and scipy.integrate style: the composite trapezoidal rule and its cumulative
+ * form, composite Simpson's rule (with scipy's treatment of an even number of samples), and Romberg integration, which
+ * extrapolates trapezoid estimates on halving steps and returns its table.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

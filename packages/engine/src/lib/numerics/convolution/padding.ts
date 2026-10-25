@@ -1,3 +1,9 @@
+/**
+ * Padding and border handling: numpy.pad modes (constant, edge, reflect, symmetric, wrap and line statistics),
+ * scipy.ndimage border modes and the translation between their names, and index extension for filters that read past an
+ * array's edges.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   concat,

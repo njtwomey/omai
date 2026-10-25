@@ -1,3 +1,9 @@
+/**
+ * The gamma function family as differentiable elementwise operations, scipy.special style: gamma, its logarithm and
+ * reciprocal, digamma, trigamma and polygamma, the beta function and its logarithm, factorials and binomial
+ * coefficients with their logarithms, extended to real arguments.
+ */
+
 import { add, mul, neg, sub, type TensorLike, type Value } from '../../tensor/index.ts'
 import { special } from './_elementwise.ts'
 import * as k from './_kernels.ts'

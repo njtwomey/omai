@@ -1,3 +1,7 @@
+/**
+ * A segmented control: two to five short options side by side, one press to pick and the arrow keys to move along.
+ */
+
 import type { ReactNode } from 'react'
 import { cx, iconButtonClass, labelClass } from './classes.ts'
 import { ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'

@@ -1,3 +1,9 @@
+/**
+ * Contours of gridded data and of Gaussians: iso-lines of a 2-D array by marching squares (as skimage's
+ * `find_contours`), nice contour levels (as matplotlib's `MaxNLocator`), and the confidence ellipse of a 2-D Gaussian
+ * at a number of standard deviations or a coverage probability.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,

@@ -1,3 +1,8 @@
+/**
+ * The editing behaviour of a typed number field: while focused the input holds a draft validated as it is typed, Enter
+ * or blur commits a valid draft, and an invalid one is refused with its message.
+ */
+
 import { type FocusEvent, type KeyboardEvent, useState } from 'react'
 import { checkNumber, formatFieldValue, type NumberSpec, stepNumber } from './number.ts'
 

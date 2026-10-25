@@ -1,3 +1,9 @@
+/**
+ * Projections between a figure's data coordinates and the pixels of its drawing area, which overlays use to place
+ * handles and read the pointer: a linear projection from ranges and margins, and the projection of one grid of a live
+ * ECharts chart.
+ */
+
 /** A point, in data or pixel coordinates. */
 export type Point2 = readonly [number, number]
 

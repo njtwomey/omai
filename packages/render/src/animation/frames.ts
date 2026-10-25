@@ -1,3 +1,10 @@
+/**
+ * Turning a timeline into pictures: every frame as a scene (structure frames drawn on one steady layout, nodes sized
+ * for every frame's badges), a scene rasterised to RGBA pixels (through SVG and a canvas in the browser, the engine's
+ * software rasteriser in Node, which leaves out text), and `timelineFrames`, the pixel frames GIF and WebM encoding
+ * take.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import {
   type Frame,

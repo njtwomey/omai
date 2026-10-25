@@ -1,3 +1,9 @@
+/**
+ * React views of a group fairness report: the groups' rates, gaps to the reference group and ROC curves with operating
+ * points, a table of summary disparities against their ideals, each group's contingency table, and the rates over a
+ * threshold sweep.
+ */
+
 import { type ReactElement, type ReactNode, useCallback, useMemo } from 'react'
 import type { GroupRateName, GroupReport } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

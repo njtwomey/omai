@@ -1,3 +1,9 @@
+/**
+ * Colour-bar range selection for layers ECharts cannot recolour itself (a heatmap drawn as one image, matrix cells with
+ * baked colours): the selection read from a visual map as soft value weights, colours outside it dimmed towards the
+ * background, and the option update that redraws the selected layer.
+ */
+
 import type { Pixels } from 'whitebox-engine/scene'
 import { pngDataUrl } from '../svg/png.ts'
 

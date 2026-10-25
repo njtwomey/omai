@@ -1,3 +1,9 @@
+/**
+ * Figures of reinforcement-learning and bandit runs: episode returns or lengths as faint points with a rolling mean and
+ * a band of one rolling standard deviation, and cumulative regret (the running sum of the best possible reward minus
+ * the reward received).
+ */
+
 import type { EChartsOption } from 'echarts'
 import { episodes, type Run } from 'whitebox-engine/trace'
 import { modeOf } from '../charts/_data.ts'

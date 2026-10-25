@@ -1,3 +1,9 @@
+/**
+ * Downsampling long series for drawing: largest-triangle-three-buckets (LTTB, which keeps the points that preserve a
+ * curve's visual shape) and min-max decimation (which keeps each bucket's extremes so a noisy envelope survives), with
+ * `decimate` as the default choice.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 
 /** A point `[x, y]`. */

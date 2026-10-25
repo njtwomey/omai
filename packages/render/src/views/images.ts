@@ -1,3 +1,9 @@
+/**
+ * Player frames for `ImageSteps`: at each recorded step a mosaic with a row of small images per group (the data, the
+ * model's reconstructions, its samples from fixed noise) beside the training objective, for autoencoders and generative
+ * models.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import type { ImageSteps } from 'whitebox-engine/exposition'
 import type { Pixels } from 'whitebox-engine/scene'

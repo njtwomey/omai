@@ -1,3 +1,8 @@
+/**
+ * The React view of a linear decomposition (PCA and kin): the biplot of the scores with the loadings as arrows, the
+ * scree with the cumulative share of variance, and the loadings as a matrix.
+ */
+
 import { type ReactElement, useCallback } from 'react'
 import type { ComponentsRecord } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

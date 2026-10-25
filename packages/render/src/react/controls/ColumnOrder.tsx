@@ -1,3 +1,8 @@
+/**
+ * A row of column chips to reorder by dragging (or with Alt and the arrow keys), each with an optional flip toggle, for
+ * the axis order and direction of parallel coordinates or a table's columns.
+ */
+
 import { type KeyboardEvent, type ReactNode, useState } from 'react'
 import { cx, labelClass } from './classes.ts'
 

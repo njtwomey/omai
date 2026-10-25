@@ -1,3 +1,8 @@
+/**
+ * A hook giving the projection of a live chart's axes for an interaction overlay laid over a `Chart`, set once the
+ * chart exists and again whenever it is recreated (as on a change of colour mode).
+ */
+
 import { useCallback, useState } from 'react'
 import { chartProjection, type PixelConverter, type Projection } from './projection.ts'
 

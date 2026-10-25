@@ -1,3 +1,8 @@
+/**
+ * The React component for an ECharts option: `Chart` draws it themed for the colour mode, resizes with its container,
+ * disposes on unmount, forwards events, connects chart groups and answers colour-bar selections.
+ */
+
 import type { EChartsCoreOption, ECharts as EChartsInstance } from 'echarts/core'
 import { type CSSProperties, type ReactElement, useEffect, useRef, useState } from 'react'
 import type { Pixels } from 'whitebox-engine/scene'

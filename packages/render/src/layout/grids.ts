@@ -1,3 +1,8 @@
+/**
+ * Regular graph layouts: nodes on a grid row by row, two-column bipartite layouts (factor graphs, bipartite networks),
+ * and lattices whose row-major node order matches grid graphs and Ising-style models.
+ */
+
 import { type Box, type GraphLayout, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /**

@@ -1,3 +1,9 @@
+/**
+ * Pade approximants and continued fractions: the rational function matching the first terms of a power series
+ * (`scipy.interpolate.pade`), and evaluation of continued fractions by the modified Lentz algorithm, the form many
+ * special functions are computed in.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../../tensor/index.ts'
 import { solve } from '../linalg/index.ts'

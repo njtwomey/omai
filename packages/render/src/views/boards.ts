@@ -1,3 +1,10 @@
+/**
+ * Player frames for boards and populations: a search, solver or simulation on a grid or graph with every cell coloured
+ * by its category at each step (walls, frontier, path, goal and so on) and its metrics, and an evolving population's
+ * generations over the objective's contours with the search distribution and best point, or the best program over its
+ * data.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import type { BoardSteps, PopulationSteps } from 'whitebox-engine/exposition'
 import { covarianceEllipse } from 'whitebox-engine/numerics/geometry'

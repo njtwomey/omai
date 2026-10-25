@@ -1,3 +1,9 @@
+/**
+ * Bessel functions, scipy.special style: the modified Bessel functions I and K of real order with exponentially scaled
+ * forms and an overflow-free log I (the normaliser of von Mises distributions), the ordinary Bessel functions J and Y,
+ * and the common integer-order shortcuts `i0`, `i1`, `i0e` and `i1e`.
+ */
+
 import { abs, add, div, log, maximum, mul, sign, sub, type TensorLike, type Value } from '../../tensor/index.ts'
 import * as b from './_bessel.ts'
 import { special } from './_elementwise.ts'

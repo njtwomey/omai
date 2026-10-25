@@ -1,3 +1,9 @@
+/**
+ * Overlays for animating a traversal of a structure: `traversalFrames` makes each visited node active in turn with the
+ * edge it was reached by and numbers the nodes in visit order, and `searchOrder` gives the breadth-first and
+ * depth-first expansion orders from a root.
+ */
+
 import type { Structure, StructureOverlay } from 'whitebox-engine/scene'
 
 /**

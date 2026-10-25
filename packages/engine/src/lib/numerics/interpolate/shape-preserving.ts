@@ -1,3 +1,9 @@
+/**
+ * Shape-preserving piecewise cubic interpolants: PCHIP (scipy's `PchipInterpolator`), which stays monotone where the
+ * data are and never overshoots, and Akima's interpolant, whose slopes damp the influence of outliers on distant
+ * intervals.
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   abs,

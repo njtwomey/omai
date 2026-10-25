@@ -1,3 +1,8 @@
+/**
+ * Playback controls in one row for a precomputed timeline or a live algorithm: step back, play or pause with a menu of
+ * target frame rates, step forward, a draggable scrubber and an optional time stamp.
+ */
+
 import { type PointerEvent, type ReactNode, useCallback, useRef, useState } from 'react'
 import { cx, iconButtonClass, menuItemClass } from './controls/classes.ts'
 import { ChevronDownIcon, PauseIcon, PlayIcon, StepBackIcon, StepForwardIcon } from './controls/icons.tsx'

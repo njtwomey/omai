@@ -1,3 +1,9 @@
+/**
+ * Integration in several dimensions: iterated adaptive quadrature with limits that may depend on outer variables
+ * (scipy's `nquad`, `dblquad` and `tplquad`), and cubature rules on boxes, tensor-product Gauss rules and Smolyak
+ * sparse grids, which need far fewer points in higher dimensions.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   concat,

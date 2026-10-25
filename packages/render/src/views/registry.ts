@@ -1,3 +1,10 @@
+/**
+ * The registry of standard views: `viewFor` gives each exposition record kind its React component, title, whether it
+ * plays and what it needs beside the record, and `stillOf` draws any record as a headless still (a chart option, or a
+ * scene for trees and pipelines) for slides, blogs and export. It is exhaustive, so a new record kind does not compile
+ * without a view.
+ */
+
 import type { EChartsOption } from 'echarts'
 import type { Exposition, ExpositionKind } from 'whitebox-engine/exposition'
 import type { Scene } from 'whitebox-engine/scene'

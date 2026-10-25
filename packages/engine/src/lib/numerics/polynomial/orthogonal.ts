@@ -1,3 +1,9 @@
+/**
+ * Orthogonal polynomial series, numpy.polynomial style, for the Legendre, Chebyshev, Hermite (both conventions),
+ * Laguerre and Jacobi families: evaluation by Clenshaw's recurrence, pseudo-Vandermonde matrices, least-squares fits,
+ * the Gauss quadrature rule of each family, and conversion to and from the power basis.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

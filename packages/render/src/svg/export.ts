@@ -1,3 +1,9 @@
+/**
+ * Whole-figure export: ECharts options drawn to SVG text by ECharts' server-side renderer, charts and HTML parts
+ * (labels, typeset maths) composed into one SVG document, SVG rasterised to a canvas, a PNG or RGBA pixels in the
+ * browser, and export sizes for the page and for 1920 by 1080 slides.
+ */
+
 import type { EChartsCoreOption } from 'echarts/core'
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Pixels } from 'whitebox-engine/scene'

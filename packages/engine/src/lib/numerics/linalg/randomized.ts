@@ -1,3 +1,10 @@
+/**
+ * Randomised linear algebra: the range finder and truncated SVD of Halko, Martinsson and Tropp (as scikit-learn's
+ * `randomized_svd`), random projection matrices with the Johnson-Lindenstrauss dimension that preserves pairwise
+ * distances, and stochastic estimators for large implicit matrices, Hutchinson's trace estimator and log-determinants
+ * by stochastic Lanczos quadrature.
+ */
+
 import { minOf, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../../random/index.ts'
 import {

@@ -1,4 +1,9 @@
-// KaTeX's stylesheet and fonts, bundled by the consumer's build tool, so HTML output is styled with no setup.
+/**
+ * Typeset maths in React: `Tex` for TeX with the shared macros, `Equation` for a live equation re-typeset as its values
+ * change, `Derivation` for aligned steps with notes, and `MathProvider` for macros and the output markup. KaTeX's
+ * stylesheet and fonts are imported here, so the consumer's bundler styles the HTML output with no setup.
+ */
+
 import 'katex/dist/katex.min.css'
 import './maths.css'
 import { type CSSProperties, createContext, type ReactElement, type ReactNode, useContext, useMemo } from 'react'

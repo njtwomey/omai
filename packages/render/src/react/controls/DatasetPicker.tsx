@@ -1,3 +1,9 @@
+/**
+ * A dataset picker: a select over a dataset collection's entries with arrows to step through them, and for generated
+ * entries a seed and the generator's knobs as controls; `useDataset` generates or loads the chosen dataset once per
+ * change.
+ */
+
 import { type ReactNode, useMemo } from 'react'
 import type { Dataset, Generated } from 'whitebox-engine/data'
 import type { DatasetCollection } from 'whitebox-engine/datasets'

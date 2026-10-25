@@ -1,3 +1,8 @@
+/**
+ * Constraints on where a dragged or added point may go: inside a box, on the graph of a function, on a segment,
+ * polyline or circle, snapped to a grid, along one axis, or several chained in turn.
+ */
+
 import type { Point2 } from './projection.ts'
 
 /** A rule for where a dragged or added point may go: the allowed point nearest to (or standing for) the one asked. */

@@ -1,3 +1,8 @@
+/**
+ * A probe tool: a crosshair that follows the pointer, drawing whatever its children make of the data point under it (a
+ * readout, a marker on a curve, a slice through a field).
+ */
+
 import { type ReactNode, useState } from 'react'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'
 import type { Point2 } from './projection.ts'
