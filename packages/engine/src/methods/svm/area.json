@@ -1,4 +1,0 @@
-{
-  "summary": "Support vector machines: classification, regression, one-class SVMs and SVDD, solved by traced SMO.",
-  "dependsOn": ["kernel-methods"]
-}

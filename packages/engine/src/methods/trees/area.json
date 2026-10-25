@@ -1,4 +1,0 @@
-{
-  "summary": "Decision trees (CART, ID3, C4.5, CHAID) with every candidate split recorded, and cost-complexity pruning.",
-  "dependsOn": []
-}

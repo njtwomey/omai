@@ -1,4 +1,0 @@
-{
-  "summary": "Linear and generalised linear models on one penalised-GLM core: least squares, ridge, lasso, elastic net, logistic and GLM regression, robust, Bayesian and mixed models, statsmodels-style inference.",
-  "dependsOn": []
-}

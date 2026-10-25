@@ -13,9 +13,8 @@ const files: Record<string, string> = {
     description: 'A miniature package.',
     exports: { './*': { source: './src/lib/*/index.ts' } },
   }),
-  'packages/mini/src/lib/core/domain.json': JSON.stringify({ tier: 1, summary: 'The core.', inline: ['ops'] }),
   'packages/mini/src/lib/core/index.ts':
-    "export * from './maths.ts'\nexport * from './ops/index.ts'\nexport * as deep from './deep/index.ts'\n",
+    "/**\n * The core.\n *\n * More about it.\n */\nexport * from './maths.ts'\nexport * from './ops/index.ts'\nexport * as deep from './deep/index.ts'\n",
   'packages/mini/src/lib/core/maths.ts': `/**
  * Add two numbers.
  *
@@ -68,7 +67,7 @@ export class Counter {
   private hidden(): void {}
 }
 `,
-  'packages/mini/src/lib/core/ops/index.ts': "export * from './scale.ts'\n",
+  'packages/mini/src/lib/core/ops/index.ts': "/**\n * Operations.\n *\n * @inline\n */\nexport * from './scale.ts'\n",
   'packages/mini/src/lib/core/ops/scale.ts':
     '/** Scale a number.\n *\n * @param x - The number.\n * @param options - Options.\n */\nexport const scale = (x: number, { by = 2 }: { by?: number } = {}): number => x * by\n',
   'packages/mini/src/lib/core/deep/index.ts': "export * from './deep.ts'\n",
@@ -87,9 +86,17 @@ describe('extractCatalogue', () => {
 
   it('finds entry points: namespaces are their own, inlined folders fold into the parent', () => {
     expect(c.modules.map((m) => m.id)).toEqual(['mini/core', 'mini/core/deep'])
-    expect(c.modules[0]).toMatchObject({ summary: 'The core.', tier: 1, children: ['mini/core/deep'], layer: 'part' })
+    expect(c.modules[0]).toMatchObject({ summary: 'The core.', children: ['mini/core/deep'], layer: 'part' })
     expect(c.packages).toEqual([
       { name: 'mini', description: 'A miniature package.', version: '1.2.3', modules: ['mini/core'] },
+    ])
+  })
+
+  it('reads folder summaries from the doc comment that opens each index.ts', () => {
+    expect(c.folders.map((f) => [f.path, f.module, f.entry, f.summary, f.description])).toEqual([
+      ['packages/mini/src/lib/core', 'mini/core', true, 'The core.', 'More about it.'],
+      ['packages/mini/src/lib/core/ops', 'mini/core', false, 'Operations.', ''],
+      ['packages/mini/src/lib/core/deep', 'mini/core/deep', true, '', ''],
     ])
   })
 

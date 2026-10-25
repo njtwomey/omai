@@ -248,9 +248,12 @@ export function writeDocsData(c: Catalogue): DocsDataReport {
   }
   let typeBytes = 0
   // Paths relative to packages/engine/src, so the tree mirrors the directories: lib/<domain>/..., methods/<area>/...
-  const folders: WireFolder[] = c.modules.map((m) => {
-    const folder = { path: m.layer === 'core' ? `lib/${m.path}` : m.path, module: m.id, summary: m.summary }
-    const types = typesOf.get(m.id)
+  // Every folder with its summary; an entry point's own folder also names its module and its types file.
+  const folders: WireFolder[] = c.folders.map((f) => {
+    const path = f.path.slice(SRC.length)
+    if (!f.entry) return { path, summary: f.summary }
+    const folder = { path, module: f.module, summary: f.summary }
+    const types = typesOf.get(f.module)
     if (types === undefined) return folder
     const text = JSON.stringify(types)
     const name = `types/${hashed(text)}.json`

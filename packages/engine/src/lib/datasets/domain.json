@@ -1,4 +1,0 @@
-{
-  "tier": 10,
-  "summary": "Dataset generators with exact truths, vendored real datasets and themed dataset collections (at the top of the core, so truths can come from any core domain)."
-}

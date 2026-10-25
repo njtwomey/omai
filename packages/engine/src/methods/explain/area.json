@@ -1,4 +1,0 @@
-{
-  "summary": "Explaining fitted models: SHAP and other attributions, inspection (importance, PDP, ICE, ALE), counterfactuals and recourse, surrogates, gradient attributions and data valuation, as exposition records.",
-  "dependsOn": ["trees", "ensemble"]
-}

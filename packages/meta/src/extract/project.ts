@@ -31,9 +31,9 @@ export interface EntryPoint {
   readonly index: string
   /** Absolute paths of the module files it owns: its own and those of the folders folded into it. */
   readonly files: readonly string[]
+  /** Absolute paths of its folder and the folders folded into it (each has an `index.ts` with a summary). */
+  readonly folders: readonly string[]
   readonly parent?: string
-  /** The `domain.json` or `area.json` beside its index, when there is one. */
-  readonly manifest?: { readonly summary?: string; readonly tier?: number }
 }
 
 /** The packages and entry points of a repository. */
@@ -104,19 +104,6 @@ function exposure(index: string): Map<string, 'namespace' | 'flat'> {
   return out
 }
 
-function readManifest(dir: string): EntryPoint['manifest'] {
-  for (const name of ['domain.json', 'area.json']) {
-    const file = join(dir, name)
-    if (!existsSync(file)) continue
-    const m = JSON.parse(readFileSync(file, 'utf8')) as { summary?: unknown; tier?: unknown }
-    return {
-      ...(typeof m.summary === 'string' ? { summary: m.summary } : {}),
-      ...(typeof m.tier === 'number' ? { tier: m.tier } : {}),
-    }
-  }
-  return undefined
-}
-
 function layerOf(pkg: string, path: string): ModuleLayer {
   if (pkg !== 'whitebox-engine') return 'part'
   return path.startsWith('methods/') ? 'methods' : 'core'
@@ -139,13 +126,14 @@ export function readProject(root: string, packages: readonly string[]): Project 
     const exportsMap = pkg.exports ?? {}
     const add = (specifier: string, path: string, entryDir: string, parent?: string): void => {
       const files: string[] = []
+      const folders: string[] = []
       const fold = (d: string): void => {
+        folders.push(d)
         files.push(...moduleFiles(d))
         const shown = exposure(join(d, 'index.ts'))
         for (const s of subdirs(d)) if (shown.get(s) === 'flat') fold(join(d, s))
       }
       fold(entryDir)
-      const manifest = readManifest(entryDir)
       entries.push({
         specifier,
         package: pkg.name,
@@ -154,8 +142,8 @@ export function readProject(root: string, packages: readonly string[]): Project 
         dir: entryDir,
         index: join(entryDir, 'index.ts'),
         files,
+        folders,
         ...(parent === undefined ? {} : { parent }),
-        ...(manifest === undefined ? {} : { manifest }),
       })
       // Namespaced subfolders are entry points of their own; flat ones were folded in above (recursively).
       const walk = (d: string, p: string, spec: string): void => {

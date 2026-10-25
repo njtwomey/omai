@@ -1,1 +1,0 @@
-{ "summary": "Semi-supervised learning: self-training, label propagation and spreading.", "dependsOn": ["neighbours"] }

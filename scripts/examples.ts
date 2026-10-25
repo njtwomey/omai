@@ -9,7 +9,8 @@
  * the time limit (default 20 s) has its worker stopped and replaced. The core (`lib/`) is strict: any failure exits 1.
  * `--methods` also runs the methods' examples, which are optional and reported without failing.
  * `--only` keeps examples whose module (`whitebox-engine/numerics/linalg`) or file (`packages/engine/src/lib/stats`)
- * starts with one of the prefixes. `--coverage` also reports documentation coverage of the core (whitebox-meta/extract).
+ * starts with one of the prefixes. `--coverage` also reports documentation coverage of the core and the
+ * folders and files of every package without a summary (whitebox-meta/extract).
  */
 import { availableParallelism } from 'node:os'
 import { join } from 'node:path'
@@ -92,6 +93,13 @@ async function main(): Promise<void> {
     process.stdout.write(`coverage: ${r.complete} of ${r.symbols} core symbols complete; missing: ${counts}\n`)
     for (const i of r.issues.slice(0, Number(option(args, '--coverage-list') ?? 0)))
       process.stdout.write(`  ${i.file}:${i.line}  ${i.symbol}  ${i.problem}${i.detail === '' ? '' : ` ${i.detail}`}\n`)
+    const { summaryCoverage } = await import('../packages/meta/src/extract/index.ts')
+    const tree = extractCatalogue({ root: ROOT, packages: ['engine', 'render', 'meta', 'hub'] })
+    const s = summaryCoverage(tree)
+    process.stdout.write(
+      `summaries: ${s.folders - s.missingFolders.length} of ${s.folders} folders, ${s.files - s.missingFiles.length} of ${s.files} files\n`,
+    )
+    for (const path of [...s.missingFolders, ...s.missingFiles]) process.stdout.write(`  no summary: ${path}\n`)
   }
   const only = option(args, '--only')
     ?.split(',')

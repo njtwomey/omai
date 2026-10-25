@@ -1,4 +1,0 @@
-{
-  "summary": "Generalised additive models: smooth terms, tensor products, penalised fitting and smoothness selection.",
-  "dependsOn": ["linear"]
-}

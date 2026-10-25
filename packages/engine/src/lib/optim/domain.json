@@ -1,5 +1,0 @@
-{
-  "tier": 7,
-  "summary": "Gradient transformations, optimisers, schedules, minimisation, programming, sparse approximation, transport and implicit differentiation.",
-  "inline": ["minimize"]
-}

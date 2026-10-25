@@ -1,5 +1,0 @@
-{
-  "tier": 6,
-  "summary": "Probability distributions with densities, CDFs, quantiles, moments, sampling and reparameterised sampling.",
-  "inline": ["continuous", "discrete", "multivariate"]
-}

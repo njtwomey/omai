@@ -56,7 +56,7 @@ Version 1 is kept at `docs/history/structure-v1.md`.
 
 | note                                                     | answer                                                                                                                                                                                                                                                                                                                                |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Data is not in the tiers                                 | It is: `lib/data` (tier 5). The tier table in section 4 now gives every domain a one-line purpose.                                                                                                                                                                                                                                    |
+| Data is not in the tiers                                 | It is: `lib/data`. The domain table in section 4 now gives every domain a one-line purpose.                                                                                                                                                                                                                                           |
 | Model architectures                                      | `methods/neural/` is now organised by modality with named architectures (ResNet, U-Net, ViT, GPT, BERT, T5, Mamba, GNNs, ...); reusable blocks are in `lib/nn/blocks/`; any model draws itself through `lib/nn/describe.ts`.                                                                                                          |
 | Feature unions, pipelines, scalers                       | `lib/learn/compose.ts` (pipeline, featureUnion, columnTransformer, transformedTarget) and `lib/learn/preprocessing/` (scalers with fitted parameters as data, encoders, imputers, feature maps).                                                                                                                                      |
 | Dimensionality reduction (UMAP etc.)                     | `methods/manifold/` (UMAP, t-SNE, PaCMAP, Isomap, LLE, MDS, spectral embedding, diffusion maps, SOM) and `methods/decomposition/` (PCA family, ICA, NMF, factor analysis, CCA/PLS, random projections).                                                                                                                               |
@@ -140,8 +140,21 @@ folder contents, so adding a file never edits another file.
 applications: named models, algorithms, environments, datasets and studies, each built from the core. The core never
 imports methods.
 
-**Layering.** Each core domain has a `domain.json` with a tier and may import only lower tiers. Each methods area has
-an `area.json` naming the areas it may import. A generated dependency-cruiser configuration enforces both.
+**Layering.** Core domains import one another without cycles, and so do methods areas: if `stats` imports `dists`,
+nothing `dists` imports may lead back to `stats`. There is no declared order; the import graph is the order, and
+`make layers` (`scripts/layers.ts`) fails with the path of any cycle. The core never imports methods; the package rules
+of section 1 hold too.
+
+**Summaries live in the code.** The source explains itself, with no metadata files beside it:
+- A folder's summary is the doc comment that opens its `index.ts`: a short paragraph on what the folder is and what
+  you will find in it (not an index of its files). The barrel generator keeps it and writes the exports below it. A
+  subfolder re-exported flat into its parent's entry point (`tensor/ops` into `whitebox-engine/tensor`) carries the
+  `@inline` tag in its summary.
+- A file opens with its own paragraph: what the file is and what to expect in it (for `shapley.ts`, what Shapley
+  values are and which explainers it provides), as a doc comment followed by a blank line or the imports. No to-do
+  lists and no lists of every export; hub entries under `collections/` can be one line.
+- `make barrels` fails on a folder or a module file without one; whitebox-meta reads both into the catalogue, and the
+  docs show them on folder and file pages.
 
 **One canonical home.** Every function has exactly one defining file. Another entry point may re-export it as an alias
 (the docs record the canonical home), but nothing is implemented twice. Where two names would collide in meaning (a
@@ -347,53 +360,55 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. whitebox-engine core, `packages/engine/src/lib/`
 
-The core has 41 domains in 11 tiers. A domain may import only domains in lower tiers.
+The core has 41 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
+`index.ts`.
 
-| tier | domain        | purpose                                                                                                                                                                                          |
-| ---: | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-|    0 | `base`        | errors, JSON, shared result shapes, scalar helpers, version                                                                                                                                      |
-|    1 | `scene`       | drawings (`Scene`), 3-D layers, rasters and graph-shaped descriptions (`Structure`) as data                                                                                                      |
-|    1 | `tensor`      | arrays, dtypes, shapes, primitives with derivative rules, backends, operations, pytrees                                                                                                          |
-|    2 | `random`      | immutable counter-based keys and samplers                                                                                                                                                        |
-|    2 | `symbolic`    | symbolic expressions: simplification, differentiation, series, integration, LaTeX                                                                                                                |
-|    2 | `exposition`  | typed exposition records that methods return and render draws (paths, trees, stages, steps, trials, episodes)                                                                                    |
-|    3 | `autodiff`    | reverse, forward and Taylor-mode differentiation, vectorisation, gradient checks                                                                                                                 |
-|    3 | `trace`       | algorithms, trace schemas and policies, events, recording, replay                                                                                                                                |
-|    3 | `space`       | typed spaces for parameters, knobs, observations and actions                                                                                                                                     |
-|    4 | `context`     | seeds, named keys, tracer and policy defaults                                                                                                                                                    |
-|    5 | `numerics`    | special functions, linear algebra, sparse, polynomials, quadrature, roots, interpolation, Fourier, convolution, geometry, nearest neighbours, approximation, inverse problems                    |
-|    5 | `data`        | dataset schemas, generators and truth, loading, batching, splits, modifiers                                                                                                                      |
-|    6 | `foundations` | mathematical foundations: trigonometry, vectors, rotations, curves, surfaces, calculus, series, linear algebra with steps, number theory, combinatorics, complex numbers, elementary probability |
-|    6 | `graph`       | graphs and graph algorithms, graph signal processing                                                                                                                                             |
-|    6 | `dists`       | distributions, bijectors, exponential families, GLM families, copulas                                                                                                                            |
-|    6 | `information` | entropy, divergences, mutual information estimators, source and channel coding, compression                                                                                                      |
-|    6 | `systems`     | linear time-invariant systems: representations, responses, stability, discretisation                                                                                                             |
-|    6 | `worlds`      | discrete worlds: grid and graph maps, mazes and generators, terrain and rules, agents moving discretely or continuously                                                                          |
-|    7 | `stats`       | descriptive statistics, tests, resampling, density estimation, smoothing bases                                                                                                                   |
-|    7 | `optim`       | optimisers, minimisation, programming, sparse approximation, transport, implicit differentiation                                                                                                 |
-|    7 | `kernels`     | kernel functions, compositions and explicit feature maps                                                                                                                                         |
-|    7 | `signal`      | signal and image processing, spectral and time-frequency analysis, audio features                                                                                                                |
-|    7 | `text`        | normalisation, tokenisation, subwords, shingles, vectorisers, similarity, parsing, fingerprinting                                                                                                |
-|    7 | `search`      | state-space search, local and evolutionary search, adversarial search, constraint satisfaction, planning, refinement search                                                                      |
-|    7 | `stochastic`  | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures                                                                                                |
-|    7 | `sampling`    | Monte Carlo samplers and diagnostics                                                                                                                                                             |
-|    7 | `graphics`    | rendering mathematics: ray casting over worlds, ray tracing, cameras, shading, textures, rasterisation                                                                                           |
-|    8 | `logic`       | terms, unification, resolution, Datalog, SAT, first-order proving, ILP                                                                                                                           |
-|    8 | `dynamics`    | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification                                                                                                               |
-|    8 | `pgm`         | graphical models, their inference and learning, causal graphs                                                                                                                                    |
-|    8 | `metrics`     | evaluation metrics in sixteen categories, with intervals and comparisons                                                                                                                         |
-|    8 | `losses`      | differentiable training objectives and regularisers                                                                                                                                              |
-|    8 | `rl`          | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                     |
-|    8 | `games`       | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                     |
-|    9 | `probprog`    | probabilistic programs, model analysis, inference engines and the planner, posteriors                                                                                                            |
-|    9 | `learn`       | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                |
-|    9 | `nn`          | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                             |
-|   10 | `tune`        | studies, objectives, samplers, pruners, multi-fidelity schedules                                                                                                                                 |
-|   10 | `datasets`    | dataset generators with exact truths, vendored real datasets, themed dataset collections                                                                                                         |
-|   10 | `explain`     | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                            |
-|   10 | `fairness`    | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                     |
+| domain        | purpose                                                                                                                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `base`        | errors, JSON, shared result shapes, scalar helpers, version                                                                                                                                      |
+| `scene`       | drawings (`Scene`), 3-D layers, rasters and graph-shaped descriptions (`Structure`) as data                                                                                                      |
+| `tensor`      | arrays, dtypes, shapes, primitives with derivative rules, backends, operations, pytrees                                                                                                          |
+| `random`      | immutable counter-based keys and samplers                                                                                                                                                        |
+| `symbolic`    | symbolic expressions: simplification, differentiation, series, integration, LaTeX                                                                                                                |
+| `exposition`  | typed exposition records that methods return and render draws (paths, trees, stages, steps, trials, episodes)                                                                                    |
+| `autodiff`    | reverse, forward and Taylor-mode differentiation, vectorisation, gradient checks                                                                                                                 |
+| `trace`       | algorithms, trace schemas and policies, events, recording, replay                                                                                                                                |
+| `space`       | typed spaces for parameters, knobs, observations and actions                                                                                                                                     |
+| `context`     | seeds, named keys, tracer and policy defaults                                                                                                                                                    |
+| `numerics`    | special functions, linear algebra, sparse, polynomials, quadrature, roots, interpolation, Fourier, convolution, geometry, nearest neighbours, approximation, inverse problems                    |
+| `data`        | dataset schemas, generators and truth, loading, batching, splits, modifiers                                                                                                                      |
+| `foundations` | mathematical foundations: trigonometry, vectors, rotations, curves, surfaces, calculus, series, linear algebra with steps, number theory, combinatorics, complex numbers, elementary probability |
+| `graph`       | graphs and graph algorithms, graph signal processing                                                                                                                                             |
+| `dists`       | distributions, bijectors, exponential families, GLM families, copulas                                                                                                                            |
+| `information` | entropy, divergences, mutual information estimators, source and channel coding, compression                                                                                                      |
+| `systems`     | linear time-invariant systems: representations, responses, stability, discretisation                                                                                                             |
+| `worlds`      | discrete worlds: grid and graph maps, mazes and generators, terrain and rules, agents moving discretely or continuously                                                                          |
+| `stats`       | descriptive statistics, tests, resampling, density estimation, smoothing bases                                                                                                                   |
+| `optim`       | optimisers, minimisation, programming, sparse approximation, transport, implicit differentiation                                                                                                 |
+| `kernels`     | kernel functions, compositions and explicit feature maps                                                                                                                                         |
+| `signal`      | signal and image processing, spectral and time-frequency analysis, audio features                                                                                                                |
+| `text`        | normalisation, tokenisation, subwords, shingles, vectorisers, similarity, parsing, fingerprinting                                                                                                |
+| `search`      | state-space search, local and evolutionary search, adversarial search, constraint satisfaction, planning, refinement search                                                                      |
+| `stochastic`  | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures                                                                                                |
+| `sampling`    | Monte Carlo samplers and diagnostics                                                                                                                                                             |
+| `graphics`    | rendering mathematics: ray casting over worlds, ray tracing, cameras, shading, textures, rasterisation                                                                                           |
+| `logic`       | terms, unification, resolution, Datalog, SAT, first-order proving, ILP                                                                                                                           |
+| `dynamics`    | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification                                                                                                               |
+| `pgm`         | graphical models, their inference and learning, causal graphs                                                                                                                                    |
+| `metrics`     | evaluation metrics in sixteen categories, with intervals and comparisons                                                                                                                         |
+| `losses`      | differentiable training objectives and regularisers                                                                                                                                              |
+| `rl`          | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                     |
+| `games`       | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                     |
+| `probprog`    | probabilistic programs, model analysis, inference engines and the planner, posteriors                                                                                                            |
+| `learn`       | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                |
+| `nn`          | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                             |
+| `tune`        | studies, objectives, samplers, pruners, multi-fidelity schedules                                                                                                                                 |
+| `datasets`    | dataset generators with exact truths, vendored real datasets, themed dataset collections                                                                                                         |
+| `explain`     | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                            |
+| `fairness`    | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                     |
 
-### 4.1 `base/` (tier 0)
+### 4.1 `base/`
 
 - `errors.ts`: `WhiteboxError` (codes: shape, dtype, value, domain, schema, convergence, singular, not-implemented,
   not-differentiable), `isWhiteboxError`, `invariant`, `assertShape`, `assertFinite`.
@@ -412,9 +427,9 @@ The core has 41 domains in 11 tiers. A domain may import only domains in lower t
   `resolveConfidenceLevel`).
 - `version.ts`: `VERSION`, generated from `package.json`.
 
-### 4.2 `scene/` (tier 1): pictures and structures as data
+### 4.2 `scene/`: pictures and structures as data
 
-Tier 1 rather than 0 so that it can use `base` (errors, `clamp`, `maxOf`); nothing below it draws.
+It uses `base` (errors, `clamp`, `maxOf`) and nothing else, so every other domain can describe pictures.
 - `types.ts`: `Scene`, `SceneNode` (rect, circle, ellipse, line (an arrow is a line with a head), path (a polygon is a
   closed path), text, tex, image, group, `layer3d`: a 3-D scene and camera drawn into a box), `Style` (with the default
   fill and stroke rules every renderer follows), `ThemeToken` (`fg`, `bg`, `surface`, `muted`, `grid`, `accent`,
@@ -443,7 +458,7 @@ Tier 1 rather than 0 so that it can use `base` (errors, `clamp`, `maxOf`); nothi
 oracle: none (no reference library shares these conventions); checked by unit tests and properties (transforms
 compose, projections are affine or perspective-consistent, painter's order, exact pixel coverage)
 
-### 4.3 `tensor/` (tier 1): arrays and differentiable primitives (numpy, torch.Tensor, jax.numpy)
+### 4.3 `tensor/`: arrays and differentiable primitives (numpy, torch.Tensor, jax.numpy)
 
 oracle: numpy, jax for derivative rules
 - `dtype.ts`: `DType` (float64, float32, int32, bool; complex values are pairs, see `complex.ts`), `Storage<D>`,
@@ -492,7 +507,7 @@ oracle: numpy, jax for derivative rules
   `treeCount`, `ravel` (returns the flat vector and its `unravel`).
 - `format.ts`: `formatTensor` (numpy-style display), `tensorToJson`, `tensorFromJson`.
 
-### 4.4 `random/` (tier 2): keys and samplers (jax.random, numpy.random)
+### 4.4 `random/`: keys and samplers (jax.random, numpy.random)
 
 oracle: Random123 known-answer vectors; scipy.stats.qmc for the sequences (unscrambled Sobol' and Halton exactly; mean
 discrepancy and fill counts for the randomised ones); scipy.stats quantiles for distributional checks of every sampler
@@ -520,7 +535,7 @@ discrepancy and fill counts for the randomised ones); scipy.stats quantiles for 
   binomial kernels), `_sobol.ts` (direction numbers, scramble, Gray-code generation) and `sobol-directions.data.ts`
   (the packed Joe-Kuo table for 1111 dimensions, vendored by `oracle/datasets/sobol_directions.py`).
 
-### 4.5 `symbolic/` (tier 2): a small computer algebra system (SymPy)
+### 4.5 `symbolic/`: a small computer algebra system (SymPy)
 
 For the mathematical foundations: exact expressions that can be simplified, differentiated, expanded in series,
 integrated where a rule applies, typeset, and compiled into differentiable numeric functions. Every rewrite returns its
@@ -603,7 +618,7 @@ lambdify values)
 - Private: `_rational.ts` (bigint rationals, integer roots and factorisation), `_node.ts` (raw nodes and keys),
   `_canon.ts` (the canonicalising constructors), `_assume.ts` (three-valued assumption queries), `_functions.ts`
   (automatic evaluation of known functions), `_order.ts` (SymPy's sort keys and printing order), `_numeric.ts` (real
-  and complex evaluation, adaptive Gauss-Kronrod: numerics is a higher tier), `_measure.ts` (operation counts and
+  and complex evaluation, adaptive Gauss-Kronrod: numerics imports symbolic, not the reverse), `_measure.ts` (operation counts and
   numeric equivalence), `_expand.ts`, `_rational-functions.ts` (together, cancel, apart), `_trigsimp.ts`, `_poly.ts`
   (sparse polynomials, dense univariate helpers, generators with SymPy's `decompose_power`, so exp(2*x) is exp(x)^2;
   gcds with modular coprimality checks and primitive remainder sequences), `_zpoly.ts` (dense polynomials over Z and
@@ -611,7 +626,7 @@ lambdify values)
   (truncated Laurent series engine), `_integrals.ts` (tables, rational and trigonometric rules), `_latex-parse.ts`,
   `_budget.ts` (work budgets: frames, charges and fallbacks).
 
-### 4.6 `autodiff/` (tier 3): differentiation transforms (jax, torch.func)
+### 4.6 `autodiff/`: differentiation transforms (jax, torch.func)
 
 oracle: jax and torch for derivative values; finite differences in property tests
 - `reverse.ts`: the reverse-mode trace (one node per traced value, recorded by the values themselves), `backward` (the
@@ -640,7 +655,7 @@ oracle: jax and torch for derivative values; finite differences in property test
   `checkPrimitive` (the conformance harness every primitive must pass: finite-difference vjp and jvp, the dot-product
   test, vmap against a loop with the batch first and last, inputs not mutated).
 
-### 4.7 `trace/` (tier 3): recording what algorithms do
+### 4.7 `trace/`: recording what algorithms do
 
 - `events.ts`: event types `run`, `metric`, `tensor` (role: param, grad, state, activation, output, with full values,
   a summary, or a summary plus an indexed subsample), `message`, `episode`, `frame`, `checkpoint`, `log`, `end`; `Run`;
@@ -671,7 +686,7 @@ oracle: jax and torch for derivative values; finite differences in property test
 
 oracle: numpy for `summaries.ts` (moments, norms, `np.histogram`); the rest by unit and property tests
 
-### 4.8 `space/` (tier 3): typed spaces (gymnasium.spaces, Optuna distributions, ConfigSpace)
+### 4.8 `space/`: typed spaces (gymnasium.spaces, Optuna distributions, ConfigSpace)
 
 - `types.ts`: `Space` union (`real` with bounds, log scale and step; `int`; `choice`; `bool`; `box`; `discrete`;
   `multiDiscrete`; `multiBinary`; `tuple`; `dict`; conditional dimensions through `when` on a dict child, which may
@@ -685,7 +700,7 @@ oracle: numpy for `summaries.ts` (moments, norms, `np.histogram`); the rest by u
 
 oracle: none; checked by properties (samples, neighbours and decoded values stay in the space, encodings round-trip)
 
-### 4.9 `context/` (tier 4): reproducibility and defaults
+### 4.9 `context/`: reproducibility and defaults
 
 - `context.ts`: `Context` (seed, key derivation, tracer, trace policy, backend, default dtype, tolerances),
   `createContext`, `ctx.key(...names)`, `derive(ctx, name)` (child contexts with a namespaced key path).
@@ -693,7 +708,7 @@ oracle: none; checked by properties (samples, neighbours and decoded values stay
   convenience layers).
 - `resolve.ts`: `resolveKey(options, name)`, `resolveTracer(options)`, `resolvePolicy(options)`: the uniform rules every
   high-level function uses.
-### 4.10 `numerics/` (tier 5): numerical methods (scipy, numpy.linalg)
+### 4.10 `numerics/`: numerical methods (scipy, numpy.linalg)
 
 oracle: numpy, scipy
 
@@ -850,7 +865,7 @@ primitives; "custom" means a dedicated rule.
 - `parameter-choice.ts`: `lCurve` (Hansen's curvature), `gcv`, `discrepancyPrinciple`, `quasiOptimality`,
   `lambdaGrid`.
 
-### 4.11 `data/` (tier 5): datasets, generators and truth (torch.utils.data, sklearn.datasets)
+### 4.11 `data/`: datasets, generators and truth (torch.utils.data, sklearn.datasets)
 
 One schema per task kind. Each schema declares its per-row fields, so one `take` and one `split` work for all of them.
 Every schema file also has a validating constructor that fills defaults (names, metadata). `schema/` and `modifiers/`
@@ -885,7 +900,7 @@ are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `M
   `regressionFunction`, `quantile`, `noiseScale`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`
   (`CausalEffects`: ATE, ATT, CATE, ITE, potential outcomes), `structure`, `relevantFeatures`; helpers that derive
   missing pieces: `completeTruth`, `posteriorFromJoint` (Bayes' rule from the joint density), `bayesErrorEstimate`,
-  `bayesPredict`, `clusterAgreement`, `excessRisk`. Programs live in a higher tier, so `GeneratingProgram` is the
+  `bayesPredict`, `clusterAgreement`, `excessRisk`. `probprog` imports `data`, so `GeneratingProgram` is the
   structural contract a program over rows `{ x, y, n }` satisfies (its feature and target sites, per-row `logProb`,
   `posterior` for classification programs, `regressionFunction`, `sample`); `probprog.generatingProgram` builds one, and
   `completeTruth` derives the log density, posterior and regression function from it. Modifiers that change how the
@@ -911,7 +926,7 @@ are inlined into `whitebox-engine/data`. Each modifier also comes as a recipe `M
 - `modifiers/shift.ts`: `withCovariateShift` (with the density ratio), `withConceptDrift` (sudden, gradual,
   recurring), `shiftedSplit`, `semiSupervisedSplit`.
 
-### 4.12 `foundations/` (tier 6): mathematical foundations
+### 4.12 `foundations/`: mathematical foundations
 
 The mathematics underneath machine learning, written so each idea can be computed, drawn and stepped through.
 Functions that teach a procedure (elimination, Euclid's algorithm, Newton's method) return their steps. Geometry and
@@ -998,7 +1013,7 @@ oracle: sympy, numpy, scipy (and scipy.spatial.transform, sympy.geometry, sympy.
   variables), sums by convolution (`sumPmf`, `sumDensity`, `diceSum`).
 - `_extrapolate.ts` (private): Richardson extrapolation of sampled sequences, shared by limits and the series tests.
 
-### 4.13 `graph/` (tier 6): graphs and their algorithms (NetworkX, scipy.sparse.csgraph)
+### 4.13 `graph/`: graphs and their algorithms (NetworkX, scipy.sparse.csgraph)
 
 oracle: networkx, scipy.sparse.csgraph, numpy and scipy (heat kernels, Chebyshev filters, spectra), checked as
 canonical forms where answers are not unique (sorted sets, partitions up to relabelling, modularity values, path costs,
@@ -1062,11 +1077,11 @@ in it (`checkPrimitive`).
   connected-sequential BFS/DFS, DSATUR), `isProperColouring`, `maximalIndependentSet`, `maximalCliques`
   (Bron-Kerbosch with Tomita pivoting), `maximumClique`, `cliqueNumber`.
 
-The graph machinery in `pgm/graphs.ts` and `pgm/triangulation.ts` (tier 8) predates this domain and works on
+The graph machinery in `pgm/graphs.ts` and `pgm/triangulation.ts` predates this domain and works on
 string-named adjacency maps; `pgm.connectedComponents`, `topologicalOrder` and `maximalCliques` can later delegate to
 `graph.connectedComponents`, `graph.topologicalSort` and `graph.maximalCliques`.
 
-### 4.14 `dists/` (tier 6): distributions (scipy.stats, torch.distributions, NumPyro)
+### 4.14 `dists/`: distributions (scipy.stats, torch.distributions, NumPyro)
 
 oracle: scipy.stats, torch.distributions
 
@@ -1125,7 +1140,7 @@ Reparameterisation comes in three forms:
 - `multivariate/archimedean-copulas.ts`: `claytonCopula`, `gumbelCopula`, `frankCopula` in any dimension (CDFs,
   closed-form or mixed-partial densities, Marshall-Olkin and conditional sampling, Kendall's tau).
 - `multivariate/copula-fitting.ts`: `pseudoObservations`, `kendallTauMatrix`, `fitCopula` (inversion of Kendall's
-  tau). Its tau-b stays private: stats' `kendallTau` is tier 7, above dists.
+  tau). Its tau-b stays private: stats imports dists, so dists cannot use stats' `kendallTau`.
 - `compose/mixture.ts`: `Mixture`, `mixture`, `mixtureSameFamily`, `responsibilities` (implicitly reparameterised
   draws, numerical quantiles, mode and entropy for univariate mixtures).
 - `compose/structure.ts`: `independent`, `truncated` (continuous and discrete bases), `censored`, `transformed`,
@@ -1162,7 +1177,7 @@ Reparameterisation comes in three forms:
   `gamlssWeibull`, `gamlssBeta`, `gamlssPoisson`, `gamlssNegativeBinomial`, `gamlssZeroInflatedPoisson`);
   cumulative-link ordinal families (`ordinalFamily` with logit, probit, cloglog, loglog and cauchit links).
 
-### 4.15 `information/` (tier 6): information theory and coding
+### 4.15 `information/`: information theory and coding
 
 oracle: scipy.stats.entropy, scipy.special (rel_entr, kl_div), sklearn mutual information, pyitlib (plug-in
 conditional and co-information), npeet for k-NN estimators, zlib and gzip (byte-exact DEFLATE), bitarray (Huffman),
@@ -1206,7 +1221,7 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
 - `complexity.ts`: normalised compression distance (any compressor) and distance matrices, Lempel-Ziv complexity,
   block entropies and entropy rate (plug-in and of a Markov chain), approximate and sample entropy.
 
-### 4.16 `systems/` (tier 6): linear time-invariant systems (scipy.signal LTI, python-control)
+### 4.16 `systems/`: linear time-invariant systems (scipy.signal LTI, python-control)
 
 oracle: scipy.signal, python-control
 
@@ -1246,7 +1261,7 @@ coefficients, and so are the conversions between them, the responses and the dis
 - TODO: invariant zeros of non-square multivariable systems (they need the staircase reduction of the system pencil).
 - Pole placement and LQR live in `dynamics/control` (section 4.26).
 
-### 4.17 `stats/` (tier 7): statistics (scipy.stats, statsmodels, pingouin)
+### 4.17 `stats/`: statistics (scipy.stats, statsmodels, pingouin)
 
 oracle: scipy.stats, statsmodels, pingouin, patsy (smoothing bases), pandas (running windows)
 
@@ -1268,7 +1283,7 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
 - `correlation.ts`: `pearson`, `spearman`, `kendallTau` (tau-b and tau-c, O(n log n), exact null without ties), `cov`
   (frequency and analytic weights), `corrcoef`, `partialCorrelation`, `pointBiserial`, `distanceCorrelation`, each with
   intervals. metrics' `pearsonCorrelation`, `spearmanCorrelation` and `kendallTau` delegate here. dists'
-  `kendallTauMatrix` (copula fitting, tier 6) keeps a private tau-b because it cannot import this tier.
+  `kendallTauMatrix` (copula fitting, in `dists`) keeps a private tau-b because dists cannot import stats.
 - `covariance.ts`: `empiricalCovariance`, `ledoitWolf`, `oas`, `shrunkCovariance`.
 - `density.ts`: `gaussianKde` (univariate and multivariate, weights, boundary reflection, resampling), `scottFactor`,
   `silvermanFactor`, `bandwidthScott`, `bandwidthSilverman`, `bandwidthCriterion`, `bandwidthCrossValidation`.
@@ -1328,14 +1343,14 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
 TODO (deferred, esoteric):
 - `tests/bayesian.ts`: the Gauss hypergeometric series behind `bayesFactorPearson` is private; move it to
   `numerics/special` when that domain gains hypergeometric functions.
-- `tests/bayesian.ts`: `highestDensityInterval` should alias `sampling`'s HDI once that tier-7 domain has one (same
-  tier, so stats cannot import it today).
+- `tests/bayesian.ts`: `highestDensityInterval` should alias `sampling`'s HDI once that domain has one
+  (sampling imports stats, so stats cannot import it today).
 - `tests/distribution.ts`: `andersonDarling` lacks scipy's `weibull_min` (its critical values depend on a fitted
   shape).
 - `smoothing/bases.ts`: `tp`, `duchon` and `gp` take the full eigen-decomposition of the kernel matrix (mgcv
   subsamples beyond 2000 points; add that when large data needs it).
 
-### 4.18 `optim/` (tier 7): optimisation (optax, torch.optim, scipy.optimize)
+### 4.18 `optim/`: optimisation (optax, torch.optim, scipy.optimize)
 
 oracle: torch.optim, optax, scipy.optimize, cvxpy for small LPs and QPs, pot for transport
 
@@ -1525,7 +1540,7 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   `implicitFixedPoint` (equilibrium layers, default fixed-point solver), `implicitArgmin` (optimisation layers through
   the stationarity condition, default inner `minimize`).
 
-### 4.19 `kernels/` (tier 7): kernels and feature maps (sklearn kernels, GPyTorch)
+### 4.19 `kernels/`: kernels and feature maps (sklearn kernels, GPyTorch)
 
 oracle: scikit-learn, gpytorch, scipy, networkx (numpy closed forms for arc-cosine and NTK: neural-tangents does not
 import with the installed jax)
@@ -1550,7 +1565,7 @@ import with the installed jax)
   `mmdSquared` (biased, unbiased, linear-time), `effectiveDimension`, `kernelPca` projections, `pairwiseKernels`
   (scikit-learn's metric names and parameters).
 
-### 4.20 `signal/` (tier 7): signal and image processing (scipy.signal, scipy.ndimage, pywt, librosa)
+### 4.20 `signal/`: signal and image processing (scipy.signal, scipy.ndimage, pywt, librosa)
 
 oracle: scipy.signal, scipy.ndimage, pywt, librosa, scikit-image, stumpy
 
@@ -1649,7 +1664,7 @@ representations are in `optim/sparse.ts`.
 - `image/motion.ts`: template matching (normalised cross-correlation), phase correlation, block matching, dense
   Lucas-Kanade and traced Horn-Schunck optical flow. TODO: pyramidal iterative Lucas-Kanade and TV-L1.
 
-### 4.21 `text/` (tier 7): text processing (HF tokenizers, nltk, sklearn.feature_extraction.text)
+### 4.21 `text/`: text processing (HF tokenizers, nltk, sklearn.feature_extraction.text)
 
 oracle: HF tokenizers, tiktoken's patterns (with the `regex` module), nltk, scikit-learn, rapidfuzz, datasketch, gensim,
 jellyfish, Biopython, pyphen
@@ -1721,7 +1736,7 @@ jellyfish, Biopython, pyphen
 - `statistics.ts`: Zipf (log-log and maximum likelihood) and Heaps fits, type-token ratios (root, log, moving average,
   hapax ratio), tokeniser fertility and compression ratio, topic coherence (UMass, NPMI as gensim).
 
-### 4.22 `search/` (tier 7): search, constraint satisfaction and planning (AIMA)
+### 4.22 `search/`: search, constraint satisfaction and planning (AIMA)
 
 oracle: aima-python (typed ports of its search, game and AC-3 code in `oracle/whitebox_oracle/aima_*.py`, since it is
 not packaged; expansion, goal-test, generation and node counts match exactly under its tie-break by state order) and
@@ -1784,7 +1799,7 @@ frontiers reuse `graph`'s `BinaryHeap`.
   Sudoku, SEND+MORE=MONEY) are in `packages/engine/src/testing/search.ts`; the named puzzles and domains for users are
   `methods/gofai`.
 
-### 4.23 `stochastic/` (tier 7): stochastic processes and stochastic calculus
+### 4.23 `stochastic/`: stochastic processes and stochastic calculus
 
 oracle: closed-form moments and transition densities (scipy.stats); sdeint with shared Brownian increments; scipy.linalg
 for chains; scikit-learn for GP regression; nolds for Hurst estimators; astropy for Ripley's K; DPPy for DPPs. Simulated
@@ -1830,7 +1845,7 @@ reparameterisations, which finite differences cannot see, by the unbiasedness of
 - `levy.ts`: compound Poisson, alpha-stable (Chambers-Mallows-Stuck sampling, densities and CDFs by Fourier inversion)
   and variance-gamma processes.
 
-### 4.24 `sampling/` (tier 7): Monte Carlo (NumPyro and BlackJAX kernels, ArviZ diagnostics)
+### 4.24 `sampling/`: Monte Carlo (NumPyro and BlackJAX kernels, ArviZ diagnostics)
 
 oracle: ArviZ (arviz-stats) for every diagnostic and for PSIS on fixed chains; BlackJAX for the mechanics that are
 deterministic given the same inputs (integrator trajectories, the U-turn criterion, dual averaging, the warm-up schedule,
@@ -1876,8 +1891,8 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   `autocorrelation.ts` (`autocovariance`, `autocorrelation` by FFT); `intervals.ts` (`hdi`, also circular, `hdiModes` for
   discrete draws, `eti`; `stats`'s `highestDensityInterval` aliases `hdi`); `reports.ts` (`summary`, `bfmi`,
   `divergenceReport`, `treeDepthReport`, `diagnose`). TODO: multimodal HDI of continuous draws needs a density estimate
-  (ArviZ uses an ISJ-bandwidth KDE, which lives in `stats`, the same tier), and circular MCSE.
-### 4.25 `logic/` (tier 8): logic programming, satisfiability and ILP
+  (ArviZ uses an ISJ-bandwidth KDE, which lives in `stats`), and circular MCSE.
+### 4.25 `logic/`: logic programming, satisfiability and ILP
 
 oracle: python-sat (Glucose satisfiability, model counts by enumeration, MUSX cores, RC2 MaxSAT optima); clingo
 (least and perfect models of Datalog programs, answer sets); sympy.logic (models, validity, entailment, minimal sum and
@@ -1918,7 +1933,7 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
   `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of
   terms, formulas and CNF are in `packages/engine/src/testing/logic.ts`.
 
-### 4.26 `dynamics/` (tier 8): differential equations, nonlinear dynamics, control and filtering (scipy.integrate, diffrax, python-control, filterpy)
+### 4.26 `dynamics/`: differential equations, nonlinear dynamics, control and filtering (scipy.integrate, diffrax, python-control, filterpy)
 
 oracle: scipy.integrate and scipy.signal, torchdiffeq (adjoint gradients), python-control, filterpy, ruptures, pysindy,
 nolds; numpy for DMD and the PDE references. Tests never run Python.
@@ -1990,7 +2005,7 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   the poles are exact but the gain can differ from scipy's for complex targets).
 - TODO: missing observations in `kalmanEm`, and multi-input multi-output ARX/ARMAX (both are single-output now).
 
-### 4.27 `pgm/` (tier 8): probabilistic graphical models (pgmpy, libDAI)
+### 4.27 `pgm/`: probabilistic graphical models (pgmpy, libDAI)
 
 oracle: pgmpy, networkx, pyAgrum (loopy BP, influence diagrams), hmmlearn, sklearn-crfsuite and pytorch-crf (CRFs),
 causal-learn (GES, FCI, DirectLiNGAM), numpy and scipy (Gaussian models), brute-force enumeration
@@ -2084,7 +2099,7 @@ into `whitebox-engine/pgm`; `learning` and `causal` are namespaces.
   `optim`'s L-BFGS-B once it exists).
 - `causal/fci.ts`: FCI with Possible-D-Sep pruning and Zhang's rules R0-R10 (R4 from the separating sets), PAGs.
 
-### 4.28 `metrics/` (tier 8): evaluation metrics (scikit-learn, torchmetrics)
+### 4.28 `metrics/`: evaluation metrics (scikit-learn, torchmetrics)
 
 oracle: scikit-learn, torchmetrics, scipy, statsmodels, fairlearn, pingouin, krippendorff, properscoring, sacrebleu,
 rouge-score, jiwer, pycocotools, torchvision, MONAI, scikit-image, sewar, prdc, pystoi, dtw-python
@@ -2180,7 +2195,7 @@ none of those weights.
   framed spectra come from `signal`. TODO: PESQ (ITU-T P.862), whose reference implementation is ITU-copyrighted C
   that cannot be ported under the licence.
 
-### 4.29 `losses/` (tier 8): differentiable objectives (torch.nn losses, optax losses)
+### 4.29 `losses/`: differentiable objectives (torch.nn losses, optax losses)
 
 oracle: torch.nn.functional, optax, MONAI, POT, torchvision, scikit-learn, scipy
 
@@ -2220,7 +2235,7 @@ share a concept they share a definition but not a name.
 - `regularisers.ts`: `l1Penalty`, `l2Penalty`, `elasticNet`, `groupLasso` (and sparse group lasso), `nuclearNorm`,
   `orthogonality`, `entropyPenalty`; penalties take any pytree of parameters.
 
-### 4.30 `rl/` (tier 8): reinforcement learning infrastructure (gymnasium, PettingZoo, stable-baselines3 building blocks)
+### 4.30 `rl/`: reinforcement learning infrastructure (gymnasium, PettingZoo, stable-baselines3 building blocks)
 
 oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and advantages, rliable for aggregate metrics
 - `env.ts`: `Env<S, O, A>` (spec, observation and action spaces, `reset`, `step`, `render` required, optional `model`
@@ -2263,7 +2278,7 @@ oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and adva
 - `training.ts`: `trainAgent` (episodes or steps as a traced algorithm, checkpoints with doubling spacing, greedy
   evaluation), `replayEpisode` (rebuild any episode, including its rendered frames, from the nearest checkpoint).
 
-### 4.31 `games/` (tier 8): game theory (nashpy, OpenSpiel)
+### 4.31 `games/`: game theory (nashpy, OpenSpiel)
 
 oracle: nashpy (support and vertex enumeration, Lemke-Howson from every label, fictitious play, replicator dynamics),
 OpenSpiel (CFR, CFR+, discounted CFR, regret matching, projected replicator dynamics, best responses and exploitability
@@ -2328,7 +2343,7 @@ Cooperative games and mechanisms:
   Condorcet winners and losers, the Smith set, and a report of the social choice paradoxes (Condorcet's paradox,
   Condorcet winners who lose or losers who win, spoilers); the Tennessee and Condorcet-paradox profiles.
 
-### 4.32 `probprog/` (tier 9): probabilistic programming and automatic inference (NumPyro, Pyro)
+### 4.32 `probprog/`: probabilistic programming and automatic inference (NumPyro, Pyro)
 
 oracle: NumPyro (log densities, potentials, transforms, handler semantics, trace shapes, ELBOs at fixed guide draws,
 Laplace modes and covariances by scipy on NumPyro's potential), pgmpy and brute-force sums for discrete programs,
@@ -2413,7 +2428,7 @@ TODO: Gaussian belief propagation for programs with correlated (multivariate nor
 conditioning meanwhile; EM with discrete and Gaussian E-steps together (mixtures of factor analysers); Pyro as a second
 oracle once the oracle environment has it.
 
-### 4.33 `learn/` (tier 9): the toolkit around models (scikit-learn's non-model modules)
+### 4.33 `learn/`: the toolkit around models (scikit-learn's non-model modules)
 
 oracle: scikit-learn, statsmodels, imbalanced-learn, mapie for conformal, captum and shap for explanations, lime,
 modAL for active learning, diffprivlib and opacus for privacy
@@ -2462,7 +2477,7 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `privacy.ts`: Laplace, Gaussian (classic and analytic) and exponential mechanisms, randomised response, composition,
   RDP accounting for the subsampled Gaussian.
 
-### 4.34 `nn/` (tier 9): neural networks (torch.nn, torch.nn.functional, Flax, Haiku)
+### 4.34 `nn/`: neural networks (torch.nn, torch.nn.functional, Flax, Haiku)
 
 oracle: PyTorch in float64 with exported weights (forward values and gradients)
 
@@ -2597,7 +2612,7 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `equivariant.ts`: p4 lifting and group convolutions (functions and modules), orientation pooling, `rotate90`,
   equivariance and invariance errors.
 
-### 4.35 `tune/` (tier 10): parameter selection for anything (Optuna, Ray Tune ideas)
+### 4.35 `tune/`: parameter selection for anything (Optuna, Ray Tune ideas)
 
 oracle: optuna (TPE Parzen densities and splits, QMC sampler orders, every pruner's decisions on fixed learning curves,
 Hyperband brackets, Pareto fronts and hypervolume, PED-ANOVA importance, GP posterior and log EI), scikit-learn
@@ -2649,7 +2664,7 @@ resumed at trial t draws exactly what an uninterrupted run would.
 - `importance.ts`: parameter importance: correlation based, permutation based (on a GP surrogate), functional ANOVA of a
   GP surrogate, and PED-ANOVA as Optuna's evaluator. TODO(methods/trees): fANOVA on random forests as Optuna's default
   evaluator, once regression forests exist.
-### 4.36 `worlds/` (tier 6): discrete worlds shared by search, reinforcement learning and graphics
+### 4.36 `worlds/`: discrete worlds shared by search, reinforcement learning and graphics
 
 One representation of a map, used by every application of it: a maze solved by breadth-first search, A* or a learned
 policy, a grid world in reinforcement learning, and the level a ray caster walks through are the same `World`. Movement
@@ -2692,9 +2707,9 @@ dependency, so its layouts are checked structurally (TODO: golden-test them agai
   over wall segments.
 - `analysis.ts`: reachability, connected regions, shortest-path distances (as a field over cells, unweighted or by
   terrain cost) and paths, dead ends, choke points and bridges, cell distances and heuristics, and conversion to
-  `graph` adjacency for graph algorithms (`graph` is a sibling tier, so worlds returns edges `graph()` accepts).
+  `graph` adjacency for graph algorithms (worlds does not import `graph`, so it returns edges `graph()` accepts).
 
-### 4.37 `graphics/` (tier 7): rendering mathematics
+### 4.37 `graphics/`: rendering mathematics
 
 The mathematics of drawing worlds and scenes, as data (float images that `imageToPixels` turns into `scene` `Pixels`,
 scene nodes, and the steps behind them: DDA crossings, ray trees, path vertices, per-triangle records), so figures and
@@ -2755,7 +2770,7 @@ stratified area-light estimates.
   interpolation, textures and deferred shading (`mesh`, `rasteriseMesh`): the counterpart of ray casting, for
   comparison figures.
 
-### 4.38 `explain/` (tier 10): explaining models and data (shap, captum, alibi, lime, interpret, quantus)
+### 4.38 `explain/`: explaining models and data (shap, captum, alibi, lime, interpret, quantus)
 
 A complete domain, organised as the field is: attributions (local and global, gradient and perturbation),
 example-based and contrastive explanations, concepts, glass-box models, data attribution, and the evaluation of
@@ -2804,7 +2819,7 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   randomisation sanity checks (model parameter and label randomisation), axiomatic properties (completeness, input
   invariance, symmetry), agreement between explainers.
 
-### 4.39 `fairness/` (tier 10): fairness and bias (fairlearn, AIF360, Aequitas)
+### 4.39 `fairness/`: fairness and bias (fairlearn, AIF360, Aequitas)
 
 A complete domain, organised as the field is: measuring unfairness (group, intersectional, individual, causal, for
 classification, regression and ranking) with uncertainty, finding bias in data, mitigating it before, during and after
@@ -2868,7 +2883,7 @@ smoothness sweep all return a `RegularisationPath`, which `render` draws one way
 bespoke capabilities: an entry only declares which views to arrange; a figure that does not exist yet becomes a new
 render view, available to every consumer.
 
-**Exposition records.** `lib/exposition/` (a core domain at tier 2, types and small constructors only) defines the
+**Exposition records.** `lib/exposition/` (a core domain low in the import graph, types and small constructors only) defines the
 record kinds methods return, each a plain, serialisable value with a `kind` tag:
 - `RegularisationPath` (penalty grid, coefficients per penalty, active sets, duality gaps), `CoefficientTable`
   (estimates with errors and intervals), `CrossValidationCurve` (scores per parameter with standard-error bands);
@@ -2910,7 +2925,7 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   Methods return `{ ...result, exposition: Exposition[] }`; long-running ones also emit the records' steps as trace
   events, so views can play them.
 
-**Methods.** The folders of 5.1 to 5.19 (named after the familiar libraries' groupings), each with an `area.json`.
+**Methods.** The folders of 5.1 to 5.19 (named after the familiar libraries' groupings), each with its summary in its `index.ts`.
 Methods are thin over the core, document themselves lightly (summary and parameters; examples optional) and follow the
 exposition contract of 5.0. Every estimator comes as a factory (`pca({ nComponents: 2 })`) and as a class
 (`new PCA({ nComponents: 2 })`), declares its `hyperSpace`, and offers `predictDistribution` where it predicts.
@@ -2949,7 +2964,7 @@ kind, each usable on its own in any page).
   no drawing of its own.
 
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
-core domain `lib/datasets/` (tier 10, at the top of the core, so exact truths can come from any core domain, such as
+core domain `lib/datasets/` (at the top of the core's import graph, so exact truths can come from any core domain, such as
 `probprog` generating programs or `dynamics` changepoint posteriors); `lib/data` keeps the schemas, loaders, splits and
 modifiers.
 
@@ -2958,7 +2973,7 @@ tested lightly: a smoke test per method that runs it on a small dataset and chec
 and a golden against the familiar library only where it is cheap and matters (a lasso path, a tree's splits). The hub
 is tested lightly: the catalogue builds and every entry's demo runs within its budget.
 
-**Layering.** Methods import the core and the method areas in their `area.json`; the core never imports methods; render
+**Layering.** Methods import the core and other method areas, without cycles between areas; the core never imports methods; render
 imports engine contracts (including `lib/exposition`), never algorithms; the hub imports engine and render.
 
 ### 5.0 First pass: scope, phases and the exposition contract (methods, with their views and hub entries)
@@ -4348,8 +4363,9 @@ Turns the source into documentation data, runs examples and links functions to c
 
 `schema/`
 - `catalogue.ts`: `SymbolDoc` (id, package, module, name, kind, signature, summary, description, params, returns,
-  throws, examples, concepts, references, canonical home and aliases, source location), `ModuleDoc`, `FileDoc` (each
-  source file with its opening comment), `Catalogue`.
+  throws, examples, concepts, references, canonical home and aliases, source location), `ModuleDoc` (with its folder's
+  summary), `FolderDoc` (each folder with the summary that opens its `index.ts`, flat subfolders included), `FileDoc`
+  (each source file with its opening paragraph), `Catalogue`.
 - `examples.ts`: `Example`, `Expectation` (value, figure, trace, throws), `ExampleResult`.
 - `content.ts`: `HowTo`, `GalleryEntry`, `Study` (a methods study as a page: description, parameters as a `Space`,
   figures).
@@ -4371,7 +4387,8 @@ Turns the source into documentation data, runs examples and links functions to c
 - `built-from.ts`: the import graph between symbols and areas, for "how is this built" views.
 - `content.ts`: how-to Markdown, gallery entries and studies.
 - `coverage.ts`: documentation coverage (summary, every parameter described, `@returns`, an `@example` with a `// =>`
-  for every core function, class and constant); `make examples ARGS=--coverage` reports it.
+  for every core function, class and constant; a summary for every folder and file of every package);
+  `make examples ARGS=--coverage` reports it.
 
 `runner/` (browser and Node)
 - `parse.ts`: statements and expectation markers.
@@ -4434,7 +4451,7 @@ failing example to itself).
 `src/docs/` (generated from `whitebox-meta`'s catalogue of the engine's TSDoc)
 - Navigation mirrors the source tree exactly (`lib/<domain>/<subfolder>/<file>`, `methods/<area>/...`, then the
   symbols of each file), as aifn-engine's docs: collapsed by default, only the current path expanded, a filter on
-  top. Tiers are an import-layering rule and never appear in the docs.
+  top. Folder pages show the folder's summary (from its `index.ts`) and file cards each file's opening paragraph.
 - Pages: home, folder (its subfolders and files), file (its exports), symbol (signature, TSDoc, live examples with
   their `// =>` values), concepts (by the encyclopedia's taxonomy), how-tos (`content/howto/`, runnable code blocks checked by the
   build), traces (open, replay, compare and export runs).
@@ -4511,8 +4528,10 @@ library for the same computation. They do not set a higher bar than that library
   typical change, most of it building the catalogue; all examples when `scripts/` or whitebox-meta's `extract/`,
   `runner/` or `modules/` change), scoped pyright and fixture checks).
 - `mise.toml`: Node, pnpm, Python and uv versions.
-- `scripts/barrels.ts`: every `index.ts` and the module map; `--check`.
-- `scripts/layers.ts`: dependency-cruiser rules from `domain.json` and `area.json`.
+- `scripts/barrels.ts`: every `index.ts` below its hand-written summary, and the module map; `--check`; fails on a
+  folder without a summary or a module file without an opening paragraph (section 2).
+- `scripts/layers.ts`: no import cycles between core domains or between methods areas (a cycle is reported as its
+  path, one import per step), the core never imports methods, and the package rules (section 1).
 - `scripts/examples.ts` (`make examples`): every `@example` of the engine core run in worker threads with its `// =>`
   lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows to module or file prefixes,
   `--coverage` reports documentation coverage). How-tos join it when they exist.
@@ -4646,8 +4665,8 @@ library for the same computation. They do not set a higher bar than that library
 
 ## 12. Order of construction
 
-Bottom up, one tier at a time; a tier is finished (documented, tested against the oracle, traced) before the next relies
-on it. The first pass is a thin vertical slice that proves the whole pipeline (values to traces to figures to docs):
+Bottom up, following the import graph; a domain is finished (documented, tested against the oracle, traced) before the
+ones that import it rely on it. The first pass is a thin vertical slice that proves the whole pipeline (values to traces to figures to docs):
 1. `base`, `scene` (types, structure, timeline), `tensor` (primitives, core operations, CPU backend), `random`.
 2. `autodiff` (reverse mode, `grad`, `valueAndGrad`, `computationGraph`, `checkPrimitive`), `trace` (schema, policy,
    algorithm, recorder, replay), `space`, `context`.
@@ -4661,11 +4680,11 @@ on it. The first pass is a thin vertical slice that proves the whole pipeline (v
 6. whitebox-meta: schema, extractor, runner with `// =>` checks, module map, concept taxonomy; the docs app (with its gallery)
    showing the slice; the oracle producing the first fixtures; CI, packing and the smoke test.
 
-After the slice, every remaining file in this document becomes a build task, taken in tier order for the core and in
+After the slice, every remaining file in this document becomes a build task, taken in import order for the core and in
 "built from" order for methods.
 
 Effort: the engine (core, then methods) is built at high effort, each domain to its full plan line before the next
-tier. whitebox-render, whitebox-meta and the docs app follow at normal effort, guided by the design rules of section 6
+one. whitebox-render, whitebox-meta and the docs app follow at normal effort, guided by the design rules of section 6
 and reusing aifn-engine's render and docs code where it already works.
 
 ## 13. Questions for the reviewer
@@ -4680,7 +4699,7 @@ and reusing aifn-engine's render and docs code where it already works.
    specialised engines. Does the planner's automatic choice stay predictable enough, and is the fast path through
    engines fast enough for interactive pages?
 5. **Two API forms.** Functional and class forms for every estimator, layer and environment: worth the surface?
-6. **Scenes and structures in the engine.** Both live in tier 1 of the engine so models and environments can describe
+6. **Scenes and structures in the engine.** Both live low in the engine (`lib/scene`) so models and environments can describe
    themselves; the alternative is a small fifth package.
 7. **Datasets in the engine package.** Embedded static data enlarges the engine tarball; the alternative is a
    `whitebox-datasets` package.

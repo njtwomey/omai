@@ -1,4 +1,0 @@
-{
-  "summary": "Mixture models (Gaussian and Bayesian), fitted by traced EM or variational inference.",
-  "dependsOn": ["cluster"]
-}

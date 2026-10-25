@@ -3,11 +3,12 @@
  *
  *   node scripts/layers.ts
  *
- * - A core domain (packages/engine/src/lib/<domain>) imports only domains of a lower tier (from its domain.json),
- *   or itself.
+ * - The core domains (packages/engine/src/lib/<domain>) import one another without a cycle: if `stats` imports
+ *   `dists`, nothing `dists` imports may lead back to `stats`. A cycle is reported as its path, with one import for
+ *   each step.
  * - The core never imports methods.
- * - A methods area (packages/engine/src/methods/<area>) imports any core domain, itself, and only the areas listed in
- *   its area.json `dependsOn`.
+ * - The methods areas (packages/engine/src/methods/<area>) import any core domain and one another, again without a
+ *   cycle.
  * - whitebox-engine never imports whitebox-render, whitebox-meta or whitebox-hub; whitebox-render never imports
  *   whitebox-meta, whitebox-hub or engine methods (it draws core contracts and exposition records, never algorithms);
  *   headless render code never imports React or render/react.
@@ -19,7 +20,6 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 
 const ROOT = join(import.meta.dirname, '..')
-const ENGINE = join(ROOT, 'packages/engine/src')
 const IMPORT = /(?:^|\n)\s*(?:import|export)\s[^'"]*?from\s+['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/g
 
 interface Location {
@@ -52,21 +52,73 @@ function locate(path: string): Location {
   return { package: pkg, kind: 'other', unit: rel[2] ?? '' }
 }
 
-function readJson(path: string): Record<string, unknown> {
-  return existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>) : {}
+/** The import graph between units (core domains, or methods areas): one example import per edge. */
+type Graph = Map<string, Map<string, string>>
+
+function addEdge(graph: Graph, from: string, to: string, where: string): void {
+  const out = graph.get(from) ?? new Map<string, string>()
+  if (!out.has(to)) out.set(to, where)
+  graph.set(from, out)
 }
 
-const tiers = new Map<string, number>()
-for (const domain of existsSync(join(ENGINE, 'lib')) ? readdirSync(join(ENGINE, 'lib')) : []) {
-  const manifest = readJson(join(ENGINE, 'lib', domain, 'domain.json'))
-  if (typeof manifest['tier'] === 'number') tiers.set(domain, manifest['tier'])
-}
-const areaDeps = new Map<string, readonly string[]>()
-for (const area of existsSync(join(ENGINE, 'methods')) ? readdirSync(join(ENGINE, 'methods')) : []) {
-  const manifest = readJson(join(ENGINE, 'methods', area, 'area.json'))
-  areaDeps.set(area, Array.isArray(manifest['dependsOn']) ? (manifest['dependsOn'] as string[]) : [])
+/** Every cycle of a graph, one per strongly connected component (Tarjan), as a path that returns to its start. */
+function cycles(graph: Graph): string[][] {
+  const index = new Map<string, number>()
+  const low = new Map<string, number>()
+  const stack: string[] = []
+  const onStack = new Set<string>()
+  const found: string[][] = []
+  let next = 0
+  const connect = (v: string): void => {
+    index.set(v, next)
+    low.set(v, next)
+    next++
+    stack.push(v)
+    onStack.add(v)
+    for (const w of (graph.get(v) ?? new Map()).keys()) {
+      if (!index.has(w)) {
+        connect(w)
+        low.set(v, Math.min(low.get(v) as number, low.get(w) as number))
+      } else if (onStack.has(w)) low.set(v, Math.min(low.get(v) as number, index.get(w) as number))
+    }
+    if (low.get(v) !== index.get(v)) return
+    const component = new Set<string>()
+    let w: string
+    do {
+      w = stack.pop() as string
+      onStack.delete(w)
+      component.add(w)
+    } while (w !== v)
+    if (component.size > 1) found.push(shortestCycle(graph, v, component))
+  }
+  for (const v of [...graph.keys()].sort()) if (!index.has(v)) connect(v)
+  return found
 }
 
+/** The shortest path from `start` back to itself inside a strongly connected component (breadth first). */
+function shortestCycle(graph: Graph, start: string, component: ReadonlySet<string>): string[] {
+  const previous = new Map<string, string>()
+  const queue = [start]
+  while (queue.length > 0) {
+    const v = queue.shift() as string
+    for (const w of [...(graph.get(v) ?? new Map()).keys()].sort()) {
+      if (!component.has(w)) continue
+      if (w === start) {
+        const path: string[] = []
+        for (let u = v; u !== start; u = previous.get(u) as string) path.unshift(u)
+        return [start, ...path, start]
+      }
+      if (!previous.has(w)) {
+        previous.set(w, v)
+        queue.push(w)
+      }
+    }
+  }
+  return [start, start]
+}
+
+const domains: Graph = new Map()
+const areas: Graph = new Map()
 const errors: string[] = []
 const files = ['engine', 'render', 'meta', 'hub'].flatMap((p) => walk(join(ROOT, 'packages', p, 'src')))
 for (const file of files) {
@@ -79,17 +131,9 @@ for (const file of files) {
       const to = locate(resolve(dirname(file), spec))
       if (from.package !== 'engine' || to.package !== 'engine') continue
       if (from.kind === 'lib' && to.kind === 'methods') errors.push(`${where}: the core never imports methods`)
-      if (from.kind === 'lib' && to.kind === 'lib' && from.unit !== to.unit) {
-        const a = tiers.get(from.unit)
-        const b = tiers.get(to.unit)
-        if (a === undefined || b === undefined) errors.push(`${where}: domain without a tier in domain.json`)
-        else if (b >= a) errors.push(`${where}: ${from.unit} (tier ${a}) may not import ${to.unit} (tier ${b})`)
-      }
-      if (from.kind === 'methods' && to.kind === 'methods' && from.unit !== to.unit) {
-        if (!(areaDeps.get(from.unit) ?? []).includes(to.unit)) {
-          errors.push(`${where}: add '${to.unit}' to methods/${from.unit}/area.json dependsOn`)
-        }
-      }
+      if (from.kind === 'lib' && to.kind === 'lib' && from.unit !== to.unit) addEdge(domains, from.unit, to.unit, where)
+      if (from.kind === 'methods' && to.kind === 'methods' && from.unit !== to.unit)
+        addEdge(areas, from.unit, to.unit, where)
       continue
     }
     if (from.package === 'engine' && /^whitebox-(render|meta|hub)/.test(spec))
@@ -109,9 +153,22 @@ for (const file of files) {
   }
 }
 
+for (const [graph, kind] of [
+  [domains, 'core domains'],
+  [areas, 'methods areas'],
+] as const) {
+  for (const cycle of cycles(graph)) {
+    const steps = cycle.slice(1).map((to, i) => `  ${graph.get(cycle[i] as string)?.get(to)}`)
+    errors.push(`import cycle between ${kind}: ${cycle.join(' -> ')}\n${steps.join('\n')}`)
+  }
+}
+
 if (errors.length > 0) {
   for (const e of errors) console.error(e)
   console.error(`${errors.length} layering violation(s)`)
   process.exit(1)
 }
-console.log(`layers: ${files.length} files checked, ${tiers.size} domains, ${areaDeps.size} areas`)
+const units = (g: Graph): number => new Set([...g.keys(), ...[...g.values()].flatMap((m) => [...m.keys()])]).size
+console.log(
+  `layers: ${files.length} files checked; ${units(domains)} domains and ${units(areas)} areas import without cycles`,
+)

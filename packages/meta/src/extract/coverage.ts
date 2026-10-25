@@ -1,7 +1,8 @@
 /**
- * Documentation coverage: which exports miss what the conventions ask for (docs/structure.md section 2): a summary,
- * every parameter described, `@returns` for a function that returns something, and an `@example` with at least one
- * `// =>` expectation for every function, class and constant of the core.
+ * Documentation coverage: what the conventions of docs/structure.md section 2 ask for and the source does not yet
+ * have. For exports: a summary, every parameter described, `@returns` for a function that returns something, and an
+ * `@example` with at least one `// =>` expectation for every function, class and constant of the core. For the tree:
+ * a summary for every folder (the doc comment that opens its `index.ts`) and an opening paragraph for every file.
  */
 import type { Catalogue, ModuleLayer, SymbolDoc } from '../schema/catalogue.ts'
 
@@ -66,4 +67,38 @@ export function coverageReport(catalogue: Catalogue, layers: readonly ModuleLaye
   const counts = { summary: 0, param: 0, returns: 0, example: 0, expectation: 0 }
   for (const i of issues) counts[i.problem]++
   return { symbols, complete, issues, counts }
+}
+
+/** Folders and files without a summary. */
+export interface SummaryReport {
+  readonly folders: number
+  readonly files: number
+  /** Repository-relative paths of folders whose `index.ts` opens with no summary. */
+  readonly missingFolders: readonly string[]
+  /** Repository-relative paths of files that open with no paragraph of their own. */
+  readonly missingFiles: readonly string[]
+}
+
+/**
+ * Check that every folder and file of the given layers says what it is: a folder by the doc comment that opens its
+ * `index.ts`, a file by its opening paragraph.
+ *
+ * @param catalogue - The catalogue.
+ * @param layers - Which module layers to check (default all).
+ * @returns The counts and the paths without a summary.
+ */
+export function summaryCoverage(
+  catalogue: Catalogue,
+  layers: readonly ModuleLayer[] = ['core', 'methods', 'part'],
+): SummaryReport {
+  const layerOf = new Map(catalogue.modules.map((m) => [m.id, m.layer]))
+  const kept = (module: string): boolean => layers.includes(layerOf.get(module) ?? 'part')
+  const folders = catalogue.folders.filter((f) => kept(f.module))
+  const files = catalogue.files.filter((f) => kept(f.module))
+  return {
+    folders: folders.length,
+    files: files.length,
+    missingFolders: folders.filter((f) => f.summary === '').map((f) => f.path),
+    missingFiles: files.filter((f) => f.summary === '').map((f) => f.path),
+  }
 }

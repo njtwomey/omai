@@ -1,4 +1,0 @@
-{
-  "summary": "Trustworthiness: calibration, conformal prediction, uncertainty, dataset shift, robustness and model cards.",
-  "dependsOn": ["fairness", "linear"]
-}

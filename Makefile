@@ -28,7 +28,7 @@ barrels-check: ## Fail if any barrel is stale
 	$(NODE) scripts/barrels.ts --check
 
 .PHONY: layers
-layers: ## Check tier and area layering (dependency-cruiser rules from domain.json and area.json)
+layers: ## Check layering: no import cycles between core domains or methods areas, and the package rules
 	$(NODE) scripts/layers.ts
 
 .PHONY: lint

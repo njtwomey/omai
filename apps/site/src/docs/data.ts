@@ -24,10 +24,10 @@ export interface IndexFile {
   readonly symbols: readonly IndexSymbol[]
 }
 
-/** An entry-point folder with its summary (from `domain.json`, `area.json` or its index). */
+/** A folder with its summary (the doc comment that opens its `index.ts`); an entry point's names its module. */
 export interface IndexFolder {
   readonly path: string
-  readonly module: string
+  readonly module?: string
   readonly summary: string
   /** The URL of its types file (declarations for the hover on a type name), when it exports types. */
   readonly types?: string
@@ -128,7 +128,7 @@ export function withLookups(index: DocsIndex): Docs {
   const inModule = new Map<string, { file: IndexFile; name: string }>()
   for (const f of index.files)
     for (const s of f.symbols) inModule.set(`${f.module}#${s.name}`, { file: f, name: s.name })
-  const types = new Map(index.folders.map((f) => [f.module, f.types]))
+  const types = new Map(index.folders.flatMap((f) => (f.module === undefined ? [] : [[f.module, f.types] as const])))
   for (const f of index.files)
     for (const s of f.symbols) byName.set(s.name, [...(byName.get(s.name) ?? []), { file: f, name: s.name }])
   const byPath = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
@@ -142,7 +142,7 @@ export function withLookups(index: DocsIndex): Docs {
         path,
         name: path === '' ? 'whitebox-engine' : baseName(path),
         summary: meta?.summary ?? '',
-        ...(meta === undefined ? {} : { module: meta.module }),
+        ...(meta?.module === undefined ? {} : { module: meta.module }),
         folders: [...subs].sort(byPath),
         files: [...(filesIn.get(path) ?? [])].sort((a, b) => byPath(a.path, b.path)),
       }

@@ -5,9 +5,9 @@
  * checker), so the whole engine reads in a few seconds.
  */
 import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { ts } from 'ts-morph'
-import type { FileDoc, MemberDoc, ModuleDoc, ParamDoc, SymbolDoc, SymbolKind } from '../schema/catalogue.ts'
+import type { FileDoc, FolderDoc, MemberDoc, ModuleDoc, ParamDoc, SymbolDoc, SymbolKind } from '../schema/catalogue.ts'
 import type { Example } from '../schema/examples.ts'
 import { type EntryPoint, type Project, relativeTo } from './project.ts'
 import { type ParsedDoc, parseDocComment, unframeComment } from './tsdoc.ts'
@@ -28,6 +28,7 @@ type Exported = { readonly decl: Declaration } | { readonly namespace: string }
 /** What reading declarations reports besides the symbols. */
 export interface SymbolsResult {
   readonly modules: readonly ModuleDoc[]
+  readonly folders: readonly FolderDoc[]
   readonly files: readonly FileDoc[]
   readonly symbols: readonly SymbolDoc[]
 }
@@ -451,9 +452,31 @@ export function readSymbols(project: Project): SymbolsResult {
     moduleSymbols.set(s.module, list)
   }
 
+  // A folder's summary: the doc comment that opens its index.ts (above the generated exports).
+  const folderSummary = (dir: string): ParsedDoc => {
+    let text = ''
+    try {
+      text = reader.source(join(dir, 'index.ts')).text
+    } catch {
+      return EMPTY_DOC
+    }
+    const header = /^\s*(\/\*\*[\s\S]*?\*\/)/.exec(text)?.[1]
+    return header === undefined ? EMPTY_DOC : parseDocComment(unframeComment(header))
+  }
+  const folders: FolderDoc[] = project.entries.flatMap((e) =>
+    e.folders.map((dir) => {
+      const doc = folderSummary(dir)
+      return {
+        path: relativeTo(project, dir),
+        module: e.specifier,
+        entry: dir === e.dir,
+        summary: doc.summary,
+        description: doc.description,
+      }
+    }),
+  )
   const modules: ModuleDoc[] = project.entries.map((e) => {
-    const header = /^\s*(\/\*\*[\s\S]*?\*\/)/.exec(reader.source(e.index).text)?.[1]
-    const summary = e.manifest?.summary ?? (header === undefined ? '' : parseDocComment(unframeComment(header)).summary)
+    const summary = folderSummary(e.dir).summary
     return {
       id: e.specifier,
       package: e.package,
@@ -461,7 +484,6 @@ export function readSymbols(project: Project): SymbolsResult {
       name: e.path === '' ? e.package : (e.path.split('/').at(-1) as string),
       layer: e.layer,
       summary,
-      ...(e.manifest?.tier === undefined ? {} : { tier: e.manifest.tier }),
       ...(e.parent === undefined ? {} : { parent: e.parent }),
       children: project.entries.filter((c) => c.parent === e.specifier).map((c) => c.specifier),
       symbols: moduleSymbols.get(e.specifier) ?? [],
@@ -483,5 +505,5 @@ export function readSymbols(project: Project): SymbolsResult {
     listed.add(s.source.file)
     files.push(fileDoc(key.slice(0, key.lastIndexOf('#')), s.module))
   }
-  return { modules, files, symbols: ordered.map(([, s]) => s) }
+  return { modules, folders, files, symbols: ordered.map(([, s]) => s) }
 }

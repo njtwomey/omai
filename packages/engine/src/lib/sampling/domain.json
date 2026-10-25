@@ -1,5 +1,0 @@
-{
-  "tier": 7,
-  "summary": "Monte Carlo: log-density targets, Metropolis, Hamiltonian, Langevin, Gibbs and slice kernels, importance sampling, SMC, rejection and exact samplers, chains and convergence diagnostics.",
-  "inline": ["hamiltonian", "diagnostics"]
-}

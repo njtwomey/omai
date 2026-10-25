@@ -1,4 +1,0 @@
-{
-  "tier": 8,
-  "summary": "Reinforcement learning infrastructure: environments, wrappers, agents, rollouts, buffers, returns, MDPs and evaluation."
-}

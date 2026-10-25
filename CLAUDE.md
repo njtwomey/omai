@@ -46,9 +46,14 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
   `packages/hub` (`whitebox-hub`, declarative entries composing methods and render views; no drawing of its own).
   One private app, `apps/site` (`make dev`, http://localhost:5300), with three sections on a shared shell: the gallery
   (render, hand-written recipes), the hub (generated from its catalogue) and the docs (generated from the TSDoc).
-- Engine core is `packages/engine/src/lib/<domain>/`; each domain has a `domain.json` tier and imports only lower tiers.
-  Applications are `packages/engine/src/methods/<area>/` with `area.json` listing allowed area imports. `make layers`
-  enforces both. Every folder is an import path (`whitebox-engine/numerics/linalg`); subfolders are namespaces.
+- Engine core is `packages/engine/src/lib/<domain>/`, applications are `packages/engine/src/methods/<area>/`. There are
+  no tiers or metadata files: domains import one another, and areas one another, without cycles, and the core never
+  imports methods (`make layers` reports any cycle as its path). Every folder is an import path
+  (`whitebox-engine/numerics/linalg`); subfolders are namespaces, or re-exported flat when their summary has `@inline`.
+- The code documents itself: each folder's `index.ts` opens with a hand-written doc comment, a short paragraph on what
+  the folder is and holds (`make barrels` keeps it above the generated exports), and each source file opens with a
+  short paragraph on what it is and what to expect in it (no to-do lists or export lists). `make barrels` fails
+  without them; the docs read both.
 - Operations are primitives (`lib/tensor/primitive.ts`) with kernels and `jvp`/`vjp` rules. Differentiation is opt-in
   per call (`grad(f)(x)`, JAX style): outside a transform, tensors are plain arrays with no graph. A new primitive
   must pass `checkPrimitive` (finite-difference vjp and jvp, vjp/jvp consistency, no input mutation).

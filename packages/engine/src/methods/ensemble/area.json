@@ -1,4 +1,0 @@
-{
-  "summary": "Ensembles: bagging, random forests, extra trees, AdaBoost, gradient boosting, stacking and voting.",
-  "dependsOn": ["trees", "linear"]
-}

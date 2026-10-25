@@ -1,5 +1,0 @@
-{
-  "tier": 9,
-  "summary": "Probabilistic programming: programs, effect handlers, densities, model analysis, inference engines with an automatic planner, posteriors, predictives and model criticism.",
-  "inline": ["engines"]
-}

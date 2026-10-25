@@ -78,10 +78,8 @@ export interface ModuleDoc {
   /** The last path segment (or the package name for a root). */
   readonly name: string
   readonly layer: ModuleLayer
-  /** One sentence: the `domain.json`/`area.json` summary, else the opening comment of `index.ts`. */
+  /** Its folder's summary: the first paragraph of the doc comment that opens its `index.ts`. */
   readonly summary: string
-  /** The tier from `domain.json`, for core domains. */
-  readonly tier?: number
   /** The enclosing entry point, if any. */
   readonly parent?: string
   /** The entry points directly below it. */
@@ -113,11 +111,27 @@ export interface FileDoc {
   readonly description: string
 }
 
-/** Everything the docs know: packages, modules, their files and symbols. */
+/**
+ * A source folder of a module: the entry point's own folder, or a subfolder re-exported flat into it (`tensor/ops`),
+ * with the summary from the doc comment that opens its `index.ts`.
+ */
+export interface FolderDoc {
+  /** Repository-relative path. */
+  readonly path: string
+  /** The entry point that owns it (the one it is, or the one it is re-exported into). */
+  readonly module: string
+  /** Whether it is the entry point's own folder. */
+  readonly entry: boolean
+  readonly summary: string
+  readonly description: string
+}
+
+/** Everything the docs know: packages, modules, their folders, files and symbols. */
 export interface Catalogue {
   readonly version: 1
   readonly packages: readonly PackageDoc[]
   readonly modules: readonly ModuleDoc[]
+  readonly folders: readonly FolderDoc[]
   readonly files: readonly FileDoc[]
   readonly symbols: readonly SymbolDoc[]
 }

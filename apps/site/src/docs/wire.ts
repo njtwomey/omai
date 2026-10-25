@@ -19,10 +19,10 @@ export interface WireFile {
   readonly symbols: readonly (readonly [string, SymbolKind])[]
 }
 
-/** An entry-point folder with its summary. */
+/** A folder with its summary (from the doc comment that opens its `index.ts`); an entry point's names its module. */
 export interface WireFolder {
   readonly path: string
-  readonly module: string
+  readonly module?: string
   readonly summary: string
   /** The name of its types file (`types/<hash>.json`, a {@link WireTypes}), when it exports types. */
   readonly types?: string
