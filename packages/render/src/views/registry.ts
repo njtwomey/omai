@@ -9,6 +9,7 @@ import { componentsView } from './components.ts'
 import { curveSetView } from './curves.ts'
 import { diagramScene } from './diagrams.ts'
 import { episodeView } from './episodes.ts'
+import { groupReportView } from './fairness.ts'
 import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
@@ -300,6 +301,14 @@ const REGISTRY: Registry = {
       const frames = valueGridFrames(r, o)
       return frames.option(frames.count - 1)
     },
+  },
+  groupReport: {
+    kind: 'groupReport',
+    component: 'GroupReportView',
+    title: 'Group report',
+    plays: false,
+    accepts: [],
+    still: (r, o) => groupReportView(r, o),
   },
   confusionMatrix: {
     kind: 'confusionMatrix',
