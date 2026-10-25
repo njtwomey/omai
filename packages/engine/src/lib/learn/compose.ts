@@ -6,6 +6,7 @@ import { dict, type Space } from '../space/index.ts'
 import { asTensor, fromStorage, reshape, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { innerFitOptions, inputNames, keyFor, runOptionsFor } from './_shared.ts'
+import { parametersOf, rowTargetsOf, STAGE_ROWS, stageDataOf, surfaceAndLossOf } from './_stages.ts'
 import {
   type Estimator,
   type EstimatorKind,
@@ -135,14 +136,24 @@ export interface PipelineHyper {
   readonly cache?: FitCache
 }
 
+/** Options of {@link pipeline}. */
+export interface PipelineOptions {
+  /** A cache of fitted transformers. */
+  readonly cache?: FitCache
+  /** The most training rows each stage's recorded data carries (evenly spaced beyond; default 500, 0 for none). */
+  readonly explainRows?: number
+}
+
 /** A fitted step of a pipeline as data. */
 export type FittedStepParams = { readonly name: string; readonly estimator: string | null; readonly params: Json }
 
 /** A fitted pipeline: the last step's verbs, plus the fitted steps and their intermediate outputs. */
 export interface FittedPipeline extends Fitted<{ readonly steps: FittedStepParams[] }> {
   /**
-   * What each step did on the training data (a `pipelineStages` record: shapes, samples and what it learned), then
-   * the steps' own records; empty after `revive`.
+   * What each step did on the training data (a `pipelineStages` record: shapes, samples, each stage's output rows
+   * with their classes and column statistics, what it learned and, for a final estimator on one or two raw
+   * features, the whole pipeline's surface over them with its training loss), then the steps' own records; empty
+   * after `revive`.
    */
   readonly exposition: readonly Exposition[]
   /** The fitted steps by name (resamplers and passthroughs are absent). */
@@ -225,7 +236,7 @@ function namesAfter(f: Fitted | undefined, input: readonly string[], d: number):
  * Hyperparameters route by step: `with({ 'model.alpha': 2 })` or `with({ model: { alpha: 2 } })`.
  *
  * @param steps - Named steps.
- * @param options - A fit cache.
+ * @param options - A fit cache, and how many training rows each stage's recorded data carries.
  * @returns The estimator.
  * @throws WhiteboxError with code `value` for duplicate names or a non-transformer before the last step.
  * @concept pipelines
@@ -243,7 +254,7 @@ function namesAfter(f: Fitted | undefined, input: readonly string[], d: number):
  */
 export function pipeline(
   steps: readonly NamedStep[],
-  options: { readonly cache?: FitCache } = {},
+  options: PipelineOptions = {},
 ): Estimator<PipelineHyper, FittedPipeline> {
   if (steps.length === 0) throw new WhiteboxError('value', 'pipeline: needs at least one step')
   if (new Set(steps.map(([n]) => n)).size !== steps.length)
@@ -341,6 +352,8 @@ export function pipeline(
     ...(space === undefined ? {} : { hyperSpace: space }),
     fit: (data, fitOptions = {}) => {
       const explain = fitOptions.explain !== false
+      const rowsLimit = Math.max(0, Math.floor(options.explainRows ?? STAGE_ROWS))
+      const targets = explain ? rowTargetsOf(data, kind) : undefined
       const algorithm: Algorithm<PipelineState> = {
         name: 'pipeline',
         config: { steps: steps.map(([n, s]) => [n, isEstimator(s) ? s.name : isResampler(s) ? s.name : s]) },
@@ -362,23 +375,34 @@ export function pipeline(
             output: TensorLike,
             outputColumns: (input: readonly string[], d: number) => string[],
             learned: PipelineStage['learned'],
+            full?: { readonly fitted?: Fitted; readonly y?: TensorLike },
           ): PipelineStage[] => {
             if (!explain) return []
             const before = sampleOf(s.data.x)
             const after = sampleOf(output)
             const inputColumns = s.stages.at(-1)?.outputColumns ?? featureNamesOf(data, before.shape[1])
+            const columns = outputColumns(inputColumns, after.shape[1])
+            const fittedStep = full?.fitted
+            const detail = fittedStep === undefined ? undefined : parametersOf(fittedStep, inputColumns, columns)
             return [
               ...s.stages,
               {
                 name,
                 kind,
                 inputColumns,
-                outputColumns: outputColumns(inputColumns, after.shape[1]),
+                outputColumns: columns,
                 inputSample: before.rows,
                 outputSample: after.rows,
                 inputShape: before.shape,
                 outputShape: after.shape,
                 learned,
+                ...(rowsLimit === 0
+                  ? {}
+                  : { output: stageDataOf(output, columns, full?.y ?? s.data.y, targets, rowsLimit) }),
+                ...(detail === undefined || detail.parameters.length === 0 ? {} : { parameters: detail.parameters }),
+                ...(detail?.explainedVarianceRatio === undefined
+                  ? {}
+                  : { explainedVarianceRatio: detail.explainedVarianceRatio.slice(0, after.shape[1]) }),
               },
             ]
           }
@@ -396,13 +420,13 @@ export function pipeline(
               index: s.index + 1,
               data: { x: r.x, y: r.y },
               fitted: [...s.fitted, undefined],
-              stages: stageOf('resampler', r.x, (i) => [...i], []),
+              stages: stageOf('resampler', r.x, (i) => [...i], [], r.y === undefined ? {} : { y: r.y }),
             }
           }
           const { fitted, out } = fitStep(step, s.data, inner, isLast, hyper.cache)
           let stages = s.stages
           if (explain && out !== undefined)
-            stages = stageOf('transformer', out, (i, d) => namesAfter(fitted, i, d), learnedOf(fitted))
+            stages = stageOf('transformer', out, (i, d) => namesAfter(fitted, i, d), learnedOf(fitted), { fitted })
           else if (explain) {
             // The final estimator: its probabilities (or predictions) on the training rows, and its training score.
             const proba = fitted.predictProba
@@ -414,10 +438,16 @@ export function pipeline(
                   : Array.from({ length: d }, (_, j) => (d === 1 ? 'prediction' : `y${j}`))
               const shaped = output.shape.length === 1 ? reshape(output, [output.shape[0] ?? 0, 1]) : output
               const score = s.data.y === undefined ? undefined : fitted.score?.(s.data)
-              stages = stageOf('estimator', shaped as Tensor, columnsOut, [
-                ...(score === undefined ? [] : [{ name: 'training score', value: score }]),
-                ...learnedOf(fitted).slice(0, 3),
-              ])
+              stages = stageOf(
+                'estimator',
+                shaped as Tensor,
+                columnsOut,
+                [
+                  ...(score === undefined ? [] : [{ name: 'training score', value: score }]),
+                  ...learnedOf(fitted).slice(0, 3),
+                ],
+                { fitted },
+              )
             }
           }
           return {
@@ -449,7 +479,25 @@ export function pipeline(
       const own = result.state.fitted.flatMap(
         (f) => (f as { readonly exposition?: readonly Exposition[] } | undefined)?.exposition ?? [],
       )
-      return build(result.state.fitted, explain ? [pipelineStages({ stages: result.state.stages }), ...own] : [])
+      if (!explain) return build(result.state.fitted)
+      let stages = result.state.stages
+      const lastStage = stages.at(-1)
+      if (lastStage?.kind === 'estimator' && rowsLimit > 0) {
+        // The whole pipeline over its raw inputs: the surface the final estimator draws, and its loss.
+        const extra = surfaceAndLossOf(build(result.state.fitted), data, targets, rowsLimit)
+        stages = [...stages.slice(0, -1), { ...lastStage, ...extra }]
+      }
+      const firstShape = stages[0]?.inputShape
+      const record = pipelineStages({
+        stages,
+        ...(rowsLimit === 0 || firstShape === undefined
+          ? {}
+          : {
+              input: stageDataOf(data.x, stages[0]?.inputColumns ?? [], data.y, targets, rowsLimit),
+            }),
+        ...(targets?.kind === 'classes' ? { classes: targets.names } : {}),
+      })
+      return build(result.state.fitted, [record, ...own])
     },
     revive: (params) => {
       const p = params as { readonly steps?: readonly FittedStepParams[] }

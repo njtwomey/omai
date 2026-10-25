@@ -2799,7 +2799,10 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   (embedding per iteration, neighbour graph, calibrated bandwidths, stress);
 - `AnomalyScores` (scores, thresholds, per-point evidence);
 - `DecisionSurface` (predictions and probabilities on a grid over two features);
-- `PipelineStages` (each stage's input and output data, fitted parameters and shape changes);
+- `PipelineStages` (each stage's input and output data, fitted parameters and shape changes; per stage up to a few
+  hundred output rows with their classes and per-column statistics, the parameters in full with the names of their
+  entries, a projection's explained variance, and on the final estimator the whole pipeline's `DecisionSurface` over
+  the raw inputs with its training loss per row and the loss it expects over the grid);
 - `SearchTrials` (every trial of a grid, random or Bayesian search with values and pruning decisions) and
   `LearningCurve`;
 - `EpisodeRecord` (per episode returns; per step state, action, reward and frame; value and policy snapshots).
