@@ -2104,6 +2104,9 @@ none of those weights.
   `f1Score`, `precisionRecallFscoreSupport`, `sensitivityScore`, `specificityScore`, `negativePredictiveValue`,
   `informedness`, `markedness`, `jaccardScore`; binary, micro, macro, weighted, samples and per-class averaging, label
   subsets, string labels and zero-division control.
+- `contingency.ts`: `confusionMargins` (row and column totals, recall and miss rate per row, precision and false
+  discovery rate per column, prevalence, accuracy) and `thresholdConfusion` (the 2 by 2 table of scores cut at a
+  threshold), what a contingency table writes around its cells.
 - `classification-summary.ts`: `matthewsCorrcoef`, `cohenKappaScore` (unweighted, linear, quadratic),
   `quadraticWeightedKappa` (ordinal), likelihood ratios (`positiveLikelihoodRatio`, `negativeLikelihoodRatio`),
   `diagnosticOddsRatio`, `hammingLoss`, `zeroOneLoss`, `topKAccuracyScore`, multi-label ranking
@@ -4084,6 +4087,11 @@ Design rules:
   play and pause with a caret menu for the target frames per second, step back and forward, a draggable scrubber, and
   an optional time stamp. `usePlayback.ts` (`usePlayback`, `useTimelinePlayback`, `useLiveRun`: one controller over
   precomputed frames and live algorithm steps) and `playhead.ts` (frame timing, the pure part).
+- `ContingencyTable.tsx`: a contingency table (confusion matrix) with full margins: named cells (TP, FN, FP, TN),
+  row and column totals with their rates (TPR, FNR, TNR, FPR; PPV, FDR, NPV, FOR; recall and precision for more
+  classes), prevalence and accuracy; hovering a rate outlines its numerator and denominator. Static from any table,
+  reactive by recomputing the table (e.g. `thresholdConfusion` at a threshold from a control). Ported from ml-concepts'
+  `ContingencyTableView`.
 - `FigureFrame.tsx`: the fixed-size figure area with its expand-to-modal button and export menu; one frame per figure
   (a grid of panels is one figure), exporting the whole figure (charts, scenes, overlay cells) as SVG or PNG, and given
   a `playback`, recording it as GIF or WebM. Fixed content is magnified in the modal; content that is a function of the

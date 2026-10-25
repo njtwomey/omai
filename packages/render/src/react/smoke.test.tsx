@@ -1,7 +1,9 @@
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { thresholdConfusion } from 'whitebox-engine/metrics'
 import { structure } from 'whitebox-engine/scene'
 import { bool, choice, dict, int, real } from 'whitebox-engine/space'
+import { ContingencyTable } from './ContingencyTable.tsx'
 import { Choice } from './controls/Choice.tsx'
 import { ControlLayout, ControlPanel, PanelArea } from './controls/ControlPanel.tsx'
 import { DatasetPicker } from './controls/DatasetPicker.tsx'
@@ -24,6 +26,39 @@ import type { PlaybackController } from './usePlayback.ts'
 const noop = (): void => {}
 
 describe('React bindings render on the server', () => {
+  it('draws a contingency table with its named cells and rates', () => {
+    const table = thresholdConfusion([0, 0, 1, 1, 1], [0.1, 0.7, 0.4, 0.8, 0.9], 0.5)
+    const two = renderToString(<ContingencyTable table={table} positive={1} classNames={['neg', 'pos']} />)
+    for (const name of [
+      'TN',
+      'FP',
+      'FN',
+      'TP',
+      'sensitivity',
+      'specificity',
+      'precision',
+      'TPR',
+      'accuracy',
+      'prevalence',
+    ])
+      expect(two).toContain(name)
+    const three = renderToString(
+      <ContingencyTable
+        table={{
+          labels: ['a', 'b', 'c'],
+          matrix: [
+            [3, 1, 0],
+            [0, 2, 1],
+            [1, 0, 4],
+          ],
+        }}
+        share="row"
+      />,
+    )
+    expect(three).toContain('recall')
+    expect(three).not.toContain('TPR')
+  })
+
   it('draws every control', () => {
     const html = renderToString(
       <ControlLayout
