@@ -473,7 +473,15 @@
       "reference": {
         "fairlearn": "0.15.0"
       },
-      "cases": 19
+      "cases": 33
+    },
+    {
+      "fixture": "fairness/inference.json",
+      "source": "oracle/cases/fairness/inference.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 3
     },
     {
       "fixture": "fairness/post_processing.json",

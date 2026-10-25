@@ -17,6 +17,45 @@ def ppv_gap(y: FloatArray, p: FloatArray, groups: FloatArray) -> float:
     return float(np.asarray(frame.difference(method="between_groups"), dtype=np.float64))
 
 
+def treatment(y: FloatArray, p: FloatArray) -> float:
+    """FN / FP of one group (NaN without false positives)."""
+    _tn, fp, fn, _tp = M.confusion_matrix(y, p, labels=[0, 1]).ravel()
+    return float(fn / fp) if fp > 0 else float("nan")
+
+
+def treatment_gap(y: FloatArray, p: FloatArray, groups: FloatArray) -> float:
+    frame = F.MetricFrame(metrics=treatment, y_true=y, y_pred=p, sensitive_features=groups)
+    values = np.asarray(frame.by_group, dtype=np.float64)
+    finite = values[np.isfinite(values)]
+    return float(finite.max() - finite.min())
+
+
+def scalar(x: object) -> float:
+    """A MetricFrame summary (a numpy scalar, or a one-value Series) as a float."""
+    return float(np.asarray(x, dtype=np.float64))
+
+
+def frame_of(y: FloatArray, p: FloatArray, groups: FloatArray, metric: str) -> F.MetricFrame:
+    fn = {"accuracy": M.accuracy_score, "recall": M.recall_score}[metric]
+    return F.MetricFrame(metrics=fn, y_true=y, y_pred=p, sensitive_features=groups)
+
+
+def conditional_gaps(p: FloatArray, groups: FloatArray, strata: FloatArray) -> FloatArray:
+    """Each stratum's selection-rate gap between groups (MetricFrame with control features), in stratum order."""
+    frame = F.MetricFrame(
+        metrics=F.selection_rate, y_true=p, y_pred=p, sensitive_features=groups, control_features=strata
+    )
+    return np.asarray(frame.difference(method="between_groups"), dtype=np.float64)
+
+
+def balance_gap(y: FloatArray, s: FloatArray, groups: FloatArray, cls: float) -> float:
+    def mean_score(yt: FloatArray, sc: FloatArray) -> float:
+        return float(np.mean(sc[yt == cls]))
+
+    frame = F.MetricFrame(metrics=mean_score, y_true=y, y_pred=s, sensitive_features=groups)
+    return float(np.asarray(frame.difference(), dtype=np.float64))
+
+
 def cases() -> list[Case]:
     g = rng(64)
     n = 90
@@ -116,6 +155,69 @@ def cases() -> list[Case]:
             [p, groups],
             np.asarray(float(min(p[groups == k].mean() for k in [1, 2]) / p[groups == 0].mean())),
             privileged=0,
+        ),
+    ]
+    strata = g.integers(0, 2, size=n).astype(np.float64)
+    scores = np.clip(0.5 * y + 0.15 * groups + g.uniform(size=n) * 0.5, 0, 1)
+    for metric in ["accuracy", "recall"]:
+        frame = frame_of(y, p, groups, metric)
+        out += [
+            case(
+                f"metricFrame/{metric}/min",
+                "frameMin",
+                [y, p, groups],
+                np.asarray(scalar(frame.group_min())),
+                metric=metric,
+            ),
+            case(
+                f"metricFrame/{metric}/max",
+                "frameMax",
+                [y, p, groups],
+                np.asarray(scalar(frame.group_max())),
+                metric=metric,
+            ),
+            case(
+                f"metricFrame/{metric}/ratio",
+                "frameRatio",
+                [y, p, groups],
+                np.asarray(scalar(frame.ratio())),
+                metric=metric,
+            ),
+            case(
+                f"metricFrame/{metric}/overall",
+                "frameOverall",
+                [y, p, groups],
+                np.asarray(scalar(frame.overall)),
+                metric=metric,
+            ),
+        ]
+    accuracy = frame_of(y, p, groups, "accuracy")
+    out += [
+        case("accuracyDifference", "accuracyDifference", [y, p, groups], np.asarray(scalar(accuracy.difference()))),
+        case("accuracyRatio", "accuracyRatio", [y, p, groups], np.asarray(scalar(accuracy.ratio()))),
+        case(
+            "treatmentEqualityDifference",
+            "treatmentEqualityDifference",
+            [y, p, groups],
+            np.asarray(treatment_gap(y, p, groups)),
+        ),
+        case(
+            "conditionalDemographicParity/strata",
+            "conditionalGaps",
+            [p, groups, strata],
+            conditional_gaps(p, groups, strata),
+        ),
+        case(
+            "balanceForPositiveClass",
+            "balanceForPositiveClass",
+            [y, scores, groups],
+            np.asarray(balance_gap(y, scores, groups, 1.0)),
+        ),
+        case(
+            "balanceForNegativeClass",
+            "balanceForNegativeClass",
+            [y, scores, groups],
+            np.asarray(balance_gap(y, scores, groups, 0.0)),
         ),
     ]
     return out

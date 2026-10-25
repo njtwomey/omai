@@ -68,15 +68,51 @@ export function GroupContingencyTables(props: { readonly record: GroupReport }):
  * @returns The table.
  */
 export function GroupDisparityTable(props: { readonly record: GroupReport }): ReactElement {
+  const iv = props.record.intervals
+  const num = (v: number): string => (Number.isFinite(v) ? formatNumber(v, { digits: 3 }) : '–')
+  const level = iv === undefined ? '' : `${Math.round(iv.level * 100)}% interval`
   const table = {
-    columns: ['disparity', 'value', 'ideal'],
-    rows: props.record.disparities.map((d) => [
-      d.name,
-      Number.isFinite(d.value) ? formatNumber(d.value, { digits: 3 }) : '–',
-      String(d.ideal),
-    ]),
+    columns: [
+      'disparity',
+      'value',
+      ...(iv?.disparities === undefined ? [] : [level]),
+      ...(iv?.pValues === undefined ? [] : ['p (permutation)']),
+      'ideal',
+    ],
+    rows: props.record.disparities.map((d, j) => {
+      const range = iv?.disparities?.[j]
+      const p = iv?.pValues?.[j]
+      return [
+        d.name,
+        num(d.value),
+        ...(iv?.disparities === undefined
+          ? []
+          : [range === null || range === undefined ? '–' : `${num(range[0])} to ${num(range[1])}`]),
+        ...(iv?.pValues === undefined ? [] : [p === null || p === undefined ? '–' : num(p)]),
+        String(d.ideal),
+      ]
+    }),
   }
   return <DataTable table={table} />
+}
+
+/**
+ * A report's warnings (groups too small to measure), as a short list; nothing without warnings.
+ *
+ * @param props - The report.
+ * @returns The list.
+ */
+export function GroupReportWarnings(props: { readonly record: GroupReport }): ReactNode {
+  const t = useTokens()
+  const w = props.record.warnings ?? []
+  if (w.length === 0) return null
+  return (
+    <ul style={{ margin: 0, paddingLeft: 18, font: `12px ${t.font}`, color: t.fgSecondary }}>
+      {w.map((m) => (
+        <li key={m}>{m}</li>
+      ))}
+    </ul>
+  )
 }
 
 /** Props of {@link GroupReportView}. */
@@ -107,7 +143,10 @@ export function GroupReportView(props: GroupReportViewProps): ReactElement {
     props.tables === false ? undefined : (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
         <GroupContingencyTables record={at} />
-        <GroupDisparityTable record={at} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <GroupDisparityTable record={at} />
+          <GroupReportWarnings record={record} />
+        </div>
       </div>
     )
   const title = props.title ?? (record.label === undefined ? undefined : `${record.label}: ${record.attribute}`)

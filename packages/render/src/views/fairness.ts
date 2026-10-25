@@ -46,7 +46,8 @@ export function groupColour(g: number): string {
 }
 
 /**
- * The rates of every group side by side: one bar per group in each rate.
+ * The rates of every group side by side: one bar per group in each rate, with its confidence interval when the report
+ * has them.
  *
  * @param record - The report.
  * @param mode - The colour mode.
@@ -64,11 +65,17 @@ export function groupRatesPanel(
     layers: [
       bars(
         rates.map((r) => GROUP_RATE_LABELS[r]),
-        record.groups.map((name, g) => ({
-          name,
-          values: rates.map((r) => record.rates[g]?.[r] ?? 0),
-          colour: groupColour(g),
-        })),
+        record.groups.map((name, g) => {
+          const iv = record.intervals?.rates[g]
+          return {
+            name,
+            values: rates.map((r) => record.rates[g]?.[r] ?? 0),
+            colour: groupColour(g),
+            ...(iv === undefined
+              ? {}
+              : { intervals: rates.map((r): readonly [number, number] => iv[r] ?? [Number.NaN, Number.NaN]) }),
+          }
+        }),
         { mode, horizontal: true },
       ),
     ],

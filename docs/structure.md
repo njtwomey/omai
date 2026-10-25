@@ -2840,12 +2840,21 @@ oracle: fairlearn (metrics, MetricFrame, ExponentiatedGradient, GridSearch, Thre
 Reweighing, DisparateImpactRemover, LFR, OptimPreproc, PrejudiceRemover, CalibratedEqOdds, RejectOptionClassification),
 Aequitas (group bias); goldens where cheap
 - Group metrics for classification (`group-metrics.ts`): selection, true- and false-positive, true- and false-negative,
-  precision, false discovery and omission rates per group; demographic parity, equal opportunity, equalised odds,
-  predictive parity, treatment equality, accuracy parity, conditional statistical parity (given legitimate factors),
-  balance for each class (score parity), disparate impact (the four-fifths rule); differences, ratios and worst-group
-  forms against any reference group; calibration within groups and multicalibration.
-- Uncertainty of metrics (`inference.ts`): bootstrap intervals and permutation tests for gaps, minimum detectable
-  differences and small-group warnings.
+  precision, negative predictive value, false discovery and omission rates per group (`groupRates`); demographic
+  parity, equal opportunity, equalised odds, predictive parity, predictive equality, treatment equality
+  (`treatmentEqualityDifference`, FN / FP), accuracy parity (`accuracyDifference`, `accuracyRatio`), conditional
+  statistical parity given legitimate factors (`conditionalDemographicParityDifference`, golden against MetricFrame's
+  control features), balance for each class (`balanceForPositiveClass`, `balanceForNegativeClass`), disparate impact
+  (the four-fifths rule); differences and ratios between groups, to the overall rate or to any reference group
+  (`method: 'to_reference'`); worst-group forms for any metric (`metricFrame`: by group, min, max, difference, ratio,
+  worst group, gaps to a reference; golden against fairlearn's MetricFrame); calibration within groups
+  (`calibrationByGroup`) and multicalibration over attributes and their intersections (`multicalibration`). Built.
+- Uncertainty of metrics (`inference.ts`): bootstrap intervals for any fairness statistic (`bootstrapDisparity`) and
+  for many at once from one set of resamples (`bootstrapStatistics`), permutation tests for gaps
+  (`permutationTestDisparity`), Wilson intervals per group rate (`groupRateIntervals`), minimum detectable differences
+  (`minimumDetectableDifference`, golden against statsmodels' NormalIndPower) and small-group warnings
+  (`smallGroupWarnings`). The audit's `groupReport` carries `intervals` (bootstrap intervals of every rate and
+  disparity, permutation p-values) and `warnings`, drawn as interval bars and an interval column. Built.
 - Intersectional and subgroup fairness (`intersectional.ts`): metrics over combinations of attributes, rich-subgroup
   auditing (GerryFair-style), worst-group gaps, generalised entropy and Theil indices between and within groups.
 - Individual fairness (`individual.ts`): consistency (k-NN), Lipschitz fairness under a task metric, fairness through

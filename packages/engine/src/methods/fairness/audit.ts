@@ -6,14 +6,19 @@
 import { linspaceNumbers, WhiteboxError } from '../../lib/base/index.ts'
 import {
   type Explained,
+  GROUP_RATES,
   type GroupReport,
+  type GroupReportIntervals,
   type GroupRoc,
+  groupDisparities,
   groupReport,
   groupReportFromTables,
   type SweepPoint,
   sweepAt,
+  tableRates,
 } from '../../lib/exposition/index.ts'
 import {
+  bootstrapStatistics,
   demographicParityDifference,
   disparateImpact,
   equalizedOddsDifference,
@@ -21,9 +26,11 @@ import {
   type GroupRates,
   groupRates,
   predictiveParityDifference,
+  smallGroupWarnings,
 } from '../../lib/fairness/index.ts'
 import type { Fitted } from '../../lib/learn/index.ts'
 import { analyseThresholds, rocCurve } from '../../lib/metrics/index.ts'
+import { foldIn, type Key, key, permutation } from '../../lib/random/index.ts'
 import {
   binaryLabels,
   type FairnessData,
@@ -58,6 +65,27 @@ export interface GroupReportInput {
   readonly keepRows?: boolean
   /** Each group's operating point when it is not on its ROC curve (randomised decisions). */
   readonly operatingPoints?: readonly { readonly fpr: number; readonly tpr: number }[]
+  /** Bootstrap intervals and permutation tests (default on: 200 of each, level 0.95, seed 0); false for none. */
+  readonly intervals?: false | ReportIntervalOptions
+  /** Warn of groups smaller than this (default 30 rows, or 10 of a class). */
+  readonly minGroupSize?: number
+}
+
+/** Options of a report's intervals. */
+export interface ReportIntervalOptions {
+  /** Bootstrap resamples (default 200). */
+  readonly nResamples?: number
+  /** Permutations for the disparities' p-values (default 200; 0 for none). */
+  readonly permutations?: number
+  readonly level?: number
+  readonly key?: Key
+}
+
+/** The index of the largest group. */
+function largestGroup(members: readonly (readonly number[])[]): number {
+  let best = 0
+  for (const [g, rows] of members.entries()) if (rows.length > (members[best]?.length ?? 0)) best = g
+  return best
 }
 
 /** Rows of each group. */
@@ -138,6 +166,79 @@ export function buildGroupReport(input: GroupReportInput): GroupReport {
       }),
     )
   const keep = (input.keepRows ?? true) && scores.length <= 5000
+  const tablesOf = (rows: ArrayLike<number>, group: (i: number) => number): number[][][] => {
+    const t = members.map(() => [
+      [0, 0],
+      [0, 0],
+    ])
+    for (let r = 0; r < rows.length; r++) {
+      const i = rows[r] ?? 0
+      const row = t[group(i)]?.[labels[i] === 1 ? 1 : 0]
+      if (row === undefined) continue
+      const d = decision(i)
+      row[1] = (row[1] ?? 0) + d
+      row[0] = (row[0] ?? 0) + 1 - d
+    }
+    return t
+  }
+  const ref = reference ?? largestGroup(members)
+  const intervals = input.intervals === false ? undefined : reportIntervals(input.intervals ?? {})
+  function reportIntervals(o: ReportIntervalOptions): GroupReportIntervals {
+    const k = o.key ?? key(0)
+    const level = o.level ?? 0.95
+    const nBoot = o.nResamples ?? 200
+    const disparitiesOf = (t: number[][][]): number[] => groupDisparities(t.map(tableRates), ref).map((d) => d.value)
+    const boot = bootstrapStatistics(
+      scores.length,
+      (rows) => {
+        const t = tablesOf(rows, (i) => groups.index[i] ?? 0)
+        const rates = t.map(tableRates)
+        return [...rates.flatMap((r) => GROUP_RATES.map((name) => r[name])), ...disparitiesOf(t)]
+      },
+      { nResamples: nBoot, level, key: foldIn(k, 1) },
+    )
+    const g = members.length
+    const all = Int32Array.from(scores, (_, i) => i)
+    const observed = disparitiesOf(tablesOf(all, (i) => groups.index[i] ?? 0))
+    const ideals = groupDisparities(tables.map(tableRates), ref).map((d) => d.ideal)
+    const nPerm = o.permutations ?? 200
+    let pValues: (number | null)[] | undefined
+    if (nPerm > 0) {
+      const extreme = observed.map(() => 0)
+      for (let b = 0; b < nPerm; b++) {
+        const order = permutation(foldIn(foldIn(k, 2), b), scores.length).data
+        const permuted = disparitiesOf(tablesOf(all, (i) => groups.index[order[i] ?? 0] ?? 0))
+        for (const [j, v] of permuted.entries()) {
+          const ideal = ideals[j] ?? 0
+          if (Math.abs(v - ideal) >= Math.abs((observed[j] ?? 0) - ideal) - 1e-12) extreme[j] = (extreme[j] ?? 0) + 1
+        }
+      }
+      pValues = observed.map((v, j) => (Number.isFinite(v) ? (1 + (extreme[j] ?? 0)) / (1 + nPerm) : null))
+    }
+    const at = (j: number): readonly [number, number] | null => {
+      const iv = boot.intervals[j]
+      return iv === undefined || !Number.isFinite(iv[0]) ? null : iv
+    }
+    return {
+      level,
+      method: `bootstrap percentile, ${nBoot} resamples${nPerm > 0 ? `; permutation test, ${nPerm} permutations` : ''}`,
+      rates: Array.from({ length: g }, (_, gi) =>
+        Object.fromEntries(
+          GROUP_RATES.flatMap((name, r) => {
+            const iv = at(gi * GROUP_RATES.length + r)
+            return iv === null ? [] : [[name, iv]]
+          }),
+        ),
+      ),
+      disparities: observed.map((_, j) => at(g * GROUP_RATES.length + j)),
+      ...(pValues === undefined ? {} : { pValues }),
+    }
+  }
+  const warnings = smallGroupWarnings(
+    labels,
+    groups.index.map((g) => groups.names[g] ?? String(g)),
+    input.minGroupSize === undefined ? {} : { minSize: input.minGroupSize },
+  ).map((w) => w.message)
   return groupReport(
     groupReportFromTables({
       attribute: groups.attribute,
@@ -155,6 +256,8 @@ export function buildGroupReport(input: GroupReportInput): GroupReport {
       ),
       ...(input.operatingPoints === undefined ? {} : { operatingPoints: input.operatingPoints }),
       ...(keep ? { scored: { scores: [...scores], labels: [...labels], groups: [...groups.index] } } : {}),
+      ...(intervals === undefined ? {} : { intervals }),
+      ...(warnings.length === 0 ? {} : { warnings }),
       ...(grid.length === 0
         ? {}
         : {
@@ -183,6 +286,8 @@ export interface FairnessAuditOptions {
   readonly label?: string
   /** Thresholds in the sweep of rates (default 51). */
   readonly sweep?: number
+  /** Bootstrap intervals and permutation tests of the report (default on); false for none. */
+  readonly intervals?: false | ReportIntervalOptions
 }
 
 /** The result of {@link fairnessAudit}. */
@@ -258,6 +363,7 @@ export function fairnessAudit(
     label: options.label ?? 'audit',
     ...(classes === undefined ? {} : { classes }),
     ...(options.sweep === undefined ? {} : { sweep: options.sweep }),
+    ...(options.intervals === undefined ? {} : { intervals: options.intervals }),
   })
   return {
     attribute: groups.attribute,
