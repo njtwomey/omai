@@ -18,6 +18,7 @@ import { curveSetView } from './curves.ts'
 import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
 import { episodeView } from './episodes.ts'
+import { counterfactualTableView, prototypeView } from './examples.ts'
 import { groupReportView } from './fairness.ts'
 import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
@@ -366,6 +367,22 @@ const REGISTRY: Registry = {
       const frames = attributionFrames(r, o)
       return frames.option(frames.count - 1)
     },
+  },
+  counterfactuals: {
+    kind: 'counterfactuals',
+    component: 'CounterfactualView',
+    title: 'Counterfactuals',
+    plays: false,
+    accepts: [],
+    still: (r, o) => counterfactualTableView(r, o),
+  },
+  prototypes: {
+    kind: 'prototypes',
+    component: 'PrototypeView',
+    title: 'Prototypes and criticisms',
+    plays: false,
+    accepts: [],
+    still: (r, o) => prototypeView(r, o),
   },
   dependence: {
     kind: 'dependence',

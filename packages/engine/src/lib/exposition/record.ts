@@ -16,6 +16,7 @@ import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
 import type { EnsembleStages } from './ensembles.ts'
 import type { EpisodeRecord } from './episodes.ts'
 import type { ConfusionMatrix } from './evaluation.ts'
+import type { CounterfactualSet, PrototypeSet } from './examples.ts'
 import type { GroupReport } from './fairness.ts'
 import type { ImageSteps } from './images.ts'
 import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from './linear.ts'
@@ -69,6 +70,8 @@ export type Exposition =
   | FeatureAttributions
   | Importances
   | Dependence
+  | CounterfactualSet
+  | PrototypeSet
   | GroupReport
   | CalibrationRecord
   | ConformalRecord
@@ -148,6 +151,8 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'featureAttributions',
   'importances',
   'dependence',
+  'counterfactuals',
+  'prototypes',
   'groupReport',
   'calibration',
   'conformal',

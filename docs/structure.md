@@ -2824,9 +2824,16 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   coverage), RuleFit-style rule ensembles, rule lists and Boolean rules (BRCG-style), linearity measure.
 - Example-based (`examples.ts`): prototypes and criticisms (MMD-critic, ProtoSelect), k-nearest explanations, gradient
   similarity explanations, trust scores.
+  Built: `mmdCritic` (greedy MMD prototypes, witness-function criticisms with a log-det spread), `nearestExamples`,
+  `gradientSimilarity` (dot, cosine, alibi's grad-cos), `trustScores` (alibi's alpha-filtered class cores). TODO:
+  ProtoSelect.
 - Contrastive and counterfactual (`counterfactuals.ts`): Wachter, diverse (DiCE-style), FACE, CEM (pertinent positives
   and negatives), prototype-guided counterfactuals, growing spheres, MACE-style for tree ensembles; actionability,
   immutability and plausibility constraints; recourse (linear, cost, feasibility) and its robustness to model change.
+  Built: `wachterCounterfactual`, `diverseCounterfactuals`, `faceCounterfactual`, `growingSpheres`,
+  `pertinentNegative` and `pertinentPositive` (CEM by projected FISTA), `prototypeCounterfactual` (class prototypes
+  from nearest neighbours, no encoder), `linearRecourse`, `actionViolations` and `projectActions` (immutable,
+  monotone, bounded, integer), `recourseRobustness`. TODO: MACE for tree ensembles.
 - Concepts (`concepts.ts`): concept activation vectors and TCAV scores with significance, probing classifiers,
   concept bottleneck analysis.
 - Glass-box models (`glassbox.ts`): explainable boosting (GA2M: shape functions and pairwise terms), scorecards from
@@ -4090,7 +4097,12 @@ built from: `explain`, `learn`, `metrics`
   `dropColumnImportances` (refits), `dependencePlot` (PDP with ICE curves raw, centred or derivative, the rug, two-way
   surfaces) and `aleEffects` (first and second order) for any fitted estimator: `importances` and `dependence`
   records (`lib/exposition/dependence.ts`), drawn by `DependenceView` and `DependenceSurfaceView`. Built.
-- `counterfactuals.ts`: counterfactual explanations and recourse for a fitted classifier, with constraints.
+- `counterfactuals.ts`: `explainCounterfactuals` (growing spheres and FACE for any classifier; Wachter, DiCE,
+  prototype-guided and CEM for models linear in their inputs, read off the decision function), with actionability
+  constraints and robustness to bootstrap refits: a `counterfactuals` record (`lib/exposition/examples.ts`) drawn as a
+  table by `CounterfactualView`; `prototypesAndCriticisms` (MMD-critic on standardised rows: a `prototypes` record,
+  `PrototypeView` on principal components or as images); `trustScoreStudy` (accuracy as fewer rows are trusted, by
+  trust score and by confidence, as `curves`). Built.
 - `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
 - `gradients.ts`: `explainNetwork` (saliency, input times gradient, integrated gradients, SmoothGrad, VarGrad,
   GradientSHAP, guided backpropagation, deconvolution, Grad-CAM, guided Grad-CAM) for the LeNet of `methods/neural`,
