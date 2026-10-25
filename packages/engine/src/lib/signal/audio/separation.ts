@@ -1,3 +1,9 @@
+/**
+ * Mask-based source separation in the short-time Fourier domain: the ideal binary, ideal ratio and phase-sensitive
+ * masks computed from known sources, `applyMask` to filter a mixture by a mask, and `oracleSeparation`, the Wiener-mask
+ * upper bound on what any mask-based separator can achieve.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { float, samples } from '../_shared.ts'

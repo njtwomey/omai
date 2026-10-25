@@ -1,3 +1,9 @@
+/**
+ * Image segmentation: global thresholds by Otsu's method and Li's minimum cross-entropy, marker-based watershed
+ * flooding, Felzenszwalb and Huttenlocher's graph-based segmentation (as scikit-image), and exact binary segmentation
+ * by a minimum graph cut of a data term plus a contrast-sensitive smoothness term (Boykov and Jolly).
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { digraph, minCut } from '../../graph/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'

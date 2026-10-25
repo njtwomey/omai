@@ -1,3 +1,9 @@
+/**
+ * Wavelet denoising: soft, hard and garrote thresholding of coefficients (pywt.threshold), the robust median estimate
+ * of the noise level from the finest details, and `waveletDenoise`, which decomposes a signal or image, shrinks its
+ * details by VisuShrink or BayesShrink and reconstructs it, as skimage.restoration.denoise_wavelet.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   abs,

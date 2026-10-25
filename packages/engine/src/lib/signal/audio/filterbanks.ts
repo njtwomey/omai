@@ -1,3 +1,9 @@
+/**
+ * Auditory filter banks: the triangular mel filter bank and the chroma filter bank that folds frequencies onto the
+ * twelve pitch classes (librosa.filters), and the gammatone filter, a model of the cochlea's frequency selectivity
+ * (scipy.signal.gammatone), with a bank of them that turns a signal into a cochleagram.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { stack, type Tensor, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'

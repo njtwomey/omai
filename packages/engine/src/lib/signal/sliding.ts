@@ -1,3 +1,10 @@
+/**
+ * The sliding-window machinery behind matrix profiles and similarity search, following STUMPY's conventions: rolling
+ * means, standard deviations, constancy and finiteness of every length-m window, sliding dot products by FFT, the O(1)
+ * diagonal update used by STOMP, z-normalised and non-normalised distance profiles, and the exclusion zone that ignores
+ * trivial self-matches.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fftConvolve, oaConvolve } from '../numerics/convolution/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'

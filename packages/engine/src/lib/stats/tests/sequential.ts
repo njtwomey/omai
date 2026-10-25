@@ -1,3 +1,9 @@
+/**
+ * Sequential testing, where data are examined as they arrive: Wald's sequential probability ratio test (also as a
+ * traced algorithm), Lan-DeMets alpha-spending boundaries for group-sequential trials, and always-valid inference for a
+ * normal mean (mixture SPRT p-values and confidence sequences) that stays valid however often it is checked.
+ */
+
 import { type TestResult, WhiteboxError } from '../../base/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import { type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

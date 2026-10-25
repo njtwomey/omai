@@ -1,3 +1,9 @@
+/**
+ * Geometric transforms of images and arrays, scipy.ndimage and scikit-image style: spline interpolation at arbitrary
+ * coordinates, affine and projective warps, shift, zoom, rotate and resize, Gaussian pyramids (successive smoothing and
+ * downsampling), and the integral image (summed-area table) that gives any box sum in four lookups.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { extendIndex } from '../../numerics/convolution/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

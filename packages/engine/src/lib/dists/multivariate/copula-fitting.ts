@@ -1,3 +1,9 @@
+/**
+ * Fitting copulas to data: pseudo-observations (column ranks scaled into the unit cube, so marginals need not be
+ * assumed), the matrix of pairwise Kendall's tau, and `fitCopula`, which estimates an elliptical or Archimedean
+ * copula's parameter by inverting Kendall's tau, as statsmodels does.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { eigh } from '../../numerics/linalg/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'

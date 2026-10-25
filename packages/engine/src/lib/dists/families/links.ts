@@ -1,3 +1,10 @@
+/**
+ * Link functions for generalised linear models, which map a distribution's mean to the scale of the linear predictor,
+ * as statsmodels' links: identity, log, logit, probit, cauchit, complementary log-log, log-log, inverse, inverse
+ * squared, square root, power and negative binomial, each with its inverse and derivatives guarded at the edges of its
+ * domain.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { ndtr, ndtri, normalPdf } from '../../numerics/special/index.ts'
 import {

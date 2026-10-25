@@ -1,3 +1,9 @@
+/**
+ * Finite impulse response (FIR) filter design, scipy.signal style: the window method (`firwin`) with Kaiser's order and
+ * beta estimates, frequency sampling (`firwin2`), the Parks-McClellan equiripple design by the Remez exchange algorithm
+ * (`remez`), and conversion of a linear-phase filter to minimum phase.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fft, ifft, irfft } from '../../numerics/fourier/index.ts'
 import { interp } from '../../numerics/interpolate/index.ts'

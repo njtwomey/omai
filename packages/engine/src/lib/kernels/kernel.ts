@@ -1,3 +1,10 @@
+/**
+ * The `Kernel` contract and kernel algebra: a positive semi-definite kernel with its hyperparameters as data,
+ * `defineKernel`, sums, products, scaling and powers of kernels, kernels restricted to some input columns and automatic
+ * relevance determination (one length scale per dimension), hyperparameter listing and the log-parameterised `theta`
+ * vector, as scikit-learn and GPyTorch, and Gram matrices with their gradients.
+ */
+
 import { jacfwd } from '../autodiff/index.ts'
 import { type Json, WhiteboxError } from '../base/index.ts'
 import {

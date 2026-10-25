@@ -1,3 +1,10 @@
+/**
+ * The `Distribution` contract every family implements: a plain object of parameters (which may be traced, so everything
+ * differentiates with respect to them) with pure methods for densities, CDFs, quantiles, moments, entropy and sampling,
+ * built by `defineDistribution`. Also the shape conventions (batch and event shapes, as torch.distributions), supports
+ * and membership tests, and parameter validation.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import {

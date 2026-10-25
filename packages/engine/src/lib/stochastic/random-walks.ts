@@ -1,3 +1,10 @@
+/**
+ * Random walks: the simple random walk and its exact law, walks on the integer lattice and on graphs with the graph
+ * walk's stationary law, self-avoiding walks grown by Rosenbluth sampling and counted exactly by enumeration, Levy
+ * flights with heavy-tailed steps, gambler's ruin in closed form and by simulation, and the mean squared displacement
+ * that distinguishes them.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Graph, transitionMatrix } from '../graph/index.ts'
 import { lbinom } from '../numerics/special/index.ts'

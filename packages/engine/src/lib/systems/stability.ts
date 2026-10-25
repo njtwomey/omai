@@ -1,3 +1,9 @@
+/**
+ * Poles, zeros and stability of linear systems: poles and (invariant) zeros, the test that every pole lies in the
+ * stable region, the Routh-Hurwitz array for continuous-time polynomials and the Jury table for discrete-time ones, and
+ * the root locus of a feedback loop, the paths of the closed-loop poles as the gain varies (python-control root_locus).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { chebyshevNodes } from '../numerics/interpolate/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Figures of merit of a window function (Harris 1978): equivalent noise bandwidth, coherent gain, main-lobe and
+ * half-power widths, highest sidelobe level and scalloping loss, the numbers that say how a window trades resolution
+ * against leakage.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { rfft } from '../../numerics/fourier/index.ts'
 import { type TensorLike, toFlat } from '../../tensor/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Families of divergences between distributions or positive measures, each generalising the Kullback-Leibler
+ * divergence: f-divergences (Csiszar) with named generators, Renyi divergences and entropies of any order, Amari's
+ * alpha-divergences, beta-divergences (the losses of beta-NMF, as scikit-learn) and Bregman divergences of a convex
+ * function.
+ */
+
 import { grad } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { entr, klDiv, relEntr } from '../numerics/special/index.ts'

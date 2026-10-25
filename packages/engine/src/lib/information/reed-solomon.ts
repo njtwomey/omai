@@ -1,3 +1,9 @@
+/**
+ * Reed-Solomon codes, the burst-error-correcting codes of CDs, QR codes and storage, built on arithmetic in the finite
+ * field GF(2^m): the field itself, systematic encoding, and decoding of errors and erasures by syndromes, the
+ * Berlekamp-Massey algorithm, a Chien search and Forney's formula.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** Arithmetic in the finite field GF(2^m), by exponent and logarithm tables of a primitive element. */

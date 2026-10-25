@@ -1,3 +1,9 @@
+/**
+ * Moving between a distribution's constrained support and unconstrained reals, as NumPyro's `biject_to`:
+ * `bijectorForSupport` picks the bijector onto a support, and `transformLogDensity` and `unconstrained` apply the
+ * change of variables so that samplers and optimisers can work on the whole real line.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { add, sub, type TensorLike, type Value } from '../../tensor/index.ts'
 import type { Distribution, Support } from '../distribution.ts'

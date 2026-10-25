@@ -1,3 +1,9 @@
+/**
+ * Covariance matrix estimators, scikit-learn style: the maximum-likelihood (empirical) covariance and the shrinkage
+ * estimators that pull it towards a scaled identity to stay well conditioned when variables are many and samples few,
+ * with a fixed intensity, the Ledoit-Wolf intensity or the oracle approximating shrinkage (OAS).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { mat, rowsOf } from './_util.ts'

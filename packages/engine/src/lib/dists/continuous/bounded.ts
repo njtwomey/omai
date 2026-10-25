@@ -1,3 +1,9 @@
+/**
+ * Continuous distributions on a bounded interval: uniform, beta, Kumaraswamy (a beta-like family with a closed-form
+ * CDF), triangular and logit-normal, each with densities, CDFs, quantiles, moments and reparameterised sampling as
+ * scipy.stats and torch.distributions.
+ */
+
 import {
   betainc,
   betaincinv,

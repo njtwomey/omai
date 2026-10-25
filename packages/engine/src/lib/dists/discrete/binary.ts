@@ -1,3 +1,8 @@
+/**
+ * Discrete distributions of successes: the Bernoulli on {0, 1} (from probabilities or logits), the binomial count of
+ * successes in n trials and the overdispersed beta-binomial, as scipy.stats and torch.distributions.
+ */
+
 import { betainc, lbeta, lbinom, logSigmoid, xlog1py, xlogy } from '../../numerics/special/index.ts'
 import {
   beta as betaDraw,

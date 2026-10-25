@@ -1,3 +1,10 @@
+/**
+ * Gaussian processes as random functions: covariance functions of Brownian motion, the Brownian bridge and the
+ * Ornstein-Uhlenbeck process, sampling paths at given points, conditioning on noisy observations to obtain the
+ * posterior, and the Karhunen-Loeve expansion of a process into orthogonal eigenfunctions with independent Gaussian
+ * coefficients (numerical, and exact for Brownian motion).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { choleskyJitter, choSolve, eigh, solveTriangular } from '../numerics/linalg/index.ts'
 import { type Key, normal } from '../random/index.ts'

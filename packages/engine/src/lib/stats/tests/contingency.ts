@@ -1,3 +1,9 @@
+/**
+ * Tests on contingency tables of counts: the chi-square and G tests of independence (scipy.stats.chi2_contingency),
+ * Fisher's exact test, McNemar's and Cochran's Q tests for paired binary outcomes, and the odds ratio and relative risk
+ * with their intervals.
+ */
+
 import { type Estimate, logSumExpOf, type TestResult, WhiteboxError } from '../../base/index.ts'
 import { hypergeometric } from '../../dists/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'

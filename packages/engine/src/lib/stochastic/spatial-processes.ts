@@ -1,3 +1,9 @@
+/**
+ * Spatial point processes in a rectangle: homogeneous and inhomogeneous spatial Poisson processes, the Thomas and
+ * Matern cluster processes (Poisson parents with scattered children), and Ripley's K and Besag's L functions with edge
+ * corrections (as astropy), which measure clustering or regularity against complete spatial randomness.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, normal, poisson, uniform } from '../random/index.ts'
 import {

@@ -1,3 +1,9 @@
+/**
+ * Dictionary and transform coding of symbol sequences: the LZ77 sliding-window parse, the LZ78 growing-dictionary parse
+ * and Lempel-Ziv-Welch (LZW) coding, each with its decoder, and the Burrows-Wheeler transform and move-to-front coding
+ * (with their inverses), which rearrange data so that it compresses better, as in bzip2.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** A sequence of symbols: a string (its UTF-8 bytes) or integers. */

@@ -1,3 +1,9 @@
+/**
+ * Elementwise bijectors, applied to each coordinate independently: identity, exponential, softplus, sigmoid, tanh,
+ * affine, power and the standard normal CDF, each with a numerically stable log-Jacobian. They map the real line onto
+ * the positive reals, the unit interval and other simple supports.
+ */
+
 import { logit, logSigmoid, ndtr, ndtri, normalLogPdf } from '../../numerics/special/index.ts'
 import {
   abs,

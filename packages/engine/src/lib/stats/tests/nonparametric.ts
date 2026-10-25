@@ -1,3 +1,9 @@
+/**
+ * Rank-based (nonparametric) tests that do not assume normality, scipy.stats style: Mann-Whitney U, Wilcoxon
+ * signed-rank, Kruskal-Wallis and Friedman tests with exact or tie-corrected p-values and effect sizes, the Nemenyi
+ * post-hoc comparisons that follow them (as scikit-posthocs), the sign test and the Brunner-Munzel test.
+ */
+
 import { type TestResult, WhiteboxError } from '../../base/index.ts'
 import { studentisedRange } from '../../dists/index.ts'
 import { item, type Tensor, type TensorLike } from '../../tensor/index.ts'

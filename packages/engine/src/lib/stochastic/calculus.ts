@@ -1,3 +1,10 @@
+/**
+ * Stochastic calculus on simulated paths: Ito and Stratonovich integrals as Riemann sums, numerical checks of Ito's
+ * lemma and the Ito isometry, Girsanov likelihood ratios for changing the drift by importance weighting, and Monte
+ * Carlo solution of backward PDEs by the Feynman-Kac formula, with the Black-Scholes option price as its classic
+ * closed-form case.
+ */
+
 import { grad } from '../autodiff/index.ts'
 import { type Estimate, estimate, WhiteboxError } from '../base/index.ts'
 import { ndtr } from '../numerics/special/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Tests of whether two (or k) samples come from the same distribution: Kolmogorov-Smirnov, Cramer-von Mises, k-sample
+ * Anderson-Darling and Epps-Singleton (scipy.stats), the energy and Wasserstein distances between empirical
+ * distributions with permutation tests, and the classifier two-sample test, which asks whether any classifier can tell
+ * the samples apart.
+ */
+
 import { type Alternative, maxOf, meanOf, minOf, type TestResult, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../../random/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'

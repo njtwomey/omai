@@ -1,3 +1,10 @@
+/**
+ * Branching processes, populations in which each individual independently leaves a random number of offspring: the
+ * Galton-Watson process with its generating function, moments and extinction probability (also simulated as a traced
+ * algorithm), and continuous-time birth-death processes with their generator, stationary law, Kendall's closed forms
+ * for the linear case, Gillespie simulation and the Yule pure-birth law.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { categorical, exponential, foldIn, type Key, multinomial } from '../random/index.ts'
 import {

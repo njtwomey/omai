@@ -1,3 +1,10 @@
+/**
+ * What samplers sample: the `LogDensity` target (an unnormalised log density with its gradient and the map back to
+ * constrained parameters), built from a differentiable function, plain number functions or a distribution sampled on
+ * unconstrained reals, and the `Proposal` used by importance, independence and rejection samplers. Also the standard
+ * test targets Neal's funnel and Haario's banana.
+ */
+
 import { valueAndGrad } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { bijectors, type Distribution, type Support } from '../dists/index.ts'

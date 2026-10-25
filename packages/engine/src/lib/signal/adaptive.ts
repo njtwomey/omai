@@ -1,3 +1,10 @@
+/**
+ * Adaptive FIR filters whose weights update sample by sample to track a desired signal: least mean squares (LMS), its
+ * normalised form (NLMS) and recursive least squares (RLS), as in padasip. The traced `adaptiveFilterAlgorithm`,
+ * `adaptiveFilter` to run one over a whole record, and Widrow's adaptive noise cancellation, which predicts the noise
+ * from a correlated reference and keeps the error as the cleaned signal.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/blas.ts'
 import { primalOf, type Tensor, type TensorLike } from '../tensor/index.ts'

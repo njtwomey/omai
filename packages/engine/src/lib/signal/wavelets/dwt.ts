@@ -1,3 +1,9 @@
+/**
+ * The discrete wavelet transform, which splits a signal into a coarse approximation and details at successive scales by
+ * filtering and downsampling, matching pywt: the single-level and multilevel transforms and their inverses in one and
+ * two dimensions, with pywt's signal extension modes.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

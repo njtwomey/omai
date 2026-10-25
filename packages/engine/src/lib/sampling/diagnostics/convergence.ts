@@ -1,3 +1,9 @@
+/**
+ * Convergence diagnostics for MCMC chains, matching ArviZ: R-hat (the potential scale reduction factor, which compares
+ * between- and within-chain variance to say whether chains agree), the effective sample size in its bulk, tail and
+ * other variants, and the Monte Carlo standard error of posterior summaries.
+ */
+
 import { quantileOf, WhiteboxError } from '../../base/index.ts'
 import { beta } from '../../dists/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'

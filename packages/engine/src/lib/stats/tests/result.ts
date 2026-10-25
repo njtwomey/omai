@@ -1,3 +1,10 @@
+/**
+ * The common shape of every hypothesis test: the `TestResult` record (statistic, p-value, degrees of freedom, effect
+ * size, interval, assumption checks) and the helpers that build, format and read it. Also the tests of equal variances
+ * (Levene, Brown-Forsythe, Bartlett, Fligner-Killeen) and the normality, equal-variance and expected-count checks that
+ * parametric tests attach to their results.
+ */
+
 import {
   type Alternative,
   type ConfidenceLevel,

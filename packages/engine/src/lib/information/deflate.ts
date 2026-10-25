@@ -1,3 +1,9 @@
+/**
+ * DEFLATE compression (LZ77 matching followed by Huffman coding), the algorithm inside zip, gzip and PNG: raw `deflate`
+ * and `inflate` streams, the zlib and gzip container formats (byte-identical to Python's zlib and gzip at the same
+ * level), and the CRC-32 and Adler-32 checksums they use.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bitSink, type DeflateStrategy, deflateRaw } from './_deflate.ts'
 

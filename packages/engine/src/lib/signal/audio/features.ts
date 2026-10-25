@@ -1,3 +1,10 @@
+/**
+ * Frame-level audio features, following librosa's conventions and defaults: magnitude, mel and chroma spectrograms,
+ * decibel conversions, mel-frequency cepstral coefficients (MFCCs), the spectral shape descriptors (centroid,
+ * bandwidth, roll-off, flatness, flux), and the time-domain RMS energy and zero-crossing rate, with the `frame` helper
+ * that cuts a signal into overlapping windows.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { padArray } from '../../numerics/convolution/index.ts'
 import { dct } from '../../numerics/fourier/index.ts'

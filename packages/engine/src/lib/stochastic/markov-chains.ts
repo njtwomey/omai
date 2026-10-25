@@ -1,3 +1,10 @@
+/**
+ * Discrete-time Markov chains given by a transition matrix: classification of states into communicating classes with
+ * periods, stationary distributions, n-step distributions, absorption probabilities and times, hitting probabilities
+ * and times, mean return times, mixing times and the spectral gap, reversibility and time reversal, and simulation of
+ * paths.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { totalVariation } from '../information/index.ts'
 import { eigh, eigvals, matrixPower, solve } from '../numerics/linalg/index.ts'

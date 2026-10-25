@@ -1,3 +1,10 @@
+/**
+ * Metropolis-Hastings samplers, which propose a move and accept it with a probability that keeps the target invariant:
+ * the acceptance rule, general Metropolis-Hastings with any proposal, random-walk and independence Metropolis, the
+ * adaptive Metropolis of Haario, Saksman and Tamminen, and a warm-up that tunes the random-walk proposal scale towards
+ * a target acceptance rate.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { dgemv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'

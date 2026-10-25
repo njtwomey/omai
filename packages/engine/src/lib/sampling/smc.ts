@@ -1,3 +1,10 @@
+/**
+ * Sequential Monte Carlo (SMC) samplers, which move a population of weighted particles from the prior to the posterior
+ * through a ladder of tempered targets: systematic, stratified, multinomial and residual resampling, adaptive choice of
+ * the next temperature, the default adaptive random-walk move, the tempered SMC sampler with its log-evidence estimate
+ * (as BlackJAX), and annealed importance sampling.
+ */
+
 import { type Estimate, type Json, logSumExpOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'

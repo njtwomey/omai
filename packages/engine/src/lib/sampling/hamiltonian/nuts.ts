@@ -1,3 +1,9 @@
+/**
+ * The No-U-Turn Sampler (NUTS), the adaptive form of HMC that doubles its trajectory in random directions until it
+ * starts to turn back, so the path length need not be tuned: the multinomial NUTS kernel (Hoffman and Gelman,
+ * Betancourt; as BlackJAX and NumPyro), its window adaptation, and `nuts` for several chains after Stan-style warm-up.
+ */
+
 import { logAddExp, WhiteboxError } from '../../base/index.ts'
 import { foldIn, uniformStream } from '../../random/index.ts'
 import { checkStepSize } from '../_mcmc.ts'

@@ -1,3 +1,9 @@
+/**
+ * Stability margins of a single-loop feedback system, the classical measures of how far a loop is from instability:
+ * gain, phase, stability and delay margins with their crossover frequencies (python-control stability_margins and
+ * margin), and the frequencies where the Nyquist curve crosses the real axis.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { polyder, polymul } from '../numerics/polynomial/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Finite mixture distributions, p(x) = sum_k w_k p_k(x): a mixture of arbitrary components (scipy.stats.Mixture), a
+ * mixture of one batched family (torch.distributions.MixtureSameFamily), and the posterior component probabilities
+ * (responsibilities) that form the E step of expectation maximisation.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {

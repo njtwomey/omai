@@ -1,3 +1,10 @@
+/**
+ * The analog lowpass prototypes that IIR design starts from (Butterworth, Chebyshev I and II, elliptic from Jacobi
+ * elliptic functions, and Bessel), the frequency transformations that turn a prototype into a lowpass, highpass,
+ * bandpass or bandstop filter, and the bilinear transform to a digital filter, all on zeros, poles and gain as in
+ * scipy.signal.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
 import { ellipj, ellipk } from '../../numerics/special/index.ts'

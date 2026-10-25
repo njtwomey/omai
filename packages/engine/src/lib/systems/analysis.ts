@@ -1,3 +1,10 @@
+/**
+ * Structural analysis of state-space systems, python-control style: the controllability and observability matrices
+ * (differentiable) and the reliable staircase tests of whether every state can be steered by the inputs and seen in the
+ * outputs, the controllability and observability Gramians, and the Kalman decomposition that separates the four
+ * combinations of the two.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { eigh, qr, solve, solveContinuousLyapunov, solveDiscreteLyapunov } from '../numerics/linalg/index.ts'
 import {

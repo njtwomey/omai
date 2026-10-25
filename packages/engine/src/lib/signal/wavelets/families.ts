@@ -1,3 +1,9 @@
+/**
+ * The wavelets themselves: the discrete families (Haar, Daubechies, symlets, coiflets, biorthogonal and others) with
+ * their four filters by name as pywt.Wavelet, the deepest useful decomposition level, and continuous wavelets (Morlet,
+ * Mexican hat, Gaussian derivatives) sampled on their support.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Tensor } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'

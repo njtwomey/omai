@@ -1,3 +1,9 @@
+/**
+ * Stationary kernels, which depend only on the difference between points: RBF (squared exponential), Matern, rational
+ * quadratic, gamma-exponential, Laplacian, periodic and locally periodic, the spectral mixture kernel of Wilson and
+ * Adams, and the cosine kernel, with the parameterisations of scikit-learn and GPyTorch.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { cdist } from '../numerics/geometry/index.ts'
 import { kv, lgamma } from '../numerics/special/index.ts'

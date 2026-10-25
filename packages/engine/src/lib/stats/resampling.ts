@@ -1,3 +1,10 @@
+/**
+ * Resampling inference, scipy.stats style: permutation tests of any statistic (exact by enumeration when feasible,
+ * Monte Carlo otherwise), bootstrap confidence intervals by the percentile, basic, BCa and studentised methods, the
+ * jackknife estimate of bias and standard error, and Monte Carlo tests against a simulated null. The permutation test
+ * and bootstrap are also traced algorithms with explicit keys.
+ */
+
 import { type Alternative, type Estimate, meanOf, type TestResult, varianceOf, WhiteboxError } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, permutation, randint } from '../random/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'

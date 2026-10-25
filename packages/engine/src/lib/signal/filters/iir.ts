@@ -1,3 +1,9 @@
+/**
+ * Infinite impulse response (IIR) filter design, scipy.signal style: `iirfilter` for any family and band, the named
+ * designs (Butterworth, Chebyshev I and II, elliptic, Bessel) returned as transfer-function coefficients,
+ * zeros-poles-gain or second-order sections, and the second-order notch, peak and comb filters.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   type SecondOrderSections,

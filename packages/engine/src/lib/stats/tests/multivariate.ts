@@ -1,3 +1,9 @@
+/**
+ * Tests on multivariate data: Hotelling's T-squared test of a mean vector, one-way MANOVA with Wilks' lambda, Pillai's
+ * trace, the Hotelling-Lawley trace and Roy's root, Box's M test of equal covariance matrices, and Mardia's tests of
+ * multivariate normality.
+ */
+
 import { type TestResult, WhiteboxError } from '../../base/index.ts'
 import { dpotrf, dsyev, dtrsv } from '../../numerics/linalg/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'

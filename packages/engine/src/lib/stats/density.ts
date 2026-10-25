@@ -1,3 +1,9 @@
+/**
+ * Kernel density estimation, the smooth estimate of a density by placing a kernel at every data point: Gaussian KDE in
+ * any dimension (scipy.stats.gaussian_kde) with optional weights and boundary correction, and bandwidth selection by
+ * Scott's and Silverman's rules or by likelihood and least-squares cross-validation (as statsmodels).
+ */
+
 import { varianceOf, WhiteboxError } from '../base/index.ts'
 import { dpotrf } from '../numerics/linalg/index.ts'
 import { categorical, foldIn, type Key, normal as normalNoise } from '../random/index.ts'

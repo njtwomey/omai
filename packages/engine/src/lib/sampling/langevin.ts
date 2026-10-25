@@ -1,3 +1,10 @@
+/**
+ * Gradient-driven samplers based on Langevin dynamics: the Metropolis-adjusted (MALA) and unadjusted (ULA) Langevin
+ * kernels, stochastic-gradient Langevin dynamics (SGLD) with minibatch gradients and its decaying step-size schedule,
+ * and Stein variational gradient descent (SVGD), which moves a set of particles deterministically towards the target
+ * (also as a traced algorithm), following BlackJAX.
+ */
+
 import { valueAndGrad } from '../autodiff/index.ts'
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { ddot, dgemv } from '../numerics/linalg/index.ts'

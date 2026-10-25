@@ -1,3 +1,10 @@
+/**
+ * Applying digital filters to signals, scipy.signal style: `lfilter` for a transfer function, `sosfilt` for
+ * second-order sections, their steady-state initial conditions, and zero-phase forward-backward `filtfilt` and
+ * `sosfiltfilt`, plus `applyFilter` for any LTI system from the systems domain. Also the non-recursive smoothers:
+ * median, Savitzky-Golay (local least-squares polynomials), moving average and exponentially weighted moving average.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { convolve } from '../../numerics/convolution/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'

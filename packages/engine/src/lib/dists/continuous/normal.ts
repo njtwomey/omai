@@ -1,3 +1,9 @@
+/**
+ * The normal distribution and its direct relatives: normal, half-normal, log-normal, truncated normal and Azzalini's
+ * skew-normal, each with densities, CDFs, quantiles, moments, entropy and reparameterised sampling, as scipy.stats and
+ * torch.distributions.
+ */
+
 import {
   erf,
   erfc,

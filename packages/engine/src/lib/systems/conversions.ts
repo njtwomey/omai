@@ -1,3 +1,9 @@
+/**
+ * Conversions between the representations of a linear system as plain coefficient data, scipy.signal style:
+ * transfer-function normalisation, transfer function to state space (the controller canonical form) and back, transfer
+ * function to zeros, poles and gain and back, and the routes between zeros-poles-gain and state space.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type ComplexArray, charpoly } from '../numerics/polynomial/index.ts'
 import {

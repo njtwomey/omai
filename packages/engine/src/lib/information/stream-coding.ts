@@ -1,3 +1,9 @@
+/**
+ * Stream (entropy) coders that approach the entropy bound to within a fraction of a bit per message: arithmetic coding
+ * with 32-bit integers (Witten, Neal and Cleary) and carry-less range coding, each with its decoder, driven by a fixed
+ * frequency table or by adaptive counts.
+ */
+
 import { pairwiseSum, WhiteboxError } from '../base/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { float } from './_shared.ts'

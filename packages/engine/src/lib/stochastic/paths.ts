@@ -1,3 +1,9 @@
+/**
+ * The shared machinery of path simulation in the stochastic domain: the `Paths` record (sample paths on a time grid),
+ * time grids, `pathAlgorithm` and `simulatePaths`, which run any Markov transition as a traced algorithm with a key per
+ * step, and helpers for increments, coarsening onto a coarser grid and reading states at a time.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import {

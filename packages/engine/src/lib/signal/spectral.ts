@@ -1,3 +1,10 @@
+/**
+ * Non-parametric power spectral density estimation, scipy.signal style: detrending, the periodogram, Welch's averaged
+ * periodogram and Bartlett's method, the cross spectral density and magnitude-squared coherence, the Blackman-Tukey
+ * correlogram, Thomson's multitaper estimate with DPSS tapers, and the degrees of freedom and chi-square confidence
+ * intervals of an estimate.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { chi2 } from '../dists/index.ts'
 import { fft, fftfreq, rfft, rfftfreq } from '../numerics/fourier/index.ts'
