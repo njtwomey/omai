@@ -83,16 +83,12 @@ export function evaluateExplanations(
   const explainers =
     options.explainers ?? ([...(trees ? ['tree'] : []), 'kernel', 'sampling', 'lime'] as AttributionMethod[])
   const background = options.background ?? 30
+  const explainOf = (method: AttributionMethod, which: readonly number[], source: LearnData = data) =>
+    explainDataset(fitted, source, { method, rows: [...which], background, nPermutations: 60, nSamples: 300, key })
   const attribute = (method: AttributionMethod, which: readonly number[], source: LearnData = data): number[][] =>
-    explainDataset(fitted, source, {
-      method,
-      rows: [...which],
-      background,
-      nPermutations: 60,
-      nSamples: 300,
-      key,
-    }).values.map((v) => [...v])
-  const attributions = explainers.map((m) => attribute(m, rows))
+    explainOf(method, which, source).values.map((v) => [...v])
+  const explained = explainers.map((m) => explainOf(m, rows))
+  const attributions = explained.map((r) => r.values.map((v) => [...v]))
   const xs = rows.map((i) => Array.from(x.data.subarray(i * d, (i + 1) * d)))
   const means = Array.from({ length: d }, (_, j) => {
     let s = 0
@@ -115,7 +111,8 @@ export function evaluateExplanations(
     explain.faithfulnessCorrelation(predict, xs, a, { baseline: means, nRuns: 30, key: foldIn(key, 1) }),
   )
   const complexities = attributions.map((a) => a.map((r) => explain.complexity(r)))
-  const completeness = attributions.map((a) => explain.completenessGap(a, fx, [fBase]))
+  // Each explainer's attributions start from its own base value (E f over its background, a surrogate's intercept).
+  const completeness = attributions.map((a, e) => explain.completenessGap(a, fx, [explained[e]?.baseValue ?? fBase]))
   const ns = options.sensitivitySamples ?? 3
   const sensitivities =
     ns <= 0

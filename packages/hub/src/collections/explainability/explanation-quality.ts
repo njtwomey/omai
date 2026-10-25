@@ -21,8 +21,8 @@ export const explanationQuality: HubEntry = defineEntry({
   maxRows: 400,
   params: dict({
     model: modelControl(['random forest', 'gradient boosting', 'k-nearest neighbours'], 'random forest'),
-    rows: int(2, 30, { default: 8, label: 'rows explained' }),
-    background: int(5, 60, { default: 20, label: 'background rows' }),
+    rows: int(2, 30, { default: 5, label: 'rows explained' }),
+    background: int(5, 60, { default: 12, label: 'background rows' }),
   }),
   run: ({ data, params, key }) => {
     const { fitted, learn } = fitModel(data, params['model'] as ExplainedModel, key)
