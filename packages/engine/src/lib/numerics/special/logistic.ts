@@ -1,3 +1,9 @@
+/**
+ * Logistic and log-domain helpers, scipy.special style, computed without overflow: the sigmoid `expit` and `logit`,
+ * softplus and log-sigmoid, `log1mexp`, `logaddexp`, and the entropy terms `xlogy`, `xlog1py`, `entr`, `relEntr` and
+ * `klDiv` that are defined as 0 where x is 0.
+ */
+
 import {
   abs,
   add,

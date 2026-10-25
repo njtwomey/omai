@@ -1,3 +1,9 @@
+/**
+ * Distribution functions in scipy.special's naming: the Student t CDF and its inverse, chi-square and F CDFs and
+ * survival functions accurate in the tails, and the Kolmogorov and Smirnov distributions behind the Kolmogorov-Smirnov
+ * test.
+ */
+
 import { jvp } from '../../autodiff/index.ts'
 import {
   abs,

@@ -1,3 +1,9 @@
+/**
+ * The Cholesky factorisation of a symmetric positive-definite matrix, A = L L^T, as a differentiable primitive, with
+ * the solves (`choSolve`, scipy's `cho_factor` form) and log-determinants built on it, a jitter ladder for nearly
+ * singular matrices, and rank-one updates and downdates.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

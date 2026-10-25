@@ -1,3 +1,10 @@
+/**
+ * Locality-sensitive hashing, where similar points are likely to share a hash bucket: random-hyperplane hashing for
+ * cosine similarity, p-stable hashing for Lp distances, MinHash signatures with banding for Jaccard similarity of sets,
+ * collision and banding probabilities (the S-curve), multi-probe sequences, and an E2LSH-style index that reports query
+ * statistics.
+ */
+
 import { heap, WhiteboxError } from '../../base/index.ts'
 import { cauchy, foldIn, type Key, normal, randint, uniform } from '../../random/index.ts'
 import { concreteOrThrow, item, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

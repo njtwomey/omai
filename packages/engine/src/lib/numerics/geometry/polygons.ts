@@ -1,3 +1,9 @@
+/**
+ * Polygons and convex hulls: planar hulls by Andrew's monotone chain and 3-D hulls by the incremental algorithm (as
+ * scipy's `ConvexHull`), polygon area, centroid and perimeter, convexity and winding-number point-in-polygon tests,
+ * segment intersection, Sutherland-Hodgman clipping, and Minkowski sums of convex polygons.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

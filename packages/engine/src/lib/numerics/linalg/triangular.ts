@@ -1,3 +1,8 @@
+/**
+ * Triangular solves by substitution as a differentiable primitive (scipy.linalg `solve_triangular`, upper or lower,
+ * transposed, unit diagonal), and inverses of triangular matrices. The Cholesky, LU and QR solves are built on it.
+ */
+
 import {
   arg,
   batchLeading,

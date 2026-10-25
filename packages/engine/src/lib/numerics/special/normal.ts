@@ -1,3 +1,9 @@
+/**
+ * Standard normal special functions: the CDF `ndtr` and its logarithm (accurate deep in the tail), the quantile
+ * `ndtri`, the density and log density, Owen's T function for bivariate normal and skew-normal probabilities, and the
+ * log-probability of an interval, as truncated normals and ordinal regression need.
+ */
+
 import {
   add,
   div,

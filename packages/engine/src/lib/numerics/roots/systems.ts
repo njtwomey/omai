@@ -1,3 +1,10 @@
+/**
+ * Solving systems of nonlinear equations F(x) = 0 with Jacobians from autodiff: damped Newton with a backtracking line
+ * search (`fsolve`), Broyden's quasi-Newton method, fixed-point iteration with Steffensen or Anderson acceleration, a
+ * `root` front end as in scipy.optimize, and `rootOf`, a solution differentiable in its parameters by the implicit
+ * function theorem.
+ */
+
 import { customVjp, jvp as forward, jacobian, vjp } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import {

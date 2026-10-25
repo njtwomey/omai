@@ -1,3 +1,9 @@
+/**
+ * Exact nearest-neighbour search by computing every distance (scikit-learn's brute algorithm): k-nearest and radius
+ * neighbours, and the k-nearest-neighbour and radius graphs as sparse matrices. It is the reference the trees and
+ * approximate indexes are checked against.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   fromStorage,

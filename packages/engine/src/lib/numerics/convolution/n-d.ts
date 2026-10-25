@@ -1,3 +1,9 @@
+/**
+ * Convolution as in deep learning (a cross-correlation, `torch.nn.functional.conv1d/2d/3d`) over any number of spatial
+ * axes, with stride, padding, dilation and groups, its transpose, and the `im2col` and `col2im` patch extraction it is
+ * built on.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

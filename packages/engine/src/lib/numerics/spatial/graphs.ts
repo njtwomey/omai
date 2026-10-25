@@ -1,3 +1,10 @@
+/**
+ * Graph-based approximate nearest-neighbour search: HNSW (hierarchical navigable small-world graphs, Malkov and
+ * Yashunin), which searches greedily down layers of ever sparser graphs, and NN-descent, which builds an approximate
+ * k-nearest-neighbour graph from the idea that a neighbour of a neighbour is likely a neighbour. Searches record what
+ * they visited, for figures.
+ */
+
 import { heap, type Json, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

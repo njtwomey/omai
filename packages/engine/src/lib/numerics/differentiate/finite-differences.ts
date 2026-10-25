@@ -1,3 +1,10 @@
+/**
+ * Numerical differentiation: Ridders' extrapolated central differences for a scalar derivative with an error estimate,
+ * numpy.gradient on sampled values, finite-difference Jacobians and Hessians (as scipy.optimize's `approx_derivative`),
+ * Fornberg's weights for any stencil, complex-step derivatives accurate to machine precision, and dense difference
+ * matrices.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

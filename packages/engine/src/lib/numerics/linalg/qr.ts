@@ -1,3 +1,8 @@
+/**
+ * The QR factorisation by Householder reflections (numpy.linalg `qr`, reduced) and the least-squares and minimum-norm
+ * solutions built on it (`lstsq`), plus the elementary building blocks: Householder reflectors and Givens rotations.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

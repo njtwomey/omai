@@ -1,3 +1,10 @@
+/**
+ * Interpolation on grids and of scattered data, numpy and scipy.interpolate style: `interp` (piecewise linear),
+ * `interp1d` with nearest, previous, next and spline kinds, `regularGridInterpolator` for rectilinear grids in any
+ * dimension, and `griddata` for scattered sites (nearest, Delaunay-linear and natural-neighbour), all linear in the
+ * data values.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

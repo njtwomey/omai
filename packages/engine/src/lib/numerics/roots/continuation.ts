@@ -1,3 +1,9 @@
+/**
+ * Continuation methods for nonlinear equations: the Newton homotopy, which deforms an easy problem into F(x) = 0 and
+ * follows the solution with Newton corrections (often reaching roots plain Newton misses), and Keller's
+ * pseudo-arclength continuation, which traces a solution curve of F(x, lambda) = 0 through turning points.
+ */
+
 import { jacobian } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import {

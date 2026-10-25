@@ -1,3 +1,9 @@
+/**
+ * Best (minimax) approximation: the Remez exchange algorithm, which finds the polynomial or rational function
+ * minimising the maximum error on an interval by repeatedly solving on a reference set of points and moving the points
+ * to the error's extrema until it equioscillates.
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { solve } from '../linalg/index.ts'

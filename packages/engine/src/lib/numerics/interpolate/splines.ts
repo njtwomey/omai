@@ -1,3 +1,9 @@
+/**
+ * Interpolating and least-squares splines, scipy.interpolate style: cubic Hermite splines, `cubicSpline` with
+ * not-a-knot, natural, clamped and periodic ends, B-splines (`BSpline`, basis elements and scipy's default knots),
+ * `makeInterpSpline` of any degree, and `makeLsqSpline` for given knots.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

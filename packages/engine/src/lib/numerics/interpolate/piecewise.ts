@@ -1,3 +1,9 @@
+/**
+ * Piecewise polynomials in the power basis (scipy.interpolate `PPoly`): evaluation, derivatives, antiderivatives,
+ * definite integrals, roots and extrapolation over breakpoints, the representation splines convert to, plus the real
+ * roots of a polynomial by companion-matrix eigenvalues polished with Newton steps.
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import {
   add,

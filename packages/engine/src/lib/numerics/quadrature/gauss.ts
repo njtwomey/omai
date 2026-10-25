@@ -1,3 +1,10 @@
+/**
+ * Gaussian quadrature rules, nodes and weights exact for polynomials up to degree 2n - 1 against a weight:
+ * Gauss-Legendre, Hermite, Laguerre and Jacobi (as numpy and scipy.special), fixed double-exponential rules for
+ * integrating many integrands at once, fixed-order quadrature over an interval, and normal expectations by
+ * Gauss-Hermite.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

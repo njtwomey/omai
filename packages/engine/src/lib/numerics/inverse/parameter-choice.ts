@@ -1,3 +1,9 @@
+/**
+ * Rules for choosing the regularisation parameter of an ill-posed problem: the L-curve corner (Hansen), generalised
+ * cross-validation, Morozov's discrepancy principle for a known noise level, and the quasi-optimality criterion, with a
+ * parameter grid scaled to the singular values.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { primalOf, toFlat } from '../../tensor/index.ts'
 import type { SpectralData } from './tikhonov.ts'

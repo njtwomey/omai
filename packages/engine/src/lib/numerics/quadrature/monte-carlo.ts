@@ -1,3 +1,9 @@
+/**
+ * Integration by random sampling: plain Monte Carlo over a box with its standard error, randomised quasi-Monte Carlo
+ * with randomly shifted Halton points, and importance sampling from a proposal with the effective sample size of its
+ * weights.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, halton, type Key, uniform } from '../../random/index.ts'
 import {

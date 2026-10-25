@@ -1,3 +1,9 @@
+/**
+ * The fast Fourier transform, numpy.fft style: forward and inverse complex transforms along an axis, real-input and
+ * Hermitian transforms, and 2-D and N-D transforms, with numpy's normalisation options. Powers of two use radix-2, and
+ * every other length uses Bluestein's algorithm, so all lengths cost O(N log N).
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   batchAtFront,

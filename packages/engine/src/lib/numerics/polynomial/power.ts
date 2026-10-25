@@ -1,3 +1,10 @@
+/**
+ * Polynomials in the power basis, as `numpy.polynomial.polynomial`: Horner evaluation (differentiable in points and
+ * coefficients), Vandermonde matrices and least-squares fits, derivatives and integrals, arithmetic and division,
+ * companion matrices and roots, polynomials from roots, and the characteristic polynomial of a matrix with an exact
+ * derivative rule.
+ */
+
 import { customJvp } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import {

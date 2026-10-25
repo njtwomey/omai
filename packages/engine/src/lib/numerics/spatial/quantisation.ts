@@ -1,3 +1,9 @@
+/**
+ * Vector quantisation for compact storage and fast approximate search: k-means codebooks with k-means++ seeding,
+ * product quantisation (Jegou, Douze and Schmid), which stores each vector as a few small codes, and inverted-file
+ * (IVF) indexes as in faiss, which search only the lists nearest the query.
+ */
+
 import { argminOf, heap, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
