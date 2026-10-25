@@ -2755,60 +2755,98 @@ stratified area-light estimates.
   interpolation, textures and deferred shading (`mesh`, `rasteriseMesh`): the counterpart of ray casting, for
   comparison figures.
 
-### 4.38 `explain/` (tier 10): explaining models and data (shap, lime, alibi, captum, interpret, sklearn.inspection)
+### 4.38 `explain/` (tier 10): explaining models and data (shap, captum, alibi, lime, interpret, quantus)
 
-A complete domain: every explanation a practitioner would reach for, model-agnostic where possible, each a plain
-function over a model's prediction function (or a fitted estimator) and data, returning values the exposition records
-of `methods/explain` and render's views draw. Built: `shapley`, `surrogates`, `gradients`, `counterfactuals`,
-`inspection`, `valuation`; the rest is the plan for completing the domain.
+A complete domain, organised as the field is: attributions (local and global, gradient and perturbation),
+example-based and contrastive explanations, concepts, glass-box models, data attribution, and the evaluation of
+explanations. Every method works on a prediction function (or a differentiable model, for gradient methods) and data,
+returns plain values, and is wrapped by `methods/explain` into exposition records. Round one built `shapley`,
+`surrogates`, `gradients`, `counterfactuals`, `inspection` and `valuation`; round two completes the domain to the
+coverage of shap, Captum, Alibi, LIME, InterpretML and Quantus together.
 
-oracle: shap (exact, kernel, tree, permutation, partition explainers), lime, captum (gradient methods), alibi
-(anchors, counterfactuals), interpret (EBM shape functions), sklearn.inspection; goldens where cheap
-- `shapley.ts`: exact Shapley values and interaction values (via `games`), kernel SHAP, sampling and permutation SHAP,
-  tree SHAP (path-dependent and interventional) and interactions, linear SHAP; to add: partition (hierarchical) SHAP
-  and Owen values for grouped features, conditional versus interventional value functions, SAGE (global importance).
-- `surrogates.ts`: LIME (tabular, text, image superpixels), anchors (precision, coverage), global surrogate trees,
-  fidelity; to add: rule extraction (RuleFit-style), prototypes and criticisms (MMD-critic) in `examples.ts`.
-- `gradients.ts`: saliency, input times gradient, integrated gradients, SmoothGrad, expected gradients, DeepLIFT; to
-  add: Grad-CAM and guided backpropagation for convolutions, layer-wise relevance propagation, attention rollout.
-- `counterfactuals.ts`: Wachter, diverse (DiCE-style), FACE, linear recourse; to add: growing spheres, constraints on
-  actionability and plausibility, recourse cost and feasibility.
-- `inspection.ts`: permutation importance, partial dependence and ICE, ALE, H-statistics, functional ANOVA; to add:
-  drop-column and conditional permutation importance.
-- `valuation.ts`: influence functions, TracIn, data Shapley, k-NN Shapley; to add: Beta Shapley and data Banzhaf,
-  representer points.
-- `concepts.ts` (to add): concept activation vectors (TCAV), probing directions.
-- `glassbox.ts` (to add): explanations of interpretable models: GAM shape functions and pairwise terms (EBM-style),
-  rule lists and scorecards, linear contributions.
-- `evaluation.ts` (to add): explanation quality: deletion and insertion curves, ROAR, faithfulness correlation,
-  sensitivity and stability, sparsity, agreement between explainers, sanity checks by model and label randomisation.
+oracle: shap (exact, kernel, tree, linear, permutation, partition), captum (gradient, perturbation, layer and neuron
+methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interpret (EBM), sklearn.inspection, quantus
+(metrics on fixed attributions); goldens where cheap
+- Attributions, perturbation-based (`perturbation.ts`): occlusion and feature ablation (with feature masks and
+  baselines), RISE for images, Morris elementary effects, LIME (tabular, text tokens, image superpixels;
+  `surrogates.ts`).
+- Shapley family (`shapley.ts`): exact, kernel, sampling and permutation SHAP, tree SHAP (path-dependent and
+  interventional) and interactions, linear SHAP (independent and correlated), partition SHAP and Owen values over
+  feature hierarchies, conditional versus interventional value functions, SAGE (global importance), Shapley-based
+  interaction indices.
+- Gradient-based (`gradients.ts`): saliency, input times gradient, integrated gradients (baselines, Riemann and
+  Gauss-Legendre paths), SmoothGrad, VarGrad and SmoothGrad squared (noise tunnels), expected gradients and
+  GradientSHAP, DeepLIFT and DeepLIFT SHAP, guided backpropagation and deconvolution, Grad-CAM and guided Grad-CAM,
+  layer-wise relevance propagation (epsilon, gamma, alpha-beta rules).
+- Layer and neuron attribution (`internal.ts`): layer conductance, internal influence, layer activation times
+  gradient, neuron conductance and integrated gradients, attention rollout and attention flow for transformers.
+- Global effects and importance (`inspection.ts`): partial dependence and ICE (centred, derivative), ALE (first and
+  second order), permutation, drop-column and conditional permutation importance, H-statistics and functional ANOVA,
+  SHAP summaries (mean |value|, beeswarm data, dependence and interaction data).
+- Surrogates and rules (`surrogates.ts`, `rules.ts`): global surrogate trees and fidelity, anchors (precision and
+  coverage), RuleFit-style rule ensembles, rule lists and Boolean rules (BRCG-style), linearity measure.
+- Example-based (`examples.ts`): prototypes and criticisms (MMD-critic, ProtoSelect), k-nearest explanations, gradient
+  similarity explanations, trust scores.
+- Contrastive and counterfactual (`counterfactuals.ts`): Wachter, diverse (DiCE-style), FACE, CEM (pertinent positives
+  and negatives), prototype-guided counterfactuals, growing spheres, MACE-style for tree ensembles; actionability,
+  immutability and plausibility constraints; recourse (linear, cost, feasibility) and its robustness to model change.
+- Concepts (`concepts.ts`): concept activation vectors and TCAV scores with significance, probing classifiers,
+  concept bottleneck analysis.
+- Glass-box models (`glassbox.ts`): explainable boosting (GA2M: shape functions and pairwise terms), scorecards from
+  logistic models, sparse linear contributions; the shape-function data render draws.
+- Data attribution (`valuation.ts`): influence functions, TracIn, data Shapley, k-NN Shapley, Beta Shapley and data
+  Banzhaf, representer points; detecting mislabelled and harmful training rows.
+- Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
+  attribution applies to text, images and series.
+- Evaluation of explanations (`evaluation.ts`, Quantus's categories): faithfulness (deletion and insertion curves,
+  ROAR, faithfulness correlation, monotonicity), robustness (max- and average-sensitivity, local Lipschitz estimate),
+  localisation (pointing game, relevance mass and rank against a ground-truth mask), complexity (sparseness, entropy),
+  randomisation sanity checks (model parameter and label randomisation), axiomatic properties (completeness, input
+  invariance, symmetry), agreement between explainers.
 
 ### 4.39 `fairness/` (tier 10): fairness and bias (fairlearn, AIF360, Aequitas)
 
-A complete domain: measuring unfairness at the group, intersectional and individual level, finding bias in data, and
-mitigating it before, during and after training, as functions the exposition records of `methods/fairness` draw.
-Built: `group-metrics`; the rest is the plan for completing the domain.
+A complete domain, organised as the field is: measuring unfairness (group, intersectional, individual, causal, for
+classification, regression and ranking) with uncertainty, finding bias in data, mitigating it before, during and after
+training, and selecting models under fairness constraints. Every function works on predictions, scores, labels and
+protected attributes (any number of groups and attributes), returns plain values, and is wrapped by `methods/fairness`
+into exposition records. Round one built `group-metrics` (and the audit in `methods/fairness`); round two completes
+the domain to the coverage of fairlearn, AIF360 and Aequitas together.
 
-oracle: fairlearn (metrics, ExponentiatedGradient, GridSearch, ThresholdOptimizer), AIF360 (metrics, reweighing,
-disparate-impact remover), Aequitas (group bias metrics); goldens where cheap
-- `group-metrics.ts`: group rates; demographic parity, equal opportunity, equalised odds, predictive parity
-  (differences and ratios), disparate impact, calibration by group; to add: treatment equality, conditional
-  statistical parity, balance for each class, false discovery and omission rate parity, multicalibration.
-- `intersectional.ts` (to add): metrics over combinations of protected attributes and subgroups, worst-group gaps,
-  generalised entropy and Theil indices between and within groups.
-- `individual.ts` (to add): consistency, Lipschitz (individual) fairness under a similarity metric, counterfactual
-  fairness against a structural causal model (from `probprog`).
-- `data-bias.ts` (to add): representation and label bias, proxy detection (dependence of features on the protected
-  attribute), sampling bias diagnostics.
-- `preprocessing.ts` (to add): reweighing, disparate-impact removal, massaging, fair representations.
-- `in-processing.ts` (to add): reductions (exponentiated gradient and grid search over constraint moments), prejudice
-  remover, adversarial debiasing, fairness-constrained convex learning.
-- `post-processing.ts` (to add): threshold optimisation (demographic parity, equal opportunity, equalised odds),
-  reject-option classification, calibrated equalised odds.
-- `frontiers.ts` (to add): accuracy–fairness frontiers and the impossibility results (calibration against error-rate
-  balance) on generated data.
-- `ranking.ts` and `regression.ts` (to add): exposure parity and FA*IR for rankings; bounded group loss and
-  distributional parity for regression.
+oracle: fairlearn (metrics, MetricFrame, ExponentiatedGradient, GridSearch, ThresholdOptimizer), AIF360 (metrics,
+Reweighing, DisparateImpactRemover, LFR, OptimPreproc, PrejudiceRemover, CalibratedEqOdds, RejectOptionClassification),
+Aequitas (group bias); goldens where cheap
+- Group metrics for classification (`group-metrics.ts`): selection, true- and false-positive, true- and false-negative,
+  precision, false discovery and omission rates per group; demographic parity, equal opportunity, equalised odds,
+  predictive parity, treatment equality, accuracy parity, conditional statistical parity (given legitimate factors),
+  balance for each class (score parity), disparate impact (the four-fifths rule); differences, ratios and worst-group
+  forms against any reference group; calibration within groups and multicalibration.
+- Uncertainty of metrics (`inference.ts`): bootstrap intervals and permutation tests for gaps, minimum detectable
+  differences and small-group warnings.
+- Intersectional and subgroup fairness (`intersectional.ts`): metrics over combinations of attributes, rich-subgroup
+  auditing (GerryFair-style), worst-group gaps, generalised entropy and Theil indices between and within groups.
+- Individual fairness (`individual.ts`): consistency (k-NN), Lipschitz fairness under a task metric, fairness through
+  awareness.
+- Causal fairness (`causal.ts`): counterfactual fairness, total, direct and indirect (path-specific) discrimination,
+  against a structural causal model written in `probprog`.
+- Regression and scores (`regression.ts`): bounded group loss, statistical parity and equal opportunity in
+  distribution (Wasserstein and Kolmogorov-Smirnov), mean-difference and calibration gaps.
+- Rankings and recommendation (`ranking.ts`): exposure and attention parity, FA*IR, disparate treatment and impact in
+  rankings, deterministic re-ranking.
+- Bias in data (`data-bias.ts`): representation and base-rate gaps, label bias, proxy detection (dependence and
+  predictability of the protected attribute from features), sampling bias, bias amplification by a model.
+- Pre-processing (`preprocessing.ts`): reweighing, massaging, preferential sampling, disparate-impact removal (with a
+  repair level), optimised pre-processing, learning fair representations.
+- In-processing (`in-processing.ts`): reductions (exponentiated gradient and grid search over constraint moments:
+  demographic parity, equalised odds, true- and false-positive parity, error-rate parity, bounded group loss),
+  prejudice remover, adversarial debiasing, meta fair classifier, fairness-constrained convex learning (Zafar), GerryFair.
+- Post-processing (`post-processing.ts`): threshold optimisation per group (demographic parity, equal opportunity,
+  equalised odds; randomised thresholds), calibrated equalised odds, reject-option classification.
+- Trade-offs and selection (`frontiers.ts`): accuracy–fairness Pareto frontiers over models and hyperparameters,
+  fairness-aware model selection, the impossibility results (calibration against error-rate balance; independence,
+  separation and sufficiency) on generated data.
+- Dynamics (`dynamics.ts`): delayed impact of decisions (Liu et al.), feedback loops over repeated rounds, fairness
+  under distribution shift.
 
 ## 5. Methods, exposition records, views and the hub
 
@@ -3985,7 +4023,8 @@ oracle: shap (exact and tree explainers), scikit-learn inspection (permutation i
 fairlearn (metrics, ExponentiatedGradient, ThresholdOptimizer), MAPIE (conformal), netcal (calibration); goldens only
 where cheap and important.
 
-Exposition records added to `lib/exposition/`: `featureAttributions` (per row: base value, one value per feature,
+Exposition records added to `lib/exposition/` (`attributions.ts`: `featureAttributions`, `importances`):
+`featureAttributions` (per row: base value, one value per feature,
 the feature values, the prediction; optional interaction values), `dependence` (PDP with ICE curves or ALE per
 feature, with the data's rug), `importances` (per feature: mean and spread across repeats, the metric and its
 direction), `counterfactuals` (original row, counterfactuals, changed features, distances, validity), `groupReport`
@@ -3999,9 +4038,12 @@ ROC with thresholds), reliability diagrams, conformal bands and set sizes.
 `explain/` (shap, lime, alibi, interpret, sklearn.inspection)
 built from: `explain`, `learn`, `metrics`
 - `attributions.ts`: `explainPrediction(model, data, row, { method: 'tree' | 'kernel' | 'exact' | 'sampling' |
-  'lime' })` and `explainDataset` (attributions for many rows: summary and beeswarm), with the sampling estimate's
-  convergence recorded.
-- `inspection.ts`: permutation importance, PDP and ICE, ALE and interaction strength for any fitted estimator.
+  'lime' })` and `explainDataset` (attributions for many rows: summary and beeswarm, with each feature's strongest
+  interaction partner), with the sampling estimate's convergence recorded (and as a `curves` record); `_models.ts`
+  picks the output explained (prediction, probability, a booster's log odds) and reads trees, forests and gradient
+  boosting as Tree SHAP models.
+- `inspection.ts`: `featureImportance` (permutation, with every repeat, or impurity), PDP and ICE, ALE and interaction
+  strength for any fitted estimator.
 - `counterfactuals.ts`: counterfactual explanations and recourse for a fitted classifier, with constraints.
 - `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
 - `gradients.ts`: gradient attributions for neural models (`methods/neural`), drawn over images and tabular inputs.
@@ -4039,7 +4081,19 @@ each with the same records and views.
 Datasets: `lib/datasets` gains tabular datasets with protected attributes (a credit or income-like generator with a
 controllable dependence on the attribute, and vendored public ones where licences allow) for audits and mitigation.
 
-Hub: collections `explainability/`, `fairness/` (audit, threshold optimiser, exponentiated gradient, reweighing,
+Where they are shown: these are model demonstrations, so they live in the hub (collections `explainability/`,
+`fairness/`, `trust/`: SHAP on fitted models, counterfactuals for a credit model, audits with per-group thresholds,
+mitigation trading accuracy for parity, conformal coverage). The gallery's exposition section keeps one small recipe
+per new view kind on simple data, showing what the view can draw.
+
+Round two adds the records and views the completed domains need: perturbation and occlusion maps over images and text
+(value grids and token strips), layer and neuron attributions, concept (TCAV) scores with significance, rule and
+anchor lists, prototypes and criticisms, contrastive (pertinent positive and negative) explanations, glass-box shape
+functions and pairwise heatmaps, explanation-evaluation curves (deletion and insertion, sanity checks); and for
+fairness, metric gaps with intervals, intersectional subgroup heatmaps, Pareto frontiers, exposure in rankings, data-bias
+summaries and the dynamics of repeated decisions.
+
+Built in round one: hub: collections `explainability/`, `fairness/` (audit, threshold optimiser, exponentiated gradient, reweighing,
 disparate-impact remover, frontier, impossibility), `trust/`. Gallery: the exposition section gains a recipe per new
 view, driven by real methods on small data, with live controls (`exposition/40-group-report`: per-group thresholds
 dragged on each group's scores); the `fairness/` section holds the mitigation recipes (threshold optimiser with a
@@ -4196,14 +4250,18 @@ Design rules:
 
 `views/` (headless: one builder per exposition record kind, from `lib/exposition`)
 - `paths.ts` (`RegularisationPath`, `CrossValidationCurve`, `LearningCurve`, `PruningPath`), `trees.ts` (`TreeRecord`
-  as a structure with split candidates and row counts), `stages.ts` (`EnsembleStages`, `PipelineStages`),
+  as a structure with split candidates and row counts), `stages.ts` (`EnsembleStages`, `PipelineStages`: the steps
+  of a pipeline, the panel each step's output suits (`pipelinePanelOf`: scatter, table, projection or the final
+  surface) and their figures),
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
   (`BoardSteps` and `PopulationSteps` as players), `images.ts` (`ImageSteps` as a mosaic of image rows per step),
   `curves.ts` (`CurveSet`, revealed along x as a player), `cells.ts` (`ValueGrids` as blocky small multiples on one
-  colour range, `ConfusionMatrix`, both played through training) and `diagrams.ts` (`DiagramRecord` as a scene with a
-  step's overlay).
+  colour range, `ConfusionMatrix`, both played through training), `diagrams.ts` (`DiagramRecord` as a scene with a
+  step's overlay) and `attributions.ts` (`FeatureAttributions` as a waterfall, played through a sampled estimate's
+  convergence, a beeswarm summary coloured by feature value, mean |attribution| bars and dependence scatters coloured
+  by the interacting feature; `Importances` as bars with spread whiskers and every repeat).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile
@@ -4258,7 +4316,8 @@ Design rules:
 - `views/`: a React component per exposition view, one file per headless module (`paths.tsx`: `PathView`,
   `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
-  `stages.tsx`, `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
+  `stages.tsx` (`EnsembleView`; `PipelineView`: a strip of stage cards and the selected stage's panel, with its
+  data table and fitted parameters beside the figure), `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
   `BoardPlayer`, `PopulationPlayer`; `curves.tsx`: `CurvesView`; `densities.tsx`: `DensityView`; `sequences.tsx`:
   `StateSequenceView`; `cells.tsx`: `ValueGridView`, `ConfusionMatrixView`; `diagrams.tsx`: `DiagramPlayer`, a
   `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`), each one figure in one

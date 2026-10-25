@@ -123,7 +123,8 @@ export function parametersOf(
     len === input.length ? input : len === output.length ? output : undefined
   for (const [name, v] of Object.entries(params as Record<string, unknown>)) {
     if (name === 'explainedVarianceRatio' && isNumbers(v)) ratio = [...v]
-    if (out.length >= MAX_PARAMETERS) continue
+    // The classes are the record's own; the rest are the step's.
+    if (out.length >= MAX_PARAMETERS || name === 'classes') continue
     if (typeof v === 'number' && Number.isFinite(v)) out.push({ name, value: v })
     else if (typeof v === 'string' && v.length <= 32) out.push({ name, value: v })
     else if (isNumbers(v) && v.length <= MAX_ENTRIES) {
