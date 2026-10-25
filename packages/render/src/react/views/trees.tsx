@@ -1,3 +1,8 @@
+/**
+ * The React view of a grown decision tree (CART, ID3, C4.5, or a tree inside an ensemble): nodes with their splits,
+ * class proportions, row counts and impurity, growth played step by step, and every candidate split of a clicked node.
+ */
+
 import { type ReactElement, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { TreeRecord } from 'whitebox-engine/exposition'
 import { type Figure, scaleFigure } from '../../figure/figure.ts'

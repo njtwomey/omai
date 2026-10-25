@@ -1,3 +1,8 @@
+/**
+ * The pure logic behind the dataset picker: finding a collection, the knob space of an entry's generator, the selection
+ * of an entry with its demo knobs, and generating or loading the selected dataset with its generating truth.
+ */
+
 import type { Dataset, Generated, Knobs } from 'whitebox-engine/data'
 import {
   type CollectionEntry,

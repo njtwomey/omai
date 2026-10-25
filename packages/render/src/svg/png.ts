@@ -1,3 +1,9 @@
+/**
+ * A dependency-free PNG encoder: RGBA pixels written as a PNG file with each scanline filtered and compressed by a
+ * small synchronous deflate, or by the platform's `CompressionStream` for smaller files, plus base64 and
+ * `data:image/png` URLs for embedding.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Pixels } from 'whitebox-engine/scene'
 import { deflateRaw } from './_deflate.ts'

@@ -1,3 +1,9 @@
+/**
+ * Function plots for teaching calculus and analysis: functions of one variable that break at asymptotes and jumps,
+ * parametric, polar and implicit curves, tangent and secant lines, Riemann rectangles and trapezoids with their signed
+ * total, Taylor polynomials, and reference lines for asymptotes and thresholds.
+ */
+
 import type { SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import { contourLines } from 'whitebox-engine/numerics/geometry'

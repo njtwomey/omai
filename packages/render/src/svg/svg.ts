@@ -1,3 +1,9 @@
+/**
+ * A scene as a standalone SVG document: `sceneToSvg` resolves theme tokens for the colour mode, projects 3-D layers,
+ * sets TeX labels as MathML in foreign objects and embeds images as PNG data URLs, so a scene renders without a
+ * browser.
+ */
+
 import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'whitebox-engine/scene'
 import { texToHtml } from '../maths/tex.ts'
 import { type ColourMode, resolvePaint } from '../theme/tokens.ts'

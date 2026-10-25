@@ -1,3 +1,8 @@
+/**
+ * Options of choice controls: bare values or labelled options normalised to labelled ones, and cycling to the previous
+ * or next enabled option with wrap-around.
+ */
+
 /** A value a choice can take. */
 export type OptionValue = string | number | boolean
 

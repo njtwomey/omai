@@ -1,3 +1,9 @@
+/**
+ * The pure timing behind the player: the frame rates on offer, how many frames are due after some elapsed time
+ * (carrying the remainder so playback keeps its rate on any display), stepping with or without looping, and time
+ * stamps.
+ */
+
 /** The frame rates a player's menu offers. */
 export const FPS_CHOICES: readonly number[] = [1, 2, 5, 10, 15, 24, 30, 60]
 

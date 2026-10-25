@@ -1,3 +1,8 @@
+/**
+ * React players for boards and populations: a search, solver or simulation played step by step on its grid or graph,
+ * and an evolving population played generation by generation with its best and mean fitness.
+ */
+
 import { type ReactElement, useCallback } from 'react'
 import type { BoardSteps, PopulationSteps } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

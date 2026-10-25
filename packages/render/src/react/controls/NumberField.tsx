@@ -1,3 +1,8 @@
+/**
+ * A compact number input in one row: type a value, slide it along a rail on the field's edge, step it with buttons or
+ * arrow keys, or pick one of 11 values between its bounds from a dropdown, as in aifn-engine's number field.
+ */
+
 import { type PointerEvent, type ReactNode, useCallback, useId, useRef, useState } from 'react'
 import { cx, iconButtonClass, inputBoxClass, labelClass, menuItemClass } from './classes.ts'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'

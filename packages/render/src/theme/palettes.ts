@@ -1,3 +1,10 @@
+/**
+ * Colour palettes and colour arithmetic: the tab10 categorical palette, sequential and diverging ramps, parsing, mixing
+ * and interpolating colours (in sRGB, as ECharts' visual map does, so marks match heatmap cells), colour scales over a
+ * domain, and accessibility checks: WCAG luminance and contrast, simulated colour-vision deficiencies and a test that
+ * categorical colours stay distinguishable.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import { type Paint, parsePaint, type Rgba } from 'whitebox-engine/scene'
 import type { ColourMode } from './tokens.ts'

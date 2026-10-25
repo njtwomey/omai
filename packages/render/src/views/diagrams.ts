@@ -1,3 +1,8 @@
+/**
+ * The view of a `DiagramRecord`: its structure laid out once for all steps, so nodes never jump, with one step's
+ * overlay of active nodes, edges and value badges drawn over it.
+ */
+
 import type { DiagramRecord } from 'whitebox-engine/exposition'
 import type { Scene } from 'whitebox-engine/scene'
 import { diagram } from '../structures/diagram.ts'

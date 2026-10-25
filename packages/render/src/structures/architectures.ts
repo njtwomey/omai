@@ -1,3 +1,9 @@
+/**
+ * Views of a neural network's structure, as `describe` in `whitebox-engine/nn` gives it: the full diagram (blocks and
+ * repeats as groups, skip connections, tensor shapes on the edges), a compact stack of one box per layer, the flow of
+ * tensor shapes, and a treemap of parameter counts, with `flowOrder` for animating a forward pass.
+ */
+
 import {
   arrow,
   rect,

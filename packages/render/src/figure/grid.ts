@@ -1,3 +1,9 @@
+/**
+ * Grid specifications for multi-panel figures, as matplotlib's gridspec: rows and columns with relative sizes and gaps
+ * (down to zero), cells that span them and hold axes, text or TeX, their placement in pixels, scatter plots with
+ * touching marginal axes, bento layouts from named areas, and the groups of shared and linked axes.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Rect } from './figure.ts'
 

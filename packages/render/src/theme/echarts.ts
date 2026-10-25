@@ -1,3 +1,9 @@
+/**
+ * The ECharts themes of the light and dark colour modes: tab10 series colours, token-coloured text, axes, legends,
+ * tooltips, visual maps and data zoom, with animation off so figures that update every frame do not tween, plus
+ * `baseOption`, the base of every chart option.
+ */
+
 import { tab10 } from './palettes.ts'
 import { type ColourMode, tokens } from './tokens.ts'
 

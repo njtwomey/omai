@@ -1,3 +1,9 @@
+/**
+ * The view of a `CurveSet`: several curves on shared axes (an optimiser race, a comparison of schemes), coloured by
+ * group and dashed within one, with bands and a right-hand axis where asked, and frames that reveal the curves along x
+ * for a player.
+ */
+
 import type { EChartsOption } from 'echarts'
 import type { CurveSeries, CurveSet } from 'whitebox-engine/exposition'
 import { referenceLines } from '../charts/functions.ts'

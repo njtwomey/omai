@@ -1,3 +1,9 @@
+/**
+ * React views of feature attributions (SHAP-style explanations): a waterfall for one prediction that can play a sampled
+ * estimate settling, a beeswarm for many rows, mean |attribution| bars, dependence scatters, and permutation
+ * importances with every repeat as a dot.
+ */
+
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { FeatureAttributions, Importances } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

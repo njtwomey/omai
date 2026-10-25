@@ -1,3 +1,10 @@
+/**
+ * Drawings of parameterised models beyond a plain diagram: a U-Net (or encoder-decoder) as the familiar U of
+ * convolution blocks sized by channels and resolution, with its forward-pass order for animation; a Bayes network as
+ * cards holding each variable's marginal and conditional probability table; and plate models with combined plates
+ * nested inside each other.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { BayesNet } from 'whitebox-engine/pgm'
 import {

@@ -1,3 +1,10 @@
+/**
+ * The cartesian plot every chart builder shares: a `Layer` is ECharts series with the data extent they cover (and
+ * optionally a colour bar or category labels), so layers from any builder combine, and `cartesian` draws layers on one
+ * pair of axes, with ranges from the limit policies and the data aspect, log axes, legend, tooltip and colour bars.
+ * `panelParts` and `chartFrame` are the pieces subplots reuse.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { type DataAspect, fitDataAspect, type Range } from '../figure/aspect.ts'
 import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figure/figure.ts'

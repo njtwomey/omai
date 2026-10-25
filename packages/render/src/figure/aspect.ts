@@ -1,3 +1,9 @@
+/**
+ * Box aspect versus data aspect: a figure's shape is fixed, and a data aspect (`equal`, so a circle looks like a
+ * circle, or a ratio) is met either by widening the short axis range about its centre (`fitDataAspect`, matplotlib's
+ * `adjustable='datalim'`) or by shrinking the plotting box (`boxForAspect`, `adjustable='box'`).
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 
 /** A closed interval `[low, high]` of data values. */

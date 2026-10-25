@@ -1,3 +1,9 @@
+/**
+ * Derivations as typeset maths: a list of steps (from `symbolic` simplifications or `foundations` proofs, or written by
+ * hand) becomes one `aligned` TeX block, a step per row aligned at the relation, with each step's note set as text
+ * beside it.
+ */
+
 /** One step of a derivation: TeX (`lhs &= rhs`, or a right-hand side continuing the previous line) and a note. */
 export interface DerivationStep {
   readonly tex: string

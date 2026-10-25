@@ -1,3 +1,9 @@
+/**
+ * Views of paths and curves over a parameter: regularisation paths (each coefficient against the penalty, as for the
+ * lasso, ridge or elastic net, with the active-set size beneath), cross-validation curves with standard-error bands and
+ * the best and one-standard-error choices, learning curves, and cost-complexity pruning paths of trees.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import type { CrossValidationCurve, LearningCurve, PruningPath, RegularisationPath } from 'whitebox-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'

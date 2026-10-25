@@ -1,3 +1,9 @@
+/**
+ * WebM video export: `muxWebm`, a pure muxer that packs encoded VP8 or VP9 frames into a WebM file (EBML header, track,
+ * clusters of simple blocks), and `encodeWebm`, which encodes frames in the browser with WebCodecs or, failing that,
+ * records a canvas with a `MediaRecorder`; `canEncodeVideo` says whether either is available.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { Pixels } from 'whitebox-engine/scene'
 

@@ -1,3 +1,9 @@
+/**
+ * The figure model: a `Figure` is a fixed area with a width, a box aspect, padding and type size, as a matplotlib
+ * figure is, with defaults per medium (page, blog, slide), scaling to another width and the plotting area left inside
+ * the padding.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { ColourMode } from '../theme/tokens.ts'
 

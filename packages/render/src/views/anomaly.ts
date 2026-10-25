@@ -1,3 +1,9 @@
+/**
+ * The view of an `AnomalyScores` record (isolation forest, local outlier factor, distance-based detectors): the scores'
+ * histogram with the threshold and the number flagged, each row's evidence (path lengths, densities, distances) against
+ * its score, and the rows coloured by score with the flagged ones ringed.
+ */
+
 import type { EChartsOption } from 'echarts'
 import type { AnomalyScores } from 'whitebox-engine/exposition'
 import { histogram } from '../charts/bars.ts'

@@ -1,3 +1,8 @@
+/**
+ * A random-seed control: a whole number to type or step, and a die that rerolls it to a seed derived from the current
+ * one, so a page's rerolls are reproducible.
+ */
+
 import type { ReactNode } from 'react'
 import { cx, iconButtonClass } from './classes.ts'
 import { DiceIcon } from './icons.tsx'

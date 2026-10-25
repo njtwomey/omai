@@ -1,3 +1,8 @@
+/**
+ * Figures of recorded tensors over training: chosen parameter elements against steps, histograms of a tensor over time
+ * (TensorBoard's distributions view), and a heatmap of per-layer norms for spotting vanishing or exploding gradients.
+ */
+
 import { WhiteboxError } from 'whitebox-engine/base'
 import { type Run, tensorSeries } from 'whitebox-engine/trace'
 import { lines } from '../charts/lines.ts'

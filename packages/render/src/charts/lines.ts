@@ -1,3 +1,8 @@
+/**
+ * Line layers: curves drawn as lines, steps or areas with gaps where values are not finite, filled bands between two
+ * curves (confidence bands, fill-between), curves read from a tensor, and `lineChart` for curves on one pair of axes.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import { asTensor, type TensorLike, toFlat } from 'whitebox-engine/tensor'

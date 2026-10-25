@@ -1,3 +1,9 @@
+/**
+ * Scatter plots: point sets coloured by group (tab10, with a marker shape per group so identity does not rest on colour
+ * alone), bubble sizes by area, continuous colours along viridis and labels, plus rugs along an axis and
+ * `scatterChart`.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { WhiteboxError } from 'whitebox-engine/base'
 import type { TensorLike } from 'whitebox-engine/tensor'

@@ -1,3 +1,8 @@
+/**
+ * React views of value grids (feature maps, filters, hidden states) as blocky small multiples on one colour range, and
+ * of a classifier's confusion matrix, both played through training when the record has steps.
+ */
+
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { ConfusionMatrix, ValueGrids } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

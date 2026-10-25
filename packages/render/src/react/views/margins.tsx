@@ -1,3 +1,8 @@
+/**
+ * The React view of a margin classifier (an SVM): support vectors ringed over the decision surface, the functional
+ * margins and the dual objective, played over the solver's SMO steps.
+ */
+
 import { type ReactElement, useCallback } from 'react'
 import type { MarginRecord } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'

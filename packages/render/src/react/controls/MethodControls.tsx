@@ -1,3 +1,8 @@
+/**
+ * Controls for a method's hyperparameters, generated from the `hyperSpace` its estimator declares, starting from the
+ * hyperparameters the estimator was made with.
+ */
+
 import type { ReactNode } from 'react'
 import type { Estimator } from 'whitebox-engine/learn'
 import { defaults, type SpaceValue } from 'whitebox-engine/space'

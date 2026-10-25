@@ -1,3 +1,10 @@
+/**
+ * Views of iterative unsupervised methods: clustering iterations (rows coloured by cluster, centres with their trails,
+ * core and noise rows for density methods), a mixture's EM steps with each component's ellipses, an embedding's
+ * optimisation, dendrograms of hierarchical clustering cut into clusters, and the OPTICS reachability plot, where
+ * clusters show as valleys.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { multivariateNormal } from 'whitebox-engine/dists'
 import type { ClusteringSteps, EmbeddingSteps, InputRows, MixtureSteps } from 'whitebox-engine/exposition'

@@ -1,3 +1,8 @@
+/**
+ * Controls generated from an engine `Space`: one control per dimension, drawn as its kind calls for (number fields,
+ * segmented choices, selects, toggles), with conditional dimensions appearing as their conditions come to hold.
+ */
+
 import type { ReactNode } from 'react'
 import type { Space, SpaceValue } from 'whitebox-engine/space'
 import { Choice } from './Choice.tsx'

@@ -1,3 +1,9 @@
+/**
+ * The tree-shaken ECharts core: every chart type and component the `whitebox-render/charts` builders use, the SVG and
+ * canvas renderers, and the whitebox light and dark themes registered, shared by the React bindings and server-side SVG
+ * export.
+ */
+
 import {
   BarChart,
   BoxplotChart,

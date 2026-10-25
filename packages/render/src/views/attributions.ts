@@ -1,3 +1,10 @@
+/**
+ * Views of feature attributions (SHAP values and other local explanations) as shap draws them: a waterfall from the
+ * expected output to one prediction (played as a sampled estimate converges), a beeswarm summary coloured by feature
+ * value, mean |attribution| bars and dependence scatters coloured by the interacting feature, and permutation
+ * importances as bars with their spread.
+ */
+
 import type { EChartsOption, SeriesOption } from 'echarts'
 import type { FeatureAttributions, Importances } from 'whitebox-engine/exposition'
 import { bars } from '../charts/bars.ts'

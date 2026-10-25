@@ -1,3 +1,8 @@
+/**
+ * An episode player: an environment run once under a policy from a seed, every state rendered, then played back with
+ * the `Player`, each frame captioned with its step, action, reward and return.
+ */
+
 import { type ReactElement, useMemo } from 'react'
 import { key as makeKey } from 'whitebox-engine/random'
 import { type Env, type Episode, type Policy, runEpisode } from 'whitebox-engine/rl'

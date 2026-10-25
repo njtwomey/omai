@@ -1,3 +1,8 @@
+/**
+ * A figure laid out on a grid specification: chart panels drawn as one subplot chart (shared and linked axes, zero
+ * gaps, marginals) and text, TeX or any React content placed in the other cells, scaled to fit.
+ */
+
 import { type ReactElement, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { type Panel, type SubplotOptions, subplotRects, subplots } from '../charts/compose.ts'
 import { type Figure, figure as makeFigure, scaleFigure } from '../figure/figure.ts'

@@ -1,3 +1,9 @@
+/**
+ * The view of a grown decision tree: a tidy tree of cards, each with its split (or prediction at a leaf), class
+ * proportions, row count and impurity, the growth order for playing it, and each node's candidate splits as impurity
+ * decrease against threshold with the chosen one marked.
+ */
+
 import type { EChartsOption } from 'echarts'
 import type { TreeNode, TreeRecord } from 'whitebox-engine/exposition'
 import { group, line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'whitebox-engine/scene'

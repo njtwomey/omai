@@ -1,3 +1,10 @@
+/**
+ * Graph layouts without a hierarchy: a seeded, deterministic force-directed layout (Fruchterman and Reingold: edges
+ * pull like springs, all nodes repel, and a cooling temperature runs until the energy settles), nodes evenly around a
+ * circle, and a spectral layout that places nodes by the Laplacian eigenvectors with the smallest nonzero eigenvalues,
+ * so well-connected nodes sit together.
+ */
+
 import { eigh } from 'whitebox-engine/numerics/linalg'
 import { key as makeKey, uniform } from 'whitebox-engine/random'
 import { toArray } from 'whitebox-engine/tensor'

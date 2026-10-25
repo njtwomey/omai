@@ -1,3 +1,8 @@
+/**
+ * The React player of a diagram record: its structure (a network's architecture, a computation graph) drawn once, with
+ * each step's overlay of active nodes, edges and value badges played over it.
+ */
+
 import { type ReactElement, useEffect, useMemo, useRef } from 'react'
 import type { DiagramRecord } from 'whitebox-engine/exposition'
 import { Player } from '../Player.tsx'

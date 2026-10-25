@@ -1,3 +1,8 @@
+/**
+ * Geometry for selection tools: the data rectangle between two corners however it was dragged, in the shape linked
+ * figures share, and the point nearest a pixel position within a radius.
+ */
+
 import type { Point2, Projection } from './projection.ts'
 
 /**

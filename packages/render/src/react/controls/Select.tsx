@@ -1,3 +1,8 @@
+/**
+ * A dropdown select for long or wordy option lists (datasets, models), with previous and next arrows either side that
+ * step through the options in place, wrapping at the ends.
+ */
+
 import { type ReactNode, useId } from 'react'
 import { cx, iconButtonClass, labelClass } from './classes.ts'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'

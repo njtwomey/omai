@@ -1,3 +1,10 @@
+/**
+ * Views of models built in stages: an ensemble stage by stage (training and validation scores, member weights, and what
+ * each member was fitted to) as player frames, and a fitted pipeline as a strip of stage cards with the panel each
+ * step's output suits (a scatter, a projection with its explained variance, a table, or the final estimator's surface
+ * over the raw inputs).
+ */
+
 import type { EChartsOption } from 'echarts'
 import {
   type DecisionSurface,

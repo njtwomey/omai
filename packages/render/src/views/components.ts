@@ -1,3 +1,9 @@
+/**
+ * The views of linear decompositions (PCA, factor analysis, ICA, NMF, PLS): a biplot of the scores with loadings as
+ * arrows, the scree of explained variance with its cumulative share, and the loadings as a matrix, plus topic models'
+ * topics as panels of their top words.
+ */
+
 import type { EChartsOption } from 'echarts'
 import type { ComponentsRecord } from 'whitebox-engine/exposition'
 import { bars } from '../charts/bars.ts'

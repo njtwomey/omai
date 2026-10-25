@@ -1,3 +1,8 @@
+/**
+ * A brush tool for an interaction overlay: press and drag across a figure to select a rectangle in data coordinates,
+ * press without dragging to clear it.
+ */
+
 import { type ReactNode, useState } from 'react'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'
 import type { Point2 } from './projection.ts'

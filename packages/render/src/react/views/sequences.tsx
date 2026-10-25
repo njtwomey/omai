@@ -1,3 +1,8 @@
+/**
+ * The React view of a hidden-state model's reading of a sequence: the states' posteriors over time stacked to one,
+ * above the decoded path and the true states.
+ */
+
 import { type ReactElement, useCallback } from 'react'
 import type { StateSequence } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
