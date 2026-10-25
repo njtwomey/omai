@@ -1,3 +1,10 @@
+/**
+ * Learning-rate schedules, matching optax and torch.optim.lr_scheduler: constant, step and multi-step decay,
+ * exponential, inverse-time, polynomial and cosine decay, warm-up variants, warm restarts (SGDR), piecewise and joined
+ * schedules, the one-cycle policy, cyclical rates, and `reduceOnPlateau`, which is driven by a metric rather than the
+ * step count.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** A learning-rate schedule: the rate at each step count (from 0). */

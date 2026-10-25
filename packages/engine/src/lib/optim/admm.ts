@@ -1,3 +1,9 @@
+/**
+ * The alternating direction method of multipliers (ADMM, Boyd et al.): splitting min f(x) + g(z) subject to A x + B z =
+ * c into alternating partial minimisations and a dual update, as a traced algorithm. Also the proximal
+ * (Douglas-Rachford) form, a lasso solver with a cached Cholesky factor, and global consensus ADMM for sums of terms.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { cholesky, choSolve, daxpy, dgemv, dnrm2, dscal } from '../numerics/linalg/index.ts'
 import {

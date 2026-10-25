@@ -1,3 +1,9 @@
+/**
+ * Solvers for the trust-region subproblem, minimising a quadratic model within a ball: Powell's dogleg step, the
+ * Steihaug-Toint truncated conjugate gradient step, and the nearly exact More-Sorensen step, the subproblems of scipy's
+ * trust-dogleg, trust-ncg and trust-exact methods.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dgemv, dnrm2, dpotrf, dpotrs, dscal, dtrsv } from '../../numerics/linalg/index.ts'
 

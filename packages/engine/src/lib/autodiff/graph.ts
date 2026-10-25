@@ -1,3 +1,9 @@
+/**
+ * Computation graphs as data: `computationGraph` records every primitive a function applies at an input, with shapes,
+ * operations, scalar values and gradients, as a structure that can be drawn, and `graphStats` summarises it (node and
+ * edge counts, depth, how often each primitive appears).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
 import {

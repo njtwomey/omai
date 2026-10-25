@@ -1,3 +1,9 @@
+/**
+ * Differential evolution (Storn and Price), a population-based global optimiser that proposes candidates from scaled
+ * differences between population members, following `scipy.optimize.differential_evolution` with its mutation
+ * strategies, crossover, constraints and optional local polishing, as a traced algorithm.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import { Generator, halton, latinHypercube } from '../../random/index.ts'

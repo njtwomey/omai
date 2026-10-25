@@ -1,3 +1,10 @@
+/**
+ * Indexing, gathering and sorting: Python-style slicing, `take` and `takeAlongAxis` with their scatter adjoints,
+ * segment sums, coordinate-tuple `gather` and JAX-style `scatter` (set, add, multiply, max, min), stable sorting and
+ * argsort, top-k, one-hot encoding, and the data-dependent operations (`nonzero`, masked selection, `unique`,
+ * `bincount`, `searchsorted`).
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import { batchAtFront, batchedAxis, moveBatchAxis } from '../batching.ts'
 import { cpu } from '../cpu.ts'

@@ -1,3 +1,9 @@
+/**
+ * Line searches, which choose how far to step along a descent direction: the shared line-function and result types,
+ * backtracking (Armijo) search, the strong Wolfe search of Nocedal and Wright (as `scipy.optimize.line_search`),
+ * fallbacks between searches, and `lineSearch` on a vector objective. Trial points are recorded for figures.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { daxpy, ddot } from '../numerics/linalg/index.ts'
 import { checkConstants, firstStep, probe } from './_line-search.ts'

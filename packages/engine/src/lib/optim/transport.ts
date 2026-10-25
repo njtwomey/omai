@@ -1,3 +1,9 @@
+/**
+ * Optimal transport between histograms, the cheapest way to move one distribution of mass onto another under a cost
+ * matrix: exact transport (the earth mover's distance) by the transportation simplex, entropic transport by Sinkhorn's
+ * iterations in the log domain, a differentiable entropic transport loss, and unbalanced transport, as in POT.
+ */
+
 import { customVjp } from '../autodiff/index.ts'
 import { type Json, logSumExpOf, WhiteboxError } from '../base/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'

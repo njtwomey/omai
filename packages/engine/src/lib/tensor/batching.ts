@@ -1,6 +1,10 @@
-// Helpers for writing batch rules (the `batch` field of a primitive), shared by every primitive that vectorises.
-// Every export here is a function declaration: operation modules import this file and use these helpers inside their
-// primitive definitions, so nothing may depend on module evaluation order.
+/**
+ * Helpers for writing batch rules, the `batch` field of a primitive that `vmap` uses: moving and aligning batch axes,
+ * broadcasting shared operands, and ready-made rules for elementwise primitives and for those that already accept
+ * leading batch axes (factorisations and solvers). Every export is a function declaration, so operation modules can use
+ * them inside their primitive definitions whatever the module evaluation order.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { broadcastTo, expandDims, moveaxis, reshape } from './ops/shape.ts'
 import { type BatchDim, type BatchResult, bind, type Primitive } from './primitive.ts'

@@ -1,3 +1,9 @@
+/**
+ * Newton's method for minimisation: the modified Cholesky factorisation that shifts an indefinite Hessian until it is
+ * positive definite (Nocedal and Wright, Algorithm 3.3), Newton with a line search, and Newton-CG (truncated Newton), a
+ * port of scipy's that solves for the step by conjugate gradients on Hessian-vector products from autodiff.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { dasum, daxpy, ddot, dgemv, dnrm2, dpotrf, dpotrs, dscal, dsyev } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

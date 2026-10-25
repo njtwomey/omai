@@ -1,3 +1,10 @@
+/**
+ * Ways to override or shape differentiation: functions with hand-written reverse or forward rules (`customVjp` and
+ * `customJvp`, as in JAX), `stopGradient`, gradient checkpointing (`checkpoint`, which recomputes the forward pass in
+ * the backward pass to save memory, with policies for what to keep), and the straight-through estimator for rounding
+ * and other piecewise-constant steps.
+ */
+
 import {
   add,
   arg,

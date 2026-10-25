@@ -1,3 +1,9 @@
+/**
+ * L-BFGS-B (Byrd, Lu, Nocedal and Zhu), the limited-memory quasi-Newton method for box-constrained problems: the
+ * generalised Cauchy point along the projected gradient path, subspace minimisation on the free variables and a line
+ * search, as a traced algorithm with the `lbfgsb` front end matching `scipy.optimize.minimize(method='L-BFGS-B')`.
+ */
+
 import { daxpy, ddot, dgemv, dgesv, dnrm2 } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { type LineSearchResult, lineFunction } from '../line-search.ts'

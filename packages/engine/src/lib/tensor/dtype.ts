@@ -1,3 +1,9 @@
+/**
+ * Element types: the dtypes a tensor can hold (bool, int32, float32, float64) and their typed-array storage,
+ * numpy-style type promotion between operands and with weak JavaScript-number scalars (as in numpy and JAX), and
+ * `finfo` and `iinfo` for the properties of float and integer types.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** Element types a tensor can hold. Arithmetic is defined on floats; `int32` and `bool` hold indices and masks. */

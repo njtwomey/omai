@@ -1,3 +1,9 @@
+/**
+ * Constraints in scipy's form (equalities and inequalities on the parameters, with Jacobians by autodiff) and the
+ * projected gradient method for minimising over a convex set given by its projection, with spectral (Barzilai-Borwein)
+ * steps and a nonmonotone line search (SPG2), as a traced algorithm.
+ */
+
 import { daxpy, ddot, dnrm2 } from '../../numerics/linalg/index.ts'
 import { concat, reshape, type Value } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Trace policies, the caller's half of the trace contract: which channels to record (metrics, tensors by role,
+ * messages, frames, checkpoints), how often (every n steps, log-spaced, first and last, on change) and at what detail.
+ * Includes the `minimal`, `standard` and `debug` presets and `shouldRecord`, the single recording decision every run
+ * makes.
+ */
+
 import type { TensorRole } from './events.ts'
 
 /** Which channels of one kind to record: all, none, or a list of names. */

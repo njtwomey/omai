@@ -1,3 +1,9 @@
+/**
+ * Linear least squares with constraints on the variables: non-negative least squares by the Lawson-Hanson active-set
+ * method (`scipy.optimize.nnls`) and bounded-variable least squares by Stark and Parker's BVLS
+ * (`scipy.optimize.lsq_linear`), both as traced algorithms.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2 } from '../../numerics/linalg/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

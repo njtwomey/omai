@@ -1,3 +1,9 @@
+/**
+ * The `Context`: everything a computation needs besides its data, namely a seed with named key derivation, the tracer
+ * and trace policy, the backend and the default float dtype. `createContext` makes one, and `derive` makes a child
+ * whose keys are namespaced so independent parts of a program never share randomness.
+ */
+
 import { type Key, keyFromPath } from '../random/index.ts'
 import { type Backend, cpu, type DType } from '../tensor/index.ts'
 import { nullTracer, policies, type TracePolicy, type Tracer } from '../trace/index.ts'

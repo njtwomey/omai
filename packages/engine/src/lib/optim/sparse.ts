@@ -1,3 +1,10 @@
+/**
+ * Sparse approximation and recovery, writing a signal as a combination of few atoms of a dictionary: matching pursuit
+ * and orthogonal matching pursuit, CoSaMP and iterative hard thresholding for compressed sensing, basis pursuit by
+ * ADMM, and the lasso and basis pursuit denoising by coordinate descent (as scikit-learn's `Lasso`), the iterative ones
+ * as traced algorithms.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../base/index.ts'
 import { cholesky, choSolve, daxpy, ddot, dgemv, dnrm2, lstsq } from '../numerics/linalg/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'

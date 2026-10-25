@@ -1,3 +1,9 @@
+/**
+ * Optimisers for sparse gradients and sparse models: SparseAdam and lazy Adagrad, which update only the entries an
+ * embedding lookup touched (as in torch.optim), and online L1 methods that produce exact zeros: SGD with cumulative L1
+ * penalty, truncated gradient (Langford et al.) and FTRL-Proximal (McMahan et al.).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   abs,

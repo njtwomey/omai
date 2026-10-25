@@ -1,3 +1,10 @@
+/**
+ * Symbolic expressions: the immutable expression tree in canonical form (exact rationals, floats, symbols with
+ * assumptions, constants, sums, products, powers, function applications, relations, unevaluated derivatives and
+ * integrals), its constructors and arithmetic, substitution and free symbols. Also the derivation and step types every
+ * rewrite reports, and work budgets that bound symbolic operations deterministically.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import {

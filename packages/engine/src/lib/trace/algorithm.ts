@@ -1,3 +1,10 @@
+/**
+ * The `Algorithm` protocol, the one shape for iterative methods (optimisers, training loops, samplers, EM, message
+ * passing, solvers, searches, agents): an `init` and a `step` over an explicit state. `runAlgorithm` runs one to
+ * completion while recording a traced run, `iterate` steps through it lazily, and `runFor` advances it in time-budgeted
+ * slices for interactive pages.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Value } from '../tensor/index.ts'

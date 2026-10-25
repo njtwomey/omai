@@ -1,3 +1,9 @@
+/**
+ * Pytrees, values nested in arrays and plain records, as in JAX: flattening a tree into leaves and a stored structure
+ * and rebuilding it, mapping functions over corresponding leaves, leaf paths such as `layers[0].w`, zero trees,
+ * parameter counts, and `ravel` to pack a tree of tensors into one vector and back.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { cpu } from './cpu.ts'
 import { zerosLike } from './create.ts'

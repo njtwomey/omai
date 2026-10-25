@@ -1,3 +1,10 @@
+/**
+ * Assignment and matching problems: the Hungarian algorithm for the linear sum assignment problem (as
+ * `scipy.optimize.linear_sum_assignment`), Bertsekas' auction algorithm with epsilon scaling, and Gale-Shapley deferred
+ * acceptance for stable matchings with a check for blocking pairs, each also a traced algorithm whose steps can be
+ * animated.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { asTensor, primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'

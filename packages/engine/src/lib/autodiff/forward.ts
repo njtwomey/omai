@@ -1,3 +1,8 @@
+/**
+ * The forward-mode trace: dual numbers, where each value carries a primal and its tangent and every primitive applies
+ * its `jvp` rule as the computation runs. `jvp`, `jacfwd` and Hessians build on it.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bind, type MaybeZero, type Primitive, type Trace, type Traced, type Value } from '../tensor/index.ts'
 

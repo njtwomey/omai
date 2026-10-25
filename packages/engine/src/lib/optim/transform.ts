@@ -1,3 +1,10 @@
+/**
+ * Gradient transformations in the design of optax: an `init` and `update` pair mapping gradients to updates while
+ * threading state, with `chain` to compose them and `applyUpdates` to apply them. Includes the core links
+ * (learning-rate scaling, gradient clipping, weight decay, momentum, Adam, RMSprop and Adagrad scaling, trust ratios),
+ * masking and per-group transforms, and Polyak averaging of parameters.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   add,

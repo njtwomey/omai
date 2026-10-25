@@ -1,3 +1,9 @@
+/**
+ * Interval line searches used by scipy's quasi-Newton and conjugate gradient methods: More-Thuente (MINPACK-2's
+ * `dcsrch`), Hager-Zhang (CG_DESCENT's approximate Wolfe search), and `wolfe12`, scipy's More-Thuente with the strong
+ * Wolfe zoom as fallback.
+ */
+
 import { checkConstants, firstStep, probe } from './_line-search.ts'
 import { type ExtraCondition, type LineSearch, type LineSearchResult, strongWolfe } from './line-search.ts'
 

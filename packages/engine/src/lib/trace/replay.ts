@@ -1,3 +1,9 @@
+/**
+ * Moving runs across boundaries and back: `exportRun` and `parseRun` serialise and validate runs as JSON, `replay`
+ * feeds a recorded run's events to handlers in order to rebuild a live view, and `mergeRuns` concatenates runs such as
+ * several seeds of one experiment.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Run, RunSchema, type TraceEvent } from './events.ts'
 

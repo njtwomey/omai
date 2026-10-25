@@ -1,3 +1,9 @@
+/**
+ * The space types and their constructors: real and integer intervals (optionally log-scaled or stepped), choices and
+ * booleans for configuration spaces, gymnasium-style `box`, `discrete`, `multiDiscrete` and `multiBinary` spaces for
+ * observations and actions, and tuples and dicts that compose them, with conditional dimensions declared by `when`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /**

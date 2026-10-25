@@ -1,3 +1,8 @@
+/**
+ * A primal-dual interior-point method for convex quadratic programs (Mehrotra's predictor-corrector on the reduced KKT
+ * system) as a traced algorithm on number arrays, the solver behind `qpInteriorPoint`.
+ */
+
 import { ddot } from '../numerics/linalg/index.ts'
 import { type Algorithm, channels } from '../trace/index.ts'
 import { matVec, quadraticValue, solveDense } from './_programming.ts'

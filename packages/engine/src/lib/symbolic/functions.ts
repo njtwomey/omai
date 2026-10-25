@@ -1,3 +1,9 @@
+/**
+ * Elementary and special functions on symbolic expressions: exponentials, logarithms (to any base), roots, absolute
+ * value, sign, floor and ceiling, exact factorials and gamma values, the error function, real and imaginary parts, and
+ * `fn` to apply a function by name. Each evaluates exactly where it can and stays symbolic otherwise.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { MINUS_ONE, makeMul, makePow, numFromRational } from './_canon.ts'
 import { makeFn } from './_functions.ts'

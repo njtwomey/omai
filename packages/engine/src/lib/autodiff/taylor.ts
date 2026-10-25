@@ -1,3 +1,9 @@
+/**
+ * Taylor-mode differentiation (like `jax.experimental.jet`): pushing a truncated power series through a function in one
+ * pass to get higher derivatives along a direction. Provides the jet trace, `jet`, `taylorCoefficients` and
+ * `taylorPolynomial`, the local model behind Taylor-series figures and Taylor methods.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   add,

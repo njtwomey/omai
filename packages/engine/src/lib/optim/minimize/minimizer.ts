@@ -1,3 +1,9 @@
+/**
+ * The bridge between gradient transformations and minimisation: `minimizer` turns an optax-style transformation into an
+ * `Algorithm` that evaluates an objective and its gradient at each step, and `minimize` is the scipy-style front end
+ * that runs either a transformation or a named method (BFGS by default) on any parameter tree.
+ */
+
 import { valueAndGrad } from '../../autodiff/index.ts'
 import type { Json } from '../../base/index.ts'
 import { item, treePaths, type Value } from '../../tensor/index.ts'

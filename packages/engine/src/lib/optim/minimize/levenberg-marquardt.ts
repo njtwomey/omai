@@ -1,3 +1,9 @@
+/**
+ * The Levenberg-Marquardt method for nonlinear least squares, following MINPACK's `lmder` (scipy's `method='lm'` and
+ * `leastsq`): a trust region on the scaled step whose damping parameter blends Gauss-Newton with gradient descent, as a
+ * traced algorithm.
+ */
+
 import { daxpy, ddot, dgesvd, dnrm2 } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { jtv, jv, requireOverdetermined, runLeastSquares } from './_least-squares.ts'

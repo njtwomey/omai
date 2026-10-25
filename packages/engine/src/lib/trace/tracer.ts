@@ -1,3 +1,9 @@
+/**
+ * Tracers, where trace events go: `nullTracer` drops everything so algorithms run at full speed, `recorder` keeps
+ * events in memory to export, replay or plot, and `tee` and `filtered` fan out or filter them. `startRun` opens a run
+ * and returns the handle that applies its policy (selection, on-change filtering, detail, subsampling and budgets).
+ */
+
 import { type Json, VERSION } from '../base/index.ts'
 import { isTensor, type Value } from '../tensor/index.ts'
 import type { Run, RunStatus, TensorRole, TraceEvent } from './events.ts'

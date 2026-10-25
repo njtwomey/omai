@@ -1,3 +1,9 @@
+/**
+ * Comparisons and logic on tensors: elementwise comparisons with broadcasting, NaN and infinity tests, logical
+ * connectives, `where` for choosing elements by a condition (differentiable in the chosen branches), `any` and `all`
+ * over axes, and numpy's `allclose`.
+ */
+
 import type { CompareKernel, PredicateKernel } from '../backend.ts'
 import { batchElementwise } from '../batching.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'

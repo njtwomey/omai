@@ -1,3 +1,9 @@
+/**
+ * Integer and combinatorial optimisation: mixed-integer linear programs by branch and bound on simplex relaxations with
+ * optional Gomory cuts (as `scipy.optimize.milp`), recording the branch-and-bound tree for figures, plus the 0-1
+ * knapsack by depth-first branch and bound and weighted set cover.
+ */
+
 import { heap, WhiteboxError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'

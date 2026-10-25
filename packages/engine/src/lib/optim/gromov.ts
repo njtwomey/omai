@@ -1,3 +1,9 @@
+/**
+ * Gromov-Wasserstein transport, which matches two spaces by comparing their internal distances rather than points
+ * across them (Memoli), so it can align point clouds, graphs or shapes in different coordinates. Exact (conditional
+ * gradient) and entropic (Sinkhorn-based) solvers as traced algorithms, as in POT's `ot.gromov`.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import {
   add,

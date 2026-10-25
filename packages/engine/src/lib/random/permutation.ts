@@ -1,3 +1,9 @@
+/**
+ * Random permutations and selections from a key: Fisher-Yates permutations and differentiable row shuffles, numpy-style
+ * `choice` with or without replacement, bootstrap indices, Floyd subsampling, reservoir sampling from a stream of
+ * unknown length, random splits by fraction, and keys for parallel tasks.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, take, type Value } from '../tensor/index.ts'
 import { unitDoubles } from './_unit.ts'

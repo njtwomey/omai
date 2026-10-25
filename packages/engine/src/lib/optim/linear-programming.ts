@@ -1,3 +1,9 @@
+/**
+ * Linear programming in scipy's form (`linprog`): minimise a linear objective under linear inequalities, equalities and
+ * bounds, by the two-phase simplex method (with duals, sensitivity ranges and the path of vertices) or a primal-dual
+ * interior-point method that detects infeasible and unbounded problems.
+ */
+
 import { ddot } from '../numerics/linalg/index.ts'
 import { asTensor, type Tensor, toArray, toFlat } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm } from '../trace/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Quasi-Newton Hessian approximations for trust-region methods: the symmetric rank-one (SR1) update, which can
+ * represent indefinite curvature, and the direct BFGS update, with SR1 in a trust region (Nocedal and Wright, Algorithm
+ * 6.2) as a traced algorithm that needs no Hessian evaluations.
+ */
+
 import { daxpy, ddot, dgemv, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import { runVector } from './_shared.ts'
 import { flatObjective, type MinimizeResult, type Objective, type Parameters } from './objective.ts'

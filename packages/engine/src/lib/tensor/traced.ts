@@ -1,3 +1,9 @@
+/**
+ * Traced values, the stand-ins for arrays inside a transformation: the abstract value (shape and dtype) known without
+ * data, the `Trace` interface each transform (reverse mode, forward mode, batching) implements, and the helpers that
+ * test for, lift into and look underneath traces, such as `primalOf` and `concreteOrThrow`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { DType } from './dtype.ts'
 import type { Primitive } from './primitive.ts'

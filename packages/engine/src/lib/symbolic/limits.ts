@@ -1,3 +1,9 @@
+/**
+ * Symbolic limits, as SymPy's `limit`: by direct substitution where an expression is continuous, otherwise from the
+ * leading term of its series, from either side or both. `limitSteps` records the route taken (substitution, series
+ * term, l'Hopital, numeric check).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { attempt, bounded } from './_budget.ts'
 import { isInfinite, MINUS_ONE, makeAdd, makeMul, makePow, NAN, NEG_INF, OO, ZERO, ZOO } from './_canon.ts'

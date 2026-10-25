@@ -1,3 +1,9 @@
+/**
+ * COBYLA (Powell 1994), constrained optimisation by linear approximations: a derivative-free method that models the
+ * objective and the inequality constraints linearly on a simplex of points and solves a trust-region linear program
+ * each step, as `scipy.optimize.minimize(method='COBYLA')`.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, inv, solve } from '../../numerics/linalg/index.ts'
 import { fromStorage, toFlat, type Value } from '../../tensor/index.ts'
