@@ -3,21 +3,23 @@ import { HubEntryView } from 'mdml-hub/react'
 import type { ReactNode } from 'react'
 import { ErrorBoundary } from '../shell/ErrorBoundary.tsx'
 import { Link } from '../shell/Link.tsx'
-import { CardGrid, PageHeader, PageSection } from '../shell/layout.tsx'
-import { collectionPath, entryPath, groupsUnder } from './contents.ts'
+import { CardGrid, PageHeader, PageSection, Prose } from '../shell/layout.tsx'
+import { RecipeView } from '../shell/RecipeView.tsx'
+import { collectionPath, groupsUnder, type HubItem, ITEM_COUNT } from './contents.ts'
+import type { HubPage } from './standalone.ts'
 
 const SOURCE = 'https://github.com/njtwomey/mdml-js/blob/main/packages/engine/src/'
 
-// An entry's card: its title and the whole of its summary (no clamping, so nothing is cut off).
-function EntryCard(props: { readonly entry: HubEntry }): ReactNode {
+// An item's card: its title and the whole of its text (no clamping, so nothing is cut off).
+function EntryCard(props: { readonly entry: HubItem }): ReactNode {
   const { entry } = props
   return (
     <Link
-      to={entryPath(entry)}
+      to={entry.path}
       className="group flex flex-col gap-0.5 rounded-lg border border-line bg-bg px-3 py-2.5 transition-colors hover:border-muted"
     >
       <span className="text-sm font-medium group-hover:text-accent">{entry.title}</span>
-      <span className="text-xs leading-snug text-muted">{entry.summary}</span>
+      <span className="text-xs leading-snug text-muted">{entry.text}</span>
     </Link>
   )
 }
@@ -53,7 +55,7 @@ export function HubHome(props: { readonly nav?: ReactNode }): ReactNode {
       <PageHeader
         title="The method hub"
         actions={props.nav}
-        lede={`${catalogue.entries.length} worked methods, each live on its datasets: pick the data, change the parameters, and the method runs again with the records that explain it. Collections follow the familiar libraries' layout.`}
+        lede={`${ITEM_COUNT} worked methods and demos, each live on its datasets: pick the data, change the parameters, and the method runs again with the records that explain it. Collections follow the familiar libraries' layout.`}
       />
       <Groups path="" />
     </>
@@ -119,6 +121,28 @@ export function EntryPage(props: {
           {...(onStateChange === undefined ? {} : { onStateChange })}
         />
       </ErrorBoundary>
+    </>
+  )
+}
+
+/** A standalone page: its question, a sentence or two, and the live demo beside its own source. */
+export function StandalonePage(props: { readonly page: HubPage; readonly nav?: ReactNode }): ReactNode {
+  const { page } = props
+  const { Example } = page
+  return (
+    <>
+      <PageHeader
+        title={page.title}
+        lede={page.question}
+        eyebrow={{ label: page.collection, path: collectionPath(page.collection) }}
+        actions={props.nav}
+      />
+      <Prose text={page.explain} className="-mt-5 max-w-3xl text-base leading-relaxed text-fg-secondary" />
+      <RecipeView code={page.snippet} file={page.file} key={page.path}>
+        <ErrorBoundary resetKey={page.path}>
+          <Example />
+        </ErrorBoundary>
+      </RecipeView>
     </>
   )
 }

@@ -4604,9 +4604,20 @@ failing example to itself).
   (maps, mazes, the ray-cast view), three-d. Every figure has one frame (expand, export) and a live control. Toy data only, no model training:
   model demos belong to the hub.
 
-`src/hub/` (generated from `mdml-hub`'s catalogue)
+  The gallery is for general visualisation types only; on 2026-10-25 its model demonstrations (the `exposition/`,
+  `fairness/` and `trust/` sections and the RL episodes) moved to the hub as standalone pages, and `moved.ts` sends
+  their old paths to the new ones.
+
+`src/hub/` (generated from `mdml-hub`'s catalogue, plus standalone pages)
 - Pages: collections and tags, a collection, an entry through `HubEntryView` (dataset picker, method controls, its
-  views, its trace, its source). Adding a `defineEntry` adds its page; there is no per-entry site code.
+  views, its trace, its source). Adding a `defineEntry` adds its page.
+- `pages/<collection>/NN-name.tsx` (`standalone.ts`): one-off live demos in the recipe format, listed in their
+  collections beside the catalogue's entries; code of their own, not necessarily a method.
+- TODO (consolidate when the hub is rethought around small, particular tasks): pages that duplicate catalogue entries,
+  suffixed `-demo` (explainability counterfactuals, prototypes, rules, TCAV, explanation quality; fairness exponentiated
+  gradient, frontier, impossibility, data bias; trust conformal sets, online conformal, uncertainty, shift, robustness,
+  model card), and the other moved pages that overlap entries (feature importances, tree SHAP views, threshold
+  optimiser, reweighing and repair).
 
 `src/docs/` (generated from `mdml-meta`'s catalogue of the engine's TSDoc)
 - Navigation mirrors the source tree exactly (`lib/<domain>/<subfolder>/<file>`, `methods/<area>/...`, then the
