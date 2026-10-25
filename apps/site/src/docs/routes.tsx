@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { PrevNext } from '../shell/PrevNext.tsx'
 import { TocSidebar } from '../shell/TocSidebar.tsx'
-import { type Docs, type Folder, type IndexFile, useDocs, useFileSymbols } from './data.ts'
+import { type Docs, type Folder, type IndexFile, useDocs, useFileData } from './data.ts'
 import { FilePage } from './FilePage.tsx'
 import { FolderPage } from './FolderPage.tsx'
 import { SymbolPage } from './SymbolPage.tsx'
+import { RefsContext } from './TypeHover.tsx'
 import { DOCS_HOME, docsToc } from './toc.ts'
 
 /** What a docs path names, following the source tree: a folder, a file, or an export of a file. */
@@ -35,16 +36,20 @@ function SymbolTarget(props: {
   readonly name: string
   readonly nav: ReactNode
 }): ReactNode {
-  const symbols = useFileSymbols(props.file)
-  if (symbols === null) return <Loading />
-  const symbol = symbols.find((s) => s.name === props.name)
+  const data = useFileData(props.file)
+  if (data === null) return <Loading />
+  const symbol = data.symbols.find((s) => s.name === props.name)
   if (symbol === undefined)
     return (
       <p>
         No export {props.name} in {props.file.path}.
       </p>
     )
-  return <SymbolPage docs={props.docs} file={props.file} symbol={symbol} nav={props.nav} />
+  return (
+    <RefsContext.Provider value={data.refs}>
+      <SymbolPage docs={props.docs} file={props.file} symbol={symbol} nav={props.nav} />
+    </RefsContext.Provider>
+  )
 }
 
 const tocs = new WeakMap<Docs, ReturnType<typeof docsToc>>()

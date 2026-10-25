@@ -347,7 +347,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. whitebox-engine core, `packages/engine/src/lib/`
 
-The core has 39 domains in 11 tiers. A domain may import only domains in lower tiers.
+The core has 41 domains in 11 tiers. A domain may import only domains in lower tiers.
 
 | tier | domain        | purpose                                                                                                                                                                                          |
 | ---: | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -386,10 +386,12 @@ The core has 39 domains in 11 tiers. A domain may import only domains in lower t
 |    8 | `rl`          | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                     |
 |    8 | `games`       | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                     |
 |    9 | `probprog`    | probabilistic programs, model analysis, inference engines and the planner, posteriors                                                                                                            |
-|    9 | `learn`       | estimator protocol, preprocessing, composition, model selection, calibration, conformal, inspection, explanation, active learning, privacy                                                       |
+|    9 | `learn`       | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                |
 |    9 | `nn`          | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                             |
 |   10 | `tune`        | studies, objectives, samplers, pruners, multi-fidelity schedules                                                                                                                                 |
 |   10 | `datasets`    | dataset generators with exact truths, vendored real datasets, themed dataset collections                                                                                                         |
+|   10 | `explain`     | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                            |
+|   10 | `fairness`    | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                     |
 
 ### 4.1 `base/` (tier 0)
 
@@ -2127,9 +2129,7 @@ none of those weights.
 - `scoring-rules.ts`: proper scoring rules for any `Distribution`: logarithmic (`logScore`), spherical
   (`sphericalScore`), CRPS (`crps`: closed forms for the normal, Laplace, logistic, exponential and uniform, quadrature
   otherwise) and the energy score (`energyScore`) from samples.
-- `fairness.ts`: group rates (`groupRates`); demographic parity, equalised odds, equal opportunity (differences and
-  ratios, between groups or to overall), predictive parity and calibration by group (`calibrationByGroup`); disparate
-  impact.
+- Fairness measures are their own domain, `lib/fairness/` (4.39).
 - `regression.ts`: MSE, RMSE, MAE, median absolute error, maximum error, R-squared (`r2Score`, `adjustedR2Score`),
   explained variance, MSLE, MAPE, log-cosh (`meanLogCoshError`), Huber (`meanHuberLoss`).
 - `deviance.ts`: Poisson, gamma and Tweedie deviances, pinball loss, D-squared scores (`d2AbsoluteErrorScore`,
@@ -2317,7 +2317,7 @@ Cooperative games and mechanisms:
 - `cooperative.ts`: coalitional games (characteristic functions over bitmasks, `coalitionValue`, `membersOf`),
   weighted voting, glove, bankruptcy and unanimity games, Shapley values (exact, and by permutation sampling with
   standard errors for worths given as functions), the Shapley interaction index (`shapleyInteractionIndex`), Banzhaf
-  indices (raw and normalised), superadditivity and convexity; `learn/explain/shapley.ts` computes its exact Shapley
+  indices (raw and normalised), superadditivity and convexity; `explain/shapley.ts` computes its exact Shapley
   and interaction values with them.
 - `core.ts`: excesses, core membership, a core point or emptiness, the least core, the nucleolus and prenucleolus
   (sequential LPs).
@@ -2455,17 +2455,7 @@ modAL for active learning, diffprivlib and opacus for privacy
   cross-fitted calibrated classifiers.
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,
   RAPS with tuning), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference).
-- `inspection.ts`: permutation importance, partial dependence, ICE, accumulated local effects, H-statistics,
-  functional ANOVA.
-- `explain/gradients.ts`: saliency, input times gradient, integrated gradients, SmoothGrad, DeepLIFT, expected
-  gradients.
-- `explain/shapley.ts`: exact, kernel, sampling and tree SHAP, interaction values. The exact Shapley and interaction
-  values of a coalition value function tabulate it as a `games` coalitional game and use `games.shapleyValue` and
-  `games.shapleyInteractionIndex`; the sampling explainer (random background rows, batched predictions) stays here.
-- `explain/surrogates.ts`: LIME, anchors, global surrogate trees, fidelity.
-- `explain/counterfactuals.ts`: Wachter counterfactuals, diverse counterfactuals, FACE, actionable recourse (linear
-  costs; TODO: discrete action sets as an integer program).
-- `valuation.ts`: influence functions, TracIn, data Shapley (truncated Monte Carlo), KNN-Shapley.
+- Explanation, inspection and data valuation are their own domain, `lib/explain/` (4.38).
 - `active-learning.ts`: the pool-based and stream-based active-learning loop as a traced algorithm (query, label,
   refit), query-strategy contract (uncertainty, margin, entropy, random, ranked batch, expected error reduction, query
   by committee), budget handling.
@@ -2765,6 +2755,61 @@ stratified area-light estimates.
   interpolation, textures and deferred shading (`mesh`, `rasteriseMesh`): the counterpart of ray casting, for
   comparison figures.
 
+### 4.38 `explain/` (tier 10): explaining models and data (shap, lime, alibi, captum, interpret, sklearn.inspection)
+
+A complete domain: every explanation a practitioner would reach for, model-agnostic where possible, each a plain
+function over a model's prediction function (or a fitted estimator) and data, returning values the exposition records
+of `methods/explain` and render's views draw. Built: `shapley`, `surrogates`, `gradients`, `counterfactuals`,
+`inspection`, `valuation`; the rest is the plan for completing the domain.
+
+oracle: shap (exact, kernel, tree, permutation, partition explainers), lime, captum (gradient methods), alibi
+(anchors, counterfactuals), interpret (EBM shape functions), sklearn.inspection; goldens where cheap
+- `shapley.ts`: exact Shapley values and interaction values (via `games`), kernel SHAP, sampling and permutation SHAP,
+  tree SHAP (path-dependent and interventional) and interactions, linear SHAP; to add: partition (hierarchical) SHAP
+  and Owen values for grouped features, conditional versus interventional value functions, SAGE (global importance).
+- `surrogates.ts`: LIME (tabular, text, image superpixels), anchors (precision, coverage), global surrogate trees,
+  fidelity; to add: rule extraction (RuleFit-style), prototypes and criticisms (MMD-critic) in `examples.ts`.
+- `gradients.ts`: saliency, input times gradient, integrated gradients, SmoothGrad, expected gradients, DeepLIFT; to
+  add: Grad-CAM and guided backpropagation for convolutions, layer-wise relevance propagation, attention rollout.
+- `counterfactuals.ts`: Wachter, diverse (DiCE-style), FACE, linear recourse; to add: growing spheres, constraints on
+  actionability and plausibility, recourse cost and feasibility.
+- `inspection.ts`: permutation importance, partial dependence and ICE, ALE, H-statistics, functional ANOVA; to add:
+  drop-column and conditional permutation importance.
+- `valuation.ts`: influence functions, TracIn, data Shapley, k-NN Shapley; to add: Beta Shapley and data Banzhaf,
+  representer points.
+- `concepts.ts` (to add): concept activation vectors (TCAV), probing directions.
+- `glassbox.ts` (to add): explanations of interpretable models: GAM shape functions and pairwise terms (EBM-style),
+  rule lists and scorecards, linear contributions.
+- `evaluation.ts` (to add): explanation quality: deletion and insertion curves, ROAR, faithfulness correlation,
+  sensitivity and stability, sparsity, agreement between explainers, sanity checks by model and label randomisation.
+
+### 4.39 `fairness/` (tier 10): fairness and bias (fairlearn, AIF360, Aequitas)
+
+A complete domain: measuring unfairness at the group, intersectional and individual level, finding bias in data, and
+mitigating it before, during and after training, as functions the exposition records of `methods/fairness` draw.
+Built: `group-metrics`; the rest is the plan for completing the domain.
+
+oracle: fairlearn (metrics, ExponentiatedGradient, GridSearch, ThresholdOptimizer), AIF360 (metrics, reweighing,
+disparate-impact remover), Aequitas (group bias metrics); goldens where cheap
+- `group-metrics.ts`: group rates; demographic parity, equal opportunity, equalised odds, predictive parity
+  (differences and ratios), disparate impact, calibration by group; to add: treatment equality, conditional
+  statistical parity, balance for each class, false discovery and omission rate parity, multicalibration.
+- `intersectional.ts` (to add): metrics over combinations of protected attributes and subgroups, worst-group gaps,
+  generalised entropy and Theil indices between and within groups.
+- `individual.ts` (to add): consistency, Lipschitz (individual) fairness under a similarity metric, counterfactual
+  fairness against a structural causal model (from `probprog`).
+- `data-bias.ts` (to add): representation and label bias, proxy detection (dependence of features on the protected
+  attribute), sampling bias diagnostics.
+- `preprocessing.ts` (to add): reweighing, disparate-impact removal, massaging, fair representations.
+- `in-processing.ts` (to add): reductions (exponentiated gradient and grid search over constraint moments), prejudice
+  remover, adversarial debiasing, fairness-constrained convex learning.
+- `post-processing.ts` (to add): threshold optimisation (demographic parity, equal opportunity, equalised odds),
+  reject-option classification, calibrated equalised odds.
+- `frontiers.ts` (to add): accuracy–fairness frontiers and the impossibility results (calibration against error-rate
+  balance) on generated data.
+- `ranking.ts` and `regression.ts` (to add): exposure parity and FA*IR for rankings; bounded group loss and
+  distributional parity for regression.
+
 ## 5. Methods, exposition records, views and the hub
 
 Four layers, each usable without the ones after it:
@@ -2799,7 +2844,10 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   (embedding per iteration, neighbour graph, calibrated bandwidths, stress);
 - `AnomalyScores` (scores, thresholds, per-point evidence);
 - `DecisionSurface` (predictions and probabilities on a grid over two features);
-- `PipelineStages` (each stage's input and output data, fitted parameters and shape changes);
+- `PipelineStages` (each stage's input and output data, fitted parameters and shape changes; per stage up to a few
+  hundred output rows with their classes and per-column statistics, the parameters in full with the names of their
+  entries, a projection's explained variance, and on the final estimator the whole pipeline's `DecisionSurface` over
+  the raw inputs with its training loss per row and the loss it expects over the grid);
 - `SearchTrials` (every trial of a grid, random or Bayesian search with values and pruning decisions) and
   `LearningCurve`;
 - `EpisodeRecord` (per episode returns; per step state, action, reward and frame; value and policy snapshots).
@@ -3195,7 +3243,7 @@ built from: `nn`, `optim`, `learn/privacy.ts`
   private federated training.
 
 `fairness/` (fairlearn, AIF360)
-built from: `learn`, `metrics/fairness.ts`, `optim`
+built from: `learn`, `fairness`, `optim`
 - `preprocessing.ts`: reweighing, disparate-impact removal, fair representations.
 - `in-processing.ts`: reductions (exponentiated gradient, grid search), adversarial debiasing, constrained learning.
 - `post-processing.ts`: threshold optimisation for equalised odds, reject-option classification.
@@ -3923,11 +3971,11 @@ built from: `tune`, `gp`, `ensemble`, `kernels`, `optim`
 - `importance.ts`: fANOVA hyperparameter importance.
 ### 5.20 Explainability, fairness and trustworthiness (`explain/`, `fairness/`, `trust/`, `privacy/`, `adversarial/`)
 
-The core already computes the quantities (`lib/learn/explain/`: exact, kernel, sampling and tree SHAP and interaction
+The core domains `lib/explain/` (4.38) and `lib/fairness/` (4.39) compute the quantities (`lib/explain/`: exact, kernel, sampling and tree SHAP and interaction
 values, LIME, anchors, surrogate trees and fidelity, saliency, integrated gradients, SmoothGrad, expected gradients,
-DeepLIFT, Wachter, DiCE and FACE counterfactuals, linear recourse; `lib/learn/inspection.ts`: permutation importance,
+DeepLIFT, Wachter, DiCE and FACE counterfactuals, linear recourse; `lib/explain/inspection.ts`: permutation importance,
 partial dependence and ICE, ALE, the H-statistic, functional ANOVA; `lib/learn/valuation.ts`: influence functions,
-TracIn, data Shapley, k-NN Shapley; `lib/metrics/fairness.ts`: group rates, demographic parity, equal opportunity,
+TracIn, data Shapley, k-NN Shapley; `lib/fairness/group-metrics.ts`: group rates, demographic parity, equal opportunity,
 equalised odds, predictive parity, disparate impact, calibration by group). These areas turn them into methods over
 any fitted estimator, each returning exposition records that views draw and the hub and gallery show; process shown
 over time where there is one (sampling SHAP converging, mitigation trading accuracy for parity, conformal coverage
@@ -3949,7 +3997,7 @@ counterfactual tables with the changes highlighted, group comparison panels (rat
 ROC with thresholds), reliability diagrams, conformal bands and set sizes.
 
 `explain/` (shap, lime, alibi, interpret, sklearn.inspection)
-built from: `learn/explain`, `learn/inspection`, `learn/valuation`, `metrics`
+built from: `explain`, `learn`, `metrics`
 - `attributions.ts`: `explainPrediction(model, data, row, { method: 'tree' | 'kernel' | 'exact' | 'sampling' |
   'lime' })` and `explainDataset` (attributions for many rows: summary and beeswarm), with the sampling estimate's
   convergence recorded.
@@ -3960,7 +4008,7 @@ built from: `learn/explain`, `learn/inspection`, `learn/valuation`, `metrics`
 - `valuation.ts`: which training rows matter (influence, data Shapley, k-NN Shapley), with mislabelled-row studies.
 
 `fairness/` (fairlearn, AIF360)
-built from: `learn`, `metrics/fairness.ts`, `optim`, `datasets` (with protected attributes)
+built from: `fairness`, `learn`, `metrics`, `optim`, `datasets` (with protected attributes)
 - `groups.ts`: `sensitiveGroups` (a column by name or index, labels per row, or the dataset's `meta.sensitive`),
   `withoutColumns` (fit unaware), `positiveScores`, `binaryLabels`.
 - `audit.ts`: `fairnessAudit(model, data, { sensitive, threshold })`: a `groupReport` with the scored rows (so views
@@ -4317,7 +4365,25 @@ failing example to itself).
 - Pages: home, folder (its subfolders and files), file (its exports), symbol (signature, TSDoc, live examples with
   their `// =>` values), concepts (by the encyclopedia's taxonomy), how-tos (`content/howto/`, runnable code blocks checked by the
   build), traces (open, replay, compare and export runs).
-- `plugins/`: the Vite plugin that extracts the catalogue at build time.
+- The catalogue is precompiled, never extracted on a request: `make docs-catalogue` (run first by `make dev` and
+  `make site`, a no-op when its output is newer than the engine's source) writes static files named by content hash
+  to `apps/site/.generated/docs/` (gitignored): a small index for the tree (folders with summaries, files with their
+  exports' names and kinds: about 0.5 MB where the whole catalogue is 7 MB), one data file per source file (its
+  comment, full `SymbolDoc`s and `refs`: the type names in its signatures resolved through its imports to
+  `[module, name]`), a types file per module (each exported type's declaration and lead sentence, named in the index
+  and fetched on the first hover) and a search index of every export's summary (fetched when the search box is used,
+  or once the page is idle), then `manifest.json` naming the current version.
+- Type names in signatures, parameter types and prose (`{@link}`, inline code) link their page and, on hover or
+  keyboard focus, show the type's declaration (highlighted) and lead sentence in whitebox-render's `Popover`
+  (`src/docs/TypeHover.tsx`); Escape or moving away closes it. Names in code resolve only through the file's `refs`,
+  so globals and private types stay plain.
+- `plugins/`: `docs-data.ts` (writing the files, the staleness check), `build-docs.ts` (the command behind
+  `make docs-catalogue`) and the Vite plugin `docs-catalogue.ts`. In dev it serves `<base>docs-data/*` from the
+  folder and `virtual:whitebox-docs/index` (the current index's URL); after an edit to the engine it regenerates in a
+  background process (debounced, low priority) while still serving the previous version, then sends
+  `whitebox-docs:update` and open pages fetch the new index. In a build it copies the files into `dist/docs-data/`.
+- Each section's code loads when the section is first visited (`React.lazy` in `main.tsx`), so the docs load none
+  of the gallery's recipes or the hub's collections.
 
 ## 9. Python oracle, `oracle/`
 
@@ -4360,7 +4426,7 @@ library for the same computation. They do not set a higher bar than that library
 
 ## 10. Repository tooling
 
-- `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `build`, `lint`, `format`, `typecheck`,
+- `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `docs-catalogue`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
   `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`.
 - Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, then only the tests,
@@ -4377,6 +4443,9 @@ library for the same computation. They do not set a higher bar than that library
 - `scripts/examples.ts` (`make examples`): every `@example` of the engine core run in worker threads with its `// =>`
   lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows to module or file prefixes,
   `--coverage` reports documentation coverage). How-tos join it when they exist.
+- `apps/site/plugins/build-docs.ts` (`make docs-catalogue`): the docs catalogue extracted once (about 3 seconds) and
+  written as the site's static docs files (section 8); `--if-stale` returns at once when they are newer than the
+  engine's source, whitebox-meta's `extract/` and `schema/`, and the generator.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).
 - `scripts/pack.ts`: build and pack the three packages; collect release assets with a manifest.
@@ -4418,7 +4487,7 @@ library for the same computation. They do not set a higher bar than that library
 | `model_selection` (searches)                                | `lib/learn/model-selection/search.ts`, `lib/tune/`    |
 | `metrics`                                                   | `lib/metrics/`                                        |
 | `calibration`                                               | `lib/learn/calibration.ts`                            |
-| `inspection`                                                | `lib/learn/inspection.ts`                             |
+| `inspection`                                                | `lib/explain/inspection.ts`                           |
 | `datasets`                                                  | `lib/datasets/`, `lib/data/`                          |
 
 ### PyTorch and its ecosystem
@@ -4496,9 +4565,9 @@ library for the same computation. They do not set a higher bar than that library
 | recordlinkage, Splink             | `methods/retrieval/record-linkage.ts`                                                             |
 | gensim, fastText                  | `methods/embedding/`, `methods/models/topic.ts`                                                   |
 | lifelines                         | `methods/survival/`                                                                               |
-| fairlearn, AIF360                 | `lib/metrics/fairness.ts`, `methods/fairness/`                                                    |
+| fairlearn, AIF360                 | `lib/fairness/`, `methods/fairness/`                                                              |
 | Opacus                            | `lib/learn/privacy.ts`, `methods/privacy/`                                                        |
-| SHAP, Captum                      | `lib/learn/explain/`                                                                              |
+| SHAP, Captum                      | `lib/explain/`                                                                                    |
 | cleanlab, Snorkel                 | `methods/weak-supervision/`                                                                       |
 | zlib                              | `lib/information/deflate.ts`                                                                      |
 

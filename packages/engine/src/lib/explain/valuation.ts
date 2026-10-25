@@ -1,0 +1,372 @@
+import { grad, hessian } from '../autodiff/index.ts'
+import { meanOf, WhiteboxError } from '../base/index.ts'
+import { innerFitOptions, keyFor, runOptionsFor } from '../learn/_shared.ts'
+import type { Estimator, FitOptions, LearnData } from '../learn/estimator.ts'
+import { type Scorer, type Scoring, scorersOf } from '../learn/scoring.ts'
+import { matrixView, rowsOf, takeData, targetVector } from '../learn/validation.ts'
+import { solve } from '../numerics/linalg/index.ts'
+import { foldIn, permutation } from '../random/index.ts'
+import { add, asTensor, fromStorage, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
+import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+
+/** A per-example loss of flat parameters `[p]`, one input row `[d]` and its target. */
+export type ExampleLoss = (params: Value, x: Value, y: number) => Value
+
+function rows(x: TensorLike, who: string): Tensor[] {
+  const m = matrixView(x, who)
+  return Array.from({ length: m.n }, (_, i) =>
+    fromStorage(Float64Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)), [m.d], 'float64'),
+  )
+}
+
+function flatParams(params: TensorLike): Tensor {
+  const v = Float64Array.from(toFlat(asTensor(params)))
+  return fromStorage(v, [v.length], 'float64')
+}
+
+/** Options of {@link influenceFunctions}. */
+export interface InfluenceOptions {
+  /** Added to the Hessian's diagonal (default 0; use a small value when the loss is not strictly convex). */
+  readonly damping?: number
+}
+
+/** The result of {@link influenceFunctions}. */
+export interface InfluenceResult {
+  /** influence[test][train]: d L(z_test) / d epsilon when z_train is up-weighted by epsilon (negative helps). */
+  readonly influence: readonly (readonly number[])[]
+  /** The first-order change in the parameters from removing each training point, (1/n) H^-1 grad L(z): [train][p]. */
+  readonly parameterChange: readonly (readonly number[])[]
+}
+
+/**
+ * Influence functions (Cook and Weisberg 1982; Koh and Liang 2017): the effect of up-weighting a training point on a
+ * test loss, I(z, z_test) = -grad L(z_test)^T H^-1 grad L(z), with H the mean Hessian of the training loss at the
+ * fitted parameters (exact, by automatic differentiation). Removing z changes the test loss by about -I / n.
+ *
+ * @param loss - The per-example loss.
+ * @param params - The fitted parameters (flat).
+ * @param train - Training rows and targets.
+ * @param test - Test rows and targets.
+ * @param options - damping.
+ * @returns Influences and first-order parameter changes.
+ * @concept data-valuation
+ * @example
+ * ```ts
+ * import { influenceFunctions } from 'whitebox-engine/explain'
+ * import { mul, square, sub, sum } from 'whitebox-engine/tensor'
+ * // Least squares on a mean: theta = mean(y) = 2. Up-weighting the outlier at 4 raises the test loss at 1 (+4);
+ * // up-weighting a point at 1 lowers it (-2).
+ * const loss = (p, x, y) => square(sub(sum(p), y))
+ * const r = influenceFunctions(loss, [2], { x: [[0], [0], [0]], y: [1, 1, 4] }, { x: [[0]], y: [1] })
+ * r.influence[0].map((v) => Math.round(v * 1e9) / 1e9) // => [-2, -2, 4]
+ * ```
+ */
+export function influenceFunctions(
+  loss: ExampleLoss,
+  params: TensorLike,
+  train: LearnData,
+  test: LearnData,
+  options: InfluenceOptions = {},
+): InfluenceResult {
+  const theta = flatParams(params)
+  const p = theta.shape[0] ?? 0
+  const xs = rows(train.x, 'influenceFunctions')
+  const ys = targetVector(train.y ?? [], 'influenceFunctions', xs.length)
+  const xt = rows(test.x, 'influenceFunctions')
+  const yt = targetVector(test.y ?? [], 'influenceFunctions', xt.length)
+  const n = xs.length
+  const h = new Float64Array(p * p)
+  const grads = xs.map((x, i) => {
+    const f = (q: Value): Value => loss(q, x, ys[i] ?? 0)
+    const hi = toFlat(hessian(f)(theta) as Tensor)
+    for (let t = 0; t < p * p; t++) h[t] = (h[t] ?? 0) + (hi[t] ?? 0) / n
+    return toFlat(grad(f)(theta) as Tensor)
+  })
+  for (let a = 0; a < p; a++) h[a * p + a] = (h[a * p + a] ?? 0) + (options.damping ?? 0)
+  const hm = fromStorage(h, [p, p], 'float64')
+  const hinvG = grads.map((g) => toFlat(solve(hm, fromStorage(Float64Array.from(g), [p], 'float64'))))
+  const influence = xt.map((x, j) => {
+    const gt = toFlat(grad((q: Value) => loss(q, x, yt[j] ?? 0))(theta) as Tensor)
+    return hinvG.map((v) => -v.reduce((s, t, a) => s + t * (gt[a] ?? 0), 0))
+  })
+  return { influence, parameterChange: hinvG.map((v) => v.map((t) => t / n)) }
+}
+
+/** A training checkpoint for {@link tracIn}: parameters and the learning rate used after them. */
+export interface Checkpoint {
+  readonly params: TensorLike
+  readonly learningRate: number
+}
+
+/**
+ * TracIn (Pruthi et al. 2020): the influence of a training point on a test point traced through training, the sum
+ * over checkpoints of learning rate times the dot product of their loss gradients. Positive values are proponents
+ * (the training point lowered the test loss), negative ones opponents.
+ *
+ * @param loss - The per-example loss.
+ * @param checkpoints - Parameters saved during training, with learning rates.
+ * @param train - Training rows and targets.
+ * @param test - Test rows and targets.
+ * @returns tracin[test][train].
+ * @example
+ * ```ts
+ * import { tracIn } from 'whitebox-engine/explain'
+ * import { mul, square, sub, sum } from 'whitebox-engine/tensor'
+ * const loss = (p, x, y) => square(sub(sum(mul(p, x)), y))
+ * tracIn(loss, [{ params: [0], learningRate: 0.5 }], { x: [[1], [1]], y: [1, -1] }, { x: [[1]], y: [1] }) // => [[2, -2]]
+ * ```
+ */
+export function tracIn(
+  loss: ExampleLoss,
+  checkpoints: readonly Checkpoint[],
+  train: LearnData,
+  test: LearnData,
+): number[][] {
+  if (checkpoints.length === 0) throw new WhiteboxError('value', 'tracIn: needs at least one checkpoint')
+  const xs = rows(train.x, 'tracIn')
+  const ys = targetVector(train.y ?? [], 'tracIn', xs.length)
+  const xt = rows(test.x, 'tracIn')
+  const yt = targetVector(test.y ?? [], 'tracIn', xt.length)
+  const out = xt.map(() => new Array<number>(xs.length).fill(0))
+  for (const c of checkpoints) {
+    const theta = flatParams(c.params)
+    const g = xs.map((x, i) => toFlat(grad((q: Value) => loss(q, x, ys[i] ?? 0))(theta) as Tensor))
+    xt.forEach((x, j) => {
+      const gt = toFlat(grad((q: Value) => loss(q, x, yt[j] ?? 0))(theta) as Tensor)
+      const row = out[j] as number[]
+      g.forEach((gi, i) => {
+        row[i] = (row[i] ?? 0) + c.learningRate * gi.reduce((s, v, a) => s + v * (gt[a] ?? 0), 0)
+      })
+    })
+  }
+  return out
+}
+
+/** Options of {@link dataShapley}. */
+export interface DataShapleyOptions extends FitOptions {
+  /** The utility: a scorer on the test data (default the estimator's score). */
+  readonly scoring?: Scoring
+  /** Permutations (default 100). */
+  readonly nPermutations?: number
+  /** Stop a permutation once the prefix's utility is within this fraction of the full data's (default 0.01). */
+  readonly truncationTolerance?: number
+  /** The utility of the empty set and of prefixes the estimator cannot fit (default 0). */
+  readonly emptyUtility?: number
+}
+
+/** The result of {@link dataShapley}. */
+export interface DataShapleyResult {
+  /** One value per training point; they sum to about v(all) - v(empty). */
+  readonly values: readonly number[]
+  /** Standard errors of the Monte Carlo means. */
+  readonly standardErrors: readonly number[]
+  /** The utility of the full training set. */
+  readonly fullUtility: number
+}
+
+/**
+ * Data Shapley by truncated Monte Carlo (Ghorbani and Zou 2019): each training point's value is its mean marginal
+ * contribution to the test utility over random orders of the data, refitting the model on growing prefixes and
+ * truncating an order once its prefix is almost as good as the full data. A traced algorithm with one step per order.
+ *
+ * @param estimator - The estimator to refit.
+ * @param train - Training data.
+ * @param test - The data the utility is measured on.
+ * @param options - scoring, nPermutations, truncationTolerance, emptyUtility, key and tracing.
+ * @returns The values, their standard errors and the full utility.
+ * @example
+ * ```ts
+ * import { dataShapley } from 'whitebox-engine/explain'
+ * import { defineEstimator, rowsOf } from 'whitebox-engine/learn'
+ * import { full, item, mean } from 'whitebox-engine/tensor'
+ * const meanModel = defineEstimator(
+ *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) },
+ *   {},
+ * )
+ * const r = dataShapley(meanModel, { x: [[0], [0], [0]], y: [1, 1, 9] }, { x: [[0]], y: [1] }, { scoring: 'neg_mean_absolute_error', nPermutations: 30, emptyUtility: -5 })
+ * r.values[2] < r.values[0] // => true
+ * ```
+ */
+export function dataShapley(
+  estimator: Estimator,
+  train: LearnData,
+  test: LearnData,
+  options: DataShapleyOptions = {},
+): DataShapleyResult {
+  const n = rowsOf(train.x)
+  const scorer: Scorer | undefined = Object.values(scorersOf(options.scoring))[0]
+  if (scorer === undefined) throw new WhiteboxError('value', 'dataShapley: no scorer')
+  const nPerm = options.nPermutations ?? 100
+  if (!(Number.isInteger(nPerm) && nPerm >= 1))
+    throw new WhiteboxError('value', 'dataShapley: nPermutations must be >= 1')
+  const empty = options.emptyUtility ?? 0
+  const key = keyFor(options, 'dataShapley')
+  const utility = (idx: readonly number[], opts: FitOptions): number => {
+    if (idx.length === 0) return empty
+    try {
+      return scorer.score(estimator.fit(takeData(train, idx), opts), test)
+    } catch {
+      return empty
+    }
+  }
+  const fullUtility = utility(
+    Array.from({ length: n }, (_, i) => i),
+    innerFitOptions(options, foldIn(key, 0), options.parent),
+  )
+  const tol = options.truncationTolerance ?? 0.01
+  type State = { readonly sum: Float64Array; readonly sumSq: Float64Array; readonly count: number }
+  const algorithm: Algorithm<State> = {
+    name: 'data-shapley',
+    config: { estimator: estimator.name, n, nPermutations: nPerm, truncationTolerance: tol },
+    schema: channels({ metrics: { permutations: { description: 'orders sampled' } } }),
+    init: () => ({ sum: new Float64Array(n), sumSq: new Float64Array(n), count: 0 }),
+    step: (s, ctx) => {
+      const order = toFlat(permutation(foldIn(key, 1 + s.count), n))
+      const sum = Float64Array.from(s.sum)
+      const sumSq = Float64Array.from(s.sumSq)
+      let prev = empty
+      let truncated = false
+      for (let t = 0; t < n; t++) {
+        const i = order[t] ?? 0
+        let contribution = 0
+        if (!truncated) {
+          const v = utility(order.slice(0, t + 1), innerFitOptions(options, foldIn(ctx.key, t), ctx.run))
+          contribution = v - prev
+          prev = v
+          if (Math.abs(fullUtility - v) <= tol * Math.abs(fullUtility)) truncated = true
+        }
+        sum[i] = (sum[i] ?? 0) + contribution
+        sumSq[i] = (sumSq[i] ?? 0) + contribution * contribution
+      }
+      return { sum, sumSq, count: s.count + 1 }
+    },
+    done: (s) => (s.count >= nPerm ? 'completed' : undefined),
+    observe: (s) => ({ metrics: { permutations: s.count } }),
+  }
+  const { state } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'dataShapley'), maxSteps: nPerm })
+  const values = Array.from(state.sum, (v) => v / state.count)
+  const standardErrors = Array.from(state.sumSq, (v, i) => {
+    const m = values[i] ?? 0
+    return state.count < 2 ? Number.NaN : Math.sqrt(Math.max(0, v / state.count - m * m) / (state.count - 1))
+  })
+  return { values, standardErrors, fullUtility }
+}
+
+/**
+ * Exact KNN-Shapley (Jia et al. 2019): the Shapley values of training points for the utility of an unweighted k-NN
+ * classifier on test points, by the closed-form recursion over training points sorted by distance, in O(N log N) per
+ * test point; averaged over the test points.
+ *
+ * @param trainX - Training rows `[N, d]`.
+ * @param trainY - Their labels `[N]`.
+ * @param testX - Test rows `[M, d]`.
+ * @param testY - Their labels `[M]`.
+ * @param k - The number of neighbours (default 5).
+ * @returns One value per training point.
+ * @example
+ * ```ts
+ * import { knnShapley } from 'whitebox-engine/explain'
+ * // The near point with the right label is worth most; the wrong label is worth less than nothing.
+ * knnShapley([[0], [1], [5]], [1, 0, 1], [[0]], [1], 1).map((v) => Math.round(v * 1e6) / 1e6) // => [0.833333, -0.166667, 0.333333]
+ * ```
+ */
+export function knnShapley(
+  trainX: TensorLike,
+  trainY: TensorLike,
+  testX: TensorLike,
+  testY: TensorLike,
+  k = 5,
+): number[] {
+  const tr = matrixView(trainX, 'knnShapley')
+  const te = matrixView(testX, 'knnShapley', { nFeatures: tr.d })
+  const ytr = targetVector(trainY, 'knnShapley', tr.n)
+  const yte = targetVector(testY, 'knnShapley', te.n)
+  if (!(Number.isInteger(k) && k >= 1)) throw new WhiteboxError('value', 'knnShapley: k must be >= 1')
+  const N = tr.n
+  const total = new Float64Array(N)
+  for (let j = 0; j < te.n; j++) {
+    const dist = Array.from({ length: N }, (_, i) => {
+      let s = 0
+      for (let c = 0; c < tr.d; c++) s += ((tr.data[i * tr.d + c] ?? 0) - (te.data[j * te.d + c] ?? 0)) ** 2
+      return { i, s }
+    }).sort((a, b) => a.s - b.s || a.i - b.i)
+    const match = dist.map((e) => (ytr[e.i] === yte[j] ? 1 : 0))
+    const s = new Float64Array(N)
+    // The farthest point counts only while it is among the k nearest: in min(k, N) of the N subset sizes.
+    s[N - 1] = ((match[N - 1] ?? 0) * Math.min(k, N)) / (k * N)
+    for (let r = N - 2; r >= 0; r--) {
+      s[r] = (s[r + 1] ?? 0) + (((match[r] ?? 0) - (match[r + 1] ?? 0)) / k) * (Math.min(k, r + 1) / (r + 1))
+    }
+    dist.forEach((e, r) => {
+      total[e.i] = (total[e.i] ?? 0) + (s[r] ?? 0) / te.n
+    })
+  }
+  return Array.from(total)
+}
+
+/**
+ * The k-NN utility KNN-Shapley values (for checks): the mean over test points of the fraction of the k nearest
+ * selected training points (fewer when fewer are selected, divided by k) that share the test label.
+ *
+ * @param trainX - Training rows.
+ * @param trainY - Their labels.
+ * @param testX - Test rows.
+ * @param testY - Their labels.
+ * @param k - The number of neighbours.
+ * @returns The utility of each subset of training points (a coalition value).
+ * @example
+ * ```ts
+ * import { knnUtility } from 'whitebox-engine/explain'
+ * knnUtility([[0], [1]], [1, 0], [[0]], [1], 1)([true, true]) // => 1
+ * ```
+ */
+export function knnUtility(
+  trainX: TensorLike,
+  trainY: TensorLike,
+  testX: TensorLike,
+  testY: TensorLike,
+  k = 5,
+): (subset: readonly boolean[]) => number {
+  const tr = matrixView(trainX, 'knnUtility')
+  const te = matrixView(testX, 'knnUtility', { nFeatures: tr.d })
+  const ytr = targetVector(trainY, 'knnUtility', tr.n)
+  const yte = targetVector(testY, 'knnUtility', te.n)
+  return (subset) =>
+    meanOf(
+      Array.from({ length: te.n }, (_, j) => {
+        const chosen = Array.from({ length: tr.n }, (_, i) => i)
+          .filter((i) => subset[i] === true)
+          .map((i) => {
+            let s = 0
+            for (let c = 0; c < tr.d; c++) s += ((tr.data[i * tr.d + c] ?? 0) - (te.data[j * te.d + c] ?? 0)) ** 2
+            return { i, s }
+          })
+          .sort((a, b) => a.s - b.s || a.i - b.i)
+          .slice(0, k)
+        return chosen.filter((e) => ytr[e.i] === yte[j]).length / k
+      }),
+    )
+}
+
+/**
+ * The total of a per-example loss over a dataset (to fit parameters with the same loss the valuation uses).
+ *
+ * @param loss - The per-example loss.
+ * @param params - The parameters.
+ * @param data - Rows and targets.
+ * @returns The summed loss (differentiable in the parameters).
+ * @example
+ * ```ts
+ * import { totalLoss } from 'whitebox-engine/explain'
+ * import { item, square, sub, sum } from 'whitebox-engine/tensor'
+ * item(totalLoss((p, x, y) => square(sub(sum(p), y)), [1], { x: [[0], [0]], y: [0, 3] })) // => 5
+ * ```
+ */
+export function totalLoss(loss: ExampleLoss, params: Value, data: LearnData): Value {
+  const xs = rows(data.x, 'totalLoss')
+  const ys = targetVector(data.y ?? [], 'totalLoss', xs.length)
+  return xs.reduce<Value>(
+    (acc, x, i) => add(acc, loss(params, x, ys[i] ?? 0)),
+    fromStorage(new Float64Array([0]), [], 'float64'),
+  )
+}

@@ -6,7 +6,6 @@ import {
   groupReport,
   groupReportFromTables,
 } from '../../lib/exposition/index.ts'
-import type { Fitted } from '../../lib/learn/index.ts'
 import {
   demographicParityDifference,
   disparateImpact,
@@ -15,8 +14,9 @@ import {
   type GroupRates,
   groupRates,
   predictiveParityDifference,
-  rocCurve,
-} from '../../lib/metrics/index.ts'
+} from '../../lib/fairness/index.ts'
+import type { Fitted } from '../../lib/learn/index.ts'
+import { rocCurve } from '../../lib/metrics/index.ts'
 import {
   binaryLabels,
   type FairnessData,

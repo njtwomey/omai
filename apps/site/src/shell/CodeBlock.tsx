@@ -4,13 +4,15 @@ import { highlight } from './highlight.ts'
 
 /**
  * Code to read and copy: highlighted TypeScript under an optional title (the file it comes from), with a copy button.
+ * `renderType` may draw the type names (capitalised words) itself, such as the docs' type links with their hover.
  */
 export function CodeBlock(props: {
   readonly code: string
   readonly title?: string
   readonly className?: string
+  readonly renderType?: (name: string, key: number) => ReactNode
 }): ReactNode {
-  const { code, title, className } = props
+  const { code, title, className, renderType } = props
   const [copied, setCopied] = useState(false)
   const copy = (): void => {
     void navigator.clipboard?.writeText(code).then(() => {
@@ -37,6 +39,8 @@ export function CodeBlock(props: {
           {highlight(code).map((t, i) =>
             t.kind === undefined ? (
               t.text
+            ) : t.kind === 'type' && renderType !== undefined ? (
+              renderType(t.text, i)
             ) : (
               // biome-ignore lint/suspicious/noArrayIndexKey: tokens are a fixed sequence for this code
               <span key={i} className={`tok-${t.kind}`}>
