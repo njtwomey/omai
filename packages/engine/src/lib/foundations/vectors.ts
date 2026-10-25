@@ -1,3 +1,10 @@
+/**
+ * Vectors and the geometry of lines and planes: dot, cross and triple products, lengths and unit vectors, projections
+ * and rejections, angles between vectors by Kahan's stable formula, Gram-Schmidt orthonormalisation, linear
+ * independence, span dimension and span membership, lines and planes with their equations, distances, closest points
+ * and intersections.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { daxpy, ddot, dnrm2, dscal } from '../numerics/linalg/blas.ts'
 import { lstsq, matrixRank } from '../numerics/linalg/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * No-regret learning in normal-form games, whose average play converges to coarse correlated equilibria (and to Nash
+ * equilibria in two-player zero-sum games). Regret matching (Hart and Mas-Colell), as in OpenSpiel, and multiplicative
+ * weights (Hedge) in self-play, as traced algorithms.
+ */
+
 import { maxOf, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TensorChannel, type TraceSchema } from '../trace/index.ts'
 import {

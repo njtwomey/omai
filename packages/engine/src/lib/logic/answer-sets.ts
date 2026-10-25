@@ -1,3 +1,10 @@
+/**
+ * Answer set programming: logic programs with default negation (`not p`) whose meanings are their stable models, the
+ * sets of atoms that justify themselves under the Gelfond-Lifschitz reduct. Reading and grounding normal programs with
+ * integrity constraints, the reduct and the stable-model check, and a guess-and-check search for all answer sets as a
+ * traced algorithm.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { evaluationOrder, factKey, joinRule, Store } from './_relations.ts'

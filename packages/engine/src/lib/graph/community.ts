@@ -1,3 +1,10 @@
+/**
+ * Community detection: partitioning a graph's nodes into groups that are densely linked inside and sparsely linked
+ * between. Newman's modularity, the Louvain and Leiden multilevel modularity optimisers, asynchronous label
+ * propagation, the Girvan-Newman hierarchy by edge-betweenness removal and spectral bisection by the Fiedler vector,
+ * the iterative ones as traced algorithms (as in NetworkX).
+ */
+
 import { type Json, maxOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'

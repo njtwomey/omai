@@ -1,3 +1,9 @@
+/**
+ * N-grams and shingles: contiguous (optionally padded) n-grams, everygrams and skip-grams as in nltk, n-gram counts for
+ * metrics such as BLEU and ROUGE, character and word shingles for document resemblance (Broder), weighted shingles, and
+ * fastText's character n-grams with their hash buckets.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fnv1a, utf8Bytes } from './hashing.ts'
 

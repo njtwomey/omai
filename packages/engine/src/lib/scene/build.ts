@@ -1,3 +1,9 @@
+/**
+ * Constructors for scenes, the engine's drawings as data: the scene itself, shapes (rectangles, circles, ellipses,
+ * lines, arrows, paths, polygons), text and TeX labels, raster images from tensors or nested arrays (with `toPixels`
+ * converting them as `imshow` would), and transforming groups.
+ */
+
 import { clamp, maxOf, minOf, WhiteboxError } from '../base/index.ts'
 import type {
   CircleNode,

@@ -1,3 +1,7 @@
+/**
+ * English stop-word lists (scikit-learn's and gensim's) and their removal from token lists.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 // The Glasgow information retrieval group's list, as scikit-learn ships it (ENGLISH_STOP_WORDS).

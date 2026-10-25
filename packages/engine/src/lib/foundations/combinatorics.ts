@@ -1,3 +1,10 @@
+/**
+ * Counting and enumeration: exact factorials, binomial and multinomial coefficients, permutations and combinations as
+ * Python's itertools lists them, ranking and unranking them in lexicographic order, derangements, Stirling numbers of
+ * both kinds, Bell, Catalan and partition numbers, integer partitions, the inclusion-exclusion principle, and Pascal's
+ * triangle (optionally modulo m).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 function count(n: number, name: string): number {

@@ -1,3 +1,10 @@
+/**
+ * Genetic algorithms and evolution strategies: population-based search that breeds better solutions by selection,
+ * recombination and mutation. Genome representations for bit strings, permutations and real vectors, a generational
+ * genetic algorithm with elitism, and a self-adaptive (mu/2, lambda) evolution strategy in which each individual
+ * carries its own step size, both as traced algorithms.
+ */
+
 import { argmaxOf, type Json, meanOf, minOf, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, permutation } from '../../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../../trace/index.ts'

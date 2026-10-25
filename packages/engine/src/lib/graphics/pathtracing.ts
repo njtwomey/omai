@@ -1,3 +1,10 @@
+/**
+ * Path tracing: rendering by Monte Carlo integration of the light arriving at each pixel, following random paths that
+ * bounce through the scene. Cosine-weighted hemisphere sampling, a small path tracer with next-event estimation as a
+ * traced algorithm that accumulates samples and their variance per pixel, and the tracing of a single path with its
+ * vertices for figures.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import type { Vec3 } from '../scene/index.ts'

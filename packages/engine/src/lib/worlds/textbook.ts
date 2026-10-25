@@ -1,3 +1,9 @@
+/**
+ * The textbook worlds of reinforcement learning and AI, each with the rules that make it a task: gymnasium's
+ * FrozenLake, CliffWalking and Taxi, the 4 x 3 AIMA grid world, the four-rooms domain, Sutton and Barto's windy grid
+ * world, a key-and-door maze, and MiniGrid-style layouts.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Key, uniformStream } from '../random/index.ts'
 import { fromAscii, type Legend } from './ascii.ts'

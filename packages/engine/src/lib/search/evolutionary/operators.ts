@@ -1,3 +1,10 @@
+/**
+ * The variation and selection operators of evolutionary algorithms: tournament, roulette, stochastic universal, rank
+ * and truncation selection; crossovers for fixed-length genomes (one-point, two-point, uniform), permutations (order,
+ * PMX, cycle) and real vectors (blend, simulated binary, arithmetic); and bit-flip, swap, inversion, scramble, Gaussian
+ * and polynomial mutations, all driven by explicit keys.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Key } from '../../random/index.ts'
 import { draws } from '../_draw.ts'

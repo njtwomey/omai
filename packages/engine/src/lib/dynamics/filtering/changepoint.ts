@@ -1,3 +1,10 @@
+/**
+ * Changepoint detection: locating the times where a series' statistical behaviour changes. Bayesian online changepoint
+ * detection (Adams and MacKay), which tracks the posterior over the current run length with conjugate segment models
+ * and a hazard, and the offline methods PELT (exact penalised optimal partitioning) and binary segmentation, as in
+ * ruptures.
+ */
+
 import { logSumExpOf, WhiteboxError } from '../../base/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'

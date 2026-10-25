@@ -1,3 +1,9 @@
+/**
+ * The search problem contract shared by the state-space searches, AIMA style: problems with actions, transitions, goal
+ * tests, step costs and heuristics; search nodes, results, status and effort statistics; node expansion and solution
+ * paths; the effective branching factor; problems over explicit graphs; and the search tree as a drawable structure.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Graph, type NodeId, nodeIndex } from '../graph/index.ts'
 import { brentq } from '../numerics/roots/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Grids, boundary conditions and discrete operators for the PDE solvers: uniform 1-D and 2-D grids, Dirichlet, Neumann,
+ * Robin and periodic conditions, and the second-order Laplacian matrices (3-point and 5-point stencils with ghost
+ * points) that carry their boundary forcing.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type CsrMatrix, fromCoo } from '../../numerics/sparse/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'

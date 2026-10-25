@@ -1,3 +1,10 @@
+/**
+ * Analysis of ODE methods: Runge-Kutta order conditions checked over rooted trees (Butcher's theory), observed
+ * convergence orders from error studies, stability functions and regions of absolute stability, A- and L-stability
+ * checks, boundary loci of linear multistep methods, and work-precision diagrams comparing methods by error against
+ * cost.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
 import type { TensorLike, Value } from '../../tensor/index.ts'

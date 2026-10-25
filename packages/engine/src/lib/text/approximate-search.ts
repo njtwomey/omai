@@ -1,3 +1,10 @@
+/**
+ * Approximate (fuzzy) string search: finding the strings or substrings within a small edit distance of a query. Q-gram
+ * indexes with the count filter, BK-trees that prune by the triangle inequality, tries searched with an incremental
+ * Levenshtein row, Sellers' approximate substring matching, and top-k fuzzy matching with length and early-termination
+ * pruning as a traced algorithm.
+ */
+
 import { heap, type Json, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, runAlgorithm, type TracePolicy, type Tracer } from '../trace/index.ts'
 import { levenshtein } from './similarity.ts'

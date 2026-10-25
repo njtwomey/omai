@@ -1,3 +1,9 @@
+/**
+ * Graph colouring and cliques: greedy colourings under NetworkX's ordering strategies with a check that a colouring is
+ * proper, maximal independent sets, and maximal cliques by the Bron-Kerbosch algorithm with pivoting, from which the
+ * maximum clique and clique number follow.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Key, permutation } from '../random/index.ts'
 import { connectedComponents } from './components.ts'

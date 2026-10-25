@@ -1,3 +1,9 @@
+/**
+ * Linear multistep methods, which reuse derivatives from past steps instead of computing new stages: fixed-step
+ * Adams-Bashforth, Adams-Moulton and the PECE predictor-corrector of orders 1 to 5, and the variable-step,
+ * variable-order Adams method in Nordsieck form that forms the nonstiff half of LSODE and LSODA.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import { implicitCorrection, isTracedState, type JacobianOption, jacobianAt, luApply, realLu } from './_newton.ts'

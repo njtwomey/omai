@@ -1,3 +1,10 @@
+/**
+ * FOIL (Quinlan 1990), a top-down inductive logic programming learner: it learns clauses for a target relation from
+ * positive and negative tuples and background relations by repeatedly adding the body literal with the highest
+ * information gain until no negatives are covered. The gain function, a traced covering loop, and the learnt theory as
+ * Prolog clauses.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { atom, type Clause, compound, type Term, variable } from '../terms.ts'

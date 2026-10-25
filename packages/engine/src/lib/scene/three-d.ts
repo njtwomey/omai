@@ -1,3 +1,8 @@
+/**
+ * Small 3-D scenes as data, in world coordinates with z up: points, segments, arrows, polylines, faces and labels, with
+ * constructors for each, surfaces `z = f(x, y)` as grids of faces, and labelled coordinate axes.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { NodeBase, Paint, Style } from './types.ts'
 

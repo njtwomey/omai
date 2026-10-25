@@ -1,3 +1,9 @@
+/**
+ * WordPiece, the subword tokeniser of BERT: words are encoded by greedy longest-match-first lookup in a vocabulary,
+ * with continuation pieces marked by a prefix. Models from a vocabulary, encoding as HF tokenizers does, and vocabulary
+ * training.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { TracePolicy, Tracer } from '../../trace/index.ts'
 import { compareCodePoints } from '../_classes.ts'

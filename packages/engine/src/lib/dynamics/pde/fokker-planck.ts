@@ -1,3 +1,9 @@
+/**
+ * The Fokker-Planck equation, which evolves the probability density of a 1-D diffusion process dX = mu dt + sigma dW. A
+ * Scharfetter-Gummel finite-volume discretisation that keeps the density positive and its mass conserved, its time
+ * evolution by the theta method, and the stationary density both in closed form and from the discrete generator.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'

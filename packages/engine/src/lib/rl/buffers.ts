@@ -1,3 +1,10 @@
+/**
+ * Experience storage for reinforcement learning, as persistent (immutable) values: a replay buffer as in
+ * stable-baselines3, a sum tree and prioritised replay with importance weights (Schaul et al.), n-step transition
+ * accumulation, an on-policy rollout buffer with GAE advantages and shuffled minibatches, and an episode store that
+ * samples subsequences for sequence models.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, permutation, randint, uniform } from '../random/index.ts'
 import type { Transition } from './agent.ts'

@@ -1,3 +1,10 @@
+/**
+ * Images and textures for rendering: linear floating-point images with conversion from and to display pixels, texture
+ * wrapping and nearest or bilinear sampling, mipmap chains with level-of-detail selection and trilinear filtering,
+ * texture-coordinate mappings (spherical, planar, cylindrical, cube map), and procedural textures (checkerboard,
+ * bricks, keyed noise).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { type Pixels, toPixels, type Vec3 } from '../scene/index.ts'

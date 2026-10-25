@@ -1,3 +1,10 @@
+/**
+ * Von Neumann stability analysis of finite-difference schemes: the amplification factor of each Fourier mode per time
+ * step, a stability check over all phase angles, stencils for the standard heat and advection schemes (FTCS, BTCS,
+ * Crank-Nicolson, upwind, Lax-Friedrichs, Lax-Wendroff), the Courant number and stable step sizes, and numerical
+ * dispersion and dissipation.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
 

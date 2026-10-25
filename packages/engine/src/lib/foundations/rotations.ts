@@ -1,3 +1,10 @@
+/**
+ * Rotations in two and three dimensions: rotation matrices, Rodrigues' formula and axis-angle form, Euler angles in all
+ * 24 conventions with gimbal-lock detection, quaternions (products, conversions, rotating vectors, slerp), the angle
+ * between orientations, chordal and Karcher means of rotations, and a check that a matrix is a rotation, following
+ * scipy's Rotation where they overlap.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Rotation, rotationFromMatrix, rotationFromQuat, rotationFromRotvec } from '../numerics/geometry/index.ts'
 import { det, eigh } from '../numerics/linalg/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * The method of lines: discretise a PDE in space only, turning it into a system of ODEs for the grid values that any
+ * ODE solver can integrate. First-derivative matrices, and semi-discretisations of 1-D advection-diffusion-reaction and
+ * 2-D reaction-diffusion equations.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type CsrMatrix, fromCoo, spmv } from '../../numerics/sparse/index.ts'
 import { add, fromStorage, mul, type Tensor, type Value } from '../../tensor/index.ts'

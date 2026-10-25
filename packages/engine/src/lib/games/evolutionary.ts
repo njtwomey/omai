@@ -1,3 +1,9 @@
+/**
+ * Evolutionary game theory: how population shares of strategies change when better-performing strategies grow. The
+ * replicator dynamics of symmetric games and its two-population form for bimatrix games, as in nashpy, and the
+ * projected replicator dynamics of Lanctot et al. as a traced algorithm.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { projectSimplex } from '../optim/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'

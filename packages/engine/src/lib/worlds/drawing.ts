@@ -1,3 +1,8 @@
+/**
+ * Pictures of worlds as engine data: the cell graph as a `Structure`, and a top-down `Scene` with cells filled by
+ * terrain, walls, starts, goals and coloured items, optional per-cell values and paths, for whitebox-render to draw.
+ */
+
 import {
   circle,
   line,

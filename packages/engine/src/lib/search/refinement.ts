@@ -1,3 +1,10 @@
+/**
+ * Refinement search: exploring a lattice of patterns from most general to more specific, the search form of rule
+ * learning, subgroup discovery and ILP. Top-k result sets with redundancy filtering, exhaustive search with
+ * optimistic-estimate pruning, best-first and beam searches as traced algorithms, and the language of conjunctions of
+ * selectors.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { BinaryHeap } from '../graph/index.ts'
 import { metricFunction } from '../numerics/geometry/index.ts'

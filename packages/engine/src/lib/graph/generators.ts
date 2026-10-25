@@ -1,3 +1,10 @@
+/**
+ * Graph generators, NetworkX style. Deterministic families (complete, path, cycle, star, wheel, grid, hypercube,
+ * complete bipartite, balanced tree, barbell), named graphs (Petersen, Zachary's karate club) and random models
+ * (Erdos-Renyi, G(n, m), Watts-Strogatz small world, Barabasi-Albert preferential attachment, stochastic block model,
+ * random DAGs, random geometric and k-nearest-neighbour graphs) driven by explicit keys.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Metric } from '../numerics/geometry/index.ts'
 import { kNeighboursGraph } from '../numerics/spatial/index.ts'

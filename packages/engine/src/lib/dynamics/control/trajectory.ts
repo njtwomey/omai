@@ -1,3 +1,10 @@
+/**
+ * Trajectory optimisation: finding the sequence of controls (and states) that minimises a cost under a dynamics model.
+ * Iterative LQR and differential dynamic programming as traced algorithms with regularisation and line search, and the
+ * direct transcriptions (single shooting, multiple shooting, trapezoidal direct collocation) that hand the problem to a
+ * general optimiser.
+ */
+
 import { clamp, type Json, WhiteboxError } from '../../base/index.ts'
 import { cholesky, daxpy, dgemv, solve, symmetricPart } from '../../numerics/linalg/index.ts'
 import { lbfgsb, slsqp } from '../../optim/index.ts'

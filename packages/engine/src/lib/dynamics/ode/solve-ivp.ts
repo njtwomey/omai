@@ -1,3 +1,10 @@
+/**
+ * The front doors to the ODE solvers. `solveIvp` follows scipy's `solve_ivp` (methods by name, dense output, events),
+ * also as a traced algorithm; `odeint` returns states at given times as in scipy and torchdiffeq; `diffeqsolve` mirrors
+ * diffrax with step-size controllers and saving policies. Also the LSODA-style automatic switch between Adams and BDF
+ * when a problem turns stiff.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import { stack, type TensorLike, type Value, zeros } from '../../tensor/index.ts'

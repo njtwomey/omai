@@ -1,3 +1,9 @@
+/**
+ * Exploration bonuses that reward an agent for visiting novel states: count-based bonuses with visit tables,
+ * pseudo-counts from a density model, SimHash codes for continuous observations, random network distillation (the error
+ * of predicting a fixed random network's features), and the intrinsic curiosity module's forward-model error.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Key, normal } from '../random/index.ts'
 import { asTensor, mean, square, sub, sum, type TensorLike, toFlat, type Value } from '../tensor/index.ts'

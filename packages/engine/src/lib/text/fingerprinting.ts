@@ -1,3 +1,10 @@
+/**
+ * Document fingerprinting and near-duplicate detection: Rabin-Karp rolling hashes and substring search, winnowing (the
+ * selection scheme behind the MOSS plagiarism detector), SimHash signatures compared by Hamming distance, MinHash
+ * signatures that estimate Jaccard similarity (as datasketch), and locality-sensitive hashing with the optimal banding,
+ * combined in `nearDuplicates`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { gaussLegendre } from '../numerics/quadrature/index.ts'
 import { type Key, randomBits } from '../random/index.ts'

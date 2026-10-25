@@ -1,3 +1,9 @@
+/**
+ * Partial-order planning (AIMA 10.4.4, POP): a least-commitment planner that searches over partial plans of steps,
+ * ordering constraints and causal links, adding steps for open preconditions and resolving threats by promotion or
+ * demotion. The planning problem over plans, best-first search on it, and linearisation of the result.
+ */
+
 import { digraph, topologicalSort } from '../../graph/index.ts'
 import { bestFirstSearch } from '../informed.ts'
 import type { SearchOptions, SearchProblem, SearchResult } from '../problem.ts'

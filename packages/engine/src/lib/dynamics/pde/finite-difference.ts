@@ -1,3 +1,10 @@
+/**
+ * Time-dependent and steady PDEs solved by finite differences on grids: the heat equation by the theta method
+ * (explicit, implicit, Crank-Nicolson), the 1-D wave equation by leapfrog, linear advection by upwind, Lax-Friedrichs
+ * or Lax-Wendroff, and the Poisson problem by Jacobi, Gauss-Seidel, SOR, conjugate gradients or a direct solve, all as
+ * traced algorithms.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { dnrm2 } from '../../numerics/linalg/index.ts'
 import { type CsrMatrix, cg, fromCoo, gmres } from '../../numerics/sparse/index.ts'

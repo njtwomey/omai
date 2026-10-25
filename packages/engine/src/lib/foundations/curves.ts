@@ -1,3 +1,10 @@
+/**
+ * Curves in the plane and in space: parametric curves with derivatives by forward-mode autodiff, sampling, speed and
+ * arc length, curvature, torsion and the Frenet-Serret frame, osculating circles and evolutes; implicit curves traced
+ * by marching squares with their tangent and curvature; conic sections classified from their equations; and Bezier
+ * curves through de Casteljau's algorithm, with splitting, derivatives and degree elevation.
+ */
+
 import { grad, hessian, jvp } from '../autodiff/index.ts'
 import { maxOf, WhiteboxError } from '../base/index.ts'
 import { contourLines } from '../numerics/geometry/index.ts'

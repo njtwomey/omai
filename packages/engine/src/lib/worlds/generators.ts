@@ -1,3 +1,9 @@
+/**
+ * Maze generation: perfect mazes (every cell reachable by exactly one path) carved by the classic algorithms, such as
+ * recursive backtracking, Prim's, Kruskal's, Wilson's, Aldous-Broder and recursive division, as a traced algorithm that
+ * shows each carve, with a keyed `generateMaze`, braiding to add loops, and a perfect-maze check.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'

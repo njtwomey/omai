@@ -1,3 +1,9 @@
+/**
+ * GraphPlan (Blum and Furst): a planner that grows a planning graph of alternating fact and action levels with
+ * mutual-exclusion relations, then extracts a shortest parallel plan by backward search with memoised failures. Also
+ * the invariant mutex pairs read from the levelled-off graph.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import type { SearchRunOptions } from '../problem.ts'

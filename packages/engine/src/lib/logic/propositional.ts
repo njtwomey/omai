@@ -1,3 +1,9 @@
+/**
+ * Propositional logic: parsing, printing and evaluating formulas, truth tables and models, satisfiability, validity,
+ * entailment and equivalence decided by CDCL on the Tseitin encoding, conversion to negation, conjunctive and
+ * disjunctive normal forms, algebraic simplification, and Quine-McCluskey prime implicants with minimal DNF and CNF.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Cnf, cdcl } from './sat.ts'
 

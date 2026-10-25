@@ -1,3 +1,10 @@
+/**
+ * The graph data type, modelled on NetworkX's Graph and DiGraph: nodes with labels and data, weighted edges and sorted
+ * compressed-sparse-row adjacency in both directions. Construction from edge lists, neighbour and degree queries, edge
+ * lookup, induced subgraphs, reversal and conversion between directed and undirected forms, and a description of a
+ * graph as a drawable structure.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
 import type { RunOptions } from '../trace/index.ts'

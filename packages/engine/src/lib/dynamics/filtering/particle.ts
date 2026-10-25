@@ -1,3 +1,9 @@
+/**
+ * Particle filters: sequential Monte Carlo estimation of a hidden state from a weighted cloud of samples. The
+ * resampling schemes (multinomial, stratified, systematic, residual), the bootstrap and auxiliary particle filters with
+ * resampling on low effective sample size, and particle smoothing by forward filtering and backward simulation.
+ */
+
 import { logSumExpOf, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../../random/index.ts'
 import {

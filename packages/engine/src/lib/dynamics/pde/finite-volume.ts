@@ -1,3 +1,9 @@
+/**
+ * Finite-volume solvers for scalar conservation laws u_t + f(u)_x = 0, which update cell averages by fluxes across cell
+ * faces and so capture shocks. Burgers' and linear fluxes, the Godunov and Rusanov numerical fluxes, the classical TVD
+ * slope limiters, Godunov and MUSCL-Hancock schemes, and the exact Burgers Riemann solution for comparison.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'

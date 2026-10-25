@@ -1,3 +1,9 @@
+/**
+ * Gradients through ODE solves: `odeintAdjoint` makes a whole solve one primitive whose reverse rule is the continuous
+ * adjoint method (backsolve, interpolated or checkpointed), as in neural ODEs. Also forward sensitivity analysis, and a
+ * comparison of the gradient methods on one problem with their cost and storage.
+ */
+
 import { grad, jacfwd, jvp, vjp } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import {

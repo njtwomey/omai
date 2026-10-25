@@ -1,3 +1,10 @@
+/**
+ * String and sequence similarity measures, as rapidfuzz and jellyfish compute them: Levenshtein (weighted and
+ * normalised, with edit counts for error rates), Damerau-Levenshtein, Hamming, Jaro and Jaro-Winkler, longest common
+ * subsequence and substring, Indel, set measures (Jaccard, containment, clipped overlap) and the fuzzy ratios (ratio,
+ * token-sort, token-set).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { compareCodePoints, PY_SPACE } from './_classes.ts'
 

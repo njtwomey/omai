@@ -1,3 +1,10 @@
+/**
+ * The extensive-form game contract and its tree, in OpenSpiel's style: games with players, chance and information sets
+ * as immutable states, materialised trees with their information sets, tabular behaviour policies and expected returns.
+ * Also backward induction for perfect-information games, games from a literal tree, and conversion of a small game to
+ * normal form.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type NormalFormGame, normalFormGame } from '../normal-form/index.ts'
 import { CHANCE, nodeValues, policyTable, TERMINAL, tablePolicy } from './_tree.ts'

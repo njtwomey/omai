@@ -1,3 +1,9 @@
+/**
+ * Transition models of worlds under rules, for planning and reinforcement learning: the full stochastic model as
+ * gymnasium's `P[s][a]` tables of outcomes with probabilities, rewards and termination, sampling of outcomes and start
+ * states, and the deterministic model shaped as a search problem for `whitebox-engine/search`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Key, uniform } from '../random/index.ts'
 import {

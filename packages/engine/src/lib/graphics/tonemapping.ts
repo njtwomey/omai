@@ -1,3 +1,8 @@
+/**
+ * Tone mapping and colour encoding, which turn unbounded linear radiance into displayable values: exposure in stops,
+ * Reinhard and ACES filmic curves, gamma encoding and decoding, the sRGB transfer functions, and relative luminance.
+ */
+
 import {
   add,
   clip,

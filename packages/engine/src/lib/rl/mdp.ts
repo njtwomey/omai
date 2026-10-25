@@ -1,3 +1,10 @@
+/**
+ * Tabular Markov decision processes and their exact solutions: MDPs in arrays, built directly or from an environment's
+ * model, one-step Bellman backups and greedy policies, value iteration and policy iteration as traced algorithms, exact
+ * policy evaluation by a linear solve, discounted occupancy measures, and discrete environments built from a transition
+ * table as gymnasium's toy-text ones are.
+ */
+
 import { argmaxOf, type Json, maxOf, WhiteboxError } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { uniform } from '../random/index.ts'

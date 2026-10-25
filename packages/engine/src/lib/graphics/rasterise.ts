@@ -1,3 +1,10 @@
+/**
+ * Triangle rasterisation, the pipeline GPUs use: transform vertices to clip space, cull back faces, clip against the
+ * view volume, cover pixels with edge functions under the top-left rule, interpolate attributes and keep the nearest
+ * fragment in a depth buffer. The stages are exported separately, and `rasteriseMesh` runs them all on a mesh with a
+ * record of what happened to each triangle.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Vec3 } from '../scene/index.ts'
 import { check3, cross3, dot3, normalise3, sub3 } from './_vec3.ts'

@@ -1,3 +1,10 @@
+/**
+ * Tools for continuous-time nonlinear dynamics and chaos: Poincare sections by event detection, periodic orbits by
+ * shooting with their Floquet multipliers, the Lyapunov spectrum of a flow, and pseudo-arclength continuation of
+ * equilibria with fold and Hopf detection. For measured time series it adds delay embedding, correlation dimension and
+ * the largest Lyapunov exponent (as nolds computes them) and recurrence quantification analysis.
+ */
+
 import { jacfwd } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { eigvals, qr, solve } from '../numerics/linalg/index.ts'

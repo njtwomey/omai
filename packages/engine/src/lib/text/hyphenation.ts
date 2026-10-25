@@ -1,3 +1,9 @@
+/**
+ * Hyphenation by Liang's algorithm, the method of TeX: patterns of letters with digits between them vote on where a
+ * word may break, and odd maxima mark the hyphenation points. Compiling patterns in TeX notation or from Hunspell
+ * dictionaries (as pyphen uses), hyphenating with a trace of the matching patterns, and inserting hyphens.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** A compiled set of Liang hyphenation patterns, keyed by their letters, with exceptions. */

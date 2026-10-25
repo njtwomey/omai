@@ -1,3 +1,9 @@
+/**
+ * Structures: graph-shaped descriptions as data, with typed nodes (roles, ports, badges), edges between ports, groups
+ * such as plates and repeated blocks, and annotations. They describe trees, networks, factor graphs, model
+ * architectures and search trees for whitebox-render to lay out; the functions here build, merge and slice them.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /**

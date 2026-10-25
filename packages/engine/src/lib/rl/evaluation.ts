@@ -1,3 +1,10 @@
+/**
+ * Reliable evaluation of reinforcement learning results across runs and tasks, following rliable (Agarwal et al.): the
+ * interquartile mean, aggregate mean and median, optimality gap and probability of improvement, score normalisation,
+ * stratified bootstrap confidence intervals, performance profiles, and learning curves aligned and aggregated with
+ * pointwise intervals.
+ */
+
 import {
   type Estimate,
   linspaceNumbers,

@@ -1,3 +1,10 @@
+/**
+ * Multi-agent environments in PettingZoo's two forms as pure functions: simultaneous-move parallel environments and
+ * turn-based agent-environment cycles. Playing episodes with a policy per agent, conversion between the two forms, time
+ * limits, and single-agent views (one agent against fixed policies, a centralised joint controller) so single-agent
+ * learners can train in them.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'

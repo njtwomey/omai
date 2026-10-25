@@ -1,3 +1,9 @@
+/**
+ * The textbook normal-form games: the prisoner's dilemma, matching pennies, rock-paper-scissors, battle of the sexes,
+ * stag hunt, chicken, hawk-dove, Shapley's game and pure coordination, with named actions, plus random games with
+ * uniform payoffs.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Key, uniform } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'

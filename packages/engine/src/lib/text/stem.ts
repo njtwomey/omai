@@ -1,3 +1,8 @@
+/**
+ * Stemming: stripping suffixes to reduce related word forms to a common stem. The Porter stemmer exactly as nltk
+ * implements it (three variants), with a trace of every rule that fired, and the Snowball English (Porter2) stemmer.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 // ---------------------------------------------------------------------------------------------------------------

@@ -1,3 +1,9 @@
+/**
+ * Environment wrappers that change episodes, rewards and actions, as in gymnasium: time limits, episode statistics,
+ * running mean and variance, reward normalisation, transformation and clipping, action transformation, clipping and
+ * rescaling, action repeat (frame skip), sticky actions, and observation transformation.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { type BoxSpace, box, type Space } from '../space/index.ts'

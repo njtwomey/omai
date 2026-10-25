@@ -1,3 +1,9 @@
+/**
+ * Continuous motion in grid worlds: the walls and impassable cells as line segments, and on them disc agents that turn,
+ * move and strafe with swept collision and sliding along walls, ray casting, point sweeps, line of sight that never
+ * slips through corners, fields of view, and distances to the nearest wall.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { closestPointOnSegment, raySegmentHit, segmentsTouch, sweptCircleHit } from '../numerics/geometry/index.ts'
 import { alongSegment, buildIndex, inBox, type SegmentIndex, segmentOf } from './_geometry.ts'

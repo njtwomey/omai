@@ -1,3 +1,9 @@
+/**
+ * Learning in normal-form games, where players repeatedly adapt to each other's past play rather than computing an
+ * equilibrium directly. Fictitious play (best responding to the others' empirical frequencies), its stochastic variant
+ * with perturbed utilities as in nashpy, and best-response dynamics, each as a traced algorithm.
+ */
+
 import { maxOf, WhiteboxError } from '../base/index.ts'
 import { uniformStream } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TensorChannel, type TraceSchema } from '../trace/index.ts'

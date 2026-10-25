@@ -1,3 +1,10 @@
+/**
+ * Adversarial search for two-player and chance games, AIMA style: the game contract (and a stochastic variant with
+ * chance nodes), minimax, alpha-beta pruning, negamax and expectimax with optional depth limits, and Monte Carlo tree
+ * search (UCT, or PUCT with priors as in AlphaZero), each as a traced algorithm reporting the best move, its value and
+ * the principal variation.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../base/index.ts'
 import { Generator, type Key } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'

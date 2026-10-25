@@ -1,3 +1,10 @@
+/**
+ * Surface shading models: how much light a surface reflects towards the viewer. The classical terms (Lambert, Phong,
+ * Blinn-Phong), their normalised BRDFs, the microfacet pieces (GGX distribution, Smith masking, Schlick and exact
+ * Fresnel) assembled into Cook-Torrance and glTF's metallic-roughness model, and materials with `brdf` and `shade`
+ * evaluating them on batches.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { dotProduct, unitVector } from '../foundations/index.ts'
 import type { Vec3 } from '../scene/index.ts'

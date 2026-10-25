@@ -1,3 +1,10 @@
+/**
+ * System identification: estimating a dynamical model from measured inputs and outputs. Polynomial models
+ * (least-squares ARX, ARMAX by the prediction-error method), subspace identification of state-space models (N4SID),
+ * dynamic mode decomposition and its extended form approximating the Koopman operator, and SINDy, which finds sparse
+ * governing equations from a library of candidate terms.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { eig, lstsq, pinv, solve, svd } from '../numerics/linalg/index.ts'
 import { leastSquares } from '../optim/index.ts'

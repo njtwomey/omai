@@ -1,3 +1,10 @@
+/**
+ * Cameras and projection for 3-D rendering: pinhole and orthographic cameras, the OpenGL-style view and projection
+ * matrices (`lookAt`, `perspective`, `orthographic`), projection of points to pixels (also differentiably in the
+ * points), per-pixel ray generation with optional jitter for antialiasing, and view-frustum planes with point, sphere
+ * and box culling tests.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { applyHomogeneous } from '../foundations/index.ts'
 import { ddot } from '../numerics/linalg/blas.ts'

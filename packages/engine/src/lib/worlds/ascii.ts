@@ -1,3 +1,9 @@
+/**
+ * ASCII maps for worlds: reading a world from characters, one per cell as in FrozenLake, MiniGrid and roguelikes or
+ * with thin walls drawn between cells as in maze drawings, writing a world back as text, and building one from rows of
+ * terrain indices. The default legend covers terrains, starts, goals, keys, doors and pickups.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { hasWall, type ItemKind, type ItemSpec, TERRAINS, type TerrainSpec, type World, world } from './world.ts'
 

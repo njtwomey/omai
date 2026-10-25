@@ -1,3 +1,10 @@
+/**
+ * Policies and action distributions: epsilon-greedy and Boltzmann (softmax) action selection over values, policy heads
+ * for policy-gradient and actor-critic methods (categorical, diagonal Gaussian with optional tanh squashing as in SAC,
+ * deterministic as in DDPG and TD3), and exploration noise processes (Gaussian and Ornstein-Uhlenbeck) as in
+ * stable-baselines3.
+ */
+
 import { argmaxOf, WhiteboxError } from '../base/index.ts'
 import { categorical, normal } from '../dists/index.ts'
 import { foldIn, type Key, normal as normalNoise, uniform } from '../random/index.ts'

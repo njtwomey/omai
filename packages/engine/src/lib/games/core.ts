@@ -1,3 +1,9 @@
+/**
+ * Stability-based solution concepts for cooperative games. The core is the set of allocations that no coalition can
+ * improve on by leaving. Here are a core-membership test, the excess of every coalition, the least core and a core
+ * point by linear programming, and the nucleolus, the allocation that lexicographically minimises the largest excesses.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { matrixRank } from '../numerics/linalg/index.ts'
 import { type LinprogOptions, linprog } from '../optim/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Spanning trees and rooted trees: minimum (or maximum) spanning forests by Kruskal's, Prim's or Boruvka's algorithm,
+ * tree and forest tests, rooting a tree with parents, depths and distances, subtree sizes, traversal orders and Euler
+ * tours, and lowest common ancestors by binary lifting.
+ */
+
 import { kahanSum, WhiteboxError } from '../base/index.ts'
 import { connectedComponents } from './components.ts'
 import { type Edge, type Graph, graph, type NodeId, nodeIndex } from './graph.ts'

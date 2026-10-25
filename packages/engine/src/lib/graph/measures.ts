@@ -1,3 +1,9 @@
+/**
+ * Whole-graph and node-level measures, NetworkX style: density, eccentricity, diameter, radius, centre and periphery;
+ * triangles, clustering and transitivity; degree, numeric and attribute assortativity and label homophily; conductance,
+ * edge expansion and the Cheeger constant; and the spectral quantities algebraic connectivity and spectral gap.
+ */
+
 import { maxOf, meanOf, minOf, WhiteboxError } from '../base/index.ts'
 import { ddot, eigvalsh } from '../numerics/linalg/index.ts'
 import { concreteOrThrow, type Tensor, toFlat } from '../tensor/index.ts'

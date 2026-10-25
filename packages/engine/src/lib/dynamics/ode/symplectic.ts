@@ -1,3 +1,9 @@
+/**
+ * Symplectic integrators for separable Hamiltonian systems, which preserve the geometry of phase space so that energy
+ * errors stay bounded over long runs. Splitting methods (symplectic Euler, Stormer-Verlet, velocity Verlet,
+ * Forest-Ruth, Yoshida), a traced integrator with the energy as a metric, and energy-drift diagnostics.
+ */
+
 import { grad } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import { item, mul, stack, sum, type TensorLike, type Value } from '../../tensor/index.ts'

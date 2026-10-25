@@ -1,3 +1,9 @@
+/**
+ * Two-player zero-sum games solved by linear programming through von Neumann's minimax theorem: the row and column
+ * players' optimal mixed strategies and the game value, the equilibrium of a constant-sum game, and any player's
+ * maximin security strategy in a general finite game.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import { type LinprogOptions, linprog } from '../../optim/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../../tensor/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * PID control: the proportional-integral-derivative controller that drives an error to zero from its present value,
+ * accumulated sum and rate of change. A discrete controller with setpoint weighting, a filtered derivative, output
+ * limits and anti-windup; a traced closed-loop simulation around a single-input single-output plant; and the classical
+ * tuning rules (Ziegler-Nichols, Cohen-Coon) plus relay auto-tuning.
+ */
+
 import { clamp, WhiteboxError } from '../../base/index.ts'
 import { c2dMatrices, isDiscrete, type Lti, toSs } from '../../systems/index.ts'
 import { primalOf, toFlat } from '../../tensor/index.ts'
