@@ -2910,15 +2910,21 @@ Aequitas (group bias); goldens where cheap
   (`generalisedEntropyIndex`, `theilIndex`, `entropyDecomposition`, golden against AIF360's ClassificationMetric).
   Built; record `subgroupReport` (`lib/exposition/subgroups.ts`, `subgroupGrid`), views `subgroupView` (heatmap over
   the attributes beside sorted subgroup bars) and the React `SubgroupView`.
-- Individual fairness (`individual.ts`): consistency among nearest neighbours (`consistency`, AIF360's), Lipschitz
-  fairness under a task metric with every violating pair (`lipschitzFairness`), fairness through awareness as a linear
-  programme (`fairnessThroughAwareness`). Built (core).
-- Causal fairness (`causal.ts`): counterfactual fairness, total, direct and indirect (path-specific) discrimination,
-  against a structural causal model written in `probprog`.
-- Regression and scores (`regression.ts`): bounded group loss, statistical parity and equal opportunity in
-  distribution (Wasserstein and Kolmogorov-Smirnov), mean-difference and calibration gaps.
-- Rankings and recommendation (`ranking.ts`): exposure and attention parity, FA*IR, disparate treatment and impact in
-  rankings, deterministic re-ranking.
+- Individual fairness (`individual.ts`): consistency among nearest neighbours (`consistency`, golden against AIF360's),
+  Lipschitz fairness under a task metric with every violating pair (`lipschitzFairness`), fairness through awareness as
+  a linear programme (`fairnessThroughAwareness`). Built; method `individualFairnessAudit` (`methods/fairness`).
+- Causal fairness (`causal.ts`): counterfactual fairness (`counterfactualFairness`) and total, natural direct and
+  indirect effects (`pathSpecificEffects`) against a structural causal model written in `probprog`, by simulation with
+  common random numbers (`seed` and `doIntervention` keep each individual's exogenous noise). Built (core; tests on
+  linear SCMs whose effects are known exactly). TODO: path-specific effects along chosen paths beyond direct/indirect.
+- Regression and scores (`regression.ts`): bounded group loss (`boundedGroupLoss`, golden against fairlearn's
+  MetricFrame), statistical parity and equal opportunity in distribution (`distributionParity`,
+  `equalOpportunityInDistribution`, Kolmogorov-Smirnov and Wasserstein, golden against scipy), mean-difference and
+  calibration gaps (`regressionGaps`). Built (core).
+- Rankings and recommendation (`ranking.ts`): exposure and attention parity with disparate treatment
+  (`rankingExposure`, `positionWeight`), FA*IR (`fairMinimumTable`, golden against scipy's binomial quantiles;
+  `fairTopK`), deterministic re-ranking to minimum shares (`detGreedyRerank`). Built (core). TODO: FA*IR's multiple-test
+  adjustment of alpha.
 - Bias in data (`data-bias.ts`): representation and sampling bias against population shares (`representation`),
   base-rate gaps in the labels (`baseRates`, golden against AIF360's BinaryLabelDatasetMetric), label bias against clean
   labels (`labelBias`), proxy detection by dependence (normalised mutual information) and predictability (per-feature
@@ -2935,7 +2941,8 @@ Aequitas (group bias); goldens where cheap
   stopping, linear-programme mixtures and eta shrinking; golden against fairlearn's final mixture and decisions for
   demographic parity and equalised odds, with a deterministic weighted least-squares learner in both) and GridSearch
   (fairlearn's grid generator and tradeoff rule; golden against its errors, violations and choice). Moments:
-  demographic parity and equalised odds (TODO: true- and false-positive parity, error-rate parity, bounded group loss).
+  demographic parity, equalised odds, true- and false-positive rate parity (all four golden). TODO: error-rate parity
+  and bounded group loss (the regression reduction).
   `fair-classifiers.ts`: the prejudice remover (`prejudiceRemover`), adversarial debiasing (`adversarialDebiasing`,
   Zhang et al.'s projected update), fairness-constrained logistic regression (`fairConstrainedLogistic`, Zafar et al.,
   by SLSQP), the meta fair classifier for the statistical rate (`metaFairClassifier`, Celis et al.), GerryFair
@@ -2949,8 +2956,21 @@ Aequitas (group bias); goldens where cheap
   model selection (`selectFairModel`: within a violation budget, or priced), the frontier of one group's threshold
   (`thresholdFrontier`), the impossibility results on given scores (`impossibilityAt`). Built; record `paretoFront`
   (`lib/exposition/frontiers.ts`) and view `paretoFrontView`; `methods/fairness/studies.ts` is built on it.
-- Dynamics (`dynamics.ts`): delayed impact of decisions (Liu et al.), feedback loops over repeated rounds, fairness
-  under distribution shift.
+- Dynamics (`dynamics.ts`): delayed impact of decisions (`outcomeCurve`, `delayedImpact` under maximum-utility,
+  demographic-parity and equal-opportunity policies, Liu et al.), feedback loops over repeated rounds
+  (`repeatedDecisions`), fairness under distribution shift (`shiftedDisparities` by importance weights,
+  `labelShiftSweep` over a group's base rate). Built; method `delayedImpactStudy` (`curves` records).
+  Round two's step-four domains reuse the `curves` and `coefficientTable` records; dedicated views (exposure in
+  rankings, causal decompositions, dynamics of repeated decisions) are TODO while render work is paused.
+
+Left in 4.39 after round two (one line each):
+- TODO: error-rate parity moment for the reductions (fairlearn's ErrorRateParity).
+- TODO: bounded group loss reduction for regression (fairlearn's BoundedGroupLoss with exponentiated gradient).
+- TODO: FA*IR's multiple-test adjustment of alpha (`fairMinimumTable` uses the unadjusted test).
+- TODO: path-specific effects along arbitrary chosen paths (`pathSpecificEffects` gives total, direct, indirect).
+- TODO: dedicated records and views for exposure in rankings, causal decompositions and repeated decisions.
+- TODO: thin methods for causal, regression and ranking fairness (the core is built).
+- TODO: hub entries for the round-two mitigations, and the parked gallery-to-hub move (5.20).
 
 ## 5. Methods, exposition records, views and the hub
 
@@ -4202,6 +4222,8 @@ built from: `fairness`, `learn`, `metrics`, `optim`, `datasets` (with protected 
 - `intersectional.ts`: `intersectionalAudit(model, data, { attributes })`: a `subgroupReport` (rates over the
   attributes' combinations, entropy decomposition, GerryFair audit over indicators of the attributes). Built.
 - `data-bias.ts`: `dataBiasAudit(data, { cleanLabels, populationShares, model })`: a `dataBias` record. Built.
+- `individual.ts`: `individualFairnessAudit(model, data)` (consistency and Lipschitz pairs). `dynamics.ts`:
+  `delayedImpactStudy(model, groups)` (outcome curves with the policies, mean scores over rounds). Built.
 - `studies.ts`: `fairnessFrontier` (a `paretoFront` of accuracy against violation, in training and after it, with the
   model selection's choice) and `impossibilityStudy`
   (calibrated scores against equalised odds and predictive parity as the base-rate gap grows).

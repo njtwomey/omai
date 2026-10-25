@@ -498,7 +498,15 @@
       "reference": {
         "fairlearn": "0.15.0"
       },
-      "cases": 12
+      "cases": 24
+    },
+    {
+      "fixture": "fairness/individual.json",
+      "source": "oracle/cases/fairness/individual.py",
+      "reference": {
+        "aif360": "0.6.1"
+      },
+      "cases": 2
     },
     {
       "fixture": "fairness/inference.json",
@@ -532,6 +540,22 @@
         "aif360": "0.6.1"
       },
       "cases": 1
+    },
+    {
+      "fixture": "fairness/ranking.json",
+      "source": "oracle/cases/fairness/ranking.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "fairness/regression.json",
+      "source": "oracle/cases/fairness/regression.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "foundations/calculus.json",

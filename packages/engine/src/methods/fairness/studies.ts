@@ -103,7 +103,7 @@ export function fairnessFrontier(
   const model = estimator.fit({ x, y: labels }, { key: foldIn(key, 1), explain: false })
   const { scores } = positiveScores(model, x)
   const swept = thresholdFrontier(scores, labels, groups.index, {
-    constraint,
+    constraint: constraint === 'demographicParity' ? 'demographicParity' : 'equalisedOdds',
     count: options.thresholds ?? 41,
   })
   const thresholdAll = swept.points.map((p, t) => ({
