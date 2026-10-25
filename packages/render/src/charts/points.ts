@@ -228,3 +228,62 @@ export function rug(
 export function scatterChart(sets: readonly PointSet[], options: PlotOptions = {}): EChartsOption {
   return cartesian([points(sets, { mode: modeOf(options) })], options)
 }
+
+/**
+ * Error bars in x and y: for each point a horizontal bar of ± its x error and a vertical bar of ± its y error, with
+ * small caps, beside the points themselves.
+ *
+ * @param data - The points and their errors (either may be absent).
+ * @param options - Colour mode, a name, a colour and the caps' size in data units (default a 60th of the range).
+ * @returns The layer.
+ * @example
+ * ```ts
+ * import { errorBars } from 'mdml-render/charts'
+ * errorBars([{ x: 1, y: 2, yErr: 0.5 }]).extent.y // => [1.5, 2.5]
+ * ```
+ */
+export function errorBars(
+  data: readonly { readonly x: number; readonly y: number; readonly xErr?: number; readonly yErr?: number }[],
+  options: { readonly mode?: ColourMode; readonly name?: string; readonly colour?: string; readonly cap?: number } = {},
+): Layer {
+  const mode = options.mode ?? 'light'
+  const colour = colourFor(options.colour, mode, 0)
+  const xs = data.flatMap((d) => [d.x - (d.xErr ?? 0), d.x + (d.xErr ?? 0)])
+  const ys = data.flatMap((d) => [d.y - (d.yErr ?? 0), d.y + (d.yErr ?? 0)])
+  const xr = extentOf(xs) ?? [0, 1]
+  const yr = extentOf(ys) ?? [0, 1]
+  const capX = options.cap ?? (xr[1] - xr[0]) / 60
+  const capY = options.cap ?? (yr[1] - yr[0]) / 60
+  const segs: [number, number][] = []
+  const gap: [number, number] = [Number.NaN, Number.NaN]
+  for (const d of data) {
+    if (d.xErr !== undefined) {
+      const [a, b] = [d.x - d.xErr, d.x + d.xErr]
+      segs.push([a, d.y], [b, d.y], gap, [a, d.y - capY], [a, d.y + capY], gap, [b, d.y - capY], [b, d.y + capY], gap)
+    }
+    if (d.yErr !== undefined) {
+      const [a, b] = [d.y - d.yErr, d.y + d.yErr]
+      segs.push([d.x, a], [d.x, b], gap, [d.x - capX, a], [d.x + capX, a], gap, [d.x - capX, b], [d.x + capX, b], gap)
+    }
+  }
+  const series: SeriesOption[] = [
+    {
+      type: 'line',
+      name: `__${options.name ?? 'errors'}`,
+      data: segs.map(([x, y]) => (Number.isNaN(x) ? '-' : [x, y])),
+      connectNulls: false,
+      showSymbol: false,
+      lineStyle: { color: colour, width: 1.25 },
+      silent: true,
+      animation: false,
+    } as SeriesOption,
+    {
+      type: 'scatter',
+      name: options.name ?? 'points',
+      data: data.map((d) => [d.x, d.y]),
+      itemStyle: { color: colour },
+      symbolSize: 7,
+    },
+  ]
+  return layer(series, { x: xr, y: yr })
+}

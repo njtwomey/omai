@@ -4601,8 +4601,10 @@ failing example to itself).
   (macros, live equations), controls (number fields, cycling selects, control panels), interaction (adding and
   dragging points, probes, brushes, linked hover), animation (the player, live and precomputed), diagrams and
   structures, multivariate (parallel coordinates, radar, scatter matrices), tuning studies, environments and worlds
-  (maps, mazes, the ray-cast view), three-d. Every figure has one frame (expand, export) and a live control. Toy data only, no model training:
-  model demos belong to the hub.
+  (maps, mazes, the ray-cast view), three-d, evaluation (contingency tables, ROC, precision-recall and PR-gain,
+  reliability, confusion matrices), hierarchies and flows (treemaps, sunbursts, Sankey), time (calendars, candles),
+  parts of a whole (pies, funnels, gauges). Every figure has one frame (expand, export) and a live control. Toy data
+  only, no model training: model demos belong to the hub.
 
   The gallery is for general visualisation types only; on 2026-10-25 its model demonstrations (the `exposition/`,
   `fairness/` and `trust/` sections and the RL episodes) moved to the hub as standalone pages, and `moved.ts` sends

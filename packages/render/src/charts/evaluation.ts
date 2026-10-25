@@ -1,12 +1,12 @@
 /**
- * Model evaluation figures from the engine's `metrics`: ROC and precision-recall curves, reliability (calibration)
+ * Model evaluation figures from the engine's `metrics`: ROC, precision-recall and precision-recall-gain curves, reliability (calibration)
  * diagrams, learning and validation curves with spread bands, residual plots, and forest plots and bars of metric
  * results with their intervals.
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
 import type { Estimate, MetricResult } from 'mdml-engine/base'
-import type { CalibrationCurve, PrecisionRecallCurve, RocCurve } from 'mdml-engine/metrics'
+import type { CalibrationCurve, PrecisionRecallCurve, PrGainCurve, RocCurve } from 'mdml-engine/metrics'
 import { extentOf } from '../figure/limits.ts'
 import { formatNumber } from '../theme/format.ts'
 import { colourFor, modeOf } from './_data.ts'
@@ -92,6 +92,45 @@ export function precisionRecallChart(
     x: { label: 'recall', limits: [0, 1] },
     y: { label: 'precision', limits: [0, 1.02] },
     ...plot,
+  })
+}
+
+/**
+ * Precision-recall-gain curves (Flach and Kull, 2015; from mdml-engine's `metrics.prGainCurve`): recall gain across
+ * and precision gain up, on the unit square where the always-positive classifier sits at the origin, so the curve's
+ * area is meaningful (unlike the precision-recall curve's) and the F-gain isometrics are straight lines; the dashed
+ * minor diagonal is F-gain 1/2.
+ *
+ * @param curves - One curve, or named curves.
+ * @param options - Plot options.
+ * @returns The ECharts option.
+ * @example
+ * ```ts
+ * import { prGainChart } from 'mdml-render/charts'
+ * prGainChart({ precisionGain: [1, 0.5, 0], recallGain: [0, 0.5, 1], thresholds: [0.9, 0.5, 0.1], isCrossing: [true, false, true] }).xAxis[0].name // => 'recall gain'
+ * ```
+ */
+export function prGainChart(
+  curves: PrGainCurve | readonly { readonly name?: string; readonly curve: PrGainCurve }[],
+  options: PlotOptions = {},
+): EChartsOption {
+  const mode = modeOf(options)
+  // The curve on the unit square: points with negative recall gain lie off to the left and are left out.
+  const l = lines(
+    named(curves).map((c) => {
+      const keep = c.curve.recallGain.map((r) => r >= 0)
+      return {
+        x: c.curve.recallGain.filter((_, i) => keep[i]),
+        y: c.curve.precisionGain.filter((_, i) => keep[i]),
+        ...(c.name === undefined ? {} : { name: c.name }),
+      }
+    }),
+    { mode },
+  )
+  return cartesian([diagonal(mode, [0, 1], [1, 0], '__F-gain 1/2'), l], {
+    x: { label: 'recall gain', limits: [0, 1] },
+    y: { label: 'precision gain', limits: [0, 1] },
+    ...options,
   })
 }
 

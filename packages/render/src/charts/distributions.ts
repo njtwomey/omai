@@ -580,3 +580,52 @@ export function meanBand(
     ...(e === undefined ? {} : { y: e }),
   })
 }
+
+/**
+ * A ridgeline plot (a joyplot): one kernel density per group, stacked one above another with a little overlap, so
+ * many distributions compare at a glance. Group k's baseline sits at y = k (label the y axis with the groups' names).
+ *
+ * @param groups - The groups, bottom first: names and samples.
+ * @param options - The shared range (default the pooled data's, padded), grid points (default 200), the overlap (the
+ *   tallest density's height in rows, default 1.6) and colour mode.
+ * @returns The layer: a filled band and an outline per group.
+ * @example
+ * ```ts
+ * import { ridgeline } from 'mdml-render/charts'
+ * ridgeline([{ name: 'a', values: [0, 1, 2] }, { name: 'b', values: [1, 2, 3] }], { n: 5 }).series.length // => 4
+ * ```
+ */
+export function ridgeline(
+  groups: readonly { readonly name: string; readonly values: readonly number[] }[],
+  options: { readonly range?: Range; readonly n?: number; readonly overlap?: number; readonly mode?: ColourMode } = {},
+): Layer {
+  const mode = options.mode ?? 'light'
+  const all = groups.flatMap((g) => [...g.values])
+  const range = options.range ?? padRange([Math.min(...all), Math.max(...all)], 0.08)
+  const n = Math.max(2, options.n ?? 200)
+  const x = Array.from({ length: n }, (_, i) => range[0] + ((range[1] - range[0]) * i) / (n - 1))
+  const dens = groups.map((g) =>
+    g.values.length > 1 ? toFlat(gaussianKde([...g.values]).evaluate(x)) : x.map(() => 0),
+  )
+  const top = Math.max(1e-12, ...dens.flat())
+  const scale = (options.overlap ?? 1.6) / top
+  const bands = band(
+    groups.map((g, k) => ({
+      x,
+      lower: x.map(() => k),
+      upper: (dens[k] ?? []).map((d) => k + d * scale),
+      name: g.name,
+      opacity: 0.55,
+      edges: false,
+    })),
+    { mode },
+  )
+  const outlines = lines(
+    groups.map((g, k) => ({ x, y: (dens[k] ?? []).map((d) => k + d * scale), name: `__${g.name}`, width: 1.25 })),
+    { mode },
+  )
+  return layer([...bands.series, ...outlines.series], {
+    x: range,
+    y: [0, groups.length - 1 + (options.overlap ?? 1.6)],
+  })
+}

@@ -405,3 +405,49 @@ export function barChart(
   })
   return cartesian([l], { tooltip: 'axis', ...plot })
 }
+
+/**
+ * A waterfall chart: a running total built up step by step, each step a floating bar from the total before it to
+ * the total after (rises and falls in different colours), with the final total as a full bar.
+ *
+ * @param steps - The steps in order: names and signed amounts.
+ * @param options - Plot options, the start's name and value (default none) and the total's name (default 'total').
+ * @returns The ECharts option.
+ * @example
+ * ```ts
+ * import { waterfallChart } from 'mdml-render/charts'
+ * waterfallChart([{ name: 'a', value: 3 }, { name: 'b', value: -1 }]).series.length // => 3
+ * ```
+ */
+export function waterfallChart(
+  steps: readonly { readonly name: string; readonly value: number }[],
+  options: PlotOptions & {
+    readonly start?: { readonly name: string; readonly value: number }
+    readonly total?: string
+  } = {},
+): EChartsOption {
+  const { start, total = 'total', ...plot } = options
+  const mode = modeOf(plot)
+  const names = [...(start === undefined ? [] : [start.name]), ...steps.map((s) => s.name), total]
+  let running = start?.value ?? 0
+  const base: (number | null)[] = start === undefined ? [] : [0]
+  const rise: (number | null)[] = start === undefined ? [] : [start.value]
+  const fall: (number | null)[] = start === undefined ? [] : [null]
+  for (const s of steps) {
+    const next = running + s.value
+    base.push(Math.min(running, next))
+    rise.push(s.value >= 0 ? s.value : null)
+    fall.push(s.value < 0 ? -s.value : null)
+    running = next
+  }
+  base.push(0)
+  rise.push(running)
+  fall.push(null)
+  const series: SeriesOption[] = [
+    { type: 'bar', name: '__base', stack: 'w', data: base, itemStyle: { color: 'transparent' }, silent: true },
+    { type: 'bar', name: 'rise', stack: 'w', data: rise, itemStyle: { color: colourFor(undefined, mode, 2) } },
+    { type: 'bar', name: 'fall', stack: 'w', data: fall, itemStyle: { color: colourFor(undefined, mode, 3) } },
+  ]
+  const tops = base.map((b, i) => (b ?? 0) + (rise[i] ?? 0) + (fall[i] ?? 0))
+  return cartesian([layer(series, { y: extentOf([0, ...tops]) ?? [0, 1] }, { xCategories: names })], plot)
+}
