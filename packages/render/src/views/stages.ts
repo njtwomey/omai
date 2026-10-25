@@ -1,16 +1,33 @@
 import type { EChartsOption } from 'echarts'
-import { type DecisionSurface, type EnsembleStages, type PipelineStages, surfaceAt } from 'whitebox-engine/exposition'
+import {
+  type DecisionSurface,
+  type EnsembleStages,
+  type PipelineStage,
+  type PipelineStages,
+  type StageData,
+  surfaceAt,
+} from 'whitebox-engine/exposition'
 import { arrow, group, line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'whitebox-engine/scene'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
+import { contours } from '../charts/fields.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { lines } from '../charts/lines.ts'
-import type { Layer } from '../charts/plot.ts'
+import { heatmap } from '../charts/matrices.ts'
+import { cartesian, type Layer } from '../charts/plot.ts'
 import { type PointSet, points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
-import { formatNumber } from '../theme/format.ts'
-import { short, type ViewFrames, type ViewOptions, viewFigure } from './_view.ts'
-import { classIndices, decisionSurfaceLayers, type Rows, surfaceAxes } from './surfaces.ts'
+import { formatNumber, formatPercent } from '../theme/format.ts'
+import type { ColourMode } from '../theme/tokens.ts'
+import { outlined, short, type ViewFrames, type ViewOptions, viewFigure } from './_view.ts'
+import {
+  classIndices,
+  classPointSets,
+  decisionSurfaceLayers,
+  type Rows,
+  surfaceAxes,
+  surfaceBoxAspect,
+} from './surfaces.ts'
 
 /** Options of {@link ensembleFrames}. */
 export interface EnsembleViewOptions extends ViewOptions {
@@ -262,4 +279,327 @@ export function pipelineScene(record: PipelineStages): Scene {
   })
   const width = 16 + stages.length * STAGE_W + Math.max(0, stages.length - 1) * gap
   return scene(Math.max(width, 200), height + 16, children, { title: 'pipeline' })
+}
+
+/** One step of a pipeline as its view shows it: the data the pipeline was fitted to, or a stage. */
+export interface PipelineStep {
+  readonly name: string
+  /** `input` for the data the pipeline took, else the stage's kind. */
+  readonly kind: 'input' | PipelineStage['kind']
+  /** The step's data: the input, or the stage's output. */
+  readonly data?: StageData
+  /** The data the step took (the previous step's), for comparing scales. */
+  readonly before?: StageData
+  readonly stage?: PipelineStage
+}
+
+/** How a pipeline step's output is best shown. */
+export type PipelinePanel = 'scatter' | 'table' | 'projection' | 'surface'
+
+/**
+ * The steps of a pipeline view: the input (when the record carries it), then each stage with the data it took.
+ *
+ * @param record - The record.
+ * @returns The steps, in order.
+ * @example
+ * ```ts
+ * import { pipelineStages } from 'whitebox-engine/exposition'
+ * import { pipelineSteps } from 'whitebox-render/views'
+ * pipelineSteps(pipelineStages({ stages: [] })).length // => 0
+ * ```
+ */
+export function pipelineSteps(record: PipelineStages): PipelineStep[] {
+  const out: PipelineStep[] = []
+  if (record.input !== undefined) out.push({ name: 'input', kind: 'input', data: record.input })
+  let before = record.input
+  for (const stage of record.stages) {
+    out.push({
+      name: stage.name,
+      kind: stage.kind,
+      stage,
+      ...(stage.output === undefined ? {} : { data: stage.output }),
+      ...(before === undefined ? {} : { before }),
+    })
+    before = stage.output
+  }
+  return out
+}
+
+/**
+ * The panel a pipeline step's output suits: the final estimator's surface over the raw inputs when it has one, a
+ * projection's first two components (with its explained variance), two columns as a scatter coloured by class, and
+ * anything wider (or a single column, or an estimator's outputs) as a table with its column statistics.
+ *
+ * @param step - The step.
+ * @returns The panel.
+ * @example
+ * ```ts
+ * import { pipelinePanelOf } from 'whitebox-render/views'
+ * pipelinePanelOf({ name: 'input', kind: 'input', data: { columns: ['a', 'b'], rows: [], n: 0 } }) // => 'scatter'
+ * pipelinePanelOf({ name: 'poly', kind: 'transformer', data: { columns: ['a', 'b', 'a^2'], rows: [], n: 0 } }) // => 'table'
+ * ```
+ */
+export function pipelinePanelOf(step: PipelineStep): PipelinePanel {
+  const stage = step.stage
+  if (stage?.surface !== undefined && stage.surface.y.length >= 2) return 'surface'
+  if (step.kind === 'estimator') return 'table'
+  const width = step.data?.columns.length ?? stage?.outputShape[1] ?? 0
+  if (stage?.explainedVarianceRatio !== undefined && width >= 2) return 'projection'
+  return width === 2 ? 'scatter' : 'table'
+}
+
+/** Options of the pipeline step views. */
+export interface PipelineStepViewOptions extends ViewOptions {
+  /** Class names, by class index (default the record's). */
+  readonly classes?: readonly string[]
+}
+
+/** A step's first two columns as points, coloured by class (or by target). */
+function stepPoints(data: StageData, classes: readonly string[] | undefined, mode: ColourMode): Layer {
+  if (data.labels === undefined && data.targets !== undefined)
+    return points(
+      [
+        {
+          x: data.rows.map((r) => r[0] ?? 0),
+          y: data.rows.map((r) => r[1] ?? 0),
+          values: data.targets,
+          name: '__target',
+          size: 7,
+        },
+      ],
+      { mode },
+    )
+  return outlined(points(classPointSets(data.rows, [0, 1], data.labels, classes), { mode }), mode, 0.6)
+}
+
+/** An axis label for a column, with its share of the variance when it is a projection's component. */
+function columnLabel(data: StageData, j: number, ratio?: readonly number[]): string {
+  const name = data.columns[j] ?? `x${j}`
+  const share = ratio?.[j]
+  return share === undefined ? name : `${name} (${formatPercent(share)} of variance)`
+}
+
+/**
+ * A pipeline step's two output columns as a scatter coloured by class: the raw inputs, or any stage that gives two
+ * columns.
+ *
+ * @param step - The step (with its data).
+ * @param options - Mode, figure and class names.
+ * @returns The ECharts option.
+ * @example
+ * ```ts
+ * import { pipelineScatterView } from 'whitebox-render/views'
+ * const step = { name: 'input', kind: 'input', data: { columns: ['a', 'b'], rows: [[0, 1], [1, 0]], n: 2, labels: [0, 1] } }
+ * pipelineScatterView(step).series.length // => 2
+ * ```
+ */
+export function pipelineScatterView(step: PipelineStep, options: PipelineStepViewOptions = {}): EChartsOption {
+  const fig = viewFigure(options, { aspect: 1.35 })
+  const data = step.data ?? { columns: [], rows: [], n: 0 }
+  return cartesian([stepPoints(data, options.classes, fig.mode)], {
+    figure: fig,
+    mode: fig.mode,
+    x: { label: columnLabel(data, 0) },
+    y: { label: columnLabel(data, 1) },
+    title: step.kind === 'input' ? `the input: ${data.n} rows` : `${step.name}'s output: ${data.n} rows`,
+    tooltip: 'item',
+  })
+}
+
+/**
+ * A projection stage (PCA, truncated SVD): the rows on its first two components, coloured by class, beside each
+ * component's share of the variance with the cumulative share.
+ *
+ * @param step - The step (with its data and explained variance).
+ * @param options - Mode, figure and class names.
+ * @returns The ECharts option.
+ * @example
+ * ```ts
+ * import { pipelineProjectionView } from 'whitebox-render/views'
+ * const stage = { name: 'pca', kind: 'transformer', inputColumns: ['a', 'b', 'c'], outputColumns: ['p0', 'p1'], inputSample: [], outputSample: [], inputShape: [2, 3], outputShape: [2, 2], learned: [], explainedVarianceRatio: [0.8, 0.2] }
+ * const data = { columns: ['p0', 'p1'], rows: [[0, 1], [1, 0]], n: 2 }
+ * pipelineProjectionView({ name: 'pca', kind: 'transformer', stage, data }).grid.length // => 2
+ * ```
+ */
+export function pipelineProjectionView(step: PipelineStep, options: PipelineStepViewOptions = {}): EChartsOption {
+  const fig = viewFigure(options, { aspect: 2 })
+  const mode = fig.mode
+  const data = step.data ?? { columns: [], rows: [], n: 0 }
+  const ratio = step.stage?.explainedVarianceRatio ?? []
+  const names = ratio.map((_, i) => data.columns[i] ?? `${i + 1}`)
+  let acc = 0
+  const cumulative = ratio.map((r) => (acc += r))
+  const panels: Record<string, Panel> = {
+    scores: {
+      layers: [stepPoints(data, options.classes, mode)],
+      options: {
+        x: { label: columnLabel(data, 0, ratio) },
+        y: { label: columnLabel(data, 1, ratio) },
+        title: `rows on the first two of ${data.columns.length} components`,
+      },
+    },
+    scree: {
+      layers: [
+        bars(names, [{ name: 'share', values: [...ratio], colour: 'tab0' }], { mode }),
+        lines(
+          [{ x: names.map((_, i) => i), y: cumulative, name: 'cumulative', colour: 'fgSecondary', markers: true }],
+          {
+            mode,
+          },
+        ),
+      ],
+      options: {
+        x: { label: 'component' },
+        y: { label: 'variance explained', format: 'percent', limits: [0, 1] },
+        title: `${formatPercent(cumulative[cumulative.length - 1] ?? 0)} of the variance kept`,
+      },
+    },
+  }
+  const grid = gridSpec(1, 2, {
+    widthRatios: [1.5, 1],
+    wspace: 72,
+    cells: [
+      { id: 'scores', row: 0, col: 0 },
+      { id: 'scree', row: 0, col: 1 },
+    ],
+  })
+  return subplots(grid, panels, { figure: fig, tooltip: 'item', legend: false })
+}
+
+/** What the final estimator's panel shades: its predicted probability, or the loss it expects (with each row's loss). */
+export type PipelineSurfaceField = 'probability' | 'loss'
+
+/** Options of {@link pipelineSurfaceView}. */
+export interface PipelineSurfaceOptions extends PipelineStepViewOptions {
+  /** What to shade (default the probability). */
+  readonly field?: PipelineSurfaceField
+}
+
+/**
+ * The final estimator's panel: the whole pipeline's predictions over the original two features with the training
+ * rows. Shading the probability, the classes' regions (faded where the model is unsure) with the 0.5 boundary and the
+ * 0.25 and 0.75 contours; shading the loss, the log loss the model expects at each point (its predicted
+ * distribution's entropy, highest along the boundary) with the boundary drawn over it and each row sized by its own
+ * log loss. Either way the misclassified rows are ringed.
+ *
+ * @param step - The step (a stage with a surface, and a loss for the loss field).
+ * @param options - Mode, figure, class names and the field.
+ * @returns The ECharts option.
+ * @example
+ * ```ts
+ * import { decisionSurface } from 'whitebox-engine/exposition'
+ * import { pipelineSurfaceView } from 'whitebox-render/views'
+ * const surface = decisionSurface({ features: ['a', 'b'], x: [0, 1], y: [0, 1], probabilities: [[[0.9, 0.4], [0.6, 0.1]], [[0.1, 0.6], [0.4, 0.9]]] })
+ * const stage = { name: 'model', kind: 'estimator', inputColumns: ['a', 'b'], outputColumns: ['p(0)', 'p(1)'], inputSample: [], outputSample: [], inputShape: [4, 2], outputShape: [4, 2], learned: [], surface }
+ * pipelineSurfaceView({ name: 'model', kind: 'estimator', stage }).series.length > 0 // => true
+ * ```
+ */
+export function pipelineSurfaceView(step: PipelineStep, options: PipelineSurfaceOptions = {}): EChartsOption {
+  const surface = step.stage?.surface
+  const fig = viewFigure(options, { aspect: surface === undefined ? 1.25 : surfaceBoxAspect(surface, 'equal', 1.25) })
+  const mode = fig.mode
+  if (surface === undefined) return cartesian([], { figure: fig, mode })
+  const loss = step.stage?.loss
+  const highlight = loss?.misclassified
+  const field = options.field ?? 'probability'
+  const p1 = surface.probabilities?.[1]
+  let layers: Layer[]
+  let title: string
+  if (field === 'loss' && loss?.expected !== undefined) {
+    // The loss the model expects from zero up (natural log: at most log 2 for two classes), the 0.5 boundary over it,
+    // and each row sized by its own loss.
+    const hi = Math.max(1e-12, ...loss.expected.flat())
+    layers = [
+      heatmap(loss.expected, {
+        x: surface.x,
+        y: surface.y,
+        mode,
+        range: [0, hi],
+        colourBar: true,
+        label: 'loss',
+      }),
+      contours(loss.expected, { x: surface.x, y: surface.y, levels: 5, colour: 'fg', width: 0.6, opacity: 0.45, mode }),
+    ]
+    if (p1 !== undefined)
+      layers.push(
+        contours(p1, { x: surface.x, y: surface.y, levels: [0.5], colour: 'fg', width: 1.6, labels: false, mode }),
+      )
+    const rows = surface.rows
+    if (rows !== undefined)
+      layers.push(
+        outlined(
+          points(classPointSets(rows.points, [0, 1], rows.labels, surface.classes ?? rows.classes, {}, loss.values), {
+            mode,
+          }),
+          mode,
+        ),
+      )
+    title = `expected ${loss.name}; rows sized by their own`
+  } else {
+    layers = [...decisionSurfaceLayers(surface, { mode, ...(highlight === undefined ? {} : { highlight }) }).layers]
+    const positive = surface.classes?.[1]
+    title = p1 === undefined ? 'predictions' : `p(${positive ?? 'class 1'}) over the raw inputs`
+  }
+  if (loss !== undefined)
+    title += ` · mean ${loss.name} ${short(loss.mean)}${
+      highlight === undefined ? '' : ` · ${highlight.length} of ${loss.values.length} misclassified`
+    }`
+  return cartesian(layers, {
+    figure: fig,
+    mode,
+    ...surfaceAxes(surface, { x: { label: surface.features[0] }, y: { label: surface.features[1] } }),
+    aspect: 'auto',
+    title,
+    tooltip: 'item',
+    legend: false,
+  })
+}
+
+/**
+ * A step's card text: its shape change, and a line saying what it did (the rows and classes it took, the features it
+ * made, the variance a projection kept, the training score and loss of the final estimator, else its first fitted
+ * parameter).
+ *
+ * @param step - The step.
+ * @param classes - Class names.
+ * @returns The shape line and the summary line.
+ * @example
+ * ```ts
+ * import { pipelineStepSummary } from 'whitebox-render/views'
+ * pipelineStepSummary({ name: 'input', kind: 'input', data: { columns: ['a', 'b'], rows: [], n: 200 } }, ['0', '1'])
+ * // => { shape: '200 × 2', detail: '2 classes' }
+ * ```
+ */
+export function pipelineStepSummary(
+  step: PipelineStep,
+  classes?: readonly string[],
+): { readonly shape: string; readonly detail: string } {
+  const stage = step.stage
+  if (stage === undefined) {
+    const n = step.data?.n ?? 0
+    const d = step.data?.columns.length ?? 0
+    return { shape: `${n} × ${d}`, detail: classes === undefined ? `${d} features` : `${classes.length} classes` }
+  }
+  const [n0, d0] = stage.inputShape
+  const [n1, d1] = stage.outputShape
+  const shape = `${n0} × ${d0} → ${n1} × ${d1}`
+  if (stage.loss !== undefined) {
+    const score = stage.learned.find((l) => l.name === 'training score')?.value
+    const scored = typeof score === 'number' ? `score ${short(score)} · ` : ''
+    return { shape, detail: `${scored}${stage.loss.name} ${short(stage.loss.mean)}` }
+  }
+  const ratio = stage.explainedVarianceRatio
+  if (ratio !== undefined)
+    return { shape, detail: `keeps ${formatPercent(ratio.reduce((s, v) => s + v, 0))} of the variance` }
+  if (stage.kind === 'resampler') return { shape, detail: `${n0} → ${n1} rows` }
+  if (d1 > d0) return { shape, detail: `${d1 - d0} feature${d1 - d0 === 1 ? '' : 's'} made` }
+  const stats = stage.output?.stats
+  if (
+    stats !== undefined &&
+    stats.length > 0 &&
+    stats.every((s) => Math.abs(s.mean) < 1e-6 && Math.abs(s.std - 1) < 1e-6)
+  )
+    return { shape, detail: 'every column: mean 0, std 1' }
+  const first = stage.learned[0]
+  return { shape, detail: first === undefined ? stage.kind : `${cell(first.name)}: ${cell(first.value)}` }
 }

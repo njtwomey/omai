@@ -4183,7 +4183,9 @@ Design rules:
 
 `views/` (headless: one builder per exposition record kind, from `lib/exposition`)
 - `paths.ts` (`RegularisationPath`, `CrossValidationCurve`, `LearningCurve`, `PruningPath`), `trees.ts` (`TreeRecord`
-  as a structure with split candidates and row counts), `stages.ts` (`EnsembleStages`, `PipelineStages`),
+  as a structure with split candidates and row counts), `stages.ts` (`EnsembleStages`, `PipelineStages`: the steps
+  of a pipeline, the panel each step's output suits (`pipelinePanelOf`: scatter, table, projection or the final
+  surface) and their figures),
   `surfaces.ts` (`DecisionSurface`, `PosteriorGrid`, `HyperparameterSurface`), `steps.ts` (`ClusteringSteps`,
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
@@ -4245,7 +4247,8 @@ Design rules:
 - `views/`: a React component per exposition view, one file per headless module (`paths.tsx`: `PathView`,
   `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
-  `stages.tsx`, `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
+  `stages.tsx` (`EnsembleView`; `PipelineView`: a strip of stage cards and the selected stage's panel, with its
+  data table and fitted parameters beside the figure), `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
   `BoardPlayer`, `PopulationPlayer`; `curves.tsx`: `CurvesView`; `densities.tsx`: `DensityView`; `sequences.tsx`:
   `StateSequenceView`; `cells.tsx`: `ValueGridView`, `ConfusionMatrixView`; `diagrams.tsx`: `DiagramPlayer`, a
   `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`), each one figure in one
