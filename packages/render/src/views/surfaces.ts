@@ -442,15 +442,19 @@ export interface PosteriorViewOptions extends ViewOptions {
   readonly outputLabel?: string
   /** Show the record's posterior samples (default true). */
   readonly samples?: boolean
+  /** The one colour of every sample line (a palette token or CSS colour; default `tab1`). */
+  readonly sampleColour?: string
+  /** Fixed axis limits (default fitted to the data), so a figure keeps its scale as its record changes. */
+  readonly limits?: { readonly x?: readonly [number, number]; readonly y?: readonly [number, number] }
 }
 
 /**
  * A predictive distribution on a grid (a GP, Bayesian regression, isotonic fits): for one input, the mean with bands of
- * one and two standard deviations, posterior samples and the observations; for two inputs, the mean as coloured
+ * one and two standard deviations, the samples as thin lines in one colour and the observations; for two inputs, the mean as coloured
  * points with the observations.
  *
  * @param grid - The record.
- * @param options - Mode, figure, axis labels and whether to draw samples.
+ * @param options - Mode, figure, axis labels, whether and in what colour to draw samples, and fixed limits.
  * @returns The ECharts option.
  * @example
  * ```ts
@@ -555,20 +559,17 @@ export function posteriorView(grid: PosteriorGrid, options: PosteriorViewOptions
           { mode },
         ),
       )
-    if ((options.samples ?? true) && grid.samples !== undefined)
+    if ((options.samples ?? true) && grid.samples !== undefined && grid.samples.length > 0) {
+      // Draws as thin lines in one colour, fainter the more there are, so they read as a spread rather than series.
+      const opacity = Math.min(0.75, Math.max(0.22, 2 / Math.sqrt(grid.samples.length)))
+      const colour = options.sampleColour ?? 'tab1'
       layers.push(
         lines(
-          grid.samples.map((s, i) => ({
-            x,
-            y: s,
-            name: `__sample${i}`,
-            colour: `tab${(i + 1) % 10}`,
-            width: 1,
-            opacity: 0.7,
-          })),
+          grid.samples.map((s, i) => ({ x, y: s, name: `__sample${i}`, colour, width: 1, opacity })),
           { mode },
         ),
       )
+    }
     layers.push(lines([{ x, y: grid.mean, name: 'mean', colour: 'tab0', width: 2.2 }], { mode }))
     if (grid.observed !== undefined)
       layers.push(
@@ -591,8 +592,14 @@ export function posteriorView(grid: PosteriorGrid, options: PosteriorViewOptions
     return cartesian(layers, {
       figure: fig,
       mode,
-      x: { label: options.inputLabel ?? grid.labels?.input ?? 'x' },
-      y: { label: options.outputLabel ?? grid.labels?.output ?? 'y' },
+      x: {
+        label: options.inputLabel ?? grid.labels?.input ?? 'x',
+        ...(options.limits?.x === undefined ? {} : { limits: options.limits.x }),
+      },
+      y: {
+        label: options.outputLabel ?? grid.labels?.output ?? 'y',
+        ...(options.limits?.y === undefined ? {} : { limits: options.limits.y }),
+      },
       legend: false,
       tooltip: 'item',
     })

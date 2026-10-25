@@ -23,6 +23,33 @@ describe('Gaussian processes', () => {
     expect(f.model.predictDistribution(sine.x).batchShape).toEqual([30])
   })
 
+  it('regression draws a chosen number of keyed samples from the posterior or the prior', () => {
+    const kernel = scaleKernel(rbfKernel({ lengthScale: 0.7 }), 1)
+    const fit = (draw: 'posterior' | 'prior', seed: number) =>
+      recordsOf(
+        new GaussianProcessRegressor({
+          kernel,
+          alpha: 0.01,
+          optimize: false,
+          surfaceResolution: 0,
+          nSamples: 10,
+          draw,
+          gridPoints: 120,
+        }).fit(sine.x, sine.y, { key: key(seed) }).exposition,
+        'posteriorGrid',
+      )[0]
+    const post = fit('posterior', 3)
+    const prior = fit('prior', 3)
+    expect(post?.samples).toHaveLength(10)
+    expect(post?.samples?.[0]).toHaveLength(120)
+    expect(prior?.mean.every((m) => m === 0)).toBe(true)
+    expect(prior?.variance.every((v) => Math.abs(v - 1) < 1e-9)).toBe(true)
+    expect(prior?.observed?.targets).toHaveLength(30)
+    expect(Math.max(...(post?.variance ?? []))).toBeLessThan(1)
+    expect(fit('posterior', 3)?.samples).toEqual(post?.samples)
+    expect(fit('posterior', 4)?.samples).not.toEqual(post?.samples)
+  })
+
   it('classification by the Laplace approximation', () => {
     const moons = classificationSet('moons', { n: 40, noise: 0.15 }, 2)
     const f = new GaussianProcessClassifier({ surfaceResolution: 5, maxIter: 40 }).fit(moons.x, moons.y)

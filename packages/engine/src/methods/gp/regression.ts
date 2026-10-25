@@ -79,6 +79,17 @@ export interface GprHyper {
   readonly bounds: readonly [number, number]
   /** Grid points per axis of the marginal-likelihood surface (default 20; 0 for none). */
   readonly surfaceResolution: number
+  /** Draws in the posterior-grid record of a one-feature fit (default 3). */
+  readonly nSamples: number
+  /**
+   * What the posterior-grid record shows (default 'posterior'): the posterior given the observations, or the prior with
+   * the fitted kernel (mean the target offset, variance the kernel's), with the observations shown but not conditioned on.
+   */
+  readonly draw: 'posterior' | 'prior'
+  /** Points of the posterior-grid record's grid (default 60). */
+  readonly gridPoints: number
+  /** The span of the posterior-grid record's grid (default the inputs' range padded by a tenth each side). */
+  readonly gridLimits: readonly [number, number] | undefined
 }
 
 /** Parameters of a fitted GP regressor. */
@@ -169,8 +180,8 @@ export function defaultGpKernel(): Kernel {
  * from the core's kernels, with the hyperparameters fitted by maximising the log marginal likelihood (gradients by
  * automatic differentiation of the Cholesky-based likelihood; traced L-BFGS-B in log coordinates within bounds, with
  * keyed restarts). Exposition: the hyperparameters as a table, the log-marginal-likelihood surface over the first two
- * log hyperparameters with the optimiser's path, and for one feature the posterior on a grid (mean, variance and
- * three samples) with the observations.
+ * log hyperparameters with the optimiser's path, and for one feature the posterior (or, with `draw: 'prior'`, the
+ * prior) on a grid: mean, variance and `nSamples` keyed draws, with the observations.
  *
  * @param hyper - Kernel, noise alpha, whether to optimise, restarts, target normalisation, bounds and surface size.
  * @returns The estimator.
@@ -287,21 +298,40 @@ export function gaussianProcessRegressor(hyper: Partial<GprHyper> = {}): Explain
           const lo2 = minOf(xsData)
           const hi2 = maxOf(xsData)
           const pad = 0.1 * (hi2 - lo2 || 1)
-          const grid = linspaceNumbers(lo2 - pad, hi2 + pad, 60).map((v) => [v])
-          const post = fitted.posterior(grid)
-          const cov = Array.from(post.covariance.data)
-          const jitter = cov.map((v, i) => (Math.floor(i / 60) === i % 60 ? v + 1e-8 * (1 + Math.abs(v)) : v))
-          const samples = toFlat(
-            multivariateNormal(post.mean, {
-              covariance: fromStorage(Float64Array.from(jitter), [60, 60], 'float64'),
-            }).sample(foldIn(resolveKey(options, 'gaussianProcessRegressor'), 1000), [3]),
-          )
+          const g = Math.max(2, Math.round(h.gridPoints))
+          const [from, to] = h.gridLimits ?? [lo2 - pad, hi2 + pad]
+          const grid = linspaceNumbers(from, to, g).map((v) => [v])
+          const moments =
+            h.draw === 'prior'
+              ? {
+                  mean: grid.map(() => yMean),
+                  covariance: flat(fitted.kernel.k(grid)).map((c) => c * yScale * yScale),
+                }
+              : (() => {
+                  const post = fitted.posterior(grid)
+                  return { mean: Array.from(post.mean.data), covariance: Array.from(post.covariance.data) }
+                })()
+          const cov = moments.covariance
+          const nSamples = Math.max(0, Math.round(h.nSamples))
+          let samples: number[][] = []
+          if (nSamples > 0) {
+            // Jitter on the diagonal, relative to the largest variance, keeps the Cholesky of a smooth kernel stable.
+            let top = 0
+            for (let i = 0; i < g; i++) top = Math.max(top, cov[i * g + i] ?? 0)
+            const jittered = cov.map((v, i) => (Math.floor(i / g) === i % g ? v + 1e-8 * (1 + top) : v))
+            const draws = toFlat(
+              multivariateNormal(fromStorage(Float64Array.from(moments.mean), [g], 'float64'), {
+                covariance: fromStorage(Float64Array.from(jittered), [g, g], 'float64'),
+              }).sample(foldIn(resolveKey(options, 'gaussianProcessRegressor'), 1000), [nSamples]),
+            )
+            samples = Array.from({ length: nSamples }, (_, s) => draws.slice(s * g, (s + 1) * g))
+          }
           exposition.push(
             posteriorGrid({
               inputs: grid,
-              mean: Array.from(post.mean.data),
-              variance: grid.map((_, i) => Math.max(cov[i * 60 + i] ?? 0, 0)),
-              samples: [0, 1, 2].map((s) => samples.slice(s * 60, (s + 1) * 60)),
+              mean: moments.mean,
+              variance: grid.map((_, i) => Math.max(cov[i * g + i] ?? 0, 0)),
+              ...(nSamples > 0 ? { samples } : {}),
               observed: { inputs: x, targets: Array.from(yRaw) },
             }),
           )
@@ -318,6 +348,10 @@ export function gaussianProcessRegressor(hyper: Partial<GprHyper> = {}): Explain
       normalizeY: hyper.normalizeY ?? false,
       bounds: hyper.bounds ?? [1e-5, 1e5],
       surfaceResolution: hyper.surfaceResolution ?? 20,
+      nSamples: hyper.nSamples ?? 3,
+      draw: hyper.draw ?? 'posterior',
+      gridPoints: hyper.gridPoints ?? 60,
+      gridLimits: hyper.gridLimits,
     },
   )
   return est

@@ -40,7 +40,7 @@ import {
   mixtureAssignment,
   mixtureFrames,
 } from './steps.ts'
-import { decisionSurfaceView } from './surfaces.ts'
+import { decisionSurfaceView, posteriorView } from './surfaces.ts'
 import { coefficientRows } from './tables.ts'
 import { splitCandidatesView, splitText, treeNodeOf, treeScene } from './trees.ts'
 
@@ -368,5 +368,25 @@ describe('posterior, search, table, margin, anomaly, pipeline and episode views'
     expect(coefficientRows(records[4] as CoefficientTable).rows[0]?.[4]).toBe('<1e-16')
     const grid = o(episodeView(records[9] as EpisodeRecord, { gridShape: [2, 2] }))
     expect(grid.series.some((s) => s.name === '__policy')).toBe(true)
+  })
+})
+
+describe('posterior view', () => {
+  it('draws every sample as a thin line in one colour, and keeps fixed limits', () => {
+    const g = posteriorGrid({
+      inputs: [[0], [1], [2]],
+      mean: [0, 1, 0],
+      variance: [1, 0.1, 1],
+      samples: Array.from({ length: 10 }, (_, s) => [s, s, s]),
+    })
+    const option = posteriorView(g, { limits: { y: [-3, 3] } })
+    const series = (option.series as { name?: string; lineStyle?: { color?: unknown; width?: number } }[]).filter((s) =>
+      s.name?.startsWith('__sample'),
+    )
+    expect(series).toHaveLength(10)
+    expect(new Set(series.map((s) => JSON.stringify(s.lineStyle?.color))).size).toBe(1)
+    expect(series.every((s) => s.lineStyle?.width === 1)).toBe(true)
+    const yAxis = (Array.isArray(option.yAxis) ? option.yAxis[0] : option.yAxis) as { min?: unknown; max?: unknown }
+    expect([yAxis.min, yAxis.max]).toEqual([-3, 3])
   })
 })
