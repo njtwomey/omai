@@ -28,6 +28,26 @@ The two fit different halves of the contribution: MLOSS the software (breadth, c
 (the gallery, the hub, embeddable explanations). JOSE does not require an established community, MLOSS effectively
 does, so JOSE can come first.
 
+**Other venues** (checked 2026-10-25):
+- **NeurIPS Education track** (new in 2026; https://nips.cc/Conferences/2026/CallforEducationalResources): code
+  libraries, notebooks and interactive demos are accepted formats, with a two-page PDF and the materials. But the
+  concept must be recent (roughly the past few years; established foundations such as backpropagation are out of
+  scope), the resource must be created for the track, and publication is non-archival. It suits one recent topic built
+  with the library (conformal prediction, diffusion, an explanation method), not the library itself. The 2026 deadline
+  (4 September) has passed; expect the 2027 call around July.
+- **NeurIPS has no code or software track**: the Evaluations and Datasets track wants datasets and benchmarks, and the
+  reproducibility track (MLRC) requires acceptance at TMLR first. Neither fits.
+- **EAAI** (AAAI's Symposium on Educational Advances in AI; https://aaai.org/conference/aaai/aaai-27/eaai-27-call/):
+  papers on AI education, and the Model AI Assignments track, a peer-reviewed open archive of assignments, which suits
+  hub-style exercises. EAAI-27's deadlines (September 2026) have passed; EAAI-28 should open around September 2027.
+  In-person presentation required.
+- **VISxAI** (IEEE VIS workshop on visualisation for AI explainability; 9th edition at VIS 2026): interactive
+  explainables, which suits individual explorable pages built with the library. The call is posted at visxai.io.
+- **JOSS** (Journal of Open Source Software): a short paper about research software, with review of the repository;
+  quick and citable, a lighter alternative to MLOSS if a DOI is wanted early.
+- **ICLR blogpost track**: Markdown only, and its founding call discourages embedded JavaScript, so not for the
+  interactive work.
+
 ## 2. The claim
 
 One library, in the browser, spanning the paradigms of AI, where every method returns the data that explains it.
