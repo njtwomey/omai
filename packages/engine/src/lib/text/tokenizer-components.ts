@@ -1,3 +1,9 @@
+/**
+ * The interchangeable stages of an HF tokenizers pipeline as described in a `tokenizer.json`: normalisers applied to
+ * aligned text, pre-tokenisers that split it into pieces, decoders that turn tokens back into text, and conversion of
+ * the file's Oniguruma regular expressions to JavaScript.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { UNI_SPACE, UNI_WORD } from './_classes.ts'
 import {

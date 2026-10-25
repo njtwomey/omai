@@ -1,3 +1,10 @@
+/**
+ * Dot-product kernels, which depend on inner products rather than distances: the linear, polynomial, sigmoid and
+ * cosine-similarity kernels, the arc-cosine kernels of Cho and Saul, the neural tangent and NNGP kernels of an
+ * infinitely wide fully connected network (as neural-tangents), and the empirical neural tangent kernel of a finite
+ * network at its current parameters.
+ */
+
 import { jacrev } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import {

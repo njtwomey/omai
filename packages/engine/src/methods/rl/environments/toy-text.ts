@@ -1,3 +1,10 @@
+/**
+ * Small discrete environments from gymnasium's toy-text suite and the exploration literature: Blackjack against a
+ * dealer drawing from an infinite deck, Taxi (pick up a passenger and drop them at their destination on a 5 x 5 grid,
+ * with its state encoding, action mask and transition table), and the n-chain of Strens and RiverSwim, two chains where
+ * a myopic agent settles for a small reward and only deep exploration finds the large one.
+ */
+
 import { foldIn, type Key, uniform } from '../../../lib/random/index.ts'
 import { type Env, type EnvDefinition, type Outcome, tabularEnv } from '../../../lib/rl/index.ts'
 import { circle, line, rect, type Scene, type SceneNode, scene, text } from '../../../lib/scene/index.ts'

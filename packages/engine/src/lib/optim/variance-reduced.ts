@@ -1,3 +1,9 @@
+/**
+ * Variance-reduced stochastic methods for finite sums such as empirical risks: SAG, SAGA (with a proximal step for
+ * nonsmooth penalties, as scikit-learn's solvers) and SVRG, which correct each stochastic gradient with stored or
+ * snapshot gradients so they converge as fast as full-gradient methods at the cost of one example per step.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { daxpy, idamax } from '../numerics/linalg/index.ts'
 import { randint } from '../random/index.ts'

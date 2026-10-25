@@ -1,3 +1,9 @@
+/**
+ * Dataset shift and its detection (Rabanser, Günnemann and Lipton, 2019): a classifier fitted on reference rows meets
+ * current rows shifted by growing amounts in their features or labels, and the study records how accuracy falls and how
+ * well per-feature Kolmogorov-Smirnov tests and a domain classifier detect the shift.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { curveSet, type Explained } from '../../lib/exposition/index.ts'
 import { type Estimator, type LearnData, matrixView, requireVerb, targetVector } from '../../lib/learn/index.ts'

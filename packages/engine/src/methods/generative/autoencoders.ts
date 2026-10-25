@@ -1,4 +1,10 @@
-// Variational autoencoders. TODO: conditional VAEs, plain and denoising autoencoders, the importance-weighted bound.
+/**
+ * Variational autoencoders (Kingma and Welling, 2014): an encoder maps each row to a Gaussian over latent codes, a
+ * decoder maps codes back to a likelihood of the data (Gaussian or Bernoulli pixels), and both are trained together by
+ * the reparameterisation trick on the evidence lower bound. Records the latent space, reconstructions and samples as
+ * training goes on.
+ */
+
 import { valueAndGrad } from '../../lib/autodiff/index.ts'
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type Explained, type Exposition, embeddingSteps, imageSteps } from '../../lib/exposition/index.ts'

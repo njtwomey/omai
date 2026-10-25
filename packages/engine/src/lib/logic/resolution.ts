@@ -1,3 +1,10 @@
+/**
+ * A small Prolog engine: programs consulted into a database with built-in and standard library predicates, and queries
+ * answered by SLD resolution (depth-first, left-to-right proof search with backtracking and cut) as a traced algorithm
+ * whose events follow Byrd's box model. Answers print in SWI-Prolog style, and a run can be recorded as its SLD tree
+ * for drawing.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Structure, type StructureNode, structure } from '../scene/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'

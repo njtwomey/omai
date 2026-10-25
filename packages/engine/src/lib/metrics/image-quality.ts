@@ -1,3 +1,9 @@
+/**
+ * Image quality metrics comparing a distorted image with a reference, skimage and sewar style: MSE and PSNR, structural
+ * similarity (SSIM) and its multi-scale form, visual information fidelity, the universal quality index, the spectral
+ * angle mapper, ERGAS and RASE for multispectral images, and LPIPS and DISTS from supplied network features.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { convNd } from '../numerics/convolution/index.ts'
 import { image as filters } from '../signal/index.ts'

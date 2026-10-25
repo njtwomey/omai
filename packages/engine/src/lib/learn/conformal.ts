@@ -1,3 +1,10 @@
+/**
+ * Conformal prediction, which turns any model's point predictions into prediction intervals or label sets with
+ * guaranteed coverage under exchangeability, MAPIE style. Split conformal regression and classification (including APS
+ * and RAPS scores), conformalised quantile regression, jackknife+ and CV+, Mondrian group-conditional intervals,
+ * adaptive conformal inference for shifting data, and coverage checks.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'

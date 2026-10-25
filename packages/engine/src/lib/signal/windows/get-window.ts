@@ -1,3 +1,8 @@
+/**
+ * `getWindow`, the window lookup of scipy.signal.get_window: any window of this folder by name, by name with parameters
+ * (`['kaiser', 8]`, `['tukey', 0.25]`) or by a Kaiser beta, so analyses can take a window as a simple specification.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Tensor } from '../../tensor/index.ts'
 import {

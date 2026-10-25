@@ -1,3 +1,9 @@
+/**
+ * The standard regression metrics, scikit-learn style: mean squared, root mean squared, mean absolute, median absolute
+ * and maximum errors, R^2 and adjusted R^2, explained variance, mean squared log error, mean absolute percentage error,
+ * and the log-cosh and Huber errors that mirror the corresponding losses.
+ */
+
 import { type Direction, type MetricSpec, maxOf, WhiteboxError } from '../base/index.ts'
 import { type Metric, type MetricOptions, perOutputMetric, weightedMean, weightedPercentile } from './metric.ts'
 

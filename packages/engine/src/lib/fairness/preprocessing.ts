@@ -1,6 +1,7 @@
 /**
- * Pre-processing mitigation: changing the data before a model sees it. Reweighing (Kamiran and Calders; AIF360's
- * Reweighing) and disparate-impact repair of features (Feldman et al.; AIF360's DisparateImpactRemover).
+ * Fairness before training, as in AIF360: reweighing, which weights each row so the label is independent of the group
+ * in the weighted data, and disparate-impact repair, which moves each feature towards a distribution shared by all
+ * groups while keeping ranks within each group.
  */
 
 import { WhiteboxError } from '../base/index.ts'

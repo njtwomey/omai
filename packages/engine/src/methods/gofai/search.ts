@@ -1,5 +1,10 @@
-// Path search on grid worlds, played expansion by expansion: the frontier, the explored set, the node expanded and
-// the path to it, from the core's traced searches (whitebox-engine/search).
+/**
+ * Path search on grid worlds, played expansion by expansion from the core's traced searches (`whitebox-engine/search`):
+ * breadth-first, depth-first, uniform-cost, greedy, A* and its weighted, iterative-deepening and bidirectional forms,
+ * recording the frontier, the explored set, the node expanded and the path to it. `gridProblem` turns a grid world into
+ * a search problem with an admissible heuristic.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import {

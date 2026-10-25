@@ -1,3 +1,9 @@
+/**
+ * Vectorisation (like `jax.vmap`): the batching trace, in which each value carries the axis that indexes its examples,
+ * and `vmap`, which maps a function over an axis of its arguments by applying each primitive's batch rule once for the
+ * whole batch (looping only for primitives without one).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   type BatchDim,

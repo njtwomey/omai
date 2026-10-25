@@ -1,3 +1,10 @@
+/**
+ * Probability calibration, which maps a classifier's scores to probabilities that match observed frequencies. The
+ * calibrators (isotonic regression by pool-adjacent-violators, Platt scaling, beta calibration, histogram binning,
+ * temperature and vector scaling), each fitted to a map with its parameters as data, and `calibratedClassifierCV` with
+ * cross-fitting as in scikit-learn.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { interp } from '../numerics/interpolate/index.ts'
 import { solve } from '../numerics/linalg/index.ts'

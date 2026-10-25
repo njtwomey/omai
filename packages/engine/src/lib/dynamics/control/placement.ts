@@ -1,3 +1,9 @@
+/**
+ * Pole placement: choosing a state-feedback gain K so that the closed-loop matrix A - B K has prescribed eigenvalues.
+ * `place` follows Kautsky, Nichols and Van Dooren's method for multi-input systems (scipy.signal.place_poles), choosing
+ * well-conditioned eigenvectors, and `acker` is Ackermann's formula for the single-input case.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { det, eigvals, lstsq, matrixPower, matrixRank, nullSpace, qr, solve, svd } from '../../numerics/linalg/index.ts'
 import { ctrb } from '../../systems/index.ts'

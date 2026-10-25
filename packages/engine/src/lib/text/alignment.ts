@@ -1,3 +1,9 @@
+/**
+ * Pairwise sequence alignment by dynamic programming: global alignment of whole sequences (Needleman-Wunsch) and local
+ * alignment of their best-matching parts (Smith-Waterman), both with Gotoh's affine gap costs, plus printing an
+ * alignment as two gapped rows and scoring a given alignment.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Sequence } from './similarity.ts'
 

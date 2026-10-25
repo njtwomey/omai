@@ -1,3 +1,8 @@
+/**
+ * The exposition record of an anomaly detector: a score per point, the threshold that flags outliers, and per-point
+ * evidence, with the input rows so a view can draw them. `anomalyScores` builds one and checks its shapes.
+ */
+
 import { sameLength } from './_check.ts'
 import type { InputRows } from './rows.ts'
 

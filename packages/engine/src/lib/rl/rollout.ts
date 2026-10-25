@@ -1,3 +1,9 @@
+/**
+ * Running policies in environments: a rollout as a traced algorithm stepping one environment step at a time, policy
+ * evaluation over episodes as stable-baselines3's `evaluate_policy`, single episodes as pure functions of a key, and
+ * paired comparison of policies under common random numbers, which reduces the variance of their difference.
+ */
+
 import { type Json, meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'

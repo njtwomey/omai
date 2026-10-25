@@ -1,3 +1,10 @@
+/**
+ * The world data type: cells on a square grid, a hexagonal grid or the nodes of a graph, with walls between cells,
+ * terrains (passability, cost, sight), items (keys, doors, pickups), starts and goals. Construction and editing, cell
+ * geometry in world units, and movement queries (passability, walls, move destinations, legal exits and neighbours
+ * under 4- or 8-connectivity).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Paint } from '../scene/index.ts'
 import {

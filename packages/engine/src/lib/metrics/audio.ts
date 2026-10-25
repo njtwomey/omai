@@ -1,3 +1,10 @@
+/**
+ * Audio and speech quality metrics, torchmetrics style: signal-to-noise and signal-to-distortion ratios (BSS Eval's SDR
+ * and the scale-invariant SI-SDR and SI-SNR), segmental SNR, permutation-invariant evaluation for source separation,
+ * the STOI and ESTOI intelligibility measures, log-spectral distance, mel-cepstral distortion and DNSMOS from a
+ * supplied model.
+ */
+
 import { argmaxOf, type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { solveToeplitz } from '../numerics/linalg/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'

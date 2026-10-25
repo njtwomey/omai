@@ -1,3 +1,10 @@
+/**
+ * Log densities of probabilistic programs, NumPyro style: the log joint at given latent values (with enumerated
+ * discrete sites summed out) and per-site log probabilities, the potential energy on the unconstrained scale that
+ * samplers and optimisers move in, maps between constrained and unconstrained site values, and the initialisation
+ * strategies (`initToMedian`, `initToSample` and others) for finding a valid starting point.
+ */
+
 import { quantileOf, WhiteboxError } from '../base/index.ts'
 import { bijectors, type Support } from '../dists/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../random/index.ts'

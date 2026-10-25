@@ -1,3 +1,10 @@
+/**
+ * Hyperparameter tuning by cross-validation: `tuneEstimator` searches an estimator's hyperparameter space with grid,
+ * random, TPE or Gaussian-process samplers and optional pruners (the median rule, successive halving), in the manner of
+ * scikit-learn's `GridSearchCV` and `RandomizedSearchCV` and Optuna, over the core's `lib/tune`, returning every trial
+ * and the best configuration.
+ */
+
 import { type Json, meanOf, WhiteboxError } from '../../lib/base/index.ts'
 import {
   type CrossValidationCurve,

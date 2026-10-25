@@ -1,3 +1,9 @@
+/**
+ * NSGA-II (Deb et al. 2002), the standard evolutionary algorithm for approximating a Pareto front: tournaments by rank
+ * and crowding distance, simulated binary crossover and polynomial mutation within bounds, and elitist survival, as a
+ * traced algorithm whose populations can be shown generation by generation.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { Generator, type Key, latinHypercube } from '../random/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../tensor/index.ts'

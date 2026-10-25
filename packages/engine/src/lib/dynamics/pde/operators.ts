@@ -1,3 +1,9 @@
+/**
+ * Differential operators of fields defined pointwise on batches of points, computed by automatic differentiation rather
+ * than grids: partial derivatives, gradient, divergence, Laplacian, curl and time derivative, plus a PDE residual
+ * helper for the losses of physics-informed neural networks.
+ */
+
 import { jvp } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import {

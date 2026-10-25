@@ -1,3 +1,9 @@
+/**
+ * Stochastic variational inference on probabilistic programs (NumPyro's `SVI`): fit a guide's parameters by stochastic
+ * gradient ascent on the ELBO, as a traced `sviAlgorithm` and the `svi` function that returns the parameters, the ELBO
+ * trace and the variational posterior. Also the engine for the planner, which uses an automatic guide.
+ */
+
 import { valueAndGrad } from '../../autodiff/index.ts'
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { bijectors, type Support } from '../../dists/index.ts'

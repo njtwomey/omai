@@ -1,3 +1,9 @@
+/**
+ * Bayesian hypothesis testing: Bayes factors for the t test (the JZS prior), the binomial test and Pearson's
+ * correlation (as pingouin), a Bayesian A/B comparison of two proportions with conjugate Beta posteriors and expected
+ * losses, and the highest-density interval and region of practical equivalence (ROPE) for summarising posterior draws.
+ */
+
 import { type TestResult, WhiteboxError } from '../../base/index.ts'
 import { betaBinomial, beta as betaDist, binomial } from '../../dists/index.ts'
 import { betainc } from '../../numerics/special/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Sequences and series: partial sums and sum estimates, the classical convergence tests (n-th term, ratio, root,
+ * integral, p-series, limit comparison, alternating series) with the statistic behind each verdict, radii of
+ * convergence, Fourier coefficients and partial sums with the Gibbs overshoot at a jump, and power series of rational
+ * generating functions, Cauchy products and linear recurrences.
+ */
+
 import { kahanSum, WhiteboxError } from '../base/index.ts'
 import { wynnEpsilon } from '../numerics/approximation/index.ts'
 import { polymul } from '../numerics/polynomial/index.ts'

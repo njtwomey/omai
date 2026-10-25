@@ -1,3 +1,9 @@
+/**
+ * Multi-fidelity schedules as data, which give many configurations a small budget (epochs, samples) and only the best
+ * ones more: synchronous successive halving, Hyperband's brackets and asynchronous successive halving (ASHA),
+ * `nextAssignment` to say what to run next, and the iteration plan of scikit-learn's halving searches.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import { lossOf, type Study, type StudyDirection, type Trial } from './study.ts'

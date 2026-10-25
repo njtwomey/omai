@@ -1,3 +1,9 @@
+/**
+ * Count-based word representations, where a word is described by the contexts it occurs in: windowed co-occurrence
+ * matrices, pointwise mutual information with context smoothing, latent semantic analysis, dense word vectors from an
+ * SVD of PPMI, and random indexing. Also nearest words by cosine similarity and word analogies (a : b :: c : ?).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { ddot, dnrm2, svd } from '../numerics/linalg/index.ts'
 import { type Key, randomBits } from '../random/index.ts'

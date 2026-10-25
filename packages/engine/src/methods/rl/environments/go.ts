@@ -1,3 +1,9 @@
+/**
+ * Go on small boards under Tromp-Taylor rules (as OpenSpiel's `go`): black and white alternately place stones or pass,
+ * groups without liberties are captured, and the game is scored by area. A two-player turn-based environment, its area
+ * scores, and a way to set up a position from a text diagram for problems and tests.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { key as makeKey, randomBits } from '../../../lib/random/index.ts'
 import { choice, dict, int, real } from '../../../lib/space/index.ts'

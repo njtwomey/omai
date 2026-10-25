@@ -1,3 +1,8 @@
+/**
+ * The reference CPU backend, `cpu`: plain loops over row-major typed arrays implementing every kernel of the backend
+ * contract, favouring clarity over speed: each kernel allocates a fresh output and never mutates its inputs.
+ */
+
 import { wrap } from './_cpu/_util.ts'
 import { binary, cast, compare, map, map2, predicate, unary, where } from './_cpu/elementwise.ts'
 import { argReduce, reduce, scan } from './_cpu/reduce.ts'

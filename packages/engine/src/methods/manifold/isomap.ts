@@ -1,3 +1,10 @@
+/**
+ * Isomap (Tenenbaum et al., 2000; as in scikit-learn): a nonlinear embedding that preserves geodesic distances,
+ * measured as shortest paths through the k-nearest-neighbour graph and then embedded by classical MDS, so a curled-up
+ * manifold such as the Swiss roll unrolls. Also the neighbour-graph and geodesic-distance helpers other embeddings
+ * reuse.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import { floydWarshall, graph as makeGraph } from '../../lib/graph/index.ts'

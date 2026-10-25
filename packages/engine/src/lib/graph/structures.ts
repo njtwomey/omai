@@ -1,3 +1,9 @@
+/**
+ * Data structures shared by the graph algorithms: a binary heap class over the base heap, a union-find (disjoint-set)
+ * structure with path compression and union by rank for Kruskal's algorithm and components, and an indexed priority
+ * queue with decrease-key for Dijkstra and Prim.
+ */
+
 import { type Heap, heap, WhiteboxError } from '../base/index.ts'
 
 /**

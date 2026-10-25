@@ -1,3 +1,9 @@
+/**
+ * Summaries of time series by representative windows: MPdist, a matrix-profile distance between series robust to their
+ * lengths, snippets (Imani et al., 2018) that cover a series with a few typical windows and the regimes each
+ * represents, and the ostinato consensus motif shared by several series. As in stumpy.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { mass, seriesOf } from '../../../lib/signal/index.ts'
 import type { TensorLike } from '../../../lib/tensor/index.ts'

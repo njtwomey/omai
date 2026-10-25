@@ -1,3 +1,9 @@
+/**
+ * Discrete prolate spheroidal (Slepian) sequences, the windows of a given length whose energy is most concentrated in a
+ * frequency band, as scipy.signal.windows.dpss, computed from a tridiagonal eigenproblem, with their concentration
+ * ratios. They are the tapers of the multitaper spectrum.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Tensor, toFlat } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'

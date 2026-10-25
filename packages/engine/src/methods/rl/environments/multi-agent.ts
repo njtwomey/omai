@@ -1,3 +1,10 @@
+/**
+ * Simultaneous-move multi-agent environments (PettingZoo's parallel API): repeated two-player matrix games such as the
+ * prisoner's dilemma, matching pennies, rock-paper-scissors and the stag hunt, pursuit-evasion on a grid, and
+ * cooperative navigation from the multi-agent particle environments (MPE `simple_spread`), with the particle-world
+ * physics step it runs on.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import {
   matchingPennies,

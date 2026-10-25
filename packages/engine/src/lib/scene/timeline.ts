@@ -1,3 +1,8 @@
+/**
+ * Timelines: frames keyed by step, each a scene or a structure with highlights laid over it, the data behind every
+ * animation, playback control and GIF or video export.
+ */
+
 import type { Structure } from './structure.ts'
 import type { Scene } from './types.ts'
 

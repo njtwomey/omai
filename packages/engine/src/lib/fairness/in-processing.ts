@@ -1,7 +1,8 @@
 /**
- * In-processing mitigation: fitting a classifier under fairness constraints. The reductions approach of Agarwal et al.
- * (fairlearn's ExponentiatedGradient and GridSearch) over constraint moments such as demographic parity and equalised
- * odds.
+ * Fairness during training by reduction, as in fairlearn's `reductions`: fair classification becomes a sequence of
+ * cost-sensitive problems under a demographic-parity or equalised-odds constraint. Exponentiated gradient (a game
+ * between a learner and a constraint player, giving a randomised classifier) and a grid search over multipliers that
+ * traces the accuracy-fairness trade-off.
  */
 
 import { WhiteboxError } from '../base/index.ts'

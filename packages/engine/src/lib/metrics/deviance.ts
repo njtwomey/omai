@@ -1,3 +1,9 @@
+/**
+ * Deviance-based regression metrics, scikit-learn style, for targets that are counts, positive or skewed: the mean
+ * Tweedie deviance and its Poisson and gamma cases, the mean pinball (quantile) loss, and the D^2 scores, which
+ * generalise R^2 to the absolute error, pinball loss and Tweedie deviance.
+ */
+
 import type { Direction, MetricSpec } from '../base/index.ts'
 import { type Metric, type MetricOptions, perOutputMetric, weightedMean, weightedPercentile } from './metric.ts'
 

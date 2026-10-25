@@ -1,3 +1,9 @@
+/**
+ * Continuous-time Markov chains, which jump between states after exponential holding times set by a generator matrix Q:
+ * transition matrices exp(tQ), distributions at time t, the stationary law, the embedded jump chain, uniformisation and
+ * expected hitting times, and simulation by Gillespie's algorithm (a traced algorithm) or exactly on a grid.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { expm, solve } from '../numerics/linalg/index.ts'
 import { categorical, exponential, foldIn, type Key } from '../random/index.ts'

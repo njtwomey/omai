@@ -1,3 +1,8 @@
+/**
+ * Choosing the number of components of a Gaussian mixture by information criteria, as in scikit-learn's model-selection
+ * example: fit a mixture for each count and record the BIC and AIC of each.
+ */
+
 import { type CrossValidationCurve, crossValidationCurve } from '../../lib/exposition/index.ts'
 import { type FitOptions, fitRunOptions } from '../../lib/learn/index.ts'
 import { foldIn, type Key } from '../../lib/random/index.ts'

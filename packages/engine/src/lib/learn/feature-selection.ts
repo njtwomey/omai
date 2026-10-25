@@ -1,3 +1,10 @@
+/**
+ * Filter feature selection, scikit-learn style: univariate scores (ANOVA F, correlation and regression F tests,
+ * chi-squared, and mutual information by nearest-neighbour estimators) and the selectors built on them (variance
+ * threshold, k best, percentile, p-value control of false positive, false discovery or familywise error rates) plus
+ * `selectFromModel`, which keeps the features a fitted model deems important.
+ */
+
 import { type Json, quantileOf, WhiteboxError } from '../base/index.ts'
 import { ksgMutualInformation, mixedMutualInformation, plugInMutualInformation } from '../information/index.ts'
 import { chdtrc, fdtrc } from '../numerics/special/index.ts'

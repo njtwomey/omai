@@ -1,3 +1,9 @@
+/**
+ * The Frank-Wolfe (conditional gradient) method, which minimises over a compact convex set without projections by
+ * stepping towards the vertex a linear minimisation oracle returns, with away and pairwise steps and an active set.
+ * Oracles for the simplex, L1, L2 and nuclear-norm balls and the box are included.
+ */
+
 import { argmaxOf, argminOf, WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, svd } from '../../numerics/linalg/index.ts'
 import { fromStorage, primalOf, toFlat } from '../../tensor/index.ts'

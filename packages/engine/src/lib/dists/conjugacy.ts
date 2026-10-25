@@ -1,3 +1,11 @@
+/**
+ * Conjugate prior and likelihood pairs, where the posterior stays in the prior's family and has a closed form: the
+ * table `CONJUGATES` (beta for Bernoulli and binomial probabilities, gamma for Poisson and exponential rates, normal
+ * and inverse gamma for normal means and variances, Dirichlet for categorical probabilities, Wishart and inverse
+ * Wishart for covariances, Pareto for a uniform bound), with `conjugatePrior` to look one up and `conjugatePosterior`
+ * to update it from observations, as probabilistic programs use to skip sampling.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { inv } from '../numerics/linalg/index.ts'
 import {

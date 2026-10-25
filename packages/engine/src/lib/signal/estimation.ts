@@ -1,3 +1,10 @@
+/**
+ * Optimal linear estimation and prediction of signals: the non-causal frequency-domain Wiener filter, the causal FIR
+ * Wiener filter from the Wiener-Hopf equations, scipy's local adaptive `wiener` denoiser, linear prediction
+ * coefficients by Burg's method (librosa.lpc) with the residual and one-step predictor, and the matched filter that
+ * maximises output SNR for a known template.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { correlate, fftConvolve } from '../numerics/convolution/index.ts'
 import { irfft, rfft } from '../numerics/fourier/index.ts'

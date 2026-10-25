@@ -1,3 +1,10 @@
+/**
+ * Ray-surface intersection, the core query of ray tracing: shapes (spheres, planes, triangles, axis-aligned boxes), the
+ * intersection tests (quadratic roots, Moller-Trumbore, the slab method) with hit records, a brute-force nearest hit,
+ * and bounding boxes. Also differentiable versions of the distances and barycentric coordinates for gradients through
+ * geometry.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { crossProduct, dotProduct } from '../foundations/index.ts'
 import type { Vec3 } from '../scene/index.ts'

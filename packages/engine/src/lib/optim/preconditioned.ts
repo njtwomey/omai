@@ -1,3 +1,9 @@
+/**
+ * Curvature-aware preconditioned optimisers: natural gradient descent with Fisher or empirical Fisher matrices, K-FAC
+ * (Kronecker-factored curvature for dense layers, Martens and Grosse), Shampoo (per-mode preconditioners, Gupta et
+ * al.), and building blocks such as matrix inverse p-th roots, fixed preconditioners and diagonal preconditioning.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { eigh, solve } from '../numerics/linalg/index.ts'
 import {

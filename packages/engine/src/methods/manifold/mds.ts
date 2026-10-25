@@ -1,3 +1,10 @@
+/**
+ * Multidimensional scaling (as in scikit-learn's `MDS`): placing points in a few dimensions so their distances match
+ * given dissimilarities. Classical (Torgerson) MDS in closed form by an eigendecomposition, and metric SMACOF, which
+ * lowers the stress by repeated Guttman transforms, traced iteration by iteration. It also defines the embedding types
+ * the other manifold methods share.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { embeddingSteps } from '../../lib/exposition/index.ts'
 import {

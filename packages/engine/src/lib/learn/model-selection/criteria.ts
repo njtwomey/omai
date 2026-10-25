@@ -1,3 +1,9 @@
+/**
+ * Model selection without (or with cheap) refitting: the information criteria AIC, AICc and BIC, Mallows' Cp,
+ * generalised cross-validation and exact leave-one-out for linear smoothers, the one-standard-error rule for picking
+ * the simplest adequate model, and the .632 and .632+ bootstrap estimates of prediction error.
+ */
+
 import { meanOf, WhiteboxError } from '../../base/index.ts'
 import { bootstrapIndices, foldIn } from '../../random/index.ts'
 import { asTensor, isTensor, type TensorLike, toFlat } from '../../tensor/index.ts'

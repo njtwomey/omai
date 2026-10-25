@@ -1,3 +1,10 @@
+/**
+ * Multivariable and vector calculus: gradients, directional derivatives, Jacobians and Hessians of fields by automatic
+ * differentiation, linear and quadratic approximations and tangent planes, critical-point classification, Lagrange
+ * multipliers, divergence and curl, line, flux and surface integrals, and numerical checks of Green's, Stokes' and the
+ * divergence theorems.
+ */
+
 import { jvp } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { eigvalsh, lstsq } from '../numerics/linalg/index.ts'

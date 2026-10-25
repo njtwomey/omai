@@ -1,3 +1,9 @@
+/**
+ * N-dimensional correlation and convolution with border handling, as in scipy.ndimage: one-dimensional filters along an
+ * axis and full multidimensional kernels, with the input extended at its edges (reflect, mirror, nearest, wrap or
+ * constant) and an adjustable kernel origin. The base the other image filters are built on.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type BorderMode, padArray, padModeOf } from '../../numerics/convolution/index.ts'
 import {

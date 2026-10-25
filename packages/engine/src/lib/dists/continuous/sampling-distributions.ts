@@ -1,3 +1,8 @@
+/**
+ * The sampling distributions of test statistics: Snedecor's F and the noncentral chi-square, F and t distributions
+ * (scipy.stats f, ncx2, ncf, nct), whose noncentral forms give the power of chi-square, ANOVA and t tests.
+ */
+
 import { maxOf, minOf } from '../../base/index.ts'
 import {
   betainc,

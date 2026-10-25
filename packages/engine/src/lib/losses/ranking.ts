@@ -1,3 +1,9 @@
+/**
+ * Learning-to-rank losses over lists of scored items: pairwise losses (margin ranking, RankNet, pairwise hinge, BPR for
+ * implicit feedback, and LambdaRank, weighted by the NDCG change of each swap) and listwise ones (ListNet, the ranking
+ * softmax, ListMLE's Plackett-Luce likelihood and ApproxNDCG, a smooth surrogate of NDCG).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { logSigmoid, softplus } from '../numerics/special/index.ts'
 import {

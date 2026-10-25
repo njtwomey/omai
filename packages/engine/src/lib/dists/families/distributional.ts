@@ -1,3 +1,10 @@
+/**
+ * Distributional regression families in the GAMLSS style (Rigby and Stasinopoulos), where every parameter of a
+ * distribution (location, scale, shape) has its own link and can depend on covariates: normal, Student-t, skew-normal,
+ * gamma, log-normal, Weibull, beta, Poisson, negative binomial and zero-inflated Poisson, plus cumulative-link families
+ * for ordinal regression.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { log1mexp, logNdtr, logSigmoid } from '../../numerics/special/index.ts'
 import {

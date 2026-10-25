@@ -1,3 +1,10 @@
+/**
+ * Fourier analysis of sampled signals beyond the bare FFT: the discrete-time Fourier transform at arbitrary frequencies
+ * (differentiable), zero padding, frequency resolution, sub-bin peak-frequency estimation by parabolic interpolation,
+ * spectral leakage of a window and Parseval's identity, plus the Hilbert transform, the analytic signal and the
+ * amplitude envelope (scipy.signal.hilbert).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fft, ifft, rfft } from '../numerics/fourier/index.ts'
 import {

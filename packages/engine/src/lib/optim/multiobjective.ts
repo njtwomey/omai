@@ -1,3 +1,9 @@
+/**
+ * Multiobjective optimisation basics: Pareto dominance, non-dominated sorting into fronts (NSGA-II's fast sort), Pareto
+ * fronts, crowding distances, the hypervolume indicator and each point's contribution to it, and scalarisations that
+ * turn several objectives into one (weighted sum, Chebyshev, augmented Chebyshev, epsilon-constraint).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   add,

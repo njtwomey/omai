@@ -1,3 +1,9 @@
+/**
+ * Image datasets: rendered shapes for classification or detection, MNIST-like digit glyphs with their clean images,
+ * MacKay's bars and stripes, geometric scenes with exact edge maps for edge and corner detectors, and a parser for the
+ * IDX format with Fashion-MNIST's test split as a pinned remote asset.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../base/index.ts'
 import { type DatasetGenerator, type DatasetRef, gunzip, type ImageData, images } from '../data/index.ts'
 import { foldIn, normal, randint, uniform } from '../random/index.ts'

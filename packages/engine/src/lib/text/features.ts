@@ -1,3 +1,9 @@
+/**
+ * Document vectorisers that turn text into feature matrices, as in scikit-learn: the shared analyser (preprocessing,
+ * word or character n-grams, stop words), bag-of-words counts, tf-idf weighting with smoothed inverse document
+ * frequency, and the hashing trick. Also BM25 ranking of documents for a query, as rank_bm25 computes it.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type CsrMatrix, csr } from '../numerics/sparse/index.ts'
 import { toFlat } from '../tensor/index.ts'

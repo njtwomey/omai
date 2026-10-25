@@ -1,3 +1,9 @@
+/**
+ * Minimum-order IIR design from a specification (passband and stopband edges, allowed passband loss, required stopband
+ * attenuation): the order functions of the Butterworth, Chebyshev and elliptic families (`buttord`, `cheb1ord`,
+ * `cheb2ord`, `ellipord`) and `iirdesign`, which picks the band type and order and designs the filter, as scipy.signal.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { ellipk } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'

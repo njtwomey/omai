@@ -1,3 +1,9 @@
+/**
+ * Exposition records for model selection: every trial of a hyperparameter search (grid, random, successive halving,
+ * Bayesian, TPE) with its parameters, scores and fate, and learning curves of training and validation scores against
+ * training-set size, epochs or another resource.
+ */
+
 import type { Json } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 

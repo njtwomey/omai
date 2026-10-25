@@ -1,3 +1,9 @@
+/**
+ * Network flows: maximum s-t flow by Dinic's or Edmonds-Karp's algorithm, the minimum cut it certifies (max-flow
+ * min-cut theorem), minimum-cost flows meeting node supplies and demands, maximum flow of minimum cost, and maximum
+ * bipartite matching by Hopcroft-Karp, as in NetworkX and scipy.
+ */
+
 import { kahanSum, WhiteboxError } from '../base/index.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
 import { IndexedQueue } from './structures.ts'

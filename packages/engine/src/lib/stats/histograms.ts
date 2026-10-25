@@ -1,3 +1,9 @@
+/**
+ * Histograms and binning, numpy and scipy style: bin edges by count, explicit edges or the automatic rules
+ * (Freedman-Diaconis, Scott, Sturges, Knuth and others), one- and two-dimensional histograms as counts or densities,
+ * and `binnedStatistic`, any statistic of the values falling in each bin.
+ */
+
 import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { asTensor, fromStorage, item, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'

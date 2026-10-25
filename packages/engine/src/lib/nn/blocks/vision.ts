@@ -1,3 +1,9 @@
+/**
+ * Convolutional blocks for vision models: ResNet's basic and bottleneck blocks, squeeze-and-excitation channel gating,
+ * the ConvNeXt block, MobileNet and EfficientNet's inverted bottleneck (`MBConv`), the encoder and decoder stages of a
+ * U-Net and a feature pyramid network, plus `toTokens` for turning feature maps into token sequences.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {

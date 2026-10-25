@@ -1,3 +1,9 @@
+/**
+ * Sharpened time-frequency representations: the reassigned spectrogram, which moves each STFT value to its local
+ * instantaneous frequency and group delay (librosa.reassigned_spectrogram), and the synchrosqueezed STFT, which moves
+ * coefficients along frequency only, so the signal can still be reconstructed from it.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type ComplexValue, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { constant, samples } from './_shared.ts'

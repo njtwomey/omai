@@ -1,3 +1,9 @@
+/**
+ * Shortest paths in weighted graphs, following scipy.sparse.csgraph and NetworkX: Dijkstra, Bellman-Ford (negative
+ * weights) and A* search from one source, Floyd-Warshall and Johnson for all pairs, path reconstruction from
+ * predecessors, Yen's k shortest loopless paths, and a `shortestPath` front door that picks a method from the weights.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'

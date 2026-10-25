@@ -1,3 +1,10 @@
+/**
+ * Conditional distributions p(y | x), functions from inputs to distributions: the linear-Gaussian conditional with its
+ * closed-form marginals and posteriors, generalised linear model and distributional (GAMLSS) regression conditionals,
+ * and heads that turn a network's raw outputs into valid normal, Bernoulli, categorical, Poisson, negative binomial,
+ * beta, gamma, mixture-density and multivariate normal distributions.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import type { Key } from '../../random/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Offline decision-making data from known environments: logged contextual-bandit data with a known stochastic logging
+ * policy, for off-policy evaluation, and episodes from a random tabular MDP or Strens' chain under a known behaviour
+ * policy. `policyEvaluation` gives the exact value of a policy, so estimates can be checked.
+ */
+
 import { softmaxOf } from '../base/index.ts'
 import { type DatasetGenerator, type TrajectoryData, trajectories } from '../data/index.ts'
 import { solve } from '../numerics/linalg/index.ts'

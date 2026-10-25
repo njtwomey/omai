@@ -1,3 +1,9 @@
+/**
+ * Convolutional and recurrent blocks for sequences. The temporal convolutional network (`TemporalBlock`, `TCN`) built
+ * from dilated causal convolutions that see only the past, WaveNet's gated residual blocks with skip outputs and
+ * optional conditioning, and GNMT-style stacked recurrent layers with residual connections.
+ */
+
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,

@@ -1,3 +1,9 @@
+/**
+ * Exposition records for neighbour and generative classifiers: the neighbours found for each query point (k-NN, radius
+ * neighbours, LOF), and likelihood tables of how each feature contributes to each class's score (naive Bayes,
+ * discriminant analysis).
+ */
+
 import { rowsOf, sameLength } from './_check.ts'
 import type { InputRows } from './rows.ts'
 

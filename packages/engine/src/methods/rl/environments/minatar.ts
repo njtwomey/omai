@@ -1,3 +1,9 @@
+/**
+ * MinAtar: miniature Atari games on a 10 x 10 grid with one binary channel per kind of object, a small, fast testbed
+ * for deep RL. Breakout, Freeway, Asterix, Space Invaders and Seaquest following MinAtar's rules, with sticky actions,
+ * a reader of an observation as a grid of channels, and a renderer that colours each cell by its object.
+ */
+
 import type { Json } from '../../../lib/base/index.ts'
 import { foldIn, Generator, type Key, uniform } from '../../../lib/random/index.ts'
 import type { Env, EnvDefinition } from '../../../lib/rl/index.ts'

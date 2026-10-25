@@ -1,3 +1,9 @@
+/**
+ * Lossless JSON for anything that crosses a boundary (files, messages, traces, fixtures): the `Json` type and its
+ * schema, number encoding that writes infinities and NaN as strings (the convention the Python oracle shares), and
+ * `toJson` and `fromJson` for values that also hold -0, typed arrays, bigints and undefined fields.
+ */
+
 import { z } from 'zod'
 import { WhiteboxError } from './errors.ts'
 

@@ -1,3 +1,10 @@
+/**
+ * Coordinate systems and changes of coordinates: conversions between Cartesian, polar, cylindrical, spherical (physics
+ * convention) and geographic coordinates; homogeneous coordinates for affine and projective maps; barycentric
+ * coordinates in simplices; coordinates in a basis, change-of-basis matrices and similarity transforms; and the
+ * Jacobian of a coordinate map by automatic differentiation.
+ */
+
 import { jacobian } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { det, solve } from '../numerics/linalg/index.ts'

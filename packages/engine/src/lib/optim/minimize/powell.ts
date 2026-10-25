@@ -1,3 +1,9 @@
+/**
+ * Powell's conjugate direction method, a derivative-free minimiser that line-searches along a set of directions by
+ * Brent's method and replaces a direction by the overall displacement, as a traced algorithm matching
+ * `scipy.optimize.minimize(method='Powell')`.
+ */
+
 import { isWhiteboxError, WhiteboxError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

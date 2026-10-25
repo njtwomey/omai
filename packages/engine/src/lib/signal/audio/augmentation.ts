@@ -1,3 +1,9 @@
+/**
+ * Audio data augmentation, librosa style: SpecAugment's random frequency and time masks on a spectrogram, the phase
+ * vocoder (an STFT resampled in time with phases kept coherent) and the time stretching and pitch shifting built on it,
+ * and mixing a signal with noise at a chosen signal-to-noise ratio.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
 import { type ComplexValue, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

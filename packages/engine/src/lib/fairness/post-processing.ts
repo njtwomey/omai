@@ -1,6 +1,7 @@
 /**
- * Post-processing mitigation: decisions adjusted after a model is trained. Threshold optimisation per group (Hardt,
- * Price and Srebro; fairlearn's ThresholdOptimizer) with randomised thresholds, and the decisions of the fitted rules.
+ * Fairness after training by threshold adjustment (Hardt, Price and Srebro, 2016; fairlearn's `ThresholdOptimizer`):
+ * per-group randomised thresholds on a score that satisfy a constraint such as demographic parity or equalised odds
+ * exactly in expectation while maximising accuracy or another objective, and the decisions they give each row.
  */
 
 import { WhiteboxError } from '../base/index.ts'

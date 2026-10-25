@@ -1,3 +1,10 @@
+/**
+ * Rate-distortion theory, the least number of bits per symbol needed to describe a source within a given average
+ * distortion: Blahut's algorithm for points on the rate-distortion curve of a discrete source (also as a traced
+ * algorithm), and the closed forms for Bernoulli and Gaussian sources, including reverse water-filling over independent
+ * Gaussian components.
+ */
+
 import { type Json, logSumExpOf, pairwiseSum, WhiteboxError } from '../base/index.ts'
 import { type Tensor, type TensorLike, tensor } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'

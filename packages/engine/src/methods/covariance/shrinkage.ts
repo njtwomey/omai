@@ -1,3 +1,9 @@
+/**
+ * Covariance estimators, as in scikit-learn's `covariance` module: the empirical covariance and its shrunk forms (fixed
+ * shrinkage, Ledoit-Wolf, OAS), each fitted with its precision matrix, Mahalanobis distances and Gaussian log
+ * likelihood. The exposition shows Mahalanobis distances as anomaly scores against a chi-squared cut-off.
+ */
+
 import { chi2 } from '../../lib/dists/index.ts'
 import { type AnomalyScores, anomalyScores } from '../../lib/exposition/index.ts'
 import {

@@ -1,3 +1,9 @@
+/**
+ * Turning symbolic expressions into numbers: `compile` builds a numeric function over tensors from an expression
+ * (SymPy's `lambdify`), with implementations for special functions passed in, and `evaluate` and `evaluateComplex`
+ * compute an expression's value as a real number or as a complex pair on principal branches.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   abs,

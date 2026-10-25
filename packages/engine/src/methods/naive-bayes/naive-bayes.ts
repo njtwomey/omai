@@ -1,3 +1,10 @@
+/**
+ * Naive Bayes classifiers, as in scikit-learn's `naive_bayes` module: generative classifiers that assume features are
+ * independent given the class, so each class's likelihood factorises feature by feature. Gaussian, multinomial
+ * (counts), Bernoulli (binary features), complement (for imbalanced text) and categorical variants, with likelihood
+ * tables showing how each feature moves each class's score.
+ */
+
 // TODO: tree-augmented naive Bayes (Chow-Liu), AODE and k-dependence classifiers (bayes-net-classifiers.ts).
 import { argmaxOf, logSumExpOf, WhiteboxError } from '../../lib/base/index.ts'
 import { categorical, type Distribution } from '../../lib/dists/index.ts'

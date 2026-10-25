@@ -1,3 +1,9 @@
+/**
+ * Sparse Gaussian-process regression with m inducing points, which cuts the cost of a GP from cubic in the data to
+ * linear: the subset-of-regressors, DTC and FITC approximate priors (Quiñonero-Candela and Rasmussen, 2005) and
+ * Titsias' variational free energy, with the inducing points and hyperparameters optimised.
+ */
+
 import { linspaceNumbers, maxOf, minOf } from '../../lib/base/index.ts'
 import { resolveKey } from '../../lib/context/index.ts'
 import { type Distribution, normal } from '../../lib/dists/index.ts'

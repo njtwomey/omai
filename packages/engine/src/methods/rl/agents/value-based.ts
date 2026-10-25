@@ -1,3 +1,10 @@
+/**
+ * Deep Q-networks (DQN, Mnih et al. 2015): a neural network that estimates each action's value, trained from a replay
+ * buffer against a periodically synced target network. The Q-network builder (an MLP trunk with optional duelling heads
+ * and noisy layers, initialised as PyTorch initialises linear layers), the `dqn` agent with double Q-learning,
+ * prioritised replay, n-step returns and noisy exploration as options, and a reader of its action values.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { huber } from '../../../lib/losses/index.ts'
 import { linear } from '../../../lib/nn/index.ts'

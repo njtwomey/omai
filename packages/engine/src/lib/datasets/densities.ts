@@ -1,3 +1,9 @@
+/**
+ * Two-dimensional target densities with exact, differentiable log densities and samplers, for testing MCMC, normalising
+ * flows and diffusion models: rings, Gaussian mixtures on a circle or grid, the pinwheel, the banana, Neal's funnel and
+ * the FFJORD checkerboard. `densitySamples` turns any of them into a labelled dataset.
+ */
+
 import { maxOf } from '../base/index.ts'
 import { type ClassificationData, type DatasetGenerator, xyClasses } from '../data/index.ts'
 import { erf } from '../numerics/special/index.ts'

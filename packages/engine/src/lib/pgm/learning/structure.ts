@@ -1,3 +1,9 @@
+/**
+ * Learning the graph of a Bayes network from data: the Chow-Liu tree (the best tree by pairwise mutual information),
+ * the PC algorithm (a skeleton from conditional independence tests, then orientation of colliders and Meek's rules) and
+ * greedy hill climbing over DAGs by score. PC's skeleton phase and hill climbing are traced algorithms.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import {
   type Algorithm,

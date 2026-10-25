@@ -1,3 +1,10 @@
+/**
+ * Cooperative multi-agent deep RL with centralised training and decentralised execution. Value decomposition builds the
+ * team's action value from per-agent values so each agent can act greedily on its own: `vdn` sums them and `qmix` mixes
+ * them through a monotonic network conditioned on the global state. `maddpg` trains per-agent deterministic actors
+ * against centralised critics that see every agent's observation and action.
+ */
+
 import { argmaxOf, type Json, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { mse } from '../../../lib/losses/index.ts'
 import { elu, mlp } from '../../../lib/nn/index.ts'

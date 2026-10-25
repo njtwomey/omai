@@ -1,3 +1,10 @@
+/**
+ * Markov networks (Markov random fields), undirected models given by non-negative potentials on the cliques of a graph:
+ * construction, neighbours and separation, maximal cliques, moralising a Bayes network, conversion from any discrete
+ * model, the Ising and Potts models of statistical physics, and the brute-force Gibbs distribution and energy of an
+ * assignment.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   type DiscreteVariable,

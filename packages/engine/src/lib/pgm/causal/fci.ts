@@ -1,3 +1,9 @@
+/**
+ * Fast Causal Inference (FCI; Spirtes, Meek and Richardson 1995, with Zhang's orientation rules), constraint-based
+ * causal discovery that allows hidden confounders and selection bias. It learns a partial ancestral graph (PAG), whose
+ * edge marks say which causal directions every compatible model shares.
+ */
+
 import { runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import { type DataRow, dataVariables } from '../learning/_data.ts'
 import { type CiTest, type IndependenceOptions, independenceOracle } from '../learning/independence.ts'

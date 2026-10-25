@@ -1,3 +1,10 @@
+/**
+ * Boolean satisfiability (SAT) solvers on CNF formulas in DIMACS form: reading and writing DIMACS, checking
+ * assignments, and three solvers as traced algorithms: DPLL with propagation and branching heuristics, conflict-driven
+ * clause learning in MiniSat's architecture (watched literals, first-UIP learning, restarts), and the WalkSAT local
+ * search.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { Generator } from '../random/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'

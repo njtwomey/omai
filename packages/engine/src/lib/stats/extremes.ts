@@ -1,3 +1,10 @@
+/**
+ * Extreme-value statistics, which model the tails of a distribution (Coles 2001): maximum-likelihood fits of the
+ * generalised extreme value distribution to block maxima and of the generalised Pareto to threshold exceedances,
+ * declustered peaks over a threshold, return levels with delta-method errors (the level exceeded once per period on
+ * average), and the mean excess function that guides the choice of threshold.
+ */
+
 import { type Estimate, meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { type Distribution, generalisedExtremeValue, generalisedPareto } from '../dists/index.ts'
 import { asTensor, exp, item, sum, type Tensor, type TensorLike, take, toFlat, type Value } from '../tensor/index.ts'

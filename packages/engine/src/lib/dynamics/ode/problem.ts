@@ -1,3 +1,9 @@
+/**
+ * The shared vocabulary of the ODE solvers: vector fields, initial value problems with explicit parameters and an
+ * optional mass matrix, event specifications, dense (continuous) solutions built from step interpolants, solve results
+ * in scipy's `OdeResult` shape, and the `Stepper` contract every integrator implements.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { stack, type TensorLike, type Value } from '../../tensor/index.ts'
 import { combine, floatState } from './_vec.ts'

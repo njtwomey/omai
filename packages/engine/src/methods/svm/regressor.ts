@@ -1,3 +1,9 @@
+/**
+ * Epsilon-support vector regression (as in scikit-learn's `SVR`, libsvm's epsilon-SVR): a kernel regression that
+ * ignores errors smaller than epsilon and penalises larger ones linearly, so only rows on or outside the epsilon tube
+ * become support vectors. The dual is solved by the core's traced SMO.
+ */
+
 import { type Distribution, normal } from '../../lib/dists/index.ts'
 import { type Exposition, marginRecord } from '../../lib/exposition/index.ts'
 import {

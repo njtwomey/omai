@@ -1,3 +1,10 @@
+/**
+ * The truth of a generated dataset: what is known about how it was made (its generating program, densities, class
+ * posterior, regression function, causal effects, clusters), so methods can be checked against it rather than only
+ * against held-out data. Also the Bayes-optimal predictions and a Monte Carlo Bayes error, `completeTruth` for deriving
+ * missing pieces by Bayes' rule, and quick checks such as excess risk and cluster agreement.
+ */
+
 import { type Estimate, estimate, WhiteboxError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import type { Structure } from '../scene/index.ts'

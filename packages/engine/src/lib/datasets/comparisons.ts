@@ -1,3 +1,9 @@
+/**
+ * Comparison data from players with latent skills, for rating and ranking models: Elo-scale pairwise games (optionally
+ * with drifting skills), round-robin tournaments with Bradley-Terry-Davidson outcomes and ties, and multi-player races
+ * under the TrueSkill (Thurstone) performance model, each with the true skills.
+ */
+
 import { type ComparisonData, comparisons, type DatasetGenerator, type Generated } from '../data/index.ts'
 import { foldIn, type Key, normal, permutation, randint, uniform } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'

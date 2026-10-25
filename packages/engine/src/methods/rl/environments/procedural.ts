@@ -1,3 +1,10 @@
+/**
+ * Procedurally generated environments for studying generalisation, with Procgen-style control of which levels are
+ * played. Maze generation (recursive backtracker, Prim's or Kruskal's algorithm, optionally braided to add loops) and
+ * grid distances, then two environments built on them: a maze whose goal is its farthest cell, and a key-door variant
+ * where each coloured door opens only with its key, with disjoint training and test level ranges.
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { foldIn, Generator, type Key, key as makeKey } from '../../../lib/random/index.ts'
 import type { Env, EnvDefinition, EnvModel, Outcome } from '../../../lib/rl/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Variational inference on discrete graphical models: naive mean field and variational message passing (Winn and Bishop
+ * 2005), which return marginals with an ELBO lower bound on log Z, and tree-reweighted belief propagation (Wainwright
+ * et al. 2005), which returns pseudo-marginals with an upper bound, using spanning-tree edge probabilities. Each is a
+ * traced algorithm.
+ */
+
 import { type Json, logSumExpOf, WhiteboxError } from '../../base/index.ts'
 import { type Key, uniform } from '../../random/index.ts'
 import {

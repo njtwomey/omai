@@ -1,3 +1,9 @@
+/**
+ * Descriptive statistics of a sample, numpy and scipy.stats style: mean, variance and standard deviation (optionally
+ * weighted), central moments, skewness and kurtosis with or without bias correction, the `describe` summary, z-scores,
+ * the standard error of the mean, the mode, and the geometric and harmonic means.
+ */
+
 import { meanOf, pairwiseSum, varianceOf, WhiteboxError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { sample, vec } from './_util.ts'

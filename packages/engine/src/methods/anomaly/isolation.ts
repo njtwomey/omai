@@ -1,3 +1,9 @@
+/**
+ * The isolation forest (as in scikit-learn's `IsolationForest`): random trees grown on subsamples isolate points by
+ * random splits, and anomalies, being few and different, are isolated in fewer splits. Trees are grown one per traced
+ * step, with extended (hyperplane) splits as an option; the fit function, a class wrapper and the path-length helpers.
+ */
+
 import {
   defineExplainedEstimator,
   type Estimator,

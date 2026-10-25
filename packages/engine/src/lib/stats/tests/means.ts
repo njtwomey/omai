@@ -1,3 +1,10 @@
+/**
+ * Tests of means, scipy.stats and pingouin style: one-sample, independent (Student or Welch) and paired t tests, z
+ * tests, one-way ANOVA and Welch's ANOVA, Tukey's honestly significant difference for all pairwise comparisons, and
+ * repeated-measures ANOVA with Mauchly's sphericity test and its corrections. Results report effect sizes and
+ * assumption checks alongside the p-values.
+ */
+
 import { type Alternative, meanOf, type TestResult, varianceOf, WhiteboxError } from '../../base/index.ts'
 import { studentisedRange } from '../../dists/index.ts'
 import { item, type Tensor, type TensorLike } from '../../tensor/index.ts'

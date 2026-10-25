@@ -1,3 +1,9 @@
+/**
+ * Discrete random samplers that take a key first: integers, Bernoulli, categorical (from probabilities or logits),
+ * multinomial, Poisson and binomial (the same algorithms as numpy, so costs stay bounded for large counts) and
+ * geometric draws, plus Vose alias tables for O(1) sampling from a fixed discrete distribution.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fromStorage, type Shape, sizeOf, type Tensor } from '../tensor/index.ts'
 import { unitDoubles } from './_unit.ts'

@@ -1,6 +1,8 @@
 /**
- * Pre-processing methods: reweighing and the disparate-impact remover over a dataset, with the group reports with and
- * without them.
+ * Fairness before training on a dataset with a protected attribute: reweighing, which up-weights the outcomes that are
+ * rare in a group so label and group become independent, a classifier fitted with and without those weights and audited
+ * both ways, and disparate-impact removal, which repairs the other features towards a distribution shared by the
+ * groups.
  */
 
 import { coefficientTable, curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'

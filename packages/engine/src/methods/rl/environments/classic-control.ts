@@ -1,3 +1,10 @@
+/**
+ * The classic control environments of gymnasium, reproduced step for step: CartPole (balance a pole on a cart),
+ * MountainCar and its continuous variant (an underpowered car must rock its way out of a valley), Pendulum (swing up
+ * and balance with limited torque) and Acrobot (a two-link pendulum that must swing its tip above a bar). Each exposes
+ * its dynamics as a plain function, as gymnasium computes it, and draws its state as a scene.
+ */
+
 import { uniform } from '../../../lib/random/index.ts'
 import type { Env, EnvDefinition } from '../../../lib/rl/index.ts'
 import { circle, line, path, polygon, rect, type Scene, scene } from '../../../lib/scene/index.ts'

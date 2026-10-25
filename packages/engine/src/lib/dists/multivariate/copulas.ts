@@ -1,3 +1,9 @@
+/**
+ * Copulas, distributions on the unit cube with uniform marginals that describe dependence separately from the marginal
+ * distributions (Sklar's theorem): the `Copula` contract and `defineCopula`, the Gaussian and Student-t copulas, and
+ * `copulaDistribution`, which joins any marginals with a copula into one joint distribution.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { cholesky, solveTriangular } from '../../numerics/linalg/index.ts'
 import { lgamma, ndtr, ndtri, owensT, stdtr, stdtrit } from '../../numerics/special/index.ts'

@@ -1,3 +1,8 @@
+/**
+ * A Taylor-series ODE integrator: at each step the solution's Taylor coefficients up to a chosen order are computed by
+ * Taylor-mode automatic differentiation, and the step size is chosen from the decay of the last coefficients.
+ */
+
 import { jet } from '../../autodiff/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import type { TensorLike, Value } from '../../tensor/index.ts'

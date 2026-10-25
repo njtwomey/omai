@@ -1,3 +1,9 @@
+/**
+ * Total-variation denoising, which removes noise while keeping edges by penalising the sum of absolute differences
+ * between neighbours: Condat's exact direct algorithm for 1-D signals, and the fast dual gradient projection of Beck
+ * and Teboulle for images, as a traced algorithm.
+ */
+
 import type { Json } from '../base/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import {

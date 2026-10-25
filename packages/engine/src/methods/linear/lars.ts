@@ -1,3 +1,9 @@
+/**
+ * Least angle regression (LARS, Efron et al., 2004; as in scikit-learn): the exact piecewise-linear coefficient path
+ * along which features enter one at a time, each moving in the direction equally correlated with the residual. The path
+ * itself, LARS traced one knot per step, and the lasso solved by its LARS modification.
+ */
+
 import { argmaxOf, type Json } from '../../lib/base/index.ts'
 import {
   coefficientTable,

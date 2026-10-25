@@ -1,5 +1,9 @@
-// Genetic algorithms on toy problems, played generation by generation: bit strings (OneMax, knapsack) as a board of
-// genomes, and real vectors over an objective's contours, from the core's genetic algorithm (whitebox-engine/search).
+/**
+ * Genetic algorithms on toy problems, played generation by generation from the core's genetic algorithm
+ * (`whitebox-engine/search`): bit strings for OneMax and a random 0/1 knapsack, recorded as a board of genomes, and
+ * real vectors minimising an objective on the plane, recorded over its contours.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import {
   type BoardSteps,

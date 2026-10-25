@@ -1,3 +1,9 @@
+/**
+ * Best responses and exploitability in extensive-form games, as in OpenSpiel: the best response of one player to the
+ * others' policy, computed from counterfactual values at its information sets, and NashConv and exploitability, which
+ * measure how far a policy profile is from a Nash equilibrium.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { CHANCE, nodeValues, policyTable, TERMINAL, tablePolicy } from './_tree.ts'
 import { type ExtensiveGame, type GameTree, type TabularPolicy, treeOf } from './tree.ts'

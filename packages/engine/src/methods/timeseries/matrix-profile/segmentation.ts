@@ -1,3 +1,9 @@
+/**
+ * Semantic segmentation of a time series from its matrix profile: FLUSS (as stumpy's `fluss`) counts the
+ * nearest-neighbour arcs crossing each position, corrects them against the ideal arc curve and reads regime boundaries
+ * from its minima; FLOSS does the same on a stream, one value at a time, as a traced algorithm.
+ */
+
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import {
   exclusionZone,

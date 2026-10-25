@@ -1,3 +1,9 @@
+/**
+ * Structural causal models (Pearl 2009): each variable is a deterministic function of its parents and its own
+ * independent noise, given as discrete tables or linear equations. Construction and validation, sampling, the Bayes
+ * network or linear-Gaussian network the model induces, and a `Structure` for drawing it.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, laplace, normal, uniform } from '../../random/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../../scene/index.ts'

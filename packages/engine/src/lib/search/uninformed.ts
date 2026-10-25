@@ -1,3 +1,9 @@
+/**
+ * Uninformed (blind) search, AIMA style: breadth-first, depth-first, depth-limited, iterative deepening, uniform-cost
+ * and bidirectional search, each as a traced algorithm that records its frontier and explored set so it can be
+ * animated, with a function form returning the solution path and effort.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { BinaryHeap } from '../graph/index.ts'
 import type { Algorithm } from '../trace/index.ts'

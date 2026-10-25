@@ -1,3 +1,10 @@
+/**
+ * Attention as functions, torch.nn.functional style: scaled dot-product attention softmax(q k^T / sqrt(d)) v with
+ * boolean or additive masks, causal, sliding-window and local masks, soft-capping and dropout, returning the attention
+ * weights when asked. Also head splitting and merging, multi-head attention with PyTorch's parameter layout, and linear
+ * attention (Katharopoulos et al. 2020).
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Key } from '../../random/index.ts'
 import {

@@ -1,3 +1,9 @@
+/**
+ * Low-density parity-check (LDPC) codes, linear codes with sparse parity checks that come close to channel capacity:
+ * Gallager's random regular construction, the Tanner graph and encoder, log-likelihood ratios from AWGN and binary
+ * symmetric channels, and decoding by belief propagation on the Tanner graph (also as a traced algorithm).
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'

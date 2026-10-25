@@ -1,3 +1,9 @@
+/**
+ * Monte Carlo counterfactual regret minimisation: CFR that samples parts of the game tree each iteration instead of
+ * walking all of it, so it scales to larger games. External and outcome sampling as a traced algorithm, following
+ * OpenSpiel's solvers.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { Generator, type Key } from '../../random/index.ts'
 import { type Algorithm, runAlgorithm } from '../../trace/index.ts'

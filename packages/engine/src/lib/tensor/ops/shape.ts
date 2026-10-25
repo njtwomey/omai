@@ -1,3 +1,9 @@
+/**
+ * Shape manipulation, numpy style: reshaping and flattening, transposes and axis moves, inserting and removing length-1
+ * axes, broadcasting and its adjoint `sumToShape`, joining (`concat`, `stack`) and splitting, flips, rolls, tiles and
+ * repeats, constant padding, and `slidingWindowView` with step and dilation.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { batchAtFront, batchedAxis, moveBatchAxis } from '../batching.ts'
 import { cpu } from '../cpu.ts'

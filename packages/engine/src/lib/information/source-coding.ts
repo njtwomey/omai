@@ -1,3 +1,10 @@
+/**
+ * Prefix codes for lossless source coding, where frequent symbols get short codewords: Kraft sums, prefix-freeness and
+ * the Sardinas-Patterson test of unique decodability, expected length against the entropy bound, Huffman's optimal
+ * binary and D-ary codes (also as a traced algorithm), canonical codes as DEFLATE uses, the Shannon and Shannon-Fano
+ * codes, and encoding and decoding with any prefix code.
+ */
+
 import { heap, type Json, pairwiseSum, WhiteboxError } from '../base/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'

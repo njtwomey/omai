@@ -1,3 +1,9 @@
+/**
+ * Distributions built from other distributions: `independent` (batch axes treated as one event), `transformed` (the law
+ * of f(X) under a bijector), `truncated` and `censored` versions of a base, the `empirical` distribution of weighted
+ * samples, and the `deterministic` point mass, following torch.distributions, NumPyro and TFP.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import { type Key, uniform as uniformNoise } from '../../random/index.ts'
 import {

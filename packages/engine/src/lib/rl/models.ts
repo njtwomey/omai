@@ -1,3 +1,10 @@
+/**
+ * Learned dynamics models for model-based reinforcement learning: ensembles of models that predict the change in
+ * observation and the reward, with the split of uncertainty into epistemic and aleatoric parts, trajectory sampling as
+ * in PETS, supervised targets from transitions, and a model ensemble wrapped as an environment so planners and agents
+ * can act in imagination (PETS, MBPO, Dyna).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
 import { scene } from '../scene/index.ts'

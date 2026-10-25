@@ -1,3 +1,9 @@
+/**
+ * A probabilistic program drawn as a graphical model: `toStructure` turns a program (or its analysis) into a
+ * `Structure` with a node per site, its role (latent, observed, factor, parameter, deterministic), its dependencies as
+ * edges and its plates as boxes, so any program draws like a Bayesian network.
+ */
+
 import { type NodeRole, type Structure, type StructureGroup, type StructureNode, structure } from '../scene/index.ts'
 import { analyse, type ProgramAnalysis, type SiteRole } from './analysis.ts'
 import type { Model } from './primitives.ts'

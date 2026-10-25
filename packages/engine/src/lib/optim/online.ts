@@ -1,3 +1,9 @@
+/**
+ * Online convex optimisation, where a learner plays a point each round, then sees that round's loss: online gradient
+ * descent, follow the regularised leader, Hedge (exponential weights over experts), exponentiated gradient and the
+ * online Newton step, with a traced runner that records the regret against the best fixed point in hindsight.
+ */
+
 import { valueAndGrad } from '../autodiff/index.ts'
 import { type Json, minOf, WhiteboxError } from '../base/index.ts'
 import { daxpy, ddot, dgemv, dnrm2, dscal, eigh } from '../numerics/linalg/index.ts'

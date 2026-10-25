@@ -1,3 +1,10 @@
+/**
+ * Fractional Brownian motion and long-range dependence, where the Hurst exponent H sets how strongly increments are
+ * correlated over long lags: fBm covariances, exact simulation of fractional Gaussian noise by the Davies-Harte
+ * circulant embedding, and estimators of H from data by rescaled range (R/S), detrended fluctuation analysis and
+ * aggregated variance (as nolds).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fft } from '../numerics/fourier/index.ts'
 import { choleskyJitter } from '../numerics/linalg/index.ts'

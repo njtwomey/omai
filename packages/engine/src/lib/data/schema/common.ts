@@ -1,3 +1,9 @@
+/**
+ * What every dataset shares: its kind (one schema per task), its metadata and provenance, and the recipe stamp that
+ * records how it was produced. Also the `Dataset` union of all schemas and the helpers that find a dataset's per-row
+ * fields and count its rows, which splitting, shuffling and batching build on.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { isTensor, type Tensor } from '../../tensor/index.ts'
 import type { ComparisonData } from './comparisons.ts'

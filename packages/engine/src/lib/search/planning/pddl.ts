@@ -1,3 +1,9 @@
+/**
+ * A reader for PDDL, the standard language of planning problems, in its STRIPS subset (typing and equality):
+ * s-expression parsing, domain and problem parsers, and grounding of action schemas over typed objects into a STRIPS
+ * problem the planners can solve.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type StripsAction, type StripsProblem, strips } from './strips.ts'
 

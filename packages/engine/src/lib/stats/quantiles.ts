@@ -1,3 +1,9 @@
+/**
+ * Order statistics of a sample: quantiles by any of the nine Hyndman-Fan definitions (numpy.quantile), the median, the
+ * interquartile range, the percentile rank of a score, the empirical CDF with Greenwood intervals and the median
+ * absolute deviation, as numpy and scipy.stats.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { asTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { normPpf, sample, sortedCopy, vec } from './_util.ts'

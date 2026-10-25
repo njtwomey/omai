@@ -1,3 +1,9 @@
+/**
+ * The confusion matrix as an exposition record: how many rows of each true class a classifier predicted as each class
+ * on a named split, optionally at recorded steps of training so a view can play it. `confusionCounts` tallies the
+ * counts from predictions and labels.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 

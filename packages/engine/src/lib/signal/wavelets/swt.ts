@@ -1,3 +1,8 @@
+/**
+ * The stationary (undecimated) wavelet transform and its inverse (pywt.swt, iswt): the DWT without downsampling,
+ * upsampling the filters instead, so every level keeps the signal's length and the transform is shift-invariant.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { add, matmul, mul, reshape, sliceAxis, type TensorLike, take, type Value } from '../../tensor/index.ts'
 import { constant, float, indexTensor, rowsOf } from '../_shared.ts'

@@ -1,3 +1,9 @@
+/**
+ * The reverse-mode trace: a tape that records each primitive applied inside the trace, and `backward`, the sweep that
+ * propagates output cotangents back to the leaves through each primitive's `vjp` rule. `grad`, `vjp` and `jacrev` build
+ * on it.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   add,

@@ -1,3 +1,10 @@
+/**
+ * Linear-Gaussian latent variable models: probabilistic PCA (Tipping and Bishop, 1999) in closed form from PCA, and
+ * factor analysis (as in scikit-learn), where each feature has its own noise variance, fitted by a traced SVD-based
+ * maximum-likelihood iteration and optionally rotated by varimax or quartimax. Both give posterior factor means and log
+ * likelihoods.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {

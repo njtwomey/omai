@@ -1,3 +1,9 @@
+/**
+ * Readers for the file formats datasets arrive in: gzip, tar and zip archives, delimited text (RFC 4180 CSV with quoted
+ * fields) and NumPy `.npy` arrays. They work on raw bytes with platform APIs only, so remote datasets can be unpacked
+ * and parsed in the browser or in Node.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 async function streamThrough(bytes: Uint8Array, format: 'gzip' | 'deflate-raw'): Promise<Uint8Array> {

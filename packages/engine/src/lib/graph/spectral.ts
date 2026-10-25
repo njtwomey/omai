@@ -1,3 +1,10 @@
+/**
+ * Graph signal processing and spectral methods: treating values on nodes as signals and analysing them in the
+ * eigenbasis of the graph Laplacian. The graph Fourier transform and spectral filters, the heat kernel and diffusion,
+ * Chebyshev polynomial filters without eigendecomposition, spectral graph wavelets, message-passing propagation,
+ * Dirichlet energy, the Fiedler vector and spectral embeddings (dense or by traced subspace iteration).
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { chebyshevCoefficients } from '../numerics/approximation/index.ts'
 import { ddot, dnrm2, eigh, qr } from '../numerics/linalg/index.ts'

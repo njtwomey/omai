@@ -1,3 +1,9 @@
+/**
+ * Differential-algebraic equations: systems mixing differential equations with algebraic constraints. Semi-explicit
+ * index-1 DAEs are solved by Radau IIA or BDF with a singular mass matrix, after making the initial algebraic variables
+ * consistent by Newton's method.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fsolve } from '../../numerics/roots/index.ts'
 import { concat, reshape, sliceAxis, stack, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'

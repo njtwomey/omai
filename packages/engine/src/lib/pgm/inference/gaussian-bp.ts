@@ -1,3 +1,10 @@
+/**
+ * Gaussian belief propagation in information form (Weiss and Freeman 2001) on Gaussian Markov random fields and
+ * linear-Gaussian networks: messages are Gaussian, the means it converges to are exact, and variances are exact on
+ * trees. A traced algorithm, the function returning posterior means and variances, and the walk-summability test that
+ * guarantees convergence.
+ */
+
 import { type Json, maxOf, WhiteboxError } from '../../base/index.ts'
 import { eigvalsh } from '../../numerics/linalg/index.ts'
 import { toArray } from '../../tensor/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * The window functions outside the cosine-sum family, scipy.signal.windows style: triangular (Bartlett), Kaiser and
+ * Kaiser-Bessel-derived, Gaussian and generalised Gaussian, Tukey (tapered cosine), sine, Parzen, Bohman,
+ * Bartlett-Hann, exponential and Lanczos.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { i0 } from '../../numerics/special/index.ts'
 import { type Tensor, toFlat } from '../../tensor/index.ts'

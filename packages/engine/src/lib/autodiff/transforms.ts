@@ -1,3 +1,9 @@
+/**
+ * The JAX-style derivative transforms: `vjp`, `grad`, `valueAndGrad` and `gradAndAux` in reverse mode, `jvp` and
+ * `linearize` in forward mode, Jacobians by either mode (`jacrev`, `jacfwd`, `jacobian`), and Hessians with
+ * Hessian-vector and vector-Hessian products that never form the full matrix.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   asTensor,

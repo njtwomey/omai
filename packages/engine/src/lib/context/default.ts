@@ -1,3 +1,8 @@
+/**
+ * The process-wide default context (seed 0 unless replaced), used when a function is given neither a key nor a context;
+ * `setDefaultContext` replaces it, typically once at application start to set the global seed.
+ */
+
 import { type Context, createContext } from './context.ts'
 
 // The one documented piece of module state in whitebox-js: the context that convenience layers (class wrappers,

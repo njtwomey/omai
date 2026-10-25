@@ -1,3 +1,8 @@
+/**
+ * The Philox4x32-10 block function (Salmon et al., 2011): a keyed bijection from a 128-bit counter to 128 random bits,
+ * computed exactly in float64 arithmetic. It is the counter-based generator underneath every key in whitebox-js.
+ */
+
 const M0 = 0xd2511f53
 const M1 = 0xcd9e8d57
 const W0 = 0x9e3779b9

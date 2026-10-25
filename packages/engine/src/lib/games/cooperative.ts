@@ -1,3 +1,11 @@
+/**
+ * Cooperative (transferable-utility) games, where coalitions of players earn a joint worth to be shared. Building games
+ * from a characteristic function, with classic examples (weighted voting, glove, bankruptcy, unanimity), and the ways
+ * of dividing the worth: the exact Shapley value (each player's average marginal contribution over all orders of
+ * arrival), its permutation-sampling estimate, the pairwise Shapley interaction index and the Banzhaf index, plus tests
+ * for superadditivity and convexity.
+ */
+
 import { meanOf, popcount, varianceOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../random/index.ts'
 import { toFlat } from '../tensor/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Gibbs sampling on probabilistic programs, which updates one site at a time from its conditional distribution given
+ * the rest: exact conditionals for discrete sites by enumeration, conjugate updates where available, and collapsed
+ * updates for Dirichlet and beta sites. A traced `gibbsAlgorithm`, the `gibbs` function and the engine for the planner.
+ */
+
 import { type Json, logSumExpOf, WhiteboxError } from '../../base/index.ts'
 import { bijectors, CONJUGATES, type ConjugatePair, dirichlet } from '../../dists/index.ts'
 import { categorical as drawCategorical, foldIn, type Key } from '../../random/index.ts'

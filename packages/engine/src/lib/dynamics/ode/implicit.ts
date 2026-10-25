@@ -1,3 +1,10 @@
+/**
+ * Implicit solvers for stiff ODEs, where explicit methods would need tiny steps for stability: ports of scipy's Radau
+ * IIA (order 5) and variable-order BDF, fixed-step diagonally implicit Runge-Kutta methods (backward Euler, trapezoid,
+ * implicit midpoint, SDIRK), the Rosenbrock method of MATLAB's ode23s, and a stiffness report from the Jacobian's
+ * eigenvalues.
+ */
+
 import { jacfwd } from '../../autodiff/index.ts'
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import { eigvals, type LuFactorisation, solve } from '../../numerics/linalg/index.ts'

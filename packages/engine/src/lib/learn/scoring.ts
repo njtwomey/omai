@@ -1,3 +1,10 @@
+/**
+ * Scorers, scikit-learn style: functions of a fitted estimator and data where higher is better, with losses negated.
+ * `makeScorer` turns a metric into a scorer that calls the right verb (predictions, probabilities or decision scores),
+ * `getScorer` looks one up by scikit-learn name, and helpers normalise scoring options for cross-validation and
+ * searches.
+ */
+
 import { type MetricResult, WhiteboxError } from '../base/index.ts'
 import {
   accuracyScore,

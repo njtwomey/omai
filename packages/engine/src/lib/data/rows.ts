@@ -1,3 +1,9 @@
+/**
+ * Row operations on any dataset kind: taking and shuffling rows (every per-row field together), train-test and
+ * three-way splits as in scikit-learn's `train_test_split`, stratified splits that keep class proportions, bootstrap
+ * resamples with their out-of-bag rows, and stacking datasets of the same kind.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, permutation, randint } from '../random/index.ts'
 import { isTensor, type Tensor, toFlat, type Value } from '../tensor/index.ts'

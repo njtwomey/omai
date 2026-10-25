@@ -1,3 +1,9 @@
+/**
+ * Queueing theory: steady-state measures of the M/M/1, M/M/c and M/G/1 queues (the last by the Pollaczek-Khinchine
+ * formula), the Erlang B and C formulas for blocking and waiting, and simulation of a first-in first-out G/G/c queue as
+ * a traced algorithm, with Little's law L = lambda W checked on the result.
+ */
+
 import { heap, WhiteboxError } from '../base/index.ts'
 import { type Distribution, exponential } from '../dists/index.ts'
 import { foldIn, type Key } from '../random/index.ts'

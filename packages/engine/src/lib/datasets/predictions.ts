@@ -1,3 +1,9 @@
+/**
+ * Synthetic model outputs and outcomes with known structure: predicted probabilities with a chosen miscalibration
+ * (over- or under-confidence, bias) for calibration metrics and recalibration, and survival data with known hazards
+ * (Weibull or exponential proportional hazards, log-normal accelerated failure time) under censoring.
+ */
+
 import { softmaxOf } from '../base/index.ts'
 import { type ClassificationData, type DatasetGenerator, type RegressionData, xy, xyClasses } from '../data/index.ts'
 import { ndtr } from '../numerics/special/index.ts'

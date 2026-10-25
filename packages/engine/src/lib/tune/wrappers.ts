@@ -1,3 +1,9 @@
+/**
+ * scikit-learn's search estimators built on studies: `gridSearchCv`, `randomizedSearchCv` and the successive-halving
+ * `halvingGridSearchCv` and `halvingRandomSearchCv`, each a `learn` estimator whose fit runs the search, records
+ * `cv_results_` and refits the best model, so searches nest inside cross-validation.
+ */
+
 import { type Decoded, type Encodable, fromJson, type Json, toJson, WhiteboxError } from '../base/index.ts'
 import {
   defineEstimator,

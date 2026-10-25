@@ -1,5 +1,9 @@
-// Association rules from frequent itemsets, with support, confidence, lift, leverage and conviction (mlxtend's
-// association_rules).
+/**
+ * Association rules from frequent itemsets, as in mlxtend's `association_rules`: every rule "X implies Y" between
+ * disjoint frequent itemsets whose confidence passes a threshold, with its support, confidence, lift, leverage and
+ * conviction, the measures of how much more often Y appears with X than without it.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type CoefficientTable, coefficientTable, type Explained } from '../../lib/exposition/index.ts'
 import type { Itemset } from './itemsets.ts'

@@ -1,3 +1,9 @@
+/**
+ * Exposition records for linear models: regularisation paths of coefficients along a penalty grid (lasso, ridge,
+ * elastic net, GAM smoothness), coefficient tables with standard errors and intervals in the manner of a statsmodels
+ * summary, and cross-validated scores along one parameter for choosing it.
+ */
+
 import { rowsOf, sameLength } from './_check.ts'
 
 /** Coefficients along a penalty grid (lasso, ridge, elastic net, GAM smoothness sweeps). */

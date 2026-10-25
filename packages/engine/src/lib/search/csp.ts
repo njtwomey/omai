@@ -1,3 +1,10 @@
+/**
+ * Constraint satisfaction problems (AIMA chapter 6): variables with domains and constraints of any arity, with helpers
+ * such as all-different. Arc consistency by AC-3 (generalised to n-ary constraints), backtracking search with MRV,
+ * degree and least-constraining-value heuristics plus forward checking or maintained arc consistency, min-conflicts
+ * local search, and a CSP as an incremental search problem, all traceable.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { Generator } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'

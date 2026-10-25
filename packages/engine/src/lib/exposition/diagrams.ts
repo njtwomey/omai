@@ -1,3 +1,8 @@
+/**
+ * The exposition record that carries a structure as a diagram with a run: a network's architecture, a computation graph
+ * or a graphical model, as a scene graph, with optional steps that highlight active nodes and edges and add badges.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Structure, StructureOverlay } from '../scene/index.ts'
 

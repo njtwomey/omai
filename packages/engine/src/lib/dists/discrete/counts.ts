@@ -1,3 +1,9 @@
+/**
+ * Count distributions on the non-negative integers: Poisson, geometric, negative binomial and hypergeometric (as
+ * scipy.stats), and zero-inflated versions of a count distribution, which add structural zeros, with the zero-inflated
+ * Poisson and negative binomial ready-made.
+ */
+
 import {
   betainc,
   expit,

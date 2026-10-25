@@ -1,3 +1,11 @@
+/**
+ * Planning agents that act from a model rather than learning from reward: dynamic programming (value or policy
+ * iteration solved once, or a few sweeps at a time), Monte Carlo tree search over an environment used as its own model,
+ * and players of two-player zero-sum games. For games: MCTS with negamax backups, alpha-beta minimax search,
+ * AlphaZero-style self-play training of a policy and value network that guides PUCT search, and a random legal-move
+ * baseline.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { crossEntropy, mse } from '../../../lib/losses/index.ts'
 import { mlp } from '../../../lib/nn/index.ts'

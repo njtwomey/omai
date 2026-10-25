@@ -1,4 +1,9 @@
-// Planning domains for whitebox-engine/search's STRIPS planners: the blocks world.
+/**
+ * Planning domains for the STRIPS planners of `whitebox-engine/search`: the blocks world with a gripper (pick up, put
+ * down, stack, unstack), the Sussman anomaly, random blocks problems, and `towersOf` for reading a state back as towers
+ * to draw.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type Key, permutation, split, uniform } from '../../lib/random/index.ts'
 import { type PlanState, type StripsAction, type StripsProblem, strips } from '../../lib/search/index.ts'

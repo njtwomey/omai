@@ -1,3 +1,11 @@
+/**
+ * Continuous-control environments with analytic dynamics, in the spirit of the DeepMind control suite and gymnasium's
+ * MuJoCo tasks: a point mass reaching a target, a two-link planar reacher, the double integrator (the one-dimensional
+ * LQR benchmark), a planar quadrotor flying to a goal and a cart double pendulum. Each exposes its parameters,
+ * equations of motion, integration step and, where useful, its energy, so models and controllers can be checked against
+ * it.
+ */
+
 import { clamp } from '../../../lib/base/index.ts'
 import { type Key, uniform } from '../../../lib/random/index.ts'
 import type { Env, EnvDefinition } from '../../../lib/rl/index.ts'

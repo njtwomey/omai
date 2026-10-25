@@ -1,3 +1,9 @@
+/**
+ * Tests on time series, statsmodels style: the Ljung-Box and Box-Pierce tests of autocorrelation, the Durbin-Watson
+ * statistic, the augmented Dickey-Fuller unit-root test with MacKinnon's p-values and critical values, the KPSS test of
+ * stationarity, and the Wald-Wolfowitz runs test of randomness.
+ */
+
 import { meanOf, type TestResult, WhiteboxError } from '../../base/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { ols } from '../_linear.ts'

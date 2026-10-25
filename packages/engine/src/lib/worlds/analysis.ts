@@ -1,3 +1,9 @@
+/**
+ * Analysis of a world's cell graph: reachable cells and connected regions, distance fields and shortest paths (by moves
+ * or terrain cost), dead ends, choke points and bridges, distances between cells under the usual grid metrics with
+ * heuristics for A*, and conversion of the cell graph to edges that `whitebox-engine/graph` can build on.
+ */
+
 import { heap, WhiteboxError } from '../base/index.ts'
 import { axial } from './_topology.ts'
 import {

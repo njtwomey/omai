@@ -1,3 +1,8 @@
+/**
+ * Phonetic encodings, which map words that sound alike to the same code for fuzzy name matching: American Soundex and
+ * Metaphone, as jellyfish computes them.
+ */
+
 const SOUNDEX_CODES: Readonly<Record<string, string>> = {
   B: '1',
   F: '1',

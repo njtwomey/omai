@@ -1,3 +1,9 @@
+/**
+ * State-space models: hidden Markov models with categorical or Gaussian emissions (hmmlearn style), with their chain
+ * potentials, sampling and conversion to a dynamic Bayes network, and linear dynamical systems (linear-Gaussian
+ * state-space models), with unrolling to a linear-Gaussian network, sampling and the exact smoothing posterior.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
 import { checkSquare, choleskyLower, dotVec, logdetPositive, type Matrix, matVec, solveVector, sub } from '../_dense.ts'

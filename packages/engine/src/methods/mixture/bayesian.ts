@@ -1,3 +1,9 @@
+/**
+ * The Bayesian Gaussian mixture by variational inference (as in scikit-learn's `BayesianGaussianMixture`): a Dirichlet
+ * or stick-breaking Dirichlet-process prior on the weights lets the data switch off components it does not need, with
+ * Normal-Wishart posteriors on each component, fitted by coordinate-ascent updates traced step by step.
+ */
+
 import { mixtureSteps } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,

@@ -1,3 +1,9 @@
+/**
+ * Generators for causal inference with known answers: random linear structural causal models over a random DAG (the
+ * causal-discovery benchmark), observational treatment-effect data with confounding and both potential outcomes, and
+ * instrumental-variable data with an unobserved confounder.
+ */
+
 import { type DatasetGenerator, type RegressionData, type Truth, xy } from '../data/index.ts'
 import { foldIn, type Key, laplace, normal, permutation, uniform } from '../random/index.ts'
 import { structure } from '../scene/index.ts'

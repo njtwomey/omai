@@ -1,3 +1,9 @@
+/**
+ * Random projections (as in scikit-learn's `random_projection`): Gaussian and sparse random matrices that reduce
+ * dimension while approximately preserving pairwise distances, the Johnson-Lindenstrauss guarantee. The fit reports the
+ * distortion, the ratios of projected to original distances on training pairs.
+ */
+
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {
   defineExplainedEstimator,

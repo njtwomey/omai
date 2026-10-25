@@ -1,3 +1,9 @@
+/**
+ * Junction-tree propagation, exact inference by passing messages between cliques of a triangulated graph: collect
+ * towards a root then distribute back, so clique and separator beliefs agree. A traced algorithm, calibration, queries
+ * over any set of variables, every marginal at once, and the most probable explanation by max-product propagation.
+ */
+
 import type { Json } from '../../base/index.ts'
 import { WhiteboxError } from '../../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'

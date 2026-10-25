@@ -1,3 +1,9 @@
+/**
+ * Running a parameter search: `tune` runs a study of an objective over a space for a number of trials with a sampler,
+ * an optional pruner and multi-fidelity schedule, traced as a run whose steps are trials (Optuna's `study.optimize`,
+ * Ray Tune's `Tuner.fit`), and `studyAlgorithm` exposes the same loop as an `Algorithm`.
+ */
+
 import { type Encodable, fromJson, type Json, toJson, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Space, SpaceValue } from '../space/index.ts'

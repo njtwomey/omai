@@ -1,3 +1,9 @@
+/**
+ * Return and advantage estimators, the targets that value-based and policy-gradient methods learn from: discounted
+ * returns, one-step TD targets and errors, n-step and lambda returns, generalised advantage estimation (GAE), and the
+ * off-policy corrections V-trace (IMPALA) and Retrace.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /** A per-step flag as a number (0 or 1) or a boolean. */

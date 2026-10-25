@@ -1,3 +1,9 @@
+/**
+ * The multidimensional matrix profile (mSTAMP and mSTOMP, as stumpy's `mstump`): for multichannel series, the distance
+ * from each window to its best match using its k most similar dimensions, for every k. Also the subspace a motif spans
+ * and minimum description length for choosing how many dimensions a motif really has.
+ */
+
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { ndtri } from '../../../lib/numerics/special/index.ts'
 import {

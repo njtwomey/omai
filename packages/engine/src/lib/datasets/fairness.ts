@@ -1,7 +1,7 @@
 /**
- * Datasets with protected attributes, for fairness audits and mitigation: a credit generator with controllable label
- * bias, proxy strength and base-rate gap (biasedCredit), and small vendored public tables (germanCredit,
- * titanicSurvival).
+ * Datasets for fairness audits and mitigation: synthetic credit decisions with a protected group and controllable bias
+ * (representation imbalance, a real base-rate gap, historical label bias, noisier measurements of the minority and a
+ * proxy feature), the Statlog German credit data, and Titanic survival with sex and age as protected attributes.
  */
 
 import { type ClassificationData, type DatasetGenerator, type Knobs, xyClasses } from '../data/index.ts'

@@ -1,3 +1,11 @@
+/**
+ * Multi-armed bandit agents: learners that repeatedly pick one of several arms with unknown reward distributions and
+ * must balance trying arms against exploiting the best so far. Epsilon-greedy, UCB1, KL-UCB, Thompson sampling for
+ * Bernoulli and Gaussian arms, EXP3 for adversarial rewards and the gradient bandit, the contextual linear bandits
+ * `linUcb` and `linearThompson`, and `runBandit`, which runs an agent and measures its cumulative regret against the
+ * environment's oracle.
+ */
+
 import { argmaxOf, type Json, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { cholesky, choSolve, ddot, dnrm2, solveTriangular } from '../../../lib/numerics/linalg/index.ts'
 import { categorical, foldIn, gammaVariates, type Key, key as makeKey, normal } from '../../../lib/random/index.ts'

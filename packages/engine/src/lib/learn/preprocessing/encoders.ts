@@ -1,3 +1,9 @@
+/**
+ * Encoders for categorical data, scikit-learn style: one-hot and ordinal encoders with handling of unknown and
+ * infrequent categories, label encoding and binarisation of targets (including multi-label sets), and the target
+ * encoder, which replaces each category by a shrunk mean of the target over its rows.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { choice, dict, real, type Space } from '../../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'

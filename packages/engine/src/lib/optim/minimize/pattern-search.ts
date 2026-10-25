@@ -1,3 +1,9 @@
+/**
+ * Pattern (direct) search methods, which need only function values: Hooke-Jeeves exploratory and pattern moves, and
+ * compass search, the simplest generalised pattern search, which polls a mesh along a set of directions and shrinks it
+ * when nothing improves. Both are traced algorithms.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

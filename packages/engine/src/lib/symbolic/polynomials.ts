@@ -1,3 +1,9 @@
+/**
+ * Polynomials over the rationals in one or more generators: conversion to and from expressions, degrees, coefficients,
+ * division, greatest common divisors and least common multiples, exact roots in radicals, real-root counting and
+ * isolation by Sturm sequences, resultants and discriminants, following SymPy's `Poly`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import { HALF, I, MINUS_ONE, makeAdd, makeMul, makePow, numFromRational, ONE, PI, ratOf, ZERO } from './_canon.ts'

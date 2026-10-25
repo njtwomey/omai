@@ -1,3 +1,9 @@
+/**
+ * Equation solving, as SymPy's `solve`: one equation in one unknown (polynomial equations through exact roots, rational
+ * equations, products, polynomials in one function of x such as `exp(x)`, and simple transcendental equations, giving
+ * principal solutions), with steps, and systems of linear equations by Gauss-Jordan elimination in exact arithmetic.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import {

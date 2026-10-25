@@ -1,3 +1,10 @@
+/**
+ * First-order methods for nonsmooth and structured convex problems: the projected subgradient method with the classic
+ * step-size rules, mirror descent with entropic and Euclidean mirror maps (exponentiated gradient on the simplex), and
+ * dual ascent, the method of multipliers and dual decomposition for equality-constrained and separable problems, each a
+ * traced algorithm.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dgemv, dnrm2 } from '../../numerics/linalg/index.ts'
 import {

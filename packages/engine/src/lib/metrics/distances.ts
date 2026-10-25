@@ -1,3 +1,8 @@
+/**
+ * Distances and similarities as metrics: Minkowski, cosine and Mahalanobis between vectors (scipy.spatial.distance
+ * style), the Procrustes disparity between configurations, and the Hausdorff and Chamfer distances between point sets.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { cdist, metricFunction, procrustes } from '../numerics/geometry/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'

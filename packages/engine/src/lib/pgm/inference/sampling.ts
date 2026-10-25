@@ -1,3 +1,9 @@
+/**
+ * Approximate inference by sampling, pgmpy style: rejection sampling and likelihood weighting for Bayes networks, Gibbs
+ * sampling on the factor graph of any discrete model (as a traced algorithm), effective sample size of importance
+ * weights, and `approximateQuery` for posteriors estimated from samples.
+ */
+
 import { type Json, logSumExpOf, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'

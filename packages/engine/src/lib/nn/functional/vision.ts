@@ -1,3 +1,9 @@
+/**
+ * Image-shaped tensor operations, torch.nn.functional style: `interpolate` for resizing (nearest, linear, bicubic and
+ * area), pixel shuffle and unshuffle for sub-pixel upsampling, `pad` with PyTorch's width order and modes, and ViT's
+ * `patchEmbedding`, which cuts images into patches and embeds each one as a token.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { padArray } from '../../numerics/convolution/index.ts'
 import {

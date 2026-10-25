@@ -1,3 +1,9 @@
+/**
+ * Small poker games used as benchmarks for imperfect-information solvers, with OpenSpiel's rules and information
+ * states: Kuhn poker (three cards, one betting round) with its known family of Nash equilibria, and Leduc poker (six
+ * cards, two betting rounds and a public card).
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { CHANCE, TERMINAL } from './_tree.ts'
 import type { ExtensiveGame, TabularPolicy } from './tree.ts'

@@ -1,3 +1,10 @@
+/**
+ * Multi-armed bandits, the simplest reinforcement learning problem: repeatedly choose among arms with unknown reward
+ * distributions, balancing exploration against exploitation. Bandits as environments with an oracle for cumulative
+ * pseudo-regret, KL divergences of the usual reward families, the UCB1 and KL-UCB indices, and the Lai-Robbins lower
+ * bound on regret.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import type { Env, EnvOracle } from './env.ts'

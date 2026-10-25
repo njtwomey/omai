@@ -1,3 +1,9 @@
+/**
+ * Clustering datasets with known clusters: concentric rings, anisotropic and unequal-variance blobs (the cases of
+ * scikit-learn's k-means assumptions example) and the Old Faithful geyser eruptions, a classic two-cluster real
+ * dataset.
+ */
+
 import {
   type ClassificationData,
   type DatasetGenerator,

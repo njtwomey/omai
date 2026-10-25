@@ -1,3 +1,9 @@
+/**
+ * Image feature detectors and descriptors, scikit-image style: the structure tensor and the Harris and Shi-Tomasi
+ * corner responses, local peak finding, the Canny edge detector, local binary patterns (texture codes), histograms of
+ * oriented gradients (HOG), and the straight-line and circular Hough transforms that vote for shapes.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { float } from '../_shared.ts'

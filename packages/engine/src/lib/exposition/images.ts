@@ -1,3 +1,9 @@
+/**
+ * The exposition record for small grey images at recorded steps of training, in named groups drawn as rows of a mosaic:
+ * a generative model's data, its reconstructions and its samples from fixed noise, so a view can play them as training
+ * goes on.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 

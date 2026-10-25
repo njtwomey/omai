@@ -1,3 +1,8 @@
+/**
+ * String hash functions shared by the text tools: UTF-8 encoding, MurmurHash3 (32-bit, matching scikit-learn's
+ * `murmurhash3_32` used by its hashing vectoriser) and FNV-1a.
+ */
+
 let encoder: TextEncoder | undefined
 
 /**

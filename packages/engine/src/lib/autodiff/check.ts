@@ -1,3 +1,9 @@
+/**
+ * The conformance checks for derivative rules: central finite-difference gradients, the dot-product (adjoint) test that
+ * forward and reverse mode agree, `gradCheck` for a scalar function, and `checkPrimitive`, the test every primitive in
+ * whitebox-js passes (finite-difference vjp and jvp, their consistency, and no mutation of inputs).
+ */
+
 import { maxOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../random/index.ts'
 import {

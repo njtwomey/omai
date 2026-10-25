@@ -1,3 +1,8 @@
+/**
+ * Colours for scenes: the light and dark palettes that give theme tokens (`fg`, `bg`, `accent`, `tab0` to `tab9` and
+ * the rest) their values, and `parsePaint`, which resolves a token or CSS colour string to RGBA.
+ */
+
 import { clamp, WhiteboxError } from '../base/index.ts'
 import type { Paint, ThemeToken } from './types.ts'
 

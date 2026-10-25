@@ -1,3 +1,10 @@
+/**
+ * Group-equivariant convolutions for the rotation group p4 (Cohen and Welling 2016): layers whose outputs rotate
+ * predictably when the input image is rotated by quarter turns. The lifting and group convolutions, orientation
+ * pooling, the group action on feature maps, module wrappers, and `equivarianceError` and `invarianceError` for
+ * checking the property numerically.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import {

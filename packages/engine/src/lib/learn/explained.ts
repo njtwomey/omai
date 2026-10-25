@@ -1,3 +1,10 @@
+/**
+ * Explained estimators: estimators whose `fit` also returns exposition records, the plain data views and sentences use
+ * to show how a model was learnt (the exposition contract). `defineExplainedEstimator` and its class wrapper, plus the
+ * helpers methods share for building records: decision surfaces over two features, staged and geometric step schedules,
+ * collecting state summaries from an algorithm, and feature and class names.
+ */
+
 import { type Json, linspaceNumbers, WhiteboxError } from '../base/index.ts'
 import { resolveKey, resolvePolicy, resolveTracer } from '../context/index.ts'
 import {

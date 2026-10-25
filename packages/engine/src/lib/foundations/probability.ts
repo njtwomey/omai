@@ -1,3 +1,10 @@
+/**
+ * Elementary probability on finite spaces: probability spaces, products and repetitions, events and conditional
+ * probability, Bayes' rule over hypotheses and for diagnostic tests (the base-rate fallacy), independence tests, random
+ * variables with their distributions, expectations, variances and covariances, and distributions of transformed
+ * variables and of sums by convolution (such as the total of n dice).
+ */
+
 import { jvp } from '../autodiff/index.ts'
 import { kahanSum, WhiteboxError } from '../base/index.ts'
 import { convolve, fftConvolve } from '../numerics/convolution/index.ts'

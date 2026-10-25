@@ -1,7 +1,11 @@
-// Exploration by intrinsic rewards: a wrapper that adds a novelty bonus to every transition before any agent learns
-// from it, and the bonus modules (visit counts, random network distillation, the intrinsic curiosity module). Each
-// module keeps what it learns (counts, predictor parameters and optimiser state, running statistics, a small replay of
-// recent experience) in its own state, which the wrapper keeps beside the inner agent's.
+/**
+ * Exploration by intrinsic rewards: `intrinsicReward` wraps any agent so that it learns from the environment's reward
+ * plus a novelty bonus, and bonus modules supply that bonus. Visit counts (MBIE-EB, with SimHash codes for vector
+ * observations), random network distillation (the error of predicting a fixed random network's output) and the
+ * intrinsic curiosity module (the error of a learnt forward model); each module keeps what it learns in its own state
+ * beside the inner agent's.
+ */
+
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { crossEntropy, mse } from '../../../lib/losses/index.ts'
 import { mlp } from '../../../lib/nn/index.ts'

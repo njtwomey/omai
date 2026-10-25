@@ -1,3 +1,9 @@
+/**
+ * Point-process generators with known intensities: homogeneous and inhomogeneous Poisson processes (drawn by
+ * Lewis-Shedler thinning), self-exciting Hawkes processes, univariate and multivariate (each event's parent is kept in
+ * the truth), and spatial Poisson processes on a rectangle.
+ */
+
 import { type DatasetGenerator, type EventData, events, type Generated } from '../data/index.ts'
 import { exponential, foldIn, type Key, poisson, uniform } from '../random/index.ts'
 import { choice, dict, real } from '../space/index.ts'

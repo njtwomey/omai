@@ -1,3 +1,10 @@
+/**
+ * Explaining a fitted model's predictions by feature attributions: `explainPrediction` says how much each feature moved
+ * one prediction from the expected value, and `explainDataset` does it for many rows for global pictures (beeswarm
+ * summaries, mean |SHAP| bars, dependence plots). It picks Tree SHAP for trees and their ensembles, or Kernel SHAP,
+ * exact or sampling Shapley values, LIME and gradient methods from the core.
+ */
+
 import { meanOf, varianceOf, WhiteboxError } from '../../lib/base/index.ts'
 import * as explain from '../../lib/explain/index.ts'
 import { curveSet, type Explained, type Exposition, featureAttributions } from '../../lib/exposition/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Training objectives of generative models: the GAN discriminator and generator losses (minimax, non-saturating,
+ * Wasserstein, hinge and least squares) with the WGAN-GP and R1 gradient penalties, the VAE's KL terms, reconstruction
+ * likelihoods, negative ELBO and IWAE bound, denoising score matching, the diffusion loss with noise, clean-sample or
+ * velocity targets, and conditional flow matching.
+ */
+
 import { grad } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'

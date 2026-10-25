@@ -1,3 +1,10 @@
+/**
+ * Brownian motion, the continuous random walk at the heart of stochastic calculus: exact simulation of Brownian
+ * increments, motion with drift and Brownian bridges (pinned at both ends), the Levy midpoint construction, realised
+ * quadratic variation and covariation, and the reflection principle with the closed-form laws of the running maximum
+ * and of first-passage times.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Distribution, inverseGamma, inverseGaussian } from '../dists/index.ts'
 import { cholesky } from '../numerics/linalg/index.ts'

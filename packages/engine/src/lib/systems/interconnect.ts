@@ -1,3 +1,9 @@
+/**
+ * Block-diagram algebra for linear systems, python-control style: systems in series, in parallel and in a feedback
+ * loop, stacking systems side by side with `append`, and wiring their channels with `connect`, so that a closed-loop
+ * system can be built from its parts.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { convolve } from '../numerics/convolution/index.ts'
 import { blockDiag, solve } from '../numerics/linalg/index.ts'

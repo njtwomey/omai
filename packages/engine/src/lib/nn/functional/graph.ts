@@ -1,3 +1,9 @@
+/**
+ * Graph neural network layers as functions, PyTorch Geometric style: edge lists and message passing (each node
+ * aggregates messages from its neighbours), edge softmax, self loops and GCN normalisation, the GCN, graph attention
+ * (GAT), GraphSAGE and GIN convolutions, and global and top-k graph pooling.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   add,

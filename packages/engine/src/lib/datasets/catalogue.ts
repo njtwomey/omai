@@ -1,3 +1,9 @@
+/**
+ * The catalogue of every dataset generator and remote dataset in this domain, by name. It is where `makeFromRecipe`
+ * looks generators up, where `load` finds pinned remote assets, and what documentation and dataset controls are built
+ * from.
+ */
+
 import type { DatasetGenerator, DatasetRef } from '../data/index.ts'
 import { instrumentalVariables, linearScm, treatmentEffects } from './causal.ts'
 import { changepointSeries } from './changepoints.ts'

@@ -1,3 +1,10 @@
+/**
+ * Cross-validation, scikit-learn style: `crossValidate` and `crossValScore` fit an estimator on each fold's training
+ * rows and score it on the held-out rows, `crossValPredict` gives out-of-fold predictions, learning and validation
+ * curves show scores against training size or a hyperparameter, and `permutationTestScore` tests whether a score beats
+ * chance.
+ */
+
 import { meanOf, varianceOf, WhiteboxError } from '../../base/index.ts'
 import { type Explained, learningCurve as learningCurveRecord } from '../../exposition/index.ts'
 import { foldIn, type Key, permutation } from '../../random/index.ts'

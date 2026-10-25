@@ -1,3 +1,9 @@
+/**
+ * Turning a continuous-time system into a discrete-time one for a given sample time (scipy.signal.cont2discrete,
+ * python-control sample_system): zero- and first-order hold, the bilinear (Tustin) and other generalised bilinear
+ * transforms, impulse invariance and pole-zero matching, plus a differentiable discretisation of state-space matrices.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { expm, solve } from '../numerics/linalg/index.ts'

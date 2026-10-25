@@ -1,3 +1,9 @@
+/**
+ * Frequency-domain analysis of linear systems: frequency responses and automatic frequency grids (scipy.signal
+ * freqresp), evaluation at a point and the DC gain, Bode magnitude and phase, Nichols chart data, and the Nyquist curve
+ * with its count of encirclements of -1, which decides closed-loop stability (python-control style).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { eigvals, solve } from '../numerics/linalg/index.ts'

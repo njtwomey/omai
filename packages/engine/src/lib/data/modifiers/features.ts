@@ -1,3 +1,10 @@
+/**
+ * Modifiers that change the features of a dataset while keeping its truth exact: missing values under Rubin's
+ * mechanisms (MCAR, MAR, MNAR), outlier contamination, independent nuisance features, invertible elementwise transforms
+ * (with the log-Jacobian added to the density) and linear mixing to a known correlation structure. Each comes as a
+ * function and as a recipe modifier.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, normal, permutation, uniform } from '../../random/index.ts'
 import { choice, dict, int, real } from '../../space/index.ts'

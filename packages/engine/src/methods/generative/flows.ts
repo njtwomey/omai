@@ -1,5 +1,8 @@
-// Normalising flows on tabular (mostly two-dimensional) data. TODO: planar and radial flows, MAF and a small Glow
-// (actnorm, invertible 1 by 1 convolutions) beside RealNVP.
+/**
+ * Normalising flows on tabular, mostly two-dimensional, data: RealNVP (Dinh, Sohl-Dickstein and Bengio, 2017), a stack
+ * of affine coupling layers that each transform half the features using the other half, so the map stays invertible
+ * with an exact log density. Trained by maximum likelihood, recording how samples and the density change.
+ */
 
 import { valueAndGrad } from '../../lib/autodiff/index.ts'
 import { WhiteboxError } from '../../lib/base/index.ts'

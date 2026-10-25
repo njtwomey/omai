@@ -1,3 +1,9 @@
+/**
+ * CMA-ES, the covariance matrix adaptation evolution strategy (Hansen): a derivative-free global optimiser that samples
+ * candidates from a Gaussian and adapts its mean, step size and covariance towards the best of them, as a traced
+ * algorithm with a `cmaes` front end.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { eigh } from '../../numerics/linalg/index.ts'
 import { Generator } from '../../random/index.ts'

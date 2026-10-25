@@ -1,3 +1,9 @@
+/**
+ * Logit processors, the functions that reshape next-token logits before choosing a token: temperature, top-k, nucleus
+ * (top-p) and min-p filtering, CTRL's repetition penalty and OpenAI-style frequency and presence penalties, with
+ * `composeProcessors` to chain them and helpers for log-probabilities and entropy of logits.
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import { logSoftmax, tensor, toFlat } from '../../tensor/index.ts'
 

@@ -1,3 +1,9 @@
+/**
+ * Image layers as modules, torch.nn style: upsampling by interpolation, pixel shuffle and unshuffle, the zero,
+ * constant, reflection, replication and circular padding layers in one to three dimensions, ViT's `PatchEmbedding` with
+ * timm's layout, and the `SpatialTransformer` (Jaderberg et al. 2015), which learns an affine warp of its input.
+ */
+
 import { foldIn, type Key } from '../../random/index.ts'
 import { reshape, type Value } from '../../tensor/index.ts'
 import { affineGrid, type GridSampleOptions, gridSample } from '../functional/sampling.ts'

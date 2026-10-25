@@ -1,3 +1,9 @@
+/**
+ * Baseline agents that do not learn: `randomAgent` draws every action uniformly from the action space (discrete, box,
+ * multi-discrete or composite) and `constantAgent` always takes the same action, for reference scores and for probing
+ * an environment's dynamics.
+ */
+
 import type { Json } from '../../../lib/base/index.ts'
 import { type Key, key as makeKey } from '../../../lib/random/index.ts'
 import type { Agent } from '../../../lib/rl/index.ts'

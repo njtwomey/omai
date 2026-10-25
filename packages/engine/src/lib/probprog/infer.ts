@@ -1,3 +1,10 @@
+/**
+ * Automatic inference for probabilistic programs: `plan` analyses a program, asks every engine whether it applies and
+ * at what cost and quality, and ranks them; `explainPlan` shows that ranking as a table; and `infer(model, data)` runs
+ * the chosen engine (exact, MCMC, SMC, importance, variational or approximate) as a traced run and returns its
+ * posterior.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type ContextOptions, resolveKey, resolvePolicy, resolveTracer } from '../context/index.ts'
 import { startRun } from '../trace/index.ts'

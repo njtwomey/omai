@@ -1,3 +1,10 @@
+/**
+ * The Parzen estimators behind the tree-structured Parzen estimator (TPE): kernel density mixtures over a search space
+ * with truncated normal kernels for numbers and categorical kernels for options, as Optuna builds them. Construction
+ * with Optuna's and hyperopt's group sizes and weights, log densities, sampling, the leaves of a space, and TPE's
+ * acquisition, the log density ratio of good to bad trials.
+ */
+
 import { logSumExpOf, WhiteboxError } from '../base/index.ts'
 import { truncatedNormal } from '../dists/index.ts'
 import { logIntervalProbability } from '../numerics/special/index.ts'

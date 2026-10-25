@@ -1,3 +1,10 @@
+/**
+ * Genetic programming (Koza): evolving programs represented as expression trees. Primitive sets with the arithmetic
+ * primitives of symbolic regression, random trees by the grow and full methods and ramped half-and-half initialisation,
+ * evaluation and printing, subtree crossover and subtree and point mutation, a regression fitness with a parsimony
+ * penalty, and the traced evolutionary loop.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import type { Key } from '../../random/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

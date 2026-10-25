@@ -1,3 +1,10 @@
+/**
+ * Byte-pair encoding (BPE), the subword tokenisation of GPT-style models: training repeatedly merges the most frequent
+ * adjacent pair of symbols into a new vocabulary entry. GPT-2's byte-level alphabet and conversions, BPE training as a
+ * traced algorithm, models loaded from a vocabulary and merges, and encoding of a word as HF tokenizers does (with
+ * dropout and byte fallback).
+ */
+
 import { heap, type Json, WhiteboxError } from '../../base/index.ts'
 import { type Key, randomBits, split } from '../../random/index.ts'
 import { type Algorithm, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'

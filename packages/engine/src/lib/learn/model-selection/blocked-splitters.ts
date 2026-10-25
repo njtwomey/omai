@@ -1,3 +1,9 @@
+/**
+ * Cross-validation splitters for dependent data, where random folds would leak information: time-series splits with
+ * expanding, sliding and blocked windows, purged k-fold with an embargo for overlapping labels (de Prado), and spatial
+ * and cluster block splits that test on unseen regions. Also conversions between splitters and lists of index pairs.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { kmeansCodebook } from '../../numerics/spatial/index.ts'
 import { foldIn } from '../../random/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * The inference-engine contract the planner works with: an engine names the posterior form it produces, says whether it
+ * applies to an analysed program (with an estimated cost, a quality from exact to approximate, and a reason) and runs.
+ * The quality ranking, the feasibility helper and the run options every engine receives.
+ */
+
 import type { Key } from '../../random/index.ts'
 import type { RunHandle, TracePolicy, Tracer } from '../../trace/index.ts'
 import type { ProgramAnalysis } from '../analysis.ts'

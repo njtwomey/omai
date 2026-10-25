@@ -1,3 +1,10 @@
+/**
+ * Pruning, which zeroes weights to make a network sparse: unstructured magnitude masks per tensor or ranked globally,
+ * structured masks that remove whole channels, N:M semi-structured sparsity, sparsity reports, and the lottery-ticket
+ * procedure of iterative magnitude pruning with rewinding (Frankle and Carbin 2019). Also constant, linear and
+ * polynomial (Zhu and Gupta) sparsity schedules for gradual pruning, as in torch.nn.utils.prune.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   asTensor,

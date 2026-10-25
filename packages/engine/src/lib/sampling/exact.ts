@@ -1,3 +1,10 @@
+/**
+ * Exact (non-Markov) sampling methods from the textbook, each able to record its steps for teaching: inverse-transform
+ * sampling from a quantile function or from a CDF by bisection, discrete inverse transform by sequential search, the
+ * Box-Muller transform and Marsaglia's polar method for normals, and Vose's alias method for constant-time discrete
+ * draws.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { type AliasTable, aliasSample, type Key, uniform, uniformStream } from '../random/index.ts'

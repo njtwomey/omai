@@ -1,3 +1,9 @@
+/**
+ * The agent contract of reinforcement learning: policies, transitions, and agents as pure functions over an explicit
+ * learning state (`act` explores, `learn` folds in a transition, a greedy policy evaluates). Also the frozen behaviour
+ * and greedy policies of an agent, and a non-learning agent that follows a fixed policy for baselines.
+ */
+
 import type { Json } from '../base/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
 import type { MetricChannel } from '../trace/index.ts'

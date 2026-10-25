@@ -1,3 +1,10 @@
+/**
+ * Objectives, the problems a study optimises: a function from a configuration to one or more values, each minimised or
+ * maximised, optionally reporting intermediate values for pruning. Adapters for a plain function, several objectives at
+ * once, a training run (any traced `Algorithm` run for a budget of steps), an RL agent in an environment, and a
+ * probabilistic program scored by evidence, ELBO or PSIS-LOO.
+ */
+
 import { type Json, meanOf, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import {

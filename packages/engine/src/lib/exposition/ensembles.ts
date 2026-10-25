@@ -1,3 +1,8 @@
+/**
+ * The exposition record of an ensemble: its members and how the combined prediction builds up stage by stage (bagging,
+ * boosting, stacking), with a decision surface per stage where the inputs allow one.
+ */
+
 import { sameLength } from './_check.ts'
 import type { DecisionSurface } from './surfaces.ts'
 

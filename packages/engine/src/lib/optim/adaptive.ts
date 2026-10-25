@@ -1,3 +1,10 @@
+/**
+ * Adaptive gradient optimisers as gradient transformations, matching torch.optim and optax: Adam, AdamW and AMSGrad,
+ * Adamax, NAdam, RAdam, Lion, LAMB, Adafactor with factored second moments for large matrices, and Sophia with
+ * Hutchinson's diagonal Hessian estimator. Each has its `scaleBy...` building block for composing custom optimisers
+ * with `chain`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bernoulli, foldIn, type Key } from '../random/index.ts'
 import {

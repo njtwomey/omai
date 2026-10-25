@@ -1,5 +1,10 @@
-// Offline actor-critic methods: implicit Q-learning (discrete and continuous actions), which never queries the critic
-// at actions outside the dataset, and TD3+BC, TD3 with a behaviour-cloning term in the actor's objective.
+/**
+ * Offline actor-critic methods for learning from a fixed dataset: implicit Q-learning (IQL, for discrete and continuous
+ * actions), which fits its values with an expectile loss and so never queries the critic at actions outside the
+ * dataset, and TD3+BC, TD3 with a behaviour-cloning term in the actor's objective that keeps the policy near the data.
+ * Each is an offline learner with a function that trains it on a dataset.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { mse } from '../../../lib/losses/index.ts'
 import { incrementalUpdate, type Tree } from '../../../lib/optim/index.ts'

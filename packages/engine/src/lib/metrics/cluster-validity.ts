@@ -1,3 +1,9 @@
+/**
+ * Internal cluster validity indices, which judge a clustering from the data alone without reference labels: the
+ * silhouette coefficient per sample and on average, the Calinski-Harabasz variance ratio, the Davies-Bouldin index and
+ * the Dunn index, as in scikit-learn.
+ */
+
 import { type MetricResult, type MetricSpec, WhiteboxError } from '../base/index.ts'
 import { cdist, type Metric as DistanceName } from '../numerics/geometry/index.ts'
 import type { TensorLike } from '../tensor/index.ts'

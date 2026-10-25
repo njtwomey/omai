@@ -1,3 +1,10 @@
+/**
+ * Warm-up tuning for Hamiltonian samplers, following Stan and BlackJAX: Nesterov's dual averaging of the step size
+ * towards a target acceptance rate, the heuristic for a reasonable first step size, Welford estimation of the mass
+ * matrix with Stan's regularisation, Stan's warm-up schedule of fast and doubling slow windows, and `windowAdaptation`,
+ * which combines them.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'

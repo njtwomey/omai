@@ -1,3 +1,9 @@
+/**
+ * The schema for sequence-to-sequence tasks (copying, sorting, arithmetic, translation): input and target token
+ * sequences padded to a common length, with masks marking the real tokens. The `sequences` constructor accepts ragged
+ * sequences or already padded arrays.
+ */
+
 import type { Tensor, TensorLike } from '../../tensor/index.ts'
 import { fromStorage } from '../../tensor/index.ts'
 import { checkRows, concrete, metaFor, padRagged } from './_coerce.ts'

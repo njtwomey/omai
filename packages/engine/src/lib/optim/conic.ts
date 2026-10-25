@@ -1,3 +1,9 @@
+/**
+ * Small conic programs: linear objectives under linear inequalities, second-order cone constraints and linear matrix
+ * inequalities, solved by the barrier method (Boyd and Vandenberghe, chapter 11) as a traced algorithm with duals from
+ * the central path, and semidefinite programs in standard form (`sdp`) built on it.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { cholesky, choSolve, ddot, dnrm2, eigvalsh } from '../numerics/linalg/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'

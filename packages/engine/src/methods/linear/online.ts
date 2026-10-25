@@ -1,3 +1,10 @@
+/**
+ * Linear models trained online by stochastic gradient descent, as scikit-learn's `_plain_sgd` runs it: the SGD
+ * classifier (hinge for a linear SVM, log loss, modified Huber and more) and regressor with L2, L1 and elastic-net
+ * penalties and learning-rate schedules, the online perceptron, and passive-aggressive models (PA-I and PA-II).
+ * Training is traced one epoch per step with its learning curve.
+ */
+
 // TODO: averaged SGD (`average`), early stopping on a validation split, class weights, partial_fit, and the
 // one-class SGD SVM.
 import { WhiteboxError } from '../../lib/base/index.ts'

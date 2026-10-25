@@ -1,3 +1,10 @@
+/**
+ * Wasserstein distances and barycentres: exact 1-D Wasserstein distances by matching quantile functions (as
+ * `scipy.stats.wasserstein_distance`), sliced Wasserstein distances over random projections, and Wasserstein
+ * barycentres, the average of several distributions in transport geometry, with fixed support (iterative Bregman
+ * projections) or free support.
+ */
+
 import { type Json, logSumExpOf, WhiteboxError } from '../base/index.ts'
 import { type Key, key as makeKey, normal } from '../random/index.ts'
 import {

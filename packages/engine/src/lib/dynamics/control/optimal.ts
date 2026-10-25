@@ -1,3 +1,10 @@
+/**
+ * Linear-quadratic optimal control and estimation, as in python-control: the continuous and discrete LQR gains (`lqr`,
+ * `dlqr`) that minimise a quadratic state and input cost, the steady-state Kalman estimator gains (`lqe`, `dlqe`), and
+ * their combination into an LQG output-feedback controller. Finite-horizon LQR is solved by the backward Riccati
+ * recursion or by integrating the Riccati differential equation, giving time-varying gains.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { eigvals, solve, solveCare, solveDare, symmetricPart } from '../../numerics/linalg/index.ts'
 import { type StateSpace, ss } from '../../systems/index.ts'

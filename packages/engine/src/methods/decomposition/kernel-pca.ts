@@ -1,3 +1,9 @@
+/**
+ * Kernel PCA (as in scikit-learn's `KernelPCA`): principal components in a kernel's feature space, computed from the
+ * centred Gram matrix, so nonlinear structure becomes linear directions. Wraps the core's kernel PCA, with pre-images
+ * by kernel ridge regression for mapping back to the input space.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import { kernelPca as coreKernelPca, type PairwiseKernelMetric, pairwiseKernels } from '../../lib/kernels/index.ts'

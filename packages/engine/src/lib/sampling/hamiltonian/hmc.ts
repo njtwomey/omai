@@ -1,3 +1,9 @@
+/**
+ * Hamiltonian Monte Carlo (HMC), which proposes distant moves by simulating Hamiltonian dynamics on the log density
+ * with momentum and corrects the integration error with a Metropolis step: the HMC kernel, its window adaptation, and
+ * `hmc`, which samples several chains after Stan-style warm-up as NumPyro's `MCMC(HMC(...))`.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn } from '../../random/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'

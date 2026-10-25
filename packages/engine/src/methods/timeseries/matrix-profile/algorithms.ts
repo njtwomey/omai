@@ -1,3 +1,10 @@
+/**
+ * Algorithms for the matrix profile, as in the stumpy library: for every window of a time series, the distance to its
+ * nearest neighbouring window (z-normalised or not), from which motifs, discords and regimes can be read. Exact STUMP
+ * (by diagonals), STOMP (row by row) and STAMP, approximate and anytime PreSCRIMP and SCRIMP++, and the incremental
+ * STUMPI for streams, each as a traced algorithm.
+ */
+
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { key as makeKey, permutation } from '../../../lib/random/index.ts'
 import {

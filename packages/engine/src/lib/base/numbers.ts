@@ -1,4 +1,10 @@
 /**
+ * Small helpers on plain numbers and number lists, used where tensors would be overkill: closeness tests in the numpy
+ * sense, clamping, accurate summation (Kahan and pairwise), loop-based extrema and argmax that never spread into
+ * `Math.max`, stable log-sum-exp and softmax, ranges, quantiles, means and variances, and bit counts.
+ */
+
+/**
  * Whether two numbers are close in the numpy sense: `|a - b| <= atol + rtol * |b|`. NaNs are never close; equal
  * infinities are.
  *

@@ -1,3 +1,10 @@
+/**
+ * MASS (Mueen's algorithm for similarity search): the z-normalised Euclidean distance from a query to every window of a
+ * time series, computed with FFT sliding dot products and rolling statistics, following stumpy.mass. Also the chunked
+ * variant for very long series and the distance profile of one window of a series against all its others, a row of the
+ * matrix profile.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import {

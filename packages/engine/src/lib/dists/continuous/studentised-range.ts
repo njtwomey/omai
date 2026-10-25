@@ -1,3 +1,9 @@
+/**
+ * The studentised range distribution (scipy.stats.studentized_range): the range of k standard normals divided by an
+ * independent chi-based estimate of their scale, the reference distribution of Tukey's HSD and Nemenyi post-hoc
+ * comparisons, computed by numerical quadrature.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { doubleExponentialRule } from '../../numerics/quadrature/index.ts'
 import { lgamma, ndtr, normalLogPdf } from '../../numerics/special/index.ts'

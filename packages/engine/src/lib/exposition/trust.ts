@@ -1,3 +1,9 @@
+/**
+ * Exposition records for trustworthy predictions: calibration of probabilistic forecasts as reliability curves with
+ * expected and maximum calibration errors, and conformal prediction with its coverage guarantee checked on held-out
+ * rows, including intervals for regression and runs on a stream. `setSizes` summarises a conformal record's set sizes.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 

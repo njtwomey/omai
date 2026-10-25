@@ -1,3 +1,9 @@
+/**
+ * Beyond plain satisfiability on CNF formulas: enumerating and counting all models, extracting a minimal unsatisfiable
+ * core, and weighted partial MaxSAT (satisfy every hard clause while minimising the weight of falsified soft clauses)
+ * solved exactly by branch and bound as a traced algorithm.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { CdclCore, code } from './_cdcl.ts'

@@ -1,3 +1,10 @@
+/**
+ * Contrastive and metric-learning losses, which train embeddings so that similar pairs lie close and dissimilar ones
+ * far apart: InfoNCE, SimCLR's NT-Xent, supervised contrastive and CLIP's symmetric image-text loss, the triplet,
+ * contrastive, cosine and hinge embedding losses, and the additive-margin softmax heads of face recognition (ArcFace,
+ * CosFace).
+ */
+
 import { logaddexp } from '../numerics/special/index.ts'
 import {
   add,

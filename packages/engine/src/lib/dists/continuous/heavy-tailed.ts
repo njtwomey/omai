@@ -1,3 +1,9 @@
+/**
+ * Heavy-tailed and flexible-shape continuous distributions: Student's t, Cauchy and half-Cauchy, Laplace, logistic,
+ * Pareto, Johnson's S_U and the sinh-arcsinh family of Jones and Pewsey, whose tails and skewness can be tuned, as
+ * scipy.stats, torch.distributions and TFP.
+ */
+
 import {
   digamma,
   kv,

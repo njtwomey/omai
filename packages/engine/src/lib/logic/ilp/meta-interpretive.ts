@@ -1,3 +1,10 @@
+/**
+ * Learning logic programs by searching for the smallest program that proves all positive examples and no negatives.
+ * Metagol's meta-interpretive learning, which instantiates second-order clause templates (metarules such as chain and
+ * tail recursion) during proof, and Popper-style learning from failures, which prunes the hypothesis space using the
+ * ways each tested program fails; both as traced algorithms.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { parseTerm } from '../parse.ts'

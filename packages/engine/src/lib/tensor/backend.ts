@@ -1,3 +1,9 @@
+/**
+ * The backend contract: the kernel vocabulary (elementwise, comparison, predicate and reduction kernels) that a backend
+ * implements for tensors to run on it, and the capabilities it declares so callers can choose a dtype or fall back
+ * before dispatching.
+ */
+
 import type { DType, Storage } from './dtype.ts'
 import type { Shape } from './shape.ts'
 import type { Tensor } from './tensor.ts'

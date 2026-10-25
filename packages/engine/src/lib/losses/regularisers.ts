@@ -1,3 +1,9 @@
+/**
+ * Penalties added to a loss to constrain the parameters: L1 (lasso), L2 (ridge, weight decay), elastic net, the group
+ * and sparse group lasso, the nuclear norm (a convex surrogate for low rank), soft orthogonality of weight matrices and
+ * an entropy (confidence) penalty on predicted distributions. Each takes one value or any tree of parameters.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { svdvals } from '../numerics/linalg/index.ts'
 import { entr } from '../numerics/special/index.ts'

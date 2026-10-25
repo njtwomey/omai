@@ -1,3 +1,9 @@
+/**
+ * The trust region reflective method for (bounded) nonlinear least squares, a port of scipy's
+ * `least_squares(method='trf')`, its default: trust-region steps scaled by the distance to the bounds and reflected off
+ * them, with an exact SVD subproblem solver, as a traced algorithm.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dgesvd, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'

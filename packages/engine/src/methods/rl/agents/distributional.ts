@@ -1,3 +1,11 @@
+/**
+ * Distributional value-based agents, which learn the whole distribution of each action's return rather than its mean:
+ * C51 (a categorical distribution on fixed atoms, with its projection of the Bellman target), Rainbow (C51 with double
+ * Q-learning, duelling heads, prioritised replay, n-step returns and noisy networks), QR-DQN (fixed quantiles trained
+ * by the quantile Huber loss) and IQN (implicit quantile networks over sampled fractions, with risk distortions for
+ * risk-sensitive policies), plus readers of the learnt distributions for figures.
+ */
+
 import { type Json, linspaceNumbers, WhiteboxError } from '../../../lib/base/index.ts'
 import { ndtr, ndtri } from '../../../lib/numerics/special/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../../../lib/random/index.ts'

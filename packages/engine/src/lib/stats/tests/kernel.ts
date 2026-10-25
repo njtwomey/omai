@@ -1,3 +1,9 @@
+/**
+ * Kernel-based tests, which compare distributions through a positive-definite kernel: the maximum mean discrepancy
+ * (MMD) two-sample test and the Hilbert-Schmidt independence criterion (HSIC) test of Gretton et al., with the Gaussian
+ * kernel, the median-heuristic bandwidth and Gram-matrix centring they use.
+ */
+
 import { type TestResult, WhiteboxError } from '../../base/index.ts'
 import { gammaincc } from '../../numerics/special/index.ts'
 import { foldIn, key as makeKey, permutation } from '../../random/index.ts'

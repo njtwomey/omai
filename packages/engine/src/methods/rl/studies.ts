@@ -1,3 +1,11 @@
+/**
+ * Experiment protocols for comparing RL agents, each a traced algorithm whose training runs are child runs of one
+ * study. Learning-curve comparisons across tasks and seeds (the rliable protocol: interquartile means with stratified
+ * bootstrap intervals, probabilities of improvement and performance profiles), hyperparameter sensitivity sweeps over a
+ * search space, exploration studies that count the states each agent visits, and generalisation studies that train on
+ * some procedural levels and test on held-out ones (Procgen's protocol).
+ */
+
 import { type Json, linspaceNumbers, maxOf, meanOf, minOf, WhiteboxError } from '../../lib/base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../../lib/random/index.ts'
 import {

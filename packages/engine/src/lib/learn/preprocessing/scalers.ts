@@ -1,3 +1,9 @@
+/**
+ * Feature scalers, scikit-learn style: standardisation to zero mean and unit variance, min-max and max-abs scaling, the
+ * robust scaler (median and percentile range), row normalisation, the quantile transformer to a uniform or normal
+ * distribution, and the Yeo-Johnson and Box-Cox power transforms, each with an inverse.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { interp } from '../../numerics/interpolate/index.ts'
 import { ndtr, ndtri } from '../../numerics/special/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * The `Bijector` contract: an invertible, differentiable map with a tractable log-Jacobian determinant, as TensorFlow
+ * Probability's Bijector and torch.distributions.Transform, which turns one distribution into another by a change of
+ * variables. `defineBijector` builds one from its forward and inverse maps, and `chain` and `invert` compose and
+ * reverse them.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { add, asTensor, neg, type TensorLike, type Value } from '../../tensor/index.ts'
 import { type Support, sumRightmost } from '../distribution.ts'

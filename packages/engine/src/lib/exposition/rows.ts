@@ -1,3 +1,8 @@
+/**
+ * The input rows behind an exposition record, as a view draws them: two coordinates per row (the two features a surface
+ * spans, or a 2-D projection) with their names, coloured by class or by a numeric target. Shared by most other records.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 

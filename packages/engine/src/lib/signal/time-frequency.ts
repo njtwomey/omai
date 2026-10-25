@@ -1,3 +1,9 @@
+/**
+ * Time-frequency analysis: the short-time Fourier transform and its inverse by weighted overlap-add, and the
+ * spectrogram (scipy.signal.stft, istft, spectrogram), instantaneous phase and frequency from the analytic signal, and
+ * the RMS time and frequency spreads of a pulse whose product is bounded by the Gabor uncertainty limit.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { fft, fftfreq, ifft, irfft, rfft, rfftfreq } from '../numerics/fourier/index.ts'
 import {

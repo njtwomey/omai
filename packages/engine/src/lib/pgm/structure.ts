@@ -1,3 +1,9 @@
+/**
+ * Graphical models drawn as diagrams: `toStructure` turns any model of `pgm` (Bayes networks, DAGs, Markov networks,
+ * factor graphs, influence diagrams and the rest) into a `Structure`, so it can be laid out and its inference animated
+ * from the message events of a trace.
+ */
+
 import {
   type NodeRole,
   type Structure,

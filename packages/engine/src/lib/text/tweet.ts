@@ -1,3 +1,9 @@
+/**
+ * Tokenisation of social-media text, as nltk's TweetTokenizer does: HTML entities replaced, then URLs, emoticons,
+ * handles, hashtags, emoji sequences and words kept as single tokens, with optional handle removal and shortening of
+ * lengthened words (`waaaay`).
+ */
+
 import { UNI_SPACE, UNI_WORD } from './_classes.ts'
 import { CP1252_HIGH, HTML_ENTITIES } from './_entities.data.ts'
 

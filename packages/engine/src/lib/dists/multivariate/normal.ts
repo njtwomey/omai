@@ -1,3 +1,9 @@
+/**
+ * The multivariate normal distribution, parameterised by a covariance, a precision or a Cholesky factor (scipy.stats
+ * and torch.distributions), with Gaussian conditioning and marginalisation, plus the low-rank-plus-diagonal form whose
+ * densities cost O(d r^2) and the matrix normal distribution with separate row and column covariances.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { cholesky, choSolve, inv, solve, solveTriangular } from '../../numerics/linalg/index.ts'
 import { foldIn, normal as normalNoise } from '../../random/index.ts'

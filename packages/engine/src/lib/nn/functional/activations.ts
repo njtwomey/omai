@@ -1,3 +1,9 @@
+/**
+ * Activation functions as plain functions of tensors, torch.nn.functional style: ReLU and its variants, ELU, SELU,
+ * GELU, SiLU, Mish, softplus, the hard and shrinkage functions, and the gated units (GLU, SwiGLU, GeGLU, ReGLU) of
+ * modern feed-forward layers, with `activation` to pick one by name.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { erf, logaddexp } from '../../numerics/special/index.ts'
 import {

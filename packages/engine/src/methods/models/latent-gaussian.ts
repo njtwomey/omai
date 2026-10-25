@@ -1,3 +1,9 @@
+/**
+ * Linear-Gaussian state-space models of a univariate series (structural time-series models, after Durbin and Koopman):
+ * a local level (a random walk observed in noise) or a local linear trend, with noise variances fitted by maximum
+ * likelihood and the states recovered by the Kalman filter and smoother.
+ */
+
 // TODO: factor analysis, PPCA and Bayesian PCA as programs (decomposition/ has the EM estimators), seasonal and
 // regression components (state-space.ts), and multivariate observations in the exposition.
 import { WhiteboxError } from '../../lib/base/index.ts'

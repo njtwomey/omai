@@ -1,3 +1,10 @@
+/**
+ * Static analysis of a probabilistic program from one traced run: every site with its role, support, shapes, plates and
+ * markov step, the dependency graph between sites (by tracking which values each one was computed from), and the
+ * structures the inference planner looks for, such as conjugate prior-likelihood pairs, linear-Gaussian form and
+ * enumerable discrete sites.
+ */
+
 import { valueAndGrad } from '../autodiff/index.ts'
 import { isWhiteboxError } from '../base/index.ts'
 import { CONJUGATES, type ConjugatePair, type Distribution, exponentialFamily, type Support } from '../dists/index.ts'

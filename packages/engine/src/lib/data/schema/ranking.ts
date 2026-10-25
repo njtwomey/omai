@@ -1,3 +1,8 @@
+/**
+ * Schemas for recommendation and ranking data: user-item interactions (ratings, clicks, purchases) one row per
+ * interaction, and learning-to-rank data of query-document feature rows with graded relevance grouped by query.
+ */
+
 import type { Tensor, TensorLike } from '../../tensor/index.ts'
 import { cardinality, checkRows, concrete, concreteFloat, defaultNames, metaFor } from './_coerce.ts'
 import type { DatasetMeta } from './common.ts'

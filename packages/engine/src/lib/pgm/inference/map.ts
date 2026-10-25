@@ -1,3 +1,9 @@
+/**
+ * Finding the most probable joint assignment (MAP) of a discrete model: max-product belief propagation, MPLP (a dual
+ * linear-programming relaxation, Globerson and Jaakkola 2007) with its bound and integrality gap, and local search by
+ * iterated conditional modes with random restarts.
+ */
+
 import { argmaxOf, type Json, maxOf } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import {

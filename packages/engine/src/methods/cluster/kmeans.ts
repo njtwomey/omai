@@ -1,3 +1,10 @@
+/**
+ * k-means and its variants, as in scikit-learn: Lloyd's algorithm (assign each row to its nearest centre, move centres
+ * to the means) traced through `runAlgorithm` with k-means++ seeding and restarts, mini-batch and bisecting k-means,
+ * kernel k-means in a kernel's feature space, and the elbow curve for choosing k. It also holds the centroid helpers
+ * and decision regions other clusterers reuse.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type ClusteringSteps, clusteringSteps, type DecisionSurface } from '../../lib/exposition/index.ts'
 import { type PairwiseKernelMetric, pairwiseKernels } from '../../lib/kernels/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Bounding-volume hierarchies: a tree of nested boxes over a scene's shapes, so a ray tests only the few shapes whose
+ * boxes it enters instead of every one. Construction by the binned surface-area heuristic, nearest-hit and any-hit
+ * (shadow) traversal with statistics of the work done, and the hierarchy as a drawable tree.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure, type Vec3 } from '../scene/index.ts'
 import type { Ray } from './camera.ts'

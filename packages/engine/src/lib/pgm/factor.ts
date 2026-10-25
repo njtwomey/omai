@@ -1,3 +1,10 @@
+/**
+ * Discrete factors, the tables of non-negative values over a few discrete variables that every exact and approximate
+ * inference algorithm manipulates, stored in log space in pgmpy's row-major layout. Construction, product, division and
+ * powers, sum and max marginalisation, reduction by evidence, normalisation, the log partition function, lookups,
+ * argmax and entropy.
+ */
+
 import { logSumExpOf, WhiteboxError } from '../base/index.ts'
 
 /**

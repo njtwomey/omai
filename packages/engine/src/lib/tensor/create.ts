@@ -1,3 +1,9 @@
+/**
+ * Tensor constructors, numpy style: filled arrays (`zeros`, `ones`, `full` and their `Like` forms), ranges and spacings
+ * (`arange`, `linspace`, `logspace`, `geomspace`), identity, diagonal and triangular matrices, `meshgrid` and index
+ * grids.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { cpu } from './cpu.ts'
 import { allocate, type DType } from './dtype.ts'

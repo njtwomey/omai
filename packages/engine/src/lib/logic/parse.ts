@@ -1,3 +1,9 @@
+/**
+ * A Prolog reader: a tokeniser for Prolog text, and parsers for terms, clauses, whole programs with directives and
+ * `op/3` operator declarations, and queries that keep their variable names. Also the translation of definite clause
+ * grammar rules into ordinary clauses with difference lists.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   atom,

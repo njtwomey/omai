@@ -1,3 +1,8 @@
+/**
+ * A numpy-style stateful random generator (`Generator`, created with `defaultRng`): a thin wrapper that holds a key and
+ * splits it on every call, for code that prefers `rng.normal(...)` to passing keys by hand.
+ */
+
 import type { Shape, Tensor } from '../tensor/index.ts'
 import { normal, uniform } from './continuous.ts'
 import { randint } from './discrete.ts'

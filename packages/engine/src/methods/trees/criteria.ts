@@ -1,3 +1,10 @@
+/**
+ * Split criteria and split search for decision trees: impurities for classification (Gini, entropy in bits) and
+ * regression (squared error, absolute error, Poisson deviance), node values, and `searchSplits`, which scores every
+ * midpoint between sorted feature values (scikit-learn's best splitter) or one random threshold per feature (the
+ * extra-trees splitter), keeping the candidates for explanation.
+ */
+
 import type { SplitCandidate } from '../../lib/exposition/index.ts'
 import type { MatrixView } from '../../lib/learn/index.ts'
 import { foldIn, type Key, uniform } from '../../lib/random/index.ts'

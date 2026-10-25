@@ -1,3 +1,10 @@
+/**
+ * Model inspection, as in scikit-learn's `inspection` module: permutation importance (the drop in score when a feature
+ * is shuffled), partial dependence and individual conditional expectation curves, accumulated local effects (ALE, which
+ * average local changes within quantile bins and so cope with correlated features), Friedman's H-statistic of
+ * interaction strength and a functional ANOVA decomposition.
+ */
+
 import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import { type FitOptions, type Fitted, type LearnData, requireTargets } from '../learn/estimator.ts'

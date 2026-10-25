@@ -1,3 +1,9 @@
+/**
+ * Differentiable spatial sampling: `affineGrid` and `gridSample` (the pieces of a spatial transformer network, sampling
+ * an image at arbitrary locations with bilinear, nearest or bicubic interpolation), and the region-of-interest pooling
+ * of object detectors, `roiAlign` (Mask R-CNN) and `roiPool` (Fast R-CNN), as in torchvision.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import {
   abs,

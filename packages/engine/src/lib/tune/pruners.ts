@@ -1,3 +1,9 @@
+/**
+ * Pruners, which stop unpromising trials early from their intermediate reports, Optuna style: percentile and median
+ * pruners, a threshold guard against divergence, a patience wrapper, asynchronous successive halving (ASHA) and
+ * Hyperband, plus a pruner that never prunes.
+ */
+
 import { type Json, quantileOf, WhiteboxError } from '../base/index.ts'
 import { crc32 } from '../information/index.ts'
 import type { SpaceValue } from '../space/index.ts'

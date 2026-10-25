@@ -1,3 +1,10 @@
+/**
+ * Minibatching, in the style of torch's `DataLoader`: batches of a dataset in order, shuffled by a key or in a
+ * sampler's order, reshuffled per epoch from derived keys so every epoch is reproducible. Also `collate` for stacking
+ * items into tensors, `padSequences` for ragged sequences with masks, and `bucketBy` for batching rows of similar
+ * length together.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { type DType, fromStorage, isTensor, stack, type Tensor, tensor } from '../tensor/index.ts'

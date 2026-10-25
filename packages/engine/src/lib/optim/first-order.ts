@@ -1,3 +1,9 @@
+/**
+ * Classic first-order optimisers as gradient transformations, matching torch.optim and optax: SGD with momentum and
+ * Nesterov momentum, RMSprop, Adagrad, Adadelta, Rprop (sign-based per-coordinate steps), averaged SGD, signSGD and
+ * signum, and the exponential moving average of updates.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   add,

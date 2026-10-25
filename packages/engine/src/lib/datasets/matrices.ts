@@ -1,3 +1,9 @@
+/**
+ * Random structured matrices, as in scikit-learn's matrix generators: mostly low-rank matrices with bell-shaped
+ * singular values, sparse-coded signals over a dictionary, dense and sparse symmetric positive-definite matrices, and
+ * bicluster and checkerboard matrices with their planted row and column groups.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { qr, svd } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, multinomial, normal, permutation, uniform } from '../random/index.ts'

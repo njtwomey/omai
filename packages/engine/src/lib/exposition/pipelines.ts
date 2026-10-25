@@ -1,3 +1,9 @@
+/**
+ * The exposition record of a fitted pipeline, stage by stage: what each stage took in and gave out (columns, sampled
+ * rows, per-column statistics), the parameters it learned (a scaler's means, polynomial powers, a model's
+ * coefficients), and the final estimator's loss. `pipelineStages` checks that the stages chain.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 import type { DecisionSurface, SurfaceGrid } from './surfaces.ts'

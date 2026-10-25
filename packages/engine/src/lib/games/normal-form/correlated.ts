@@ -1,3 +1,9 @@
+/**
+ * Correlated equilibria (Aumann): distributions over joint action profiles from which no player wants to deviate when
+ * told its recommended action. Finding one by linear programming, measuring how far a distribution is from a correlated
+ * or coarse correlated equilibrium, and the product distribution of independent strategies.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type LinprogOptions, linprog } from '../../optim/index.ts'
 import { toFlat } from '../../tensor/index.ts'

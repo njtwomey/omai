@@ -1,3 +1,9 @@
+/**
+ * Gradient attributions for differentiable models, as in captum: each input feature's contribution to an output, read
+ * from gradients. Saliency, input times gradient, integrated gradients (the average gradient along a path from a
+ * baseline, by quadrature), SmoothGrad, expected gradients and DeepLIFT's rescale rule for sequential networks.
+ */
+
 import { vjp } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { keyFor } from '../learn/_shared.ts'

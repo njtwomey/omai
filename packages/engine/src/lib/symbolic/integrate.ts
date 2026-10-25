@@ -1,3 +1,11 @@
+/**
+ * Symbolic integration, as SymPy's `integrate`: a bounded heuristic integrator for antiderivatives (linearity, a table
+ * of elementary integrals, partial fractions for rational functions, trigonometric reduction formulas,
+ * derivative-divides substitution and integration by parts), each candidate checked by differentiating it and what no
+ * rule handles left as an unevaluated `Integral`. Also definite integrals from the antiderivative, with one-sided
+ * limits for infinite bounds and a numeric quadrature check, and `Steps` variants that record the rules applied.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { withBudget, attempt as within } from './_budget.ts'
 import { isInfinite, MINUS_ONE, makeAdd, makeIntegral, makeMul, makePow, NAN, numFromFloat, ZERO } from './_canon.ts'

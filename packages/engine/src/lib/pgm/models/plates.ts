@@ -1,3 +1,9 @@
+/**
+ * Plate models, Bayes networks written as templates in plate notation (variables repeated over students, documents or
+ * other objects, sharing their tables): construction and validation, grounding against a set of objects into an
+ * ordinary network, grounding of observations, and maximum-likelihood fitting of the shared tables by pooling counts.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { topologicalOrder } from '../graphs.ts'
 import { type BayesNet, type BayesNode, bayesNet } from './bayes-net.ts'

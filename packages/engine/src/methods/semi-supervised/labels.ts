@@ -1,3 +1,9 @@
+/**
+ * Labels for semi-supervised learning: the `UNLABELLED` marker (-1, scikit-learn's convention), `hideLabels` for a
+ * keyed, stratified choice of the few rows that keep their labels in demos, and the helpers that split semi-supervised
+ * targets into labelled codes and classes.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type LearnData, targetVector } from '../../lib/learn/index.ts'
 import { foldIn, type Key, permutation } from '../../lib/random/index.ts'

@@ -1,3 +1,10 @@
+/**
+ * Simplification and rewriting, as SymPy's `simplify`: expanding, collecting, factoring over the rationals, combining
+ * over a common denominator, cancelling, partial fractions and trigonometric simplification, and `simplify`, which
+ * tries these rewrites and keeps whichever has the fewest operations. Most have `Steps` variants that return the
+ * derivation, and `compareExprs` gives SymPy's canonical ordering.
+ */
+
 import { attempt, bounded, withBudget } from './_budget.ts'
 import {
   asCoeffMul,

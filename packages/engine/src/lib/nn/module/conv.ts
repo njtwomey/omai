@@ -1,3 +1,9 @@
+/**
+ * Convolution layers as modules, torch.nn style: `Conv1d`, `Conv2d` and `Conv3d`, their transposed counterparts for
+ * upsampling, and `Unfold` and `Fold`, with PyTorch's weight layouts and default initialisation so trained PyTorch
+ * weights load unchanged.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { convOutputSize } from '../../numerics/convolution/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'

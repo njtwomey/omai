@@ -1,3 +1,9 @@
+/**
+ * Finding all Nash equilibria of two-player games, as in nashpy: support enumeration, which tries every pair of
+ * equal-size supports, and vertex enumeration, which walks the vertices of the best-response polytopes, plus removal of
+ * repeated equilibria.
+ */
+
 import { maxOf, minOf, WhiteboxError } from '../../base/index.ts'
 import { combinations } from '../../foundations/index.ts'
 import { dgesv } from '../../numerics/linalg/index.ts'

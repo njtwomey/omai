@@ -1,3 +1,10 @@
+/**
+ * Sparse coding and dictionary learning: sparse codes of samples over a dictionary (as scikit-learn's `sparse_encode`),
+ * the K-SVD, method-of-optimal-directions and online (Mairal et al.) dictionary learners as traced algorithms, and the
+ * measures of a dictionary that guarantee sparse recovery (mutual coherence, the Babel function, estimates of the
+ * restricted isometry constant).
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { ddot, dnrm2, lstsq, svd } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../random/index.ts'

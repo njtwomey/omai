@@ -1,3 +1,10 @@
+/**
+ * The normal-form game: players choose actions simultaneously and receive payoffs from a tensor indexed by the joint
+ * profile. Building games (any number of players, or a bimatrix pair as in nashpy), expected payoffs and action values
+ * under mixed strategies, best responses, deviation gains and NashConv, Nash equilibrium checks and the pure
+ * equilibria.
+ */
+
 import { maxOf, WhiteboxError } from '../../base/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import type { RunOptions } from '../../trace/index.ts'

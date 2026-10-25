@@ -1,3 +1,9 @@
+/**
+ * Dynamic Bayes networks, defined by a first slice and a two-slice transition template (2TBN) that repeats over time:
+ * construction and validation, unrolling over T slices into an ordinary Bayes network, the interface variables that
+ * separate past from future, and exact filtering by Murphy's interface algorithm.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Factor, factorProduct, logFactor, permuteFactor } from '../factor.ts'
 import { topologicalOrder } from '../graphs.ts'

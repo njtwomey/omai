@@ -1,3 +1,9 @@
+/**
+ * Posterior summaries and sampler health checks, as ArviZ's `summary` and `diagnose`: a per-coordinate table of mean,
+ * sd, credible interval, effective sample sizes, R-hat and standard errors, the energy fraction of missing information
+ * (E-BFMI), counts of divergent transitions and of NUTS trees that hit the depth limit, and an overall verdict.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { type Chains, parameterDraws } from '../chains.ts'

@@ -1,3 +1,9 @@
+/**
+ * Measures of how well an embedding preserves its data: trustworthiness and continuity (Venna and Kaski, 2001),
+ * neighbourhood preservation, the co-ranking matrix of original against embedded neighbour ranks (Lee and Verleysen,
+ * 2009) and Kruskal's stress.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { matrixView } from '../../lib/learn/index.ts'
 import { geometry } from '../../lib/numerics/index.ts'

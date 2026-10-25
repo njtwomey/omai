@@ -1,3 +1,10 @@
+/**
+ * Classification losses, torch.nn.functional style: binary cross-entropy on logits (computed stably) and on
+ * probabilities, softmax cross-entropy with class-index or probability targets and label smoothing options, negative
+ * log-likelihood of log-probabilities, the multi-label soft-margin loss, and sigmoid and softmax focal losses, which
+ * down-weight easy examples.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import {

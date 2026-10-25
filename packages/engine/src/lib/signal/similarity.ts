@@ -1,3 +1,9 @@
+/**
+ * Similarity and representation of time series: dynamic time warping (DTW, the cheapest alignment of two series that
+ * may run at different speeds, as dtw-python) with its LB_Kim and LB_Keogh lower bounds, piecewise aggregate
+ * approximation and the symbolic SAX representation with its MINDIST bound, and the lag of maximum cross-correlation.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { correlate, correlationLags } from '../numerics/convolution/index.ts'
 import { ndtri } from '../numerics/special/index.ts'

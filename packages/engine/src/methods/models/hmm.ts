@@ -1,3 +1,10 @@
+/**
+ * Hidden Markov models (as in hmmlearn): a sequence explained by hidden states that follow a Markov chain, each
+ * emitting observations. Categorical and Gaussian emissions fitted by Baum-Welch (EM over forward-backward), traced
+ * iteration by iteration, with state posteriors and Viterbi paths as exposition, plus the occasionally dishonest casino
+ * of Durbin et al. as a worked study.
+ */
+
 // TODO: Gaussian-mixture emissions (hmmlearn's GMMHMM), tied and spherical covariances, Baum-Welch through the
 // probprog EM engine on the HMM as a program, Bayesian (Dirichlet-prior) and variational HMMs.
 import { WhiteboxError } from '../../lib/base/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Streaming (one-pass) statistics that update with each observation in constant memory: running mean, variance,
+ * skewness and kurtosis by Welford's and Pebay's updates with merging of partial states, the P-squared estimator of a
+ * quantile, and exponentially weighted moving mean, variance and standard deviation matching pandas' `ewm`.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { sample, sortedCopy, vec } from './_util.ts'

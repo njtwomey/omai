@@ -1,3 +1,9 @@
+/**
+ * Optimisation test functions with gradients and Hessians by automatic differentiation, known minimisers and search
+ * boxes: Rosenbrock, Himmelblau, Beale, Rastrigin, Ackley, Branin and an ill-conditioned quadratic bowl. Also synthetic
+ * tuning surfaces (a learning-rate and weight-decay loss, Branin) for hyperparameter search.
+ */
+
 import { grad, hessian } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { qr } from '../numerics/linalg/index.ts'

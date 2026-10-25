@@ -1,3 +1,9 @@
+/**
+ * Cross-decomposition of two blocks of variables, as in scikit-learn's `cross_decomposition`: PLS regression (latent
+ * directions of the inputs that best predict the outputs, by NIPALS), PLS canonical, canonical correlation analysis
+ * (directions of maximal correlation between the blocks) and PLS-SVD, with fit functions and class wrappers.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { componentsRecord } from '../../lib/exposition/index.ts'
 import {

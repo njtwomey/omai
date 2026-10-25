@@ -1,3 +1,8 @@
+/**
+ * The autocovariance and autocorrelation of a chain of draws at every lag, computed by FFT as ArviZ's `autocov` and
+ * `autocorr`: the raw material of effective sample sizes and of autocorrelation plots.
+ */
+
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { drawsOf, isMatrix, rowAutocovariance } from './_draws.ts'
 

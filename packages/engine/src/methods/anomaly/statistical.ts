@@ -1,3 +1,9 @@
+/**
+ * Statistical outlier detectors: the elliptic envelope (squared Mahalanobis distances under a robust minimum covariance
+ * determinant fit, as in scikit-learn), the PCA reconstruction-error detector, histogram-based outlier scores (HBOS)
+ * and the per-feature z-score detector with mean or robust median scaling.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import {
   defineExplainedEstimator,

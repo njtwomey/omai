@@ -1,6 +1,7 @@
 /**
- * In-processing methods: the exponentiated-gradient and grid-search reductions over a fitted learner, with the group
- * reports before and after and the trade-off over iterations.
+ * Fair classification during training on a dataset with a protected attribute, wrapping the reductions of
+ * `whitebox-engine/fairness`: exponentiated gradient, which yields a randomised classifier meeting a demographic-parity
+ * or equalised-odds constraint, and a grid search over multipliers, each audited before and after (as in fairlearn).
  */
 
 import { curveSet, type Explained, type Exposition } from '../../lib/exposition/index.ts'

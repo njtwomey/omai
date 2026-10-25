@@ -1,3 +1,10 @@
+/**
+ * Counterfactual explanations and recourse: the smallest change to an input that changes a model's decision. Wachter
+ * counterfactuals (the closest point in MAD-weighted distance that reaches a target), DiCE's diverse sets of
+ * counterfactuals found jointly, FACE paths of feasible steps through the data, and actionable recourse for a linear
+ * classifier, the cheapest allowed change that flips it.
+ */
+
 import { grad } from '../autodiff/index.ts'
 import { WhiteboxError } from '../base/index.ts'
 import { dijkstra, graph } from '../graph/index.ts'

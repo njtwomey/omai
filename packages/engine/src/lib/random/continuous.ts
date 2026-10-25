@@ -1,3 +1,10 @@
+/**
+ * Continuous random samplers that take a key first, JAX style: uniform and normal draws, the truncated normal (Robert's
+ * rejection samplers), exponential, Laplace, logistic, Gumbel, Cauchy, gamma (Marsaglia-Tsang), beta, chi-square,
+ * Student-t, Dirichlet, multivariate normal and von Mises, plus `uniformStream` for code that needs an unknown number
+ * of draws.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import {
   add,

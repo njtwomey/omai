@@ -1,3 +1,10 @@
+/**
+ * LeNet (LeCun et al., 1998), the classic convolutional network, for small images given as flattened rows (the 8 by 8
+ * digits by default): two convolution, activation and pooling stages, a hidden fully connected layer and a softmax
+ * output. A fit function and class that record the feature maps of each convolution and the learnt filters as training
+ * goes on.
+ */
+
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import {
   coefficientTable,

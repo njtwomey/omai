@@ -1,3 +1,9 @@
+/**
+ * Recurrent networks as functions: single steps of the Elman RNN, LSTM and GRU cells with PyTorch's weight names, a
+ * JAX-style `scan` over time, `recurrent` for stacked and bidirectional networks over whole sequences (the computation
+ * of torch.nn.RNN, LSTM and GRU), and packing and unpacking of variable-length batches.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {

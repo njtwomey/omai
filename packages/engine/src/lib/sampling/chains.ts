@@ -1,3 +1,11 @@
+/**
+ * The shared shape of Markov chain Monte Carlo, in BlackJAX's style: the `MCMCKernel` contract (`init` and `step` with
+ * an explicit key), warm-up `Adaptation`s, `samplerAlgorithm`, which runs a kernel as a traced algorithm recording
+ * acceptance, divergences and step sizes, and `sampleChain` and `sampleChains` for one or several independent chains.
+ * Also the `Chains` record of draws and statistics and helpers to thin, pool, discard warm-up and map draws back to
+ * constrained parameters.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, split as splitKey, uniform } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'

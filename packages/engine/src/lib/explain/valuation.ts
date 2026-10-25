@@ -1,3 +1,9 @@
+/**
+ * Data valuation: how much each training example matters to a model. Influence functions (the effect on a test loss of
+ * up-weighting a training point, through the inverse Hessian), TracIn (gradient agreement summed over training
+ * checkpoints), Data Shapley by truncated Monte Carlo, and exact KNN-Shapley for nearest-neighbour classifiers.
+ */
+
 import { grad, hessian } from '../autodiff/index.ts'
 import { meanOf, WhiteboxError } from '../base/index.ts'
 import { innerFitOptions, keyFor, runOptionsFor } from '../learn/_shared.ts'

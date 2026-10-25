@@ -1,3 +1,9 @@
+/**
+ * Factor graphs, the bipartite graph of variables and the factors over them that inference algorithms run on, and the
+ * shared plumbing that lets any discrete model (Bayes network, Markov network or factor graph) be used as one: its
+ * variables and factors, evidence by state name or index, unnormalised log probabilities and a forest test.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type DiscreteVariable, type Factor, logFactorAt } from '../factor.ts'
 import { type BayesNet, bayesFactors } from './bayes-net.ts'

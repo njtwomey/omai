@@ -1,3 +1,9 @@
+/**
+ * Nonlinear least squares and curve fitting, scipy.optimize style: robust losses, damped Gauss-Newton as a traced
+ * algorithm, the `leastSquares` front end over Gauss-Newton, Levenberg-Marquardt, trust region reflective and dogbox,
+ * and `curveFit` for fitting a model to data with parameter covariances (as `scipy.optimize.curve_fit`).
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { cholesky, daxpy, ddot, dgesvd, dnrm2, dscal, solveTriangular } from '../../numerics/linalg/index.ts'
 import {

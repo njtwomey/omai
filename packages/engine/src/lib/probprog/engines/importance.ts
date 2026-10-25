@@ -1,3 +1,9 @@
+/**
+ * Importance sampling on probabilistic programs: likelihood weighting by default (draws from the prior weighted by the
+ * likelihood of the observations, Pyro's `Importance`), or draws from a guide, returned as a weighted posterior with
+ * the evidence estimate and the Pareto k-hat diagnostic. Also the engine for the planner.
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { foldIn } from '../../random/index.ts'
 import { importanceEss, logEvidence, paretoSmoothedWeights } from '../../sampling/index.ts'

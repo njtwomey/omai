@@ -1,3 +1,9 @@
+/**
+ * Random measures and the combinatorial processes of Bayesian nonparametrics: stick-breaking weights and truncated
+ * Dirichlet and Pitman-Yor processes, the Chinese restaurant process with its expected table count and partition
+ * probabilities, the Polya urn, the Indian buffet process for latent feature allocations, and beta and gamma processes.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { beta as betaLaw, type Distribution, gamma as gammaLaw } from '../dists/index.ts'
 import { lgamma } from '../numerics/special/index.ts'

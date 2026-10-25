@@ -1,3 +1,9 @@
+/**
+ * The shared vocabulary of the minimisers: objectives and residual functions of any parameter tree, their views as
+ * functions of one flat vector with derivatives by autodiff, box bounds and their normalisation, the method type that
+ * `minimize` dispatches on, and the scipy-style `MinimizeResult`.
+ */
+
 import {
   hessian as hessianOf,
   hvp as hessianVector,

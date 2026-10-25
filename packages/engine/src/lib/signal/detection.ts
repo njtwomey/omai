@@ -1,3 +1,10 @@
+/**
+ * Detection of signals in noise with a controlled false-alarm rate: the energy detector (radiometer), the
+ * matched-filter detector for a known template, constant false-alarm rate (CFAR) detection whose threshold adapts to
+ * the noise estimated from neighbouring cells, and the receiver operating characteristics of the first two in closed
+ * form.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { chi2, noncentralChi2, normal } from '../dists/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Trigonometric and hyperbolic functions on symbolic expressions, with their inverses and `atan2`: sine, cosine and
+ * tangent are exact at rational multiples of pi with small denominators, and the rest evaluate exactly where they can
+ * and stay symbolic otherwise.
+ */
+
 import { makeFn } from './_functions.ts'
 import { asExpr, type Expr, type ExprLike } from './expr.ts'
 

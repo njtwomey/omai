@@ -1,3 +1,10 @@
+/**
+ * The graphical lasso (Friedman, Hastie and Tibshirani, 2008; as in scikit-learn): a sparse precision matrix estimated
+ * by an L1-penalised Gaussian likelihood, whose zeros are conditional independences between variables. Solved by
+ * coordinate descent column by column as a traced algorithm, with the objective, the solver and an estimator with a
+ * class wrapper.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { regularisationPath } from '../../lib/exposition/index.ts'
 import {

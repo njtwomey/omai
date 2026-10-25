@@ -1,3 +1,9 @@
+/**
+ * Interventions and the do-operator by graph surgery: `doIntervention` cuts an intervened variable from its parents and
+ * fixes its value, giving interventional distributions P(y | do(x)) of Bayes networks, average causal effects, and
+ * interventional means and covariances of linear-Gaussian networks.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type Factor, factorValues } from '../factor.ts'
 import { variableElimination } from '../inference/elimination.ts'

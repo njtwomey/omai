@@ -1,3 +1,10 @@
+/**
+ * Centrality measures, which score how important each node is to a graph's structure, as in NetworkX: degree and
+ * closeness, betweenness by Brandes' algorithm (and edge betweenness), and the spectral scores eigenvector centrality,
+ * Katz centrality, PageRank and HITS hubs and authorities, the iterative ones also available as traced power
+ * iterations.
+ */
+
 import { type Json, kahanSum, maxOf, WhiteboxError } from '../base/index.ts'
 import { dasum, daxpy, dnrm2 } from '../numerics/linalg/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * Constrained minimisation by sequences of unconstrained problems: the quadratic penalty method, the logarithmic
+ * barrier method and the augmented Lagrangian method (with multipliers in scipy's sign convention), each an outer
+ * traced algorithm that runs an inner local method as a child run.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2 } from '../../numerics/linalg/index.ts'
 import { add, log, maximum, mul, neg, square, sub, sum, tensor, toFlat, type Value } from '../../tensor/index.ts'

@@ -1,3 +1,9 @@
+/**
+ * The training loop of reinforcement learning (stable-baselines3's `learn`): an agent acts, the environment steps and
+ * the agent learns, as a traced algorithm with periodic greedy evaluations and checkpoints. Any episode of a run can be
+ * rebuilt with its rendered frames by deterministic replay from the nearest checkpoint.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'

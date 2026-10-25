@@ -1,3 +1,10 @@
+/**
+ * Entropies and divergences of discrete distributions given as probability vectors or joint tables: Shannon, joint,
+ * conditional and cross entropy, the Kullback-Leibler and Jensen-Shannon divergences and total variation (as scipy),
+ * mutual, conditional and interaction information, pointwise mutual information, and the information gain and gain
+ * ratio used to grow decision trees.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { entr, relEntr, xlogy } from '../numerics/special/index.ts'
 import {

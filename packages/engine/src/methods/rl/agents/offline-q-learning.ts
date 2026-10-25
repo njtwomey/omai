@@ -1,5 +1,10 @@
-// Discrete value-based offline RL: offline DQN, conservative Q-learning (CQL) and batch-constrained Q-learning
-// (discrete BCQ), each an OfflineLearner over a fixed dataset of transitions.
+/**
+ * Discrete value-based offline RL, each method an `OfflineLearner` over a fixed dataset of transitions: offline DQN,
+ * the uncorrected baseline that overestimates actions the data never took, conservative Q-learning (CQL, which pushes
+ * down the values of unsupported actions) and discrete batch-constrained Q-learning (BCQ, which only considers actions
+ * a learnt model of the behaviour policy finds likely).
+ */
+
 import { argmaxOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { crossEntropy, huber } from '../../../lib/losses/index.ts'
 import { incrementalUpdate, type Tree } from '../../../lib/optim/index.ts'

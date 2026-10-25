@@ -1,3 +1,9 @@
+/**
+ * Estimating how images move: template matching by normalised cross-correlation, translation by phase correlation,
+ * exhaustive block matching (the motion vectors of video coding), and dense optical flow by Lucas-Kanade (local least
+ * squares) and Horn-Schunck (a global smoothness prior solved by Jacobi iterations, also as a traced algorithm).
+ */
+
 import { type Json, WhiteboxError } from '../../base/index.ts'
 import { fft2, ifft2 } from '../../numerics/fourier/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'

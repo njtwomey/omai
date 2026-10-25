@@ -1,3 +1,10 @@
+/**
+ * Corrections for testing many hypotheses at once, as statsmodels multipletests: adjusted p-values controlling the
+ * family-wise error rate (Bonferroni, Sidak, Holm, Hochberg, Hommel) or the false discovery rate (Benjamini-Hochberg,
+ * Benjamini-Yekutieli), and combination of independent p-values by Fisher's, Stouffer's and related methods
+ * (scipy.stats.combine_pvalues).
+ */
+
 import { type TestResult, WhiteboxError } from '../../base/index.ts'
 import type { Tensor, TensorLike } from '../../tensor/index.ts'
 import { chi2Cdf, chi2Sf, normPpf, normSf, sample, tSf, vec } from '../_util.ts'

@@ -1,5 +1,10 @@
-// Frequent itemsets: Apriori played level by level over the itemset lattice, FP-growth played transaction by
-// transaction as its FP-tree grows (mlxtend's apriori and fpgrowth).
+/**
+ * Frequent itemset mining, as in mlxtend's `apriori` and `fpgrowth`: Apriori played level by level over the itemset
+ * lattice (join frequent itemsets into larger candidates, prune those with an infrequent subset, count the rest), and
+ * FP-growth played transaction by transaction as its prefix tree grows. Also Han and Kamber's textbook baskets and
+ * generated baskets with planted associations.
+ */
+
 import { WhiteboxError } from '../../lib/base/index.ts'
 import { type BoardSteps, boardSteps, type Explained } from '../../lib/exposition/index.ts'
 import { type Key, uniform } from '../../lib/random/index.ts'

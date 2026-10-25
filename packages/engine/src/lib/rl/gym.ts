@@ -1,3 +1,9 @@
+/**
+ * A gymnasium-like front door to the environments: listing the definitions a module exports, `make` (time limits and
+ * wrappers applied, as `gymnasium.make`), and `GymEnv`, a stateful wrapper whose `reset` and `step` return gymnasium's
+ * tuples for code written in that style.
+ */
+
 import { type Json, WhiteboxError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'

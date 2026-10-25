@@ -1,3 +1,9 @@
+/**
+ * Exposition records of clustering: how assignments and centres changed per iteration, the merges of a hierarchy and
+ * density labels, must-link and cannot-link constraints with the pairs the result breaks, and the EM or variational
+ * steps of a mixture model (parameters, responsibilities and objective per step).
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 import type { InputRows } from './rows.ts'

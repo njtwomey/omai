@@ -1,3 +1,10 @@
+/**
+ * Active learning, where the model chooses which unlabelled examples to have labelled next so it learns from fewer
+ * labels, modAL style. Uncertainty measures and query strategies (least confidence, margin, entropy, query by
+ * committee, expected error reduction, ranked batches), pool-based `activeLearning` as a traced loop of fit, query and
+ * label, and stream-based selective sampling.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, permutation } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'

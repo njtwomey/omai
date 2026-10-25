@@ -1,3 +1,9 @@
+/**
+ * The distributions of extremes: the Gumbel law of maxima, the generalised extreme value (GEV) distribution, which
+ * unites the Gumbel, Frechet and Weibull limit laws of block maxima, the generalised Pareto distribution of exceedances
+ * over a high threshold, and the Frechet, as scipy.stats.
+ */
+
 import { gamma as gammaFn, log1mexp } from '../../numerics/special/index.ts'
 import {
   abs,

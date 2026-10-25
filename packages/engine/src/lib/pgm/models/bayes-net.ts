@@ -1,3 +1,10 @@
+/**
+ * Discrete Bayes networks as plain data: nodes with states, parents and conditional probability tables, validated and
+ * in topological order. Their factors and joint probabilities, ancestral sampling, Markov blankets, d-separation and
+ * active trails (Bayes-ball), minimal d-separators, and the local and pairwise independencies a network implies, as in
+ * pgmpy.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { type Factor, factor } from '../factor.ts'

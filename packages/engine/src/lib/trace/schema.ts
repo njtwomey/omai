@@ -1,3 +1,9 @@
+/**
+ * Trace schemas, the algorithm's half of the trace contract: the metric, tensor and message channels an algorithm can
+ * emit (tensors with their role and shape), declared with `channels`, serialised into the run event, and checked
+ * against recorded events by `validateAgainstSchema`.
+ */
+
 import type { Direction, Json } from '../base/index.ts'
 import type { TensorRole, TraceEvent } from './events.ts'
 

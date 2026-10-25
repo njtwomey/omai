@@ -1,3 +1,9 @@
+/**
+ * Pattern discovery from a matrix profile, as in stumpy: all matches of a query, the top motifs (repeated patterns, the
+ * windows with the closest neighbours) with their matches, the top discords (the most unusual windows), and time-series
+ * chains of windows that evolve step by step (anchored and all chains).
+ */
+
 import { WhiteboxError } from '../../../lib/base/index.ts'
 import { applyExclusionZone, exclusionZone, mass, seriesOf } from '../../../lib/signal/index.ts'
 import type { TensorLike } from '../../../lib/tensor/index.ts'

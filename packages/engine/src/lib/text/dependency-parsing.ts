@@ -1,3 +1,10 @@
+/**
+ * Dependency parsing: finding the head word of each word in a sentence, which forms a tree. Eisner's
+ * dynamic-programming algorithm for the best projective tree under arc scores, a projectivity test, and the
+ * arc-standard transition system with its static oracle and a greedy transition-based parser driven by a scoring
+ * function.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 
 /**

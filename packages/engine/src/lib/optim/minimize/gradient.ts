@@ -1,3 +1,9 @@
+/**
+ * Gradient-based minimisers as traced algorithms: gradient descent with line searches, fixed rates or Barzilai-Borwein
+ * steps, nonlinear conjugate gradients (a port of scipy's CG, with the Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel
+ * and Dai-Yuan choices), and coordinate descent with cyclic, random or greedy order.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, dscal, idamax } from '../../numerics/linalg/index.ts'
 import { permutation } from '../../random/index.ts'

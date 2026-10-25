@@ -1,3 +1,9 @@
+/**
+ * Rosenblatt's perceptron on two classes as a study of its learning rule: each misclassified row moves the weights
+ * towards its side until an epoch makes no mistakes, with every update recorded and Novikoff's bound on the number of
+ * mistakes for separable data.
+ */
+
 import { type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { coefficientTable, type Exposition, learningCurve } from '../../../lib/exposition/index.ts'
 import {

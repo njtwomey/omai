@@ -1,3 +1,9 @@
+/**
+ * Image filters, scipy.ndimage and scikit-image style: Gaussian smoothing and derivatives, box (uniform) means, rank
+ * filters (median, minimum, maximum, percentile), the Sobel, Scharr and Prewitt edge filters, the Laplacian and
+ * Laplacian of Gaussian, the edge-preserving bilateral filter, and Gabor kernels and filter banks for texture.
+ */
+
 import { WhiteboxError } from '../../base/index.ts'
 import { type BorderMode, extendIndex, padModeOf } from '../../numerics/convolution/index.ts'
 import { add, fromStorage, mul, primalOf, sqrt, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'

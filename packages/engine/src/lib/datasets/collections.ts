@@ -1,3 +1,9 @@
+/**
+ * Themed collections of datasets for pickers and hub entries (two-dimensional classification, one-dimensional
+ * regression and so on): each entry is a generator with demo knobs or a vendored real dataset, and `loadEntry` makes or
+ * loads one.
+ */
+
 import { WhiteboxError } from '../base/index.ts'
 import type { Dataset } from '../data/index.ts'
 import { type Generated, generate, type Knobs } from '../data/index.ts'
