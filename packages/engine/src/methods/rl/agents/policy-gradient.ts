@@ -1,3 +1,10 @@
+/**
+ * On-policy policy-gradient agents, which move a parametrised policy along the gradient of expected return: REINFORCE
+ * (Monte Carlo returns with a baseline), A2C (advantage actor-critic on short rollouts), TRPO (natural-gradient steps
+ * inside a KL trust region) and PPO (clipped or KL-penalised surrogate objectives, as stable-baselines3 implements it).
+ * The surrogate objectives, the adaptive KL rule and the TRPO step are exported on their own as well.
+ */
+
 import { grad, jvp, valueAndGrad } from '../../../lib/autodiff/index.ts'
 import { type Json, meanOf, WhiteboxError } from '../../../lib/base/index.ts'
 import type { Params } from '../../../lib/nn/index.ts'

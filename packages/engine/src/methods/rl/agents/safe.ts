@@ -1,3 +1,11 @@
+/**
+ * Safe reinforcement learning: constrained MDPs, where an agent maximises reward while keeping an expected constraint
+ * cost under a limit, and shielding, which keeps an agent from taking unsafe actions. A wrapper that adds a cost to
+ * every step of an environment (the Safety Gym convention), Lagrangian PPO, which learns a multiplier that prices the
+ * cost, and shields built from a safety predicate or a model lookahead, applied before the agent chooses or after it
+ * proposes.
+ */
+
 import { argminOf, type Json, meanOf, minOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { adam, chain, clipByGlobalNorm } from '../../../lib/optim/index.ts'
 import type { Key } from '../../../lib/random/index.ts'

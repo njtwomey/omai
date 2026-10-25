@@ -1,3 +1,11 @@
+/**
+ * The reinforcement-learning playground: curated pairings of an environment and an agent whose defaults learn visibly
+ * in about a second in a browser (bandits, cliff walking, frozen lake, CartPole and MountainCar). `playground` trains a
+ * pairing and returns an `episodes` exposition record of returns, episodes recorded for playback and value and policy
+ * snapshots; `playgroundSession` sets up the same run to step live, and `replayRecorded` plays a recorded episode back
+ * exactly.
+ */
+
 import { type Json, linspaceNumbers, meanOf, WhiteboxError } from '../../lib/base/index.ts'
 import { type EpisodeRecord, type Explained, episodeRecord } from '../../lib/exposition/index.ts'
 import { foldIn, type Key, key as makeKey } from '../../lib/random/index.ts'

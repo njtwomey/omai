@@ -1,3 +1,10 @@
+/**
+ * Hierarchical RL with options (Sutton, Precup and Singh 1999): temporally extended actions, each with an initiation
+ * set, an internal policy and a termination condition. Option builders (primitive actions, subgoal options solved from
+ * a model, the hallway options of the four-rooms domain), SMDP Q-learning and intra-option Q-learning over a set of
+ * options, and the tabular option-critic, which learns the options' policies and terminations from reward alone.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { expit } from '../../../lib/numerics/special/index.ts'
 import { foldIn, type Key, uniform } from '../../../lib/random/index.ts'

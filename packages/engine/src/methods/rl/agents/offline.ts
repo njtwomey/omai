@@ -1,8 +1,11 @@
-// Offline (batch) reinforcement learning: methods that learn from a fixed dataset of transitions collected by some
-// behaviour policy, never interacting with the environment. Each method is an `OfflineLearner` (pure functions over
-// its state, updated on minibatches of the dataset); `offlineAlgorithm` runs one as a traced Algorithm,
-// `trainOffline` returns the trained state with its policy, and `offlineAgent` gives the result the Agent contract so
-// it can be evaluated like any other agent.
+/**
+ * Offline (batch) reinforcement learning: learning from a fixed dataset of transitions collected by some behaviour
+ * policy, without interacting with the environment. Collecting a dataset and splitting it into episodes, the
+ * `OfflineLearner` contract (pure functions over a state, updated on minibatches), `offlineAlgorithm` and
+ * `trainOffline` to run a learner as a traced algorithm, `offlineAgent` to evaluate the result like any other agent,
+ * and behaviour cloning as the simplest learner.
+ */
+
 import { argmaxOf, type Json, WhiteboxError } from '../../../lib/base/index.ts'
 import { crossEntropy, gaussianNll, mse } from '../../../lib/losses/index.ts'
 import type { Tree } from '../../../lib/optim/index.ts'

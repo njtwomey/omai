@@ -1,3 +1,10 @@
+/**
+ * Multi-agent learning in competitive and general-sum games: independent learners (one single-agent learner per agent,
+ * treating the others as part of the environment), minimax-Q for two-player zero-sum Markov games, self-play against a
+ * pool of past snapshots, and neural fictitious self-play, whose average policies approach an equilibrium in turn-based
+ * games such as poker.
+ */
+
 import { argmaxOf, type Json, meanOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { solveZeroSum } from '../../../lib/games/index.ts'
 import { crossEntropy } from '../../../lib/losses/index.ts'

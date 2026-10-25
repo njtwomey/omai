@@ -1,3 +1,11 @@
+/**
+ * Classical controllers as agents for continuous control, planning with a model of the environment rather than learning
+ * from reward. The linear-quadratic regulator (`lqr`, the optimal linear feedback for linear dynamics and quadratic
+ * cost, from the discrete algebraic Riccati equation) and `lqrAgent`, which linearises a differentiable model by
+ * autodiff; an energy-based pendulum swing-up that hands over to LQR near upright; model predictive control re-planning
+ * over a receding horizon; and a cross-entropy-method planner.
+ */
+
 import { argminOf, clamp, type Json, maxOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { dlqr, type IlqrOptions, ilqr } from '../../../lib/dynamics/control/index.ts'
 import { type Key, key as makeKey } from '../../../lib/random/index.ts'

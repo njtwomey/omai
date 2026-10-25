@@ -1,3 +1,10 @@
+/**
+ * Off-policy actor-critic agents for continuous control: an actor network chooses actions and Q-value critics learnt
+ * from replayed transitions judge them. `ddpg` (a deterministic actor with exploration noise), `td3` (DDPG with twin
+ * critics, target policy smoothing and delayed actor updates) and `sac` (soft actor-critic: a squashed Gaussian actor
+ * maximising reward plus entropy, its temperature tuned automatically), with `sacDiscrete` for discrete actions.
+ */
+
 import { argmaxOf } from '../../../lib/base/index.ts'
 import type { Params } from '../../../lib/nn/index.ts'
 import { adam, incrementalUpdate, type Tree } from '../../../lib/optim/index.ts'

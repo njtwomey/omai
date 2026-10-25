@@ -1,3 +1,11 @@
+/**
+ * Imitation learning and inverse reinforcement learning: learning a policy from an expert's behaviour, or the reward
+ * that behaviour implies. DAgger (repeatedly labelling the learner's own states with the expert's actions), GAIL (a
+ * policy trained against a discriminator that tells its behaviour from the expert's), and maximum-entropy IRL for
+ * tabular MDPs with its building blocks: soft value iteration, expected state visitation frequencies and feature
+ * expectations of demonstrations.
+ */
+
 import { type Json, meanOf, WhiteboxError } from '../../../lib/base/index.ts'
 import { binaryCrossEntropyWithLogits } from '../../../lib/losses/index.ts'
 import type { ActivationName, Params } from '../../../lib/nn/index.ts'
