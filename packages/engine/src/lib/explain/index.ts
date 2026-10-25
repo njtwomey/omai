@@ -7,6 +7,7 @@
 export * from './counterfactuals.ts'
 export * from './gradients.ts'
 export * from './inspection.ts'
+export * from './internal.ts'
 export * from './modalities.ts'
 export * from './perturbation.ts'
 export * from './shapley.ts'

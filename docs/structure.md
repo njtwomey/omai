@@ -2802,8 +2802,16 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   Gauss-Legendre paths), SmoothGrad, VarGrad and SmoothGrad squared (noise tunnels), expected gradients and
   GradientSHAP, DeepLIFT and DeepLIFT SHAP, guided backpropagation and deconvolution, Grad-CAM and guided Grad-CAM,
   layer-wise relevance propagation (epsilon, gamma, alpha-beta rules).
+  Built: `saliency`, `inputXGradient`, `integratedGradients` (`pathRule`), `smoothGrad`, `noiseTunnel` (SmoothGrad,
+  SmoothGrad squared, VarGrad over any method), `expectedGradients`, `gradientShap`, `deepLift`, `guidedBackprop`,
+  `deconvolution`, `gradCam` with `interpolateMap` (guided Grad-CAM is their product, in `methods/explain`), `lrp`
+  (epsilon, gamma, alpha-beta). Goldens: captum Saliency, InputXGradient, IntegratedGradients, DeepLift,
+  GuidedBackprop, Deconvolution, LRP (epsilon, gamma), LayerGradCam. TODO: DeepLIFT SHAP, LRP for convolutions.
 - Layer and neuron attribution (`internal.ts`): layer conductance, internal influence, layer activation times
   gradient, neuron conductance and integrated gradients, attention rollout and attention flow for transformers.
+  Built: `layerGradientXActivation`, `internalInfluence`, `layerConductance`, `neuronConductance`,
+  `neuronIntegratedGradients`, `attentionRollout`, `attentionFlow` (max-flow through the attention graph). Goldens:
+  captum LayerConductance, InternalInfluence, LayerGradientXActivation, NeuronConductance.
 - Global effects and importance (`inspection.ts`): partial dependence and ICE (centred, derivative), ALE (first and
   second order), permutation, drop-column and conditional permutation importance, H-statistics and functional ANOVA,
   SHAP summaries (mean |value|, beeswarm data, dependence and interaction data).
@@ -4084,7 +4092,10 @@ built from: `explain`, `learn`, `metrics`
   records (`lib/exposition/dependence.ts`), drawn by `DependenceView` and `DependenceSurfaceView`. Built.
 - `counterfactuals.ts`: counterfactual explanations and recourse for a fitted classifier, with constraints.
 - `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
-- `gradients.ts`: gradient attributions for neural models (`methods/neural`), drawn over images and tabular inputs.
+- `gradients.ts`: `explainNetwork` (saliency, input times gradient, integrated gradients, SmoothGrad, VarGrad,
+  GradientSHAP, guided backpropagation, deconvolution, Grad-CAM, guided Grad-CAM) for the LeNet of `methods/neural`,
+  as image-laid attribution records, and `explainLayer` (the last convolution's conductance per channel, as value
+  grids). Built.
 - `valuation.ts`: which training rows matter (influence, data Shapley, k-NN Shapley), with mislabelled-row studies.
 - `perturbation.ts`: `explainImage` (occlusion, superpixel ablation, RISE, superpixel SHAP and LIME), `explainText`
   (word ablation, SHAP, LIME over any text scorer), `explainSeries` (window occlusion, ablation, SHAP) and

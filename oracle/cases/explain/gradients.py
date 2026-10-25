@@ -1,10 +1,28 @@
 """Gradient attributions against captum on small torch networks with fixed weights: saliency, input times gradient,
-integrated gradients (Gauss-Legendre and Riemann rules, with the convergence delta) and DeepLIFT's rescale rule."""
+integrated gradients (Gauss-Legendre and Riemann rules, with the convergence delta), DeepLIFT's rescale rule, guided
+backpropagation and deconvolution, layer-wise relevance propagation (epsilon and gamma rules; captum's alpha1-beta0
+clamps weights rather than contributions, so it is not compared), the layer and neuron methods (layer conductance,
+internal influence, layer gradient times activation, neuron conductance) and Grad-CAM on a small convolutional
+network."""
 
 import captum
 import numpy as np
 import torch
-from captum.attr import DeepLift, InputXGradient, IntegratedGradients, Saliency
+from captum.attr import (
+    LRP,
+    Deconvolution,
+    DeepLift,
+    GuidedBackprop,
+    InputXGradient,
+    IntegratedGradients,
+    InternalInfluence,
+    LayerConductance,
+    LayerGradCam,
+    LayerGradientXActivation,
+    NeuronConductance,
+    Saliency,
+)
+from captum.attr._utils.lrp_rules import EpsilonRule, GammaRule
 from whitebox_oracle.fixture import Case, case
 from whitebox_oracle.helpers import FloatArray, rng
 from whitebox_oracle.torch_helpers import to_numpy, to_torch
@@ -23,6 +41,12 @@ def network(w1: FloatArray, b1: FloatArray, w2: FloatArray, b2: FloatArray, act:
         second.bias.copy_(to_torch(b2))
     activation = torch.nn.ReLU() if act == "relu" else torch.nn.Tanh()
     return torch.nn.Sequential(first, activation, second)
+
+
+def single(t: object) -> torch.Tensor:
+    """The one tensor a captum attribution returns for a single input."""
+    assert isinstance(t, torch.Tensor)
+    return t
 
 
 def cases() -> list[Case]:
@@ -89,4 +113,62 @@ def cases() -> list[Case]:
                     atol=1e-12,
                 )
             )
+    relu_net = network(w1, b1, w2, b2, "relu")
+    weights = [w1, b1, w2, b2, x, base]
+    xr = to_torch(x).requires_grad_()
+    for name, method in [("guided", GuidedBackprop(relu_net)), ("deconvolution", Deconvolution(relu_net))]:
+        attr = method.attribute(xr, target=1)
+        out.append(case(f"relu/{name}", "backward", weights, {"attributions": to_numpy(attr)}, rule=name))
+    for label, rules in [
+        ("epsilon", (EpsilonRule(), EpsilonRule())),
+        ("epsilon-0.1", (EpsilonRule(epsilon=0.1), EpsilonRule(epsilon=0.1))),
+        ("gamma", (GammaRule(), EpsilonRule())),
+    ]:
+        lrp_net = network(w1, b1, w2, b2, "relu")
+        lrp_net[0].rule = rules[0]  # type: ignore[attr-defined]
+        lrp_net[2].rule = rules[1]  # type: ignore[attr-defined]
+        attr = LRP(lrp_net).attribute(to_torch(x).requires_grad_(), target=0)
+        out.append(case(f"lrp/{label}", "lrp", weights, {"attributions": to_numpy(attr)}, rule=label))
+    for act in ["relu", "tanh"]:
+        net = network(w1, b1, w2, b2, act)
+        xt = to_torch(x).requires_grad_()
+        bt = to_torch(base)
+        layer = net[1]
+        path = {"baselines": bt, "target": 1, "n_steps": 20}
+        conductance = LayerConductance(net, layer).attribute(xt, **path)  # type: ignore[arg-type]
+        influence = InternalInfluence(net, layer).attribute(xt, **path)  # type: ignore[arg-type]
+        neuron = NeuronConductance(net, layer).attribute(xt, neuron_selector=2, **path)  # type: ignore[arg-type]
+        outputs = {
+            "conductance": to_numpy(single(conductance)),
+            "influence": to_numpy(single(influence)),
+            "gradientXActivation": to_numpy(single(LayerGradientXActivation(net, layer).attribute(xt, target=1))),
+            "neuron": to_numpy(neuron),
+        }
+        # NeuronConductance scales by float32 step sizes.
+        out.append(case(f"{act}/layer", "layer", weights, outputs, act=act, rtol=1e-6, atol=1e-7))
+    cw = g.normal(size=(2, 1, 3, 3))
+    cb = g.normal(size=2) * 0.3
+    lw = g.normal(size=(32, 2)) * 0.5
+    lb = g.normal(size=2) * 0.3
+    conv = torch.nn.Conv2d(1, 2, 3, padding=1).double()
+    lin = torch.nn.Linear(32, 2).double()
+    with torch.no_grad():
+        conv.weight.copy_(to_torch(cw))
+        assert conv.bias is not None
+        conv.bias.copy_(to_torch(cb))
+        lin.weight.copy_(to_torch(lw.T))
+        lin.bias.copy_(to_torch(lb))
+    cnn = torch.nn.Sequential(conv, torch.nn.ReLU(), torch.nn.Flatten(), lin)
+    images = g.normal(size=(2, 1, 4, 4))
+    for relu in [True, False]:
+        cam = LayerGradCam(cnn, cnn[1]).attribute(to_torch(images), target=0, relu_attributions=relu)
+        out.append(
+            case(
+                f"gradcam/{'relu' if relu else 'signed'}",
+                "gradCam",
+                [cw, cb, lw, lb, images.reshape(2, 16)],
+                {"maps": to_numpy(single(cam)).reshape(2, 16)},
+                relu=relu,
+            )
+        )
     return out
