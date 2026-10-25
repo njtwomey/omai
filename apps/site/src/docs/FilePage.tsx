@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '../shell/Link.tsx'
 import { Crumbs } from './Crumbs.tsx'
 import { DocText } from './DocText.tsx'
-import { baseName, type Docs, type IndexFile, symbolPath, useFileSymbols } from './data.ts'
+import { baseName, type Docs, type IndexFile, symbolPath, useFileData } from './data.ts'
 import { SymbolBody } from './SymbolPage.tsx'
 
 /** A source file: its opening comment, an index of its exports, then each export's documentation in source order. */
@@ -12,8 +12,9 @@ export function FilePage(props: {
   readonly nav?: ReactNode
 }): ReactNode {
   const { docs, file } = props
-  const symbols = useFileSymbols(file)
-  const prose = [file.summary, file.description].filter((t) => t !== '').join('\n\n')
+  const data = useFileData(file)
+  const symbols = data?.symbols ?? null
+  const prose = [file.summary, data?.description ?? ''].filter((t) => t !== '').join('\n\n')
   return (
     <div className="space-y-6">
       <header>

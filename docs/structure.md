@@ -4298,7 +4298,19 @@ failing example to itself).
 - Pages: home, folder (its subfolders and files), file (its exports), symbol (signature, TSDoc, live examples with
   their `// =>` values), concepts (by the encyclopedia's taxonomy), how-tos (`content/howto/`, runnable code blocks checked by the
   build), traces (open, replay, compare and export runs).
-- `plugins/`: the Vite plugin that extracts the catalogue at build time.
+- The catalogue is precompiled, never extracted on a request: `make docs-catalogue` (run first by `make dev` and
+  `make site`, a no-op when its output is newer than the engine's source) writes static files named by content hash
+  to `apps/site/.generated/docs/` (gitignored): a small index for the tree (folders with summaries, files with their
+  exports' names and kinds: about 0.5 MB where the whole catalogue is 7 MB), one data file per source file (its
+  comment and full `SymbolDoc`s, fetched when a page shows it) and a search index of every export's summary (fetched
+  when the search box is used, or once the page is idle), then `manifest.json` naming the current version.
+- `plugins/`: `docs-data.ts` (writing the files, the staleness check), `build-docs.ts` (the command behind
+  `make docs-catalogue`) and the Vite plugin `docs-catalogue.ts`. In dev it serves `<base>docs-data/*` from the
+  folder and `virtual:whitebox-docs/index` (the current index's URL); after an edit to the engine it regenerates in a
+  background process (debounced, low priority) while still serving the previous version, then sends
+  `whitebox-docs:update` and open pages fetch the new index. In a build it copies the files into `dist/docs-data/`.
+- Each section's code loads when the section is first visited (`React.lazy` in `main.tsx`), so the docs load none
+  of the gallery's recipes or the hub's collections.
 
 ## 9. Python oracle, `oracle/`
 
@@ -4341,7 +4353,7 @@ library for the same computation. They do not set a higher bar than that library
 
 ## 10. Repository tooling
 
-- `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `build`, `lint`, `format`, `typecheck`,
+- `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `docs-catalogue`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
   `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`.
 - Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, then only the tests,
@@ -4358,6 +4370,9 @@ library for the same computation. They do not set a higher bar than that library
 - `scripts/examples.ts` (`make examples`): every `@example` of the engine core run in worker threads with its `// =>`
   lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows to module or file prefixes,
   `--coverage` reports documentation coverage). How-tos join it when they exist.
+- `apps/site/plugins/build-docs.ts` (`make docs-catalogue`): the docs catalogue extracted once (about 3 seconds) and
+  written as the site's static docs files (section 8); `--if-stale` returns at once when they are newer than the
+  engine's source, whitebox-meta's `extract/` and `schema/`, and the generator.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).
 - `scripts/pack.ts`: build and pack the three packages; collect release assets with a manifest.

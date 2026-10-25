@@ -82,12 +82,16 @@ examples: ## Run every @example of the engine core and check its `// =>` lines (
 build: barrels ## Build all packages
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p run build || exit 1; done
 
+.PHONY: docs-catalogue
+docs-catalogue: ## Precompile the docs catalogue into apps/site/.generated/docs (skipped when newer than the sources)
+	$(NODE) apps/site/plugins/build-docs.ts --if-stale
+
 .PHONY: dev
-dev: ## Serve the site (gallery, hub and docs) at http://localhost:5300 with hot reload
+dev: docs-catalogue ## Serve the site (gallery, hub and docs) at http://localhost:5300 with hot reload
 	$(PNPM) --dir apps/site exec vite
 
 .PHONY: site
-site: ## Build the site into apps/site/dist
+site: docs-catalogue ## Build the site into apps/site/dist
 	$(PNPM) --dir apps/site exec vite build
 
 .PHONY: verify

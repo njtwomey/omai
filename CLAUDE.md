@@ -24,6 +24,9 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - `make check` and `make fixtures-check`: everything, every test, example and fixture. A periodic full run (after a batch
   of merges and before a release), not a per-commit gate.
 - `make setup`: install tools and dependencies.
+- `make docs-catalogue`: precompile the docs catalogue into `apps/site/.generated/docs/` (static files the docs pages
+  fetch); `make dev` and `make site` run it first, and it skips itself when the output is newer than the sources. The
+  dev server regenerates it in the background after engine edits.
 - `make test`: all Vitest projects.
 - `make barrels`: regenerate `index.ts` files after adding or removing a file or folder (never edit them by hand).
 - `make layers`, `make lint`, `make format`, `make typecheck`.
