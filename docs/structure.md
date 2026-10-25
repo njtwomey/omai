@@ -2791,26 +2791,55 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Attributions, perturbation-based (`perturbation.ts`): occlusion and feature ablation (with feature masks and
   baselines), RISE for images, Morris elementary effects, LIME (tabular, text tokens, image superpixels;
   `surrogates.ts`).
+  Built: `featureAblation`, `occlusion` (captum's window count, edge windows clipped), `rise`, `morrisEffects`;
+  `limeMasked` in `surrogates.ts` (lime's text and image explainers over on/off units). Goldens: captum
+  FeatureAblation and Occlusion.
 - Shapley family (`shapley.ts`): exact, kernel, sampling and permutation SHAP, tree SHAP (path-dependent and
   interventional) and interactions, linear SHAP (independent and correlated), partition SHAP and Owen values over
   feature hierarchies, conditional versus interventional value functions, SAGE (global importance), Shapley-based
   interaction indices.
+  Built: `shapleyValues`, `shapleyInteractionValues`, `interventionalValue`, `conditionalValue` (Gaussian and
+  empirical, Aas et al.), `kernelShap`, `samplingShapley`, `treeShap`, `treeShapInteractions`, `ensembleTreeShap`,
+  `linearShap` (interventional, and correlation-dependent by the Gaussian conditional mean), `owenValues` (nested
+  hierarchies), `hierarchyFromLinkage`, `correlationHierarchy`, `partitionShap`, `sage` (permutation-sampled or exact).
+  Goldens: shap Kernel, Exact (independent masker, and partition masker = Owen values), Linear and Tree explainers.
+  TODO: interventional Tree SHAP, Shapley-Taylor and Faith-SHAP interaction indices.
 - Gradient-based (`gradients.ts`): saliency, input times gradient, integrated gradients (baselines, Riemann and
   Gauss-Legendre paths), SmoothGrad, VarGrad and SmoothGrad squared (noise tunnels), expected gradients and
   GradientSHAP, DeepLIFT and DeepLIFT SHAP, guided backpropagation and deconvolution, Grad-CAM and guided Grad-CAM,
   layer-wise relevance propagation (epsilon, gamma, alpha-beta rules).
+  Built: `saliency`, `inputXGradient`, `integratedGradients` (`pathRule`), `smoothGrad`, `noiseTunnel` (SmoothGrad,
+  SmoothGrad squared, VarGrad over any method), `expectedGradients`, `gradientShap`, `deepLift`, `guidedBackprop`,
+  `deconvolution`, `gradCam` with `interpolateMap` (guided Grad-CAM is their product, in `methods/explain`), `lrp`
+  (epsilon, gamma, alpha-beta). Goldens: captum Saliency, InputXGradient, IntegratedGradients, DeepLift,
+  GuidedBackprop, Deconvolution, LRP (epsilon, gamma), LayerGradCam. TODO: DeepLIFT SHAP, LRP for convolutions.
 - Layer and neuron attribution (`internal.ts`): layer conductance, internal influence, layer activation times
   gradient, neuron conductance and integrated gradients, attention rollout and attention flow for transformers.
+  Built: `layerGradientXActivation`, `internalInfluence`, `layerConductance`, `neuronConductance`,
+  `neuronIntegratedGradients`, `attentionRollout`, `attentionFlow` (max-flow through the attention graph). Goldens:
+  captum LayerConductance, InternalInfluence, LayerGradientXActivation, NeuronConductance.
 - Global effects and importance (`inspection.ts`): partial dependence and ICE (centred, derivative), ALE (first and
   second order), permutation, drop-column and conditional permutation importance, H-statistics and functional ANOVA,
   SHAP summaries (mean |value|, beeswarm data, dependence and interaction data).
+  Built: `partialDependence` (ICE kept), `centredIce`, `iceDerivative`, `accumulatedLocalEffects`,
+  `accumulatedLocalEffects2D` (ALEPlot's second order), `permutationImportance`, `dropColumnImportance`,
+  `conditionalPermutationImportance` (Strobl's strata of correlated features), `hStatistic`, `functionalAnova`; SHAP
+  summaries are `methods/explain`'s `explainDataset`. Goldens: sklearn PD/ICE and permutation importance, numpy ALE
+  (both orders) and drop-column refits.
 - Surrogates and rules (`surrogates.ts`, `rules.ts`): global surrogate trees and fidelity, anchors (precision and
   coverage), RuleFit-style rule ensembles, rule lists and Boolean rules (BRCG-style), linearity measure.
 - Example-based (`examples.ts`): prototypes and criticisms (MMD-critic, ProtoSelect), k-nearest explanations, gradient
   similarity explanations, trust scores.
+  Built: `mmdCritic` (greedy MMD prototypes, witness-function criticisms with a log-det spread), `nearestExamples`,
+  `gradientSimilarity` (dot, cosine, alibi's grad-cos), `trustScores` (alibi's alpha-filtered class cores). TODO:
+  ProtoSelect.
 - Contrastive and counterfactual (`counterfactuals.ts`): Wachter, diverse (DiCE-style), FACE, CEM (pertinent positives
   and negatives), prototype-guided counterfactuals, growing spheres, MACE-style for tree ensembles; actionability,
   immutability and plausibility constraints; recourse (linear, cost, feasibility) and its robustness to model change.
+  Built: `wachterCounterfactual`, `diverseCounterfactuals`, `faceCounterfactual`, `growingSpheres`,
+  `pertinentNegative` and `pertinentPositive` (CEM by projected FISTA), `prototypeCounterfactual` (class prototypes
+  from nearest neighbours, no encoder), `linearRecourse`, `actionViolations` and `projectActions` (immutable,
+  monotone, bounded, integer), `recourseRobustness`. TODO: MACE for tree ensembles.
 - Concepts (`concepts.ts`): concept activation vectors and TCAV scores with significance, probing classifiers,
   concept bottleneck analysis.
 - Glass-box models (`glassbox.ts`): explainable boosting (GA2M: shape functions and pairwise terms), scorecards from
@@ -2819,6 +2848,9 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   Banzhaf, representer points; detecting mislabelled and harmful training rows.
 - Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
   attribution applies to text, images and series.
+  Built: `tokenise`, `tokenPredictor`, `gridSuperpixels`, `slicSuperpixels`, `timeWindows`, `maskGroups`,
+  `maskedPredictor` (a predictor over group presence, so Kernel SHAP, exact Shapley and LIME run over units),
+  `expandGroups`.
 - Evaluation of explanations (`evaluation.ts`, Quantus's categories): faithfulness (deletion and insertion curves,
   ROAR, faithfulness correlation, monotonicity), robustness (max- and average-sensitivity, local Lipschitz estimate),
   localisation (pointing game, relevance mass and rank against a ground-truth mask), complexity (sparseness, entropy),
@@ -4080,16 +4112,33 @@ ROC with thresholds), reliability diagrams, conformal bands and set sizes.
 `explain/` (shap, lime, alibi, interpret, sklearn.inspection)
 built from: `explain`, `learn`, `metrics`
 - `attributions.ts`: `explainPrediction(model, data, row, { method: 'tree' | 'kernel' | 'exact' | 'sampling' |
-  'lime' })` and `explainDataset` (attributions for many rows: summary and beeswarm, with each feature's strongest
+  'lime' | 'linear' | 'partition' | 'conditional' })` and `explainDataset` (attributions for many rows: summary and beeswarm, with each feature's strongest
   interaction partner), with the sampling estimate's convergence recorded (and as a `curves` record); `_models.ts`
   picks the output explained (prediction, probability, a booster's log odds) and reads trees, forests and gradient
   boosting as Tree SHAP models.
-- `inspection.ts`: `featureImportance` (permutation, with every repeat, or impurity), PDP and ICE, ALE and interaction
-  strength for any fitted estimator.
-- `counterfactuals.ts`: counterfactual explanations and recourse for a fitted classifier, with constraints.
+- `inspection.ts`: `featureImportance` (permutation, with every repeat; conditional permutation; or impurity),
+  `sageImportance` (SAGE's loss shares),
+  `dropColumnImportances` (refits), `dependencePlot` (PDP with ICE curves raw, centred or derivative, the rug, two-way
+  surfaces) and `aleEffects` (first and second order) for any fitted estimator: `importances` and `dependence`
+  records (`lib/exposition/dependence.ts`), drawn by `DependenceView` and `DependenceSurfaceView`. Built.
+- `counterfactuals.ts`: `explainCounterfactuals` (growing spheres and FACE for any classifier; Wachter, DiCE,
+  prototype-guided and CEM for models linear in their inputs, read off the decision function), with actionability
+  constraints and robustness to bootstrap refits: a `counterfactuals` record (`lib/exposition/examples.ts`) drawn as a
+  table by `CounterfactualView`; `prototypesAndCriticisms` (MMD-critic on standardised rows: a `prototypes` record,
+  `PrototypeView` on principal components or as images); `trustScoreStudy` (accuracy as fewer rows are trusted, by
+  trust score and by confidence, as `curves`). Built.
 - `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
-- `gradients.ts`: gradient attributions for neural models (`methods/neural`), drawn over images and tabular inputs.
+- `gradients.ts`: `explainNetwork` (saliency, input times gradient, integrated gradients, SmoothGrad, VarGrad,
+  GradientSHAP, guided backpropagation, deconvolution, Grad-CAM, guided Grad-CAM) for the LeNet of `methods/neural`,
+  as image-laid attribution records, and `explainLayer` (the last convolution's conductance per channel, as value
+  grids). Built.
 - `valuation.ts`: which training rows matter (influence, data Shapley, k-NN Shapley), with mislabelled-row studies.
+- `perturbation.ts`: `explainImage` (occlusion, superpixel ablation, RISE, superpixel SHAP and LIME), `explainText`
+  (word ablation, SHAP, LIME over any text scorer), `explainSeries` (window occlusion, ablation, SHAP) and
+  `morrisScreening` (an `importances` record). The `featureAttributions` record gains `layout` (image, tokens,
+  series) and `segments`; render draws them with `AttributionImageView`, `TokenStripView` and
+  `AttributionSeriesView` (`views/modalities.ts`), which `AttributionView` picks by layout. Built. Render also
+  draws one row as shap's force plot (`forceView`, `ForcePlotView`).
 
 `fairness/` (fairlearn, AIF360)
 built from: `fairness`, `learn`, `metrics`, `optim`, `datasets` (with protected attributes)

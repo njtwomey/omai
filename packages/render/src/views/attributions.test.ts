@@ -7,6 +7,8 @@ import {
   attributionOrder,
   beeswarmView,
   dependenceScatterView,
+  forceSegments,
+  forceView,
   importanceView,
   waterfallView,
 } from './attributions.ts'
@@ -110,5 +112,24 @@ describe('attribution views', () => {
     expect(viewFor('featureAttributions').component).toBe('AttributionView')
     expect(render(stillOf(many) as echarts.EChartsCoreOption)).toContain('<svg')
     expect(render(stillOf(one) as echarts.EChartsCoreOption)).toContain('<svg')
+  })
+})
+
+describe('force plot', () => {
+  it('stacks raising features up to the prediction and lowering ones beyond it', () => {
+    const r = featureAttributions({
+      method: 'exact',
+      features: ['a', 'b', 'c'],
+      output: 'y',
+      baseValue: 1,
+      values: [[2, -0.5, 0.25]],
+      data: [[1, 2, 3]],
+      predictions: [2.75],
+    })
+    const { segments, end } = forceSegments(r, 0)
+    expect(end).toBeCloseTo(2.75, 12)
+    expect(segments.filter((s) => s.up).map((s) => s.end)).toEqual([2.75, 0.75])
+    expect(segments.find((s) => !s.up)?.start).toBeCloseTo(2.75, 12)
+    expect((forceView(r) as { series: unknown[] }).series.length).toBeGreaterThan(0)
   })
 })

@@ -12,8 +12,10 @@ import { BoardPlayer, PopulationPlayer } from './boards.tsx'
 import { ConfusionMatrixView, ValueGridView } from './cells.tsx'
 import { ComponentsView } from './components.tsx'
 import { CurvesView } from './curves.tsx'
+import { DependenceView } from './dependence.tsx'
 import { DiagramPlayer } from './diagrams.tsx'
 import { EpisodeView } from './episodes.tsx'
+import { CounterfactualView, PrototypeView } from './examples.tsx'
 import { GroupReportView } from './fairness.tsx'
 import { ImagePlayer } from './images.tsx'
 import { MarginView } from './margins.tsx'
@@ -120,6 +122,12 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <AttributionView record={record} {...common} />
     case 'importances':
       return <ImportanceView record={record} {...common} />
+    case 'dependence':
+      return <DependenceView record={record} {...common} />
+    case 'counterfactuals':
+      return <CounterfactualView record={record} {...common} />
+    case 'prototypes':
+      return <PrototypeView record={record} {...common} />
     case 'groupReport':
       return <GroupReportView record={record} {...common} />
     case 'calibration':

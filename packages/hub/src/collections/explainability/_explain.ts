@@ -1,7 +1,7 @@
 // What the explainability entries share (private to collections/explainability): the model a demo explains, fitted
 // to the chosen dataset as a classifier or a regressor.
 import type { Dataset } from 'whitebox-engine/data'
-import { type Fitted, type LearnData, matrixView } from 'whitebox-engine/learn'
+import { type Estimator, type Fitted, type LearnData, matrixView } from 'whitebox-engine/learn'
 import {
   gradientBoostingClassifier,
   gradientBoostingRegressor,
@@ -31,19 +31,22 @@ export function fitModel(
   key: Key,
 ): { readonly fitted: Fitted; readonly learn: LearnData; readonly n: number } {
   const learn = learnDataOf(data)
-  const classify = data?.kind === 'classification'
-  const est =
-    model === 'gradient boosting'
-      ? classify
-        ? gradientBoostingClassifier({ nEstimators: 40, maxDepth: 3 })
-        : gradientBoostingRegressor({ nEstimators: 60, maxDepth: 3 })
-      : model === 'k-nearest neighbours'
-        ? classify
-          ? kNeighborsClassifier({ nNeighbors: 10 })
-          : kNeighborsRegressor({ nNeighbors: 10 })
-        : classify
-          ? randomForestClassifier({ nEstimators: 30, maxDepth: 6 })
-          : randomForestRegressor({ nEstimators: 30, maxDepth: 6 })
+  const est = modelOf(model, data?.kind === 'classification')
   const fitted = est.fit(learn, { key, explain: false })
   return { fitted, learn, n: matrixView(learn.x, 'fitModel', { allowNaN: true }).n }
+}
+
+/** The unfitted estimator of a named model: a classifier or a regressor. */
+export function modelOf(model: ExplainedModel, classify: boolean): Estimator {
+  return model === 'gradient boosting'
+    ? classify
+      ? gradientBoostingClassifier({ nEstimators: 40, maxDepth: 3 })
+      : gradientBoostingRegressor({ nEstimators: 60, maxDepth: 3 })
+    : model === 'k-nearest neighbours'
+      ? classify
+        ? kNeighborsClassifier({ nNeighbors: 10 })
+        : kNeighborsRegressor({ nNeighbors: 10 })
+      : classify
+        ? randomForestClassifier({ nEstimators: 30, maxDepth: 6 })
+        : randomForestRegressor({ nEstimators: 30, maxDepth: 6 })
 }

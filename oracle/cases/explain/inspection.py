@@ -46,6 +46,46 @@ def ale(predict: Any, x: FloatArray, j: int, bins: int) -> tuple[FloatArray, Flo
     return edges, acc - centre
 
 
+def ale2d(predict: Any, x: FloatArray, j: int, k: int, bins: int) -> tuple[FloatArray, FloatArray, FloatArray]:  # noqa: ANN401
+    """Second-order ALE as ALEPlot: cell second differences, nearest-cell fill, accumulation, first-order removal."""
+
+    def binned(col: FloatArray) -> tuple[FloatArray, Any]:
+        edges = np.unique(np.quantile(col, np.linspace(0, 1, bins + 1)))
+        return edges, np.clip(np.searchsorted(edges, col, side="left") - 1, 0, len(edges) - 2)
+
+    e1, a1 = binned(x[:, j])
+    e2, a2 = binned(x[:, k])
+    k1, k2 = len(e1) - 1, len(e2) - 1
+
+    def at(s1: int, s2: int) -> FloatArray:
+        z = x.copy()
+        z[:, j] = e1[a1 + s1]
+        z[:, k] = e2[a2 + s2]
+        return predict(z)
+
+    second = at(1, 1) - at(0, 1) - at(1, 0) + at(0, 0)
+    counts = np.zeros((k1, k2))
+    delta = np.zeros((k1, k2))
+    np.add.at(counts, (a1, a2), 1)
+    np.add.at(delta, (a1, a2), second)
+    full = counts > 0
+    delta[full] /= counts[full]
+    cells = np.argwhere(full)
+    for p, q in np.argwhere(~full):
+        dist = ((cells[:, 0] - p) / max(1, k1)) ** 2 + ((cells[:, 1] - q) / max(1, k2)) ** 2
+        u, v = cells[np.argmin(dist)]
+        delta[p, q] = delta[u, v]
+    fj = np.zeros((k1 + 1, k2 + 1))
+    fj[1:, 1:] = np.cumsum(np.cumsum(delta, axis=0), axis=1)
+    d1 = fj[1:, :] - fj[:-1, :]
+    f1 = np.concatenate([[0.0], np.cumsum(np.sum(counts * (d1[:, :-1] + d1[:, 1:]) / 2, axis=1) / counts.sum(axis=1))])
+    d2 = fj[:, 1:] - fj[:, :-1]
+    f2 = np.concatenate([[0.0], np.cumsum(np.sum(counts * (d2[:-1, :] + d2[1:, :]) / 2, axis=0) / counts.sum(axis=0))])
+    fj = fj - f1[:, None] - f2[None, :]
+    centre = np.sum(counts * (fj[:-1, :-1] + fj[:-1, 1:] + fj[1:, :-1] + fj[1:, 1:]) / 4) / counts.sum()
+    return np.concatenate([e1, e2]), fj - centre, counts
+
+
 def pd_at_rows(predict: Any, x: FloatArray, cols: list[int]) -> FloatArray:  # noqa: ANN401
     """Centred partial dependence on `cols` evaluated at every row."""
     out = np.empty(len(x))
@@ -143,6 +183,37 @@ def cases() -> list[Case]:
     edges, effects = ale(model.predict, x, 0, 6)
     out.append(
         case("ale", "ale", [x, y], {"edges": edges, "effects": effects}, feature=0, bins=6, rtol=1e-10, atol=1e-10)
+    )
+    edges2, effects2, counts2 = ale2d(model.predict, x, 0, 1, 4)
+    out.append(
+        case(
+            "ale2d",
+            "ale2d",
+            [x, y],
+            {"edges": edges2, "effects": effects2, "counts": counts2},
+            features=[0, 1],
+            bins=4,
+            rtol=1e-10,
+            atol=1e-10,
+        )
+    )
+    train, test = slice(0, 28), slice(28, n)
+    base = Pipeline([("poly", PolynomialFeatures(2)), ("lr", LinearRegression())])
+    baseline = base.fit(x[train], y[train]).score(x[test], y[test])
+    drops = []
+    for j in range(3):
+        keep = [c for c in range(3) if c != j]
+        drops.append(baseline - base.fit(x[train][:, keep], y[train]).score(x[test][:, keep], y[test]))
+    out.append(
+        case(
+            "dropColumn",
+            "dropColumn",
+            [x, y],
+            {"baseline": np.array(baseline), "importances": np.array(drops)},
+            split=28,
+            rtol=1e-9,
+            atol=1e-12,
+        )
     )
     xs = x[:15]
     pj, pk, pjk = (

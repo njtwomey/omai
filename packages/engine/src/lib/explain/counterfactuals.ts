@@ -1,25 +1,28 @@
 /**
- * Counterfactual explanations and recourse: the smallest change to an input that changes a model's decision. Wachter
- * counterfactuals (the closest point in MAD-weighted distance that reaches a target), DiCE's diverse sets of
- * counterfactuals found jointly, FACE paths of feasible steps through the data, and actionable recourse for a linear
- * classifier, the cheapest allowed change that flips it.
+ * Counterfactual and contrastive explanations and recourse: the smallest change to a row that flips a model's
+ * decision. Wachter's gradient search, diverse (DiCE-style) sets, FACE paths through dense regions of the data,
+ * growing spheres (model-agnostic), CEM's pertinent negatives and positives, prototype-guided counterfactuals, linear
+ * recourse with costs, actionability constraints (immutable, monotone, bounded, integer features) and the robustness
+ * of recourse to model change.
  */
 
 import { grad } from '../autodiff/index.ts'
-import { WhiteboxError } from '../base/index.ts'
+import { argmaxOf, WhiteboxError } from '../base/index.ts'
 import { dijkstra, graph } from '../graph/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import type { FitOptions } from '../learn/estimator.ts'
 import { columnOf, matrixView } from '../learn/validation.ts'
-import { foldIn, normal } from '../random/index.ts'
+import { foldIn, type Key, normal, uniform } from '../random/index.ts'
 import {
   add,
   asTensor,
   div,
   fromStorage,
   log,
+  maximum,
   mul,
   relu,
+  reshape,
   sliceAxis,
   sqrt,
   square,
@@ -508,4 +511,556 @@ export function linearRecourse(
     cost += step * (costs[j] ?? 1)
   }
   return { action, cost, feasible: need <= 1e-12 }
+}
+
+/** What a counterfactual may change (actionability): fixed features, allowed directions and bounds. */
+export interface ActionConstraints {
+  /** Features that may not change (age, ethnicity). */
+  readonly immutable?: readonly number[]
+  /** Features that may only go up (`increase`) or down (`decrease`), feature index to direction. */
+  readonly monotone?: Readonly<Record<number, 'increase' | 'decrease'>>
+  /** Bounds on the counterfactual's values, `[low, high]` per feature (a feature's plausible range). */
+  readonly bounds?: readonly (readonly [number, number])[]
+  /** Features that must stay whole numbers (counts). */
+  readonly integer?: readonly number[]
+}
+
+/** A violated constraint. */
+export interface ActionViolation {
+  readonly feature: number
+  readonly reason: 'immutable' | 'increase only' | 'decrease only' | 'below bound' | 'above bound' | 'not integer'
+}
+
+/**
+ * The constraints a counterfactual breaks: changes to immutable features, moves against a monotone direction, values
+ * outside bounds or non-integers where integers are required.
+ *
+ * @param x - The original point `[d]`.
+ * @param counterfactual - The proposed point `[d]`.
+ * @param constraints - The actionability constraints.
+ * @returns Every violation (empty when the counterfactual is actionable).
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * explain.actionViolations([30, 2], [29, 3], { monotone: { 0: 'increase' } }) // => [{ feature: 0, reason: 'increase only' }]
+ * ```
+ */
+export function actionViolations(
+  x: TensorLike,
+  counterfactual: TensorLike,
+  constraints: ActionConstraints,
+): ActionViolation[] {
+  const a = rowOf(x, 'actionViolations')
+  const b = rowOf(counterfactual, 'actionViolations')
+  if (a.length !== b.length) throw new WhiteboxError('shape', 'actionViolations: the points differ in features')
+  const out: ActionViolation[] = []
+  const fixed = new Set(constraints.immutable ?? [])
+  const ints = new Set(constraints.integer ?? [])
+  for (let j = 0; j < a.length; j++) {
+    const delta = (b[j] ?? 0) - (a[j] ?? 0)
+    const tol = 1e-9 * (1 + Math.abs(a[j] ?? 0))
+    if (fixed.has(j) && Math.abs(delta) > tol) out.push({ feature: j, reason: 'immutable' })
+    const dir = constraints.monotone?.[j]
+    if (dir === 'increase' && delta < -tol) out.push({ feature: j, reason: 'increase only' })
+    if (dir === 'decrease' && delta > tol) out.push({ feature: j, reason: 'decrease only' })
+    const bound = constraints.bounds?.[j]
+    if (bound !== undefined && (b[j] ?? 0) < bound[0] - tol) out.push({ feature: j, reason: 'below bound' })
+    if (bound !== undefined && (b[j] ?? 0) > bound[1] + tol) out.push({ feature: j, reason: 'above bound' })
+    if (ints.has(j) && Math.abs((b[j] ?? 0) - Math.round(b[j] ?? 0)) > tol)
+      out.push({ feature: j, reason: 'not integer' })
+  }
+  return out
+}
+
+/**
+ * Project a proposed counterfactual onto the actionable set: immutable features back to the original, monotone ones
+ * clipped to their allowed side, values clipped to their bounds and rounded where integers are required.
+ *
+ * @param x - The original point `[d]`.
+ * @param counterfactual - The proposed point `[d]`.
+ * @param constraints - The actionability constraints.
+ * @returns The nearest actionable point (feature by feature).
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * explain.projectActions([30, 2, 1], [29, 3.6, 5], { monotone: { 0: 'increase' }, integer: [1], immutable: [2] }) // => [30, 4, 1]
+ * ```
+ */
+export function projectActions(x: TensorLike, counterfactual: TensorLike, constraints: ActionConstraints): number[] {
+  const a = rowOf(x, 'projectActions')
+  const b = Array.from(rowOf(counterfactual, 'projectActions'))
+  const fixed = new Set(constraints.immutable ?? [])
+  const ints = new Set(constraints.integer ?? [])
+  return b.map((v, j) => {
+    const orig = a[j] ?? 0
+    if (fixed.has(j)) return orig
+    let out = v
+    const dir = constraints.monotone?.[j]
+    if (dir === 'increase') out = Math.max(out, orig)
+    if (dir === 'decrease') out = Math.min(out, orig)
+    const bound = constraints.bounds?.[j]
+    if (bound !== undefined) out = Math.min(bound[1], Math.max(bound[0], out))
+    if (ints.has(j)) out = Math.round(out)
+    return out
+  })
+}
+
+/** Options of {@link growingSpheres}. */
+export interface GrowingSpheresOptions {
+  /** Whether a model output is the desired outcome. */
+  readonly accept: (prediction: number) => boolean
+  /** The first sphere's radius (default 0.1, in units of the scales). */
+  readonly radius?: number
+  /** Points sampled per layer (default 200). */
+  readonly nSamples?: number
+  /** Most layers tried (default 50). */
+  readonly maxLayers?: number
+  /** Feature scales (default ones). */
+  readonly scales?: readonly number[]
+  readonly constraints?: ActionConstraints
+  readonly key?: Key
+}
+
+/**
+ * Growing spheres (Laugel et al. 2018): a model-agnostic counterfactual search. Sample uniformly in a ball of
+ * decreasing radius around x until no sample is an "enemy" (has the desired outcome), then in spherical layers of
+ * growing radius until one is; take the closest enemy, and make it sparse by moving its features back to x's, smallest
+ * change first, while it stays an enemy. Distances are Euclidean in units of the scales; actionability constraints
+ * are applied to every sample.
+ *
+ * @param predict - The model.
+ * @param x - The original point `[d]`.
+ * @param options - accept, radius, nSamples, maxLayers, scales, constraints and key.
+ * @returns The counterfactual, or undefined when no enemy is found.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * const f = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i]))
+ * const cf = explain.growingSpheres(f, [0, 0], { accept: (p) => p > 1 })
+ * cf.valid && cf.x[1] === 0 // => true
+ * ```
+ */
+export function growingSpheres(
+  predict: (x: Tensor) => Tensor,
+  x: TensorLike,
+  options: GrowingSpheresOptions,
+): Counterfactual | undefined {
+  const x0 = rowOf(x, 'growingSpheres')
+  const d = x0.length
+  const scales = options.scales ?? new Array<number>(d).fill(1)
+  const ns = options.nSamples ?? 200
+  const key = options.key ?? keyFor({}, 'growingSpheres')
+  const constraints = options.constraints ?? {}
+  const evalRows = (rows: readonly (readonly number[])[]): number[] =>
+    rows.length === 0 ? [] : toFlat(predict(fromStorage(Float64Array.from(rows.flat()), [rows.length, d], 'float64')))
+  const dist = (p: readonly number[]): number =>
+    Math.sqrt(p.reduce((s, v, j) => s + ((v - (x0[j] ?? 0)) / (scales[j] ?? 1)) ** 2, 0))
+  // Uniform samples in the shell lo <= |z| < hi (scaled), constrained.
+  const layer = (lo: number, hi: number, t: number): number[][] => {
+    const z = toFlat(normal(foldIn(key, 2 * t), [ns, d]))
+    const u = toFlat(uniform(foldIn(key, 2 * t + 1), [ns]))
+    return Array.from({ length: ns }, (_, i) => {
+      const dir = Array.from({ length: d }, (_, j) => z[i * d + j] ?? 0)
+      const norm = Math.sqrt(dir.reduce((s, v) => s + v * v, 0)) || 1
+      const r = (lo ** d + (u[i] ?? 0) * (hi ** d - lo ** d)) ** (1 / d)
+      const p = dir.map((v, j) => (x0[j] ?? 0) + (v / norm) * r * (scales[j] ?? 1))
+      return projectActions(x0, p, constraints)
+    })
+  }
+  let radius = options.radius ?? 0.1
+  let t = 0
+  // Shrink the first ball until it holds no enemy.
+  for (; t < 30; t++) {
+    const pts = layer(0, radius, t)
+    if (!evalRows(pts).some(options.accept)) break
+    radius /= 2
+  }
+  let lo = radius
+  let found: { p: number[]; f: number } | undefined
+  for (let s = 0; s < (options.maxLayers ?? 50) && found === undefined; s++, t++) {
+    const hi = lo + radius
+    const pts = layer(lo, hi, 100 + t)
+    const f = evalRows(pts)
+    let best = Number.POSITIVE_INFINITY
+    pts.forEach((p, i) => {
+      if (!options.accept(f[i] ?? Number.NaN)) return
+      const dd = dist(p)
+      if (dd < best) {
+        best = dd
+        found = { p, f: f[i] ?? 0 }
+      }
+    })
+    lo = hi
+  }
+  if (found === undefined) return undefined
+  // Sparsify: move features back to x's, smallest change first, while the point stays an enemy.
+  const point = [...found.p]
+  let value = found.f
+  const order = point
+    .map((v, j) => ({ j, c: Math.abs(v - (x0[j] ?? 0)) / (scales[j] ?? 1) }))
+    .filter((e) => e.c > 0)
+    .sort((a, b) => a.c - b.c || a.j - b.j)
+  for (const { j } of order) {
+    const trial = [...point]
+    trial[j] = x0[j] ?? 0
+    const f = evalRows([trial])[0] ?? Number.NaN
+    if (options.accept(f)) {
+      point[j] = x0[j] ?? 0
+      value = f
+    }
+  }
+  const l1 = point.reduce((s, v, j) => s + Math.abs(v - (x0[j] ?? 0)) / (scales[j] ?? 1), 0)
+  return { x: point, prediction: value, distance: l1, valid: options.accept(value) }
+}
+
+/** Options shared by the contrastive explanations (CEM) and prototype-guided counterfactuals. */
+export interface ContrastiveOptions {
+  /** The confidence margin kappa the class gap must exceed (default 0). */
+  readonly kappa?: number
+  /** The L1 weight beta (default 0.1). */
+  readonly beta?: number
+  /** The starting weight c of the class loss (default 10), doubled while no solution is valid. */
+  readonly c?: number
+  /** Rounds of c (default 6) and FISTA iterations per round (default 300) at this step size (default 0.01). */
+  readonly rounds?: number
+  readonly iterations?: number
+  readonly learningRate?: number
+  /** The feature range, `[low, high]` per feature (default unbounded). */
+  readonly bounds?: readonly (readonly [number, number])[]
+  /** The class explained (default the predicted class). */
+  readonly classIndex?: number
+}
+
+/** A contrastive explanation: the perturbation found and the class it gives. */
+export interface ContrastiveResult {
+  /** The point (x + delta for a pertinent negative, delta for a pertinent positive). */
+  readonly x: readonly number[]
+  /** The perturbation delta. */
+  readonly delta: readonly number[]
+  /** The class predicted at the point, and the class explained. */
+  readonly predictedClass: number
+  readonly classIndex: number
+  /** Whether the point meets the condition (another class for a PN; the same class for a PP). */
+  readonly valid: boolean
+  /** The class scores at the point. */
+  readonly scores: readonly number[]
+}
+
+function classScores(model: DifferentiableModel, v: readonly number[]): number[] {
+  return toFlat(model(fromStorage(Float64Array.from(v), [1, v.length], 'float64')) as Tensor)
+}
+
+/**
+ * The elastic-net FISTA search shared by CEM and prototype-guided counterfactuals: minimise
+ * c loss(point(delta)) + beta |delta|_1 + |delta|_2^2 (+ an extra smooth term) over a box, by projected FISTA with
+ * soft thresholding, doubling c until a valid point is found and keeping the best valid one by elastic-net size.
+ */
+function elasticSearch(
+  objective: (delta: Value, c: number) => Value,
+  valid: (delta: readonly number[]) => boolean,
+  d: number,
+  box: (j: number) => [number, number],
+  options: ContrastiveOptions,
+): number[] | undefined {
+  const beta = options.beta ?? 0.1
+  const lr = options.learningRate ?? 0.01
+  let c = options.c ?? 10
+  let best: number[] | undefined
+  let bestSize = Number.POSITIVE_INFINITY
+  for (let round = 0; round < (options.rounds ?? 6); round++) {
+    const g = grad((v: Value) => objective(v, c))
+    let delta = new Float64Array(d)
+    let y = Float64Array.from(delta)
+    let tk = 1
+    let foundThisRound = false
+    for (let it = 0; it < (options.iterations ?? 300); it++) {
+      const gv = toFlat(g(fromStorage(Float64Array.from(y), [d], 'float64')) as Tensor)
+      const next = Float64Array.from(y, (v, j) => {
+        const z = v - lr * (gv[j] ?? 0)
+        const shrunk = Math.sign(z) * Math.max(0, Math.abs(z) - lr * beta)
+        const [lo, hi] = box(j)
+        return Math.min(hi, Math.max(lo, shrunk))
+      })
+      const t1 = (1 + Math.sqrt(1 + 4 * tk * tk)) / 2
+      y = Float64Array.from(next, (v, j) => v + ((tk - 1) / t1) * (v - (delta[j] ?? 0)))
+      for (let j = 0; j < d; j++) {
+        const [lo, hi] = box(j)
+        y[j] = Math.min(hi, Math.max(lo, y[j] ?? 0))
+      }
+      delta = next
+      tk = t1
+      const dv = Array.from(delta)
+      if (valid(dv)) {
+        const size = dv.reduce((s, v) => s + beta * Math.abs(v) + v * v, 0)
+        if (size < bestSize) {
+          bestSize = size
+          best = dv
+        }
+        foundThisRound = true
+      }
+    }
+    // Doubling c pushes harder towards validity; once valid, halving searches for a smaller perturbation.
+    c = foundThisRound ? c / 2 : c * 2
+  }
+  return best
+}
+
+function classGapLoss(scores: Value, target: number, k: number, sign: 1 | -1, kappa: number): Value {
+  // sign 1: the target class must lose (max other - f_t >= kappa); sign -1: it must win.
+  const col = (j: number): Value => squeeze(sliceAxis(scores, -1, j, j + 1))
+  let other: Value | undefined
+  for (let j = 0; j < k; j++) {
+    if (j === target) continue
+    other = other === undefined ? col(j) : maximum(other, col(j))
+  }
+  const ft = col(target)
+  const gap = sign === 1 ? sub(ft, other ?? ft) : sub(other ?? ft, ft)
+  return relu(add(gap, kappa))
+}
+
+/**
+ * A pertinent negative (Dhurandhar et al. 2018, CEM; alibi's CEM in PN mode): the smallest perturbation delta whose
+ * addition changes the predicted class, what must be absent from x for its class to hold, found by projected FISTA on
+ * c max(f_t(x + delta) - max_{i != t} f_i(x + delta), -kappa) + beta |delta|_1 + |delta|_2^2 within the feature range.
+ *
+ * @param model - A differentiable model returning class scores `[n, k]` (probabilities or logits).
+ * @param x - The original point `[d]`.
+ * @param options - kappa, beta, c, rounds, iterations, learningRate, bounds and classIndex.
+ * @returns The pertinent negative, or undefined when none is found.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * import { matmul } from 'whitebox-engine/tensor'
+ * // Two classes by the sign of x1 - x2: raising x2 above x1 flips it.
+ * const scores = (v) => matmul(v, [[1, -1], [-1, 1]])
+ * const pn = explain.pertinentNegative(scores, [1, 0.5], { beta: 0.01 })
+ * pn.predictedClass // => 1
+ * ```
+ */
+export function pertinentNegative(
+  model: DifferentiableModel,
+  x: TensorLike,
+  options: ContrastiveOptions = {},
+): ContrastiveResult | undefined {
+  const x0 = rowOf(x, 'pertinentNegative')
+  const d = x0.length
+  const s0 = classScores(model, Array.from(x0))
+  const k = s0.length
+  const t = options.classIndex ?? argmaxOf(s0)
+  const kappa = options.kappa ?? 0
+  const xt = fromStorage(Float64Array.from(x0), [d], 'float64')
+  const box = (j: number): [number, number] => {
+    const b = options.bounds?.[j]
+    return b === undefined
+      ? [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY]
+      : [b[0] - (x0[j] ?? 0), b[1] - (x0[j] ?? 0)]
+  }
+  const objective = (delta: Value, c: number): Value => {
+    const scores = model(reshape(add(xt, delta), [1, d]))
+    return add(mul(classGapLoss(scores, t, k, 1, kappa), c), sum(square(delta)))
+  }
+  const valid = (delta: readonly number[]): boolean =>
+    argmaxOf(
+      classScores(
+        model,
+        delta.map((v, j) => (x0[j] ?? 0) + v),
+      ),
+    ) !== t
+  const delta = elasticSearch(objective, valid, d, box, options)
+  if (delta === undefined) return undefined
+  const point = delta.map((v, j) => (x0[j] ?? 0) + v)
+  const scores = classScores(model, point)
+  return { x: point, delta, predictedClass: argmaxOf(scores), classIndex: t, valid: true, scores }
+}
+
+/**
+ * A pertinent positive (Dhurandhar et al. 2018, CEM; alibi's CEM in PP mode): the smallest part delta of x (between
+ * the baseline 0 and x, feature by feature) that on its own keeps x's class, what must be present, found by projected
+ * FISTA on c max(max_{i != t} f_i(delta) - f_t(delta), -kappa) + beta |delta|_1 + |delta|_2^2.
+ *
+ * @param model - A differentiable model returning class scores `[n, k]`.
+ * @param x - The original point `[d]` (features measured from an absent value of 0).
+ * @param options - kappa, beta, c, rounds, iterations, learningRate and classIndex.
+ * @returns The pertinent positive, or undefined when none is found.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * import { add, matmul } from 'whitebox-engine/tensor'
+ * // Class 0 needs x1 > 0.5; x2 is irrelevant, so the pertinent positive keeps part of x1 only.
+ * const scores = (v) => add(matmul(v, [[1, 0], [0, 0]]), [[0, 0.5]])
+ * const pp = explain.pertinentPositive(scores, [2, 3])
+ * [pp.predictedClass, pp.delta[1] < 1e-6] // => [0, true]
+ * ```
+ */
+export function pertinentPositive(
+  model: DifferentiableModel,
+  x: TensorLike,
+  options: ContrastiveOptions = {},
+): ContrastiveResult | undefined {
+  const x0 = rowOf(x, 'pertinentPositive')
+  const d = x0.length
+  const s0 = classScores(model, Array.from(x0))
+  const k = s0.length
+  const t = options.classIndex ?? argmaxOf(s0)
+  const kappa = options.kappa ?? 0
+  const box = (j: number): [number, number] => {
+    const v = x0[j] ?? 0
+    return v >= 0 ? [0, v] : [v, 0]
+  }
+  const objective = (delta: Value, c: number): Value => {
+    const scores = model(reshape(delta, [1, d]))
+    return add(mul(classGapLoss(scores, t, k, -1, kappa), c), sum(square(delta)))
+  }
+  const valid = (delta: readonly number[]): boolean => argmaxOf(classScores(model, delta)) === t
+  const delta = elasticSearch(objective, valid, d, box, options)
+  if (delta === undefined) return undefined
+  const scores = classScores(model, delta)
+  return { x: delta, delta, predictedClass: argmaxOf(scores), classIndex: t, valid: true, scores }
+}
+
+/** Options of {@link prototypeCounterfactual}. */
+export interface PrototypeOptions extends ContrastiveOptions {
+  /** The weight theta of the prototype term (default 1). */
+  readonly theta?: number
+  /** Neighbours of x in each class averaged into its prototype (default 5). */
+  readonly kPrototype?: number
+  /** The target class (default the class whose prototype is nearest, other than x's). */
+  readonly targetClass?: number
+}
+
+/**
+ * Prototype-guided counterfactuals (Van Looveren and Klaise 2021; alibi's CounterfactualProto without an encoder):
+ * each class's prototype is the mean of the kPrototype training rows of that class nearest x; the target is the
+ * nearest prototype of another class, and the search adds theta |x + delta - proto|^2 to the elastic-net objective, so
+ * the counterfactual moves towards a typical member of the new class and stays plausible.
+ *
+ * @param model - A differentiable model returning class scores `[n, k]`.
+ * @param x - The original point `[d]`.
+ * @param train - Training rows `[n, d]`.
+ * @param labels - Their class indices (0..k-1).
+ * @param options - theta, kPrototype, targetClass and the {@link ContrastiveOptions}.
+ * @returns The counterfactual with its prototype and target class, or undefined when none is found.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * import { matmul } from 'whitebox-engine/tensor'
+ * const scores = (v) => matmul(v, [[1, -1], [-1, 1]])
+ * const train = [[2, 0], [3, 1], [0, 2], [1, 3]]
+ * const r = explain.prototypeCounterfactual(scores, [2, 1], train, [0, 0, 1, 1], { kPrototype: 2 })
+ * [r.targetClass, r.predictedClass] // => [1, 1]
+ * ```
+ */
+export function prototypeCounterfactual(
+  model: DifferentiableModel,
+  x: TensorLike,
+  train: TensorLike,
+  labels: readonly number[],
+  options: PrototypeOptions = {},
+): (ContrastiveResult & { readonly prototype: readonly number[]; readonly targetClass: number }) | undefined {
+  const x0 = rowOf(x, 'prototypeCounterfactual')
+  const d = x0.length
+  const m = matrixView(train, 'prototypeCounterfactual', { nFeatures: d })
+  if (labels.length !== m.n) throw new WhiteboxError('shape', 'prototypeCounterfactual: one label per training row')
+  const s0 = classScores(model, Array.from(x0))
+  const t = options.classIndex ?? argmaxOf(s0)
+  const kp = options.kPrototype ?? 5
+  const rows = Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * d, (i + 1) * d)))
+  const dist2 = (a: readonly number[]): number => a.reduce((s, v, j) => s + (v - (x0[j] ?? 0)) ** 2, 0)
+  const prototypes = new Map<number, number[]>()
+  for (const c of new Set(labels)) {
+    const near = rows
+      .map((r, i) => ({ r, i }))
+      .filter((e) => labels[e.i] === c)
+      .sort((a, b) => dist2(a.r) - dist2(b.r) || a.i - b.i)
+      .slice(0, kp)
+    prototypes.set(
+      c,
+      Array.from({ length: d }, (_, j) => near.reduce((s, e) => s + (e.r[j] ?? 0), 0) / Math.max(1, near.length)),
+    )
+  }
+  let target = options.targetClass
+  if (target === undefined) {
+    let best = Number.POSITIVE_INFINITY
+    for (const [c, p] of prototypes) {
+      if (c === t) continue
+      const v = dist2(p)
+      if (v < best) {
+        best = v
+        target = c
+      }
+    }
+  }
+  const proto = target === undefined ? undefined : prototypes.get(target)
+  if (target === undefined || proto === undefined)
+    throw new WhiteboxError('value', 'prototypeCounterfactual: no other class to move to')
+  const theta = options.theta ?? 1
+  const xt = fromStorage(Float64Array.from(x0), [d], 'float64')
+  const pt = fromStorage(Float64Array.from(proto), [d], 'float64')
+  const k = s0.length
+  const box = (j: number): [number, number] => {
+    const b = options.bounds?.[j]
+    return b === undefined
+      ? [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY]
+      : [b[0] - (x0[j] ?? 0), b[1] - (x0[j] ?? 0)]
+  }
+  const goal = target
+  const objective = (delta: Value, c: number): Value => {
+    const point = add(xt, delta)
+    const scores = model(reshape(point, [1, d]))
+    // The target class must win by kappa.
+    const loss = classGapLoss(scores, goal, k, -1, options.kappa ?? 0)
+    return add(add(mul(loss, c), sum(square(delta))), mul(sum(square(sub(point, pt))), theta))
+  }
+  const valid = (delta: readonly number[]): boolean =>
+    argmaxOf(
+      classScores(
+        model,
+        delta.map((v, j) => (x0[j] ?? 0) + v),
+      ),
+    ) === goal
+  const delta = elasticSearch(objective, valid, d, box, options)
+  if (delta === undefined) return undefined
+  const point = delta.map((v, j) => (x0[j] ?? 0) + v)
+  const scores = classScores(model, point)
+  return {
+    x: point,
+    delta,
+    predictedClass: argmaxOf(scores),
+    classIndex: t,
+    valid: true,
+    scores,
+    prototype: proto,
+    targetClass: goal,
+  }
+}
+
+/**
+ * The robustness of recourse to model change (Upadhyay, Joshi and Lakkaraju 2021; Rawal et al. 2020): the share of
+ * alternative models (refits on resampled data, later versions) under which a counterfactual still gets the desired
+ * outcome. Recourse that holds only for the model it was computed against is fragile.
+ *
+ * @param predictors - The alternative models.
+ * @param counterfactual - The counterfactual point `[d]`.
+ * @param accept - Whether a model output is the desired outcome.
+ * @returns The share of models that accept it, and each model's verdict.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * const shifted = (c) => (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i] - c))
+ * explain.recourseRobustness([shifted(0), shifted(0.5), shifted(2)], [1], (p) => p > 0).share // => 0.6666666666666666
+ * ```
+ */
+export function recourseRobustness(
+  predictors: readonly ((x: Tensor) => Tensor)[],
+  counterfactual: TensorLike,
+  accept: (prediction: number) => boolean,
+): { readonly share: number; readonly accepted: readonly boolean[] } {
+  const p = rowOf(counterfactual, 'recourseRobustness')
+  if (predictors.length === 0) throw new WhiteboxError('value', 'recourseRobustness: no models')
+  const accepted = predictors.map((f) =>
+    accept(toFlat(f(fromStorage(Float64Array.from(p), [1, p.length], 'float64')))[0] ?? Number.NaN),
+  )
+  return { share: accepted.filter(Boolean).length / accepted.length, accepted }
 }

@@ -1,14 +1,14 @@
 /**
- * Surrogate explanations: simpler models that imitate a complex one. LIME (a locally weighted linear model fitted to
- * perturbations around a point), anchors (high-precision if-then rules around a point found by beam search with bandit
- * sampling), and global surrogate trees with their fidelity to the model.
+ * Surrogate explanations: LIME's locally weighted linear models (with its feature selection), anchors (high-precision
+ * rules found by a bandit search), and global surrogate trees with their fidelity to the model.
  */
 
+import { WhiteboxError } from '../base/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import type { FitOptions } from '../learn/estimator.ts'
 import { columnOf, type MatrixView, matrixView, takeColumns, targetVector } from '../learn/validation.ts'
 import { pinv } from '../numerics/linalg/index.ts'
-import { foldIn, type Key, normal, randint } from '../random/index.ts'
+import { foldIn, type Key, normal, permutation, randint } from '../random/index.ts'
 import { asTensor, fromStorage, matmul, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import type { PredictFunction, TreeModel } from './shapley.ts'
@@ -228,6 +228,71 @@ export function lime(
     Float64Array.from({ length: ns }, (_, i) => ov[i * k + label] ?? 0),
     distances,
     options,
+  )
+}
+
+/** Options of {@link limeMasked}. */
+export interface LimeMaskedOptions extends LimeFitOptions {
+  /** Perturbations drawn (default 1000). */
+  readonly nSamples?: number
+  /** The kernel width on the scaled cosine distance (default 25, lime text's; lime image uses 0.25 on the raw one). */
+  readonly kernelWidth?: number
+  /** The factor on the cosine distance (default 100, lime text's; 1 for lime image's convention). */
+  readonly distanceScale?: number
+  readonly key?: Key
+}
+
+/**
+ * LIME over interpretable on/off features (lime's LimeTextExplainer and LimeImageExplainer): the explained instance is
+ * the all-ones row over its tokens, superpixels or windows; each perturbation switches off a random subset of a
+ * uniformly drawn size, the model scores it through a predictor over groups (`tokenPredictor`, `maskedPredictor`),
+ * points are weighted by their cosine distance to the instance, and a weighted ridge regression on the binary rows
+ * gives each unit's weight.
+ *
+ * @param predict - A predictor over `[m, nFeatures]` rows of 0/1 presence.
+ * @param nFeatures - The interpretable features (tokens, superpixels, windows).
+ * @param options - nSamples, kernelWidth, distanceScale, key and the {@link limeFit} options.
+ * @returns The explanation (weights per interpretable feature).
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * // Only the second unit matters.
+ * const f = (z) => tensor(Array.from({ length: z.shape[0] }, (_, i) => 2 * z.data[3 * i + 1]))
+ * explain.limeMasked(f, 3, { nSamples: 200, nFeatures: 1 }).weights[0][0] // => 1
+ * ```
+ */
+export function limeMasked(
+  predict: PredictFunction,
+  nFeatures: number,
+  options: LimeMaskedOptions = {},
+): LimeExplanation {
+  const d = nFeatures
+  if (!(Number.isInteger(d) && d >= 1)) throw new WhiteboxError('value', 'limeMasked: needs at least one feature')
+  const ns = options.nSamples ?? 1000
+  const key = options.key ?? keyFor({}, 'limeMasked')
+  const data = new Float64Array(ns * d).fill(1)
+  for (let i = 1; i < ns; i++) {
+    const k = foldIn(key, i)
+    const size = d === 1 ? 1 : 1 + (toFlat(randint(foldIn(k, 0), [1], 0, d - 1))[0] ?? 0)
+    const order = toFlat(permutation(foldIn(k, 1), d))
+    for (let t = 0; t < size; t++) data[i * d + (order[t] ?? 0)] = 0
+  }
+  const out = predict(fromStorage(data, [ns, d], 'float64'))
+  const kOut = out.shape.length === 2 ? (out.shape[1] ?? 1) : 1
+  const ov = toFlat(out)
+  const scale = options.distanceScale ?? 100
+  const distances = Float64Array.from({ length: ns }, (_, i) => {
+    let on = 0
+    for (let j = 0; j < d; j++) on += data[i * d + j] ?? 0
+    // Cosine distance to the all-ones row: 1 - on / sqrt(on * d).
+    return on === 0 ? scale : scale * (1 - on / Math.sqrt(on * d))
+  })
+  return limeFit(
+    fromStorage(data, [ns, d], 'float64'),
+    Float64Array.from({ length: ns }, (_, i) => ov[i * kOut] ?? 0),
+    distances,
+    { kernelWidth: 25, ...options },
   )
 }
 

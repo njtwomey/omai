@@ -16,11 +16,14 @@ import { confusionFrames, valueGridFrames } from './cells.ts'
 import { componentsView } from './components.ts'
 import { curveSetView } from './curves.ts'
 import { dataBiasView } from './data-bias.ts'
+import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
 import { episodeView } from './episodes.ts'
+import { counterfactualTableView, prototypeView } from './examples.ts'
 import { groupReportView } from './fairness.ts'
 import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
+import { attributionImageView, attributionSeriesView, tokenStripView } from './modalities.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
 import { stateSequenceView } from './sequences.ts'
 import { ensembleFrames, pipelineScene } from './stages.ts'
@@ -384,10 +387,37 @@ const REGISTRY: Registry = {
     plays: true,
     accepts: [],
     still: (r, o) => {
+      if (r.layout?.kind === 'image') return attributionImageView(r, o)
+      if (r.layout?.kind === 'tokens') return tokenStripView(r, o)
+      if (r.layout?.kind === 'series') return attributionSeriesView(r, o)
       if (r.values.length > 1) return beeswarmView(r, o)
       const frames = attributionFrames(r, o)
       return frames.option(frames.count - 1)
     },
+  },
+  counterfactuals: {
+    kind: 'counterfactuals',
+    component: 'CounterfactualView',
+    title: 'Counterfactuals',
+    plays: false,
+    accepts: [],
+    still: (r, o) => counterfactualTableView(r, o),
+  },
+  prototypes: {
+    kind: 'prototypes',
+    component: 'PrototypeView',
+    title: 'Prototypes and criticisms',
+    plays: false,
+    accepts: [],
+    still: (r, o) => prototypeView(r, o),
+  },
+  dependence: {
+    kind: 'dependence',
+    component: 'DependenceView',
+    title: 'Feature dependence',
+    plays: false,
+    accepts: [],
+    still: (r, o) => dependenceView(r, o),
   },
   importances: {
     kind: 'importances',

@@ -1,15 +1,22 @@
 /**
- * Model inspection, as in scikit-learn's `inspection` module: permutation importance (the drop in score when a feature
- * is shuffled), partial dependence and individual conditional expectation curves, accumulated local effects (ALE, which
- * average local changes within quantile bins and so cope with correlated features), Friedman's H-statistic of
- * interaction strength and a functional ANOVA decomposition.
+ * Global inspection of fitted models (sklearn.inspection and beyond): permutation, conditional permutation and
+ * drop-column importance, partial dependence with ICE curves (centred and derivative), accumulated local effects of
+ * first and second order, Friedman's H-statistic and the functional ANOVA decomposition.
  */
 
-import { meanOf, varianceOf, WhiteboxError } from '../base/index.ts'
+import { meanOf, quantileOf, varianceOf, WhiteboxError } from '../base/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
-import { type FitOptions, type Fitted, type LearnData, requireTargets } from '../learn/estimator.ts'
+import { type Estimator, type FitOptions, type Fitted, type LearnData, requireTargets } from '../learn/estimator.ts'
 import { type Scoring, scorersOf } from '../learn/scoring.ts'
-import { columnOf, fromView, type MatrixView, matrixView, sampleWeightsOf, takeRows } from '../learn/validation.ts'
+import {
+  columnOf,
+  fromView,
+  type MatrixView,
+  matrixView,
+  sampleWeightsOf,
+  takeColumns,
+  takeRows,
+} from '../learn/validation.ts'
 import { foldIn, permutation, subsample } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
@@ -509,4 +516,398 @@ export function functionalAnova(
   }
   const explained = components.reduce((s, c) => s + c.share, 0)
   return { constant, components, residualShare: total === 0 ? 0 : 1 - explained }
+}
+
+/**
+ * Centred ICE curves (Goldstein et al. 2015's c-ICE; sklearn's `centered=True`): each curve minus its value at one grid
+ * point (default the first), so curves that differ only by an offset coincide and the spread left is heterogeneity of
+ * the effect (an interaction).
+ *
+ * @param individual - ICE curves, individual[row][gridIndex].
+ * @param at - The grid index anchored at zero (default 0).
+ * @returns The centred curves.
+ * @example
+ * ```ts
+ * import { centredIce } from 'whitebox-engine/explain'
+ * centredIce([[1, 2, 4], [5, 6, 8]]) // => [[0, 1, 3], [0, 1, 3]]
+ * ```
+ */
+export function centredIce(individual: readonly (readonly number[])[], at = 0): number[][] {
+  return individual.map((curve) => {
+    if (!(Number.isInteger(at) && at >= 0 && at < curve.length))
+      throw new WhiteboxError('value', `centredIce: grid index ${at} out of range`)
+    const c = curve[at] ?? 0
+    return curve.map((v) => v - c)
+  })
+}
+
+/**
+ * Derivative ICE curves (Goldstein et al. 2015's d-ICE): each curve's slope along the grid by second-order central
+ * differences inside and one-sided differences at the ends (numpy.gradient on an uneven grid), so a slope that varies
+ * across rows at the same grid value reveals an interaction.
+ *
+ * @param grid - The grid values (increasing, at least two).
+ * @param individual - ICE curves, individual[row][gridIndex].
+ * @returns The derivative curves.
+ * @example
+ * ```ts
+ * import { iceDerivative } from 'whitebox-engine/explain'
+ * iceDerivative([0, 1, 2], [[0, 1, 4]]) // => [[1, 2, 3]]
+ * ```
+ */
+export function iceDerivative(grid: readonly number[], individual: readonly (readonly number[])[]): number[][] {
+  const g = grid.length
+  if (g < 2) throw new WhiteboxError('value', 'iceDerivative: needs at least two grid points')
+  return individual.map((curve) => {
+    if (curve.length !== g) throw new WhiteboxError('shape', 'iceDerivative: a curve does not match the grid')
+    return curve.map((_, i) => {
+      if (i === 0) return ((curve[1] ?? 0) - (curve[0] ?? 0)) / ((grid[1] ?? 0) - (grid[0] ?? 0))
+      if (i === g - 1) return ((curve[i] ?? 0) - (curve[i - 1] ?? 0)) / ((grid[i] ?? 0) - (grid[i - 1] ?? 0))
+      const h1 = (grid[i] ?? 0) - (grid[i - 1] ?? 0)
+      const h2 = (grid[i + 1] ?? 0) - (grid[i] ?? 0)
+      return (
+        (h1 * h1 * (curve[i + 1] ?? 0) - h2 * h2 * (curve[i - 1] ?? 0) + (h2 * h2 - h1 * h1) * (curve[i] ?? 0)) /
+        (h1 * h2 * (h1 + h2))
+      )
+    })
+  })
+}
+
+/** Quantile edges of a column (numpy's linear quantiles, repeats merged), and each row's bin. */
+function quantileBins(col: Float64Array, bins: number, who: string): { edges: number[]; bin: number[] } {
+  const sorted = Float64Array.from(col).sort()
+  const q = (p: number): number => {
+    const h = (sorted.length - 1) * p
+    const lo = Math.floor(h)
+    return (sorted[lo] ?? 0) + (h - lo) * ((sorted[Math.min(lo + 1, sorted.length - 1)] ?? 0) - (sorted[lo] ?? 0))
+  }
+  const edges = Array.from(new Set(Array.from({ length: bins + 1 }, (_, k) => q(k / bins)))).sort((a, b) => a - b)
+  if (edges.length < 2) throw new WhiteboxError('value', `${who}: the feature is constant`)
+  const nb = edges.length - 1
+  const bin = Array.from(col, (v) => {
+    let b = 0
+    while (b < nb - 1 && v > (edges[b + 1] ?? 0)) b++
+    return b
+  })
+  return { edges, bin }
+}
+
+/** The result of {@link accumulatedLocalEffects2D}. */
+export interface Ale2DResult {
+  /** The bin edges of the two features. */
+  readonly edges: readonly [readonly number[], readonly number[]]
+  /** The pure second-order effect at each pair of edges, effects[i][j] (first feature's edge i, second's j). */
+  readonly effects: readonly (readonly number[])[]
+  /** Rows per cell, counts[i][j]. */
+  readonly counts: readonly (readonly number[])[]
+}
+
+/**
+ * Second-order accumulated local effects (Apley and Zhu 2020, as R's ALEPlot): over the grid of both features'
+ * quantile bins, average in each cell the second difference f(hi, hi) - f(lo, hi) - f(hi, lo) + f(lo, lo) of the rows
+ * in it (empty cells take the value of the nearest non-empty cell, by bin index), accumulate over both axes, then
+ * remove each feature's own first-order effect and centre, leaving the pure interaction of the pair.
+ *
+ * @param fitted - A fitted estimator.
+ * @param x - The data `[n, d]`.
+ * @param features - The two columns.
+ * @param options - bins per feature (default 10) and response.
+ * @returns The edges, the interaction surface and the cell counts.
+ * @example
+ * ```ts
+ * import { accumulatedLocalEffects2D } from 'whitebox-engine/explain'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * const additive = { estimator: 'a', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + 3 * x.data[2 * i + 1])) }
+ * const x = [[0, 0], [1, 2], [2, 1], [3, 3], [1, 0], [2, 3]]
+ * // No interaction: the surface is flat.
+ * accumulatedLocalEffects2D(additive, x, [0, 1], { bins: 2 }).effects.flat().every((v) => Math.abs(v) < 1e-12) // => true
+ * ```
+ */
+export function accumulatedLocalEffects2D(
+  fitted: Fitted,
+  x: TensorLike,
+  features: readonly [number, number],
+  options: AleOptions = {},
+): Ale2DResult {
+  const m = matrixView(x, 'accumulatedLocalEffects2D')
+  const [j, k] = features
+  for (const f of features)
+    if (!(Number.isInteger(f) && f >= 0 && f < m.d))
+      throw new WhiteboxError('value', 'accumulatedLocalEffects2D: feature out of range')
+  if (j === k) throw new WhiteboxError('value', 'accumulatedLocalEffects2D: the two features must differ')
+  const K = options.bins ?? 10
+  const a = quantileBins(columnOf(m, j), K, 'accumulatedLocalEffects2D')
+  const b = quantileBins(columnOf(m, k), K, 'accumulatedLocalEffects2D')
+  const K1 = a.edges.length - 1
+  const K2 = b.edges.length - 1
+  const response = responseFn(fitted, options.response ?? 'auto')
+  const at = (s1: 0 | 1, s2: 0 | 1): Float64Array => {
+    const evalX = Float64Array.from(m.data)
+    for (let i = 0; i < m.n; i++) {
+      evalX[i * m.d + j] = a.edges[(a.bin[i] ?? 0) + s1] ?? 0
+      evalX[i * m.d + k] = b.edges[(b.bin[i] ?? 0) + s2] ?? 0
+    }
+    const r = response(fromStorage(evalX, [m.n, m.d], 'float64'))
+    return Float64Array.from({ length: m.n }, (_, i) => r.values[i * r.k] ?? 0)
+  }
+  const f11 = at(1, 1)
+  const f01 = at(0, 1)
+  const f10 = at(1, 0)
+  const f00 = at(0, 0)
+  const counts = Array.from({ length: K1 }, () => new Array<number>(K2).fill(0))
+  const delta = Array.from({ length: K1 }, () => new Array<number>(K2).fill(0))
+  for (let i = 0; i < m.n; i++) {
+    const p = a.bin[i] ?? 0
+    const q = b.bin[i] ?? 0
+    ;(counts[p] as number[])[q] = (counts[p]?.[q] ?? 0) + 1
+    ;(delta[p] as number[])[q] = (delta[p]?.[q] ?? 0) + (f11[i] ?? 0) - (f01[i] ?? 0) - (f10[i] ?? 0) + (f00[i] ?? 0)
+  }
+  const filled: [number, number][] = []
+  for (let p = 0; p < K1; p++)
+    for (let q = 0; q < K2; q++) {
+      const c = counts[p]?.[q] ?? 0
+      if (c > 0) {
+        ;(delta[p] as number[])[q] = (delta[p]?.[q] ?? 0) / c
+        filled.push([p, q])
+      }
+    }
+  // Empty cells copy their nearest non-empty cell (distance in bin indices scaled to [0, 1] per axis).
+  for (let p = 0; p < K1; p++)
+    for (let q = 0; q < K2; q++) {
+      if ((counts[p]?.[q] ?? 0) > 0) continue
+      let best = Number.POSITIVE_INFINITY
+      let value = 0
+      for (const [u, v] of filled) {
+        const dist = ((u - p) / Math.max(1, K1)) ** 2 + ((v - q) / Math.max(1, K2)) ** 2
+        if (dist < best) {
+          best = dist
+          value = delta[u]?.[v] ?? 0
+        }
+      }
+      ;(delta[p] as number[])[q] = value
+    }
+  // Accumulate over both axes onto the (K1 + 1) x (K2 + 1) edge grid.
+  const fJ = Array.from({ length: K1 + 1 }, () => new Array<number>(K2 + 1).fill(0))
+  for (let p = 1; p <= K1; p++)
+    for (let q = 1; q <= K2; q++)
+      (fJ[p] as number[])[q] =
+        (delta[p - 1]?.[q - 1] ?? 0) + (fJ[p - 1]?.[q] ?? 0) + (fJ[p]?.[q - 1] ?? 0) - (fJ[p - 1]?.[q - 1] ?? 0)
+  const rowCounts = counts.map((r) => r.reduce((s, v) => s + v, 0))
+  const colCounts = Array.from({ length: K2 }, (_, q) => counts.reduce((s, r) => s + (r[q] ?? 0), 0))
+  // Remove the first-order effects the accumulated surface still holds (ALEPlot's fJ1 and fJ2).
+  const fJ1 = [0]
+  for (let p = 0; p < K1; p++) {
+    let s = 0
+    for (let q = 0; q < K2; q++) {
+      const d0 = (fJ[p + 1]?.[q] ?? 0) - (fJ[p]?.[q] ?? 0)
+      const d1 = (fJ[p + 1]?.[q + 1] ?? 0) - (fJ[p]?.[q + 1] ?? 0)
+      s += ((counts[p]?.[q] ?? 0) * (d0 + d1)) / 2
+    }
+    fJ1.push((fJ1[p] ?? 0) + ((rowCounts[p] ?? 0) > 0 ? s / (rowCounts[p] ?? 1) : 0))
+  }
+  const fJ2 = [0]
+  for (let q = 0; q < K2; q++) {
+    let s = 0
+    for (let p = 0; p < K1; p++) {
+      const d0 = (fJ[p]?.[q + 1] ?? 0) - (fJ[p]?.[q] ?? 0)
+      const d1 = (fJ[p + 1]?.[q + 1] ?? 0) - (fJ[p + 1]?.[q] ?? 0)
+      s += ((counts[p]?.[q] ?? 0) * (d0 + d1)) / 2
+    }
+    fJ2.push((fJ2[q] ?? 0) + ((colCounts[q] ?? 0) > 0 ? s / (colCounts[q] ?? 1) : 0))
+  }
+  const pure = fJ.map((row, p) => row.map((v, q) => v - (fJ1[p] ?? 0) - (fJ2[q] ?? 0)))
+  let centre = 0
+  for (let p = 0; p < K1; p++)
+    for (let q = 0; q < K2; q++)
+      centre +=
+        ((counts[p]?.[q] ?? 0) *
+          ((pure[p]?.[q] ?? 0) + (pure[p]?.[q + 1] ?? 0) + (pure[p + 1]?.[q] ?? 0) + (pure[p + 1]?.[q + 1] ?? 0))) /
+        4
+  centre /= m.n
+  return { edges: [a.edges, b.edges], effects: pure.map((row) => row.map((v) => v - centre)), counts }
+}
+
+/** Options of {@link dropColumnImportance}. */
+export interface DropColumnOptions extends FitOptions {
+  /** The scorer (default the estimator's `score`). */
+  readonly scoring?: Scoring
+  /** Data to score on (default the training data). */
+  readonly test?: LearnData
+  /** Features to drop together, as groups of column indices (default each column alone). */
+  readonly features?: readonly (readonly number[])[]
+}
+
+/** The result of {@link dropColumnImportance}. */
+export interface DropColumnResult {
+  /** The score of the model fitted on every column. */
+  readonly baseline: number
+  /** The score of each refit without the feature (group). */
+  readonly scores: readonly number[]
+  /** baseline - score: how much the model loses without the feature. */
+  readonly importances: readonly number[]
+}
+
+/**
+ * Drop-column importance (Parr et al. 2018): refit the estimator without each feature (or group) and measure the drop
+ * in score against the model fitted on every column. Unlike permutation importance it asks what the data hold that no
+ * other feature replaces, so correlated features share little importance; it costs one fit per feature.
+ *
+ * @param estimator - An unfitted estimator.
+ * @param train - The training data (features and targets).
+ * @param options - scoring, test data, features (column groups) and fit options.
+ * @returns The baseline score, the score of each refit and the importances.
+ * @example
+ * ```ts
+ * import { dropColumnImportance } from 'whitebox-engine/explain'
+ * import { defineEstimator } from 'whitebox-engine/learn'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * // Predicts the first column (0 when it is dropped).
+ * const firstOrZero = defineEstimator({ name: 'first', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => tensor(x.map((row) => row[0] ?? 0)) }) }, {})
+ * dropColumnImportance(firstOrZero, { x: [[1], [2]], y: [1, 2] }, { scoring: 'neg_mean_squared_error' }).importances // => [2.5]
+ * ```
+ */
+export function dropColumnImportance(
+  estimator: Estimator,
+  train: LearnData,
+  options: DropColumnOptions = {},
+): DropColumnResult {
+  const m = matrixView(train.x, 'dropColumnImportance', { allowNaN: true })
+  requireTargets(train, 'dropColumnImportance')
+  const scorer = Object.values(scorersOf(options.scoring))[0]
+  if (scorer === undefined) throw new WhiteboxError('value', 'dropColumnImportance: no scorer')
+  const test = options.test ?? train
+  const t = matrixView(test.x, 'dropColumnImportance', { allowNaN: true, nFeatures: m.d })
+  const fitOptions: FitOptions = { ...options, explain: false }
+  const baseline = scorer.score(estimator.fit({ ...train, x: rowsMatrix(m) }, fitOptions), {
+    ...test,
+    x: rowsMatrix(t),
+  })
+  const groups = options.features ?? Array.from({ length: m.d }, (_, j) => [j])
+  const scores = groups.map((g) => {
+    const keep = Array.from({ length: m.d }, (_, c) => c).filter((c) => !g.includes(c))
+    const fitted = estimator.fit({ ...train, x: rowsMatrix(takeColumns(m, keep)) }, fitOptions)
+    return scorer.score(fitted, { ...test, x: rowsMatrix(takeColumns(t, keep)) })
+  })
+  return { baseline, scores, importances: scores.map((s) => baseline - s) }
+}
+
+// A view as nested rows (so a model of no columns still sees one empty row per sample).
+function rowsMatrix(m: MatrixView): number[][] {
+  return Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
+}
+
+/** Options of {@link conditionalPermutationImportance}. */
+export interface ConditionalPermutationOptions extends FitOptions {
+  readonly scoring?: Scoring
+  /** Repetitions per feature (default 5). */
+  readonly nRepeats?: number
+  /** The features each feature is conditioned on, conditionOn[j] (default those correlated with it, see `threshold`). */
+  readonly conditionOn?: readonly (readonly number[])[]
+  /** The |Pearson correlation| above which a feature is conditioned on (default 0.3; at most two, the strongest). */
+  readonly threshold?: number
+  /** Quantile bins per conditioning feature (default 4). */
+  readonly bins?: number
+}
+
+/** The result of {@link conditionalPermutationImportance}. */
+export interface ConditionalPermutationResult extends PermutationImportanceResult {
+  /** The features each feature was conditioned on. */
+  readonly conditionOn: readonly (readonly number[])[]
+}
+
+function pearsonOf(a: ArrayLike<number>, b: ArrayLike<number>): number {
+  const ma = meanOf(a)
+  const mb = meanOf(b)
+  let sab = 0
+  let saa = 0
+  let sbb = 0
+  for (let i = 0; i < a.length; i++) {
+    const u = (a[i] ?? 0) - ma
+    const v = (b[i] ?? 0) - mb
+    sab += u * v
+    saa += u * u
+    sbb += v * v
+  }
+  return saa === 0 || sbb === 0 ? 0 : sab / Math.sqrt(saa * sbb)
+}
+
+/**
+ * Conditional permutation importance (Strobl et al. 2008): permute a feature only within strata of the features it is
+ * correlated with (quantile bins of each), so the permuted values stay plausible given the rest of the row and a
+ * feature that only duplicates another's information scores near zero. Without conditioning features it is the
+ * marginal permutation importance.
+ *
+ * @param fitted - A fitted estimator.
+ * @param data - Evaluation data (features and targets).
+ * @param options - scoring, nRepeats, conditionOn, threshold, bins and key.
+ * @returns The baseline, the importances per repeat, their mean and spread, and the conditioning features.
+ * @example
+ * ```ts
+ * import { conditionalPermutationImportance } from 'whitebox-engine/explain'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * const firstColumn = { estimator: 'f', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i * 2])) }
+ * // The second column copies the first: conditioned on it, permuting the first changes nothing.
+ * const x = [[1, 1], [2, 2], [3, 3], [4, 4]]
+ * conditionalPermutationImportance(firstColumn, { x, y: [1, 2, 3, 4] }, { scoring: 'neg_mean_squared_error', bins: 4 }).mean // => [0, 0]
+ * ```
+ */
+export function conditionalPermutationImportance(
+  fitted: Fitted,
+  data: LearnData,
+  options: ConditionalPermutationOptions = {},
+): ConditionalPermutationResult {
+  const m = matrixView(data.x, 'conditionalPermutationImportance')
+  requireTargets(data, 'conditionalPermutationImportance')
+  const scorer = Object.values(scorersOf(options.scoring))[0]
+  if (scorer === undefined) throw new WhiteboxError('value', 'conditionalPermutationImportance: no scorer')
+  const key = keyFor(options, 'conditionalPermutationImportance')
+  const nRepeats = options.nRepeats ?? 5
+  const bins = options.bins ?? 4
+  const threshold = options.threshold ?? 0.3
+  const cols = Array.from({ length: m.d }, (_, j) => columnOf(m, j))
+  const conditionOn =
+    options.conditionOn ??
+    cols.map((cj, j) =>
+      cols
+        .map((ck, k) => ({ k, r: k === j ? 0 : Math.abs(pearsonOf(cj, ck)) }))
+        .filter((e) => e.r > threshold)
+        .sort((u, v) => v.r - u.r || u.k - v.k)
+        .slice(0, 2)
+        .map((e) => e.k),
+    )
+  const binsOf = cols.map((c) => {
+    const sorted = Float64Array.from(c).sort()
+    const edges = Array.from({ length: bins - 1 }, (_, b) => quantileOf(sorted, (b + 1) / bins))
+    return Array.from(c, (v) => edges.filter((e) => v > e).length)
+  })
+  const evalData = { ...data, x: fromView(m) }
+  const baseline = scorer.score(fitted, evalData)
+  const importances = cols.map((_, j) => {
+    const z = conditionOn[j] ?? []
+    const strata = new Map<string, number[]>()
+    for (let i = 0; i < m.n; i++) {
+      const s = z.map((k) => binsOf[k]?.[i] ?? 0).join(',')
+      const list = strata.get(s) ?? []
+      list.push(i)
+      strata.set(s, list)
+    }
+    return Array.from({ length: nRepeats }, (_, r) => {
+      const shuffled = Float64Array.from(m.data)
+      let t = 0
+      for (const rows of strata.values()) {
+        const perm = toFlat(permutation(foldIn(foldIn(key, j), r * 7919 + t++), rows.length))
+        rows.forEach((i, a) => {
+          shuffled[i * m.d + j] = m.data[(rows[perm[a] ?? a] ?? i) * m.d + j] ?? 0
+        })
+      }
+      return baseline - scorer.score(fitted, { ...data, x: fromStorage(shuffled, [m.n, m.d], 'float64') })
+    })
+  })
+  return {
+    baseline,
+    importances,
+    mean: importances.map((d) => meanOf(d)),
+    std: importances.map((d) => Math.sqrt(varianceOf(d, 0))),
+    conditionOn,
+  }
 }

@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { diabetes, iris } from '../../lib/datasets/index.ts'
 import { recordsOf } from '../../lib/exposition/index.ts'
+import { defineEstimator, takeData } from '../../lib/learn/index.ts'
 import { key } from '../../lib/random/index.ts'
-import { toFlat } from '../../lib/tensor/index.ts'
+import { asTensor, fromStorage, toFlat } from '../../lib/tensor/index.ts'
 import { gradientBoostingClassifier, randomForestClassifier, randomForestRegressor } from '../ensemble/index.ts'
 import { decisionTreeRegressor } from '../trees/index.ts'
 import { explainDataset, explainPrediction } from './attributions.ts'
-import { featureImportance } from './inspection.ts'
+import { featureImportance, sageImportance } from './inspection.ts'
 
 const reg = diabetes()
 const forest = randomForestRegressor({ nEstimators: 8, maxDepth: 4 }).fit(reg, { key: key(1) })
@@ -79,5 +80,52 @@ describe('explainDataset and featureImportance', () => {
     expect([2, 8]).toContain(top)
     const imp = featureImportance(forest, reg, { method: 'impurity' })
     expect(sum(imp.mean)).toBeCloseTo(1, 6)
+  })
+})
+
+describe('Shapley completion', () => {
+  it('linear, partition and conditional explainers add up to the prediction', () => {
+    const small = takeData(
+      reg,
+      Array.from({ length: 60 }, (_, i) => i),
+    )
+    const lin = defineEstimator(
+      {
+        name: 'fixed linear',
+        kind: 'regressor',
+        fit: () => ({}),
+        methods: () => ({
+          predict: (x) => {
+            const t = asTensor(x)
+            const [n = 0, d = 0] = t.shape
+            const v = toFlat(t)
+            return fromStorage(
+              Float64Array.from({ length: n }, (_, i) =>
+                v.slice(i * d, (i + 1) * d).reduce((a, b, j) => a + (j + 1) * b, 3),
+              ),
+              [n],
+              'float64',
+            )
+          },
+        }),
+      },
+      {},
+    ).fit(small)
+    const l = explainPrediction(lin, small, 2, { method: 'linear', background: 20 })
+    expect(l.baseValue + sum(l.values)).toBeCloseTo(l.prediction, 9)
+    expect(() => explainPrediction(forest, small, 2, { method: 'linear' })).toThrow(/linear/)
+    const p = explainPrediction(forest, small, 2, { method: 'partition', background: 10 })
+    expect(p.baseValue + sum(p.values)).toBeCloseTo(p.prediction, 8)
+    const c = explainPrediction(lin, small, 2, { method: 'conditional', background: 30, nSamples: 20 })
+    expect(c.values.length).toBe(10)
+  })
+
+  it('SAGE importances as a record', () => {
+    const small = takeData(
+      reg,
+      Array.from({ length: 50 }, (_, i) => i),
+    )
+    const r = sageImportance(forest, small, { nPermutations: 20, background: 10 })
+    expect(recordsOf(r.exposition, 'importances')[0]?.method).toBe('SAGE')
   })
 })
