@@ -30,6 +30,7 @@ export const treeShap: HubEntry = defineEntry({
   },
   views: [
     { record: 'featureAttributions', view: 'WaterfallView', title: 'Why this prediction', index: 0 },
+    { record: 'featureAttributions', view: 'ForcePlotView', title: 'As forces', index: 0 },
     { record: 'featureAttributions', view: 'BeeswarmView', title: 'Every row', index: 1, area: 'side' },
     { record: 'featureAttributions', view: 'AttributionBarView', title: 'Mean |SHAP|', index: 1, area: 'below' },
     {

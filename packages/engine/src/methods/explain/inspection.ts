@@ -1,5 +1,5 @@
 /**
- * Global inspection of fitted models as exposition records: permutation, conditional, drop-column and impurity
+ * Global inspection of fitted models as exposition records: permutation, conditional, drop-column, impurity and SAGE
  * importances (`importances`), partial dependence with ICE curves and accumulated local effects (`dependence`).
  */
 import { WhiteboxError } from '../../lib/base/index.ts'
@@ -12,6 +12,7 @@ import {
   iceDerivative,
   partialDependence,
   permutationImportance,
+  sage,
 } from '../../lib/explain/index.ts'
 import {
   type DependenceCurve,
@@ -30,6 +31,7 @@ import {
   type Scoring,
 } from '../../lib/learn/index.ts'
 import type { Key } from '../../lib/random/index.ts'
+import { asTensor, type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
 import { modelOutput } from './_models.ts'
 
 /** Options of {@link featureImportance}. */
@@ -359,6 +361,76 @@ export function aleEffects(
         output: output.name,
         curves,
         ...(surfaces.length === 0 ? {} : { surfaces }),
+      }),
+    ],
+  }
+}
+
+/** Options of {@link sageImportance}. */
+export interface SageImportanceOptions {
+  /** Background rows for imputation, drawn from the data (default 30). */
+  readonly background?: number
+  /** Permutations sampled (default 200). */
+  readonly nPermutations?: number
+  /** Evaluation rows used, the first of the data (default 300). */
+  readonly maxRows?: number
+  readonly key?: Key
+}
+
+/**
+ * SAGE global importance (Covert, Lundberg and Lee 2020) for a fitted model: each feature's Shapley share of the drop
+ * in loss (squared error for regressors, cross-entropy of the class probabilities for classifiers) from predicting
+ * with no features to predicting with all, missing features imputed from background rows. The record's repeats are
+ * absent; the spread is the sampling standard error.
+ *
+ * @param fitted - A fitted estimator.
+ * @param data - Evaluation data with targets.
+ * @param options - background, nPermutations, maxRows and key.
+ * @returns The values with an `importances` record.
+ */
+export function sageImportance(
+  fitted: Fitted,
+  data: LearnData,
+  options: SageImportanceOptions = {},
+): Explained<FeatureImportanceResult> {
+  const x = matrixView(data.x, 'sageImportance')
+  const features = featureNamesOf(data, x.d)
+  const n = Math.min(x.n, options.maxRows ?? 300)
+  const rows = Array.from({ length: n }, (_, i) => Array.from(x.data.subarray(i * x.d, (i + 1) * x.d)))
+  const yAll = toFlat(asTensor(data.y as TensorLike))
+  const classify = fitted.kind === 'classifier'
+  const classes = (fitted as { readonly classes?: readonly number[] }).classes ?? []
+  const y = yAll.slice(0, n).map((v) => (classify ? Math.max(0, classes.indexOf(v)) : v))
+  const predict = (t: Tensor): Tensor => {
+    const f = classify ? fitted.predictProba : fitted.predict
+    if (f === undefined) throw new WhiteboxError('value', `sageImportance: ${fitted.estimator} cannot predict`)
+    return f(t)
+  }
+  const bgSize = Math.min(x.n, options.background ?? 30)
+  const step = x.n / bgSize
+  const background = Array.from({ length: bgSize }, (_, b) => {
+    const i = Math.floor(b * step)
+    return Array.from(x.data.subarray(i * x.d, (i + 1) * x.d))
+  })
+  const r = sage(predict, { x: rows, y }, background, {
+    loss: classify ? 'cross-entropy' : 'mse',
+    nPermutations: options.nPermutations ?? 200,
+    ...(options.key === undefined ? {} : { key: options.key }),
+  })
+  const spread = r.standardErrors.map((v) => (Number.isFinite(v) ? v : 0))
+  return {
+    mean: r.values,
+    spread,
+    baseline: r.lossFull,
+    exposition: [
+      importances({
+        method: 'SAGE',
+        features,
+        mean: r.values,
+        spread,
+        metric: classify ? 'cross-entropy removed' : 'squared error removed',
+        direction: 'higher',
+        baseline: r.lossEmpty,
       }),
     ],
   }

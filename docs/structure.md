@@ -2792,6 +2792,12 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   interventional) and interactions, linear SHAP (independent and correlated), partition SHAP and Owen values over
   feature hierarchies, conditional versus interventional value functions, SAGE (global importance), Shapley-based
   interaction indices.
+  Built: `shapleyValues`, `shapleyInteractionValues`, `interventionalValue`, `conditionalValue` (Gaussian and
+  empirical, Aas et al.), `kernelShap`, `samplingShapley`, `treeShap`, `treeShapInteractions`, `ensembleTreeShap`,
+  `linearShap` (interventional, and correlation-dependent by the Gaussian conditional mean), `owenValues` (nested
+  hierarchies), `hierarchyFromLinkage`, `correlationHierarchy`, `partitionShap`, `sage` (permutation-sampled or exact).
+  Goldens: shap Kernel, Exact (independent masker, and partition masker = Owen values), Linear and Tree explainers.
+  TODO: interventional Tree SHAP, Shapley-Taylor and Faith-SHAP interaction indices.
 - Gradient-based (`gradients.ts`): saliency, input times gradient, integrated gradients (baselines, Riemann and
   Gauss-Legendre paths), SmoothGrad, VarGrad and SmoothGrad squared (noise tunnels), expected gradients and
   GradientSHAP, DeepLIFT and DeepLIFT SHAP, guided backpropagation and deconvolution, Grad-CAM and guided Grad-CAM,
@@ -4067,11 +4073,12 @@ ROC with thresholds), reliability diagrams, conformal bands and set sizes.
 `explain/` (shap, lime, alibi, interpret, sklearn.inspection)
 built from: `explain`, `learn`, `metrics`
 - `attributions.ts`: `explainPrediction(model, data, row, { method: 'tree' | 'kernel' | 'exact' | 'sampling' |
-  'lime' })` and `explainDataset` (attributions for many rows: summary and beeswarm, with each feature's strongest
+  'lime' | 'linear' | 'partition' | 'conditional' })` and `explainDataset` (attributions for many rows: summary and beeswarm, with each feature's strongest
   interaction partner), with the sampling estimate's convergence recorded (and as a `curves` record); `_models.ts`
   picks the output explained (prediction, probability, a booster's log odds) and reads trees, forests and gradient
   boosting as Tree SHAP models.
 - `inspection.ts`: `featureImportance` (permutation, with every repeat; conditional permutation; or impurity),
+  `sageImportance` (SAGE's loss shares),
   `dropColumnImportances` (refits), `dependencePlot` (PDP with ICE curves raw, centred or derivative, the rug, two-way
   surfaces) and `aleEffects` (first and second order) for any fitted estimator: `importances` and `dependence`
   records (`lib/exposition/dependence.ts`), drawn by `DependenceView` and `DependenceSurfaceView`. Built.
@@ -4083,7 +4090,8 @@ built from: `explain`, `learn`, `metrics`
   (word ablation, SHAP, LIME over any text scorer), `explainSeries` (window occlusion, ablation, SHAP) and
   `morrisScreening` (an `importances` record). The `featureAttributions` record gains `layout` (image, tokens,
   series) and `segments`; render draws them with `AttributionImageView`, `TokenStripView` and
-  `AttributionSeriesView` (`views/modalities.ts`), which `AttributionView` picks by layout. Built.
+  `AttributionSeriesView` (`views/modalities.ts`), which `AttributionView` picks by layout. Built. Render also
+  draws one row as shap's force plot (`forceView`, `ForcePlotView`).
 
 `fairness/` (fairlearn, AIF360)
 built from: `fairness`, `learn`, `metrics`, `optim`, `datasets` (with protected attributes)

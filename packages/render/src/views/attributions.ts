@@ -589,3 +589,168 @@ export function importanceView(record: Importances, options: AttributionViewOpti
     legend: false,
   })
 }
+
+interface ForceSegment {
+  readonly label: string
+  readonly start: number
+  readonly end: number
+  readonly up: boolean
+}
+
+/**
+ * The segments of a force plot for one row: features that raise the output stacked up to the prediction from the
+ * left (largest nearest it), those that lower it stacked down from the right.
+ *
+ * @param record - The record.
+ * @param row - The explained row.
+ * @returns The segments, the base value and the end the attributions reach.
+ * @example
+ * ```ts
+ * import { featureAttributions } from 'whitebox-engine/exposition'
+ * import { forceSegments } from 'whitebox-render/views'
+ * const r = featureAttributions({ method: 'exact', features: ['a', 'b'], output: 'y', baseValue: 1, values: [[2, -0.5]], data: [[0, 0]], predictions: [2.5] })
+ * forceSegments(r, 0).segments.map((s) => [s.start, s.end]) // => [[0.5, 2.5], [2.5, 3]]
+ * ```
+ */
+export function forceSegments(
+  record: FeatureAttributions,
+  row: number,
+): { readonly segments: ForceSegment[]; readonly base: number; readonly end: number } {
+  const values = record.values[row] ?? []
+  const data = record.data[row] ?? []
+  const base = record.baseValues?.[row] ?? record.baseValue
+  const end = base + values.reduce((a, b) => a + b, 0)
+  const label = (j: number): string => `${record.features[j] ?? `x${j}`} = ${short(data[j] ?? 0)}`
+  const order = (sign: 1 | -1): number[] =>
+    values
+      .map((v, j) => ({ v, j }))
+      .filter((e) => (sign > 0 ? e.v > 0 : e.v < 0))
+      .sort((a, b) => Math.abs(b.v) - Math.abs(a.v) || a.j - b.j)
+      .map((e) => e.j)
+  const segments: ForceSegment[] = []
+  let at = end
+  for (const j of order(1)) {
+    const v = values[j] ?? 0
+    segments.push({ label: label(j), start: at - v, end: at, up: true })
+    at -= v
+  }
+  at = end
+  for (const j of order(-1)) {
+    const v = -(values[j] ?? 0)
+    segments.push({ label: label(j), start: at, end: at + v, up: false })
+    at += v
+  }
+  return { segments, base, end }
+}
+
+/**
+ * One prediction's attributions as a force plot (shap.plots.force): along the output axis, the features that push
+ * the prediction up as red arrows ending at f(x) from the left and those that push it down as blue arrows from the
+ * right, each as long as its attribution, the larger features labelled beneath, with the base value marked.
+ *
+ * @param record - The record.
+ * @param options - row, mode and figure.
+ * @returns The ECharts option.
+ */
+export function forceView(record: FeatureAttributions, options: WaterfallViewOptions = {}): EChartsOption {
+  const row = options.row ?? 0
+  const fig = viewFigure(options, { aspect: 3.2, padding: { left: 24, right: 24 } })
+  const t = tokens(fig.mode)
+  const { segments, base, end } = forceSegments(record, row)
+  const prediction = record.predictions[row] ?? end
+  const span = spanOf([base, prediction, end, ...segments.flatMap((s) => [s.start, s.end])])
+  const width = span[1] - span[0] || 1
+  const fs = fig.fontSize - 1
+  const series = {
+    type: 'custom',
+    name: '__force',
+    data: segments.map((s, i) => [s.start, s.end, i]),
+    renderItem: (_p: unknown, api: ArrowApi): Record<string, unknown> => {
+      const i = api.value(2)
+      const seg = segments[i]
+      if (seg === undefined) return { type: 'group', children: [] }
+      const a = api.coord([seg.start, 0])
+      const b = api.coord([seg.end, 0])
+      const x0 = a[0] ?? 0
+      const x1 = b[0] ?? 0
+      const y = a[1] ?? 0
+      const h = 18
+      const tip = Math.min(6, Math.abs(x1 - x0) / 2)
+      // Red arrows point right (towards higher output), blue ones left.
+      const points = seg.up
+        ? [
+            [x0, y - h / 2],
+            [x1 - tip, y - h / 2],
+            [x1, y],
+            [x1 - tip, y + h / 2],
+            [x0, y + h / 2],
+            [x0 + tip, y],
+          ]
+        : [
+            [x0 + tip, y - h / 2],
+            [x1, y - h / 2],
+            [x1 - tip, y],
+            [x1, y + h / 2],
+            [x0 + tip, y + h / 2],
+            [x0, y],
+          ]
+      const wide = Math.abs(seg.end - seg.start) > 0.07 * width
+      return {
+        type: 'group',
+        children: [
+          {
+            type: 'polygon',
+            shape: { points },
+            style: { fill: seg.up ? ATTRIBUTION_UP : ATTRIBUTION_DOWN, stroke: t.bg, lineWidth: 1 },
+          },
+          ...(wide
+            ? [
+                {
+                  type: 'text',
+                  style: {
+                    text: seg.label,
+                    x: (x0 + x1) / 2,
+                    y: y + h / 2 + 6 + (i % 2) * (fs + 3),
+                    fill: seg.up ? ATTRIBUTION_UP : ATTRIBUTION_DOWN,
+                    align: 'center',
+                    verticalAlign: 'top',
+                    font: `${fs}px ${t.font}`,
+                  },
+                },
+              ]
+            : []),
+        ],
+      }
+    },
+    tooltip: {
+      formatter: (p: { dataIndex: number }) => {
+        const s = segments[p.dataIndex]
+        return s === undefined ? '' : `${s.label}<br/>${signed(s.up ? s.end - s.start : s.start - s.end)}`
+      },
+    },
+    z: 3,
+  } as unknown as SeriesOption
+  const marks = {
+    type: 'line',
+    name: '__marks',
+    data: [],
+    markLine: {
+      silent: true,
+      symbol: 'none',
+      lineStyle: { color: t.muted, type: 'dashed', width: 1 },
+      label: { color: t.fgSecondary, fontSize: fs, position: 'end' },
+      data: [
+        { xAxis: base, label: { formatter: `base value ${short(base)}` } },
+        { xAxis: prediction, label: { formatter: `f(x) = ${short(prediction)}`, fontWeight: 600 } },
+      ],
+    },
+  } as SeriesOption
+  return cartesian([layer([series], { x: span, y: [-1, 1] }), layer([marks], {})], {
+    figure: fig,
+    mode: fig.mode,
+    x: { label: record.output, limits: [span[0] - 0.04 * width, span[1] + 0.04 * width] },
+    y: { show: false, splitLine: false, limits: [-1.6, 1] },
+    tooltip: 'item',
+    legend: false,
+  })
+}

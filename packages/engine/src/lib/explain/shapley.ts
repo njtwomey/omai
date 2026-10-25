@@ -1,16 +1,17 @@
 /**
  * The Shapley family of attributions: exact Shapley and interaction values of any coalition game, the interventional
- * value function of a model, Kernel SHAP, permutation-sampling Shapley values, and Tree SHAP (path-dependent) with its
- * interaction values for single trees and ensembles.
+ * and conditional (Gaussian, empirical) value functions of a model, Kernel SHAP, permutation-sampling Shapley values,
+ * Tree SHAP (path-dependent) with its interaction values for single trees and ensembles, linear SHAP (independent and
+ * correlated), Owen values and partition SHAP over feature hierarchies, and SAGE's global importance.
  */
 import { popcount, WhiteboxError } from '../base/index.ts'
 import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../games/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
-import type { FitOptions } from '../learn/estimator.ts'
+import { type FitOptions, type LearnData, requireTargets } from '../learn/estimator.ts'
 import { type MatrixView, matrixView } from '../learn/validation.ts'
-import { solve } from '../numerics/linalg/index.ts'
-import { foldIn, type Key, permutation, randint } from '../random/index.ts'
-import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { choleskyJitter, pinv, solve } from '../numerics/linalg/index.ts'
+import { foldIn, type Key, normal, permutation, randint } from '../random/index.ts'
+import { asTensor, fromStorage, type Tensor, type TensorLike, toArray, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 
 /** A cooperative game: the value of each coalition (a membership mask over the players). */
@@ -604,4 +605,541 @@ export function ensembleTreeShap(
     ),
     baseValue: factor * parts.reduce((s, p) => s + p.baseValue, 0),
   }
+}
+
+/** A feature hierarchy (shap's partition tree): a feature index, or a group of sub-hierarchies. */
+export type FeatureHierarchy = number | readonly FeatureHierarchy[]
+
+function leavesOf(h: FeatureHierarchy): number[] {
+  return typeof h === 'number' ? [h] : h.flatMap(leavesOf)
+}
+
+function factorial(k: number): number {
+  let r = 1
+  for (let i = 2; i <= k; i++) r *= i
+  return r
+}
+
+/**
+ * Owen values (Owen 1977; Winter 1989 for nested levels): the Shapley value of a game with a coalition structure.
+ * Groups are first ordered among their siblings, then players within their group, so a player's value averages its
+ * marginal contributions over orders that keep every group together; with one group of all players (or all players as
+ * singletons) it is the Shapley value. shap's Partition explainer computes them over a feature clustering.
+ *
+ * @param value - The coalition value function.
+ * @param hierarchy - The players' hierarchy (nested arrays of player indices covering 0..n-1 once each).
+ * @returns One value per player.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * // v = 1 when player 0 joins player 1 or 2. Grouping 0 with 1 shifts value from 2 to them.
+ * const v = (s) => (s[0] && (s[1] || s[2]) ? 1 : 0)
+ * explain.owenValues(v, [[0, 1], 2]).map((x) => Math.round(x * 1e12) / 1e12) // => [0.75, 0.25, 0]
+ * ```
+ */
+export function owenValues(value: CoalitionValue, hierarchy: FeatureHierarchy): number[] {
+  const leaves = leavesOf(hierarchy)
+  const n = leaves.length
+  if (n > MAX_EXACT_PLAYERS) throw new WhiteboxError('value', `owenValues: at most ${MAX_EXACT_PLAYERS} players`)
+  const seen = new Set(leaves)
+  if (seen.size !== n || leaves.some((j) => !(Number.isInteger(j) && j >= 0 && j < n)))
+    throw new WhiteboxError('value', 'owenValues: the hierarchy must hold each player 0..n-1 exactly once')
+  const cache = new Map<number, number>()
+  const v = (bits: number): number => {
+    const known = cache.get(bits)
+    if (known !== undefined) return known
+    const r = value(maskOf(bits, n))
+    cache.set(bits, r)
+    return r
+  }
+  const bitsOf = (h: FeatureHierarchy): number => leavesOf(h).reduce((b, j) => b | (1 << j), 0)
+  // The path from the root to each player: at each level the siblings and which of them holds the player.
+  const paths = new Map<number, { readonly children: readonly FeatureHierarchy[]; readonly at: number }[]>()
+  const walk = (h: FeatureHierarchy, path: { children: readonly FeatureHierarchy[]; at: number }[]): void => {
+    if (typeof h === 'number') {
+      paths.set(h, path)
+      return
+    }
+    h.forEach((c, k) => {
+      walk(c, [...path, { children: h, at: k }])
+    })
+  }
+  walk(hierarchy, [])
+  return Array.from({ length: n }, (_, i) => {
+    const path = paths.get(i) ?? []
+    let total = 0
+    const go = (level: number, bits: number, weight: number): void => {
+      if (level === path.length) {
+        total += weight * (v(bits | (1 << i)) - v(bits))
+        return
+      }
+      const { children, at } = path[level] as { children: readonly FeatureHierarchy[]; at: number }
+      const others = children.filter((_, k) => k !== at).map(bitsOf)
+      const c = children.length
+      for (let r = 0; r < 1 << others.length; r++) {
+        let b = bits
+        let size = 0
+        others.forEach((o, k) => {
+          if ((r >> k) & 1) {
+            b |= o
+            size += 1
+          }
+        })
+        go(level + 1, b, (weight * factorial(size) * factorial(c - size - 1)) / factorial(c))
+      }
+    }
+    go(0, 0, 1)
+    return total
+  })
+}
+
+/**
+ * A feature hierarchy from a scipy linkage matrix (rows `[a, b, distance, count]`, merged cluster ids from n up), as
+ * shap's Partition masker reads its clustering.
+ *
+ * @param linkage - The `[n - 1, 4]` linkage rows.
+ * @param n - The number of features.
+ * @returns The binary hierarchy.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * explain.hierarchyFromLinkage([[0, 1, 0.1, 2], [2, 3, 0.5, 3]], 3) // => [2, [0, 1]]
+ * ```
+ */
+export function hierarchyFromLinkage(linkage: readonly (readonly number[])[], n: number): FeatureHierarchy {
+  if (n === 1) return 0
+  if (linkage.length !== n - 1) throw new WhiteboxError('shape', `hierarchyFromLinkage: ${n - 1} merges expected`)
+  const node = (id: number): FeatureHierarchy => {
+    if (id < n) return id
+    const row = linkage[id - n]
+    if (row === undefined) throw new WhiteboxError('value', `hierarchyFromLinkage: no cluster ${id}`)
+    return [node(row[0] ?? 0), node(row[1] ?? 0)]
+  }
+  return node(2 * n - 2)
+}
+
+function meanAndCovariance(bg: MatrixView): { mu: number[]; sigma: number[][] } {
+  const mu = Array.from({ length: bg.d }, (_, j) => {
+    let s = 0
+    for (let r = 0; r < bg.n; r++) s += bg.data[r * bg.d + j] ?? 0
+    return s / bg.n
+  })
+  const sigma = Array.from({ length: bg.d }, (_, a) =>
+    Array.from({ length: bg.d }, (_, b) => {
+      let s = 0
+      for (let r = 0; r < bg.n; r++)
+        s += ((bg.data[r * bg.d + a] ?? 0) - (mu[a] ?? 0)) * ((bg.data[r * bg.d + b] ?? 0) - (mu[b] ?? 0))
+      return s / Math.max(1, bg.n - 1)
+    }),
+  )
+  return { mu, sigma }
+}
+
+/**
+ * Average-linkage clustering of features by 1 - |correlation| over data, as a hierarchy for {@link owenValues} and
+ * {@link partitionShap} (shap clusters features before its Partition explainer; correlated features end up together).
+ *
+ * @param x - Data `[n, d]`.
+ * @returns The binary hierarchy.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * // Columns 0 and 2 move together; 1 is unrelated.
+ * explain.correlationHierarchy([[1, 5, 1], [2, 1, 2.1], [3, 4, 2.9], [4, 2, 4.2]]) // => [1, [0, 2]]
+ * ```
+ */
+export function correlationHierarchy(x: TensorLike): FeatureHierarchy {
+  const m = matrixView(x, 'correlationHierarchy')
+  const { sigma } = meanAndCovariance(m)
+  const corr = (a: number, b: number): number => {
+    const den = Math.sqrt((sigma[a]?.[a] ?? 0) * (sigma[b]?.[b] ?? 0))
+    return den === 0 ? 0 : (sigma[a]?.[b] ?? 0) / den
+  }
+  let clusters: { members: number[]; tree: FeatureHierarchy }[] = Array.from({ length: m.d }, (_, j) => ({
+    members: [j],
+    tree: j,
+  }))
+  while (clusters.length > 1) {
+    let best = [0, 1]
+    let bestD = Number.POSITIVE_INFINITY
+    for (let a = 0; a < clusters.length; a++)
+      for (let b = a + 1; b < clusters.length; b++) {
+        const ca = clusters[a]?.members ?? []
+        const cb = clusters[b]?.members ?? []
+        let s = 0
+        for (const u of ca) for (const w of cb) s += 1 - Math.abs(corr(u, w))
+        const dist = s / (ca.length * cb.length)
+        if (dist < bestD - 1e-12) {
+          bestD = dist
+          best = [a, b]
+        }
+      }
+    const [a = 0, b = 1] = best
+    const A = clusters[a] as { members: number[]; tree: FeatureHierarchy }
+    const B = clusters[b] as { members: number[]; tree: FeatureHierarchy }
+    // The smaller cluster first, ties by the lowest feature, so the result does not depend on the scan order.
+    const [first, second] =
+      A.members.length < B.members.length ||
+      (A.members.length === B.members.length && Math.min(...A.members) < Math.min(...B.members))
+        ? [A, B]
+        : [B, A]
+    const merged = { members: [...first.members, ...second.members], tree: [first.tree, second.tree] }
+    clusters = clusters.filter((_, k) => k !== a && k !== b)
+    clusters.push(merged)
+  }
+  return (clusters[0] as { tree: FeatureHierarchy }).tree
+}
+
+/**
+ * Partition SHAP (shap.PartitionExplainer and ExactExplainer with a Partition masker): the Owen values of each row's
+ * interventional game over a feature hierarchy, so correlated features (clustered together) are explained as groups
+ * first, which keeps the explanation from crediting impossible combinations; the values still sum to f(x) - E f.
+ *
+ * @param predict - The model.
+ * @param x - Rows to explain `[n, d]`.
+ * @param background - Background rows `[m, d]`.
+ * @param hierarchy - The feature hierarchy (default {@link correlationHierarchy} of the background).
+ * @returns The values and the base value.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[2 * i] - x.data[2 * i + 1]))
+ * // An additive model: Owen values equal Shapley values w (x - E x).
+ * explain.partitionShap(linear, [[1, 1]], [[0, 0], [2, 4]], [0, 1]).values // => [[0, 1]]
+ * ```
+ */
+export function partitionShap(
+  predict: PredictFunction,
+  x: TensorLike,
+  background: TensorLike,
+  hierarchy?: FeatureHierarchy,
+): ShapExplanation {
+  const xs = matrixView(x, 'partitionShap')
+  const bg = matrixView(background, 'partitionShap', { nFeatures: xs.d })
+  const h = hierarchy ?? correlationHierarchy(fromStorage(bg.data, [bg.n, bg.d], 'float64'))
+  if (leavesOf(h).length !== xs.d)
+    throw new WhiteboxError('shape', 'partitionShap: the hierarchy must cover every feature')
+  const baseValue = evalRows(predict, Float64Array.from(bg.data), bg.n, bg.d).reduce((a, b) => a + b, 0) / bg.n
+  const bgT = fromStorage(bg.data, [bg.n, bg.d], 'float64')
+  const values = Array.from({ length: xs.n }, (_, r) =>
+    owenValues(interventionalValue(predict, Array.from(xs.data.subarray(r * xs.d, (r + 1) * xs.d)), bgT), h),
+  )
+  return { values, baseValue }
+}
+
+/** Options of {@link linearShap}. */
+export interface LinearShapOptions {
+  /**
+   * `interventional` (default; shap's Independent masker): features missing from a coalition take background values
+   * independently, phi = w (x - E x). `correlation`: they follow the Gaussian conditional given the coalition's values
+   * (exact Shapley values over the 2^d coalitions).
+   */
+  readonly perturbation?: 'interventional' | 'correlation'
+}
+
+/**
+ * Linear SHAP (shap.LinearExplainer): exact Shapley values of a linear model w x + b. With interventional
+ * (independent) perturbation they are w_j (x_j - E x_j); with correlation-dependent perturbation the value of a
+ * coalition is the model at the Gaussian conditional mean of the missing features given the present ones (the
+ * background's mean and covariance), which spreads credit onto correlated features.
+ *
+ * @param coef - The weights `[d]`.
+ * @param intercept - The intercept.
+ * @param x - Rows to explain `[n, d]`.
+ * @param background - Background rows `[m, d]` (their mean, and covariance for `correlation`).
+ * @param options - perturbation.
+ * @returns The values and the base value w E x + b.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * explain.linearShap([2, -1], 0.5, [[3, 1]], [[1, 1], [3, 3]]).values // => [[2, 1]]
+ * ```
+ */
+export function linearShap(
+  coef: readonly number[],
+  intercept: number,
+  x: TensorLike,
+  background: TensorLike,
+  options: LinearShapOptions = {},
+): ShapExplanation {
+  const xs = matrixView(x, 'linearShap', { nFeatures: coef.length })
+  const bg = matrixView(background, 'linearShap', { nFeatures: coef.length })
+  const { mu, sigma } = meanAndCovariance(bg)
+  const d = xs.d
+  const baseValue = intercept + coef.reduce((s, w, j) => s + w * (mu[j] ?? 0), 0)
+  if ((options.perturbation ?? 'interventional') === 'interventional') {
+    return {
+      values: Array.from({ length: xs.n }, (_, r) =>
+        coef.map((w, j) => w * ((xs.data[r * d + j] ?? 0) - (mu[j] ?? 0))),
+      ),
+      baseValue,
+    }
+  }
+  const values = Array.from({ length: xs.n }, (_, r) => {
+    const row = Array.from(xs.data.subarray(r * d, (r + 1) * d))
+    const v: CoalitionValue = (s) => {
+      const m = gaussianConditionalMean(row, s, mu, sigma)
+      return intercept + coef.reduce((acc, w, j) => acc + w * (m[j] ?? 0), 0)
+    }
+    return shapleyValues(v, d)
+  })
+  return { values, baseValue }
+}
+
+/** E[x | x_S = row_S] under N(mu, sigma): row on S, the regression of the rest on S elsewhere. */
+function gaussianConditionalMean(
+  row: readonly number[],
+  s: readonly boolean[],
+  mu: readonly number[],
+  sigma: readonly (readonly number[])[],
+): number[] {
+  const d = row.length
+  const inS = Array.from({ length: d }, (_, j) => j).filter((j) => s[j] === true)
+  const out = mu.map((v, j) => (s[j] === true ? (row[j] ?? 0) : v))
+  if (inS.length === 0 || inS.length === d) return out
+  const ss = inS.map((a) => inS.map((b) => sigma[a]?.[b] ?? 0))
+  const inv = toArray(pinv(ss)) as number[][]
+  const dev = inS.map((a) => (row[a] ?? 0) - (mu[a] ?? 0))
+  const z = inv.map((r) => r.reduce((acc, v, k) => acc + v * (dev[k] ?? 0), 0))
+  for (let j = 0; j < d; j++) {
+    if (s[j] === true) continue
+    out[j] = (mu[j] ?? 0) + inS.reduce((acc, a, k) => acc + (sigma[j]?.[a] ?? 0) * (z[k] ?? 0), 0)
+  }
+  return out
+}
+
+/** Options of {@link conditionalValue}. */
+export interface ConditionalValueOptions {
+  /**
+   * `gaussian` (Aas, Jullum and Loland 2021's Gaussian approach: sample the missing features from their conditional
+   * normal given the present ones) or `empirical` (weight background rows by their Mahalanobis closeness on the present
+   * features). Default `gaussian`.
+   */
+  readonly method?: 'gaussian' | 'empirical'
+  /** Conditional samples per coalition (gaussian, default 100). */
+  readonly nSamples?: number
+  /** The kernel bandwidth of the empirical weights (default 0.4). */
+  readonly sigma?: number
+  readonly key?: Key
+}
+
+/**
+ * The observational (conditional) value function of a model at a point: v(S) = E[f(x) | x_S] with the missing
+ * features drawn from their distribution given the present ones, against {@link interventionalValue}'s independent
+ * draw. Conditional Shapley values (Aas, Jullum and Loland 2021) stay on the data manifold and credit correlated
+ * features jointly; interventional ones explain the model's mechanism (Janzing et al. 2020).
+ *
+ * @param predict - The model.
+ * @param x - The explained row `[d]`.
+ * @param background - Rows `[m, d]` of the data distribution.
+ * @param options - method, nSamples, sigma and key.
+ * @returns The coalition value function.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * // Two perfectly correlated features: knowing the first fixes the second, so f = x2 has value 1 at x1 = 1.
+ * const second = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i + 1]))
+ * const v = explain.conditionalValue(second, [1, 1], [[-1, -1], [0, 0], [1, 1]], { method: 'empirical', sigma: 0.1 })
+ * Math.round(v([true, false]) * 1e6) / 1e6 // => 1
+ * ```
+ */
+export function conditionalValue(
+  predict: PredictFunction,
+  x: TensorLike,
+  background: TensorLike,
+  options: ConditionalValueOptions = {},
+): CoalitionValue {
+  const xv = rowValues(x)
+  const bg = matrixView(background, 'conditionalValue', { nFeatures: xv.length })
+  const d = bg.d
+  const { mu, sigma } = meanAndCovariance(bg)
+  const method = options.method ?? 'gaussian'
+  const key = options.key ?? keyFor({}, 'conditionalValue')
+  if (method === 'empirical') {
+    const h = options.sigma ?? 0.4
+    return (s) => {
+      const inS = Array.from({ length: d }, (_, j) => j).filter((j) => s[j] === true)
+      const data = Float64Array.from(bg.data)
+      for (let r = 0; r < bg.n; r++) for (const j of inS) data[r * d + j] = xv[j] ?? 0
+      const f = evalRows(predict, data, bg.n, d)
+      if (inS.length === 0) return f.reduce((a, b) => a + b, 0) / bg.n
+      const inv = toArray(pinv(inS.map((a) => inS.map((b) => sigma[a]?.[b] ?? 0)))) as number[][]
+      let sw = 0
+      let sf = 0
+      for (let r = 0; r < bg.n; r++) {
+        const dev = inS.map((j) => (xv[j] ?? 0) - (bg.data[r * d + j] ?? 0))
+        let q = 0
+        for (let a = 0; a < dev.length; a++)
+          for (let b = 0; b < dev.length; b++) q += (dev[a] ?? 0) * (inv[a]?.[b] ?? 0) * (dev[b] ?? 0)
+        const w = Math.exp(-q / inS.length / (2 * h * h))
+        sw += w
+        sf += w * (f[r] ?? 0)
+      }
+      return sw === 0 ? f.reduce((a, b) => a + b, 0) / bg.n : sf / sw
+    }
+  }
+  const ns = options.nSamples ?? 100
+  return (s) => {
+    const inS = Array.from({ length: d }, (_, j) => j).filter((j) => s[j] === true)
+    const out = Array.from({ length: d }, (_, j) => j).filter((j) => s[j] !== true)
+    if (out.length === 0) return evalRows(predict, Float64Array.from(xv), 1, d)[0] ?? 0
+    const mean = gaussianConditionalMean(xv, s, mu, sigma)
+    // The conditional covariance of the missing features: S_oo - S_os S_ss^-1 S_so.
+    const soo = out.map((a) => out.map((b) => sigma[a]?.[b] ?? 0))
+    let cov = soo
+    if (inS.length > 0) {
+      const inv = toArray(pinv(inS.map((a) => inS.map((b) => sigma[a]?.[b] ?? 0)))) as number[][]
+      cov = out.map((a, p) =>
+        out.map((b, q) => {
+          let t = 0
+          for (let u = 0; u < inS.length; u++)
+            for (let w = 0; w < inS.length; w++)
+              t += (sigma[a]?.[inS[u] ?? 0] ?? 0) * (inv[u]?.[w] ?? 0) * (sigma[inS[w] ?? 0]?.[b] ?? 0)
+          return (soo[p]?.[q] ?? 0) - t
+        }),
+      )
+    }
+    const l = toArray(choleskyJitter(cov, 1e-3).l) as number[][]
+    const bits = s.reduce((b, v, j) => (v ? b | (1 << j) : b), 0)
+    const z = toFlat(normal(foldIn(key, bits), [ns, out.length]))
+    const data = new Float64Array(ns * d)
+    for (let t = 0; t < ns; t++) {
+      for (let j = 0; j < d; j++) data[t * d + j] = mean[j] ?? 0
+      out.forEach((j, p) => {
+        let e = 0
+        for (let q = 0; q <= p; q++) e += (l[p]?.[q] ?? 0) * (z[t * out.length + q] ?? 0)
+        data[t * d + j] = (mean[j] ?? 0) + e
+      })
+    }
+    return evalRows(predict, data, ns, d).reduce((a, b) => a + b, 0) / ns
+  }
+}
+
+/** Options of {@link sage}. */
+export interface SageOptions extends FitOptions {
+  /** The loss (default `mse`; `cross-entropy` reads the output as P(y = 1), or class probabilities `[m, k]`). */
+  readonly loss?: 'mse' | 'cross-entropy'
+  /** Permutations sampled (default 256); ignored when `exact`. */
+  readonly nPermutations?: number
+  /** Enumerate every coalition (at most 12 features). */
+  readonly exact?: boolean
+}
+
+/** SAGE values: each feature's share of the reduction in loss the features achieve together. */
+export interface SageResult {
+  readonly values: readonly number[]
+  /** Standard errors of the sampled estimates (0 when exact). */
+  readonly standardErrors: readonly number[]
+  /** The loss with no features (the background's mean prediction) and with all of them. */
+  readonly lossEmpty: number
+  readonly lossFull: number
+}
+
+/**
+ * SAGE (Covert, Lundberg and Lee 2020): global feature importance as Shapley values of the game v(S) = -E[loss(y,
+ * f_S(x))], where f_S averages the model over background values of the features outside S (marginal imputation).
+ * The values sum to the loss without features minus the loss with all of them, and a feature the model ignores gets
+ * 0. Estimated by permutation sampling (each step a data row and a feature order), or exactly for few features.
+ *
+ * @param predict - The model.
+ * @param data - Evaluation rows with targets.
+ * @param background - Background rows `[m, d]` for imputation.
+ * @param options - loss, nPermutations, exact, key and tracing.
+ * @returns The values, their errors and the two end losses.
+ * @example
+ * ```ts
+ * import * as explain from 'whitebox-engine/explain'
+ * import { tensor } from 'whitebox-engine/tensor'
+ * const first = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i]))
+ * const x = [[0, 5], [2, -5]]
+ * // Only the first feature matters: it removes all of the loss (1 at the mean prediction).
+ * explain.sage(first, { x, y: [0, 2] }, x, { exact: true }).values // => [1, 0]
+ * ```
+ */
+export function sage(
+  predict: PredictFunction,
+  data: LearnData,
+  background: TensorLike,
+  options: SageOptions = {},
+): SageResult {
+  const m = matrixView(data.x, 'sage')
+  requireTargets(data, 'sage')
+  const y = toFlat(asTensor(data.y as TensorLike))
+  const bg = matrixView(background, 'sage', { nFeatures: m.d })
+  const d = m.d
+  const ce = options.loss === 'cross-entropy'
+  // The imputed prediction for row i with features in S at its values: the mean over background rows.
+  const imputed = (i: number, s: readonly boolean[]): Float64Array => {
+    const rows = new Float64Array(bg.n * d)
+    for (let r = 0; r < bg.n; r++)
+      for (let j = 0; j < d; j++) rows[r * d + j] = s[j] === true ? (m.data[i * d + j] ?? 0) : (bg.data[r * d + j] ?? 0)
+    const out = predict(fromStorage(rows, [bg.n, d], 'float64'))
+    const k = out.shape.length === 2 ? (out.shape[1] ?? 1) : 1
+    const v = toFlat(out)
+    const mean = new Float64Array(k)
+    for (let r = 0; r < bg.n; r++) for (let c = 0; c < k; c++) mean[c] = (mean[c] ?? 0) + (v[r * k + c] ?? 0) / bg.n
+    return mean
+  }
+  const lossOf = (i: number, p: Float64Array): number => {
+    const yi = y[i] ?? 0
+    if (!ce) return ((p[0] ?? 0) - yi) ** 2
+    const clip = (q: number): number => Math.min(1 - 1e-12, Math.max(1e-12, q))
+    if (p.length === 1) return -(yi * Math.log(clip(p[0] ?? 0)) + (1 - yi) * Math.log(clip(1 - (p[0] ?? 0))))
+    return -Math.log(clip(p[Math.round(yi)] ?? 0))
+  }
+  const all = new Array<boolean>(d).fill(true)
+  const none = new Array<boolean>(d).fill(false)
+  let lossEmpty = 0
+  let lossFull = 0
+  for (let i = 0; i < m.n; i++) {
+    lossEmpty += lossOf(i, imputed(i, none)) / m.n
+    lossFull += lossOf(i, imputed(i, all)) / m.n
+  }
+  if (options.exact === true) {
+    if (d > 12) throw new WhiteboxError('value', 'sage: exact SAGE takes at most 12 features')
+    const game: CoalitionValue = (s) => {
+      let l = 0
+      for (let i = 0; i < m.n; i++) l += lossOf(i, imputed(i, s)) / m.n
+      return -l
+    }
+    return { values: shapleyValues(game, d), standardErrors: new Array<number>(d).fill(0), lossEmpty, lossFull }
+  }
+  const nPerm = options.nPermutations ?? 256
+  const key = keyFor(options, 'sage')
+  type State = { readonly sum: Float64Array; readonly sumSq: Float64Array; readonly count: number }
+  const algorithm: Algorithm<State> = {
+    name: 'sage',
+    config: { features: d, nPermutations: nPerm },
+    schema: channels({ metrics: { count: { description: 'permutations so far' } } }),
+    init: () => ({ sum: new Float64Array(d), sumSq: new Float64Array(d), count: 0 }),
+    step: (st) => {
+      const k = foldIn(key, st.count)
+      const i = toFlat(randint(foldIn(k, 0), [1], 0, m.n))[0] ?? 0
+      const order = toFlat(permutation(foldIn(k, 1), d))
+      const s = new Array<boolean>(d).fill(false)
+      let prev = lossOf(i, imputed(i, s))
+      const sum = Float64Array.from(st.sum)
+      const sumSq = Float64Array.from(st.sumSq)
+      for (const j of order) {
+        s[j] = true
+        const cur = lossOf(i, imputed(i, s))
+        const c = prev - cur
+        sum[j] = (sum[j] ?? 0) + c
+        sumSq[j] = (sumSq[j] ?? 0) + c * c
+        prev = cur
+      }
+      return { sum, sumSq, count: st.count + 1 }
+    },
+    done: (st) => (st.count >= nPerm ? 'completed' : undefined),
+    observe: (st) => ({ metrics: { count: st.count } }),
+  }
+  const { state } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'sage'), maxSteps: nPerm })
+  const values = Array.from(state.sum, (v) => v / state.count)
+  const standardErrors = Array.from(state.sumSq, (v, j) => {
+    const mean = values[j] ?? 0
+    return state.count < 2 ? Number.NaN : Math.sqrt(Math.max(0, v / state.count - mean * mean) / (state.count - 1))
+  })
+  return { values, standardErrors, lossEmpty, lossFull }
 }

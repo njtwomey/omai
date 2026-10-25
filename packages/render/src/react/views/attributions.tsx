@@ -13,6 +13,7 @@ import {
   beeswarmView,
   type DependenceScatterOptions,
   dependenceScatterView,
+  forceView,
   importanceView,
 } from '../../views/attributions.ts'
 import {
@@ -27,6 +28,7 @@ const WATERFALL_FIGURE = { aspect: 1.5 } as const
 const DEPENDENCE_FIGURE = { aspect: 1.5 } as const
 const IMAGE_FIGURE = { aspect: 2.1, padding: { right: 84 } } as const
 const SERIES_FIGURE = { aspect: 1.6 } as const
+const FORCE_FIGURE = { aspect: 3.2, padding: { left: 24, right: 24 } } as const
 
 function shownRows(record: FeatureAttributions, max: number): number {
   return Math.min(max, record.features.length)
@@ -212,4 +214,21 @@ export function AttributionSeriesView(
     [record, row],
   )
   return <RecordFigure {...props} figure={figure} build={build} filename={props.filename ?? 'series-attributions'} />
+}
+
+/**
+ * One prediction's attributions as a force plot: red pushes up to f(x) from the left, blue pushes down from the
+ * right, the base value marked.
+ *
+ * @param props - The record, the row, and the figure settings.
+ * @returns The figure.
+ */
+export function ForcePlotView(props: RecordViewProps<FeatureAttributions> & { readonly row?: number }): ReactElement {
+  const { record, row } = props
+  const figure = useViewFigure(props.figure, FORCE_FIGURE)
+  const build = useCallback(
+    (fig: Figure) => forceView(record, { figure: fig, ...(row === undefined ? {} : { row }) }),
+    [record, row],
+  )
+  return <RecordFigure {...props} figure={figure} build={build} filename={props.filename ?? 'force'} />
 }

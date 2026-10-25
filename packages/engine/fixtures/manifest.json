@@ -465,7 +465,7 @@
         "shap": "0.54.1",
         "scikit-learn": "1.9.1"
       },
-      "cases": 3
+      "cases": 6
     },
     {
       "fixture": "explain/surrogates.json",

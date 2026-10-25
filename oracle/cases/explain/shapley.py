@@ -1,12 +1,14 @@
 """Shapley explanations against shap: KernelExplainer with every coalition enumerated (exact interventional Shapley
-values) on a polynomial regression, TreeExplainer's path-dependent values and interaction values on a decision tree,
-and a small random forest. The trees are passed as sklearn's arrays."""
+values) and ExactExplainer (independent masker, and a partition masker over a feature clustering, which gives Owen
+values) on a polynomial regression, LinearExplainer on a linear regression, TreeExplainer's path-dependent values and
+interaction values on a decision tree, and a small random forest. The trees are passed as sklearn's arrays."""
 
 from typing import Any
 
 import numpy as np
 import shap
 import sklearn
+from scipy.cluster.hierarchy import linkage
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
@@ -78,6 +80,44 @@ def cases() -> list[Case]:
             [*arrays, xe],
             {"values": np.asarray(fe.shap_values(xe)), "base": np.array(float(np.ravel(fe.expected_value)[0]))},
             trees=3,
+            rtol=1e-9,
+            atol=1e-10,
+        )
+    )
+    lin = LinearRegression().fit(x, y)
+    le: Any = shap.LinearExplainer(lin, background)
+    out.append(
+        case(
+            "linear",
+            "linear",
+            [x, y, xe, background, lin.coef_, np.array([lin.intercept_])],
+            {"values": np.asarray(le.shap_values(xe)), "base": np.array(float(np.ravel(le.expected_value)[0]))},
+            rtol=1e-10,
+            atol=1e-10,
+        )
+    )
+    ex: Any = shap.ExactExplainer(model.predict, shap.maskers.Independent(background, max_samples=len(background)))
+    ev: Any = ex(xe)
+    out.append(
+        case(
+            "exact",
+            "exact",
+            [x, y, xe, background],
+            {"values": ev.values, "base": np.asarray(ev.base_values)},
+            rtol=1e-9,
+            atol=1e-10,
+        )
+    )
+    z = linkage(x.T, method="average", metric="correlation")
+    pm: Any = shap.maskers.Partition(background, clustering=z, max_samples=len(background))
+    pe: Any = shap.ExactExplainer(model.predict, pm)
+    pv: Any = pe(xe)
+    out.append(
+        case(
+            "owen",
+            "owen",
+            [x, y, xe, background, z],
+            {"values": pv.values, "base": np.asarray(pv.base_values)},
             rtol=1e-9,
             atol=1e-10,
         )
