@@ -476,6 +476,14 @@
       "cases": 19
     },
     {
+      "fixture": "fairness/post_processing.json",
+      "source": "oracle/cases/fairness/post_processing.py",
+      "reference": {
+        "fairlearn": "0.15.0"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "foundations/calculus.json",
       "source": "oracle/cases/foundations/calculus.py",
       "reference": {

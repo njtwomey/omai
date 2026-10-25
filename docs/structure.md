@@ -2812,6 +2812,9 @@ training, and selecting models under fairness constraints. Every function works 
 protected attributes (any number of groups and attributes), returns plain values, and is wrapped by `methods/fairness`
 into exposition records. Round one built `group-metrics` (and the audit in `methods/fairness`); round two completes
 the domain to the coverage of fairlearn, AIF360 and Aequitas together.
+Round one also built the first pass of `preprocessing` (`reweighingWeights`, `repairFeatures`), `in-processing`
+(`exponentiatedGradientReduction`, `gridReduction`) and `post-processing` (`optimiseThresholds`,
+`thresholdDecisions`, golden against fairlearn's ThresholdOptimizer); round two extends them.
 
 oracle: fairlearn (metrics, MetricFrame, ExponentiatedGradient, GridSearch, ThresholdOptimizer), AIF360 (metrics,
 Reweighing, DisparateImpactRemover, LFR, OptimPreproc, PrejudiceRemover, CalibratedEqOdds, RejectOptionClassification),
@@ -3922,7 +3925,7 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   exact posterior, Bayes error, clean labels and base rates), the vendored Statlog German credit data
   (`germanCredit`, UCI, CC BY 4.0; sex derived from the personal status) and `titanicSurvival` (sex protected); the
   collection `fairnessTabular` gathers presets of the generator (biased labels, an under-represented group, a real
-  gap, a withheld group with a proxy, no bias) and the two real datasets.
+  gap, a strong proxy, no bias) and the two real datasets.
 - `clustering.ts`: `rings`, `anisotropicBlobs`, `unequalVarianceBlobs`, `oldFaithful`, with true clusters (and
   exact posteriors for the generators).
 - `manifolds.ts`: `swissRoll` (optionally with a hole), `sCurve`, `severedSphere`, `torus`, with latent coordinates;
@@ -4051,20 +4054,32 @@ built from: `explain`, `learn`, `metrics`
 
 `fairness/` (fairlearn, AIF360)
 built from: `fairness`, `learn`, `metrics`, `optim`, `datasets` (with protected attributes)
-- `audit.ts`: `fairnessAudit(model, data, { sensitive })`: group report across thresholds and metrics.
-- `preprocessing.ts`: reweighing, disparate-impact removal, fair representations.
-- `in-processing.ts`: reductions (exponentiated gradient, grid search) traced over iterations, adversarial debiasing.
-- `post-processing.ts`: threshold optimisation for equalised odds or demographic parity, reject-option classification.
-- `studies.ts`: impossibility results (calibration against equalised odds), the accuracy–fairness frontier.
+- `groups.ts`: `sensitiveGroups` (a column by name or index, labels per row, or the dataset's `meta.sensitive`),
+  `withoutColumns` (fit unaware), `positiveScores`, `binaryLabels`.
+- `audit.ts`: `fairnessAudit(model, data, { sensitive, threshold })`: a `groupReport` with the scored rows (so views
+  move each group's threshold), per-group ROC curves and a sweep; `buildGroupReport` for scores, randomised decisions
+  and per-group thresholds.
+- `preprocessing.ts`: `reweighing` and `reweighedFit` (weights and the group reports with and without them),
+  `disparateImpactRemover` (repaired data and each group's distribution of the most group-dependent feature).
+- `in-processing.ts`: `exponentiatedGradient` (the trade-off moving over iterations, the path from the unconstrained
+  model, group reports before and after) and `gridSearchReduction`.
+- `post-processing.ts`: `thresholdOptimizer` (group reports before and after, the trade-off curves with the choice,
+  `rulesAt` for other shared rates).
+- `studies.ts`: `fairnessFrontier` (accuracy against violation, in training and after it) and `impossibilityStudy`
+  (calibrated scores against equalised odds and predictive parity as the base-rate gap grows).
 
 `trust/` (MAPIE, netcal, uncertainty and robustness)
-built from: `learn`, `metrics`, `stats`, `dists`
-- `calibration.ts`: reliability diagrams, ECE and MCE, Platt scaling, isotonic and temperature calibration.
-- `conformal.ts`: split, cross and adaptive conformal prediction (intervals and sets), coverage as data arrive.
-- `uncertainty.ts`: aleatoric and epistemic uncertainty (ensembles, MC dropout, GP and Bayesian posteriors).
-- `shift.ts`: dataset and concept drift detection (two-sample tests, classifier-based), performance under shift.
-- `robustness.ts`: sensitivity to perturbations and missing values, stability of explanations.
-- `model-cards.ts`: a model card from a fitted estimator's records (performance by group, calibration, limits).
+built from: `fairness`, `learn` (calibration, conformal), `metrics`, `stats`
+- `calibration.ts`: `reliabilityCurve`, `calibrateClassifier` (Platt, isotonic and temperature scaling fitted on
+  calibration rows, measured on held-out ones; per group optionally): a `calibration` record.
+- `conformal.ts`: `conformalRegression` (split, normalised, CV+), `conformalClassification` (LAC, APS, by class),
+  `onlineConformal` (adaptive conformal inference against a fixed width as rows arrive): `conformal` records.
+- `uncertainty.ts`: `ensembleUncertainty` (bootstrap ensemble: epistemic spread and out-of-bag aleatoric noise).
+  TODO: MC dropout, GP and Bayesian posteriors, the entropy decomposition for classifiers.
+- `shift.ts`: `shiftStudy` (covariate or concept shift; KS tests, a domain classifier and the model's accuracy).
+- `robustness.ts`: `robustnessStudy` (accuracy under noise, in all features or one, and missing values). TODO:
+  stability of explanations.
+- `model-cards.ts`: `modelCard` (a card as data, with the group report, reliability and robustness as evidence).
 
 `privacy/` and `adversarial/`: as in 5.3 (DP training and statistics, membership inference; FGSM, PGD, defences),
 each with the same records and views.
@@ -4083,6 +4098,21 @@ anchor lists, prototypes and criticisms, contrastive (pertinent positive and neg
 functions and pairwise heatmaps, explanation-evaluation curves (deletion and insertion, sanity checks); and for
 fairness, metric gaps with intervals, intersectional subgroup heatmaps, Pareto frontiers, exposure in rankings, data-bias
 summaries and the dynamics of repeated decisions.
+
+Built in round one. Records built: `groupReport` (`lib/exposition/fairness.ts`, with `groupReportFromTables`, `groupReportAt`,
+`tableRates`, `groupDisparities`), `calibration` and `conformal` (`lib/exposition/trust.ts`, with `setSizes`); views
+`groupReportView`, `groupSweepView`, `reliabilityView`, `conformalView`/`conformalFrames` and the React
+`GroupReportView` (with per-group `ContingencyTable`s and the disparities), `GroupSweepView`, `CalibrationView`,
+`ConformalView`.
+
+Hub: collections `explainability/`, `trust/` (calibration, conformal intervals, sets and streams, uncertainty, shift,
+robustness, model card), `fairness/` (audit, threshold optimiser, exponentiated gradient, reweighing,
+disparate-impact remover, frontier, impossibility). Gallery: the exposition section gains a recipe per new
+view, driven by real methods on small data, with live controls (`exposition/40-group-report`: per-group thresholds
+dragged on each group's scores); the `fairness/` section holds the mitigation recipes (threshold optimiser with a
+draggable shared rate, exponentiated gradient with a draggable ε, reweighing and repair, the frontier, the
+impossibility); `exposition/41-reliability-diagram` and `42-conformal-intervals`; the `trust/` section holds
+conformal sets, coverage as data arrive, uncertainty, shift, robustness and the model card.
 
 ## 6. whitebox-render, `packages/render/src/`
 

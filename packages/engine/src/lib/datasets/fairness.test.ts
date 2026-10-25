@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { bayesPredict, generate } from '../data/index.ts'
 import { key } from '../random/index.ts'
-import { type Tensor, toFlat } from '../tensor/index.ts'
+import { fromStorage, type Tensor, toFlat } from '../tensor/index.ts'
 import { biasedCredit, germanCredit, titanicSurvival } from './index.ts'
 
 const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
+
+/** The first three columns of four. */
+function withoutGroup(x: ArrayLike<number>): Tensor {
+  const n = x.length / 4
+  const out = new Float64Array(3 * n)
+  for (let i = 0; i < n; i++) for (let j = 0; j < 3; j++) out[3 * i + j] = x[4 * i + j] ?? 0
+  return fromStorage(out, [n, 3], 'float64')
+}
 
 /** The share of label 1 among the rows of each group. */
 function baseRates(y: readonly number[], group: readonly number[]): number[] {
@@ -72,21 +80,26 @@ describe('biasedCredit', () => {
     expect(sd(1)).toBeCloseTo(2, 1)
   })
 
-  for (const includeGroup of [true, false]) {
-    it(`the Bayes rule's error matches the stated Bayes error (group ${includeGroup ? 'seen' : 'withheld'})`, () => {
-      const knobs = { n: 20_000, includeGroup, proxyStrength: 2, labelBias: 0.3 }
-      const { data, truth } = generate(biasedCredit, { key: key(6), knobs })
-      expect(data.x.shape).toEqual([20_000, includeGroup ? 4 : 3])
-      const p = toFlat(truth.posterior?.(data.x) as Tensor)
-      for (let i = 0; i < 50; i++) expect((p[2 * i] ?? 0) + (p[2 * i + 1] ?? 0)).toBeCloseTo(1, 12)
-      const y = toFlat(data.y)
-      const err = mean(Array.from(toFlat(bayesPredict(truth, data.x))).map((v, i) => (v === y[i] ? 0 : 1)))
-      const b = truth.bayesError ?? Number.NaN
-      expect(Math.abs(err - b)).toBeLessThan(5 * Math.sqrt((b * (1 - b)) / 20_000) + 0.005)
-      // Calibrated: the posterior's mean matches the label's mean.
-      expect(mean(Array.from({ length: 20_000 }, (_, i) => p[2 * i + 1] ?? 0))).toBeCloseTo(mean(Array.from(y)), 2)
-    })
-  }
+  it("the Bayes rule's error matches the stated Bayes error; the posterior without the group is calibrated", () => {
+    const knobs = { n: 20_000, proxyStrength: 2, labelBias: 0.3 }
+    const { data, truth } = generate(biasedCredit, { key: key(6), knobs })
+    expect(data.x.shape).toEqual([20_000, 4])
+    const p = toFlat(truth.posterior?.(data.x) as Tensor)
+    for (let i = 0; i < 50; i++) expect((p[2 * i] ?? 0) + (p[2 * i + 1] ?? 0)).toBeCloseTo(1, 12)
+    const y = Array.from(toFlat(data.y))
+    const err = mean(Array.from(toFlat(bayesPredict(truth, data.x))).map((v, i) => (v === y[i] ? 0 : 1)))
+    const b = truth.bayesError ?? Number.NaN
+    expect(Math.abs(err - b)).toBeLessThan(5 * Math.sqrt((b * (1 - b)) / 20_000) + 0.005)
+    // Calibrated: the posterior's mean matches the label's mean, with or without the group.
+    expect(mean(Array.from({ length: 20_000 }, (_, i) => p[2 * i + 1] ?? 0))).toBeCloseTo(mean(y), 2)
+    const unaware = truth.extra?.['unawarePosterior'] as (x: Tensor) => Tensor
+    const three = withoutGroup(toFlat(data.x))
+    const q = toFlat(unaware(three))
+    expect(mean(Array.from({ length: 20_000 }, (_, i) => q[2 * i + 1] ?? 0))).toBeCloseTo(mean(y), 2)
+    // Without the group, the best predictor errs more.
+    const unawareErr = mean(y.map((v, i) => (((q[2 * i + 1] ?? 0) > 0.5 ? 1 : 0) === v ? 0 : 1)))
+    expect(unawareErr).toBeGreaterThan(err)
+  })
 
   it('is a pure function of its key', () => {
     const a = generate(biasedCredit, { key: key(7), knobs: { n: 50 } }).data

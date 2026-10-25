@@ -87,8 +87,7 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
         baseRateGap: 1,
         minorityNoise: 1,
       }),
-      g('proxyOnly', 'Credit: group withheld, a strong proxy', 'biasedCredit', {
-        includeGroup: false,
+      g('strongProxy', 'Credit: biased labels and a strong proxy', 'biasedCredit', {
         proxyStrength: 3,
         labelBias: 0.3,
       }),
