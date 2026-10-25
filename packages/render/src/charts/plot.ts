@@ -5,6 +5,7 @@ import { type Limits, legibleRange, padRange, resolveLimits, unionRange } from '
 import { axisStyle, baseOption } from '../theme/echarts.ts'
 import { formatNumber, formatPercent, formatPower } from '../theme/format.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
+import { type ColourSelect, SELECT_KEY } from './selection.ts'
 
 /** The data extent of a layer, used by the axes' limit policies. `tight` asks for no padding (images, fields). */
 export interface Extent {
@@ -43,6 +44,11 @@ export interface ColourBar {
   readonly target?: number
   /** Discrete levels (a piecewise bar) instead of a continuous ramp. */
   readonly levels?: readonly number[]
+  /**
+   * How the layer answers a range selection on the bar (dragging a continuous bar's handles, clicking a piecewise bar's
+   * pieces). Without it the bar is a plain legend: no handles, no selectable pieces.
+   */
+  readonly select?: ColourSelect
 }
 
 /**
@@ -301,9 +307,12 @@ export function panelParts(
   const legendNames: string[] = []
   for (const l of layers) {
     const first = seriesIndex + series.length
-    for (const s of l.series) {
+    const select = l.colourBar?.select
+    for (const [i, s] of l.series.entries()) {
       const yAxisIndex = l.secondary === true && hasSecondary ? yIndex + 1 : yIndex
-      const placed = { ...s, xAxisIndex: index, yAxisIndex } as SeriesOption
+      // The series a colour bar's selection recolours is found by id.
+      const id = select !== undefined && i === select.series ? { id: selectableId(first + i) } : {}
+      const placed = { ...s, ...id, xAxisIndex: index, yAxisIndex } as SeriesOption
       series.push(placed)
       const name = (s as { name?: unknown }).name
       if (typeof name === 'string' && !name.startsWith('__') && !legendNames.includes(name)) legendNames.push(name)
@@ -311,6 +320,12 @@ export function panelParts(
     const bar = l.colourBar
     if (bar !== undefined) {
       const common = {
+        ...(select === undefined
+          ? {}
+          : {
+              id: `__colourbar-${first + (bar.target ?? 0)}`,
+              [SELECT_KEY]: { series: selectableId(first + select.series), recolour: select.recolour },
+            }),
         seriesIndex: first + (bar.target ?? 0),
         orient: 'vertical',
         left: rect.x + rect.width + 12,
@@ -328,9 +343,14 @@ export function panelParts(
               type: 'continuous',
               min: bar.min,
               max: bar.max,
-              // Calculable: the handles carry the ends' values and read off any level when dragged.
-              ...(bar.label === undefined ? {} : { text: [bar.label, ''] }),
-              calculable: true,
+              // Calculable where the layer answers a selection: the handles carry the ends' values, and dragging them
+              // dims the values outside. A plain legend writes its ends' values instead.
+              ...(select === undefined
+                ? { text: [endLabel(bar.max, bar.label), formatNumber(bar.min, { digits: 3 })] }
+                : bar.label === undefined
+                  ? {}
+                  : { text: [bar.label, ''] }),
+              calculable: select !== undefined,
               inRange: { color: [...bar.colours] },
             }
           : {
@@ -341,7 +361,15 @@ export function panelParts(
                 max: bar.levels?.[i + 1] ?? lo,
                 color: bar.colours[i] ?? bar.colours[bar.colours.length - 1],
               })),
+              // One piece per band, stacked to fill the bar's height at most (not each as tall as the bar).
+              itemHeight: Math.max(
+                8,
+                Math.min(24, Math.floor((rect.height - 24) / Math.max(1, bar.levels.length - 1)) - 2),
+              ),
               itemGap: 2,
+              // Hidden bands show in the grid's colour, visible on either theme.
+              inactiveColor: t.grid,
+              selectedMode: select === undefined ? false : 'multiple',
             },
       )
     }
@@ -363,6 +391,15 @@ export function panelParts(
     ranges: { ...(xr === undefined ? {} : { x: xr }), ...(yr === undefined ? {} : { y: yr }) },
     legendNames,
   }
+}
+
+function selectableId(index: number): string {
+  return `__selectable-${index}`
+}
+
+function endLabel(max: number, label: string | undefined): string {
+  const v = formatNumber(max, { digits: 3 })
+  return label === undefined ? v : `${label}\n${v}`
 }
 
 /**

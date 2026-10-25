@@ -4028,7 +4028,11 @@ Design rules:
 `charts/` (ECharts option builders; each returns an `EChartsOption`, built from layers)
 - `plot.ts`: `Layer` (series with their data extent, colour bar and categories; every builder returns layers so they
   combine), `cartesian(layers, options)` (axes from limit policies and the data aspect, legend, tooltip, zoom),
-  `panelParts` and `chartFrame` (shared with `compose.ts`).
+  `panelParts` and `chartFrame` (shared with `compose.ts`). A colour bar is calculable (draggable handles, clickable
+  bands) only when its layer answers a selection (`ColourBar.select`); otherwise it is a plain legend.
+- `selection.ts`: colour bar range selections for layers ECharts cannot recolour (heatmap images, matrix cells):
+  `ColourSelect`, `selectionFilter` (a `datarangeselected` event as soft value weights), `dimColour` (values outside
+  faded towards the background) and `colourSelection` (the option update the React `Chart` merges, once per frame).
 - `echarts-core.ts`: `echartsCore`, the tree-shaken ECharts core with every chart type the builders use, both
   renderers and the registered themes (shared by the React bindings and server-side export).
 - `lines.ts`: curves, steps, areas, bands, fill-between, series from tensors.

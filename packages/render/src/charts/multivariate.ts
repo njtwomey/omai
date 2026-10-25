@@ -112,6 +112,29 @@ export interface ParallelOptions {
   readonly width?: number
   /** Show the legend of groups (default: with more than one group). */
   readonly legend?: boolean
+  /** The axes' order, by column name (default the table's; columns left out keep their relative order at the end). */
+  readonly order?: readonly string[]
+  /** Columns whose axis runs downwards (largest value at the bottom). */
+  readonly inverted?: readonly string[]
+}
+
+/**
+ * A table with its columns in a given order: the named columns first, in that order, then the rest as they were.
+ *
+ * @param data - The table.
+ * @param order - Column names.
+ * @returns The table with its columns (and every row's values) permuted.
+ * @example
+ * ```ts
+ * import { reorderColumns } from 'whitebox-render/charts'
+ * reorderColumns({ columns: ['a', 'b', 'c'], rows: [[1, 2, 3]] }, ['c', 'a']).rows // => [[3, 1, 2]]
+ * ```
+ */
+export function reorderColumns(data: Table, order: readonly string[]): Table {
+  const first = order.filter((c) => data.columns.includes(c))
+  const columns = [...new Set([...first, ...data.columns])]
+  const index = columns.map((c) => data.columns.indexOf(c))
+  return { ...data, columns, rows: data.rows.map((r) => index.map((j) => r[j] ?? 0)) }
 }
 
 /** Where a parallel-coordinates chart puts its axes, in pixels of its figure. */
@@ -188,8 +211,10 @@ export function parallelLayout(
  * o.series.map((s) => s.data.length) // => [1, 1, 1]
  * ```
  */
-export function parallelCoordinates(data: Table, options: ParallelOptions = {}): EChartsOption {
-  check(data, 'parallelCoordinates')
+export function parallelCoordinates(table: Table, options: ParallelOptions = {}): EChartsOption {
+  check(table, 'parallelCoordinates')
+  const data = options.order === undefined ? table : reorderColumns(table, options.order)
+  const inverted = new Set(options.inverted ?? [])
   const fig = options.figure ?? makeFigure({ mode: options.mode ?? 'light' })
   const mode = options.mode ?? fig.mode
   const t = tokens(mode)
@@ -251,10 +276,11 @@ export function parallelCoordinates(data: Table, options: ParallelOptions = {}):
     const r = layout.ranges[j]
     const x = layout.axisX[j]
     if (b === undefined || r === undefined || x === undefined) return []
-    const yOf = (v: number): number =>
-      layout.top + layout.height * (1 - (Math.min(Math.max(v, r[0]), r[1]) - r[0]) / (r[1] - r[0] || 1))
-    const y0 = yOf(Math.max(b[0], b[1]))
-    const y1 = yOf(Math.min(b[0], b[1]))
+    const share = (v: number): number => (Math.min(Math.max(v, r[0]), r[1]) - r[0]) / (r[1] - r[0] || 1)
+    const yOf = (v: number): number => layout.top + layout.height * (inverted.has(c) ? share(v) : 1 - share(v))
+    const ya = yOf(b[0])
+    const yb = yOf(b[1])
+    const [y0, y1] = [Math.min(ya, yb), Math.max(ya, yb)]
     const shape = { x: x - 8, y: y0, width: 16, height: Math.max(1, y1 - y0) }
     return [
       { type: 'rect', silent: true, z: 10, shape, style: { fill: t.accent, opacity: 0.25 } },
@@ -294,6 +320,9 @@ export function parallelCoordinates(data: Table, options: ParallelOptions = {}):
       name: c,
       min: layout.ranges[j]?.[0],
       max: layout.ranges[j]?.[1],
+      inverse: inverted.has(c),
+      // Names stay on top whichever way the axis runs.
+      ...(inverted.has(c) ? { nameLocation: 'start' } : {}),
     })),
     series,
     ...(graphic.length > 0 ? { graphic } : {}),
