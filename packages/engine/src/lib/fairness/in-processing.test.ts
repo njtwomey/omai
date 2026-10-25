@@ -19,13 +19,17 @@ describe('reductions', () => {
     const r = exponentiatedGradientReduction(logisticRegression(), rows, { iterations: 8, epsilon: 0.02, key: key(1) })
     expect(r.weights.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 9)
     expect(r.decisions.every((p) => p >= 0 && p <= 1)).toBe(true)
-    expect(r.steps[7]?.averageViolation).toBeLessThan(r.baseline.violation)
+    expect(r.steps.length).toBeLessThanOrEqual(8)
+    expect(r.steps.at(-1)?.averageViolation).toBeLessThan(r.baseline.violation)
+    expect(r.bestIteration).toBeLessThanOrEqual(r.steps.length)
     expect(() => exponentiatedGradientReduction(logisticRegression(), rows, { epsilon: -1 })).toThrow(/epsilon/)
   })
 
   it('a grid of multipliers spans violations, zero multiplier being the unconstrained fit', () => {
     const points = gridReduction(logisticRegression(), rows, { gridSize: 5, key: key(2) })
-    expect(points.map((p) => p.lambda)).toEqual([-0.5, -0.25, 0, 0.25, 0.5])
+    // fairlearn's grid: five integer points on one axis, scaled to the limit of 2.
+    expect(points.map((p) => p.lambda)).toEqual([-2, -1, 0, 1, 2])
+    expect(points.filter((p) => p.best)).toHaveLength(1)
     expect(Math.max(...points.map((p) => p.violation))).toBeGreaterThan(Math.min(...points.map((p) => p.violation)))
   })
 })

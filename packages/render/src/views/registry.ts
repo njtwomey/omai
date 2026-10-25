@@ -22,6 +22,7 @@ import { episodeView } from './episodes.ts'
 import { counterfactualTableView, prototypeView } from './examples.ts'
 import { explanationQualityView } from './explanation-quality.ts'
 import { groupReportView } from './fairness.ts'
+import { paretoFrontView } from './frontiers.ts'
 import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
 import { attributionImageView, attributionSeriesView, tokenStripView } from './modalities.ts'
@@ -354,6 +355,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => subgroupView(r, o),
+  },
+  paretoFront: {
+    kind: 'paretoFront',
+    component: 'ParetoFrontView',
+    title: 'Pareto front',
+    plays: false,
+    accepts: [],
+    still: (r, o) => paretoFrontView(r, o),
   },
   dataBias: {
     kind: 'dataBias',

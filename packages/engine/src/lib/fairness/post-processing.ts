@@ -1,7 +1,10 @@
 /**
- * Fairness after training by threshold adjustment (Hardt, Price and Srebro, 2016; fairlearn's `ThresholdOptimizer`):
+ * Fairness after training. Threshold adjustment (Hardt, Price and Srebro, 2016; fairlearn's `ThresholdOptimizer`):
  * per-group randomised thresholds on a score that satisfy a constraint such as demographic parity or equalised odds
- * exactly in expectation while maximising accuracy or another objective, and the decisions they give each row.
+ * exactly in expectation while maximising accuracy or another objective, and the decisions they give each row;
+ * calibrated equalised odds (Pleiss et al., 2017), which mixes the cheaper group's scores with its base rate; and
+ * reject-option classification (Kamiran et al., 2012), which decides near the threshold in favour of the unprivileged
+ * group (both as AIF360).
  */
 
 import { WhiteboxError } from '../base/index.ts'
@@ -322,4 +325,295 @@ export function thresholdDecisions(
     const p = r.p0 * applies(r.rule0, s) + r.p1 * applies(r.rule1, s)
     return r.pIgnore === undefined ? p : r.pIgnore * (r.constant ?? 0) + (1 - r.pIgnore) * p
   })
+}
+
+/** The cost calibrated equalised odds equalises: false positives, false negatives, or both weighted by base rates. */
+export type CalibratedCost = 'falsePositive' | 'falseNegative' | 'weighted'
+
+/** Options of {@link calibratedEqualisedOdds}. */
+export interface CalibratedEqualisedOddsOptions {
+  /** The privileged group's index (default 0); every other group is unprivileged. */
+  readonly privileged?: number
+  /** The generalised cost equalised (default `weighted`, as AIF360). */
+  readonly cost?: CalibratedCost
+}
+
+/** A fitted calibrated-equalised-odds post-processor. */
+export interface CalibratedEqualisedOdds {
+  readonly privileged: number
+  /** The base rate of the privileged and the unprivileged rows. */
+  readonly baseRates: readonly [number, number]
+  /** The generalised cost of the privileged and unprivileged rows' scores, and of their base rates (trivial). */
+  readonly costs: readonly [number, number]
+  readonly trivialCosts: readonly [number, number]
+  /** The share of each side's scores replaced by its base rate (one of the two is 0). */
+  readonly mixRates: readonly [number, number]
+}
+
+/** Generalised false-positive rate (mean score of negatives) and false-negative rate (mean 1 - score of positives). */
+function generalisedRates(
+  scores: readonly number[],
+  labels: readonly number[],
+  rows: readonly number[],
+): [number, number] {
+  let fp = 0
+  let neg = 0
+  let fn = 0
+  let pos = 0
+  for (const i of rows) {
+    const s = scores[i] ?? 0
+    if (labels[i] === 1) {
+      fn += 1 - s
+      pos++
+    } else {
+      fp += s
+      neg++
+    }
+  }
+  return [neg === 0 ? Number.NaN : fp / neg, pos === 0 ? Number.NaN : fn / pos]
+}
+
+/**
+ * Calibrated equalised odds (Pleiss et al., 2017; AIF360's `CalibratedEqOddsPostprocessing`): keep scores calibrated
+ * while equalising a generalised error cost between the privileged and unprivileged groups, by replacing a share of the
+ * cheaper group's scores with its base rate (the trivial calibrated classifier) until both groups' costs match.
+ *
+ * @param scores - Calibrated scores (probabilities) `[N]`.
+ * @param labels - Binary labels `[N]`.
+ * @param groups - Group indices `[N]`.
+ * @param options - The privileged group and the cost.
+ * @returns The base rates, costs and mixing rates.
+ * @throws WhiteboxError `shape` when the inputs differ in length.
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { calibratedEqualisedOdds } from 'whitebox-engine/fairness'
+ * const r = calibratedEqualisedOdds([0.9, 0.2, 0.8, 0.1, 0.6, 0.4, 0.6, 0.4], [1, 0, 1, 0, 1, 0, 1, 0], [0, 0, 0, 0, 1, 1, 1, 1])
+ * r.mixRates[0] > 0 // => true
+ * r.mixRates[1] // => 0
+ * ```
+ */
+export function calibratedEqualisedOdds(
+  scores: readonly number[],
+  labels: readonly number[],
+  groups: readonly number[],
+  options: CalibratedEqualisedOddsOptions = {},
+): CalibratedEqualisedOdds {
+  if (scores.length !== labels.length || scores.length !== groups.length)
+    throw new WhiteboxError('shape', 'calibratedEqualisedOdds: inputs differ in length')
+  const privileged = options.privileged ?? 0
+  const sides = [0, 1].map((side) => groups.flatMap((g, i) => ((g === privileged) === (side === 0) ? [i] : [])))
+  const baseRates = sides.map(
+    (rows) => rows.reduce((s, i) => s + (labels[i] === 1 ? 1 : 0), 0) / Math.max(1, rows.length),
+  )
+  const cost = options.cost ?? 'weighted'
+  const costOf = (s: readonly number[], side: number): number => {
+    const [gfpr, gfnr] = generalisedRates(s, labels, sides[side] ?? [])
+    const b = baseRates[side] ?? 0
+    if (cost === 'falsePositive') return gfpr
+    if (cost === 'falseNegative') return gfnr
+    // AIF360's weighted cost with equal weights (fp_rate = fn_rate = 1, normalised to 1/2 each).
+    return 0.5 * gfpr * (1 - b) + 0.5 * gfnr * b
+  }
+  const trivial = scores.map((_, i) => baseRates[groups[i] === privileged ? 0 : 1] ?? 0)
+  const costs: [number, number] = [costOf(scores, 0), costOf(scores, 1)]
+  const trivialCosts: [number, number] = [costOf(trivial, 0), costOf(trivial, 1)]
+  const unprivCostsMore = costs[1] > costs[0]
+  const mixRates: [number, number] = unprivCostsMore
+    ? [(costs[1] - costs[0]) / (trivialCosts[0] - costs[0]), 0]
+    : [0, (costs[0] - costs[1]) / (trivialCosts[1] - costs[1])]
+  return { privileged, baseRates: [baseRates[0] ?? 0, baseRates[1] ?? 0], costs, trivialCosts, mixRates }
+}
+
+/**
+ * The decisions of a fitted calibrated-equalised-odds post-processor: each row's probability of a positive decision
+ * (its own score's decision with probability 1 - mix, its group's base rate's with probability mix), or, given a key,
+ * the randomised scores themselves.
+ *
+ * @param fitted - The fitted post-processor.
+ * @param scores - Scores `[N]`.
+ * @param groups - Group indices `[N]`.
+ * @param threshold - The decision threshold (default 0.5; positive when the score is at least it).
+ * @returns Each row's probability of a positive decision.
+ * @example
+ * ```ts
+ * import { calibratedEqualisedOdds, calibratedEqualisedOddsDecisions } from 'whitebox-engine/fairness'
+ * const fit = { privileged: 0, baseRates: [0.4, 0.4], costs: [0, 0], trivialCosts: [0, 0], mixRates: [0.25, 0] } as const
+ * calibratedEqualisedOddsDecisions(fit, [0.9, 0.1, 0.9], [0, 0, 1]) // => [0.75, 0, 1]
+ * ```
+ */
+export function calibratedEqualisedOddsDecisions(
+  fitted: CalibratedEqualisedOdds,
+  scores: readonly number[],
+  groups: readonly number[],
+  threshold = 0.5,
+): number[] {
+  return scores.map((s, i) => {
+    const side = groups[i] === fitted.privileged ? 0 : 1
+    const mix = fitted.mixRates[side] ?? 0
+    const own = s >= threshold ? 1 : 0
+    const base = (fitted.baseRates[side] ?? 0) >= threshold ? 1 : 0
+    return (1 - mix) * own + mix * base
+  })
+}
+
+/** The fairness metric reject-option classification bounds. */
+export type RejectOptionMetric = 'statisticalParity' | 'averageOdds' | 'equalOpportunity'
+
+/** Options of {@link rejectOptionClassification}. */
+export interface RejectOptionOptions {
+  /** The privileged group's index (default 0); every other group is unprivileged. */
+  readonly privileged?: number
+  /** The metric bounded (default statistical parity, as AIF360). */
+  readonly metric?: RejectOptionMetric
+  /** The metric's allowed range, unprivileged minus privileged (default [-0.05, 0.05]). */
+  readonly bounds?: readonly [number, number]
+  /** Classification thresholds searched: from, to and how many (default 0.01, 0.99, 100). */
+  readonly thresholds?: readonly [number, number, number]
+  /** Margins searched at each threshold, from 0 to the distance to 0 or 1 (default 50). */
+  readonly margins?: number
+}
+
+/** A fitted reject-option classifier, with the search behind it. */
+export interface RejectOption {
+  readonly privileged: number
+  readonly threshold: number
+  /** Half the width of the critical region around the threshold. */
+  readonly margin: number
+  readonly balancedAccuracy: number
+  /** The metric at the chosen threshold and margin. */
+  readonly metric: number
+  /** Whether a threshold and margin met the bounds (else the one with the smallest metric). */
+  readonly feasible: boolean
+  /** Every point searched. */
+  readonly grid: {
+    readonly thresholds: readonly number[]
+    readonly margins: readonly number[]
+    readonly balancedAccuracy: readonly number[]
+    readonly metric: readonly number[]
+  }
+}
+
+/**
+ * Reject-option decisions: positive when the score is above the threshold, except in the critical region (within the
+ * margin of it), where the unprivileged rows are decided positive and the privileged negative.
+ *
+ * @param fitted - The threshold, margin and privileged group.
+ * @param scores - Scores `[N]`.
+ * @param groups - Group indices `[N]`.
+ * @returns Each row's decision.
+ * @example
+ * ```ts
+ * import { rejectOptionDecisions } from 'whitebox-engine/fairness'
+ * rejectOptionDecisions({ privileged: 0, threshold: 0.5, margin: 0.1 }, [0.55, 0.45, 0.8, 0.2], [0, 1, 0, 1]) // => [0, 1, 1, 0]
+ * ```
+ */
+export function rejectOptionDecisions(
+  fitted: Pick<RejectOption, 'privileged' | 'threshold' | 'margin'>,
+  scores: readonly number[],
+  groups: readonly number[],
+): number[] {
+  const { threshold: t, margin: m } = fitted
+  return scores.map((s, i) => {
+    if (s <= t + m && s > t - m) return groups[i] === fitted.privileged ? 0 : 1
+    return s > t ? 1 : 0
+  })
+}
+
+/** numpy's linspace. */
+function linspace(a: number, b: number, n: number): number[] {
+  if (n === 1) return [a]
+  const step = (b - a) / (n - 1)
+  return Array.from({ length: n }, (_, i) => (i === n - 1 ? b : a + i * step))
+}
+
+/**
+ * Reject-option classification (Kamiran, Karim and Zhang, 2012; AIF360's `RejectOptionClassification`): in a critical
+ * region around the decision threshold, where the classifier is least sure, decide in favour of the unprivileged group
+ * and against the privileged. The threshold and the region's margin are chosen by grid search to maximise balanced
+ * accuracy while keeping the fairness metric (unprivileged minus privileged) within bounds, as AIF360.
+ *
+ * @param scores - Scores in [0, 1] `[N]`.
+ * @param labels - Binary labels `[N]`.
+ * @param groups - Group indices `[N]`.
+ * @param options - The privileged group, metric, bounds and grids.
+ * @returns The threshold, margin, their balanced accuracy and metric, and the grid.
+ * @throws WhiteboxError `shape` when the inputs differ in length.
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { rejectOptionClassification } from 'whitebox-engine/fairness'
+ * const scores = [0.9, 0.7, 0.6, 0.3, 0.55, 0.45, 0.4, 0.1]
+ * const r = rejectOptionClassification(scores, [1, 1, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1], { thresholds: [0.1, 0.9, 9], margins: 5 })
+ * r.feasible // => true
+ * ```
+ */
+export function rejectOptionClassification(
+  scores: readonly number[],
+  labels: readonly number[],
+  groups: readonly number[],
+  options: RejectOptionOptions = {},
+): RejectOption {
+  if (scores.length !== labels.length || scores.length !== groups.length)
+    throw new WhiteboxError('shape', 'rejectOptionClassification: inputs differ in length')
+  const privileged = options.privileged ?? 0
+  const metricName = options.metric ?? 'statisticalParity'
+  const [lb, ub] = options.bounds ?? [-0.05, 0.05]
+  const [lo, hi, count] = options.thresholds ?? [0.01, 0.99, 100]
+  const nMargins = options.margins ?? 50
+  const priv = groups.map((g) => g === privileged)
+  const evaluate = (d: readonly number[]): { bacc: number; metric: number } => {
+    // Counts per side (0 privileged, 1 unprivileged) and overall: [tp, fp, tn, fn, selected, n].
+    const c = [new Array<number>(6).fill(0), new Array<number>(6).fill(0)]
+    for (const [i, y] of labels.entries()) {
+      const side = c[priv[i] === true ? 0 : 1] as number[]
+      const p = d[i] === 1
+      const k = y === 1 ? (p ? 0 : 3) : p ? 1 : 2
+      side[k] = (side[k] ?? 0) + 1
+      if (p) side[4] = (side[4] ?? 0) + 1
+      side[5] = (side[5] ?? 0) + 1
+    }
+    const sum = (k: number): number => (c[0]?.[k] ?? 0) + (c[1]?.[k] ?? 0)
+    const tpr = (s: readonly number[]): number => (s[0] ?? 0) / ((s[0] ?? 0) + (s[3] ?? 0))
+    const fpr = (s: readonly number[]): number => (s[1] ?? 0) / ((s[1] ?? 0) + (s[2] ?? 0))
+    const all = [sum(0), sum(1), sum(2), sum(3)]
+    const bacc = 0.5 * (tpr(all) + (all[2] ?? 0) / ((all[2] ?? 0) + (all[1] ?? 0)))
+    const [p0 = [], p1 = []] = c
+    const metric =
+      metricName === 'statisticalParity'
+        ? (p1[4] ?? 0) / (p1[5] ?? 1) - (p0[4] ?? 0) / (p0[5] ?? 1)
+        : metricName === 'equalOpportunity'
+          ? tpr(p1) - tpr(p0)
+          : 0.5 * (fpr(p1) - fpr(p0) + (tpr(p1) - tpr(p0)))
+    return { bacc, metric }
+  }
+  const thresholds: number[] = []
+  const margins: number[] = []
+  const baccs: number[] = []
+  const metrics: number[] = []
+  for (const t of linspace(lo, hi, count))
+    for (const m of linspace(0, t <= 0.5 ? t : 1 - t, nMargins)) {
+      const e = evaluate(rejectOptionDecisions({ privileged, threshold: t, margin: m }, scores, groups))
+      thresholds.push(t)
+      margins.push(m)
+      baccs.push(e.bacc)
+      metrics.push(e.metric)
+    }
+  const feasible = metrics.map((v) => v >= lb && v <= ub)
+  const anyFeasible = feasible.some(Boolean)
+  let best = -1
+  for (let i = 0; i < metrics.length; i++) {
+    if (anyFeasible && feasible[i] !== true) continue
+    if (best < 0) best = i
+    else if (anyFeasible ? (baccs[i] ?? 0) > (baccs[best] ?? 0) : (metrics[i] ?? 0) < (metrics[best] ?? 0)) best = i
+  }
+  return {
+    privileged,
+    threshold: thresholds[best] ?? 0.5,
+    margin: margins[best] ?? 0,
+    balancedAccuracy: baccs[best] ?? Number.NaN,
+    metric: metrics[best] ?? Number.NaN,
+    feasible: anyFeasible,
+    grid: { thresholds, margins, balancedAccuracy: baccs, metric: metrics },
+  }
 }

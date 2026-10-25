@@ -1,10 +1,36 @@
 /**
  * Fairness before training, as in AIF360: reweighing, which weights each row so the label is independent of the group
- * in the weighted data, and disparate-impact repair, which moves each feature towards a distribution shared by all
- * groups while keeping ranks within each group.
+ * in the weighted data; disparate-impact repair, which moves each feature towards a distribution shared by all groups
+ * while keeping ranks within each group; massaging and preferential sampling (Kamiran and Calders), which relabel or
+ * resample the rows nearest a ranker's boundary; optimised pre-processing of the labels (after Calmon et al.), a
+ * linear programme; and learning fair representations (Zemel et al.), prototypes the groups use alike.
  */
 
 import { WhiteboxError } from '../base/index.ts'
+import { lbfgs, linprog } from '../optim/index.ts'
+import { type Key, key as makeKey, permutation } from '../random/index.ts'
+import {
+  abs,
+  add,
+  clip,
+  fromStorage,
+  log,
+  matmul,
+  mean,
+  mul,
+  neg,
+  reshape,
+  sigmoid,
+  sliceAxis,
+  softmax,
+  square,
+  sub,
+  sum,
+  type Tensor,
+  toFlat,
+  transpose,
+  type Value,
+} from '../tensor/index.ts'
 
 /** One cell of {@link reweighingWeights}: a group and a label, how many rows it has and expects, and its weight. */
 export interface ReweighingCell {
@@ -130,4 +156,360 @@ export function repairFeatures(
     }
   }
   return out
+}
+
+/** The result of {@link massageLabels}. */
+export interface Massaged {
+  /** The massaged labels. */
+  readonly labels: number[]
+  /** Unprivileged negatives relabelled positive (the highest scored). */
+  readonly promoted: number[]
+  /** Privileged positives relabelled negative (the lowest scored). */
+  readonly demoted: number[]
+}
+
+/**
+ * Massaging (Kamiran and Calders, 2012): relabel the fewest rows that make the label rate equal across the privileged
+ * and unprivileged groups, choosing those a ranker is least sure of: promote the unprivileged negatives with the highest
+ * scores and demote the same number of privileged positives with the lowest. The number of swaps is
+ * `round((P_p n_u - P_u n_p) / n)`, where P counts positives and n rows.
+ *
+ * @param labels - Binary labels `[N]`.
+ * @param scores - A ranker's scores `[N]` (higher means more likely positive).
+ * @param groups - Group indices `[N]`.
+ * @param options - The privileged group's index (default 0); every other group is unprivileged.
+ * @returns The new labels and the rows promoted and demoted.
+ * @throws WhiteboxError `shape` when the inputs differ in length.
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { massageLabels } from 'whitebox-engine/fairness'
+ * const r = massageLabels([1, 1, 1, 0, 1, 0, 0, 0], [0.9, 0.8, 0.6, 0.3, 0.7, 0.5, 0.4, 0.1], [0, 0, 0, 0, 1, 1, 1, 1])
+ * r.promoted // => [5]
+ * r.demoted // => [2]
+ * ```
+ */
+export function massageLabels(
+  labels: readonly number[],
+  scores: readonly number[],
+  groups: readonly number[],
+  options: { readonly privileged?: number } = {},
+): Massaged {
+  if (labels.length !== scores.length || labels.length !== groups.length)
+    throw new WhiteboxError('shape', 'massageLabels: inputs differ in length')
+  const privileged = options.privileged ?? 0
+  const n = labels.length
+  const isPriv = groups.map((g) => g === privileged)
+  let np = 0
+  let pp = 0
+  let pu = 0
+  for (const [i, y] of labels.entries()) {
+    if (isPriv[i] === true) {
+      np++
+      if (y === 1) pp++
+    } else if (y === 1) pu++
+  }
+  const nu = n - np
+  const m = Math.max(0, Math.round((pp * nu - pu * np) / n))
+  const candidates = (priv: boolean, label: number): number[] =>
+    labels.flatMap((y, i) => ((isPriv[i] === true) === priv && y === label ? [i] : []))
+  const promoted = candidates(false, 0)
+    .sort((a, b) => (scores[b] ?? 0) - (scores[a] ?? 0))
+    .slice(0, m)
+  const demoted = candidates(true, 1)
+    .sort((a, b) => (scores[a] ?? 0) - (scores[b] ?? 0))
+    .slice(0, m)
+  const out = labels.map((y) => (y === 1 ? 1 : 0))
+  for (const i of promoted) out[i] = 1
+  for (const i of demoted) out[i] = 0
+  return { labels: out, promoted, demoted }
+}
+
+/** One cell of {@link preferentialSample}: a group and a label, its size before and after. */
+export interface SampleCell {
+  readonly group: number
+  readonly label: number
+  readonly count: number
+  /** n P(group) P(label), rounded: the size were group and label independent. */
+  readonly expected: number
+}
+
+/**
+ * Preferential sampling (Kamiran and Calders, 2012): resample every group-and-label cell to the size it would have if
+ * label and group were independent, removing or duplicating the rows nearest the decision boundary (by a ranker's
+ * score): a cell of positives that is too large loses its lowest-scored rows and one too small duplicates them; a cell
+ * of negatives the same with its highest-scored rows.
+ *
+ * @param labels - Binary labels `[N]`.
+ * @param scores - A ranker's scores `[N]`.
+ * @param groups - Group indices `[N]`.
+ * @returns The row indices of the resample (with repeats), and each cell's size before and after.
+ * @throws WhiteboxError `shape` when the inputs differ in length.
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { preferentialSample } from 'whitebox-engine/fairness'
+ * const r = preferentialSample([1, 1, 1, 0, 1, 0, 0, 0], [0.9, 0.8, 0.6, 0.3, 0.7, 0.5, 0.4, 0.1], [0, 0, 0, 0, 1, 1, 1, 1])
+ * r.rows // => [0, 1, 3, 3, 4, 4, 6, 7]
+ * ```
+ */
+export function preferentialSample(
+  labels: readonly number[],
+  scores: readonly number[],
+  groups: readonly number[],
+): { readonly rows: number[]; readonly cells: SampleCell[] } {
+  if (labels.length !== scores.length || labels.length !== groups.length)
+    throw new WhiteboxError('shape', 'preferentialSample: inputs differ in length')
+  const { cells: weights } = reweighingWeights(labels, groups)
+  const rows: number[] = []
+  const cells: SampleCell[] = []
+  for (const c of weights) {
+    const members = labels.flatMap((y, i) => (groups[i] === c.group && (y === 1 ? 1 : 0) === c.label ? [i] : []))
+    // Nearest the boundary first: the lowest-scored positives, the highest-scored negatives.
+    members.sort((a, b) => (c.label === 1 ? (scores[a] ?? 0) - (scores[b] ?? 0) : (scores[b] ?? 0) - (scores[a] ?? 0)))
+    const expected = Math.round(c.expected)
+    cells.push({ group: c.group, label: c.label, count: members.length, expected })
+    if (members.length === 0) continue
+    if (expected <= members.length) rows.push(...members.slice(members.length - expected))
+    else {
+      rows.push(...members)
+      for (let k = 0; k < expected - members.length; k++) rows.push(members[k % members.length] ?? 0)
+    }
+  }
+  return { rows: rows.sort((a, b) => a - b), cells }
+}
+
+/** Options of {@link optimisedLabelMapping}. */
+export interface LabelMappingOptions {
+  /** The largest gap allowed between any group's positive rate and a shared rate (default 0.02). */
+  readonly epsilon?: number
+  /** The largest probability with which any group's labels of one class may be flipped (default 1). */
+  readonly maxFlip?: number
+}
+
+/** A randomised relabelling of each group's labels. */
+export interface LabelMapping {
+  /** positive[g][y]: the probability a row of group g with label y is relabelled positive. */
+  readonly positive: readonly (readonly [number, number])[]
+  /** Each group's positive rate after the mapping. */
+  readonly rates: readonly number[]
+  /** The shared rate the groups are held within epsilon of. */
+  readonly target: number
+  /** The expected share of labels changed (the distortion minimised). */
+  readonly distortion: number
+}
+
+/**
+ * Optimised pre-processing of the labels (Calmon et al., 2017, in the form that maps the label alone): the randomised
+ * relabelling P(new label | group, label) that changes the fewest labels in expectation subject to every group's
+ * positive rate lying within `epsilon` of a shared rate (statistical parity) and to a cap on how often any group's
+ * labels of one class are flipped (the individual distortion constraint), solved as a linear program. Calmon et al.
+ * also map the features through the same programme; this form leaves them as they are.
+ *
+ * @param labels - Binary labels `[N]`.
+ * @param groups - Group indices `[N]`.
+ * @param options - epsilon and the flip cap.
+ * @returns The mapping, each group's new rate, the shared rate and the distortion.
+ * @throws WhiteboxError `value` when the programme has no solution (a flip cap too tight for epsilon).
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { optimisedLabelMapping } from 'whitebox-engine/fairness'
+ * const m = optimisedLabelMapping([1, 1, 1, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1], { epsilon: 0 })
+ * Math.abs((m.rates[0] ?? 0) - (m.rates[1] ?? 1)) < 1e-9 // => true
+ * m.distortion.toFixed(3) // => '0.250'
+ * ```
+ */
+export function optimisedLabelMapping(
+  labels: readonly number[],
+  groups: readonly number[],
+  options: LabelMappingOptions = {},
+): LabelMapping {
+  if (labels.length !== groups.length) throw new WhiteboxError('shape', 'optimisedLabelMapping: one group per label')
+  const n = labels.length
+  const k = Math.max(-1, ...groups) + 1
+  const eps = options.epsilon ?? 0.02
+  const cap = options.maxFlip ?? 1
+  // P(group, label).
+  const joint = Array.from({ length: k }, () => [0, 0])
+  for (const [i, g] of groups.entries()) {
+    const row = joint[g] as number[]
+    const y = labels[i] === 1 ? 1 : 0
+    row[y] = (row[y] ?? 0) + 1 / n
+  }
+  const pg = joint.map((r) => (r[0] ?? 0) + (r[1] ?? 0))
+  // Variables: p[g][0], p[g][1] for each group, then the shared rate t.
+  const v = 2 * k + 1
+  const c = new Array<number>(v).fill(0)
+  for (let g = 0; g < k; g++) {
+    c[2 * g] = joint[g]?.[0] ?? 0
+    c[2 * g + 1] = -(joint[g]?.[1] ?? 0)
+  }
+  const aUb: number[][] = []
+  const bUb: number[] = []
+  for (let g = 0; g < k; g++) {
+    if ((pg[g] ?? 0) === 0) continue
+    const row = new Array<number>(v).fill(0)
+    row[2 * g] = (joint[g]?.[0] ?? 0) / (pg[g] ?? 1)
+    row[2 * g + 1] = (joint[g]?.[1] ?? 0) / (pg[g] ?? 1)
+    aUb.push([...row.slice(0, v - 1), -1])
+    bUb.push(eps)
+    aUb.push([...row.slice(0, v - 1).map((x) => -x), 1])
+    bUb.push(eps)
+  }
+  const bounds: [number, number][] = Array.from({ length: v }, (_, j) =>
+    j === v - 1 ? [0, 1] : j % 2 === 0 ? [0, Math.min(1, cap)] : [Math.max(0, 1 - cap), 1],
+  )
+  const r = linprog({ c, aUb, bUb, bounds })
+  if (!r.success)
+    throw new WhiteboxError('value', `optimisedLabelMapping: no mapping meets the constraints (${r.message})`)
+  const x = Array.from(toFlat(r.x))
+  const positive = Array.from({ length: k }, (_, g): [number, number] => [x[2 * g] ?? 0, x[2 * g + 1] ?? 1])
+  const rates = positive.map(
+    ([p0, p1], g) => ((joint[g]?.[0] ?? 0) * p0 + (joint[g]?.[1] ?? 0) * p1) / Math.max(pg[g] ?? 0, 1e-300),
+  )
+  const distortion = positive.reduce(
+    (s, [p0, p1], g) => s + (joint[g]?.[0] ?? 0) * p0 + (joint[g]?.[1] ?? 0) * (1 - p1),
+    0,
+  )
+  return { positive, rates, target: x[v - 1] ?? 0, distortion }
+}
+
+/** Options of {@link learnFairRepresentation}. */
+export interface FairRepresentationOptions {
+  /** Prototypes (default 5). */
+  readonly prototypes?: number
+  /** Weights of the reconstruction, prediction and parity losses (default 0.01, 1, 50, as AIF360's Ax, Ay, Az). */
+  readonly weights?: { readonly reconstruction?: number; readonly prediction?: number; readonly parity?: number }
+  readonly maxIterations?: number
+  readonly key?: Key
+}
+
+/** A learned fair representation: prototypes in feature space, each with a label probability. */
+export interface FairRepresentation {
+  /** The prototypes `[K, d]`, in the features' units. */
+  readonly prototypes: readonly (readonly number[])[]
+  /** Each prototype's probability of the positive label. */
+  readonly labels: readonly number[]
+  /** The losses at the solution. */
+  readonly losses: { readonly reconstruction: number; readonly prediction: number; readonly parity: number }
+}
+
+/**
+ * The memberships of rows in a fair representation's prototypes: a softmax of minus each squared distance.
+ *
+ * @param rep - The representation.
+ * @param x - Rows `[n, d]`.
+ * @returns memberships[i][k].
+ * @example
+ * ```ts
+ * import { fairRepresentationMemberships } from 'whitebox-engine/fairness'
+ * const rep = { prototypes: [[0], [10]], labels: [0, 1], losses: { reconstruction: 0, prediction: 0, parity: 0 } }
+ * fairRepresentationMemberships(rep, [[0]])[0]?.[0] // => 1
+ * ```
+ */
+export function fairRepresentationMemberships(rep: FairRepresentation, x: readonly (readonly number[])[]): number[][] {
+  return x.map((row) => {
+    const d = rep.prototypes.map((v) => -row.reduce((s, xj, j) => s + (xj - (v[j] ?? 0)) ** 2, 0))
+    const top = Math.max(...d)
+    const e = d.map((v) => Math.exp(v - top))
+    const z = e.reduce((s, v) => s + v, 0)
+    return e.map((v) => v / z)
+  })
+}
+
+/**
+ * Learning fair representations (Zemel, Wu, Swersky, Pitassi and Dwork, 2013; AIF360's `LFR`): map each row to a
+ * distribution over K prototypes (a softmax of minus its squared distances to them) so that the prototypes reconstruct
+ * the features, predict the label (each prototype carries a label probability), and are used alike by both groups
+ * (statistical parity of the memberships); the weighted sum of the three losses is minimised by L-BFGS. A classifier on
+ * the memberships (or the prototypes' labels) is then fair by construction, as far as the parity weight demands.
+ *
+ * @param x - Features `[n, d]` (standardise them first; without the protected attribute).
+ * @param labels - Binary labels `[n]`.
+ * @param groups - Group indices `[n]` (0 the privileged group; others pooled).
+ * @param options - Prototypes, loss weights, iteration cap and key.
+ * @returns The prototypes, their labels and the losses.
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { learnFairRepresentation } from 'whitebox-engine/fairness'
+ * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
+ * learnFairRepresentation(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { prototypes: 2 }).prototypes.length // => 2
+ * ```
+ */
+export function learnFairRepresentation(
+  x: readonly (readonly number[])[],
+  labels: readonly number[],
+  groups: readonly number[],
+  options: FairRepresentationOptions = {},
+): FairRepresentation {
+  const n = x.length
+  const d = x[0]?.length ?? 0
+  if (labels.length !== n || groups.length !== n)
+    throw new WhiteboxError('shape', 'learnFairRepresentation: one label and group per row')
+  const K = options.prototypes ?? 5
+  const ax = options.weights?.reconstruction ?? 0.01
+  const ay = options.weights?.prediction ?? 1
+  const az = options.weights?.parity ?? 50
+  const X = fromStorage(Float64Array.from(x.flat()), [n, d], 'float64')
+  const y = fromStorage(
+    Float64Array.from(labels, (v) => (v === 1 ? 1 : 0)),
+    [n, 1],
+    'float64',
+  )
+  const z = groups.map((g) => (g === 0 ? 0 : 1))
+  const n1 = z.reduce((s: number, v) => s + v, 0)
+  const n0 = n - n1
+  // Each row's weight in its group's mean membership, signed: +1/n0 for the privileged group, -1/n1 for the rest.
+  const signed = fromStorage(
+    Float64Array.from(z, (v) => (v === 1 ? -1 / Math.max(1, n1) : 1 / Math.max(1, n0))),
+    [1, n],
+    'float64',
+  )
+  const sqX = fromStorage(
+    Float64Array.from({ length: n }, (_, i) => (x[i] ?? []).reduce((s, v) => s + v * v, 0)),
+    [n, 1],
+    'float64',
+  )
+  const unpack = (p: Value) => {
+    const V = reshape(sliceAxis(p, 0, 0, K * d), [K, d])
+    const w = reshape(sliceAxis(p, 0, K * d, K * d + K), [K, 1])
+    return { V, w }
+  }
+  const parts = (p: Value) => {
+    const { V, w } = unpack(p)
+    // Squared distances ||x||^2 - 2 x.v + ||v||^2, then memberships by softmax over prototypes.
+    const sqV = reshape(sum(square(V), 1), [1, K])
+    const dist = add(sub(sqX, mul(matmul(X, transpose(V)), 2)), sqV)
+    const M = softmax(neg(dist), 1)
+    const recon = mean(sum(square(sub(X, matmul(M, V))), 1))
+    const prob = clip(matmul(M, sigmoid(w)), 1e-6, 1 - 1e-6)
+    const pred = neg(mean(add(mul(y, log(prob)), mul(sub(1, y), log(sub(1, prob))))))
+    const parity = sum(abs(matmul(signed, M)))
+    return { recon, pred, parity }
+  }
+  const objective = (p: Value): Value => {
+    const { recon, pred, parity } = parts(p)
+    return add(add(mul(recon, ax), mul(pred, ay)), mul(parity, az))
+  }
+  // Start the prototypes at rows drawn by the key, the labels at 0.
+  const k = options.key ?? makeKey(0)
+  const order = Array.from(toFlat(permutation(k, n))).slice(0, K)
+  const p0 = new Float64Array(K * d + K)
+  order.forEach((row, j) => {
+    for (let c = 0; c < d; c++) p0[j * d + c] = x[row]?.[c] ?? 0
+  })
+  const r = lbfgs(objective, fromStorage(p0, [K * d + K], 'float64'), {
+    gradTol: 1e-7,
+    maxIterations: options.maxIterations ?? 300,
+  })
+  const flat = toFlat(r.x as Tensor)
+  const { recon, pred, parity } = parts(r.x as Tensor)
+  const scalar = (v: Value): number => toFlat(v as Tensor)[0] ?? Number.NaN
+  return {
+    prototypes: Array.from({ length: K }, (_, j) => Array.from({ length: d }, (_, c) => flat[j * d + c] ?? 0)),
+    labels: Array.from({ length: K }, (_, j) => 1 / (1 + Math.exp(-(flat[K * d + j] ?? 0)))),
+    losses: { reconstruction: scalar(recon), prediction: scalar(pred), parity: scalar(parity) },
+  }
 }
