@@ -4104,6 +4104,8 @@ Design rules:
   graph, segment, polyline or circle, along an axis, on a grid, in a box, chained), `Brush`, `Probe`, `NearestHover`,
   `selection.ts`, `useLinkState` (a figure `LinkStore` in React) and `keys.ts` (`useHeldKeys`: keys captured while a
   figure has focus, per press and per frame, for playing worlds).
+  `DraggableLine` (a vertical or horizontal line the reader drags, bound two-way to a control's value: thresholds,
+  cut-offs, levels; snaps to a step, keyboard-nudgeable).
 - `EpisodePlayer.tsx`: environment episodes (run once from a seed, rendered, played with captions) with overlays;
   `useEnvStepper.ts`: an environment stepped by hand from a seed.
 - `ExportMenu.tsx`: export of the current figure as SVG, PNG, GIF, MP4 or WebM.

@@ -33,7 +33,11 @@ export interface SurfaceViewOptions extends ViewOptions {
    * for none (default the record's decision levels, or 0.25, 0.5, 0.75 for two classes' probabilities).
    */
   readonly contours?: readonly number[] | false
-  /** The data aspect (default `auto`; `equal` when the features share units). */
+  /**
+   * The data aspect (default `auto`; `equal` when the features share units). A surface always fills its axes — the
+   * model is only evaluated on the grid, so widening an axis would leave unshaded bands — so `equal` shapes the figure
+   * to the grid's proportions instead of widening an axis.
+   */
   readonly aspect?: DataAspect
   /** Rows to ring (indices into the rows drawn): support vectors, the rows just seen. */
   readonly highlight?: readonly number[]
@@ -270,6 +274,24 @@ export function decisionSurfaceLayers(
   return { layers, x: xAxis, y: { label: surface.features[1] } }
 }
 
+/**
+ * The figure's box aspect for a surface: with `equal` data aspect, the grid's own proportions (width over height of
+ * the features' ranges, with a little room for the axes, clamped to a sensible shape), so equal scaling never widens
+ * an axis past the grid; otherwise the default.
+ *
+ * @param surface - The record.
+ * @param aspect - The requested data aspect.
+ * @param fallback - The box aspect otherwise.
+ * @returns Width over height.
+ */
+export function surfaceBoxAspect(surface: DecisionSurface, aspect: DataAspect | undefined, fallback: number): number {
+  if (aspect !== 'equal' || surface.y.length < 2) return fallback
+  const dx = (surface.x[surface.x.length - 1] ?? 1) - (surface.x[0] ?? 0)
+  const dy = (surface.y[surface.y.length - 1] ?? 1) - (surface.y[0] ?? 0)
+  if (!(dx > 0 && dy > 0)) return fallback
+  return Math.min(2.2, Math.max(0.7, (dx / dy) * 1.12))
+}
+
 /** The axes of a surface panel: its features, limited to the grid when it spans two features. */
 export function surfaceAxes(
   surface: DecisionSurface,
@@ -298,14 +320,14 @@ export function surfaceAxes(
  * ```
  */
 export function decisionSurfaceView(surface: DecisionSurface, options: SurfaceViewOptions = {}): EChartsOption {
-  const fig = viewFigure(options, { aspect: 1.25 })
+  const fig = viewFigure(options, { aspect: surfaceBoxAspect(surface, options.aspect, 1.25) })
   const { layers, x, y } = decisionSurfaceLayers(surface, { ...options, mode: fig.mode })
   const axes = surfaceAxes(surface, { x, y })
   return cartesian(layers, {
     figure: fig,
     mode: fig.mode,
     ...axes,
-    aspect: options.aspect ?? 'auto',
+    aspect: 'auto',
     tooltip: 'item',
   })
 }
@@ -339,7 +361,9 @@ export function surfaceObjective(
 export function decisionSurfaceFrames(surface: DecisionSurface, options: SurfaceViewOptions = {}): ViewFrames {
   const steps = surface.steps ?? []
   const objective = surfaceObjective(surface)
-  const fig = viewFigure(options, { aspect: objective === undefined ? 1.25 : 1.9 })
+  // Beside an objective panel the surface takes about 60% of the width, so its box is that share of the figure.
+  const box = surfaceBoxAspect(surface, options.aspect, 1.25)
+  const fig = viewFigure(options, { aspect: objective === undefined ? box : box / 0.62 })
   const mode = fig.mode
   const count = Math.max(1, steps.length)
   const stepName = surface.stepName ?? 'step'
@@ -359,7 +383,7 @@ export function decisionSurfaceFrames(surface: DecisionSurface, options: Surface
       layers,
       options: {
         ...axes,
-        aspect: options.aspect ?? 'auto',
+        aspect: 'auto',
         ...(step === undefined
           ? {}
           : {

@@ -15,6 +15,7 @@ import { Select } from './controls/Select.tsx'
 import { SpaceControls } from './controls/SpaceControls.tsx'
 import { Toggle } from './controls/Toggle.tsx'
 import { Brush } from './interaction/Brush.tsx'
+import { DraggableLine } from './interaction/DraggableLine.tsx'
 import { DraggablePoints } from './interaction/DraggablePoints.tsx'
 import { InteractionOverlay } from './interaction/InteractionOverlay.tsx'
 import { NearestHover } from './interaction/NearestHover.tsx'
@@ -26,6 +27,19 @@ import type { PlaybackController } from './usePlayback.ts'
 const noop = (): void => {}
 
 describe('React bindings render on the server', () => {
+  it('draws draggable lines bound to a value', () => {
+    const projection = linearProjection({ x: [0, 10], y: [0, 1], width: 200, height: 100 })
+    const html = renderToString(
+      <InteractionOverlay projection={projection} width={200} height={100}>
+        <DraggableLine axis="x" value={4} onChange={noop} span={[0, 1]} min={0} max={10} step={0.5} label="threshold" />
+        <DraggableLine axis="y" value={0.5} onChange={noop} />
+      </InteractionOverlay>,
+    )
+    expect(html).toContain('role="slider"')
+    expect(html).toContain('aria-valuenow="4"')
+    expect(html).toContain('threshold')
+  })
+
   it('draws a contingency table with its named cells and rates', () => {
     const table = thresholdConfusion([0, 0, 1, 1, 1], [0.1, 0.7, 0.4, 0.8, 0.9], 0.5)
     const two = renderToString(<ContingencyTable table={table} positive={1} classNames={['neg', 'pos']} />)

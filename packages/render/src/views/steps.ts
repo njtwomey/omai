@@ -304,7 +304,8 @@ export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptio
           : {
               x: { label: names[0], ...(grid0 === undefined ? {} : { limits: limitsOf2(grid0.x) }) },
               y: { label: names[1], ...(grid0 === undefined ? {} : { limits: limitsOf2(grid0.y) }) },
-              aspect: 'equal',
+              // Regions fill their grid: equal scaling would widen an axis past it and leave unshaded bands.
+              aspect: grid0 === undefined ? 'equal' : 'auto',
             },
     }
     if (progress === undefined || count < 2)
@@ -706,7 +707,7 @@ export function mixtureFrames(steps: MixtureSteps, options: StepsViewOptions = {
         options: {
           x: { label: names[0], ...(grid0 === undefined ? {} : { limits: limitsOf2(grid0.x) }) },
           y: { label: names[1], ...(grid0 === undefined ? {} : { limits: limitsOf2(grid0.y) }) },
-          aspect: 'equal',
+          aspect: grid0 === undefined ? 'equal' : 'auto',
         },
       },
       objective: progressPanel(
