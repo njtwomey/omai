@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import type { Exposition } from 'whitebox-engine/exposition'
 import type { Figure } from '../../figure/figure.ts'
 import { AnomalyView } from './anomaly.tsx'
+import { AttributionView, ImportanceView } from './attributions.tsx'
 import { BoardPlayer, PopulationPlayer } from './boards.tsx'
 import { ConfusionMatrixView, ValueGridView } from './cells.tsx'
 import { ComponentsView } from './components.tsx'
@@ -106,5 +107,9 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <StateSequenceView record={record} {...common} />
     case 'imageSteps':
       return <ImagePlayer record={record} {...common} />
+    case 'featureAttributions':
+      return <AttributionView record={record} {...common} />
+    case 'importances':
+      return <ImportanceView record={record} {...common} />
   }
 }

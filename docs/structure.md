@@ -3931,7 +3931,8 @@ oracle: shap (exact and tree explainers), scikit-learn inspection (permutation i
 fairlearn (metrics, ExponentiatedGradient, ThresholdOptimizer), MAPIE (conformal), netcal (calibration); goldens only
 where cheap and important.
 
-Exposition records added to `lib/exposition/`: `featureAttributions` (per row: base value, one value per feature,
+Exposition records added to `lib/exposition/` (`attributions.ts`: `featureAttributions`, `importances`):
+`featureAttributions` (per row: base value, one value per feature,
 the feature values, the prediction; optional interaction values), `dependence` (PDP with ICE curves or ALE per
 feature, with the data's rug), `importances` (per feature: mean and spread across repeats, the metric and its
 direction), `counterfactuals` (original row, counterfactuals, changed features, distances, validity), `groupReport`
@@ -3945,9 +3946,12 @@ ROC with thresholds), reliability diagrams, conformal bands and set sizes.
 `explain/` (shap, lime, alibi, interpret, sklearn.inspection)
 built from: `learn/explain`, `learn/inspection`, `learn/valuation`, `metrics`
 - `attributions.ts`: `explainPrediction(model, data, row, { method: 'tree' | 'kernel' | 'exact' | 'sampling' |
-  'lime' })` and `explainDataset` (attributions for many rows: summary and beeswarm), with the sampling estimate's
-  convergence recorded.
-- `inspection.ts`: permutation importance, PDP and ICE, ALE and interaction strength for any fitted estimator.
+  'lime' })` and `explainDataset` (attributions for many rows: summary and beeswarm, with each feature's strongest
+  interaction partner), with the sampling estimate's convergence recorded (and as a `curves` record); `_models.ts`
+  picks the output explained (prediction, probability, a booster's log odds) and reads trees, forests and gradient
+  boosting as Tree SHAP models.
+- `inspection.ts`: `featureImportance` (permutation, with every repeat, or impurity), PDP and ICE, ALE and interaction
+  strength for any fitted estimator.
 - `counterfactuals.ts`: counterfactual explanations and recourse for a fitted classifier, with constraints.
 - `surrogates.ts`: global surrogate trees with fidelity, LIME neighbourhoods, anchors with precision and coverage.
 - `gradients.ts`: gradient attributions for neural models (`methods/neural`), drawn over images and tabular inputs.
@@ -4135,8 +4139,10 @@ Design rules:
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
   (`BoardSteps` and `PopulationSteps` as players), `images.ts` (`ImageSteps` as a mosaic of image rows per step),
   `curves.ts` (`CurveSet`, revealed along x as a player), `cells.ts` (`ValueGrids` as blocky small multiples on one
-  colour range, `ConfusionMatrix`, both played through training) and `diagrams.ts` (`DiagramRecord` as a scene with a
-  step's overlay).
+  colour range, `ConfusionMatrix`, both played through training), `diagrams.ts` (`DiagramRecord` as a scene with a
+  step's overlay) and `attributions.ts` (`FeatureAttributions` as a waterfall, played through a sampled estimate's
+  convergence, a beeswarm summary coloured by feature value, mean |attribution| bars and dependence scatters coloured
+  by the interacting feature; `Importances` as bars with spread whiskers and every repeat).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile

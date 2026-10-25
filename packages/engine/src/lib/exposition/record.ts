@@ -1,4 +1,5 @@
 import type { AnomalyScores } from './anomaly.ts'
+import type { FeatureAttributions, Importances } from './attributions.ts'
 import type { BoardSteps } from './boards.ts'
 import type { ValueGrids } from './cells.ts'
 import type { ClusteringSteps, MixtureSteps } from './clustering.ts'
@@ -56,6 +57,8 @@ export type Exposition =
   | ValueGrids
   | ConfusionMatrix
   | ImageSteps
+  | FeatureAttributions
+  | Importances
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -129,4 +132,6 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'confusionMatrix',
   'stateSequence',
   'imageSteps',
+  'featureAttributions',
+  'importances',
 ])
