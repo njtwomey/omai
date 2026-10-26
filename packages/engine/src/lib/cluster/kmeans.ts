@@ -10,7 +10,7 @@ import { geometry } from '../numerics/index.ts'
 import { kmeansCodebook } from '../numerics/spatial/index.ts'
 import { type Key, subsample } from '../random/index.ts'
 import { fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels } from '../trace/index.ts'
+import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 
 /** Rows of a matrix as plain arrays. */
 export type Rows = readonly (readonly number[])[]
@@ -197,6 +197,8 @@ export function lloydAlgorithm(
         labels: { role: 'state', value: s.labels, shape: [m.n] },
       },
     }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as LloydState,
   }
 }
 

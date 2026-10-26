@@ -31,7 +31,10 @@ function section<M>(load: () => Promise<M>): Section<M> {
 }
 
 const gallery = section(() => import('./gallery/routes.tsx'))
+const hub = section(() => import('./hub/routes.tsx'))
 const docs = section(() => import('./docs/routes.tsx'))
+const HubSection = lazy(() => hub.preload().then((m) => ({ default: m.HubSection })))
+const HubToc = lazy(() => hub.preload().then((m) => ({ default: m.HubToc })))
 const GallerySection = lazy(() => gallery.preload().then((m) => ({ default: m.GallerySection })))
 const GalleryToc = lazy(() => gallery.preload().then((m) => ({ default: m.GalleryToc })))
 const DocsSection = lazy(() => docs.preload().then((m) => ({ default: m.DocsSection })))
@@ -54,6 +57,8 @@ function App(): ReactNode {
   const path = usePath()
   const page = path.startsWith('/gallery') ? (
     <SectionView key="gallery" section={gallery} lazy={GallerySection} pick={(m) => m.GallerySection} path={path} />
+  ) : path.startsWith('/hub') ? (
+    <SectionView key="hub" section={hub} lazy={HubSection} pick={(m) => m.HubSection} path={path} />
   ) : path.startsWith('/docs') ? (
     <SectionView key="docs" section={docs} lazy={DocsSection} pick={(m) => m.DocsSection} path={path} />
   ) : (
@@ -61,6 +66,8 @@ function App(): ReactNode {
   )
   const sidebar = path.startsWith('/gallery') ? (
     <SectionView key="gallery" section={gallery} lazy={GalleryToc} pick={(m) => m.GalleryToc} path={path} />
+  ) : path.startsWith('/hub') ? (
+    <SectionView key="hub" section={hub} lazy={HubToc} pick={(m) => m.HubToc} path={path} />
   ) : path.startsWith('/docs') ? (
     <SectionView key="docs" section={docs} lazy={DocsToc} pick={(m) => m.DocsToc} path={path} />
   ) : undefined
@@ -76,9 +83,11 @@ if (root === null) throw new Error('index.html has no #root element')
 const first = currentPath()
 const preload = first.startsWith('/gallery')
   ? gallery.preload()
-  : first.startsWith('/docs')
-    ? docs.preload()
-    : Promise.resolve()
+  : first.startsWith('/hub')
+    ? hub.preload()
+    : first.startsWith('/docs')
+      ? docs.preload()
+      : Promise.resolve()
 // A failed preload renders anyway: the section's lazy load then shows the error.
 void preload
   .catch(() => undefined)

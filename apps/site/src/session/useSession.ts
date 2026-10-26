@@ -9,7 +9,7 @@ import {
   type SliceBudget,
   session,
 } from 'mdml-engine/trace'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export interface LiveSession<S, C extends Config> {
   readonly session: Session<S, C>

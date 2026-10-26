@@ -17,8 +17,13 @@ import {
 } from 'mdml-render/react'
 import { episodeCurves, metricCurves, metricNames } from 'mdml-render/trace'
 import { type ReactElement, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { rowsOf } from './data.ts'
-import type { LiveSession } from './session.ts'
+import type { LiveSession } from './useSession.ts'
+
+function rowsOf<T>(flat: readonly T[], width: number): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < flat.length; i += width) out.push(flat.slice(i, i + width))
+  return out
+}
 
 const FIG = figure({ width: 520, height: 240 })
 const SMALL = figure({ width: 320, height: 240 })

@@ -6,6 +6,7 @@ import { Link } from './Link.tsx'
 /** The site's sections, in navigation order. */
 export const SECTIONS = [
   { path: '/gallery', title: 'Gallery', summary: 'What mdml-render can draw, lay out, control and animate.' },
+  { path: '/hub', title: 'Hub', summary: 'Methods on a contract, run as sessions.' },
   { path: '/docs', title: 'Docs', summary: 'The mdml-engine reference, generated from the source.' },
 ] as const
 
