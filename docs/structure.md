@@ -2999,6 +2999,16 @@ keeps no past: `observe` exposes the metrics `inertia` and `moved` and the `stat
 density, hierarchical, spectral, ...) are still parked and arrive here as they are needed.
 
 oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path)
+||||||| 9c6bb451
+### 4.41 `linear/`: linear and generalised linear models (statsmodels, scikit-learn linear_model)
+
+The algorithms behind linear models, moved from the parked methods layer. `_design.ts` (private) builds the design
+matrix from `LearnData` (intercept, centring, weights); `solvers.ts` holds least squares, ridge by SVD, IRLS for GLMs
+and coordinate descent for the lasso and elastic net; `paths.ts` the alpha grid and the regularisation path over it
+(with cross-validation); `model.ts` the linear model's parameters and prediction (`linearModel`); `inference.ts`
+covariances, Wald tables, standard errors and intervals. The estimator factories (lasso, ridge, logistic, GLM, robust,
+Bayesian, online, LARS, isotonic) stay parked until the new methods base. Goldens keep their fixtures under
+`methods/linear/`.
 
 ## 5. Methods, exposition records, views and the hub
 

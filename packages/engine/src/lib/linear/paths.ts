@@ -4,18 +4,18 @@
  * path with the best and one-standard-error choices of the penalty.
  */
 
-import { argminOf, MdmlError } from '../../lib/base/index.ts'
+import { argminOf, MdmlError } from '../base/index.ts'
 import {
   type CrossValidationCurve,
   crossValidationCurve,
   type Explained,
   type RegularisationPath,
   regularisationPath,
-} from '../../lib/exposition/index.ts'
-import { featureNamesOf, type LearnData, takeRows } from '../../lib/learn/index.ts'
-import { kFold, type Splitter, splitIndices } from '../../lib/learn/model-selection/index.ts'
-import { ddot } from '../../lib/numerics/linalg/index.ts'
-import { key as makeKey } from '../../lib/random/index.ts'
+} from '../exposition/index.ts'
+import { featureNamesOf, type LearnData, takeRows } from '../learn/index.ts'
+import { kFold, type Splitter, splitIndices } from '../learn/model-selection/index.ts'
+import { ddot } from '../numerics/linalg/index.ts'
+import { key as makeKey } from '../random/index.ts'
 import { centre, type Design, designOf, logGrid } from './_design.ts'
 import { coordinateDescentSolve, svdRidge } from './solvers.ts'
 
