@@ -56,6 +56,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/information': () => import('mdml-engine/information'),
   'mdml-engine/kernels': () => import('mdml-engine/kernels'),
   'mdml-engine/learn': () => import('mdml-engine/learn'),
+  'mdml-engine/learn/bases': () => import('mdml-engine/learn/bases'),
   'mdml-engine/learn/model-selection': () => import('mdml-engine/learn/model-selection'),
   'mdml-engine/learn/preprocessing': () => import('mdml-engine/learn/preprocessing'),
   'mdml-engine/logic': () => import('mdml-engine/logic'),

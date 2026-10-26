@@ -189,6 +189,8 @@ export interface LogSpec {
   readonly detail?: 'summary' | 'full'
   /** Arguments of a derived path (a grid, a sample count). */
   readonly args?: Json
+  /** Stop recording this path once its events pass this many bytes of JSON. */
+  readonly budget?: number
 }
 
 /** What a value logged against a contract can be: a number, a tensor or array, JSON, or an exposition record. */

@@ -13,7 +13,7 @@ import { accuracyScore, r2Score } from '../metrics/index.ts'
 import type { Key } from '../random/index.ts'
 import type { Space } from '../space/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
-import type { RunHandle, TracePolicy, Tracer } from '../trace/index.ts'
+import type { RunHandle, Subscription, TracePolicy, Tracer } from '../trace/index.ts'
 
 /** Hyperparameters: an object of plain values, nested estimators or functions, by name. */
 export type Hyper = object
@@ -44,6 +44,11 @@ export interface FitOptions {
    * inside model selection (folds, trials) pass false, so a search does not pay for records nobody reads.
    */
   readonly explain?: boolean
+  /**
+   * For estimators on the log contract (`lib/learn/bases`): what the fit's session keeps (default the method's
+   * `defaults`, or `off` when `explain` is false).
+   */
+  readonly logs?: Subscription
 }
 
 /** What an estimator learns to do. */

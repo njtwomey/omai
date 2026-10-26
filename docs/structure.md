@@ -2447,6 +2447,13 @@ oracle once the oracle environment has it.
 
 ### 4.33 `learn/`: the toolkit around models (scikit-learn's non-model modules)
 
+- `bases/` (inlined; `docs/methods_port/bases.md`): the bases methods are built on. `iterative.ts`: the iterative base
+  (`iterative(particular)`: a library `Algorithm` over the data run as a session behind scikit-learn's `fit`, with the
+  solver's channels as `solver/...` paths, `fit/iteration/end`, `model/params`, restarts, the records' rows, and
+  `method(data)` and `session(data)` to drive the same fit live); `kinds.ts`: the estimator kinds as add-ons
+  (`kindProbes`: the standard derived paths of classifiers and regressors, clusterers, transformers and outlier
+  detectors). The one-shot, trainer, agent, sweep and procedure bases follow.
+
 oracle: scikit-learn, statsmodels, imbalanced-learn, mapie for conformal, captum and shap for explanations, lime,
 modAL for active learning, diffprivlib and opacus for privacy
 - `estimator.ts`: the estimator contract (`name`, `hyper`, `hyperSpace`, `fit`, optional `fitTransform` for cross-fitted

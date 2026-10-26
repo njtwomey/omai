@@ -100,6 +100,8 @@ export interface SessionOptions<S, C extends Config> {
   /** Knob values over the method's defaults. */
   readonly config?: Partial<C>
   readonly seed?: number
+  /** The run's root key, in place of the seed (an estimator fitting with a key from its options). */
+  readonly key?: Key
   /** What to keep (default the method's `defaults`). */
   readonly logs?: Subscription
   /** Default `live`. */
@@ -179,9 +181,10 @@ function configOf<C extends Config>(space: DictSpace, given: Partial<C> | undefi
 export function session<S, C extends Config>(method: Method<S, C>, options: SessionOptions<S, C> = {}): Session<S, C> {
   const config = configOf<C>(method.config, options.config, method.name)
   const seed = options.seed ?? 0
+  const root: Key = options.key ?? makeKey(seed)
   const total = options.steps ?? 1000
   const checkpointEvery = options.checkpointEvery ?? Math.max(1, Math.floor(total / 100))
-  const makeKeyOf = foldIn(makeKey(seed), 7)
+  const makeKeyOf = foldIn(root, 7)
   const contract = contractOf(method, config, makeKeyOf)
   const resolved: Resolved<S> = resolve(contract, options.logs ?? 'defaults', {
     ...(method.defaults === undefined ? {} : { defaults: method.defaults }),
@@ -233,13 +236,13 @@ export function session<S, C extends Config>(method: Method<S, C>, options: Sess
   if (slice !== undefined && raw.serialise !== undefined && run.wants('checkpoint'))
     run.checkpoint(slice.t, raw.serialise(slice.state))
   const current = (): Slice<S> => {
-    if (slice === undefined) slice = initialSlice(algorithm, { seed, run })
+    if (slice === undefined) slice = initialSlice(algorithm, { key: root, run })
     return slice
   }
   const advance = (budget: SliceBudget = { steps: Number.POSITIVE_INFINITY }): Slice<S> => {
     const from = current()
     if (from.status !== undefined) return from
-    const next = runFor(algorithm, budget, { seed, maxSteps: total, from, run })
+    const next = runFor(algorithm, budget, { key: root, maxSteps: total, from, run })
     slice = next
     if (next.status !== undefined) run.end(next.status, next.t)
     return next
@@ -249,7 +252,7 @@ export function session<S, C extends Config>(method: Method<S, C>, options: Sess
     if (t === now.t) return now.state
     if (t > now.t || t < 0) throw new MdmlError('value', `${method.name}: step ${t} has not been reached`)
     if (rec === undefined) throw new MdmlError('value', `${method.name}: an 'off' session keeps no past`)
-    return seek(raw, rec.run(), t, { seed })
+    return seek(raw, rec.run(), t, { key: root })
   }
   const self: Session<S, C> = {
     method,
@@ -274,7 +277,8 @@ export function session<S, C extends Config>(method: Method<S, C>, options: Sess
         ...options,
         mode: 'live',
         config: { ...config, ...forkOptions.config } as Partial<C>,
-        seed: forkOptions.seed ?? seed,
+        // The same root continues exactly; a new seed branches.
+        ...(forkOptions.seed === undefined ? { seed, key: root } : { seed: forkOptions.seed }),
         start: { state: stateAt(t), t },
       }),
     probe: (t, path, args) => {

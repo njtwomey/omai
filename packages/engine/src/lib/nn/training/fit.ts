@@ -15,6 +15,8 @@ import {
   type RunHandle,
   type RunOptions,
   runAlgorithm,
+  stateFromJson,
+  stateToJson,
   tapContext,
 } from '../../trace/index.ts'
 import type { Module, Params } from '../module/module.ts'
@@ -249,6 +251,8 @@ export function fitAlgorithm(model: Module, data: TabularData, options: FitOptio
           : !Number.isNaN(s.loss) && !Number.isFinite(s.loss)
             ? 'diverged'
             : undefined,
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as TrainState,
     observe: (s) => {
       const tensors: Record<string, { role: 'param'; value: Value }> = {}
       for (const [path, v] of Object.entries(treePaths(s.params)))

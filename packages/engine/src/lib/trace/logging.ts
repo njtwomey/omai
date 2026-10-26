@@ -17,6 +17,7 @@ import {
   type Subscribed,
 } from './contract.ts'
 import type { TensorRole, TraceEvent } from './events.ts'
+import { summarise } from './summaries.ts'
 import { type TapContext, tapContext } from './taps.ts'
 import type { RunHandle, Tracer } from './tracer.ts'
 
@@ -54,8 +55,14 @@ export function scheduler<S>(resolved: Resolved<S>): Scheduler<S> {
   const pending = new Set<Path>()
   const counts = new Map<Path, number>()
   const steps = new Map<Path, number[]>()
-  const entry = (path: Path): Subscribed<S> | undefined =>
-    exact.get(path) ?? patterns.find((p) => matchesPath(p.path, path))
+  // Pattern matches are remembered: taps log the same names every step.
+  const found = new Map<Path, Subscribed<S> | undefined>()
+  const entry = (path: Path): Subscribed<S> | undefined => {
+    if (found.has(path)) return found.get(path)
+    const e = exact.get(path) ?? patterns.find((p) => matchesPath(p.path, path))
+    found.set(path, e)
+    return e
+  }
   return {
     entry,
     due: (path, t) => {
@@ -264,28 +271,47 @@ export function gated<S>(tracer: Tracer, resolved: Resolved<S>, sched: Scheduler
     sched.consume(path)
     return true
   }
+  // A path's byte budget: its events stop once their JSON passes it.
+  const spent = new Map<Path, number>()
+  const emitPath = (path: Path, event: TraceEvent): void => {
+    const budget = sched.entry(path)?.spec.budget
+    if (budget !== undefined) {
+      const size = (spent.get(path) ?? 0) + JSON.stringify(event).length
+      if (size > budget) return
+      spent.set(path, size)
+    }
+    tracer.emit(event)
+  }
   return {
     enabled: tracer.enabled,
     emit: (e: TraceEvent) => {
       switch (e.type) {
         case 'metric': {
           const path = pathOf(native.metric, e.name)
-          if (pass(path, e.step)) tracer.emit({ ...e, name: path })
+          if (pass(path, e.step)) emitPath(path, { ...e, name: path })
           return
         }
         case 'tensor': {
           const path = pathOf(native.tensor, e.name)
-          if (pass(path, e.step)) tracer.emit({ ...e, name: path })
+          if (!pass(path, e.step)) return
+          // A path that asked for summaries keeps them, even when another path turned full values on for the policy.
+          const full = sched.entry(path)?.spec.detail === 'full'
+          if (full || e.values === undefined) {
+            emitPath(path, { ...e, name: path })
+            return
+          }
+          const { values, indices: _indices, ...rest } = e
+          emitPath(path, { ...rest, name: path, summary: e.summary ?? summarise(values) })
           return
         }
         case 'message': {
           const path = pathOf(native.message, e.kind)
-          if (pass(path, e.step)) tracer.emit({ ...e, kind: path })
+          if (pass(path, e.step)) emitPath(path, { ...e, kind: path })
           return
         }
         case 'frame': {
           const path = framePath ?? derivedFrame
-          if (pass(path, e.step)) tracer.emit(e)
+          if (pass(path, e.step)) emitPath(path, e)
           return
         }
         default:
