@@ -2983,6 +2983,16 @@ Left in 4.39 after round two (one line each):
 - TODO: thin methods for causal, regression and ranking fairness (the core is built).
 - TODO: hub entries for the round-two mitigations, and the parked gallery-to-hub move (5.20).
 
+### 4.40 `linear/`: linear and generalised linear models (statsmodels, scikit-learn linear_model)
+
+The algorithms behind linear models, moved from the parked methods layer. `_design.ts` (private) builds the design
+matrix from `LearnData` (intercept, centring, weights); `solvers.ts` holds least squares, ridge by SVD, IRLS for GLMs
+and coordinate descent for the lasso and elastic net; `paths.ts` the alpha grid and the regularisation path over it
+(with cross-validation); `model.ts` the linear model's parameters and prediction (`linearModel`); `inference.ts`
+covariances, Wald tables, standard errors and intervals. The estimator factories (lasso, ridge, logistic, GLM, robust,
+Bayesian, online, LARS, isotonic) stay parked until the new methods base. Goldens keep their fixtures under
+`methods/linear/`.
+
 ## 5. Methods, exposition records, views and the hub
 
 > **Status, 2026-10-26.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,

@@ -1,8 +1,8 @@
 // The design shared by the linear models: features, targets and weights read once, weighted centring, prediction.
 
-import { type LearnData, type MatrixView, matrixView, sampleWeightsOf, targetVector } from '../../lib/learn/index.ts'
-import { ddot } from '../../lib/numerics/linalg/index.ts'
-import { fromStorage, type Tensor, type TensorLike } from '../../lib/tensor/index.ts'
+import { type LearnData, type MatrixView, matrixView, sampleWeightsOf, targetVector } from '../learn/index.ts'
+import { ddot } from '../numerics/linalg/index.ts'
+import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 
 /** Features, targets and sample weights of a fit. */
 export interface Design {

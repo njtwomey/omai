@@ -5,11 +5,11 @@
  * and says why.
  */
 
-import { type Json, MdmlError } from '../../lib/base/index.ts'
-import type { DispersionFamily, Link } from '../../lib/dists/families/index.ts'
-import { collecting, type MatrixView } from '../../lib/learn/index.ts'
-import { cholesky, choSolve, ddot, lstsq, svd } from '../../lib/numerics/linalg/index.ts'
-import { lassoCoordinateDescentAlgorithm, lbfgs, owlqn } from '../../lib/optim/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
+import type { DispersionFamily, Link } from '../dists/families/index.ts'
+import { collecting, type MatrixView } from '../learn/index.ts'
+import { cholesky, choSolve, ddot, lstsq, svd } from '../numerics/linalg/index.ts'
+import { lassoCoordinateDescentAlgorithm, lbfgs, owlqn } from '../optim/index.ts'
 import {
   add,
   fromStorage,
@@ -21,8 +21,8 @@ import {
   type Tensor,
   toFlat,
   type Value,
-} from '../../lib/tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../lib/trace/index.ts'
+} from '../tensor/index.ts'
+import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { centre, type Design, interceptFor, matrixTensor, vectorTensor } from './_design.ts'
 
 /** The solvers of the penalised GLM core. */
