@@ -131,8 +131,9 @@ On(hook: (ctx: HookContext) => void): HookSpec     // on an event path; HookCont
 On(name: string, options?: Json): HookSpec         // a hook the method exports by name, so it can cross to a worker
 ```
 
-`'off'` is the trivial mode: `nullTracer`, no derived computations, no hooks, no checkpoints; the method is the raw
-algorithm. `'defaults'` is the method's own small choice (usually a loss). `'all'` is everything at summary detail,
+`'off'` is the trivial mode: no metrics, tensors, messages or frames, no derived computations, no hooks; the method is
+the raw algorithm, with only checkpoints kept so `stateAt`, `fork` and `probe` still work (`past: false` drops them too
+and uses `nullTracer`). `'defaults'` is the method's own small choice (usually a loss). `'all'` is everything at summary detail,
 for debugging. Scheduling by event is what makes `every: 'training/epoch/end'` and `every: ['rl/episode/end', 10]`
 one mechanism rather than an epoch concept and an episode concept.
 

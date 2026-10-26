@@ -250,7 +250,7 @@ export function TapeView<S, C extends Config>(props: TapeViewProps<S, C>): React
           } catch {
             return null
           }
-          return isExposition(record) ? (
+          return record !== undefined && isExposition(record) ? (
             <div key={name} className="flex flex-col gap-1">
               <div className="text-sm opacity-70">{name}, from the tape so far</div>
               <ExpositionView record={record} figure={SMALL} />

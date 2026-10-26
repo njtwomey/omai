@@ -61,10 +61,10 @@ describe('sessions', () => {
   })
 
   it("'off' keeps nothing and costs nothing, and the method's defaults are a small choice", () => {
-    const off = session(counter, { mode: 'eager', steps: 10, logs: 'off' })
+    const off = session(counter, { mode: 'eager', steps: 10, logs: 'off', past: false })
     expect(off.state).toBe(10)
     expect(off.run().events).toEqual([])
-    expect(() => off.stateAt(3)).toThrow(/keeps no past/)
+    expect(() => off.stateAt(3)).toThrow(/keeps no checkpoints/)
     const some = session(counter, { mode: 'eager', steps: 10 })
     expect(
       some
@@ -72,6 +72,12 @@ describe('sessions', () => {
         .events.filter((e) => e.type === 'metric')
         .every((e) => e.type === 'metric' && e.name === 'count'),
     ).toBe(true)
+  })
+
+  it("an 'off' session still keeps its past: it can seek a middle step, and only the run, checkpoints and end are kept", () => {
+    const off = session(counter, { mode: 'eager', steps: 10, logs: 'off', checkpointEvery: 3 })
+    expect(off.stateAt(5)).toBe(5)
+    expect(new Set(off.run().events.map((e) => e.type))).toEqual(new Set(['run', 'checkpoint', 'end']))
   })
 
   it('schedules by steps and by events, and skips what nobody asked for', () => {

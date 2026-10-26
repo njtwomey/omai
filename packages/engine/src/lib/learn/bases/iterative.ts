@@ -58,8 +58,8 @@ export interface IterativeParticular<H extends object, S, P extends Json, V exte
   readonly restarts?: { readonly count: (hyper: H) => number; readonly better: (a: S, b: S) => boolean }
   /** Structural records from the final state (a tree, a coefficient table). */
   records?(state: S, data: LearnData, hyper: H): readonly Exposition[]
-  /** Step-like records from the tape, given the final state too. */
-  readonly projections?: Readonly<Record<string, (run: Run, data: LearnData, hyper: H) => Exposition>>
+  /** Step-like records from the tape; `undefined` when the tape has nothing to project (a fit leaves it out). */
+  readonly projections?: Readonly<Record<string, (run: Run, data: LearnData, hyper: H) => Exposition | undefined>>
   /** What `fit` keeps by default (default nothing: the raw algorithm). */
   readonly logs?: Subscription
 }
@@ -72,6 +72,8 @@ export type IterativeFitted<P extends Json, V> = Fitted<P> &
 export interface IterativeSessionOptions extends FitOptions {
   readonly mode?: Mode
   readonly steps?: number
+  /** Keep checkpoints under `logs: 'off'` so the session can seek and probe (default `true`; a fit sets `false`). */
+  readonly past?: boolean
 }
 
 /** An estimator on the iterative base: scikit-learn's surface, plus its method and a session of its fit. */
@@ -213,6 +215,7 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
       logs: options.logs ?? (options.explain === false ? 'off' : 'defaults'),
       mode: options.mode ?? 'live',
       steps: options.steps ?? steps,
+      ...(options.past === undefined ? {} : { past: options.past }),
       checkpointEvery,
     })
   const fit = (data: LearnData, options: FitOptions = {}): IterativeFitted<P, V> => {
@@ -220,7 +223,7 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
     const n = Math.max(1, p.restarts?.count(hyper) ?? 1)
     let best: Session<S, Config> | undefined
     for (let r = 0; r < n; r++) {
-      const s = sessionOf(data, { ...options, mode: 'eager' }, n === 1 ? key : foldIn(key, r))
+      const s = sessionOf(data, { ...options, mode: 'eager', past: false }, n === 1 ? key : foldIn(key, r))
       if (best === undefined || p.restarts?.better(s.state, best.state) === true) best = s
     }
     const chosen = best as Session<S, Config>
@@ -229,7 +232,7 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
     const fitted = build(p.params(state, data, hyper))
     const records: Exposition[] = [
       ...(p.records?.(state, data, hyper) ?? []),
-      ...Object.values(p.projections ?? {}).map((f) => f(run, data, hyper)),
+      ...Object.values(p.projections ?? {}).flatMap((f) => f(run, data, hyper) ?? []),
     ]
     const exposition = options.explain === false ? records : withInputRows(records, data, fitted.classes, fitted.kind)
     return { ...fitted, exposition, run }

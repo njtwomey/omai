@@ -1,9 +1,10 @@
+import type { Json } from 'mdml-engine/base'
 import { datasetCollections } from 'mdml-engine/datasets'
 import { key } from 'mdml-engine/random'
 import { type DictSpace, defaults } from 'mdml-engine/space'
 import { type Tensor, toFlat } from 'mdml-engine/tensor'
 import { contractOf } from 'mdml-engine/trace'
-import { cartesian, lines, points } from 'mdml-render/charts'
+import { cartesian, type Layer, lines, points } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import {
   Chart,
@@ -92,8 +93,31 @@ export function HubPage(props: { readonly entry: HubEntry }): ReactNode {
   )
 }
 
-// The model at the scrubbed step: clusterers draw the rows by assignment with the centres over them, classifiers and
-// regressors their decision surface.
+type Probed = { readonly value?: unknown; readonly error?: string }
+
+// One probe of the session at a step, computed once per (session, step) and never throwing: a failure is returned as
+// its message so a panel can say why and still draw its rows.
+// biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+function useProbe(live: LiveSession<any, any>, t: number, path: string | undefined, args?: Json): Probed {
+  const argsKey = JSON.stringify(args ?? null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the viewed step, not on every tape version
+  return useMemo(() => {
+    if (path === undefined) return {}
+    try {
+      return { value: live.session.probe(t, path, args) }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  }, [live.session, t, path, argsKey])
+}
+
+const Note = (props: { readonly children: ReactNode }): ReactNode => (
+  <div className="text-xs text-muted">{props.children}</div>
+)
+
+// The model at the scrubbed step. The training rows are always drawn (by class or target when the dataset has them);
+// the probe overlays on top when it succeeds: clusterers the assignments and centres, regressors the fit, the rest
+// their decision surface. Each probe is independent, and every chart stays mounted across frames.
 function ProbePanel(props: {
   readonly entry: HubEntry
   readonly paths: readonly string[]
@@ -105,67 +129,91 @@ function ProbePanel(props: {
 }): ReactNode {
   const { entry, live, at, x, y, paths } = props
   const mode = useColourMode()
+  const kind = entry.estimator.kind
   const t = at === null ? live.session.t : Math.min(at, live.session.t)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: probes re-run as the tape grows
-  return useMemo(() => {
-    try {
-      if (entry.estimator.kind === 'clusterer') {
-        const labels = live.session.probe(t, 'model/assignments') as number[]
-        const centres = live.session.probe(t, 'model/centres') as number[][]
-        const flat = toFlat(x)
-        const d = x.shape[1] ?? 2
-        const rows = {
-          x: labels.map((_, i) => flat[i * d] ?? 0),
-          y: labels.map((_, i) => flat[i * d + 1] ?? 0),
-        }
-        const marks = { x: centres.map((c) => c[0] ?? 0), y: centres.map((c) => c[1] ?? 0) }
-        // A clusterer that is also a density (a mixture) shows its density beside the assignments.
-        const density = paths.includes('model/density')
-        return (
-          <div className="flex flex-wrap gap-4">
-            <Chart
-              figure={FIG}
-              option={cartesian(
-                [
-                  points([{ ...rows, groups: labels, opacity: 0.7 }], { mode }),
-                  points([{ ...marks, name: 'centres', size: 16, symbol: 'diamond' }], { mode, colourOffset: 9 }),
-                ],
-                { mode, figure: FIG, title: `probe: assignments and centres at step ${t}` },
-              )}
-            />
-            {density ? (
-              <ExpositionView
-                record={live.session.probe(t, 'model/density', { resolution: 40 }) as never}
-                figure={FIG}
-              />
-            ) : null}
-          </div>
-        )
-      }
-      if (entry.estimator.kind === 'regressor' && (x.shape[1] ?? 1) === 1 && y !== undefined) {
-        const fit = live.session.probe(t, 'model/predictions') as number[]
-        const xs = toFlat(x)
-        const order = xs.map((_, i) => i).sort((a, b) => (xs[a] ?? 0) - (xs[b] ?? 0))
-        return (
-          <Chart
-            figure={FIG}
-            option={cartesian(
-              [
-                points([{ x: xs, y: toFlat(y), opacity: 0.7 }], { mode }),
-                lines([{ x: order.map((i) => xs[i] ?? 0), y: order.map((i) => fit[i] ?? 0), name: 'fit' }], {
-                  mode,
-                  colourOffset: 1,
-                }),
-              ],
-              { mode, figure: FIG, title: `probe: the fit at step ${t}` },
-            )}
-          />
-        )
-      }
-      const record = live.session.probe(t, 'model/decision-surface') as never
-      return <ExpositionView record={record} figure={FIG} />
-    } catch {
-      return null
+  const clusterer = kind === 'clusterer'
+  const oneD = kind === 'regressor' && (x.shape[1] ?? 1) === 1 && y !== undefined
+  const assignments = useProbe(live, t, clusterer ? 'model/assignments' : undefined)
+  const centres = useProbe(live, t, clusterer ? 'model/centres' : undefined)
+  const fit = useProbe(live, t, oneD ? 'model/predictions' : undefined)
+  const surface = useProbe(live, t, clusterer || oneD ? undefined : 'model/decision-surface')
+  const density = useProbe(live, t, clusterer && paths.includes('model/density') ? 'model/density' : undefined, {
+    resolution: 40,
+  })
+  const xs = useMemo(() => toFlat(x), [x])
+  const ys = useMemo(() => (y === undefined ? undefined : toFlat(y)), [y])
+  const d = x.shape[1] ?? 1
+  const n = x.shape[0] ?? 0
+  const rowX = useMemo(() => Array.from({ length: n }, (_, i) => xs[i * d] ?? 0), [xs, n, d])
+  const rowY = useMemo(
+    () => Array.from({ length: n }, (_, i) => (d > 1 ? (xs[i * d + 1] ?? 0) : (ys?.[i] ?? 0))),
+    [xs, ys, n, d],
+  )
+  const labels = assignments.value as number[] | undefined
+  const classes = kind === 'classifier' && ys !== undefined ? Array.from(ys) : undefined
+  const groups = labels ?? classes
+  const centreRows = centres.value as number[][] | undefined
+  const fitted = fit.value as number[] | undefined
+  const errors = [assignments, centres, fit, surface, density].flatMap((p) => (p.error === undefined ? [] : [p.error]))
+  const title = clusterer
+    ? `probe: assignments and centres at step ${t}`
+    : oneD
+      ? `probe: the fit at step ${t}`
+      : `probe: the rows at step ${t}`
+  const option = useMemo(() => {
+    const layers: Layer[] = [
+      points([{ x: rowX, y: rowY, ...(groups === undefined ? {} : { groups }), opacity: 0.7 }], { mode }),
+    ]
+    if (centreRows !== undefined)
+      layers.push(
+        points(
+          [
+            {
+              x: centreRows.map((c) => c[0] ?? 0),
+              y: centreRows.map((c) => c[1] ?? 0),
+              name: 'centres',
+              size: 16,
+              symbol: 'diamond',
+            },
+          ],
+          { mode, colourOffset: 9 },
+        ),
+      )
+    if (fitted !== undefined && d === 1) {
+      const order = rowX.map((_, i) => i).sort((a, b) => (rowX[a] ?? 0) - (rowX[b] ?? 0))
+      layers.push(
+        lines([{ x: order.map((i) => rowX[i] ?? 0), y: order.map((i) => fitted[i] ?? 0), name: 'fit' }], {
+          mode,
+          colourOffset: 1,
+        }),
+      )
     }
-  }, [live.session, live.version, t, mode, entry, x, y, paths])
+    return { ...cartesian(layers, { mode, figure: FIG, title }), animation: false }
+  }, [rowX, rowY, groups, centreRows, fitted, d, mode, title])
+  const showSurface = surface.value !== undefined
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap gap-4">
+        {showSurface ? (
+          <ExpositionView
+            record={surface.value as never}
+            figure={FIG}
+            points={rowsOf(xs, d)}
+            {...(groups === undefined ? {} : { labels: groups })}
+          />
+        ) : (
+          <Chart figure={FIG} option={option} />
+        )}
+        {density.value === undefined ? null : <ExpositionView record={density.value as never} figure={FIG} />}
+      </div>
+      {errors.length === 0 ? null : <Note>probe unavailable: {errors[0]}</Note>}
+    </div>
+  )
+}
+
+function rowsOf(flat: ArrayLike<number>, width: number): number[][] {
+  const out: number[][] = []
+  for (let i = 0; i + width <= flat.length; i += width)
+    out.push(Array.from({ length: width }, (_, j) => flat[i + j] ?? 0))
+  return out
 }

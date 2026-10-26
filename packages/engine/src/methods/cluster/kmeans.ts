@@ -81,6 +81,7 @@ export const kmeans: IterativeEstimator<KMeansHyper, LloydState, KMeansParams, K
       const centres = tensorSeries(run, 'solver/centres')
       const labels = tensorSeries(run, 'solver/labels')
       const objective = metricSeries(run, 'solver/inertia').values
+      if (labels.length === 0 || centres.length === 0) return undefined
       return clusteringSteps({
         method: 'kmeans',
         assignments: labels.map((e) => [...(e.values ?? [])]),

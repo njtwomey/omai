@@ -95,6 +95,7 @@ export const lassoPath: IterativeEstimator<LassoPathHyper, LassoPathState, Lasso
     projections: {
       regularisationPath: (run, data) => {
         const coefficients = tensorSeries(run, 'solver/coefficients').map((e) => [...(e.values ?? [])])
+        if (coefficients.length === 0) return undefined
         const d = coefficients[0]?.length ?? 0
         return regularisationPath({
           penalties: metricSeries(run, 'solver/alpha').values,
