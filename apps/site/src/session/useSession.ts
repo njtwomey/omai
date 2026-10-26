@@ -68,11 +68,11 @@ export function useSession<S, C extends Config>(
         return
       }
       if (last !== undefined) {
-        // Steps due at the target rate since the last frame, at least one, within the frame's time budget.
+        // Steps due at the target rate since the last frame (none until one is due), within the frame's time budget.
         const due = carry + ((now - last) * fps) / 1000
-        const steps = Math.max(1, Math.floor(due))
-        carry = Math.max(0, due - steps)
-        advance({ steps, ms: FRAME_MS, clock: () => performance.now() })
+        const steps = Math.floor(due)
+        carry = due - steps
+        if (steps > 0) advance({ steps, ms: FRAME_MS, clock: () => performance.now() })
       }
       last = now
       handle = requestAnimationFrame(tick)

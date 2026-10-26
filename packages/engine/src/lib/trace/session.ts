@@ -49,7 +49,7 @@ export interface Method<S, C extends Config = Config> {
   /** Hooks exported by name, so `On('name', options)` can cross to a worker. */
   readonly hooks?: Readonly<Record<string, (options?: Json) => Hook>>
   /** Bespoke records from the tape, for views the generic ones cannot give. */
-  readonly projections?: Readonly<Record<string, (run: Run, options?: Json) => Derived>>
+  readonly projections?: Readonly<Record<string, (run: Run, options?: Json) => Derived | undefined>>
 }
 
 /**
@@ -110,6 +110,11 @@ export interface SessionOptions<S, C extends Config> {
   readonly steps?: number
   /** Store a checkpoint every this many steps (default about a hundred over the run), for `stateAt` and `fork`. */
   readonly checkpointEvery?: number
+  /**
+   * Keep checkpoints even when `logs` is `off`, so `stateAt`, `fork` and `probe` work (default `true`); `false` is the
+   * raw algorithm with no tape at all.
+   */
+  readonly past?: boolean
   /** Start from a state at a step instead of `init` (forks). */
   readonly start?: { readonly state: S; readonly t: number }
 }
@@ -139,7 +144,7 @@ export interface Session<S, C extends Config = Config> {
   /** A derived path of the contract, computed on the state at a step. */
   probe(t: number, path: string, args?: Json): Derived
   /** A bespoke record of the method, from the tape so far. */
-  project(name: string, options?: Json): Derived
+  project(name: string, options?: Json): Derived | undefined
   /** The tape so far. */
   run(): Run
   /** The steps at which an event has fired so far. */
@@ -192,15 +197,19 @@ export function session<S, C extends Config>(method: Method<S, C>, options: Sess
     checkpointInterval: checkpointEvery,
   })
   const sched: Scheduler<S> = scheduler(resolved)
-  const rec: Recorder | undefined = resolved.off ? undefined : recorder()
+  // `off` keeps only checkpoints (no metrics, tensors, messages, frames, derived work or hooks) unless `past: false`.
+  const rec: Recorder | undefined = resolved.off && options.past === false ? undefined : recorder()
+  const policy = resolved.off
+    ? { ...resolved.policy, metrics: false, checkpoints: true, checkpointInterval: checkpointEvery }
+    : resolved.policy
   const startAt = options.start?.t ?? 0
-  const run: RunHandle = startRun(rec === undefined ? nullTracer : gated(rec, resolved, sched), {
+  const run: RunHandle = startRun(rec === undefined ? nullTracer : resolved.off ? rec : gated(rec, resolved, sched), {
     name: method.name,
     seed,
     config: config as Json,
     runId: startAt === 0 ? `${method.name}:${seed}` : `${method.name}:${seed}@${startAt}`,
     schema: contractSchema(contract),
-    policy: resolved.policy,
+    policy,
   })
   const raw = method.make(config, makeKeyOf)
   let stopped: RunStatus | undefined
@@ -251,7 +260,7 @@ export function session<S, C extends Config>(method: Method<S, C>, options: Sess
     const now = current()
     if (t === now.t) return now.state
     if (t > now.t || t < 0) throw new MdmlError('value', `${method.name}: step ${t} has not been reached`)
-    if (rec === undefined) throw new MdmlError('value', `${method.name}: an 'off' session keeps no past`)
+    if (rec === undefined) throw new MdmlError('value', `${method.name}: a session without a past keeps no checkpoints`)
     return seek(raw, rec.run(), t, { key: root })
   }
   const self: Session<S, C> = {
