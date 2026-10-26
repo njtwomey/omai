@@ -6,11 +6,11 @@
  */
 
 // TODO: SAG and SAGA solvers (optim has them); ordinal (ordinal.ts) and mixed models (mixed.ts).
-import { MdmlError } from '../../lib/base/index.ts'
-import type { DispersionFamily, Link, LinkName } from '../../lib/dists/families/index.ts'
-import type { Distribution } from '../../lib/dists/index.ts'
-import { families } from '../../lib/dists/index.ts'
-import { type CoefficientTable, coefficientTable, type Exposition } from '../../lib/exposition/index.ts'
+import { MdmlError } from '../base/index.ts'
+import type { DispersionFamily, Link, LinkName } from '../dists/families/index.ts'
+import type { Distribution } from '../dists/index.ts'
+import { families } from '../dists/index.ts'
+import { type CoefficientTable, coefficientTable, type Exposition } from '../exposition/index.ts'
 import {
   defineExplainedEstimator,
   type ExplainedEstimator,
@@ -19,9 +19,9 @@ import {
   type Fitted,
   featureNamesOf,
   type LearnData,
-} from '../../lib/learn/index.ts'
-import { bool, choice, dict, real, type Space } from '../../lib/space/index.ts'
-import { primalOf, type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
+} from '../learn/index.ts'
+import { bool, choice, dict, real, type Space } from '../space/index.ts'
+import { primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Design, designOf, designPredictor, linearPredictor, vectorTensor } from './_design.ts'
 import { glmCovariance, waldTable } from './inference.ts'
 import { chooseSolver, type GlmProblem, type GlmSolution, type LinearSolver, solveGlm } from './solvers.ts'

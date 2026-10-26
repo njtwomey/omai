@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { diabetes } from '../../lib/datasets/index.ts'
-import { standardScaler } from '../../lib/learn/preprocessing/index.ts'
-import { toFlat } from '../../lib/tensor/index.ts'
+import { diabetes } from '../datasets/index.ts'
+import { standardScaler } from '../learn/preprocessing/index.ts'
+import { toFlat } from '../tensor/index.ts'
 import { linearModel } from './model.ts'
 
 describe('linearModel', () => {

@@ -5,12 +5,12 @@
  * information criteria.
  */
 
-import { MdmlError } from '../../lib/base/index.ts'
-import { type CoefficientTable, coefficientTable, type Explained } from '../../lib/exposition/index.ts'
-import { featureNamesOf, type LearnData } from '../../lib/learn/index.ts'
-import { inv, pinv } from '../../lib/numerics/linalg/index.ts'
-import { fdtrc, ndtr, ndtri, stdtr, stdtrit } from '../../lib/numerics/special/index.ts'
-import { primalOf, toFlat } from '../../lib/tensor/index.ts'
+import { MdmlError } from '../base/index.ts'
+import { type CoefficientTable, coefficientTable, type Explained } from '../exposition/index.ts'
+import { featureNamesOf, type LearnData } from '../learn/index.ts'
+import { inv, pinv } from '../numerics/linalg/index.ts'
+import { fdtrc, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
+import { primalOf, toFlat } from '../tensor/index.ts'
 import { type Design, designOf, matrixTensor } from './_design.ts'
 import { leastSquaresSolve } from './solvers.ts'
 
