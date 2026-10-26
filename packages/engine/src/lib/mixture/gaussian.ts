@@ -198,6 +198,7 @@ const emSchema = channels({
     responsibilities: { role: 'state', description: 'the posterior of each component for each row', shape: ['n', 'k'] },
     means: { role: 'param', description: 'the component means', shape: ['k', 'd'] },
     weights: { role: 'param', description: 'the mixing weights', shape: ['k'] },
+    covariances: { role: 'param', description: 'the component covariances, row-major', shape: ['k', 'd', 'd'] },
   },
 })
 
@@ -261,6 +262,7 @@ export function gaussianEmAlgorithm(
         responsibilities: { role: 'state', value: s.resp.flat(), shape: [m.n, k] },
         means: { role: 'param', value: s.means.flat(), shape: [k, m.d] },
         weights: { role: 'param', value: s.weights, shape: [k] },
+        covariances: { role: 'param', value: s.covariances.flat(2), shape: [k, m.d, m.d] },
       },
     }),
     serialise: (s) => stateToJson(s),

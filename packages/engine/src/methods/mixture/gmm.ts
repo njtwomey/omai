@@ -121,12 +121,14 @@ export const gmm: IterativeEstimator<GmmHyper, GaussianEmState, GmmParams, GmmVe
     'solver/responsibilities': Log({ detail: 'full' }),
     'solver/means': Log({ detail: 'full' }),
     'solver/weights': Log({ detail: 'full' }),
+    'solver/covariances': Log({ detail: 'full' }),
   },
   projections: {
     mixtureSteps: (run) => {
       const resp = tensorSeries(run, 'solver/responsibilities')
       const means = tensorSeries(run, 'solver/means')
       const weights = tensorSeries(run, 'solver/weights')
+      const covs = tensorSeries(run, 'solver/covariances')
       const objective = metricSeries(run, 'solver/logLikelihood').values
       const t = Math.min(means.length, weights.length, objective.length)
       const matrix = (v: readonly number[], rows: number, cols: number): number[][] =>
@@ -135,6 +137,14 @@ export const gmm: IterativeEstimator<GmmHyper, GaussianEmState, GmmParams, GmmVe
         family: 'gaussian',
         weights: weights.slice(0, t).map((e) => [...(e.values ?? [])]),
         means: means.slice(0, t).map((e) => matrix(e.values ?? [], e.shape[0] ?? 0, e.shape[1] ?? 1)),
+        // covariances[t][k]: component k's d by d covariance, flattened row-major, as the record expects.
+        ...(covs.length >= t
+          ? {
+              covariances: covs
+                .slice(0, t)
+                .map((e) => matrix(e.values ?? [], e.shape[0] ?? 0, (e.shape[1] ?? 1) * (e.shape[2] ?? 1))),
+            }
+          : {}),
         responsibilities: resp.slice(0, t).map((e) => matrix(e.values ?? [], e.shape[0] ?? 0, e.shape[1] ?? 1)),
         objective: objective.slice(0, t),
       })
