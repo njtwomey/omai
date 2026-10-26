@@ -1,5 +1,6 @@
 import type { Json } from 'mdml-engine/base'
 import { datasetCollections } from 'mdml-engine/datasets'
+import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
 import { key } from 'mdml-engine/random'
 import { type DictSpace, defaults } from 'mdml-engine/space'
 import { type Tensor, toFlat } from 'mdml-engine/tensor'
@@ -16,6 +17,7 @@ import {
   selectEntry,
   useColourMode,
 } from 'mdml-render/react'
+import { categoricalColour } from 'mdml-render/theme'
 import { type ReactNode, useMemo, useState } from 'react'
 import { logsOf, SessionControls, type SessionSettings } from '../session/SessionControls.tsx'
 import { TapeView } from '../session/TapeView.tsx'
@@ -135,6 +137,8 @@ function ProbePanel(props: {
   const oneD = kind === 'regressor' && (x.shape[1] ?? 1) === 1 && y !== undefined
   const assignments = useProbe(live, t, clusterer ? 'model/assignments' : undefined)
   const centres = useProbe(live, t, clusterer ? 'model/centres' : undefined)
+  // A mixture's parameters carry covariances: drawn as each component's 1 and 2 sigma ellipses.
+  const params = useProbe(live, t, clusterer ? 'model/params' : undefined)
   const fit = useProbe(live, t, oneD ? 'model/predictions' : undefined)
   const surface = useProbe(live, t, clusterer || oneD ? undefined : 'model/decision-surface')
   const density = useProbe(live, t, clusterer && paths.includes('model/density') ? 'model/density' : undefined, {
@@ -153,10 +157,13 @@ function ProbePanel(props: {
   const classes = kind === 'classifier' && ys !== undefined ? Array.from(ys) : undefined
   const groups = labels ?? classes
   const centreRows = centres.value as number[][] | undefined
+  const covs = (params.value as { readonly covariances?: number[][][] } | undefined)?.covariances
   const fitted = fit.value as number[] | undefined
   const errors = [assignments, centres, fit, surface, density].flatMap((p) => (p.error === undefined ? [] : [p.error]))
   const title = clusterer
-    ? `probe: assignments and centres at step ${t}`
+    ? covs === undefined
+      ? `probe: assignments and centres at step ${t}`
+      : `probe: components at step ${t} (1σ solid, 2σ dashed)`
     : oneD
       ? `probe: the fit at step ${t}`
       : `probe: the rows at step ${t}`
@@ -179,6 +186,36 @@ function ProbePanel(props: {
           { mode, colourOffset: 9 },
         ),
       )
+    if (centreRows !== undefined && covs !== undefined && d >= 2) {
+      centreRows.forEach((m, k) => {
+        const c = covs[k]
+        if (c === undefined) return
+        const sigma = [
+          [c[0]?.[0] ?? 0, c[0]?.[1] ?? 0],
+          [c[1]?.[0] ?? 0, c[1]?.[1] ?? 0],
+        ]
+        for (const nStd of [1, 2]) {
+          const flat = toFlat(covarianceEllipse([m[0] ?? 0, m[1] ?? 0], sigma, { nStd, points: 72 }).points)
+          const ex = Array.from({ length: 73 }, (_, i) => flat[(2 * i) % flat.length] ?? 0)
+          const ey = Array.from({ length: 73 }, (_, i) => flat[(2 * i + 1) % flat.length] ?? 0)
+          layers.push(
+            lines(
+              [
+                {
+                  x: ex,
+                  y: ey,
+                  name: `__ring${k}-${nStd}`,
+                  colour: categoricalColour(k),
+                  width: nStd === 1 ? 2 : 1,
+                  dash: nStd === 1 ? 'solid' : 'dashed',
+                },
+              ],
+              { mode },
+            ),
+          )
+        }
+      })
+    }
     if (fitted !== undefined && d === 1) {
       const order = rowX.map((_, i) => i).sort((a, b) => (rowX[a] ?? 0) - (rowX[b] ?? 0))
       layers.push(
@@ -189,7 +226,7 @@ function ProbePanel(props: {
       )
     }
     return { ...cartesian(layers, { mode, figure: FIG, title }), animation: false }
-  }, [rowX, rowY, groups, centreRows, fitted, d, mode, title])
+  }, [rowX, rowY, groups, centreRows, covs, fitted, d, mode, title])
   const showSurface = surface.value !== undefined
   return (
     <div className="flex flex-col gap-1">
