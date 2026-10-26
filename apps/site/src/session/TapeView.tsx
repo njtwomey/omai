@@ -242,6 +242,21 @@ export function TapeView<S, C extends Config>(props: TapeViewProps<S, C>): React
             </div>
           )
         })}
+        {Object.keys(s.method.projections ?? {}).map((name) => {
+          // A projection of the tape so far; it may have nothing to project yet.
+          let record: unknown
+          try {
+            record = s.project(name)
+          } catch {
+            return null
+          }
+          return isExposition(record) ? (
+            <div key={name} className="flex flex-col gap-1">
+              <div className="text-sm opacity-70">{name}, from the tape so far</div>
+              <ExpositionView record={record} figure={SMALL} />
+            </div>
+          ) : null
+        })}
         {props.children}
       </div>
     </div>

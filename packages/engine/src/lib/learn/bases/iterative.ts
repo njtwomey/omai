@@ -59,7 +59,7 @@ export interface IterativeParticular<H extends object, S, P extends Json, V exte
   /** Structural records from the final state (a tree, a coefficient table). */
   records?(state: S, data: LearnData, hyper: H): readonly Exposition[]
   /** Step-like records from the tape, given the final state too. */
-  readonly projections?: Readonly<Record<string, (run: Run, state: S, data: LearnData, hyper: H) => Exposition>>
+  readonly projections?: Readonly<Record<string, (run: Run, data: LearnData, hyper: H) => Exposition>>
   /** What `fit` keeps by default (default nothing: the raw algorithm). */
   readonly logs?: Subscription
 }
@@ -195,6 +195,14 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
       },
       contract: (c, key) => contractOf(data, hyperOf(c), key),
       ...(p.logs === undefined ? {} : { defaults: p.logs }),
+      // The same projections a fit returns, available on a live session's tape so far.
+      ...(p.projections === undefined
+        ? {}
+        : {
+            projections: Object.fromEntries(
+              Object.entries(p.projections).map(([name, f]) => [name, (run: Run) => f(run, data, hyper)]),
+            ),
+          }),
     })
   const steps = p.maxSteps?.(hyper) ?? 10_000
   const checkpointEvery = Math.max(1, Math.floor(steps / 100))
@@ -221,7 +229,7 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
     const fitted = build(p.params(state, data, hyper))
     const records: Exposition[] = [
       ...(p.records?.(state, data, hyper) ?? []),
-      ...Object.values(p.projections ?? {}).map((f) => f(run, state, data, hyper)),
+      ...Object.values(p.projections ?? {}).map((f) => f(run, data, hyper)),
     ]
     const exposition = options.explain === false ? records : withInputRows(records, data, fitted.classes, fitted.kind)
     return { ...fitted, exposition, run }

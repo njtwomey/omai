@@ -93,7 +93,7 @@ export const lassoPath: IterativeEstimator<LassoPathHyper, LassoPathState, Lasso
     verbs: (p) => linearRegressorVerbs(p, 'lassoPath'),
     logs: { 'solver/alpha': Log(), 'solver/gap': Log(), 'solver/coefficients': Log({ detail: 'full' }) },
     projections: {
-      regularisationPath: (run, _state, data) => {
+      regularisationPath: (run, data) => {
         const coefficients = tensorSeries(run, 'solver/coefficients').map((e) => [...(e.values ?? [])])
         const d = coefficients[0]?.length ?? 0
         return regularisationPath({
