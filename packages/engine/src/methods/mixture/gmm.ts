@@ -24,7 +24,12 @@ export interface GmmHyper {
   readonly nComponents: number
   /** How component covariances are shared and shaped. */
   readonly covarianceType: CovarianceType
-  /** Starts from fresh k-means initialisations; the highest log likelihood wins. */
+  /**
+   * Where EM starts: from a converged k-means partition (scikit-learn's default, so EM has little left to do on
+   * separated data) or from random responsibilities (EM does the work; watchable).
+   */
+  readonly init: 'kmeans' | 'random'
+  /** Starts from fresh initialisations; the highest log likelihood wins. */
   readonly nInit: number
   readonly maxIter: number
   /** The mean log-likelihood change that stops EM. */
@@ -64,7 +69,7 @@ export const gmm: IterativeEstimator<GmmHyper, GaussianEmState, GmmParams, GmmVe
 >({
   name: 'mixture/gmm',
   kind: 'clusterer',
-  defaults: { nComponents: 3, covarianceType: 'full', nInit: 1, maxIter: 100, tol: 1e-3 },
+  defaults: { nComponents: 3, covarianceType: 'full', init: 'kmeans', nInit: 1, maxIter: 100, tol: 1e-3 },
   hyperSpace: (h) =>
     dict({
       nComponents: int(1, 8, { default: h.nComponents, label: 'components' }),
@@ -72,6 +77,7 @@ export const gmm: IterativeEstimator<GmmHyper, GaussianEmState, GmmParams, GmmVe
         default: h.covarianceType,
         label: 'covariance type',
       }),
+      init: choice(['kmeans', 'random'] as const, { default: h.init, label: 'start from' }),
     }),
   algorithm: (data, h, key) =>
     gaussianEmAlgorithm(data.x, initialMixture(data.x, h, key), { covarianceType: h.covarianceType, tol: h.tol }),

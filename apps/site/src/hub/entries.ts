@@ -29,7 +29,8 @@ export const ENTRIES: readonly HubEntry[] = [
     title: 'Gaussian mixture',
     summary:
       'Expectation-maximisation: responsibilities of each component for each row, then new weights, means and covariances.',
-    estimator: gmm,
+    // Random responsibilities to start, so EM is seen doing the work (k-means would hand it the answer).
+    estimator: gmm.with({ init: 'random' }),
     datasets: ['clustering2d'],
   },
   {
