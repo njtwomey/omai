@@ -3002,7 +3002,7 @@ oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans`
 ||||||| 9c6bb451
 ### 4.41 `linear/`: linear and generalised linear models (statsmodels, scikit-learn linear_model)
 
-The algorithms behind linear models, moved from the parked methods layer. `_design.ts` (private) builds the design
+The algorithms behind linear models, moved from the parked methods layer. `design.ts` (private) builds the design
 matrix from `LearnData` (intercept, centring, weights); `solvers.ts` holds least squares, ridge by SVD, IRLS for GLMs
 and coordinate descent for the lasso and elastic net; `paths.ts` the alpha grid and the regularisation path over it
 (with cross-validation); `model.ts` the linear model's parameters and prediction (`linearModel`); `inference.ts`

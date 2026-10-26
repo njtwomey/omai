@@ -3,7 +3,7 @@ import { key } from 'mdml-engine/random'
 import { type DictSpace, defaults } from 'mdml-engine/space'
 import { type Tensor, toFlat } from 'mdml-engine/tensor'
 import { contractOf } from 'mdml-engine/trace'
-import { cartesian, points } from 'mdml-render/charts'
+import { cartesian, lines, points } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import {
   Chart,
@@ -79,7 +79,7 @@ export function HubPage(props: { readonly entry: HubEntry }): ReactNode {
       )}
       <SessionControls paths={paths} settings={settings} onChange={setSettings} />
       <TapeView live={live} at={at} onScrub={setAt}>
-        <ProbePanel entry={entry} live={live} at={at} x={data.x} />
+        <ProbePanel entry={entry} live={live} at={at} x={data.x} {...(data.y === undefined ? {} : { y: data.y })} />
       </TapeView>
     </div>
   )
@@ -93,8 +93,9 @@ function ProbePanel(props: {
   readonly live: LiveSession<any, any>
   readonly at: number | null
   readonly x: Tensor
+  readonly y?: Tensor
 }): ReactNode {
-  const { entry, live, at, x } = props
+  const { entry, live, at, x, y } = props
   const mode = useColourMode()
   const t = at === null ? live.session.t : Math.min(at, live.session.t)
   // biome-ignore lint/correctness/useExhaustiveDependencies: probes re-run as the tape grows
@@ -123,10 +124,30 @@ function ProbePanel(props: {
           />
         )
       }
+      if (entry.estimator.kind === 'regressor' && (x.shape[1] ?? 1) === 1 && y !== undefined) {
+        const fit = live.session.probe(t, 'model/predictions') as number[]
+        const xs = toFlat(x)
+        const order = xs.map((_, i) => i).sort((a, b) => (xs[a] ?? 0) - (xs[b] ?? 0))
+        return (
+          <Chart
+            figure={FIG}
+            option={cartesian(
+              [
+                points([{ x: xs, y: toFlat(y), opacity: 0.7 }], { mode }),
+                lines([{ x: order.map((i) => xs[i] ?? 0), y: order.map((i) => fit[i] ?? 0), name: 'fit' }], {
+                  mode,
+                  colourOffset: 1,
+                }),
+              ],
+              { mode, figure: FIG, title: `probe: the fit at step ${t}` },
+            )}
+          />
+        )
+      }
       const record = live.session.probe(t, 'model/decision-surface') as never
       return <ExpositionView record={record} figure={FIG} />
     } catch {
       return null
     }
-  }, [live.session, live.version, t, mode, entry, x])
+  }, [live.session, live.version, t, mode, entry, x, y])
 }

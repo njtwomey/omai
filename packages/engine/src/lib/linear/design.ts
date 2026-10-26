@@ -1,4 +1,7 @@
-// The design shared by the linear models: features, targets and weights read once, weighted centring, prediction.
+/**
+ * The design shared by the linear models: features, targets and weights read once, weighted centring, the intercept
+ * that goes with centred coefficients, linear prediction, and the log grid of penalties.
+ */
 
 import { type LearnData, type MatrixView, matrixView, sampleWeightsOf, targetVector } from '../learn/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'

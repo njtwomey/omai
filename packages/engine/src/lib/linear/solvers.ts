@@ -22,8 +22,8 @@ import {
   toFlat,
   type Value,
 } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
-import { centre, type Design, interceptFor, matrixTensor, vectorTensor } from './_design.ts'
+import { type Algorithm, channels, type RunOptions, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
+import { centre, type Design, interceptFor, matrixTensor, vectorTensor } from './design.ts'
 
 /** The solvers of the penalised GLM core. */
 export type LinearSolver = 'auto' | 'cholesky' | 'qr' | 'svd' | 'irls' | 'coordinate-descent' | 'lbfgs' | 'owlqn'
@@ -385,6 +385,8 @@ export function irlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}): 
       metrics: { objective: state.objective, change: state.change, halvings: state.halvings },
       tensors: { coef: { role: 'param', value: state.coef } },
     }),
+    serialise: (state) => stateToJson(state),
+    deserialise: (json) => stateFromJson(json) as IrlsState,
   }
 }
 

@@ -16,7 +16,7 @@ import { featureNamesOf, type LearnData, takeRows } from '../learn/index.ts'
 import { kFold, type Splitter, splitIndices } from '../learn/model-selection/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { key as makeKey } from '../random/index.ts'
-import { centre, type Design, designOf, logGrid } from './_design.ts'
+import { centre, type Design, designOf, logGrid } from './design.ts'
 import { coordinateDescentSolve, svdRidge } from './solvers.ts'
 
 /** Options of {@link enetPath}. */

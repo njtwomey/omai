@@ -22,7 +22,7 @@ import {
 } from '../learn/index.ts'
 import { bool, choice, dict, real, type Space } from '../space/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Design, designOf, designPredictor, linearPredictor, vectorTensor } from './_design.ts'
+import { type Design, designOf, designPredictor, linearPredictor, vectorTensor } from './design.ts'
 import { glmCovariance, waldTable } from './inference.ts'
 import { chooseSolver, type GlmProblem, type GlmSolution, type LinearSolver, solveGlm } from './solvers.ts'
 
