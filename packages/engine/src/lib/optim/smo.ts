@@ -6,7 +6,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import { type Algorithm, channels, type RunOptions, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
 
 /**
@@ -299,6 +299,8 @@ export function smoAlgorithm(problem: SmoProblem, options: SmoOptions = {}): Alg
       return { ...s, alpha: a, grad, violation: pick.violation, iterations: s.iterations + 1, counter, pair: [i, j] }
     },
     done: (s) => (s.finished ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as SmoState,
     observe: (s) => {
       let objective = 0
       for (let i = 0; i < n; i++) objective += 0.5 * (s.alpha[i] ?? 0) * ((s.grad[i] ?? 0) + (p[i] ?? 0))

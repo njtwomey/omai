@@ -682,6 +682,17 @@ oracle: jax and torch for derivative values; finite differences in property test
   tensor summaries, with a generated schema; timing excluded unless a clock is injected), `traceCall` (step records
   for direct methods).
 - `checkpoint.ts`: `checkpointEvery` (a policy storing checkpoints every n steps), `resume`, `seek`.
+- `contract.ts`: the log contract (`docs/methods.md`): sources by path (`scalar`, `tensor`, `message`, `frame`,
+  `derived`, `event`), subscriptions (`Log`, `On`, `off`/`defaults`/`all`), path patterns, `resolve` (contract and
+  subscription to a policy, per-path schedules and hooks), `contractSchema`.
+- `logging.ts`: the scheduler (every n steps, log-spaced, or on the nth firing of an event), the log context
+  algorithms write to (`log`, `wants`, `emit`, `taps`), `defaultLogContext` for runs outside a session, and `gated`
+  (the tracer that renames native channels to paths and passes only what is subscribed and due).
+- `session.ts`: `Method` and `defineMethod` (config space, `make`, contract, defaults, named hooks, projections),
+  `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`, `stepsOf`) and `session` with its modes (eager,
+  live, eager to a point).
+- `serialise.ts`: `stateToJson` and `stateFromJson`, generic checkpoint serialisation of states made of tensors, typed
+  arrays, keys and plain trees.
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
 - `query.ts`: `metricSeries`, `tensorSeries`, `messages`, `episodes`, `frames`, `runTree`, `summary`, `diffRuns`.
 

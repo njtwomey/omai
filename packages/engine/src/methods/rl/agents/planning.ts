@@ -43,6 +43,7 @@ import {
   runAlgorithm,
   type StepContext,
   startRun,
+  stepContext,
 } from '../../../lib/trace/index.ts'
 import { gradientStep, rowsTensor } from './_common.ts'
 
@@ -220,7 +221,7 @@ export function sweepingPlannerAgent<S, O, A>(
   const toState = options.toState ?? identity<O, S>
   const mdp = mdpFromEnv(env, gamma)
   const run = startRun(nullTracer, { name: 'sweep', seed: null, config: {} })
-  const ctx = (t: number): StepContext => ({ t, key: SWEEP_KEY, run })
+  const ctx = (t: number): StepContext => stepContext(t, SWEEP_KEY, run)
   const greedyOf = (V: readonly number[]): number[] => greedyPolicy(qFromV(mdp, V, gamma))
   const vi = valueIterationAlgorithm(mdp, { gamma })
   const pi = policyIterationAlgorithm(mdp, { gamma })

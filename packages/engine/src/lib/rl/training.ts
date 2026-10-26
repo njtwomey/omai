@@ -15,6 +15,9 @@ import {
   runAlgorithm,
   type StepContext,
   startRun,
+  stateFromJson,
+  stateToJson,
+  stepContext,
 } from '../trace/index.ts'
 import { type Agent, greedyPolicyOf } from './agent.ts'
 import { type Env, resetAfter } from './env.ts'
@@ -144,6 +147,7 @@ function trainStep<G, S, O, A>(
     }
   } else {
     ctx.run.episode(s.episode, ret, s.t + 1, r.terminated)
+    ctx.emit('rl/episode/end', { episode: s.episode, return: ret, length: s.t + 1, terminated: r.terminated })
     const episode = s.episode + 1
     let evaluations = s.evaluations
     if (options.evalEvery !== undefined && episode % options.evalEvery === 0) {
@@ -220,6 +224,9 @@ export function trainingAlgorithm<G, S, O, A>(
     init: (k) => initialState(env, agent, k, options.checkpoints ?? true),
     step: (s, ctx) => trainStep(env, agent, options, s, ctx),
     done: (s) => (options.episodes !== undefined && s.episode >= options.episodes ? 'completed' : undefined),
+    // Checkpoints drop the in-state snapshot list: a seekable tape makes it redundant.
+    serialise: (s) => stateToJson({ ...s, checkpoints: [] }),
+    deserialise: (j) => stateFromJson(j) as TrainState<G, S, O>,
     observe: (s) => ({ metrics: { return: s.episodeReturn }, frame: env.render(s.envState) as unknown as Json }),
   }
 }
@@ -333,7 +340,7 @@ export function replayEpisode<G, S, O, A>(
   // Evaluations never change the agent or the environment, so the replay skips them.
   const quiet: TrainOptions = { checkpoints: false }
   const step = (state: TrainState<G, S, O>): TrainState<G, S, O> =>
-    trainStep(env, agent, quiet, state, { t: state.totalSteps, key: foldIn(stepsKey, state.totalSteps), run })
+    trainStep(env, agent, quiet, state, stepContext(state.totalSteps, foldIn(stepsKey, state.totalSteps), run))
   while (s.totalSteps < start) s = step(s)
   const observations: O[] = [s.observation]
   const states: S[] = [s.envState]

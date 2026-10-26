@@ -4,7 +4,7 @@ import { categorical, dirichlet, inverseGamma, normal } from '../../dists/index.
 import { lgamma } from '../../numerics/special/index.ts'
 import { key } from '../../random/index.ts'
 import { item, mul, sqrt, stack, type Tensor, take, tensor, toFlat, type Value } from '../../tensor/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import { nullTracer, runAlgorithm, startRun, stepContext } from '../../trace/index.ts'
 import { type Model, markov, observe, param, plate, sample } from '../primitives.ts'
 import { chainInference } from './chain.ts'
 import { em, emAlgorithm } from './em.ts'
@@ -229,7 +229,7 @@ describe('discrete chains and EM', () => {
     const alg = emAlgorithm(model, undefined, { accelerate: false })
     let s = alg.init(key(0))
     for (let i = 0; i < 20; i++) {
-      s = alg.step(s, { t: i, key: key(i), run: undefined as never })
+      s = alg.step(s, stepContext(i, key(i), startRun(nullTracer, { name: 'em', seed: 0, config: {} })))
       objectives.push(s.objective)
     }
     for (let i = 1; i < objectives.length; i++)

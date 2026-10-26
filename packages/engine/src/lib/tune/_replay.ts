@@ -5,7 +5,7 @@
 // study needs no sampler state). When the optimiser stops (it converged), it restarts from a new key. Not re-exported.
 import { foldIn, type Key } from '../random/index.ts'
 import { asTensor, toFlat, type Value } from '../tensor/index.ts'
-import { type Algorithm, nullTracer, startRun } from '../trace/index.ts'
+import { type Algorithm, nullTracer, startRun, stepContext } from '../trace/index.ts'
 
 /** A function of a flat vector, as the optimisers take it (a parameter tree; here always a vector). */
 type Probe = (x: unknown) => Value
@@ -52,7 +52,7 @@ export function replayAsk<S>(
       let stalled = 0
       for (let t = 0; algorithm.done?.(state, t) === undefined; t++) {
         const at = used
-        state = algorithm.step(state, { t, key: foldIn(steps, t), run })
+        state = algorithm.step(state, stepContext(t, foldIn(steps, t), run))
         stalled = used === at ? stalled + 1 : 0
         // Steps that evaluate nothing cannot ask for anything: give up rather than loop.
         if (stalled > 1000) return undefined

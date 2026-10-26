@@ -30,7 +30,7 @@ import { type Algorithm, type RunOptions, type RunResult, runAlgorithm, type Ste
  * ```
  */
 export function subRun<S>(
-  ctx: StepContext,
+  ctx: Pick<StepContext, 't' | 'key' | 'run'>,
   algorithm: Algorithm<S>,
   options: Pick<RunOptions, 'maxSteps' | 'policy' | 'runId'> & { readonly index?: number },
 ): RunResult<S> {

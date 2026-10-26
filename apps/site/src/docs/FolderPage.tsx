@@ -43,8 +43,14 @@ export function FolderPage(props: {
             {folder.folders.map((p) => {
               const sub = docs.folder(p)
               return (
-                <li key={p} className="rounded border border-line p-3">
-                  <Link to={docsPath(p)} className="font-mono font-medium text-accent">
+                <li
+                  key={p}
+                  className="group relative rounded-lg border border-line bg-bg p-3 transition-colors hover:border-muted"
+                >
+                  <Link
+                    to={docsPath(p)}
+                    className="font-mono font-medium text-accent after:absolute after:inset-0 after:content-['']"
+                  >
                     {baseName(p)}/
                   </Link>
                   <span className="ml-2 text-xs text-muted">{count(docs, p)} files</span>
@@ -60,8 +66,14 @@ export function FolderPage(props: {
           <h2 className="mb-2 text-lg font-semibold">Files</h2>
           <ul className="grid gap-2 sm:grid-cols-2">
             {folder.files.map((f) => (
-              <li key={f.path} className="rounded border border-line p-3">
-                <Link to={docsPath(f.path)} className="font-mono font-medium text-accent">
+              <li
+                key={f.path}
+                className="group relative rounded-lg border border-line bg-bg p-3 transition-colors hover:border-muted"
+              >
+                <Link
+                  to={docsPath(f.path)}
+                  className="font-mono font-medium text-accent after:absolute after:inset-0 after:content-['']"
+                >
                   {baseName(f.path)}
                 </Link>
                 <span className="ml-2 text-xs text-muted">{f.symbols.length} exports</span>
@@ -70,7 +82,7 @@ export function FolderPage(props: {
                     <DocInline text={f.summary} docs={docs} near={f.module} />
                   </p>
                 )}
-                <p className="mt-1 line-clamp-3 font-mono text-xs">
+                <p className="relative z-10 mt-1 line-clamp-3 font-mono text-xs">
                   {f.symbols.map((s, i) => (
                     <span key={s.name}>
                       {i > 0 ? ' · ' : ''}

@@ -9,17 +9,39 @@ import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Value } from '../tensor/index.ts'
 import type { RunStatus, TensorRole } from './events.ts'
+import { defaultLogContext, type LogContext } from './logging.ts'
 import { shouldRecord, type TracePolicy } from './policy.ts'
 import type { TraceSchema } from './schema.ts'
 import { nullTracer, type RunHandle, startRun, type Tracer } from './tracer.ts'
 
 /** What an algorithm sees at each step. */
-export interface StepContext {
+export interface StepContext extends Pick<LogContext, 'log' | 'wants' | 'emit' | 'taps'> {
   readonly t: number
   /** A key derived from the run's key and `t`: the same at step `t` however the run was paused or resumed. */
   readonly key: Key
   /** The run, for emitting extra events or starting child runs of inner algorithms. */
   readonly run: RunHandle
+}
+
+/**
+ * The context of a step: the step, its key, the run, and the log context (the run's own by default, a session's
+ * when it drives the algorithm).
+ *
+ * @param t - The step.
+ * @param key - The step's key.
+ * @param run - The run.
+ * @param logs - The log context (default the run's).
+ * @returns The context.
+ * @example
+ * ```ts
+ * import { nullTracer, startRun, stepContext } from 'mdml-engine/trace'
+ * import { key } from 'mdml-engine/random'
+ * stepContext(3, key(0), startRun(nullTracer, { name: 'x', seed: 0, config: {} })).t // => 3
+ * ```
+ */
+export function stepContext(t: number, key: Key, run: RunHandle, logs?: LogContext): StepContext {
+  const l = logs ?? defaultLogContext(run, t)
+  return { t, key, run, log: l.log, wants: l.wants, emit: l.emit, taps: l.taps }
 }
 
 /** What an algorithm reports about a state when it is observed. */
@@ -179,7 +201,7 @@ export function runAlgorithm<S>(algorithm: Algorithm<S>, options: RunOptions): R
       status = stop
       break
     }
-    state = algorithm.step(state, { t, key: foldIn(stepsKey, t), run })
+    state = algorithm.step(state, stepContext(t, foldIn(stepsKey, t), run))
     t += 1
     if (run.due(t)) observe()
     checkpoint(algorithm, run, state, t)
@@ -220,7 +242,7 @@ export function* iterate<S>(
       return
     }
     yield { t, state }
-    state = algorithm.step(state, { t, key: foldIn(stepsKey, t), run })
+    state = algorithm.step(state, stepContext(t, foldIn(stepsKey, t), run))
     t += 1
   }
 }
@@ -243,6 +265,37 @@ export interface SliceBudget {
   readonly steps?: number
   readonly ms?: number
   readonly clock?: () => number
+}
+
+/**
+ * The slice a run starts from: the initial state, observed and checkpointed as `runAlgorithm` would, without taking a
+ * step (so a session can stand at step 0 until asked to advance).
+ *
+ * @param algorithm - The algorithm.
+ * @param options - Seed or key, and a run handle to record into.
+ * @returns The slice at step 0.
+ * @example
+ * ```ts
+ * import { initialSlice, runFor, type Algorithm } from 'mdml-engine/trace'
+ * const count: Algorithm<number> = { name: 'count', config: {}, init: () => 0, step: (s) => s + 1 }
+ * const first = initialSlice(count, {})
+ * [first.t, runFor(count, { steps: 2 }, { maxSteps: 10, from: first }).state] // => [0, 2]
+ * ```
+ */
+export function initialSlice<S>(
+  algorithm: Algorithm<S>,
+  options: Pick<RunOptions, 'seed' | 'key'> & { readonly run?: RunHandle },
+): Slice<S> {
+  const root = rootKey(options)
+  const run = options.run ?? startRun(nullTracer, { name: algorithm.name, seed: null, config: algorithm.config })
+  const state = algorithm.init(foldIn(root, 0))
+  let observedAt = -1
+  if (run.enabled && run.due(0)) {
+    record(algorithm, run, state, 0)
+    observedAt = 0
+  }
+  checkpoint(algorithm, run, state, 0)
+  return { state, t: 0, observedAt }
 }
 
 /**
@@ -303,7 +356,7 @@ export function runFor<S>(
   for (;;) {
     status = t >= options.maxSteps ? (algorithm.done?.(state, t) ?? 'completed') : algorithm.done?.(state, t)
     if (status !== undefined || taken >= steps || (taken > 0 && outOfTime())) break
-    state = algorithm.step(state, { t, key: foldIn(stepsKey, t), run })
+    state = algorithm.step(state, stepContext(t, foldIn(stepsKey, t), run))
     t += 1
     taken += 1
     if (run.due(t)) observe()
