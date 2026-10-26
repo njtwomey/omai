@@ -2983,6 +2983,16 @@ Left in 4.39 after round two (one line each):
 - TODO: thin methods for causal, regression and ranking fairness (the core is built).
 - TODO: hub entries for the round-two mitigations, and the parked gallery-to-hub move (5.20).
 
+### 4.40 `cluster/`: clustering algorithms (scikit-learn cluster)
+
+Clustering as traced `Algorithm`s, moved out of the parked methods layer. `kmeans.ts` holds Lloyd's algorithm and
+mini-batch k-means, the initial centres (k-means++, random rows or given) and the nearest-centre assignment. A state
+keeps no past: `observe` exposes the metrics `inertia` and `moved` and the `state` tensors `centres` `[k, d]` and
+`labels` `[n]`, declared in the schema, and the tape records the history. The other clusterers (bisecting, kernel,
+density, hierarchical, spectral, ...) are still parked and arrive here as they are needed.
+
+oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path)
+
 ## 5. Methods, exposition records, views and the hub
 
 > **Status, 2026-10-26.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
