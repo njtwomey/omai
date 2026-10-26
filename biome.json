@@ -12,6 +12,7 @@
       "!**/generated",
       "!**/*.data.ts",
       "!**/fixtures",
+      "!_parked",
       "!docs/port-map.json",
       "!pnpm-lock.yaml",
       "!packages/*/src/**/index.ts"

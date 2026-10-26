@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cartPole, frozenLake } from '../../methods/rl/index.ts'
+import { cartPole, frozenLake } from '../environments/index.ts'
 import { key } from '../random/index.ts'
 import { episodes, frames, recorder, resume, runAlgorithm, tracePolicy } from '../trace/index.ts'
 import { make } from './gym.ts'

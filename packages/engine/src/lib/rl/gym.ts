@@ -31,7 +31,7 @@ export interface MakeConfig {
  * @example
  * ```ts
  * import { listEnvironments } from 'mdml-engine/rl'
- * import * as rl from 'mdml-engine/methods/rl'
+ * import * as rl from 'mdml-engine/environments'
  * listEnvironments(rl).some((d) => d.id === 'CartPole-v1') // => true
  * ```
  */
@@ -65,7 +65,7 @@ function lookup(id: string, registry: readonly EnvDefinition[] | undefined): Env
  * @example
  * ```ts
  * import { make, listEnvironments } from 'mdml-engine/rl'
- * import * as rl from 'mdml-engine/methods/rl'
+ * import * as rl from 'mdml-engine/environments'
  * make(rl.cartPole).spec.id // => 'CartPole-v1'
  * make('MountainCar-v0', {}, { registry: listEnvironments(rl) }).spec.maxEpisodeSteps // => 200
  * ```
@@ -96,7 +96,7 @@ export function make<S, O, A>(
  * @example
  * ```ts
  * import { GymEnv } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * const env = new GymEnv(cartPole)
  * env.reset({ seed: 0 })
  * env.step(1)[1] // => 1

@@ -50,15 +50,6 @@ export default defineConfig({
           environment: 'node',
         },
       },
-      {
-        extends: true,
-        test: {
-          name: 'hub',
-          root: 'packages/hub',
-          include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-          environment: 'node',
-        },
-      },
     ],
     coverage: {
       provider: 'v8',

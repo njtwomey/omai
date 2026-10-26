@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bernoulliBandit, cartPole, nonStationaryBandit } from '../../methods/rl/index.ts'
+import { bernoulliBandit, cartPole, nonStationaryBandit } from '../environments/index.ts'
 import {
   cumulativeRegret,
   isBandit,

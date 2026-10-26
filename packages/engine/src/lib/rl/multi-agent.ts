@@ -100,7 +100,7 @@ export interface AecEpisode<S, A> {
  * @example
  * ```ts
  * import { playAec } from 'mdml-engine/rl'
- * import { nim } from 'mdml-engine/methods/rl'
+ * import { nim } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const take1 = () => 0
  * playAec(nim.create({ heaps: [3] }), { player_0: take1, player_1: take1 }, key(0)).returns // => { player_0: 1, player_1: -1 }
@@ -149,7 +149,7 @@ export interface AecParallelState<S> {
  * @example
  * ```ts
  * import { aecToParallel } from 'mdml-engine/rl'
- * import { nim } from 'mdml-engine/methods/rl'
+ * import { nim } from 'mdml-engine/environments'
  * aecToParallel(nim.create()).possibleAgents // => ['player_0', 'player_1']
  * ```
  */
@@ -217,7 +217,7 @@ export interface ParallelAecState<S, O> {
  * @example
  * ```ts
  * import { parallelToAec } from 'mdml-engine/rl'
- * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { matrixGame } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = parallelToAec(matrixGame.create({ game: 'prisonersDilemma' }))
  * env.currentAgent(env.reset(key(0))) // => 'player_0'
@@ -279,7 +279,7 @@ export interface ParallelTimeLimitState<S> {
  * @example
  * ```ts
  * import { parallelTimeLimit } from 'mdml-engine/rl'
- * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { matrixGame } from 'mdml-engine/environments'
  * parallelTimeLimit(matrixGame.create(), 5).spec.maxEpisodeSteps // => 5
  * ```
  */
@@ -327,7 +327,7 @@ export interface SingleAgentState<S, O> {
  * @example
  * ```ts
  * import { singleAgentView } from 'mdml-engine/rl'
- * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { matrixGame } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = singleAgentView(matrixGame.create({ game: 'prisonersDilemma' }), 'player_0', { player_1: () => 0 })
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 5
@@ -393,7 +393,7 @@ export interface ParallelEpisode<S> {
  * @example
  * ```ts
  * import { playParallel, parallelTimeLimit } from 'mdml-engine/rl'
- * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { matrixGame } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = parallelTimeLimit(matrixGame.create({ game: 'prisonersDilemma' }), 3)
  * playParallel(env, { player_0: () => 0, player_1: () => 0 }, key(0)).returns // => { player_0: 9, player_1: 9 }
@@ -460,7 +460,7 @@ export type JointReward = 'sum' | 'mean' | { readonly agent: string }
  * @example
  * ```ts
  * import { jointEnv } from 'mdml-engine/rl'
- * import { matrixGame } from 'mdml-engine/methods/rl'
+ * import { matrixGame } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = jointEnv(matrixGame.create({ game: 'prisonersDilemma' }))
  * const r = env.step(env.reset(key(0)).state, { player_0: 1, player_1: 0 }, key(1))
@@ -543,7 +543,7 @@ export interface AecViewState<S> {
  * @example
  * ```ts
  * import { aecSingleAgentView } from 'mdml-engine/rl'
- * import { nim } from 'mdml-engine/methods/rl'
+ * import { nim } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = aecSingleAgentView(nim.create({ heaps: [3] }), 'player_0', { player_1: () => 0 })
  * const r = env.step(env.reset(key(0)).state, 0, key(1))
@@ -630,7 +630,7 @@ export function aecSingleAgentView<S, O, A>(
  * @example
  * ```ts
  * import { stateObservations } from 'mdml-engine/rl'
- * import { nim } from 'mdml-engine/methods/rl'
+ * import { nim } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = stateObservations(nim.create({ heaps: [2, 2] }))
  * env.observe(env.reset(key(0)), 'player_1').heaps // => [2, 2]

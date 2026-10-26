@@ -62,7 +62,7 @@ export interface TimeLimitState<S> {
  * @example
  * ```ts
  * import { timeLimit } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * timeLimit(cartPole.create(), 10).spec.maxEpisodeSteps // => 10
  * ```
  */
@@ -111,7 +111,7 @@ export interface EpisodeStatisticsState<S> {
  * @example
  * ```ts
  * import { episodeStatistics } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = episodeStatistics(cartPole.create())
  * env.step(env.reset(key(0)).state, 1, key(1)).state.episodeLength // => 1
@@ -242,7 +242,7 @@ export interface NormalizeRewardState<S> {
  * @example
  * ```ts
  * import { normalizeReward } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = normalizeReward(cartPole.create())
  * env.step(env.reset(key(0)).state, 1, key(1)).reward > 1 // => true
@@ -296,7 +296,7 @@ export function normalizeReward<S, O, A>(
  * @example
  * ```ts
  * import { transformReward } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = transformReward(cartPole.create(), (r) => 2 * r)
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 2
@@ -317,7 +317,7 @@ export function transformReward<S, O, A>(env: Env<S, O, A>, f: (reward: number) 
  * @example
  * ```ts
  * import { clipReward } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = clipReward(cartPole.create(), 0, 0.5)
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 0.5
@@ -339,7 +339,7 @@ export function clipReward<S, O, A>(env: Env<S, O, A>, min = -1, max = 1): Env<S
  * @example
  * ```ts
  * import { transformAction } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = transformAction(cartPole.create(), (push: boolean) => (push ? 1 : 0))
  * env.step(env.reset(key(0)).state, true, key(1)).reward // => 1
@@ -377,7 +377,7 @@ function boxOf(
  * @example
  * ```ts
  * import { clipAction } from 'mdml-engine/rl'
- * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { pendulum } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = clipAction(pendulum.create())
  * const s = env.reset(key(0)).state
@@ -405,7 +405,7 @@ export function clipAction<S, O>(env: Env<S, O, readonly number[]>): Env<S, O, r
  * @example
  * ```ts
  * import { rescaleAction } from 'mdml-engine/rl'
- * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { pendulum } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = rescaleAction(pendulum.create(), -1, 1)
  * const s = env.reset(key(0)).state
@@ -436,7 +436,7 @@ export function rescaleAction<S, O>(
  * @example
  * ```ts
  * import { actionRepeat } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = actionRepeat(cartPole.create(), 4)
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 4
@@ -487,7 +487,7 @@ export interface StickyActionState<S, A> {
  * @example
  * ```ts
  * import { stickyAction } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = stickyAction(cartPole.create(), 1)
  * const s1 = env.step(env.reset(key(0)).state, 1, key(1)).state
@@ -530,7 +530,7 @@ export function stickyAction<S, O, A>(env: Env<S, O, A>, p = 0.25): Env<StickyAc
  * @example
  * ```ts
  * import { transformObservation } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = transformObservation(cartPole.create(), (o) => o.length)
  * env.reset(key(0)).observation // => 4

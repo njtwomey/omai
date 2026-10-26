@@ -226,24 +226,21 @@ importers:
 
   apps/site:
     dependencies:
-      react:
-        specifier: ^19.3.1
-        version: 19.3.1
-      react-dom:
-        specifier: ^19.3.1
-        version: 19.3.1(react@19.3.1)
       mdml-engine:
         specifier: workspace:*
         version: link:../../packages/engine
-      mdml-hub:
-        specifier: workspace:*
-        version: link:../../packages/hub
       mdml-meta:
         specifier: workspace:*
         version: link:../../packages/meta
       mdml-render:
         specifier: workspace:*
         version: link:../../packages/render
+      react:
+        specifier: ^19.3.1
+        version: 19.3.1
+      react-dom:
+        specifier: ^19.3.1
+        version: 19.3.1(react@19.3.1)
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.3.3
@@ -270,7 +267,7 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
-  packages/hub:
+  packages/meta:
     dependencies:
       mdml-engine:
         specifier: workspace:*
@@ -278,31 +275,12 @@ importers:
       mdml-render:
         specifier: workspace:*
         version: link:../render
-    devDependencies:
-      '@types/react':
-        specifier: ^19.3.0
-        version: 19.3.0
-      react:
-        specifier: ^19.3.1
-        version: 19.3.1
-
-  packages/meta:
-    dependencies:
       sucrase:
         specifier: ^3.35.1
         version: 3.35.1
       ts-morph:
         specifier: ^28.0.0
         version: 28.0.0
-      mdml-engine:
-        specifier: workspace:*
-        version: link:../engine
-      mdml-hub:
-        specifier: workspace:*
-        version: link:../hub
-      mdml-render:
-        specifier: workspace:*
-        version: link:../render
     devDependencies:
       '@types/react':
         specifier: ^19.3.0

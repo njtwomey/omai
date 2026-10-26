@@ -2,8 +2,8 @@
 // whose reward, agent statistics and frames are renamed to paths and whose episode event schedules the rest. The
 // Q-table, the greedy policy and greedy rollouts are derived from any state, so a page can click an episode and watch
 // that episode's policy act.
-import { cliffWalking } from 'mdml-engine/methods/rl'
-import { qLearning, type TabularState } from 'mdml-engine/methods/rl/agents'
+import { qLearning, type TabularState } from 'mdml-engine/agents'
+import { cliffWalking } from 'mdml-engine/environments'
 import { type Key, key as makeKey } from 'mdml-engine/random'
 import { type Env, greedyPolicyOf, make, runEpisode, type TrainState, trainingAlgorithm } from 'mdml-engine/rl'
 import { dict, real } from 'mdml-engine/space'

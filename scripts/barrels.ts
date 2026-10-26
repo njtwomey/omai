@@ -172,7 +172,7 @@ const LAZY_SUMMARY = `/**
  * Generated beside the catalogue, so adding an entry module adds it here.
  */`
 const MODULES_SUMMARY = `/**
- * The module map: every public entry point of mdml-engine, mdml-render and mdml-hub mapped to a lazy
+ * The module map: every public entry point of mdml-engine, mdml-render and mdml-hub (when present) mapped to a lazy
  * \`import()\`, so the example runner can resolve the imports of an example in Node and in the browser. Generated.
  */`
 
@@ -233,8 +233,11 @@ for (const [kind, prefix] of [
 }
 flat('render', entries, 'mdml-render')
 flat('meta', [], 'mdml-meta')
-flat('hub', entries, 'mdml-hub', ['collections'], ['catalogue', 'lazy'])
-hubCatalogue()
+// The hub package is parked (_parked/packages/hub); its barrels and catalogue are generated only while it exists.
+if (existsSync(join(ROOT, 'packages/hub'))) {
+  flat('hub', entries, 'mdml-hub', ['collections'], ['catalogue', 'lazy'])
+  hubCatalogue()
+}
 
 const loaders = entries
   .filter((e) => !e.startsWith('mdml-meta'))

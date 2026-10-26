@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cartPole } from '../../methods/rl/index.ts'
+import { cartPole } from '../environments/index.ts'
 import { key } from '../random/index.ts'
 import { episodes, recorder } from '../trace/index.ts'
 import { behaviourPolicy, greedyPolicyOf, policyAgent } from './agent.ts'

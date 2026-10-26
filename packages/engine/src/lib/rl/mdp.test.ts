@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { makeCliffWalking, makeNChain, makeRiverSwim, makeWindyGridWorld } from '../../methods/rl/index.ts'
+import { makeCliffWalking, makeNChain, makeRiverSwim, makeWindyGridWorld } from '../environments/index.ts'
 import { key } from '../random/index.ts'
 import { scene } from '../scene/index.ts'
 import { recorder, runAlgorithm } from '../trace/index.ts'

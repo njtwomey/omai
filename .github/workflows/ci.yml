@@ -30,7 +30,7 @@ jobs:
         run: make barrels-check layers lint
       - name: Type-check (TypeScript)
         run: |
-          for p in engine render meta hub; do pnpm --dir packages/$p exec tsc -p tsconfig.json --noEmit; done
+          for p in engine render meta; do pnpm --dir packages/$p exec tsc -p tsconfig.json --noEmit; done
           pnpm --dir apps/site exec tsc -p tsconfig.json --noEmit
           pnpm exec tsc -p tsconfig.json
       - name: Tests

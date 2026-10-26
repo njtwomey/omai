@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { blackjack, cartPole, frozenLake, mountainCarContinuous, pendulum } from '../../methods/rl/index.ts'
 import { maxOf } from '../base/index.ts'
+import { blackjack, cartPole, frozenLake, mountainCarContinuous, pendulum } from '../environments/index.ts'
 import { foldIn, key } from '../random/index.ts'
 import type { BoxSpace } from '../space/index.ts'
 import { type Env, resetAfter } from './env.ts'

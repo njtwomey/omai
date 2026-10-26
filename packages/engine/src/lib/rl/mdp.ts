@@ -96,7 +96,7 @@ export function tabularMdp(spec: {
  * @example
  * ```ts
  * import { mdpFromModel } from 'mdml-engine/rl'
- * import { frozenLake } from 'mdml-engine/methods/rl'
+ * import { frozenLake } from 'mdml-engine/environments'
  * const model = frozenLake.create().model
  * model === undefined ? 0 : mdpFromModel(model, 0.99).nStates // => 16
  * ```
@@ -139,7 +139,7 @@ export function mdpFromModel<S, A>(model: EnvModel<S, A>, gamma = 1): TabularMdp
  * @example
  * ```ts
  * import { mdpFromEnv } from 'mdml-engine/rl'
- * import { cliffWalking } from 'mdml-engine/methods/rl'
+ * import { cliffWalking } from 'mdml-engine/environments'
  * mdpFromEnv(cliffWalking.create()).nActions // => 4
  * ```
  */

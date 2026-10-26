@@ -12,7 +12,7 @@ import {
   taxiDecode,
   taxiEncode,
   taxiTransitions,
-} from '../../methods/rl/environments/index.ts'
+} from '../environments/index.ts'
 import { key } from '../random/index.ts'
 import type { Env } from '../rl/index.ts'
 import {

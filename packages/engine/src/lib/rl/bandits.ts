@@ -27,7 +27,7 @@ export type BanditEnv<S, O> = Env<S, O, number> & { readonly oracle: EnvOracle<S
  * @example
  * ```ts
  * import { isBandit } from 'mdml-engine/rl'
- * import { bernoulliBandit, cartPole } from 'mdml-engine/methods/rl'
+ * import { bernoulliBandit, cartPole } from 'mdml-engine/environments'
  * [isBandit(bernoulliBandit.create()), isBandit(cartPole.create())] // => [true, false]
  * ```
  */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { cartPole, makeCliffWalking, makeFrozenLake, mountainCarContinuous, pendulum } from '../../methods/rl/index.ts'
 import { takeAway } from '../../testing/rl.ts'
+import { cartPole, makeCliffWalking, makeFrozenLake, mountainCarContinuous, pendulum } from '../environments/index.ts'
 import { key } from '../random/index.ts'
 import { recorder, runAlgorithm } from '../trace/index.ts'
 import { mdpFromEnv, valueIteration } from './mdp.ts'

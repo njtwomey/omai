@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import * as environments from '../../methods/rl/index.ts'
-import { cartPole, frozenLake, mountainCar } from '../../methods/rl/index.ts'
+import * as environments from '../environments/index.ts'
+import { cartPole, frozenLake, mountainCar } from '../environments/index.ts'
 import { contains } from '../space/index.ts'
 import { isEnvDefinition, unwrapped } from './env.ts'
 import { GymEnv, listEnvironments, make } from './gym.ts'

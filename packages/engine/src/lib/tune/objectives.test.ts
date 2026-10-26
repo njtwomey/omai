@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { cartPole } from '../../methods/rl/index.ts'
 import { xy, xyClasses } from '../data/index.ts'
+import { cartPole } from '../environments/index.ts'
 import { defineEstimator } from '../learn/index.ts'
 import { accuracyScore, meanSquaredError } from '../metrics/index.ts'
 import { make, policyAgent } from '../rl/index.ts'

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { contextualLinearBandit, makeGridWorld } from '../../methods/rl/index.ts'
 import { DYNA_MAZE, randomMdpEnv } from '../../testing/rl-tabular.ts'
+import { contextualLinearBandit, makeGridWorld } from '../environments/index.ts'
 import { lstsq } from '../numerics/linalg/index.ts'
 import { foldIn, key, uniform } from '../random/index.ts'
 import { toFlat } from '../tensor/index.ts'

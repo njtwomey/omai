@@ -1,7 +1,7 @@
 // A search method on the contract, the trivial end: A* on a grid map through the core's search algorithm, its native
 // expansion messages and counts renamed to paths, and the map with the current node and the path so far derived as a
 // frame. No serialise: there is nothing to seek in a search you can rerun in a blink.
-import { gridProblem, SEARCH_MAPS, type SearchMapName, searchMap } from 'mdml-engine/methods/gofai'
+import { gridProblem, SEARCH_MAPS, type SearchMapName, searchMap } from 'mdml-engine/problems'
 import { aStarSearchAlgorithm, type SearchNode, type SearchState } from 'mdml-engine/search'
 import { choice, dict } from 'mdml-engine/space'
 import { defineMethod, derived, Log, type Method, message, scalar } from 'mdml-engine/trace'

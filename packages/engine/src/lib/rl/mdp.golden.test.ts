@@ -1,6 +1,6 @@
 import { describe, it, vi } from 'vitest'
-import { makeCliffWalking, makeFrozenLake, makeTaxi } from '../../methods/rl/index.ts'
 import { expectMatches, loadFixture } from '../../testing/golden.ts'
+import { makeCliffWalking, makeFrozenLake, makeTaxi } from '../environments/index.ts'
 import { tensor } from '../tensor/index.ts'
 import type { Env } from './env.ts'
 import { mdpFromEnv, occupancyMeasure, policyEvaluation, policyIteration, qFromV, valueIteration } from './mdp.ts'

@@ -94,7 +94,7 @@ async function main(): Promise<void> {
     for (const i of r.issues.slice(0, Number(option(args, '--coverage-list') ?? 0)))
       process.stdout.write(`  ${i.file}:${i.line}  ${i.symbol}  ${i.problem}${i.detail === '' ? '' : ` ${i.detail}`}\n`)
     const { summaryCoverage } = await import('../packages/meta/src/extract/index.ts')
-    const tree = extractCatalogue({ root: ROOT, packages: ['engine', 'render', 'meta', 'hub'] })
+    const tree = extractCatalogue({ root: ROOT, packages: ['engine', 'render', 'meta'] })
     const s = summaryCoverage(tree)
     process.stdout.write(
       `summaries: ${s.folders - s.missingFolders.length} of ${s.folders} folders, ${s.files - s.missingFiles.length} of ${s.files} files\n`,

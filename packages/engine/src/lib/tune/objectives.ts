@@ -257,7 +257,7 @@ export interface AgentObjectiveOptions extends ObjectiveOptions {
  * ```ts
  * import { agentObjective } from 'mdml-engine/tune'
  * import { make, policyAgent } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * agentObjective(make(cartPole), () => policyAgent(() => 0)).directions // => ['maximize']
  * ```
  */

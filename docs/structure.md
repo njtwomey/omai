@@ -2985,6 +2985,14 @@ Left in 4.39 after round two (one line each):
 
 ## 5. Methods, exposition records, views and the hub
 
+> **Status, 2026-10-26.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
+> `docs/methods_port/`): one base per way of running, particulars of a few lines each, and a minimal hub that is the
+> pattern rather than a catalogue. The methods described below, the `mdml-hub` package and the site's hub section are
+> parked, untouched, under `_parked/` (same paths), and come back piece by piece: their algorithms move home to `lib/`
+> (`docs/methods_port/inventory.md`), and the constructables already have (`lib/environments`, `lib/agents`,
+> `lib/problems`, `lib/graphics/rendering.ts`). Sections 5.x below describe what is parked; the exposition records of
+> `lib/exposition` and the views of render are unchanged.
+
 Four layers, each usable without the ones after it:
 
 | layer   | where                          | what it holds                                                                                                                                                  | draws?        |

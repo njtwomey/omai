@@ -85,7 +85,7 @@ export interface MctsResult<A> {
  * @example
  * ```ts
  * import { mctsAlgorithm } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * mctsAlgorithm(cartPole.create(), [0, 0, 0, 0]).name // => 'mcts'
  * ```
  */
@@ -212,7 +212,7 @@ function summarise<S, A>(root: Node<S>, actions: readonly A[], simulations: numb
  * @example
  * ```ts
  * import { mcts } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * mcts(cartPole.create(), [0, 0, 0.12, 0], { simulations: 300, depth: 25, c: 5 }).action // => 1
  * ```
  */
@@ -279,7 +279,7 @@ export interface GameMctsOptions<S> {
  * @example
  * ```ts
  * import { gameMcts } from 'mdml-engine/rl'
- * import { nim } from 'mdml-engine/methods/rl'
+ * import { nim } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = nim.create({ heaps: [2] })
  * gameMcts(env, env.reset(key(0)), { simulations: 100 }).action // => 1
@@ -392,7 +392,7 @@ export function gameMcts<S, O>(
  * @example
  * ```ts
  * import { rolloutPlanner } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * rolloutPlanner(cartPole.create(), [0, 0, 0.1, 0], { rollouts: 8, horizon: 30 }).action // => 1
  * ```
  */
@@ -514,7 +514,7 @@ export interface CemPlannerState {
  * @example
  * ```ts
  * import { cemPlannerAlgorithm } from 'mdml-engine/rl'
- * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { pendulum } from 'mdml-engine/environments'
  * cemPlannerAlgorithm(pendulum.create(), [0, 0]).name // => 'cem'
  * ```
  */
@@ -614,7 +614,7 @@ export interface PlanResult {
  * @example
  * ```ts
  * import { cem } from 'mdml-engine/rl'
- * import { mountainCarContinuous } from 'mdml-engine/methods/rl'
+ * import { mountainCarContinuous } from 'mdml-engine/environments'
  * cem(mountainCarContinuous.create(), [-0.5, 0], { horizon: 5, population: 16 }).plan.length // => 5
  * ```
  */
@@ -657,7 +657,7 @@ export function cem<S, O>(
  * @example
  * ```ts
  * import { mppi } from 'mdml-engine/rl'
- * import { pendulum } from 'mdml-engine/methods/rl'
+ * import { pendulum } from 'mdml-engine/environments'
  * mppi(pendulum.create(), [Math.PI, 0], { horizon: 4, population: 8 }).action.length // => 1
  * ```
  */

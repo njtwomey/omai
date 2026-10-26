@@ -118,7 +118,7 @@ export interface EnvDefinition<S = unknown, O = unknown, A = unknown> {
  * @example
  * ```ts
  * import { make, unwrapped } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * unwrapped(make(cartPole)).spec.maxEpisodeSteps // => 500
  * ```
  */
@@ -140,7 +140,7 @@ export function unwrapped(env: Env<unknown, unknown, unknown>): Env<unknown, unk
  * @example
  * ```ts
  * import { resetAfter } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * resetAfter(cartPole.create(), undefined, key(0)).observation.length // => 4
  * ```
@@ -158,7 +158,7 @@ export function resetAfter<S, O, A>(env: Env<S, O, A>, previous: S | undefined, 
  * @example
  * ```ts
  * import { isEnvDefinition } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * isEnvDefinition(cartPole) // => true
  * ```
  */

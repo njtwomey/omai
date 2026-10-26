@@ -13,7 +13,6 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "mdml-engine": "workspace:*",
-    "mdml-hub": "workspace:*",
     "mdml-meta": "workspace:*",
     "mdml-render": "workspace:*"
   },

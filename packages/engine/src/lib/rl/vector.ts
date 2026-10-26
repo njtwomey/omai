@@ -65,7 +65,7 @@ export interface VectorEnv<S, O, A> {
  * @example
  * ```ts
  * import { vectorEnv } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const venv = vectorEnv(cartPole.create(), 3)
  * venv.step(venv.reset(key(0)).state, [0, 1, 0], key(1)).rewards // => [1, 1, 1]
@@ -162,7 +162,7 @@ export function vectorEnv<S, O, A>(
  * @example
  * ```ts
  * import { GymVectorEnv } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * const venv = new GymVectorEnv(cartPole.create(), 2)
  * venv.reset({ seed: 0 })[0].length // => 2
  * ```

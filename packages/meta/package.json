@@ -36,7 +36,6 @@
     "sucrase": "^3.35.1",
     "ts-morph": "^28.0.0",
     "mdml-engine": "workspace:*",
-    "mdml-hub": "workspace:*",
     "mdml-render": "workspace:*"
   },
   "devDependencies": {

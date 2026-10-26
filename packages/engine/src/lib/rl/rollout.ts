@@ -42,7 +42,7 @@ export interface RolloutOptions {
  * @example
  * ```ts
  * import { make, rolloutAlgorithm } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * rolloutAlgorithm(make(cartPole), () => 0).name // => 'rollout'
  * ```
  */
@@ -120,7 +120,7 @@ function meanStd(xs: readonly number[]): { readonly mean: number; readonly std: 
  * @example
  * ```ts
  * import { make, evaluatePolicy } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * evaluatePolicy(make(cartPole), () => 0, { episodes: 3 }).returns.length // => 3
  * ```
  */
@@ -167,7 +167,7 @@ export interface Episode<S, O, A> {
  * @example
  * ```ts
  * import { make, runEpisode } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const ep = runEpisode(make(cartPole), () => 1, key(0))
  * [ep.length === ep.rewards.length, ep.terminated] // => [true, true]
@@ -271,7 +271,7 @@ export interface ComparisonResult {
  * @example
  * ```ts
  * import { compareAgents, make } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * const balance = (o: readonly number[]) => ((o[2] ?? 0) + 0.5 * (o[3] ?? 0) > 0 ? 1 : 0)
  * compareAgents(make(cartPole), { balance, push: () => 1 }, { episodes: 3 }).best // => 'balance'
  * ```

@@ -30,7 +30,7 @@ export interface NormalizeObservationState<S> {
  * @example
  * ```ts
  * import { normalizeObservation } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * normalizeObservation(cartPole.create()).reset(key(0)).state.stats.count > 1 // => true
  * ```
@@ -90,7 +90,7 @@ export interface FrameStackState<S, O> {
  * @example
  * ```ts
  * import { frameStack } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * frameStack(cartPole.create(), 4).reset(key(0)).observation.length // => 4
  * ```
@@ -138,7 +138,7 @@ export function frameStack<S, O, A>(
  * @example
  * ```ts
  * import { flattenObservation } from 'mdml-engine/rl'
- * import { blackjack } from 'mdml-engine/methods/rl'
+ * import { blackjack } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * flattenObservation(blackjack.create()).reset(key(0)).observation.length // => 3
  * ```
@@ -162,7 +162,7 @@ export function flattenObservation<S, O, A>(env: Env<S, O, A>): Env<S, readonly 
  * @example
  * ```ts
  * import { oneHotObservation } from 'mdml-engine/rl'
- * import { frozenLake } from 'mdml-engine/methods/rl'
+ * import { frozenLake } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * oneHotObservation(frozenLake.create()).reset(key(0)).observation.slice(0, 3) // => [1, 0, 0]
  * ```
@@ -199,7 +199,7 @@ export interface TimeAwareState<S> {
  * @example
  * ```ts
  * import { timeAwareObservation } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * const env = timeAwareObservation(cartPole.create())
  * env.step(env.reset(key(0)).state, 1, key(1)).observation[4] // => 1
@@ -259,7 +259,7 @@ export interface PixelObservationOptions {
  * @example
  * ```ts
  * import { pixelObservation } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * import { key } from 'mdml-engine/random'
  * pixelObservation(cartPole.create(), { width: 32, height: 24 }).reset(key(0)).observation.shape // => [24, 32, 3]
  * ```

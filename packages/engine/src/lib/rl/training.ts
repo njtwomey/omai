@@ -194,7 +194,7 @@ function trainStep<G, S, O, A>(
  * @example
  * ```ts
  * import { make, policyAgent, trainingAlgorithm } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * trainingAlgorithm(make(cartPole), policyAgent(() => 1)).name // => 'train:policy'
  * ```
  */
@@ -261,7 +261,7 @@ export interface TrainResult<G, S, O> {
  * @example
  * ```ts
  * import { make, policyAgent, trainAgent } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * trainAgent(make(cartPole), policyAgent(() => 1), { episodes: 2 }).returns.length // => 2
  * ```
  */
@@ -313,7 +313,7 @@ export function trainAgent<G, S, O, A>(
  * @example
  * ```ts
  * import { make, policyAgent, replayEpisode, trainAgent } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/methods/rl'
+ * import { cartPole } from 'mdml-engine/environments'
  * const env = make(cartPole)
  * const agent = policyAgent(() => 1)
  * const result = trainAgent(env, agent, { episodes: 3 })

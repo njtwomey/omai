@@ -258,9 +258,16 @@ const MIN_ITER = 5
  * @example
  * ```ts
  * import { exponentiatedGradientReduction } from 'mdml-engine/fairness'
- * import { logisticRegression } from 'mdml-engine/methods/linear'
+ * import { defineEstimator, matrixView } from 'mdml-engine/learn'
+ * import { asTensor } from 'mdml-engine/tensor'
+ * // A stump on the first feature: the simplest classifier an estimator can be.
+ * const stump = defineEstimator({
+ *   name: 'stump', kind: 'classifier',
+ *   fit: (data) => { const m = matrixView(data.x, 'stump'); let s = 0; for (let i = 0; i < m.n; i++) s += m.data[i * m.d] ?? 0; return { t: s / m.n } },
+ *   methods: (p) => ({ classes: [0, 1], predict: (x) => { const m = matrixView(x, 'stump'); return asTensor(Array.from({ length: m.n }, (_, i) => ((m.data[i * m.d] ?? 0) > p.t ? 1 : 0))) } }),
+ * }, {})
  * const x = [[0], [1], [2], [3], [0.5], [1.5], [2.5], [3.5]]
- * const r = exponentiatedGradientReduction(logisticRegression(), { x, labels: [0, 0, 1, 1, 0, 1, 1, 1], groups: [0, 0, 0, 0, 1, 1, 1, 1] }, { iterations: 3 })
+ * const r = exponentiatedGradientReduction(stump, { x, labels: [0, 0, 1, 1, 0, 1, 1, 1], groups: [0, 0, 0, 0, 1, 1, 1, 1] }, { iterations: 3 })
  * r.steps.length // => 3
  * ```
  */
@@ -506,9 +513,16 @@ function integerGrid(dim: number, units: number): number[][] {
  * @example
  * ```ts
  * import { gridReduction } from 'mdml-engine/fairness'
- * import { logisticRegression } from 'mdml-engine/methods/linear'
+ * import { defineEstimator, matrixView } from 'mdml-engine/learn'
+ * import { asTensor } from 'mdml-engine/tensor'
+ * // A stump on the first feature: the simplest classifier an estimator can be.
+ * const stump = defineEstimator({
+ *   name: 'stump', kind: 'classifier',
+ *   fit: (data) => { const m = matrixView(data.x, 'stump'); let s = 0; for (let i = 0; i < m.n; i++) s += m.data[i * m.d] ?? 0; return { t: s / m.n } },
+ *   methods: (p) => ({ classes: [0, 1], predict: (x) => { const m = matrixView(x, 'stump'); return asTensor(Array.from({ length: m.n }, (_, i) => ((m.data[i * m.d] ?? 0) > p.t ? 1 : 0))) } }),
+ * }, {})
  * const x = [[0], [1], [2], [3], [0.5], [1.5], [2.5], [3.5]]
- * gridReduction(logisticRegression(), { x, labels: [0, 0, 1, 1, 0, 1, 1, 1], groups: [0, 0, 0, 0, 1, 1, 1, 1] }, { gridSize: 3 }).length // => 3
+ * gridReduction(stump, { x, labels: [0, 0, 1, 1, 0, 1, 1, 1], groups: [0, 0, 0, 0, 1, 1, 1, 1] }, { gridSize: 3 }).length // => 3
  * ```
  */
 export function gridReduction(
