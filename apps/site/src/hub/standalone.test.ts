@@ -5,13 +5,15 @@ import { ENTRIES } from '../gallery/registry.ts'
 import { PAGES, pageById } from './standalone.ts'
 
 describe('the hub standalone pages', () => {
-  it('loads every page with a title, question, collection and source, at an id no entry uses', () => {
+  it('lists every page with a title, question and collection at an id no entry uses, and loads its demo', async () => {
     expect(PAGES.length).toBeGreaterThan(0)
     for (const p of PAGES) {
       expect(p.title.length, p.file).toBeGreaterThan(0)
       expect(p.question.endsWith('?'), p.file).toBe(true)
-      expect(typeof p.Example, p.file).toBe('function')
       expect(catalogue.byId.has(p.id), p.file).toBe(false)
+      const { Example, snippet } = await p.load()
+      expect(typeof Example, p.file).toBe('function')
+      expect(snippet, p.file).not.toContain('export const recipe')
     }
     expect(pageById.size).toBe(PAGES.length)
   })

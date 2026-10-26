@@ -13,9 +13,14 @@ function subscribe(listener: () => void): () => void {
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '')
 
+/** The current path within the site (without the deploy base), e.g. `/gallery/charts`, outside React. */
+export function currentPath(): string {
+  return window.location.pathname.slice(base.length) || '/'
+}
+
 /** The current path within the site (without the deploy base), e.g. `/gallery/charts`. */
 export function usePath(): string {
-  return useSyncExternalStore(subscribe, () => window.location.pathname.slice(base.length) || '/')
+  return useSyncExternalStore(subscribe, currentPath)
 }
 
 /** Go to a path within the site without reloading. */

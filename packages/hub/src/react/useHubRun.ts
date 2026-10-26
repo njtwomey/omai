@@ -2,19 +2,21 @@
  * The React hook that runs a hub entry's method whenever its state changes, debounced: in a Web Worker when the entry
  * is in the catalogue and workers are available (a newer state stops a run still going), otherwise on the main thread,
  * reporting progress, the records, timing and where the run happened. Also the request and reply messages of the hub's
- * worker.
+ * worker. Given the entry's module (`mdml-hub/lazy`), the worker loads that module alone; otherwise the catalogue is
+ * imported when a run starts, never with the page.
  */
 
 import type { Exposition } from 'mdml-engine/exposition'
 import { useEffect, useRef, useState } from 'react'
-import { catalogue } from '../catalogue/index.ts'
 import type { HubEntry, HubProgress } from '../entry/entry.ts'
 import { type HubState, runDemo } from '../entry/run.ts'
 
-/** A request to the hub's worker: run the catalogue entry `id` on `state`. */
+/** A request to the hub's worker: run the catalogue entry `id` (found in `module`, if given) on `state`. */
 export interface HubRunRequest {
   readonly token: number
   readonly id: string
+  /** The entry's module in `mdml-hub/lazy`'s `entryModules`; omitted, the worker looks in the whole catalogue. */
+  readonly module?: string
   readonly state: HubState
 }
 
@@ -63,6 +65,16 @@ function spawn(): Worker | undefined {
   }
 }
 
+// Whether the worker can find this entry: given its module, the worker loads that; otherwise the entry must be the
+// catalogue's own (imported here only when needed, so a page showing one entry does not load them all).
+function inCatalogue(entry: HubEntry, module: string | undefined): Promise<boolean> {
+  if (module !== undefined) return Promise.resolve(true)
+  return import('../catalogue/index.ts').then(
+    ({ catalogue }) => catalogue.byId.get(entry.id) === entry,
+    () => false,
+  )
+}
+
 /**
  * Run an entry's method on a state whenever the state changes, debounced: in a Web Worker when the entry is in the
  * catalogue and workers are available (a newer state stops a run still going), otherwise on the main thread. The last
@@ -71,15 +83,16 @@ function spawn(): Worker | undefined {
  * @param entry - The entry.
  * @param state - The dataset and parameters.
  * @param delay - The debounce in milliseconds (default 200; the first run starts at once).
+ * @param module - The entry's module in `mdml-hub/lazy`'s `entryModules`, so the worker loads it alone (default: the
+ *   worker looks the entry up in the whole catalogue).
  * @returns The latest run.
  */
-export function useHubRun(entry: HubEntry, state: HubState, delay = 200): HubRun {
+export function useHubRun(entry: HubEntry, state: HubState, delay = 200, module?: string): HubRun {
   const [run, setRun] = useState<HubRun>({ status: 'running' })
   const worker = useRef<{ w: Worker; busy: boolean } | undefined>(undefined)
   const token = useRef(0)
   const first = useRef(true)
   const key = JSON.stringify(state)
-  const inCatalogue = catalogue.byId.get(entry.id) === entry
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the state is compared by content (`key`)
   useEffect(() => {
@@ -102,11 +115,14 @@ export function useHubRun(entry: HubEntry, state: HubState, delay = 200): HubRun
     }
     const start = (): void => {
       setRun((p) => ({ status: 'running', ...previousOf(p) }))
-      if (!inCatalogue) {
+      void inCatalogue(entry, module).then((found) => {
+        if (t !== token.current) return
+        if (found) inWorker()
         // Let the "running" state paint before a main-thread run blocks.
-        setTimeout(onMain, 0)
-        return
-      }
+        else setTimeout(onMain, 0)
+      })
+    }
+    const inWorker = (): void => {
       if (worker.current?.busy === true) {
         worker.current.w.terminate()
         worker.current = undefined
@@ -138,7 +154,7 @@ export function useHubRun(entry: HubEntry, state: HubState, delay = 200): HubRun
         if (worker.current === slot) worker.current = undefined
         if (t === token.current) onMain()
       }
-      const request: HubRunRequest = { token: t, id: entry.id, state }
+      const request: HubRunRequest = { token: t, id: entry.id, state, ...(module === undefined ? {} : { module }) }
       slot.w.postMessage(request)
     }
     if (first.current) {
@@ -148,7 +164,7 @@ export function useHubRun(entry: HubEntry, state: HubState, delay = 200): HubRun
     }
     const timer = setTimeout(start, delay)
     return () => clearTimeout(timer)
-  }, [entry, key, delay, inCatalogue])
+  }, [entry, key, delay, module])
 
   useEffect(
     () => () => {

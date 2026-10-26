@@ -33,6 +33,11 @@ export interface HubEntryViewProps {
   readonly initialState?: HubState
   /** Called with every new state (to keep it in the URL, say). */
   readonly onStateChange?: (state: HubState) => void
+  /**
+   * The entry's module in `mdml-hub/lazy`'s `entryModules` (`sklearn/cluster/kmeans`), so the worker loads that module
+   * alone; omitted, the worker finds the entry in the whole catalogue.
+   */
+  readonly module?: string
 }
 
 /** The record a slot shows, if the run returned it. */
@@ -171,7 +176,7 @@ export function HubEntryView(props: HubEntryViewProps): ReactNode {
   }
   // biome-ignore lint/correctness/useExhaustiveDependencies: report changes of state only
   useEffect(() => onStateChange?.(state), [state])
-  const run = useHubRun(entry, state)
+  const run = useHubRun(entry, state, 200, props.module)
   const update = (s: HubState): void => setState(s)
   const last = run.status === 'done' ? run : run.previous
   // A run that learns live shows its records so far, on the state it runs on.

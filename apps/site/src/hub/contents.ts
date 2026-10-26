@@ -1,4 +1,5 @@
-import { catalogue, type HubEntry } from 'mdml-hub'
+import { HUB_INDEX } from 'virtual:mdml-hub/index'
+import type { HubIndexEntry } from '../../plugins/hub-index-data.ts'
 import type { PageRef } from '../shell/PrevNext.tsx'
 import type { TocNode } from '../shell/toc.ts'
 import { PAGES } from './standalone.ts'
@@ -7,7 +8,18 @@ import { PAGES } from './standalone.ts'
 export const HUB_HOME: PageRef = { title: 'Hub', path: '/hub' }
 
 /** The page of an entry. */
-export const entryPath = (entry: HubEntry): string => `/hub/${entry.id}`
+export const entryPath = (entry: { readonly id: string }): string => `/hub/${entry.id}`
+
+/**
+ * The catalogue's entries as the index pages show them (titles, summaries, collections, the module of each), from the
+ * hub index (plugins/hub-index.ts): listing them loads none of their code.
+ */
+export const entryById: ReadonlyMap<string, HubIndexEntry> = new Map(HUB_INDEX.entries.map((e) => [e.id, e]))
+
+/** The description of a collection or folder of collections, if it has one. */
+export function collectionDescription(path: string): string | undefined {
+  return HUB_INDEX.descriptions[path]
+}
 
 /** The page of a collection (`sklearn/linear-model`). */
 export const collectionPath = (collection: string): string => `/hub/${collection}`
@@ -20,7 +32,7 @@ export interface HubItem {
   readonly path: string
 }
 
-const itemOf = (e: HubEntry): HubItem => ({ id: e.id, title: e.title, text: e.summary, path: entryPath(e) })
+const itemOf = (e: HubIndexEntry): HubItem => ({ id: e.id, title: e.title, text: e.summary, path: entryPath(e) })
 
 interface Folder {
   readonly path: string
@@ -30,7 +42,7 @@ interface Folder {
 
 const root: Folder = { path: '', folders: new Map(), entries: [] }
 const items: { readonly collection: string; readonly item: HubItem }[] = [
-  ...catalogue.entries.map((e) => ({ collection: e.collection, item: itemOf(e) })),
+  ...HUB_INDEX.entries.map((e) => ({ collection: e.collection, item: itemOf(e) })),
   ...PAGES.map((p) => ({
     collection: p.collection,
     item: { id: p.id, title: p.title, text: p.question, path: p.path },

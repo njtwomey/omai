@@ -7,15 +7,13 @@
 
 import type { ComponentType } from 'react'
 import type { Recipe } from '../gallery/recipe.ts'
-import { snippetOf } from '../shell/snippet.ts'
+import { type RecipeLoader, recipeLoader } from '../shell/LazyRecipe.tsx'
 
-interface PageModule {
-  readonly recipe: Recipe
-  readonly default: ComponentType
-}
-
-const modules = import.meta.glob<PageModule>('./pages/**/*.tsx', { eager: true })
-const sources = import.meta.glob<string>('./pages/**/*.tsx', { eager: true, query: '?raw', import: 'default' })
+// Only the pages' metadata loads with the hub (`?recipe`, plugins/recipe-meta.ts); a page's code and source load when
+// it is opened (some train a model as they load).
+const metas = import.meta.glob<Recipe>('./pages/**/*.tsx', { eager: true, query: '?recipe', import: 'recipe' })
+const modules = import.meta.glob<{ readonly default: ComponentType }>('./pages/**/*.tsx')
+const sources = import.meta.glob<string>('./pages/**/*.tsx', { query: '?raw', import: 'default' })
 
 /** A standalone page as the hub shows it. */
 export interface HubPage extends Recipe {
@@ -26,26 +24,28 @@ export interface HubPage extends Recipe {
   readonly path: string
   /** The file, relative to the site. */
   readonly file: string
-  readonly Example: ComponentType
-  readonly snippet: string
+  /** Loads the live demo and the code shown beside it. */
+  readonly load: RecipeLoader
 }
 
 /** Every standalone page, by collection and then file order. Adding a page is adding a file. */
-export const PAGES: readonly HubPage[] = Object.entries(modules)
-  .map(([key, mod]): HubPage => {
+export const PAGES: readonly HubPage[] = Object.entries(metas)
+  .map(([key, recipe]): HubPage => {
     const match = /\/pages\/(.+)\/([^/]+)\.tsx$/.exec(key)
     const collection = match?.[1] ?? ''
     const name = match?.[2] ?? ''
-    if (mod.recipe === undefined) throw new Error(`${key}: exports no \`recipe\``)
+    if (recipe === undefined) throw new Error(`${key}: exports no \`recipe\``)
     const id = `${collection}/${name.replace(/^\d+-/, '')}`
     return {
-      ...mod.recipe,
+      ...recipe,
       id,
       collection,
       path: `/hub/${id}`,
       file: `src/hub/pages/${collection}/${name}.tsx`,
-      Example: mod.default,
-      snippet: snippetOf(sources[key] ?? ''),
+      load: recipeLoader(
+        modules[key] as () => Promise<{ readonly default: ComponentType }>,
+        sources[key] as () => Promise<string>,
+      ),
     }
   })
   .sort((a, b) => a.file.localeCompare(b.file))

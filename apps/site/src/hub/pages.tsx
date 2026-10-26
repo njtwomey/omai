@@ -1,12 +1,14 @@
-import { catalogue, collectionDescription, type HubEntry, type HubState } from 'mdml-hub'
-import { HubEntryView } from 'mdml-hub/react'
-import type { ReactNode } from 'react'
+import { lazy, type ReactNode, Suspense } from 'react'
+import type { HubIndexEntry } from '../../plugins/hub-index-data.ts'
 import { ErrorBoundary } from '../shell/ErrorBoundary.tsx'
+import { LazyRecipeView } from '../shell/LazyRecipe.tsx'
 import { Link } from '../shell/Link.tsx'
 import { CardGrid, PageHeader, PageSection, Prose } from '../shell/layout.tsx'
-import { RecipeView } from '../shell/RecipeView.tsx'
-import { collectionPath, groupsUnder, type HubItem, ITEM_COUNT } from './contents.ts'
+import { collectionDescription, collectionPath, groupsUnder, type HubItem, ITEM_COUNT } from './contents.ts'
 import type { HubPage } from './standalone.ts'
+
+// An entry's widget loads with its page: its module, the hub's React bindings and the engine code it runs.
+const LiveEntry = lazy(() => import('./live.tsx').then((m) => ({ default: m.LiveEntry })))
 
 const SOURCE = 'https://github.com/njtwomey/mdml-js/blob/main/packages/engine/src/'
 
@@ -84,14 +86,13 @@ export function CollectionPage(props: { readonly path: string; readonly nav?: Re
   )
 }
 
-/** One entry: its title and summary, links to the methods' docs and source, and the live widget. */
+/** One entry: its title and summary, links to the methods' docs and source, and the live widget (loaded lazily). */
 export function EntryPage(props: {
-  readonly entry: HubEntry
+  readonly entry: HubIndexEntry
+  readonly path: string
   readonly nav?: ReactNode
-  readonly initialState?: HubState
-  readonly onStateChange?: (state: HubState) => void
 }): ReactNode {
-  const { entry, initialState, onStateChange } = props
+  const { entry, path } = props
   return (
     <>
       <PageHeader
@@ -101,7 +102,7 @@ export function EntryPage(props: {
         actions={props.nav}
       />
       <div className="-mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-        {(entry.methods ?? []).map((m) => (
+        {entry.methods.map((m) => (
           <span key={`${m.file}#${m.name}`} className="flex items-center gap-2">
             <Link to={`/docs/${m.file}/${m.name}`} className="font-mono text-fg hover:text-accent">
               {m.name}
@@ -114,12 +115,9 @@ export function EntryPage(props: {
         {entry.tags.length > 0 ? <span>{entry.tags.join(' · ')}</span> : null}
       </div>
       <ErrorBoundary resetKey={entry.id}>
-        <HubEntryView
-          key={entry.id}
-          entry={entry}
-          {...(initialState === undefined ? {} : { initialState })}
-          {...(onStateChange === undefined ? {} : { onStateChange })}
-        />
+        <Suspense fallback={<p className="text-sm text-muted">Loading the method…</p>}>
+          <LiveEntry key={entry.id} meta={entry} path={path} />
+        </Suspense>
       </ErrorBoundary>
     </>
   )
@@ -128,7 +126,6 @@ export function EntryPage(props: {
 /** A standalone page: its question, a sentence or two, and the live demo beside its own source. */
 export function StandalonePage(props: { readonly page: HubPage; readonly nav?: ReactNode }): ReactNode {
   const { page } = props
-  const { Example } = page
   return (
     <>
       <PageHeader
@@ -138,11 +135,7 @@ export function StandalonePage(props: { readonly page: HubPage; readonly nav?: R
         actions={props.nav}
       />
       <Prose text={page.explain} className="-mt-5 max-w-3xl text-base leading-relaxed text-fg-secondary" />
-      <RecipeView code={page.snippet} file={page.file} key={page.path}>
-        <ErrorBoundary resetKey={page.path}>
-          <Example />
-        </ErrorBoundary>
-      </RecipeView>
+      <LazyRecipeView id={page.path} file={page.file} load={page.load} key={page.path} />
     </>
   )
 }

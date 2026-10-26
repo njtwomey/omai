@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
-import { ErrorBoundary } from '../shell/ErrorBoundary.tsx'
+import { LazyRecipeView } from '../shell/LazyRecipe.tsx'
 import { Card, CardGrid, PageHeader, PageSection, Prose } from '../shell/layout.tsx'
-import { RecipeView } from '../shell/RecipeView.tsx'
 import type { Section } from './recipe.ts'
 import { ENTRIES, type Entry, entriesOf, SECTIONS } from './registry.ts'
 
@@ -60,7 +59,6 @@ export function SectionPage(props: { readonly section: Section; readonly nav?: R
 export function EntryPage(props: { readonly entry: Entry; readonly nav?: ReactNode }): ReactNode {
   const { entry } = props
   const section = SECTIONS.find((s) => s.id === entry.section)
-  const { Example } = entry
   return (
     <>
       <PageHeader
@@ -69,11 +67,7 @@ export function EntryPage(props: { readonly entry: Entry; readonly nav?: ReactNo
         actions={props.nav}
       />
       <Prose text={entry.explain} className="-mt-5 max-w-3xl text-base leading-relaxed text-fg-secondary" />
-      <RecipeView code={entry.snippet} file={entry.file} key={entry.path}>
-        <ErrorBoundary resetKey={entry.path}>
-          <Example />
-        </ErrorBoundary>
-      </RecipeView>
+      <LazyRecipeView id={entry.path} file={entry.file} load={entry.load} key={entry.path} />
     </>
   )
 }
