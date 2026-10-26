@@ -1,6 +1,7 @@
 import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
+import { gmm } from 'mdml-engine/methods/mixture'
 
 /** A hub entry is data: an id, words, an estimator on the contract, and the dataset collections it runs on. */
 export interface HubEntry {
@@ -21,6 +22,14 @@ export const ENTRIES: readonly HubEntry[] = [
     title: 'k-means',
     summary: 'Lloyd’s algorithm: assign rows to the nearest centre, move centres to the means, repeat.',
     estimator: kmeans,
+    datasets: ['clustering2d'],
+  },
+  {
+    id: 'mixture/gmm',
+    title: 'Gaussian mixture',
+    summary:
+      'Expectation-maximisation: responsibilities of each component for each row, then new weights, means and covariances.',
+    estimator: gmm,
     datasets: ['clustering2d'],
   },
   {

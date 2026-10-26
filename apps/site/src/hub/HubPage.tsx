@@ -79,7 +79,14 @@ export function HubPage(props: { readonly entry: HubEntry }): ReactNode {
       )}
       <SessionControls paths={paths} settings={settings} onChange={setSettings} />
       <TapeView live={live} at={at} onScrub={setAt}>
-        <ProbePanel entry={entry} live={live} at={at} x={data.x} {...(data.y === undefined ? {} : { y: data.y })} />
+        <ProbePanel
+          entry={entry}
+          live={live}
+          paths={paths}
+          at={at}
+          x={data.x}
+          {...(data.y === undefined ? {} : { y: data.y })}
+        />
       </TapeView>
     </div>
   )
@@ -89,13 +96,14 @@ export function HubPage(props: { readonly entry: HubEntry }): ReactNode {
 // regressors their decision surface.
 function ProbePanel(props: {
   readonly entry: HubEntry
+  readonly paths: readonly string[]
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
   readonly live: LiveSession<any, any>
   readonly at: number | null
   readonly x: Tensor
   readonly y?: Tensor
 }): ReactNode {
-  const { entry, live, at, x, y } = props
+  const { entry, live, at, x, y, paths } = props
   const mode = useColourMode()
   const t = at === null ? live.session.t : Math.min(at, live.session.t)
   // biome-ignore lint/correctness/useExhaustiveDependencies: probes re-run as the tape grows
@@ -111,17 +119,27 @@ function ProbePanel(props: {
           y: labels.map((_, i) => flat[i * d + 1] ?? 0),
         }
         const marks = { x: centres.map((c) => c[0] ?? 0), y: centres.map((c) => c[1] ?? 0) }
+        // A clusterer that is also a density (a mixture) shows its density beside the assignments.
+        const density = paths.includes('model/density')
         return (
-          <Chart
-            figure={FIG}
-            option={cartesian(
-              [
-                points([{ ...rows, groups: labels, opacity: 0.7 }], { mode }),
-                points([{ ...marks, name: 'centres', size: 16, symbol: 'diamond' }], { mode, colourOffset: 9 }),
-              ],
-              { mode, figure: FIG, title: `probe: assignments and centres at step ${t}` },
-            )}
-          />
+          <div className="flex flex-wrap gap-4">
+            <Chart
+              figure={FIG}
+              option={cartesian(
+                [
+                  points([{ ...rows, groups: labels, opacity: 0.7 }], { mode }),
+                  points([{ ...marks, name: 'centres', size: 16, symbol: 'diamond' }], { mode, colourOffset: 9 }),
+                ],
+                { mode, figure: FIG, title: `probe: assignments and centres at step ${t}` },
+              )}
+            />
+            {density ? (
+              <ExpositionView
+                record={live.session.probe(t, 'model/density', { resolution: 40 }) as never}
+                figure={FIG}
+              />
+            ) : null}
+          </div>
         )
       }
       if (entry.estimator.kind === 'regressor' && (x.shape[1] ?? 1) === 1 && y !== undefined) {
@@ -149,5 +167,5 @@ function ProbePanel(props: {
     } catch {
       return null
     }
-  }, [live.session, live.version, t, mode, entry, x, y])
+  }, [live.session, live.version, t, mode, entry, x, y, paths])
 }

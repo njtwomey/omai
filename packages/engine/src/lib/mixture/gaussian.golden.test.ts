@@ -1,20 +1,17 @@
-import { type Tensor, tensor, toArray } from '../../lib/tensor/index.ts'
 import { goldenSuite } from '../../testing/suite.ts'
-import { type CovarianceType, gaussianMixture } from './gaussian.ts'
+import { type Tensor, tensor, toArray } from '../tensor/index.ts'
+import { runAlgorithm } from '../trace/index.ts'
+import { type CovarianceType, gaussianEmAlgorithm, mixturePosterior } from './gaussian.ts'
 
 const fit = (inputs: readonly (Tensor | undefined)[], kind: CovarianceType) => {
   const [x, w, mu, cov] = inputs as Tensor[]
-  return gaussianMixture({
-    nComponents: 3,
-    covarianceType: kind,
-    tol: 1e-12,
-    maxIter: 15,
-    init: {
-      weights: toArray(w as Tensor) as number[],
-      means: toArray(mu as Tensor) as number[][],
-      covariances: toArray(cov as Tensor) as number[][][],
-    },
-  }).fit({ x: x as Tensor })
+  const start = {
+    weights: toArray(w as Tensor) as number[],
+    means: toArray(mu as Tensor) as number[][],
+    covariances: toArray(cov as Tensor) as number[][][],
+  }
+  const alg = gaussianEmAlgorithm(x as Tensor, start, { covarianceType: kind, tol: 1e-12 })
+  return { x: x as Tensor, params: runAlgorithm(alg, { maxSteps: 15 }).state }
 }
 
 /** Covariances in sklearn's per-type shape. */
@@ -30,7 +27,8 @@ goldenSuite('Gaussian mixtures by EM against scikit-learn', 'methods/mixture/gau
   means: (i, o) => tensor(fit(i, o['kind'] as CovarianceType).params.means),
   covariances: (i, o) => shaped(fit(i, o['kind'] as CovarianceType).params.covariances, o['kind'] as CovarianceType),
   score: (i, o) => {
-    const f = fit(i, o['kind'] as CovarianceType)
-    return f.score({ x: i[0] })
+    const { x, params } = fit(i, o['kind'] as CovarianceType)
+    const { logNorm } = mixturePosterior(x, params)
+    return logNorm.reduce((a, v) => a + v, 0) / logNorm.length
   },
 })
