@@ -3017,6 +3017,14 @@ and the responsibilities and per-row log density under a mixture. A state keeps 
 `logLikelihood` and `change` and the tensors `responsibilities` `[n, k]` (state), `means` `[k, d]` and `weights` `[k]`
 (params), declared in the schema. The estimator factories, the Bayesian mixture, component selection and the density
 helpers stay parked. The golden keeps its fixture under `methods/mixture/gaussian`.
+- `experts.ts`: the mixture of linear experts (Jacobs and Jordan) by EM: `mixtureOfExpertsAlgorithm(x, y, { nExperts,
+  ... }, key)` has a softmax gate of linear functions with a bias (the last expert's row held at zero) over
+  linear-Gaussian experts, each with its own noise variance. The E-step is the posterior responsibility of each expert
+  for each row; the M-step is weighted least squares per expert (`linear`'s `leastSquaresSolve`) and a few damped,
+  line-searched Newton steps on the ridge-penalised weighted multinomial logistic objective for the gate. The start is
+  one random chord (an exact fit through `d + 1` random rows) per expert. The metrics are `logLikelihood` and `change`;
+  the tensors `responsibilities` `[n, k]`, `gate` and `experts` `[k, d + 1]` and `variances` `[k]`. `moeGate`,
+  `moeExpertMeans`, `moePredict` (the mixture mean), `moePosterior` and `moeAssignments` read parameters.
 
 ## 5. Methods, exposition records, views and the hub
 
