@@ -30,7 +30,7 @@ import {
 /** The length of the simulated run, in steps. */
 const STEPS = 300
 /** The noise of the simulated world: acceleration spectral density and position reading standard deviation. */
-const WORLD = { processNoise: 0.15, measurementNoise: 2.5 } as const
+const WORLD = { processNoise: 0.03, measurementNoise: 5 } as const
 
 type Matrix = number[][]
 
@@ -75,7 +75,7 @@ function simulate(dt: number, key: Key): { truth: number[][]; observations: numb
     observation: w.H,
     transitionCovariance: w.Q,
     observationCovariance: w.R,
-    initialMean: [0, 0, 1, 0.5],
+    initialMean: [0, 0, 0.5, 0.25],
     initialCovariance: [
       [0.01, 0, 0, 0],
       [0, 0.01, 0, 0],
@@ -99,7 +99,7 @@ function present(s: KalmanState): KalmanState {
 /**
  * Track a moving point with a Kalman filter: a constant-velocity model in the plane, 300 steps of a simulated truth
  * and noisy position readings, and the library's Kalman filter run over them one reading per step. The world has fixed
- * noise (acceleration 0.15, reading noise 2.5); `processNoise` and `measurementNoise` are what the filter assumes, so
+ * noise (acceleration 0.03, reading noise 5); `processNoise` and `measurementNoise` are what the filter assumes, so
  * the defaults are matched and moving either shows over- or under-trusting the model (the normalised innovation
  * drifts away from 2). On the tape: `truth`, `observation`, `estimate` (the filtered position) and `covariance` (its
  * 2-by-2 block) at every step, with the scalars `nis` and `positionError`.
@@ -118,13 +118,13 @@ export const kalmanTracking: Method<KalmanState, Config> = defineMethod<KalmanSt
       log: true,
       default: WORLD.processNoise,
       label: 'process noise',
-      description: 'The acceleration noise the filter assumes (the world’s is 0.15).',
+      description: `The acceleration noise the filter assumes (the world’s is ${WORLD.processNoise}).`,
     }),
     measurementNoise: real(0.1, 20, {
       log: true,
       default: WORLD.measurementNoise,
       label: 'measurement noise',
-      description: 'The standard deviation of the position readings the filter assumes (the world’s is 2.5).',
+      description: `The standard deviation of the position readings the filter assumes (the world’s is ${WORLD.measurementNoise}).`,
     }),
     dt: real(0.1, 2, { default: 1, label: 'time step', description: 'The time between readings.' }),
   }),

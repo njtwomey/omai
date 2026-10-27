@@ -198,7 +198,7 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
     id: 'sequences',
     title: 'Sequences with hidden states',
     entries: [
-      g('dishonestCasino', 'The dishonest casino', { length: 500 }),
+      g('dishonestCasino', 'The dishonest casino', { length: 1000 }),
       g('regimeSwitching', 'Two Gaussian regimes', { length: 300 }),
     ],
   },
