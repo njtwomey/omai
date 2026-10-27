@@ -3584,6 +3584,10 @@ built from: `search`, `logic`, `stats`
   then the plan carried out), blocks drawn on a table under the gripper.
 - `puzzles.ts`: 8-puzzle, n-queens, Sudoku, Towers of Hanoi, missionaries and cannibals, cryptarithms (so far
   `nQueens`, `sudoku` with `SUDOKUS`, map colouring of `AUSTRALIA` and `randomMap`s).
+- `search` (dataset-free methods of the session layer, in `methods/search/` for now): `gridSearch` (breadth-first,
+  depth-first, uniform-cost, greedy, A* and weighted A* on the hand-drawn maps of `lib/problems`, a board of cell
+  categories per step) and `annealing` (simulated annealing, hill climbing and late acceptance over the test functions
+  of `datasets/objectives.ts`, the objective as the probe `objective/surface`).
 - `csp.ts`: CSPs played on their boards (`playCsp` with a `CspPicture`; `solveQueens`, `solveSudoku`,
   `solveMapColouring`): backtracking with ordering and inference, or min-conflicts, step by step as `BoardSteps`.
 - `adversarial.ts`: small games (`explicitTree`, `textbookTree`, `randomTree`, `ticTacToe` from a position) and
@@ -4122,7 +4126,8 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   `pinwheelDensity`, `bananaDensity`, `funnelDensity`, `gaussianMixtureDensity` on a circle or grid,
   `checkerboardDensity`) for samplers, flows and diffusion; `densitySamples` as a generator.
 - `objectives.ts`: optimisation test functions with gradients, Hessians and known minima (`TestFunction`:
-  `rosenbrock`, `himmelblau`, `beale`, `rastrigin`, `ackley`, `branin`, `quadraticBowl` with a set condition number),
+  `rosenbrock`, `himmelblau`, `beale`, `rastrigin`, `ackley`, `branin`, `quadraticBowl` with a set condition number,
+  and the one-dimensional `forrester`, `gramacyLee` and `dampedSine` for watching a surrogate model),
   hyperparameter-tuning surfaces (`TuningSurface`: `learningRateSurface` with learning curves for multi-fidelity
   tuning, `braninSurface`).
 - `changepoints.ts`: tunable changepoint series (`changepointSeries`: mean, variance and rate shifts, AR regime
@@ -4188,6 +4193,9 @@ built from: `tune`, `gp`, `ensemble`, `kernels`, `optim`
   far.
 - `bayesian.ts`: Bayesian optimisation samplers (GP or random-forest surrogates, initial designs, hyperparameter refits,
   posterior and acquisition snapshots as trace events).
+  So far `methods/tune/bayesianOptimisation.ts`, a dataset-free method of the session layer: one-dimensional functions
+  of `datasets/objectives.ts`, a GP surrogate (`fitGpSurrogate`) and `maximizeAcquisition` per trial, the probe
+  `tune/posterior` (function, surrogate band and acquisition as a `curves` record).
 - `acquisitions.ts`: probability of improvement, expected improvement and log-EI, upper confidence bound, Thompson
   sampling, max-value entropy search, q-EI, local penalisation.
 - `tpe.ts`: tree-structured Parzen estimators (univariate and multivariate).

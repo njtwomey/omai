@@ -3,6 +3,7 @@ import { kmeans } from 'mdml-engine/methods/cluster'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
 import { annealing, gridSearch } from 'mdml-engine/methods/search'
+import { bayesianOptimisation } from 'mdml-engine/methods/tune'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -131,6 +132,19 @@ export const ENTRIES: readonly HubEntry[] = [
       },
       { kind: 'curves', paths: ['energy', 'best'] },
       { kind: 'curves', paths: ['temperature'] },
+    ],
+  },
+  {
+    id: 'tune/bayesian-optimisation',
+    title: 'Bayesian optimisation',
+    summary:
+      'A Gaussian-process surrogate and an acquisition choose each trial of a one-dimensional function: expected improvement, the lower confidence bound or the probability of improvement.',
+    method: bayesianOptimisation,
+    steps: 30,
+    layout: [
+      { kind: 'probe', path: 'tune/posterior', title: 'surrogate and acquisition' },
+      { kind: 'curves', paths: ['best'] },
+      { kind: 'curves', paths: ['x'] },
     ],
   },
 ]
