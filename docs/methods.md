@@ -323,6 +323,16 @@ switching changes no number. Two refinements fall out:
 A stored tape (computed at build time, loaded instead of run) is a third source for an eager session and nothing more;
 a later addition that changes no interface.
 
+### 5.1 What is logged is not what is shown
+
+A page declares a **layout**: a few panels, each naming what it draws (the training rows with a probe's overlay at the
+scrubbed step; a probe; a few scalar paths as curves; a projection of the tape so far). The host draws those and
+nothing else; the generic everything-on-the-tape view is a debugging toggle. The entry's subscription stays as rich as
+it likes, so the tape holds more than the page shows: a later panel, or a later stage of a narrative, draws from the
+same session (a Bayesian mixture trained once; its components dying off in one place, its component priors over
+training in another). Live is the default mode. Layouts are data, like entries, so the same panel can be placed on
+any page that holds a session.
+
 ## 6. The standard
 
 1. **A method is a declaration**: `config` space, `make`, `contract`, `defaults`, `projections`. No loop, hook or
