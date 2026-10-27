@@ -365,8 +365,9 @@ function ProbeView(
   const probed = useProbe(live, t, panel.path, panel.args)
   const title = `${panel.title ?? panel.path} at step ${t}`
   const filename = props.file(panel.title ?? panel.path)
+  // A record at a step is a still: views that would play it along x are told not to.
   if (probed.value !== undefined && isExposition(probed.value))
-    return <ExpositionView record={probed.value} figure={FIG} />
+    return <ExpositionView record={probed.value} figure={FIG} title={title} filename={filename} play={false} />
   const text = probed.value === undefined ? undefined : JSON.stringify(probed.value, null, 1)
   return (
     <FigureFrame

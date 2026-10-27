@@ -3,7 +3,7 @@ import { kmeans } from 'mdml-engine/methods/cluster'
 import { eigenPower, eigenQr } from 'mdml-engine/methods/linalg'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
-import { changeOfVariables } from 'mdml-engine/methods/probability'
+import { transformSampling } from 'mdml-engine/methods/probability'
 import { mcmc } from 'mdml-engine/methods/sampling'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
@@ -124,16 +124,16 @@ export const ENTRIES: readonly HubEntry[] = [
     ],
   },
   {
-    id: 'probability/change-of-variables',
-    title: 'Change of variables',
+    id: 'probability/transform-sampling',
+    title: 'Sampling by transformation',
     summary:
-      'Normal samples and a grid pushed through a bijection that deforms from the identity: the density follows the Jacobian.',
-    method: changeOfVariables,
-    steps: 60,
+      'Uniform or normal draws pushed through a map become samples of a harder law; the change of variables gives the density they pile up under.',
+    method: transformSampling,
+    steps: 200,
     layout: [
-      { kind: 'probe', path: 'map/density', title: 'pushed density, with the pushed samples' },
-      { kind: 'probe', path: 'map/grid', title: 'the grid under the map' },
-      { kind: 'curves', paths: ['map/entropy', 'map/meanLogDet'], title: 'entropy and mean log |det J|' },
+      { kind: 'probe', path: 'transform/picture', title: 'up to the map, across to the target' },
+      { kind: 'curves', paths: ['samples/ks'], title: 'distance to the exact law' },
+      { kind: 'curves', paths: ['samples/mean'], title: 'mean of the pushed samples' },
     ],
   },
   {

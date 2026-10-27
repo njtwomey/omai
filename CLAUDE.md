@@ -12,6 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Agents that need isolation work in a git worktree under `.claude/worktrees/` named `agent-<id>-<word>`: the agent's
   short id and one word for what it is doing (`agent-afa77c-vision`). One worktree per agent, removed once its branch
   is merged; never an unlabelled `worktree-agent-<hash>`.
+- Agents throttle everything that runs tests: `nice -n 15 env MDML_TEST_WORKERS=1 make verify` (never `make check`,
+  never a second test run while one is going, never a full-repo `vitest run`). The main session alone runs the gate at
+  normal priority. Several agents verifying at once at full width stalls the machine for the person using it.
 
 ## Commands
 

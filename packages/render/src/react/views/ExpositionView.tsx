@@ -4,7 +4,7 @@
  */
 
 import type { Exposition } from 'mdml-engine/exposition'
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { AgentPlayer } from './agents.tsx'
 import { AnomalyView } from './anomaly.tsx'
@@ -42,6 +42,11 @@ export interface ExpositionViewProps {
   readonly points?: readonly (readonly number[])[]
   /** A label per row (class or group), for views that colour rows. */
   readonly labels?: readonly (number | string)[]
+  /** The frame's title and export file name, for views drawn in a page's own frame. */
+  readonly title?: ReactNode
+  readonly filename?: string
+  /** Whether views that can play (curves revealed along x) show their player (default true). */
+  readonly play?: boolean
 }
 
 /**
@@ -53,7 +58,11 @@ export interface ExpositionViewProps {
  */
 export function ExpositionView(props: ExpositionViewProps): ReactElement {
   const { record } = props
-  const common = props.figure === undefined ? {} : { figure: props.figure }
+  const common = {
+    ...(props.figure === undefined ? {} : { figure: props.figure }),
+    ...(props.title === undefined ? {} : { title: props.title }),
+    ...(props.filename === undefined ? {} : { filename: props.filename }),
+  }
   const rows = {
     ...(props.points === undefined ? {} : { points: props.points }),
     ...(props.labels === undefined ? {} : { labels: props.labels }),
@@ -111,7 +120,7 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
     case 'populationSteps':
       return <PopulationPlayer record={record} {...common} />
     case 'curves':
-      return <CurvesView record={record} {...common} />
+      return <CurvesView record={record} {...common} {...(props.play === undefined ? {} : { play: props.play })} />
     case 'diagram':
       return <DiagramPlayer record={record} {...common} />
     case 'valueGrids':
