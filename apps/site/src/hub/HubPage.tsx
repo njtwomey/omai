@@ -31,22 +31,31 @@ const TAPE: readonly Panel[] = [{ kind: 'tape' }]
  * controls; a method of nothing but its configuration runs on that. Session settings are controls, the player scrubs
  * the tape, and the entry's layout alone decides which panels are drawn.
  */
-export function HubPage(props: { readonly entry: HubEntry }): ReactNode {
-  const { entry } = props
-  return 'estimator' in entry ? <EstimatorPage entry={entry} /> : <MethodPage entry={entry} />
+export function HubPage(props: { readonly entry: HubEntry; readonly nav?: ReactNode }): ReactNode {
+  const { entry, nav } = props
+  return 'estimator' in entry ? <EstimatorPage entry={entry} nav={nav} /> : <MethodPage entry={entry} nav={nav} />
 }
 
 type EstimatorEntry = Extract<HubEntry, { readonly estimator: unknown }>
 type MethodEntry = Extract<HubEntry, { readonly method: unknown }>
 
-function MethodPage(props: { readonly entry: MethodEntry }): ReactNode {
+function MethodPage(props: { readonly entry: MethodEntry; readonly nav?: ReactNode }): ReactNode {
   const { entry } = props
   const space = Object.keys(entry.method.config.spaces).length === 0 ? undefined : entry.method.config
   const [params, setParams] = useState<Params>(() => defaults(entry.method.config) as Params)
-  return <SessionPage entry={entry} method={entry.method} space={space} params={params} onParams={setParams} />
+  return (
+    <SessionPage
+      entry={entry}
+      method={entry.method}
+      space={space}
+      params={params}
+      onParams={setParams}
+      nav={props.nav}
+    />
+  )
 }
 
-function EstimatorPage(props: { readonly entry: EstimatorEntry }): ReactNode {
+function EstimatorPage(props: { readonly entry: EstimatorEntry; readonly nav?: ReactNode }): ReactNode {
   const { entry } = props
   const estimator = entry.estimator
   const space = estimator.hyperSpace as DictSpace | undefined
@@ -67,6 +76,7 @@ function EstimatorPage(props: { readonly entry: EstimatorEntry }): ReactNode {
       params={params}
       onParams={setParams}
       data={data}
+      nav={props.nav}
       controls={
         <DatasetPicker
           collection={datasetCollections[collectionId] ?? collectionId}
@@ -89,6 +99,8 @@ function SessionPage(props: {
   readonly onParams: (p: Params) => void
   readonly data?: { readonly x: Tensor; readonly y?: Tensor }
   readonly controls?: ReactNode
+  /** The previous and next links, in the header. */
+  readonly nav?: ReactNode
 }): ReactNode {
   const { entry, method, space, params, data } = props
   const [settings, setSettings] = useState<SessionSettings>(() =>
@@ -108,7 +120,12 @@ function SessionPage(props: {
   const layout = useMemo(() => (settings.tape ? [...entry.layout, ...TAPE] : entry.layout), [entry, settings.tape])
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={entry.title} lede={entry.summary} eyebrow={{ label: 'Hub', path: '/hub' }} />
+      <PageHeader
+        title={entry.title}
+        lede={entry.summary}
+        eyebrow={{ label: 'Hub', path: '/hub' }}
+        actions={props.nav}
+      />
       {props.controls === undefined ? null : <ControlPanel columns={4}>{props.controls}</ControlPanel>}
       {space === undefined ? null : (
         <ControlPanel columns={4}>

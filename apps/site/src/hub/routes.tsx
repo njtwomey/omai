@@ -1,40 +1,69 @@
 import type { ReactNode } from 'react'
-import { Card, CardGrid, PageHeader } from '../shell/layout.tsx'
-import type { PageRef } from '../shell/PrevNext.tsx'
+import { Card, CardGrid, PageHeader, PageSection } from '../shell/layout.tsx'
+import { type PageRef, PrevNext } from '../shell/PrevNext.tsx'
 import { TocSidebar } from '../shell/TocSidebar.tsx'
 import type { TocNode } from '../shell/toc.ts'
-import { ENTRIES } from './entries.ts'
+import { AREAS, ENTRIES, type HubArea, type HubEntry } from './entries.ts'
 import { HubPage } from './HubPage.tsx'
 
 const HUB_HOME: PageRef = { title: 'Hub', path: '/hub' }
 
+const areaOf = (entry: HubEntry): string => entry.id.split('/')[0] ?? ''
+
+// The areas in reading order (the listed ones first, then any other an entry names), each with its entries.
+const AREA_LIST: readonly { readonly area: HubArea; readonly entries: readonly HubEntry[] }[] = [
+  ...AREAS,
+  ...[...new Set(ENTRIES.map(areaOf))]
+    .filter((id) => !AREAS.some((a) => a.id === id))
+    .map((id) => ({ id, title: id, blurb: '' })),
+]
+  .map((area) => ({ area, entries: ENTRIES.filter((e) => areaOf(e) === area.id) }))
+  .filter((group) => group.entries.length > 0)
+
 // The contents mirror the ids: a folder per area, a page per entry.
-const HUB_TOC: readonly TocNode[] = [...new Set(ENTRIES.map((e) => e.id.split('/')[0] ?? ''))].map((area) => ({
-  id: area,
-  title: area,
-  children: ENTRIES.filter((e) => e.id.startsWith(`${area}/`)).map((e) => ({
-    id: e.id,
-    title: e.title,
-    path: `/hub/${e.id}`,
-  })),
+const HUB_TOC: readonly TocNode[] = AREA_LIST.map(({ area, entries }) => ({
+  id: area.id,
+  title: area.title,
+  children: entries.map((e) => ({ id: e.id, title: e.title, path: `/hub/${e.id}` })),
 }))
 
-/** The hub section: the index of entries, or one entry's page. */
+/** The hub section: the index of entries by area, or one entry's page, with previous and next links. */
 export function HubSection(props: { readonly path: string }): ReactNode {
   const id = props.path.replace(/\/$/, '').replace(/^\/hub\/?/, '')
   const entry = ENTRIES.find((e) => e.id === id)
-  if (entry !== undefined) return <HubPage key={entry.id} entry={entry} />
+  const current = entry === undefined ? HUB_HOME.path : `/hub/${entry.id}`
+  const nav = <PrevNext nodes={HUB_TOC} home={HUB_HOME} current={current} compact />
   return (
-    <div className="flex flex-col gap-4">
+    <>
+      {entry !== undefined ? <HubPage key={entry.id} entry={entry} nav={nav} /> : <HubIndex nav={nav} />}
+      <PrevNext nodes={HUB_TOC} home={HUB_HOME} current={current} />
+    </>
+  )
+}
+
+// The front page: each area with its entries as cards.
+function HubIndex(props: { readonly nav: ReactNode }): ReactNode {
+  return (
+    <div className="flex flex-col gap-8">
       <PageHeader
         title="The hub"
-        lede="Methods on a contract, run as sessions: pick a dataset, set the hyperparameters, play the fit and scrub its tape."
+        lede="Methods on a contract, run as sessions: pick a dataset or a configuration, play the run and scrub its tape."
+        actions={props.nav}
       />
-      <CardGrid>
-        {ENTRIES.map((e) => (
-          <Card key={e.id} path={`/hub/${e.id}`} title={e.title} text={e.summary} />
-        ))}
-      </CardGrid>
+      {AREA_LIST.map(({ area, entries }) => (
+        <PageSection
+          key={area.id}
+          id={area.id}
+          title={area.title}
+          {...(area.blurb === '' ? {} : { blurb: area.blurb })}
+        >
+          <CardGrid>
+            {entries.map((e) => (
+              <Card key={e.id} path={`/hub/${e.id}`} title={e.title} text={e.summary} />
+            ))}
+          </CardGrid>
+        </PageSection>
+      ))}
     </div>
   )
 }

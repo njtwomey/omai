@@ -2,10 +2,12 @@
  * Path search on a grid world as a method of nothing but its configuration: breadth-first, depth-first, uniform-cost,
  * greedy, A* and weighted A* on one of the library's hand-drawn maps, one expansion per step. Every step puts a board of
  * cell categories on the tape (walls, explored cells, the frontier, the node expanded, the path to it) beside the
- * frontier size, the cells explored and the path cost, so a page can play the search as it floods the map.
+ * frontier size, the cells explored and the path cost, so a page can play the search as it floods the map; the
+ * `board` projection reads those boards back as a `boardSteps` record for the board view.
  */
 
 import { MdmlError } from '../../lib/base/index.ts'
+import { boardSteps } from '../../lib/exposition/index.ts'
 import { gridProblem, SEARCH_MAPS, type SearchMapName, searchMap } from '../../lib/problems/index.ts'
 import {
   aStarSearchAlgorithm,
@@ -17,7 +19,18 @@ import {
   uniformCostSearchAlgorithm,
 } from '../../lib/search/index.ts'
 import { choice, dict, real } from '../../lib/space/index.ts'
-import { type Algorithm, type Config, defineMethod, Log, type Method, scalar, tensor } from '../../lib/trace/index.ts'
+import {
+  type Algorithm,
+  type Config,
+  defineMethod,
+  Log,
+  type Method,
+  metricSeries,
+  type Run,
+  scalar,
+  tensor,
+  tensorSeries,
+} from '../../lib/trace/index.ts'
 import { terrainOf, type World } from '../../lib/worlds/index.ts'
 
 /** The path searches {@link gridSearch} can run. */
@@ -160,6 +173,27 @@ export const gridSearch: Method<GridState, Config> = defineMethod<GridState, Con
       },
       done: (s, t) => inner.done?.(s.search, t),
     }
+  },
+  // The boards on the tape as one record, in the order they were logged, with the effort metrics beside them.
+  projections: {
+    board: (run: Run) => {
+      const boards = tensorSeries(run, 'board').filter((e) => e.values !== undefined && e.indices === undefined)
+      const first = boards[0]
+      if (first === undefined) return undefined
+      const [rows, columns] = [first.shape[0] ?? 0, first.shape[1] ?? 0]
+      const metrics = ['frontier', 'explored', 'pathCost'].flatMap((name) => {
+        const values = metricSeries(run, name).values
+        return values.length === boards.length ? [{ name, values }] : []
+      })
+      return boardSteps({
+        method: 'grid search',
+        layout: { type: 'grid', rows, columns },
+        categories: ['empty', 'wall', 'explored', 'frontier', 'current', 'path', 'start', 'goal', 'terrain'],
+        steps: boards.map((e) => ({ cells: [...(e.values ?? [])] })),
+        metrics,
+        stepName: 'expansion',
+      })
+    },
   },
   contract: (c) => ({
     board: tensor({

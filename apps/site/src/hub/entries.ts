@@ -49,6 +49,35 @@ export type HubEntry = EntryBase &
       }
   )
 
+/** An area of the hub: the first segment of its entries' ids, with a title and a line for the index. */
+export interface HubArea {
+  readonly id: string
+  readonly title: string
+  readonly blurb: string
+}
+
+/** The areas, in reading order; an entry whose area is not listed is shown under its id. */
+export const AREAS: readonly HubArea[] = [
+  { id: 'cluster', title: 'Clustering', blurb: 'Rows grouped by nearness, a step at a time.' },
+  {
+    id: 'mixture',
+    title: 'Mixture models',
+    blurb: 'Components fitted by expectation-maximisation or variational inference, and a gate over experts.',
+  },
+  {
+    id: 'linear',
+    title: 'Linear models',
+    blurb: 'Classifiers, regressors and paths over a design matrix, Bayesian or not.',
+  },
+  { id: 'sequence', title: 'Sequences', blurb: 'Hidden-state models of a sequence.' },
+  { id: 'dynamics', title: 'Dynamics', blurb: 'Equations, processes and filters in time.' },
+  { id: 'sampling', title: 'Sampling', blurb: 'Markov chains walking a target.' },
+  { id: 'probability', title: 'Probability', blurb: 'The ideas of probability watched.' },
+  { id: 'linalg', title: 'Linear algebra', blurb: 'The iterations of numerical linear algebra.' },
+  { id: 'search', title: 'Search', blurb: 'Path and local search, expansion by expansion.' },
+  { id: 'tune', title: 'Tuning', blurb: 'Choosing parameters trial by trial.' },
+]
+
 /** The entries of the hub. */
 export const ENTRIES: readonly HubEntry[] = [
   {
@@ -217,7 +246,7 @@ export const ENTRIES: readonly HubEntry[] = [
     method: gridSearch,
     steps: 2000,
     layout: [
-      { kind: 'tensor', path: 'board', title: 'explored, frontier and path' },
+      { kind: 'projection', name: 'board', title: 'the board: explored, frontier and path' },
       { kind: 'curves', paths: ['frontier', 'explored'] },
       { kind: 'curves', paths: ['pathCost'] },
     ],

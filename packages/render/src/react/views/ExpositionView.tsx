@@ -116,7 +116,7 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
     case 'episodes':
       return <EpisodeView record={record} {...common} />
     case 'boardSteps':
-      return <BoardPlayer record={record} {...common} />
+      return <BoardPlayer record={record} {...common} {...(props.play === undefined ? {} : { play: props.play })} />
     case 'populationSteps':
       return <PopulationPlayer record={record} {...common} />
     case 'curves':

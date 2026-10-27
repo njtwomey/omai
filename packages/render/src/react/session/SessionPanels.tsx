@@ -134,8 +134,18 @@ function PanelView(props: PanelContext & { readonly panel: Panel }): ReactNode {
       const title = panel.title ?? leaf(panel.path)
       return <TensorView live={live} path={panel.path} title={title} filename={file(title)} t={t} />
     }
-    case 'projection':
-      return <ProjectionView live={live} name={panel.name} t={at === null ? undefined : t} />
+    case 'projection': {
+      const title = panel.title ?? panel.name
+      return (
+        <ProjectionView
+          live={live}
+          name={panel.name}
+          t={at === null ? undefined : t}
+          title={`${title} at step ${t}`}
+          filename={file(title)}
+        />
+      )
+    }
     case 'tape':
       return <TapeChannels live={live} at={at} {...(onScrub === undefined ? {} : { onScrub })} />
   }
@@ -396,6 +406,8 @@ function ProjectionView(props: {
   readonly name: string
   /** The scrubbed step: project the tape up to it (`undefined` follows the head). */
   readonly t: number | undefined
+  readonly title: string
+  readonly filename: string
 }): ReactNode {
   const { live, name, t } = props
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
@@ -410,5 +422,8 @@ function ProjectionView(props: {
       return undefined
     }
   }, [live.session, live.version, name, t])
-  return record !== undefined && isExposition(record) ? <ExpositionView record={record} figure={FIG} /> : null
+  // The record up to the viewed step is a still: views that would play it are told not to.
+  return record !== undefined && isExposition(record) ? (
+    <ExpositionView record={record} figure={FIG} title={props.title} filename={props.filename} play={false} />
+  ) : null
 }
