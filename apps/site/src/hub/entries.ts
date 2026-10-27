@@ -3,6 +3,7 @@ import { kmeans } from 'mdml-engine/methods/cluster'
 import { kalmanTracking } from 'mdml-engine/methods/dynamics'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
+import { hmm } from 'mdml-engine/methods/sequence'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -118,6 +119,19 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'trajectory', paths: ['observation'], points: true, trail: 60, title: 'observations' },
       { kind: 'curves', paths: ['positionError'] },
       { kind: 'curves', paths: ['nis'] },
+    ],
+  },
+  {
+    id: 'sequence/hmm',
+    title: 'Hidden Markov model',
+    summary:
+      'Baum-Welch on a sequence with hidden states: forward-backward gives the state posteriors, then the transitions and emissions are re-estimated from the expected counts. The dishonest casino hides which die was rolled; the decoded path is drawn against the truth.',
+    estimator: hmm,
+    datasets: ['sequences'],
+    layout: [
+      { kind: 'probe', path: 'model/posterior', title: 'state posteriors and the decoded path' },
+      { kind: 'tensor', path: 'solver/transition', title: 'transition matrix' },
+      { kind: 'curves', paths: ['solver/logLikelihood'] },
     ],
   },
 ]

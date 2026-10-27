@@ -67,6 +67,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/methods/dynamics': () => import('mdml-engine/methods/dynamics'),
   'mdml-engine/methods/linear': () => import('mdml-engine/methods/linear'),
   'mdml-engine/methods/mixture': () => import('mdml-engine/methods/mixture'),
+  'mdml-engine/methods/sequence': () => import('mdml-engine/methods/sequence'),
   'mdml-engine/metrics': () => import('mdml-engine/metrics'),
   'mdml-engine/mixture': () => import('mdml-engine/mixture'),
   'mdml-engine/nn': () => import('mdml-engine/nn'),
