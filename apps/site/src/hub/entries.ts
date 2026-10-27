@@ -74,8 +74,9 @@ export const ENTRIES: readonly HubEntry[] = [
     title: 'Bayesian Gaussian mixture',
     summary:
       'Variational inference with a sparse prior on the weights: eight components start, and the ones the data does not need die off.',
-    // Random responsibilities to start, so the components begin alike and the work is visible.
-    estimator: bgmm.with({ init: 'random' }),
+    // From a k-means start: eight pieces of three blobs, merged and switched off by the prior. A random start leaves
+    // the components alike, and variational inference then merges two of three separated blobs in nine seeds of ten.
+    estimator: bgmm,
     datasets: ['clustering2d'],
     layout: [
       { kind: 'rows', overlay: 'components' },
