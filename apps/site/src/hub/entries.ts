@@ -2,6 +2,7 @@ import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
+import { gridSearch } from 'mdml-engine/methods/search'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -98,6 +99,19 @@ export const ENTRIES: readonly HubEntry[] = [
     layout: [
       { kind: 'projection', name: 'regularisationPath' },
       { kind: 'curves', paths: ['solver/gap', 'solver/alpha'], title: 'duality gap and penalty' },
+    ],
+  },
+  {
+    id: 'search/grid-search',
+    title: 'Path search on a grid',
+    summary:
+      'Breadth-first, depth-first, uniform-cost, greedy, A* and weighted A* on small maps: watch the frontier flood the grid and the path appear.',
+    method: gridSearch,
+    steps: 2000,
+    layout: [
+      { kind: 'tensor', path: 'board', title: 'explored, frontier and path' },
+      { kind: 'curves', paths: ['frontier', 'explored'] },
+      { kind: 'curves', paths: ['pathCost'] },
     ],
   },
 ]
