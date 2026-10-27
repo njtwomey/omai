@@ -2,7 +2,7 @@ import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
-import { gridSearch } from 'mdml-engine/methods/search'
+import { annealing, gridSearch } from 'mdml-engine/methods/search'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -112,6 +112,25 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'tensor', path: 'board', title: 'explored, frontier and path' },
       { kind: 'curves', paths: ['frontier', 'explored'] },
       { kind: 'curves', paths: ['pathCost'] },
+    ],
+  },
+  {
+    id: 'search/annealing',
+    title: 'Local search on a surface',
+    summary:
+      'Simulated annealing, hill climbing and late acceptance walking over Rastrigin, Himmelblau, Ackley, Rosenbrock and Beale: watch a hot walk cool into a valley, or a greedy one stop in the first it finds.',
+    method: annealing,
+    steps: 1000,
+    layout: [
+      {
+        kind: 'trajectory',
+        paths: ['position'],
+        over: { path: 'objective/surface' },
+        trail: 200,
+        title: 'the walk over the objective',
+      },
+      { kind: 'curves', paths: ['energy', 'best'] },
+      { kind: 'curves', paths: ['temperature'] },
     ],
   },
 ]
