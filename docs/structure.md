@@ -2089,6 +2089,11 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   latent-Gaussian model: probit, Gaussian and quadrature sites; damping, power EP).
 - `inference/map.ts`: MAP and MPE by max-product (elimination and junction trees elsewhere; loopy BP decoding here), by
   LP relaxation (MPLP on its dual, with the integrality gap), and by local search (ICM with restarts).
+- `learning/baum-welch.ts`: Baum-Welch for hidden Markov models (`baumWelchAlgorithm` as a traced algorithm with no past,
+  `baumWelch` to fit, `initialHmmParameters`, `hmmDecode`, `hmmFromParameters`): categorical or Gaussian emissions
+  (diagonal or full covariances with hmmlearn's prior) over `inference/chain.ts`; parameters are plain JSON
+  (`HmmParameters`). The golden against hmmlearn keeps its fixture under `methods/models/hmm`. `methods/sequence/hmm.ts`
+  is its particular on the iterative base.
 - `learning/parameters.ts`: state counts, maximum-likelihood and Bayesian (BDeu, K2, Dirichlet) parameter estimation,
   data log-likelihood, EM with missing data and latent variables (traced), linear-Gaussian least squares.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
@@ -4146,6 +4151,10 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   topics), drifting topics (`driftingTopics`), worked-example corpora (`workedExampleCorpus`: Deerwester's LSA
   titles, the IR book's Caesar passages), `nurseryRhymes`, Tiny Shakespeare (`tinyShakespeare`, remote), near-duplicate
   corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage).
+- `hidden-markov.ts`: sequences from hidden Markov chains with the states as labels: the occasionally dishonest casino
+  (`dishonestCasino`: faces 0 to 5, a fair and a loaded die swapped in secret) and a series switching between a calm
+  and an active Gaussian regime (`regimeSwitching`), each with its generating model in the truth; the `sequences`
+  collection.
 - `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
   (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
   `modularArithmetic`), each with an exact solver in its truth.

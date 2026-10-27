@@ -194,6 +194,14 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
       g('changepointSeries', 'Changepoints'),
     ],
   },
+  sequences: {
+    id: 'sequences',
+    title: 'Sequences with hidden states',
+    entries: [
+      g('dishonestCasino', 'The dishonest casino', { length: 500 }),
+      g('regimeSwitching', 'Two Gaussian regimes', { length: 300 }),
+    ],
+  },
   comparisons: {
     id: 'comparisons',
     title: 'Games and tournaments',

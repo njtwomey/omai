@@ -17,6 +17,7 @@ import { abTest } from './experiments.ts'
 import { biasedCredit } from './fairness.ts'
 import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, kinshipTriples } from './graphs.ts'
+import { dishonestCasino, regimeSwitching } from './hidden-markov.ts'
 import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes } from './images.ts'
 import { makeClassification, makeMultilabelClassification } from './make-classification.ts'
 import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
@@ -83,6 +84,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   crowdLabels,
   densitySamples,
   digitGlyphs,
+  dishonestCasino,
   dopplerCurve,
   driftingTopics,
   dyckTask,
@@ -124,6 +126,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   poissonProcess,
   positiveUnlabelled,
   quantileCurves,
+  regimeSwitching,
   reverseTask,
   rings,
   roundRobin,
