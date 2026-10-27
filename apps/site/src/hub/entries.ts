@@ -2,6 +2,7 @@ import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
+import { mcmc } from 'mdml-engine/methods/sampling'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -98,6 +99,26 @@ export const ENTRIES: readonly HubEntry[] = [
     layout: [
       { kind: 'projection', name: 'regularisationPath' },
       { kind: 'curves', paths: ['solver/gap', 'solver/alpha'], title: 'duality gap and penalty' },
+    ],
+  },
+  {
+    id: 'sampling/mcmc',
+    title: 'Markov chain Monte Carlo',
+    summary:
+      'A chain walks a two-dimensional target by random-walk Metropolis or Hamiltonian Monte Carlo: watch it mix.',
+    method: mcmc,
+    steps: 2000,
+    layout: [
+      {
+        kind: 'trajectory',
+        paths: ['chain/position'],
+        points: true,
+        over: { path: 'target/density' },
+        title: 'the chain over the target',
+      },
+      { kind: 'series', path: 'chain/position', names: ['x₀', 'x₁'], title: 'trace plot' },
+      { kind: 'curves', paths: ['chain/acceptance'], title: 'acceptance rate so far' },
+      { kind: 'curves', paths: ['chain/logDensity'] },
     ],
   },
 ]
