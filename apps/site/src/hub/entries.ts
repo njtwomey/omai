@@ -5,6 +5,9 @@ import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear
 import { gmm } from 'mdml-engine/methods/mixture'
 import { transformSampling } from 'mdml-engine/methods/probability'
 import { mcmc } from 'mdml-engine/methods/sampling'
+
+import { annealing, gridSearch } from 'mdml-engine/methods/search'
+import { bayesianOptimisation } from 'mdml-engine/methods/tune'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -162,6 +165,51 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'series', path: 'iteration/vector', title: 'the diagonal: eigenvalue estimates' },
       { kind: 'curves', paths: ['iteration/offDiagonal'], title: 'off-diagonal norm' },
       { kind: 'curves', paths: ['iteration/error'], title: 'largest eigenvalue error' },
+    ],
+  },
+  {
+    id: 'search/grid-search',
+    title: 'Path search on a grid',
+    summary:
+      'Breadth-first, depth-first, uniform-cost, greedy, A* and weighted A* on small maps: watch the frontier flood the grid and the path appear.',
+    method: gridSearch,
+    steps: 2000,
+    layout: [
+      { kind: 'tensor', path: 'board', title: 'explored, frontier and path' },
+      { kind: 'curves', paths: ['frontier', 'explored'] },
+      { kind: 'curves', paths: ['pathCost'] },
+    ],
+  },
+  {
+    id: 'search/annealing',
+    title: 'Local search on a surface',
+    summary:
+      'Simulated annealing, hill climbing and late acceptance walking over Rastrigin, Himmelblau, Ackley, Rosenbrock and Beale: watch a hot walk cool into a valley, or a greedy one stop in the first it finds.',
+    method: annealing,
+    steps: 1000,
+    layout: [
+      {
+        kind: 'trajectory',
+        paths: ['position'],
+        over: { path: 'objective/surface' },
+        trail: 200,
+        title: 'the walk over the objective',
+      },
+      { kind: 'curves', paths: ['energy', 'best'] },
+      { kind: 'curves', paths: ['temperature'] },
+    ],
+  },
+  {
+    id: 'tune/bayesian-optimisation',
+    title: 'Bayesian optimisation',
+    summary:
+      'A Gaussian-process surrogate and an acquisition choose each trial of a one-dimensional function: expected improvement, the lower confidence bound or the probability of improvement.',
+    method: bayesianOptimisation,
+    steps: 30,
+    layout: [
+      { kind: 'probe', path: 'tune/posterior', title: 'surrogate and acquisition' },
+      { kind: 'curves', paths: ['best'] },
+      { kind: 'curves', paths: ['x'] },
     ],
   },
 ]

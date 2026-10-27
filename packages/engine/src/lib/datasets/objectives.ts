@@ -1,6 +1,7 @@
 /**
  * Optimisation test functions with gradients and Hessians by automatic differentiation, known minimisers and search
- * boxes: Rosenbrock, Himmelblau, Beale, Rastrigin, Ackley, Branin and an ill-conditioned quadratic bowl. Also synthetic
+ * boxes: Rosenbrock, Himmelblau, Beale, Rastrigin, Ackley, Branin and an ill-conditioned quadratic bowl, and three
+ * one-dimensional ones for watching a surrogate model at work (Forrester, Gramacy-Lee, a damped sine). Also synthetic
  * tuning surfaces (a learning-rate and weight-decay loss, Branin) for hyperparameter search.
  */
 
@@ -13,12 +14,14 @@ import {
   add,
   asTensor,
   cos,
+  div,
   exp,
   item,
   matmul,
   mean,
   mul,
   reshape,
+  sin,
   sliceAxis,
   sqrt,
   square,
@@ -233,6 +236,67 @@ export function branin(): TestFunction {
       [0, 15],
     ],
   )
+}
+
+/**
+ * The Forrester function `(6x - 2)² sin(12x - 4)` on `[0, 1]` (Forrester, Sobester and Keane 2008), the standard
+ * one-dimensional test of surrogate-based optimisation: a local minimum near 0.14 and the global one at
+ * `x = 0.757249` with value `-6.020740`.
+ *
+ * @returns The test function, of dimension 1.
+ * @example
+ * ```ts
+ * import { forrester } from 'mdml-engine/datasets'
+ * import { item, tensor } from 'mdml-engine/tensor'
+ * Math.abs(item(forrester().f(tensor([0.7572487578418559]))) + 6.0207400557670825) < 1e-12 // => true
+ * ```
+ */
+export function forrester(): TestFunction {
+  const f = (x: Value): Value => {
+    const a = coord(x, 0)
+    return mul(square(sub(mul(a, 6), 2)), sin(sub(mul(a, 12), 4)))
+  }
+  return testFunction('forrester', 1, f, [[0.7572487578418559]], -6.0207400557670825, [[0, 1]])
+}
+
+/**
+ * The Gramacy-Lee function `sin(10 pi x) / (2x) + (x - 1)^4` on `[0.5, 2.5]` (Gramacy and Lee 2012), many
+ * evenly spaced minima under a slowly varying trend, the global one at `x = 0.548563` with value `-0.869011`.
+ *
+ * @returns The test function, of dimension 1.
+ * @example
+ * ```ts
+ * import { gramacyLee } from 'mdml-engine/datasets'
+ * import { item, tensor } from 'mdml-engine/tensor'
+ * Math.abs(item(gramacyLee().f(tensor([0.5485634445276051]))) + 0.8690111349894999) < 1e-12 // => true
+ * ```
+ */
+export function gramacyLee(): TestFunction {
+  const f = (x: Value): Value => {
+    const a = coord(x, 0)
+    return add(div(sin(mul(a, 10 * Math.PI)), mul(a, 2)), square(square(sub(a, 1))))
+  }
+  return testFunction('gramacyLee', 1, f, [[0.5485634445276051]], -0.8690111349894999, [[0.5, 2.5]])
+}
+
+/**
+ * A damped sine `exp(-0.3 x) sin(2x)` on `[0, 10]`: oscillations that die away, the global minimum in the first trough
+ * at `x = (atan(2 / 0.3) + pi) / 2 = 2.28175` with value `-0.498750`.
+ *
+ * @returns The test function, of dimension 1.
+ * @example
+ * ```ts
+ * import { dampedSine } from 'mdml-engine/datasets'
+ * import { item, tensor } from 'mdml-engine/tensor'
+ * item(dampedSine().f(tensor([0]))) // => 0
+ * ```
+ */
+export function dampedSine(): TestFunction {
+  const f = (x: Value): Value => {
+    const a = coord(x, 0)
+    return mul(exp(mul(a, -0.3)), sin(mul(a, 2)))
+  }
+  return testFunction('dampedSine', 1, f, [[2.2817495163875963]], -0.49875007550795025, [[0, 10]])
 }
 
 /** Options of {@link quadraticBowl}. */
