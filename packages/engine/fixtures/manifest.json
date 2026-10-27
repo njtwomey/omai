@@ -4737,6 +4737,15 @@
       "cases": 24
     },
     {
+      "fixture": "vision/thresholds.json",
+      "source": "oracle/cases/vision/thresholds.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 27
+    },
+    {
       "fixture": "worlds/analysis.json",
       "source": "oracle/cases/worlds/analysis.py",
       "reference": {
